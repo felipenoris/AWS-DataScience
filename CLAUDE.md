@@ -389,7 +389,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   them to Claude): the carve-out is live (`EXC-20`), Staging is associated with `Tooling` configured,
   and both `backend.py` lists carry `staging`; 2.6 and 2.7 are applied, the `deployment` profile
   (`Tooling`, `enableSpaces` false) and its grant to Staging's InfrastructureAccess session group, an
-  IAM role being two DataZone principals (`lessons.md`); decisions 1-3 are taken; 3.1 is next;
+  IAM role being two DataZone principals (`lessons.md`); decisions 1-3 are taken; pass 3 done, `deploy-staging` provisioned with no SageMaker AI domain and the two
+  SMUS roles made Staging's Lake Formation admins (OQ 24); pass 4 waits on `app-etl`'s first tag at a
+  GitLab sitting;
   an associated account no person works in goes in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in
   `SMUS_MEMBERS`. Its 4.4's two prerequisites, Stage 8 3.0's first half and Stage 10 1.2's `vpc-v0.4.0`
   on `staging/foundation/`, were applied 2026-10-19 by the user.
