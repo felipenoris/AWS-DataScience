@@ -111,6 +111,10 @@ PROJECT_PROFILE_NAMES = ("experimentation",)
 # Admitted for Stage 18's window: `deployment` provisions into Staging and no person works in a
 # project born of it. Stage 18 pass 8 deletes the profile and empties this tuple.
 WINDOW_PROFILE_NAMES = ("deployment",)
+# The governance project's profile (Stage 17 decision 13): no environment configuration, so it
+# provisions nothing anywhere. The console's model access publishes into the project born of it,
+# GenerativeAIModelGovernanceProject, and the name is the console's contract, not this file's.
+MODEL_GOVERNANCE_PROFILE_NAMES = ("Generative AI model governance",)
 RETIRED_PROFILE_NAMES = ("engineering",)
 STEP3_SIDS = ("DenySageMakerJobsOffVpc", "DenySageMakerInstanceCeiling")
 BOUNDARY_NAME_FRAGMENT = "project-boundary"
@@ -722,7 +726,11 @@ def main(argv: list) -> int:
         have = {n for n, _i, _s in project_profiles}
         missing = [n for n in PROJECT_PROFILE_NAMES if n not in have]
         retired = [n for n in RETIRED_PROFILE_NAMES if n in have]
-        contracted = set(PROJECT_PROFILE_NAMES) | set(WINDOW_PROFILE_NAMES)
+        contracted = (
+            set(PROJECT_PROFILE_NAMES)
+            | set(WINDOW_PROFILE_NAMES)
+            | set(MODEL_GOVERNANCE_PROFILE_NAMES)
+        )
         unknown = sorted(have - contracted - set(RETIRED_PROFILE_NAMES))
         window = sorted(have & set(WINDOW_PROFILE_NAMES))
         if not project_profiles:
@@ -755,10 +763,20 @@ def main(argv: list) -> int:
                 "US-4",
                 "project profiles",
                 f"{', '.join(sorted(have))} - experimentation as contracted, "
-                f"{', '.join(window)} in Stage 18's window",
+                f"{', '.join(window)} in Stage 18's window, the model governance profile "
+                "Stage 17 decision 13's",
             )
         else:
-            checks.ok("US-4", "project profiles", f"{', '.join(sorted(have))} - one, as contracted")
+            checks.ok(
+                "US-4",
+                "project profiles",
+                f"{', '.join(sorted(have))} - experimentation as contracted"
+                + (
+                    ", the model governance profile Stage 17 decision 13's"
+                    if have & set(MODEL_GOVERNANCE_PROFILE_NAMES)
+                    else ""
+                ),
+            )
 
     # US-5: every blueprint-provisioned SageMaker AI domain in the Interactive accounts is
     # VpcOnly. PublicInternetOnly is the whole VPC design bypassed at the app layer.

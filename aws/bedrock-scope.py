@@ -59,6 +59,7 @@ from awslib.bedrockscope import (
     SCP_PATH,
     SID_REGIONS,
     grant_models,
+    scp_admitted,
     scp_declaration,
     settings_pins,
 )
@@ -96,10 +97,17 @@ def main(argv: list) -> int:
             rep.checks_table(checks)
         note(f"wrote {out_label}", why)
         return 2 if checks.n_fail() else 0
+    # Admitted beside the scope (Stage 17 decision 11): a model named without a profile, and the
+    # application inference profiles the portal invokes through. Named, never checked against the
+    # scoped set's consumers, which know nothing of them.
+    admitted, app_profiles, _admitted_why = scp_admitted(ctx.repo_root / SCP_PATH)
+    beside = sorted((admitted or set()) - set(declared))
     checks.ok(
         "BS-1",
         "the SCP declares the scope",
-        f"{len(declared)} model(s), {len(declared_regions)} region(s)",
+        f"{len(declared)} model(s), {len(declared_regions)} region(s)"
+        + (f"; admitted beside it: {', '.join(beside)}" if beside else "")
+        + ("; application inference profiles admitted" if app_profiles else ""),
     )
 
     # ------------------------------------------------------------------- what AWS actually does

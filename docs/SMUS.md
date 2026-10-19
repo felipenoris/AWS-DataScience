@@ -411,7 +411,8 @@ bump, in this order:
      *Update project* and no environment deployed by the reading. A second gate stands behind it: every
      model list reads *"No models found. Contact your admin to enable more models."*, since the account
      enables no model for projects or the playground (the console's **Amazon Bedrock models** tab, whose
-     roles the *Set up generative AI* form creates).
+     *Manage* publishes each model through a governance project the domain does not hold; the catalog
+     surface below, Stage 17 decision 13).
    A promoted blueprint is therefore read in the portal after the applies, and its entry's gate is read
    before a refusal is attributed to the profile.
 
@@ -665,6 +666,20 @@ objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/cat
   `sts:SetContext` and `q:PassRequest`. It is AWS's document and moves without this repository being
   asked (Lesson 11), which is why a preventive control over publishing or sharing belongs on this role
   rather than in an OU document.
+- **A Bedrock model reaches a project as a catalog subscription** (read 2026-10-19 in the console's and
+  the portal's code, [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decision 13; the
+  publishing measured the same evening, the subscription not yet). The console's **Amazon Bedrock models** tab publishes each enabled model as an asset,
+  `BedrockModelAssetType` for projects and `BedrockInferenceOnlyAssetType` for the playground, owned by a
+  project named `GenerativeAIModelGovernanceProject` and listed with `approvalRequired` `NO`; the asset's
+  form names a provisioning or consumption role, held by a custom environment of that project in the
+  model's account. A project's first use subscribes to the listing, and the grant's target is an
+  application inference profile in the project's account, the only door AWS's policies on the project
+  role and on the Bedrock IDE's roles open to a model. The domain holds no governance project, and an
+  associated account's console creates none: only the domain account's setup does, in the run that also
+  configures the Bedrock blueprints and `Tooling` there, which D22 forbids.
+  Here `data-governance/governance/` writes it, and `sandbox/model-access/` the two roles the console
+  adopts. Enabling five models created six custom environments, six assets and listings and the
+  playground's two application inference profiles, and no role (2026-10-19).
 
 ## Connections — how a project reaches something Terraform owns
 
