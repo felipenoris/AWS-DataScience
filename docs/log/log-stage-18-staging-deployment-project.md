@@ -390,3 +390,253 @@ are UTC.*
   Production's `datazone:ListDomains` `DENY-SCP p-83t232f4`, and Sandbox's `ListDomains` still
   `ALLOWED`; the seven not measured are the ones Stage 9's log names, the processing-job rows whose
   quotas read 0 in Production. 1.3 is done; 1.1's `EXC-nn` is `EXC-20`.
+
+## 2026-10-19 — the association read back, 2.3's rows, 2.5's second half planned, 2.6 written
+
+- **[user] 2.1, the association.** The user associated `Staging Account` to `awsds-studio` in Data
+  Governance's DataZone console, by the path the 6a log records, and wrote in chat *"Fiz a associação,
+  pode continuar"*. RAM dates the act: the domain's share gained Staging as a principal at 04:03:13Z.
+- **[Claude] 2.2, read back from 04:05 UTC** as the infrastructure user. `datazone
+  list-environment-blueprint-configurations --domain-identifier dzd-d8yrvx1ko7im6o` as
+  `awsds-infra-staging` exits 0 with `{"items": []}`, where it read `UnauthorizedException` at 03:52Z.
+  `ram get-resource-shares --resource-owner OTHER-ACCOUNTS` there holds
+  `DataZone-EXTENDED_ACCESS-dzd-d8yrvx1ko7im6o-ORG-ONLY`, `ACTIVE`, created 2026-08-21, and no
+  invitation exists. Read from Data Governance, the share's principals are Staging (04:03:13Z) and
+  Sandbox (2026-08-21). Its permission is `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`
+  at version 10, the default and the only `ATTACHABLE` version, created 2026-06-04: the share carries
+  the current version, so the release note's *"Existing RAM resource shares do not auto-update"* does
+  not reach it. `./aws/studio.py` with the four infrastructure profiles writes `all checks passed`:
+  `US-2` reads Staging seeing the shared domain and owning none, `US-6` Production's DataZone reads
+  denied, and Staging holds no SageMaker AI domain. Run with every `awsds-*` profile it exits 1, the
+  persona, deploy and Control Tower sessions not being signed in. `search-user-profiles --user-type
+  DATAZONE_IAM_USER` as `awsds-infra-data` lists an `ACTIVATED` IAM user profile for Staging's
+  InfrastructureAccess role, its ARN carrying the SSO path: the principal decision 3 names.
+- **[Claude] 2.3's rows.** `SMUS_ASSOCIATED` gained `staging`, then `SMUS_DEPLOYMENT_MEMBERS`. After
+  each row, every declared slice's generated tfvars, laptop and pipeline, and refusal 8's answers for
+  every profile were compared with the previous set, 38 slices: the first row changes
+  `staging/studio/`'s `blueprints_enabled` from false to true and nothing else, the second adds
+  `staging` to `governance/`'s `members` map and nothing else, and refusal 8 is unchanged. Re-planned
+  at 04:15Z: `sandbox/foundation/`, `production/tooling/` (the SAML var-file) and `staging/foundation/`
+  (the alerts var-file) `No changes`; `governance/` 0 to add, 1 to change, 0 to destroy, the
+  `MLflowApp` configuration of `experimentation` alone (Stage 17 pass 1's, `deployment_order` 11), as
+  on 2026-10-18.
+- **[Claude] 2.5's second half planned at 04:13:56Z** as `awsds-infra-staging`, saved to
+  `$HOME/tmp/stage18-studio-2.tfplan`: 2 to add, 1 to change, 0 to destroy. The `Tooling`
+  configuration takes region `us-west-2`, the boundary `awsds-staging-project-boundary`, the two
+  roles, and the regional parameters `AZs` `usw2-az1,usw2-az2`, the project key, `S3Location`
+  `s3://awsds-staging-smus-projects`, Staging's two private subnets and its VPC. Its
+  `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant goes to `CONTRIBUTOR` projects of the root domain unit,
+  child units excluded. The project key's policy gains the domain execution role in two statements,
+  and `GrantKMSPermissionsForAllProjectRoles` and `AllowCreateGrantForProjectRoles`, which the module
+  writes once a domain id exists. The apply is the user's; it takes decision 1's base, `Tooling`.
+- **[Claude] 2.6 written behind a switch.** `governance/`'s `locals.tf` holds
+  `deployment_profile_enabled = false`, the `deployment` row (Staging, `["Tooling"]`, a null `group`)
+  and each profile's own overrides; `profiles.tf` reads each profile's blueprint list under a
+  precondition holding Tooling first and category 1 only; `providers.tf` gains the `staging` alias,
+  `data.tf` Staging's identity and its InfrastructureAccess role by name; `grants.tf` grants a profile
+  with no group to that role's ARN as DataZone's user identifier. Planned at 04:21:26Z with the switch
+  off: 0 to add, 1 to change, `MLflowApp` alone, as before. Set true in the working copy and back
+  afterwards, at 04:21:59Z: 2 to add, 1 to change. The profile holds `Tooling` alone, `ON_CREATE`,
+  order 0, in Staging's account, with `experimentation`'s six Tooling overrides and `enableSpaces`
+  `"false"` locked (the template's AllowedValues are `"true"` and `"false"`, default `"true"`); the
+  grant is `CREATE_PROJECT_FROM_PROJECT_PROFILE` on the root unit to Staging's InfrastructureAccess
+  role; `experimentation`'s grant is unchanged. `./aws/studio.py`'s `US-4` passed with any extra
+  profile, reporting "one, as contracted"; it now fails on a profile outside the contract and reads
+  `deployment` as Stage 18's window.
+
+## 2026-10-19 — 2.5's second half, by the user's hand, and its read-back
+
+- **[user] 2.5's second apply, from the saved plan**, in the app's terminal on the worktree, as
+  `awsds-infra-staging`. The output, ids left out: the project key *"Modifications complete after 6s"*,
+  the `Tooling` configuration *"Creation complete after 17s"*, its grant *"Creation complete after
+  6s"*, and *"Apply complete! Resources: 2 added, 1 changed, 0 destroyed."* The outputs name the two
+  roles, the boundary, the key and the regional parameters as the first half's did. The session had
+  said the apply takes decision 1's base, `Tooling`, and that another base had to be named before
+  it; none was, so the base is decided on the recommendation of 2026-10-19.
+- **[Claude] Read back, 04:32 to 04:36 UTC**, as the infrastructure user. `staging/studio/` re-plans
+  `No changes` (04:32:40Z). `get-environment-blueprint-configuration` for `Tooling` from Staging: created
+  04:31:00Z, `enabledRegions` `us-west-2`, the provisioning and manage-access roles,
+  `environmentRolePermissionBoundary` `awsds-staging-project-boundary`, and the regional parameters
+  `AZs` `usw2-az1,usw2-az2`, the project key, `S3Location` `s3://awsds-staging-smus-projects`,
+  Staging's two private subnets and its VPC; `list-environment-blueprint-configurations` holds that one
+  configuration and no other. `list-policy-grants` on it: one `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant
+  to `CONTRIBUTOR` projects of the root domain unit, child units excluded, created 04:31:00Z. The key
+  behind `alias/awsds-staging-project` holds nine statements, the domain execution role in
+  `AllowKmsKeyUsageForSageMakerDomain` and `AllowSageMakerDomainKmsGrantPermissions`, and
+  `GrantKMSPermissionsForAllProjectRoles` and `AllowCreateGrantForProjectRoles` among them. Staging
+  holds no SageMaker AI domain, and its live CloudFormation stacks are Control Tower's five baseline
+  stack sets of 2026-08-09. `./aws/studio.py` on the four infrastructure profiles: `all checks
+  passed`, `US-4` reading `experimentation` alone.
+- **[Claude] The boundary is readable, by one of the two reads.** DataZone's own
+  `get-environment-blueprint-configuration` returns `environmentRolePermissionBoundary` in Staging, and
+  in Sandbox for the `Tooling` configuration of 2026-08-22, where `list-environment-blueprint-configurations`
+  returns it too. Cloud Control's `get-resource` for `AWS::DataZone::EnvironmentBlueprintConfiguration`,
+  the read `awscc` makes, omits it. `lessons.md`'s entry of 2026-08-22, *"no read returns it"*, carries
+  this reading now; a plan still cannot show the field's drift.
+
+## 2026-10-19 — 4.4's two prerequisites written and planned
+
+- **[Claude] The application image's pull grant for Staging** (Stage 8 step 3.0's first half, which
+  this stage's Prerequisites run in its window). `APP_REGISTRY_CONSUMERS` gains `staging`;
+  `production/registry/` gains the `staging` alias, its profile read from `app_consumers`, the identity
+  read, and `staging` in `account_id_by_folder`. Planned at 04:53:07Z as `awsds-infra-prod`, saved to
+  `$HOME/tmp/stage18-registry.tfplan`: 0 to add, 1 to change, 0 to destroy, the `app-etl`
+  repository's pull policy gaining one principal, read against `awsds-infra-staging`'s caller identity
+  as Staging's account root. The ceiling half of 3.0 is not written; 4.4 does not need it.
+- **[Claude] `staging/foundation/` on `vpc-v0.4.0`** (Stage 10 step 1.2's bump). The module's one
+  functional change between the tags is the S3 gateway default list gaining
+  `mwaa-serverless-code-files-*-<region>-prod`; the rest is description text, and the slice passes
+  no list of its own. Planned at 04:53:32Z as `awsds-infra-staging` with the alerts var-file, saved to
+  `$HOME/tmp/stage18-staging-foundation.tfplan`: 0 to add, 1 to change, 0 to destroy, the S3
+  gateway endpoint's policy gaining that family's bucket and object ARNs alone.
+- The two applies are the user's.
+
+## 2026-10-19 — 4.4's two prerequisites, by the user's hand, and the readings after them
+
+- **[user] Both applies, from the saved plans**, in the app's terminal on the worktree.
+  `production/registry/` as `awsds-infra-prod`: the `app-etl` repository policy *"Modifications
+  complete after 1s"*, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*
+  `staging/foundation/` as `awsds-infra-staging`: the S3 gateway endpoint *"Modifications complete
+  after 7s"*, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*
+- **[Claude] Read back, 05:11 to 05:16 UTC**, as the infrastructure user. Both slices re-plan
+  `No changes` (05:11:51Z and 05:12:11Z). `awsds-prod-ecr-app-etl`'s policy holds one statement,
+  `AllowConsumerAccountsToPull`, for Staging's and Sandbox's account roots, with
+  `ecr:BatchCheckLayerAvailability`, `BatchGetImage`, `GetDownloadUrlForLayer` and `DescribeImages`.
+  Staging's S3 gateway endpoint holds `AllowWithinOrganization` and `AllowAwsOwnedServiceBuckets`, the
+  second with 16 resources, the `mwaa-serverless-code-files-*-us-west-2-prod` bucket and object ARNs
+  among them. `./aws/egress.py` and `./aws/networking.py` on the four infrastructure profiles: all
+  checks passed.
+- **[Claude] `EG-4` learns the MWAA Serverless family.** Its comment holds one pattern per family of
+  the gateway's AWS-owned list, so that a deleted entry cannot stay `pass` (Lesson 13), and the
+  `mwaa-serverless-code-files` family of `vpc-v0.4.0` had none: Sandbox's row, which has carried the
+  family since 2026-10-11, never showed it. With the pattern, `EG-4` reads `mwaa-code` in Sandbox and
+  Staging and not in Production's three VPCs, which are on `vpc-v0.3.1`; the family's absence stays
+  a reading, never a failure.
+
+## 2026-10-19 — Stage 17's applies read back, 2.7 planned
+
+- **[user] Stage 17 1.3's two applies**, in that stage's session ([its log](log-stage-17-sandbox-machine-learning.md) is
+  its own record); the user wrote here *"acredito que os applies do Stage 17 rodaram"*.
+- **[Claude] Read back at 05:23:40Z**, as the infrastructure user, before anything was planned here:
+  `experimentation`, last updated 05:12:33Z, holds twelve environment configurations, `MLflowApp`
+  `ON_DEMAND` at order 11 the last; Sandbox holds twelve blueprint configurations, `MLflowApp`'s
+  created 05:11:58Z. The domain holds that one profile. `governance/`'s state object was last written
+  05:12:40Z, and no lock object stood beside it at 05:24:05Z. Stage 17's session reported its
+  `governance/` re-plan `No changes` at 05:13:39 to 05:14:00Z.
+- **[Claude] 2.7 planned at 05:24:48Z** as `awsds-infra-data`, `deployment_profile_enabled` set
+  true, saved to `$HOME/tmp/stage18-governance-27.tfplan`: 2 to add, 0 to change, 0 to destroy, the
+  `deployment` profile and its `CREATE_PROJECT_FROM_PROJECT_PROFILE` grant, both identical to the
+  working-copy plan of 04:21:59Z; `experimentation` untouched. The other sessions were told before the
+  apply, Stage 17's with the hazard that its checkout, cut from `main` without PR #196, would plan
+  the profile's destruction after the apply; it answered that it plans `governance/` no more until
+  PR #196 is in its branch. The apply is the user's.
+
+## 2026-10-19 — 2.7's first apply: the profile created, the grant refused, the grant re-planned
+
+- **[user] 2.7's apply, from the saved plan**, in the app's terminal on the worktree, as
+  `awsds-infra-data`: *"awscc_datazone_project_profile.this["deployment"]: Creation complete after
+  7s"*, then the grant refused, *"Group profile already exists for the given User profile (Service:
+  DataZone, Status Code: 400 ...) ErrorCode: InvalidRequest"*, at `grants.tf` line 28.
+- **[Claude] What the apply left**, read at 05:43 to 05:50 UTC: `governance/`'s state holds the
+  `deployment` profile and no grant for it; the root domain unit holds one
+  `CREATE_PROJECT_FROM_PROJECT_PROFILE` grant, `experimentation`'s, so nothing was half-created. The
+  profile is `ENABLED`, created 05:47:08Z, `Tooling` `ON_CREATE` at order 0 in Staging's account,
+  with `experimentation`'s six Tooling overrides and `enableSpaces` `false`, locked.
+- **[Claude] Why the grant was refused.** The role's ARN names two DataZone objects.
+  `get-user-profile` with it returns an `IAM` user profile whose `principalId` and `sessionName`
+  carry one session, the infrastructure user's, and whose `groupProfileId` points at a group profile;
+  `get-group-profile` with the same ARN returns that group profile, `ASSIGNED`, with
+  `rolePrincipalArn` the role and no group name: an `IAM_ROLE_SESSION_GROUP`, which
+  `search-group-profiles` lists beside the two other accounts' InfrastructureAccess roles. A grant to
+  the ARN as a user lands on the session's profile, which a group profile already covers. The service
+  model admits the ARN as a user identifier and documents nothing of the group.
+- **[Claude] The grant re-written to the group.** `grants.tf` names a group in every grant again:
+  the IdC group for `experimentation`, the role's session group for `deployment`, its id read by
+  `awscc_datazone_group_profile`, since Cloud Control's `GetResource` for
+  `AWS::DataZone::GroupProfile` resolves `<domain>|<role ARN>` to the profile (read before the
+  edit). With no lock on the state at 05:51:29Z, re-planned at 05:52:00Z as `awsds-infra-data`, saved
+  to `$HOME/tmp/stage18-governance-27b.tfplan`: 1 to add, 0 to change, 0 to destroy, the grant on the
+  root unit for the `deployment` profile, its `group_identifier` the session group's id;
+  `experimentation`'s grant untouched. The apply is the user's.
+
+## 2026-10-19 — 2.7's grant, by the user's hand, and the read-back
+
+- **[user] The grant's apply, from the saved plan**, as `awsds-infra-data`:
+  *"awscc_datazone_policy_grant.create_project_from_profile["deployment"]: Creation complete after
+  7s"*, *"Apply complete! Resources: 1 added, 0 changed, 0 destroyed."* The outputs name the creators,
+  `"deployment" = "InfrastructureAccess (staging)"` and `"experimentation" =
+  "sso-group-data-scientists"`. Then the user merged PR #196 (06:00:44Z) and wrote *"fiz o merge do
+  #196"*.
+- **[Claude] Read back at 06:01 UTC.** `governance/` re-plans `No changes` (06:01:20Z). The root domain
+  unit holds two `CREATE_PROJECT_FROM_PROJECT_PROFILE` grants, child units excluded:
+  `sso-group-data-scientists` for `experimentation` (2026-08-22) and Staging's InfrastructureAccess
+  session group for `deployment` (05:58:00Z). `./aws/studio.py` on the four infrastructure profiles:
+  all checks passed, `US-4` reading *"deployment, experimentation - experimentation as contracted,
+  deployment in Stage 18's window"*. Decisions 1 to 3 are taken by the applies; 2.7 is done.
+
+## 2026-10-19 — 3.1, the project
+
+- **[Claude] `deploy-staging` created at 06:05:27Z** as `awsds-infra-staging`, on the user's
+  authorization in this session for the stage's writes: `datazone create-project --name
+  deploy-staging` from the `deployment` profile exited 0. The app's classifier let this call through,
+  where it had refused every `terraform apply` of the stage. The project was created at 06:05:28Z by
+  the IAM user profile of the infrastructure user's session in Staging's InfrastructureAccess, its
+  environment deployment `PENDING_DEPLOYMENT`. The CLI's newer options, `--project-execution-role`,
+  `--resource-tags`, `--membership-assignments` and `--project-category`, were left out, so the
+  project is AWS's default shape. The other sessions were told before the call.
+- **[Claude] `list-project-memberships`**: one member, Staging's InfrastructureAccess session group,
+  `PROJECT_OWNER`. The group is the member, not the session that created the project.
+- **[Claude] The environment started deploying**: `Tooling` `CREATING` at 06:05:49Z, the stack
+  `DataZone-Env-…` `CREATE_IN_PROGRESS` in Staging since 06:05:43Z.
+
+## 2026-10-19 — 3.2 and 3.3, the environment and what it created
+
+- **[Claude] 3.2, read at 06:05 to 06:08 UTC** as `awsds-infra-staging`: the stack
+  `DataZone-Env-…` began at 06:05:43Z and reached `CREATE_COMPLETE` at 06:06:38Z; the project read
+  `SUCCESSFUL`, `Tooling` `ACTIVE`, at 06:07:27Z. The stack's parameters: `enableSpaces` `false`,
+  `isDefault` and `enableCustomProjectProfiles` `true`, `permissionsBoundaryArn` the stage's boundary,
+  `enableScheduling`, `enableAthena`, `enableAthenaSparkWorkgroup`, `enableGlueNetworkConnection`,
+  `enableNetworkIsolation`, `enableRolesWithoutBoundary` and the Bedrock switch `true`,
+  `logGroupRetention` 731. The profile's locked `enableSpaces` reached the deploy.
+- **[Claude] 3.3, the thirteen resources**: two Athena workgroups, the Bedrock Lambda and service roles,
+  `CDKMetadata`, the schedule group, two `GlueNetworkConnection`s, the Lake Formation registration of the
+  project prefix, the log group, `ToolingSecurityGroup` with its ingress, and `ToolingUserRole`. 0.2's
+  Sandbox list less `SageMakerSpacesDefaultDomain`. The outputs carry `VpcExport`,
+  `PrivateSubnetsExport`, `SecurityGroup` and `KmsKeyExport`, the names the CI/CD CLI reads, the key
+  `staging/studio/`'s project key.
+  - The roles, all three under `awsds-staging-project-boundary`: `datazone_usr_role_<project>_<env>`,
+    trusted by `datazone.amazonaws.com` and `auth.datazone.amazonaws.com`, a list of fourteen service
+    principals (`airflow-serverless`, `sagemaker`, `glue`, `lakeformation` and `bedrock` among them),
+    the two Redshift principals and the provisioning role, with `SageMakerStudioProjectUserRolePolicy`,
+    `SageMakerStudioProjectRoleMachineLearningPolicy` and `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy`;
+    `AmazonBedrockServiceRole-…`, trusted by `bedrock.amazonaws.com`, four Bedrock policies;
+    `AmazonBedrockLambdaExecutionRole-…`, trusted by `lambda.amazonaws.com`, three.
+  - The security group `datazone-<project>-dev`: all traffic in from itself, all traffic out to
+    `0.0.0.0/0`, in a VPC with no route out but the endpoints and the hub.
+  - Two Glue network connections, one per private subnet; the Athena workgroups
+    `sagemaker-studio-spark-workgroup-<project>` and `workgroup-<project>-<env>`, the second writing to
+    the project's `dev/sys/athena/`, both enforcing their configuration; the log group
+    `datazone-<project>-dev` at 731 days under the project key.
+  - Lake Formation: the project's `dev` prefix registered under the project role, hybrid access off.
+    The admin list, empty until then, holds `awsds-staging-smus-provisioning` and
+    `awsds-staging-smus-manage-access`, set by the provisioning role's three `PutDataLakeSettings` at
+    06:05:34Z (open question 24's Sandbox pattern); `CROSS_ACCOUNT_VERSION` 1.
+  - DataZone: nine connections (`default.s3_shared`, `project.s3_default_folder`, `project.iam`,
+    `project.athena`, `project.default_lakehouse`, `project.spark.compatibility`,
+    `project.spark.fineGrained`, `serverless.spark`, `default.workflow_serverless`), and no data source,
+    where each Sandbox project holds `EXC-11`'s failing one.
+  - RAM: Staging owns no share; it receives the domain's alone. The projects bucket holds five objects
+    under the project's prefix, written 06:06:48 to 06:06:50Z: the `dev/` and `shared/` markers and
+    `shared/`'s `.libs.json`, `README.md` and `getting_started.ipynb`.
+- **[Claude] CloudTrail in Staging from 06:04Z**, four pages: the DataZone service's `AssumeRole`
+  calls (25), the provisioning role's CloudFormation, EC2, Glue, Logs, Lake Formation, Scheduler, Athena,
+  KMS and S3 calls, and InfrastructureAccess's `datazone:` calls, the only principal calling DataZone in
+  Staging. Every refusal read *"no identity-based policy allows"*: the provisioning role's
+  `athena:GetWorkGroup` and `ListTagsForResource`, `logs:DescribeIndexPolicies` and
+  `DescribeResourcePolicies`, `ec2:DescribeSecurityGroupRules`, `servicequotas:GetServiceQuota` and a
+  first `ec2:CreateSecurityGroup` (decoded: `allowed` false, no explicit deny), whose retry created the
+  group; the project role's `s3:CreateAccessGrantsLocation`, with no Access Grants instance in the
+  account. None came from the SCP or the boundary.
+- **[Claude] The instruments**: `./aws/studio.py` all checks passed, `US-6` with no SageMaker AI domain
+  in Staging; `./aws/datalake.py` all checks passed, its `DL-13` reading the lake's accounts alone, so
+  Staging's two seats are this log's reading and 8.6's, by hand.

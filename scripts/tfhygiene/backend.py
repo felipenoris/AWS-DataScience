@@ -337,7 +337,8 @@ REGISTRY_CONSUMERS = ["sandbox"]
 # authored apart from REGISTRY_CONSUMERS because the two grant different things to different accounts
 # (Lesson 51). Sandbox's projects pull it when their workflows run (Stage 8 decision 21); Staging joins
 # at Stage 8 step 3.0 (INT-07). The registry account is never a row: its own roles pull by identity.
-APP_REGISTRY_CONSUMERS = ["sandbox"]
+# Staging's row is that step's first half, written 2026-10-19 for Stage 18's 4.4.
+APP_REGISTRY_CONSUMERS = ["sandbox", "staging"]
 
 # The account the two ECR repositories live in - the other end of REGISTRY_CONSUMERS, kept as a
 # list so the emission below has the same shape as every other cross-account read in this tree.
@@ -417,13 +418,18 @@ SMUS_MEMBERS = ["sandbox"]
 # one pass the two differ: the console disassociation is Stage 6b step 1.4 and it comes after
 # the configurations are destroyed - necessarily, since only the member can delete them and only
 # while the association still exists.
-SMUS_ASSOCIATED: list = ["sandbox"]
+#
+# Staging's row measured 2026-10-19 the same way, after Stage 18 step 2.1's association: the
+# call answered an empty list where it had answered UnauthorizedException that morning.
+SMUS_ASSOCIATED: list = ["sandbox", "staging"]
 # The associated accounts no person works in: a deployment project's account (Stage 18 step 2.3).
 # Apart from SMUS_MEMBERS because four readers of that list mean "an account people work in"
 # (Lesson 51): PERSONA_VENDING_ACCOUNTS, interactive_private_cidrs(), production/sagemaker/'s
 # `readers`, and refusal 8 in layers.py. Only governance/'s `members` map and `profiles_enabled` read
-# both lists, so a row here follows its SMUS_ASSOCIATED row, as a SMUS_MEMBERS row does.
-SMUS_DEPLOYMENT_MEMBERS: list = []
+# both lists, so a row here follows its SMUS_ASSOCIATED row, as a SMUS_MEMBERS row does. Staging's
+# row is Stage 18's window: governance/'s `staging` provider alias reads it, so pass 8 removes the
+# two in one commit.
+SMUS_DEPLOYMENT_MEMBERS: list = ["staging"]
 if set(SMUS_MEMBERS) & set(SMUS_DEPLOYMENT_MEMBERS):
     raise ValueError(
         "SMUS_DEPLOYMENT_MEMBERS: an account people work in belongs in SMUS_MEMBERS alone"

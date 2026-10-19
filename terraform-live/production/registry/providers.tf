@@ -35,13 +35,20 @@ provider "aws" {
 # CodeArtifact domain and repository policies, and the key policy - and aws/INDEX.md rule 1 keeps
 # account ids out of tracked files (Lesson 3).
 #
-# One alias since Stage 7 decision 7 (2026-10-12): Staging left the map, and its alias and identity
-# read left with it. The alias keys are static while D35 says sandboxes multiply. Terraform cannot
-# for_each a provider, so unit 2 adds an alias here by hand - the same seam data-governance/data/
-# carries, and this file joins Stage 14's edit list by construction.
+# Staging left `consumers` at Stage 7 decision 7 (2026-10-12), and its alias and identity read left
+# with it; it returned at Stage 8 step 3.0 as an application-image puller alone, so its alias reads
+# its profile from `app_consumers`. The alias keys are static while D35 says sandboxes multiply.
+# Terraform cannot for_each a provider, so unit 2 adds an alias here by hand - the same seam
+# data-governance/data/ carries, and this file joins Stage 14's edit list by construction.
 
 provider "aws" {
   alias   = "sandbox"
   region  = var.region
   profile = var.consumers["sandbox"].profile
+}
+
+provider "aws" {
+  alias   = "staging"
+  region  = var.region
+  profile = var.app_consumers["staging"].profile
 }
