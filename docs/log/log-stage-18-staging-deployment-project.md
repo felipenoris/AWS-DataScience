@@ -640,3 +640,52 @@ are UTC.*
 - **[Claude] The instruments**: `./aws/studio.py` all checks passed, `US-6` with no SageMaker AI domain
   in Staging; `./aws/datalake.py` all checks passed, its `DL-13` reading the lake's accounts alone, so
   Staging's two seats are this log's reading and 8.6's, by hand.
+
+## 2026-10-19 — 0.4, question vii, the non-member's run
+
+- **[Claude] 0.4, through a subagent of this session**, after `make up ENV=sandbox ONLY=egress AUTO=1`
+  raised Sandbox's endpoints. As `awsds-infra-sandbox-1`, InfrastructureAccess, a non-member of
+  `test-experimentation`: `list-workflows` and `get-workflow` found
+  `houseprice_etl_test_experimentation_houseprice_etl`, `READY`, `manual_only`, created
+  2026-10-16T02:40:45Z, its execution role the `test` project's role, its key the project key, one
+  `GlueJobOperator` task, two earlier CLI runs `SUCCESS`. One `start-workflow-run` at 18:32:39 to
+  18:32:41Z, exit 0, `STARTING`, with `SUBNET_AZ1` and `SUBNET_AZ2` as overrides, since the YAML reads
+  `{{ params.SUBNET_AZ1 }}` and `{{ params.SUBNET_AZ2 }}` with no default and both CLI runs had passed
+  them.
+- **[Claude] The run**: `QUEUED` from 18:33:00Z, `RUNNING` at 18:35:08Z, `SUCCESS` read at 18:36:45Z;
+  the service's own times `StartedOn` 18:32:45Z, `CompletedOn` 18:35:01Z, `Duration` 136, no error.
+  The polled state lagged the work by about two minutes. The task ran 18:33:28 to 18:35:00Z, attempt
+  1, its Glue job run `SUCCEEDED` in 64 s, 128 DPU-seconds, on a worker in Sandbox's private range;
+  the task's `UpdateJob` changed the Glue job's `LastModifiedOn` alone.
+- **[Claude] CloudTrail, 18:31:39 to 18:42Z**: `StartWorkflowRun` by InfrastructureAccess with no
+  error, to the public endpoint; in the same second, invoked by `airflow-serverless.amazonaws.com`
+  under the starter's session, KMS `GenerateDataKey` and `Decrypt` on the project key with the
+  workflow's ARN as encryption context, and one `Decrypt` for each later `get-workflow-run`. No
+  DataZone call on the start path. The service assumed its roles seven times. The only errors were
+  benign: the Glue session's two `DeleteNetworkInterface` *"currently in use"*, both deletes passing
+  at 18:37:38Z, and the MWAA Serverless service role's ten `AttachNetworkInterface` retries on the
+  worker's ENI. **Question vii: yes**, the service authorizes by IAM alone, with the starter's own
+  KMS grant on the workflow's key; Stage 10's `chain-exec` takes both actions, and its chain passes the
+  workflow's stage variables.
+
+## 2026-10-19 — pass 4 begins: the environment raised, app-etl's release, 4.1's branch
+
+- **[user] The sitting**: `make hub-up` and `make gitlab-up`, the tunnel up (*"Ambiente já está no
+  ar"*, *"vpn habilitada"*), and the request *"Peço planejar a executar o maior número possível de
+  etapas do stage 18 que dependem desse ambiente no ar. Pode disparar quantas tarefas em paralelo
+  forem necessárias. Você está autorizado a utilizar a sessão no chrome, realizar todos os applies
+  necessários."*
+- **[Claude] Both egress slices raised**, the other sessions told first: `make up ENV=sandbox
+  ONLY=egress AUTO=1`, Sandbox's `sagemaker.api`, `glue` and `logs` endpoints `available`; `make up
+  ENV=staging ONLY=egress AUTO=1`, *"20 added, 0 changed, 0 destroyed"*, eleven interface endpoints
+  `available` (`athena`, `studio`, `ecr.api`, `ecr.dkr`, `glue`, `kms`, `lakeformation`, `logs`,
+  `sagemaker.api`, `sagemaker.runtime`, `sts`).
+- **[Claude] The quota 4.4 meets**: Staging's `ml.t3.medium for processing job usage` is 4 and its
+  `ml.m5.large` 0; `app-etl`'s `process` task runs on `ml.t3.medium`.
+- **[Claude] `app-etl`'s release**, the Prerequisites' first tag, recorded in full in [Stage 8's
+  log](log-stage-08-cicd-pipelines.md): the template reached GitLab's `main` (MR !2, the user's
+  merge), its eleven CI/CD variables were set through the user's Chrome session, the user tagged
+  `v0.2.0`, and pipeline #51's `test-deploy` failed three times, the last after a successful deploy
+  and run in the `test` project; the fix is MR !3, for `v0.2.1`.
+- **[Claude] 4.1**: the branch `stage-18-staging` (`d8550e0`) on `awsds/app-etl`, the manifest's
+  `staging` stage added to `main`'s, never to be merged.

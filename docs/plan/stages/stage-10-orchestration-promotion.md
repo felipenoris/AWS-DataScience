@@ -292,6 +292,10 @@ run, plus the `[E]` endpoint set while tasks are in the VPC.
   **The chain roles are written beside it** (3.4, 3.6): `awsds-<env>-chain-exec`, which Step Functions
   assumes to start and poll the workflows (`airflow-serverless:StartWorkflowRun` and `GetWorkflowRun` on
   the account's `awsds-<env>-wf-*` workflows, the ten `logs:*` delivery actions, nothing on jobs or S3);
+  starting and reading a run also take `kms:GenerateDataKey` and `kms:Decrypt` on the workflow's key,
+  under the caller's own session with the workflow's ARN as encryption context (measured by
+  [Stage 18](stage-18-staging-deployment-project.md)'s 0.4 on 2026-10-19, a non-member's run that
+  succeeded), so the role carries both on the project key;
   `awsds-<env>-chain-scheduler`, which EventBridge Scheduler assumes to start a machine
   (`states:StartExecution` on `awsds-<env>-chain-*`); and `awsds-<env>-chain-events`, the same grant for
   the EventBridge rules that start a machine. None touches data, and none is the workflow's execution
@@ -969,7 +973,7 @@ Record every answer, including the ones that come out fine.
 | xxvi | Do `aws_sfn_state_machine` and `aws_scheduler_schedule` apply under the deploy role's boundary beside the `awscc` workflow, and does `OR-9` read the layer back? | 1.5, 3.7 |
 | xxvii | Does `bundle` carry the checkout's YAML with its variables unresolved when the manifest's `content.storage` items name no connection, and a project's copy, resolved for that project, when one names a connection, and does `deploy --targets test` write the tag's files from the checkout, whatever bundle it is given, as the CLI's 1.0.9 code reads? **First clause answered 2026-10-18, offline: yes.** `bundle --targets test` over a copy of `examples/app-etl/` at `28f340c`, with no credentials and fabricated stage values, made a bundle of 6,988 bytes whose `workflows/app-etl.yaml` is byte-identical to the checkout's: 25 CLI variables unresolved (`{proj.*}` 17, `{env.*}` 7, `{domain.region}` 1), no fabricated value in it, each of the seven files equal to its source. The storage items name no connection, so `commands/bundle.py` copies each from the manifest's folder (lines 201 and 232-261). The connection clause and `deploy`'s clause need AWS | 2.2 |
 | xxviii | Does the S3 operator task write the result file and an inbox marker as the execution role, admitted by the key policy's `aws:PrincipalArn` statement, while the same role's read of a lake bucket is refused? | 1.3, 3.6 |
-| xxix | Does a run the CLI's `workflow.run` starts receive the stage's `environment_variables` as `OverrideParameters` and render them where the YAML reads `{{ params.VAR }}`, in a processing task's `ImageUri` and in a Glue task's arguments, and what does a run started from the portal, without them, read? | 2.2 |
+| xxix | Does a run the CLI's `workflow.run` starts receive the stage's `environment_variables` as `OverrideParameters` and render them where the YAML reads `{{ params.VAR }}`, in a processing task's `ImageUri` and in a Glue task's arguments, and what does a run started from the portal, without them, read? **Read in part 2026-10-19** by [Stage 18](stage-18-staging-deployment-project.md)'s 0.4: a run started outside the CLI with `SUBNET_AZ1` and `SUBNET_AZ2` as `OverrideParameters` rendered the Glue task's connections and succeeded; a run with no overrides was not measured. | 2.2 |
 
 ## Risks
 

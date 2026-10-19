@@ -360,7 +360,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block.
 - **Stage 8 in progress**: passes 0-3 done (`awsds/ci-gates`, the test runner, the house image on Python
   3.12 with its recipe in GitLab, copied under `gitlab/`), four deploy roles, and `examples/app-etl/` an
-  application since 2.5, its first tag owed. Pass 4 runs after Stage 9 with Stage 10's passes 1-2
+  application since 2.5, on GitLab's `main` since 2026-10-19 with its eleven CI/CD variables;
+  `v0.2.0`'s `test-deploy` ran its workflow to `SUCCESS` and then failed on the run id's parse, fixed
+  in MR !3 for `v0.2.1`. Pass 4 runs after Stage 9 with Stage 10's passes 1-2
   (decision 23). `awsds/infrastructure` has no reader since decision 18: decision 2's open question, the
   user's. `staging/probes/` is retired, so `make up ENV=staging` raises `egress/` alone, and the template's
   lint passes `--image-repository` and the ceiling's seven instance types (PR #186); GitLab's copy waits on
@@ -390,8 +392,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   and both `backend.py` lists carry `staging`; 2.6 and 2.7 are applied, the `deployment` profile
   (`Tooling`, `enableSpaces` false) and its grant to Staging's InfrastructureAccess session group, an
   IAM role being two DataZone principals (`lessons.md`); decisions 1-3 are taken; pass 3 done, `deploy-staging` provisioned with no SageMaker AI domain and the two
-  SMUS roles made Staging's Lake Formation admins (OQ 24); pass 4 waits on `app-etl`'s first tag at a
-  GitLab sitting;
+  SMUS roles made Staging's Lake Formation admins (OQ 24); 0.4 answered yes (a non-member starts the
+  workflow); 4.1's branch `stage-18-staging` pushed; 4.2 waits on `v0.2.1`'s bundle;
   an associated account no person works in goes in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in
   `SMUS_MEMBERS`. Its 4.4's two prerequisites, Stage 8 3.0's first half and Stage 10 1.2's `vpc-v0.4.0`
   on `staging/foundation/`, were applied 2026-10-19 by the user.

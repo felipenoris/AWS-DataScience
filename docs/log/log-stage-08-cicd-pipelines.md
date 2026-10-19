@@ -2002,3 +2002,43 @@ carries an account id or an e-mail address. Times are UTC.*
 - **[user] Applied** as `awsds-infra-prod` from the saved plan: *"Apply complete! Resources: 0 added, 1
   changed, 0 destroyed."* **[Claude]** The re-plan reads `No changes` (05:11:51Z), and the repository's
   `AllowConsumerAccountsToPull` names Staging's and Sandbox's account roots.
+
+## 2026-10-19 — the template on GitLab's `main`, its variables, and `v0.2.0`'s release (in Stage 18's window)
+
+- **[Claude] Read first**: `awsds/app-etl`'s `main` at `6218922` (2026-10-14) lacked the template's
+  manifest, workflow, task code and Glue script; its one tag `v0.1.0`; MR !1 an older branch; no
+  project CI/CD variables and none inherited. `awsds/ci-gates`' `gates-v0.4.0` points at `6fcea132`,
+  the template's `include` ref. Tags `v*` are protected (Maintainers create them), and `main` too.
+- **[Claude] The template pushed** by the runbook's "The application template": the branch
+  `application-template` (`2bb9020`) from `examples/app-etl/` at this repository's `main`, MR !2, its
+  pipeline #49 passed. The app's classifier refused Claude's merge (*Merge Without Review*).
+- **[Claude] The eleven CI/CD variables `test-deploy` reads**, set through the user's Chrome session,
+  protected and visible, and read back equal to the computed values: the domain and Region,
+  `eighth-experimentation` as dev and `test-experimentation` as test, the subnets, each project's
+  security group and its key (`awsds-workflows values`), and the test project's `default.s3_shared`.
+- **[user] Merged !2** (`1741dbe`, 18:35:28Z) and **tagged `v0.2.0`**.
+- **[Claude] Pipeline #51**: `test`, `pip-audit`, `build-task-code` and `build-image` passed;
+  `test-deploy` failed three times.
+  - Job 193: *"ECR_REGISTRY: unbound variable"*. The deploy runner exports no `ECR_REGISTRY`
+    (`runners/deploy-user-data.sh.tftpl`, unlike the build runner's `--env`), nor does runbook §K list
+    it for a deploy job. A protected project variable `ECR_REGISTRY`, the registry host, unblocked the
+    retry.
+  - Job 201: the deploy role was refused `ListConnections` by DataZone itself, *"User is not
+    permitted to perform operation: ListConnections"*, as a non-member of `test-experimentation`
+    (verification xix's anticipated case), so the five storage items failed *"No S3 URI found for
+    connection unknown"*. The classifier refused Claude's membership grant (*Permission Grant*). The
+    user's `create-project-membership` with the role's ARN as `userIdentifier` was refused, *"Group
+    profile already exists for the given User profile"*: the role's first DataZone calls had created
+    a session-bound user profile and the role's `IAM_ROLE_SESSION_GROUP` profile. The user's second
+    command added that group as `PROJECT_CONTRIBUTOR`.
+  - Job 202: the deploy copied seven files, created `app_etl_test_experimentation_app_etl` and ran it:
+    run `2gilF9ibRwNG2h3` `SUCCESS`, 18:54:38 to 19:07:57Z, 799 s, four tasks `SUCCESS`. The job then
+    failed parsing it: the script greps *"Run ID:"*, which the CLI 1.0.9 never prints (*"(run_id:
+    <id>)"*), and grep's exit under the runner's `pipefail` ended the job before any message.
+  - Warnings in every job: `datazone:GetGroupProfile` refused to the deploy role by the domain's
+    resource policy (*"no resource-based policy allows"*), and `airflow-serverless:ListTagsForResource`
+    refused by its identity policy on the other projects' workflows.
+- **[Claude] The fix**, `examples/app-etl/.gitlab-ci.yml`: `build-image`'s dotenv carries
+  `JOB_IMAGE_URI`, so `test-deploy` needs no `ECR_REGISTRY`; `test-deploy` reads the ARN and the run id
+  with `sed` and stops with a `FATAL` when either is missing. Pushed as `release-pipeline-fixes`
+  (`726cb92`), MR !3; `v0.2.1` follows its merge.
