@@ -1585,6 +1585,35 @@ through the most thorough one (Stage 8 verification xiv says which option each r
 **What makes it expensive.** The gate stays green while the thing it was written to refuse goes through,
 and the first reader to notice is a person looking at a rendered file.
 
+## Lesson 72 — an action left out of the policy you write is not denied to a principal that carries policies you do not write
+
+**What happened.** Stage 6h, 2026-09-21 to 2026-10-18. Step 2.2 wrote the project role's warehouse
+policy without the `redshift-data:` family, and the stage recorded the consequence as a fact: *"the JDBC
+path is open and the Data API path is not granted"*. Verification i left the boundary's answer for the
+family unread, and decision 8 argued the wide tag on the strength of layer 2. The policy simulator, run
+on 2026-10-18 for 5.3, read the project role `allowed` for `redshift-data:ExecuteStatement` on the tagged
+workgroup: AWS's `SageMakerStudioProjectUserRolePolicy` v75, which the blueprint attaches to every project
+role, grants the family and `GetCredentials` on a workgroup tagged with the caller's project,
+`GetCredentials` on any workgroup through `sqlworkbench` or the Data API, and both on any workgroup
+carrying `for-use-with-all-datazone-projects=true`. The omission had closed nothing for a month.
+
+**Why it is a class rather than a slip.** An omission is a control only on a principal whose every policy
+the author writes. The project role carries five AWS-managed documents and one of this repository's (open
+question 22), so what it may do is their union, and a family left out of the one is granted or not by the
+five. Lesson 11 one layer down: the author of the *other* policies decides. And Lesson 20's mirror: the
+allow nobody here wrote is attached and exercised, while the deny nobody wrote is imagined.
+
+**The rule.** A claim that a principal lacks an action is made about the principal, never about one
+policy on it: simulate the principal with the action and the resource's tags in the context, or read every
+policy it carries. Where a service mints the role, the repository's policy is the declared duplicate of
+what the service's text grants, kept because that text moves, and the stage says which door each grant
+answers for; in 6h the access role, which carries no AWS policy, is the one principal the repository's
+policy alone admits.
+
+**What makes it expensive.** The design was argued on a gate that did not exist, the instrument that reads
+the layer (`WH-11`) reads the repository's policy only, and the finding arrived as a by-product of another
+measurement.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits; the entries here are facts about the platform that cost a measurement

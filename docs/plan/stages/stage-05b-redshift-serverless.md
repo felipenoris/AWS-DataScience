@@ -552,7 +552,10 @@ shrug.
 - **No database password is issued, and the one that exists will stop rotating.**
   [6h](stage-06h-redshift-connection.md) decision 2 took IAM credentials, so a project's or a person's
   database user has no password; the admin's is Redshift-managed in Secrets Manager, and its rotation fails
-  if it lands while the `[E]` workgroup is down (`EXC-13`, first due by 2026-10-20 01:59:59Z).
+  if it lands while the `[E]` workgroup is down (`EXC-13`, first due by 2026-10-20 01:59:59Z). Declaring the rotation off is
+  possible since provider 6.62.0, `aws_secretsmanager_secret_rotation.rotation_enabled = false`, unread on a
+  Redshift-owned secret ([`upstream-releases.md`](../upstream-releases.md)); `EXC-13` records it beside the
+  accepted failure.
 - **`useractivitylog` carries SQL text**, which means it carries data values in literals. It is a DLP feed
   and a DLP exposure at the same time, bounded by the 30-day retention (decision 4) until
   [Stage 11](stage-11-dlp.md) 5.1 decides where the export goes. As measured it carries nothing while a

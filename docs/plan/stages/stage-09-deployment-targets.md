@@ -401,7 +401,15 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
 
   **Recommended: (a)**: a condition attached to every submitter by hand will be missing from one
   (Lesson 14). **Applied 2026-10-18** with 3.7's deny, at 19:54Z, as `awsds-infra-identity`; the battery's
-  `ou` phase after the apply read each Stage 9 row as expected (the log).
+  `ou` phase after the apply read each Stage 9 row as expected (the log). **One row the battery does not
+  carry yet** (the upstream readings of 2026-10-18, PR #189): since 2026-09-15 a training or processing job
+  may name its instance types in `ResourceConfig.InstancePreferences` instead of `InstanceType`, and
+  whether the service fills `sagemaker:InstanceTypes`, the key `DenySageMakerInstanceCeiling` reads, from
+  that list is unread; the policy generator's catalogue lists no new key. Before the first SageMaker job is
+  submitted in `Workloads` (5.4's negatives, Stage 10's processing step), `probes.py` gains rows for
+  `CreateProcessingJob` and `CreateTrainingJob` whose list names an off-ceiling type, expected `DENY-SCP`
+  ([`scp-battery.md`](../runbooks/scp-battery.md)); a pass there is a hole in the ceiling, and the same rows
+  read the D13 boundary for [Stage 17](stage-17-sandbox-machine-learning.md) pass 2.
 - **3.6 — [Claude] Read the enforcement back.** `./aws/deploytargets.py` gains **`DT-11`** (`DT-9` is the
   escape hatch): under (a), the five statements present in the `Workloads` OU document and the document
   attached; under (b), every role that can call `Create*Job` in the two accounts carries the boundary, read
@@ -981,6 +989,10 @@ Record every answer, including the ones that come out fine.
 
 ## Risks
 
+- **An instance preference list may pass beside the instance ceiling** (3.5): `InstancePreferences` names
+  up to five types in place of `InstanceType`, and no reading says the condition key follows. The battery
+  rows are owed before any SageMaker job runs in `Workloads`, and the quotas of 0 keep that true until the
+  user's request is granted.
 - **The silent LF-settings reset now has three instances, not one** — every account with a
   `DataLakeSettings` resource can zero its own `Parameters` on any apply. `DT-5` extends `DL-5`'s
   reading to all three; run it after every apply, not at stage end. **And that resource carries a

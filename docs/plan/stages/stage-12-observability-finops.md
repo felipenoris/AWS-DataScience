@@ -235,6 +235,13 @@ Stage 7 step 8.2 applies to GitLab.
 - **8.4 — [user] State and test the RTO, once each**: GitLab, the Terraform state, and the data lake. Write
   the three numbers in the log. GitLab's is Stage 7 step 8.2's rehearsal, which has not run: its
   verification (v), *"in how long?"*, is unanswered.
+  **The SageMaker Unified Studio domain is a fourth object with no RTO and no backup**: `DeleteDomain` takes
+  `cascadeDelete` since 2026-08-27, one call removing every project, environment and subscription with their
+  resources, `aws_datazone_domain` has no such argument, and no SCP on the `Data` OU's path denies
+  `datazone:DeleteDomain` (the upstream readings of 2026-10-18, PR #189). What a cascade leaves, this
+  repository's buckets and keys included, is unread; the RTO is a rebuild of [6a](stage-06a-unified-studio.md),
+  and a deny on the `Data` document would bind the identity that applies the slice too (Lesson 18), so
+  whether one is written is the user's.
 
 ### 9. Alarm the quotas that would silently break a session
 

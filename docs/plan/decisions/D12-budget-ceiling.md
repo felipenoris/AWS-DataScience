@@ -20,6 +20,8 @@ The projection lives in [`docs/plan/cost-model.md`](../cost-model.md) and this d
 
 **Revision trigger:** the first month the real bill exceeds the USD 29-43 projection, or the first forgotten `[E]` resource found by reading the bill rather than by noticing it — either one is evidence that the ceiling needed a notification and not a figure.
 
+**The trigger fired on 2026-10-18.** [Stage 12](../stages/stage-12-observability-finops.md) 4.2 read the bill of the six profiled accounts at 53.31 USD for August and 74.48 for September, Management, Log Archive and Audit unread, both above the projection and September above the ceiling, and rewrote `cost-model.md` from it. The decision's revision is the user's ([`waiting-on-the-user.md`](../waiting-on-the-user.md)); until it is taken the ceiling stands as written and still notifies nobody.
+
 ---
 
 *Index: [decisions/INDEX.md](INDEX.md) · Plan core: [GENERAL_PLAN.md](../../GENERAL_PLAN.md)*

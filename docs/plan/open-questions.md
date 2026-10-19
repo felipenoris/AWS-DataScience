@@ -201,6 +201,11 @@ load-bearing against principle 4.
     saw. **The distinction: where a session is reached *from* is not where it *runs*.** The revision
     trigger is worded against that (Stage 6 step 1.6): executors in our subnets, under our security group,
     never a headline saying VPC is supported.
+    **Read again 2026-10-18** (the upstream readings, PR #189): since 2026-04-23 the native notebook's kernels
+    run in the domain-level VPC configuration, so its Python kernel is inside the VPC, while Athena for
+    Apache Spark is still the notebooks' default Spark runtime and still outside any VPC (the user guide's
+    notebooks page), so the item stands for Spark. `L-DBBAE884` read 2 on 2026-09-12, so such a notebook may
+    start in Sandbox, unmeasured.
 13. **Notebooks do not support trusted identity propagation, and that reaches an `objectives.md` objective.**
     In an IAM Identity Center domain, notebooks fall back to **compatibility permission mode**, so data
     access resolves through the project/compute role rather than through the signed-in human. The DLP
@@ -286,6 +291,10 @@ load-bearing against principle 4.
     decided the perimeter, and no method was both VPN-bound and scoped** until D39 removed the VPN half:
     6d decision due 4 now carries the method and the file channel. The residual (12 h) is still 6d 7.7's
     to measure.
+    **A second laptop channel since 2026-09-11** (read 2026-10-18, PR #189): the Athena ODBC driver 2.2.0.1 or
+    later reads project data from a BI tool on a laptop, authenticating as the Identity Center user or by
+    IAM, and under D39 needs no tunnel; the threat model carries it as `TM-22` beside `TM-08`, with the
+    driver's calls unread.
 15. **"As many instances as they like" is a cost statement before it is an access statement.** Each
     JupyterLab or Code Editor space is a running instance billed by the hour, and D11 ("pay nothing while
     idle") is a property of the *design*, not of the user's habits. What closes it is idle shutdown plus a
@@ -593,6 +602,12 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     — which is *why* the bucket name is free (Stage 6's v0.3.2 finding, whose `*/dzd*/<project>/`
     shorthand is the **provisioning** policy's `GetS3GenAI` statement, a different document; the
     conclusion is unaffected and was proven behaviourally anyway).
+    **A third authorship since 2026-10-09** (read 2026-10-18, PR #189): a custom Tooling blueprint is a
+    CloudFormation template this repository writes, registered with `CreateEnvironmentBlueprint` under the
+    `TOOLING` category, and in an Identity Center domain the template creates the project role, so that
+    role's policies, and the D13 boundary on it, would be this repository's text rather than AWS's.
+    [Stage 18](stages/stage-18-staging-deployment-project.md) decision 1 weighs it for the deployment
+    project; whether the Sandbox profiles ever move to one is a question this item gains, not an answer.
 
 ### Raised while sizing the persona set, 2026-08-23
 
@@ -652,6 +667,10 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     meets a question this file holds: the project role's `datazone:Get*` now covers
     `GetEnvironmentCredentials`, which question 20 asks of the governance manager's set. Again it was read
     by hand, for an unrelated sweep.
+    **The same date moves this item's scope** (2026-10-09, read 2026-10-18): a project role a custom Tooling
+    template creates carries the policies the template attaches, so a profile on such a blueprint takes the
+    load-bearing documents out of AWS's authorship, and the pull-and-diff this item asks for would cover the
+    roles the managed blueprints still mint. Stage 18 decision 1 is where the template is first weighed.
 
 ### Raised by the 2026-08-25 objectives clarification
 
