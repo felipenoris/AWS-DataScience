@@ -909,3 +909,152 @@ carries an account id or an e-mail address. Times are UTC.*
   projects' contributors. The infrastructure user is a contributor of both projects through a group
   profile whose role is `Sandbox Account 1`'s `InfrastructureAccess`; the Data Scientist User owns both
   through an SSO profile, which no CLI identity reaches.
+
+## 2026-10-19 — 1.5: the app created through `create-environment`
+
+*Provenance. The user ran the create in a terminal of the laptop as the infrastructure user with
+`InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`), and pasted it into this
+session; the account id in the paste is replaced by `<Sandbox Account 1>`. The readings after it are
+Claude's, read-only, with the same identities as the entry above, and Claude in Chrome reading the
+portal's *MLflow* tab in the user's session with nothing clicked. Times are UTC.*
+
+- **[user] The path.** Asked how to go on from the reading above, the user chose *"API, você executa
+  (Recomendado)"*: the request the portal's create would send, run by the user, nothing in D22 changed
+  and the item left greyed. The options declined were the page's lookup filled in the user's browser,
+  an inert `MLflowApp` configuration in Data Governance (an amendment of D22 that fails `US-3` as
+  written), and stopping at the reading.
+- **[user] The create and the list**, pasted:
+
+  ```
+  AWS_PROFILE=awsds-infra-sandbox-1 aws datazone create-environment --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier avhvbqn37ty7m8 --environment-configuration-id 3342d20e-001b-4b95-9053-fbbc04b5c303 --environment-blueprint-identifier agjvpzxbha9fbk --name ml-demo-mlflow --user-parameters name=mlflowAppName,value=ml-demo-mlflow --region us-west-2
+
+  {
+      "projectId": "avhvbqn37ty7m8",
+      "id": "cu3flqsgefwwls",
+      "domainId": "dzd-d8yrvx1ko7im6o",
+      "createdBy": "fb9dc808-ab98-4030-bef4-3103631a57a3",
+      "createdAt": "2026-10-19T06:39:30.209633+00:00",
+      "updatedAt": "2026-10-19T06:39:30.312524+00:00",
+      "name": "ml-demo-mlflow",
+      "awsAccountId": "<Sandbox Account 1>",
+      "awsAccountRegion": "us-west-2",
+      "provider": "Amazon SageMaker",
+      "status": "CREATING",
+      "userParameters": [
+          {
+              "keyName": "mlflowAppName",
+              "description": "The name of MLflow Serverless app",
+              "fieldType": "String",
+              "defaultValue": "ml-demo-mlflow",
+              "isEditable": true,
+              "isOptional": false
+          }
+      ],
+      "lastDeployment": {
+          "deploymentId": "cucx6zpvyihno0",
+          "deploymentType": "CREATE",
+          "deploymentStatus": "PENDING_DEPLOYMENT",
+          "isDeploymentComplete": false
+      },
+      "provisioningProperties": {
+          "cloudFormation": {
+              "templateUrl": "https://env-partner-blueprin-wg7wpbgxcioem11yato9kyjmqipx4usw2b-s3alias.s3-accesspoint.us-west-2.amazonaws.com/v2/DataZone-Amazon-SageMaker-MLflowServerless-prod-20251008.template.json"
+          }
+      },
+      "deploymentProperties": {
+          "startTimeoutMinutes": 5,
+          "endTimeoutMinutes": 180
+      },
+      "environmentBlueprintId": "agjvpzxbha9fbk",
+      "environmentConfigurationId": "3342d20e-001b-4b95-9053-fbbc04b5c303",
+      "environmentConfigurationName": "MLflowApp"
+  }
+  (END)
+
+  AWS_PROFILE=awsds-infra-sandbox-1 aws datazone list-environments --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier avhvbqn37ty7m8 --region us-west-2 --query "items[].[name,status]" --output table
+
+  ----------------------------------------------------------------------------
+  |                             ListEnvironments                             |
+  +---------------------------------------------------------+----------------+
+  |  create-datalake-database-env-mydatabase-1789263919641  |  CREATE_FAILED |
+  |  Tooling                                                |  ACTIVE        |
+  |  ml-demo-mlflow                                         |  ACTIVE        |
+  +---------------------------------------------------------+----------------+
+  ```
+
+  `createdBy` is the DataZone IAM profile of `Sandbox Account 1`'s `InfrastructureAccess` role.
+- **[Claude] The trails, in order.** `CreateEnvironment` 06:39:30, in Sandbox's trail as
+  `AWSReservedSSO_InfrastructureAccess_59e5b26af457128d` and in Data Governance's with the request as
+  sent and the CLI's user agent (`aws-cli/2.37.12`); `CreateStack` 06:39:42 and `DescribeStacks` 06:39:52
+  to 06:40:03 as `awsds-sandbox-smus-provisioning`, session
+  `AmazonDataZoneEnvironmentDeployer-<Sandbox Account 1>`; `CreateMlflowApp` and `AddTags` 06:39:55 in the
+  same session, the second adding `AmazonDataZoneBlueprint` `MLflowApp`. `CreateMlflowApp`, from
+  Sandbox's trail:
+
+  ```
+  "userIdentity": {"type": "AssumedRole", "arn": "arn:aws:sts::<Sandbox Account 1>:assumed-role/awsds-sandbox-smus-provisioning/AmazonDataZoneEnvironmentDeployer-<Sandbox Account 1>", "invokedBy": "datazone.amazonaws.com"}
+  "sourceIPAddress": "datazone.amazonaws.com", "userAgent": "datazone.amazonaws.com", "vpcEndpointId": null
+  "requestParameters": {"name": "ml-demo-mlflow", "artifactStoreUri": "s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/ml/mlflow", "roleArn": "arn:aws:iam::<Sandbox Account 1>:role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c", "tags": [{"key": "AmazonDataZoneEnvironment", "value": "cu3flqsgefwwls"}, {"key": "AmazonDataZoneProject", "value": "avhvbqn37ty7m8"}, {"key": "AmazonDataZoneDomain", "value": "dzd-d8yrvx1ko7im6o"}]}
+  "responseElements": {"arn": "arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:mlflow-app/app-IXYTVNFGQRKM"}
+  ```
+
+  No `KmsKeyId` travels in the request.
+- **[Claude] The environment** (`get-environment`, 06:40:45): `ACTIVE`, updated 06:40:03, deployment
+  `cucx6zpvyihno0` `CREATE` `SUCCESSFUL`, five provisioned resources, all *"Amazon DataZone Generated"*:
+  `mlflowAppArtifactStoreUri`, `cloudFormationStackId`, `mlflowAppName`, `userRoleArn` (the project
+  role) and `mlflowAppArn`.
+- **[Claude] The stack** `DataZone-Env-cu3flqsgefwwls`: `CREATE_COMPLETE`, created 06:39:42, parameters
+  `datazoneEnvironmentEnvironmentId`, `datazoneEnvironmentProjectId`, `datazoneEnvironmentDomainId`,
+  `mlflowAppName`, `datazoneEnvironmentStage` `prod` and `datazoneScopeName` `dev`, four outputs naming
+  the app, the stack, the user role and the store, and one resource, `WaitHandle`
+  (`AWS::CloudFormation::WaitConditionHandle`, whose presigned URL is not copied here). The app is no
+  stack resource: DataZone's deployer creates it beside the stack.
+- **[Claude] The app** (`describe-mlflow-app`, 06:41), `Status` `Creating` then:
+
+  ```
+  "Arn": "arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:mlflow-app/app-IXYTVNFGQRKM",
+  "Name": "ml-demo-mlflow",
+  "ArtifactStoreUri": "s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/ml/mlflow",
+  "RoleArn": "arn:aws:iam::<Sandbox Account 1>:role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c",
+  "ModelRegistrationMode": "AutoModelRegistrationDisabled",
+  "CreationTime": "2026-10-19T03:39:54-03:00",
+  "CreatedBy": {"IamIdentity": {"Arn": "arn:aws:sts::<Sandbox Account 1>:assumed-role/awsds-sandbox-smus-provisioning/AmazonDataZoneEnvironmentDeployer-<Sandbox Account 1>"}},
+  "WeeklyMaintenanceWindowStart": "Sun:14:15"
+  ```
+
+  Its tags are `AmazonDataZoneBlueprint` `MLflowApp`, `AmazonDataZoneEnvironment` `cu3flqsgefwwls`,
+  `AmazonDataZoneProject` `avhvbqn37ty7m8` and `AmazonDataZoneDomain`. A 30-second poll read `Created`
+  at 06:44:27, `LastModifiedTime` `2026-10-19T03:44:15.364000-03:00` (06:44:15 UTC), about four minutes
+  twenty seconds after `CreateMlflowApp`. The response carries no `KmsKeyId` and no
+  `AccountDefaultStatus`.
+- **[Claude] The store's bucket**: `get-bucket-encryption` on `awsds-sandbox-smus-projects` reads
+  `aws:kms` under the project key (`alias/awsds-sandbox-project`), `BucketKeyEnabled` `true`, SSE-C
+  blocked; the store's prefix held no object at 06:41.
+- **[Claude] The portal**, `eighth-experimentation`'s Compute → *MLflow*: at 06:43 *"MLflow environments
+  (1)"*, the row `ml-demo-mlflow`, `Creating`, `App`, *October 19, 2026, 03:39 (UTC-03:00)*, with *Open*;
+  at 06:46 the same row reads `On`, and both *Create* items are still disabled with the same tooltips,
+  the page's two lookups failing again at 06:45:58 and 06:45:59 with *"No environment blueprint
+  configurations found"*. The app's row links to `/projects/<project>/compute/mlflow-app/cu3flqsgefwwls`,
+  the environment's id.
+- **[Claude] 1.7, `./aws/sandbox-ml.py`** (generated 06:47:41, *"all checks passed"*), its `ML-2` rows:
+
+  ```
+  NAME            STATUS   VERSION  ARTIFACT STORE                                                                         KEY  ROLE                                             REGISTRATION                   TAG
+  ml-demo-mlflow  Created  3.10.1   s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/ml/mlflow  -    datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c  AutoModelRegistrationDisabled  avhvbqn37ty7m8
+
+  note    ML-2  ml-demo-mlflow                                                                   Created; MLflow 3.10.1; role datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c; registration AutoModelRegistrationDisabled; account default -; maintenance Sun:14:15; tag avhvbqn37ty7m8; key none is not the project key (verification iv).
+  note    ML-2  CreateMlflowApp ml-demo-mlflow at 2026-10-19T06:39:55Z                           awsds-sandbox-smus-provisioning/AmazonDataZoneEnvironmentDeployer-<Sandbox Account 1>, no vpcEndpointId (verification ii).
+  ```
+
+  `ML-7` reads the MLflow quotas, among them *"The maximum number of MLflow Apps that can be created. =
+  3 (applied)"*, *"Rate of CreateMlflowApp requests = 1 (applied)"* and *"Rate of
+  CreatePresignedMlflowAppUrl requests = 5 (applied)"*.
+- **[user] *Open***, on the app's row in `eighth-experimentation`'s *MLflow* tab, after 06:48: the
+  MLflow UI opened in a new tab of the laptop's browser (the user's answer in this session; the host
+  was not recorded).
+- **[Claude] The URL's trail**: `CreatePresignedMlflowAppUrl` at 06:54:54 as
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, session
+  `28f1b390-0041-7068-8cc7-9ccef94277d1@5hkjdsy3umpi1c` (the Data Scientist User's DataZone id and the
+  `Tooling` environment's), the browser's user agent, no `vpcEndpointId`, the app's ARN as the only
+  parameter, no error. The portal mints the URL as the project role, from the laptop, on the public
+  SageMaker API.

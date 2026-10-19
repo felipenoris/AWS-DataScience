@@ -1893,6 +1893,23 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   `cron(43 3 * * ? *)` with a lineage job of its own, which ran daily from 2026-10-11 and failed eight
   times. A run that succeeds is a scheduled query on the warehouse's meter. Where: `log-stage-06h`,
   2026-10-18, and `./aws/warehouse.py` `WH-9`.
+- **The portal's MLflow entries look their blueprint up in the domain account, so a domain whose
+  configurations live in associated accounts greys them out whatever the profile carries** (read
+  2026-10-19, Stage 17 1.5). *Create MLflow App* and *Create MLflow Tracking Server* resolve the
+  blueprint's id by name from `ListEnvironmentBlueprintConfigurations`, called with the domain id alone
+  as the domain execution role. DataZone answers with the domain account's configurations, none here
+  (D22), the page's query fails with *"No environment blueprint configurations found"*, and the
+  tooltip says *"The MLflowApp blueprint is not enabled for this project"*. Neither the profile,
+  *Update project* (`UPDATE_NOT_AVAILABLE`) nor the project's age plays a part. A `CreateEnvironment`
+  with the profile's configuration id, made through the API by a project contributor, creates the app
+  the entry would have. Where: `log-stage-17-sandbox-machine-learning.md`, the 1.5 entries of
+  2026-10-19.
+- **The portal's Generative AI menu opens only with all seven Bedrock blueprints in the profile**
+  (read 2026-10-19, Stage 17 1.5). Its module maps the profile's configurations to `ChatApp`,
+  `Evaluation`, `FlowApp`, `Function`, `Guardrail`, `KnowledgeBase` and `Prompt`, and answers the
+  Playground and *AI apps* with *"This tool is not available for this project"* when one is missing,
+  so a profile carrying six, the knowledge base left out on cost, opens none of them. Where: the same
+  entries.
 
 ### MWAA, provisioned
 

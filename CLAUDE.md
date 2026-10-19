@@ -379,8 +379,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `./aws/vending.py` (`VN-1`..`VN-6`) reads the hand-built unit as nine passes and one note; a unit costs
   3.50 USD/month at rest and 0.180/h working (`docs/PRICING.md` §3).
 - **Stage 17**: pass 0 in progress; 1.1 read and 1.3 applied 2026-10-19 (`MLflowApp` configured and in
-  `experimentation`, `TM-21` with it), yet the portal still greys out *Create MLflow App* in both projects:
-  1.5 reads what makes it available. Main pins `vpc-egress-v0.18.0` (`mlflow`), unapplied (1.4). Decision 11, the embeddings model in the Bedrock SCP, needs
+  `experimentation`, `TM-21` with it), and 1.5 read why the portal greys out *Create MLflow App* (it resolves the blueprint from Data
+  Governance's configurations, which D22 keeps empty): the user created `ml-demo-mlflow` through
+  `create-environment` (`ML-2` read, no CMK). The Generative AI menu opens only with `AmazonBedrockKnowledgeBase` in the profile (7.0b). Main pins `vpc-egress-v0.18.0` (`mlflow`), unapplied (1.4). Decision 11, the embeddings model in the Bedrock SCP, needs
   `awslib/bedrockscope.py` to learn the difference first, or `BS-2`, `BS-7` and `BR-4` go red. Pass 2's training job waits on the battery's instance-preference rows (Stage 9 3.5).
   **Stage 18**: pass 1 and 2.5's first half applied 2026-10-19 by the user (the classifier refuses
   these applies to Claude): the carve-out of Staging from `DenyDataZoneEntirely` is live (`EXC-20`) and
