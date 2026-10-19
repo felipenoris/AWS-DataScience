@@ -14,6 +14,10 @@
 #                                     v0.3.3) and the root domain unit id (the grants' scope,
 #                                     v0.3.0). count-gated, because before pass 2 the state does not
 #                                     exist and an unconditional read would fail every pass-1 plan
+#   4. this account                   its id and partition, for the job ARN patterns of the
+#                                     workflows grant (workflows.tf), and each project role it
+#                                     attaches to, read rather than assumed: a missing project fails
+#                                     at plan, naming the role
 #
 # The second and third cross an account boundary, so each needs a profile in the data source's
 # config. A profile literal never sits in a .tf file (Lesson 14): both arrive keyed by account
@@ -51,4 +55,13 @@ data "terraform_remote_state" "governance" {
     region  = var.region
     profile = one([for k, v in var.domain : v.profile])
   }
+}
+
+data "aws_caller_identity" "current" {}
+
+data "aws_partition" "current" {}
+
+data "aws_iam_role" "project" {
+  for_each = toset(var.project_roles)
+  name     = each.value
 }

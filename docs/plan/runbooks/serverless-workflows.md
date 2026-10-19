@@ -186,6 +186,10 @@ The grant is `terraform-live/sandbox/workflows/`, one policy and one attachment 
 2. Plan and apply the slice as the infrastructure user, `InfrastructureAccess`, in the account the project
    lives in. A precondition refuses a role without the D13 boundary.
 
+Stage 18's deployment project in Staging holds the same three statements from
+`terraform-live/staging/studio/workflows.tf`, for the stage's life: its first run stopped on `glue:GetJob`
+without them (2026-10-19, run `7MMhwSySe5SOWd1`).
+
 The policy allows `DescribeProcessingJob` on a job with no project tag, `AddTags` of the caller's own
 project tag alone, on a job with no project tag or with the caller's, and `glue:GetJob` on a job with no
 project tag whose name ends with the caller's project id, `<app>-<project id>`, the name an application

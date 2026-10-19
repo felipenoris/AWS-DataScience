@@ -640,3 +640,187 @@ are UTC.*
 - **[Claude] The instruments**: `./aws/studio.py` all checks passed, `US-6` with no SageMaker AI domain
   in Staging; `./aws/datalake.py` all checks passed, its `DL-13` reading the lake's accounts alone, so
   Staging's two seats are this log's reading and 8.6's, by hand.
+
+## 2026-10-19 — 0.4, question vii, the non-member's run
+
+- **[Claude] 0.4, through a subagent of this session**, after `make up ENV=sandbox ONLY=egress AUTO=1`
+  raised Sandbox's endpoints. As `awsds-infra-sandbox-1`, InfrastructureAccess, a non-member of
+  `test-experimentation`: `list-workflows` and `get-workflow` found
+  `houseprice_etl_test_experimentation_houseprice_etl`, `READY`, `manual_only`, created
+  2026-10-16T02:40:45Z, its execution role the `test` project's role, its key the project key, one
+  `GlueJobOperator` task, two earlier CLI runs `SUCCESS`. One `start-workflow-run` at 18:32:39 to
+  18:32:41Z, exit 0, `STARTING`, with `SUBNET_AZ1` and `SUBNET_AZ2` as overrides, since the YAML reads
+  `{{ params.SUBNET_AZ1 }}` and `{{ params.SUBNET_AZ2 }}` with no default and both CLI runs had passed
+  them.
+- **[Claude] The run**: `QUEUED` from 18:33:00Z, `RUNNING` at 18:35:08Z, `SUCCESS` read at 18:36:45Z;
+  the service's own times `StartedOn` 18:32:45Z, `CompletedOn` 18:35:01Z, `Duration` 136, no error.
+  The polled state lagged the work by about two minutes. The task ran 18:33:28 to 18:35:00Z, attempt
+  1, its Glue job run `SUCCEEDED` in 64 s, 128 DPU-seconds, on a worker in Sandbox's private range;
+  the task's `UpdateJob` changed the Glue job's `LastModifiedOn` alone.
+- **[Claude] CloudTrail, 18:31:39 to 18:42Z**: `StartWorkflowRun` by InfrastructureAccess with no
+  error, to the public endpoint; in the same second, invoked by `airflow-serverless.amazonaws.com`
+  under the starter's session, KMS `GenerateDataKey` and `Decrypt` on the project key with the
+  workflow's ARN as encryption context, and one `Decrypt` for each later `get-workflow-run`. No
+  DataZone call on the start path. The service assumed its roles seven times. The only errors were
+  benign: the Glue session's two `DeleteNetworkInterface` *"currently in use"*, both deletes passing
+  at 18:37:38Z, and the MWAA Serverless service role's ten `AttachNetworkInterface` retries on the
+  worker's ENI. **Question vii: yes**, the service authorizes by IAM alone, with the starter's own
+  KMS grant on the workflow's key; Stage 10's `chain-exec` takes both actions, and its chain passes the
+  workflow's stage variables.
+
+## 2026-10-19 — pass 4 begins: the environment raised, app-etl's release, 4.1's branch
+
+- **[user] The sitting**: `make hub-up` and `make gitlab-up`, the tunnel up (*"Ambiente já está no
+  ar"*, *"vpn habilitada"*), and the request *"Peço planejar a executar o maior número possível de
+  etapas do stage 18 que dependem desse ambiente no ar. Pode disparar quantas tarefas em paralelo
+  forem necessárias. Você está autorizado a utilizar a sessão no chrome, realizar todos os applies
+  necessários."*
+- **[Claude] Both egress slices raised**, the other sessions told first: `make up ENV=sandbox
+  ONLY=egress AUTO=1`, Sandbox's `sagemaker.api`, `glue` and `logs` endpoints `available`; `make up
+  ENV=staging ONLY=egress AUTO=1`, *"20 added, 0 changed, 0 destroyed"*, eleven interface endpoints
+  `available` (`athena`, `studio`, `ecr.api`, `ecr.dkr`, `glue`, `kms`, `lakeformation`, `logs`,
+  `sagemaker.api`, `sagemaker.runtime`, `sts`).
+- **[Claude] The quota 4.4 meets**: Staging's `ml.t3.medium for processing job usage` is 4 and its
+  `ml.m5.large` 0; `app-etl`'s `process` task runs on `ml.t3.medium`.
+- **[Claude] `app-etl`'s release**, the Prerequisites' first tag, recorded in full in [Stage 8's
+  log](log-stage-08-cicd-pipelines.md): the template reached GitLab's `main` (MR !2, the user's
+  merge), its eleven CI/CD variables were set through the user's Chrome session, the user tagged
+  `v0.2.0`, and pipeline #51's `test-deploy` failed three times, the last after a successful deploy
+  and run in the `test` project; the fix is MR !3, for `v0.2.1`.
+- **[Claude] 4.1**: the branch `stage-18-staging` (`d8550e0`) on `awsds/app-etl`, the manifest's
+  `staging` stage added to `main`'s, never to be merged.
+
+## 2026-10-19 — 4.2 and 4.4: the deploy into `deploy-staging`, the first run
+
+- **[Claude] `v0.2.1`'s release**, recorded in full in [Stage 8's log](log-stage-08-cicd-pipelines.md):
+  pipeline #55's `test-deploy` passed as job 223 and `store-bundle` wrote
+  `s3://awsds-prod-releases/app-etl/v0.2.1/app-etl.zip`, SHA256
+  `7fb374d15c23953cb6ad6d9f5473f97d2c83ff2db167703a5a830d96add95fff`, the image
+  `awsds-prod-ecr-app-etl@sha256:247ec6b661ceb03d2927e1ce5a3c07d9287280a639abed18ce8daf898ed4ce0c`; the
+  `release` job failed on the notes' backticks, and MR !4 is the fix.
+- **[Claude] 4.2, first form, 20:04:57 to 20:06:20Z**, as `awsds-infra-staging`: `deploy --manifest
+  manifest.yaml --targets staging --bundle-archive-path <the bundle> --skip-validation --no-events` from
+  a checkout of `stage-18-staging`, exit 1, *"No operator code found in S3 for: app-etl (code:
+  code/app-etl.zip)"*. The CLI 1.0.9 printed *"Deploying '<item>' from local filesystem"* for each of the
+  five storage items and wrote six files of the checkout and none of the bundle: a `content.storage` item
+  naming no `connectionName` is read from the manifest's folder whenever a manifest is given
+  (`smus_cicd/commands/deploy.py`, read 2026-10-19), and the checkout holds no `code/app-etl.zip`, which
+  the pipeline builds.
+- **[Claude] 4.2, second form, 20:07:34 to 20:09:33Z**: the bundle's SHA256 checked, the archive
+  extracted into an empty folder with the branch's manifest beside it, and the same command run there
+  without `--bundle-archive-path`: exit 0, *"Total files deployed: 7"*, the workflow created. The bundle
+  holds the seven content files and no manifest. The CLI found the network and key through the `Tooling`
+  environment, *"No managed Tooling.GA/Tooling.Lightning blueprint found; will try the IAM connection
+  fallback"*, then *"Resolved Tooling config for project 'deploy-staging'"*, naming the project's two
+  subnets, its security group and its key.
+- **[Claude] What it wrote**, read 20:09 to 20:10Z: seven objects under the project's `shared/app-etl/`
+  (`code/app-etl.zip`, `glue/transform.py`, `inbox/trades.csv`, the three `src/app_etl/` files and
+  `workflows/app-etl.yaml`, resolved, 4,686 bytes against the bundle's 4,198), the first form's six
+  overwritten; `app_etl_deploy_staging_app_etl` `READY`, `manual_only`, no schedule, one version
+  `2f1e8e79d4e438da2eefec9ecc496ba3`; its execution role the project role
+  `datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps` (D41 item 4); the project's two subnets and
+  security group; `CUSTOMER_MANAGED_KEY`, the project key; the log group
+  `/aws/mwaa-serverless/dzd-d8yrvx1ko7im6o-d1veybt5oak4uo/app_etl_deploy_staging_app_etl`, no retention,
+  under KMS; the code object under `shared/operatorFiles/`; the tags `AmazonDataZoneProject`,
+  `AmazonDataZoneDomain`, `Target=deploy-staging`, `CreatedBy=SMUS-CICD`, `STAGE=STAGING` and
+  `Pipeline=app-etl`. No Glue job exists: the operator creates it at the run (D41 item 9). **Question
+  v's second half: yes.**
+- **[Claude] CloudTrail, 20:07:30 to 20:09:34Z**, read again at 20:28Z, the input of 4.3: 174 calls by
+  InfrastructureAccess. `datazone:` 150, all reads: `GetConnection` 72, `ListConnections` 18,
+  `ListProjects` 11, `ListEnvironments` 10, `GetProject` 8, `GetUserProfile` 7,
+  `ListProjectMemberships` 7, `GetGroupProfile` 7 refused, `GetDomain` 3, `GetEnvironment` 3,
+  `ListDomains` 3, `ListEnvironmentBlueprints` 1. `airflow-serverless:CreateWorkflow`, `GetWorkflow`
+  and `TagResource`; `logs:CreateLogGroup`; `sts:GetCallerIdentity`; `cloudformation:DescribeStacks` 7,
+  each *"Stack with id cicd-test-domain-stack does not exist"*. Twelve KMS calls on the project key,
+  each made by a service under the caller's session: MWAA Serverless's `CreateGrant` 2 (the grantee
+  `airflow-serverless.us-west-2.amazonaws.com`), `GenerateDataKey` 3 and `Decrypt` 1 with the
+  workflow's ARN as encryption context; S3's `GenerateDataKey` 1 and `Decrypt` 4; Logs' `DescribeKey` 1.
+  DataZone assumed roles eight times, and the project role's session called `athena:GetWorkGroup` eight
+  times. The S3 writes are data events, which `lookup-events` does not return. The list read at 20:10Z
+  held 13 names and 18 calls: CloudTrail delivered the rest later (Lesson 62).
+- **[Claude] 4.4, the first run**, the Stage 17 session told first: `run --workflow app-etl --targets
+  staging --manifest manifest.yaml` from the extracted bundle's folder, 20:16:22Z, exit 0, *"Run ID:
+  7MMhwSySe5SOWd1"*, `STARTING`, the stage's five variables passed as `OverrideParameters`. Its calls:
+  `GetDomain`, `ListProjects`, `ListConnections`, `ListWorkflows`, `ListTagsForResource` and
+  `StartWorkflowRun`, the last from the laptop through no VPC endpoint. **Question ix: no**, `run`
+  started that one workflow run and nothing else.
+- **[Claude] The run**: `QUEUED` from 20:17:01Z, `FAILED` read at 20:18:35Z; the service's `StartedOn`
+  20:16:32Z, `CompletedOn` 20:17:15Z, `Duration` 43, *"Workflow execution failed, please check the task
+  execution logs for more details"*. `transform` `FAILED`, attempt 1, 20:17:08 to 20:17:14Z; `process`,
+  `summarize` and `write_result` `UPSTREAM_FAILED`. The task's log reads *"Execution environment is
+  ready"* at 20:17:10Z, past the preparation `vpc-v0.4.0`'s endpoint policy admits (6i decision 7), then
+  *"An error occurred (AccessDeniedException) when calling the GetJob operation: User:
+  arn:aws:sts::<acct>:assumed-role/datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps/AmazonMWAAServerless
+  is not authorized to perform: glue:GetJob on resource:
+  arn:aws:glue:us-west-2:<acct>:job/app-etl-d1veybt5oak4uo because no identity-based policy allows the
+  glue:GetJob action"*.
+- **[Claude] Where the worker ran**, CloudTrail 20:16:20 to 20:19:30Z:
+  `AWSServiceRoleForAmazonMWAAServerless` created its network interface in
+  `awsds-staging-private-usw2-az1` with the project's security group, and the project role's session
+  `AmazonMWAAServerless` called from an address in that subnet: `kms:Decrypt` through Staging's `kms`
+  endpoint, `glue:GetJob` through `glue`, `logs:CreateLogStream` through `logs`.
+  `airflow-serverless.amazonaws.com` assumed roles seven times and called `kms:Decrypt` three times and
+  `GenerateDataKey` twice; ECS's six `AttachNetworkInterface`, five refused *"already has an interface
+  attached"*, are the retries Sandbox's runs show.
+- **[Claude] The cause**, read 20:21Z: the project role carries the blueprint's three AWS managed
+  policies and the boundary `awsds-staging-project-boundary`, and nothing else. Sandbox's two project
+  roles also carry `awsds-sandbox-workflows` (`sandbox/workflows/`), whose `GetAGlueJobNoProjectHolds`
+  answers this refusal ([serverless-workflows.md](../plan/runbooks/serverless-workflows.md) §G, measured
+  2026-10-16). No step of this stage had given the deployment project's role that grant.
+- **[Claude] The grant written**: `staging/studio/workflows.tf`, `sandbox/workflows/`'s three
+  statements as `awsds-staging-workflows`, attached to the role `project_roles` names, with a
+  precondition on the slice's own boundary ARN; 8.1 empties the list before the project is deleted.
+  Planned 20:23:37Z, *"Plan: 2 to add, 0 to change, 0 to destroy."*, the policy and the attachment, the
+  plan saved for the user's apply.
+- **[Claude] Re-planned** at 20:42:12Z, after Stage 17's `governance/` apply had moved a state this
+  slice reads: unchanged, 2 to add, the saved plan replaced.
+- **[user] Applied `staging/studio/`** as `awsds-infra-staging`, from that plan: *"aws_iam_policy.workflows:
+  Creation complete after 1s [id=arn:aws:iam::<acct>:policy/awsds-staging-workflows]"*,
+  *"aws_iam_role_policy_attachment.project["datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps"]: Creation
+  complete after 0s"*, *"Apply complete! Resources: 2 added, 0 changed, 0 destroyed."*
+- **[Claude] Read back**: the re-plan reads `No changes` (20:47:40Z); `awsds-staging-workflows` was
+  created at 20:46:41Z, version `v1`, its Sids `DescribeAProcessingJobNoProjectHolds`,
+  `TagAProcessingJobWithTheCallersProject` and `GetAGlueJobNoProjectHolds`, and it is attached to the
+  project role beside the blueprint's three policies.
+- **[Claude] 4.4, the second run**, the same command from the same folder, 20:47:53Z, exit 0, *"Run ID:
+  JSSr2Br9Zsf2b26"*. `SUCCESS` read at 21:02:31Z; the service's `StartedOn` 20:48:04Z, `CompletedOn`
+  21:01:32Z, `Duration` 808, no error. Each task attempt 1, `SUCCESS`:
+  - `transform`, 20:48:41 to 20:51:25Z, 164 s: *"Creating job: app-etl-d1veybt5oak4uo"*, the worker's
+    `glue:GetJob` answered `EntityNotFoundException` at 20:48:46Z, then `CreateJob` and `StartJobRun`.
+    The job carries the project role, the two Glue network connections, Glue 6.0, two `G.1X` workers, no
+    security configuration and one tag, `AmazonDataZoneProject`; its run `jr_5d56c4cd…` `SUCCEEDED`,
+    20:48:46 to 20:51:23Z, 131 s, 262 DPU-seconds.
+  - `process`, 20:52:01 to 21:00:09Z, 488 s: the worker's `DescribeProcessingJob` answered
+    `ValidationException` (*"Could not find requested job with name: app-etl-20261019T205205"*), then
+    `CreateProcessingJob`. The job `app-etl-20261019T205205` `Completed`, created 20:52:06Z, processing
+    ended 20:57:53Z: `ml.t3.medium`, within Staging's quota of 4; the volume key set; network isolation
+    and inter-container encryption on; the project's two subnets and security group; the project role;
+    the image by digest from `awsds-prod-ecr-app-etl`; the tags `AmazonDataZoneProject`,
+    `AmazonDataZoneDomain` and `AmazonDataZoneScopeName=dev`, the last two not in the definition. No
+    statement of the `Workloads` document refused it, Staging's first SageMaker job.
+  - `summarize`, 21:00:47 to 21:00:53Z, 6 s, and `write_result`, 21:01:25 to 21:01:32Z, 7 s.
+- **[Claude] The outputs** under the project's `shared/app-etl/`: `work/glue/trades.csv`, 436 bytes,
+  20:51:12Z; `work/job/trades.parquet`, 2,126 bytes, and `trades.summary.json`, 511 bytes, 20:57:50Z;
+  `outbox/report.json`, 332 bytes, 21:01:33Z, reading `"rows": 10`, the input `trades.csv` with SHA256
+  `a84e2ff352f746eed76c0c7643703831c08fcd88c45ee386070b07c6ad2d2dac`, the sums `notional` 49850.5,
+  `price` 701.2399999999999 and `quantity` 1530.
+- **[Claude] CloudTrail, 20:47:50 to 21:02:40Z**, read at 21:05Z: the project role in five sessions. The
+  worker's, `AmazonMWAAServerless`, called from Staging's private range through Staging's endpoints:
+  `glue` 30 (`GetJob`, `CreateJob`, `StartJobRun`, `GetJobRun` 27), `sagemaker.api` 19
+  (`DescribeProcessingJob` 18, `CreateProcessingJob`), `kms` 11 and `logs` 4. The managed services'
+  sessions called from AWS's own addresses, through no endpoint of Staging's: `GlueJobRunnerSession`
+  (the job's network interfaces and tags, `glue:GetConnection` 4, `logs:CreateLogGroup` 2, KMS),
+  `GlueVpcAuthSession`, `AnalyticsValidation` (three `DryRun` EC2 calls), and `SageMaker` (the job's
+  network interface, `ecr:GetAuthorizationToken`, `BatchGetImage` 3, `GetDownloadUrlForLayer` 33,
+  `logs:CreateLogGroup`, KMS). The refusals: `SageMaker`'s direct `kms:CreateGrant` on the project key
+  (*"no identity-based policy allows the kms:CreateGrant action"*), with the job going on as 6i
+  measured in Sandbox; one `ecr:BatchGetImage` `InvalidParameterException` on the repository name's
+  pattern; the Glue session's two `DeleteNetworkInterface` *"currently in use"*; ECS's 15
+  `AttachNetworkInterface` retries. `sagemaker.amazonaws.com` created a trial component,
+  `app-etl-20261019T205205-aws-processing-job`, four lineage artifacts (three `DataSet`, one `Image`)
+  and four associations.
+- **[Claude] The log groups the run created**, none with retention: `/aws/sagemaker/ProcessingJobs`
+  (20:57:40Z, no CMK) and the Glue job's `datazone-d1veybt5oak4uo-dev/error` (20:49:14Z) and `/output`
+  (20:50:03Z), beside 4.2's workflow group, `EXC-10`'s shape in Staging.
+- **[Claude] 4.4's first half done.** `start-workflow-run` as the deploy identity waits on 4.3
+  (decision 4).
