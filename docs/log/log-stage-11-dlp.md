@@ -251,3 +251,21 @@ Written by Claude, same session and identity.
   re-initialised.
 - **[Claude] Nothing applied.** No principal the plan names can be filtered without a choice the stage file
   does not settle, so the apply, the module tag and the caller's pin wait on Stage 11 decision 12.
+
+## 2026-10-19 — `TM-21`: applied with Stage 17's 1.3
+
+Written by Claude, session "Stage 17 1.1 and 1.3: MLflow reading and the applies", as the infrastructure
+user (`InfrastructureAccess`, profile `awsds-infra-sandbox-1`). The apply and its full record are in
+[Stage 17's log](log-stage-17-sandbox-machine-learning.md), entry of the same day.
+
+- **[user] The apply**, of a plan Claude saved at `v0.6.0` after Stage 17's 1.1 had read the portal:
+  `aws_kms_key.this: Modifications complete after 6s`, in the same `Apply complete! Resources: 2 added, 1
+  changed, 0 destroyed.` as Stage 17's `MLflowApp` configuration and grant. Sandbox's trail reads
+  `PutKeyPolicy` at 05:11:46 UTC as `InfrastructureAccess`.
+- **[Claude] Read back** at 05:14 UTC: the slice re-plans `No changes`; the live policy's two
+  `Principal *` statements, `GrantKMSPermissionsForAllProjectRoles` and `AllowCreateGrantForProjectRoles`,
+  carry `aws:PrincipalOrgID` in their `StringEquals`, and the other seven statements read as before.
+- **[Claude] Still open.** `TM-21` and `EXC-18` close when a snapshot in Audit reads the finding
+  `RESOLVED`; no CLI profile reaches Audit, so that read is the user's, in Audit's CloudShell with the
+  block of this log's entry "`TM-21`: the finding read by `get-finding-v2`", its status filter set to
+  `RESOLVED`.

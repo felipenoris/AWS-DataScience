@@ -366,7 +366,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
 - **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-24`): `TM-17`, the project role's managed policy
   reaching other accounts' `airflow-celery-*` queues and Bedrock functions, is the user's to decide;
-  `TM-21` shares `sandbox/sagemaker/`'s one apply with Stage 17's `MLflowApp`; the data cells filters
+  `TM-21` applied 2026-10-19 with Stage 17's 1.3, its finding's `RESOLVED` unread; the data cells filters
   create nothing until decision 12. The internal-access analyzer bills on each 1st: run it after
   2026-11-01.
 - **Stage 12 in progress**: `production/observability/` and `sandbox/observability/` (rank 70, `[P]`)
@@ -378,9 +378,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stage 14**: the pre-vend half done 2026-10-18, steps 2 and 7 still blocked on the account quota.
   `./aws/vending.py` (`VN-1`..`VN-6`) reads the hand-built unit as nine passes and one note; a unit costs
   3.50 USD/month at rest and 0.180/h working (`docs/PRICING.md` §3).
-- **Stage 17**: pass 0 in progress, pass 1 merged and unapplied. Main pins `vpc-egress-v0.18.0` (`mlflow`)
-  and `sagemaker-prereqs-v0.6.0` (`TM-21` over v0.5.0's `MLflowApp`), so `sandbox/sagemaker`'s one apply
-  waits on 1.1's portal reading (Lesson 69). Decision 11, the embeddings model in the Bedrock SCP, needs
+- **Stage 17**: pass 0 in progress; 1.1 read and 1.3 applied 2026-10-19 (`MLflowApp` configured and in
+  `experimentation`, `TM-21` with it), yet the portal still greys out *Create MLflow App* in both projects:
+  1.5 reads what makes it available. Main pins `vpc-egress-v0.18.0` (`mlflow`), unapplied (1.4). Decision 11, the embeddings model in the Bedrock SCP, needs
   `awslib/bedrockscope.py` to learn the difference first, or `BS-2`, `BS-7` and `BR-4` go red. Pass 2's training job waits on the battery's instance-preference rows (Stage 9 3.5).
   **Stage 18**: pass 1 and 2.5's first half applied 2026-10-19 by the user (the classifier refuses
   these applies to Claude): the carve-out of Staging from `DenyDataZoneEntirely` is live (`EXC-20`) and
@@ -393,7 +393,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
   `--no-browser`.
-- **Module tags**: `vpc-egress-v0.18.0` and `sagemaker-prereqs-v0.6.0` (both unapplied), `wireguard-v0.6.0`,
+- **Module tags**: `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.6.0` (applied), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` only; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit
