@@ -102,6 +102,8 @@ build-image:
         --output type=image,name="$ref",push=true --metadata-file image.json
       digest="$(grep -o '"containerimage.digest": *"sha256:[0-9a-f]*"' image.json | grep -o 'sha256:[0-9a-f]*')"
       echo "SCAN_DIGEST=$digest" > image.env
+      # The image by digest for test-deploy, whose deploy runner carries no ECR_REGISTRY.
+      echo "JOB_IMAGE_URI=$ECR_REGISTRY/$IMAGE_REPO@$digest" >> image.env
       echo "== pushed $ref@$digest"
   artifacts:
     reports:
@@ -159,7 +161,8 @@ test-deploy:
         eval "value=\${$name:-}"
         if [ -z "$value" ]; then echo "FATAL: the CI/CD variable $name is not set"; exit 1; fi
       done
-      export JOB_IMAGE_URI="$ECR_REGISTRY/$IMAGE_REPO@$SCAN_DIGEST"
+      if [ -z "${JOB_IMAGE_URI:-}" ]; then echo "FATAL: build-image's dotenv carries no JOB_IMAGE_URI"; exit 1; fi
+      export JOB_IMAGE_URI
       echo "== the hub: the proxy answers for the SageMaker API"
       code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://sagemaker.$DOMAIN_REGION.amazonaws.com/")"
       if [ "$code" = "000" ]; then echo "FATAL: no answer through the proxy: is the hub up (make hub-up)?"; exit 1; fi
@@ -184,9 +187,13 @@ test-deploy:
       rc=0
       aws-smus-cicd-cli deploy --manifest manifest.yaml --targets test --skip-validation --no-events > deploy.log 2>&1 || rc=$?
       cat deploy.log
-      arn="$(grep -o 'ARN: arn:[^ ]*' deploy.log | tail -1 | cut -d' ' -f2)"
-      run_id="$(grep -o 'Run ID: [^ ]*' deploy.log | tail -1 | cut -d' ' -f3)"
+      # The CLI 1.0.9 prints the workflow as "ARN: <arn>" and the run as "(run_id: <id>)". sed, not
+      # grep: a missing line yields an empty value and the FATAL below, where grep's exit status under
+      # the runner's pipefail would end the job before any message.
+      arn="$(sed -n 's/.*ARN: \(arn:[^ ]*\).*/\1/p' deploy.log | tail -1)"
+      run_id="$(sed -n 's/.*(run_id: \([^)]*\)).*/\1/p' deploy.log | tail -1)"
       echo "deploy: exit $rc, run $run_id of $arn"
+      if [ -z "$arn" ] || [ -z "$run_id" ]; then echo "FATAL: deploy.log names no workflow ARN or run id"; exit 1; fi
       aws mwaa-serverless get-workflow-run --workflow-arn "$arn" --run-id "$run_id" --output json > run.json
       cat run.json
       if [ "$rc" -ne 0 ]; then echo "FATAL: the deploy or the run failed"; exit "$rc"; fi
@@ -222,6 +229,8 @@ store-bundle:
 # The tag's GitLab release, whose notes name the bundle's object, its SHA256 and the image: what a leg
 # of the promotion reads (Stage 10). The `release` keyword runs glab, which GitLab's own cli image
 # carries, pinned by digest (v1.120.0, released 2026-09-29); a tag whose `test` failed gets no release.
+# The runner evaluates the description inside double quotes, so the notes hold no backtick, which the
+# shell would run as a command substitution.
 release:
   stage: release
   needs: [store-bundle, test-deploy, build-image]
@@ -234,11 +243,11 @@ release:
     tag_name: $CI_COMMIT_TAG
     name: "app-etl $CI_COMMIT_TAG"
     description: |
-      Bundle: `$BUNDLE_OBJECT`
+      Bundle: $BUNDLE_OBJECT
 
-      Bundle SHA256: `$BUNDLE_SHA256`
+      Bundle SHA256: $BUNDLE_SHA256
 
-      Image: `$JOB_IMAGE_URI`
+      Image: $JOB_IMAGE_URI
 
 # Verification (xiii), run by hand: the pip-audit gate with the proxy variables removed. No route leaves
 # VPC-SharedServices but the proxy, so the job must fail, and the time it takes says whether it failed or
