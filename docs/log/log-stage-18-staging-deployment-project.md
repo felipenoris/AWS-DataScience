@@ -772,3 +772,13 @@ are UTC.*
   precondition on the slice's own boundary ARN; 8.1 empties the list before the project is deleted.
   Planned 20:23:37Z, *"Plan: 2 to add, 0 to change, 0 to destroy."*, the policy and the attachment, the
   plan saved for the user's apply.
+- **[Claude] Re-planned** at 20:42:12Z, after Stage 17's `governance/` apply had moved a state this
+  slice reads: unchanged, 2 to add, the saved plan replaced.
+- **[user] Applied `staging/studio/`** as `awsds-infra-staging`, from that plan: *"aws_iam_policy.workflows:
+  Creation complete after 1s [id=arn:aws:iam::<acct>:policy/awsds-staging-workflows]"*,
+  *"aws_iam_role_policy_attachment.project["datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps"]: Creation
+  complete after 0s"*, *"Apply complete! Resources: 2 added, 0 changed, 0 destroyed."*
+- **[Claude] Read back**: the re-plan reads `No changes` (20:47:40Z); `awsds-staging-workflows` was
+  created at 20:46:41Z, version `v1`, its Sids `DescribeAProcessingJobNoProjectHolds`,
+  `TagAProcessingJobWithTheCallersProject` and `GetAGlueJobNoProjectHolds`, and it is attached to the
+  project role beside the blueprint's three policies.
