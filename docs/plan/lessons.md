@@ -1968,6 +1968,23 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   sensor had finished at 23:05:23Z, and `/aws/mwaa-serverless/<domain>-<project>/<workflow>` existed,
   empty and with no retention, before any run. Where: `runbooks/serverless-workflows.md` §V and §O.
 
+### The SageMaker Unified Studio CI/CD CLI
+
+- **`deploy` reads a manifest's local content from the manifest's folder, whatever
+  `--bundle-archive-path` names** (measured 2026-10-19, Stage 18 4.2, `aws-smus-cicd-cli` 1.0.9). A
+  `content.storage` item that names no connection is copied from the folder the manifest sits in; run
+  from a checkout with a release's bundle, the deploy wrote the checkout's files and none of the
+  bundle's. A promotion that deploys a stored bundle extracts it and puts the stage's manifest beside
+  it. Where: `log-stage-18`'s 4.2 entries.
+- **`workflow.create` and the operator-code lookup scan the project's whole shared root, whatever
+  `targetDirectory` says** (measured 2026-10-19, Stage 18 5.2, the same version). The scan's prefixes
+  come from `target_directory`, a name the manifest's `StorageConfig` does not carry, so they fall back
+  to the root, and the first file in S3's listing order wins each workflow name or DAG id. An
+  application whose workflow reused `app-etl`'s name and DAG id read and rewrote `app-etl`'s YAML, was
+  created from `app-etl`'s definition, and its `destroy` plan then held `app-etl`'s Glue job, since
+  `destroy` reads the Glue jobs from the workflow's definition as the service holds it. Where:
+  `log-stage-18`'s pass 5 entry.
+
 ### CloudTrail
 
 - **CloudTrail Lake refuses a new customer, and the network activity guide still offers it** (measured

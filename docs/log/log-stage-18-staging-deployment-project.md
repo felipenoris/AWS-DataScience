@@ -824,3 +824,55 @@ are UTC.*
   (20:50:03Z), beside 4.2's workflow group, `EXC-10`'s shape in Staging.
 - **[Claude] 4.4's first half done.** `start-workflow-run` as the deploy identity waits on 4.3
   (decision 4).
+
+## 2026-10-19 — pass 5: two applications in one project, the shared DAG id, the destroy
+
+- **[user] Merged PR #201** (21:12:35Z) and asked for pass 5: *"I merged #201. I authorize the push to the
+  recreated branch and a new PR; continue with pass 5 (5.1 to 5.3)."*
+- **[Claude] The CLI 1.0.9's code, read again before the writes**: `workflow.create` resolves each
+  manifest workflow against the YAML files it lists, registering every top-level key and nested
+  `dag_id`, the first file per name winning; the operator code is matched by basename the same way;
+  `destroy` deletes the workflow by its composed name, every object under each `<root>/<targetDirectory>`,
+  and each Glue job a `GlueJobOperator` task names in the workflow's definition as the service holds it,
+  the catalog only when a stage declares it without `disable: true`, the project only with `create: true`
+  (`bootstrap/handlers/workflow_create_handler.py`, `commands/deploy.py`, `helpers/destroy_validator.py`).
+  Without `--force` it prints its plan and asks.
+- **[Claude] 5.1, the second application**: `orchestration-demo`, 6i's `demo-python-operator` in the
+  CLI's notation (the sensor and the Python task, `bucket`, `inbox` and `outbox` from
+  `{proj.connection.default.s3_shared.bucket}`, `{domain.id}` and `{proj.id}`), its code the archive of
+  `examples/sandbox-orchestration/operators/build.sh` (996,233 bytes), `project.create: false`, the
+  catalog `disable: true`, its storage under `orchestration-demo/python/`. `bundle --targets staging`
+  into a folder of its own, 970,357 bytes, extracted with the manifest beside it, then `deploy`
+  21:19:41 to 21:21:01Z, exit 0: two files, the code copied to `operatorFiles/`,
+  `orchestration_demo_deploy_staging_demo_python_operator` created, `READY`, `manual_only`, one version,
+  the project role, network and key, its log group with no retention, the tags `Pipeline=orchestration-demo`
+  and `Target=deploy-staging` beside the CLI's four. Against a snapshot taken before it, three objects
+  were added, all under its prefix and `operatorFiles/`, and none of `app-etl`'s changed; `app-etl`'s
+  workflow read the same version, definition, code and modification time.
+- **[Claude] 5.2, the shared DAG id**: `dagid-copy`, the same application with its workflow named
+  `app-etl` and `dag_id: app-etl`, its storage under `dagid-copy/python/`. `deploy` 21:22:10 to 21:23:28Z,
+  exit 0, printed *"Reading workflow from S3: s3://awsds-staging-smus-projects/dzd-d8yrvx1ko7im6o/d1veybt5oak4uo/shared/app-etl/workflows/app-etl.yaml"*
+  and *"Resolved workflow uploaded to"* the same key, then created `dagid_copy_deploy_staging_app_etl`
+  with `app-etl`'s definition. **0.1's inference holds, by a cause 0.1 did not name**:
+  `_derive_workflow_search_prefixes` (`commands/deploy.py`) reads `target_directory`, an attribute the
+  manifest's `StorageConfig` does not carry (`targetDirectory`), so both lookups fall back to the
+  project's whole `shared/` root, and `app-etl/` lists before `dagid-copy/`. The rewrite wrote a new
+  version of `app-etl/workflows/app-etl.yaml`, byte-identical to the one before (4,686 bytes, its
+  versions read 20:06:11, 20:09:08, 20:09:31 and 21:23:26Z); the copy's code was its own,
+  `dagid-copy.zip`, copied as `operatorFiles/app-etl-<n>.zip`, the name `app-etl`'s own copies carry.
+- **[Claude] `app-etl` redeployed from its bundle**, 21:25:48 to 21:27:48Z, exit 0, the manifest read
+  from the branch with `git show` after a first attempt stopped on the clone's other branch, before any
+  AWS call: it read its own file, first in the listing, and updated its workflow, `♻️  Workflow already
+  existed, updated`, to version 2 (`5a2ce43100dc50c21b0357ab5c67f4ae`), its seven files and a new
+  `operatorFiles/` copy rewritten; the copy's workflow unchanged.
+- **[Claude] 5.3, the plans**, each `destroy --targets staging` answered `n`: `orchestration-demo`'s
+  lists its workflow, its two prefixes and its two tasks `skipped`; `dagid-copy`'s lists its workflow,
+  its two prefixes, `process`, `summarize` and `write_result` `skipped`, and **`glue_job:
+  app-etl-d1veybt5oak4uo`**, `app-etl`'s Glue job, read from the copy's definition. The copy's destroy is
+  not run: it is the user's decision.
+- **[Claude] 5.3, `orchestration-demo` destroyed**, `--force`, 21:28:54 to 21:29:12Z, exit 0: *"Catalog
+  deletion is disabled (disable: true) — skipping"*, *"staging: deleted=3 not_found=0 skipped=2
+  error=0"*: the workflow and the two prefixes' two objects. It left
+  `operatorFiles/demo-python-operator-<n>.zip` and its log group, no retention. `app-etl`'s workflow
+  (version 2), its two runs, its Glue job with its one job run, and its files survived, and so did the
+  copy; the project owns no catalog object.
