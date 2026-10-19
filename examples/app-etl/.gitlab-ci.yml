@@ -229,6 +229,8 @@ store-bundle:
 # The tag's GitLab release, whose notes name the bundle's object, its SHA256 and the image: what a leg
 # of the promotion reads (Stage 10). The `release` keyword runs glab, which GitLab's own cli image
 # carries, pinned by digest (v1.120.0, released 2026-09-29); a tag whose `test` failed gets no release.
+# The runner evaluates the description inside double quotes, so the notes hold no backtick, which the
+# shell would run as a command substitution.
 release:
   stage: release
   needs: [store-bundle, test-deploy, build-image]
@@ -241,11 +243,11 @@ release:
     tag_name: $CI_COMMIT_TAG
     name: "app-etl $CI_COMMIT_TAG"
     description: |
-      Bundle: `$BUNDLE_OBJECT`
+      Bundle: $BUNDLE_OBJECT
 
-      Bundle SHA256: `$BUNDLE_SHA256`
+      Bundle SHA256: $BUNDLE_SHA256
 
-      Image: `$JOB_IMAGE_URI`
+      Image: $JOB_IMAGE_URI
 
 # Verification (xiii), run by hand: the pip-audit gate with the proxy variables removed. No route leaves
 # VPC-SharedServices but the proxy, so the job must fail, and the time it takes says whether it failed or

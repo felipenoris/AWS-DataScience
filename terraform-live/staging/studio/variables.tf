@@ -59,6 +59,26 @@ variable "blueprint_names" {
   default     = ["Tooling"]
 }
 
+# The roles the workflows grant attaches to (workflows.tf) are minted by SageMaker Unified Studio when a
+# project is created, `datazone_usr_role_<project>_<environment>`, so the list is written by hand after
+# the project exists, as sandbox/workflows/'s is.
+variable "project_roles" {
+  description = "The SMUS project roles whose workflows create Glue and SageMaker processing jobs, by role NAME (not ARN). Empty is legal and attaches nothing: Stage 18 step 8.1 empties it before the project is deleted."
+  type        = list(string)
+  # deploy-staging, created 2026-10-19 (Stage 18 pass 3); read with `iam list-roles` 2026-10-19.
+  default = ["datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps"]
+
+  validation {
+    condition     = alltrue([for r in var.project_roles : can(regex("^datazone_usr_role_[a-z0-9]+_[a-z0-9]+$", r))])
+    error_message = "each entry is a SMUS project role name, `datazone_usr_role_<project>_<environment>`."
+  }
+
+  validation {
+    condition     = length(var.project_roles) == length(distinct(var.project_roles))
+    error_message = "a role appears twice. The attachment is keyed by role name, so a duplicate would collide rather than be ignored."
+  }
+}
+
 variable "allowed_instance_types" {
   description = "The ml.* ceiling (D12). null - the default - is the right answer: the list lives once, in terraform-modules/sagemaker-denies, and the six persona sets in identity/sso/ compose the same fragment. The variable survives so that a business unit which genuinely needs a different ceiling can say so in its tfvars rather than in the shared module (D35: this slice is one unit's, not *the* Sandbox's)."
   type        = list(string)

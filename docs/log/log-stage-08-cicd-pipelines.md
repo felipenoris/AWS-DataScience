@@ -2060,3 +2060,20 @@ carries an account id or an e-mail address. Times are UTC.*
 - **[user] Applied** as `awsds-infra-sandbox-1`: *"Apply complete! Resources: 0 added, 1 changed, 0
   destroyed."* **[Claude]** The re-plan reads `No changes` (19:47:16Z), and `test-deploy` was retried as
   job 223.
+
+## 2026-10-19 — `v0.2.1`'s pipeline to its end, and the release's notes
+
+- **[Claude] Pipeline #55 after the retry**: `test-deploy` passed as job 223, its deploy updating
+  `app_etl_test_experimentation_app_etl` and its run reading `SUCCESS`; `store-bundle` passed, writing
+  `s3://awsds-prod-releases/app-etl/v0.2.1/app-etl.zip` after `sha256sum -c` on
+  `7fb374d15c23953cb6ad6d9f5473f97d2c83ff2db167703a5a830d96add95fff`. The image is
+  `awsds-prod-ecr-app-etl` `v0.2.1-1e756091`,
+  `sha256:247ec6b661ceb03d2927e1ce5a3c07d9287280a639abed18ce8daf898ed4ce0c`. The scan gate failed, as
+  decision 1 allows.
+- **[Claude] The `release` job** (job 221) failed in its release step: *"/bin/sh: eval: line 201:
+  s3://awsds-prod-releases/app-etl/v0.2.1/app-etl.zip: not found"*, and the same for the SHA256 and the
+  image. The runner evaluates the `release` keyword's description inside double quotes, so each
+  backtick-quoted value in the notes ran as a command. `v0.2.1` has no GitLab release; its bundle is in
+  the bucket, and Stage 18's 4.2 deployed it.
+- **[Claude] The fix**: `examples/app-etl/.gitlab-ci.yml`'s notes carry the three values as plain text,
+  pushed as `release-notes-plain` (`95ad38a`), MR !4. The next tag after its merge makes a release.

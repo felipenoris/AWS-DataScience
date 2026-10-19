@@ -332,8 +332,9 @@ terraform-live/
 │   │                     #     the deployment-only project through sagemaker-prereqs (the
 │   │                     #     provisioning and manage-access roles, the D13 boundary, the
 │   │                     #     project key, the projects bucket, the log group) and, on the
-│   │                     #     second apply, decision 1's base blueprint alone. Destroyed
-│   │                     #     whole at 8.6; sagemaker/ above keeps Stage 9's job roles
+│   │                     #     second apply, decision 1's base blueprint alone; the workflows
+│   │                     #     grant of sandbox/workflows/ on the project's role (4.4).
+│   │                     #     Destroyed whole at 8.6; sagemaker/ above keeps Stage 9's job roles
 │   ├── orchestration/    # [E] MWAA Serverless workflows for the staging leg (D7 amended:
 │   │                     #     a serverless workflow bills nothing at rest, so the reason
 │   │                     #     orchestration was Production-only is gone), with the chain
