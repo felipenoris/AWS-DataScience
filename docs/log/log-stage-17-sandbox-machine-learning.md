@@ -1798,3 +1798,47 @@ ids replaced by the account's name. Times are UTC.*
   `foundation-model` ARN and `arn:aws:bedrock:*:*:application-inference-profile/*`, after the commit
   that teaches `aws/awslib/bedrockscope.py` an admitted model, with the battery's rows for both and the
   apply by the user's hand from `Identity`.
+
+## 2026-10-19 — decision 11's amendment written and planned; the battery's before-half
+
+- **[Claude] The parser**, commit `2aa52ec3`: `aws/awslib/bedrockscope.py`'s `scp_declaration()` returns
+  the scoped models alone, those with a profile, and the new `scp_admitted()` returns every admitted
+  `foundation-model` and whether `application-inference-profile/*` is admitted; `ML-8` and `BS-1` read
+  the second. Against the document as applied: 3 scoped, 3 admitted, profiles not admitted. Against the
+  amended one: 3 scoped, 4 admitted, profiles admitted.
+- **[Claude] The amendment**, uncommitted when planned: `DenyBedrockInvocationOutsideTheScopedModels` in
+  `awsds-org-scp-ou-interactive.json` gains `arn:aws:bedrock:*::foundation-model/amazon.titan-embed-text-v2:0`
+  and `arn:aws:bedrock:*:*:application-inference-profile/*` in its `NotResource`; the policy's description
+  in `locals.tf` gains a sentence (502 of 512 characters); `POLICIES.md`'s row names both entries and the
+  second trigger. `./scripts/check-index.py` clean.
+- **[Claude] The plan**, `identity/org-policies` as `awsds-infra-identity`, saved at 21:30:49 UTC as
+  `~/tmp/s17-decision-11-scp.tfplan`, not applied:
+
+  ```
+  # aws_organizations_policy.this["awsds-org-scp-ou-interactive"] will be updated in-place
+                          + "arn:aws:bedrock:*::foundation-model/amazon.titan-embed-text-v2:0",
+                          + "arn:aws:bedrock:*:*:application-inference-profile/*",
+  Plan: 0 to add, 1 to change, 0 to destroy.
+      ~ awsds-org-scp-ou-interactive  = 1362 -> 1483
+  ```
+
+  The description changes with it.
+- **[Claude] The battery's before-half**, `./aws/probes/scp-battery.py --phase ou`, 21:31:24 to
+  21:32:45 UTC, with two new rows: `41 as expected, 1 unexpected, 7 not measured`. The unexpected row is
+  Titan's, refused as predicted before the apply:
+
+  ```
+  FAIL	ou	sandbox1	allow	DENY-SCP	p-tgda7n58	interactive (inherited): bedrock:InvokeModel on amazon.titan-embed-text-v2:0 (Stage 17 decision 11)
+  ok  	ou	sandbox1	allow	ALLOWED	reached-authorization	interactive (inherited): bedrock:InvokeModel through an application inference profile (Stage 17 decision 11)
+  ```
+
+  The second row invoked a profile id that does not exist and read `ALLOWED` with the entry absent. The
+  same call by hand at 21:33:00 UTC, as `awsds-infra-sandbox-1`, answered:
+
+  ```
+  An error occurred (ValidationException) when calling the InvokeModel operation: The provided model identifier is invalid.
+  ```
+
+  Bedrock refuses an unknown profile id before it authorizes, so that row reads the same on both sides
+  of the amendment. It left `probes.py` before the commit, and the battery holds 48 `ou` rows. 7.3's
+  chat after the apply measures the profile's pass.
