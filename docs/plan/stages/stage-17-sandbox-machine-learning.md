@@ -824,7 +824,8 @@ recommendation stated (Lesson 16).
     browser. AWS's policies on the project role and on the Bedrock IDE's roles admit a model only through
     an application inference profile tagged with the project. The domain holds no governance project:
     *Manage* in Sandbox's console stays greyed until one exists with the caller as a member (*"Model
-    governance project does not exist"*, inferred from the code), and only the domain account's setup
+    governance project does not exist"*, read in the console the same evening), and only the domain
+    account's setup
     creates it, in the run that also configures the Bedrock blueprints and `Tooling` in Data Governance,
     which D22 forbids. AWS's pages call the two roles `AmazonDataZoneBedrockModelManagementRole` and
     `AmazonDataZoneBedrockFMConsumptionRole`, the console names them
@@ -870,8 +871,11 @@ recommendation stated (Lesson 16).
     `CreateListingChangeSet`, `bedrock:CreateInferenceProfile`), and the registry and `awscc` 1.98.0
     carry the environment, its role and the profile but no asset, listing or subscription (Lesson 8,
     read 2026-10-19), so the enablement itself would be CLI writes of a form only the console's code
-    defines (Lesson 23); it stays the fallback if the form refuses the slice's roles. Under every option
-    the first act is the user's reading of the tab's *Manage*, which the code says is greyed.
+    defines (Lesson 23); it stays the fallback if the form refuses the slice's roles. **The console,
+    read the same evening** (the log): the *Manage* page's governance selector offers nothing and
+    *Review and submit* stays greyed, and a model's *Manage roles* dialog preselects
+    `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>` as an existing role though no
+    such role exists in Sandbox, the code's last fallback, which a role of that name would fill.
 
 ## Verifications to answer while executing
 

@@ -1465,3 +1465,56 @@ address. Times are UTC.*
   leave 7.4a's second sync refused on the same pass. `aws/awslib/bedrockscope.py`'s two patterns match
   neither half of an `application-inference-profile/*` entry, so such an entry moves no instrument's
   reading (read from the code).
+
+## 2026-10-19 — decision 13: the Bedrock models tab and its *Manage* page, read in the console
+
+*Provenance. Claude, in the same session and worktree. The console session was the user's, signed in as
+the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1` (`ConsoleLogin` at
+19:50:48), read through Claude in Chrome in a tab of Claude's own group, opened by URL. Claude's clicks
+opened the governance project selector, one model's *Manage roles* dialog and its role selector, each
+closed with Escape or *Cancel*; nothing was ticked, saved or submitted. The AWS calls Claude ran were
+reads as `awsds-infra-sandbox-1` and `awsds-infra-data`. Times are UTC.*
+
+- **[Claude] The tab** (`#/associatedDomains/<domain>/modelsManagement`), 19:51. The header reads
+  `Sandbox Account 1` and `InfrastructureAccess`, the selectors `<Sandbox Account 1>` and `us-west-2`.
+  *Models enabled for the selected account and region (0)*, and **Manage** greyed, its tooltip
+  *"Model governance project does not exist"*, the wording the code predicted. The table lists 62 models
+  from 12 providers (Amazon 9, Anthropic 11, Cohere 4, DeepSeek 2, Luma AI 1, Meta 9, Mistral AI 5,
+  OpenAI 2, Qwen 4, Stability AI 12, TwelveLabs 1, Writer 2), every *Enabled in projects*, *Enabled in
+  playground* and *Roles for model access* cell at `-`. Anthropic's eleven are all *On-demand
+  cross-region*: Claude Haiku 4.5, Opus 4.1 (*Legacy*), Opus 4.5, 4.6, 4.7, 4.8, Opus 5, Opus 5.5, Sonnet
+  4.5 (*Legacy*), Sonnet 4.6 and Sonnet 5. Titan Text Embeddings V2 is listed twice, as `Titan Text
+  Embeddings V2` and `Titan Text Embeddings v2`, both *Embedding* and *On-demand*. Below the table,
+  *Playground settings* holds *Default playground models - optional* with its *Chat playground* and
+  *Image and video playground* selectors empty, and no *Model governance project* section. The page's
+  *Next steps* reads *Generative AI* with *8 blueprints enabled*.
+- **[Claude] The *Manage* page, opened by URL** (`#/associatedDomains/<domain>/manage-generative-ai-models`),
+  19:52. *Manage models access*, the same selectors and the same 62 rows, each with an *Enable* checkbox
+  under *Enable in projects* and under *Enable in playground* and a *Manage roles* link under *Roles for
+  model access*. A *Model governance project* section says the service creates a governing project at
+  the initial model access setup, from a system-generated *Gen AI Model Governance Project* profile; its
+  field *Generative AI governance project* opens on a search box and no option. *Review and submit* is
+  greyed.
+- **[Claude] *Manage roles* on Claude Haiku 4.5's row**, 19:52 to 19:53. The dialog *Permissions for
+  Amazon Bedrock model access* holds one section, *Model provisioning role*, with *Use an Amazon
+  SageMaker Unified Studio managed role for the model* and *Use a single existing custom role for the
+  model*, the second selected with `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>`;
+  no consumption role section, the playground box being unticked. The role selector lists the account's
+  roles in name order, unfiltered by trust (`AmazonBedrockLambdaExecutionRole-*`,
+  `AmazonBedrockServiceRole-*`, `aws-controltower-*`, `AWSControlTowerExecution`,
+  `AWSControlTower_VPCFlowLogsRole`, `awsds-deploy-devenv-sandbox`, `awsds-deploy-sandbox-test`,
+  `awsds-sandbox-lake-access`, and on), and the preselected role is not among them. `iam list-roles` at
+  19:53 holds no role whose name carries `AmazonSageMaker`, `AmazonDataZone`, `ModelManagement` or
+  `ModelConsumption` but `AWSServiceRoleForAmazonSageMakerNotebooks`: the dialog offers, as an existing
+  role, the ARN the code builds as its last fallback. *Cancel*, then the page's *Cancel*, back on the
+  tab.
+- **[Claude] Nothing was written.** At 19:54 Sandbox holds no application inference profile, and the
+  domain the same three projects and two profiles. Sandbox's trail from 19:38 holds, as the
+  infrastructure user, `ConsoleLogin` at 19:50:48, six `SearchListings` from 19:51:09 to 19:52:29 (the
+  pages' catalog lookups) and, in `us-east-1`, one `PutRolePolicy` at 19:46:08 on
+  `awsds-deploy-sandbox-test` by Terraform, Stage 18's `sandbox/workflows/` apply announced by its
+  session; no other write.
+- **[Claude] What the reading says.** The code's prediction holds: an associated account's console
+  offers no way to enable a model until a governance project exists and lists the caller as a member.
+  The dialog's default for the provisioning role is the console's managed name, so a role the slice
+  creates under that name would appear as the existing role, which is decision 13 (b)'s adoption.
