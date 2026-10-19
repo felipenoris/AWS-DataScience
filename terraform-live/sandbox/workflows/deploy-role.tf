@@ -183,6 +183,17 @@ data "aws_iam_policy_document" "test_workflows" {
     actions   = ["logs:CreateLogGroup", "logs:FilterLogEvents"]
     resources = [local.test_log_groups]
   }
+
+  # A release after the first updates the workflow, and the service, in the caller's session, meets
+  # the existing log group: CreateLogGroup answers that it exists, then DescribeLogGroups, a listing
+  # IAM evaluates on the account's `log-group::log-stream:` and no single group. Without it
+  # UpdateWorkflow answers "Access denied to logGroup or KmsKey" (measured 2026-10-19).
+  statement {
+    sid       = "DescribeTheLogGroupsOnUpdate"
+    effect    = "Allow"
+    actions   = ["logs:DescribeLogGroups"]
+    resources = ["arn:${data.aws_partition.current.partition}:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:*"]
+  }
 }
 
 # The `test` project's shared/ prefix in the projects bucket, and nothing of any other project: the

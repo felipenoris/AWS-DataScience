@@ -2042,3 +2042,21 @@ carries an account id or an e-mail address. Times are UTC.*
   `JOB_IMAGE_URI`, so `test-deploy` needs no `ECR_REGISTRY`; `test-deploy` reads the ARN and the run id
   with `sed` and stops with a `FATAL` when either is missing. Pushed as `release-pipeline-fixes`
   (`726cb92`), MR !3; `v0.2.1` follows its merge.
+
+## 2026-10-19 — `v0.2.1`: the update path, and the deploy role's `DescribeLogGroups`
+
+- **[user] Merged !3** (`1e75609`, 19:24:10Z) and **tagged `v0.2.1`**.
+- **[Claude] Pipeline #55's `test-deploy`** (job 219) stopped on the new `FATAL`, *"deploy.log names no
+  workflow ARN or run id"*, the deploy itself exiting 1. `app_etl_test_experimentation_app_etl`
+  existed since `v0.2.0`'s run, so `CreateWorkflow` answered `ConflictException` and the CLI updated
+  it: `UpdateWorkflow` was refused, *"Access denied to logGroup or KmsKey"*. Sandbox's CloudTrail
+  shows the service, in the deploy role's session, calling `kms:GenerateDataKey` (ok),
+  `logs:CreateLogGroup` (`ResourceAlreadyExistsException`) and `logs:DescribeLogGroups`, refused by
+  the role's own policy on the account's `log-group::log-stream:`. The first release's create path
+  had made no such call.
+- **[Claude] The fix**: `sandbox/workflows/deploy-role.tf` gains `DescribeTheLogGroupsOnUpdate`,
+  `logs:DescribeLogGroups` on the account's log groups. Planned 19:32:54Z, 0 to add, 1 to change, the
+  inline policy `workflows` alone. The classifier refused Claude's apply (*Protected-Scope IaC Apply*).
+- **[user] Applied** as `awsds-infra-sandbox-1`: *"Apply complete! Resources: 0 added, 1 changed, 0
+  destroyed."* **[Claude]** The re-plan reads `No changes` (19:47:16Z), and `test-deploy` was retried as
+  job 223.
