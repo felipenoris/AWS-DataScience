@@ -621,3 +621,195 @@ user (`awsds-infra-sandbox-1`, `InfrastructureAccess` in `Sandbox Account 1`), r
   from 2026-10-17 21:00Z to 2026-10-18 21:00Z the only writes are those three requests (the rest are
   `List*` and `Get*` reads), and `support.amazonaws.com` returns no event. AWS applied values above the
   ones asked for, on its side, with the cases still open. Verification xxi says so.
+
+## 2026-10-19 — 1.3's plans on `main`'s pins, 1.1's before, and the applies
+
+*Provenance. Claude, in the session "Stage 17 1.1 and 1.3: MLflow reading and the applies", which the
+Stage 18 session started to release that stage's step 2.7, from the worktree `stage-17-readings-7be400`
+at `origin/main` `47f5759`, as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1`
+(`awsds-infra-sandbox-1`) and in `Data Governance` (`awsds-infra-data`), with the whole environment down. Every AWS call Claude ran was a read or a plan;
+the applies are the user's, since the app's auto-mode classifier refuses them to Claude (Stage 18's log,
+2026-10-19). No quoted line carries an account id or an e-mail address. Times are UTC.*
+
+- **[Claude] What `main` pins.** `sandbox/sagemaker` takes `sagemaker-prereqs-v0.6.0`, whose default
+  roster ends in `MLflowApp`, and the `experimentation` profile's list ends in `MLflowApp`. PR #196
+  (Stage 18) is open, so `governance/` carries no `deployment` profile and `SMUS_DEPLOYMENT_MEMBERS` is
+  empty. `gen-tfvars.py` wrote `blueprints_enabled = true` for the first slice, and
+  `profiles_enabled = true` with `members` holding `sandbox` alone for the second. Neither init changed a
+  `.terraform.lock.hcl`.
+- **[Claude] `sandbox/sagemaker`, planned at `v0.6.0`** as `awsds-infra-sandbox-1`, 04:51:34 to
+  04:52:03, `-input=false`, saved as `~/tmp/s17-sagemaker-1019.tfplan`:
+
+  ```
+    # module.sagemaker_prereqs.awscc_datazone_environment_blueprint_configuration.enabled["MLflowApp"] will be created
+    # module.sagemaker_prereqs.awscc_datazone_policy_grant.create_environment_from_blueprint["MLflowApp"] will be created
+    # module.sagemaker_prereqs.module.project_key.aws_kms_key.this will be updated in-place
+  Plan: 2 to add, 1 to change, 0 to destroy.
+  ```
+
+  The configuration names `awsds-studio`, `us-west-2`, the boundary `awsds-sandbox-project-boundary`,
+  `awsds-sandbox-smus-manage-access`, `awsds-sandbox-smus-provisioning` and the regional parameters
+  `AZs` (`usw2-az1,usw2-az2`), `Subnets` and `VpcId`; the grant is `CREATE_ENVIRONMENT_FROM_BLUEPRINT`
+  to the root domain unit's project contributors, `include_child_domain_units = false`. The key policy
+  keeps its nine `Sid`s; `terraform show -json` on the saved plan reads two of them changed,
+  `GrantKMSPermissionsForAllProjectRoles` and `AllowCreateGrantForProjectRoles`, each gaining
+  `aws:PrincipalOrgID` in its `StringEquals` and nothing else: [Stage 11](../plan/stages/stage-11-dlp.md)'s
+  `TM-21`, the plan its session read on 2026-10-18.
+- **[Claude] `data-governance/governance`, planned** as `awsds-infra-data`, 04:52:28 to 04:52:48, saved
+  as `~/tmp/s17-governance-1019.tfplan`:
+
+  ```
+    # awscc_datazone_project_profile.this["experimentation"] will be updated in-place
+  Plan: 0 to add, 1 to change, 0 to destroy.
+  ```
+
+  The one changed attribute is `environment_configurations`, eleven elements before and twelve after:
+  `MLflowApp`, `ON_DEMAND`, `deployment_order` 11, `us-west-2`, no parameters, the same account as the
+  other eleven, which keep their orders 0 to 10 unchanged. No `deployment` profile and no grant is in the
+  plan, so the apply carries nothing of Stage 18's 2.6 or 2.7.
+- **[user] The portal, opened for Claude.** Before 05:01 the user wrote in this session *"abri uma
+  sessão no chrome para você, com a página aberta"*: the user's Chrome held the portal signed in as the
+  Data Scientist User. The page's own `list-groups-for-user` request names the DataZone user that
+  `get-user-profile` resolves to *Data Scientist User*, so the reading is that persona's.
+- **[Claude] 1.1, the before, read 05:01 to 05:04** through Claude in Chrome, in a tab of its own, in
+  `eighth-experimentation` (`avhvbqn37ty7m8`). Nothing was submitted or created; the two disabled items
+  were hovered, never clicked, and the legacy page's two *Create* buttons were not clicked. The portal
+  has two MLflow entries, where the stage names one path, "Compute → AI/ML → MLflow":
+  - **AI/ML → MLflow**, the left navigation (`/projects/<project>/experiments`), the legacy experiments
+    page. A red notice, still served three days past the date it names:
+
+    ```
+    This page will be removed on September 16, 2026
+    To view your experiments, go to Compute and open an MLflow Tracking Server or App.
+    ```
+
+    Then a banner, *"New! Mlflow 3.0 is now available on SageMaker AI. Accelerate your generative AI
+    development with fully managed experiment tracking, observability, and performance evaluation."*,
+    with a **Create Tracking Server** button, and the body *"Experiments / Create, analyze, and manage
+    MLflow experiments. / No tracking server. / To get started with MLflow experiments, create an MLflow
+    Tracking Server."* with a **Create** button. The page offers the tracking server alone.
+  - **Compute → MLflow**, a tab of the Compute page (`/projects/<project>/compute?type=mlflow`), beside
+    *SQL analytics*, *Data processing*, *HyperPod clusters*, *Spaces* and *Workflow environments*:
+    *"MLflow environments (0)"*, *"No MLflow Apps or Tracking Servers found"*, and a **Create** dropdown
+    whose two items are greyed out, each with a tooltip:
+
+    ```
+    Create MLflow Tracking Server   The MLExperiments blueprint is not enabled for this project. Contact your administrator to enable it.
+    Create MLflow App               The MLflowApp blueprint is not enabled for this project. Contact your administrator to enable it.
+    ```
+
+  - **The page's requests**: DataZone reads of the project profile, the blueprint configurations, the
+    managed blueprints and eleven blueprints by id, and the project's environments; and two `POST`s to
+    `api.sagemaker.us-west-2.amazonaws.com`, both `200`, whose bodies were not read (inferred: the two
+    MLflow list calls).
+  - **Project details** (the project's actions menu): profile `experimentation`, **Update status** *Up
+    to date*. The actions menu holds *Project details*, *Copy project link*, *Update project* and
+    *Delete project*, and the **Manage** menu *Govern*, *Browse catalog* and *Catalog management*; no
+    page lists capabilities, the page 1.5 names (inferred: in this portal a profile change reaches a
+    project through *Update project*, not opened).
+  - An Amazon Q prompt sat at the page's foot on every page, *"Amazon Q can now list and describe your
+    AWS resources. By continuing, you consent to Amazon Q making cross-Region calls to access your
+    resources."*, with *Don't allow* and *Continue*; it was left unanswered.
+- **[Claude] Verification i's before: the blueprint gates the app.** The portal refuses the create in the
+  menu, by a tooltip naming the blueprint, before any SageMaker call, so the project role's
+  `SageMakerMlflowServerlessPermission` (`sagemaker:CreateMlflowApp` on `mlflow-app/*` under
+  `aws:ResourceTag/AmazonDataZoneProject`, read in v45 the same hour) is never reached; whether it admits
+  the create is 1.5's reading. The after is the same tab once `governance/` and `sandbox/sagemaker/`
+  are applied, and the project's update status beside it.
+- **[user] Both applies**, from the saved plans, in a terminal of the project folder with `-chdir` into
+  this worktree, pasted into this session. The paste, with the account ids replaced:
+
+  ```
+  ➜  AWS-DataScience git:(main) AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=/Users/felipentavares/src/AWS-DataScience/.claude/worktrees/stage-17-readings-7be400/terraform-live/sandbox/sagemaker apply -input=false "$HOME/tmp/s17-sagemaker-1019.tfplan"
+  module.sagemaker_prereqs.module.project_key.aws_kms_key.this: Modifying... [id=a81b1ef3-716f-4105-bb42-14184a6e2174]
+  module.sagemaker_prereqs.module.project_key.aws_kms_key.this: Modifications complete after 6s [id=a81b1ef3-716f-4105-bb42-14184a6e2174]
+  module.sagemaker_prereqs.awscc_datazone_environment_blueprint_configuration.enabled["MLflowApp"]: Creating...
+  module.sagemaker_prereqs.awscc_datazone_environment_blueprint_configuration.enabled["MLflowApp"]: Still creating... [00m10s elapsed]
+  module.sagemaker_prereqs.awscc_datazone_environment_blueprint_configuration.enabled["MLflowApp"]: Creation complete after 15s [id=dzd-d8yrvx1ko7im6o|agjvpzxbha9fbk]
+  module.sagemaker_prereqs.awscc_datazone_policy_grant.create_environment_from_blueprint["MLflowApp"]: Creating...
+  module.sagemaker_prereqs.awscc_datazone_policy_grant.create_environment_from_blueprint["MLflowApp"]: Creation complete after 6s [id=dzd-d8yrvx1ko7im6o|00MWjiPOdj|<Sandbox Account 1>:agjvpzxbha9fbk|ENVIRONMENT_BLUEPRINT_CONFIGURATION|CREATE_ENVIRONMENT_FROM_BLUEPRINT]
+  Releasing state lock. This may take a few moments...
+
+  Apply complete! Resources: 2 added, 1 changed, 0 destroyed.
+
+  Outputs:
+
+  manage_access_role_arn = "arn:aws:iam::<Sandbox Account 1>:role/awsds-sandbox-smus-manage-access"
+  project_boundary_arn = "arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-project-boundary"
+  project_key_arn = "arn:aws:kms:us-west-2:<Sandbox Account 1>:key/a81b1ef3-716f-4105-bb42-14184a6e2174"
+  provisioning_role_arn = "arn:aws:iam::<Sandbox Account 1>:role/awsds-sandbox-smus-provisioning"
+  regional_parameters = {
+    "AZs" = "usw2-az1,usw2-az2"
+    "Subnets" = "subnet-016b5a3a62c739894,subnet-09d3399d6b0fec93a"
+    "VpcId" = "vpc-00dca74a35159b11c"
+  }
+  ➜  AWS-DataScience git:(main) AWS_PROFILE=awsds-infra-data terraform -chdir=/Users/felipentavares/src/AWS-DataScience/.claude/worktrees/stage-17-readings-7be400/terraform-live/data-governance/governance apply -input=false "$HOME/tmp/s17-governance-1019.tfplan"
+  awscc_datazone_project_profile.this["experimentation"]: Modifying... [id=dzd-d8yrvx1ko7im6o|dh60xbal05q64w]
+  awscc_datazone_project_profile.this["experimentation"]: Modifications complete after 7s [id=dzd-d8yrvx1ko7im6o|dh60xbal05q64w]
+  Releasing state lock. This may take a few moments...
+
+  Apply complete! Resources: 0 added, 1 changed, 0 destroyed.
+
+  Outputs:
+
+  domain_arn = "arn:aws:datazone:us-west-2:<Data Governance Account>:domain/dzd-d8yrvx1ko7im6o"
+  domain_execution_role_arn = "arn:aws:iam::<Data Governance Account>:role/awsds-data-studio-domain-execution"
+  domain_id = "dzd-d8yrvx1ko7im6o"
+  domain_service_role_arn = "arn:aws:iam::<Data Governance Account>:role/awsds-data-studio-domain-service"
+  portal_url = "https://dzd-d8yrvx1ko7im6o.sagemaker.us-west-2.on.aws"
+  project_profile_creators = {
+    "experimentation" = "sso-group-data-scientists"
+  }
+  project_profile_ids = {
+    "experimentation" = "dh60xbal05q64w"
+  }
+  root_domain_unit_id = "bzq0cbh2gd0f4g"
+  ```
+
+- **[Claude] When, from the trails.** Sandbox's reads `PutKeyPolicy` at 05:11:46 and
+  `PutEnvironmentBlueprintConfiguration` at 05:11:59, both as `InfrastructureAccess`; Data Governance's
+  reads `UpdateProjectProfile` at 05:12:33, the profile's `lastUpdatedAt`. Neither trail's lookup showed a
+  `CreatePolicyGrant` event at 05:20.
+- **[Claude] Re-planned, both `No changes. Your infrastructure matches the configuration.`**:
+  `sandbox/sagemaker` 05:13:11 to 05:13:39, `governance/` 05:13:39 to 05:14:00. The second ran before
+  Stage 18's 2.7 apply from a checkout holding PR #196; from this worktree, cut from `main` without it, a
+  later plan of `governance/` reads that stage's `deployment` profile and grant as destroys, so none ran.
+- **[Claude] Read back.** The project key's policy keeps its nine `Sid`s; the two with `Principal *`,
+  `GrantKMSPermissionsForAllProjectRoles` and `AllowCreateGrantForProjectRoles`, carry
+  `aws:PrincipalOrgID`, and the other seven read as before. `list-environment-blueprint-configurations`
+  as `awsds-infra-sandbox-1` returns twelve. `experimentation` is `ENABLED` with twelve environment
+  configurations, `MLflowApp` `ON_DEMAND` at order 11.
+- **[Claude] `./aws/studio.py`**, 05:14:41 to 05:16:00: `wrote aws/output/studio.txt (some calls FAILED -
+  see section 10)`, exit 1. Section 10 holds seven `sts get-caller-identity` calls of the persona and
+  Control Tower profiles, whose SSO sessions were not signed in. `US-3` passes, *"12 blueprint
+  configuration(s) in awsds-infra-sandbox-1 — all inside decision 5's category 1"*, as do `US-4`
+  (`experimentation`, one) and `US-8` (six project roles bounded); the rest pass or note. `US-10` notes one
+  running app, the Data Scientist User's default JupyterLab space on `ml.t3.medium`, `InService` since
+  04:59:27, which the 60-minute idle shutdown stops (`US-7`).
+- **[Claude] Verification i's after, read 05:17 to 05:24** through Claude in Chrome, nothing submitted:
+  - `eighth-experimentation`, Compute → MLflow: both items of the **Create** dropdown still greyed out,
+    *Create MLflow App* with the same tooltip, *"The MLflowApp blueprint is not enabled for this
+    project. Contact your administrator to enable it."*; Project details' **Update status** still *Up to
+    date*.
+  - `test-experimentation`, the same tab on its first load in that browser: the page fetched the profile,
+    both blueprint-configuration lists and twelve blueprints by id, `agjvpzxbha9fbk` among them
+    (`MLflowApp`, by `get-environment-blueprint`), and the item carries the same tooltip.
+  - `test-experimentation`'s Generative AI → AI apps: *"This tool is not available for this project. To
+    enable it, activate the "Generative AI Application Development" project profile or its associated
+    blueprints using the following documentation."* The six Bedrock blueprints have been in the profile
+    since 2026-08-21, before either project.
+  - Each project holds two environments: `Tooling`, `ACTIVE`, and a `create-datalake-database-env-*` of
+    `DataLake`'s configuration, `CREATE_FAILED` on the manage-access role's
+    `lakeformation:CreateLakeFormationOptIn`, [6f](log-stage-06f-data-governance.md)'s refusal of
+    2026-09-13, repeated in the second project on 2026-10-15. The portal deploys an `ON_DEMAND`
+    environment from the flow that needs it, and the MLflow flow stops at the menu before reaching one.
+- **[Claude] What the after says.** 1.3's two objects are live and read back, and neither project's
+  portal offers the app. Both projects predate 05:12:33, but the Bedrock tools are refused although
+  their blueprints predate both projects, so "a profile change does not reach an existing project" does
+  not explain both readings. What the portal wants beyond the configuration and the profile is unread,
+  and 1.5's premise, a capabilities page offering the blueprint, does not hold in this portal: 1.5 starts
+  by reading what makes the item available.
+- **[Claude] [Stage 11](log-stage-11-dlp.md)'s `TM-21` is applied with 1.3.** `TM-21` and `EXC-18` stay
+  open until a snapshot in Audit reads the analyzer's finding `RESOLVED`, that stage's condition.
+- **[Claude] What is owed.** [user] 1.5, from what makes *Create MLflow App* available; then 1.4's
+  sitting, the image first (decision 4). [Claude] 1.7 after 1.5.
