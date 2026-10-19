@@ -387,9 +387,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `awslib/bedrockscope.py` to learn the difference first, or `BS-2`, `BS-7` and `BR-4` go red. Pass 2's training job waits on the battery's instance-preference rows (Stage 9 3.5).
   **Stage 18**: passes 1 and 2.1-2.5 done 2026-10-19, the applies by the user (the classifier refuses
   them to Claude): the carve-out is live (`EXC-20`), Staging is associated with `Tooling` configured,
-  and both `backend.py` lists carry `staging`; 2.6 is written behind `deployment_profile_enabled`, false
-  until 2.7, which follows Stage 17 1.1 and 1.3; decision 1's base is taken (`Tooling`), its
-  `enableSpaces` false is 2.7's, and 3 is written to its recommendation;
+  and both `backend.py` lists carry `staging`; 2.7 is planned with `deployment_profile_enabled` true
+  after Stage 17 1.3's applies, the apply the user's, and PR #196 merges right after it, since a
+  checkout without it plans the profile's destruction; decision 1's base is taken (`Tooling`), and its
+  `enableSpaces` false and decision 3 are 2.7's;
   an associated account no person works in goes in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in
   `SMUS_MEMBERS`. Its 4.4's two prerequisites, Stage 8 3.0's first half and Stage 10 1.2's `vpc-v0.4.0`
   on `staging/foundation/`, were applied 2026-10-19 by the user.

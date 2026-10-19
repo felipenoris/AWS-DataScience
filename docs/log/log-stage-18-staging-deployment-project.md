@@ -512,3 +512,21 @@ are UTC.*
   family since 2026-10-11, never showed it. With the pattern, `EG-4` reads `mwaa-code` in Sandbox and
   Staging and not in Production's three VPCs, which are on `vpc-v0.3.1`; the family's absence stays
   a reading, never a failure.
+
+## 2026-10-19 — Stage 17's applies read back, 2.7 planned
+
+- **[user] Stage 17 1.3's two applies**, in that stage's session ([its log](log-stage-17-sandbox-machine-learning.md) is
+  its own record); the user wrote here *"acredito que os applies do Stage 17 rodaram"*.
+- **[Claude] Read back at 05:23:40Z**, as the infrastructure user, before anything was planned here:
+  `experimentation`, last updated 05:12:33Z, holds twelve environment configurations, `MLflowApp`
+  `ON_DEMAND` at order 11 the last; Sandbox holds twelve blueprint configurations, `MLflowApp`'s
+  created 05:11:58Z. The domain holds that one profile. `governance/`'s state object was last written
+  05:12:40Z, and no lock object stood beside it at 05:24:05Z. Stage 17's session reported its
+  `governance/` re-plan `No changes` at 05:13:39 to 05:14:00Z.
+- **[Claude] 2.7 planned at 05:24:48Z** as `awsds-infra-data`, `deployment_profile_enabled` set
+  true, saved to `$HOME/tmp/stage18-governance-27.tfplan`: 2 to add, 0 to change, 0 to destroy, the
+  `deployment` profile and its `CREATE_PROJECT_FROM_PROJECT_PROFILE` grant, both identical to the
+  working-copy plan of 04:21:59Z; `experimentation` untouched. The other sessions were told before the
+  apply, Stage 17's with the hazard that its checkout, cut from `main` without PR #196, would plan
+  the profile's destruction after the apply; it answered that it plans `governance/` no more until
+  PR #196 is in its branch. The apply is the user's.

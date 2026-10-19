@@ -76,10 +76,10 @@ locals {
     staging = one(data.aws_iam_roles.staging_infrastructure_access.arns)
   }
 
-  # Stage 18 step 2.7 sets this true after Stage 17 step 1.3 has applied `experimentation`'s
-  # MLflowApp configuration, so the two stages never share one apply of this slice (Lesson 69).
-  # While false, the `deployment` row below creates nothing.
-  deployment_profile_enabled = false
+  # The `deployment` row below exists while this is true: Stage 18's window, from step 2.7 to
+  # pass 8, which removes both. Another stage's change to this slice applies apart from Stage 18's
+  # (Lesson 69).
+  deployment_profile_enabled = true
 
   # The profiles, where each provisions, and who may create from it (D21/D26). The names are a
   # contract with ./aws/studio.py (US-4), and the account pinning turns D21's boundary from
