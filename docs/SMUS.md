@@ -13,7 +13,7 @@ Stage 6 decisions 4 and 5, recorded in [the stage log](log/log-stage-06a-unified
 configurations, its eleven authorization grants and the `engineering` project profile are all unwound,
 and the associated-account count is **N Sandboxes** rather than N + 1 (D26 amended). One project profile
 survives, `experimentation`, pinned to Sandbox. Stage 18 associates `Staging` as well, from 2026-10-19 to
-that stage's pass 8, for one deployment project.
+that stage's pass 8, for one deployment project born of a second profile, `deployment`.
 
 ## The object model — domain, project, and the profiles between them
 
@@ -210,6 +210,7 @@ The two project profiles this installation carries — created 2026-08-21 by the
 | Profile | Provisions into | The unit of work (D21) | Who may create from it |
 |---|---|---|---|
 | `experimentation` | **Sandbox** | a notebook — experimentation happens where nothing downstream depends on it | `sso-group-data-scientists` |
+| `deployment` | **Staging**, Stage 18's window, `Tooling` alone with `enableSpaces` `false` | an application the CI/CD CLI deploys, with no person in the project | Staging's InfrastructureAccess role, as its IAM role session group |
 | ~~`engineering`~~ | ~~**Development**~~ | **Destroyed 2026-09-06** (Stage 6b step 1.1). The account it targeted became the headless `Staging`, and the chain now starts at a repository rather than an account | — |
 
 Identical in everything but the target account: **eleven environment configurations** (decision 5's

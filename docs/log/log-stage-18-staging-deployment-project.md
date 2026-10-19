@@ -558,3 +558,18 @@ are UTC.*
   to `$HOME/tmp/stage18-governance-27b.tfplan`: 1 to add, 0 to change, 0 to destroy, the grant on the
   root unit for the `deployment` profile, its `group_identifier` the session group's id;
   `experimentation`'s grant untouched. The apply is the user's.
+
+## 2026-10-19 — 2.7's grant, by the user's hand, and the read-back
+
+- **[user] The grant's apply, from the saved plan**, as `awsds-infra-data`:
+  *"awscc_datazone_policy_grant.create_project_from_profile["deployment"]: Creation complete after
+  7s"*, *"Apply complete! Resources: 1 added, 0 changed, 0 destroyed."* The outputs name the creators,
+  `"deployment" = "InfrastructureAccess (staging)"` and `"experimentation" =
+  "sso-group-data-scientists"`. Then the user merged PR #196 (06:00:44Z) and wrote *"fiz o merge do
+  #196"*.
+- **[Claude] Read back at 06:01 UTC.** `governance/` re-plans `No changes` (06:01:20Z). The root domain
+  unit holds two `CREATE_PROJECT_FROM_PROJECT_PROFILE` grants, child units excluded:
+  `sso-group-data-scientists` for `experimentation` (2026-08-22) and Staging's InfrastructureAccess
+  session group for `deployment` (05:58:00Z). `./aws/studio.py` on the four infrastructure profiles:
+  all checks passed, `US-4` reading *"deployment, experimentation - experimentation as contracted,
+  deployment in Stage 18's window"*. Decisions 1 to 3 are taken by the applies; 2.7 is done.
