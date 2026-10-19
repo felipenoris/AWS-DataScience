@@ -11,9 +11,10 @@
 #             ./aws/bedrock-usage.py --profile awsds-infra-staging           # another account
 #   writes:   aws/output/bedrock-usage.txt   (untracked - see .gitignore)
 #   reads:    cloudwatch:ListMetrics and GetMetricData on the AWS/Bedrock namespace, cloudtrail:
-#             LookupEvents for the four invocation event names, and sts:GetCallerIdentity, all in
-#             us-west-2. Every one is a read; this script invokes no model. GetMetricData is billed
-#             per metric requested (USD 0.01 per 1,000), which one run keeps to fractions of a cent.
+#             LookupEvents for the four invocation event names, bedrock:ListInferenceProfiles for
+#             each type when a ModelId names no model, and sts:GetCallerIdentity, all in us-west-2.
+#             Every one is a read; this script invokes no model. GetMetricData is billed per metric
+#             requested (USD 0.01 per 1,000), which one run keeps to fractions of a cent.
 #   exits:    0 every check passed | 1 a call failed | 2 a check FAILED
 #
 # A TIME WITH NO OFFSET IS REFUSED. `2026-09-12T21:00` is 21:00 in whatever zone the reader assumes,
@@ -49,6 +50,14 @@
 # billed. Cache writes are priced at the 5-minute TTL rate, because CloudWatch does not separate a
 # 5-minute write from a 1-hour one and the 1-hour rate is higher (Opus 4.5: 11.00 against 6.875).
 # Cost Explorer's usage types separate them and carry the billed amount, a day late.
+#
+# A call through an application inference profile is published under the profile's id, which names
+# no model (`cp0gmvjv1h8q`, the playground's Claude Haiku 4.5, measured 2026-10-19), and CloudTrail
+# names it by ARN. The console copies a system-defined profile or a model into one, and the profile
+# lists the model it reaches in each Region but not what it copied, so the row is rated as the
+# system-defined profile listing the same model ARNs, or as the model when it lists this Region
+# alone. A profile no longer in the account stays unpriced: disabling a model in the playground
+# deletes its profile, and enabling it again mints another id.
 #
 # WHAT IT CANNOT SEE (Lesson 13): which space, which user or which session spent the tokens. Every
 # space in a project invokes as the same project role, and neither channel names the space - so a
@@ -111,6 +120,14 @@ RATE_ROW_RE = re.compile(
     + r"\|\s*\**(?P<cache_write>[0-9.]+)\**\s*\|",
     re.M,
 )
+# `| Titan Text Embeddings V2 (`amazon.titan-embed-text-v2:0`), input tokens | per 1K tokens |`
+# `**0.00002** (batch 0.00001) |` -> key `amazon.titan-embed-text-v2:0`, 0.02 per 1M input tokens
+ID_RATE_ROW_RE = re.compile(
+    r"^\|[^|`]*\(`(?P<model>[a-z0-9.:-]+)`\), input tokens\s*"
+    + r"\|\s*per 1K tokens\s*"
+    + r"\|\s*\**(?P<input>[0-9.]+)\**",
+    re.M,
+)
 # `us.anthropic.claude-opus-4-5-20251101-v1:0` -> prefix `us`, key `claude-opus-4-5`
 MODEL_KEY_RE = re.compile(
     r"^(?:(?P<prefix>[a-z]+)\.)?anthropic\.(?P<key>claude-[a-z]+-[0-9-]+?)(?:-\d{8}-v\d+:\d+)?$"
@@ -163,16 +180,92 @@ def model_key(model_id: str) -> tuple[str | None, str | None]:
 
 
 def recorded_rates(path: Path) -> dict:
-    """Rate key -> (input, output, cache read, cache write 5 min), USD per 1M tokens."""
+    """Rate key -> (input, output, cache read, cache write 5 min), USD per 1M tokens.
+
+    A Claude row is keyed `claude-<family>-<version>`. A row naming a model's id is keyed by the id
+    and records the input rate alone; None stands for a rate the row does not record.
+    """
     if not path.is_file():
         return {}
+    text = path.read_text(encoding="utf-8")
     rates = {}
-    for m in RATE_ROW_RE.finditer(path.read_text(encoding="utf-8")):
+    for m in RATE_ROW_RE.finditer(text):
         key = f"claude-{m.group('family').lower()}-{m.group('version').replace('.', '-')}"
         rates[key] = tuple(
             float(m.group(g)) for g in ("input", "output", "cache_read", "cache_write")
         )
+    for m in ID_RATE_ROW_RE.finditer(text):
+        rates[m.group("model")] = (float(m.group("input")) * 1000, None, None, None)
     return rates
+
+
+def rate_for(model: str, rates: dict, counts: dict) -> tuple[tuple | None, str]:
+    """(USD per 1M tokens in TOKENS order, "") for the id a series is rated as, or (None, why)."""
+    prefix, key = model_key(model)
+    if key is None:
+        key = model
+        if key not in rates:
+            return None, f"neither {PRICING}'s Claude table nor a row naming the id prices {model}"
+    elif prefix not in (None, "us"):
+        return None, f"a `{prefix}.` profile, whose rates the recorded table does not carry"
+    elif key not in rates:
+        return None, f"no `Claude ...` row for {key} in {PRICING}"
+    rate = rates[key]
+    missing = [SHORT[t] for t, r in zip(TOKENS, rate) if r is None and counts[t]]
+    if missing:
+        return None, f"{PRICING} records no {' or '.join(missing)} rate for {key}"
+    return tuple(r or 0.0 for r in rate), ""
+
+
+def inference_profiles(cli: AwsCli) -> tuple[dict, dict] | None:
+    """(application profile id -> its model ARNs, model ARNs -> system-defined profile ids), or
+    None when a call failed.
+
+    Each type is asked for by name: with no type the call returns the system-defined profiles alone
+    (measured 2026-10-19, 96 of 96 in Sandbox, which held two application profiles).
+    """
+    found = []
+    for kind in ("APPLICATION", "SYSTEM_DEFINED"):
+        res = cli.run(
+            "bedrock",
+            "list-inference-profiles",
+            "--type-equals",
+            kind,
+            "--query",
+            "inferenceProfileSummaries[].[inferenceProfileId,models[].modelArn]",
+            "--output",
+            "json",
+        )
+        if not res.ok:
+            return None
+        rows = json.loads(res.stdout or "[]") or []
+        found.append({pid: frozenset(arns or ()) for pid, arns in rows})
+    systems: dict = defaultdict(set)
+    for pid, arns in found[1].items():
+        systems[arns].add(pid)
+    return found[0], systems
+
+
+def profile_route(arns: frozenset, systems: dict) -> tuple[str | None, str | None, str]:
+    """(the model, the id it is rated as, what the profile lists) for an application profile.
+
+    The model is None when the profile reaches more than one, and the id is None when its model
+    ARNs match neither one system-defined profile nor the model in this Region alone.
+    """
+    models = sorted({arn.rsplit("/", 1)[-1] for arn in arns})
+    if len(models) != 1:
+        return None, None, f"lists {len(models)} models: {', '.join(models)}"
+    model = models[0]
+    copied = sorted(systems.get(arns, ()))
+    if len(copied) == 1:
+        system = copied[0]
+        return model, system, f"lists the model ARNs of {system}, so it is rated as that profile"
+    if copied:
+        return model, None, f"lists the model ARNs of {' and '.join(copied)}, more than one profile"
+    if arns == {f"arn:aws:bedrock:{context.REGION}::foundation-model/{model}"}:
+        return model, model, f"lists {model} in {context.REGION} alone, so it is rated as the model"
+    regions = sorted(arn.split(":")[3] or "no Region" for arn in arns)
+    return model, None, f"lists {model} in {', '.join(regions)}, as no system-defined profile does"
 
 
 def metric_data(cli: AwsCli, queries: list, start: datetime, end: datetime) -> dict | None:
@@ -400,6 +493,7 @@ def main(argv: list) -> int:
     # ------------------------------------------------------------------------- CloudTrail
     trail_ok: Counter = Counter()
     trail_denied: Counter = Counter()
+    trail_profiles: set = set()  # ids CloudTrail names by an application-inference-profile ARN
     events_read = 0
     newest_event = None
     capped = False
@@ -442,6 +536,8 @@ def main(argv: list) -> int:
                         trail_denied[record["errorCode"]] += 1
                     elif model_id:
                         trail_ok[model_id.rsplit("/", 1)[-1]] += 1
+                        if ":application-inference-profile/" in model_id:
+                            trail_profiles.add(model_id.rsplit("/", 1)[-1])
                 token = page.get("NextToken")
                 capped = events_read >= MAX_EVENTS
                 if not token:
@@ -492,34 +588,71 @@ def main(argv: list) -> int:
 
     # --------------------------------------------------------------------------- the prices
     rates = recorded_rates(ctx.repo_root / PRICING)
-    cost: dict = {}  # model -> (input, output, cache read, cache write) USD
+    # A model id and a system-defined profile id carry the provider after a dot (`amazon.`,
+    # `us.anthropic.`); an application inference profile's id is a bare token.
+    bare = [m for m in active if "." not in m]
+    inventory = inference_profiles(cli) if bare else None
+    if not bare:
+        profiles_read = "not read - every ModelId with tokens names its model"
+    elif inventory is None:
+        profiles_read = "ListInferenceProfiles failed (section 7)"
+    else:
+        profiles_read = (
+            f"ListInferenceProfiles {context.REGION}, {len(inventory[0])} application and "
+            f"{sum(len(ids) for ids in inventory[1].values())} system-defined"
+        )
+    label = {m: m for m in active}  # how the report names a series
+    routes: dict = {}  # application profile -> what it lists, when that names an id to rate it as
+    rate_of: dict = {}  # model -> USD per 1M tokens, in TOKENS order
     unpriced: dict = {}
     for model in active:
-        prefix, key = model_key(model)
-        if key is None:
-            unpriced[model] = "not an Anthropic model; docs/PRICING.md prices it elsewhere"
-        elif prefix not in (None, "us"):
-            unpriced[model] = (
-                f"a `{prefix}.` profile, whose rates the recorded table does not carry"
-            )
-        elif key not in rates:
-            unpriced[model] = f"no `Claude ...` row for {key} in {PRICING}"
+        rated_as = model
+        if model in bare:
+            if inventory is None:
+                unpriced[model] = "ListInferenceProfiles failed (section 7): its model was not read"
+                continue
+            applications, systems = inventory
+            if model not in applications:
+                held = (
+                    "an application inference profile by CloudTrail's ARN, and none with this id is"
+                    if model in trail_profiles
+                    else "no application inference profile with this id is"
+                )
+                unpriced[model] = (
+                    f"{held} in the account now: disabling a model in the playground deletes its "
+                    "profile, and a deleted profile's model cannot be read"
+                )
+                continue
+            foundation, rated_as, lists = profile_route(applications[model], systems)
+            if foundation:
+                label[model] = f"{model} ({model_key(foundation)[1] or foundation})"
+            if rated_as is None:
+                unpriced[model] = f"an application inference profile that {lists}"
+                continue
+            routes[model] = lists
+        rate, why = rate_for(rated_as, rates, totals[model])
+        if rate is None:
+            unpriced[model] = why
         else:
-            r = rates[key]
-            cost[model] = tuple(totals[model][t] * r[n] / 1e6 for n, t in enumerate(TOKENS))
+            rate_of[model] = rate
+    cost = {  # model -> (input, output, cache read, cache write) USD
+        m: tuple(totals[m][t] * r / 1e6 for t, r in zip(TOKENS, rate))
+        for m, rate in rate_of.items()
+    }
     if ctx.standalone or not (ctx.repo_root / PRICING).is_file():
         checks.note("BU-5", "every model with tokens has a recorded rate", f"{PRICING} not found")
     elif unpriced:
         checks.note(
             "BU-5",
             "every model with tokens has a recorded rate",
-            f"{len(unpriced)} unpriced: " + ", ".join(sorted(unpriced)),
+            f"{len(unpriced)} unpriced: " + ", ".join(sorted(label[m] for m in unpriced)),
         )
     elif active:
+        through = f", {len(routes)} through an application inference profile" if routes else ""
         checks.ok(
             "BU-5",
             "every model with tokens has a recorded rate",
-            f"{len(cost)} model(s), from {PRICING}",
+            f"{len(cost)} model(s), from {PRICING}{through}",
         )
     else:
         checks.ok("BU-5", "every model with tokens has a recorded rate", "no tokens in the window")
@@ -570,7 +703,9 @@ trusting a stale copy.""")
                 f"invocation events\tCloudTrail {context.REGION}, {events_read} read"
                 + (" (capped)" if capped else ""),
                 f"newest event\t{newest_event.isoformat() if newest_event else '-'}",
-                f"rates\t{PRICING}, {len(rates)} Claude row(s)",
+                f"rates\t{PRICING}, {sum('.' not in k for k in rates)} Claude row(s) and "
+                f"{sum('.' in k for k in rates)} naming a model id",
+                f"inference profiles\t{profiles_read}",
                 f"caller\t{caller.arn or '(failed)'}",
             ]
         )
@@ -584,7 +719,7 @@ trusting a stale copy.""")
                 t = totals[model]
                 price = usd(sum(cost[model])) if model in cost else "unpriced"
                 rows.append(
-                    f"{model}\t{int(t['Invocations'])}\t{int(t['InputTokenCount'])}\t"
+                    f"{label[model]}\t{int(t['Invocations'])}\t{int(t['InputTokenCount'])}\t"
                     f"{int(t['OutputTokenCount'])}\t{int(t['CacheReadInputTokenCount'])}\t"
                     f"{int(t['CacheWriteInputTokenCount'])}\t{price}"
                 )
@@ -594,8 +729,10 @@ trusting a stale copy.""")
                 + f"\t{usd(total_usd)}"
             )
             rep.tabulate(rows)
+            for model, lists in sorted(routes.items()):
+                rep.line(f"profile: {label[model]} - an application inference profile that {lists}")
             for model, why in sorted(unpriced.items()):
-                rep.line(f"unpriced: {model} - {why}")
+                rep.line(f"unpriced: {label[model]} - {why}")
 
         rep.h1("3. By day")
         if not month_mode:
@@ -609,9 +746,8 @@ trusting a stale copy.""")
                 for model, metrics in by_day[day].items():
                     for k, v in metrics.items():
                         counts[k] += v
-                    _, key = model_key(model)
-                    if model in cost and key in rates:
-                        spent += sum(metrics[t] * rates[key][n] / 1e6 for n, t in enumerate(TOKENS))
+                    if model in rate_of:
+                        spent += sum(metrics[t] * r / 1e6 for t, r in zip(TOKENS, rate_of[model]))
                 rows.append(
                     f"{day}\t{int(counts['Invocations'])}\t"
                     + "\t".join(str(int(counts[k])) for k in TOKENS)
@@ -638,7 +774,10 @@ trusting a stale copy.""")
         rep.h1("5. The two channels")
         rows = ["MODEL\tCLOUDTRAIL OK\tCLOUDWATCH INVOCATIONS"]
         for model in sorted(set(trail_ok) | set(active)):
-            rows.append(f"{model}\t{trail_ok.get(model, 0)}\t{int(totals[model]['Invocations'])}")
+            rows.append(
+                f"{label.get(model, model)}\t{trail_ok.get(model, 0)}\t"
+                f"{int(totals[model]['Invocations'])}"
+            )
         rep.tabulate(rows)
         rep.text(f"""
 refusals, CloudTrail (no modelId on a denied call) : {sum(trail_denied.values())}  {dict(trail_denied) or ""}
@@ -656,7 +795,7 @@ AccessDenied events against 6 client errors. Only the successful invocations rec
     for model in active:
         price = f"USD {usd(sum(cost[model]))}" if model in cost else "unpriced"
         note(
-            f"  {model:48} {int(totals[model]['Invocations']):>5} inv  "
+            f"  {label[model]:48} {int(totals[model]['Invocations']):>5} inv  "
             f"{int(totals[model]['OutputTokenCount']):>9} out  "
             f"{int(totals[model]['CacheWriteInputTokenCount']):>9} cache-write  {price}"
         )

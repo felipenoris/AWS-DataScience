@@ -2091,6 +2091,12 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   ceiling refuses `cloudwatch:ListMetrics` in `us-east-1` and `us-east-2`, so nothing else could have
   been read. And `ListMetrics` names only series with data in the last two weeks. Where:
   `aws/bedrock-usage.py`.
+- **`ListInferenceProfiles` with no `typeEquals` returns the system-defined profiles alone** (measured
+  2026-10-19). In `Sandbox Account 1`, which held two application inference profiles, the call with
+  no type returned 96 profiles, every one `SYSTEM_DEFINED`, and `--type-equals APPLICATION` returned
+  the two. The API reference names both values and no default. Where: `aws/bedrock-usage.py`, which
+  asks for each type by name to rate a series published under an application profile's id;
+  `aws/bedrock.py` section 5 passes no type, so it lists no application profile.
 - **A Control Tower control is written from `Management` and read from anywhere** (measured
   2026-09-12). `controltower:` answers only in the management account — a member account is told to
   create a landing zone first — but the control writes an ordinary SCP, and

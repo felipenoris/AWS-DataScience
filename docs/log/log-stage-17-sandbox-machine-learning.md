@@ -1350,3 +1350,59 @@ chosen, and nothing was saved or created. Times are UTC.*
   models** tab reads no model enabled for `Sandbox Account 1` in `us-west-2` (7.0a's entry), and the
   IDE answers *"Contact your admin to enable more models."* 7.3's chat therefore waits on how a model
   is enabled for the projects (decision 13).
+
+## 2026-10-19 — `bedrock-usage.py` rates a call through an application inference profile
+
+*Provenance. Claude, in a session of its own started by the one that took decisions 13 and 11, as the
+infrastructure user with `InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`).
+Every AWS call was a read. The script's change is on this session's branch; the fabricated `aws` it
+was exercised against lives in the session's scratchpad and is not tracked. Times are UTC.*
+
+- **[Claude] The run before the change**, the same window as decision 11's entry
+  (`2026-10-19T21:00Z 2026-10-19T22:20Z`): `BU-1` to `BU-4` pass, and `BU-5` notes `2 unpriced:
+  amazon.titan-embed-text-v2:0, cp0gmvjv1h8q`, each with *"not an Anthropic model; docs/PRICING.md
+  prices it elsewhere"*. The script priced by model id alone.
+- **[Claude] The application inference profiles**, `bedrock list-inference-profiles --type-equals
+  APPLICATION` in `us-west-2`: two, both `ACTIVE` and named after the domain id.
+  - `cp0gmvjv1h8q`, created 20:52:31: `anthropic.claude-haiku-4-5-20251001-v1:0` in `us-east-1`,
+    `us-east-2` and `us-west-2`.
+  - `csu817ovl4kz`, created 20:52:43: `amazon.nova-lite-v1:0` in `us-west-2` alone.
+- **[Claude] The system-defined profiles.** With no `--type-equals` the call returned 96 profiles, every
+  one `SYSTEM_DEFINED`; the API reference names both types and no default.
+  `us.anthropic.claude-haiku-4-5-20251001-v1:0` lists the same three model ARNs as `cp0gmvjv1h8q`;
+  `global.anthropic.claude-haiku-4-5-20251001-v1:0` lists a model ARN with no Region and the `us-west-2`
+  one; `us.amazon.nova-lite-v1:0` lists three Regions where `csu817ovl4kz` lists one. No
+  system-defined profile names Titan.
+- **[Claude] The trail.** Haiku's `ConverseStream` at 22:08:48 carries `modelId`
+  `arn:aws:bedrock:us-west-2:<Sandbox Account 1>:application-inference-profile/cp0gmvjv1h8q`; CloudWatch
+  carries the same call under `cp0gmvjv1h8q`.
+- **[Claude] The change.** A `ModelId` with no dot names no model. The script reads
+  `ListInferenceProfiles` once per type and rates such a row as the system-defined profile listing the
+  same model ARNs, or as the model when the profile lists `us-west-2` alone. It prints the row as
+  `<id> (<model>)`, with a `profile:` line under the table saying which. A profile no longer in the
+  account stays unpriced, and the note says so, naming CloudTrail's ARN when the window holds one.
+  Titan Text Embeddings V2 is priced from `docs/PRICING.md`'s row, 0.00002 USD per 1K input tokens
+  (read 2026-10-12), the one row there naming a model id; a token count that row does not price leaves
+  the model unpriced. No profile id is written in the code.
+- **[Claude] Exercised against a fabricated `aws`** before the live run: a copy of a `us.` profile, of a
+  `global.` profile and of a model in `us-west-2`; a profile gone, with and without CloudTrail's ARN;
+  Regions no system-defined profile lists; two models in one profile; Titan with output tokens; and
+  `ListInferenceProfiles` refused, which exits 1 with the call in section 7. Each read as intended.
+- **[Claude] The re-run**, `./aws/bedrock-usage.py 2026-10-19T21:00Z 2026-10-19T22:20Z`, stamped
+  23:05:37, exit 0, *"all checks passed"*:
+
+  ```
+  cp0gmvjv1h8q (claude-haiku-4-5)               1            13     4       0           0            0.0000
+  profile: cp0gmvjv1h8q (claude-haiku-4-5) - an application inference profile that lists the model ARNs of us.anthropic.claude-haiku-4-5-20251001-v1:0, so it is rated as that profile
+  pass    BU-5  every model with tokens has a recorded rate   5 model(s), from docs/PRICING.md, 1 through an application inference profile
+  ```
+
+  The row prices at 13 × 1.10 + 4 × 5.50 USD per 1M tokens, 0.0000363 USD, which the report's four
+  decimals print as `0.0000`; Titan's 2 tokens price at 0.00000004 USD. `BU-1` to `BU-4` read as before,
+  and section 1 reads `ListInferenceProfiles us-west-2, 2 application and 96 system-defined`.
+- **[Claude] The month**, `./aws/bedrock-usage.py 2026-10`, stamped 23:06:10, exit 0: `BU-5` passes
+  with the same five models, and the per-day table's 2026-10-19 row counts the profile's invocation
+  among its 11 (0.0004 USD).
+- **[Claude] Outside this change.** `aws/bedrock.py` section 5 passes no type to
+  `list-inference-profiles`, so it lists no application profile while its text describes them; the
+  default is now in `lessons.md`'s list of platform behaviours. The script belongs to Stage 6e.
