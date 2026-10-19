@@ -392,14 +392,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `enableSpaces` false is 2.7's, and 3 is written to its recommendation;
   an associated account no person works in goes in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in
   `SMUS_MEMBERS`. Its 4.4's two prerequisites, Stage 8 3.0's first half and Stage 10 1.2's `vpc-v0.4.0`
-  on `staging/foundation/`, are written and planned 2026-10-19, the applies the user's.
+  on `staging/foundation/`, were applied 2026-10-19 by the user.
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
   `--no-browser`.
 - **Module tags**: `vpc-egress-v0.18.0` and `sagemaker-prereqs-v0.6.0` (both unapplied), `wireguard-v0.6.0`,
-  `vpc-v0.4.0` (`sandbox/foundation`, and `staging/foundation` on main, unapplied; the other callers
-  `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
+  `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit
   code matters (Lesson 46); a module change is exercised by planning a caller, never by `validate`;

@@ -342,6 +342,11 @@ def main(argv: list) -> int:
             hits += "cloudwatch-agent "
         if re.search("starport-layer-bucket", pol, re.IGNORECASE):
             hits += "ecr-layers "
+        # The MWAA Serverless code family (6i decision 7, `vpc-v0.4.0`) reaches the VPCs whose
+        # foundation/ pins that tag: Sandbox since 2026-10-11, Staging since 2026-10-19. A VPC
+        # still on `vpc-v0.3.1` lacks it, so its absence is a reading here, never a failure.
+        if re.search("mwaa-serverless-code-files", pol, re.IGNORECASE):
+            hits += "mwaa-code "
         if "al2023" in hits:
             checks.ok(
                 "EG-4",

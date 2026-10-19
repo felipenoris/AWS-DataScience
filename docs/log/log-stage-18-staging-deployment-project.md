@@ -490,3 +490,25 @@ are UTC.*
   `$HOME/tmp/stage18-staging-foundation.tfplan`: 0 to add, 1 to change, 0 to destroy, the S3
   gateway endpoint's policy gaining that family's bucket and object ARNs alone.
 - The two applies are the user's.
+
+## 2026-10-19 — 4.4's two prerequisites, by the user's hand, and the readings after them
+
+- **[user] Both applies, from the saved plans**, in the app's terminal on the worktree.
+  `production/registry/` as `awsds-infra-prod`: the `app-etl` repository policy *"Modifications
+  complete after 1s"*, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*
+  `staging/foundation/` as `awsds-infra-staging`: the S3 gateway endpoint *"Modifications complete
+  after 7s"*, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*
+- **[Claude] Read back, 05:11 to 05:16 UTC**, as the infrastructure user. Both slices re-plan
+  `No changes` (05:11:51Z and 05:12:11Z). `awsds-prod-ecr-app-etl`'s policy holds one statement,
+  `AllowConsumerAccountsToPull`, for Staging's and Sandbox's account roots, with
+  `ecr:BatchCheckLayerAvailability`, `BatchGetImage`, `GetDownloadUrlForLayer` and `DescribeImages`.
+  Staging's S3 gateway endpoint holds `AllowWithinOrganization` and `AllowAwsOwnedServiceBuckets`, the
+  second with 16 resources, the `mwaa-serverless-code-files-*-us-west-2-prod` bucket and object ARNs
+  among them. `./aws/egress.py` and `./aws/networking.py` on the four infrastructure profiles: all
+  checks passed.
+- **[Claude] `EG-4` learns the MWAA Serverless family.** Its comment holds one pattern per family of
+  the gateway's AWS-owned list, so that a deleted entry cannot stay `pass` (Lesson 13), and the
+  `mwaa-serverless-code-files` family of `vpc-v0.4.0` had none: Sandbox's row, which has carried the
+  family since 2026-10-11, never showed it. With the pattern, `EG-4` reads `mwaa-code` in Sandbox and
+  Staging and not in Production's three VPCs, which are on `vpc-v0.3.1`; the family's absence stays
+  a reading, never a failure.

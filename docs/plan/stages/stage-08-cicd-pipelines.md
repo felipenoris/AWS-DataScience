@@ -594,7 +594,7 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   `deploy-role-v0.5.0`, decision 19's version, kept it, so it changes with the module's next version. Its content
   admits what the roles it bounds do: Stage 10's workflow execution role and chain roles (Stage 10 steps
   1.3, 3.4 and 3.6), and the application's job role if 2.5 makes it the slice's. Apply as
-  `awsds-infra-prod` and `awsds-infra-staging`. **The pull grant written and planned 2026-10-19** for
+  `awsds-infra-prod` and `awsds-infra-staging`. **The pull grant applied 2026-10-19 by the user** for
   [Stage 18](stage-18-staging-deployment-project.md)'s 4.4, which needs it in that stage's window (its
   log): `APP_REGISTRY_CONSUMERS` gains `staging`, and `production/registry/` an alias and identity
   read for it; the plan changes the `app-etl` repository's pull policy alone. The ceiling half is not
