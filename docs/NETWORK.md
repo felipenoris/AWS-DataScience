@@ -331,6 +331,11 @@ Access prompt** — the two surfaces that demanded the grant on 2026-08-26. A pr
 its whole subtree, so a client resolving through a VPC full of endpoints inherited every one of their
 names (Lessons 40-43).
 
+**Staging's compute VPC carries a `datazone` endpoint for Stage 18's window** (`staging/egress/`, step
+7.1): a Glue job there posts lineage to the domain through it, and without it the job's
+`PostLineageEvent` read *"Network is unreachable"* (2026-10-19). It shadows nothing the client plane
+requires, since the client resolves at VPC-Networking's `.2`; Stage 18 step 8.8 removes it.
+
 **The DNS Firewall** is in the two **compute** VPCs and in VPC-Workloads (Stage 9 step 3.3a), and its
 job is **closing the recursive resolver as an exfiltration channel** rather than filtering the internet,
 which the proxy does. The compute VPCs' allow-list is **fourteen** entries — AWS's own namespaces and

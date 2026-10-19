@@ -887,3 +887,65 @@ are UTC.*
   behind, as `destroy` would leave them: the copy's `operatorFiles/app-etl-<n>.zip` beside `app-etl`'s two,
   `orchestration-demo`'s `operatorFiles/` copy, and the two applications' log groups, empty and with no
   retention. 5.3 is done.
+
+## 2026-10-19 — 7.1: lineage from the Staging Glue job
+
+- **[user] The request**: *"Go on to 7.1 with the environment up: write what the lineage needs and hand me
+  the applies."*
+- **[Claude] What AWS's pages require**, read 2026-10-19: the Spark settings SageMaker Unified Studio
+  documents for a Glue job, `spark.extraListeners=io.openlineage.spark.agent.OpenLineageSparkListener`
+  with `spark.openlineage.transport.type=amazon_datazone_api`, the domain, the account and the job name;
+  OpenLineage built into Glue 5.0 and later, for Spark DataFrames only (`transform.py` uses DataFrames);
+  S3 paths yield S3 dataset nodes, and a graph shows only when a node is an asset; and, for a job in a
+  VPC, *"make sure the Amazon DataZone VPC endpoint is deployed in that VPC"*.
+- **[Claude] What Staging already holds**, read 2026-10-19: the project role carries the tag
+  `AmazonDataZoneDomain=dzd-d8yrvx1ko7im6o`, so `SageMakerStudioProjectUserRolePolicy` v75's
+  `DataZoneUserPermissions` grants it `datazone:PostLineageEvent` on its domain; the D13 boundary's
+  ceiling is `*`; the DNS Firewall admits `*.amazonaws.com` and `*.api.aws`; the domain's share carries
+  `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess` version 10, the default, whose 154 actions
+  include `PostLineageEvent`, `ListLineageEvents` and `GetLineageEvent`; the domain has no customer CMK.
+  Staging's VPC holds no `datazone` endpoint (issue #39). The domain's `list-lineage-events` read empty
+  at 22:00:16Z, as Data Governance's InfrastructureAccess and as Staging's.
+- **[Claude] The lineage settings**, `awsds/app-etl`'s branch `stage-18-staging` at `6eb795c`: the
+  `transform` task's `DefaultArguments` gain `--conf` with AWS's seven settings, the domain as
+  `{domain.id}`, the job name `app-etl-{proj.id}`, and the account as the staging stage's `ACCOUNT_ID`
+  variable, read from the shell at deploy. `v0.2.1`'s bundle, its workflow YAML and manifest taken
+  from the branch, deployed 21:57:52 to 21:59:51Z, exit 0 (a first attempt stopped at the manifest's
+  validation, `JOB_IMAGE_URI` unset, before any call): the resolved YAML names the domain and
+  `{{ params.ACCOUNT_ID }}`, and the workflow took version 3 (`f2ed9786ea16afcbf6b88cc93d92e937`).
+- **[Claude] The endpoint, written and planned, not applied**: `staging/egress/` gains `datazone` in
+  `extra_services`, planned 22:00:57Z, *"Plan: 1 to add, 0 to change, 0 to destroy."*,
+  `com.amazonaws.us-west-2.datazone` with private DNS and the module's policy. Run A goes first,
+  without it, so the run says whether the event leaves the VPC with no endpoint.
+- **[Claude] Run A, no endpoint**: the workflow started at 22:00:13Z; the Glue job took the settings at
+  22:01:10Z (`update_config`), and its run `jr_9aea84f7…` `SUCCEEDED`, 22:01:10 to 22:03:40Z, 118 s.
+  The driver's error stream reads *"Registered listenerio.openlineage.spark.agent.OpenLineageSparkListener"*,
+  then twice *"Could not emit lineage w/ exception"*, *"Failed to send lineage event to DataZone"*,
+  caused by *"software.amazon.awssdk.core.exception.SdkClientException: Unable to execute HTTP request:
+  Network is unreachable (SDK Attempt Count: 4)"* from `DefaultDataZoneClient.postLineageEvent`, each
+  holding the listener about 33 s; the job went on. The domain's `list-lineage-events` read empty, and
+  neither Staging's CloudTrail nor Data Governance's holds a `PostLineageEvent` since 22:00Z: the event
+  never left the VPC (Lesson 42). The job's driver posts from Staging's network, which has no route to
+  DataZone, so the endpoint is the measured premise.
+- **[Claude] Run A's end and the second reading**: `4pwrFUq1NSnnUMI` `SUCCESS`, 22:00:17 to 22:14:04Z,
+  826 s; at 22:16:40Z the domain's `list-lineage-events` still read 0 from both accounts, the second
+  reading after a delay that "nothing" needs (Lesson 62).
+- **[user] The endpoint applied**, `make up ENV=staging ONLY=egress AUTO=1`, as `awsds-infra-staging`
+  (*"rodei o make up do staging"*). **[Claude] Read back**: `vpce-0fc40278dfb516cc8`,
+  `com.amazonaws.us-west-2.datazone`, `available` since 22:51:18Z, private DNS for
+  `datazone.us-west-2.amazonaws.com` and `datazone.us-west-2.api.aws`; `staging/egress/` re-plans `No
+  changes` (22:54:18Z).
+- **[Claude] Run B, with the endpoint**: the workflow `V4eBnEgINa6pd4U` started at 22:54:33Z; the Glue
+  run `jr_a1422806…` `SUCCEEDED`, 22:55:25 to 22:57:47Z, 122 s. The driver's error stream reads
+  *"Successfully posted a LineageEvent: 4kj1qq1kak6hsg in Domain: dzd-d8yrvx1ko7im6o"* and the same for
+  each later event, the first 4.7 s after the application started. At 22:59Z the domain's
+  `list-lineage-events` read 12 events, from both accounts, each `processingStatus` `SUCCESS`, created by
+  the domain's `IAM` user profile of the project role `datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps`:
+  4 `START`, 4 `RUNNING` and 4 `COMPLETE`, for the job `app_etl_d1veybt5oak4uo` in the namespace
+  `default` (the `-` of `spark.glue.JOB_NAME` turned to `_`) and four of its Spark sub-jobs. The datasets
+  are S3 paths, `s3://awsds-staging-smus-projects` with the inputs `…/app-etl/inbox` and
+  `…/app-etl/inbox/trades.csv` and the output `…/app-etl/work/glue`. `get-lineage-node` on the write's job
+  run reads a `JobRunLineageNodeType` with one upstream node and, downstream, a
+  `DatasetLineageNodeType` whose `sourceIdentifier` is the output's S3 URI. No node is an asset, and the
+  portal draws lineage only on an asset's page, so this run gives the portal no graph; 7.2's
+  publication is where one would appear. CloudTrail held no lineage call in either account at 22:59Z.

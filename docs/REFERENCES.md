@@ -572,6 +572,17 @@
   shape is given per type. The page names no orchestrator, so whether MWAA Serverless emits anything
   is unanswered and is [Stage 10](plan/stages/stage-10-orchestration-promotion.md) step 3.3:
   <https://docs.aws.amazon.com/datazone/latest/userguide/datazone-data-lineage.html>.
+- Automate lineage capture from tools, SageMaker Unified Studio, read 2026-10-19 for Stage 18 step 7.1:
+  the Spark settings a Glue job carries to post lineage, `spark.extraListeners` naming
+  `io.openlineage.spark.agent.OpenLineageSparkListener`, `spark.openlineage.transport.type=amazon_datazone_api`,
+  the domain, the account, the job name and two facet settings, with OpenLineage built into Glue 5.0 and
+  later for Spark DataFrames only:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-automate-capture-from-tools.html>.
+- Troubleshooting data lineage, SageMaker Unified Studio, read 2026-10-19 for Stage 18 step 7.1: *"If the
+  AWS Glue ETL is in VPC, make sure the Amazon DataZone VPC endpoint is deployed in that VPC"*; a graph
+  shows only when a node is an asset; a job reading S3 paths yields S3 dataset nodes; the driver logs
+  *"Successfully posted a LineageEvent"*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-lineage-troubleshooting.html>.
 - Amazon DataZone's Glue data source, read 2026-09-18 for Stage 6f step 3.1, and it carries three
   sentences the step needed. **A data source takes any database by name**: *"You can either choose an
   AWS Glue database from the dropdown or type a database name… If you want to bring assets from a

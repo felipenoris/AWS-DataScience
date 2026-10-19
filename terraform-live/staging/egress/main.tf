@@ -48,6 +48,11 @@ module "egress" {
   # DataZone - and the shadowing comes back with it, so B also has to move the portal off the
   # resolver (architecture.md §4.3).
   #
+  # `datazone` is back for Stage 18's window (step 7.1): a Glue job in this VPC posts its lineage
+  # to the domain through it, and AWS's lineage guide requires the endpoint in the job's VPC. The
+  # rule above holds: the client plane resolves through VPC-Networking, which holds no interface
+  # endpoint (docs/NETWORK.md §12), and no person works in this account. Stage 18 step 8.8 removes it.
+  #
   # The rest of the required table (docs/SMUS.md §VpcOnly, fifteen names) is added by measurement
   # and not by copying: verification (viii) reads the flow logs of a working session, and only what
   # is exercised gets an endpoint, at +USD 0.010/h each, per account, for the whole session.
@@ -61,7 +66,7 @@ module "egress" {
   #   q    the doc pairs it with com.amazonaws.US-EAST-1.codewhisperer, and an interface
   #        endpoint is regional - so under design B the Amazon Q surface has no private path
   #        from us-west-2 at all. Record what breaks at 4.3 rather than assuming either way.
-  extra_services = ["sagemaker.api", "sagemaker.runtime", "sagemaker.studio"]
+  extra_services = ["sagemaker.api", "sagemaker.runtime", "sagemaker.studio", "datazone"]
 
   # The firewall's job since 6c step 5.7 (2026-09-06) is the resolver, not the route. Step 5.1
   # removed the last default route in the estate (D38), so nothing in this VPC opens an internet
