@@ -182,7 +182,10 @@ the session starts.
   origin main:main` is refused while the project folder has it checked out (measured 2026-10-10).
 - A merge rewrites the branch's commits (PR #98 was rebased, PR #99 squashed into one commit, and
   neither branch's hashes are on `main`), so a merged branch is retired with its worktree: the next
-  task is a new session. The worktree is kept or removed when the user says so.
+  task is a new session. The worktree is kept or removed when the user says so. The app's classifier
+  refused a push to the branch of a merged PR on 2026-10-19 (*Out-of-Place Publication*), after
+  letting one through the same day, and let it through once the user authorized it in chat; the
+  merge had deleted the remote branch, so the push recreated it.
 - An uncommitted edit in the project folder is the user's. When a PR touches the same file, Claude
   says so: the user's next pull will refuse it.
 
@@ -382,19 +385,21 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `experimentation`, `TM-21` with it), yet the portal still greys out *Create MLflow App* in both projects:
   1.5 reads what makes it available. Main pins `vpc-egress-v0.18.0` (`mlflow`), unapplied (1.4). Decision 11, the embeddings model in the Bedrock SCP, needs
   `awslib/bedrockscope.py` to learn the difference first, or `BS-2`, `BS-7` and `BR-4` go red. Pass 2's training job waits on the battery's instance-preference rows (Stage 9 3.5).
-  **Stage 18**: pass 1 and 2.5's first half applied 2026-10-19 by the user (the classifier refuses
-  these applies to Claude): the carve-out of Staging from `DenyDataZoneEntirely` is live (`EXC-20`) and
-  `staging/studio/` holds the prerequisites; 2.1, the association, is the user's next act; question i
-  read from the templates, so decision 1 recommends `Tooling` with `enableSpaces` false; 2.7 shares
-  `governance/`'s apply with Stage 17 1.3; no decision taken; an associated account no person works in goes
-  in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in `SMUS_MEMBERS`. Its 4.4 needs Stage 8 3.0's first half
-  and Stage 10 1.2's `vpc-v0.4.0` on `staging/foundation/` first (PR #188).
+  **Stage 18**: passes 1 and 2.1-2.5 done 2026-10-19, the applies by the user (the classifier refuses
+  them to Claude): the carve-out is live (`EXC-20`), Staging is associated with `Tooling` configured,
+  and both `backend.py` lists carry `staging`; 2.7's first apply created the `deployment` profile and
+  was refused its grant, now re-planned to the role's session group for the user's apply, and PR #196
+  merges right after it, since `main` without it plans the profile's destruction; decision 1's base is taken (`Tooling`), and its
+  `enableSpaces` false and decision 3 are 2.7's;
+  an associated account no person works in goes in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in
+  `SMUS_MEMBERS`. Its 4.4's two prerequisites, Stage 8 3.0's first half and Stage 10 1.2's `vpc-v0.4.0`
+  on `staging/foundation/`, were applied 2026-10-19 by the user.
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
   `--no-browser`.
 - **Module tags**: `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.6.0` (applied), `wireguard-v0.6.0`,
-  `vpc-v0.4.0` (`sandbox/foundation` only; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
+  `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit
   code matters (Lesson 46); a module change is exercised by planning a caller, never by `validate`;

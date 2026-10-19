@@ -8,11 +8,12 @@ Stage 6 decisions 4 and 5, recorded in [the stage log](log/log-stage-06a-unified
 `./aws/studio.py`'s `US-3` measures them.
 
 
-**The domain has one associated account.** `Development` became the headless `Staging` at
+**The domain has one associated account outside Stage 18's window.** `Development` became the headless `Staging` at
 [Stage 6b](plan/stages/stage-06b-development-becomes-staging.md) on 2026-09-06, so its eleven blueprint
 configurations, its eleven authorization grants and the `engineering` project profile are all unwound,
 and the associated-account count is **N Sandboxes** rather than N + 1 (D26 amended). One project profile
-survives, `experimentation`, pinned to Sandbox.
+survives, `experimentation`, pinned to Sandbox. Stage 18 associates `Staging` as well, from 2026-10-19 to
+that stage's pass 8, for one deployment project.
 
 ## The object model — domain, project, and the profiles between them
 
@@ -36,7 +37,8 @@ Properties this design leans on:
 - **Member accounts join by *account association*** — console-only (**no public API**, read
   2026-08-16): a RAM share DataZone initiates. Sandbox alone is associated since 2026-09-06 — the
   second association was removed from the member side at Stage 6b step 1.4; **Staging and Production
-  never are** (D28). Measured 2026-08-21: under Stage 1d's org-wide RAM enablement the share is created
+  never are** (D28), Staging's association for Stage 18's measurement aside: since 2026-10-19, with
+  `Tooling` its one blueprint configuration (`EXC-20`), until that stage's pass 8. Measured 2026-08-21: under Stage 1d's org-wide RAM enablement the share is created
   organization-scoped and **auto-accepts**, zero invitations either side, so *"invitations expiring in
   7 days"* names a clock that never starts.
 - **The domain and IdC must share a Region** (Stage 6 step 1.1) — `us-west-2` twice, and neither can

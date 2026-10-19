@@ -142,3 +142,15 @@ classifier (*Production Deploy*) an hour earlier, before that word.*
   of the persona, deploy and Control Tower profiles, whose SSO sessions were not signed in.
 - **[Claude] Not yet read**: a notification, since no model package exists in Production; Stage 12
   step 2.4's provocation is the first.
+
+## 2026-10-19 — 1.2's bump of `staging/foundation/`, applied in Stage 18's window
+
+- **[Claude] Written and planned in Stage 18's session**, because Stage 18's 4.4 runs a workflow with a
+  Python task's `Code` in Staging ([Stage 18's log](log-stage-18-staging-deployment-project.md)):
+  `staging/foundation/` pins `vpc-v0.4.0`, whose one functional change is the S3 gateway default list
+  gaining `mwaa-serverless-code-files-*-<region>-prod`; the plan changed the gateway endpoint's policy
+  alone. `production/workloads/` stays on `vpc-v0.3.1`.
+- **[user] Applied** as `awsds-infra-staging` from the saved plan: *"Apply complete! Resources: 0
+  added, 1 changed, 0 destroyed."* **[Claude]** The re-plan reads `No changes` (05:12:11Z); the
+  endpoint's `AllowAwsOwnedServiceBuckets` holds the family's bucket and object ARNs, and `EG-4` reads
+  `mwaa-code` in Sandbox and Staging since its pattern was added that day.

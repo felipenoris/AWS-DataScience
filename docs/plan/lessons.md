@@ -1830,7 +1830,11 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   accepts it and no read returns it (Stage 6a, 2026-08-22). Boundary drift can never appear in a
   `terraform plan`; the only door is `iam get-role` per role, since `list-roles` omits
   `PermissionsBoundary` by documented contract. A control that cannot be read back needs a sentinel,
-  which is `US-8`.
+  which is `US-8`. Read again 2026-10-19 (Stage 18 2.5): DataZone's own `get-` and
+  `list-environment-blueprint-configurations` return `environmentRolePermissionBoundary`, in Sandbox
+  and in Staging; Cloud Control's `get-resource`, the read `awscc` makes, omits it. So drift still
+  never appears in a plan, the configuration's value is a DataZone read away, and a role's own
+  boundary is still `get-role`'s.
 - **An associated DataZone domain lists from every member account, with an ARN naming the owning
   account.** A check that counts domains per account therefore reports the association working as a
   finding. Measured when `./aws/studio.py` failed because the step succeeded (Lesson 31).
@@ -1840,6 +1844,13 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
 - **A blueprint configuration is applied from the member account**, an existing one is immutable
   through `awscc`, and an incomplete one pins its projects in both directions: they can neither
   deploy nor be torn down. None of the three is on the authoring API's page; each cost a sitting.
+- **An IAM role in a DataZone domain is two principals, and a policy grant takes the group.** Its ARN
+  resolves as a user identifier to one session's user profile, and as a group identifier to the
+  role's `IAM_ROLE_SESSION_GROUP` profile, which every session belongs to. `CreatePolicyGrant` with
+  the ARN as a user is refused, *"Group profile already exists for the given User profile"*, though
+  the service model's pattern admits it; the grant goes to the group by its profile id, which Cloud
+  Control's `GetResource` for `AWS::DataZone::GroupProfile` resolves from `<domain>|<role ARN>`
+  (Stage 18 2.7, 2026-10-19).
 - **The `Workflows` blueprint has three states and the bill starts at the third.** Enabling it
   provides the CloudFormation template; the fee-bearing MWAA environment is born when a project
   first uses the blueprint. Neither *"enabled"* nor *"a project exists"* means billing.

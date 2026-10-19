@@ -1991,3 +1991,14 @@ carries an account id or an e-mail address. Times are UTC.*
   delete refusal is the deny's condition; the two Sandbox rows put the read refusal on the account
   boundary. The simulator evaluates no key policy. The attempt half and the `If-None-Match` half stay
   owed.
+
+## 2026-10-19 — 3.0's first half, Staging's pull grant, applied in Stage 18's window
+
+- **[Claude] Written and planned in Stage 18's session**, because Stage 18's 4.4 runs `app-etl`'s
+  `process` task in Staging ([Stage 18's log](log-stage-18-staging-deployment-project.md)):
+  `APP_REGISTRY_CONSUMERS` gains `staging`, and `production/registry/` a `staging` alias, its profile
+  read from `app_consumers`, and the identity read; the plan changed the `app-etl` repository's pull
+  policy alone. The ceiling half of 3.0 is not written.
+- **[user] Applied** as `awsds-infra-prod` from the saved plan: *"Apply complete! Resources: 0 added, 1
+  changed, 0 destroyed."* **[Claude]** The re-plan reads `No changes` (05:11:51Z), and the repository's
+  `AllowConsumerAccountsToPull` names Staging's and Sandbox's account roots.

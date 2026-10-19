@@ -106,6 +106,9 @@ BLUEPRINT_ALLOWLIST = (
 # retired name is kept so that `engineering` reappearing reads as the finding it is, rather than
 # as a profile this file has no opinion about.
 PROJECT_PROFILE_NAMES = ("experimentation",)
+# Admitted for Stage 18's window: `deployment` provisions into Staging and no person works in a
+# project born of it. Stage 18 pass 8 deletes the profile and empties this tuple.
+WINDOW_PROFILE_NAMES = ("deployment",)
 RETIRED_PROFILE_NAMES = ("engineering",)
 STEP3_SIDS = ("DenySageMakerJobsOffVpc", "DenySageMakerInstanceCeiling")
 BOUNDARY_NAME_FRAGMENT = "project-boundary"
@@ -717,6 +720,9 @@ def main(argv: list) -> int:
         have = {n for n, _i, _s in project_profiles}
         missing = [n for n in PROJECT_PROFILE_NAMES if n not in have]
         retired = [n for n in RETIRED_PROFILE_NAMES if n in have]
+        contracted = set(PROJECT_PROFILE_NAMES) | set(WINDOW_PROFILE_NAMES)
+        unknown = sorted(have - contracted - set(RETIRED_PROFILE_NAMES))
+        window = sorted(have & set(WINDOW_PROFILE_NAMES))
         if not project_profiles:
             checks.note("US-4", "project profiles", "none - expected before Stage 6 step 1.")
         elif missing:
@@ -734,6 +740,20 @@ def main(argv: list) -> int:
                 f"{', '.join(retired)} is back - it was destroyed by Stage 6b step 1.1 because "
                 "its member account became the headless `Staging`. A project created from it "
                 "would provision into an account with no interactive surface.",
+            )
+        elif unknown:
+            checks.fail(
+                "US-4",
+                "project profiles",
+                f"{', '.join(unknown)} is no contracted profile - every profile is a row of "
+                "data-governance/governance/'s locals.tf and a name in this script.",
+            )
+        elif window:
+            checks.ok(
+                "US-4",
+                "project profiles",
+                f"{', '.join(sorted(have))} - experimentation as contracted, "
+                f"{', '.join(window)} in Stage 18's window",
             )
         else:
             checks.ok("US-4", "project profiles", f"{', '.join(sorted(have))} - one, as contracted")
@@ -1080,8 +1100,9 @@ What the checks are, and where each comes from:
          directions: NONE in the domain account (D22 - one there is a finding),
          and in each member account none Redshift-backed and none outside
          decision 5's category 1 (step 1.4; D12/D26, docs/SMUS.md)
-  US-4   the `experimentation` project profile exists and is the ONLY one -
-         `engineering` was retired by Stage 6b step 1.1 and its return is a failure
+  US-4   the `experimentation` project profile exists and no uncontracted one does -
+         `deployment` is admitted for Stage 18's window, `engineering` was retired by
+         Stage 6b step 1.1 and its return is a failure
   US-5   every Interactive SageMaker AI domain is VpcOnly (step 1)
   US-6   the deployment targets stay headless (D28): no SageMaker domain there,
          and datazone reads denied by the Workloads ceiling read as the control

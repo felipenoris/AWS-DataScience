@@ -272,7 +272,8 @@ axis has its own control where it is load-bearing: the **S3 gateway policy** wit
 bucket allow-list. One of its AWS-owned families is measured rather than documented:
 `mwaa-serverless-code-files-*-<region>-prod`, the bucket a MWAA Serverless worker's environment
 preparation reads a workflow's code from, as `airflow-serverless.amazonaws.com`, through this endpoint
-(`vpc-v0.4.0`, Sandbox only since 2026-10-11, 6i decision 7). A refusal by this policy is visible only
+(`vpc-v0.4.0`: Sandbox since 2026-10-11, 6i decision 7, and Staging since 2026-10-19, for Stage 18's
+4.4; Production's three VPCs are on `vpc-v0.3.1` and lack it, and `EG-4` reads it as `mwaa-code`). A refusal by this policy is visible only
 as a CloudTrail network activity event with `errorCode` `VpceAccessDenied`. The trail 6i built to record
 them, `sandbox/endpoint-audit/`, ran from 2026-10-11 to 2026-10-12 and is recoverable from `c0baddd`.
 
