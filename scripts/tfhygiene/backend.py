@@ -337,7 +337,8 @@ REGISTRY_CONSUMERS = ["sandbox"]
 # authored apart from REGISTRY_CONSUMERS because the two grant different things to different accounts
 # (Lesson 51). Sandbox's projects pull it when their workflows run (Stage 8 decision 21); Staging joins
 # at Stage 8 step 3.0 (INT-07). The registry account is never a row: its own roles pull by identity.
-APP_REGISTRY_CONSUMERS = ["sandbox"]
+# Staging's row is that step's first half, written 2026-10-19 for Stage 18's 4.4.
+APP_REGISTRY_CONSUMERS = ["sandbox", "staging"]
 
 # The account the two ECR repositories live in - the other end of REGISTRY_CONSUMERS, kept as a
 # list so the emission below has the same shape as every other cross-account read in this tree.

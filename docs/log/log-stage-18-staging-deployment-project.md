@@ -473,3 +473,20 @@ are UTC.*
   returns it too. Cloud Control's `get-resource` for `AWS::DataZone::EnvironmentBlueprintConfiguration`,
   the read `awscc` makes, omits it. `lessons.md`'s entry of 2026-08-22, *"no read returns it"*, carries
   this reading now; a plan still cannot show the field's drift.
+
+## 2026-10-19 — 4.4's two prerequisites written and planned
+
+- **[Claude] The application image's pull grant for Staging** (Stage 8 step 3.0's first half, which
+  this stage's Prerequisites run in its window). `APP_REGISTRY_CONSUMERS` gains `staging`;
+  `production/registry/` gains the `staging` alias, its profile read from `app_consumers`, the identity
+  read, and `staging` in `account_id_by_folder`. Planned at 04:53:07Z as `awsds-infra-prod`, saved to
+  `$HOME/tmp/stage18-registry.tfplan`: 0 to add, 1 to change, 0 to destroy, the `app-etl`
+  repository's pull policy gaining one principal, read against `awsds-infra-staging`'s caller identity
+  as Staging's account root. The ceiling half of 3.0 is not written; 4.4 does not need it.
+- **[Claude] `staging/foundation/` on `vpc-v0.4.0`** (Stage 10 step 1.2's bump). The module's one
+  functional change between the tags is the S3 gateway default list gaining
+  `mwaa-serverless-code-files-*-<region>-prod`; the rest is description text, and the slice passes
+  no list of its own. Planned at 04:53:32Z as `awsds-infra-staging` with the alerts var-file, saved to
+  `$HOME/tmp/stage18-staging-foundation.tfplan`: 0 to add, 1 to change, 0 to destroy, the S3
+  gateway endpoint's policy gaining that family's bucket and object ARNs alone.
+- The two applies are the user's.

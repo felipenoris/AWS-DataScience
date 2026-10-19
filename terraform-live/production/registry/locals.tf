@@ -25,6 +25,7 @@ locals {
   # reads: a key of var.app_consumers with no alias here fails the plan on the index, naming the key.
   account_id_by_folder = {
     sandbox = data.aws_caller_identity.sandbox.account_id
+    staging = data.aws_caller_identity.staging.account_id
   }
 
   app_consumer_account_arns = [
