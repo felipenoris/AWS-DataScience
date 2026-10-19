@@ -956,3 +956,15 @@ are UTC.*
   Governance, DataZone's own processing as `datazone.amazonaws.com` (`CreateLineageNode` 2,
   `CreateLineageNodeVersion` 3, `UpdateLineageEvent` 6, `UpdateLineageNode` 11,
   `UpdateLineageNodeVersion` 9), and this session's reads logged in both accounts. 7.1 is done.
+
+## 2026-10-19 — 4.5: Stage 10's steps read against the CLI's deploy
+
+- **[user] The request**: *"Go on with 4.5, the reading of the deploy against Stage 10; I will take the
+  environment down and merge PR #203."*
+- **[Claude] 4.5 written**, from this day's measurements and no new AWS call but one read: the Glue job's
+  `--conf` carries the account rendered from the run's `ACCOUNT_ID` override, so `create_job_kwargs` is a
+  template field. The stage file's table holds one row per Stage 10 step. The CLI does 1.2 and 4.2; 1.1
+  outside Terraform's state, with a log group that never expires; 2.4 without a release-versioned home,
+  its lookups scanning the whole `shared/` root; not D28's per-workflow role (1.3), one project role
+  serving every application; not D41 item 9's declared Glue job; and nothing of 3.1, 3.4 to 3.7 or Stage
+  8's production gate. Question iii is answered but for 4.3's identity, which waits on decision 4.
