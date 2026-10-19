@@ -370,8 +370,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   create nothing until decision 12. The internal-access analyzer bills on each 1st: run it after
   2026-11-01.
 - **Stage 12 in progress**: `production/observability/` and `sandbox/observability/` (rank 70, `[P]`)
-  applied 2026-10-18. Every Sandbox alarm notifies `awsds-sandbox-alerts`, whose e-mail subscription awaits
-  the user; `OB-3` fails by design (`EXC-19`) until the three `[D]` hosts' alarms are wired at a hub session.
+  applied 2026-10-18. Every Sandbox alarm notifies `awsds-sandbox-alerts`, its e-mail subscription confirmed
+  2026-10-19, so `OB-3` passes there; it fails in Production by design (`EXC-19`) until the three `[D]` hosts'
+  alarms are wired at a hub session.
   **The bill passes D12**: 53.31 USD in August and 74.48 in September from the accounts with a profile, and
   D12's budget notifies nobody.
 - **Stage 14**: the pre-vend half done 2026-10-18, steps 2 and 7 still blocked on the account quota.
