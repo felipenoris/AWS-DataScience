@@ -115,6 +115,8 @@
 
 - Disabling an IAM Identity Center user (the mechanism D33 cited; D34 withdrew the retirement of `AWS Control Tower Admin`, so no user in this design is scheduled for disabling): <https://docs.aws.amazon.com/singlesignon/latest/userguide/disableuser.html>.
 
+- `ListAccountAssignmentsForPrincipal` — every assignment of one user or group in one call, the reading `./aws/vending.py` `VN-6` takes; the page says it *"must be called from the management account"*, and it answered from the Identity Center delegated administrator on 2026-10-18 (Stage 14): <https://docs.aws.amazon.com/singlesignon/latest/APIReference/API_ListAccountAssignmentsForPrincipal.html>.
+
 - IAM OIDC identity providers (the issuer's discovery/JWKS URL must be publicly reachable — relevant to Stage 8 with a private GitLab): <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html>.
 
 - AWS global condition context keys (`aws:ViaAWSService`, `aws:PrincipalIsAWSService`, `aws:SourceIp` caveats): <https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html>.

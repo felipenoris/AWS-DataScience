@@ -382,6 +382,41 @@ Readings of the table:
   serve no caller in a GitLab session; they are `vpc-egress`'s core list, which no caller overrides.
 - Always on, the session would bill 337.48/month with runners and 145.56 without, both above D12's 50.
 
+### A Sandbox unit (Stage 14)
+
+What one more business unit's Sandbox adds (D35), the quantities counted in the hand-built unit on
+2026-10-18 with the environment down: its customer-managed keys from `kms list-aliases` and
+`describe-key` (the account's other four keys are AWS-managed), its private zones from `route53
+list-hosted-zones`, and the endpoint set from this section's as-built row. Every rate is this file's.
+
+| Item | Layer | Per unit | `sa-east-1` | `us-west-2` | Rate read in |
+|---|---|---|---|---|---|
+| KMS keys `alias/awsds-<env>-tfstate`, `-data`, `-project` | `[P]` | 3 keys, 1 version each in year one | 3.00/month | **3.00/month** | §2, 1.00 per key version-month; Sandbox's KMS line billed 2.99 in September (`cost-model.md`) |
+| — the same keys after their first and second yearly rotation | `[P]` | 2, then 3 versions each | 6.00, then 9.00 | **6.00, then 9.00** | §2's rotation rule, capped at 3 versions |
+| The child zone `<env>.awsds.internal` | `[P]` | 1 private zone | 0.50/month | **0.50/month** | §2, §6 |
+| **At rest, year one** | | | **3.50/month** | **3.50/month** | |
+| Interface endpoints, the Sandbox set, one AZ (D9) | `[E]` | 18 | 0.378/h | **0.180/h** | the as-built row above; 0.010-0.070/h more per optional group named |
+| AWS Config, per `make up` + `make down` of the unit's `egress/` | `[E]` | its own recorder | 0.36-0.87 per cycle | **0.36-0.87 per cycle** | the Config row above |
+
+What the row leaves out, and why:
+
+- **The account** bills nothing (§10); what it costs is one slot of the account quota, the reason the
+  stage is blocked.
+- **The hub** serves every unit, so a unit adds nothing to its 0.0206/h (the GitLab session's hub
+  line above); the peering and zone rows a vend adds there are free.
+- **What the unit's people run**: a space at 0.050/h on `ml.t3.medium` (above) and its volume at 0.112
+  per GB-month with every app stopped (§8). Unit 1 also carries Stage 5b's warehouse, which step 1's
+  composition does not: 0.40/month for its admin secret (§6) and 1.44 per query-hour at 4 RPU (§5).
+- **Stage 12's `observability/`**, if a unit gets its own: 0.10 per alarm-month and 3.00 per
+  dashboard-month past a free tier counted once per bill (§6, inferred there).
+- **Config at rest**: Sandbox records 0-4 items a day without a session (§2), at most 0.36/month.
+- **Not measured per unit**: its buckets' storage, its flow log's ingestion, peering data across AZs
+  (0.01/GB each way, §7; free inside `usw2-az1`, where the endpoint sets sit), and the vend's own
+  Config items (the landing zone's enrollment of every account billed 2.20 in one day, §2, and the
+  `[P]` applies after a vend are §11's).
+- **The endpoints are the term that multiplies**: N units working at once bill N × 0.180/h. A set
+  shared through RAM would bill one 0.180/h; what else it needs is not priced here.
+
 ---
 
 ## 4. What the USD 50 ceiling rules out (D12)

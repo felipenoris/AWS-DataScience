@@ -374,6 +374,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the user; `OB-3` fails by design (`EXC-19`) until the three `[D]` hosts' alarms are wired at a hub session.
   **The bill passes D12**: 53.31 USD in August and 74.48 in September from the accounts with a profile, and
   D12's budget notifies nobody.
+- **Stage 14**: the pre-vend half done 2026-10-18, steps 2 and 7 still blocked on the account quota.
+  `./aws/vending.py` (`VN-1`..`VN-6`) reads the hand-built unit as nine passes and one note; a unit costs
+  3.50 USD/month at rest and 0.180/h working (`docs/PRICING.md` §3).
 - **Stage 17**: pass 0 in progress, pass 1 merged and unapplied. Main pins `vpc-egress-v0.18.0` (`mlflow`)
   and `sagemaker-prereqs-v0.6.0` (`TM-21` over v0.5.0's `MLflowApp`), so `sandbox/sagemaker`'s one apply
   waits on 1.1's portal reading (Lesson 69). Decision 11, the embeddings model in the Bedrock SCP, needs

@@ -53,7 +53,6 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | Read Cost Explorer for August and September in Management, Log Archive and Audit, the accounts no CLI profile reaches | Stage 12 4.2 |
 | The persona's refused job and its implicit-deny attempt | 6d 1.1, 1.2 |
 | The three persona memberships in GitLab; Auto DevOps and the restricted visibility level; the CodeConnections attempt from Data Governance's console | [Stage 7](stages/stage-07-gitlab-runners-ecr.md) 3.5, runbook §I step 6, 7.2 |
-| Open the PR for the pushed branch `claude/stage-14-vending-instrument` (`./aws/vending.py`, Stage 14's first log, a unit's cost): the auto-mode classifier refused `gh pr create` to Claude on 2026-10-18 | [Stage 14](stages/stage-14-sandbox-vending.md) |
 | 6h 5.3 and 5.4's real attempts, for the refusals' wording, with the compute up (the simulator read both as designed on 2026-10-18) | [6h](stages/stage-06h-redshift-connection.md) |
 | Push `examples/app-etl/.gitlab-ci.yml` and its README to GitLab's `awsds/app-etl` at a GitLab session, so GitLab's pipeline runs the lint with its two options (PR #186) | [Stage 8](stages/stage-08-cicd-pipelines.md) 5.6 |
 | Verification xxi's attempt half, an S3 put and delete on the release bucket | Stage 8 |

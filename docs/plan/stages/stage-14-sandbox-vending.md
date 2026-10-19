@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | not started, **blocked on the account quota** (2026-09-05) and scoped by it. Step 2 (request the account) and step 7 (prove it with a **second** unit) cannot run, so nothing here can be marked done; the rest may be authored, against this stage's own rule that automating what has never been built is speculation. **Its central question is answered elsewhere and without N**: where the VPN terminates is settled as a *designated hub* — `VPC-Networking` in Production ([D38](../decisions/D38-single-egress-hub.md)) — one of the three shapes this stage listed (Lesson 34). What remains here when a slot frees: the `sandbox-unit` module, the CIDR draw from `10.16.0.0/13`, the peering pair to `VPC-Networking` and `VPC-SharedServices`, and one more zone in the `awsds.internal` family. Per-business-unit isolation inside the single Sandbox — SMUS projects plus Stage 16's per-group prefixes — is the interim. This is the first stage about *scale* rather than about a new capability |
+| **Status** | **blocked on the account quota** (2026-09-05) and scoped by it, with its pre-vend half done: `./aws/vending.py` read the hand-built unit on 2026-10-18 as nine passes and one note, and [`docs/PRICING.md`](../../PRICING.md) §3 prices a unit at 3.50 USD/month at rest and 0.180/h working. Step 2 (request the account) and step 7 (prove it with a **second** unit) cannot run, so the stage cannot close; the rest may be authored, against this stage's own rule that automating what has never been built is speculation. **Its central question is answered elsewhere and without N**: where the VPN terminates is settled as a *designated hub* — `VPC-Networking` in Production ([D38](../decisions/D38-single-egress-hub.md)) — one of the three shapes this stage listed (Lesson 34). What remains here when a slot frees: the `sandbox-unit` module, the CIDR draw from `10.16.0.0/13`, the peering pair to `VPC-Networking` and `VPC-SharedServices`, and one more zone in the `awsds.internal` family. Per-business-unit isolation inside the single Sandbox — SMUS projects plus Stage 16's per-group prefixes — is the interim. This is the first stage about *scale* rather than about a new capability |
 | **Prerequisites** | Stages 2, 3, 4, **5** and 6 — Stage 5a for the consumer side the module composes (`terraform-modules/consumer-data/` — `sandbox/data/` pins v0.6.0 on 2026-10-18, and a vend pins whatever tag is current then — the per-account `DataLakeSettings` and the share map step 5 extends). Everything a business unit's Sandbox must arrive holding has to exist and have been applied by hand at least once |
 | **Consumes** | [D21](../decisions/D21-development-account.md), [D23](../decisions/D23-ou-structure.md), [D26](../decisions/D26-unified-studio.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D37](../decisions/D37-nested-ou-inheritance.md) |
 | **Proves** | that a business unit's `Sandbox` can be created, made usable and closed without a hand-written slice |
@@ -265,15 +265,25 @@ pool stays open across units, and that is the first reading the second vend take
    built by hand and is being adopted; the proof is a *second* one, created from nothing but a name, whose
    `terraform plan` on every shared slice comes back empty afterwards.
 
-**The mechanical half this stage does not have, and should get before the first vend:** a vend's failure
-mode is *an account that is 90 % configured*. **`./aws/vending.py`** is the missing script, and its
-checks are the same list eight `aws/` scripts already run, parameterised by unit: `VN-1` the account is in
-`Sandboxes` with no policy attachment of its own (D37); `VN-2` its CIDR is inside `10.16.0.0/13` and
-overlaps nothing in `backend.CIDRS`; `VN-3` **both** peerings exist with routes on both sides (`NT-11`'s
-rule, per unit); `VN-4` its child zone is associated into `VPC-Networking` and its authorization still
-exists (INT-22); `VN-5` its source block is in the proxy's allow-list (`PX-3`'s rule, per unit); `VN-6` its
-SSO group has exactly one assignment. **Write it against the hand-built unit first**, where every answer is
-already known — a check that has only ever run against the thing it was written from is not a check.
+**The mechanical half, which the stage gets before the first vend:** a vend's failure mode is *an account
+that is 90 % configured*, and **`./aws/vending.py`** reads it ([`aws/INDEX.md`](../../../aws/INDEX.md)).
+Its checks are the same list eight `aws/` scripts already run, parameterised by unit and generated from
+`scripts/tfhygiene/backend.py`'s tables: `VN-1` the account is in `Sandboxes` with no policy attachment of
+its own, nor the OU (D37), and every active account in `Sandboxes` is a declared unit; `VN-2` its CIDR is
+inside `10.16.0.0/13` and overlaps nothing in `backend.VPC_CIDRS`; `VN-3` **both** peerings exist with
+routes on both sides (`NT-11`'s rule, per unit), no other peering does, and the unit names the hand-built
+unit's peer slices; `VN-4` its child zone is associated into `VPC-Networking` and its authorization still
+exists (INT-22), and the unit's VPC resolves the apex and its child zone alone; `VN-5` its source block is
+in the proxy's allow-list and its security group (`PX-3`'s and `PX-1`'s rules, per unit); `VN-6` its SSO
+group has exactly one assignment in `Sandboxes`. **Against the hand-built unit**, where every answer is
+already known, it read `sandbox` on 2026-10-18 with the environment down as nine passes and one note.
+`VN-6`'s discriminator (Lesson 50) is the reason the note is not a failure: the shared
+`sso-group-data-scientists` is unit 1's principal while one unit is declared, and its two seats in
+`Workloads` stay on it by design (`docs/ORGANIZATION.md`, the dagger under Assignments); at the second unit
+the shared group holding a unit's seat fails. A check that has only ever run against the thing it was
+written from is not a check, so the same day it read `Staging`, which is no unit, as four failures (`VN-1`,
+`VN-2`, `VN-3`'s peer slices, `VN-6`), and every failure branch was exercised against fabricated readings.
+The proof is still step 7's second unit.
 
 **Deliverables:** a business unit's Sandbox account, its VPC, its identity assignment and its
 domain association all produced from one name in a merge request; a second unit created without editing any
@@ -281,9 +291,13 @@ module; **two peering pairs, one child zone and one proxy source block generated
 than authored; and the quota headroom restated in units rather than in accounts — **one slot per business
 unit**. The VPN-topology decision this stage used to owe is D38's, taken on 2026-09-05 at N = 1.
 
-**Cost:** measured into [`docs/PRICING.md`](../../PRICING.md) per unit before the first vended one, not after
-(Lesson 6). The dominant term is not the account — it is **one set of interface VPC endpoints per unit**,
-which is what decides whether centralized endpoints shared by RAM stop being optional (D35).
+**Cost:** measured into [`docs/PRICING.md`](../../PRICING.md) §3, *A Sandbox unit*, before the first vended
+one (Lesson 6), from the hand-built unit's counts on 2026-10-18: **3.50 USD/month at rest** in year one
+(three CMKs and the child zone; 6.50 and 9.50 as the keys gain versions), **0.180/h** of interface
+endpoints while the unit works, and 0.36-0.87 of Config per `[E]` cycle. The account and the hub add
+nothing. The dominant term is not the account — it is **one set of interface VPC endpoints per unit**,
+N × 0.180/h with N units working, which is what decides whether centralized endpoints shared by RAM stop
+being optional (D35).
 
 ---
 
