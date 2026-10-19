@@ -523,8 +523,9 @@ inside pass 7, 7.2 waits on 7.0b's apply, 7.4a's second sync waits on decision 1
   2026-10-19 at 22:09 UTC**, decision 11 applied at 21:58: Haiku 4.5 answers `ok` (`Input: 13`,
   `Output: 4`, `Latency: 652ms`), its `ConverseStream` through the profile routed to `us-east-2`, and
   Nova Lite is refused on `foundation-model/amazon.nova-lite-v1:0`, naming `p-tgda7n58`.
-  `bedrock-usage.py` reads the Haiku call under the profile's id, 13 tokens in and 4 out, and leaves it
-  unpriced: it prices by model id and does not resolve an application inference profile to its model.
+  `bedrock-usage.py` reads the Haiku call under the profile's id, 13 tokens in and 4 out; re-run at
+  23:05 UTC, it rates the call as `us.anthropic.claude-haiku-4-5-20251001-v1:0`, the system-defined
+  profile whose model ARNs the profile lists, and `BU-5` passes.
 - **7.4 — [user] The objects, one each**: a prompt with a variable and two versions; a guardrail with one
   denied topic and the PII filter, attached to 7.4b's chat agent; a flow with a prompt node and a model
   node, run once; an evaluation job, automatic, over a twenty-line dataset in `shared/ml-demo/bedrock/`,
