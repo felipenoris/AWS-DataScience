@@ -38,8 +38,8 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | `EXC-10`'s repair; conformance packs; AWS Backup and its Vault Lock | Stage 12 3.1, 6.2, 8.x | the rest of Stage 12 |
 | Terraform 1.15.8 → 1.16.6, for CVE-2026-78669's fix: installed on the laptop first, then the pins in `.github/workflows/offline-gates.yml` and the deploy image's `TERRAFORM_VERSION` and checksum, with a new deploy-image release; no `versions.tf` changes | `docs/plan/upstream-releases.md`, in PR #189 | every plan and apply runs on the laptop's binary |
 | GuardDuty's decisions 1-4, the fourth whether the enablement is the console acts or the Organizations policy type of 2026-10-01 | [Stage 15](stages/stage-15-guardduty.md) | the whole stage, and Stage 11 step 4 |
-| The embeddings model in the Bedrock SCP | Stage 17 decision 11 | pass 7's knowledge base |
-| How a model reaches the projects: enabled in the console's **Amazon Bedrock models** tab with the roles it creates, with roles written in a `[P]` slice, or through an API path if one exists | [Stage 17](stages/stage-17-sandbox-machine-learning.md) decision 13 | 7.3's chat and 7.4's apps: every model list read *"No models found"* on 2026-10-19 |
+| The embeddings model in the Bedrock SCP, with `application-inference-profile/*` beside it since decision 13's reading | Stage 17 decision 11 | pass 7's knowledge base, and every call the portal makes to a model |
+| How a model reaches the projects, recommended (b): a governance project in `data-governance/governance/`, the two model roles in a `[P]` slice `sandbox/model-access/` the console adopts, then *Manage* in Sandbox's console | [Stage 17](stages/stage-17-sandbox-machine-learning.md) decision 13 | 7.3's chat and 7.4's apps: every model list read *"No models found"* on 2026-10-19 |
 | 6e decision 11: carve one probe principal out of `DenyInvokingModelsThatRetain` for one sitting and invoke the Fable profile as it, or accept the vendor's sentence with its date (recommended: the carve-out) | 6e | the only negative control `mode: none` can have; the probe may meet `EXC-08`'s commercial gate before the retention mode |
 | 6e decision 13, taken by Claude on 2026-09-12 and never reviewed: only `bedrock-runtime` carries an action scope, not the `bedrock` control-plane endpoint | 6e | `PutModelInvocationLoggingConfiguration` still traverses that door; five weeks of readings show only `ListInferenceProfiles` through it |
 | `TM-01`: `-n` on the allow-list planes' `dstdomain` ACL, so a raw address matches no name (never on the deny-list ACL, which it would widen) | Stage 11, [`threat-model.md`](threat-model.md) | the proxy may admit a raw public address whose reverse record names an allowed host (inferred, unexercised); the change replaces the proxy host, so it rides the hub sitting's `production/proxy/` apply |
@@ -57,6 +57,7 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | Verification xxi's attempt half, an S3 put and delete on the release bucket | Stage 8 |
 | Step 2's portal acts: a consumer project, a subscription, an approval as the Governance Manager | 6f step 2, 4.3 |
 | 0.4's portal half; 6.4, keep or drop `lab` | 6h |
+| Sandbox's **Amazon Bedrock models** tab, as the infrastructure user: *Manage*'s state and its reason, and the *Manage* page's fields, read and cancelled | Stage 17 decision 13 |
 | The domain name | [Stage 13](stages/stage-13-public-web-tier.md) |
 | The account quota, and D34's rung | [Stage 14](stages/stage-14-sandbox-vending.md) |
 

@@ -1350,3 +1350,118 @@ chosen, and nothing was saved or created. Times are UTC.*
   models** tab reads no model enabled for `Sandbox Account 1` in `us-west-2` (7.0a's entry), and the
   IDE answers *"Contact your admin to enable more models."* 7.3's chat therefore waits on how a model
   is enabled for the projects (decision 13).
+
+## 2026-10-19 — decision 13's readings: what the Bedrock models tab writes, the model roles' policies, the SCP against an application inference profile
+
+*Provenance. Claude, in a session started for decision 13, from the worktree
+`verificar-ambiente-down-e95914` at `origin/main` `5142e0f`, as the infrastructure user with
+`InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and in `Data Governance`
+(`awsds-infra-data`). Every AWS call was a read. The console's and the portal's JavaScript was
+downloaded from their public CDN and read, never run. No quoted line carries an account id or an e-mail
+address. Times are UTC.*
+
+- **[Claude] The two managed policies**, read at 19:16 with `iam get-policy-version`. Both live under
+  `service-role/`, so the first `get-policy` at the root path answered `NoSuchEntity`; each reads
+  `AttachmentCount` 0 in `Sandbox Account 1`.
+  - `AmazonDataZoneBedrockModelManagementPolicy` v1, created 2024-11-12 and never edited:
+    `ManageApplicationInferenceProfile` (`bedrock:CreateInferenceProfile` and `TagResource` on
+    `application-inference-profile/*` in the principal's account, the request and the resource carrying
+    `AmazonDataZoneProject`), `DeleteApplicationInferenceProfile` (profiles carrying that tag),
+    `CreateApplicationInferenceProfileUsingFoundationModels` (`foundation-model/*`, no condition) and
+    `CreateApplicationInferenceProfileUsingBedrockModels` (`inference-profile/*` in the account). It
+    grants no invocation.
+  - `AmazonDataZoneBedrockModelConsumptionPolicy` v7, edited 2026-02-12: `InvokeDomainInferenceProfiles`
+    (`InvokeModel` and `InvokeModelWithResponseStream` on `application-inference-profile/*` tagged
+    `AmazonDataZoneDomain` with `${datazone:domainId}` and carrying no `AmazonDataZoneProject`),
+    `ListFoundationModels`, and Bedrock sessions tagged with the DataZone user and domain. AWS's role
+    page adds one inline statement per model, `AllowInferenceProfileToInvokeFoundationModels`: the
+    model's `foundation-model` ARN when `bedrock:InferenceProfileArn` is one of the account's application
+    inference profiles. Both roles' trust is `datazone.amazonaws.com`, `sts:AssumeRole` and
+    `sts:SetContext`, under `aws:SourceAccount`.
+- **[Claude] AWS's pages** (`REFERENCES.md`). The admin guide's *Amazon Bedrock in SageMaker Unified
+  Studio* enables a model with *Manage* and two checkboxes per model, and publishes the models as assets
+  through `GenerativeAIModelGovernanceProject`, a project the service creates, owned by the identity that
+  configured Bedrock for the domain; an associated account's IAM identity must join it to publish models.
+  The inference-profile prerequisites page requires the foundation model in each Region beside the
+  profile, under `bedrock:InferenceProfileArn`.
+- **[Claude] What the tab's *Manage* writes, read in the console's code**: 7.0a's bundle, unchanged
+  (6,158,162 bytes, SHA-256 `950192e9ddeebb64…`, downloaded 19:18). The Submit,
+  `processModelEnablementRequestCommand`:
+  1. Looks in the current account for a role whose name contains
+     `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>`; failing that, takes a role
+     chosen in the setup wizard; failing that, creates it at `/service-role/` with AWS's management policy,
+     its trust's `aws:SourceAccount` the domain's account. This runs before any model is processed, and
+     a role chosen in a model's *Roles for model access* is read only afterwards.
+  2. Per model enabled in projects: `CreateEnvironment` with `environmentBlueprintIdentifier`
+     `AwsServiceBlueprint` in the governance project, named
+     `amazon.datazone.BedrockModelEnvironmentType_<12 characters>`, in the selected account and Region;
+     `AssociateEnvironmentRole` with the provisioning role as `SYSTEM_ROLE`; `CreateAsset` of type
+     `amazon.datazone.BedrockModelAssetType`, owned by the governance project, named
+     `<model id><Region>BedrockModelForm`, its form carrying the Region, the account, the role, the
+     environment and the model (a cross-Region row's ARN being its system inference profile's), beside a
+     `SubscriptionTermsForm` of `{"approvalRequired": "NO"}`; `CreateListingChangeSet` `PUBLISH`.
+  3. Per model enabled in the playground: `bedrock:CreateInferenceProfile` as the person pressing
+     Submit, named after the domain id, copying the system profile or the model, tagged
+     `AmazonDataZoneDomain`; a consumption role, chosen in the form, found by its generated name
+     `AmazonSageMakerBedrockModelConsumptionRole-<14 hex characters>`, or created with a customer-managed
+     `AmazonSageMakerBedrockModelConsumptionPolicy-<the same hash>`; an environment of type
+     `BedrockInferenceOnlyEnvironmentType` holding it as `SHAREABLE_ROLE`; an asset of type
+     `amazon.datazone.BedrockInferenceOnlyAssetType` carrying the profile's ARN; the publish.
+  4. A disable revokes the listing's approved subscriptions, unpublishes and deletes the asset, and for
+     the playground deletes the profile.
+
+  The governance project is found through `ListProjects`, by id or by the name
+  `GenerativeAIModelGovernanceProject`. In an associated account *Manage* stays greyed while none is
+  found (*"Model governance project does not exist"*), and the *Manage* page offers the project in a
+  selector and keeps *Review and submit* disabled until one is chosen. Only the domain account's setup
+  creates the profile *Generative AI model governance*, with no environment configuration, and the
+  project, in the run that also writes the Bedrock blueprints' and `Tooling`'s configurations in that
+  account. The associated account's *Set up generative AI* Submit writes the `Tooling` configuration if
+  absent and the Bedrock blueprints' configurations with a blueprint management role, and processes no
+  model: the two model roles of its form are unused there (inferred from the code).
+- **[Claude] How a project reaches a model, read in the portal's code**: `assets/module-GY0Cw3hN.js`,
+  4,374,983 bytes, the bundle that holds 1.5's `App-D6IrICgA.js`, downloaded 19:25. The model lists are
+  catalog searches by asset type, `BedrockModelAssetType` in a project and
+  `BedrockInferenceOnlyAssetType` in the playground. On a model's first use the portal sends
+  `CreateSubscriptionRequest` for its listing, as the project (`PROJECT`) or as the person (`USER`),
+  polls the request to `ACCEPTED` and `ListSubscriptionGrants` to `COMPLETED`. A project's grant names
+  the application inference profile in its `targetName`, and the call uses the project's bootstrap
+  environment's credentials; the playground's names a connection, whose credentials the browser takes
+  through `GetConnectionCredentials`. That the grant creates the profile with the provisioning role,
+  tagged `AmazonDataZoneProject`, is inferred from the management policy; no grant was observed.
+- **[Claude] Who invokes through an application inference profile**, read at 19:23 and 19:26. The
+  project role's `SageMakerStudioProjectUserRolePolicy` v75 admits `InvokeModel` on
+  `application-inference-profile/*` tagged with its own `AmazonDataZoneProject` (`BRInvokeAppProfile`,
+  under `EnableAmazonBedrockPermissions`) and on `foundation-model/*` only when
+  `bedrock:InferenceProfileArn` is an application inference profile (`BedrockInvokeModelPermissions`).
+  The `Tooling` environments' `AmazonBedrockServiceRole-*` policies, `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy`
+  v9, `SageMakerStudioBedrockAgentServiceRolePolicy` v3, `SageMakerStudioBedrockFlowServiceRolePolicy`
+  v9 and `SageMakerStudioBedrockEvaluationJobServiceRolePolicy` v3, admit the same pair. The knowledge
+  base's embeddings, the agent, the flow and the evaluation therefore reach a model only through a
+  project's application inference profile (inferred from the policies).
+- **[Claude] The domain and the account**, read at 19:22 and 19:33. As `awsds-infra-data`, the domain
+  holds the project profiles `deployment` and `experimentation` and the projects `test-experimentation`,
+  `eighth-experimentation` and `deploy-staging`: no governance profile and no governance project. In
+  `Sandbox Account 1`, `bedrock list-inference-profiles --type-equals APPLICATION` returns none, and the
+  three scoped `us.` profiles read `ACTIVE`, each routing to `us-east-1`, `us-east-2` and `us-west-2`.
+- **[Claude] What Terraform reaches (Lesson 8)**, read at 19:24. CloudFormation's registry in
+  `us-west-2` lists 17 `AWS::DataZone::*` types, `Environment` among them with
+  `EnvironmentBlueprintIdentifier`, `EnvironmentAccountIdentifier`, `EnvironmentAccountRegion` and
+  `EnvironmentRoleArn`, beside `Project`, `ProjectMembership` and `ProjectProfile`, and
+  `AWS::Bedrock::ApplicationInferenceProfile`; none for an asset, a listing, a subscription or
+  `AssociateEnvironmentRole`. The pinned providers, `awscc` 1.98.0 and `aws` 6.61.0, document
+  `awscc_datazone_environment` (`environment_role_arn`), `awscc_datazone_project`,
+  `awscc_datazone_project_membership`, `awscc_datazone_project_profile`,
+  `awscc_bedrock_application_inference_profile` and `aws_bedrock_inference_profile`, and no asset,
+  listing or subscription resource in either.
+- **[Claude] The SCP against an invocation through an application inference profile.**
+  `DenyBedrockInvocationOutsideTheScopedModels` lists six spellings in its `NotResource`, three
+  `inference-profile/us.anthropic.*` and three `foundation-model/anthropic.*`, and no
+  `application-inference-profile`. Such an invocation is authorized on the profile's ARN and on the
+  foundation model's in each Region it routes to (AWS's prerequisites page; 6e's `sandbox/bedrock/`
+  names both halves for the system profiles), so the statement refuses every call the portal makes, a
+  project's, the knowledge base's sync and the playground's, on the profile's pass (inferred,
+  unexercised). Decision 11's amendment as recommended, Titan V2's `foundation-model` ARN alone, would
+  leave 7.4a's second sync refused on the same pass. `aws/awslib/bedrockscope.py`'s two patterns match
+  neither half of an `application-inference-profile/*` entry, so such an entry moves no instrument's
+  reading (read from the code).
