@@ -302,8 +302,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   is Sandbox only. All 41 decisions are closed. Gates: `make check`, `make check-ou`. **What waits on the
   user is [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md)**: read it before asking
   the user anything, and remove a row in the sitting that takes it.
-- **The SCP battery** read `ou` 39 as expected / 0 unexpected / 7 not measured and `root` 25 / 0 / 0 on
-  2026-10-18. **SageMaker processing-job quotas are 0 in Production and Staging** (`ml.m5.large`,
+- **The SCP battery** read `ou` 40 as expected / 0 unexpected / 7 not measured on 2026-10-19 (Stage 18's
+  carve-out rows included) and `root` 25 / 0 / 0 on 2026-10-18. **SageMaker processing-job quotas are 0 in Production and Staging** (`ml.m5.large`,
   `.xlarge`, `.2xlarge`), with no increase requested: no job runs there until the user requests them, and
   the probes read `ResourceLimitExceeded` as authorized.
 - **Stage 9**: pass 1 applied 2026-10-18, `awsds-org-scp-ou-workloads` (nine statements) and
@@ -382,9 +382,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   and `sagemaker-prereqs-v0.6.0` (`TM-21` over v0.5.0's `MLflowApp`), so `sandbox/sagemaker`'s one apply
   waits on 1.1's portal reading (Lesson 69). Decision 11, the embeddings model in the Bedrock SCP, needs
   `awslib/bedrockscope.py` to learn the difference first, or `BS-2`, `BS-7` and `BR-4` go red. Pass 2's training job waits on the battery's instance-preference rows (Stage 9 3.5).
-  **Stage 18**: passes 1 and 2.4 written and planned 2026-10-19, their two applies the user's (the
-  classifier refused them to Claude); question i read from the templates, so decision 1 recommends
-  `Tooling` with `enableSpaces` false; 2.7 shares `governance/`'s apply with Stage 17 1.3; no decision taken; an associated account no person works in goes
+  **Stage 18**: pass 1 and 2.5's first half applied 2026-10-19 by the user (the classifier refuses
+  these applies to Claude): the carve-out of Staging from `DenyDataZoneEntirely` is live (`EXC-20`) and
+  `staging/studio/` holds the prerequisites; 2.1, the association, is the user's next act; question i
+  read from the templates, so decision 1 recommends `Tooling` with `enableSpaces` false; 2.7 shares
+  `governance/`'s apply with Stage 17 1.3; no decision taken; an associated account no person works in goes
   in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in `SMUS_MEMBERS`. Its 4.4 needs Stage 8 3.0's first half
   and Stage 10 1.2's `vpc-v0.4.0` on `staging/foundation/` first (PR #188).
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,

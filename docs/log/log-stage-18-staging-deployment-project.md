@@ -355,3 +355,38 @@ are UTC.*
   4 and 7 need `app-etl`'s first tag (a GitLab session, with `DEV_PROJECT_KEY_ARN` and
   `TEST_PROJECT_KEY_ARN` set) and `make hub-up` with `make up ENV=staging ONLY=egress`, with Stage 8
   3.0's first half and Stage 10 1.2's `vpc-v0.4.0` applied before 4.4.
+
+## 2026-10-19 — the two applies, by the user's hand, and the readings after them
+
+- **[user] Both applies, from the saved plans, in the app's terminal on the worktree.** The output was
+  pasted into the chat; the ids it carries stay in the slices' states. `identity/org-policies/` as
+  `awsds-infra-identity`: `aws_organizations_policy.this["awsds-org-scp-ou-workloads"]: Modifications
+  complete after 1s`, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*, the outputs reading
+  `awsds-org-scp-ou-workloads = 2571` and the four OU and six root attachments unchanged.
+  `staging/studio/` as `awsds-infra-staging`: *"Apply complete! Resources: 14 added, 0 changed, 0
+  destroyed."*, the key created in 25 s and the bucket's lifecycle configuration in 58 s, the outputs
+  naming the two roles, the boundary, the key and the regional parameters (`AZs = usw2-az1,usw2-az2`,
+  Staging's two private subnets and its VPC), the values 2.5's second apply sends.
+- **[Claude] Read back, 03:51 to 03:53 UTC**, as the infrastructure user. `identity/org-policies/`
+  re-plans `No changes` (03:51:24Z) and `./aws/org-policies.py` writes `all checks passed`.
+  `staging/studio/` re-plans `No changes` (03:52:42Z); `awsds-staging-smus-provisioning` and
+  `awsds-staging-smus-manage-access` were created at 03:47:52Z, the first trusted by
+  `datazone.amazonaws.com` and `cloudformation.amazonaws.com` and carrying no boundary of its own; the
+  key behind `alias/awsds-staging-project` is `Enabled`, customer-managed, created 03:48:02Z;
+  `awsds-staging-smus-projects` is versioned with its four public-access blocks on; `/awsds/staging/studio`
+  keeps 30 days; Staging's Lake Formation settings read as at 0.3: no admin, `CROSS_ACCOUNT_VERSION` 1.
+- **[Claude] The carve-out, measured at 03:52:49Z.** `datazone list-domains` as `awsds-infra-staging`
+  answers `{"items": []}`, the account's own domains; as `awsds-infra-prod` it is refused with *"an
+  explicit deny in a service control policy"* naming `p-83t232f4`, the `Workloads` document; `sagemaker
+  create-space` on a made-up domain as `awsds-infra-staging` is refused by the same wording, so the
+  document's other statements still bind Staging; `list-environment-blueprint-configurations` on
+  `awsds-studio` as `awsds-infra-staging` reads `UnauthorizedException`, DataZone's own refusal of an
+  account not yet associated, the call 2.2 expects to succeed after 2.1. `EXC-20` records the window and
+  `AWS_STATE.md` section C the objects `staging/studio/` holds.
+- **[Claude] The battery's phase `ou`, 03:52:53 to 03:53:57Z** (`./aws/probes/scp-battery.py --phase ou`,
+  report `scp-battery-20261019T005253.txt` under `aws/output/`): *"40 as expected, 0 unexpected, 7 not
+  measured"*, one row more than Stage 9's 39 of 2026-10-18, the new `CreateSpace` row. Staging's
+  `datazone:ListDomains` reads `ALLOWED, succeeded`, its `sagemaker:CreateSpace` `DENY-SCP p-83t232f4`,
+  Production's `datazone:ListDomains` `DENY-SCP p-83t232f4`, and Sandbox's `ListDomains` still
+  `ALLOWED`; the seven not measured are the ones Stage 9's log names, the processing-job rows whose
+  quotas read 0 in Production. 1.3 is done; 1.1's `EXC-nn` is `EXC-20`.
