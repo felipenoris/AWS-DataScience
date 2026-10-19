@@ -558,3 +558,85 @@ are UTC.*
   to `$HOME/tmp/stage18-governance-27b.tfplan`: 1 to add, 0 to change, 0 to destroy, the grant on the
   root unit for the `deployment` profile, its `group_identifier` the session group's id;
   `experimentation`'s grant untouched. The apply is the user's.
+
+## 2026-10-19 — 2.7's grant, by the user's hand, and the read-back
+
+- **[user] The grant's apply, from the saved plan**, as `awsds-infra-data`:
+  *"awscc_datazone_policy_grant.create_project_from_profile["deployment"]: Creation complete after
+  7s"*, *"Apply complete! Resources: 1 added, 0 changed, 0 destroyed."* The outputs name the creators,
+  `"deployment" = "InfrastructureAccess (staging)"` and `"experimentation" =
+  "sso-group-data-scientists"`. Then the user merged PR #196 (06:00:44Z) and wrote *"fiz o merge do
+  #196"*.
+- **[Claude] Read back at 06:01 UTC.** `governance/` re-plans `No changes` (06:01:20Z). The root domain
+  unit holds two `CREATE_PROJECT_FROM_PROJECT_PROFILE` grants, child units excluded:
+  `sso-group-data-scientists` for `experimentation` (2026-08-22) and Staging's InfrastructureAccess
+  session group for `deployment` (05:58:00Z). `./aws/studio.py` on the four infrastructure profiles:
+  all checks passed, `US-4` reading *"deployment, experimentation - experimentation as contracted,
+  deployment in Stage 18's window"*. Decisions 1 to 3 are taken by the applies; 2.7 is done.
+
+## 2026-10-19 — 3.1, the project
+
+- **[Claude] `deploy-staging` created at 06:05:27Z** as `awsds-infra-staging`, on the user's
+  authorization in this session for the stage's writes: `datazone create-project --name
+  deploy-staging` from the `deployment` profile exited 0. The app's classifier let this call through,
+  where it had refused every `terraform apply` of the stage. The project was created at 06:05:28Z by
+  the IAM user profile of the infrastructure user's session in Staging's InfrastructureAccess, its
+  environment deployment `PENDING_DEPLOYMENT`. The CLI's newer options, `--project-execution-role`,
+  `--resource-tags`, `--membership-assignments` and `--project-category`, were left out, so the
+  project is AWS's default shape. The other sessions were told before the call.
+- **[Claude] `list-project-memberships`**: one member, Staging's InfrastructureAccess session group,
+  `PROJECT_OWNER`. The group is the member, not the session that created the project.
+- **[Claude] The environment started deploying**: `Tooling` `CREATING` at 06:05:49Z, the stack
+  `DataZone-Env-…` `CREATE_IN_PROGRESS` in Staging since 06:05:43Z.
+
+## 2026-10-19 — 3.2 and 3.3, the environment and what it created
+
+- **[Claude] 3.2, read at 06:05 to 06:08 UTC** as `awsds-infra-staging`: the stack
+  `DataZone-Env-…` began at 06:05:43Z and reached `CREATE_COMPLETE` at 06:06:38Z; the project read
+  `SUCCESSFUL`, `Tooling` `ACTIVE`, at 06:07:27Z. The stack's parameters: `enableSpaces` `false`,
+  `isDefault` and `enableCustomProjectProfiles` `true`, `permissionsBoundaryArn` the stage's boundary,
+  `enableScheduling`, `enableAthena`, `enableAthenaSparkWorkgroup`, `enableGlueNetworkConnection`,
+  `enableNetworkIsolation`, `enableRolesWithoutBoundary` and the Bedrock switch `true`,
+  `logGroupRetention` 731. The profile's locked `enableSpaces` reached the deploy.
+- **[Claude] 3.3, the thirteen resources**: two Athena workgroups, the Bedrock Lambda and service roles,
+  `CDKMetadata`, the schedule group, two `GlueNetworkConnection`s, the Lake Formation registration of the
+  project prefix, the log group, `ToolingSecurityGroup` with its ingress, and `ToolingUserRole`. 0.2's
+  Sandbox list less `SageMakerSpacesDefaultDomain`. The outputs carry `VpcExport`,
+  `PrivateSubnetsExport`, `SecurityGroup` and `KmsKeyExport`, the names the CI/CD CLI reads, the key
+  `staging/studio/`'s project key.
+  - The roles, all three under `awsds-staging-project-boundary`: `datazone_usr_role_<project>_<env>`,
+    trusted by `datazone.amazonaws.com` and `auth.datazone.amazonaws.com`, a list of fourteen service
+    principals (`airflow-serverless`, `sagemaker`, `glue`, `lakeformation` and `bedrock` among them),
+    the two Redshift principals and the provisioning role, with `SageMakerStudioProjectUserRolePolicy`,
+    `SageMakerStudioProjectRoleMachineLearningPolicy` and `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy`;
+    `AmazonBedrockServiceRole-…`, trusted by `bedrock.amazonaws.com`, four Bedrock policies;
+    `AmazonBedrockLambdaExecutionRole-…`, trusted by `lambda.amazonaws.com`, three.
+  - The security group `datazone-<project>-dev`: all traffic in from itself, all traffic out to
+    `0.0.0.0/0`, in a VPC with no route out but the endpoints and the hub.
+  - Two Glue network connections, one per private subnet; the Athena workgroups
+    `sagemaker-studio-spark-workgroup-<project>` and `workgroup-<project>-<env>`, the second writing to
+    the project's `dev/sys/athena/`, both enforcing their configuration; the log group
+    `datazone-<project>-dev` at 731 days under the project key.
+  - Lake Formation: the project's `dev` prefix registered under the project role, hybrid access off.
+    The admin list, empty until then, holds `awsds-staging-smus-provisioning` and
+    `awsds-staging-smus-manage-access`, set by the provisioning role's three `PutDataLakeSettings` at
+    06:05:34Z (open question 24's Sandbox pattern); `CROSS_ACCOUNT_VERSION` 1.
+  - DataZone: nine connections (`default.s3_shared`, `project.s3_default_folder`, `project.iam`,
+    `project.athena`, `project.default_lakehouse`, `project.spark.compatibility`,
+    `project.spark.fineGrained`, `serverless.spark`, `default.workflow_serverless`), and no data source,
+    where each Sandbox project holds `EXC-11`'s failing one.
+  - RAM: Staging owns no share; it receives the domain's alone. The projects bucket holds five objects
+    under the project's prefix, written 06:06:48 to 06:06:50Z: the `dev/` and `shared/` markers and
+    `shared/`'s `.libs.json`, `README.md` and `getting_started.ipynb`.
+- **[Claude] CloudTrail in Staging from 06:04Z**, four pages: the DataZone service's `AssumeRole`
+  calls (25), the provisioning role's CloudFormation, EC2, Glue, Logs, Lake Formation, Scheduler, Athena,
+  KMS and S3 calls, and InfrastructureAccess's `datazone:` calls, the only principal calling DataZone in
+  Staging. Every refusal read *"no identity-based policy allows"*: the provisioning role's
+  `athena:GetWorkGroup` and `ListTagsForResource`, `logs:DescribeIndexPolicies` and
+  `DescribeResourcePolicies`, `ec2:DescribeSecurityGroupRules`, `servicequotas:GetServiceQuota` and a
+  first `ec2:CreateSecurityGroup` (decoded: `allowed` false, no explicit deny), whose retry created the
+  group; the project role's `s3:CreateAccessGrantsLocation`, with no Access Grants instance in the
+  account. None came from the SCP or the boundary.
+- **[Claude] The instruments**: `./aws/studio.py` all checks passed, `US-6` with no SageMaker AI domain
+  in Staging; `./aws/datalake.py` all checks passed, its `DL-13` reading the lake's accounts alone, so
+  Staging's two seats are this log's reading and 8.6's, by hand.

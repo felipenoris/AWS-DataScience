@@ -754,6 +754,13 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     registered, grants under the `projectId` condition, a database `test`, and a Glue `UntagResource`
     refused.
 
+    **Amended 2026-10-19: Staging, at Stage 18 3.3.** The first project there, `deploy-staging`, took
+    the same seats: the provisioning role's three `PutDataLakeSettings` at 06:05:34Z set the admin list,
+    empty until then and with no `InfrastructureAccess` seat, to itself and the manage-access role.
+    `./aws/datalake.py` `DL-13` reads the lake's accounts alone, so it does not see them; Stage 18's
+    8.6 reads them back after the unwinding, and Stage 9 pass 5's `staging/data/` meets them if a
+    deployment project outlives the stage.
+
 ### Raised by Stage 6 step 2.4's reading, 2026-08-26
 
 25. **What expires in `awsds-<env>-smus-projects`, and who removes the storage of a project that no
