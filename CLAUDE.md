@@ -184,7 +184,8 @@ the session starts.
   neither branch's hashes are on `main`), so a merged branch is retired with its worktree: the next
   task is a new session. The worktree is kept or removed when the user says so. The app's classifier
   refused a push to the branch of a merged PR on 2026-10-19 (*Out-of-Place Publication*), after
-  letting one through the same day.
+  letting one through the same day, and let it through once the user authorized it in chat; the
+  merge had deleted the remote branch, so the push recreated it.
 - An uncommitted edit in the project folder is the user's. When a PR touches the same file, Claude
   says so: the user's next pull will refuse it.
 
