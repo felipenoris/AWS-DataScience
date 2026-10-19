@@ -268,3 +268,90 @@ AWS write, and neither change below was applied.*
   pass 1's job statements were merged and not attached. They were attached at 19:54Z today, the battery's
   `ou` phase reading them after ([Stage 9's log](log-stage-09-deployment-targets.md)), and this stage's 0.3
   read the attached document.
+
+## 2026-10-19 — passes 1 and 2.4 written and planned, the two bases' templates read, the applies refused to Claude
+
+*Claude's hand, in this stage's session on the laptop ("Stage 18 — Staging deployment project"), on the
+user's word of 2026-10-19: *"iniciar o Stage 18 passa a ser a prioridade. Mapeie tudo que é necessário
+... Em seguida execute todas as etapas que conseguir fazer sem minha intervenção. Você está autorizado a
+executar todos os comandos de apply e leitura do ambiente."* Every AWS call below is a read as the
+infrastructure user (`InfrastructureAccess`), through `awsds-infra-data`, `awsds-infra-identity` and
+`awsds-infra-staging`; the environment was down. Account ids are replaced by the account's name. Times
+are UTC.*
+
+- **[Claude] The state at the start.** Every `awsds-infra-*` profile held a live session. The domain
+  `awsds-studio` (`dzd-d8yrvx1ko7im6o`) is `AVAILABLE` with one profile, `experimentation`; its managed
+  roster holds `Tooling` (`4k186sfh08eqxc`) and `ToolingLite` (`6b5j1ajb2pzh3k`), both updated
+  2026-09-23. From `awsds-infra-staging`, `datazone list-domains` is refused with an explicit deny in
+  the service control policy `p-83t232f4`, the `Workloads` document: 0.3's reading repeated.
+- **[Claude] Question i read from the templates, before anything is created.** `get-environment-blueprint`
+  gives each blueprint's `provisioningProperties.cloudFormation.templateUrl`, an S3 access-point URL that
+  refuses a plain fetch (`InvalidRequest`, SigV4 only); `s3api get-object` as `awsds-infra-data` read
+  both into the session's scratch directory: `DataZone-Amazon-SageMaker-ToolingLiteDefault-prod-20260723`
+  (159,043 bytes) and `DataZone-Amazon-SageMaker-ToolingDefault-prod-20260918` (245,988 bytes).
+  - `ToolingLite`: one user parameter, `s3BucketLocation` (optional, editable), and 24 template
+    parameters, `executionRoleArn` among them. Resources: `ProjectBucket` when no location is given
+    (`amazon-sagemaker-<account>-<region>-<project>`, Retain), `ToolingSecurityGroup` (all egress to
+    `0.0.0.0/0`) when a VPC is given and no security group is passed, up to sixteen Glue network
+    connections, `AthenaWorkgroup`, `EventBridgeScheduleGroup`, and **`SageMakerSpacesDefaultDomain`,
+    `AWS::SageMaker::Domain`, with no condition**, `VpcOnly` when a VPC is given, its default space
+    settings' execution role the `executionRoleArn` parameter. No IAM role, no log group, no Lake
+    Formation resource. Its outputs include `VpcExport`, `PrivateSubnetsExport`, `SecurityGroup` and
+    `KmsKeyExport`, the names the CI/CD CLI reads a workflow's network and key from.
+  - `Tooling`: 65 template parameters. `SageMakerSpacesDefaultDomain` carries the condition
+    `sageMakerDomainRequired` = `isDefaultTooling` and `enableSpaces == "true"`, where `isDefaultTooling`
+    = `enableCustomProjectProfiles == "true"` and `isDefault == "true"`, parameters the service sets and
+    true in the two Sandbox stacks 0.2 read, which hold the domain. `ToolingUserRole` is created with
+    `PermissionsBoundary` = `permissionsBoundaryArn` when given, AWS's
+    `SageMakerStudioProjectUserRolePermissionsBoundary` otherwise, and the three managed policies 0.2
+    read; `ToolingCloudWatchLogGroup`, `LakeFormationResourceToRegisterProjectsS3Location` (the project
+    prefix under `s3BucketArn`, registered under the user role) and the security group are
+    unconditional; `EventBridgeScheduleGroup` needs `enableScheduling`, the Athena workgroups their
+    flags, the Bedrock roles `enableAmazonBedrockProjectServiceRoles`. The same four network and key
+    outputs.
+  - So both managed bases create a SageMaker AI domain, `ToolingLite` always and `Tooling` only with
+    spaces on: a `Tooling` environment whose profile sets `enableSpaces` false calls no
+    `sagemaker:CreateDomain`, and `DenyInteractiveSageMakerSurface` needs no carve-out for it. The live
+    blueprint marks `enableSpaces` not editable (`isEditable` false), as it marks
+    `maxIdleTimeoutInMinutes`, which `experimentation` overrides to 120 and whose projects deploy, so a
+    profile's override of such a parameter reaches the deploy for one parameter; 3.2 reads it for this
+    one. Decision 1's recommendation is revised to `Tooling` with `enableSpaces` false; the user decides.
+- **[Claude] 1.1 written.** `awsds-org-scp-ou-workloads.json`'s `DenyDataZoneEntirely` gains
+  `StringNotEquals aws:PrincipalAccount <ACCOUNT_ID_STAGING>`; `locals.tf` resolves the placeholder by
+  the vended name `Staging Account` and `ACTIVE`, as `identity_account_id` is, and renders it sixth;
+  `render.py` reads it from `organizations list-accounts` and refuses any count but one; `policies.tf`
+  gains a precondition refusing a placeholder that survives the rendering; `POLICIES.md`'s row and the
+  README carry the window. No `CreateDomain` split, decision 1's recommendation needing none.
+  `render.py` as `awsds-infra-identity`: every placeholder substituted, the `Workloads` document 3,768
+  bytes as written and 2,571 minified, margin 2,549.
+- **[Claude] 1.2 written.** `probes.py`'s Staging `ListDomains` row reads `allow` for the window, the
+  `prod` row keeps the deny, and a new Staging `CreateSpace` row (`blocked`, domain `d-0000000000000`)
+  reads that the rest of the document still binds the account. An amendment to a per-OU document is the
+  runbook's phase 4b, re-probed in the OU's own accounts with nothing parked on `Policy Test`, so 1.3's
+  "the candidate on `Policy Test` first" does not apply.
+- **[Claude] 1.3 planned, not applied.** `identity/org-policies/` as `awsds-infra-identity`,
+  `-input=false`, about 03:26: `aws_organizations_policy.this["awsds-org-scp-ou-workloads"]` updated in
+  place and nothing else, the content differing in the one Sid, the plan saved outside the repository.
+  The apply was refused to Claude by the app's auto-mode classifier (*Protected-Scope IaC Apply*), the
+  user's authorization in the chat notwithstanding, and so was `staging/studio/`'s below. Both are the
+  user's to run from the saved plans, after which this stage owes the re-plan, `./aws/org-policies.py`,
+  the battery's phase `ou`, the two `list-domains` probes and `EXC-20`.
+- **[Claude] 2.4 written.** `staging/studio/` from `sandbox/sagemaker/`'s files on
+  `sagemaker-prereqs-v0.6.0`, with `blueprint_names` a variable defaulting to `["Tooling"]` and
+  `cost_center` `stage-18`; `layers.py` gains the rank `studio` at 46 and the `[P]` row; `backend.py`
+  the `studio` emission (`account_folder`, `lake`, `domain`, `blueprints_enabled` from
+  `SMUS_ASSOCIATED`, false today); conventions §6 and `NETWORK.md` §2.1 their rows. `terraform init`
+  took `aws` 6.69.1 and `awscc` 1.106.0; the lock carries the three platforms; `make check` passes.
+- **[Claude] 2.5's first half planned, not applied.** As `awsds-infra-staging`, about 03:28: 14 to add,
+  nothing changed or destroyed: `awsds-staging-smus-provisioning` and `awsds-staging-smus-manage-access`
+  with their managed-policy attachments, `awsds-staging-project-boundary`, the key
+  `alias/awsds-staging-project`, `awsds-staging-smus-projects` with its five settings, and
+  `/awsds/staging/studio` at 30 days. Refused to Claude as above.
+- **[Claude] What the stage waits on now**, in order: the two applies; 2.1, the association, in Data
+  Governance's DataZone console; decisions 1 to 3, 1 as revised; Stage 17 1.1, since 2.7's `governance/`
+  apply carries Stage 17 pass 1's `MLflowApp` configuration and the two stages never share one; the
+  `SMUS_ASSOCIATED` and `SMUS_DEPLOYMENT_MEMBERS` rows after the association, then 2.5's second apply
+  and 2.6; then pass 3 from the laptop. 0.4's run needs `make hub-up` and `make up ENV=sandbox`; passes
+  4 and 7 need `app-etl`'s first tag (a GitLab session, with `DEV_PROJECT_KEY_ARN` and
+  `TEST_PROJECT_KEY_ARN` set) and `make hub-up` with `make up ENV=staging ONLY=egress`, with Stage 8
+  3.0's first half and Stage 10 1.2's `vpc-v0.4.0` applied before 4.4.
