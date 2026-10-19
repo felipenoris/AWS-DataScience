@@ -30,6 +30,19 @@ data "awscc_datazone_group_profile" "staging_infrastructure_access" {
   id = "${aws_datazone_domain.this.id}|${one(data.aws_iam_roles.staging_infrastructure_access.arns)}"
 }
 
+# The identity that presses *Manage* in Sandbox's console (Stage 17 decision 13): Sandbox's
+# InfrastructureAccess, resolved the same way, and its session group, made in the portal on
+# 2026-10-15 (INT-25), which model-governance.tf makes a member of the governance project.
+data "aws_iam_roles" "sandbox_infrastructure_access" {
+  provider    = aws.sandbox
+  name_regex  = "AWSReservedSSO_InfrastructureAccess_.*"
+  path_prefix = "/aws-reserved/sso.amazonaws.com/"
+}
+
+data "awscc_datazone_group_profile" "sandbox_infrastructure_access" {
+  id = "${aws_datazone_domain.this.id}|${one(data.aws_iam_roles.sandbox_infrastructure_access.arns)}"
+}
+
 
 # The blueprint ids, resolved by name on the domain (pass 2c only). Terraform's project-profile
 # resource takes ids; the decision, the documentation and ./aws/studio.py all speak names, so

@@ -39,3 +39,8 @@ output "project_profile_creators" {
   description = "Who may create a project from which profile - the applied form of local.project_profiles' group column, by group name rather than group id (aws/INDEX.md rule 1), or the InfrastructureAccess role of the profile's account where the group is null (Stage 18 decision 3). Empty until pass 2c."
   value       = { for k, p in local.project_profiles : k => coalesce(p.group, "InfrastructureAccess (${p.account})") if var.profiles_enabled }
 }
+
+output "model_governance_project_id" {
+  description = "The project that owns the Bedrock model listings (Stage 17 decision 13). An associated account's console selects it by name."
+  value       = var.profiles_enabled ? awscc_datazone_project.model_governance[0].project_id : null
+}

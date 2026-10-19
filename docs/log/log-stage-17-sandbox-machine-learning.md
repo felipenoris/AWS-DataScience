@@ -1518,3 +1518,59 @@ reads as `awsds-infra-sandbox-1` and `awsds-infra-data`. Times are UTC.*
   offers no way to enable a model until a governance project exists and lists the caller as a member.
   The dialog's default for the provisioning role is the console's managed name, so a role the slice
   creates under that name would appear as the existing role, which is decision 13 (b)'s adoption.
+
+## 2026-10-19 — decision 13 taken
+
+- **[user] Decision 13**, in this session's chat after the console reading: *"Vamos pela opção (b)"*,
+  the recommended (b): the governance profile, project and Sandbox `InfrastructureAccess` membership in
+  `data-governance/governance/`, and the two model roles in a `[P]` slice `sandbox/model-access/` the
+  console adopts. Decision 11, the SCP amendment grown by `application-inference-profile/*`, stays the
+  user's.
+
+## 2026-10-19 — decision 13 (b): the governance project and `sandbox/model-access/` written and planned
+
+*Provenance. Claude, in the same session and worktree, as the infrastructure user with
+`InfrastructureAccess` in `Data Governance` (`awsds-infra-data`, with the slice's `sandbox`, `staging`
+and `identity` aliases) and in `Sandbox Account 1` (`awsds-infra-sandbox-1`). Plans only: nothing was
+applied. Account ids in the plans' output are replaced by the account's name. Times are UTC.*
+
+- **[Claude] The group the membership names**, read with `datazone search-group-profiles`: Sandbox's
+  `InfrastructureAccess` role has an `IAM_ROLE_SESSION_GROUP` profile, already a
+  `PROJECT_CONTRIBUTOR` of `eighth-experimentation` (INT-25's portal membership of 2026-10-15), and
+  the slice resolves its id from the role's ARN, as it does Staging's.
+- **[Claude] `data-governance/governance/`**: `model-governance.tf` and the Sandbox role's two lookups
+  in `data.tf`, beside Staging's. The plan, saved as `~/tmp/s17-model-governance.tfplan` at 20:14:20:
+
+  ```
+    # awscc_datazone_project.model_governance[0] will be created
+    # awscc_datazone_project_membership.model_governance_sandbox_infrastructure[0] will be created
+    # awscc_datazone_project_profile.model_governance[0] will be created
+  Plan: 3 to add, 0 to change, 0 to destroy.
+  ```
+
+  The profile is *Generative AI model governance*, `ENABLED`, with no environment configuration; the
+  project `GenerativeAIModelGovernanceProject`; the membership `PROJECT_CONTRIBUTOR` for that
+  session group.
+- **[Claude] `sandbox/model-access/`**, a new `[P]` slice at rank 52, registered in `layers.py` and
+  given `account_folder` and `domain` by `backend.py`. Its lock file is `sandbox/observability/`'s,
+  `hashicorp/aws` 6.69.1 on the three platforms, since the first init locked one platform and
+  `check-provider-locks.py` failed it. The plan, saved as `~/tmp/s17-model-access.tfplan` at 20:13:12:
+
+  ```
+    # module.model_consumption_role.aws_iam_role.this will be created
+    # module.model_consumption_role.aws_iam_role_policy.inline["invoke-through-application-inference-profiles"] will be created
+    # module.model_consumption_role.aws_iam_role_policy_attachment.managed["arn:aws:iam::aws:policy/service-role/AmazonDataZoneBedrockModelConsumptionPolicy"] will be created
+    # module.model_provisioning_role.aws_iam_role.this will be created
+    # module.model_provisioning_role.aws_iam_role_policy.inline["model-management"] will be created
+  Plan: 5 to add, 0 to change, 0 to destroy.
+  ```
+
+  The provisioning role is `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>`, path
+  `/`, boundary `awsds-sandbox-project-boundary`, trust `datazone.amazonaws.com` (`sts:AssumeRole`,
+  `sts:SetContext`) under `aws:SourceAccount` `<Data Governance Account>`. Its `model-management`
+  policy admits `CreateInferenceProfile` from the three scoped models' `foundation-model` ARNs and Titan
+  V2's, Region-less, and from the three `us.` profiles in `us-west-2`, beside AWS's two statements on
+  `application-inference-profile/*` of `<Sandbox Account 1>`. The consumption role is
+  `awsds-sandbox-bedrock-model-consumption`, with the same trust and boundary, AWS's consumption policy
+  and `AllowInferenceProfileToInvokeFoundationModels` on `foundation-model/*` under
+  `bedrock:InferenceProfileArn`.
