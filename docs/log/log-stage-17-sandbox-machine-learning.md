@@ -1842,3 +1842,80 @@ ids replaced by the account's name. Times are UTC.*
   Bedrock refuses an unknown profile id before it authorizes, so that row reads the same on both sides
   of the amendment. It left `probes.py` before the commit, and the battery holds 48 `ou` rows. 7.3's
   chat after the apply measures the profile's pass.
+
+## 2026-10-19 — decision 11 applied by the user; the readings after, and 7.3's second chat
+
+*Provenance. The apply is the user's, from `Identity` as `awsds-infra-identity`, its output pasted in
+this session's chat. Everything after it is Claude's: the reads as `awsds-infra-identity`,
+`awsds-infra-sandbox-1` and `awsds-infra-data`, the battery, and the chat through Claude in Chrome in
+the user's portal session as the Data Scientist User (the account menu reads *Data Scientist User*), in
+a tab opened by URL, one prompt per model, `Responda apenas: ok`, as in the first reading. The portal's
+text is quoted verbatim with the account ids replaced by the account's name. Times are UTC.*
+
+- **[user] The apply** of `~/tmp/s17-decision-11-scp.tfplan`:
+
+  ```
+  aws_organizations_policy.this["awsds-org-scp-ou-interactive"]: Modifying... [id=p-tgda7n58]
+  aws_organizations_policy.this["awsds-org-scp-ou-interactive"]: Modifications complete after 2s [id=p-tgda7n58]
+  Releasing state lock. This may take a few moments...
+
+  Apply complete! Resources: 0 added, 1 changed, 0 destroyed.
+  ```
+
+  Among the outputs, `"awsds-org-scp-ou-interactive" = 1483`. Identity's trail holds `UpdatePolicy` of
+  `p-tgda7n58` at 21:58:46 by `InfrastructureAccess`, with no error.
+- **[Claude] The re-plan**, 21:59:36 to 21:59:55: `No changes. Your infrastructure matches the
+  configuration.`
+- **[Claude] The live statement**: `DenyBedrockInvocationOutsideTheScopedModels` lists the six
+  spellings, then `arn:aws:bedrock:*::foundation-model/amazon.titan-embed-text-v2:0` and
+  `arn:aws:bedrock:*:*:application-inference-profile/*`. The description ends *"Stage 17 decision 11 -
+  the embeddings model and application inference profiles are admitted beside them."*
+- **[Claude] The battery's after-half**, `--phase ou`, 22:00:11 to 22:01:17: `41 as expected, 0
+  unexpected, 7 not measured`. Titan's row:
+
+  ```
+  ok  	ou	sandbox1	allow	ALLOWED	succeeded	interactive (inherited): bedrock:InvokeModel on amazon.titan-embed-text-v2:0 (Stage 17 decision 11)
+  ```
+
+- **[Claude] `./aws/bedrock-scope.py`**: `BS-1` to `BS-7` pass. `BS-1` reads `3 model(s), 3 region(s);
+  admitted beside it: amazon.titan-embed-text-v2:0; application inference profiles admitted`.
+- **[Claude] `./aws/bedrock.py`**: every check passes or is a note, and `BR-4` reads `3 of 3 in
+  awsds-infra-sandbox-1`. Its failed calls are the seven profiles whose SSO sessions were not signed in
+  (`awsds-ctadmin`, `awsds-deploy`, `awsds-devenv`, `awsds-governance`, `awsds-scientist`). `BR-7`'s
+  note reads `availability DOES distinguish the form`: `agreementAvailability` reads `AVAILABLE` in
+  `Sandbox Account 1`, the one account with a form, and `NOT_AVAILABLE` in the five without, for the
+  three scoped models. The snapshots of 2026-09-12 and 2026-10-11 on this laptop read the control `not
+  runnable`. An availability read is not an invocation, so the amendment does not move it; `BR-7`
+  belongs to Stage 6e.
+- **[Claude] `./aws/sandbox-ml.py`**, 22:04:06 to 22:06:47: all checks passed. `ML-8` reads Titan's
+  availability `agreement AVAILABLE, authorization AUTHORIZED, entitlement AVAILABLE, region AVAILABLE`
+  and `admitted by the repository's SCP (decision 11), application inference profiles admitted`.
+- **[Claude] Claude Haiku 4.5**, sent at 22:08:48 by the trail: the answer `ok`, and the playground's
+  reading `Input: 13`, `Output: 4`, `Latency: 652ms`.
+- **[Claude] Nova Lite**, sent at 22:09:15 by the trail. The answer, and a red banner *"An error
+  occurred in Explorer Chat."* carrying the same text:
+
+  ```
+  Something went wrong. User: arn:aws:sts::<Sandbox Account 1>:assumed-role/awsds-sandbox-bedrock-model-consumption/28f1b390-0041-7068-8cc7-9ccef94277d1@d747chsyrc379s is not authorized to perform: bedrock:InvokeModelWithResponseStream on resource: arn:aws:bedrock:us-west-2::foundation-model/amazon.nova-lite-v1:0 with an explicit deny in a service control policy: arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-tgda7n58
+  ```
+
+- **[Claude] The trail**, Sandbox's. Haiku's `ConverseStream` at 22:08:48 is an `AwsApiCall` as
+  `awsds-sandbox-bedrock-model-consumption`, session `…@cty232yk8f2zyo`, with `modelId` the
+  playground's profile `cp0gmvjv1h8q`, `inferenceRegion` `us-east-2`, resource
+  `foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0`, no error, no `vpcEndpointId`, and host
+  `bedrock-runtime.us-west-2.amazonaws.com`; an `AwsServiceEvent` of the same name in the same second
+  names the same model. Nova Lite's `ConverseStream` at 22:09:15, session `…@d747chsyrc379s`, is
+  `AccessDenied` with the text above, its resource the profile `csu817ovl4kz`, no `vpcEndpointId`.
+- **[Claude] The subscriptions**, read at 22:10 in Data Governance with the governance project as
+  approver: the same three as the first chat (two to Haiku 4.5's playground listing at 21:12:18, one to
+  Nova Lite's at 21:13:51), all `APPROVED`. The second chat subscribed to nothing.
+- **[Claude] `./aws/bedrock-usage.py 2026-10-19T21:00Z 2026-10-19T22:20Z`**, Sandbox, `us-west-2`:
+  `BU-1` to `BU-4` pass. `cp0gmvjv1h8q` carries 1 invocation, 13 tokens in and 4 out, the Haiku chat;
+  Titan 1 invocation and 2 tokens in, the battery's row; each `us.` profile 2 invocations, the
+  battery's two halves. `BU-5` notes `cp0gmvjv1h8q` and Titan unpriced: the script prices by model id
+  and reads the profile's series under the profile's id.
+- **[Claude] What the reading says.** Verification xix is answered. After the amendment the scoped model
+  answers through the playground's application inference profile. The model outside the scoped set
+  passes the profile's pass and is refused on its foundation model's, by `p-tgda7n58`, attributable
+  from its own text. The model ceiling holds on the foundation-model pass, which decision 11 had
+  recorded as unmeasured.
