@@ -395,8 +395,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   IAM role being two DataZone principals (`lessons.md`); decisions 1-3 are taken; pass 3 done, `deploy-staging` provisioned with no SageMaker AI domain and the two
   SMUS roles made Staging's Lake Formation admins (OQ 24); 0.4 answered yes (a non-member starts the
   workflow); 4.1's branch `stage-18-staging` pushed; 4.2 deployed `v0.2.1`'s bundle from its extracted
-  folder, the CLI reading local content from the manifest's; 4.4's first run was refused `glue:GetJob`
-  until `staging/studio/workflows.tf`, `sandbox/workflows/`'s grant, is applied;
+  folder, the CLI reading local content from the manifest's; 4.4's run `SUCCESS` once the user applied
+  `staging/studio/workflows.tf`, `sandbox/workflows/`'s grant;
   an associated account no person works in goes in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in
   `SMUS_MEMBERS`. Its 4.4's two prerequisites, Stage 8 3.0's first half and Stage 10 1.2's `vpc-v0.4.0`
   on `staging/foundation/`, were applied 2026-10-19 by the user.

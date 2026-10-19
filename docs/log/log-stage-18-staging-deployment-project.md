@@ -782,3 +782,45 @@ are UTC.*
   created at 20:46:41Z, version `v1`, its Sids `DescribeAProcessingJobNoProjectHolds`,
   `TagAProcessingJobWithTheCallersProject` and `GetAGlueJobNoProjectHolds`, and it is attached to the
   project role beside the blueprint's three policies.
+- **[Claude] 4.4, the second run**, the same command from the same folder, 20:47:53Z, exit 0, *"Run ID:
+  JSSr2Br9Zsf2b26"*. `SUCCESS` read at 21:02:31Z; the service's `StartedOn` 20:48:04Z, `CompletedOn`
+  21:01:32Z, `Duration` 808, no error. Each task attempt 1, `SUCCESS`:
+  - `transform`, 20:48:41 to 20:51:25Z, 164 s: *"Creating job: app-etl-d1veybt5oak4uo"*, the worker's
+    `glue:GetJob` answered `EntityNotFoundException` at 20:48:46Z, then `CreateJob` and `StartJobRun`.
+    The job carries the project role, the two Glue network connections, Glue 6.0, two `G.1X` workers, no
+    security configuration and one tag, `AmazonDataZoneProject`; its run `jr_5d56c4cd…` `SUCCEEDED`,
+    20:48:46 to 20:51:23Z, 131 s, 262 DPU-seconds.
+  - `process`, 20:52:01 to 21:00:09Z, 488 s: the worker's `DescribeProcessingJob` answered
+    `ValidationException` (*"Could not find requested job with name: app-etl-20261019T205205"*), then
+    `CreateProcessingJob`. The job `app-etl-20261019T205205` `Completed`, created 20:52:06Z, processing
+    ended 20:57:53Z: `ml.t3.medium`, within Staging's quota of 4; the volume key set; network isolation
+    and inter-container encryption on; the project's two subnets and security group; the project role;
+    the image by digest from `awsds-prod-ecr-app-etl`; the tags `AmazonDataZoneProject`,
+    `AmazonDataZoneDomain` and `AmazonDataZoneScopeName=dev`, the last two not in the definition. No
+    statement of the `Workloads` document refused it, Staging's first SageMaker job.
+  - `summarize`, 21:00:47 to 21:00:53Z, 6 s, and `write_result`, 21:01:25 to 21:01:32Z, 7 s.
+- **[Claude] The outputs** under the project's `shared/app-etl/`: `work/glue/trades.csv`, 436 bytes,
+  20:51:12Z; `work/job/trades.parquet`, 2,126 bytes, and `trades.summary.json`, 511 bytes, 20:57:50Z;
+  `outbox/report.json`, 332 bytes, 21:01:33Z, reading `"rows": 10`, the input `trades.csv` with SHA256
+  `a84e2ff352f746eed76c0c7643703831c08fcd88c45ee386070b07c6ad2d2dac`, the sums `notional` 49850.5,
+  `price` 701.2399999999999 and `quantity` 1530.
+- **[Claude] CloudTrail, 20:47:50 to 21:02:40Z**, read at 21:05Z: the project role in five sessions. The
+  worker's, `AmazonMWAAServerless`, called from Staging's private range through Staging's endpoints:
+  `glue` 30 (`GetJob`, `CreateJob`, `StartJobRun`, `GetJobRun` 27), `sagemaker.api` 19
+  (`DescribeProcessingJob` 18, `CreateProcessingJob`), `kms` 11 and `logs` 4. The managed services'
+  sessions called from AWS's own addresses, through no endpoint of Staging's: `GlueJobRunnerSession`
+  (the job's network interfaces and tags, `glue:GetConnection` 4, `logs:CreateLogGroup` 2, KMS),
+  `GlueVpcAuthSession`, `AnalyticsValidation` (three `DryRun` EC2 calls), and `SageMaker` (the job's
+  network interface, `ecr:GetAuthorizationToken`, `BatchGetImage` 3, `GetDownloadUrlForLayer` 33,
+  `logs:CreateLogGroup`, KMS). The refusals: `SageMaker`'s direct `kms:CreateGrant` on the project key
+  (*"no identity-based policy allows the kms:CreateGrant action"*), with the job going on as 6i
+  measured in Sandbox; one `ecr:BatchGetImage` `InvalidParameterException` on the repository name's
+  pattern; the Glue session's two `DeleteNetworkInterface` *"currently in use"*; ECS's 15
+  `AttachNetworkInterface` retries. `sagemaker.amazonaws.com` created a trial component,
+  `app-etl-20261019T205205-aws-processing-job`, four lineage artifacts (three `DataSet`, one `Image`)
+  and four associations.
+- **[Claude] The log groups the run created**, none with retention: `/aws/sagemaker/ProcessingJobs`
+  (20:57:40Z, no CMK) and the Glue job's `datazone-d1veybt5oak4uo-dev/error` (20:49:14Z) and `/output`
+  (20:50:03Z), beside 4.2's workflow group, `EXC-10`'s shape in Staging.
+- **[Claude] 4.4's first half done.** `start-workflow-run` as the deploy identity waits on 4.3
+  (decision 4).
