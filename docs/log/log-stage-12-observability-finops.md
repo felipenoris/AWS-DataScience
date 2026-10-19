@@ -254,3 +254,18 @@ slices, alarms, quotas, cost", read-only, about 20:55 to 20:58 UTC.*
   `namespace_name`, so an account holding neither (a Stage 14 unit, a rebuild) could plan neither first.
   `sandbox/observability/` now builds the name as `sandbox/warehouse/data.tf` does,
   `awsds-${var.env}-warehouse`, and reads no warehouse state. Code only: its re-plan reads `No changes`.
+
+## 2026-10-19 — the Sandbox alerts subscription confirmed, and `OB-3` passing in Sandbox
+
+*The user confirmed the subscription; Claude read it back, the orchestrating session of 2026-10-18's
+third round, from the laptop as the infrastructure user (`awsds-infra-sandbox-1`, `InfrastructureAccess`
+in `Sandbox Account 1`, and the other `awsds-infra-*` profiles), read-only, at 02:51 UTC.*
+
+- **[user] The confirmation**: the e-mail subscription of `awsds-sandbox-alerts`, created by the slice's
+  apply on 2026-10-18, confirmed from the link in AWS's message; the page read *"Subscription confirmed!"*.
+- **[Claude] Read back**: `get-topic-attributes` reads 1 confirmed, 0 pending, 0 deleted, and
+  `list-subscriptions-by-topic` one `email` subscription with an ARN, no longer `PendingConfirmation`.
+- **[Claude] `./aws/observability.py`, 02:51:56Z, exit 2**: `OB-3` `pass` in Sandbox, *"every alarm
+  notifies a topic that resolves (7 alarms)"*, the five quota alarms and the two warehouse alarms; `fail`
+  in Production on the three `[D]` hosts' alarms alone, `EXC-19`'s remaining half; `OB-1` and `OB-5`
+  `pass` in every account, `OB-2` and `OB-4` the notes of 2026-10-18.

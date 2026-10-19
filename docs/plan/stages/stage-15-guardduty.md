@@ -131,7 +131,8 @@ every Region**, so a second Region later repeats step 1's command, never picks a
   record the topic name and who subscribes. It is not the project's first notification: the break-glass
   topic `awsds-org-break-glass-alerts` in Management (Stage 1a) and Stage 8 decision 5's
   `awsds-prod-alerts` and `awsds-staging-alerts` already reach a person (one confirmed subscription each,
-  read 2026-10-18), while Stage 12's `awsds-sandbox-alerts` waits on the user's confirmation; this is the
+  read 2026-10-18), and Stage 12's `awsds-sandbox-alerts` since the user confirmed its subscription on
+  2026-10-19; this is the
   first for threat findings. **Create a new `awsds-*` topic; do not reuse Control Tower's** —
   and this is measured, not assumed: the `Security` OU's Control Tower SCP was read from the Identity
   profile on 2026-08-18 and carries three SNS statements, all excluding only `AWSControlTowerExecution`.

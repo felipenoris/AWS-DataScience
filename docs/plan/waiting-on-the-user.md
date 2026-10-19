@@ -48,7 +48,6 @@ own Decisions-due table keeps the reasoning and the recommendation.
 
 | Act | Where |
 |---|---|
-| Confirm the e-mail subscription of `awsds-sandbox-alerts`, created on 2026-10-18 at 20:54Z and reading `PendingConfirmation` | Stage 12 |
 | Activate the cost allocation tags in Management's Billing console; the analyzer in Audit | Stage 12 4.1, 7.1 |
 | Read Cost Explorer for August and September in Management, Log Archive and Audit, the accounts no CLI profile reaches | Stage 12 4.2 |
 | The persona's refused job and its implicit-deny attempt | 6d 1.1, 1.2 |

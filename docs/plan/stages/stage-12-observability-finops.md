@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **in progress since 2026-10-18** ([log](../../log/log-stage-12-observability-finops.md)). Step 10's `./aws/observability.py` written 2026-10-17. **Built in Production 2026-10-18**: `production/observability/` (the hub dashboard, the proxy log's two metric filters, the refusal alarm, the VPCs-per-Region quota alarm) and the CloudWatch statement on `awsds-prod-alerts`, both re-planning `No changes`. **`sandbox/observability/` was applied the same day by the orchestrating session** (9 added, `No changes` after), the topic's e-mail subscription waiting on the user's confirmation. 4.2 read the bill from the accounts with a profile: **at least USD 53.31 in August and 74.48 in September**, above D12's 50, and the model is rewritten from it. `OB-3` fails since the first wired alarm, by design, until the three `[D]` hosts' alarms are wired (`EXC-19`); Sandbox's two warehouse alarms notify `awsds-sandbox-alerts` since PR #181's apply. Scoped against [D38](../decisions/D38-single-egress-hub.md): no NAT panels, and three lines the hub creates — the proxy's access log and its refusal rate, the DNS Firewall's per-query charge, the peering bytes |
+| **Status** | **in progress since 2026-10-18** ([log](../../log/log-stage-12-observability-finops.md)). Step 10's `./aws/observability.py` written 2026-10-17. **Built in Production 2026-10-18**: `production/observability/` (the hub dashboard, the proxy log's two metric filters, the refusal alarm, the VPCs-per-Region quota alarm) and the CloudWatch statement on `awsds-prod-alerts`, both re-planning `No changes`. **`sandbox/observability/` was applied the same day by the orchestrating session** (9 added, `No changes` after), the topic's e-mail subscription confirmed by the user on 2026-10-19, so `OB-3` passes in Sandbox. 4.2 read the bill from the accounts with a profile: **at least USD 53.31 in August and 74.48 in September**, above D12's 50, and the model is rewritten from it. `OB-3` fails since the first wired alarm, by design, until the three `[D]` hosts' alarms are wired (`EXC-19`); Sandbox's two warehouse alarms notify `awsds-sandbox-alerts` since PR #181's apply. Scoped against [D38](../decisions/D38-single-egress-hub.md): no NAT panels, and three lines the hub creates — the proxy's access log and its refusal rate, the DNS Firewall's per-query charge, the peering bytes |
 | **Prerequisites** | any stage that created resources — and **one real invoice**, met: the August and September bills, read from Cost Explorer in every account with a CLI profile (2026-10-14 for Config, 2026-10-18 in full). Management, Log Archive and Audit hold no profile and are unread |
 | **Consumes** | [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | nothing new crosses an account boundary. What it **retires** is a set of estimates |
@@ -308,6 +308,9 @@ and this one is not. **Explanation:** the checks are cheap because the facts are
 - **After the warehouse apply, 2026-10-18** (the orchestrating session's reading, `awsds-infra-sandbox-1`):
   Sandbox's seven alarms `broken` on the unconfirmed subscription, the *"notifying nobody"* line gone.
   Production's three `[D]` hosts' alarms are the only unwired ones.
+- **After the user confirmed the e-mail subscription, 2026-10-19T02:51:56Z**: `awsds-sandbox-alerts` holds
+  one confirmed subscription and none pending, and `OB-3` passes in Sandbox, *"every alarm notifies a topic
+  that resolves (7 alarms)"*. Production's three `[D]` hosts' alarms are the only `fail` (`EXC-19`).
 
 ---
 
