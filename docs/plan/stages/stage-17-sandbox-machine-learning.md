@@ -515,6 +515,12 @@ inside pass 7, 7.2 waits on 7.0b's apply, 7.4a's second sync waits on decision 1
   model outside the scoped three, expected refused by `DenyBedrockInvocationOutsideTheScopedModels`, the
   SCP's first refusal from the portal. `bedrock-usage.py` reads the tokens. Waits on decision 13, which
   orders the chat around decision 11's amendment: on 2026-10-19 the Playground listed no model.
+  **The first chat, read 2026-10-19 at 21:13 UTC** (the log), after decision 13's third step and before
+  the amendment: the playground lists Haiku 4.5 and Nova Lite, and both answer *"…not authorized to
+  perform: bedrock:InvokeModelWithResponseStream on resource: …application-inference-profile/… with
+  an explicit deny in a service control policy: …p-tgda7n58"*, as the consumption role in a session
+  named after the person and the environment, with no `vpcEndpointId`. The chat after the amendment
+  is the step's remainder.
 - **7.4 — [user] The objects, one each**: a prompt with a variable and two versions; a guardrail with one
   denied topic and the PII filter, attached to 7.4b's chat agent; a flow with a prompt node and a model
   node, run once; an evaluation job, automatic, over a twenty-line dataset in `shared/ml-demo/bedrock/`,
@@ -906,7 +912,7 @@ recommendation stated (Lesson 16).
 | xvi | Does the downloaded pipeline definition equal the committed source, placeholders aside? | 5.2 |
 | xvii | Does adding the Generative AI capability tag the project role with `EnableAmazonBedrockIDEPermissions`, and what else does it provision? | 7.2 |
 | xviii | As whom, and through which door, does the portal create and invoke a prompt, a guardrail, an agent, a flow and an evaluation: the project role, a project Bedrock role, a `vpcEndpointId` or none? | 7.5 |
-| xix | Does the SCP refuse a model outside the scoped three from the playground, with its wording? | 7.3 |
+| xix | Does the SCP refuse a model outside the scoped three from the playground, with its wording? **Before decision 11's amendment, read 2026-10-19**: it refuses every playground model, Haiku 4.5 included, on the application inference profile's pass, *"with an explicit deny in a service control policy"* naming `p-tgda7n58`; the refusal of Nova Lite on its foundation model waits for the amendment | 7.3 |
 | xx | What did the MLflow App bill on the sitting's day, read in Cost Explorer? | 8.2 |
 | xxi | Which quotas does a young account hold for the four instance types, and is any zero? **Answered 2026-10-17: three were zero**, `ml.m5.xlarge for training job usage` (`L-CCE2AFA6`), `ml.m5.large for endpoint usage` (`L-614B09FD`) and `ml.m5.large for transform job usage` (`L-236AE59F`); `ml.t3.medium for processing job usage` (`L-0CE343FE`) was 4. **Read again 2026-10-18 at 19:51 UTC: the three read 20, 8 and 8 and the processing quota 10**, the three requests (to 1 each, filed 2026-10-17) still `CASE_OPENED`. **What raised the values is outside the account's record** (read 2026-10-18, ~22:20 UTC): Sandbox's trail holds, from 2026-10-17 21:00Z to 2026-10-18 21:00Z, the three `RequestServiceQuotaIncrease` calls (`desiredValue` 1.0, as `InfrastructureAccess`) and reads alone, and no `support.amazonaws.com` event, so AWS applied 20, 8 and 8 on its side with the cases still open | 0.2 |
 | xxii | Does the knowledge base's first sync fail on the SCP's explicit deny of `InvokeModel` on the embeddings model, as which role, and does the second sync complete after decision 11's apply? | 7.4a |

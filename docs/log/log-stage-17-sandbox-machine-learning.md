@@ -1739,3 +1739,53 @@ before and after are Claude's, as `awsds-infra-sandbox-1` and `awsds-infra-data`
   writes nothing for a model not yet enabled. Its preselected consumption role is again a fallback name
   that no role carries, so a save left on it would point the model at a missing role. The playground's
   profiles are the console user's, named after the domain.
+
+## 2026-10-19 — 7.3's first reading: the playground refused by the SCP, before decision 11's amendment
+
+*Provenance. Claude, at the user's request in this session's chat, through Claude in Chrome in the
+user's portal session as the Data Scientist User (the account menu reads *Data Scientist User*), in a
+tab opened by URL. Claude's clicks opened the model list, chose a model and sent one prompt per model,
+`Responda apenas: ok`. The reads around them are Claude's, as `awsds-infra-identity` (the live SCP),
+`awsds-infra-sandbox-1` and `awsds-infra-data`. The portal's text is quoted verbatim with the account
+ids replaced by the account's name. Times are UTC.*
+
+- **[Claude] The SCP before**, 20:58: `DenyBedrockInvocationOutsideTheScopedModels` in `p-tgda7n58`
+  lists the six spellings of the repository's document and no `application-inference-profile`.
+- **[Claude] The playground's model list**, 21:12: *Spotlight models*, Nova Lite, then Claude Haiku 4.5
+  *Cross-region*, and nothing else: the two the console enabled for the playground, where 7.2 had read
+  *"No models found"*.
+- **[Claude] Claude Haiku 4.5**, sent at about 21:13:07. The answer, and a red banner *"An error occurred
+  in Explorer Chat."* carrying the same text:
+
+  ```
+  Something went wrong. User: arn:aws:sts::<Sandbox Account 1>:assumed-role/awsds-sandbox-bedrock-model-consumption/28f1b390-0041-7068-8cc7-9ccef94277d1@cty232yk8f2zyo is not authorized to perform: bedrock:InvokeModelWithResponseStream on resource: arn:aws:bedrock:us-west-2:<Sandbox Account 1>:application-inference-profile/cp0gmvjv1h8q with an explicit deny in a service control policy: arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-tgda7n58
+  ```
+
+- **[Claude] Nova Lite**, sent at 21:13:56:
+
+  ```
+  Something went wrong. User: arn:aws:sts::<Sandbox Account 1>:assumed-role/awsds-sandbox-bedrock-model-consumption/28f1b390-0041-7068-8cc7-9ccef94277d1@d747chsyrc379s is not authorized to perform: bedrock:InvokeModelWithResponseStream on resource: arn:aws:bedrock:us-west-2:<Sandbox Account 1>:application-inference-profile/csu817ovl4kz with an explicit deny in a service control policy: arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-tgda7n58
+  ```
+
+- **[Claude] The trail.** Sandbox's holds `ConverseStream` at 21:13:08 as
+  `awsds-sandbox-bedrock-model-consumption`, session `28f1b390-0041-7068-8cc7-9ccef94277d1@cty232yk8f2zyo`,
+  `AccessDenied`, no `vpcEndpointId` and a browser's user agent; `ListFoundationModels` as the same role
+  at 21:12:24 and 21:13:05; and `AssumeRole` of the role by `datazone.amazonaws.com` with that session
+  name at 21:12:23 (twice), 21:13:05 and 21:13:07. Nova Lite's `ConverseStream`, delivered by 21:16:05,
+  is at 21:13:56, session `…@d747chsyrc379s`, `AccessDenied`, no `vpcEndpointId`, so Nova Lite was sent
+  at 21:13:56. Data Governance's holds `CreateSubscriptionRequest` by the domain execution role at
+  21:12:18 (twice) and 21:13:51, and `GetConnection` from 21:11:53.
+- **[Claude] The subscriptions and grants**, read at 21:15. Three subscriptions, `APPROVED`, each with a
+  user as principal: two to Haiku 4.5's playground listing, both at 21:12:18, and one to Nova Lite's at
+  21:13:51. Their grants read `COMPLETED`, the asset `GRANTED`, each naming a connection (21:12:19,
+  21:13:52).
+- **[Claude] What the reading says.** The playground's path works to its last call. The list shows the
+  enabled models, and the portal subscribes for the person, with no approval since the listing asks
+  for none. DataZone grants the subscription and vends the consumption role to a session named
+  `<DataZone user>@<environment>`, and the browser calls Bedrock through the playground's application
+  inference profile, past every VPC endpoint. The SCP refuses that call on the profile's pass, attributable
+  from its own text, because the statement's `NotResource` names no application inference profile.
+  Decision 13's prediction and decision 11's grown amendment rest on this reading. Verification xix is
+  answered in part: before the amendment the SCP refuses every playground model, the scoped one
+  included, on the profile; the refusal of the model outside the scoped set on its foundation model
+  waits for the amendment. The portal subscribed twice to Haiku 4.5's listing in the same second.
