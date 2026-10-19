@@ -93,7 +93,7 @@ Each line names the invoice line that corrected it (Stage 12 validation 3).
   the organization.
 - **Staging holds a zone.** `staging.awsds.internal` bills 0.50 a month (`HostedZone`), where the floor said
   Staging held none.
-- **The KMS row** read ~13 for a year-one set; `us-west-2-KMS-Keys` billed 11.13 in September.
+- **The KMS row** read ~13 for a year-one set; `us-west-2-KMS-Keys` billed 11.13 in September. `alias/awsds-staging-project` joined on 2026-10-19 for Stage 18's life (`staging/studio/`), +1.00 a month while it exists.
 - **The warehouse's first bill.** This file said no free trial absorbed its 9.48 USD; the Redshift
   Serverless trial did, and no Amazon Redshift line appears through October 17 (*The warehouse*).
 
