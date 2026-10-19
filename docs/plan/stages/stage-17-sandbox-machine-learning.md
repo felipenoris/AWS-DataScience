@@ -768,7 +768,9 @@ recommendation stated (Lesson 16).
     (7.4a) are the blueprint's, not the entry's: AWS's blueprint page lists them with their execution
     role, they are the service's plumbing for the index and the ingestion trigger, and `ML-8` reads where
     they run; Stage 11 §3's ledger gets them in the same row.
-11. **The embeddings model at the SCP** (7.4a). Recommended: **(a) the `foundation-model` ARN of
+11. **The embeddings model at the SCP** (7.4a). **Taken by the user 2026-10-19: (a), grown by
+    `application-inference-profile/*`** as the 2026-10-19 reading below says. Recommended: **(a) the
+    `foundation-model` ARN of
     `amazon.titan-embed-text-v2:0` added to `DenyBedrockInvocationOutsideTheScopedModels`'s
     `NotResource`**, region-less like the six entries there, applied from `Identity` with the battery's
     row for it written in the same sitting (6e 7.5's standing rule; 7.4a says which). It is the first entry of that list

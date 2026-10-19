@@ -1789,3 +1789,12 @@ ids replaced by the account's name. Times are UTC.*
   answered in part: before the amendment the SCP refuses every playground model, the scoped one
   included, on the profile; the refusal of the model outside the scoped set on its foundation model
   waits for the amendment. The portal subscribed twice to Haiku 4.5's listing in the same second.
+
+## 2026-10-19 — decision 11 taken
+
+- **[user] Decision 11**, in this session's chat after the context was laid out: *"Ok, pode seguir
+  conforme sua recomendação. Entendi que é a opção (a)."*, the recommended (a) grown by decision 13's
+  reading. `DenyBedrockInvocationOutsideTheScopedModels` admits Titan Text Embeddings V2's
+  `foundation-model` ARN and `arn:aws:bedrock:*:*:application-inference-profile/*`, after the commit
+  that teaches `aws/awslib/bedrockscope.py` an admitted model, with the battery's rows for both and the
+  apply by the user's hand from `Identity`.
