@@ -813,3 +813,99 @@ the applies are the user's, since the app's auto-mode classifier refuses them to
   open until a snapshot in Audit reads the analyzer's finding `RESOLVED`, that stage's condition.
 - **[Claude] What is owed.** [user] 1.5, from what makes *Create MLflow App* available; then 1.4's
   sitting, the image first (decision 4). [Claude] 1.7 after 1.5.
+
+## 2026-10-19 — 1.5's reading: what greys out *Create MLflow App*, and what refuses the Bedrock tools
+
+*Provenance. Claude, in the session that took 1.5 after PR #197 merged, from the worktree
+`verificar-ambiente-down-e95914` at `origin/main` `b737154`, with the whole environment down. AWS reads
+as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`)
+and in `Data Governance` (`awsds-infra-data`). The portal was read through Claude in Chrome, in a tab of
+its own in the user's session as the Data Scientist User: nothing was created or submitted, the one click
+was the left navigation's *AI apps* link, and the *Create* dropdown was never opened, its items being read
+from the page's own state. The portal's JavaScript was downloaded from its public CDN and read, never run;
+its logic is described below in Claude's words, each bundle named by its content hash. No quoted line
+carries an account id or an e-mail address. Times are UTC.*
+
+- **[Claude] The projects** (`get-project`, 05:46): both `ACTIVE` on profile `dh60xbal05q64w`,
+  `overallDeploymentStatus` `SUCCESSFUL`, last updated 2026-10-15 at 06:15:45 (`eighth-experimentation`)
+  and 06:15:15 (`test-experimentation`). The response carries no profile version; `update-project` takes
+  `--project-profile-version`, whose one accepted value is `latest`.
+- **[Claude] The profile**, read as `awsds-infra-data`, `awsds-infra-sandbox-1` being refused
+  (*"no resource-based policy allows the datazone:GetProjectProfile action"*): `ENABLED`, last updated
+  05:12:33, twelve environment configurations, `Tooling` `ON_CREATE` at order 0 and eleven `ON_DEMAND`;
+  `MLflowApp` at order 11, configuration `3342d20e-001b-4b95-9053-fbbc04b5c303`, blueprint
+  `agjvpzxbha9fbk`. No `AmazonBedrockKnowledgeBase` element.
+- **[Claude] The environments**: each project's two, unchanged since 05:24 (`Tooling` `ACTIVE`, the
+  `DataLake` one `CREATE_FAILED`).
+- **[Claude] The blueprint configurations, per account**: `list-environment-blueprint-configurations`
+  returns **12** as `awsds-infra-sandbox-1` (one page, no `nextToken`), `MLflowApp`'s with the same roles,
+  boundary and regional parameters as the Bedrock ones, and **0** as `awsds-infra-data` (05:50:37), the
+  domain's own account, where `US-3` requires none (D22).
+- **[Claude] How the portal deployed the `DataLake` environments**, from Data Governance's trail:
+  `CreateEnvironment` at 2026-09-13 01:45:21 and 2026-10-15 06:08:17, each as
+  `awsds-data-studio-domain-execution`, with `DataLake`'s `environmentConfigurationId`, its blueprint id,
+  the account, the Region and one user parameter, `glueDbName`. The portal acts in DataZone as the domain
+  execution role, in the domain's account.
+- **[Claude] What the page did on two loads** of `test-experimentation`'s Compute → *MLflow* (05:51:09
+  and 05:51:24, Data Governance's trail): two `ListEnvironmentBlueprintConfigurations` as
+  `awsds-data-studio-domain-execution`, no error; twelve `GetEnvironmentBlueprint`, one per profile
+  configuration; one `GetProjectProfile`.
+- **[Claude] The dropdown's state**, from the page's React props at 05:52, the menu closed:
+
+  ```
+  create-tracking-server  "Create MLflow Tracking Server"  disabled: true  "The MLExperiments blueprint is not enabled for this project. Contact your administrator to enable it."
+  create-mlflow-app       "Create MLflow App"              disabled: true  "The MLflowApp blueprint is not enabled for this project. Contact your administrator to enable it."
+  ```
+
+- **[Claude] Why, from the page's query cache**: both blueprint lookups failed, with one message.
+
+  ```
+  ["getMLflowAppBPConfig","MLExperiments"]  status: error  "No environment blueprint configurations found"  2026-10-19T05:51:24.047Z
+  ["getMLflowAppBPConfig","MLflowApp"]      status: error  "No environment blueprint configurations found"  2026-10-19T05:51:24.716Z
+  ```
+
+- **[Claude] The gate, read in the portal's code**
+  (`a.b.cdn.console.awsstatic.com/a/v1/WEM6FZF2DHQXD46KL5UJ4ENIRJAVORMDCSYVJVKZIIQ3VJQMLLXA/index.js`,
+  6,071,041 bytes). *Create MLflow App* is enabled when a lookup returns an environment configuration
+  id. The lookup resolves the name `MLflowApp` to a blueprint id by calling
+  `ListEnvironmentBlueprintConfigurations` with the domain id alone, as the domain execution role, and
+  reading each listed blueprint's name; an empty list throws the message above. It then takes the
+  profile's configuration with that blueprint id. The item is also disabled when that configuration is
+  `ON_CREATE`; it carries no owner check, where *Create MLflow Tracking Server* requires the project
+  owner. The list the portal reads is the domain account's, which holds none, while the twelve
+  configurations are `Sandbox Account 1`'s, so the item stays greyed in every project of this domain
+  whatever the profile carries. What would enable it is an `MLflowApp` configuration in Data Governance
+  (read from the code, not measured).
+- **[Claude] What the create sends**, from the same code: `CreateEnvironment` with the project, the
+  blueprint id, the profile's configuration id, the app's name as the environment's name, and one user
+  parameter, `mlflowAppName`, the same name. No artifact store, role or key travels with the create; the
+  form's artifact-storage field serves `UpdateMlflowApp`.
+- **[Claude] *Update project* changes nothing here**: the portal's `GetUpdateEligibility` for
+  `test-experimentation`, read from the page's cache at 06:03, answers `{"status": "UPDATE_NOT_AVAILABLE"}`,
+  and the lookup reads no project field. A project created after the profile change reads the same
+  domain-account list; none was created.
+- **[Claude] The Bedrock tools.** `test-experimentation`'s *AI apps* link opened
+  `/projects/<project>/bedrock/playground/chat`: *"This tool is not available for this project."* The
+  Bedrock module (`…/RLDNULH5G2X4O5BRWMHN7HKFEWSA3P4EGBV33RMSSWWVVU6UT5HQ/assets/module-GY0Cw3hN.js` and
+  `App-D6IrICgA.js`) maps the profile's configurations to resource types by managed-blueprint name, and
+  opens the whole Generative AI application, the Playground included, only when seven types are all
+  present: `ChatApp`, `Evaluation`, `FlowApp`, `Function`, `Guardrail`, `KnowledgeBase` and `Prompt`. The
+  map read for `test-experimentation` (05:56:24) holds `Project` (from `Tooling`), `ChatApp`,
+  `Guardrail`, `Function`, `Prompt`, `Evaluation` and `FlowApp`. `KnowledgeBase` is missing because
+  `AmazonBedrockKnowledgeBase` is category 2 and outside the profile; the refusal follows from the
+  profile alone, the domain account's configurations playing no part on that path.
+- **[Claude] AWS's pages, read the same morning.** *Update a project* (user guide) says an admin's
+  blueprint change reaches a project when its owner runs *Actions → Update project*. The admin guide's
+  project-profile pages describe `ON_DEMAND` blueprints as enabled later by project users and name no page
+  that does it. The *Generative AI application development* template enables seven Bedrock blueprints,
+  `AmazonBedrockKnowledgeBase` among them. `PutEnvironmentBlueprintConfiguration` requires
+  `enabledRegions` with a minimum of 0 items, and `ListEnvironmentBlueprintConfigurations` takes no
+  account filter. No page says the portal's MLflow entries read the domain account's configurations.
+- **[Claude] The three candidates, read.** A project created after the profile change: no, the gate
+  reads no project. The owner's *Update project*: no, `UPDATE_NOT_AVAILABLE`. A DataZone path that
+  deploys the environment: `CreateEnvironment` with configuration `3342d20e-…` is the request the
+  portal's create sends, and the gate it skips is the page's. DataZone authorizes it against the
+  `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant on `Sandbox Account 1`'s configuration, held by the
+  projects' contributors. The infrastructure user is a contributor of both projects through a group
+  profile whose role is `Sandbox Account 1`'s `InfrastructureAccess`; the Data Scientist User owns both
+  through an SSO profile, which no CLI identity reaches.
