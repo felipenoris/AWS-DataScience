@@ -43,12 +43,10 @@ locals {
     # the D13 boundary stops, or when a blueprint here proves to depend on it.
     # Compute.
     "EmrServerless",
-    # The generative-AI surface, six entries. `AmazonBedrockGenerativeAI` is a console grouping
-    # with no API identifier (measured 2026-08-21 - `list-environment-blueprints` returns seven
-    # `AmazonBedrock*` blueprints and no aggregate), and six of the seven are category 1.
-    # AmazonBedrockKnowledgeBase is absent - category 2, its vector store bills while it exists;
-    # it joins in the commit that enables it (Lesson 14). Decision 5's category 1 is delivered by
-    # naming them.
+    # The generative-AI surface. `AmazonBedrockGenerativeAI` is a console grouping with no API
+    # identifier (measured 2026-08-21 - `list-environment-blueprints` returns seven
+    # `AmazonBedrock*` blueprints and no aggregate), so decision 5's category 1 is delivered by
+    # naming them. AmazonBedrockKnowledgeBase, the seventh, is last in the list.
     "AmazonBedrockChatAgent",
     "AmazonBedrockEvaluation",
     "AmazonBedrockFlow",
@@ -56,12 +54,17 @@ locals {
     "AmazonBedrockGuardrail",
     "AmazonBedrockPrompt",
     # Experiment tracking, out of category 2 at Stage 17 pass 1 (decision 2, taken 2026-10-12):
-    # the serverless MLflow App. Last, so every environment above keeps its `deployment_order`.
-    # MLExperiments, the tracking server, stays category 2. Whether its template has a required
-    # parameter without a default, which `blueprint_parameters` below would then have to declare
-    # for UpdateProjectProfile, is read from the template before the apply (docs/SMUS.md, the
-    # category-2 checklist, step 3).
+    # the serverless MLflow App. MLExperiments, the tracking server, stays category 2. Its
+    # template's one user parameter, `mlflowAppName`, has a default, so `blueprint_parameters`
+    # below declares nothing for it (read 2026-10-18).
     "MLflowApp",
+    # The knowledge base, out of category 2 at Stage 17 step 7.0a (decision 1, taken 2026-10-12):
+    # the portal opens its Generative AI menu only when the profile carries all seven Bedrock
+    # blueprints (read from the portal's code 2026-10-19). Its template's parameters without a
+    # default are the four `datazoneEnvironment*` ones, none of them a user parameter, so
+    # `blueprint_parameters` declares nothing for it (read 2026-10-19). Appended last, like
+    # MLflowApp, so every environment above keeps its `deployment_order`.
+    "AmazonBedrockKnowledgeBase",
   ]
 
   member_account_ids = {

@@ -1058,3 +1058,295 @@ portal's *MLflow* tab in the user's session with nothing clicked. Times are UTC.
   `Tooling` environment's), the browser's user agent, no `vpcEndpointId`, the app's ARN as the only
   parameter, no error. The portal mints the URL as the project role, from the laptop, on the public
   SageMaker API.
+
+## 2026-10-19 — 7.0's before, and 7.0a's readings: the key page, the template, the console's form
+
+*Provenance. Claude, in a session the Stage 17 1.5 session started for 7.0a and 7.0b, from the worktree
+`stage-17-readings-7be400` at `origin/main` `1b95eaa`, as the infrastructure user with
+`InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and in `Data Governance`
+(`awsds-infra-data`), with the whole environment down. Every AWS call Claude ran was a read. The console
+session was the user's, as the infrastructure user in `Sandbox Account 1`, in a tab the user moved into
+Claude in Chrome's group: Claude navigated it by URL and read it, and the user's two clicks were
+**Enable** and **Cancel**. The console's JavaScript was downloaded from its public CDN and read, never
+run. No quoted line carries an account id or an e-mail address. Times are UTC.*
+
+- **[Claude] 7.0, the before.** `./aws/sandbox-ml.py`, 17:33:33 to 17:36:09 (the report stamped
+  17:36:07Z): *"all checks passed"*, exit 0, section 13 *"None."* Its `ML-8` rows, padding
+  compressed:
+
+  ```
+  note   ML-8  4gqfau9xuo6e4w: Bedrock tags   EnableAmazonBedrockPermissions true, EnableAmazonBedrockIDEPermissions absent (verification xvii).
+  note   ML-8  avhvbqn37ty7m8: Bedrock tags   EnableAmazonBedrockPermissions true, EnableAmazonBedrockIDEPermissions absent (verification xvii).
+  note   ML-8  knowledge bases   none - not built yet (pass 7, step 7.4a).
+  note   ML-8  S3 vector buckets   none
+  note   ML-8  agents   none - not built yet (pass 7).
+  note   ML-8  prompts   none - not built yet (pass 7).
+  note   ML-8  flows   none - not built yet (pass 7).
+  note   ML-8  guardrails   none - not built yet (pass 7).
+  note   ML-8  evaluation jobs   none - not built yet (pass 7).
+  note   ML-8  amazon.titan-embed-text-v2:0 availability   agreement AVAILABLE, authorization AUTHORIZED, entitlement AVAILABLE, region AVAILABLE
+  note   ML-8  DenyBedrockInvocationOutsideTheScopedModels amazon.titan-embed-text-v2:0   not admitted by the repository's SCP - step 7.4a's first sync is expected refused until decision 11's amendment.
+  pass   ML-8  role AmazonBedrockLambdaExecutionRole-4gqfau9xuo6e4w-bi356s1sacz0cw   boundary awsds-sandbox-project-boundary; project 4gqfau9xuo6e4w; policies AWSLambdaBasicExecutionRole, SageMakerStudioBedrockKnowledgeBaseCustomResourcePolicy, SageMakerStudioBedrockFunctionExecutionRolePolicy
+  pass   ML-8  role AmazonBedrockLambdaExecutionRole-avhvbqn37ty7m8-5hkjdsy3umpi1c   boundary awsds-sandbox-project-boundary; project avhvbqn37ty7m8; policies AWSLambdaBasicExecutionRole, SageMakerStudioBedrockKnowledgeBaseCustomResourcePolicy, SageMakerStudioBedrockFunctionExecutionRolePolicy
+  pass   ML-8  role AmazonBedrockServiceRole-4gqfau9xuo6e4w-bi356s1sacz0cw   boundary awsds-sandbox-project-boundary; project 4gqfau9xuo6e4w; policies SageMakerStudioBedrockFlowServiceRolePolicy, SageMakerStudioBedrockEvaluationJobServiceRolePolicy, SageMakerStudioBedrockAgentServiceRolePolicy, SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy
+  pass   ML-8  role AmazonBedrockServiceRole-avhvbqn37ty7m8-5hkjdsy3umpi1c   boundary awsds-sandbox-project-boundary; project avhvbqn37ty7m8; policies SageMakerStudioBedrockFlowServiceRolePolicy, SageMakerStudioBedrockEvaluationJobServiceRolePolicy, SageMakerStudioBedrockAgentServiceRolePolicy, SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy
+  pass   ML-8  Lambda functions   none but Control Tower's own
+  ```
+
+  It lists no OpenSearch Serverless collection. The four `AmazonBedrock*` roles are the `Tooling`
+  environments': `list-roles` dates them 2026-08-23 17:31:18 (`eighth-experimentation`) and
+  2026-10-15 06:05:44 (`test-experimentation`), each under the D13 boundary.
+- **[Claude] The checklist's step 2: AWS's key-permissions page**
+  (`adminguide/sagemaker-unified-studio-provisioned-resources-key-permissions.html`), read before the
+  template: one policy *"for the Tooling blueprint config"* with ten `Sid`s, `AllowKmsPermissionsForCloudWatch`,
+  `RedshiftCreateGrantKmsPermissions`, `AthenaKmsPermissions`, `EmrServerlessKmsPermissions`,
+  `EmrServerlessKmsPermissionsForProvisioning`, `AirflowCreateGrantKmsPermissions`,
+  `AllowKmsKeyUsageForSageMakerDomain`, `AllowSageMakerDomainKmsGrantPermissions`,
+  `GrantKMSPermissionsForAllProjectRoles` and `AllowCreateGrantForProjectRoles`. None names Bedrock,
+  a knowledge base, OpenSearch Serverless, S3 Vectors or Lambda, so `kms.tf` gains no statement.
+- **[Claude] Step 3: the blueprint and its template.** As `awsds-infra-data`,
+  `AmazonBedrockKnowledgeBase` is `48ls9aowlj9zv4`, updated 2026-07-02, with 61 user parameters, each
+  optional and editable. Its `templateUrl` names
+  `DataZone-AmazonBedrockKnowledgeBase-prod-20260316.template.json`, fetched at 17:31:41 by `aws s3api
+  get-object` as `awsds-infra-sandbox-1` from the URL's access-point alias: 130,848 bytes,
+  `LastModified` 2026-10-08T15:10:38Z. It declares 62 parameters:
+  - Four have no default, `datazoneEnvironmentEnvironmentId`, `datazoneEnvironmentProjectId`,
+    `datazoneEnvironmentDomainId` and `datazoneEnvironmentDomainArn`, and none is a user parameter
+    (inferred: DataZone fills them, as it fills `MLflowApp`'s three).
+  - Five carry `AllowedValues`: `knowledgeBaseType` (`VECTOR`, `SQL`; default `VECTOR`),
+    `storageConfigurationType` (`OPENSEARCH_SERVERLESS`, `NEPTUNE_ANALYTICS`, `RDS`, `S3_VECTORS`;
+    default `OPENSEARCH_SERVERLESS`), `logGroupRetention`, `useCustomerManagedKey` and
+    `useAwsManagedPoliciesWithoutBoundary` (`true`, `false`; default `false`). The profile locks no
+    value of this blueprint, so no locked value meets them.
+  - Fourteen are not user parameters: the four above, `datazoneScopeName`, `s3BucketArn`,
+    `kmsKeyArn`, `useCustomerManagedKey`, `useAwsManagedPoliciesWithoutBoundary`,
+    `bedrockServiceRoleArn`, `lambdaExecutionRoleArn`, `enableExternalS3DataSources`,
+    `logGroupRetention` and `componentDefinitionS3Path`; who fills the roles and the key is unread.
+    Thirteen user parameters are not in the template: the SQL knowledge base's Redshift and
+    query-generation fields and the three `contextEnrichment*`.
+
+  So `blueprint_parameters` declares nothing for the knowledge base.
+- **[Claude] What the template builds**: 22 resources. The knowledge base, its data source, an
+  OpenSearch Serverless collection `<collectionName>-<environment>` (default `bedrock-ide`) with a
+  `network` and a `data` policy, and two Lambdas, the index and the ingestion trigger, with their log
+  groups, exist only under `IsAOSSVectorStoreKB` (`knowledgeBaseType` `VECTOR` and
+  `storageConfigurationType` `OPENSEARCH_SERVERLESS`); with any other store the stack holds its wait
+  handles alone. The network policy sets `AllowFromPublic` true on the collection and its dashboard,
+  and the template writes no encryption policy. Its two IAM roles,
+  `AmazonBedrockExecutionRoleForKnowledgeBase__<environment>` and
+  `AmazonBedrockExecutionRoleForLambda-<environment>`, are created only when `bedrockServiceRoleArn`
+  and `lambdaExecutionRoleArn` are empty and the store is OpenSearch Serverless; their boundary is AWS's
+  `SageMakerStudioProjectUserRolePermissionsBoundary`, or none with
+  `useAwsManagedPoliciesWithoutBoundary` `true`, never `awsds-sandbox-project-boundary`.
+- **[user, Claude] Step 4: the console**, the DataZone console's **Associated domains** → `awsds-studio`
+  → **Blueprints**, 14 entries. The knowledge base has no row of its own: it is one of the seven in
+  `AmazonBedrockGenerativeAI` (*"It enables users to build generative AI applications using tools such
+  as Agents, Knowledge Bases, Guardrails, Flows, Functions, and Model Evaluation."*), status *Not all
+  enabled*. The grouping's page, read by URL: **Provisioning** type CloudFormation, provisioning role
+  `awsds-sandbox-smus-provisioning`; **Regions** the six configured Bedrock blueprints in `us-west-2`;
+  **Authorization** *"No domain units"* and *"You must authorize at least one domain unit."*, while the
+  page's Tooling card reads *"1 authorized domain unit(s)"*. A banner, *"Not all Amazon Bedrock
+  Generative AI blueprints are enabled."*, carries a **Retry** button, not clicked. The domain page also
+  offers *Enable new project experience* (*"Create an administration project to allow the creation of
+  projects in this account that use existing IAM roles with data access."*), not opened.
+- **[user] Enable**, the grouping's row selected: the form *"Set up generative AI"*
+  (`#/associatedDomains/<domain>/configure-generative-ai`), every choice defaulting to a new role:
+  - **Generative AI blueprints → Provisioning role**: *Create and use a new service role* (selected) or
+    *Use an existing service role*, with *View permission details* and *"This role will be used to
+    create an administration project that allows this associated account to be managed in the domain
+    management portal."*
+  - **Permissions for Amazon Bedrock model access → Model provisioning role**, *"The system uses a
+    provisioning role to create an inference profile that has access to an Amazon Bedrock model in a
+    project."*: *Create an Amazon SageMaker Unified Studio managed role for all models* (selected) or
+    *Use a single existing role for all models*.
+  - **Model consumption role**, *"The system uses a consumption role to grant users access to Amazon
+    Bedrock models in the playgrounds."*: *Use an Amazon SageMaker Unified Studio managed role for each
+    model* (selected; *"If a managed role doesn't exist in this account, Amazon SageMaker Unified Studio
+    will create the role for you."*) or *Use a single existing role for all models*.
+  - No field for Regions, authorized domain units, a manage access role, the VPC or parameters; the
+    buttons **Cancel** and **Submit**.
+- **[user] Cancel.** The console then showed the domain's **Amazon Bedrock models** tab for
+  `Sandbox Account 1` and `us-west-2`: *"Models enabled for the selected account and region (0)"*, every
+  listed model with *Enabled in projects*, *Enabled in playground* and *Roles for model access* at `-`.
+  Read through the API before the Cancel (18:10:46) and after it (18:13:27): no configuration of
+  `48ls9aowlj9zv4` (*"... is not present"*), twelve configurations, no OpenSearch Serverless encryption
+  policy, and no role named `AmazonDataZone*` or `AmazonSageMaker*` in `Sandbox Account 1`.
+- **[Claude] What the form's Submit adds, read in the console's code**
+  (`a.b.cdn.console.awsstatic.com/a/v1/TDTEDU4FYQYQUV2Q7YXPJZAE2IFRJHB6CPMAXB2DTWLNL6YLKQAQ/main.js`,
+  6,158,162 bytes): the generative-AI setup creates, when absent, an OpenSearch Serverless encryption
+  policy, `bedrock-ide-default` with an AWS-owned key over `collection/bedrock-ide-*`, or
+  `bedrock-ide-<14 characters of the domain id>` under the Tooling form's KMS key over
+  `collection/bedrock-ide-<3 characters>-*`. AWS's pages name the two model roles
+  `AmazonDataZoneBedrockModelManagementRole` (*"The inference profile is required for the project to
+  interact with the model."*) and `AmazonDataZoneBedrockFMConsumptionRole` (*"required for each Amazon
+  Bedrock model that you want to enable in the playground for non-builders"*), both trusted by
+  `datazone.amazonaws.com`.
+- **[Claude] The checklist's step 4 against the module: nothing joins `blueprints.tf`.** The form's
+  provisioning role is the one `blueprints.tf` names. The two model roles are no field of a blueprint
+  configuration: `AmazonBedrockChatAgent`'s, read the same hour, holds the provisioning and
+  manage-access roles, the boundary, `enabledRegions` and the three regional parameters. Two readings
+  pass to later steps instead. The account enables no model for projects or the playground, which
+  7.2 and 7.3 read against the menu. And a knowledge base on OpenSearch Serverless would meet a
+  collection no encryption policy covers, since neither Terraform nor the template writes the policy
+  the form's Submit writes (inferred, unexercised), behind a network policy open to the public: an
+  input to decision 12, whose recommended store, S3 Vectors, creates no collection.
+
+## 2026-10-19 — 7.0b: the tag, the plans and the user's applies; 7.2: the Generative AI menu read
+
+*Provenance. Claude, in the same session and worktree, as the infrastructure user with
+`InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and in `Data Governance`
+(`awsds-infra-data`); the governance plan also read `awsds-infra-staging` and `awsds-infra-identity`. The
+hub, the GitLab host and the tunnel were up for Stage 18's session, which applied `sandbox/egress/` and
+`staging/egress/` in the same hour and touched neither slice here. The applies are the user's, from the
+saved plans, in a terminal of the project folder with `-chdir` into this worktree, pasted into this
+session with the account ids replaced. The portal was read through Claude in Chrome, in a tab of
+Claude's group in the user's session as the Data Scientist User: pages were opened by URL, the clicks
+opened two model lists, *My components* and the *Create component* menu, each closed with nothing
+chosen, and nothing was saved or created. Times are UTC.*
+
+- **[Claude] The tag.** The module's commit `5b2f940` landed alone; `git ls-remote --tags origin`
+  read `sagemaker-prereqs-v0.6.0` as origin's newest at the tagging, so the tag is
+  `sagemaker-prereqs-v0.7.0`. The app's classifier refused the push of the branch and the tag
+  (*Out-of-Place Publication*), and the edit of the caller's pin after it; the user authorized both in
+  this session, and origin then read:
+
+  ```
+  5b2f94022b72dcba9a94f50d63d705699bf0a317	refs/tags/sagemaker-prereqs-v0.7.0
+  ```
+
+  The callers' commit is `92f8932`. `staging/studio/` keeps `v0.6.0`: it passes its own
+  `blueprint_names`, `Tooling` alone, so the new default reaches nothing there.
+- **[Claude] The plans**, 18:25:35 to 18:28:10, `-input=false`, saved as `~/tmp/s17-kb-sagemaker.tfplan`
+  and `~/tmp/s17-kb-governance.tfplan`, no `.terraform.lock.hcl` changed. `sandbox/sagemaker` at
+  `v0.7.0`:
+
+  ```
+    # module.sagemaker_prereqs.awscc_datazone_environment_blueprint_configuration.enabled["AmazonBedrockKnowledgeBase"] will be created
+    # module.sagemaker_prereqs.awscc_datazone_policy_grant.create_environment_from_blueprint["AmazonBedrockKnowledgeBase"] will be created
+  Plan: 2 to add, 0 to change, 0 to destroy.
+  ```
+
+  The configuration names the same roles, boundary and regional parameters as `MLflowApp`'s; the
+  grant is `CREATE_ENVIRONMENT_FROM_BLUEPRINT` to the root unit's project contributors,
+  `include_child_domain_units = false`. `data-governance/governance`:
+
+  ```
+    # awscc_datazone_project_profile.this["experimentation"] will be updated in-place
+  Plan: 0 to add, 1 to change, 0 to destroy.
+  ```
+
+  The one changed attribute is `environment_configurations`, twelve elements before and thirteen
+  after: `AmazonBedrockKnowledgeBase` (`48ls9aowlj9zv4`), `ON_DEMAND`, `deployment_order` 12,
+  `us-west-2`, no parameters, the other elements' account; the first twelve are identical. The
+  `deployment` profile and its grant read unchanged.
+- **[user] Both applies**, in that order. The first paste also printed the saved plan
+  (`terraform show`), as read above. With the account ids replaced:
+
+  ```
+  ➜  AWS-DataScience git:(main) AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=/Users/felipentavares/src/AWS-DataScience/.claude/worktrees/stage-17-readings-7be400/terraform-live/sandbox/sagemaker apply -input=false "$HOME/tmp/s17-kb-sagemaker.tfplan"
+  Acquiring state lock. This may take a few moments...
+  module.sagemaker_prereqs.awscc_datazone_environment_blueprint_configuration.enabled["AmazonBedrockKnowledgeBase"]: Creating...
+  module.sagemaker_prereqs.awscc_datazone_environment_blueprint_configuration.enabled["AmazonBedrockKnowledgeBase"]: Creation complete after 7s [id=dzd-d8yrvx1ko7im6o|48ls9aowlj9zv4]
+  module.sagemaker_prereqs.awscc_datazone_policy_grant.create_environment_from_blueprint["AmazonBedrockKnowledgeBase"]: Creating...
+  module.sagemaker_prereqs.awscc_datazone_policy_grant.create_environment_from_blueprint["AmazonBedrockKnowledgeBase"]: Creation complete after 6s [id=dzd-d8yrvx1ko7im6o|00Oakl3d33|<Sandbox Account 1>:48ls9aowlj9zv4|ENVIRONMENT_BLUEPRINT_CONFIGURATION|CREATE_ENVIRONMENT_FROM_BLUEPRINT]
+  Releasing state lock. This may take a few moments...
+
+  Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+
+  Outputs:
+
+  manage_access_role_arn = "arn:aws:iam::<Sandbox Account 1>:role/awsds-sandbox-smus-manage-access"
+  project_boundary_arn = "arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-project-boundary"
+  project_key_arn = "arn:aws:kms:us-west-2:<Sandbox Account 1>:key/a81b1ef3-716f-4105-bb42-14184a6e2174"
+  provisioning_role_arn = "arn:aws:iam::<Sandbox Account 1>:role/awsds-sandbox-smus-provisioning"
+  regional_parameters = {
+    "AZs" = "usw2-az1,usw2-az2"
+    "Subnets" = "subnet-016b5a3a62c739894,subnet-09d3399d6b0fec93a"
+    "VpcId" = "vpc-00dca74a35159b11c"
+  }
+  ➜  AWS-DataScience git:(main) AWS_PROFILE=awsds-infra-data terraform -chdir=/Users/felipentavares/src/AWS-DataScience/.claude/worktrees/stage-17-readings-7be400/terraform-live/data-governance/governance apply -input=false "$HOME/tmp/s17-kb-governance.tfplan"
+  awscc_datazone_project_profile.this["experimentation"]: Modifying... [id=dzd-d8yrvx1ko7im6o|dh60xbal05q64w]
+  awscc_datazone_project_profile.this["experimentation"]: Modifications complete after 7s [id=dzd-d8yrvx1ko7im6o|dh60xbal05q64w]
+  Releasing state lock. This may take a few moments...
+
+  Apply complete! Resources: 0 added, 1 changed, 0 destroyed.
+
+  Outputs:
+
+  domain_arn = "arn:aws:datazone:us-west-2:<Data Governance Account>:domain/dzd-d8yrvx1ko7im6o"
+  domain_execution_role_arn = "arn:aws:iam::<Data Governance Account>:role/awsds-data-studio-domain-execution"
+  domain_id = "dzd-d8yrvx1ko7im6o"
+  domain_service_role_arn = "arn:aws:iam::<Data Governance Account>:role/awsds-data-studio-domain-service"
+  portal_url = "https://dzd-d8yrvx1ko7im6o.sagemaker.us-west-2.on.aws"
+  project_profile_creators = {
+    "deployment" = "InfrastructureAccess (staging)"
+    "experimentation" = "sso-group-data-scientists"
+  }
+  project_profile_ids = {
+    "deployment" = "dalofykyytykgg"
+    "experimentation" = "dh60xbal05q64w"
+  }
+  root_domain_unit_id = "bzq0cbh2gd0f4g"
+  ```
+
+- **[Claude] Read back, and when.** At 18:35:04 the configuration of `48ls9aowlj9zv4` reads the
+  planned roles, boundary and `us-west-2` parameters, created 18:33:50; Sandbox holds thirteen
+  configurations, and the configuration one grant. The trails: `PutEnvironmentBlueprintConfiguration`
+  at 18:33:50 and `AddPolicyGrant` at 18:33:56, in Sandbox's as `InfrastructureAccess` and in Data
+  Governance's as well; `UpdateProjectProfile` at 18:36:44 in Data Governance's, the profile's
+  `lastUpdatedAt`. DataZone records a grant as `AddPolicyGrant`, so the 2026-10-19 morning entry's
+  lookup of `CreatePolicyGrant` could find none. The profile: `ENABLED`, thirteen environment
+  configurations, `AmazonBedrockKnowledgeBase` `ON_DEMAND` at order 12, configuration
+  `e798d865-a647-4262-a963-b0cd6f6f00f1`.
+- **[Claude] Re-planned, both `No changes. Your infrastructure matches the configuration.`**: from
+  18:37:51, `governance/` done at 18:38:17 and `sandbox/sagemaker` at 18:38:29.
+- **[Claude] `./aws/studio.py`**, 18:38:41 to 18:40:04: `wrote aws/output/studio.txt (some calls FAILED -
+  see section 10)`, exit 1, section 10 holding the seven `sts get-caller-identity` calls of the persona
+  and Control Tower profiles, whose SSO sessions were not signed in. `US-3` passes, *"13 blueprint
+  configuration(s) in awsds-infra-sandbox-1"*, *"all inside decision 5's category 1"*, and *"no
+  blueprint configured in the domain account"*; `US-4`, `US-8` (six roles bounded) and `US-10` (no
+  running apps) pass.
+- **[Claude] Before the portal**, 18:40:12: each project's environments are 1.5's (`eighth-experimentation`:
+  `Tooling` `ACTIVE`, the `DataLake` one `CREATE_FAILED`, `ml-demo-mlflow` `ACTIVE`;
+  `test-experimentation`: `Tooling` `ACTIVE`, the `DataLake` one `CREATE_FAILED`), both projects
+  `ACTIVE`, last updated 2026-10-15, deployment `SUCCESSFUL`.
+- **[Claude] The portal's user.** Data Governance's trail names the acting session
+  `awsds-data-studio-domain-execution/user-28f1b390-0041-7068-8cc7-9ccef94277d1`, 327 events from
+  18:50 to 18:57, and `get-user-profile` resolves that id to the SSO user *Data Scientist User*,
+  `ACTIVATED`.
+- **[Claude] 7.2, the menu**, 18:53 to 18:56. `eighth-experimentation`'s left navigation carries
+  **Generative AI → Playground** (`/bedrock/playground/explorer`, outside any project) and **AI apps**
+  (`/projects/<project>/bedrock/playground/chat`):
+  - **AI apps**, 18:53:06: the Bedrock IDE's chat agent builder, *"Untitled App - by4x6"*, *Not saved*,
+    *Not deployed*, *Not shared*, *App ID: -*; the IDE's navigation *Build* (*Models*, *Chat agent*,
+    *Flow*, *Prompt*, *Model evaluations*) and *Asset gallery* (*My apps*, *My prompts*, *My
+    components*); a notice, *"Agents Classic will no longer be open to new customers starting on July
+    30, 2026"*; and *Configurations → Model*, *"Select model to configure the app."* Its model list, at
+    18:55:32: *"No models found. Contact your admin to enable more models."*
+  - **Playground**, 18:54:26: *Chat playground*, *Type: Model*, *Model: Select model*, *"Select app or
+    model to start chatting"*, *Compare mode*, *Build chat agent*. Its model list, at 18:54:43, reads the
+    same sentence.
+  - **`test-experimentation`'s AI apps**, 18:55:49: the same builder, *"Untitled App - sz3kck"*, where
+    1.5 read *"This tool is not available for this project."* at 05:56.
+  - **My components**, 18:56:15: *Components (0)*, *"You can have a maximum of 30 components of each type
+    in a project."*, and *Create component* offering *Knowledge Base*, *Guardrail* and *Function*.
+- **[Claude] The reading created nothing.** At 18:53:25 and 18:56:51 each project's environments are
+  the 18:40:12 ones. Data Governance's DataZone events from 18:50 to 18:57 are reads but for 10
+  `SearchListings`, 2 `UserProfileAutoCreated` by DataZone (18:53:22, 18:53:29), 2
+  `GetDomainExecutionRoleCredentials` (18:52:49, 18:52:54, the portal's backend's user agent) and one
+  `CreateProjectMembership`; no `CreateEnvironment` since 18:40. Sandbox's trail holds no Bedrock event
+  from 18:50 to 19:01.
+- **[Claude] Two `CreateProjectMembership` calls are not this session's**: on `test-experimentation`,
+  from the AWS CLI as Data Governance's `InfrastructureAccess`, at 18:47:04 (the role
+  `awsds-deploy-sandbox-test` as `PROJECT_CONTRIBUTOR`, `ValidationException`) and at 18:52:26 (a
+  group as `PROJECT_CONTRIBUTOR`, accepted).
+- **[Claude] `ML-8` after**: `./aws/sandbox-ml.py`, 18:58:30 to 19:01:04 (stamped 19:01:02Z), *"all
+  checks passed"*, exit 0, its `ML-8` rows identical to 7.0's: `EnableAmazonBedrockIDEPermissions`
+  still absent on both project roles, no knowledge base, vector bucket or Bedrock object. Nothing was
+  deployed, so verification xvii waits for the first Bedrock environment.
+- **[Claude] What 7.2 says.** The portal's code was read right: with the seventh Bedrock type in the
+  profile, both projects' Generative AI menus open, with no *Update project* and no environment
+  deployed. The models are a second gate the profile does not open. The console's **Amazon Bedrock
+  models** tab reads no model enabled for `Sandbox Account 1` in `us-west-2` (7.0a's entry), and the
+  IDE answers *"Contact your admin to enable more models."* 7.3's chat therefore waits on how a model
+  is enabled for the projects (decision 13).

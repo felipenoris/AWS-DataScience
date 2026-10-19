@@ -622,9 +622,9 @@ blueprints provision, not the domain:
 The console's `AmazonBedrockGenerativeAI` grouping has no API identifier: the domain publishes
 `AmazonBedrockChatAgent`, `Evaluation`, `Flow`, `Function`, `Guardrail`, `KnowledgeBase` and `Prompt` as
 seven separate blueprints. The rates below are the model's, not the blueprint's, so they are unaffected.
-**`AmazonBedrockKnowledgeBase` is not among the six** in category 1: a knowledge base stands up a vector
-store, which bills while it exists rather than per token, so it moved to **category 2** on 2026-08-21 with
-a trigger that names the measurement. Price it when the trigger fires (Lesson 6).
+**`AmazonBedrockKnowledgeBase` was category 2 from 2026-08-21 to 2026-10-19**: a knowledge base stands up a
+vector store, which can bill while it exists rather than per token. Its store was priced on 2026-10-12
+(the knowledge-base rows below), and it joined category 1 on 2026-10-19 (Stage 17 7.0b).
 
 **Read 2026-08-21** from `AmazonBedrock/current/{us-west-2,sa-east-1}/index.json`, both published
 `2026-08-20`. The row was owed before the Stage 6 step 1.4 apply: the upkeep rule asks for one per new
