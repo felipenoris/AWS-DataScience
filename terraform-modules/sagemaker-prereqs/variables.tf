@@ -145,11 +145,10 @@ variable "blueprint_names" {
     # and what the D13 boundary actually stops - or when a blueprint here proves to depend on it.
     # Compute.
     "EmrServerless",
-    # The generative-AI surface, six entries: `AmazonBedrockGenerativeAI` is a console grouping
-    # with no API identifier (measured 2026-08-21 - `list-environment-blueprints` returns seven
-    # `AmazonBedrock*` blueprints and no aggregate), and six of the seven are category 1.
-    # AmazonBedrockKnowledgeBase is absent - category 2, its vector store billing while it
-    # exists; it joins in the commit that enables it (Lesson 14).
+    # The generative-AI surface: `AmazonBedrockGenerativeAI` is a console grouping with no API
+    # identifier (measured 2026-08-21 - `list-environment-blueprints` returns seven
+    # `AmazonBedrock*` blueprints and no aggregate). AmazonBedrockKnowledgeBase, the seventh, is
+    # last in the list.
     "AmazonBedrockChatAgent",
     "AmazonBedrockEvaluation",
     "AmazonBedrockFlow",
@@ -162,5 +161,12 @@ variable "blueprint_names" {
     # per hour while it exists. No kms.tf statement comes with it, since AWS's key-permissions page
     # for the Tooling blueprint names none for MLflow (read 2026-10-12).
     "MLflowApp",
+    # The knowledge base, out of category 2 at Stage 17 step 7.0a (decision 1, taken 2026-10-12):
+    # the portal opens its Generative AI menu only when the profile carries all seven Bedrock
+    # blueprints (read from the portal's code 2026-10-19). Its vector store is the one Bedrock
+    # shape that can bill while it exists, chosen per knowledge base (Stage 17 decision 12). No
+    # kms.tf statement comes with it: AWS's key-permissions page names none for a knowledge base
+    # (read 2026-10-19).
+    "AmazonBedrockKnowledgeBase",
   ]
 }

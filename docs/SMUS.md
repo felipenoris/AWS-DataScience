@@ -196,7 +196,7 @@ parameters
 | Object | Written by | Lives in | In this design |
 |---|---|---|---|
 | blueprint | AWS | the service | the 23 in the table below (custom blueprints are made with `CreateEnvironmentBlueprint`, and since 2026-10-09 one with the `TOOLING` category can be a profile's base, [`upstream-releases.md`](plan/upstream-releases.md); outside decision 5, so outside `US-3`'s allow-list; the domain held none on 2026-10-18) |
-| blueprint configuration | Terraform, per member account (1.4) | domain × account | category 1's **twelve**, in one account: eleven applied 2026-08-21 in Sandbox and in Development, Development's 22 objects (11 configurations and their 11 grants) destroyed 2026-09-06, and `MLflowApp`'s applied in Sandbox 2026-10-19 (Stage 17 1.3) |
+| blueprint configuration | Terraform, per member account (1.4) | domain × account | category 1's **thirteen**, in one account: eleven applied 2026-08-21 in Sandbox and in Development, Development's 22 objects (11 configurations and their 11 grants) destroyed 2026-09-06, and `MLflowApp`'s and `AmazonBedrockKnowledgeBase`'s applied in Sandbox 2026-10-19 (Stage 17 1.3 and 7.0b) |
 | project profile + its environment configurations | domain admin (1.5) | the domain | `experimentation`, `engineering` |
 | project | an authorized user, in the portal | the domain (registry) | step 2.4's throwaway first |
 | environment | DataZone, through the provisioning role | the member account | read back by `US-8` / step 2.5 |
@@ -214,7 +214,7 @@ The two project profiles this installation carries — created 2026-08-21 by the
 | ~~`engineering`~~ | ~~**Development**~~ | **Destroyed 2026-09-06** (Stage 6b step 1.1). The account it targeted became the headless `Staging`, and the chain now starts at a repository rather than an account | — |
 
 Identical in everything but the target account: **eleven environment configurations** (decision 5's
-category 1; `experimentation` holds **twelve** since 2026-10-19, `MLflowApp` `ON_DEMAND` at order 11), `Tooling` the only base — `ON_CREATE`, every other blueprint `ON_DEMAND`; a second base
+category 1; `experimentation` holds **thirteen** since 2026-10-19, `MLflowApp` and `AmazonBedrockKnowledgeBase` `ON_DEMAND` at orders 11 and 12), `Tooling` the only base — `ON_CREATE`, every other blueprint `ON_DEMAND`; a second base
 cannot ride along on demand, which is what re-cut `ToolingLite` to category 3 (its row in the
 blueprint table below) — and the same Tooling parameters, read back after the apply. Since 2026-08-22
 both profiles also declare the only two required-no-default blueprint parameters across the eleven
@@ -382,18 +382,38 @@ bump, in this order:
    against its `AllowedValues`** (the `lifecycleManagement` trap).
 4. **Enumerate the console's enable-wizard fields for that blueprint and treat every one as required**
    (Lesson 39): a field the wizard fills and the Put does not demand is validated at environment deploy
-   and teardown, and an incomplete configuration pins its projects in both directions.
+   and teardown, and an incomplete configuration pins its projects in both directions. The seven
+   `AmazonBedrock*` blueprints have no wizard of their own: the console enables them as the grouping
+   `AmazonBedrockGenerativeAI`, whose form *Set up generative AI* asks for the provisioning role and two
+   model roles, and whose Submit also writes an OpenSearch Serverless encryption policy over
+   `collection/bedrock-ide-*` (read 2026-10-19 in the console and its code, Stage 17 7.0a).
 5. **What arrives free**: the `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant (`grants.tf` `for_each`s the
    configurations) and — because a NEW configuration is a create, not an update — no reconciliation Put
    (§Blueprints item (b) bites only on changes to an existing one).
 6. **The profile side**: an `ON_DEMAND` environment configuration in the profiles' list (the governance
    copy of step 1) — and the price measured at that moment if the category row lacks one (Lesson 6).
 7. **The portal, read before and after the applies.** Steps 1 to 6 do not make the tool usable by
-   themselves: after `MLflowApp`'s configuration and profile element were applied (2026-10-19), Compute's
-   *MLflow* tab still greyed out *Create MLflow App* in both Sandbox projects, *"The MLflowApp blueprint
-   is not enabled for this project"*, and *AI apps* refuses the Bedrock tools, whose blueprints have
-   been in the profile since before either project. What makes an `ON_DEMAND` tool available in a
-   project is [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) 1.5's reading.
+   themselves, because each portal entry gates itself in the browser, and the gates differ (read from
+   the portal's code and its query state, 2026-10-19, [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md)
+   1.5):
+   - **The MLflow entries** (*Create MLflow App*, *Create MLflow Tracking Server*) resolve the blueprint
+     by name from `ListEnvironmentBlueprintConfigurations`, called with the domain id alone as the
+     domain execution role, so they read Data Governance's configurations, which `US-3` keeps at zero
+     (D22). They stay greyed in every project whatever the profile carries, *Update project* has nothing
+     to apply (`UPDATE_NOT_AVAILABLE`), and a project created later reads the same list. What the
+     entry would send is a `CreateEnvironment` with the profile's configuration id, and that call,
+     made through the API by a project contributor, creates the tool (the `MLflowApp` environment and
+     its app, 2026-10-19).
+   - **The Generative AI menu** (the Playground and *AI apps*) opens only when the profile carries all
+     seven Bedrock types, `AmazonBedrockKnowledgeBase` among them; with six it answers *"This tool is
+     not available for this project."* Measured 2026-10-19 (Stage 17 7.2): once the seventh was
+     applied, both projects' *AI apps* opened the Bedrock IDE and the Playground opened, with no
+     *Update project* and no environment deployed by the reading. A second gate stands behind it: every
+     model list reads *"No models found. Contact your admin to enable more models."*, since the account
+     enables no model for projects or the playground (the console's **Amazon Bedrock models** tab, whose
+     roles the *Set up generative AI* form creates).
+   A promoted blueprint is therefore read in the portal after the applies, and its entry's gate is read
+   before a refusal is attributed to the profile.
 
 ### Blueprints
 
@@ -431,7 +451,7 @@ can be diffed against this table directly.
 | `AmazonBedrockFlow` | A configurable generative AI workflow | **Per use** — token-billed | — | **1** |
 | `AmazonBedrockFunction` | A reusable component for including dynamic information in model output | **Per use** — token-billed | — | **1** |
 | `AmazonBedrockGuardrail` | A reusable component for implementing safeguards on model output | **Per use** — token-billed; guardrail evaluation is its own unit | — | **1** |
-| `AmazonBedrockKnowledgeBase` | A reusable component for providing your own data to apps: a Bedrock knowledge base, its data source and execution role, an OpenSearch Serverless collection and two Lambdas (the index and the ingestion trigger) with their role, per AWS's blueprint page (read 2026-10-12); the IDE's form also offers S3 Vectors and Neptune Analytics as the store | **Per use plus the store**: the embeddings are token-billed (Titan Text Embeddings V2 **0.00002 USD per 1K tokens**, `AmazonBedrock` offer of 2026-10-10) and the vector store is the shape that can bill while idle — **measured 2026-10-12**: OpenSearch Serverless **0.24 per OCU-hour** plus 0.024 per GB-month (a classic collection holds 1-2 OCU, 5.76-11.52 a day; a next-generation one scales to zero), S3 Vectors **0.06 per GB-month** plus requests (`PRICING.md` §5) | **[Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) pass 7, decision 1 taken 2026-10-12**: a chat agent over the repository's runbooks, S3 Vectors the recommended store (its decision 12) and the embeddings model admitted at the SCP (its decision 11); the category-2 checklist at its step 7.0a, a commit and a tag of its own after pass 1's `MLflowApp` (PR #157 carried that blueprint alone), applied at 7.0b. It is the only Bedrock row that is not purely per use, which is why it left category 1 on 2026-08-21 while its six siblings stayed | **2** |
+| `AmazonBedrockKnowledgeBase` | A reusable component for providing your own data to apps: a Bedrock knowledge base, its data source and execution role, an OpenSearch Serverless collection and two Lambdas (the index and the ingestion trigger) with their role, per AWS's blueprint page (read 2026-10-12); the IDE's form also offers S3 Vectors and Neptune Analytics as the store. Its template (`DataZone-AmazonBedrockKnowledgeBase-prod-20260316`, read 2026-10-19) creates all of that only for an OpenSearch Serverless store, behind a `network` policy with `AllowFromPublic` true and no encryption policy; its two roles exist only when DataZone passes none, and carry AWS's `SageMakerStudioProjectUserRolePermissionsBoundary`, not the D13 boundary. Any other store leaves the stack with its wait handles alone | **Per use plus the store**: the embeddings are token-billed (Titan Text Embeddings V2 **0.00002 USD per 1K tokens**, `AmazonBedrock` offer of 2026-10-10) and the vector store is the shape that can bill while idle — **measured 2026-10-12**: OpenSearch Serverless **0.24 per OCU-hour** plus 0.024 per GB-month (a classic collection holds 1-2 OCU, 5.76-11.52 a day; a next-generation one scales to zero), S3 Vectors **0.06 per GB-month** plus requests (`PRICING.md` §5) | **Fired: [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decision 1** (taken 2026-10-12): a chat agent over the repository's runbooks, S3 Vectors the recommended store (its decision 12) and the embeddings model admitted at the SCP (its decision 11). The checklist's readings of 2026-10-19 (7.0a): no key statement, no profile parameter (the template's four parameters without a default are DataZone's), and nothing from the console's *Set up generative AI* form joins `blueprints.tf`. **The configuration, its grant and the profile's element were applied 2026-10-19** at `sagemaker-prereqs-v0.7.0` (7.0b), and both projects' Generative AI menus opened, offering no model (the checklist's step 7). It was the only Bedrock row that is not purely per use, which is why it left category 1 on 2026-08-21 while its six siblings stayed | **1** |
 | `AmazonBedrockPrompt` | A reusable set of inputs that guide model output | **Per use** — token-billed | — | **1** |
 | `DataLake` (console: `LakeHouseDatabase`) | Per project: **Glue databases, Lake Formation permissions, an Athena workgroup** — the catalog/SQL surface on the Glue + LF substrate Stage 5a built, the query path D13 depends on | **Per use**: Athena SQL **USD 5.00/TB scanned** (`PRICING.md` §5); Glue catalog negligible at lab scale. No standing resource | default — configured at step 1.4 | **1** |
 | `EmrOnEc2` | EMR clusters on EC2 instances — Spark, Hive and other big-data workloads from a reusable CloudFormation template | **Standing in practice** — instance-hours + EMR uplift while the cluster exists; a forgotten cluster bills on. Not measured | amend the decision (unowned until 2026-08-19) | **3** |
@@ -440,7 +460,7 @@ can be diffed against this table directly.
 | `LakehouseAdmin` | *"Creates a unified data source across all Lakehouse catalogs in the account and automatically ingests and catalogs all available data."* An automatic, account-wide ingest-and-catalog is the shape `docs/GOVERNANCE.md` exists to prevent, and the account it would run in holds a governed lake | Not documented. Whatever a standing crawl of everything costs, plus the catalog it writes | **step 2.4 has measured** what the environment provisions, under whose role, and what the D13 boundary actually stops — **or** a category-1 blueprint proves it depends on this one. Until then it is not registered, so no project can create it | **2** |
 | `LakehouseCatalog` | A new catalog in the SageMaker Lakehouse **backed by S3 tables or Redshift Managed Storage** — *not* the Glue/Athena surface its name suggests (the 2026-08-19 re-read) | RMS storage + the Redshift query path; the RPU-hour rate is now measured (`PRICING.md` §5) and the base capacity this blueprint would pick is not | amend **decision 4** (2026-08-19); the Glue/Athena form this project uses is `DataLake`. **D40 does not reach this row**: it admits a warehouse Terraform sizes, not a catalog a blueprint provisions on Redshift-managed storage | **3** |
 | `MLExperiments` | An **MLflow tracking server** for the project (OnDemand blueprint) | **Standing** — the server bills per hour while up (no idle shutdown like the apps have) + storage. **Measured 2026-10-12** in the `AmazonSageMaker` offer (`us-west-2`, published 2026-10-12T18:05:38Z): Small **0.60**, Medium **1.04**, Large **1.91** USD/h, storage 0.10 USD/GB-month (`PRICING.md` §8). Known floor under `VpcOnly`: its interface endpoint, +USD 0.010/h per account — the tracking server's service name is `aws.sagemaker.us-west-2.experiments`; `aws.sagemaker.us-west-2.mlflow` is the MLflow App's (read 2026-10-12) | a tracking need the MLflow App does not meet: [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decision 2 took the app over the server on 2026-10-12, the offering AWS's own MLflow page says to prefer (read 2026-10-12) | **2** |
-| `MLflowApp` | *"Creates an MLflow App for SageMaker Unified Studio."* **The same capability as `MLExperiments`, arriving twice**, and the pair was categorised together so enabling one would not quietly imply the other, until Stage 17 decision 2 took the app and left the server in category 2. Serverless: `CreateMlflowApp` makes `mlflow-app/<id>` with an S3 artifact store and a role, reached from a VPC through the `aws.sagemaker.<region>.mlflow` interface endpoint and from the portal through a presigned URL minted on `sagemaker.api` (read 2026-10-12). `CreateMlflowApp` takes `KmsKeyId` since 2026-08-20, and an app made without it carries no customer-managed key; neither CloudFormation nor either provider has the field (read 2026-10-18) | **No usage type in the `AmazonSageMaker` offer of 2026-10-12** (the tracking-server sizes, its storage and the partner-app SKUs are there; nothing for the app), and AWS's launch post of 2025-12-02 says no additional cost beyond the artifact store. **Measured in the bill at [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) 8.2** | **Fired: Stage 17 decision 2** (taken 2026-10-12, the app over the server). Pass 1's change was written 2026-10-17 (PR #157): the three roster copies (`sagemaker-prereqs-v0.5.0`, the profile, `US-3`) and the `mlflow` endpoint group (`vpc-egress-v0.18.0`, its decision 4); the checklist's template and wizard readings (steps 3 and 4) were made on 2026-10-18, with nothing to declare. **The configuration, its grant and the profile's element were applied 2026-10-19** (Stage 17 1.3); the endpoint group is not. The portal's Compute → *MLflow* tab greyed out *Create MLflow App* before the applies (*"The MLflowApp blueprint is not enabled for this project"*) and still does after them, in both projects | **1** |
+| `MLflowApp` | *"Creates an MLflow App for SageMaker Unified Studio."* **The same capability as `MLExperiments`, arriving twice**, and the pair was categorised together so enabling one would not quietly imply the other, until Stage 17 decision 2 took the app and left the server in category 2. Serverless: `CreateMlflowApp` makes `mlflow-app/<id>` with an S3 artifact store and a role, reached from a VPC through the `aws.sagemaker.<region>.mlflow` interface endpoint and from the portal through a presigned URL minted on `sagemaker.api` (read 2026-10-12). `CreateMlflowApp` takes `KmsKeyId` since 2026-08-20, and an app made without it carries no customer-managed key; neither CloudFormation nor either provider has the field (read 2026-10-18) | **No usage type in the `AmazonSageMaker` offer of 2026-10-12** (the tracking-server sizes, its storage and the partner-app SKUs are there; nothing for the app), and AWS's launch post of 2025-12-02 says no additional cost beyond the artifact store. **Measured in the bill at [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) 8.2** | **Fired: Stage 17 decision 2** (taken 2026-10-12, the app over the server). Pass 1's change was written 2026-10-17 (PR #157): the three roster copies (`sagemaker-prereqs-v0.5.0`, the profile, `US-3`) and the `mlflow` endpoint group (`vpc-egress-v0.18.0`, its decision 4); the checklist's template and wizard readings (steps 3 and 4) were made on 2026-10-18, with nothing to declare. **The configuration, its grant and the profile's element were applied 2026-10-19** (Stage 17 1.3); the endpoint group is not. The portal's Compute → *MLflow* tab greyed out *Create MLflow App* before the applies (*"The MLflowApp blueprint is not enabled for this project"*) and still does after them, in both projects, because the entry resolves the blueprint from Data Governance's configurations (the checklist's step 7). **The app `ml-demo-mlflow` was created 2026-10-19 through `CreateEnvironment`** in `eighth-experimentation` (Stage 17 1.5): DataZone's deployer calls `CreateMlflowApp` as the provisioning role, with the project role as the app's role, the store under the project's path in `awsds-sandbox-smus-projects` and no `KmsKeyId` | **1** |
 | `PartnerApps` | An IAM role and a Connection giving access to third-party Partner AI Apps | **Standing/subscription** — partner licence + deployed infrastructure; varies by partner. Not measured | amend the decision | **3** |
 | `QuickSight` | The QuickSight analytics/dashboard surface inside a project | **Subscription** — per author/month + per reader session. Not measured | amend the decision. **Also blocked in fact**: the console reads *"QuickSight account not set up"* (2026-08-21) | **3** |
 | `RedshiftServerless` | A Redshift Serverless workgroup + namespace | **Per use** with a **60-second minimum charge per query** + storage, at **0.36 USD/RPU-hour** measured (`PRICING.md` §5) — and a blueprint-provisioned workgroup takes the service default of **128 base RPUs**, which is **46.08 USD per query-hour** | **Never** — and the trigger changed on 2026-09-19 without the verdict changing. [D40](plan/decisions/D40-redshift-warehouse.md) **admits a warehouse and keeps this blueprint disabled**: the warehouse is one namespace per account, written by Terraform at `base_capacity = 4` with a usage limit, reached through a **connection to an existing compute resource** (§Connections below, [Stage 6h](plan/stages/stage-06h-redshift-connection.md)). Enabling *this* row would put a 128-RPU workgroup one click from every project member, which is the thing D26 refused and D40 did not un-refuse. `US-3` fails if it appears, with its own message. **The warehouse it was refused in favour of exists since 2026-09-20** and reads back at `base 4 / max 8 RPU` with a 40-RPU-hour monthly limit that `deactivate`s on breach — measured refusing queries, so the comparison in this row is now against something real | **3** |
@@ -454,17 +474,19 @@ can be diffed against this table directly.
 against the console grouping decision 5 had addressed: closed at 12/5/6 and re-cut to 11/5/7 the same
 day, when step 1.5's refusal measured `ToolingLite` as a second base (its row above), then to 11/4/8
 when D7's amendment removed the `Workflows` trigger (its row above), then to 12/3/8 when Stage 17
-decision 2 took `MLflowApp` (its row above; applied 2026-10-19).
-**Category 1 is twelve**: `Tooling`, `DataLake`, `S3Bucket`, `S3TableCatalog`, `EmrServerless`,
-six of the seven `AmazonBedrock*` and `MLflowApp`. Category 2 is three, category 3 is eight, and
-**no row is `undefined`** — which is what step 1.4 needed, because `US-3` fails on an
-uncategorised blueprint as it fails on a forbidden one.
+decision 2 took `MLflowApp` (its row above; applied 2026-10-19), then to 13/2/8 when its decision 1
+took `AmazonBedrockKnowledgeBase` (applied the same day).
+**Category 1 is thirteen**: `Tooling`, `DataLake`, `S3Bucket`, `S3TableCatalog`, `EmrServerless`,
+the seven `AmazonBedrock*` and `MLflowApp`. Category 2 is two, `LakehouseAdmin` and `MLExperiments`;
+category 3 is eight, and **no row is `undefined`** — which is what step 1.4 needed, because `US-3`
+fails on an uncategorised blueprint as it fails on a forbidden one.
 
-**`AmazonBedrockKnowledgeBase` is in category 2 and its six siblings are in category 1**, so nothing
-downstream may reason about "the Bedrock blueprints" as one thing. The reason is billing shape: the
-other six are purely token-billed, while a knowledge base stands up a **vector store that bills while
-it exists**. That is the standing shape D12's silent budget is worst at catching, and it is
-unmeasured — hence a category-2 trigger that names the measurement (Lesson 6).
+**`AmazonBedrockKnowledgeBase` joined its six siblings in category 1 on 2026-10-19**, and nothing
+downstream may yet reason about "the Bedrock blueprints" as one billing shape: the other six are purely
+token-billed, while a knowledge base stands up a **vector store**, which an OpenSearch Serverless
+collection bills while it exists and S3 Vectors bills by the gigabyte stored (`PRICING.md` §5, measured
+2026-10-12). That standing shape is the one D12's silent budget is worst at catching, so the store is
+chosen per knowledge base ([Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decision 12).
 
 **`S3Bucket` and `S3TableCatalog` create storage this project did not author.** The governing question
 is not their cost but their **encryption key and bucket policy**, which come from the blueprint rather
@@ -960,7 +982,7 @@ reached *from*, not where it runs — open question 12, Stage 6 step 1.6).
 - **The page's optional table is not optional once a blueprint is enabled.** It is introduced with
   *"Create these Amazon VPC endpoints if you plan to deploy Amazon SageMaker Unified Studio projects
   that include blueprints using the services listed below"* — so it is keyed to the **enabled blueprint
-  list**, not to taste. This estate's category 1 contains the six `AmazonBedrock*` blueprints and
+  list**, not to taste. This estate's category 1 contains the seven `AmazonBedrock*` blueprints and
   `EmrServerless`, whose rows are `bedrock-agent`, `bedrock-agent-runtime`, `bedrock-runtime` and the
   `emr-serverless`/`elasticmapreduce` family. With a NAT their absence was invisible; with **no default
   route** a project using either blueprint fails on first use. **The enabled-blueprint list and the

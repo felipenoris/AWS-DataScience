@@ -384,8 +384,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `./aws/vending.py` (`VN-1`..`VN-6`) reads the hand-built unit as nine passes and one note; a unit costs
   3.50 USD/month at rest and 0.180/h working (`docs/PRICING.md` §3).
 - **Stage 17**: pass 0 in progress; 1.1 read and 1.3 applied 2026-10-19 (`MLflowApp` configured and in
-  `experimentation`, `TM-21` with it), yet the portal still greys out *Create MLflow App* in both projects:
-  1.5 reads what makes it available. Main pins `vpc-egress-v0.18.0` (`mlflow`), unapplied (1.4). Decision 11, the embeddings model in the Bedrock SCP, needs
+  `experimentation`, `TM-21` with it), and 1.5 read why the portal greys out *Create MLflow App* (it resolves the blueprint from Data
+  Governance's configurations, which D22 keeps empty): the user created `ml-demo-mlflow` through
+  `create-environment` (`ML-2` read, no CMK). 7.0a and 7.0b applied 2026-10-19 (`AmazonBedrockKnowledgeBase` at `sagemaker-prereqs-v0.7.0`): the Generative AI menu opens and lists no model until one is enabled for the account (decision 13). Main pins `vpc-egress-v0.18.0` (`mlflow`), unapplied (1.4). Decision 11, the embeddings model in the Bedrock SCP, needs
   `awslib/bedrockscope.py` to learn the difference first, or `BS-2`, `BS-7` and `BR-4` go red. Pass 2's training job waits on the battery's instance-preference rows (Stage 9 3.5).
   **Stage 18**: passes 1 and 2.1-2.5 done 2026-10-19, the applies by the user (the classifier refuses
   them to Claude): the carve-out is live (`EXC-20`), Staging is associated with `Tooling` configured,
@@ -401,7 +402,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
   `--no-browser`.
-- **Module tags**: `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.6.0` (applied), `wireguard-v0.6.0`,
+- **Module tags**: `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.7.0` (`sandbox/sagemaker`; `staging/studio` `v0.6.0`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit

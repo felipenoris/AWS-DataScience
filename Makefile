@@ -147,7 +147,7 @@ help:
 	@printf '    bedrock-base   2 endpoints, ~0.020 USD/h - `bedrock` and `bedrock-runtime`, the\n'
 	@printf '                   control plane and the invocation path. Stage 6e s assistant in a\n'
 	@printf '                   space needs both, so a session that runs it names this group\n'
-	@printf '    bedrock-agent  2 endpoints, ~0.020 USD/h - the agent pair, for the six\n'
+	@printf '    bedrock-agent  2 endpoints, ~0.020 USD/h - the agent pair, for the\n'
 	@printf '                   AmazonBedrock* blueprints; it needs bedrock-base beside it\n'
 	@printf '    emr            7 endpoints, ~0.070 USD/h - EmrServerless\n'
 	@printf '    mlflow         1 endpoint, ~0.010 USD/h - the MLflow App s tracking API, for\n'
