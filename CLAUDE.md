@@ -305,8 +305,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   is Sandbox only. All 41 decisions are closed. Gates: `make check`, `make check-ou`. **What waits on the
   user is [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md)**: read it before asking
   the user anything, and remove a row in the sitting that takes it.
-- **The SCP battery** read `ou` 40 as expected / 0 unexpected / 7 not measured on 2026-10-19 (Stage 18's
-  carve-out rows included) and `root` 25 / 0 / 0 on 2026-10-18. **SageMaker processing-job quotas are 0 in Production and Staging** (`ml.m5.large`,
+- **The SCP battery** read `ou` 41 as expected / 0 unexpected / 7 not measured on 2026-10-19 (Stage 18's
+  carve-out rows and Stage 17's Titan row included) and `root` 25 / 0 / 0 on 2026-10-18. **SageMaker processing-job quotas are 0 in Production and Staging** (`ml.m5.large`,
   `.xlarge`, `.2xlarge`), with no increase requested: no job runs there until the user requests them, and
   the probes read `ResourceLimitExceeded` as authorized.
 - **Stage 9**: pass 1 applied 2026-10-18, `awsds-org-scp-ou-workloads` (nine statements) and
@@ -386,8 +386,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stage 17**: pass 0 in progress; 1.1 read and 1.3 applied 2026-10-19 (`MLflowApp` configured and in
   `experimentation`, `TM-21` with it), and 1.5 read why the portal greys out *Create MLflow App* (it resolves the blueprint from Data
   Governance's configurations, which D22 keeps empty): the user created `ml-demo-mlflow` through
-  `create-environment` (`ML-2` read, no CMK). 7.0a and 7.0b applied 2026-10-19 (`AmazonBedrockKnowledgeBase` at `sagemaker-prereqs-v0.7.0`): the Generative AI menu opens and lists no model until one is enabled for the account (decision 13). Main pins `vpc-egress-v0.18.0` (`mlflow`), unapplied (1.4). Decision 11, the embeddings model in the Bedrock SCP, needs
-  `awslib/bedrockscope.py` to learn the difference first, or `BS-2`, `BS-7` and `BR-4` go red. Pass 2's training job waits on the battery's instance-preference rows (Stage 9 3.5).
+  `create-environment` (`ML-2` read, no CMK). 7.0a and 7.0b applied 2026-10-19 (`AmazonBedrockKnowledgeBase` at `sagemaker-prereqs-v0.7.0`): the Generative AI menu opens and lists no model until one is enabled for the account. Decision 13 taken as (b): a governance project in `data-governance/governance/` and the two model roles in `sandbox/model-access/` (rank 52), applied by the user 2026-10-19, and the five models enabled in Sandbox's console the same evening (Opus, Sonnet and Haiku 4.5 and Titan V2 in projects, Haiku 4.5 and Nova Lite in the playground); decision 11's amendment, Titan V2 and `application-inference-profile/*` in the Bedrock SCP, was applied by the user the same evening: the playground answers with Haiku 4.5 and refuses Nova Lite on its foundation model (7.3). Main pins `vpc-egress-v0.18.0` (`mlflow`), unapplied (1.4). Pass 2's training job waits on the battery's instance-preference rows (Stage 9 3.5).
   **Stage 18**: passes 1 and 2.1-2.5 done 2026-10-19, the applies by the user (the classifier refuses
   them to Claude): the carve-out is live (`EXC-20`), Staging is associated with `Tooling` configured,
   and both `backend.py` lists carry `staging`; 2.6 and 2.7 are applied, the `deployment` profile

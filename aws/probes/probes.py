@@ -513,6 +513,21 @@ probe("ou", "sandbox1", "deny", "ValidationException", "ro",
       "interactive (inherited): bedrock:InvokeModel outside the scoped set (decision 15)",
       _invoke("amazon.nova-lite-v1:0", _NOVA_BODY))
 
+# --- Stage 17 decision 11 - the statement's two entries beside the scope. Titan Text Embeddings V2,
+#     the knowledge base's embeddings model, is admitted by its foundation-model ARN: the row invokes
+#     it with Titan's body, an embedding of one word.
+#
+#     The application inference profiles, admitted as a family, have no row. A profile id that does
+#     not exist is refused before authorization, "The provided model identifier is invalid"
+#     (ValidationException, measured 2026-10-19 with the entry absent), so a fake id reads the same
+#     on both sides of the amendment (Lesson 21), and a real one is an id the service mints. The
+#     profile's pass, and the model checked behind it, are measured through the portal by Stage 17
+#     7.3's playground chat.
+_TITAN_BODY = '{"inputText":"ping"}'
+probe("ou", "sandbox1", "allow", None, "ro",
+      "interactive (inherited): bedrock:InvokeModel on amazon.titan-embed-text-v2:0 (Stage 17 decision 11)",
+      _invoke("amazon.titan-embed-text-v2:0", _TITAN_BODY))
+
 # The allow rows invoke each profile the house image pins, read from its managed settings, so they
 # follow the scoped set when the image moves. The statement's NotResource is the list under test:
 # a row built from it would invoke a misspelt id and never meet the refusal the image's own call

@@ -39,40 +39,58 @@ SID_REGIONS = "DenyBedrockReadsOutsideTheRoutedRegions"
 
 PROFILE_ARN_RE = re.compile(r"^arn:aws:bedrock:[^:]*:[^:]*:inference-profile/(?P<id>.+)$")
 MODEL_ARN_RE = re.compile(r"^arn:aws:bedrock:[^:]*::foundation-model/(?P<id>.+)$")
+APP_PROFILE_ARN_RE = re.compile(r"^arn:aws:bedrock:[^:]*:[^:]*:application-inference-profile/")
+
+
+def _statements(path: Path) -> tuple[dict | None, str]:
+    """The SCP document's statements by Sid, or None and why."""
+    if not path.is_file():
+        return None, f"{SCP_PATH} not found - running outside the repository"
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        return None, f"{SCP_PATH} is not valid JSON: {exc}"
+    return {st.get("Sid"): st for st in doc.get("Statement", [])}, ""
+
+
+def _not_resource(by_sid: dict) -> tuple[dict, set, bool]:
+    """(model -> us. profile, every foundation model named, application profiles admitted)."""
+    profiles_seen, models_seen, app_profiles = {}, set(), False
+    st = by_sid.get(SID_MODELS)
+    for arn in (st or {}).get("NotResource", []):
+        m = PROFILE_ARN_RE.match(arn)
+        if m:
+            pid = m.group("id")
+            # `us.anthropic.claude-x` is the profile for `anthropic.claude-x`.
+            profiles_seen[pid.split(".", 1)[1] if "." in pid else pid] = pid
+            continue
+        m = MODEL_ARN_RE.match(arn)
+        if m:
+            models_seen.add(m.group("id"))
+            continue
+        if APP_PROFILE_ARN_RE.match(arn):
+            app_profiles = True
+    return profiles_seen, models_seen, app_profiles
 
 
 def scp_declaration(path: Path) -> tuple[dict | None, list | None, str]:
-    """(models -> profile, routed regions, why it is None) read out of the SCP document.
+    """(scoped models -> profile, routed regions, why it is None) read out of the SCP document.
+
+    A scoped model is one the statement names with its `us.` profile, the set of Stage 6e decision
+    14. A model the statement names alone is admitted, not scoped (Stage 17 decision 11's
+    embeddings model), and only scp_admitted() returns it: the scoped set's consumers (the grant
+    map, the image's pins, the endpoint policy) know nothing of it.
 
     ``path`` is the document itself. A caller inside the repository passes
     ``ctx.repo_root / SCP_PATH``; a caller running standalone (CloudShell, where `locate` finds
     no repository) passes a path that does not exist and gets the `why` string to print.
     """
-    if not path.is_file():
-        return None, None, f"{SCP_PATH} not found - running outside the repository"
-    try:
-        doc = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        return None, None, f"{SCP_PATH} is not valid JSON: {exc}"
+    by_sid, why = _statements(path)
+    if by_sid is None:
+        return None, None, why
 
-    by_sid = {st.get("Sid"): st for st in doc.get("Statement", [])}
-
-    pairs: dict[str, str] = {}
-    st = by_sid.get(SID_MODELS)
-    if st is not None:
-        profiles_seen, models_seen = {}, set()
-        for arn in st.get("NotResource", []):
-            m = PROFILE_ARN_RE.match(arn)
-            if m:
-                pid = m.group("id")
-                # `us.anthropic.claude-x` is the profile for `anthropic.claude-x`.
-                profiles_seen[pid.split(".", 1)[1] if "." in pid else pid] = pid
-                continue
-            m = MODEL_ARN_RE.match(arn)
-            if m:
-                models_seen.add(m.group("id"))
-        for model in sorted(models_seen):
-            pairs[model] = profiles_seen.get(model, "")
+    profiles_seen, models_seen, _app = _not_resource(by_sid)
+    pairs = {m: profiles_seen[m] for m in sorted(models_seen) if m in profiles_seen}
 
     regions = None
     st = by_sid.get(SID_REGIONS)
@@ -87,6 +105,23 @@ def scp_declaration(path: Path) -> tuple[dict | None, list | None, str]:
     missing = [s for s, present in ((SID_MODELS, pairs), (SID_REGIONS, regions)) if not present]
     why = f"{SCP_PATH} carries no {', '.join(missing)}" if missing else ""
     return (pairs or None), regions, why
+
+
+def scp_admitted(path: Path) -> tuple[set | None, bool | None, str]:
+    """(every foundation model the statement admits, application profiles admitted, why None).
+
+    The admitted set is the scoped models and the models named without a profile. The document
+    cannot tell a model admitted on purpose from a scoped model whose profile entry went missing:
+    both read as admitted and neither as scoped, which is why ./aws/bedrock-scope.py BS-1 names
+    every admitted model that is not scoped.
+    """
+    by_sid, why = _statements(path)
+    if by_sid is None:
+        return None, None, why
+    if SID_MODELS not in by_sid:
+        return None, None, f"{SCP_PATH} carries no {SID_MODELS}"
+    _profiles, models_seen, app_profiles = _not_resource(by_sid)
+    return models_seen, app_profiles, ""
 
 
 def grant_models(path: Path) -> dict | None:

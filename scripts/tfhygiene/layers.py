@@ -170,6 +170,11 @@ RANKS = {
     # PROJECT must exist in the portal, because the role this slice attaches to is named after
     # it (runbooks/claude-code-sagemaker.md section P).
     "bedrock": 52,
+    # Stage 17 decision 13: the two roles of the console's model access, beside `bedrock` and above
+    # `sagemaker` (46), whose boundary they carry. [P], so up/down skip it. Its real prerequisite
+    # is in another account: data-governance/governance/'s governance project, without which the
+    # console's Manage stays greyed and the roles are never used.
+    "model-access": 52,
     # Stage 6i decision 6: the workflows grant for SMUS project roles, the same shape as `bedrock`
     # and above `sagemaker` (46) for the same reason. [P], so up/down skip it; 56 is the first free
     # slot, and nothing interleaves with it.
@@ -529,6 +534,15 @@ SLICES = [
     # hand-written once per project, which decision 8 took deliberately.
     Slice(
         "sandbox", "bedrock", PERSISTENT, "the Bedrock grant: 1 policy + 1 attachment per project"
+    ),
+    # Stage 17 decision 13 - the model provisioning role, under the name the console adopts, and the
+    # playground's model consumption role, both under the D13 boundary. IAM only, free at rest; the
+    # application inference profiles DataZone creates with the first role are not this slice's.
+    Slice(
+        "sandbox",
+        "model-access",
+        PERSISTENT,
+        "the console's model access: 2 roles, 1 inline policy each",
     ),
     # Stage 6i decision 6 - one IAM policy and one attachment per SMUS project whose workflows run
     # SageMaker processing jobs: DescribeProcessingJob on a job no project tag marks, which is what
