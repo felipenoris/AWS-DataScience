@@ -222,6 +222,11 @@ terraform-live/
 │   │                     #     is hand-written after a project exists - the blueprint offers a
 │   │                     #     boundary for every project role and no grant for any
 │   │                     #     (runbooks/claude-code-sagemaker.md section P)
+│   ├── model-access/     # [P] the console's model access (Stage 17 decision 13, rank 52): the
+│   │                     #     model provisioning role, under the name the console adopts,
+│   │                     #     AmazonSageMakerBedrockModelManagementRole-<domain account>, and the
+│   │                     #     playground's consumption role, both under the D13 boundary; the
+│   │                     #     project they serve is data-governance/governance/'s
 │   ├── workflows/        # [P] the workflows grant (6i decision 6, rank 56): one IAM policy -
 │   │                     #     DescribeProcessingJob on a processing job no project tag marks,
 │   │                     #     which SageMakerProcessingOperator's existence check needs, and
@@ -301,7 +306,11 @@ terraform-live/
 │                         #     A registry: blueprints provision compute into those
 │                         #     accounts, never into this one. No foundation/ slice: no
 │                         #     VPC, no user compute, nothing standing - which is why
-│                         #     INT-13 has no host
+│                         #     INT-13 has no host. Since Stage 17 decision 13 also the
+│                         #     project the console's model access publishes into,
+│                         #     GenerativeAIModelGovernanceProject, its profile with no
+│                         #     environment configuration, and Sandbox's InfrastructureAccess
+│                         #     as its contributor (model-governance.tf)
 ├── staging/              # Deployment target (D20, D17): the Development account renamed at
 │   │                     # Stage 6b (2026-09-06) - not a vend, the quota refused that.
 │   │                     # SageMaker runtime only - no domain, no space, no blueprint, no
@@ -755,6 +764,9 @@ plan, so the layer of the other two is written here rather than inferred from a 
 | the project's SageMaker AI domain, its `DefaultUserSettings` and the `CustomImages` attachment | `[P]` | the blueprint; the attachment by hand ([`dev-env.md`](runbooks/dev-env.md) §C6) | nothing until an app runs | never |
 | the registered image, its version and app image configurations | `[P]` | `sandbox/dev-env/`, rank 49 | nothing | never |
 | the Bedrock grant | `[P]` | `sandbox/bedrock/`, rank 52 | nothing | never |
+| the governance project of the console's model access, its profile and Sandbox's membership | `[P]` | `data-governance/governance/` (Stage 17 decision 13) | nothing | never |
+| the model provisioning and consumption roles | `[P]` | `sandbox/model-access/`, rank 52 | nothing | never |
+| a model's catalog asset and environment in the governance project; a project's application inference profile of a model | `[P]` in shape | the console's *Manage*; DataZone, at a subscription's grant | nothing | never: the console's disable revokes the listing's subscriptions and unpublishes and deletes the asset (its code, read 2026-10-19); whether it deletes the environment is unread |
 | the workflows grant | `[P]` | `sandbox/workflows/`, rank 56 | nothing | never |
 | the CI/CD CLI's `test` deploy role, `awsds-deploy-sandbox-test`, and its ceiling | `[P]` | `sandbox/workflows/`, rank 56 (Stage 8 decision 19; applied 2026-10-16) | nothing | never |
 | **a space** | **`[D]` in shape**: kept between sessions, its app stopped, its volume billing — though no `make` target starts one | the portal, by hand | **USD 0.112 per GB-month** of its volume (`UnifiedStudio:VolumeUsage.gp3`); 56 GB and USD 6.27 a month across the three spaces of 2026-09-12 | **not by default**: `scripts/down-studio-apps.py --spaces` deletes them, and the home directories with them |

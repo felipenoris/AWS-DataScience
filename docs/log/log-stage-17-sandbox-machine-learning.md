@@ -1350,3 +1350,572 @@ chosen, and nothing was saved or created. Times are UTC.*
   models** tab reads no model enabled for `Sandbox Account 1` in `us-west-2` (7.0a's entry), and the
   IDE answers *"Contact your admin to enable more models."* 7.3's chat therefore waits on how a model
   is enabled for the projects (decision 13).
+
+## 2026-10-19 — decision 13's readings: what the Bedrock models tab writes, the model roles' policies, the SCP against an application inference profile
+
+*Provenance. Claude, in a session started for decision 13, from the worktree
+`verificar-ambiente-down-e95914` at `origin/main` `5142e0f`, as the infrastructure user with
+`InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and in `Data Governance`
+(`awsds-infra-data`). Every AWS call was a read. The console's and the portal's JavaScript was
+downloaded from their public CDN and read, never run. No quoted line carries an account id or an e-mail
+address. Times are UTC.*
+
+- **[Claude] The two managed policies**, read at 19:16 with `iam get-policy-version`. Both live under
+  `service-role/`, so the first `get-policy` at the root path answered `NoSuchEntity`; each reads
+  `AttachmentCount` 0 in `Sandbox Account 1`.
+  - `AmazonDataZoneBedrockModelManagementPolicy` v1, created 2024-11-12 and never edited:
+    `ManageApplicationInferenceProfile` (`bedrock:CreateInferenceProfile` and `TagResource` on
+    `application-inference-profile/*` in the principal's account, the request and the resource carrying
+    `AmazonDataZoneProject`), `DeleteApplicationInferenceProfile` (profiles carrying that tag),
+    `CreateApplicationInferenceProfileUsingFoundationModels` (`foundation-model/*`, no condition) and
+    `CreateApplicationInferenceProfileUsingBedrockModels` (`inference-profile/*` in the account). It
+    grants no invocation.
+  - `AmazonDataZoneBedrockModelConsumptionPolicy` v7, edited 2026-02-12: `InvokeDomainInferenceProfiles`
+    (`InvokeModel` and `InvokeModelWithResponseStream` on `application-inference-profile/*` tagged
+    `AmazonDataZoneDomain` with `${datazone:domainId}` and carrying no `AmazonDataZoneProject`),
+    `ListFoundationModels`, and Bedrock sessions tagged with the DataZone user and domain. AWS's role
+    page adds one inline statement per model, `AllowInferenceProfileToInvokeFoundationModels`: the
+    model's `foundation-model` ARN when `bedrock:InferenceProfileArn` is one of the account's application
+    inference profiles. Both roles' trust is `datazone.amazonaws.com`, `sts:AssumeRole` and
+    `sts:SetContext`, under `aws:SourceAccount`.
+- **[Claude] AWS's pages** (`REFERENCES.md`). The admin guide's *Amazon Bedrock in SageMaker Unified
+  Studio* enables a model with *Manage* and two checkboxes per model, and publishes the models as assets
+  through `GenerativeAIModelGovernanceProject`, a project the service creates, owned by the identity that
+  configured Bedrock for the domain; an associated account's IAM identity must join it to publish models.
+  The inference-profile prerequisites page requires the foundation model in each Region beside the
+  profile, under `bedrock:InferenceProfileArn`.
+- **[Claude] What the tab's *Manage* writes, read in the console's code**: 7.0a's bundle, unchanged
+  (6,158,162 bytes, SHA-256 `950192e9ddeebb64…`, downloaded 19:18). The Submit,
+  `processModelEnablementRequestCommand`:
+  1. Looks in the current account for a role whose name contains
+     `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>`; failing that, takes a role
+     chosen in the setup wizard; failing that, creates it at `/service-role/` with AWS's management policy,
+     its trust's `aws:SourceAccount` the domain's account. This runs before any model is processed, and
+     a role chosen in a model's *Roles for model access* is read only afterwards.
+  2. Per model enabled in projects: `CreateEnvironment` with `environmentBlueprintIdentifier`
+     `AwsServiceBlueprint` in the governance project, named
+     `amazon.datazone.BedrockModelEnvironmentType_<12 characters>`, in the selected account and Region;
+     `AssociateEnvironmentRole` with the provisioning role as `SYSTEM_ROLE`; `CreateAsset` of type
+     `amazon.datazone.BedrockModelAssetType`, owned by the governance project, named
+     `<model id><Region>BedrockModelForm`, its form carrying the Region, the account, the role, the
+     environment and the model (a cross-Region row's ARN being its system inference profile's), beside a
+     `SubscriptionTermsForm` of `{"approvalRequired": "NO"}`; `CreateListingChangeSet` `PUBLISH`.
+  3. Per model enabled in the playground: `bedrock:CreateInferenceProfile` as the person pressing
+     Submit, named after the domain id, copying the system profile or the model, tagged
+     `AmazonDataZoneDomain`; a consumption role, chosen in the form, found by its generated name
+     `AmazonSageMakerBedrockModelConsumptionRole-<14 hex characters>`, or created with a customer-managed
+     `AmazonSageMakerBedrockModelConsumptionPolicy-<the same hash>`; an environment of type
+     `BedrockInferenceOnlyEnvironmentType` holding it as `SHAREABLE_ROLE`; an asset of type
+     `amazon.datazone.BedrockInferenceOnlyAssetType` carrying the profile's ARN; the publish.
+  4. A disable revokes the listing's approved subscriptions, unpublishes and deletes the asset, and for
+     the playground deletes the profile.
+
+  The governance project is found through `ListProjects`, by id or by the name
+  `GenerativeAIModelGovernanceProject`. In an associated account *Manage* stays greyed while none is
+  found (*"Model governance project does not exist"*), and the *Manage* page offers the project in a
+  selector and keeps *Review and submit* disabled until one is chosen. Only the domain account's setup
+  creates the profile *Generative AI model governance*, with no environment configuration, and the
+  project, in the run that also writes the Bedrock blueprints' and `Tooling`'s configurations in that
+  account. The associated account's *Set up generative AI* Submit writes the `Tooling` configuration if
+  absent and the Bedrock blueprints' configurations with a blueprint management role, and processes no
+  model: the two model roles of its form are unused there (inferred from the code).
+- **[Claude] How a project reaches a model, read in the portal's code**: `assets/module-GY0Cw3hN.js`,
+  4,374,983 bytes, the bundle that holds 1.5's `App-D6IrICgA.js`, downloaded 19:25. The model lists are
+  catalog searches by asset type, `BedrockModelAssetType` in a project and
+  `BedrockInferenceOnlyAssetType` in the playground. On a model's first use the portal sends
+  `CreateSubscriptionRequest` for its listing, as the project (`PROJECT`) or as the person (`USER`),
+  polls the request to `ACCEPTED` and `ListSubscriptionGrants` to `COMPLETED`. A project's grant names
+  the application inference profile in its `targetName`, and the call uses the project's bootstrap
+  environment's credentials; the playground's names a connection, whose credentials the browser takes
+  through `GetConnectionCredentials`. That the grant creates the profile with the provisioning role,
+  tagged `AmazonDataZoneProject`, is inferred from the management policy; no grant was observed.
+- **[Claude] Who invokes through an application inference profile**, read at 19:23 and 19:26. The
+  project role's `SageMakerStudioProjectUserRolePolicy` v75 admits `InvokeModel` on
+  `application-inference-profile/*` tagged with its own `AmazonDataZoneProject` (`BRInvokeAppProfile`,
+  under `EnableAmazonBedrockPermissions`) and on `foundation-model/*` only when
+  `bedrock:InferenceProfileArn` is an application inference profile (`BedrockInvokeModelPermissions`).
+  The `Tooling` environments' `AmazonBedrockServiceRole-*` policies, `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy`
+  v9, `SageMakerStudioBedrockAgentServiceRolePolicy` v3, `SageMakerStudioBedrockFlowServiceRolePolicy`
+  v9 and `SageMakerStudioBedrockEvaluationJobServiceRolePolicy` v3, admit the same pair. The knowledge
+  base's embeddings, the agent, the flow and the evaluation therefore reach a model only through a
+  project's application inference profile (inferred from the policies).
+- **[Claude] The domain and the account**, read at 19:22 and 19:33. As `awsds-infra-data`, the domain
+  holds the project profiles `deployment` and `experimentation` and the projects `test-experimentation`,
+  `eighth-experimentation` and `deploy-staging`: no governance profile and no governance project. In
+  `Sandbox Account 1`, `bedrock list-inference-profiles --type-equals APPLICATION` returns none, and the
+  three scoped `us.` profiles read `ACTIVE`, each routing to `us-east-1`, `us-east-2` and `us-west-2`.
+- **[Claude] What Terraform reaches (Lesson 8)**, read at 19:24. CloudFormation's registry in
+  `us-west-2` lists 17 `AWS::DataZone::*` types, `Environment` among them with
+  `EnvironmentBlueprintIdentifier`, `EnvironmentAccountIdentifier`, `EnvironmentAccountRegion` and
+  `EnvironmentRoleArn`, beside `Project`, `ProjectMembership` and `ProjectProfile`, and
+  `AWS::Bedrock::ApplicationInferenceProfile`; none for an asset, a listing, a subscription or
+  `AssociateEnvironmentRole`. The pinned providers, `awscc` 1.98.0 and `aws` 6.61.0, document
+  `awscc_datazone_environment` (`environment_role_arn`), `awscc_datazone_project`,
+  `awscc_datazone_project_membership`, `awscc_datazone_project_profile`,
+  `awscc_bedrock_application_inference_profile` and `aws_bedrock_inference_profile`, and no asset,
+  listing or subscription resource in either.
+- **[Claude] The SCP against an invocation through an application inference profile.**
+  `DenyBedrockInvocationOutsideTheScopedModels` lists six spellings in its `NotResource`, three
+  `inference-profile/us.anthropic.*` and three `foundation-model/anthropic.*`, and no
+  `application-inference-profile`. Such an invocation is authorized on the profile's ARN and on the
+  foundation model's in each Region it routes to (AWS's prerequisites page; 6e's `sandbox/bedrock/`
+  names both halves for the system profiles), so the statement refuses every call the portal makes, a
+  project's, the knowledge base's sync and the playground's, on the profile's pass (inferred,
+  unexercised). Decision 11's amendment as recommended, Titan V2's `foundation-model` ARN alone, would
+  leave 7.4a's second sync refused on the same pass. `aws/awslib/bedrockscope.py`'s two patterns match
+  neither half of an `application-inference-profile/*` entry, so such an entry moves no instrument's
+  reading (read from the code).
+
+## 2026-10-19 — decision 13: the Bedrock models tab and its *Manage* page, read in the console
+
+*Provenance. Claude, in the same session and worktree. The console session was the user's, signed in as
+the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1` (`ConsoleLogin` at
+19:50:48), read through Claude in Chrome in a tab of Claude's own group, opened by URL. Claude's clicks
+opened the governance project selector, one model's *Manage roles* dialog and its role selector, each
+closed with Escape or *Cancel*; nothing was ticked, saved or submitted. The AWS calls Claude ran were
+reads as `awsds-infra-sandbox-1` and `awsds-infra-data`. Times are UTC.*
+
+- **[Claude] The tab** (`#/associatedDomains/<domain>/modelsManagement`), 19:51. The header reads
+  `Sandbox Account 1` and `InfrastructureAccess`, the selectors `<Sandbox Account 1>` and `us-west-2`.
+  *Models enabled for the selected account and region (0)*, and **Manage** greyed, its tooltip
+  *"Model governance project does not exist"*, the wording the code predicted. The table lists 62 models
+  from 12 providers (Amazon 9, Anthropic 11, Cohere 4, DeepSeek 2, Luma AI 1, Meta 9, Mistral AI 5,
+  OpenAI 2, Qwen 4, Stability AI 12, TwelveLabs 1, Writer 2), every *Enabled in projects*, *Enabled in
+  playground* and *Roles for model access* cell at `-`. Anthropic's eleven are all *On-demand
+  cross-region*: Claude Haiku 4.5, Opus 4.1 (*Legacy*), Opus 4.5, 4.6, 4.7, 4.8, Opus 5, Opus 5.5, Sonnet
+  4.5 (*Legacy*), Sonnet 4.6 and Sonnet 5. Titan Text Embeddings V2 is listed twice, as `Titan Text
+  Embeddings V2` and `Titan Text Embeddings v2`, both *Embedding* and *On-demand*. Below the table,
+  *Playground settings* holds *Default playground models - optional* with its *Chat playground* and
+  *Image and video playground* selectors empty, and no *Model governance project* section. The page's
+  *Next steps* reads *Generative AI* with *8 blueprints enabled*.
+- **[Claude] The *Manage* page, opened by URL** (`#/associatedDomains/<domain>/manage-generative-ai-models`),
+  19:52. *Manage models access*, the same selectors and the same 62 rows, each with an *Enable* checkbox
+  under *Enable in projects* and under *Enable in playground* and a *Manage roles* link under *Roles for
+  model access*. A *Model governance project* section says the service creates a governing project at
+  the initial model access setup, from a system-generated *Gen AI Model Governance Project* profile; its
+  field *Generative AI governance project* opens on a search box and no option. *Review and submit* is
+  greyed.
+- **[Claude] *Manage roles* on Claude Haiku 4.5's row**, 19:52 to 19:53. The dialog *Permissions for
+  Amazon Bedrock model access* holds one section, *Model provisioning role*, with *Use an Amazon
+  SageMaker Unified Studio managed role for the model* and *Use a single existing custom role for the
+  model*, the second selected with `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>`;
+  no consumption role section, the playground box being unticked. The role selector lists the account's
+  roles in name order, unfiltered by trust (`AmazonBedrockLambdaExecutionRole-*`,
+  `AmazonBedrockServiceRole-*`, `aws-controltower-*`, `AWSControlTowerExecution`,
+  `AWSControlTower_VPCFlowLogsRole`, `awsds-deploy-devenv-sandbox`, `awsds-deploy-sandbox-test`,
+  `awsds-sandbox-lake-access`, and on), and the preselected role is not among them. `iam list-roles` at
+  19:53 holds no role whose name carries `AmazonSageMaker`, `AmazonDataZone`, `ModelManagement` or
+  `ModelConsumption` but `AWSServiceRoleForAmazonSageMakerNotebooks`: the dialog offers, as an existing
+  role, the ARN the code builds as its last fallback. *Cancel*, then the page's *Cancel*, back on the
+  tab.
+- **[Claude] Nothing was written.** At 19:54 Sandbox holds no application inference profile, and the
+  domain the same three projects and two profiles. Sandbox's trail from 19:38 holds, as the
+  infrastructure user, `ConsoleLogin` at 19:50:48, six `SearchListings` from 19:51:09 to 19:52:29 (the
+  pages' catalog lookups) and, in `us-east-1`, one `PutRolePolicy` at 19:46:08 on
+  `awsds-deploy-sandbox-test` by Terraform, Stage 18's `sandbox/workflows/` apply announced by its
+  session; no other write.
+- **[Claude] What the reading says.** The code's prediction holds: an associated account's console
+  offers no way to enable a model until a governance project exists and lists the caller as a member.
+  The dialog's default for the provisioning role is the console's managed name, so a role the slice
+  creates under that name would appear as the existing role, which is decision 13 (b)'s adoption.
+
+## 2026-10-19 — decision 13 taken
+
+- **[user] Decision 13**, in this session's chat after the console reading: *"Vamos pela opção (b)"*,
+  the recommended (b): the governance profile, project and Sandbox `InfrastructureAccess` membership in
+  `data-governance/governance/`, and the two model roles in a `[P]` slice `sandbox/model-access/` the
+  console adopts. Decision 11, the SCP amendment grown by `application-inference-profile/*`, stays the
+  user's.
+
+## 2026-10-19 — decision 13 (b): the governance project and `sandbox/model-access/` written and planned
+
+*Provenance. Claude, in the same session and worktree, as the infrastructure user with
+`InfrastructureAccess` in `Data Governance` (`awsds-infra-data`, with the slice's `sandbox`, `staging`
+and `identity` aliases) and in `Sandbox Account 1` (`awsds-infra-sandbox-1`). Plans only: nothing was
+applied. Account ids in the plans' output are replaced by the account's name. Times are UTC.*
+
+- **[Claude] The group the membership names**, read with `datazone search-group-profiles`: Sandbox's
+  `InfrastructureAccess` role has an `IAM_ROLE_SESSION_GROUP` profile, already a
+  `PROJECT_CONTRIBUTOR` of `eighth-experimentation` (INT-25's portal membership of 2026-10-15), and
+  the slice resolves its id from the role's ARN, as it does Staging's.
+- **[Claude] `data-governance/governance/`**: `model-governance.tf` and the Sandbox role's two lookups
+  in `data.tf`, beside Staging's. The plan, saved as `~/tmp/s17-model-governance.tfplan` at 20:14:20:
+
+  ```
+    # awscc_datazone_project.model_governance[0] will be created
+    # awscc_datazone_project_membership.model_governance_sandbox_infrastructure[0] will be created
+    # awscc_datazone_project_profile.model_governance[0] will be created
+  Plan: 3 to add, 0 to change, 0 to destroy.
+  ```
+
+  The profile is *Generative AI model governance*, `ENABLED`, with no environment configuration; the
+  project `GenerativeAIModelGovernanceProject`; the membership `PROJECT_CONTRIBUTOR` for that
+  session group.
+- **[Claude] `sandbox/model-access/`**, a new `[P]` slice at rank 52, registered in `layers.py` and
+  given `account_folder` and `domain` by `backend.py`. Its lock file is `sandbox/observability/`'s,
+  `hashicorp/aws` 6.69.1 on the three platforms, since the first init locked one platform and
+  `check-provider-locks.py` failed it. The plan, saved as `~/tmp/s17-model-access.tfplan` at 20:13:12:
+
+  ```
+    # module.model_consumption_role.aws_iam_role.this will be created
+    # module.model_consumption_role.aws_iam_role_policy.inline["invoke-through-application-inference-profiles"] will be created
+    # module.model_consumption_role.aws_iam_role_policy_attachment.managed["arn:aws:iam::aws:policy/service-role/AmazonDataZoneBedrockModelConsumptionPolicy"] will be created
+    # module.model_provisioning_role.aws_iam_role.this will be created
+    # module.model_provisioning_role.aws_iam_role_policy.inline["model-management"] will be created
+  Plan: 5 to add, 0 to change, 0 to destroy.
+  ```
+
+  The provisioning role is `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>`, path
+  `/`, boundary `awsds-sandbox-project-boundary`, trust `datazone.amazonaws.com` (`sts:AssumeRole`,
+  `sts:SetContext`) under `aws:SourceAccount` `<Data Governance Account>`. Its `model-management`
+  policy admits `CreateInferenceProfile` from the three scoped models' `foundation-model` ARNs and Titan
+  V2's, Region-less, and from the three `us.` profiles in `us-west-2`, beside AWS's two statements on
+  `application-inference-profile/*` of `<Sandbox Account 1>`. The consumption role is
+  `awsds-sandbox-bedrock-model-consumption`, with the same trust and boundary, AWS's consumption policy
+  and `AllowInferenceProfileToInvokeFoundationModels` on `foundation-model/*` under
+  `bedrock:InferenceProfileArn`.
+
+## 2026-10-19 — decision 13 (b) applied by the user, read back, and the console's *Manage* open
+
+*Provenance. The applies are the user's, from the saved plans, in a terminal of the project folder
+with `-chdir` into this worktree, pasted into this session; the account ids are replaced by the
+account's name. Claude, in the same session and worktree, re-planned and read back as
+`awsds-infra-data` and `awsds-infra-sandbox-1`, ran `./aws/studio.py`, and read the console through
+Claude in Chrome in the user's session as the infrastructure user in `Sandbox Account 1`: the clicks
+opened *Manage*, the governance project selector, Claude Haiku 4.5's *Manage roles* dialog and its
+role selector, each closed with Escape or *Cancel*; nothing was selected, ticked, saved or submitted.
+Times are UTC.*
+
+- **[user] Both applies**, in that order:
+
+  ```
+  ➜  AWS-DataScience git:(main) AWS_PROFILE=awsds-infra-data terraform -chdir=/Users/felipentavares/src/AWS-DataScience/.claude/worktrees/verificar-ambiente-down-e95914/terraform-live/data-governance/governance apply -input=false "$HOME/tmp/s17-model-governance.tfplan"
+  awscc_datazone_project_profile.model_governance[0]: Creating...
+  awscc_datazone_project_profile.model_governance[0]: Creation complete after 7s [id=dzd-d8yrvx1ko7im6o|ds7ur2s2ce42vk]
+  awscc_datazone_project.model_governance[0]: Creating...
+  awscc_datazone_project.model_governance[0]: Still creating... [00m10s elapsed]
+  awscc_datazone_project.model_governance[0]: Still creating... [00m20s elapsed]
+  awscc_datazone_project.model_governance[0]: Still creating... [00m30s elapsed]
+  awscc_datazone_project.model_governance[0]: Still creating... [00m40s elapsed]
+  awscc_datazone_project.model_governance[0]: Still creating... [00m50s elapsed]
+  awscc_datazone_project.model_governance[0]: Still creating... [01m00s elapsed]
+  awscc_datazone_project.model_governance[0]: Creation complete after 1m3s [id=dzd-d8yrvx1ko7im6o|dmvami701qu6xc]
+  awscc_datazone_project_membership.model_governance_sandbox_infrastructure[0]: Creating...
+  awscc_datazone_project_membership.model_governance_sandbox_infrastructure[0]: Creation complete after 7s [id=dzd-d8yrvx1ko7im6o|839bcde8-f8b8-4ada-936a-1441352db302|GROUP_IDENTIFIER|dmvami701qu6xc]
+  Releasing state lock. This may take a few moments...
+
+  Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
+
+  Outputs:
+
+  domain_arn = "arn:aws:datazone:us-west-2:<Data Governance Account>:domain/dzd-d8yrvx1ko7im6o"
+  domain_execution_role_arn = "arn:aws:iam::<Data Governance Account>:role/awsds-data-studio-domain-execution"
+  domain_id = "dzd-d8yrvx1ko7im6o"
+  domain_service_role_arn = "arn:aws:iam::<Data Governance Account>:role/awsds-data-studio-domain-service"
+  model_governance_project_id = "dmvami701qu6xc"
+  portal_url = "https://dzd-d8yrvx1ko7im6o.sagemaker.us-west-2.on.aws"
+  project_profile_creators = {
+    "deployment" = "InfrastructureAccess (staging)"
+    "experimentation" = "sso-group-data-scientists"
+  }
+  project_profile_ids = {
+    "deployment" = "dalofykyytykgg"
+    "experimentation" = "dh60xbal05q64w"
+  }
+  root_domain_unit_id = "bzq0cbh2gd0f4g"
+  ➜  AWS-DataScience git:(main) AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=/Users/felipentavares/src/AWS-DataScience/.claude/worktrees/verificar-ambiente-down-e95914/terraform-live/sandbox/model-access apply -input=false "$HOME/tmp/s17-model-access.tfplan"
+  module.model_provisioning_role.aws_iam_role.this: Creating...
+  module.model_consumption_role.aws_iam_role.this: Creating...
+  module.model_consumption_role.aws_iam_role.this: Creation complete after 2s [id=awsds-sandbox-bedrock-model-consumption]
+  module.model_consumption_role.aws_iam_role_policy_attachment.managed["arn:aws:iam::aws:policy/service-role/AmazonDataZoneBedrockModelConsumptionPolicy"]: Creating...
+  module.model_consumption_role.aws_iam_role_policy.inline["invoke-through-application-inference-profiles"]: Creating...
+  module.model_provisioning_role.aws_iam_role.this: Creation complete after 2s [id=AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>]
+  module.model_provisioning_role.aws_iam_role_policy.inline["model-management"]: Creating...
+  module.model_consumption_role.aws_iam_role_policy_attachment.managed["arn:aws:iam::aws:policy/service-role/AmazonDataZoneBedrockModelConsumptionPolicy"]: Creation complete after 0s [id=awsds-sandbox-bedrock-model-consumption/arn:aws:iam::aws:policy/service-role/AmazonDataZoneBedrockModelConsumptionPolicy]
+  module.model_consumption_role.aws_iam_role_policy.inline["invoke-through-application-inference-profiles"]: Creation complete after 0s [id=awsds-sandbox-bedrock-model-consumption:invoke-through-application-inference-profiles]
+  module.model_provisioning_role.aws_iam_role_policy.inline["model-management"]: Creation complete after 0s [id=AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>:model-management]
+  Releasing state lock. This may take a few moments...
+
+  Apply complete! Resources: 5 added, 0 changed, 0 destroyed.
+
+  Outputs:
+
+  model_consumption_role_arn = "arn:aws:iam::<Sandbox Account 1>:role/awsds-sandbox-bedrock-model-consumption"
+  model_provisioning_role_arn = "arn:aws:iam::<Sandbox Account 1>:role/AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>"
+  ```
+
+- **[Claude] Re-planned**, both `No changes. Your infrastructure matches the configuration.`:
+  `governance/` from 20:31:41, `sandbox/model-access/` from 20:32:09, done at 20:32:20.
+- **[Claude] Read back** at 20:32. The project `GenerativeAIModelGovernanceProject`
+  (`dmvami701qu6xc`), created 20:25:25, reads `ACTIVE`, deployment `SUCCESSFUL`, on the profile
+  `ds7ur2s2ce42vk`; the profile *Generative AI model governance*, created 20:25:19, reads `ENABLED` with
+  no environment configuration. The project's members are two groups: `PROJECT_OWNER` the session group
+  of Data Governance's `InfrastructureAccess`, Terraform's identity, and `PROJECT_CONTRIBUTOR`
+  Sandbox's. In `Sandbox Account 1` both roles were created 20:27:17 at path `/`, under
+  `awsds-sandbox-project-boundary`, trusted by `datazone.amazonaws.com` (`sts:SetContext`,
+  `sts:AssumeRole`) under `aws:SourceAccount` `<Data Governance Account>`; the provisioning role holds
+  the inline `model-management` and no managed policy, the consumption role
+  `AmazonDataZoneBedrockModelConsumptionPolicy` and the inline
+  `invoke-through-application-inference-profiles`.
+- **[Claude] The console after**, 20:33 to 20:35. On the tab, **Manage** is active, with no disabled
+  reason, and the counter still reads *(0)*. On the *Manage* page, the *Generative AI governance
+  project* selector offers `GenerativeAIModelGovernanceProject`, and *Review and submit* stays greyed
+  with no model ticked. Claude Haiku 4.5's *Manage roles* dialog preselects
+  `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>`, and the role selector now lists
+  that role, the slice's.
+- **[Claude] `./aws/studio.py`**, report stamped 20:36:54Z. With the new profile, `US-4` would fail
+  (*"is no contracted profile"*, inferred from the code); the script names it in
+  `MODEL_GOVERNANCE_PROFILE_NAMES` in this sitting, and the run reads `US-4` passing on *Generative AI
+  model governance*, `deployment` and `experimentation`, with `US-3`, `US-8` and `US-10` passing. Exit 1
+  comes from section 10 alone: the seven persona and Control Tower profiles whose SSO sessions were not
+  signed in.
+
+## 2026-10-19 — decision 13's third step: the models enabled in Sandbox's console
+
+*Provenance. Claude, at the user's request in this session's chat ("Pode fazer estes passos na sessão
+do chrome que está aberta", the steps being decision 13's third), through Claude in Chrome in the
+user's console session as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1`:
+Claude's clicks ticked the six boxes, set the consumption role in two dialogs, chose the governance
+project and pressed *Submit*, after reading the review table against the user's steps. The readings
+before and after are Claude's, as `awsds-infra-sandbox-1` and `awsds-infra-data`. Times are UTC.*
+
+- **[Claude] The rows ticked**, on the *Manage* page, 20:47 to 20:49. *Enable in projects*: Claude
+  Opus 4.5, Claude Sonnet 4.5 (*Legacy*) and Claude Haiku 4.5, each *On-demand cross-region*, and
+  Titan Text Embeddings V2. `bedrock list-foundation-models` names the two Titan rows: *Titan Text
+  Embeddings V2* is `amazon.titan-embed-text-v2:0` and *Titan Text Embeddings v2* is
+  `amazon.titan-embed-g1-text-02`, left unticked. *Enable in playground*: Claude Haiku 4.5, and Nova Lite
+  on its *On-demand* row, `amazon.nova-lite-v1:0`, the model outside the scoped set for 7.3's refusal.
+- **[Claude] The two playground dialogs.** In each *Manage roles* dialog the provisioning role came
+  preselected as `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>`, the slice's. The
+  consumption role came preselected as an existing custom role that does not exist:
+  `AmazonSageMakerBedrockModelConsumptionRole-3aa57cf8315f…` for Haiku 4.5 and
+  `AmazonSageMakerBedrockModelVideoConsumptionRole-b7bb98…` for Nova Lite, which the console treats as a
+  video model. Both were changed to `awsds-sandbox-bedrock-model-consumption`, and each dialog was
+  saved with *Save and submit*. Neither save wrote anything: at 20:50:09 and 20:51:29 Sandbox held no
+  application inference profile, no new role and no policy beyond the consumption role's two.
+- **[Claude] The review**, after `GenerativeAIModelGovernanceProject` was chosen in the selector:
+
+  ```
+  Review and submit changes
+  Model modifications (5)
+  Models                    Inference type          Enabled in projects  Domain playground
+  Claude Opus 4.5           On-demand cross-region  Enabled              -
+  Claude Sonnet 4.5         On-demand cross-region  Enabled              -
+  Claude Haiku 4.5          On-demand cross-region  Enabled              Enabled
+  Titan Text Embeddings V2  On-demand               Enabled              -
+  Nova Lite                 On-demand               -                    Enabled
+  ```
+
+  The table matched the user's steps. *Submit* at 20:52:05; the dialog *Configuring Generative AI* closed
+  within a minute onto the tab with *"Roles have been successfully updated"*. After a reload the table
+  reads the five rows *Enabled* with *Custom roles* in *Roles for model access*, while the heading
+  still reads *Models enabled for the selected account and region (0)*.
+- **[Claude] What it made**, read at 20:53. In the governance project, six environments in `<Sandbox
+  Account 1>`, all `ACTIVE`, created from 20:52:15 to 20:52:44: four
+  `amazon.datazone.BedrockModelEnvironmentType_<12 characters>` and two
+  `amazon.datazone.BedrockInferenceOnlyEnvironmentType_<12 characters>`. Six assets, each published,
+  owned by `dmvami701qu6xc`, created from 20:52:18 to 20:52:47:
+  `anthropic.claude-opus-4-5-20251101-v1:0us-west-2BedrockModelFormCRIT`,
+  `anthropic.claude-sonnet-4-5-20250929-v1:0us-west-2BedrockModelFormCRIT`,
+  `anthropic.claude-haiku-4-5-20251001-v1:0us-west-2BedrockModelFormCRIT`,
+  `amazon.titan-embed-text-v2:0us-west-2BedrockModelForm` (type `BedrockModelAssetType`), and
+  `anthropic.claude-haiku-4-5-20251001-v1:0us-west-2BedrockInferenceOnlyFormCRIT` and
+  `amazon.nova-lite-v1:0us-west-2BedrockInferenceOnlyForm` (type `BedrockInferenceOnlyAssetType`). In
+  `Sandbox Account 1`, two application inference profiles named `dzd-d8yrvx1ko7im6o`, `ACTIVE`, of Haiku
+  4.5 (20:52:31) and Nova Lite (20:52:43): the playground's. No project's profile exists yet, since no
+  project has subscribed.
+- **[Claude] What it did not make.** No IAM role and no customer-managed policy: `iam list-roles` and
+  `list-policies --scope Local` show the slice's provisioning role alone among the names the console
+  uses, and the consumption role still holds `AmazonDataZoneBedrockModelConsumptionPolicy` and its
+  inline policy alone. Sandbox's trail in `us-east-1` holds no write by the infrastructure user from
+  20:45. In `us-west-2` it holds, read complete at 20:56:51, 2 `CreateInferenceProfile`, 6
+  `CreateEnvironment`, 6 `AssociateEnvironmentRole`, 6 `CreateAsset` and 6 `CreateListingChangeSet` by
+  the infrastructure user from 20:52:15 to 20:52:47; Data Governance's trail holds DataZone's
+  `CreateLineageNode`, `UpdateLineageNode` and `CreateLineageNodeVersion` in the same minutes.
+- **[Claude] `./aws/catalog.py`** after: all checks passed. `CT-2` reads 8 listings, all owned by a live
+  project, and `CT-3` *"no subscription, request or grant on any listing"*.
+- **[Claude] What the step says.** The console adopted both roles: the provisioning role by its name
+  and the consumption role by the dialog's choice, and it created no principal. The dialog's save
+  writes nothing for a model not yet enabled. Its preselected consumption role is again a fallback name
+  that no role carries, so a save left on it would point the model at a missing role. The playground's
+  profiles are the console user's, named after the domain.
+
+## 2026-10-19 — 7.3's first reading: the playground refused by the SCP, before decision 11's amendment
+
+*Provenance. Claude, at the user's request in this session's chat, through Claude in Chrome in the
+user's portal session as the Data Scientist User (the account menu reads *Data Scientist User*), in a
+tab opened by URL. Claude's clicks opened the model list, chose a model and sent one prompt per model,
+`Responda apenas: ok`. The reads around them are Claude's, as `awsds-infra-identity` (the live SCP),
+`awsds-infra-sandbox-1` and `awsds-infra-data`. The portal's text is quoted verbatim with the account
+ids replaced by the account's name. Times are UTC.*
+
+- **[Claude] The SCP before**, 20:58: `DenyBedrockInvocationOutsideTheScopedModels` in `p-tgda7n58`
+  lists the six spellings of the repository's document and no `application-inference-profile`.
+- **[Claude] The playground's model list**, 21:12: *Spotlight models*, Nova Lite, then Claude Haiku 4.5
+  *Cross-region*, and nothing else: the two the console enabled for the playground, where 7.2 had read
+  *"No models found"*.
+- **[Claude] Claude Haiku 4.5**, sent at about 21:13:07. The answer, and a red banner *"An error occurred
+  in Explorer Chat."* carrying the same text:
+
+  ```
+  Something went wrong. User: arn:aws:sts::<Sandbox Account 1>:assumed-role/awsds-sandbox-bedrock-model-consumption/28f1b390-0041-7068-8cc7-9ccef94277d1@cty232yk8f2zyo is not authorized to perform: bedrock:InvokeModelWithResponseStream on resource: arn:aws:bedrock:us-west-2:<Sandbox Account 1>:application-inference-profile/cp0gmvjv1h8q with an explicit deny in a service control policy: arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-tgda7n58
+  ```
+
+- **[Claude] Nova Lite**, sent at 21:13:56:
+
+  ```
+  Something went wrong. User: arn:aws:sts::<Sandbox Account 1>:assumed-role/awsds-sandbox-bedrock-model-consumption/28f1b390-0041-7068-8cc7-9ccef94277d1@d747chsyrc379s is not authorized to perform: bedrock:InvokeModelWithResponseStream on resource: arn:aws:bedrock:us-west-2:<Sandbox Account 1>:application-inference-profile/csu817ovl4kz with an explicit deny in a service control policy: arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-tgda7n58
+  ```
+
+- **[Claude] The trail.** Sandbox's holds `ConverseStream` at 21:13:08 as
+  `awsds-sandbox-bedrock-model-consumption`, session `28f1b390-0041-7068-8cc7-9ccef94277d1@cty232yk8f2zyo`,
+  `AccessDenied`, no `vpcEndpointId` and a browser's user agent; `ListFoundationModels` as the same role
+  at 21:12:24 and 21:13:05; and `AssumeRole` of the role by `datazone.amazonaws.com` with that session
+  name at 21:12:23 (twice), 21:13:05 and 21:13:07. Nova Lite's `ConverseStream`, delivered by 21:16:05,
+  is at 21:13:56, session `…@d747chsyrc379s`, `AccessDenied`, no `vpcEndpointId`, so Nova Lite was sent
+  at 21:13:56. Data Governance's holds `CreateSubscriptionRequest` by the domain execution role at
+  21:12:18 (twice) and 21:13:51, and `GetConnection` from 21:11:53.
+- **[Claude] The subscriptions and grants**, read at 21:15. Three subscriptions, `APPROVED`, each with a
+  user as principal: two to Haiku 4.5's playground listing, both at 21:12:18, and one to Nova Lite's at
+  21:13:51. Their grants read `COMPLETED`, the asset `GRANTED`, each naming a connection (21:12:19,
+  21:13:52).
+- **[Claude] What the reading says.** The playground's path works to its last call. The list shows the
+  enabled models, and the portal subscribes for the person, with no approval since the listing asks
+  for none. DataZone grants the subscription and vends the consumption role to a session named
+  `<DataZone user>@<environment>`, and the browser calls Bedrock through the playground's application
+  inference profile, past every VPC endpoint. The SCP refuses that call on the profile's pass, attributable
+  from its own text, because the statement's `NotResource` names no application inference profile.
+  Decision 13's prediction and decision 11's grown amendment rest on this reading. Verification xix is
+  answered in part: before the amendment the SCP refuses every playground model, the scoped one
+  included, on the profile; the refusal of the model outside the scoped set on its foundation model
+  waits for the amendment. The portal subscribed twice to Haiku 4.5's listing in the same second.
+
+## 2026-10-19 — decision 11 taken
+
+- **[user] Decision 11**, in this session's chat after the context was laid out: *"Ok, pode seguir
+  conforme sua recomendação. Entendi que é a opção (a)."*, the recommended (a) grown by decision 13's
+  reading. `DenyBedrockInvocationOutsideTheScopedModels` admits Titan Text Embeddings V2's
+  `foundation-model` ARN and `arn:aws:bedrock:*:*:application-inference-profile/*`, after the commit
+  that teaches `aws/awslib/bedrockscope.py` an admitted model, with the battery's rows for both and the
+  apply by the user's hand from `Identity`.
+
+## 2026-10-19 — decision 11's amendment written and planned; the battery's before-half
+
+- **[Claude] The parser**, commit `2aa52ec3`: `aws/awslib/bedrockscope.py`'s `scp_declaration()` returns
+  the scoped models alone, those with a profile, and the new `scp_admitted()` returns every admitted
+  `foundation-model` and whether `application-inference-profile/*` is admitted; `ML-8` and `BS-1` read
+  the second. Against the document as applied: 3 scoped, 3 admitted, profiles not admitted. Against the
+  amended one: 3 scoped, 4 admitted, profiles admitted.
+- **[Claude] The amendment**, uncommitted when planned: `DenyBedrockInvocationOutsideTheScopedModels` in
+  `awsds-org-scp-ou-interactive.json` gains `arn:aws:bedrock:*::foundation-model/amazon.titan-embed-text-v2:0`
+  and `arn:aws:bedrock:*:*:application-inference-profile/*` in its `NotResource`; the policy's description
+  in `locals.tf` gains a sentence (502 of 512 characters); `POLICIES.md`'s row names both entries and the
+  second trigger. `./scripts/check-index.py` clean.
+- **[Claude] The plan**, `identity/org-policies` as `awsds-infra-identity`, saved at 21:30:49 UTC as
+  `~/tmp/s17-decision-11-scp.tfplan`, not applied:
+
+  ```
+  # aws_organizations_policy.this["awsds-org-scp-ou-interactive"] will be updated in-place
+                          + "arn:aws:bedrock:*::foundation-model/amazon.titan-embed-text-v2:0",
+                          + "arn:aws:bedrock:*:*:application-inference-profile/*",
+  Plan: 0 to add, 1 to change, 0 to destroy.
+      ~ awsds-org-scp-ou-interactive  = 1362 -> 1483
+  ```
+
+  The description changes with it.
+- **[Claude] The battery's before-half**, `./aws/probes/scp-battery.py --phase ou`, 21:31:24 to
+  21:32:45 UTC, with two new rows: `41 as expected, 1 unexpected, 7 not measured`. The unexpected row is
+  Titan's, refused as predicted before the apply:
+
+  ```
+  FAIL	ou	sandbox1	allow	DENY-SCP	p-tgda7n58	interactive (inherited): bedrock:InvokeModel on amazon.titan-embed-text-v2:0 (Stage 17 decision 11)
+  ok  	ou	sandbox1	allow	ALLOWED	reached-authorization	interactive (inherited): bedrock:InvokeModel through an application inference profile (Stage 17 decision 11)
+  ```
+
+  The second row invoked a profile id that does not exist and read `ALLOWED` with the entry absent. The
+  same call by hand at 21:33:00 UTC, as `awsds-infra-sandbox-1`, answered:
+
+  ```
+  An error occurred (ValidationException) when calling the InvokeModel operation: The provided model identifier is invalid.
+  ```
+
+  Bedrock refuses an unknown profile id before it authorizes, so that row reads the same on both sides
+  of the amendment. It left `probes.py` before the commit, and the battery holds 48 `ou` rows. 7.3's
+  chat after the apply measures the profile's pass.
+
+## 2026-10-19 — decision 11 applied by the user; the readings after, and 7.3's second chat
+
+*Provenance. The apply is the user's, from `Identity` as `awsds-infra-identity`, its output pasted in
+this session's chat. Everything after it is Claude's: the reads as `awsds-infra-identity`,
+`awsds-infra-sandbox-1` and `awsds-infra-data`, the battery, and the chat through Claude in Chrome in
+the user's portal session as the Data Scientist User (the account menu reads *Data Scientist User*), in
+a tab opened by URL, one prompt per model, `Responda apenas: ok`, as in the first reading. The portal's
+text is quoted verbatim with the account ids replaced by the account's name. Times are UTC.*
+
+- **[user] The apply** of `~/tmp/s17-decision-11-scp.tfplan`:
+
+  ```
+  aws_organizations_policy.this["awsds-org-scp-ou-interactive"]: Modifying... [id=p-tgda7n58]
+  aws_organizations_policy.this["awsds-org-scp-ou-interactive"]: Modifications complete after 2s [id=p-tgda7n58]
+  Releasing state lock. This may take a few moments...
+
+  Apply complete! Resources: 0 added, 1 changed, 0 destroyed.
+  ```
+
+  Among the outputs, `"awsds-org-scp-ou-interactive" = 1483`. Identity's trail holds `UpdatePolicy` of
+  `p-tgda7n58` at 21:58:46 by `InfrastructureAccess`, with no error.
+- **[Claude] The re-plan**, 21:59:36 to 21:59:55: `No changes. Your infrastructure matches the
+  configuration.`
+- **[Claude] The live statement**: `DenyBedrockInvocationOutsideTheScopedModels` lists the six
+  spellings, then `arn:aws:bedrock:*::foundation-model/amazon.titan-embed-text-v2:0` and
+  `arn:aws:bedrock:*:*:application-inference-profile/*`. The description ends *"Stage 17 decision 11 -
+  the embeddings model and application inference profiles are admitted beside them."*
+- **[Claude] The battery's after-half**, `--phase ou`, 22:00:11 to 22:01:17: `41 as expected, 0
+  unexpected, 7 not measured`. Titan's row:
+
+  ```
+  ok  	ou	sandbox1	allow	ALLOWED	succeeded	interactive (inherited): bedrock:InvokeModel on amazon.titan-embed-text-v2:0 (Stage 17 decision 11)
+  ```
+
+- **[Claude] `./aws/bedrock-scope.py`**: `BS-1` to `BS-7` pass. `BS-1` reads `3 model(s), 3 region(s);
+  admitted beside it: amazon.titan-embed-text-v2:0; application inference profiles admitted`.
+- **[Claude] `./aws/bedrock.py`**: every check passes or is a note, and `BR-4` reads `3 of 3 in
+  awsds-infra-sandbox-1`. Its failed calls are the seven profiles whose SSO sessions were not signed in
+  (`awsds-ctadmin`, `awsds-deploy`, `awsds-devenv`, `awsds-governance`, `awsds-scientist`). `BR-7`'s
+  note reads `availability DOES distinguish the form`: `agreementAvailability` reads `AVAILABLE` in
+  `Sandbox Account 1`, the one account with a form, and `NOT_AVAILABLE` in the five without, for the
+  three scoped models. The snapshots of 2026-09-12 and 2026-10-11 on this laptop read the control `not
+  runnable`. An availability read is not an invocation, so the amendment does not move it; `BR-7`
+  belongs to Stage 6e.
+- **[Claude] `./aws/sandbox-ml.py`**, 22:04:06 to 22:06:47: all checks passed. `ML-8` reads Titan's
+  availability `agreement AVAILABLE, authorization AUTHORIZED, entitlement AVAILABLE, region AVAILABLE`
+  and `admitted by the repository's SCP (decision 11), application inference profiles admitted`.
+- **[Claude] Claude Haiku 4.5**, sent at 22:08:48 by the trail: the answer `ok`, and the playground's
+  reading `Input: 13`, `Output: 4`, `Latency: 652ms`.
+- **[Claude] Nova Lite**, sent at 22:09:15 by the trail. The answer, and a red banner *"An error
+  occurred in Explorer Chat."* carrying the same text:
+
+  ```
+  Something went wrong. User: arn:aws:sts::<Sandbox Account 1>:assumed-role/awsds-sandbox-bedrock-model-consumption/28f1b390-0041-7068-8cc7-9ccef94277d1@d747chsyrc379s is not authorized to perform: bedrock:InvokeModelWithResponseStream on resource: arn:aws:bedrock:us-west-2::foundation-model/amazon.nova-lite-v1:0 with an explicit deny in a service control policy: arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-tgda7n58
+  ```
+
+- **[Claude] The trail**, Sandbox's. Haiku's `ConverseStream` at 22:08:48 is an `AwsApiCall` as
+  `awsds-sandbox-bedrock-model-consumption`, session `…@cty232yk8f2zyo`, with `modelId` the
+  playground's profile `cp0gmvjv1h8q`, `inferenceRegion` `us-east-2`, resource
+  `foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0`, no error, no `vpcEndpointId`, and host
+  `bedrock-runtime.us-west-2.amazonaws.com`; an `AwsServiceEvent` of the same name in the same second
+  names the same model. Nova Lite's `ConverseStream` at 22:09:15, session `…@d747chsyrc379s`, is
+  `AccessDenied` with the text above, its resource the profile `csu817ovl4kz`, no `vpcEndpointId`.
+- **[Claude] The subscriptions**, read at 22:10 in Data Governance with the governance project as
+  approver: the same three as the first chat (two to Haiku 4.5's playground listing at 21:12:18, one to
+  Nova Lite's at 21:13:51), all `APPROVED`. The second chat subscribed to nothing.
+- **[Claude] `./aws/bedrock-usage.py 2026-10-19T21:00Z 2026-10-19T22:20Z`**, Sandbox, `us-west-2`:
+  `BU-1` to `BU-4` pass. `cp0gmvjv1h8q` carries 1 invocation, 13 tokens in and 4 out, the Haiku chat;
+  Titan 1 invocation and 2 tokens in, the battery's row; each `us.` profile 2 invocations, the
+  battery's two halves. `BU-5` notes `cp0gmvjv1h8q` and Titan unpriced: the script prices by model id
+  and reads the profile's series under the profile's id.
+- **[Claude] What the reading says.** Verification xix is answered. After the amendment the scoped model
+  answers through the playground's application inference profile. The model outside the scoped set
+  passes the profile's pass and is refused on its foundation model's, by `p-tgda7n58`, attributable
+  from its own text. The model ceiling holds on the foundation-model pass, which decision 11 had
+  recorded as unmeasured.

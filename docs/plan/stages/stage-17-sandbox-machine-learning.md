@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Pass 0 in progress, pass 1's 1.1, 1.3, 1.5 and 1.7 done on 2026-10-19, passes 2 to 5 no longer stopped on the quotas, and pass 7's 7.0, 7.0a and 7.0b done and 7.2's menu read the same day** ([the log](../../log/log-stage-17-sandbox-machine-learning.md)): `AmazonBedrockKnowledgeBase` left category 2 at `sagemaker-prereqs-v0.7.0`, applied by the user at 18:33 and 18:36 UTC, both slices re-planned `No changes`; both projects' Generative AI menus then opened, and every model list reads *"No models found"*, the account enabling no model (decision 13). `./aws/sandbox-ml.py` (`ML-1`..`ML-9`, step 0.1) and `examples/sandbox-ml/` (0.6) were written 2026-10-17 (PR #157) from a cloud session with no AWS credentials, and the instrument's first run, on the laptop that evening with the session down, read `ml.m5.xlarge for training job usage`, `ml.m5.large for endpoint usage` and `ml.m5.large for transform job usage` at 0 (0.2); the user requested the three increases the same evening, and the second run, on 2026-10-18, read the three at 20, 8 and 8 with each request still `CASE_OPENED`; a third, on 2026-10-18 at 19:51 UTC with the whole environment down, read the same values and requests with nothing built, and `./aws/devenv.py` passed `DE-5` against the Dockerfile's 70 names, `sandbox/egress` being down; since PR #172 put the 72-name literal under `gitlab/` (20:38 UTC) the same comparison fails, version 9 lacking 2 names (read 22:06 UTC). Pass 1's change was written the same evening in PR #157: `vpc-egress-v0.18.0` with the `mlflow` group and `sagemaker-prereqs-v0.5.0` with `MLflowApp`, the two callers pointed at them, the governance profile and `US-3` moved with them (1.2, 1.4). On 2026-10-18 the laptop pushed the two tags, planned both of 1.2's slices as predicted from `fa20bfe`, which pinned `sagemaker-prereqs-v0.5.0`, read the template (nothing to declare) and took the first plan of `sandbox/egress` at the new tag (two `mlflow` names the image's literal lacks), and the user read the enable wizard and cancelled it, with nothing to declare either; 1.1's before was read on 2026-10-19, *Create MLflow App* greyed out by a tooltip naming the blueprint, and the user applied 1.3 the same morning (05:11 to 05:12 UTC), both slices re-planned `No changes`, after which the item is still greyed out in both projects; 1.5 read why the same morning (the entry resolves the blueprint from Data Governance's configurations, which D22 keeps empty), and the user created the app `ml-demo-mlflow` through `create-environment`, `Created` at 06:44 UTC and read by `ML-2` (the log); decision 4, taken by the user on 2026-10-18, releases the image with the new literal in the sitting of the group's first apply. PR #157 merged on 2026-10-18 at 02:33 UTC, before any release, so `main` pins `vpc-egress-v0.18.0` and a session raised from it reads `DE-3` and `DE-5` red until that image ships (inferred); `main` also pins `sagemaker-prereqs-v0.6.0` on `sandbox/sagemaker` since PR #166 (`TM-21`'s key-policy narrowing over `MLflowApp`), planned 2026-10-18 by Stage 11's session (2 to add, 1 to change, 0 to destroy), so step 1.3's apply carried both. The first run read `EnableSageMakerMLWorkloadsPermissions` `true` on both project roles (decision 9 does not arise), the managed ML policy at v45 against the v44 of AWS's pages, and `enableNetworkIsolation` `true` in both Tooling stacks (0.8). The user's readings 0.3 and 0.7 and 0.5's interface half wait on a raised session. Step 2.2's image is XGBoost `3.0-5`, since the recipe's `1.7-1` writes a model the house interpreter's `xgboost-cpu` 3.3.0 refused on a build host (the log). The plan was written 2026-10-12 from a session with no AWS reading, so every "read" below is owed to pass 0, and nothing here is a measurement unless it carries its date. An exercise, not a promotion path, in [6i](stage-06i-sandbox-orchestration.md)'s shape: one project, one data scientist, the portal's **AI/ML** menu walked end to end (an experiment tracked in an MLflow App, a model trained under the D13 boundary's job settings, registered, deployed, invoked, served offline by batch transform, then the same chain as an ML pipeline), the two entries that provision standing infrastructure read without being created (HyperPod, Partner AI apps), and the **Generative AI** menu's apps built once each, a chat agent over a knowledge base of the user's own documents among them (pass 7, decision 1). The Terraform changes planned are `MLflowApp` and `AmazonBedrockKnowledgeBase` promoted out of category 2 (decisions 2 and 1), an `mlflow` endpoint group in `vpc-egress` (decision 4) and the embeddings model admitted by the SCP `DenyBedrockInvocationOutsideTheScopedModels` (decision 11); the `[P]` grant slice `sandbox/ml/` joins them if pass 2 measures on a training job the tag gap 6i measured on a processing job (decision 7). Decisions 1-3 were taken by the user on 2026-10-12: the Generative AI menu in, with a knowledge base; the `MLflowApp`; the public CSV of AWS's XGBoost recipe |
+| **Status** | **Pass 0 in progress, pass 1's 1.1, 1.3, 1.5 and 1.7 done on 2026-10-19, passes 2 to 5 no longer stopped on the quotas, and pass 7's 7.0, 7.0a and 7.0b done and 7.2's menu read the same day** ([the log](../../log/log-stage-17-sandbox-machine-learning.md)): `AmazonBedrockKnowledgeBase` left category 2 at `sagemaker-prereqs-v0.7.0`, applied by the user at 18:33 and 18:36 UTC, both slices re-planned `No changes`; both projects' Generative AI menus then opened, and every model list reads *"No models found"*, the account enabling no model until decision 13, taken as (b) and applied the same evening with five models enabled; 7.3's first chat was refused by the SCP on the application inference profile, and after decision 11's amendment, applied by the user at 21:58 UTC, Haiku 4.5 answered and Nova Lite was refused on its foundation model. `./aws/sandbox-ml.py` (`ML-1`..`ML-9`, step 0.1) and `examples/sandbox-ml/` (0.6) were written 2026-10-17 (PR #157) from a cloud session with no AWS credentials, and the instrument's first run, on the laptop that evening with the session down, read `ml.m5.xlarge for training job usage`, `ml.m5.large for endpoint usage` and `ml.m5.large for transform job usage` at 0 (0.2); the user requested the three increases the same evening, and the second run, on 2026-10-18, read the three at 20, 8 and 8 with each request still `CASE_OPENED`; a third, on 2026-10-18 at 19:51 UTC with the whole environment down, read the same values and requests with nothing built, and `./aws/devenv.py` passed `DE-5` against the Dockerfile's 70 names, `sandbox/egress` being down; since PR #172 put the 72-name literal under `gitlab/` (20:38 UTC) the same comparison fails, version 9 lacking 2 names (read 22:06 UTC). Pass 1's change was written the same evening in PR #157: `vpc-egress-v0.18.0` with the `mlflow` group and `sagemaker-prereqs-v0.5.0` with `MLflowApp`, the two callers pointed at them, the governance profile and `US-3` moved with them (1.2, 1.4). On 2026-10-18 the laptop pushed the two tags, planned both of 1.2's slices as predicted from `fa20bfe`, which pinned `sagemaker-prereqs-v0.5.0`, read the template (nothing to declare) and took the first plan of `sandbox/egress` at the new tag (two `mlflow` names the image's literal lacks), and the user read the enable wizard and cancelled it, with nothing to declare either; 1.1's before was read on 2026-10-19, *Create MLflow App* greyed out by a tooltip naming the blueprint, and the user applied 1.3 the same morning (05:11 to 05:12 UTC), both slices re-planned `No changes`, after which the item is still greyed out in both projects; 1.5 read why the same morning (the entry resolves the blueprint from Data Governance's configurations, which D22 keeps empty), and the user created the app `ml-demo-mlflow` through `create-environment`, `Created` at 06:44 UTC and read by `ML-2` (the log); decision 4, taken by the user on 2026-10-18, releases the image with the new literal in the sitting of the group's first apply. PR #157 merged on 2026-10-18 at 02:33 UTC, before any release, so `main` pins `vpc-egress-v0.18.0` and a session raised from it reads `DE-3` and `DE-5` red until that image ships (inferred); `main` also pins `sagemaker-prereqs-v0.6.0` on `sandbox/sagemaker` since PR #166 (`TM-21`'s key-policy narrowing over `MLflowApp`), planned 2026-10-18 by Stage 11's session (2 to add, 1 to change, 0 to destroy), so step 1.3's apply carried both. The first run read `EnableSageMakerMLWorkloadsPermissions` `true` on both project roles (decision 9 does not arise), the managed ML policy at v45 against the v44 of AWS's pages, and `enableNetworkIsolation` `true` in both Tooling stacks (0.8). The user's readings 0.3 and 0.7 and 0.5's interface half wait on a raised session. Step 2.2's image is XGBoost `3.0-5`, since the recipe's `1.7-1` writes a model the house interpreter's `xgboost-cpu` 3.3.0 refused on a build host (the log). The plan was written 2026-10-12 from a session with no AWS reading, so every "read" below is owed to pass 0, and nothing here is a measurement unless it carries its date. An exercise, not a promotion path, in [6i](stage-06i-sandbox-orchestration.md)'s shape: one project, one data scientist, the portal's **AI/ML** menu walked end to end (an experiment tracked in an MLflow App, a model trained under the D13 boundary's job settings, registered, deployed, invoked, served offline by batch transform, then the same chain as an ML pipeline), the two entries that provision standing infrastructure read without being created (HyperPod, Partner AI apps), and the **Generative AI** menu's apps built once each, a chat agent over a knowledge base of the user's own documents among them (pass 7, decision 1). The Terraform changes planned are `MLflowApp` and `AmazonBedrockKnowledgeBase` promoted out of category 2 (decisions 2 and 1), an `mlflow` endpoint group in `vpc-egress` (decision 4) and the embeddings model admitted by the SCP `DenyBedrockInvocationOutsideTheScopedModels` (decision 11); the `[P]` grant slice `sandbox/ml/` joins them if pass 2 measures on a training job the tag gap 6i measured on a processing job (decision 7). Decisions 1-3 were taken by the user on 2026-10-12: the Generative AI menu in, with a knowledge base; the `MLflowApp`; the public CSV of AWS's XGBoost recipe |
 | **Prerequisites** | **[6a](stage-06a-unified-studio.md) and [6d](stage-06d-unified-studio-remainder.md)**: the Sandbox project, its project role under the D13 boundary, the house image selectable in a space. **[6c](stage-06c-networking-hub.md)**: the private tier with no default route, and a raised session, `make hub-up` then `make up ENV=sandbox GROUPS=mlflow` for passes 1-6 and `GROUPS=mlflow,bedrock-base,bedrock-agent` for pass 7, because `sagemaker.api`, `sagemaker.runtime`, `ecr.api`, `ecr.dkr`, `logs`, `kms` and `sts` are `[E]` endpoints of `sandbox/egress` and only the gateway endpoints are `[P]`. **[6e](stage-06e-claude-code-bedrock.md)** for pass 7: the use-case form, the retention mode `none`, the three scoped models and the grant slice `sandbox/bedrock/`. **[6i](stage-06i-sandbox-orchestration.md)**: the measurements this stage reuses rather than repeats, a processing job admitted under the four settings, the house image pulled cross-account by a job, and the tag gap on create. **Stage 3's S3 gateway allow-list**, which has named `jumpstart-cache-prod-<region>` and `sagemaker-<region>` since it was written and has never been exercised for either (verification iii) |
 | **Consumes** | [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D21](../decisions/D21-development-account.md), [D26](../decisions/D26-unified-studio.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | — (no `INT-nn` row: the project, the jobs, the models, the endpoint and the apps are all in Sandbox). It reads, under the Sandbox boundary alone, whether `DenySageMakerJobsOffVpc` on `CreateModel` already refuses serverless inference (4.4), a reading [Stage 9](stage-09-deployment-targets.md) 3.7 named and decided without (it took (b) on 2026-10-16), and it gives the Model Registry its first version, the event `EXC-11` names as the one that turns the `Tooling` data source's daily failure into a gap (3.3) |
@@ -82,9 +82,10 @@ the notebook must.
 | Where | What | Layer |
 |---|---|---|
 | `terraform-live/sandbox/sagemaker/` (through `sagemaker-prereqs`) | `MLflowApp` and `AmazonBedrockKnowledgeBase` join `blueprint_names`: `MLflowApp` (decision 2) at `sagemaker-prereqs-v0.5.0` (pass 1, written 2026-10-17) and `AmazonBedrockKnowledgeBase` (decision 1) at `v0.7.0` (7.0a), applied 2026-10-19 by the user (7.0b; `staging/studio/` keeps `v0.6.0`, passing `Tooling` alone). The caller pinned `v0.6.0` from PR #166, which adds [Stage 11](stage-11-dlp.md)'s `TM-21`: `aws:PrincipalOrgID` on the project key's two open statements (`kms.tf`, with a `data.tf` lookup of the organization); the slice's plan on that pin, read 2026-10-18 by Stage 11's session, is 2 to add (`MLflowApp` and its grant), 1 to change (that key policy) and 0 to destroy, applied 2026-10-19 by the user (1.3). A blueprint configuration and its `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant per blueprint arrive in one apply (`grants.tf`'s `for_each`). The roster has three copies, the module default, the governance profile and `aws/studio.py`'s `BLUEPRINT_ALLOWLIST`, and they move in one commit (Lesson 14). Neither blueprint adds a `kms.tf` statement: AWS's key-permissions page for the Tooling blueprint names none for MLflow (read 2026-10-12) or a knowledge base (read 2026-10-19, 7.0a), and a refusal naming KMS at 7.4a reopens it | `[P]` |
-| `terraform-live/data-governance/governance/` | the `experimentation` profile gains `MLflowApp` and `AmazonBedrockKnowledgeBase`, `deployment_mode = ON_DEMAND`, like the six Bedrock blueprints already there; `MLflowApp`'s element (order 11) and the knowledge base's (order 12) applied 2026-10-19 (1.3, 7.0b) | `[P]` |
+| `terraform-live/data-governance/governance/` | the `experimentation` profile gains `MLflowApp` and `AmazonBedrockKnowledgeBase`, `deployment_mode = ON_DEMAND`, like the six Bedrock blueprints already there; `MLflowApp`'s element (order 11) and the knowledge base's (order 12) applied 2026-10-19 (1.3, 7.0b). Decision 13 (b) adds `model-governance.tf`: the profile *Generative AI model governance* with no environment configuration, the project `GenerativeAIModelGovernanceProject` and Sandbox's `InfrastructureAccess` session group as its `PROJECT_CONTRIBUTOR`, applied 2026-10-19 by the user (20:25 UTC) and re-planned `No changes` | `[P]` |
+| `terraform-live/sandbox/model-access/` (new, rank 52, decision 13 (b)) | the model provisioning role under the name the console adopts, `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>`, with a policy of its own that admits a profile of `project_models` alone (the three scoped models and Titan V2), and the playground's `awsds-sandbox-bedrock-model-consumption`, both trusted by `datazone.amazonaws.com` under the domain account and both under `awsds-sandbox-project-boundary`; applied 2026-10-19 by the user (20:27 UTC) and re-planned `No changes` | `[P]` |
 | `terraform-modules/vpc-egress` (new tag, `v0.18.0`) and `terraform-live/sandbox/egress/` | the optional group `mlflow`, one endpoint, `aws.sagemaker.<region>.mlflow`: the module's `sagemaker.studio` special case in `service_names_all_groups` becomes a list of the `aws.sagemaker.` short names, `sagemaker.studio` and `sagemaker.mlflow`, since `sagemaker.api` and `sagemaker.runtime` are `com.amazonaws.` names and a prefix match would rename them (written 2026-10-17). `no_proxy_all_groups` grows by the endpoint's names whatever `GROUPS=` names, so the house image's dated literal (70 entries, `aafa08da98a61f5c`, 6d decision 8) goes stale and `DE-5` reads the drift until an image carries the new one (decision 4). Raised per session with `GROUPS=mlflow` | `[E]` |
-| `terraform-live/identity/org-policies/` | `DenyBedrockInvocationOutsideTheScopedModels` in `awsds-org-scp-ou-interactive.json` gains the embeddings model's `foundation-model` ARN in its `NotResource` (decision 11), the first entry there outside the scoped set's six spellings; `POLICIES.md`'s row gains the second trigger, `./scripts/check-index.py` reads it, and the battery runs with its Bedrock rows ([`scp-battery.md`](../runbooks/scp-battery.md); PR #159 wrote those of 6e 7.5 and decision 15 on 2026-10-17), plus one allow row on the embeddings model, which no image pin names (7.4a). Applied from `Identity` with `awsds-infra-identity`, the slice's profile precondition | `[P]` |
+| `terraform-live/identity/org-policies/` | `DenyBedrockInvocationOutsideTheScopedModels` in `awsds-org-scp-ou-interactive.json` gains two entries in its `NotResource` (decision 11): the embeddings model's `foundation-model` ARN, the first there outside the scoped set's six spellings, and `arn:aws:bedrock:*:*:application-inference-profile/*`, the profile's pass every portal call carries (decision 13); `POLICIES.md`'s row gains the second trigger, `./scripts/check-index.py` reads it, and the battery runs with its Bedrock rows ([`scp-battery.md`](../runbooks/scp-battery.md); PR #159 wrote those of 6e 7.5 and decision 15 on 2026-10-17), plus one allow row on the embeddings model, which no image pin names (7.4a); the profile entry has no row (decision 11). Planned 2026-10-19, `0 to add, 1 to change, 0 to destroy`, applied by the user at 21:58 UTC and re-planned `No changes`. Applied from `Identity` with `awsds-infra-identity`, the slice's profile precondition | `[P]` |
 | `terraform-live/sandbox/ml/` (new, rank 57, decision 7, only if 2.2 measures the gap) | the grants the project role lacks for the exercise, in `sandbox/workflows/`'s shape: `sagemaker:AddTags` of the key `AmazonDataZoneProject` with the caller's own value, alone, on a resource that carries no project tag or already the caller's, for each resource type the measurements name (training jobs, models, endpoint configurations, endpoints, transform jobs, model package groups, pipelines, MLflow apps). Attached to the project roles, each checked for the D13 boundary as `sandbox/workflows/` checks them | `[P]` |
 | `aws/sandbox-ml.py` (new) | `ML-1`..`ML-9`, the evidence: the project role's tags and policy version, the MLflow App, each training job against the five statements and the tag, the registry, the serving objects (no endpoint may survive a sitting), the pipeline, the read-only entries and the quotas, the Generative AI objects and their doors, the session's `mlflow` endpoint and the DNS Firewall list | — |
 | `examples/sandbox-ml/` (new) | the notebook as scripts a person reviews: `data.py` (the recipe's CSV fetched, prepared and split), `train.py` (the estimator, the MLflow run, the negatives), `register.py`, `serve.py` (the endpoint, the transform, the serverless negative), `pipeline.py` and `pipeline/definition.json` with a placeholder for every account-scoped value (6i decision 1's shape), `bedrock/` for the prompt, guardrail, flow and evaluation definitions the portal exports, the knowledge base's document list and the chat agent's exported snapshot, and a `README.md` | — |
@@ -512,8 +513,18 @@ inside pass 7, 7.2 waits on 7.0b's apply, 7.4a's second sync waits on decision 1
   which entry deploys which environment is read when the first one is created.
 - **7.3 — [user] Playground**: a chat with Claude Haiku 4.5, the scoped model with the lowest rate; then a
   model outside the scoped three, expected refused by `DenyBedrockInvocationOutsideTheScopedModels`, the
-  SCP's first refusal from the portal. `bedrock-usage.py` reads the tokens. Waits on decision 13: on
-  2026-10-19 the Playground listed no model.
+  SCP's first refusal from the portal. `bedrock-usage.py` reads the tokens. Waits on decision 13, which
+  orders the chat around decision 11's amendment: on 2026-10-19 the Playground listed no model.
+  **The first chat, read 2026-10-19 at 21:13 UTC** (the log), after decision 13's third step and before
+  the amendment: the playground lists Haiku 4.5 and Nova Lite, and both answer *"…not authorized to
+  perform: bedrock:InvokeModelWithResponseStream on resource: …application-inference-profile/… with
+  an explicit deny in a service control policy: …p-tgda7n58"*, as the consumption role in a session
+  named after the person and the environment, with no `vpcEndpointId`. **The chat after it, read
+  2026-10-19 at 22:09 UTC**, decision 11 applied at 21:58: Haiku 4.5 answers `ok` (`Input: 13`,
+  `Output: 4`, `Latency: 652ms`), its `ConverseStream` through the profile routed to `us-east-2`, and
+  Nova Lite is refused on `foundation-model/amazon.nova-lite-v1:0`, naming `p-tgda7n58`.
+  `bedrock-usage.py` reads the Haiku call under the profile's id, 13 tokens in and 4 out, and leaves it
+  unpriced: it prices by model id and does not resolve an application inference profile to its model.
 - **7.4 — [user] The objects, one each**: a prompt with a variable and two versions; a guardrail with one
   denied topic and the PII filter, attached to 7.4b's chat agent; a flow with a prompt node and a model
   node, run once; an evaluation job, automatic, over a twenty-line dataset in `shared/ml-demo/bedrock/`,
@@ -761,7 +772,9 @@ recommendation stated (Lesson 16).
     (7.4a) are the blueprint's, not the entry's: AWS's blueprint page lists them with their execution
     role, they are the service's plumbing for the index and the ingestion trigger, and `ML-8` reads where
     they run; Stage 11 §3's ledger gets them in the same row.
-11. **The embeddings model at the SCP** (7.4a). Recommended: **(a) the `foundation-model` ARN of
+11. **The embeddings model at the SCP** (7.4a). **Taken by the user 2026-10-19: (a), grown by
+    `application-inference-profile/*`** as the 2026-10-19 reading below says. Recommended: **(a) the
+    `foundation-model` ARN of
     `amazon.titan-embed-text-v2:0` added to `DenyBedrockInvocationOutsideTheScopedModels`'s
     `NotResource`**, region-less like the six entries there, applied from `Identity` with the battery's
     row for it written in the same sitting (6e 7.5's standing rule; 7.4a says which). It is the first entry of that list
@@ -781,6 +794,30 @@ recommendation stated (Lesson 16).
     exempts the knowledge base's role by name from the statement, which keeps the ceiling tight but binds
     the SCP to a role name the blueprint generates; **(c)** no knowledge base, which takes decision 1 back
     to (b).
+
+    **Read 2026-10-19 with decision 13** (the log): every call the portal makes, the knowledge base's
+    sync included, passes through an application inference profile, which the statement's `NotResource`
+    does not name, so Titan's ARN alone leaves 7.4a's second sync refused on the profile's pass
+    (inferred). The amendment therefore carries a second entry,
+    `arn:aws:bedrock:*:*:application-inference-profile/*`: the model ceiling stays on the foundation
+    model's pass every such call carries (AWS's prerequisites page; measured 2026-10-19 by 7.3's second
+    chat, the model outside the scoped set refused on that pass), and the instruments' patterns match neither half of the
+    entry, so no reading moves. The battery carries no row for it: a profile id that does not exist is
+    refused before authorization, *"The provided model identifier is invalid"* (`ValidationException`,
+    read 2026-10-19 with the entry absent), so such a row reads the same on both sides of the amendment
+    (Lesson 21), and a real id is one the console mints. 7.3's chat after the apply measures the
+    profile's pass.
+
+    **Written and planned 2026-10-19** (the log): the plan of `identity/org-policies` changes
+    `awsds-org-scp-ou-interactive` alone, `0 to add, 1 to change, 0 to destroy`, the two entries and the
+    description, 1362 to 1483 bytes. The battery's before-half read 41 as expected, 1 unexpected, 7 not
+    measured, the unexpected row Titan's allow row refused by `p-tgda7n58`, as predicted. The apply is
+    the user's, from `Identity`.
+
+    **Applied 2026-10-19** by the user at 21:58:46 UTC and re-planned `No changes` (the log). The
+    battery's after-half read 41 as expected, 0 unexpected, 7 not measured, Titan's row `ALLOWED`;
+    `BS-1`..`BS-7`, `BR-4` and `ML-8` pass with the admitted entries; 7.3's second chat answered with
+    Haiku 4.5 and refused Nova Lite on its foundation model (verification xix).
 12. **The vector store** (7.4a). Recommended: **(a) S3 Vectors**: storage at 0.06 USD per GB-month and
     requests per use (measured 2026-10-12), nothing at idle beyond the vectors' bytes, and AWS's S3
     Vectors page names Amazon Bedrock in SageMaker Unified Studio knowledge bases among its uses (read
@@ -797,22 +834,80 @@ recommendation stated (Lesson 16).
     Terraform does not, so (b) would also meet a collection no encryption policy covers (inferred). For
     (a) the stack creates nothing, so who creates the S3 Vectors store and the knowledge base, and as
     which role, is 7.4a's reading.
-13. **How a model reaches the projects** (7.3, 7.4a, 7.4b). **Read 2026-10-19** (7.0a, 7.2): the menu
+13. **How a model reaches the projects** (7.3, 7.4a, 7.4b). **Taken by the user 2026-10-19, as
+    recommended: (b) the two model roles written in a `[P]` slice**, in the order below; its first two
+    steps applied by the user the same evening (20:25 and 20:27 UTC), both re-planned `No changes`,
+    and its third done at 20:52 UTC, the user's request carried out through Claude in Chrome: five
+    models enabled, six environments, assets and listings and the playground's two profiles
+    created, no role created by the console (the log). **Read
+    2026-10-19** (7.0a, 7.2): the menu
     opens and every model list answers *"No models found. Contact your admin to enable more models."*
     The console's **Amazon Bedrock models** tab on the associated domain enables a model for projects
-    and for the playground, and reads none enabled in `Sandbox Account 1`. Its roles are the *Set up
-    generative AI* form's two: a model provisioning role (AWS's
-    `AmazonDataZoneBedrockModelManagementRole`, which creates the inference profile a project needs to
-    reach a model) and a consumption role per model (`AmazonDataZoneBedrockFMConsumptionRole`, for the
-    playground), both trusted by `datazone.amazonaws.com` and neither present in Sandbox. The options:
-    **(a)** enable the models in that tab and let the console create its managed roles, principals no
-    slice here authors (Lesson 17); **(b)** write the two roles in a `[P]` slice, read against the D13
-    boundary, and name them in the tab as existing roles; **(c)** an API path, if the console's calls
-    show one, codified. The models: the three scoped ones, and Titan V2 for the embeddings (decision 11).
-    The SCP's `NotResource` names no application inference profile, so an invocation through one is
-    expected refused (inferred), an input to decision 11's amendment. No recommendation yet: the roles'
-    managed policies and what the tab writes are unread, and the first reading is the tab's *Manage*
-    form, opened and cancelled as 7.0a's form was.
+    and for the playground, and reads none enabled in `Sandbox Account 1`. **What enabling writes, read
+    the same evening** in the console's and the portal's code and in AWS's policies (the log;
+    unexercised): a model enabled in projects becomes a catalog asset, `BedrockModelAssetType`, owned by
+    a project named `GenerativeAIModelGovernanceProject` and published with `approvalRequired` `NO`; its
+    form names a provisioning role, which a custom environment of that project holds in `Sandbox Account
+    1`. A project subscribes to the listing on a model's first use, and the grant's target is an
+    application inference profile in the project's account, created by the provisioning role (inferred:
+    `AmazonDataZoneBedrockModelManagementPolicy` v1 creates and tags only profiles carrying
+    `AmazonDataZoneProject`). The playground's asset is `BedrockInferenceOnlyAssetType`, its profile
+    created by the person pressing *Submit*, its consumption role's credentials handed to the person's
+    browser. AWS's policies on the project role and on the Bedrock IDE's roles admit a model only through
+    an application inference profile tagged with the project. The domain holds no governance project:
+    *Manage* in Sandbox's console stays greyed until one exists with the caller as a member (*"Model
+    governance project does not exist"*, read in the console the same evening), and only the domain
+    account's setup
+    creates it, in the run that also configures the Bedrock blueprints and `Tooling` in Data Governance,
+    which D22 forbids. AWS's pages call the two roles `AmazonDataZoneBedrockModelManagementRole` and
+    `AmazonDataZoneBedrockFMConsumptionRole`, the console names them
+    `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>` and
+    `AmazonSageMakerBedrockModelConsumptionRole-<hash>`, and neither exists in Sandbox. On its first
+    *Submit* the console looks for the first by that name and creates it when none exists, before it
+    reads a role chosen per model.
+
+    Recommended and taken: **(b) the two model roles written in a `[P]` slice**, in this order:
+    1. `data-governance/governance/` writes the profile *Generative AI model governance* with no
+       environment configuration, the project `GenerativeAIModelGovernanceProject` (the name Sandbox's
+       console resolves) and Sandbox's `InfrastructureAccess` group profile as its `PROJECT_CONTRIBUTOR`,
+       the designation the console's own *Add IAM users or roles* writes. No blueprint is configured in
+       Data Governance, so `US-3` stays green.
+    2. A `[P]` slice `sandbox/model-access/`, rank 52 beside `sandbox/bedrock/` (6e's, held by PR #108),
+       writes both roles. The provisioning role takes the console's name, built in code from the vended
+       account name, sits at `/service-role/`, is trusted by `datazone.amazonaws.com` (`sts:AssumeRole`,
+       `sts:SetContext`) under `aws:SourceAccount` the domain's account, and carries a policy of its own in
+       place of AWS's, with its four statements and `CreateApplicationInferenceProfileUsingFoundationModels`
+       narrowed to the admitted models. `awsds-sandbox-bedrock-model-consumption` has the same trust,
+       AWS's consumption policy and an inline invoke of `foundation-model/*` through the account's
+       application inference profiles, so the SCP is the layer that refuses a model outside the scoped
+       set (Lesson 20). Both carry `awsds-sandbox-project-boundary`, which subtracts only the lake and the
+       job settings.
+    3. [user] *Manage* in Sandbox's console: the governance project in its selector; *Enable in
+       projects* for the three scoped models' cross-Region rows and Titan V2; *Enable in playground* for
+       Haiku 4.5 and one model outside the scoped set (7.3's refusal); the slice's consumption role in
+       each playground model's *Roles for model access*; *Submit*. [Claude] The trail, the domain's assets
+       and `list-inference-profiles` after, with `./aws/catalog.py` and `./aws/studio.py`.
+    4. 7.3's first chat runs before decision 11's amendment and is expected refused by the SCP on the
+       profile's pass; then the amendment, grown by `application-inference-profile/*` (decision 11); then
+       the chat again, expected answered, and the model outside the scoped set, expected refused on the
+       foundation model's pass.
+
+    The roles become objects this repository authors and destroys, under the boundary every other
+    interactive principal here carries, and the console adopts them: the provisioning role by its name,
+    the consumption role by the form's choice. The alternatives: **(a)** the console's managed roles,
+    which costs no code: the provisioning role with AWS's policy, which profiles any foundation model,
+    and a consumption role with a customer-managed policy per playground model, none under the boundary
+    while the playground hands the consumption role's credentials to a browser, principals no slice
+    authors and nothing deletes (Lesson 17). **(c)** an API path: the console's acts are public calls
+    (`CreateEnvironment` on `AwsServiceBlueprint`, `AssociateEnvironmentRole`, `CreateAsset`,
+    `CreateListingChangeSet`, `bedrock:CreateInferenceProfile`), and the registry and `awscc` 1.98.0
+    carry the environment, its role and the profile but no asset, listing or subscription (Lesson 8,
+    read 2026-10-19), so the enablement itself would be CLI writes of a form only the console's code
+    defines (Lesson 23); it stays the fallback if the form refuses the slice's roles. **The console,
+    read the same evening** (the log): the *Manage* page's governance selector offers nothing and
+    *Review and submit* stays greyed, and a model's *Manage roles* dialog preselects
+    `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>` as an existing role though no
+    such role exists in Sandbox, the code's last fallback, which a role of that name would fill.
 
 ## Verifications to answer while executing
 
@@ -836,7 +931,7 @@ recommendation stated (Lesson 16).
 | xvi | Does the downloaded pipeline definition equal the committed source, placeholders aside? | 5.2 |
 | xvii | Does adding the Generative AI capability tag the project role with `EnableAmazonBedrockIDEPermissions`, and what else does it provision? | 7.2 |
 | xviii | As whom, and through which door, does the portal create and invoke a prompt, a guardrail, an agent, a flow and an evaluation: the project role, a project Bedrock role, a `vpcEndpointId` or none? | 7.5 |
-| xix | Does the SCP refuse a model outside the scoped three from the playground, with its wording? | 7.3 |
+| xix | Does the SCP refuse a model outside the scoped three from the playground, with its wording? **Before decision 11's amendment, read 2026-10-19**: it refuses every playground model, Haiku 4.5 included, on the application inference profile's pass, *"with an explicit deny in a service control policy"* naming `p-tgda7n58`. **After it**, applied at 21:58 UTC, Haiku 4.5 answers through its profile and Nova Lite is refused on `foundation-model/amazon.nova-lite-v1:0`, *"with an explicit deny in a service control policy"* naming `p-tgda7n58` (22:09 UTC) | 7.3 |
 | xx | What did the MLflow App bill on the sitting's day, read in Cost Explorer? | 8.2 |
 | xxi | Which quotas does a young account hold for the four instance types, and is any zero? **Answered 2026-10-17: three were zero**, `ml.m5.xlarge for training job usage` (`L-CCE2AFA6`), `ml.m5.large for endpoint usage` (`L-614B09FD`) and `ml.m5.large for transform job usage` (`L-236AE59F`); `ml.t3.medium for processing job usage` (`L-0CE343FE`) was 4. **Read again 2026-10-18 at 19:51 UTC: the three read 20, 8 and 8 and the processing quota 10**, the three requests (to 1 each, filed 2026-10-17) still `CASE_OPENED`. **What raised the values is outside the account's record** (read 2026-10-18, ~22:20 UTC): Sandbox's trail holds, from 2026-10-17 21:00Z to 2026-10-18 21:00Z, the three `RequestServiceQuotaIncrease` calls (`desiredValue` 1.0, as `InfrastructureAccess`) and reads alone, and no `support.amazonaws.com` event, so AWS applied 20, 8 and 8 on its side with the cases still open | 0.2 |
 | xxii | Does the knowledge base's first sync fail on the SCP's explicit deny of `InvokeModel` on the embeddings model, as which role, and does the second sync complete after decision 11's apply? | 7.4a |
@@ -881,7 +976,8 @@ recommendation stated (Lesson 16).
   interactive principal outside it. 7.0 read the Tooling environments' two Bedrock roles under it
   (2026-10-19); the knowledge-base template's own two roles, created only for an OpenSearch Serverless
   store when DataZone passes no role, would carry AWS's `SageMakerStudioProjectUserRolePermissionsBoundary`
-  instead, and decision 13's model roles are unread.
+  instead, and the console creates decision 13's two model roles with no boundary (read in its code
+  2026-10-19), which is why (b) authors them under it.
 - **The knowledge base's store bills at idle.** The IDE chooses the store's kind on the user's behalf; an
   OpenSearch Serverless collection with a minimum OCU bills 5.76 a day whether or not anyone asks it
   anything. 7.4a reads the kind before the first sync, 7.6 deletes a store with a minimum, and decision

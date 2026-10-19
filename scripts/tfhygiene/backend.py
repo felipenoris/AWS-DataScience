@@ -913,6 +913,15 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         }
         values["blueprints_enabled"] = account in SMUS_ASSOCIATED
 
+    # Stage 17 decision 13 - the two roles of the console's model access. account_folder for the
+    # same-account sagemaker/ read (the D13 boundary), and the domain account's profile for the
+    # governance/ read (the domain ARN, whose account the provisioning role's name carries).
+    elif slice_name == "model-access":
+        values["account_folder"] = account
+        values["domain"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_DOMAIN
+        }
+
     # Stage 18 step 2.4 - the deployment project's prerequisites in a Workloads account, for that
     # stage's life: the four values the member branch above emits, under a slice name of its own
     # because staging/sagemaker/ is Stage 9's job-role slice and a slice destroyed whole at 8.6

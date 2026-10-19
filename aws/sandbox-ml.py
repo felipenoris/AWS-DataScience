@@ -822,7 +822,7 @@ def main(argv: list) -> int:
         run_json("bedrock", "get-foundation-model-availability", "--model-id", EMBEDDINGS_MODEL)
         or {}
     )
-    scp_models, _regions, scp_why = bedrockscope.scp_declaration(
+    scp_models, scp_app_profiles, scp_why = bedrockscope.scp_admitted(
         ctx.repo_root / bedrockscope.SCP_PATH
     )
 
@@ -1618,7 +1618,8 @@ def main(argv: list) -> int:
         checks.note(
             "ML-8",
             f"{bedrockscope.SID_MODELS} {EMBEDDINGS_MODEL}",
-            "admitted by the repository's SCP (decision 11); ./aws/org-policy-baseline.py "
+            "admitted by the repository's SCP (decision 11), application inference profiles "
+            f"{'admitted' if scp_app_profiles else 'NOT admitted'}; ./aws/org-policy-baseline.py "
             "prints the attached document.",
         )
     else:
@@ -2018,6 +2019,7 @@ def main(argv: list) -> int:
         rep.line(
             f"{bedrockscope.SID_MODELS} in the repository's SCP admits: "
             + (", ".join(sorted(scp_models)) if scp_models else scp_why or "-")
+            + ("; application inference profiles" if scp_app_profiles else "")
         )
 
         rep.h1("10. The session's doors - ML-9")
