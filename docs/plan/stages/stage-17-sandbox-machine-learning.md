@@ -812,7 +812,9 @@ recommendation stated (Lesson 16).
 13. **How a model reaches the projects** (7.3, 7.4a, 7.4b). **Taken by the user 2026-10-19, as
     recommended: (b) the two model roles written in a `[P]` slice**, in the order below; its first two
     steps applied by the user the same evening (20:25 and 20:27 UTC), both re-planned `No changes`,
-    after which *Manage* in Sandbox's console is active. **Read
+    and its third done at 20:52 UTC, the user's request carried out through Claude in Chrome: five
+    models enabled, six environments, assets and listings and the playground's two profiles
+    created, no role created by the console (the log). **Read
     2026-10-19** (7.0a, 7.2): the menu
     opens and every model list answers *"No models found. Contact your admin to enable more models."*
     The console's **Amazon Bedrock models** tab on the associated domain enables a model for projects

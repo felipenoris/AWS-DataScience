@@ -1669,3 +1669,73 @@ Times are UTC.*
   model governance*, `deployment` and `experimentation`, with `US-3`, `US-8` and `US-10` passing. Exit 1
   comes from section 10 alone: the seven persona and Control Tower profiles whose SSO sessions were not
   signed in.
+
+## 2026-10-19 — decision 13's third step: the models enabled in Sandbox's console
+
+*Provenance. Claude, at the user's request in this session's chat ("Pode fazer estes passos na sessão
+do chrome que está aberta", the steps being decision 13's third), through Claude in Chrome in the
+user's console session as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1`:
+Claude's clicks ticked the six boxes, set the consumption role in two dialogs, chose the governance
+project and pressed *Submit*, after reading the review table against the user's steps. The readings
+before and after are Claude's, as `awsds-infra-sandbox-1` and `awsds-infra-data`. Times are UTC.*
+
+- **[Claude] The rows ticked**, on the *Manage* page, 20:47 to 20:49. *Enable in projects*: Claude
+  Opus 4.5, Claude Sonnet 4.5 (*Legacy*) and Claude Haiku 4.5, each *On-demand cross-region*, and
+  Titan Text Embeddings V2. `bedrock list-foundation-models` names the two Titan rows: *Titan Text
+  Embeddings V2* is `amazon.titan-embed-text-v2:0` and *Titan Text Embeddings v2* is
+  `amazon.titan-embed-g1-text-02`, left unticked. *Enable in playground*: Claude Haiku 4.5, and Nova Lite
+  on its *On-demand* row, `amazon.nova-lite-v1:0`, the model outside the scoped set for 7.3's refusal.
+- **[Claude] The two playground dialogs.** In each *Manage roles* dialog the provisioning role came
+  preselected as `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>`, the slice's. The
+  consumption role came preselected as an existing custom role that does not exist:
+  `AmazonSageMakerBedrockModelConsumptionRole-3aa57cf8315f…` for Haiku 4.5 and
+  `AmazonSageMakerBedrockModelVideoConsumptionRole-b7bb98…` for Nova Lite, which the console treats as a
+  video model. Both were changed to `awsds-sandbox-bedrock-model-consumption`, and each dialog was
+  saved with *Save and submit*. Neither save wrote anything: at 20:50:09 and 20:51:29 Sandbox held no
+  application inference profile, no new role and no policy beyond the consumption role's two.
+- **[Claude] The review**, after `GenerativeAIModelGovernanceProject` was chosen in the selector:
+
+  ```
+  Review and submit changes
+  Model modifications (5)
+  Models                    Inference type          Enabled in projects  Domain playground
+  Claude Opus 4.5           On-demand cross-region  Enabled              -
+  Claude Sonnet 4.5         On-demand cross-region  Enabled              -
+  Claude Haiku 4.5          On-demand cross-region  Enabled              Enabled
+  Titan Text Embeddings V2  On-demand               Enabled              -
+  Nova Lite                 On-demand               -                    Enabled
+  ```
+
+  The table matched the user's steps. *Submit* at 20:52:05; the dialog *Configuring Generative AI* closed
+  within a minute onto the tab with *"Roles have been successfully updated"*. After a reload the table
+  reads the five rows *Enabled* with *Custom roles* in *Roles for model access*, while the heading
+  still reads *Models enabled for the selected account and region (0)*.
+- **[Claude] What it made**, read at 20:53. In the governance project, six environments in `<Sandbox
+  Account 1>`, all `ACTIVE`, created from 20:52:15 to 20:52:44: four
+  `amazon.datazone.BedrockModelEnvironmentType_<12 characters>` and two
+  `amazon.datazone.BedrockInferenceOnlyEnvironmentType_<12 characters>`. Six assets, each published,
+  owned by `dmvami701qu6xc`, created from 20:52:18 to 20:52:47:
+  `anthropic.claude-opus-4-5-20251101-v1:0us-west-2BedrockModelFormCRIT`,
+  `anthropic.claude-sonnet-4-5-20250929-v1:0us-west-2BedrockModelFormCRIT`,
+  `anthropic.claude-haiku-4-5-20251001-v1:0us-west-2BedrockModelFormCRIT`,
+  `amazon.titan-embed-text-v2:0us-west-2BedrockModelForm` (type `BedrockModelAssetType`), and
+  `anthropic.claude-haiku-4-5-20251001-v1:0us-west-2BedrockInferenceOnlyFormCRIT` and
+  `amazon.nova-lite-v1:0us-west-2BedrockInferenceOnlyForm` (type `BedrockInferenceOnlyAssetType`). In
+  `Sandbox Account 1`, two application inference profiles named `dzd-d8yrvx1ko7im6o`, `ACTIVE`, of Haiku
+  4.5 (20:52:31) and Nova Lite (20:52:43): the playground's. No project's profile exists yet, since no
+  project has subscribed.
+- **[Claude] What it did not make.** No IAM role and no customer-managed policy: `iam list-roles` and
+  `list-policies --scope Local` show the slice's provisioning role alone among the names the console
+  uses, and the consumption role still holds `AmazonDataZoneBedrockModelConsumptionPolicy` and its
+  inline policy alone. Sandbox's trail in `us-east-1` holds no write by the infrastructure user from
+  20:45. In `us-west-2` it holds, read complete at 20:56:51, 2 `CreateInferenceProfile`, 6
+  `CreateEnvironment`, 6 `AssociateEnvironmentRole`, 6 `CreateAsset` and 6 `CreateListingChangeSet` by
+  the infrastructure user from 20:52:15 to 20:52:47; Data Governance's trail holds DataZone's
+  `CreateLineageNode`, `UpdateLineageNode` and `CreateLineageNodeVersion` in the same minutes.
+- **[Claude] `./aws/catalog.py`** after: all checks passed. `CT-2` reads 8 listings, all owned by a live
+  project, and `CT-3` *"no subscription, request or grant on any listing"*.
+- **[Claude] What the step says.** The console adopted both roles: the provisioning role by its name
+  and the consumption role by the dialog's choice, and it created no principal. The dialog's save
+  writes nothing for a model not yet enabled. Its preselected consumption role is again a fallback name
+  that no role carries, so a save left on it would point the model at a missing role. The playground's
+  profiles are the console user's, named after the domain.

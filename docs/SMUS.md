@@ -667,8 +667,8 @@ objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/cat
   asked (Lesson 11), which is why a preventive control over publishing or sharing belongs on this role
   rather than in an OU document.
 - **A Bedrock model reaches a project as a catalog subscription** (read 2026-10-19 in the console's and
-  the portal's code, [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decision 13;
-  unexercised). The console's **Amazon Bedrock models** tab publishes each enabled model as an asset,
+  the portal's code, [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decision 13; the
+  publishing measured the same evening, the subscription not yet). The console's **Amazon Bedrock models** tab publishes each enabled model as an asset,
   `BedrockModelAssetType` for projects and `BedrockInferenceOnlyAssetType` for the playground, owned by a
   project named `GenerativeAIModelGovernanceProject` and listed with `approvalRequired` `NO`; the asset's
   form names a provisioning or consumption role, held by a custom environment of that project in the
@@ -677,6 +677,9 @@ objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/cat
   role and on the Bedrock IDE's roles open to a model. The domain holds no governance project, and an
   associated account's console creates none: only the domain account's setup does, in the run that also
   configures the Bedrock blueprints and `Tooling` there, which D22 forbids.
+  Here `data-governance/governance/` writes it, and `sandbox/model-access/` the two roles the console
+  adopts. Enabling five models created six custom environments, six assets and listings and the
+  playground's two application inference profiles, and no role (2026-10-19).
 
 ## Connections — how a project reaches something Terraform owns
 
