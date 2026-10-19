@@ -572,6 +572,13 @@ The other three are in `probes.py` next to their probes: `enable-snapshot-block-
   event-stream operation, so the Bedrock statements that name it are probed on `InvokeModel` alone.
   The streaming action is the one every Claude Code session calls, and a session's CloudTrail events are
   its reading (6e step 6).
+- **A job naming its instance types as a preference list.** Since 2026-09-15 `CreateTrainingJob` and
+  `CreateProcessingJob` take `ResourceConfig.InstancePreferences`, up to five types in place of
+  `InstanceType`, and `probes.py`'s ceiling rows send `InstanceType` alone (`_processing_job`). Whether the
+  service fills `sagemaker:InstanceTypes` from the list is unread, so the rows are owed before the first
+  SageMaker job in `Workloads` and before Stage 17's training job: a list naming one off-ceiling type,
+  expected `DENY-SCP` on the `Workloads` document and on the D13 boundary, where `ALLOWED` is a hole
+  (Stage 9 3.5, Stage 17's risks; [`upstream-releases.md`](../upstream-releases.md), 2026-10-18).
 
 ### The class the battery cannot reach — verified by *reading*, never by attempting
 

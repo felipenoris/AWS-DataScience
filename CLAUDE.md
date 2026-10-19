@@ -364,7 +364,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the user's push. **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
-- **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-21`): `TM-17`, the project role's managed policy
+- **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-24`): `TM-17`, the project role's managed policy
   reaching other accounts' `airflow-celery-*` queues and Bedrock functions, is the user's to decide;
   `TM-21` shares `sandbox/sagemaker/`'s one apply with Stage 17's `MLflowApp`; the data cells filters
   create nothing until decision 12. The internal-access analyzer bills on each 1st: run it after
@@ -381,7 +381,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stage 17**: pass 0 in progress, pass 1 merged and unapplied. Main pins `vpc-egress-v0.18.0` (`mlflow`)
   and `sagemaker-prereqs-v0.6.0` (`TM-21` over v0.5.0's `MLflowApp`), so `sandbox/sagemaker`'s one apply
   waits on 1.1's portal reading (Lesson 69). Decision 11, the embeddings model in the Bedrock SCP, needs
-  `awslib/bedrockscope.py` to learn the difference first, or `BS-2`, `BS-7` and `BR-4` go red.
+  `awslib/bedrockscope.py` to learn the difference first, or `BS-2`, `BS-7` and `BR-4` go red. Pass 2's training job waits on the battery's instance-preference rows (Stage 9 3.5).
   **Stage 18**: pass 0 in progress, no decision taken; an associated account no person works in goes
   in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in `SMUS_MEMBERS`. Its 4.4 needs Stage 8 3.0's first half
   and Stage 10 1.2's `vpc-v0.4.0` on `staging/foundation/` first (PR #188).
@@ -535,6 +535,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
 70. **A refusal attributed to the identity's class was a membership, and memberships change in a portal
     nobody watches.**
 71. **A lint that prints `ok` for a clause its invocation leaves unchecked reads as a pass on every clause.**
+72. **An action left out of the policy you write is not denied to a principal that carries policies you
+    do not write — a claim about what a role lacks is made about the role, never about one policy on it.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

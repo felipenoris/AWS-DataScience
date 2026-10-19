@@ -76,6 +76,10 @@ data "aws_iam_policy_document" "namespace_trust" {
 #   redshift-data:*          absent until 6h's credential answer needs it. A plain JDBC/psycopg
 #                            connection over 5439 does not touch the Data API at all, so this is
 #                            decided by a measurement rather than added on spec (Lesson 41).
+#                            AWS's SageMakerStudioProjectUserRolePolicy grants the family to the project
+#                            role on a workgroup tagged with its project (simulated 2026-10-18, 6h 5.3),
+#                            so the omission here closes nothing for that role; the access role, which
+#                            carries no AWS policy, has no Data API path.
 resource "aws_iam_policy" "project_warehouse" {
   for_each = var.projects
 

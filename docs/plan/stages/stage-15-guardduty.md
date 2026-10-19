@@ -254,6 +254,13 @@ Protection for EC2** bills only when a finding triggers a scan.
    it holds break-glass root (D16), and it is the one place where a compromise is constrained by
    nothing this project wrote — which makes "GuardDuty everywhere except there" the wrong shape. It
    costs one more account's foundational detection after the trial. Record the answer either way.
+4. **The enablement mechanism** (steps 1, 2) — the console and CLI acts as written, or GuardDuty's
+   Organizations policy type (2026-10-01; the upstream readings of 2026-10-18, PR #189), a declarative
+   enablement attached at the root like the other policy types. Recommended: **read first whether
+   `aws_organizations_policy` accepts the type and what the policy expresses** (the protection plans, the
+   auto-enable scope, the delegated administrator); if it carries steps 0 to 3 whole, the policy, the
+   preventive shape principle 9 prefers and one `./aws/org-policies.py` can read back, with `POLICIES.md`
+   gaining a fifth type's rows; if not, the acts as written, the policy noted as the revision path.
 
 ## Verifications to answer while executing
 
