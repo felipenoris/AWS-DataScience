@@ -56,6 +56,7 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | Verification xxi's attempt half, an S3 put and delete on the release bucket | Stage 8 |
 | Step 2's portal acts: a consumer project, a subscription, an approval as the Governance Manager | 6f step 2, 4.3 |
 | 0.4's portal half; 6.4, keep or drop `lab` | 6h |
+| *Manage* in Sandbox's **Amazon Bedrock models** tab, as the infrastructure user: the governance project, the three scoped models' cross-Region rows and Titan V2 in projects, Haiku 4.5 and one model outside the scoped set in the playground, the consumption role `awsds-sandbox-bedrock-model-consumption` per playground model, *Submit* | Stage 17 decision 13, its third step |
 | The domain name | [Stage 13](stages/stage-13-public-web-tier.md) |
 | The account quota, and D34's rung | [Stage 14](stages/stage-14-sandbox-vending.md) |
 

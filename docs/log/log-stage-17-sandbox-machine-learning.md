@@ -1574,3 +1574,98 @@ applied. Account ids in the plans' output are replaced by the account's name. Ti
   `awsds-sandbox-bedrock-model-consumption`, with the same trust and boundary, AWS's consumption policy
   and `AllowInferenceProfileToInvokeFoundationModels` on `foundation-model/*` under
   `bedrock:InferenceProfileArn`.
+
+## 2026-10-19 — decision 13 (b) applied by the user, read back, and the console's *Manage* open
+
+*Provenance. The applies are the user's, from the saved plans, in a terminal of the project folder
+with `-chdir` into this worktree, pasted into this session; the account ids are replaced by the
+account's name. Claude, in the same session and worktree, re-planned and read back as
+`awsds-infra-data` and `awsds-infra-sandbox-1`, ran `./aws/studio.py`, and read the console through
+Claude in Chrome in the user's session as the infrastructure user in `Sandbox Account 1`: the clicks
+opened *Manage*, the governance project selector, Claude Haiku 4.5's *Manage roles* dialog and its
+role selector, each closed with Escape or *Cancel*; nothing was selected, ticked, saved or submitted.
+Times are UTC.*
+
+- **[user] Both applies**, in that order:
+
+  ```
+  ➜  AWS-DataScience git:(main) AWS_PROFILE=awsds-infra-data terraform -chdir=/Users/felipentavares/src/AWS-DataScience/.claude/worktrees/verificar-ambiente-down-e95914/terraform-live/data-governance/governance apply -input=false "$HOME/tmp/s17-model-governance.tfplan"
+  awscc_datazone_project_profile.model_governance[0]: Creating...
+  awscc_datazone_project_profile.model_governance[0]: Creation complete after 7s [id=dzd-d8yrvx1ko7im6o|ds7ur2s2ce42vk]
+  awscc_datazone_project.model_governance[0]: Creating...
+  awscc_datazone_project.model_governance[0]: Still creating... [00m10s elapsed]
+  awscc_datazone_project.model_governance[0]: Still creating... [00m20s elapsed]
+  awscc_datazone_project.model_governance[0]: Still creating... [00m30s elapsed]
+  awscc_datazone_project.model_governance[0]: Still creating... [00m40s elapsed]
+  awscc_datazone_project.model_governance[0]: Still creating... [00m50s elapsed]
+  awscc_datazone_project.model_governance[0]: Still creating... [01m00s elapsed]
+  awscc_datazone_project.model_governance[0]: Creation complete after 1m3s [id=dzd-d8yrvx1ko7im6o|dmvami701qu6xc]
+  awscc_datazone_project_membership.model_governance_sandbox_infrastructure[0]: Creating...
+  awscc_datazone_project_membership.model_governance_sandbox_infrastructure[0]: Creation complete after 7s [id=dzd-d8yrvx1ko7im6o|839bcde8-f8b8-4ada-936a-1441352db302|GROUP_IDENTIFIER|dmvami701qu6xc]
+  Releasing state lock. This may take a few moments...
+
+  Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
+
+  Outputs:
+
+  domain_arn = "arn:aws:datazone:us-west-2:<Data Governance Account>:domain/dzd-d8yrvx1ko7im6o"
+  domain_execution_role_arn = "arn:aws:iam::<Data Governance Account>:role/awsds-data-studio-domain-execution"
+  domain_id = "dzd-d8yrvx1ko7im6o"
+  domain_service_role_arn = "arn:aws:iam::<Data Governance Account>:role/awsds-data-studio-domain-service"
+  model_governance_project_id = "dmvami701qu6xc"
+  portal_url = "https://dzd-d8yrvx1ko7im6o.sagemaker.us-west-2.on.aws"
+  project_profile_creators = {
+    "deployment" = "InfrastructureAccess (staging)"
+    "experimentation" = "sso-group-data-scientists"
+  }
+  project_profile_ids = {
+    "deployment" = "dalofykyytykgg"
+    "experimentation" = "dh60xbal05q64w"
+  }
+  root_domain_unit_id = "bzq0cbh2gd0f4g"
+  ➜  AWS-DataScience git:(main) AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=/Users/felipentavares/src/AWS-DataScience/.claude/worktrees/verificar-ambiente-down-e95914/terraform-live/sandbox/model-access apply -input=false "$HOME/tmp/s17-model-access.tfplan"
+  module.model_provisioning_role.aws_iam_role.this: Creating...
+  module.model_consumption_role.aws_iam_role.this: Creating...
+  module.model_consumption_role.aws_iam_role.this: Creation complete after 2s [id=awsds-sandbox-bedrock-model-consumption]
+  module.model_consumption_role.aws_iam_role_policy_attachment.managed["arn:aws:iam::aws:policy/service-role/AmazonDataZoneBedrockModelConsumptionPolicy"]: Creating...
+  module.model_consumption_role.aws_iam_role_policy.inline["invoke-through-application-inference-profiles"]: Creating...
+  module.model_provisioning_role.aws_iam_role.this: Creation complete after 2s [id=AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>]
+  module.model_provisioning_role.aws_iam_role_policy.inline["model-management"]: Creating...
+  module.model_consumption_role.aws_iam_role_policy_attachment.managed["arn:aws:iam::aws:policy/service-role/AmazonDataZoneBedrockModelConsumptionPolicy"]: Creation complete after 0s [id=awsds-sandbox-bedrock-model-consumption/arn:aws:iam::aws:policy/service-role/AmazonDataZoneBedrockModelConsumptionPolicy]
+  module.model_consumption_role.aws_iam_role_policy.inline["invoke-through-application-inference-profiles"]: Creation complete after 0s [id=awsds-sandbox-bedrock-model-consumption:invoke-through-application-inference-profiles]
+  module.model_provisioning_role.aws_iam_role_policy.inline["model-management"]: Creation complete after 0s [id=AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>:model-management]
+  Releasing state lock. This may take a few moments...
+
+  Apply complete! Resources: 5 added, 0 changed, 0 destroyed.
+
+  Outputs:
+
+  model_consumption_role_arn = "arn:aws:iam::<Sandbox Account 1>:role/awsds-sandbox-bedrock-model-consumption"
+  model_provisioning_role_arn = "arn:aws:iam::<Sandbox Account 1>:role/AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>"
+  ```
+
+- **[Claude] Re-planned**, both `No changes. Your infrastructure matches the configuration.`:
+  `governance/` from 20:31:41, `sandbox/model-access/` from 20:32:09, done at 20:32:20.
+- **[Claude] Read back** at 20:32. The project `GenerativeAIModelGovernanceProject`
+  (`dmvami701qu6xc`), created 20:25:25, reads `ACTIVE`, deployment `SUCCESSFUL`, on the profile
+  `ds7ur2s2ce42vk`; the profile *Generative AI model governance*, created 20:25:19, reads `ENABLED` with
+  no environment configuration. The project's members are two groups: `PROJECT_OWNER` the session group
+  of Data Governance's `InfrastructureAccess`, Terraform's identity, and `PROJECT_CONTRIBUTOR`
+  Sandbox's. In `Sandbox Account 1` both roles were created 20:27:17 at path `/`, under
+  `awsds-sandbox-project-boundary`, trusted by `datazone.amazonaws.com` (`sts:SetContext`,
+  `sts:AssumeRole`) under `aws:SourceAccount` `<Data Governance Account>`; the provisioning role holds
+  the inline `model-management` and no managed policy, the consumption role
+  `AmazonDataZoneBedrockModelConsumptionPolicy` and the inline
+  `invoke-through-application-inference-profiles`.
+- **[Claude] The console after**, 20:33 to 20:35. On the tab, **Manage** is active, with no disabled
+  reason, and the counter still reads *(0)*. On the *Manage* page, the *Generative AI governance
+  project* selector offers `GenerativeAIModelGovernanceProject`, and *Review and submit* stays greyed
+  with no model ticked. Claude Haiku 4.5's *Manage roles* dialog preselects
+  `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>`, and the role selector now lists
+  that role, the slice's.
+- **[Claude] `./aws/studio.py`**, report stamped 20:36:54Z. With the new profile, `US-4` would fail
+  (*"is no contracted profile"*, inferred from the code); the script names it in
+  `MODEL_GOVERNANCE_PROFILE_NAMES` in this sitting, and the run reads `US-4` passing on *Generative AI
+  model governance*, `deployment` and `experimentation`, with `US-3`, `US-8` and `US-10` passing. Exit 1
+  comes from section 10 alone: the seven persona and Control Tower profiles whose SSO sessions were not
+  signed in.
