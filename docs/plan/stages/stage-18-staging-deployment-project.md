@@ -582,10 +582,11 @@ The reverse of passes 1 to 3, in 6b pass 1's order, each step read back before t
   so the stack deletes a role carrying only the policies it attached), the Glue job the operator created,
   the lineage entities SageMaker created for the processing job (a trial component, four artifacts, four
   associations; the job itself cannot be deleted), the Glue data source on the `DataLake` database, the
-  project, whose deletion deletes its two environments' stacks; the stacks read gone, and the database
-  `glue_db_d6ogysnx78dguo` read by name (`get-database` answers Lake Formation's refusal for a database
-  that exists, `EntityNotFoundException` for one that does not), since the failed environment's survived
-  its stack; then the S3 Access Grants location for the project's prefix and the account's `default`
+  project, whose deletion deletes its two environments' stacks; the stacks read gone; then
+  `glue_db_d6ogysnx78dguo` dropped like the orphan, since the `DataLake` template keeps its database
+  (`DeletionPolicy: Retain`, `lessons.md`), and both read by name (`get-database` answers Lake Formation's
+  refusal for a database that exists, `EntityNotFoundException` for one that does not); then the S3
+  Access Grants location for the project's prefix and the account's `default`
   instance, both created at the project's provisioning; 7.1's lineage events and nodes and the project
   role's `IAM` user profile, domain objects, read and recorded;
   the CLI's log groups and the run's (`/aws/sagemaker/ProcessingJobs`, `datazone-<project>-dev/error` and
