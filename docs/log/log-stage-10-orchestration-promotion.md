@@ -154,3 +154,64 @@ classifier (*Production Deploy*) an hour earlier, before that word.*
   added, 1 changed, 0 destroyed."* **[Claude]** The re-plan reads `No changes` (05:12:11Z); the
   endpoint's `AllowAwsOwnedServiceBuckets` holds the family's bucket and object ARNs, and `EG-4` reads
   `mwaa-code` in Sandbox and Staging since its pattern was added that day.
+
+## 2026-10-20 — step 1.3's training operator, read in the provider's code
+
+*Claude's hand, written in a task the orchestrating session started (branch
+`claude/stage-10-log-reads-94955a`) for PR #210, merged the same day, which added no entry. That PR's
+session made the reading from the Amazon provider's source on GitHub at the tag `providers-amazon/9.32.0`,
+with no AWS call; this sitting read each clause again at the tag.*
+
+- **[Claude] 1.3, `SageMakerTrainingOperator`**, in `operators/sagemaker.py`, `hooks/sagemaker.py` and
+  `hooks/s3.py`: while `check_if_job_exists` is true, the default, `DescribeTrainingJob` runs on the
+  config's `TrainingJobName` before `CreateTrainingJob`, and only a `ValidationException` counts as absent;
+  `action_if_job_exists` takes `timestamp`, the default, or `fail`. Before the create, the hook heads each
+  `S3DataSource` channel's bucket (`HeadBucket`), then its key (`HeadObject`) or prefix (`ListObjectsV2`);
+  while `print_log` is true, the default, it reads `/aws/sagemaker/TrainingJobs` (`DescribeLogStreams`,
+  `GetLogEvents`). 1.3's grant listed neither the S3 heads nor the log reads. No code in either SageMaker
+  operator or in `SageMakerHook` stops a training or processing job. Step 1.3 carries the consequences.
+
+## 2026-10-20 — verification iii: the service-linked role read in Staging and Production
+
+*Claude's hand, in the same task, from the laptop as the infrastructure user (`InfrastructureAccess`)
+through `awsds-infra-staging` and `awsds-infra-prod`, reads only, with the tunnel down (`NO_PROXY='*'`).
+Times are UTC.*
+
+- **[Claude] Staging, the role** (21:59:35Z): `iam get-role --role-name
+  AWSServiceRoleForAmazonMWAAServerless` reads the path `/aws-service-role/airflow-serverless.amazonaws.com/`,
+  `CreateDate` 2026-10-19T20:09:32Z, `RoleLastUsed` 2026-10-19T23:09:41Z in `us-west-2`, no boundary and no
+  tags; the trust is one statement, `airflow-serverless.amazonaws.com` with `sts:AssumeRole` and no
+  condition. `list-attached-role-policies` names `AmazonMWAAServerlessServiceRolePolicy` alone, and
+  `list-role-policies` none.
+- **[Claude] Staging, the policy**: `get-policy` reads `DefaultVersionId` `v1`, created and updated
+  2025-11-15T20:34:07Z, `AttachmentCount` 1, and `list-policy-versions` holds `v1` alone. `get-policy-version`
+  of `v1` is one `Allow` statement on `*` with no condition and no `Sid`, eleven actions, all `ec2:`:
+  `AttachNetworkInterface`, `CreateNetworkInterface`, `CreateNetworkInterfacePermission`,
+  `DeleteNetworkInterface`, `DeleteNetworkInterfacePermission`, `DescribeDhcpOptions`,
+  `DescribeNetworkInterfaces`, `DescribeSecurityGroups`, `DescribeSubnets`, `DescribeVpcs`,
+  `DetachNetworkInterface`.
+- **[Claude] Staging, who created it**: `cloudtrail lookup-events` in `us-east-1` over the 90-day window
+  holds one `CreateServiceLinkedRole` naming `airflow-serverless.amazonaws.com`, 2026-10-19T20:09:32Z,
+  `invokedBy` `airflow-serverless.amazonaws.com` with the InfrastructureAccess session as its identity, and
+  no `DeleteServiceLinkedRole`. In `us-west-2` the window's first `CreateWorkflow` is the same second's,
+  `app_etl_deploy_staging_app_etl`, inside Stage 18's 4.2 deploy (20:07:34 to 20:09:33Z); the four after it,
+  21:20:59Z to 21:59:48Z, the last two answered `ConflictException`, made no second
+  `CreateServiceLinkedRole`.
+- **[Claude] Production** (22:00:12Z): `get-role` *"An error occurred (NoSuchEntity) when calling the
+  GetRole operation: The role with name AWSServiceRoleForAmazonMWAAServerless cannot be found."*;
+  `list-roles` under the service's path is empty, the policy's `AttachmentCount` 0, `mwaa-serverless
+  list-workflows` empty, and the trail's 90 days hold no `CreateWorkflow`.
+- **[Claude] Production, the saver of 1.5**: `awsds-deploy-prod` carries one inline policy, `state`, no
+  attached policy, and the boundary `awsds-prod-deploy-boundary` at `v1`. `iam simulate-principal-policy` for
+  `iam:CreateServiceLinkedRole` on the service-linked role's ARN, with `iam:AWSServiceName`
+  `airflow-serverless.amazonaws.com`, reads `implicitDeny`, allowed by the boundary and by Organizations,
+  no statement matched; `airflow-serverless:CreateWorkflow` reads `implicitDeny` as well, a grant 1.5 adds.
+- **[Claude] `./aws/orchestration.py awsds-infra-staging awsds-infra-prod`**, 22:04:58Z, exit 2: section 9
+  reads Staging *"present, created 2026-10-19T20:09:32"* and Production absent; `OR-4` and `OR-6` pass;
+  `OR-2` fails four times on Staging's three `/aws/mwaa-serverless/` log groups with no retention
+  (`app_etl_deploy_staging_app_etl`, `dagid_copy_deploy_staging_app_etl`,
+  `orchestration_demo_deploy_staging_demo_python_operator`), which Stage 18's deploys left, as its log
+  records.
+- **[Claude] Written into the stage file**: verification iii's Staging half, and in 1.5 what the trail
+  means for Production: Staging's first save created the role in the saver's session, so Production's first
+  apply needs `iam:CreateServiceLinkedRole` in `awsds-deploy-prod`'s policy unless the role exists by then.
