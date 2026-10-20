@@ -51,7 +51,7 @@ names the control that admits, refuses or sizes it. A row that says "read" is ex
 | **HyperPod clusters** (Compute → HyperPod clusters → *Add compute*) | nothing here: the entry connects a project to an existing cluster, and the project role's policy grants no `sagemaker:CreateCluster` | — | read: a cluster is standing compute (`Cluster:ml.m5.large` 0.115 USD/h in the offer) no decision has asked for | 6 |
 | **Partner AI apps** (AI/ML → Partner AI apps) | nothing here: Lakera Guard, Comet, DeepChecks and Fiddler, each an EKS stack with its own EC2, cache and database SKUs | — | read: the `PartnerApps` blueprint is category 3 and the SKUs are standing (Cost) | 6 |
 | **Generative AI** (Generative AI → Playground, Chat agent apps, Prompts, Guardrails, Functions, Flows, Evaluations) | Bedrock objects in the Sandbox account: a prompt, a guardrail, a flow, an evaluation job, and a chat agent over the knowledge base below, shared as a snapshot; a Function is a Lambda | the portal's own backend, not the VPC, as the project role or the project's Bedrock roles (verification xviii); a notebook's invocation through `bedrock-runtime` and `bedrock-agent-runtime` | the SCP's `DenyBedrockInvocationOutsideTheScopedModels` and `DenyBedrockReadsOutsideTheRoutedRegions`; the project role's conditional Bedrock grants (6e 3.1: `InvokeBRModel` needs the IDE tag the role did not carry on 2026-09-11); no control names a Lambda (7.4, decision 10) | 7 |
-| **Knowledge bases** (Generative AI → AI apps → Asset gallery → *My components* → *Knowledge Base*) | a Bedrock knowledge base, its data source, its execution role, two Lambdas (the OpenSearch index and the ingestion trigger, with their role; AWS's blueprint page, read 2026-10-12) and a vector store created on the user's behalf, OpenSearch Serverless, S3 Vectors or Neptune Analytics by the form's choice (decision 12) | the IDE's backend for the create; the sync is the service's own calls as the knowledge base's role, `InvokeModel` on the embeddings model and the store's API; a notebook's `Retrieve` through `bedrock-agent-runtime` | `AmazonBedrockKnowledgeBase`, category 2 until decision 1; the SCP's `NotResource`, which names no embeddings model and refuses the first sync (7.4a, decision 11); the store's billing shape (decision 12) | 7 |
+| **Knowledge bases** (Generative AI → AI apps → Asset gallery → *My components* → *Knowledge Base*) | a Bedrock knowledge base, its data source, its execution role and a vector store created on the user's behalf, OpenSearch Serverless, S3 Vectors or Neptune Analytics by the form's choice (decision 12); for an OpenSearch Serverless store, two Lambdas as well, the index and the ingestion trigger, with their role, which AWS's blueprint page lists with no condition (read 2026-10-12) and the blueprint's template creates for that store alone (read 2026-10-19, 7.0a) | the IDE's backend for the create; the sync is the service's own calls as the knowledge base's role, `InvokeModel` on the embeddings model and the store's API; a notebook's `Retrieve` through `bedrock-agent-runtime` | `AmazonBedrockKnowledgeBase`, category 2 until decision 1; the SCP's `NotResource`, which admits the embeddings model and application inference profiles since decision 11's amendment (applied 2026-10-19); the store's billing shape (decision 12) | 7 |
 
 ### Why the experiment is logged from the space, and never from the job
 
@@ -155,12 +155,12 @@ flowchart LR
 | **4** | 4 | deployed and served: the endpoint, the invocations, the deletion, the transform, the serverless negative, the GPU negative | the user, from JupyterLab and the portal |
 | **5** | 5 | the pipeline: authored from the SDK, run, read back, the editor's forms | the user |
 | **6** | 6 | HyperPod and Partner AI apps, read | the user reads the pages; Claude reads the APIs |
-| **7** | 7 | the Generative AI menu: the roles before, the knowledge base's promotion, which opens the menu, the playground, the objects, the knowledge base and the chat agent over it, the doors | the user; Claude writes and applies the promotion (7.0a, 7.0b), reads before and after, and applies decision 11's amendment between the two syncs |
+| **7** | 7 | the Generative AI menu: the roles before, the knowledge base's promotion, which opens the menu, the playground, the objects, the knowledge base and the chat agent over it, the doors | the user; Claude writes and applies the promotion (7.0a, 7.0b), reads before and after, and writes decision 11's amendment, which precedes the knowledge base's sync |
 | **8** | 8 | the readings, the records, the close | Claude; the user decides decisions 5 and 7's close |
 
 Pass 1 precedes pass 2 because every later run is logged into the app, and pass 4 follows pass 3 because
 the endpoint and the transform serve the registered version. Passes 6 and 7 are independent of the rest;
-inside pass 7, 7.2 waits on 7.0b's apply, 7.4a's second sync waits on decision 11's apply, and 7.4b on 7.4a.
+inside pass 7, 7.2 waits on 7.0b's apply, 7.4a's sync on decision 11's apply, and 7.4b on 7.4a.
 
 ---
 
@@ -454,7 +454,7 @@ inside pass 7, 7.2 waits on 7.0b's apply, 7.4a's second sync waits on decision 1
   list-knowledge-bases`, `aoss list-collections` and `s3vectors list-vector-buckets` in Sandbox, all
   expected empty; `bedrock get-foundation-model-availability` on `amazon.titan-embed-text-v2:0`, whether
   the account may use the embeddings model at all; and the SCP's `NotResource` as it stands, six spellings
-  of three models and no embeddings model (read 2026-10-12), so 7.4a's first sync is expected refused.
+  of three models and no embeddings model (read 2026-10-12).
   **Read 2026-10-19 at 17:36 UTC** by `./aws/sandbox-ml.py` (the log): `EnableAmazonBedrockIDEPermissions`
   still absent on both project roles; the `Tooling` environments' `AmazonBedrockServiceRole-*` and
   `AmazonBedrockLambdaExecutionRole-*`, one pair per project, under the D13 boundary; no knowledge base,
@@ -542,28 +542,30 @@ inside pass 7, 7.2 waits on 7.0b's apply, 7.4a's second sync waits on decision 1
   components* → *Create component* → *Knowledge Base*: embeddings model Titan Text Embeddings V2
   (`amazon.titan-embed-text-v2:0`, 1024 dimensions), the store S3 Vectors (decision 12), default chunking
   and Bedrock's parser; the web crawler is not configured, since its crawl leaves from Bedrock's own
-  network and not this estate's. **Sync once before decision 11 is applied**: the sync embeds through
-  `InvokeModel` on the embeddings model as the knowledge base's role, and the SCP's `NotResource` names no
-  embeddings model, so the expected reading is a failed sync whose error carries `explicit deny in a
-  service control policy` (verification xxii); the trail's `InvokeModel` event carries the role and the
-  `errorMessage`. Then [Claude⚡] **the amendment** from `Identity`, the infrastructure user,
-  `InfrastructureAccess`, `AWS_PROFILE=awsds-infra-identity`: the embeddings model's `foundation-model`
-  ARN into the statement's `NotResource`, preceded by the parser change decision 11 names, with
-  `POLICIES.md`'s row for the second trigger, `./scripts/check-index.py`, `./aws/bedrock-scope.py` and
-  `./aws/bedrock.py` read after the apply, and the battery with its Bedrock rows: those of 6e 7.5 and
-  decision 15 are in `probes.py` since PR #159 (2026-10-17), and their allow rows invoke the image's
-  pins, so this sitting adds one, an allow row of `invoke-model` on `amazon.titan-embed-text-v2:0` from
-  `Sandbox Account 1` with Titan's body (`{"inputText":"ping"}`). The amendment waited for Stage 9 pass 1's
-  apply of the same slice and the battery after it: neither ran on 2026-10-17 (items 2 and 3 of the laptop
-  list in [its log](../../log/log-stage-09-deployment-targets.md)), and both ran on 2026-10-18, the
-  `Workloads` document applied at 19:54 UTC and the battery's after-half reading 39 as expected, 0
-  unexpected, 7 not measured. An apply attaches every change pending in the slice, and this one's plan
-  changes `awsds-org-scp-ou-interactive.json` alone. Sync again:
-  expected `COMPLETE`, with the document count and the time. [Claude] `ML-8` reads the knowledge base,
-  its role with the role's policies and boundary, the
-  data source, the two Lambdas and their role, the store (which OpenSearch Serverless kind or which S3
-  Vectors bucket the IDE created, as which identity, and what it bills at idle: decision 12's reading), and
-  whether every object carries the project tag (verification xxiii).
+  network and not this estate's. **Decision 11's amendment came first**, the embeddings model's
+  `foundation-model` ARN and `application-inference-profile/*` in the statement's `NotResource`, after
+  the parser change decision 11 names. Its battery row is an allow row of `invoke-model` on
+  `amazon.titan-embed-text-v2:0` from `Sandbox Account 1` with Titan's body (`{"inputText":"ping"}`):
+  the Bedrock rows of 6e 7.5 and decision 15, in `probes.py` since PR #159 (2026-10-17), invoke the
+  image's pins, and no pin names the embeddings model. The amendment waited for Stage 9 pass 1's apply of
+  the same slice and the battery after it, both run on 2026-10-18
+  ([its log](../../log/log-stage-09-deployment-targets.md): the `Workloads` document applied at 19:54 UTC,
+  the battery's after-half 39 as expected, 0 unexpected, 7 not measured), so its plan changed
+  `awsds-org-scp-ou-interactive.json` alone. The user applied it from `Identity` (the infrastructure
+  user, `InfrastructureAccess`, `AWS_PROFILE=awsds-infra-identity`) on 2026-10-19 at 21:58:46 UTC, before
+  any knowledge base existed (`ML-8` read none at 19:01). The SCP's refusal of the embeddings model was
+  therefore read by the battery and by no sync: the before-half read Titan's row `DENY-SCP` naming
+  `p-tgda7n58` as `InfrastructureAccess` (21:31 UTC), the after-half `ALLOWED` (22:00; decision 11).
+  **Sync once**: the sync embeds through `InvokeModel` on the embeddings model as the knowledge base's
+  role, which the amended statement admits on the foundation model's pass and on an application inference
+  profile's, so the expected reading is `COMPLETE`, with the indexed document count against the sixteen
+  files and the time (verification xxii); the trail's `InvokeModel` events carry the role and the
+  `modelId`, and a refusal is attributed by its wording. [Claude] `ML-8` reads the knowledge base, its
+  role with the role's policies and boundary, the data source, any Lambda the create left (the template
+  makes two, the index and the ingestion trigger, with their role, for an OpenSearch Serverless store
+  alone: 7.0a), the store (which OpenSearch Serverless kind or which S3 Vectors bucket the IDE created, as
+  which identity, and what it bills at idle: decision 12's reading), and whether every object carries the
+  project tag (verification xxiii).
 - **7.4b — [user] The chat agent over it**: Chat agent apps → *Create*; the *Model* list is read first,
   which of the scoped three it offers and under which id, a `us.` profile or a foundation model, since the
   SCP admits both spellings (verification xxv); Haiku 4.5, a system instruction that confines the answers
@@ -663,7 +665,7 @@ offers):
 | The `mlflow` interface endpoint | 0.010/hour per session with `GROUPS=mlflow`, one AZ (D9) |
 | Bedrock, pass 7 | Haiku 4.5 at 1.10 per million input and 5.50 per million output tokens: a playground chat, the chat agent's turns, a flow run and a twenty-line evaluation **under 0.20** |
 | The guardrail (7.4, 7.4b) | 0.15 per 1,000 text units for the content and the topic policies, 0.10 for sensitive information and contextual grounding, 0 for the word policy: the preview's questions **cents** |
-| The knowledge base's embeddings (7.4a) | Titan Text Embeddings V2 at 0.00002 per 1,000 input tokens: the runbooks, 550 KB, about 140,000 tokens, **under 0.01** a sync, and two syncs are planned |
+| The knowledge base's embeddings (7.4a) | Titan Text Embeddings V2 at 0.00002 per 1,000 input tokens: the runbooks, 550 KB, about 140,000 tokens, **under 0.01** for 7.4a's one sync |
 | S3 Vectors (decision 12's recommendation) | storage 0.06 per GB-month, 0.20 per GB put, 0.055 per 1,000 requests, 0.0000025 per query: the runbooks' vectors, a few MB, **cents a month and nothing at idle beyond their bytes** |
 | OpenSearch Serverless (decision 12's alternative) | 0.24 per OCU-hour and 0.024 per GB-month: a classic collection holds at least 1 OCU in dev/test and 2 in production, **5.76 or 11.52 a day while it exists, idle or not**; a next-generation collection scales to zero after ten idle minutes (AWS's scaling page, read 2026-10-12); which kind the IDE creates is 7.4a's reading |
 | HyperPod (read only) | `Cluster:ml.m5.large` 0.115/hour per node, the smallest the offer prices; nothing billed |
@@ -769,10 +771,12 @@ recommendation stated (Lesson 16).
     `UpdateFunctionConfiguration` without `lambda:VpcIds`, is written into Stage 11 §3's ledger in this
     sitting (Lesson 34), and the entry is exercised when that control exists. The alternative, **(b)**,
     creates one function, reads where it runs and what it reaches, and deletes it; the reading is worth
-    having and the path it opens is the one this estate exists to close. The knowledge base's two Lambdas
-    (7.4a) are the blueprint's, not the entry's: AWS's blueprint page lists them with their execution
-    role, they are the service's plumbing for the index and the ingestion trigger, and `ML-8` reads where
-    they run; Stage 11 §3's ledger gets them in the same row.
+    having and the path it opens is the one this estate exists to close. The knowledge base's two Lambdas,
+    the index and the ingestion trigger with their execution role, are the blueprint's, not the entry's,
+    and depend on decision 12: AWS's blueprint page lists them with no condition (read 2026-10-12), and
+    the blueprint's template creates them for an OpenSearch Serverless store alone (read 2026-10-19,
+    7.0a), so the recommended S3 Vectors gets none from the template. `ML-8` reads any Lambda 7.4a leaves
+    and where it runs; Stage 11 §3's ledger gets them in the same row.
 11. **The embeddings model at the SCP** (7.4a). **Taken by the user 2026-10-19: (a), grown by
     `application-inference-profile/*`** as the 2026-10-19 reading below says. Recommended: **(a) the
     `foundation-model` ARN of
@@ -798,7 +802,7 @@ recommendation stated (Lesson 16).
 
     **Read 2026-10-19 with decision 13** (the log): every call the portal makes, the knowledge base's
     sync included, passes through an application inference profile, which the statement's `NotResource`
-    does not name, so Titan's ARN alone leaves 7.4a's second sync refused on the profile's pass
+    does not name, so Titan's ARN alone leaves 7.4a's sync refused on the profile's pass
     (inferred). The amendment therefore carries a second entry,
     `arn:aws:bedrock:*:*:application-inference-profile/*`: the model ceiling stays on the foundation
     model's pass every such call carries (AWS's prerequisites page; measured 2026-10-19 by 7.3's second
@@ -935,7 +939,7 @@ recommendation stated (Lesson 16).
 | xix | Does the SCP refuse a model outside the scoped three from the playground, with its wording? **Before decision 11's amendment, read 2026-10-19**: it refuses every playground model, Haiku 4.5 included, on the application inference profile's pass, *"with an explicit deny in a service control policy"* naming `p-tgda7n58`. **After it**, applied at 21:58 UTC, Haiku 4.5 answers through its profile and Nova Lite is refused on `foundation-model/amazon.nova-lite-v1:0`, *"with an explicit deny in a service control policy"* naming `p-tgda7n58` (22:09 UTC) | 7.3 |
 | xx | What did the MLflow App bill on the sitting's day, read in Cost Explorer? | 8.2 |
 | xxi | Which quotas does a young account hold for the four instance types, and is any zero? **Answered 2026-10-17: three were zero**, `ml.m5.xlarge for training job usage` (`L-CCE2AFA6`), `ml.m5.large for endpoint usage` (`L-614B09FD`) and `ml.m5.large for transform job usage` (`L-236AE59F`); `ml.t3.medium for processing job usage` (`L-0CE343FE`) was 4. **Read again 2026-10-18 at 19:51 UTC: the three read 20, 8 and 8 and the processing quota 10**, the three requests (to 1 each, filed 2026-10-17) still `CASE_OPENED`. **What raised the values is outside the account's record** (read 2026-10-18, ~22:20 UTC): Sandbox's trail holds, from 2026-10-17 21:00Z to 2026-10-18 21:00Z, the three `RequestServiceQuotaIncrease` calls (`desiredValue` 1.0, as `InfrastructureAccess`) and reads alone, and no `support.amazonaws.com` event, so AWS applied 20, 8 and 8 on its side with the cases still open | 0.2 |
-| xxii | Does the knowledge base's first sync fail on the SCP's explicit deny of `InvokeModel` on the embeddings model, as which role, and does the second sync complete after decision 11's apply? | 7.4a |
+| xxii | Does the knowledge base's sync complete under decision 11's amendment, as which role, whether through an application inference profile, and with how many of the sixteen files indexed? **The SCP's refusal of the embeddings model was read by the battery, not by a sync** (2026-10-19): the before-half read Titan's allow row `DENY-SCP` naming `p-tgda7n58` as `InfrastructureAccess` at 21:31 UTC, and the amendment was applied at 21:58, before any knowledge base existed | 7.4a |
 | xxiii | Which vector store does the IDE create for the knowledge base, as which identity, under which key, with the project tag or not, and what does it bill at idle? | 7.4a, 8.2 |
 | xxiv | Does the project role reach the knowledge base from a space with `Retrieve` through the `bedrock-agent-runtime` endpoint, and does the shared chat agent's snapshot appear in the project's catalog? | 7.4b |
 | xxv | Does the chat agent's *Model* list offer the scoped models under a `us.` profile id or a foundation-model id, and do its answers cite the runbooks' chunks? | 7.4b |
@@ -943,12 +947,14 @@ recommendation stated (Lesson 16).
 
 ## Risks
 
-- **An instance preference list may pass beside the instance ceiling.** Since 2026-09-15 a job's
-  `ResourceConfig.InstancePreferences` names its instance types, and whether that fills
-  `sagemaker:InstanceTypes`, the key `DenySageMakerInstanceCeiling` reads, is unconfirmed (the upstream
-  readings of 2026-10-18, PR #189). Before pass 2's training job the SCP battery gains rows for
-  `CreateTrainingJob` and `CreateProcessingJob` naming an off-ceiling type only in the list, expected
-  `DENY-SCP` (`docs/plan/runbooks/scp-battery.md`); a pass there is a hole in the ceiling.
+- **An instance preference list may pass beside the instance ceiling.** Since 2026-09-15 a training job
+  names its instance types in `ResourceConfig.InstancePreferences` and a processing job in
+  `ProcessingResources.ClusterConfig.InstancePreferences` (the paths read 2026-10-20 in the AWS CLI's
+  SageMaker service model), and whether such a list fills `sagemaker:InstanceTypes`, the key
+  `DenySageMakerInstanceCeiling` reads, is unconfirmed (the upstream readings of 2026-10-18, PR #189).
+  Before pass 2's training job the SCP battery gains rows for `CreateTrainingJob` and
+  `CreateProcessingJob` naming an off-ceiling type only in the list, expected `DENY-SCP`
+  (`docs/plan/runbooks/scp-battery.md`); a pass there is a hole in the ceiling.
 - **The project role lacks `EnableSageMakerMLWorkloadsPermissions`.** Every `sagemaker:Create*` and the
   hub reads are refused, and the AI/ML menu is empty in effect; 0.1 reads it first, and decision 9 owns the
   answer. A day's delay, not a design change.
@@ -981,11 +987,11 @@ recommendation stated (Lesson 16).
   2026-10-19), which is why (b) authors them under it.
 - **The knowledge base's store bills at idle.** The IDE chooses the store's kind on the user's behalf; an
   OpenSearch Serverless collection with a minimum OCU bills 5.76 a day whether or not anyone asks it
-  anything. 7.4a reads the kind before the first sync, 7.6 deletes a store with a minimum, and decision
+  anything. 7.4a reads the kind before the sync, 7.6 deletes a store with a minimum, and decision
   12's S3 Vectors is the default for that reason.
-- **A sync fails halfway.** A sync that embeds part of the runbooks before the SCP refuses it leaves a
-  partial index; the second sync after decision 11 is read for its document count against the sixteen
-  files, and a short count is a re-sync from the IDE.
+- **A sync indexes part of the runbooks.** The ingestion job counts the documents it scanned, indexed,
+  failed and skipped (`IngestionJobStatistics`); the sync is read for its indexed count against the
+  sixteen files, and a short count is a re-sync from the IDE.
 - **A shared chat agent cannot be unshared.** AWS's page says a shared snapshot is withdrawn only by
   deleting the app, and the share publishes an asset into the project's catalog; 7.4b shares with one
   user and no link, and decision 5 owns the rest.

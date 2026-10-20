@@ -270,9 +270,12 @@ variable "projects" {
   #
   # So Stage 5b 2.2's "one tag per admitted project" is not expressible, and the requirement that
   # one sandbox schema may be SHARED by several projects meets that wall at the second project, not
-  # the first. What is NOT affected: layer 2 (one IAM policy per project role, resource-scoped) and
-  # layer 3 (a database role per schema, granted per project) are both genuinely per project and
-  # many-to-many. Only the compute-admission gate is single-valued.
+  # the first. Layer 3 (a database role per schema, granted per project) is per project and
+  # many-to-many. Layer 2 is per project on the access role alone: the project role also carries
+  # AWS's SageMakerStudioProjectUserRolePolicy v75, which grants it GetCredentials and the Data API
+  # on a workgroup tagged with its project, the same to every project role under the wide tag, and
+  # GetCredentials on any workgroup through sqlworkbench (simulated 2026-10-18, 6h 5.1 and decision
+  # 8). Only the compute-admission gate is single-valued.
   #
   # The validation is here rather than in a comment because the failure it prevents is unreadable:
   # a second entry would silently overwrite the first project's tag, the first project's connection

@@ -216,6 +216,81 @@
   <https://docs.aws.amazon.com/controltower/latest/userguide/configure-auto-enroll.html> and
   <https://docs.aws.amazon.com/controltower/latest/APIReference/API_GetLandingZone.html>.
 
+- The Account Factory and account-closure readings behind Stage 14 steps 2 and 6 (read 2026-10-20):
+  - *The product and its keys*: `ProvisionProduct`'s sample input names `AccountEmail`, `AccountName`,
+    `ManagedOrganizationalUnit`, `SSOUserEmail`, `SSOUserFirstName` and `SSOUserLastName`, the OU's value
+    now `OU_NAME (OU_ID)` where it was `OU_NAME`:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/automated-provisioning-walkthrough.html>.
+    The console procedure names the product `AWS Control Tower Account Factory`, wants an `AccountEmail` no
+    AWS account uses, and forbids TagOptions, notifications and a resource plan:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/provision-as-end-user.html>; its portfolio is
+    `AWS Control Tower Account Factory Portfolio`:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/controltower-walkthrough-cleanup-account-factory.html>.
+    The product's own parameters, the binding reading, come from `DescribeProvisioningParameters`:
+    <https://docs.aws.amazon.com/servicecatalog/latest/dg/API_DescribeProvisioningParameters.html>.
+  - *Who provisions*: the requester holds `CreateAccount` and `DescribeCreateAccountStatus`, at most five
+    account operations run at once, and the target OU has `AWSControlTowerBaseline` enabled:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/provision-and-manage-accounts.html>. A
+    Lambda function that provisions needs, beside `AWSServiceCatalogEndUserFullAccess`, `sso:` and
+    `sso-directory:` actions on `*` and `controltower:CreateManagedAccount`; Control Tower has
+    `CreateAccount` name the role it creates `AWSControlTowerExecution`:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/roles-how.html>.
+  - *What terminating does*: Service Catalog's *terminate* does not close the account; it leaves its OU
+    and the landing zone: <https://docs.aws.amazon.com/controltower/latest/userguide/unenroll-with-sc.html>.
+    Unenrolling removes what Control Tower provisioned, `AWSControlTowerExecution` included, moves the
+    account to the root, and leaves the Account Factory SSO user's administrator access:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/unmanage-account.html>.
+  - *The auto-enrollment rung*: a newly created account, which lands in the root, is enrolled once moved
+    into a registered OU, and unenrolled by a move out:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/account-auto-enrollment.html>. Every enrolled
+    account holds `AWSControlTowerExecution`:
+    <https://docs.aws.amazon.com/organizations/latest/userguide/services-that-can-integrate-CTower.html>
+    and <https://docs.aws.amazon.com/controltower/latest/userguide/awscontroltowerexecution.html>.
+    Enrollment neither creates nor removes a VPC, the default one included, while an account Account
+    Factory creates loses its default VPC:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/enroll-account.html>, in the governed Regions,
+    and neither page ties that to the network configuration:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/vpc-concepts.html>; a default VPC has an
+    internet gateway and a public subnet per Availability Zone, on `172.31.0.0/16`:
+    <https://docs.aws.amazon.com/vpc/latest/userguide/default-vpc.html> and
+    <https://docs.aws.amazon.com/vpc/latest/userguide/default-vpc-components.html>. `CreateAccount` and
+    `MoveAccount` are the management account's alone; `CreateAccount` defaults `RoleName` to
+    `OrganizationAccountAccessRole` and takes an address of 6 to 64 characters of 7-bit ASCII:
+    <https://docs.aws.amazon.com/organizations/latest/APIReference/API_CreateAccount.html> and
+    <https://docs.aws.amazon.com/organizations/latest/APIReference/API_MoveAccount.html>. The service
+    reference gives `CreateAccount` no resource type and `MoveAccount` the account, OU and root ARNs, with
+    no condition key: <https://servicereference.us-east-1.amazonaws.com/v1/organizations/organizations.json>.
+    Re-registering an OU updates its enrolled accounts:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/nested-ous.html>.
+  - *The Terraform resources*: `aws_servicecatalog_provisioned_product`, whose `name` and
+    `notification_arns` force a replacement and whose delete is `TerminateProvisionedProduct`, retried with
+    `IgnoreErrors` on failure (the provider's source at v6.69.1):
+    <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/servicecatalog_provisioned_product>
+    and <https://github.com/hashicorp/terraform-provider-aws/blob/v6.69.1/internal/service/servicecatalog/provisioned_product.go>.
+    `aws_organizations_account` removes the account from the organization on destroy unless
+    `close_on_deletion` is set, and cannot read `role_name` back:
+    <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/organizations_account>.
+    `prevent_destroy` does not protect a resource whose block is removed:
+    <https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle>.
+  - *Closing*: an Account Factory account is unenrolled before its close; closed while enrolled it reads
+    *Suspended* and *Enrolled* and blocks its OU's re-registration for the 90 days:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/delete-account.html>. The post-closure
+    period is 90 days, a closed member account counts toward the quota until it ends, and the address
+    registered at closure can never be another account's primary e-mail:
+    <https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-closing.html>. `CloseAccount` goes
+    through `PENDING_CLOSURE` to `SUSPENDED`, and after 90 days Management's event history records
+    `AccountDepartedOrganization` with `departureMethod:CLEANED`:
+    <https://docs.aws.amazon.com/organizations/latest/APIReference/API_CloseAccount.html> and
+    <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_accounts_close.html>. The quota
+    table: a closed account counts until permanently closed, three close at once, 250 in 30 days below
+    1,250 members, and a created account is removed after four days at the earliest:
+    <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_reference_limits.html>. Removing a
+    created account takes a support plan, verified contacts and a payment method of its own:
+    <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_accounts_remove.html>. A member
+    account's root address is changed from Management with `StartPrimaryEmailUpdate` and
+    `AcceptPrimaryEmailUpdate`, under Account Management's trusted access:
+    <https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-update-root-user-email.html>.
+
 - The IAM, KMS and STS readings behind Stage 9 pass 1's roles and alarm (read 2026-10-16):
   - *KMS alias authorization*: `kms:ResourceAliases` controls access to a key by its aliases, and an
     alias change can take up to five minutes to affect authorization, which bounds how soon after pass 3
@@ -1399,6 +1474,35 @@
   The four `lakeformation:` actions listed for querying a table with cell-level filtering:
   <https://docs.aws.amazon.com/lake-formation/latest/dg/row-filtering-prereqs.html>.
 
+- Lake Formation row-level security policies (read 2026-10-20, for Stage 11 decision 12): a named
+  predicate over declared columns, attached to a table or an LF-Tag expression for a principal, under an
+  optional condition on IAM attributes (Identity Center attributes are not supported), or as the table's
+  default; an attachment scopes down `SELECT` from any grant, and `ALL` or `SUPER_USER` escapes it;
+  attachments in one account combine as a union, a data cells filter's rows included, and across a share
+  the producer's and the consumer's intersect; reads only, no column filtering; AWS recommends it over
+  data cells filters for rows, and warns that a tag-based attachment stops applying when its tag leaves
+  the table: <https://docs.aws.amazon.com/lake-formation/latest/dg/rls-policies.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/rls-policies-about.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/rls-policies-managing.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/rls-policies-granting.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/rls-policies-cross-account.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/rls-policies-sql-support.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/rls-policies-best-practices.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/rls-policies-limitations.html>. The data filtering
+  limitations page and the filtered-query page, read again the same day: an all-rows filter expression
+  still prevails over every other, and the four actions are the same. The API Reference has no page for
+  the operations yet, `API_AttachRLSPolicy.html` redirecting to its index:
+  <https://docs.aws.amazon.com/lake-formation/latest/APIReference/API_AttachRLSPolicy.html>; botocore's
+  model carries the eight:
+  <https://github.com/boto/botocore/blob/develop/botocore/data/lakeformation/2017-03-31/service-2.json>.
+  Neither provider carries RLS, at `aws` 6.69.1 and `awscc` 1.106.0 nor in either changelog's unreleased
+  section: <https://github.com/hashicorp/terraform-provider-aws/blob/main/CHANGELOG.md>,
+  <https://github.com/hashicorp/terraform-provider-awscc/blob/main/CHANGELOG.md>; nor does CloudFormation's
+  list of Lake Formation types:
+  <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/AWS_LakeFormation.html>. The
+  developer guide's document history ends at 2025-04-17 and dates no RLS change:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/doc-history.html>.
+
 - Amazon S3 Bucket Keys (KMS cost reduction): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-key.html>.
 
 - Amazon S3 Object Lock (immutable log archive): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html>.
@@ -1858,6 +1962,7 @@
 - Stage 10's documentation pass (read 2026-08-16):
   - *MWAA Serverless supported operators* — Amazon-provider operators only, no `PythonOperator`/`BashOperator`; ECS/EKS/Batch/Lambda/Glue/SageMaker are the code paths: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators.html>. **Re-read 2026-10-10**: the page now lists `PythonOperator` and `BashOperator` beside the Amazon-provider operators, billed as managed tasks. The guide's document history dates the addition 2026-08-17, the day after the first reading: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/doc-history.html>. **Re-read 2026-10-13**: `SageMakerNotebookOperator` "provides artifact execution functionality" for Unified Studio workflows, and `GlueJobOperator` "creates an AWS Glue job".
   - *The Amazon provider at 9.32.0, the version the worker pre-installs* (read 2026-10-13): `GlueJobOperator` runs `GlueJobHook.initialize_job`, which calls `get_job` on the named job before `start_job_run`, and `create_job` when the job is absent (`update_config` defaults to false); `has_job` treats only `EntityNotFoundException` as absent: <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/glue.py>. `SageMakerNotebookOperator` describes itself as Jupyter notebook artifact execution for Unified Studio workflows, and its hook calls the `sagemaker_studio` SDK's `execution_client.start_execution`: <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/operators/sagemaker_unified_studio.py> and <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/sagemaker_unified_studio.py>.
+  - *The Amazon provider at 9.32.0, `SageMakerTrainingOperator`* (read 2026-10-20, for Stage 10 step 1.3): `execute` hands `describe_training_job` to `_get_unique_job_name` while `check_if_job_exists` is true, its default, and `_check_if_resource_exists` counts only a `ValidationException` as absent; `action_if_job_exists` takes `timestamp`, the default, or `fail`; before the create, the hook's `check_training_config` heads each `S3DataSource` channel's bucket and key through the S3 hook, whose `check_for_bucket` returns false on a 403; `print_log` tails `/aws/sagemaker/TrainingJobs`; no code in the operators or the hook stops a training or processing job: <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/operators/sagemaker.py>, <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/sagemaker.py>, <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/s3.py>. The API reference names `ResourceNotFound` as the error of `DescribeTrainingJob` and of `DescribeProcessingJob`: <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeTrainingJob.html>, <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeProcessingJob.html>. `HeadBucket` needs `s3:ListBucket`: <https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html>.
   - *Using Python and Bash operators* (read 2026-10-10) — the code travels apart from the YAML, in the `Code` parameter (one `.py`, one `.sh` or a `.zip`; 250 MB per file and unzipped, 75 GB per account), versioned with the definition and readable back as `Code` and `CodeSnapshottedAt`; dependencies vendored at the archive root for Linux x86_64 and Python 3.12; a pre-installed set (Airflow 3.0.6, Amazon provider 9.32.0, boto3 1.43.1, dag-factory 1.0.0) that wins over any bundled version; no internet by default; a 1 vCPU / 3 GiB worker; the execution role's credentials available to the task: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators-python-bash-detail.html>. **Re-read 2026-10-11**: `python_callable` takes `<module>.<function>`, and the code is extracted to `/usr/local/airflow/dags`, which is also a `BashOperator` script's working directory. Read again the same day for 6i's probe: the example's `bash_task` is an inline `bash_command` (`echo 'Hello from bash' && date`), and the operator's two accepted paths are `airflow.providers.standard.operators.bash.BashOperator` and `airflow.operators.bash.BashOperator`.
   - *`awscc_mwaaserverless_workflow`'s `code` attribute* — absent from the provider docs at `v1.98.0` (released 2026-08-19), present from `v1.99.0` (2026-08-28) (read at the release tags and the provider's changelog, 2026-10-10): <https://github.com/hashicorp/terraform-provider-awscc/blob/v1.99.0/docs/resources/mwaaserverless_workflow.md>.
   - *MWAA Serverless supported Airflow parameters* — the schedule lives in the YAML (`schedule`, cron); `retries` ≤ 3, `retry_delay` ≤ 300 s, `execution_timeout` ≤ 3 600 s; `catchup`, callbacks and `trigger_rule` are ignored: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/supported-airflow-parameters.html>. **Re-read 2026-10-10**: `retries` defaults to 1, and the ignored lists also carry `deferrable`, `do_xcom_push` and `render_template_as_native_obj`, so a sensor holds its worker for the whole wait and a templated list arrives as a string.
@@ -1978,6 +2083,52 @@
   them (the read-only restriction applies to *management* events, which need
   `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`):
   <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-service-event-cloudtrail.html>.
+
+- The channels `threat-model.md`'s `TM-22` to `TM-24` name, read 2026-10-20 for Stage 11:
+  - `TM-22`, ODBC and JDBC from a BI tool. The Athena ODBC 2.x driver's `SageMakerBrowserIdc` plugin
+    signs in to Identity Center in a browser and exchanges the token for credentials scoped to the
+    domain and the project's Athena environment; `SageMakerIam` takes the default credential chain:
+    <https://docs.aws.amazon.com/athena/latest/ug/odbc-v2-driver-sagemaker-idc.html>,
+    <https://docs.aws.amazon.com/athena/latest/ug/odbc-v2-driver-sagemaker-iam.html>; the release notes
+    adding both: <https://docs.aws.amazon.com/athena/latest/ug/odbc-v2-driver-release-notes.html>; the
+    JDBC 3.x plugins: <https://docs.aws.amazon.com/athena/latest/ug/jdbc-v3-driver-datazone-idc.html>,
+    <https://docs.aws.amazon.com/athena/latest/ug/jdbc-v3-driver-datazone-iamcp.html>. SageMaker Unified
+    Studio's pages name the calls, `RedeemAccessToken` trading an Identity Center access token for the
+    domain execution role's credentials, which call `GetEnvironmentCredentials`:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/query-with-odbc.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/query-with-jdbc.html>.
+  - `TM-23`, the SageMaker Data Agent. The project role needs DataZone's `SendMessage`, `GenerateCode`,
+    `StartConversation`, `GetConversation` and `ListConversations`, and an Identity Center domain turns
+    the agent off on its configuration page:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-agent-security.html>; the
+    admin guide's `SageMakerDataAgentDeny` over the five actions, on the page already read for Amazon Q:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/amazonq.html>; geographic
+    cross-region inference, `us-east-1`, `us-west-2` and `us-east-2` for a United States domain:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-agent-cross-region.html>;
+    prompts and generated code used to improve the service unless an AI services opt-out policy covers
+    DataZone:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-agent-service-improvement.html>;
+    the storage page, read again:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-agent-data-storage.html>.
+  - `TM-24` and the two above, in IAM. The Service Authorization Reference's DataZone page and its
+    machine-readable copy: `CreateConnection`, `GetEnvironmentCredentials` (credentials that assume the
+    environment user role) and the agent's five actions take no resource type and no condition key, and
+    `RedeemAccessToken` is no action:
+    <https://docs.aws.amazon.com/service-authorization/latest/reference/list_datazone.html>,
+    <https://servicereference.us-east-1.amazonaws.com/v1/datazone/datazone.json>. Glue's pair, where
+    `CreateConnection` takes an optional `connectionType` resource beside the required `rootcatalog`:
+    <https://docs.aws.amazon.com/service-authorization/latest/reference/list_glue.html>,
+    <https://servicereference.us-east-1.amazonaws.com/v1/glue/glue.json>; Glue's resource-ARN page does
+    not name that type: <https://docs.aws.amazon.com/glue/latest/dg/glue-specifying-resource-arns.html>.
+    DataZone's model in botocore, where the three Iceberg REST types are Glue connection types under
+    `props.glueProperties`:
+    <https://github.com/boto/botocore/blob/develop/botocore/data/datazone/2018-05-10/service-2.json>. The
+    managed policies that grant the calls: `SageMakerStudioProjectRoleMachineLearningPolicy` v45
+    (`DataZoneUserPermissions`), `SageMakerStudioProjectUserRolePolicy` v75 (`DataLakeAthenaPermissions`)
+    and `SageMakerStudioDomainExecutionRolePolicy` v23 (`GetEnvironmentCredentials`):
+    <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectRoleMachineLearningPolicy.html>,
+    <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectUserRolePolicy.html>,
+    <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioDomainExecutionRolePolicy.html>.
 
 - S3 Object Lock — governance vs. compliance mode, the distinction that decides whether an administrator of the Log Archive account can bypass it (`s3:BypassGovernanceRetention`): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html>.
 
@@ -2140,6 +2291,48 @@
   default" answer given for S3 Protection, EKS Protection and Malware Protection. So the paid add-ons
   arrive on and must be switched off (Stage 15 step 3), and the switch is denied to Audit by
   `DenyGuardDutyTampering` (Stage 15 step 0, decision 1): <https://aws.amazon.com/guardduty/faqs/>.
+
+- Pricing in GuardDuty — the table of the plans enabled by default, re-read 2026-10-20 for Stage 15
+  step 0: EKS, S3, RDS and Lambda Protection and the GuardDuty-initiated scan of Malware Protection for
+  EC2 on; Runtime Monitoring, the on-demand scan and Malware Protection for S3 and for AWS Backup off; AI
+  Protection absent: <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-pricing.html>. AI
+  Protection's pages enable it as an act, feature `AI_PROTECTION`, and state no default:
+  <https://docs.aws.amazon.com/guardduty/latest/ug/ai-protection.html> and
+  <https://docs.aws.amazon.com/guardduty/latest/ug/ai-protection-enable-multiple-accounts.html>.
+
+- GuardDuty policies in AWS Organizations, the `GUARDDUTY_POLICY` type, read 2026-10-20 for Stage 15
+  decision 4. The overview: per-Region enablement of the foundational detector and seven plans, scoped by
+  the attachment, the Regional auto-enable settings suspended once the type is enabled:
+  <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_guardduty.html>. The
+  syntax: a `default` block or one per Region, each feature `enabled` or `disabled`, a Region block
+  replacing the default rather than merging with it:
+  <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_guardduty_syntax.html>.
+  Getting started, which admits as author the management account or an Organizations delegated
+  administrator for the type, and lists Management's `AWSServiceRoleForAmazonGuardDuty` among its checks:
+  <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_guardduty_getting_started.html>.
+
+- GuardDuty's side of the same policies, read 2026-10-20 for Stage 15 decision 4. The prerequisites, the
+  delegated administrator and the delegation policy among them:
+  <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-organization-policies.html>. A managed plan
+  read-only through the console and API, and policies authored by the delegated administrator alone:
+  <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-organization-policies-how-it-works.html>.
+  Management covered only once its service-linked role exists, a disabled plan turned off where it is on,
+  changes applied asynchronously, a detach that leaves GuardDuty on, and disabling the type restoring
+  auto-enable: <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-organization-policies-considerations.html>.
+  A covered account that is not yet a member added as one, and `DescribeEffectivePolicy` callable from
+  any account: <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-organization-policies-review-impact.html>.
+  The console flow in the delegated administrator, a plan left unselected left unmanaged:
+  <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-organization-policies-create-console.html>.
+
+- `aws_organizations_policy`'s `type` validator, read 2026-10-20 for Stage 15 decision 4. The resource
+  validates against the Go SDK's `PolicyType` enum:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/main/internal/service/organizations/policy.go>.
+  The enum gains `GUARDDUTY_POLICY` in `service/organizations` v1.61.0 (2026-09-30):
+  <https://github.com/aws/aws-sdk-go-v2/blob/main/service/organizations/CHANGELOG.md>. Provider 6.68.0
+  is the first to require that version, 6.67.0 requiring v1.60.0:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/v6.68.0/go.mod>. The resource's
+  documentation lists twelve values without it:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/main/website/docs/r/organizations_policy.html.markdown>.
 
 - How EC2 instance stop and start works — Elastic IP addresses belong to the network interface, which is listed under "resources that persist" across a stop/start (and the address bills while the instance is stopped). Answers Stage 4 verification (ii) by documentation: "re-associate on start" is unnecessary code: <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/how-ec2-instance-stop-start-works.html>.
 

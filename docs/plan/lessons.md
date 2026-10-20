@@ -1937,6 +1937,32 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   Playground and *AI apps* with *"This tool is not available for this project"* when one is missing,
   so a profile carrying six, the knowledge base left out on cost, opens none of them. Where: the same
   entries.
+- **An associated account's Bedrock models tab enables no model until the domain holds a project named
+  `GenerativeAIModelGovernanceProject`, and only the domain account's setup creates one** (read
+  2026-10-19, Stage 17 decision 13). In `Sandbox Account 1` the *Amazon Bedrock models* tab greys out
+  *Manage* with *"Model governance project does not exist"* (measured 19:51 UTC). The console's code
+  creates the project, on a profile *Generative AI model governance* with no environment configuration,
+  only in the domain account's setup, the run that also configures the Bedrock blueprints and `Tooling`
+  in the domain account, where D22 configures none; an associated account's *Set up generative AI*
+  creates neither. The console finds the project through `ListProjects`, by id or by that name: one written by
+  Terraform, with the account's `InfrastructureAccess` session group as a contributor, opened *Manage*
+  (20:33), and the Submit created the models' environments and assets in it (20:52). AWS's page says the
+  service creates the project, owned by whoever configures Bedrock for the domain, and that an associated
+  account's identity must join it; it says neither which setup creates it nor what an associated account
+  sees without it. Where: `log-stage-17-sandbox-machine-learning.md`, decision 13's entries of
+  2026-10-19, and `terraform-live/data-governance/governance/model-governance.tf`.
+- **The Bedrock models tab adopts a provisioning role by a name no AWS page gives** (read 2026-10-19,
+  Stage 17 decision 13). Its Submit takes the account's role whose name contains
+  `AmazonSageMakerBedrockModelManagementRole-<domain account id>`, else the role chosen in the setup
+  wizard, and creates one at `/service-role/` with AWS's policy only when neither exists, all before it
+  reads the role chosen per model (the console's code). A model's *Manage roles* dialog preselects that
+  name as an existing role whether or not one exists (measured 19:52 UTC, with none). The role
+  `sandbox/model-access/` writes under that name, at `/` under the project boundary with a policy of its
+  own, served the Submit, which created no principal (20:52). The consumption dialog preselects
+  `AmazonSageMakerBedrockModelConsumptionRole-<hash>` the same way, a role that did not exist. AWS's role
+  page calls the role `AmazonDataZoneBedrockModelManagementRole` and its post of 2025-07-09
+  `AmazonSageMakerBedrockModelManagementRole`; both say only that the service creates a role or takes a
+  custom one. Where: the same entries, and `terraform-live/sandbox/model-access/`.
 - **A `DataLake` environment needs `AmazonDataZoneGlueManageAccessRolePolicy` on the manage-access role**
   (measured 2026-10-20, Stage 18 7.2). The add-on has the manage-access role call
   `lakeformation:CreateLakeFormationOptIn` on the new database, which
@@ -2095,6 +2121,17 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   `CT.MULTISERVICE.PV.1`, whose only condition is `aws:RequestedRegion != us-west-2`. No vendor page
   connects the two, and the consequence is that **a Region ceiling refuses every cross-Region profile in
   the organization** until the invoke actions are exempted. Where: `claude-code-sagemaker.md` M5.
+- **`InvokeModel` refuses an application inference profile id that does not exist before it
+  authorizes** (measured 2026-10-19, Stage 17 decision 11). As `InfrastructureAccess` in
+  `Sandbox Account 1`, with `DenyBedrockInvocationOutsideTheScopedModels` naming no
+  `application-inference-profile`, the call answered `ValidationException`, *"The provided model
+  identifier is invalid"* (21:33 UTC), and the battery's row had read that call as `ALLOWED`,
+  `reached-authorization`. A profile the console minted was refused by that statement at 21:13,
+  `InvokeModelWithResponseStream` as the playground's consumption role (7.3's first chat). The API
+  reference and the troubleshooting page name both errors and neither the message nor the order. A probe
+  of a statement on application inference profiles therefore needs an id the service minted (Lesson 21),
+  and the battery carries no such row. Where: `log-stage-17-sandbox-machine-learning.md`, decision 11's
+  entries of 2026-10-19, and the note on decision 11 in `aws/probes/probes.py`.
 - **Bedrock's data retention mode is per account AND per Region** (measured 2026-09-12). The account read
   `none` in `us-west-2` and `inherit` in the two Regions its own profiles route to; `get-account-data-retention`
   answers independently in each. A mode declared once is a claim about one Region, and whether cross-Region

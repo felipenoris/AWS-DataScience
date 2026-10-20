@@ -284,7 +284,7 @@ Consequences this file has to carry rather than leave to a stage:
 
 Stage 6f step 8 wrote the institutional pattern this half-implements, and
 [`plan/institutional-delta.md`](plan/institutional-delta.md)'s warehouse row carries what is still missing:
-one permission system over both storage engines, which is exactly what the the sandbox class does not have.
+one permission system over both storage engines, which is exactly what the sandbox class does not have.
 
 ### Glue Data Catalog
 
