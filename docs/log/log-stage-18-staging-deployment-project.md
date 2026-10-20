@@ -968,3 +968,8 @@ are UTC.*
   its lookups scanning the whole `shared/` root; not D28's per-workflow role (1.3), one project role
   serving every application; not D41 item 9's declared Glue job; and nothing of 3.1, 3.4 to 3.7 or Stage
   8's production gate. Question iii is answered but for 4.3's identity, which waits on decision 4.
+- **[user] The environment taken down** (*"Derrubei todo o ambiente. Pode verificar."*). **[Claude] Read
+  back** at about 23:25Z: Production's three hosts `awsds-prod-gitlab`, `-proxy` and `-vpn` `stopped`, and
+  no instance running, no interface endpoint and no NAT gateway in Production, Staging, Sandbox or Data
+  Governance, so Staging's `datazone` endpoint went down with `staging/egress/`; no Redshift workgroup in
+  Sandbox, no SageMaker app `InService` and no processing job in progress in Sandbox or Staging.
