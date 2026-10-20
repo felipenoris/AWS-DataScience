@@ -216,6 +216,80 @@
   <https://docs.aws.amazon.com/controltower/latest/userguide/configure-auto-enroll.html> and
   <https://docs.aws.amazon.com/controltower/latest/APIReference/API_GetLandingZone.html>.
 
+- The Account Factory and account-closure readings behind Stage 14 steps 2 and 6 (read 2026-10-20):
+  - *The product and its keys*: `ProvisionProduct`'s sample input names `AccountEmail`, `AccountName`,
+    `ManagedOrganizationalUnit`, `SSOUserEmail`, `SSOUserFirstName` and `SSOUserLastName`, the OU's value
+    now `OU_NAME (OU_ID)` where it was `OU_NAME`:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/automated-provisioning-walkthrough.html>.
+    The console procedure names the product `AWS Control Tower Account Factory`, wants an `AccountEmail` no
+    AWS account uses, and forbids TagOptions, notifications and a resource plan:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/provision-as-end-user.html>; its portfolio is
+    `AWS Control Tower Account Factory Portfolio`:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/controltower-walkthrough-cleanup-account-factory.html>.
+    The product's own parameters, the binding reading, come from `DescribeProvisioningParameters`:
+    <https://docs.aws.amazon.com/servicecatalog/latest/dg/API_DescribeProvisioningParameters.html>.
+  - *Who provisions*: the requester holds `CreateAccount` and `DescribeCreateAccountStatus`, at most five
+    account operations run at once, and the target OU has `AWSControlTowerBaseline` enabled:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/provision-and-manage-accounts.html>. A
+    Lambda function that provisions needs, beside `AWSServiceCatalogEndUserFullAccess`, `sso:` and
+    `sso-directory:` actions on `*` and `controltower:CreateManagedAccount`; Control Tower has
+    `CreateAccount` name the role it creates `AWSControlTowerExecution`:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/roles-how.html>.
+  - *What terminating does*: Service Catalog's *terminate* does not close the account; it leaves its OU
+    and the landing zone: <https://docs.aws.amazon.com/controltower/latest/userguide/unenroll-with-sc.html>.
+    Unenrolling removes what Control Tower provisioned, `AWSControlTowerExecution` included, moves the
+    account to the root, and leaves the Account Factory SSO user's administrator access:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/unmanage-account.html>.
+  - *The auto-enrollment rung*: a newly created account, which lands in the root, is enrolled once moved
+    into a registered OU, and unenrolled by a move out:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/account-auto-enrollment.html>. Every enrolled
+    account holds `AWSControlTowerExecution`:
+    <https://docs.aws.amazon.com/organizations/latest/userguide/services-that-can-integrate-CTower.html>
+    and <https://docs.aws.amazon.com/controltower/latest/userguide/awscontroltowerexecution.html>.
+    Enrollment neither creates nor removes a VPC, the default one included, while an account Account
+    Factory creates loses its default VPC:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/enroll-account.html>, in the governed Regions,
+    and neither page ties that to the network configuration:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/vpc-concepts.html>; a default VPC has an
+    internet gateway and a public subnet per Availability Zone:
+    <https://docs.aws.amazon.com/vpc/latest/userguide/default-vpc.html>. `CreateAccount` and `MoveAccount`
+    are the management account's alone; `CreateAccount` defaults `RoleName` to
+    `OrganizationAccountAccessRole` and takes an address of 6 to 64 characters of 7-bit ASCII:
+    <https://docs.aws.amazon.com/organizations/latest/APIReference/API_CreateAccount.html> and
+    <https://docs.aws.amazon.com/organizations/latest/APIReference/API_MoveAccount.html>. The service
+    reference gives `CreateAccount` no resource type and `MoveAccount` the account, OU and root ARNs, with
+    no condition key: <https://servicereference.us-east-1.amazonaws.com/v1/organizations/organizations.json>.
+    Re-registering an OU updates its enrolled accounts:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/nested-ous.html>.
+  - *The Terraform resources*: `aws_servicecatalog_provisioned_product`, whose `name` and
+    `notification_arns` force a replacement and whose delete is `TerminateProvisionedProduct`, retried with
+    `IgnoreErrors` on failure (the provider's source at v6.69.1):
+    <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/servicecatalog_provisioned_product>
+    and <https://github.com/hashicorp/terraform-provider-aws/blob/v6.69.1/internal/service/servicecatalog/provisioned_product.go>.
+    `aws_organizations_account` removes the account from the organization on destroy unless
+    `close_on_deletion` is set, and cannot read `role_name` back:
+    <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/organizations_account>.
+    `prevent_destroy` does not protect a resource whose block is removed:
+    <https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle>.
+  - *Closing*: an Account Factory account is unenrolled before its close; closed while enrolled it reads
+    *Suspended* and *Enrolled* and blocks its OU's re-registration for the 90 days:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/delete-account.html>. The post-closure
+    period is 90 days, a closed member account counts toward the quota until it ends, and the address
+    registered at closure can never be another account's primary e-mail:
+    <https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-closing.html>. `CloseAccount` goes
+    through `PENDING_CLOSURE` to `SUSPENDED`, and after 90 days Management's event history records
+    `AccountDepartedOrganization` with `departureMethod:CLEANED`:
+    <https://docs.aws.amazon.com/organizations/latest/APIReference/API_CloseAccount.html> and
+    <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_accounts_close.html>. The quota
+    table: a closed account counts until permanently closed, three close at once, 250 in 30 days below
+    1,250 members, and a created account is removed after four days at the earliest:
+    <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_reference_limits.html>. Removing a
+    created account takes a support plan, verified contacts and a payment method of its own:
+    <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_accounts_remove.html>. A member
+    account's root address is changed from Management with `StartPrimaryEmailUpdate` and
+    `AcceptPrimaryEmailUpdate`, under Account Management's trusted access:
+    <https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-update-root-user-email.html>.
+
 - The IAM, KMS and STS readings behind Stage 9 pass 1's roles and alarm (read 2026-10-16):
   - *KMS alias authorization*: `kms:ResourceAliases` controls access to a key by its aliases, and an
     alias change can take up to five minutes to affect authorization, which bounds how soon after pass 3
