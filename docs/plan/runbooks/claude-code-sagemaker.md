@@ -1060,10 +1060,17 @@ aws bedrock list-foundation-models --by-provider Anthropic --region us-west-2 --
 ```
 
 The profiles the account can actually name in a request, and how many models each routes to — the
-third column above 1 is a prompt processed outside `us-west-2` some of the time:
+third column above 1 is a prompt processed outside `us-west-2` some of the time. Each type is asked
+for by name: with no `--type-equals` the call returns the system-defined profiles alone, so an
+application profile, such as the one the SageMaker Unified Studio playground creates for a model,
+never shows (measured 2026-10-19):
 
 ```bash
-aws bedrock list-inference-profiles --region us-west-2 --profile awsds-infra-sandbox-1 --query "inferenceProfileSummaries[?status=='ACTIVE'].[inferenceProfileId,type,length(models)]" --output table
+aws bedrock list-inference-profiles --type-equals SYSTEM_DEFINED --region us-west-2 --profile awsds-infra-sandbox-1 --query "inferenceProfileSummaries[?status=='ACTIVE'].[inferenceProfileId,type,length(models)]" --output table
+```
+
+```bash
+aws bedrock list-inference-profiles --type-equals APPLICATION --region us-west-2 --profile awsds-infra-sandbox-1 --query "inferenceProfileSummaries[?status=='ACTIVE'].[inferenceProfileId,type,length(models)]" --output table
 ```
 
 Anything standing up and billing by the hour, which should be empty:
