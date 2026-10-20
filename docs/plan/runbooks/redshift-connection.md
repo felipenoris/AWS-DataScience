@@ -273,9 +273,9 @@ import boto3
 import redshift_connector
 
 WORKGROUP = "awsds-sandbox-warehouse"
-DATABASE = "sandbox"                     # the class container, NOT the `dev` the dropdown offers
+DATABASE = "sandbox"  # the class container, NOT the `dev` the dropdown offers
 REGION = "us-west-2"
-PROJECT = "avhvbqn37ty7m8"               # the project id, from the portal's URL
+PROJECT = "avhvbqn37ty7m8"  # the project id, from the portal's URL
 
 
 def connect():
@@ -320,12 +320,14 @@ statement-at-a-time.
 conn = connect()
 
 with conn.cursor() as cur:
-    cur.execute("create table if not exists lab.readings (ts timestamp, sensor varchar(32), v float)")
     cur.execute(
-        "insert into lab.readings values (%s, %s, %s)",     # paramstyle is `format`
+        "create table if not exists lab.readings (ts timestamp, sensor varchar(32), v float)"
+    )
+    cur.execute(
+        "insert into lab.readings values (%s, %s, %s)",  # paramstyle is `format`
         ("2026-10-11 12:00:00", "t-1", 21.5),
     )
-conn.commit()                                              # without this the table is not there
+conn.commit()  # without this the table is not there
 ```
 
 **Reading back, into pandas:**
@@ -333,7 +335,7 @@ conn.commit()                                              # without this the ta
 ```python
 with conn.cursor() as cur:
     cur.execute("select sensor, avg(v) as mean_v from lab.readings group by 1 order by 1")
-    df = cur.fetch_dataframe()          # pandas is in the image; fetchall() gives tuples instead
+    df = cur.fetch_dataframe()  # pandas is in the image; fetchall() gives tuples instead
 df
 ```
 
@@ -514,29 +516,48 @@ try:
     if not addrs:
         say("1 dns resolves", "FAIL", "no A record")
     elif private:
-        say("1 dns resolves", "ok", f"{', '.join(private)} - private. These are the WORKGROUP's "
+        say(
+            "1 dns resolves",
+            "ok",
+            f"{', '.join(private)} - private. These are the WORKGROUP's "
             "own managed VPC endpoint ENIs, which carry the warehouse security group; the "
             "redshift-serverless API endpoint is a different address and is not what this name "
-            "resolves to (measured 2026-10-10)")
+            "resolves to (measured 2026-10-10)",
+        )
     else:
-        say("1 dns resolves", "FAIL", f"{', '.join(addrs)} - PUBLIC. The private DNS of the "
+        say(
+            "1 dns resolves",
+            "FAIL",
+            f"{', '.join(addrs)} - PUBLIC. The private DNS of the "
             "redshift-serverless endpoint is not answering: either the endpoint is absent "
-            "(GROUPS=redshift) or its private DNS is off")
+            "(GROUPS=redshift) or its private DNS is off",
+        )
 except socket.gaierror as exc:
-    say("1 dns resolves", "FAIL", f"ENOTFOUND - {exc}. A name that does not resolve inside a "
-        "compute VPC is the DNS Firewall or a missing endpoint, never a security group")
+    say(
+        "1 dns resolves",
+        "FAIL",
+        f"ENOTFOUND - {exc}. A name that does not resolve inside a "
+        "compute VPC is the DNS Firewall or a missing endpoint, never a security group",
+    )
 
 # ------------------------------------------------------------------- 2. does the 5439 door open
 try:
     with socket.create_connection((host, PORT), timeout=10) as s:
         peer = s.getpeername()[0]
-        say("2 port 5439 opens", "ok",
+        say(
+            "2 port 5439 opens",
+            "ok",
             f"{s.getsockname()[0]} -> {peer}:{PORT}, so the SG rule and the route both exist. The "
-            "local address is the space's container NAT, not an ENI")
+            "local address is the space's container NAT, not an ENI",
+        )
 except OSError as exc:
-    say("2 port 5439 opens", "FAIL", f"{type(exc).__name__}: {exc}. A TIMEOUT here is the "
+    say(
+        "2 port 5439 opens",
+        "FAIL",
+        f"{type(exc).__name__}: {exc}. A TIMEOUT here is the "
         "security group (the warehouse admits only the project's group on 5439); a REFUSED is a "
-        "listener that is not there - check the workgroup is up")
+        "listener that is not there - check the workgroup is up",
+    )
 
 # ------------------------------- 2b. does the thing on 5439 speak the Redshift wire protocol
 #
@@ -551,12 +572,24 @@ try:
         s.sendall(struct.pack("!ii", 8, 80877103))
         reply = s.recv(1)
     if reply == b"S":
-        say("2b speaks redshift", "ok", "SSLRequest accepted - TLS required, as the workgroup is set")
+        say(
+            "2b speaks redshift",
+            "ok",
+            "SSLRequest accepted - TLS required, as the workgroup is set",
+        )
     elif reply == b"N":
-        say("2b speaks redshift", "warn", "SSLRequest refused - the protocol is there and TLS is off")
+        say(
+            "2b speaks redshift",
+            "warn",
+            "SSLRequest refused - the protocol is there and TLS is off",
+        )
     else:
-        say("2b speaks redshift", "FAIL", f"answered {reply!r} - whatever is on 5439 is NOT "
-            "speaking the Redshift wire protocol, so a driver's BrokenPipe is this and not a session")
+        say(
+            "2b speaks redshift",
+            "FAIL",
+            f"answered {reply!r} - whatever is on 5439 is NOT "
+            "speaking the Redshift wire protocol, so a driver's BrokenPipe is this and not a session",
+        )
 except OSError as exc:
     say("2b speaks redshift", "FAIL", f"{type(exc).__name__}: {exc}")
 
@@ -579,12 +612,16 @@ try:
 except ImportError:
     proc = subprocess.run(
         ["uv", "pip", "install", "--quiet", "--python", sys.executable, "redshift_connector"],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     if proc.returncode:
-        say("3a driver present", "FAIL",
+        say(
+            "3a driver present",
+            "FAIL",
             f"install failed: {(proc.stderr or proc.stdout).strip()[-300:]} - PyPI is on the "
-            "proxy allow-list, so a failure here is the proxy variables rather than the index")
+            "proxy allow-list, so a failure here is the proxy variables rather than the index",
+        )
     else:
         import redshift_connector as driver
 
@@ -616,18 +653,21 @@ def measure(label, conn, table):
         cur.execute("select current_user")
         user = cur.fetchone()[0].strip()
         per_person = user.startswith("IAMR:user-")
-        say(f"{label}c the grantee", "ok",
-            f"{user} - per {'PERSON' if per_person else 'PROJECT'}")
+        say(f"{label}c the grantee", "ok", f"{user} - per {'PERSON' if per_person else 'PROJECT'}")
 
         # LAYER 3 IS READ BEFORE IT IS USED. This came after the write once, and the write's
         # permission error arrived as a driver traceback instead of a verdict naming the layer.
         cur.execute("select role_name from svv_user_grants where user_name = current_user")
         roles = [r[0] for r in cur.fetchall()]
-        say(f"{label}d the roles it holds", "ok" if roles else "FAIL",
-            str(roles) if roles else
-            "none, so the write below fails as `permission denied for schema`. A per-person user "
+        say(
+            f"{label}d the roles it holds",
+            "ok" if roles else "FAIL",
+            str(roles)
+            if roles
+            else "none, so the write below fails as `permission denied for schema`. A per-person user "
             "is granted nothing by anything: SMUS passes `RedshiftDbRoles` only on the PORTAL's "
-            "session, not the space's (runbook section T)")
+            "session, not the space's (runbook section T)",
+        )
 
         try:
             cur.execute(f"drop table if exists {SCHEMA}.{table}")
@@ -640,9 +680,12 @@ def measure(label, conn, table):
             say(f"{label}e write and read", "ok", str(cur.fetchone()))
         except Exception as exc:
             conn.rollback()
-            say(f"{label}e write and read", "FAIL",
+            say(
+                f"{label}e write and read",
+                "FAIL",
                 f"{str(getattr(exc, 'args', [exc])[0])[:180]} - with the roles empty this is "
-                "layer 3, not the network")
+                "layer 3, not the network",
+            )
             return
 
         # WH-14's question, from inside: is what this session just wrote readable by a role?
@@ -651,12 +694,18 @@ def measure(label, conn, table):
             f"where namespace_name = '{SCHEMA}' and relation_name = '{table}'"
         )
         rows = cur.fetchall()
-        say(f"{label}f readable by a role", "ok" if rows else "FAIL",
-            f"{rows}" + (" - a role reaches it, so a second project holding the theme role reads "
-                         "this table: the schema's default privilege named this owner"
-                         if rows else
-                         " - EMPTY. No default privilege names this owner, so a second project "
-                         "holding the theme role would see none of this table (section T)"))
+        say(
+            f"{label}f readable by a role",
+            "ok" if rows else "FAIL",
+            f"{rows}"
+            + (
+                " - a role reaches it, so a second project holding the theme role reads "
+                "this table: the schema's default privilege named this owner"
+                if rows
+                else " - EMPTY. No default privilege names this owner, so a second project "
+                "holding the theme role would see none of this table (section T)"
+            ),
+        )
 
 
 # ---------------------------------------- 3b-3e. as the project role itself: the PER-PERSON user
@@ -667,9 +716,13 @@ else:
         conn = open_session()
     except Exception as exc:
         conn = None
-        say("3b direct session", "FAIL", f"{type(exc).__name__}: {str(exc)[:300]} - an "
+        say(
+            "3b direct session",
+            "FAIL",
+            f"{type(exc).__name__}: {str(exc)[:300]} - an "
             "AccessDenied naming redshift-serverless:GetCredentials is layer 2 on the PROJECT "
-            "role; a timeout with steps 1 and 2 green is the API endpoint, not the database")
+            "role; a timeout with steps 1 and 2 green is the API endpoint, not the database",
+        )
     if conn:
         say("3b direct session", "ok", f"peer {peer} - the VPC door, not the Data page's")
         measure("3", conn, TABLE)
@@ -701,9 +754,13 @@ else:
         )["Credentials"]
         say("4a assumed the access role", "ok", "the per-project grantee's credentials")
     except Exception as exc:
-        say("4a assumed the access role", "FAIL", f"{type(exc).__name__}: {str(exc)[:220]} - an "
+        say(
+            "4a assumed the access role",
+            "FAIL",
+            f"{type(exc).__name__}: {str(exc)[:220]} - an "
             "AccessDenied naming sts:AssumeRole is layer 2 on the project role; one naming the "
-            "trust policy is the external id, which must equal the project id")
+            "trust policy is the external id, which must equal the project id",
+        )
     if chained:
         try:
             conn2 = open_session(chained)
