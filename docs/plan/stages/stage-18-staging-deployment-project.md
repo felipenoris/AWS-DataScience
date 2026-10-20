@@ -607,6 +607,10 @@ stage-18-deploy:
   the pool. The person signs in from a separate browser profile: a CLI login answered in a browser
   holding a portal session ends that session. Decision 9, taken 2026-10-20: 6.1 runs with the
   environment down, before 4.3, and ends with the person's membership deleted and read gone.
+  **Refused 2026-10-20**: `PROJECT_CATALOG_VIEWER` answers *"Project member with designation
+  PROJECT_CATALOG_VIEWER cannot be added to project in V2 domain"*, and AWS's guide names two project
+  roles, Contributor and Owner, both on the project's credentials. Decision 10 is the designation 6.1
+  continues with.
 - **6.2 — [Claude reads, user decides] The boundary on the project role** (vi), only if 6.1 shows a
   person's write landing: read the session's name and context keys of a portal action against a
   worker's task (6h read the portal's session as `<user id>@<env id>` and a space's as `SageMaker`); a
@@ -1015,6 +1019,14 @@ Each is decided during the stage and written into the stage log with its recomme
    If 6.1 shows a write landing, 6.2 waits for a sitting with the environment up. The alternative is 6.1
    after 4.3, inside the next sitting: the person's run reaches a worker, and 6.2 is read in that sitting.
    **Taken 2026-10-20 by the user**, to the recommendation.
+10. **The designation 6.1 continues with** (6.1), after the domain refused `PROJECT_CATALOG_VIEWER`.
+    Recommended: **`PROJECT_CATALOG_CONSUMER`, then `PROJECT_CATALOG_STEWARD`, each expected to be
+    refused the same way, then `PROJECT_CONTRIBUTOR`**, the narrowest the domain admits. Question iv's
+    answer is then the refusals, and the person holds the project's credentials for the portal acts,
+    so whatever write lands is 6.1's measurement and 6.2's trigger. D18 gives the person no write in
+    Staging; the membership suspends that for 6.1's minutes and is deleted at its end (decision 9). The
+    alternative: 6.1 closed by reading, iv answered by the refusal and the guide, xi by the domain
+    unit's grants read 2026-10-20, and no person in the project.
 
 ## Risks
 

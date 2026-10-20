@@ -1207,3 +1207,17 @@ The last two were read again here.*
 
 - **[user] Decision 9**: *"Decisão 9: sim, o 6.1 roda com o ambiente desligado, antes do 4.3, terminando
   com a membership da pessoa apagada."*, the recommendation; then *"usuário sso infra logado"*.
+- **[user] 6.1's first command**, as `awsds-infra-staging`, at about 22:00Z:
+
+  ```
+  AWS-DataScience git:(main) NO_PROXY='*' aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d1veybt5oak4uo --designation PROJECT_CATALOG_VIEWER --member userIdentifier=28f1b390-0041-7068-8cc7-9ccef94277d1 --profile awsds-infra-staging --region us-west-2
+
+  aws: [ERROR]: An error occurred (ValidationException) when calling the CreateProjectMembership operation: Project member with designation PROJECT_CATALOG_VIEWER cannot be added to project in V2 domain
+  ```
+- **[Claude] What the refusal leaves**: no member added. The project's two members were read before it
+  (21:58:30Z, as `awsds-infra-data`): Staging's InfrastructureAccess session group as `PROJECT_OWNER` and
+  the project role's profile as `PROJECT_CONTRIBUTOR`; the identifier is the Data Scientist User's profile,
+  `ACTIVATED` in the domain. At 22:04Z neither Staging's nor Data Governance's trail holds the
+  `CreateProjectMembership` yet, the delivery lag (Lesson 62). AWS's user guide names two project roles,
+  Contributor and Owner, and its admin guide says a member's analytics runs on session credentials the
+  service generates for the project's context (read 2026-10-20).
