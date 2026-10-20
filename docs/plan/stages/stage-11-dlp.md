@@ -401,7 +401,7 @@ reading that `AccessDenied` as a broken policy and deleting the statement.
   protection plans: auto-enable **`ALL`** for both features (new and existing members, up to 24 h to
   propagate).
 - **4.3 — [user] Unblock Audit's own detector by the recorded path** (decision 4): **Stage 15 meets this
-  deny first, in the opposite direction** (its step 5: GuardDuty creates only the service-linked role, so
+  deny first, in the opposite direction** (its step 5: GuardDuty creates only service-linked roles, so
   there is no administration role to name), and its decision 1 recommends the detach/re-attach procedure
   and argues against the carve-out; Stage 15 has not started, so no path is exercised yet (read
   2026-10-18). **Reuse whatever its log records as the exercised path**; failing that, detach `awsds-org-scp-baseline`

@@ -2304,11 +2304,25 @@
   <https://docs.aws.amazon.com/guardduty/latest/ug/delegated-admin-designate.html>.
 
 - Permissions required to designate a delegated GuardDuty administrator account — the management
-  account needs `guardduty:EnableOrganizationAdminAccount` plus the Organizations reads, and the only
-  principal the service creates is the service-linked role `AWSServiceRoleForAmazonGuardDuty`. Read
-  for Stage 15 step 5: `POLICIES.md`'s "carve out a named administration role" alternative has no
-  candidate among GuardDuty's own creations:
+  account needs `guardduty:EnableOrganizationAdminAccount` plus the Organizations reads, and
+  `iam:CreateServiceLinkedRole` on `AWSServiceRoleForAmazonGuardDuty` only to designate itself. Read
+  for Stage 15 step 5 with the two rows below: `POLICIES.md`'s "carve out a named administration role"
+  alternative has no candidate among GuardDuty's own creations:
   <https://docs.aws.amazon.com/guardduty/latest/ug/organizations_permissions.html>.
+
+- Service-linked role permissions for Malware Protection for EC2 — a second GuardDuty role,
+  `AWSServiceRoleForAmazonGuardDutyMalwareProtection`, trusted by
+  `malware-protection.guardduty.amazonaws.com`, created when the plan is first enabled, which it is by
+  default for an account new to GuardDuty, and not deleted when the plan is disabled. Read 2026-10-20
+  for Stage 15 step 5 and decision 1 (c):
+  <https://docs.aws.amazon.com/guardduty/latest/ug/slr-permissions-malware-protection.html>.
+
+- The two roles' managed policies, `AmazonGuardDutyServiceRolePolicy` v13 and
+  `AmazonGuardDutyMalwareProtectionServiceRolePolicy` v2: neither holds a `guardduty:` action, and the
+  first allows `iam:CreateServiceLinkedRole` for `malware-protection.guardduty.amazonaws.com`. Read
+  2026-10-20 for Stage 15 step 5:
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonGuardDutyServiceRolePolicy.html>
+  and <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonGuardDutyMalwareProtectionServiceRolePolicy.html>.
 
 - Adding members to the GuardDuty organization — "There is an exception to the organization
   management account. Before the management account gets added as a GuardDuty member, it must have
@@ -2336,12 +2350,19 @@
   <https://docs.aws.amazon.com/guardduty/latest/ug/ai-protection.html> and
   <https://docs.aws.amazon.com/guardduty/latest/ug/ai-protection-enable-multiple-accounts.html>.
 
+- GuardDuty Investigation (Preview), read 2026-10-20 for Stage 15 step 0 and verification ii: the
+  `AI_ANALYST` detector feature enabled as an act, through `UpdateDetector` or the console's
+  **Settings**, with no default stated; investigations created by the administrator alone, on Amazon
+  Bedrock models through cross-Region inference, `us-east-1`, `us-east-2` or `us-west-2` serving a
+  request from Oregon: <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-investigation.html>.
+
 - GuardDuty policies in AWS Organizations, the `GUARDDUTY_POLICY` type, read 2026-10-20 for Stage 15
   decision 4. The overview: per-Region enablement of the foundational detector and seven plans, scoped by
   the attachment, the Regional auto-enable settings suspended once the type is enabled:
   <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_guardduty.html>. The
   syntax: a `default` block or one per Region, each feature `enabled` or `disabled`, a Region block
-  replacing the default rather than merging with it:
+  replacing the default rather than merging with it, and no key for the `AI_ANALYST` detector feature
+  (Stage 15 step 3):
   <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_guardduty_syntax.html>.
   Getting started, which admits as author the management account or an Organizations delegated
   administrator for the type, and lists Management's `AWSServiceRoleForAmazonGuardDuty` among its checks:
