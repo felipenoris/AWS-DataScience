@@ -395,7 +395,7 @@ deploys.
   them the CLI 1.0.9 creates the workflow in the service's default worker network under a service-managed
   key and prints one line, and MWAA Serverless offers no condition key an SCP could require a network
   with (the CLI's code, read 2026-10-18, PR #189). **Prepared 2026-10-20**: the amendment, three inline
-  documents in `staging/foundation/deploy-role.tf`, planned 3 to add and saved for the user's apply; the
+  documents in `staging/foundation/deploy-role.tf`, applied by the user 2026-10-20 (3 added, re-plan `No changes`); the
   job `stage-18-deploy` on the branch (`caf1ff6`), pushed at the next GitLab sitting. The role has no
   group profile in the domain yet, so its first run is refused as a non-member and creates one, and the
   membership by group id follows, as in Sandbox.

@@ -1018,3 +1018,9 @@ are UTC.*
   and on that location answers an empty list to the infrastructure user, who is no admin there, which
   proves nothing either way (Lesson 13). No principal this repository writes can create the database a
   published table needs: the path is the user's decision.
+- **[user] 4.3's amendment applied**, `staging/foundation/` from the saved plan, as `awsds-infra-staging`:
+  *"module.deploy_role.module.role.aws_iam_role_policy.inline["deployment-project-reads"]: Creation
+  complete after 1s [id=awsds-deploy-staging:deployment-project-reads]"*, the same for `-workflows` and
+  `-storage`, *"Apply complete! Resources: 3 added, 0 changed, 0 destroyed."* **[Claude] Read back**: the
+  re-plan reads `No changes` (01:16:24Z); `awsds-deploy-staging` holds five inline policies, `apply-egress`,
+  `state` and the three, their Sids as written.
