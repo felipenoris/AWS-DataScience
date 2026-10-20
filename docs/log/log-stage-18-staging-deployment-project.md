@@ -1244,3 +1244,20 @@ The last two were read again here.*
   three members, the Data Scientist User's profile `PROJECT_CONTRIBUTOR` beside the two of before. The
   V2 domain refuses the three catalog designations and admits `PROJECT_CONTRIBUTOR`, so question iv's
   answer is no: the narrowest designation a person can hold works on the project's credentials.
+
+## 2026-10-20 — the checklist session's Stage 10 readings in Staging: `OR-2` and two service-linked roles
+
+- **[Claude, the checklist session] `OR-2` and an unrecorded principal**, read in PR #222's Stage 10
+  session and sent as information: `./aws/orchestration.py` at 22:04:58Z read four `OR-2` failures on
+  Staging's three `/aws/mwaa-serverless/` groups, which carry no retention; and Staging's CloudTrail
+  (`us-east-1`) holds a `CreateServiceLinkedRole` for `ops.athena.amazonaws.com` at 2026-10-19 06:06:23Z,
+  invoked by `datazone.amazonaws.com` as `awsds-staging-smus-provisioning`, which no file named.
+- **[Claude] Read again** (22:19:18Z, `awsds-infra-staging`): the three groups,
+  `app_etl_deploy_staging_app_etl`, `dagid_copy_deploy_staging_app_etl` and
+  `orchestration_demo_deploy_staging_demo_python_operator`, with no retention; the role
+  `AWSServiceRoleForAmazonAthena`, path `/aws-service-role/ops.athena.amazonaws.com/`, created 2026-10-19
+  06:06:23Z, trusting `ops.athena.amazonaws.com`, `AmazonAthenaServiceRolePolicy` attached, never used.
+  CloudTrail's `CreateServiceLinkedRole` since 2026-10-19 holds a second one, `airflow-serverless.amazonaws.com`
+  at 20:09:32Z by InfrastructureAccess, invoked by that service: `AWSServiceRoleForAmazonMWAAServerless`,
+  created at 4.2's first `CreateWorkflow`, the role Stage 10's verification iii tracks. `AWS_STATE.md`
+  gains `EXC-21` for `OR-2` during the window, and 8.1 the Athena role.
