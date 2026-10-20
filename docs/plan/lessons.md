@@ -1921,6 +1921,14 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   Playground and *AI apps* with *"This tool is not available for this project"* when one is missing,
   so a profile carrying six, the knowledge base left out on cost, opens none of them. Where: the same
   entries.
+- **A `DataLake` environment needs `AmazonDataZoneGlueManageAccessRolePolicy` on the manage-access role**
+  (measured 2026-10-20, Stage 18 7.2). The add-on has the manage-access role call
+  `lakeformation:CreateLakeFormationOptIn` on the new database, which
+  `AmazonDataZoneSageMakerManageAccessRolePolicy` v4 does not carry and the Glue policy v18 does; with the
+  SageMaker policy alone the environment fails and its stack rolls back, which is why every Sandbox
+  `DataLake` environment has been `CREATE_FAILED` since 2026-09-13. The Glue policy's ARN carries the
+  `service-role/` path, which the SageMaker one does not. Where: `log-stage-18-staging-deployment-project.md`,
+  the 7.2 entries of 2026-10-20.
 
 ### MWAA, provisioned
 

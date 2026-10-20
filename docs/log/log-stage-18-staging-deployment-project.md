@@ -1073,3 +1073,30 @@ are UTC.*
   SageMaker one has no path; the listing that found it had printed the name after the last `/` alone
   (Lesson 38). Fixed in `manage-access.tf`, re-planned 01:46:16Z, *"Plan: 1 to add, 0 to change, 0 to
   destroy."*, the plan saved again.
+- **[user] The attachment applied**, from `s18-studio-72c`: *"aws_iam_role_policy_attachment.manage_access_glue:
+  Creation complete after 1s
+  [id=awsds-staging-smus-manage-access/arn:aws:iam::aws:policy/service-role/AmazonDataZoneGlueManageAccessRolePolicy]"*,
+  *"Apply complete! Resources: 1 added, 0 changed, 0 destroyed."* **[Claude] Read back**: the re-plan
+  reads `No changes`; the manage-access role carries the Glue and the SageMaker manage-access policies.
+- **[Claude] The failed environment deleted**, `delete-environment` at 02:00:59Z, `DELETING` and then not
+  found by 02:01:24Z; Lake Formation's admins still the two SMUS roles; the environment created again at
+  02:01:46Z, `d6ogysnx78dguo` `CREATING`.
+- **[Claude] The environment `ACTIVE`**, `d6ogysnx78dguo` `deploy-staging-lakehouse`, read 02:02:28Z, 40 s after
+  its creation. It provisioned `glueDBName` `glue_db_d6ogysnx78dguo` at `glueOutputUri`
+  `s3://awsds-staging-smus-projects/dzd-d8yrvx1ko7im6o/d1veybt5oak4uo/dev/data/catalogs/`, inside the
+  `dev/` scope Lake Formation registers; its stack `DataZone-Env-d6ogysnx78dguo` holds one resource,
+  `AWS::Glue::Database`; and the project gained a Glue data source on the database, `READY`, `ENABLED`,
+  scheduled `cron(2 2 * * ? *)`, daily at 02:02 UTC. The infrastructure user's `glue get-databases` lists
+  none: Lake Formation filters the listing to a principal holding a grant. Lake Formation's settings
+  read identical before and after, the same two admins: a second provisioning in the account did not
+  rewrite them (decision 6's open point, read on an environment rather than a project).
+- **[Claude] The grants, from CloudTrail 02:01:40 to 02:03:30Z**: the provisioning role's
+  `BatchGrantPermissions` to `<acct>:IAMPrincipals` and `arn:aws:identitystore:::user/*`, each under the
+  condition `context.datazone.projectId=="d1veybt5oak4uo"`, `CREATE_TABLE`, `DESCRIBE` and `DROP` on the
+  database and `ALTER`, `DELETE`, `DESCRIBE`, `DROP`, `INSERT` and `SELECT` on all its tables; then to the
+  manage-access role `CREATE_TABLE` and grantable `DESCRIBE` on the database and grantable `DESCRIBE` and
+  `SELECT` on its tables. The manage-access role's `CreateLakeFormationOptIn` for the conditioned
+  `IAMPrincipals` on the database passed, and its `RevokePermissions` of `ALL` from
+  `IAM_ALLOWED_PRINCIPALS` answered `InvalidInputException`, nothing to revoke under empty defaults. The
+  pattern is Sandbox's, `docs/SMUS.md`'s portal database, with the opt-in passing for the first time in
+  the estate.

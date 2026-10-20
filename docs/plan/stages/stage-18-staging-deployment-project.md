@@ -539,7 +539,13 @@ deploys.
   manage-access role was refused `lakeformation:CreateLakeFormationOptIn`, which
   `AmazonDataZoneSageMakerManageAccessRolePolicy`, the module's one attachment, does not grant, the refusal
   every Sandbox `DataLake` environment has met since 2026-09-13; `staging/studio/manage-access.tf`
-  attaches `AmazonDataZoneGlueManageAccessRolePolicy`, planned 1 to add.
+  attaches `AmazonDataZoneGlueManageAccessRolePolicy` (the user's apply, 2026-10-20, after a first
+  refused for the policy's `service-role/` path). **The second environment is `ACTIVE`**
+  (`d6ogysnx78dguo`, 02:02:28Z): the database `glue_db_d6ogysnx78dguo` under the project's `dev/` scope,
+  the project-conditioned grants and the manage-access role's grantable ones, the opt-in passing, a Glue
+  data source on the database scheduled daily at 02:02 UTC, and Lake Formation's admins unchanged. What
+  is left needs a sitting: the Glue task writing its output as a table there, the data source's run
+  that makes it an asset, the publication, the subscription, the approval and the reads.
 - **7.3 — [Claude] Redshift is read, not measured**: Staging has no warehouse, and a Sandbox project
   reading a governed Redshift table is INT-24, Stage 9 step 9.7's. AWS's pages, read 2026-10-17: a
   subscription to a Redshift asset across accounts adds a datashare that the producer side authorizes
