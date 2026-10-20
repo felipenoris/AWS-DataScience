@@ -204,9 +204,10 @@ pool stays open across units, and that is the first reading the second vend take
      subnet per Availability Zone, in the governed Regions of an account it creates; enrollment deletes no
      VPC, so this rung owes that deletion. The pages do not say whether Account Factory still deletes it
      with VPC creation off (Stage 3 step 0.3); the first vend reads it, under either rung, by `IsDefault`,
-     since a default VPC is `172.31.0.0/16`, the range the Account Factory VPCs held. No
-     `SSOUserEmail` exists, so the account arrives without D32's direct assignment (inferred: the field is
-     the product's).
+     since a default VPC is `172.31.0.0/16`, the range the Account Factory VPCs held. No account with a
+     profile holds a default VPC in `us-west-2` (read 2026-10-20, the log), but all six were vended before
+     0.3, so that reading does not answer it. No `SSOUserEmail` exists, so the account arrives without
+     D32's direct assignment (inferred: the field is the product's).
    - **Timing.** Enrollment is eventually consistent, minutes to hours, so the vend's next steps wait for it.
    - **Destroy.** `aws_organizations_account` removes the account from the organization by default, which a
      created account allows only after four days and with a payment method, a support plan and verified
@@ -348,6 +349,8 @@ pool stays open across units, and that is the first reading the second vend take
      An account closed while enrolled reads *Suspended* and *Enrolled*, blocks its OU's re-registration for
      the 90 days, and leaves its provisioned product to delete after them.
    - **The close** is `organizations close-account` from Management: `PENDING_CLOSURE`, then `SUSPENDED`.
+     Those are the account's `Status`; its `State` reads `CLOSED` beside `SUSPENDED` (`EXC-01`'s account,
+     read 2026-10-20, the log).
    - **The post-closure period is 90 days.** AWS Support can reopen the account during it. After it AWS
      closes the account permanently and deletes its content except its CloudTrail trails, the account id is
      never reused, and Management's event history records `AccountDepartedOrganization` with

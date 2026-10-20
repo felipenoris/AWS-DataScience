@@ -51,3 +51,26 @@ Account ids are replaced by the account's name in angle brackets.*
   `alias/awsds-sandbox-project`; the other four keys are AWS-managed), one private zone
   (`sandbox.awsds.internal`) and one secret, the warehouse's admin secret, which Stage 5b made and a vend
   does not. `docs/PRICING.md` §3, *A Sandbox unit*, prices the counts.
+
+---
+
+## 2026-10-20 — Every infrastructure profile's VPCs and the organization's account states, read for steps 2 and 6
+
+- **[Claude] The request.** One of the tasks the orchestrating session started on 2026-10-20 at the
+  user's request, one stage each: this log, D34 and `docs/AWS_STATE.md`'s VPC row brought to the vendor
+  readings PR #214 put in steps 2 and 6. PR #214 read the vendor's pages with no session on AWS, so those
+  readings live in the stage file and `docs/REFERENCES.md`, not here. Every call below was a read, as the
+  infrastructure user through `InfrastructureAccess`, in `us-west-2`. The entry is PR #PRNUM's.
+- **[Claude] No default VPC, and nothing in `172.31.0.0/16`.** `ec2 describe-vpcs` at 22:00Z, exit 0 from
+  each of `awsds-infra-sandbox-1`, `awsds-infra-staging`, `awsds-infra-prod`, `awsds-infra-data`,
+  `awsds-infra-identity` and `awsds-policy-canary`: five VPCs, each `IsDefault` false on a single block,
+  `<Sandbox Account 1>` `10.20.0.0/16` (`awsds-sandbox-vpc`), `<Staging Account>` `10.50.0.0/16`
+  (`awsds-staging-vpc`) and `<Production Account>` `10.30.0.0/16`, `10.31.0.0/16` and `10.32.0.0/16`
+  (`awsds-prod-shared-vpc`, `awsds-prod-networking-vpc`, `awsds-prod-workloads-vpc`). `<Data Governance
+  Account>`, `<Identity Account>` and `<Policy Canary Account>` hold none. All six joined the organization
+  on 2026-08-09, before Stage 3 step 0.3 turned VPC creation off, so whether Account Factory deletes the
+  default VPC with creation off stays the first vend's reading (step 2).
+- **[Claude] The organization's one closed account.** `organizations list-accounts` from
+  `awsds-infra-identity`, exit 0: ten accounts, nine `ACTIVE`, and `Sandbox` (`EXC-01`) with `Status`
+  `SUSPENDED` and `State` `CLOSED`, joined 2026-08-01. Step 6's `PENDING_CLOSURE`, then `SUSPENDED`, is the
+  `Status` field; `./aws/vending.py` reads `State` first, and its closed states hold `CLOSED`.
