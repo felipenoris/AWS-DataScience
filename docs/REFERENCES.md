@@ -2141,6 +2141,48 @@
   arrive on and must be switched off (Stage 15 step 3), and the switch is denied to Audit by
   `DenyGuardDutyTampering` (Stage 15 step 0, decision 1): <https://aws.amazon.com/guardduty/faqs/>.
 
+- Pricing in GuardDuty — the table of the plans enabled by default, re-read 2026-10-20 for Stage 15
+  step 0: EKS, S3, RDS and Lambda Protection and the GuardDuty-initiated scan of Malware Protection for
+  EC2 on; Runtime Monitoring, the on-demand scan and Malware Protection for S3 and for AWS Backup off; AI
+  Protection absent: <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-pricing.html>. AI
+  Protection's pages enable it as an act, feature `AI_PROTECTION`, and state no default:
+  <https://docs.aws.amazon.com/guardduty/latest/ug/ai-protection.html> and
+  <https://docs.aws.amazon.com/guardduty/latest/ug/ai-protection-enable-multiple-accounts.html>.
+
+- GuardDuty policies in AWS Organizations, the `GUARDDUTY_POLICY` type, read 2026-10-20 for Stage 15
+  decision 4. The overview: per-Region enablement of the foundational detector and seven plans, scoped by
+  the attachment, the Regional auto-enable settings suspended once the type is enabled:
+  <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_guardduty.html>. The
+  syntax: a `default` block or one per Region, each feature `enabled` or `disabled`, a Region block
+  replacing the default rather than merging with it:
+  <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_guardduty_syntax.html>.
+  Getting started, which admits as author the management account or an Organizations delegated
+  administrator for the type, and lists Management's `AWSServiceRoleForAmazonGuardDuty` among its checks:
+  <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_guardduty_getting_started.html>.
+
+- GuardDuty's side of the same policies, read 2026-10-20 for Stage 15 decision 4. The prerequisites, the
+  delegated administrator and the delegation policy among them:
+  <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-organization-policies.html>. A managed plan
+  read-only through the console and API, and policies authored by the delegated administrator alone:
+  <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-organization-policies-how-it-works.html>.
+  Management covered only once its service-linked role exists, a disabled plan turned off where it is on,
+  changes applied asynchronously, a detach that leaves GuardDuty on, and disabling the type restoring
+  auto-enable: <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-organization-policies-considerations.html>.
+  A covered account that is not yet a member added as one, and `DescribeEffectivePolicy` callable from
+  any account: <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-organization-policies-review-impact.html>.
+  The console flow in the delegated administrator, a plan left unselected left unmanaged:
+  <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-organization-policies-create-console.html>.
+
+- `aws_organizations_policy`'s `type` validator, read 2026-10-20 for Stage 15 decision 4. The resource
+  validates against the Go SDK's `PolicyType` enum:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/main/internal/service/organizations/policy.go>.
+  The enum gains `GUARDDUTY_POLICY` in `service/organizations` v1.61.0 (2026-09-30):
+  <https://github.com/aws/aws-sdk-go-v2/blob/main/service/organizations/CHANGELOG.md>. Provider 6.68.0
+  is the first to require that version, 6.67.0 requiring v1.60.0:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/v6.68.0/go.mod>. The resource's
+  documentation lists twelve values without it:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/main/website/docs/r/organizations_policy.html.markdown>.
+
 - How EC2 instance stop and start works — Elastic IP addresses belong to the network interface, which is listed under "resources that persist" across a stop/start (and the address bills while the instance is stopped). Answers Stage 4 verification (ii) by documentation: "re-associate on start" is unnecessary code: <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/how-ec2-instance-stop-start-works.html>.
 
 - Compatibility for changing the instance type — *"AMIs are specific to the architecture of the
