@@ -1261,3 +1261,14 @@ The last two were read again here.*
   at 20:09:32Z by InfrastructureAccess, invoked by that service: `AWSServiceRoleForAmazonMWAAServerless`,
   created at 4.2's first `CreateWorkflow`, the role Stage 10's verification iii tracks. `AWS_STATE.md`
   gains `EXC-21` for `OR-2` during the window, and 8.1 the Athena role.
+
+## 2026-10-20 — 6.1 in the portal, as the Data Scientist User
+
+- **[user] Step 1, the project read as the person**, signed in to the portal from a separate browser
+  profile: *"No passo 1 - Ver o projeto. Os subitens 1, 2 e 3 conferem. Em 4, aparecem dois bancos:
+  `glue_db_c2ej62w956q2a8`e `glue_db_d6ogysnx78dguo`. Em 5, ao clicar no menu Workflows aparece mensagem
+  "This tool is not available for this project: Spaces are not enabled in this project profile. Please
+  contact your admin."."* The project appears in the selector, its overview opens, and its members read
+  three with the person as Contributor; Data lists both Glue databases, the failed environment's orphan
+  included; and the Workflows tool is refused by the `deployment` profile, whose `Tooling` carries
+  `enableSpaces` `false`, so the person sees no workflow and no run in the portal.

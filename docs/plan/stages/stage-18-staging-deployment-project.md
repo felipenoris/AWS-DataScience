@@ -612,7 +612,10 @@ stage-18-deploy:
   roles, Contributor and Owner, both on the project's credentials. Decision 10 is the designation 6.1
   continues with: `PROJECT_CATALOG_CONSUMER` and `PROJECT_CATALOG_STEWARD` refused the same way, and the
   Data Scientist User added as `PROJECT_CONTRIBUTOR` at about 22:07Z (the log), so question iv's answer
-  is no.
+  is no. **In the portal 2026-10-20**, as that person: the project, its three members and both Glue
+  databases, the orphan `glue_db_c2ej62w956q2a8` included; Workflows answers *"This tool is not available
+  for this project: Spaces are not enabled in this project profile."*, so no workflow and no run shows
+  in the portal of a `deployment` project. The write attempts and the membership's deletion follow.
 - **6.2 — [Claude reads, user decides] The boundary on the project role** (vi), only if 6.1 shows a
   person's write landing: read the session's name and context keys of a portal action against a
   worker's task (6h read the portal's session as `<user id>@<env id>` and a space's as `SageMaker`); a
