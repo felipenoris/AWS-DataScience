@@ -404,11 +404,12 @@ probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
 #     Every row is `blocked` for the processing rows' reason. SageMaker checks the quota of every
 #     listed type, so an authorized processing row reads ResourceLimitExceeded, Production's
 #     processing quotas being 0, and the quota check follows authorization (the ceiling row above,
-#     2026-10-18). Production's training quotas are unread, and so is that order for
-#     CreateTrainingJob, so the training rows carry the processing ceiling row's twin, ml.m5.2xlarge
-#     as InstanceType: its deny places authorization before the role and quota checks of this
-#     action, so a list row answering the contrast row's role or quota refusal is a hole. A refusal
-#     that names the list itself may precede authorization, and leaves the row untested.
+#     2026-10-18). Production's training quotas for the three ml.m5 types read 0 as well
+#     (2026-10-20), and that order for CreateTrainingJob is unread, so the training rows carry
+#     the processing ceiling row's twin, ml.m5.2xlarge as InstanceType: its deny places
+#     authorization before the role and quota checks of this action, so a list row answering the
+#     contrast row's role or quota refusal is a hole. A refusal that names the list itself may
+#     precede authorization, and leaves the row untested.
 
 
 def _training_job(instances):

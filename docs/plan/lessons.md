@@ -2395,6 +2395,14 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   admin username**, so changing either gets past it and leaves the orphan. Where: `AWS_STATE.md`
   `EXC-12`, `log-stage-05b` the first sitting.
 
+- **Redshift Serverless rotated a managed admin secret with no workgroup** (measured 2026-10-20, Stage
+  5b). AWS's page *Managing Amazon Redshift admin passwords using AWS Secrets Manager* says such a
+  rotation fails and is never retried. Sandbox's first scheduled rotation ran on 2026-10-20 with no
+  workgroup since 2026-10-16: Redshift's service-linked role wrote and promoted the new version, and
+  `CompleteRotation` reported `Succeeded`. Whether the database followed is unread; the next
+  `./aws/warehouse.py --sql` authenticates with the rotated secret. Where: `AWS_STATE.md` `EXC-13`,
+  `log-stage-05b` (2026-10-20).
+
 - **A Redshift Serverless workgroup's endpoint host survives a delete and re-create; its id does
   not** (measured 2026-09-20). Destroy and re-create under the same name and
   `endpoint.address` is byte-identical — it is derived from the name, the account and the Region —

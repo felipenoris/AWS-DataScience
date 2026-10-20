@@ -490,7 +490,7 @@ def judge_tree(checks: Checks, tree: OrgTree, units_judged: dict, every_unit: bo
         checks.note(
             "VN-1",
             what,
-            f"{joined(closed)}: a closed account stays in its OU for about 90 days (D34)",
+            f"{joined(closed)}: a closed account stays in its OU for about 90 days (Stage 14 step 6)",
         )
     if not active:
         checks.ok(
