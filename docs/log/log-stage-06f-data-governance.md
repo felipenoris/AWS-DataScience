@@ -935,3 +935,65 @@ session on the laptop was running. Times are UTC.*
 - **[Claude] The log re-read against the session**: the two writes marked `[Claude⚡]`; the first entry's
   heading and provenance corrected, the user's apply being part of it; the pull request, the records,
   the checks and the hand-over to the Stage 18 session added to both entries.
+
+## 2026-10-20 — the `DataLake` data sources before their first run, and what the listings do not show
+
+*Claude, in a session started for step 2.0's last reading, from the worktree `stage-07-supplychain-88cab2`
+on the branch `claude/heuristic-payne-4a7ca1`, cut from `origin/main` at `d8688697`. AWS reads as the
+infrastructure user with `InfrastructureAccess`: in `Sandbox Account 1` (`awsds-infra-sandbox-1`), in
+`Staging Account` (`awsds-infra-staging`) for the comparison and the control, and in `Data Governance
+Account` (`awsds-infra-data`) for one listing. Claude created, changed and deleted nothing in AWS. In the
+outputs below an account id is replaced by the account's name (`<Sandbox Account 1>`, `<Staging Account>`,
+`<Data Governance Account>`), and nothing else is edited. Times are UTC.*
+
+- **[Claude] Both sources before their first run** (`datazone get-data-source`, `list-data-source-runs`),
+  04:47:59Z and 04:48:16Z. Sandbox's `3zp6fog9jep1qo` is
+  `<Sandbox Account 1>-AwsDataCatalog-glue_db_4zojr4rr6bmnww-default-datasource`, `GLUE`, `READY`,
+  `ENABLED`, created 02:51:23Z on the connection `3ycv3ajk3stwcw` with no environment id, its filter
+  `INCLUDE` `*` over `glue_db_4zojr4rr6bmnww`, `autoImportDataQualityResult` true. Staging's `aqm5tebc42cufk`
+  is `<Staging Account>-AwsDataCatalog-glue_db_d6ogysnx78dguo-default-datasource`, the same shape on
+  `cron(2 2 * * ? *)`, created 02:02:16Z in `deploy-staging` (`d1veybt5oak4uo`). Both answer
+  `"items": []` with `lastRunStatus` null, and both still had no run at 22:14:10Z. Each name carries its
+  account's id.
+- **[Claude] What DataZone did at each source's creation** (`cloudtrail lookup-events`, `sts` and `glue`).
+  Two seconds after it, `datazone.amazonaws.com` assumed the project role, as `SYSTEM@bi356s1sacz0cw` in
+  Sandbox at 02:51:25Z and `SYSTEM@bujd259b8g9zps` in Staging at 02:02:18Z: `sourceIdentity` `SYSTEM`,
+  900 s, the session policy `{"Effect":"Allow","NotAction":"sts:AssumeRole","Resource":"*"}` and no
+  session tag. In the same second that session called `GetTables` on the new database, `attributesToGet`
+  `["NAME"]`, with no error and `lakeFormationPrincipal` the project role. Sandbox's trail holds 62
+  `GetTables` events in its 90 days, none refused.
+- **[Claude] The grants on `glue_db_4zojr4rr6bmnww`** (`lakeformation list-permissions --resource`),
+  04:49:29Z. `<Sandbox Account 1>:IAMPrincipals` holds the database's `CREATE_TABLE`, `DESCRIBE` and `DROP`
+  and the tables' `ALTER`, `DELETE`, `DESCRIBE`, `DROP`, `INSERT` and `SELECT`, under `context has datazone
+  && context.datazone has projectId && context.datazone.projectId=="4gqfau9xuo6e4w"`. The provisioning role
+  holds `ALL`, `ALTER`, `CREATE_TABLE`, `DESCRIBE` and `DROP` on the database, all grantable. The
+  manage-access role holds `CREATE_TABLE` and `DESCRIBE` on the database, `DESCRIBE` alone grantable, and
+  grantable `DESCRIBE` and `SELECT` on its tables: the trail's `GrantPermissions` of `CREATE_TABLE` at
+  02:51:22Z names no grant option, where the entry on decision due 6 above read it grantable. The project
+  role holds no grant of its own there, so its sessions reach the database through the conditioned
+  entries alone.
+- **[Claude] The identity-store grants are not readable through the listing.** The trail's two
+  `BatchGrantPermissions` at 02:51:22Z gave `arn:aws:identitystore:::user/*` the same permissions under
+  the same condition. `list-permissions` by resource returns no such entry, and asking for that principal
+  (22:16:38Z) answers *"An error occurred (InvalidInputException) when calling the ListPermissions
+  operation: LakeFormation Identity Center Configuration not configured for requested catalog."*
+- **[Claude] `list-permissions` without a token returns its first page alone, and `./aws/catalog.py` reads
+  that page.** In Sandbox (22:17:09Z) the first page holds 27 entries and a `NextToken`, the second the
+  other 2, and the later pages are empty. The two are `<Sandbox Account 1>`'s grantable `DESCRIBE` on the
+  `<Data Governance Account>` LF-Tag expression `layer` = `curated`, `raw` over databases, and its grantable
+  `DESCRIBE` and `SELECT` on `classification` = `internal`, `public` with `layer` = `curated`, `raw` over
+  tables. In Data Governance (22:18:09Z) the first page holds all 28, followed by empty pages. The entries
+  `catalog.py` missed are the TBAC shares, held by no SMUS principal, so `CT-7`'s count stands; a SMUS
+  grant past the first page would go uncounted.
+- **[Claude] The negative control, in Staging**, 04:52:12Z, as the infrastructure user, no Lake Formation
+  administrator there. `glue get-tables --database-name glue_db_d6ogysnx78dguo` answers `[]`; `glue
+  get-database --name glue_db_d6ogysnx78dguo` answers *"An error occurred (AccessDeniedException) when
+  calling the GetDatabase operation: Insufficient Lake Formation permission(s): Required Describe on
+  glue_db_d6ogysnx78dguo"*; `get-tables` on a made-up name answers `EntityNotFoundException`. `GetTables`
+  without a grant on the database lists nothing and refuses nothing, so over an empty database a
+  successful listing does not show whether the session matched the conditioned grants.
+- **[Claude] `./aws/catalog.py` before the runs**, 22:14:32 to 22:15:20Z: *"all checks passed"*. `CT-6`
+  notes `EXC-11`'s two `Tooling` sources, every completed run `FAILED` (4 in `test-experimentation`, 57 in
+  `eighth-experimentation`), and nothing else, the two `DataLake` sources having no run; `CT-4` *"all 5
+  carry publishOnImport false"*; `CT-7` *"21 SMUS grants, all on project-owned objects"*; `CT-8` *"all 10
+  carry context.datazone.projectId"*.
