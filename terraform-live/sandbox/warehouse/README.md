@@ -30,8 +30,14 @@ per-project list, because `AmazonDataZoneProject` is a tag key and a key holds o
 
 So `projects` is validated to hold at most one entry. Stage 5b 2.2's *"one tag per admitted project"*
 is not expressible, and the requirement that one sandbox schema may be **shared** by several projects
-meets that wall at the second project, not the first. Layers 2 and 3 are unaffected — one IAM policy
-per project role, and a database role per schema granted per project, both genuinely many-to-many.
+meets that wall at the second project, not the first. Layer 3 is unaffected: a database role per
+schema, granted per project, many-to-many. Layer 2 is per project on the access role alone, the
+per-project role the portal's form demands (6h 3.1), which holds this slice's policies and no AWS
+policy. The project role holds this slice's policy beside AWS's
+`SageMakerStudioProjectUserRolePolicy` v75, which grants it `GetCredentials` and the Data API on a
+workgroup tagged with its project, the same to every project role under the wide tag, and
+`GetCredentials` on any workgroup through `sqlworkbench` (simulated 2026-10-18,
+[6h](../../../docs/plan/stages/stage-06h-redshift-connection.md) 5.1 and decision 8).
 Admitting a second project is a decision with the wide tag's cost accepted or rejected in writing
 ([6h](../../../docs/plan/stages/stage-06h-redshift-connection.md) decision 8), never a second map
 entry.

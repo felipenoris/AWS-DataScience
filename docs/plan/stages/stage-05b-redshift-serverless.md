@@ -458,6 +458,11 @@ Lesson 28's intersection in a third permission layer.
   workgroup and on the namespace alike. **Layer 1 admits exactly one project.** The requirement's grain
   survives in layers 2 and 3, which are per project role and per schema × project; what does not survive is
   the assumption that the gate in front of them can be per project too.
+  Layer 2's per-project grain holds on [6h](stage-06h-redshift-connection.md) 3.1's access role alone
+  (simulated 2026-10-18, 6h 5.1 and decision 8): the project role also carries AWS's
+  `SageMakerStudioProjectUserRolePolicy` v75, which grants it `GetCredentials` and the Data API on a
+  workgroup tagged with its project, the same to every project role under the wide tag, and
+  `GetCredentials` on any workgroup through `sqlworkbench`.
   `sandbox/warehouse/`'s `projects` variable refuses a second entry at plan time, because the alternative is
   a silent overwrite that breaks the first project's connection with nothing in the plan output to say which
   project lost access. **How a second project is admitted is [6h](stage-06h-redshift-connection.md)
@@ -472,15 +477,29 @@ Lesson 28's intersection in a third permission layer.
   - The tag is on **two objects**, workgroup *and* namespace, which is Lesson 14's shape — a value that must
     appear in N places by hand will be missing from one. Both are in the same Terraform resource file, from
     one `locals` map keyed by project id, so the two can only differ by an edit that fails the plan.
-- **2.3 — [Claude] Write the persona side into `identity/sso/`, and write the *absences* as the design.**
-  `DataScientistAccess` gets the read side — `redshift-serverless:GetWorkgroup`, `GetNamespace`,
-  `ListWorkgroups`, `ListNamespaces`, `ListTagsForResource` — scoped to this account's workgroup ARN, and
-  **`redshift-data:` nothing yet** (the query path is the project's connection, not the persona's;
-  [Stage 6h](stage-06h-redshift-connection.md) decides whether a persona ever queries directly).
-  It gets **no** `UpdateWorkgroup`, **no** `CreateWorkgroup`, **no** `DeleteUsageLimit`, **no**
-  `UpdateUsageLimit`, **no** `CreateNamespace` and **no** `redshift-serverless:GetCredentials`. The last one
-  is the load-bearing absence: `GetCredentials` mints a database session, so a persona holding it reaches
-  the warehouse with no connection, no tag and no project — around both layers of 2.2 at once.
+- **2.3 — Done 2026-09-20: the persona side is in `identity/sso/`, and its absences are denies**
+  (`policies-data-scientists.tf`; [log](../../log/log-stage-05b-redshift-serverless.md), Pass 2).
+  `DataScientistAccess` holds `ReadRedshiftServerlessStatus`: `redshift-serverless:GetNamespace`,
+  `GetWorkgroup`, `ListNamespaces`, `ListTagsForResource`, `ListUsageLimits` and `ListWorkgroups`, on `*`.
+  The resource cannot be this account's workgroup ARN: a permission set is one document provisioned into
+  many accounts, so any ARN in it would carry a wildcard account. The action list bounds the grant, and
+  every entry is a read. The absences are denies rather than omissions, because these actions sit in
+  services the set holds real reads on, and an omission is one AWS managed policy away from being undone:
+  - **`DenyMintingARedshiftDatabaseSession`**: `redshift-serverless:GetCredentials`, the `redshift-data:`
+    calls `ExecuteStatement`, `BatchExecuteStatement` and `GetStatementResult`, and
+    `redshift:GetClusterCredentials` and `GetClusterCredentialsWithIAM`. `GetCredentials` is the
+    load-bearing absence: it mints a database session, so a persona holding it reaches the warehouse with
+    no connection, no tag and no project, around both layers of 2.2 at once. The Data API is denied on a
+    measurement: on 2026-09-20 it ran SQL on this warehouse from a laptop outside every VPC, with nothing
+    but an IAM identity and the admin secret.
+  - **`DenyRedshiftCostGuardAndCompute`**: `CreateNamespace`, `CreateUsageLimit`, `CreateWorkgroup`,
+    `DeleteNamespace`, `DeleteUsageLimit`, `DeleteWorkgroup`, `UpdateNamespace`, `UpdateUsageLimit` and
+    `UpdateWorkgroup`, the persona's half of 3.2.
+
+  Whether a persona ever queries directly is [6h](stage-06h-redshift-connection.md) decision 4, taken
+  2026-09-20 as no. The policy simulator read `GetCredentials` and `redshift-data:ExecuteStatement` as
+  `explicitDeny` matching `DenyMintingARedshiftDatabaseSession` on 2026-10-18 (6h 5.4); the persona's real
+  call, and with it the refusal's wording, is the user's.
 - **2.4 — [Claude] Re-state D13 against the new principal, and read it rather than assert it.** Three
   readings, all read-only: `awsds-sandbox-warehouse-exec`'s attached and inline policies (expected: none
   touching a lake bucket); whether the namespace's `awsdatacatalog` database is mounted and what it lists
