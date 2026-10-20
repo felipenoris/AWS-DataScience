@@ -707,7 +707,9 @@ the newer models publish `USW2_input_tokens_standard-Units`, the older ones `USW
 Haiku 4.5 and Sonnet 4.5 are on the second spelling, Opus 5 and Sonnet 5 on the first — so a filter
 written against either one alone reports a model as unpriced when it is merely spelled differently.
 The same split appears in the agreement rate card. `./aws/bedrock-usage.py` does not read the offer
-file: it prices from the table above, and a model with no row there is reported unpriced by name.
+file: it prices from the table above and from a row naming a model's id (Titan Text Embeddings V2's,
+below), rates a call through an application inference profile as the system-defined profile or the
+model the profile lists, and reports a model with no row unpriced by name.
 
 The `us.` profile routes to us-east-1, us-east-2 and us-west-2; `global.` routes wider and costs **10%**
 less. A batch tier is published on `global.` alone (2.50 / 12.50) and no interactive caller can use it.
