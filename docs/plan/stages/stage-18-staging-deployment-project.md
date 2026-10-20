@@ -397,9 +397,9 @@ deploys.
   key and prints one line, and MWAA Serverless offers no condition key an SCP could require a network
   with (the CLI's code, read 2026-10-18, PR #189). **Prepared 2026-10-20**: the amendment, three inline
   documents in `staging/foundation/deploy-role.tf`, applied by the user 2026-10-20 (3 added, re-plan `No changes`); the
-  job `stage-18-deploy` on the branch (`caf1ff6`), pushed at the next GitLab sitting. The role has no
-  group profile in the domain yet, so its first run is refused as a non-member and creates one, and the
-  membership by group id follows, as in Sandbox.
+  job `stage-18-deploy` on the branch, below, committed as `caf1ff6` in the laptop's clone and pushed at
+  the next GitLab sitting. The role has no group profile in the domain yet, so its first run is refused
+  as a non-member and creates one, and the membership by group id follows, as in Sandbox.
 - **4.4 — [Claude⚡] Run it** (ix), once the Prerequisites' Stage 8 3.0 half and `vpc-v0.4.0` are
   applied (both 2026-10-19): the sample input placed, then `run --targets staging --workflow` from the laptop, and `start-workflow-run` as the deploy identity; `get-workflow-run` to the end; the
   tasks' identity, subnets and endpoints read from CloudTrail and the logs. **The first run, 2026-10-19**
@@ -441,6 +441,95 @@ deploys.
 | 3.3, lineage | decision 9, Production's lineage | The Glue job posts its own events as the project role, through a `datazone` endpoint in the VPC (7.1) | Available in the project shape; Production needs the endpoint and a way past `DenyDataZoneEntirely` |
 | 3.4 to 3.7, the chain layer | a state machine and a schedule per chain, the chain roles, the chain's failure rule | nothing: `run` starts one workflow and returns (ix); a non-member starts the workflow by IAM alone, with `kms:GenerateDataKey` and `Decrypt` on the workflow's key (0.4, vii) | To build either way; the chain role takes KMS on the project key, the workflow's key |
 | Stage 8 3.5, the production gate | a blocking manual job before the Production leg | nothing: `deploy --targets <stage>` deploys the stage it is named | The pipeline's job either way |
+
+#### The job `stage-18-deploy`
+
+4.3's job goes into `stage-18-staging`'s `.gitlab-ci.yml` between `test-deploy` and `store-bundle`'s
+comment. GitLab holds the branch at `6eb795c`, pushed at 7.1; the laptop's clone `$HOME/tmp/app-etl-check`
+holds the job as `caf1ff6`, one commit ahead, and fetches `main` alone, so it shows no upstream for the
+branch. A session without that clone clones `awsds/app-etl`, switches to `stage-18-staging`, inserts the
+block there, commits and pushes. The block is `caf1ff6`'s addition, byte for byte.
+
+```yaml
+# Stage 18 step 4.3, on this measurement branch alone: v0.2.1's stored bundle deployed into Staging's
+# deployment project as awsds-deploy-staging, with this branch's manifest and workflow beside it, then
+# run once as the same role (4.4's second half). The deploy runner takes protected refs only, so the
+# branch is protected for Stage 18's window; the job is manual. The bundle is read with the runner's own
+# role (decision 20); the account, the subnets, the project's security group and its key are read at run
+# time, so no account-specific value sits here or in a CI/CD variable. A deploy that names no network
+# from the Tooling environment stops: without it the workflow lands in the service's own network.
+stage-18-deploy:
+  stage: deploy
+  tags: [awsds-deploy]
+  resource_group: app-etl-staging
+  timeout: 45m
+  rules:
+    - if: $CI_COMMIT_BRANCH == "stage-18-staging"
+      when: manual
+  variables:
+    BUNDLE_OBJECT: s3://awsds-prod-releases/app-etl/v0.2.1/app-etl.zip
+    BUNDLE_SHA256: 7fb374d15c23953cb6ad6d9f5473f97d2c83ff2db167703a5a830d96add95fff
+    IMAGE_DIGEST: sha256:247ec6b661ceb03d2927e1ce5a3c07d9287280a639abed18ce8daf898ed4ce0c
+    STAGING_PROJECT_NAME: deploy-staging
+  script:
+    - |
+      set -eu
+      for name in DOMAIN_ID DOMAIN_REGION ECR_REGISTRY; do
+        eval "value=\${$name:-}"
+        if [ -z "$value" ]; then echo "FATAL: the CI/CD variable $name is not set"; exit 1; fi
+      done
+      export STAGING_PROJECT_NAME
+      export JOB_IMAGE_URI="$ECR_REGISTRY/$IMAGE_REPO@$IMAGE_DIGEST"
+      echo "== the bundle, read with the runner's own role"
+      AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" bundle.zip
+      echo "$BUNDLE_SHA256  bundle.zip" | sha256sum -c -
+      mkdir extracted
+      python3 -m zipfile -e bundle.zip extracted
+      cp manifest.yaml extracted/manifest.yaml
+      cp workflows/app-etl.yaml extracted/workflows/app-etl.yaml
+      export AWS_PROFILE=awsds-deploy-staging
+      echo "== who deploys"
+      aws sts get-caller-identity --query Arn --output text
+      echo "== Staging's values, read at run time"
+      STAGING_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+      STAGING_SUBNET_AZ1="$(aws ec2 describe-subnets --filters 'Name=tag:Name,Values=awsds-staging-private-*-az1' --query 'Subnets[0].SubnetId' --output text)"
+      STAGING_SUBNET_AZ2="$(aws ec2 describe-subnets --filters 'Name=tag:Name,Values=awsds-staging-private-*-az2' --query 'Subnets[0].SubnetId' --output text)"
+      project_id="$(aws datazone list-projects --domain-identifier "$DOMAIN_ID" --name "$STAGING_PROJECT_NAME" --query 'items[0].id' --output text)"
+      STAGING_PROJECT_SG="$(aws ec2 describe-security-groups --filters "Name=group-name,Values=datazone-$project_id-dev" --query 'SecurityGroups[0].GroupId' --output text)"
+      STAGING_PROJECT_KEY_ARN="$(aws kms describe-key --key-id alias/awsds-staging-project --query KeyMetadata.Arn --output text)"
+      for name in STAGING_SUBNET_AZ1 STAGING_SUBNET_AZ2 STAGING_PROJECT_SG STAGING_PROJECT_KEY_ARN; do
+        eval "value=\${$name}"
+        case "$value" in ""|None) echo "FATAL: $name could not be read"; exit 1;; esac
+      done
+      export STAGING_ACCOUNT_ID STAGING_SUBNET_AZ1 STAGING_SUBNET_AZ2 STAGING_PROJECT_SG STAGING_PROJECT_KEY_ARN
+      echo "project $project_id, subnets $STAGING_SUBNET_AZ1 $STAGING_SUBNET_AZ2, security group $STAGING_PROJECT_SG"
+      cd extracted
+      echo "== deploy to staging, as awsds-deploy-staging"
+      rc=0
+      aws-smus-cicd-cli deploy --manifest manifest.yaml --targets staging --skip-validation --no-events > ../deploy.log 2>&1 || rc=$?
+      cat ../deploy.log
+      if [ "$rc" -ne 0 ]; then echo "FATAL: the deploy failed"; exit "$rc"; fi
+      if ! grep -q "Tooling VPC config" ../deploy.log; then echo "FATAL: the deploy named no network from the Tooling environment"; exit 1; fi
+      echo "== run, as awsds-deploy-staging"
+      aws-smus-cicd-cli run --workflow app-etl --targets staging --manifest manifest.yaml > ../run.log 2>&1
+      cat ../run.log
+      arn="$(sed -n 's/.*ARN: \(arn:[^ ]*\).*/\1/p' ../run.log | tail -1)"
+      run_id="$(sed -n 's/.*Run ID: \([^ ]*\).*/\1/p' ../run.log | tail -1)"
+      if [ -z "$arn" ] || [ -z "$run_id" ]; then echo "FATAL: run.log names no workflow ARN or run id"; exit 1; fi
+      for i in $(seq 1 80); do
+        state="$(aws mwaa-serverless get-workflow-run --workflow-arn "$arn" --run-id "$run_id" --query 'RunDetail.RunState' --output text)"
+        echo "$(date -u +%H:%M:%SZ) $state"
+        case "$state" in SUCCESS|FAILED|TIMEOUT|STOPPED) break;; esac
+        sleep 30
+      done
+      aws mwaa-serverless get-workflow-run --workflow-arn "$arn" --run-id "$run_id" --output json > ../run.json
+      cat ../run.json
+      grep -q '"RunState": "SUCCESS"' ../run.json
+  artifacts:
+    when: always
+    paths: [deploy.log, run.log, run.json]
+    expire_in: 90 days
+```
 
 ### 5. Several applications in one project
 
