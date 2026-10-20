@@ -1202,3 +1202,8 @@ The last two were read again here.*
   `datazone.amazonaws.com` alone, `sts:AssumeRole` each. No person and no Terraform role acts as either,
   so 8.1's two drops take InfrastructureAccess into the admins first, the checklist session's inference,
   written into 8.1 unmeasured.
+
+## 2026-10-20 — decision 9, and 6.1 with the environment down
+
+- **[user] Decision 9**: *"Decisão 9: sim, o 6.1 roda com o ambiente desligado, antes do 4.3, terminando
+  com a membership da pessoa apagada."*, the recommendation; then *"usuário sso infra logado"*.
