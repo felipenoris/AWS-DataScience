@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **in progress since 2026-10-18** ([log](../../log/log-stage-12-observability-finops.md)). Step 10's `./aws/observability.py` written 2026-10-17. **Built in Production 2026-10-18**: `production/observability/` (the hub dashboard, the proxy log's two metric filters, the refusal alarm, the VPCs-per-Region quota alarm) and the CloudWatch statement on `awsds-prod-alerts`, both re-planning `No changes`. **`sandbox/observability/` was applied the same day by the orchestrating session** (9 added, `No changes` after), the topic's e-mail subscription confirmed by the user on 2026-10-19, so `OB-3` passes in Sandbox. 4.2 read the bill from the accounts with a profile: **at least USD 53.31 in August and 74.48 in September**, above D12's 50, and the model is rewritten from it. `OB-3` fails since the first wired alarm, by design, until the three `[D]` hosts' alarms are wired (`EXC-19`); Sandbox's two warehouse alarms notify `awsds-sandbox-alerts` since PR #181's apply. Scoped against [D38](../decisions/D38-single-egress-hub.md): no NAT panels, and three lines the hub creates — the proxy's access log and its refusal rate, the DNS Firewall's per-query charge, the peering bytes |
+| **Status** | **in progress since 2026-10-18** ([log](../../log/log-stage-12-observability-finops.md)). Step 10's `./aws/observability.py` written 2026-10-17. **Built in Production 2026-10-18**: `production/observability/` (the hub dashboard, the proxy log's two metric filters, the refusal alarm, the VPCs-per-Region quota alarm) and the CloudWatch statement on `awsds-prod-alerts`, both re-planning `No changes`. **`sandbox/observability/` was applied the same day by the orchestrating session** (9 added, `No changes` after), the topic's e-mail subscription confirmed by the user on 2026-10-19, so `OB-3` passes in Sandbox. 4.2 read the bill from the accounts with a profile: **at least USD 53.31 in August and 74.48 in September**, above D12's 50, and the model is rewritten from it. `OB-3` fails since the first wired alarm, by design, until the three `[D]` hosts' alarms are wired (`EXC-19`); Sandbox's two warehouse alarms notify `awsds-sandbox-alerts` since PR #181's apply. Scoped against [D38](../decisions/D38-single-egress-hub.md): no NAT panels, and three lines the hub creates — the proxy's access log and its refusal rate, the DNS Firewall's per-query charge, the peering bytes. 5.2 read the bill's usage types on 2026-10-20: no letter moves (decision due 3, the user's) |
 | **Prerequisites** | any stage that created resources — and **one real invoice**, met: the August and September bills, read from Cost Explorer in every account with a CLI profile (2026-10-14 for Config, 2026-10-18 in full). Management, Log Archive and Audit hold no profile and are unread |
 | **Consumes** | [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | nothing new crosses an account boundary. What it **retires** is a set of estimates |
@@ -167,6 +167,29 @@ that is up so often it may as well be `[D]`.
   `BoxUsage:t3.micro` the proxy, `Studio:VolumeUsage.gp3` the spaces). The per-slice split by tag waits on
   4.1, the user's activation in Management.
 - **5.2 — [Claude reads, user decides] Propose any letter changes**, each with the arithmetic beside it.
+  **Read 2026-10-20** for open question 4, from 5.1's usage-type half alone, at `docs/PRICING.md`'s
+  rates and 730 hours a month: **the bill moves no letter** (decision due 3). Each alternative costs
+  more than the letter it would replace, or rests on a restore nobody has timed:
+
+  | Slice | Letter | Alternative | Arithmetic | Reading |
+  |---|---|---|---|---|
+  | `sandbox/egress/` | `[E]` | `[P]`, never destroyed | 18 endpoints × 0.010 × 730 = 131.40 a month, against 19.45 billed in September (`USW2-VpcEndpoint-Hours`, 1,945 endpoint-hours, about 108 hours of the set) plus at most 7.27 of Sandbox's Config (`docs/PRICING.md` §2) | `[E]`: `[P]` costs 6.8 times September's endpoint line |
+  | `production/egress/` | `[E]` | `[P]` | 12 × 0.010 × 730 = 87.60 a month, against 4.35 billed for October 1-17 (435 endpoint-hours) | `[E]` |
+  | `production/tooling/` | `[D]` | `[E]`, destroyed and restored at every session | its two volumes, 12 + 50 GiB × 0.08 = 4.96 a month, stopped or running (`USW2-EBS:VolumeUsage.gp3`) | `[D]`: the rebuild is a first boot, 13 min 54 s for the fresh install of 2026-10-12 (Stage 7 step 8.1), and a restore, Stage 7 step 8.2's rehearsal, which has not run |
+  | `production/vpn/`, `production/proxy/` | `[D]` | running between sessions | 0.0206/h (`t3.nano` 0.0052, `t3.micro` 0.0104, the proxy's address 0.005): 15.04 for 730 hours, against 2.72 for September's 132 hours (`USW2-BoxUsage:t3.micro`) | `[D]`: 12.32 a month more |
+  | `production/vpn/`, `production/proxy/` | `[D]` | `[E]` | saves the two 8 GiB root volumes, 16 × 0.08 = 1.28 a month | `[D]`: each session's rebuild is a first boot (Lesson 68) |
+  | `production/runners/` | `[E]` | `[D]`, stopped between sessions | three root volumes, 64 + 30 + 30 GiB × 0.08 = 9.92 a month stopped, against 5.76 billed for the build runner's 27 hours of October 1-17 | `[E]` |
+
+  **Config bills a cycle, not an hour.** A Sandbox `[E]` cycle records 0.36-0.87 USD of configuration
+  items whatever its length (`USW2-ConfigurationItemRecorded`), which is 2.0 to 4.8 hours of the set
+  at 0.18/h: two sessions less than about two hours apart cost less with `sandbox/egress/` left up
+  between them, and more than about five hours apart cost less cycled. It moves no letter: at
+  September's 108 hours, `[P]` pays only past about 129 cycles a month at the dearest cycle,
+  (131.40 − 19.45) / 0.87. The recorder's scope is step 6's.
+  **Two idle lines are not letters.** The hub's largest is the WireGuard Elastic IP, 3.65 a month,
+  `[P]` by `conventions.md` §5.1 rule 5, since every client `.conf` names it. GitLab's is the data
+  volume's size: its daily snapshot holds about 1 GB of the 50 GiB (`docs/PRICING.md` §3), and EBS does
+  not shrink a volume (`production/tooling/variables.tf`), so a smaller one is a migration.
 
 ### 6. Review the Config recorder scope against what it actually cost
 
@@ -334,6 +357,10 @@ and this one is not. **Explanation:** the checks are cheap because the facts are
 2. **D12's revision trigger fired** (2.1, 4.2): the bill exceeded the projection in August and in
    September. Raising the ceiling, cutting the session hours that dominate the bill, or wiring the budget
    (6e decision 6) are D12's to choose, the user's.
+3. **The layer letters** (5.2, open question 4). The bill moves none. (a) Keep every letter; (b) demote
+   `production/tooling/` to `[E]`, saving 4.96 a month, once Stage 7 step 8.2 has timed a restore.
+   **Recommended: (a)**, with (b) re-read against 8.2's time. The lever the bill names is the session
+   hours, decision due 2's.
 
 ## Cost
 
