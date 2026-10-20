@@ -18,7 +18,7 @@ the S3 connection.*
 | # | Layer | Lives in | Grain | What its absence looks like |
 |---|---|---|---|---|
 | 1 | the tag `AmazonDataZoneProject=<projectId>` on the workgroup **and** the namespace | Terraform, `sandbox/warehouse/`'s `projects` map | per **workgroup** | the compute does not appear in the project's dropdown at all |
-| 2 | the project role's IAM policy — `GetCredentials`, `GetWorkgroup`, `ListTagsForResource` | Terraform, the same map | per **project role** | the connection is created and every query fails at authentication |
+| 2 | the IAM reach — `GetCredentials`, `GetWorkgroup`, `ListTagsForResource` — in one policy on the project role and on its access role. The project role also carries AWS's `SageMakerStudioProjectUserRolePolicy` v75, which grants it `GetCredentials` and the Data API on a workgroup tagged with its project, the same to every project role under the wide tag, and `GetCredentials` on any workgroup through `sqlworkbench` (simulated 2026-10-18, 6h 5.1 and decision 8) | Terraform, the same map | per **project** on the access role alone | the connection is created and every query fails at authentication; §F says which role to read |
 | 3 | a database role per schema, granted to each admitted project's database user | **SQL**, nowhere else | per **schema × project** | the project connects, sees the cluster, and the schema is invisible or read-only |
 | — | the door on `5439/tcp` | Terraform, the warehouse's security group | per **project's security group** | JupyterLab hangs; the Data page still works |
 
