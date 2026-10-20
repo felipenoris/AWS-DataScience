@@ -1024,3 +1024,12 @@ are UTC.*
   `-storage`, *"Apply complete! Resources: 3 added, 0 changed, 0 destroyed."* **[Claude] Read back**: the
   re-plan reads `No changes` (01:16:24Z); `awsds-deploy-staging` holds five inline policies, `apply-egress`,
   `state` and the three, their Sids as written.
+- **[user] 7.2's path**: *"Vamos pela decisão A (recommended): add the DataLake blueprint"*.
+- **[Claude] Path A written and planned**: `staging/studio/`'s `blueprint_names` gains `DataLake`, planned
+  01:19:06Z, *"Plan: 2 to add, 0 to change, 0 to destroy."*, its configuration with `Tooling`'s VPC,
+  subnets, provisioning and manage-access roles and boundary, and its `CREATE_ENVIRONMENT_FROM_BLUEPRINT`
+  grant; `governance/`'s `deployment` row gains `DataLake`, planned 01:19:45Z, *"Plan: 0 to add, 1 to
+  change, 0 to destroy."*, the profile's second environment configuration, `ON_DEMAND`, order 1, blueprint
+  `d8w7c3fmbsz5cg`, in Staging. Both plans saved for the user's applies, `staging/studio/` first. No
+  instrument reads Staging's configurations against a list: `./aws/studio.py` US-3 reads the Interactive
+  accounts, and US-6 refuses a SageMaker AI domain in Staging, which `DataLake` does not create.

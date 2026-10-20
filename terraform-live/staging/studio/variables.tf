@@ -54,9 +54,9 @@ variable "blueprints_enabled" {
 }
 
 variable "blueprint_names" {
-  description = "Stage 18 decision 1's base blueprint, alone: a deployment project enables no capability a person would use, so the module's default list (Sandbox's twelve) is not this slice's. Tooling is the recommendation of 2026-10-19, read from the blueprint's own template: with enableSpaces false in the deployment profile its sageMakerDomainRequired condition is false, so no SageMaker AI domain is created and sagemaker:CreateDomain needs no carve-out, while ToolingLite's template creates that domain unconditionally. The decision is the user's, and the first apply (blueprints_enabled = false) does not read this list."
+  description = "Stage 18 decision 1's base blueprint and, for 7.2's published table, DataLake (decision 5, path A, the user's on 2026-10-20): a deployment project enables no capability a person would use, so the module's default list (Sandbox's twelve) is not this slice's. Tooling with enableSpaces false in the deployment profile creates no SageMaker AI domain (its sageMakerDomainRequired condition is false), so sagemaker:CreateDomain needs no carve-out; DataLake creates a project's Glue database, its Lake Formation permissions and an Athena workgroup, through the provisioning role Staging's Lake Formation admits as an admin. The first apply (blueprints_enabled = false) does not read this list."
   type        = list(string)
-  default     = ["Tooling"]
+  default     = ["Tooling", "DataLake"]
 }
 
 # The roles the workflows grant attaches to (workflows.tf) are minted by SageMaker Unified Studio when a
