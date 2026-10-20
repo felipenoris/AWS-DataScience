@@ -1143,3 +1143,62 @@ are UTC.*
   objects and the project role's profile; 8.3 two configurations; 8.6 the admins emptied by a
   `PutDataLakeSettings` that keeps every other field; the cost twelve endpoints; the slices table two
   rows.
+
+## 2026-10-20 — the environment down, read by the checklist session; pass 8 corrected
+
+*The first three entries were read by another session on this laptop, "Stage 18 checklist
+AWS-DataScience", from 04:45 to 05:00Z, every call a read as the infrastructure user
+(`InfrastructureAccess`), and sent to this session at the user's word in that chat: "Envie as leituras de
+hoje, as três correções do passo 8 e a proposta de fazer o 6.1 sem o ambiente para a sessão do Stage 18."
+The last two were read again here.*
+
+- **[Claude, the checklist session] The environment down**: Production's `awsds-prod-gitlab`, `-proxy`
+  and `-vpn` stopped, no instance in Staging or Sandbox; `./aws/egress.py` (prod, staging, sandbox-1,
+  data) at 04:47Z, 0 interface endpoints, 0 NAT, 0.000 USD/h, every check passing; `./aws/studio.py` at
+  04:49Z and `./aws/org-policies.py` at 04:50Z, every check passing, `US-4` listing three profiles
+  (Generative AI model governance, `deployment`, `experimentation`).
+- **[Claude, the checklist session] Stage 18's objects, as the entries above leave them**:
+  `deploy-staging` `ACTIVE`, its `Tooling` and `deploy-staging-lakehouse` environments `ACTIVE`, its
+  members Staging's InfrastructureAccess session group (`PROJECT_OWNER`) and the project role's `IAM`
+  user profile (`PROJECT_CONTRIBUTOR`); one workflow, `app_etl_deploy_staging_app_etl`, `READY`, its runs
+  `V4eBnEgINa6pd4U`, `4pwrFUq1NSnnUMI` and `JSSr2Br9Zsf2b26` `SUCCESS` and `7MMhwSySe5SOWd1` `FAILED`;
+  the Glue job `app-etl-d1veybt5oak4uo`, Glue 6.0, with the `--conf` settings and no
+  `--enable-glue-datacatalog`; both Glue databases answering `get-database` with *"Required Describe"*;
+  Lake Formation's admins the two SMUS roles, no read-only admin, both default lists empty,
+  `CROSS_ACCOUNT_VERSION` 1 and `SET_CONTEXT` `TRUE`, one registered location (the project's `dev`
+  prefix, the project role, hybrid false); the Access Grants instance `default` and its one location;
+  `awsds-deploy-staging`'s five inline policies, and no group profile for it in the domain (Cloud
+  Control `NotFound`, `search-group-profiles` listing six others); the data source `aqm5tebc42cufk`
+  `READY` and `ENABLED` on `cron(2 2 * * ? *)` with no run, its first at 2026-10-21 02:02Z; the
+  subscription target present, no asset, no subscription request or subscription with `deploy-staging`
+  as approver, 12 lineage events; Sandbox's `test-experimentation-lakehouse` `ACTIVE` with its own
+  target. Staging's log groups with no retention are the three workflows', `/aws/sagemaker/ProcessingJobs`,
+  `datazone-d1veybt5oak4uo-dev/error` and `/output`; its three processing jobs are `Completed`. CloudTrail's
+  writes not invoked by a service since 02:10Z: none in Staging; in Data Governance and Sandbox, the
+  `DeleteEnvironment` (02:50:05Z) and `CreateEnvironment` (02:50:56Z) of PR #207's session, and
+  `SearchListings`.
+- **[Claude, the checklist session] 6.1's inputs**: the API's designations are `PROJECT_OWNER`,
+  `PROJECT_CONTRIBUTOR`, `PROJECT_CATALOG_VIEWER`, `PROJECT_CATALOG_CONSUMER` and
+  `PROJECT_CATALOG_STEWARD` (the CLI's model `datazone/2018-05-10`), the narrowest `PROJECT_CATALOG_VIEWER`.
+  The root domain unit's grants, child units excluded: `CREATE_PROJECT_FROM_PROJECT_PROFILE` to the
+  Identity Center group for `experimentation` and to Staging's InfrastructureAccess session group for
+  `deployment`; `ADD_TO_PROJECT_MEMBER_POOL` to all users; `OVERRIDE_PROJECT_OWNERS`,
+  `OVERRIDE_DOMAIN_UNIT_OWNERS`, `CREATE_PROJECT` and `CREATE_DOMAIN_UNIT` to nobody. The root unit's
+  owner is Data Governance's InfrastructureAccess session group.
+- **[Claude] SageMaker's lineage in Staging, read again** (05:17Z, `awsds-infra-staging`): three trial
+  components, one per processing job (4.4's `app-etl-20261019T205205`, 7.1's runs A and B,
+  `…T220422` and `…T225843`), each with three associations in and one out, twelve in all; four
+  artifacts they share, three `DataSet` (the project's `shared/app-etl/src/`, `work/glue/` and
+  `work/job/`) and one `Image` (`awsds-prod-ecr-app-etl` by digest), created 2026-10-19 20:52:07Z; no
+  action and no context. 8.1 named one trial component and four associations.
+- **[Claude] Staging's `PutDataLakeSettings`, read again** (CloudTrail, 05:17Z, five events):
+  2026-08-19 05:57:19Z by InfrastructureAccess, `CROSS_ACCOUNT_VERSION` 4, `SET_CONTEXT` `TRUE`, one
+  admin; 2026-09-06 04:48:24Z by InfrastructureAccess (6b's unwinding), version 1, `SET_CONTEXT` `TRUE`,
+  no admin; 2026-10-19 06:05:34Z by `awsds-staging-smus-provisioning`, three calls with the same
+  parameters and two, two and one admins. `SET_CONTEXT` `TRUE` predates the stage, and 8.6's call has a
+  measured precedent on this account as InfrastructureAccess.
+- **[Claude] The two Lake Formation admins' trust** (05:21Z, `iam get-role`): `awsds-staging-smus-provisioning`
+  trusts `cloudformation.amazonaws.com` and `datazone.amazonaws.com`, and `awsds-staging-smus-manage-access`
+  `datazone.amazonaws.com` alone, `sts:AssumeRole` each. No person and no Terraform role acts as either,
+  so 8.1's two drops take InfrastructureAccess into the admins first, the checklist session's inference,
+  written into 8.1 unmeasured.

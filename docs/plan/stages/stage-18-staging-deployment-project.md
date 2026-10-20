@@ -589,7 +589,13 @@ stage-18-deploy:
   in to the portal as that person and read what the project shows (the workflows, a run and its logs,
   the editor, the run button); try each write and read its refusal in CloudTrail. Then try, as the same
   person, to create a project from `deployment`, to add a member and to take ownership, which the domain
-  unit's policies govern (`ADD_TO_PROJECT_MEMBER_POOL` is open to every user, read at Stage 6f).
+  unit's policies govern (`ADD_TO_PROJECT_MEMBER_POOL` is open to every user, read at Stage 6f). **Inputs
+  read 2026-10-20** (the log): the narrowest designation is `PROJECT_CATALOG_VIEWER`; the root domain unit
+  grants `CREATE_PROJECT_FROM_PROJECT_PROFILE` for `deployment` to Staging's InfrastructureAccess session
+  group alone and `OVERRIDE_PROJECT_OWNERS` to nobody, so the person is expected to be refused the
+  project and the ownership, and as a viewer the member, the project's owner being the gate rather than
+  the pool. The person signs in from a separate browser profile: a CLI login answered in a browser
+  holding a portal session ends that session. When 6.1 runs is decision 9.
 - **6.2 — [Claude reads, user decides] The boundary on the project role** (vi), only if 6.1 shows a
   person's write landing: read the session's name and context keys of a portal action against a
   worker's task (6h read the portal's session as `<user id>@<env id>` and a space's as `SageMaker`); a
@@ -665,12 +671,16 @@ stage-18-deploy:
 The reverse of passes 1 to 3, in 6b pass 1's order, each step read back before the next.
 
 - **8.1 — [Claude⚡] Remove what the project holds, then the project**: the subscription and the asset,
-  the orphaned database `glue_db_c2ej62w956q2a8` of 7.2's failed environment, by a principal holding `DROP`
-  on it,
+  the orphaned database `glue_db_c2ej62w956q2a8` of 7.2's failed environment, dropped by Staging's
+  InfrastructureAccess once it joins the admins (it holds no Lake Formation permission there, and the
+  two admins trust DataZone and, for the provisioning role, CloudFormation alone): a `PutDataLakeSettings`
+  keeping the two SMUS roles and every other field, then `DROP` granted to itself on both databases
+  (unmeasured; 8.6 empties the list),
   the applications, the workflows grant's attachment (`project_roles` emptied in `staging/studio/`, applied,
   so the stack deletes a role carrying only the policies it attached), the Glue job the operator created,
-  the lineage entities SageMaker created for the processing job (a trial component, four artifacts, four
-  associations; the job itself cannot be deleted), the Glue data source on the `DataLake` database, the
+  the lineage entities SageMaker created for the three processing jobs (three trial components, one per
+  job, the four artifacts they share and twelve associations, read 2026-10-20; the jobs themselves
+  cannot be deleted), the Glue data source on the `DataLake` database, the
   project, whose deletion deletes its two environments' stacks; the stacks read gone; then
   `glue_db_d6ogysnx78dguo` dropped like the orphan, since the `DataLake` template keeps its database
   (`DeletionPolicy: Retain`, `lessons.md`), and both read by name (`get-database` answers Lake Formation's
@@ -694,8 +704,11 @@ The reverse of passes 1 to 3, in 6b pass 1's order, each step read back before t
 - **8.6 — [Claude⚡] Destroy the rest of `staging/studio/`**: the projects bucket listed with its versions
   and delete markers and emptied, the slice destroyed with the workflows policy and the Glue manage-access
   attachment in it, the folder and its `layers.py` row deleted, the project key's deletion date in the log;
-  Staging's Lake Formation admins, the two SMUS roles since 3.3, emptied by `PutDataLakeSettings` carrying
-  every other field as read (a full replace, Lesson 60), then read back to 0.3's empty list.
+  Staging's Lake Formation admins, the two SMUS roles since 3.3 and InfrastructureAccess since 8.1, emptied
+  by `PutDataLakeSettings` carrying every other field as read (a full replace, Lesson 60):
+  `CROSS_ACCOUNT_VERSION` 1 and `SET_CONTEXT` `TRUE`, both from before the stage, and the default lists
+  empty, the state InfrastructureAccess's own call left on 2026-09-06 (6b's unwinding); then read back to
+  0.3's empty list with those parameters.
 - **8.7 — [Claude⚡] Restore the SCP**: the carve-out and the placeholder removed, `identity/org-policies/`
   applied, the battery's rows removed, and from `awsds-infra-staging` a `datazone list-domains` denied
   with the SCP's wording; the `EXC-nn` closed.
@@ -797,6 +810,16 @@ Each is decided during the stage and written into the stage log with its recomme
    job and its run history to repeat that reading. The alternatives: the copy's `destroy`, then `app-etl`'s
    job read gone and recreated by its next run; or the copy kept to 8.1, which removes `app-etl`'s job
    anyway. **Taken 2026-10-19 by the user**, to the recommendation: the direct calls ran at 21:34Z.
+9. **When 6.1 runs** (6.1). Recommended: **with the environment down, before 4.3**, as the checklist
+   session proposed on 2026-10-20. 6.1 needs the portal and the control plane alone, both reached by
+   identity (D39): the person sees the workflow and its four runs with their logs, and a run started
+   from the portal fails at environment preparation with no endpoint up, CloudTrail's `StartWorkflowRun`
+   answering the authorization question either way while one `FAILED` run joins the history. 6.1 ends
+   with the person's membership deleted and read gone, since decisions 3 and 4 want 4.3 in a project
+   with no person in it. Adding and deleting the membership are writes as the project's owner, the user's
+   commands while the classifier refuses Claude a membership grant (Stage 8's log, *Permission Grant*).
+   If 6.1 shows a write landing, 6.2 waits for a sitting with the environment up. The alternative is 6.1
+   after 4.3, inside the next sitting: the person's run reaches a worker, and 6.2 is read in that sitting.
 
 ## Risks
 
