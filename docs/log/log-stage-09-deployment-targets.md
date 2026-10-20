@@ -327,3 +327,20 @@ Production, with the tunnel down (`NO_PROXY='*'`). Every call is a read; nothing
   Production job on `ml.t3.medium`, the type `app-etl`'s `process` task names, passes the quota, and the
   processing rows' reading of `ResourceLimitExceeded` as authorized still holds for the three `ml.m5`
   types.
+
+## 2026-10-20 — Production's training quotas read
+
+*Claude's hand. The first reading is the orchestrating session's; the task session it started to carry
+the reading into the plan re-read it and added AWS's defaults and the ceiling's other types. Both as the
+infrastructure user (`InfrastructureAccess`) through `awsds-infra-prod`, in Production, with the tunnel
+down (`NO_PROXY='*'`). Every call is a read; nothing was applied.*
+
+- **[Claude] The three `ml.m5` training quotas**, `service-quotas list-service-quotas --service-code
+  sagemaker`, read by the orchestrating session at 22:22:36Z: `ml.m5.large for training job usage`
+  (`L-611FA074`), `ml.m5.xlarge` (`L-CCE2AFA6`) and `ml.m5.2xlarge` (`L-AD0A282D`) 0.0. The task
+  session's re-read at 22:34Z gave the same three 0.0, `get-aws-default-service-quota` 0.0 for each, and
+  an empty SageMaker request history.
+- **[Claude] The ceiling's other types, from the same listing**: `ml.t3.large` (`L-B95AAE44`),
+  `ml.t3.xlarge` (`L-823DAB46`) and `ml.c5.xlarge` (`L-E2BB44FE`) for training 0.0, AWS's default 0.0
+  each (22:36Z); `ml.t3.medium` and `ml.c5.large` have no training quota. No type inside the ceiling can
+  train in Production without an increase, so Stage 10 5.1's training job waits on one.
