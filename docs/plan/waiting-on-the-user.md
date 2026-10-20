@@ -9,7 +9,6 @@ own Decisions-due table keeps the reasoning and the recommendation.
 
 | Item | Where | What it holds up |
 |---|---|---|
-| PR #207's merge, soon: `sandbox/sagemaker/` is applied at `sagemaker-prereqs-v0.8.0` (2026-10-20 02:38:53Z) and `main` still pins `v0.7.0`, so a plan of the slice from `main` would detach the Glue manage-access policy | [6f](stages/stage-06f-data-governance.md) step 2.0 | every `sandbox/sagemaker/` plan from `main`, Stage 17's included |
 | Which principal the data cells filters bind | [Stage 11](stages/stage-11-dlp.md) decision 12, with 6f decision 1 | pass 1's two lake applies and 2.3's proof; the code is written and creates nothing |
 | SageMaker processing-job quota increases in Production and Staging (`ml.m5.large`, `ml.m5.xlarge`, `ml.m5.2xlarge` read 0 on 2026-10-18) | [Stage 9](stages/stage-09-deployment-targets.md), [Stage 10](stages/stage-10-orchestration-promotion.md) | every SageMaker job in either account, the promotion's processing step included |
 | The three Claude 5.5 model agreements (Sonnet 4.5 is Legacy since 2026-10-08) | [6e](stages/stage-06e-claude-code-bedrock.md) decision 17, PR #108 | PR #108's applies and the image's model pins; the PR conflicts with main in `CLAUDE.md`, `docs/AWS_STATE.md` and `docs/log/INDEX.md` (read 2026-10-18), for its session to resolve when the agreements arrive |
