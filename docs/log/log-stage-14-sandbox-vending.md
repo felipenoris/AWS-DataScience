@@ -60,7 +60,7 @@ Account ids are replaced by the account's name in angle brackets.*
   user's request, one stage each: this log, D34 and `docs/AWS_STATE.md`'s VPC row brought to the vendor
   readings PR #214 put in steps 2 and 6. PR #214 read the vendor's pages with no session on AWS, so those
   readings live in the stage file and `docs/REFERENCES.md`, not here. Every call below was a read, as the
-  infrastructure user through `InfrastructureAccess`, in `us-west-2`. The entry is PR #PRNUM's.
+  infrastructure user through `InfrastructureAccess`, in `us-west-2`. The entry is PR #221's.
 - **[Claude] No default VPC, and nothing in `172.31.0.0/16`.** `ec2 describe-vpcs` at 22:00Z, exit 0 from
   each of `awsds-infra-sandbox-1`, `awsds-infra-staging`, `awsds-infra-prod`, `awsds-infra-data`,
   `awsds-infra-identity` and `awsds-policy-canary`: five VPCs, each `IsDefault` false on a single block,
