@@ -1221,3 +1221,9 @@ The last two were read again here.*
   `CreateProjectMembership` yet, the delivery lag (Lesson 62). AWS's user guide names two project roles,
   Contributor and Owner, and its admin guide says a member's analytics runs on session credentials the
   service generates for the project's context (read 2026-10-20).
+- **[user] Decision 10**: *"Decisão 10: sim, o 6.1 segue com PROJECT_CATALOG_CONSUMER, depois
+  PROJECT_CATALOG_STEWARD, e então PROJECT_CONTRIBUTOR."*, the recommendation.
+- **[Claude] The first attempt in CloudTrail** (read 22:07Z): `CreateProjectMembership` at 22:02:07Z with
+  `designation` `PROJECT_CATALOG_VIEWER` and `errorCode` `ValidationException`, in Staging's trail by
+  InfrastructureAccess and in Data Governance's as an `AssumedRole` call, the domain's account recording it
+  too; the project's members still the two.

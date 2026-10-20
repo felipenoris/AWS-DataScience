@@ -1026,7 +1026,8 @@ Each is decided during the stage and written into the stage log with its recomme
     so whatever write lands is 6.1's measurement and 6.2's trigger. D18 gives the person no write in
     Staging; the membership suspends that for 6.1's minutes and is deleted at its end (decision 9). The
     alternative: 6.1 closed by reading, iv answered by the refusal and the guide, xi by the domain
-    unit's grants read 2026-10-20, and no person in the project.
+    unit's grants read 2026-10-20, and no person in the project. **Taken 2026-10-20 by the user**, to
+    the recommendation.
 
 ## Risks
 
