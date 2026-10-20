@@ -907,7 +907,8 @@ The reverse of passes 1 to 3, in 6b pass 1's order, each step read back before t
   with the SCP's wording; the `EXC-nn` closed.
 - **8.8 — [user + Claude] Close the repositories**: the measurement branches deleted unmerged, the
   protected branch unprotected, the deploy role's added actions removed and applied, and `datazone` taken
-  out of `staging/egress/`'s `extra_services`.
+  out of `staging/egress/`'s `extra_services`, with `layers.py`'s `staging/egress` row and `PRICING.md`
+  §3's Staging row back to 11 endpoints at USD 0.110 an hour.
 - **8.9 — [Claude reads, user decides] The verdict** (decision 7): the answers to i to xi in the log;
   then D41 item 2 kept, with the measurements in place of the argument, or reopened, with Stage 10's
   steps 1.1, 2.4 and 4.2 rewritten around the CLI; `SMUS.md` gains what the blueprint creates in a
