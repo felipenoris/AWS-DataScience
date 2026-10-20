@@ -985,3 +985,36 @@ are UTC.*
   storage the only charge at rest; a prefix and a role per project, removing pass 5's collision by
   construction. Left unmeasured, by the decision: whether a second provisioning rewrites Staging's Lake
   Formation admins.
+- **[user] Decision 6 recorded above; the decisions done** but 7, the verdict, at 8.9.
+
+## 2026-10-20 — 4.3 and 7.2 prepared, with the environment down
+
+- **[user] The request**: *"Prepare 4.3 and 7.2 now: write and plan the deploy role's amendment and 7.2's
+  table, and give me the acts for the next sitting."* A first plan stopped on an expired SSO token; the
+  user signed in with `./aws/login.py`.
+- **[Claude] 4.3's amendment**, `staging/foundation/deploy-role.tf`: three inline documents on
+  `awsds-deploy-staging`, `sandbox/workflows/`'s test deploy role scoped to `deploy-staging` (the DataZone
+  reads, the workflow calls on a workflow tagged with the project, the project role passed to MWAA
+  Serverless alone, the project's `shared/` prefix, the project key matched by `kms:ResourceAliases`),
+  naming the project role and the key rather than looking them up, so the project's deletion at 8.1
+  leaves the slice planning. The deploy role's ceiling, `awsds-staging-deploy-boundary` at
+  `deploy-role-v0.3.0`, is a `*` ceiling whose denies reach none of these. Planned 01:09:49Z, *"Plan: 3 to
+  add, 0 to change, 0 to destroy."*, the plan saved for the user's apply.
+- **[Claude] 4.3's job**, `stage-18-deploy` on `awsds/app-etl`'s `stage-18-staging` (`caf1ff6`, committed
+  in the clone, pushed at the next GitLab sitting): manual, on the deploy runner; the bundle read with the
+  runner's own role and checked against its SHA256; the branch's manifest and workflow beside it; the
+  account, the subnets, the project's security group and its key read at run time as
+  `awsds-deploy-staging`; `deploy --targets staging`, stopping when the log names no network from the
+  `Tooling` environment; then `run` and `get-workflow-run` to the end.
+- **[Claude] The membership's order**: `awsds-deploy-staging` has no group profile in the domain yet
+  (Cloud Control's `<domain>|<role ARN>` read answers `NotFound`); in Sandbox the test role's appeared at
+  its first DataZone call and the membership by group id followed (2026-10-19). `deploy-staging`'s
+  members read: Staging's InfrastructureAccess session group `PROJECT_OWNER`, and the project role's
+  own `IAM` user profile, the one that posted 7.1's events, `PROJECT_CONTRIBUTOR`.
+- **[Claude] 7.2's readings**: Staging holds no Glue database; its Lake Formation admins are the two SMUS
+  roles alone, and `CreateDatabaseDefaultPermissions` and `CreateTableDefaultPermissions` are empty, so a
+  new database and table are Lake Formation's alone; the one registered location is the project's
+  `…/d1veybt5oak4uo/dev`, registered with the project role, not hybrid. `list-permissions` on the catalog
+  and on that location answers an empty list to the infrastructure user, who is no admin there, which
+  proves nothing either way (Lesson 13). No principal this repository writes can create the database a
+  published table needs: the path is the user's decision.

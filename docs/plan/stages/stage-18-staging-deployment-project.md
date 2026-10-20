@@ -57,7 +57,7 @@ Every row is removed at pass 8, at the step the last column names.
 | `staging/studio/` (new) | the blueprint prerequisites `sandbox/sagemaker/` holds, through `terraform-modules/sagemaker-prereqs/` (the provisioning and manage-access roles, the D13 boundary for the project role, the project key, the projects bucket, the log group), and on its second apply the configuration of decision 1's base blueprint alone, with its grant; `sandbox/workflows/`'s grant on `deploy-staging`'s project role (`workflows.tf`, 4.4) | `[P]` for the stage's life | 8.1 (the attachment), 8.3, 8.6 |
 | `data-governance/governance/` (amended) | the project profile `deployment`: one environment configuration, the base blueprint, with `enableSpaces` false and not editable where the blueprint has it; its create grant names the identity decision 3 picks and no persona group | — | 8.2 |
 | The domain | the project `deploy-staging`, whose only members are the identities that deploy (decision 3) | DataZone's | 8.1 |
-| `staging/foundation/` (amended, only if decision 4 runs 4.3) | the actions 4.2's CloudTrail list adds to `awsds-deploy-staging` | `[P]` | 8.8 |
+| `staging/foundation/` (amended for 4.3, decision 4 taken) | the actions 4.2's CloudTrail list adds to `awsds-deploy-staging`, three inline documents in `deploy-role.tf` | `[P]` | 8.8 |
 | `staging/egress/` (amended) | `datazone` in `extra_services`, the endpoint 7.1's Glue job posts lineage through | `[E]` | 8.8 |
 | `awsds/app-etl` and one awsds-workflows example | a `staging` stage in `app-etl`'s manifest, on a measurement branch that is never merged; the example's two manifests, `orchestration-demo` and `dagid-copy` (5.1, 5.2), in a measurement folder on the laptop, never committed | — | 8.8 |
 
@@ -394,7 +394,11 @@ deploys.
   `ListEnvironmentBlueprints`, `ListEnvironments` and `ListConnections` before its first deploy: without
   them the CLI 1.0.9 creates the workflow in the service's default worker network under a service-managed
   key and prints one line, and MWAA Serverless offers no condition key an SCP could require a network
-  with (the CLI's code, read 2026-10-18, PR #189).
+  with (the CLI's code, read 2026-10-18, PR #189). **Prepared 2026-10-20**: the amendment, three inline
+  documents in `staging/foundation/deploy-role.tf`, planned 3 to add and saved for the user's apply; the
+  job `stage-18-deploy` on the branch (`caf1ff6`), pushed at the next GitLab sitting. The role has no
+  group profile in the domain yet, so its first run is refused as a non-member and creates one, and the
+  membership by group id follows, as in Sandbox.
 - **4.4 — [Claude⚡] Run it** (ix), once the Prerequisites' Stage 8 3.0 half and `vpc-v0.4.0` are
   applied (both 2026-10-19): the sample input placed, then `run --targets staging --workflow` from the laptop, and `start-workflow-run` as the deploy identity; `get-workflow-run` to the end; the
   tasks' identity, subnets and endpoints read from CloudTrail and the logs. **The first run, 2026-10-19**
