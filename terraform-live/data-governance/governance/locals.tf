@@ -106,9 +106,10 @@ locals {
   #
   # `blueprints` is the profile's own list, in deployment order with Tooling first (profiles.tf
   # refuses any other order and any blueprint outside category 1). `deployment` is Stage 18's
-  # measurement, a project no person works in: decision 1's base alone, and a null `group`, so
-  # grants.tf grants Staging's InfrastructureAccess role instead (decision 3), never
-  # sso-group-data-scientists. Stage 18 pass 8 removes the row.
+  # measurement, a project no person works in: decision 1's base, DataLake on demand for 7.2's
+  # published table (decision 5, path A), and a null `group`, so grants.tf grants Staging's
+  # InfrastructureAccess role instead (decision 3), never sso-group-data-scientists. Stage 18
+  # pass 8 removes the row.
   project_profiles = merge(
     {
       experimentation = {
@@ -121,7 +122,7 @@ locals {
     local.deployment_profile_enabled ? {
       deployment = {
         account     = "staging"
-        blueprints  = ["Tooling"]
+        blueprints  = ["Tooling", "DataLake"]
         group       = null
         description = "Deployment (Stage 18): a project the CI/CD CLI deploys applications into and no person works in. Provisions into Staging, with spaces off."
       }

@@ -210,7 +210,7 @@ The two project profiles this installation carries — created 2026-08-21 by the
 | Profile | Provisions into | The unit of work (D21) | Who may create from it |
 |---|---|---|---|
 | `experimentation` | **Sandbox** | a notebook — experimentation happens where nothing downstream depends on it | `sso-group-data-scientists` |
-| `deployment` | **Staging**, Stage 18's window, `Tooling` alone with `enableSpaces` `false` | an application the CI/CD CLI deploys, with no person in the project | Staging's InfrastructureAccess role, as its IAM role session group |
+| `deployment` | **Staging**, Stage 18's window, `Tooling` with `enableSpaces` `false`, and `DataLake` on demand for 7.2's published table (once applied) | an application the CI/CD CLI deploys, with no person in the project | Staging's InfrastructureAccess role, as its IAM role session group |
 | ~~`engineering`~~ | ~~**Development**~~ | **Destroyed 2026-09-06** (Stage 6b step 1.1). The account it targeted became the headless `Staging`, and the chain now starts at a repository rather than an account | — |
 
 Identical in everything but the target account: **eleven environment configurations** (decision 5's

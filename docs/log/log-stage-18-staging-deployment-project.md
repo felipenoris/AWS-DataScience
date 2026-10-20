@@ -824,3 +824,322 @@ are UTC.*
   (20:50:03Z), beside 4.2's workflow group, `EXC-10`'s shape in Staging.
 - **[Claude] 4.4's first half done.** `start-workflow-run` as the deploy identity waits on 4.3
   (decision 4).
+
+## 2026-10-19 — pass 5: two applications in one project, the shared DAG id, the destroy
+
+- **[user] Merged PR #201** (21:12:35Z) and asked for pass 5: *"I merged #201. I authorize the push to the
+  recreated branch and a new PR; continue with pass 5 (5.1 to 5.3)."*
+- **[Claude] The CLI 1.0.9's code, read again before the writes**: `workflow.create` resolves each
+  manifest workflow against the YAML files it lists, registering every top-level key and nested
+  `dag_id`, the first file per name winning; the operator code is matched by basename the same way;
+  `destroy` deletes the workflow by its composed name, every object under each `<root>/<targetDirectory>`,
+  and each Glue job a `GlueJobOperator` task names in the workflow's definition as the service holds it,
+  the catalog only when a stage declares it without `disable: true`, the project only with `create: true`
+  (`bootstrap/handlers/workflow_create_handler.py`, `commands/deploy.py`, `helpers/destroy_validator.py`).
+  Without `--force` it prints its plan and asks.
+- **[Claude] 5.1, the second application**: `orchestration-demo`, 6i's `demo-python-operator` in the
+  CLI's notation (the sensor and the Python task, `bucket`, `inbox` and `outbox` from
+  `{proj.connection.default.s3_shared.bucket}`, `{domain.id}` and `{proj.id}`), its code the archive of
+  `examples/sandbox-orchestration/operators/build.sh` (996,233 bytes), `project.create: false`, the
+  catalog `disable: true`, its storage under `orchestration-demo/python/`. `bundle --targets staging`
+  into a folder of its own, 970,357 bytes, extracted with the manifest beside it, then `deploy`
+  21:19:41 to 21:21:01Z, exit 0: two files, the code copied to `operatorFiles/`,
+  `orchestration_demo_deploy_staging_demo_python_operator` created, `READY`, `manual_only`, one version,
+  the project role, network and key, its log group with no retention, the tags `Pipeline=orchestration-demo`
+  and `Target=deploy-staging` beside the CLI's four. Against a snapshot taken before it, three objects
+  were added, all under its prefix and `operatorFiles/`, and none of `app-etl`'s changed; `app-etl`'s
+  workflow read the same version, definition, code and modification time.
+- **[Claude] 5.2, the shared DAG id**: `dagid-copy`, the same application with its workflow named
+  `app-etl` and `dag_id: app-etl`, its storage under `dagid-copy/python/`. `deploy` 21:22:10 to 21:23:28Z,
+  exit 0, printed *"Reading workflow from S3: s3://awsds-staging-smus-projects/dzd-d8yrvx1ko7im6o/d1veybt5oak4uo/shared/app-etl/workflows/app-etl.yaml"*
+  and *"Resolved workflow uploaded to"* the same key, then created `dagid_copy_deploy_staging_app_etl`
+  with `app-etl`'s definition. **0.1's inference holds, by a cause 0.1 did not name**:
+  `_derive_workflow_search_prefixes` (`commands/deploy.py`) reads `target_directory`, an attribute the
+  manifest's `StorageConfig` does not carry (`targetDirectory`), so both lookups fall back to the
+  project's whole `shared/` root, and `app-etl/` lists before `dagid-copy/`. The rewrite wrote a new
+  version of `app-etl/workflows/app-etl.yaml`, byte-identical to the one before (4,686 bytes, its
+  versions read 20:06:11, 20:09:08, 20:09:31 and 21:23:26Z); the copy's code was its own,
+  `dagid-copy.zip`, copied as `operatorFiles/app-etl-<n>.zip`, the name `app-etl`'s own copies carry.
+- **[Claude] `app-etl` redeployed from its bundle**, 21:25:48 to 21:27:48Z, exit 0, the manifest read
+  from the branch with `git show` after a first attempt stopped on the clone's other branch, before any
+  AWS call: it read its own file, first in the listing, and updated its workflow, `♻️  Workflow already
+  existed, updated`, to version 2 (`5a2ce43100dc50c21b0357ab5c67f4ae`), its seven files and a new
+  `operatorFiles/` copy rewritten; the copy's workflow unchanged.
+- **[Claude] 5.3, the plans**, each `destroy --targets staging` answered `n`: `orchestration-demo`'s
+  lists its workflow, its two prefixes and its two tasks `skipped`; `dagid-copy`'s lists its workflow,
+  its two prefixes, `process`, `summarize` and `write_result` `skipped`, and **`glue_job:
+  app-etl-d1veybt5oak4uo`**, `app-etl`'s Glue job, read from the copy's definition. The copy's destroy is
+  not run: it is the user's decision.
+- **[Claude] 5.3, `orchestration-demo` destroyed**, `--force`, 21:28:54 to 21:29:12Z, exit 0: *"Catalog
+  deletion is disabled (disable: true) — skipping"*, *"staging: deleted=3 not_found=0 skipped=2
+  error=0"*: the workflow and the two prefixes' two objects. It left
+  `operatorFiles/demo-python-operator-<n>.zip` and its log group, no retention. `app-etl`'s workflow
+  (version 2), its two runs, its Glue job with its one job run, and its files survived, and so did the
+  copy; the project owns no catalog object.
+- **[user] Decision 8 taken**: *"remove dagid-copy with direct calls only, delete-workflow for its workflow
+  and s3 rm for its dagid-copy/ prefix, leaving app-etl's Glue job in place."*
+- **[Claude] The copy removed**, the Stage 17 session told first, as `awsds-infra-staging`: the workflow
+  `dagid_copy_deploy_staging_app_etl` read `READY` with no run, and its prefix two objects, the copy's
+  `dagid-copy.zip` and its own YAML, 795 bytes, never resolved, since its deploy had read `app-etl`'s;
+  `delete-workflow` at 21:34:37Z, exit 0, then `s3 rm --recursive` on `shared/dagid-copy/` at 21:34:38Z,
+  the two objects deleted, exit 0. Against a snapshot taken before: the workflow and the two objects
+  gone, nothing else changed; `app-etl`'s workflow at version 2, its Glue job with its one job run. Left
+  behind, as `destroy` would leave them: the copy's `operatorFiles/app-etl-<n>.zip` beside `app-etl`'s two,
+  `orchestration-demo`'s `operatorFiles/` copy, and the two applications' log groups, empty and with no
+  retention. 5.3 is done.
+
+## 2026-10-19 — 7.1: lineage from the Staging Glue job
+
+- **[user] The request**: *"Go on to 7.1 with the environment up: write what the lineage needs and hand me
+  the applies."*
+- **[Claude] What AWS's pages require**, read 2026-10-19: the Spark settings SageMaker Unified Studio
+  documents for a Glue job, `spark.extraListeners=io.openlineage.spark.agent.OpenLineageSparkListener`
+  with `spark.openlineage.transport.type=amazon_datazone_api`, the domain, the account and the job name;
+  OpenLineage built into Glue 5.0 and later, for Spark DataFrames only (`transform.py` uses DataFrames);
+  S3 paths yield S3 dataset nodes, and a graph shows only when a node is an asset; and, for a job in a
+  VPC, *"make sure the Amazon DataZone VPC endpoint is deployed in that VPC"*.
+- **[Claude] What Staging already holds**, read 2026-10-19: the project role carries the tag
+  `AmazonDataZoneDomain=dzd-d8yrvx1ko7im6o`, so `SageMakerStudioProjectUserRolePolicy` v75's
+  `DataZoneUserPermissions` grants it `datazone:PostLineageEvent` on its domain; the D13 boundary's
+  ceiling is `*`; the DNS Firewall admits `*.amazonaws.com` and `*.api.aws`; the domain's share carries
+  `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess` version 10, the default, whose 154 actions
+  include `PostLineageEvent`, `ListLineageEvents` and `GetLineageEvent`; the domain has no customer CMK.
+  Staging's VPC holds no `datazone` endpoint (issue #39). The domain's `list-lineage-events` read empty
+  at 22:00:16Z, as Data Governance's InfrastructureAccess and as Staging's.
+- **[Claude] The lineage settings**, `awsds/app-etl`'s branch `stage-18-staging` at `6eb795c`: the
+  `transform` task's `DefaultArguments` gain `--conf` with AWS's seven settings, the domain as
+  `{domain.id}`, the job name `app-etl-{proj.id}`, and the account as the staging stage's `ACCOUNT_ID`
+  variable, read from the shell at deploy. `v0.2.1`'s bundle, its workflow YAML and manifest taken
+  from the branch, deployed 21:57:52 to 21:59:51Z, exit 0 (a first attempt stopped at the manifest's
+  validation, `JOB_IMAGE_URI` unset, before any call): the resolved YAML names the domain and
+  `{{ params.ACCOUNT_ID }}`, and the workflow took version 3 (`f2ed9786ea16afcbf6b88cc93d92e937`).
+- **[Claude] The endpoint, written and planned, not applied**: `staging/egress/` gains `datazone` in
+  `extra_services`, planned 22:00:57Z, *"Plan: 1 to add, 0 to change, 0 to destroy."*,
+  `com.amazonaws.us-west-2.datazone` with private DNS and the module's policy. Run A goes first,
+  without it, so the run says whether the event leaves the VPC with no endpoint.
+- **[Claude] Run A, no endpoint**: the workflow started at 22:00:13Z; the Glue job took the settings at
+  22:01:10Z (`update_config`), and its run `jr_9aea84f7…` `SUCCEEDED`, 22:01:10 to 22:03:40Z, 118 s.
+  The driver's error stream reads *"Registered listenerio.openlineage.spark.agent.OpenLineageSparkListener"*,
+  then twice *"Could not emit lineage w/ exception"*, *"Failed to send lineage event to DataZone"*,
+  caused by *"software.amazon.awssdk.core.exception.SdkClientException: Unable to execute HTTP request:
+  Network is unreachable (SDK Attempt Count: 4)"* from `DefaultDataZoneClient.postLineageEvent`, each
+  holding the listener about 33 s; the job went on. The domain's `list-lineage-events` read empty, and
+  neither Staging's CloudTrail nor Data Governance's holds a `PostLineageEvent` since 22:00Z: the event
+  never left the VPC (Lesson 42). The job's driver posts from Staging's network, which has no route to
+  DataZone, so the endpoint is the measured premise.
+- **[Claude] Run A's end and the second reading**: `4pwrFUq1NSnnUMI` `SUCCESS`, 22:00:17 to 22:14:04Z,
+  826 s; at 22:16:40Z the domain's `list-lineage-events` still read 0 from both accounts, the second
+  reading after a delay that "nothing" needs (Lesson 62).
+- **[user] The endpoint applied**, `make up ENV=staging ONLY=egress AUTO=1`, as `awsds-infra-staging`
+  (*"rodei o make up do staging"*). **[Claude] Read back**: `vpce-0fc40278dfb516cc8`,
+  `com.amazonaws.us-west-2.datazone`, `available` since 22:51:18Z, private DNS for
+  `datazone.us-west-2.amazonaws.com` and `datazone.us-west-2.api.aws`; `staging/egress/` re-plans `No
+  changes` (22:54:18Z).
+- **[Claude] Run B, with the endpoint**: the workflow `V4eBnEgINa6pd4U` started at 22:54:33Z; the Glue
+  run `jr_a1422806…` `SUCCEEDED`, 22:55:25 to 22:57:47Z, 122 s. The driver's error stream reads
+  *"Successfully posted a LineageEvent: 4kj1qq1kak6hsg in Domain: dzd-d8yrvx1ko7im6o"* and the same for
+  each later event, the first 4.7 s after the application started. At 22:59Z the domain's
+  `list-lineage-events` read 12 events, from both accounts, each `processingStatus` `SUCCESS`, created by
+  the domain's `IAM` user profile of the project role `datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps`:
+  4 `START`, 4 `RUNNING` and 4 `COMPLETE`, for the job `app_etl_d1veybt5oak4uo` in the namespace
+  `default` (the `-` of `spark.glue.JOB_NAME` turned to `_`) and four of its Spark sub-jobs. The datasets
+  are S3 paths, `s3://awsds-staging-smus-projects` with the inputs `…/app-etl/inbox` and
+  `…/app-etl/inbox/trades.csv` and the output `…/app-etl/work/glue`. `get-lineage-node` on the write's job
+  run reads a `JobRunLineageNodeType` with one upstream node and, downstream, a
+  `DatasetLineageNodeType` whose `sourceIdentifier` is the output's S3 URI. No node is an asset, and the
+  portal draws lineage only on an asset's page, so this run gives the portal no graph; 7.2's
+  publication is where one would appear. CloudTrail held no lineage call in either account at 22:59Z.
+- **[Claude] Run B's end and the second reading**: `V4eBnEgINa6pd4U` `SUCCESS`, 22:54:43 to 23:08:24Z,
+  820 s. At 23:10:59Z the domain's `list-lineage-events` read the same 12 events from both accounts.
+  CloudTrail had delivered the calls by then: in Staging, twelve `PostLineageEvent` by the project role's
+  session `GlueJobRunnerSession`, each through `vpce-0fc40278dfb516cc8`, the new endpoint; in Data
+  Governance, DataZone's own processing as `datazone.amazonaws.com` (`CreateLineageNode` 2,
+  `CreateLineageNodeVersion` 3, `UpdateLineageEvent` 6, `UpdateLineageNode` 11,
+  `UpdateLineageNodeVersion` 9), and this session's reads logged in both accounts. 7.1 is done.
+
+## 2026-10-19 — 4.5: Stage 10's steps read against the CLI's deploy
+
+- **[user] The request**: *"Go on with 4.5, the reading of the deploy against Stage 10; I will take the
+  environment down and merge PR #203."*
+- **[Claude] 4.5 written**, from this day's measurements and no new AWS call but one read: the Glue job's
+  `--conf` carries the account rendered from the run's `ACCOUNT_ID` override, so `create_job_kwargs` is a
+  template field. The stage file's table holds one row per Stage 10 step. The CLI does 1.2 and 4.2; 1.1
+  outside Terraform's state, with a log group that never expires; 2.4 without a release-versioned home,
+  its lookups scanning the whole `shared/` root; not D28's per-workflow role (1.3), one project role
+  serving every application; not D41 item 9's declared Glue job; and nothing of 3.1, 3.4 to 3.7 or Stage
+  8's production gate. Question iii is answered but for 4.3's identity, which waits on decision 4.
+- **[user] The environment taken down** (*"Derrubei todo o ambiente. Pode verificar."*). **[Claude] Read
+  back** at about 23:25Z: Production's three hosts `awsds-prod-gitlab`, `-proxy` and `-vpn` `stopped`, and
+  no instance running, no interface endpoint and no NAT gateway in Production, Staging, Sandbox or Data
+  Governance, so Staging's `datazone` endpoint went down with `staging/egress/`; no Redshift workgroup in
+  Sandbox, no SageMaker app `InService` and no processing job in progress in Sandbox or Staging.
+
+## 2026-10-19 — the pending decisions, one by one
+
+- **[user] Decision 4 taken**: *"Decision 4: yes, 4.3 runs as awsds-deploy-staging at the next GitLab
+  sitting."*
+- **[user] Decision 5 taken**: *"Decision 5: yes, 7.2's subscription runs on sample data."*
+- **[user] Decision 6 taken**, after asking what 5.4 answers and why it would need a project: *"sim,
+  "read-only""*. **[Claude] 5.4 answered by reading**: no SageMaker AI domain per `deployment` project, so
+  the environments-per-domain quota bounds it; 3.3's thirteen resources per project, the log group's
+  storage the only charge at rest; a prefix and a role per project, removing pass 5's collision by
+  construction. Left unmeasured, by the decision: whether a second provisioning rewrites Staging's Lake
+  Formation admins.
+- **[user] Decision 6 recorded above; the decisions done** but 7, the verdict, at 8.9.
+
+## 2026-10-20 — 4.3 and 7.2 prepared, with the environment down
+
+- **[user] The request**: *"Prepare 4.3 and 7.2 now: write and plan the deploy role's amendment and 7.2's
+  table, and give me the acts for the next sitting."* A first plan stopped on an expired SSO token; the
+  user signed in with `./aws/login.py`.
+- **[Claude] 4.3's amendment**, `staging/foundation/deploy-role.tf`: three inline documents on
+  `awsds-deploy-staging`, `sandbox/workflows/`'s test deploy role scoped to `deploy-staging` (the DataZone
+  reads, the workflow calls on a workflow tagged with the project, the project role passed to MWAA
+  Serverless alone, the project's `shared/` prefix, the project key matched by `kms:ResourceAliases`),
+  naming the project role and the key rather than looking them up, so the project's deletion at 8.1
+  leaves the slice planning. The deploy role's ceiling, `awsds-staging-deploy-boundary` at
+  `deploy-role-v0.3.0`, is a `*` ceiling whose denies reach none of these. Planned 01:09:49Z, *"Plan: 3 to
+  add, 0 to change, 0 to destroy."*, the plan saved for the user's apply.
+- **[Claude] 4.3's job**, `stage-18-deploy` on `awsds/app-etl`'s `stage-18-staging` (`caf1ff6`, committed
+  in the clone, pushed at the next GitLab sitting): manual, on the deploy runner; the bundle read with the
+  runner's own role and checked against its SHA256; the branch's manifest and workflow beside it; the
+  account, the subnets, the project's security group and its key read at run time as
+  `awsds-deploy-staging`; `deploy --targets staging`, stopping when the log names no network from the
+  `Tooling` environment; then `run` and `get-workflow-run` to the end.
+- **[Claude] The membership's order**: `awsds-deploy-staging` has no group profile in the domain yet
+  (Cloud Control's `<domain>|<role ARN>` read answers `NotFound`); in Sandbox the test role's appeared at
+  its first DataZone call and the membership by group id followed (2026-10-19). `deploy-staging`'s
+  members read: Staging's InfrastructureAccess session group `PROJECT_OWNER`, and the project role's
+  own `IAM` user profile, the one that posted 7.1's events, `PROJECT_CONTRIBUTOR`.
+- **[Claude] 7.2's readings**: Staging holds no Glue database; its Lake Formation admins are the two SMUS
+  roles alone, and `CreateDatabaseDefaultPermissions` and `CreateTableDefaultPermissions` are empty, so a
+  new database and table are Lake Formation's alone; the one registered location is the project's
+  `…/d1veybt5oak4uo/dev`, registered with the project role, not hybrid. `list-permissions` on the catalog
+  and on that location answers an empty list to the infrastructure user, who is no admin there, which
+  proves nothing either way (Lesson 13). No principal this repository writes can create the database a
+  published table needs: the path is the user's decision.
+- **[user] 4.3's amendment applied**, `staging/foundation/` from the saved plan, as `awsds-infra-staging`:
+  *"module.deploy_role.module.role.aws_iam_role_policy.inline["deployment-project-reads"]: Creation
+  complete after 1s [id=awsds-deploy-staging:deployment-project-reads]"*, the same for `-workflows` and
+  `-storage`, *"Apply complete! Resources: 3 added, 0 changed, 0 destroyed."* **[Claude] Read back**: the
+  re-plan reads `No changes` (01:16:24Z); `awsds-deploy-staging` holds five inline policies, `apply-egress`,
+  `state` and the three, their Sids as written.
+- **[user] 7.2's path**: *"Vamos pela decisão A (recommended): add the DataLake blueprint"*.
+- **[Claude] Path A written and planned**: `staging/studio/`'s `blueprint_names` gains `DataLake`, planned
+  01:19:06Z, *"Plan: 2 to add, 0 to change, 0 to destroy."*, its configuration with `Tooling`'s VPC,
+  subnets, provisioning and manage-access roles and boundary, and its `CREATE_ENVIRONMENT_FROM_BLUEPRINT`
+  grant; `governance/`'s `deployment` row gains `DataLake`, planned 01:19:45Z, *"Plan: 0 to add, 1 to
+  change, 0 to destroy."*, the profile's second environment configuration, `ON_DEMAND`, order 1, blueprint
+  `d8w7c3fmbsz5cg`, in Staging. Both plans saved for the user's applies, `staging/studio/` first. No
+  instrument reads Staging's configurations against a list: `./aws/studio.py` US-3 reads the Interactive
+  accounts, and US-6 refuses a SageMaker AI domain in Staging, which `DataLake` does not create.
+- **[user] 7.2's applies**, from the saved plans: `staging/studio/` as `awsds-infra-staging`,
+  *"module.sagemaker_prereqs.awscc_datazone_environment_blueprint_configuration.enabled["DataLake"]: Creation
+  complete after 7s [id=dzd-d8yrvx1ko7im6o|d8w7c3fmbsz5cg]"*, the grant after it, *"Apply complete!
+  Resources: 2 added, 0 changed, 0 destroyed."*; then `governance/` as `awsds-infra-data`,
+  *"awscc_datazone_project_profile.this["deployment"]: Modifications complete after 6s
+  [id=dzd-d8yrvx1ko7im6o|dalofykyytykgg]"*, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*
+- **[Claude] Read back**, 01:38:55Z: both slices re-plan `No changes`; Staging lists two blueprint
+  configurations, `Tooling` (`4k186sfh08eqxc`) and `DataLake` (`d8w7c3fmbsz5cg`, updated 01:36:09Z); the
+  `deployment` profile lists `Tooling` `ON_CREATE` order 0 and `DataLake` `ON_DEMAND` order 1
+  (`b6bc931f-9f6b-4d15-b02d-aa65d4dd3d46`); Staging's Lake Formation admins are still the two SMUS roles.
+- **[Claude] The environment created**, the two other sessions told first, as `awsds-infra-staging`:
+  `datazone create-environment` with that configuration and blueprint, name `deploy-staging-lakehouse`,
+  01:39:17Z, exit 0, `c2ej62w956q2a8` `CREATING`.
+- **[Claude] The environment failed**, `CREATE_FAILED` read 01:40:18Z: *"Failed to deploy DataLake add-on for
+  environment c2ej62w956q2a8: User:
+  arn:aws:sts::<acct>:assumed-role/awsds-staging-smus-manage-access/AmazonDataZoneEnvironmentDeployer-<acct>
+  is not authorized to perform: lakeformation:CreateLakeFormationOptIn on resource:
+  arn:aws:lakeformation:us-west-2:<acct>:catalog:<acct> because no identity-based policy allows the
+  lakeformation:CreateLakeFormationOptIn action"*, the stack `DataZone-Env-c2ej62w956q2a8`
+  `DELETE_COMPLETE`. CloudTrail, 01:39 to 01:41Z: the provisioning role created the stack,
+  `glue:CreateDatabase` of `glue_db_c2ej62w956q2a8`, three `lakeformation:GrantPermissions` and two
+  `BatchGrantPermissions`, a `glue:UntagResource` refused, then the manage-access role's opt-in refused
+  and the stack deleted. After it: no Glue database, Lake Formation's two admins and one registered
+  location unchanged. Sandbox's projects hold the same `CREATE_FAILED` `DataLake` environment, on the
+  same refusal, since 6f (2026-09-13) and 2026-10-15 (Stage 17's log): the blueprint has never deployed
+  here.
+- **[Claude] The cause, read**: the manage-access role carries `AmazonDataZoneSageMakerManageAccessRolePolicy`
+  v4 alone, `sagemaker-prereqs`'s one attachment, and its document names no `CreateLakeFormationOptIn`;
+  `AmazonDataZoneGlueManageAccessRolePolicy` v18 does, with the grants a subscription to a Glue table
+  becomes. `staging/studio/manage-access.tf` attaches it to Staging's role for the window, beside the
+  module's attachments, which `iam-role-v0.1.0` makes one by one: planned 01:42:35Z, *"Plan: 1 to add, 0
+  to change, 0 to destroy."*, saved for the user's apply. The failed environment is deleted and created
+  again after it.
+- **[user] The attachment's first apply failed**: *"NoSuchEntity: Policy
+  arn:aws:iam::aws:policy/AmazonDataZoneGlueManageAccessRolePolicy does not exist or is not attachable."*
+  **[Claude] The cause**: the policy lives under `/service-role/`,
+  `arn:aws:iam::aws:policy/service-role/AmazonDataZoneGlueManageAccessRolePolicy`, attachable, while the
+  SageMaker one has no path; the listing that found it had printed the name after the last `/` alone
+  (Lesson 38). Fixed in `manage-access.tf`, re-planned 01:46:16Z, *"Plan: 1 to add, 0 to change, 0 to
+  destroy."*, the plan saved again.
+- **[user] The attachment applied**, from `s18-studio-72c`: *"aws_iam_role_policy_attachment.manage_access_glue:
+  Creation complete after 1s
+  [id=awsds-staging-smus-manage-access/arn:aws:iam::aws:policy/service-role/AmazonDataZoneGlueManageAccessRolePolicy]"*,
+  *"Apply complete! Resources: 1 added, 0 changed, 0 destroyed."* **[Claude] Read back**: the re-plan
+  reads `No changes`; the manage-access role carries the Glue and the SageMaker manage-access policies.
+- **[Claude] The failed environment deleted**, `delete-environment` at 02:00:59Z, `DELETING` and then not
+  found by 02:01:24Z; Lake Formation's admins still the two SMUS roles; the environment created again at
+  02:01:46Z, `d6ogysnx78dguo` `CREATING`.
+- **[Claude] The environment `ACTIVE`**, `d6ogysnx78dguo` `deploy-staging-lakehouse`, read 02:02:28Z, 40 s after
+  its creation. It provisioned `glueDBName` `glue_db_d6ogysnx78dguo` at `glueOutputUri`
+  `s3://awsds-staging-smus-projects/dzd-d8yrvx1ko7im6o/d1veybt5oak4uo/dev/data/catalogs/`, inside the
+  `dev/` scope Lake Formation registers; its stack `DataZone-Env-d6ogysnx78dguo` holds one resource,
+  `AWS::Glue::Database`; and the project gained a Glue data source on the database, `READY`, `ENABLED`,
+  scheduled `cron(2 2 * * ? *)`, daily at 02:02 UTC. The infrastructure user's `glue get-databases` lists
+  none: Lake Formation filters the listing to a principal holding a grant. Lake Formation's settings
+  read identical before and after, the same two admins: a second provisioning in the account did not
+  rewrite them (decision 6's open point, read on an environment rather than a project).
+- **[Claude] The grants, from CloudTrail 02:01:40 to 02:03:30Z**: the provisioning role's
+  `BatchGrantPermissions` to `<acct>:IAMPrincipals` and `arn:aws:identitystore:::user/*`, each under the
+  condition `context.datazone.projectId=="d1veybt5oak4uo"`, `CREATE_TABLE`, `DESCRIBE` and `DROP` on the
+  database and `ALTER`, `DELETE`, `DESCRIBE`, `DROP`, `INSERT` and `SELECT` on all its tables; then to the
+  manage-access role `CREATE_TABLE` and grantable `DESCRIBE` on the database and grantable `DESCRIBE` and
+  `SELECT` on its tables. The manage-access role's `CreateLakeFormationOptIn` for the conditioned
+  `IAMPrincipals` on the database passed, and its `RevokePermissions` of `ALL` from
+  `IAM_ALLOWED_PRINCIPALS` answered `InvalidInputException`, nothing to revoke under empty defaults. The
+  pattern is Sandbox's, `docs/SMUS.md`'s portal database, with the opt-in passing for the first time in
+  the estate.
+- **[Claude] Correction: the first environment's database survived.** The entry above that read "After
+  it: no Glue database" took a `glue get-databases` that Lake Formation filters for a principal holding no
+  grant (Lesson 62); the session that fixed Sandbox's module found it (its notes, 2026-10-20). Read again
+  as `awsds-infra-staging`: `glue get-database` on `glue_db_c2ej62w956q2a8` answers
+  `AccessDeniedException`, *"Insufficient Lake Formation permission(s): Required Describe"*, the same as
+  on the `ACTIVE` `glue_db_d6ogysnx78dguo`, while a made-up name answers `EntityNotFoundException`; and
+  CloudTrail from 01:39 to 02:10Z holds two `glue:CreateDatabase` by the provisioning role and no
+  `DeleteDatabase`. The stack's deletion and the environment's left it: an orphan 8.1 removes, by a
+  principal holding `DROP` on it.
+- **[Claude] What the Glue policy changes beyond the opt-in**: `AmazonDataZoneGlueManageAccessRolePolicy`
+  v18 grants the manage-access role `lakeformation:GrantPermissions`, `BatchGrantPermissions`,
+  `RevokePermissions`, `RegisterResource`, the opt-ins and the data cells filters on `*`, where the
+  SageMaker policy grants no `lakeformation:` action; the role is one of Staging's two Lake Formation
+  admins since 3.3, so its seat, inert until now, can act. Staging holds no lake data (Stage 9 pass 5 is
+  not built), and the role is assumable by DataZone alone.
+
+## 2026-10-20 — the remaining steps reviewed against the session, and two corrections
+
+- **[user] The request**: *"Confira se o PR #203 tem no log todo o andamento desta sessão. Revise o plano
+  das etapas que faltam deste estágio do plano considerando o andamento desta sessão e faça as correções
+  necessárias."*
+- **[Claude] The log against the session**: every write and reading of 2026-10-19/20 has its entry, from
+  2.1 to 7.2's environment, the release pipeline's half in Stage 8's log. The entries from 7.2's applies
+  on sit under the heading "4.3 and 7.2 prepared, with the environment down", which their text outgrew.
+- **[Claude] Correction to 3.3's list: S3 Access Grants.** CloudTrail of 2026-10-19: the project role's
+  `CreateAccessGrantsLocation` refused at 06:06:48Z, the one 3.3 recorded; the provisioning role's
+  `CreateAccessGrantsInstance` at 06:06:50Z; the project role's retry at 06:06:51Z, which created the
+  location for `s3://awsds-staging-smus-projects/dzd-d8yrvx1ko7im6o/d1veybt5oak4uo/`. Read 2026-10-20: the
+  instance `default` and that location exist, and the project's `project.s3_default_folder` connection
+  names the location. Question ii and 8.1 carry them.
+- **[Claude] What the subscribing side holds**: Sandbox's `test-experimentation` lists
+  `test-experimentation-lakehouse` `ACTIVE`, created on 2026-10-20 by the session that put the Glue
+  manage-access policy into `sagemaker-prereqs-v0.8.0` (PR #207); Staging's `DataLake` environment carries
+  the subscription target `deploy-staging-lakehouse-default-target` for `GlueTableAssetType` and
+  `GlueViewAssetType`; Staging's data source reads `publishOnImport` false, its daily run at 02:02 UTC not
+  yet made.
+- **[Claude] The remaining steps corrected**: 7.2's rest written as four steps for the next sitting (the
+  table in `glue_db_d6ogysnx78dguo`, the data source's run and the publication, the subscription from
+  `test-experimentation` and the approval, the reads and the notebook); 8.1 gains the data source, the
+  `DataLake` database read by name, the Access Grants location and instance, and the domain's lineage
+  objects and the project role's profile; 8.3 two configurations; 8.6 the admins emptied by a
+  `PutDataLakeSettings` that keeps every other field; the cost twelve endpoints; the slices table two
+  rows.

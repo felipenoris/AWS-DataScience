@@ -398,7 +398,15 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   SMUS roles made Staging's Lake Formation admins (OQ 24); 0.4 answered yes (a non-member starts the
   workflow); 4.1's branch `stage-18-staging` pushed; 4.2 deployed `v0.2.1`'s bundle from its extracted
   folder, the CLI reading local content from the manifest's; 4.4's run `SUCCESS` once the user applied
-  `staging/studio/workflows.tf`, `sandbox/workflows/`'s grant;
+  `staging/studio/workflows.tf`, `sandbox/workflows/`'s grant; pass 5's 5.1-5.3 run: the CLI 1.0.9
+  scans a project's whole `shared/` root, so applications sharing a workflow name or DAG id take each
+  other's file, and `dagid-copy`, whose destroy plan held `app-etl`'s Glue job, was removed by direct
+  calls (decision 8, the user's); 7.1 done, the Glue job posting lineage as the project role through a
+  `datazone` endpoint `staging/egress/` carries for the window; 4.5 read Stage 10's steps against the
+  deploy (question iii, but 4.3's identity); decisions 4-6 taken (4.3 at the next GitLab sitting, 7.2 on
+  sample data, 5.4 by reading); 7.2's path A applied: `DataLake` in Staging and the profile, the manage-access
+  role given `AmazonDataZoneGlueManageAccessRolePolicy` (the opt-in every Sandbox `DataLake` environment
+  is refused), `deploy-staging-lakehouse` `ACTIVE`;
   an associated account no person works in goes in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in
   `SMUS_MEMBERS`. Its 4.4's two prerequisites, Stage 8 3.0's first half and Stage 10 1.2's `vpc-v0.4.0`
   on `staging/foundation/`, were applied 2026-10-19 by the user.

@@ -535,7 +535,11 @@ state machine (3.5) and what carries data between them is a contract on S3 (3.6)
   has nothing to configure here, since the worker's packages are AWS's and win over any bundled copy; or the
   job posts its own events, which meets the same SCP in Production. What Production lineage costs is
   decision 9. **Today the domain's `list-lineage-events` is
-  empty**, so whatever this finds is the first event the estate ever produces.
+  empty**, so whatever this finds is the first event the estate ever produces. **Measured 2026-10-19 in
+  Staging** ([Stage 18](stage-18-staging-deployment-project.md) step 7.1): a Glue 6.0 job carrying the
+  OpenLineage settings posts its own events, as its role, and only through a `datazone` interface
+  endpoint in its VPC; without one each post failed *"Network is unreachable"* and the job went on. In
+  Production that takes the endpoint and a way past `DenyDataZoneEntirely` together, decision 9's cost.
 - **3.4 — [Claude] Write the chain layer's base, per account** (D41; decision 15 for its slice): the
   schedule group `awsds-<env>-chains`; the state machines' log group
   `/aws/vendedlogs/states/awsds-<env>-chains`, retention 90 days, encrypted with the account's data CMK,

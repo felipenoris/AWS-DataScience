@@ -120,3 +120,30 @@ variable "alert_email" {
   type        = string
   default     = null
 }
+
+# Stage 18 step 4.3, for the stage's life (removed at 8.8): the deployment project the deploy role
+# deploys into, by its role's name, and its domain. Both are written by hand, as sandbox/workflows/'s
+# are, and neither is looked up, so the project's deletion at 8.1 leaves this slice planning.
+variable "deployment_project_role" {
+  description = "The project role of Stage 18's deployment project `deploy-staging`, by NAME: the role awsds-deploy-staging passes to the workflow service, and whose project's shared/ prefix, workflows and log groups it reaches."
+  type        = string
+  # deploy-staging, created 2026-10-19 (Stage 18 pass 3); read with `iam list-roles` 2026-10-19.
+  default = "datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps"
+
+  validation {
+    condition     = can(regex("^datazone_usr_role_[a-z0-9]+_[a-z0-9]+$", var.deployment_project_role))
+    error_message = "a SMUS project role name, `datazone_usr_role_<project>_<environment>`."
+  }
+}
+
+variable "datazone_domain_id" {
+  description = "The SMUS domain the deployment project belongs to; the deploy role's S3 and log-group scopes use it."
+  type        = string
+  # `awsds-studio`, read from `datazone list-domains` on 2026-10-19 from Staging.
+  default = "dzd-d8yrvx1ko7im6o"
+
+  validation {
+    condition     = can(regex("^dzd-[a-z0-9]+$", var.datazone_domain_id))
+    error_message = "a SMUS domain id is `dzd-` followed by lowercase alphanumerics, as `datazone list-domains` prints it."
+  }
+}
