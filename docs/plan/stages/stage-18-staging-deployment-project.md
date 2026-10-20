@@ -54,7 +54,7 @@ Every row is removed at pass 8, at the step the last column names.
 | `identity/org-policies/` (amended) | the carve-out of `Staging Account` from `DenyDataZoneEntirely`, and from `sagemaker:CreateDomain` only if decision 1 lands on `Tooling`, by `aws:PrincipalAccount` against a new placeholder `<ACCOUNT_ID_STAGING>`; the battery's rows for both directions | — | 8.7 |
 | Data Governance, console (user) | the association of `Staging Account` to `awsds-studio` | — | 8.4 |
 | `scripts/tfhygiene/backend.py` | the `staging` rows of `SMUS_DEPLOYMENT_MEMBERS`, the list 2.3 wrote empty for an associated account no person works in, and of `SMUS_ASSOCIATED` | — | 8.2 |
-| `staging/studio/` (new) | the blueprint prerequisites `sandbox/sagemaker/` holds, through `terraform-modules/sagemaker-prereqs/` (the provisioning and manage-access roles, the D13 boundary for the project role, the project key, the projects bucket, the log group), and on its second apply the configuration of decision 1's base blueprint alone, with its grant; `sandbox/workflows/`'s grant on `deploy-staging`'s project role (`workflows.tf`, 4.4); `DataLake`'s configuration and grant, for 7.2's table (decision 5, path A) | `[P]` for the stage's life | 8.1 (the attachment), 8.3, 8.6 |
+| `staging/studio/` (new) | the blueprint prerequisites `sandbox/sagemaker/` holds, through `terraform-modules/sagemaker-prereqs/` (the provisioning and manage-access roles, the D13 boundary for the project role, the project key, the projects bucket, the log group), and on its second apply the configuration of decision 1's base blueprint alone, with its grant; `sandbox/workflows/`'s grant on `deploy-staging`'s project role (`workflows.tf`, 4.4); `DataLake`'s configuration and grant, for 7.2's table (decision 5, path A); `AmazonDataZoneGlueManageAccessRolePolicy` on the manage-access role (`manage-access.tf`, 7.2) | `[P]` for the stage's life | 8.1 (the attachment), 8.3, 8.6 |
 | `data-governance/governance/` (amended) | the project profile `deployment`: the base blueprint's environment configuration and, for 7.2, `DataLake`'s on demand, with `enableSpaces` false and not editable where the blueprint has it; its create grant names the identity decision 3 picks and no persona group | — | 8.2 |
 | The domain | the project `deploy-staging`, whose only members are the identities that deploy (decision 3) | DataZone's | 8.1 |
 | `staging/foundation/` (amended for 4.3, decision 4 taken) | the actions 4.2's CloudTrail list adds to `awsds-deploy-staging`, three inline documents in `deploy-role.tf` | `[P]` | 8.8 |
@@ -535,7 +535,11 @@ deploys.
   role, a Lake Formation admin, create the project's database and its grants. Its order: `staging/studio/`
   applied (2 to add, planned), then `governance/` (1 to change, planned), then the environment created in
   `deploy-staging`, then the Glue task writing its output as a table there, the publication, the
-  subscription and the approval.
+  subscription and the approval. **The first environment failed** (`c2ej62w956q2a8`, 2026-10-20): the
+  manage-access role was refused `lakeformation:CreateLakeFormationOptIn`, which
+  `AmazonDataZoneSageMakerManageAccessRolePolicy`, the module's one attachment, does not grant, the refusal
+  every Sandbox `DataLake` environment has met since 2026-09-13; `staging/studio/manage-access.tf`
+  attaches `AmazonDataZoneGlueManageAccessRolePolicy`, planned 1 to add.
 - **7.3 — [Claude] Redshift is read, not measured**: Staging has no warehouse, and a Sandbox project
   reading a governed Redshift table is INT-24, Stage 9 step 9.7's. AWS's pages, read 2026-10-17: a
   subscription to a Redshift asset across accounts adds a datashare that the producer side authorizes

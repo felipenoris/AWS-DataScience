@@ -1033,3 +1033,36 @@ are UTC.*
   `d8w7c3fmbsz5cg`, in Staging. Both plans saved for the user's applies, `staging/studio/` first. No
   instrument reads Staging's configurations against a list: `./aws/studio.py` US-3 reads the Interactive
   accounts, and US-6 refuses a SageMaker AI domain in Staging, which `DataLake` does not create.
+- **[user] 7.2's applies**, from the saved plans: `staging/studio/` as `awsds-infra-staging`,
+  *"module.sagemaker_prereqs.awscc_datazone_environment_blueprint_configuration.enabled["DataLake"]: Creation
+  complete after 7s [id=dzd-d8yrvx1ko7im6o|d8w7c3fmbsz5cg]"*, the grant after it, *"Apply complete!
+  Resources: 2 added, 0 changed, 0 destroyed."*; then `governance/` as `awsds-infra-data`,
+  *"awscc_datazone_project_profile.this["deployment"]: Modifications complete after 6s
+  [id=dzd-d8yrvx1ko7im6o|dalofykyytykgg]"*, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*
+- **[Claude] Read back**, 01:38:55Z: both slices re-plan `No changes`; Staging lists two blueprint
+  configurations, `Tooling` (`4k186sfh08eqxc`) and `DataLake` (`d8w7c3fmbsz5cg`, updated 01:36:09Z); the
+  `deployment` profile lists `Tooling` `ON_CREATE` order 0 and `DataLake` `ON_DEMAND` order 1
+  (`b6bc931f-9f6b-4d15-b02d-aa65d4dd3d46`); Staging's Lake Formation admins are still the two SMUS roles.
+- **[Claude] The environment created**, the two other sessions told first, as `awsds-infra-staging`:
+  `datazone create-environment` with that configuration and blueprint, name `deploy-staging-lakehouse`,
+  01:39:17Z, exit 0, `c2ej62w956q2a8` `CREATING`.
+- **[Claude] The environment failed**, `CREATE_FAILED` read 01:40:18Z: *"Failed to deploy DataLake add-on for
+  environment c2ej62w956q2a8: User:
+  arn:aws:sts::<acct>:assumed-role/awsds-staging-smus-manage-access/AmazonDataZoneEnvironmentDeployer-<acct>
+  is not authorized to perform: lakeformation:CreateLakeFormationOptIn on resource:
+  arn:aws:lakeformation:us-west-2:<acct>:catalog:<acct> because no identity-based policy allows the
+  lakeformation:CreateLakeFormationOptIn action"*, the stack `DataZone-Env-c2ej62w956q2a8`
+  `DELETE_COMPLETE`. CloudTrail, 01:39 to 01:41Z: the provisioning role created the stack,
+  `glue:CreateDatabase` of `glue_db_c2ej62w956q2a8`, three `lakeformation:GrantPermissions` and two
+  `BatchGrantPermissions`, a `glue:UntagResource` refused, then the manage-access role's opt-in refused
+  and the stack deleted. After it: no Glue database, Lake Formation's two admins and one registered
+  location unchanged. Sandbox's projects hold the same `CREATE_FAILED` `DataLake` environment, on the
+  same refusal, since 6f (2026-09-13) and 2026-10-15 (Stage 17's log): the blueprint has never deployed
+  here.
+- **[Claude] The cause, read**: the manage-access role carries `AmazonDataZoneSageMakerManageAccessRolePolicy`
+  v4 alone, `sagemaker-prereqs`'s one attachment, and its document names no `CreateLakeFormationOptIn`;
+  `AmazonDataZoneGlueManageAccessRolePolicy` v18 does, with the grants a subscription to a Glue table
+  becomes. `staging/studio/manage-access.tf` attaches it to Staging's role for the window, beside the
+  module's attachments, which `iam-role-v0.1.0` makes one by one: planned 01:42:35Z, *"Plan: 1 to add, 0
+  to change, 0 to destroy."*, saved for the user's apply. The failed environment is deleted and created
+  again after it.
