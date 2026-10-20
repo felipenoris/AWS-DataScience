@@ -203,7 +203,8 @@ pool stays open across units, and that is the first reading the second vend take
    - **What arrives.** Account Factory deletes the default VPC, which has an internet gateway and a public
      subnet per Availability Zone, in the governed Regions of an account it creates; enrollment deletes no
      VPC, so this rung owes that deletion. The pages do not say whether Account Factory still deletes it
-     with VPC creation off (Stage 3 step 0.3); the first vend reads it, under either rung. No
+     with VPC creation off (Stage 3 step 0.3); the first vend reads it, under either rung, by `IsDefault`,
+     since a default VPC is `172.31.0.0/16`, the range the Account Factory VPCs held. No
      `SSOUserEmail` exists, so the account arrives without D32's direct assignment (inferred: the field is
      the product's).
    - **Timing.** Enrollment is eventually consistent, minutes to hours, so the vend's next steps wait for it.

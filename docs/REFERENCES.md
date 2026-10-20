@@ -251,9 +251,10 @@
     <https://docs.aws.amazon.com/controltower/latest/userguide/enroll-account.html>, in the governed Regions,
     and neither page ties that to the network configuration:
     <https://docs.aws.amazon.com/controltower/latest/userguide/vpc-concepts.html>; a default VPC has an
-    internet gateway and a public subnet per Availability Zone:
-    <https://docs.aws.amazon.com/vpc/latest/userguide/default-vpc.html>. `CreateAccount` and `MoveAccount`
-    are the management account's alone; `CreateAccount` defaults `RoleName` to
+    internet gateway and a public subnet per Availability Zone, on `172.31.0.0/16`:
+    <https://docs.aws.amazon.com/vpc/latest/userguide/default-vpc.html> and
+    <https://docs.aws.amazon.com/vpc/latest/userguide/default-vpc-components.html>. `CreateAccount` and
+    `MoveAccount` are the management account's alone; `CreateAccount` defaults `RoleName` to
     `OrganizationAccountAccessRole` and takes an address of 6 to 64 characters of 7-bit ASCII:
     <https://docs.aws.amazon.com/organizations/latest/APIReference/API_CreateAccount.html> and
     <https://docs.aws.amazon.com/organizations/latest/APIReference/API_MoveAccount.html>. The service
