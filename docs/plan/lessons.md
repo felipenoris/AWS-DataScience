@@ -2096,8 +2096,9 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   no type returned 96 profiles, every one `SYSTEM_DEFINED`, and `--type-equals APPLICATION` returned
   the two. The API reference names both values and no default. Where:
   `aws/awslib/inferenceprofiles.py` asks for each type by name, for `aws/bedrock-usage.py` to rate a
-  series published under an application profile's id and for `aws/bedrock.py` section 5 to list both
-  types.
+  series published under an application profile's id, for `aws/bedrock.py` section 5 to list both
+  types and for `aws/bedrock-scope.py`'s `BS-2` to read the declared `us.` profiles, which are
+  `SYSTEM_DEFINED`.
 - **A Control Tower control is written from `Management` and read from anywhere** (measured
   2026-09-12). `controltower:` answers only in the management account — a member account is told to
   create a landing zone first — but the control writes an ordinary SCP, and

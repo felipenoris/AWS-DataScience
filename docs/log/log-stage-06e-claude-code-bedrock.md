@@ -1629,3 +1629,25 @@ and is not tracked. Times are UTC.*
   `BU-5` read as Stage 17's log recorded them on 2026-10-19.
 - **[Claude] Outside this change.** `aws/bedrock-scope.py` also lists inference profiles with no
   type. Its `BS-2` looks only for the scoped `us.` profiles, so it needs no type either.
+
+## 2026-10-20 — `aws/bedrock-scope.py` asks for the system-defined inference profiles by name
+
+*Provenance. Claude, in a session of its own, as the infrastructure user with `InfrastructureAccess`
+through `awsds-infra-sandbox-1` on `Sandbox Account 1`. Every AWS call was a read. The change is on
+this session's branch; the `aws` shim on `PATH` that logged and refused one call lives in the
+session's scratchpad and is not tracked. Times are UTC.*
+
+- **[Claude] The run before the change**, `./aws/bedrock-scope.py` with `main`'s copy of the script,
+  01:09:26 to 01:09:57, exit 0. Its `list-inference-profiles` named no type. Every check passed:
+  `BS-2` read `3 profile(s)` `ACTIVE`, `BS-3` and `BS-4` the routing `us-east-1, us-east-2,
+  us-west-2`, `BS-5` three agreements `AVAILABLE`, `BS-6` mode `none` in 17 Regions.
+- **[Claude] The change.** `BS-2` reads the `SYSTEM_DEFINED` listing of
+  `aws/awslib/inferenceprofiles.py`, the type of the declared `us.` profiles, and keeps its note
+  when the call fails.
+- **[Claude] The run after the change**, 01:10:03 to 01:10:31, exit 0, no call failed. The report
+  is the one before, line for line, but its `generated` stamp. A third run through the shim,
+  stamped 01:11:49, logged the call as `list-inference-profiles --type-equals SYSTEM_DEFINED` and
+  wrote the same report.
+- **[Claude] The call refused** by the shim, stamped 01:12:17, exit 1: `BS-2` reads `note`,
+  *"the profile list did not read"*, section 5 names the call, and `BS-1` and `BS-3` to `BS-7`
+  pass as before.
