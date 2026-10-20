@@ -1975,3 +1975,44 @@ was exercised against lives in the session's scratchpad and is not tracked. Time
 - **[Claude] Outside this change.** `aws/bedrock.py` section 5 passes no type to
   `list-inference-profiles`, so it lists no application profile while its text describes them; the
   default is now in `lessons.md`'s list of platform behaviours. The script belongs to Stage 6e.
+
+## 2026-10-20 — the readings owed with the environment down, and the provisioning role's path
+
+*Provenance. Claude, in a session started by the session that ran 2026-10-20's offline round, from the
+worktree `stage-17-log-reads-c5d8e8` at `origin/main` `1a84fc47`, as the infrastructure user with
+`InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and in `Data Governance`
+(`awsds-infra-data`), with the whole environment down. Every AWS call was a read. The reports print the
+caller's ARN and were not copied; no quoted line carries an account id or an e-mail address. Times are
+UTC.*
+
+- **[Claude] The provisioning role**, read with `iam get-role` at 22:06, since decision 13's step 2 in
+  the stage file placed it at `/service-role/` with a name built from the vended account name.
+  `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>` sits at path `/`, created
+  2026-10-19 at 20:27:17, under `awsds-sandbox-project-boundary`, its `RoleLastUsed` empty. Compared
+  without printing them, the name's suffix and the trust's `aws:SourceAccount` are the account of the
+  domain ARN `awsds-infra-data` lists, and not Sandbox's. The slice reads that account from the
+  governance state's `domain_arn`, and its `iam-role` module sets no path. The consumption role
+  `awsds-sandbox-bedrock-model-consumption` sits at `/` too, last used 2026-10-19 at 22:09:15 in
+  `us-west-2`, Nova Lite's refused call.
+- **[Claude] `./aws/devenv.py`**, stamped 22:01:30, exit 2, run first so that `ML-9` reads a current
+  `DE-5`. `DE-5` fails as it has since PR #172: version 9 (`aafa08da98a61f5c`) against the Dockerfile's
+  `6faf2e4761622508`, 2 names the image lacks. `DE-2` fails on `sandbox/egress` being down, as on
+  2026-10-18, and `DE-3` and `DE-6` are not compared.
+- **[Claude] `./aws/sandbox-ml.py`**, 22:01:30 to 22:04:02, the report stamped 22:04:01, exit 0, *"all
+  checks passed"*. Against the run of 2026-10-19 at 22:06:45 (decision 11's entry), section 10 alone
+  moved, the session being down where it was up then: no interface endpoint where eighteen read
+  `available`, the DNS Firewall list `awsds-sandbox-egress-allow` absent where it held 14 entries, and
+  `ML-9`'s endpoint row a note where it was a pass. `ML-1` to `ML-8` read as on 2026-10-19, and
+  CloudTrail holds no create after `CreateMlflowApp` at 06:39:55 on 2026-10-19.
+- **[Claude] `ML-7`.** The quotas read 20 for training, 8 for endpoints, 8 for transform and 10 for
+  processing, all applied, and 3 MLflow Apps. The three increase requests still read `CASE_OPENED`.
+  `list-requested-service-quota-change-history` at 22:03:59 gives the last updates read on 2026-10-18:
+  21:45:45 and 21:45:49 on 2026-10-17 for `L-CCE2AFA6` and `L-614B09FD`, and 00:23:33 on 2026-10-18 for
+  `L-236AE59F`. No case has moved since.
+- **[Claude] `ML-2`.** `ml-demo-mlflow` reads `Created`, MLflow `3.10.1`, its store the project's
+  `dev/data/ml/mlflow` prefix, its role the project role, `AutoModelRegistrationDisabled`, no account
+  default, maintenance `Sun:14:15`, the project's tag and no key, as at 06:47 on 2026-10-19.
+- **[Claude] The models' objects**, at 22:04:45. Sandbox holds the two application inference profiles
+  of 2026-10-19, the playground's `cp0gmvjv1h8q` and `csu817ovl4kz`. The governance project approves
+  the same three subscriptions, each a person's, to the playground listings of Haiku 4.5 and Nova
+  Lite. No project has subscribed to a model.
