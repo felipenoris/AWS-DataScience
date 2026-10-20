@@ -1583,3 +1583,49 @@ with each phase's stamp and totals; the other rows are left out.*
   stages: the `ou` phase's one `FAIL` and six of its `note` rows are Stage 9's, whose statements are
   written and not applied ([its log](log-stage-09-deployment-targets.md)); four `note` rows are `EXC-03`'s
   Athena rows and three are the standing `no subnet in us-west-2` rows in Data Governance and Identity.
+
+## 2026-10-20 — `aws/bedrock.py` section 5 lists application inference profiles
+
+*Provenance. Claude, in a session of its own, as the infrastructure user with `InfrastructureAccess`
+through the five `awsds-infra-*` profiles. Every AWS call was a read. The change is on this
+session's branch; the fabricated `aws` it was exercised against lives in the session's scratchpad
+and is not tracked. Times are UTC.*
+
+- **[Claude] The run before the change**, `./aws/bedrock.py awsds-infra-data awsds-infra-identity
+  awsds-infra-prod awsds-infra-sandbox-1 awsds-infra-staging`, 00:30:04 to 00:31:31, exit 0.
+  Section 5 called `list-inference-profiles` with no type and listed 96 profiles in each account,
+  every one `SYSTEM_DEFINED`. `Sandbox Account 1` holds two application profiles (Stage 17's log,
+  2026-10-19), and the section showed neither.
+- **[Claude] The change.** Section 5 asks for each type by name through
+  `aws/awslib/inferenceprofiles.py`, which `aws/bedrock-usage.py` now reads too. An application
+  profile's row carries its id, type, status, model count and what it copies: the system-defined
+  profile listing exactly its model ARNs, or the model when it lists `us-west-2` alone. When neither
+  matches, the cell reads `-` and a line under the table says what the profile lists. No profile id
+  is in the code.
+- **[Claude] `BR-4` needs no type.** It looks for the scoped `us.` profiles, which are
+  system-defined, the type the call returns when it names none. It now reads section 5's
+  `SYSTEM_DEFINED` listing for its account instead of a call of its own, so the check and the table
+  read one answer.
+- **[Claude] Exercised against a fabricated `aws`** before the live run: copies of a `us.` profile,
+  of a `global.` profile and of a model in `us-west-2`; Regions no system-defined profile lists; two
+  models in one profile; model ARNs two system-defined profiles share; no application profile; each
+  type's call refused, which exits 1 with the call in section 10; a scoped profile missing, which
+  fails `BR-4` and exits 2. `bedrock-usage.py`'s `inference_profiles()` and `profile_route()`
+  returned what `main`'s returned on 841 inputs.
+- **[Claude] The run after the change**, the same five profiles, 00:36:52 to 00:38:25, exit 0, no
+  call failed. Section 5 in `Sandbox Account 1`:
+
+  ```
+  PROFILE ID    TYPE         STATUS  MODELS  COPIES
+  cp0gmvjv1h8q  APPLICATION  ACTIVE  3       us.anthropic.claude-haiku-4-5-20251001-v1:0
+  csu817ovl4kz  APPLICATION  ACTIVE  1       amazon.nova-lite-v1:0
+  ```
+
+  The other four accounts hold no application profile, and each account lists the same 96
+  system-defined ids as before. Outside section 5 the report is identical to the run before, checks
+  included: `BR-4` reads `3 of 3 in awsds-infra-sandbox-1`.
+- **[Claude] `./aws/bedrock-usage.py 2026-10-19T21:00Z 2026-10-19T22:20Z`**, stamped 00:38:12,
+  exit 0, *"all checks passed"*: the `cp0gmvjv1h8q (claude-haiku-4-5)` row, its `profile:` line and
+  `BU-5` read as Stage 17's log recorded them on 2026-10-19.
+- **[Claude] Outside this change.** `aws/bedrock-scope.py` also lists inference profiles with no
+  type. Its `BS-2` looks only for the scoped `us.` profiles, so it needs no type either.
