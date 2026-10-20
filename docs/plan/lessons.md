@@ -2111,9 +2111,10 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
 - **`ListInferenceProfiles` with no `typeEquals` returns the system-defined profiles alone** (measured
   2026-10-19). In `Sandbox Account 1`, which held two application inference profiles, the call with
   no type returned 96 profiles, every one `SYSTEM_DEFINED`, and `--type-equals APPLICATION` returned
-  the two. The API reference names both values and no default. Where: `aws/bedrock-usage.py`, which
-  asks for each type by name to rate a series published under an application profile's id;
-  `aws/bedrock.py` section 5 passes no type, so it lists no application profile.
+  the two. The API reference names both values and no default. Where:
+  `aws/awslib/inferenceprofiles.py` asks for each type by name, for `aws/bedrock-usage.py` to rate a
+  series published under an application profile's id and for `aws/bedrock.py` section 5 to list both
+  types.
 - **A Control Tower control is written from `Management` and read from anywhere** (measured
   2026-09-12). `controltower:` answers only in the management account — a member account is told to
   create a landing zone first — but the control writes an ordinary SCP, and

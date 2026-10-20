@@ -73,7 +73,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from awslib import context, profiles
+from awslib import context, inferenceprofiles, profiles
 from awslib.awscli import AwsCli, ErrorLog
 from awslib.bedrockscope import SCP_PATH, scp_declaration
 from awslib.report import Checks, Report, failed_calls_epilogue, note
@@ -219,53 +219,30 @@ def rate_for(model: str, rates: dict, counts: dict) -> tuple[tuple | None, str]:
 
 def inference_profiles(cli: AwsCli) -> tuple[dict, dict] | None:
     """(application profile id -> its model ARNs, model ARNs -> system-defined profile ids), or
-    None when a call failed.
-
-    Each type is asked for by name: with no type the call returns the system-defined profiles alone
-    (measured 2026-10-19, 96 of 96 in Sandbox, which held two application profiles).
+    None when a call failed. Each type is asked for by name (awslib/inferenceprofiles.py).
     """
-    found = []
-    for kind in ("APPLICATION", "SYSTEM_DEFINED"):
-        res = cli.run(
-            "bedrock",
-            "list-inference-profiles",
-            "--type-equals",
-            kind,
-            "--query",
-            "inferenceProfileSummaries[].[inferenceProfileId,models[].modelArn]",
-            "--output",
-            "json",
-        )
-        if not res.ok:
-            return None
-        rows = json.loads(res.stdout or "[]") or []
-        found.append({pid: frozenset(arns or ()) for pid, arns in rows})
-    systems: dict = defaultdict(set)
-    for pid, arns in found[1].items():
-        systems[arns].add(pid)
-    return found[0], systems
+    applications = inferenceprofiles.listing(cli, "APPLICATION")
+    if applications is None:
+        return None
+    systems = inferenceprofiles.listing(cli, "SYSTEM_DEFINED")
+    if systems is None:
+        return None
+    return (
+        {pid: arns for pid, (_status, arns) in applications.items()},
+        inferenceprofiles.by_model_arns(systems),
+    )
 
 
 def profile_route(arns: frozenset, systems: dict) -> tuple[str | None, str | None, str]:
     """(the model, the id it is rated as, what the profile lists) for an application profile.
 
-    The model is None when the profile reaches more than one, and the id is None when its model
-    ARNs match neither one system-defined profile nor the model in this Region alone.
+    The id is what the profile copies, and None when awslib/inferenceprofiles.py cannot read that.
     """
-    models = sorted({arn.rsplit("/", 1)[-1] for arn in arns})
-    if len(models) != 1:
-        return None, None, f"lists {len(models)} models: {', '.join(models)}"
-    model = models[0]
-    copied = sorted(systems.get(arns, ()))
-    if len(copied) == 1:
-        system = copied[0]
-        return model, system, f"lists the model ARNs of {system}, so it is rated as that profile"
-    if copied:
-        return model, None, f"lists the model ARNs of {' and '.join(copied)}, more than one profile"
-    if arns == {f"arn:aws:bedrock:{context.REGION}::foundation-model/{model}"}:
-        return model, model, f"lists {model} in {context.REGION} alone, so it is rated as the model"
-    regions = sorted(arn.split(":")[3] or "no Region" for arn in arns)
-    return model, None, f"lists {model} in {', '.join(regions)}, as no system-defined profile does"
+    model, copied, lists = inferenceprofiles.source(arns, systems)
+    if copied is None:
+        return model, None, lists
+    rated = "the model" if copied == model else "that profile"
+    return model, copied, f"{lists}, so it is rated as {rated}"
 
 
 def metric_data(cli: AwsCli, queries: list, start: datetime, end: datetime) -> dict | None:
