@@ -23,7 +23,7 @@ or resolvable from outside the VPN.
 |---|---|
 | **[Claude]** | repository edits and read-only AWS calls — done without asking |
 | **[Claude⚡]** | `terraform apply` or any AWS write — only after the user authorizes that specific action in chat, with the SSO user / account / permission set stated first |
-| **[user]** | the domain name, the registration, every DNS decision, and every log entry |
+| **[user]** | the domain name, the registration, every DNS decision, and the log entries the user writes |
 | **[Claude reads, user decides]** | a measurement Claude takes and a choice only the user can make |
 
 ## Step numbers are identifiers, not an order

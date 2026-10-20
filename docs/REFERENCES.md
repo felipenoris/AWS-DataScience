@@ -927,6 +927,14 @@
   `modelArn` per entry:
   <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_ListInferenceProfiles.html>.
 
+- **`InvokeModel`'s errors**, read 2026-10-20 for the reading `lessons.md` records from Stage 17 decision
+  11, an unknown application inference profile id refused before authorization: the API reference lists
+  `AccessDeniedException` (403) and `ValidationException` (400), and the troubleshooting page gives each a
+  cause and a solution; neither page carries the message *"The provided model identifier is invalid"* or
+  says which check comes first:
+  <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_InvokeModel.html>,
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/troubleshooting-api-error-codes.html>.
+
 - **Claude Code on Amazon Bedrock**, the vendor's own setup page (read 2026-09-11): the environment
   variables (`CLAUDE_CODE_USE_BEDROCK`, `AWS_REGION`, `ANTHROPIC_MODEL`, `ANTHROPIC_DEFAULT_OPUS_MODEL`,
   `ANTHROPIC_DEFAULT_HAIKU_MODEL`), the IAM policy with its four `bedrock:` actions and the marketplace
@@ -1082,6 +1090,11 @@
   and managed, S3 Vectors, Aurora, Neptune Analytics, Pinecone, Redis, MongoDB Atlas)
   <https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-supported.html>.
 
+- **`IngestionJobStatistics`**, read 2026-10-20 for Stage 17's risk that a sync indexes part of the
+  runbooks: an ingestion job counts the source documents it scanned (new, updated and unchanged), indexed
+  as new or as modified, failed, skipped and deleted, and the metadata files it scanned and modified:
+  <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_IngestionJobStatistics.html>.
+
 - **Amazon S3 Vectors** (read 2026-10-12), which names Amazon Bedrock in SageMaker Unified Studio
   knowledge bases among its uses <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors.html>.
 
@@ -1159,6 +1172,19 @@
     `DescribeModelPackage`, `DescribeModelPackageGroup` and `ListModelPackages` on another account's
     resources, decision 10's project-role half:
     <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectRoleMachineLearningPolicy.html>.
+- The SageMaker readings behind Stage 9 3.5's instance-preference rows and decision 1's scoping (read
+  2026-10-20):
+  - *Instance preference lists for processing jobs*: up to five types in `ProcessingClusterConfig`,
+    never beside `InstanceType`; SageMaker checks the quota of every listed type and refuses the request
+    when one falls short; no condition key is named:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/processing-job-instance-preferences.html>.
+  - *How Amazon SageMaker AI Processes Training Output*: `/opt/ml/model` and `/opt/ml/output/data` are
+    each copied as one compressed tar object to the S3 location the `CreateTrainingJob` request names,
+    which is why decision 1 scopes Staging's read to the model archive rather than the prefix:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms-training-algo-output.html>.
+  - *The training storage paths*: `/opt/ml/output/data` (`SM_OUTPUT_DIR`) takes any output the script
+    saves and is written to S3 when the job ends, as `/opt/ml/model` (`SM_MODEL_DIR`) is:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/model-train-storage-env-var-summary.html>.
 - Data across accounts in SageMaker Unified Studio (read 2026-10-17, for Stage 18 steps 2.2, 7.2 and 7.3, and the question whether a Sandbox project reads what production writes). The association's share and its RAM permission: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>; a governance-first account layout, a data mesh over the catalog, and two cross-account walkthroughs that create a project in each account: <https://aws.amazon.com/blogs/big-data/navigating-multi-account-deployments-in-amazon-sagemaker-unified-studio-a-governance-first-approach/>, <https://aws.amazon.com/blogs/big-data/implement-a-data-mesh-pattern-with-amazon-sagemaker-catalog-without-making-changes-to-your-applications/>, <https://aws.amazon.com/blogs/big-data/cross-account-lakehouse-governance-with-amazon-s3-tables-and-sagemaker-catalog/>, <https://aws.amazon.com/blogs/big-data/govern-amazon-redshift-data-across-accounts-with-sagemaker-unified-studio/>. Publishing: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-source-glue.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-redshift-data-source.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/discover-data.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-unmanaged-asset.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/troubleshooting-issues.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/lake-formation-permissions-for-amazon-sagemaker-unified-studio.html>, <https://docs.aws.amazon.com/datazone/latest/userguide/hybrid-mode.html>, <https://docs.aws.amazon.com/datazone/latest/userguide/use-your-own-role.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/data-onboarding.html>. Subscribing: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-glue-asset.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-with-filters.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-redshift-asset.html>, and the two managed policies that carry the cross-account calls: <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectUserRolePolicy.html>, <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonDataZoneRedshiftManageAccessRolePolicy.html>. Lake Formation and Redshift with no DataZone: <https://docs.aws.amazon.com/lake-formation/latest/dg/crosss-account-how-works.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/compute-permission-mode.html>, <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/lakehouse-add-catalog.html>, <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/consumer-account-setup.html>, <https://docs.aws.amazon.com/redshift/latest/dg/considerations.html>, <https://docs.aws.amazon.com/redshift/latest/dg/consumer-cluster-admin.html>, <https://docs.aws.amazon.com/id_id/sagemaker-unified-studio/latest/userguide/compute-prerequisite-athena.html>.
 - AWS's guidance on a non-production account reading production data (read 2026-10-17, for the same question): the ML platform whitepaper, which treats the data science account's copy as production data, the financial-services strategy, and three Well-Architected best practices, two of which ask for masked or sampled data outside production: <https://docs.aws.amazon.com/whitepapers/latest/build-secure-enterprise-ml-platform/aws-accounts.html>, <https://docs.aws.amazon.com/prescriptive-guidance/latest/strategy-unlock-value-data-financial-services/best-practices-ml-ops.html>, <https://docs.aws.amazon.com/wellarchitected/latest/analytics-lens/best-practice-2.2---create-test-data-and-provision-staging-environment..html>, <https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/anti-patterns-for-test-environment-management.html>, <https://docs.aws.amazon.com/wellarchitected/latest/machine-learning-lens/mlsec04-bp01.html>.
 - SageMaker Unified Studio's releases, read 2026-10-18 for `docs/plan/upstream-releases.md`. Custom Tooling blueprints, the announcement and the admin guide's template requirements: <https://aws.amazon.com/about-aws/whats-new/2026/10/sagemaker-custom-tooling-blueprints/>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/tooling-custom-blueprints.html>. Trusted identity propagation from notebooks, and the three pages re-read the same day (the notebooks page now documents the native notebook experience and its TIP support; remote space connections are still unsupported in a TIP profile): <https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-sagemaker/>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/trusted-identity-propagation.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/notebooks.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/configuring-sagemaker-unified-studio-remote-access.html>. Notebook kernels in the domain-level VPC: <https://aws.amazon.com/about-aws/whats-new/2026/04/sagemaker-unified-studio-vpc/>. CI/CD notebook promotion and manifest generation: <https://aws.amazon.com/about-aws/whats-new/2026/09/sagemaker-cicd-notebook-ai-manifest/>. ODBC for BI tools: <https://aws.amazon.com/about-aws/whats-new/2026/09/sagemaker-unified-studio-odbc-power-bi/>. Iceberg REST Catalog connections: <https://aws.amazon.com/about-aws/whats-new/2026/09/sagemaker-iceberg-rest-iam-documentdb/>. Python and Bash operators in Workflows: <https://aws.amazon.com/about-aws/whats-new/2026/09/sagemaker-workflows-python-bash/>. Git in every project tool: <https://aws.amazon.com/about-aws/whats-new/2026/07/amazon-sagemaker-unified-studio-git/>. Identity and user management for both domain types: <https://aws.amazon.com/about-aws/whats-new/2026/05/smus-identity-user-management/>. Where the Data Agent stores and infers, and the native notebooks with the agent reaching Identity Center domains on 2026-04-23: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-agent-data-storage.html>, <https://aws.amazon.com/about-aws/whats-new/2026/04/amazon-sagemaker-idc/>. The MLflow App's customer-managed key: <https://aws.amazon.com/about-aws/whats-new/2026/08/sagemaker-mlflow-custom-keys>. The admin guide's document history, with the managed-policy updates of 2026-08-24, 2026-09-14 and 2026-10-08: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html>. AWS's post of 2026-08-06 on LF-TBAC grants to Identity Center groups through TIP: <https://aws.amazon.com/blogs/big-data/scaling-fine-grained-access-control-for-enterprise-lakehouse-using-sagemaker-unified-studio-and-aws-lake-formation/>. Instance preference lists for training and processing jobs: <https://aws.amazon.com/about-aws/whats-new/2026/09/amazon-sagemaker-training-processing-instance-pref-lists/>, <https://docs.aws.amazon.com/sagemaker/latest/dg/train-instance-preferences.html>.
@@ -1223,6 +1249,14 @@
   databases that you are connected to, and also write from any other database that you have permissions to"* —
   which is why D40 puts the two classes of database in two accounts rather than in one namespace:
   <https://docs.aws.amazon.com/redshift/latest/dg/cross-database-overview.html>.
+
+- **Redshift — the admin secret's rotation (read 2026-10-20, for `EXC-13`'s first rotation).**
+  *Managing Amazon Redshift admin passwords using AWS Secrets Manager*: Redshift *"rotates the secret every
+  30 days by default"*, and among the considerations a serverless namespace with no workgroup associated
+  at a rotation means *"the rotation will fail and won't try to rotate it again"*. On 2026-10-20 the first
+  scheduled rotation ran with no workgroup and Secrets Manager logged `RotationSucceeded`
+  ([Stage 5b](plan/stages/stage-05b-redshift-serverless.md)'s log, 2026-10-20):
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/redshift-secrets-manager-integration.html>.
 
 - **Redshift — where a query runs, and the serverless per-query limit (read 2026-10-18, for
   [Stage 5b](plan/stages/stage-05b-redshift-serverless.md)'s owed reading of `max_query_execution_time`).**
@@ -1508,7 +1542,9 @@
   developer guide's document history ends at 2025-04-17 and dates no RLS change:
   <https://docs.aws.amazon.com/lake-formation/latest/dg/doc-history.html>.
 
-- Amazon S3 Bucket Keys (KMS cost reduction): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-key.html>.
+- Amazon S3 Bucket Keys (KMS cost reduction; re-read 2026-10-20 for Stage 9 decision 1 and D31: with a
+  Bucket Key the KMS encryption context is the bucket ARN, so a key or IAM policy that names an object
+  ARN stops matching): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-key.html>.
 
 - Amazon S3 Object Lock (immutable log archive): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html>.
 
@@ -2273,11 +2309,25 @@
   <https://docs.aws.amazon.com/guardduty/latest/ug/delegated-admin-designate.html>.
 
 - Permissions required to designate a delegated GuardDuty administrator account — the management
-  account needs `guardduty:EnableOrganizationAdminAccount` plus the Organizations reads, and the only
-  principal the service creates is the service-linked role `AWSServiceRoleForAmazonGuardDuty`. Read
-  for Stage 15 step 5: `POLICIES.md`'s "carve out a named administration role" alternative has no
-  candidate among GuardDuty's own creations:
+  account needs `guardduty:EnableOrganizationAdminAccount` plus the Organizations reads, and
+  `iam:CreateServiceLinkedRole` on `AWSServiceRoleForAmazonGuardDuty` only to designate itself. Read
+  for Stage 15 step 5 with the two rows below: `POLICIES.md`'s "carve out a named administration role"
+  alternative has no candidate among GuardDuty's own creations:
   <https://docs.aws.amazon.com/guardduty/latest/ug/organizations_permissions.html>.
+
+- Service-linked role permissions for Malware Protection for EC2 — a second GuardDuty role,
+  `AWSServiceRoleForAmazonGuardDutyMalwareProtection`, trusted by
+  `malware-protection.guardduty.amazonaws.com`, created when the plan is first enabled, which it is by
+  default for an account new to GuardDuty, and not deleted when the plan is disabled. Read 2026-10-20
+  for Stage 15 step 5 and decision 1 (c):
+  <https://docs.aws.amazon.com/guardduty/latest/ug/slr-permissions-malware-protection.html>.
+
+- The two roles' managed policies, `AmazonGuardDutyServiceRolePolicy` v13 and
+  `AmazonGuardDutyMalwareProtectionServiceRolePolicy` v2: neither holds a `guardduty:` action, and the
+  first allows `iam:CreateServiceLinkedRole` for `malware-protection.guardduty.amazonaws.com`. Read
+  2026-10-20 for Stage 15 step 5:
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonGuardDutyServiceRolePolicy.html>
+  and <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonGuardDutyMalwareProtectionServiceRolePolicy.html>.
 
 - Adding members to the GuardDuty organization — "There is an exception to the organization
   management account. Before the management account gets added as a GuardDuty member, it must have
@@ -2305,12 +2355,19 @@
   <https://docs.aws.amazon.com/guardduty/latest/ug/ai-protection.html> and
   <https://docs.aws.amazon.com/guardduty/latest/ug/ai-protection-enable-multiple-accounts.html>.
 
+- GuardDuty Investigation (Preview), read 2026-10-20 for Stage 15 step 0 and verification ii: the
+  `AI_ANALYST` detector feature enabled as an act, through `UpdateDetector` or the console's
+  **Settings**, with no default stated; investigations created by the administrator alone, on Amazon
+  Bedrock models through cross-Region inference, `us-east-1`, `us-east-2` or `us-west-2` serving a
+  request from Oregon: <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-investigation.html>.
+
 - GuardDuty policies in AWS Organizations, the `GUARDDUTY_POLICY` type, read 2026-10-20 for Stage 15
   decision 4. The overview: per-Region enablement of the foundational detector and seven plans, scoped by
   the attachment, the Regional auto-enable settings suspended once the type is enabled:
   <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_guardduty.html>. The
   syntax: a `default` block or one per Region, each feature `enabled` or `disabled`, a Region block
-  replacing the default rather than merging with it:
+  replacing the default rather than merging with it, and no key for the `AI_ANALYST` detector feature
+  (Stage 15 step 3):
   <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_guardduty_syntax.html>.
   Getting started, which admits as author the management account or an Organizations delegated
   administrator for the type, and lists Management's `AWSServiceRoleForAmazonGuardDuty` among its checks:

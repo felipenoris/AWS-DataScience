@@ -190,17 +190,21 @@ variable "storage_alarm_usd" {
 
 # ------------------------------------------------- the admitted projects (5b 2.2, 6h 2.1/2.2)
 #
-# ONE MAP, THREE CONSUMERS, WHICH IS WHY IT IS A MAP AND NOT THREE LISTS. Each entry expands to:
+# One map for every consumer, which is why it is a map and not a list per consumer. Each entry
+# expands to:
 #
-#   layer 1  the tag AmazonDataZoneProject=<projectId> on BOTH the workgroup and the namespace -
-#            AWS names both objects, and a value that must appear in N places by hand will be
-#            missing from one (Lesson 14). The namespace half is written here; the workgroup half
-#            is written by sandbox/warehouse-compute/, which READS THIS MAP FROM THIS SLICE'S
-#            STATE rather than declaring its own copy.
-#   layer 2  one IAM policy attached to the project's role: GetCredentials and the three reads,
-#            resource-scoped to this workgroup's ARN.
-#   the door one ingress rule on the workgroup's security group, 5439/tcp from the project's own
-#            security group - not a CIDR, and not the whole private tier.
+#   layer 1      the tag AmazonDataZoneProject=<projectId> on BOTH the workgroup and the namespace -
+#                AWS names both objects, and a value that must appear in N places by hand will be
+#                missing from one (Lesson 14). The namespace half is written here; the workgroup
+#                half is written by sandbox/warehouse-compute/, which READS THIS MAP FROM THIS
+#                SLICE'S STATE rather than declaring its own copy.
+#   layer 2      one IAM policy, on the project's role and on its access role: GetCredentials,
+#                GetWorkgroup and ListTagsForResource on this account's workgroups, and the two
+#                listings that take no resource.
+#   access role  the role the portal's connection assumes (6h 3.1): trusted by the project's role
+#                alone, holding layer 2's policy and the portal's own.
+#   the door     one ingress rule on the workgroup's security group, 5439/tcp from the project's own
+#                security group - not a CIDR, and not the whole private tier.
 #
 # Layer 3 - the GRANT on a schema - is NOT here and cannot be: it is SQL in the namespace, and
 # removing a project from this map revokes layers 1 and 2 at the next apply and leaves its role
@@ -212,8 +216,8 @@ variable "storage_alarm_usd" {
 # sandbox/bedrock/'s project_roles is, and for the same reason (Stage 6e decision 8).
 #
 # EMPTY IS LEGAL AND IT IS THE STATE PASS 1 APPLIES IN. A warehouse with no admitted project has
-# no ingress rule, no project tag and no attached policy - which is what makes 6h verification (vi)
-# readable at all: the before is a measurement, not an assumption.
+# no ingress rule, no project tag, no access role and no attached policy - which is what makes 6h
+# verification (vi) readable at all: the before is a measurement, not an assumption.
 # ------------------------------------------------- the domain the admitted project belongs to
 #
 # Needed by ONE statement: the access role's trust policy pins the session tag

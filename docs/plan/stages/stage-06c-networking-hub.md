@@ -87,7 +87,7 @@ Each row corrects an assumption of the 2026-09-05 draft.
 |---|---|
 | **[Claude]** | repository edits and read-only AWS calls — done without asking |
 | **[Claude⚡]** | `terraform apply`/`destroy` or any AWS write (the two address-transfer calls included) — run **only after the user authorizes that specific action in chat**, with the SSO user / account / permission set stated first |
-| **[user]** | the host-key copy, every device's `.conf`, the tunnel-side measurements, the console acts, git commits and every log entry |
+| **[user]** | the host-key copy, every device's `.conf`, the tunnel-side measurements, the console acts, git commits and the log entries the user writes |
 | **[Claude reads, user decides]** / **[Claude and user]** | a measurement Claude takes and a choice only the user can make, in the same sitting — the reading is written down whichever way the choice goes |
 
 ## Step numbers are identifiers, not an order

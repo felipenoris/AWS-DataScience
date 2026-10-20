@@ -430,7 +430,7 @@ Stage 17's training job names its types as a list:
 | `create-processing-job`, the list naming `ml.m5.large` | `ResourceLimitExceeded` (authorized): SageMaker checks the quota of every listed type, and Production's processing quotas read 0 | none: the contrast, which attributes the two rows below to the type rather than to the list's form |
 | the same, the list naming `ml.m5.2xlarge` | `AccessDenied` naming the `Workloads` document | `DenySageMakerInstanceCeiling` reads a list |
 | the same, the list naming `ml.m5.large`, then `ml.m5.2xlarge` | `AccessDenied` | the key carries every entry, not the first alone |
-| `create-training-job` with `VpcConfig`, isolation, inter-container encryption, `VolumeKmsKeyId`, the list naming `ml.m5.large` | `ValidationException` or `ResourceLimitExceeded` (authorized); Production's training quotas are unread | none: the contrast, and the battery's first training row |
+| `create-training-job` with `VpcConfig`, isolation, inter-container encryption, `VolumeKmsKeyId`, the list naming `ml.m5.large` | `ValidationException` or `ResourceLimitExceeded` (authorized); Production's training quotas for the three `ml.m5` types read 0 (2026-10-20), and whether this action checks them after authorization is unread | none: the contrast, and the battery's first training row |
 | the same, `ml.m5.2xlarge` as `InstanceType` | `AccessDenied` | none new: the control, which places authorization before the role and quota checks of this action |
 | the same, the list naming `ml.m5.2xlarge` | `AccessDenied` | the list, for the second action (Lesson 21) |
 | the same, the list naming `ml.m5.large`, then `ml.m5.2xlarge` | `AccessDenied` | every entry, for the second action |

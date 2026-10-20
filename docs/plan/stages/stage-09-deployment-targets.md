@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **pass 0 read and pass 1 applied on 2026-10-18** ([the log](../../log/log-stage-09-deployment-targets.md)), from a laptop session as the infrastructure user: the `Workloads` OU document's job settings and serverless deny (9 statements, the battery's `ou` phase after the apply 39 as expected, 0 unexpected, 7 not measured, `DT-11` passing) and `production/sagemaker/` (16 resources, re-plan `No changes`); `production/workloads-egress/`'s six endpoints and DNS Firewall planned (15 to add) and raised by the next Production `make up`. Decisions 4, 9 (a), 10 and 3.7 (b) taken as recommended. Verification viii is answered, its assignment half by `./aws/list-identities.py` and the Identity account's CloudTrail (2026-10-18). Owed in pass 1: 3.4's registry proof and 6.3's window, the user's, and a battery run for 3.5's instance-preference rows, written and not run. **The processing-job quotas of `ml.m5.large`, `ml.m5.xlarge` and `ml.m5.2xlarge` read 0 in Production and Staging** (2026-10-18); Staging's `ml.t3.medium` reads 4, and Staging's first SageMaker job ran on it on 2026-10-19, `app-etl-20261019T205205` ([Stage 18](stage-18-staging-deployment-project.md) 4.4), refused by no statement of the `Workloads` document. Pass 2 waits on decision 3. **Staging is the renamed `Development`** ([6b](stage-06b-development-becomes-staging.md)): 10.50.0.0/16 with its `[P]` gateway endpoint, peered with `VPC-Networking` only, no default route, and an `egress/` slice still cut for an Interactive account, which 4.3a re-cuts. **Production's jobs run in `VPC-Workloads`** ([6c](stage-06c-networking-hub.md)), whose endpoint slice holds the jobs' six endpoints once pass 1 is applied (3.3a) and whose gateway endpoint, not `production/foundation/`'s, is their INT-05 anchor (1.4). Three measurements from [6d](stage-06d-unified-studio-remainder.md) and [6i](stage-06i-sandbox-orchestration.md) reshape the runtime: a SageMaker job's settings are enforced on whoever calls `Create*Job`, never on the role the job runs as (3.5, decision 9); a job under network isolation reads no governed data, so the producer and the pickup stay Glue (3.1); and `consumer-data-v0.6.0` supplies neither a workgroup nor a results bucket, so this stage authors both (decision 11, [D19](../decisions/D19-derived-zone.md)'s re-decision). **The Staging data CMK is created here**, as `alias/awsds-staging-data`. Step 9 adds the governed half of the Redshift warehouse ([D40](../decisions/D40-redshift-warehouse.md)), copied from the Sandbox slices [Stage 5b](stage-05b-redshift-serverless.md) built and [6h](stage-06h-redshift-connection.md) measured |
+| **Status** | **pass 0 read and pass 1 applied on 2026-10-18** ([the log](../../log/log-stage-09-deployment-targets.md)), from a laptop session as the infrastructure user: the `Workloads` OU document's job settings and serverless deny (9 statements, the battery's `ou` phase after the apply 39 as expected, 0 unexpected, 7 not measured, `DT-11` passing) and `production/sagemaker/` (16 resources, re-plan `No changes`); `production/workloads-egress/`'s six endpoints and DNS Firewall planned (15 to add) and raised by the next Production `make up`. Decisions 4, 9 (a), 10 and 3.7 (b) taken as recommended. Verification viii is answered, its assignment half by `./aws/list-identities.py` and the Identity account's CloudTrail (2026-10-18). Owed in pass 1: 3.4's registry proof and 6.3's window, the user's, and a battery run for 3.5's instance-preference rows, written and not run. **The processing-job quotas of `ml.m5.large`, `ml.m5.xlarge` and `ml.m5.2xlarge` read 0 in Production and Staging** (2026-10-18, Production's again on 2026-10-20); `ml.t3.medium`, the type `app-etl`'s `process` task names, reads 4 in both, AWS's default (Production's re-read 2026-10-20, no increase requested), and Staging's first SageMaker job ran on it on 2026-10-19, `app-etl-20261019T205205` ([Stage 18](stage-18-staging-deployment-project.md) 4.4), refused by no statement of the `Workloads` document. Production's training quotas read 0 for every type inside the ceiling that has one (2026-10-20, 3.5). Pass 2 waits on decision 3. **Staging is the renamed `Development`** ([6b](stage-06b-development-becomes-staging.md)): 10.50.0.0/16 with its `[P]` gateway endpoint, peered with `VPC-Networking` only, no default route, and an `egress/` slice still cut for an Interactive account, which 4.3a re-cuts. **Production's jobs run in `VPC-Workloads`** ([6c](stage-06c-networking-hub.md)), whose endpoint slice holds the jobs' six endpoints once pass 1 is applied (3.3a) and whose gateway endpoint, not `production/foundation/`'s, is their INT-05 anchor (1.4). Three measurements from [6d](stage-06d-unified-studio-remainder.md) and [6i](stage-06i-sandbox-orchestration.md) reshape the runtime: a SageMaker job's settings are enforced on whoever calls `Create*Job`, never on the role the job runs as (3.5, decision 9); a job under network isolation reads no governed data, so the producer and the pickup stay Glue (3.1); and `consumer-data-v0.6.0` supplies neither a workgroup nor a results bucket, so this stage authors both (decision 11, [D19](../decisions/D19-derived-zone.md)'s re-decision). **The Staging data CMK is created here**, as `alias/awsds-staging-data`. Step 9 adds the governed half of the Redshift warehouse ([D40](../decisions/D40-redshift-warehouse.md)), copied from the Sandbox slices [Stage 5b](stage-05b-redshift-serverless.md) built and [6h](stage-06h-redshift-connection.md) measured |
 | **Prerequisites** | Stage 3: `production/foundation/` and `production/workloads/` with their `[P]` gateway endpoints. Stage 5a: the lake, the LF settings under `DL-5`'s guard, the drop-box statements written against this stage's role name. **Stage 8 pass 1**: step 3's resource policies name `awsds-deploy-prod` and `awsds-deploy-staging`, and a resource policy naming a principal that does not exist fails at put time; the full chain only for pass 5. 6b and 6c: Staging and the three Production VPCs as built. For step 9 alone: [5b](stage-05b-redshift-serverless.md) (the warehouse slices and their readings, its verification (i) answered with two subnets) and [6h](stage-06h-redshift-connection.md) (the database users and grants measured through both doors). Redshift waits on no quota (5b 0.4 read 25 namespaces and 25 workgroups per account); SageMaker does: the processing-job quotas of `ml.m5.large`, `ml.m5.xlarge` and `ml.m5.2xlarge` read 0 in Production and Staging (2026-10-18). [Stage 18](stage-18-staging-deployment-project.md) depends on this stage too: it needs pass 1's `Workloads` document and its battery (its 0.3 and 0.5) and runs before pass 5. Its association adds no reader to `production/sagemaker/`: `readers` is `SMUS_MEMBERS`, the accounts people work in, and Stage 18 2.3 put a deployment account's row in `SMUS_DEPLOYMENT_MEMBERS` (PR #174), which `readers` does not read (`backend.py`) |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D22](../decisions/D22-data-governance-account.md), [D25](../decisions/D25-drop-box-consumer.md), [D28](../decisions/D28-workflow-contract.md), [D31](../decisions/D31-approver-read.md), [D38](../decisions/D38-single-egress-hub.md), [D39](../decisions/D39-access-by-identity.md), [D40](../decisions/D40-redshift-warehouse.md) |
 | **Proves** | [INT-03](../integrations.md) **the write share** (the two read shares are Stage 5a's); [INT-05](../integrations.md) (the Production branch, anchored on `VPC-Workloads`, and the persona's principal branch); [INT-06](../integrations.md); [INT-07](../integrations.md) **in part**, the model-registry read half, which absorbed INT-04 at 6b (the image half is Stage 8 step 3.2's); [INT-10](../integrations.md) **the pickup half** (the writer and maintenance halves are Stage 5a's); [INT-24](../integrations.md), a Sandbox project reading a governed Redshift table that lives in Production |
@@ -79,7 +79,7 @@ flowchart LR
 |---|---|
 | **[Claude]** | repository edits (Terraform, scripts) and read-only AWS calls — done without asking |
 | **[Claude⚡]** | `terraform apply` or any AWS write — only after the user authorizes that specific action in chat, with the SSO user/account/permission set stated first |
-| **[user]** | behavioural proofs run from a laptop session, approvals, and every log entry |
+| **[user]** | behavioural proofs run from a laptop session, approvals, and the log entries the user writes |
 | **[Claude reads, user decides]** | a measurement Claude takes and a choice only the user can make, in the same sitting |
 | **[pipeline]** | Stage 8's chain run in pass 5, which is Stage 8's own pass 4 (its decision 23) — triggered by the user's tag, credentialed by Stage 8 step 4 |
 
@@ -418,7 +418,12 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   for [Stage 17](stage-17-sandbox-machine-learning.md) pass 2. **The first job in `Workloads` came before
   the rows**: Stage 18 4.4 ran Staging's first, `app-etl-20261019T205205` on `ml.t3.medium` (2026-10-19),
   naming its type as `InstanceType`, so it did not exercise a list. The rows run with the next battery,
-  before Stage 10's processing step and Stage 17 pass 2's training job.
+  before Stage 10's processing step and Stage 17 pass 2's training job. Production's three `ml.m5`
+  processing quotas read 0 again on 2026-10-20, so an authorized processing row still answers
+  `ResourceLimitExceeded` (the log). Its training quotas read 0 the same day, AWS's defaults with no
+  request, for those three types and for every other type inside the ceiling with a training quota
+  (`ml.t3.large`, `ml.t3.xlarge`, `ml.c5.xlarge`; `ml.t3.medium` and `ml.c5.large` have none), so
+  Stage 10 5.1's training job waits on an increase (the log).
 - **3.6 — [Claude] Read the enforcement back.** `./aws/deploytargets.py` gains **`DT-11`** (`DT-9` is the
   escape hatch): under (a), the five statements present in the `Workloads` OU document and the document
   attached; under (b), every role that can call `Create*Job` in the two accounts carries the boundary, read
@@ -679,8 +684,10 @@ carry 5b's readings, with the differences 9.1 lists. What is new in this account
     fails with *"the key … is inaccessible"* and leaves an orphan admin secret behind (`EXC-12`), so the retry
     needs a new admin username.
   - **The admin secret.** `manage_admin_password = true`, with no `admin_password_secret_kms_key_id`: the
-    data key refuses it. Its rotation fails permanently when it fires while the workgroup is down, so
-    `EXC-13` gains a Production row.
+    data key refuses it. Sandbox's first rotation succeeded on 2026-10-20 with no workgroup, against AWS's
+    page, and whether the database took the password is unread
+    ([the 5b log](../../log/log-stage-05b-redshift-serverless.md)); the Production secret rotates on the
+    same schedule, so `EXC-13` gains a Production row.
   - **The databases.** `db_name = "warehouse"`, as in Sandbox; `governed` is created in SQL at 9.3. `db_name`
     adds a database beside `dev` rather than replacing it, so the namespace holds three, and `WH-6` expects
     exactly `governed`, `warehouse` and `dev`.
@@ -940,7 +947,10 @@ Measured (`docs/PRICING.md`, `docs/plan/cost-model.md`), us-west-2:
      2026-10-20). No key condition reaches the prefix, so the key admits the two roles to the bucket
      through S3 and the bucket policy alone holds them to the archives. D31's recorded zero-cost variant,
      a key condition on the object's ARN, is unavailable on every bucket the module creates, for the same
-     reason.
+     reason. Every module tag, `v0.1.0` to `v0.4.0`, sets `bucket_key_enabled = true` with no variable,
+     and Production's three module buckets, `awsds-prod-releases` (`v0.4.0`), `awsds-prod-gitlab-objects`
+     and `awsds-prod-gitlab-backup` (`v0.3.0`), read `BucketKeyEnabled: true` on 2026-10-20;
+     `awsds-prod-outputs` answered `NoSuchBucket`, since 1.1 creates it in pass 3 (the log).
    - **Against 4.6**: the scoping is 4.6's read, its resource narrowed from the bucket to the archives.
    - **Against Stage 10 5.1**: the training job writes its archive under
      `awsds-prod-outputs/models/app-etl/` with the data CMK, which the pattern matches; its training data,
@@ -1055,11 +1065,12 @@ Record every answer, including the ones that come out fine.
 
 - **An instance preference list may pass beside the instance ceiling** (3.5): `InstancePreferences` names
   up to five types in place of `InstanceType`, and no reading says the condition key follows. The
-  battery's rows are written and not run. The quotas do not keep jobs out of `Workloads`: Staging's
-  `ml.t3.medium` processing quota is 4, and `app-etl-20261019T205205` ran on it on 2026-10-19 (Stage 18
-  4.4). SageMaker checks the quota of every listed type, so a list naming `ml.m5.2xlarge`, at 0 for
-  processing in both accounts, is refused either way; the quotas of the other off-ceiling types are
-  unread.
+  battery's rows are written and not run. The quotas do not keep jobs out of `Workloads`: the
+  `ml.t3.medium` processing quota is 4 in Staging and in Production (AWS's default, Production's read
+  2026-10-20), and `app-etl-20261019T205205` ran on it in Staging on 2026-10-19 (Stage 18 4.4).
+  SageMaker checks the quota of every listed type, so a list naming `ml.m5.2xlarge`, at 0 for processing
+  in both accounts and for training in Production, is refused either way; the quotas of the other
+  off-ceiling types are unread.
 - **The silent LF-settings reset now has three instances, not one** — every account with a
   `DataLakeSettings` resource can zero its own `Parameters` on any apply. `DT-5` extends `DL-5`'s
   reading to all three; run it after every apply, not at stage end. **And that resource carries a

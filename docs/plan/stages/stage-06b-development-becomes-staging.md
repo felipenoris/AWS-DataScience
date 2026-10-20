@@ -50,7 +50,7 @@ The one object the two stages share is the `Development ↔ Production` peering.
 |---|---|
 | **[Claude]** | repository edits and read-only AWS calls — done without asking |
 | **[Claude⚡]** | `terraform apply`/`destroy` or any AWS write — run **only after the user authorizes that specific action in chat**, with the SSO user / account / permission set stated first |
-| **[user]** | console and CloudShell acts (Management holds no CLI profile for this work), `~/.aws/config`, git commits, and every log entry |
+| **[user]** | console and CloudShell acts (Management holds no CLI profile for this work), `~/.aws/config`, git commits, and the log entries the user writes |
 
 ## Step numbers are identifiers, not an order
 

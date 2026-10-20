@@ -59,7 +59,7 @@ principals, and log files that survive to be read. Enabling one does not dischar
 |---|---|
 | **[Claude]** | repository edits and read-only AWS calls — done without asking |
 | **[Claude⚡]** | `terraform apply` or any AWS write — only after the user authorizes that specific action in chat, with the SSO user/account/permission set stated first |
-| **[user]** | console/CloudShell acts in Management and Audit (no profile there, by design), the behavioural proofs run from persona sessions and the laptop, and every log entry |
+| **[user]** | console/CloudShell acts in Management and Audit (no profile there, by design), the behavioural proofs run from persona sessions and the laptop, and the log entries the user writes |
 
 Hand applies run as the **infrastructure user**: `awsds-infra-data` and `awsds-infra-sandbox-1` (the
 lake and trail slices; `awsds-infra-prod` joins when Stage 9 writes `production/data/`),
@@ -401,7 +401,7 @@ reading that `AccessDenied` as a broken policy and deleting the statement.
   protection plans: auto-enable **`ALL`** for both features (new and existing members, up to 24 h to
   propagate).
 - **4.3 — [user] Unblock Audit's own detector by the recorded path** (decision 4): **Stage 15 meets this
-  deny first, in the opposite direction** (its step 5: GuardDuty creates only the service-linked role, so
+  deny first, in the opposite direction** (its step 5: GuardDuty creates only service-linked roles, so
   there is no administration role to name), and its decision 1 recommends the detach/re-attach procedure
   and argues against the carve-out; Stage 15 has not started, so no path is exercised yet (read
   2026-10-18). **Reuse whatever its log records as the exercised path**; failing that, detach `awsds-org-scp-baseline`

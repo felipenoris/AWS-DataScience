@@ -66,7 +66,7 @@ flowchart LR
 |---|---|
 | **[Claude]** | repository edits (Terraform, `.gitlab-ci.yml`, workflow files, scripts) and read-only AWS calls — done without asking |
 | **[Claude⚡]** | `terraform apply` or any AWS write — only after the user authorizes that specific action in chat, with the SSO user/account/permission set stated first |
-| **[user]** | everything inside GitLab's UI (roles, protected tags, runner registration, CI variables, running manual jobs), git pushes and tags, GitHub settings, the dev-env domain writes, and every log entry |
+| **[user]** | everything inside GitLab's UI (roles, protected tags, runner registration, CI variables, running manual jobs), git pushes and tags, GitHub settings, the dev-env domain writes, and the log entries the user writes |
 | **[pipeline]** | a job that runs by itself once its trigger fires — written by Claude, triggered by the user's push or tag, credentialed by step 4 |
 
 Hand applies run as the **infrastructure user**: `awsds-infra-prod` (Production), `awsds-infra-sandbox-1`
@@ -695,7 +695,15 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   members, `deployment-managers` among them (2.1). A release's S3 objects are the bundle in
   `awsds-prod-releases` (decision 20) and Stage 10 2.4's copies under `awsds-<env>-outputs/workflows/`,
   each under a customer-managed key, and the set's own `DenyDataReadPaths` refuses `kms:Decrypt` on
-  every key, so an `s3:GetObject` on either reads nothing while that deny stands.
+  every key, so an `s3:GetObject` on either reads nothing while that deny stands. Read in AWS
+  2026-10-20, 22:02 to 22:04 UTC, as the infrastructure user
+  ([log](../../log/log-stage-08-cicd-pipelines.md)): the set's inline policy in Identity Center is the
+  code's 17 statements in the code's order, and `DenyDataReadPaths` denies `kms:Decrypt` and five other
+  actions on `*` with no condition. No other statement names a `kms:` action, no allow names an `s3:`
+  one, and the latest version is provisioned in Sandbox, Staging and Production. `awsds-prod-releases`
+  holds one object, `app-etl/v0.2.1/app-etl.zip`, `aws:kms` under `alias/awsds-prod-registry`, a
+  customer-managed key, with the bucket key on. No `awsds-<env>-outputs` bucket exists in Staging or
+  Production, so Stage 10 2.4's copies are not there to read.
 
 ### 4. The deploy credential layer — roles, the deploy runner, the alarm (principle 2, INT-08, INT-18)
 

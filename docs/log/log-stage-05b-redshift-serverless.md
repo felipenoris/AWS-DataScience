@@ -1243,3 +1243,66 @@ alarms, quotas, cost", read-only, at 21:23Z.*
   21:19:26Z. The topic reads `SubscriptionsConfirmed` 0, `SubscriptionsPending` 1,
   `SubscriptionsDeleted` 1, and its one `email` subscription `PendingConfirmation`: the alarms reach a
   person once the user confirms it.
+
+## 2026-10-20 — `EXC-13`'s first rotation succeeded with no workgroup
+
+*Written by Claude in a session the orchestrating session started for Stages 5b and 6h, with the
+environment down and no apply. Every reading is Claude's own, as `awsds-infra-sandbox-1` (account
+`<Sandbox Account 1>`, permission set `InfrastructureAccess`), from 22:02Z to 22:07Z: Secrets Manager
+`describe-secret`, CloudTrail `lookup-events`, Redshift Serverless `list-workgroups` and `get-namespace`.
+No secret value was read. The CLI printed its dates at -03:00; they are converted to UTC here. This
+answers the first of the 2026-10-18 entry's dates to read later.*
+
+### `describe-secret` on `redshift!awsds-sandbox-warehouse-dbadmin`, 22:02:43Z
+
+| Field | Value |
+|---|---|
+| `RotationEnabled` | `true` |
+| `RotationRules` | `rate(30 days)`, `AutomaticallyAfterDays: 30`, `Duration: 2h` |
+| `LastRotatedDate` | 2026-10-20T01:22:07Z |
+| `LastChangedDate` | 2026-10-20T01:22:07Z |
+| `LastAccessedDate` | 2026-10-10, the field's day granularity |
+| `NextRotationDate` | 2026-11-19T01:59:59Z |
+| `VersionIdsToStages` | `c0bb119e-6a9e-46dc-a162-f26e5d1ce306`: `AWSCURRENT`, `AWSPENDING`; `b7ac4764-7331-4816-afb0-957b8a9d65a9`: `AWSPREVIOUS` |
+| `OwningService` | `redshift` |
+
+On 2026-10-17 the same call read `LastRotatedDate` none and the next rotation due by
+2026-10-20T01:59:59Z.
+
+### CloudTrail, Secrets Manager, 2026-10-19 00:00Z to 2026-10-20 23:59Z
+
+Ten events, none with an error code, and no `RotateSecret` call:
+
+| UTC | Event | Caller |
+|---|---|---|
+| 2026-10-19 13:11:59 | `ListSecrets`, `GetResourcePolicy`, `DescribeSecret` | `AWSServiceRoleForAccessAnalyzer`, invoked by `access-analyzer.amazonaws.com` |
+| 2026-10-20 01:17:32 | `RotationStarted`, a service event | `secretsmanager.amazonaws.com` |
+| 01:18:06 | `PutSecretValue`, version `c0bb119e-…` staged `AWSPENDING`; `DescribeSecret` | `AWSServiceRoleForRedshift`, invoked by `redshift.amazonaws.com` |
+| 01:22:06 | `UpdateSecretVersionStage`, `AWSCURRENT` moved from `b7ac4764-…` to `c0bb119e-…`; `DescribeSecret` | the same |
+| 01:22:07 | `CompleteRotation`, `status: Succeeded`, `statusMessage: Rotation completed` | `redshift.amazonaws.com`, an `AWSService` identity |
+| 01:22:07 | `RotationSucceeded`, a service event | `secretsmanager.amazonaws.com` |
+
+### No workgroup existed
+
+- `list-workgroups` at 22:03Z: none. `get-namespace` at 22:07Z: `awsds-sandbox-warehouse` `AVAILABLE`,
+  admin `dbadmin`, the secret set.
+- CloudTrail, Redshift Serverless, 2026-10-16 to 2026-10-20: the last `CreateWorkgroup` at 2026-10-16
+  16:36:38Z, its `DeleteWorkgroup` succeeded at 21:17:34Z after two `ConflictException`s, and no
+  `CreateWorkgroup` since. After 2026-10-19 00:00Z the trail holds two `GetCredentials` from a portal
+  session of the access role, at 05:02:22Z and 05:19:21Z, both refused with `ResourceNotFoundException`
+  *"Serverless workgroup awsds-sandbox-warehouse not found."*, and one `ListWorkgroups` by
+  `InfrastructureAccess` at 2026-10-20 00:26:26Z. Nothing from Redshift Serverless around the rotation.
+
+### What it settles, and what it does not
+
+- **`EXC-13`'s prediction did not hold for the secret.** AWS's page, re-read today (*Managing Amazon
+  Redshift admin passwords using AWS Secrets Manager*, its considerations), still says a rotation
+  attempted with no workgroup associated fails and is not retried. The first scheduled one ran with no
+  workgroup, inside its two-hour window, and Secrets Manager recorded it as succeeded after Redshift's
+  service-linked role wrote and promoted the new version.
+- **Not read: the database half.** Whether the namespace's `dbadmin` password now equals `AWSCURRENT`
+  needs a database session, so a workgroup. The next `./aws/warehouse.py --sql` sends its statements
+  through the Data API with this secret: statements that run are the database following, and an
+  authentication failure is the two diverging.
+- **Written**: the stage file's status, 1.1 and step 4; `docs/AWS_STATE.md`'s `EXC-13`;
+  `sandbox/warehouse/README.md`'s section on the rotation.
