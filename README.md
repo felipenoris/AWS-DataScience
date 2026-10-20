@@ -750,7 +750,8 @@ An account request is answered in this order (D34):
    association and a project profile). Naming that list makes the real cost of "just one more sandbox"
    visible at the moment somebody asks for it.
 4. **Quota headroom is a standing item, not a one-off pre-flight.** Keep slack for a failed provisioning that
-   has to be retried; a closed account holds both its slot and its e-mail address for roughly 90 days.
+   has to be retried; a closed account holds its slot for 90 days, and its e-mail address can never become
+   another account's primary address unless it is changed before the close (D34).
 
 ### 6. Why manual creation is safe, and the failure it introduces
 
@@ -794,7 +795,7 @@ forfeit (D34).
 | Rung | What it is | What it costs |
 |---|---|---|
 | 1. **Today** | Account Factory from the console, by the owner in §3 | nothing; the request has no diff and no review |
-| 2. **The middle** | `aws_servicecatalog_provisioned_product` against the **Account Factory product**, with `AccountEmail`, `AccountName`, `ManagedOrganizationalUnit` and the SSO fields as provisioning parameters | one Terraform slice; a principal with Service Catalog rights **in Management**, which reopens the ownership question; and `prevent_destroy`, because terminating that resource **closes an account** |
+| 2. **The middle** | `aws_servicecatalog_provisioned_product` against the **Account Factory product**, with `AccountEmail`, `AccountName`, `ManagedOrganizationalUnit` and the SSO fields as provisioning parameters | one Terraform slice; a principal **in Management** whose rights reach past Service Catalog, which reopens the ownership question; and `prevent_destroy`, because terminating that resource **unenrolls the account** without closing it, leaving it running outside every OU policy set |
 | 3. **AFT** (Account Factory for Terraform) | the full product: its own management account, pipelines, per-account customization repositories | a dedicated account slot plus metered services |
 
 **Rung 2 is what Stage 14 uses**, for the Sandbox class only. The account is still created *by Account
