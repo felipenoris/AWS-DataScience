@@ -1115,3 +1115,31 @@ are UTC.*
   SageMaker policy grants no `lakeformation:` action; the role is one of Staging's two Lake Formation
   admins since 3.3, so its seat, inert until now, can act. Staging holds no lake data (Stage 9 pass 5 is
   not built), and the role is assumable by DataZone alone.
+
+## 2026-10-20 — the remaining steps reviewed against the session, and two corrections
+
+- **[user] The request**: *"Confira se o PR #203 tem no log todo o andamento desta sessão. Revise o plano
+  das etapas que faltam deste estágio do plano considerando o andamento desta sessão e faça as correções
+  necessárias."*
+- **[Claude] The log against the session**: every write and reading of 2026-10-19/20 has its entry, from
+  2.1 to 7.2's environment, the release pipeline's half in Stage 8's log. The entries from 7.2's applies
+  on sit under the heading "4.3 and 7.2 prepared, with the environment down", which their text outgrew.
+- **[Claude] Correction to 3.3's list: S3 Access Grants.** CloudTrail of 2026-10-19: the project role's
+  `CreateAccessGrantsLocation` refused at 06:06:48Z, the one 3.3 recorded; the provisioning role's
+  `CreateAccessGrantsInstance` at 06:06:50Z; the project role's retry at 06:06:51Z, which created the
+  location for `s3://awsds-staging-smus-projects/dzd-d8yrvx1ko7im6o/d1veybt5oak4uo/`. Read 2026-10-20: the
+  instance `default` and that location exist, and the project's `project.s3_default_folder` connection
+  names the location. Question ii and 8.1 carry them.
+- **[Claude] What the subscribing side holds**: Sandbox's `test-experimentation` lists
+  `test-experimentation-lakehouse` `ACTIVE`, created on 2026-10-20 by the session that put the Glue
+  manage-access policy into `sagemaker-prereqs-v0.8.0` (PR #207); Staging's `DataLake` environment carries
+  the subscription target `deploy-staging-lakehouse-default-target` for `GlueTableAssetType` and
+  `GlueViewAssetType`; Staging's data source reads `publishOnImport` false, its daily run at 02:02 UTC not
+  yet made.
+- **[Claude] The remaining steps corrected**: 7.2's rest written as four steps for the next sitting (the
+  table in `glue_db_d6ogysnx78dguo`, the data source's run and the publication, the subscription from
+  `test-experimentation` and the approval, the reads and the notebook); 8.1 gains the data source, the
+  `DataLake` database read by name, the Access Grants location and instance, and the domain's lineage
+  objects and the project role's profile; 8.3 two configurations; 8.6 the admins emptied by a
+  `PutDataLakeSettings` that keeps every other field; the cost twelve endpoints; the slices table two
+  rows.
