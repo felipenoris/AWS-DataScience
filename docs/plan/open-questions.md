@@ -761,6 +761,15 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     8.6 reads them back after the unwinding, and Stage 9 pass 5's `staging/data/` meets them if a
     deployment project outlives the stage.
 
+    **Amended 2026-10-20: the manage-access seat gains its IAM half.** The role's only identity policy,
+    `AmazonDataZoneSageMakerManageAccessRolePolicy` v4, carries no `lakeformation:` action, which is why
+    the seat's one call was refused and it has acted on nothing. `sagemaker-prereqs-v0.8.0` attaches
+    `AmazonDataZoneGlueManageAccessRolePolicy` v18, the policy a `DataLake` environment needs (Stage 18
+    7.2), whose `lakeformation:` actions on `*` include `GrantPermissions`, `BatchGrantPermissions`,
+    `RevokePermissions` and `RegisterResource`. Once Sandbox's apply lands, the seat is a working
+    administrator whose grants are what DataZone fulfils; 6f step 2.0 reads its first ones in the trail,
+    and the narrower-permission half of this question stands.
+
 ### Raised by Stage 6 step 2.4's reading, 2026-08-26
 
 25. **What expires in `awsds-<env>-smus-projects`, and who removes the storage of a project that no

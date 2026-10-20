@@ -22,6 +22,7 @@ own Decisions-due table keeps the reasoning and the recommendation.
 |---|---|---|
 | `TM-17`: deny `sqs:SendMessage` and Bedrock's cross-account `lambda:InvokeFunction` outside the organization, or accept the channel | Stage 11, [`threat-model.md`](threat-model.md) | the project role's AWS-managed policy reaches other accounts' `airflow-celery-*` queues and `amazon-bedrock*` functions today, and no SCP narrows it |
 | How the lake enters the catalog, recommended (c), and decisions 2-5 | [6f](stages/stage-06f-data-governance.md) decision 1 | step 2's subscriptions, 6g 2.4's Athena read and Stage 11 decision 12 |
+| The two failed `DataLake` environments: delete both and create the consumer project's (recommended), recreate both, or leave them; after `sandbox/sagemaker/`'s apply at `sagemaker-prereqs-v0.8.0` | 6f decision 6, step 2.0 | 2.2: a Glue table's subscription target is the `DataLake` environment's, and no Sandbox project holds one |
 | Whether Sandbox's `InfrastructureAccess` stays a contributor of both Sandbox projects, added in the portal on 2026-10-15 | 6f, [6h](stages/stage-06h-redshift-connection.md) `EXC-17`, [INT-25](integrations.md) | it opens the projects' connections and assets to the infrastructure user; the instruments now read them from that session |
 | The connection's `lineageSync`, daily at 03:43 UTC and failing: off in the portal, or kept | 6h decision 3 | a query on the 1.44 USD/h meter whenever the workgroup is up at that minute |
 | 6g 2.4's Athena read: the persona's from a laptop, or the project role's after 6f decision 1 | [6g](stages/stage-06g-access-by-identity.md) 2.4 | as written it is refused, since the project role holds no Lake Formation grant on the lake |
@@ -53,6 +54,7 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | 6h 5.3 and 5.4's real attempts, for the refusals' wording, with the compute up (the simulator read both as designed on 2026-10-18) | [6h](stages/stage-06h-redshift-connection.md) |
 | Push `examples/app-etl/.gitlab-ci.yml` and its README to GitLab's `awsds/app-etl` at a GitLab session, so GitLab's pipeline runs the lint with its two options (PR #186) | [Stage 8](stages/stage-08-cicd-pipelines.md) 5.6 |
 | Verification xxi's attempt half, an S3 put and delete on the release bucket | Stage 8 |
+| Apply `sandbox/sagemaker/`'s saved plan, `sagemaker-prereqs-v0.8.0`: the Glue manage-access policy on `awsds-sandbox-smus-manage-access`, one attachment | 6f step 2.0, [INT-23](integrations.md) |
 | Step 2's portal acts: a consumer project, a subscription, an approval as the Governance Manager | 6f step 2, 4.3 |
 | 0.4's portal half; 6.4, keep or drop `lab` | 6h |
 | The domain name | [Stage 13](stages/stage-13-public-web-tier.md) |
