@@ -643,31 +643,33 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
    `AmazonDataZoneProject` turned out to be a **single-valued tag key** on both the workgroup and the
    namespace. **At one project nothing is blocked**; the question arrives with the second. The options:
    **(a)** the wide `for-use-with-all-datazone-projects=true`, accepting that the compute-admission gate
-   becomes per-account and leaning on layers 2 and 3, which are per project role and per schema × project;
+   becomes per-account and leaning on layer 3, per schema × project, and on layer 2, per project on the
+   access role alone (below);
    **(b)** a second workgroup per project on the same namespace — but the **namespace** tag is single-valued
    too, so this probably does not work and would have to be measured before it is chosen; **(c)** one project
    per warehouse, which multiplies the `[E]` object rather than the data and spends a workgroup quota on a
    permission.
-   **Recommended: (a), with the argument written down rather than assumed.** A project whose role lacks
-   `GetCredentials` still cannot connect and a project without a `GRANT ROLE` still sees nothing, so the wide
-   tag widens a gate that has two narrower, genuinely per-project gates behind it — and `WH-7` would have to
-   change from *"the wide tag appears on neither object"* to *"it appears on both, and the authored map is the
-   register of who may actually connect"*, which is a real loss of one independent check. **Live and not
-   taken**: a second project, `test-experimentation`, exists since 2026-10-15 and is in no map. Whether it
-   needs the warehouse is the user's to say, and the shape follows that requirement rather than preceding it.
-   **Under (a) the argument's layer 2 does not hold** (simulated 2026-10-18): AWS's
+   **Recommended: (a), with the argument written down rather than assumed.** A project without a
+   `GRANT ROLE` still sees nothing, and a project the map gives no access role cannot connect from the Data
+   page, so the wide tag widens a gate that has the schema `GRANT` behind it on every door and the access
+   role on the Data page alone — and `WH-7` would have to change from *"the wide tag appears on neither
+   object"* to *"it appears on both, and the authored map is the register of who may actually connect"*,
+   which is a real loss of one independent check. **Live and not taken**: a second project,
+   `test-experimentation`, exists since 2026-10-15 and is in no map. Whether it needs the warehouse is the
+   user's to say, and the shape follows that requirement rather than preceding it.
+   **Under (a) the project role's layer 2 is not per project** (simulated 2026-10-18): AWS's
    `SageMakerStudioProjectUserRolePolicy` v75, on both Sandbox project roles, carries
    `ExistingRedshiftCompute`, which allows `GetCredentials` and the Data API on a workgroup tagged
    `for-use-with-all-datazone-projects=true` that carries no `AmazonDataZoneEnvironment` tag, and
    `test-experimentation`'s role reads `allowed` for both under that tag. So with the wide tag every
    project role holds layer 2, and layer 3 is the only per-project gate left.
-   **The recommendation stands as (a), on a narrower argument.** With the wide tag, layer 2 holds for the
-   Data page alone, whose `GetCredentials` the per-project access role makes (3.1, `SMUS.md` §Connections)
-   and no AWS policy grants; a direct notebook session or a Data API call as the project role reaches the
-   compute under `ExistingRedshiftCompute`, so for those doors the schema `GRANT` is the only per-project
-   gate. The register of who may connect is then the map's access roles for the Data page and `WH-12`'s
-   roles for everything else, `WH-7` inverts as written above, and 5.2b, a project in no map reading
-   nothing from a notebook, is the check that carries the design. (b) and (c) keep their objections.
+   With the wide tag, layer 2 holds for the Data page alone, whose `GetCredentials` the per-project access
+   role makes (3.1, `SMUS.md` §Connections) and no AWS policy grants; a direct notebook session or a Data
+   API call as the project role reaches the compute under `ExistingRedshiftCompute`, so for those doors the
+   schema `GRANT` is the only per-project gate. The register of who may connect is then the map's access
+   roles for the Data page and `WH-12`'s roles for everything else, `WH-7` inverts as written above, and
+   5.2b, a project in no map reading nothing from a notebook, is the check that carries the design. (b) and
+   (c) keep their objections.
 
 ## Verifications to answer while executing
 
