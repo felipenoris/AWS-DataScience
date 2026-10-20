@@ -610,7 +610,9 @@ stage-18-deploy:
   **Refused 2026-10-20**: `PROJECT_CATALOG_VIEWER` answers *"Project member with designation
   PROJECT_CATALOG_VIEWER cannot be added to project in V2 domain"*, and AWS's guide names two project
   roles, Contributor and Owner, both on the project's credentials. Decision 10 is the designation 6.1
-  continues with.
+  continues with: `PROJECT_CATALOG_CONSUMER` and `PROJECT_CATALOG_STEWARD` refused the same way, and the
+  Data Scientist User added as `PROJECT_CONTRIBUTOR` at about 22:07Z (the log), so question iv's answer
+  is no.
 - **6.2 — [Claude reads, user decides] The boundary on the project role** (vi), only if 6.1 shows a
   person's write landing: read the session's name and context keys of a portal action against a
   worker's task (6h read the portal's session as `<user id>@<env id>` and a space's as `SageMaker`); a

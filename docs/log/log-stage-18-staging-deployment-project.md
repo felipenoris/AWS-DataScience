@@ -1227,3 +1227,20 @@ The last two were read again here.*
   `designation` `PROJECT_CATALOG_VIEWER` and `errorCode` `ValidationException`, in Staging's trail by
   InfrastructureAccess and in Data Governance's as an `AssumedRole` call, the domain's account recording it
   too; the project's members still the two.
+- **[user] The three commands of decision 10**, as `awsds-infra-staging`, about 22:07Z (*"Me parece que
+  apenas o terceiro funcionou"*):
+
+  ```
+  ➜  AWS-DataScience git:(main) NO_PROXY='*' aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d1veybt5oak4uo --designation PROJECT_CATALOG_CONSUMER --member userIdentifier=28f1b390-0041-7068-8cc7-9ccef94277d1 --profile awsds-infra-staging --region us-west-2
+
+  aws: [ERROR]: An error occurred (ValidationException) when calling the CreateProjectMembership operation: Project member with designation PROJECT_CATALOG_CONSUMER cannot be added to project in V2 domain
+  ➜  AWS-DataScience git:(main) NO_PROXY='*' aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d1veybt5oak4uo --designation PROJECT_CATALOG_STEWARD --member userIdentifier=28f1b390-0041-7068-8cc7-9ccef94277d1 --profile awsds-infra-staging --region us-west-2
+
+  aws: [ERROR]: An error occurred (ValidationException) when calling the CreateProjectMembership operation: Project member with designation PROJECT_CATALOG_STEWARD cannot be added to project in V2 domain
+  ➜  AWS-DataScience git:(main) NO_PROXY='*' aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d1veybt5oak4uo --designation PROJECT_CONTRIBUTOR --member userIdentifier=28f1b390-0041-7068-8cc7-9ccef94277d1 --profile awsds-infra-staging --region us-west-2
+  ➜  AWS-DataScience git:(main)
+  ```
+- **[Claude] The membership read back** (22:08:15Z, `list-project-memberships` as `awsds-infra-data`):
+  three members, the Data Scientist User's profile `PROJECT_CONTRIBUTOR` beside the two of before. The
+  V2 domain refuses the three catalog designations and admits `PROJECT_CONTRIBUTOR`, so question iv's
+  answer is no: the narrowest designation a person can hold works on the project's credentials.
