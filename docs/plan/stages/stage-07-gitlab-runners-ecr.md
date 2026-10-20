@@ -90,7 +90,7 @@ What the vendor documentation says and what the executed stages measured, each w
 |---|---|
 | **[Claude]** | repository edits and read-only AWS calls — done without asking |
 | **[Claude⚡]** | `terraform apply`/`destroy` or any AWS write — run **only after the user authorizes that specific action in chat**, with the SSO user / account / permission set stated first |
-| **[user]** | the Identity Center console, everything inside GitLab's own UI, browser flows, SSM sessions on the host, git tags, and every log entry |
+| **[user]** | the Identity Center console, everything inside GitLab's own UI, browser flows, SSM sessions on the host, git tags, and the log entries the user writes |
 | **[Claude reads, user decides]** | a measurement Claude takes and a choice only the user can make, in the same sitting |
 
 Every apply runs as the **infrastructure user** through **`awsds-infra-prod`** (Production,

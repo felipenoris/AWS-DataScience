@@ -59,7 +59,7 @@ principals, and log files that survive to be read. Enabling one does not dischar
 |---|---|
 | **[Claude]** | repository edits and read-only AWS calls — done without asking |
 | **[Claude⚡]** | `terraform apply` or any AWS write — only after the user authorizes that specific action in chat, with the SSO user/account/permission set stated first |
-| **[user]** | console/CloudShell acts in Management and Audit (no profile there, by design), the behavioural proofs run from persona sessions and the laptop, and every log entry |
+| **[user]** | console/CloudShell acts in Management and Audit (no profile there, by design), the behavioural proofs run from persona sessions and the laptop, and the log entries the user writes |
 
 Hand applies run as the **infrastructure user**: `awsds-infra-data` and `awsds-infra-sandbox-1` (the
 lake and trail slices; `awsds-infra-prod` joins when Stage 9 writes `production/data/`),
