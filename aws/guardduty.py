@@ -57,9 +57,10 @@ IDENTITY_PROFILE = "awsds-infra-identity"
 # verification ii's reading), so step 3 is a switch-off, and GD-3 is written against the
 # whole set rather than only S3 Protection and Malware Protection for EC2 (Stage 11 step 4's
 # pair). The check is not driven by this tuple: the report prints every feature the API
-# returns and the check fails on any that reads ENABLED, so a protection plan AWS adds later
-# is measured the day it appears (Lesson 23). The names below only fix the report's column
-# order; anything unknown is appended in the API's own order.
+# returns and the check fails on any that reads ENABLED but the foundational sources below,
+# so a protection plan AWS adds later is measured the day it appears (Lesson 23). The names
+# below only fix the report's column order; anything unknown is appended in the API's own
+# order.
 KNOWN_FEATURES = (
     "S3_DATA_EVENTS",
     "EKS_AUDIT_LOGS",
@@ -69,6 +70,12 @@ KNOWN_FEATURES = (
     "AI_PROTECTION",
     "RUNTIME_MONITORING",
 )
+
+# The foundational sources. GetDetector's result enum for Features lists them beside the
+# plans, and no create or update input names them (the AWS CLI 2.37.12 model, read
+# 2026-10-20): they are on while the detector is, so GD-3 reads past them and the report
+# still prints them.
+FOUNDATIONAL = ("CLOUD_TRAIL", "DNS_LOGS", "FLOW_LOGS")
 
 
 def main(argv: list) -> int:
@@ -207,13 +214,15 @@ def main(argv: list) -> int:
                 checks.ok("GD-2", f"GuardDuty in {p}", "ENABLED")
 
     # GD-3: every optional protection plan off, on every detector this file can read
-    # (steps 0/3). They arrive ENABLED, so this check reads red between step 1 and the end of
-    # step 3. If decision 1's option (b), the trial window, is taken instead, flip this check
-    # rather than living with the red (the VP-7 precedent, Stage 4).
+    # (steps 0/3); the foundational sources are not plans. They arrive ENABLED, so this check
+    # reads red between step 1 and the end of step 3. If decision 1's option (b), the trial
+    # window, is taken instead, flip this check rather than living with the red (the VP-7
+    # precedent, Stage 4).
     for p, det, status, plans in gd_rows:
         if det == "-" or status != "ENABLED":
             continue
-        bad_feat = [tok.split("=", 1)[0] for tok in plans.split() if tok.endswith("=ENABLED")]
+        enabled = [tok.split("=", 1)[0] for tok in plans.split() if tok.endswith("=ENABLED")]
+        bad_feat = [n for n in enabled if n not in FOUNDATIONAL]
         if bad_feat:
             checks.fail(
                 "GD-3",
@@ -271,7 +280,11 @@ never a compliant one.
         # ==============================================================================
         rep.h1("2. Detectors and protection plans, per account")
         rep.tabulate(
-            ["PROFILE\tDETECTOR\tSTATUS\tPROTECTION PLANS (all must be DISABLED)"]
+            [
+                "PROFILE\tDETECTOR\tSTATUS\tFEATURES (every plan DISABLED; "
+                + ", ".join(FOUNDATIONAL)
+                + " are foundational)"
+            ]
             + [f"{p}\t{d}\t{s}\t{f}" for p, d, s, f in gd_rows]
         )
         rep.line()
