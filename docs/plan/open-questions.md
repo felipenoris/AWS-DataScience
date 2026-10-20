@@ -767,8 +767,10 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     `AmazonDataZoneGlueManageAccessRolePolicy` v18, the policy a `DataLake` environment needs (Stage 18
     7.2), whose `lakeformation:` actions on `*` include `GrantPermissions`, `BatchGrantPermissions`,
     `RevokePermissions` and `RegisterResource`. The user applied it in Sandbox at 02:38:53Z, so the seat
-    is a working administrator whose grants are what DataZone fulfils; 6f step 2.0 reads its first ones in the trail,
-    and the narrower-permission half of this question stands.
+    is a working administrator whose grants are what DataZone fulfils. Its first calls, at 6f step 2.0
+    (02:51:23Z): the opt-in on `test-experimentation`'s new database, conditioned on the project, and a
+    `RevokePermissions` from `IAM_ALLOWED_PRINCIPALS` answered `InvalidInputException`; it granted
+    nothing. The narrower-permission half of this question stands.
 
 ### Raised by Stage 6 step 2.4's reading, 2026-08-26
 

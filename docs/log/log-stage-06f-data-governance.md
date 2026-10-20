@@ -816,3 +816,64 @@ The readings ran 02:10 to 02:15 UTC, their times read back from the trails.*
 - **[Claude] `mydatabase`'s data source**, for decision due 6: `6kk4bknmo46o0g`, created 2026-09-13
   04:06:38Z at the publish, on the connection `project.default_lakehouse` (`LAKEHOUSE`), whose environment
   is the project's `Tooling` (`5hkjdsy3umpi1c`), not the failed `4lrapnc3syxd74`.
+
+## 2026-10-20 — decision due 6 taken, `test-experimentation`'s `DataLake` environment created
+
+*Claude, in the same session and worktree, AWS as the infrastructure user with `InfrastructureAccess` in
+`Sandbox Account 1` (`awsds-infra-sandbox-1`). The two writes below are `datazone delete-environment`
+and `create-environment`, run on the user's decision; the Stage 18 session was told first, and no other
+session on the laptop was running. Times are UTC.*
+
+- **[user] Decision due 6**, after asking for its context: *"Vamos seguir sua recomendação ajustada"*,
+  the adjusted recommendation being to delete `test-experimentation`'s failed record and create its
+  `DataLake` environment now, and to leave `eighth-experimentation`'s record until step 2 ends.
+- **[Claude] Before**, 02:49:45Z: `test-experimentation` holds `Tooling` `ACTIVE` and `d42fq38p5bkbdc`
+  `CREATE_FAILED`; Lake Formation's administrators are the manage-access role, `InfrastructureAccess` and
+  the provisioning role, both create-defaults empty, `Parameters` 4/`TRUE`; two registered locations, the
+  projects' `dev/` prefixes; Glue lists `curated`, `default`, `mydatabase` and `raw`. Sandbox's `DataLake`
+  configuration names blueprint `d8w7c3fmbsz5cg` and the manage-access role.
+- **[Claude] The failed record deleted**: `delete-environment` of `d42fq38p5bkbdc` at 02:50:03Z, exit 0;
+  `DELETING` at 02:50:11Z and not found at 02:50:30Z. The trail: `DeleteEnvironment` 02:50:05Z, then a
+  `DeleteStack` of the already deleted `DataZone-Env-d42fq38p5bkbdc` by the provisioning role at
+  02:50:17Z, and no `DeleteDatabase`.
+- **[Claude] The environment created**: `create-environment` at 02:50:55Z with the `experimentation`
+  profile's `DataLake` configuration (`40631117-4a84-42b1-b2dc-c2deef6c3d52`, blueprint `d8w7c3fmbsz5cg`),
+  name `test-experimentation-lakehouse`, no user parameter: `4zojr4rr6bmnww` `CREATING`, and `ACTIVE` at
+  02:51:33Z, 37 s after its creation, `lastDeployment` `SUCCESSFUL`.
+- **[Claude] What it holds.** `provisionedResources`: `glueDBName` `glue_db_4zojr4rr6bmnww`,
+  `glueOutputUri` `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/4gqfau9xuo6e4w/dev/data/catalogs/`,
+  `userRoleArn` the project role, and the stack `DataZone-Env-4zojr4rr6bmnww` (`CREATE_COMPLETE`
+  02:51:08Z), one resource, `GlueDatabase`. Its template, `DataZone-Amazon-SageMaker-DataLakeDefault-prod-20250618`,
+  declares that database and an Athena workgroup this stack did not create, both with `DeletionPolicy`
+  and `UpdateReplacePolicy` `Retain`: why every failed environment's database outlived its stack. The
+  subscription target `test-experimentation-lakehouse-default-target` serves `GlueTableAssetType` and
+  `GlueViewAssetType`, its `manageAccessRole` the project role. The Glue data source `3zp6fog9jep1qo`, on
+  `project.default_lakehouse` (the `Tooling` environment's connection), covers the new database alone,
+  `cron(51 2 * * ? *)`, the minute of its creation, `publishOnImport` false, business-name generation off,
+  data quality import on, its data access role the project role.
+- **[Claude] The grants, from the trail**, 02:51:13 to 02:51:24Z: `CreateDatabase` of
+  `glue_db_4zojr4rr6bmnww` by the provisioning role; its `BatchGrantPermissions` to `<acct>:IAMPrincipals`
+  and `arn:aws:identitystore:::user/*`, each under `context.datazone.projectId=="4gqfau9xuo6e4w"`,
+  `CREATE_TABLE`, `DESCRIBE` and `DROP` on the database and `ALTER`, `DELETE`, `DESCRIBE`, `DROP`,
+  `INSERT` and `SELECT` on its tables; its three `GrantPermissions` to the manage-access role,
+  grantable `DESCRIBE` and `CREATE_TABLE` on the database and grantable `DESCRIBE` and `SELECT` on its
+  tables. Then the manage-access role's `CreateLakeFormationOptIn` for the conditioned `IAMPrincipals` on
+  the database, **passing**, its first call allowed in Sandbox, and its `RevokePermissions` of `ALL` from
+  `IAM_ALLOWED_PRINCIPALS`, *"InvalidInputException"*, nothing to revoke under empty defaults. Last, the
+  provisioning role's `TagResource` of the database with the four `AmazonDataZone*` tags. Staging's 7.2
+  pattern, call for call, without its refused `UntagResource`.
+- **[Claude] Lake Formation after**: the same three administrators, empty create-defaults, `Parameters`
+  4/`TRUE`, two registered locations. The administrators came back in another order, and three more reads
+  gave two orders with no `PutDataLakeSettings` in the trail since 2026-10-15: the list is unordered.
+- **[Claude] `./aws/catalog.py`**, 02:53:44 to 02:54:43Z: *"all checks passed"*. `CT-7` *"21 SMUS grants,
+  all on project-owned objects"*, the seven new ones on `glue_db_4zojr4rr6bmnww` (the provisioning role's
+  creator grant among them); `CT-8` *"all 10 carry context.datazone.projectId"*; `CT-4` *"all 5 carry
+  publishOnImport false"*; `CT-5` and `CT-6` note what they noted at 02:40Z, the new source not yet run.
+- **[Claude] `./aws/datalake.py`**, 02:54:43 to 02:56:01Z: *"wrote aws/output/datalake.txt (some calls FAILED
+  - see section 14)"*, exit 1. Section 14 holds seven `sts get-caller-identity` calls of the Control Tower,
+  deploy, dev-env, governance and scientist profiles, whose SSO sessions were not signed in. Every check
+  passes or notes: `DL-13` in Sandbox the required seat and the two SMUS seats, `DL-14` the two projects'
+  `dev/` registrations, `DL-5` and `DL-6` passing in Sandbox.
+- **[Claude] What 2.0 leaves for step 2**: `test-experimentation`, 2.1's recommended consumer, holds the
+  Glue subscription target 2.2 needs; `eighth-experimentation` holds `house-price` and its failed record,
+  whose deletion is 2.7.

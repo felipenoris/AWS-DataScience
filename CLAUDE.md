@@ -338,8 +338,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stage 6f in progress**: `CT-7` says the catalog road has not reached the lake, and decision 1
   recommends (c); no IAM condition key reaches business-name generation, decision 3's last input (PR #187); each
   project's `Tooling` data source fails daily (`EXC-11`); `sagemaker-prereqs-v0.8.0` gives the manage-access
-  role the Glue policy every `DataLake` environment failed without, applied 2026-10-20, and decision 6 holds
-  the two failed environments. **6g** owes 2.4's Athena
+  role the Glue policy every `DataLake` environment failed without, applied 2026-10-20; decision 6 taken:
+  `test-experimentation` holds an `ACTIVE` `DataLake` environment, `eighth-experimentation`'s failed record
+  waits for 2.7. **6g** owes 2.4's Athena
   read, refused as written, and decision 1's proxy-host replacement at the next `production/proxy/` apply.
 - **Security Hub paused 2026-10-09** (`EXC-14`): `awsds-fsbp-only` keeps the service with no standard;
   the revert is `runbooks/security-hub.md` §R.

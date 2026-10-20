@@ -1905,15 +1905,21 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   times. A run that succeeds is a scheduled query on the warehouse's meter. Where: `log-stage-06h`,
   2026-10-18, and `./aws/warehouse.py` `WH-9`.
 - **A `DataLake` environment that fails keeps the Glue database its add-on created, and deleting the
-  environment keeps it too** (read 2026-10-20 in both trails, 6f decision due 6). The provisioning role
-  creates the database through `datazone.amazonaws.com`; at the failure DataZone deletes the stack and
-  calls no `DeleteDatabase`, and a later `DeleteEnvironment` deletes the stack again and calls none
-  either (Staging's `glue_db_c2ej62w956q2a8`, Sandbox's `mydatabase`). The portal's *Create database*
+  environment keeps it too** (read 2026-10-20 in both trails, 6f decision due 6). The template,
+  `DataLakeDefault-prod-20250618`, declares the `AWS::Glue::Database` with `DeletionPolicy: Retain`: at
+  the failure DataZone deletes the stack and no `DeleteDatabase` follows, and a later
+  `DeleteEnvironment` deletes the stack again and calls none either (Staging's
+  `glue_db_c2ej62w956q2a8`, Sandbox's `mydatabase`). An `ACTIVE` environment's deletion follows the same
+  template, so it is expected to leave its database too, unmeasured. The portal's *Create database*
   deleted its database after one such failure (`test`, 2026-10-15, as the project role) and not after
   the other. Lake Formation leaves the database out of a non-administrator's `get-databases`, so the
   listing reads it as gone; `get-database` by name answers *"Insufficient Lake Formation
   permission(s): Required Describe"* while it exists and `EntityNotFoundException` once it does not.
   Where: `log-stage-06f-data-governance.md`, the entry of 2026-10-20.
+- **`GetDataLakeSettings` returns the administrators in no fixed order** (read 2026-10-20 in Sandbox).
+  Three consecutive reads gave two orders of the same three principals, and the trail holds no
+  `PutDataLakeSettings` since 2026-10-15, so a change of order is no write. A reading compares the set.
+  Where: `log-stage-06f-data-governance.md`, the entries of 2026-10-20.
 - **The portal's MLflow entries look their blueprint up in the domain account, so a domain whose
   configurations live in associated accounts greys them out whatever the profile carries** (read
   2026-10-19, Stage 17 1.5). *Create MLflow App* and *Create MLflow Tracking Server* resolve the
