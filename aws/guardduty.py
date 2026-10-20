@@ -230,8 +230,11 @@ def main(argv: list) -> int:
                 f"{' '.join(bad_feat)} ENABLED - every optional plan arrives ON and step 3 "
                 "switches it off; the paid ones are decided in Stage 11 step 4 against a "
                 "real bill, not before. In a MEMBER account the fix is UpdateMemberDetectors "
-                "from Audit; on AUDIT'S OWN detector UpdateDetector is denied by "
-                "DenyGuardDutyTampering - that is decision 1, not a console click.",
+                "from Audit, or decision 4's alternative, a GUARDDUTY_POLICY with the plan "
+                "disabled; on AUDIT'S OWN detector UpdateDetector is denied by "
+                "DenyGuardDutyTampering - that is decision 1, not a console click. Of the "
+                "update calls only UpdateDetector names AI_ANALYST, so its switch-off is "
+                "decision 1 in any member account.",
             )
         else:
             checks.ok("GD-3", f"protection plans in {p}", "foundational detection only")
