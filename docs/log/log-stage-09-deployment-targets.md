@@ -288,3 +288,42 @@ user (`InfrastructureAccess`) through `awsds-infra-identity`; nothing was applie
   publish to `awsds-sandbox-alerts` since 21:19Z today (PR #181, [the 5b log](log-stage-05b-redshift-serverless.md)),
   and `awsds-prod-alerts` admits CloudWatch since PR #179 (`CloudWatchAlarmsOfThisAccount`,
   [the Stage 12 log](log-stage-12-observability-finops.md)), so the copies publish there.
+
+## 2026-10-20 — the instance-preference rows and decision 1's scoping written; Production's quotas and Bucket Keys read
+
+*Claude's hand. The first two entries record PR #216, written offline in a task session on 2026-10-20
+and merged at 21:52Z: no AWS call, plan or battery ran in it. The readings after them were taken in a
+later task session as the infrastructure user (`InfrastructureAccess`) through `awsds-infra-prod`, in
+Production, with the tunnel down (`NO_PROXY='*'`). Every call is a read; nothing was applied.*
+
+- **[Claude] 3.5's instance-preference rows, written and not run** (PR #216). `aws/probes/probes.py`'s `ou`
+  phase gains seven rows in Production, each `blocked`, for a job naming its types in
+  `InstancePreferences`: for `CreateProcessingJob` and for `CreateTrainingJob`, a list naming
+  `ml.m5.2xlarge` and a list naming `ml.m5.large` then `ml.m5.2xlarge`, each expected `DENY-SCP`, beside a
+  list naming `ml.m5.large`, expected authorized; and for training, `ml.m5.2xlarge` as `InstanceType`, the
+  control. Each argv was checked offline against the installed CLI's SageMaker model, and `scp-battery.md`
+  moves the entry from its uncovered list to phase 4b. No `scp-battery-*` report in any checkout on the
+  laptop is dated after 2026-10-19. The run is owed: the infrastructure user, account Production,
+  permission set `InfrastructureAccess` (`awsds-infra-prod`), `./aws/probes/scp-battery.py --phase ou`,
+  before Stage 10's processing step and Stage 17 pass 2's training job.
+- **[Claude] Decision 1's scoping, written as a recommendation** (PR #216): Staging reads
+  `awsds-prod-outputs/models/*/model.tar.gz`, `s3:GetObject` with no `s3:ListBucket`, as
+  `awsds-staging-job-exec` and `awsds-deploy-staging`; the bucket policy alone holds them to the archives,
+  because with S3 Bucket Keys the KMS encryption context is the bucket's ARN (AWS's S3 guide). The
+  decision, and Stage 10 decision 6's sentence with it, stay the user's.
+- **[Claude] The Bucket Keys on Production's buckets**, `s3api get-bucket-encryption` at 22:00:16Z:
+  `awsds-prod-outputs` answered *"An error occurred (NoSuchBucket) when calling the GetBucketEncryption
+  operation: The specified bucket does not exist"*; 1.1 creates it in pass 3, from the module. The three
+  buckets `terraform-modules/s3-bucket` created in Production, `awsds-prod-releases` (`s3-bucket-v0.4.0`),
+  `awsds-prod-gitlab-objects` and `awsds-prod-gitlab-backup` (`v0.3.0`), each read `aws:kms` with
+  `BucketKeyEnabled: true`, as does `awsds-prod-tfstate`, the bootstrap's. Every module tag, `v0.1.0` to
+  `v0.4.0`, sets `bucket_key_enabled = true` with no variable, so decision 1's finding holds for the bucket
+  1.1 creates, and D31 records its zero-cost variant as unavailable on the module's buckets.
+- **[Claude] Production's processing quotas**, `service-quotas list-service-quotas --service-code
+  sagemaker` at 22:00:35Z: `ml.t3.medium for processing job usage` (`L-0CE343FE`) 4.0, adjustable, AWS's
+  default (`get-aws-default-service-quota` 4.0); `ml.m5.large` (`L-8541302D`), `ml.m5.xlarge`
+  (`L-0307F515`) and `ml.m5.2xlarge` (`L-1D84B9D2`) 0.0. The SageMaker request history is empty. Stage 12's
+  reading of 2026-10-18 gave Production the same 4 ([its log](log-stage-12-observability-finops.md)). A
+  Production job on `ml.t3.medium`, the type `app-etl`'s `process` task names, passes the quota, and the
+  processing rows' reading of `ResourceLimitExceeded` as authorized still holds for the three `ml.m5`
+  types.
