@@ -41,6 +41,8 @@ follows is still unanswered:
 4. **Layer assignments.** `[P]`/`[D]`/`[E]` are cost judgements based on estimates. Revisit them at
    Stage 12 against the real bill — especially the interface endpoints (the largest hourly item, and a
    **per-account** list rather than one list: Stage 3 step 8) and GitLab (the largest idle item).
+   **Read 2026-10-20** (Stage 12 step 5.2, PR #211): the bill moves no layer letter; the choice is
+   Stage 12's decision due 3, the user's.
 5. **CodeArtifact ecosystem coverage (`docs/plan/architecture.md` §4.3).** The CodeArtifact
    documentation lists Cargo among its supported formats, so the Rust question is down to confirming it
    in practice at Stage 6. Julia and R remain uncovered and keep their `docs/plan/architecture.md` §4.3
