@@ -2077,3 +2077,26 @@ carries an account id or an e-mail address. Times are UTC.*
   the bucket, and Stage 18's 4.2 deployed it.
 - **[Claude] The fix**: `examples/app-etl/.gitlab-ci.yml`'s notes carry the three values as plain text,
   pushed as `release-notes-plain` (`95ad38a`), MR !4. The next tag after its merge makes a release.
+
+## 2026-10-20 — 3.9 read in AWS: `DeploymentManagerAccess`'s `kms:Decrypt` deny and the release's key
+
+Read by Claude in a laptop session as the infrastructure user (`InfrastructureAccess`), reads only, for
+the finding PR #213 wrote into 3.9 from the code with no AWS call. Every time is UTC.
+
+- **[Claude] The set, as `awsds-infra-identity`.** `sso-admin get-inline-policy-for-permission-set` on
+  `DeploymentManagerAccess` (22:02:42Z): 17 statements, 5,008 characters, the Sids in the order
+  `policies-approvers.tf` renders them (four shared denies, five of `sagemaker-denies-v0.2.0`, two
+  remote-IDE denies, four allows, `DenyDataReadPaths`, `DenyControlPlaneInFull`). `DenyDataReadPaths`
+  is `Deny` on `"Resource": "*"` with no `Condition`, its actions `ssm:GetParametersByPath`,
+  `ssm:GetParameters`, `ssm:GetParameter`, `secretsmanager:GetSecretValue`, `kms:Decrypt` and
+  `athena:*`. No other statement names a `kms:` action, and no allow names an `s3:` or `kms:` action.
+  The one managed policy is `CloudWatchLogsReadOnlyAccess`, and there is no customer-managed reference.
+  `list-accounts-for-provisioned-permission-set` (22:03:14Z): `LATEST_PERMISSION_SET_PROVISIONED` in
+  Production, Staging and Sandbox, and `LATEST_PERMISSION_SET_NOT_PROVISIONED` lists no account.
+- **[Claude] The release's objects, as `awsds-infra-prod`** (22:04Z). `awsds-prod-releases` encrypts by
+  default with `aws:kms` under key `13ca81ec-…`, `alias/awsds-prod-registry`, `KeyManager` `CUSTOMER`
+  and `Enabled`, with the bucket key on. `list-object-versions` returns one version,
+  `app-etl/v0.2.1/app-etl.zip` (6,988 bytes, 2026-10-19 20:02:38Z), and `head-object` reads it `aws:kms`
+  under the same key with `BucketKeyEnabled: true`. `list-buckets` finds no `awsds-prod-outputs` in
+  Production and, as `awsds-infra-staging`, no `awsds-staging-outputs` in Staging, so Stage 10 2.4's
+  copies do not exist yet.

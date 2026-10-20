@@ -695,7 +695,15 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   members, `deployment-managers` among them (2.1). A release's S3 objects are the bundle in
   `awsds-prod-releases` (decision 20) and Stage 10 2.4's copies under `awsds-<env>-outputs/workflows/`,
   each under a customer-managed key, and the set's own `DenyDataReadPaths` refuses `kms:Decrypt` on
-  every key, so an `s3:GetObject` on either reads nothing while that deny stands.
+  every key, so an `s3:GetObject` on either reads nothing while that deny stands. Read in AWS
+  2026-10-20, 22:02 to 22:04 UTC, as the infrastructure user
+  ([log](../../log/log-stage-08-cicd-pipelines.md)): the set's inline policy in Identity Center is the
+  code's 17 statements in the code's order, and `DenyDataReadPaths` denies `kms:Decrypt` and five other
+  actions on `*` with no condition. No other statement names a `kms:` action, no allow names an `s3:`
+  one, and the latest version is provisioned in Sandbox, Staging and Production. `awsds-prod-releases`
+  holds one object, `app-etl/v0.2.1/app-etl.zip`, `aws:kms` under `alias/awsds-prod-registry`, a
+  customer-managed key, with the bucket key on. No `awsds-<env>-outputs` bucket exists in Staging or
+  Production, so Stage 10 2.4's copies are not there to read.
 
 ### 4. The deploy credential layer — roles, the deploy runner, the alarm (principle 2, INT-08, INT-18)
 
