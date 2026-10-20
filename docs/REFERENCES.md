@@ -1219,6 +1219,14 @@
   which is why D40 puts the two classes of database in two accounts rather than in one namespace:
   <https://docs.aws.amazon.com/redshift/latest/dg/cross-database-overview.html>.
 
+- **Redshift — the admin secret's rotation (read 2026-10-20, for `EXC-13`'s first rotation).**
+  *Managing Amazon Redshift admin passwords using AWS Secrets Manager*: Redshift *"rotates the secret every
+  30 days by default"*, and among the considerations a serverless namespace with no workgroup associated
+  at a rotation means *"the rotation will fail and won't try to rotate it again"*. On 2026-10-20 the first
+  scheduled rotation ran with no workgroup and Secrets Manager logged `RotationSucceeded`
+  ([Stage 5b](plan/stages/stage-05b-redshift-serverless.md)'s log, 2026-10-20):
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/redshift-secrets-manager-integration.html>.
+
 - **Redshift — where a query runs, and the serverless per-query limit (read 2026-10-18, for
   [Stage 5b](plan/stages/stage-05b-redshift-serverless.md)'s owed reading of `max_query_execution_time`).**
   *Leader node–only functions*: a query that references only `PG_` catalog tables, or no table, *"runs
