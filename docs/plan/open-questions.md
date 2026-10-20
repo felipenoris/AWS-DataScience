@@ -766,8 +766,8 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     the seat's one call was refused and it has acted on nothing. `sagemaker-prereqs-v0.8.0` attaches
     `AmazonDataZoneGlueManageAccessRolePolicy` v18, the policy a `DataLake` environment needs (Stage 18
     7.2), whose `lakeformation:` actions on `*` include `GrantPermissions`, `BatchGrantPermissions`,
-    `RevokePermissions` and `RegisterResource`. Once Sandbox's apply lands, the seat is a working
-    administrator whose grants are what DataZone fulfils; 6f step 2.0 reads its first ones in the trail,
+    `RevokePermissions` and `RegisterResource`. The user applied it in Sandbox at 02:38:53Z, so the seat
+    is a working administrator whose grants are what DataZone fulfils; 6f step 2.0 reads its first ones in the trail,
     and the narrower-permission half of this question stands.
 
 ### Raised by Stage 6 step 2.4's reading, 2026-08-26

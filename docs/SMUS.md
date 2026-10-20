@@ -658,8 +658,8 @@ objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/cat
   change). The manage-access seat has acted on nothing in Sandbox: its identity policy carried no
   `lakeformation:` action until `sagemaker-prereqs-v0.8.0`, whose Glue manage-access policy grants
   `GrantPermissions`, `BatchGrantPermissions`, `RevokePermissions`, `RegisterResource`, the opt-ins and
-  the data cells filters on `*`. Once applied, what the seat grants is what DataZone fulfils, the role
-  trusting `datazone.amazonaws.com` from the domain account alone.
+  the data cells filters on `*`. Applied 2026-10-20, so what the seat grants from then on is what
+  DataZone fulfils, the role trusting `datazone.amazonaws.com` from the domain account alone.
 - **Every user of the domain may be added to any project's member pool.**
   `ADD_TO_PROJECT_MEMBER_POOL` on the root domain unit reads `allUsersGrantFilter`, DataZone's
   default. Both override policy types are empty, so the owner project's approval is the control on a
@@ -878,7 +878,7 @@ creates (measured 2026-09-12: CloudTrail since 2026-08-20, and the objects read 
   and the refusal failed it: `AmazonDataZoneSageMakerManageAccessRolePolicy` v4 carries no
   `lakeformation:` action, and `AmazonDataZoneGlueManageAccessRolePolicy` v18 carries the opt-in (read
   2026-10-20). With both on the role, Staging's environment reached `ACTIVE` (Stage 18 7.2);
-  `sagemaker-prereqs-v0.8.0` attaches both in Sandbox, the apply the user's (6f step 2.0). The failed
+  `sagemaker-prereqs-v0.8.0` attaches both in Sandbox, applied by the user 2026-10-20 (6f step 2.0). The failed
   environment's stack was deleted and the database stayed, so `mydatabase` exists outside any
   environment.
 - **A table created by uploading a file points at a folder the upload flow chose, not at the database

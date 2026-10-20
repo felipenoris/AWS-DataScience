@@ -797,3 +797,22 @@ The readings ran 02:10 to 02:15 UTC, their times read back from the trails.*
   `sagemaker-prereqs-v0.8.0`, `init` fetched it from origin, and the plan as `awsds-infra-sandbox-1`,
   02:31:23 to 02:31:53Z, reads *"Plan: 1 to add, 0 to change, 0 to destroy."*, the same attachment as the
   local plan. Saved to `$HOME/tmp/s6f-sagemaker-prereqs-v080.tfplan` for the user's apply (step 2.0).
+- **[user] 2.0's apply**, from the project folder on `main`, of the saved plan, as `awsds-infra-sandbox-1`:
+  *"module.sagemaker_prereqs.module.manage_access_role.aws_iam_role_policy_attachment.managed["arn:aws:iam::aws:policy/service-role/AmazonDataZoneGlueManageAccessRolePolicy"]:
+  Creation complete after 1s
+  [id=awsds-sandbox-smus-manage-access/arn:aws:iam::aws:policy/service-role/AmazonDataZoneGlueManageAccessRolePolicy]"*,
+  *"Apply complete! Resources: 1 added, 0 changed, 0 destroyed."*
+- **[Claude] Read back.** The trail's `AttachRolePolicy` of the Glue policy on
+  `awsds-sandbox-smus-manage-access`, by the `InfrastructureAccess` session, at 02:38:53Z; a lookup at
+  02:40Z had not yet listed it (Lesson 62). The re-plan from this branch, 02:39:51 to 02:40:21Z, reads
+  *"No changes. Your infrastructure matches the configuration."* (`-detailed-exitcode` 0), and
+  `list-attached-role-policies` lists the Glue and the SageMaker manage-access policies. `main` still pins
+  `v0.7.0`, so a plan of the slice from `main` would detach the policy until this branch merges.
+- **[Claude] `./aws/catalog.py`**, 02:40:44 to 02:41:34Z: *"all checks passed"*. `CT-7` *"14 SMUS grants,
+  all on project-owned objects"*, the count of 2026-10-18; `CT-8` *"all 7 carry context.datazone.projectId"*;
+  `CT-4` all four data sources `publishOnImport` false; `CT-5` notes `mydatabase`'s data source, business-name
+  generation on (decision due 3). No grant changed with the attachment: DataZone has not asked the role
+  to act since.
+- **[Claude] `mydatabase`'s data source**, for decision due 6: `6kk4bknmo46o0g`, created 2026-09-13
+  04:06:38Z at the publish, on the connection `project.default_lakehouse` (`LAKEHOUSE`), whose environment
+  is the project's `Tooling` (`5hkjdsy3umpi1c`), not the failed `4lrapnc3syxd74`.
