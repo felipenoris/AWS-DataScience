@@ -1927,8 +1927,9 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   `AmazonDataZoneSageMakerManageAccessRolePolicy` v4 does not carry and the Glue policy v18 does; with the
   SageMaker policy alone the environment fails and its stack rolls back, which is why every Sandbox
   `DataLake` environment has been `CREATE_FAILED` since 2026-09-13. The Glue policy's ARN carries the
-  `service-role/` path, which the SageMaker one does not. Where: `log-stage-18-staging-deployment-project.md`,
-  the 7.2 entries of 2026-10-20.
+  `service-role/` path, which the SageMaker one does not. The module attaches it since
+  `sagemaker-prereqs-v0.8.0` (PR #207), and Staging's `staging/studio/manage-access.tf` until that slice
+  leaves v0.6.0. Where: `log-stage-18-staging-deployment-project.md`, the 7.2 entries of 2026-10-20.
 
 ### MWAA, provisioned
 

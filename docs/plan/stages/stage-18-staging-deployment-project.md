@@ -543,7 +543,9 @@ deploys.
   refused for the policy's `service-role/` path). **The second environment is `ACTIVE`**
   (`d6ogysnx78dguo`, 02:02:28Z): the database `glue_db_d6ogysnx78dguo` under the project's `dev/` scope,
   the project-conditioned grants and the manage-access role's grantable ones, the opt-in passing, a Glue
-  data source on the database scheduled daily at 02:02 UTC, and Lake Formation's admins unchanged. What
+  data source on the database scheduled daily at 02:02 UTC, and Lake Formation's admins unchanged. The
+  failed environment's database, `glue_db_c2ej62w956q2a8`, survived both deletions, an orphan for 8.1.
+  What
   is left needs a sitting: the Glue task writing its output as a table there, the data source's run
   that makes it an asset, the publication, the subscription, the approval and the reads.
 - **7.3 — [Claude] Redshift is read, not measured**: Staging has no warehouse, and a Sandbox project
@@ -559,6 +561,8 @@ deploys.
 The reverse of passes 1 to 3, in 6b pass 1's order, each step read back before the next.
 
 - **8.1 — [Claude⚡] Remove what the project holds, then the project**: the subscription and the asset,
+  the orphaned database `glue_db_c2ej62w956q2a8` of 7.2's failed environment, by a principal holding `DROP`
+  on it,
   the applications, the workflows grant's attachment (`project_roles` emptied in `staging/studio/`, applied,
   so the stack deletes a role carrying only the policies it attached), the Glue job the operator created,
   the lineage entities SageMaker created for the processing job (a trial component, four artifacts, four
@@ -704,6 +708,10 @@ Each is decided during the stage and written into the stage log with its recomme
   **Measured 2026-10-19 at 3.3**: the provisioning role's three `PutDataLakeSettings` at 06:05:34Z set
   Staging's admins, an empty list until then, to itself and the manage-access role. 8.6 reads them
   back by hand, since `./aws/datalake.py` `DL-13` reads the lake's accounts alone.
+  **Since 2026-10-20 the manage-access seat can act**: 7.2's `AmazonDataZoneGlueManageAccessRolePolicy`
+  gives that role `GrantPermissions`, `RevokePermissions` and `RegisterResource` on `*`, where the
+  SageMaker policy gave no `lakeformation:` action; the seat reaches Staging's catalog alone while
+  `staging/data/` does not exist, and 8.6 removes the policy with the slice.
 - **The `Workloads` document carries Stage 9 pass 1's job statements, attached since 2026-10-18 at
   19:54Z** (PR #144; the apply and its battery in Stage 9's log). An apply of `identity/org-policies/`
   attaches what `main` holds, so 1.1 edits `main`'s document, and 1.3's plan changes only

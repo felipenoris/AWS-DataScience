@@ -1100,3 +1100,18 @@ are UTC.*
   `IAM_ALLOWED_PRINCIPALS` answered `InvalidInputException`, nothing to revoke under empty defaults. The
   pattern is Sandbox's, `docs/SMUS.md`'s portal database, with the opt-in passing for the first time in
   the estate.
+- **[Claude] Correction: the first environment's database survived.** The entry above that read "After
+  it: no Glue database" took a `glue get-databases` that Lake Formation filters for a principal holding no
+  grant (Lesson 62); the session that fixed Sandbox's module found it (its notes, 2026-10-20). Read again
+  as `awsds-infra-staging`: `glue get-database` on `glue_db_c2ej62w956q2a8` answers
+  `AccessDeniedException`, *"Insufficient Lake Formation permission(s): Required Describe"*, the same as
+  on the `ACTIVE` `glue_db_d6ogysnx78dguo`, while a made-up name answers `EntityNotFoundException`; and
+  CloudTrail from 01:39 to 02:10Z holds two `glue:CreateDatabase` by the provisioning role and no
+  `DeleteDatabase`. The stack's deletion and the environment's left it: an orphan 8.1 removes, by a
+  principal holding `DROP` on it.
+- **[Claude] What the Glue policy changes beyond the opt-in**: `AmazonDataZoneGlueManageAccessRolePolicy`
+  v18 grants the manage-access role `lakeformation:GrantPermissions`, `BatchGrantPermissions`,
+  `RevokePermissions`, `RegisterResource`, the opt-ins and the data cells filters on `*`, where the
+  SageMaker policy grants no `lakeformation:` action; the role is one of Staging's two Lake Formation
+  admins since 3.3, so its seat, inert until now, can act. Staging holds no lake data (Stage 9 pass 5 is
+  not built), and the role is assumable by DataZone alone.
