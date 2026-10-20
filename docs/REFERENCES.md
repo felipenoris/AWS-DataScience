@@ -836,6 +836,11 @@
   `otherIndustryOption`, `useCases`) are in the API reference:
   <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_PutUseCaseForModelAccess.html>.
 
+- **`ListInferenceProfiles`**, read 2026-10-19 for `aws/bedrock-usage.py`: `typeEquals` names
+  `SYSTEM_DEFINED` and `APPLICATION` and states no default, and each summary's `models` carries one
+  `modelArn` per entry:
+  <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_ListInferenceProfiles.html>.
+
 - **Claude Code on Amazon Bedrock**, the vendor's own setup page (read 2026-09-11): the environment
   variables (`CLAUDE_CODE_USE_BEDROCK`, `AWS_REGION`, `ANTHROPIC_MODEL`, `ANTHROPIC_DEFAULT_OPUS_MODEL`,
   `ANTHROPIC_DEFAULT_HAIKU_MODEL`), the IAM policy with its four `bedrock:` actions and the marketplace
