@@ -397,9 +397,14 @@ deploys.
   key and prints one line, and MWAA Serverless offers no condition key an SCP could require a network
   with (the CLI's code, read 2026-10-18, PR #189). **Prepared 2026-10-20**: the amendment, three inline
   documents in `staging/foundation/deploy-role.tf`, applied by the user 2026-10-20 (3 added, re-plan `No changes`); the
-  job `stage-18-deploy` on the branch, below, committed as `caf1ff6` in the laptop's clone and pushed at
-  the next GitLab sitting. The role has no group profile in the domain yet, so its first run is refused
-  as a non-member and creates one, and the membership by group id follows, as in Sandbox.
+  job `stage-18-deploy` on the branch, below, committed as `caf1ff6` and `6a23b4d` in the laptop's clone
+  and pushed at the next GitLab sitting. The branch's `test` fails the workflow lint since 7.1, the
+  workflow naming `ACCOUNT_ID`, which only the staging stage defines, and a failed stage skips every
+  later job, manual ones included, so the job carries `needs: []` (the checklist session's reading of
+  2026-10-20, the lint reproduced here). `ECR_REGISTRY`, which the job reads beside `DOMAIN_ID` and
+  `DOMAIN_REGION`, is the protected project variable Stage 8's job 193 added, read in GitLab before the
+  run. The role has no group profile in the domain yet, so its first run is refused as a non-member and
+  creates one, and the membership by group id follows, as in Sandbox.
 - **4.4 — [Claude⚡] Run it** (ix), once the Prerequisites' Stage 8 3.0 half and `vpc-v0.4.0` are
   applied (both 2026-10-19): the sample input placed, then `run --targets staging --workflow` from the laptop, and `start-workflow-run` as the deploy identity; `get-workflow-run` to the end; the
   tasks' identity, subnets and endpoints read from CloudTrail and the logs. **The first run, 2026-10-19**
@@ -446,9 +451,10 @@ deploys.
 
 4.3's job goes into `stage-18-staging`'s `.gitlab-ci.yml` between `test-deploy` and `store-bundle`'s
 comment. GitLab holds the branch at `6eb795c`, pushed at 7.1; the laptop's clone `$HOME/tmp/app-etl-check`
-holds the job as `caf1ff6`, one commit ahead, and fetches `main` alone, so it shows no upstream for the
-branch. A session without that clone clones `awsds/app-etl`, switches to `stage-18-staging`, inserts the
-block there, commits and pushes. The block is `caf1ff6`'s addition, byte for byte.
+holds the job as `caf1ff6` and `6a23b4d`, two commits ahead, and fetches `main` alone, so it shows no
+upstream for the branch. A session without that clone clones `awsds/app-etl`, switches to
+`stage-18-staging`, inserts the block there, commits and pushes. The block is the two commits'
+addition, byte for byte.
 
 ```yaml
 # Stage 18 step 4.3, on this measurement branch alone: v0.2.1's stored bundle deployed into Staging's
@@ -460,6 +466,10 @@ block there, commits and pushes. The block is `caf1ff6`'s addition, byte for byt
 # from the Tooling environment stops: without it the workflow lands in the service's own network.
 stage-18-deploy:
   stage: deploy
+  # Started apart from the test stage: the workflow lint fails this branch, whose workflow names
+  # ACCOUNT_ID, a staging value alone (7.1), and a failed stage skips every later job, manual ones
+  # included.
+  needs: []
   tags: [awsds-deploy]
   resource_group: app-etl-staging
   timeout: 45m
@@ -614,7 +624,10 @@ stage-18-deploy:
   gained `datazone`, by the user's `make up`. Run B: 12 events `SUCCESS`, posted by the project role's IAM
   profile, S3 dataset nodes and job-run nodes the domain links, and no graph in the portal, since no
   node is an asset. CloudTrail read each post as `PostLineageEvent` by the role's `GlueJobRunnerSession`
-  through the new endpoint, and the 12 events again after a delay.
+  through the new endpoint, and the 12 events again after a delay. The branch's workflow lint fails
+  since `6eb795c` (2026-10-20): the workflow names `ACCOUNT_ID`, which only the staging stage defines,
+  and the lint wants every variable a workflow names in every stage, so an application posting its
+  lineage defines the account in each stage.
 - **7.2 — [user + Claude reads] A subscription across accounts** (x, decision 5): the Staging project
   publishes the Glue task's output table, sample data; the Sandbox project subscribes and the Staging
   owner approves; read the grants DataZone writes in each account and through RAM (INT-23's claim), and
@@ -646,7 +659,16 @@ stage-18-deploy:
      `glue_db_d6ogysnx78dguo`, located under the database's `dev/data/catalogs/`, which the project role may
      do under the provisioning role's project-conditioned `CREATE_TABLE`; the job gains
      `--enable-glue-datacatalog`, and `transform.py` and the workflow change on the measurement branch,
-     deployed from `v0.2.1`'s extracted bundle with the branch's files beside it.
+     deployed from `v0.2.1`'s extracted bundle with the branch's files beside it. **Prepared 2026-10-20**
+     by the checklist session: branch `stage-18-table` at `e14e910` in the clone `$HOME/tmp/app-etl-table`,
+     cut from `caf1ff6` and not pushed, the change below. Its 16 tests and ruff pass and its lint fails
+     as the branch's does, `TABLE_DATABASE` beside `ACCOUNT_ID` (read again here). The deploy exports
+     `STAGING_TABLE_DATABASE`, the environment's `glueDBName`, which the 4.3 job does not read. A second
+     run drops and recreates the table (`overwrite`, Spark's V1 path), and a grant on the dropped table
+     goes with it [inferred]: after the subscription the task does not run again before the reads.
+     Unmeasured: whether the job's `GlueJobRunnerSession` carries `context.datazone.projectId`, which
+     the `CREATE_TABLE` grant is conditioned on; a refusal reads *"Insufficient Lake Formation
+     permission(s)"* on `CreateTable`, after the CSV is written.
   2. **[Claude⚡] The asset**: a run of the project's Glue data source, `start-data-source-run`, since it
      publishes nothing on import (`publishOnImport` false) and its daily schedule fires at 02:02 UTC;
      then the asset published as the project's owner, Staging's InfrastructureAccess.
@@ -665,6 +687,176 @@ stage-18-deploy:
   or Serverless, and the subscribed tables appear as views in the consumer's warehouse; a direct
   datashare, with no DataZone, gives a database of `SELECT` only. The pages name no Lake Formation step
   on either path, the property INT-24's shapes are measured by.
+
+#### 7.2's table change
+
+The checklist session's `stage-18-table` (`e14e910`) against `caf1ff6`. Saved to a file, the block
+goes onto `stage-18-staging` with `git apply`, and the result equals `e14e910`'s tree (read
+2026-10-20). Its blank context lines carry no leading space, which `git apply` accepts.
+
+```diff
+diff --git a/glue/transform.py b/glue/transform.py
+index a9e7f9a..3f4628b 100644
+--- a/glue/transform.py
++++ b/glue/transform.py
+@@ -7,6 +7,11 @@ into the target's prefix, which the overwrite empties first, then copies the par
+ target's key and deletes what Spark wrote, with the boto3 the Glue worker carries. A second run
+ overwrites the one object, so the processing job that reads the prefix finds one file and names
+ its outputs after it. Glue 6.0 runs it; the test runs it over doubles of awsglue, pyspark and boto3.
++
++A run that names --TABLE_DATABASE and --TABLE_NAME also writes the result as a Parquet table of the
++Glue Data Catalog, a managed table at the database's location, which needs the job's
++--enable-glue-datacatalog. Stage 18 step 7.2 names the Staging project's DataLake database; a run
++that names neither writes no table, and one naming only one of the two stops before reading.
+ """
+
+ from __future__ import annotations
+@@ -45,7 +50,21 @@ def keep_one_file(target: str) -> None:
+     s3.delete_objects(Bucket=bucket, Delete={"Objects": leftovers})
+
+
++TABLE_OPTIONS = ["TABLE_DATABASE", "TABLE_NAME"]
++
++
++def table_options(argv: list[str]) -> dict[str, str]:
++    """The table's database and name when the run names both; empty when it names neither."""
++    named = [name for name in TABLE_OPTIONS if f"--{name}" in argv]
++    if not named:
++        return {}
++    if named != TABLE_OPTIONS:
++        raise ValueError(f"--TABLE_DATABASE and --TABLE_NAME go together; the run names {named}")
++    return getResolvedOptions(argv, TABLE_OPTIONS)
++
++
+ def main() -> None:
++    table = table_options(sys.argv)
+     arguments = getResolvedOptions(sys.argv, ["SOURCE_PATH", "TARGET_PATH"])
+     target = arguments["TARGET_PATH"]
+     spark = SparkSession.builder.getOrCreate()
+@@ -58,6 +77,10 @@ def main() -> None:
+     )
+     keep_one_file(target)
+     print(f"wrote {target}")
++    if table:
++        name = f"{table['TABLE_DATABASE']}.{table['TABLE_NAME']}"
++        result.coalesce(1).write.mode("overwrite").format("parquet").saveAsTable(name)
++        print(f"wrote the table {name}")
+
+
+ if __name__ == "__main__":
+diff --git a/manifest.yaml b/manifest.yaml
+index 03c64af..c8e4e63 100644
+--- a/manifest.yaml
++++ b/manifest.yaml
+@@ -125,6 +125,8 @@ stages:
+       PROJECT_SG: ${STAGING_PROJECT_SG}
+       PROJECT_KEY_ARN: ${STAGING_PROJECT_KEY_ARN}
+       ACCOUNT_ID: ${STAGING_ACCOUNT_ID}
++      # Stage 18 step 7.2: the DataLake environment's glueDBName, which the Glue task writes `trades` to.
++      TABLE_DATABASE: ${STAGING_TABLE_DATABASE}
+     bootstrap:
+       actions:
+         - type: workflow.create
+diff --git a/tests/test_glue_script.py b/tests/test_glue_script.py
+index d39bc93..4ec1e71 100644
+--- a/tests/test_glue_script.py
++++ b/tests/test_glue_script.py
+@@ -31,6 +31,7 @@ class FakeWriter:
+         self.log = log
+         self.options = {}
+         self.save_mode = None
++        self.format_name = None
+
+     def option(self, key, value):
+         self.options[key] = value
+@@ -40,9 +41,16 @@ class FakeWriter:
+         self.save_mode = name
+         return self
+
++    def format(self, name):
++        self.format_name = name
++        return self
++
+     def csv(self, path):
+         self.log["write"] = (path, self.options, self.save_mode)
+
++    def saveAsTable(self, name):
++        self.log["table"] = (name, self.format_name, self.save_mode)
++
+
+ class FakeFrame:
+     def __init__(self, log):
+@@ -96,7 +104,7 @@ class FakeS3:
+         self.deleted.append([item["Key"] for item in Delete["Objects"]])
+
+
+-def run_script(monkeypatch, log, keys):
++def run_script(monkeypatch, log, keys, extra=()):
+     """Run the script as Glue would, with its three libraries doubled; return the S3 double."""
+     s3 = FakeS3(keys)
+
+@@ -125,7 +133,7 @@ def run_script(monkeypatch, log, keys):
+         "boto3": boto3,
+     }.items():
+         monkeypatch.setitem(sys.modules, name, module)
+-    argv = ["transform.py", "--SOURCE_PATH", SOURCE, "--TARGET_PATH", TARGET]
++    argv = ["transform.py", "--SOURCE_PATH", SOURCE, "--TARGET_PATH", TARGET, *extra]
+     monkeypatch.setattr(sys, "argv", argv)
+     runpy.run_path(str(SCRIPT), run_name="__main__")
+     return s3
+@@ -140,9 +148,27 @@ def test_the_script_reads_transforms_and_writes_one_file(monkeypatch, capsys):
+     assert log["write"] == ("s3://bucket/app-etl/work/glue/", {"header": True}, "overwrite")
+     assert s3.copied == [(PART, "app-etl/work/glue/trades.csv")]
+     assert s3.deleted == [[PART, "app-etl/work/glue/_SUCCESS"]]
++    assert "table" not in log
+     assert capsys.readouterr().out == f"wrote {TARGET}\n"
+
+
++def test_the_script_writes_the_table_a_run_names(monkeypatch, capsys):
++    log = {}
++    table = ["--TABLE_DATABASE", "glue_db_example", "--TABLE_NAME", "trades"]
++    run_script(monkeypatch, log, [PART], table)
++    assert log["write"] == ("s3://bucket/app-etl/work/glue/", {"header": True}, "overwrite")
++    assert log["table"] == ("glue_db_example.trades", "parquet", "overwrite")
++    printed = capsys.readouterr().out
++    assert printed == f"wrote {TARGET}\nwrote the table glue_db_example.trades\n"
++
++
++def test_the_script_refuses_half_a_table(monkeypatch):
++    log = {}
++    with pytest.raises(ValueError, match="go together"):
++        run_script(monkeypatch, log, [PART], ["--TABLE_NAME", "trades"])
++    assert "read" not in log
++
++
+ def test_the_script_refuses_more_than_one_part_file(monkeypatch):
+     second = "app-etl/work/glue/part-00001-0f6a-c000.csv"
+     with pytest.raises(RuntimeError, match="one part file expected"):
+diff --git a/workflows/app-etl.yaml b/workflows/app-etl.yaml
+index 4c4ae9f..3f33626 100644
+--- a/workflows/app-etl.yaml
++++ b/workflows/app-etl.yaml
+@@ -13,6 +13,10 @@ app-etl:
+       script_args:
+         "--SOURCE_PATH": "{proj.connection.default.s3_shared.s3Uri}app-etl/inbox/"
+         "--TARGET_PATH": "{proj.connection.default.s3_shared.s3Uri}app-etl/work/glue/trades.csv"
++        # Stage 18 step 7.2: the result also as the table the Staging project publishes, in its
++        # DataLake environment's database, a stage variable.
++        "--TABLE_DATABASE": "{env.TABLE_DATABASE}"
++        "--TABLE_NAME": trades
+       create_job_kwargs:
+         Command:
+           Name: glueetl
+@@ -28,6 +32,8 @@ app-etl:
+             - datazone-glue-network-connection-{env.SUBNET_AZ2}-{proj.id}-dev
+         DefaultArguments:
+           "--custom-logGroup-prefix": datazone-{proj.id}-dev
++          # Stage 18 step 7.2: the Glue Data Catalog as Spark's metastore, which the table needs.
++          "--enable-glue-datacatalog": "true"
+           # Stage 18 step 7.1: the OpenLineage listener posting to the domain, the Spark settings
+           # SageMaker Unified Studio documents for a Glue job; the account is a stage variable.
+           "--conf": "spark.extraListeners=io.openlineage.spark.agent.OpenLineageSparkListener --conf spark.openlineage.transport.type=amazon_datazone_api --conf spark.openlineage.transport.domainId={domain.id} --conf spark.glue.accountId={env.ACCOUNT_ID} --conf spark.openlineage.facets.custom_environment_variables=[AWS_DEFAULT_REGION;GLUE_VERSION;GLUE_COMMAND_CRITERIA;GLUE_PYTHON_VERSION;] --conf spark.openlineage.columnLineage.datasetLineageEnabled=True --conf spark.glue.JOB_NAME=app-etl-{proj.id}"
+```
 
 ### 8. The unwinding, then the verdict
 
