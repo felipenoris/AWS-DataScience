@@ -8,6 +8,7 @@
 # attachment beside them is not undone by its next apply. Stage 18 step 8.6 destroys it with the slice.
 
 resource "aws_iam_role_policy_attachment" "manage_access_glue" {
-  role       = element(split("/", module.sagemaker_prereqs.manage_access_role_arn), 1)
-  policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/AmazonDataZoneGlueManageAccessRolePolicy"
+  role = element(split("/", module.sagemaker_prereqs.manage_access_role_arn), 1)
+  # Under the service-role/ path, unlike the SageMaker policy beside it.
+  policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/service-role/AmazonDataZoneGlueManageAccessRolePolicy"
 }

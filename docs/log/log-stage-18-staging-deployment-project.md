@@ -1066,3 +1066,10 @@ are UTC.*
   module's attachments, which `iam-role-v0.1.0` makes one by one: planned 01:42:35Z, *"Plan: 1 to add, 0
   to change, 0 to destroy."*, saved for the user's apply. The failed environment is deleted and created
   again after it.
+- **[user] The attachment's first apply failed**: *"NoSuchEntity: Policy
+  arn:aws:iam::aws:policy/AmazonDataZoneGlueManageAccessRolePolicy does not exist or is not attachable."*
+  **[Claude] The cause**: the policy lives under `/service-role/`,
+  `arn:aws:iam::aws:policy/service-role/AmazonDataZoneGlueManageAccessRolePolicy`, attachable, while the
+  SageMaker one has no path; the listing that found it had printed the name after the last `/` alone
+  (Lesson 38). Fixed in `manage-access.tf`, re-planned 01:46:16Z, *"Plan: 1 to add, 0 to change, 0 to
+  destroy."*, the plan saved again.
