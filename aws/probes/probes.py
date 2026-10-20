@@ -12,7 +12,7 @@
 #                  one document at a time and each phase is the measurement for the attach
 #                  that just happened. `rcp` in particular is run before widening the RCP
 #                  from Policy Test to the root - see docs/plan/runbooks/scp-battery.md.
-#     account      canary data identity dev sandbox1 prod
+#     account      canary data identity staging sandbox1 prod
 #     expect       deny   the ceiling must stop it
 #                  allow  it must still work - a cross-check, or the floor
 #     allowed_re   the wording that proves this action reached authorization. That is a
@@ -347,12 +347,22 @@ _JOB_ROLE = "arn:aws:iam::@ACCT@:role/awsds-canary-nonexistent"
 _JOB_REGISTRY = "@ACCT@" + ".dkr.ecr.us-west-2.amazonaws.com"
 _JOB_IMAGE = '{"ImageUri":"' + _JOB_REGISTRY + '/awsds-canary-probe:latest"}'
 _JOB_KEY = "arn:aws:kms:us-west-2:@ACCT@:key/00000000-0000-0000-0000-000000000000"
-_JOB_VPC = '"VpcConfig":{"SecurityGroupIds":["sg-0123456789abcdef0"],"Subnets":["@SUBNET@"]}'
+_JOB_VPC_CONFIG = '{"SecurityGroupIds":["sg-0123456789abcdef0"],"Subnets":["@SUBNET@"]}'
+_JOB_VPC = '"VpcConfig":' + _JOB_VPC_CONFIG
 
 
-def _processing_job(instance_type, volume_key, isolation, encryption, vpc):
+def _instances(instances):
+    """A job cluster's instance field: a string is InstanceType, a list is InstancePreferences,
+    which excludes InstanceType and leaves the one InstanceCount on the cluster."""
+    if isinstance(instances, str):
+        return '"InstanceType":"' + instances + '"'
+    return ('"InstancePreferences":['
+            + ",".join('{"InstanceType":"' + t + '"}' for t in instances) + "]")
+
+
+def _processing_job(instances, volume_key, isolation, encryption, vpc):
     """create-processing-job argv with each of the five settings chosen by the caller."""
-    cluster = '{"InstanceCount":1,"InstanceType":"' + instance_type + '","VolumeSizeInGB":1'
+    cluster = '{"InstanceCount":1,' + _instances(instances) + ',"VolumeSizeInGB":1'
     cluster += (',"VolumeKmsKeyId":"' + _JOB_KEY + '"}') if volume_key else "}"
     network = ('{"EnableInterContainerTrafficEncryption":' + encryption
                + ',"EnableNetworkIsolation":' + isolation + ((',' + _JOB_VPC) if vpc else "") + "}")
@@ -380,6 +390,65 @@ probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
 probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
       "workloads: CreateProcessingJob, no VolumeKmsKeyId (DenySageMakerJobsWithoutVolumeEncryption)",
       _processing_job("ml.m5.large", False, "true", "true", True))
+
+# --- The ceiling against an instance preference list (Stage 9 step 3.5). A job may name up to five
+#     types in InstancePreferences instead of InstanceType: ProcessingResources.ClusterConfig for a
+#     processing job, ResourceConfig for a training job. DenySageMakerInstanceCeiling is
+#     ForAnyValue:StringNotEquals on sagemaker:InstanceTypes, which leaves a request alone when the
+#     key is absent, so the deny rows ask whether SageMaker fills the key from the list: one
+#     off-ceiling type, and an off-ceiling type after an admitted one, which a key filled from the
+#     first entry alone lets through. The allow rows send the same list on an admitted type, so a
+#     deny is attributed to the type, never to the list's form. Each question is asked of both
+#     actions (Lesson 21). Every row carries the other four settings.
+#
+#     Every row is `blocked` for the processing rows' reason. SageMaker checks the quota of every
+#     listed type, so an authorized processing row reads ResourceLimitExceeded, Production's
+#     processing quotas being 0, and the quota check follows authorization (the ceiling row above,
+#     2026-10-18). Production's training quotas are unread, and so is that order for
+#     CreateTrainingJob, so the training rows carry the processing ceiling row's twin, ml.m5.2xlarge
+#     as InstanceType: its deny places authorization before the role and quota checks of this
+#     action, so a list row answering the contrast row's role or quota refusal is a hole. A refusal
+#     that names the list itself may precede authorization, and leaves the row untested.
+
+
+def _training_job(instances):
+    """create-training-job argv with the four settings beside the ceiling met."""
+    resources = ('{"InstanceCount":1,' + _instances(instances)
+                 + ',"VolumeSizeInGB":1,"VolumeKmsKeyId":"' + _JOB_KEY + '"}')
+    return ["sagemaker", "create-training-job", "--training-job-name", "awsds-canary-probe",
+            "--role-arn", _JOB_ROLE,
+            "--algorithm-specification",
+            '{"TrainingImage":"' + _JOB_REGISTRY + '/awsds-canary-probe:latest",'
+            '"TrainingInputMode":"File"}',
+            "--output-data-config", '{"S3OutputPath":"s3://awsds-canary-does-not-exist/out"}',
+            "--resource-config", resources,
+            "--stopping-condition", '{"MaxRuntimeInSeconds":3600}',
+            "--vpc-config", _JOB_VPC_CONFIG,
+            "--enable-network-isolation", "--enable-inter-container-traffic-encryption",
+            "--region", "us-west-2"]
+
+
+probe("ou", "prod", "allow", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateProcessingJob listing ml.m5.large still authorized (3.5 preference-list contrast)",
+      _processing_job(["ml.m5.large"], True, "true", "true", True))
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateProcessingJob listing ml.m5.2xlarge (DenySageMakerInstanceCeiling, preference list)",
+      _processing_job(["ml.m5.2xlarge"], True, "true", "true", True))
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateProcessingJob listing ml.m5.large, then ml.m5.2xlarge (DenySageMakerInstanceCeiling, every entry)",
+      _processing_job(["ml.m5.large", "ml.m5.2xlarge"], True, "true", "true", True))
+probe("ou", "prod", "allow", _JOB_AUTHORIZED, "blocked",
+      "workloads: compliant sagemaker:CreateTrainingJob listing ml.m5.large still authorized (3.5 contrast)",
+      _training_job(["ml.m5.large"]))
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateTrainingJob on ml.m5.2xlarge (DenySageMakerInstanceCeiling, the training control)",
+      _training_job("ml.m5.2xlarge"))
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateTrainingJob listing ml.m5.2xlarge (DenySageMakerInstanceCeiling, preference list)",
+      _training_job(["ml.m5.2xlarge"]))
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateTrainingJob listing ml.m5.large, then ml.m5.2xlarge (DenySageMakerInstanceCeiling, every entry)",
+      _training_job(["ml.m5.large", "ml.m5.2xlarge"]))
 
 probe("ou", "prod", "deny", "ValidationException", "blocked",
       "workloads: serverless CreateEndpointConfig (DenySageMakerServerlessInference, 3.7)",
@@ -715,11 +784,11 @@ probe("region", "canary", "allow", None, "dryrun",
 # works; these prove it was enabled where it was meant to be - a different claim, and the one
 # an enable-per-OU design can get wrong five times.
 #
-# `sandbox1` is not a repetition of `dev`: it is verification (xi)'s second half. The SCP an
-# enabled control attaches is *inherited* by a nested OU whether or not that OU is itself a
-# registered target, so a deny in Sandbox Account 1 says the accounts are covered and says
-# nothing about which OU covers them. What distinguishes the two readings is whether the
-# enablement on `Sandboxes` was *accepted*, and that is read from the OU's attached policies.
+# `sandbox1` is verification (xi)'s second half. The SCP an enabled control attaches is
+# *inherited* by a nested OU whether or not that OU is itself a registered target, so a deny in
+# Sandbox Account 1 says the accounts are covered and says nothing about which OU covers them.
+# What distinguishes the two readings is whether the enablement on `Sandboxes` was *accepted*,
+# and that is read from the OU's attached policies.
 probe("region", "data", "deny", None, "dryrun", "region: us-east-1 denied in Data Governance",
       ["ec2", "create-key-pair", "--key-name", "awsds-canary-probe", "--dry-run",
        "--region", "us-east-1"])

@@ -414,6 +414,34 @@ retry is safe: a role that exists would let an authorized call create a job, whi
 from CloudTrail. The compliant row turning into a deny is the finding that matters most: either the volume
 key stopped populating under its old name, or another statement reaches further than written.
 
+**The instance-preference rows are written and not run.** Since 2026-09-15 a job may name up to five
+instance types as a preference list in place of `InstanceType`:
+`ProcessingResources.ClusterConfig.InstancePreferences` for a processing job,
+`ResourceConfig.InstancePreferences` for a training job, the list excluding `InstanceType` and the one
+`InstanceCount` staying on the cluster. `DenySageMakerInstanceCeiling` is `ForAnyValue:StringNotEquals` on
+`sagemaker:InstanceTypes`, which leaves alone a request in which the key is absent, and whether SageMaker
+fills the key from the list is unread ([`upstream-releases.md`](../upstream-releases.md), 2026-10-18).
+The rows below ask it, in `probes.py` beside the processing rows above, `blocked` for the same reason and
+each carrying the other four settings. They run with the next `--phase ou`, before a job in `Workloads` or
+Stage 17's training job names its types as a list:
+
+| Probe (`aws sagemaker …`, from `awsds-infra-prod`) | Expected | What it answers |
+|---|---|---|
+| `create-processing-job`, the list naming `ml.m5.large` | `ResourceLimitExceeded` (authorized): SageMaker checks the quota of every listed type, and Production's processing quotas read 0 | none: the contrast, which attributes the two rows below to the type rather than to the list's form |
+| the same, the list naming `ml.m5.2xlarge` | `AccessDenied` naming the `Workloads` document | `DenySageMakerInstanceCeiling` reads a list |
+| the same, the list naming `ml.m5.large`, then `ml.m5.2xlarge` | `AccessDenied` | the key carries every entry, not the first alone |
+| `create-training-job` with `VpcConfig`, isolation, inter-container encryption, `VolumeKmsKeyId`, the list naming `ml.m5.large` | `ValidationException` or `ResourceLimitExceeded` (authorized); Production's training quotas are unread | none: the contrast, and the battery's first training row |
+| the same, `ml.m5.2xlarge` as `InstanceType` | `AccessDenied` | none new: the control, which places authorization before the role and quota checks of this action |
+| the same, the list naming `ml.m5.2xlarge` | `AccessDenied` | the list, for the second action (Lesson 21) |
+| the same, the list naming `ml.m5.large`, then `ml.m5.2xlarge` | `AccessDenied` | every entry, for the second action |
+
+**An authorized deny row is a hole in the ceiling.** A processing row proves it with
+`ResourceLimitExceeded`, which follows authorization (2026-10-18). A training row proves it by answering
+what the contrast row answers while the control reads `AccessDenied`. A `ValidationException` that names
+the list itself may precede authorization, and records the row untested. The key's population is a
+property of the request, so the answer carries to the D13 boundary, which composes the same statement
+([Stage 17](../stages/stage-17-sandbox-machine-learning.md) pass 2's training job).
+
 **The Stage 6e decision 15 amendment — `awsds-org-scp-ou-interactive` gains
 `DenyBedrockInvocationOutsideTheScopedModels` and `DenyBedrockReadsOutsideTheRoutedRegions`.** Run as
 `awsds-infra-sandbox-1` with `--phase ou`; the battery ran these rows on 2026-10-17, every one as
@@ -572,13 +600,6 @@ The other three are in `probes.py` next to their probes: `enable-snapshot-block-
   event-stream operation, so the Bedrock statements that name it are probed on `InvokeModel` alone.
   The streaming action is the one every Claude Code session calls, and a session's CloudTrail events are
   its reading (6e step 6).
-- **A job naming its instance types as a preference list.** Since 2026-09-15 `CreateTrainingJob` and
-  `CreateProcessingJob` take `ResourceConfig.InstancePreferences`, up to five types in place of
-  `InstanceType`, and `probes.py`'s ceiling rows send `InstanceType` alone (`_processing_job`). Whether the
-  service fills `sagemaker:InstanceTypes` from the list is unread, so the rows are owed before the first
-  SageMaker job in `Workloads` and before Stage 17's training job: a list naming one off-ceiling type,
-  expected `DENY-SCP` on the `Workloads` document and on the D13 boundary, where `ALLOWED` is a hole
-  (Stage 9 3.5, Stage 17's risks; [`upstream-releases.md`](../upstream-releases.md), 2026-10-18).
 
 ### The class the battery cannot reach — verified by *reading*, never by attempting
 
