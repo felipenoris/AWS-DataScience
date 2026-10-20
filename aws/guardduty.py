@@ -4,9 +4,12 @@
 # registration visible from Identity.
 #
 # Coverage is read across every account at once: one account silently uncovered is the
-# finding. Every protection plan arrives ON except Runtime Monitoring (Stage 15 step 0) and
-# step 3 switches them off, so an ENABLED reading here is either drift or an unfinished
-# step 3.
+# finding. Every protection plan but Runtime Monitoring arrives ON (Stage 15 step 0; AI
+# Protection's default is verification ii's reading) and step 3 switches them off, so an
+# ENABLED reading here is either drift or an unfinished step 3. Steps 2 and 3 are console
+# or CLI acts in Audit, or decision 4's alternative: GuardDuty's Organizations policy
+# (GUARDDUTY_POLICY) attached at the root, every plan disabled. Step 1's delegation is an
+# act under either, and the checks read the detectors the same way.
 #
 # These checks were VP-8 in ./aws/vpn.py; they are GD-* here, and VP-8 stays RETIRED there
 # rather than renumbered - the Stage 4 log's readings cite it by that name.
@@ -27,8 +30,10 @@
 # What it cannot see, since an empty listing and a missing account look alike:
 #   - GuardDuty's org configuration (auto-enable ALL, the per-plan NONE list) lives in
 #     Audit, which holds no CLI profile (D33/D34): it is verified in the Audit console or
-#     CloudShell, never here. This file reads only the members' detectors and the
-#     delegation registration.
+#     CloudShell, never here. Under decision 4's policy the policy document replaces it.
+#     This file reads neither, only the members' detectors and the delegation
+#     registration, and does not print a feature's ManagedBy, GUARDDUTY_POLICY on a
+#     feature the policy manages.
 #   - Management's own detector (Stage 15 step 2a, decision 3) is outside every profile
 #     here; read it from its CloudShell.
 #   - The findings route (step 4) is proven by a sample finding arriving by e-mail, not by
@@ -48,20 +53,29 @@ OUT_NAME = "guardduty.txt"
 IDENTITY_PROFILE = "awsds-infra-identity"
 
 # The optional protection plans. Enabling GuardDuty turns on every one of them except
-# Runtime Monitoring (documented 2026-08-18, Stage 15 step 0), so step 3 is a switch-off, and
-# GD-3 is written against the whole set rather than only S3 Protection and Malware Protection
-# for EC2 (Stage 11 step 4's pair). The check is not driven by this tuple: the report prints
-# every feature the API returns and the check fails on any that reads ENABLED, so a protection
-# plan AWS adds later is measured the day it appears (Lesson 23). The names below only fix the
-# report's column order; anything unknown is appended in the API's own order.
+# Runtime Monitoring (documented 2026-08-18, Stage 15 step 0; AI Protection's default is
+# verification ii's reading), so step 3 is a switch-off, and GD-3 is written against the
+# whole set rather than only S3 Protection and Malware Protection for EC2 (Stage 11 step 4's
+# pair). The check is not driven by this tuple: the report prints every feature the API
+# returns and the check fails on any that reads ENABLED but the foundational sources below,
+# so a protection plan AWS adds later is measured the day it appears (Lesson 23). The names
+# below only fix the report's column order; anything unknown is appended in the API's own
+# order.
 KNOWN_FEATURES = (
     "S3_DATA_EVENTS",
     "EKS_AUDIT_LOGS",
     "EBS_MALWARE_PROTECTION",
     "RDS_LOGIN_EVENTS",
     "LAMBDA_NETWORK_LOGS",
+    "AI_PROTECTION",
     "RUNTIME_MONITORING",
 )
+
+# The foundational sources. GetDetector's result enum for Features lists them beside the
+# plans, and no create or update input names them (the AWS CLI 2.37.12 model, read
+# 2026-10-20): they are on while the detector is, so GD-3 reads past them and the report
+# still prints them.
+FOUNDATIONAL = ("CLOUD_TRAIL", "DNS_LOGS", "FLOW_LOGS")
 
 
 def main(argv: list) -> int:
@@ -200,13 +214,15 @@ def main(argv: list) -> int:
                 checks.ok("GD-2", f"GuardDuty in {p}", "ENABLED")
 
     # GD-3: every optional protection plan off, on every detector this file can read
-    # (steps 0/3). They arrive ENABLED, so this check reads red between step 1 and the end of
-    # step 3. If decision 1's option (b), the trial window, is taken instead, flip this check
-    # rather than living with the red (the VP-7 precedent, Stage 4).
+    # (steps 0/3); the foundational sources are not plans. They arrive ENABLED, so this check
+    # reads red between step 1 and the end of step 3. If decision 1's option (b), the trial
+    # window, is taken instead, flip this check rather than living with the red (the VP-7
+    # precedent, Stage 4).
     for p, det, status, plans in gd_rows:
         if det == "-" or status != "ENABLED":
             continue
-        bad_feat = [tok.split("=", 1)[0] for tok in plans.split() if tok.endswith("=ENABLED")]
+        enabled = [tok.split("=", 1)[0] for tok in plans.split() if tok.endswith("=ENABLED")]
+        bad_feat = [n for n in enabled if n not in FOUNDATIONAL]
         if bad_feat:
             checks.fail(
                 "GD-3",
@@ -264,7 +280,11 @@ never a compliant one.
         # ==============================================================================
         rep.h1("2. Detectors and protection plans, per account")
         rep.tabulate(
-            ["PROFILE\tDETECTOR\tSTATUS\tPROTECTION PLANS (all must be DISABLED)"]
+            [
+                "PROFILE\tDETECTOR\tSTATUS\tFEATURES (every plan DISABLED; "
+                + ", ".join(FOUNDATIONAL)
+                + " are foundational)"
+            ]
             + [f"{p}\t{d}\t{s}\t{f}" for p, d, s, f in gd_rows]
         )
         rep.line()
