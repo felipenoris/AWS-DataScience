@@ -973,3 +973,15 @@ are UTC.*
   no instance running, no interface endpoint and no NAT gateway in Production, Staging, Sandbox or Data
   Governance, so Staging's `datazone` endpoint went down with `staging/egress/`; no Redshift workgroup in
   Sandbox, no SageMaker app `InService` and no processing job in progress in Sandbox or Staging.
+
+## 2026-10-19 — the pending decisions, one by one
+
+- **[user] Decision 4 taken**: *"Decision 4: yes, 4.3 runs as awsds-deploy-staging at the next GitLab
+  sitting."*
+- **[user] Decision 5 taken**: *"Decision 5: yes, 7.2's subscription runs on sample data."*
+- **[user] Decision 6 taken**, after asking what 5.4 answers and why it would need a project: *"sim,
+  "read-only""*. **[Claude] 5.4 answered by reading**: no SageMaker AI domain per `deployment` project, so
+  the environments-per-domain quota bounds it; 3.3's thirteen resources per project, the log group's
+  storage the only charge at rest; a prefix and a role per project, removing pass 5's collision by
+  construction. Left unmeasured, by the decision: whether a second provisioning rewrites Staging's Lake
+  Formation admins.
