@@ -10,9 +10,10 @@
 # and the revision is AWS's (Lesson 23's case, inverted).
 #
 # The managed policy ARNs were measured, not remembered (2026-08-21, iam list-policies against
-# the live partition). Two plausible names that do not exist:
-# SageMakerStudioProjectRoleForManageAccessPolicy, AmazonDataZoneSageMakerProvisioningPolicy.
-# The two that do exist are below.
+# the live partition; the Glue manage-access one 2026-10-20, Stage 18 7.2). Two plausible names
+# that do not exist: SageMakerStudioProjectRoleForManageAccessPolicy,
+# AmazonDataZoneSageMakerProvisioningPolicy. The ones that exist are below, each with the path
+# its ARN carries: a listing that prints the name alone hides it (Lesson 38).
 #
 # Neither carries a permissions boundary, the IAM convention's one legitimate null
 # (terraform-modules/iam-role's own comment, Lesson 18): they are service roles authored by
@@ -92,8 +93,14 @@ module "manage_access_role" {
   assume_role_policy   = data.aws_iam_policy_document.manage_access_trust.json
   permissions_boundary = null
 
+  # A DataLake environment's add-on calls lakeformation:CreateLakeFormationOptIn on the new
+  # database as this role. The SageMaker policy (v4) carries no lakeformation: action; the Glue
+  # policy (v18) carries the opt-in and the grants a subscription to a Glue table is fulfilled
+  # with. Measured 2026-10-20 (Stage 18 7.2): CREATE_FAILED with the SageMaker policy alone,
+  # ACTIVE in 40 s with both.
   managed_policy_arns = [
     "arn:${data.aws_partition.current.partition}:iam::aws:policy/AmazonDataZoneSageMakerManageAccessRolePolicy",
+    "arn:${data.aws_partition.current.partition}:iam::aws:policy/service-role/AmazonDataZoneGlueManageAccessRolePolicy",
   ]
 }
 
