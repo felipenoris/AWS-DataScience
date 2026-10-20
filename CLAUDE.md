@@ -337,7 +337,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `claude-sonnet-5` are refused for this account (`EXC-08`).
 - **Stage 6f in progress**: `CT-7` says the catalog road has not reached the lake, and decision 1
   recommends (c); no IAM condition key reaches business-name generation, decision 3's last input (PR #187); each
-  project's `Tooling` data source fails daily (`EXC-11`). **6g** owes 2.4's Athena
+  project's `Tooling` data source fails daily (`EXC-11`); `sagemaker-prereqs-v0.8.0` gives the manage-access
+  role the Glue policy every `DataLake` environment failed without, applied 2026-10-20; decision 6 taken:
+  `test-experimentation` holds an `ACTIVE` `DataLake` environment, `eighth-experimentation`'s failed record
+  waits for 2.7. **6g** owes 2.4's Athena
   read, refused as written, and decision 1's proxy-host replacement at the next `production/proxy/` apply.
 - **Security Hub paused 2026-10-09** (`EXC-14`): `awsds-fsbp-only` keeps the service with no standard;
   the revert is `runbooks/security-hub.md` §R.
@@ -403,7 +406,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
   `--no-browser`.
-- **Module tags**: `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.7.0` (`sandbox/sagemaker`; `staging/studio` `v0.6.0`), `wireguard-v0.6.0`,
+- **Module tags**: `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`; `staging/studio` `v0.6.0`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit

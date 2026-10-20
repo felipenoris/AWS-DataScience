@@ -716,3 +716,222 @@ the laptop's CLI, 2.37.12. [`REFERENCES.md`](../REFERENCES.md) lists both source
 - **[Claude] What it leaves for the decision.** An IAM deny reaches generation only as a whole action,
   and no policy reaches the flag. Whether a data source's own run calls any IAM action to generate is not
   on the page. The decision stays the user's; the stage file's decision due 3 carries the reading.
+
+## 2026-10-20 — the manage-access role's Glue policy in the module and applied, and the failed `DataLake` environments read
+
+*Claude, in a session the Stage 18 session started, from the worktree `verificar-ambiente-down-e95914` on
+the branch `claude/gifted-thompson-d4f635`, cut from `origin/main` at `fa69fe19`, the pull request
+being #207. The requirement came from Stage 18 7.2's entries of the same night, read on PR #203's branch,
+where they stay until it merges. AWS reads as the infrastructure user with `InfrastructureAccess` in
+`Sandbox Account 1` (`awsds-infra-sandbox-1`), and in `Staging` (`awsds-infra-staging`) for the control
+reading; Claude created, changed and deleted nothing in AWS, the one change being the user's apply
+below. The first readings ran 02:10 to 02:15 UTC, their times read back from the trails.*
+
+- **[Claude] The two policies** (`iam get-policy-version`). `awsds-sandbox-smus-manage-access` carries
+  `AmazonDataZoneSageMakerManageAccessRolePolicy` alone, at v4 (updated 2026-02-12): thirteen statements
+  over SageMaker, RAM, S3, ECR and KMS, and no `lakeformation:` action. `AmazonDataZoneGlueManageAccessRolePolicy`,
+  v18 (updated 2026-02-12), lives under `service-role/`; its `LakeformationResourceSharing` statement
+  grants `CreateLakeFormationOptIn`, `GrantPermissions`, `BatchGrantPermissions`, `RevokePermissions`,
+  `RegisterResource` and the data cells filter actions on `*`, and its other statements reach Glue
+  databases and tables in the role's own account, RAM shares made through Lake Formation, `iam:PassRole`
+  of `datazone_usr_role*` to Lake Formation and Glue, and `kms:Decrypt` on keys tagged
+  `datazone:projectId` `proj-all`. Stage 18 measured the pair in Staging the same night (7.2).
+- **[Claude] The failed environments** (`datazone list-environments`, `get-environment`). Two, both from
+  the `experimentation` profile's `DataLake` configuration (`40631117-4a84-42b1-b2dc-c2deef6c3d52`), both
+  `CREATE_FAILED` with `provisionedResources` null and the failure *"Failed to deploy DataLake add-on for
+  environment <id>: User: arn:aws:sts::<acct>:assumed-role/awsds-sandbox-smus-manage-access/AmazonDataZoneEnvironmentDeployer-<acct>
+  is not authorized to perform: lakeformation:CreateLakeFormationOptIn … because no identity-based policy
+  allows the lakeformation:CreateLakeFormationOptIn action"*:
+  - `4lrapnc3syxd74`, `create-datalake-database-env-mydatabase-1789263919641`, in `eighth-experimentation`,
+    `glueDbName` `mydatabase`, created 2026-09-13 01:45:21Z;
+  - `d42fq38p5bkbdc`, `create-datalake-database-env-test-1792044496398`, in `test-experimentation`,
+    `glueDbName` `test`, created 2026-10-15 06:08:17Z.
+
+  The name's suffix is the portal's epoch in milliseconds. The domain's other two projects hold none:
+  `GenerativeAIModelGovernanceProject`'s six Bedrock environments and `deploy-staging`'s two are `ACTIVE`.
+- **[Claude] What each failure left, from Sandbox's trail** (`cloudtrail lookup-events`). 2026-09-13:
+  `CreateStack` 01:45:33Z and `CreateDatabase` of `mydatabase` 01:45:38Z, both by the provisioning role
+  through `datazone.amazonaws.com`; the manage-access role's `CreateLakeFormationOptIn` refused 01:45:46Z;
+  `DeleteStack` 01:46:04Z; no `DeleteDatabase`. `mydatabase` exists, holding `house-price`. 2026-10-15: the
+  same sequence for `test` (06:08:29 to 06:09:00Z), then `DeleteDatabase` of `test` at 06:08:58Z by
+  `test-experimentation`'s project role from the laptop's address, as the portal acts; `get-database`
+  answers `EntityNotFoundException`. Both stacks, `DataZone-Env-<id>`, read `DELETE_COMPLETE`.
+- **[Claude] Whether deleting a failed environment takes its database, read in Staging.** Stage 18 7.2's
+  failed `c2ej62w956q2a8` followed the same sequence (`CreateDatabase` of `glue_db_c2ej62w956q2a8`
+  01:39:36Z, the opt-in refused 01:39:46Z, `DeleteStack` 01:40:04Z); its `DeleteEnvironment` at 02:01:00Z
+  was followed by a second `DeleteStack` at 02:01:12Z and no `DeleteDatabase` through 02:06Z.
+  `glue get-database` as the infrastructure user, no Lake Formation administrator there, answers
+  *"Insufficient Lake Formation permission(s): Required Describe on glue_db_c2ej62w956q2a8"*, the same as
+  for the `ACTIVE` environment's `glue_db_d6ogysnx78dguo`, and `EntityNotFoundException` for a name that
+  does not exist: the database outlived both the failure and the deletion. A `get-databases` listing as
+  that user shows neither (Lesson 62).
+- **[Claude] Where a Glue subscription lands** (`datazone list-subscription-targets`). Each `Tooling`
+  environment, in both Sandbox projects and in `deploy-staging`, carries two targets: one for
+  `BedrockModelAssetType`, and `Tooling-default-target` for `SageMakerFeatureGroupAssetType` and
+  `SageMakerModelPackageGroupAssetType`. Staging's `ACTIVE` `DataLake` environment carries
+  `deploy-staging-lakehouse-default-target` for `GlueTableAssetType` and `GlueViewAssetType`. No Sandbox
+  project holds a target for a Glue table, so 2.2's subscription to `house-price` has nowhere to land
+  until the consumer project holds an `ACTIVE` `DataLake` environment.
+- **[Claude] What a new environment adds**, read from Staging's: a database `glue_db_<environment id>`
+  under the project's `dev/data/catalogs/`, the project-conditioned grants, and a Glue data source over
+  that database alone, `cron(2 2 * * ? *)`, `publishOnImport` false, business-name generation off, its
+  data access role the project role.
+- **[Claude] The module change**, `terraform-modules/sagemaker-prereqs/roles.tf`: the Glue policy's ARN,
+  with its `service-role/` path, added to `module "manage_access_role"`'s `managed_policy_arns`, and
+  `blueprints.tf`'s comment that called the SageMaker policy the role's one policy corrected. `validate`
+  passed. Planned from `sandbox/sagemaker/` against the local module (Recipe B step 1), 02:17:49 to
+  02:18:20Z: *"Plan: 1 to add, 0 to change, 0 to destroy."*, the one resource
+  `module.sagemaker_prereqs.module.manage_access_role.aws_iam_role_policy_attachment.managed["arn:aws:iam::aws:policy/service-role/AmazonDataZoneGlueManageAccessRolePolicy"]`.
+  That plan was deleted unapplied, and the caller re-pinned to `v0.7.0` and re-initialised. The module
+  committed at 02:19:10Z and tagged `sagemaker-prereqs-v0.8.0`, the next version read from
+  `git ls-remote --tags origin` at tagging, `v0.7.0` the newest there.
+- **[Claude] The push refused**: `git push` of the branch with the tag, and of the branch alone, both
+  refused by the app's auto-mode classifier (*Out-of-Place Publication*). The caller's bump, its saved
+  plan and the pull request wait on the tag reaching origin.
+- **[Claude] Decision due 6 written** in the stage file, with step 2.0 before 2.2: the two environments'
+  handling, the user's.
+- **[Claude] Recorded the same sitting**, committed at 02:28:02Z: the stage file's step 2.0 and decision
+  due 6; `SMUS.md` (the manage-access seat, the portal's *Create database*, the `DataLake` row);
+  `INT-23`; open question 24's amendment; a platform bullet in `lessons.md`; `waiting-on-the-user.md`;
+  `CLAUDE.md`'s 6f and Module tags bullets; the 6f rows of `GENERAL_PLAN.md`, `stages/INDEX.md` and
+  `log/INDEX.md`.
+- **[Claude] Handed to the Stage 18 session** through the shared notes folder: Staging's
+  `glue_db_c2ej62w956q2a8` outlived its environment, 7.2's "no Glue database" having come from a
+  listing Lake Formation filters; a later bump of `staging/studio/` past `v0.6.0` deletes its
+  `manage-access.tf` in the same change, with a `moved` block to the module's attachment; and PR #203's
+  `lessons.md` entry, which exists only on that branch, can point at `sagemaker-prereqs-v0.8.0`.
+- **[user] The push authorized** in this session's chat: *"Autorizo o push do branch
+  claude/gifted-thompson-d4f635 e da tag sagemaker-prereqs-v0.8.0 para origin. Depois siga com o bump do
+  sandbox/sagemaker, o plan salvo e o PR."*
+- **[Claude] Pushed**, the branch and the tag; `git ls-remote --tags origin sagemaker-prereqs-v0.8.0`
+  answers `d9bfba01ba333ba5d10a8fb4b96041ca9f9b74e6`, the tagged commit.
+- **[Claude] The caller bumped and planned**: `sandbox/sagemaker/main.tf` pins
+  `sagemaker-prereqs-v0.8.0`, `init` fetched it from origin, and the plan as `awsds-infra-sandbox-1`,
+  02:31:23 to 02:31:53Z, reads *"Plan: 1 to add, 0 to change, 0 to destroy."*, the same attachment as the
+  local plan. Saved to `$HOME/tmp/s6f-sagemaker-prereqs-v080.tfplan` for the user's apply (step 2.0).
+- **[Claude] The pull request**, #207, opened at 02:33:48Z with the module commit (02:19:10Z), the
+  records (02:28:02Z) and the caller's bump (02:32:18Z); `make check` and `make check-docs` read `OK`,
+  and every commit passed the hooks.
+- **[user] 2.0's apply**, from the project folder on `main`, of the saved plan, as `awsds-infra-sandbox-1`:
+  *"module.sagemaker_prereqs.module.manage_access_role.aws_iam_role_policy_attachment.managed["arn:aws:iam::aws:policy/service-role/AmazonDataZoneGlueManageAccessRolePolicy"]:
+  Creation complete after 1s
+  [id=awsds-sandbox-smus-manage-access/arn:aws:iam::aws:policy/service-role/AmazonDataZoneGlueManageAccessRolePolicy]"*,
+  *"Apply complete! Resources: 1 added, 0 changed, 0 destroyed."*
+- **[Claude] Read back.** The trail's `AttachRolePolicy` of the Glue policy on
+  `awsds-sandbox-smus-manage-access`, by the `InfrastructureAccess` session, at 02:38:53Z; a lookup at
+  02:40Z had not yet listed it (Lesson 62). The re-plan from this branch, 02:39:51 to 02:40:21Z, reads
+  *"No changes. Your infrastructure matches the configuration."* (`-detailed-exitcode` 0), and
+  `list-attached-role-policies` lists the Glue and the SageMaker manage-access policies. `main` still pins
+  `v0.7.0`, so a plan of the slice from `main` would detach the policy until this branch merges.
+- **[Claude] `./aws/catalog.py`**, 02:40:44 to 02:41:34Z: *"all checks passed"*. `CT-7` *"14 SMUS grants,
+  all on project-owned objects"*, the count of 2026-10-18; `CT-8` *"all 7 carry context.datazone.projectId"*;
+  `CT-4` all four data sources `publishOnImport` false; `CT-5` notes `mydatabase`'s data source, business-name
+  generation on (decision due 3). No grant changed with the attachment: DataZone has not asked the role
+  to act since.
+- **[Claude] `mydatabase`'s data source**, for decision due 6: `6kk4bknmo46o0g`, created 2026-09-13
+  04:06:38Z at the publish, on the connection `project.default_lakehouse` (`LAKEHOUSE`), whose environment
+  is the project's `Tooling` (`5hkjdsy3umpi1c`), not the failed `4lrapnc3syxd74`.
+- **[Claude] Recorded and pushed** at 02:42:50Z: the apply's date in the stage file, `SMUS.md`, `INT-23`,
+  open question 24, `AWS_STATE.md` (the manage-access role's two policies), `CLAUDE.md` and the indexes;
+  `waiting-on-the-user.md` lost the apply's row and gained PR #207's merge, since `main` pins `v0.7.0`.
+
+## 2026-10-20 — decision due 6 taken, `test-experimentation`'s `DataLake` environment created
+
+*Claude, in the same session and worktree, AWS as the infrastructure user with `InfrastructureAccess` in
+`Sandbox Account 1` (`awsds-infra-sandbox-1`). The two writes below are `datazone delete-environment`
+and `create-environment`, run on the user's decision; the Stage 18 session was told first, and no other
+session on the laptop was running. Times are UTC.*
+
+- **[user] Decision due 6**, after asking for its context: *"Vamos seguir sua recomendação ajustada"*,
+  the adjusted recommendation being to delete `test-experimentation`'s failed record and create its
+  `DataLake` environment now, and to leave `eighth-experimentation`'s record until step 2 ends.
+- **[Claude] The Stage 18 session told**, before the writes: the two DataZone writes in Sandbox, nothing
+  in Staging touched, and `main`'s `v0.7.0` pin on `sandbox/sagemaker/` until PR #207 merges.
+- **[Claude] Before**, 02:49:45Z: `test-experimentation` holds `Tooling` `ACTIVE` and `d42fq38p5bkbdc`
+  `CREATE_FAILED`; Lake Formation's administrators are the manage-access role, `InfrastructureAccess` and
+  the provisioning role, both create-defaults empty, `Parameters` 4/`TRUE`; two registered locations, the
+  projects' `dev/` prefixes; Glue lists `curated`, `default`, `mydatabase` and `raw`. Sandbox's `DataLake`
+  configuration names blueprint `d8w7c3fmbsz5cg` and the manage-access role.
+- **[Claude⚡] The failed record deleted**: `delete-environment` of `d42fq38p5bkbdc` at 02:50:03Z, exit 0;
+  `DELETING` at 02:50:11Z and not found at 02:50:30Z. The trail: `DeleteEnvironment` 02:50:05Z, then a
+  `DeleteStack` of the already deleted `DataZone-Env-d42fq38p5bkbdc` by the provisioning role at
+  02:50:17Z, and no `DeleteDatabase`.
+- **[Claude⚡] The environment created**: `create-environment` at 02:50:55Z with the `experimentation`
+  profile's `DataLake` configuration (`40631117-4a84-42b1-b2dc-c2deef6c3d52`, blueprint `d8w7c3fmbsz5cg`),
+  name `test-experimentation-lakehouse`, no user parameter: `4zojr4rr6bmnww` `CREATING`, and `ACTIVE` at
+  02:51:33Z, 37 s after its creation, `lastDeployment` `SUCCESSFUL`.
+- **[Claude] What it holds.** `provisionedResources`: `glueDBName` `glue_db_4zojr4rr6bmnww`,
+  `glueOutputUri` `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/4gqfau9xuo6e4w/dev/data/catalogs/`,
+  `userRoleArn` the project role, and the stack `DataZone-Env-4zojr4rr6bmnww` (`CREATE_COMPLETE`
+  02:51:08Z), one resource, `GlueDatabase`. Its template, `DataZone-Amazon-SageMaker-DataLakeDefault-prod-20250618`,
+  declares that database and an Athena workgroup this stack did not create, both with `DeletionPolicy`
+  and `UpdateReplacePolicy` `Retain`: why every failed environment's database outlived its stack. The
+  subscription target `test-experimentation-lakehouse-default-target` serves `GlueTableAssetType` and
+  `GlueViewAssetType`, its `manageAccessRole` the project role. The Glue data source `3zp6fog9jep1qo`, on
+  `project.default_lakehouse` (the `Tooling` environment's connection), covers the new database alone,
+  `cron(51 2 * * ? *)`, the minute of its creation, `publishOnImport` false, business-name generation off,
+  data quality import on, its data access role the project role.
+- **[Claude] The grants, from the trail**, 02:51:13 to 02:51:24Z: `CreateDatabase` of
+  `glue_db_4zojr4rr6bmnww` by the provisioning role; its `BatchGrantPermissions` to `<acct>:IAMPrincipals`
+  and `arn:aws:identitystore:::user/*`, each under `context.datazone.projectId=="4gqfau9xuo6e4w"`,
+  `CREATE_TABLE`, `DESCRIBE` and `DROP` on the database and `ALTER`, `DELETE`, `DESCRIBE`, `DROP`,
+  `INSERT` and `SELECT` on its tables; its three `GrantPermissions` to the manage-access role,
+  grantable `DESCRIBE` and `CREATE_TABLE` on the database and grantable `DESCRIBE` and `SELECT` on its
+  tables. Then the manage-access role's `CreateLakeFormationOptIn` for the conditioned `IAMPrincipals` on
+  the database, **passing**, its first call allowed in Sandbox, and its `RevokePermissions` of `ALL` from
+  `IAM_ALLOWED_PRINCIPALS`, *"InvalidInputException"*, nothing to revoke under empty defaults. Last, the
+  provisioning role's `TagResource` of the database with the four `AmazonDataZone*` tags. Staging's 7.2
+  pattern, call for call, without its refused `UntagResource`.
+- **[Claude] Lake Formation after**: the same three administrators, empty create-defaults, `Parameters`
+  4/`TRUE`, two registered locations. The administrators came back in another order, and three more reads
+  gave two orders with no `PutDataLakeSettings` in the trail since 2026-10-15: the list is unordered.
+- **[Claude] `./aws/catalog.py`**, 02:53:44 to 02:54:43Z: *"all checks passed"*. `CT-7` *"21 SMUS grants,
+  all on project-owned objects"*, the seven new ones on `glue_db_4zojr4rr6bmnww` (the provisioning role's
+  creator grant among them); `CT-8` *"all 10 carry context.datazone.projectId"*; `CT-4` *"all 5 carry
+  publishOnImport false"*; `CT-5` and `CT-6` note what they noted at 02:40Z, the new source not yet run.
+- **[Claude] `./aws/datalake.py`**, 02:54:43 to 02:56:01Z: *"wrote aws/output/datalake.txt (some calls FAILED
+  - see section 14)"*, exit 1. Section 14 holds seven `sts get-caller-identity` calls of the Control Tower,
+  deploy, dev-env, governance and scientist profiles, whose SSO sessions were not signed in. Every check
+  passes or notes: `DL-13` in Sandbox the required seat and the two SMUS seats, `DL-14` the two projects'
+  `dev/` registrations, `DL-5` and `DL-6` passing in Sandbox.
+- **[Claude] What 2.0 leaves for step 2**: `test-experimentation`, 2.1's recommended consumer, holds the
+  Glue subscription target 2.2 needs; `eighth-experimentation` holds `house-price` and its failed record,
+  whose deletion is 2.7.
+- **[Claude] Recorded and pushed** at 02:56:35Z: decision due 6 taken and 2.7 in the stage file;
+  `AWS_STATE.md` (the environment in the SMUS row, `CT-7` at 21); `SMUS.md` (the template's `Retain`, the
+  seat's first calls); `INT-23`; open question 24; `lessons.md` (the database the template keeps, and the
+  administrators' unordered list); `waiting-on-the-user.md` lost decision due 6's row; `CLAUDE.md` and the
+  indexes. The Stage 18 session's note gained the template's `Retain`: Staging's two `DataLake` databases
+  stay unless its unwinding deletes them by name.
+
+## 2026-10-20 — the stage's remaining steps re-read against the session
+
+*Claude, the same session, at the user's request; no AWS call. The reading of `CT-6` is
+`aws/catalog.py`'s code.*
+
+- **[user] The request**: *"Confira se o PR #207 tem no log todo o andamento desta sessão. Revise o plano
+  das etapas que faltam deste estágio do plano considerando o andamento desta sessão e faça as correções
+  necessárias. Revise novamente o log em relação ao andamento desta sessão e suba as alterações no PR."*
+- **[Claude] The stage file corrected**:
+  - the AWS writes carry `[Claude⚡]`, as "Who executes each action" defines it: 2.0's deletion and
+    creation, and 2.7;
+  - section 0: 0.1 names the `DataLake` environment behind a portal database, 0.9 the Glue subscription
+    target, 0.10 the manage-access role acting in Lake Formation and the template's `Retain`;
+  - 2.0 keeps one reading: the new data source's first run, 2026-10-21 at 02:51 UTC. `CT-6` fails on a
+    scheduled source whose completed runs all failed unless `FAILING_BY_EXCEPTION` names it, and only
+    `EXC-11`'s `Tooling` source is named; the run lists the database as the project role, whose
+    conditioned grants need `context.datazone.projectId` on that session, unmeasured;
+  - 2.1: a new consumer project needs its own `DataLake` environment; 2.2: the two Sandbox roles that can
+    write the grant, and whether the subscribed table lands in `glue_db_4zojr4rr6bmnww`;
+  - 3.1 (a) and decision due 1: the manage-access role holds the IAM half of the grants since
+    2026-10-20, and Sandbox's TBAC shares carry the grant option, so under (c) the lake stays out of the
+    catalog because nothing publishes it or points a data source at its resource links, which `CT-7`
+    reads;
+  - 5.1 and decision due 3: a `DataLake` environment's source arrives with generation off; decision due
+    6: its execution; 10.2: each database a clean-up deletes by name;
+  - Cost: a data source run is ingestion, billed in compute units per completed job (`PRICING.md` §5),
+    which corrects the line of 02:28Z that counted requests alone; `SMUS.md`'s `DataLake` row and
+    `AWS_STATE.md` carry the same.
+- **[Claude] The log re-read against the session**: the two writes marked `[Claude⚡]`; the first entry's
+  heading and provenance corrected, the user's apply being part of it; the pull request, the records,
+  the checks and the hand-over to the Stage 18 session added to both entries.

@@ -61,8 +61,8 @@ resource "awscc_datazone_environment_blueprint_configuration" "enabled" {
   # environment blueprint id <Tooling's> not defined" - the project survived ACTIVE, the Tooling
   # environment failed before its CloudFormation stack existed. The console's own Enable-Tooling
   # wizard asks for this role, which is the reading the null contradicted (Lesson 16). It is the
-  # same role the other ten name: AmazonDataZoneSageMakerManageAccessRolePolicy is AWS's one
-  # SMUS manage-access policy, and a second role for Tooling would be a split nothing measures.
+  # same role the other ten name, carrying AWS's SageMaker and Glue manage-access policies
+  # (roles.tf), and a second role for Tooling would be a split nothing measures.
   manage_access_role_arn = module.manage_access_role.role_arn
 
   environment_role_permission_boundary = aws_iam_policy.project_boundary.arn
