@@ -306,14 +306,19 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   user is [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md)**: read it before asking
   the user anything, and remove a row in the sitting that takes it.
 - **The SCP battery** read `ou` 41 as expected / 0 unexpected / 7 not measured on 2026-10-19 (Stage 18's
-  carve-out rows and Stage 17's Titan row included) and `root` 25 / 0 / 0 on 2026-10-18. **SageMaker processing-job quotas are 0 in Production and Staging** (`ml.m5.large`,
-  `.xlarge`, `.2xlarge`), with no increase requested: no job runs there until the user requests them, and
-  the probes read `ResourceLimitExceeded` as authorized.
+  carve-out rows and Stage 17's Titan row included) and `root` 25 / 0 / 0 on 2026-10-18. **SageMaker job quotas for `ml.m5.large`,
+  `.xlarge` and `.2xlarge` are 0 in Production and Staging** (processing; Production's training too, read
+  2026-10-20), with no increase requested; `ml.t3.medium`, `app-etl`'s processing type, is 4 in both, and
+  Staging ran a job on it on 2026-10-19. The probes read `ResourceLimitExceeded` as authorized, and the `ou`
+  phase carries seven instance-preference rows, written, not run (Stage 9 3.5, PR #216).
 - **Stage 9**: pass 1 applied 2026-10-18, `awsds-org-scp-ou-workloads` (nine statements) and
   `production/sagemaker/` (rank 46, `[P]`); `production/workloads-egress/` (`[E]`) rises with the next
-  Production `make up`. Pass 2 waits on decision 3. **Stage 10**: pass 0 read and 4.3's
+  Production `make up`. Pass 2 waits on decision 3; the `s3-bucket` module turns Bucket Keys on for every bucket it
+  creates, so no key policy scopes a prefix and D31's zero-cost variant is unavailable (PR #225). **Stage 10**: pass 0 read and 4.3's
   `DenyProvisionedMwaa` applied 2026-10-18, the root baseline's thirteenth statement; passes 1-2 follow
-  Stage 9 with Stage 8's pass 4 (decision 23) and Stage 18's verdict. 5.3's `awsds-prod-model-approval`
+  Stage 9 with Stage 8's pass 4 (decision 23) and Stage 18's verdict. The MWAA Serverless service-linked role
+  exists in Staging since 2026-10-19 and not in Production, whose first apply needs `iam:CreateServiceLinkedRole`
+  (1.5, read 2026-10-20). 5.3's `awsds-prod-model-approval`
   is applied (2026-10-18 23:19Z, 2 added, `OR-4` passing) and has never fired: no model package exists.
 - **The Sandbox warehouse (5b, 6h)**: `sandbox/warehouse/` rank 53 `[P]` and `sandbox/warehouse-compute/`
   rank 54 `[E]` (base 4 / max 8 RPU, usage limit 10 RPU-h monthly `deactivate`), database `sandbox`, schema
@@ -321,8 +326,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `test-experimentation`. The connection (`EXC-17`) carries **`lineageSync` on, daily 03:43 UTC, every run
   failing** (decision 3, the user's). **Cost**: 1.44 USD per query-hour at 4 RPU and 0.00 idle, with no
   pause, so `make down` is the guarantee; the ratchet past 4 never returns; the free trial, 300 USD per
-  account for 90 days, absorbs the bill to 2026-12-19. **`EXC-13`**: the admin secret's first rotation, due by 2026-10-20 01:59:59Z, fails with
-  the workgroup down and does not retry. SQL from a notebook is `redshift-connection.md` §J. AWS's `SageMakerStudioProjectUserRolePolicy` v75 grants
+  account for 90 days, absorbs the bill to 2026-12-19. **`EXC-13`**: the admin secret's first rotation succeeded on 2026-10-20 with no workgroup,
+  against AWS's page; whether the database took the password is the next `./aws/warehouse.py --sql`'s reading. SQL from a notebook is `redshift-connection.md` §J. AWS's `SageMakerStudioProjectUserRolePolicy` v75 grants
   every project role `GetCredentials` and the Data API on a workgroup tagged with its project, `GetCredentials` on
   any workgroup through `sqlworkbench`, and the secrets tagged with its project or
   `for-use-with-all-datazone-projects`: the admin secret stays closed by its tags alone (`INV-20`, PR #187).
@@ -358,7 +363,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stage 7 in progress**: passes 1-2 closed 2026-10-12 but three persona memberships, pass 3 nearly done,
   pass 4 not started. Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
   `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners out. Owed: INT-09's clone from a
-  notebook, the memberships, pass 4. The GitLab backups leave the bucket on 2026-11-13 and 2026-11-15.
+  notebook, the memberships, 5.6's ECR ARNs in three persona sets (scope not chosen), pass 4. The GitLab backups leave the bucket on 2026-11-13 and 2026-11-15.
   **`saml.auto.tfvars` lives in the project folder's `secrets/`**: a `tooling/` plan passes
   `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block.
 - **Stage 8 in progress**: passes 0-3 done (`awsds/ci-gates`, the test runner, the house image on Python
@@ -366,8 +371,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   application since 2.5, on GitLab's `main` since 2026-10-19 with its eleven CI/CD variables;
   `v0.2.1`'s pipeline passed `test-deploy` and stored the bundle, and its GitLab release failed on the
   notes' backticks, fixed in MR !4. Pass 4 runs after Stage 9 with Stage 10's passes 1-2
-  (decision 23). `awsds/infrastructure` has no reader since decision 18: decision 2's open question, the
-  user's. `staging/probes/` is retired, so `make up ENV=staging` raises `egress/` alone, and the template's
+  (decision 23). `awsds/infrastructure` has no reader since decision 18: decision 2 recommends keeping it for pass 4,
+  and 2.5 recommends Stage 9's `awsds-<env>-job-exec` as the Staging and Production job role, both the user's;
+  3.9's owed read reads nothing while `DeploymentManagerAccess` denies `kms:Decrypt` (read 2026-10-20). `staging/probes/` is retired, so `make up ENV=staging` raises `egress/` alone, and the template's
   lint passes `--image-repository` and the ceiling's seven instance types (PR #186); GitLab's copy waits on
   the user's push. **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
@@ -375,21 +381,26 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-24`): `TM-17`, the project role's managed policy
   reaching other accounts' `airflow-celery-*` queues and Bedrock functions, is the user's to decide;
   `TM-21` applied 2026-10-19 with Stage 17's 1.3, its finding's `RESOLVED` unread; the data cells filters
-  create nothing until decision 12. The internal-access analyzer bills on each 1st: run it after
+  create nothing until decision 12, which since 2026-10-20 also weighs Lake Formation's RLS policies (an
+  attachment narrows an all-rows `SELECT`); `TM-22`..`TM-24`'s mechanisms are read from AWS's pages, their
+  measurements owed. The internal-access analyzer bills on each 1st: run it after
   2026-11-01.
 - **Stage 12 in progress**: `production/observability/` and `sandbox/observability/` (rank 70, `[P]`)
   applied 2026-10-18. Every Sandbox alarm notifies `awsds-sandbox-alerts`, its e-mail subscription confirmed
   2026-10-19, so `OB-3` passes there; it fails in Production by design (`EXC-19`) until the three `[D]` hosts'
   alarms are wired at a hub session.
   **The bill passes D12**: 53.31 USD in August and 74.48 in September from the accounts with a profile, and
-  D12's budget notifies nobody.
+  D12's budget notifies nobody. 5.2 read 2026-10-20: the bill moves no layer letter (decision due 3, the
+  user's).
 - **Stage 14**: the pre-vend half done 2026-10-18, steps 2 and 7 still blocked on the account quota.
   `./aws/vending.py` (`VN-1`..`VN-6`) reads the hand-built unit as nine passes and one note; a unit costs
-  3.50 USD/month at rest and 0.180/h working (`docs/PRICING.md` §3).
+  3.50 USD/month at rest and 0.180/h working (`docs/PRICING.md` §3). Terminating the Account Factory product
+  unenrolls an account without closing it, and a closed account's address is spent (2026-10-20); D34's rung,
+  auto-enrollment recommended, is the user's.
 - **Stage 17**: pass 0 in progress; 1.1 read and 1.3 applied 2026-10-19 (`MLflowApp` configured and in
   `experimentation`, `TM-21` with it), and 1.5 read why the portal greys out *Create MLflow App* (it resolves the blueprint from Data
   Governance's configurations, which D22 keeps empty): the user created `ml-demo-mlflow` through
-  `create-environment` (`ML-2` read, no CMK). 7.0a and 7.0b applied 2026-10-19 (`AmazonBedrockKnowledgeBase` at `sagemaker-prereqs-v0.7.0`): the Generative AI menu opens and lists no model until one is enabled for the account. Decision 13 taken as (b): a governance project in `data-governance/governance/` and the two model roles in `sandbox/model-access/` (rank 52), applied by the user 2026-10-19, and the five models enabled in Sandbox's console the same evening (Opus, Sonnet and Haiku 4.5 and Titan V2 in projects, Haiku 4.5 and Nova Lite in the playground); decision 11's amendment, Titan V2 and `application-inference-profile/*` in the Bedrock SCP, was applied by the user the same evening: the playground answers with Haiku 4.5 and refuses Nova Lite on its foundation model (7.3). Main pins `vpc-egress-v0.18.0` (`mlflow`), unapplied (1.4). Pass 2's training job waits on the battery's instance-preference rows (Stage 9 3.5).
+  `create-environment` (`ML-2` read, no CMK). 7.0a and 7.0b applied 2026-10-19 (`AmazonBedrockKnowledgeBase` at `sagemaker-prereqs-v0.7.0`): the Generative AI menu opens and lists no model until one is enabled for the account. Decision 13 taken as (b): a governance project in `data-governance/governance/` and the two model roles in `sandbox/model-access/` (rank 52), applied by the user 2026-10-19, and the five models enabled in Sandbox's console the same evening (Opus, Sonnet and Haiku 4.5 and Titan V2 in projects, Haiku 4.5 and Nova Lite in the playground); decision 11's amendment, Titan V2 and `application-inference-profile/*` in the Bedrock SCP, was applied by the user the same evening: the playground answers with Haiku 4.5 and refuses Nova Lite on its foundation model (7.3). Main pins `vpc-egress-v0.18.0` (`mlflow`), unapplied (1.4). Pass 2's training job waits on a battery run of the instance-preference rows, written in PR #216 (Stage 9 3.5); the three quota requests still read `CASE_OPENED` on 2026-10-20.
   **Stage 18**: passes 1 and 2.1-2.5 done 2026-10-19, the applies by the user (the classifier refuses
   them to Claude): the carve-out is live (`EXC-20`), Staging is associated with `Tooling` configured,
   and both `backend.py` lists carry `staging`; 2.6 and 2.7 are applied, the `deployment` profile
