@@ -657,7 +657,9 @@ stage-18-deploy:
   same four session tags, each calling `athena:GetWorkGroup` alone; at the data source's creation it
   opened `SYSTEM@<environment>`, source identity `SYSTEM` and no tag, for one `GetTables` (6f's log of
   2026-10-20). The deny binds those sessions as well and no worker's; it leaves a deploy and a listing
-  working while they only read, which 4.3's run and 7.2's data source run re-read.
+  working while they only read, which 4.3's run and 7.2's data source run re-read. The data source's
+  first scheduled run, 2026-10-21 02:09:39Z, is the first such re-read: its `SYSTEM` session called
+  `glue:GetDatabase` and `GetTables` alone, and nothing was refused.
 
 ### 7. Lineage and the catalog (D26)
 
@@ -726,14 +728,20 @@ stage-18-deploy:
      project context: `CREATE_TABLE` on the database (2026-10-20) and `DATA_LOCATION_ACCESS` on
      `…/d1veybt5oak4uo/dev/` (the project's creation, 2026-10-19 06:06:51Z). The database's `LocationUri`
      is `…/dev/data/catalogs/`, so the table lands at `…/catalogs/trades`. The project role carries the
-     tag `AmazonDataZoneProject` `d1veybt5oak4uo` [the condition's source unmeasured]. A table's creator
+     tag `AmazonDataZoneProject` `d1veybt5oak4uo` [the condition's source unmeasured]. The data source's
+     scheduled run of 2026-10-21 read the database as `SYSTEM`, a session with no tag, and its
+     `GetDatabase` passed with no insufficient permission, though the environment's grants name no
+     project role: the conditioned entries matched a session of the role that carries no tag
+     [inferred], as the job's `GlueJobRunnerSession` carries none. A table's creator
      holds `ALL` with the grant option on it (6f's upload in Sandbox, 2026-09-13), the publishing
      project's half of AWS's terms.
   2. **[Claude⚡] The asset**: a run of the project's Glue data source, `start-data-source-run`, since it
      publishes nothing on import (`publishOnImport` false) and its daily schedule fires at 02:02 UTC;
      then the asset published as the project's owner, Staging's InfrastructureAccess. The run lists the
      database in a `SYSTEM` session of the project role, which 6.2's deny binds, so the run is that
-     session's re-read; a completed run bills compute units (`PRICING.md` §5).
+     session's re-read; a completed run bills compute units (`PRICING.md` §5). The schedule's first run,
+     `djfk1ihzkerez4`, started at 2026-10-21 02:09:39Z, seven minutes past its cron minute, and ended
+     `SUCCESS` in 3 s with no asset over the empty database.
   3. **[user] The subscription**: from `test-experimentation`, whose `DataLake` environment
      `test-experimentation-lakehouse` is `ACTIVE` since 2026-10-20 (created after
      `sagemaker-prereqs-v0.8.0`, PR #207) and is the subscription target on that side; Staging's

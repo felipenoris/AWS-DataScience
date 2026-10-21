@@ -1518,3 +1518,42 @@ alone. Account ids are replaced by `<acct>`. Times are UTC.*
   through 4.3's job, the two grants, the `SYSTEM` session, the targets and the version, the reads' sources)
   and its job change as a diff; 8.1's Sandbox side and profiles; 8.6's two fields that go back; decision
   12; a risk; the data source's cost.
+
+## 2026-10-21 — the session closed before the sitting; the data source's first scheduled run
+
+*Claude, in the same session, its branch synced with `main` at `7d186ec3` after PR #236's merge. Every AWS
+call was a read as the infrastructure user with `InfrastructureAccess`, in `Staging Account`
+(`awsds-infra-staging`), `Data Governance Account` (`awsds-infra-data`) and `Production Account`
+(`awsds-infra-prod`). Nothing was created, changed or deleted in AWS or in GitLab. Account ids are replaced
+by `<acct>`. Times are UTC.*
+
+- **[Claude] The review's record**: the entry above went in as PR #236, merged by the user at 01:39:16Z
+  (`3b1735e9`).
+- **[user] The continuation**: *"Autorizo o push da branch recriada e um PR novo nesta sessão para o 4.3 e o
+  7.2. Vou subir o ambiente e aviso quando estiver no ar, com stage-18-staging protegida."*
+- **[Claude] The hosts**, 01:40:05Z: Production's three still `stopped`.
+- **[Claude] 4.3's group profile lookup, prepared**: `search-group-profiles --group-type
+  IAM_ROLE_SESSION_GROUP` as `awsds-infra-data` lists six profiles, the SSO groups
+  `sso-group-deployment-managers` and `sso-group-data-scientists` among them, so the filter does not narrow
+  the list to roles. A role's profile carries the role's ARN as `rolePrincipalArn`: Staging's
+  InfrastructureAccess `65b0f127-…`, Data Governance's `7ee243ab-…`, Sandbox's `839bcde8-…` and
+  `awsds-deploy-sandbox-test`'s `06d426f2-…`. None names `awsds-deploy-staging`, and `--search-text
+  awsds-deploy-staging` answers nothing. After 4.3's first run the id is the item whose `rolePrincipalArn`
+  ends in `/awsds-deploy-staging`, and the user's command as `awsds-infra-staging` is `datazone
+  create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d1veybt5oak4uo
+  --designation PROJECT_OWNER --member groupIdentifier=<that id>`.
+- **[user] The session closed before the sitting**: *"Vamos encerrar esta sessão por aqui. Irei subir o
+  ambiente em outra oportunidade. Verifique se todo o seu andamento está refletido no log. Atualize o que
+  for necessário e abra um PR."* 4.3 and 7.2 wait for a sitting with the environment up; what they need
+  is in the stage file, on the clone's local branch `stage-18-table-job`, and in a hand-over note in the
+  session family's notes folder.
+- **[Claude] The data source's first scheduled run**, read at about 20:18Z: `djfk1ihzkerez4`, `SCHEDULED`, started
+  02:09:39Z, seven minutes past `cron(2 2 * * ? *)`, stopped 02:09:42Z, `SUCCESS`, no asset added, updated,
+  unchanged or failed, its lineage import `SUCCESS`. CloudTrail, 02:00 to 02:20Z: DataZone assumed the
+  project role as `SYSTEM@bujd259b8g9zps` at 02:09:41Z, source identity `SYSTEM`, no session tag, and that
+  session called `glue:GetDatabase` on `glue_db_d6ogysnx78dguo` (02:09:41Z, `insufficientLakeFormationPermissions`
+  empty, `lakeFormationPrincipal` the project role) and `GetTables` (02:09:42Z), from AWS's addresses,
+  with no error. No event in the window names an explicit deny. 6.2's deny binds that session and refused
+  nothing. The environment's grants (2026-10-20 02:01:40 to 02:03:30Z) name no project role, so the
+  `GetDatabase` passed on the project-conditioned entries for a session with no tag [inferred]. The stage
+  file's 6.2 and 7.2 carry both readings.
