@@ -68,6 +68,10 @@
 # not set the exit code - a refusal is an expected reading of a permission ceiling, and only
 # a call that should always work (the preflight, the listings) makes this exit 1.
 #
+# The three s3control listings have no CLI paginator, so each is read to its last page; one
+# stopped at the page limit is a failed call. SP-9 reads `note`, never `pass`, while any
+# listing it counts was refused or stopped short.
+#
 # What it cannot see, stated because an empty column and a missing account look alike:
 #   - Management, Log Archive and Audit hold no CLI profile and never will (guiding
 #     principle 1). Log Archive is where the CloudTrail bucket lives, so INV-14's Object
@@ -359,6 +363,25 @@ def main(argv: list) -> int:
             return "", "denied"
         return res.stdout, "ok"
 
+    def listing(cli: AwsCli, subject: str, key: str, *args: str) -> tuple:
+        """probe() for a listing the CLI does not paginate: (entries under `key`, state).
+
+        Every page is read. A listing stopped at the page limit is a failed call, and its
+        state is `partial`.
+        """
+        read = cli.pages(*args, tolerate=NOT_CONFIGURED, log=False)
+        if read.last.tolerated:
+            return [], "none"
+        if not read.last.ok:
+            refused.append(
+                (cli.profile or "-", subject, " ".join(args[:2]), head2(read.last.merged))
+            )
+            return read.items(key), "denied"
+        if not read.complete:
+            cli.errors.add(args, read.why, cli.profile)
+            return read.items(key), "partial"
+        return read.items(key), "ok"
+
     def cell(text: str, state: str, when_none: str = "none") -> str:
         return {"none": when_none, "denied": "DENIED"}.get(state, text or when_none)
 
@@ -371,6 +394,7 @@ def main(argv: list) -> int:
     table_buckets: list = []  # (profile, name, arn, created)
     dir_buckets: list = []  # (profile, name, created)
     storage_lens: list = []  # (profile, id, home region, enabled)
+    unread: list = []  # (profile, surface): a section 7 listing refused or not read to its end
 
     def alias_of(profile: str, key: str) -> str:
         """A KMS key ARN or id resolved back to its alias, so a table can name the key.
@@ -432,52 +456,59 @@ def main(argv: list) -> int:
             else:
                 account_bpa[p] = {"none": "NOT SET", "denied": "DENIED"}[state]
 
-            text, state = probe(
+            # The three s3control listings have no CLI paginator: listing() reads every page.
+            entries, state = listing(
                 cli,
                 "account",
+                "AccessPointList",
                 "s3control",
                 "list-access-points",
                 "--account-id",
                 acct,
-                "--query",
-                "AccessPointList[].[Name,Bucket,NetworkOrigin]",
-                "--output",
-                "text",
             )
-            for f in tsv_rows(text):
-                access_points.append((p, f[0], f[1], f[2] if len(f) > 2 else "-"))
+            for a in entries:
+                access_points.append(
+                    (p, a.get("Name") or "-", a.get("Bucket") or "-", a.get("NetworkOrigin") or "-")
+                )
+            if state in ("denied", "partial"):
+                unread.append((p, "access points"))
 
-            text, state = probe(
+            entries, state = listing(
                 cli,
                 "account",
+                "AccessPoints",
                 "s3control",
                 "list-multi-region-access-points",
                 "--account-id",
                 acct,
-                "--query",
-                "AccessPoints[].[Name,Alias,Status]",
-                "--output",
-                "text",
             )
-            for f in tsv_rows(text):
-                mraps.append((p, f[0], f[1] if len(f) > 1 else "-", f[2] if len(f) > 2 else "-"))
+            for a in entries:
+                mraps.append(
+                    (p, a.get("Name") or "-", a.get("Alias") or "-", a.get("Status") or "-")
+                )
+            if state in ("denied", "partial"):
+                unread.append((p, "multi-region access points"))
 
-            text, state = probe(
+            entries, state = listing(
                 cli,
                 "account",
+                "StorageLensConfigurationList",
                 "s3control",
                 "list-storage-lens-configurations",
                 "--account-id",
                 acct,
-                "--query",
-                "StorageLensConfigurationList[].[Id,HomeRegion,IsEnabled]",
-                "--output",
-                "text",
             )
-            for f in tsv_rows(text):
+            for c in entries:
                 storage_lens.append(
-                    (p, f[0], f[1] if len(f) > 1 else "-", f[2] if len(f) > 2 else "-")
+                    (
+                        p,
+                        c.get("Id") or "-",
+                        c.get("HomeRegion") or "-",
+                        str(c.get("IsEnabled", "-")),
+                    )
                 )
+            if state in ("denied", "partial"):
+                unread.append((p, "Storage Lens configurations"))
 
         # S3 Tables and S3 Express are separate namespaces: neither shows up in list-buckets,
         # so both are asked for by name. `S3TableCatalog` is one of the SMUS blueprints category 1
@@ -497,6 +528,8 @@ def main(argv: list) -> int:
             table_buckets.append(
                 (p, f[0], f[1] if len(f) > 1 else "-", f[2] if len(f) > 2 else "-")
             )
+        if state == "denied":
+            unread.append((p, "table buckets"))
 
         text, state = probe(
             cli,
@@ -510,6 +543,8 @@ def main(argv: list) -> int:
         )
         for f in tsv_rows(text):
             dir_buckets.append((p, f[0], f[1] if len(f) > 1 else "-"))
+        if state == "denied":
+            unread.append((p, "directory buckets"))
 
         # Which (bucket, storage class) pairs S3 publishes a daily size metric for. One call
         # per account instead of one per bucket, and it doubles as the storage-class column.
@@ -1105,6 +1140,7 @@ def main(argv: list) -> int:
             )
 
     extra = len(dir_buckets) + len(table_buckets) + len(access_points) + len(mraps)
+    sp9_unread = [f"{p} {s}" for p, s in unread if s != "Storage Lens configurations"]
     if extra:
         checks.note(
             "SP-9",
@@ -1113,6 +1149,13 @@ def main(argv: list) -> int:
             f"bucket(s), {len(access_points)} access point(s), {len(mraps)} "
             "multi-region access point(s). Section 7. None of them appears in "
             "section 2, and none is covered by any other file in aws/.",
+        )
+    elif sp9_unread:
+        checks.note(
+            "SP-9",
+            "surfaces list-buckets does not show",
+            "none in what was read; refused or not read to the last page: "
+            f"{', '.join(sp9_unread)} (section 11)",
         )
     else:
         checks.ok(
@@ -1423,39 +1466,55 @@ different controls, and a bucket reading 3/4 may still be covered by a 4/4 here.
             + [f"{c.profile}\t{account_bpa.get(c.profile, '-')}" for c in live]
         )
 
+        def not_read(surface: str) -> list:
+            """The profiles whose `surface` listing was refused or stopped short."""
+            return [q for q, s in unread if s == surface]
+
+        def name_unread(surface: str) -> None:
+            if not_read(surface):
+                rep.line(
+                    f"Refused or not read to its last page: {', '.join(not_read(surface))} "
+                    "- section 11."
+                )
+
         rep.h2("directory buckets (S3 Express One Zone)")
         if dir_buckets:
             rep.tabulate(["PROFILE\tBUCKET\tCREATED"] + ["\t".join(r) for r in dir_buckets])
-        else:
+        elif not not_read("directory buckets"):
             rep.line("None in any measured account.")
+        name_unread("directory buckets")
 
         rep.h2("table buckets (S3 Tables)")
         if table_buckets:
             rep.tabulate(["PROFILE\tNAME\tARN\tCREATED"] + ["\t".join(r) for r in table_buckets])
-        else:
+        elif not not_read("table buckets"):
             rep.line("None in any measured account.")
+        name_unread("table buckets")
 
         rep.h2("access points")
         if access_points:
             rep.tabulate(
                 ["PROFILE\tNAME\tBUCKET\tNETWORK ORIGIN"] + ["\t".join(r) for r in access_points]
             )
-        else:
+        elif not not_read("access points"):
             rep.line("None in any measured account.")
+        name_unread("access points")
 
         rep.h2("multi-region access points")
         if mraps:
             rep.tabulate(["PROFILE\tNAME\tALIAS\tSTATUS"] + ["\t".join(r) for r in mraps])
-        else:
+        elif not not_read("multi-region access points"):
             rep.line("None in any measured account.")
+        name_unread("multi-region access points")
 
         rep.h2("S3 Storage Lens configurations")
         if storage_lens:
             rep.tabulate(
                 ["PROFILE\tID\tHOME REGION\tENABLED"] + ["\t".join(r) for r in storage_lens]
             )
-        else:
+        elif not not_read("Storage Lens configurations"):
             rep.line("None beyond the default dashboard, which has no configuration object.")
+        name_unread("Storage Lens configurations")
 
         # =====================================================================================
         rep.h1("8. Tags - which buckets somebody declared, and which somebody left")

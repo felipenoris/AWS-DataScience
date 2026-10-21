@@ -37,6 +37,8 @@
 # sso-group folder) or a per-project grant (grantee = a live datazone_usr_role_*).
 # Anything else - a directory grantee nobody decided (Stage 16 decision 2), an unknown
 # principal, an orphaned project role - is a fail to attribute, never a row to tidy.
+# ListAccessGrants and ListAccessGrantsLocations have no CLI paginator, so both are read to
+# their last page; a listing that was not leaves SL-3 or SL-4 a note naming it.
 #
 # What it cannot see, since an empty listing and a missing account look alike:
 #   - The behavioural proofs - the in-project read/write through the S3 connection, the
@@ -146,15 +148,17 @@ def main(argv: list) -> int:
     instance = run_json(
         "s3control", "get-access-grants-instance", "--account-id", account, tolerate=ABSENT
     )
-    locations = (
-        run_json(
-            "s3control", "list-access-grants-locations", "--account-id", account, tolerate=ABSENT
-        )
-        or {}
-    ).get("AccessGrantsLocationsList", [])
-    grants = (
-        run_json("s3control", "list-access-grants", "--account-id", account, tolerate=ABSENT) or {}
-    ).get("AccessGrantsList", [])
+    location_listing = cli.pages(
+        "s3control", "list-access-grants-locations", "--account-id", account, tolerate=ABSENT
+    )
+    grant_listing = cli.pages(
+        "s3control", "list-access-grants", "--account-id", account, tolerate=ABSENT
+    )
+    locations = location_listing.items("AccessGrantsLocationsList")
+    grants = grant_listing.items("AccessGrantsList")
+    # Read whole: to the last page, or answered that no instance exists to hold a row.
+    locations_whole = location_listing.complete or location_listing.last.tolerated
+    grants_whole = grant_listing.complete or grant_listing.last.tolerated
 
     lake_scope = f"s3://{BUCKET}"
 
@@ -342,7 +346,8 @@ def main(argv: list) -> int:
 
     # SL-3: the location - the bucket registered against the access role, once.
     if not lake_locations:
-        checks.note("SL-3", "lake location", "none - expected before Stage 16 pass 3.")
+        if locations_whole:
+            checks.note("SL-3", "lake location", "none - expected before Stage 16 pass 3.")
     else:
         for loc in lake_locations:
             role_arn = loc.get("IAMRoleArn", "-")
@@ -368,6 +373,13 @@ def main(argv: list) -> int:
                 f"{len(lake_locations)} locations under the bucket - verification (ii)'s reading; "
                 "record which act created each.",
             )
+    if not locations_whole:
+        checks.note(
+            "SL-3",
+            "lake locations",
+            f"{len(locations)} location(s) read; the listing was not read to its last page "
+            "(section 7), and a location not read is not judged.",
+        )
     for loc in default_locations:
         checks.note(
             "SL-3",
@@ -378,8 +390,15 @@ def main(argv: list) -> int:
         )
 
     # SL-4: the register. Every grant on the bucket classifies, or it is a finding.
-    if not lake_grants:
+    if not lake_grants and grants_whole:
         checks.note("SL-4", "lake grants", "none - expected before Stage 16 pass 3.")
+    if not grants_whole:
+        checks.note(
+            "SL-4",
+            "lake grants",
+            f"{len(grants)} grant(s) read; the listing was not read to its last page "
+            "(section 7), and a grant not read is not classified.",
+        )
     for g in lake_grants:
         gid = g.get("AccessGrantId", "-")
         scope = g.get("GrantScope", "")
@@ -536,8 +555,10 @@ def main(argv: list) -> int:
         rep.line()
         if instance is not None:
             rep.show(cli, "s3control", "get-access-grants-instance", "--account-id", account)
-            rep.show(cli, "s3control", "list-access-grants-locations", "--account-id", account)
-            rep.show(cli, "s3control", "list-access-grants", "--account-id", account)
+            rep.show_pages(
+                cli, "s3control", "list-access-grants-locations", "--account-id", account
+            )
+            rep.show_pages(cli, "s3control", "list-access-grants", "--account-id", account)
             rep.h2("the lake's rows, classified (SL-4 is the verdict)")
             rows = ["GRANT\tSCOPE\tGRANTEE\tPERMISSION"]
             for g in lake_grants:
