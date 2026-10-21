@@ -293,26 +293,24 @@ def main(argv: list) -> int:
         # step 0.4): `list-permissions --principal <account>` without `--resource` is
         # refused - "Resource is mandatory if Principal is set in the input" - so the call
         # answers `(call failed)` in the before state and identically in the after one
-        # (Lesson 13). The catalog is listed whole instead and the account matched
-        # client-side; the estate holds tens of permissions, not thousands.
-        r = cli.run(
-            "lakeformation",
-            "list-permissions",
-            "--query",
-            "length(PrincipalResourcePermissions[?Principal.DataLakePrincipalIdentifier=="
-            f"'{acct_id}'])",
-            "--output",
-            "text",
-            log=False,
-            tolerate="AccessDenied",
-        )
-        if r.tolerated:
+        # (Lesson 13). The catalog is listed whole instead, every page, since the CLI has no
+        # paginator for ListPermissions, and the account matched client-side; the estate
+        # holds tens of permissions, not thousands.
+        listing = cli.pages("lakeformation", "list-permissions", tolerate="AccessDenied")
+        if listing.last.tolerated:
             lf_grants = "(read denied)"
-        elif r.ok:
-            lf_grants = r.stdout.strip()
-        else:
-            logerr(PRODUCER_PROFILE, "lakeformation list-permissions", r.stderr)
+        elif not listing.last.ok:
             lf_grants = "(call failed)"
+        elif not listing.complete:
+            lf_grants = "(not read to its last page)"
+        else:
+            lf_grants = str(
+                sum(
+                    1
+                    for e in listing.items("PrincipalResourcePermissions")
+                    if (e.get("Principal") or {}).get("DataLakePrincipalIdentifier") == acct_id
+                )
+            )
 
     # -------------------------------------------------------------------------- the checks
     #
@@ -460,7 +458,7 @@ def main(argv: list) -> int:
             checks.ok("RC-5", "the permission sets", ", ".join(sorted(held)))
 
     # RC-6: the lake share. D20 says Staging is never on it.
-    if lf_grants in ("(not read)", "(read denied)", "(call failed)"):
+    if lf_grants in ("(not read)", "(read denied)", "(call failed)", "(not read to its last page)"):
         checks.note("RC-6", "Lake Formation grants naming the account", lf_grants)
     elif lf_grants == "0":
         checks.ok("RC-6", "Lake Formation grants naming the account", "none")

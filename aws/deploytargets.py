@@ -396,41 +396,33 @@ def main(argv: list) -> int:
     # ------------------------- 5. the write share, the links, the invitations (INT-03)
     share_perm_rows: list = []  # (principal tail, resource, permissions)
     write_share_seen = False
+    share_listed = False  # the grantor's listing read to its last page
     link_rows: list = []  # (profile, database, target catalog tail, target database)
     pending_invites: list = []  # (profile, share name, status)
     if data_live:
         cli = cli_for(DATA_PROFILE)
         note(f"measuring {DATA_PROFILE} (grantor permissions) ...")
-        res = cli.run(
-            "lakeformation",
-            "list-permissions",
-            "--output",
-            "json",
-            log=False,
-        )
-        if res.ok and res.stdout:
-            for entry in json.loads(res.stdout).get("PrincipalResourcePermissions", []):
-                principal = str(
-                    (entry.get("Principal") or {}).get("DataLakePrincipalIdentifier") or ""
-                )
-                if prod_account and prod_account not in principal:
-                    continue
-                if not prod_account:
-                    continue
-                perms = ",".join(entry.get("Permissions") or [])
-                resource = entry.get("Resource") or {}
-                if "Table" in resource:
-                    r = resource["Table"]
-                    where = f"table:{r.get('DatabaseName')}.{r.get('Name') or '*'}"
-                elif "Database" in resource:
-                    where = f"database:{resource['Database'].get('Name')}"
-                else:
-                    where = next(iter(resource.keys()), "?")
-                share_perm_rows.append((principal[-12:], where, perms))
-                if "INSERT" in perms:
-                    write_share_seen = True
-        elif not res.ok:
-            logerr(DATA_PROFILE, "lakeformation list-permissions", res.stderr)
+        # ListPermissions has no CLI paginator: one call answers the first page and a NextToken.
+        listing = cli.pages("lakeformation", "list-permissions")
+        share_listed = listing.complete
+        for entry in listing.items("PrincipalResourcePermissions"):
+            principal = str((entry.get("Principal") or {}).get("DataLakePrincipalIdentifier") or "")
+            if prod_account and prod_account not in principal:
+                continue
+            if not prod_account:
+                continue
+            perms = ",".join(entry.get("Permissions") or [])
+            resource = entry.get("Resource") or {}
+            if "Table" in resource:
+                r = resource["Table"]
+                where = f"table:{r.get('DatabaseName')}.{r.get('Name') or '*'}"
+            elif "Database" in resource:
+                where = f"database:{resource['Database'].get('Name')}"
+            else:
+                where = next(iter(resource.keys()), "?")
+            share_perm_rows.append((principal[-12:], where, perms))
+            if "INSERT" in perms:
+                write_share_seen = True
     for p in (PROD_PROFILE, STAGING_PROFILE):
         if p not in live:
             continue
@@ -980,6 +972,13 @@ def main(argv: list) -> int:
     if data_live and prod_account:
         if write_share_seen:
             checks.ok("DT-6", "the write share", "an INSERT grant names the Production account")
+        elif not share_listed:
+            checks.note(
+                "DT-6",
+                "the write share",
+                "no INSERT grant to Production in what was read - the grantor's listing was not "
+                "read to its last page (section 13).",
+            )
         elif built:
             checks.fail(
                 "DT-6",
@@ -1256,8 +1255,10 @@ of data-governance/data/, production/data/ or staging/data/.""")
                 ["PRINCIPAL (TAIL)\tRESOURCE\tPERMISSIONS"]
                 + ["\t".join(r) for r in share_perm_rows]
             )
-        elif data_live:
+        elif data_live and share_listed:
             rep.line("No grantor-side permission names the Production account yet (pre-2.2).")
+        elif data_live:
+            rep.line("The grantor's listing was not read to its last page - section 13.")
         if link_rows:
             rep.line()
             rep.tabulate(
