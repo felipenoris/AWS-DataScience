@@ -424,7 +424,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   decision 11): it refuses a person's writes, re-read 2026-10-21, and the worker's side is owed at 4.3's
   run, whose job also deploys 7.2's table (reviewed 2026-10-21; decision 12 at the approval);
   an associated account no person works in goes in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in
-  `SMUS_MEMBERS`. Its 4.4's two prerequisites, Stage 8 3.0's first half and Stage 10 1.2's `vpc-v0.4.0`
+  `SMUS_MEMBERS`. Prepared 2026-10-21: the stage file's "The order of what is left", pass 8's code on the
+  local branch `claude/stage-18-unwind` planned step by step, decisions 12-18 the user's. Its 4.4's two prerequisites, Stage 8 3.0's first half and Stage 10 1.2's `vpc-v0.4.0`
   on `staging/foundation/`, were applied 2026-10-19 by the user.
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a

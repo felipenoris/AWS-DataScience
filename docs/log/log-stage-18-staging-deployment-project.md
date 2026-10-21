@@ -1600,3 +1600,89 @@ readings again.*
   14:37:40Z): `app_etl_deploy_staging_app_etl` at version 3 (`f2ed9786…`) since 7.1's deploy, where the
   row said 2, and SageMaker's lineage at three trial components sharing four artifacts with twelve
   associations, where it named the first run's alone. The readings are this log's.
+
+## 2026-10-21 — the rest of the stage prepared, with the environment down
+
+*Claude, in the session `stage-18-diagnostic` (branch `claude/stage-18-diagnostic-d0612f`, cut from `main` at
+`944984f6`). Every AWS call was a read as the infrastructure user with `InfrastructureAccess`, in `Staging
+Account` (`awsds-infra-staging`), `Data Governance Account` (`awsds-infra-data`), `Sandbox Account 1`
+(`awsds-infra-sandbox-1`), `Identity Account` (`awsds-infra-identity`) and `Production Account`
+(`awsds-infra-prod`); every Terraform run was a plan, none saved. Nothing was created, changed or deleted in
+AWS or in GitLab. Times are UTC.*
+
+- **[user] The request**: *"Prepare tudo para conseguirmos concluir o Stage 18, ainda com o ambiente
+  desligado. Verifique todos os artefatos que podem ser preparados antes de subir o ambiente. Com tudo
+  pronto, irei subir o ambiente. Aproveite para revisar as etapas que faltam do stage, verifique se são
+  exequíveis e faça as correções necessárias. Otimize o planejamento do restante do stage para agrupar
+  todos os passos que você pode fazer sem a minha intervenção. Me apresente qualquer decisão pendente que
+  eu possa tomar neste momento antes de começar, com o ambiente fora do ar."*
+- **[Claude] The environment**: Production's `awsds-prod-vpn`, `-proxy` and `-gitlab` `stopped`.
+- **[Claude] Stage 18's objects, read at 22:53Z**: `deploy-staging` `ACTIVE` with `Tooling`
+  (`bujd259b8g9zps`) and `deploy-staging-lakehouse` (`d6ogysnx78dguo`) `ACTIVE`; two members, Staging's
+  InfrastructureAccess session group (`PROJECT_OWNER`) and the project role's profile
+  (`PROJECT_CONTRIBUTOR`); no group profile for `awsds-deploy-staging`; the data source `READY`, its one run
+  `djfk1ihzkerez4` `SUCCESS` with nothing added; no asset, subscription request or subscription; the
+  profiles `deployment`, `experimentation` and the model governance one; Staging's two blueprint
+  configurations; both Glue databases present (*"Required Describe"*); the Glue job `app-etl-d1veybt5oak4uo`;
+  one workflow, `READY`; Lake Formation's admins the two SMUS roles, `CROSS_ACCOUNT_VERSION` 1,
+  `SET_CONTEXT` `TRUE`, `AllowFullTableExternalDataAccess` `true`, both default lists empty, one registered
+  location; the Access Grants instance `default` and its one location; the projects bucket at 62 versions
+  and 11 delete markers; the project key `Enabled`; `AWSServiceRoleForAmazonAthena` never used;
+  `datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps` carrying the workflows grant, the person-session deny
+  and AWS's three policies; the manage-access role the Glue and SageMaker manage-access policies;
+  `awsds-deploy-staging` five inline policies; the three `/aws/mwaa-serverless/` groups,
+  `/aws/sagemaker/ProcessingJobs` and `datazone-d1veybt5oak4uo-dev/error` and `/output` with no retention,
+  `datazone-d1veybt5oak4uo-dev` at 731 days and `/awsds/staging/studio` at 30; SageMaker's lineage at three
+  trial components, four artifacts and twelve associations; the two `DataZone-Env-*` stacks; on Sandbox's
+  side `test-experimentation-lakehouse` `ACTIVE` over `glue_db_4zojr4rr6bmnww`, Lake Formation at version 4
+  with three admins, and no table, link, RAM resource or Lake Formation permission of Staging's.
+- **[Claude] What a non-member lists**: as `awsds-infra-staging`, `datazone list-projects --name
+  test-experimentation` answers the project, whose members are the Data Scientist User (`PROJECT_OWNER`) and
+  three contributors, Sandbox's InfrastructureAccess and `awsds-deploy-sandbox-test` among them, not Staging's
+  InfrastructureAccess. 4.3's job looks the project up the same way, so its first run passes its own lookups
+  and stops at the CLI's storage items, as the stage says.
+- **[Claude] The read door of 7.2**: *SageMaker Unified Studio Querybooks running on sc.t3.medium instances*
+  and *Querybook Runs* read 0 in Sandbox and in Staging; the query editor runs Athena through SQL Workbench
+  with no compute (`docs/SMUS.md` §S3 item 1b, measured in Sandbox), so it reads the subscription with
+  Sandbox's environment down (decision 13).
+- **[Claude] Two forms 8.1 and 8.6 depend on**: Sandbox's Lake Formation admins hold InfrastructureAccess as
+  `arn:aws:iam::<acct>:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_InfrastructureAccess_…`,
+  path included, the form 8.1's call writes for Staging's role. The projects bucket comes from
+  `terraform-modules/s3-bucket` (`s3-bucket-v0.3.0`), which fixes `prevent_destroy = true` and
+  `force_destroy = false`, so 8.6's `terraform destroy` would be refused: the slice's teardown takes 6b step
+  1.7's form, its resource files moved out of the working tree and the bucket emptied first. The project key
+  takes `kms-key-v0.1.0`'s 30-day deletion window.
+- **[Claude] The baseline, 22:36Z**: `staging/studio/` and `staging/foundation/` (with the project folder's
+  `alerts.auto.tfvars`) as `awsds-infra-staging`, `data-governance/governance/` as `awsds-infra-data` and
+  `identity/org-policies/` as `awsds-infra-identity` all plan *"No changes. Your infrastructure matches the
+  configuration."*
+- **[Claude] Pass 8's code, written on the local branch `claude/stage-18-unwind`** (not pushed), one commit
+  per step, each planned against the live state, `-input=false`, plan not saved:
+  - `1875d65e` (8.1), `project_roles` emptied: *"Plan: 0 to add, 0 to change, 2 to destroy."* (22:39Z), the
+    two attachments alone.
+  - `b781a6ea` (8.2, 8.3), the `deployment` profile, the null-group branch, the `staging` alias and its
+    three data sources out of `governance/`, `SMUS_ASSOCIATED` and `SMUS_DEPLOYMENT_MEMBERS` without
+    `staging`, `WINDOW_PROFILE_NAMES` empty: `governance/` *"Plan: 0 to add, 0 to change, 2 to destroy."*,
+    the profile and its grant; `staging/studio/` with the regenerated tfvars *"Plan: 0 to add, 2 to change,
+    6 to destroy."* (22:41Z), the two configurations, their grants, the two attachments, the key's policy
+    and the person-session policy, whose bucket read waits on the key.
+  - `1faa92a9` (8.6), the folder and its rows in `layers.py`, `backend.py`, conventions §6 and `NETWORK.md`
+    §2.1. The apply's form planned with the six resource files moved out and put back: *"Plan: 0 to add,
+    0 to change, 23 to destroy."* (22:43Z), no refusal.
+  - `06a2f095` (8.7), `0af41075`'s hunks reversed and `POLICIES.md`'s row as before: `render.py` exits 0,
+    and the plan updates `awsds-org-scp-ou-workloads` in place, the condition removed, 2571 to 2499 bytes
+    (22:45Z).
+  - `0398ff76` (8.8), `d8688697`'s and `d21bcf66`'s hunks reversed and `NETWORK.md`'s paragraph removed;
+    `check-network-doc.py` clean; `staging/foundation/` *"Plan: 0 to add, 0 to change, 3 to destroy."*
+    (22:46Z), the three inline policies.
+- **[Claude] Back on the session branch**: the tfvars regenerated, `blueprints_enabled = true`, and
+  `staging/studio/` and `governance/` re-plan *"No changes."* (22:48Z).
+- **[Claude] The scripts for the sitting and pass 8**, kept in the session's scratch folder, outside the
+  repository: an inventory of every object above, re-run before and after each step; a CloudTrail reader
+  for the two roles' sessions and for the Lake Formation, RAM and Glue writes of a window, tried on 6.2's
+  re-read window, where it found the person's `StartNotebookCompute` and `CreateNotebook` refusals and no
+  message on either in CloudTrail; and a generator of pass 8's write inputs (the two Lake Formation
+  settings documents, the `DROP` grants and drops, the bucket's delete batches, 73 objects in one batch at
+  22:53Z), which reads and prints the commands without running them.
+- **[Claude] The plan corrected**: the status; the section "The order of what is left"; 4.3's listing
+  reading; 7.2 steps 1 and 4; 8.1 to 8.3 and 8.6 to 8.8; decisions 13 to 18; a risk; the cost.
