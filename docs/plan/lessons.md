@@ -2071,6 +2071,12 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   rule (verification xvi). A refused cross-account `AssumeRole` is recorded in the caller's account only,
   with `requestParameters` null and the role named in `errorMessage` alone. Where: `log-stage-08`'s
   2026-10-13 entries, `deploy-role-v0.2.0`.
+- **An `AssumeRole` event names its role by ARN, so a `ResourceName` lookup by the role's name finds
+  none of them** (measured 2026-10-21 in Production). By ARN the lookup answered the same event ids as
+  the `EventName=AssumeRole` history, role by role: `awsds-deploy-prod` 12, Staging's
+  `awsds-deploy-staging` 12, `awsds-prod-proxy` 172 in a 25-day window, the Config service-linked role
+  627 on 2026-10-19. By name it answered no `AssumeRole`. The user guide's only `ResourceName` example is
+  a role name. Where: `aws/deploytargets.py` §8 and `aws/cicd.py` `CI-8`, both by ARN.
 
 ### SageMaker processing jobs
 

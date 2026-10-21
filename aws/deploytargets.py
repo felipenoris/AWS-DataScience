@@ -107,7 +107,6 @@ JOB_DENY_SIDS = (
     "DenySageMakerJobsWithoutVolumeEncryption",
     "DenySageMakerServerlessInference",
 )
-LOOKUP_MAX = 50
 
 # The branches the outputs bucket's network deny carries (Stage 9 step 1.1, D39): the endpoint
 # and service branches, and a principal branch for DataScientistProdAccess's read of the named
@@ -616,6 +615,8 @@ def main(argv: list) -> int:
     debug_session_max = "-"
     debug_rules: list = []  # (rule, state)
     debug_events: list = []  # (time, caller tail)
+    debug_arn = ""
+    debug_read = False  # the role's AssumeRole history answered
     if prod_live:
         cli = cli_for(PROD_PROFILE)
         note(f"measuring {PROD_PROFILE} (escape hatch) ...")
@@ -625,7 +626,7 @@ def main(argv: list) -> int:
             "--role-name",
             DEBUG_ROLE,
             "--query",
-            "Role.[AssumeRolePolicyDocument,MaxSessionDuration]",
+            "Role.[AssumeRolePolicyDocument,MaxSessionDuration,Arn]",
             "--output",
             "json",
             log=False,
@@ -635,7 +636,7 @@ def main(argv: list) -> int:
             debug_state = "(absent)"
         elif res.ok and res.stdout:
             debug_state = "present"
-            trust, max_duration = json.loads(res.stdout)
+            trust, max_duration, debug_arn = json.loads(res.stdout)
             debug_session_max = str(max_duration)
             for st in _stmts(trust):
                 cond = (st.get("Condition") or {}).get("DateLessThan") or {}
@@ -663,20 +664,23 @@ def main(argv: list) -> int:
         for rname, state in json.loads(res.stdout or "[]") if res.ok and res.stdout else []:
             if DEBUG_RULE_SUBSTR in str(rname):
                 debug_rules.append((str(rname), str(state)))
-        res = cli.run(
-            "cloudtrail",
-            "lookup-events",
-            "--lookup-attributes",
-            "AttributeKey=EventName,AttributeValue=AssumeRole",
-            "--max-results",
-            str(LOOKUP_MAX),
-            "--query",
-            "Events[].CloudTrailEvent",
-            "--output",
-            "json",
-            log=False,
-        )
-        for raw in json.loads(res.stdout or "[]") if res.ok and res.stdout else []:
+        # Looked up by the role's ARN, every page: Production's AssumeRole events of every kind
+        # number about 980 a day, so a page of 50 spans about an hour (2026-10-21).
+        raws: list = []
+        if debug_arn:
+            res = cli.run(
+                "cloudtrail",
+                "lookup-events",
+                "--lookup-attributes",
+                f"AttributeKey=ResourceName,AttributeValue={debug_arn}",
+                "--query",
+                "Events[?EventName=='AssumeRole'].CloudTrailEvent",
+                "--output",
+                "json",
+            )
+            debug_read = res.ok
+            raws = json.loads(res.stdout or "[]") if res.ok else []
+        for raw in raws:
             try:
                 ev = json.loads(raw)
             except (TypeError, ValueError):
@@ -1338,15 +1342,20 @@ the app - DataScientistStagingAccess holds no Athena at all (Stage 2).""")
             if debug_events:
                 rep.line()
                 rep.tabulate(["TIME\tCALLER"] + ["\t".join(r) for r in debug_events[:25]])
+            elif not debug_arn:
+                rep.line("The AssumeRole history was not read: it is looked up by the role's ARN.")
+            elif not debug_read:
+                rep.line("The AssumeRole history was not read: the lookup failed (section 13).")
             else:
                 rep.line("No AssumeRole event names the debug role in the last 90 days.")
             rep.text("""
 Closed at rest is the design: the DateLessThan default sits in the past, an
 approval is a recorded apply, and EVERY assumption alarms (not just misuse).
 The read-only-by-API shape is imposed by the Workloads OU SCP - a session
-under this role cannot become a notebook (6.3 proves it once). The events above
-are API AssumeRole calls only: a console switch records a sign-in SwitchRole
-event, which the second rule watches and 6.3 locates.""")
+under this role cannot become a notebook (6.3 proves it once). The events read
+are API AssumeRole calls that succeeded: a refused one records no roleArn
+(6.2), and a console switch records a sign-in SwitchRole event, which the
+second rule watches and 6.3 locates.""")
 
         # ==============================================================================
         rep.h1("9. The persona sets' owed allows (step 5)")

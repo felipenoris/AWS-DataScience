@@ -63,6 +63,10 @@ Login as `AWS Control Tower Admin User`.
 aws organizations list-accounts --query 'Accounts[].[Name,Id]' --output table
 ```
 
+A variable inside an ARN is braced under zsh: `arn:aws:iam::${ACCOUNT}:role/NAME`. Unbraced,
+`$ACCOUNT:r` is zsh's root modifier, which drops the `:r`: the ARN reads `…ole/NAME`, and a CloudTrail
+lookup by it answered no event (2026-10-21).
+
 ## Identity Store id
 
 ```
