@@ -775,9 +775,9 @@ def main(argv: list) -> int:
         ).get("dataSourceSummaries", [])
         got["_sources"] = sources
         kbs.append(got)
-    collections = (run_json("opensearchserverless", "list-collections") or {}).get(
-        "collectionSummaries", []
-    )
+    # ListCollections has no CLI paginator: pages() follows its nextToken.
+    collection_listing = cli.pages("opensearchserverless", "list-collections", token="nextToken")
+    collections = collection_listing.items("collectionSummaries")
     vector_buckets = (run_json("s3vectors", "list-vector-buckets") or {}).get("vectorBuckets", [])
     genai = {  # kind -> [(name, arn or id)]
         "agents": [
@@ -1586,6 +1586,13 @@ def main(argv: list) -> int:
             f"OpenSearch Serverless collection {c.get('name', '-')}",
             f"{c.get('status', '-')} - a classic collection holds at least one OCU, 5.76 USD a "
             "day while it exists (decision 12).",
+        )
+    if not collection_listing.complete:
+        checks.note(
+            "ML-8",
+            "OpenSearch Serverless collections",
+            f"{len(collections)} read; the listing was not read to its last page (section 13), "
+            "and a collection not read is a bill this report does not show.",
         )
     checks.note(
         "ML-8",
