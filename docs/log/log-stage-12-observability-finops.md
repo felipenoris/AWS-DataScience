@@ -269,3 +269,56 @@ in `Sandbox Account 1`, and the other `awsds-infra-*` profiles), read-only, at 0
   notifies a topic that resolves (7 alarms)"*, the five quota alarms and the two warehouse alarms; `fail`
   in Production on the three `[D]` hosts' alarms alone, `EXC-19`'s remaining half; `OB-1` and `OB-5`
   `pass` in every account, `OB-2` and `OB-4` the notes of 2026-10-18.
+
+## 2026-10-20 — step 6.1's Config reading of 2026-10-14 (PR #126), recorded and re-read
+
+*Two Claude sessions. The reading of 2026-10-14 is the session that opened PR #126 (merged
+2026-10-14T17:19:05Z), which wrote no log entry; its bullets are taken from that PR's body and the
+`docs/PRICING.md` §2 paragraph it added. Its calls, as the body names them, were reads: Cost Explorer,
+CloudWatch `AWS/Config`, CloudTrail `lookup-events` and `describe-configuration-recorders`, as the
+infrastructure user with `InfrastructureAccess` and, on Policy Canary, `AWSAdministratorAccess`. The
+re-read is Claude's, in the session the orchestrating session started on 2026-10-20 for Stage 12's log,
+at the user's request in its chat: read-only, from the laptop, 22:58:53 to 23:00:47 UTC, through the five
+`awsds-infra-*` profiles and `awsds-policy-canary`, the same identities, Cost Explorer in `us-east-1` and
+the rest in `us-west-2`.*
+
+### The reading of 2026-10-14
+
+- **[Claude, PR #126] Cost Explorer**, AWS Config by usage type in the six accounts with a CLI profile:
+  `USW2-ConfigurationItemRecorded` is the only usage type, and no rule evaluation is billed.
+
+  | Account | August | September | October 1-13 |
+  |---|---|---|---|
+  | Sandbox | 6.32 | 7.27 | 3.02 |
+  | Production | 1.10 | 3.13 | 1.90 |
+  | Staging | 1.31 | 0.33 | 0.26 |
+  | Data Governance | 0.41 | 0.11 | 0.28 |
+  | Identity | 0.25 | 0.02 | 0.17 |
+  | Policy Canary | 0.23 | 0.02 | 0.15 |
+
+  September is 10.88 in all. Log Archive and Audit hold no profile and are unread.
+- **[Claude, PR #126] The recorders**: each is `aws-controltower-BaselineConfigRecorder`, `CONTINUOUS`,
+  all supported types, no exclusion.
+- **[Claude, PR #126] Sandbox's items from 2026-09-14 to 10-13**, CloudWatch `ConfigurationItemsRecorded`
+  by `ResourceType`: 1,816, of which 1,487 fall inside the eight `sandbox/egress` cycles that CloudTrail's
+  `CreateVpcEndpoint` and `DeleteVpcEndpoints` bound. A cycle records 120-290 items (USD 0.36-0.87)
+  whatever its length; a day without a session records 0-4. `AWS::EC2::NetworkInterface` 510,
+  `AWS::EC2::VPCEndpoint` 331, `AWS::EC2::SecurityGroup` 176, `AWS::EC2::Subnet` 157 and `AWS::EC2::VPC`
+  123 make 71% of the window, with `AWS::Config::ResourceCompliance` 279 beside them. Production recorded
+  742 in the same window (`ResourceCompliance` 172, ENI 148, endpoint 138, instance 76).
+
+### The re-read of 2026-10-20
+
+- **[Claude] Cost Explorer**, six `get-cost-and-usage` requests over 2026-08-01 to 2026-10-14, the AWS
+  Config service grouped by usage type: every figure of the table to the cent, net equal to unblended in
+  each account. Unrounded, September is 10.866 USD for 3,622 items: the 10.88 above adds the rounded
+  figures, and step 6.1's 10.87 of 2026-10-18 rounds the sum.
+- **[Claude] CloudWatch**, `get-metric-data` daily sums from 2026-09-14T00:00Z to 10-14T00:00Z: Sandbox's
+  `ResourceType` `All` is 1,816 and Production's 742, and every type above reads its figure.
+- **[Claude] CloudTrail**, `lookup-events` in Sandbox over the same window: the eight cycles run from
+  2026-09-14 13:15 to 2026-10-12 00:11 UTC. Sandbox's hourly `All`, summed from the hour of a cycle's
+  first `CreateVpcEndpoint` to the hour after its last `DeleteVpcEndpoints`, gives 1,487, and 120 to 290
+  a cycle; the other 329 items fall outside the cycles. The window holds 228 `CreateVpcEndpoint` and 181
+  `DeleteVpcEndpoints` events: 65 and 17 of them refused with `Client.RequestLimitExceeded` under
+  `InfrastructureAccess`, and 8 of each by `AWSServiceRoleForRedshift`, whose creates name a `vpce-svc-`
+  endpoint service, so the event count is not the endpoint count.
