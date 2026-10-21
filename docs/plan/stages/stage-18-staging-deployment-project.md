@@ -114,11 +114,13 @@ tree regenerates them back: `blueprints_enabled` follows `backend.py` at generat
 
 **A. Before the sitting, the environment down** [user]: decisions 12 to 18 below, and Stage 11 step
 2.1.1's Audit snapshot (`aws/cloudshell/audit-iam-analyser.sh` in Audit), which reads the projects bucket
-while it exists and so precedes 8.6.
+while it exists and so precedes 8.6; taken 2026-10-21, no finding on the bucket or its key.
 
 **B. The sitting**: the hub, GitLab with its runners, and Staging's egress.
 1. [user] `make hub-up`, `make gitlab-up`, `make up ENV=staging ONLY=egress`; `stage-18-staging`
-   protected in `awsds/app-etl` before the push of `6a23b4d`; `ECR_REGISTRY` read among the project's
+   protected in `awsds/app-etl` under Settings → Repository → Protected branches, not Protected tags,
+   before the push of `6a23b4d`: a pipeline created before the protection stays unprotected and the
+   protected deploy runner takes none of its jobs, so a new pipeline is run on the branch (2026-10-21); `ECR_REGISTRY` read among the project's
    variables; the manual job `stage-18-deploy` started.
 2. [pipeline] The first run stops at the storage items, the role being no member yet, and DataZone
    creates the role's `IAM_ROLE_SESSION_GROUP` profile. [Claude] reads its id. [user] `datazone

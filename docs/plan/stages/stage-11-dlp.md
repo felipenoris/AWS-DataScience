@@ -263,7 +263,9 @@ enumerated-ARN instrument: created, read, recorded, deleted inside one month.
   the INV-16 shape, A.1's rows plus the nine persona assignments and Staging's direct one; the 46th is
   the Sandbox project key, `TM-21` and `EXC-18`, which the user chose to narrow. The three `RESOLVED`
   findings are Staging's, two roles 6b step 2.1 unassigned and a key inferred to be the destroyed
-  Development project key.
+  Development project key. **Read again 2026-10-21** (23:42:59Z): 49 findings, 45 `ACTIVE`, all of the
+  INV-16 shape; the Sandbox project key now `RESOLVED`, the one change, which closes `TM-21` and
+  `EXC-18`; no finding names Stage 18's projects bucket or key in `Staging`.
 - **2.1.2 — [Claude] Read the five no-RCP resource types as perimeter, not as commentary** — Lambda, SNS,
   EBS volume snapshots, RDS DB and DB-cluster snapshots, EFS (`docs/plan/architecture.md` §4.2): for the
   data-bearing ones (the snapshots — closed preventively by 1c 7.5's unconditional denies), the external

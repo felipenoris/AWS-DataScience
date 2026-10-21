@@ -380,7 +380,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
 - **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-24`): `TM-17`, the project role's managed policy
   reaching other accounts' `airflow-celery-*` queues and Bedrock functions, is the user's to decide;
-  `TM-21` applied 2026-10-19 with Stage 17's 1.3, its finding's `RESOLVED` unread; the data cells filters
+  `TM-21` applied 2026-10-19 with Stage 17's 1.3, its finding `RESOLVED` (read 2026-10-21); the data cells filters
   create nothing until decision 12, which since 2026-10-20 also weighs Lake Formation's RLS policies (an
   attachment narrows an all-rows `SELECT`); `TM-22`..`TM-24`'s mechanisms are read from AWS's pages, their
   measurements owed. The internal-access analyzer bills on each 1st: run it after

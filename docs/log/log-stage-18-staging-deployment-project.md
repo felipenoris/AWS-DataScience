@@ -1701,3 +1701,31 @@ AWS or in GitLab. Times are UTC.*
   battery authorized ahead, the applies and the membership the user's; 16, `stage-18-staging` unprotected
   and deleted in the sitting; 17, the Athena service-linked role and the six log groups deleted at 8.1;
   18, pass 8 on the sitting's day. The stage file's decisions, status, 7.2 step 4 and 8.1 carry them.
+
+## 2026-10-21 — the sitting begins: B1, and a branch protected as a tag
+
+*Claude read AWS as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`,
+`awsds-infra-staging`, `awsds-infra-data`) and GitLab through Claude in Chrome, reads alone. Times UTC.*
+
+- **[user] B1**: *"Ambiente no ar e B1 feito: stage-18-staging protegida, push de 6a23b4d, ECR_REGISTRY
+  conferido e job stage-18-deploy disparado. Siga com o B2."*
+- **[Claude] The environment, 23:37:41Z**: `awsds-prod-gitlab` (launched 23:26:08Z), `-proxy`, `-vpn` and the
+  three runners (23:28Z) running; Staging's twelve interface endpoints `available`, `datazone` among them; no
+  group profile for `awsds-deploy-staging` in the domain.
+- **[user]** *"falhou no test. aba no chrome está aberta no teste"*
+- **[Claude] GitLab read**: pipeline #58 on `6a23b4d2`; `test` #237 failed and its retry #240 failed on the
+  pinned lint, *"manifest.yaml: manifest: stage dev: sem ACCOUNT_ID em environment_variables, que os
+  workflows usam"* and the same for `test`, the 14 tests and ruff passing; `stage-18-deploy` #239 `Manual`,
+  never started.
+- **[user]** On #239: *"This job is stuck because of one of the following problems. There are no active
+  runners online, no runners for the protected branch, or no runners that match all of the job's tags:
+  awsds-deploy"*
+- **[Claude] The cause**: the deploy runner #3 (`awsds-prod-runner-deploy`, tag `awsds-deploy`) reads
+  `Online` and `Protected`, assigned to `awsds/app-etl`; that project's Settings → Repository lists `main`
+  alone under Protected branches and `stage-18-staging` under Protected tags. Pipeline #58 was created
+  unprotected, so the protected runner takes none of its jobs, and the protected `ECR_REGISTRY` would not
+  reach them. The acts handed back: #239 cancelled (it holds `resource_group: app-etl-staging`), the tag's
+  protection removed, the branch protected, a pipeline run on the branch, its `stage-18-deploy` started. B1
+  in the order section now names the Protected branches list.
+- **[user] The Audit snapshot**, block A's last act (Stage 11's log of this day): no finding names
+  `awsds-staging-smus-projects` or Staging's project key, the reading 8.6 waited on.
