@@ -329,12 +329,14 @@ SLICES = [
     # them, and a static rate that assumed them would over-report every session that does not.
     # `make status` quotes this column; the flag's cost is in `make help`.
     Slice("sandbox", "egress", EPHEMERAL, "18 interface endpoints (5.2) - no NAT", 0.180),
+    # 12 while `staging/egress/` declares `datazone` for Stage 18's window (step 7.1); Stage 18 step
+    # 8.8 removes it, and the row returns to 11 at 0.110.
     Slice(
         "staging",
         "egress",
         EPHEMERAL,
-        "11 interface endpoints (8.3) - no NAT",
-        0.110,
+        "12 interface endpoints (8.3, datazone for Stage 18) - no NAT",
+        0.120,
     ),
     # 12 since Stage 7 (2026-10-12): 6c 5.5's 13 plus `secretsmanager` (step 1.7), which the GitLab
     # host's bootstrap reads its leaf keys and gitlab-secrets.json through and the runner its

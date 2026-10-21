@@ -1972,6 +1972,14 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   `service-role/` path, which the SageMaker one does not. The module attaches it since
   `sagemaker-prereqs-v0.8.0` (PR #207), and Staging's `staging/studio/manage-access.tf` until that slice
   leaves v0.6.0. Where: `log-stage-18-staging-deployment-project.md`, the 7.2 entries of 2026-10-20.
+- **A V2 domain refuses the three catalog designations the DataZone API lists** (measured 2026-10-20,
+  Stage 18 6.1). `create-project-membership` with `PROJECT_CATALOG_VIEWER`, `PROJECT_CATALOG_CONSUMER`
+  or `PROJECT_CATALOG_STEWARD` answers `ValidationException` *"Project member with designation <it>
+  cannot be added to project in V2 domain"*, and `PROJECT_CONTRIBUTOR` is admitted. The CLI's model
+  (`datazone/2018-05-10`) lists all five, while SageMaker Unified Studio's user guide names two project
+  roles, Contributor and Owner, both working on the project's credentials: no designation gives a
+  person a view with no write. Where: the
+  Stage 18 log, 2026-10-20.
 
 ### MWAA, provisioned
 

@@ -1143,3 +1143,286 @@ are UTC.*
   objects and the project role's profile; 8.3 two configurations; 8.6 the admins emptied by a
   `PutDataLakeSettings` that keeps every other field; the cost twelve endpoints; the slices table two
   rows.
+
+## 2026-10-20 — the environment down, read by the checklist session; pass 8 corrected
+
+*The first three entries were read by another session on this laptop, "Stage 18 checklist
+AWS-DataScience", from 04:45 to 05:00Z, every call a read as the infrastructure user
+(`InfrastructureAccess`), and sent to this session at the user's word in that chat: "Envie as leituras de
+hoje, as três correções do passo 8 e a proposta de fazer o 6.1 sem o ambiente para a sessão do Stage 18."
+The last two were read again here.*
+
+- **[Claude, the checklist session] The environment down**: Production's `awsds-prod-gitlab`, `-proxy`
+  and `-vpn` stopped, no instance in Staging or Sandbox; `./aws/egress.py` (prod, staging, sandbox-1,
+  data) at 04:47Z, 0 interface endpoints, 0 NAT, 0.000 USD/h, every check passing; `./aws/studio.py` at
+  04:49Z and `./aws/org-policies.py` at 04:50Z, every check passing, `US-4` listing three profiles
+  (Generative AI model governance, `deployment`, `experimentation`).
+- **[Claude, the checklist session] Stage 18's objects, as the entries above leave them**:
+  `deploy-staging` `ACTIVE`, its `Tooling` and `deploy-staging-lakehouse` environments `ACTIVE`, its
+  members Staging's InfrastructureAccess session group (`PROJECT_OWNER`) and the project role's `IAM`
+  user profile (`PROJECT_CONTRIBUTOR`); one workflow, `app_etl_deploy_staging_app_etl`, `READY`, its runs
+  `V4eBnEgINa6pd4U`, `4pwrFUq1NSnnUMI` and `JSSr2Br9Zsf2b26` `SUCCESS` and `7MMhwSySe5SOWd1` `FAILED`;
+  the Glue job `app-etl-d1veybt5oak4uo`, Glue 6.0, with the `--conf` settings and no
+  `--enable-glue-datacatalog`; both Glue databases answering `get-database` with *"Required Describe"*;
+  Lake Formation's admins the two SMUS roles, no read-only admin, both default lists empty,
+  `CROSS_ACCOUNT_VERSION` 1 and `SET_CONTEXT` `TRUE`, one registered location (the project's `dev`
+  prefix, the project role, hybrid false); the Access Grants instance `default` and its one location;
+  `awsds-deploy-staging`'s five inline policies, and no group profile for it in the domain (Cloud
+  Control `NotFound`, `search-group-profiles` listing six others); the data source `aqm5tebc42cufk`
+  `READY` and `ENABLED` on `cron(2 2 * * ? *)` with no run, its first at 2026-10-21 02:02Z; the
+  subscription target present, no asset, no subscription request or subscription with `deploy-staging`
+  as approver, 12 lineage events; Sandbox's `test-experimentation-lakehouse` `ACTIVE` with its own
+  target. Staging's log groups with no retention are the three workflows', `/aws/sagemaker/ProcessingJobs`,
+  `datazone-d1veybt5oak4uo-dev/error` and `/output`; its three processing jobs are `Completed`. CloudTrail's
+  writes not invoked by a service since 02:10Z: none in Staging; in Data Governance and Sandbox, the
+  `DeleteEnvironment` (02:50:05Z) and `CreateEnvironment` (02:50:56Z) of PR #207's session, and
+  `SearchListings`.
+- **[Claude, the checklist session] 6.1's inputs**: the API's designations are `PROJECT_OWNER`,
+  `PROJECT_CONTRIBUTOR`, `PROJECT_CATALOG_VIEWER`, `PROJECT_CATALOG_CONSUMER` and
+  `PROJECT_CATALOG_STEWARD` (the CLI's model `datazone/2018-05-10`), the narrowest `PROJECT_CATALOG_VIEWER`.
+  The root domain unit's grants, child units excluded: `CREATE_PROJECT_FROM_PROJECT_PROFILE` to the
+  Identity Center group for `experimentation` and to Staging's InfrastructureAccess session group for
+  `deployment`; `ADD_TO_PROJECT_MEMBER_POOL` to all users; `OVERRIDE_PROJECT_OWNERS`,
+  `OVERRIDE_DOMAIN_UNIT_OWNERS`, `CREATE_PROJECT` and `CREATE_DOMAIN_UNIT` to nobody. The root unit's
+  owner is Data Governance's InfrastructureAccess session group.
+- **[Claude] SageMaker's lineage in Staging, read again** (05:17Z, `awsds-infra-staging`): three trial
+  components, one per processing job (4.4's `app-etl-20261019T205205`, 7.1's runs A and B,
+  `…T220422` and `…T225843`), each with three associations in and one out, twelve in all; four
+  artifacts they share, three `DataSet` (the project's `shared/app-etl/src/`, `work/glue/` and
+  `work/job/`) and one `Image` (`awsds-prod-ecr-app-etl` by digest), created 2026-10-19 20:52:07Z; no
+  action and no context. 8.1 named one trial component and four associations.
+- **[Claude] Staging's `PutDataLakeSettings`, read again** (CloudTrail, 05:17Z, five events):
+  2026-08-19 05:57:19Z by InfrastructureAccess, `CROSS_ACCOUNT_VERSION` 4, `SET_CONTEXT` `TRUE`, one
+  admin; 2026-09-06 04:48:24Z by InfrastructureAccess (6b's unwinding), version 1, `SET_CONTEXT` `TRUE`,
+  no admin; 2026-10-19 06:05:34Z by `awsds-staging-smus-provisioning`, three calls with the same
+  parameters and two, two and one admins. `SET_CONTEXT` `TRUE` predates the stage, and 8.6's call has a
+  measured precedent on this account as InfrastructureAccess.
+- **[Claude] The two Lake Formation admins' trust** (05:21Z, `iam get-role`): `awsds-staging-smus-provisioning`
+  trusts `cloudformation.amazonaws.com` and `datazone.amazonaws.com`, and `awsds-staging-smus-manage-access`
+  `datazone.amazonaws.com` alone, `sts:AssumeRole` each. No person and no Terraform role acts as either,
+  so 8.1's two drops take InfrastructureAccess into the admins first, the checklist session's inference,
+  written into 8.1 unmeasured.
+
+## 2026-10-20 — decision 9, and 6.1 with the environment down
+
+- **[user] Decision 9**: *"Decisão 9: sim, o 6.1 roda com o ambiente desligado, antes do 4.3, terminando
+  com a membership da pessoa apagada."*, the recommendation; then *"usuário sso infra logado"*.
+- **[user] 6.1's first command**, as `awsds-infra-staging`, at about 22:00Z:
+
+  ```
+  AWS-DataScience git:(main) NO_PROXY='*' aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d1veybt5oak4uo --designation PROJECT_CATALOG_VIEWER --member userIdentifier=28f1b390-0041-7068-8cc7-9ccef94277d1 --profile awsds-infra-staging --region us-west-2
+
+  aws: [ERROR]: An error occurred (ValidationException) when calling the CreateProjectMembership operation: Project member with designation PROJECT_CATALOG_VIEWER cannot be added to project in V2 domain
+  ```
+- **[Claude] What the refusal leaves**: no member added. The project's two members were read before it
+  (21:58:30Z, as `awsds-infra-data`): Staging's InfrastructureAccess session group as `PROJECT_OWNER` and
+  the project role's profile as `PROJECT_CONTRIBUTOR`; the identifier is the Data Scientist User's profile,
+  `ACTIVATED` in the domain. At 22:04Z neither Staging's nor Data Governance's trail holds the
+  `CreateProjectMembership` yet, the delivery lag (Lesson 62). AWS's user guide names two project roles,
+  Contributor and Owner, and its admin guide says a member's analytics runs on session credentials the
+  service generates for the project's context (read 2026-10-20).
+- **[user] Decision 10**: *"Decisão 10: sim, o 6.1 segue com PROJECT_CATALOG_CONSUMER, depois
+  PROJECT_CATALOG_STEWARD, e então PROJECT_CONTRIBUTOR."*, the recommendation.
+- **[Claude] The first attempt in CloudTrail** (read 22:07Z): `CreateProjectMembership` at 22:02:07Z with
+  `designation` `PROJECT_CATALOG_VIEWER` and `errorCode` `ValidationException`, in Staging's trail by
+  InfrastructureAccess and in Data Governance's as an `AssumedRole` call, the domain's account recording it
+  too; the project's members still the two.
+- **[user] The three commands of decision 10**, as `awsds-infra-staging`, about 22:07Z (*"Me parece que
+  apenas o terceiro funcionou"*):
+
+  ```
+  ➜  AWS-DataScience git:(main) NO_PROXY='*' aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d1veybt5oak4uo --designation PROJECT_CATALOG_CONSUMER --member userIdentifier=28f1b390-0041-7068-8cc7-9ccef94277d1 --profile awsds-infra-staging --region us-west-2
+
+  aws: [ERROR]: An error occurred (ValidationException) when calling the CreateProjectMembership operation: Project member with designation PROJECT_CATALOG_CONSUMER cannot be added to project in V2 domain
+  ➜  AWS-DataScience git:(main) NO_PROXY='*' aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d1veybt5oak4uo --designation PROJECT_CATALOG_STEWARD --member userIdentifier=28f1b390-0041-7068-8cc7-9ccef94277d1 --profile awsds-infra-staging --region us-west-2
+
+  aws: [ERROR]: An error occurred (ValidationException) when calling the CreateProjectMembership operation: Project member with designation PROJECT_CATALOG_STEWARD cannot be added to project in V2 domain
+  ➜  AWS-DataScience git:(main) NO_PROXY='*' aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d1veybt5oak4uo --designation PROJECT_CONTRIBUTOR --member userIdentifier=28f1b390-0041-7068-8cc7-9ccef94277d1 --profile awsds-infra-staging --region us-west-2
+  ➜  AWS-DataScience git:(main)
+  ```
+- **[Claude] The membership read back** (22:08:15Z, `list-project-memberships` as `awsds-infra-data`):
+  three members, the Data Scientist User's profile `PROJECT_CONTRIBUTOR` beside the two of before. The
+  V2 domain refuses the three catalog designations and admits `PROJECT_CONTRIBUTOR`, so question iv's
+  answer is no: the narrowest designation a person can hold works on the project's credentials.
+
+## 2026-10-20 — the checklist session's Stage 10 readings in Staging: `OR-2` and two service-linked roles
+
+- **[Claude, the checklist session] `OR-2` and an unrecorded principal**, read in PR #222's Stage 10
+  session and sent as information: `./aws/orchestration.py` at 22:04:58Z read four `OR-2` failures on
+  Staging's three `/aws/mwaa-serverless/` groups, which carry no retention; and Staging's CloudTrail
+  (`us-east-1`) holds a `CreateServiceLinkedRole` for `ops.athena.amazonaws.com` at 2026-10-19 06:06:23Z,
+  invoked by `datazone.amazonaws.com` as `awsds-staging-smus-provisioning`, which no file named.
+- **[Claude] Read again** (22:19:18Z, `awsds-infra-staging`): the three groups,
+  `app_etl_deploy_staging_app_etl`, `dagid_copy_deploy_staging_app_etl` and
+  `orchestration_demo_deploy_staging_demo_python_operator`, with no retention; the role
+  `AWSServiceRoleForAmazonAthena`, path `/aws-service-role/ops.athena.amazonaws.com/`, created 2026-10-19
+  06:06:23Z, trusting `ops.athena.amazonaws.com`, `AmazonAthenaServiceRolePolicy` attached, never used.
+  CloudTrail's `CreateServiceLinkedRole` since 2026-10-19 holds a second one, `airflow-serverless.amazonaws.com`
+  at 20:09:32Z by InfrastructureAccess, invoked by that service: `AWSServiceRoleForAmazonMWAAServerless`,
+  created at 4.2's first `CreateWorkflow`, the role Stage 10's verification iii tracks. `AWS_STATE.md`
+  gains `EXC-21` for `OR-2` during the window, and 8.1 the Athena role.
+
+## 2026-10-20 — 6.1 in the portal, as the Data Scientist User
+
+- **[user] Step 1, the project read as the person**, signed in to the portal from a separate browser
+  profile: *"No passo 1 - Ver o projeto. Os subitens 1, 2 e 3 conferem. Em 4, aparecem dois bancos:
+  `glue_db_c2ej62w956q2a8`e `glue_db_d6ogysnx78dguo`. Em 5, ao clicar no menu Workflows aparece mensagem
+  "This tool is not available for this project: Spaces are not enabled in this project profile. Please
+  contact your admin."."* The project appears in the selector, its overview opens, and its members read
+  three with the person as Contributor; Data lists both Glue databases, the failed environment's orphan
+  included; and the Workflows tool is refused by the `deployment` profile, whose `Tooling` carries
+  `enableSpaces` `false`, so the person sees no workflow and no run in the portal.
+
+## 2026-10-21 — 6.1's write attempts in the portal
+
+*Read through Claude in Chrome in the tab the user opened for it, signed in as the Data Scientist User
+(the user menu names that user), from 2026-10-20 23:55Z; CloudTrail read 00:06:43Z and 00:07:25Z as
+`awsds-infra-data` and `awsds-infra-staging`. The person's e-mail address, which names a session below,
+is not written here.*
+
+- **[user] The go-ahead**: *"Siga com os testes de escrita do 6.1 na aba do Chrome, pedindo minha
+  confirmação antes de cada clique que grave algo."*, then, for the three writes proposed: *"Sim, pode
+  fazer todas as atividades propostas"*.
+- **[Claude] What the portal offers a contributor**: Files lists `app-etl/`, `getting_started.ipynb`,
+  `operatorFiles/` and `README.md` under Shared, and its Actions menu offers Publish to Catalog, Add
+  business metadata, Create folder, Upload files, Delete and Copy; Members lists the three with no add and
+  no role control; the project's menu offers Project details and Copy project link alone; Manage offers
+  Govern, Browse catalog and the catalog's assets, subscription requests, data sources and metadata
+  entities; the Query Editor offers querybooks; the create-project wizard lists `deployment` and
+  `experimentation`, and steps 1 to 3 pass with `deployment` chosen.
+- **[Claude] Create project with `deployment`** (clicked 00:04:29Z): *"Failed to create project — User is
+  not permitted to perform operation: CreateProject"*; Data Governance's trail holds `CreateProject` at
+  00:04:32Z `AccessDenied`, called by `awsds-data-studio-domain-execution` in session `user-<the person's
+  profile>`, the role the portal calls DataZone through for the person; the project list reads the
+  three projects of before.
+- **[Claude] Create folder `teste-6.1`** (clicked 00:05:11Z): *"Successfully created folder
+  "teste-6.1"."*; the object `dzd-d8yrvx1ko7im6o/d1veybt5oak4uo/shared/teste-6.1/`, 0 bytes, 00:05:13Z;
+  Staging's trail holds the project key's `GenerateDataKey` at 00:05:12Z by
+  `datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps` in a session named after the person's e-mail address,
+  which DataZone assumed (`AssumeRole` by `AWSService`).
+- **[Claude] A querybook** (00:05:35Z on): `CreateNotebook` at 00:05:36Z and `CreateCell` at 00:05:38Z in
+  that session; `StartNotebookCompute` at 00:05:43Z `ServiceQuotaExceededException`, the portal reading
+  *"Status code: 402 - The account-level service limit 'SageMaker Unified Studio Querybooks running on
+  sc.t3.medium instances' is 0 Querybooks, with current utilization of 0 Querybooks and a request delta of
+  1 Querybooks. Please use AWS Service Quotas to request an increase for this quota. If AWS Service Quotas
+  is not available, contact AWS support to request an increase for this quota."* and *"Kernel Error"*. No
+  query ran: the error moved the page, and `SELECT 1` landed in the querybook's description
+  (`UpdateNotebook` at 00:05:53Z). The querybook `bsmw1ns168paxc` stays, untitled.
+- **[Claude] The same session's reads and refusals**: `tag:GetResources` refused, *"is not authorized to
+  perform: tag:GetResources because no identity-based policy allows the tag:GetResources action"*; `glue:GetConnections`, `ListConnectionTypes`, `GetCatalogs`,
+  `GetDatabases`, `athena:GetWorkGroup`, `sqlworkbench:GetResources`, `datazone:GetEnvironment`,
+  `ListNotebooks`, `StartConversation` and `GetConversation` answered.
+- **[Claude] What 6.1 answers**: iv, no: the narrowest designation the domain admits acts as the project
+  role, and a write landed in the project's storage and a querybook in the project, while the portal
+  shows no workflow (spaces off). xi: `CreateProject` from `deployment` is refused by the domain unit's
+  grant though the wizard lists the profile, and a contributor is offered no member or role control.
+  A write landed, so 6.2 runs: the person's session carries the e-mail address as its name, where 7.1's
+  Glue job ran as `GlueJobRunnerSession`.
+- **[user] The membership deleted**: *"Rodei o delete-project-membership; pode conferir e fechar o 6.1."*
+- **[Claude] Read back** (00:15:51Z, `list-project-memberships` as `awsds-infra-data`): two members,
+  Staging's InfrastructureAccess session group `PROJECT_OWNER` and the project role's profile
+  `PROJECT_CONTRIBUTOR`, as before 6.1; the person is out of the project. Neither trail holds the
+  `DeleteProjectMembership` yet at 00:16:57Z, the delivery lag. 6.1 done.
+
+## 2026-10-21 — 6.2's reading: the person's sessions against the workers'
+
+*Read as `awsds-infra-staging` with a script that prints, for each event of the project role, the
+session's name, who assumed it, its source identity and tags, and the call's origin. The person's e-mail
+address and the browser's public address are not written here.*
+
+- **[user] The request**: *"Sim, faça a leitura do 6.2 agora."*
+- **[Claude] The person's sessions** (2026-10-21 00:04:59Z to 00:05:43Z): `AssumeRole` of
+  `datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps` by `datazone.amazonaws.com`, the session named after the
+  person's e-mail address, `sourceIdentity` her DataZone profile id, and the session tags `dz` `true`,
+  `RedshiftDbUser` (the e-mail address), `RedshiftDbRoles` `datazone_env_bujd259b8g9zps` and
+  `datazone:userId` (the profile id). The session's calls came from the browser's public address with a
+  browser's user agent and no VPC endpoint; the folder's write reached KMS as `fas.s3.amazonaws.com` in that
+  session.
+- **[Claude] The workers' sessions** (4.4's second run, 2026-10-19 20:47:30Z to 21:02Z, 57 events):
+  `AmazonMWAAServerless`, assumed by `airflow-serverless.amazonaws.com`; `GlueJobRunnerSession`,
+  `GlueVpcAuthSession` and `GlueRoleValidationSession` by `glue.amazonaws.com`; `SageMaker` and
+  `AnalyticsValidation` by `sagemaker.amazonaws.com`, and `SageMaker` by `im.amazonaws.com`. None carries a
+  source identity or a session tag. The worker's calls came from Staging's private addresses through its
+  `glue` and `sagemaker.api` endpoints, with a `Boto3` user agent.
+- **[Claude] What separates them**: `aws:SourceIdentity`, present in the person's sessions alone, and
+  `aws:PrincipalTag/datazone:userId` and `dz` likewise. The session's name differs but is matched by
+  pattern alone, and `aws:SourceVpce` is absent from the person's calls but also from a service's forward
+  call in any session. A key separates them, so 6.2's deny can be written: decision 11.
+- **[user] Decision 11**: *"Decisão 11: sim, escreva e planeje agora o deny na role do projeto,
+  condicionado a aws:SourceIdentity; eu aplico."*, the recommendation.
+- **[Claude] 6.2's deny written and planned**: `staging/studio/person-session.tf`, the policy
+  `awsds-staging-person-session-deny`, attached to each `project_roles` entry under the boundary
+  precondition. Its four Deny statements are conditioned on `aws:SourceIdentity` being present (`Null`
+  `false`): `DenyAPersonWritingTheProjectsObjects` (`s3:PutObject*`, `s3:DeleteObject*` and
+  `s3:RestoreObject` on the projects bucket's objects, the bucket read by a data source),
+  `DenyAPersonChangingTheWorkflows` (the seven `airflow-serverless` writes), `DenyAPersonChangingTheJobsAndTables`
+  (Glue's and SageMaker's create, update, delete, start, stop and put writes, and Glue's batch writes) and
+  `DenyAPersonWritingNotebooks` (DataZone's notebook and cell writes, `CreateCell` and `StartNotebookCompute`
+  among them). Planned 00:29:02Z as `awsds-infra-staging`, *"Plan: 2 to add, 0 to change, 0 to destroy."*,
+  saved to `$HOME/tmp/stage18-person-session.tfplan` for the user's apply; IAM Access Analyzer's
+  `validate-policy` on the planned document answers no finding.
+- **[user] 6.2's deny applied**, `staging/studio/` from the saved plan, as `awsds-infra-staging`; the
+  account id is replaced by `<Staging Account>`:
+
+  ```
+  ➜  AWS-DataScience git:(main) AWS_PROFILE=awsds-infra-staging NO_PROXY='*' terraform -chdir=/Users/felipentavares/src/AWS-DataScience/.claude/worktrees/plano-revisao-leituras-19d931/terraform-live/staging/studio apply -input=false "$HOME/tmp/stage18-person-session.tfplan"
+  aws_iam_policy.person_session: Creating...
+  aws_iam_policy.person_session: Creation complete after 1s [id=arn:aws:iam::<Staging Account>:policy/awsds-staging-person-session-deny]
+  aws_iam_role_policy_attachment.person_session["datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps"]: Creating...
+  aws_iam_role_policy_attachment.person_session["datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps"]: Creation complete after 0s [id=datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps/arn:aws:iam::<Staging Account>:policy/awsds-staging-person-session-deny]
+  Releasing state lock. This may take a few moments...
+
+  Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+  ```
+
+  The slice's outputs followed, as before the apply.
+- **[Claude] Read back** (00:40:30Z): the re-plan reads *"No changes. Your infrastructure matches the
+  configuration."*; the project role carries `awsds-staging-workflows`, `awsds-staging-person-session-deny`
+  and AWS's `SageMakerStudioProjectUserRolePolicy`, `SageMakerStudioProjectRoleMachineLearningPolicy` and
+  `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy`; the policy is at `v1`, one attachment, created
+  00:39:18Z. The re-reads on both sides follow.
+
+## 2026-10-21 — 6.2's re-read on the person's side, and a correction to the session's name
+
+*Read through Claude in Chrome in a tab of its own, signed in as the Data Scientist User (the user menu
+names that user), and in CloudTrail as `awsds-infra-staging` and `awsds-infra-data`. In the portal's
+messages below, the account ids are replaced by `<Staging Account>` and `<Data Governance Account>`, and
+the person's DataZone profile id by `<profile id>`.*
+
+- **[user] The membership added again**, as `awsds-infra-staging`, at 00:49:26Z (Data Governance's trail):
+
+  ```
+  ➜  AWS-DataScience git:(main) NO_PROXY='*' aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d1veybt5oak4uo --designation PROJECT_CONTRIBUTOR --member userIdentifier=28f1b390-0041-7068-8cc7-9ccef94277d1 --profile awsds-infra-staging --region us-west-2
+  ➜  AWS-DataScience git:(main)
+  ```
+
+  Read back at 00:49:45Z: three members, the person a `PROJECT_CONTRIBUTOR`.
+- **[Claude] The folder `teste-6.2`** (clicked 00:50:32Z), refused in the dialog: *"[AccessDenied] User:
+  arn:aws:sts::<Staging Account>:assumed-role/datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps/<profile
+  id>@bujd259b8g9zps is not authorized to perform: s3:PutObject on resource:
+  "arn:aws:s3:::awsds-staging-smus-projects/dzd-d8yrvx1ko7im6o/d1veybt5oak4uo/shared/teste-6.2/" with an
+  explicit deny in an identity-based policy: arn:aws:iam::<Staging Account>:policy/awsds-staging-person-session-deny"*.
+  The write is an S3 data event, which `lookup-events` does not return.
+- **[Claude] The querybook**: opening the Query Editor reopened 6.1's querybook, whose compute the portal
+  started and the deny refused: *"Status code: 403 - User: arn:aws:sts::<Staging
+  Account>:assumed-role/datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps/<profile id>@bujd259b8g9zps is not
+  authorized to perform: datazone:StartNotebookCompute on resource: arn:aws:datazone:us-west-2:<Data
+  Governance Account>:domain/dzd-d8yrvx1ko7im6o with an explicit deny in an identity-based policy:
+  arn:aws:iam::<Staging Account>:policy/awsds-staging-person-session-deny"*; both trails hold
+  `StartNotebookCompute` `AccessDenied` at 00:51:07Z. IAM knows that action, then: the statement's name
+  matched. The querybook list's Create (00:51:11Z) made no `CreateNotebook` call by 00:53:49Z.
+- **[user] The membership deleted**:
+
+  ```
+  ➜  AWS-DataScience git:(main) NO_PROXY='*' aws datazone delete-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d1veybt5oak4uo --member userIdentifier=28f1b390-0041-7068-8cc7-9ccef94277d1 --profile awsds-infra-staging --region us-west-2
+  ➜  AWS-DataScience git:(main)
+  ```
+
+  Read back at 00:53:49Z: the two members of before. The person's side of 6.2 is re-read: the deny binds
+  her session. The worker's side waits for 4.3's run.
+- **[Claude] Correction to this day's 6.1 and 6.2 entries: the session's name.** The entries above say
+  that the person's session was named after her e-mail address and that `RedshiftDbUser` carried that
+  address. Both readings came from the script's mask, which replaced any `x@y` with `<email>`. Read again
+  unmasked (00:52Z): the session is `<profile id>@bujd259b8g9zps`, the DataZone profile id and the
+  environment id, the shape 6h read in Sandbox, and `RedshiftDbUser` is `user-<profile id>@d1veybt5oak4uo`.
+  The source identity and `datazone:userId` are as read. No e-mail address names the session.
