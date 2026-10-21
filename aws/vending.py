@@ -274,6 +274,17 @@ class Reader:
             return Answer({}, False)
         return Answer(doc if isinstance(doc, dict) else {}, True)
 
+    def pages(self, key: str, *args: str) -> Answer:
+        """``json`` for a listing the CLI does not paginate: the ``key`` entries of every page.
+
+        ``ok`` is False when a page failed or the token outlived the page limit; both are
+        logged, so a zone reading that stopped short reads as a failed read.
+        """
+        if not self.live:
+            return Answer({}, False)
+        listing = self.cli.pages(*args)
+        return Answer({key: listing.items(key)}, listing.complete)
+
 
 def tag_value(tags: list | None, key: str) -> str:
     for t in tags or []:
@@ -883,8 +894,15 @@ class Zones:
 
 
 def zone_summaries(reader: Reader, vpc_id: str) -> tuple:
-    ans = reader.json(
-        "route53", "list-hosted-zones-by-vpc", "--vpc-id", vpc_id, "--vpc-region", context.REGION
+    # ListHostedZonesByVPC has no CLI paginator: Reader.pages follows NextToken.
+    ans = reader.pages(
+        "HostedZoneSummaries",
+        "route53",
+        "list-hosted-zones-by-vpc",
+        "--vpc-id",
+        vpc_id,
+        "--vpc-region",
+        context.REGION,
     )
     rows = [
         (
