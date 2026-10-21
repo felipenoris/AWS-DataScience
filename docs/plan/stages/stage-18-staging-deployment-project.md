@@ -631,7 +631,12 @@ stage-18-deploy:
   session tag, and the workers' sessions (`AmazonMWAAServerless`, the Glue and SageMaker ones) carry
   neither, so a key separates them. With spaces off the portal offers no editor and no run button, so
   the deny covers the writes a person's session made in 6.1 (the project's storage, notebooks) and the
-  application's (its workflow and jobs). Decision 11 is whether it is written now.
+  application's (its workflow and jobs). Decision 11 is whether it is written now. **Written and planned
+  2026-10-21** (decision 11): `staging/studio/person-session.tf`, `awsds-staging-person-session-deny` on the
+  project role, four Deny statements conditioned on `aws:SourceIdentity` (the projects bucket's objects,
+  the workflows, the jobs and tables, the notebooks), 2 to add, for the user's apply. Then the re-reads:
+  the person's side with the environment down (6.1's membership cycle, the folder's write expected
+  refused) and the worker's by 4.3's run at the next sitting.
 
 ### 7. Lineage and the catalog (D26)
 
@@ -889,7 +894,8 @@ The reverse of passes 1 to 3, in 6b pass 1's order, each step read back before t
   two admins trust DataZone and, for the provisioning role, CloudFormation alone): a `PutDataLakeSettings`
   keeping the two SMUS roles and every other field, then `DROP` granted to itself on both databases
   (unmeasured; 8.6 empties the list),
-  the applications, the workflows grant's attachment (`project_roles` emptied in `staging/studio/`, applied,
+  the applications, the workflows grant's and the person-session deny's attachments (`project_roles` emptied
+  in `staging/studio/`, applied,
   so the stack deletes a role carrying only the policies it attached), the Glue job the operator created,
   the lineage entities SageMaker created for the three processing jobs (three trial components, one per
   job, the four artifacts they share and twelve associations, read 2026-10-20; the jobs themselves
@@ -920,8 +926,8 @@ The reverse of passes 1 to 3, in 6b pass 1's order, each step read back before t
 - **8.5 — [Claude] Read the association back**: `list-environment-blueprint-configurations` from Staging
   fails with `UnauthorizedException` (6b step 1.5), and RAM holds no DataZone share.
 - **8.6 — [Claude⚡] Destroy the rest of `staging/studio/`**: the projects bucket listed with its versions
-  and delete markers and emptied, the slice destroyed with the workflows policy and the Glue manage-access
-  attachment in it, the folder and its `layers.py` row deleted, the project key's deletion date in the log;
+  and delete markers and emptied, the slice destroyed with the workflows policy, the person-session deny
+  and the Glue manage-access attachment in it, the folder and its `layers.py` row deleted, the project key's deletion date in the log;
   Staging's Lake Formation admins, the two SMUS roles since 3.3 and InfrastructureAccess since 8.1, emptied
   by `PutDataLakeSettings` carrying every other field as read (a full replace, Lesson 60):
   `CROSS_ACCOUNT_VERSION` 1 and `SET_CONTEXT` `TRUE`, both from before the stage, and the default lists
@@ -1068,7 +1074,8 @@ Each is decided during the stage and written into the stage log with its recomme
     writes. Claude plans it and the user applies it; then it is re-read on both sides: the person's with
     the environment down, 6.1's membership cycle again with the folder's write expected refused, and the
     worker's by 4.3's run at the next sitting. The alternative: 6.2 recorded as read and the deny left to
-    the verdict, which needs it only if D41 item 2 is reopened.
+    the verdict, which needs it only if D41 item 2 is reopened. **Taken 2026-10-21 by the user**, to the
+    recommendation.
 
 ## Risks
 

@@ -1348,3 +1348,16 @@ address and the browser's public address are not written here.*
   `aws:PrincipalTag/datazone:userId` and `dz` likewise. The session's name differs but is matched by
   pattern alone, and `aws:SourceVpce` is absent from the person's calls but also from a service's forward
   call in any session. A key separates them, so 6.2's deny can be written: decision 11.
+- **[user] Decision 11**: *"Decisão 11: sim, escreva e planeje agora o deny na role do projeto,
+  condicionado a aws:SourceIdentity; eu aplico."*, the recommendation.
+- **[Claude] 6.2's deny written and planned**: `staging/studio/person-session.tf`, the policy
+  `awsds-staging-person-session-deny`, attached to each `project_roles` entry under the boundary
+  precondition. Its four Deny statements are conditioned on `aws:SourceIdentity` being present (`Null`
+  `false`): `DenyAPersonWritingTheProjectsObjects` (`s3:PutObject*`, `s3:DeleteObject*` and
+  `s3:RestoreObject` on the projects bucket's objects, the bucket read by a data source),
+  `DenyAPersonChangingTheWorkflows` (the seven `airflow-serverless` writes), `DenyAPersonChangingTheJobsAndTables`
+  (Glue's and SageMaker's create, update, delete, start, stop and put writes, and Glue's batch writes) and
+  `DenyAPersonWritingNotebooks` (DataZone's notebook and cell writes, `CreateCell` and `StartNotebookCompute`
+  among them). Planned 00:29:02Z as `awsds-infra-staging`, *"Plan: 2 to add, 0 to change, 0 to destroy."*,
+  saved to `$HOME/tmp/stage18-person-session.tfplan` for the user's apply; IAM Access Analyzer's
+  `validate-policy` on the planned document answers no finding.
