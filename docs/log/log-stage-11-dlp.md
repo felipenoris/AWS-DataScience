@@ -269,3 +269,38 @@ user (`InfrastructureAccess`, profile `awsds-infra-sandbox-1`). The apply and it
   `RESOLVED`; no CLI profile reaches Audit, so that read is the user's, in Audit's CloudShell with the
   block of this log's entry "`TM-21`: the finding read by `get-finding-v2`", its status filter set to
   `RESOLVED`.
+
+## 2026-10-21 — decision 12's RLS policies and the mechanisms of `TM-22`..`TM-24`, read on 2026-10-20 (PR #218), recorded
+
+*Claude's sitting, no AWS call: the offline task of the orchestrating session "Stage 18 checklist" that
+opened PR #218 (merged 2026-10-20T21:52:33Z) read AWS's documentation pages, botocore's models and both
+providers' changelogs, recorded in [`REFERENCES.md`](../REFERENCES.md) the same sitting. It wrote no
+entry, under the rule of that day; this one is written on 2026-10-21 from the PR's body and diff, with no
+AWS call either.*
+
+- **[Claude] Decision 12 gains Lake Formation's row-level security policies.** A data cells filter's row
+  predicate still yields to an all-rows grant, while an RLS attachment scopes down any `SELECT` but `ALL`
+  or `SUPER_USER`; no provider resource and no CloudFormation type carries one. The recommendation keeps
+  the written filter for the row half while the project role holds no other `SELECT` on the table, and
+  adds an RLS policy once 6f's (c) regrants it. The decision stays the user's.
+- **[Claude] `threat-model.md`'s `TM-22`..`TM-24` carry their mechanisms, the measurements still owed.**
+  The ODBC and JDBC drivers query as the project role, through `GetEnvironmentCredentials`; the Data
+  Agent's five DataZone actions are the project role's, and AWS names a deny and a domain switch that stop
+  it; no IAM condition key reaches a connection's type.
+- **[Claude] The knowledge base's Lambdas**, in 3.7, `TM-12` and the Lambda row of the resource types no
+  RCP reaches, depend on Stage 17's decision 12, from Stage 17's template reading of 2026-10-19.
+- **[Claude] `awsds-staging-smus-projects`**, Stage 18's projects bucket in Staging, gains the halves its
+  code and Stage 18's log answer; its outside column waits on an Audit snapshot taken since 2026-10-19,
+  the user's.
+
+## 2026-10-21 — step 4.3's sentence on GuardDuty's roles, corrected on 2026-10-20 (PR #227), recorded
+
+*Claude's sitting, no AWS call: the task of the orchestrating session that opened PR #227 (merged
+2026-10-20T22:54:07Z) corrected Stage 15's text on GuardDuty's service-linked roles from AWS's pages,
+recorded in [Stage 15's log](log-stage-15-guardduty.md), and the same sentence here. It wrote no entry,
+under the rule of that day; this one is written on 2026-10-21 from the PR's body and diff, with no AWS
+call either.*
+
+- **[Claude] 4.3 says GuardDuty creates only service-linked roles**, where it said only the
+  service-linked role: Malware Protection for EC2 creates a second, and neither role's managed policy
+  holds a `guardduty:` action, so the step's "no administration role to name" holds.

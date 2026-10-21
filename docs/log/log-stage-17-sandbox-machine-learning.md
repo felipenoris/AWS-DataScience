@@ -2016,3 +2016,27 @@ UTC.*
   of 2026-10-19, the playground's `cp0gmvjv1h8q` and `csu817ovl4kz`. The governance project approves
   the same three subscriptions, each a person's, to the playground listings of Haiku 4.5 and Nova
   Lite. No project has subscribed to a model.
+
+## 2026-10-21 — 7.4a re-planned after decision 11's apply, and the knowledge base's Lambdas, written on 2026-10-20 (PR #212), recorded
+
+*Claude's sitting, no AWS call: the session that opened PR #212 (merged 2026-10-20T21:51:01Z) revised the
+stage file and `lessons.md` from this log's entries of 2026-10-19, and read the AWS CLI's SageMaker service
+model. It wrote no entry, under the rule of that day; this one is written on 2026-10-21 from the PR's body
+and diff, with no AWS call either. Times are UTC.*
+
+- **[Claude] 7.4a plans one sync, expected `COMPLETE`.** The user applied decision 11's amendment on
+  2026-10-19 at 21:58:46, before any knowledge base existed (`ML-8` read none at 19:01), so the SCP's
+  refusal of Titan was read by the battery's before-half, `DENY-SCP` naming `p-tgda7n58` as
+  `InfrastructureAccess` at 21:31, and by no sync. Verification xxii, the pass table, the Cost row and the
+  risks describe that sync, and 7.4a keeps the amendment's procedure as a record.
+- **[Claude] The knowledge base's Lambdas depend on decision 12.** The blueprint's template creates the
+  two functions and their role for an OpenSearch Serverless store alone (7.0a's reading of 2026-10-19),
+  while AWS's blueprint page lists them with no condition; the menu table, decision 10 and 7.4a's `ML-8`
+  reading carry it.
+- **[Claude] The instance-preference risk names both paths**: `ResourceConfig.InstancePreferences` for a
+  training job and `ProcessingResources.ClusterConfig.InstancePreferences` for a processing job, read in
+  the AWS CLI's SageMaker service model.
+- **[Claude] `lessons.md`'s list of platform behaviours** gains three readings of 2026-10-19 from this log:
+  `InvokeModel` refuses an unknown application inference profile id before it authorizes; only the domain
+  account's setup creates `GenerativeAIModelGovernanceProject`; the Bedrock models tab adopts the
+  provisioning role named `AmazonSageMakerBedrockModelManagementRole-<domain account id>`.
