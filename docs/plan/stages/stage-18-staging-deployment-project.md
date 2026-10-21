@@ -626,7 +626,12 @@ stage-18-deploy:
   person's write landing: read the session's name and context keys of a portal action against a
   worker's task (6h read the portal's session as `<user id>@<env id>` and a space's as `SageMaker`); a
   deny conditioned on the person's session is written in `staging/studio/` and re-read on both sides
-  only if a key separates them.
+  only if a key separates them. **Read 2026-10-21** (the log): DataZone assumes the project role for the
+  person's portal session with her DataZone profile id as `aws:SourceIdentity` and `datazone:userId` as a
+  session tag, and the workers' sessions (`AmazonMWAAServerless`, the Glue and SageMaker ones) carry
+  neither, so a key separates them. With spaces off the portal offers no editor and no run button, so
+  the deny covers the writes a person's session made in 6.1 (the project's storage, notebooks) and the
+  application's (its workflow and jobs). Decision 11 is whether it is written now.
 
 ### 7. Lineage and the catalog (D26)
 
@@ -1056,6 +1061,14 @@ Each is decided during the stage and written into the stage log with its recomme
     alternative: 6.1 closed by reading, iv answered by the refusal and the guide, xi by the domain
     unit's grants read 2026-10-20, and no person in the project. **Taken 2026-10-20 by the user**, to
     the recommendation.
+11. **The deny on a person's session** (6.2). Recommended: **written now in `staging/studio/`**, an identity
+    policy on the project role beside `awsds-staging-workflows` that denies, when `aws:SourceIdentity` is
+    present, the writes a person's session can make: objects under the project's prefix, the workflow's
+    and its jobs' writes (`airflow-serverless`, `glue`, `sagemaker`), and DataZone's notebook and cell
+    writes. Claude plans it and the user applies it; then it is re-read on both sides: the person's with
+    the environment down, 6.1's membership cycle again with the folder's write expected refused, and the
+    worker's by 4.3's run at the next sitting. The alternative: 6.2 recorded as read and the deny left to
+    the verdict, which needs it only if D41 item 2 is reopened.
 
 ## Risks
 

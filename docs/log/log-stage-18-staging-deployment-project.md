@@ -1323,3 +1323,28 @@ is not written here.*
   Staging's InfrastructureAccess session group `PROJECT_OWNER` and the project role's profile
   `PROJECT_CONTRIBUTOR`, as before 6.1; the person is out of the project. Neither trail holds the
   `DeleteProjectMembership` yet at 00:16:57Z, the delivery lag. 6.1 done.
+
+## 2026-10-21 — 6.2's reading: the person's sessions against the workers'
+
+*Read as `awsds-infra-staging` with a script that prints, for each event of the project role, the
+session's name, who assumed it, its source identity and tags, and the call's origin. The person's e-mail
+address and the browser's public address are not written here.*
+
+- **[user] The request**: *"Sim, faça a leitura do 6.2 agora."*
+- **[Claude] The person's sessions** (2026-10-21 00:04:59Z to 00:05:43Z): `AssumeRole` of
+  `datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps` by `datazone.amazonaws.com`, the session named after the
+  person's e-mail address, `sourceIdentity` her DataZone profile id, and the session tags `dz` `true`,
+  `RedshiftDbUser` (the e-mail address), `RedshiftDbRoles` `datazone_env_bujd259b8g9zps` and
+  `datazone:userId` (the profile id). The session's calls came from the browser's public address with a
+  browser's user agent and no VPC endpoint; the folder's write reached KMS as `fas.s3.amazonaws.com` in that
+  session.
+- **[Claude] The workers' sessions** (4.4's second run, 2026-10-19 20:47:30Z to 21:02Z, 57 events):
+  `AmazonMWAAServerless`, assumed by `airflow-serverless.amazonaws.com`; `GlueJobRunnerSession`,
+  `GlueVpcAuthSession` and `GlueRoleValidationSession` by `glue.amazonaws.com`; `SageMaker` and
+  `AnalyticsValidation` by `sagemaker.amazonaws.com`, and `SageMaker` by `im.amazonaws.com`. None carries a
+  source identity or a session tag. The worker's calls came from Staging's private addresses through its
+  `glue` and `sagemaker.api` endpoints, with a `Boto3` user agent.
+- **[Claude] What separates them**: `aws:SourceIdentity`, present in the person's sessions alone, and
+  `aws:PrincipalTag/datazone:userId` and `dz` likewise. The session's name differs but is matched by
+  pattern alone, and `aws:SourceVpce` is absent from the person's calls but also from a service's forward
+  call in any session. A key separates them, so 6.2's deny can be written: decision 11.
