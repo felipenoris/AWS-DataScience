@@ -49,13 +49,24 @@
 #   CT-9  nobody may override a project owner or a domain unit owner. The owner project's approval
 #         is the control on the catalog road; an override grant removes it.
 #
+# CT-7 and CT-8 read every page of ListPermissions in both accounts: the CLI has no paginator for
+# that operation, so one call answers the first page and a NextToken. A listing not read to its
+# last page leaves both checks a note, never a pass; a grant it did read still fails them.
+#
 # What it cannot see (0.6, measured 2026-09-13 and again 2026-10-18): DataZone refuses GetAsset and
 # GetDataProduct to InfrastructureAccess in Data Governance, the session this script reads the
 # domain with, so the asset behind a listing is read through GetListing or not at all. The refusal
 # is the project-membership check: the Sandbox session, a contributor of both projects since
 # 2026-10-15, is answered. ListPolicyGrants is refused for two policy types on the same ceiling;
 # those cells read DENIED rather than empty, because an empty listing and a refused read are
-# different facts.
+# different facts. Lake Formation lists no grant to an Identity Center principal (Stage 6f,
+# measured in Sandbox 2026-10-20 and 2026-10-21): the provisioning role grants
+# `arn:aws:identitystore:::user/*` on a project's database and its tables under the project
+# condition (CloudTrail BatchGrantPermissions, no failure), ListPermissions by resource omits it,
+# and asked for that principal it answers InvalidInputException, "LakeFormation Identity Center
+# Configuration not configured for requested catalog". CT-7 and CT-8 judge the role and
+# IAMPrincipals grants alone; a grant to an Identity Center user is read in CloudTrail or not at
+# all.
 
 from __future__ import annotations
 
@@ -497,14 +508,18 @@ def main(argv: list) -> int:
 
     # ---------------------------------------------------------------- the grants, both accounts
     grant_rows: list = []
+    lf_read: dict = {}  # where -> (grants, pages, read to the last page)
     for label, cli, profile in (
         ("registry", dat, DATA_PROFILE),
         ("consumer", sbx, SANDBOX_PROFILE),
     ):
         if not live[profile].live:
+            lf_read[label] = (0, 0, False)
             continue
-        res = cli.run("lakeformation", "list-permissions", "--output", "json")
-        for row in (json_or_none(res.stdout) or {}).get("PrincipalResourcePermissions", []):
+        listing = cli.pages("lakeformation", "list-permissions")
+        entries = listing.items("PrincipalResourcePermissions")
+        lf_read[label] = (len(entries), len(listing.pages), listing.complete)
+        for row in entries:
             ident = (row.get("Principal") or {}).get("DataLakePrincipalIdentifier", "-")
             kind, name = resource_of(row.get("Resource") or {})
             grant_rows.append(
@@ -520,6 +535,10 @@ def main(argv: list) -> int:
             )
 
     smus_grants = [g for g in grant_rows if is_smus_principal(g[1])]
+    # The accounts whose listing stopped before its last page, or was never read. A grant found
+    # in what was read is a finding; an absence there proves nothing (Lesson 62).
+    unlisted = [w for w, (_, _, whole) in lf_read.items() if not whole]
+    partial = f"not read to its last page: {', '.join(unlisted)} (section 5)"
 
     # ---------------------------------------------------------------- CT-7 SMUS reaching the lake
     reaching = [g for g in smus_grants if touches_lake(g[2], g[3])]
@@ -531,6 +550,12 @@ def main(argv: list) -> int:
             "no SMUS principal reaches the governed lake",
             "; ".join(f"{short_principal(g[1])} on {g[2]} {g[3]}" for g in reaching)
             + " - a second road into governed data, with no row in AWS_STATE.md's register",
+        )
+    elif unlisted:
+        checks.note(
+            "CT-7",
+            "no SMUS principal reaches the governed lake",
+            f"{len(smus_grants)} SMUS grants read, all on project-owned objects; {partial}",
         )
     else:
         checks.ok(
@@ -544,15 +569,21 @@ def main(argv: list) -> int:
         g for g in grant_rows if g[1].endswith(IAM_PRINCIPALS_SUFFIX) and "projectId" not in g[6]
     ]
     iam_principals = [g for g in grant_rows if g[1].endswith(IAM_PRINCIPALS_SUFFIX)]
-    if not iam_principals:
-        checks.note("CT-8", "every IAMPrincipals grant is project-conditioned", "none exists")
-    elif account_wide:
+    if account_wide:
         checks.fail(
             "CT-8",
             "every IAMPrincipals grant is project-conditioned",
             "; ".join(f"{g[2]} {g[3]}" for g in account_wide)
             + " - without the condition this grants every principal in the account",
         )
+    elif unlisted:
+        checks.note(
+            "CT-8",
+            "every IAMPrincipals grant is project-conditioned",
+            f"{len(iam_principals)} read, all carrying context.datazone.projectId; {partial}",
+        )
+    elif not iam_principals:
+        checks.note("CT-8", "every IAMPrincipals grant is project-conditioned", "none exists")
     else:
         checks.ok(
             "CT-8",
@@ -703,6 +734,15 @@ def main(argv: list) -> int:
             f"Every grant read: {len(grant_rows)} ({len(smus_grants)} SMUS-managed). The rest are the\n"
             "register's own, and docs/AWS_STATE.md is where they are judged."
         )
+        rep.line()
+        rep.tabulate(
+            ["WHERE\tGRANTS\tPAGES\tLISTING"]
+            + [
+                f"{w}\t{g}\t{p}\t"
+                + ("read to its last page" if whole else "NOT read to its last page - section 9")
+                for w, (g, p, whole) in lf_read.items()
+            ]
+        )
 
         rep.h1("6. The LF-Tag ontology, by account")
         if not tag_rows:
@@ -721,6 +761,15 @@ def main(argv: list) -> int:
             "permission ceiling rather than an empty policy. The Sandbox session is answered, as a\n"
             "contributor of both projects. Whether a fulfilment grant would land where CT-7 looks is\n"
             "unmeasured until one is made: no subscription or Share has ever run here."
+        )
+        rep.line()
+        rep.text(
+            "Lake Formation lists no grant to an Identity Center principal. The provisioning role\n"
+            "grants arn:aws:identitystore:::user/* on a project's database and its tables under the\n"
+            "project condition (CloudTrail BatchGrantPermissions); ListPermissions by resource omits\n"
+            'it, and by principal answers InvalidInputException, "LakeFormation Identity Center\n'
+            'Configuration not configured for requested catalog". CT-7 and CT-8 judge the role and\n'
+            "IAMPrincipals grants of section 5 alone."
         )
 
         rep.h1("9. Calls that failed")
