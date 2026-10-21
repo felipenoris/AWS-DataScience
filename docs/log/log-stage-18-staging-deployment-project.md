@@ -1557,3 +1557,46 @@ by `<acct>`. Times are UTC.*
   nothing. The environment's grants (2026-10-20 02:01:40 to 02:03:30Z) name no project role, so the
   `GetDatabase` passed on the project-conditioned entries for a session with no tag [inferred]. The stage
   file's 6.2 and 7.2 carry both readings.
+
+## 2026-10-21 — the checklist session's offline sitting of 2026-10-20: 4.3's lint, 7.2's table code and `AWS_STATE.md`'s Staging row (PR #209), recorded
+
+*Claude's sitting, no AWS call: another session on this laptop, "Stage 18 checklist AWS-DataScience",
+at the user's word in its chat: "Execute todos os itens do plano que possam ser executados sem o ambiente
+no ar e ser credenciais do sso infra." It sent what follows to the Stage 18 session at 13:41:35Z on
+2026-10-20 and wrote no entry, under the rule of that day; this one is written on 2026-10-21 from that
+message and PR #209. Its readings of the same day are the entry "the environment down, read by the
+checklist session". The checklist session drafted this entry and sent it to the Stage 18 session on
+2026-10-21, which appended it as sent after checking PR #209's times, the CLI's lines and both lint
+readings again.*
+
+- **[Claude, the checklist session] 4.3's branch fails the pinned lint.** D28's lint (`awsds-workflows` at
+  `3c1708e`, from uv's cache, offline, with the template's seven instance types) exits 1 on `caf1ff6`
+  with *"manifest.yaml: manifest: stage dev: sem ACCOUNT_ID em environment_variables, que os workflows
+  usam"*, and the same for stage `test`; on `d8550e0` (4.1) it reads *"ok: 6 arquivo(s)"*. The cause is
+  `6eb795c`'s `{env.ACCOUNT_ID}` in the Glue task's `--conf`, with only the staging stage defining
+  `ACCOUNT_ID`. The branch's `workflow:` rules admit branch pipelines and `test` carries no `rules`, so a
+  push runs the lint in stage `test`, and `stage-18-deploy`, in stage `deploy` with no `needs`, would be
+  skipped after a failed `test` (inferred from GitLab's stage semantics, not measured). The fixes named:
+  `needs: []` on the job, or `ACCOUNT_ID` in the dev and test stages; the Stage 18 session took the first
+  (`6a23b4d`).
+- **[Claude, the checklist session] What else 4.3's job reads**: `ECR_REGISTRY`, beside `DOMAIN_ID` and
+  `DOMAIN_REGION`, is the protected project variable added at Stage 8's job 193 (2026-10-19), not one of
+  the template's eleven, and the deploy runner exports none. The three lines the job parses are the CLI
+  1.0.9's own, read in the installed package on 2026-10-20: *"🔒 Workflows will use Tooling VPC config:
+  subnets=…"* (`bootstrap/handlers/workflow_create_handler.py:177`), *"🔗 ARN: {workflow_arn}"*
+  (`commands/run.py:585`) and *"📋 Run ID: {run_id}"* (`commands/run.py:607`).
+- **[Claude, the checklist session] 7.2's table code, written and not run**: branch `stage-18-table` at
+  `e14e910` (13:40:25Z), in the clone `$HOME/tmp/app-etl-table`, cut from `caf1ff6` and pushed nowhere.
+  `glue/transform.py` also writes the result as a Parquet table of the Glue Data Catalog (`saveAsTable`,
+  mode `overwrite`) when a run names `--TABLE_DATABASE` and `--TABLE_NAME`, and stops before reading when
+  it names one alone; `workflows/app-etl.yaml` passes both, `TABLE_NAME` `trades`, with
+  `--enable-glue-datacatalog`; `manifest.yaml`'s staging stage gains `TABLE_DATABASE:
+  ${STAGING_TABLE_DATABASE}`. Two tests added, 16 pass, ruff passes, and the lint fails as the branch's
+  does. Unmeasured: whether the Glue job's session carries `context.datazone.projectId`, which the
+  provisioning role's `CREATE_TABLE` grant on the database is conditioned on. The Stage 18 session picked
+  `e14e910` onto `6a23b4d` (the entry "the plan reviewed against the readings, with the environment
+  down").
+- **[Claude, the checklist session] `AWS_STATE.md`'s Staging row** (PR #209, opened 13:40:55Z, merged
+  14:37:40Z): `app_etl_deploy_staging_app_etl` at version 3 (`f2ed9786…`) since 7.1's deploy, where the
+  row said 2, and SageMaker's lineage at three trial components sharing four artifacts with twelve
+  associations, where it named the first run's alone. The readings are this log's.
