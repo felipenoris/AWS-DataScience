@@ -664,8 +664,8 @@ def main(argv: list) -> int:
         for rname, state in json.loads(res.stdout or "[]") if res.ok and res.stdout else []:
             if DEBUG_RULE_SUBSTR in str(rname):
                 debug_rules.append((str(rname), str(state)))
-        # Looked up by the role's ARN, every page: Production's AssumeRole events of every kind
-        # number about 980 a day, so a page of 50 spans about an hour (2026-10-21).
+        # Looked up by the role's ARN, every page: Production held 80,211 AssumeRole events of
+        # every kind on 2026-10-21, about 1,100 a day, and the latest 50 spanned 95 minutes.
         raws: list = []
         if debug_arn:
             res = cli.run(
