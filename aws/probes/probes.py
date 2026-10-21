@@ -39,6 +39,10 @@
 #
 # The --profile flag is added by the driver. Do not write one here.
 #
+# A probe's verdict is whether the call reached authorization, never what it answered, so one
+# page is the whole answer: several listing probes ask for a single item, and
+# ce get-cost-and-usage, which has no CLI paginator, is never followed past its first page.
+#
 # This file keeps a compact one-probe-per-block layout and is excluded from `ruff format`
 # (pyproject.toml): it is edited as a table, not as code.
 

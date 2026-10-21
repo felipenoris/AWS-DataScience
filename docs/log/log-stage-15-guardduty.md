@@ -39,3 +39,32 @@ Account ids are replaced by the account's name in angle brackets. All times UTC.
   accounts, each exit 0, filtered on role names holding `GuardDuty` or `SecurityHub`: no role holding
   `GuardDuty` in any of them, and `AWSServiceRoleForSecurityHub` in all five, which shows the listing
   returns service-linked roles. The stage file's before of 2026-10-17 stands.
+
+## 2026-10-21 — the Malware Protection service-linked role and the `AI_ANALYST` feature, read on 2026-10-20 (PR #227), recorded
+
+*Claude's sitting, no AWS call: the task of the orchestrating session that opened PR #227 (merged
+2026-10-20T22:54:07Z), to make the corrections PR #223's session had found outside its files, read
+GuardDuty's pages on the Malware Protection role and on Investigation, the two roles' managed policies and
+the AWS CLI 2.37.12 model, recorded in [`REFERENCES.md`](../REFERENCES.md) the same sitting. It wrote no
+entry, under the rule of that day; this one is written on 2026-10-21 from the PR's body and diff, with no
+AWS call either.*
+
+- **[Claude] A second service-linked role.** Malware Protection for EC2 creates
+  `AWSServiceRoleForAmazonGuardDutyMalwareProtection`, trusted by
+  `malware-protection.guardduty.amazonaws.com`, when the plan is first enabled, which it is by default in
+  an account new to GuardDuty, and keeps it when the plan is disabled. Neither
+  `AmazonGuardDutyServiceRolePolicy` v13 nor `AmazonGuardDutyMalwareProtectionServiceRolePolicy` v2 holds
+  a `guardduty:` action, so decision 1 (c)'s only candidate stays Audit's Identity Center administrator
+  role.
+- **[Claude] The `AI_ANALYST` detector feature** is in the model's `DetectorFeature` and
+  `DetectorFeatureResult` and not in `OrgFeature`, the names `UpdateOrganizationConfiguration` and
+  `UpdateMemberDetectors` take, and the `GUARDDUTY_POLICY` syntax has no key for it, so `UpdateDetector`
+  in the account is its only switch. `CreateInvestigation`, a preview in Oregon, needs it on the
+  administrator's detector and runs on Bedrock through cross-Region inference. Steps 0, 2 and 3, decision
+  4, verification ii and the deliverables name it.
+- **[Claude] `aws/guardduty.py`'s `GD-3` message** names decision 4's policy as a member account's
+  alternative, and `UpdateDetector` as the only update call naming `AI_ANALYST`; `aws/INDEX.md`'s row
+  matches PR #223's script, and
+  `REFERENCES.md`'s permissions row no longer credits a page with "the only principal the service
+  creates". `POLICIES.md`'s two corrections wait in the PR's body for PR #108's holder, and main's
+  collision note still names the service-linked role alone.

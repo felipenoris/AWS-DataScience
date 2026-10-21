@@ -43,6 +43,9 @@
 # (1d step 11.2, INT-11). The failure is total and mute: every later grant appears to
 # succeed and no share ever arrives. This file turns that into a reading that fails.
 #
+# lakeformation ListResources and athena ListWorkGroups have no CLI paginator, so both are
+# read to their last page; a listing that was not leaves DL-14 or DL-8 a note, never a pass.
+#
 # What it cannot see, stated because an empty listing and a missing account look alike:
 #   - The behavioural proofs - the pandas pair, the workgroup boundary, the crawler run
 #     as the maintenance role, the drop-box asymmetry - are the stage's own (Lesson 20).
@@ -283,6 +286,7 @@ def main(argv: list) -> int:
     lf_admins: list = []
     lf_db_defaults = lf_tbl_defaults = "-"
     lf_registered: list = []
+    lf_registered_whole = False  # the registrations read to their last page
     lf_tags: list = []
     lf_read = False
     if data_live:
@@ -297,9 +301,10 @@ def main(argv: list) -> int:
             ]
             lf_db_defaults = json.dumps(s.get("CreateDatabaseDefaultPermissions", []))
             lf_tbl_defaults = json.dumps(s.get("CreateTableDefaultPermissions", []))
-        doc = run_json(cli, DATA_PROFILE, "lakeformation", "list-resources")
-        if doc:
-            lf_registered = [r.get("ResourceArn", "?") for r in doc.get("ResourceInfoList", [])]
+        # ListResources has no CLI paginator: pages() follows NextToken.
+        listing = cli.pages("lakeformation", "list-resources")
+        lf_registered = [r.get("ResourceArn", "?") for r in listing.items("ResourceInfoList")]
+        lf_registered_whole = listing.complete
         doc = run_json(
             cli,
             DATA_PROFILE,
@@ -333,6 +338,7 @@ def main(argv: list) -> int:
     lf_admin_counts: dict = {}  # profile -> number of data lake admins in that account
     lf_consumer_settings: dict = {}  # profile -> {params, db_defaults, tbl_defaults}
     lf_consumer_registered: dict = {}  # profile -> [(resource arn, registration role, hybrid)]
+    lf_consumer_whole: dict = {}  # profile -> the registrations read to their last page
     for p in CONSUMER_PROFILES:
         if p not in live:
             continue
@@ -372,36 +378,30 @@ def main(argv: list) -> int:
             }
         # The locations Lake Formation governs in this account, for DL-14. SMUS registers each
         # project's dev/ scope here, so a consumer's list is not empty by design.
-        doc = run_json(cli, p, "lakeformation", "list-resources")
-        if doc is not None:
+        listing = cli.pages("lakeformation", "list-resources")
+        if listing.pages:
             lf_consumer_registered[p] = [
                 (
                     r.get("ResourceArn", "?"),
                     r.get("RoleArn", "-"),
                     str(r.get("HybridAccessEnabled", "-")),
                 )
-                for r in doc.get("ResourceInfoList", [])
+                for r in listing.items("ResourceInfoList")
             ]
+            lf_consumer_whole[p] = listing.complete
 
     # ----------------------------------------------------- Athena workgroups, consumer side
     workgroups: list = []  # (profile, name, enforce, output location, scan limit)
+    wg_unread: list = []  # consumer profiles whose workgroup listing stopped before its last page
     for p in CONSUMER_PROFILES:
         if p not in live:
             continue
         cli = cli_for(p)
-        res = cli.run(
-            "athena",
-            "list-work-groups",
-            "--query",
-            "WorkGroups[].Name",
-            "--output",
-            "text",
-            log=False,
-        )
-        if not res.ok:
-            logerr(p, "athena list-work-groups", res.stderr)
-            continue
-        for wg in res.stdout.split():
+        # ListWorkGroups has no CLI paginator: pages() follows NextToken.
+        listing = cli.pages("athena", "list-work-groups")
+        if not listing.complete:
+            wg_unread.append(p)
+        for wg in (w.get("Name", "") for w in listing.items("WorkGroups")):
             if not wg.startswith("awsds-"):
                 continue
             doc = run_json(cli, p, "athena", "get-work-group", "--work-group", wg)
@@ -841,7 +841,14 @@ def main(argv: list) -> int:
         r"^arn:aws:s3:::awsds-[a-z0-9]+(-[0-9]+)?-smus-projects/dzd-[a-z0-9]+/([a-z0-9]+)/dev/?$"
     )
     for prof, regs in sorted(lf_consumer_registered.items()):
-        if not regs:
+        if not lf_consumer_whole[prof]:
+            checks.note(
+                "DL-14",
+                f"LF registered locations ({prof})",
+                f"{len(regs)} read; the listing was not read to its last page (section 14), "
+                "and a registration not read is not judged",
+            )
+        elif not regs:
             checks.ok("DL-14", f"LF registered locations ({prof})", "none")
             continue
         for arn, role, hybrid in regs:
@@ -965,7 +972,14 @@ def main(argv: list) -> int:
             "design was removed 2026-08-26 (D19 revised); the query surface is the SMUS "
             "project workgroup. FAIL is expected until the v0.6.0 destroy applies.",
         )
-    if not workgroups and any(p in live for p in CONSUMER_PROFILES):
+    if wg_unread:
+        checks.note(
+            "DL-8",
+            "consumer Athena workgroups",
+            f"not read to the last page in {', '.join(wg_unread)} (section 14) - a workgroup "
+            "not read is not judged",
+        )
+    elif not workgroups and any(p in live for p in CONSUMER_PROFILES):
         checks.ok(
             "DL-8",
             "consumer Athena workgroups",
@@ -1216,8 +1230,12 @@ stage's own probe (scp-battery phase 4), not this file's.""")
             rep.line(f"Table defaults   : {lf_tbl_defaults}")
             rep.line()
             rep.line("Registered locations:")
-            for arn in lf_registered or ["  (none)"]:
+            for arn in lf_registered:
                 rep.line(f"  {arn}")
+            if not lf_registered_whole:
+                rep.line("  (not read to its last page - section 14)")
+            elif not lf_registered:
+                rep.line("    (none)")
             rep.line()
             rep.line(f"LF-Tags: {', '.join(lf_tags) or '(none)'}")
             rep.text("""
@@ -1238,8 +1256,11 @@ it. Admins present with Parameters absent is the reset having happened.""")
             rep.text("""
 Consumer side. SMUS registers each live project's dev/ scope under that project's
 datazone_usr_role_* and deregisters it with the project (DL-14).""")
-        elif lf_consumer_registered:
+        elif lf_consumer_registered and all(lf_consumer_whole.values()):
             rep.line("No registered location in any consumer account.")
+        unread = sorted(p for p, whole in lf_consumer_whole.items() if not whole)
+        if unread:
+            rep.line(f"Not read to its last page: {', '.join(unread)} - section 14.")
 
         # ==============================================================================
         rep.h1("7. RAM - shares out, invitations pending, shares HELD by each consumer")
@@ -1293,8 +1314,10 @@ visible there, so a zero in the admins table explains the emptiness by itself.""
                 ["PROFILE\tWORKGROUP\tENFORCED\tRESULT LOCATION\tSCAN LIMIT"]
                 + [f"{p}\t{w}\t{e}\t{o}\t{lim}" for p, w, e, o, lim in workgroups]
             )
-        else:
+        elif not wg_unread:
             rep.line("No awsds-* workgroup on any consumer.")
+        if wg_unread:
+            rep.line(f"Not read to its last page: {', '.join(wg_unread)} - section 14.")
 
         # ==============================================================================
         rep.h1("9. The derived zone (REMOVED 2026-08-26 - D19 revised; empty is the design)")

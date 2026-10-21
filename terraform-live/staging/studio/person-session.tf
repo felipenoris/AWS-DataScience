@@ -1,9 +1,11 @@
 # The deny on a person's session of the deployment project's role (Stage 18 step 6.2, decision 11).
-# DataZone assumes the project role for a person the project admits with the person's DataZone profile
-# id as the session's source identity; the workers' sessions (MWAA Serverless, Glue, SageMaker) carry
-# none (read 2026-10-21). A deny conditioned on aws:SourceIdentity being present binds the person's
-# session alone: the objects in the projects bucket, the workflows, the jobs and the catalog's tables,
-# and DataZone's notebooks, the writes 6.1's contributor made and the application's.
+# DataZone assumes the project role with the caller's DataZone profile id as the session's source
+# identity, for a person and for an IAM principal alike, and as SYSTEM for its own listings; the workers'
+# sessions (MWAA Serverless, Glue, SageMaker) carry none (read 2026-10-21). A deny conditioned on
+# aws:SourceIdentity being present binds every session DataZone opens and no worker's: the objects in
+# the projects bucket, the workflows, the jobs and the catalog's tables, and DataZone's notebooks, the
+# writes 6.1's contributor made and the application's. DataZone's sessions for an IAM principal and for
+# SYSTEM were read making reads alone.
 #
 # Stage 18 step 8.1 empties project_roles before the project is deleted; 8.6 destroys the policy with
 # the slice.

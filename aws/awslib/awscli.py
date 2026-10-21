@@ -13,7 +13,8 @@ The call styles:
            an empty ``text``, so a caller can test the result for emptiness
     pages  every page of a listing the CLI does not paginate itself, and whether the reading
            reached the last one
-    show   is on the Report class: echo the command into the report, then its output
+    show   is on the Report class: echo the command into the report, then its output;
+           ``show_pages`` does the same for a listing ``pages`` reads
 """
 
 from __future__ import annotations
@@ -94,7 +95,7 @@ class CallResult:
 class Listing:
     """Every page one listing answered, and how the reading ended.
 
-    ``complete`` is true only when the last page carried no NextToken. Otherwise ``last`` says
+    ``complete`` is true only when the last page carried no token. Otherwise ``last`` says
     why: tolerated, failed, or ``ok`` at the page limit. An absence in an incomplete listing
     proves nothing; a presence does.
     """
@@ -102,10 +103,39 @@ class Listing:
     pages: list
     last: CallResult
     complete: bool
+    token: str = "NextToken"
 
     def items(self, key: str) -> list:
         """The entries under ``key``, from every page read."""
         return [item for page in self.pages for item in page.get(key) or []]
+
+    @property
+    def why(self) -> str:
+        """Why the reading stopped short, in the failed-calls log's words; empty when complete."""
+        if self.complete:
+            return ""
+        if self.last.tolerated:
+            return "tolerated"
+        if not self.last.ok:
+            return self.last.merged
+        return (
+            f"{self.token} still present after {len(self.pages)} pages: the listing is incomplete"
+        )
+
+    def merged(self) -> dict:
+        """The pages as one answer: each list member joined in page order, any other member
+        from the first page that carries it, the token dropped."""
+        doc: dict = {}
+        for page in self.pages:
+            for key, value in page.items():
+                if key == self.token:
+                    continue
+                if isinstance(value, list):
+                    joined = doc.get(key)
+                    doc[key] = (joined if isinstance(joined, list) else []) + value
+                elif key not in doc:
+                    doc[key] = value
+        return doc
 
 
 @dataclass
@@ -186,46 +216,46 @@ class AwsCli:
     def pages(
         self,
         *args: str,
+        token: str = "NextToken",
         max_pages: int = MAX_PAGES,
         tolerate: str | None = None,
         log: bool = True,
     ) -> Listing:
-        """``run`` for a listing the CLI does not paginate, following NextToken.
+        """``run`` for a listing the CLI does not paginate, following its token.
 
         The CLI pages an operation itself only when botocore defines a paginator for it; for
-        any other, one call answers the first page and a NextToken. ``args`` carry no
-        ``--output`` and no ``--query``: the pages are read as JSON, and a query would drop
-        the token. A failure, or a token still present after ``max_pages``, is logged under
-        ``args`` without the token unless ``log`` is false.
+        any other, one call answers the first page and a token. ``token`` is the member that
+        carries it in the answer and in the request (``nextToken`` for OpenSearch Serverless);
+        the request option is its kebab-case spelling, ``--next-token`` for both. ``args``
+        carry no ``--output`` and no ``--query``: the pages are read as JSON, and a query would
+        drop the token. A failure, or a token still present after ``max_pages``, is logged
+        under ``args`` without the token unless ``log`` is false.
         """
+        option = "--" + re.sub(r"(?<!^)(?=[A-Z])", "-", token).lower()
         pages: list = []
-        token = None
+        value = None
         while True:
             res = self.run(
                 *args,
-                *(("--next-token", token) if token else ()),
+                *((option, value) if value else ()),
                 "--output",
                 "json",
                 tolerate=tolerate,
                 log=False,
             )
             if res.tolerated:
-                return Listing(pages, res, complete=False)
+                return Listing(pages, res, complete=False, token=token)
             if not res.ok:
                 if log:
                     self.errors.add(args, res.merged, self.profile if self.echo_profile else None)
-                return Listing(pages, res, complete=False)
+                return Listing(pages, res, complete=False, token=token)
             page = json.loads(res.stdout or "{}")
             pages.append(page)
-            token = page.get("NextToken")
-            if not token:
-                return Listing(pages, res, complete=True)
+            value = page.get(token)
+            if not value:
+                return Listing(pages, res, complete=True, token=token)
             if len(pages) >= max_pages:
+                listing = Listing(pages, res, complete=False, token=token)
                 if log:
-                    self.errors.add(
-                        args,
-                        f"NextToken still present after {max_pages} pages: "
-                        "the listing is incomplete",
-                        self.profile if self.echo_profile else None,
-                    )
-                return Listing(pages, res, complete=False)
+                    self.errors.add(args, listing.why, self.profile if self.echo_profile else None)
+                return listing
