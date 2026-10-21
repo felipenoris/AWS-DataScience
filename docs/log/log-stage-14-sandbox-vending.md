@@ -74,3 +74,18 @@ Account ids are replaced by the account's name in angle brackets.*
   `awsds-infra-identity`, exit 0: ten accounts, nine `ACTIVE`, and `Sandbox` (`EXC-01`) with `Status`
   `SUSPENDED` and `State` `CLOSED`, joined 2026-08-01. Step 6's `PENDING_CLOSURE`, then `SUSPENDED`, is the
   `Status` field; `./aws/vending.py` reads `State` first, and its closed states hold `CLOSED`.
+
+## 2026-10-21 — `EXC-01`'s slot answered from step 6's reading on 2026-10-20 (PR #230), recorded
+
+*Claude's sitting, no AWS call: the task session the orchestrating session "Stage 18 checklist" started
+opened PR #230 (merged 2026-10-20T22:55:05Z), which carried this log's 2026-10-20 reading of the
+organization's account states into [`docs/AWS_STATE.md`](../AWS_STATE.md). This entry is written on
+2026-10-21 by the orchestrating session from the PR's body and diff.*
+
+- **[Claude] `EXC-01`'s "Not verified" sentence, answered**: a closed account counts against the account
+  quota until it is permanently closed, 90 days after the close. The row gains the 2026-10-20 reading
+  (`Status` `SUSPENDED`, `State` `CLOSED`, joined 2026-08-01) and an inferred departure window, 2026-10-30
+  to 2026-11-09, which holds if the account closed between joining and the user's note of 2026-08-11. The
+  departure frees the slot.
+- **[Claude] `./aws/vending.py`**: `VN-1`'s note cites Stage 14 step 6 instead of D34; only the citation
+  changed.
