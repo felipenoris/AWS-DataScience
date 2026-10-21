@@ -1518,3 +1518,85 @@ alone. Account ids are replaced by `<acct>`. Times are UTC.*
   through 4.3's job, the two grants, the `SYSTEM` session, the targets and the version, the reads' sources)
   and its job change as a diff; 8.1's Sandbox side and profiles; 8.6's two fields that go back; decision
   12; a risk; the data source's cost.
+
+## 2026-10-21 — the session closed before the sitting; the data source's first scheduled run
+
+*Claude, in the same session, its branch synced with `main` at `7d186ec3` after PR #236's merge. Every AWS
+call was a read as the infrastructure user with `InfrastructureAccess`, in `Staging Account`
+(`awsds-infra-staging`), `Data Governance Account` (`awsds-infra-data`) and `Production Account`
+(`awsds-infra-prod`). Nothing was created, changed or deleted in AWS or in GitLab. Account ids are replaced
+by `<acct>`. Times are UTC.*
+
+- **[Claude] The review's record**: the entry above went in as PR #236, merged by the user at 01:39:16Z
+  (`3b1735e9`).
+- **[user] The continuation**: *"Autorizo o push da branch recriada e um PR novo nesta sessão para o 4.3 e o
+  7.2. Vou subir o ambiente e aviso quando estiver no ar, com stage-18-staging protegida."*
+- **[Claude] The hosts**, 01:40:05Z: Production's three still `stopped`.
+- **[Claude] 4.3's group profile lookup, prepared**: `search-group-profiles --group-type
+  IAM_ROLE_SESSION_GROUP` as `awsds-infra-data` lists six profiles, the SSO groups
+  `sso-group-deployment-managers` and `sso-group-data-scientists` among them, so the filter does not narrow
+  the list to roles. A role's profile carries the role's ARN as `rolePrincipalArn`: Staging's
+  InfrastructureAccess `65b0f127-…`, Data Governance's `7ee243ab-…`, Sandbox's `839bcde8-…` and
+  `awsds-deploy-sandbox-test`'s `06d426f2-…`. None names `awsds-deploy-staging`, and `--search-text
+  awsds-deploy-staging` answers nothing. After 4.3's first run the id is the item whose `rolePrincipalArn`
+  ends in `/awsds-deploy-staging`, and the user's command as `awsds-infra-staging` is `datazone
+  create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d1veybt5oak4uo
+  --designation PROJECT_OWNER --member groupIdentifier=<that id>`.
+- **[user] The session closed before the sitting**: *"Vamos encerrar esta sessão por aqui. Irei subir o
+  ambiente em outra oportunidade. Verifique se todo o seu andamento está refletido no log. Atualize o que
+  for necessário e abra um PR."* 4.3 and 7.2 wait for a sitting with the environment up; what they need
+  is in the stage file, on the clone's local branch `stage-18-table-job`, and in a hand-over note in the
+  session family's notes folder.
+- **[Claude] The data source's first scheduled run**, read at about 20:18Z: `djfk1ihzkerez4`, `SCHEDULED`, started
+  02:09:39Z, seven minutes past `cron(2 2 * * ? *)`, stopped 02:09:42Z, `SUCCESS`, no asset added, updated,
+  unchanged or failed, its lineage import `SUCCESS`. CloudTrail, 02:00 to 02:20Z: DataZone assumed the
+  project role as `SYSTEM@bujd259b8g9zps` at 02:09:41Z, source identity `SYSTEM`, no session tag, and that
+  session called `glue:GetDatabase` on `glue_db_d6ogysnx78dguo` (02:09:41Z, `insufficientLakeFormationPermissions`
+  empty, `lakeFormationPrincipal` the project role) and `GetTables` (02:09:42Z), from AWS's addresses,
+  with no error. No event in the window names an explicit deny. 6.2's deny binds that session and refused
+  nothing. The environment's grants (2026-10-20 02:01:40 to 02:03:30Z) name no project role, so the
+  `GetDatabase` passed on the project-conditioned entries for a session with no tag [inferred]. The stage
+  file's 6.2 and 7.2 carry both readings.
+
+## 2026-10-21 — the checklist session's offline sitting of 2026-10-20: 4.3's lint, 7.2's table code and `AWS_STATE.md`'s Staging row (PR #209), recorded
+
+*Claude's sitting, no AWS call: another session on this laptop, "Stage 18 checklist AWS-DataScience",
+at the user's word in its chat: "Execute todos os itens do plano que possam ser executados sem o ambiente
+no ar e ser credenciais do sso infra." It sent what follows to the Stage 18 session at 13:41:35Z on
+2026-10-20 and wrote no entry, under the rule of that day; this one is written on 2026-10-21 from that
+message and PR #209. Its readings of the same day are the entry "the environment down, read by the
+checklist session". The checklist session drafted this entry and sent it to the Stage 18 session on
+2026-10-21, which appended it as sent after checking PR #209's times, the CLI's lines and both lint
+readings again.*
+
+- **[Claude, the checklist session] 4.3's branch fails the pinned lint.** D28's lint (`awsds-workflows` at
+  `3c1708e`, from uv's cache, offline, with the template's seven instance types) exits 1 on `caf1ff6`
+  with *"manifest.yaml: manifest: stage dev: sem ACCOUNT_ID em environment_variables, que os workflows
+  usam"*, and the same for stage `test`; on `d8550e0` (4.1) it reads *"ok: 6 arquivo(s)"*. The cause is
+  `6eb795c`'s `{env.ACCOUNT_ID}` in the Glue task's `--conf`, with only the staging stage defining
+  `ACCOUNT_ID`. The branch's `workflow:` rules admit branch pipelines and `test` carries no `rules`, so a
+  push runs the lint in stage `test`, and `stage-18-deploy`, in stage `deploy` with no `needs`, would be
+  skipped after a failed `test` (inferred from GitLab's stage semantics, not measured). The fixes named:
+  `needs: []` on the job, or `ACCOUNT_ID` in the dev and test stages; the Stage 18 session took the first
+  (`6a23b4d`).
+- **[Claude, the checklist session] What else 4.3's job reads**: `ECR_REGISTRY`, beside `DOMAIN_ID` and
+  `DOMAIN_REGION`, is the protected project variable added at Stage 8's job 193 (2026-10-19), not one of
+  the template's eleven, and the deploy runner exports none. The three lines the job parses are the CLI
+  1.0.9's own, read in the installed package on 2026-10-20: *"🔒 Workflows will use Tooling VPC config:
+  subnets=…"* (`bootstrap/handlers/workflow_create_handler.py:177`), *"🔗 ARN: {workflow_arn}"*
+  (`commands/run.py:585`) and *"📋 Run ID: {run_id}"* (`commands/run.py:607`).
+- **[Claude, the checklist session] 7.2's table code, written and not run**: branch `stage-18-table` at
+  `e14e910` (13:40:25Z), in the clone `$HOME/tmp/app-etl-table`, cut from `caf1ff6` and pushed nowhere.
+  `glue/transform.py` also writes the result as a Parquet table of the Glue Data Catalog (`saveAsTable`,
+  mode `overwrite`) when a run names `--TABLE_DATABASE` and `--TABLE_NAME`, and stops before reading when
+  it names one alone; `workflows/app-etl.yaml` passes both, `TABLE_NAME` `trades`, with
+  `--enable-glue-datacatalog`; `manifest.yaml`'s staging stage gains `TABLE_DATABASE:
+  ${STAGING_TABLE_DATABASE}`. Two tests added, 16 pass, ruff passes, and the lint fails as the branch's
+  does. Unmeasured: whether the Glue job's session carries `context.datazone.projectId`, which the
+  provisioning role's `CREATE_TABLE` grant on the database is conditioned on. The Stage 18 session picked
+  `e14e910` onto `6a23b4d` (the entry "the plan reviewed against the readings, with the environment
+  down").
+- **[Claude, the checklist session] `AWS_STATE.md`'s Staging row** (PR #209, opened 13:40:55Z, merged
+  14:37:40Z): `app_etl_deploy_staging_app_etl` at version 3 (`f2ed9786…`) since 7.1's deploy, where the
+  row said 2, and SageMaker's lineage at three trial components sharing four artifacts with twelve
+  associations, where it named the first run's alone. The readings are this log's.
