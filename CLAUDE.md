@@ -131,7 +131,7 @@ are never cut; the words around them are.
 
 | File | What it holds, and the rule |
 |---|---|
-| [`docs/log/`](docs/log/INDEX.md)`log-stage-NN-*.md` | Every step performed by hand in AWS, one file per stage, mirroring `docs/plan/stages/`: the stage file's slug with a `log-` prefix. Written cooperatively: Claude records each step of the plan it executes, in that sitting, and the user writes whenever they want. Claude adds entries and never rewrites one already there. Every entry names whose hand wrote it, and a measurement the user pasted stays verbatim. English, Markdown, no account ids, concise. The rules: [`docs/log/INDEX.md`](docs/log/INDEX.md), "How an entry gets written" |
+| [`docs/log/`](docs/log/INDEX.md)`log-stage-NN-*.md` | Every step performed by hand, in AWS or in a sitting with no AWS call, one file per stage, mirroring `docs/plan/stages/`: the stage file's slug with a `log-` prefix, and an entry goes to the log of the stage whose plan holds the step. Written cooperatively: Claude records each step of the plan it executes, in that sitting, and the user writes whenever they want. Claude adds entries and never rewrites one already there. Every entry names whose hand wrote it, and a measurement the user pasted stays verbatim. English, Markdown, no account ids, concise. The rules: [`docs/log/INDEX.md`](docs/log/INDEX.md), "How an entry gets written" |
 | [`docs/log/INDEX.md`](docs/log/INDEX.md) | After writing or reading a stage log, bring its `Records` cell to what the file contains: one line saying what is inside, never a restated step |
 | [`docs/ORGANIZATION.md`](docs/ORGANIZATION.md) | The AWS OUs, accounts and users |
 | [`docs/REFERENCES.md`](docs/REFERENCES.md) | Every internet link used as a reference, added on the interaction that used it |
@@ -417,7 +417,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   deploy (question iii, but 4.3's identity); decisions 4-6 taken (4.3 at the next GitLab sitting, 7.2 on
   sample data, 5.4 by reading); 7.2's path A applied: `DataLake` in Staging and the profile, the manage-access
   role given `AmazonDataZoneGlueManageAccessRolePolicy` (the opt-in every Sandbox `DataLake` environment
-  is refused), `deploy-staging-lakehouse` `ACTIVE`;
+  is refused), `deploy-staging-lakehouse` `ACTIVE`; 6.1 done 2026-10-21 with the environment down: a V2
+  domain admits no read-only member, and a contributor writes in Staging as the project role; 6.2 read
+  `aws:SourceIdentity` as the key that separates a person's session from the workers', and its deny on the
+  project role is applied (`awsds-staging-person-session-deny`, decision 11): it refuses a person's writes,
+  re-read 2026-10-21, and the worker's side is owed at 4.3's run;
   an associated account no person works in goes in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in
   `SMUS_MEMBERS`. Its 4.4's two prerequisites, Stage 8 3.0's first half and Stage 10 1.2's `vpc-v0.4.0`
   on `staging/foundation/`, were applied 2026-10-19 by the user.

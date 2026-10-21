@@ -63,7 +63,7 @@ variable "blueprint_names" {
 # project is created, `datazone_usr_role_<project>_<environment>`, so the list is written by hand after
 # the project exists, as sandbox/workflows/'s is.
 variable "project_roles" {
-  description = "The SMUS project roles whose workflows create Glue and SageMaker processing jobs, by role NAME (not ARN). Empty is legal and attaches nothing: Stage 18 step 8.1 empties it before the project is deleted."
+  description = "The SMUS project roles whose workflows create Glue and SageMaker processing jobs, by role NAME (not ARN): each gets the workflows grant and the deny on a person's session. Empty is legal and attaches nothing: Stage 18 step 8.1 empties it before the project is deleted."
   type        = list(string)
   # deploy-staging, created 2026-10-19 (Stage 18 pass 3); read with `iam list-roles` 2026-10-19.
   default = ["datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps"]
