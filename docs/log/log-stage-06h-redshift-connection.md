@@ -2339,3 +2339,28 @@ from the PR's body and diff, with no AWS call either. The PR's 5b half is record
 - **[Claude] [`runbooks/redshift-connection.md`](../plan/runbooks/redshift-connection.md) §O** (6.1):
   layer 2's row names one policy on the project role and on its access role, v75 beside it on the project
   role, and the grain per project on the access role alone. No decision 8 option is taken.
+
+## 2026-10-21 — decision 8's layer 2 brought to the v75 reading on 2026-10-20 (PR #224), recorded
+
+*Claude's sitting, no AWS call: the task session the orchestrating session "Stage 18 checklist" started
+for Stages 5b and 6h opened PR #224 (merged 2026-10-20T22:20:41Z), whose 6h half is decision 8's text and
+the access role's rows in `sandbox/warehouse/`'s README. It wrote no 6h entry, under the rule of that
+day; this one is written on 2026-10-21 by the orchestrating session from the PR's body and diff, with no
+AWS call either. The PR's `EXC-13` reading is in [the 5b log](log-stage-05b-redshift-serverless.md), the
+entry of 2026-10-20.*
+
+- **[Claude] Decision 8, layer 2** ([`stage-06h`](../plan/stages/stage-06h-redshift-connection.md)): the
+  options' lead-in and the recommendation called layers 2 and 3 "per project role" and "genuinely
+  per-project gates", against the v75 reading of 2026-10-18 further down the same paragraph. Both now say
+  layer 2 is per project on the access role alone, and the recommendation's gates are the schema `GRANT`
+  on every door and the access role on the Data page alone. Of the two lead-ins that pointed at the old
+  argument, "Under (a) the argument's layer 2 does not hold" now reads "Under (a) the project role's layer
+  2 is not per project", and "The recommendation stands as (a), on a narrower argument" is gone. The
+  recommendation stays (a); no option is taken, and decision 8 stays the user's.
+- **[Claude] The access role's rows** in
+  [`sandbox/warehouse/README.md`](../../terraform-live/sandbox/warehouse/README.md): one row each for
+  `aws_iam_role.project_access`, `aws_iam_role_policy_attachment.project_access_warehouse`,
+  `aws_iam_policy.project_access_portal` and that policy's attachment, and layer 2's row names its
+  `sts:AssumeRole`. The `projects` comment in `variables.tf` names the access role; only the comment
+  changed. PR #224's body reports the role's policies read in AWS, the slice's two policies with no inline
+  policy and no boundary, without the time, the identity or the commands; no log holds that reading.
