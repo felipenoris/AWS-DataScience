@@ -1361,3 +1361,23 @@ address and the browser's public address are not written here.*
   among them). Planned 00:29:02Z as `awsds-infra-staging`, *"Plan: 2 to add, 0 to change, 0 to destroy."*,
   saved to `$HOME/tmp/stage18-person-session.tfplan` for the user's apply; IAM Access Analyzer's
   `validate-policy` on the planned document answers no finding.
+- **[user] 6.2's deny applied**, `staging/studio/` from the saved plan, as `awsds-infra-staging`; the
+  account id is replaced by `<Staging Account>`:
+
+  ```
+  ➜  AWS-DataScience git:(main) AWS_PROFILE=awsds-infra-staging NO_PROXY='*' terraform -chdir=/Users/felipentavares/src/AWS-DataScience/.claude/worktrees/plano-revisao-leituras-19d931/terraform-live/staging/studio apply -input=false "$HOME/tmp/stage18-person-session.tfplan"
+  aws_iam_policy.person_session: Creating...
+  aws_iam_policy.person_session: Creation complete after 1s [id=arn:aws:iam::<Staging Account>:policy/awsds-staging-person-session-deny]
+  aws_iam_role_policy_attachment.person_session["datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps"]: Creating...
+  aws_iam_role_policy_attachment.person_session["datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps"]: Creation complete after 0s [id=datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps/arn:aws:iam::<Staging Account>:policy/awsds-staging-person-session-deny]
+  Releasing state lock. This may take a few moments...
+
+  Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+  ```
+
+  The slice's outputs followed, as before the apply.
+- **[Claude] Read back** (00:40:30Z): the re-plan reads *"No changes. Your infrastructure matches the
+  configuration."*; the project role carries `awsds-staging-workflows`, `awsds-staging-person-session-deny`
+  and AWS's `SageMakerStudioProjectUserRolePolicy`, `SageMakerStudioProjectRoleMachineLearningPolicy` and
+  `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy`; the policy is at `v1`, one attachment, created
+  00:39:18Z. The re-reads on both sides follow.

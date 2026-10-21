@@ -634,7 +634,8 @@ stage-18-deploy:
   application's (its workflow and jobs). Decision 11 is whether it is written now. **Written and planned
   2026-10-21** (decision 11): `staging/studio/person-session.tf`, `awsds-staging-person-session-deny` on the
   project role, four Deny statements conditioned on `aws:SourceIdentity` (the projects bucket's objects,
-  the workflows, the jobs and tables, the notebooks), 2 to add, for the user's apply. Then the re-reads:
+  the workflows, the jobs and tables, the notebooks), **applied by the user 2026-10-21 at 00:39Z** (2
+  added, re-plan `No changes`). Then the re-reads:
   the person's side with the environment down (6.1's membership cycle, the folder's write expected
   refused) and the worker's by 4.3's run at the next sitting.
 
