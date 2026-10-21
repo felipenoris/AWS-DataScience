@@ -2320,3 +2320,22 @@ on, next rotation 2026-10-20 01:59:59Z (`EXC-13`).
 What the readings change in the stage file: 2.2, whose Data API path AWS's policy grants; verification
 i's `redshift-data:` clause; 5.1's IAM half; and decision 8's argument for (a), whose layer 2 the wide tag
 grants to every project.
+
+## 2026-10-21 — `SMUS.md` and the runbook brought to the 2026-10-18 readings on 2026-10-20 (PR #217), recorded
+
+*Claude's sitting, no AWS call: the offline task of the orchestrating session "Stage 18 checklist" that
+opened PR #217 (merged 2026-10-20T21:52:20Z) carried this log's entries of 2026-10-18 into the documents
+of steps 6.1 and 6.3. It wrote no entry, under the rule of that day; this one is written on 2026-10-21
+from the PR's body and diff, with no AWS call either. The PR's 5b half is recorded in
+[the 5b log](log-stage-05b-redshift-serverless.md), the entry of the same date.*
+
+- **[Claude] [`docs/SMUS.md`](../SMUS.md) §Connections** (6.3): the Redshift row says `WH-9` reads the
+  connection object, which DataZone answers to Sandbox's `InfrastructureAccess` role since its contributor
+  membership of 2026-10-15, where it said no instrument reads it. The `lineageSync` paragraph says the
+  form's connection has the sync enabled and every run to 2026-10-18 failed, where it said the sync stays
+  off, and leaves decision 3 to the user. Layer 1's item no longer credits layer 2 with the requirement's
+  grain, and layer 2's says it is per project on the access role alone, AWS's
+  `SageMakerStudioProjectUserRolePolicy` v75 giving the project role its own reach.
+- **[Claude] [`runbooks/redshift-connection.md`](../plan/runbooks/redshift-connection.md) §O** (6.1):
+  layer 2's row names one policy on the project role and on its access role, v75 beside it on the project
+  role, and the grain per project on the access role alone. No decision 8 option is taken.

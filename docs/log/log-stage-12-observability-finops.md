@@ -322,3 +322,19 @@ the rest in `us-west-2`.*
   `DeleteVpcEndpoints` events: 65 and 17 of them refused with `Client.RequestLimitExceeded` under
   `InfrastructureAccess`, and 8 of each by `AWSServiceRoleForRedshift`, whose creates name a `vpce-svc-`
   endpoint service, so the event count is not the endpoint count.
+
+## 2026-10-21 — step 5.2's layer letters, read against the bill on 2026-10-20 (PR #211), recorded
+
+*Claude's sitting, no AWS call: the session that opened PR #211 (merged 2026-10-20T21:50:35Z) read the
+bill's usage types in [`cost-model.md`](../plan/cost-model.md) at [`PRICING.md`](../PRICING.md)'s rates.
+It wrote no entry, under the rule of that day; this one is written on 2026-10-21 from the PR's body and
+diff, with no AWS call either.*
+
+- **[Claude] 5.2, for open question 4: the bill moves no letter.** The reading uses 5.1's usage-type half
+  alone, since the split by tag waits on 4.1, and its arithmetic is the step's table. Decision due 3 is
+  written, recommending (a), every letter kept; the choice is the user's.
+- **[Claude] [`institutional-delta.md`](../plan/institutional-delta.md)**, in the same PR: the lab column
+  of the Networking, Egress control, Egress cost, Backups and Availability rows describes what is built,
+  from D38, `NETWORK.md`, the bill and `OB-4`'s reading of no backup plan. The VPN row makes the WireGuard
+  host the single point of failure for private-network access and leaves egress's to the proxy (the
+  Availability row).
