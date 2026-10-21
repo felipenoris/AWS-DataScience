@@ -1306,3 +1306,22 @@ Ten events, none with an error code, and no `RotateSecret` call:
   authentication failure is the two diverging.
 - **Written**: the stage file's status, 1.1 and step 4; `docs/AWS_STATE.md`'s `EXC-13`;
   `sandbox/warehouse/README.md`'s section on the rotation.
+
+## 2026-10-21 — step 2.3 brought to the code and 2.2's layer 2, written on 2026-10-20 (PR #217), recorded
+
+*Claude's sitting, no AWS call: the offline task of the orchestrating session "Stage 18 checklist" that
+opened PR #217 (merged 2026-10-20T21:52:20Z) read the stage file against `identity/sso/`'s code and
+carried the 6h log's simulator reading of 2026-10-18. It wrote no entry, under the rule of that day; this
+one is written on 2026-10-21 from the PR's body and diff, with no AWS call either. The PR's 6h half is
+recorded in [the 6h log](log-stage-06h-redshift-connection.md), the entry of the same date.*
+
+- **[Claude] 2.3 marked done 2026-09-20, its text brought to `policies-data-scientists.tf`** as Pass 2
+  above records it: six reads on `*`, `ListUsageLimits` among them, where the step listed five on this
+  account's workgroup ARN, and two denies where it said `redshift-data:` nothing yet. The step cites 6h
+  decision 4 and the simulator's reading of 2026-10-18.
+- **[Claude] 2.2: layer 2 is per project on 6h 3.1's access role alone**, because AWS's
+  `SageMakerStudioProjectUserRolePolicy` v75 gives the project role its own reach on the warehouse,
+  through layer 1's tag, the wide tag and `sqlworkbench`. `sandbox/warehouse/README.md` and the comment on
+  `variables.tf`'s `projects` variable say the same.
+- **[Claude] [`docs/SMUS.md`](../SMUS.md)'s `RedshiftServerless` row**, 6.4's document: the usage limit
+  reads 10 RPU-hours, lowered on 2026-09-20, where it read 40.

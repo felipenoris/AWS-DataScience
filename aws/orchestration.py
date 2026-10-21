@@ -81,7 +81,7 @@ SLR_NAME = "AWSServiceRoleForAmazonMWAAServerless"
 MIN_AZS = 2  # the private-routing shape's documented minimum (step 1.2)
 VERSION_QUOTA = 50  # versions per workflow; no prune API is documented (risk 4)
 VERSION_WARN = 40
-LOOKUP_MAX = 50  # CloudTrail lookup page - registry writes are rare at lab scale
+LOOKUP_MAX = 50  # CloudTrail's largest lookup page: --max-results turns the CLI's paging off
 RUNS_MAX = 10  # recent runs per workflow
 
 # The fields of an EC2 route that name its target, in the order a default route is reported.
@@ -535,26 +535,24 @@ def main(argv: list) -> int:
     # -------------- the registry record: who registered, who approved (INT-07's registry half)
     reg_rows: list = []  # (time, event, caller tail)
     reg_bad: list = []  # (event, caller)
+    reg_unread: list = []  # event names whose history was not read to its last page
     if prod_live:
         cli = cli_for(PROD_PROFILE)
         note(f"measuring {PROD_PROFILE} (registry events) ...")
         for ev_name in ("CreateModelPackage", "UpdateModelPackage"):
-            res = cli.run(
+            listing = cli.pages(
                 "cloudtrail",
                 "lookup-events",
                 "--lookup-attributes",
                 f"AttributeKey=EventName,AttributeValue={ev_name}",
                 "--max-results",
                 str(LOOKUP_MAX),
-                "--query",
-                "Events[].CloudTrailEvent",
-                "--output",
-                "json",
-                log=False,
             )
-            for raw in _json(res, []):
+            if not listing.complete:
+                reg_unread.append(ev_name)
+            for item in listing.items("Events"):
                 try:
-                    ev = json.loads(raw)
+                    ev = json.loads(item.get("CloudTrailEvent") or "")
                 except (TypeError, ValueError):
                     continue
                 caller = str((ev.get("userIdentity") or {}).get("arn") or "(unknown)")
@@ -807,6 +805,13 @@ def main(argv: list) -> int:
                 f"{head2(caller)} is not awsds-deploy-prod - registration is the "
                 "pipeline's act (step 5.2, D17).",
             )
+    elif reg_unread:
+        checks.note(
+            "OR-8",
+            "registry writes",
+            f"{' and '.join(reg_unread)} not read to the last page (section 14); "
+            f"{len(reg_rows)} event(s) read.",
+        )
     elif reg_rows:
         checks.ok(
             "OR-8",
@@ -1005,7 +1010,12 @@ Stage 9 1.1, and Staging's, awsds-staging-outputs, is built by the same module c
             rep.tabulate(["TIME\tEVENT\tCALLER"] + ["\t".join(r) for r in reg_rows[:25]])
             if len(reg_rows) > 25:
                 rep.line(f"... and {len(reg_rows) - 25} more event(s).")
-        else:
+        if reg_unread:
+            rep.line(
+                f"{' and '.join(reg_unread)} not read to the last page (section 14): an "
+                "absence here proves nothing."
+            )
+        elif not reg_rows:
             rep.line("No Create/UpdateModelPackage event in the 90-day lookup.")
         rep.text("""
 Stage 9 3.2's policy says register-and-approve is awsds-deploy-prod alone; this

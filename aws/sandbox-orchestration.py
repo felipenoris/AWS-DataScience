@@ -108,7 +108,7 @@ WF_LOG_PREFIX = "/aws/mwaa-serverless/"
 
 RUNS_MAX = 10  # recent runs read per workflow
 JOBS_MAX = 20  # recent demo-devenv- jobs
-LOOKUP_MAX = 50  # CloudTrail page per event name
+LOOKUP_MAX = 50  # CloudTrail's largest lookup page: --max-results turns the CLI's paging off
 
 ABSENT = "NoSuchEntity|ResourceNotFound|ValidationException.*does not exist|NoSuchKey|Not Found"
 
@@ -469,25 +469,23 @@ def main(argv: list) -> int:
                 )
 
     # ------------------------------------------------------------------ CloudTrail
-    def lookup(event_name: str) -> list:
-        got = (
-            run_json(
-                "cloudtrail",
-                "lookup-events",
-                "--lookup-attributes",
-                f"AttributeKey=EventName,AttributeValue={event_name}",
-                "--max-results",
-                str(LOOKUP_MAX),
-            )
-            or {}
+    def lookup(event_name: str) -> tuple:
+        """The events of one name, and whether the read reached the last page."""
+        listing = cli.pages(
+            "cloudtrail",
+            "lookup-events",
+            "--lookup-attributes",
+            f"AttributeKey=EventName,AttributeValue={event_name}",
+            "--max-results",
+            str(LOOKUP_MAX),
         )
         out = []
-        for e in got.get("Events", []):
+        for e in listing.items("Events"):
             try:
                 out.append(json.loads(e.get("CloudTrailEvent", "{}")))
             except json.JSONDecodeError:
                 continue
-        return out
+        return out, listing.complete
 
     def caller_of(ev: dict) -> tuple:
         """(role name, session name) of an assumed-role caller, else (arn, '-')."""
@@ -499,14 +497,18 @@ def main(argv: list) -> int:
         rp = ev.get("requestParameters") or {}
         return rp.get("Name") or rp.get("name") or ""
 
-    create_wf = [ev for ev in lookup("CreateWorkflow") if wf_name(ev) in WORKFLOWS]
+    wf_events, wf_whole = lookup("CreateWorkflow")
+    create_wf = [ev for ev in wf_events if wf_name(ev) in WORKFLOWS]
+    job_events, job_whole = lookup("CreateProcessingJob")
     create_job = [
         ev
-        for ev in lookup("CreateProcessingJob")
+        for ev in job_events
         if ((ev.get("requestParameters") or {}).get("processingJobName") or "").startswith(
             JOB_PREFIX
         )
     ]
+    wf_window = "the 90-day trail window" if wf_whole else "the pages read (section 11)"
+    job_window = "the 90-day trail window" if job_whole else "the pages read (section 11)"
 
     # ================================================================== checks
     def project_of(d: dict) -> dict | None:
@@ -533,9 +535,7 @@ def main(argv: list) -> int:
         if status != "READY":
             checks.fail("SO-1", name, f"status {status} - expected READY.")
         elif not evs:
-            checks.note(
-                "SO-1", name, "READY; no CreateWorkflow in the 90-day trail window to attribute."
-            )
+            checks.note("SO-1", name, f"READY; no CreateWorkflow in {wf_window} to attribute.")
         elif all(w.startswith(PROJECT_ROLE_PREFIX) for w in who):
             checks.ok("SO-1", name, f"READY, created by {', '.join(who)}")
         else:
@@ -873,7 +873,7 @@ def main(argv: list) -> int:
                 f"{role}/{session}, no vpcEndpointId - the call came from {ev.get('sourceIPAddress', '-')}; read it.",
             )
     if not create_job:
-        checks.note("SO-8", f"CreateProcessingJob {JOB_PREFIX}*", "none in the trail window yet.")
+        checks.note("SO-8", f"CreateProcessingJob {JOB_PREFIX}*", f"none in {job_window} yet.")
 
     # ================================================================== report
     with open(out_path, "w") as stream:
