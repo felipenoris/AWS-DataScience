@@ -73,7 +73,7 @@ whenever they want. The modes below decide who holds the pen, never what is allo
 
 In every mode the entry names its hands (see Provenance above) and follows the rules below. A sitting
 with no AWS call — a vendor page read, a pass written, the plan revised — gets an entry too, and its
-provenance note says so: the first 2026-09-18 entry of
+provenance note says so: the 2026-09-18 entry on step 3.1's documentation half in
 [`log-stage-06f-data-governance.md`](log-stage-06f-data-governance.md) is the wording to copy.
 
 - **English and Markdown** in every mode; the chat is in Portuguese and these files are not. In the
