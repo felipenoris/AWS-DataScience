@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Passes 0 to 3 and 5 done 2026-10-19, pass 4 done but 4.3, 7.1 done, 7.2 in progress; 6.1 done 2026-10-21 with the environment down (decision 9), 6.2 next, and pass 8 to come. Decisions 1 to 3 taken by the applies of passes 1 and 2, 4 to 6, 8 and 9 by the user; 7 is the verdict.** Every apply is the user's: the app's auto-mode classifier refuses them to Claude (*Protected-Scope IaC Apply*), so the user runs each from its saved plan ([log](../../log/log-stage-18-staging-deployment-project.md)). Pass 1: the carve-out is live (`EXC-20`): `identity/org-policies/` updated the `Workloads` document in place (the one Sid, 2,571 characters minified) and re-plans `No changes`; from Staging `datazone list-domains` answers while Production's is still the SCP's deny. Pass 2: `staging/studio/` holds the prerequisites, 14 added, re-plan `No changes`; 2.1 done by the user and read back, the domain's share holding Staging as a principal since 04:03:13Z and `list-environment-blueprint-configurations` answering an empty list from Staging; 2.3's two rows written; 2.5's second half applied at 04:31Z (2 added, 1 changed, re-plan `No changes`), so `Tooling` is configured in Staging; 2.6 and 2.7 applied, the `deployment` profile since 05:47:08Z and its grant to Staging's InfrastructureAccess session group since 05:58:00Z, after the first apply was refused a grant to the role as a user, `governance/` re-planning `No changes`. Question i was answered from the two managed bases' own templates: `ToolingLite` creates a SageMaker AI domain unconditionally and `Tooling` only when `enableSpaces` is `true`, so the `deployment` profile is `Tooling` with `enableSpaces` false and needs no `CreateDomain` carve-out. Pass 3: `deploy-staging` provisioned, its stack complete in 55 s, with no SageMaker AI domain, three roles under the D13 boundary, and the provisioning and manage-access roles made Staging's Lake Formation admins. Pass 4: 0.4 answered question vii; 4.4's two prerequisites, from Stages 8 and 10, applied by the user; `app-etl` tagged `v0.2.0` and `v0.2.1`, the second's bundle stored and its GitLab release failed on the notes' backticks (MR !4, the user's merge); 4.1's branch written. **4.2 done**: `v0.2.1`'s bundle deployed from its extracted folder, since the CLI 1.0.9 reads every local content item from the manifest's folder whatever `--bundle-archive-path` names, and the workflow carries the project's network, key and role (question v). **4.4's run `SUCCESS`** (808 s, `JSSr2Br9Zsf2b26`) once the user applied `staging/studio/workflows.tf`, `sandbox/workflows/`'s grant, after the first run was refused `glue:GetJob`: every task ran as the project role, the worker's calls through Staging's endpoints, the operator creating the Glue job and the processing job; `start-workflow-run` as the deploy identity waits on 4.3. **Pass 5's 5.1-5.3 run the same day**: `orchestration-demo` deployed beside `app-etl` and destroyed, neither touching the other; `dagid-copy`, reusing `app-etl`'s workflow name and DAG id, took and rewrote `app-etl`'s file, since the CLI 1.0.9 scans the whole shared root, and its `destroy` plan held `app-etl`'s Glue job, so decision 8 removed the copy by direct calls. **Decisions 4 to 6 taken by the user**: 4.3 at the next GitLab sitting, 7.2 on sample data, 5.4 answered by reading. **4.5 done** (question iii, but 4.3's identity), Stage 10's steps read against the CLI's deploy. **4.3 prepared 2026-10-20** (the deploy role's amendment applied by the user, the job committed on the branch's clone); **7.2's `DataLake` environment `ACTIVE`** the same day after the Glue manage-access policy, its table, publication and subscription waiting on a sitting. **7.1 done the same day**: the Glue job posts its own lineage as the project role, through a `datazone` endpoint `staging/egress/` gained for the window; without it each post read *"Network is unreachable"*. Pass 0: 0.1 read 2026-10-17 and 2026-10-18; 0.2 and 0.3 read 2026-10-18, the attached `Workloads` document with Stage 9's nine statements included; 0.5 is the battery Stage 9's log records after that apply. 2.3 written 2026-10-18 with no row: `sandbox/foundation/`, `production/tooling/` and `staging/foundation/` re-plan `No changes`. 5.4's quotas read: Staging admits ten SageMaker AI domains, the ceiling a `Tooling` base meets first. **Written 2026-10-17** from a cloud session with no AWS reading, on the user's word of that day at 18:28 UTC (*"vamos medir em staging o que falta para completar o quadro"*), the answer to the card of 2026-10-16 that offered to measure before [Stage 10](stage-10-orchestration-promotion.md) builds [D41](../decisions/D41-sagemaker-application.md) item 2. A measurement and its teardown, not a build: AWS's default shape for a deployment account, a SageMaker Unified Studio project that the CI/CD CLI deploys into and no person works in, is created once in `Staging`, read against this estate's perimeter, and unwound at pass 8 whatever the verdict. **D41 stands until the verdict** (8.9, decision 7): Stage 10 keeps item 2's design, no project in Staging or Production, while this stage runs. Nothing below is a measurement unless it carries its date |
+| **Status** | **Passes 0 to 3 and 5 done 2026-10-19, pass 4 done but 4.3, 7.1 done, 7.2 in progress; 6.1 done 2026-10-21 with the environment down (decision 9), 6.2's deny applied and re-read on the person's side 2026-10-21, its worker side owed at 4.3's run, and pass 8 to come. Decisions 1 to 3 taken by the applies of passes 1 and 2, 4 to 6 and 8 to 11 by the user; 7 is the verdict, and 12 is taken at 7.2's approval if the fulfilment needs it.** **Reviewed 2026-10-21 with the environment down** (the log): 7.2's table deploys through 4.3's job, which copies the branch's Glue script, `v0.2.1`'s writing no table, and reads the `DataLake` database at run time; DataZone sets a source identity on every session it opens on the project role, an IAM principal's and its own `SYSTEM` included, so 6.2's deny binds those too and no worker's; both `DataLake` subscription targets act as their project's role for `abac:CURRENT_PROJECT`, and Staging's Lake Formation sits at cross-account version 1 (decision 12). Every apply is the user's: the app's auto-mode classifier refuses them to Claude (*Protected-Scope IaC Apply*), so the user runs each from its saved plan ([log](../../log/log-stage-18-staging-deployment-project.md)). Pass 1: the carve-out is live (`EXC-20`): `identity/org-policies/` updated the `Workloads` document in place (the one Sid, 2,571 characters minified) and re-plans `No changes`; from Staging `datazone list-domains` answers while Production's is still the SCP's deny. Pass 2: `staging/studio/` holds the prerequisites, 14 added, re-plan `No changes`; 2.1 done by the user and read back, the domain's share holding Staging as a principal since 04:03:13Z and `list-environment-blueprint-configurations` answering an empty list from Staging; 2.3's two rows written; 2.5's second half applied at 04:31Z (2 added, 1 changed, re-plan `No changes`), so `Tooling` is configured in Staging; 2.6 and 2.7 applied, the `deployment` profile since 05:47:08Z and its grant to Staging's InfrastructureAccess session group since 05:58:00Z, after the first apply was refused a grant to the role as a user, `governance/` re-planning `No changes`. Question i was answered from the two managed bases' own templates: `ToolingLite` creates a SageMaker AI domain unconditionally and `Tooling` only when `enableSpaces` is `true`, so the `deployment` profile is `Tooling` with `enableSpaces` false and needs no `CreateDomain` carve-out. Pass 3: `deploy-staging` provisioned, its stack complete in 55 s, with no SageMaker AI domain, three roles under the D13 boundary, and the provisioning and manage-access roles made Staging's Lake Formation admins. Pass 4: 0.4 answered question vii; 4.4's two prerequisites, from Stages 8 and 10, applied by the user; `app-etl` tagged `v0.2.0` and `v0.2.1`, the second's bundle stored and its GitLab release failed on the notes' backticks (MR !4, the user's merge); 4.1's branch written. **4.2 done**: `v0.2.1`'s bundle deployed from its extracted folder, since the CLI 1.0.9 reads every local content item from the manifest's folder whatever `--bundle-archive-path` names, and the workflow carries the project's network, key and role (question v). **4.4's run `SUCCESS`** (808 s, `JSSr2Br9Zsf2b26`) once the user applied `staging/studio/workflows.tf`, `sandbox/workflows/`'s grant, after the first run was refused `glue:GetJob`: every task ran as the project role, the worker's calls through Staging's endpoints, the operator creating the Glue job and the processing job; `start-workflow-run` as the deploy identity waits on 4.3. **Pass 5's 5.1-5.3 run the same day**: `orchestration-demo` deployed beside `app-etl` and destroyed, neither touching the other; `dagid-copy`, reusing `app-etl`'s workflow name and DAG id, took and rewrote `app-etl`'s file, since the CLI 1.0.9 scans the whole shared root, and its `destroy` plan held `app-etl`'s Glue job, so decision 8 removed the copy by direct calls. **Decisions 4 to 6 taken by the user**: 4.3 at the next GitLab sitting, 7.2 on sample data, 5.4 answered by reading. **4.5 done** (question iii, but 4.3's identity), Stage 10's steps read against the CLI's deploy. **4.3 prepared 2026-10-20** (the deploy role's amendment applied by the user, the job committed on the branch's clone); **7.2's `DataLake` environment `ACTIVE`** the same day after the Glue manage-access policy, its table, publication and subscription waiting on a sitting. **7.1 done the same day**: the Glue job posts its own lineage as the project role, through a `datazone` endpoint `staging/egress/` gained for the window; without it each post read *"Network is unreachable"*. Pass 0: 0.1 read 2026-10-17 and 2026-10-18; 0.2 and 0.3 read 2026-10-18, the attached `Workloads` document with Stage 9's nine statements included; 0.5 is the battery Stage 9's log records after that apply. 2.3 written 2026-10-18 with no row: `sandbox/foundation/`, `production/tooling/` and `staging/foundation/` re-plan `No changes`. 5.4's quotas read: Staging admits ten SageMaker AI domains, the ceiling a `Tooling` base meets first. **Written 2026-10-17** from a cloud session with no AWS reading, on the user's word of that day at 18:28 UTC (*"vamos medir em staging o que falta para completar o quadro"*), the answer to the card of 2026-10-16 that offered to measure before [Stage 10](stage-10-orchestration-promotion.md) builds [D41](../decisions/D41-sagemaker-application.md) item 2. A measurement and its teardown, not a build: AWS's default shape for a deployment account, a SageMaker Unified Studio project that the CI/CD CLI deploys into and no person works in, is created once in `Staging`, read against this estate's perimeter, and unwound at pass 8 whatever the verdict. **D41 stands until the verdict** (8.9, decision 7): Stage 10 keeps item 2's design, no project in Staging or Production, while this stage runs. Nothing below is a measurement unless it carries its date |
 | **Prerequisites** | **[Stage 8](stage-08-cicd-pipelines.md)**: `awsds-deploy-staging` and the deploy runner (pass 1), the deploy image `v0.2.0` with the CLI 1.0.9, and `app-etl` as an application whose release carries a bundle (2.5, 2.5a): no tag has run one, `awsds/app-etl`'s newest tag being `v0.1.0` (read 2026-10-16, the Stage 8 log), and the first carries the `process` task's `VolumeKmsKeyId` (PR #156), which `DenySageMakerJobsWithoutVolumeEncryption` requires in `Workloads` and under Sandbox's D13 boundary alike. **Two changes of other stages' later passes, which 4.4's run needs first** (read in the code 2026-10-18, neither applied): **[Stage 8](stage-08-cicd-pipelines.md) step 3.0's first half**, the application image's pull grant for Staging: the `process` task's image is `awsds-prod-ecr-app-etl` by digest, which the job's role pulls through the service ([6i](stage-06i-sandbox-orchestration.md)), and the repository admits `APP_REGISTRY_CONSUMERS` alone, `["sandbox"]` (`backend.py`), so Staging's row comes with a `staging` alias and identity read in `production/registry/`, whose `account_id_by_folder` resolves `sandbox` alone and fails the plan on any other key; and **[Stage 10](stage-10-orchestration-promotion.md) step 1.2's bump of `staging/foundation/` from `vpc-v0.3.1` to `vpc-v0.4.0`**, whose one functional change is `mwaa-serverless-code-files-*-<region>-prod` on the S3 gateway endpoint's policy: a worker reads a workflow's `Code` object, the archive a Python task's callable is imported from, out of that bucket, and without it the workflow fails at environment preparation, before its first task ([6i](stage-06i-sandbox-orchestration.md) decision 7). `app-etl` carries one (`code/app-etl.zip`, for `summarize`), as does 5.1's `demo-python-operator`, which matters if it is run. Stage 8's decision 23 places 3.0 in its pass 4, after Stage 9, and the bump is Stage 10's pass 2, so both run in this stage's window, after its decisions. **Both applied 2026-10-19 by the user**, and both slices re-plan `No changes`: `APP_REGISTRY_CONSUMERS` gains `staging`, with the alias and identity read in `production/registry/`, whose plan changes the `app-etl` repository's pull policy alone, Staging's account root added; and `staging/foundation/` pins `vpc-v0.4.0`, whose plan changes the S3 gateway endpoint's policy alone, the `mwaa-serverless-code-files-*` family added. **[6a](stage-06a-unified-studio.md)**: the domain `awsds-studio` and the profile machinery of `data-governance/governance/`. **[6b](stage-06b-development-becomes-staging.md) pass 1**: the unwinding order pass 8 repeats, measured on this account on 2026-09-06. **[6c](stage-06c-networking-hub.md)**: Staging's private routing and its 11 `[E]` endpoints, so a sitting is `make hub-up` then `make up ENV=staging ONLY=egress`, Stage 8 step 3.1's form, which names the one slice a sitting needs. **[Stage 9](stage-09-deployment-targets.md) pass 1's `identity/org-policies/` apply**: its job statements, on `main` since PR #144, were attached on 2026-10-18 at 19:54Z and the battery's `ou` phase read them after (Stage 9's log, PR #176; this stage's 0.3 read the attached document), so 1.3 follows that apply, and this stage's processing jobs run under them (risk "The `Workloads` document"). Stage 9 pass 5 (`staging/data/`, step 4) is not a prerequisite, and this stage runs before it (risk "The Lake Formation seat") |
 | **Consumes** | [D7](../decisions/D07-orchestration.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D20](../decisions/D20-staging-account.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D41](../decisions/D41-sagemaker-application.md) |
 | **Proves** | — (no `INT-nn` row: the association is [INT-12](../integrations.md)'s shape on an account INT-12 leaves out, and pass 8 removes it). It exercises [INT-23](../integrations.md) once, a subscription across two accounts over sample data (7.2, decision 5), and answers for Stage 10 how much of its steps 1.1, 2.4 and 4.2 a `deploy --targets staging` from the bundle does (4.5) |
@@ -36,14 +36,14 @@ the report's list of 2026-10-16; viii to x are the user's three lines of 2026-10
 | i | Does a project live in a `Workloads` account with spaces and apps still denied? `Tooling` creates a SageMaker AI domain per project, which `DenyInteractiveSageMakerSurface` refuses on `CreateDomain`; does `ToolingLite` create one? **Read 2026-10-19 from the templates** (the log): `ToolingLite`'s creates `AWS::SageMaker::Domain` with no condition, and `Tooling`'s creates it under `sageMakerDomainRequired`, `isDefaultTooling` and `enableSpaces == "true"`, so a `Tooling` environment with `enableSpaces` false creates none. Whether the deploy honours the profile's override of a parameter the blueprint marks not editable is 3.2's first reading; `experimentation` overrides `maxIdleTimeoutInMinutes`, also not editable, and its projects deploy **Measured 2026-10-19 at 3.2**: yes, for `Tooling` with spaces off. The project provisioned with no `CreateDomain` and no refusal from the SCP or the boundary. | 3.2 |
 | ii | What does the blueprint create in a deployment account (roles and their policies, a domain, security groups, buckets and prefixes, keys, Glue databases, Athena workgroups, Lake Formation registrations and admins, data sources and their schedules, RAM shares), and which principals call `datazone:*` there? **Read 2026-10-19 at 3.3** (the log): thirteen stack resources, three bounded roles, one security group, two Glue connections, two Athena workgroups, a log group, the `dev/` prefix registered in Lake Formation, the two SMUS roles made Lake Formation admins, nine connections, no data source, no RAM share of its own. **Corrected 2026-10-20**: the provisioning also left an S3 Access Grants instance, `default`, created by the provisioning role at 06:06:50Z, and a location for the project's prefix, created by the project role's retry at 06:06:51Z; 3.3 read the first attempt's refusal alone. It also left the service-linked role `AWSServiceRoleForAmazonAthena` (`ops.athena.amazonaws.com`, `AmazonAthenaServiceRolePolicy`), created by the provisioning role through DataZone at 06:06:23Z (read 2026-10-20). 7.2's `DataLake` environment adds a Glue database, its Lake Formation grants and a daily Glue data source. | 3.3 |
 | iii | What does `deploy --targets staging` from `app-etl`'s release bundle write, as which identity, and how much of Stage 10's steps 1.1, 2.4 and 4.2 does it do; what stays to be built (the chain, the failure rule, Stage 8's manual gate, D28's per-workflow role)? **Answered 2026-10-19 at 4.5, but 4.3's identity**: the deploy writes the bundle's files under the project's `shared/` and a code copy under `operatorFiles/`, and creates or updates the workflow with the project's network, key and role, as the caller (4.3 measures `awsds-deploy-staging`); it does 1.2 and 4.2, 1.1 outside Terraform's state and 2.4 without a release-versioned home; the chain, the failure rule, the production gate and D28's per-workflow role stay to be built, the last impossible in this shape, which has one role per project | 4.2-4.5 |
-| iv | Does a membership designation (`PROJECT_CATALOG_VIEWER` or another the API lists) give a person a view of the workflows and their runs with no write? | 6.1 |
+| iv | Does a membership designation (`PROJECT_CATALOG_VIEWER` or another the API lists) give a person a view of the workflows and their runs with no write? **Answered 2026-10-20 and 2026-10-21 at 6.1: no.** The V2 domain refuses the three catalog designations (*"cannot be added to project in V2 domain"*) and admits `PROJECT_CONTRIBUTOR`, which acts as the project role; with spaces off the portal shows no workflow and no run, and the contributor's folder and querybook landed | 6.1 |
 | v | Does a profile with `enableSpaces` false and not editable give a project with no spaces, in which the CLI still deploys with the project's network and key? **The first half measured 2026-10-19 at 3.2**: the stack's `enableSpaces` reads `false`, and no domain or space exists. **The CLI's half measured 2026-10-19 at 4.2: yes**, the workflow created with the project's two subnets and security group and under the project key, which the CLI 1.0.9 resolved from the `Tooling` environment through its IAM connection fallback. | 3.2, 4.2 |
-| vi | Does a boundary on the project role that denies the `airflow-serverless` writes to a person's session lock the editor and the portal's run button while the worker's session still runs the tasks, and which session key tells the two apart? | 6.2 |
+| vi | Does a boundary on the project role that denies the `airflow-serverless` writes to a person's session lock the editor and the portal's run button while the worker's session still runs the tasks, and which session key tells the two apart? **Read 2026-10-21 at 6.2**: `aws:SourceIdentity`, which DataZone sets on every session it opens on the project role (a person's, an IAM principal's such as a deploying identity's, and its own `SYSTEM`) and no worker carries. With spaces off the portal offers no editor and no run button; the deny on those sessions (decision 11) refused the person's folder and querybook compute, and the worker's side is 4.3's run | 6.2 |
 | vii | Does a role that is not a member of the project find a CLI-made workflow by its composed name and start it, as Stage 10's chain role must? **Measured 2026-10-19 at 0.4**: yes. The service authorized the start by IAM alone, plus the starter's own `kms:Decrypt` and `kms:GenerateDataKey` on the workflow's key. | 0.4 |
 | viii | Do two applications share one project cleanly (workflow names, storage prefixes, tags, the one project role), and does removing one leave the other's workflows and files? What does one project per application cost and change? **Measured 2026-10-19 at 5.1-5.3**: two applications whose workflows have distinct names share the project cleanly, apart by the workflow name `<application>_<project>_<workflow>`, the tag `Pipeline` and their prefixes, and destroying one left the other's workflow, runs, files and Glue job. A workflow name or DAG id shared across applications does not: the CLI 1.0.9 scans the whole shared root, and the copy took `app-etl`'s file, rewrote it, and drew a `destroy` plan holding `app-etl`'s Glue job. **The cost half answered 2026-10-19 at 5.4, by reading**: near nothing at rest, a prefix and a role per project, the collision gone by construction | 0.1, 5.1-5.4 |
 | ix | Does the CLI's `run` start anything but a workflow, for an application whose manifest deploys a model or holds no workflow? The code says no (0.1), and 4.4 runs it once. **Measured 2026-10-19 at 4.4: no.** `run` listed the account's workflows, found the composed name and called `StartWorkflowRun` with the stage's five variables as `OverrideParameters`, and nothing else; `--workflow` is required, so a manifest with no workflow gives it nothing to start | 0.1, 4.4 |
 | x | Does a Glue job the Staging project runs post lineage that the domain shows, and does a Sandbox project's subscription to an asset the Staging project publishes become a Lake Formation grant across the two accounts? **The first half measured 2026-10-19 at 7.1: yes, through an endpoint.** With AWS's OpenLineage settings the job posts its own events as the project role, which already holds `PostLineageEvent`, and the domain holds them, readable from both accounts; without a `datazone` endpoint in Staging's VPC each post failed *"Network is unreachable"*. The portal draws none of it, since no node is an asset | 7.1, 7.2 |
-| xi | Do the domain unit's policies keep people out of the project: who may create a project from the deployment profile, add a member, or take ownership? | 6.1 |
+| xi | Do the domain unit's policies keep people out of the project: who may create a project from the deployment profile, add a member, or take ownership? **Answered 2026-10-21 at 6.1**: the root unit grants `CREATE_PROJECT_FROM_PROJECT_PROFILE` for `deployment` to Staging's InfrastructureAccess session group alone, and the person's `CreateProject` was refused though the wizard lists the profile; a contributor is offered no member or role control, and `OVERRIDE_PROJECT_OWNERS` is granted to nobody | 6.1 |
 
 ## What this stage builds, and in which accounts
 
@@ -54,13 +54,13 @@ Every row is removed at pass 8, at the step the last column names.
 | `identity/org-policies/` (amended) | the carve-out of `Staging Account` from `DenyDataZoneEntirely`, and from `sagemaker:CreateDomain` only if decision 1 lands on `Tooling`, by `aws:PrincipalAccount` against a new placeholder `<ACCOUNT_ID_STAGING>`; the battery's rows for both directions | — | 8.7 |
 | Data Governance, console (user) | the association of `Staging Account` to `awsds-studio` | — | 8.4 |
 | `scripts/tfhygiene/backend.py` | the `staging` rows of `SMUS_DEPLOYMENT_MEMBERS`, the list 2.3 wrote empty for an associated account no person works in, and of `SMUS_ASSOCIATED` | — | 8.2 |
-| `staging/studio/` (new) | the blueprint prerequisites `sandbox/sagemaker/` holds, through `terraform-modules/sagemaker-prereqs/` (the provisioning and manage-access roles, the D13 boundary for the project role, the project key, the projects bucket, the log group), and on its second apply the configuration of decision 1's base blueprint alone, with its grant; `sandbox/workflows/`'s grant on `deploy-staging`'s project role (`workflows.tf`, 4.4); `DataLake`'s configuration and grant, for 7.2's table (decision 5, path A); `AmazonDataZoneGlueManageAccessRolePolicy` on the manage-access role (`manage-access.tf`, 7.2) | `[P]` for the stage's life | 8.1 (the attachment), 8.3, 8.6 |
+| `staging/studio/` (new) | the blueprint prerequisites `sandbox/sagemaker/` holds, through `terraform-modules/sagemaker-prereqs/` (the provisioning and manage-access roles, the D13 boundary for the project role, the project key, the projects bucket, the log group), and on its second apply the configuration of decision 1's base blueprint alone, with its grant; `sandbox/workflows/`'s grant on `deploy-staging`'s project role (`workflows.tf`, 4.4); `DataLake`'s configuration and grant, for 7.2's table (decision 5, path A); `AmazonDataZoneGlueManageAccessRolePolicy` on the manage-access role (`manage-access.tf`, 7.2); `awsds-staging-person-session-deny` on the project role (`person-session.tf`, 6.2) | `[P]` for the stage's life | 8.1 (the attachments), 8.3, 8.6 |
 | `data-governance/governance/` (amended) | the project profile `deployment`: the base blueprint's environment configuration and, for 7.2, `DataLake`'s on demand, with `enableSpaces` false and not editable where the blueprint has it; its create grant names the identity decision 3 picks and no persona group | — | 8.2 |
-| The domain | the project `deploy-staging`, whose only members are the identities that deploy (decision 3), and its two environments, `Tooling` and, for 7.2, `DataLake` | DataZone's | 8.1 |
+| The domain | the project `deploy-staging`, whose only members are the identities that deploy (decision 3), and its two environments, `Tooling` and, for 7.2, `DataLake`; the user and group profiles DataZone creates at an identity's first call, `awsds-deploy-staging`'s at 4.3's | DataZone's | 8.1 |
 | Staging, by the provisioning | the S3 Access Grants instance `default` and the project prefix's location (created 2026-10-19 at 3.1), and the Glue database of 7.2's failed environment | the blueprint's | 8.1 |
 | `staging/foundation/` (amended for 4.3, decision 4 taken) | the actions 4.2's CloudTrail list adds to `awsds-deploy-staging`, three inline documents in `deploy-role.tf` | `[P]` | 8.8 |
 | `staging/egress/` (amended) | `datazone` in `extra_services`, the endpoint 7.1's Glue job posts lineage through | `[E]` | 8.8 |
-| `awsds/app-etl` and one awsds-workflows example | a `staging` stage in `app-etl`'s manifest, on a measurement branch that is never merged; the example's two manifests, `orchestration-demo` and `dagid-copy` (5.1, 5.2), in a measurement folder on the laptop, never committed | — | 8.8 |
+| `awsds/app-etl` and one awsds-workflows example | a `staging` stage in `app-etl`'s manifest, 4.3's job and 7.2's table change, on a measurement branch that is never merged and is protected for the window; the example's two manifests, `orchestration-demo` and `dagid-copy` (5.1, 5.2), in a measurement folder on the laptop, never committed | — | 8.8 |
 
 **Not built**: `staging/orchestration/`, a chain or a schedule, the Glue job's declaration in a Staging
 slice (D41 item 9), anything in Production. **Why `staging/studio/` and not `staging/sagemaker/`**:
@@ -404,7 +404,19 @@ deploys.
   2026-10-20, the lint reproduced here). `ECR_REGISTRY`, which the job reads beside `DOMAIN_ID` and
   `DOMAIN_REGION`, is the protected project variable Stage 8's job 193 added, read in GitLab before the
   run. The role has no group profile in the domain yet, so its first run is refused as a non-member and
-  creates one, and the membership by group id follows, as in Sandbox.
+  creates one, and the membership by group id follows, as in Sandbox. **The sitting's order, reviewed
+  2026-10-21**: the user protects `stage-18-staging` before the push, since GitLab marks a pipeline
+  protected when it creates it, and only a protected pipeline reaches the deploy runner and the protected
+  variables; then the push of `6a23b4d`, `ECR_REGISTRY` read, and the user's start of the manual job. The
+  first run stops at the storage items, before `workflow.create`, so the workflow is untouched: the CLI
+  1.0.9 processes the bootstrap actions only once every storage item deployed (`commands/deploy.py`, read
+  2026-10-21), and a non-member's `ListConnections` fails them, as Sandbox's job 201 did on 2026-10-19.
+  The role's `IAM_ROLE_SESSION_GROUP` profile, found with `search-group-profiles`, joins as `PROJECT_OWNER`
+  by `groupIdentifier`, the user's command as `awsds-infra-staging` (the classifier refuses Claude a
+  membership grant), and the job is retried. CloudTrail then reads 6.2's worker side: the workers'
+  sessions carry no source identity and meet no deny, and DataZone's own sessions for the deploy role
+  carry its user profile id, as InfrastructureAccess's did at 4.2 (14 `athena:GetWorkGroup`, read
+  2026-10-21), so the deny binds them and their calls are expected to be reads.
 - **4.4 — [Claude⚡] Run it** (ix), once the Prerequisites' Stage 8 3.0 half and `vpc-v0.4.0` are
   applied (both 2026-10-19): the sample input placed, then `run --targets staging --workflow` from the laptop, and `start-workflow-run` as the deploy identity; `get-workflow-run` to the end; the
   tasks' identity, subnets and endpoints read from CloudTrail and the logs. **The first run, 2026-10-19**
@@ -639,7 +651,13 @@ stage-18-deploy:
   contributor again, the folder `teste-6.2` and the querybook's compute are refused *"with an explicit
   deny in an identity-based policy"* naming `awsds-staging-person-session-deny`. Then the re-reads:
   the person's side with the environment down (6.1's membership cycle, the folder's write expected
-  refused) and the worker's by 4.3's run at the next sitting.
+  refused) and the worker's by 4.3's run at the next sitting. **Corrected 2026-10-21** (the log):
+  DataZone sets the source identity on every session it opens on the project role, a person's being one
+  case. At 4.2's and 7.1's deploys it opened them for InfrastructureAccess's `IAM` user profile, with the
+  same four session tags, each calling `athena:GetWorkGroup` alone; at the data source's creation it
+  opened `SYSTEM@<environment>`, source identity `SYSTEM` and no tag, for one `GetTables` (6f's log of
+  2026-10-20). The deny binds those sessions as well and no worker's; it leaves a deploy and a listing
+  working while they only read, which 4.3's run and 7.2's data source run re-read.
 
 ### 7. Lineage and the catalog (D26)
 
@@ -684,7 +702,7 @@ stage-18-deploy:
   data source on the database scheduled daily at 02:02 UTC, and Lake Formation's admins unchanged. The
   failed environment's database, `glue_db_c2ej62w956q2a8`, survived both deletions, an orphan for 8.1.
   **What is left needs a sitting**, the hub and Staging's egress up:
-  1. **[Claude⚡] The table**: the Glue task writes its output as a table, `trades`, in
+  1. **[pipeline] The table**: the Glue task writes its output as a table, `trades`, in
      `glue_db_d6ogysnx78dguo`, located under the database's `dev/data/catalogs/`, which the project role may
      do under the provisioning role's project-conditioned `CREATE_TABLE`; the job gains
      `--enable-glue-datacatalog`, and `transform.py` and the workflow change on the measurement branch,
@@ -697,18 +715,44 @@ stage-18-deploy:
      goes with it [inferred]: after the subscription the task does not run again before the reads.
      Unmeasured: whether the job's `GlueJobRunnerSession` carries `context.datazone.projectId`, which
      the `CREATE_TABLE` grant is conditioned on; a refusal reads *"Insufficient Lake Formation
-     permission(s)"* on `CreateTable`, after the CSV is written.
+     permission(s)"* on `CreateTable`, after the CSV is written. **Reviewed 2026-10-21**: the table
+     deploys through 4.3's job once 4.3 has passed, a `[pipeline]` act the user starts: `v0.2.1`'s
+     bundle holds `glue/transform.py`, which writes no table (its listing, read 2026-10-21), so the job
+     copies the branch's script beside the manifest and the workflow, and reads `deploy-staging-lakehouse`'s
+     `glueDBName` at run time as `STAGING_TABLE_DATABASE`, through the DataZone reads the role holds. The
+     two commits sit on the clone's local branch `stage-18-table-job`: `bfb1a28`, `e14e910` picked onto
+     `6a23b4d`, and `7186404`, the job (below), pushed to `stage-18-staging` after 4.3's `SUCCESS`; the
+     tests and ruff pass and the lint fails as the branch's does. The write needs two grants on the
+     project context: `CREATE_TABLE` on the database (2026-10-20) and `DATA_LOCATION_ACCESS` on
+     `…/d1veybt5oak4uo/dev/` (the project's creation, 2026-10-19 06:06:51Z). The database's `LocationUri`
+     is `…/dev/data/catalogs/`, so the table lands at `…/catalogs/trades`. The project role carries the
+     tag `AmazonDataZoneProject` `d1veybt5oak4uo` [the condition's source unmeasured]. A table's creator
+     holds `ALL` with the grant option on it (6f's upload in Sandbox, 2026-09-13), the publishing
+     project's half of AWS's terms.
   2. **[Claude⚡] The asset**: a run of the project's Glue data source, `start-data-source-run`, since it
      publishes nothing on import (`publishOnImport` false) and its daily schedule fires at 02:02 UTC;
-     then the asset published as the project's owner, Staging's InfrastructureAccess.
+     then the asset published as the project's owner, Staging's InfrastructureAccess. The run lists the
+     database in a `SYSTEM` session of the project role, which 6.2's deny binds, so the run is that
+     session's re-read; a completed run bills compute units (`PRICING.md` §5).
   3. **[user] The subscription**: from `test-experimentation`, whose `DataLake` environment
      `test-experimentation-lakehouse` is `ACTIVE` since 2026-10-20 (created after
      `sagemaker-prereqs-v0.8.0`, PR #207) and is the subscription target on that side; Staging's
      environment carries `deploy-staging-lakehouse-default-target` for `GlueTableAssetType` and
      `GlueViewAssetType`. **[Claude⚡]** The approval, `accept-subscription-request` as Staging's owner.
+     **Read 2026-10-21**: `test-experimentation`'s owner is the Data Scientist User, so the user
+     subscribes signed in as that person, from a separate browser profile. Both `DataLake` targets name
+     their project's role as the manage-access role and `abac:CURRENT_PROJECT` as the authorized
+     principal, so on Sandbox's side the fulfilment acts as `test-experimentation`'s role and grants to
+     its project context. Staging's Lake Formation reads `CROSS_ACCOUNT_VERSION` 1 and Sandbox's 4;
+     Lake Formation needs version 3 to share with an IAM principal in another account, and AWS's DataZone
+     pages name no version, so the approval reads whether the fulfilment passes at 1 (decision 12). Both
+     accounts' Data Catalog encryption is `DISABLED`, so the rule against sharing a catalog under Glue's
+     service-managed key does not apply.
   4. **[Claude] The reads**: the Lake Formation grants DataZone writes in Staging and in Sandbox, the RAM
      share, the resource link in Sandbox's database, the writing role of each (INT-23's claim); then
-     **[user]** a Sandbox notebook in a space reads the table.
+     **[user]** a Sandbox notebook in a space reads the table. Staging's grants are read in CloudTrail,
+     the infrastructure user being no Lake Formation admin there, and Sandbox's with `list-permissions`
+     to its last page (PR #234).
 - **7.3 — [Claude] Redshift is read, not measured**: Staging has no warehouse, and a Sandbox project
   reading a governed Redshift table is INT-24, Stage 9 step 9.7's. AWS's pages, read 2026-10-17: a
   subscription to a Redshift asset across accounts adds a datashare that the producer side authorizes
@@ -887,12 +931,71 @@ index 4c4ae9f..3f33626 100644
            "--conf": "spark.extraListeners=io.openlineage.spark.agent.OpenLineageSparkListener --conf spark.openlineage.transport.type=amazon_datazone_api --conf spark.openlineage.transport.domainId={domain.id} --conf spark.glue.accountId={env.ACCOUNT_ID} --conf spark.openlineage.facets.custom_environment_variables=[AWS_DEFAULT_REGION;GLUE_VERSION;GLUE_COMMAND_CRITERIA;GLUE_PYTHON_VERSION;] --conf spark.openlineage.columnLineage.datasetLineageEnabled=True --conf spark.glue.JOB_NAME=app-etl-{proj.id}"
 ```
 
+#### 7.2's job change
+
+`7186404` against `bfb1a28`, which is `e14e910` picked onto `6a23b4d`, on the clone's local branch
+`stage-18-table-job`. Saved to a file, the block goes onto `stage-18-staging` with `git apply` after
+the table change. The job copies the branch's Glue script, since `v0.2.1`'s writes no table, and
+exports the `DataLake` database the staging stage reads as `TABLE_DATABASE`; an empty or `None` value
+stops the job before any write.
+
+```diff
+diff --git a/.gitlab-ci.yml b/.gitlab-ci.yml
+index a8f9a65..164f894 100644
+--- a/.gitlab-ci.yml
++++ b/.gitlab-ci.yml
+@@ -204,6 +204,8 @@ test-deploy:
+ # role (decision 20); the account, the subnets, the project's security group and its key are read at run
+ # time, so no account-specific value sits here or in a CI/CD variable. A deploy that names no network
+ # from the Tooling environment stops: without it the workflow lands in the service's own network.
++# Step 7.2 puts the Glue task's script beside them too, and reads the database of the project's DataLake
++# environment, which the task writes the table `trades` to.
+ stage-18-deploy:
+   stage: deploy
+   # Started apart from the test stage: the workflow lint fails this branch, whose workflow names
+@@ -221,6 +223,7 @@ stage-18-deploy:
+     BUNDLE_SHA256: 7fb374d15c23953cb6ad6d9f5473f97d2c83ff2db167703a5a830d96add95fff
+     IMAGE_DIGEST: sha256:247ec6b661ceb03d2927e1ce5a3c07d9287280a639abed18ce8daf898ed4ce0c
+     STAGING_PROJECT_NAME: deploy-staging
++    STAGING_LAKEHOUSE_NAME: deploy-staging-lakehouse
+   script:
+     - |
+       set -eu
+@@ -237,6 +240,7 @@ stage-18-deploy:
+       python3 -m zipfile -e bundle.zip extracted
+       cp manifest.yaml extracted/manifest.yaml
+       cp workflows/app-etl.yaml extracted/workflows/app-etl.yaml
++      cp glue/transform.py extracted/glue/transform.py
+       export AWS_PROFILE=awsds-deploy-staging
+       echo "== who deploys"
+       aws sts get-caller-identity --query Arn --output text
+@@ -247,12 +251,14 @@ stage-18-deploy:
+       project_id="$(aws datazone list-projects --domain-identifier "$DOMAIN_ID" --name "$STAGING_PROJECT_NAME" --query 'items[0].id' --output text)"
+       STAGING_PROJECT_SG="$(aws ec2 describe-security-groups --filters "Name=group-name,Values=datazone-$project_id-dev" --query 'SecurityGroups[0].GroupId' --output text)"
+       STAGING_PROJECT_KEY_ARN="$(aws kms describe-key --key-id alias/awsds-staging-project --query KeyMetadata.Arn --output text)"
+-      for name in STAGING_SUBNET_AZ1 STAGING_SUBNET_AZ2 STAGING_PROJECT_SG STAGING_PROJECT_KEY_ARN; do
++      lakehouse_id="$(aws datazone list-environments --domain-identifier "$DOMAIN_ID" --project-identifier "$project_id" --name "$STAGING_LAKEHOUSE_NAME" --query 'items[0].id' --output text)"
++      STAGING_TABLE_DATABASE="$(aws datazone get-environment --domain-identifier "$DOMAIN_ID" --identifier "$lakehouse_id" --query "provisionedResources[?name=='glueDBName'].value | [0]" --output text)"
++      for name in STAGING_SUBNET_AZ1 STAGING_SUBNET_AZ2 STAGING_PROJECT_SG STAGING_PROJECT_KEY_ARN STAGING_TABLE_DATABASE; do
+         eval "value=\${$name}"
+         case "$value" in ""|None) echo "FATAL: $name could not be read"; exit 1;; esac
+       done
+-      export STAGING_ACCOUNT_ID STAGING_SUBNET_AZ1 STAGING_SUBNET_AZ2 STAGING_PROJECT_SG STAGING_PROJECT_KEY_ARN
+-      echo "project $project_id, subnets $STAGING_SUBNET_AZ1 $STAGING_SUBNET_AZ2, security group $STAGING_PROJECT_SG"
++      export STAGING_ACCOUNT_ID STAGING_SUBNET_AZ1 STAGING_SUBNET_AZ2 STAGING_PROJECT_SG STAGING_PROJECT_KEY_ARN STAGING_TABLE_DATABASE
++      echo "project $project_id, subnets $STAGING_SUBNET_AZ1 $STAGING_SUBNET_AZ2, security group $STAGING_PROJECT_SG, table database $STAGING_TABLE_DATABASE"
+       cd extracted
+       echo "== deploy to staging, as awsds-deploy-staging"
+       rc=0
+```
+
 ### 8. The unwinding, then the verdict
 
 The reverse of passes 1 to 3, in 6b pass 1's order, each step read back before the next.
 
 - **8.1 — [Claude⚡] Remove what the project holds, then the project**: the subscription and the asset,
-  the orphaned database `glue_db_c2ej62w956q2a8` of 7.2's failed environment, dropped by Staging's
+  the subscription read gone on Sandbox's side too (the resource link in `test-experimentation-lakehouse`'s
+  database, its grants and the RAM share), the orphaned database `glue_db_c2ej62w956q2a8` of 7.2's failed environment, dropped by Staging's
   InfrastructureAccess once it joins the admins (it holds no Lake Formation permission there, and the
   two admins trust DataZone and, for the provisioning role, CloudFormation alone): a `PutDataLakeSettings`
   keeping the two SMUS roles and every other field, then `DROP` granted to itself on both databases
@@ -908,14 +1011,16 @@ The reverse of passes 1 to 3, in 6b pass 1's order, each step read back before t
   (`DeletionPolicy: Retain`, `lessons.md`), and both read by name (`get-database` answers Lake Formation's
   refusal for a database that exists, `EntityNotFoundException` for one that does not); then the S3
   Access Grants location for the project's prefix and the account's `default`
-  instance, both created at the project's provisioning; 7.1's lineage events and nodes and the project
-  role's `IAM` user profile, domain objects, read and recorded;
+  instance, both created at the project's provisioning; 7.1's lineage events and nodes, the project
+  role's `IAM` user profile and `awsds-deploy-staging`'s user and group profiles, domain objects, read and
+  recorded;
   `AWSServiceRoleForAmazonAthena`, the provisioning's service-linked role, deleted with
   `delete-service-linked-role` once nothing uses it and its deletion status read, or recorded as kept;
   `AWSServiceRoleForAmazonMWAAServerless` left to Stage 10, whose verification iii reads it;
   the CLI's log groups and the run's (`/aws/sagemaker/ProcessingJobs`, `datazone-<project>-dev/error` and
   `/output`), which carry no retention, deleted, which closes `EXC-21`, or recorded under `EXC-10`'s shape.
-  6.1's folder `shared/teste-6.1/` goes with the bucket at 8.6, and its querybook `bsmw1ns168paxc` with the
+  6.1's folder `shared/teste-6.1/` and 7.2's table objects under `dev/data/catalogs/trades/` go with the
+  bucket at 8.6, the table itself with its database, and 6.1's querybook `bsmw1ns168paxc` with the
   project.
 - **8.2 — [Claude⚡] Remove the profile and the rows in one edit**: the `deployment` profile and its grant,
   the `SMUS_DEPLOYMENT_MEMBERS` row and the `SMUS_ASSOCIATED` row (6b step 1.6's rule: one list alone
@@ -935,7 +1040,10 @@ The reverse of passes 1 to 3, in 6b pass 1's order, each step read back before t
   by `PutDataLakeSettings` carrying every other field as read (a full replace, Lesson 60):
   `CROSS_ACCOUNT_VERSION` 1 and `SET_CONTEXT` `TRUE`, both from before the stage, and the default lists
   empty, the state InfrastructureAccess's own call left on 2026-09-06 (6b's unwinding); then read back to
-  0.3's empty list with those parameters.
+  0.3's empty list with those parameters. Two fields go back rather than across:
+  `AllowFullTableExternalDataAccess`, which the provisioning role's second call set `true` at 06:05:34Z on
+  2026-10-19 where no call before had set it (read 2026-10-21), returns to `false`, and a version decision
+  12 raised returns to 1.
 - **8.7 — [Claude⚡] Restore the SCP**: the carve-out and the placeholder removed, `identity/org-policies/`
   applied, the battery's rows removed, and from `awsds-infra-staging` a `datazone list-domains` denied
   with the SCP's wording; the `EXC-nn` closed.
@@ -982,8 +1090,9 @@ The reverse of passes 1 to 3, in 6b pass 1's order, each step read back before t
 Rates measured in `us-west-2` (`docs/PRICING.md`): Staging's 12 endpoints, `datazone` among them since 7.1, at USD 0.120 an hour
 while up, with the hub; MWAA Serverless at 0.088 per task-hour; Glue 6.0 and later at 0.308 per DPU-hour in `us-west-2` (offer of 2026-10-12; `app-etl`'s job is `GlueVersion: "6.0"`), 0.44 before; the DataZone domain's
 metadata in cents per month. A project's environment holds no compute of its own unless the blueprint
-starts one, which question ii reads. The stage's spend is read from Cost Explorer at 8.9, not estimated
-(Lesson 6).
+starts one, which question ii reads; `deploy-staging-lakehouse`'s data source runs daily at 02:02 UTC
+from 2026-10-21 to 8.1, a completed run billing compute units at 1.776 each (`PRICING.md` §5). The
+stage's spend is read from Cost Explorer at 8.9, not estimated (Lesson 6).
 
 ## Decisions due while executing
 
@@ -1079,6 +1188,16 @@ Each is decided during the stage and written into the stage log with its recomme
     worker's by 4.3's run at the next sitting. The alternative: 6.2 recorded as read and the deny left to
     the verdict, which needs it only if D41 item 2 is reopened. **Taken 2026-10-21 by the user**, to the
     recommendation.
+12. **Staging's cross-account version at the approval** (7.2 step 3). Staging's Lake Formation reads
+    `CROSS_ACCOUNT_VERSION` 1, the value 6b's unwinding wrote on 2026-09-06, and Lake Formation needs
+    version 3 to share with an IAM principal in another account; AWS's DataZone pages name no version, and
+    the targets' `abac:CURRENT_PROJECT` does not say which principal the producer's grant names (read
+    2026-10-21). Recommended: **approve at version 1 and read the fulfilment**: a grant to the account
+    passes at 1, and a refusal names the requirement, which is the measurement. If the fulfilment fails
+    on the version, the version goes to 4, Sandbox's and Data Governance's, through a
+    `PutDataLakeSettings` from Staging's InfrastructureAccess carrying every other field as read (Lesson
+    60), the grant is retried, and 8.6 writes 1 back. The alternative: version 4 before the approval,
+    which spares a failed grant and leaves the question unread.
 
 ## Risks
 
@@ -1111,5 +1230,10 @@ Each is decided during the stage and written into the stage log with its recomme
   attaches what `main` holds, so 1.1 edits `main`'s document, and 1.3's plan changes only
   `DenyDataZoneEntirely` and, if 1.1 split it, `CreateDomain`'s statement. The two stages never share an
   apply.
+- **6.2's deny binds DataZone's own sessions** (6.2's correction, 2026-10-21). A call those sessions make
+  that the deny names, an object written to the projects bucket or a Glue or SageMaker write, is refused
+  for a member's or a `SYSTEM` operation as for a person's. The deploys' and the data source's sessions
+  read alone so far; 4.3's run, 7.2's data source run and the subscription are where a new call would
+  show, the refusal naming `awsds-staging-person-session-deny`.
 - **Residues**: the CLI's log groups carry no retention, the workflows' versions and run history leave
   with the project, and the project key waits out its deletion window.

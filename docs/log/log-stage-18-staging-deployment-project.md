@@ -1426,3 +1426,95 @@ the person's DataZone profile id by `<profile id>`.*
   unmasked (00:52Z): the session is `<profile id>@bujd259b8g9zps`, the DataZone profile id and the
   environment id, the shape 6h read in Sandbox, and `RedshiftDbUser` is `user-<profile id>@d1veybt5oak4uo`.
   The source identity and `datazone:userId` are as read. No e-mail address names the session.
+
+## 2026-10-21 — the plan reviewed against the readings, with the environment down
+
+*Claude, in the session that took Stage 18 over at PR #231's merge (00:57:20Z), from the worktree
+`quizzical-pascal-95268a` on the branch `claude/quizzical-pascal-95268a`, synced with `main` at
+`d7c67643`. Every AWS call was a read as the infrastructure user with `InfrastructureAccess`: in `Staging
+Account` (`awsds-infra-staging`), `Sandbox Account 1` (`awsds-infra-sandbox-1`), `Data Governance Account`
+(`awsds-infra-data`) and `Production Account` (`awsds-infra-prod`, the hosts and the release bundle).
+Nothing was created, changed or deleted in AWS or in GitLab; the commits below are in the laptop's clones
+alone. Account ids are replaced by `<acct>`. Times are UTC.*
+
+- **[user] The request**: *"Antes de prosseguir, sincronize sua cópia do repositório em relação à main, e
+  revise o plano do estágio 18 considerando o andamento que foi dado a este estágio até o momento, bem
+  como as atualizações das leituras recentes no plano. Faça as correções necessárias. Em seguinte, mapeie
+  as etapas que estão pendentes no estágio 18. Verifique se existe algo que possa ser executado sem
+  precisar do ambiente no ar e execute. Caso não exista, me avise que subo o ambiente."*
+- **[Claude] The environment** (00:59Z): Production's `awsds-prod-vpn`, `-proxy` and `-gitlab` `stopped`,
+  no interface endpoint in Staging.
+- **[Claude] 4.3's job against the plan**: the clone's two commits add the stage file's block byte for
+  byte, a blank separator line apart. The CLI 1.0.9's `run` prints `🔗 ARN:` and `📋 Run ID:`, which the
+  job's `sed` reads (`commands/run.py`). Its `deploy` processes the bootstrap actions only once every
+  storage item has deployed (`commands/deploy.py`, `deploy_command`), so a non-member's first run, its
+  `ListConnections` refused, stops before `workflow.create` and leaves the workflow as it is. The deploy
+  role's three inline documents admit every call the job makes. The job's run-time values, read as the
+  infrastructure user: the two private subnets, `datazone-d1veybt5oak4uo-dev`'s security group, the project
+  key, and `glue_db_d6ogysnx78dguo` through `list-environments --name deploy-staging-lakehouse` and
+  `get-environment`'s `provisionedResources`.
+- **[Claude] 7.2's table would not have reached the deploy.** `v0.2.1`'s bundle
+  (`s3://awsds-prod-releases/app-etl/v0.2.1/app-etl.zip`, its SHA256 `7fb374d1…` checked) holds seven
+  files, `glue/transform.py` among them, the script that writes no table; 4.3's job copies the branch's
+  manifest and workflow beside the extracted bundle and nothing else, so its deploy would have uploaded
+  that script. The fix, on the clone `$HOME/tmp/app-etl-check`'s local branch `stage-18-table-job`:
+  `bfb1a28`, `e14e910` picked onto `6a23b4d`, and `7186404`, the job copying the branch's
+  `glue/transform.py` and reading the `DataLake` environment's `glueDBName` as `STAGING_TABLE_DATABASE`,
+  an empty or `None` value stopping it before any write. The 16 tests pass, ruff passes, `bash -n` and `sh
+  -n` pass on the job's script, and the pinned lint fails as the branch's does: *"manifest.yaml:
+  manifest: stage dev: sem ACCOUNT_ID, TABLE_DATABASE em environment_variables, que os workflows usam"*,
+  and the same for `test`. The stage file's two diff blocks, applied onto `6a23b4d`, give `7186404`'s tree.
+- **[Claude] The grants the table's write needs** (Staging's CloudTrail): the provisioning role's
+  `BatchGrantPermissions` at 2026-10-19 06:06:51Z gave `<acct>:IAMPrincipals` and
+  `arn:aws:identitystore:::user/*`, under `context.datazone.projectId=="d1veybt5oak4uo"`, `DESCRIBE` on
+  `default` and `DATA_LOCATION_ACCESS` on `s3://awsds-staging-smus-projects/dzd-d8yrvx1ko7im6o/d1veybt5oak4uo/dev/`,
+  beside 2026-10-20's `CREATE_TABLE` on the database. `glue_db_d6ogysnx78dguo`'s `CreateDatabase` (2026-10-20
+  02:02:06Z) carries `locationUri` `…/d1veybt5oak4uo/dev/data/catalogs/`, the orphan's the same. The
+  project role's tags include `AmazonDataZoneProject` `d1veybt5oak4uo`; the D13 boundary's S3 deny names
+  the lake's registered buckets, not the projects bucket.
+- **[Claude] Whom the person-session deny binds**: every `AssumeRole` of
+  `datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps` in Staging's trail, 2026-10-19 05:00Z to 2026-10-21
+  02:00Z, grouped by who assumed it, the session's shape and its source identity:
+
+  | Assumed by | Session | Source identity | Session tags | Count, last |
+  |---|---|---|---|---|
+  | `datazone.amazonaws.com` | `AmazonDataZoneEnvironmentDeployer-<acct>` | none | none | 3, 2026-10-19 06:06:50Z |
+  | `datazone.amazonaws.com` | `65620b9d-e03d-4947-9551-b8fe80ea2d99@bujd259b8g9zps` | that profile id | `dz`, `datazone:userId`, `RedshiftDbUser`, `RedshiftDbRoles` | 45, 2026-10-19 21:59:43Z |
+  | `datazone.amazonaws.com` | `SYSTEM@bujd259b8g9zps` | `SYSTEM` | none | 3, 2026-10-20 02:02:18Z |
+  | `datazone.amazonaws.com` | `28f1b390-0041-7068-8cc7-9ccef94277d1@bujd259b8g9zps` | that profile id | the same four | 34, 2026-10-21 00:52:58Z |
+  | `glue.amazonaws.com` | `S3AC-…`, `GlueVpcAuthSession`, `GlueRoleValidationSession`, `GlueJobRunnerSession` | none | none | 40 |
+  | `athena.amazonaws.com` | `ExecutionRoleVerification…` | none | none | 1 |
+  | `sagemaker.amazonaws.com`, `im.amazonaws.com` | `AnalyticsValidation`, `SageMaker` | none | none | 51 |
+  | `airflow-serverless.amazonaws.com` | `AmazonMWAAServerless` | none | none | 18 |
+
+  `get-user-profile` names `65620b9d-…`: an `IAM` profile, Staging's InfrastructureAccess role, in the
+  session group `65b0f127-…` that owns the project. In 4.2's window (2026-10-19 20:04 to 20:11Z) its
+  sessions made 14 calls, all `athena:GetWorkGroup`, from AWS's addresses. So DataZone sets the source
+  identity on every session it opens for a member, an IAM principal included, and on its own `SYSTEM`
+  sessions; 6.2's deny binds them all and no worker's, and the sessions read so far only read.
+  `person-session.tf`'s comment and `AWS_STATE.md`'s sentence say so now; a comment changes no plan.
+- **[Claude] 7.2's subscription, read**: `test-experimentation` (`4gqfau9xuo6e4w`) is owned by the Data
+  Scientist User's profile, with three contributors, and its `Tooling` and
+  `test-experimentation-lakehouse` (`4zojr4rr6bmnww`) environments are `ACTIVE`. Both `DataLake` targets,
+  `test-experimentation-lakehouse-default-target` and `deploy-staging-lakehouse-default-target`, take
+  `GlueTableAssetType` and `GlueViewAssetType`, name `abac:CURRENT_PROJECT` as the authorized principal and
+  their own project's role as the manage-access role, provider *"Amazon SageMaker"*. Lake Formation: in
+  Staging the two SMUS roles as admins, `CROSS_ACCOUNT_VERSION` 1, `SET_CONTEXT` `TRUE`, both default
+  lists empty, `AllowFullTableExternalDataAccess` `true`; in Sandbox three admins (InfrastructureAccess
+  and the two SMUS roles), version 4, the rest the same. The Data Catalog's encryption at rest reads
+  `DISABLED` in both, and neither holds a Glue resource policy (`EntityNotFoundException`).
+- **[Claude] Staging's `PutDataLakeSettings`, its five calls read again**: InfrastructureAccess's of
+  2026-08-19 and 2026-09-06 carry no `allowFullTableExternalDataAccess`; of the provisioning role's three at
+  2026-10-19 06:05:34Z, one carries it `true`, the value the account holds. 8.6 writes it back to `false`.
+- **[Claude] AWS's pages, read for 7.2 step 3** (`REFERENCES.md`): Lake Formation needs version 3 of its
+  cross-account settings to share with an IAM principal in another account, and refuses to share a catalog
+  under Glue's service-managed key; DataZone's fulfilment needs the manage-access role's grantable
+  `DESCRIBE` and `SELECT` and names no version; SageMaker Unified Studio's page says a project's own
+  database needs no added permission to publish from.
+- **[Claude] The plan corrected**, `docs/plan/stages/stage-18-staging-deployment-project.md`: the status;
+  questions iv, vi and xi's answers; the slices table (the deny, the profiles, the branch's contents);
+  4.3's order (the branch protected before the push, the first run stopping before `workflow.create`, the
+  membership by group id, 6.2's reading of DataZone's sessions); 6.2's correction; 7.2's steps (the table
+  through 4.3's job, the two grants, the `SYSTEM` session, the targets and the version, the reads' sources)
+  and its job change as a diff; 8.1's Sandbox side and profiles; 8.6's two fields that go back; decision
+  12; a risk; the data source's cost.
