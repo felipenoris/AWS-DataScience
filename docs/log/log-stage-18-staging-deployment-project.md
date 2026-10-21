@@ -1686,3 +1686,18 @@ AWS or in GitLab. Times are UTC.*
   22:53Z), which reads and prints the commands without running them.
 - **[Claude] The plan corrected**: the status; the section "The order of what is left"; 4.3's listing
   reading; 7.2 steps 1 and 4; 8.1 to 8.3 and 8.6 to 8.8; decisions 13 to 18; a risk; the cost.
+
+## 2026-10-21 — decisions 12 to 18 taken
+
+- **[user] The decisions**, with the environment down: *"Decisões 12 a 18: sigo as recomendações. Na 15,
+  autorizo antecipadamente as escritas do Claude listadas nos blocos B e C, como usuário de infraestrutura
+  na conta Staging, permission set InfrastructureAccess (perfil awsds-infra-staging), e a bateria de SCP no
+  fim do passo 8. Os applies e a membership"*, the message as it arrived, cut by the app at 300 characters;
+  the reply button it came from ends *"continuam comigo."*
+- **[Claude] What the decisions set**: 12, the approval at version 1 and its fulfilment read, version 4 on
+  a refusal and 1 again at 8.6; 13, the read from `test-experimentation`'s query editor, with no Sandbox
+  environment; 14, on a refused `CreateTable`, InfrastructureAccess an admin at once and the project role's
+  two unconditioned grants, gone at 8.1; 15, Claude's writes of the order section's blocks B and C and the
+  battery authorized ahead, the applies and the membership the user's; 16, `stage-18-staging` unprotected
+  and deleted in the sitting; 17, the Athena service-linked role and the six log groups deleted at 8.1;
+  18, pass 8 on the sitting's day. The stage file's decisions, status, 7.2 step 4 and 8.1 carry them.
