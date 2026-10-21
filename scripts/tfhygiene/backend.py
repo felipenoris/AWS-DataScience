@@ -419,17 +419,17 @@ SMUS_MEMBERS = ["sandbox"]
 # the configurations are destroyed - necessarily, since only the member can delete them and only
 # while the association still exists.
 #
-# Staging's row measured 2026-10-19 the same way, after Stage 18 step 2.1's association: the
-# call answered an empty list where it had answered UnauthorizedException that morning.
-SMUS_ASSOCIATED: list = ["sandbox", "staging"]
+# Staging was associated for Stage 18's window, from step 2.1 (2026-10-19) to step 8.4, and its
+# row left with its SMUS_DEPLOYMENT_MEMBERS row at step 8.2.
+SMUS_ASSOCIATED: list = ["sandbox"]
 # The associated accounts no person works in: a deployment project's account (Stage 18 step 2.3).
 # Apart from SMUS_MEMBERS because four readers of that list mean "an account people work in"
 # (Lesson 51): PERSONA_VENDING_ACCOUNTS, interactive_private_cidrs(), production/sagemaker/'s
 # `readers`, and refusal 8 in layers.py. Only governance/'s `members` map and `profiles_enabled` read
-# both lists, so a row here follows its SMUS_ASSOCIATED row, as a SMUS_MEMBERS row does. Staging's
-# row is Stage 18's window: governance/'s `staging` provider alias reads it, so pass 8 removes the
-# two in one commit.
-SMUS_DEPLOYMENT_MEMBERS: list = ["staging"]
+# both lists, so a row here follows its SMUS_ASSOCIATED row, as a SMUS_MEMBERS row does, and a row
+# here needs a provider alias of its own in governance/. Empty since Stage 18 step 8.2; the list
+# stays until Stage 18's verdict says whether a deployment account is ever a member.
+SMUS_DEPLOYMENT_MEMBERS: list = []
 if set(SMUS_MEMBERS) & set(SMUS_DEPLOYMENT_MEMBERS):
     raise ValueError(
         "SMUS_DEPLOYMENT_MEMBERS: an account people work in belongs in SMUS_MEMBERS alone"

@@ -10,26 +10,6 @@ data "aws_caller_identity" "sandbox" {
   provider = aws.sandbox
 }
 
-data "aws_caller_identity" "staging" {
-  provider = aws.staging
-}
-
-# The role granted the `deployment` profile (Stage 18 decision 3): Staging's InfrastructureAccess,
-# resolved by name so neither the account id nor the role's suffix enters a tracked file. `one()`
-# refuses a second match.
-data "aws_iam_roles" "staging_infrastructure_access" {
-  provider    = aws.staging
-  name_regex  = "AWSReservedSSO_InfrastructureAccess_.*"
-  path_prefix = "/aws-reserved/sso.amazonaws.com/"
-}
-
-# The DataZone group that role is: an IAM_ROLE_SESSION_GROUP profile, which every session of the
-# role belongs to. Cloud Control resolves `<domain>|<role ARN>` to it (read 2026-10-19), so the
-# group profile's id stays out of tracked files like the role's.
-data "awscc_datazone_group_profile" "staging_infrastructure_access" {
-  id = "${aws_datazone_domain.this.id}|${one(data.aws_iam_roles.staging_infrastructure_access.arns)}"
-}
-
 # The identity that presses *Manage* in Sandbox's console (Stage 17 decision 13): Sandbox's
 # InfrastructureAccess, resolved the same way, and its session group, made in the portal on
 # 2026-10-15 (INT-25), which model-governance.tf makes a member of the governance project.
@@ -70,7 +50,7 @@ data "aws_ssoadmin_instances" "this" {
 # `one()` rather than `[0]`: a second IdC instance must raise here instead of silently taking
 # the first, which is the shape identity/sso/locals.tf argues for at length.
 data "aws_identitystore_group" "profile_creators" {
-  for_each = var.profiles_enabled ? toset([for p in local.project_profiles : p.group if p.group != null]) : toset([])
+  for_each = var.profiles_enabled ? toset([for p in local.project_profiles : p.group]) : toset([])
 
   provider          = aws.identity
   identity_store_id = one(data.aws_ssoadmin_instances.this.identity_store_ids)

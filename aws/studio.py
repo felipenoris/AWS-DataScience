@@ -108,9 +108,9 @@ BLUEPRINT_ALLOWLIST = (
 # retired name is kept so that `engineering` reappearing reads as the finding it is, rather than
 # as a profile this file has no opinion about.
 PROJECT_PROFILE_NAMES = ("experimentation",)
-# Admitted for Stage 18's window: `deployment` provisions into Staging and no person works in a
-# project born of it. Stage 18 pass 8 deletes the profile and empties this tuple.
-WINDOW_PROFILE_NAMES = ("deployment",)
+# A profile admitted for a stage's window alone. Empty since Stage 18 step 8.2, which deleted
+# `deployment`, so a `deployment` profile reappearing reads as an uncontracted one.
+WINDOW_PROFILE_NAMES: tuple = ()
 # The governance project's profile (Stage 17 decision 13): no environment configuration, so it
 # provisions nothing anywhere. The console's model access publishes into the project born of it,
 # GenerativeAIModelGovernanceProject, and the name is the console's contract, not this file's.
@@ -1121,8 +1121,8 @@ What the checks are, and where each comes from:
          and in each member account none Redshift-backed and none outside
          decision 5's category 1 (step 1.4; D12/D26, docs/SMUS.md)
   US-4   the `experimentation` project profile exists and no uncontracted one does -
-         `deployment` is admitted for Stage 18's window, `engineering` was retired by
-         Stage 6b step 1.1 and its return is a failure
+         a stage's window profile is admitted while WINDOW_PROFILE_NAMES names it,
+         `engineering` was retired by Stage 6b step 1.1 and its return is a failure
   US-5   every Interactive SageMaker AI domain is VpcOnly (step 1)
   US-6   the deployment targets stay headless (D28): no SageMaker domain there,
          and datazone reads denied by the Workloads ceiling read as the control
