@@ -1,9 +1,9 @@
 # Log — index
 
-One file per stage records what was done in AWS by hand. The user and Claude write these files
-cooperatively: Claude records each step of the plan it executes, in the sitting the step ran, and the
-user writes whenever they want — their own acts, a correction, a measurement they hold. A step is not
-finished while the log is silent about it. Plan narrative goes in
+One file per stage records what was done by hand, in AWS or in a sitting with no AWS call. The user and
+Claude write these files cooperatively: Claude records each step of the plan it executes, in the sitting
+the step ran, and the user writes whenever they want — their own acts, a correction, a measurement they
+hold. A step is not finished while the log is silent about it. Plan narrative goes in
 [`docs/plan/history.md`](../plan/history.md), not here.
 
 Claude adds entries; it does not rewrite the ones already there. Not to tidy them, not as a side effect
@@ -22,8 +22,9 @@ Claude maintains this index too. After writing or reading a stage log, Claude br
 
 One log file mirrors one stage file: `docs/log/log-stage-NN-*.md` ↔
 [`docs/plan/stages/stage-NN-*.md`](../plan/stages/INDEX.md), the same slug with a `log-` prefix, so no
-log file shares a filename with the plan file it mirrors. The `Records` column says what each file holds,
-so no stage requires reading another stage's log.
+log file shares a filename with the plan file it mirrors. An entry goes to the log of the stage whose plan
+holds the step, whichever session ran it. The `Records` column says what each file holds, so no stage
+requires reading another stage's log.
 
 | Stage | Log | Records |
 |---|---|---|
@@ -70,9 +71,10 @@ whenever they want. The modes below decide who holds the pen, never what is allo
 | **Claude drafts, the user pastes** | The entry is about acts Claude did not observe, or the user wants the file to stay in their hand. The draft goes to the chat as one fenced block, so it is pasted untouched |
 | **The user writes** | Their own acts and corrections, and any measurement they want kept verbatim. Claude reads what is there and builds on it rather than restating it |
 
-In every mode the entry names its hands (see Provenance above) and follows the rules below. A step
-executed with no session on AWS — a plan written, a document corrected — belongs to the stage file,
-not here: these files record what was done in AWS, and git records the rest.
+In every mode the entry names its hands (see Provenance above) and follows the rules below. A sitting
+with no AWS call — a vendor page read, a pass written, the plan revised — gets an entry too, and its
+provenance note says so: the first 2026-09-18 entry of
+[`log-stage-06f-data-governance.md`](log-stage-06f-data-governance.md) is the wording to copy.
 
 - **English and Markdown** in every mode; the chat is in Portuguese and these files are not. In the
   drafting mode, one fenced code block and never chat prose: a ` ```markdown ` fence, or a longer outer
