@@ -344,3 +344,24 @@ down (`NO_PROXY='*'`). Every call is a read; nothing was applied.*
   `ml.t3.xlarge` (`L-823DAB46`) and `ml.c5.xlarge` (`L-E2BB44FE`) for training 0.0, AWS's default 0.0
   each (22:36Z); `ml.t3.medium` and `ml.c5.large` have no training quota. No type inside the ceiling can
   train in Production without an increase, so Stage 10 5.1's training job waits on one.
+
+## 2026-10-21 — the stage's text brought to `EXC-13`'s rotation and the training quotas on 2026-10-20 (PR #230), recorded
+
+*Claude's sitting, no AWS call: the task session the orchestrating session "Stage 18 checklist" started
+opened PR #230 (merged 2026-10-20T22:55:05Z), which carried two readings into the plan: `EXC-13`'s first
+rotation ([the 5b log](log-stage-05b-redshift-serverless.md), 2026-10-20) and Production's training
+quotas (this log's entry "Production's training quotas read", the PR's one AWS reading). It logged the
+reading and not the text it changed; this entry is written on 2026-10-21 by the orchestrating session
+from the PR's body and diff, with no AWS call.*
+
+- **[Claude] 9.1, "The admin secret"**: the claim that the rotation "fails permanently" with no workgroup
+  gives way to Sandbox's reading, the first rotation succeeding on 2026-10-20. `EXC-13` still gains a
+  Production row: the Production secret rotates on the same schedule.
+- **[Claude] The training quotas in the stage file**: the Status row, 3.5 and the instance-preference
+  risk say that no type inside the ceiling can train in Production without an increase, so Stage 10 5.1's
+  training job waits on one.
+- **[Claude] The battery's training rows**: [`scp-battery.md`](../plan/runbooks/scp-battery.md) phase 4b
+  and the comment over the rows in `aws/probes/probes.py` no longer call the quotas unread; whether
+  `CreateTrainingJob` checks them after authorization still is. No probe changed.
+- **[Claude] "Who executes"**: the `[user]` row reads "the log entries the user writes", as PR #228 has it
+  in the other stage files.
