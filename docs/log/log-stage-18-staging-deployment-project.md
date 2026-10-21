@@ -1272,3 +1272,49 @@ The last two were read again here.*
   three with the person as Contributor; Data lists both Glue databases, the failed environment's orphan
   included; and the Workflows tool is refused by the `deployment` profile, whose `Tooling` carries
   `enableSpaces` `false`, so the person sees no workflow and no run in the portal.
+
+## 2026-10-21 — 6.1's write attempts in the portal
+
+*Read through Claude in Chrome in the tab the user opened for it, signed in as the Data Scientist User
+(the user menu names that user), from 2026-10-20 23:55Z; CloudTrail read 00:06:43Z and 00:07:25Z as
+`awsds-infra-data` and `awsds-infra-staging`. The person's e-mail address, which names a session below,
+is not written here.*
+
+- **[user] The go-ahead**: *"Siga com os testes de escrita do 6.1 na aba do Chrome, pedindo minha
+  confirmação antes de cada clique que grave algo."*, then, for the three writes proposed: *"Sim, pode
+  fazer todas as atividades propostas"*.
+- **[Claude] What the portal offers a contributor**: Files lists `app-etl/`, `getting_started.ipynb`,
+  `operatorFiles/` and `README.md` under Shared, and its Actions menu offers Publish to Catalog, Add
+  business metadata, Create folder, Upload files, Delete and Copy; Members lists the three with no add and
+  no role control; the project's menu offers Project details and Copy project link alone; Manage offers
+  Govern, Browse catalog and the catalog's assets, subscription requests, data sources and metadata
+  entities; the Query Editor offers querybooks; the create-project wizard lists `deployment` and
+  `experimentation`, and steps 1 to 3 pass with `deployment` chosen.
+- **[Claude] Create project with `deployment`** (clicked 00:04:29Z): *"Failed to create project — User is
+  not permitted to perform operation: CreateProject"*; Data Governance's trail holds `CreateProject` at
+  00:04:32Z `AccessDenied`, called by `awsds-data-studio-domain-execution` in session `user-<the person's
+  profile>`, the role the portal calls DataZone through for the person; the project list reads the
+  three projects of before.
+- **[Claude] Create folder `teste-6.1`** (clicked 00:05:11Z): *"Successfully created folder
+  "teste-6.1"."*; the object `dzd-d8yrvx1ko7im6o/d1veybt5oak4uo/shared/teste-6.1/`, 0 bytes, 00:05:13Z;
+  Staging's trail holds the project key's `GenerateDataKey` at 00:05:12Z by
+  `datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps` in a session named after the person's e-mail address,
+  which DataZone assumed (`AssumeRole` by `AWSService`).
+- **[Claude] A querybook** (00:05:35Z on): `CreateNotebook` at 00:05:36Z and `CreateCell` at 00:05:38Z in
+  that session; `StartNotebookCompute` at 00:05:43Z `ServiceQuotaExceededException`, the portal reading
+  *"Status code: 402 - The account-level service limit 'SageMaker Unified Studio Querybooks running on
+  sc.t3.medium instances' is 0 Querybooks, with current utilization of 0 Querybooks and a request delta of
+  1 Querybooks. Please use AWS Service Quotas to request an increase for this quota. If AWS Service Quotas
+  is not available, contact AWS support to request an increase for this quota."* and *"Kernel Error"*. No
+  query ran: the error moved the page, and `SELECT 1` landed in the querybook's description
+  (`UpdateNotebook` at 00:05:53Z). The querybook `bsmw1ns168paxc` stays, untitled.
+- **[Claude] The same session's reads and refusals**: `tag:GetResources` refused, *"is not authorized to
+  perform: tag:GetResources because no identity-based policy allows the tag:GetResources action"*; `glue:GetConnections`, `ListConnectionTypes`, `GetCatalogs`,
+  `GetDatabases`, `athena:GetWorkGroup`, `sqlworkbench:GetResources`, `datazone:GetEnvironment`,
+  `ListNotebooks`, `StartConversation` and `GetConversation` answered.
+- **[Claude] What 6.1 answers**: iv, no: the narrowest designation the domain admits acts as the project
+  role, and a write landed in the project's storage and a querybook in the project, while the portal
+  shows no workflow (spaces off). xi: `CreateProject` from `deployment` is refused by the domain unit's
+  grant though the wizard lists the profile, and a contributor is offered no member or role control.
+  A write landed, so 6.2 runs: the person's session carries the e-mail address as its name, where 7.1's
+  Glue job ran as `GlueJobRunnerSession`.

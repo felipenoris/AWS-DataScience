@@ -615,7 +615,12 @@ stage-18-deploy:
   is no. **In the portal 2026-10-20**, as that person: the project, its three members and both Glue
   databases, the orphan `glue_db_c2ej62w956q2a8` included; Workflows answers *"This tool is not available
   for this project: Spaces are not enabled in this project profile."*, so no workflow and no run shows
-  in the portal of a `deployment` project. The write attempts and the membership's deletion follow.
+  in the portal of a `deployment` project. **The writes, 2026-10-21** (the log): `CreateProject` from
+  `deployment` refused (`AccessDenied`, the wizard listing the profile all the same); a folder created in
+  the project's storage and a querybook created, both as the project role in a session named after the
+  person's e-mail address; the querybook's compute refused on the account's quota of 0
+  `sc.t3.medium` querybooks; no member or role control offered. iv's answer is no, xi's the domain unit's
+  grant at `CreateProject`, and a write landed, so 6.2 runs. The membership's deletion follows.
 - **6.2 — [Claude reads, user decides] The boundary on the project role** (vi), only if 6.1 shows a
   person's write landing: read the session's name and context keys of a portal action against a
   worker's task (6h read the portal's session as `<user id>@<env id>` and a space's as `SageMaker`); a
@@ -895,6 +900,8 @@ The reverse of passes 1 to 3, in 6b pass 1's order, each step read back before t
   `AWSServiceRoleForAmazonMWAAServerless` left to Stage 10, whose verification iii reads it;
   the CLI's log groups and the run's (`/aws/sagemaker/ProcessingJobs`, `datazone-<project>-dev/error` and
   `/output`), which carry no retention, deleted, which closes `EXC-21`, or recorded under `EXC-10`'s shape.
+  6.1's folder `shared/teste-6.1/` goes with the bucket at 8.6, and its querybook `bsmw1ns168paxc` with the
+  project.
 - **8.2 — [Claude⚡] Remove the profile and the rows in one edit**: the `deployment` profile and its grant,
   the `SMUS_DEPLOYMENT_MEMBERS` row and the `SMUS_ASSOCIATED` row (6b step 1.6's rule: one list alone
   flips `profiles_enabled`), with the switch, the `staging` alias and its two data sources, and
@@ -925,6 +932,18 @@ The reverse of passes 1 to 3, in 6b pass 1's order, each step read back before t
   then D41 item 2 kept, with the measurements in place of the argument, or reopened, with Stage 10's
   steps 1.1, 2.4 and 4.2 rewritten around the CLI; `SMUS.md` gains what the blueprint creates in a
   deployment account; `POLICIES.md`'s revision trigger on `DenyDataZoneEntirely` names the result.
+  **An input, from the user's question of 2026-10-20** (whether the profiles should be the same across
+  the accounts, to enable the same blueprints): a deployment profile carries the blueprints the
+  applications use at run time, not the experimentation profile's developer tools. The rule is that it
+  includes every blueprint whose connections or resources the applications' manifests and workflows
+  name: 4.2 and 4.4 deployed and ran `app-etl` on `Tooling` alone, spaces off, since the CLI reads the
+  environment's network and key and the connections the manifest names, and 7.2 added `DataLake` for
+  the table it publishes. The CLI fills `{proj.connection.X}` from the target project's connections
+  (read in its code 2026-10-20); what it does when one is missing is unmeasured. The price is 6.1's
+  reading: with spaces off the portal offers no Workflows tool in a deployment project, so no person
+  sees the workflows or their runs there, and diagnosis goes through the console and the APIs. The
+  portal's Workflows in Staging would cost `Tooling` with spaces on, a SageMaker AI domain in the account
+  and a `CreateDomain` carve-out in `Workloads` (decision 1).
 
 ## Deliverables
 
