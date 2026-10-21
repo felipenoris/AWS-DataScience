@@ -1318,3 +1318,8 @@ is not written here.*
   grant though the wizard lists the profile, and a contributor is offered no member or role control.
   A write landed, so 6.2 runs: the person's session carries the e-mail address as its name, where 7.1's
   Glue job ran as `GlueJobRunnerSession`.
+- **[user] The membership deleted**: *"Rodei o delete-project-membership; pode conferir e fechar o 6.1."*
+- **[Claude] Read back** (00:15:51Z, `list-project-memberships` as `awsds-infra-data`): two members,
+  Staging's InfrastructureAccess session group `PROJECT_OWNER` and the project role's profile
+  `PROJECT_CONTRIBUTOR`, as before 6.1; the person is out of the project. Neither trail holds the
+  `DeleteProjectMembership` yet at 00:16:57Z, the delivery lag. 6.1 done.
