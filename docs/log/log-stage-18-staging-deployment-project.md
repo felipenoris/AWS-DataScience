@@ -1381,3 +1381,48 @@ address and the browser's public address are not written here.*
   and AWS's `SageMakerStudioProjectUserRolePolicy`, `SageMakerStudioProjectRoleMachineLearningPolicy` and
   `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy`; the policy is at `v1`, one attachment, created
   00:39:18Z. The re-reads on both sides follow.
+
+## 2026-10-21 — 6.2's re-read on the person's side, and a correction to the session's name
+
+*Read through Claude in Chrome in a tab of its own, signed in as the Data Scientist User (the user menu
+names that user), and in CloudTrail as `awsds-infra-staging` and `awsds-infra-data`. In the portal's
+messages below, the account ids are replaced by `<Staging Account>` and `<Data Governance Account>`, and
+the person's DataZone profile id by `<profile id>`.*
+
+- **[user] The membership added again**, as `awsds-infra-staging`, at 00:49:26Z (Data Governance's trail):
+
+  ```
+  ➜  AWS-DataScience git:(main) NO_PROXY='*' aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d1veybt5oak4uo --designation PROJECT_CONTRIBUTOR --member userIdentifier=28f1b390-0041-7068-8cc7-9ccef94277d1 --profile awsds-infra-staging --region us-west-2
+  ➜  AWS-DataScience git:(main)
+  ```
+
+  Read back at 00:49:45Z: three members, the person a `PROJECT_CONTRIBUTOR`.
+- **[Claude] The folder `teste-6.2`** (clicked 00:50:32Z), refused in the dialog: *"[AccessDenied] User:
+  arn:aws:sts::<Staging Account>:assumed-role/datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps/<profile
+  id>@bujd259b8g9zps is not authorized to perform: s3:PutObject on resource:
+  "arn:aws:s3:::awsds-staging-smus-projects/dzd-d8yrvx1ko7im6o/d1veybt5oak4uo/shared/teste-6.2/" with an
+  explicit deny in an identity-based policy: arn:aws:iam::<Staging Account>:policy/awsds-staging-person-session-deny"*.
+  The write is an S3 data event, which `lookup-events` does not return.
+- **[Claude] The querybook**: opening the Query Editor reopened 6.1's querybook, whose compute the portal
+  started and the deny refused: *"Status code: 403 - User: arn:aws:sts::<Staging
+  Account>:assumed-role/datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps/<profile id>@bujd259b8g9zps is not
+  authorized to perform: datazone:StartNotebookCompute on resource: arn:aws:datazone:us-west-2:<Data
+  Governance Account>:domain/dzd-d8yrvx1ko7im6o with an explicit deny in an identity-based policy:
+  arn:aws:iam::<Staging Account>:policy/awsds-staging-person-session-deny"*; both trails hold
+  `StartNotebookCompute` `AccessDenied` at 00:51:07Z. IAM knows that action, then: the statement's name
+  matched. The querybook list's Create (00:51:11Z) made no `CreateNotebook` call by 00:53:49Z.
+- **[user] The membership deleted**:
+
+  ```
+  ➜  AWS-DataScience git:(main) NO_PROXY='*' aws datazone delete-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d1veybt5oak4uo --member userIdentifier=28f1b390-0041-7068-8cc7-9ccef94277d1 --profile awsds-infra-staging --region us-west-2
+  ➜  AWS-DataScience git:(main)
+  ```
+
+  Read back at 00:53:49Z: the two members of before. The person's side of 6.2 is re-read: the deny binds
+  her session. The worker's side waits for 4.3's run.
+- **[Claude] Correction to this day's 6.1 and 6.2 entries: the session's name.** The entries above say
+  that the person's session was named after her e-mail address and that `RedshiftDbUser` carried that
+  address. Both readings came from the script's mask, which replaced any `x@y` with `<email>`. Read again
+  unmasked (00:52Z): the session is `<profile id>@bujd259b8g9zps`, the DataZone profile id and the
+  environment id, the shape 6h read in Sandbox, and `RedshiftDbUser` is `user-<profile id>@d1veybt5oak4uo`.
+  The source identity and `datazone:userId` are as read. No e-mail address names the session.

@@ -617,8 +617,8 @@ stage-18-deploy:
   for this project: Spaces are not enabled in this project profile."*, so no workflow and no run shows
   in the portal of a `deployment` project. **The writes, 2026-10-21** (the log): `CreateProject` from
   `deployment` refused (`AccessDenied`, the wizard listing the profile all the same); a folder created in
-  the project's storage and a querybook created, both as the project role in a session named after the
-  person's e-mail address; the querybook's compute refused on the account's quota of 0
+  the project's storage and a querybook created, both as the project role in a session named
+  `<profile id>@<environment id>`; the querybook's compute refused on the account's quota of 0
   `sc.t3.medium` querybooks; no member or role control offered. iv's answer is no, xi's the domain unit's
   grant at `CreateProject`, and a write landed, so 6.2 runs. The user deleted the membership, read gone at
   00:15:51Z: **6.1 done 2026-10-21**.
@@ -635,7 +635,9 @@ stage-18-deploy:
   2026-10-21** (decision 11): `staging/studio/person-session.tf`, `awsds-staging-person-session-deny` on the
   project role, four Deny statements conditioned on `aws:SourceIdentity` (the projects bucket's objects,
   the workflows, the jobs and tables, the notebooks), **applied by the user 2026-10-21 at 00:39Z** (2
-  added, re-plan `No changes`). Then the re-reads:
+  added, re-plan `No changes`). **The person's side re-read 2026-10-21** (the log): with the person a
+  contributor again, the folder `teste-6.2` and the querybook's compute are refused *"with an explicit
+  deny in an identity-based policy"* naming `awsds-staging-person-session-deny`. Then the re-reads:
   the person's side with the environment down (6.1's membership cycle, the folder's write expected
   refused) and the worker's by 4.3's run at the next sitting.
 

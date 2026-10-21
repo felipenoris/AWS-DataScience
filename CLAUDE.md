@@ -420,7 +420,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   is refused), `deploy-staging-lakehouse` `ACTIVE`; 6.1 done 2026-10-21 with the environment down: a V2
   domain admits no read-only member, and a contributor writes in Staging as the project role; 6.2 read
   `aws:SourceIdentity` as the key that separates a person's session from the workers', and its deny on the
-  project role is applied (`awsds-staging-person-session-deny`, decision 11), its re-reads owed;
+  project role is applied (`awsds-staging-person-session-deny`, decision 11): it refuses a person's writes,
+  re-read 2026-10-21, and the worker's side is owed at 4.3's run;
   an associated account no person works in goes in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in
   `SMUS_MEMBERS`. Its 4.4's two prerequisites, Stage 8 3.0's first half and Stage 10 1.2's `vpc-v0.4.0`
   on `staging/foundation/`, were applied 2026-10-19 by the user.
