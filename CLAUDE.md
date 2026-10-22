@@ -325,8 +325,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, never fired (no model package exists). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
-  (rank 59, `[E]`) written and planned, `OR-9` written; the user pushed `orchestration-v0.1.0` on `26bfc15d`,
-  and the slices move from the module's path to the tag in PR #246. Passes 1-2 follow Stage 9 with Stage 8's pass 4 (decision 23) and
+  (rank 59, `[E]`) written and planned, `OR-9` written; the module is tagged `orchestration-v0.1.0` (`26bfc15d`),
+  and both slices pin it, each planning `No changes` with no release (PR #246). Passes 1-2 follow Stage 9 with Stage 8's pass 4 (decision 23) and
   need Stage 8 3.0's application ceiling and Stage 9's data keys, outputs buckets and Staging's job role.
   The MWAA Serverless service-linked role exists in Staging, not in Production, whose first apply needs
   `iam:CreateServiceLinkedRole` (1.5).
