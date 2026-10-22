@@ -307,19 +307,26 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the user anything, and remove a row in the sitting that takes it.
 - **The SCP battery** read `ou` 47 as expected / 0 unexpected / 7 not measured on 2026-10-22 (Stage 18's
   carve-out removed, Stage 9 3.5's instance-preference rows run for the first time) and `root` 25 / 0 / 0 on 2026-10-18. **SageMaker job quotas for `ml.m5.large`,
-  `.xlarge` and `.2xlarge` are 0 in Production and Staging** (processing; Production's training too, read
-  2026-10-20), with no increase requested; `ml.t3.medium`, `app-etl`'s processing type, is 4 in both, and
-  Staging ran a job on it on 2026-10-19. The probes read `ResourceLimitExceeded` as authorized; the `ou`
+  `.xlarge` and `.2xlarge` are 0 in Production and Staging** (processing and training; training is 0 for
+  every type inside the ceiling in both, read 2026-10-20 and 2026-10-22), **and no type inside the ceiling
+  has a transform quota above 0 in either** (2026-10-22), with no increase requested; `ml.t3.medium`,
+  `app-etl`'s processing type, is 4 in both, and Staging ran a job on it on 2026-10-19. The probes read `ResourceLimitExceeded` as authorized; the `ou`
   phase's seven instance-preference rows (Stage 9 3.5, PR #216) ran 2026-10-22, each as expected.
 - **Stage 9**: pass 1 applied 2026-10-18, `awsds-org-scp-ou-workloads` (nine statements) and
-  `production/sagemaker/` (rank 46, `[P]`); `production/workloads-egress/` (`[E]`) rises with the next
-  Production `make up`. Pass 2 waits on decision 3; the `s3-bucket` module turns Bucket Keys on for every bucket it
-  creates, so no key policy scopes a prefix and D31's zero-cost variant is unavailable (PR #225). **Stage 10**: pass 0 read and 4.3's
-  `DenyProvisionedMwaa` applied 2026-10-18, the root baseline's thirteenth statement; passes 1-2 follow
-  Stage 9 with Stage 8's pass 4 (decision 23); Stage 18's verdict kept D41 item 2 (2026-10-22). The MWAA Serverless service-linked role
-  exists in Staging since 2026-10-19 and not in Production, whose first apply needs `iam:CreateServiceLinkedRole`
-  (1.5, read 2026-10-20). 5.3's `awsds-prod-model-approval`
-  is applied (2026-10-18 23:19Z, 2 added, `OR-4` passing) and has never fired: no model package exists.
+  `production/sagemaker/` (rank 46, `[P]`); `production/workloads-egress/` and `staging/egress/`, re-cut to
+  the same six endpoints (4.3a), rise with their next `make up`. Prepared 2026-10-22 (PR #245):
+  `staging/sagemaker/` (`awsds-staging-job-exec`, 8 to add) and the Production job role's
+  `glue:GetConnection` planned for an authorized apply; `deploytargets.py` reads each pass from its own
+  objects. Pass 2 waits on decision 3; decision 12 (the Glue job's network) is new; the `s3-bucket` module
+  turns Bucket Keys on for every bucket it creates, so D31's zero-cost variant is unavailable (PR #225).
+  **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
+  `awsds-prod-model-approval` applied the same day, never fired (no model package exists). Prepared
+  2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
+  (rank 59, `[E]`) written and planned, `OR-9` written; the tag `orchestration-v0.1.0` waits on the user,
+  so the slices pin the module by path. Passes 1-2 follow Stage 9 with Stage 8's pass 4 (decision 23) and
+  need Stage 8 3.0's application ceiling and Stage 9's data keys, outputs buckets and Staging's job role.
+  The MWAA Serverless service-linked role exists in Staging, not in Production, whose first apply needs
+  `iam:CreateServiceLinkedRole` (1.5).
 - **The Sandbox warehouse (5b, 6h)**: `sandbox/warehouse/` rank 53 `[P]` and `sandbox/warehouse-compute/`
   rank 54 `[E]` (base 4 / max 8 RPU, usage limit 10 RPU-h monthly `deactivate`), database `sandbox`, schema
   `lab`. One project per tag key is admitted (`avhvbqn37ty7m8`); decision 8 owns the second,
@@ -376,6 +383,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   grant, decision 20's `If-None-Match` deny is not written; decision 26 leaves an application's base pin
   to its developer, who works in a space on an equivalent version. `staging/probes/` is retired, so `make up ENV=staging` raises `egress/` alone, and the template's
   lint passes `--image-repository` and the ceiling's seven instance types (PR #186), in GitLab since MR !2.
+  Pass 4, read item by item on 2026-10-22 (PR #244), has no item writable whole before Stage 9's platforms
+  and Stage 10's decisions 2, 8, 19 and 20; 3.0 holds the ceiling's content, 4.1 the application halves'
+  specification, and `slices.py`'s `prepare()` passes `--pipeline` for a deploy role's profile.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.

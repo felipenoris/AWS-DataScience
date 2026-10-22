@@ -2238,3 +2238,24 @@ stages. AWS read as the infrastructure user with `InfrastructureAccess` (`awsds-
   list), 4.4, 4.6, 6.1 and the risk on decision 2, verifications xix and xxviii; the comments in
   `staging/foundation/deploy-role.tf`, `production/foundation/deploy-anchors.tf` and `backend.py` that
   still cited 2.4; `docs/REFERENCES.md`'s CI/CD pages line.
+
+## 2026-10-22 — Stages 9 and 10's hand-over consolidated, and the sittings with the environment up planned
+
+*Claude, in the session `stages-7-8-pending`, after the sessions "Stage 9 — revisão e preparação" (PR #245)
+and "Stage 10 — revisão e preparação" (PR #246) ended their turns; no AWS call in this entry.*
+
+- **[Claude] The two reports**, read from the sessions' notes: each PR kept to its own files and left the
+  shared upkeep files to this session. Stage 9 wrote and planned `staging/sagemaker/` (8 to add), the
+  Production job role's `glue:GetConnection` (1 to change), the `staging/egress/` re-cut (15 to add) and
+  `production/workloads/` on `vpc-v0.4.0` (1 to change), and opened its decision 12. Stage 10 wrote and
+  planned `terraform-modules/orchestration/` and both `orchestration/` slices, and opened its decisions 19
+  and 20. The classifier refused that session's push of the tag `orchestration-v0.1.0`
+  (*Out-of-Place Publication*), so its slices pin the module by path until the user authorizes the push.
+- **[Claude] What Stage 8 received**: the application ceiling's content (3.0, an allow-list from Stage 10);
+  the application halves' specification (4.1), whose orchestration grant has its single home in Stage 10
+  1.5; the place of Stage 9 4.4's seed and 3.4's approval half (3.3). Stage 10 was asked to align its 1.3
+  sentence on the deploy role's ceiling with the six actions the module denies.
+- **[Claude] The shared files, rewritten once from the reports**: `waiting-on-the-user.md` (the quota row,
+  Stage 9's decisions with 12, the registry row, the Stage 9 applies, the tag push, Stage 10's decisions,
+  and the sittings table with a Promotion row for pass 4), `CLAUDE.md`, `GENERAL_PLAN.md` (39,471 bytes), the
+  stage index, the log index and `AWS_STATE.md`'s network row.

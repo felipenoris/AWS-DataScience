@@ -636,12 +636,18 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   log): `APP_REGISTRY_CONSUMERS` gains `staging`, and `production/registry/` an alias and identity
   read for it; the plan changes the `app-etl` repository's pull policy alone. `awsds-deploy-staging`
   itself landed in `staging/foundation/` on 2026-10-12 (4.1). The ceiling half is not written (read
-  2026-10-22: absent in both accounts). Its shape follows from the two things this plan asks of it: an
-  allow-list of the action families the roles it bounds use, since a pipeline-created role's identity
-  policy is the pipeline's to write and the ceiling is what bounds it, and a deny floor refusing the lake
-  (its S3 prefixes, `lakeformation:GetDataAccess`) and IAM writes. The deploy roles' own ceiling is
-  `Allow *` minus denies because the infrastructure user writes their identity policies. Its content
-  waits on Stage 10's roles (1.3, 3.4, 3.6) and Stage 10 decisions 2 and 8.
+  2026-10-22: absent in both accounts). Its content, handed over by Stage 10 on 2026-10-22, is an
+  allow-list of what that stage's workflow execution and chain roles do (its 1.3, 3.4, 3.6):
+  `airflow-serverless:GetWorkflowRun` and `StartWorkflowRun`, the Glue job-run actions (`StartJobRun`,
+  `GetJob`, `GetJobRun`, `GetJobRuns`, `BatchStopJobRun`), SageMaker processing and training jobs
+  (`Create*`, `Describe*`, `Stop*`, `AddTags`) and `states:StartExecution` on `*`; `iam:PassRole` of
+  `awsds-<env>-job-exec` to SageMaker alone; S3 on `awsds-<env>-outputs` alone; `kms:CreateGrant`,
+  `Decrypt`, `DescribeKey` and `GenerateDataKey` on `alias/awsds-<env>-data` alone; the logs delivery and
+  stream actions. What it does not allow it refuses, so no role the pipeline creates reaches a lake bucket,
+  Lake Formation, another key or another role. Training is admitted now, ECS is not (Stage 10 decision 8).
+  The deploy roles' own ceiling is `Allow *` minus denies because the infrastructure user writes their
+  identity policies; this one bounds the policies the pipeline writes. It is written once Stage 10
+  decisions 2 (the key) and 8 are taken.
 - **3.1 — [pipeline] Bring Staging up**: `make up ENV=staging ONLY=egress PROFILE=awsds-deploy-staging AUTO=1` — the
   `[E]` `egress/` slice, which since 6c is **interface endpoints only, with no NAT gateway and no default
   route**, and exists only for the duration of this run. Three things the job does before it:
@@ -688,9 +694,13 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   the Staging leg; what Staging tests is the deployed artifact against a real account. Stage 18 measured
   the run's two halves: `run` returns once `StartWorkflowRun` answers, so the job follows the run with a
   paced `get-workflow-run` loop to a terminal state, and a principal that is not a project member starts
-  a workflow by IAM plus `kms:GenerateDataKey` and `Decrypt` on the workflow's key. Whether 3.3 starts the
-  workflow directly or through a chain execution is asked of Stage 10. A table's existence is read by a
-  principal holding `DESCRIBE` on it, never by `glue get-table` without a grant.
+  a workflow by IAM plus `kms:GenerateDataKey` and `Decrypt` on the workflow's key. Stage 10 decision 19
+  recommends the leg start the chain's state machine and follow it, Staging's schedule `DISABLED`. A
+  table's existence is read by a principal holding `DESCRIBE` on it, never by `glue get-table` without a
+  grant. Stage 9 4.4's seed runs between 3.2 and 3.3, as `awsds-staging-job-exec` through Lake Formation,
+  when a release changes the schema source or the seed; it is written in `examples/app-etl/` once Stage 9
+  decision 3 names the source. Stage 9 3.4's approval half is a manual job of this pipeline on the deploy
+  runner, at Stage 10's first registration.
 - **3.4 — [pipeline] Tear Staging down**: `make down ENV=staging PROFILE=awsds-deploy-staging AUTO=1`, in
   `after_script`/always so a failed run cannot leave the endpoints burning. 6c removed the NAT gateway,
   but an endpoint set left up is still a bill. `down` destroys every `[E]` Staging slice by descending
@@ -810,7 +820,26 @@ the approval, and 4.6's alarm.
   `awsds-deploy-staging` with three inline documents for its window** (applied 2026-10-20) and removed
   them on 2026-10-22, so the role holds `apply-egress` and `state` alone, the base the application half
   starts from; its `IAM` user profile and `IAM_ROLE_SESSION_GROUP` profile stay in the domain, where no
-  delete API reaches them. Each role **carries a boundary itself** — INT-14 later has to apply `awscc`
+  delete API reaches them.
+- **4.1 — The application halves, specified 2026-10-22 by Stages 9 and 10, written once their decisions
+  are taken** (Stage 10 decisions 2 and 19, Stage 9 decisions 1, 3 and 12):
+  - the orchestration grant on both roles, an inline `apply-orchestration`, is Stage 10 1.5's enumeration,
+    its single home: Cloud Control, the workflows, the definitions home, the data key, the log groups and
+    their delivery, the `wf-` and `chain-` roles scoped by name, one `iam:PassRole` per service, the state
+    machines, schedules and rules, the workers' security group by its `Name` tag, Production's
+    `iam:CreateServiceLinkedRole` until the role exists, and Staging's `states:StartExecution` and
+    `DescribeExecution` for the leg (Stage 10 decision 19);
+  - `iam:PassRole` of `awsds-<env>-job-exec` to `glue` and `sagemaker` on both roles (Stage 9);
+  - on `awsds-deploy-staging`, 3.2's registry read: `sagemaker:DescribeModelPackage` on Production's
+    `awsds-prod-model-*` packages and `ListModelPackages`, the Production account read through an aliased
+    identity, never a literal; and, once Stage 9 decision 1 is taken as recommended, `s3:GetObject` on
+    `awsds-prod-outputs/models/*/model.tar.gz` with `kms:Decrypt` through S3 under that bucket's context;
+  - on `awsds-deploy-prod`, Stage 9 9.4's Data API grant at its pass 6;
+  - the module call: `state_prefixes` gain `<folder>/orchestration/`; `state_read_keys` are
+    `staging/foundation/` and `staging/sagemaker/` in Staging, `workloads/`, `foundation/` and
+    `sagemaker/` in Production, and each account's `data/` once Stage 9 writes it;
+  - IAM caps a role's inline policies at 10,240 characters together: the plan shows the size, and past
+    it `apply-orchestration` becomes a customer-managed policy the infrastructure user attaches. Each role **carries a boundary itself** — INT-14 later has to apply `awscc`
   resources under it (Stage 10), which is where the boundary's shape gets its real test. **Two later stages
   amend this policy, and say so here so the promise exists at both ends (Lesson 34)**: Stage 9 step 9.4 adds
   the Redshift Data API grant the DDL needs, and Stage 10 step 1.5 the saver's reads of a workflow's
