@@ -94,6 +94,20 @@ data "aws_iam_policy_document" "job" {
     resources = ["*"]
   }
 
+  # A Glue job given a network connection reads it as this role before it starts: Glue's
+  # GlueJobRunnerSession called glue:GetConnection four times in Staging on 2026-10-19, as the role
+  # of Stage 18 4.4's job. Read-only and held to this account's connections; step 2.4 decides
+  # whether the producer has one.
+  statement {
+    sid     = "ReadTheJobsConnection"
+    effect  = "Allow"
+    actions = ["glue:GetConnection"]
+    resources = [
+      "arn:${local.partition}:glue:${var.region}:${local.account_id}:catalog",
+      "arn:${local.partition}:glue:${var.region}:${local.account_id}:connection/*",
+    ]
+  }
+
   # ------------------------------------------------ the account's buckets (steps 1.1 and 1.2)
   statement {
     sid    = "ReadAndWriteTheAccountBuckets"
@@ -208,7 +222,7 @@ data "aws_iam_policy_document" "job" {
       "logs:PutLogEvents",
     ]
     resources = flatten([
-      for group in aws_cloudwatch_log_group.job : [group.arn, "${group.arn}:*"]
+      for arn in local.job_log_group_arns : [arn, "${arn}:*"]
     ])
   }
 
@@ -290,12 +304,14 @@ data "aws_iam_policy_document" "job" {
 # ------------------------------------------------------------------- the job log groups
 #
 # Declared before any job runs, with a retention: the service that creates its own group gives it none
-# (EXC-10). The names are the ones each service writes to by default.
+# (EXC-10). The names are the ones each service writes to by default. Each group is encrypted under the
+# account data key, which CloudWatch Logs uses as its own service principal under production/data/'s
+# AllowCloudWatchLogsForTheJobAndWorkflowGroups, scoped by the group's ARN as encryption context.
 resource "aws_cloudwatch_log_group" "job" {
-  # checkov:skip=CKV_AWS_158:the account data CMK is production/data/'s and arrives at pass 3 with the CloudWatch Logs statement step 1.1 lists; the groups move under it then, and carry the AWS-owned key until that apply
   # checkov:skip=CKV_AWS_338:retention is 30 days, Stage 3 decision 3's figure; the audit trail of record is CloudTrail, org-wide and Object-Locked since Stage 1d
   for_each = local.job_log_groups
 
   name              = each.value
   retention_in_days = var.log_retention_days
+  kms_key_id        = data.terraform_remote_state.data.outputs.data_key_arn
 }

@@ -228,7 +228,7 @@ that turns that policy custom (Stage 5a step 13.3); or D12's ceiling revised.
 | ~~EFS (shared filesystem + project storage, IA)~~ | **removed — the NFS requirement was withdrawn 2026-08-17 (D24 with it)** | | **0** | **0** |
 | SageMaker unified domain — DataZone V2 metadata (D26) | 10.00/100k req + 0.40/GiB-mo (global) | idem | ~0.50 | ~0.50 |
 | ~~Staging, Development, Data Governance at rest~~ | **removed — double count** | | **0** | **0** |
-| **Floor** | | | **~USD 30-43** (central ~36) | **~USD 25-34** (central ~30) |
+| **Floor** | | | **~USD 32-45** (central ~38) | **~USD 27-36** (central ~32) |
 
 The São Paulo floor is roughly **1.25-1.4x** the Oregon one — less than the 1.72x of the metered services,
 because so much of the floor is region-flat: KMS, Config, Route 53, Security Hub, the domain and the
@@ -284,7 +284,7 @@ the real bill.
 | — *(until 6c)* Sandbox, **11** endpoints, single AZ (D9), design A (12 until 2026-08-17 when `elasticfilesystem` left with the NFS requirement; 11 until 2026-08-21 when `datazone` joined at Stage 6 step 4.2; **11 again since 2026-08-25, when it left — issue #39**) | 0.231 | 0.110 | 2.10 |
 | — *(the 2026-08 projection)* Sandbox, 14 endpoints, design B — **11 + the two CodeArtifact + `datazone` back**, the one entry design B must re-add: with no NAT the app has no other path to DataZone (the 2026-08-25 removal is design A's, issue #39). B's own premise requires it; `VpcOnly` does not (Lesson 41), and the portal names it shadows belong to the client plane | 0.294 | 0.140 | (design B needs CodeArtifact — see §9) |
 | — Sandbox **18** endpoints **as built** (6c step 5.2, counted from the slice's plan: the core 8, the SMUS 3, `s3tables`, `datazone`, the SSM trio, `ec2`, `secretsmanager`) | 0.378 | **0.180** | 2.10 |
-| — Staging **11** / `VPC-SharedServices` **12** / `VPC-Workloads` **6** (6c step 5.5 counts; `VPC-SharedServices` 13 until Stage 7 step 1.7 added `secretsmanager` and decision 9 dropped the SageMaker pair; `VPC-Workloads` 0 until Stage 9 step 3.3a named the jobs' `sts`, `logs`, `kms`, `glue`, `sagemaker.api`, `secretsmanager`) | 0.231 / 0.252 / 0.126 | **0.110 / 0.120 / 0.060** | 2.10 |
+| — Staging **7** / `VPC-SharedServices` **12** / `VPC-Workloads` **7** (6c step 5.5 counts; `VPC-SharedServices` 13 until Stage 7 step 1.7 added `secretsmanager` and decision 9 dropped the SageMaker pair; `VPC-Workloads` 0 until Stage 9 step 3.3a named the jobs' `sts`, `logs`, `kms`, `glue`, `sagemaker.api`, `secretsmanager`, and `lakeformation` joined both for decision 12 (a); Staging 11 until Stage 9 step 4.3a gave it the same set, written 2026-10-22 and applied by its next `make up`) | 0.147 / 0.252 / 0.147 | **0.070 / 0.120 / 0.070** | 2.10 |
 | AWS Config per Sandbox `[E]` cycle — **not hourly**: one `make up` + `make down` of `sandbox/egress` records 120-290 items, whatever the time between, 63-90% of them the endpoints, their ENIs, and the subnets, VPC and security groups those ENIs relate to (eight cycles measured 2026-09-14..10-12, §2) | 0.36-0.87 per cycle | **0.36-0.87 per cycle** | **1.00** |
 | AWS Config per GitLab cycle — **not hourly**: one `make gitlab-up` + `make gitlab-down` with the runners and a hub start/stop recorded 70 items on 2026-10-14, 35 up and 35 down (CloudWatch `AWS/Config` `ConfigurationItemsRecorded`, Production). The endpoints' ENIs were absent from both halves at 21:17 UTC; in the previous cycle 17 of them landed 2-3 h after the destroy. The 2026-10-13 billing day carried 125 items (0.375) for a session whose applies removed two endpoints, replaced a runner and added one. Without the runners about 40 items, read from the per-type split (the GitLab session below) | 0.21-0.38 per cycle | **0.21-0.38 per cycle** | **1.00** |
 | GitLab EC2 `t4g.large` | 0.1072 | 0.0672 | 1.60 |
@@ -1032,7 +1032,7 @@ The numbers:
 
 | Figure | `sa-east-1` | `us-west-2` | Ratio |
 |---|---|---|---|
-| Monthly floor (§2) | ~USD 30-43, central ~36 | ~USD 25-34, central ~30 | ~1.25-1.4x |
+| Monthly floor (§2) | ~USD 32-45, central ~38 | ~USD 27-36, central ~32 | ~1.25-1.4x |
 | Typical lab hour (§3) | ~USD 0.38-0.44 | ~USD 0.19-0.22 | ~2.0x |
 | Full-stack hour (§3) | ~USD 0.91 | ~USD 0.47 | ~1.9x |
 | **Projection at 20 h/month** | **~USD 38-61** | **~USD 29-43** | |

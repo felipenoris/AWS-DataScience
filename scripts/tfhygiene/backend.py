@@ -296,13 +296,23 @@ VPN_HOST_SLICE = ("production", "networking")
 # longer has to split this list before adding Production. Production joins at Stage 9; a vended
 # Sandbox unit at Stage 14.
 #
-# One consumer since Stage 6b step 2.3: `development` becomes the headless `Staging`, and D20
-# keeps a deployment target off the lake share entirely. Dropping the row stops emitting the
-# aliased-provider identity read, stops emitting that account's `consumer_foundation` remote
-# state (whose gateway-endpoint id is INT-05's `aws:SourceVpce` allow-list), and stops emitting
-# the `lake` map to a consumer slice that step 2.4 destroys.
-DATA_CONSUMERS = ["sandbox"]
+# Three consumers since Stage 9: Sandbox; Staging, read-only by Stage 9 decision 3, the share 6b step
+# 2.3 revoked returning for the read alone; and Production, whose read rides beside the governed write.
+# A row emits the aliased-provider identity read, the `consumer_vpc` remote state (whose gateway-
+# endpoint id is INT-05's `aws:SourceVpce` allow-list) and the `lake` map to the consumer's data/ slice.
+DATA_CONSUMERS = ["sandbox", "staging", "production"]
 DATA_PRODUCERS = ["production"]
+
+# The slice holding the VPC whose [P] S3 gateway endpoint the lake trusts for a consumer, where it is
+# not foundation/: Production's foundation/ is VPC-SharedServices (GitLab, the runners), and its jobs
+# run in VPC-Workloads (Stage 9 step 1.4). A row read from the wrong slice fails INT-05 with the
+# bucket's own deny and no word about which VPC it expected (Lesson 3).
+DATA_CONSUMER_VPC_SLICE = {"production": "workloads"}
+
+# The deployment targets that read the governed lake and write none of it: Staging, whose read share
+# Stage 9 decision 3 grants and DATA_CONSUMERS emits from step 4.1. Consumed by their sagemaker/ slice
+# (step 4.3), which holds the job role alone.
+READ_ONLY_TARGETS = ["staging"]
 
 # The other direction, added at pass 4: the account that owns the lake, read by the consumers. A
 # one-element table, and still a table for the reason the three above are: the consumer slices
@@ -799,7 +809,12 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
     # login covers every profile, because they share the `awsds` sso-session.
     if account == "data-governance" and slice_name == "data":
         values["consumers"] = {
-            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_CONSUMERS
+            acct: {
+                "profile": PROFILES[acct],
+                "env": ENV_TOKENS[acct],
+                "vpc_slice": DATA_CONSUMER_VPC_SLICE.get(acct, "foundation"),
+            }
+            for acct in DATA_CONSUMERS
         }
         values["producers"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_PRODUCERS
@@ -814,6 +829,13 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         values["lake"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
         }
+        # Stage 9 steps 1.1 and 4.1 - a deployment target's data/ slice reads its own sagemaker/,
+        # foundation/ and VPC slice by the account folder, for the job role, the deploy role and the
+        # gateway endpoint its outputs bucket trusts.
+        if account in DEPLOY_ROLES and account not in SMUS_MEMBERS:
+            values["account_folder"] = account
+            values["vpc_slice"] = DATA_CONSUMER_VPC_SLICE.get(account, "foundation")
+            values["deploy_role_name"] = DEPLOY_ROLES[account]
 
     # Stage 5b step 1.7 - the two warehouse slices. Both read a sibling's state through
     # terraform_remote_state, and the state key is built from the ACCOUNT FOLDER, which no .tf file
@@ -892,11 +914,25 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
     # provider per key. The readers are the SMUS members, the accounts with projects.
     if slice_name == "sagemaker" and account in DATA_PRODUCERS:
         values["account_folder"] = account
+        values["zone_ids"] = ZONE_IDS[account]
         values["lake"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
         }
         values["readers"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_MEMBERS
+        }
+
+    # Stage 9 step 4.3 - a read-only target's sagemaker/ slice: the job role and the job log groups,
+    # without the registry and the escape hatch, which stay Production's. No `lake` map: the role
+    # reaches the lake through Lake Formation alone. It pulls the application image from the registry
+    # account, whose state is read cross-account, so the slice takes the registry map as an
+    # application slice does.
+    elif slice_name == "sagemaker" and account in READ_ONLY_TARGETS:
+        values["account_folder"] = account
+        values["zone_ids"] = ZONE_IDS[account]
+        values["registry"] = {
+            acct: {"profile": registry_profile(acct, pipeline), "env": ENV_TOKENS[acct]}
+            for acct in REGISTRY_HOME
         }
 
     # Stage 6 pass 1 and pass 2 - the blueprint prerequisites and, on the second apply, the
@@ -1030,6 +1066,8 @@ def render_tfvars(account: str, slice_name: str, pipeline: bool = False) -> str:
         out += f"zone_ids        = [{zone_list}]\n"
     if "account_folder" in v:
         out += f'account_folder  = "{v["account_folder"]}"\n'
+    if "vpc_slice" in v:
+        out += f'vpc_slice       = "{v["vpc_slice"]}"\n'
     if "peer_cidr" in v:
         out += f'peer_cidr       = "{v["peer_cidr"]}"\n'
     # Spelled in full and not `peer_cidr` (6c step 4.1). The vpn/ slice's `peer_cidr` is that
@@ -1078,8 +1116,11 @@ def render_tfvars(account: str, slice_name: str, pipeline: bool = False) -> str:
         )
         out += f"peers = {{\n{rows}}}\n"
     if "consumers" in v:
+        # The lake's consumers carry the slice of the VPC the lake trusts for them; the registry's do not.
         rows = "".join(
-            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}"'
+            + (f', vpc_slice = "{p["vpc_slice"]}"' if "vpc_slice" in p else "")
+            + " }\n"
             for acct, p in v["consumers"].items()
         )
         out += f"consumers = {{\n{rows}}}\n"

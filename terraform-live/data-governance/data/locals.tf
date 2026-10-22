@@ -18,13 +18,14 @@ locals {
     dropbox = aws_glue_catalog_database.dropbox.name
   }
 
-  # The consumer accounts of step 7's shares. Production is absent by design: its share carries
-  # the governed write and arrives with Stage 9, which has a job role to receive it. Staging is
-  # absent by D20 - a deployment target reads what the pipeline gives it, not the catalog. The
-  # ids come from the aliased providers, so no account id enters a tracked file, and an account
-  # that cannot be read fails by name here.
+  # The consumer accounts of step 7's read shares. Staging reads by Stage 9 decision 3, the share 6b
+  # step 2.3 revoked returning for the read alone, and Production's read rides beside its governed
+  # write (shares.tf). The ids come from the aliased providers, so no account id enters a tracked
+  # file, and an account that cannot be read fails by name here.
   consumer_accounts = {
-    sandbox = data.aws_caller_identity.sandbox.account_id
+    sandbox    = data.aws_caller_identity.sandbox.account_id
+    staging    = data.aws_caller_identity.staging.account_id
+    production = data.aws_caller_identity.production.account_id
   }
 
   # The five buckets. A name is permanent in this account - DenyLakeDeletionAndDeregistration
@@ -36,7 +37,7 @@ locals {
 
   # INT-05's allow-list branch, read live from [P] state - never pasted.
   consumer_vpce_ids = [
-    for k, s in data.terraform_remote_state.consumer_foundation : s.outputs.s3_gateway_endpoint_id
+    for k, s in data.terraform_remote_state.consumer_vpc : s.outputs.s3_gateway_endpoint_id
   ]
   trusted_vpce_ids = sort(distinct(local.consumer_vpce_ids))
 

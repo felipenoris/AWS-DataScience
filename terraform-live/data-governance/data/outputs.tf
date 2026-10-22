@@ -43,3 +43,8 @@ output "sample_table_name" {
   description = "The stage's working piece - the share and classification pairs query it (deliverables)."
   value       = aws_glue_catalog_table.sample_trades.name
 }
+
+output "producer_table_name" {
+  description = "curated's table the governed write lands in (Stage 9 step 2.1) - what 2.4's producer and 2.5's pickup write, and what ./aws/deploytargets.py reads."
+  value       = aws_glue_catalog_table.trades.name
+}

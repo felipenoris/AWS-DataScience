@@ -32,8 +32,8 @@ variable "environment_tag" {
 }
 
 variable "consumers" {
-  description = "Profile + env token per consumer account (INT-03's N+2, minus Production until Stage 9), derived in scripts/tfhygiene/backend.py - never authored here. Consumed twice: the terraform_remote_state reads of each consumer's foundation/ (the [P] S3 gateway-endpoint id, INT-05's anchor), and the aliased providers that resolve each account id for the drop-box statements."
-  type        = map(object({ profile = string, env = string }))
+  description = "Profile, env token and VPC slice per consumer account (INT-03's N+2), derived in scripts/tfhygiene/backend.py - never authored here. Consumed twice: the terraform_remote_state reads of each consumer's VPC slice (the [P] S3 gateway-endpoint id, INT-05's anchor; workloads/ for Production, foundation/ elsewhere), and the aliased providers that resolve each account id for the shares and the drop-box statements."
+  type        = map(object({ profile = string, env = string, vpc_slice = string }))
   nullable    = false
 }
 

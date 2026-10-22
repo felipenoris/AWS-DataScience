@@ -102,6 +102,7 @@ module's arithmetic:
 | `production/tooling/` | `[D]` | the GitLab host, its data volume, the `gitlab.awsds.internal` and `*.awsds-pages.internal` records, GitLab's security group **and the runners' group**, declared here so GitLab's HTTPS rule never names an `[E]` object (Stage 7 steps 1.2, 1.4) |
 | `production/runners/` | `[E]` | the build, deploy and test runners, in the group `tooling/` declares - and no route at all, like the buildbox the build runner replaced at Stage 7 step 6.5 |
 | `sandbox/sagemaker/` | `[P]` | **no network object of its own** — it hands the blueprint the VPC, the private subnets and their zone ids, which is what makes every project app land where §5 describes |
+| `production/sagemaker/` · `staging/sagemaker/` | `[P]` | the job security group `awsds-<env>-jobs` and the Glue network connection on the first zone's private subnet, in VPC-Workloads and Staging's VPC (Stage 9 decision 12 (a), applied 2026-10-22): every pipeline-submitted Glue and SageMaker job runs in it |
 | `sandbox/warehouse/` | `[P]` | the warehouse's **security group** and one ingress rule per admitted SMUS project. The group is here rather than in the compute slice because it is free and is referenced by the workgroup rather than the reverse, so it survives a `make down` unattached |
 | `sandbox/warehouse-compute/` | `[E]` | the **workgroup**, which is what puts ENIs in the two private subnets. Destroyed by `make down ENV=sandbox`: Redshift Serverless has no pause, so *off* means *absent* |
 | `staging/orchestration/` · `production/orchestration/` | `[E]` | **written 2026-10-22, not applied** (Stage 10 step 1.2): the workers' security group `awsds-<env>-wf-workers`, declared in the `orchestration` module; at run time the service-linked role puts each MWAA Serverless worker's interface in the two private subnets of Staging's VPC or VPC-Workloads |
@@ -273,7 +274,7 @@ bucket allow-list. One of its AWS-owned families is measured rather than documen
 `mwaa-serverless-code-files-*-<region>-prod`, the bucket a MWAA Serverless worker's environment
 preparation reads a workflow's code from, as `airflow-serverless.amazonaws.com`, through this endpoint
 (`vpc-v0.4.0`: Sandbox since 2026-10-11, 6i decision 7, and Staging since 2026-10-19, for Stage 18's
-4.4, whose two runs that day passed the preparation; Production's three VPCs are on `vpc-v0.3.1` and lack it, and `EG-4` reads it as `mwaa-code`). A refusal by this policy is visible only
+4.4, whose two runs that day passed the preparation; Production's `foundation/` and `networking/` are on `vpc-v0.3.1` and lack it, `workloads/` is on `vpc-v0.4.0` since 2026-10-22 for Stage 10 1.2, and `EG-4` reads it as `mwaa-code`). A refusal by this policy is visible only
 as a CloudTrail network activity event with `errorCode` `VpceAccessDenied`. The trail 6i built to record
 them, `sandbox/endpoint-audit/`, ran from 2026-10-11 to 2026-10-12 and is recoverable from `c0baddd`.
 
@@ -296,6 +297,7 @@ otherwise, naming the endpoint. The case that forced it: `sagemaker.studio` answ
 | `awsds-prod-gitlab` `[D]` | TCP/443 from **three sources and nothing else** (Stage 7 step 1.2): the WireGuard host's group `awsds-prod-vpn` — a same-account, cross-VPC group reference over the peering, since the host masquerades every tunnel packet not bound for the proxy and a laptop arrives as its address; the Interactive **private tiers** by CIDR (`10.20.0.0/18`, `10.20.64.0/18` today, generated from the allocation table), where a SMUS project's app ENI is the source of the INT-09 clone; and the runners' group. No port 22, no port 80 |
 | `awsds-prod-runner` `[E]`-attached, `[D]`-declared | **nothing** — no ingress rule at all; declared in `production/tooling/` and attached by `production/runners/` to all three runners |
 | the probe groups `[E]` | no ingress; egress scoped to the peers the **peering matrix** generates |
+| `awsds-prod-jobs` · `awsds-staging-jobs` `[P]` | TCP from **its own group**, every port: Glue's requirement for a connection's group, so a job's driver and executors reach each other. Egress to its own group, TCP/443 to the VPC's interface-endpoint group and TCP/443 to the S3 prefix list, and nothing else. Applied 2026-10-22 (Stage 9 decision 12 (a)); the governed warehouse's `5439` rule will name it (Stage 9 step 9.1) |
 | `awsds-<env>-wf-workers` `[E]`, written, not applied | all traffic from itself, the private-routing shape's self-referencing rule; outbound all, which reaches the VPC's interface endpoints and the S3 gateway alone, since the subnets route nowhere else (Stage 10 step 1.2) |
 | `awsds-sandbox-warehouse` `[P]` | TCP/5439 from **an admitted SMUS project's own security group**, group-to-group, one rule per project — **never a CIDR**, which would admit every ENI in two /18s including every other project's apps. **No egress rule at all**: nothing in this design has the warehouse originate a connection, and the day `COPY` is granted (5b decision 5) is the day one is written with a named destination. With no project admitted the group has **no ingress rule**, which is the state Stage 5b pass 1 applied in. **One rule since 2026-09-21**, for project `avhvbqn37ty7m8` (6h 2.3), exercised from a space on 2026-10-10 (6h 3.3): the socket's local address inside the container read `169.255.254.3`, not a VPC address, and the group-to-group rule admitted the connection |
 
@@ -332,14 +334,18 @@ Access prompt** — the two surfaces that demanded the grant on 2026-08-26. A pr
 its whole subtree, so a client resolving through a VPC full of endpoints inherited every one of their
 names (Lessons 40-43).
 
-**The DNS Firewall** is in the two **compute** VPCs and in VPC-Workloads (Stage 9 step 3.3a), and its
-job is **closing the recursive resolver as an exfiltration channel** rather than filtering the internet,
-which the proxy does. The compute VPCs' allow-list is **fourteen** entries — AWS's own namespaces and
-this estate's private zones. VPC-Workloads' is **four**, AWS's namespaces only, so `gitlab`, `proxy`
-and every `prod.awsds.internal` name answer NXDOMAIN there: GitLab is in a VPC it has no peering to,
-and the proxy refuses its plane everything. VPC-Workloads' six interface endpoints are the jobs' set:
-`sts`, `logs`, `kms`, `glue`, `sagemaker.api` and `secretsmanager`. `VPC-Networking` carries none: the
-proxy has to resolve.
+**The DNS Firewall** is in Sandbox's and Staging's VPCs and in VPC-Workloads (Stage 9 steps 3.3a and
+4.3a), and its job is **closing the recursive resolver as an exfiltration channel** rather than
+filtering the internet, which the proxy does. Sandbox's allow-list is **fourteen** entries — AWS's own
+namespaces and this estate's private zones. VPC-Workloads' and Staging's are **four**, AWS's namespaces
+only, so `gitlab`, `proxy` and every `prod.awsds.internal` or `staging.awsds.internal` name answer
+NXDOMAIN there: GitLab is in a VPC neither peers with, and the proxy refuses both planes everything.
+The two carry the same seven interface endpoints, the jobs' set: `sts`, `logs`, `kms`, `glue`,
+`lakeformation`, `sagemaker.api` and `secretsmanager`, Staging's since 4.3a's re-cut (written
+2026-10-22, raised by the next `make up ENV=staging`) against the four a worker called there on
+2026-10-19 (Stage 18 4.4), and `lakeformation` in both for decision 12 (a)'s jobs, which vend Lake
+Formation credentials from inside the VPC.
+`VPC-Networking` carries none: the proxy has to resolve.
 
 **It was ten until 2026-09-09**, when the same reading that repaired `NO_PROXY` was pointed at this
 list and found two endpoints both compute VPCs pay for hourly answering on families it did not carry:

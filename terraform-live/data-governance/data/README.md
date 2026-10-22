@@ -103,6 +103,7 @@ a database carries is what every future table there starts with.
 | database `dropbox` | `layer=dropbox`, `classification=internal` | Same rationale — user-supplied arrivals. Its own database so crawler-inferred tables do not wear `raw`'s value wrongly |
 | database `curated` | `layer=curated` — **no `classification`** | **Fail-closed by absence**, the designed asymmetry: an untagged curated table matches **no** TBAC expression and is therefore invisible to the default grants. Tables here are classified explicitly at creation |
 | table `curated.sample_trades` | `classification=internal` | Declares its own, since the database carries none |
+| table `curated.trades` | `classification=internal` | Stage 9 step 2.1: the table the governed write lands in (2.4's producer, 2.5's pickup), declared before its first write with the columns of `app-etl`'s input, its classification approved with the apply that created it, on 2026-10-22 |
 | column `sample_trades.counterparty` | `classification=restricted` | **Most-specific wins.** This is the column the classification pair proves against: absent from a default session's result *and* from its column list, present after the explicit grant |
 
 ## `kms.tf` — the account data key policy
@@ -137,7 +138,7 @@ The branches of `DenyOutsideTrustedNetworks`:
 
 | Branch | Condition | The rule behind it |
 |---|---|---|
-| 1 | `aws:SourceVpce` ∈ `trusted_vpce_ids` — the consumers' **gateway** endpoint ids | **Never the `[E]` interface endpoints** ([Lesson 3](../../../docs/plan/lessons.md), INT-05): those change id on every `make up` and live in accounts this policy could never repair itself against. Anchored on `[P]` state, read live, never pasted |
+| 1 | `aws:SourceVpce` ∈ `trusted_vpce_ids` — the consumers' **gateway** endpoint ids | **Never the `[E]` interface endpoints** ([Lesson 3](../../../docs/plan/lessons.md), INT-05): those change id on every `make up` and live in accounts this policy could never repair itself against. Anchored on `[P]` state, read live, never pasted. Each consumer's from the slice `backend.py` names for it (`DATA_CONSUMER_VPC_SLICE`): `foundation/` for Sandbox and Staging, `workloads/` for Production, whose `foundation/` is VPC-SharedServices (Stage 9 step 1.4) |
 | 2 | `aws:PrincipalAccount` = this account | The stage's own "looser and easier to get right" option, taken over naming the maintenance role alone: the crawler runs in Glue with no VPC (D27's collision), and the infrastructure user works from any network. A role-only branch would lock the account's own administrator out of its own lake |
 
 **No branch names an address** ([D39](../../../docs/plan/decisions/D39-access-by-identity.md)). The one laptop path the lake carries, D18's drop-box write, is admitted by principal on the drop-box alone (below).
@@ -253,13 +254,17 @@ governance-manager session answers it (the pages, and how they were read, are in
 ## `shares.tf` — the cross-account shares (pass 3, step 7)
 
 One grant per consumer account per resource type. The principal is an **account**, resolved from the
-aliased providers so no account id enters a tracked file. Production is absent by design — its share
-carries the governed write and arrives with Stage 9.
+aliased providers so no account id enters a tracked file. The consumers are Sandbox, Staging (read-only,
+Stage 9 decision 3) and Production, whose read rides beside the governed write below; the two Stage 9
+consumers' grants were applied on 2026-10-22.
 
 | Grant | Expression | Permission | Why that shape |
 |---|---|---|---|
 | `share_databases` | `layer ∈ {raw, curated}` | `DESCRIBE` **+ grant option** | The container, metadata only. It may **not** carry the classification gate: `curated`'s database has no `classification`, so an expression naming it would not match — and a database that does not match cannot be resource-linked, which is the whole consumer side |
 | `share_tables` | `layer ∈ {raw, curated}` **AND** `classification ∈ {public, internal}` | `SELECT`, `DESCRIBE` **+ grant option** | The rows. Two `expression` blocks in one grant is an **AND**; two separate grants would be an OR and would share the drop-box back |
+
+| `production_write_database` | named: database `curated` | `DESCRIBE` **+ grant option** | Stage 9 step 2.1, D22: Production is the lake's only producer. Named rather than an expression, the exception Stage 5a decision 5 reserves: an expression over `classification` alone matched the drop-box (Lesson 29), and a write is the more dangerous direction |
+| `production_write_tables` | named: every table of `curated` | `SELECT`, `INSERT`, `DELETE`, `ALTER`, `DESCRIBE` **+ grant option** | The governed write. `ALTER` rides with it, since an Iceberg commit rewrites the table's metadata; no `CREATE_TABLE`, since a curated table is declared in `catalog.tf` first. Production's administrator regrants it to `awsds-prod-job-exec` alone (`production/data/`, 2.3) |
 
 **The grant option is required.** A cross-account grant lands on the *account*; nothing inside it can
 use the share until that account's own data lake administrator passes it on, and an administrator can

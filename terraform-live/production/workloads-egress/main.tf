@@ -37,21 +37,20 @@ module "egress" {
   endpoint_subnet_id         = data.terraform_remote_state.workloads.outputs.private_subnet_ids[var.zone_ids[0]]
   endpoint_security_group_id = data.terraform_remote_state.workloads.outputs.endpoints_security_group_id
 
-  # The job-facing set of Stage 9 step 3.3a, at ~0.010/h each. This is the one place
-  # `core_services` is overridden: the module's core eight are what a notebook or a runner cannot
-  # work without, and this VPC holds neither. `sts`, `logs`, `kms` and `glue` stay. `ecr.api` and
+  # The job-facing set of Stage 9 step 3.3a, at ~0.010/h each. `core_services` is overridden here and
+  # in staging/egress/, which carries the same set (4.3a): the module's core eight are what a notebook
+  # or a runner cannot work without, and neither VPC holds one. `sts`, `logs`, `kms` and `glue` stay. `ecr.api` and
   # `ecr.dkr` leave, because a SageMaker job pulls its image as its role through the service and
   # never through this VPC (step 3.1). `athena` leaves until a job here queries through it.
   #
-  # `lakeformation` waits on step 2.4, which decides the job's network first. A Glue job given a
-  # network connection runs in this VPC and calls Lake Formation from it, so that choice puts
-  # `lakeformation` back in this list before the job runs; the job's `vpcEndpointId` reading then
-  # decides whether it stays (Stage 10 step 0.5). Stage 10 step 1.2's worker set joins
-  # `extra_services`, and no optional group is wired until a workload here names one.
+  # `lakeformation` is here for decision 12 (a), taken 2026-10-22: a Glue job runs on the connection
+  # production/sagemaker/ declares, inside this VPC, and vends its Lake Formation credentials from it;
+  # the job's `vpcEndpointId` reading confirms it at step 2.4 (Stage 10 step 0.5). Stage 10 keeps its
+  # `mwaa` group empty, and no optional group is wired until a workload here names one.
   #
   # Session Manager's three stay out: 6c step 5.5 asks for them in an instance-bearing spoke, and
   # this VPC holds no instance.
-  core_services  = ["sts", "logs", "kms", "glue"]
+  core_services  = ["sts", "logs", "kms", "glue", "lakeformation"]
   extra_services = ["sagemaker.api", "secretsmanager"]
 
   # The firewall closes the VPC resolver as an exfiltration channel (6c step 5.7), which exists
@@ -63,7 +62,7 @@ module "egress" {
   # the chain beneath it.
   firewall_domain_redirection_action = "TRUST_REDIRECTION_DOMAIN"
 
-  # AWS namespaces only (step 3.3a). Each of the six endpoints answers for
+  # AWS namespaces only (step 3.3a). Each of the seven endpoints answers for
   # `<service>.<region>.amazonaws.com` and its `.api.aws` twin, plus `streaming-logs` for `logs`
   # (measured on Sandbox's endpoints, 2026-09-09), and the S3 gateway's names are under
   # `amazonaws.com` too. The apex sits beside each wildcard because a domain-list wildcard never

@@ -327,12 +327,13 @@ SLICES = [
     # them, and a static rate that assumed them would over-report every session that does not.
     # `make status` quotes this column; the flag's cost is in `make help`.
     Slice("sandbox", "egress", EPHEMERAL, "18 interface endpoints (5.2) - no NAT", 0.180),
+    # Stage 9 step 4.3a re-cut it to VPC-Workloads' set (3.3a), the endpoints a job and a worker call.
     Slice(
         "staging",
         "egress",
         EPHEMERAL,
-        "11 interface endpoints (8.3) - no NAT",
-        0.110,
+        "7 interface endpoints (St.9 4.3a, decision 12) + DNS Firewall - no NAT",
+        0.070,
     ),
     # 12 since Stage 7 (2026-10-12): 6c 5.5's 13 plus `secretsmanager` (step 1.7), which the GitLab
     # host's bootstrap reads its leaf keys and gitlab-secrets.json through and the runner its
@@ -345,15 +346,15 @@ SLICES = [
         0.120,
     ),
     # Stage 6c step 1.3a - VPC-Workloads' endpoint slice, zero NAT (D38). Stage 9 step 3.3a names
-    # its six endpoints: sts, logs, kms and glue of the core, sagemaker.api and secretsmanager. The
-    # DNS Firewall bills per query and per domain list, never by the hour, so it adds nothing to
-    # this column.
+    # its seven endpoints: sts, logs, kms, glue and lakeformation of the core (decision 12),
+    # sagemaker.api and secretsmanager. The DNS Firewall bills per query and per domain list, never by
+    # the hour, so it adds nothing to this column.
     Slice(
         "production",
         "workloads-egress",
         EPHEMERAL,
-        "6 interface endpoints (St.9 3.3a) + DNS Firewall - no NAT",
-        0.060,
+        "7 interface endpoints (St.9 3.3a, decision 12) + DNS Firewall - no NAT",
+        0.070,
     ),
     # Stage 8 steps 3.2 and 3.6 - the application's Glue job, applied by the pipeline with the release it
     # promotes (refusal 7) and destroyed by Staging's `make down`. A job bills per run, nothing at rest.
@@ -462,6 +463,22 @@ SLICES = [
         PERSISTENT,
         "consumer side: account data CMK, links, DataLakeSettings (derived zone removed 2026-08-26)",
     ),
+    # Stage 9 steps 1 and 4.1 - the two deployment targets' data platforms: the consumer-data call (the
+    # account data CMK, the LF settings, the resource links and their re-grants), the outputs bucket,
+    # the results bucket and the enforced Athena workgroup. Production's read rides beside its governed
+    # write (2.3); Staging reads alone (decision 3). [P], free or floor-priced at rest, like Sandbox's.
+    Slice(
+        "production",
+        "data",
+        PERSISTENT,
+        "consumer-data, outputs + derived buckets, the enforced workgroup, the job role's regrants",
+    ),
+    Slice(
+        "staging",
+        "data",
+        PERSISTENT,
+        "consumer-data (read only), outputs + derived buckets, the enforced workgroup",
+    ),
     # Stage 7 pass 1 (step 2.1) - the internal CA: the root and two leaves in the `tls`
     # provider's state, three SSM parameters and three S3 objects publishing the certificates,
     # two Secrets Manager secrets holding the leaf keys. [P], never destroyed (NEVER_DESTROY,
@@ -522,6 +539,10 @@ SLICES = [
     # also precedes production/data/ (45), whose key and bucket policies name the two roles, the
     # inversion the sso/data row above describes and for the same reason no order acts on it.
     Slice("production", "sagemaker", PERSISTENT, "job role, model registry, debug role + alarm"),
+    # Stage 9 step 4.3 - Staging's copy of the runtime half, the job role and its log groups alone:
+    # the registry and the escape hatch stay Production's. [P] and free at rest. It reads
+    # production/registry/'s state for the application repository, a cross-account read no rank orders.
+    Slice("staging", "sagemaker", PERSISTENT, "job role + the job log groups (St.9 4.3)"),
     # Stage 6 pass 2 - the registry, and it is a registry (D26): the DataZone V2 domain, its
     # two IAM roles and the two project profiles. [P] and metadata-priced (~USD 0.50/month,
     # docs/PRICING.md 5). No compute lives here and none may: US-2 measures that, and Stage 6
