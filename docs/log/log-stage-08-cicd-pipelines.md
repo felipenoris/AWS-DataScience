@@ -2100,3 +2100,65 @@ the finding PR #213 wrote into 3.9 from the code with no AWS call. Every time is
   under the same key with `BucketKeyEnabled: true`. `list-buckets` finds no `awsds-prod-outputs` in
   Production and, as `awsds-infra-staging`, no `awsds-staging-outputs` in Staging, so Stage 10 2.4's
   copies do not exist yet.
+
+## 2026-10-22 — decisions 2 and 20, 2.5's job role and 3.9 taken; 2.5a's and xix's readings; decision 26
+
+*Claude, in the session `stages-7-8-pending` (branch `claude/stages-7-8-pending-03936d`), after a review of
+Stages 7 and 8 against their logs. AWS read as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod` and `awsds-infra-sandbox-1`, and every `awsds-infra-*` profile and `awsds-policy-canary`
+for `./aws/cicd.py`), reads only; no other Claude session held this stage. An account id in a quoted output is replaced by the account's name. Times UTC.*
+
+- **[user] The decisions**: *"Sobre os itens "Decisões suas, sem ambiente", registre que vamos acolher suas
+  recomendações em todas essas decisões."*, then *"Faça as correções necessárias no plano, considerando os
+  itens que você identificou que necessitam de ajuste. Registre as decisões e atualize os arquivos do plano
+  e o log."*
+- **[Claude] Recorded as taken, each as recommended**: decision 2, `awsds/infrastructure` kept as pass 4's
+  reader; 2.5, Stage 9's `awsds-<env>-job-exec` as the job role in Staging and Production; 3.9, no S3 grant,
+  the evidence read in GitLab; decision 20's `If-None-Match` deny, not written; Terraform 1.15.8 → 1.16.6
+  (`upstream-releases.md`), the laptop's install first. The message the user answered carried the
+  recommendations of decision 2, 2.5 and the bump; those of 3.9 and of decision 20's option, and Stage 7
+  5.6's scope, were written in this sitting after the user's acceptance and named in the closing message.
+- **[Claude] 2.5a's assumptions**, `cloudtrail lookup-events` in `<Sandbox Account 1>` by the role's ARN from
+  2026-10-16: 17 `AssumeRole` of `awsds-deploy-sandbox-test`, each `userIdentity.principalId` carrying
+  `awsds-prod-runner-deploy`'s unique id. Five at runner boots (2026-10-16 17:43:14, 21:12:32 and 22:29:51;
+  2026-10-19 18:21:39; 2026-10-21 23:32:59), twelve between 2026-10-19 18:42:04 and 19:47:12 in four groups
+  of three, the `test-deploy` jobs of `v0.2.0` and `v0.2.1`.
+- **[Claude] Verification xix's call list**, `lookup-events` by each of the twelve sessions' access keys,
+  2026-10-19 18:00 to 21:00: 1,335 events. `airflow-serverless`: `ListWorkflowRuns` 308, `ListTagsForResource`
+  4 and 10 `AccessDenied`, `GetWorkflow` 4, `ListWorkflows` 4, `StartWorkflowRun` 2, `TagResource` 2,
+  `CreateWorkflow` 1 and 2 `ConflictException`, `UpdateWorkflow` 1 and 1 `AccessDenied`, `GetWorkflowRun` 1.
+  `datazone`: `GetConnection` 243, `ListConnections` 87 and 8 `AccessDenied`, `GetUserProfile` 64,
+  `GetGroupProfile` 56 `AccessDenied`, `ListProjects` 44, `GetProject` 35, `ListEnvironments` 33,
+  `ListProjectMemberships` 32, `ListDomains` 14, `GetDomain` 10, `GetEnvironment` 9,
+  `ListEnvironmentBlueprints` 3. `logs:FilterLogEvents` 309, `cloudformation:DescribeStacks` 32
+  `AccessDenied`, `ec2:DescribeVpcEndpoints` 12, `sts:GetCallerIdentity` 4. The `DescribeStacks` refusal,
+  absent from the warnings of 2026-10-19: *"User: arn:aws:sts::<Sandbox Account 1>:assumed-role/awsds-deploy-sandbox-test/botocore-session-1792436008
+  is not authorized to perform: cloudformation:DescribeStacks on resource:
+  arn:aws:cloudformation:us-west-2:<Sandbox Account 1>:stack/cicd-test-domain-stack/* because no
+  identity-based policy allows the cloudformation:DescribeStacks action"*. The lookup returns none of the
+  service's calls in the role's session on `UpdateWorkflow` that this log recorded on 2026-10-19.
+- **[Claude] `./aws/cicd.py`**, every profile: the seven persona and Control Tower profiles had no token
+  (section 10), so it exits 1. `CI-5` passes the repository policy (*"present, admitting Sandbox, Staging"*)
+  and both cross-account reads; `CI-8` passes, *"92 event(s), every caller is the deploy runner"*; `CI-2`,
+  `CI-3`, `CI-4` and `CI-7` pass; `CI-1` and `CI-9` note the runners absent, `CI-6` notes N = 1.
+- **[Claude] The application's objects**: `awsds-prod-ecr-app-etl` holds five images, the three `v0.1.0`
+  ones, `v0.2.0-1741dbe5` (pushed 2026-10-19 18:39:21) and `v0.2.1-1e756091` (19:27:46);
+  `awsds-prod-releases` one version, `app-etl/v0.2.1/app-etl.zip`, 6,988 bytes, 20:02:38, no delete marker;
+  `mwaa-serverless list-workflows` in Sandbox lists `app_etl_test_experimentation_app_etl` `READY`, created
+  2026-10-19 18:54:29, beside six workflows of 6i and the lab.
+- **[Claude] The lint's options reached GitLab with MR !2**: `$HOME/tmp/app-etl-template.tar`, the archive
+  the runbook writes from `HEAD:examples/app-etl` to build the template's branch, modified 2026-10-19 18:26,
+  nine minutes before MR !2's merge, carries `LINT_INSTANCE_TYPES` (line 37) and `--image-repository` (line
+  59) in its `.gitlab-ci.yml`. `$HOME/tmp/app-etl`, last fetched 2026-10-14, does not hold the merge, so
+  GitLab's own copy is read at the next GitLab sitting. `$HOME/tmp/app-etl-check` and `$HOME/tmp/app-etl-table`
+  do not exist.
+- **[Claude] Decision 26 written**: `examples/app-etl/Dockerfile` pins `default-v0.6.0`'s base
+  (`sha256:94359041…1975`) while version 9 runs on `default-v0.8.0`'s (`sha256:681dcb20…f23e`, the
+  `dev-env` README's release rows), and no step moves the pin. Recommended: at the application's own
+  release; the user's.
+- **[Claude] The plan revised, no AWS call**: this stage's status, 2.5's header, 2.5a, 3.0, 3.9, 4.6 (the
+  global STS endpoint, inferred in Stage 9's log, and verification xxviii), 5.6, decisions 2, 20 and 26 and
+  verifications xiv and xix to xxii; `AWS_STATE.md`'s deploy-layer row; `identity/sso/`'s README and the
+  approvers' header; `gitlab.md`'s mirror; `upstream-releases.md`'s Terraform row; Stage 11's 5.1 and 5.2
+  (the release bucket, from decision 20); `waiting-on-the-user.md`, `CLAUDE.md`, `GENERAL_PLAN.md` and the
+  stage index.

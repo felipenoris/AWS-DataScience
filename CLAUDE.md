@@ -360,10 +360,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   it between the two Sandbox projects and bundles it, the pipeline deploys the bundle, and a Step
   Functions machine per chain with a Scheduler schedule starts the workflows. The tooling is
   `awsds-workflows` (runbook §T).
-- **Stage 7 in progress**: passes 1-2 closed 2026-10-12 but three persona memberships, pass 3 nearly done,
-  pass 4 not started. Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
+- **Stage 7 in progress**: passes 1-2 closed 2026-10-12 but three persona memberships, pass 3 nearly done
+  (7.2 left), pass 4's 8.4 done. Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
   `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners out. Owed: INT-09's clone from a
-  notebook, the memberships, 5.6's ECR ARNs in three persona sets (scope not chosen), pass 4. The GitLab backups leave the bucket on 2026-11-13 and 2026-11-15.
+  notebook, the memberships, 5.6's ECR grant (its scope taken 2026-10-22), 8.1-8.3. The GitLab backups leave the bucket on 2026-11-13 and 2026-11-15.
   **`saml.auto.tfvars` lives in the project folder's `secrets/`**: a `tooling/` plan passes
   `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block.
 - **Stage 8 in progress**: passes 0-3 done (`awsds/ci-gates`, the test runner, the house image on Python
@@ -371,11 +371,12 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   application since 2.5, on GitLab's `main` since 2026-10-19 with its eleven CI/CD variables;
   `v0.2.1`'s pipeline passed `test-deploy` and stored the bundle, and its GitLab release failed on the
   notes' backticks, fixed in MR !4. Pass 4 runs after Stage 9 with Stage 10's passes 1-2
-  (decision 23). `awsds/infrastructure` has no reader since decision 18: decision 2 recommends keeping it for pass 4,
-  and 2.5 recommends Stage 9's `awsds-<env>-job-exec` as the Staging and Production job role, both the user's;
-  3.9's owed read reads nothing while `DeploymentManagerAccess` denies `kms:Decrypt` (read 2026-10-20). `staging/probes/` is retired, so `make up ENV=staging` raises `egress/` alone, and the template's
-  lint passes `--image-repository` and the ceiling's seven instance types (PR #186); GitLab's copy waits on
-  the user's push. **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
+  (decision 23). Taken by the user 2026-10-22, as recommended: decision 2 keeps `awsds/infrastructure` for
+  pass 4, 2.5 makes Stage 9's `awsds-<env>-job-exec` the Staging and Production job role, 3.9 writes no S3
+  grant, decision 20's `If-None-Match` deny is not written; decision 26, an application's base pin, is the
+  user's. `staging/probes/` is retired, so `make up ENV=staging` raises `egress/` alone, and the template's
+  lint passes `--image-repository` and the ceiling's seven instance types (PR #186), in GitLab since MR !2.
+  **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
 - **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-24`): `TM-17`, the project role's managed policy
