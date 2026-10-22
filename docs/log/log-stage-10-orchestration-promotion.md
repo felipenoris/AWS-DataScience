@@ -356,3 +356,21 @@ the revised recommendation they answered in that session's transcript before rec
   keys and `release.tf`, in `./aws/orchestration.py`'s `OR-5` (`DEF_PREFIX`), and in the lines of
   `aws/INDEX.md` and `docs/GOVERNANCE.md` that named the old prefix. The orchestrating session and the Stage
   9 session were told, for Stage 8 3.2 and 4.1 and for the two data slices' statements.
+
+## 2026-10-22 — the module tagged `orchestration-v0.1.0`, the slices pinned to it
+
+*Claude's hand, the same session, on the user's word in its chat: "Autorizo criar a tag
+orchestration-v0.1.0 no commit 26bfc15d, publicá-la no origin e trocar os dois slices para
+?ref=orchestration-v0.1.0." Plans as the infrastructure user (`awsds-infra-prod`, `awsds-infra-staging`);
+nothing applied. Times are UTC.*
+
+- **[Claude] Before tagging**: `git ls-remote --tags origin 'orchestration-*'` read nothing, and the
+  module's last commit was `26bfc15d`, decision 1's prefix.
+- **[Claude] The tag**: `git tag orchestration-v0.1.0 26bfc15d`, pushed alone; origin reads
+  `refs/tags/orchestration-v0.1.0` at `26bfc15dfd02…`. The push the auto-mode classifier refused earlier
+  the same day was this tag's, then on `e9f0c9a7`; the module changed twice since, so that commit was never
+  tagged.
+- **[Claude] The slices**: both `main.tf` pin `?ref=orchestration-v0.1.0`; `terraform init` downloads the
+  module from the tag, and at 18:22:59Z each plan with no release reads *"No changes. Your infrastructure
+  matches the configuration."* With the stand-in release each still stops at its lookups, as at 05:16Z:
+  the application ceiling and the data key in both accounts, and `staging/sagemaker/`'s state in Staging.
