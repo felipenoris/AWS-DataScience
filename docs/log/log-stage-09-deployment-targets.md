@@ -994,3 +994,22 @@ this chat and copied here with the account id replaced by its placeholder; Claud
   stays attached and unexercised, as the inline policy's absence of the action already refuses it. The
   role is read-by-API by two layers in each direction, and one of each pair is proven. The step's
   expectation is corrected to the measured wording.
+
+## 2026-10-22 — 6.3: the alarm's messages received, and a third assumption inside the window
+
+*The user's hand for the messages and the command, pasted into this chat and copied here with the
+account id, the sign-in address and the laptop's address replaced by placeholders; Claude's reading as
+the infrastructure user (`awsds-infra-prod`). Times UTC.*
+
+- **[user] The alerts**: *"Sim, recebi dois emails de alerta"*, one per assumption; the second's body,
+  verbatim but for the placeholders, the input transformer's eight lines:
+  *"awsds-prod-debug-assume: the production debug role was assumed." / "When: 2026-10-22T23:22:00Z" /
+  "Role: arn:aws:iam::<Production>:role/awsds-prod-debug" / "Caller: AROAW6L3NRTR5S22T5TS5:<the
+  data-science user>" / "Session name: botocore-session-1792711318" / "Source address: <the laptop>" /
+  "CloudTrail event id: 2acc588b-f660-4c47-9abc-ea3c7ff286e4"*. No credential in it, as 6.2 wrote the
+  transformer; the caller is the reserved role's unique id and the sign-in name.
+- **[user] The after-window command, run before the window's end**: the step's `assume-role` with the
+  session name `debug-window-after` answered
+  *"arn:aws:sts::<Production>:assumed-role/awsds-prod-debug/debug-window-after"*, a third successful
+  assumption, since the window is open until 01:00Z. The refusal is the next reading, after the window
+  closes, by the clock or by the closing apply.
