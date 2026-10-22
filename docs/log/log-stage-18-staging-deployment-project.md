@@ -1729,3 +1729,42 @@ AWS or in GitLab. Times are UTC.*
   in the order section now names the Protected branches list.
 - **[user] The Audit snapshot**, block A's last act (Stage 11's log of this day): no finding names
   `awsds-staging-smus-projects` or Staging's project key, the reading 8.6 waited on.
+- **[user]** The branch protected, a new pipeline run on it, its job started: *"o `stage-18-deploy` falhou."*
+- **[Claude] B2, job #246 read** (the deploy runner, 23:47:19 to 23:47:58Z): the bundle read with the runner's
+  own role and its SHA256 `OK`; *"assumed-role/awsds-deploy-staging/botocore-session-…"*; the job's own
+  lookups passed (*"project d1veybt5oak4uo, subnets subnet-084d979d7fafd0b07 subnet-03a9c071d98036d4c,
+  security group sg-06aed2f274ea413e2"*); then each of the five storage items refused as a non-member's,
+  *"An error occurred (AccessDeniedException) when calling the ListConnections operation: User is not
+  permitted to perform operation: ListConnections"*, *"No S3 URI found for connection unknown"*, *"Total
+  files deployed: 0"*, *"FATAL: the deploy failed"*, before `workflow.create`. The CLI's `GetGroupProfile`
+  on the owner's group was refused *"because no resource-based policy allows the
+  datazone:GetGroupProfile action"*, the warning 4.2 read for InfrastructureAccess. Read after it (23:50Z):
+  the role's `IAM_ROLE_SESSION_GROUP` profile `9bead345-cd5a-3881-abb8-e68cc17e2e9b` `ASSIGNED`, created by
+  the run; `app_etl_deploy_staging_app_etl` `READY` at version `f2ed9786…`, as 7.1 left it; the project's two
+  members unchanged.
+- **[user] The membership and the retry**: `create-project-membership ... --designation PROJECT_OWNER
+  --member groupIdentifier=9bead345-cd5a-3881-abb8-e68cc17e2e9b` as `awsds-infra-staging`, then the job
+  retried, *"O retry terminou."*, its log pasted: *"✅ Deployment completed successfully!"*, the run
+  `I3A52lFlgpcaxpN` started, *"00:08:00Z SUCCESS"*, `"Duration": 762`, the four task instances, *"Job
+  succeeded"* (artifacts id 247).
+- **[Claude] 4.3 read back** (00:10Z): `app_etl_deploy_staging_app_etl` `READY` at version `eca67205…`, its
+  fourth, modified 23:53:43Z; the project role as its role; the project's two subnets and security group;
+  the project key as `CUSTOMER_MANAGED_KEY`; `manual_only`; tags `Pipeline=app-etl`, `STAGE=STAGING`,
+  `Target=deploy-staging`, `CreatedBy=SMUS-CICD` and the two DataZone ones; the run `SUCCESS` from 23:53:53Z
+  to 00:06:36Z, `transform`, `process`, `summarize` and `write_result` `SUCCESS`.
+- **[Claude] The sessions, CloudTrail 23:46 to 00:09Z** (read at 00:10:34Z, inside the delivery lag for the
+  run's last minutes): `awsds-deploy-staging` assumed five times by the runner, no source identity; the
+  project role assumed by `airflow-serverless.amazonaws.com` (`AmazonMWAAServerless`, 5),
+  `glue.amazonaws.com` (`GlueJobRunnerSession` 10, `GlueRoleValidationSession` 2), `sagemaker.amazonaws.com`
+  (`SageMaker` 11, `AnalyticsValidation` 2) and `im.amazonaws.com` (`SageMaker` 4), none carrying a source
+  identity; and by `datazone.amazonaws.com` eight times as `<profile>@bujd259b8g9zps`, source identity
+  `4aea7383-8e00-4a33-b3b1-01c9cfae0352`, which `get-user-profile` names the `IAM` profile of
+  `awsds-deploy-staging`, `ACTIVATED`; those eight sessions called `athena:GetWorkGroup` alone, none refused.
+  No event names an explicit deny. After the membership the refusals are the CLI's
+  `cloudformation:DescribeStacks` (7) and `datazone:GetGroupProfile` (14), as 4.2 read for
+  InfrastructureAccess; `CreateWorkflow` answering `ConflictException` before `UpdateWorkflow`;
+  `logs:CreateLogGroup` `ResourceAlreadyExistsException`; the workers' dry runs; and two of the processing
+  job's `SageMaker` session, `kms:CreateGrant` on the project key *"because no identity-based policy allows
+  the kms:CreateGrant action"* (23:57:00Z) and one `ecr:BatchGetImage` `InvalidParameterException` on
+  `repositoryName` (23:57:47Z) beside three that passed, the job completing. 6.2's worker side: the deny
+  binds no worker, and DataZone's sessions for the deploy role read.
