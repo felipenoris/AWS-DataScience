@@ -538,8 +538,8 @@ approval gate (decision 1).
   `awsds-deploy-staging`. The INT-07 image grant, Stage 8 step 3.0's pull grant, was applied by the user
   on 2026-10-19 in [Stage 18](stage-18-staging-deployment-project.md)'s window: `APP_REGISTRY_CONSUMERS`
   reads `sandbox` and `staging` (`backend.py`), and `production/registry/`'s `app-etl` repository policy
-  admits Staging's account (that stage's log). 3.0's ceiling half, `awsds-<env>-app-boundary`, is not
-  written. Read 2026-10-18: the AZ mapping is identical in the six profiled accounts, and account-level
+  admits Staging's account (that stage's log). 3.0's ceiling half, `awsds-<env>-app-boundary`, is written in
+  both `foundation/` slices by Stage 8's PR #244, planned and unapplied (2026-10-22). Read 2026-10-18: the AZ mapping is identical in the six profiled accounts, and account-level
   Block Public Access has all four flags in each, Staging's included. **This stage owns two things nobody
   else does** — the account data CMK `alias/awsds-staging-data` (created here, under its own name; 6b
   destroyed the old `dev`-named key rather than renaming it) and the `staging/{data,sagemaker}/` slices

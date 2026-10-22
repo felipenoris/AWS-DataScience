@@ -27,6 +27,7 @@ Every role is the account root narrowed by `aws:PrincipalArn`, which KMS does no
 | `AllowTheReleaseRolesToGrantTheWorkflowService` | idem | `CreateGrant` for an AWS resource; which context the service's grant carries is unread |
 | `AllowTheReleaseRolesToDescribeTheKey` | idem | `DescribeKey` |
 | `AllowTheChainRoleForItsWorkflows` | `awsds-prod-chain-exec` | `Decrypt`, `GenerateDataKey` with the workflow's ARN as context |
+| `AllowTheDeploymentManagerToReadWorkflowRuns` | `DeploymentManagerAccess` | `Decrypt` with a workflow's ARN as encryption context alone: the service decrypts a run in the reader's session at each `GetWorkflowRun` (Stage 10 decisions 2, 11). No S3 object carries that context, so the approver still decrypts no output (D31) |
 | `AllowTheWorkflowRolesViaS3` | `awsds-prod-wf-*` | `Decrypt`, `GenerateDataKey` through S3: the result file and the inbox markers |
 | `AllowTheWorkflowRolesForTheirWorkflows` | `awsds-prod-wf-*` | `Decrypt` with the workflow's ARN as context |
 | `AllowJobVolumeGrantsThroughSageMaker` | `awsds-prod-wf-*`, `awsds-deploy-prod` | `CreateGrant`, `DescribeKey` through SageMaker: a job's volume key, granted in the submitting session (6i) |

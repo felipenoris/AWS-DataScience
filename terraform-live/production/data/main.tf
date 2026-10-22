@@ -10,8 +10,9 @@
 #
 # The key policy is enumerated: the account root administers the key and holds no cryptographic
 # action, so delegation to IAM is impossible and every principal that decrypts is named here (D31).
-# The approvers are named nowhere. Every role is matched by aws:PrincipalArn under the account root,
-# which KMS does not validate, so a role Stage 10 creates later is admitted by its name.
+# The approvers decrypt no object: their one statement is a workflow run, by the workflow's encryption
+# context. Every role is matched by aws:PrincipalArn under the account root, which KMS does not validate,
+# so a role Stage 10 creates later is admitted by its name.
 
 module "consumer_data" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
@@ -121,6 +122,21 @@ module "consumer_data" {
       Resource  = "*"
       Condition = {
         ArnEquals  = { "aws:PrincipalArn" = local.chain_role_arn }
+        StringLike = { "kms:EncryptionContext:aws:airflow-serverless:workflow-arn" = local.workflow_arn_pattern }
+      }
+    },
+    # The deployment manager reads a workflow's runs (Stage 10 decision 11), and the service decrypts the
+    # run in the reader's session at each GetWorkflowRun (decision 2). The condition admits a workflow's
+    # encryption context alone, which no S3 object carries (its context is the bucket's ARN), so the
+    # approver still decrypts no output (D31).
+    {
+      Sid       = "AllowTheDeploymentManagerToReadWorkflowRuns"
+      Effect    = "Allow"
+      Principal = { AWS = local.account_root }
+      Action    = ["kms:Decrypt"]
+      Resource  = "*"
+      Condition = {
+        ArnLike    = { "aws:PrincipalArn" = local.deployment_manager_pattern }
         StringLike = { "kms:EncryptionContext:aws:airflow-serverless:workflow-arn" = local.workflow_arn_pattern }
       }
     },

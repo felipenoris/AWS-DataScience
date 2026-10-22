@@ -17,7 +17,7 @@ governs how an account shares, which Staging never does.
 
 | Object | Staging |
 |---|---|
-| the data key | no debug-role statement and no Redshift statement; the persona's is `AllowTheDataScientistToDecryptViaS3`, `Decrypt` alone through S3, since `DataScientistStagingAccess` writes nothing |
+| the data key | no debug-role statement and no Redshift statement, and the deployment manager's run read as in Production; the persona's is `AllowTheDataScientistToDecryptViaS3`, `Decrypt` alone through S3, since `DataScientistStagingAccess` writes nothing |
 | `awsds-staging-outputs`'s policy | the trusted endpoint is `staging/foundation/`'s gateway endpoint; `DenyThePersonaAnyWrite` holds the persona to reads, on the whole bucket (8.4: everything readable, nothing writable); no named-prefix statements and no debug role |
 | Lake Formation grants | the job role's read alone: `job_link_describe`, `job_shared_databases`, `job_shared_tables`; no `job_curated_write`, since Staging received no write to regrant |
 | `app_outputs` | the deploy creates the application's tables from the repository's schemas, after Stage 8's 3.2 and before its 3.3 (4.4) |

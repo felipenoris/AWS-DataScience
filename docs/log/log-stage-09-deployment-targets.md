@@ -670,3 +670,22 @@ decision 20 (d) in its chat. No AWS call.*
   own test input; a real application names its governed source in its release. `production/data/` and
   `staging/data/` already admit the release role to `inbox/`, and Stage 10 decision 2, taken the same day,
   confirms the workflow statements their data keys carry.
+
+## 2026-10-22 — the deployment manager's run read on both data keys; Stage 8's halves in PR #244
+
+*Claude's hand, the same session, on messages from the sessions "Stage 10 — revisão e preparação" and
+"Pendências estágios 7 e 8". No AWS call beyond the re-plans; nothing applied.*
+
+- **[Claude] `AllowTheDeploymentManagerToReadWorkflowRuns`** joins the data keys of `production/data/` and
+  `staging/data/`: the user took Stage 10 decision 11 that day, so `DeploymentManagerAccess` reads
+  workflow runs, and under decision 2 the service decrypts a run in the reader's session at each
+  `GetWorkflowRun`. `kms:Decrypt`, the reserved role matched by pattern, and the encryption context
+  `aws:airflow-serverless:workflow-arn` matched to `awsds-<env>-wf-*`, narrower than the context's
+  presence the request named. No S3 object carries that context, so the approver still decrypts no
+  output (D31). Re-plans: *"Plan: 35 to add, 0 to change, 0 to destroy."* and *"Plan: 34 to add, 0 to
+  change, 0 to destroy."*, the full plans saved again; Recipe D's first-step plans are unchanged, since the
+  settings carry no key statement.
+- **[Claude] Stage 8's halves, in PR #244 and unapplied**: `awsds-<env>-app-boundary` in both
+  `foundation/` slices (4.0 now says so), `PassTheJobRole` on both deploy roles, and on
+  `awsds-deploy-staging` `ReadTheApprovedModelVersions` and `ListTheModelVersions`, the two actions
+  `production/sagemaker/`'s group policy grants that role.

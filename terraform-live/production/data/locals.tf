@@ -18,6 +18,10 @@ locals {
   chain_role_arn        = "${local.role_prefix}/awsds-${var.env}-chain-exec"
   workflow_role_pattern = "${local.role_prefix}/awsds-${var.env}-wf-*"
 
+  # The deployment manager, who reads workflow runs (Stage 10 decision 11). The reserved suffix is
+  # minted per account, so the role is matched by pattern; it may not be provisioned in an account yet.
+  deployment_manager_pattern = "${local.role_prefix}/aws-reserved/sso.amazonaws.com/*/AWSReservedSSO_DeploymentManagerAccess_*"
+
   # A MWAA Serverless workflow's ARN carries its name and a generated suffix, so the encryption context
   # the service binds to the workflow is matched by pattern (Stage 10 decision 2).
   workflow_arn_pattern = "arn:${local.partition}:airflow-serverless:${var.region}:${local.account_id}:workflow/awsds-${var.env}-wf-*"
