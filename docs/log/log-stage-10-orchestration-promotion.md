@@ -450,3 +450,29 @@ call of this session's.*
   the same time, so no plan was taken after this one.
 - **[Claude] Recorded**: the stage file's status, prerequisites, 1.5's grant and decision 11 say what is
   applied.
+
+## 2026-10-22 — steps of this sitting the entries above leave out: the PR, 1.3's ceiling, 6.1's minute, 1.5's two policies
+
+*Claude's hand, the same session, recording commits of the day whose steps no entry above names. No AWS
+call.*
+
+- **[Claude] The branch and the PR**: after the classifier refused the tag's push (the first entry of the
+  day), the branch alone was pushed and PR #246 opened against `main`; every later commit joined it, and
+  its one check, `pre-commit and make check`, passed. The exact statements for Stage 8's `*/foundation/`
+  (1.5's grant and the application ceiling) and the texts for the shared files were handed to the
+  orchestrating session, which writes them in PR #244.
+- **[Claude] 6.1** (`5d713ea3`): Production's chain fires at 06:30 UTC and a run needs
+  `production/workloads-egress/`'s `[E]` endpoints, so the sitting that proves the unattended run spans
+  that minute with them up, or a commit moves the cron into the sitting.
+- **[Claude] 1.3's sentence on the deploy role's ceiling** (`f435d8d7`, `411dc2b3`), on the orchestrating
+  session's reading: the ceiling refuses `CreateRole` and the five role-policy writes on a role without the
+  application ceiling, the actions `iam:PermissionsBoundary` is evaluated for, where 1.3, the module's
+  header and its variable's description said every policy change. Text only; that module commit moved the
+  tag's target from `e9f0c9a7` to `f435d8d7`, before decision 1 moved it to `26bfc15d`.
+- **[Claude] 1.5's grant as two managed policies** (`8dd5e2e9`), on the orchestrating session's
+  measurement: the grant is 7,836 characters in Staging, white space not counted, above the 6,144 a managed
+  policy holds, and inline it would take Staging's role to 12,483 of the 10,240 IAM allows; PR #244 splits
+  it into `awsds-<env>-deploy-orchestration-resources` and `-access`, and an amendment keeps each under
+  6,144. 1.5 no longer says the statements are in this log.
+- **[Claude] Decision 11's carve-out put to the user** (`007ff267`), before the approval an entry above
+  records: a row of `waiting-on-the-user.md`, with `identity/sso/` waiting on the answer.
