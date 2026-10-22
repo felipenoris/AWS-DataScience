@@ -2190,3 +2190,338 @@ for `./aws/cicd.py`), reads only; no other Claude session held this stage. An ac
   domain names, and reads no application's pin.
 - **[Claude] Recorded**: decision 26 taken, with those facts; the stage's status and 2.2;
   `waiting-on-the-user.md`'s row removed; `CLAUDE.md`, `GENERAL_PLAN.md` and the stage index.
+
+## 2026-10-22 — pass 4 read against Stages 9, 10 and 18; `prepare()` fixed; xix and xxviii's passive half
+
+*Claude, in the session `stages-7-8-pending`, which orchestrates the parallel review of Stages 8, 9 and
+10; the sessions "Stage 9 — revisão e preparação" and "Stage 10 — revisão e preparação" hold those
+stages. AWS read as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`,
+`awsds-infra-staging`, `awsds-infra-sandbox-1`), reads only, the environment down. Times UTC.*
+
+- **[user] The request**: *"Revise o plano dos estágios 8, 9 e 10, considerando o andamento atual do
+  plano, em especial as decisões registradas na sessão atual, bem como o aprendizado com a conclusão do
+  stage 18. Faça todas as leituras que não dependam do ambiente no ar. Usuário infra sso está logado.
+  Faça a preparação necessária para todas as etapas dos estágios 8, 9 e 10 que forem possíveis de serem
+  preparadas e que não precisam da minha intervenção ou decisão. Abra quantas tarefas em paralelo forem
+  necessárias para estas atividades. Faça as correções necessárias no plano, atualize o log dos
+  estágios correspondentes com o andamento feito. Ao final, planeje as etapas seguintes que dependem do
+  ambiente no ar."*
+- **[Claude] Pass 4, item by item**, a read-only subagent over this stage, Stages 9, 10 and 18 and the
+  code: no item can be written whole now. 3.2, 3.3 and 3.6 wait on Stage 9's platforms (4.3's
+  `awsds-staging-job-exec`, `staging/data/`, `production/data/`, behind its decisions 1 and 3) and on
+  Stage 10's decisions 1, 2, 8 and 12 and its `orchestration/` slices; 3.0's ceiling content on Stage 10's
+  roles; 3.7 and 3.8 follow a promotion. What each needs of Stages 9 and 10 was sent to their sessions.
+- **[Claude] The readings**:
+  - `iam get-role`: `awsds-staging-job-exec` *"cannot be found"*; `awsds-prod-job-exec` created
+    2026-10-18 19:59:03, no permissions boundary. `s3api head-bucket`: no `awsds-staging-outputs` or
+    `awsds-prod-outputs`. `iam list-policies --scope Local`: no `awsds-<env>-app-boundary` in either.
+  - `iam list-role-policies`: `awsds-deploy-staging` holds `apply-egress` and `state`,
+    `awsds-deploy-prod` holds `state`.
+  - Verification xxviii's passive half, `cloudtrail lookup-events --region us-east-1` on `AssumeRole`
+    from 2026-10-12: 0 events naming an `awsds-deploy-*` role in Production, Staging and Sandbox, beside
+    32, 35 and 41 service-linked `AssumeRole` events (`AWSServiceRoleForOrganizations`, Athena's,
+    Resource Explorer's, Service Quotas').
+  - Verification vii's third half: no `UpdateDomain` in Sandbox since 2026-10-18.
+  - Verification xix's comparison: AWS's sample IAM policy for the CI/CD feature, read 2026-10-22, holds
+    18 entries on `*` and covers 7 of the role's 25 actions; the 18 it leaves out are in the stage file.
+- **[Claude] `scripts/slices.py`'s `prepare()`**: with `--profile` naming a deploy role it now runs
+  `gen-tfvars.py --pipeline`, so `make down ENV=staging PROFILE=awsds-deploy-staging` (3.4) writes an
+  application slice's registry profile as the runner's own rather than `awsds-infra-prod`, which the
+  runner does not hold; `layers.deploy_profiles()` is the set refusal 8 already used. Read: `slices.py
+  down --env staging --profile awsds-deploy-staging --dry-run` prints `gen-tfvars.py --pipeline staging
+  egress`, without the profile it prints no flag, and the three `egress` slices' tfvars render the same
+  with and without it; `ruff` clean.
+- **[Claude] The plan revised, no AWS call**: the status, the build table (the two ceilings), the pass
+  table, 2.5's ceiling claim (five role-policy writes, not every change), 3.0 (its applied half, the
+  ceiling's shape), 3.1 to 3.8 (Stage 18's measurements and the asks of Stages 9 and 10), 4.1 (the scope by
+  name, Stage 18's amendment and removal of three inline documents, the residual profiles, 1.5's fuller
+  list), 4.4, 4.6, 6.1 and the risk on decision 2, verifications xix and xxviii; the comments in
+  `staging/foundation/deploy-role.tf`, `production/foundation/deploy-anchors.tf` and `backend.py` that
+  still cited 2.4; `docs/REFERENCES.md`'s CI/CD pages line.
+
+## 2026-10-22 — Stages 9 and 10's hand-over consolidated, and the sittings with the environment up planned
+
+*Claude, in the session `stages-7-8-pending`, after the sessions "Stage 9 — revisão e preparação" (PR #245)
+and "Stage 10 — revisão e preparação" (PR #246) ended their turns; no AWS call in this entry.*
+
+- **[Claude] The two reports**, read from the sessions' notes: each PR kept to its own files and left the
+  shared upkeep files to this session. Stage 9 wrote and planned `staging/sagemaker/` (8 to add), the
+  Production job role's `glue:GetConnection` (1 to change), the `staging/egress/` re-cut (15 to add) and
+  `production/workloads/` on `vpc-v0.4.0` (1 to change), and opened its decision 12. Stage 10 wrote and
+  planned `terraform-modules/orchestration/` and both `orchestration/` slices, and opened its decisions 19
+  and 20. The classifier refused that session's push of the tag `orchestration-v0.1.0`
+  (*Out-of-Place Publication*), so its slices pin the module by path until the user authorizes the push.
+- **[Claude] What Stage 8 received**: the application ceiling's content (3.0, an allow-list from Stage 10);
+  the application halves' specification (4.1), whose orchestration grant has its single home in Stage 10
+  1.5; the place of Stage 9 4.4's seed and 3.4's approval half (3.3). Stage 10 was asked to align its 1.3
+  sentence on the deploy role's ceiling with the six actions the module denies.
+- **[Claude] The shared files, rewritten once from the reports**: `waiting-on-the-user.md` (the quota row,
+  Stage 9's decisions with 12, the registry row, the Stage 9 applies, the tag push, Stage 10's decisions,
+  and the sittings table with a Promotion row for pass 4), `CLAUDE.md`, `GENERAL_PLAN.md` (39,471 bytes), the
+  stage index, the log index and `AWS_STATE.md`'s network row.
+
+## 2026-10-22 — Stage 9's decisions 2, 5 to 8, 11 and 12 taken, and what Stage 8 follows
+
+*Claude, in the session `stages-7-8-pending`, no AWS call. The decisions themselves are recorded in
+Stage 9's log by the session that holds Stage 9 (PR #245), to which the user's words were relayed.*
+
+- **[user] The decisions**: *"Pode registrar como aceitas as recomendações de decisão em relação aos
+  seguintes itens: # Stage 9 * #2 Limite de dados por query no athena. * #11 onde ficam os resultados de
+  query em Staging e Produção * #12 a rede do job glue * #5 como um projeto do sandbox lê uma tabela
+  governada no redshift * #6 Quem cria as tabelas do warehouse governado * #7 Os limites de custo do
+  warehouse * #8 os logs de auditoria do warehouse"*. Stage 9's decisions 3 and 1 stay open, and no
+  Stage 10 decision was taken.
+- **[Claude] What follows here**: 4.1's application halves no longer wait on Stage 9 decision 12, whose
+  option (a) puts the Glue connection and the job security group in `*/sagemaker/` for the application
+  slice to reference. Stage 10 was told that its decision 20(b), which had the application slice declare
+  both, must follow 12(a). `waiting-on-the-user.md`, `CLAUDE.md`, `GENERAL_PLAN.md` and the stage index
+  carry the taken decisions.
+
+## 2026-10-22 — Stage 9's revised recommendations for decisions 1 and 3 reach Stage 8 and the shared files
+
+*Claude, in the session `stages-7-8-pending`, no AWS call. The revision was asked for by the user in a
+session started from this one under the same title, which relayed it to the Stage 9 session; that
+session recorded it in PR #245 (`55ed4c90`) as recommendations, with the decisions still the user's.*
+
+- **[Claude] What changed here**: 4.1's list no longer carries the archive read on `awsds-deploy-staging`,
+  since Stage 9 decision 1 now recommends that Staging read nothing of Production's outputs, the model
+  archives included; the read survives as that decision's option (a). `waiting-on-the-user.md`,
+  `GENERAL_PLAN.md` and the stage index carry the two revised recommendations. The threat model's
+  `TM-25` and D20's amendment wait on decision 3 being taken.
+
+## 2026-10-22 — Stage 9's decisions 1 and 3 taken: D20 amended, `TM-25`, the design documents
+
+*Claude, in the session `stages-7-8-pending`, no AWS call, on a message from the session started from
+this one under the same title, relaying the user's words there; the words were read in that session's
+transcript before anything was written. The Stage 9 session records the decisions in its own log.*
+
+- **[user] The decisions**, relayed verbatim: *"Avise às sessões que irei acatar as recomendações em
+  relação às decisões 3 e 1, conforme conversamos nesta sessão."* Stage 9 decisions 3 and 1 are taken as
+  revised in PR #245 (`55ed4c90`): no mirror, Staging reading the governed lake in place, read-only,
+  through the LF-Tag share Sandbox holds, and nothing of Production's outputs read in Staging, the model
+  archives included. Every Stage 9 decision is taken.
+- **[Claude] The files that described the previous design**: D20 amended in place and its index row;
+  `threat-model.md` gains `TM-25`, the read accepted with its compensations and revision triggers, and
+  its catalog-layer row names Staging; `GOVERNANCE.md` (the diagram, the account table, the test
+  paragraph), `ORGANIZATION.md`, `README.md`, `architecture.md`'s tree and open question 9, closed. The
+  waiting list loses Stage 9's decisions row; `CLAUDE.md`, `GENERAL_PLAN.md` and the stage index say every
+  Stage 9 decision is taken; Stage 8 4.1 writes no archive read, and 3.3 places the deploy's own tables
+  between 3.2 and 3.3.
+
+## 2026-10-22 — the rest of decision 3's text from Stage 9's record
+
+*Claude, in the session `stages-7-8-pending`, no AWS call, from the Stage 9 session's report of its
+commit `29302c94` (PR #245), which records decisions 3 and 1 and withdraws 4.4.*
+
+- **[Claude] Applied**: `GOVERNANCE.md`'s Staging row (its own catalog filled by each deploy, with resource
+  links to `raw` and `curated`; read through the TBAC share and the local re-grants, `DESCRIBE` and
+  `SELECT` alone), the warehouse sentence, the grants' principals and node 5 of the development cycle;
+  INT-03's restored Staging read; D20's argument, the user's; the Stage 9 rows of `CLAUDE.md` and the log
+  index. Stage 8 3.3 no longer names 4.4: each deploy fills Staging's own catalog (Stage 9 4.1).
+
+## 2026-10-22 — Stage 10 decision 1 taken: the definitions home moves to `applications/`
+
+*Claude, in the session `stages-7-8-pending`, no AWS call, on the Stage 10 session's report of its
+commit `f2bd47a7` (PR #246); the user's words were read in the transcript of the session started from
+this one, where they were written.*
+
+- **[user] The decision**, in that session: *"Sim, peço registrar esta recomendação revisada e acatar esta
+  como sendo a decisão tomada."* Stage 10 decision 1, revised: the bundle stays whole in
+  `awsds-prod-releases`, its tree is unpacked under `awsds-<env>-outputs/applications/<app>/<tag>/`, the
+  workflow's YAML alone rendered and every other file copied byte for byte, `MANIFEST.sha256` proving it.
+- **[Claude] What follows here**: 2.5's job-role cost, 3.2's copy, 3.8's exemption, 3.9's reading and
+  5.6 (h) name `applications/` for `workflows/`; the waiting list drops decision 1 from Stage 10's row.
+  The module tag `orchestration-v0.1.0` now goes on `26bfc15d`, the module's last commit.
+
+## 2026-10-22 — Stage 10 decisions 5, 8 and 12 confirmed
+
+*Claude, in the session `stages-7-8-pending`, no AWS call; the Stage 10 session records the decisions in
+its own log, the user's words relayed to it.*
+
+- **[user] The confirmation**: *"Confirmo estes itens:"*, above the orchestrator's list of Stage 10's
+  decisions 5 (the orchestration slice `[E]`), 8 (a SageMaker processing job, not an ECS task) and 12 (the
+  Glue scripts under the release's `applications/<app>/<tag>/glue/`, writes to `applications/*` denied to
+  all but the release role and `InfrastructureAccess`).
+- **[Claude] What follows here**: 3.0's ceiling admits no ECS action and waits on Stage 10 decision 2 alone;
+  the waiting list keeps Stage 10's decisions 2, 3, 4, 9, 11, 19 and 20, and `CLAUDE.md` and the stage
+  index name 2, 19 and 20 as the ones pass 4 waits on.
+
+## 2026-10-22 — Stage 10 decisions 2, 3, 4, 9, 11, 19 and 20 taken
+
+*Claude, in the session `stages-7-8-pending`, no AWS call; the Stage 10 session records the decisions in
+its own log, the user's words relayed to it, and the Stage 9 session was told of 20(d)'s exception.*
+
+- **[user] The decisions**: *"Aceito as recomendações das decisões 2, 3, 4, 9, 11, 19 e 20 (a, d, e) do
+  Stage 10, com a 20(d) como exceção explícita do template. Registre-as."* Every Stage 9 and Stage 10
+  decision is taken.
+- **[Claude] What follows here**: 3.0's ceiling has its content settled (decisions 2 and 8); 4.1's
+  application halves no longer wait on a decision; 3.2 names the Glue job `awsds-<env>-app-etl`, the render
+  by `scripts/render-workflow.py` and the inbox seeded from the bundle's `samples/`, the template's
+  explicit exception to Stage 9 decision 3; 3.3's leg starts the chain's state machine (decision 19). The
+  waiting list loses Stage 10's decisions row; `CLAUDE.md`, `GENERAL_PLAN.md` and the stage index say every
+  decision of both stages is taken.
+
+## 2026-10-22 — 3.0's ceiling and 4.1's application halves written and planned
+
+*Claude, in the session `stages-7-8-pending`; read-only AWS calls and two plans as the infrastructure user
+(`awsds-infra-staging`, `awsds-infra-prod`, `awsds-infra-sandbox-1` for Production's aliased read), no
+apply.*
+
+- **[user] The request**: *"Prepare o teto awsds-<env>-app-boundary (3.0) e as permissões de aplicação dos
+  deploy roles (4.1) nas slices foundation de Staging e Produção, só com plano, sem aplicar."*
+- **[Claude] What was written**, in both `foundation/` slices: `app-boundary.tf` (the ceiling, Stage 10's
+  hand-over) and `apply-orchestration.tf` (Stage 10 1.5's enumeration), each one file copied byte for byte
+  and held by the new `./scripts/check-copies.py`, wired into `make check` and pre-commit. What one account
+  adds is in its deploy role's file: Staging's `StartTheChainInTheLeg` and `FollowTheChainInTheLeg` (Stage 10
+  decision 19), `ReadTheApprovedModelVersions` on `awsds-prod-model-*` packages with Production's account
+  read through the `deploy_runner` alias, and `ListTheModelVersions`; Production's
+  `CreateTheWorkflowServiceLinkedRole`. `apply-application`, inline on both roles, holds `PassTheJobRole`
+  (`awsds-<env>-job-exec` to Glue and SageMaker). The module calls gain `<folder>/orchestration/` and the
+  read keys (`staging/foundation/` and `staging/sagemaker/`; `production/workloads/`, `foundation/` and
+  `sagemaker/`), still on `deploy-role-v0.3.0`.
+- **[Claude] The first plan's measurement**: with the grant as the inline `apply-orchestration` 4.1
+  specified, Staging's role would carry 12,483 characters of inline documents without white space
+  (`state` 1,062, `apply-egress` 3,023, `apply-application` 562, `apply-orchestration` 7,836), past IAM's
+  10,240, and Production's 9,090. The grant alone passes the 6,144 a managed policy holds, so 4.1's
+  fallback, one customer-managed policy, could not hold it either: it became two, split by content,
+  `awsds-<env>-deploy-orchestration-resources` (the workflows, the state machines, schedules and rules,
+  the workers' group) and `-access` (the roles and their `PassRole`, the definitions home, the data key, the
+  log groups), attached by the slice.
+- **[Claude] The plans**, with `-var-file=<project folder>/secrets/alerts.auto.tfvars`: `staging/foundation/`
+  6 to add, 2 to change, 0 to destroy; `production/foundation/` the same. The two changes in each are the
+  role's description and its `state` document (the new prefix and read keys); no other pending change
+  in either slice. Sizes: inline 4,647 (Staging) and 1,382 (Production) of 10,240; managed
+  `app-boundary` 1,641 and 1,629, `-access` 3,811 and 3,760, `-resources` 4,063 and 3,986, of 6,144.
+- **[Claude] Readings**: `AWSServiceRoleForAmazonMWAAServerless` exists in Staging, path
+  `/aws-service-role/airflow-serverless.amazonaws.com/`, created 2026-10-19T20:09:32Z, and `GetRole` answers
+  `NoSuchEntity` in Production, the ARN the statement names. Every permission action
+  `orchestration-v0.1.0` grants its `wf-` and `chain-` roles (36) falls inside the ceiling's allow-list;
+  `sts:AssumeRole`, from the trusts, is the only action outside it. Neither PR #245 nor PR #246 touches
+  either `foundation/` slice.
+- **[Claude] What follows**: the two applies wait on the user's authorization (the waiting list). Stage 9's
+  stage file still says 3.0's ceiling half is not written; the Stage 9 session was told, since that file
+  is its own.
+
+## 2026-10-22 — 4.1 completed from Stage 9's report, and Stage 10 decision 11's carve-out
+
+*Claude, in the session `stages-7-8-pending`; three plans as the infrastructure user (`awsds-infra-staging`,
+`awsds-infra-prod`, `awsds-infra-identity`), no apply.*
+
+- **[Claude] What Stage 9's report added to 4.1** (its section 8, after its passes 2, 3 and 5): the release
+  job's `inbox/*` beside `applications/*` (Stage 10 decision 20 (d)'s seed), the data key's statements as
+  twins of the key policy's `AllowTheReleaseRoles*`, the application's tables in `app_outputs` (Lake
+  Formation's half in each `data/`), and the `data/` state keys.
+- **[Claude] What was written**: `apply-application.tf` joins the copied files with `PassTheJobRole` and
+  `ManageTheApplicationTables`, each account's additions in `apply_application_in_this_account` (Staging's
+  registry read; Production's empty until Stage 9 9.4's Data API grant). The orchestration grant's access
+  policy writes `applications/*` and `inbox/*`, and `EncryptTheWorkflows` gives way to
+  `UseTheDataKeyForTheWorkflows` (the workflow-ARN encryption context), `GrantTheDataKeyToTheServices`
+  (`kms:GrantIsForAWSResource`) and `DescribeTheDataKey`. The read keys gain `<folder>/data/`.
+- **[Claude] The foundation plans**: each still 6 to add, 2 to change, 0 to destroy. Sizes without white
+  space: inline 5,098 (Staging) and 1,836 (Production) of 10,240; `-access` 4,490 and 4,427, `-resources`
+  4,063 and 3,986, the ceilings 1,641 and 1,629, of 6,144.
+- **[user] Stage 10 decision 11's carve-out**: *"Pode aprovar a exceção, conforme a recomendação."* The
+  recommendation: `kms:Decrypt` for `DeploymentManagerAccess` only when the encryption context carries
+  `aws:airflow-serverless:workflow-arn`, D31's decrypt deny narrowed to requests without it, `kms:ViaService`
+  added once a trail shows the calls carry it.
+- **[Claude] What follows here**: `identity/sso/policies-approvers.tf` gains `ReadWorkflowRunStatus` (the
+  six `airflow-serverless:` reads), `DecryptWhatTheWorkflowServiceEncrypts` and
+  `DenyDecryptOutsideTheWorkflowService`, and `DenyDataReadPaths` loses `kms:Decrypt`. Its plan: 0 to add,
+  1 to change, 0 to destroy, the set's inline policy alone, 7,289 to 8,223 rendered characters of the
+  slice's 10,240 ceiling. The apply joins the waiting list; the key-policy half is Stage 9's `data/`
+  slices'. The Stage 10 session was given the user's words and the commit for its decision and its log.
+
+## 2026-10-22 — 3.0's ceiling, 4.1's application halves and Stage 10 decision 11's carve-out applied
+
+*Claude, in the session `stages-7-8-pending`, as the infrastructure user (`awsds-infra-prod`,
+`awsds-infra-staging`, `awsds-infra-sandbox-1`, `awsds-infra-identity`, each `InfrastructureAccess`).*
+
+- **[user] The authorization**: *"I authorize applying staging/foundation, production/foundation and
+  identity/sso as the infrastructure user. Warn the other sessions and re-plan before applying."*
+- **[Claude] Before**: the sessions Stage 9, Stage 10 and `Chat lateral` warned by message. Fresh saved
+  plans: `production/foundation/` and `staging/foundation/` 6 to add, 2 to change, 0 to destroy, each with
+  the alerts var-file; `identity/sso/` 0 to add, 1 to change.
+- **[Claude] The applies**, in order: `production/foundation/` *"Apply complete! Resources: 6 added, 2
+  changed, 0 destroyed."*; `staging/foundation/` the same; `identity/sso/` *"0 added, 1 changed, 0
+  destroyed"*, the permission set's inline policy modified in 7 s.
+- **[Claude] After**: each re-plan `No changes` (`-detailed-exitcode` 0). Read back:
+  - `awsds-deploy-prod`: inline `apply-application` and `state`, attached
+    `awsds-prod-deploy-orchestration-resources` and `-access`, boundary `awsds-prod-deploy-boundary`;
+  - `awsds-deploy-staging`: inline `apply-application`, `apply-egress` and `state`, the same two attached,
+    boundary `awsds-staging-deploy-boundary`;
+  - `awsds-prod-app-boundary` and `awsds-staging-app-boundary` at `v1`, attachment count 0, boundary usage
+    0;
+  - `AWSReservedSSO_DeploymentManagerAccess_*`'s `AwsSSOInlinePolicy` in Sandbox, Staging and Production
+    carries `ReadWorkflowRunStatus`, `DecryptWhatTheWorkflowServiceEncrypts` and
+    `DenyDecryptOutsideTheWorkflowService`, and its `DenyDataReadPaths` lists no `kms:Decrypt`;
+  - `./aws/cicd.py awsds-infra-prod awsds-infra-staging awsds-infra-sandbox-1`: all checks passed, `CI-2`
+    for the four deploy roles, `CI-3`, `CI-4`, `CI-5` three times, `CI-7` twice, `CI-8` 92 events, every
+    caller the deploy runner; notes `CI-1`, `CI-6`, `CI-8` (xvi) and `CI-9`.
+- **[Claude] What follows**: the waiting list loses both apply rows and the promotion sitting's
+  prerequisite on them; Stage 8 3.9's sentences name `DenyDecryptOutsideTheWorkflowService`, and so does
+  6g's set table. The Stage 9 and Stage 10 sessions were told.
+
+## 2026-10-22 — Stage 9's applies consolidated into the shared files
+
+*Claude, in the session `stages-7-8-pending`, reads only (`awsds-infra-prod`, `awsds-infra-staging`,
+`awsds-infra-data`), on the Stage 9 session's report of its applies (PR #245, section 10 of its note).*
+
+- **[Claude] Readings, before writing its results down**: in Production and Staging, `alias/awsds-<env>-data`
+  `Enabled`, `CUSTOMER`; `awsds-<env>-outputs` present; `awsds-<env>-job-exec` present (Staging's created
+  2026-10-22T19:47:33Z); the Glue connection `awsds-<env>-jobs`, `NETWORK`; Lake Formation one administrator,
+  both default lists empty, `CROSS_ACCOUNT_VERSION` 4; the database `app_outputs`. In Data Governance,
+  `list-permissions` lists seven triples to the two accounts, each with the grant option: to each, `DESCRIBE`
+  on the databases `layer ∈ {raw, curated}` and `SELECT`, `DESCRIBE` on the tables adding `classification ∈
+  {public, internal}`; to Production, `DESCRIBE` on `curated` and, on its `ALL_TABLES`, `ALTER`, `DELETE`,
+  `DESCRIBE`, `INSERT` and `SELECT`.
+- **[Claude] What follows here**: the waiting list loses Stage 9's applies row and the promotion sitting's
+  prerequisite on them, and both egress rows read 16 to add; `CLAUDE.md`, `GENERAL_PLAN.md`, the stage and
+  log indexes take Stage 9's text; `AWS_STATE.md` gains the six grant rows, the lake's three trusted gateway
+  endpoints and `curated.trades`, and the deployment targets' Lake Formation row; `PRICING.md` reads 17 keys.
+
+## 2026-10-22 — pass 4's code written, the application slices planned
+
+*Claude, in the session `stages-7-8-pending`; plans and reads as the infrastructure user
+(`awsds-infra-staging`, `awsds-infra-prod`), no apply.*
+
+- **[user] The request**: as Stage 7's entry of the same sitting quotes, then Stage 8 pass 4's code.
+- **[Claude] The application slices**: `staging/app/app-etl/` and `production/app/app-etl/`, one slice
+  copied but `release.tf`, the Glue job `awsds-<env>-app-etl` on `sagemaker/`'s job role and connection,
+  its script under the release's prefix. Plans: `No changes` with no release in each; with `v0.2.1` as a
+  stand-in (`sha256:247ec6b6…ce0c`, read with `ecr describe-images`, and the bundle's
+  `7fb374d1…5fff`), 1 to add in each, the job reading `awsds-<env>-job-exec`, `awsds-<env>-jobs` and
+  `s3://awsds-<env>-outputs/applications/app-etl/v0.2.1/glue/transform.py`.
+- **[Claude] The deploy roles**: `ManageTheApplicationGlueJob` in `apply-application.tf`; each
+  `foundation/` plans 0 to add, 1 to change, the inline documents 5,359 and 2,094 of 10,240.
+- **[Claude] The scripts**: `scripts/render-workflow.py` (`--check` in `make check` and pre-commit) rendered
+  `v0.2.1`'s workflow from Staging's and Production's states; `scripts/release-application.py`'s dry run on
+  the same bundle, downloaded from `awsds-prod-releases` as `awsds-infra-prod`, listed seven objects and a
+  manifest in which only `workflows/app-etl.yaml` differs from the bundle, and refused a wrong SHA256.
+  `scripts/tfhygiene/states.py` reads a slice's outputs for both.
+- **[Claude] The template's legs**: `staging-up`, `staging-deploy`, `staging-test`, `staging-down`,
+  `production-plan`, `production-gate`, `production-deploy`; `check-gitlab-ci.py` read 20 jobs, every name
+  resolved, every script item through `bash -n`.
+- **[Claude] What follows**: the two `foundation/` applies and `identity/sso/`'s join the waiting list;
+  the template reaches `awsds/app-etl` by an MR at a GitLab sitting; the application's tables and 3.3's
+  share read wait for a schema.
+
+## 2026-10-22 — the deploy roles' Glue job grant applied
+
+*Claude, in the session `stages-7-8-pending`, as the infrastructure user (`awsds-infra-prod`,
+`awsds-infra-staging`), on the user's authorization quoted in Stage 7's entry of the same sitting.*
+
+- **[Claude] The applies**, from fresh saved plans, Production first: `production/foundation/` and
+  `staging/foundation/` *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."* each.
+- **[Claude] After**: each re-plan `No changes` (`-detailed-exitcode` 0); `apply-application` reads
+  `PassTheJobRole`, `ManageTheApplicationGlueJob` and `ManageTheApplicationTables` on `awsds-deploy-prod`,
+  and the same with `ReadTheApprovedModelVersions` and `ListTheModelVersions` on `awsds-deploy-staging`.
+
+## 2026-10-22 — 3.3's integration tests read through the share, pinned to an Iceberg snapshot
+
+*Claude, in the session `stages-7-8-pending`, no AWS call; the step of 15:19 (commit `26c06cc7`), from
+the Stage 9 session's revised 4.4 (PR #245), recorded at the end of the sitting.*
+
+- **[Claude] Applied**: Stage 9's 4.4, withdrawn by decision 3, says that in the Staging leg the deploy
+  creates the application's own tables after 3.2 and before 3.3, and that a test reads them and the
+  governed tables through the share, pinned to an Iceberg snapshot. Stage 8 3.3 says so and names 4.4
+  again, a reference the entry on the rest of decision 3's text had removed the same minute.

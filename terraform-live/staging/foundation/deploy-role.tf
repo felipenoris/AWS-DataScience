@@ -2,8 +2,10 @@
 # steps 3.1-3.4 (INT-08), and the misuse alarm with the alerts topic it reaches (4.6, decision 5).
 #
 # What it applies from the deploy runner: staging/egress/, which since 6c is interface endpoints and
-# the DNS Firewall with no NAT, and staging/app/* (step 3.2). The egress half of its grant is below;
-# the application half lands with staging/app/app-etl/ (step 3.0).
+# the DNS Firewall with no NAT, staging/app/* (step 3.2) and staging/orchestration/ (Stage 10). Its
+# grant is the inline documents apply-egress below and apply-application (apply-application.tf), and
+# the orchestration grant's two managed policies (apply-orchestration.tf). Every role those slices create carries
+# awsds-staging-app-boundary (app-boundary.tf, step 3.0).
 #
 # The trust names the runner's role in the runner's home, built from the runner's name and the home's
 # account id, which the alias below resolves (aws/INDEX.md rule 1). Production/foundation/ must exist
@@ -33,7 +35,15 @@ locals {
     CostCenter = "stage-08"
   }
 
+  # The names app-boundary.tf and apply-orchestration.tf read, the same in production/foundation/.
+  partition      = data.aws_partition.current.partition
+  account_id     = data.aws_caller_identity.current.account_id
   region_account = "${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}"
+
+  # Production's model registry (production/sagemaker/registry.tf): the deploy runner's home is that
+  # account (D14), so the alias above resolves its id.
+  registry_account_id = data.aws_caller_identity.deploy_runner.account_id
+  registry_env        = one([for k, v in var.deploy_runner : v.env])
 }
 
 module "deploy_role" {
@@ -41,18 +51,19 @@ module "deploy_role" {
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.3.0"
 
   name            = var.deploy_role_name
-  description     = "Stage 8's Staging leg (INT-08, steps 3.1-3.4) - assumed only by the deploy runner's role; applies staging/egress/ and staging/app/* slices"
+  description     = "Stage 8's Staging leg (INT-08, steps 3.1-3.4) - assumed only by the deploy runner's role; applies staging/egress/, staging/app/* and staging/orchestration/"
   env             = var.env
   runner_role_arn = local.deploy_runner_role_arn
   runner_role_id  = data.aws_iam_role.deploy_runner.unique_id
-  state_prefixes  = ["staging/egress/", "staging/app/"]
-  state_read_keys = ["staging/foundation/terraform.tfstate"]
+  state_prefixes  = ["staging/egress/", "staging/app/", "staging/orchestration/"]
+  state_read_keys = [for s in ["foundation", "sagemaker", "data"] : "staging/${s}/terraform.tfstate"]
 
   inline_policies = {
-    "apply-egress" = data.aws_iam_policy_document.apply_egress.json
+    "apply-egress"      = data.aws_iam_policy_document.apply_egress.json
+    "apply-application" = data.aws_iam_policy_document.apply_application.json
   }
 
-  application_boundary_name = "awsds-${var.env}-app-boundary"
+  application_boundary_name = local.application_boundary_name
 
   misuse_alarm     = true
   alerts_topic_arn = aws_sns_topic.alerts.arn
@@ -188,6 +199,45 @@ data "aws_iam_policy_document" "apply_egress" {
       "logs:UpdateLogDelivery",
     ]
     resources = ["*"]
+  }
+}
+
+# Staging's statements in apply-application.tf's document: the leg's read of the version it deploys.
+data "aws_iam_policy_document" "apply_application_in_this_account" {
+  # checkov:skip=CKV_AWS_356:sagemaker:ListModelPackages has no resource type, so only "*" matches it; the registry's resource policy names this role
+
+  # Step 3.2: the approved version, read in production/sagemaker/registry.tf's groups, whose resource
+  # policy admits this role to the same two actions (Stage 9 step 3.2).
+  statement {
+    sid       = "ReadTheApprovedModelVersions"
+    effect    = "Allow"
+    actions   = ["sagemaker:DescribeModelPackage"]
+    resources = ["arn:${local.partition}:sagemaker:${data.aws_region.current.region}:${local.registry_account_id}:model-package/awsds-${local.registry_env}-model-*/*"]
+  }
+
+  statement {
+    sid       = "ListTheModelVersions"
+    effect    = "Allow"
+    actions   = ["sagemaker:ListModelPackages"]
+    resources = ["*"]
+  }
+}
+
+# Staging's statements in apply-orchestration.tf's resources policy: the leg starts the chain's
+# machine and follows it to its end (Stage 10 decision 19).
+data "aws_iam_policy_document" "apply_orchestration_in_this_account" {
+  statement {
+    sid       = "StartTheChainInTheLeg"
+    effect    = "Allow"
+    actions   = ["states:StartExecution"]
+    resources = ["arn:${local.partition}:states:${local.region_account}:stateMachine:awsds-${var.env}-chain-*"]
+  }
+
+  statement {
+    sid       = "FollowTheChainInTheLeg"
+    effect    = "Allow"
+    actions   = ["states:DescribeExecution", "states:GetExecutionHistory"]
+    resources = ["arn:${local.partition}:states:${local.region_account}:execution:awsds-${var.env}-chain-*:*"]
   }
 }
 

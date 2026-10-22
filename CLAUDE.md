@@ -307,19 +307,31 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the user anything, and remove a row in the sitting that takes it.
 - **The SCP battery** read `ou` 47 as expected / 0 unexpected / 7 not measured on 2026-10-22 (Stage 18's
   carve-out removed, Stage 9 3.5's instance-preference rows run for the first time) and `root` 25 / 0 / 0 on 2026-10-18. **SageMaker job quotas for `ml.m5.large`,
-  `.xlarge` and `.2xlarge` are 0 in Production and Staging** (processing; Production's training too, read
-  2026-10-20), with no increase requested; `ml.t3.medium`, `app-etl`'s processing type, is 4 in both, and
-  Staging ran a job on it on 2026-10-19. The probes read `ResourceLimitExceeded` as authorized; the `ou`
+  `.xlarge` and `.2xlarge` are 0 in Production and Staging** (processing and training; training is 0 for
+  every type inside the ceiling in both, read 2026-10-20 and 2026-10-22), **and no type inside the ceiling
+  has a transform quota above 0 in either** (2026-10-22), with no increase requested; `ml.t3.medium`,
+  `app-etl`'s processing type, is 4 in both, and Staging ran a job on it on 2026-10-19. The probes read `ResourceLimitExceeded` as authorized; the `ou`
   phase's seven instance-preference rows (Stage 9 3.5, PR #216) ran 2026-10-22, each as expected.
-- **Stage 9**: pass 1 applied 2026-10-18, `awsds-org-scp-ou-workloads` (nine statements) and
-  `production/sagemaker/` (rank 46, `[P]`); `production/workloads-egress/` (`[E]`) rises with the next
-  Production `make up`. Pass 2 waits on decision 3; the `s3-bucket` module turns Bucket Keys on for every bucket it
-  creates, so no key policy scopes a prefix and D31's zero-cost variant is unavailable (PR #225). **Stage 10**: pass 0 read and 4.3's
-  `DenyProvisionedMwaa` applied 2026-10-18, the root baseline's thirteenth statement; passes 1-2 follow
-  Stage 9 with Stage 8's pass 4 (decision 23); Stage 18's verdict kept D41 item 2 (2026-10-22). The MWAA Serverless service-linked role
-  exists in Staging since 2026-10-19 and not in Production, whose first apply needs `iam:CreateServiceLinkedRole`
-  (1.5, read 2026-10-20). 5.3's `awsds-prod-model-approval`
-  is applied (2026-10-18 23:19Z, 2 added, `OR-4` passing) and has never fired: no model package exists.
+- **Stage 9**: pass 1 applied 2026-10-18 (`awsds-org-scp-ou-workloads`, nine statements; `production/sagemaker/`,
+  rank 46). Every decision taken 2026-10-22: no mirror, Staging reading the governed lake through a
+  read-only share and nothing of Production's outputs (3, 1, D20 amended, `TM-25`), the Glue job in each
+  target's VPC on a `[P]` connection and group (12). Passes 2, 3 and 5 applied the same day (PR #245): the
+  read shares and Production's write on `curated` with `curated.trades`, `production/data/` and
+  `staging/data/` (data keys, outputs and derived buckets, workgroups, `app_outputs`), the job network,
+  `staging/sagemaker/`, `production/workloads/` on `vpc-v0.4.0`; `deploytargets.py` and `datalake.py` 0
+  failed. Both egress slices, seven endpoints with `lakeformation`, rise with their next `make up`. The
+  `s3-bucket` module turns Bucket Keys on for every bucket it creates, so D31's zero-cost variant is
+  unavailable (PR #225).
+  **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
+  `awsds-prod-model-approval` applied the same day, never fired (no model package exists). Prepared
+  2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
+  (rank 59, `[E]`) written and planned, `OR-9` written; the module is tagged `orchestration-v0.1.0` (`26bfc15d`),
+  and both slices pin it, each planning `No changes` with no release (PR #246); every Stage 10 decision
+  was taken 2026-10-22. Passes 1-2 run with Stage 8's pass 4 (decision 23); the objects they stopped at,
+  Stage 8's application ceilings and Stage 9's data keys, outputs buckets and Staging's job role, exist
+  since 2026-10-22.
+  The MWAA Serverless service-linked role exists in Staging, not in Production, whose first apply needs
+  `iam:CreateServiceLinkedRole` (1.5).
 - **The Sandbox warehouse (5b, 6h)**: `sandbox/warehouse/` rank 53 `[P]` and `sandbox/warehouse-compute/`
   rank 54 `[E]` (base 4 / max 8 RPU, usage limit 10 RPU-h monthly `deactivate`), database `sandbox`, schema
   `lab`. One project per tag key is admitted (`avhvbqn37ty7m8`); decision 8 owns the second,
@@ -363,7 +375,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stage 7 in progress**: passes 1-2 closed 2026-10-12 but three persona memberships, pass 3 nearly done
   (7.2 left), pass 4's 8.4 done. Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
   `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners out. Owed: INT-09's clone from a
-  notebook, the memberships, 5.6's ECR grant (its scope taken 2026-10-22), 8.1-8.3. The GitLab backups leave the bucket on 2026-11-13 and 2026-11-15.
+  notebook, the memberships, 8.1-8.3; 5.6's ECR grant applied 2026-10-22. The GitLab backups leave the bucket on 2026-11-13 and 2026-11-15.
   **`saml.auto.tfvars` lives in the project folder's `secrets/`**: a `tooling/` plan passes
   `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block.
 - **Stage 8 in progress**: passes 0-3 done (`awsds/ci-gates`, the test runner, the house image on Python
@@ -376,10 +388,17 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   grant, decision 20's `If-None-Match` deny is not written; decision 26 leaves an application's base pin
   to its developer, who works in a space on an equivalent version. `staging/probes/` is retired, so `make up ENV=staging` raises `egress/` alone, and the template's
   lint passes `--image-repository` and the ceiling's seven instance types (PR #186), in GitLab since MR !2.
+  Pass 4, read item by item on 2026-10-22 (PR #244), has no item writable whole before Stage 9's platforms,
+  every Stage 9 and Stage 10 decision now taken, and `slices.py`'s `prepare()` passes `--pipeline` for a
+  deploy role's profile. 3.0's ceiling and 4.1's application halves are applied (2026-10-22, PR #244),
+  with Stage 10 decision 11's decrypt carve-out on `DeploymentManagerAccess`: the orchestration grant is two managed policies, since inline it took Staging's
+  role past IAM's 10,240 characters, and `check-copies.py` keeps the two `foundation/` copies identical.
+  Pass 4's code written 2026-10-22 (PR #244), its Glue job grant applied: `<env>/app/app-etl/` (planned), the
+  render and release scripts, and the template's promotion legs, which reach GitLab by an MR.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
-- **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-24`): `TM-17`, the project role's managed policy
+- **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-25`): `TM-17`, the project role's managed policy
   reaching other accounts' `airflow-celery-*` queues and Bedrock functions, is the user's to decide;
   `TM-21` applied 2026-10-19 with Stage 17's 1.3, its finding `RESOLVED` (read 2026-10-21); the data cells filters
   create nothing until decision 12, which since 2026-10-20 also weighs Lake Formation's RLS policies (an
@@ -411,7 +430,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
   `--no-browser`.
-- **Module tags**: `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
+- **Module tags**: `orchestration-v0.1.0` (PR #246, unapplied), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit

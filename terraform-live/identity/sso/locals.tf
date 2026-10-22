@@ -59,6 +59,14 @@ locals {
     ])
   }
 
+  # Stage 7 step 5.6: the ECR repositories the persona sets read, each by its name in
+  # production/registry/, where the registry lives (D14). A name, never a pattern: a repository joins
+  # here once it exists (README, "What is complete").
+  ecr_repository_arns = {
+    for name in ["awsds-prod-ecr-app-etl", "awsds-prod-ecr-base", "awsds-prod-ecr-dev-env"] :
+    name => "arn:${data.aws_partition.current.partition}:ecr:${var.region}:${local.account_ids["production"]}:repository/${name}"
+  }
+
   # ------------------------------------------------------------------------ the entitlements
   #
   # The table of 1b step 3.1, transcribed. That step is the design of record for all seven

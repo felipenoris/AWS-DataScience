@@ -746,3 +746,65 @@ Stages 7 and 8 against their logs. AWS read as the infrastructure user with `Inf
   is up), 1.4's and 1.6's leftovers, 6.4's, 5.6's scope, 8.2's backup schedule (the timer, not a cron entry)
   and the snapshot cost row. D36 §5's data events and alarm went to Stage 11's 5.1 and 5.2, and its §6
   rotation rehearsal to Stage 12's 8.5, the receiving ends that did not carry them (Lesson 34).
+
+## 2026-10-22 — 5.6's ECR grant written and planned
+
+*Claude, in the session `stages-7-8-pending`, a plan as the infrastructure user (`awsds-infra-identity`),
+no apply.*
+
+- **[user] The request**: *"Do both here: first Stage 7 5.6's ECR grant in identity/sso, written and
+  planned, then Stage 8 pass 4's code. Plan the application slices now that Stage 9 is applied. Apply
+  nothing without my authorization."*
+- **[Claude] What was written**, the scope the user took that morning: `identity/sso/locals.tf`'s
+  `ecr_repository_arns`, each repository by its name in `production/registry/` and Production's account id
+  from the organization; `DataScientistAccess` gains `PullTheHouseImage` on `awsds-prod-ecr-dev-env`;
+  `DataScientistProdAccess`'s `ReadEcrImageMetadata` becomes `AuthenticateToEcr` on `*` and
+  `ReadAndPullTheApplicationImages` on `awsds-prod-ecr-app-etl`; `DevEnvStewardAccess`'s
+  `ReadEcrImageMetadataAndScanFindings` narrows to `awsds-prod-ecr-base` and `-dev-env`, its two
+  registry-level reads moving to `ReadTheRegistryScanningConfiguration` on `*`.
+- **[Claude] The plan**: 0 to add, 3 to change, 0 to destroy, the three sets' inline policies;
+  `inline_policy_bytes` reads `data_scientist` 8,640 to 8,993, `data_scientist_prod` 6,808 to 7,098 and
+  `dev_env_steward` 6,768 to 7,069, of 10,240. Each planned ECR ARN names Production's account,
+  `us-west-2` and the repository by name.
+- **[Claude] What follows**: the apply joins the waiting list.
+
+## 2026-10-22 — 5.6 applied; the apply's state and lock left behind by a network drop
+
+*Claude, in the session `stages-7-8-pending`, as the infrastructure user (`awsds-infra-identity`).*
+
+- **[user] The authorization**: *"I authorize applying identity/sso (Stage 7 5.6) and staging/foundation and
+  production/foundation (the Glue job grant) as the infrastructure user. Warn the other sessions and re-plan
+  before applying."*
+- **[Claude] Before**: the Stage 9 session and `Chat lateral` warned; a fresh plan, 0 to add, 3 to change.
+- **[Claude] The apply**: `DevEnvStewardAccess`'s policy *"Modifications complete after 42s"*; then the
+  laptop's DNS stopped resolving AWS's names (*"lookup sso.us-west-2.amazonaws.com: no such host"*,
+  *"lookup awsds-org-tfstate.s3.us-west-2.amazonaws.com: i/o timeout"*): the other two sets' read-back,
+  the state upload and the lock's release failed, and the apply exited 1.
+- **[Claude] Readings after, the network back**: Identity Center holds all three new policies
+  (`PullTheHouseImage`, `ReadAndPullTheApplicationImages` without `ReadEcrImageMetadata`,
+  `ReadTheRegistryScanningConfiguration`), and `list-accounts-for-provisioned-permission-set` with
+  `LATEST_PERMISSION_SET_NOT_PROVISIONED` lists no account for any of them. The state object
+  `identity/sso/terraform.tfstate` is the 19:28:06Z version; `errored.tfstate` (312,211 bytes) is in the
+  slice, gitignored; the lock object holds ID `f81ea42e-cc66-d468-e02c-b3223d0a93f8`, operation
+  `OperationTypeApply`, this laptop's user, created 2026-10-22T20:51:27Z.
+- **[Claude] What follows**: the recovery, `terraform force-unlock` of that lock and `terraform apply
+  -refresh-only`, waits on the user, since the project's rule forbids a force-unlock; the slice refuses
+  every plan until then.
+
+## 2026-10-22 — identity/sso's lock removed and its state refreshed
+
+*Claude, in the session `stages-7-8-pending`, as the infrastructure user (`awsds-infra-identity`).*
+
+- **[user] The authorization**: *"I authorize terraform force-unlock f81ea42e-cc66-d468-e02c-b3223d0a93f8 on
+  identity/sso (the lock of your own failed apply) and terraform apply -refresh-only as
+  awsds-infra-identity, then a re-plan."*
+- **[Claude] Before**: the lock object still held that ID, created 2026-10-22T20:51:27Z, and the state
+  object was still the 19:28:06Z version; the Stage 9 session and `Chat lateral` warned.
+- **[Claude] The recovery**: `terraform force-unlock -force` with that ID, *"The state has been
+  unlocked"*, the lock object gone; `terraform plan -refresh-only` read the three sets' policies as
+  *"changed outside of Terraform"*, no resource action, `DataScientistAccess` +`PullTheHouseImage`,
+  `DataScientistProdAccess` +`AuthenticateToEcr` +`ReadAndPullTheApplicationImages` −`ReadEcrImageMetadata`,
+  `DevEnvStewardAccess` +`ReadTheRegistryScanningConfiguration`; its apply *"0 added, 0 changed, 0
+  destroyed"*, the state object written at 21:07:44Z, no lock left; the re-plan `No changes`
+  (`-detailed-exitcode` 0). The failed apply's `errored.tfstate` moved out of the slice to the session's
+  scratch directory.

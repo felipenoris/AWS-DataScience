@@ -454,6 +454,25 @@ this is a second apply of one folder. Everything is `[P]` and free at rest excep
   an object that does not exist yet), so a second application's repository joins when it is created. The
   grant is owed: it lands in the identity slice, applied as `awsds-infra-identity`, with
   `DataScientistAccess`'s size read first (the README's size discipline).
+- **5.6 — Written and planned 2026-10-22 by Claude, not applied.** `identity/sso/locals.tf` builds each
+  repository's ARN from its name and Production's account id (`ecr_repository_arns`);
+  `DataScientistAccess` gains `PullTheHouseImage`, `DataScientistProdAccess`'s `ReadEcrImageMetadata`
+  becomes `AuthenticateToEcr` on `*` and `ReadAndPullTheApplicationImages` on `awsds-prod-ecr-app-etl`, and
+  `DevEnvStewardAccess`'s reads narrow to `base` and `dev-env`, `DescribeRegistry` and
+  `GetRegistryScanningConfiguration` staying on `*` (`ReadTheRegistryScanningConfiguration`). The plan, as
+  `awsds-infra-identity`: 0 to add, 3 to change, the three sets' inline policies, at 8,993, 7,098 and 7,069
+  rendered characters of the slice's 10,240 (from 8,640, 6,808 and 6,768); every planned ARN names
+  Production's account and `us-west-2`.
+- **5.6 — Applied 2026-10-22 by Claude, authorized by the user; the slice's state recovered the same evening.**
+  Identity Center holds the three sets' new policies, and no account is behind the latest version of any
+  of them (read back with `sso-admin`). The laptop's DNS stopped resolving AWS's names during the apply,
+  after `DevEnvStewardAccess`'s update, so Terraform could neither upload the state nor release its lock:
+  the state object is still the 19:28Z version, `errored.tfstate` sits in the slice (gitignored), and the
+  apply's own lock remains in `awsds-org-tfstate` (ID `f81ea42e-cc66-d468-e02c-b3223d0a93f8`, operation
+  `Apply`, created 2026-10-22T20:51:27Z by this laptop). The user authorized the recovery, which a
+  force-unlock needs under the project's rule: `terraform force-unlock` of that lock, a refresh-only plan
+  recording the three sets' drift and no action, its apply (the state object written at 21:07:44Z), and
+  a re-plan reading `No changes`.
 
 ### 6. Stand up the build runner — `production/runners/` `[E]`, and retire the buildbox
 
