@@ -646,8 +646,8 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   stream actions. What it does not allow it refuses, so no role the pipeline creates reaches a lake bucket,
   Lake Formation, another key or another role. Training is admitted now, ECS is not (Stage 10 decision 8, taken 2026-10-22).
   The deploy roles' own ceiling is `Allow *` minus denies because the infrastructure user writes their
-  identity policies; this one bounds the policies the pipeline writes. It is written once Stage 10
-  decision 2 (the key) is taken.
+  identity policies; this one bounds the policies the pipeline writes. Its content is settled: Stage 10
+  decisions 2 (each account's data key) and 8 were taken on 2026-10-22.
 - **3.1 — [pipeline] Bring Staging up**: `make up ENV=staging ONLY=egress PROFILE=awsds-deploy-staging AUTO=1` — the
   `[E]` `egress/` slice, which since 6c is **interface endpoints only, with no NAT gateway and no default
   route**, and exists only for the duration of this run. Three things the job does before it:
@@ -680,7 +680,11 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   `awsds-prod-releases` with the deploy runner's own role (decision 20) and checked against its SHA256
   before a file of it is read, then unpacked under `awsds-staging-outputs/applications/app-etl/<tag>/`, the
   workflow's YAML alone rendered and every other file copied byte for byte, which `MANIFEST.sha256` proves
-  (Stage 10 decision 1 and step 2.4), and linted on the rendered copy (Stage 10 2.3). The image is pulled at the run by
+  (Stage 10 decision 1 and step 2.4), and linted on the rendered copy (Stage 10 2.3). Stage 10 decision 20,
+  taken 2026-10-22, names the Glue job `awsds-<env>-app-etl`, renders with `scripts/render-workflow.py`
+  from the owning slices' states, and seeds the inbox `inbox/app-etl/` from the bundle's `samples/`, an
+  explicit exception for the template: the samples are `app-etl`'s own test input and no stand-in for
+  governed data, and a real application names its governed source in its release. The image is pulled at the run by
   `awsds-staging-job-exec` through the service, so INT-07 is proven by 3.3's run (verification v), not by
   the apply. The image URI comes from `build-image`'s dotenv (`JOB_IMAGE_URI`) through `needs:`, as
   `test-deploy` has taken it since 2026-10-19, or from `release.tf` on a by-hand re-apply; the deploy runner
@@ -696,7 +700,7 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   the run's two halves: `run` returns once `StartWorkflowRun` answers, so the job follows the run with a
   paced `get-workflow-run` loop to a terminal state, and a principal that is not a project member starts
   a workflow by IAM plus `kms:GenerateDataKey` and `Decrypt` on the workflow's key. Stage 10 decision 19
-  recommends the leg start the chain's state machine and follow it, Staging's schedule `DISABLED`. A
+  (taken 2026-10-22) has the leg start the chain's state machine and follow it, Staging's schedule `DISABLED`. A
   table's existence is read by a principal holding `DESCRIBE` on it, never by `glue get-table` without a
   grant. Stage 9 decision 3 (taken 2026-10-22) gives Staging no mirror: the leg reads the governed lake in
   place, read-only, and each deploy fills Staging's own catalog with the application's tables (Stage 9
@@ -823,9 +827,9 @@ the approval, and 4.6's alarm.
   them on 2026-10-22, so the role holds `apply-egress` and `state` alone, the base the application half
   starts from; its `IAM` user profile and `IAM_ROLE_SESSION_GROUP` profile stay in the domain, where no
   delete API reaches them.
-- **4.1 — The application halves, specified 2026-10-22 by Stages 9 and 10, written once their decisions
-  are taken** (Stage 10 decisions 2 and 19; every Stage 9 decision is taken, its decision 12 putting the
-  Glue connection and the job security group in `*/sagemaker/`, which the application slice references):
+- **4.1 — The application halves, specified 2026-10-22 by Stages 9 and 10**, every decision of both stages
+  taken that day; Stage 9 decision 12 puts the Glue connection and the job security group in
+  `*/sagemaker/`, which the application slice references:
   - the orchestration grant on both roles, an inline `apply-orchestration`, is Stage 10 1.5's enumeration,
     its single home: Cloud Control, the workflows, the definitions home, the data key, the log groups and
     their delivery, the `wf-` and `chain-` roles scoped by name, one `iam:PassRole` per service, the state

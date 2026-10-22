@@ -326,7 +326,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `awsds-prod-model-approval` applied the same day, never fired (no model package exists). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
   (rank 59, `[E]`) written and planned, `OR-9` written; the module is tagged `orchestration-v0.1.0` (`26bfc15d`),
-  and both slices pin it, each planning `No changes` with no release (PR #246). Passes 1-2 follow Stage 9 with Stage 8's pass 4 (decision 23) and
+  and both slices pin it, each planning `No changes` with no release (PR #246); every Stage 10 decision
+  was taken 2026-10-22. Passes 1-2 follow Stage 9 with Stage 8's pass 4 (decision 23) and
   need Stage 8 3.0's application ceiling and Stage 9's data keys, outputs buckets and Staging's job role.
   The MWAA Serverless service-linked role exists in Staging, not in Production, whose first apply needs
   `iam:CreateServiceLinkedRole` (1.5).
@@ -386,8 +387,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   grant, decision 20's `If-None-Match` deny is not written; decision 26 leaves an application's base pin
   to its developer, who works in a space on an equivalent version. `staging/probes/` is retired, so `make up ENV=staging` raises `egress/` alone, and the template's
   lint passes `--image-repository` and the ceiling's seven instance types (PR #186), in GitLab since MR !2.
-  Pass 4, read item by item on 2026-10-22 (PR #244), has no item writable whole before Stage 9's platforms
-  and Stage 10's decisions 2, 19 and 20; 3.0 holds the ceiling's content, 4.1 the application halves'
+  Pass 4, read item by item on 2026-10-22 (PR #244), has no item writable whole before Stage 9's platforms,
+  every Stage 9 and Stage 10 decision now taken; 3.0 holds the ceiling's content, 4.1 the application halves'
   specification, and `slices.py`'s `prepare()` passes `--pipeline` for a deploy role's profile.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass

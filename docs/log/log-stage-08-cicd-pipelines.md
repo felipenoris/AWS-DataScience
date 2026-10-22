@@ -2345,3 +2345,18 @@ its own log, the user's words relayed to it.*
 - **[Claude] What follows here**: 3.0's ceiling admits no ECS action and waits on Stage 10 decision 2 alone;
   the waiting list keeps Stage 10's decisions 2, 3, 4, 9, 11, 19 and 20, and `CLAUDE.md` and the stage
   index name 2, 19 and 20 as the ones pass 4 waits on.
+
+## 2026-10-22 — Stage 10 decisions 2, 3, 4, 9, 11, 19 and 20 taken
+
+*Claude, in the session `stages-7-8-pending`, no AWS call; the Stage 10 session records the decisions in
+its own log, the user's words relayed to it, and the Stage 9 session was told of 20(d)'s exception.*
+
+- **[user] The decisions**: *"Aceito as recomendações das decisões 2, 3, 4, 9, 11, 19 e 20 (a, d, e) do
+  Stage 10, com a 20(d) como exceção explícita do template. Registre-as."* Every Stage 9 and Stage 10
+  decision is taken.
+- **[Claude] What follows here**: 3.0's ceiling has its content settled (decisions 2 and 8); 4.1's
+  application halves no longer wait on a decision; 3.2 names the Glue job `awsds-<env>-app-etl`, the render
+  by `scripts/render-workflow.py` and the inbox seeded from the bundle's `samples/`, the template's
+  explicit exception to Stage 9 decision 3; 3.3's leg starts the chain's state machine (decision 19). The
+  waiting list loses Stage 10's decisions row; `CLAUDE.md`, `GENERAL_PLAN.md` and the stage index say every
+  decision of both stages is taken.
