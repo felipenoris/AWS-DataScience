@@ -215,3 +215,91 @@ Times are UTC.*
 - **[Claude] Written into the stage file**: verification iii's Staging half, and in 1.5 what the trail
   means for Production: Staging's first save created the role in the saver's session, so Production's first
   apply needs `iam:CreateServiceLinkedRole` in `awsds-deploy-prod`'s policy unless the role exists by then.
+
+## 2026-10-22 — the stage prepared with the environment down: readings, the module, both slices, two corrections
+
+*Claude's hand, in the session "stage-10-prep" (branch `claude/stage-10-prep-91b561`), started by the
+orchestrating session "Pendências estágios 7 e 8" on the user's request in that chat: "Revise o plano dos
+estágios 8, 9 e 10 [...] Faça a preparação necessária para todas as etapas dos estágios 8, 9 e 10 que
+forem possíveis de serem preparadas e que não precisam da minha intervenção ou decisão". AWS read as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`,
+`awsds-infra-sandbox-1`), reads and plans only, with the tunnel down (`NO_PROXY='*'`); nothing was
+applied. Times are UTC.*
+
+- **[Claude] `./aws/orchestration.py awsds-infra-staging awsds-infra-prod awsds-infra-sandbox-1`**, before
+  any edit: exit 0, *"all checks passed"*. `OR-1` notes no workflow in either account, `OR-4` passes on
+  `awsds-prod-model-approval`, `OR-6` reads *"none in 3 account(s) read"*. `OR-2`'s four failures of
+  2026-10-20 are gone: Stage 18's pass 8 deleted Staging's three `/aws/mwaa-serverless/` groups.
+- **[Claude] The objects other stages create**, 04:53:34Z. Staging: `AWSServiceRoleForAmazonMWAAServerless`
+  created 2026-10-19T20:09:32Z, last used 2026-10-22T00:32:11Z; no workflow; `awsds-staging-app-boundary`
+  `NoSuchEntity`; `awsds-staging-deploy-boundary` at `v1`; `awsds-staging-job-exec` `NoSuchEntity`;
+  `alias/awsds-staging-data` *"is not found"*; `awsds-staging-outputs` `404`. Production: the
+  service-linked role `NoSuchEntity`; no workflow; `awsds-prod-app-boundary` `NoSuchEntity`;
+  `awsds-prod-deploy-boundary` at `v1`; `awsds-prod-job-exec` created 2026-10-18T19:59:03Z with no boundary;
+  `alias/awsds-prod-data` *"is not found"*, `alias/awsds-prod-registry` `Enabled`; `awsds-prod-outputs`
+  `404`.
+- **[Claude] The registry's `AWS::MWAAServerless::Workflow`** (`cloudformation describe-type`, created
+  2025-11-28): create-only `Name` and `EncryptionConfiguration`; read-only `WorkflowArn`, `WorkflowVersion`,
+  `ScheduleConfiguration`, `WorkflowStatus` and the times; `TriggerMode` a string of 1 to 255 characters.
+  The create handler's permissions: `s3:GetObject`, `s3:GetObjectVersion`, `logs:CreateLogGroup`,
+  `logs:DescribeLogGroups`, `iam:GetRole`, `iam:PassRole`, `airflow-serverless:CreateWorkflow`,
+  `GetWorkflow`, `TagResource`, `iam:CreateServiceLinkedRole`, `kms:CreateGrant`, `kms:GenerateDataKey`;
+  read: `GetWorkflow`, `ListTagsForResource`, `kms:Decrypt`; update: create's but `CreateWorkflow` and
+  `CreateServiceLinkedRole`, with `UpdateWorkflow` and `UntagResource`; delete: `GetWorkflow`,
+  `DeleteWorkflow`, `UntagResource`. 1.5's list lacked `s3:GetObjectVersion`, which a pinned version
+  needs, and the read handler's `Decrypt`.
+- **[Claude] The service's event names.** The schema registry `aws.events` holds no `aws.airflow-serverless`
+  schema (the prefix `aws.airflow` lists provisioned MWAA's alone). EventBridge's reference page lists
+  fifteen detail types, each prefixed: *"MWAA Serverless Workflow Run Failed"*, *"MWAA Serverless Workflow
+  Run Timeout"* and thirteen more; an example event on a third-party page reads `"detail-type": "MWAA
+  Serverless Workflow Run Succeeded"`, its detail carrying `accountId`, `workflowRunId`, `workflowArn`,
+  `status` and `workflowId`. Step 3.1 named `Workflow Run Failed` and `Workflow Run Timeout`, which no event
+  carries.
+- **[Claude] The Cloud Control API's IAM prefix**, AWS's security page for it: *"You must prefix the action
+  name with the lowercase string `cloudformation:`"*, and it supports no resource-level permission. Step 1.5
+  said `cloudcontrol:*Resource*`.
+- **[Claude] The API model** (botocore's `mwaa-serverless` 2024-07-26, read in the laptop's uv cache):
+  `StartWorkflowRun` takes `WorkflowArn` (required), `ClientToken` (1 to 128 printable characters),
+  `OverrideParameters` and `WorkflowVersion`, and returns `RunId`, `Status` and `StartedAt`; `GetWorkflowRun`
+  returns `RunDetail.RunState`, one of `STARTING`, `QUEUED`, `RUNNING`, `SUCCESS`, `FAILED`, `TIMEOUT`,
+  `STOPPING`, `STOPPED`. `hashicorp/awscc` v1.107.0 and `hashicorp/aws` 6.70.0 are the newest releases.
+- **[Claude] Written**, in two commits: `e9f0c9a7`, the module `terraform-modules/orchestration/`; `7afbc554`,
+  `staging/orchestration/` and `production/orchestration/` with `chains/app-etl.asl.json`, `release.tf` and
+  their locks (three platforms), `RANKS["orchestration"]` 59 and two `[E]` rows in `layers.py`, the folder
+  and zone ids in `backend.py`, `OR-9` and `OR-4`'s pattern check in `./aws/orchestration.py`, and the
+  workers' group in `docs/NETWORK.md`. `make check` reads `check: OK`; checkov passes the module with
+  fourteen skips, each with its reason.
+- **[Claude] The slices planned**, `-input=false`, as `awsds-infra-prod` and `awsds-infra-staging`, the
+  module by path. With no release, at 05:16:08Z, both *"No changes. Your infrastructure matches the
+  configuration."* With a stand-in release (`v0.0.0`, version ids `stand-in`), each stops at its lookups:
+  Production *"reading IAM Policy (arn:aws:iam::<Production>:policy/awsds-prod-app-boundary): couldn't find
+  resource"* and *"reading KMS Alias (alias/awsds-prod-data): empty result"*; Staging the same two for its
+  names and *"Unable to find remote state"*, `staging/sagemaker/`'s. Nothing was saved for an apply: the
+  pipeline applies these slices with a real release.
+- **[Claude] A scratch caller of the module**, planned with local state as `awsds-infra-staging`: Staging's
+  VPC, subnets and alerts topic from its state, stand-ins for the ceiling, the key, the job role and the
+  objects, three workflows (`app-etl`, decision 18's check, a training one), the chain and a bridge: *"Plan:
+  35 to add, 0 to change, 0 to destroy."* Each execution role's policy is known at plan, with only the
+  statements its entry asks for.
+- **[Claude] The chain's definition validated**, 05:18:30Z, `stepfunctions validate-state-machine-definition
+  --type STANDARD` as `awsds-infra-staging`, on `chains/app-etl.asl.json` rendered with a stand-in ARN:
+  `"result": "OK"`, no diagnostic. Three negative controls, each `"FAIL"` with `SCHEMA_VALIDATION_FAILED`:
+  `mwaaserverlessX` and `getWorkflowRunX`, *"The resource provided
+  arn:aws:states:::aws-sdk:mwaaserverlessX:getWorkflowRun is not recognized. The value is not a valid
+  resource ARN, or the resource is not available in this region."* and the same for the action; `RunId`
+  removed, *"The field 'RunId' is required but was missing"*.
+- **[Claude] The module's tag.** `git ls-remote --tags origin 'orchestration-*'` read nothing. The push of
+  the branch with `orchestration-v0.1.0` was refused by the auto-mode classifier (*Out-of-Place
+  Publication*), and the next command reading the local tags was refused the same way; no tag exists, local
+  or on origin. The slices pin the module by path until the user authorizes the tag.
+- **[Claude] `./aws/orchestration.py`** after the edits, 05:21:22Z: exit 0; `OR-9` notes *"nothing
+  awsds-staging-chain\* exists - expected before pass 2"*, and the same for Production.
+- **[Claude] Told the Stage 9 session**, which holds `production/workloads/`, both egress slices and the
+  data slices: the `mwaa` group stays empty; the statements `production/data/` and `staging/data/` owe this
+  stage, decision 12's deny exempting `InfrastructureAccess` beside the deploy role; and what
+  `awsds-staging-job-exec` needs (Production's shape, its two outputs by the same names).
+- **[Claude] The plan revised**: the status and prerequisites; 0.2, 1.1 to 1.5 (the grant enumerated for
+  Stage 8), 2.3's and 5.1's lint rules and 2.4's comparison with the manifest, specified; 3.1's detail types,
+  3.4 to 3.7; the decisions' state (1, 5, 8 and 12 awaiting confirmation, 2, 3, 4, 9 and 11 open), decisions
+  19 and 20 written with their recommendations, and decision 6's render table; verifications iii, vi, xvi,
+  xxii and xxv; a risk on the two accounts' endpoint sets.
