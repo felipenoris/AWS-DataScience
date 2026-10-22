@@ -225,6 +225,10 @@ RANKS = {
     # the application before the endpoints its jobs log through; Stage 10's `orchestration` ranks
     # above it, so `down` removes a workflow before the application the workflow starts.
     "app/app-etl": 58,
+    # Stage 10 step 1.4 - the orchestration/ slices, [E] in Staging and Production: the workflows and
+    # the chain layer that starts them. Above `app/app-etl` (58), so `down` removes a schedule and the
+    # workflows it starts before the application slice's Glue job they run; `up` refuses it (refusal 7).
+    "orchestration": 59,
     "probes": 60,
     # Stage 12 step 1 - the dashboards and the alarms no other slice owns, one [P] slice per account
     # with something to watch. It reads the [P] states of the slices it watches and names the [D]
@@ -351,6 +355,21 @@ SLICES = [
         EPHEMERAL,
         "7 interface endpoints (St.9 3.3a, decision 12) + DNS Firewall - no NAT",
         0.070,
+    ),
+    # Stage 10 step 1.4 - the MWAA Serverless workflows with their roles and log groups, and the chain
+    # layer above them, applied by the pipeline. Nothing here meters by the hour: a run bills
+    # task-hours and a chain's execution its state transitions (the stage's Cost section).
+    Slice(
+        "staging",
+        "orchestration",
+        EPHEMERAL,
+        "workflows + the chain layer (St.10), pipeline-applied",
+    ),
+    Slice(
+        "production",
+        "orchestration",
+        EPHEMERAL,
+        "workflows + the chain layer (St.10), pipeline-applied",
     ),
     # Stage 3's Deliverables, as slices rather than as a script. These are instruments: created,
     # read from the serial console, destroyed in the same sitting - `make down` is why they are

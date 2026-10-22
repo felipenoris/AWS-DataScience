@@ -899,6 +899,13 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
             for acct in REGISTRY_HOME
         }
 
+    # Stage 10 step 1.4 - an orchestration slice reads its account's network slice for the workers'
+    # subnets, foundation/ for the alerts topic and sagemaker/ for the job role, by the account folder;
+    # the subnets arrive keyed by zone id, so the zone ids ride along, as for warehouse-compute/.
+    if slice_name == "orchestration":
+        values["account_folder"] = account
+        values["zone_ids"] = ZONE_IDS[account]
+
     # Stage 9 step 3 - a deployment target's sagemaker/ slice, the runtime half of D17: the job
     # role, the Model Registry and the debug role. It reads its own foundation/ and registry/
     # states by the account folder (the deploy roles, the alerts topic, the application

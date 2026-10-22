@@ -1,7 +1,7 @@
 # `terraform-modules/` — the reusable half
 
 The roster: `vpc`, `vpc-egress`, `s3-bucket`, `kms-key`, `iam-role`, `wireguard`, `consumer-data`,
-Stage 6's `ecr-repo`, `sagemaker-prereqs` and `sagemaker-denies`, and Stage 8's `deploy-role`. The tree exists from Stage 2 step 1;
+Stage 6's `ecr-repo`, `sagemaker-prereqs` and `sagemaker-denies`, Stage 8's `deploy-role` and Stage 10's `orchestration`. The tree exists from Stage 2 step 1;
 **Stage 3 step 1.1/1.1a** wrote the first four, and the rule that kept it empty until then still governs the
 unwritten `sandbox-unit` module.
 
@@ -62,6 +62,11 @@ Stage 8's `deploy-role` nests the same way: it calls `iam-role` by `../iam-role`
 role's shape. It holds one deploy role's design, its trust, its ceiling, its state access and its misuse
 rule, which the accounts the deploy runner reaches must not spell differently, because
 `./aws/cicd.py` reads them as one contract.
+
+Stage 10's `orchestration` calls `iam-role` by tag, as `sagemaker-prereqs` does. It holds the workflows,
+their execution roles and failure rules, and the chain layer above them, which Staging and Production must
+not spell differently: the Staging leg tests what Production runs (D20), and `./aws/orchestration.py`
+reads both accounts as one contract.
 
 Skip a rung and `terraform init` stops at `invalid ref: "<tag>"` — the message
 [Recipe B](../docs/plan/runbooks/terraform-changes.md) step 5 is written to prevent, one level deeper.

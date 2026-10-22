@@ -825,7 +825,7 @@ reads the stage as D7's amendments left it: MWAA Serverless runs the tasks, in S
 D41's chain layer above the workflows is `OR-9`, written when the layer is built. Until the stage runs,
 every absent resource reads as a `note`; a *partial* build fails loudly. Its contracts: the
 `awsds-<env>-wf-` name fragment (workflows, roles, failure rules), the log prefix `/awsds/<env>/wf/`, the
-definitions home (`awsds-prod-outputs/workflows/`, with the object's S3 `VersionId` pinned), the approval
+definitions home (`awsds-prod-outputs/applications/`, with the object's S3 `VersionId` pinned), the approval
 rule (`awsds-prod-model-approval`) and no cron on a workflow (Stage 10 decision 13). Its workflow, network
 and role readers were exercised on 2026-10-10 against Sandbox's two portal-authored workflows, since
 Staging and Production hold none. Three of its checks are halves: `OR-1` shows the resources exist, while
