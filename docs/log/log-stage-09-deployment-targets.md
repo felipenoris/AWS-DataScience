@@ -569,3 +569,14 @@ AWS call; the saved plan of `staging/sagemaker/` was refreshed.*
   fails on a link to Data Governance and a table-by-table comparison with a mirror; it is rewritten with
   pass 5's preparation to read that every Staging grant on the lake is `DESCRIBE` or `SELECT`. Passes 2,
   3 and 5 can now be prepared: no decision blocks them.
+
+## 2026-10-22 — 4.4 aligned with Stage 8 3.3
+
+*Claude's hand, the same session, on the orchestrating session's message that it applied decisions 3
+and 1 to the shared files in PR #244. No AWS call.*
+
+- **[Claude] What the message asked was already on this branch**: decisions 2, 5, 6, 7, 8, 11 and 12
+  (commit `f96db8bf`) and 3 and 1 (`29302c94`) recorded, and 4.1, 4.4 and 4.6 rewritten to them.
+- **[Claude] 4.4 names where the application's tables come from**, the shape Stage 8 3.3 now assumes: in
+  the Staging leg the deploy creates them from the repository's schemas, after Stage 8's 3.2 and before
+  its 3.3, in 4.1's local database, and the tests read them beside the governed tables through the share.
