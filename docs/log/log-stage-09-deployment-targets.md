@@ -862,3 +862,35 @@ Times UTC.*
   to run; the step now specifies the proof job (`awsds-prod-producer-proof`, `[P]` in
   `production/sagemaker/`, its scripts under `applications/stage-09-proofs/v0/glue/`), unwritten.
 - **[Claude] The plan**: the Status row, the build table, 2.4, 4.6, 5.1, 5.3 and 9.1.
+
+## 2026-10-22 — 5.1 applied: the persona's managed policy in Production, its attachment in Identity
+
+*Claude's hand, the same session, as the infrastructure user (`awsds-infra-prod`, `awsds-infra-identity`,
+each `InfrastructureAccess`), on the user's authorization in this chat. Every plan was made afresh and
+applied only after its summary line read what the reviewed plan had read. Times UTC.*
+
+- **[user] The authorization**: *"Autorizo aplicar production/data como awsds-infra-prod e depois
+  identity/sso como awsds-infra-identity, cada um a partir de um plano novo, avisando as outras sessões
+  antes."*
+- **[Claude] Before**: the app's session list read at 22:49, no session running, so none to warn; both
+  profiles answered `get-caller-identity`; the worktree clean at `c9800c78`.
+- **[Claude] `production/data/`** (Production, `awsds-infra-prod`): the fresh plan at 22:50:22 to 22:50:56
+  read *"Plan: 1 to add, 1 to change, 0 to destroy."* (`aws_iam_policy.persona`; the data key's policy);
+  the apply, 22:50:56 to 22:51:16, *"Apply complete! Resources: 1 added, 1 changed, 0 destroyed."*, the
+  key modified in 8 s and the policy created in 1 s; the re-plan at 22:52:31 *"No changes."*
+- **[Claude] `identity/sso/`** (Identity, `awsds-infra-identity`): the fresh plan at 22:51:39 to 22:51:53
+  read *"Plan: 1 to add, 1 to change, 0 to destroy."* with `data_scientist_prod` 7098 → 8438; the apply,
+  22:51:53 to 22:52:13, *"Apply complete! Resources: 1 added, 1 changed, 0 destroyed."*, the attachment
+  created in 7 s and the inline policy modified in 9 s, `inline_policy_bytes` reading 8438 for the set;
+  the re-plan at 22:53:50 *"No changes."*
+- **[Claude] Read back**, 22:54 to 22:56: `awsds-prod-data-scientist` at `v1`, created 22:51:13, attachment
+  count 1, its seven `Sid`s the ones `persona.tf` writes; the set's customer-managed policy references name
+  it at path `/`, provisioned in one account; Production's `AWSReservedSSO_DataScientistProdAccess_*` role
+  carries `CloudWatchLogsReadOnlyAccess` and `awsds-prod-data-scientist` attached, and its inline policy
+  `DenyMintingARedshiftDatabaseSession`, `DenyRedshiftCostGuardAndCompute` and `ReadThroughLakeFormation`;
+  the data key's `AllowCloudWatchLogsForTheJobAndWorkflowGroups` lists `/aws/redshift/*` between
+  `/aws-glue/*` and `/awsds/prod/wf/*`. `./aws/deploytargets.py` on the five infrastructure profiles at
+  22:55:43: *"0 check(s) FAILED."*, `DT-10` passing for `DataScientistProdAccess` (the three markers `yes`,
+  the policy `attached`) and for `DataScientistStagingAccess`.
+- **[Claude] What follows**: 5.4 and 8.1 to 8.4 are the user's, in the data-science persona's sessions;
+  6.3 may run now, the persona holding the debug role's assumption.

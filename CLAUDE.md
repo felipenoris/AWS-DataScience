@@ -323,7 +323,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `s3-bucket` module turns Bucket Keys on for every bucket it creates, so D31's zero-cost variant is
   unavailable (PR #225). **Pass 4 prepared 2026-10-22**: 5.1 is the managed policy `awsds-prod-data-scientist`
   in `production/data/` (1 to add, 1 to change) attached in `identity/sso/` (1 to add, 1 to change; the
-  inline form read 10,550 of 10,240), `GetDataAccess` added, both applies owed in that order; step 9.1's
+  inline form read 10,550 of 10,240), `GetDataAccess` added, both applied 2026-10-22; step 9.1's
   `production/warehouse/` (9 to add) and `warehouse-compute/` written, the compute held from `make up` by
   `layers.py` refusal 9 until the namespace is applied; 2.4-2.6 have no job yet (2.4 specifies one).
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's

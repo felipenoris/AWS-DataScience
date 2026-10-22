@@ -40,8 +40,8 @@ Every role is the account root narrowed by `aws:PrincipalArn`, which KMS does no
 
 `awsds-prod-data-scientist`, the customer-managed policy `identity/sso/` attaches to `DataScientistProdAccess`
 by name (Stage 9 step 5.1; the name is `backend.py`'s `PERSONA_PRODUCTION_POLICY_NAME`). Each ARN is this
-slice's own; the debug role is named by contract, as `main.tf` names it. Written 2026-10-22 and planned (1 to
-add); the apply, then `identity/sso/`'s, are owed.
+slice's own; the debug role is named by contract, as `main.tf` names it. Written and applied 2026-10-22, then
+`identity/sso/`'s attachment; the set's role in Production carries it.
 
 | `Sid` | Allows |
 |---|---|
