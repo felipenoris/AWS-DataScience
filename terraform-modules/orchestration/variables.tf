@@ -132,8 +132,8 @@ variable "workflows" {
   }
 
   validation {
-    condition     = alltrue(flatten([for k, w in var.workflows : [for p in concat(w.reads, w.writes, w.deletes) : !startswith(p, "workflows/") && endswith(p, "/")]]))
-    error_message = "reads, writes and deletes are prefixes ending in '/' and never under workflows/, which decision 12 keeps for the release job alone."
+    condition     = alltrue(flatten([for k, w in var.workflows : [for p in concat(w.reads, w.writes, w.deletes) : !startswith(p, "applications/") && endswith(p, "/")]]))
+    error_message = "reads, writes and deletes are prefixes ending in '/' and never under applications/, which decision 12 keeps for the release job alone."
   }
 }
 
