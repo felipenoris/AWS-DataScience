@@ -325,8 +325,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, never fired (no model package exists). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
-  (rank 59, `[E]`) written and planned, `OR-9` written; the tag `orchestration-v0.1.0` waits on the user,
-  so the slices pin the module by path. Passes 1-2 follow Stage 9 with Stage 8's pass 4 (decision 23) and
+  (rank 59, `[E]`) written and planned, `OR-9` written; the user pushed `orchestration-v0.1.0` on `26bfc15d`,
+  and the slices move from the module's path to the tag in PR #246. Passes 1-2 follow Stage 9 with Stage 8's pass 4 (decision 23) and
   need Stage 8 3.0's application ceiling and Stage 9's data keys, outputs buckets and Staging's job role.
   The MWAA Serverless service-linked role exists in Staging, not in Production, whose first apply needs
   `iam:CreateServiceLinkedRole` (1.5).
@@ -424,7 +424,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
   `--no-browser`.
-- **Module tags**: `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
+- **Module tags**: `orchestration-v0.1.0` (PR #246, unapplied), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit
