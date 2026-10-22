@@ -184,9 +184,10 @@ in Data Governance: a `DataLakeSettings` apply replaces the whole structure.
     ([D39](../decisions/D39-access-by-identity.md), `./aws/deploytargets.py` `DT-1`).
   - **What Stage 10 adds on these objects**, its exact list in [Stage 10](stage-10-orchestration-promotion.md)'s
     file (2026-10-22), the same in `staging/data/`: on `awsds-<env>-outputs`, its decision 12's deny of
-    `s3:PutObject` and `s3:DeleteObject` on `workflows/*` to every principal but the release job's deploy
-    role and the account's `InfrastructureAccess` role, a principal branch admitting that pair to
-    `workflows/*` from outside `VPC-Workloads`' endpoint, and the EventBridge notification its decision 16
+    `s3:PutObject` and `s3:DeleteObject` on `applications/*`, where each leg extracts the release bundle's
+    tree, to every principal but the release job's deploy role and the account's `InfrastructureAccess`
+    role, a principal branch admitting that pair to `applications/*` from outside `VPC-Workloads`'
+    endpoint, and the EventBridge notification its decision 16
     reads; on the data key, the deploy role, `awsds-<env>-chain-exec`, the `awsds-<env>-wf-*` roles and
     CloudWatch Logs for `/awsds/<env>/wf/*` and `/aws/vendedlogs/states/awsds-<env>-chains`.
 - **1.2 — [Claude] Write the results bucket and the workgroup beside the call** (decision 11): the bucket

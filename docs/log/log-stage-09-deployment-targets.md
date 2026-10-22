@@ -580,3 +580,14 @@ and 1 to the shared files in PR #244. No AWS call.*
 - **[Claude] 4.4 names where the application's tables come from**, the shape Stage 8 3.3 now assumes: in
   the Staging leg the deploy creates them from the repository's schemas, after Stage 8's 3.2 and before
   its 3.3, in 4.1's local database, and the tests read them beside the governed tables through the share.
+
+## 2026-10-22 — Stage 10's definitions home renamed to `applications/`
+
+*Claude's hand, the same session, on a message from the session "Stage 10 — revisão e preparação". No AWS
+call.*
+
+- **[Claude] 1.1's pointer to Stage 10's statements** names `applications/*` where it named `workflows/*`:
+  the user took Stage 10 decision 1, revised, on 2026-10-22, and the definitions home's prefix moved with
+  it. Each leg extracts the release bundle's tree there (`workflows/<name>.yaml`, `code/`, `src/`,
+  `glue/`); the deny's two exemptions and the principal branch's pair are unchanged, and Stage 10's file
+  carries the list as of its commit `f2bd47a7` on PR #246.
