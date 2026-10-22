@@ -794,3 +794,19 @@ dos grupos de log à chave de dados em production/sagemaker (awsds-infra-prod) e
   key turned from a note into a fail, exercised against the stand-in.
 - **[Claude] Owed**: the first job in each account shows whether its logs land and whether the debug role
   reads them, neither role holding a grant on the key.
+
+## 2026-10-22 — the documents brought to the applied state
+
+*Claude's hand, the same session, in commit `d3610844` with the applies of passes 2, 3 and 5. No AWS call
+beyond the readings recorded above.*
+
+- **[Claude] The stage file**: the Status, steps 1, 1.5, 2.1-2.3, 3.1's `glue:GetConnection` note, 4.0's
+  ceiling, 4.1, 4.3, 4.5, 7.2 and verification xiv carry the applies and their readings where they said
+  planned and unapplied.
+- **[Claude] The indexes**: the rows of `production/data/`'s, `staging/data/`'s and the producer's READMEs
+  read applied; `consumer-data`'s README names its three callers; conventions §6 counts seven endpoints in
+  both egress slices, `lakeformation` among them; `docs/NETWORK.md` marks the jobs' groups and
+  VPC-Workloads' `vpc-v0.4.0` applied.
+- **[Claude] `docs/PRICING.md`**: the KMS row counts 17 keys with the two deploy targets' data keys, and
+  the monthly floor rises by 2 USD in both Regions (`sa-east-1` ~USD 32-45, central ~38; `us-west-2`
+  ~USD 27-36, central ~32), in §2 and in the regional comparison.
