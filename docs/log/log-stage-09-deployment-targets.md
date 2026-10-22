@@ -1013,3 +1013,25 @@ the infrastructure user (`awsds-infra-prod`). Times UTC.*
   *"arn:aws:sts::<Production>:assumed-role/awsds-prod-debug/debug-window-after"*, a third successful
   assumption, since the window is open until 01:00Z. The refusal is the next reading, after the window
   closes, by the clock or by the closing apply.
+
+## 2026-10-22 — 6.3: the window closed by the apply, read back
+
+*Claude's hand, as the infrastructure user (`awsds-infra-prod`), on the user's authorization in this
+chat: "Autorizo o apply de production/sagemaker sem a flag, como awsds-infra-prod, a partir de um plano
+novo, para fechar a janela agora; depois eu rodo o assume-role e colo a recusa." Times UTC.*
+
+- **[Claude] Before**: no session running (the app's list at 23:34); the trail read at 23:34:29 holds
+  three successful `AssumeRole` events on the role, all by the persona's reserved role in `us-west-2`:
+  23:21:29 `debug-window-proof`, 23:22:00 `botocore-session-1792711318`, 23:32:07 `debug-window-after`
+  (event `371cc413-9835-40b0-aec1-86ef80c0b962`).
+- **[Claude] The closing apply** (`production/sagemaker/`, Production): the fresh plan without the flag,
+  23:34:42 to 23:34:58, *"Plan: 0 to add, 1 to change, 0 to destroy."*, `aws:CurrentTime` moving from
+  `2026-10-23T01:00:00Z` back to `2026-01-01T00:00:00Z`, no check warning; the apply, 23:34:58 to
+  23:35:09, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*, the role modified in 1 s.
+- **[Claude] Read back**: the re-plan at 23:35:36 *"No changes."* with no warning; `get-role` at 23:35:38
+  shows `DateLessThan aws:CurrentTime 2026-01-01T00:00:00Z` beside `aws:RequestedRegion us-west-2`;
+  `./aws/deploytargets.py awsds-infra-prod` at 23:36:06 *"0 check(s) FAILED."*, `DT-9` passing, *"window
+  on awsds-prod-debug closed (ends 2026-01-01T00:00:00Z)"*, both rules
+  `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`. The window was open 25 minutes, 23:09:55 to 23:35:09.
+- **[Claude] What follows**: the persona's `assume-role` against the closed trust, the refusal pasted
+  here and read in the trail by `errorCode`, which closes 6.3 and verification xi.
