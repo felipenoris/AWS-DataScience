@@ -790,3 +790,21 @@ no apply.*
 - **[Claude] What follows**: the recovery, `terraform force-unlock` of that lock and `terraform apply
   -refresh-only`, waits on the user, since the project's rule forbids a force-unlock; the slice refuses
   every plan until then.
+
+## 2026-10-22 — identity/sso's lock removed and its state refreshed
+
+*Claude, in the session `stages-7-8-pending`, as the infrastructure user (`awsds-infra-identity`).*
+
+- **[user] The authorization**: *"I authorize terraform force-unlock f81ea42e-cc66-d468-e02c-b3223d0a93f8 on
+  identity/sso (the lock of your own failed apply) and terraform apply -refresh-only as
+  awsds-infra-identity, then a re-plan."*
+- **[Claude] Before**: the lock object still held that ID, created 2026-10-22T20:51:27Z, and the state
+  object was still the 19:28:06Z version; the Stage 9 session and `Chat lateral` warned.
+- **[Claude] The recovery**: `terraform force-unlock -force` with that ID, *"The state has been
+  unlocked"*, the lock object gone; `terraform plan -refresh-only` read the three sets' policies as
+  *"changed outside of Terraform"*, no resource action, `DataScientistAccess` +`PullTheHouseImage`,
+  `DataScientistProdAccess` +`AuthenticateToEcr` +`ReadAndPullTheApplicationImages` −`ReadEcrImageMetadata`,
+  `DevEnvStewardAccess` +`ReadTheRegistryScanningConfiguration`; its apply *"0 added, 0 changed, 0
+  destroyed"*, the state object written at 21:07:44Z, no lock left; the re-plan `No changes`
+  (`-detailed-exitcode` 0). The failed apply's `errored.tfstate` moved out of the slice to the session's
+  scratch directory.

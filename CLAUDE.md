@@ -375,7 +375,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stage 7 in progress**: passes 1-2 closed 2026-10-12 but three persona memberships, pass 3 nearly done
   (7.2 left), pass 4's 8.4 done. Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
   `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners out. Owed: INT-09's clone from a
-  notebook, the memberships, 5.6's ECR grant (applied 2026-10-22; the slice's lock and state wait on the user), 8.1-8.3. The GitLab backups leave the bucket on 2026-11-13 and 2026-11-15.
+  notebook, the memberships, 8.1-8.3; 5.6's ECR grant applied 2026-10-22. The GitLab backups leave the bucket on 2026-11-13 and 2026-11-15.
   **`saml.auto.tfvars` lives in the project folder's `secrets/`**: a `tooling/` plan passes
   `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block.
 - **Stage 8 in progress**: passes 0-3 done (`awsds/ci-gates`, the test runner, the house image on Python
