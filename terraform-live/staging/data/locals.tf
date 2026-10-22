@@ -36,8 +36,8 @@ locals {
   # inbox it seeds from the bundle's samples.
   deploy_prefixes = ["applications/", "inbox/"]
 
-  # The log groups the data key encrypts or will: the job groups staging/sagemaker/ declares, which
-  # move under the key once it exists, and Stage 10's workflow and chain groups.
+  # The log groups the data key encrypts or will: the job groups staging/sagemaker/ declares and
+  # associates with the key, and Stage 10's workflow and chain groups.
   log_group_patterns = [
     "arn:${local.partition}:logs:${var.region}:${local.account_id}:log-group:/aws/sagemaker/*",
     "arn:${local.partition}:logs:${var.region}:${local.account_id}:log-group:/aws-glue/*",

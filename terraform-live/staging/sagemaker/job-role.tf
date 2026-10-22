@@ -176,7 +176,7 @@ data "aws_iam_policy_document" "job" {
       "logs:PutLogEvents",
     ]
     resources = flatten([
-      for group in aws_cloudwatch_log_group.job : [group.arn, "${group.arn}:*"]
+      for arn in local.job_log_group_arns : [arn, "${arn}:*"]
     ])
   }
 
@@ -259,12 +259,14 @@ data "aws_iam_policy_document" "job" {
 # Declared before any job runs, with a retention: the service that creates its own group gives it none
 # (EXC-10). Stage 18 4.4's job created /aws/sagemaker/ProcessingJobs here on 2026-10-19 and its pass 8
 # deleted it on 2026-10-22; a group a job creates before this apply is imported, never re-created
-# (ResourceAlreadyExistsException), and the apply then sets its retention.
+# (ResourceAlreadyExistsException), and the apply then sets its retention. Each group is encrypted under
+# the account data key, which CloudWatch Logs uses as its own service principal under staging/data/'s
+# AllowCloudWatchLogsForTheJobAndWorkflowGroups, scoped by the group's ARN as encryption context.
 resource "aws_cloudwatch_log_group" "job" {
-  # checkov:skip=CKV_AWS_158:the account data CMK is staging/data/'s and arrives at step 4.1 with the CloudWatch Logs statement step 1.1 lists; the groups move under it then, and carry the AWS-owned key until that apply
   # checkov:skip=CKV_AWS_338:retention is 30 days, the figure of Production's job groups; the audit trail of record is CloudTrail, org-wide and Object-Locked since Stage 1d
   for_each = local.job_log_groups
 
   name              = each.value
   retention_in_days = var.log_retention_days
+  kms_key_id        = data.terraform_remote_state.data.outputs.data_key_arn
 }

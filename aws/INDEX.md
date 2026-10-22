@@ -648,7 +648,7 @@ there.
 | Is the workgroup actually enforcing its result location and scan limit (D19)? | 2, decided by `DT-2` |
 | Does every `awsds-prod-model-*` group carry its resource policy (D28 item 6)? | 3, decided by `DT-3` |
 | Does a job role reach a lake bucket through plain S3 — D13's absence in Production, D20's in Staging, read from each role's own policies? | 3 and 7, decided by `DT-4` |
-| Are the six job log groups declared with a retention wherever a job role stands (`EXC-10`)? | 3, decided by `DT-12` |
+| Are the six job log groups declared with a retention wherever a job role stands (`EXC-10`), each under the account data key once `data/` stands? | 3, decided by `DT-12` |
 | Did an apply reset the LF `Parameters` anywhere — the silent INT-11 failure, in any account? | 4, decided by **`DT-5`** — read it after *every* `DataLakeSettings` apply |
 | Did the write share arrive, with **no pending RAM invitation** (INT-03, INT-11's tax)? | 5, decided by `DT-6` |
 | Do the drop-box statement **and** its key name exactly `awsds-prod-job-exec` (the Stage 5a contract, INT-10)? | 6, decided by `DT-7` |

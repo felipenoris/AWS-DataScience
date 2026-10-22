@@ -749,3 +749,27 @@ not signed in (their "Calls that failed" section), with 0 checks failed.*
   app's sync merged `origin/main` (PR #246) per `CLAUDE.md`'s rule, one conflict in `docs/NETWORK.md` §9
   where both stages added a row, both kept. The six applied slices re-planned on the merged code read
   `No changes`.
+
+## 2026-10-22 — the job log groups under the data key, written and planned
+
+*Claude's hand, the same session, on the user's "Sim, prepare a migração dos seis grupos de log dos jobs
+para a chave de dados em production/sagemaker e staging/sagemaker, só até o plano, sem aplicar." AWS
+reads only; nothing applied.*
+
+- **[Claude] The association**: each `*/sagemaker/` slice reads the account data key's ARN from
+  `*/data/`'s state, with a null default so a first build still applies the job role before `data/`
+  (whose Lake Formation grants name it), and sets `kms_key_id` on its six job log groups. CloudWatch Logs
+  uses the key as its own principal under the data key's `AllowCloudWatchLogsForTheJobAndWorkflowGroups`;
+  no role holds a grant on it. The `CKV_AWS_158` skips are gone.
+- **[Claude] The policies name the groups by ARNs built from their names**: a first plan listed the job
+  role's and the debug role's inline policies as updates, their documents read only at the apply because
+  they referenced the group resources. With the ARNs built from `local.job_log_groups` the documents are
+  identical and plan as no change.
+- **[Claude] Plans** as `awsds-infra-prod` and `awsds-infra-staging`, each *"Plan: 0 to add, 6 to change,
+  0 to destroy."*, `kms_key_id` the only attribute that moves, no data source deferred to the apply; saved
+  as `production-sagemaker-logkey.tfplan` and `staging-sagemaker-logkey.tfplan` outside the repository.
+- **[Claude] `DT-12`** reads each group's key: live, a note in both accounts (all twelve groups under the
+  AWS-owned key), 0 failed. Against a stand-in `aws`: all six under the data key passes, three of six
+  fails as a partial apply, another key fails, none is the note.
+- **[Claude] Lesson 69**: once PR #245 merges, both `sagemaker/` slices carry this change on `main`
+  unapplied, and any later plan of either shows the six associations.

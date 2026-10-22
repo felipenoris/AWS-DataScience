@@ -399,8 +399,9 @@ def main(argv: list) -> int:
                 mpg_rows.append((group, "(read failed)"))
 
     # ------------------- 3b. the job log groups, both accounts (steps 3.1 and 4.3, EXC-10)
-    log_rows: list = []  # (profile, group, retention) - "(absent)" when the group does not exist
-    for p in (PROD_PROFILE, STAGING_PROFILE):
+    log_rows: list = []  # (profile, group, retention, key) - "(absent)" when the group does not exist
+    data_key_arns: dict = {}  # profile -> the account data key's ARN, the job groups' key
+    for p, alias in ((PROD_PROFILE, PROD_CMK_ALIAS), (STAGING_PROFILE, STAGING_CMK_ALIAS)):
         if p not in live:
             continue
         found: dict = {}
@@ -411,18 +412,33 @@ def main(argv: list) -> int:
                 "--log-group-name-prefix",
                 prefix,
                 "--query",
-                "logGroups[].[logGroupName,retentionInDays]",
+                "logGroups[].[logGroupName,retentionInDays,kmsKeyId]",
                 "--output",
                 "json",
                 log=False,
             )
-            for name, days in json.loads(res.stdout or "[]") if res.ok and res.stdout else []:
-                found[str(name)] = days
+            for name, days, key in json.loads(res.stdout or "[]") if res.ok and res.stdout else []:
+                found[str(name)] = (days, key)
+        res = cli_for(p).run(
+            "kms",
+            "describe-key",
+            "--key-id",
+            alias,
+            "--query",
+            "KeyMetadata.Arn",
+            "--output",
+            "text",
+            log=False,
+            tolerate="NotFoundException",
+        )
+        if res.ok and not res.tolerated and res.stdout.strip():
+            data_key_arns[p] = res.stdout.strip()
         for group in JOB_LOG_GROUPS:
             if group not in found:
-                log_rows.append((p, group, "(absent)"))
+                log_rows.append((p, group, "(absent)", "-"))
             else:
-                log_rows.append((p, group, f"{found[group]}d" if found[group] else "(none)"))
+                days, key = found[group]
+                log_rows.append((p, group, f"{days}d" if days else "(none)", key or "(AWS-owned)"))
 
     # -------------------- 4. the Lake Formation settings, every account that has any
     lf_rows: list = []  # (profile, parameters, create defaults, admins)
@@ -1319,13 +1335,14 @@ def main(argv: list) -> int:
             )
 
     # DT-12: the job log groups, declared with a retention by the slice that holds the account's
-    # job role (3.1, 4.3, EXC-10). Before that slice, a group a job created is the import 4.3 owes.
+    # job role (3.1, 4.3, EXC-10), each under the account data key once data/ stands. Before that
+    # slice, a group a job created is the import 4.3 owes.
     for p, role_state in ((PROD_PROFILE, job_role_state), (STAGING_PROFILE, staging_job_state)):
-        rows = [(g, days) for q, g, days in log_rows if q == p]
+        rows = [(g, days, key) for q, g, days, key in log_rows if q == p]
         if not rows:
             continue
         if role_state == "present":
-            bad = [f"{g} {days}" for g, days in rows if days in ("(absent)", "(none)")]
+            bad = [f"{g} {days}" for g, days, _key in rows if days in ("(absent)", "(none)")]
             if bad:
                 checks.fail(
                     "DT-12",
@@ -1336,10 +1353,45 @@ def main(argv: list) -> int:
                 checks.ok(
                     "DT-12",
                     f"{p} job log groups",
-                    f"{len(rows)} declared, retention {', '.join(sorted({d for _g, d in rows}))}",
+                    f"{len(rows)} declared, retention {', '.join(sorted({d for _g, d, _k in rows}))}",
                 )
+            # The key, once the account data key exists. Another key, or the data key on some groups
+            # only, fails. The AWS-owned key on all of them is the association written on 2026-10-22
+            # and not yet applied (3.1, 4.3), a note.
+            data_key = data_key_arns.get(p)
+            standing = [(g, key) for g, days, key in rows if days != "(absent)"]
+            if data_key and standing:
+                other = [g for g, key in standing if key not in ("(AWS-owned)", data_key)]
+                keyed = [g for g, key in standing if key == data_key]
+                unkeyed = [g for g, key in standing if key == "(AWS-owned)"]
+                if other:
+                    checks.fail(
+                        "DT-12",
+                        f"{p} job log groups' key",
+                        f"{', '.join(other)} under a key other than the account data key.",
+                    )
+                elif keyed and unkeyed:
+                    checks.fail(
+                        "DT-12",
+                        f"{p} job log groups' key",
+                        f"{', '.join(unkeyed)} under the AWS-owned key while {len(keyed)} carry the "
+                        "account data key - a partial apply.",
+                    )
+                elif keyed:
+                    checks.ok(
+                        "DT-12",
+                        f"{p} job log groups' key",
+                        f"{len(keyed)} under the account data key",
+                    )
+                else:
+                    checks.note(
+                        "DT-12",
+                        f"{p} job log groups' key",
+                        "the AWS-owned key on all of them - the association with the account data "
+                        "key is written (2026-10-22), not applied (3.1, 4.3).",
+                    )
         else:
-            early = [f"{g} {days}" for g, days in rows if days != "(absent)"]
+            early = [f"{g} {days}" for g, days, _key in rows if days != "(absent)"]
             if early:
                 checks.note(
                     "DT-12",
@@ -1444,7 +1496,10 @@ what keeps it from the approvers and from Staging (D31).""")
                 rep.line(f"No package group matches {MPG_PREFIX}*.")
         if log_rows:
             rep.line()
-            rep.tabulate(["PROFILE\tJOB LOG GROUP\tRETENTION"] + ["\t".join(r) for r in log_rows])
+            rep.tabulate(
+                ["PROFILE\tJOB LOG GROUP\tRETENTION\tKEY"]
+                + ["\t".join((q, g, days, key.rsplit(":", 1)[-1])) for q, g, days, key in log_rows]
+            )
         if prod_live:
             rep.text("""
 D13 read from the role's own policies: the governed write must arrive only
@@ -1452,7 +1507,8 @@ through lakeformation:GetDataAccess vending, so an inline s3 allow naming a lake
 bucket is the finding, and the drop-box statements are the named exception. The
 Staging principals join the group policies at step 4.6. A service creates its
 job log group with no retention when a job runs before the slice that declares
-it, so DT-12 reads the six in every account with a job role.""")
+it, so DT-12 reads the six in every account with a job role, and the key each
+carries: the account data key once data/ stands.""")
 
         # ==============================================================================
         rep.h1("4. The Lake Formation settings, every account that has any (DT-5)")
@@ -1643,7 +1699,8 @@ What the checks are, and where each comes from:
   DT-11  the Workloads OU document attached, with the five job settings and the
          serverless-inference deny (3.5-3.7, decision 9, verification xv)
   DT-12  the six job log groups declared with a retention wherever the job role stands,
-         and a group a job created before the slice named for import (3.1, 4.3, EXC-10)""")
+         each under the account data key once data/ stands, and a group a job created
+         before the slice named for import (3.1, 4.3, EXC-10)""")
 
         # ==============================================================================
         rep.h1("12. The accounts nothing here is measuring")

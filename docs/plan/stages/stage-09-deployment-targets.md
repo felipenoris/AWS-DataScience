@@ -414,7 +414,17 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   the account will use, with a retention, and Staging's slice does the same (4.3); Glue's job groups the
   same way. In Staging the first job came before the slice: Stage 18 4.4's created
   `/aws/sagemaker/ProcessingJobs` on 2026-10-19 and its pass 8 deleted it on 2026-10-22; 4.3 says what
-  the slice owes such a group. `iam:PassRole` to
+  the slice owes such a group. **Each group goes under the account data key**, written and planned on
+  2026-10-22 and unapplied: `*/sagemaker/` reads the key's ARN from `*/data/`'s state with a null default,
+  so a first build still applies the role before `data/`, and CloudWatch Logs uses the key as its own
+  principal under the data key's `AllowCloudWatchLogsForTheJobAndWorkflowGroups`, scoped by each group's
+  ARN, with no grant to either role. *"Plan: 0 to add, 6 to change, 0 to destroy."* in Production and in
+  Staging, `kms_key_id` the only attribute that moves; the policies name the groups by ARNs built from
+  their names, so no role policy re-plans. AWS's page says the key encrypts what arrives after the
+  association, so what a group held before keeps the AWS-owned key until the 30-day retention expires it.
+  `DT-12` reads each group's key: a note while all six carry the AWS-owned key, a pass once all carry the
+  data key, a fail on another key or a partial apply. At the apply the note becomes a fail, and the first
+  job after it shows whether its logs land and the debug role reads them with no grant on the key. `iam:PassRole` to
   the role is granted only to Stage 8's deploy roles and Stage 10's execution roles, scoped by
   `iam:PassedToService`.
 - **3.2 — [Claude] Write the package groups and their resource policies**: one group per application or
@@ -607,7 +617,8 @@ approval gate (decision 1).
     `ResourceAlreadyExistsException`, so the slice reads `/aws/sagemaker/` and `/aws-glue/` before its
     first plan, as 3.4 did in Production, and imports each group that exists; the apply then sets its
     retention. Read 2026-10-22 at 04:55Z: neither prefix holds a group in Staging, and `DT-12` names any
-    group a job creates before the apply.
+    group a job creates before the apply. The groups go under `alias/awsds-staging-data` as Production's
+    go under its key (3.1).
 - **4.3a — [Claude] Re-cut Staging's `[E]` endpoint set in `staging/egress/`.** It was built for an
   Interactive account and migrated whole at 6b: the core eight (`sts`, `logs`, `kms`, `ecr.api`,
   `ecr.dkr`, `athena`, `glue`, `lakeformation`) plus `sagemaker.api`, `sagemaker.runtime` and

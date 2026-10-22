@@ -10,10 +10,11 @@
 #   4. registry/'s state                      -> the application repository the job role pulls
 #   5. data-governance/data/'s state          -> the drop-box, its prefix and the lake data key
 #   6. the production persona, by pattern     -> the only principal the debug role trusts
+#   7. production/data/'s state               -> the account data key's ARN, for the job log groups
 #
-# Nothing is read from production/data/: its buckets and its key name this slice's job role, so
-# the role is applied first (Stage 9's pass 1 before pass 3), and the bucket and alias names below
-# are the contracts ./aws/deploytargets.py reads.
+# From production/data/ the slice reads that ARN alone: its buckets and its key name this slice's
+# job role, so the role is applied first (Stage 9's pass 1 before pass 3), and the bucket and alias
+# names below are the contracts ./aws/deploytargets.py reads.
 
 data "aws_caller_identity" "current" {}
 
@@ -40,6 +41,24 @@ data "terraform_remote_state" "registry" {
     bucket = "awsds-${var.env}-tfstate"
     key    = "${var.account_folder}/registry/terraform.tfstate"
     region = var.region
+  }
+}
+
+# The account data key's ARN, the key the job log groups are encrypted under (job-role.tf). The null
+# default is what a first build reads: the role precedes production/data/, whose Lake Formation grants
+# name it, so the groups carry the AWS-owned key until the apply after data/'s, and DT-12 reads the key
+# each group carries.
+data "terraform_remote_state" "data" {
+  backend = "s3"
+
+  config = {
+    bucket = "awsds-${var.env}-tfstate"
+    key    = "${var.account_folder}/data/terraform.tfstate"
+    region = var.region
+  }
+
+  defaults = {
+    data_key_arn = null
   }
 }
 
