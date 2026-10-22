@@ -36,7 +36,7 @@
 # The contracts it reads, each named in the stage file so a rename fails loudly:
 #   - workflows, their roles and their failure rules carry awsds-<env>-wf- (steps 1.1, 1.3, 3.1)
 #   - log groups: /awsds/<env>/wf/ (step 1.1)
-#   - each account's definitions home is workflows/ in its own outputs bucket,
+#   - each account's definitions home is applications/ in its own outputs bucket,
 #     awsds-prod-outputs or awsds-staging-outputs, with the object's S3 VersionId pinned
 #     (steps 1.1, 2.4, decisions 1, 6 and 17)
 #   - the approval rule is awsds-prod-model-approval (step 5.3)
@@ -79,7 +79,7 @@ AUTO_LOG_PREFIX = "/aws/mwaa-serverless/"
 APPROVAL_RULE = "awsds-prod-model-approval"
 # Each account holds its own rendered copy in its own outputs bucket (decisions 6 and 17).
 DEF_BUCKETS = {"staging": "awsds-staging-outputs", "prod": "awsds-prod-outputs"}
-DEF_PREFIX = "workflows/"
+DEF_PREFIX = "applications/"
 LAKE_FRAG = "awsds-data-"
 WF_PRINCIPAL = "airflow-serverless.amazonaws.com"
 # The service's events carry the "MWAA Serverless " prefix (the EventBridge reference page and an
@@ -1390,7 +1390,7 @@ What the checks are, and where each comes from:
         NetworkConfiguration set, two AZs, no default route (steps 1.2, 1.3)
   OR-4  the *-failed rules and awsds-prod-model-approval ENABLED, each workflow
         rule's pattern naming the service's two run-failure detail types (3.1, 5.3)
-  OR-5  definitions under workflows/ in each account's own outputs bucket,
+  OR-5  definitions under applications/ in each account's own outputs bucket,
         VersionId pinned (steps 1.1, 2.4, decisions 1, 6 and 17)
   OR-6  no provisioned MWAA environment in any account read (step 4.3)
   OR-7  workflow versions vs the 50-version quota (risk 4)

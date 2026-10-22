@@ -77,12 +77,12 @@ locals {
       description = a.description
       definition = {
         bucket     = local.outputs_bucket
-        key        = "workflows/${a.application}/${var.release.tag}/workflows/${k}.yaml"
+        key        = "applications/${a.application}/${var.release.tag}/workflows/${k}.yaml"
         version_id = var.release.workflows[k].definition_version_id
       }
       code = a.code ? {
         bucket     = local.outputs_bucket
-        key        = "workflows/${a.application}/${var.release.tag}/code/${k}.zip"
+        key        = "applications/${a.application}/${var.release.tag}/code/${k}.zip"
         version_id = var.release.workflows[k].code_version_id
       } : null
       glue_jobs             = a.glue_jobs

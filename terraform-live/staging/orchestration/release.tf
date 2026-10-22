@@ -1,7 +1,7 @@
-# The release this slice runs (Stage 10 step 2.4, Stage 8 steps 3.6 and 3.7). The release job renders
-# each workflow of the tag's bundle for this account, writes it under
-# workflows/<application>/<tag>/workflows/ of awsds-staging-outputs with the worker's code package under
-# .../code/, and passes the S3 VersionIds the writes returned with -var. The promoted release is then
+# The release this slice runs (Stage 10 step 2.4, decision 1; Stage 8 steps 3.6 and 3.7). The release
+# job extracts the tag's bundle under applications/<application>/<tag>/ of awsds-staging-outputs, the
+# bundle's own tree with each workflow's YAML rendered for this account, and passes the S3 VersionIds
+# of the YAML and the worker's code package with -var. The promoted release is then
 # recorded as this variable's default, so a by-hand apply after `make down ENV=staging` creates the
 # same workflows from the same object versions (Lesson 4).
 #

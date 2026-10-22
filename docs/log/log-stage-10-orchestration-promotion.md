@@ -337,3 +337,22 @@ Stage 10 decision was taken.*
   the day, one connection per subnet in the application slice and the private-tier group for the
   processing job, is withdrawn; decision 6's render table follows. Decision 20 stays open for (a), (d) and
   the tool. The orchestration slices' `applications` locals name no network object and are unchanged.
+
+## 2026-10-22 — decision 1 taken by the user, revised: the bundle's tree under `applications/<app>/<tag>/`
+
+*Claude's hand, the same session. The user took the decision in a fork of the orchestrating session
+("Pendências estágios 7 e 8", PR #244), whose message relayed it; this session read the user's words and
+the revised recommendation they answered in that session's transcript before recording it. No AWS call.*
+
+- **[user] The decision**, in that session: *"Sim, peço registrar esta recomendação revisada e acatar esta
+  como sendo a decisão tomada."*, answering a recommendation that the bundle stay intact in
+  `awsds-prod-releases/<app>/<tag>/`, each leg extract exactly its tree under a prefix of the account's
+  outputs bucket named after the application rather than `workflows/`, the rendered YAML be the only
+  difference from the bundle, and `MANIFEST.sha256` show it.
+- **[Claude] Recorded**: decision 1 taken, revised, with its four points; the prefix
+  `workflows/<app>/<tag>/` became `applications/<app>/<tag>/` in the stage file (the contracts, 1.1, 1.5's
+  grant, 2.3, 2.4 with the manifest naming the bundle's SHA256 of each file, 3.6, decisions 6, 7 and 12,
+  the render table, verification xxi), in the module's validation of the roles' prefixes, in both slices'
+  keys and `release.tf`, in `./aws/orchestration.py`'s `OR-5` (`DEF_PREFIX`), and in the lines of
+  `aws/INDEX.md` and `docs/GOVERNANCE.md` that named the old prefix. The orchestrating session and the Stage
+  9 session were told, for Stage 8 3.2 and 4.1 and for the two data slices' statements.
