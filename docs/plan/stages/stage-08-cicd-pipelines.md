@@ -699,7 +699,8 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   table's existence is read by a principal holding `DESCRIBE` on it, never by `glue get-table` without a
   grant. Stage 9 decision 3 (taken 2026-10-22) gives Staging no mirror: the leg reads the governed lake in
   place, read-only, and each deploy fills Staging's own catalog with the application's tables (Stage 9
-  4.1), so 3.3 meets them once 3.2 has run. Stage 9 3.4's approval half is a manual job of this pipeline on the deploy
+  4.1), so 3.3 meets them once 3.2 has run, and the tests read them and the governed tables through the
+  share pinned to an Iceberg snapshot (Stage 9 4.4). Stage 9 3.4's approval half is a manual job of this pipeline on the deploy
   runner, at Stage 10's first registration.
 - **3.4 — [pipeline] Tear Staging down**: `make down ENV=staging PROFILE=awsds-deploy-staging AUTO=1`, in
   `after_script`/always so a failed run cannot leave the endpoints burning. 6c removed the NAT gateway,
