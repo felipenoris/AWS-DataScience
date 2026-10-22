@@ -1834,3 +1834,44 @@ AWS or in GitLab. Times are UTC.*
   `terminated`, Staging with no interface endpoint; `staging/studio/` re-plans *"No changes."* from the first
   unwinding commit's tree, committed now on the session branch, and the project role carries AWS's three
   policies alone.
+
+## 2026-10-22 — pass 8, C1: what the project held, then the project
+
+*Claude's writes, authorized ahead by the user's decision 15 (2026-10-21), as the infrastructure user with
+`InfrastructureAccess` in `Staging Account` (`awsds-infra-staging`); the reads as the same user there, in
+`Data Governance Account` and in `Sandbox Account 1`. No other Claude session running (read 01:05Z). Times
+UTC.*
+
+- **[Claude] The subscription**: `revoke-subscription --no-retain-permissions` on `5q2t8pgzp9ekr4` at 01:06:30Z,
+  `REVOKED`; its grant `REVOKE_PENDING`, `REVOKE_IN_PROGRESS`, then not found at 01:07:32Z. Read after: no
+  table in `glue_db_4zojr4rr6bmnww`, no Sandbox Lake Formation row naming `trades` or Staging, no RAM share
+  from Staging in Sandbox, Staging's `LakeFormation-V5-SZM42MYX4P` `DELETED`, and Staging's Data Catalog
+  resource policy *"Policy not found"*.
+- **[Claude] The asset and the data source**: the listing `UNPUBLISH`ed (`bx8v3rafykv3ww` `INACTIVE`) at
+  01:07:58Z, `delete-asset` on `aen4mge50m070w` and `delete-data-source` on `aqm5tebc42cufk`, both read
+  `ResourceNotFoundException` after.
+- **[Claude] The application**: `mwaa-serverless delete-workflow` on `app_etl_deploy_staging_app_etl-ZLVazCgH1d`
+  and `glue delete-job` on `app-etl-d1veybt5oak4uo`, the account then listing no workflow and the job
+  *"Job not found"*.
+- **[Claude] SageMaker's lineage**: 20 associations deleted, then five trial components (the processing jobs
+  of 2026-10-19 20:52, 22:04 and 22:58, and of 2026-10-21 23:56 and 2026-10-22 00:21) and four artifacts
+  (three `DataSet`, one `Image`), none refused; none left. The processing jobs stay, as SageMaker keeps them.
+- **[Claude] The project**: `delete-project --skip-deletion-check` at 01:09:39Z; `DataZone-Env-d6ogysnx78dguo`
+  `DELETE_COMPLETE` by 01:11:18Z, `DataZone-Env-bujd259b8g9zps` by 01:12:25Z, the project not found at
+  01:12:48Z. The stacks took the project role, the security group, the two Glue connections, the two
+  project Athena workgroups, the schedule group and the S3 Access Grants location; they left the log group
+  `datazone-d1veybt5oak4uo-dev` (731 days) and both Glue databases.
+- **[Claude] The databases**: `PutDataLakeSettings` at 01:13:04Z with InfrastructureAccess added to the two
+  SMUS admins, every other field as read; `DROP` and `DESCRIBE` granted to itself on each database;
+  `glue_db_c2ej62w956q2a8` and `glue_db_d6ogysnx78dguo` (holding `trades`) deleted, each then
+  `EntityNotFoundException`.
+- **[Claude] The rest**: `delete-access-grants-location` answered *"The specified access grants location does
+  not exist"*, the project's deletion having taken it, and the instance `default` deleted, none listed after;
+  `AWSServiceRoleForAmazonAthena` deleted, deletion status `SUCCEEDED`; seven log groups deleted, the three
+  `/aws/mwaa-serverless/…`, `/aws/sagemaker/ProcessingJobs`, `datazone-d1veybt5oak4uo-dev` and its `/error`
+  and `/output`, none left, which closes `EXC-21`'s groups. `AWSServiceRoleForAmazonMWAAServerless` stays for
+  Stage 10.
+- **[Claude] What the domain keeps, read and recorded**: the `IAM` user profiles of the project role
+  (`b25324be-…`, its role gone) and of `awsds-deploy-staging` (`4aea7383-…`), both `ACTIVATED`; the deploy
+  role's group profile `9bead345-…` `ASSIGNED`; 44 lineage events. The projects bucket holds 91 versions and
+  17 delete markers for 8.6.
