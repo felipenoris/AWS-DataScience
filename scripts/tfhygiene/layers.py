@@ -355,6 +355,12 @@ SLICES = [
         "6 interface endpoints (St.9 3.3a) + DNS Firewall - no NAT",
         0.060,
     ),
+    # Stage 8 steps 3.2 and 3.6 - the application's Glue job, applied by the pipeline with the release it
+    # promotes (refusal 7) and destroyed by Staging's `make down`. A job bills per run, nothing at rest.
+    Slice("staging", "app/app-etl", EPHEMERAL, "app-etl's Glue job (St.8 3.2), pipeline-applied"),
+    Slice(
+        "production", "app/app-etl", EPHEMERAL, "app-etl's Glue job (St.8 3.6), pipeline-applied"
+    ),
     # Stage 10 step 1.4 - the MWAA Serverless workflows with their roles and log groups, and the chain
     # layer above them, applied by the pipeline. Nothing here meters by the hour: a run bills
     # task-hours and a chain's execution its state transitions (the stage's Cost section).
@@ -684,6 +690,11 @@ APPLICATION_PARENT = "app"
 # deliberate `terraform apply`, read first.
 
 
+def deploy_profiles() -> set:
+    """The pipeline profiles: the deploy runner names each after its deploy role (Stage 8 step 4.4)."""
+    return set(backend.DEPLOY_ROLES.values()) | set(backend.DEPLOY_ROLES_BY_SLICE.values())
+
+
 def pipeline_refusal(account: str, slice_name: str, profile: str) -> str | None:
     """Refusal 8 (Stage 8 step 2.4): why a pipeline profile must not apply this slice, or None.
 
@@ -694,10 +705,7 @@ def pipeline_refusal(account: str, slice_name: str, profile: str) -> str | None:
     decision 18), the test deploy its workflow (decision 19). Neither deploy role holds state access,
     which refuses the same writes in IAM; this says so before anything runs.
     """
-    deploy_profiles = set(backend.DEPLOY_ROLES.values()) | set(
-        backend.DEPLOY_ROLES_BY_SLICE.values()
-    )
-    if profile not in deploy_profiles or account not in backend.SMUS_MEMBERS:
+    if profile not in deploy_profiles() or account not in backend.SMUS_MEMBERS:
         return None
     return (
         f"refusal 8: the pipeline profile {profile} applies no {account}/ slice - CI never applies "

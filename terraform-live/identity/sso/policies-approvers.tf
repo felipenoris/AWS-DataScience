@@ -31,7 +31,7 @@
 # The job is diagnosis, not reading: why did this promotion fail, and should it be released.
 #
 # No S3 read is owed (Stage 8 step 3.9): a promotion's evidence is the manual job's artifacts in
-# GitLab, and DenyDataReadPaths' kms:Decrypt deny would leave an s3:GetObject reading nothing.
+# GitLab, and DenyDecryptOutsideTheWorkflowService would leave an s3:GetObject reading nothing.
 
 data "aws_iam_policy_document" "deployment_manager" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf
@@ -109,6 +109,43 @@ data "aws_iam_policy_document" "deployment_manager" {
     resources = ["*"]
   }
 
+  # Stage 10 decision 11: the person who approves a promotion reads why its workflow run failed. Each
+  # workflow is encrypted with its account's data key (Stage 10 decision 2), and the service decrypts
+  # in the reader's session at each GetWorkflowRun (Stage 18 step 0.4), so the reads come with the
+  # decrypt below.
+  statement {
+    sid    = "ReadWorkflowRunStatus"
+    effect = "Allow"
+
+    actions = [
+      "airflow-serverless:GetTaskInstance",
+      "airflow-serverless:GetWorkflow",
+      "airflow-serverless:GetWorkflowRun",
+      "airflow-serverless:ListTaskInstances",
+      "airflow-serverless:ListWorkflowRuns",
+      "airflow-serverless:ListWorkflows",
+    ]
+
+    resources = ["*"]
+  }
+
+  # A ciphertext decrypts only under the encryption context it was encrypted with, and only what the
+  # workflow service encrypts carries a workflow's ARN in it: no S3 object's context does, so the set
+  # still decrypts no output (D31). The data key's policy names this set's role for the same call
+  # (Stage 9's data/ slices); kms:ViaService narrows it once a trail shows the calls carry it.
+  statement {
+    sid       = "DecryptWhatTheWorkflowServiceEncrypts"
+    effect    = "Allow"
+    actions   = ["kms:Decrypt"]
+    resources = ["*"]
+
+    condition {
+      test     = "Null"
+      variable = "kms:EncryptionContext:aws:airflow-serverless:workflow-arn"
+      values   = ["false"]
+    }
+  }
+
   # ---------------------------------------------------------------------------------------
   # The four denials D31 names, each closing a different route to the same place:
   #
@@ -120,7 +157,9 @@ data "aws_iam_policy_document" "deployment_manager" {
   #                              SMUS project path under the project CMK - this deny is the
   #                              approver-side half that survives the re-homing, and it makes
   #                              the control apply to a principal who might otherwise be
-  #                              handed s3:GetObject later).
+  #                              handed s3:GetObject later). A statement of its own,
+  #                              DenyDecryptOutsideTheWorkflowService, because Stage 10 decision
+  #                              11 admits the workflow service's encryption context.
   #   secretsmanager:GetSecretValue,
   #   ssm:GetParameter*          a promotion's secrets are not diagnostic material, and both
   #                              are the standard route from "read-only" to "credentialed".
@@ -133,7 +172,6 @@ data "aws_iam_policy_document" "deployment_manager" {
 
     actions = [
       "athena:*",
-      "kms:Decrypt",
       "secretsmanager:GetSecretValue",
       "ssm:GetParameter",
       "ssm:GetParameters",
@@ -141,6 +179,20 @@ data "aws_iam_policy_document" "deployment_manager" {
     ]
 
     resources = ["*"]
+  }
+
+  # D31's kms:Decrypt denial, for every request whose encryption context carries no workflow ARN.
+  statement {
+    sid       = "DenyDecryptOutsideTheWorkflowService"
+    effect    = "Deny"
+    actions   = ["kms:Decrypt"]
+    resources = ["*"]
+
+    condition {
+      test     = "Null"
+      variable = "kms:EncryptionContext:aws:airflow-serverless:workflow-arn"
+      values   = ["true"]
+    }
   }
 
   # "The control plane in full" - the release approver diagnoses and approves; the pipeline
@@ -366,6 +418,8 @@ data "aws_iam_policy_document" "dev_env_steward" {
     data.aws_iam_policy_document.stage6_denies.json,
   ]
 
+  # Stage 7 step 5.6: the release the steward judges, on the repository it ships into and the base it
+  # is built from (Stage 8 step 1.4 scans both), each by name. No pull.
   statement {
     sid    = "ReadEcrImageMetadataAndScanFindings"
     effect = "Allow"
@@ -373,12 +427,23 @@ data "aws_iam_policy_document" "dev_env_steward" {
     actions = [
       "ecr:DescribeImageScanFindings",
       "ecr:DescribeImages",
-      "ecr:DescribeRegistry",
       "ecr:DescribeRepositories",
-      "ecr:GetRegistryScanningConfiguration",
       "ecr:ListImages",
       "ecr:ListTagsForResource",
     ]
+
+    resources = [
+      local.ecr_repository_arns["awsds-prod-ecr-base"],
+      local.ecr_repository_arns["awsds-prod-ecr-dev-env"],
+    ]
+  }
+
+  # The registry-level reads take no repository ARN.
+  statement {
+    sid    = "ReadTheRegistryScanningConfiguration"
+    effect = "Allow"
+
+    actions = ["ecr:DescribeRegistry", "ecr:GetRegistryScanningConfiguration"]
 
     resources = ["*"]
   }

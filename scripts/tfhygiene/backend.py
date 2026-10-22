@@ -867,9 +867,9 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
             for acct in APP_REGISTRY_CONSUMERS
         }
 
-    # Stage 8 step 2.4 - an application slice reads its account's foundation/ and data/ states (the
-    # subnets, the VPC, the data key, the outputs bucket) and the registry's (the repository its job
-    # pulls), so it takes the folder and the registry map, as dev-env/ does.
+    # Stage 8 steps 3.2 and 3.6 - an application slice reads its own account's states and the
+    # registry's (the repository its job pulls), so it takes the folder and the registry map, as
+    # dev-env/ does. On the deploy runner the registry's profile is the runner's own (--pipeline).
     if slice_name.startswith("app/"):
         values["account_folder"] = account
         values["registry"] = {

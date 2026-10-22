@@ -74,9 +74,15 @@ def run(cmd: list, env_extra: dict | None = None, dry: bool = False, capture: bo
 
 
 def prepare(sl: layers.Slice, dry: bool, profile: str | None = None) -> bool:
-    """The two generated files and `init`. Both generators read one table (step 2.6)."""
-    for gen in ("gen-tfvars.py", "gen-backend-hcl.py"):
-        res = run([f"./scripts/{gen}", sl.account, sl.name], dry=dry, capture=True)
+    """The two generated files and `init`. Both generators read one table (step 2.6).
+
+    A deploy role's profile runs on the deploy runner, whose AWS configuration holds none of
+    backend.PROFILES, so its tfvars name the runner's own profile for the registry's state
+    (`gen-tfvars.py --pipeline`, Stage 8 decision 14).
+    """
+    pipeline = ["--pipeline"] if profile in layers.deploy_profiles() else []
+    for gen, flags in (("gen-tfvars.py", pipeline), ("gen-backend-hcl.py", [])):
+        res = run([f"./scripts/{gen}", *flags, sl.account, sl.name], dry=dry, capture=True)
         if res is not None and res.returncode != 0:
             print(res.stderr.strip(), file=sys.stderr)
             return False

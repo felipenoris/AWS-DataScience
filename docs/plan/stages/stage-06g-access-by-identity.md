@@ -63,7 +63,7 @@ exercised both (Lesson 20's mirror).
   | `DataScientistAccess` | Sandbox | SageMaker `Search`/`List*`/`Describe*`, Glue metadata, LF-Tag reads, CloudWatch Logs | the drop-box `s3:PutObject` with the lake key through S3, still confined by the bucket until step 2 | `lakeformation:GetDataAccess`; `s3:GetDataAccess` and `s3:ListCallerAccessGrants` on Sandbox's Access Grants instance; `ecr:GetAuthorizationToken` |
   | `DataScientistStagingAccess` | Staging | SageMaker, Glue metadata, CloudWatch Logs | none (`DenyEveryWrite`) | none |
   | `DataScientistProdAccess` | Production | SageMaker, Glue metadata, ECR metadata, Athena discovery, CloudWatch Logs | none (`DenyProductionControlPlane`) | `ecr:GetAuthorizationToken` |
-  | `DeploymentManagerAccess` | Sandbox, Staging, Production | SageMaker job and registry status, Glue metadata, ECR scan findings, Step Functions and Scheduler, CloudWatch Logs | none (`DenyControlPlaneInFull`, `DenyDataReadPaths`) | none |
+  | `DeploymentManagerAccess` | Sandbox, Staging, Production | SageMaker job and registry status, Glue metadata, ECR scan findings, Step Functions and Scheduler, CloudWatch Logs | none (`DenyControlPlaneInFull`, `DenyDataReadPaths`, `DenyDecryptOutsideTheWorkflowService`) | none |
   | `DevEnvStewardAccess` | Production, Sandbox | ECR, SageMaker image registration, build logs | none (`DenyShippingTheArtifactItApproves`, `DenyReadingData`) | none |
   | `GovernanceManagerAccess` | Data Governance | Glue metadata, Lake Formation, DataZone, Macie findings | **Lake Formation grants, revocations and LF-Tag administration; DataZone subscription decisions and project membership** | none (`DenyReadingTheRows`) |
 

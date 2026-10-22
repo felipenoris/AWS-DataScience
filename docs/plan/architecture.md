@@ -89,8 +89,8 @@ AWS Organization (Management account - console only)                        [P]
     │                           no human control plane (D20)
     ├── Staging account      <- deployment target; integration tests land here
     │   ├── VPC (same module, own CIDR; peered to VPC-Networking since 6c)  [P]
-    │   ├── S3 + Glue Catalog (Iceberg) - sampled or synthetic data only,
-    │   │     local to this account, never LF-shared production data        [P]
+    │   ├── S3 + Glue Catalog (Iceberg) - its own tables, created by each
+    │   │     deploy; the governed lake read in place, read-only via LF     [P]
     │   ├── SageMaker job execution roles (no domain, no Model Registry)    [P]
     │   ├── interface VPC endpoints, no NAT (only during a promotion run)  [E]
     │   └── app slices, deployed by the pipeline and torn down after tests  [E]

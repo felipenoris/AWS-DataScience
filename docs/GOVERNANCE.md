@@ -43,7 +43,7 @@ flowchart LR
         SCAT["Glue Data Catalog<br/>resource links raw, curated"]
     end
     subgraph STG["Staging · Workloads · D20 · Stage 9"]
-        SMIR["the application under test<br/>mirror of the lake's databases · same tags<br/>sampled or synthetic rows"]
+        SMIR["the application under test<br/>its own tables, created by each deploy<br/>the lake read in place, read-only"]
     end
     subgraph PRD["Production · Workloads · Stages 7-10"]
         SUP["GitLab · runners · ECR · CodeArtifact · D14"]
@@ -51,6 +51,7 @@ flowchart LR
     end
     GLUE ==>|"LF/RAM share · read · TBAC · INT-03"| SCAT
     GLUE -.->|"LF/RAM share · read + governed write · Stage 9"| JOB
+    GLUE -.->|"LF/RAM share · read only · Stage 9 decision 3"| SMIR
     DOM ==>|"account association · blueprints provision here"| PRJ
     CRAWL -->|"schema inference"| LAKE
     SBX -.->|"the persona · PutObject only · drop-box"| LAKE
@@ -64,7 +65,7 @@ flowchart LR
 |---|---|---|---|
 | Data Governance | the lake buckets (§Persistence), the lake's Glue Data Catalog, Lake Formation with the LF-Tags and the D13 registrations, the drop-box, the crawlers (D27), the domain and the SageMaker Catalog. No user compute, no interactive sign-in (D22) | owns it | hosts it; the portal's catalog calls run here as `awsds-data-studio-domain-execution` (measured 2026-09-13) |
 | Sandbox | the projects' apps, the projects bucket `awsds-sandbox-smus-projects`, a Glue Data Catalog of its own holding each project's databases and the resource links to `raw` and `curated`, and the sandbox lake `awsds-sandbox-lake`, outside Lake Formation by design (Stage 16) | read, through the TBAC share and the local re-grants (§Grants), which name the persona role: no project role holds one yet, so no project reads the lake (Stage 6f 0.7). The one write is the persona's `PutObject` into the drop-box | associated; every project provisions here |
-| Staging | a mirror of the lake's databases with the same LF-Tag keys and values, over sampled or synthetic rows local to it (Stage 9 4.1) | no share (D20) | never (D26, `DenyDataZoneEntirely`) |
+| Staging | its own Glue Data Catalog, which each deploy fills with the application's tables, with resource links to `raw` and `curated` (Stage 9 4.1) | read, through the TBAC share and the local re-grants to the job role, `DESCRIBE` and `SELECT` alone (Stage 9 decision 3, D20 as amended 2026-10-22, `TM-25`) | never (D26, `DenyDataZoneEntirely`) |
 | Production | the supply chain (D14), the job execution role, the orchestration (Stage 10), `awsds-prod-outputs`, a Glue Data Catalog of its own with resource links to the lake (Stage 9 1) | read and the governed write, the producer path (Stage 9 2); the drop-box pickup (D25) | never |
 
 The Staging and Production rows describe Stage 9; neither data slice is built.
@@ -76,8 +77,8 @@ database of themed schemas, outside Lake Formation like the sandbox lake beside 
 `Production` gains `awsds-prod-warehouse` with the `governed` database, inside Lake Formation as a federated
 catalog. `Data Governance` gains **nothing** — a Redshift Serverless workgroup needs subnets, that account has
 no VPC by decision, and the same absence that sends INT-13 to its manual fallback sends the warehouse to the
-two accounts that have VPCs. `Staging` gains nothing either: D20 keeps a deployment target off the lake, and
-a warehouse it has no writer for would be a second mirror to maintain.
+two accounts that have VPCs. `Staging` gains nothing either: it reads the governed lake through its share, and
+a warehouse it has no writer for would hold nothing of its own.
 
 ## Persistence — the buckets
 
@@ -481,7 +482,7 @@ exists, because they act at creation time.
 
 **The principals** (who the first element can be): the consumer accounts — `Sandbox Account 1`, the one
 consumer today (`Development` left the list on 2026-09-06 when the account became the headless
-`Staging`, which D20 keeps off the lake), plus one more per business unit at N>1 (INT-03's N+2) — for
+`Staging`, which rejoins as a read-only consumer at Stage 9 4.1, decision 3), plus one more per business unit at N>1 (INT-03's N+2) — for
 the cross-account shares; inside accounts, the persona permission-set roles;
 `awsds-data-catalog-maintenance` for catalog work; from Stage 6, the project execution roles; from
 Stage 9, `awsds-prod-job-exec` (read + the governed write). LF-Tags never gate the read/write direction
@@ -651,7 +652,7 @@ flowchart LR
     B["2 · SageMaker Catalog<br/>project assets published · business metadata<br/>data products · share and subscribe"]
     C["3 · GitLab, group awsds/<br/>graduation through git · D21<br/>D28 artifacts · schema and proposed tags"]
     R["4 · the register, for a new table<br/>curated table declared and tagged<br/>Governance Manager approves"]
-    D["5 · Staging<br/>pipeline apply · integration tests<br/>mirror databases, same tags"]
+    D["5 · Staging<br/>pipeline apply · integration tests<br/>reads the lake through the share · own tables per deploy"]
     E["6 · Production<br/>Deployment Manager's gate · apply<br/>the job writes through the share"]
     F["7 · the lake, Data Governance<br/>rows in the declared table<br/>consumers read through TBAC"]
     G["8 · SageMaker Catalog<br/>the governed table published<br/>discovery · request record"]
@@ -725,10 +726,11 @@ flowchart LR
   portal-scoped in the copy rendered per account, and in Production the definition is deployed to
   `awsds-prod-outputs/applications/<app>/<tag>/` and run by MWAA Serverless as the per-workflow role, started
   by its chain's state machine.
-- **Staging tests against a mirror.** Its databases carry the lake's names, definitions and LF-Tag keys
-  and values over sampled or synthetic rows (Stage 9 4.1), and no share reaches it (D20). The integration
-  test catches schema, permission and wiring errors against the same definitions; the cross-account
-  share is exercised in Production alone.
+- **Staging tests against the lake, read in place.** It reads the governed lake read-only through the
+  LF-Tag share Sandbox holds and writes only its own catalog, buckets and key, its tables created by each
+  deploy from the repository's schemas (Stage 9 decision 3, D20 as amended 2026-10-22). The integration
+  test meets the definitions, rows and grants Production reads, `restricted` excluded or filtered
+  (`TM-25`).
 - **Production writes the product into the lake.** The job execution role holds the read and the
   governed write through Stage 9's share, regranted locally (Stage 9 2.1-2.3); the table it writes is in
   the lake's catalog, so the authoritative product never lives in Production. Its local outputs, model

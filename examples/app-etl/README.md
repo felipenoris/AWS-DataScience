@@ -106,7 +106,7 @@ handler in 1.0.9. Which identity runs the `dev` deploy, and from where, is Stage
 |---|---|---|
 | any branch | `test` (`uv sync --locked`, ruff, pytest, the workflow lint), `secret_detection` and its gate, `pip-audit` | the test runner, no AWS identity |
 | `main` | the same, and `pages` | the test runner |
-| a tag `v<semver>` | `test`, `pip-audit`, `build-image` (smoke, then the push as `v<semver>-<short sha>`), `scan-gate`, informative: it may fail and the pipeline goes on; `build-task-code` (the worker's zip); `test-deploy` (the bundle, the `test` project's prefix emptied, the deploy and the run); `store-bundle` (the bundle to `awsds-prod-releases`); `release` (the tag's GitLab release) | the test runner, the build runner, and the deploy runner for `test-deploy` |
+| a tag `v<semver>` | `test`, `pip-audit`, `build-image` (smoke, then the push as `v<semver>-<short sha>`), `scan-gate`, informative: it may fail and the pipeline goes on; `build-task-code` (the worker's zip); `test-deploy` (the bundle, the `test` project's prefix emptied, the deploy and the run); `store-bundle` (the bundle to `awsds-prod-releases`); `release` (the tag's GitLab release); the promotion: `staging-up`, `staging-deploy`, `staging-test`, `staging-down` (always), `production-plan`, `production-gate` (manual), `production-deploy` | the test runner, the build runner, and the deploy runner for `test-deploy` and the promotion |
 
 A release is a tag `v<major>.<minor>.<patch>` on `main`, which only a Maintainer can create: the tag is
 protected, and that protection is the release gate. ECR's tags are immutable, so a second pipeline for
@@ -122,6 +122,16 @@ deploys; the bundle's SHA256 and the image go down the pipeline as a dotenv repo
 notes name them. `bundle` resolves an `include` as a file or a directory and not as a glob (`code/*.zip`
 is "Pattern not found" with the zip present, while `deploy` expands it; read in 1.0.9's code and run
 offline on 2026-10-16), so the manifest names the zip by its name.
+
+The promotion (Stage 8 step 3) runs on the deploy runner, each job cloning `awsds/infrastructure` with the
+job token (Stage 8 decision 2), where the slices and the two scripts it calls live. Staging's egress is
+raised; the bundle is read as the runner's own role and checked against the SHA256 `test-deploy` passed;
+`scripts/release-application.py` writes its tree into the account's outputs bucket with the workflow
+rendered by `scripts/render-workflow.py`, then the application and orchestration slices apply; the leg
+starts the chain's machine and follows it, and Staging is torn down whatever the outcome. Production
+gets a plan, the manual gate and the same bundle and image. The jobs need the hub and the deploy runner,
+and a Production run `production/workloads-egress/` (`make up ENV=production`). Written 2026-10-22, not
+yet run.
 
 Read on 2026-10-16 and not yet run: the first tag's pipeline, which shows whether the `test` run reaches
 `outbox/report.json`, the XCom of `summarize` pulled in `write_result`'s template, the project role's

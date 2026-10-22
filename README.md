@@ -143,7 +143,13 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   EC2 otherwise reports at apply, after the resources ahead of it exist. `check-gitlab-pins.py` reads the
   two GitLab release pins, `production/tooling/`'s `gitlab_ce_version` and `production/runners/`'s
   `gitlab_runner_version`, and fails when their major.minor differ: GitLab keeps a runner's major.minor
-  with the server's.
+  with the server's. `check-copies.py` compares the files one slice keeps as a copy of another's, the
+  application ceiling and the application and orchestration grants in Staging's and Production's
+  `foundation/`, and fails when one has diverged. `render-workflow.py` and `release-application.py`
+  are the promotion's two tools (Stage 10 decision 20 and step 2.4): the first renders an application's
+  workflow for a deployment target from the slices that own each value, and its `--check` runs in
+  `make check`; the second writes a release's bundle into the target's outputs bucket and reads it
+  back.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree. `make`
   itself is a convenience, not a dependency — every target is a direct call to scripts that also run
@@ -337,7 +343,7 @@ Artifacts cross in one direction only, through the pipeline, and they pass throu
 - the Terraform that instantiates them.
 
 The chain is **Sandbox → Staging → Production**. Staging receives the built artifact, runs the
-integration tests against a sampled or synthetic dataset, and is torn down again; only then does the
+integration tests against the governed lake, read in place and read-only, and is torn down again; only then does the
 **Deployment Manager**'s approval release the same artifact to Production. A failure in Staging stops the
 chain, and Production is never touched. Sandbox sits *before* the chain, not at its head: experimentation
 graduates into an **engineering repository** through git — a rewrite and a review, not an automated lift —
@@ -467,7 +473,7 @@ reason this project has a `Workloads` OU rather than an `Environment=production`
 | Model Registry and ECR in a Tooling / shared-services account | Both in the **Production** account (D14) | **Departure**, the main one remaining. No separate tooling account, on cost. The consequence: there is no boundary between what builds and what runs, so a compromise of GitLab is a compromise of Production |
 | A separate data lake / data management account | The **Data Governance** account (D22): the lake, its catalog, Lake Formation and the classification scheme, reached from every environment through cross-account shares | **Adopted** on 2026-08-08. It had been a departure; the section below on Data Governance vs. Production records why it stopped being one |
 | Experimentation and development as distinct accounts | **Sandbox** (experimentation — the unit of work is a notebook) and, until 2026-09-06, **Development** (the unit of work is a pipeline) | **Adopted 2026-08-08, reversed 2026-09-06** — the one recommendation this project took and later gave back. The boundary was real; what did not survive was the claim that it needs an AWS **account**. What is developed past the boundary is a *pipeline definition*, developed in git and executed into Staging, so the account stood empty. The distinction is kept and now runs between **Sandbox and a repository**; the section below records what it buys either way |
-| Staging holds data representative of production | Staging holds **sampled or synthetic data only**, never a copy of production | **Deliberate departure.** Staging is a deployment target where data scientists have read access and unattended tests run, so a full copy would make the less-defended of the two accounts the cheapest route to production data. The accepted cost: a test suite that catches permission, schema and wiring errors and misses whatever only appears at production distribution and volume |
+| Staging holds data representative of production | Staging **reads the governed lake in place, read-only, and holds no copy** (D20 as amended 2026-10-22) | **Followed, with no copy.** Staging is a deployment target where data scientists have read access and unattended tests run, so a copy would make the less-defended of the two accounts the cheapest route to production data. The read in place is `TM-25`'s accepted residual, scoped by `classification` with `restricted` excluded or filtered, and audited by Stage 11's data events |
 
 ### What the shape rests on
 
