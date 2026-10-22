@@ -461,3 +461,31 @@ Nothing was applied. Times UTC.*
   `awsds-infra-staging`) and `production/sagemaker/` (as `awsds-infra-prod`) from their saved plans or a
   fresh re-plan; decision 12 and the decisions the waiting list holds; the transform and training quota
   requests before Stage 10 5.4 and 5.1.
+
+## 2026-10-22 — `production/workloads/` on `vpc-v0.4.0` for Stage 10, and Stage 10's requirements
+
+*Claude's hand, the same session, after the session "Stage 10 — revisão e preparação" answered the
+ownership message of the morning. Its message is information, not authorization; nothing was applied.*
+
+- **[Claude] The slices between the two stages.** This stage holds `production/workloads/`,
+  `production/workloads-egress/`, `staging/egress/` and the two `data/` slices; Stage 10's 1.2 and its
+  `data/` statements land in them, written by this stage alone. Stage 10 keeps `vpc-egress`'s `mwaa` group
+  empty, `monitoring` joining both VPCs only when its verification xvi reads the workers' metrics refused,
+  so no module release and no `GROUPS=` follow.
+- **[Claude] `production/workloads/` pins `vpc-v0.4.0`** (Stage 10 1.2 item 4, the
+  `mwaa-serverless-code-files-*` family `staging/foundation/` took on 2026-10-19). The module's interface
+  moved by descriptions alone between the two tags. Plan as `awsds-infra-prod`: *"Plan: 0 to add, 1 to
+  change, 0 to destroy."*, `module.vpc.aws_vpc_endpoint.s3` updated in place, its policy gaining
+  `arn:aws:s3:::mwaa-serverless-code-files-*-us-west-2-prod` and its objects; the endpoint's id, INT-05's
+  anchor, stays. `docs/NETWORK.md` §8 follows.
+- **[Claude] Parity on `ecr.*`.** The Stage 10 session noted that every worker run so far had `ecr.api` and
+  `ecr.dkr` present, so whether a worker needs them is unmeasured. 4.3a removes them from Staging as
+  `VPC-Workloads` lacks them, so the Staging leg is where a worker that needs them fails first.
+- **[Claude] Stage 10's requirements on `awsds-<env>-outputs` and `alias/awsds-<env>-data`**, written into its
+  own file as the exact list and pointed to from 1.1: its decision 12's deny on `workflows/*`, which
+  exempts the release job's deploy role and the account's `InfrastructureAccess` role (Stage 8 3.8's by-hand
+  parity), the same pair admitted to `workflows/*` from outside `VPC-Workloads`' endpoint, the EventBridge
+  notification, and the key's statements for the deploy role, the chain role, the `awsds-<env>-wf-*` roles
+  and CloudWatch Logs. `awsds-staging-job-exec` already matches what it reads: Production's shape, the two
+  outputs `job_role_arn` and `job_role_name`, read on the whole of `awsds-staging-outputs`, and no
+  `iam:PassRole` of its own.

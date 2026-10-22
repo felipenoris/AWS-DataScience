@@ -182,6 +182,13 @@ in Data Governance: a `DataLakeSettings` apply replaces the whole structure.
     the `aws:ViaAWSService` carve-out (Athena writes results as the caller); and a principal branch admitting
     `DataScientistProdAccess`'s read of the named prefixes from any network
     ([D39](../decisions/D39-access-by-identity.md), `./aws/deploytargets.py` `DT-1`).
+  - **What Stage 10 adds on these objects**, its exact list in [Stage 10](stage-10-orchestration-promotion.md)'s
+    file (2026-10-22), the same in `staging/data/`: on `awsds-<env>-outputs`, its decision 12's deny of
+    `s3:PutObject` and `s3:DeleteObject` on `workflows/*` to every principal but the release job's deploy
+    role and the account's `InfrastructureAccess` role, a principal branch admitting that pair to
+    `workflows/*` from outside `VPC-Workloads`' endpoint, and the EventBridge notification its decision 16
+    reads; on the data key, the deploy role, `awsds-<env>-chain-exec`, the `awsds-<env>-wf-*` roles and
+    CloudWatch Logs for `/awsds/<env>/wf/*` and `/aws/vendedlogs/states/awsds-<env>-chains`.
 - **1.2 — [Claude] Write the results bucket and the workgroup beside the call** (decision 11): the bucket
   `awsds-prod-derived`, `results/` its prefix family with a 30-day expiry, under the account data CMK, and
   the workgroup `awsds-prod-athena` with `enforce_workgroup_configuration = true` (the console's "override
@@ -572,11 +579,13 @@ behind the approval gate.
   v0.17.0, the firewall's list AWS's namespaces alone. This account's own run is the reading: on
   2026-10-19 the worker called `glue`, `sagemaker.api`, `kms` and `logs` through these endpoints, and the
   job's image pull and Glue's job runner called from AWS's own addresses, through none ([Stage 18](stage-18-staging-deployment-project.md)'s
-  log, 4.4), so `ecr.*`, `athena`, `lakeformation`, `sagemaker.runtime` and `sagemaker.studio` left. A
-  change joins both slices or carries its reason: `lakeformation` on 2.4's reading (decision 12), `athena`
-  when a job inside the VPC queries through it, and Stage 10 step 1.2's `mwaa` group, empty at v0.17.0,
-  named in both slices' `optional_service_groups` once it is filled, so the leg's `make up` needs no
-  `GROUPS=`. Planned as `awsds-infra-staging`: *"Plan: 15 to add, 0 to change, 0 to destroy."*, the six
+  log, 4.4), so `ecr.*`, `athena`, `lakeformation`, `sagemaker.runtime` and `sagemaker.studio` left. Dropping
+  `ecr.*` in both VPCs also lets the Staging leg answer what no run has measured, every worker so far
+  having had them present: whether a MWAA Serverless worker needs them, where AWS's private-routing
+  minimum names `logs`, `monitoring` and `kms` (Stage 10 1.2). A change joins both slices or carries its
+  reason: `lakeformation` on 2.4's reading (decision 12), `athena` when a job inside the VPC queries
+  through it, and `monitoring` when Stage 10's verification xvi reads the workers' metrics refused, its
+  1.2 keeping the `mwaa` group empty, so the leg's `make up` needs no `GROUPS=`. Planned as `awsds-infra-staging`: *"Plan: 15 to add, 0 to change, 0 to destroy."*, the six
   endpoints and the firewall's nine pieces, the coverage precondition passing; the next `make up
   ENV=staging` applies it, at 0.060/h where the old set cost 0.110. `staging.awsds.internal` holds no
   record (read 2026-10-22), so its names answering NXDOMAIN in the VPC cost nothing. **No AZ pin**: 6i
