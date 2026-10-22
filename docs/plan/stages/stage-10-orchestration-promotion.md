@@ -265,8 +265,9 @@ run, plus the `[E]` endpoint set while tasks are in the VPC.
 - **1.3 — [Claude] Write the execution role**: trust `airflow-serverless.amazonaws.com`
   (`sts:AssumeRole`; add `aws:SourceAccount` — the docs sample omits it, so if creation fails naming
   trust, drop the condition and record it), and the permissions boundary `awsds-<env>-app-boundary`: the
-  deploy role's ceiling refuses `CreateRole` and every policy change on a role without it
-  (`DenyRoleChangesOutsideTheApplicationCeiling`, `terraform-modules/deploy-role/main.tf`), so a role
+  deploy role's ceiling refuses `CreateRole` and the five role-policy writes (`AttachRolePolicy`,
+  `DetachRolePolicy`, `PutRolePolicy`, `DeleteRolePolicy`, `PutRolePermissionsBoundary`) on a role without
+  it (`DenyRoleChangesOutsideTheApplicationCeiling`, `terraform-modules/deploy-role/main.tf`), so a role
   this slice writes without it fails at the pipeline's first apply. The boundary is `[P]`, the
   infrastructure user's (Stage 8 step 3.0), since the deploy role may neither change nor delete a policy
   named `awsds-<env>-*-boundary`, so it never lives in this `[E]` slice; its content admits what this
