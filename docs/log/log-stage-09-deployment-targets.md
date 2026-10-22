@@ -539,3 +539,33 @@ recommendations of this stage's file. No AWS call, and no preparation beyond the
   - 8: 30 days and the account data CMK.
 - **[Claude] Still open**: decisions 3 (whether Staging keeps a mirror) and 1 (the Production data key and
   what Staging reads of Production's outputs), which hold pass 2 onward.
+
+## 2026-10-22 — decisions 3 and 1 taken by the user, as recommended
+
+*Claude's hand, the same session. The user's words were relayed from the orchestrating session "Pendências
+estágios 7 e 8", which reads them as the two decisions taken on 2026-10-22 as revised and recommended. No
+AWS call; the saved plan of `staging/sagemaker/` was refreshed.*
+
+- **[user] The words, verbatim**, relayed from the orchestrating session: *"Avise às sessões que irei
+  acatar as recomendações em relação às decisões 3 e 1, conforme conversamos nesta sessão."*
+- **[Claude] Decision 3**: no mirror. Staging reads the governed lake read-only through the LF-Tag share
+  Sandbox holds, writes only to its own catalog, buckets and key, and creates the application's schemas
+  from the repository at each deploy. **Decision 1**: a dedicated Production data key, and Staging reads
+  nothing of Production's outputs, model archives included, so Stage 10 decision 6 holds as written. Every
+  decision of the stage is now taken, and none holds a pass.
+- **[Claude] The stage file brought to the two decisions**: the Status row and the Decisions-due table;
+  the build table's `data-governance/data/` and `staging/data/` rows; the outputs paragraph, where
+  `staging/data/` gives `production/data/`'s names; the diagram's Staging node; 1.4 and 2.1 (Staging joins
+  `DATA_CONSUMERS`, the share map gains its `DESCRIBE` and `SELECT`); section 4's Action and Why; 4.1 as
+  1.1-1.3's shape without the write; 4.4 withdrawn; 4.6 without the archive read; 8.5, the Deliverables,
+  verification xiii, two risks, the cost table and decision 6's sentence on the schema's source.
+- **[Claude] The code made true to them, behaviour unchanged**: `DATA_MIRRORS` is `READ_ONLY_TARGETS` in
+  `backend.py`; `staging/sagemaker/`'s comments and role description name the lake read through Lake
+  Formation, and its Sid `VendTheMirrorCredentials` is `VendTheLakeCredentials`. Re-plan as
+  `awsds-infra-staging`: *"Plan: 8 to add, 0 to change, 0 to destroy."*, saved over the earlier plan.
+  `deploytargets.py`'s `DT-4` cites D13 for Staging's role; `./aws/deploytargets.py` *"0 check(s)
+  FAILED."*
+- **[Claude] Owed before 4.5's apply**: `DT-8` still reads the superseded design, an isolation check that
+  fails on a link to Data Governance and a table-by-table comparison with a mirror; it is rewritten with
+  pass 5's preparation to read that every Staging grant on the lake is `DESCRIBE` or `SELECT`. Passes 2,
+  3 and 5 can now be prepared: no decision blocks them.

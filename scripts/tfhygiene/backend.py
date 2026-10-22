@@ -304,10 +304,10 @@ VPN_HOST_SLICE = ("production", "networking")
 DATA_CONSUMERS = ["sandbox"]
 DATA_PRODUCERS = ["production"]
 
-# The accounts holding the lake's mirror, its schema with sampled content (Stage 9 step 4, D20):
-# deployment targets kept off the share, so no `lake` map reaches them and no consumer or producer
-# row names them. Consumed by their sagemaker/ slice (step 4.3), which holds the job role alone.
-DATA_MIRRORS = ["staging"]
+# The deployment targets that read the governed lake and write none of it: Staging, whose read share
+# Stage 9 decision 3 grants and DATA_CONSUMERS emits from step 4.1. Consumed by their sagemaker/ slice
+# (step 4.3), which holds the job role alone.
+READ_ONLY_TARGETS = ["staging"]
 
 # The other direction, added at pass 4: the account that owns the lake, read by the consumers. A
 # one-element table, and still a table for the reason the three above are: the consumer slices
@@ -897,12 +897,12 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_MEMBERS
         }
 
-    # Stage 9 step 4.3 - a mirror account's sagemaker/ slice: the job role and the job log groups,
-    # without the registry and the escape hatch, which stay Production's. No `lake` map, since D20
-    # keeps the account off the share. The role pulls the application image from the registry
+    # Stage 9 step 4.3 - a read-only target's sagemaker/ slice: the job role and the job log groups,
+    # without the registry and the escape hatch, which stay Production's. No `lake` map: the role
+    # reaches the lake through Lake Formation alone. It pulls the application image from the registry
     # account, whose state is read cross-account, so the slice takes the registry map as an
     # application slice does.
-    elif slice_name == "sagemaker" and account in DATA_MIRRORS:
+    elif slice_name == "sagemaker" and account in READ_ONLY_TARGETS:
         values["registry"] = {
             acct: {"profile": registry_profile(acct, pipeline), "env": ENV_TOKENS[acct]}
             for acct in REGISTRY_HOME

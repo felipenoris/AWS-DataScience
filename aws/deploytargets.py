@@ -286,7 +286,7 @@ def main(argv: list) -> int:
         """The role's state, its trust findings, and its s3 allows reaching a lake bucket (D13).
 
         The drop-box is the producer's one excepted bucket (Stage 5a decision 3). In Staging it is a
-        finding like every other lake bucket, since D20 keeps that account off the lake.
+        finding like every other lake bucket: it reads the lake through Lake Formation alone (D13).
         """
         trust_bad: list = []
         lake_hits: list = []  # (policy, resource) - an s3 statement reaching a lake bucket
@@ -1040,7 +1040,7 @@ def main(argv: list) -> int:
                 )
 
     # DT-4, Staging: the same trust, and no s3 allow reaching any lake bucket, the drop-box included
-    # (4.3, D20). Absent until 4.5 applies staging/sagemaker/.
+    # (4.3, D13). Absent until 4.5 applies staging/sagemaker/.
     if staging_live:
         if staging_job_state == "(absent)":
             checks.note("DT-4", f"role {STAGING_JOB_ROLE}", "absent - expected before step 4.5.")
@@ -1062,13 +1062,13 @@ def main(argv: list) -> int:
                 for pname, arn in sorted(set(staging_lake_hits)):
                     checks.fail(
                         "DT-4",
-                        f"D20 on {STAGING_JOB_ROLE}",
-                        f"inline {pname} allows s3 on {arn} - Staging is never on the lake.",
+                        f"D13 on {STAGING_JOB_ROLE}",
+                        f"inline {pname} allows s3 on {arn} - Staging reads the lake through Lake Formation alone.",
                     )
             else:
                 checks.ok(
                     "DT-4",
-                    f"D20 on {STAGING_JOB_ROLE}",
+                    f"D13 on {STAGING_JOB_ROLE}",
                     "no inline s3 allow reaches a lake bucket, the drop-box included",
                 )
 
@@ -1593,7 +1593,7 @@ What the checks are, and where each comes from:
   DT-2   the workgroup enforces location + scan limit (1.2, D19)
   DT-3   every awsds-prod-model-* group carries a resource policy (3.2, D28 item 6)
   DT-4   the job roles: service-only trust, no s3 allow on lake buckets - Production's
-         drop-box excepted (3.1, D13), Staging's with no exception (4.3, D20)
+         drop-box excepted (3.1, D13), Staging's with no exception (4.3, D13)
   DT-5   the LF settings discipline in all three accounts: parameters carried, create
          defaults emptied once an administrator is seated (1.3/2.2/4.1, DL-5's twin)
   DT-6   the write share granted, no pending invitation (2.1-2.2, INT-03/INT-11)

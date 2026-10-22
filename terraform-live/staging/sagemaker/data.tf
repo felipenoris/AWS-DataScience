@@ -8,7 +8,8 @@
 # Nothing is read from staging/data/: its buckets and its key name this slice's job role, so the
 # role is applied first (step 4.5, as Production's pass 1 preceded its pass 3), and the bucket and
 # alias names in locals.tf are the contracts ./aws/deploytargets.py reads. Nothing is read from the
-# lake either: D20 keeps this account off the share.
+# lake's state: the role reaches the lake through Lake Formation alone, by the read share decision 3
+# gives this account.
 
 data "aws_caller_identity" "current" {}
 

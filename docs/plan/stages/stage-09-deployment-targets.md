@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **pass 0 read and pass 1 applied on 2026-10-18** ([the log](../../log/log-stage-09-deployment-targets.md)), from a laptop session as the infrastructure user: the `Workloads` OU document's job settings and serverless deny (9 statements, the battery's `ou` phase after the apply 39 as expected, 0 unexpected, 7 not measured, `DT-11` passing) and `production/sagemaker/` (16 resources, re-plan `No changes`); `production/workloads-egress/`'s six endpoints and DNS Firewall planned (15 to add) and raised by the next Production `make up`. Decisions 4, 9 (a), 10 and 3.7 (b) taken as recommended. Verification viii is answered, its assignment half by `./aws/list-identities.py` and the Identity account's CloudTrail (2026-10-18). Owed in pass 1: 3.4's registry proof and 6.3's window, the user's; 3.5's instance-preference rows ran on 2026-10-22 in Stage 18's 8.7 battery, each as expected. **The processing-job quotas of `ml.m5.large`, `ml.m5.xlarge` and `ml.m5.2xlarge` read 0 in Production and Staging** (2026-10-18, Production's again on 2026-10-20); `ml.t3.medium`, the type `app-etl`'s `process` task names, reads 4 in both, AWS's default (Production's re-read 2026-10-20, no increase requested), and Staging's first SageMaker job ran on it on 2026-10-19, `app-etl-20261019T205205` ([Stage 18](stage-18-staging-deployment-project.md) 4.4), refused by no statement of the `Workloads` document. Production's training quotas read 0 for every type inside the ceiling that has one (2026-10-20, 3.5). Pass 2 waits on decision 3. **Prepared 2026-10-22 with the environment down** (the log): Stage 8's decision of that day makes this stage's `awsds-<env>-job-exec` the job role in Staging and Production, so 4.3's `staging/sagemaker/` is written and planned (8 to add: the role and the six job log groups) before Stage 8's pass 4; 4.3a re-cuts `staging/egress/` to `VPC-Workloads`' six endpoints (planned, 15 to add); `production/sagemaker/`'s job role gains `glue:GetConnection` (planned, 1 to change); and `./aws/deploytargets.py` reads each pass from its own objects, 0 failed and 8 notes where the same state read 7 failed, with Staging's job role and the job log groups (`DT-12`) added. Staging's training quotas read 0 like Production's, and no type inside the ceiling has a transform quota above 0 in either account. Decisions 2, 5, 6, 7, 8, 11 and 12 were taken by the user the same day, as recommended; 1 and 3 stay open. **Staging is the renamed `Development`** ([6b](stage-06b-development-becomes-staging.md)): 10.50.0.0/16 with its `[P]` gateway endpoint, peered with `VPC-Networking` only, no default route, and an `egress/` slice still cut for an Interactive account, which 4.3a re-cuts. **Production's jobs run in `VPC-Workloads`** ([6c](stage-06c-networking-hub.md)), whose endpoint slice holds the jobs' six endpoints once pass 1 is applied (3.3a) and whose gateway endpoint, not `production/foundation/`'s, is their INT-05 anchor (1.4). Three measurements from [6d](stage-06d-unified-studio-remainder.md) and [6i](stage-06i-sandbox-orchestration.md) reshape the runtime: a SageMaker job's settings are enforced on whoever calls `Create*Job`, never on the role the job runs as (3.5, decision 9); a job under network isolation reads no governed data, so the producer and the pickup stay Glue (3.1); and `consumer-data-v0.6.0` supplies neither a workgroup nor a results bucket, so this stage authors both (decision 11, [D19](../decisions/D19-derived-zone.md)'s re-decision). **The Staging data CMK is created here**, as `alias/awsds-staging-data`. Step 9 adds the governed half of the Redshift warehouse ([D40](../decisions/D40-redshift-warehouse.md)), copied from the Sandbox slices [Stage 5b](stage-05b-redshift-serverless.md) built and [6h](stage-06h-redshift-connection.md) measured |
+| **Status** | **pass 0 read and pass 1 applied on 2026-10-18** ([the log](../../log/log-stage-09-deployment-targets.md)), from a laptop session as the infrastructure user: the `Workloads` OU document's job settings and serverless deny (9 statements, the battery's `ou` phase after the apply 39 as expected, 0 unexpected, 7 not measured, `DT-11` passing) and `production/sagemaker/` (16 resources, re-plan `No changes`); `production/workloads-egress/`'s six endpoints and DNS Firewall planned (15 to add) and raised by the next Production `make up`. Decisions 4, 9 (a), 10 and 3.7 (b) taken as recommended. Verification viii is answered, its assignment half by `./aws/list-identities.py` and the Identity account's CloudTrail (2026-10-18). Owed in pass 1: 3.4's registry proof and 6.3's window, the user's; 3.5's instance-preference rows ran on 2026-10-22 in Stage 18's 8.7 battery, each as expected. **The processing-job quotas of `ml.m5.large`, `ml.m5.xlarge` and `ml.m5.2xlarge` read 0 in Production and Staging** (2026-10-18, Production's again on 2026-10-20); `ml.t3.medium`, the type `app-etl`'s `process` task names, reads 4 in both, AWS's default (Production's re-read 2026-10-20, no increase requested), and Staging's first SageMaker job ran on it on 2026-10-19, `app-etl-20261019T205205` ([Stage 18](stage-18-staging-deployment-project.md) 4.4), refused by no statement of the `Workloads` document. Production's training quotas read 0 for every type inside the ceiling that has one (2026-10-20, 3.5). Pass 2 waited on decision 3. **Prepared 2026-10-22 with the environment down** (the log): Stage 8's decision of that day makes this stage's `awsds-<env>-job-exec` the job role in Staging and Production, so 4.3's `staging/sagemaker/` is written and planned (8 to add: the role and the six job log groups) before Stage 8's pass 4; 4.3a re-cuts `staging/egress/` to `VPC-Workloads`' six endpoints (planned, 15 to add); `production/sagemaker/`'s job role gains `glue:GetConnection` (planned, 1 to change); and `./aws/deploytargets.py` reads each pass from its own objects, 0 failed and 8 notes where the same state read 7 failed, with Staging's job role and the job log groups (`DT-12`) added. Staging's training quotas read 0 like Production's, and no type inside the ceiling has a transform quota above 0 in either account. Every open decision was taken by the user the same day, as recommended, 1 and 3 among them: Staging keeps no mirror and reads the governed lake through a read-only share, and reads nothing of Production's outputs; no decision holds a pass now. **Staging is the renamed `Development`** ([6b](stage-06b-development-becomes-staging.md)): 10.50.0.0/16 with its `[P]` gateway endpoint, peered with `VPC-Networking` only, no default route, and an `egress/` slice still cut for an Interactive account, which 4.3a re-cuts. **Production's jobs run in `VPC-Workloads`** ([6c](stage-06c-networking-hub.md)), whose endpoint slice holds the jobs' six endpoints once pass 1 is applied (3.3a) and whose gateway endpoint, not `production/foundation/`'s, is their INT-05 anchor (1.4). Three measurements from [6d](stage-06d-unified-studio-remainder.md) and [6i](stage-06i-sandbox-orchestration.md) reshape the runtime: a SageMaker job's settings are enforced on whoever calls `Create*Job`, never on the role the job runs as (3.5, decision 9); a job under network isolation reads no governed data, so the producer and the pickup stay Glue (3.1); and `consumer-data-v0.6.0` supplies neither a workgroup nor a results bucket, so this stage authors both (decision 11, [D19](../decisions/D19-derived-zone.md)'s re-decision). **The Staging data CMK is created here**, as `alias/awsds-staging-data`. Step 9 adds the governed half of the Redshift warehouse ([D40](../decisions/D40-redshift-warehouse.md)), copied from the Sandbox slices [Stage 5b](stage-05b-redshift-serverless.md) built and [6h](stage-06h-redshift-connection.md) measured |
 | **Prerequisites** | Stage 3: `production/foundation/` and `production/workloads/` with their `[P]` gateway endpoints. Stage 5a: the lake, the LF settings under `DL-5`'s guard, the drop-box statements written against this stage's role name. **Stage 8 pass 1**: step 3's resource policies name `awsds-deploy-prod` and `awsds-deploy-staging`, and a resource policy naming a principal that does not exist fails at put time; the full chain only for pass 5. 6b and 6c: Staging and the three Production VPCs as built. For step 9 alone: [5b](stage-05b-redshift-serverless.md) (the warehouse slices and their readings, its verification (i) answered with two subnets) and [6h](stage-06h-redshift-connection.md) (the database users and grants measured through both doors). Redshift waits on no quota (5b 0.4 read 25 namespaces and 25 workgroups per account); SageMaker does: the processing-job quotas of `ml.m5.large`, `ml.m5.xlarge` and `ml.m5.2xlarge` read 0 in Production and Staging (2026-10-18). [Stage 18](stage-18-staging-deployment-project.md) ran on pass 1's `Workloads` document and its battery (its 0.3 and 0.5) and is done (2026-10-22): D41 item 2 kept, and pass 5 finds Staging at Stage 18's 0.3 reading, with no association, no project, no `staging/studio/` and `SMUS_DEPLOYMENT_MEMBERS` empty (`backend.py`), except `AWSServiceRoleForAmazonMWAAServerless`, Stage 10's, and the project key, `PendingDeletion` until 2026-11-21 |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D22](../decisions/D22-data-governance-account.md), [D25](../decisions/D25-drop-box-consumer.md), [D28](../decisions/D28-workflow-contract.md), [D31](../decisions/D31-approver-read.md), [D38](../decisions/D38-single-egress-hub.md), [D39](../decisions/D39-access-by-identity.md), [D40](../decisions/D40-redshift-warehouse.md) |
 | **Proves** | [INT-03](../integrations.md) **the write share** (the two read shares are Stage 5a's); [INT-05](../integrations.md) (the Production branch, anchored on `VPC-Workloads`, and the persona's principal branch); [INT-06](../integrations.md); [INT-07](../integrations.md) **in part**, the model-registry read half, which absorbed INT-04 at 6b (the image half is Stage 8 step 3.2's); [INT-10](../integrations.md) **the pickup half** (the writer and maintenance halves are Stage 5a's); [INT-24](../integrations.md), a Sandbox project reading a governed Redshift table that lives in Production |
@@ -24,9 +24,9 @@ is the data platform, the SageMaker runtime and the sharing model.
 | Where | What | Layer |
 |---|---|---|
 | `production/sagemaker/` (new) | Model Registry: package groups + **resource policies** (D28 item 6); `awsds-prod-job-exec`; the `awsds-prod-debug` escape hatch + its alarm; the SageMaker job log groups, pre-created with a retention (3.1) | `[P]` |
-| `data-governance/data/` (amended) | the Production share: LF read **+ governed write**, granted *with grant option* to the Production account (INT-03's last third); the trusted-network list's Production entry read from `production/workloads/` (1.4); the first curated table and its LF-Tags, declared before its first write (2.1) | `[P]` |
+| `data-governance/data/` (amended) | the Production share: LF read **+ governed write**, granted *with grant option* to the Production account (INT-03's last third), and Staging's read share, `DESCRIBE` and `SELECT` by Sandbox's expression (decision 3); the trusted-network list's Production entry read from `production/workloads/` (1.4); the first curated table and its LF-Tags, declared before its first write (2.1) | `[P]` |
 | `production/data/` (new) | the `consumer-data` call (account data CMK, LF settings, resource links, re-grants) and, beside it, what `consumer-data-v0.6.0` does not supply: the outputs bucket, the results bucket `awsds-prod-derived` and the enforced workgroup `awsds-prod-athena` (decision 11) | `[P]` |
-| `staging/data/`, `staging/sagemaker/` (new) | the catalog mirror with sampled/synthetic content, `awsds-staging-outputs` (Stage 10 decision 17), its results location and workgroup (decision 11); the job role `awsds-staging-job-exec` and its six job log groups (4.3), and nothing else. Staging has no SMUS (D17/D28) | `[P]` |
+| `staging/data/`, `staging/sagemaker/` (new) | 1.1-1.3's shape without the write: the `consumer-data` call with the read share's links and read regrants, `awsds-staging-outputs` (Stage 10 decision 17), its results location and workgroup (decision 11), no mirror and no copy (decision 3); the job role `awsds-staging-job-exec` and its six job log groups (4.3), and nothing else. Staging has no SMUS (D17/D28) | `[P]` |
 | `production/workloads-egress/` (amended), `staging/egress/` (amended) | the endpoints a job needs where there is no default route (3.3a, 4.3a): the same six in both VPCs, on `vpc-egress` v0.17.0, with the DNS Firewall in both | `[E]` |
 | `production/warehouse/` (new, rank 53, step 9) | **the data half** of D40's governed warehouse: the namespace `awsds-prod-warehouse` under `alias/awsds-prod-data`, its admin secret, its three audit log groups, the namespace role, the security group, the alarms, and the first governed schema, written by `awsds-prod-job-exec` and put under Lake Formation by decision 5's shape | `[P]` |
 | `production/warehouse-compute/` (new, rank 54, step 9) | **the compute half**: the workgroup at `base_capacity = 4` in `VPC-Workloads`' private tier and its usage limit, in one apply. `[E]` for Sandbox's reason: Redshift Serverless has no pause, so *powered off* means *does not exist*. RMS storage bills while it is down | `[E]` |
@@ -54,8 +54,7 @@ render reads): `*/sagemaker/` gives `job_role_arn`, `job_role_name` and `job_log
 Production's also `model_package_group_arns` and `debug_role_arn`; `production/data/` gives the
 `consumer-data` module's `data_key_arn`, `data_key_alias` and `resource_link_names`, and
 `outputs_bucket_name`/`_arn`, `derived_bucket_name`/`_arn`, `workgroup_name` and
-`app_outputs_database`; `staging/data/` gives the same names for its key, buckets and workgroup,
-`data_bucket_name`/`_arn` for the mirror's content and `mirror_database_names`. Decision 12's
+`app_outputs_database`; `staging/data/` gives the same names, Staging having the same shape without the governed write. Decision 12's
 `job_security_group_id` and `glue_connection_name` join `*/sagemaker/` if it takes the recommendation.
 
 ```mermaid
@@ -73,8 +72,9 @@ flowchart LR
         WH["awsds-prod-warehouse · step 9 · D40<br/>namespace [P] · compute [E] · usage limit<br/>Lake Formation by decision 5<br/>no project tag, no connection"]
     end
     subgraph STG["Staging"]
-        MIR["catalog mirror · sampled data<br/>awsds-staging-job-exec only"]
+        MIR["own catalog · read share, no copy<br/>awsds-staging-job-exec only"]
     end
+    MIR -.->|"LF read only · decision 3"| LAKE
     JOB ==>|"LF governed write · INT-03"| LAKE
     JOB ==>|"read + delete · INT-10"| BOX
     JOB --> OUT
@@ -228,7 +228,8 @@ in Data Governance: a `DataLakeSettings` apply replaces the whole structure.
   > front of you.
 - **1.4 — [Claude] Write the machinery rows and point the lake at the right VPC**: `backend.py`/`layers.py`
   gain `production/data/` and `production/sagemaker/` (both `[P]`, outside every `make up`/`down` path), and
-  `production` joins `DATA_CONSUMERS` so the slice receives its `lake` map. The list needs no split: it has
+  `production` joins `DATA_CONSUMERS` so the slice receives its `lake` map; `staging` joins it at 4.1 for
+  its read share (decision 3). The list needs no split: it has
   emitted nothing to `identity/sso/` since D19's revision. What the row does change is the lake's
   trusted networks: `data-governance/data/` reads each consumer's `foundation/` for its gateway-endpoint id,
   and Production's `foundation/` is `VPC-SharedServices`. Its entry is read from `production/workloads/`'s
@@ -299,7 +300,9 @@ shape).
   `aws_lakeformation_resource_lf_tags`) from the versioned schema source (decision 3), with the Governance
   Manager approving the classification ([`docs/GOVERNANCE.md`](../../GOVERNANCE.md), the development cycle
   of a data product). A table without `classification` matches no expression and is invisible to every
-  consumer, so the tag is part of the delivery; Staging's mirror takes the same definition (4.1).
+  consumer, so the tag is part of the delivery; Staging reads it through its share (decision 3, 4.1). The
+  share map gains Staging's read, `DESCRIBE` and `SELECT` with the grant option by the expression
+  Sandbox's share uses, and no write.
 - **2.2 — [Claude⚡] Apply as `awsds-infra-data`, inside `DL-5`'s bracket**: read
   `DataLakeSettings.Parameters` before and after (Stage 5a step 5.4's three-reading discipline — the reset
   it can cause is silent). Then, from Production with a **fresh** session (Lesson 24 — the four-hour CLI
@@ -501,15 +504,18 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
 
 ### 4. The Staging data platform (D20) — layer `[P]`
 
-**Action:** the environment the promotion chain actually deploys against — a catalog that mirrors the
-lake's schema, holding sampled or synthetic content, and job execution roles. **Why:** a staging run that
-fails on a schema difference tests the staging environment rather than the application; and **Staging is
-not on the Data Governance share** (D20/D22) — it is the least-defended account with unattended tests and
-data-scientist read access, so a share or a copy would make it the cheapest route to governed data. An
-earlier stand-in (a `staging` database inside Production) is gone: it shared an IAM surface with what it
-de-risked and could never catch a permission error (Lesson 2). **Explanation:** if a test genuinely needs
-production-shaped volume, generate it; if it needs production *values*, the test belongs in Production
-behind the approval gate.
+**Action:** the environment the promotion chain actually deploys against — its own catalog, which each
+deploy fills with the application's schemas from the repository, a read-only share of the governed lake,
+and the job role. **Why:** code and artifacts are promoted and data is not, and the governed lake is the
+one source of truth (decision 3): Staging reads the governed tables through the LF-Tag share Sandbox
+holds, scoped by `classification`, writes only to its own catalog, buckets and key, and copies nothing,
+so a staging run meets the real schemas under a real permission layer. Decision 3 amends D20, which kept
+Staging off the share as the least-defended account with unattended tests and data-scientist read
+access; that residual is accepted in `threat-model.md` beside Sandbox's. An earlier stand-in (a `staging`
+database inside Production) is gone: it shared an IAM surface with what it de-risked and could never
+catch a permission error (Lesson 2). **Explanation:** a reproducible test pins an Iceberg snapshot or
+reads by time travel; a test that needs Production's own outputs belongs in Production behind the
+approval gate (decision 1).
 
 - **4.0 — [Claude] Read what 6b and Stage 8 already delivered, and build only the gap**: 6b brought the
   bootstrap, `foundation/`, `egress/`, the tree and the SSO assignment; Stage 8 step 4.1 brought
@@ -523,27 +529,25 @@ behind the approval gate.
   destroyed the old `dev`-named key rather than renaming it) and the `staging/{data,sagemaker}/` slices
   below. Run
   `./aws/AZs.py` and `./aws/account-bpa.py` once as the standing post-conversion readings.
-- **4.1 — [Claude] Write `staging/data/`**. Decision 3's recommendation withdraws the mirror, Staging
-  reading the governed lake through a read-only share instead, and decision 1's has Staging read nothing
-  of Production's outputs; the step stands as written until the user decides. Local Glue databases
-  mirroring the lake's — same database and table names, same Iceberg definitions, same LF-Tag keys and
-  values (LF-Tags are account-local, so the mirror recreates the ontology) — **instantiated from the
-  same versioned schema source as the lake's tables** (decision 3 — two hand-typed copies drift, and the drift is a false test failure), the
-  table 2.1 declares included; the content bucket `awsds-staging-data` under the Staging CMK, registered with
-  Staging's Lake Formation, since the job role holds no S3 on it (4.3, D13's shape), and
+- **4.1 — [Claude] Write `staging/data/`**, 1.1-1.3's shape without the governed write (decision 3): the
+  `consumer-data` call (the account data CMK `alias/awsds-staging-data`, the LF settings, the resource
+  links to the read share and the read regrants to the job role, `DESCRIBE` and `SELECT` alone),
   `awsds-staging-outputs`, Stage 10 decision 17's (taken 2026-10-15), 1.1's `s3-bucket` call with
-  Production's statements; the LF settings under 1.3's discipline (parameters carried, defaults killed) — **including its two-step apply**, and
-  this is the account where getting it wrong is least visible: the mirror's whole point is that its
-  databases look like the lake's, so a mirror database born deferring to IAM would pass every shape
-  comparison `DT-8` makes while enforcing nothing. The before-reading is not Production's: Staging reads no
-  administrator, `CROSS_ACCOUNT_VERSION=1`, `SET_CONTEXT=TRUE`, both default lists empty and
+  Production's statements, and a local Glue database for what the application writes, whose tables each
+  deploy creates from the repository's schemas; no mirror and no copy of a governed table. Staging joins
+  `DATA_CONSUMERS`, so the lake's perimeter admits its `[P]` gateway endpoint, read from
+  `staging/foundation/` as Sandbox's is, and 2.1 grants its read. The LF settings follow 1.3's discipline
+  (parameters carried, defaults killed), **its two-step apply included**: a resource link born deferring
+  to IAM restricts nothing. The before-reading is not Production's: Staging reads no administrator,
+  `CROSS_ACCOUNT_VERSION=1`, `SET_CONTEXT=TRUE`, both default lists empty and
   `AllowFullTableExternalDataAccess` false, as Stage 18's pass 8 put them back on 2026-10-22 after its SMUS
-  provisioning had seated two administrators and turned that flag on (2026-10-19), re-read at 04:55Z the same
-  day with no administrator, both lists empty and the same parameters, and the parameters are copied from
-  that reading. With no SMUS in Staging, a second administrator is a finding there as in
-  Production, and `./aws/datalake.py` gains Staging for `DL-13` with 1.3's Production: Stage 18 8.6 read
-  the seats by hand. **No resource link to Data Governance anywhere** — its
-  absence is a control, and `DT-8` fails if one appears.
+  provisioning had seated two administrators and turned that flag on (2026-10-19), re-read at 04:55Z the
+  same day with no administrator, both lists empty and the same parameters, and the parameters are copied
+  from that reading. With no SMUS in Staging, a second administrator is a finding there as in Production,
+  and `./aws/datalake.py` gains Staging for `DL-5` and `DL-13` with 1.3's Production: Stage 18 8.6 read the
+  seats by hand. **A resource link to Data Governance is now the design**, and every Staging grant on the
+  lake is `DESCRIBE` or `SELECT`: `DT-8`'s isolation check, which fails on a link, is rewritten to read
+  that before 4.5 applies.
 - **4.2 — [Claude] Write the workgroup `awsds-staging-athena` and its results location** (decision 11):
   enforced, scan limit, **for the integration tests and the deployed application, not for people** —
   `DataScientistStagingAccess` carries no Athena at all (Stage 2 wrote it that way: a query writes its result
@@ -557,9 +561,9 @@ behind the approval gate.
   SageMaker job log groups pre-created with a retention, as 3.1 does. The job settings bind whoever submits
   the job (3.5), so this role carries nothing of them; under decision 9's (a) the `Workloads` OU SCP covers
   this account with Production's. A job's subnets are Staging's private tier and its security group its
-  own. **Written 2026-10-22** (`terraform-live/staging/sagemaker/`, `DATA_MIRRORS` in `backend.py`, rank
+  own. **Written 2026-10-22** (`terraform-live/staging/sagemaker/`, `READ_ONLY_TARGETS` in `backend.py`, rank
   46): 3.1's trust and permissions without Production's drop-box pickup and with `glue:GetConnection`,
-  S3 on `awsds-staging-outputs` and `awsds-staging-derived` and none on `awsds-staging-data`, and the
+  S3 on `awsds-staging-outputs` and `awsds-staging-derived` and none on a lake bucket, and the
   image pulled from Production's `awsds-prod-ecr-app-etl` cross-account, the repository's grant to this
   account being Stage 8 step 3.0's. Planned as `awsds-infra-staging`: *"Plan: 8 to add, 0 to change, 0 to
   destroy."* `iam:PassRole` to the role is the passers' to hold: `awsds-deploy-staging` for the Glue job
@@ -594,27 +598,22 @@ behind the approval gate.
   measured MWAA Serverless workers placed in both AZs reaching Sandbox's single-AZ endpoints, and a
   SageMaker job's `VpcConfig` names both subnets. As in 3.3a, this plane has no proxy, so a missing
   endpoint fails at the firewall or as a timeout, never as a 403.
-- **4.4 — [Claude] Write the sample-data seed**, withdrawn if decision 3 is taken as recommended: a job in the `app-etl` repository generating the
-  sampled/synthetic content into `awsds-staging-data` — owned by the repository so the pipeline can
-  refresh it, never copied from the lake (D20's line to hold). **When it runs**: in the Staging leg after
-  Stage 8's 3.2 deploy and before its 3.3 tests, as `awsds-staging-job-exec` writing through Lake
-  Formation, when the release changes the schema source or the seed; the content is `[P]` in
-  `awsds-staging-data`, so a leg that changes neither reuses it. The job is Stage 8's to write in
-  `examples/app-etl/` once decision 3 names the source.
+- **4.4 — Withdrawn by decision 3**: Staging holds no seeded or synthetic content. A test reads the
+  governed tables through the share, pinned to an Iceberg snapshot, and the application's own tables,
+  which each deploy creates; Stage 8's seed job in `examples/app-etl/` is not written.
 - **4.5 — [Claude⚡] Apply both slices as `awsds-infra-staging`**, machinery rows included.
 - **4.6 — [Claude⚡] Amend step 3's resource policies with the Staging principals** (as
-  `awsds-infra-prod`), and, unless decision 1 is taken as recommended, which drops it, the
-  artifact-bucket/CMK read for `awsds-deploy-staging` and
-  `awsds-staging-job-exec` — the documented third leg of cross-account deployment (1.1's bucket, not
-  ECR: ECR needs no KMS grant for pulls); how far that read reaches is decision 1's. The application image
-  reaches a Staging job through the job's own role (6i: the pull is made as the job's role, session
+  `awsds-infra-prod`) where the promotion reads Production's registry: 3.2's policy carries
+  `awsds-deploy-staging`'s read since pass 1, and the role's own allow is Stage 8's to write in
+  `staging/foundation/`. Staging reads nothing of `awsds-prod-outputs` or its key (decision 1): a model
+  reaches Staging as a release artifact, through the registry or the release bucket, or is retrained there
+  from the governed data the share gives, its archive carrying its data's classification. The application
+  image reaches a Staging job through the job's own role (6i: the pull is made as the job's role, session
   `SageMaker`, through the service), so the repository policy admits the account, which Stage 8 step
   3.0's pull grant does on `app-etl`'s repository since 2026-10-19, and `awsds-staging-job-exec` holds the
   pull actions. Stage 18 4.4's job took that path on 2026-10-19: `awsds-prod-ecr-app-etl` by digest,
-  pulled as the project role in the session `SageMaker` (that stage's log). The identity halves on
-  `awsds-deploy-staging` are Stage 8's to write in `staging/foundation/`: decision 1's archive read and
-  3.2's registry read. **[user]** Prove INT-07's registry half: a `DescribeModelPackage` of an approved
-  version from the Staging role answers.
+  pulled as the project role in the session `SageMaker` (that stage's log). **[user]** Prove INT-07's
+  registry half: a `DescribeModelPackage` of an approved version from the Staging role answers.
 
 ### 5. The persona layer (D18) — `identity/sso/` amended
 
@@ -733,7 +732,8 @@ read every denial by its wording, never its exit code.
   assigned): everything readable, nothing writable — including the buckets the pipeline writes to; the
   wording names `DenyEveryWrite`.
 - **8.5 — [pipeline] The end-to-end**: run Stage 8's promotion against the real catalogs, its first run (Stage 8 pass 4, decision 23) — the
-  integration tests now query `staging/data/`'s mirror, the artifact lands in Production, and the pandas
+  integration tests now query the governed tables through Staging's share and the application's own
+  tables, the artifact lands in Production, and the pandas
   test still fails everywhere it should. It is the stage's closing proof and the first fully meaningful
   promotion.
 
@@ -944,8 +944,8 @@ Each is written so its output differs between working and broken (Lesson 13). **
 `./aws/deploytargets.py`** ([`aws/INDEX.md`](../../../aws/INDEX.md)): the buckets, CMK and workgroup
 enforcement; the package groups with their policies; the job and debug roles with their trust shapes;
 the LF settings in every account that has any (`DT-5` — `DL-5`'s twin); the share, links and regrants with no
-pending invitation; the Staging mirror side by side with the lake's catalog, and the **absence** of any
-Staging link to Data Governance; the alarm rule; the persona sets' owed allows read back; the job settings
+pending invitation; Staging's share read-only, every grant `DESCRIBE` or `SELECT`, and no Staging copy of a
+governed table; the alarm rule; the persona sets' owed allows read back; the job settings
 where decision 9 put them (`DT-11`); the job log groups in both accounts (`DT-12`). The behavioural proofs are the stage's own (Lesson 20):
 
 - **The producer pair (INT-03):** a curated Iceberg table, declared before its first write, written
@@ -994,7 +994,7 @@ Measured (`docs/PRICING.md`, `docs/plan/cost-model.md`), us-west-2:
 |---|---|---|
 | `alias/awsds-prod-data` + the Staging CMK | ~USD 1/key-month | `[P]` |
 | Package groups, workgroups, LF grants, links, resource policies | free at rest | `[P]` |
-| Outputs/derived/mirror storage | cents at lab scale | `[P]` |
+| Outputs/derived storage | cents at lab scale | `[P]` |
 | Producer/pickup Glue runs | 0.44 USD/DPU-h, 10-min minimum, on-demand | metered per run |
 | Athena queries | 5 USD/TB scanned — the workgroup limit is the guard | metered |
 | The endpoints of `production/workloads-egress/` and `staging/egress/` while a session needs them | 0.010/h each, single-AZ: six per VPC, 0.060/h per slice | `[E]` |
@@ -1008,8 +1008,7 @@ Measured (`docs/PRICING.md`, `docs/plan/cost-model.md`), us-west-2:
 
 Each is decided during the stage and written into `docs/log/log-stage-09-deployment-targets.md`
 (Lesson 16), with a recommendation stated. Decisions 4, 9 and 10 and step 3.7 were taken on 2026-10-16,
-and 2, 5, 6, 7, 8, 11 and 12 by the user on 2026-10-22, each as recommended; 1 and 3 are the user's and
-wait in [`waiting-on-the-user.md`](../waiting-on-the-user.md).
+and the rest by the user on 2026-10-22, each as recommended.
 
 1. **The Production data CMK, and what of Production's outputs Staging reads** (1.1, 4.6) — **the alias
    is not open**: `docs/GOVERNANCE.md` §Encryption settles it (one data CMK per account), which gives
@@ -1045,9 +1044,12 @@ wait in [`waiting-on-the-user.md`](../waiting-on-the-user.md).
      and Production's three module buckets, `awsds-prod-releases` (`v0.4.0`), `awsds-prod-gitlab-objects`
      and `awsds-prod-gitlab-backup` (`v0.3.0`), read `BucketKeyEnabled: true` on 2026-10-20;
      `awsds-prod-outputs` answered `NoSuchBucket`, since 1.1 creates it in pass 3 (the log).
-   - **What changes if taken**: 4.6 keeps the registry read and loses the archive read; Stage 10 5.4's
+   - **What it changes**: 4.6 keeps the registry read and loses the archive read; Stage 10 5.4's
      batch transform in Staging runs a model built from a release artifact or retrained there, which
      Stage 10's file says; Stage 8's ask for an archive read on `awsds-deploy-staging` drops.
+
+   **Taken by the user 2026-10-22, as recommended**: a dedicated key, and Staging reads nothing of
+   Production's outputs, model archives included (the log).
 2. **The scan limit** (1.2) — recommended: **10 GB per query** to start, revised against real queries at
    Stage 12 rather than set high and forgotten. **Taken by the user 2026-10-22, as recommended**: 10 GB per query (the log).
 3. **Whether Staging keeps a mirror of the lake** (4.1, 4.4). The plan as written gives Staging local
@@ -1065,15 +1067,16 @@ wait in [`waiting-on-the-user.md`](../waiting-on-the-user.md).
      repository (a module input, not a sync script), since a hand-maintained second copy is Lesson 14 as a
      catalog. Who may open a merge request on that source is not decided anywhere (`docs/GOVERNANCE.md`),
      and the Governance Manager approves classification through it.
-   - **What changes if taken**: D20's sentences that keep Staging off the share and its data sampled or
-     synthetic are amended, and 6b 2.3's revocation reverses; `DATA_CONSUMERS` gains Staging and
-     `DATA_MIRRORS` leaves `backend.py`; 2.1's grant gains Staging's read, `DESCRIBE` and `SELECT` with
+   - **What it changes**: D20's sentences that keep Staging off the share and its data sampled or
+     synthetic are amended, and 6b 2.3's revocation reverses; `DATA_CONSUMERS` gains Staging; 2.1's grant gains Staging's read, `DESCRIBE` and `SELECT` with
      the grant option, by the expression Sandbox's share uses; 4.1 becomes 1.1-1.3's shape without the
      write: the `consumer-data` call (the account CMK, the LF settings by the two-step, the resource
      links, the read regrants to the job role), `awsds-staging-outputs`, the results bucket and workgroup
      (decision 11), and no `awsds-staging-data`; 4.4's seed is withdrawn; `DT-8`'s isolation check
      inverts into one that Staging's grants read and never write. `staging/sagemaker/`'s role is unchanged
      (it reads through `lakeformation:GetDataAccess` and holds S3 on no lake bucket); its comments change.
+
+   **Taken by the user 2026-10-22, as recommended**: no mirror, the read-only share (the log).
 4. **The debug window mechanics** (6.1) — recommended: the **`DateLessThan` trust condition from a
    tfvars value defaulting to the past** — approval is a recorded apply, closure is a revert, and no
    standing machinery exists to rot. **Taken 2026-10-16, as recommended**: the default the user's card of
@@ -1093,7 +1096,7 @@ wait in [`waiting-on-the-user.md`](../waiting-on-the-user.md).
    is D28's class 2c, its script under the release's prefix by Stage 10 decision 12), the pipeline the only
    runner of the DDL, and the deployer's database user the only creator, with `ALTER DEFAULT PRIVILEGES FOR
    USER` granting the job role's rights through a role. A schema outside the repository leaves Staging's
-   mirror with no source (decision 3's argument, one store later). The alternative, DDL run as the job role,
+   deploy with nothing to create it from (decision 3). The alternative, DDL run as the job role,
    keeps one creator and gives up the separation. **Taken by the user 2026-10-22, as recommended**: the DDL and the load job in
    the repository, the deployer's database user the only creator (the log).
 7. **The governed warehouse's cost guards** (9.1) — the usage limit's amount and `auto_mv`. Recommended:
@@ -1164,7 +1167,7 @@ Record every answer, including the ones that come out fine.
 | x | What fraction of the S3 console works for the persona under 1.1's principal branch (INT-06, open question 8) — and is `README.md` told? | 8.2 |
 | xi | Is the escape hatch closed at rest, open only in the window, alarmed on every successful assumption — and does a `CreateSpace` under it die on the OU policy? | 6.3 |
 | xii | Does the Staging role read an approved model version (INT-07's registry half)? | 4.6 |
-| xiii | Does the end-to-end promotion pass against the real catalogs — and does a schema drift planted in the mirror fail the integration tests, not the deploy? | 8.5 |
+| xiii | Does the end-to-end promotion pass against the real catalogs — and does a schema drift planted in the application's schema source fail the integration tests, not the deploy? | 8.5 |
 | xiv | In **each** of the two accounts this stage gives a `DataLakeSettings` (Production, then Staging): do `CreateDatabaseDefaultPermissions` and `CreateTableDefaultPermissions` read `[]` **before** the slice's first catalog object exists, and does no database in that account carry an `IAMAllowedPrincipals` grant afterwards? — the reading the two-step exists to produce, and the only moment it can be taken | 1.3, 1.5, 4.1 |
 | xv | Does a `Create*Job` without the five settings fail when submitted by a role other than the job's own (a deploy role, a workflow execution role), naming the policy decision 9 chose — and does `DT-11` read the enforcement back? **Answered 2026-10-18 for the infrastructure user**: each `Create*Job` row read `DENY-SCP` naming the `Workloads` document, and `DT-11` passes. A deploy role and a workflow execution role are unread until a pipeline submits a job | 3.5, 3.6 |
 | xvi | Which shape did serverless inference take (3.7) — a named exception, the SCP deny, or a refusal 3.5's `CreateModel` deny already produces — and is the choice written into `AWS_STATE.md` either way? **Answered 2026-10-18**: the SCP deny, applied and probed (`DENY-SCP` after, `ALLOWED` before), and `AWS_STATE.md` section C records it | 3.7 |
@@ -1214,11 +1217,13 @@ Record every answer, including the ones that come out fine.
 - **A job's settings bind whoever submits it.** Written as a boundary on the job's own role they bind
   nothing, and the failure is silent: the job runs, off the VPC, with a network (3.5).
 - **Two contracts are spelled, not enforced**: `awsds-prod-job-exec` (Stage 5a's statements name it) and
-  the mirror's schema source (4.1). A typo fails closed later, with an error naming a policy rather
+  the read share's expression for Staging (2.1). A typo fails closed later, with an error naming a policy rather
   than the typo (Lesson 14); `deploytargets.py` reads both sides.
-- **Staging's value rests on sampled data catching real failures** (open question 9) — record, for
-  every production incident this environment ever has, whether the Staging run could have caught it;
-  until then it is a belief, not a finding.
+- **Staging reads governed data** (decision 3): a governed table is readable in the account where
+  unattended tests and the data scientists' Staging reads run, the residual `threat-model.md` accepts
+  beside Sandbox's. The read is scoped by `classification`, `restricted` excluded or filtered (Stage 11
+  decision 12), no grant outside Production writes, and Stage 11's data events audit every read from
+  outside Production.
 - **Query results are visible within the persona** — one enforced result location means any
   `DataScientistProdAccess` holder can read another's query output. Stated limit at lab scale (D31
   keeps it from the approvers and Staging); per-user isolation would need per-user workgroups, which

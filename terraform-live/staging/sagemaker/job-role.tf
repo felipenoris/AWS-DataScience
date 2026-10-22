@@ -9,16 +9,16 @@
 # granted in the passers' own slices (awsds-deploy-staging, Stage 10's execution roles), scoped by
 # iam:PassedToService.
 #
-# What Production's role holds and this one does not: the drop-box pickup, since D20 keeps this
-# account off the lake. What it holds that Production's role reads from Data Governance, it reads
-# from the mirror here, through Lake Formation alone (step 4.1).
+# What Production's role holds and this one does not: the drop-box pickup, and through the share any
+# write: this account reads the governed lake through a read-only Lake Formation share (decision 3)
+# and writes only to its own catalog, buckets and key.
 
 module "job_role" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/iam-role?ref=iam-role-v0.1.0"
 
   name        = "awsds-${var.env}-job-exec"
-  description = "Pipeline-submitted Glue and SageMaker jobs in this account (Stage 9 step 4.3): the mirror through Lake Formation only, the account's outputs and derived buckets, the application image, the job logs"
+  description = "Pipeline-submitted Glue and SageMaker jobs in this account (Stage 9 step 4.3): the governed lake read through Lake Formation only, the account's outputs and derived buckets, the application image, the job logs"
 
   permissions_boundary = null
 
@@ -56,11 +56,11 @@ data "aws_iam_policy_document" "job" {
   # checkov:skip=CKV_AWS_111:PutMetricData takes no resource and is held to the job namespaces by its condition; the interface writes and Glue's tags are scoped to this account and region, the tags to Glue's one key, and every other write names its resource
   # checkov:skip=CKV_AWS_356:the catalog reads, the credential vending, the registry token, the Describe calls and the metrics take no narrower resource; Lake Formation answers on every catalog object (D13)
 
-  # ---------------------------------------------------------- the mirror, through Lake Formation
+  # ------------------------------------------------------- the lake, through Lake Formation
   #
   # The metadata reads every Lake Formation-aware engine makes, and the vending call itself. The
-  # mirror's data arrives in credentials Lake Formation vends per table (step 4.1 registers its
-  # location); this role holds no S3 on awsds-<env>-data, as Production's holds none on the lake.
+  # governed data arrives in credentials Lake Formation vends per table, through the read share and
+  # the read regrants of step 4.1; this role holds no S3 on a lake bucket, as Production's holds none.
   statement {
     sid    = "ReadTheCatalogMetadata"
     effect = "Allow"
@@ -78,7 +78,7 @@ data "aws_iam_policy_document" "job" {
   }
 
   statement {
-    sid       = "VendTheMirrorCredentials"
+    sid       = "VendTheLakeCredentials"
     effect    = "Allow"
     actions   = ["lakeformation:GetDataAccess"]
     resources = ["*"]
