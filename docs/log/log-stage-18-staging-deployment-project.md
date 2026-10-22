@@ -1932,3 +1932,26 @@ UTC.*
   two clones under `$HOME/tmp/`, the user's to delete.
 - **[Claude] 8.9's recommendation written**: D41 item 2 kept, the reasoning in the stage file's 8.9 and
   decision 7; the verdict is the user's.
+
+## 2026-10-22 — the verdict: D41 item 2 kept
+
+- **[user] Two questions before deciding**: *"Sobre "o workflow fica fora do state do Terraform", como o
+  plano original prevê "converter" um workflow definido por aplicação SMUS em terraform? Sobre
+  "Desmontagem: deixa resíduos". De quais resíduos estamos falando?"*, then *"Sobre "Identidade da
+  aplicação: não é mais simples manter o padrão entre os ambientes de desenvolvimento/tests/staging/produção
+  em relação ao papel do projeto ser suficiente para execução da aplicação, do que a alternativa de
+  gerenciar roles por workflow apenas nos ambientes de workloads?"*
+- **[Claude] The answers, read from the plan and AWS**: Stage 10's decision 6 renders the release's YAML per
+  account and 1.1 pins the rendered object's `VersionId` in an `awscc_mwaaserverless_workflow`, which rests
+  on INT-14, 4.2's API rung being the CLI's form; the residues are the domain's profiles, lineage events and
+  subscription records (the request `ACCEPTED`, the subscription `REVOKED`, read 2026-10-22 as
+  `awsds-infra-data`), the five processing jobs SageMaker keeps, and what pass 8 removed by hand; the
+  project role in every environment is simpler to run, and in Production it is a role members assume, AWS's
+  managed policies define (`TM-17`) and the project's applications share.
+- **[user] Decision 7**: *"Decisão 7: mantenho o item 2 da D41, como recomendado. Escreva o veredito (D41,
+  SMUS.md, POLICIES.md, Stage 10) neste PR."*
+- **[Claude] The verdict written**: D41's item 2 kept with the measurements and its revision trigger naming
+  the price; the decisions index; `SMUS.md`'s section on a deployment project in a `Workloads` account;
+  `POLICIES.md`'s trigger on `DenyDataZoneEntirely`; Stage 10's status; this stage's 8.9, decision 7 and
+  status; four entries in `lessons.md`'s list of platform behaviours; `history.md`; the general plan, the
+  indexes, the waiting list and `CLAUDE.md`. The stage is done.

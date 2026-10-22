@@ -605,7 +605,8 @@ The SageMaker Unified Studio CI/CD feature is the open-source `aws-smus-cicd-cli
 it deploys only into projects that already exist; its 1.0.9 code also creates one when a stage says
 `project.create: true`, and its `destroy` then deletes it (read 2026-10-17, Stage 18 step 0.1).
 A deployment target under D26 has no project and no domain
-association, so the tool cannot reach one: it deploys an application from its repository into the
+association, so the tool cannot reach one (Stage 18 gave Staging both for its window, below, and its
+verdict kept the rule): it deploys an application from its repository into the
 Sandbox projects, `dev` and `test`, and makes the bundle, and the GitLab pipeline stays the deployer in
 Staging and Production (D28, D41). Measured in the lab on 2026-10-15: `deploy` syncs the manifest's
 `storage` content into the project's S3 and the workflow is born by the bootstrap action
@@ -622,6 +623,47 @@ file. 1.0.9 is still the latest release on 2026-10-18. When its identity cannot 
 connection or the Tooling environment's `privateSubnets`, `securityGroup` and `kmsKeyArn`, `workflow.create`
 omits the network and the key, prints one line and creates the workflow in the service's default worker
 network under a service-managed key (its `helpers/datazone.py`; [`upstream-releases.md`](plan/upstream-releases.md)).
+
+### A deployment project in a `Workloads` account
+
+Measured in `Staging` from 2026-10-19 to 2026-10-22 and removed ([Stage 18](plan/stages/stage-18-staging-deployment-project.md)
+and its log); D41 item 2 kept the rule above.
+
+- **What the blueprint creates.** A `Tooling` environment whose profile locks `enableSpaces` to `"false"`
+  creates no SageMaker AI domain, so only `DenyDataZoneEntirely` needs a carve-out. Its stack holds
+  thirteen resources: three roles under the configuration's boundary, the project role among them, a
+  security group, two Glue network connections, two Athena workgroups, a log group at 731 days, the
+  project's `dev/` prefix registered in Lake Formation and a schedule group. Outside the stack the
+  provisioning seated itself and the manage-access role as the account's Lake Formation admins
+  (`PutDataLakeSettings`, a full replace), set `AllowFullTableExternalDataAccess` `true`, created the S3
+  Access Grants instance `default` with a location for the project's prefix, and the service-linked
+  role `AWSServiceRoleForAmazonAthena`. `DataLake` on demand adds a Glue database, its
+  project-conditioned Lake Formation grants and a daily data source, its manage-access role needing
+  `AmazonDataZoneGlueManageAccessRolePolicy`.
+- **What the CLI needs there.** The deploying role is a member through its `IAM_ROLE_SESSION_GROUP`
+  profile, which DataZone creates at the role's first call; as a non-member it lists the project and
+  every storage item stops on `ListConnections`. It holds the DataZone reads, the workflow calls on
+  workflows tagged with the project, `iam:PassRole` of the project role to the service, the project's
+  `shared/` prefix and the project key. `run` starts the workflow and returns; a pipeline follows the
+  run with `get-workflow-run`.
+- **A person in it.** The V2 domain admits `PROJECT_OWNER` and `PROJECT_CONTRIBUTOR` alone, a
+  contributor acts as the project role, and with spaces off the portal offers no Workflows tool.
+  DataZone sets `aws:SourceIdentity` on the sessions it opens for a member and as `SYSTEM`, and none
+  is set on a worker's session or on a subscription fulfilment's.
+- **A subscription across accounts.** The fulfilment acts as each side's project role, in
+  `AWSDataZone-Subscriptions` sessions. The producer side grants `SELECT` to the consumer account's
+  `IAMPrincipals` under the subscribing project's context, with `CROSS_ACCOUNT_VERSION` 5 in the grant
+  whatever the account's setting; shares the producer's catalog, databases and tables to the consumer
+  account through RAM; and writes three statements into the producer's Data Catalog resource policy.
+  The consumer side creates a resource link and grants `DESCRIBE` on it to the project's context. The
+  consumer's query editor reads the table; a revocation removes every piece on both sides.
+- **What a teardown leaves.** `delete-project --skip-deletion-check` deletes the environments' stacks,
+  and with them the project role, the security group, the Glue connections, the project's Athena
+  workgroups and the Access Grants location. It leaves the stack's log group, the `DataLake` database
+  and a failed environment's, the Lake Formation admins and settings, the Access Grants instance, the
+  Athena service-linked role, the CLI's and the runs' log groups with no retention, SageMaker's lineage
+  entities and the `operatorFiles/` copies, all removed by hand; and the domain keeps the members' user
+  and group profiles, the lineage events and the subscription records, which no delete API reached.
 
 ## The catalog surface
 

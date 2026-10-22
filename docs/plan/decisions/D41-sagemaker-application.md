@@ -62,7 +62,16 @@ took item 1's `{env.VAR}`, in place of a `${VAR}` the CLI leaves as written, at 
    `datazone:*` out of the `Workloads` SCP and make the project role the execution role. The user
    chose on 2026-10-17 to measure that alternative before Stage 10 builds this item, in Staging, with
    a project whose only member is the identity that deploys
-   ([Stage 18](../stages/stage-18-staging-deployment-project.md)); this item stands until its verdict.
+   ([Stage 18](../stages/stage-18-staging-deployment-project.md)). **Kept by that verdict, the user's on
+   2026-10-22.** The alternative works and was measured end to end in Staging: a `Tooling` project with
+   spaces off, the CLI deploying and running from the pipeline, a subscription read across accounts.
+   Its price falls on what this item protects: one role per project, which members' sessions assume and
+   AWS's managed policies define, shared by the project's applications, in place of D28's per-workflow
+   role; the workflow outside Terraform's state; `datazone:*` carved out of `Workloads`, the account
+   associated and the SMUS roles seated as its Lake Formation admins; a subscription that shares the
+   producer's whole catalog through RAM and a Data Catalog resource policy; and residues a teardown
+   leaves (the stage's 8.9 and log). Keeping the workflow in Terraform's state rests on INT-14 (Stage 10
+   1.1), whose last fallback rung is the CLI's own API form (4.2).
 3. **The CLI's place.** It deploys from the `dev` project to the `test` project and makes the bundle
    the pipeline promotes: `deploy --targets dev` from the laptop or a space while the application is
    engineered, `bundle` and `deploy --targets test` in the application's pipeline on the release
@@ -227,7 +236,8 @@ per million. The workflow's own cost is D7's, 0.088 per task-hour, unchanged.
 ## Revision trigger
 
 A deployment target that gains a domain association and a project (item 2's alternative), which
-would make the CLI the deployer of every stage; a Step Functions integration with MWAA Serverless
+would make the CLI the deployer of every stage: Stage 18 measured its price (2026-10-17 to 2026-10-22),
+and what reopens it is `DenyDataZoneEntirely`'s trigger, Production publishing a data product of its own; a Step Functions integration with MWAA Serverless
 that the console does not list, or a `GetWorkflowRun` loop the service's quotas refuse at the chains'
 cadence (Stage 10 verification xxii); or the service gaining a dependency between workflows of its
 own, which would retire the inbox and leave the machine as the scheduler alone.

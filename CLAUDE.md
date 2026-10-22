@@ -300,7 +300,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **Done**: Stages 0-1d, 2, 3, 4, 5a, 6a, 6b, 6c, 6i and 16; 5b's passes are applied, its owed readings
+- **Done**: Stages 0-1d, 2, 3, 4, 5a, 6a, 6b, 6c, 6i, 16 and 18; 5b's passes are applied, its owed readings
   dated. The chain is Sandbox → Staging → Production: no Development account, ever; interactive compute
   is Sandbox only. All 41 decisions are closed. Gates: `make check`, `make check-ou`. **What waits on the
   user is [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md)**: read it before asking
@@ -316,7 +316,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Production `make up`. Pass 2 waits on decision 3; the `s3-bucket` module turns Bucket Keys on for every bucket it
   creates, so no key policy scopes a prefix and D31's zero-cost variant is unavailable (PR #225). **Stage 10**: pass 0 read and 4.3's
   `DenyProvisionedMwaa` applied 2026-10-18, the root baseline's thirteenth statement; passes 1-2 follow
-  Stage 9 with Stage 8's pass 4 (decision 23) and Stage 18's verdict. The MWAA Serverless service-linked role
+  Stage 9 with Stage 8's pass 4 (decision 23); Stage 18's verdict kept D41 item 2 (2026-10-22). The MWAA Serverless service-linked role
   exists in Staging since 2026-10-19 and not in Production, whose first apply needs `iam:CreateServiceLinkedRole`
   (1.5, read 2026-10-20). 5.3's `awsds-prod-model-approval`
   is applied (2026-10-18 23:19Z, 2 added, `OR-4` passing) and has never fired: no model package exists.
@@ -401,33 +401,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `experimentation`, `TM-21` with it), and 1.5 read why the portal greys out *Create MLflow App* (it resolves the blueprint from Data
   Governance's configurations, which D22 keeps empty): the user created `ml-demo-mlflow` through
   `create-environment` (`ML-2` read, no CMK). 7.0a and 7.0b applied 2026-10-19 (`AmazonBedrockKnowledgeBase` at `sagemaker-prereqs-v0.7.0`): the Generative AI menu opens and lists no model until one is enabled for the account. Decision 13 taken as (b): a governance project in `data-governance/governance/` and the two model roles in `sandbox/model-access/` (rank 52), applied by the user 2026-10-19, and the five models enabled in Sandbox's console the same evening (Opus, Sonnet and Haiku 4.5 and Titan V2 in projects, Haiku 4.5 and Nova Lite in the playground); decision 11's amendment, Titan V2 and `application-inference-profile/*` in the Bedrock SCP, was applied by the user the same evening: the playground answers with Haiku 4.5 and refuses Nova Lite on its foundation model (7.3). Main pins `vpc-egress-v0.18.0` (`mlflow`), unapplied (1.4). Pass 2's training job waited on a battery run of the instance-preference rows, written in PR #216 and run 2026-10-22 (Stage 9 3.5); the three quota requests still read `CASE_OPENED` on 2026-10-20.
-  **Stage 18**: passes 1 and 2.1-2.5 done 2026-10-19, the applies by the user (the classifier refuses
-  them to Claude): the carve-out is live (`EXC-20`), Staging is associated with `Tooling` configured,
-  and both `backend.py` lists carry `staging`; 2.6 and 2.7 are applied, the `deployment` profile
-  (`Tooling`, `enableSpaces` false) and its grant to Staging's InfrastructureAccess session group, an
-  IAM role being two DataZone principals (`lessons.md`); decisions 1-3 are taken; pass 3 done, `deploy-staging` provisioned with no SageMaker AI domain and the two
-  SMUS roles made Staging's Lake Formation admins (OQ 24); 0.4 answered yes (a non-member starts the
-  workflow); 4.1's branch `stage-18-staging` pushed; 4.2 deployed `v0.2.1`'s bundle from its extracted
-  folder, the CLI reading local content from the manifest's; 4.4's run `SUCCESS` once the user applied
-  `staging/studio/workflows.tf`, `sandbox/workflows/`'s grant; pass 5's 5.1-5.3 run: the CLI 1.0.9
-  scans a project's whole `shared/` root, so applications sharing a workflow name or DAG id take each
-  other's file, and `dagid-copy`, whose destroy plan held `app-etl`'s Glue job, was removed by direct
-  calls (decision 8, the user's); 7.1 done, the Glue job posting lineage as the project role through a
-  `datazone` endpoint `staging/egress/` carries for the window; 4.5 read Stage 10's steps against the
-  deploy (question iii, but 4.3's identity); decisions 4-6 taken (4.3 at the next GitLab sitting, 7.2 on
-  sample data, 5.4 by reading); 7.2's path A applied: `DataLake` in Staging and the profile, the manage-access
-  role given `AmazonDataZoneGlueManageAccessRolePolicy` (the opt-in every Sandbox `DataLake` environment
-  is refused), `deploy-staging-lakehouse` `ACTIVE`; 6.1 done 2026-10-21 with the environment down: a V2
-  domain admits no read-only member, and a contributor writes in Staging as the project role; 6.2's key,
-  `aws:SourceIdentity`, marks every session DataZone opens on the project role (a person's, an IAM
-  principal's, `SYSTEM`) and no worker's, and its deny is applied (`awsds-staging-person-session-deny`,
-  decision 11): it refuses a person's writes, re-read 2026-10-21, and no worker's session met it at 4.3's
-  run (2026-10-21, `SUCCESS`), whose job also deploys 7.2's table (reviewed 2026-10-21; decision 12 at the approval);
-  an associated account no person works in goes in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in
-  `SMUS_MEMBERS`. Prepared 2026-10-21: the stage file's "The order of what is left", pass 8's code on the
-  local branch `claude/stage-18-unwind` planned step by step, decisions 12-18 taken 2026-10-21. 7.2 and pass 8 done 2026-10-22, the estate back to 0.3's
-  reading; the verdict (decision 7, recommended: D41 item 2 kept) is the user's. Its 4.4's two prerequisites, Stage 8 3.0's first half and Stage 10 1.2's `vpc-v0.4.0`
-  on `staging/foundation/`, were applied 2026-10-19 by the user.
+  **Stage 18 DONE 2026-10-22: D41 item 2 kept** (the user's verdict): a deployment-only project measured in
+  Staging and removed, the estate back to its reading before the stage, `EXC-20` and `EXC-21` closed, the
+  measurements in `SMUS.md`'s deployment-project section and `lessons.md`. Left: the domain's two `IAM`
+  profiles, a group profile and 44 lineage events (no delete API), the project key until 2026-11-21, and
+  `awsds/app-etl`'s Protected branches and tags to read at the next GitLab sitting.
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
