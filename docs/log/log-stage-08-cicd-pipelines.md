@@ -2430,3 +2430,33 @@ apply.*
   1 to change, 0 to destroy, the set's inline policy alone, 7,289 to 8,223 rendered characters of the
   slice's 10,240 ceiling. The apply joins the waiting list; the key-policy half is Stage 9's `data/`
   slices'. The Stage 10 session was given the user's words and the commit for its decision and its log.
+
+## 2026-10-22 — 3.0's ceiling, 4.1's application halves and Stage 10 decision 11's carve-out applied
+
+*Claude, in the session `stages-7-8-pending`, as the infrastructure user (`awsds-infra-prod`,
+`awsds-infra-staging`, `awsds-infra-sandbox-1`, `awsds-infra-identity`, each `InfrastructureAccess`).*
+
+- **[user] The authorization**: *"I authorize applying staging/foundation, production/foundation and
+  identity/sso as the infrastructure user. Warn the other sessions and re-plan before applying."*
+- **[Claude] Before**: the sessions Stage 9, Stage 10 and `Chat lateral` warned by message. Fresh saved
+  plans: `production/foundation/` and `staging/foundation/` 6 to add, 2 to change, 0 to destroy, each with
+  the alerts var-file; `identity/sso/` 0 to add, 1 to change.
+- **[Claude] The applies**, in order: `production/foundation/` *"Apply complete! Resources: 6 added, 2
+  changed, 0 destroyed."*; `staging/foundation/` the same; `identity/sso/` *"0 added, 1 changed, 0
+  destroyed"*, the permission set's inline policy modified in 7 s.
+- **[Claude] After**: each re-plan `No changes` (`-detailed-exitcode` 0). Read back:
+  - `awsds-deploy-prod`: inline `apply-application` and `state`, attached
+    `awsds-prod-deploy-orchestration-resources` and `-access`, boundary `awsds-prod-deploy-boundary`;
+  - `awsds-deploy-staging`: inline `apply-application`, `apply-egress` and `state`, the same two attached,
+    boundary `awsds-staging-deploy-boundary`;
+  - `awsds-prod-app-boundary` and `awsds-staging-app-boundary` at `v1`, attachment count 0, boundary usage
+    0;
+  - `AWSReservedSSO_DeploymentManagerAccess_*`'s `AwsSSOInlinePolicy` in Sandbox, Staging and Production
+    carries `ReadWorkflowRunStatus`, `DecryptWhatTheWorkflowServiceEncrypts` and
+    `DenyDecryptOutsideTheWorkflowService`, and its `DenyDataReadPaths` lists no `kms:Decrypt`;
+  - `./aws/cicd.py awsds-infra-prod awsds-infra-staging awsds-infra-sandbox-1`: all checks passed, `CI-2`
+    for the four deploy roles, `CI-3`, `CI-4`, `CI-5` three times, `CI-7` twice, `CI-8` 92 events, every
+    caller the deploy runner; notes `CI-1`, `CI-6`, `CI-8` (xvi) and `CI-9`.
+- **[Claude] What follows**: the waiting list loses both apply rows and the promotion sitting's
+  prerequisite on them; Stage 8 3.9's sentences name `DenyDecryptOutsideTheWorkflowService`, and so does
+  6g's set table. The Stage 9 and Stage 10 sessions were told.

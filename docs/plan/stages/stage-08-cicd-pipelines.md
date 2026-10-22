@@ -29,8 +29,8 @@ the container image (ECR), the model version (Model Registry, from Stage 9), the
 
 | Where | What | Layer |
 |---|---|---|
-| `production/foundation/` (amended) | the deploy runner's role, instance profile and token container (4.3's anchors), the role's read of `awsds-prod-releases` (decision 20), `awsds-deploy-prod` (INT-08), the misuse alarm and `awsds-prod-alerts` (decision 5), the test runner's token container (decision 11), `awsds-prod-app-boundary`, the ceiling of every role a pipeline apply creates (3.0), and the deploy role's application halves (4.1), both written and planned 2026-10-22, not applied | `[P]` |
-| `staging/foundation/` (amended, **after 6b**) | `awsds-deploy-staging` (INT-08), the same alarm and `awsds-staging-alerts`, `awsds-staging-app-boundary` (3.0) and the deploy role's application halves (4.1), both written and planned 2026-10-22, not applied | `[P]` |
+| `production/foundation/` (amended) | the deploy runner's role, instance profile and token container (4.3's anchors), the role's read of `awsds-prod-releases` (decision 20), `awsds-deploy-prod` (INT-08), the misuse alarm and `awsds-prod-alerts` (decision 5), the test runner's token container (decision 11), `awsds-prod-app-boundary`, the ceiling of every role a pipeline apply creates (3.0), and the deploy role's application halves (4.1), both applied 2026-10-22 | `[P]` |
+| `staging/foundation/` (amended, **after 6b**) | `awsds-deploy-staging` (INT-08), the same alarm and `awsds-staging-alerts`, `awsds-staging-app-boundary` (3.0) and the deploy role's application halves (4.1), both applied 2026-10-22 | `[P]` |
 | `sandbox/foundation/` (amended, one per unit) | the dev-env deploy role (INT-18), one per target | `[P]` |
 | `sandbox/workflows/` (amended) | `awsds-deploy-sandbox-test`, the CI/CD CLI's `test` deploy role (2.5, decision 19, INT-25): trusted by the deploy runner's role alone, confined to the `test` project's storage prefix, key, log groups and workflows, passing that project's role alone under its own ceiling `awsds-sandbox-deploy-test-boundary` | `[P]` |
 | `terraform-modules/deploy-role/` (new, `deploy-role-v0.1.0`; `v0.5.0` since decision 19) | one deploy role: its trust, its ceiling (named by the caller since `v0.5.0`, so two roles share an account), its state access and its misuse rule, one document for every account the deploy runner reaches | — |
@@ -635,8 +635,8 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   [Stage 18](stage-18-staging-deployment-project.md)'s 4.4, which needs it in that stage's window (its
   log): `APP_REGISTRY_CONSUMERS` gains `staging`, and `production/registry/` an alias and identity
   read for it; the plan changes the `app-etl` repository's pull policy alone. `awsds-deploy-staging`
-  itself landed in `staging/foundation/` on 2026-10-12 (4.1). The ceiling half is written and planned, not
-  applied (2026-10-22, 4.1's status below): `app-boundary.tf` in each `foundation/`, one file copied byte
+  itself landed in `staging/foundation/` on 2026-10-12 (4.1). The ceiling half is applied
+  (2026-10-22, 4.1's status below): `app-boundary.tf` in each `foundation/`, one file copied byte
   for byte. Its content, handed over by Stage 10 on 2026-10-22, is an
   allow-list of what that stage's workflow execution and chain roles do (its 1.3, 3.4, 3.6):
   `airflow-serverless:GetWorkflowRun` and `StartWorkflowRun`, the Glue job-run actions (`StartJobRun`,
@@ -755,8 +755,9 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   GitLab serves itself (`proxy_download`, `production/tooling/gitlab.rb.tftpl`) to the project's
   members, `deployment-managers` among them (2.1). A release's S3 objects are the bundle in
   `awsds-prod-releases` (decision 20) and Stage 10 2.4's copies under `awsds-<env>-outputs/applications/`,
-  each under a customer-managed key, and the set's own `DenyDataReadPaths` refuses `kms:Decrypt` on
-  every key, so an `s3:GetObject` on either reads nothing while that deny stands. Read in AWS
+  each under a customer-managed key, and the set's own `DenyDecryptOutsideTheWorkflowService` refuses
+  `kms:Decrypt` on every key outside the workflow service's encryption context (Stage 10 decision 11,
+  applied 2026-10-22), so an `s3:GetObject` on either reads nothing while that deny stands. Read in AWS
   2026-10-20, 22:02 to 22:04 UTC, as the infrastructure user
   ([log](../../log/log-stage-08-cicd-pipelines.md)): the set's inline policy in Identity Center is the
   code's 17 statements in the code's order, and `DenyDataReadPaths` denies `kms:Decrypt` and five other
@@ -769,7 +770,7 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   the manual job's artifacts, which GitLab serves to `deployment-managers` once
   [Stage 7](stage-07-gitlab-runners-ecr.md) 3.5's memberships exist, and the release's notes there name
   the bundle's object, the image digest and the SHA256. A grant would read nothing behind
-  `DenyDataReadPaths`, and carving `kms:Decrypt` out of it for `alias/awsds-prod-registry` would open every
+  `DenyDecryptOutsideTheWorkflowService`, and carving `kms:Decrypt` out of it for `alias/awsds-prod-registry` would open every
   object under that key to the approver, CodeArtifact's included. The slice's owed row is closed. Revision
   trigger: evidence a promotion needs that GitLab does not serve.
 
@@ -882,6 +883,13 @@ the approval, and 4.6's alarm.
   in either order, on the user's authorization, before the first pipeline apply of an `orchestration/`
   slice. What the application slice's own apply needs beyond these, its Glue job among them, is written
   with the slice.
+- **3.0's ceiling and 4.1's application halves — Applied 2026-10-22 by Claude, authorized by the user**,
+  Production first, each from a fresh saved plan: `production/foundation/` and `staging/foundation/` 6
+  added, 2 changed each, and each re-plan `No changes`. Read back: each deploy role carries `state` and
+  `apply-application` inline (`apply-egress` too in Staging) and the two orchestration policies attached,
+  its own ceiling unchanged; `awsds-<env>-app-boundary` exists at `v1`, carried by no role until the first
+  `orchestration/` apply. `./aws/cicd.py` on the three infrastructure profiles: 0 FAILED, `CI-2` passing
+  for the four deploy roles and `CI-8` reading 92 assumptions, every one the runner's.
 - **4.2 — [Claude] Write the dev-env deploy role** (INT-18): `awsds-deploy-devenv-<unit>`, one per
   `DEPLOY_ROLES` row, in each unit's `foundation/` (`awsds-deploy-devenv-sandbox` for unit 1); **`awsds-deploy-devenv-dev` is not written** — it died with the
   second Interactive account (6b). Scope, read from what `sandbox/dev-env/` actually holds: its state prefix;
