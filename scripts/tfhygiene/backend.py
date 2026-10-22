@@ -304,6 +304,11 @@ VPN_HOST_SLICE = ("production", "networking")
 DATA_CONSUMERS = ["sandbox"]
 DATA_PRODUCERS = ["production"]
 
+# The accounts holding the lake's mirror, its schema with sampled content (Stage 9 step 4, D20):
+# deployment targets kept off the share, so no `lake` map reaches them and no consumer or producer
+# row names them. Consumed by their sagemaker/ slice (step 4.3), which holds the job role alone.
+DATA_MIRRORS = ["staging"]
+
 # The other direction, added at pass 4: the account that owns the lake, read by the consumers. A
 # one-element table, and still a table for the reason the three above are: the consumer slices
 # resolve the lake's catalog id through an aliased provider and read its state for the shared
@@ -890,6 +895,17 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         }
         values["readers"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_MEMBERS
+        }
+
+    # Stage 9 step 4.3 - a mirror account's sagemaker/ slice: the job role and the job log groups,
+    # without the registry and the escape hatch, which stay Production's. No `lake` map, since D20
+    # keeps the account off the share. The role pulls the application image from the registry
+    # account, whose state is read cross-account, so the slice takes the registry map as an
+    # application slice does.
+    elif slice_name == "sagemaker" and account in DATA_MIRRORS:
+        values["registry"] = {
+            acct: {"profile": registry_profile(acct, pipeline), "env": ENV_TOKENS[acct]}
+            for acct in REGISTRY_HOME
         }
 
     # Stage 6 pass 1 and pass 2 - the blueprint prerequisites and, on the second apply, the

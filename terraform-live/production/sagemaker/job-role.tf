@@ -94,6 +94,20 @@ data "aws_iam_policy_document" "job" {
     resources = ["*"]
   }
 
+  # A Glue job given a network connection reads it as this role before it starts: Glue's
+  # GlueJobRunnerSession called glue:GetConnection four times in Staging on 2026-10-19, as the role
+  # of Stage 18 4.4's job. Read-only and held to this account's connections; step 2.4 decides
+  # whether the producer has one.
+  statement {
+    sid     = "ReadTheJobsConnection"
+    effect  = "Allow"
+    actions = ["glue:GetConnection"]
+    resources = [
+      "arn:${local.partition}:glue:${var.region}:${local.account_id}:catalog",
+      "arn:${local.partition}:glue:${var.region}:${local.account_id}:connection/*",
+    ]
+  }
+
   # ------------------------------------------------ the account's buckets (steps 1.1 and 1.2)
   statement {
     sid    = "ReadAndWriteTheAccountBuckets"

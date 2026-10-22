@@ -323,12 +323,13 @@ SLICES = [
     # them, and a static rate that assumed them would over-report every session that does not.
     # `make status` quotes this column; the flag's cost is in `make help`.
     Slice("sandbox", "egress", EPHEMERAL, "18 interface endpoints (5.2) - no NAT", 0.180),
+    # Stage 9 step 4.3a re-cut it to VPC-Workloads' six (3.3a), the endpoints a job and a worker call.
     Slice(
         "staging",
         "egress",
         EPHEMERAL,
-        "11 interface endpoints (8.3) - no NAT",
-        0.110,
+        "6 interface endpoints (St.9 4.3a) + DNS Firewall - no NAT",
+        0.060,
     ),
     # 12 since Stage 7 (2026-10-12): 6c 5.5's 13 plus `secretsmanager` (step 1.7), which the GitLab
     # host's bootstrap reads its leaf keys and gitlab-secrets.json through and the runner its
@@ -497,6 +498,10 @@ SLICES = [
     # also precedes production/data/ (45), whose key and bucket policies name the two roles, the
     # inversion the sso/data row above describes and for the same reason no order acts on it.
     Slice("production", "sagemaker", PERSISTENT, "job role, model registry, debug role + alarm"),
+    # Stage 9 step 4.3 - Staging's copy of the runtime half, the job role and its log groups alone:
+    # the registry and the escape hatch stay Production's. [P] and free at rest. It reads
+    # production/registry/'s state for the application repository, a cross-account read no rank orders.
+    Slice("staging", "sagemaker", PERSISTENT, "job role + the job log groups (St.9 4.3)"),
     # Stage 6 pass 2 - the registry, and it is a registry (D26): the DataZone V2 domain, its
     # two IAM roles and the two project profiles. [P] and metadata-priced (~USD 0.50/month,
     # docs/PRICING.md 5). No compute lives here and none may: US-2 measures that, and Stage 6

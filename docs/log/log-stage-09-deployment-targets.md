@@ -365,3 +365,99 @@ from the PR's body and diff, with no AWS call.*
   `CreateTrainingJob` checks them after authorization still is. No probe changed.
 - **[Claude] "Who executes"**: the `[user]` row reads "the log entries the user writes", as PR #228 has it
   in the other stage files.
+
+## 2026-10-22 — the stage reviewed and prepared with the environment down
+
+*Claude's hand, in the session "Stage 9 — revisão e preparação", one of three the orchestrating session
+started on the user's request of that day to review and prepare Stages 8, 9 and 10. Every AWS call is a
+read, as the infrastructure user (`InfrastructureAccess`) through `awsds-infra-prod`,
+`awsds-infra-staging`, `awsds-infra-data`, `awsds-infra-identity` and `awsds-infra-sandbox-1`, with the
+tunnel down (`NO_PROXY='*'`); the plans ran on Terraform 1.15.8 and were saved under `$HOME/tmp/stage-09/`.
+Nothing was applied. Times UTC.*
+
+- **[user] The request**, to the orchestrating session: *"Revise o plano dos estágios 8, 9 e 10,
+  considerando o andamento atual do plano, em especial as decisões registradas na sessão atual, bem como o
+  aprendizado com a conclusão do stage 18. Faça todas as leituras que não dependam do ambiente no ar.
+  [...] Faça a preparação necessária para todas as etapas dos estágios 8, 9 e 10 que forem possíveis de
+  serem preparadas e que não precisam da minha intervenção ou decisão."*
+- **[Claude] What Stage 8's decisions of the day change here.** Its 2.5 makes this stage's
+  `awsds-<env>-job-exec` the job role in Staging and Production, with Staging's twin arriving by 4.3 before
+  Stage 8's pass 4 (decision 23), so 4.3 moves ahead of the rest of pass 5. Its decision 2 (`awsds/infrastructure`
+  kept as pass 4's reader), 3.9 (no S3 grant to `DeploymentManagerAccess`) and decision 20 (no
+  `If-None-Match` deny) leave this stage's text as it was.
+- **[Claude] Lake Formation, before 1.5 and 4.1**, `get-data-lake-settings` at 04:55:27Z. Staging: no
+  administrator, both default lists empty, `CROSS_ACCOUNT_VERSION` `1`, `SET_CONTEXT` `TRUE`, as Stage 18's
+  pass 8 left them. Production: no administrator, both default lists
+  `IAM_ALLOWED_PRINCIPALS` with `ALL`, `CROSS_ACCOUNT_VERSION` `4`, `SET_CONTEXT` `TRUE`.
+- **[Claude] The job log groups**, `describe-log-groups` at 04:55:40Z: none under `/aws/sagemaker/` or
+  `/aws-glue/` in Staging, whose whole list is the Control Tower forwarder's group and
+  `awsds-staging-vpc-flow-logs`; Production's six at 30 days with no CMK, as 3.4 created them.
+- **[Claude] The SageMaker quotas**, `service-quotas list-service-quotas` at 04:56:01Z, identical in
+  Staging and Production: processing `ml.t3.medium` 4, `ml.t3.large` 4, `ml.t3.xlarge` 2, and 0 for
+  `ml.m5.large`, `ml.m5.xlarge` and `ml.c5.xlarge`; training 0 for `ml.t3.large`, `ml.t3.xlarge`,
+  `ml.m5.large`, `ml.m5.xlarge` and `ml.c5.xlarge`; transform 0 for `ml.m5.large` (`L-236AE59F`),
+  `ml.m5.xlarge` (`L-7939E4EC`) and `ml.c5.xlarge` (`L-09C9B23C`). `ml.t3.*` and `ml.c5.large` have no
+  transform quota, and `ml.c5.large` none for processing or training either. Both accounts' SageMaker
+  request history is empty. So Staging's training quotas are Production's, and Stage 10 5.4's batch
+  transform waits on an increase in both accounts.
+- **[Claude] The instruments.** `./aws/datalake.py`: *"0 check(s) FAILED."*, `DL-5`
+  `CROSS_ACCOUNT_VERSION=4, SET_CONTEXT=TRUE - the 5.4 bracket holds`. `./aws/deploytargets.py` as it stood:
+  *"7 check(s) FAILED."*, every one an object of a pass not yet applied (the two buckets and the workgroup,
+  Production's create-defaults, the write share, the `curated` mirror, the persona's owed allows), since
+  its `built` flag turned every absence into a failure once pass 1 stood (Lesson 50).
+- **[Claude] `./aws/deploytargets.py` amended.** Each check reads the pass that creates its object from that
+  pass's own objects: pass 1 the job role, a package group or the debug role; pass 3 a bucket, the
+  workgroup or the CMK, and Production's seated administrator for `DT-5` and `DT-6`; pass 4 one of 5.1's
+  statements; pass 5 a mirror database, Staging's workgroup or CMK. `DT-4` reads `awsds-staging-job-exec`
+  with no lake exception, `DT-5` reads every account's parameters (`SET_CONTEXT` everywhere,
+  `CROSS_ACCOUNT_VERSION` 4 in Data Governance and Production, the value 1.5 copies), and `DT-12` reads the
+  six job log groups in both accounts. Live, as the five infrastructure profiles: *"0 check(s) FAILED."*,
+  16 passes and 8 notes. Against a stand-in `aws` on `PATH` serving a half-applied world, with no AWS call:
+  *"11 check(s) FAILED."*, each planted defect named (a bucket without its sibling, the workgroup missing
+  beside it, a Staging role reaching `awsds-data-dropbox`, Production's defaults granting with an
+  administrator seated, Staging's parameters emptied, the share missing after pass 3 began, a partial
+  5.3, a missing job group in each account), and `DT-11` failing on the document the stand-in did not
+  serve. `aws/INDEX.md` follows.
+- **[Claude] 4.3, `staging/sagemaker/`.** `awsds-staging-job-exec` with 3.1's trust and permissions, without
+  the drop-box pickup, with S3 on `awsds-staging-outputs` (Stage 10 decision 17, taken 2026-10-15) and
+  `awsds-staging-derived` (decision 11's name) and none on `awsds-staging-data`, the mirror's content,
+  which 4.1 registers with Lake Formation; the image from Production's `awsds-prod-ecr-app-etl`, the
+  repository's ARN read from `production/registry/`'s state cross-account; the six job log groups at 30
+  days. `backend.py` gains `DATA_MIRRORS = ["staging"]` and the slice's registry map, `layers.py` its `[P]`
+  row. Plan as `awsds-infra-staging`: *"Plan: 8 to add, 0 to change, 0 to destroy."* The inline policy is
+  known after apply, since it names the groups' ARNs, as Production's was.
+- **[Claude] `glue:GetConnection` on both job roles.** Stage 18's CloudTrail of 2026-10-19 shows Glue's
+  `GlueJobRunnerSession`, a session of that job's role, calling `glue:GetConnection` four times before the
+  job ran; `awsds-prod-job-exec` had no such action. `ReadTheJobsConnection` grants it on the account's
+  connections and catalog. `production/sagemaker/` plan as `awsds-infra-prod`: *"Plan: 0 to add, 1 to
+  change, 0 to destroy."*, the job role's inline policy alone, no other drift.
+- **[Claude] 4.3a, `staging/egress/`.** Re-cut to `VPC-Workloads`' six (`sts`, `logs`, `kms`, `glue`,
+  `sagemaker.api`, `secretsmanager`) on `vpc-egress-v0.17.0`, the firewall's list AWS's namespaces alone,
+  from Stage 18's reading of this account's run of 2026-10-19: the worker called `glue` 30 times,
+  `sagemaker.api` 19, `kms` 11 and `logs` 4 through the endpoints, and the job's image pull and Glue's
+  job runner called from AWS's own addresses. `staging.awsds.internal` holds its NS and SOA records alone
+  (read 2026-10-22), so blocking its names costs nothing. The two module versions declare the same
+  resource types, so the deploy role that raises the slice in the promotion leg meets nothing new. Plan as
+  `awsds-infra-staging`: *"Plan: 15 to add, 0 to change, 0 to destroy."*, the six endpoints and the
+  firewall's nine pieces, the coverage precondition passing; the next `make up ENV=staging` applies it.
+  `layers.py` 0.110 → 0.060/h; `docs/NETWORK.md` §10 and conventions §6 follow, `check-network-doc.py`
+  clean.
+- **[Claude] Two readings behind decision 12.** The lake's `DenyOutsideTrustedNetworks` admits a call made
+  through a trusted gateway endpoint, by a Data Governance principal or by a service, so a Glue job's
+  vended reads and writes, made as the registration role, pass from any network, while the pickup's
+  direct `GetObject` and `DeleteObject` as `awsds-prod-job-exec` pass only through `VPC-Workloads`'
+  gateway endpoint; and that endpoint's policy admits every bucket of the organization
+  (`AllowWithinOrganization`). The deploy roles' ceiling is `CeilingIsEverythingTheIdentityPolicyGrants`
+  (`Allow *`) beside the module's denies, so 9.4's grant needs no line in it.
+- **[Claude] The plan corrected.** The Status row; the build table's Staging and egress rows; the contracts
+  gain `awsds-staging-outputs` and a paragraph of the outputs other slices read by state key; 1.3 carries
+  `datalake.py`'s `DL-8` and `DL-9`, which would fail Production's derived bucket and workgroup once
+  Production joins its consumers; 1.5 the Production reading; 2.4 decision 12; 3.1 the connection read;
+  3.2 `awsds-deploy-staging`'s own registry allow; 3.4's proof in two halves, the approval as a pipeline
+  job on the deploy runner; 4.1, 4.3, 4.3a, 4.4's timing in the Staging leg and 4.6; 6.3's prerequisite,
+  marked as an inference; 9.4 without "and its boundary"; verification xvii without a subject; the
+  quota risk; the endpoint cost; and the Decisions-due header, which said no question blocks on the user.
+- **[Claude] Owed, by the user or an authorized apply**: the applies of `staging/sagemaker/` (as
+  `awsds-infra-staging`) and `production/sagemaker/` (as `awsds-infra-prod`) from their saved plans or a
+  fresh re-plan; decision 12 and the decisions the waiting list holds; the transform and training quota
+  requests before Stage 10 5.4 and 5.1.

@@ -341,7 +341,8 @@ terraform-live/
 │   │                     #     a serverless workflow bills nothing at rest, so the reason
 │   │                     #     orchestration was Production-only is gone), with the chain
 │   │                     #     layer above them (D41), as in production/orchestration/
-│   ├── egress/           # [E] interface endpoints only (11) - NO NAT, no default route
+│   ├── egress/           # [E] interface endpoints only (6, VPC-Workloads' set since Stage 9
+│   │                     #     step 4.3a) and the DNS Firewall - NO NAT, no default route
 │   │                     #     (D38). Measured empty at the migration; D11 leaves it torn
 │   │                     #     down between sittings
 │   └── app/

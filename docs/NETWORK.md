@@ -330,14 +330,16 @@ Access prompt** — the two surfaces that demanded the grant on 2026-08-26. A pr
 its whole subtree, so a client resolving through a VPC full of endpoints inherited every one of their
 names (Lessons 40-43).
 
-**The DNS Firewall** is in the two **compute** VPCs and in VPC-Workloads (Stage 9 step 3.3a), and its
-job is **closing the recursive resolver as an exfiltration channel** rather than filtering the internet,
-which the proxy does. The compute VPCs' allow-list is **fourteen** entries — AWS's own namespaces and
-this estate's private zones. VPC-Workloads' is **four**, AWS's namespaces only, so `gitlab`, `proxy`
-and every `prod.awsds.internal` name answer NXDOMAIN there: GitLab is in a VPC it has no peering to,
-and the proxy refuses its plane everything. VPC-Workloads' six interface endpoints are the jobs' set:
-`sts`, `logs`, `kms`, `glue`, `sagemaker.api` and `secretsmanager`. `VPC-Networking` carries none: the
-proxy has to resolve.
+**The DNS Firewall** is in Sandbox's and Staging's VPCs and in VPC-Workloads (Stage 9 steps 3.3a and
+4.3a), and its job is **closing the recursive resolver as an exfiltration channel** rather than
+filtering the internet, which the proxy does. Sandbox's allow-list is **fourteen** entries — AWS's own
+namespaces and this estate's private zones. VPC-Workloads' and Staging's are **four**, AWS's namespaces
+only, so `gitlab`, `proxy` and every `prod.awsds.internal` or `staging.awsds.internal` name answer
+NXDOMAIN there: GitLab is in a VPC neither peers with, and the proxy refuses both planes everything.
+The two carry the same six interface endpoints, the jobs' set: `sts`, `logs`, `kms`, `glue`,
+`sagemaker.api` and `secretsmanager`, Staging's since 4.3a's re-cut (written 2026-10-22, raised by the
+next `make up ENV=staging`) against the four a worker called there on 2026-10-19 (Stage 18 4.4).
+`VPC-Networking` carries none: the proxy has to resolve.
 
 **It was ten until 2026-09-09**, when the same reading that repaired `NO_PROXY` was pointed at this
 list and found two endpoints both compute VPCs pay for hourly answering on families it did not carry:

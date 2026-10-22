@@ -37,9 +37,9 @@ module "egress" {
   endpoint_subnet_id         = data.terraform_remote_state.workloads.outputs.private_subnet_ids[var.zone_ids[0]]
   endpoint_security_group_id = data.terraform_remote_state.workloads.outputs.endpoints_security_group_id
 
-  # The job-facing set of Stage 9 step 3.3a, at ~0.010/h each. This is the one place
-  # `core_services` is overridden: the module's core eight are what a notebook or a runner cannot
-  # work without, and this VPC holds neither. `sts`, `logs`, `kms` and `glue` stay. `ecr.api` and
+  # The job-facing set of Stage 9 step 3.3a, at ~0.010/h each. `core_services` is overridden here and
+  # in staging/egress/, which carries the same set (4.3a): the module's core eight are what a notebook
+  # or a runner cannot work without, and neither VPC holds one. `sts`, `logs`, `kms` and `glue` stay. `ecr.api` and
   # `ecr.dkr` leave, because a SageMaker job pulls its image as its role through the service and
   # never through this VPC (step 3.1). `athena` leaves until a job here queries through it.
   #
