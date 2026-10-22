@@ -103,7 +103,7 @@ a database carries is what every future table there starts with.
 | database `dropbox` | `layer=dropbox`, `classification=internal` | Same rationale — user-supplied arrivals. Its own database so crawler-inferred tables do not wear `raw`'s value wrongly |
 | database `curated` | `layer=curated` — **no `classification`** | **Fail-closed by absence**, the designed asymmetry: an untagged curated table matches **no** TBAC expression and is therefore invisible to the default grants. Tables here are classified explicitly at creation |
 | table `curated.sample_trades` | `classification=internal` | Declares its own, since the database carries none |
-| table `curated.trades` | `classification=internal` | Stage 9 step 2.1: the table the governed write lands in (2.4's producer, 2.5's pickup), declared before its first write with the columns of `app-etl`'s input, its classification the Governance Manager's to approve at the apply that creates it. Written 2026-10-22, unapplied |
+| table `curated.trades` | `classification=internal` | Stage 9 step 2.1: the table the governed write lands in (2.4's producer, 2.5's pickup), declared before its first write with the columns of `app-etl`'s input, its classification approved with the apply that created it, on 2026-10-22 |
 | column `sample_trades.counterparty` | `classification=restricted` | **Most-specific wins.** This is the column the classification pair proves against: absent from a default session's result *and* from its column list, present after the explicit grant |
 
 ## `kms.tf` — the account data key policy
@@ -256,7 +256,7 @@ governance-manager session answers it (the pages, and how they were read, are in
 One grant per consumer account per resource type. The principal is an **account**, resolved from the
 aliased providers so no account id enters a tracked file. The consumers are Sandbox, Staging (read-only,
 Stage 9 decision 3) and Production, whose read rides beside the governed write below; the two Stage 9
-consumers are written 2026-10-22, unapplied.
+consumers' grants were applied on 2026-10-22.
 
 | Grant | Expression | Permission | Why that shape |
 |---|---|---|---|

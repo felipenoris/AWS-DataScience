@@ -689,3 +689,63 @@ decision 20 (d) in its chat. No AWS call.*
   `foundation/` slices (4.0 now says so), `PassTheJobRole` on both deploy roles, and on
   `awsds-deploy-staging` `ReadTheApprovedModelVersions` and `ListTheModelVersions`, the two actions
   `production/sagemaker/`'s group policy grants that role.
+
+## 2026-10-22 — passes 2, 3 and 5, decision 12 (a) and `production/workloads/` applied
+
+*Claude's hand, the same session, as the infrastructure user, on the user's "Autorizado" in this
+session's chat: the applies in the report's order, `curated.trades`' classification with pass 2. The
+session told "Pendências estágios 7 e 8", "Stage 10 — revisão e preparação" and "Chat lateral" before
+the first write, and started after the orchestrating session reported its `foundation/` and
+`identity/sso/` applies done. Every plan was made afresh with `-input=false`, and its changes in
+`terraform show -json` compared with the reviewed plan's: identical each time.*
+
+- **[Claude] Pass 2, `data-governance/data/`** (Data Governance, `InfrastructureAccess`,
+  `awsds-infra-data`), 19:35:58-19:36:25Z: *"Apply complete! Resources: 8 added, 5 changed, 0
+  destroyed."*, re-planned `No changes`. `DL-5` read `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE` before
+  (19:35:09Z) and after (19:39:12Z), and `DL-7` 9 shares out where it read 3, no invitation pending.
+  `DT-6` passes (an `INSERT` grant names Production's account) and `DT-8` reads 2 grants to Staging,
+  `DESCRIBE` and `SELECT` alone (19:45:20Z); `DT-5` read Production's two default lists holding one
+  `IAMAllowedPrincipals` entry each.
+- **[Claude] `production/workloads/` and `production/sagemaker/`** (Production, `awsds-infra-prod`) and
+  **`staging/sagemaker/`** (Staging, `awsds-infra-staging`): 19:46:42-19:47:00Z, 1 changed, the S3 gateway
+  endpoint's policy on `vpc-v0.4.0`; 19:47:00-19:47:22Z, 6 added and 1 changed, decision 12 (a)'s group,
+  rules and Glue connection and `ReadTheJobsConnection`; 19:47:23-19:47:54Z, 14 added. Each re-planned
+  `No changes`.
+- **[Claude] `production/data/` by Recipe D**: the settings alone, 19:51:00-19:52:37Z, 1 added;
+  `get-data-lake-settings` read the `InfrastructureAccess` seat alone, both default lists `[]`,
+  `CROSS_ACCOUNT_VERSION=4` and `SET_CONTEXT=TRUE`, so nothing was revoked, and `DT-5` read the lists
+  emptied (19:54:38Z). Then the rest, 19:55:07-19:56:36Z, *"Apply complete! Resources: 34 added, 0 changed,
+  0 destroyed."*, re-planned `No changes`.
+- **[Claude] `staging/data/` by Recipe D**: the settings alone, 19:57:27-19:57:36Z, 1 added, read back
+  with the `InfrastructureAccess` seat alone, both lists `[]`, `SET_CONTEXT=TRUE` and
+  `CROSS_ACCOUNT_VERSION` 4 where it read 1. Then the rest, 19:58:08-19:59:30Z, *"Apply complete!
+  Resources: 33 added, 0 changed, 0 destroyed."*, re-planned `No changes`.
+
+## 2026-10-22 — the readings after the applies
+
+*Claude's hand, the same session, read-only. Both instruments exit 1 for the persona profiles that were
+not signed in (their "Calls that failed" section), with 0 checks failed.*
+
+- **[Claude] `./aws/deploytargets.py`**, 20:01:24Z: 0 failed, one note, `DT-10`'s `DataScientistProdAccess`
+  allows, owed by 5.1. `DT-1` reads `awsds-prod-outputs` under `aws:kms` with its vpce, via and principal
+  branches and `awsds-prod-derived` expiring at 30 days; `DT-2` the workgroup enforced, its results in
+  `awsds-prod-derived`, cutoff 10737418240, `SSE_KMS`; `DT-4` both job roles' trust and D13; `DT-5` every
+  account's parameters and both consumers' lists emptied; `DT-8` the share, the links `curated` and `raw`
+  resolving into Data Governance, and no copy; `DT-12` six job log groups at 30 days in each account.
+- **[Claude] `./aws/datalake.py`**, 20:03:39Z: 0 failed, `DL-5` 4 / TRUE, `DL-7` 9 shares out.
+- **[Claude] Verification xiv**: no grant names `IAM_ALLOWED_PRINCIPALS` in Production (21 grants: 9 to
+  `awsds-prod-job-exec`, 7 to `DataScientistProdAccess`, 3 to `InfrastructureAccess`, 2 to
+  `awsds-deploy-prod`) or in Staging (22). Production's RAM holds four `LakeFormation-V4-*` shares and
+  Staging's two, each `ACTIVE`, with no invitation pending; through the links, `curated` lists
+  `sample_trades` and `trades` in both accounts and `raw` lists none.
+- **[Claude] The jobs' network**: `awsds-prod-jobs` and `awsds-staging-jobs` each read ingress TCP
+  0-65535 from itself, and egress TCP 0-65535 to itself, 443 to the endpoints group and 443 to the S3
+  prefix list. The Glue connections of the same names are `NETWORK`, on that group, in `us-west-2b`.
+  `./aws/egress.py`'s `EG-4` matches `mwaa-code` on VPC-Workloads' gateway endpoint and on neither of
+  Production's other two, 0 failed.
+- **[Claude] Stage 8's ceilings**: `awsds-prod-app-boundary` and `awsds-staging-app-boundary` read at
+  `v1`, created 19:27:16Z and 19:27:35Z, attached to nothing.
+- **[Claude] The branch on `main`**: the user asked to rebase on `main`; the branch is pushed, so the
+  app's sync merged `origin/main` (PR #246) per `CLAUDE.md`'s rule, one conflict in `docs/NETWORK.md` §9
+  where both stages added a row, both kept. The six applied slices re-planned on the merged code read
+  `No changes`.

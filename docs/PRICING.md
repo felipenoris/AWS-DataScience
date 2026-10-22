@@ -201,7 +201,7 @@ Paid every month even with the lab shut down. Same rows as `docs/plan/cost-model
 | Organization, accounts, Identity Center, VPC, subnets, IGW, security groups, IAM roles | — | — | **0** | **0** |
 | GitLab EBS volume (50 GB gp3) | 0.152 USD/GB-mo | 0.08 USD/GB-mo | 7.60 | 4.00 |
 | Elastic IP for WireGuard (idle or in use) | 0.005 USD/h | 0.005 USD/h | 3.65 | 3.65 |
-| KMS customer-managed keys (one tfstate key per Terraform-managed account, plus one data CMK per account that holds data — the lake's `alias/awsds-data-data` and each Interactive account's (D31) — plus D36's second state key `alias/awsds-prod-tfstate-pki`, created by `production/bootstrap/` on 2026-08-15 and encrypting `production/pki/`'s state since that slice's apply on 2026-10-12 (Stage 7 pass 1) — plus the supply-chain key `alias/awsds-prod-registry` (`production/registry/`) and one project key per Interactive account, `alias/awsds-<env>-project` (`terraform-modules/sagemaker-prereqs/`), all three applied 2026-08-21; the encryption rule is `docs/GOVERNANCE.md` §Encryption) — plus, from Stage 6c step 4.11, the proxy access log's key `alias/awsds-prod-proxy-log` in `production/networking/`, the first key in this estate created for a log. Every other log group declined a CMK on the same arithmetic (USD 1/key-month against a debugging log); this one takes it because it records what left the estate. The proxy's key was applied at 6c pass 4 (14 keys); **Stage 7 step 1.1 adds `alias/awsds-prod-gitlab`** (`production/foundation/`, 2026-10-12), the key under GitLab's two buckets and its data volume, its own for D14's option-preservation reason: 15 keys | 1.00 USD/key-mo | 1.00 USD/key-mo | 15.00 | 15.00 |
+| KMS customer-managed keys (one tfstate key per Terraform-managed account, plus one data CMK per account that holds data — the lake's `alias/awsds-data-data` and each Interactive account's (D31) — plus D36's second state key `alias/awsds-prod-tfstate-pki`, created by `production/bootstrap/` on 2026-08-15 and encrypting `production/pki/`'s state since that slice's apply on 2026-10-12 (Stage 7 pass 1) — plus the supply-chain key `alias/awsds-prod-registry` (`production/registry/`) and one project key per Interactive account, `alias/awsds-<env>-project` (`terraform-modules/sagemaker-prereqs/`), all three applied 2026-08-21; the encryption rule is `docs/GOVERNANCE.md` §Encryption) — plus, from Stage 6c step 4.11, the proxy access log's key `alias/awsds-prod-proxy-log` in `production/networking/`, the first key in this estate created for a log. Every other log group declined a CMK on the same arithmetic (USD 1/key-month against a debugging log); this one takes it because it records what left the estate. The proxy's key was applied at 6c pass 4 (14 keys); **Stage 7 step 1.1 adds `alias/awsds-prod-gitlab`** (`production/foundation/`, 2026-10-12), the key under GitLab's two buckets and its data volume, its own for D14's option-preservation reason: 15 keys; **Stage 9 adds the deploy targets' data keys** `alias/awsds-prod-data` and `alias/awsds-staging-data` (applied 2026-10-22): 17 keys | 1.00 USD/key-mo | 1.00 USD/key-mo | 17.00 | 17.00 |
 | S3 data + state + backups (~25 GB Standard) | 0.0405 USD/GB-mo | 0.023 USD/GB-mo | ~1.50 | ~1.00 |
 
 The KMS row's unit is a key **version**, not a key — read from AWS's KMS pricing and key-rotation pages
@@ -228,7 +228,7 @@ that turns that policy custom (Stage 5a step 13.3); or D12's ceiling revised.
 | ~~EFS (shared filesystem + project storage, IA)~~ | **removed — the NFS requirement was withdrawn 2026-08-17 (D24 with it)** | | **0** | **0** |
 | SageMaker unified domain — DataZone V2 metadata (D26) | 10.00/100k req + 0.40/GiB-mo (global) | idem | ~0.50 | ~0.50 |
 | ~~Staging, Development, Data Governance at rest~~ | **removed — double count** | | **0** | **0** |
-| **Floor** | | | **~USD 30-43** (central ~36) | **~USD 25-34** (central ~30) |
+| **Floor** | | | **~USD 32-45** (central ~38) | **~USD 27-36** (central ~32) |
 
 The São Paulo floor is roughly **1.25-1.4x** the Oregon one — less than the 1.72x of the metered services,
 because so much of the floor is region-flat: KMS, Config, Route 53, Security Hub, the domain and the
@@ -1032,7 +1032,7 @@ The numbers:
 
 | Figure | `sa-east-1` | `us-west-2` | Ratio |
 |---|---|---|---|
-| Monthly floor (§2) | ~USD 30-43, central ~36 | ~USD 25-34, central ~30 | ~1.25-1.4x |
+| Monthly floor (§2) | ~USD 32-45, central ~38 | ~USD 27-36, central ~32 | ~1.25-1.4x |
 | Typical lab hour (§3) | ~USD 0.38-0.44 | ~USD 0.19-0.22 | ~2.0x |
 | Full-stack hour (§3) | ~USD 0.91 | ~USD 0.47 | ~1.9x |
 | **Projection at 20 h/month** | **~USD 38-61** | **~USD 29-43** | |

@@ -342,8 +342,8 @@ terraform-live/
 │   │                     #     a serverless workflow bills nothing at rest, so the reason
 │   │                     #     orchestration was Production-only is gone), with the chain
 │   │                     #     layer above them (D41), as in production/orchestration/
-│   ├── egress/           # [E] interface endpoints only (6, VPC-Workloads' set since Stage 9
-│   │                     #     step 4.3a) and the DNS Firewall - NO NAT, no default route
+│   ├── egress/           # [E] interface endpoints only (7, VPC-Workloads' set since Stage 9
+│   │                     #     step 4.3a and decision 12) and the DNS Firewall - NO NAT, no default route
 │   │                     #     (D38). Measured empty at the migration; D11 leaves it torn
 │   │                     #     down between sittings
 │   └── app/
@@ -394,7 +394,7 @@ terraform-live/
     │                     #     shaped slice reads exactly one foundation/: egress/ below
     │                     #     serves VPC-SharedServices and cannot also serve this one.
     │                     #     Rank 51, just above egress (50). Created at 6c step 1.3a;
-    │                     #     Stage 9 step 3.3a names the jobs' six endpoints and turns the
+    │                     #     Stage 9 step 3.3a names the jobs' seven endpoints and turns the
     │                     #     DNS Firewall on, AWS namespaces only; Stage 10 step 1.2 adds
     │                     #     the workers'
     ├── pki/              # [P] the internal root CA (D36). Own state file and own KMS key,

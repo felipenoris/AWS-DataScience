@@ -2,8 +2,10 @@
 
 The Stage 5a pass 4 module ([stage file](../../docs/plan/stages/stage-05a-data-foundation.md); the governance
 model's one copy is [`docs/GOVERNANCE.md`](../../docs/GOVERNANCE.md)). Called by
-[`terraform-live/sandbox/data/`](../../terraform-live/sandbox/data/) and
-~~`terraform-live/development/data/`~~ (destroyed at Stage 6b step 2.4, 2026-09-06) — thin, `[P]`,
+[`terraform-live/sandbox/data/`](../../terraform-live/sandbox/data/),
+[`terraform-live/production/data/`](../../terraform-live/production/data/) and
+[`terraform-live/staging/data/`](../../terraform-live/staging/data/) (Stage 9, applied 2026-10-22), and
+once by ~~`terraform-live/development/data/`~~ (destroyed at Stage 6b step 2.4, 2026-09-06) — thin, `[P]`,
 pinning the module **by git tag** — and by every further business unit's Sandbox once D35's N
 passes 1. **The design lives here once; a slice says which account, never what.** That is why this
 index is in the module and not in the slices: two copies of one design drift on the first divergence.
@@ -173,7 +175,7 @@ may be granted only to principals **in** it, never onward.
 
 ## What the caller supplies, and what it republishes
 
-Everything that differs between the two callers is in `variables.tf` and nothing else is (Lesson 14) — the
+Everything that differs between the callers is in `variables.tf` and nothing else is (Lesson 14) — the
 descriptions there are the one copy. In the other direction, `outputs.tf` republishes the data key's ARN
 and alias and the resource-link names. **Nothing reads them through remote state any more**:
 `identity/sso/`'s pass-4c lookup left on 2026-08-26 with the statements that consumed it, so the

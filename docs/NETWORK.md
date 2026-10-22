@@ -102,7 +102,7 @@ module's arithmetic:
 | `production/tooling/` | `[D]` | the GitLab host, its data volume, the `gitlab.awsds.internal` and `*.awsds-pages.internal` records, GitLab's security group **and the runners' group**, declared here so GitLab's HTTPS rule never names an `[E]` object (Stage 7 steps 1.2, 1.4) |
 | `production/runners/` | `[E]` | the build, deploy and test runners, in the group `tooling/` declares - and no route at all, like the buildbox the build runner replaced at Stage 7 step 6.5 |
 | `sandbox/sagemaker/` | `[P]` | **no network object of its own** — it hands the blueprint the VPC, the private subnets and their zone ids, which is what makes every project app land where §5 describes |
-| `production/sagemaker/` · `staging/sagemaker/` | `[P]` | the job security group `awsds-<env>-jobs` and the Glue network connection on the first zone's private subnet, in VPC-Workloads and Staging's VPC (Stage 9 decision 12 (a), written 2026-10-22, unapplied): every pipeline-submitted Glue and SageMaker job runs in it |
+| `production/sagemaker/` · `staging/sagemaker/` | `[P]` | the job security group `awsds-<env>-jobs` and the Glue network connection on the first zone's private subnet, in VPC-Workloads and Staging's VPC (Stage 9 decision 12 (a), applied 2026-10-22): every pipeline-submitted Glue and SageMaker job runs in it |
 | `sandbox/warehouse/` | `[P]` | the warehouse's **security group** and one ingress rule per admitted SMUS project. The group is here rather than in the compute slice because it is free and is referenced by the workgroup rather than the reverse, so it survives a `make down` unattached |
 | `sandbox/warehouse-compute/` | `[E]` | the **workgroup**, which is what puts ENIs in the two private subnets. Destroyed by `make down ENV=sandbox`: Redshift Serverless has no pause, so *off* means *absent* |
 | `staging/orchestration/` · `production/orchestration/` | `[E]` | **written 2026-10-22, not applied** (Stage 10 step 1.2): the workers' security group `awsds-<env>-wf-workers`, declared in the `orchestration` module; at run time the service-linked role puts each MWAA Serverless worker's interface in the two private subnets of Staging's VPC or VPC-Workloads |
@@ -274,7 +274,7 @@ bucket allow-list. One of its AWS-owned families is measured rather than documen
 `mwaa-serverless-code-files-*-<region>-prod`, the bucket a MWAA Serverless worker's environment
 preparation reads a workflow's code from, as `airflow-serverless.amazonaws.com`, through this endpoint
 (`vpc-v0.4.0`: Sandbox since 2026-10-11, 6i decision 7, and Staging since 2026-10-19, for Stage 18's
-4.4, whose two runs that day passed the preparation; Production's `foundation/` and `networking/` are on `vpc-v0.3.1` and lack it, `workloads/` pins `vpc-v0.4.0` since 2026-10-22 for Stage 10 1.2, planned and unapplied, and `EG-4` reads it as `mwaa-code`). A refusal by this policy is visible only
+4.4, whose two runs that day passed the preparation; Production's `foundation/` and `networking/` are on `vpc-v0.3.1` and lack it, `workloads/` is on `vpc-v0.4.0` since 2026-10-22 for Stage 10 1.2, and `EG-4` reads it as `mwaa-code`). A refusal by this policy is visible only
 as a CloudTrail network activity event with `errorCode` `VpceAccessDenied`. The trail 6i built to record
 them, `sandbox/endpoint-audit/`, ran from 2026-10-11 to 2026-10-12 and is recoverable from `c0baddd`.
 

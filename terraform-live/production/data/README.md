@@ -1,6 +1,6 @@
 # production/data — Production's data platform, layer `[P]`
 
-Stage 9 steps 1 and 2.3, written 2026-10-22 and unapplied. The `consumer-data` module's third caller
+Stage 9 steps 1 and 2.3, applied 2026-10-22. The `consumer-data` module's third caller
 ([its README](../../../terraform-modules/consumer-data/README.md) holds the module's own rows: the key's
 administration statement, the settings, the links, the persona's re-grants); this file indexes what the
 slice adds. The `.tf` comments carry the reasoning. `staging/data/` is the same shape without the
@@ -11,7 +11,9 @@ governed write ([its README](../../staging/data/README.md)).
 Recipe D ([`terraform-changes.md`](../../../docs/plan/runbooks/terraform-changes.md)): the settings alone
 under `-target=module.consumer_data.aws_lakeformation_data_lake_settings.this`, read back (`DT-5`, and
 `IAMAllowedPrincipals` revoked if it is still there), then the rest. Before it:
-`data-governance/data/`'s Stage 9 change applied (pass 2), since the regrants below need the share.
+`data-governance/data/`'s Stage 9 change applied (pass 2), since the regrants below need the share. The
+first apply, on 2026-10-22, read back the `InfrastructureAccess` seat alone and both default lists `[]`,
+so nothing was revoked.
 
 ## The data key's added statements (`main.tf`)
 
