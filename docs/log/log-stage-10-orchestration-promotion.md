@@ -411,3 +411,24 @@ call.*
   now names the three statements that make them work: `kms:Decrypt` allowed with the
   `aws:airflow-serverless:workflow-arn` encryption context, the deny narrowed to requests without it, and
   the data key's policy naming the set's role. Which other reads decrypt is 3.2's reading.
+
+## 2026-10-22 — decision 11's decrypt carve-out approved by the user and written in `identity/sso/`
+
+*Claude's hand, the same session; the user's words relayed from the orchestrating session ("Pendências
+estágios 7 e 8"), whose chat they were written in, and read again in that session's transcript. No AWS
+call of this session's.*
+
+- **[user] The approval**: *"Pode aprovar a exceção, conforme a recomendação."*, answering the carve-out
+  decision 11's text named: `kms:Decrypt` for `DeploymentManagerAccess` only with the
+  `aws:airflow-serverless:workflow-arn` encryption context, D31's decrypt deny narrowed to requests without
+  that key, and `kms:ViaService` added once a trail shows the calls carry it.
+- **[Claude] What the orchestrating session reported writing** (PR #244, `b35aae36`): in `deployment_manager`
+  of `identity/sso/policies-approvers.tf`, `ReadWorkflowRunStatus`, `DecryptWhatTheWorkflowServiceEncrypts`,
+  `DenyDecryptOutsideTheWorkflowService`, and `DenyDataReadPaths` without `kms:Decrypt`; planned as
+  `awsds-infra-identity`, *"0 to add, 1 to change, 0 to destroy"*, the set's inline policy from 7,289 to
+  8,223 characters of 10,240; not applied, the apply a row of `waiting-on-the-user.md`. In 1.5's grant,
+  `EncryptTheWorkflows` became the twins of Stage 9's key-policy statements (the workflow key's `Decrypt`
+  and `GenerateDataKey` by the workflow's ARN as context, `CreateGrant` for an AWS resource,
+  `DescribeKey`), and the release job's copy writes `inbox/*`, decision 20 (d)'s seed; the access policy
+  measures 4,490 characters in Staging of 6,144.
+- **[Claude] Recorded** in decision 11 and in 1.5's grant.

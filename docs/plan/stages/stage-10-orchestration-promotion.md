@@ -415,12 +415,15 @@ run, plus the `[E]` endpoint set while tasks are in the VPC.
     `logs:CreateLogGroup` on `/awsds/<env>/wf/*` and `logs:DescribeLogGroups` on `*`, the saver's calls on
     `UpdateWorkflow` (Stage 18 4.5) and in the registry's create and update handlers.
   - **the saver's reads and the release job's copy**: `s3:GetObject` and `s3:GetObjectVersion` (the read
-    of a pinned version) on `awsds-<env>-outputs/applications/*`, `s3:PutObject` there, `s3:ListBucket`
-    with `s3:prefix` `applications/*`; `kms:Decrypt` and `kms:GenerateDataKey` on the data key with
-    `kms:ViaService` = `s3.<region>.amazonaws.com`.
-  - **the workflow's key** (decision 2): `kms:CreateGrant`, `kms:GenerateDataKey`, `kms:Decrypt` and
-    `kms:DescribeKey` on the data key, the read handler's `Decrypt` included; the context the service's
-    calls carry is the first apply's reading, and the statement narrows to it then.
+    of a pinned version) on `awsds-<env>-outputs/applications/*`, `s3:PutObject` there and on `inbox/*`,
+    where the release job seeds `samples/` (decision 20 (d)), `s3:ListBucket` with `s3:prefix`
+    `applications/*`; `kms:Decrypt` and `kms:GenerateDataKey` on the data key with `kms:ViaService` =
+    `s3.<region>.amazonaws.com`.
+  - **the workflow's key** (decision 2), as written in PR #244 (`b35aae36`), the twins of Stage 9's
+    key-policy statements: `kms:Decrypt` and `kms:GenerateDataKey` with
+    `kms:EncryptionContext:aws:airflow-serverless:workflow-arn` like `workflow/awsds-<env>-wf-*`, the read
+    handler's `Decrypt` included; `kms:CreateGrant` with `kms:GrantIsForAWSResource`; and
+    `kms:DescribeKey`. The context the service's calls carry is the first apply's reading.
   - **the roles**: `iam:CreateRole` with `iam:PermissionsBoundary` = `awsds-<env>-app-boundary`,
     `iam:PutRolePolicy`, `iam:DeleteRolePolicy`, `iam:GetRole`, `iam:GetRolePolicy`,
     `iam:ListRolePolicies`, `iam:ListAttachedRolePolicies`, `iam:ListInstanceProfilesForRole`,
@@ -1122,10 +1125,14 @@ Each is decided during the stage and written into `docs/log/log-stage-10-orchest
     narrowed to requests without that key, and the data key's policy naming the set's role for that call
     (Stage 9's data slices). The carve-out reaches only what the workflow service encrypts, never an S3
     object, whose context is the bucket's ARN, so D31's line, the approvers decrypt no output, holds.
-    Whether `GetWorkflow`, `ListWorkflowRuns` and `GetTaskInstance` decrypt too is 3.2's reading. The
-    carve-out is put to the user (`waiting-on-the-user.md`, 2026-10-22), and nothing in `identity/sso/`
-    is written until the answer; the key-policy half is written in Stage 9's PR #245 as
-    `AllowTheDeploymentManagerToReadWorkflowRuns`.
+    Whether `GetWorkflow`, `ListWorkflowRuns` and `GetTaskInstance` decrypt too is 3.2's reading. **The
+    carve-out was approved by the user on 2026-10-22, as recommended** (*"Pode aprovar a exceção, conforme
+    a recomendação."*), and the orchestrating session wrote it in `identity/sso/`'s `deployment_manager`
+    (PR #244, `b35aae36`): `ReadWorkflowRunStatus`, `DecryptWhatTheWorkflowServiceEncrypts`,
+    `DenyDecryptOutsideTheWorkflowService`, and `DenyDataReadPaths` without `kms:Decrypt`, planned *"0 to
+    add, 1 to change"*, the set's inline policy from 7,289 to 8,223 characters of 10,240; not applied.
+    `kms:ViaService` narrows the allow once a trail shows the calls carry it. The key-policy half is
+    Stage 9's PR #245, `AllowTheDeploymentManagerToReadWorkflowRuns`.
 12. **Where a Glue job's script lives, and who may write it** (1.3, 2.4; D28 class 2c). Glue reads a job's
     `ScriptLocation`, and every file its arguments name, from S3 when each run starts and pins no version,
     so a job runs whatever the key holds then: decision 7's problem, on the path that writes governed
