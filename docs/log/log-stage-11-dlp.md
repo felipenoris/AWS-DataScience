@@ -324,3 +324,14 @@ running on the laptop at the time.*
   roles.
 - **[Claude] Carried into** `threat-model.md` (`TM-21`, the Staging bucket's row, what the file waits on),
   `AWS_STATE.md` (`EXC-18`, `INV-16`), this stage's 2.1.1 and the waiting list.
+
+## 2026-10-22 — Production's release bucket, the PKI state and the PKI key's alarm in 5.1 and 5.2
+
+*Claude, in the session `stages-7-8-pending` (branch `claude/stages-7-8-pending-03936d`), no AWS call:
+the plan revised from a review of Stages 7 and 8, on the user's request to correct what the review found.*
+
+- **[Claude] 5.1's map gains Production**: `awsds-prod-releases`, whose downloads Stage 8 decision 20
+  leaves to this step, and the `pki/` prefix of the state bucket, D36 §5's first control. No stage file
+  carried either, and both wait on `production/data/` with the rest of Production's trail.
+- **[Claude] 5.2 gains `awsds-prod-pki-key-use`**, D36 §5's second control: `kms:Decrypt` on the key behind
+  `alias/awsds-prod-tfstate-pki` by anyone but the infrastructure role, and `kms:ScheduleKeyDeletion` on it.

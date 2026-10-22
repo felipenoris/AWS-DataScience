@@ -338,3 +338,12 @@ diff, with no AWS call either.*
   from D38, `NETWORK.md`, the bill and `OB-4`'s reading of no backup plan. The VPN row makes the WireGuard
   host the single point of failure for private-network access and leaves egress's to the proxy (the
   Availability row).
+
+## 2026-10-22 — step 8.5, the internal CA root's rotation, written
+
+*Claude, in the session `stages-7-8-pending` (branch `claude/stages-7-8-pending-03936d`), no AWS call:
+the plan revised from a review of Stages 7 and 8, on the user's request to correct what the review found.*
+
+- **[Claude] 8.5**: D36 §6 schedules the root's rotation, rehearsed once with its time recorded, at this
+  stage, and this file carried nothing for it. The step names the surfaces a new root rebuilds and leaves
+  its procedure to be written with it.

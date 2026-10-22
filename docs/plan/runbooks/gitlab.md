@@ -586,8 +586,8 @@ Two copies, in opposite directions. The image recipes live in GitLab since Stage
 ### The infrastructure mirror
 
 1. **Create it**, as the local administrator: group `awsds` → **New project → Create blank project**: name `infrastructure`, visibility **Private**, no README. **Protected branches**: `main`, push and merge **Maintainers**.
-2. **Members**: `awsds/dev-env-stewards` as **Reporter**: the registration job cloned with its job token, which carries the permissions of whoever ran the release gate (`register` and `retire` clone nothing since Stage 8 decision 18). `awsds/deployment-managers` joins at pass 4.
-3. **The job token**: **Settings → CI/CD → Job token permissions → Authorized groups and projects**: add `awsds/dev-env`.
+2. **Members**: `awsds/dev-env-stewards` as **Reporter**: the registration job cloned with its job token, which carries the permissions of whoever ran the release gate (`register` and `retire` clone nothing since Stage 8 decision 18). `awsds/deployment-managers` joins at pass 4, and the stewards' seat leaves then: Stage 8 decision 2 keeps the mirror as the promotion jobs' reader.
+3. **The job token**: **Settings → CI/CD → Job token permissions → Authorized groups and projects**: add `awsds/dev-env`. At pass 4's first sitting `awsds/app-etl` is added and `awsds/dev-env` removed, before the first promotion clones the mirror.
 4. **The remote**, once, in the project folder: a second remote, never a second push URL on `origin`, through which every session's push would also go to GitLab and fail while it is stopped:
 
    ```bash

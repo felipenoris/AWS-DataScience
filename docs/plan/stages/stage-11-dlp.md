@@ -450,7 +450,12 @@ are free) with the rule's `MatchedEvents` metric — no CloudWatch Logs ingestio
   **`awsds-sandbox-lake` in Sandbox** — its reads are the exfiltration signal for the
   one store where artifacts persist; **`awsds-<env>-smus-projects` in each Interactive member** — the
   derived zone itself since the D19 revision, and the only monitored
-  bucket whose contents never expire, orphaned project prefixes included) —
+  bucket whose contents never expire, orphaned project prefixes included; **in Production,
+  `awsds-prod-releases`** — who downloaded a release's bundle, which
+  [Stage 8](stage-08-cicd-pipelines.md) decision 20 leaves to this step — **and the `pki/` prefix of
+  the state bucket**, the object holding the internal CA's root key, whose read outside a planned change
+  is [D36](../decisions/D36-internal-pki.md) §5's signal; Production's selectors ride its trail, so they
+  wait on `production/data/` like the rest) —
   **no management-event selector**, reads and writes both, log file validation on. Delivery: every trail
   into **`awsds-data-logs`** under `AWSLogs/<account>/` (decision 7), the consumers' cross-account, with
   the bucket-policy statements for `cloudtrail.amazonaws.com` conditioned on `aws:SourceAccount` ∈ the
@@ -489,6 +494,11 @@ are free) with the rule's `MatchedEvents` metric — no CloudWatch Logs ingestio
     `athena:StartQueryExecution` to every principal, the infrastructure user included, exercised 2026-08-20
     (Stage 5a pass 4e, `POLICIES.md`), so the rule alarms on any occurrence and verification x reads that
     branch.
+  - **`awsds-prod-pki-key-use`** (Production only) — D36 §5's alarm: `kms:Decrypt` on the key behind
+    `alias/awsds-prod-tfstate-pki` by any principal but the infrastructure role, and any
+    `kms:ScheduleKeyDeletion` on it. Both are management events, so the rule needs no member trail, and
+    `Decrypt` is a read, so the rule takes the state `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`, as
+    [Stage 8](stage-08-cicd-pipelines.md) 4.6 measured for `AssumeRole`. Target: the SNS topic directly.
 - **5.3 — [Claude⚡] Apply the trail slices** — `awsds-infra-data`, `awsds-infra-sandbox-1`, and
   `awsds-infra-prod` once Stage 9 writes `production/data/`; `DL-5` brackets the Data Governance apply as
   always. **[user]** Record in the log.

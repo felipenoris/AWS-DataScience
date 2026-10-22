@@ -719,3 +719,30 @@ applied.*
   (whether Stage 8 keeps it for the promotion jobs is that stage's). *INT-09's fallback* named a second
   peering and Development's commits, both gone with 6b, and a mirror decision 4 left unbuilt; *INT-19's
   owed clause* named image version 6; *`docs/PRICING.md`'s key row* said `production/pki/` does not exist.
+
+## 2026-10-22 — 5.6's scope taken, and the backups read again
+
+*Claude, in the session `stages-7-8-pending` (branch `claude/stages-7-8-pending-03936d`), after a review of
+Stages 7 and 8 against their logs. AWS read as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`), reads only. Times UTC.*
+
+- **[user] The decision**: *"Sobre os itens "Decisões suas, sem ambiente", registre que vamos acolher suas
+  recomendações em todas essas decisões."*, then *"Faça as correções necessárias no plano, considerando os
+  itens que você identificou que necessitam de ajuste. Registre as decisões e atualize os arquivos do plano
+  e o log."*
+- **[Claude] 5.6's scope, taken as recommended**, the recommendation written in this sitting after the
+  user's acceptance and named in the closing message: `DataScientistAccess` pulls `awsds-prod-ecr-dev-env`;
+  `DataScientistProdAccess` reads and pulls the application repositories, each by name; `DevEnvStewardAccess`
+  reads `awsds-prod-ecr-dev-env` and `awsds-prod-ecr-base`, no pull; the registry-level actions stay on `*`.
+  The grant is owed to `identity/sso/`.
+- **[Claude] The backups**, `s3api list-objects-v2` on `awsds-prod-gitlab-backup`: the two objects of
+  2026-10-18, `1791860449_2026_10_13_19.4.2_gitlab_backup.tar` (931,840 bytes, 2026-10-13 03:00:58) and
+  `1792033259_2026_10_15_19.4.2_gitlab_backup.tar` (9,953,280 bytes, 2026-10-15 03:01:09), and the
+  lifecycle's three rules unchanged, so the expiry stays 2026-11-13 and 2026-11-15. `describe-instances`:
+  `awsds-prod-gitlab` stopped, last started 2026-10-21 23:26:08 in Stage 18's sitting, `awsds-prod-proxy`
+  stopped, no `awsds-prod-runner*`. That sitting left no backup, so the host was down at 03:00 [inferred:
+  the stop time is unread].
+- **[Claude] The plan revised, no AWS call**: the status (`SC-11` reads a runner's user data only once one
+  is up), 1.4's and 1.6's leftovers, 6.4's, 5.6's scope, 8.2's backup schedule (the timer, not a cron entry)
+  and the snapshot cost row. D36 §5's data events and alarm went to Stage 11's 5.1 and 5.2, and its §6
+  rotation rehearsal to Stage 12's 8.5, the receiving ends that did not carry them (Lesson 34).

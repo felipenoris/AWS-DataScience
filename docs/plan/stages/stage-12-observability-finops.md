@@ -268,6 +268,12 @@ Stage 7 step 8.2 applies to GitLab.
   repository's buckets and keys included, is unread; the RTO is a rebuild of [6a](stage-06a-unified-studio.md),
   and a deny on the `Data` document would bind the identity that applies the slice too (Lesson 18), so
   whether one is written is the user's.
+- **8.5 — [user] Rotate the internal CA's root once, and record the time** ([D36](../decisions/D36-internal-pki.md)
+  §6): a new root in `production/pki/`, then every surface that trusts it rebuilt — the `dev-env` image by
+  a release, the runners' user data at their next boot, GitLab's `trusted-certs` and the laptop's trust
+  (runbook [`gitlab.md`](../runbooks/gitlab.md) §C) — and the measured time in the log. The root lives ten
+  years, so this rehearsal is the only time the path is walked before it is needed (Lesson 5). Its
+  procedure is written with this step; `gitlab.md` §C holds the leaves' re-issue alone.
 
 ### 9. Alarm the quotas that would silently break a session
 

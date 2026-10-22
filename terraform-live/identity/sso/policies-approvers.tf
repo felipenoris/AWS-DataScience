@@ -30,8 +30,8 @@
 #
 # The job is diagnosis, not reading: why did this promotion fail, and should it be released.
 #
-# Still owed: Stage 8 s3:GetObject on enumerated build-artifact and test-report prefixes, never
-# a bucket wildcard, which is the shape that produced D31 in the first place.
+# No S3 read is owed (Stage 8 step 3.9): a promotion's evidence is the manual job's artifacts in
+# GitLab, and DenyDataReadPaths' kms:Decrypt deny would leave an s3:GetObject reading nothing.
 
 data "aws_iam_policy_document" "deployment_manager" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf
