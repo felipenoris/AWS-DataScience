@@ -3,8 +3,8 @@
 # data platform (buckets, CMK, the enforced workgroup), the runtime (the job role under
 # D13, the model package groups with their resource policies), the Lake Formation settings
 # in every account that has any (DT-5), the write share with its links and invitations
-# (INT-03), the drop-box contract from both sides (INT-10), the Staging mirror and the
-# absence that is a control (D20), the escape hatch with its alarm, the persona sets' owed
+# (INT-03), the drop-box contract from both sides (INT-10), Staging's read-only share and the
+# absence of any copy (decision 3), the escape hatch with its alarm, the persona sets' owed
 # allows read back through the delegated admin, and the job settings on the Workloads OU (DT-11).
 #
 #   needs:    a live SSO session, and nothing else:
@@ -95,7 +95,9 @@ MPG_PREFIX = "awsds-prod-model-"
 PROD_CMK_ALIAS = "alias/awsds-prod-data"  # one data CMK per account
 DROPBOX_SUBSTR = "dropbox"
 LAKE_BUCKET_SUBSTR = "awsds-data-"
-MIRROR_DBS = ("raw", "curated")  # the lake databases the Staging catalog mirrors (4.1)
+LAKE_DBS = ("raw", "curated")  # the lake databases a consumer reads through its share (2.1, 4.1)
+# What a read share grants: Staging receives these and nothing else (decision 3).
+READ_PERMISSIONS = {"DESCRIBE", "SELECT"}
 SETS_READ = ("DataScientistProdAccess", "DataScientistStagingAccess")
 WORKLOADS_OU = "Workloads"
 WORKLOADS_DOC = "awsds-org-scp-ou-workloads"
@@ -452,6 +454,10 @@ def main(argv: list) -> int:
     # ------------------------- 5. the write share, the links, the invitations (INT-03)
     share_perm_rows: list = []  # (principal tail, resource, permissions)
     write_share_seen = False
+    staging_account = account_of.get(STAGING_PROFILE)
+    staging_share_rows: list = []  # (resource, permissions) granted to Staging's account
+    staging_write_grants: list = []  # (resource, permissions beyond DESCRIBE and SELECT)
+    staging_local_dbs: list = []  # Staging's databases that are not resource links
     share_listed = False  # the grantor's listing read to its last page
     link_rows: list = []  # (profile, database, target catalog tail, target database)
     pending_invites: list = []  # (profile, share name, status)
@@ -463,11 +469,9 @@ def main(argv: list) -> int:
         share_listed = listing.complete
         for entry in listing.items("PrincipalResourcePermissions"):
             principal = str((entry.get("Principal") or {}).get("DataLakePrincipalIdentifier") or "")
-            if prod_account and prod_account not in principal:
-                continue
-            if not prod_account:
-                continue
-            perms = ",".join(entry.get("Permissions") or [])
+            granted = list(entry.get("Permissions") or [])
+            optioned = list(entry.get("PermissionsWithGrantOption") or [])
+            perms = ",".join(granted)
             resource = entry.get("Resource") or {}
             if "Table" in resource:
                 r = resource["Table"]
@@ -476,6 +480,13 @@ def main(argv: list) -> int:
                 where = f"database:{resource['Database'].get('Name')}"
             else:
                 where = next(iter(resource.keys()), "?")
+            if staging_account and staging_account in principal:
+                staging_share_rows.append((where, perms))
+                beyond = sorted(set(granted + optioned) - READ_PERMISSIONS)
+                if beyond:
+                    staging_write_grants.append((where, ",".join(beyond)))
+            if not prod_account or prod_account not in principal:
+                continue
             share_perm_rows.append((principal[-12:], where, perms))
             if "INSERT" in perms:
                 write_share_seen = True
@@ -497,6 +508,8 @@ def main(argv: list) -> int:
         ):
             if target_catalog:
                 link_rows.append((p, str(name), str(target_catalog)[-4:], str(target_db)))
+            elif p == STAGING_PROFILE:
+                staging_local_dbs.append(str(name))
         res = cli.run(
             "ram",
             "get-resource-share-invitations",
@@ -592,21 +605,20 @@ def main(argv: list) -> int:
             else:
                 dropbox_key_names_role = "(no drop-box key alias)"
 
-    # ------------------- 7. the Staging mirror, and the absence that is a control (D20)
-    staging_links_to_data: list = []  # resource links pointing at Data Governance
-    mirror_rows: list = []  # (database, lake tables, staging tables, verdict)
+    # --------------------------- 7. Staging's read of the lake, through its share (decision 3)
+    staging_links_to_data: list = []  # resource links resolving into Data Governance
+    staging_copies: list = []  # (local database, table) named like a lake table
     staging_wg_row = None
     staging_job_state = "(not measured)"
     staging_trust_bad: list = []
     staging_lake_hits: list = []  # (policy, resource) - any lake bucket, the drop-box included
     staging_cmk_present = False
-    staging_mirror_dbs: set = set()  # the MIRROR_DBS that exist in Staging's catalog
     if staging_live:
         for p, db, catalog_tail, target_db in link_rows:
             if p == STAGING_PROFILE and data_account and data_account.endswith(catalog_tail):
                 staging_links_to_data.append((db, target_db))
         cli = cli_for(STAGING_PROFILE)
-        note(f"measuring {STAGING_PROFILE} (mirror) ...")
+        note(f"measuring {STAGING_PROFILE} (the read share) ...")
         res = cli.run(
             "athena",
             "get-work-group",
@@ -630,39 +642,41 @@ def main(argv: list) -> int:
         )
         aliases = json.loads(res.stdout or "[]") if res.ok and res.stdout else []
         staging_cmk_present = STAGING_CMK_ALIAS in aliases
-        if data_live:
-            for db in MIRROR_DBS:
-                lake_tables: set = set()
-                staging_tables: set = set()
-                for profile, sink in (
-                    (DATA_PROFILE, lake_tables),
-                    (STAGING_PROFILE, staging_tables),
-                ):
-                    r = cli_for(profile).run(
-                        "glue",
-                        "get-tables",
-                        "--database-name",
-                        db,
-                        "--query",
-                        "TableList[].Name",
-                        "--output",
-                        "json",
-                        log=False,
-                        tolerate="EntityNotFoundException",
-                    )
-                    if r.ok and not r.tolerated and r.stdout:
-                        sink.update(str(t) for t in json.loads(r.stdout))
-                    if profile == STAGING_PROFILE and r.ok and not r.tolerated:
-                        staging_mirror_dbs.add(db)
-                if not staging_tables and not lake_tables:
-                    verdict = "(neither exists)"
-                elif staging_tables == lake_tables:
-                    verdict = "mirrored"
-                else:
-                    missing = lake_tables - staging_tables
-                    extra = staging_tables - lake_tables
-                    verdict = f"DIVERGES (missing {len(missing)}, extra {len(extra)})"
-                mirror_rows.append((db, str(len(lake_tables)), str(len(staging_tables)), verdict))
+        # A copy reads as a local table carrying a lake table's name: the application's own tables are
+        # its schemas, and a governed table is read through the links, never re-created here.
+        if data_live and staging_local_dbs:
+            lake_tables: set = set()
+            for db in LAKE_DBS:
+                r = cli_for(DATA_PROFILE).run(
+                    "glue",
+                    "get-tables",
+                    "--database-name",
+                    db,
+                    "--query",
+                    "TableList[].Name",
+                    "--output",
+                    "json",
+                    log=False,
+                    tolerate="EntityNotFoundException",
+                )
+                if r.ok and not r.tolerated and r.stdout:
+                    lake_tables.update(str(t) for t in json.loads(r.stdout))
+            for db in staging_local_dbs:
+                r = cli.run(
+                    "glue",
+                    "get-tables",
+                    "--database-name",
+                    db,
+                    "--query",
+                    "TableList[].Name",
+                    "--output",
+                    "json",
+                    log=False,
+                    tolerate="EntityNotFoundException",
+                )
+                for t in json.loads(r.stdout or "[]") if r.ok and r.stdout else []:
+                    if str(t) in lake_tables:
+                        staging_copies.append((db, str(t)))
 
     # ------------------------------ 8. the escape hatch: role, alarm, assumptions (step 6)
     debug_state = "(not measured)"
@@ -894,7 +908,7 @@ def main(argv: list) -> int:
     #   pass 3  production/data/ - a bucket, the workgroup or the account data CMK stands; its first,
     #           targeted apply seats Production's data lake administrator (1.3, Recipe D)
     #   pass 4  identity/sso/ - one of step 5.1's statements is in DataScientistProdAccess (DT-10)
-    #   pass 5  staging/data/ - a mirror database, the workgroup or the account data CMK stands, and
+    #   pass 5  staging/data/ - a resource link, the workgroup or the account data CMK stands, and
     #           its targeted apply seats Staging's administrator; staging/sagemaker/ - the job role
     runtime_built = job_role_state == "present" or bool(mpg_rows) or debug_state == "present"
     prod_data_built = (
@@ -903,7 +917,7 @@ def main(argv: list) -> int:
         or any(state == "present" for _b, state, *_ in bucket_rows)
     )
     staging_data_built = (
-        bool(staging_mirror_dbs) or staging_wg_row is not None or staging_cmk_present
+        bool(staging_links_to_data) or staging_wg_row is not None or staging_cmk_present
     )
     lf_seated = {
         p: admins != "(none)" for p, _params, _defaults, admins in lf_rows if admins != "-"
@@ -1153,39 +1167,56 @@ def main(argv: list) -> int:
         elif dropbox_key_names_role == "yes":
             checks.ok("DT-7", "drop-box KMS grant", f"the key names {JOB_ROLE}")
 
-    # DT-8: Staging touches nothing governed - no link to Data Governance; the mirror agrees.
+    # DT-8: Staging reads the lake through its share and writes none of it (decision 3): every grant
+    # to its account is DESCRIBE or SELECT, its links resolve into Data Governance once staging/data/
+    # stands, and no local table carries a lake table's name.
     if staging_live:
-        if staging_links_to_data:
-            for db, target in staging_links_to_data:
-                checks.fail(
-                    "DT-8",
-                    f"staging link {db}",
-                    f"resolves into Data Governance ({target}) - D20 forbids the share; remove it.",
-                )
-        else:
-            checks.ok("DT-8", "staging isolation", "no resource link reaches Data Governance")
-        # A divergence before staging/data/ exists is the lake's tables with nothing to be mirrored
-        # by, which reads exactly like a mirror that fell behind (Lesson 13): the first run, on
-        # 2026-09-06, reported `curated: DIVERGES (missing 1, extra 0)` with nothing drifted. So it is
-        # a note until step 4.5 stands the mirror up, and a failure after it.
-        for db, lake_n, staging_n, verdict in mirror_rows:
-            if verdict == "mirrored":
-                checks.ok("DT-8", f"mirror {db}", f"{staging_n} table(s), names agree")
-            elif verdict.startswith("DIVERGES"):
-                if staging_data_built:
+        if data_live and share_listed:
+            if staging_write_grants:
+                for where, beyond in staging_write_grants:
                     checks.fail(
                         "DT-8",
-                        f"mirror {db}",
-                        f"{verdict} - a drifted mirror produces false test failures (4.1, "
-                        "decision 3).",
+                        f"staging grant {where}",
+                        f"carries {beyond} - Staging reads the lake and writes none of it (decision 3).",
                     )
-                else:
-                    checks.note(
-                        "DT-8",
-                        f"mirror {db}",
-                        f"{verdict} - the lake's {lake_n} table(s) have no mirror yet; expected "
-                        "until step 4.5 applies staging/data/.",
-                    )
+            elif staging_share_rows:
+                checks.ok(
+                    "DT-8",
+                    "staging share",
+                    f"{len(staging_share_rows)} grant(s) to Staging, DESCRIBE and SELECT alone",
+                )
+            else:
+                (checks.fail if staging_data_built else checks.note)(
+                    "DT-8",
+                    "staging share",
+                    "no grant to Staging while staging/data/ stands - pass 2 precedes pass 5."
+                    if staging_data_built
+                    else "no grant to Staging yet - expected before pass 2's apply.",
+                )
+        if staging_links_to_data:
+            checks.ok(
+                "DT-8",
+                "staging links",
+                "resolve into Data Governance: "
+                + ", ".join(sorted(t for _db, t in staging_links_to_data)),
+            )
+        else:
+            (checks.fail if staging_data_built else checks.note)(
+                "DT-8",
+                "staging links",
+                "none while staging/data/ stands - the read share is consumed through them (4.1)."
+                if staging_data_built
+                else "none yet - expected before step 4.5.",
+            )
+        if staging_copies:
+            for db, t in staging_copies:
+                checks.fail(
+                    "DT-8",
+                    f"staging table {db}.{t}",
+                    "carries a lake table's name - Staging holds no copy (decision 3).",
+                )
+        else:
+            checks.ok("DT-8", "staging copies", "no local table carries a lake table's name")
 
     # DT-9: the escape hatch - windowed trust, closed at rest, 1 h sessions, alarmed.
     if prod_live:
@@ -1321,7 +1352,9 @@ def main(argv: list) -> int:
     with open(out_path, "w", encoding="utf-8") as stream:
         rep = Report(stream)
 
-        rep.banner("DEPLOY TARGETS - the Stage 9 evidence: producer path, registry, mirrors")
+        rep.banner(
+            "DEPLOY TARGETS - the Stage 9 evidence: producer path, registry, the read shares"
+        )
         rep.text(f"""generated : {context.utc_stamp()}
 profiles  : {source}
 region    : {context.REGION}
@@ -1334,7 +1367,7 @@ SECTIONS
   4. The Lake Formation settings, every account that has any (DT-5)
   5. The write share, the links, the invitations (INT-03)
   6. The drop-box contract, both sides (INT-10)
-  7. The Staging mirror, and the absence that is a control (D20)
+  7. Staging's read of the lake, through its share (decision 3)
   8. The escape hatch: role, alarm, assumptions (step 6)
   9. The persona sets' owed allows (step 5)
  10. The job settings on the Workloads OU (step 3.5)
@@ -1477,27 +1510,28 @@ contract this section watches. A NO on either line is the pickup failing later
 with an error that names S3 and means KMS or a typo (2.5, D25).""")
 
         # ==============================================================================
-        rep.h1("7. The Staging mirror, and the absence that is a control (D20)")
+        rep.h1("7. Staging's read of the lake, through its share (decision 3)")
         if not staging_live:
             rep.line(
                 f"{STAGING_PROFILE} did not answer - the whole section waits for a session on it."
             )
         else:
+            if staging_share_rows:
+                rep.tabulate(
+                    ["GRANT TO STAGING\tPERMISSIONS"] + ["\t".join(r) for r in staging_share_rows]
+                )
+            else:
+                rep.line("No grant of the lake names Staging's account (pass 2 grants its read).")
+            rep.line()
             if staging_links_to_data:
                 rep.tabulate(
                     ["LINK\tRESOLVES INTO"] + ["\t".join(r) for r in staging_links_to_data]
                 )
             else:
-                rep.line("No Staging resource link reaches Data Governance - D20 holding.")
-            if mirror_rows:
-                rep.line()
-                rep.tabulate(
-                    ["DATABASE\tLAKE TABLES\tSTAGING TABLES\tVERDICT"]
-                    + ["\t".join(r) for r in mirror_rows]
-                )
+                rep.line("No Staging resource link reaches Data Governance (4.1 creates them).")
+            rep.line(f"local databases: {', '.join(staging_local_dbs) or '(none)'}")
             if staging_wg_row is not None:
                 enforce, location, cutoff = staging_wg_row
-                rep.line()
                 rep.line(
                     f"workgroup {STAGING_WG}: enforce={enforce} location={location} cutoff={cutoff}"
                 )
@@ -1509,9 +1543,11 @@ with an error that names S3 and means KMS or a typo (2.5, D25).""")
                 )
             rep.line(f"{STAGING_CMK_ALIAS}: {'present' if staging_cmk_present else '(absent)'}")
             rep.text("""
-The mirror agreeing is 4.1 working; the link NOT existing is the control (D20:
-Staging is never on the share). The workgroup serves the integration tests and
-the app - DataScientistStagingAccess holds no Athena at all (Stage 2).""")
+Staging reads the governed lake through the share Sandbox holds and writes none of it
+(decision 3, amending D20): a grant beyond DESCRIBE and SELECT is the finding, and so is a
+local table carrying a lake table's name, since each deploy creates the application's own
+tables and a governed table is read through the links. The workgroup serves the integration
+tests and the application; DataScientistStagingAccess holds no Athena (Stage 2).""")
 
         # ==============================================================================
         rep.h1("8. The escape hatch: role, alarm, assumptions (step 6)")
@@ -1598,7 +1634,9 @@ What the checks are, and where each comes from:
          defaults emptied once an administrator is seated (1.3/2.2/4.1, DL-5's twin)
   DT-6   the write share granted, no pending invitation (2.1-2.2, INT-03/INT-11)
   DT-7   the drop-box statement and key both name awsds-prod-job-exec (2.5, INT-10)
-  DT-8   no Staging link to Data Governance; the mirror agrees (4.1, D20)
+  DT-8   Staging's grants on the lake are DESCRIBE or SELECT, its links resolve into Data
+         Governance once staging/data/ stands, and no local table copies a lake table (4.1,
+         decision 3)
   DT-9   the escape hatch: windowed trust pinned to the Region, closed at rest, <=1h,
          alarmed by rules that receive AssumeRole (6.1-6.2)
   DT-10  the persona halves read back through the delegated admin (5.1-5.2)
@@ -1611,11 +1649,9 @@ What the checks are, and where each comes from:
         rep.h1("12. The accounts nothing here is measuring")
         rep.text("""Read this BEFORE reading section 11 as a pass.
 
-  - `Staging` HAS a profile since 2026-09-06 and this text used to say it would
-    not until a vend. That vend was refused; Stage 6b made the account by
-    renaming `Development`, so sections 5, 7 and the DT-8 pair are no longer
-    blind - and neither is INT-07's registry half (4.6). What they report is a
-    real reading now, not an absence.
+  - `Staging` has a profile since 2026-09-06: Stage 6b made the account by
+    renaming `Development`, so sections 5 and 7, DT-8 and INT-07's registry
+    half (4.6) report a real reading, not an absence.
   - `Development` is gone as an account name. Where this report still says it,
     read `Staging`: same account, renamed 2026-09-06. INT-04 was retired into
     INT-07 at the 2026-09-05 re-scope.

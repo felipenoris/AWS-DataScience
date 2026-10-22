@@ -591,3 +591,70 @@ call.*
   it. Each leg extracts the release bundle's tree there (`workflows/<name>.yaml`, `code/`, `src/`,
   `glue/`); the deny's two exemptions and the principal branch's pair are unchanged, and Stage 10's file
   carries the list as of its commit `f2bd47a7` on PR #246.
+
+## 2026-10-22 — passes 2, 3 and 5 and decision 12 (a) prepared, `DT-8` rewritten
+
+*Claude's hand, the same session, on the user's words relayed from the orchestrating session. Every AWS
+call is a read, as the infrastructure user (`InfrastructureAccess`) through `awsds-infra-data`,
+`awsds-infra-prod`, `awsds-infra-staging` and `awsds-infra-identity`, with the tunnel down; the plans ran
+on Terraform 1.15.8 and were saved under `$HOME/tmp/stage-09/`. Nothing was applied.*
+
+- **[user] The words, verbatim**, relayed from the orchestrating session's chat: *"Peça à sessão do Stage 9
+  para preparar os passes 2, 3 e 5 e reescrever o DT-8, sem aplicar nada."*
+- **[Claude] `backend.py`.** `DATA_CONSUMERS` holds Sandbox, Staging and Production; `DATA_CONSUMER_VPC_SLICE`
+  sends the lake's read of Production's gateway endpoint to `production/workloads/` (1.4), and the
+  generated `consumers` map carries it as `vpc_slice`; a deployment target's `data/` slice receives its
+  account folder, VPC slice and deploy role's name; the two `sagemaker/` slices their zone ids and, in
+  Staging, the account folder. `layers.py` gains `production/data/` and `staging/data/` (`[P]`).
+- **[Claude] Pass 2, `data-governance/data/`.** An aliased provider and identity read for Staging; the
+  consumers' endpoint read from each one's VPC slice; the read shares (`share_databases`, `share_tables`)
+  for Staging and Production beside Sandbox's; `production_write_database` and `production_write_tables`,
+  named on `curated` with the grant option; the table `curated.trades` (Iceberg, the columns of
+  `app-etl`'s input: `trade_date`, `desk`, `instrument`, `quantity`, `price`) and its
+  `classification=internal`, the Governance Manager's to approve; the output `producer_table_name`.
+  `DL-5`'s bracket: `get-data-lake-settings` at 18:44:47Z read `CROSS_ACCOUNT_VERSION` `4` and
+  `SET_CONTEXT` `TRUE`, and the plan touches no settings. Plan: *"Plan: 8 to add, 5 to change, 0 to
+  destroy."*; each of the five lake bucket policies gains two `aws:SourceVpce` ids, the Production one
+  read from `production/workloads/terraform.tfstate`.
+- **[Claude] Pass 3, `production/data/`.** The `consumer-data-v0.6.0` call with fourteen added key
+  statements (the job role, the persona, the debug role, the release roles and their workflows, the chain
+  role, the workflow roles, the jobs' volume grants, CloudWatch Logs for the job and workflow groups,
+  Redshift Serverless); `awsds-prod-outputs` with eight statements (the network deny with its named
+  exemptions, the persona's and debug role's reads, the release role's prefixes `applications/` and
+  `inbox/`, Stage 10 decision 12's deny on `applications/*` exempting the deploy role and
+  `InfrastructureAccess`) and its EventBridge notification; `awsds-prod-derived` at 30 days;
+  `awsds-prod-athena`, enforced, 10 GB per query; `app_outputs` and its grants; 2.3's regrants to the job
+  role, the read by expression and the write on `curated` by name. Plan: *"Plan: 35 to add, 0 to change, 0
+  to destroy."*; Recipe D's first step, `-target` on the settings: *"Plan: 1 to add, 0 to change, 0 to
+  destroy."*, `CROSS_ACCOUNT_VERSION` `4`, `SET_CONTEXT` `TRUE`, the create-time defaults known after
+  apply.
+- **[Claude] Pass 5, `staging/data/`.** The same shape without the write, the debug role and the Redshift
+  statement; the persona held to reads on the whole bucket. Plan: *"Plan: 34 to add, 0 to change, 0 to
+  destroy."*; the first step *"Plan: 1 to add"*. The module writes `CROSS_ACCOUNT_VERSION` 4 where Staging
+  read 1.
+- **[Claude] Decision 12 (a).** `network.tf` in both `sagemaker/` slices: `awsds-<env>-jobs`, a
+  self-referencing rule for every TCP port in and out, TCP/443 to the endpoints' group and to the S3
+  prefix list, and the `NETWORK` Glue connection on the first zone's private subnet; outputs
+  `job_security_group_id` and `glue_connection_name`. EC2 refuses an apostrophe in a description, which
+  `check-sg-descriptions.py` caught before a plan. Plans: `production/sagemaker/` *"Plan: 6 to add, 1 to
+  change, 0 to destroy."* (the change is `glue:GetConnection`), `staging/sagemaker/` *"Plan: 14 to add, 0
+  to change, 0 to destroy."*. `lakeformation` joins both egress slices: *"Plan: 16 to add"* each.
+- **[Claude] `DT-8` rewritten.** It reads every grant of the lake to Staging's account (fail on anything
+  beyond `DESCRIBE` and `SELECT`), Staging's resource links into Data Governance (a failure once
+  `staging/data/` stands without them) and Staging's local tables against the lake's names (a failure on
+  a copy). Live, the five infrastructure profiles: *"0 check(s) FAILED."*, `DT-8` two notes (no grant, no
+  link yet) and one pass. Against a stand-in `aws`: a planted `INSERT`, a missing link with the Staging key
+  present and a local `app_outputs.trades` each fail by name; a world with `DESCRIBE`/`SELECT` grants,
+  both links and no copy reads three passes.
+- **[Claude] What the plans do not stop on, and what they wait for.** No plan reads an object another
+  stage creates: the policies name Stage 10's roles by `aws:PrincipalArn`. The applies have an order:
+  pass 2 before `production/data/` and `staging/data/` (the regrants need the share);
+  `staging/sagemaker/` before `staging/data/` (Lake Formation refuses a grant to a role that does not
+  exist); Recipe D's two steps in each data slice. Once merged, `data-governance/data/`'s change sits on
+  `main` unapplied, and any later apply of that slice carries it (Lesson 69).
+- **[Claude] Documents.** `docs/NETWORK.md` §2.1 and §9 name the jobs' groups and §10 the seven
+  endpoints; the producer README gains the write grants, the trusted endpoints' sources and `curated.trades`;
+  `production/data/` and `staging/data/` carry READMEs indexing every added `Sid` and grant; conventions §6,
+  `docs/PRICING.md` §3, `docs/plan/cost-model.md` and `aws/INDEX.md` follow. `check-network-doc.py`,
+  `check-sg-descriptions.py`, `check-plan-refs.py`, `check-index.py` and `slices.py check` (41 slices) are
+  clean.

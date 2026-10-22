@@ -44,15 +44,16 @@ module "egress" {
   # this account's own run of 2026-10-19 (Stage 18 4.4, CloudTrail): the worker called `glue`,
   # `sagemaker.api`, `kms` and `logs` through these endpoints, and the job's image pull (`ecr.*`) and
   # Glue's job runner called from AWS's own addresses, through none of them. So `ecr.api`, `ecr.dkr`,
-  # `athena`, `lakeformation`, `sagemaker.runtime` and `sagemaker.studio` leave the 2026-09-06 set, and
-  # `secretsmanager` joins. A change joins both slices or carries its reason here:
-  #   lakeformation  on step 2.4's reading of a job's vpcEndpointId, in both VPCs
+  # `athena`, `sagemaker.runtime` and `sagemaker.studio` leave the 2026-09-06 set, `secretsmanager`
+  # joins, and `lakeformation` stays for decision 12 (a): a Glue job runs on staging/sagemaker/'s
+  # connection, inside this VPC, and vends its Lake Formation credentials from it. A change joins both
+  # slices or carries its reason here:
   #   athena         when a job inside the VPC queries through it (an integration test's, Stage 8 3.3)
-  #   the mwaa group Stage 10 step 1.2's worker set, in both VPCs (`monitoring` among its candidates)
+  #   monitoring     when Stage 10's verification xvi reads the workers' metrics refused
   #
   # `datazone` stays out: `DenyDataZoneEntirely` refuses this account the service, and the endpoint
   # Stage 18 7.1 added for its window left with it.
-  core_services  = ["sts", "logs", "kms", "glue"]
+  core_services  = ["sts", "logs", "kms", "glue", "lakeformation"]
   extra_services = ["sagemaker.api", "secretsmanager"]
 
   # The firewall closes the VPC resolver as an exfiltration channel (6c step 5.7), which exists
@@ -64,7 +65,7 @@ module "egress" {
   # the chain beneath it.
   firewall_domain_redirection_action = "TRUST_REDIRECTION_DOMAIN"
 
-  # AWS namespaces only, VPC-Workloads' list. Each of the six endpoints answers for
+  # AWS namespaces only, VPC-Workloads' list. Each of the seven endpoints answers for
   # `<service>.<region>.amazonaws.com` and its `.api.aws` twin, plus `streaming-logs` for `logs`
   # (measured on Sandbox's endpoints, 2026-09-09), and the S3 gateway's names are under
   # `amazonaws.com` too. The apex sits beside each wildcard because a domain-list wildcard never

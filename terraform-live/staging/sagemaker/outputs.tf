@@ -16,3 +16,13 @@ output "job_log_group_names" {
   description = "The job log groups this slice declares with a retention (step 4.3, EXC-10)."
   value       = sort([for group in aws_cloudwatch_log_group.job : group.name])
 }
+
+output "job_security_group_id" {
+  description = "awsds-<env>-jobs, the group a Glue job's connection and a processing job's VpcConfig name (decision 12)."
+  value       = aws_security_group.jobs.id
+}
+
+output "glue_connection_name" {
+  description = "awsds-<env>-jobs, the Glue network connection the application slice declares its Glue job on (decision 12)."
+  value       = aws_glue_connection.jobs.name
+}

@@ -323,13 +323,13 @@ SLICES = [
     # them, and a static rate that assumed them would over-report every session that does not.
     # `make status` quotes this column; the flag's cost is in `make help`.
     Slice("sandbox", "egress", EPHEMERAL, "18 interface endpoints (5.2) - no NAT", 0.180),
-    # Stage 9 step 4.3a re-cut it to VPC-Workloads' six (3.3a), the endpoints a job and a worker call.
+    # Stage 9 step 4.3a re-cut it to VPC-Workloads' set (3.3a), the endpoints a job and a worker call.
     Slice(
         "staging",
         "egress",
         EPHEMERAL,
-        "6 interface endpoints (St.9 4.3a) + DNS Firewall - no NAT",
-        0.060,
+        "7 interface endpoints (St.9 4.3a, decision 12) + DNS Firewall - no NAT",
+        0.070,
     ),
     # 12 since Stage 7 (2026-10-12): 6c 5.5's 13 plus `secretsmanager` (step 1.7), which the GitLab
     # host's bootstrap reads its leaf keys and gitlab-secrets.json through and the runner its
@@ -342,15 +342,15 @@ SLICES = [
         0.120,
     ),
     # Stage 6c step 1.3a - VPC-Workloads' endpoint slice, zero NAT (D38). Stage 9 step 3.3a names
-    # its six endpoints: sts, logs, kms and glue of the core, sagemaker.api and secretsmanager. The
-    # DNS Firewall bills per query and per domain list, never by the hour, so it adds nothing to
-    # this column.
+    # its seven endpoints: sts, logs, kms, glue and lakeformation of the core (decision 12),
+    # sagemaker.api and secretsmanager. The DNS Firewall bills per query and per domain list, never by
+    # the hour, so it adds nothing to this column.
     Slice(
         "production",
         "workloads-egress",
         EPHEMERAL,
-        "6 interface endpoints (St.9 3.3a) + DNS Firewall - no NAT",
-        0.060,
+        "7 interface endpoints (St.9 3.3a, decision 12) + DNS Firewall - no NAT",
+        0.070,
     ),
     # Stage 3's Deliverables, as slices rather than as a script. These are instruments: created,
     # read from the serial console, destroyed in the same sitting - `make down` is why they are
@@ -437,6 +437,22 @@ SLICES = [
         "data",
         PERSISTENT,
         "consumer side: account data CMK, links, DataLakeSettings (derived zone removed 2026-08-26)",
+    ),
+    # Stage 9 steps 1 and 4.1 - the two deployment targets' data platforms: the consumer-data call (the
+    # account data CMK, the LF settings, the resource links and their re-grants), the outputs bucket,
+    # the results bucket and the enforced Athena workgroup. Production's read rides beside its governed
+    # write (2.3); Staging reads alone (decision 3). [P], free or floor-priced at rest, like Sandbox's.
+    Slice(
+        "production",
+        "data",
+        PERSISTENT,
+        "consumer-data, outputs + derived buckets, the enforced workgroup, the job role's regrants",
+    ),
+    Slice(
+        "staging",
+        "data",
+        PERSISTENT,
+        "consumer-data (read only), outputs + derived buckets, the enforced workgroup",
     ),
     # Stage 7 pass 1 (step 2.1) - the internal CA: the root and two leaves in the `tls`
     # provider's state, three SSM parameters and three S3 objects publishing the certificates,

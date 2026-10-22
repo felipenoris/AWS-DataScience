@@ -6,9 +6,9 @@
 # A pending invitation is the finding: the org-sharing path is not doing the work, the share
 # arrived through the fallback tax, and it will reappear at every rebuild. DL-7 fails on that.
 #
-# The consumers are the Interactive accounts and not Production: Production's share carries the
-# governed write and arrives with Stage 9, which has a job role to receive it. Sharing into an
-# account with no consumer in it is a grant nobody asked for.
+# The consumers are Sandbox, Staging (read-only, Stage 9 decision 3) and Production, whose read rides
+# beside the governed write at the end of this file (Stage 9 step 2.1). Every consumer receives the
+# same read, so Staging and Production read exactly what Sandbox reads, `restricted` excluded.
 #
 # ---------------------------------------------------------------------------------------
 # The grant option is required
@@ -145,5 +145,41 @@ resource "aws_lakeformation_permissions" "share_tables" {
       key    = aws_lakeformation_lf_tag.classification.key
       values = ["public", "internal"]
     }
+  }
+}
+
+# ---------------------------------------------------------------------------------------
+# The governed write (Stage 9 step 2.1, D22, INT-03's last third)
+#
+# Production is the lake's only producer: the promoted pipeline's job role writes curated tables
+# through Lake Formation, and nothing else writes them. The grant names the curated database rather
+# than an LF-Tag expression, the exception Stage 5a decision 5 reserves and the register records as
+# one: an expression over `classification` alone matched the drop-box (Lesson 29), and a write grant
+# is the more dangerous direction. ALTER is not optional, since an Iceberg commit rewrites the
+# table's metadata and a write without it fails at the commit. No CREATE_TABLE: a curated table is
+# declared in catalog.tf before its first write, tagged as the Governance Manager approves.
+#
+# With the grant option, as every cross-account grant here: Production's administrator regrants it
+# to awsds-prod-job-exec alone (production/data/, step 2.3).
+resource "aws_lakeformation_permissions" "production_write_database" {
+  principal = local.consumer_accounts["production"]
+
+  permissions                   = ["DESCRIBE"]
+  permissions_with_grant_option = ["DESCRIBE"]
+
+  database {
+    name = aws_glue_catalog_database.curated.name
+  }
+}
+
+resource "aws_lakeformation_permissions" "production_write_tables" {
+  principal = local.consumer_accounts["production"]
+
+  permissions                   = ["SELECT", "INSERT", "DELETE", "ALTER", "DESCRIBE"]
+  permissions_with_grant_option = ["SELECT", "INSERT", "DELETE", "ALTER", "DESCRIBE"]
+
+  table {
+    database_name = aws_glue_catalog_database.curated.name
+    wildcard      = true
   }
 }

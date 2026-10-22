@@ -332,11 +332,12 @@ terraform-live/
 │   │                     #     this account's whole internet, and there is no default route.
 │   │                     #     And awsds-deploy-staging with awsds-staging-alerts (Stage 8
 │   │                     #     step 4.1, decision 5), the deploy-role module
-│   ├── data/             # [P] S3 + Glue catalog mirroring production's schema, sampled or
-│   │                     #     synthetic data only, under alias/awsds-staging-data - a new
-│   │                     #     key created at Stage 9, never the dev-named one 6b destroys
-│   ├── sagemaker/        # [P] job execution roles only (Pipelines, training, processing,
-│   │                     #     batch transform, the Model Registry consumer side)
+│   ├── data/             # [P] the lake read through a read-only share (Stage 9 decision 3:
+│   │                     #     no mirror, no copy), the outputs and derived buckets and the
+│   │                     #     enforced workgroup, under alias/awsds-staging-data - a new key
+│   │                     #     created at Stage 9, never the dev-named one 6b destroyed
+│   ├── sagemaker/        # [P] awsds-staging-job-exec, its job log groups, and the jobs'
+│   │                     #     security group and Glue connection (Stage 9 4.3, decision 12)
 │   ├── orchestration/    # [E] MWAA Serverless workflows for the staging leg (D7 amended:
 │   │                     #     a serverless workflow bills nothing at rest, so the reason
 │   │                     #     orchestration was Production-only is gone), with the chain
@@ -442,8 +443,9 @@ terraform-live/
     │                     #     pipeline-submitted jobs assume, its job log groups, and the
     │                     #     escape hatch awsds-prod-debug with its alarm (Stage 9 steps 3
     │                     #     and 6, rank 46); the rule awsds-prod-model-approval on every
-    │                     #     model package's state change (Stage 10 step 5.3). No domain,
-    │                     #     no user profiles (D17)
+    │                     #     model package's state change (Stage 10 step 5.3), and the jobs'
+    │                     #     security group and Glue connection (decision 12). No domain, no
+    │                     #     user profiles (D17)
     ├── egress/           # [E] VPC-SharedServices' interface endpoints (12 since Stage 7: 6c
     │                     #     5.5's 13 plus secretsmanager, step 1.7, minus the SageMaker pair,
     │                     #     decision 9) - no NAT anywhere (D38; the NAT

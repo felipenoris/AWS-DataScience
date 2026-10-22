@@ -49,6 +49,18 @@ variable "log_retention_days" {
   default     = 30
 }
 
+variable "account_folder" {
+  description = "This account's terraform-live/ folder - the state key of the VPC slice the job network reads, never re-derived from the env token (Lesson 14)."
+  type        = string
+  nullable    = false
+}
+
+variable "zone_ids" {
+  description = "The two AZ zone ids subnets anchor on (D9). The first entry is where the Glue connection's subnet is selected - a selection among authored zones, made in one place."
+  type        = list(string)
+  nullable    = false
+}
+
 variable "project" {
   description = "Project tag. Fixed by docs/plan/conventions.md and by 1c's tag policy."
   type        = string
