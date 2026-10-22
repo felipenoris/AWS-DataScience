@@ -901,7 +901,9 @@ session; read every denial by its wording (standing rule since 1c).
   (Stage 18 7.2, 2026-10-22), and the failure rules stay quiet. Then the pause lever works, applied
   through the slice:
   the schedule's `state` → `DISABLED`, no further executions (3.5); no production workflow has a cron of
-  its own to pause (decision 13).
+  its own to pause (decision 13). The schedule fires at 06:30 UTC (`cron(30 6 * * ? *)`, 3.5), and a run
+  needs `production/workloads-egress/`'s endpoints, which are `[E]`: the sitting that proves it spans that
+  minute with the endpoints up, or a commit moves the cron into the sitting and the pipeline applies it.
 - **6.2 — [user] The negatives, from a data-science Production session**: `airflow-serverless:StartWorkflowRun`
   denied, and `airflow-serverless:ListWorkflows` too unless decision 11 granted this set the read (implicit
   deny; the wording names no allow, not an SCP) — and `airflow:CreateEnvironment` denied by **`DenyProvisionedMwaa`**
