@@ -894,3 +894,21 @@ applied only after its summary line read what the reviewed plan had read. Times 
   the policy `attached`) and for `DataScientistStagingAccess`.
 - **[Claude] What follows**: 5.4 and 8.1 to 8.4 are the user's, in the data-science persona's sessions;
   6.3 may run now, the persona holding the debug role's assumption.
+
+## 2026-10-22 — 6.3: the deployment manager's approval of a debugging window, and the apply planned
+
+*Claude's hand, the same session. The approval is the user's, in this chat; the plan a read as the
+infrastructure user (`awsds-infra-prod`); nothing applied in this entry. Times UTC.*
+
+- **[user] The approval**, as the deployment manager, 23:0x: *"Sim: registre minha aprovação como
+  deployment manager, planeje o apply da variável debug_window_end em production/sagemaker e me diga
+  o que eu faço na sessão da persona."* It answers this session's question of the same minute,
+  *"Quer abrir agora a janela do escape hatch (6.3), com sua aprovação escrita e o apply da
+  variável?"*. The window proposed: until 2026-10-23T01:00:00Z, about two hours from the approval, long
+  enough for the persona's sign-in, one assumption inside it and the refused one after it.
+- **[Claude] The plan**, `production/sagemaker/` as `awsds-infra-prod` with `-var
+  debug_window_end=2026-10-23T01:00:00Z`, 23:07:28 to 23:07:44: *"Plan: 0 to add, 1 to change, 0 to
+  destroy."*, the debug role's trust alone (`DateLessThan` moving from the default to the window), and
+  the slice's own check printing *"The debug window on awsds-prod-debug is open until
+  2026-10-23T01:00:00Z: close it in the same sitting with an apply without -var debug_window_end"*, the
+  reminder 6.3 relies on. The apply waits on the user's word; the persona's sequence is the step's.

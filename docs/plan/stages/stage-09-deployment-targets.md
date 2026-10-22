@@ -768,11 +768,59 @@ detective — the alarm, and CloudTrail.
   assumption succeeds and the alarm fires; after the window, the same assumption is denied, and the denial
   is read in CloudTrail rather than expected from the rule; a `CreateSpace` under the role is denied naming
   the Workloads OU policy. Reverting the variable closes the window in the same sitting.
-  The persona holds no `sts:AssumeRole` allow until 5.1, and no persona set denies an `sts:` action
-  (read 2026-10-22). The role's trust names the reserved role's ARN in the same account, which by AWS's
-  evaluation logic admits the session with no identity-side allow [inferred, unmeasured], so 6.3 may run
-  before pass 4; a refusal naming an implicit deny in an identity-based policy means 5.1's debug half
-  comes first.
+  The persona holds the `sts:AssumeRole` allow since 5.1's apply (2026-10-22), and no persona set denies
+  an `sts:` action (read 2026-10-22); the inference that the same-account trust admits the session with no
+  identity-side allow is no longer the path this proof takes. **Approved in writing 2026-10-22** by the
+  user as the deployment manager (the log), the window to end at 2026-10-23T01:00:00Z, planned as
+  `awsds-infra-prod` with `-var debug_window_end=2026-10-23T01:00:00Z`: 0 to add, 1 to change, the trust
+  alone, the slice's check warning that the window is open. **The persona's sequence**, from a laptop,
+  signed in as the Data Scientist User (`aws sso login --sso-session awsds-scientist --no-browser`, the
+  URL answered in a private window, as `aws/AWS-CLI.md` has it), with a profile of the laptop's own
+  config that assumes the role through the persona (`role_arn` the debug role's, `source_profile`
+  `awsds-scientist-prod`, `region` `us-west-2`, so the call reaches the regional STS endpoint the trust
+  pins); the account id is the one that config already carries:
+
+  ```bash
+  aws sts get-caller-identity --profile awsds-scientist-prod
+  ```
+
+  1. Inside the window, the assumption itself, with a session name the alarm's message will print:
+
+  ```bash
+  aws sts assume-role --profile awsds-scientist-prod --region us-west-2 --role-arn "arn:aws:iam::<Production>:role/awsds-prod-debug" --role-session-name debug-window-proof --query 'AssumedRoleUser.Arn' --output text
+  ```
+
+  The alerts e-mail from `awsds-prod-alerts` names `awsds-prod-debug-assume`, the time, the role, the
+  caller and the session name, and carries no credential.
+
+  2. The reads the role exists for, through the assuming profile: the outputs bucket's listing and the
+  six job log groups.
+
+  ```bash
+  aws s3 ls s3://awsds-prod-outputs/ --profile awsds-scientist-prod-debug
+  ```
+
+  ```bash
+  aws logs describe-log-groups --log-group-name-prefix /aws/sagemaker/ --query 'logGroups[].logGroupName' --profile awsds-scientist-prod-debug
+  ```
+
+  3. The negatives, read by their wording: a write refused by the bucket's
+  `DenyThePersonaAndTheDebugRoleAnyWrite`, and a `CreateSpace` refused by the `Workloads` document
+  (`DenyInteractiveSageMakerSurface`, *"with an explicit deny in a service control policy"*), the
+  battery's own probe with a domain that does not exist.
+
+  ```bash
+  echo probe | aws s3 cp - s3://awsds-prod-outputs/app-etl/outbox/probe.txt --profile awsds-scientist-prod-debug
+  ```
+
+  ```bash
+  aws sagemaker create-space --domain-id d-0000000000000 --space-name awsds-canary-probe --region us-west-2 --profile awsds-scientist-prod-debug
+  ```
+
+  4. After 01:00Z, the same `assume-role` of item 1 again, never a call through the profile, whose
+  cached credentials outlive the window for up to an hour: the refusal names `sts:AssumeRole` and the
+  role, and Claude reads it in Production's trail by `errorCode` as the infrastructure user. Then the
+  closing apply without the flag, re-planned `No changes`, `DT-9` reading the window closed.
 
 ### 7. Consumed from Stage 8 — readings, not builds
 
