@@ -2190,3 +2190,51 @@ for `./aws/cicd.py`), reads only; no other Claude session held this stage. An ac
   domain names, and reads no application's pin.
 - **[Claude] Recorded**: decision 26 taken, with those facts; the stage's status and 2.2;
   `waiting-on-the-user.md`'s row removed; `CLAUDE.md`, `GENERAL_PLAN.md` and the stage index.
+
+## 2026-10-22 — pass 4 read against Stages 9, 10 and 18; `prepare()` fixed; xix and xxviii's passive half
+
+*Claude, in the session `stages-7-8-pending`, which orchestrates the parallel review of Stages 8, 9 and
+10; the sessions "Stage 9 — revisão e preparação" and "Stage 10 — revisão e preparação" hold those
+stages. AWS read as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`,
+`awsds-infra-staging`, `awsds-infra-sandbox-1`), reads only, the environment down. Times UTC.*
+
+- **[user] The request**: *"Revise o plano dos estágios 8, 9 e 10, considerando o andamento atual do
+  plano, em especial as decisões registradas na sessão atual, bem como o aprendizado com a conclusão do
+  stage 18. Faça todas as leituras que não dependam do ambiente no ar. Usuário infra sso está logado.
+  Faça a preparação necessária para todas as etapas dos estágios 8, 9 e 10 que forem possíveis de serem
+  preparadas e que não precisam da minha intervenção ou decisão. Abra quantas tarefas em paralelo forem
+  necessárias para estas atividades. Faça as correções necessárias no plano, atualize o log dos
+  estágios correspondentes com o andamento feito. Ao final, planeje as etapas seguintes que dependem do
+  ambiente no ar."*
+- **[Claude] Pass 4, item by item**, a read-only subagent over this stage, Stages 9, 10 and 18 and the
+  code: no item can be written whole now. 3.2, 3.3 and 3.6 wait on Stage 9's platforms (4.3's
+  `awsds-staging-job-exec`, `staging/data/`, `production/data/`, behind its decisions 1 and 3) and on
+  Stage 10's decisions 1, 2, 8 and 12 and its `orchestration/` slices; 3.0's ceiling content on Stage 10's
+  roles; 3.7 and 3.8 follow a promotion. What each needs of Stages 9 and 10 was sent to their sessions.
+- **[Claude] The readings**:
+  - `iam get-role`: `awsds-staging-job-exec` *"cannot be found"*; `awsds-prod-job-exec` created
+    2026-10-18 19:59:03, no permissions boundary. `s3api head-bucket`: no `awsds-staging-outputs` or
+    `awsds-prod-outputs`. `iam list-policies --scope Local`: no `awsds-<env>-app-boundary` in either.
+  - `iam list-role-policies`: `awsds-deploy-staging` holds `apply-egress` and `state`,
+    `awsds-deploy-prod` holds `state`.
+  - Verification xxviii's passive half, `cloudtrail lookup-events --region us-east-1` on `AssumeRole`
+    from 2026-10-12: 0 events naming an `awsds-deploy-*` role in Production, Staging and Sandbox, beside
+    32, 35 and 41 service-linked `AssumeRole` events (`AWSServiceRoleForOrganizations`, Athena's,
+    Resource Explorer's, Service Quotas').
+  - Verification vii's third half: no `UpdateDomain` in Sandbox since 2026-10-18.
+  - Verification xix's comparison: AWS's sample IAM policy for the CI/CD feature, read 2026-10-22, holds
+    18 entries on `*` and covers 7 of the role's 25 actions; the 18 it leaves out are in the stage file.
+- **[Claude] `scripts/slices.py`'s `prepare()`**: with `--profile` naming a deploy role it now runs
+  `gen-tfvars.py --pipeline`, so `make down ENV=staging PROFILE=awsds-deploy-staging` (3.4) writes an
+  application slice's registry profile as the runner's own rather than `awsds-infra-prod`, which the
+  runner does not hold; `layers.deploy_profiles()` is the set refusal 8 already used. Read: `slices.py
+  down --env staging --profile awsds-deploy-staging --dry-run` prints `gen-tfvars.py --pipeline staging
+  egress`, without the profile it prints no flag, and the three `egress` slices' tfvars render the same
+  with and without it; `ruff` clean.
+- **[Claude] The plan revised, no AWS call**: the status, the build table (the two ceilings), the pass
+  table, 2.5's ceiling claim (five role-policy writes, not every change), 3.0 (its applied half, the
+  ceiling's shape), 3.1 to 3.8 (Stage 18's measurements and the asks of Stages 9 and 10), 4.1 (the scope by
+  name, Stage 18's amendment and removal of three inline documents, the residual profiles, 1.5's fuller
+  list), 4.4, 4.6, 6.1 and the risk on decision 2, verifications xix and xxviii; the comments in
+  `staging/foundation/deploy-role.tf`, `production/foundation/deploy-anchors.tf` and `backend.py` that
+  still cited 2.4; `docs/REFERENCES.md`'s CI/CD pages line.

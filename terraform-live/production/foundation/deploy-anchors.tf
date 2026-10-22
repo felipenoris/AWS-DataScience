@@ -272,9 +272,10 @@ resource "aws_secretsmanager_secret_policy" "deploy_runner_token" {
 
 # -------------------------------------------------------------------- the deploy role (4.1)
 #
-# What it applies from the runner: production/app/* (step 3.6), and no other slice - the pipeline
-# never runs `make up` or `make down ENV=production`. The application half of its grant lands with the
-# first application slice (steps 2.4 and 3.0); until then it holds its state access and nothing else.
+# What it applies from the runner: production/app/* (step 3.6) and production/orchestration/ (Stage
+# 10), and no other slice - the pipeline never runs `make up` or `make down ENV=production`. The
+# application half of its grant lands here, beside the application ceiling awsds-prod-app-boundary
+# (step 3.0); until then it holds its state access and nothing else.
 module "deploy_role" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.3.0"

@@ -2,8 +2,9 @@
 # steps 3.1-3.4 (INT-08), and the misuse alarm with the alerts topic it reaches (4.6, decision 5).
 #
 # What it applies from the deploy runner: staging/egress/, which since 6c is interface endpoints and
-# the DNS Firewall with no NAT, and staging/app/* (step 3.2). The egress half of its grant is below;
-# the application half lands with staging/app/app-etl/ (step 3.0).
+# the DNS Firewall with no NAT, staging/app/* (step 3.2) and staging/orchestration/ (Stage 10). The
+# egress half of its grant is below; the application half lands here, beside the application ceiling
+# awsds-staging-app-boundary (step 3.0), applied by the infrastructure user.
 #
 # The trust names the runner's role in the runner's home, built from the runner's name and the home's
 # account id, which the alias below resolves (aws/INDEX.md rule 1). Production/foundation/ must exist
