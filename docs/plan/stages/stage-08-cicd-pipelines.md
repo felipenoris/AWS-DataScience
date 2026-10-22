@@ -834,7 +834,8 @@ the approval, and 4.6's alarm.
   - `iam:PassRole` of `awsds-<env>-job-exec` to `glue` and `sagemaker` on both roles (Stage 9);
   - on `awsds-deploy-staging`, 3.2's registry read: `sagemaker:DescribeModelPackage` on Production's
     `awsds-prod-model-*` packages and `ListModelPackages`, the Production account read through an aliased
-    identity, never a literal; and, once Stage 9 decision 1 is taken as recommended, `s3:GetObject` on
+    identity, never a literal. Stage 9 decision 1's recommendation keeps Staging off Production's
+    outputs, the model archives included; its option (a) would add `s3:GetObject` on
     `awsds-prod-outputs/models/*/model.tar.gz` with `kms:Decrypt` through S3 under that bucket's context;
   - on `awsds-deploy-prod`, Stage 9 9.4's Data API grant at its pass 6;
   - the module call: `state_prefixes` gain `<folder>/orchestration/`; `state_read_keys` are

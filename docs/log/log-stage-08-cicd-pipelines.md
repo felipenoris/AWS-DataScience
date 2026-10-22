@@ -2276,3 +2276,15 @@ Stage 9's log by the session that holds Stage 9 (PR #245), to which the user's w
   slice to reference. Stage 10 was told that its decision 20(b), which had the application slice declare
   both, must follow 12(a). `waiting-on-the-user.md`, `CLAUDE.md`, `GENERAL_PLAN.md` and the stage index
   carry the taken decisions.
+
+## 2026-10-22 — Stage 9's revised recommendations for decisions 1 and 3 reach Stage 8 and the shared files
+
+*Claude, in the session `stages-7-8-pending`, no AWS call. The revision was asked for by the user in a
+session started from this one under the same title, which relayed it to the Stage 9 session; that
+session recorded it in PR #245 (`55ed4c90`) as recommendations, with the decisions still the user's.*
+
+- **[Claude] What changed here**: 4.1's list no longer carries the archive read on `awsds-deploy-staging`,
+  since Stage 9 decision 1 now recommends that Staging read nothing of Production's outputs, the model
+  archives included; the read survives as that decision's option (a). `waiting-on-the-user.md`,
+  `GENERAL_PLAN.md` and the stage index carry the two revised recommendations. The threat model's
+  `TM-25` and D20's amendment wait on decision 3 being taken.
