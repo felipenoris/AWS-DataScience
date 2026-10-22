@@ -58,14 +58,6 @@ locals {
     a.id if a.name == "Identity Account" && a.status == "ACTIVE"
   ])
 
-  # Stage 18 step 1.1: the account DenyDataZoneEntirely carves out for that stage's window,
-  # resolved by its exact vended name and ACTIVE status the way identity_account_id is, so no
-  # id enters a tracked file. The placeholder and this local leave together at Stage 18 step 8.7.
-  account_id_staging = one([
-    for a in data.aws_organizations_organization.this.accounts :
-    a.id if a.name == "Staging Account" && a.status == "ACTIVE"
-  ])
-
   # ----------------------------------------------------------------------- the ten documents
   #
   # Derived from the map and not from a glob over the folder, because of `canary/`. That folder
@@ -84,27 +76,24 @@ locals {
   # converting them would mean editing render.py in the same commit that first compares against
   # what render.py generated.
   #
-  # All six substitutions run on every document, though only four appear in policies/ today
-  # (<ORG_ID> x6, <ORG_PATH_DATA> x1, <ACCOUNT_ID_DATA> x1, measured 2026-08-16; <ACCOUNT_ID_STAGING>
-  # x1 since Stage 18 step 1.1). Replacing an absent placeholder is a no-op, and running the full
-  # set keeps this and render.py the same substitution rather than two that currently agree. No
-  # token is a substring of another, so the order of the six is immaterial.
+  # All five substitutions run on every document, though only three appear in policies/ today
+  # (<ORG_ID> x6, <ORG_PATH_DATA> x1, <ACCOUNT_ID_DATA> x1 - measured 2026-08-16). Replacing an
+  # absent placeholder is a no-op, and running the full set keeps this and render.py the same
+  # substitution rather than two that currently agree. No token is a substring of another, so
+  # the order of the five is immaterial.
   rendered = {
     for name in local.documents : name => replace(
       replace(
         replace(
           replace(
-            replace(
-              replace(file("${path.module}/policies/${name}.json"), "<ORG_ID>", local.org_id),
-              "<ROOT_ID>", local.root_id
-            ),
-            "<OU_ID_DATA>", local.ou_id_data
+            replace(file("${path.module}/policies/${name}.json"), "<ORG_ID>", local.org_id),
+            "<ROOT_ID>", local.root_id
           ),
-          "<ORG_PATH_DATA>", local.org_path_data
+          "<OU_ID_DATA>", local.ou_id_data
         ),
-        "<ACCOUNT_ID_DATA>", local.account_id_data
+        "<ORG_PATH_DATA>", local.org_path_data
       ),
-      "<ACCOUNT_ID_STAGING>", local.account_id_staging
+      "<ACCOUNT_ID_DATA>", local.account_id_data
     )
   }
 

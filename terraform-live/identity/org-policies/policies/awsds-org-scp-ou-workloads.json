@@ -20,12 +20,7 @@
       "Sid": "DenyDataZoneEntirely",
       "Effect": "Deny",
       "Action": "datazone:*",
-      "Resource": "*",
-      "Condition": {
-        "StringNotEquals": {
-          "aws:PrincipalAccount": "<ACCOUNT_ID_STAGING>"
-        }
-      }
+      "Resource": "*"
     },
     {
       "Sid": "DenyAthenaSparkStartSession",
