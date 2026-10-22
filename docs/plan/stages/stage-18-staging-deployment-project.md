@@ -827,7 +827,10 @@ stage-18-deploy:
      subscribes signed in as that person, from a separate browser profile. Both `DataLake` targets name
      their project's role as the manage-access role and `abac:CURRENT_PROJECT` as the authorized
      principal, so on Sandbox's side the fulfilment acts as `test-experimentation`'s role and grants to
-     its project context. Staging's Lake Formation reads `CROSS_ACCOUNT_VERSION` 1 and Sandbox's 4;
+     its project context. **Done 2026-10-22** (the log): approved at 00:41:38Z, the grant `COMPLETED` at
+     00:42:53Z with Staging at version 1, since DataZone's own grant carries `CROSS_ACCOUNT_VERSION` 5; it
+     acted as each side's project role in `AWSDataZone-Subscriptions` sessions, which carry no source
+     identity, so 6.2's deny binds none of them. Staging's Lake Formation reads `CROSS_ACCOUNT_VERSION` 1 and Sandbox's 4;
      Lake Formation needs version 3 to share with an IAM principal in another account, and AWS's DataZone
      pages name no version, so the approval reads whether the fulfilment passes at 1 (decision 12). Both
      accounts' Data Catalog encryption is `DISABLED`, so the rule against sharing a catalog under Glue's
@@ -1083,7 +1086,9 @@ The reverse of passes 1 to 3, in 6b pass 1's order, each step read back before t
 
 - **8.1 — [Claude⚡] Remove what the project holds, then the project**: the subscription and the asset,
   the subscription read gone on Sandbox's side too (the resource link in `test-experimentation-lakehouse`'s
-  database, its grants and the RAM share), the orphaned database `glue_db_c2ej62w956q2a8` of 7.2's failed environment, dropped by Staging's
+  database, its grants and the RAM share) and on Staging's (the `SELECT` grant, the RAM share
+  `LakeFormation-V5-SZM42MYX4P` and the three statements the fulfilment put in Staging's Data Catalog
+  resource policy, which `glue get-resource-policy` reads `EntityNotFoundException` once empty), the orphaned database `glue_db_c2ej62w956q2a8` of 7.2's failed environment, dropped by Staging's
   InfrastructureAccess once it joins the admins (it holds no Lake Formation permission there, and the
   two admins trust DataZone and, for the provisioning role, CloudFormation alone): a `PutDataLakeSettings`
   keeping the two SMUS roles and every other field, then `DROP` granted to itself on both databases
@@ -1382,7 +1387,9 @@ Each is decided during the stage and written into the stage log with its recomme
   attaches what `main` holds, so 1.1 edits `main`'s document, and 1.3's plan changes only
   `DenyDataZoneEntirely` and, if 1.1 split it, `CreateDomain`'s statement. The two stages never share an
   apply.
-- **6.2's deny binds DataZone's own sessions** (6.2's correction, 2026-10-21). A call those sessions make
+- **6.2's deny binds DataZone's own sessions** (6.2's correction, 2026-10-21), those it opens for a member
+  or as `SYSTEM`; the subscription fulfilment's `AWSDataZone-Subscriptions` sessions carry no source
+  identity, and their `glue:PutResourcePolicy` passed on 2026-10-22. A call those sessions make
   that the deny names, an object written to the projects bucket or a Glue or SageMaker write, is refused
   for a member's or a `SYSTEM` operation as for a person's. The deploys' and the data source's sessions
   read alone so far; 4.3's run, 7.2's data source run and the subscription are where a new call would
