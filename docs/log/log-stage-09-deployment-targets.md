@@ -516,3 +516,26 @@ relaying the user's words in that chat. No AWS call; the decisions stay the user
 - **[Claude] Steps 4.1, 4.4 and 4.6** point at the two recommendations and stand as written until the user
   decides; no code changed. `staging/sagemaker/`'s role serves either design: it reads through
   `lakeformation:GetDataAccess` and holds S3 on no lake bucket.
+
+## 2026-10-22 — decisions 2, 5, 6, 7, 8, 11 and 12 taken by the user, as recommended
+
+*Claude's hand, the same session. The user's words were relayed from the orchestrating session "Pendências
+estágios 7 e 8", where the user took the decisions after the orchestrator showed them the options and
+recommendations of this stage's file. No AWS call, and no preparation beyond the record.*
+
+- **[user] The words, verbatim**, relayed from the orchestrating session: *"Pode registrar como aceitas as
+  recomendações de decisão em relação aos seguintes itens: # Stage 9 * #2 Limite de dados por query no
+  athena. * #11 onde ficam os resultados de query em Staging e Produção * #12 a rede do job glue * #5 como
+  um projeto do sandbox lê uma tabela governada no redshift * #6 Quem cria as tabelas do warehouse
+  governado * #7 Os limites de custo do warehouse * #8 os logs de auditoria do warehouse"*
+- **[Claude] What each acceptance takes**, recorded in the Decisions-due table:
+  - 2: 10 GB per query.
+  - 11: each data slice authors `awsds-<env>-derived`, `results/` at 30 days, and `awsds-<env>-athena`.
+  - 12: option (a), the Glue connection and the job security group `[P]` in `*/sagemaker/`. The
+    application slice references them through `*/sagemaker/`'s outputs (Stage 10 decision 20 (b)).
+  - 5: the Lake Formation-managed datashare, after 9.5a's reading.
+  - 6: the DDL and the load job in the repository, the deployer's database user the only creator.
+  - 7: 10 RPU-hours and `auto_mv` off.
+  - 8: 30 days and the account data CMK.
+- **[Claude] Still open**: decisions 3 (whether Staging keeps a mirror) and 1 (the Production data key and
+  what Staging reads of Production's outputs), which hold pass 2 onward.
