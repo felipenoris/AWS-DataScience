@@ -1217,8 +1217,8 @@ The reverse of passes 1 to 3, in 6b pass 1's order, each step read back before t
   membership, AWS's managed policies define and the project's applications share; a boundary that caps
   it is the per-application policy written in another place, and the parity that matters, Staging with
   Production, is D28's. State: D41's workflow is in Terraform's state on INT-14 alone, the fallback's
-  last rung being the CLI's form, while D28's other properties hold either way. D41, `SMUS.md`,
-  `POLICIES.md` and Stage 10 carry the verdict.
+  last rung being the CLI's form, while D28's other properties hold either way. D41, whose section "Where production
+  runs" carries the comparison, `SMUS.md`, `POLICIES.md` and Stage 10 carry the verdict.
 
 ## Deliverables
 

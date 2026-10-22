@@ -1955,3 +1955,10 @@ UTC.*
   `POLICIES.md`'s trigger on `DenyDataZoneEntirely`; Stage 10's status; this stage's 8.9, decision 7 and
   status; four entries in `lessons.md`'s list of platform behaviours; `history.md`; the general plan, the
   indexes, the waiting list and `CLAUDE.md`. The stage is done.
+- **[user] The decision's text**: *"revise a decisão escrevendo a comparação entre as duas abordagens, as
+  vantagens e desvantagens, e o motivo de a decisão tomada ser a melhor opção."*
+- **[Claude] D41 revised**: a section "Where production runs: the pipeline's deploy against a project in each
+  deployment account", the two approaches described, compared row by row against this stage's readings
+  (identity, who can act as it, Terraform's state, the Glue job, isolation, the `Workloads` perimeter, the
+  deploy identity, running and seeing runs, governed data to Sandbox, lineage, teardown, cost), their
+  advantages and disadvantages, and why A, the pipeline's deploy, was kept; item 2 and the status point to it.
