@@ -2515,3 +2515,13 @@ apply.*
 - **[Claude] After**: each re-plan `No changes` (`-detailed-exitcode` 0); `apply-application` reads
   `PassTheJobRole`, `ManageTheApplicationGlueJob` and `ManageTheApplicationTables` on `awsds-deploy-prod`,
   and the same with `ReadTheApprovedModelVersions` and `ListTheModelVersions` on `awsds-deploy-staging`.
+
+## 2026-10-22 — 3.3's integration tests read through the share, pinned to an Iceberg snapshot
+
+*Claude, in the session `stages-7-8-pending`, no AWS call; the step of 15:19 (commit `26c06cc7`), from
+the Stage 9 session's revised 4.4 (PR #245), recorded at the end of the sitting.*
+
+- **[Claude] Applied**: Stage 9's 4.4, withdrawn by decision 3, says that in the Staging leg the deploy
+  creates the application's own tables after 3.2 and before 3.3, and that a test reads them and the
+  governed tables through the share, pinned to an Iceberg snapshot. Stage 8 3.3 says so and names 4.4
+  again, a reference the entry on the rest of decision 3's text had removed the same minute.
