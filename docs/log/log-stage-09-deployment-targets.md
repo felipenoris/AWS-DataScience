@@ -912,3 +912,23 @@ infrastructure user (`awsds-infra-prod`); nothing applied in this entry. Times U
   the slice's own check printing *"The debug window on awsds-prod-debug is open until
   2026-10-23T01:00:00Z: close it in the same sitting with an apply without -var debug_window_end"*, the
   reminder 6.3 relies on. The apply waits on the user's word; the persona's sequence is the step's.
+
+## 2026-10-22 — 6.3: the window opened
+
+*Claude's hand, the same session, as the infrastructure user (`awsds-infra-prod`), on the user's
+authorization in this chat: "Autorizo o apply de production/sagemaker como awsds-infra-prod a partir do
+plano salvo, abrindo a janela do awsds-prod-debug até 2026-10-23T01:00:00Z." Times UTC.*
+
+- **[Claude] Before**: the app's session list read at 23:09, no session running.
+- **[Claude] The apply**, from the plan saved at 23:07 (`production/sagemaker/`, Production): 23:09:43 to
+  23:09:55, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*, the role modified in 1 s,
+  the check warning *"The debug window on awsds-prod-debug is open until 2026-10-23T01:00:00Z"* printed
+  with it.
+- **[Claude] Read back**: `get-role` at 23:10:19 shows the trust's `DateLessThan aws:CurrentTime
+  2026-10-23T01:00:00Z` beside `aws:RequestedRegion us-west-2`, the session ceiling 3600 s;
+  `./aws/deploytargets.py awsds-infra-prod` at 23:10:50 *"0 check(s) FAILED."*, `DT-9` a note, *"OPEN
+  until 2026-10-23T01:00:00Z - close it in the same sitting (6.3)"*, both assumption rules
+  `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`; the re-plan with the flag at 23:11:04 *"No changes."*
+  with the same warning.
+- **[Claude] What follows**: the persona's sequence (6.3), the user's; then the refused assumption after
+  01:00Z read in the trail, and the closing apply without the flag.
