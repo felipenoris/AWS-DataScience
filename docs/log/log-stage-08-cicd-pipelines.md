@@ -2307,3 +2307,14 @@ transcript before anything was written. The Stage 9 session records the decision
   waiting list loses Stage 9's decisions row; `CLAUDE.md`, `GENERAL_PLAN.md` and the stage index say every
   Stage 9 decision is taken; Stage 8 4.1 writes no archive read, and 3.3 places the deploy's own tables
   between 3.2 and 3.3.
+
+## 2026-10-22 — the rest of decision 3's text from Stage 9's record
+
+*Claude, in the session `stages-7-8-pending`, no AWS call, from the Stage 9 session's report of its
+commit `29302c94` (PR #245), which records decisions 3 and 1 and withdraws 4.4.*
+
+- **[Claude] Applied**: `GOVERNANCE.md`'s Staging row (its own catalog filled by each deploy, with resource
+  links to `raw` and `curated`; read through the TBAC share and the local re-grants, `DESCRIBE` and
+  `SELECT` alone), the warehouse sentence, the grants' principals and node 5 of the development cycle;
+  INT-03's restored Staging read; D20's argument, the user's; the Stage 9 rows of `CLAUDE.md` and the log
+  index. Stage 8 3.3 no longer names 4.4: each deploy fills Staging's own catalog (Stage 9 4.1).
