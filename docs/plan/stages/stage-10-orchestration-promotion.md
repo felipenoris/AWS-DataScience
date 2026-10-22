@@ -31,7 +31,7 @@ and the pipeline deploys its bundle here (D41).
 | `production/orchestration/` (new) | the module with VPC-Workloads, Production's alerts topic, job role, data key and application ceiling, the release (its tag and S3 `VersionId`s, null until the first promotion: `release.tf`), and `chains/app-etl.asl.json` (decision 14). **Applied by the pipeline** (INT-14). Written 2026-10-22, not applied | `[E]` |
 | `staging/orchestration/` (new) | the same module with Staging's VPC and names — **a serverless workflow bills nothing at rest**, so the promotion chain gains a rehearsal that is not Production; its schedule is `DISABLED`, the leg starting the machine itself (decision 19). Written 2026-10-22, not applied | `[E]` |
 | `production/workloads-egress/` + `staging/egress/` | nothing of this stage's, read 2026-10-22: the private-routing set the vendor documents is `logs`, `monitoring` and `kms`, and Stage 9 3.3a's and 4.3a's job-facing sets carry `logs` and `kms` in both VPCs, so `vpc-egress`'s reserved `mwaa` group stays empty and `monitoring` joins it only on verification xvi's reading (1.2). Single-AZ (decision 3) | `[E]` |
-| `production/workloads/` + `staging/foundation/` (amended) | `vpc-v0.4.0`: the S3 gateway endpoint's policy admits `mwaa-serverless-code-files-*`, the service bucket a worker reads a task's `Code` from. `prod-<region>-starport-layer-bucket` is in every VPC's policy since Stage 3. Staging's applied 2026-10-19 in Stage 18's window; Production's written and planned by the Stage 9 session that holds the slice (2026-10-22) | `[P]` |
+| `production/workloads/` + `staging/foundation/` (amended) | `vpc-v0.4.0`: the S3 gateway endpoint's policy admits `mwaa-serverless-code-files-*`, the service bucket a worker reads a task's `Code` from. `prod-<region>-starport-layer-bucket` is in every VPC's policy since Stage 3. Staging's applied 2026-10-19 in Stage 18's window; Production's in Stage 9's PR #245 (`502b6da6`), planned 2026-10-22 as one change in place, the S3 gateway endpoint's policy, its id unchanged; not applied | `[P]` |
 | `production/sagemaker/` (amended) | the model-approval notification rule (`awsds-prod-model-approval`) on the documented `SageMaker Model Package State Change` event | `[P]` |
 | `production/data/` (amended) | on `awsds-prod-outputs`: the `Object Created` notification to EventBridge for the bridge decision 16 took (3.6), decision 12's statement on `workflows/*`, and a principal branch admitting the release job's role to `workflows/*` from the deploy runner's network, which the perimeter does not trust (2.4), both exempting `InfrastructureAccess` as well, or Stage 8 3.8's by-hand parity is refused; on `alias/awsds-prod-data`, which delegates nothing to IAM, the deploy role and the workflows' execution roles named (1.3, 1.5, 2.4), the chain role `awsds-prod-chain-exec` when decision 2 puts the workflow on this key (3.4), and CloudWatch Logs for the log groups the module encrypts under it. The statements, exact, are 2.4's list; the slice is Stage 9's | `[P]` |
 | `staging/data/` (amended) | `awsds-staging-outputs` (decision 17): Staging's copy of what `awsds-prod-outputs` holds for a workflow (its definition, its code, its result file and its inbox), with the same statements, under `alias/awsds-staging-data` | `[P]` |
@@ -233,10 +233,12 @@ run, plus the `[E]` endpoint set while tasks are in the VPC.
      through the service and stages S3 through the gateway, so neither `ecr.*` nor `sagemaker.runtime` is on
      a processing step's path. **Read 2026-10-22**: the jobs' set already carries `logs` and `kms`, so the
      `mwaa` group stays empty, no `vpc-egress` release is owed, and the Stage 9 session that holds both
-     egress slices was told so. **One input is unmeasured**: Production's set drops `ecr.api` and `ecr.dkr`
-     while Staging's keeps them, and every worker run so far, 6i's and Stage 18's, had both present, so
-     whether a worker's preparation needs them is unknown, and a Staging rehearsal cannot answer it while
-     Staging carries them (verification xvi).
+     egress slices was told so. **One input is unmeasured**: once Stage 9's 4.3a applies, both deployment
+     targets carry the same six endpoints, `sts`, `logs`, `kms`, `glue`, `sagemaker.api` and
+     `secretsmanager` (`staging/egress/` on `vpc-egress-v0.17.0`, PR #245), and neither carries `ecr.api` or
+     `ecr.dkr`, while every worker run so far, 6i's and Stage 18's, had both present. Whether a worker's
+     preparation needs them is unknown, and the Staging leg is the first run that reads it (verification
+     xvi).
   4. **The S3 gateway policy**: `prod-<region>-starport-layer-bucket` is in every VPC's policy since Stage
      3; **a workflow with a Python or Bash task's `Code` also needs `mwaa-serverless-code-files-*-<region>-prod`**:
      the worker's environment preparation reads the code snapshot from that service-owned bucket as
@@ -245,8 +247,9 @@ run, plus the `[E]` endpoint set while tasks are in the VPC.
      2026-10-11). `vpc-v0.4.0` carries the family; `staging/foundation/` and `production/workloads/` are on
      `vpc-v0.3.1` and take the bump here. `staging/foundation/`'s bump was applied on 2026-10-19
      by the user for [Stage 18](stage-18-staging-deployment-project.md)'s 4.4, the S3 gateway endpoint's
-     policy its one change; `production/workloads/` stays on `vpc-v0.3.1`, and its bump is written and planned
-     by the Stage 9 session that holds the slice (2026-10-22). The trail that named the bucket, 6i's `sandbox/endpoint-audit/`,
+     policy its one change; `production/workloads/`'s bump is in Stage 9's PR #245, planned 2026-10-22 as
+     *"Plan: 0 to add, 1 to change, 0 to destroy"*, the gateway endpoint's policy in place and its id, the
+     INT-05 anchor, unchanged; not applied. The trail that named the bucket, 6i's `sandbox/endpoint-audit/`,
      was destroyed on 2026-10-12 and is recoverable from `c0baddd` for the next refusal of this kind.
   5. **A security group with a self-referencing inbound rule** and an all-traffic outbound rule:
      `awsds-<env>-wf-workers`, in the module (`main.tf`), `[E]` with the slice. A service-linked role's
@@ -1239,7 +1242,7 @@ Record every answer, including the ones that come out fine.
 | xi | Does the lint reject a portal-scoped / non-ECR-URI / oversized definition, and a code package whose `python_callable` does not import offline (deliberate bad artifacts)? | 2.3 |
 | xii | After the stage's redeploys, how many workflow versions exist against the 50-version quota — and is the run-history disposition written before the first `make down` (Lesson 4)? | 1.6, 6.3 |
 | xv | Moved to [6i](stage-06i-sandbox-orchestration.md) (its verifications viii-x): Sandbox's workers sit on a private shape with no internet path, so the vendored package, the reach for PyPI and the task's identity are measured there and consumed here. A processing job's vendored folder is its verification xvi, answered 2026-10-11 | 2.1, 2.3 |
-| xvi | Do the workers in `VPC-Workloads` reach its single-AZ endpoints from both AZs, do their metrics arrive with no `monitoring` endpoint, read on the receiving side rather than from a run's success (Lesson 55), and does a worker's preparation succeed with no `ecr.api` or `ecr.dkr` endpoint, which Production's set drops and every earlier run had (1.2)? | 1.2 |
+| xvi | Do the workers in `VPC-Workloads` reach its single-AZ endpoints from both AZs, do their metrics arrive with no `monitoring` endpoint, read on the receiving side rather than from a run's success (Lesson 55), and does a worker's preparation succeed with no `ecr.api` or `ecr.dkr` endpoint, which neither deployment target's set carries after Stage 9's 4.3a and every earlier run had (1.2)? | 1.2 |
 | xvii | Does the deploy role's save read the definition and the code package in its own session, and does a run need the execution role to read them again? | 1.3, 1.5 |
 | xviii | Does a `Create*Job` from the execution role without one of the five settings fail, naming the policy Stage 9 decision 9 chose? | 1.3 |
 | xix | What does the domain's `list-lineage-events` hold after a Sandbox workflow run, read twice with a delay between? | 3.3 |
@@ -1274,9 +1277,9 @@ Record every answer, including the ones that come out fine.
 - **The workers have no internet path at all** (1.2), since the service takes no proxy setting. Anything
   a task needs from the internet must arrive in the container image, in the code package or through an
   endpoint, and CI's offline import of the package says so at CI time.
-- **Staging's endpoint set is not Production's**: Staging keeps `ecr.api` and `ecr.dkr`, which
-  `VPC-Workloads` drops, and no worker has run without them (1.2, verification xvi), so a worker that
-  needs them passes the Staging leg and fails in Production.
+- **No worker has run without `ecr.*`**: once Stage 9's 4.3a applies, neither deployment target's
+  endpoint set carries `ecr.api` or `ecr.dkr`, so a worker whose preparation needs them fails, first in
+  the Staging leg, which is where it is read (1.2, verification xvi).
 - **`TriggerMode`'s literal values are undocumented** (a plain string in every schema) — read the accepted
   values at 1.5 rather than hard-coding; a wrong literal fails at apply, loudly. One literal is read:
   Sandbox's portal workflows carry `manual_only` (2026-10-10), and the CLI's workflow of 2026-10-15 too; a

@@ -303,3 +303,23 @@ applied. Times are UTC.*
   3.4 to 3.7; the decisions' state (1, 5, 8 and 12 awaiting confirmation, 2, 3, 4, 9 and 11 open), decisions
   19 and 20 written with their recommendations, and decision 6's render table; verifications iii, vi, xvi,
   xxii and xxv; a risk on the two accounts' endpoint sets.
+
+## 2026-10-22 — the Stage 9 session's answer: Production's bump planned, the two endpoint sets equal
+
+*Claude's hand, the same session, recording the Stage 9 session's message ("Stage 9 — revisão e
+preparação", PR #245), with no AWS call of its own.*
+
+- **[Claude] 1.2 item 4, as that session reported**: `production/workloads/` pins `vpc-v0.4.0` in its commit
+  `502b6da6`, planned as `awsds-infra-prod`, *"Plan: 0 to add, 1 to change, 0 to destroy."*,
+  `module.vpc.aws_vpc_endpoint.s3` in place with the `mwaa-serverless-code-files-*` family added and the
+  endpoint's id unchanged; not applied.
+- **[Claude] The endpoint sets, corrected**: this file's entry above read `staging/egress/` before Stage 9's
+  4.3a re-cut. That re-cut gives Staging exactly `VPC-Workloads`' six endpoints on `vpc-egress-v0.17.0`
+  (`sts`, `logs`, `kms`, `glue`, `sagemaker.api`, `secretsmanager`), planned 15 to add, so neither
+  deployment target carries `ecr.*` once it applies, and the Staging leg is the first run to read whether a
+  worker needs them. 1.2, verification xvi and the risk say so now.
+- **[Claude] The data slices and the job role**: the statements `production/data/` and `staging/data/` owe
+  this stage are in that session's report, with decision 12's deny and the principal branch exempting the
+  deploy role and `InfrastructureAccess`; `awsds-staging-job-exec` is written in Production's shape with
+  outputs `job_role_arn` and `job_role_name`, its Glue trust statement without `aws:SourceAccount`, as
+  Production's, planned 8 to add.
