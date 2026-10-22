@@ -65,8 +65,8 @@ variable "blueprint_names" {
 variable "project_roles" {
   description = "The SMUS project roles whose workflows create Glue and SageMaker processing jobs, by role NAME (not ARN): each gets the workflows grant and the deny on a person's session. Empty is legal and attaches nothing: Stage 18 step 8.1 empties it before the project is deleted."
   type        = list(string)
-  # deploy-staging, created 2026-10-19 (Stage 18 pass 3); read with `iam list-roles` 2026-10-19.
-  default = ["datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps"]
+  # Emptied at Stage 18 step 8.1, before deploy-staging is deleted.
+  default = []
 
   validation {
     condition     = alltrue([for r in var.project_roles : can(regex("^datazone_usr_role_[a-z0-9]+_[a-z0-9]+$", r))])

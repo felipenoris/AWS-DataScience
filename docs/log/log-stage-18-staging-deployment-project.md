@@ -1815,3 +1815,22 @@ AWS or in GitLab. Times are UTC.*
   `ALL`, `DESCRIBE` and `DROP` with the grant option on it, the RAM share `ACTIVE` among Sandbox's received
   ones with its three wildcard resources `AVAILABLE`, and Sandbox's `list-permissions` on Staging's table
   empty, the cross-account `SELECT` being Staging's grant.
+- **[user] B7 and B8**: *"Li trades no query editor do test-experimentation (resultado abaixo), apaguei a
+  branch stage-18-staging, desliguei o ambiente e apliquei o plano do 8.1. Siga com o C1."*, the message
+  carrying no result; the apply's output pasted: *"aws_iam_role_policy_attachment.project[...]: Destruction
+  complete after 1s"*, the same for `person_session`, *"Apply complete! Resources: 0 added, 0 changed, 2
+  destroyed."*
+- **[Claude] 7.2 step 4's read, from the trails** (01:05Z): in Sandbox, `sqlworkbench:ExecuteQuery` at
+  00:49:06Z and 00:52:03Z by `test-experimentation`'s role in the person's session
+  (`<profile>@bi356s1sacz0cw`), each followed by `athena:StartQueryExecution` invoked by
+  `sqlworkbench.amazonaws.com` in `workgroup-4gqfau9xuo6e4w-bi356s1sacz0cw` on `glue_db_4zojr4rr6bmnww`, and
+  `lakeformation:GetDataAccess` for `SELECT`, invoked by `athena.amazonaws.com` on the resource link and by
+  `glue.amazonaws.com` on Staging's `glue_db_d6ogysnx78dguo/trades`; in Staging, the same `GetDataAccess`
+  by `glue.amazonaws.com` at 00:49:07Z and 00:52:04Z; no error on either side. The second query,
+  `98f869dd-…`, *"SELECT * FROM "glue_db_4zojr4rr6bmnww"."trades" LIMIT 10"*, `SUCCEEDED`, 539 bytes scanned
+  in 1,114 ms. A Sandbox project reads, through its query editor, the table a deployment project in Staging
+  published (question x's second half).
+- **[Claude] B8 read back** (01:03Z): `awsds-prod-gitlab`, `-proxy` and `-vpn` `stopped`, the three runners
+  `terminated`, Staging with no interface endpoint; `staging/studio/` re-plans *"No changes."* from the first
+  unwinding commit's tree, committed now on the session branch, and the project role carries AWS's three
+  policies alone.
