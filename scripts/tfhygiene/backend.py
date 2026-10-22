@@ -428,7 +428,7 @@ SMUS_ASSOCIATED: list = ["sandbox"]
 # `readers`, and refusal 8 in layers.py. Only governance/'s `members` map and `profiles_enabled` read
 # both lists, so a row here follows its SMUS_ASSOCIATED row, as a SMUS_MEMBERS row does, and a row
 # here needs a provider alias of its own in governance/. Empty since Stage 18 step 8.2; the list
-# stays until Stage 18's verdict says whether a deployment account is ever a member.
+# stays empty while D41 item 2 holds (Stage 18's verdict, 2026-10-22).
 SMUS_DEPLOYMENT_MEMBERS: list = []
 if set(SMUS_MEMBERS) & set(SMUS_DEPLOYMENT_MEMBERS):
     raise ValueError(

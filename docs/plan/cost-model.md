@@ -86,14 +86,16 @@ Each line names the invoice line that corrected it (Stage 12 validation 3).
 - **The hours.** The projection counted 20 lab hours a month; `USW2-VpcEndpoint-Hours` puts Sandbox's
   September at about 108, and `USW2-BoxUsage:t3.micro` the hub's at 132. The rates were right.
 - **Config is a session cost.** The floor row read ~0.5 from the 2026-08-14 reading;
-  `USW2-ConfigurationItemRecorded` billed 9.61, 10.87 and 9.77, almost all of it `[E]` churn.
+  `USW2-ConfigurationItemRecorded` billed 9.61, 10.87 and 9.77, almost all of it `[E]` churn. A stage's
+  creates and deletes churn it too: 0.71 of Staging's 1.52 over Stage 18's window (2026-10-17 to
+  2026-10-21, estimated).
 - **The floor missed four lines**: the spaces' volumes (`USW2-Studio:VolumeUsage.gp3`, 5.37 in
   September), the public addresses while stopped (`PublicIPv4:IdleAddress`, 3.79 in September with two
   addresses idle), ECR at 1.59 against ~1.00, and Security Hub at 4.48 in the accounts read against 1-2 for
   the organization.
 - **Staging holds a zone.** `staging.awsds.internal` bills 0.50 a month (`HostedZone`), where the floor said
   Staging held none.
-- **The KMS row** read ~13 for a year-one set; `us-west-2-KMS-Keys` billed 11.13 in September. `alias/awsds-staging-project` joined on 2026-10-19 for Stage 18's life (`staging/studio/`), +1.00 a month while it exists.
+- **The KMS row** read ~13 for a year-one set; `us-west-2-KMS-Keys` billed 11.13 in September. `alias/awsds-staging-project` joined on 2026-10-19 for Stage 18's life (`staging/studio/`), +1.00 a month while it exists; it is `PendingDeletion` since 2026-10-22, its deletion date 2026-11-21, and whether a key pending deletion bills is November's invoice to read.
 - **The warehouse's first bill.** This file said no free trial absorbed its 9.48 USD; the Redshift
   Serverless trial did, and no Amazon Redshift line appears through October 17 (*The warehouse*).
 

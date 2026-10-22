@@ -283,7 +283,9 @@ pool stays open across units, and that is the first reading the second vend take
    4. **The unit's `sagemaker/` pass-2 apply** — the blueprint configurations **with the complete
       wizard-field set** (manage-access role on every one; Tooling's `S3Location` + `KmsKeyArn`) **and the
       11 per-configuration `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grants** — all carried by
-      `sagemaker-prereqs` at **v0.3.3 or later**, applied **from the member account**, because
+      `sagemaker-prereqs` at **v0.3.3 or later**, and v0.8.0 or later for a `DataLake` environment, whose
+      manage-access role needs `AmazonDataZoneGlueManageAccessRolePolicy` (6f, applied 2026-10-20; measured
+      again in Staging at Stage 18 7.2), applied **from the member account**, because
       `PutEnvironmentBlueprintConfiguration` takes no account parameter and configures the caller's
       (`terraform-modules/sagemaker-prereqs/blueprints.tf` carries the reasoning). **The measured rule
       (2026-08-22, five attempts): a configuration missing a wizard field pins its projects in BOTH
@@ -342,6 +344,13 @@ pool stays open across units, and that is the first reading the second vend take
    generated Sandbox exactly as it does against the hand-built one, and closing a unit must be a documented
    procedure with the slot and the e-mail address stated up front (D34's headroom item, whose e-mail half
    the reading below corrects).
+
+   **The domain side is unwound first**, step 4 in reverse, in the order Stage 18's pass 8 ran in Staging
+   (2026-10-22): the unit's projects deleted, then its blueprint configurations, its `SMUS_MEMBERS` and
+   `SMUS_ASSOCIATED` rows leaving in that edit, then the association, a console act. A project's deletion
+   leaves residues ([`SMUS.md`](../../SMUS.md), "A deployment project in a `Workloads` account"): those in
+   the account go with its closure, and the shared domain keeps the members' user and group profiles, the
+   lineage events and the subscription records, which no delete API reaches.
 
    **Closing an account, read 2026-10-20 from the vendor's pages:**
    - **Unenrolling comes first**, by Control Tower's and Account Management's pages alike: the provisioned

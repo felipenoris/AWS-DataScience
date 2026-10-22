@@ -202,7 +202,10 @@ churn Stage 1d decision 4 named as its revision signal.
 
 - **6.1 — [Claude] Read the recorder's actual line** from the invoice. **Done 2026-10-14** (`docs/PRICING.md`
   §2), and re-read 2026-10-18 over the accounts read: `USW2-ConfigurationItemRecorded` 9.61 in August, 10.87
-  in September and 9.77 for October 1-17, so October runs above September.
+  in September and 9.77 for October 1-17, so October runs above September. A build and its teardown bill
+  it too: AWS Config was 0.71 of Staging's USD 1.52 over Stage 18's window (2026-10-17 to 2026-10-21,
+  estimated, Cost Explorer read in Staging on 2026-10-22), the configuration items of its creates and
+  deletes.
 - **6.2 — [Claude reads, user decides] Add conformance packs, or record why not.**
 
 ### 7. Tighten the permission sets against real usage
