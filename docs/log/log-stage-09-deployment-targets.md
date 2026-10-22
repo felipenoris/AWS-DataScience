@@ -932,3 +932,35 @@ plano salvo, abrindo a janela do awsds-prod-debug até 2026-10-23T01:00:00Z." Ti
   with the same warning.
 - **[Claude] What follows**: the persona's sequence (6.3), the user's; then the refused assumption after
   01:00Z read in the trail, and the closing apply without the flag.
+
+## 2026-10-22 — 6.3: the persona's assumption inside the window, the alarm heard on the receiving side
+
+*The user's hand for the persona's commands, pasted into this chat and copied here with the account id
+and the sign-in address replaced by placeholders; Claude's hand for the readings, as the infrastructure
+user (`awsds-infra-prod`), after the user signed in again as that user (the persona's login had emptied
+the `awsds` token: *"Token for awsds does not exist"* at 23:22). Times UTC.*
+
+- **[user] A first attempt with the placeholder left in the ARN**, three calls refused the same way:
+  *"An error occurred (AccessDenied) when calling the AssumeRole operation: User:
+  arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the
+  data-science user> is not authorized to perform: sts:AssumeRole on resource:
+  arn:aws:iam::<Production>:role/awsds-prod-debug"*, the resource string carrying the literal
+  `<Production>` of the step's text. The trail records them in Production as `AccessDenied` on
+  `AssumeRole` with `requestParameters` null (4 events, 23:18:16, 23:18:27, 23:18:36, 23:20:51), the shape Stage 8 4.6 read
+  for a refused assumption. The step's command now reads the account id from the persona's own profile.
+- **[user] The assumption inside the window**, the step's command with the real ARN:
+  *"arn:aws:sts::<Production>:assumed-role/awsds-prod-debug/debug-window-proof"*.
+- **[user] The reads through the assuming profile**: `aws s3 ls s3://awsds-prod-outputs/` answered
+  nothing and refused nothing (the bucket holds no object yet, so the listing is the reading and
+  `GetObject` stays unexercised); `describe-log-groups` under `/aws/sagemaker/` listed
+  `/aws/sagemaker/ProcessingJobs`, `/aws/sagemaker/TrainingJobs` and `/aws/sagemaker/TransformJobs`.
+- **[Claude] The receiving side**, 23:25:44: the rule `awsds-prod-debug-assume` read `TriggeredRules` 2 in
+  the 23:21 minute and `Invocations` 1 at 23:21 and 1 at 23:22; the topic `awsds-prod-alerts`
+  `NumberOfMessagesPublished` 1 and 1 in the same minutes, its one subscription an e-mail, `confirmed`
+  (23:26:17). The trail, read at 23:26: two `AssumeRole` events naming the role, both by the persona's
+  reserved role in `us-west-2` with no error: 23:21:29 session `debug-window-proof` (event
+  `14013946-3962-41c9-8391-7cc6cc1db228`) and 23:22:00 session `botocore-session-1792711318` (event
+  `2acc588b-f660-4c47-9abc-ea3c7ff286e4`), the second the assuming profile's own call at the first read.
+  So one proof assumption produced two alarms, the direct call's and the profile's, each a message.
+- **[Claude] What follows**: the two negatives and, after 01:00Z, the refused assumption, then the closing
+  apply.
