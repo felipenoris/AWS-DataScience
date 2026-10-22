@@ -399,8 +399,9 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   re-read nothing for `EXC-11`: its trigger is the Sandbox registry's first version (Stage 17 3.2), and
   this registry is Production's, in an account the domain does not know. Each cross-account reader needs
   its own allow as well (Lesson 28): `awsds-deploy-staging`'s is Stage 8's to write in
-  `staging/foundation/`, `sagemaker:DescribeModelPackage` and `DescribeModelPackageGroup` on Production's
-  `awsds-prod-model-*` groups and their packages, and `ListModelPackages`, which takes no resource.
+  `staging/foundation/`: `sagemaker:DescribeModelPackage` on the packages of Production's
+  `awsds-prod-model-*` groups, the two actions the group policy grants it, and `ListModelPackages`, which
+  takes no resource.
 - **3.3 — [Claude] Write the escape hatch** (step 6's resources — same slice, same apply).
 - **3.3a — [Claude] Complete `production/workloads-egress/`.** `VPC-Workloads` is where Production's jobs
   and Stage 10's workers run, and 6c created the slice empty, with `core_services = []`. Bump it from
