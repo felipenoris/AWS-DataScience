@@ -2460,3 +2460,21 @@ apply.*
 - **[Claude] What follows**: the waiting list loses both apply rows and the promotion sitting's
   prerequisite on them; Stage 8 3.9's sentences name `DenyDecryptOutsideTheWorkflowService`, and so does
   6g's set table. The Stage 9 and Stage 10 sessions were told.
+
+## 2026-10-22 — Stage 9's applies consolidated into the shared files
+
+*Claude, in the session `stages-7-8-pending`, reads only (`awsds-infra-prod`, `awsds-infra-staging`,
+`awsds-infra-data`), on the Stage 9 session's report of its applies (PR #245, section 10 of its note).*
+
+- **[Claude] Readings, before writing its results down**: in Production and Staging, `alias/awsds-<env>-data`
+  `Enabled`, `CUSTOMER`; `awsds-<env>-outputs` present; `awsds-<env>-job-exec` present (Staging's created
+  2026-10-22T19:47:33Z); the Glue connection `awsds-<env>-jobs`, `NETWORK`; Lake Formation one administrator,
+  both default lists empty, `CROSS_ACCOUNT_VERSION` 4; the database `app_outputs`. In Data Governance,
+  `list-permissions` lists seven triples to the two accounts, each with the grant option: to each, `DESCRIBE`
+  on the databases `layer ∈ {raw, curated}` and `SELECT`, `DESCRIBE` on the tables adding `classification ∈
+  {public, internal}`; to Production, `DESCRIBE` on `curated` and, on its `ALL_TABLES`, `ALTER`, `DELETE`,
+  `DESCRIBE`, `INSERT` and `SELECT`.
+- **[Claude] What follows here**: the waiting list loses Stage 9's applies row and the promotion sitting's
+  prerequisite on them, and both egress rows read 16 to add; `CLAUDE.md`, `GENERAL_PLAN.md`, the stage and
+  log indexes take Stage 9's text; `AWS_STATE.md` gains the six grant rows, the lake's three trusted gateway
+  endpoints and `curated.trades`, and the deployment targets' Lake Formation row; `PRICING.md` reads 17 keys.

@@ -312,23 +312,24 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   has a transform quota above 0 in either** (2026-10-22), with no increase requested; `ml.t3.medium`,
   `app-etl`'s processing type, is 4 in both, and Staging ran a job on it on 2026-10-19. The probes read `ResourceLimitExceeded` as authorized; the `ou`
   phase's seven instance-preference rows (Stage 9 3.5, PR #216) ran 2026-10-22, each as expected.
-- **Stage 9**: pass 1 applied 2026-10-18, `awsds-org-scp-ou-workloads` (nine statements) and
-  `production/sagemaker/` (rank 46, `[P]`); `production/workloads-egress/` and `staging/egress/`, re-cut to
-  the same six endpoints (4.3a), rise with their next `make up`. Prepared 2026-10-22 (PR #245):
-  `staging/sagemaker/` (`awsds-staging-job-exec`, 8 to add) and the Production job role's
-  `glue:GetConnection` planned for an authorized apply; `deploytargets.py` reads each pass from its own
-  objects; `production/workloads/` on `vpc-v0.4.0` planned too. Every Stage 9 decision is taken
-  (2026-10-22): no mirror, Staging reading the governed lake in place, read-only (D20 amended, `TM-25`),
-  and nothing of Production's outputs; the Glue connection and the job security group `[P]` in
-  `*/sagemaker/`; passes 2, 3 and 5 can be prepared; the `s3-bucket` module
-  turns Bucket Keys on for every bucket it creates, so D31's zero-cost variant is unavailable (PR #225).
+- **Stage 9**: pass 1 applied 2026-10-18 (`awsds-org-scp-ou-workloads`, nine statements; `production/sagemaker/`,
+  rank 46). Every decision taken 2026-10-22: no mirror, Staging reading the governed lake through a
+  read-only share and nothing of Production's outputs (3, 1, D20 amended, `TM-25`), the Glue job in each
+  target's VPC on a `[P]` connection and group (12). Passes 2, 3 and 5 applied the same day (PR #245): the
+  read shares and Production's write on `curated` with `curated.trades`, `production/data/` and
+  `staging/data/` (data keys, outputs and derived buckets, workgroups, `app_outputs`), the job network,
+  `staging/sagemaker/`, `production/workloads/` on `vpc-v0.4.0`; `deploytargets.py` and `datalake.py` 0
+  failed. Both egress slices, seven endpoints with `lakeformation`, rise with their next `make up`. The
+  `s3-bucket` module turns Bucket Keys on for every bucket it creates, so D31's zero-cost variant is
+  unavailable (PR #225).
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, never fired (no model package exists). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
   (rank 59, `[E]`) written and planned, `OR-9` written; the module is tagged `orchestration-v0.1.0` (`26bfc15d`),
   and both slices pin it, each planning `No changes` with no release (PR #246); every Stage 10 decision
-  was taken 2026-10-22. Passes 1-2 follow Stage 9 with Stage 8's pass 4 (decision 23) and
-  need Stage 9's data keys, outputs buckets and Staging's job role.
+  was taken 2026-10-22. Passes 1-2 run with Stage 8's pass 4 (decision 23); the objects they stopped at,
+  Stage 8's application ceilings and Stage 9's data keys, outputs buckets and Staging's job role, exist
+  since 2026-10-22.
   The MWAA Serverless service-linked role exists in Staging, not in Production, whose first apply needs
   `iam:CreateServiceLinkedRole` (1.5).
 - **The Sandbox warehouse (5b, 6h)**: `sandbox/warehouse/` rank 53 `[P]` and `sandbox/warehouse-compute/`
