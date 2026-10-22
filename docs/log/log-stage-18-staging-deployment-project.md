@@ -1875,3 +1875,27 @@ UTC.*
   (`b25324be-…`, its role gone) and of `awsds-deploy-staging` (`4aea7383-…`), both `ACTIVATED`; the deploy
   role's group profile `9bead345-…` `ASSIGNED`; 44 lineage events. The projects bucket holds 91 versions and
   17 delete markers for 8.6.
+
+## 2026-10-22 — pass 8, C2 and C3: the profile, the configurations, the association, the bucket, Lake Formation
+
+- **[user] C2**: `governance/` and `staging/studio/` applied from the saved plans, chained, as
+  `awsds-infra-data` and `awsds-infra-staging`: *"awscc_datazone_project_profile.this["deployment"]:
+  Destruction complete after 6s"*, *"Apply complete! Resources: 0 added, 0 changed, 2 destroyed."*; then the
+  two blueprint configurations and their grants, *"module.sagemaker_prereqs.module.project_key.aws_kms_key.this:
+  Modifications complete after 7s"*, *"Apply complete! Resources: 0 added, 1 changed, 4 destroyed."*, the
+  person-session policy's planned update a no-op; and *"Staging foi desassociada do domínio datazone."*
+- **[Claude] Read back** (01:43Z): `governance/` and `staging/studio/` re-plan *"No changes."*; the second
+  unwinding commit joins the session branch as applied. 8.5: from Staging,
+  `list-environment-blueprint-configurations` answers *"UnauthorizedException ... Unauthorized"*, Staging
+  receives no RAM share, and Data Governance's `DataZone-EXTENDED_ACCESS-…-ORG-ONLY` names Sandbox alone.
+  `./aws/studio.py`: *"0 check(s) FAILED."*, `US-4` reading the model governance profile and
+  `experimentation`, `US-2` no domain visible from Staging; the persona profiles not signed in fail their calls.
+- **[Claude] C3, authorized ahead (decision 15)**: the projects bucket's 108 versions and delete markers
+  deleted in one `delete-objects` batch at 01:46:36Z, no error, then 0 and 0; Lake Formation's settings put
+  at 01:46:47Z with no admin, `CROSS_ACCOUNT_VERSION` 1, `SET_CONTEXT` `TRUE`, both default lists empty and
+  `AllowFullTableExternalDataAccess` false, read back with no admin and no registered location.
+- **[Claude] The last plans, saved for the user**: `staging/studio/` with its six resource files moved out,
+  *"Plan: 0 to add, 0 to change, 17 to destroy."*, no refusal; `identity/org-policies/` from the fourth
+  unwinding commit, `render.py` exiting 0, the `Workloads` document updated in place, 2571 to 2499 bytes;
+  `staging/foundation/` from the fifth, *"Plan: 0 to add, 0 to change, 3 to destroy."*, the three inline
+  policies.
