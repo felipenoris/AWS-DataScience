@@ -374,3 +374,18 @@ nothing applied. Times are UTC.*
   module from the tag, and at 18:22:59Z each plan with no release reads *"No changes. Your infrastructure
   matches the configuration."* With the stand-in release each still stops at its lookups, as at 05:16Z:
   the application ceiling and the data key in both accounts, and `staging/sagemaker/`'s state in Staging.
+
+## 2026-10-22 — decisions 5, 8 and 12 taken by the user, as recommended
+
+*Claude's hand, the same session; the user's words relayed from the orchestrating session ("Pendências
+estágios 7 e 8"), whose chat they were written in, and read again in that session's transcript. No AWS
+call.*
+
+- **[user] The confirmation**, the user's sentence over the orchestrator's list, which the user pasted:
+  *"Confirmo estes itens:"*, *"Stage 10, para confirmar (o código já segue a recomendação): \* 5: a slice de
+  orquestração é `[E]`. \* 8: o passo de contêiner é um processing job do SageMaker, não uma task ECS. \*
+  12: os scripts Glue ficam sob o prefixo da release, `applications/<app>/<tag>/glue/`, com uma regra que
+  proíbe escrita em `applications/*` a todos menos o papel de release e o `InfrastructureAccess`."*
+- **[Claude] Recorded**: decisions 5, 8 and 12 marked taken, as recommended, in the stage file, with the
+  decisions' state and the status. The code written earlier the same day already follows them. Open: 2, 3,
+  4, 9, 11 and 19, and 20's (a), (d) and tool.
