@@ -43,7 +43,7 @@ flowchart LR
         SCAT["Glue Data Catalog<br/>resource links raw, curated"]
     end
     subgraph STG["Staging · Workloads · D20 · Stage 9"]
-        SMIR["the application under test<br/>mirror of the lake's databases · same tags<br/>sampled or synthetic rows"]
+        SMIR["the application under test<br/>its own tables, created by each deploy<br/>the lake read in place, read-only"]
     end
     subgraph PRD["Production · Workloads · Stages 7-10"]
         SUP["GitLab · runners · ECR · CodeArtifact · D14"]
@@ -51,6 +51,7 @@ flowchart LR
     end
     GLUE ==>|"LF/RAM share · read · TBAC · INT-03"| SCAT
     GLUE -.->|"LF/RAM share · read + governed write · Stage 9"| JOB
+    GLUE -.->|"LF/RAM share · read only · Stage 9 decision 3"| SMIR
     DOM ==>|"account association · blueprints provision here"| PRJ
     CRAWL -->|"schema inference"| LAKE
     SBX -.->|"the persona · PutObject only · drop-box"| LAKE
@@ -64,7 +65,7 @@ flowchart LR
 |---|---|---|---|
 | Data Governance | the lake buckets (§Persistence), the lake's Glue Data Catalog, Lake Formation with the LF-Tags and the D13 registrations, the drop-box, the crawlers (D27), the domain and the SageMaker Catalog. No user compute, no interactive sign-in (D22) | owns it | hosts it; the portal's catalog calls run here as `awsds-data-studio-domain-execution` (measured 2026-09-13) |
 | Sandbox | the projects' apps, the projects bucket `awsds-sandbox-smus-projects`, a Glue Data Catalog of its own holding each project's databases and the resource links to `raw` and `curated`, and the sandbox lake `awsds-sandbox-lake`, outside Lake Formation by design (Stage 16) | read, through the TBAC share and the local re-grants (§Grants), which name the persona role: no project role holds one yet, so no project reads the lake (Stage 6f 0.7). The one write is the persona's `PutObject` into the drop-box | associated; every project provisions here |
-| Staging | a mirror of the lake's databases with the same LF-Tag keys and values, over sampled or synthetic rows local to it (Stage 9 4.1) | no share (D20) | never (D26, `DenyDataZoneEntirely`) |
+| Staging | its own tables, created by each deploy from the repository's schemas, and no copy of the lake (Stage 9 decision 3) | the LF-Tag share, read-only (D20 as amended 2026-10-22, `TM-25`) | never (D26, `DenyDataZoneEntirely`) |
 | Production | the supply chain (D14), the job execution role, the orchestration (Stage 10), `awsds-prod-outputs`, a Glue Data Catalog of its own with resource links to the lake (Stage 9 1) | read and the governed write, the producer path (Stage 9 2); the drop-box pickup (D25) | never |
 
 The Staging and Production rows describe Stage 9; neither data slice is built.
@@ -725,10 +726,11 @@ flowchart LR
   portal-scoped in the copy rendered per account, and in Production the definition is deployed to
   `awsds-prod-outputs/workflows/<app>/<tag>/` and run by MWAA Serverless as the per-workflow role, started
   by its chain's state machine.
-- **Staging tests against a mirror.** Its databases carry the lake's names, definitions and LF-Tag keys
-  and values over sampled or synthetic rows (Stage 9 4.1), and no share reaches it (D20). The integration
-  test catches schema, permission and wiring errors against the same definitions; the cross-account
-  share is exercised in Production alone.
+- **Staging tests against the lake, read in place.** It reads the governed lake read-only through the
+  LF-Tag share Sandbox holds and writes only its own catalog, buckets and key, its tables created by each
+  deploy from the repository's schemas (Stage 9 decision 3, D20 as amended 2026-10-22). The integration
+  test meets the definitions, rows and grants Production reads, `restricted` excluded or filtered
+  (`TM-25`).
 - **Production writes the product into the lake.** The job execution role holds the read and the
   governed write through Stage 9's share, regranted locally (Stage 9 2.1-2.3); the table it writes is in
   the lake's catalog, so the authoritative product never lives in Production. Its local outputs, model

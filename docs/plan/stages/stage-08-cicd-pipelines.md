@@ -697,9 +697,9 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   a workflow by IAM plus `kms:GenerateDataKey` and `Decrypt` on the workflow's key. Stage 10 decision 19
   recommends the leg start the chain's state machine and follow it, Staging's schedule `DISABLED`. A
   table's existence is read by a principal holding `DESCRIBE` on it, never by `glue get-table` without a
-  grant. Stage 9 4.4's seed runs between 3.2 and 3.3, as `awsds-staging-job-exec` through Lake Formation,
-  when a release changes the schema source or the seed; it is written in `examples/app-etl/` once Stage 9
-  decision 3 names the source. Stage 9 3.4's approval half is a manual job of this pipeline on the deploy
+  grant. Stage 9 decision 3 (taken 2026-10-22) gives Staging no mirror: the leg reads the governed lake in
+  place, read-only, and the application's own tables are created at each deploy from the repository's
+  schemas, between 3.2 and 3.3, which is where Stage 9 4.4's step now runs. Stage 9 3.4's approval half is a manual job of this pipeline on the deploy
   runner, at Stage 10's first registration.
 - **3.4 — [pipeline] Tear Staging down**: `make down ENV=staging PROFILE=awsds-deploy-staging AUTO=1`, in
   `after_script`/always so a failed run cannot leave the endpoints burning. 6c removed the NAT gateway,
@@ -822,9 +822,8 @@ the approval, and 4.6's alarm.
   starts from; its `IAM` user profile and `IAM_ROLE_SESSION_GROUP` profile stay in the domain, where no
   delete API reaches them.
 - **4.1 — The application halves, specified 2026-10-22 by Stages 9 and 10, written once their decisions
-  are taken** (Stage 10 decisions 2 and 19, Stage 9 decisions 1 and 3; Stage 9 decision 12, taken
-  2026-10-22, puts the Glue connection and the job security group in `*/sagemaker/`, which the
-  application slice references):
+  are taken** (Stage 10 decisions 2 and 19; every Stage 9 decision is taken, its decision 12 putting the
+  Glue connection and the job security group in `*/sagemaker/`, which the application slice references):
   - the orchestration grant on both roles, an inline `apply-orchestration`, is Stage 10 1.5's enumeration,
     its single home: Cloud Control, the workflows, the definitions home, the data key, the log groups and
     their delivery, the `wf-` and `chain-` roles scoped by name, one `iam:PassRole` per service, the state
@@ -834,9 +833,8 @@ the approval, and 4.6's alarm.
   - `iam:PassRole` of `awsds-<env>-job-exec` to `glue` and `sagemaker` on both roles (Stage 9);
   - on `awsds-deploy-staging`, 3.2's registry read: `sagemaker:DescribeModelPackage` on Production's
     `awsds-prod-model-*` packages and `ListModelPackages`, the Production account read through an aliased
-    identity, never a literal. Stage 9 decision 1's recommendation keeps Staging off Production's
-    outputs, the model archives included; its option (a) would add `s3:GetObject` on
-    `awsds-prod-outputs/models/*/model.tar.gz` with `kms:Decrypt` through S3 under that bucket's context;
+    identity, never a literal. Stage 9 decision 1, taken 2026-10-22, keeps Staging off Production's
+    outputs, the model archives included, so no archive read is written;
   - on `awsds-deploy-prod`, Stage 9 9.4's Data API grant at its pass 6;
   - the module call: `state_prefixes` gain `<folder>/orchestration/`; `state_read_keys` are
     `staging/foundation/` and `staging/sagemaker/` in Staging, `workloads/`, `foundation/` and

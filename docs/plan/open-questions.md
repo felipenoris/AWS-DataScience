@@ -90,13 +90,10 @@ follows is still unanswered:
    INT-06's allow-list must carry the VPN home's endpoint — the same axis rule Lesson 33's second
    finding states for the lake — and the open half narrows to *which* calls the S3 console actually
    makes, from where.
-9. **Whether sampled or synthetic Staging data makes the integration tests meaningful** (D20, Stage 9).
-   The decision that Staging never holds a copy of production data is firm — the reasoning is in D20 and
-   it is a security argument, not a cost one. What is open is the consequence: a test suite running
-   against a sample catches permission, schema and wiring errors and misses everything that only appears
-   at production distribution and volume. Answer it by recording, for each production incident this
-   environment ever has, whether a Staging run could have caught it. Until there is such a record, this
-   is a belief rather than a finding.
+9. ~~**Whether sampled or synthetic Staging data makes the integration tests meaningful**~~ — **closed
+   2026-10-22 by Stage 9 decision 3** (D20 amended): Staging reads the governed lake in place, read-only,
+   so its tests meet production's distribution and volume, and the copy D20 refuses stays refused. The
+   residual is `TM-25`.
 10. **How far the Sandbox ordinal propagates.** The token shape is settled — an ordinal integer,
     `awsds-infra-sandbox-1`, `-2`, … (`docs/plan/conventions.md`, 2026-08-11) — and the SSO profile carries it
     today. What is open is which of the other five per-unit tokens D35 names do: the `<env>` token, the

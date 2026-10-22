@@ -2288,3 +2288,22 @@ session recorded it in PR #245 (`55ed4c90`) as recommendations, with the decisio
   archives included; the read survives as that decision's option (a). `waiting-on-the-user.md`,
   `GENERAL_PLAN.md` and the stage index carry the two revised recommendations. The threat model's
   `TM-25` and D20's amendment wait on decision 3 being taken.
+
+## 2026-10-22 — Stage 9's decisions 1 and 3 taken: D20 amended, `TM-25`, the design documents
+
+*Claude, in the session `stages-7-8-pending`, no AWS call, on a message from the session started from
+this one under the same title, relaying the user's words there; the words were read in that session's
+transcript before anything was written. The Stage 9 session records the decisions in its own log.*
+
+- **[user] The decisions**, relayed verbatim: *"Avise às sessões que irei acatar as recomendações em
+  relação às decisões 3 e 1, conforme conversamos nesta sessão."* Stage 9 decisions 3 and 1 are taken as
+  revised in PR #245 (`55ed4c90`): no mirror, Staging reading the governed lake in place, read-only,
+  through the LF-Tag share Sandbox holds, and nothing of Production's outputs read in Staging, the model
+  archives included. Every Stage 9 decision is taken.
+- **[Claude] The files that described the previous design**: D20 amended in place and its index row;
+  `threat-model.md` gains `TM-25`, the read accepted with its compensations and revision triggers, and
+  its catalog-layer row names Staging; `GOVERNANCE.md` (the diagram, the account table, the test
+  paragraph), `ORGANIZATION.md`, `README.md`, `architecture.md`'s tree and open question 9, closed. The
+  waiting list loses Stage 9's decisions row; `CLAUDE.md`, `GENERAL_PLAN.md` and the stage index say every
+  Stage 9 decision is taken; Stage 8 4.1 writes no archive read, and 3.3 places the deploy's own tables
+  between 3.2 and 3.3.
