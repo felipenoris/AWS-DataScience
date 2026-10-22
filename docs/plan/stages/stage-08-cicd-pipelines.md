@@ -644,10 +644,10 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   `awsds-<env>-job-exec` to SageMaker alone; S3 on `awsds-<env>-outputs` alone; `kms:CreateGrant`,
   `Decrypt`, `DescribeKey` and `GenerateDataKey` on `alias/awsds-<env>-data` alone; the logs delivery and
   stream actions. What it does not allow it refuses, so no role the pipeline creates reaches a lake bucket,
-  Lake Formation, another key or another role. Training is admitted now, ECS is not (Stage 10 decision 8).
+  Lake Formation, another key or another role. Training is admitted now, ECS is not (Stage 10 decision 8, taken 2026-10-22).
   The deploy roles' own ceiling is `Allow *` minus denies because the infrastructure user writes their
   identity policies; this one bounds the policies the pipeline writes. It is written once Stage 10
-  decisions 2 (the key) and 8 are taken.
+  decision 2 (the key) is taken.
 - **3.1 — [pipeline] Bring Staging up**: `make up ENV=staging ONLY=egress PROFILE=awsds-deploy-staging AUTO=1` — the
   `[E]` `egress/` slice, which since 6c is **interface endpoints only, with no NAT gateway and no default
   route**, and exists only for the duration of this run. Three things the job does before it:

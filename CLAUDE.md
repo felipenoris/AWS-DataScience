@@ -387,7 +387,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   to its developer, who works in a space on an equivalent version. `staging/probes/` is retired, so `make up ENV=staging` raises `egress/` alone, and the template's
   lint passes `--image-repository` and the ceiling's seven instance types (PR #186), in GitLab since MR !2.
   Pass 4, read item by item on 2026-10-22 (PR #244), has no item writable whole before Stage 9's platforms
-  and Stage 10's decisions 2, 8, 19 and 20; 3.0 holds the ceiling's content, 4.1 the application halves'
+  and Stage 10's decisions 2, 19 and 20; 3.0 holds the ceiling's content, 4.1 the application halves'
   specification, and `slices.py`'s `prepare()` passes `--pipeline` for a deploy role's profile.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass

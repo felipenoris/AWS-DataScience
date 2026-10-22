@@ -2332,3 +2332,16 @@ this one, where they were written.*
 - **[Claude] What follows here**: 2.5's job-role cost, 3.2's copy, 3.8's exemption, 3.9's reading and
   5.6 (h) name `applications/` for `workflows/`; the waiting list drops decision 1 from Stage 10's row.
   The module tag `orchestration-v0.1.0` now goes on `26bfc15d`, the module's last commit.
+
+## 2026-10-22 — Stage 10 decisions 5, 8 and 12 confirmed
+
+*Claude, in the session `stages-7-8-pending`, no AWS call; the Stage 10 session records the decisions in
+its own log, the user's words relayed to it.*
+
+- **[user] The confirmation**: *"Confirmo estes itens:"*, above the orchestrator's list of Stage 10's
+  decisions 5 (the orchestration slice `[E]`), 8 (a SageMaker processing job, not an ECS task) and 12 (the
+  Glue scripts under the release's `applications/<app>/<tag>/glue/`, writes to `applications/*` denied to
+  all but the release role and `InfrastructureAccess`).
+- **[Claude] What follows here**: 3.0's ceiling admits no ECS action and waits on Stage 10 decision 2 alone;
+  the waiting list keeps Stage 10's decisions 2, 3, 4, 9, 11, 19 and 20, and `CLAUDE.md` and the stage
+  index name 2, 19 and 20 as the ones pass 4 waits on.
