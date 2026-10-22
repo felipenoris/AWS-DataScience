@@ -463,6 +463,14 @@ this is a second apply of one folder. Everything is `[P]` and free at rest excep
   `awsds-infra-identity`: 0 to add, 3 to change, the three sets' inline policies, at 8,993, 7,098 and 7,069
   rendered characters of the slice's 10,240 (from 8,640, 6,808 and 6,768); every planned ARN names
   Production's account and `us-west-2`.
+- **5.6 — Applied 2026-10-22 by Claude, authorized by the user; the slice's state not yet saved.**
+  Identity Center holds the three sets' new policies, and no account is behind the latest version of any
+  of them (read back with `sso-admin`). The laptop's DNS stopped resolving AWS's names during the apply,
+  after `DevEnvStewardAccess`'s update, so Terraform could neither upload the state nor release its lock:
+  the state object is still the 19:28Z version, `errored.tfstate` sits in the slice (gitignored), and the
+  apply's own lock remains in `awsds-org-tfstate` (ID `f81ea42e-cc66-d468-e02c-b3223d0a93f8`, operation
+  `Apply`, created 2026-10-22T20:51:27Z by this laptop). The recovery, `terraform force-unlock` of that
+  lock and `terraform apply -refresh-only`, waits on the user: the project's rule forbids a force-unlock.
 
 ### 6. Stand up the build runner — `production/runners/` `[E]`, and retire the buildbox
 

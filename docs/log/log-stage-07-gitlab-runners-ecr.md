@@ -767,3 +767,26 @@ no apply.*
   `dev_env_steward` 6,768 to 7,069, of 10,240. Each planned ECR ARN names Production's account,
   `us-west-2` and the repository by name.
 - **[Claude] What follows**: the apply joins the waiting list.
+
+## 2026-10-22 — 5.6 applied; the apply's state and lock left behind by a network drop
+
+*Claude, in the session `stages-7-8-pending`, as the infrastructure user (`awsds-infra-identity`).*
+
+- **[user] The authorization**: *"I authorize applying identity/sso (Stage 7 5.6) and staging/foundation and
+  production/foundation (the Glue job grant) as the infrastructure user. Warn the other sessions and re-plan
+  before applying."*
+- **[Claude] Before**: the Stage 9 session and `Chat lateral` warned; a fresh plan, 0 to add, 3 to change.
+- **[Claude] The apply**: `DevEnvStewardAccess`'s policy *"Modifications complete after 42s"*; then the
+  laptop's DNS stopped resolving AWS's names (*"lookup sso.us-west-2.amazonaws.com: no such host"*,
+  *"lookup awsds-org-tfstate.s3.us-west-2.amazonaws.com: i/o timeout"*): the other two sets' read-back,
+  the state upload and the lock's release failed, and the apply exited 1.
+- **[Claude] Readings after, the network back**: Identity Center holds all three new policies
+  (`PullTheHouseImage`, `ReadAndPullTheApplicationImages` without `ReadEcrImageMetadata`,
+  `ReadTheRegistryScanningConfiguration`), and `list-accounts-for-provisioned-permission-set` with
+  `LATEST_PERMISSION_SET_NOT_PROVISIONED` lists no account for any of them. The state object
+  `identity/sso/terraform.tfstate` is the 19:28:06Z version; `errored.tfstate` (312,211 bytes) is in the
+  slice, gitignored; the lock object holds ID `f81ea42e-cc66-d468-e02c-b3223d0a93f8`, operation
+  `OperationTypeApply`, this laptop's user, created 2026-10-22T20:51:27Z.
+- **[Claude] What follows**: the recovery, `terraform force-unlock` of that lock and `terraform apply
+  -refresh-only`, waits on the user, since the project's rule forbids a force-unlock; the slice refuses
+  every plan until then.

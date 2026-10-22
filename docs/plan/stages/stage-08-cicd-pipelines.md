@@ -745,7 +745,7 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   works by hand (conventions §6). Stage 10 decision 12's deny on writes to `applications/*` must exempt
   `InfrastructureAccess`, or this path's copy of the rendered definition is refused (asked of Stage 10,
   2026-10-22).
-- **Pass 4's code — Written 2026-10-22 by Claude; the application slices planned, nothing applied.**
+- **Pass 4's code — Written 2026-10-22 by Claude; the application slices planned, the deploy roles' Glue job grant applied.**
   - `staging/app/app-etl/` and `production/app/app-etl/`, one slice copied byte for byte but its
     `release.tf` (`./scripts/check-copies.py`): the Glue job `awsds-<env>-app-etl` (Stage 10 decision 20
     (a)) running the release's `glue/transform.py` under the release's prefix, as `awsds-<env>-job-exec`
@@ -756,7 +756,7 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
     infrastructure user: `No changes` in each, and with `v0.2.1` as a stand-in release, 1 to add each.
   - The deploy roles' `apply-application` gains `ManageTheApplicationGlueJob` on that job's name: each
     `foundation/` plans 0 to add, 1 to change, the inline documents 5,359 (Staging) and 2,094
-    (Production) of 10,240.
+    (Production) of 10,240. Applied 2026-10-22 on the user's authorization, each re-plan `No changes`.
   - `scripts/render-workflow.py` is Stage 10 decision 6's table: it reads each value from the slice that
     owns it and fails on a placeholder the table does not know; `--check`, in `make check` and pre-commit,
     renders the template's workflows offline. It rendered `v0.2.1`'s workflow from Staging's and

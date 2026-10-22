@@ -2504,3 +2504,14 @@ apply.*
 - **[Claude] What follows**: the two `foundation/` applies and `identity/sso/`'s join the waiting list;
   the template reaches `awsds/app-etl` by an MR at a GitLab sitting; the application's tables and 3.3's
   share read wait for a schema.
+
+## 2026-10-22 — the deploy roles' Glue job grant applied
+
+*Claude, in the session `stages-7-8-pending`, as the infrastructure user (`awsds-infra-prod`,
+`awsds-infra-staging`), on the user's authorization quoted in Stage 7's entry of the same sitting.*
+
+- **[Claude] The applies**, from fresh saved plans, Production first: `production/foundation/` and
+  `staging/foundation/` *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."* each.
+- **[Claude] After**: each re-plan `No changes` (`-detailed-exitcode` 0); `apply-application` reads
+  `PassTheJobRole`, `ManageTheApplicationGlueJob` and `ManageTheApplicationTables` on `awsds-deploy-prod`,
+  and the same with `ReadTheApprovedModelVersions` and `ListTheModelVersions` on `awsds-deploy-staging`.
