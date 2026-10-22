@@ -212,7 +212,7 @@ glossary, data products and subscription requests.
 
 **Compute it does not own.** A domain is a registry, not a runtime. It holds no notebook, no app, no
 training job and no project bucket; blueprints provision all of that into the *associated* accounts
-(Sandbox only since 2026-09-06; Sandbox and Development before), decided by the project profile. Two named
+(Sandbox only since 2026-09-06, and Staging from 2026-10-19 to 2026-10-22 for [Stage 18](plan/stages/stage-18-staging-deployment-project.md)'s measurement; Sandbox and Development before), decided by the project profile. Two named
 exceptions:
 
 - **Catalog maintenance (D27)** — Glue Crawlers over the raw zone and the drop-box, Iceberg compaction and

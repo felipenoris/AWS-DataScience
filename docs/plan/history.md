@@ -799,6 +799,11 @@ one module tag.
   runbook says a workflow the CLI made is never saved or run from the portal. Verifications xxiii to
   xxvi join Stage 8. Nothing in AWS changed.
 
+- **2026-10-22 — Stage 18's verdict: D41 item 2 kept.** A deployment-only SageMaker project was measured
+  in Staging from 2026-10-17 and removed on 2026-10-22, and the user kept item 2 on the recommendation
+  its measurements carried (Stage 18's 8.9). D41's item 2 and revision trigger, `SMUS.md`'s section on a
+  deployment project, `POLICIES.md`'s trigger on `DenyDataZoneEntirely` and Stage 10's status carry it.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

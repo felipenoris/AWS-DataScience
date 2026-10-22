@@ -133,12 +133,6 @@ RANKS = {
     # inversion the two-pass split exists to make safe - the same shape Stage 3 pass 2 has for
     # the peerings, covered by the cross-account exception note above.
     "sagemaker": 46,
-    # Stage 18 step 2.4 - the same prerequisites in a deployment account, for that stage's life,
-    # under a name of its own because staging/sagemaker/ is Stage 9's job-role slice and a slice
-    # destroyed whole at Stage 18 8.6 cannot share a folder with one that stays. The same rank as
-    # sagemaker for the same reason: [P], applied twice around the console association, and
-    # nothing in up/down ever acts on the number.
-    "studio": 46,
     "governance": 47,
     # Stage 16's sandbox lake. After `data` (45), the only real dependency of the three ranks
     # below it: the bucket encrypts under alias/awsds-<env>-data, which the `data` slice's
@@ -329,14 +323,12 @@ SLICES = [
     # them, and a static rate that assumed them would over-report every session that does not.
     # `make status` quotes this column; the flag's cost is in `make help`.
     Slice("sandbox", "egress", EPHEMERAL, "18 interface endpoints (5.2) - no NAT", 0.180),
-    # 12 while `staging/egress/` declares `datazone` for Stage 18's window (step 7.1); Stage 18 step
-    # 8.8 removes it, and the row returns to 11 at 0.110.
     Slice(
         "staging",
         "egress",
         EPHEMERAL,
-        "12 interface endpoints (8.3, datazone for Stage 18) - no NAT",
-        0.120,
+        "11 interface endpoints (8.3) - no NAT",
+        0.110,
     ),
     # 12 since Stage 7 (2026-10-12): 6c 5.5's 13 plus `secretsmanager` (step 1.7), which the GitLab
     # host's bootstrap reads its leaf keys and gitlab-secrets.json through and the runner its
@@ -498,10 +490,6 @@ SLICES = [
     # the running apps are the [E] half, deleted by scripts/down-studio-apps.py rather than
     # by terraform destroy (conventions 6; Stage 6 step 8.3).
     Slice("sandbox", "sagemaker", PERSISTENT, "blueprint prereqs: 2 roles, D13 boundary, CMK"),
-    # Stage 18 step 2.4 - the deployment project's prerequisites in Staging, the same module and
-    # the same four free-at-rest objects plus the projects bucket and the log group, for the
-    # stage's life: 8.6 destroys the slice whole and deletes this row with it.
-    Slice("staging", "studio", PERSISTENT, "Stage 18: blueprint prereqs of the deployment project"),
     # Stage 9 step 3 - the same slice name in a deployment target, and a different content: the
     # job role, the Model Registry's package groups, the debug role and its alarm, the job log
     # groups (D17's runtime half). [P] and free at rest: roles, rules and empty groups cost

@@ -46,14 +46,6 @@ provider "aws" {
   profile = var.members["sandbox"].profile
 }
 
-# Staging, the deployment member of Stage 18's window (SMUS_DEPLOYMENT_MEMBERS). Stage 18 pass 8
-# removes this alias in the commit that removes the backend.py row.
-provider "aws" {
-  alias   = "staging"
-  region  = var.region
-  profile = var.members["staging"].profile
-}
-
 
 # ------------------------------------------------------- the read-only directory provider
 #

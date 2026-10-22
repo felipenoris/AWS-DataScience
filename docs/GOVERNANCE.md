@@ -214,7 +214,7 @@ holds the objects, the second the permissions over them, the third the business 
 | Its question | what tabular data exists, and where | who may read which database, table, column and row | what the data means, who owns it, who asked for it and who approved |
 
 A publish writes to the third column only (measured 2026-09-13). Access reaches the second column when a
-subscription or a Share is fulfilled (INT-23, unexercised), and Lake Formation answers every query,
+subscription or a Share is fulfilled (INT-23: a subscription measured across accounts on 2026-10-22, a Share unexercised), and Lake Formation answers every query,
 whichever column the request came through.
 
 A data product, the lake and a warehouse are different things. A data product is a catalog object, a
@@ -333,7 +333,7 @@ where each stands here:
 | Asset and listing | a catalog entry for a Glue table, a Redshift table or view, or a custom asset type; *publish* creates the listing other projects search | `house-price` published 2026-09-13; metadata only, no grant written |
 | Business metadata | business names and descriptions, generated on request, glossary terms, metadata forms, a README per asset | a glossary or form for `classification`: Stage 6f 4.1-4.2; the generation: decision due 3 |
 | Data product | a set of assets published and subscribed as one | `my-data-product`, 2026-09-13 |
-| Subscription | a consumer project requests, the owner project approves, DataZone fulfils: a Lake Formation grant in the table's account for a managed asset (INT-23), an EventBridge event for an unmanaged one, whose owner grants | unexercised; Stage 6f step 2 |
+| Subscription | a consumer project requests, the owner project approves, DataZone fulfils: a Lake Formation grant in the table's account for a managed asset (INT-23), an EventBridge event for an unmanaged one, whose owner grants | across accounts on 2026-10-22 ([Stage 18](plan/stages/stage-18-staging-deployment-project.md) 7.2, revoked the same night): `SELECT` under the subscribing project's context, a RAM share of the producer's whole catalog, Data Catalog resource-policy statements and a resource link, each by its side's project role; inside one account, Stage 6f step 2 |
 | Direct Share | the owner gives an asset (S3, Glue, QuickSight) to chosen projects, users or groups; for S3, without a subscription request | decision due 5 |
 | Lineage | OpenLineage nodes from instrumented engines and from publishing (§Data lineage) | two nodes, an asset and its listing, written by the publish of 2026-09-13; no event posted by any engine (Stage 6f 6.1) |
 | Domain units and authorization policies | who may create projects, glossaries and forms, and where; one unit per business data domain in the institutional pattern | Stage 6f step 9, `institutional-delta.md` |
@@ -431,7 +431,7 @@ Lake Formation's other attribute-based form, ABAC, puts the attribute on the cal
 on the data: a named-resource grant under a Cedar condition. SMUS writes it for every project
 (`context.datazone.projectId == <project-id>`, [`docs/SMUS.md`](SMUS.md) §S3 1b). DataZone documents a
 subscription fulfilment as a named-resource grant, with no LF-TBAC support for the Glue assets it
-manages; whether a fulfilment carries a condition as well is Stage 6f verification i. Lake Formation
+manages; across accounts it carried the subscribing project's `context.datazone.projectId` (Stage 18 7.2, 2026-10-22), and the same-account case is Stage 6f verification i. Lake Formation
 evaluates a principal's permissions as the union of its grants, named-resource and LF-Tag alike
 (`docs/REFERENCES.md`), so a tag on a table neither gates nor blocks a named-resource grant. The forms
 meet in one account's Lake Formation without reading each other: the register holds TBAC, and a
@@ -441,9 +441,9 @@ named-resource grant on a lake table is an exception under §Grants (Stage 6f de
 |---|---|---|
 | The attribute sits on | the data: an LF-Tag on a database, table or column | the caller's session, in the grants SMUS writes: `context.datazone.projectId` (measured 2026-09-12); a fulfilment's condition is Stage 6f verification i |
 | The grant | `[principal, tag expression, permissions]`, standing, reaching every object that carries the tags | a named database, table or location, per project or per approved subscription |
-| Written by | Terraform: `data-governance/data/` and the consumer slices | the SMUS provisioning role at project creation (measured); DataZone at fulfilment, through the manage-access role (documented, unexercised) |
+| Written by | Terraform: `data-governance/data/` and the consumer slices | the SMUS provisioning role at project creation (measured); DataZone at fulfilment, as each side's project role (measured across accounts 2026-10-22) |
 | Governs here | the lake, `raw` and `curated` | a project's own databases and its `dev/` scope in Sandbox |
-| The control | the tag and the expression | the project id on the session, which DataZone sets (which sessions carry it is unmeasured); for a subscription, the owner project's approval |
+| The control | the tag and the expression | the project id the condition reads, which every session of the project role read so far met, a person's, `SYSTEM`'s and a Glue worker's with no session tag (Stage 18, 2026-10-21/22), so it comes from the role (inferred); for a subscription, the owner project's approval |
 | Recorded in | the grant register, `AWS_STATE.md` | no register row: `DL-14` reads the registrations, and `./aws/catalog.py` `CT-7` and `CT-8` read the grants a SMUS principal holds (14 on 2026-10-18, all on project-owned objects) |
 
 ## Grants
@@ -699,9 +699,9 @@ flowchart LR
   published, `classification` in the catalog is description for people, and the tag is the control
   (Lesson 5).
 - **Access between projects is the catalog's own.** A consumer project subscribes, the owner project
-  approves, and DataZone writes the grant for a managed asset (documented; INT-23, unexercised). For a
+  approves, and DataZone writes the grant for a managed asset as the owner project's role (INT-23, measured across accounts on 2026-10-22; inside one account, Stage 6f step 2). For a
   project's own tables this is the designed mechanism, since the register does not reach them. The Governance Manager approves as a member of the owner
-  project or through `GovernanceManagerAccess`'s domain ownership; which policy decides is Stage 6f 4.3.
+  project or through `GovernanceManagerAccess`'s domain ownership; which policy decides is Stage 6f 4.3. A member acts as the project role in the portal, whose query editor reads the project's tables (Stage 18 6.1, 7.2), so that route reaches rows D31 keeps from the persona.
 - **The domain is the boundary.** Publish, subscribe and Share work inside one domain; Staging and
   Production are never associated (D26), so a deployment target neither publishes nor subscribes.
 

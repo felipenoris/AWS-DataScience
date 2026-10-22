@@ -54,8 +54,13 @@ user's own address.
 
 **Two keys exist for scoping it**, and neither needs Identity Center *attributes for access control*:
 `aws:SourceIdentity` on the role session, and the space's `OwnershipSettings.OwnerUserProfileName`,
-which carries the same user id. A condition on the **D13 permissions boundary** is the one instrument
-this estate has that reaches a role the blueprint writes. The channel is reachable from any network,
+which carries the same user id. DataZone sets the first on the project-role sessions it opens for a
+member, a person or an IAM principal, and as `SYSTEM` for a data source's run; a job's sessions and a
+subscription fulfilment's carry none (Stage 18 6.2 and 7.2, 2026-10-21 and 2026-10-22), so a deny
+conditioned on its presence binds a member's and a data source's sessions, never a worker's or a
+fulfilment's. Such a condition reaches a role the blueprint writes from the **D13 permissions boundary**
+or from a policy a slice attaches to the role, the form of Stage 18's
+`awsds-staging-person-session-deny`, which refused a person's write. The channel is reachable from any network,
 and that is the design ([D39](../decisions/D39-access-by-identity.md)): what is left of decision due 4 in
 [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) is the connection method, and whether the
 file channel in both directions (§N) is acceptable.

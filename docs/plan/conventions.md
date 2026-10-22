@@ -337,13 +337,6 @@ terraform-live/
 │   │                     #     key created at Stage 9, never the dev-named one 6b destroys
 │   ├── sagemaker/        # [P] job execution roles only (Pipelines, training, processing,
 │   │                     #     batch transform, the Model Registry consumer side)
-│   ├── studio/           # [P] Stage 18, for the stage's life: the blueprint prerequisites of
-│   │                     #     the deployment-only project through sagemaker-prereqs (the
-│   │                     #     provisioning and manage-access roles, the D13 boundary, the
-│   │                     #     project key, the projects bucket, the log group) and, on the
-│   │                     #     second apply, decision 1's base blueprint alone; the workflows
-│   │                     #     grant of sandbox/workflows/ on the project's role (4.4).
-│   │                     #     Destroyed whole at 8.6; sagemaker/ above keeps Stage 9's job roles
 │   ├── orchestration/    # [E] MWAA Serverless workflows for the staging leg (D7 amended:
 │   │                     #     a serverless workflow bills nothing at rest, so the reason
 │   │                     #     orchestration was Production-only is gone), with the chain

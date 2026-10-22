@@ -515,6 +515,12 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     hand a principal that the principal could not ask for directly. Two surfaces, which is the argument
     for carrying it as an axis rather than as two incidents.
 
+    **Amended 2026-10-22: the membership is a door of its own.** DataZone hands an owner's or a
+    contributor's portal session the project role, the only designations a V2 domain admits (Stage 18
+    6.1), and its query editor reads the project's tables with no compute (Stage 18 7.2), so a governance
+    manager made a member, as 6f 4.3 plans, reads them past `DenyReadingTheRows` with no
+    `GetEnvironmentCredentials` call.
+
 ### Raised by Stage 6 step 1.3, 2026-08-21
 
 21. **Nothing in this design writes a `datazone:` policy for the Interactive OU — and since the account
@@ -773,6 +779,13 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     (02:51:23Z): the opt-in on `test-experimentation`'s new database, conditioned on the project, and a
     `RevokePermissions` from `IAM_ALLOWED_PRINCIPALS` answered `InvalidInputException`; it granted
     nothing. The narrower-permission half of this question stands.
+
+    **Amended 2026-10-22: a subscription used no seat, and Staging's are gone.** Stage 18 7.2's
+    subscription across accounts was fulfilled by each side's project role, the producer's on a table it
+    had created, so the writes read there are the project roles', not a seat's; the same-account case is
+    6f step 2.2's. Stage 18's unwinding put Staging's settings at no administrator,
+    `CROSS_ACCOUNT_VERSION` 1 and `AllowFullTableExternalDataAccess` `false` (01:46:47Z), and its verdict
+    left no deployment project, so Stage 9 pass 5's `staging/data/` meets no seat.
 
 ### Raised by Stage 6 step 2.4's reading, 2026-08-26
 

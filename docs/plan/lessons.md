@@ -1910,7 +1910,7 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   the failure DataZone deletes the stack and no `DeleteDatabase` follows, and a later
   `DeleteEnvironment` deletes the stack again and calls none either (Staging's
   `glue_db_c2ej62w956q2a8`, Sandbox's `mydatabase`). An `ACTIVE` environment's deletion follows the same
-  template, so it is expected to leave its database too, unmeasured. The portal's *Create database*
+  template and left its database too (Staging's `glue_db_d6ogysnx78dguo`, 2026-10-22, Stage 18 8.1). The portal's *Create database*
   deleted its database after one such failure (`test`, 2026-10-15, as the project role) and not after
   the other. Lake Formation leaves the database out of a non-administrator's `get-databases`, so the
   listing reads it as gone; `get-database` by name answers *"Insufficient Lake Formation
@@ -1980,6 +1980,28 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   roles, Contributor and Owner, both working on the project's credentials: no designation gives a
   person a view with no write. Where: the
   Stage 18 log, 2026-10-20.
+
+- **`glue get-table` answers a missing table as it answers a hidden one** (measured 2026-10-22 in Staging,
+  Stage 18 7.2). To a principal holding no Lake Formation grant, `trades` and a made-up name both
+  answered *"Insufficient Lake Formation permission(s): Required Describe"*, where `get-database`
+  answers `EntityNotFoundException` for a database that does not exist; a table's existence is read in
+  CloudTrail's `CreateTable` or by a principal holding `DESCRIBE`. Where: `log-stage-18`'s 7.2 entry.
+- **DataZone sets `aws:SourceIdentity` on the project-role sessions it opens for a member or as
+  `SYSTEM`, and on none it opens to fulfil a subscription** (measured 2026-10-21 and 2026-10-22, Stage 18
+  6.2 and 7.2). A person's, an IAM principal's and a data source's `SYSTEM` sessions carried the
+  caller's profile id or `SYSTEM`; the workers' (MWAA Serverless, Glue, SageMaker) and the
+  `AWSDataZone-Subscriptions` sessions carried none, so a deny conditioned on the key binds the first
+  and spares the second, the fulfilment's `glue:PutResourcePolicy` included. Where: `log-stage-18`'s
+  6.2, 4.3 and 7.2 entries.
+- **A subscription's fulfilment shares the producer's whole catalog** (measured 2026-10-22, Stage 18
+  7.2). With Staging's `CROSS_ACCOUNT_VERSION` at 1, the grant DataZone wrote carried
+  `CROSS_ACCOUNT_VERSION` 5 in its own parameters; the RAM share it created named Staging's `catalog`,
+  `database/*` and `table/*/*` with the three ReadWrite Glue permissions, and three statements went into
+  Staging's Data Catalog resource policy naming the consumer account. Lake Formation's `SELECT` under
+  the subscribing project's context is what scopes the read, and the revocation removed all of it.
+  Where: `log-stage-18`'s 7.2 and C1 entries.
+- **Deleting a `Tooling` environment leaves its log group** (measured 2026-10-22, Stage 18 8.1): the
+  stack reached `DELETE_COMPLETE` and `datazone-<project>-dev`, at 731 days, stayed.
 
 ### MWAA, provisioned
 

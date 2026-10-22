@@ -7,7 +7,9 @@ Sandbox, and makes the bundle; the pipeline deploys the bundle to Staging and Pr
 Step Functions state machine per chain starts the workflows and one EventBridge Scheduler schedule
 starts the machine, the shape of `terraform-reference/`'s `modules/orchestration/`. Amends
 [D7](D07-orchestration.md), [D26](D26-unified-studio.md) and [D28](D28-workflow-contract.md) in place,
-each with a dated line. The first CLI deploy into a project ran in the lab the same day.
+each with a dated line. The first CLI deploy into a project ran in the lab the same day. Item 2 kept by
+[Stage 18](../stages/stage-18-staging-deployment-project.md)'s verdict, the user's on 2026-10-22, after measuring its
+alternative.
 
 **In one line:** the application is the unit, the CI/CD CLI carries it between the Sandbox projects
 and bundles it, the pipeline deploys the bundle, and design B is built as the layer that schedules and
@@ -62,7 +64,9 @@ took item 1's `{env.VAR}`, in place of a `${VAR}` the CLI leaves as written, at 
    `datazone:*` out of the `Workloads` SCP and make the project role the execution role. The user
    chose on 2026-10-17 to measure that alternative before Stage 10 builds this item, in Staging, with
    a project whose only member is the identity that deploys
-   ([Stage 18](../stages/stage-18-staging-deployment-project.md)); this item stands until its verdict.
+   ([Stage 18](../stages/stage-18-staging-deployment-project.md)). **Kept by that verdict, the user's on
+   2026-10-22**: the comparison, measured, and the reasons are the section "Where production runs"
+   below.
 3. **The CLI's place.** It deploys from the `dev` project to the `test` project and makes the bundle
    the pipeline promotes: `deploy --targets dev` from the laptop or a space while the application is
    engineered, `bundle` and `deploy --targets test` in the application's pipeline on the release
@@ -157,9 +161,93 @@ Claude project's library, `laboratorio/leituras/2026-10-15-cli-houseprice-etl-de
 - Read in the lab on 2026-10-16: `bundle` and the deploy to `test`, whose 158 CloudTrail events
   gave the actions the CLI's identity needs beyond AWS's example policy, which lists no
   `airflow-serverless` action ([Stage 8](../stages/stage-08-cicd-pipelines.md) decision 19).
-- Still owed: `run`, `monitor` and `logs` with the Sandbox up and the input file in place; a Python or Bash task's `Code` through the CLI; the
-  project role's pull of the application image; and the chain layer's readings (Stage 10
-  verifications xxii to xxvi).
+- Still owed: `monitor` and `logs` with the Sandbox up and the input file in place, and the chain
+  layer's readings (Stage 10 verifications xxii to xxvi). Stage 18 read the other three in Staging: `run`
+  returns once `StartWorkflowRun` answers, and the pipeline followed the run with `get-workflow-run`
+  (4.3, 2026-10-21); a Python task's `Code`, copied under `shared/operatorFiles/` and run (4.2 and 4.4,
+  2026-10-19); and the project role's pull of `awsds-prod-ecr-app-etl` by digest, in its job's
+  `SageMaker` session (4.4 and 4.3).
+
+## Where production runs: the pipeline's deploy against a project in each deployment account
+
+Item 2 chose between two ways of running an application in Staging and Production. The user had the
+second measured before Stage 10 builds the first, and [Stage 18](../stages/stage-18-staging-deployment-project.md)
+built it in Staging from 2026-10-17, read it against the perimeter and removed it on 2026-10-22; its
+questions i to xi and its log carry every reading cited below. The user kept item 2 on 2026-10-22.
+
+**A, the pipeline deploys the bundle (item 2).** Staging and Production hold no project and no domain
+association. The release job renders the application's YAML for the account (Stage 10 decision 6),
+writes it with the code under the release's prefix in the account's outputs bucket, and the
+`orchestration/` slice declares the workflow as `awscc_mwaaserverless_workflow`, pinned to that object's
+version, with the per-workflow execution role (D28), a named log group and the Glue job the application
+slice declares (item 9). A chain's state machine and schedule start the workflows (item 5).
+
+**B, a project in each deployment account (item 2's alternative).** Each account is associated to the
+domain and holds a deployment profile, `Tooling` with `enableSpaces` false, and one project whose only
+member is the identity that deploys; the CI/CD CLI deploys every stage from the bundle and the project
+role is the workflow's execution role, as in `dev` and `test`.
+
+### The comparison
+
+| | A, the pipeline deploys the bundle | B, a project per deployment account | Measured |
+|---|---|---|---|
+| Execution identity | one role per workflow, written here and enumerated, under `awsds-<env>-app-boundary`; the jobs under `awsds-<env>-job-exec` | the project role: AWS's managed policies (`SageMakerStudioProjectUserRolePolicy` v75 and two others) plus the grants the stage had to add, shared by every application in the project | 4.4 needed `sandbox/workflows/`'s grant on the project role; `TM-17` found the managed policy reaching other accounts' `airflow-celery-*` queues and `amazon-bedrock*` functions |
+| Who can act as it | the workflow service alone | every project member: DataZone hands members' portal sessions the project role, and a V2 domain admits no read-only designation | 6.1: a contributor wrote a folder and a querybook as the project role; 6.2's deny on `aws:SourceIdentity` blocks a person, binds DataZone's own member and `SYSTEM` sessions too, and misses a subscription's fulfilment |
+| Workflow in Terraform | in state, on INT-14; the ladder's last rung is the CLI's API form (Stage 10 4.2) | outside state: `CreateWorkflow`, then `UpdateWorkflow` per deploy; `destroy` reads the manifest and the service | 4.2, 4.3: four versions in four deploys; log groups with no retention (`EXC-21`); `operatorFiles/` never pruned |
+| Glue job | declared by the application slice (item 9) | created and updated by the operator at each run | 4.4, 7.2 |
+| Isolation between applications | a role, a prefix and a workflow each | one shared root: a reused workflow name or DAG id takes the other's file, and its `destroy` reaches the other's Glue job; one project per application removes it, at the price of a project, a stack and a role each | 5.2, 5.4 |
+| `Workloads` perimeter | `DenyDataZoneEntirely` whole; nothing of DataZone in the account | `datazone:*` carved out for good; the account associated; the SMUS provisioning and manage-access roles seated as its Lake Formation admins, able to grant once a `DataLake` environment exists; `AllowFullTableExternalDataAccess` turned on; an S3 Access Grants instance and the Athena service-linked role created | 1.3, 3.3 and its corrections of 2026-10-20 and 2026-10-21 |
+| Deploy identity | `awsds-deploy-<env>` with the workflow, `iam:PassRole` and S3 grants of Stage 10 1.5 | the same, plus DataZone reads and a `PROJECT_OWNER` membership by its session group, which DataZone creates at its first call, so the first deploy fails and a human adds it | 4.3: job #246 stopped on `ListConnections`, #247 `SUCCESS` |
+| Running and following a run | the chain's machine starts the workflow and waits on `GetWorkflowRun` | `run` starts the workflow and returns; the pipeline polls | ix, 4.3's job loop; 0.4: a non-member starts a workflow by IAM and the workflow key alone, so the chain works in either |
+| Seeing runs | the console and the APIs | the same: with spaces off the portal offers no Workflows tool, and spaces on need a SageMaker AI domain and a `CreateDomain` carve-out | 6.1, decision 1 |
+| Governed data to Sandbox | the lake: Lake Formation's TBAC shares from Data Governance (Stage 5a); the catalog road to the lake is 6f's open input | a catalog subscription: `SELECT` to the consumer account's `IAMPrincipals` under the project's context, a RAM share of the producer's whole catalog and a Data Catalog resource policy naming the consumer account | 7.2: the query editor read the table; the revocation removed every piece |
+| Lineage to the domain | none from Production while `DenyDataZoneEntirely` stands (Stage 10 decision 9) | the Glue job posts its own events as the project role, through a `datazone` endpoint in the VPC | 7.1 |
+| Teardown | a Terraform destroy | a project deletion leaves the stack's log group, the `DataLake` database, the Lake Formation admins and settings, the Access Grants instance, the service-linked role, the runs' log groups and lineage entities to remove by hand; the domain keeps the members' profiles, lineage events and subscription records | 8.1 to 8.6 |
+| Cost | the workflow's runs; the roles and log groups free at rest | the same runs; at rest the stack's log group storage and the project key, cents; the stage's whole window cost USD 1.52 in Staging | the stage's Cost section |
+
+### Advantages and disadvantages
+
+A's advantages: the identity that runs production is written here, held by no person and scoped to
+one application; the workflow, its log group and its Glue job are Terraform resources a plan reads; the
+`Workloads` perimeter, Lake Formation's admins and the catalog's sharing stay as they are; Staging and
+Production run the same roles under the same document, so the Staging leg tests what Production runs.
+A's disadvantages: two deploy paths, the CLI in `dev` and `test` and the release job beyond them, with a
+render table between the CLI's variables and each account's values to write and keep; a pattern break
+between `test` (the project role) and Staging (the per-workflow role); the state property resting on
+INT-14, which Stage 10 has yet to prove; no lineage from Production and no catalog publication by
+Production while `DenyDataZoneEntirely` stands.
+
+B's advantages: one tool and one identity model from `dev` to Production, the CLI resolving the
+network, the key and the connections from the project; lineage posted by the jobs themselves; a
+governed table published to the catalog and subscribed from Sandbox with the grants DataZone writes and
+revokes; the managed policies maintained by AWS. B's disadvantages: a production role that project
+members assume and AWS redefines, shared across the project's applications; the workflow outside
+Terraform's state; DataZone's administrators and settings inside the account that holds governed data;
+a subscription that opens the producer's whole catalog at the RAM and Glue layers, Lake Formation alone
+scoping the read; a membership step no API automates at the role's first deploy; residues at every
+project's deletion.
+
+### Why A
+
+The objectives make data-leakage protection a requirement of its own, through fine-grained access
+control and egress control, and Production is where governed data is written. B's costs land on the
+controls that requirement rests on: who can act as the role that writes governed data, who authors its
+permissions, what the account's Lake Formation trusts, and what the catalog shares; each was measured
+in Staging, not inferred. Closing them inside B takes one project per application, an allow-list
+boundary written here on the project role, an SCP on `TM-17`'s channel and a teardown procedure per
+project, which is A's authoring work done in another place, with B's perimeter changes still on top.
+
+B's gains are mostly reachable on A or elsewhere. Resolving the network and calling `CreateWorkflow` are
+calls the release job makes (Stage 10 1.2, 4.2); following a run is the chain's `GetWorkflowRun`, which
+Stage 18's job loop showed in its smallest form; a chain role starts a workflow by IAM alone; and the
+portal shows a deployment project's runs to nobody unless spaces, and with them a SageMaker AI domain,
+enter `Workloads`. What A gives up for now is a catalog publication and lineage from Production, and
+`DenyDataZoneEntirely`'s revision trigger already names that moment: the first time Production must
+publish a data product of its own. If INT-14 fails, A's workflow is managed by API as B's is, and the
+other properties hold.
+
+The simpler path to run is B, one tool and one role model everywhere; the simpler path to keep safe is
+A, and the parity that matters for promotion, Staging with Production, is A's. Item 2 stands.
 
 ## The chain layer, against `terraform-reference/`
 
@@ -170,7 +258,7 @@ takes it in the `orchestration/` slice of each deployment account, with the name
 |---|---|
 | `aws_scheduler_schedule_group` `controladoria-schedules` | the group `awsds-<env>-chains` |
 | `aws_cloudwatch_log_group` `/aws/vendedlogs/states/<prefix>-pipelines`, 90 days, KMS | `/aws/vendedlogs/states/awsds-<env>-chains`, 90 days, the account's data CMK |
-| the role `<prefix>-step-functions` (trust `states.amazonaws.com`): EMR Serverless, Glue crawlers, SageMaker jobs, `sns:Publish`, `iam:PassRole`, logs, X-Ray | `awsds-<env>-chain-exec`: `airflow-serverless:StartWorkflowRun` and `GetWorkflowRun` on the account's workflows, and the log delivery; nothing on jobs. The reference's state machine chains jobs; here the workflow chains jobs (D28) and the machine chains workflows |
+| the role `<prefix>-step-functions` (trust `states.amazonaws.com`): EMR Serverless, Glue crawlers, SageMaker jobs, `sns:Publish`, `iam:PassRole`, logs, X-Ray | `awsds-<env>-chain-exec`: `airflow-serverless:StartWorkflowRun` and `GetWorkflowRun` on the account's workflows, `kms:GenerateDataKey` and `kms:Decrypt` on the workflow's key (Stage 18 0.4, 2026-10-19), and the log delivery; nothing on jobs. The reference's state machine chains jobs; here the workflow chains jobs (D28) and the machine chains workflows |
 | the role `<prefix>-eventbridge-scheduler` (trust `scheduler.amazonaws.com`): `states:StartExecution` on `stateMachine:<prefix>-*` | `awsds-<env>-chain-scheduler`, the same form on `awsds-<env>-chain-*` |
 | the role `gitlab_cicd`: `states:*`, `scheduler:*`, `events:*`, no `airflow-serverless` | `awsds-deploy-<env>` (Stage 8), the named actions of Stage 10 step 1.5 inside the boundary |
 | the module's input `eventbridge_role_arn`, given `<prefix>-eventbridge-scheduler`, trusted by `scheduler.amazonaws.com` alone, so a bridge rule needs a second trust on it or a second role | `awsds-<env>-chain-events`, trusted by `events.amazonaws.com`, the same `states:StartExecution`: a second role, so that CloudTrail tells a start on an inbox write from a scheduled one (Stage 10 step 3.6) |
@@ -227,7 +315,8 @@ per million. The workflow's own cost is D7's, 0.088 per task-hour, unchanged.
 ## Revision trigger
 
 A deployment target that gains a domain association and a project (item 2's alternative), which
-would make the CLI the deployer of every stage; a Step Functions integration with MWAA Serverless
+would make the CLI the deployer of every stage: Stage 18 measured its price (2026-10-17 to 2026-10-22),
+and what reopens it is `DenyDataZoneEntirely`'s trigger, Production publishing a data product of its own; a Step Functions integration with MWAA Serverless
 that the console does not list, or a `GetWorkflowRun` loop the service's quotas refuse at the chains'
 cadence (Stage 10 verification xxii); or the service gaining a dependency between workflows of its
 own, which would retire the inbox and leave the machine as the scheduler alone.

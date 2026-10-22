@@ -186,16 +186,16 @@ The grant is `terraform-live/sandbox/workflows/`, one policy and one attachment 
 2. Plan and apply the slice as the infrastructure user, `InfrastructureAccess`, in the account the project
    lives in. A precondition refuses a role without the D13 boundary.
 
-Stage 18's deployment project in Staging holds the same three statements from
+Stage 18's deployment project in Staging held, until its removal on 2026-10-22, the same three statements from
 `terraform-live/staging/studio/workflows.tf`, for the stage's life: its first run stopped on `glue:GetJob`
 without them (2026-10-19, run `7MMhwSySe5SOWd1`).
 
 The policy allows `DescribeProcessingJob` on a job with no project tag, `AddTags` of the caller's own
 project tag alone, on a job with no project tag or with the caller's, and `glue:GetJob` on a job with no
 project tag whose name ends with the caller's project id, `<app>-<project id>`, the name an application
-gives its job (user, 2026-10-16). Another project's jobs stay out of reach. The Glue statement is written
-and waits on an apply and a run that creates the job: whether `CreateJob` with the project tag then
-passes with nothing more, unlike the processing job's `AddTags`, is unmeasured.
+gives its job (user, 2026-10-16). Another project's jobs stay out of reach. With the Glue statement applied, `CreateJob` with the project tag passed with nothing more, unlike the
+processing job's `AddTags`: `GetJob` answered `EntityNotFoundException`, then `CreateJob` and `StartJobRun`
+passed (Sandbox, 2026-10-16, 6i's log; Staging, 2026-10-19, Stage 18 4.4).
 
 ---
 
@@ -246,7 +246,10 @@ the application's repository and deploy again with the CLI.
   the workflow as `{{ params.VAR }}` and fills it only in a run it starts, from the stage's
   `environment_variables` (its 1.0.9 code, read 2026-10-15), so such a run gets none of their values;
   what it renders in their place is [Stage 10](../stages/stage-10-orchestration-promotion.md)
-  verification xxix. Start the run from the CLI.
+  verification xxix. Start the run from the CLI, or with `start-workflow-run` carrying the parameters as
+  `OverrideParameters`: DataZone does not gate a start, which takes the IAM action and, in the starter's
+  session, `kms:GenerateDataKey` and `kms:Decrypt` on the project key (Stage 18 0.4, 2026-10-19). The
+  CLI's `run` returns once the service accepts the start; `get-workflow-run` follows the run to its end.
 
 **Save errors and their way through:**
 
@@ -658,7 +661,9 @@ prefix of loose files cannot be named, and a package with dependencies travels a
   stored as uploaded, its S3 version pinned, its sha256 equal to the built archive's.
 - **Through the API** (`create-workflow --code`, or Terraform's `awscc` from 1.99.0), the object can be
   any one the saver can read, such as an archive in the project's `shared/`. The service reads it at
-  save time in the saver's session. Not exercised here.
+  save time in the saver's session. The CI/CD CLI 1.0.9 takes this path: `workflow.create` copies the
+  archive to `shared/operatorFiles/<workflow>-<ms>.zip`, one object per deploy that nothing prunes, and
+  names it as `Code` (Stage 18 4.2, 4.3 and 4.5).
 
 **The portal guide's dependency recipe omits the platform flags** (`pip install --target ./package
 your-dependency`): run on a Mac, it installs the Mac's wheels of any compiled package. Use C2, or C6
@@ -723,6 +728,10 @@ never from `RunState`.
 - **Delete a workflow** from the *Workflows* page. Its log group stays, with no retention.
 - **Empty the inboxes** so the next run starts from a known state; the outboxes are the results.
 - **Processing jobs cannot be deleted**: they stay listed, which is why `SO-5` fails only the newest.
+- **A processing job's lineage stays too**: SageMaker creates a trial component per job, with artifacts
+  and associations, removed with `delete-association`, `delete-trial-component` and `delete-artifact`
+  (read in Staging, Stage 18 4.4 and 8.1). A project's deletion leaves these, the runs' log groups and the
+  CLI's `operatorFiles/` copies ([`docs/SMUS.md`](../../SMUS.md), "What a teardown leaves").
 - **The code archives** under `dev/operatorFiles/` stay with every version, since the bucket is versioned.
 - **The code folders** under `shared/jobs/` stay, one per version (§J1 step 5); delete an old one only
   when no definition names it.

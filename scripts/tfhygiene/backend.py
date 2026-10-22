@@ -419,17 +419,17 @@ SMUS_MEMBERS = ["sandbox"]
 # the configurations are destroyed - necessarily, since only the member can delete them and only
 # while the association still exists.
 #
-# Staging's row measured 2026-10-19 the same way, after Stage 18 step 2.1's association: the
-# call answered an empty list where it had answered UnauthorizedException that morning.
-SMUS_ASSOCIATED: list = ["sandbox", "staging"]
+# Staging was associated for Stage 18's window, from step 2.1 (2026-10-19) to step 8.4, and its
+# row left with its SMUS_DEPLOYMENT_MEMBERS row at step 8.2.
+SMUS_ASSOCIATED: list = ["sandbox"]
 # The associated accounts no person works in: a deployment project's account (Stage 18 step 2.3).
 # Apart from SMUS_MEMBERS because four readers of that list mean "an account people work in"
 # (Lesson 51): PERSONA_VENDING_ACCOUNTS, interactive_private_cidrs(), production/sagemaker/'s
 # `readers`, and refusal 8 in layers.py. Only governance/'s `members` map and `profiles_enabled` read
-# both lists, so a row here follows its SMUS_ASSOCIATED row, as a SMUS_MEMBERS row does. Staging's
-# row is Stage 18's window: governance/'s `staging` provider alias reads it, so pass 8 removes the
-# two in one commit.
-SMUS_DEPLOYMENT_MEMBERS: list = ["staging"]
+# both lists, so a row here follows its SMUS_ASSOCIATED row, as a SMUS_MEMBERS row does, and a row
+# here needs a provider alias of its own in governance/. Empty since Stage 18 step 8.2; the list
+# stays empty while D41 item 2 holds (Stage 18's verdict, 2026-10-22).
+SMUS_DEPLOYMENT_MEMBERS: list = []
 if set(SMUS_MEMBERS) & set(SMUS_DEPLOYMENT_MEMBERS):
     raise ValueError(
         "SMUS_DEPLOYMENT_MEMBERS: an account people work in belongs in SMUS_MEMBERS alone"
@@ -921,21 +921,6 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         values["domain"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_DOMAIN
         }
-
-    # Stage 18 step 2.4 - the deployment project's prerequisites in a Workloads account, for that
-    # stage's life: the four values the member branch above emits, under a slice name of its own
-    # because staging/sagemaker/ is Stage 9's job-role slice and a slice destroyed whole at 8.6
-    # cannot share a folder with one that stays. blueprints_enabled follows SMUS_ASSOCIATED as it
-    # does for a member; the row that flips it is written after the console association (2.3).
-    elif slice_name == "studio":
-        values["account_folder"] = account
-        values["lake"] = {
-            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
-        }
-        values["domain"] = {
-            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_DOMAIN
-        }
-        values["blueprints_enabled"] = account in SMUS_ASSOCIATED
 
     # Stage 6 pass 2 - the domain account's own slice. The members map is what the project
     # profiles' environment configurations are built from (one per member account); the flag is

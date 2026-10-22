@@ -69,20 +69,7 @@ locals {
 
   member_account_ids = {
     sandbox = data.aws_caller_identity.sandbox.account_id
-    staging = data.aws_caller_identity.staging.account_id
   }
-
-  # The DataZone group a profile with no `group` grants project creation to: the IAM role session
-  # group of the InfrastructureAccess role in the profile's own account (Stage 18 decision 3). Keyed
-  # by account folder; a profile pinned to an account absent here fails at plan.
-  infrastructure_access_group_ids = {
-    staging = data.awscc_datazone_group_profile.staging_infrastructure_access.group_profile_id
-  }
-
-  # The `deployment` row below exists while this is true: Stage 18's window, from step 2.7 to
-  # pass 8, which removes both. Another stage's change to this slice applies apart from Stage 18's
-  # (Lesson 69).
-  deployment_profile_enabled = true
 
   # The profiles, where each provisions, and who may create from it (D21/D26). The names are a
   # contract with ./aws/studio.py (US-4), and the account pinning turns D21's boundary from
@@ -105,29 +92,15 @@ locals {
   # that account's data.
   #
   # `blueprints` is the profile's own list, in deployment order with Tooling first (profiles.tf
-  # refuses any other order and any blueprint outside category 1). `deployment` is Stage 18's
-  # measurement, a project no person works in: decision 1's base, DataLake on demand for 7.2's
-  # published table (decision 5, path A), and a null `group`, so grants.tf grants Staging's
-  # InfrastructureAccess role instead (decision 3), never sso-group-data-scientists. Stage 18
-  # pass 8 removes the row.
-  project_profiles = merge(
-    {
-      experimentation = {
-        account     = "sandbox"
-        blueprints  = local.category_one_blueprints
-        group       = "sso-group-data-scientists"
-        description = "Experimentation (D21): the unit of work is a notebook. Provisions into a business unit's Sandbox."
-      }
-    },
-    local.deployment_profile_enabled ? {
-      deployment = {
-        account     = "staging"
-        blueprints  = ["Tooling", "DataLake"]
-        group       = null
-        description = "Deployment (Stage 18): a project the CI/CD CLI deploys applications into and no person works in. Provisions into Staging, with spaces off."
-      }
-    } : {},
-  )
+  # refuses any other order and any blueprint outside category 1).
+  project_profiles = {
+    experimentation = {
+      account     = "sandbox"
+      blueprints  = local.category_one_blueprints
+      group       = "sso-group-data-scientists"
+      description = "Experimentation (D21): the unit of work is a notebook. Provisions into a business unit's Sandbox."
+    }
+  }
 
   # The Tooling parameters Stage 6 step 1.5 locks. The non-editable flag is the difference
   # between a default and a control (Lesson 5): the parameters exist so nobody can flip a project
@@ -177,16 +150,8 @@ locals {
     ]
   }
 
-  # The overrides each profile passes, by profile name. `deployment` adds `enableSpaces` "false",
-  # locked: the Tooling template (ToolingDefault-prod-20260918) creates its SageMaker AI domain only
-  # when `enableSpaces` is "true", the template default, so the deployment project calls no
-  # sagemaker:CreateDomain (Stage 18 decision 1). The template's AllowedValues are "true"/"false".
+  # The overrides each profile passes, by profile name.
   profile_parameters = {
     experimentation = local.blueprint_parameters
-    deployment = {
-      Tooling = concat(local.tooling_parameters, [
-        { name = "enableSpaces", value = "false", is_editable = false },
-      ])
-    }
   }
 }

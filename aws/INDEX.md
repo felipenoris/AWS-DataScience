@@ -583,7 +583,7 @@ there.
 | Is a domain **owned** by any account but Data Governance — INT-12's fallback by accident, or the 1c root deny not holding? (a shared-in row is step 1.3 working — the owner is read from the ARN, never from who is asking) | 2, decided by `US-2` |
 | Is anything **SageMaker-shaped** running in Data Governance — the registry/runtime split (step 0's second preflight)? | 4, decided by `US-2` |
 | Which blueprints are configured — is any **Redshift-backed**, and is any **outside decision 5's category 1**? | 3, decided by `US-3`, read per account and split in sign: **zero** configurations in the domain account is the pass (one there is the finding, D22 puts no compute there), while in each member account two questions apply with two different messages: the Redshift family (`RedshiftServerless`, and `LakehouseCatalog` — RMS-backed, decision 4) reopens D26/D12, and anything else off the allow-list amends Stage 6 decision 5. The categories are [`docs/SMUS.md`](../docs/SMUS.md) |
-| Do the `experimentation` and `engineering` project profiles exist? | 3, decided by `US-4` |
+| Does the `experimentation` project profile exist, and no profile the script does not contract (the model governance profile is Stage 17 decision 13's; `engineering`'s return is a failure)? | 3, decided by `US-4` |
 | Is every Interactive SageMaker AI domain **VpcOnly**, with idle shutdown ENABLED? | 4, decided by `US-5`/`US-7` |
 | Does any deployment target carry a domain (D28)? | 4, decided by `US-6` |
 | Do the blueprint-provisioned project roles carry the **D13 boundary** (INT-15's presence half)? | 6, decided by `US-8` — survival is a `diff` of two runs either side of a reconciliation |

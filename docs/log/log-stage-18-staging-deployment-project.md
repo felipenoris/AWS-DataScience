@@ -1600,3 +1600,403 @@ readings again.*
   14:37:40Z): `app_etl_deploy_staging_app_etl` at version 3 (`f2ed9786…`) since 7.1's deploy, where the
   row said 2, and SageMaker's lineage at three trial components sharing four artifacts with twelve
   associations, where it named the first run's alone. The readings are this log's.
+
+## 2026-10-21 — the rest of the stage prepared, with the environment down
+
+*Claude, in the session `stage-18-diagnostic` (branch `claude/stage-18-diagnostic-d0612f`, cut from `main` at
+`944984f6`). Every AWS call was a read as the infrastructure user with `InfrastructureAccess`, in `Staging
+Account` (`awsds-infra-staging`), `Data Governance Account` (`awsds-infra-data`), `Sandbox Account 1`
+(`awsds-infra-sandbox-1`), `Identity Account` (`awsds-infra-identity`) and `Production Account`
+(`awsds-infra-prod`); every Terraform run was a plan, none saved. Nothing was created, changed or deleted in
+AWS or in GitLab. Times are UTC.*
+
+- **[user] The request**: *"Prepare tudo para conseguirmos concluir o Stage 18, ainda com o ambiente
+  desligado. Verifique todos os artefatos que podem ser preparados antes de subir o ambiente. Com tudo
+  pronto, irei subir o ambiente. Aproveite para revisar as etapas que faltam do stage, verifique se são
+  exequíveis e faça as correções necessárias. Otimize o planejamento do restante do stage para agrupar
+  todos os passos que você pode fazer sem a minha intervenção. Me apresente qualquer decisão pendente que
+  eu possa tomar neste momento antes de começar, com o ambiente fora do ar."*
+- **[Claude] The environment**: Production's `awsds-prod-vpn`, `-proxy` and `-gitlab` `stopped`.
+- **[Claude] Stage 18's objects, read at 22:53Z**: `deploy-staging` `ACTIVE` with `Tooling`
+  (`bujd259b8g9zps`) and `deploy-staging-lakehouse` (`d6ogysnx78dguo`) `ACTIVE`; two members, Staging's
+  InfrastructureAccess session group (`PROJECT_OWNER`) and the project role's profile
+  (`PROJECT_CONTRIBUTOR`); no group profile for `awsds-deploy-staging`; the data source `READY`, its one run
+  `djfk1ihzkerez4` `SUCCESS` with nothing added; no asset, subscription request or subscription; the
+  profiles `deployment`, `experimentation` and the model governance one; Staging's two blueprint
+  configurations; both Glue databases present (*"Required Describe"*); the Glue job `app-etl-d1veybt5oak4uo`;
+  one workflow, `READY`; Lake Formation's admins the two SMUS roles, `CROSS_ACCOUNT_VERSION` 1,
+  `SET_CONTEXT` `TRUE`, `AllowFullTableExternalDataAccess` `true`, both default lists empty, one registered
+  location; the Access Grants instance `default` and its one location; the projects bucket at 62 versions
+  and 11 delete markers; the project key `Enabled`; `AWSServiceRoleForAmazonAthena` never used;
+  `datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps` carrying the workflows grant, the person-session deny
+  and AWS's three policies; the manage-access role the Glue and SageMaker manage-access policies;
+  `awsds-deploy-staging` five inline policies; the three `/aws/mwaa-serverless/` groups,
+  `/aws/sagemaker/ProcessingJobs` and `datazone-d1veybt5oak4uo-dev/error` and `/output` with no retention,
+  `datazone-d1veybt5oak4uo-dev` at 731 days and `/awsds/staging/studio` at 30; SageMaker's lineage at three
+  trial components, four artifacts and twelve associations; the two `DataZone-Env-*` stacks; on Sandbox's
+  side `test-experimentation-lakehouse` `ACTIVE` over `glue_db_4zojr4rr6bmnww`, Lake Formation at version 4
+  with three admins, and no table, link, RAM resource or Lake Formation permission of Staging's.
+- **[Claude] What a non-member lists**: as `awsds-infra-staging`, `datazone list-projects --name
+  test-experimentation` answers the project, whose members are the Data Scientist User (`PROJECT_OWNER`) and
+  three contributors, Sandbox's InfrastructureAccess and `awsds-deploy-sandbox-test` among them, not Staging's
+  InfrastructureAccess. 4.3's job looks the project up the same way, so its first run passes its own lookups
+  and stops at the CLI's storage items, as the stage says.
+- **[Claude] The read door of 7.2**: *SageMaker Unified Studio Querybooks running on sc.t3.medium instances*
+  and *Querybook Runs* read 0 in Sandbox and in Staging; the query editor runs Athena through SQL Workbench
+  with no compute (`docs/SMUS.md` §S3 item 1b, measured in Sandbox), so it reads the subscription with
+  Sandbox's environment down (decision 13).
+- **[Claude] Two forms 8.1 and 8.6 depend on**: Sandbox's Lake Formation admins hold InfrastructureAccess as
+  `arn:aws:iam::<acct>:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_InfrastructureAccess_…`,
+  path included, the form 8.1's call writes for Staging's role. The projects bucket comes from
+  `terraform-modules/s3-bucket` (`s3-bucket-v0.3.0`), which fixes `prevent_destroy = true` and
+  `force_destroy = false`, so 8.6's `terraform destroy` would be refused: the slice's teardown takes 6b step
+  1.7's form, its resource files moved out of the working tree and the bucket emptied first. The project key
+  takes `kms-key-v0.1.0`'s 30-day deletion window.
+- **[Claude] The baseline, 22:36Z**: `staging/studio/` and `staging/foundation/` (with the project folder's
+  `alerts.auto.tfvars`) as `awsds-infra-staging`, `data-governance/governance/` as `awsds-infra-data` and
+  `identity/org-policies/` as `awsds-infra-identity` all plan *"No changes. Your infrastructure matches the
+  configuration."*
+- **[Claude] Pass 8's code, written on the local branch `claude/stage-18-unwind`** (not pushed), one commit
+  per step, each planned against the live state, `-input=false`, plan not saved:
+  - `1875d65e` (8.1), `project_roles` emptied: *"Plan: 0 to add, 0 to change, 2 to destroy."* (22:39Z), the
+    two attachments alone.
+  - `b781a6ea` (8.2, 8.3), the `deployment` profile, the null-group branch, the `staging` alias and its
+    three data sources out of `governance/`, `SMUS_ASSOCIATED` and `SMUS_DEPLOYMENT_MEMBERS` without
+    `staging`, `WINDOW_PROFILE_NAMES` empty: `governance/` *"Plan: 0 to add, 0 to change, 2 to destroy."*,
+    the profile and its grant; `staging/studio/` with the regenerated tfvars *"Plan: 0 to add, 2 to change,
+    6 to destroy."* (22:41Z), the two configurations, their grants, the two attachments, the key's policy
+    and the person-session policy, whose bucket read waits on the key.
+  - `1faa92a9` (8.6), the folder and its rows in `layers.py`, `backend.py`, conventions §6 and `NETWORK.md`
+    §2.1. The apply's form planned with the six resource files moved out and put back: *"Plan: 0 to add,
+    0 to change, 23 to destroy."* (22:43Z), no refusal.
+  - `06a2f095` (8.7), `0af41075`'s hunks reversed and `POLICIES.md`'s row as before: `render.py` exits 0,
+    and the plan updates `awsds-org-scp-ou-workloads` in place, the condition removed, 2571 to 2499 bytes
+    (22:45Z).
+  - `0398ff76` (8.8), `d8688697`'s and `d21bcf66`'s hunks reversed and `NETWORK.md`'s paragraph removed;
+    `check-network-doc.py` clean; `staging/foundation/` *"Plan: 0 to add, 0 to change, 3 to destroy."*
+    (22:46Z), the three inline policies.
+- **[Claude] Back on the session branch**: the tfvars regenerated, `blueprints_enabled = true`, and
+  `staging/studio/` and `governance/` re-plan *"No changes."* (22:48Z).
+- **[Claude] The scripts for the sitting and pass 8**, kept in the session's scratch folder, outside the
+  repository: an inventory of every object above, re-run before and after each step; a CloudTrail reader
+  for the two roles' sessions and for the Lake Formation, RAM and Glue writes of a window, tried on 6.2's
+  re-read window, where it found the person's `StartNotebookCompute` and `CreateNotebook` refusals and no
+  message on either in CloudTrail; and a generator of pass 8's write inputs (the two Lake Formation
+  settings documents, the `DROP` grants and drops, the bucket's delete batches, 73 objects in one batch at
+  22:53Z), which reads and prints the commands without running them.
+- **[Claude] The plan corrected**: the status; the section "The order of what is left"; 4.3's listing
+  reading; 7.2 steps 1 and 4; 8.1 to 8.3 and 8.6 to 8.8; decisions 13 to 18; a risk; the cost.
+
+## 2026-10-21 — decisions 12 to 18 taken
+
+- **[user] The decisions**, with the environment down: *"Decisões 12 a 18: sigo as recomendações. Na 15,
+  autorizo antecipadamente as escritas do Claude listadas nos blocos B e C, como usuário de infraestrutura
+  na conta Staging, permission set InfrastructureAccess (perfil awsds-infra-staging), e a bateria de SCP no
+  fim do passo 8. Os applies e a membership"*, the message as it arrived, cut by the app at 300 characters;
+  the reply button it came from ends *"continuam comigo."*
+- **[Claude] What the decisions set**: 12, the approval at version 1 and its fulfilment read, version 4 on
+  a refusal and 1 again at 8.6; 13, the read from `test-experimentation`'s query editor, with no Sandbox
+  environment; 14, on a refused `CreateTable`, InfrastructureAccess an admin at once and the project role's
+  two unconditioned grants, gone at 8.1; 15, Claude's writes of the order section's blocks B and C and the
+  battery authorized ahead, the applies and the membership the user's; 16, `stage-18-staging` unprotected
+  and deleted in the sitting; 17, the Athena service-linked role and the six log groups deleted at 8.1;
+  18, pass 8 on the sitting's day. The stage file's decisions, status, 7.2 step 4 and 8.1 carry them.
+
+## 2026-10-21 — the sitting begins: B1, and a branch protected as a tag
+
+*Claude read AWS as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`,
+`awsds-infra-staging`, `awsds-infra-data`) and GitLab through Claude in Chrome, reads alone. Times UTC.*
+
+- **[user] B1**: *"Ambiente no ar e B1 feito: stage-18-staging protegida, push de 6a23b4d, ECR_REGISTRY
+  conferido e job stage-18-deploy disparado. Siga com o B2."*
+- **[Claude] The environment, 23:37:41Z**: `awsds-prod-gitlab` (launched 23:26:08Z), `-proxy`, `-vpn` and the
+  three runners (23:28Z) running; Staging's twelve interface endpoints `available`, `datazone` among them; no
+  group profile for `awsds-deploy-staging` in the domain.
+- **[user]** *"falhou no test. aba no chrome está aberta no teste"*
+- **[Claude] GitLab read**: pipeline #58 on `6a23b4d2`; `test` #237 failed and its retry #240 failed on the
+  pinned lint, *"manifest.yaml: manifest: stage dev: sem ACCOUNT_ID em environment_variables, que os
+  workflows usam"* and the same for `test`, the 14 tests and ruff passing; `stage-18-deploy` #239 `Manual`,
+  never started.
+- **[user]** On #239: *"This job is stuck because of one of the following problems. There are no active
+  runners online, no runners for the protected branch, or no runners that match all of the job's tags:
+  awsds-deploy"*
+- **[Claude] The cause**: the deploy runner #3 (`awsds-prod-runner-deploy`, tag `awsds-deploy`) reads
+  `Online` and `Protected`, assigned to `awsds/app-etl`; that project's Settings → Repository lists `main`
+  alone under Protected branches and `stage-18-staging` under Protected tags. Pipeline #58 was created
+  unprotected, so the protected runner takes none of its jobs, and the protected `ECR_REGISTRY` would not
+  reach them. The acts handed back: #239 cancelled (it holds `resource_group: app-etl-staging`), the tag's
+  protection removed, the branch protected, a pipeline run on the branch, its `stage-18-deploy` started. B1
+  in the order section now names the Protected branches list.
+- **[user] The Audit snapshot**, block A's last act (Stage 11's log of this day): no finding names
+  `awsds-staging-smus-projects` or Staging's project key, the reading 8.6 waited on.
+- **[user]** The branch protected, a new pipeline run on it, its job started: *"o `stage-18-deploy` falhou."*
+- **[Claude] B2, job #246 read** (the deploy runner, 23:47:19 to 23:47:58Z): the bundle read with the runner's
+  own role and its SHA256 `OK`; *"assumed-role/awsds-deploy-staging/botocore-session-…"*; the job's own
+  lookups passed (*"project d1veybt5oak4uo, subnets subnet-084d979d7fafd0b07 subnet-03a9c071d98036d4c,
+  security group sg-06aed2f274ea413e2"*); then each of the five storage items refused as a non-member's,
+  *"An error occurred (AccessDeniedException) when calling the ListConnections operation: User is not
+  permitted to perform operation: ListConnections"*, *"No S3 URI found for connection unknown"*, *"Total
+  files deployed: 0"*, *"FATAL: the deploy failed"*, before `workflow.create`. The CLI's `GetGroupProfile`
+  on the owner's group was refused *"because no resource-based policy allows the
+  datazone:GetGroupProfile action"*, the warning 4.2 read for InfrastructureAccess. Read after it (23:50Z):
+  the role's `IAM_ROLE_SESSION_GROUP` profile `9bead345-cd5a-3881-abb8-e68cc17e2e9b` `ASSIGNED`, created by
+  the run; `app_etl_deploy_staging_app_etl` `READY` at version `f2ed9786…`, as 7.1 left it; the project's two
+  members unchanged.
+- **[user] The membership and the retry**: `create-project-membership ... --designation PROJECT_OWNER
+  --member groupIdentifier=9bead345-cd5a-3881-abb8-e68cc17e2e9b` as `awsds-infra-staging`, then the job
+  retried, *"O retry terminou."*, its log pasted: *"✅ Deployment completed successfully!"*, the run
+  `I3A52lFlgpcaxpN` started, *"00:08:00Z SUCCESS"*, `"Duration": 762`, the four task instances, *"Job
+  succeeded"* (artifacts id 247).
+- **[Claude] 4.3 read back** (00:10Z): `app_etl_deploy_staging_app_etl` `READY` at version `eca67205…`, its
+  fourth, modified 23:53:43Z; the project role as its role; the project's two subnets and security group;
+  the project key as `CUSTOMER_MANAGED_KEY`; `manual_only`; tags `Pipeline=app-etl`, `STAGE=STAGING`,
+  `Target=deploy-staging`, `CreatedBy=SMUS-CICD` and the two DataZone ones; the run `SUCCESS` from 23:53:53Z
+  to 00:06:36Z, `transform`, `process`, `summarize` and `write_result` `SUCCESS`.
+- **[Claude] The sessions, CloudTrail 23:46 to 00:09Z** (read at 00:10:34Z, inside the delivery lag for the
+  run's last minutes): `awsds-deploy-staging` assumed five times by the runner, no source identity; the
+  project role assumed by `airflow-serverless.amazonaws.com` (`AmazonMWAAServerless`, 5),
+  `glue.amazonaws.com` (`GlueJobRunnerSession` 10, `GlueRoleValidationSession` 2), `sagemaker.amazonaws.com`
+  (`SageMaker` 11, `AnalyticsValidation` 2) and `im.amazonaws.com` (`SageMaker` 4), none carrying a source
+  identity; and by `datazone.amazonaws.com` eight times as `<profile>@bujd259b8g9zps`, source identity
+  `4aea7383-8e00-4a33-b3b1-01c9cfae0352`, which `get-user-profile` names the `IAM` profile of
+  `awsds-deploy-staging`, `ACTIVATED`; those eight sessions called `athena:GetWorkGroup` alone, none refused.
+  No event names an explicit deny. After the membership the refusals are the CLI's
+  `cloudformation:DescribeStacks` (7) and `datazone:GetGroupProfile` (14), as 4.2 read for
+  InfrastructureAccess; `CreateWorkflow` answering `ConflictException` before `UpdateWorkflow`;
+  `logs:CreateLogGroup` `ResourceAlreadyExistsException`; the workers' dry runs; and two of the processing
+  job's `SageMaker` session, `kms:CreateGrant` on the project key *"because no identity-based policy allows
+  the kms:CreateGrant action"* (23:57:00Z) and one `ecr:BatchGetImage` `InvalidParameterException` on
+  `repositoryName` (23:57:47Z) beside three that passed, the job completing. 6.2's worker side: the deny
+  binds no worker, and DataZone's sessions for the deploy role read.
+- **[user] B4**: `stage-18-table-job` pushed onto `stage-18-staging` and the new pipeline's `stage-18-deploy`
+  started; *"rodou no job 253"*, its log pasted: the run `yOhIv1kI8QInkMp` with `"TABLE_DATABASE":
+  "glue_db_d6ogysnx78dguo"` among its overrides, workflow version `64c056fa…`, *"00:31:54Z SUCCESS"*,
+  `"Duration": 814`, *"Job succeeded"*.
+- **[Claude] 7.2 step 1 read** (00:33Z): Staging's CloudTrail holds one `glue:CreateTable` at 00:20:47Z by the
+  project role's `GlueJobRunnerSession`, no source identity, no error: `trades` in `glue_db_d6ogysnx78dguo`,
+  `MANAGED_TABLE`, located at `…/d1veybt5oak4uo/dev/data/catalogs/trades`, where one Parquet object of 2,083
+  bytes landed at 00:20:45Z. The `CREATE_TABLE` conditioned on `context.datazone.projectId` admitted the
+  Glue job's session, so decision 14's fallback did not run. `glue get-table` as the infrastructure user is
+  no reading of existence for a table: `trades` and a made-up name both answer *"Insufficient Lake
+  Formation permission(s): Required Describe"*, where a database's two answers differ.
+- **[Claude] 7.2 step 2**, no other Claude session running: `start-data-source-run` on `aqm5tebc42cufk` at
+  00:34:04Z, run `dfz6l20pa95634` `SUCCESS` from 00:34:07Z to 00:34:09Z, one asset added, none failed; the
+  asset `aen4mge50m070w`, `trades`, `amazon.datazone.GlueTableAssetType`; `create-listing-change-set
+  --action PUBLISH` at 00:34:23Z, listing `bx8v3rafykv3ww` `ACTIVE` by 00:34:32Z, and Sandbox's
+  InfrastructureAccess finds it with `search-listings`, owned by `d1veybt5oak4uo`.
+- **[Claude] The data source run's session** (CloudTrail 00:33:30 to 00:35:30Z): DataZone assumed the project
+  role as `SYSTEM@bujd259b8g9zps`, source identity `SYSTEM`, which called `glue:GetDatabase`, `GetTables` and
+  `lakeformation:GetResourceLFTags`, none refused.
+- **[user] B6**: *"Pedi a assinatura de trades a partir do test-experimentation, como Data Scientist User.
+  Siga com a aprovação."*
+- **[Claude] The approval**: the request `4bpkmvgbs7escw` `PENDING`, created 00:41:14Z by the Data Scientist
+  User's profile for the project `test-experimentation` on the listing `bx8v3rafykv3ww`, reason *"testing"*;
+  `accept-subscription-request` as `awsds-infra-staging` at 00:41:38Z, `ACCEPTED`. The subscription
+  `5q2t8pgzp9ekr4` `APPROVED`; its grant `b20liz4386llow` to the target `ai0iw2p6vlxw5s` `IN_PROGRESS` at
+  00:42:04Z and `COMPLETED` at 00:42:53Z, the asset `GRANTED`. Staging's Lake Formation settings still read
+  `CROSS_ACCOUNT_VERSION` 1 with the two SMUS admins: decision 12's version was never raised.
+- **[Claude] What the fulfilment wrote in Staging** (CloudTrail 00:41 to 00:46Z): DataZone assumed Staging's
+  project role fourteen times as `AWSDataZone-Subscriptions`, no source identity and no session tag, and
+  that session called `glue:GetTable` (6), `lakeformation:ListPermissions` (5), then at 00:42:22Z
+  `BatchGrantPermissions`, `SELECT` on `glue_db_d6ogysnx78dguo.trades` to `<acct>:IAMPrincipals` (Sandbox)
+  under *"context.datazone.projectId=="4gqfau9xuo6e4w""*, with `"parameters":{"CROSS_ACCOUNT_VERSION":"5"}`
+  in the grant itself; `ram:CreateResourceShare` `LakeFormation-V5-SZM42MYX4P`, resources Staging's
+  `catalog`, `database/*` and `table/*/*`, principal Sandbox's account, `allowExternalPrincipals` false, with
+  `AWSRAMLFEnabledGlueTableReadWrite`, `AWSRAMPermissionGlueTableReadWriteForDatabase` and `…ForCatalog`; and
+  at 00:42:23Z three `glue:PutResourcePolicy`, the Data Catalog resource policy of Staging, which held none on
+  2026-10-21, now naming Sandbox's account for the table and partition actions of those three
+  permissions, reads and writes. Nothing refused: the person-session deny covers `glue:Put*` and binds a
+  session with a source identity, which these do not carry.
+- **[Claude] What the fulfilment wrote in Sandbox** (Sandbox's CloudTrail): `test-experimentation`'s role
+  `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw`, assumed by DataZone as `AWSDataZone-Subscriptions`, no
+  source identity, created at 00:42:41Z the resource link `trades` in `glue_db_4zojr4rr6bmnww`, its target
+  Staging's `glue_db_d6ogysnx78dguo.trades`, and granted `DESCRIBE` on the link to `<acct>:IAMPrincipals`
+  under that project's context. Read after it: the link listed with its target, the project role holding
+  `ALL`, `DESCRIBE` and `DROP` with the grant option on it, the RAM share `ACTIVE` among Sandbox's received
+  ones with its three wildcard resources `AVAILABLE`, and Sandbox's `list-permissions` on Staging's table
+  empty, the cross-account `SELECT` being Staging's grant.
+- **[user] B7 and B8**: *"Li trades no query editor do test-experimentation (resultado abaixo), apaguei a
+  branch stage-18-staging, desliguei o ambiente e apliquei o plano do 8.1. Siga com o C1."*, the message
+  carrying no result; the apply's output pasted: *"aws_iam_role_policy_attachment.project[...]: Destruction
+  complete after 1s"*, the same for `person_session`, *"Apply complete! Resources: 0 added, 0 changed, 2
+  destroyed."*
+- **[Claude] 7.2 step 4's read, from the trails** (01:05Z): in Sandbox, `sqlworkbench:ExecuteQuery` at
+  00:49:06Z and 00:52:03Z by `test-experimentation`'s role in the person's session
+  (`<profile>@bi356s1sacz0cw`), each followed by `athena:StartQueryExecution` invoked by
+  `sqlworkbench.amazonaws.com` in `workgroup-4gqfau9xuo6e4w-bi356s1sacz0cw` on `glue_db_4zojr4rr6bmnww`, and
+  `lakeformation:GetDataAccess` for `SELECT`, invoked by `athena.amazonaws.com` on the resource link and by
+  `glue.amazonaws.com` on Staging's `glue_db_d6ogysnx78dguo/trades`; in Staging, the same `GetDataAccess`
+  by `glue.amazonaws.com` at 00:49:07Z and 00:52:04Z; no error on either side. The second query,
+  `98f869dd-…`, *"SELECT * FROM "glue_db_4zojr4rr6bmnww"."trades" LIMIT 10"*, `SUCCEEDED`, 539 bytes scanned
+  in 1,114 ms. A Sandbox project reads, through its query editor, the table a deployment project in Staging
+  published (question x's second half).
+- **[Claude] B8 read back** (01:03Z): `awsds-prod-gitlab`, `-proxy` and `-vpn` `stopped`, the three runners
+  `terminated`, Staging with no interface endpoint; `staging/studio/` re-plans *"No changes."* from the first
+  unwinding commit's tree, committed now on the session branch, and the project role carries AWS's three
+  policies alone.
+
+## 2026-10-22 — pass 8, C1: what the project held, then the project
+
+*Claude's writes, authorized ahead by the user's decision 15 (2026-10-21), as the infrastructure user with
+`InfrastructureAccess` in `Staging Account` (`awsds-infra-staging`); the reads as the same user there, in
+`Data Governance Account` and in `Sandbox Account 1`. No other Claude session running (read 01:05Z). Times
+UTC.*
+
+- **[Claude] The subscription**: `revoke-subscription --no-retain-permissions` on `5q2t8pgzp9ekr4` at 01:06:30Z,
+  `REVOKED`; its grant `REVOKE_PENDING`, `REVOKE_IN_PROGRESS`, then not found at 01:07:32Z. Read after: no
+  table in `glue_db_4zojr4rr6bmnww`, no Sandbox Lake Formation row naming `trades` or Staging, no RAM share
+  from Staging in Sandbox, Staging's `LakeFormation-V5-SZM42MYX4P` `DELETED`, and Staging's Data Catalog
+  resource policy *"Policy not found"*.
+- **[Claude] The asset and the data source**: the listing `UNPUBLISH`ed (`bx8v3rafykv3ww` `INACTIVE`) at
+  01:07:58Z, `delete-asset` on `aen4mge50m070w` and `delete-data-source` on `aqm5tebc42cufk`, both read
+  `ResourceNotFoundException` after.
+- **[Claude] The application**: `mwaa-serverless delete-workflow` on `app_etl_deploy_staging_app_etl-ZLVazCgH1d`
+  and `glue delete-job` on `app-etl-d1veybt5oak4uo`, the account then listing no workflow and the job
+  *"Job not found"*.
+- **[Claude] SageMaker's lineage**: 20 associations deleted, then five trial components (the processing jobs
+  of 2026-10-19 20:52, 22:04 and 22:58, and of 2026-10-21 23:56 and 2026-10-22 00:21) and four artifacts
+  (three `DataSet`, one `Image`), none refused; none left. The processing jobs stay, as SageMaker keeps them.
+- **[Claude] The project**: `delete-project --skip-deletion-check` at 01:09:39Z; `DataZone-Env-d6ogysnx78dguo`
+  `DELETE_COMPLETE` by 01:11:18Z, `DataZone-Env-bujd259b8g9zps` by 01:12:25Z, the project not found at
+  01:12:48Z. The stacks took the project role, the security group, the two Glue connections, the two
+  project Athena workgroups, the schedule group and the S3 Access Grants location; they left the log group
+  `datazone-d1veybt5oak4uo-dev` (731 days) and both Glue databases.
+- **[Claude] The databases**: `PutDataLakeSettings` at 01:13:04Z with InfrastructureAccess added to the two
+  SMUS admins, every other field as read; `DROP` and `DESCRIBE` granted to itself on each database;
+  `glue_db_c2ej62w956q2a8` and `glue_db_d6ogysnx78dguo` (holding `trades`) deleted, each then
+  `EntityNotFoundException`.
+- **[Claude] The rest**: `delete-access-grants-location` answered *"The specified access grants location does
+  not exist"*, the project's deletion having taken it, and the instance `default` deleted, none listed after;
+  `AWSServiceRoleForAmazonAthena` deleted, deletion status `SUCCEEDED`; seven log groups deleted, the three
+  `/aws/mwaa-serverless/…`, `/aws/sagemaker/ProcessingJobs`, `datazone-d1veybt5oak4uo-dev` and its `/error`
+  and `/output`, none left, which closes `EXC-21`'s groups. `AWSServiceRoleForAmazonMWAAServerless` stays for
+  Stage 10.
+- **[Claude] What the domain keeps, read and recorded**: the `IAM` user profiles of the project role
+  (`b25324be-…`, its role gone) and of `awsds-deploy-staging` (`4aea7383-…`), both `ACTIVATED`; the deploy
+  role's group profile `9bead345-…` `ASSIGNED`; 44 lineage events. The projects bucket holds 91 versions and
+  17 delete markers for 8.6.
+
+## 2026-10-22 — pass 8, C2 and C3: the profile, the configurations, the association, the bucket, Lake Formation
+
+- **[user] C2**: `governance/` and `staging/studio/` applied from the saved plans, chained, as
+  `awsds-infra-data` and `awsds-infra-staging`: *"awscc_datazone_project_profile.this["deployment"]:
+  Destruction complete after 6s"*, *"Apply complete! Resources: 0 added, 0 changed, 2 destroyed."*; then the
+  two blueprint configurations and their grants, *"module.sagemaker_prereqs.module.project_key.aws_kms_key.this:
+  Modifications complete after 7s"*, *"Apply complete! Resources: 0 added, 1 changed, 4 destroyed."*, the
+  person-session policy's planned update a no-op; and *"Staging foi desassociada do domínio datazone."*
+- **[Claude] Read back** (01:43Z): `governance/` and `staging/studio/` re-plan *"No changes."*; the second
+  unwinding commit joins the session branch as applied. 8.5: from Staging,
+  `list-environment-blueprint-configurations` answers *"UnauthorizedException ... Unauthorized"*, Staging
+  receives no RAM share, and Data Governance's `DataZone-EXTENDED_ACCESS-…-ORG-ONLY` names Sandbox alone.
+  `./aws/studio.py`: *"0 check(s) FAILED."*, `US-4` reading the model governance profile and
+  `experimentation`, `US-2` no domain visible from Staging; the persona profiles not signed in fail their calls.
+- **[Claude] C3, authorized ahead (decision 15)**: the projects bucket's 108 versions and delete markers
+  deleted in one `delete-objects` batch at 01:46:36Z, no error, then 0 and 0; Lake Formation's settings put
+  at 01:46:47Z with no admin, `CROSS_ACCOUNT_VERSION` 1, `SET_CONTEXT` `TRUE`, both default lists empty and
+  `AllowFullTableExternalDataAccess` false, read back with no admin and no registered location.
+- **[Claude] The last plans, saved for the user**: `staging/studio/` with its six resource files moved out,
+  *"Plan: 0 to add, 0 to change, 17 to destroy."*, no refusal; `identity/org-policies/` from the fourth
+  unwinding commit, `render.py` exiting 0, the `Workloads` document updated in place, 2571 to 2499 bytes;
+  `staging/foundation/` from the fifth, *"Plan: 0 to add, 0 to change, 3 to destroy."*, the three inline
+  policies.
+
+## 2026-10-22 — pass 8, C4 and C5: the slice, the carve-out and the deploy role's documents, then the readings
+
+- **[user] C4**: the three saved plans applied, chained: `staging/studio/` *"Apply complete! Resources: 0 added, 0
+  changed, 17 destroyed."*, the bucket among them; `identity/org-policies/` *"Apply complete! Resources: 0
+  added, 1 changed, 0 destroyed."*, `"awsds-org-scp-ou-workloads" = 2499`; `staging/foundation/` *"Apply
+  complete! Resources: 0 added, 0 changed, 3 destroyed."*
+- **[Claude] Read back** (01:51Z): `staging/studio/`'s state empty; `identity/org-policies/` and
+  `staging/foundation/` re-plan *"No changes."*; the project key `PendingDeletion`, deletion date
+  2026-11-21 01:50:23Z; `head-bucket` on `awsds-staging-smus-projects` 404; the two SMUS roles `NoSuchEntity`;
+  `awsds-deploy-staging`'s inline policies `apply-egress` and `state` alone. The unwinding's last three commits
+  joined the session branch as applied, the slice's folder went with the third, and the local branch
+  `claude/stage-18-unwind` was deleted, its tree equal to the session branch's on every path it touched.
+- **[Claude] 8.7's readings**: the battery's phase `ou` at 01:53:42Z, *"47 as expected, 0 unexpected, 7 not
+  measured"*, Staging's `datazone:ListDomains` `DENY-SCP` (`p-83t232f4`), the window's `CreateSpace` row gone,
+  and Stage 9 3.5's seven instance-preference rows run for the first time, each `ok`; from Staging,
+  `datazone list-domains` *"is not authorized to perform: datazone:ListDomains on resource: …domain/* with an
+  explicit deny in a service control policy"*; `./aws/org-policies.py` *"all checks passed"*;
+  `./aws/studio.py` *"0 check(s) FAILED."*, `US-6` reading Staging's `datazone` reads denied. `EXC-20` closed.
+- **[Claude] The Validation's re-plans**, 01:51 to 01:59Z: `data-governance/governance/`, `staging/foundation/`,
+  `sandbox/foundation/`, `production/tooling/` (with the project folder's `saml.auto.tfvars`) and
+  `identity/org-policies/` read *"No changes."*
+- **[Claude] The stage's spend**, Cost Explorer in Staging, 2026-10-17 to 2026-10-21, estimated: USD 1.5188,
+  AWS Config 0.7050, Amazon Virtual Private Cloud 0.4400, AWS Key Management Service 0.1935, AWS Glue 0.0640,
+  Amazon Managed Workflows for Apache Airflow 0.0578, Amazon DataZone 0.0228, AWS Cost Explorer 0.0200,
+  Amazon SageMaker 0.0118, Amazon Simple Storage Service 0.0036; 2026-10-22's hours not yet in it.
+- **[Claude] What stays outside the estate's 0.3 reading**: the domain's two `IAM` user profiles, the deploy
+  role's group profile and 44 lineage events (no delete API reached them); the project key until its
+  deletion date; `AWSServiceRoleForAmazonMWAAServerless`, Stage 10's; in GitLab, whether `awsds/app-etl`'s
+  Protected branches and Protected tags still name `stage-18-staging`, read at the next GitLab sitting; the
+  two clones under `$HOME/tmp/`, the user's to delete.
+- **[Claude] 8.9's recommendation written**: D41 item 2 kept, the reasoning in the stage file's 8.9 and
+  decision 7; the verdict is the user's.
+
+## 2026-10-22 — the verdict: D41 item 2 kept
+
+- **[user] Two questions before deciding**: *"Sobre "o workflow fica fora do state do Terraform", como o
+  plano original prevê "converter" um workflow definido por aplicação SMUS em terraform? Sobre
+  "Desmontagem: deixa resíduos". De quais resíduos estamos falando?"*, then *"Sobre "Identidade da
+  aplicação: não é mais simples manter o padrão entre os ambientes de desenvolvimento/tests/staging/produção
+  em relação ao papel do projeto ser suficiente para execução da aplicação, do que a alternativa de
+  gerenciar roles por workflow apenas nos ambientes de workloads?"*
+- **[Claude] The answers, read from the plan and AWS**: Stage 10's decision 6 renders the release's YAML per
+  account and 1.1 pins the rendered object's `VersionId` in an `awscc_mwaaserverless_workflow`, which rests
+  on INT-14, 4.2's API rung being the CLI's form; the residues are the domain's profiles, lineage events and
+  subscription records (the request `ACCEPTED`, the subscription `REVOKED`, read 2026-10-22 as
+  `awsds-infra-data`), the five processing jobs SageMaker keeps, and what pass 8 removed by hand; the
+  project role in every environment is simpler to run, and in Production it is a role members assume, AWS's
+  managed policies define (`TM-17`) and the project's applications share.
+- **[user] Decision 7**: *"Decisão 7: mantenho o item 2 da D41, como recomendado. Escreva o veredito (D41,
+  SMUS.md, POLICIES.md, Stage 10) neste PR."*
+- **[Claude] The verdict written**: D41's item 2 kept with the measurements and its revision trigger naming
+  the price; the decisions index; `SMUS.md`'s section on a deployment project in a `Workloads` account;
+  `POLICIES.md`'s trigger on `DenyDataZoneEntirely`; Stage 10's status; this stage's 8.9, decision 7 and
+  status; four entries in `lessons.md`'s list of platform behaviours; `history.md`; the general plan, the
+  indexes, the waiting list and `CLAUDE.md`. The stage is done.
+- **[user] The decision's text**: *"revise a decisão escrevendo a comparação entre as duas abordagens, as
+  vantagens e desvantagens, e o motivo de a decisão tomada ser a melhor opção."*
+- **[Claude] D41 revised**: a section "Where production runs: the pipeline's deploy against a project in each
+  deployment account", the two approaches described, compared row by row against this stage's readings
+  (identity, who can act as it, Terraform's state, the Glue job, isolation, the `Workloads` perimeter, the
+  deploy identity, running and seeing runs, governed data to Sandbox, lineage, teardown, cost), their
+  advantages and disadvantages, and why A, the pipeline's deploy, was kept; item 2 and the status point to it.
+
+## 2026-10-22 — this stage's learnings carried into the other stages' open steps
+
+*Claude, in the session `stage-18-diagnostic` (branch `claude/stage-18-diagnostic-d0612f`). No AWS call:
+four read-only subagents compared the open steps of the stages before this one with seventeen learnings
+read from this log, and Claude checked each proposal against this log before applying it.*
+
+- **[user] The request**: *"Verifique se há necessidade de revisar as etapas não executadas do plano
+  (estágios anteriores ao 18) tendo em vista o aprendizado com esta sessão, e propague as alterações
+  necessárias. Abra quantas tarefas em paralelo forem necessárias para esta revisão. Atualize também a
+  documentação do projeto."*
+- **[Claude] The review, by area**: the pipeline and orchestration (Stages 8 and 10, the GitLab, Terraform
+  and workflows runbooks, `integrations.md`); governance and leakage (6f, 6g, 11, the threat model, the
+  open questions, `GOVERNANCE.md`, the producer README); the workbench and the project's documents (6d,
+  6e, 17, the upstream readings, the remote-IDE and Sandbox-lake runbooks, the glossary, `aws/INDEX.md`);
+  the deployment targets and the rest (Stages 9, 12 and 14, the cost model, the institutional delta,
+  `ORGANIZATION.md`).
+- **[Claude] What the open steps gained**: Stage 10 the chain role's and the deploy role's KMS calls on the
+  workflow's key, `trailLogs` and `get-workflow-run` in place of `wait`, the redeploy's `UpdateWorkflow`, and
+  a table's existence read by a principal holding `DESCRIBE`; Stage 8 a release job's `needs:`, the image
+  pull and the membership half of verification xix; `gitlab.md` §K a pipeline's protection fixed at its
+  creation; `terraform-changes.md` the tfvars regenerated after a switch of branch and Recipe G, the
+  whole-slice teardown; 6f the cross-account fulfilment as each side's project role, the RAM share of the
+  whole catalog, the Data Catalog resource policy `shares.tf` keeps absent, the revoke, the `DROP` grant
+  and `AllowFullTableExternalDataAccess`; INT-23 exercised across accounts; `GOVERNANCE.md` the fulfilment's
+  writer and condition; open questions 20 and 24 amended; the threat model `TM-17`'s portal session and the
+  full-table vending; Stage 11 decision 12 the person's source identity; 6d the teardown's log groups and
+  `staging/egress` on `v0.11.1`; Stage 17 the instance-preference rows read and what a job leaves; the
+  upstream readings, D41's owed list, `SMUS.md`'s profiles, the glossary's session group, `US-4`'s row;
+  Stage 9 3.5 the key filled from the list.
+- **[Claude] Corrected before applying**: the glossary's claim that `InfrastructureAccess` belongs to the
+  Sandbox projects (`test-experimentation` lists none, 0.4's read); 6f decision due 6 cited for the
+  browser's address, which is 6.2's reading; a re-plan of the `datazone` endpoint this log does not record;
+  6g 2.4's read, where the query editor joins the options and the space stays; and the grant option placed
+  on the publishing project's role, which 7.2's table, created by that role, cannot separate from the
+  creator's own permissions.
+- **[Claude] Checks**: `check-plan-refs`, `check-index` and `check-network-doc` clean; `GENERAL_PLAN.md` at
+  39,765 bytes of 40,000.

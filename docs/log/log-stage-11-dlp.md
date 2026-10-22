@@ -304,3 +304,23 @@ call either.*
 - **[Claude] 4.3 says GuardDuty creates only service-linked roles**, where it said only the
   service-linked role: Malware Protection for EC2 creates a second, and neither role's managed policy
   holds a `guardduty:` action, so the step's "no administration role to name" holds.
+
+## 2026-10-21 — 2.1.1's snapshot taken again, before Stage 18's 8.6
+
+*The user ran `aws/cloudshell/audit-iam-analyser.sh` in Audit's CloudShell as AWS Control Tower Admin with
+`AWSAdministratorAccess` and saved the report in the project folder's `aws/output/cloudshell/`; Claude read
+it and compared it with the report of 2026-10-17. Written by the Stage 18 session, no other Claude session
+running on the laptop at the time.*
+
+- **[user] The snapshot**: generated 2026-10-21T23:42:59Z, `Audit Account` `[OK]`, `us-west-2`; section 5
+  *"CHECK OK: exactly one analyzer, ORGANIZATION zone of trust, ACTIVE"*, its last resource analyzed at
+  23:30:17Z; section 6 *"None. Every call in this report returned successfully."*
+- **[Claude] The findings**: 49, 45 `ACTIVE` and 4 `RESOLVED`. Against 2026-10-17's report (46 and 3) the one
+  change is the key `a81b1ef3-…`, `alias/awsds-sandbox-project` in `Sandbox Account 1` (read with
+  `describe-key`), from `ACTIVE` to `RESOLVED`: `TM-21` is controlled and `EXC-18` closed. Every `ACTIVE`
+  finding is `ExternalAccess` on an `AWSReservedSSO_*` role, `INV-16`'s shape, at 45. No finding names
+  Stage 18's projects bucket `awsds-staging-smus-projects` or Staging's project key (`62942eb7-…`), both
+  created 2026-10-19. The other `RESOLVED` rows are 2026-10-17's: the key `ef2e17cd-…` and 6b step 2.1's two
+  roles.
+- **[Claude] Carried into** `threat-model.md` (`TM-21`, the Staging bucket's row, what the file waits on),
+  `AWS_STATE.md` (`EXC-18`, `INV-16`), this stage's 2.1.1 and the waiting list.
