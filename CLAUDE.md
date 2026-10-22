@@ -305,12 +305,12 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   is Sandbox only. All 41 decisions are closed. Gates: `make check`, `make check-ou`. **What waits on the
   user is [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md)**: read it before asking
   the user anything, and remove a row in the sitting that takes it.
-- **The SCP battery** read `ou` 41 as expected / 0 unexpected / 7 not measured on 2026-10-19 (Stage 18's
-  carve-out rows and Stage 17's Titan row included) and `root` 25 / 0 / 0 on 2026-10-18. **SageMaker job quotas for `ml.m5.large`,
+- **The SCP battery** read `ou` 47 as expected / 0 unexpected / 7 not measured on 2026-10-22 (Stage 18's
+  carve-out removed, Stage 9 3.5's instance-preference rows run for the first time) and `root` 25 / 0 / 0 on 2026-10-18. **SageMaker job quotas for `ml.m5.large`,
   `.xlarge` and `.2xlarge` are 0 in Production and Staging** (processing; Production's training too, read
   2026-10-20), with no increase requested; `ml.t3.medium`, `app-etl`'s processing type, is 4 in both, and
-  Staging ran a job on it on 2026-10-19. The probes read `ResourceLimitExceeded` as authorized, and the `ou`
-  phase carries seven instance-preference rows, written, not run (Stage 9 3.5, PR #216).
+  Staging ran a job on it on 2026-10-19. The probes read `ResourceLimitExceeded` as authorized; the `ou`
+  phase's seven instance-preference rows (Stage 9 3.5, PR #216) ran 2026-10-22, each as expected.
 - **Stage 9**: pass 1 applied 2026-10-18, `awsds-org-scp-ou-workloads` (nine statements) and
   `production/sagemaker/` (rank 46, `[P]`); `production/workloads-egress/` (`[E]`) rises with the next
   Production `make up`. Pass 2 waits on decision 3; the `s3-bucket` module turns Bucket Keys on for every bucket it
@@ -400,7 +400,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stage 17**: pass 0 in progress; 1.1 read and 1.3 applied 2026-10-19 (`MLflowApp` configured and in
   `experimentation`, `TM-21` with it), and 1.5 read why the portal greys out *Create MLflow App* (it resolves the blueprint from Data
   Governance's configurations, which D22 keeps empty): the user created `ml-demo-mlflow` through
-  `create-environment` (`ML-2` read, no CMK). 7.0a and 7.0b applied 2026-10-19 (`AmazonBedrockKnowledgeBase` at `sagemaker-prereqs-v0.7.0`): the Generative AI menu opens and lists no model until one is enabled for the account. Decision 13 taken as (b): a governance project in `data-governance/governance/` and the two model roles in `sandbox/model-access/` (rank 52), applied by the user 2026-10-19, and the five models enabled in Sandbox's console the same evening (Opus, Sonnet and Haiku 4.5 and Titan V2 in projects, Haiku 4.5 and Nova Lite in the playground); decision 11's amendment, Titan V2 and `application-inference-profile/*` in the Bedrock SCP, was applied by the user the same evening: the playground answers with Haiku 4.5 and refuses Nova Lite on its foundation model (7.3). Main pins `vpc-egress-v0.18.0` (`mlflow`), unapplied (1.4). Pass 2's training job waits on a battery run of the instance-preference rows, written in PR #216 (Stage 9 3.5); the three quota requests still read `CASE_OPENED` on 2026-10-20.
+  `create-environment` (`ML-2` read, no CMK). 7.0a and 7.0b applied 2026-10-19 (`AmazonBedrockKnowledgeBase` at `sagemaker-prereqs-v0.7.0`): the Generative AI menu opens and lists no model until one is enabled for the account. Decision 13 taken as (b): a governance project in `data-governance/governance/` and the two model roles in `sandbox/model-access/` (rank 52), applied by the user 2026-10-19, and the five models enabled in Sandbox's console the same evening (Opus, Sonnet and Haiku 4.5 and Titan V2 in projects, Haiku 4.5 and Nova Lite in the playground); decision 11's amendment, Titan V2 and `application-inference-profile/*` in the Bedrock SCP, was applied by the user the same evening: the playground answers with Haiku 4.5 and refuses Nova Lite on its foundation model (7.3). Main pins `vpc-egress-v0.18.0` (`mlflow`), unapplied (1.4). Pass 2's training job waited on a battery run of the instance-preference rows, written in PR #216 and run 2026-10-22 (Stage 9 3.5); the three quota requests still read `CASE_OPENED` on 2026-10-20.
   **Stage 18**: passes 1 and 2.1-2.5 done 2026-10-19, the applies by the user (the classifier refuses
   them to Claude): the carve-out is live (`EXC-20`), Staging is associated with `Tooling` configured,
   and both `backend.py` lists carry `staging`; 2.6 and 2.7 are applied, the `deployment` profile
@@ -425,13 +425,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   run (2026-10-21, `SUCCESS`), whose job also deploys 7.2's table (reviewed 2026-10-21; decision 12 at the approval);
   an associated account no person works in goes in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in
   `SMUS_MEMBERS`. Prepared 2026-10-21: the stage file's "The order of what is left", pass 8's code on the
-  local branch `claude/stage-18-unwind` planned step by step, decisions 12-18 taken 2026-10-21. Its 4.4's two prerequisites, Stage 8 3.0's first half and Stage 10 1.2's `vpc-v0.4.0`
+  local branch `claude/stage-18-unwind` planned step by step, decisions 12-18 taken 2026-10-21. 7.2 and pass 8 done 2026-10-22, the estate back to 0.3's
+  reading; the verdict (decision 7, recommended: D41 item 2 kept) is the user's. Its 4.4's two prerequisites, Stage 8 3.0's first half and Stage 10 1.2's `vpc-v0.4.0`
   on `staging/foundation/`, were applied 2026-10-19 by the user.
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
   `--no-browser`.
-- **Module tags**: `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`; `staging/studio` `v0.6.0`), `wireguard-v0.6.0`,
+- **Module tags**: `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit

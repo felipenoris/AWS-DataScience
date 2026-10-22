@@ -1899,3 +1899,36 @@ UTC.*
   unwinding commit, `render.py` exiting 0, the `Workloads` document updated in place, 2571 to 2499 bytes;
   `staging/foundation/` from the fifth, *"Plan: 0 to add, 0 to change, 3 to destroy."*, the three inline
   policies.
+
+## 2026-10-22 — pass 8, C4 and C5: the slice, the carve-out and the deploy role's documents, then the readings
+
+- **[user] C4**: the three saved plans applied, chained: `staging/studio/` *"Apply complete! Resources: 0 added, 0
+  changed, 17 destroyed."*, the bucket among them; `identity/org-policies/` *"Apply complete! Resources: 0
+  added, 1 changed, 0 destroyed."*, `"awsds-org-scp-ou-workloads" = 2499`; `staging/foundation/` *"Apply
+  complete! Resources: 0 added, 0 changed, 3 destroyed."*
+- **[Claude] Read back** (01:51Z): `staging/studio/`'s state empty; `identity/org-policies/` and
+  `staging/foundation/` re-plan *"No changes."*; the project key `PendingDeletion`, deletion date
+  2026-11-21 01:50:23Z; `head-bucket` on `awsds-staging-smus-projects` 404; the two SMUS roles `NoSuchEntity`;
+  `awsds-deploy-staging`'s inline policies `apply-egress` and `state` alone. The unwinding's last three commits
+  joined the session branch as applied, the slice's folder went with the third, and the local branch
+  `claude/stage-18-unwind` was deleted, its tree equal to the session branch's on every path it touched.
+- **[Claude] 8.7's readings**: the battery's phase `ou` at 01:53:42Z, *"47 as expected, 0 unexpected, 7 not
+  measured"*, Staging's `datazone:ListDomains` `DENY-SCP` (`p-83t232f4`), the window's `CreateSpace` row gone,
+  and Stage 9 3.5's seven instance-preference rows run for the first time, each `ok`; from Staging,
+  `datazone list-domains` *"is not authorized to perform: datazone:ListDomains on resource: …domain/* with an
+  explicit deny in a service control policy"*; `./aws/org-policies.py` *"all checks passed"*;
+  `./aws/studio.py` *"0 check(s) FAILED."*, `US-6` reading Staging's `datazone` reads denied. `EXC-20` closed.
+- **[Claude] The Validation's re-plans**, 01:51 to 01:59Z: `data-governance/governance/`, `staging/foundation/`,
+  `sandbox/foundation/`, `production/tooling/` (with the project folder's `saml.auto.tfvars`) and
+  `identity/org-policies/` read *"No changes."*
+- **[Claude] The stage's spend**, Cost Explorer in Staging, 2026-10-17 to 2026-10-21, estimated: USD 1.5188,
+  AWS Config 0.7050, Amazon Virtual Private Cloud 0.4400, AWS Key Management Service 0.1935, AWS Glue 0.0640,
+  Amazon Managed Workflows for Apache Airflow 0.0578, Amazon DataZone 0.0228, AWS Cost Explorer 0.0200,
+  Amazon SageMaker 0.0118, Amazon Simple Storage Service 0.0036; 2026-10-22's hours not yet in it.
+- **[Claude] What stays outside the estate's 0.3 reading**: the domain's two `IAM` user profiles, the deploy
+  role's group profile and 44 lineage events (no delete API reached them); the project key until its
+  deletion date; `AWSServiceRoleForAmazonMWAAServerless`, Stage 10's; in GitLab, whether `awsds/app-etl`'s
+  Protected branches and Protected tags still name `stage-18-staging`, read at the next GitLab sitting; the
+  two clones under `$HOME/tmp/`, the user's to delete.
+- **[Claude] 8.9's recommendation written**: D41 item 2 kept, the reasoning in the stage file's 8.9 and
+  decision 7; the verdict is the user's.

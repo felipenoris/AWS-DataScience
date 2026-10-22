@@ -404,7 +404,7 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   **Recommended: (a)**: a condition attached to every submitter by hand will be missing from one
   (Lesson 14). **Applied 2026-10-18** with 3.7's deny, at 19:54Z, as `awsds-infra-identity`; the battery's
   `ou` phase after the apply read each Stage 9 row as expected (the log). **The instance-preference rows
-  are written and not run** (the upstream readings of 2026-10-18, PR #189): since 2026-09-15 a job may
+  are written, and ran on 2026-10-22 in Stage 18's 8.7 battery, each as expected** (the upstream readings of 2026-10-18, PR #189): since 2026-09-15 a job may
   name up to five instance types as a list instead of `InstanceType`,
   `ProcessingResources.ClusterConfig.InstancePreferences` for processing and
   `ResourceConfig.InstancePreferences` for training, and whether the service fills
