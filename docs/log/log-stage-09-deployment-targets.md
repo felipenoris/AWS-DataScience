@@ -964,3 +964,33 @@ the `awsds` token: *"Token for awsds does not exist"* at 23:22). Times UTC.*
   So one proof assumption produced two alarms, the direct call's and the profile's, each a message.
 - **[Claude] What follows**: the two negatives and, after 01:00Z, the refused assumption, then the closing
   apply.
+- **[Claude] A correction to the entry above**: the trail holds four refused attempts with the
+  placeholder, not three: 23:18:16, 23:18:27, 23:18:36 and 23:20:51, each `AccessDenied` with
+  `requestParameters` null.
+
+## 2026-10-22 — 6.3: the two negatives under the debug role, each refused one layer before the one the step named
+
+*The user's hand, the commands run as the Data Scientist User through the assuming profile, pasted into
+this chat and copied here with the account id replaced by its placeholder; Claude's reading of them.*
+
+- **[user] The write**: *"upload failed: - to s3://awsds-prod-outputs/app-etl/outbox/probe.txt An error
+  occurred (AccessDenied) when calling the PutObject operation: User:
+  arn:aws:sts::<Production>:assumed-role/awsds-prod-debug/botocore-session-1792711318 is not authorized to
+  perform: kms:GenerateDataKey on resource:
+  arn:aws:kms:us-west-2:<Production>:key/0415a6f0-9b15-4049-841d-d51e7a65d09c because no resource-based
+  policy allows the kms:GenerateDataKey action"*.
+- **[user] The `CreateSpace`**: *"An error occurred (AccessDeniedException) when calling the CreateSpace
+  operation: User: arn:aws:sts::<Production>:assumed-role/awsds-prod-debug/botocore-session-1792711318 is
+  not authorized to perform: sagemaker:CreateSpace on resource:
+  arn:aws:sagemaker:us-west-2:<Production>:space/d-0000000000000/awsds-canary-probe because no
+  identity-based policy allows the sagemaker:CreateSpace action"*.
+- **[Claude] The reading** (Lesson 20): both refused, neither by the policy the step named. The write
+  met the data key before the bucket: the key policy's `AllowTheDebugRoleToDecryptViaS3` grants the role
+  `Decrypt` alone, and a `PutObject` under SSE-KMS needs `GenerateDataKey`, so the key refused and the
+  bucket's `DenyThePersonaAndTheDebugRoleAnyWrite` stays attached and unexercised for this principal. The
+  `CreateSpace` met the role's own identity policy, `Describe*` and `List*`, an implicit deny; the
+  `Workloads` document's `DenyInteractiveSageMakerSurface` names itself only to a principal whose
+  identity policy allows the action, the battery's infrastructure user, so for the debug role the SCP
+  stays attached and unexercised, as the inline policy's absence of the action already refuses it. The
+  role is read-by-API by two layers in each direction, and one of each pair is proven. The step's
+  expectation is corrected to the measured wording.

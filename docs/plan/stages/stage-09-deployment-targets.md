@@ -804,10 +804,15 @@ detective — the alarm, and CloudTrail.
   aws logs describe-log-groups --log-group-name-prefix /aws/sagemaker/ --query 'logGroups[].logGroupName' --profile awsds-scientist-prod-debug
   ```
 
-  3. The negatives, read by their wording: a write refused by the bucket's
-  `DenyThePersonaAndTheDebugRoleAnyWrite`, and a `CreateSpace` refused by the `Workloads` document
-  (`DenyInteractiveSageMakerSurface`, *"with an explicit deny in a service control policy"*), the
-  battery's own probe with a domain that does not exist.
+  3. The negatives, read by their wording. **Measured 2026-10-22** (the log): the write is refused by
+  the data key, whose `AllowTheDebugRoleToDecryptViaS3` grants `Decrypt` alone, *"not authorized to
+  perform: kms:GenerateDataKey … because no resource-based policy allows"*, one layer before the bucket's
+  `DenyThePersonaAndTheDebugRoleAnyWrite`, which stays attached and unexercised for this principal; the
+  `CreateSpace`, the battery's own probe with a domain that does not exist, is refused by the role's own
+  identity policy, *"no identity-based policy allows the sagemaker:CreateSpace action"*, one layer
+  before the `Workloads` document's `DenyInteractiveSageMakerSurface`, whose wording appears only to a
+  principal whose identity policy allows the action (Lesson 20). Each direction is closed twice, and one
+  closure of each pair is the proven one.
 
   ```bash
   echo probe | aws s3 cp - s3://awsds-prod-outputs/app-etl/outbox/probe.txt --profile awsds-scientist-prod-debug
