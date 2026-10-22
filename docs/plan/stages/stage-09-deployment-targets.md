@@ -414,17 +414,18 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   the account will use, with a retention, and Staging's slice does the same (4.3); Glue's job groups the
   same way. In Staging the first job came before the slice: Stage 18 4.4's created
   `/aws/sagemaker/ProcessingJobs` on 2026-10-19 and its pass 8 deleted it on 2026-10-22; 4.3 says what
-  the slice owes such a group. **Each group goes under the account data key**, written and planned on
-  2026-10-22 and unapplied: `*/sagemaker/` reads the key's ARN from `*/data/`'s state with a null default,
+  the slice owes such a group. **Each group is under the account data key since 2026-10-22**:
+  `*/sagemaker/` reads the key's ARN from `*/data/`'s state with a null default,
   so a first build still applies the role before `data/`, and CloudWatch Logs uses the key as its own
   principal under the data key's `AllowCloudWatchLogsForTheJobAndWorkflowGroups`, scoped by each group's
-  ARN, with no grant to either role. *"Plan: 0 to add, 6 to change, 0 to destroy."* in Production and in
-  Staging, `kms_key_id` the only attribute that moves; the policies name the groups by ARNs built from
-  their names, so no role policy re-plans. AWS's page says the key encrypts what arrives after the
+  ARN, with no grant to either role. *"Apply complete! Resources: 0 added, 6 changed, 0 destroyed."* in
+  Production (20:51Z) and in Staging (21:00Z), from fresh plans identical to the reviewed ones, `kms_key_id`
+  the only attribute that moved, each re-planned `No changes`; the policies name the groups by ARNs built
+  from their names, so no role policy moved. AWS's page says the key encrypts what arrives after the
   association, so what a group held before keeps the AWS-owned key until the 30-day retention expires it.
-  `DT-12` reads each group's key: a note while all six carry the AWS-owned key, a pass once all carry the
-  data key, a fail on another key or a partial apply. At the apply the note becomes a fail, and the first
-  job after it shows whether its logs land and the debug role reads them with no grant on the key. `iam:PassRole` to
+  `DT-12` reads each group's key and passes in both accounts (21:03:22Z); the AWS-owned key, another key
+  or a partial apply fails it. The first job shows whether its logs land and the debug role reads them
+  with no grant on the key. `iam:PassRole` to
   the role is granted only to Stage 8's deploy roles and Stage 10's execution roles, scoped by
   `iam:PassedToService`.
 - **3.2 — [Claude] Write the package groups and their resource policies**: one group per application or

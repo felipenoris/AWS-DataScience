@@ -773,3 +773,24 @@ reads only; nothing applied.*
   fails as a partial apply, another key fails, none is the note.
 - **[Claude] Lesson 69**: once PR #245 merges, both `sagemaker/` slices carry this change on `main`
   unapplied, and any later plan of either shows the six associations.
+
+## 2026-10-22 — the job log groups under the data key, applied
+
+*Claude's hand, the same session, as the infrastructure user, on the user's "Sim, aplique a associação
+dos grupos de log à chave de dados em production/sagemaker (awsds-infra-prod) e staging/sagemaker
+(awsds-infra-staging), a partir de planos novos." The session told "Pendências estágios 7 e 8" and
+"Chat lateral" before the write.*
+
+- **[Claude] Fresh plans**, each *"Plan: 0 to add, 6 to change, 0 to destroy."*, their changes in
+  `terraform show -json` identical to the reviewed plans', no data source deferred to the apply.
+- **[Claude] `production/sagemaker/`** (Production, `awsds-infra-prod`), 20:51:10-20:51:22Z, and
+  **`staging/sagemaker/`** (Staging, `awsds-infra-staging`), 21:00:02-21:00:15Z: *"Apply complete!
+  Resources: 0 added, 6 changed, 0 destroyed."* each. Staging re-planned `No changes`. Production's first
+  re-plan failed on the laptop's DNS (`lookup ec2.us-west-2.amazonaws.com: no such host`; the
+  orchestrating session reported the same drop interrupting its `identity/sso/` apply), and the second, at
+  21:00:44Z, read `No changes`.
+- **[Claude] `DT-12`**, 21:03:22Z: *"6 under the account data key"* in both accounts, 0 failed; the
+  CLI reads each of the twelve groups' `kmsKeyId` as its account's data key. Its branch for the AWS-owned
+  key turned from a note into a fail, exercised against the stand-in.
+- **[Claude] Owed**: the first job in each account shows whether its logs land and whether the debug role
+  reads them, neither role holding a grant on the key.

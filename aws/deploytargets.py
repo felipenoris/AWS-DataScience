@@ -1355,9 +1355,8 @@ def main(argv: list) -> int:
                     f"{p} job log groups",
                     f"{len(rows)} declared, retention {', '.join(sorted({d for _g, d, _k in rows}))}",
                 )
-            # The key, once the account data key exists. Another key, or the data key on some groups
-            # only, fails. The AWS-owned key on all of them is the association written on 2026-10-22
-            # and not yet applied (3.1, 4.3), a note.
+            # The key, once the account data key exists: every group carries it since 2026-10-22
+            # (3.1, 4.3), so the AWS-owned key, another key, or the data key on some groups only, fails.
             data_key = data_key_arns.get(p)
             standing = [(g, key) for g, days, key in rows if days != "(absent)"]
             if data_key and standing:
@@ -1384,11 +1383,11 @@ def main(argv: list) -> int:
                         f"{len(keyed)} under the account data key",
                     )
                 else:
-                    checks.note(
+                    checks.fail(
                         "DT-12",
                         f"{p} job log groups' key",
-                        "the AWS-owned key on all of them - the association with the account data "
-                        "key is written (2026-10-22), not applied (3.1, 4.3).",
+                        "the AWS-owned key on all of them - each group carries the account data key "
+                        "since 2026-10-22 (3.1, 4.3).",
                     )
         else:
             early = [f"{g} {days}" for g, days, _key in rows if days != "(absent)"]
