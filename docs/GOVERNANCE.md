@@ -724,7 +724,7 @@ flowchart LR
 - **A workflow is authored in the application repository** (Stage 10 steps 2.1-2.2, D41): the CI/CD CLI
   deploys it into the Sandbox `dev` and `test` projects and bundles it, the D28 lint refuses anything
   portal-scoped in the copy rendered per account, and in Production the definition is deployed to
-  `awsds-prod-outputs/workflows/<app>/<tag>/` and run by MWAA Serverless as the per-workflow role, started
+  `awsds-prod-outputs/applications/<app>/<tag>/` and run by MWAA Serverless as the per-workflow role, started
   by its chain's state machine.
 - **Staging tests against the lake, read in place.** It reads the governed lake read-only through the
   LF-Tag share Sandbox holds and writes only its own catalog, buckets and key, its tables created by each
