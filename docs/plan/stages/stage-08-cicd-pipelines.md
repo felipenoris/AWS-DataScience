@@ -838,7 +838,11 @@ the approval, and 4.6's alarm.
     machines, schedules and rules, the workers' security group by its `Name` tag, Production's
     `iam:CreateServiceLinkedRole` until the role exists, and Staging's `states:StartExecution` and
     `DescribeExecution` for the leg (Stage 10 decision 19);
-  - `iam:PassRole` of `awsds-<env>-job-exec` to `glue` and `sagemaker` on both roles (Stage 9);
+  - `iam:PassRole` of `awsds-<env>-job-exec` to `glue` and `sagemaker` on both roles (Stage 9), and the
+    application's tables in `app_outputs`, whose Lake Formation half is in each `data/` slice (Stage 9);
+  - the release job's writes to the outputs bucket, `applications/*` and the inbox `inbox/*` (Stage 10
+    decisions 1 and 20 (d)), with the data key's statements matching its key policy's
+    `AllowTheReleaseRoles*` (Stage 9 1.1);
   - on `awsds-deploy-staging`, 3.2's registry read: `sagemaker:DescribeModelPackage` on Production's
     `awsds-prod-model-*` packages and `ListModelPackages`, the Production account read through an aliased
     identity, never a literal. Stage 9 decision 1, taken 2026-10-22, keeps Staging off Production's
@@ -846,7 +850,7 @@ the approval, and 4.6's alarm.
   - on `awsds-deploy-prod`, Stage 9 9.4's Data API grant at its pass 6;
   - the module call: `state_prefixes` gain `<folder>/orchestration/`; `state_read_keys` are
     `staging/foundation/` and `staging/sagemaker/` in Staging, `workloads/`, `foundation/` and
-    `sagemaker/` in Production, and each account's `data/` once Stage 9 writes it;
+    `sagemaker/` in Production, and each account's `data/`;
   - IAM caps a role's inline policies at 10,240 characters together and a managed policy at 6,144, white
     space not counted: the grant measured 7,836 in Staging's plan on 2026-10-22, where the role's inline
     documents would have totalled 12,483, so it is two managed policies split by content. Each role **carries a boundary itself** — INT-14 later has to apply `awscc`
@@ -862,19 +866,22 @@ the approval, and 4.6's alarm.
   `DenyRedshiftCostGuardTamperingExceptInfrastructure` exempts only `InfrastructureAccess`, so
   `awsds-deploy-prod` can neither update nor destroy `production/warehouse-compute/`.
 - **3.0's ceiling and 4.1's application halves — Written and planned 2026-10-22 by Claude, not applied.**
-  Each `foundation/` gains `app-boundary.tf` and `apply-orchestration.tf`, each one file copied byte for byte
-  into both accounts and held there by `./scripts/check-copies.py` (in `make check` and pre-commit). What
-  one account adds sits in its deploy role's file: Staging's leg statements (Stage 10 decision 19) and its
-  read of Production's registry, Production's `iam:CreateServiceLinkedRole`, whose role is absent there and
-  present in Staging since 2026-10-19 (read 2026-10-22). `apply-application`, inline, holds the
-  `iam:PassRole` of `awsds-<env>-job-exec` to Glue and SageMaker on both roles. The module call gains the
-  `orchestration/` prefix and the read keys and stays on `deploy-role-v0.3.0`. Each plan, as
-  `awsds-infra-staging` and `awsds-infra-prod` with the alerts var-file, reads 6 to add, 2 to change (the
-  role's description and its `state` document), 0 to destroy. Sizes without white space: the inline
-  documents 4,647 of 10,240 in Staging and 1,382 in Production; the ceilings 1,641 and 1,629, the `-access`
-  policies 3,811 and 3,760, the `-resources` policies 4,063 and 3,986, each of 6,144. The two applies are
-  the infrastructure user's, in either order, on the user's authorization, before the first pipeline
-  apply of an `orchestration/` slice.
+  Each `foundation/` gains `app-boundary.tf`, `apply-application.tf` and `apply-orchestration.tf`, each one
+  file copied byte for byte into both accounts and held there by `./scripts/check-copies.py` (in `make
+  check` and pre-commit). What one account adds sits in its deploy role's file: Staging's leg statements
+  (Stage 10 decision 19) and its read of Production's registry, Production's `iam:CreateServiceLinkedRole`,
+  whose role is absent there and present in Staging since 2026-10-19 (read 2026-10-22). `apply-application`,
+  inline on both roles, holds the `iam:PassRole` of `awsds-<env>-job-exec` to Glue and SageMaker and the
+  tables of `app_outputs`; the orchestration grant writes `applications/*` and `inbox/*`, and its data key
+  statements are the twins of the key policy's. The module call gains the `orchestration/` prefix and the
+  read keys, `data/` among them, and stays on `deploy-role-v0.3.0`. Each plan, as `awsds-infra-staging` and
+  `awsds-infra-prod` with the alerts var-file, reads 6 to add, 2 to change (the role's description and its
+  `state` document), 0 to destroy. Sizes without white space: the inline documents 5,098 of 10,240 in
+  Staging and 1,836 in Production; the ceilings 1,641 and 1,629, the `-access` policies 4,490 and 4,427,
+  the `-resources` policies 4,063 and 3,986, each of 6,144. The two applies are the infrastructure user's,
+  in either order, on the user's authorization, before the first pipeline apply of an `orchestration/`
+  slice. What the application slice's own apply needs beyond these, its Glue job among them, is written
+  with the slice.
 - **4.2 — [Claude] Write the dev-env deploy role** (INT-18): `awsds-deploy-devenv-<unit>`, one per
   `DEPLOY_ROLES` row, in each unit's `foundation/` (`awsds-deploy-devenv-sandbox` for unit 1); **`awsds-deploy-devenv-dev` is not written** — it died with the
   second Interactive account (6b). Scope, read from what `sandbox/dev-env/` actually holds: its state prefix;

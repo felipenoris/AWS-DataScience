@@ -45,9 +45,10 @@ the comment markers stripped, and any other unshared file a failure. A module wo
 answer, and step 2.3 rules it out: modules are consumed **by git tag**, which cannot exist before
 `terraform-modules/` does.
 
-**Two files are copies across `staging/foundation/` and `production/foundation/`**: `app-boundary.tf`,
-the application ceiling (Stage 8 step 3.0), and `apply-orchestration.tf`, the deploy role's orchestration
-grant (4.1). What one account adds sits in its deploy role's own file. **`./scripts/check-copies.py`
+**`staging/foundation/` and `production/foundation/` share copied files**: `app-boundary.tf`, the
+application ceiling (Stage 8 step 3.0), and `apply-application.tf` and `apply-orchestration.tf`, the
+deploy role's application and orchestration grants (4.1). What one account adds sits in its deploy
+role's own file. **`./scripts/check-copies.py`
 fails on a divergence.** A module would turn each change of a grant that changes at its first applies
 into a tag.
 

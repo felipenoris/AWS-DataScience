@@ -279,9 +279,9 @@ resource "aws_secretsmanager_secret_policy" "deploy_runner_token" {
 #
 # What it applies from the runner: production/app/* (step 3.6) and production/orchestration/ (Stage
 # 10), and no other slice - the pipeline never runs `make up` or `make down ENV=production`. Its grant
-# is the inline document apply-application below and the orchestration grant's two managed policies
-# (apply-orchestration.tf). Every role those slices create carries awsds-prod-app-boundary
-# (app-boundary.tf, step 3.0). Stage 9 step 9.4's Data API grant joins them at that stage's pass 6.
+# is the inline document apply-application (apply-application.tf) and the orchestration grant's two
+# managed policies (apply-orchestration.tf). Every role those slices create carries
+# awsds-prod-app-boundary (app-boundary.tf, step 3.0).
 module "deploy_role" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.3.0"
@@ -292,7 +292,7 @@ module "deploy_role" {
   runner_role_arn = module.deploy_runner_role.role_arn
   runner_role_id  = data.aws_iam_role.deploy_runner.unique_id
   state_prefixes  = ["${var.account_folder}/app/", "${var.account_folder}/orchestration/"]
-  state_read_keys = [for s in ["workloads", "foundation", "sagemaker"] : "${var.account_folder}/${s}/terraform.tfstate"]
+  state_read_keys = [for s in ["workloads", "foundation", "sagemaker", "data"] : "${var.account_folder}/${s}/terraform.tfstate"]
 
   inline_policies = {
     "apply-application" = data.aws_iam_policy_document.apply_application.json
@@ -304,21 +304,9 @@ module "deploy_role" {
   alerts_topic_arn = aws_sns_topic.alerts.arn
 }
 
-# What the application slices hand to a job service.
-data "aws_iam_policy_document" "apply_application" {
-  statement {
-    sid       = "PassTheJobRole"
-    effect    = "Allow"
-    actions   = ["iam:PassRole"]
-    resources = ["arn:${local.partition}:iam::${local.account_id}:role/awsds-${var.env}-job-exec"]
-
-    condition {
-      test     = "StringEquals"
-      variable = "iam:PassedToService"
-      values   = ["glue.amazonaws.com", "sagemaker.amazonaws.com"]
-    }
-  }
-}
+# Production's statements in apply-application.tf's document: none yet. Stage 9 step 9.4's Data API
+# grant joins here at that stage's pass 6.
+data "aws_iam_policy_document" "apply_application_in_this_account" {}
 
 # Production's statement in apply-orchestration.tf's resources policy:
 # AWSServiceRoleForAmazonMWAAServerless exists in Staging and not here (read 2026-10-22), so the first

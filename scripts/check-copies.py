@@ -5,12 +5,12 @@
 #   reads:    the files COPIES names. No AWS session, no side effect, nothing written.
 #   exit:     0 clean | 1 a copy is missing or has diverged
 #
-# The application ceiling and the deploy role's orchestration grant sit in each deployment target's
-# foundation/, beside the deploy role whose ceiling names them (Stage 8 steps 3.0 and 4.1). A copy and
-# not a module because the grant changes at its first applies (Stage 10 narrows EncryptTheWorkflows to
-# the context it measures), and a module would turn each change into a tag (Recipe B). The copy's
-# failure mode is Lesson 14: a statement changed in one account and not in the other, with nothing
-# announcing it. What one account adds lives outside the copied file, in a document of its own.
+# The application ceiling and the deploy role's application and orchestration grants sit in each
+# deployment target's foundation/, beside the deploy role whose ceiling names them (Stage 8 steps 3.0
+# and 4.1). A copy and not a module because the grants change at their first applies, which read the
+# calls they make, and a module would turn each change into a tag (Recipe B). The copy's failure mode
+# is Lesson 14: a statement changed in one account and not in the other, with nothing announcing it.
+# What one account adds lives outside the copied file, in a document of its own.
 #
 # check-bootstrap-parity.py holds the same rule for the bootstrap slices, which are copies whole.
 
@@ -27,6 +27,7 @@ DEPLOY_TARGETS = ("terraform-live/staging/foundation", "terraform-live/productio
 # against.
 COPIES = (
     ("app-boundary.tf", DEPLOY_TARGETS),
+    ("apply-application.tf", DEPLOY_TARGETS),
     ("apply-orchestration.tf", DEPLOY_TARGETS),
 )
 

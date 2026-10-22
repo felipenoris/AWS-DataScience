@@ -1,7 +1,7 @@
 # apply-orchestration.tf - Stage 8 step 4.1's orchestration grant: what this account's deploy role
 # calls when the pipeline applies <folder>/orchestration/, and the release job's copy into the
-# definitions home (Stage 10 steps 1.5 and 2.4). Stage 10 step 1.5 holds the enumeration; these two
-# documents are its code.
+# definitions home and its seed of the inbox (Stage 10 steps 1.5 and 2.4, decision 20 (d)). Stage 10
+# step 1.5 holds the enumeration; these two documents are its code.
 #
 # Two customer-managed policies the infrastructure user attaches, not an inline document: a role's
 # inline documents share 10,240 characters and a managed policy holds 6,144, and the grant measured
@@ -24,7 +24,7 @@ locals {
       document    = data.aws_iam_policy_document.orchestration_resources.json
     }
     access = {
-      description = "Stage 8 step 4.1 - the deploy role's apply of the orchestration slice: the application roles and their PassRole, the definitions home, the data key and the log groups (Stage 10 step 1.5)"
+      description = "Stage 8 step 4.1 - the deploy role's apply of the orchestration slice and the release job's copy: the application roles and their PassRole, the release's tree and the inbox, the data key and the log groups (Stage 10 step 1.5)"
       document    = data.aws_iam_policy_document.orchestration_access.json
     }
   }
@@ -334,17 +334,21 @@ data "aws_iam_policy_document" "orchestration_access" {
     }
   }
 
-  # The saver's read of a pinned definition and code package, and the release job's copy (Stage 10
-  # step 2.4).
+  # The saver's read of a pinned definition and code package, the release job's copy (Stage 10 step
+  # 2.4) and its seed of the inbox (decision 20 (d)). The outputs bucket's policy holds this role to
+  # these two prefixes (Stage 9 steps 1.1 and 4.1).
   statement {
-    sid       = "ReadAndWriteTheDefinitionsHome"
-    effect    = "Allow"
-    actions   = ["s3:GetObject", "s3:GetObjectVersion", "s3:PutObject"]
-    resources = ["arn:${local.partition}:s3:::awsds-${var.env}-outputs/applications/*"]
+    sid     = "WriteTheReleaseTreeAndTheInbox"
+    effect  = "Allow"
+    actions = ["s3:GetObject", "s3:GetObjectVersion", "s3:PutObject"]
+    resources = [
+      "arn:${local.partition}:s3:::awsds-${var.env}-outputs/applications/*",
+      "arn:${local.partition}:s3:::awsds-${var.env}-outputs/inbox/*",
+    ]
   }
 
   statement {
-    sid       = "ListTheDefinitionsHome"
+    sid       = "ListTheReleasePrefixes"
     effect    = "Allow"
     actions   = ["s3:ListBucket"]
     resources = ["arn:${local.partition}:s3:::awsds-${var.env}-outputs"]
@@ -352,7 +356,7 @@ data "aws_iam_policy_document" "orchestration_access" {
     condition {
       test     = "StringLike"
       variable = "s3:prefix"
-      values   = ["applications/*"]
+      values   = ["applications/*", "inbox/*"]
     }
   }
 
@@ -377,12 +381,50 @@ data "aws_iam_policy_document" "orchestration_access" {
   }
 
   # Stage 10 decision 2: the workflow is encrypted with the data key, and the service makes its calls
-  # in the saver's session (Stage 18 step 4.2), the read handler's Decrypt included. The first apply
-  # reads those calls' context, and this statement narrows to it then.
+  # in the saver's session (Stage 18 step 4.2), the read handler's Decrypt included. Each statement
+  # here has its twin among the key policy's AllowTheReleaseRoles* statements (Stage 9 step 1.1).
   statement {
-    sid       = "EncryptTheWorkflows"
+    sid       = "UseTheDataKeyForTheWorkflows"
     effect    = "Allow"
-    actions   = ["kms:CreateGrant", "kms:Decrypt", "kms:DescribeKey", "kms:GenerateDataKey"]
+    actions   = ["kms:Decrypt", "kms:GenerateDataKey"]
+    resources = ["arn:${local.partition}:kms:${local.region_account}:key/*"]
+
+    condition {
+      test     = "ForAnyValue:StringEquals"
+      variable = "kms:ResourceAliases"
+      values   = ["alias/awsds-${var.env}-data"]
+    }
+
+    condition {
+      test     = "StringLike"
+      variable = "kms:EncryptionContext:aws:airflow-serverless:workflow-arn"
+      values   = ["arn:${local.partition}:airflow-serverless:${local.region_account}:workflow/awsds-${var.env}-wf-*"]
+    }
+  }
+
+  statement {
+    sid       = "GrantTheDataKeyToTheServices"
+    effect    = "Allow"
+    actions   = ["kms:CreateGrant"]
+    resources = ["arn:${local.partition}:kms:${local.region_account}:key/*"]
+
+    condition {
+      test     = "ForAnyValue:StringEquals"
+      variable = "kms:ResourceAliases"
+      values   = ["alias/awsds-${var.env}-data"]
+    }
+
+    condition {
+      test     = "Bool"
+      variable = "kms:GrantIsForAWSResource"
+      values   = ["true"]
+    }
+  }
+
+  statement {
+    sid       = "DescribeTheDataKey"
+    effect    = "Allow"
+    actions   = ["kms:DescribeKey"]
     resources = ["arn:${local.partition}:kms:${local.region_account}:key/*"]
 
     condition {

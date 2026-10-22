@@ -3,8 +3,8 @@
 #
 # What it applies from the deploy runner: staging/egress/, which since 6c is interface endpoints and
 # the DNS Firewall with no NAT, staging/app/* (step 3.2) and staging/orchestration/ (Stage 10). Its
-# grant is the inline documents apply-egress and apply-application below, and the orchestration
-# grant's two managed policies (apply-orchestration.tf). Every role those slices create carries
+# grant is the inline documents apply-egress below and apply-application (apply-application.tf), and
+# the orchestration grant's two managed policies (apply-orchestration.tf). Every role those slices create carries
 # awsds-staging-app-boundary (app-boundary.tf, step 3.0).
 #
 # The trust names the runner's role in the runner's home, built from the runner's name and the home's
@@ -56,7 +56,7 @@ module "deploy_role" {
   runner_role_arn = local.deploy_runner_role_arn
   runner_role_id  = data.aws_iam_role.deploy_runner.unique_id
   state_prefixes  = ["staging/egress/", "staging/app/", "staging/orchestration/"]
-  state_read_keys = ["staging/foundation/terraform.tfstate", "staging/sagemaker/terraform.tfstate"]
+  state_read_keys = [for s in ["foundation", "sagemaker", "data"] : "staging/${s}/terraform.tfstate"]
 
   inline_policies = {
     "apply-egress"      = data.aws_iam_policy_document.apply_egress.json
@@ -202,21 +202,9 @@ data "aws_iam_policy_document" "apply_egress" {
   }
 }
 
-# What the application slices hand to a job service, and the leg's read of the version it deploys.
-data "aws_iam_policy_document" "apply_application" {
+# Staging's statements in apply-application.tf's document: the leg's read of the version it deploys.
+data "aws_iam_policy_document" "apply_application_in_this_account" {
   # checkov:skip=CKV_AWS_356:sagemaker:ListModelPackages has no resource type, so only "*" matches it; the registry's resource policy names this role
-  statement {
-    sid       = "PassTheJobRole"
-    effect    = "Allow"
-    actions   = ["iam:PassRole"]
-    resources = ["arn:${local.partition}:iam::${local.account_id}:role/awsds-${var.env}-job-exec"]
-
-    condition {
-      test     = "StringEquals"
-      variable = "iam:PassedToService"
-      values   = ["glue.amazonaws.com", "sagemaker.amazonaws.com"]
-    }
-  }
 
   # Step 3.2: the approved version, read in production/sagemaker/registry.tf's groups, whose resource
   # policy admits this role to the same two actions (Stage 9 step 3.2).

@@ -2401,3 +2401,32 @@ apply.*
 - **[Claude] What follows**: the two applies wait on the user's authorization (the waiting list). Stage 9's
   stage file still says 3.0's ceiling half is not written; the Stage 9 session was told, since that file
   is its own.
+
+## 2026-10-22 — 4.1 completed from Stage 9's report, and Stage 10 decision 11's carve-out
+
+*Claude, in the session `stages-7-8-pending`; three plans as the infrastructure user (`awsds-infra-staging`,
+`awsds-infra-prod`, `awsds-infra-identity`), no apply.*
+
+- **[Claude] What Stage 9's report added to 4.1** (its section 8, after its passes 2, 3 and 5): the release
+  job's `inbox/*` beside `applications/*` (Stage 10 decision 20 (d)'s seed), the data key's statements as
+  twins of the key policy's `AllowTheReleaseRoles*`, the application's tables in `app_outputs` (Lake
+  Formation's half in each `data/`), and the `data/` state keys.
+- **[Claude] What was written**: `apply-application.tf` joins the copied files with `PassTheJobRole` and
+  `ManageTheApplicationTables`, each account's additions in `apply_application_in_this_account` (Staging's
+  registry read; Production's empty until Stage 9 9.4's Data API grant). The orchestration grant's access
+  policy writes `applications/*` and `inbox/*`, and `EncryptTheWorkflows` gives way to
+  `UseTheDataKeyForTheWorkflows` (the workflow-ARN encryption context), `GrantTheDataKeyToTheServices`
+  (`kms:GrantIsForAWSResource`) and `DescribeTheDataKey`. The read keys gain `<folder>/data/`.
+- **[Claude] The foundation plans**: each still 6 to add, 2 to change, 0 to destroy. Sizes without white
+  space: inline 5,098 (Staging) and 1,836 (Production) of 10,240; `-access` 4,490 and 4,427, `-resources`
+  4,063 and 3,986, the ceilings 1,641 and 1,629, of 6,144.
+- **[user] Stage 10 decision 11's carve-out**: *"Pode aprovar a exceção, conforme a recomendação."* The
+  recommendation: `kms:Decrypt` for `DeploymentManagerAccess` only when the encryption context carries
+  `aws:airflow-serverless:workflow-arn`, D31's decrypt deny narrowed to requests without it, `kms:ViaService`
+  added once a trail shows the calls carry it.
+- **[Claude] What follows here**: `identity/sso/policies-approvers.tf` gains `ReadWorkflowRunStatus` (the
+  six `airflow-serverless:` reads), `DecryptWhatTheWorkflowServiceEncrypts` and
+  `DenyDecryptOutsideTheWorkflowService`, and `DenyDataReadPaths` loses `kms:Decrypt`. Its plan: 0 to add,
+  1 to change, 0 to destroy, the set's inline policy alone, 7,289 to 8,223 rendered characters of the
+  slice's 10,240 ceiling. The apply joins the waiting list; the key-policy half is Stage 9's `data/`
+  slices'. The Stage 10 session was given the user's words and the commit for its decision and its log.
