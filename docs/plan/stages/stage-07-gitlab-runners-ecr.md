@@ -454,6 +454,15 @@ this is a second apply of one folder. Everything is `[P]` and free at rest excep
   an object that does not exist yet), so a second application's repository joins when it is created. The
   grant is owed: it lands in the identity slice, applied as `awsds-infra-identity`, with
   `DataScientistAccess`'s size read first (the README's size discipline).
+- **5.6 — Written and planned 2026-10-22 by Claude, not applied.** `identity/sso/locals.tf` builds each
+  repository's ARN from its name and Production's account id (`ecr_repository_arns`);
+  `DataScientistAccess` gains `PullTheHouseImage`, `DataScientistProdAccess`'s `ReadEcrImageMetadata`
+  becomes `AuthenticateToEcr` on `*` and `ReadAndPullTheApplicationImages` on `awsds-prod-ecr-app-etl`, and
+  `DevEnvStewardAccess`'s reads narrow to `base` and `dev-env`, `DescribeRegistry` and
+  `GetRegistryScanningConfiguration` staying on `*` (`ReadTheRegistryScanningConfiguration`). The plan, as
+  `awsds-infra-identity`: 0 to add, 3 to change, the three sets' inline policies, at 8,993, 7,098 and 7,069
+  rendered characters of the slice's 10,240 (from 8,640, 6,808 and 6,768); every planned ARN names
+  Production's account and `us-west-2`.
 
 ### 6. Stand up the build runner — `production/runners/` `[E]`, and retire the buildbox
 

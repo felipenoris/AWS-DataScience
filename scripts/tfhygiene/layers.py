@@ -355,6 +355,12 @@ SLICES = [
         "6 interface endpoints (St.9 3.3a) + DNS Firewall - no NAT",
         0.060,
     ),
+    # Stage 8 steps 3.2 and 3.6 - the application's Glue job, applied by the pipeline with the release it
+    # promotes (refusal 7) and destroyed by Staging's `make down`. A job bills per run, nothing at rest.
+    Slice("staging", "app/app-etl", EPHEMERAL, "app-etl's Glue job (St.8 3.2), pipeline-applied"),
+    Slice(
+        "production", "app/app-etl", EPHEMERAL, "app-etl's Glue job (St.8 3.6), pipeline-applied"
+    ),
     # Stage 10 step 1.4 - the MWAA Serverless workflows with their roles and log groups, and the chain
     # layer above them, applied by the pipeline. Nothing here meters by the hour: a run bills
     # task-hours and a chain's execution its state transitions (the stage's Cost section).

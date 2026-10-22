@@ -2478,3 +2478,29 @@ apply.*
   prerequisite on them, and both egress rows read 16 to add; `CLAUDE.md`, `GENERAL_PLAN.md`, the stage and
   log indexes take Stage 9's text; `AWS_STATE.md` gains the six grant rows, the lake's three trusted gateway
   endpoints and `curated.trades`, and the deployment targets' Lake Formation row; `PRICING.md` reads 17 keys.
+
+## 2026-10-22 — pass 4's code written, the application slices planned
+
+*Claude, in the session `stages-7-8-pending`; plans and reads as the infrastructure user
+(`awsds-infra-staging`, `awsds-infra-prod`), no apply.*
+
+- **[user] The request**: as Stage 7's entry of the same sitting quotes, then Stage 8 pass 4's code.
+- **[Claude] The application slices**: `staging/app/app-etl/` and `production/app/app-etl/`, one slice
+  copied but `release.tf`, the Glue job `awsds-<env>-app-etl` on `sagemaker/`'s job role and connection,
+  its script under the release's prefix. Plans: `No changes` with no release in each; with `v0.2.1` as a
+  stand-in (`sha256:247ec6b6…ce0c`, read with `ecr describe-images`, and the bundle's
+  `7fb374d1…5fff`), 1 to add in each, the job reading `awsds-<env>-job-exec`, `awsds-<env>-jobs` and
+  `s3://awsds-<env>-outputs/applications/app-etl/v0.2.1/glue/transform.py`.
+- **[Claude] The deploy roles**: `ManageTheApplicationGlueJob` in `apply-application.tf`; each
+  `foundation/` plans 0 to add, 1 to change, the inline documents 5,359 and 2,094 of 10,240.
+- **[Claude] The scripts**: `scripts/render-workflow.py` (`--check` in `make check` and pre-commit) rendered
+  `v0.2.1`'s workflow from Staging's and Production's states; `scripts/release-application.py`'s dry run on
+  the same bundle, downloaded from `awsds-prod-releases` as `awsds-infra-prod`, listed seven objects and a
+  manifest in which only `workflows/app-etl.yaml` differs from the bundle, and refused a wrong SHA256.
+  `scripts/tfhygiene/states.py` reads a slice's outputs for both.
+- **[Claude] The template's legs**: `staging-up`, `staging-deploy`, `staging-test`, `staging-down`,
+  `production-plan`, `production-gate`, `production-deploy`; `check-gitlab-ci.py` read 20 jobs, every name
+  resolved, every script item through `bash -n`.
+- **[Claude] What follows**: the two `foundation/` applies and `identity/sso/`'s join the waiting list;
+  the template reaches `awsds/app-etl` by an MR at a GitLab sitting; the application's tables and 3.3's
+  share read wait for a schema.

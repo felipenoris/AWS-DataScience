@@ -36,7 +36,7 @@ the container image (ECR), the model version (Model Registry, from Stage 9), the
 | `terraform-modules/deploy-role/` (new, `deploy-role-v0.1.0`; `v0.5.0` since decision 19) | one deploy role: its trust, its ceiling (named by the caller since `v0.5.0`, so two roles share an account), its state access and its misuse rule, one document for every account the deploy runner reaches | — |
 | `production/registry/` (amended) | the **app-repository** pull grant, an authored entry of its own beside `REGISTRY_CONSUMERS`: Sandbox at 2.4, Staging at 3.0 (INT-07); `awsds-prod-ecr-deploy`, the deploy jobs' image (3.1, 4.3); and `awsds-prod-releases`, the bucket each application release's bundle is stored in (2.5, decision 20) | `[P]` |
 | `production/runners/` (amended) | the **deploy runner** — protected, project-locked, its role only assumes the deploy roles, `awsds-deploy-sandbox-test` among them (decision 19); the **test runner** — unprotected, project-locked, no AWS identity reachable from its jobs (decision 11); the build runner's role, which writes `awsds-prod-releases` (decision 20) | `[E]` |
-| `sandbox/app/app-etl/` (new, **retired by decision 21**), `staging/`, `production/` idem | the application slices — **Sandbox applied by hand** (2.4) until decision 21 (2026-10-16) retired it with `awsds-sandbox-outputs` and `AllowApplicationJobRolesViaS3`, the `dev` project being D41's engineering loop; the other two by the pipeline (step 3). **CI never applies an application into Sandbox**, which is the answer to D21's surviving objection; the CLI's `test` deploy (2.5) is the exception D21 records (decision 19) | `[E]` |
+| `sandbox/app/app-etl/` (new, **retired by decision 21**), `staging/`, `production/` idem | the application slices — **Sandbox applied by hand** (2.4) until decision 21 (2026-10-16) retired it with `awsds-sandbox-outputs` and `AllowApplicationJobRolesViaS3`, the `dev` project being D41's engineering loop; the other two by the pipeline (step 3), written 2026-10-22 as one slice in both targets, the Glue job `awsds-<env>-app-etl`. **CI never applies an application into Sandbox**, which is the answer to D21's surviving objection; the CLI's `test` deploy (2.5) is the exception D21 records (decision 19) | `[E]` |
 | GitLab, by hand | the three `.gitlab-ci.yml`s, repository roles, protected release tags, the deploy and test runners' registrations, CI variables, and the project `awsds/ci-gates` the gates live in (decision 10), written here under `ci-gates/` | — |
 | GitHub | the infrastructure repository's offline-gates workflow (step 6) | — |
 | `scripts/` | `layers.py`: the `app/app-etl` rank, the `[E]` rows, **refusals 7 and 8**; `slices.py`: `-input=false` on every apply and destroy (Lesson 47); `backend.py`: the dev-env target map, the app-consumer entry, `DEPLOY_ROLES_BY_SLICE` for a deploy role a slice holds (decision 19); the `make` `PROFILE` override; `aws/cicd.py`: the four roles by profile | — |
@@ -745,6 +745,35 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   works by hand (conventions §6). Stage 10 decision 12's deny on writes to `applications/*` must exempt
   `InfrastructureAccess`, or this path's copy of the rendered definition is refused (asked of Stage 10,
   2026-10-22).
+- **Pass 4's code — Written 2026-10-22 by Claude; the application slices planned, nothing applied.**
+  - `staging/app/app-etl/` and `production/app/app-etl/`, one slice copied byte for byte but its
+    `release.tf` (`./scripts/check-copies.py`): the Glue job `awsds-<env>-app-etl` (Stage 10 decision 20
+    (a)) running the release's `glue/transform.py` under the release's prefix, as `awsds-<env>-job-exec`
+    on the account's `awsds-<env>-jobs` connection (Stage 9 decision 12 (a)), Glue 6.0, two `G.1X`
+    workers, 50 minutes, the shape of the YAML's `create_job_kwargs`; no security configuration, whose
+    CloudWatch encryption would rename the job's log groups. `release` is the tag, the image digest and the
+    bundle's SHA256, null until a promotion, and the slice creates nothing while it is. Planned as the
+    infrastructure user: `No changes` in each, and with `v0.2.1` as a stand-in release, 1 to add each.
+  - The deploy roles' `apply-application` gains `ManageTheApplicationGlueJob` on that job's name: each
+    `foundation/` plans 0 to add, 1 to change, the inline documents 5,359 (Staging) and 2,094
+    (Production) of 10,240.
+  - `scripts/render-workflow.py` is Stage 10 decision 6's table: it reads each value from the slice that
+    owns it and fails on a placeholder the table does not know; `--check`, in `make check` and pre-commit,
+    renders the template's workflows offline. It rendered `v0.2.1`'s workflow from Staging's and
+    Production's live states.
+  - `scripts/release-application.py` is Stage 10 2.4's release job: the bundle's SHA256 first, the tree
+    with the workflow rendered, `MANIFEST.sha256` last, the read-back by `head-object --checksum-mode
+    ENABLED`, the inbox seeded only where absent or different, and the orchestration slice's `release` as
+    tfvars JSON. A dry run on `v0.2.1`'s bundle wrote nothing, listed seven objects whose SHA256 equals the
+    bundle's but the rendered YAML's, and refused a wrong SHA256 before reading the bundle.
+  - `examples/app-etl/.gitlab-ci.yml` gains the legs, 3.1 to 3.6: `staging-up`, `staging-deploy`,
+    `staging-test` (decision 19: the chain's machine started and followed), `staging-down` (always),
+    `production-plan`, `production-gate` (manual, its `needs` the leg's jobs) and `production-deploy`;
+    `check-gitlab-ci.py` passes. They reach GitLab's `awsds/app-etl` through an MR at a GitLab sitting.
+  - Not written: the application's tables in `app_outputs` and 3.3's read through the share pinned to an
+    Iceberg snapshot (Stage 9 4.4), since the template carries no schema; the first application with one
+    brings both. To read at the first leg: whether `uv run` resolves the repository's dev group on the
+    runner, and the deploy roles' Glue and Cloud Control calls against their grants (Stage 10 verification ii).
 - **3.9 — `identity/sso/`'s owed row: `DeploymentManagerAccess`'s read of a promotion's evidence**,
   `s3:GetObject` on enumerated build-artifact and test-report prefixes, never a bucket wildcard, the
   shape that produced D31. The source is the slice's

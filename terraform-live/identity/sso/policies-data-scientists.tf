@@ -241,10 +241,9 @@ data "aws_iam_policy_document" "data_scientist" {
     resources = ["*"]
   }
 
-  # The registry handshake and nothing else. GetAuthorizationToken is account-scoped by the
-  # caller and cannot be narrowed by resource - it hands back a token for the registries the
-  # caller already has access to, so it opens nothing on its own. The pull it precedes is a
-  # repository-scoped grant and arrives with Stage 7.
+  # The registry handshake. GetAuthorizationToken is account-scoped by the caller and cannot be
+  # narrowed by resource - it hands back a token for the registries the caller already has access
+  # to, so it opens nothing on its own. The pull it precedes is PullTheHouseImage.
   statement {
     sid    = "AuthenticateToEcr"
     effect = "Allow"
@@ -252,6 +251,23 @@ data "aws_iam_policy_document" "data_scientist" {
     actions = ["ecr:GetAuthorizationToken"]
 
     resources = ["*"]
+  }
+
+  # Stage 7 step 5.6: the house image's pull, and the reads that find a tag, on its repository alone.
+  # The repository's policy admits Sandbox's account (Stage 7 decision 7); this is the persona's half.
+  statement {
+    sid    = "PullTheHouseImage"
+    effect = "Allow"
+
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
+      "ecr:DescribeImages",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:ListImages",
+    ]
+
+    resources = [local.ecr_repository_arns["awsds-prod-ecr-dev-env"]]
   }
 
   # The CloudWatch Logs grant is the AWS managed policy CloudWatchLogsReadOnlyAccess, attached
@@ -539,21 +555,33 @@ data "aws_iam_policy_document" "data_scientist_prod" {
   # in permission-sets.tf, where the argument for that choice is written once instead of four
   # times.
 
-  # D14's ECR half: which image is deployed, and what its scan says. The pull itself is
-  # repository-scoped and arrives at Stage 7.
+  # The registry handshake, account-scoped by the caller (AuthenticateToEcr in DataScientistAccess).
   statement {
-    sid    = "ReadEcrImageMetadata"
+    sid    = "AuthenticateToEcr"
+    effect = "Allow"
+
+    actions = ["ecr:GetAuthorizationToken"]
+
+    resources = ["*"]
+  }
+
+  # D14's ECR half: which application image is deployed, what its scan says, and the image itself,
+  # on the application repositories alone, each by name (Stage 7 step 5.6).
+  statement {
+    sid    = "ReadAndPullTheApplicationImages"
     effect = "Allow"
 
     actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
       "ecr:DescribeImageScanFindings",
       "ecr:DescribeImages",
       "ecr:DescribeRepositories",
-      "ecr:GetAuthorizationToken",
+      "ecr:GetDownloadUrlForLayer",
       "ecr:ListImages",
     ]
 
-    resources = ["*"]
+    resources = [local.ecr_repository_arns["awsds-prod-ecr-app-etl"]]
   }
 
   statement {

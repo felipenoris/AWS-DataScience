@@ -375,7 +375,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Stage 7 in progress**: passes 1-2 closed 2026-10-12 but three persona memberships, pass 3 nearly done
   (7.2 left), pass 4's 8.4 done. Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
   `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners out. Owed: INT-09's clone from a
-  notebook, the memberships, 5.6's ECR grant (its scope taken 2026-10-22), 8.1-8.3. The GitLab backups leave the bucket on 2026-11-13 and 2026-11-15.
+  notebook, the memberships, 5.6's ECR grant (written and planned 2026-10-22, PR #244), 8.1-8.3. The GitLab backups leave the bucket on 2026-11-13 and 2026-11-15.
   **`saml.auto.tfvars` lives in the project folder's `secrets/`**: a `tooling/` plan passes
   `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block.
 - **Stage 8 in progress**: passes 0-3 done (`awsds/ci-gates`, the test runner, the house image on Python
@@ -393,6 +393,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   deploy role's profile. 3.0's ceiling and 4.1's application halves are applied (2026-10-22, PR #244),
   with Stage 10 decision 11's decrypt carve-out on `DeploymentManagerAccess`: the orchestration grant is two managed policies, since inline it took Staging's
   role past IAM's 10,240 characters, and `check-copies.py` keeps the two `foundation/` copies identical.
+  Pass 4's code written 2026-10-22 (PR #244), nothing applied: `<env>/app/app-etl/` (planned), the
+  render and release scripts, and the template's promotion legs, which reach GitLab by an MR.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.

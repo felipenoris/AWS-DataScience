@@ -418,6 +418,8 @@ data "aws_iam_policy_document" "dev_env_steward" {
     data.aws_iam_policy_document.stage6_denies.json,
   ]
 
+  # Stage 7 step 5.6: the release the steward judges, on the repository it ships into and the base it
+  # is built from (Stage 8 step 1.4 scans both), each by name. No pull.
   statement {
     sid    = "ReadEcrImageMetadataAndScanFindings"
     effect = "Allow"
@@ -425,12 +427,23 @@ data "aws_iam_policy_document" "dev_env_steward" {
     actions = [
       "ecr:DescribeImageScanFindings",
       "ecr:DescribeImages",
-      "ecr:DescribeRegistry",
       "ecr:DescribeRepositories",
-      "ecr:GetRegistryScanningConfiguration",
       "ecr:ListImages",
       "ecr:ListTagsForResource",
     ]
+
+    resources = [
+      local.ecr_repository_arns["awsds-prod-ecr-base"],
+      local.ecr_repository_arns["awsds-prod-ecr-dev-env"],
+    ]
+  }
+
+  # The registry-level reads take no repository ARN.
+  statement {
+    sid    = "ReadTheRegistryScanningConfiguration"
+    effect = "Allow"
+
+    actions = ["ecr:DescribeRegistry", "ecr:GetRegistryScanningConfiguration"]
 
     resources = ["*"]
   }

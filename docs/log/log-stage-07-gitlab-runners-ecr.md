@@ -746,3 +746,24 @@ Stages 7 and 8 against their logs. AWS read as the infrastructure user with `Inf
   is up), 1.4's and 1.6's leftovers, 6.4's, 5.6's scope, 8.2's backup schedule (the timer, not a cron entry)
   and the snapshot cost row. D36 §5's data events and alarm went to Stage 11's 5.1 and 5.2, and its §6
   rotation rehearsal to Stage 12's 8.5, the receiving ends that did not carry them (Lesson 34).
+
+## 2026-10-22 — 5.6's ECR grant written and planned
+
+*Claude, in the session `stages-7-8-pending`, a plan as the infrastructure user (`awsds-infra-identity`),
+no apply.*
+
+- **[user] The request**: *"Do both here: first Stage 7 5.6's ECR grant in identity/sso, written and
+  planned, then Stage 8 pass 4's code. Plan the application slices now that Stage 9 is applied. Apply
+  nothing without my authorization."*
+- **[Claude] What was written**, the scope the user took that morning: `identity/sso/locals.tf`'s
+  `ecr_repository_arns`, each repository by its name in `production/registry/` and Production's account id
+  from the organization; `DataScientistAccess` gains `PullTheHouseImage` on `awsds-prod-ecr-dev-env`;
+  `DataScientistProdAccess`'s `ReadEcrImageMetadata` becomes `AuthenticateToEcr` on `*` and
+  `ReadAndPullTheApplicationImages` on `awsds-prod-ecr-app-etl`; `DevEnvStewardAccess`'s
+  `ReadEcrImageMetadataAndScanFindings` narrows to `awsds-prod-ecr-base` and `-dev-env`, its two
+  registry-level reads moving to `ReadTheRegistryScanningConfiguration` on `*`.
+- **[Claude] The plan**: 0 to add, 3 to change, 0 to destroy, the three sets' inline policies;
+  `inline_policy_bytes` reads `data_scientist` 8,640 to 8,993, `data_scientist_prod` 6,808 to 7,098 and
+  `dev_env_steward` 6,768 to 7,069, of 10,240. Each planned ECR ARN names Production's account,
+  `us-west-2` and the repository by name.
+- **[Claude] What follows**: the apply joins the waiting list.

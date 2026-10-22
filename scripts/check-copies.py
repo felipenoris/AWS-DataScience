@@ -12,6 +12,9 @@
 # is Lesson 14: a statement changed in one account and not in the other, with nothing announcing it.
 # What one account adds lives outside the copied file, in a document of its own.
 #
+# The application slice, <env>/app/app-etl/ (Stage 8 steps 3.2 and 3.6), is one slice in both
+# targets but for release.tf, which records each account's own promoted release (step 3.7).
+#
 # check-bootstrap-parity.py holds the same rule for the bootstrap slices, which are copies whole.
 
 from __future__ import annotations
@@ -22,6 +25,7 @@ import sys
 from pathlib import Path
 
 DEPLOY_TARGETS = ("terraform-live/staging/foundation", "terraform-live/production/foundation")
+APPLICATION = ("terraform-live/staging/app/app-etl", "terraform-live/production/app/app-etl")
 
 # (file name, the slices holding it). The first slice is the reference a divergence is reported
 # against.
@@ -29,6 +33,18 @@ COPIES = (
     ("app-boundary.tf", DEPLOY_TARGETS),
     ("apply-application.tf", DEPLOY_TARGETS),
     ("apply-orchestration.tf", DEPLOY_TARGETS),
+    *(
+        (name, APPLICATION)
+        for name in (
+            "backend.tf",
+            "data.tf",
+            "main.tf",
+            "outputs.tf",
+            "providers.tf",
+            "variables.tf",
+            "versions.tf",
+        )
+    ),
 )
 
 

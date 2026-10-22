@@ -8,7 +8,8 @@
 #                         the application: the worker's package built, the bundle for the `test` project
 #                         built and deployed there with a run of the workflow, the bundle stored in
 #                         awsds-prod-releases and the tag's GitLab release, which names it (D41,
-#                         decisions 19 and 20)
+#                         decisions 19 and 20); then the promotion (Stage 8 step 3): Staging raised,
+#                         deployed from the bundle, run and torn down, a manual gate, and Production
 #
 # Which runner takes which job (decision 11): every job extending .gates-uv carries tag awsds-test, the
 # test runner, whose jobs hold no AWS identity. build-image, the scan gate, store-bundle and release are
@@ -22,7 +23,7 @@ include:
     ref: 6fcea132896746c3938411c0d081f4421ca0dce8 # gates-v0.4.0
     file: [/gates.gitlab-ci.yml, /baselines.gitlab-ci.yml]
 
-stages: [test, build, verify, deploy, release]
+stages: [test, build, verify, deploy, release, staging, staging-teardown, gate, production]
 
 variables:
   GATES_UV_PROJECTS: "."
@@ -268,3 +269,169 @@ gate-without-proxy:
         uvx --from pip-audit==2.10.1 pip-audit --version || rc=$?
       echo "without the proxy: exit $rc after $(( $(date +%s) - start )) s (124 is the 300 s bound)"
       [ "$rc" -ne 0 ]
+
+# ------------------------------------------------------------------ the promotion (Stage 8 step 3)
+#
+# The legs run on the deploy runner, in its deploy image, each job cloning the infrastructure repository
+# at its default branch with the job token and printing the commit it runs (decision 2): the slices, the
+# render and the release job live there, never here. The job's AWS identity is the profile it names, one
+# per deploy role on the runner; every account value is read at run time from the slice that owns it.
+# The deploy runner reaches AWS through the proxy alone, so each job checks the proxy first (step 3.1).
+.promotion:
+  tags: [awsds-deploy]
+  timeout: 45m
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  variables:
+    INFRA_DIR: $CI_PROJECT_DIR/infrastructure
+  before_script:
+    - |
+      set -eu
+      code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://sts.$DOMAIN_REGION.amazonaws.com/")"
+      if [ "$code" = "000" ]; then echo "FATAL: no answer through the proxy: is the hub up (make hub-up)?"; exit 1; fi
+      git clone --quiet --depth 1 "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/awsds/infrastructure.git" "$INFRA_DIR"
+      echo "awsds/infrastructure at $(git -C "$INFRA_DIR" rev-parse HEAD)"
+
+# 3.1: Staging's [E] egress, its interface endpoints and DNS Firewall, raised for this run alone.
+staging-up:
+  extends: .promotion
+  stage: staging
+  needs: [store-bundle]
+  resource_group: staging
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      make up ENV=staging ONLY=egress PROFILE=awsds-deploy-staging AUTO=1
+
+# 3.2: the bundle read as the runner's own role (decision 20) and checked before a file of it is read;
+# the release job writes its tree into Staging's outputs bucket with the workflow rendered for the
+# account (Stage 10 step 2.4); then the application slice and the orchestration slice, each with the
+# release this pipeline promotes.
+staging-deploy:
+  extends: .promotion
+  stage: staging
+  needs: [staging-up, test-deploy, store-bundle]
+  resource_group: staging
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" bundle.zip --only-show-errors
+      echo "$BUNDLE_SHA256  bundle.zip" | sha256sum -c -
+      export AWS_PROFILE=awsds-deploy-staging
+      ./scripts/release-application.py staging --bundle bundle.zip --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --image-uri "$JOB_IMAGE_URI" --release-vars terraform-live/staging/orchestration/release.auto.tfvars.json
+      printf '{"release": {"tag": "%s", "digest": "%s", "bundle_sha256": "%s"}}\n' "$CI_COMMIT_TAG" "${JOB_IMAGE_URI##*@}" "$BUNDLE_SHA256" > terraform-live/staging/app/app-etl/release.auto.tfvars.json
+      for slice in app/app-etl orchestration; do
+        ./scripts/gen-backend-hcl.py staging "$slice"
+        ./scripts/gen-tfvars.py --pipeline staging "$slice"
+        terraform -chdir="terraform-live/staging/$slice" init -backend-config=backend.hcl -input=false
+        terraform -chdir="terraform-live/staging/$slice" apply -input=false -auto-approve
+      done
+
+# 3.3: the deployed artifact run in the account, the chain's machine started by the leg and followed to
+# its end (Stage 10 decision 19), the schedule being DISABLED in Staging.
+staging-test:
+  extends: .promotion
+  stage: staging
+  needs: [staging-deploy]
+  resource_group: staging
+  script:
+    - |
+      set -eu
+      export AWS_PROFILE=awsds-deploy-staging
+      account="$(aws sts get-caller-identity --query Account --output text)"
+      machine="arn:aws:states:$DOMAIN_REGION:$account:stateMachine:awsds-staging-chain-app-etl"
+      execution="$(aws stepfunctions start-execution --state-machine-arn "$machine" --name "$(echo "$CI_COMMIT_TAG-$CI_PIPELINE_ID" | tr . -)" --query executionArn --output text)"
+      echo "started $execution"
+      status=RUNNING
+      while [ "$status" = "RUNNING" ]; do
+        sleep 60
+        status="$(aws stepfunctions describe-execution --execution-arn "$execution" --query status --output text)"
+        echo "$(date -u +%H:%M:%S) $status"
+      done
+      aws stepfunctions describe-execution --execution-arn "$execution" --output json > execution.json
+      if [ "$status" != "SUCCEEDED" ]; then
+        aws stepfunctions get-execution-history --execution-arn "$execution" --reverse-order --max-items 20 --output json > history.json
+        echo "FATAL: the chain ended $status"; cat history.json; exit 1
+      fi
+  artifacts:
+    when: always
+    paths: [execution.json, history.json]
+    expire_in: 1 year
+
+# 3.4: every [E] Staging slice destroyed whatever the leg's outcome, by descending rank, the
+# orchestration and application slices before egress: an endpoint set left up is a bill.
+staging-down:
+  extends: .promotion
+  stage: staging-teardown
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+      when: always
+  resource_group: staging
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      make down ENV=staging PROFILE=awsds-deploy-staging AUTO=1
+
+# 3.5: Production's plan of the application slice, read beside Staging's results before the gate.
+production-plan:
+  extends: .promotion
+  stage: gate
+  needs: [staging-test, test-deploy]
+  resource_group: production
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      export AWS_PROFILE=awsds-deploy-prod
+      printf '{"release": {"tag": "%s", "digest": "%s", "bundle_sha256": "%s"}}\n' "$CI_COMMIT_TAG" "${JOB_IMAGE_URI##*@}" "$BUNDLE_SHA256" > terraform-live/production/app/app-etl/release.auto.tfvars.json
+      ./scripts/gen-backend-hcl.py production app/app-etl
+      ./scripts/gen-tfvars.py --pipeline production app/app-etl
+      terraform -chdir=terraform-live/production/app/app-etl init -backend-config=backend.hcl -input=false
+      terraform -chdir=terraform-live/production/app/app-etl plan -input=false -no-color > "$CI_PROJECT_DIR/production-plan.txt"
+      cat "$CI_PROJECT_DIR/production-plan.txt"
+  artifacts:
+    paths: [production-plan.txt]
+    expire_in: 1 year
+
+# 3.5: the gate, a blocking manual job whose needs name the Staging leg's jobs, never `needs: []`,
+# which would let it start past a failed leg. Who may start a release is the protected tag (step 2.1).
+production-gate:
+  stage: gate
+  needs: [staging-test, production-plan]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+      when: manual
+  allow_failure: false
+  resource_group: production
+  script:
+    - echo "$CI_COMMIT_TAG promoted by $GITLAB_USER_LOGIN"
+
+# 3.6: the same bundle and image by digest, nothing rebuilt; named slices only, never `make up` or
+# `make down ENV=production`. A Production run needs production/workloads-egress/ raised by the user.
+production-deploy:
+  extends: .promotion
+  stage: production
+  needs: [production-gate, test-deploy, store-bundle]
+  resource_group: production
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" bundle.zip --only-show-errors
+      echo "$BUNDLE_SHA256  bundle.zip" | sha256sum -c -
+      export AWS_PROFILE=awsds-deploy-prod
+      ./scripts/release-application.py production --bundle bundle.zip --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --image-uri "$JOB_IMAGE_URI" --release-vars terraform-live/production/orchestration/release.auto.tfvars.json
+      printf '{"release": {"tag": "%s", "digest": "%s", "bundle_sha256": "%s"}}\n' "$CI_COMMIT_TAG" "${JOB_IMAGE_URI##*@}" "$BUNDLE_SHA256" > terraform-live/production/app/app-etl/release.auto.tfvars.json
+      for slice in app/app-etl orchestration; do
+        ./scripts/gen-backend-hcl.py production "$slice"
+        ./scripts/gen-tfvars.py --pipeline production "$slice"
+        terraform -chdir="terraform-live/production/$slice" init -backend-config=backend.hcl -input=false
+        terraform -chdir="terraform-live/production/$slice" apply -input=false -auto-approve
+      done
+      cat terraform-live/production/orchestration/release.auto.tfvars.json
+  artifacts:
+    paths: [infrastructure/terraform-live/production/orchestration/release.auto.tfvars.json]
+    expire_in: 1 year
