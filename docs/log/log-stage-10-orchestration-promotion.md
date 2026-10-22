@@ -389,3 +389,25 @@ call.*
 - **[Claude] Recorded**: decisions 5, 8 and 12 marked taken, as recommended, in the stage file, with the
   decisions' state and the status. The code written earlier the same day already follows them. Open: 2, 3,
   4, 9, 11 and 19, and 20's (a), (d) and tool.
+
+## 2026-10-22 — decisions 2, 3, 4, 9, 11, 19 and 20 taken by the user: every decision of the stage taken
+
+*Claude's hand, the same session; the user's words relayed from the orchestrating session ("Pendências
+estágios 7 e 8"), whose chat they were written in, and read again in that session's transcript. No AWS
+call.*
+
+- **[user] The decision**: *"Aceito as recomendações das decisões 2, 3, 4, 9, 11, 19 e 20 (a, d, e) do
+  Stage 10, com a 20(d) como exceção explícita do template. Registre-as."* The orchestrating session had
+  shown the user that 20 (d)'s seeding of `inbox/app-etl/` from the bundle's `samples/` meets Stage 9
+  decision 3's rule that Staging holds no seeded or synthetic content, and the exception it proposed: the
+  samples are `app-etl`'s own test input, a template with no producer, and no stand-in for governed data,
+  and a real application names its governed source in its release.
+- **[Claude] Recorded**: each of the seven taken, as recommended, 20 (d) with that exception in those
+  terms, in the stage file's decisions, their state and the status; every decision of the stage is taken.
+- **[Claude] What decision 11's grant needs, read in `identity/sso/policies-approvers.tf`**:
+  `DeploymentManagerAccess`'s `DenyDataReadPaths` denies `kms:Decrypt` on `*` with no condition, and under
+  decision 2 the workflow service decrypts in the reader's session at each `GetWorkflowRun` (Stage 18 0.4),
+  so the six `airflow-serverless:` reads alone would be refused by the set's own deny. Decision 11's text
+  now names the three statements that make them work: `kms:Decrypt` allowed with the
+  `aws:airflow-serverless:workflow-arn` encryption context, the deny narrowed to requests without it, and
+  the data key's policy naming the set's role. Which other reads decrypt is 3.2's reading.
