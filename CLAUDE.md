@@ -317,7 +317,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the same six endpoints (4.3a), rise with their next `make up`. Prepared 2026-10-22 (PR #245):
   `staging/sagemaker/` (`awsds-staging-job-exec`, 8 to add) and the Production job role's
   `glue:GetConnection` planned for an authorized apply; `deploytargets.py` reads each pass from its own
-  objects. Pass 2 waits on decision 3; decision 12 (the Glue job's network) is new; the `s3-bucket` module
+  objects. Pass 2 waits on decision 3 and pass 3 on decision 1; 2, 5-8, 11 and 12 were taken 2026-10-22, 12
+  putting the Glue connection and the job security group `[P]` in `*/sagemaker/`; the `s3-bucket` module
   turns Bucket Keys on for every bucket it creates, so D31's zero-cost variant is unavailable (PR #225).
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, never fired (no model package exists). Prepared

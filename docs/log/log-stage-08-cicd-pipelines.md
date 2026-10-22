@@ -2259,3 +2259,20 @@ and "Stage 10 — revisão e preparação" (PR #246) ended their turns; no AWS c
   Stage 9's decisions with 12, the registry row, the Stage 9 applies, the tag push, Stage 10's decisions,
   and the sittings table with a Promotion row for pass 4), `CLAUDE.md`, `GENERAL_PLAN.md` (39,471 bytes), the
   stage index, the log index and `AWS_STATE.md`'s network row.
+
+## 2026-10-22 — Stage 9's decisions 2, 5 to 8, 11 and 12 taken, and what Stage 8 follows
+
+*Claude, in the session `stages-7-8-pending`, no AWS call. The decisions themselves are recorded in
+Stage 9's log by the session that holds Stage 9 (PR #245), to which the user's words were relayed.*
+
+- **[user] The decisions**: *"Pode registrar como aceitas as recomendações de decisão em relação aos
+  seguintes itens: # Stage 9 * #2 Limite de dados por query no athena. * #11 onde ficam os resultados de
+  query em Staging e Produção * #12 a rede do job glue * #5 como um projeto do sandbox lê uma tabela
+  governada no redshift * #6 Quem cria as tabelas do warehouse governado * #7 Os limites de custo do
+  warehouse * #8 os logs de auditoria do warehouse"*. Stage 9's decisions 3 and 1 stay open, and no
+  Stage 10 decision was taken.
+- **[Claude] What follows here**: 4.1's application halves no longer wait on Stage 9 decision 12, whose
+  option (a) puts the Glue connection and the job security group in `*/sagemaker/` for the application
+  slice to reference. Stage 10 was told that its decision 20(b), which had the application slice declare
+  both, must follow 12(a). `waiting-on-the-user.md`, `CLAUDE.md`, `GENERAL_PLAN.md` and the stage index
+  carry the taken decisions.

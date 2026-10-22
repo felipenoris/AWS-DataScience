@@ -822,7 +822,9 @@ the approval, and 4.6's alarm.
   starts from; its `IAM` user profile and `IAM_ROLE_SESSION_GROUP` profile stay in the domain, where no
   delete API reaches them.
 - **4.1 — The application halves, specified 2026-10-22 by Stages 9 and 10, written once their decisions
-  are taken** (Stage 10 decisions 2 and 19, Stage 9 decisions 1, 3 and 12):
+  are taken** (Stage 10 decisions 2 and 19, Stage 9 decisions 1 and 3; Stage 9 decision 12, taken
+  2026-10-22, puts the Glue connection and the job security group in `*/sagemaker/`, which the
+  application slice references):
   - the orchestration grant on both roles, an inline `apply-orchestration`, is Stage 10 1.5's enumeration,
     its single home: Cloud Control, the workflows, the definitions home, the data key, the log groups and
     their delivery, the `wf-` and `chain-` roles scoped by name, one `iam:PassRole` per service, the state
