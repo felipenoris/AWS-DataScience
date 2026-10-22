@@ -27,7 +27,7 @@ variable "subnet_ids" {
 }
 
 variable "application_boundary_arn" {
-  description = "The application ceiling awsds-<env>-app-boundary (Stage 8 step 3.0). Every role this module creates carries it: the deploy role's ceiling refuses CreateRole and every policy change on a role without it."
+  description = "The application ceiling awsds-<env>-app-boundary (Stage 8 step 3.0). Every role this module creates carries it: the deploy role's ceiling refuses CreateRole and the five role-policy writes on a role without it."
   type        = string
   nullable    = false
 

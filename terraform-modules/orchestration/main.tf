@@ -8,9 +8,9 @@
 # (step 1.5, INT-14).
 #
 # Every role carries the application ceiling awsds-<env>-app-boundary: the deploy role's own ceiling
-# refuses CreateRole, and every policy change on a role, without it (Stage 8 step 3.0). No role here
-# holds a lake permission: the execution roles start and observe jobs and reach the outputs bucket's
-# result and inbox prefixes, the chain roles start and read workflows (D13 one level up).
+# refuses CreateRole and the five role-policy writes on a role without it (Stage 8 step 3.0). No role
+# here holds a lake permission: the execution roles start and observe jobs and reach the outputs
+# bucket's result and inbox prefixes, the chain roles start and read workflows (D13 one level up).
 #
 # The names are contracts ./aws/orchestration.py reads (OR-1 to OR-5, OR-9): awsds-<env>-wf-<key>,
 # /awsds/<env>/wf/<key>, awsds-<env>-chain-<key>, awsds-<env>-chains, awsds-<env>-chain-exec,
