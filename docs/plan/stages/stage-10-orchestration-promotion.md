@@ -1122,7 +1122,10 @@ Each is decided during the stage and written into `docs/log/log-stage-10-orchest
     narrowed to requests without that key, and the data key's policy naming the set's role for that call
     (Stage 9's data slices). The carve-out reaches only what the workflow service encrypts, never an S3
     object, whose context is the bucket's ARN, so D31's line, the approvers decrypt no output, holds.
-    Whether `GetWorkflow`, `ListWorkflowRuns` and `GetTaskInstance` decrypt too is 3.2's reading.
+    Whether `GetWorkflow`, `ListWorkflowRuns` and `GetTaskInstance` decrypt too is 3.2's reading. The
+    carve-out is put to the user (`waiting-on-the-user.md`, 2026-10-22), and nothing in `identity/sso/`
+    is written until the answer; the key-policy half is written in Stage 9's PR #245 as
+    `AllowTheDeploymentManagerToReadWorkflowRuns`.
 12. **Where a Glue job's script lives, and who may write it** (1.3, 2.4; D28 class 2c). Glue reads a job's
     `ScriptLocation`, and every file its arguments name, from S3 when each run starts and pins no version,
     so a job runs whatever the key holds then: decision 7's problem, on the path that writes governed
