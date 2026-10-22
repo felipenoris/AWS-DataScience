@@ -421,8 +421,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   domain admits no read-only member, and a contributor writes in Staging as the project role; 6.2's key,
   `aws:SourceIdentity`, marks every session DataZone opens on the project role (a person's, an IAM
   principal's, `SYSTEM`) and no worker's, and its deny is applied (`awsds-staging-person-session-deny`,
-  decision 11): it refuses a person's writes, re-read 2026-10-21, and the worker's side is owed at 4.3's
-  run, whose job also deploys 7.2's table (reviewed 2026-10-21; decision 12 at the approval);
+  decision 11): it refuses a person's writes, re-read 2026-10-21, and no worker's session met it at 4.3's
+  run (2026-10-21, `SUCCESS`), whose job also deploys 7.2's table (reviewed 2026-10-21; decision 12 at the approval);
   an associated account no person works in goes in `backend.SMUS_DEPLOYMENT_MEMBERS`, never in
   `SMUS_MEMBERS`. Prepared 2026-10-21: the stage file's "The order of what is left", pass 8's code on the
   local branch `claude/stage-18-unwind` planned step by step, decisions 12-18 taken 2026-10-21. Its 4.4's two prerequisites, Stage 8 3.0's first half and Stage 10 1.2's `vpc-v0.4.0`
