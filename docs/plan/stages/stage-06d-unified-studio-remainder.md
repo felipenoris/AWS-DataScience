@@ -607,7 +607,9 @@ than intended.
   running space exercises (its first half, a `VpcOnly` space starting on the endpoint set, is every start
   since 2.3); (xvi), which needs a
   subscription and belongs with [6f](stage-06f-data-governance.md) step 2.2; and (xvii), which is an
-  attempt rather than a read.**
+  attempt rather than a read.** (xvi)'s cross-account shape was read by Stage 18 7.2 on 2026-10-22, a
+  Staging project's table subscribed from `test-experimentation`: [`docs/SMUS.md`](../../SMUS.md), "A
+  deployment project in a `Workloads` account".
 - **6.1 — [Claude and user] Answer iii, viii, xiv, xv, xvi, xvii and xix**: the two-AZ blueprint acceptance;
   a VPC-only space starting on the endpoint set under design B; whether the blueprint's manage-access role
   must be a Lake Formation administrator (open question 24's other half); whether a blueprint-created
@@ -639,7 +641,7 @@ than intended.
   Stage 10. [D41](../decisions/D41-sagemaker-application.md) (2026-10-15) changed the CI/CD tool's
   section: the CLI deploys an application between the Sandbox projects and makes the bundle, the pipeline
   creates the workflow from the bundle in Staging and Production (D41 item 2, which
-  [Stage 18](stage-18-staging-deployment-project.md) measures against its alternative), and the section
+  [Stage 18](stage-18-staging-deployment-project.md) measured against its alternative and the user kept on 2026-10-22), and the section
   is `docs/SMUS.md`'s *The CI/CD tool deploys between projects*.
 - **6.3 — [Claude] Restate the SMUS document**: `docs/SMUS.md` for one associated account, one project
   profile, the workflow surface as measured in step 4, and the CI/CD tool as what D41 makes it — the
@@ -1146,7 +1148,10 @@ class as `pypi.org`: the question is which names, not whether code may be fetche
     `staging/egress` is the one that matters, since it carries the firewall and the two new families.
     **Read 2026-10-18**: `production/egress` runs `vpc-egress-v0.17.0` since 2026-10-12 (Stage 7 step 1.7) and
     `production/workloads-egress` pins it unapplied, while `staging/egress` pins `v0.11.1` and Staging's
-    trail holds no `CreateVpcEndpoint` since 2026-09-09, so it has never run on the fix.
+    trail holds no `CreateVpcEndpoint` since 2026-09-09, so it has never run on the fix. Stage 18 raised
+    it on `v0.11.1` on 2026-10-19 (`make up ENV=staging ONLY=egress`, *"20 added"*, eleven interface
+    endpoints `available`), its plan passing the precondition; `production/workloads-egress` is the slice
+    left.
   - **The in-space proof was taken the same night, on two channels.** The user pasted the 52-entry
     array into the `editor` Code Editor space and restarted it; CloudTrail dates the restart to the second
     (`DeleteApp` 19:43:50, `CreateApp` 19:44:02 −03), and the container address changes with it, so the
@@ -1679,7 +1684,9 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
     subject is a family, not one group**: `AWS_STATE.md` `EXC-10` counts 14 never-expiring groups in
     Sandbox on 2026-10-17 (this one, `/aws/sagemaker/ProcessingJobs`, eight `/aws/mwaa-serverless/`
     groups and each project's `datazone-<project>-dev/error` and `/output`) and asks for one decision
-    over all of them, which is this one.
+    over all of them, which is this one. A project's deletion removes none of them: in Staging it left the
+    same family and the stack's `datazone-<project>-dev`, at 731 days, until they were deleted by hand
+    (Stage 18 8.1, 2026-10-22).
 13. **Whether a space may start on any image but the house image.** Measured 2026-09-12, the case it
     answers: a space created on AWS's SageMaker Distribution by mistake had no proxy variables and no
     Claude Code settings, a client in it — the Claude Code extension, by every sign — asked for

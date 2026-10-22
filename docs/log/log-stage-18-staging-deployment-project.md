@@ -1962,3 +1962,41 @@ UTC.*
   (identity, who can act as it, Terraform's state, the Glue job, isolation, the `Workloads` perimeter, the
   deploy identity, running and seeing runs, governed data to Sandbox, lineage, teardown, cost), their
   advantages and disadvantages, and why A, the pipeline's deploy, was kept; item 2 and the status point to it.
+
+## 2026-10-22 — this stage's learnings carried into the other stages' open steps
+
+*Claude, in the session `stage-18-diagnostic` (branch `claude/stage-18-diagnostic-d0612f`). No AWS call:
+four read-only subagents compared the open steps of the stages before this one with seventeen learnings
+read from this log, and Claude checked each proposal against this log before applying it.*
+
+- **[user] The request**: *"Verifique se há necessidade de revisar as etapas não executadas do plano
+  (estágios anteriores ao 18) tendo em vista o aprendizado com esta sessão, e propague as alterações
+  necessárias. Abra quantas tarefas em paralelo forem necessárias para esta revisão. Atualize também a
+  documentação do projeto."*
+- **[Claude] The review, by area**: the pipeline and orchestration (Stages 8 and 10, the GitLab, Terraform
+  and workflows runbooks, `integrations.md`); governance and leakage (6f, 6g, 11, the threat model, the
+  open questions, `GOVERNANCE.md`, the producer README); the workbench and the project's documents (6d,
+  6e, 17, the upstream readings, the remote-IDE and Sandbox-lake runbooks, the glossary, `aws/INDEX.md`);
+  the deployment targets and the rest (Stages 9, 12 and 14, the cost model, the institutional delta,
+  `ORGANIZATION.md`).
+- **[Claude] What the open steps gained**: Stage 10 the chain role's and the deploy role's KMS calls on the
+  workflow's key, `trailLogs` and `get-workflow-run` in place of `wait`, the redeploy's `UpdateWorkflow`, and
+  a table's existence read by a principal holding `DESCRIBE`; Stage 8 a release job's `needs:`, the image
+  pull and the membership half of verification xix; `gitlab.md` §K a pipeline's protection fixed at its
+  creation; `terraform-changes.md` the tfvars regenerated after a switch of branch and Recipe G, the
+  whole-slice teardown; 6f the cross-account fulfilment as each side's project role, the RAM share of the
+  whole catalog, the Data Catalog resource policy `shares.tf` keeps absent, the revoke, the `DROP` grant
+  and `AllowFullTableExternalDataAccess`; INT-23 exercised across accounts; `GOVERNANCE.md` the fulfilment's
+  writer and condition; open questions 20 and 24 amended; the threat model `TM-17`'s portal session and the
+  full-table vending; Stage 11 decision 12 the person's source identity; 6d the teardown's log groups and
+  `staging/egress` on `v0.11.1`; Stage 17 the instance-preference rows read and what a job leaves; the
+  upstream readings, D41's owed list, `SMUS.md`'s profiles, the glossary's session group, `US-4`'s row;
+  Stage 9 3.5 the key filled from the list.
+- **[Claude] Corrected before applying**: the glossary's claim that `InfrastructureAccess` belongs to the
+  Sandbox projects (`test-experimentation` lists none, 0.4's read); 6f decision due 6 cited for the
+  browser's address, which is 6.2's reading; a re-plan of the `datazone` endpoint this log does not record;
+  6g 2.4's read, where the query editor joins the options and the space stays; and the grant option placed
+  on the publishing project's role, which 7.2's table, created by that role, cannot separate from the
+  creator's own permissions.
+- **[Claude] Checks**: `check-plan-refs`, `check-index` and `check-network-doc` clean; `GENERAL_PLAN.md` at
+  39,765 bytes of 40,000.

@@ -161,9 +161,12 @@ Claude project's library, `laboratorio/leituras/2026-10-15-cli-houseprice-etl-de
 - Read in the lab on 2026-10-16: `bundle` and the deploy to `test`, whose 158 CloudTrail events
   gave the actions the CLI's identity needs beyond AWS's example policy, which lists no
   `airflow-serverless` action ([Stage 8](../stages/stage-08-cicd-pipelines.md) decision 19).
-- Still owed: `run`, `monitor` and `logs` with the Sandbox up and the input file in place; a Python or Bash task's `Code` through the CLI; the
-  project role's pull of the application image; and the chain layer's readings (Stage 10
-  verifications xxii to xxvi).
+- Still owed: `monitor` and `logs` with the Sandbox up and the input file in place, and the chain
+  layer's readings (Stage 10 verifications xxii to xxvi). Stage 18 read the other three in Staging: `run`
+  returns once `StartWorkflowRun` answers, and the pipeline followed the run with `get-workflow-run`
+  (4.3, 2026-10-21); a Python task's `Code`, copied under `shared/operatorFiles/` and run (4.2 and 4.4,
+  2026-10-19); and the project role's pull of `awsds-prod-ecr-app-etl` by digest, in its job's
+  `SageMaker` session (4.4 and 4.3).
 
 ## Where production runs: the pipeline's deploy against a project in each deployment account
 
@@ -255,7 +258,7 @@ takes it in the `orchestration/` slice of each deployment account, with the name
 |---|---|
 | `aws_scheduler_schedule_group` `controladoria-schedules` | the group `awsds-<env>-chains` |
 | `aws_cloudwatch_log_group` `/aws/vendedlogs/states/<prefix>-pipelines`, 90 days, KMS | `/aws/vendedlogs/states/awsds-<env>-chains`, 90 days, the account's data CMK |
-| the role `<prefix>-step-functions` (trust `states.amazonaws.com`): EMR Serverless, Glue crawlers, SageMaker jobs, `sns:Publish`, `iam:PassRole`, logs, X-Ray | `awsds-<env>-chain-exec`: `airflow-serverless:StartWorkflowRun` and `GetWorkflowRun` on the account's workflows, and the log delivery; nothing on jobs. The reference's state machine chains jobs; here the workflow chains jobs (D28) and the machine chains workflows |
+| the role `<prefix>-step-functions` (trust `states.amazonaws.com`): EMR Serverless, Glue crawlers, SageMaker jobs, `sns:Publish`, `iam:PassRole`, logs, X-Ray | `awsds-<env>-chain-exec`: `airflow-serverless:StartWorkflowRun` and `GetWorkflowRun` on the account's workflows, `kms:GenerateDataKey` and `kms:Decrypt` on the workflow's key (Stage 18 0.4, 2026-10-19), and the log delivery; nothing on jobs. The reference's state machine chains jobs; here the workflow chains jobs (D28) and the machine chains workflows |
 | the role `<prefix>-eventbridge-scheduler` (trust `scheduler.amazonaws.com`): `states:StartExecution` on `stateMachine:<prefix>-*` | `awsds-<env>-chain-scheduler`, the same form on `awsds-<env>-chain-*` |
 | the role `gitlab_cicd`: `states:*`, `scheduler:*`, `events:*`, no `airflow-serverless` | `awsds-deploy-<env>` (Stage 8), the named actions of Stage 10 step 1.5 inside the boundary |
 | the module's input `eventbridge_role_arn`, given `<prefix>-eventbridge-scheduler`, trusted by `scheduler.amazonaws.com` alone, so a bridge rule needs a second trust on it or a second role | `awsds-<env>-chain-events`, trusted by `events.amazonaws.com`, the same `states:StartExecution`: a second role, so that CloudTrail tells a start on an inbox write from a scheduled one (Stage 10 step 3.6) |

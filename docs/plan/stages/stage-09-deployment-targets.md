@@ -416,7 +416,9 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   name up to five instance types as a list instead of `InstanceType`,
   `ProcessingResources.ClusterConfig.InstancePreferences` for processing and
   `ResourceConfig.InstancePreferences` for training, and whether the service fills
-  `sagemaker:InstanceTypes`, the key `DenySageMakerInstanceCeiling` reads, from that list is unread; the
+  `sagemaker:InstanceTypes`, the key `DenySageMakerInstanceCeiling` reads, from that list was unread until
+  the rows ran: the lists naming an off-ceiling type answered `DENY-SCP` and the list inside the ceiling
+  was authorized, so the service fills the key from the list; the
   policy generator's catalogue lists no new key. `probes.py`'s `ou` phase carries the rows in Production:
   for each action a list naming `ml.m5.2xlarge` and a list naming `ml.m5.large` then `ml.m5.2xlarge`, each
   expected `DENY-SCP`, beside a list naming `ml.m5.large`, expected authorized, and for training the same

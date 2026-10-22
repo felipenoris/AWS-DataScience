@@ -58,7 +58,10 @@ The last one confirms *who you are* before anything acts. One login covers every
 
 1. **Branch** — never commit to `main` directly; the flow ends in a PR.
 2. **Edit** the `.tf` files in `terraform-live/<account>/<slice>/`.
-3. **Generate the two untracked files** (idempotent — safe to run every time):
+3. **Generate the two untracked files** (idempotent — safe to run every time), and again after every
+   switch of branch: `terraform.auto.tfvars` holds what `backend.py` emitted for the tree that generated
+   it (`blueprints_enabled` among them), so a plan after a checkout made without regenerating plans the
+   other tree's values (Stage 18, 2026-10-21):
 
    ```bash
    ./scripts/gen-backend-hcl.py <account> <slice> && ./scripts/gen-tfvars.py <account> <slice>
@@ -300,6 +303,20 @@ estate and the API's behaviour is unknown.
 4. **Then the rest of the slice**, with no `-target`.
 5. **Re-plan to `No changes`.** As with Recipe D, the split exists so that a step can be *verified*
    between halves; a `-target` used to skip a failing resource is the thing §8 forbids.
+
+## 4d. Recipe G — a whole-slice teardown
+
+For a slice retired with its folder (Stage 6b step 1.7, Stage 18 step 8.6). A bucket from
+`terraform-modules/s3-bucket` carries `prevent_destroy = true` and `force_destroy = false`, so
+`terraform destroy` refuses the slice and a bucket holding any version refuses the apply.
+
+1. **Empty the bucket**: `list-object-versions` lists the versions and the delete markers that
+   `list-objects-v2` does not show; delete both until it lists none.
+2. **Move the slice's resource files out of the working tree**, so the `prevent_destroy` blocks leave the
+   configuration with them, then Recipe A steps 5-7: a plan that destroys every resource and refuses none,
+   applied from its file.
+3. **Read the state back empty, then commit the end state**: the folder deleted, its `layers.py` rank and
+   row, its `backend.py` emission and the docs that name it.
 
 ## 5. Recipe D — the staged apply, when a value must be read before the rest is built
 

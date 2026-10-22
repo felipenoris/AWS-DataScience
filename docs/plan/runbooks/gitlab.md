@@ -464,6 +464,8 @@ Stage 8 step 2.2 replaces everything on `awsds/app-etl`'s `main` with [`examples
 
 The deploy runner (Stage 8 step 4.3) is a second protected project runner of `awsds/app-etl`, linked to `awsds/dev-env` and locked, with the tag `awsds-deploy` and no untagged jobs. Its instance profile is the only path to the deploy roles, so a job reaches them only by carrying `tags: [awsds-deploy]` on a protected ref of those two projects. The role, the instance profile and the token container are anchors in `production/foundation/`; the host is `production/runners/`'s, `[E]`, raised by `make gitlab-up` once `deploy_image_digest` is set.
 
+A pipeline is protected or not from the moment GitLab creates it. A ref protected after its pipeline exists leaves that pipeline unprotected: the deploy runner takes none of its jobs (*"no runners for the protected branch"*) and no protected variable reaches them. The fix, in order: the branch under **Settings → Repository → Protected branches** (a branch name under Protected tags leaves the branch unprotected), a stuck job holding a `resource_group` cancelled, then a new pipeline from **Build → Pipelines → Run pipeline** (Stage 18, 2026-10-21).
+
 1. **Create it in GitLab**, as the local administrator: `awsds/app-etl` → **Settings → CI/CD → Runners → Create project runner**: tag `awsds-deploy`, **Run untagged jobs** unchecked, description `awsds-prod-runner-deploy`, **Protected** checked, maximum job timeout `3600`.
 2. **Put the token into its container**, as for the build runner:
 

@@ -204,13 +204,15 @@ parameters
 
 ### The installed profiles
 
-The two project profiles this installation carries — created 2026-08-21 by the second apply of
-`terraform-live/data-governance/governance/` (step 1.5), both `ENABLED`, read back by `US-4`:
+The project profiles this installation carries, each `ENABLED` and read back by `US-4`: `experimentation`
+created 2026-08-21 by the second apply of `terraform-live/data-governance/governance/` (step 1.5), the
+model governance profile on 2026-10-19 (Stage 17 decision 13):
 
 | Profile | Provisions into | The unit of work (D21) | Who may create from it |
 |---|---|---|---|
 | `experimentation` | **Sandbox** | a notebook — experimentation happens where nothing downstream depends on it | `sso-group-data-scientists` |
-| `deployment` | **Staging**, Stage 18's window, `Tooling` with `enableSpaces` `false`, and `DataLake` on demand for 7.2's published table (once applied) | an application the CI/CD CLI deploys, with no person in the project | Staging's InfrastructureAccess role, as its IAM role session group |
+| `Generative AI model governance` | nothing: no environment configuration; the console creates one custom environment per enabled model, in the model's account | the project `GenerativeAIModelGovernanceProject`, which owns the Amazon Bedrock model listings the console publishes | Terraform's identity, the root domain unit's owner; Sandbox's InfrastructureAccess is a `PROJECT_CONTRIBUTOR` through its session group |
+| ~~`deployment`~~ | ~~**Staging**~~ | **Destroyed 2026-10-22** (Stage 18 step 8.2), at the end of that stage's window: its verdict kept D41 item 2, so no project provisions into a deployment account | — |
 | ~~`engineering`~~ | ~~**Development**~~ | **Destroyed 2026-09-06** (Stage 6b step 1.1). The account it targeted became the headless `Staging`, and the chain now starts at a repository rather than an account | — |
 
 Identical in everything but the target account: **eleven environment configurations** (decision 5's

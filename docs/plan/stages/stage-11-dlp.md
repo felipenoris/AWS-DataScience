@@ -693,7 +693,9 @@ during the stage and written into `docs/log/log-stage-11-dlp.md` (Lesson 16), wi
     project role discriminates under the data cells filter only while it holds no other `SELECT` on the
     table, which (c)'s regrant gives it if it covers the table as the persona's `shared_tables` does
     (inferred), while an RLS policy holds either way. Whether the column filter, granted with all rows,
-    voids an RLS policy on the same principal is unread.
+    voids an RLS policy on the same principal is unread. A member's session of the project role carries
+    the person's id as `aws:SourceIdentity`, a worker's none (Stage 18 6.2; 6h verification xv); whether
+    an RLS condition on IAM attributes reads it, putting the row half on a person, is unread.
     Recommended: **the project role of `avhvbqn37ty7m8`, taken together with 6f decision 1 as (c)**,
     the filter read as the project's and said so; its row half the written data cells filter while that
     role holds no other `SELECT` on the table, and an RLS policy attached to it once (c) regrants the

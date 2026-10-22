@@ -228,6 +228,9 @@ whose grant was cut keeps its form and loses its reach — already-vended creden
 their remaining duration (the bearer residual, open question 14's shape; Stage 16 verification (viii)
 measures the window). **The orphan reading is `SL-4`**: a grant whose `datazone_usr_role_*` grantee no
 longer exists in IAM is a dead project that skipped this section — run it then, not a new design.
+A project's deletion takes its role and the Access Grants location of its own prefix, and leaves the
+account's Access Grants instance, which the lake's location lives in (measured in Staging, Stage 18
+8.1, 2026-10-22): §R removes the grant and the trust entry, never the instance.
 
 ---
 
