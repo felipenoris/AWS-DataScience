@@ -523,10 +523,12 @@ behind the approval gate.
   destroyed the old `dev`-named key rather than renaming it) and the `staging/{data,sagemaker}/` slices
   below. Run
   `./aws/AZs.py` and `./aws/account-bpa.py` once as the standing post-conversion readings.
-- **4.1 — [Claude] Write `staging/data/`**: local Glue databases mirroring the lake's — same database
-  and table names, same Iceberg definitions, same LF-Tag keys and values (LF-Tags are account-local, so
-  the mirror recreates the ontology) — **instantiated from the same versioned schema source as the
-  lake's tables** (decision 3 — two hand-typed copies drift, and the drift is a false test failure), the
+- **4.1 — [Claude] Write `staging/data/`**. Decision 3's recommendation withdraws the mirror, Staging
+  reading the governed lake through a read-only share instead, and decision 1's has Staging read nothing
+  of Production's outputs; the step stands as written until the user decides. Local Glue databases
+  mirroring the lake's — same database and table names, same Iceberg definitions, same LF-Tag keys and
+  values (LF-Tags are account-local, so the mirror recreates the ontology) — **instantiated from the
+  same versioned schema source as the lake's tables** (decision 3 — two hand-typed copies drift, and the drift is a false test failure), the
   table 2.1 declares included; the content bucket `awsds-staging-data` under the Staging CMK, registered with
   Staging's Lake Formation, since the job role holds no S3 on it (4.3, D13's shape), and
   `awsds-staging-outputs`, Stage 10 decision 17's (taken 2026-10-15), 1.1's `s3-bucket` call with
@@ -592,7 +594,7 @@ behind the approval gate.
   measured MWAA Serverless workers placed in both AZs reaching Sandbox's single-AZ endpoints, and a
   SageMaker job's `VpcConfig` names both subnets. As in 3.3a, this plane has no proxy, so a missing
   endpoint fails at the firewall or as a timeout, never as a 403.
-- **4.4 — [Claude] Write the sample-data seed**: a job in the `app-etl` repository generating the
+- **4.4 — [Claude] Write the sample-data seed**, withdrawn if decision 3 is taken as recommended: a job in the `app-etl` repository generating the
   sampled/synthetic content into `awsds-staging-data` — owned by the repository so the pipeline can
   refresh it, never copied from the lake (D20's line to hold). **When it runs**: in the Staging leg after
   Stage 8's 3.2 deploy and before its 3.3 tests, as `awsds-staging-job-exec` writing through Lake
@@ -601,7 +603,8 @@ behind the approval gate.
   `examples/app-etl/` once decision 3 names the source.
 - **4.5 — [Claude⚡] Apply both slices as `awsds-infra-staging`**, machinery rows included.
 - **4.6 — [Claude⚡] Amend step 3's resource policies with the Staging principals** (as
-  `awsds-infra-prod`), and the artifact-bucket/CMK read for `awsds-deploy-staging` and
+  `awsds-infra-prod`), and, unless decision 1 is taken as recommended, which drops it, the
+  artifact-bucket/CMK read for `awsds-deploy-staging` and
   `awsds-staging-job-exec` — the documented third leg of cross-account deployment (1.1's bucket, not
   ECR: ECR needs no KMS grant for pulls); how far that read reaches is decision 1's. The application image
   reaches a Staging job through the job's own role (6i: the pull is made as the job's role, session
@@ -1007,67 +1010,69 @@ Each is decided during the stage and written into `docs/log/log-stage-09-deploym
 (Lesson 16), with a recommendation stated. Decisions 4, 9 and 10 and step 3.7 were taken on 2026-10-16;
 the others are the user's and wait in [`waiting-on-the-user.md`](../waiting-on-the-user.md).
 
-1. **The Production data CMK** (1.1) — **the alias is not open**: `docs/GOVERNANCE.md` §Encryption
-   settles it (one data CMK per account), which gives `alias/awsds-prod-data`. What remains to decide
-   here is only **dedicated versus reusing `foundation/`'s key**. Recommended: **dedicated** (D31): the
-   deny that matters — the approvers read no output, and Staging none but the model archives below — is
-   only expressible on a key nothing else uses. **A contradiction to settle with it**: 4.6 grants Staging
-   read on `awsds-prod-outputs` and its key, and Stage 10 steps 5.1 and 5.4 need that read, while Stage
-   10 decision 6 has Staging read nothing of Production's outputs, the deny it says this key is kept for.
-   The scoping below reconciles them; it is a recommendation, and the decision stays the user's.
-   - **What Staging reads**: `s3:GetObject` on `arn:aws:s3:::awsds-prod-outputs/models/*/model.tar.gz`
-     for the two principals 4.6 names, `awsds-staging-job-exec`, the model's execution role at Stage 10
-     5.4, and `awsds-deploy-staging`, with no `s3:ListBucket`: a package version names its archive by its
-     key. The pattern, not `models/*`, because a training job copies both `/opt/ml/model` and
-     `/opt/ml/output/data` under its `S3OutputPath` (AWS's guide), and the second holds whatever the
-     training script wrote there from the governed data it read.
-   - **Where it is written**, three policies in two accounts (Lesson 28): 1.1's bucket policy gains a
-     Staging branch, the allow on that pattern and the two roles' exemption from the perimeter's deny,
-     whose endpoint branch names `VPC-Workloads`' gateway endpoint, which no Staging request carries
-     (which door the download takes is 4.6's reading); the key policy gains, through
-     `additional_data_key_policy_statements`, `kms:Decrypt` for the two roles with `kms:ViaService` =
-     `s3.<region>.amazonaws.com` and `kms:EncryptionContext:aws:s3:arn` = the bucket's ARN; and each role
-     holds the same read in its own account, a cross-account read needing the reader's allow too: the
-     job role in `staging/sagemaker/` (4.3), the deploy role in `staging/foundation/`'s `deploy-role.tf`.
+1. **The Production data CMK, and what of Production's outputs Staging reads** (1.1, 4.6) — **the alias
+   is not open**: `docs/GOVERNANCE.md` §Encryption settles it (one data CMK per account), which gives
+   `alias/awsds-prod-data`. What remains is **dedicated versus reusing `foundation/`'s key**, and the
+   contradiction between 4.6, which grants Staging read on `awsds-prod-outputs` and its key for the model
+   archives Stage 10 steps 5.1 and 5.4 move, and Stage 10 decision 6, taken by the user on 2026-10-15,
+   under which Staging reads nothing of Production's outputs.
+   - **Recommended: a dedicated key, and Staging reads nothing of Production's outputs, model archives
+     included.** The argument is the user's: in data science code and artifacts are promoted and data is
+     not, and the governed lake is the one source of truth. Each environment writes only to its own
+     catalog, buckets and key, and only the promoted pipeline in Production writes to the governed lake,
+     through the producer path (step 2). A model crosses environments as a release artifact, through the
+     registry or the release bucket, or is retrained in Staging from the governed data Staging reads
+     through the share (decision 3), and its archive carries its data's classification. Stage 10
+     decision 6 then holds as written, and 1.1's bucket and key policies carry no Staging statement; the
+     key still names every principal that decrypts, the approvers none (D31).
+   - **The options weighed**: (a) Staging reads `awsds-prod-outputs/models/*/model.tar.gz` as
+     `awsds-staging-job-exec` and `awsds-deploy-staging`, `s3:GetObject` with no `s3:ListBucket`, the
+     pattern rather than `models/*` because a training job copies `/opt/ml/output/data` beside
+     `/opt/ml/model` under its `S3OutputPath` (AWS's guide); written in three policies across two
+     accounts (1.1's bucket branch and perimeter exemption, the key's `kms:Decrypt` with `kms:ViaService`
+     and the bucket's encryption context, each role's own allow, Lesson 28), and rewording Stage 10
+     decision 6 for the archives. (b) The archives in a bucket of their own, `awsds-prod-models`, whose
+     ARN the key's Staging statement names as its encryption context. (c) The pipeline copies the
+     approved archive into Staging's own bucket, so Staging tests a copy and a Production principal
+     writes into Staging.
    - **What the key cannot say**: the `s3-bucket` module turns S3 Bucket Keys on unconditionally, and
      with them the encryption context is the bucket's ARN, not the object's (AWS's S3 guide, read
-     2026-10-20). No key condition reaches the prefix, so the key admits the two roles to the bucket
+     2026-10-20). No key condition reaches a prefix, so under option (a) the key admits the two roles to the bucket
      through S3 and the bucket policy alone holds them to the archives. D31's recorded zero-cost variant,
      a key condition on the object's ARN, is unavailable on every bucket the module creates, for the same
      reason. Every module tag, `v0.1.0` to `v0.4.0`, sets `bucket_key_enabled = true` with no variable,
      and Production's three module buckets, `awsds-prod-releases` (`v0.4.0`), `awsds-prod-gitlab-objects`
      and `awsds-prod-gitlab-backup` (`v0.3.0`), read `BucketKeyEnabled: true` on 2026-10-20;
      `awsds-prod-outputs` answered `NoSuchBucket`, since 1.1 creates it in pass 3 (the log).
-   - **Against 4.6**: the scoping is 4.6's read, its resource narrowed from the bucket to the archives.
-   - **Against Stage 10 5.1**: the training job writes its archive under
-     `awsds-prod-outputs/models/app-etl/` with the data CMK, which the pattern matches; its training data,
-     the prefix a Glue step wrote, matches no archive name and stays closed to Staging.
-   - **Against Stage 10 5.4**: `CreateModel` from the approved package and the batch transform read the
-     archive as the model's execution role, `awsds-staging-job-exec`, which the pattern admits, and the
-     image through the pull grant 4.6 records. The Production serve is in-account.
-   - **Against Stage 10 decision 6**: *"Staging reads nothing of Production's outputs"* holds for every
-     class that decision places (the definition, the code package, `src/`, `glue/`), none of which the
-     pattern matches, and stops being literal for the model archives. Decision 6 was taken by the user on
-     2026-10-15, so its sentence's amendment, nothing but the model archives, is the user's with this
-     one.
-   - **The alternatives**: (b) the archives in a bucket of their own, `awsds-prod-models`, whose ARN the
-     key's Staging statement names as its encryption context, so the key itself refuses Staging the
-     outputs bucket, the training data and the workflow copies with it; it adds a contract name that
-     `./aws/deploytargets.py`, 1.1, 3.2 and Stage 10 5.1 read, and keeps the archive pattern, since
-     `/opt/ml/output/data` lands beside the model there too. (c) the pipeline copies the approved archive
-     into Staging's own bucket and Staging builds its model from the copy: Staging reads nothing of
-     Production, but it tests a copy rather than the version 5.4's documented shape references, and a
-     Production principal writes into Staging.
-   - **Recommended: dedicated, with the pattern on `awsds-prod-outputs`**: no contract name moves, the
-     branch is an allow-list, so a prefix added later stays closed to Staging, and the key still names
-     every principal that decrypts, the approvers none.
+   - **What changes if taken**: 4.6 keeps the registry read and loses the archive read; Stage 10 5.4's
+     batch transform in Staging runs a model built from a release artifact or retrained there, which
+     Stage 10's file says; Stage 8's ask for an archive read on `awsds-deploy-staging` drops.
 2. **The scan limit** (1.2) — recommended: **10 GB per query** to start, revised against real queries at
    Stage 12 rather than set high and forgotten.
-3. **The mirror mechanism** (4.1) — recommended: **both catalogs instantiated from one versioned schema
-   source** in the repository (a module input, not a sync script); a hand-maintained second copy is
-   Lesson 14 as a catalog. Who may open a merge request on that source is not decided anywhere
-   (`docs/GOVERNANCE.md`); the Governance Manager approves classification through it, so Stage 7's GitLab
-   groups give `governance-managers` a role on the repository that holds it.
+3. **Whether Staging keeps a mirror of the lake** (4.1, 4.4). The plan as written gives Staging local
+   databases mirroring the lake's, from one versioned schema source with sampled or synthetic content,
+   and keeps Staging off the share (D20, the share revoked at 6b 2.3).
+   - **Recommended: no mirror.** Staging reads the governed lake read-only through Lake Formation, by the
+     LF-Tag share Sandbox already holds, and writes only to its own catalog, buckets and key. The schemas
+     the application produces live in its repository, and each deploy creates them in its own
+     environment; a reproducible test pins an Iceberg snapshot or reads by time travel. The controls: no
+     write grant outside Production on the governed catalog; the read scoped by the `classification`
+     LF-Tag, `restricted` excluded or filtered (Stage 11 decision 12); Stage 11's data events audit every
+     read from outside Production. The residual, a governed table readable in the account where unattended
+     tests run, is accepted in `threat-model.md` beside Sandbox's.
+   - **The alternative**: the mirror as written, both catalogs from one versioned schema source in the
+     repository (a module input, not a sync script), since a hand-maintained second copy is Lesson 14 as a
+     catalog. Who may open a merge request on that source is not decided anywhere (`docs/GOVERNANCE.md`),
+     and the Governance Manager approves classification through it.
+   - **What changes if taken**: D20's sentences that keep Staging off the share and its data sampled or
+     synthetic are amended, and 6b 2.3's revocation reverses; `DATA_CONSUMERS` gains Staging and
+     `DATA_MIRRORS` leaves `backend.py`; 2.1's grant gains Staging's read, `DESCRIBE` and `SELECT` with
+     the grant option, by the expression Sandbox's share uses; 4.1 becomes 1.1-1.3's shape without the
+     write: the `consumer-data` call (the account CMK, the LF settings by the two-step, the resource
+     links, the read regrants to the job role), `awsds-staging-outputs`, the results bucket and workgroup
+     (decision 11), and no `awsds-staging-data`; 4.4's seed is withdrawn; `DT-8`'s isolation check
+     inverts into one that Staging's grants read and never write. `staging/sagemaker/`'s role is unchanged
+     (it reads through `lakeformation:GetDataAccess` and holds S3 on no lake bucket); its comments change.
 4. **The debug window mechanics** (6.1) — recommended: the **`DateLessThan` trust condition from a
    tfvars value defaulting to the past** — approval is a recorded apply, closure is a revert, and no
    standing machinery exists to rot. **Taken 2026-10-16, as recommended**: the default the user's card of

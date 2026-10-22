@@ -489,3 +489,30 @@ ownership message of the morning. Its message is information, not authorization;
   and CloudWatch Logs. `awsds-staging-job-exec` already matches what it reads: Production's shape, the two
   outputs `job_role_arn` and `job_role_name`, read on the whole of `awsds-staging-outputs`, and no
   `iam:PassRole` of its own.
+
+## 2026-10-22 — decisions 1 and 3 carry a revised recommendation
+
+*Claude's hand, the same session, on a message from the orchestrating session "Pendências estágios 7 e 8"
+relaying the user's words in that chat. No AWS call; the decisions stay the user's.*
+
+- **[user] The instruction**, relayed verbatim from the orchestrating session's chat: *"Sim, aplique esta
+  recomendação revisada na sessão do Stage 9."* The revision rests on the user's reasoning on environment
+  isolation: in data science code and artifacts are promoted and data is not, and the governed lake is the
+  one source of truth.
+- **[Claude] Decision 3**, rewritten as "whether Staging keeps a mirror of the lake". Recommended: no
+  mirror; Staging reads the governed lake read-only through Lake Formation, by the LF-Tag share Sandbox
+  holds, writes only to its own catalog, buckets and key, creates the application's schemas from the
+  repository at each deploy, and pins an Iceberg snapshot or reads by time travel for a reproducible
+  test. Controls: no write grant outside Production on the governed catalog, the read scoped by
+  `classification` with `restricted` excluded or filtered (Stage 11 decision 12), Stage 11's data events
+  on every read from outside Production, and the residual accepted in `threat-model.md`. The mirror stays
+  listed as the alternative. Taken, it amends D20's off-the-share and sampled-data sentences and reverses
+  6b 2.3's revocation.
+- **[Claude] Decision 1**, rewritten to cover what Staging reads of Production's outputs. Recommended: a
+  dedicated key, and Staging reads nothing of Production's outputs, model archives included, so Stage 10
+  decision 6 holds as written; a model crosses environments as a release artifact or is retrained in
+  Staging from governed data, its archive carrying its data's classification. The archive read of the
+  2026-10-20 entry is now option (a); the Bucket Keys finding stays.
+- **[Claude] Steps 4.1, 4.4 and 4.6** point at the two recommendations and stand as written until the user
+  decides; no code changed. `staging/sagemaker/`'s role serves either design: it reads through
+  `lakeformation:GetDataAccess` and holds S3 on no lake bucket.
