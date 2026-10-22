@@ -658,3 +658,15 @@ on Terraform 1.15.8 and were saved under `$HOME/tmp/stage-09/`. Nothing was appl
   `docs/PRICING.md` §3, `docs/plan/cost-model.md` and `aws/INDEX.md` follow. `check-network-doc.py`,
   `check-sg-descriptions.py`, `check-plan-refs.py`, `check-index.py` and `slices.py check` (41 slices) are
   clean.
+
+## 2026-10-22 — 4.4 carries Stage 10 decision 20 (d)'s exception
+
+*Claude's hand, the same session, on the orchestrating session's message that the user took Stage 10
+decision 20 (d) in its chat. No AWS call.*
+
+- **[Claude] 4.4** keeps Staging free of any seeded stand-in for governed data, with one exception named:
+  the release job seeds `inbox/app-etl/` of the account's outputs bucket from the bundle's `samples/`, in
+  Staging and Production alike, because `app-etl` is a template with no producer and the samples are its
+  own test input; a real application names its governed source in its release. `production/data/` and
+  `staging/data/` already admit the release role to `inbox/`, and Stage 10 decision 2, taken the same day,
+  confirms the workflow statements their data keys carry.

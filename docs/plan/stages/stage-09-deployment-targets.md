@@ -617,8 +617,12 @@ approval gate (decision 1).
   measured MWAA Serverless workers placed in both AZs reaching Sandbox's single-AZ endpoints, and a
   SageMaker job's `VpcConfig` names both subnets. As in 3.3a, this plane has no proxy, so a missing
   endpoint fails at the firewall or as a timeout, never as a 403.
-- **4.4 — Withdrawn by decision 3**: Staging holds no seeded or synthetic content, and Stage 8's seed job
-  in `examples/app-etl/` is not written. In the Staging leg the deploy creates the application's own
+- **4.4 — Withdrawn by decision 3**: Staging holds no seeded or synthetic stand-in for governed data, and
+  Stage 8's seed job in `examples/app-etl/` is not written. One exception, Stage 10 decision 20 (d), taken
+  by the user on 2026-10-22 for the template: the release job seeds `s3://awsds-<env>-outputs/inbox/app-etl/`
+  from the bundle's `samples/`, in Staging and Production alike, since `app-etl` is a template with no
+  producer and the samples are its own test input, not a stand-in for governed data; a real application
+  names its governed source in its release. In the Staging leg the deploy creates the application's own
   tables from the repository's schemas, after Stage 8's 3.2 and before its 3.3, in 4.1's local database;
   a test then reads them and the governed tables through the share, pinned to an Iceberg snapshot.
 - **4.5 — [Claude⚡] Apply both slices as `awsds-infra-staging`**, machinery rows included.
