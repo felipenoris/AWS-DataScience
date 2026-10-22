@@ -121,3 +121,13 @@ variable "persona_vending_policy_name" {
   type        = string
   nullable    = false
 }
+
+# Generated into the tfvars, never typed (Lesson 14): the object is created by production/data/
+# (persona.tf) under this exact name, and the two sides read one constant, backend.py's
+# PERSONA_PRODUCTION_POLICY_NAME. A reference that does not resolve fails provisioning in Production,
+# not planning here, so that slice applies first.
+variable "persona_production_policy_name" {
+  description = "The customer-managed policy production/data/ creates for DataScientistProdAccess (Stage 9 step 5.1); this slice attaches it by name."
+  type        = string
+  nullable    = false
+}

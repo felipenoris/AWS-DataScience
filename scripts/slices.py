@@ -36,6 +36,9 @@
 #   8. no pipeline profile applies a    layers.pipeline_refusal, when --profile names a deploy role:
 #      sandbox/ slice                   CI never applies into the account people work in (2.4,
 #                                       decision 18)
+#   9. an [E] slice held from up        layers.HELD_FROM_UP, keyed (account, slice), while the [P]
+#      until its [P] state exists       state it reads is unapplied (Stage 9 pass 6's compute); the
+#                                       row leaves with the namespace's apply. `down` is unaffected
 #
 # How it authenticates: AWS_PROFILE is set on each command, from backend.PROFILES or from --profile
 # (Stage 8 step 4.4, the deploy runner's profiles), and no credential is ever exported into this

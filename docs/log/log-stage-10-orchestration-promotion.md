@@ -476,3 +476,22 @@ call.*
   6,144. 1.5 no longer says the statements are in this log.
 - **[Claude] Decision 11's carve-out put to the user** (`007ff267`), before the approval an entry above
   records: a row of `waiting-on-the-user.md`, with `identity/sso/` waiting on the answer.
+
+## 2026-10-22 — the third sitting with the environment down: 2.3's lint wired into the legs, pass 3 placed behind the quotas
+
+*Claude's hand, in the session `stages-8-9-10-review`, on the user's request quoted in Stage 8's entry of
+the same sitting. AWS read as the infrastructure user (`awsds-infra-staging`, `awsds-infra-prod`,
+`awsds-infra-sandbox-1`), reads only, the tunnel down. Nothing applied. Times UTC.*
+
+- **[Claude] `./aws/orchestration.py`**, between 22:00 and 22:10: 0 FAILED; `OR-9` a note, nothing of
+  the layer existing in either account.
+- **[Claude] 2.3 wired**: Stage 8's release job runs the promoted lint on each rendered copy
+  (`release-application.py --lint`, its entry in Stage 8's log), read offline on `v0.2.1`'s bundle
+  against Staging's live state: the rendered copy `ok`, a `dev-env` image refused by the lint's image
+  rule, an empty `LINT_INSTANCE_TYPES` refused by the script. The three rules this stage owns in
+  `awsds-workflows` stay specified and unwritten.
+- **[Claude] Pass 3's placement**: every type inside the ceiling has a training quota of 0 in Staging
+  and Production (Stage 9's reading of 2026-10-22) and Sandbox's is 20, so a training task in `app-etl`'s
+  workflow would pass `test` and fail the Staging leg; 5.1 now puts it in a second workflow with its own
+  chain, written after the quota increase, and pass 3 waits on that increase.
+- **[Claude] The plan**: the Status row, 2.3 and 5.1.

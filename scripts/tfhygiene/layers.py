@@ -637,6 +637,27 @@ SLICES = [
         "the 4-RPU workgroup + its serverless-compute usage limit - no pause exists, so [E]",
         usd_per_hour=1.44,
     ),
+    # Stage 9 step 9.1 - the governed class of D40's warehouse, the Sandbox pair copied into Production
+    # with the same split and the same rank. [P] here is 0.0 for the same reason Sandbox's row is: the
+    # Redshift Managed Storage it bills is per GB-month, outside this column. Written 2026-10-22, not
+    # applied; the namespace's first apply is step 9.1's, by hand.
+    Slice(
+        "production",
+        "warehouse",
+        PERSISTENT,
+        "the governed Redshift namespace, its admin secret, 3 audit groups, the exec role + alarms",
+    ),
+    # Stage 9 step 9.4: the operator raises the compute by hand before the DDL job and takes it down
+    # after; awsds-deploy-prod cannot (the root SCP exempts InfrastructureAccess alone). The ceiling is
+    # Sandbox's reasoning, 4 RPU x 0.36 while a query runs. The slice reads production/warehouse/'s
+    # state, so HELD_FROM_UP (refusal 9) keeps it out of `up` until the namespace is applied.
+    Slice(
+        "production",
+        "warehouse-compute",
+        EPHEMERAL,
+        "the 4-RPU governed workgroup + its serverless-compute usage limit - no pause exists, so [E]",
+        usd_per_hour=1.44,
+    ),
     # Stage 12 steps 1, 2 and 9 - a dashboard, alarms and quota alarms. Nothing here bills by the
     # hour: a dashboard and an alarm bill by the month past CloudWatch's free tier (three dashboards,
     # ten alarms, counted once per bill, docs/PRICING.md 6), and a metric filter's metric only for the
@@ -696,6 +717,18 @@ NEVER_ANY_TARGET_SLICE_NAMES = {"bootstrap"}
 # `down` destroys both normally (Stage 10 step 1.4 relies on it).
 APPLIED_BY_THEIR_OWN_HAND = {"orchestration"}
 APPLICATION_PARENT = "app"
+#
+# Refusal 9 - an [E] slice held from `up` while the [P] state it reads does not exist, keyed by
+# (account, slice) like NEVER_DESTROY, with the reason printed. production/warehouse-compute/ reads
+# production/warehouse/'s state for the namespace, and that namespace is applied by hand at Stage 9
+# pass 6: until then a `make up ENV=production` would stop at this slice's state read, after the
+# endpoints it raised. The row leaves in the sitting that applies the namespace. `down` is unaffected.
+HELD_FROM_UP = {
+    ("production", "warehouse-compute"): (
+        "production/warehouse/ is not applied (Stage 9 pass 6): the namespace this slice reads is "
+        "applied by hand first, and this row leaves with that apply"
+    ),
+}
 #
 # A [D] slice is refused by both targets, and the power state is handled by the dormant hook
 # instead. Without the refusal a [D] row falls into the same list as the [E] ones, the one
@@ -780,6 +813,8 @@ def is_refused(sl: Slice, action: str) -> str | None:
             "refusal 7: up never applies an application or orchestration slice - the pipeline "
             "applies it with the release it runs (Stage 8 step 2.4)"
         )
+    if action == "up" and (sl.account, sl.name) in HELD_FROM_UP:
+        return f"refusal 9: held from up - {HELD_FROM_UP[(sl.account, sl.name)]}"
     if sl.layer == PERSISTENT:
         return "refusal 1: [P] slices are never touched by up or down (D11)"
     if sl.layer == DORMANT:

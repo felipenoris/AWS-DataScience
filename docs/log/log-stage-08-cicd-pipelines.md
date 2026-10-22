@@ -2525,3 +2525,47 @@ the Stage 9 session's revised 4.4 (PR #245), recorded at the end of the sitting.
   creates the application's own tables after 3.2 and before 3.3, and that a test reads them and the
   governed tables through the share, pinned to an Iceberg snapshot. Stage 8 3.3 says so and names 4.4
   again, a reference the entry on the rest of decision 3's text had removed the same minute.
+
+## 2026-10-22 — the third sitting with the environment down: the promoted lint in the legs, Staging's release file kept, 3.8's sequence
+
+*Claude, in the session `stages-8-9-10-review` (the branch `claude/stages-8-9-10-review`), on the user's
+request to review Stages 8, 9 and 10 against their state, Stage 18's lessons and the readings so far, and
+to prepare everything that needs no environment. AWS read as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`, `awsds-infra-sandbox-1`), reads and
+plans only, the tunnel down (`NO_PROXY='*'`). Nothing applied. Times UTC.*
+
+- **[user] The request**: *"Em relação aos estágios 8, 9 e 10, peço fazer o seguinte: verifique o
+  status atual de cada estágio. revise o plano destes estágios considerando o andamento atual, o
+  resultado com as leituras e preparações prévias realizadas para execução destes estágios, e o
+  aprendizado com a implementação do estágio 18. Avalie se as etapas pendentes do plano destes
+  estágios é exequível e faça os ajustes necessários. Faça a preparação necessária para a execução
+  destes estágios com tudo o que pode ser feito sem que seja necessário subir o ambiente. Usuário infra
+  sso logado para as leituras."*
+- **[Claude] The instruments, between 22:00 and 22:10**: `./aws/cicd.py` on the three profiles 0 FAILED,
+  `CI-2` to `CI-9` passing, `CI-1`, `CI-6` notes; `./aws/egress.py` 0 FAILED, the burn 0.000 USD/h in
+  the six profiled accounts, no interface endpoint and no NAT gateway anywhere. `make up ENV=staging
+  ONLY=egress PROFILE=awsds-deploy-staging AUTO=1 DRY=1` prints `staging/egress/` alone, and `make down
+  ENV=staging PROFILE=awsds-deploy-staging AUTO=1 DRY=1` prints `orchestration`, `app/app-etl`, then
+  `egress`, each `gen-tfvars.py --pipeline`; `gen-tfvars.py --pipeline staging app/app-etl` writes the
+  registry profile as `awsds-prod-runner-deploy`, the laptop form `awsds-infra-prod`. The deploy image's
+  recipe rewrites `git@github.com:` to HTTPS (`insteadOf`), so the module sources by tag resolve on the
+  runner; the two `release.auto.tfvars.json` files the legs write are ignored by git.
+- **[Claude] Stage 10 2.3's lint in the legs**: `scripts/release-application.py` gains `--lint`, which
+  runs `awsds-workflows lint <rendered copy> --promoted --prefix s3://<bucket>/applications/<app>/<tag>/
+  --image-repository $IMAGE_REPO --instance-type <each of LINT_INSTANCE_TYPES>` on every rendered
+  workflow before a byte is written, the tool from `AWSDS_WORKFLOWS` (`uvx --from`) or `PATH`; an empty
+  variable fails the job. The first draft read the repository off the image URI, and the negative
+  control passed a `dev-env` image on its own repository name: the repository is the pipeline's
+  `IMAGE_REPO` since. Both legs pass the flag, and `staging-deploy` keeps
+  `staging/orchestration/release.auto.tfvars.json` as an artifact with a `cat`, which it did not: the
+  Staging `VersionId`s 3.7 records would have died with the job. `check-gitlab-ci.py` `OK`.
+- **[Claude] The lint read offline**, 22:14 to 22:16, against the stored `v0.2.1` bundle (read as
+  `awsds-infra-prod`, SHA256 `7fb374d1…5fff`, the log of 2026-10-19's) and Staging's live state as
+  `awsds-infra-staging`, with a stand-in digest: `release-application.py staging … --lint --dry-run` rendered
+  the workflow, the lint read `ok: 1 arquivo(s)`, seven objects and the manifest were listed, the YAML the
+  one file whose SHA256 differs from the bundle's; with `LINT_INSTANCE_TYPES` empty the run was refused
+  before the lint; with the image under `awsds-prod-ecr-dev-env` the lint refused *"ImageUri do
+  repositório awsds-prod-ecr-dev-env, e não de awsds-prod-ecr-app-etl"*, exit 1.
+- **[Claude] 3.8**: the by-hand sequence written into the step, for a re-apply after 3.7 (no copy, the
+  objects persist) and for a tag the pipeline never promoted (the copy first, with `--lint`).
+- **[Claude] The plan**: the Status row, 3.2, pass 4's code bullet, 3.8 and Validation 2.

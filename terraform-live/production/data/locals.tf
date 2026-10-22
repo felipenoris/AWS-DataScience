@@ -38,10 +38,12 @@ locals {
   deploy_prefixes = ["applications/", "inbox/"]
 
   # The log groups the data key encrypts or will: the job groups production/sagemaker/ declares and
-  # associates with the key, and Stage 10's workflow and chain groups.
+  # associates with the key, Stage 10's workflow and chain groups, and the governed warehouse's three
+  # audit groups (Stage 9 step 9.1, decision 8), under Redshift's /aws/redshift/ prefix.
   log_group_patterns = [
     "arn:${local.partition}:logs:${var.region}:${local.account_id}:log-group:/aws/sagemaker/*",
     "arn:${local.partition}:logs:${var.region}:${local.account_id}:log-group:/aws-glue/*",
+    "arn:${local.partition}:logs:${var.region}:${local.account_id}:log-group:/aws/redshift/*",
     "arn:${local.partition}:logs:${var.region}:${local.account_id}:log-group:/awsds/${var.env}/wf/*",
     "arn:${local.partition}:logs:${var.region}:${local.account_id}:log-group:/aws/vendedlogs/states/awsds-${var.env}-chains",
   ]

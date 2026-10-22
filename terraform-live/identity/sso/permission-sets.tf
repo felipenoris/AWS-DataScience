@@ -180,3 +180,19 @@ resource "aws_ssoadmin_customer_managed_policy_attachment" "persona_vending" {
     name = var.persona_vending_policy_name
   }
 }
+
+# Stage 9 step 5.1 - the production persona's allows on Production's data platform, the object
+# production/data/ creates (persona.tf) under the generated name. The same reason as the attachment
+# above, measured on 2026-10-22: inline, those allows took DataScientistProdAccess to 10,550
+# characters against the 10,240 ceiling. The set is assigned in Production alone (D18), so the
+# reference resolves in one account, where the policy names that account's own objects. The
+# apply order is production/data/ first: a reference to a policy that does not exist fails
+# provisioning in that account.
+resource "aws_ssoadmin_customer_managed_policy_attachment" "persona_production" {
+  instance_arn       = local.instance_arn
+  permission_set_arn = aws_ssoadmin_permission_set.persona["data_scientist_prod"].arn
+
+  customer_managed_policy_reference {
+    name = var.persona_production_policy_name
+  }
+}

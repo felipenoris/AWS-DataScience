@@ -810,3 +810,55 @@ beyond the readings recorded above.*
 - **[Claude] `docs/PRICING.md`**: the KMS row counts 17 keys with the two deploy targets' data keys, and
   the monthly floor rises by 2 USD in both Regions (`sa-east-1` ~USD 32-45, central ~38; `us-west-2`
   ~USD 27-36, central ~32), in §2 and in the regional comparison.
+
+## 2026-10-22 — the third sitting with the environment down: 5.1 as a managed policy, the warehouse pair written, 2.4 has no job
+
+*Claude's hand, in the session `stages-8-9-10-review`, on the user's request quoted in Stage 8's entry of
+the same sitting. AWS read as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`,
+`awsds-infra-staging`, `awsds-infra-data`, `awsds-infra-identity`, `awsds-infra-sandbox-1`), reads and
+plans only, the tunnel down (`NO_PROXY='*'`); the plans saved outside the repository. Nothing applied.
+Times UTC.*
+
+- **[Claude] The instruments, between 22:00 and 22:10**: `./aws/deploytargets.py` 0 FAILED, `DT-10` a
+  note (`DataScientistProdAccess`: the three markers `no`, owed by 5.1); `./aws/datalake.py` 0 FAILED,
+  `DL-5` 4 / TRUE.
+- **[Claude] 5.1, first as inline statements**: the six allows and the two Redshift denies, with the
+  ARNs read from `production/data/` and `production/sagemaker/`'s states through a `deployment_target`
+  map. The plan as `awsds-infra-identity` at 22:14:09 failed the slice's own precondition:
+  *"Inline policy for DataScientistProdAccess is 10550 characters, over the 10240 the plan allows. See
+  step 5.2: the way out is a customer-managed policy, not a larger threshold."* The set read 7,098
+  before. The set also lacked `lakeformation:GetDataAccess` (read in the document), without which 2.3's
+  regrants reach nothing.
+- **[Claude] 5.1 as written**: `production/data/persona.tf`, the `aws_iam_policy`
+  `awsds-prod-data-scientist` (`backend.py`'s `PERSONA_PRODUCTION_POLICY_NAME`, generated into both
+  slices) with seven statements on the slice's own objects: the six Athena query and history actions on
+  `awsds-prod-athena`, `GetObject` and `GetObjectVersion` under `PERSONA_READ_PREFIXES`
+  (`app-etl/outbox/`, one list in `backend.py`, generated into `production/data/` for the bucket policy
+  and the policy alike), `ListBucket` held to those prefixes, the results' read and write under
+  `results/` of `awsds-prod-derived`, `Decrypt` and `GenerateDataKey` on the data key through S3, and
+  `sts:AssumeRole` on `awsds-prod-debug`; `identity/sso/` attaches it to `data_scientist_prod` by name,
+  keeps `ReadThroughLakeFormation` inline, and composes the two Redshift denies from the new fragment
+  `redshift_denies`, which both data-science sets read. `production/data/`'s key policy admits
+  `/aws/redshift/*` for 9.1's audit groups. Plans: `production/data/` as `awsds-infra-prod` at 22:22:18
+  *"Plan: 1 to add, 1 to change, 0 to destroy."* (the policy; the key policy's CloudWatch statement);
+  `identity/sso/` as `awsds-infra-identity` at 22:22:31 *"Plan: 1 to add, 1 to change, 0 to destroy."*
+  (the attachment; `DataScientistProdAccess` 7,098 to 8,438), `DataScientistAccess` unchanged.
+- **[Claude] `DT-10` amended**: it reads the set's customer-managed policy references and, when
+  `awsds-prod-data-scientist` is among them, the policy's default version in Production, and searches
+  the markers in both documents; live at 22:28: a note, the markers `no` and the policy `not attached`,
+  0 failed.
+- **[Claude] 9.1, written by a fork of this session**: `terraform-live/production/warehouse/` and
+  `production/warehouse-compute/` from the Sandbox slices with the step's differences; the four states'
+  outputs read at 22:08:20; the namespace planned as `awsds-infra-prod` at 22:13:52 to 22:14:12,
+  *"Plan: 9 to add, 0 to change, 0 to destroy."* (three log groups, two alarms, the role, the namespace,
+  the security group, the ingress rule); the compute's plan at 22:14:16 to 22:14:26 *"Error: Unable to
+  find remote state … No stored state was found"* for `production/warehouse/`, the expected reading;
+  `awsds-prod-tfstate` holds no object under `production/warehouse` (22:14:51). `layers.py` gains the
+  two rows and refusal 9, `HELD_FROM_UP`, keyed `("production", "warehouse-compute")`: `make up
+  ENV=production DRY=1` prints the refusal and raises nothing of it. `docs/NETWORK.md` gains the pair's
+  rows in §2, §2.1 and §9; `check-network-doc.py` clean.
+- **[Claude] 2.4 read against the code**: no job writes `curated.trades`. The pipeline's Glue job runs
+  `glue/transform.py` (inbox to one CSV), and the template carries no schema, so 2.4 to 2.6 have no job
+  to run; the step now specifies the proof job (`awsds-prod-producer-proof`, `[P]` in
+  `production/sagemaker/`, its scripts under `applications/stage-09-proofs/v0/glue/`), unwritten.
+- **[Claude] The plan**: the Status row, the build table, 2.4, 4.6, 5.1, 5.3 and 9.1.

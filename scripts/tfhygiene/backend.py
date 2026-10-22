@@ -303,6 +303,22 @@ VPN_HOST_SLICE = ("production", "networking")
 DATA_CONSUMERS = ["sandbox", "staging", "production"]
 DATA_PRODUCERS = ["production"]
 
+# The application-output prefixes DataScientistProdAccess reads from any network (Stage 9 steps 1.1
+# and 5.1, D39), each ending in "/": each application's outbox, where its result file lands (Stage 10
+# decision 6's render table). One list, two readers: production/data/ writes the bucket policy's
+# principal branch from it, and identity/sso/ writes the persona's own allow from it, so the two
+# halves of the read (Lesson 28) cannot name different prefixes (Lesson 33).
+PERSONA_READ_PREFIXES = ["app-etl/outbox/"]
+
+# The customer-managed policy that carries DataScientistProdAccess's Stage 9 allows (its step 5.1):
+# created by production/data/ with that slice's own objects' ARNs, attached to the set by name in
+# identity/sso/. A managed policy because the set's inline document, with the allows in it, rendered
+# 10,550 characters against the 10,240 an inline role policy holds (planned 2026-10-22): the vending
+# policy's precedent (PERSONA_VENDING_POLICY_NAME). It carries the account's token, unlike the
+# vending policy's `org`: the set is assigned in Production alone (D18), so one name resolves in one
+# account and names the objects of that account. Generated into both slices' tfvars, never typed.
+PERSONA_PRODUCTION_POLICY_NAME = "awsds-prod-data-scientist"
+
 # The slice holding the VPC whose [P] S3 gateway endpoint the lake trusts for a consumer, where it is
 # not foundation/: Production's foundation/ is VPC-SharedServices (GitLab, the runners), and its jobs
 # run in VPC-Workloads (Stage 9 step 1.4). A row read from the wrong slice fails INT-05 with the
@@ -832,6 +848,11 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         # Stage 9 steps 1.1 and 4.1 - a deployment target's data/ slice reads its own sagemaker/,
         # foundation/ and VPC slice by the account folder, for the job role, the deploy role and the
         # gateway endpoint its outputs bucket trusts.
+        # Stage 9 step 5.1: the producer's bucket policy names the persona's read prefixes from the one
+        # list identity/sso/ reads too.
+        if account in DATA_PRODUCERS:
+            values["persona_read_prefixes"] = list(PERSONA_READ_PREFIXES)
+            values["persona_policy_name"] = PERSONA_PRODUCTION_POLICY_NAME
         if account in DEPLOY_ROLES and account not in SMUS_MEMBERS:
             values["account_folder"] = account
             values["vpc_slice"] = DATA_CONSUMER_VPC_SLICE.get(account, "foundation")
@@ -1033,6 +1054,9 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         # is created by each member's foundation/ (the emission above), and the apply order is
         # members first - a reference to a policy that does not exist yet fails provisioning.
         values["persona_vending_policy_name"] = PERSONA_VENDING_POLICY_NAME
+        # Stage 9 step 5.1: the production persona's managed policy, created by production/data/,
+        # attached here by name (the reference half, the vending policy's shape).
+        values["persona_production_policy_name"] = PERSONA_PRODUCTION_POLICY_NAME
 
     return values
 
@@ -1178,6 +1202,13 @@ def render_tfvars(account: str, slice_name: str, pipeline: bool = False) -> str:
         out += f"readers = {{\n{rows}}}\n"
     if "persona_vending_policy_name" in v:
         out += f'persona_vending_policy_name = "{v["persona_vending_policy_name"]}"\n'
+    if "persona_read_prefixes" in v:
+        prefixes = ", ".join(f'"{x}"' for x in v["persona_read_prefixes"])
+        out += f"persona_read_prefixes = [{prefixes}]\n"
+    if "persona_policy_name" in v:
+        out += f'persona_policy_name = "{v["persona_policy_name"]}"\n'
+    if "persona_production_policy_name" in v:
+        out += f'persona_production_policy_name = "{v["persona_production_policy_name"]}"\n'
     if "identity_profile" in v:
         out += f'identity_profile = "{v["identity_profile"]}"\n'
     if "deploy_role_name" in v:
