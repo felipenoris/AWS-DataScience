@@ -1179,16 +1179,17 @@ Each is decided during the stage and written into `docs/log/log-stage-10-orchest
     Production's schedule is `ENABLED` and 6.1 is its proof. Written as recommended, pending the user.
 20. **The render's tool and the names it maps** (2.4, decision 6; one contract with Stage 8's application
     slice). The table below maps every value of `examples/app-etl/workflows/app-etl.yaml` the CLI resolves
-    from a project; four rows are choices. Recommended: (a) the Glue job, `job_name: app-etl-{proj.id}`,
+    from a project. Two rows and the tool are choices; two rows follow Stage 9 decision 12 (a), taken by the
+    user on 2026-10-22. Recommended: (a) the Glue job, `job_name: app-etl-{proj.id}`,
     becomes **`awsds-<env>-app-etl`**, conventions §6's `<project>-<env>-<component>`, the name
     `<env>/app/app-etl/` declares and the execution role's `glue:` grant names; the alternative is
-    `app-etl-<env>`, dev's shape with the env token. (b) The Glue task's `create_job_kwargs` drops with its two
-    `datazone-glue-network-connection-*` connections and its log prefix: the slice declares the job and its
-    network, recommended one `NETWORK` connection per private subnet, `awsds-<env>-app-etl-<zone id>`, on a
-    security group whose inbound rule references itself, Glue's requirement (Stage 8's slice). (c) The
-    processing job's `{env.PROJECT_SG}` becomes the account's private-tier group,
-    `tier_security_group_ids["private"]` of `foundation/` or `workloads/`, no ingress and all egress, enough
-    for a job under network isolation; the alternative is a job group in `<env>/sagemaker/` (Stage 9). (d)
+    `app-etl-<env>`, dev's shape with the env token. (b) Settled by Stage 9 decision 12 (a): the Glue task's
+    `create_job_kwargs` drops with its two `datazone-glue-network-connection-*` connections and its log
+    prefix, and the application slice declares the job on `glue_connection_name`, an output of
+    `*/sagemaker/`, declaring no connection and no group, since an `[E]` group would break Stage 9 9.1's
+    group-to-group `5439` rule at every teardown. (c) Settled by the same decision: the processing job's
+    `{env.PROJECT_SG}` becomes `job_security_group_id` of `*/sagemaker/`, the account's one job group for
+    its Glue and SageMaker jobs. (d)
     The input, `{s3Uri}app-etl/inbox/`, becomes `s3://awsds-<env>-outputs/inbox/app-etl/`, 3.6's inbox,
     which the release job seeds from the bundle's `samples/` as the CLI does in `dev` and `test`; `app-etl`
     is a template with no producer, so Production runs on the samples too until an application names its
@@ -1214,11 +1215,11 @@ lint refuses any `{proj.*}`, `{env.*}` or `{domain.*}` left in it (2.3).
 | `...app-etl/outbox/report.json` | the same | `s3://awsds-<env>-outputs/app-etl/outbox/report.json` |
 | `{proj.iam_role_arn}`, the processing job's `RoleArn` | the project role | `awsds-<env>-job-exec` (Stage 8 2.5) |
 | `job_name: app-etl-{proj.id}` | `app-etl-<project id>` | `awsds-<env>-app-etl` (decision 20 a) |
-| the Glue task's `job_desc`, `script_location`, `iam_role_arn`, `update_config`, `create_job_kwargs` | read by the operator, which creates the job | dropped: the application slice declares the job (D41 item 9) |
+| the Glue task's `job_desc`, `script_location`, `iam_role_arn`, `update_config`, `create_job_kwargs` | read by the operator, which creates the job | dropped: the application slice declares the job on `glue_connection_name` of `*/sagemaker/` (D41 item 9, Stage 9 decision 12 (a)) |
 | the processing job's tag `AmazonDataZoneProject: {proj.id}` | the project id | dropped: no project in a deployment target (D41 item 2) |
 | `{env.JOB_IMAGE_URI}` | the stage variable | the image by digest the release built (Stage 8 2.5) |
 | `{env.SUBNET_AZ1}`, `{env.SUBNET_AZ2}` | Sandbox's private subnets | the account's private subnets by zone id, from `foundation/` or `workloads/` |
-| `{env.PROJECT_SG}` | the project's group | the private-tier group (decision 20 c) |
+| `{env.PROJECT_SG}` | the project's group | `job_security_group_id` of `*/sagemaker/` (Stage 9 decision 12 (a)) |
 | `{env.PROJECT_KEY_ARN}` | the project key | the account data key, `alias/awsds-<env>-data` (decision 2) |
 | `{domain.region}` | the domain's Region | the account's Region |
 

@@ -323,3 +323,17 @@ preparação", PR #245), with no AWS call of its own.*
   deploy role and `InfrastructureAccess`; `awsds-staging-job-exec` is written in Production's shape with
   outputs `job_role_arn` and `job_role_name`, its Glue trust statement without `aws:SourceAccount`, as
   Production's, planned 8 to add.
+
+## 2026-10-22 — decision 20's network rows follow Stage 9 decision 12 (a)
+
+*Claude's hand, the same session, on the orchestrating session's message that the user took Stage 9
+decision 12 as recommended, option (a), the same day (that stage's PR #245 records it). No AWS call; no
+Stage 10 decision was taken.*
+
+- **[Claude] Decision 20 (b) and (c) settled by it**: the Glue network connection and the job security
+  group are `[P]` in `*/sagemaker/`, outputs `glue_connection_name` and `job_security_group_id`, so the
+  application slice declares the Glue job on that connection and declares neither object, and the
+  processing job's `{env.PROJECT_SG}` renders as that group. The stage file's earlier recommendation of
+  the day, one connection per subnet in the application slice and the private-tier group for the
+  processing job, is withdrawn; decision 6's render table follows. Decision 20 stays open for (a), (d) and
+  the tool. The orchestration slices' `applications` locals name no network object and are unchanged.
