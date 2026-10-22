@@ -1768,3 +1768,50 @@ AWS or in GitLab. Times are UTC.*
   the kms:CreateGrant action"* (23:57:00Z) and one `ecr:BatchGetImage` `InvalidParameterException` on
   `repositoryName` (23:57:47Z) beside three that passed, the job completing. 6.2's worker side: the deny
   binds no worker, and DataZone's sessions for the deploy role read.
+- **[user] B4**: `stage-18-table-job` pushed onto `stage-18-staging` and the new pipeline's `stage-18-deploy`
+  started; *"rodou no job 253"*, its log pasted: the run `yOhIv1kI8QInkMp` with `"TABLE_DATABASE":
+  "glue_db_d6ogysnx78dguo"` among its overrides, workflow version `64c056fa…`, *"00:31:54Z SUCCESS"*,
+  `"Duration": 814`, *"Job succeeded"*.
+- **[Claude] 7.2 step 1 read** (00:33Z): Staging's CloudTrail holds one `glue:CreateTable` at 00:20:47Z by the
+  project role's `GlueJobRunnerSession`, no source identity, no error: `trades` in `glue_db_d6ogysnx78dguo`,
+  `MANAGED_TABLE`, located at `…/d1veybt5oak4uo/dev/data/catalogs/trades`, where one Parquet object of 2,083
+  bytes landed at 00:20:45Z. The `CREATE_TABLE` conditioned on `context.datazone.projectId` admitted the
+  Glue job's session, so decision 14's fallback did not run. `glue get-table` as the infrastructure user is
+  no reading of existence for a table: `trades` and a made-up name both answer *"Insufficient Lake
+  Formation permission(s): Required Describe"*, where a database's two answers differ.
+- **[Claude] 7.2 step 2**, no other Claude session running: `start-data-source-run` on `aqm5tebc42cufk` at
+  00:34:04Z, run `dfz6l20pa95634` `SUCCESS` from 00:34:07Z to 00:34:09Z, one asset added, none failed; the
+  asset `aen4mge50m070w`, `trades`, `amazon.datazone.GlueTableAssetType`; `create-listing-change-set
+  --action PUBLISH` at 00:34:23Z, listing `bx8v3rafykv3ww` `ACTIVE` by 00:34:32Z, and Sandbox's
+  InfrastructureAccess finds it with `search-listings`, owned by `d1veybt5oak4uo`.
+- **[Claude] The data source run's session** (CloudTrail 00:33:30 to 00:35:30Z): DataZone assumed the project
+  role as `SYSTEM@bujd259b8g9zps`, source identity `SYSTEM`, which called `glue:GetDatabase`, `GetTables` and
+  `lakeformation:GetResourceLFTags`, none refused.
+- **[user] B6**: *"Pedi a assinatura de trades a partir do test-experimentation, como Data Scientist User.
+  Siga com a aprovação."*
+- **[Claude] The approval**: the request `4bpkmvgbs7escw` `PENDING`, created 00:41:14Z by the Data Scientist
+  User's profile for the project `test-experimentation` on the listing `bx8v3rafykv3ww`, reason *"testing"*;
+  `accept-subscription-request` as `awsds-infra-staging` at 00:41:38Z, `ACCEPTED`. The subscription
+  `5q2t8pgzp9ekr4` `APPROVED`; its grant `b20liz4386llow` to the target `ai0iw2p6vlxw5s` `IN_PROGRESS` at
+  00:42:04Z and `COMPLETED` at 00:42:53Z, the asset `GRANTED`. Staging's Lake Formation settings still read
+  `CROSS_ACCOUNT_VERSION` 1 with the two SMUS admins: decision 12's version was never raised.
+- **[Claude] What the fulfilment wrote in Staging** (CloudTrail 00:41 to 00:46Z): DataZone assumed Staging's
+  project role fourteen times as `AWSDataZone-Subscriptions`, no source identity and no session tag, and
+  that session called `glue:GetTable` (6), `lakeformation:ListPermissions` (5), then at 00:42:22Z
+  `BatchGrantPermissions`, `SELECT` on `glue_db_d6ogysnx78dguo.trades` to `<acct>:IAMPrincipals` (Sandbox)
+  under *"context.datazone.projectId=="4gqfau9xuo6e4w""*, with `"parameters":{"CROSS_ACCOUNT_VERSION":"5"}`
+  in the grant itself; `ram:CreateResourceShare` `LakeFormation-V5-SZM42MYX4P`, resources Staging's
+  `catalog`, `database/*` and `table/*/*`, principal Sandbox's account, `allowExternalPrincipals` false, with
+  `AWSRAMLFEnabledGlueTableReadWrite`, `AWSRAMPermissionGlueTableReadWriteForDatabase` and `…ForCatalog`; and
+  at 00:42:23Z three `glue:PutResourcePolicy`, the Data Catalog resource policy of Staging, which held none on
+  2026-10-21, now naming Sandbox's account for the table and partition actions of those three
+  permissions, reads and writes. Nothing refused: the person-session deny covers `glue:Put*` and binds a
+  session with a source identity, which these do not carry.
+- **[Claude] What the fulfilment wrote in Sandbox** (Sandbox's CloudTrail): `test-experimentation`'s role
+  `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw`, assumed by DataZone as `AWSDataZone-Subscriptions`, no
+  source identity, created at 00:42:41Z the resource link `trades` in `glue_db_4zojr4rr6bmnww`, its target
+  Staging's `glue_db_d6ogysnx78dguo.trades`, and granted `DESCRIBE` on the link to `<acct>:IAMPrincipals`
+  under that project's context. Read after it: the link listed with its target, the project role holding
+  `ALL`, `DESCRIBE` and `DROP` with the grant option on it, the RAM share `ACTIVE` among Sandbox's received
+  ones with its three wildcard resources `AVAILABLE`, and Sandbox's `list-permissions` on Staging's table
+  empty, the cross-account `SELECT` being Staging's grant.
