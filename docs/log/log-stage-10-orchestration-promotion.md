@@ -432,3 +432,21 @@ call of this session's.*
   `DescribeKey`), and the release job's copy writes `inbox/*`, decision 20 (d)'s seed; the access policy
   measures 4,490 characters in Staging of 6,144.
 - **[Claude] Recorded** in decision 11 and in 1.5's grant.
+
+## 2026-10-22 — the application ceilings applied; the slices' plans read again
+
+*Claude's hand, the same session, after the orchestrating session reported its applies of
+`production/foundation/`, `staging/foundation/` and `identity/sso/` on the user's authorization in its chat
+(each re-plan `No changes`, `./aws/cicd.py` 0 FAILED). Reads and plans as the infrastructure user
+(`awsds-infra-prod`, `awsds-infra-staging`); nothing applied. Times UTC.*
+
+- **[Claude] The ceilings**, 19:32:28Z: `iam get-policy` reads `awsds-prod-app-boundary` at `v1`, created
+  2026-10-22T19:27:16Z, and `awsds-staging-app-boundary` at `v1`, created 19:27:35Z.
+- **[Claude] The slices**, from the tag: with no release, each plan reads *"No changes. Your infrastructure
+  matches the configuration."* With the stand-in release, the application ceiling's lookup now passes, and
+  each plan stops at Stage 9's objects alone: Production *"reading KMS Alias (alias/awsds-prod-data): empty
+  result"*; Staging *"Unable to find remote state"* (`staging/sagemaker/`) and *"reading KMS Alias
+  (alias/awsds-staging-data): empty result"*. The Stage 9 session began its applies of those objects at
+  the same time, so no plan was taken after this one.
+- **[Claude] Recorded**: the stage file's status, prerequisites, 1.5's grant and decision 11 say what is
+  applied.
