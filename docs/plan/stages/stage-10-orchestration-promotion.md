@@ -396,8 +396,11 @@ run, plus the `[E]` endpoint set while tasks are in the VPC.
   **[Claude⚡]** Prove the by-hand parity once as `awsds-infra-prod` (Stage 8 3.8's rule: a slice that only
   applies from CI is as broken as one that only applies by hand).
 
-  **The grant, enumerated on 2026-10-22** for Stage 8 to write in each `*/foundation/` (its 4.1; the
-  statements are this stage's log of that day). The deploy role's ceiling holds only the six actions
+  **The grant, enumerated on 2026-10-22** for Stage 8 to write in each `*/foundation/` (its 4.1), written
+  there the same day in PR #244 as two customer-managed policies per account,
+  `awsds-<env>-deploy-orchestration-resources` and `-access`: the grant measures 7,836 characters in
+  Staging, white space not counted, above the 6,144 a managed policy holds, so an amendment keeps each
+  policy under 6,144. The deploy role's ceiling holds only the six actions
   `iam:PermissionsBoundary` is evaluated for to the application ceiling, so every other role action is
   scoped here by the role's name. The pipeline clones `awsds/infrastructure` for these applies (Stage 8
   decision 2, taken 2026-10-22). Read against the registry's handlers for `AWS::MWAAServerless::Workflow`
