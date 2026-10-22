@@ -2162,3 +2162,31 @@ for `./aws/cicd.py`), reads only; no other Claude session held this stage. An ac
   approvers' header; `gitlab.md`'s mirror; `upstream-releases.md`'s Terraform row; Stage 11's 5.1 and 5.2
   (the release bucket, from decision 20); `waiting-on-the-user.md`, `CLAUDE.md`, `GENERAL_PLAN.md` and the
   stage index.
+
+## 2026-10-22 — decision 26 taken: no rule for an application's base pin
+
+*Claude, in the session `stages-7-8-pending`, the same sitting. AWS read as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-sandbox-1`), reads only. Times UTC.*
+
+- **[user] The question**: *"Pode detalhar a decisão 26, as opções e recomendação?"*
+- **[Claude] The two bases compared**, `ecr batch-get-image` on `awsds-prod-ecr-base` for
+  `sha256:94359041…1975` (`default-v0.6.0`, `app-etl`'s pin) and `sha256:681dcb20…f23e`
+  (`default-v0.8.0-7c59998c`, version 9's): 30 layers each, layers 1 to 25 identical, 26 to 30 different,
+  each within 556 bytes of its counterpart (1,087,261 against 1,087,817 the largest). The base recipe
+  between `a3f698bf` (`default-v0.6.0`'s commit) and `HEAD` differs in three comment lines, one error
+  message and the `org.opencontainers.image.source` label.
+- **[Claude] The options put to the user**: (a) the pin moves at the application's own release, the
+  recommendation; (b) a `dev-env` release opening a merge request on each application; (c) a moving tag;
+  (d) no rule; (e) the application naming its development version; and a drift note in `./aws/cicd.py`
+  as a complement to (a).
+- **[user] The decision**: *"Não deveria haver regra. Se a aplicação está estacionada numa versão antiga do
+  Base, isso deve permanecer até que o desenvolvedor atualize explicitamente. O desenvolvedor deverá ter a
+  disciplina de selecionar versão do space que seja equivalente ao base da aplicação."*
+- **[Claude] What the decision meets**, `sagemaker list-image-versions` and `describe-image-version` on
+  `awsds-sandbox-dev-env` in `<Sandbox Account 1>`: versions 7 (`default-v0.7.1-c268de48`), 8
+  (`sha256:38f4864c…dd6f`) and 9 (`sha256:b788dbd9…1b87`). Version 6, built on `app-etl`'s base, was
+  destroyed on 2026-10-15 at 01:59:57 (this log), so its equivalent versions are 7 to 9 by the layer
+  reading above. `release/versions.py`'s `retire` keeps the newest 10 and every version a space or a
+  domain names, and reads no application's pin.
+- **[Claude] Recorded**: decision 26 taken, with those facts; the stage's status and 2.2;
+  `waiting-on-the-user.md`'s row removed; `CLAUDE.md`, `GENERAL_PLAN.md` and the stage index.

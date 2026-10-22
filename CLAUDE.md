@@ -373,8 +373,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   notes' backticks, fixed in MR !4. Pass 4 runs after Stage 9 with Stage 10's passes 1-2
   (decision 23). Taken by the user 2026-10-22, as recommended: decision 2 keeps `awsds/infrastructure` for
   pass 4, 2.5 makes Stage 9's `awsds-<env>-job-exec` the Staging and Production job role, 3.9 writes no S3
-  grant, decision 20's `If-None-Match` deny is not written; decision 26, an application's base pin, is the
-  user's. `staging/probes/` is retired, so `make up ENV=staging` raises `egress/` alone, and the template's
+  grant, decision 20's `If-None-Match` deny is not written; decision 26 leaves an application's base pin
+  to its developer, who works in a space on an equivalent version. `staging/probes/` is retired, so `make up ENV=staging` raises `egress/` alone, and the template's
   lint passes `--image-repository` and the ceiling's seven instance types (PR #186), in GitLab since MR !2.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
