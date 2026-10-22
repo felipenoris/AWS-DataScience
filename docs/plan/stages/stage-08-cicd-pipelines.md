@@ -29,8 +29,8 @@ the container image (ECR), the model version (Model Registry, from Stage 9), the
 
 | Where | What | Layer |
 |---|---|---|
-| `production/foundation/` (amended) | the deploy runner's role, instance profile and token container (4.3's anchors), the role's read of `awsds-prod-releases` (decision 20), `awsds-deploy-prod` (INT-08), the misuse alarm and `awsds-prod-alerts` (decision 5), the test runner's token container (decision 11), and `awsds-prod-app-boundary`, the ceiling of every role a pipeline apply creates (3.0, not written) | `[P]` |
-| `staging/foundation/` (amended, **after 6b**) | `awsds-deploy-staging` (INT-08), the same alarm and `awsds-staging-alerts`, and `awsds-staging-app-boundary` (3.0, not written) | `[P]` |
+| `production/foundation/` (amended) | the deploy runner's role, instance profile and token container (4.3's anchors), the role's read of `awsds-prod-releases` (decision 20), `awsds-deploy-prod` (INT-08), the misuse alarm and `awsds-prod-alerts` (decision 5), the test runner's token container (decision 11), `awsds-prod-app-boundary`, the ceiling of every role a pipeline apply creates (3.0), and the deploy role's application halves (4.1), both written and planned 2026-10-22, not applied | `[P]` |
+| `staging/foundation/` (amended, **after 6b**) | `awsds-deploy-staging` (INT-08), the same alarm and `awsds-staging-alerts`, `awsds-staging-app-boundary` (3.0) and the deploy role's application halves (4.1), both written and planned 2026-10-22, not applied | `[P]` |
 | `sandbox/foundation/` (amended, one per unit) | the dev-env deploy role (INT-18), one per target | `[P]` |
 | `sandbox/workflows/` (amended) | `awsds-deploy-sandbox-test`, the CI/CD CLI's `test` deploy role (2.5, decision 19, INT-25): trusted by the deploy runner's role alone, confined to the `test` project's storage prefix, key, log groups and workflows, passing that project's role alone under its own ceiling `awsds-sandbox-deploy-test-boundary` | `[P]` |
 | `terraform-modules/deploy-role/` (new, `deploy-role-v0.1.0`; `v0.5.0` since decision 19) | one deploy role: its trust, its ceiling (named by the caller since `v0.5.0`, so two roles share an account), its state access and its misuse rule, one document for every account the deploy runner reaches | — |
@@ -635,8 +635,9 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   [Stage 18](stage-18-staging-deployment-project.md)'s 4.4, which needs it in that stage's window (its
   log): `APP_REGISTRY_CONSUMERS` gains `staging`, and `production/registry/` an alias and identity
   read for it; the plan changes the `app-etl` repository's pull policy alone. `awsds-deploy-staging`
-  itself landed in `staging/foundation/` on 2026-10-12 (4.1). The ceiling half is not written (read
-  2026-10-22: absent in both accounts). Its content, handed over by Stage 10 on 2026-10-22, is an
+  itself landed in `staging/foundation/` on 2026-10-12 (4.1). The ceiling half is written and planned, not
+  applied (2026-10-22, 4.1's status below): `app-boundary.tf` in each `foundation/`, one file copied byte
+  for byte. Its content, handed over by Stage 10 on 2026-10-22, is an
   allow-list of what that stage's workflow execution and chain roles do (its 1.3, 3.4, 3.6):
   `airflow-serverless:GetWorkflowRun` and `StartWorkflowRun`, the Glue job-run actions (`StartJobRun`,
   `GetJob`, `GetJobRun`, `GetJobRuns`, `BatchStopJobRun`), SageMaker processing and training jobs
@@ -830,8 +831,9 @@ the approval, and 4.6's alarm.
 - **4.1 — The application halves, specified 2026-10-22 by Stages 9 and 10**, every decision of both stages
   taken that day; Stage 9 decision 12 puts the Glue connection and the job security group in
   `*/sagemaker/`, which the application slice references:
-  - the orchestration grant on both roles, an inline `apply-orchestration`, is Stage 10 1.5's enumeration,
-    its single home: Cloud Control, the workflows, the definitions home, the data key, the log groups and
+  - the orchestration grant on both roles, two customer-managed policies the infrastructure user attaches
+    (`awsds-<env>-deploy-orchestration-resources` and `-access`), is Stage 10 1.5's enumeration, its
+    single home: Cloud Control, the workflows, the definitions home, the data key, the log groups and
     their delivery, the `wf-` and `chain-` roles scoped by name, one `iam:PassRole` per service, the state
     machines, schedules and rules, the workers' security group by its `Name` tag, Production's
     `iam:CreateServiceLinkedRole` until the role exists, and Staging's `states:StartExecution` and
@@ -845,19 +847,34 @@ the approval, and 4.6's alarm.
   - the module call: `state_prefixes` gain `<folder>/orchestration/`; `state_read_keys` are
     `staging/foundation/` and `staging/sagemaker/` in Staging, `workloads/`, `foundation/` and
     `sagemaker/` in Production, and each account's `data/` once Stage 9 writes it;
-  - IAM caps a role's inline policies at 10,240 characters together: the plan shows the size, and past
-    it `apply-orchestration` becomes a customer-managed policy the infrastructure user attaches. Each role **carries a boundary itself** — INT-14 later has to apply `awscc`
+  - IAM caps a role's inline policies at 10,240 characters together and a managed policy at 6,144, white
+    space not counted: the grant measured 7,836 in Staging's plan on 2026-10-22, where the role's inline
+    documents would have totalled 12,483, so it is two managed policies split by content. Each role **carries a boundary itself** — INT-14 later has to apply `awscc`
   resources under it (Stage 10), which is where the boundary's shape gets its real test. **Two later stages
   amend this policy, and say so here so the promise exists at both ends (Lesson 34)**: Stage 9 step 9.4 adds
   the Redshift Data API grant the DDL needs, and Stage 10 step 1.5 the saver's reads of a workflow's
   definition and code and the `PassRole` of its execution role, with the chain layer's `states:`,
-  `scheduler:` and `events:` actions and the `PassRole` of the three chain roles (D41), `cloudcontrol:`
-  and the `airflow-serverless:` workflow actions, the release copy's S3 writes, the workflow key's calls,
+  `scheduler:` and `events:` actions and the `PassRole` of the three chain roles (D41), Cloud Control's
+  actions (IAM prefix `cloudformation:`) and the `airflow-serverless:` workflow actions, the release copy's S3 writes, the workflow key's calls,
   the saver's `logs:DescribeLogGroups` and `CreateLogGroup` in the role's session on `UpdateWorkflow`
   (measured 2026-10-19 and at Stage 18 4.5), and Production's `iam:CreateServiceLinkedRole`. What no amendment
   can add: the root SCP's
   `DenyRedshiftCostGuardTamperingExceptInfrastructure` exempts only `InfrastructureAccess`, so
   `awsds-deploy-prod` can neither update nor destroy `production/warehouse-compute/`.
+- **3.0's ceiling and 4.1's application halves — Written and planned 2026-10-22 by Claude, not applied.**
+  Each `foundation/` gains `app-boundary.tf` and `apply-orchestration.tf`, each one file copied byte for byte
+  into both accounts and held there by `./scripts/check-copies.py` (in `make check` and pre-commit). What
+  one account adds sits in its deploy role's file: Staging's leg statements (Stage 10 decision 19) and its
+  read of Production's registry, Production's `iam:CreateServiceLinkedRole`, whose role is absent there and
+  present in Staging since 2026-10-19 (read 2026-10-22). `apply-application`, inline, holds the
+  `iam:PassRole` of `awsds-<env>-job-exec` to Glue and SageMaker on both roles. The module call gains the
+  `orchestration/` prefix and the read keys and stays on `deploy-role-v0.3.0`. Each plan, as
+  `awsds-infra-staging` and `awsds-infra-prod` with the alerts var-file, reads 6 to add, 2 to change (the
+  role's description and its `state` document), 0 to destroy. Sizes without white space: the inline
+  documents 4,647 of 10,240 in Staging and 1,382 in Production; the ceilings 1,641 and 1,629, the `-access`
+  policies 3,811 and 3,760, the `-resources` policies 4,063 and 3,986, each of 6,144. The two applies are
+  the infrastructure user's, in either order, on the user's authorization, before the first pipeline
+  apply of an `orchestration/` slice.
 - **4.2 — [Claude] Write the dev-env deploy role** (INT-18): `awsds-deploy-devenv-<unit>`, one per
   `DEPLOY_ROLES` row, in each unit's `foundation/` (`awsds-deploy-devenv-sandbox` for unit 1); **`awsds-deploy-devenv-dev` is not written** — it died with the
   second Interactive account (6b). Scope, read from what `sandbox/dev-env/` actually holds: its state prefix;

@@ -143,7 +143,9 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   EC2 otherwise reports at apply, after the resources ahead of it exist. `check-gitlab-pins.py` reads the
   two GitLab release pins, `production/tooling/`'s `gitlab_ce_version` and `production/runners/`'s
   `gitlab_runner_version`, and fails when their major.minor differ: GitLab keeps a runner's major.minor
-  with the server's.
+  with the server's. `check-copies.py` compares the files one slice keeps as a copy of another's, the
+  application ceiling and the orchestration grant in Staging's and Production's `foundation/`, and fails
+  when one has diverged.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree. `make`
   itself is a convenience, not a dependency — every target is a direct call to scripts that also run

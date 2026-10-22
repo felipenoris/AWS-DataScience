@@ -2360,3 +2360,44 @@ its own log, the user's words relayed to it, and the Stage 9 session was told of
   explicit exception to Stage 9 decision 3; 3.3's leg starts the chain's state machine (decision 19). The
   waiting list loses Stage 10's decisions row; `CLAUDE.md`, `GENERAL_PLAN.md` and the stage index say every
   decision of both stages is taken.
+
+## 2026-10-22 — 3.0's ceiling and 4.1's application halves written and planned
+
+*Claude, in the session `stages-7-8-pending`; read-only AWS calls and two plans as the infrastructure user
+(`awsds-infra-staging`, `awsds-infra-prod`, `awsds-infra-sandbox-1` for Production's aliased read), no
+apply.*
+
+- **[user] The request**: *"Prepare o teto awsds-<env>-app-boundary (3.0) e as permissões de aplicação dos
+  deploy roles (4.1) nas slices foundation de Staging e Produção, só com plano, sem aplicar."*
+- **[Claude] What was written**, in both `foundation/` slices: `app-boundary.tf` (the ceiling, Stage 10's
+  hand-over) and `apply-orchestration.tf` (Stage 10 1.5's enumeration), each one file copied byte for byte
+  and held by the new `./scripts/check-copies.py`, wired into `make check` and pre-commit. What one account
+  adds is in its deploy role's file: Staging's `StartTheChainInTheLeg` and `FollowTheChainInTheLeg` (Stage 10
+  decision 19), `ReadTheApprovedModelVersions` on `awsds-prod-model-*` packages with Production's account
+  read through the `deploy_runner` alias, and `ListTheModelVersions`; Production's
+  `CreateTheWorkflowServiceLinkedRole`. `apply-application`, inline on both roles, holds `PassTheJobRole`
+  (`awsds-<env>-job-exec` to Glue and SageMaker). The module calls gain `<folder>/orchestration/` and the
+  read keys (`staging/foundation/` and `staging/sagemaker/`; `production/workloads/`, `foundation/` and
+  `sagemaker/`), still on `deploy-role-v0.3.0`.
+- **[Claude] The first plan's measurement**: with the grant as the inline `apply-orchestration` 4.1
+  specified, Staging's role would carry 12,483 characters of inline documents without white space
+  (`state` 1,062, `apply-egress` 3,023, `apply-application` 562, `apply-orchestration` 7,836), past IAM's
+  10,240, and Production's 9,090. The grant alone passes the 6,144 a managed policy holds, so 4.1's
+  fallback, one customer-managed policy, could not hold it either: it became two, split by content,
+  `awsds-<env>-deploy-orchestration-resources` (the workflows, the state machines, schedules and rules,
+  the workers' group) and `-access` (the roles and their `PassRole`, the definitions home, the data key, the
+  log groups), attached by the slice.
+- **[Claude] The plans**, with `-var-file=<project folder>/secrets/alerts.auto.tfvars`: `staging/foundation/`
+  6 to add, 2 to change, 0 to destroy; `production/foundation/` the same. The two changes in each are the
+  role's description and its `state` document (the new prefix and read keys); no other pending change
+  in either slice. Sizes: inline 4,647 (Staging) and 1,382 (Production) of 10,240; managed
+  `app-boundary` 1,641 and 1,629, `-access` 3,811 and 3,760, `-resources` 4,063 and 3,986, of 6,144.
+- **[Claude] Readings**: `AWSServiceRoleForAmazonMWAAServerless` exists in Staging, path
+  `/aws-service-role/airflow-serverless.amazonaws.com/`, created 2026-10-19T20:09:32Z, and `GetRole` answers
+  `NoSuchEntity` in Production, the ARN the statement names. Every permission action
+  `orchestration-v0.1.0` grants its `wf-` and `chain-` roles (36) falls inside the ceiling's allow-list;
+  `sts:AssumeRole`, from the trusts, is the only action outside it. Neither PR #245 nor PR #246 touches
+  either `foundation/` slice.
+- **[Claude] What follows**: the two applies wait on the user's authorization (the waiting list). Stage 9's
+  stage file still says 3.0's ceiling half is not written; the Stage 9 session was told, since that file
+  is its own.

@@ -115,6 +115,15 @@ repos:
         pass_filenames: false
         files: ^terraform-live/[^/]+/bootstrap/
 
+      # Stage 8 steps 3.0 and 4.1 - the application ceiling and the orchestration grant are one
+      # file each, copied into Staging's and Production's foundation/.
+      - id: check-copies
+        name: the files copied across slices are still identical
+        entry: ./scripts/check-copies.py
+        language: system
+        pass_filenames: false
+        files: ^(terraform-live/(staging|production)/foundation/.*\.tf|scripts/check-copies\.py)$
+
       # 8.1 - every slice on disk declares its D11 layer in scripts/tfhygiene/layers.py. The
       # direction that costs money is a slice with no row: `make down` skips it in silence,
       # and for an [E] slice that is a bill nobody is told about. It fires on any .tf under

@@ -69,6 +69,11 @@ locals {
   deploy_role_arns = values(local.deploy_role_arn_by_name)
 
   releases_bucket_arn = "arn:${data.aws_partition.current.partition}:s3:::awsds-${var.env}-releases"
+
+  # The names app-boundary.tf and apply-orchestration.tf read, the same in staging/foundation/.
+  partition      = data.aws_partition.current.partition
+  account_id     = data.aws_caller_identity.current.account_id
+  region_account = "${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}"
 }
 
 # ------------------------------------------------------------------- the runner's role (4.3)
@@ -273,24 +278,65 @@ resource "aws_secretsmanager_secret_policy" "deploy_runner_token" {
 # -------------------------------------------------------------------- the deploy role (4.1)
 #
 # What it applies from the runner: production/app/* (step 3.6) and production/orchestration/ (Stage
-# 10), and no other slice - the pipeline never runs `make up` or `make down ENV=production`. The
-# application half of its grant lands here, beside the application ceiling awsds-prod-app-boundary
-# (step 3.0); until then it holds its state access and nothing else.
+# 10), and no other slice - the pipeline never runs `make up` or `make down ENV=production`. Its grant
+# is the inline document apply-application below and the orchestration grant's two managed policies
+# (apply-orchestration.tf). Every role those slices create carries awsds-prod-app-boundary
+# (app-boundary.tf, step 3.0). Stage 9 step 9.4's Data API grant joins them at that stage's pass 6.
 module "deploy_role" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.3.0"
 
   name            = var.deploy_role_name
-  description     = "Stage 8's promotion into Production (INT-08, step 3.6) - assumed only by the deploy runner's role; applies production/app/* slices"
+  description     = "Stage 8's promotion into Production (INT-08, step 3.6) - assumed only by the deploy runner's role; applies production/app/* and production/orchestration/"
   env             = var.env
   runner_role_arn = module.deploy_runner_role.role_arn
   runner_role_id  = data.aws_iam_role.deploy_runner.unique_id
-  state_prefixes  = ["${var.account_folder}/app/"]
+  state_prefixes  = ["${var.account_folder}/app/", "${var.account_folder}/orchestration/"]
+  state_read_keys = [for s in ["workloads", "foundation", "sagemaker"] : "${var.account_folder}/${s}/terraform.tfstate"]
 
-  application_boundary_name = "awsds-${var.env}-app-boundary"
+  inline_policies = {
+    "apply-application" = data.aws_iam_policy_document.apply_application.json
+  }
+
+  application_boundary_name = local.application_boundary_name
 
   misuse_alarm     = true
   alerts_topic_arn = aws_sns_topic.alerts.arn
+}
+
+# What the application slices hand to a job service.
+data "aws_iam_policy_document" "apply_application" {
+  statement {
+    sid       = "PassTheJobRole"
+    effect    = "Allow"
+    actions   = ["iam:PassRole"]
+    resources = ["arn:${local.partition}:iam::${local.account_id}:role/awsds-${var.env}-job-exec"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["glue.amazonaws.com", "sagemaker.amazonaws.com"]
+    }
+  }
+}
+
+# Production's statement in apply-orchestration.tf's resources policy:
+# AWSServiceRoleForAmazonMWAAServerless exists in Staging and not here (read 2026-10-22), so the first
+# workflow's creation makes it in the deploy role's session (Stage 10 step 1.5). The statement goes
+# once the role exists (Stage 10 verification iii).
+data "aws_iam_policy_document" "apply_orchestration_in_this_account" {
+  statement {
+    sid       = "CreateTheWorkflowServiceLinkedRole"
+    effect    = "Allow"
+    actions   = ["iam:CreateServiceLinkedRole"]
+    resources = ["arn:${local.partition}:iam::${local.account_id}:role/aws-service-role/airflow-serverless.amazonaws.com/AWSServiceRoleForAmazonMWAAServerless"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:AWSServiceName"
+      values   = ["airflow-serverless.amazonaws.com"]
+    }
+  }
 }
 
 # --------------------------------------------------------------- the alerts topic (decision 5)

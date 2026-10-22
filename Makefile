@@ -28,8 +28,9 @@
 #
 # The `check` list, each offline and failing on one mistake: check-tf-conventions (9.1),
 # check-iam-wildcards (9.2), check-bootstrap-parity (3.5: the five bootstrap slices are one slice
-# copied), slices.py check (8.1), check-tfvars-shape, check-index (9.4), check-network-doc,
-# check-plan-refs (the plan's relative links, stable IDs and the two size budgets),
+# copied), check-copies (Stage 8 3.0 and 4.1: files copied across slices), slices.py check (8.1),
+# check-tfvars-shape, check-index (9.4), check-network-doc, check-plan-refs (the plan's relative
+# links, stable IDs and the two size budgets),
 # check-identifiers (no account id or e-mail in a tracked file), check-provider-locks (6.3: three
 # platforms in every committed lock file), check-gitlab-ci (no job named after a GitLab CI global
 # keyword, no `needs:` naming a job its pipeline lacks, no script item `bash -n` refuses) and
@@ -52,10 +53,10 @@ help:
 	@printf '\033[1mREAD\033[0m - safe at any time; offline unless a session is named\n'
 	@printf '  help        this text\n'
 	@printf '  check       Stage 2 step 9, offline - what a commit must pass: conventions,\n'
-	@printf '              wildcard ARNs, bootstrap parity, slice layers, tfvars shapes, the\n'
-	@printf '              policy index, the network doc, the plan references, account ids\n'
-	@printf '              and e-mails, provider locks, the GitLab CI files, security group\n'
-	@printf '              descriptions\n'
+	@printf '              wildcard ARNs, bootstrap parity, copied files, slice layers, tfvars\n'
+	@printf '              shapes, the policy index, the network doc, the plan references,\n'
+	@printf '              account ids and e-mails, provider locks, the GitLab CI files,\n'
+	@printf '              security group descriptions\n'
 	@printf '  check-ou    step 9.3, OU coverage - reads the Organization. Needs an SSO session\n'
 	@printf '              as the infrastructure user on Identity: exits 2 without one, never passes\n'
 	@printf '  check-docs  the plan reference check on its own; check runs it too\n'
@@ -175,6 +176,7 @@ check:
 	for c in "./scripts/check-tf-conventions.py" \
 	         "./scripts/check-iam-wildcards.py" \
 	         "./scripts/check-bootstrap-parity.py" \
+	         "./scripts/check-copies.py" \
 	         "./scripts/slices.py check" \
 	         "./scripts/check-tfvars-shape.py" \
 	         "./scripts/check-index.py" \

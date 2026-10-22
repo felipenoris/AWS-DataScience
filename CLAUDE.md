@@ -388,8 +388,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   to its developer, who works in a space on an equivalent version. `staging/probes/` is retired, so `make up ENV=staging` raises `egress/` alone, and the template's
   lint passes `--image-repository` and the ceiling's seven instance types (PR #186), in GitLab since MR !2.
   Pass 4, read item by item on 2026-10-22 (PR #244), has no item writable whole before Stage 9's platforms,
-  every Stage 9 and Stage 10 decision now taken; 3.0 holds the ceiling's content, 4.1 the application halves'
-  specification, and `slices.py`'s `prepare()` passes `--pipeline` for a deploy role's profile.
+  every Stage 9 and Stage 10 decision now taken, and `slices.py`'s `prepare()` passes `--pipeline` for a
+  deploy role's profile. 3.0's ceiling and 4.1's application halves are written and planned (2026-10-22,
+  PR #244), not applied: the orchestration grant is two managed policies, since inline it took Staging's
+  role past IAM's 10,240 characters, and `check-copies.py` keeps the two `foundation/` copies identical.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
