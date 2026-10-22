@@ -532,7 +532,7 @@ promotion** — the chain starts at the tag (D21) and its first target is Stagin
       assumes, `awsds-<env>-chain-exec`.
 
     Its cost: every application in an account runs its jobs as one role, which reads and writes the
-    whole of `awsds-<env>-outputs` (Stage 10 decision 12 keeps it from writing `workflows/*`). With one
+    whole of `awsds-<env>-outputs` (Stage 10 decision 12 keeps it from writing `applications/*`). With one
     application that separates nothing. A second application in a deployment target is the trigger to
     give each its own role, `[P]` beside Stage 9's, so neither objection above returns.
   - **A deploy spends a workflow version** (read 2026-10-16 in the lab on `houseprice-etl`: 2 versions
@@ -678,8 +678,9 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   application tag, and of Stage 10's `staging/orchestration/` in the same leg (decision 23), with the
   definition, the code and the Glue scripts written from the tag's bundle, downloaded from
   `awsds-prod-releases` with the deploy runner's own role (decision 20) and checked against its SHA256
-  before a file of it is read, then rendered and copied under `awsds-staging-outputs/workflows/app-etl/<tag>/`
-  (Stage 10 step 2.4) and linted on the rendered copy (Stage 10 2.3). The image is pulled at the run by
+  before a file of it is read, then unpacked under `awsds-staging-outputs/applications/app-etl/<tag>/`, the
+  workflow's YAML alone rendered and every other file copied byte for byte, which `MANIFEST.sha256` proves
+  (Stage 10 decision 1 and step 2.4), and linted on the rendered copy (Stage 10 2.3). The image is pulled at the run by
   `awsds-staging-job-exec` through the service, so INT-07 is proven by 3.3's run (verification v), not by
   the apply. The image URI comes from `build-image`'s dotenv (`JOB_IMAGE_URI`) through `needs:`, as
   `test-deploy` has taken it since 2026-10-19, or from `release.tf` on a by-hand re-apply; the deploy runner
@@ -736,7 +737,7 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   downloaded bundle is checked against (Stage 10 step 2.4).
 - **3.8 — [user] Prove the by-hand path once**: the same `make up`/`apply`/`make down` sequence from the
   laptop as `awsds-infra-staging` — a rebuild that only works from CI is the same bug as one that only
-  works by hand (conventions §6). Stage 10 decision 12's deny on writes to `workflows/*` must exempt
+  works by hand (conventions §6). Stage 10 decision 12's deny on writes to `applications/*` must exempt
   `InfrastructureAccess`, or this path's copy of the rendered definition is refused (asked of Stage 10,
   2026-10-22).
 - **3.9 — `identity/sso/`'s owed row: `DeploymentManagerAccess`'s read of a promotion's evidence**,
@@ -748,7 +749,7 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   evidence, the Staging test results and the Production plan, lives in the manual job's artifacts, which
   GitLab serves itself (`proxy_download`, `production/tooling/gitlab.rb.tftpl`) to the project's
   members, `deployment-managers` among them (2.1). A release's S3 objects are the bundle in
-  `awsds-prod-releases` (decision 20) and Stage 10 2.4's copies under `awsds-<env>-outputs/workflows/`,
+  `awsds-prod-releases` (decision 20) and Stage 10 2.4's copies under `awsds-<env>-outputs/applications/`,
   each under a customer-managed key, and the set's own `DenyDataReadPaths` refuses `kms:Decrypt` on
   every key, so an `s3:GetObject` on either reads nothing while that deny stands. Read in AWS
   2026-10-20, 22:02 to 22:04 UTC, as the infrastructure user
@@ -1086,7 +1087,7 @@ only** — `pip-audit` covers the Python dependencies, and the two compose rathe
   - **(g) templates what the service does not render**: `dag_run`, or a method called on a macro's result;
     a template sees `macros`, `ti`, `task_instance`, `params`, `ds`, `ds_nodash`, `ts` and `ts_nodash` only;
   - **(h) gives a processing job a code input outside the release's own prefix**
-    (`workflows/<app>/<tag>/src/`), or one whose objects differ from the manifest the release job wrote
+    (`applications/<app>/<tag>/src/`), or one whose objects differ from the manifest the release job wrote
     there: a `ProcessingInput` takes no version, so the prefix, written once and kept from change by Stage
     10 decision 12's statement, is the pin (D28 class 2d). The lint carries the first half: the code input
     of a `SageMakerProcessingOperator` (`InputName` `code`, or mounted at `/opt/ml/processing/code`) lies

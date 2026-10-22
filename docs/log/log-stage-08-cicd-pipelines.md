@@ -2318,3 +2318,17 @@ commit `29302c94` (PR #245), which records decisions 3 and 1 and withdraws 4.4.*
   `SELECT` alone), the warehouse sentence, the grants' principals and node 5 of the development cycle;
   INT-03's restored Staging read; D20's argument, the user's; the Stage 9 rows of `CLAUDE.md` and the log
   index. Stage 8 3.3 no longer names 4.4: each deploy fills Staging's own catalog (Stage 9 4.1).
+
+## 2026-10-22 — Stage 10 decision 1 taken: the definitions home moves to `applications/`
+
+*Claude, in the session `stages-7-8-pending`, no AWS call, on the Stage 10 session's report of its
+commit `f2bd47a7` (PR #246); the user's words were read in the transcript of the session started from
+this one, where they were written.*
+
+- **[user] The decision**, in that session: *"Sim, peço registrar esta recomendação revisada e acatar esta
+  como sendo a decisão tomada."* Stage 10 decision 1, revised: the bundle stays whole in
+  `awsds-prod-releases`, its tree is unpacked under `awsds-<env>-outputs/applications/<app>/<tag>/`, the
+  workflow's YAML alone rendered and every other file copied byte for byte, `MANIFEST.sha256` proving it.
+- **[Claude] What follows here**: 2.5's job-role cost, 3.2's copy, 3.8's exemption, 3.9's reading and
+  5.6 (h) name `applications/` for `workflows/`; the waiting list drops decision 1 from Stage 10's row.
+  The module tag `orchestration-v0.1.0` now goes on `26bfc15d`, the module's last commit.
