@@ -1458,3 +1458,36 @@ nothing clicked but the navigation; the console's messages quoted as shown. Abou
   16:38 UTC, from the branch `claude/stages-8-9-10-prep-2` cut from `main` after PR #247's merge retired
   the previous branch, and every later commit of the session joined it: decision 13 taken and done, the
   quota requests, the persona proofs block by block, and the records. The description follows the branch.
+
+## 2026-10-23 — 2.4's job and 9.4's grant applied, the script uploaded, with the environment down
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo as aplicações 1 a 3 do §0.4 … e o upload
+do script, cada uma de um plano fresco"*), as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`), the tunnel down, after the user's fresh `./aws/login.py`; no other session running
+on the machine (`list_sessions`, every row idle). Each apply from a saved plan read first (Recipe A), the
+plans outside the repository. Times UTC.*
+
+- **[Claude] `production/sagemaker/`**: the fresh plan at 21:17:03 to 21:17:19, *"Plan: 1 to add, 1 to
+  change, 0 to destroy."*, the job `awsds-prod-producer-proof` and the role's inline `job` policy;
+  applied 21:18:32 to 21:18:42, *"Apply complete! Resources: 1 added, 1 changed, 0 destroyed."* (the
+  policy modified in 1 s, the job created in 2 s); re-planned `No changes` at 21:18:54.
+- **[Claude] `production/workloads/`**: the fresh plan at 21:17:31 to 21:17:49 read **`No changes`**:
+  the `vpc-v0.4.0` bump had been applied in the evening of 2026-10-22 with Stage 9's passes (this log's
+  entry of that evening), and Stage 10's 1.2 and `runbooks/promotion.md` §0.4 still called it unapplied;
+  both are corrected. Nothing applied.
+- **[Claude] `production/foundation/`**, with `-var-file=<project folder>/secrets/alerts.auto.tfvars`:
+  the fresh plan at 21:17:49 to 21:18:12, *"Plan: 0 to add, 1 to change, 0 to destroy."*, the deploy
+  role's inline `apply-application` gaining `RunTheGovernedWarehouseDdl` (9.4); applied 21:19:16 to
+  21:19:26, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*; re-planned `No changes`
+  with the var-file. `./aws/deploytargets.py awsds-infra-prod` at 21:19:42: all checks passed.
+- **[Claude] The script**: `aws s3 cp` of `proofs/producer_proof.py` (7,318 bytes) to
+  `s3://awsds-prod-outputs/applications/stage-09-proofs/v0/glue/producer_proof.py` at 21:20:09, the
+  write the bucket's principal branch and the data key admit `InfrastructureAccess` to; `head-object`
+  reads 7,318 bytes, `aws:kms` under the data key with the bucket key on, version
+  `LhV4dvLqaXJCFqSJm.Z0tpmqShZjHM95`. `get-job` reads the job as declared: Glue 6.0, two `G.1X`, 20
+  minutes, the connection `awsds-prod-jobs`, the script's location, `--MODE producer`,
+  `--datalake-formats iceberg`, `curated`, `trades`, `incoming`.
+- **[Claude] What this leaves for the Production sitting**: `make hub-up`, `make up ENV=production
+  ONLY=workloads-egress`, the two runs and their readings (`runbooks/promotion.md` §P). With the script
+  in place, 5.4's `get-object` from the persona now meets the read deny rather than the listing deny, a
+  one-command reading the user may take at any time.

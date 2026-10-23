@@ -91,13 +91,13 @@ down; each shortens the Production sitting by one apply. `[Claude⚡]` on the us
 `awsds-infra-prod`, each from a fresh plan (Recipe A) and re-planned `No changes`:
 
 1. `production/sagemaker/`, 2.4's proof job and the job role's `CommitTheIcebergWrites` (*1 to add,
-   1 to change*, 2026-10-23); then the script's upload (§P step 3), the one write the user's hand or
-   Claude's makes under `applications/stage-09-proofs/`.
+   1 to change*), then the script's upload (§P step 3), the one write the user's hand or Claude's makes
+   under `applications/stage-09-proofs/`. **Done 2026-10-23, 21:18 and 21:20 UTC** (Stage 9's log).
 2. `production/workloads/` on `vpc-v0.4.0`, the S3 gateway endpoint's policy admitting the workers'
-   code bucket (Stage 10 1.2; *1 to change*, planned 2026-10-22), owed before a Production worker runs
-   a Python task.
+   code bucket (Stage 10 1.2). **Applied 2026-10-22** with Stage 9's passes; a fresh plan read
+   `No changes` on 2026-10-23.
 3. `production/foundation/`, 9.4's `RunTheGovernedWarehouseDdl` on the deploy role (*1 to change*, with
-   the alerts var-file), pass 6's, harmless before it.
+   the alerts var-file), pass 6's, harmless before it. **Done 2026-10-23, 21:19 UTC.**
 4. `production/warehouse/`, the namespace and its guards (*9 to add*), pass 6's start: it bills the
    admin secret from its creation and opens `EXC-13`'s Production row, so it waits for the user to want
    pass 6 begun; the compute stays held either way.
@@ -142,12 +142,10 @@ that this VPC has none of. `make down ENV=production ONLY=workloads-egress` ends
 is needed.
 
 1. **The flag on in Production** (§0.3, done 2026-10-23), `DT-5` read again at the sitting.
-2. **[Claude⚡] `production/sagemaker/` applied** as `awsds-infra-prod` from a fresh plan (Recipe A):
-   the proof job added and the job role's `CommitTheIcebergWrites` statement changed, read 2026-10-23
-   as *1 to add, 1 to change*.
-3. **[Claude⚡] The script uploaded** by the infrastructure user, the one principal the bucket's branch
-   and the data key admit to `applications/*` from the laptop, the key the job's `script_location`
-   names (`terraform -chdir=terraform-live/production/sagemaker output -raw producer_proof_script`):
+2. **`production/sagemaker/` applied** (done 2026-10-23, 21:18 UTC: *1 added, 1 changed*, re-plan
+   `No changes`).
+3. **The script uploaded** (done 2026-10-23, 21:20 UTC, version `LhV4dvLqaXJCFqSJm.Z0tpmqShZjHM95`); a
+   changed script is uploaded again with the same command, the key the job's `script_location` names:
 
    ```bash
    aws s3 cp terraform-live/production/sagemaker/proofs/producer_proof.py s3://awsds-prod-outputs/applications/stage-09-proofs/v0/glue/producer_proof.py --profile awsds-infra-prod --region us-west-2
