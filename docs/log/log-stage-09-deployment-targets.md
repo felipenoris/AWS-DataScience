@@ -892,6 +892,10 @@ applied only after its summary line read what the reviewed plan had read. Times 
   `/aws-glue/*` and `/awsds/prod/wf/*`. `./aws/deploytargets.py` on the five infrastructure profiles at
   22:55:43: *"0 check(s) FAILED."*, `DT-10` passing for `DataScientistProdAccess` (the three markers `yes`,
   the policy `attached`) and for `DataScientistStagingAccess`.
+- **[Claude] The records**: the stage file (the Status, 5.1, 5.3), both slices' READMEs, the waiting
+  list, `CLAUDE.md`, the plan core and both indexes; `docs/AWS_STATE.md`'s row on `deploytargets.py`,
+  which still described the seven fails of 2026-10-18, brought to the 0-failed reading with `DT-10`
+  passing.
 - **[Claude] What follows**: 5.4 and 8.1 to 8.4 are the user's, in the data-science persona's sessions;
   6.3 may run now, the persona holding the debug role's assumption.
 

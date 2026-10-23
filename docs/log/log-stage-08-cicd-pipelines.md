@@ -2569,3 +2569,12 @@ plans only, the tunnel down (`NO_PROXY='*'`). Nothing applied. Times UTC.*
 - **[Claude] 3.8**: the by-hand sequence written into the step, for a re-apply after 3.7 (no copy, the
   objects persist) and for a tag the pipeline never promoted (the copy first, with `--lint`).
 - **[Claude] The plan**: the Status row, 3.2, pass 4's code bullet, 3.8 and Validation 2.
+
+## 2026-10-23 — the session's branch and its PR
+
+*Claude, the same session; no AWS call.*
+
+- **[Claude] The PR**: the sitting's first commit opened PR #247 against `main` on 2026-10-22 at
+  22:4x UTC, and every later commit of the session joined it: Stage 9's 5.1 applies, its 6.3 from the
+  approval to the refusal read in the trail, and the records. The description was rewritten on
+  2026-10-23 to carry the whole branch.
