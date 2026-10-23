@@ -426,7 +426,14 @@ shape).
 
   A refusal names its layer: a Lake Formation wording (*"Insufficient Lake Formation permission(s)"*)
   is the grant's shape or decision 13's flag, an IAM wording naming `glue:UpdateTable` is the role's,
-  a timeout at the Glue or Lake Formation API is the endpoint set.
+  a timeout at the Glue or Lake Formation API is the endpoint set. **The first run, 2026-10-23 at
+  21:43 UTC** (the log): `FAILED` at the first SQL after 56 s, the vend for the lake's `curated/trades`
+  with `SELECT` refused *"Insufficient Lake Formation permissions. Verify the data lake settings for
+  account"*, Production's flag `true` and the lake's unset at that minute; the four `GetDataAccess`
+  carry the `lakeformation` endpoint's id (Stage 10 0.5 answered), and the lake's trail holds none of
+  them where 5.4's Athena read of 20:29 UTC left its answered pair in both accounts. Decision 13's
+  fallback follows: the lake's resource gains the flag, planned *"0 to add, 1 to change"* at 21:56 UTC;
+  the apply, `DL-5` after it and the second run are the sitting's next acts.
 - **2.5 — [user] Prove the pickup (INT-10)**: drop a file into the dated prefix from a Sandbox session
   (Stage 5a's writer half), run the pickup job under the job role — it reads the prefix, curates into a
   governed table through 2.4's write path, and **deletes what it consumed**. Verify the KMS half
@@ -1700,7 +1707,7 @@ Record every answer, including the ones that come out fine.
 | xxv | Which database users do the job role's and the deploy role's sessions land on, read from `pg_user` after the first connection, and does the job role write a row into a table the deployer's user created? | 9.3, 9.4 |
 | xxvi | Do the Production audit groups hold a user connection and a user statement, logged while the workgroup was up — the presence `EXC-16`'s export makes necessary before the groups are called an audit trail? | 9.8 |
 | xxvii | Does the Data API job cancel its statement on a timeout, and does `DescribeStatement` read the cancellation? | 9.4 |
-| xxviii | Does Lake Formation's full-table-access mode admit the job role's write holding `INSERT`, `DELETE` and `ALTER` without `ALL`, which AWS's page says a write requires; is `AllowFullTableExternalDataAccess` needed in the engine's account, the lake's, or both (decision 13); does the commit need `glue:UpdateTable` on the lake's table (3.1's `CommitTheIcebergWrites`); and does the run's `GetTemporaryGlue*Credentials` carry `vpcEndpointId` (Stage 10 0.5)? | 2.4, decision 13 |
+| xxviii | Does Lake Formation's full-table-access mode admit the job role's write holding `INSERT`, `DELETE` and `ALTER` without `ALL`, which AWS's page says a write requires; is `AllowFullTableExternalDataAccess` needed in the engine's account, the lake's, or both (decision 13); does the commit need `glue:UpdateTable` on the lake's table (3.1's `CommitTheIcebergWrites`); and does the run's `GetTemporaryGlue*Credentials` carry `vpcEndpointId` (Stage 10 0.5)? **The first run, 2026-10-23**: with the engine's flag alone the vend is refused naming the data lake settings, so the owner's flag is required and the engine's alone is not enough, whether both are needed being the third run's measurement; the vend is logged as `GetDataAccess`, through the `lakeformation` endpoint; the `ALL` and `glue:UpdateTable` halves wait for the second run | 2.4, decision 13 |
 
 ## Risks
 

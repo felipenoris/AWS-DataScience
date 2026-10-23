@@ -1491,3 +1491,49 @@ plans outside the repository. Times UTC.*
   ONLY=workloads-egress`, the two runs and their readings (`runbooks/promotion.md` §P). With the script
   in place, 5.4's `get-object` from the persona now meets the read deny rather than the listing deny, a
   one-command reading the user may take at any time.
+
+## 2026-10-23 — 2.4's producer run: the write refused at the vend, naming the data lake settings; the lake's flag planned
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo a execução producer do job
+awsds-prod-producer-proof agora, como usuário de infraestrutura em Production, e a leitura dos
+resultados."*), as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod` for the run
+and its trail, `awsds-infra-data` for the lake's readings and the plan); the hub and
+`production/workloads-egress/` up, raised by the user (`make status`: seven endpoints available). Times UTC.*
+
+- **[Claude] The run**: `start-job-run` at 21:43:25, run
+  `jr_3a45dc0e7e994943f6e4eca20664083ca0437fef7b1a2302ae8bd03ca79a287f`, started 21:43:26, **`FAILED`** at
+  21:44:42 after 56 s of execution, 113 DPU-seconds. The script's lines in `/aws-glue/jobs/output`:
+  *"running as arn:aws:sts::<Production>:assumed-role/awsds-prod-job-exec/GlueJobRunnerSession, mode
+  producer"* at 21:44:08 and *"producer: inserting 10 sample rows into lake.curated.trades"* at 21:44:25;
+  the first SQL failed with *"Failed to retrieve AWS Lake Formation temporary credentials for table
+  arn:aws:glue:us-west-2:<Data Governance>:table/curated/trades with permission SELECT. Error:
+  Insufficient Lake Formation permissions. Verify the data lake settings for account (Service:
+  LakeFormation, Status Code: 400, Request ID: 1230a16c-812b-4c80-bf11-bfa9d4401d19)"*, the sentence
+  naming no account. The error stream's last cause, *"Connection refused: /10.32.58.144:35175"*, is the
+  executor losing the driver after its exit, an address in `VPC-Workloads`' private range.
+- **[Claude] Production's trail** (`lookup-events` at 21:46 and 21:57): six `glue:GetTable` at 21:44:29
+  answered through `vpce-0925d883174fd23c1`, the `glue` endpoint; four `lakeformation:GetDataAccess` at
+  21:44:30 through `vpce-0431cce5692733205`, the `lakeformation` endpoint, each `AccessDenied` with the
+  wording above, two from the driver's SDK (`aws-sdk-java/2.44.6`) naming the lake's table and the job
+  in `auditContext`, two invoked by `glue.amazonaws.com` with no request parameters logged; one
+  `glue:GetConfig` at 21:44:30 through the Glue endpoint, `ForbiddenResponse`; the session's
+  `GetCallerIdentity` at 21:44:08 through `vpce-004b999946b362a5e`, the `sts` endpoint. No
+  `GetTemporaryGlueTableCredentials` event in three hours: the vend is logged as `GetDataAccess`.
+  **Stage 10 0.5 is answered**: the job's Lake Formation call carries the `lakeformation` endpoint's id,
+  the endpoint decision 12 (a) raised.
+- **[Claude] The lake's trail**: no Lake Formation event in the run's window. A cross-account vend the
+  lake answers is logged there too, with a `sharedEventID` and no user name: 5.4's Athena read of
+  `curated.trades` by the Data Scientist User in Production at 20:29:09 left its pair, `GetDataAccess`
+  invoked by `athena.amazonaws.com` on Production's resource link and by `glue.amazonaws.com` on the
+  lake's table, answered in both trails. The run's vend was refused in Production before any event
+  reached the lake.
+- **[Claude] The readings and the fallback**: Production's settings re-read at 21:53, the flag `true`,
+  one administrator, both lists empty, `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE`; the lake's at
+  21:53, the flag unset and the rest the same; `./aws/datalake.py awsds-infra-data` at 21:46 all checks
+  passed, `DL-5` 4/TRUE, `DL-6` and `DL-13` passing. The wording names the data lake settings with
+  Production's flag on, which is decision 13's fallback: `data-governance/data/lakeformation.tf` gains
+  `allow_full_table_external_data_access = true` and its README the row; the slice initialised in the
+  worktree (`gen-tfvars.py`, `gen-backend-hcl.py`, `init`) and planned as `awsds-infra-data` at 21:55:41
+  to 21:56:00, *"Plan: 0 to add, 1 to change, 0 to destroy."*, the flag `false -> true` and eight
+  attributes unchanged, the plan saved outside the repository. The apply waits on the user's
+  authorization, then `DL-5` after it and the second run.

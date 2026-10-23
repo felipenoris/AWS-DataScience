@@ -50,6 +50,13 @@ resource "aws_lakeformation_data_lake_settings" "this" {
     SET_CONTEXT           = "TRUE"
   }
 
+  # Full-table access for external engines (Stage 9 decision 13): a consumer's Glue Spark job
+  # writes a registered table only through credentials Lake Formation vends for the whole table,
+  # and the vend reads this flag in the table owner's settings. With Production's own flag on and
+  # this one unset, the first write was refused naming the data lake settings (2.4's producer run,
+  # 2026-10-23). What it costs, TM-26: a principal holding full-table permissions on a table here
+  # vends S3 credentials for its objects directly, outside an integrated engine.
+  allow_full_table_external_data_access = true
 }
 
 # ------------------------------------------------------------- the registration role (5.1)

@@ -179,6 +179,15 @@ is needed.
    A refusal names its layer: Lake Formation's wording (*"Insufficient Lake Formation permission(s)"*,
    which permission) is the grant's shape, decision 13's fallback or 2.1's `ALL`; an IAM wording naming
    `glue:UpdateTable` is the role's; a timeout at the Glue or Lake Formation API is the endpoint set.
+   **The first run (2026-10-23, 21:43 UTC) was refused at the vend naming the data lake settings**,
+   Production's flag on and the lake's unset, so decision 13's fallback runs before the second run:
+   5a. **[Claude⚡] The lake's flag**: `data-governance/data/lakeformation.tf` carries
+   `allow_full_table_external_data_access = true`; `./aws/datalake.py awsds-infra-data` before (`DL-5`
+   4/TRUE), a fresh plan as `awsds-infra-data` (*1 to change*, the flag `false -> true` alone), the apply
+   on the user's authorization, the same script and `get-data-lake-settings` after, then step 5 again.
+   With both flags on, a commit answers verification xxviii's first two halves and leaves the third
+   half (whether the engine's flag is also needed) unmeasured; the measurement is the user's hand in
+   Production's console, the flag off, a third run, the flag on again, bracketed by `DT-5`.
 6. **The drop is in place** (Stage 9 2.5's first half, done 2026-10-23): `incoming/2026/10/23/trades.csv`,
    and 2.6 read the same evening, the writer's read-back refused by the set's implicit deny. A second
    drop before the pickup is optional, the same command on the day's prefix as the Data Scientist User
