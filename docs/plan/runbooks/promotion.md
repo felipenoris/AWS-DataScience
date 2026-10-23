@@ -71,6 +71,10 @@ the threat model are in the stage file. The act needs nothing up:
    same page before anything else runs. Then Stage 11's threat-model row, and `AWS_STATE.md`'s word on
    the flag per account.
 
+**Done 2026-10-23, 19:29 to 19:49 UTC**: the flag reads `true` in Production, the rest unchanged, `DT-5`
+passing (Stage 9's log; `TM-26`). The console refused the page first in `us-east-2`, the Region ceiling:
+the Lake Formation console is opened in `us-west-2`.
+
 The lake's half, its own `lakeformation.tf`, waits for the first run's wording (§P step 5).
 
 ## H. The hub and GitLab
@@ -106,7 +110,7 @@ the DNS Firewall), `runners/` and `probes/`, leaves the hub alone (refusal 6) an
 `warehouse-compute/` (refusal 9). The sitting needs the hub up for `make up`'s check and nothing else
 of §H.
 
-1. **The flag on in Production** (§0.3), read back with `DT-5`.
+1. **The flag on in Production** (§0.3, done 2026-10-23), `DT-5` read again at the sitting.
 2. **[Claude⚡] `production/sagemaker/` applied** as `awsds-infra-prod` from a fresh plan (Recipe A):
    the proof job added and the job role's `CommitTheIcebergWrites` statement changed, read 2026-10-23
    as *1 to add, 1 to change*.

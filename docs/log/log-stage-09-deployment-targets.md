@@ -1149,3 +1149,32 @@ plans saved outside the repository. Nothing applied. Times UTC.*
   `waiting-on-the-user.md`'s acts and in `runbooks/promotion.md` §0.3 with its three steps, the indexes
   and `CLAUDE.md` following. Stage 11's threat-model row and `AWS_STATE.md`'s word on the flag are
   written when the flag reads on.
+
+## 2026-10-23 — decision 13's act: the full-table-access flag turned on in Production, read before and after
+
+*Claude's hand, the same session; the readings as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`, `awsds-infra-data`, `awsds-infra-staging`, `awsds-infra-sandbox-1`), reads only;
+the write the user's, in the console. Times UTC.*
+
+- **[Claude] The before-reading**, 19:29:52, `get-data-lake-settings` in Production: one administrator,
+  `InfrastructureAccess`; `ReadOnlyAdmins` empty; both create-default lists empty;
+  `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE`; `AllowExternalDataFiltering` false;
+  `AllowFullTableExternalDataAccess` absent; the allow list empty; `AuthorizedSessionTagValueList`
+  absent. `DT-5` passing (parameters and create-defaults).
+- **[user]** The console refused the settings page first, pasted (the account ids and the address
+  masked): *"Unable to load settings. User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_InfrastructureAccess_c2bcabf74c885115/<the infrastructure user> is not authorized to perform: lakeformation:GetDataLakeSettings on resource: arn:aws:lakeformation:us-east-2:<Production>:catalog:<Production> with an explicit deny in a service control policy: arn:aws:organizations::<Management>:policy/<organization>/service_control_policy/p-i0ney7mx"*.
+- **[Claude]** `p-i0ney7mx` read as `awsds-infra-identity`: `aws-guardrails-nYsweH`, Control Tower's
+  `CTMULTISERVICEPV1`, `StringNotEquals aws:RequestedRegion us-west-2`: the console had opened in Ohio,
+  and the Region ceiling refused the page to the account's own Lake Formation administrator, the first
+  console-side reading of that control in Production (INV-12's hand-probe was a CLI call in CloudShell).
+- **[user]** The console switched to `us-west-2`; *Administration → Application integration settings →
+  Allow external engines to access data in Amazon S3 locations with full table access* marked and saved:
+  *"Pronto"*.
+- **[Claude] The after-reading**, 19:49:19: `AllowFullTableExternalDataAccess` `true`; the administrator,
+  both lists, the parameters, `AllowExternalDataFiltering` and the allow list as before;
+  `AuthorizedSessionTagValueList` now an empty list, which the console wrote and the API had returned
+  absent. `DT-5` passing at 19:49:30, 0 failed. The other accounts the same minute: the lake absent,
+  Staging absent, Sandbox `true` with its three administrators.
+- **[Claude]** `TM-26` written in the threat model's ledger, the flag per account in `AWS_STATE.md` §C,
+  decision 13 and the Status row brought to the act, the act's rows out of `waiting-on-the-user.md`,
+  `runbooks/promotion.md` §0.3 marked done with the Region note.
