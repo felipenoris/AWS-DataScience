@@ -1364,3 +1364,37 @@ paste the user's, the account ids and the address masked; the readings Claude's.
   `s3://awsds-data-dropbox/incoming/2026/10/23/trades.csv`, the writer's put by principal, waiting for the
   pickup run; **2.6's read-back** was refused as a bare `403` on `HeadObject`, the asymmetry holding,
   its wording owed to a `get-object` (the next command), as 5.4's was.
+
+## 2026-10-23 — 8.4 run by the user from the laptop: Staging readable, the writes refused
+
+*The commands the user's, from the laptop signed in as the Data Scientist User through
+`DataScientistStagingAccess`, on the profile `awsds-scientist-staging` the user added to the laptop's
+config this evening (8.4's block); the paste the user's, the account id and the address masked; the
+readings Claude's.*
+
+- **[user]**
+
+  ```
+  aws glue get-tables --database-name app_outputs --profile awsds-scientist-staging --region us-west-2
+
+  {
+      "TableList": []
+  }
+
+  ➜  AWS-DataScience git:(main) echo probe | aws s3 cp - s3://awsds-staging-outputs/probe.txt --profile awsds-scientist-staging --region us-west-2
+  upload failed: - to s3://awsds-staging-outputs/probe.txt An error occurred (AccessDenied) when calling the PutObject operation: User: arn:aws:sts::<Staging>:assumed-role/AWSReservedSSO_DataScientistStagingAccess_c242dbe2f89a1229/<the data scientist user> is not authorized to perform: kms:GenerateDataKey on resource: arn:aws:kms:us-west-2:<Staging>:key/74f5ebbc-41bb-4165-9047-f84a952a833f because no resource-based policy allows the kms:GenerateDataKey action
+  ➜  AWS-DataScience git:(main) aws glue start-job-run --job-name awsds-staging-app-etl --profile awsds-scientist-staging --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the StartJobRun operation: User: arn:aws:sts::<Staging>:assumed-role/AWSReservedSSO_DataScientistStagingAccess_c242dbe2f89a1229/<the data scientist user> is not authorized to perform: glue:StartJobRun on resource: arn:aws:glue:us-west-2:<Staging>:job/awsds-staging-app-etl with an explicit deny in an identity-based policy
+  ```
+
+- **[Claude] The readings.** The catalog read answered, an empty list: no deploy has created a table in
+  `app_outputs` yet, and an empty list is also what Lake Formation shows a principal with no grant, so
+  the read is "answered", not "sees tables" (Lesson 13). The Glue write refused *"with an explicit deny
+  in an identity-based policy"*, `DenyEveryWrite`'s `glue:Start*`. **The S3 write was refused by the
+  data key's policy first**, *"kms:GenerateDataKey … because no resource-based policy allows"*: the
+  bucket encrypts under `alias/awsds-staging-data`, which names no persona for `GenerateDataKey`, and
+  S3 asked the key before it decided the put, so `DenyEveryWrite`'s `s3:Put*` and the bucket's
+  `DenyThePersonaAnyWrite` stay attached and unexercised by this call (Lesson 20), the same order 6.3
+  read on Production's data key. A write that takes no key, a delete, exercises the set's own deny; the
+  next command.

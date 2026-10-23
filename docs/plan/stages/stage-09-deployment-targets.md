@@ -1136,6 +1136,16 @@ read every denial by its wording, never its exit code.
   ```bash
   aws glue start-job-run --job-name awsds-staging-app-etl --profile awsds-scientist-staging --region us-west-2
   ```
+
+  **Run by the user 2026-10-23** (the log): the catalog read answered an empty list, the Glue write was
+  refused by `DenyEveryWrite`, and **the S3 put was refused by the data key first**, *"kms:GenerateDataKey
+  … no resource-based policy allows"*, S3 asking the key before deciding the put, so the set's `s3:Put*`
+  deny and the bucket's `DenyThePersonaAnyWrite` stayed unexercised (Lesson 20). A delete takes no key
+  and exercises the set's own deny, expected *"an explicit deny in an identity-based policy"*:
+
+  ```bash
+  aws s3api delete-object --bucket awsds-staging-outputs --key probe.txt --profile awsds-scientist-staging --region us-west-2
+  ```
 - **8.5 — [pipeline] The end-to-end**: run Stage 8's promotion against the real catalogs, its first run (Stage 8 pass 4, decision 23) — the
   integration tests now query the governed tables through Staging's share and the application's own
   tables, the artifact lands in Production, and the pandas
