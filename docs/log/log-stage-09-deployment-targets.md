@@ -1056,3 +1056,16 @@ sign-in.*
   escape hatch is closed at rest, open in an approved window alone, alarmed on each assumption, and
   cannot become a notebook: 6.3 is done, verification xi answered but for the OU wording, which the
   role's own policy pre-empts (Lesson 20).
+
+## 2026-10-23 — 6.3: the refusal's record read in the trail
+
+*Claude's hand, as the infrastructure user (`awsds-infra-prod`), after the user signed in again on
+request. Read-only. Times UTC.*
+
+- **[Claude] The trail**, every `AssumeRole` in Production from 2026-10-22 23:30 to 2026-10-23 15:28,
+  paginated whole (471 events, none truncated), two by the persona's reserved role: the third assumption
+  inside the window, 2026-10-22 23:32:07, session `debug-window-after`, no error; and the refusal,
+  **2026-10-23 15:25:28, `errorCode` `AccessDenied`, `requestParameters` null**, `us-west-2`, event
+  `47e12fbc-5061-4a34-bc1f-e73217fbf313`, its `errorMessage` the text the user pasted, both from the
+  laptop's address. The refused call records no session name and no role ARN, the shape Stage 8 4.6
+  read; the window had been closed for 15 h 50 min. 6.3 and verification xi are closed.
