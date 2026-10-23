@@ -188,6 +188,7 @@ is needed.
    With both flags on, a commit answers verification xxviii's first two halves and leaves the third
    half (whether the engine's flag is also needed) unmeasured; the measurement is the user's hand in
    Production's console, the flag off, a third run, the flag on again, bracketed by `DT-5`.
+   **Done 2026-10-23**: the flag applied at 22:03 UTC, the second run `SUCCEEDED` at 22:06 (Stage 9's log).
 6. **The drop is in place** (Stage 9 2.5's first half, done 2026-10-23): `incoming/2026/10/23/trades.csv`,
    and 2.6 read the same evening, the writer's read-back refused by the set's implicit deny. A second
    drop before the pickup is optional, the same command on the day's prefix as the Data Scientist User
@@ -201,9 +202,14 @@ is needed.
    as an S3 error naming the object), the rows curated, each key gone after its delete (`404` on the
    `head-object`). `EXC-02`'s three `.txt` objects are not CSV and stay: the row retires with a
    deliberate `InfrastructureAccess` cleanup once the pickup has run, as `AWS_STATE.md` has it.
+   **Done 2026-10-23, 22:11 UTC** (Stage 9's log): one CSV, ten rows read and curated, the key deleted, a
+   delete marker over a version the bucket expires at 90 days.
 8. **[Claude]** `./aws/deploytargets.py`, `./aws/datalake.py` (`DL-5` after a run that vended
    through the lake), the table's rows read as the persona through Athena (5.4's first query), and the
    run's events in CloudTrail; `./aws/egress.py` §6 before `make down ENV=production`.
+   **Taken 2026-10-23, 22:14 to 22:16**: `deploytargets.py` and `datalake.py` all checks passed, `EG-5`
+   ~0.070 USD/h with the seven endpoints up, `make status` 0.0856 USD/h; the persona's Athena read of the
+   twenty rows and `make down` were left to the user.
 
 ## T. The tag: Stage 8's pass 4 with Stage 10's passes 1 and 2
 
@@ -253,8 +259,10 @@ Separable and last; nothing needs it. In a Production sitting with the hub up.
 
 1. **[Claude⚡] `production/foundation/` applied** with 9.4's `RunTheGovernedWarehouseDdl` on the deploy
    role, planned 2026-10-23 (the alerts var-file on the command line, or the subscription is destroyed).
+   **Done 2026-10-23, 21:19 UTC.**
 2. **[Claude⚡] `production/warehouse/` applied** (9 to add) as `awsds-infra-prod`, by hand; the
    refusal-9 row removed from `layers.py` in the same sitting; `EXC-13`'s Production row written.
+   **Done 2026-10-23, 22:07 UTC**, the re-plan `No changes`; `warehouse-compute/` plans *2 to add* (22:10).
 3. **[user] `make up ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift`**:
    `warehouse-compute/` with the namespace in place, and the `redshift-serverless` endpoint in
    VPC-Workloads for a job that calls the API (9.1). The usage limit counts from zero with each

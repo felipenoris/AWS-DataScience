@@ -594,3 +594,15 @@ address masked; the reading Claude's.*
 
 - **[Claude]** The implicit deny, the set naming no `sns:` write; 6.2's six calls are read, every one
   refused by the set's own policy, and the provisioned deny's exercise stays the battery's.
+
+## 2026-10-23 — 0.5's reading: the Lake Formation call carries the endpoint's id
+
+*Claude's hand, reading Production's CloudTrail after Stage 9 2.4's runs, which that stage's log carries;
+no write. Times UTC.*
+
+- **[Claude] The reading**: the proof job's `GetDataAccess` events of 21:44, 22:05-22:06 and 22:11 each
+  carry `vpcEndpointId` `vpce-0431cce5692733205`, the `lakeformation` interface endpoint
+  `production/workloads-egress/` raises in `VPC-Workloads`; its `GetTable`s carry the `glue` endpoint's,
+  `vpce-0925d883174fd23c1`. The event name is `GetDataAccess`, never `GetTemporaryGlueTableCredentials`,
+  and the vend comes in two legs, the driver's own call and Glue's on its behalf. The Sandbox endpoint
+  question 6d left in this step is answerable from this reading.

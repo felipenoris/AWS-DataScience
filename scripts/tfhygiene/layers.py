@@ -639,8 +639,7 @@ SLICES = [
     ),
     # Stage 9 step 9.1 - the governed class of D40's warehouse, the Sandbox pair copied into Production
     # with the same split and the same rank. [P] here is 0.0 for the same reason Sandbox's row is: the
-    # Redshift Managed Storage it bills is per GB-month, outside this column. Written 2026-10-22, not
-    # applied; the namespace's first apply is step 9.1's, by hand.
+    # Redshift Managed Storage it bills is per GB-month, outside this column.
     Slice(
         "production",
         "warehouse",
@@ -650,7 +649,7 @@ SLICES = [
     # Stage 9 step 9.4: the operator raises the compute by hand before the DDL job and takes it down
     # after; awsds-deploy-prod cannot (the root SCP exempts InfrastructureAccess alone). The ceiling is
     # Sandbox's reasoning, 4 RPU x 0.36 while a query runs. The slice reads production/warehouse/'s
-    # state, so HELD_FROM_UP (refusal 9) keeps it out of `up` until the namespace is applied.
+    # state, applied 2026-10-23, so `up` no longer holds it (refusal 9's table is empty).
     Slice(
         "production",
         "warehouse-compute",
@@ -719,16 +718,11 @@ APPLIED_BY_THEIR_OWN_HAND = {"orchestration"}
 APPLICATION_PARENT = "app"
 #
 # Refusal 9 - an [E] slice held from `up` while the [P] state it reads does not exist, keyed by
-# (account, slice) like NEVER_DESTROY, with the reason printed. production/warehouse-compute/ reads
-# production/warehouse/'s state for the namespace, and that namespace is applied by hand at Stage 9
-# pass 6: until then a `make up ENV=production` would stop at this slice's state read, after the
-# endpoints it raised. The row leaves in the sitting that applies the namespace. `down` is unaffected.
-HELD_FROM_UP = {
-    ("production", "warehouse-compute"): (
-        "production/warehouse/ is not applied (Stage 9 pass 6): the namespace this slice reads is "
-        "applied by hand first, and this row leaves with that apply"
-    ),
-}
+# (account, slice) like NEVER_DESTROY, with the reason printed: a `make up` would otherwise stop at
+# the slice's state read after raising the slices before it. `down` is unaffected. The table held
+# production/warehouse-compute/ from 2026-10-22 until the namespace it reads was applied on
+# 2026-10-23, and holds nothing today.
+HELD_FROM_UP: dict[tuple[str, str], str] = {}
 #
 # A [D] slice is refused by both targets, and the power state is handled by the dormant hook
 # instead. Without the refusal a [D] row falls into the same list as the [E] ones, the one

@@ -325,16 +325,20 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `s3-bucket` module turns Bucket Keys on for every bucket it creates, so D31's zero-cost variant is
   unavailable (PR #225). **Pass 4 prepared 2026-10-22**: 5.1 is the managed policy `awsds-prod-data-scientist`
   in `production/data/` (1 to add, 1 to change) attached in `identity/sso/` (1 to add, 1 to change; the
-  inline form read 10,550 of 10,240), `GetDataAccess` added, both applied 2026-10-22; step 9.1's
-  `production/warehouse/` (9 to add) and `warehouse-compute/` written, the compute held from `make up` by
-  `layers.py` refusal 9 until the namespace is applied; 6.3's window opened, exercised and closed
+  inline form read 10,550 of 10,240), `GetDataAccess` added, both applied 2026-10-22; step 9.1's two
+  slices written; 6.3's window opened, exercised and closed
   2026-10-22, the refusal read 2026-10-23. **2026-10-23**: 2.4's proof job `awsds-prod-producer-proof`
-  applied in `production/sagemaker/` with its script uploaded (one run per mode, nothing run yet); decision
-  13 taken as (a) and done: the `AllowFullTableExternalDataAccess` flag a Glue write needs is on in
-  Production since 2026-10-23 19:49 UTC (the user's console act, `DT-5` unchanged, `TM-26`), unset in the
-  lake and Staging, on in Sandbox since SMUS; 9.4's grant applied, `workloads-egress/` taking `GROUPS=redshift`; the quota codes
-  in 3.5, the `ml.m5.large` pair requested 2026-10-23; the persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run the same evening but the space halves and the Data API negative (INT-06 answered, open question 8 closed);
-  the sittings in `runbooks/promotion.md`.
+  (`production/sagemaker/`) ran both modes in the Production sitting: the `producer` write committed and the
+  `pickup` consumed the drop, `curated.trades` at 20 rows, after decision 13's two halves: the
+  `AllowFullTableExternalDataAccess` flag on in Production (the user's console, 19:49 UTC) was not enough,
+  the vend refused *"Verify the data lake settings for account"*, and the lake's `lakeformation.tf` carries it
+  since 22:03 UTC (`TM-26`); the flag is on in Production, Sandbox and the lake, unset in Staging; whether
+  Production's is needed beside the lake's is unmeasured (a third run, the user's console). 9.1's
+  `production/warehouse/` applied 22:07 UTC (the namespace; `EXC-13`'s Production sentence), refusal 9
+  lifted, `warehouse-compute/` planning 2 to add and waiting on 9.3's theme and quota; 9.4's grant applied,
+  `workloads-egress/` taking `GROUPS=redshift`; the `ml.m5.large` pair requested 2026-10-23 (`PENDING`); the
+  persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run but the space halves and the Data API negative
+  (INT-06 answered, open question 8 closed); the sittings in `runbooks/promotion.md`.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, never fired (no model package exists). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`

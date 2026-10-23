@@ -1537,3 +1537,103 @@ and its trail, `awsds-infra-data` for the lake's readings and the plan); the hub
   to 21:56:00, *"Plan: 0 to add, 1 to change, 0 to destroy."*, the flag `false -> true` and eight
   attributes unchanged, the plan saved outside the repository. The apply waits on the user's
   authorization, then `DL-5` after it and the second run.
+
+## 2026-10-23 — decision 13's lake half applied: the flag on in Data Governance
+
+*Claude's hand, on the user's authorization in chat (*"Pode prosseguir com os applies e todas as etapas
+que você conseguir executar sem q minha intervenção."*), as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-data`); no other session running on the machine (`list_sessions`,
+every row idle). Recipe A, the plan outside the repository, `DL-5` before and after. Times UTC.*
+
+- **[Claude] Before**: `./aws/datalake.py awsds-infra-data` at 22:01:58, all checks passed, `DL-5`
+  `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE`, `DL-6` and `DL-13` passing. The fresh plan at 22:02:36
+  to 22:02:55, *"Plan: 0 to add, 1 to change, 0 to destroy."*, one resource,
+  `allow_full_table_external_data_access = false -> true`.
+- **[Claude] The apply** at 22:02:55 to 22:03:05, *"aws_lakeformation_data_lake_settings.this:
+  Modifications complete after 1s"*, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*;
+  the resource's id moved from `4042482338` to `1412964709`, a hash of the settings.
+- **[Claude] After**: `get-data-lake-settings` at 22:03:49 reads the flag `true`, one administrator,
+  both create-default lists empty, the parameters `4` / `TRUE`, `ExternalDataFilteringAllowList` `[]`,
+  `AuthorizedSessionTagValueList` and `TrustedResourceOwners` absent; `./aws/datalake.py` at 22:03:50
+  all checks passed, the two standing notes (`DL-7`, `DL-11`); the re-plan at 22:04:42 **`No changes`**.
+  The flag now reads `true` in Production, Sandbox and Data Governance, unset in Staging.
+
+## 2026-10-23 — 2.4's producer run again, with both flags on: the governed write committed
+
+*Claude's hand, the same authorization and identity (`awsds-infra-prod`), the hub and
+`production/workloads-egress/` up. Times UTC.*
+
+- **[Claude] The run**: `start-job-run` at 22:04:44, run
+  `jr_954bd067091522ca86a459b9887e4ab3d0d3055fae0130aa845965de4f8e2b09`, **`SUCCEEDED`** at 22:06:27
+  after 79 s of execution, 158 DPU-seconds, 99 s after the lake's flag went on. The script's lines:
+  *"running as …awsds-prod-job-exec/GlueJobRunnerSession, mode producer"* 22:05:33; *"inserting 10
+  sample rows into lake.curated.trades"* 22:05:42; *"the insert committed"* 22:06:11;
+  *"lake.curated.trades holds 10 row(s) through the share"* 22:06:14, the ten rows printed, dated
+  2026-10-01 to 2026-10-05; *"the direct put was refused: AccessDenied: User:
+  …awsds-prod-job-exec/GlueJobRunnerSession is not authorized to perform: kms:GenerateDataKey on this
+  resource because the resource does not exist in this Region, no resource-based policies allow access,
+  or a resource-based policy explicitly denies access"* 22:06:16; *"done"*. The refusal came from the
+  lake's data key, one layer before the S3 identity-policy wording 2.4 expected, the same order 8.4
+  read for the Staging persona: the job role's missing `s3:PutObject` stays attached and unexercised
+  (Lesson 20). The error log group carries Spark's executor noise (*"SparkContext should only be created
+  and accessed on the driver"*, *"A master URL must be set"*) and no failure.
+- **[Claude] The vends in both trails**: eight `GetDataAccess` in Production between 22:05:45 and
+  22:06:15, every one answered through `vpce-0431cce5692733205`, in pairs: one from the driver's SDK
+  naming the lake's table, one invoked by `glue.amazonaws.com` whose `sharedEventID` is also in the
+  lake's trail (four events there, the role's session as the principal, `invokedBy`
+  `glue.amazonaws.com`). The first run's refused vends had reached neither leg of that pair in the lake.
+- **The readings 2.4 owed**: the mode admits a writer holding `INSERT`, `DELETE` and `ALTER` without
+  `ALL`, so the `ALL` fallback is not taken; the commit went through with `glue:UpdateTable` in the
+  role, which the next run without it would measure, and is not measured; the flag is needed in the
+  owner's account, and whether Production's is also needed is the third run's measurement, the
+  user's hand.
+
+## 2026-10-23 — 9.1's `production/warehouse/` applied: the governed namespace
+
+*Claude's hand, the same authorization (*"Pode prosseguir com os applies…"*), as the infrastructure user
+with `InfrastructureAccess` (`awsds-infra-prod`); `runbooks/promotion.md` §W step 2. Recipe A, the
+plan outside the repository. Times UTC.*
+
+- **[Claude] The plan**, the slice initialised in the worktree, at 22:06:09 to 22:06:18: *"Plan: 9 to
+  add, 0 to change, 0 to destroy."*, the count 9.1 planned on 2026-10-22: the three audit log groups
+  (`connectionlog`, `userlog`, `useractivitylog` under `/aws/redshift/awsds-prod-warehouse/`), the
+  alarms `awsds-prod-warehouse-compute-capacity` and `-data-storage`, the role
+  `awsds-prod-warehouse-exec`, the namespace, the security group and its 5439 ingress rule.
+- **[Claude] The apply** at 22:07:07 to 22:07:20, *"Apply complete! Resources: 9 added, 0 changed, 0
+  destroyed."*, the namespace `awsds-prod-warehouse` created in 2 s, the security group
+  `sg-0f018ef6c4848a9a3`; the re-plan at 22:07:32 **`No changes`**. The outputs: the admin secret
+  `redshift!awsds-prod-warehouse-dbadmin-…`, Redshift-managed; capacity base 4, max 8, the usage
+  limit 10 RPU-hours monthly, `max_query_execution_time` 120; the namespace ARN. No workgroup exists:
+  `production/warehouse-compute/` is `[E]`, raised by `make up … ONLY=warehouse-compute GROUPS=redshift`
+  once `layers.py`'s refusal 9 is lifted, and 9.3's SQL waits on the user's schema theme and quota
+  (`waiting-on-the-user.md`).
+
+## 2026-10-23 — 2.5's pickup run: the drop consumed, curated through the write path, deleted
+
+*Claude's hand, the same authorization and identity (`awsds-infra-prod`), the hub and
+`production/workloads-egress/` up; the drop `incoming/2026/10/23/trades.csv` (362 bytes) made by the
+user as the Data Scientist User in Sandbox at 20:47 UTC. Times UTC.*
+
+- **[Claude] The run**: `start-job-run` at 22:09:38, run
+  `jr_4039ad141615c4ac81136dccb766dff822ff964b27ac84ee5db7a88ea8153683`, **`SUCCEEDED`** at 22:11:33
+  after 97 s of execution, 194 DPU-seconds. The script's lines: *"pickup: 1 CSV object(s) under
+  s3://awsds-data-dropbox/incoming/: incoming/2026/10/23/trades.csv"* 22:10:34, the three `.txt`
+  objects of `EXC-02` passed over; *"pickup: 10 row(s) read as the job role, under the lake data key
+  (the KMS half)"* 22:11:09; *"pickup: 10 row(s) curated into lake.curated.trades"* 22:11:19;
+  *"lake.curated.trades holds 20 row(s) through the share"* 22:11:20, the sample rows and the CSV's
+  carrying the same ten trades, so each prints twice; *"pickup: deleted
+  s3://awsds-data-dropbox/incoming/2026/10/23/trades.csv; a read after the delete answers 404: Not
+  Found"* 22:11:21; *"the letterbox is empty"*; *"done"*.
+- **[Claude] The drop-box after**: the listing at 22:13 holds the three `.txt` objects alone. The
+  bucket is versioned, so the delete is a **delete marker** (`YoD2rVa6…`, 22:11:22) over the object's
+  version (`.UmZxqIbd…`, 362 bytes), which stays until the bucket's lifecycle expires it.
+- **[Claude] Production's trail** (22:11): the drop-box read's `kms:Decrypt` at 22:11:08 invoked by
+  `fas.s3.amazonaws.com` as the job role's session, the KMS half of INT-10 answered by the lake's data
+  key; the vends in pairs through the `lakeformation` endpoint at 22:11:12, 22:11:18 and 22:11:21, the
+  `GetTable`s through the `glue` endpoint, and one `glue:UpdateTable` at 22:11:19 invoked by
+  `glue.amazonaws.com`, the Iceberg commit. The lake's trail had not yet shown the decrypt at 22:13.
+- **[Claude] The lake's trail at 22:26**, after the log's lag: the drop-box read's `kms:Decrypt` at 22:11:08
+  as the job role's session, the cross-account principal (`sharedEventID` with Production's event); then,
+  from 22:11:12 to 22:11:21, every `Decrypt` on the curated data is the registration role's
+  (`awsds-data-lf-registration`, sessions `AWSLF-00-NA-…`), the credentials Lake Formation vended: the
+  job role's own session touched no `curated` object, which is D13 read in the trail.

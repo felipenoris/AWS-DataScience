@@ -70,7 +70,7 @@ flowchart LR
 
 The Staging and Production rows describe Stage 9; neither data slice is built.
 
-**The warehouse adds a store to two of those rows** (D40). **`Sandbox`'s exists since 2026-09-20** ([Stage 5b](plan/stages/stage-05b-redshift-serverless.md) pass 1); Production's is specified and waits for [Stage 9](plan/stages/stage-09-deployment-targets.md) step 9. **What the brief calls
+**The warehouse adds a store to two of those rows** (D40). **`Sandbox`'s exists since 2026-09-20** ([Stage 5b](plan/stages/stage-05b-redshift-serverless.md) pass 1); **Production's namespace exists since 2026-10-23** ([Stage 9](plan/stages/stage-09-deployment-targets.md) 9.1), its `governed` database and first schema waiting for 9.3. **What the brief calls
 a *base* is a Redshift `schema`** (`objectives.md`, 2026-09-20), so the Redshift `database` is only a class
 container and every grain below is per schema. `Sandbox` gains `awsds-sandbox-warehouse` with one `sandbox`
 database of themed schemas, outside Lake Formation like the sandbox lake beside it;

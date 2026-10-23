@@ -2601,6 +2601,18 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   (`EXC-10`, 2026-09-12), Lesson 62's wrong path. Where: `log-stage-12-observability-finops.md`, the
   2026-10-18 entry.
 
+### Lake Formation
+
+- **A cross-account full-table-access vend reads the table owner's `AllowFullTableExternalDataAccess`,
+  and the refusal names no account** (measured 2026-10-23, Stage 9 2.4). A Glue 6.0 Spark job in
+  Production, the engine's own flag `true`, was refused at its first Iceberg write on a shared `curated`
+  table with *"Insufficient Lake Formation permissions. Verify the data lake settings for account"*, the
+  sentence ending there; the same job committed 99 s after the lake's flag went on. AWS's page names the
+  flag as the mode's first step and says nothing about which account's. The vend is logged as
+  `GetDataAccess` in two legs, the driver's own call and Glue's on its behalf, and only the second
+  reaches the owner's trail, as a shared event; `GetTemporaryGlueTableCredentials` never appears as an
+  event name. Where: `log-stage-09-deployment-targets.md`, the 2026-10-23 entries; Stage 9 decision 13.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
