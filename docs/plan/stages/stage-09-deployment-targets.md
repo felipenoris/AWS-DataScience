@@ -445,7 +445,8 @@ shape).
   aws glue start-job-run --job-name awsds-prod-producer-proof --arguments '{"--MODE":"pickup"}' --profile awsds-infra-prod --region us-west-2
   ```
 
-  The script lists every `.csv` under `incoming/` as the job role (`ListTheDropBox`), fails the run
+  **The drop made 2026-10-23** by the user: `incoming/2026/10/23/trades.csv`, waiting for the pickup
+  (the log). The script lists every `.csv` under `incoming/` as the job role (`ListTheDropBox`), fails the run
   when there is none, reads the rows with the role's own credentials under the lake key (the KMS half:
   a refusal there surfaces as an S3 error naming the object), inserts them into `curated.trades`
   through the share, deletes each consumed key and reads it gone (a `404` on `head-object`). `EXC-02`'s
@@ -459,7 +460,13 @@ shape).
   aws s3 cp "s3://awsds-data-dropbox/incoming/$(date -u +%Y/%m/%d)/trades.csv" - --profile awsds-scientist-sandbox --region us-west-2
   ```
 
-  expected refused, the implicit deny Stage 5a pass 4d read.
+  expected refused, the implicit deny Stage 5a pass 4d read. **Run by the user 2026-10-23**: refused
+  as a bare `403` on `HeadObject` (the log); the attributed form is the object read, whose error body
+  names the layer:
+
+  ```bash
+  aws s3api get-object --bucket awsds-data-dropbox --key incoming/2026/10/23/trades.csv /dev/null --profile awsds-scientist-sandbox --region us-west-2
+  ```
 
 ### 3. `production/sagemaker/` — the runtime half of D17, layer `[P]`
 
@@ -678,7 +685,10 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   aws sagemaker create-model-package --model-package-group-name "arn:aws:sagemaker:us-west-2:<Production>:model-package-group/awsds-prod-model-app-etl" --model-package-description probe --inference-specification '{"Containers":[{"Image":"<Production>.dkr.ecr.us-west-2.amazonaws.com/awsds-prod-ecr-app-etl:v0.2.1"}],"SupportedContentTypes":["text/csv"],"SupportedResponseMIMETypes":["text/csv"]}' --profile awsds-scientist-sandbox --region us-west-2
   ```
 
-  The project-role half runs the same two calls from a space, with the Sandbox sitting up.
+  **Run by the user 2026-10-23**: refused *"because no resource-based policy allows the
+  sagemaker:CreateModelPackage action"*, the group policy's absence of a grant, no network condition
+  (the log); the persona's half of verification v is read. The project-role half runs the same two calls
+  from a space, with the Sandbox sitting up.
 
 ### 4. The Staging data platform (D20) — layer `[P]`
 
@@ -1082,7 +1092,11 @@ read every denial by its wording, never its exit code.
 
   The share's read-but-not-write is the space's: the project's query editor answers `SELECT count(*)
   FROM curated.trades` and refuses `INSERT INTO curated.trades VALUES (...)` with Lake Formation's
-  wording, with the Sandbox sitting up.
+  wording, with the Sandbox sitting up. **The laptop half run by the user 2026-10-23** (the log): the
+  lake put refused by the set's implicit deny, the debug role at the trust, the registry pair 3.4's;
+  the perimeter put answered S3's bare `Access Denied` for a bucket another account owns, and the set
+  holds no allow on such a bucket, so no laptop persona exercises `DenyS3ObjectWriteOutsideOrganization`
+  by its wording: its proof stays 1c's inverted document.
 - **8.2 — [user] From a Production session as the data scientist**: 5.4's proofs, plus INT-06 — how
   much of the S3 **console** works for the persona under 1.1's principal branch, recorded as a fraction
   and written into `README.md` if part of it does not. The console's bucket list is `s3:ListAllMyBuckets`,
@@ -1637,7 +1651,7 @@ Record every answer, including the ones that come out fine.
 | ii | Does the write share arrive with a **fresh** session and no pending RAM invitation — INT-11's org path holding for the third consumer? **Answered on the RAM side at 2.2 and on the catalog side at 2.3**, because Production has no data lake administrator in between (2.2's callout) | 2.2, 2.3 |
 | iii | Does the write pair hold — the LF write succeeds **and** the direct `PutObject` is denied on the identity side (D13)? | 2.4 |
 | iv | Does the pickup read, curate and delete — and does the drop-box KMS grant reach the exact 3.1 role name (the Stage 5a contract)? | 2.5 |
-| v | Is the registry gate real — the Sandbox reader decision 10 named reads status only, and an approval lands only under `awsds-deploy-prod` (INT-07)? | 3.4 |
+| v | Is the registry gate real — the Sandbox reader decision 10 named reads status only, and an approval lands only under `awsds-deploy-prod` (INT-07)? **The persona's half, 2026-10-23**: from a laptop as `DataScientistAccess`, `DescribeModelPackageGroup` answered across the account boundary and `CreateModelPackage` was refused *"because no resource-based policy allows"*; the project role's half and the approval half are owed | 3.4 |
 | vi | Does the enforced workgroup override a client-requested result location, and does the scan limit cancel (the documented behaviour, observed)? **The override, yes, 2026-10-23**: a query asking for `s3://awsds-prod-outputs/not-enforced/` landed its result under `s3://awsds-prod-derived/results/`, `SUCCEEDED`, the workgroup reading enforced with a 10,737,418,240-byte cutoff; the cancel waits for a table past 10 GB, which no table here is | 5.4 |
 | vii | Are the Production negatives denied naming the **set's** deny — `CreateTrainingJob`, `StartJobRun`, `redshift-data:ExecuteStatement` (D18)? **Two of three, 2026-10-23**: `CreateModelPackageGroup`, in place of `CreateTrainingJob`, which the `Workloads` document's job settings would answer first, and `StartJobRun` each refused *"with an explicit deny in an identity-based policy"*, the set's `DenyProductionControlPlane`; `ExecuteStatement` validated before it authorized with no workgroup in Production (Lesson 21), re-run at pass 6 | 5.4 |
 | viii | Does `DataScientistStagingAccess` read back with `DenyEveryWrite` and no Athena, and is its assignment the one 6b made (Lesson 22)? **Answered 2026-10-18, yes to both**: `DT-10` reads `DenyEveryWrite` and no Athena allow; `./aws/list-identities.py` (22:20:57Z) reads the set assigned in `Staging Account` to `sso-group-data-scientists` alone, among the seven assignments 6b's last reading counted, and the Identity account's CloudTrail since 2026-08-20 holds one `CreateAccountAssignment` for the set, at 2026-09-06T04:35:35Z, ten seconds after 6b step 2.1 deleted `DataScientistAccess` and `DevEnvStewardAccess` there, and no delete since | 5.2 |

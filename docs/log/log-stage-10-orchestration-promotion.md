@@ -578,3 +578,19 @@ left in, which the service refused as a malformed input, and one of them was re-
   set holds an `airflow:` allow. So that statement is exercised from a persona session by nobody, and its
   proof stays the battery's `root` row as the infrastructure user (2026-10-18, `DENY-SCP`), the same shape
   Stage 9 6.3 read for `CreateSpace` under the debug role. The step's expectation is corrected.
+
+## 2026-10-23 — 6.2's topic, run again with the account id
+
+*The command the user's, the same session and profile; the paste the user's, the account id and the
+address masked; the reading Claude's.*
+
+- **[user]**
+
+  ```
+  ➜  AWS-DataScience git:(main) aws sns publish --topic-arn "arn:aws:sns:us-west-2:${PROD}:awsds-prod-alerts" --message probe --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AuthorizationError) when calling the Publish operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: SNS:Publish on resource: arn:aws:sns:us-west-2:<Production>:awsds-prod-alerts because no identity-based policy allows the SNS:Publish action
+  ```
+
+- **[Claude]** The implicit deny, the set naming no `sns:` write; 6.2's six calls are read, every one
+  refused by the set's own policy, and the provisioned deny's exercise stays the battery's.

@@ -1323,3 +1323,44 @@ and the principal's unique id masked; the reading Claude's.*
   across the account boundary, through the group policy's read-status statement (3.2, decision 10) and
   the set's `ReadSageMakerStatus`, both halves of Lesson 28's intersection exercised by one call. The
   write half is the next command, `create-model-package`.
+
+## 2026-10-23 — 3.4's write half, 8.1's laptop half, 2.5's drop and 2.6's read-back, from Sandbox
+
+*The commands the user's, from the laptop signed in as the Data Scientist User through
+`DataScientistAccess` (`awsds-scientist-sandbox`), the Production account id in a shell variable; the
+paste the user's, the account ids and the address masked; the readings Claude's.*
+
+- **[user]**
+
+  ```
+  ➜  AWS-DataScience git:(main) aws sagemaker create-model-package --model-package-group-name "arn:aws:sagemaker:us-west-2:${PROD}:model-package-group/awsds-prod-model-app-etl" --model-package-description probe --inference-specification "{\"Containers\":[{\"Image\":\"${PROD}.dkr.ecr.us-west-2.amazonaws.com/awsds-prod-ecr-app-etl:v0.2.1\"}],\"SupportedContentTypes\":[\"text/csv\"],\"SupportedResponseMIMETypes\":[\"text/csv\"]}" --profile awsds-scientist-sandbox --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the CreateModelPackage operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<the data scientist user> is not authorized to perform: sagemaker:CreateModelPackage on resource: arn:aws:sagemaker:us-west-2:<Production>:model-package/awsds-prod-model-app-etl/new because no resource-based policy allows the sagemaker:CreateModelPackage action
+  ➜  AWS-DataScience git:(main) echo probe | aws s3 cp - s3://awsds-data-curated/warehouse/trades/probe.txt --profile awsds-scientist-sandbox --region us-west-2
+  upload failed: - to s3://awsds-data-curated/warehouse/trades/probe.txt An error occurred (AccessDenied) when calling the PutObject operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<the data scientist user> is not authorized to perform: s3:PutObject on resource: "arn:aws:s3:::awsds-data-curated/warehouse/trades/probe.txt" because no identity-based policy allows the s3:PutObject action
+  ➜  AWS-DataScience git:(main) aws sts assume-role --role-arn "arn:aws:iam::${PROD}:role/awsds-prod-debug" --role-session-name probe --profile awsds-scientist-sandbox --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDenied) when calling the AssumeRole operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<the data scientist user> is not authorized to perform: sts:AssumeRole on resource: arn:aws:iam::<Production>:role/awsds-prod-debug
+  ➜  AWS-DataScience git:(main) echo probe | aws s3 cp - s3://noaa-ghcn-pds/awsds-probe.txt --profile awsds-scientist-sandbox --region us-west-2
+  upload failed: - to s3://noaa-ghcn-pds/awsds-probe.txt An error occurred (AccessDenied) when calling the PutObject operation: Access Denied
+  ➜  AWS-DataScience git:(main) aws s3 cp examples/app-etl/samples/trades.csv "s3://awsds-data-dropbox/incoming/$(date -u +%Y/%m/%d)/trades.csv" --profile awsds-scientist-sandbox --region us-west-2
+  upload: examples/app-etl/samples/trades.csv to s3://awsds-data-dropbox/incoming/2026/10/23/trades.csv
+  ➜  AWS-DataScience git:(main) aws s3 cp "s3://awsds-data-dropbox/incoming/$(date -u +%Y/%m/%d)/trades.csv" - --profile awsds-scientist-sandbox --region us-west-2
+  download failed: s3://awsds-data-dropbox/incoming/2026/10/23/trades.csv to - An error occurred (403) when calling the HeadObject operation: Forbidden
+  ```
+
+- **[Claude] The readings.** **The registry gate (3.4, verification v's Sandbox half)**: the write was
+  refused *"because no resource-based policy allows the sagemaker:CreateModelPackage action"*, the
+  group policy's absence of a grant and no network condition, the wording the step asked for; the
+  identity side had allowed it, or IAM would have named the identity policy first, so the gate is the
+  resource policy alone (3.2). **8.1**: the direct put into the lake's own bucket refused by the set's
+  implicit deny, *"no identity-based policy allows the s3:PutObject action"*, which keeps the bucket's
+  branches unreached from this principal; the debug role refused at the trust, *"not authorized to
+  perform: sts:AssumeRole"*, which STS never attributes; **the perimeter put answered a bare `Access
+  Denied`**, S3's form for a bucket another account owns, which names no policy, and the set holds no
+  `s3:PutObject` on that bucket anyway, so the implicit deny would answer before the perimeter document
+  even in the attributed form (Lesson 20): `DenyS3ObjectWriteOutsideOrganization`'s exercise stays 1c's
+  inverted document, and no laptop persona can exercise it. **2.5's drop** landed at
+  `s3://awsds-data-dropbox/incoming/2026/10/23/trades.csv`, the writer's put by principal, waiting for the
+  pickup run; **2.6's read-back** was refused as a bare `403` on `HeadObject`, the asymmetry holding,
+  its wording owed to a `get-object` (the next command), as 5.4's was.

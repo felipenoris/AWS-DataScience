@@ -960,7 +960,8 @@ session; read every denial by its wording (standing rule since 1c).
   never a CLI command (`Found invalid choice 'airflow-serverless'`, 2026-10-23). **Run by the user
   2026-10-23** (the log): both refused *"no identity-based policy allows"*, on a workflow ARN that does
   not exist, which the service authorized before resolving; `states:StartExecution` and
-  `scheduler:CreateSchedule` the same, so the chain layer's writes are closed to the set by omission.
+  `scheduler:CreateSchedule` the same, so the chain layer's writes are closed to the set by omission;
+  `SNS:Publish` the same. 6.2's persona half is read; the role-side negative stays `OR-3`'s reading.
 
   ```bash
   aws stepfunctions start-execution --state-machine-arn "arn:aws:states:us-west-2:<Production>:stateMachine:awsds-prod-chain-app-etl" --profile awsds-scientist-prod --region us-west-2
