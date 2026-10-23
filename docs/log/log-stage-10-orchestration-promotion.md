@@ -724,3 +724,22 @@ Times UTC.*
   after 0s"* on `awsds-staging-wf-app-etl:orchestrate`, re-planned `No changes`; `production/orchestration/`
   re-initialised on the tag and planned `No changes` (no release). The callers' commit failed its hook once,
   the slices not yet initialised on the new tag, and landed after the applies.
+- **[Claude] The chain's third execution, `v0-2-1-byhand-232145`** (23:21:47, after the role's policy):
+  **`SUCCEEDED`** at 23:36:51, output `{"runId":"2gSJPosjsAlFvxB","runState":"SUCCESS"}`; the run 767 s,
+  23:21:54 to 23:34:42, four tasks `SUCCESS`: `transform` 106 s (the Glue job `jr_f8abc018…`, 76 s, 153
+  DPU-seconds, `work/glue/trades.csv` 436 bytes), `process` 491 s (the processing job
+  `app-etl-20261023T232509`, `Completed`, 23:26:04 to 23:30:28 on `ml.t3.medium`, network isolation on,
+  the two private subnets, the jobs' group, the image `awsds-prod-ecr-app-etl@sha256:247ec6b6…` pulled
+  across the account boundary, the volume under the data key; `work/job/trades.parquet` 2,126 bytes and
+  `trades.summary.json` 511), `summarize` 7 s (*"1 table(s), 10 rows, under
+  s3://awsds-staging-outputs/app-etl/work/job/"*), `write_result` 6 s (`app-etl/outbox/report.json`, 332
+  bytes: 10 rows, `notional` 49850.5, `quantity` 1530, the input's SHA256). `./aws/orchestration.py` all
+  checks passed after the run.
+- **[Claude] The worker's calls in the trail**: `glue:GetJob`, `StartJobRun` and seventeen `GetJobRun`
+  through `vpce-029bcdb3b71c415e6` (`glue`); `sagemaker:CreateProcessingJob` and eighteen
+  `DescribeProcessingJob` through `vpce-04b5fe9741bc3c295` (`sagemaker.api`), the first `Describe` a
+  `ValidationException` before the job existed; the key's `GenerateDataKey` and `Decrypt` through
+  `vpce-07b2884c5d3d77925` (`kms`), `logs:CreateLogStream` through `vpce-0813d1026921373f2`; one
+  `ec2:CreateNetworkInterface` in the worker's session at 23:25:12, `Client.UnauthorizedOperation`, the job
+  unaffected. The two tasks' hosts, `ip-10-50-110-196` (`process`) and `ip-10-50-50-227` (`summarize`),
+  sit one in each private subnet, so the single-AZ endpoints were reached from both AZs (verification xvi).

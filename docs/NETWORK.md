@@ -37,7 +37,7 @@ the plan.
 | Sandbox 1 | `10.20.0.0/16` | Sandbox | SMUS project apps, the probes |
 | **VPC-SharedServices** | `10.30.0.0/16` | Production | GitLab, Pages, the build runner — *the VPC Stage 3 built, re-labelled at 6c step 1.1* |
 | **VPC-Networking** | `10.31.0.0/16` | Production | **the only internet gateway that serves a host**; the WireGuard host; the Squid proxy |
-| **VPC-Workloads** | `10.32.0.0/16` | Production | the production SageMaker runtime, MWAA Serverless workers — *nothing runs in it yet* |
+| **VPC-Workloads** | `10.32.0.0/16` | Production | the production SageMaker runtime, MWAA Serverless workers; Stage 9's proof job ran in it on 2026-10-23 |
 | Staging | `10.50.0.0/16` | Staging | the runtime target — **the CIDR is inherited, not re-cut**: a VPC CIDR is immutable, and the `[P]` gateway-endpoint ids the lake names survive with it |
 | WireGuard peers | `10.90.0.0/24` + `fd90::/64` | — | in **no** route table except VPC-Networking's public tier (`NT-4` asserts both halves) |
 
@@ -108,7 +108,7 @@ module's arithmetic:
 | `sandbox/warehouse-compute/` | `[E]` | the **workgroup**, which is what puts ENIs in the two private subnets. Destroyed by `make down ENV=sandbox`: Redshift Serverless has no pause, so *off* means *absent* |
 | `production/warehouse/` | `[P]` | **applied 2026-10-23** (Stage 9 step 9.1): the governed warehouse's **security group** `awsds-prod-warehouse` and its one ingress rule, TCP/5439 from the jobs' group `awsds-prod-jobs`, group-to-group; the group is here for Sandbox's reason, free and referenced by the workgroup, so it survives a `make down` unattached |
 | `production/warehouse-compute/` | `[E]` | **unapplied, planning 2 to add since the namespace's apply of 2026-10-23**: the governed **workgroup**, which puts ENIs in VPC-Workloads' two private subnets. Destroyed by `make down ENV=production`; raised by the sitting that runs Stage 9 9.3 (`GROUPS=redshift`) |
-| `staging/orchestration/` · `production/orchestration/` | `[E]` | **written 2026-10-22, not applied** (Stage 10 step 1.2): the workers' security group `awsds-<env>-wf-workers`, declared in the `orchestration` module; at run time the service-linked role puts each MWAA Serverless worker's interface in the two private subnets of Staging's VPC or VPC-Workloads |
+| `staging/orchestration/` · `production/orchestration/` | `[E]` | **Staging's applied for Stage 8 3.8's leg on 2026-10-23 and destroyed by its `make down`, Production's unapplied** (Stage 10 step 1.2): the workers' security group `awsds-<env>-wf-workers`, declared in the `orchestration` module; at run time the service-linked role puts each MWAA Serverless worker's interface in the two private subnets of Staging's VPC or VPC-Workloads |
 
 ---
 
@@ -301,7 +301,7 @@ otherwise, naming the endpoint. The case that forced it: `sagemaker.studio` answ
 | `awsds-prod-runner` `[E]`-attached, `[D]`-declared | **nothing** — no ingress rule at all; declared in `production/tooling/` and attached by `production/runners/` to all three runners |
 | the probe groups `[E]` | no ingress; egress scoped to the peers the **peering matrix** generates |
 | `awsds-prod-jobs` · `awsds-staging-jobs` `[P]` | TCP from **its own group**, every port: Glue's requirement for a connection's group, so a job's driver and executors reach each other. Egress to its own group, TCP/443 to the VPC's interface-endpoint group and TCP/443 to the S3 prefix list, and nothing else. Applied 2026-10-22 (Stage 9 decision 12 (a)); the governed warehouse's `5439` rule will name it (Stage 9 step 9.1) |
-| `awsds-<env>-wf-workers` `[E]`, written, not applied | all traffic from itself, the private-routing shape's self-referencing rule; outbound all, which reaches the VPC's interface endpoints and the S3 gateway alone, since the subnets route nowhere else (Stage 10 step 1.2) |
+| `awsds-<env>-wf-workers` `[E]`, Staging's measured 2026-10-23 | all traffic from itself, the private-routing shape's self-referencing rule; outbound all, which reaches the VPC's interface endpoints and the S3 gateway alone, since the subnets route nowhere else (Stage 10 step 1.2) |
 | `awsds-sandbox-warehouse` `[P]` | TCP/5439 from **an admitted SMUS project's own security group**, group-to-group, one rule per project — **never a CIDR**, which would admit every ENI in two /18s including every other project's apps. **No egress rule at all**: nothing in this design has the warehouse originate a connection, and the day `COPY` is granted (5b decision 5) is the day one is written with a named destination. With no project admitted the group has **no ingress rule**, which is the state Stage 5b pass 1 applied in. **One rule since 2026-09-21**, for project `avhvbqn37ty7m8` (6h 2.3), exercised from a space on 2026-10-10 (6h 3.3): the socket's local address inside the container read `169.255.254.3`, not a VPC address, and the group-to-group rule admitted the connection |
 | `awsds-prod-warehouse` `[P]`, `sg-0f018ef6c4848a9a3` since 2026-10-23 | TCP/5439 from **the jobs' group `awsds-prod-jobs`**, group-to-group, one rule and never a CIDR: the two subnets also hold the MWAA Serverless workers (Stage 10), and a CIDR would admit them (Stage 9 step 9.1). **No egress rule at all**, for Sandbox's reason. No project rule: no project reaches this account (D26), so 6h's per-project layer does not exist here |
 

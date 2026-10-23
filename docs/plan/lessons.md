@@ -2623,8 +2623,11 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   value"*, the `GenerateDataKey` refused *"because no resource-based policy allows"*; the three tasks
   behind it `UPSTREAM_FAILED`. A key policy read against the service's documented calls misses the
   XCom backend's, and a run on a key the role already held `kms:*` on (Stage 18's project key) could
-  not show it. Where: `log-stage-10-orchestration-promotion.md`, the 2026-10-23 entries;
-  `staging/data/main.tf`'s `AllowTheWorkflowRolesForTheirWorkflows`.
+  not show it. The role's own policy mirrored the key's, `Decrypt` alone, so the second run moved the
+  wording from *"no resource-based policy allows"* to *"no identity-based policy allows"*: one intent
+  in two documents (Lesson 33), each needing the action. Where: `log-stage-10-orchestration-promotion.md`,
+  the 2026-10-23 entries; `staging/data/main.tf`'s `AllowTheWorkflowRolesForTheirWorkflows` and the
+  orchestration module's `UseTheKeyForItsWorkflow`.
 
 ---
 

@@ -349,7 +349,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Stage 8's application ceilings and Stage 9's data keys, outputs buckets and Staging's job role, exist
   since 2026-10-22.
   The MWAA Serverless service-linked role exists in Staging, not in Production, whose first apply needs
-  `iam:CreateServiceLinkedRole` (1.5).
+  `iam:CreateServiceLinkedRole` (1.5). **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
+  3.8): the workflow created by `awscc` under `InfrastructureAccess`, the chain's machine started, diagnosed two
+  failures (the worker's XCom encryption needs `kms:GenerateDataKey` in the key policy and in the role's, both
+  fixed) and `SUCCEEDED`; 0.5, decision 19, decision 2's context and verification xvi's worker clauses read; the
+  failure rules mailed; verification ii's deploy-role half and 3.2's deliberate break wait for the pipeline.
 - **The Sandbox warehouse (5b, 6h)**: `sandbox/warehouse/` rank 53 `[P]` and `sandbox/warehouse-compute/`
   rank 54 `[E]` (base 4 / max 8 RPU, usage limit 10 RPU-h monthly `deactivate`), database `sandbox`, schema
   `lab`. One project per tag key is admitted (`avhvbqn37ty7m8`); decision 8 owns the second,
@@ -414,7 +418,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Pass 4's code written 2026-10-22 (PR #244), its Glue job grant applied: `<env>/app/app-etl/` (planned), the
   render and release scripts, and the template's promotion legs, which reach GitLab by an MR; the legs lint
   each rendered copy in Stage 10 2.3's promoted mode (`release-application.py --lint`, read offline on
-  `v0.2.1`) and keep Staging's release file as an artifact; 3.8 carries the by-hand sequence.
+  `v0.2.1`) and keep Staging's release file as an artifact; 3.8 carries the by-hand sequence. **3.8 ran by hand on 2026-10-23, before the pipeline's leg** (Stage 8's
+  log): `v0.2.1` released into Staging, both slices applied, the chain `SUCCEEDED` at its third execution after
+  two policy fixes, the data keys' and the execution role's `kms:GenerateDataKey` for the XCom encryption
+  (`orchestration-v0.2.0`); the pipeline's leg owes verification xi's parity, `uv run` on the runner and the
+  deploy role's calls.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
@@ -450,7 +458,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
   `--no-browser`.
-- **Module tags**: `orchestration-v0.1.0` (PR #246, unapplied), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
+- **Module tags**: `orchestration-v0.2.0` (`staging/orchestration` applied 2026-10-23 in Stage 8 3.8's by-hand
+  leg; `production/orchestration` pinned, no release), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit

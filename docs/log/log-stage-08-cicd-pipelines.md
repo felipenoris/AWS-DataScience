@@ -2640,3 +2640,10 @@ Staging's `egress/` up (Stage 9's log), Production coming down. Times UTC.*
   the `awsds-<env>-wf-*` roles, in both deployment targets. Verification xi's parity reading waits for the
   pipeline's leg; what this leg proved so far: the release path, both slices' applies, the machine's start
   and diagnosis, the Glue job on the release's script.
+- **[Claude] 3.8's chain, at the third execution** (23:21 to 23:36, after the data keys' and the
+  execution role's `GenerateDataKey`, Stage 10's log): `SUCCEEDED` end to end, the Glue job, the
+  processing job on the release's image, the summary and `app-etl/outbox/report.json` (10 rows). The
+  by-hand sequence of 3.8 is proven before the pipeline's leg: `make up ENV=staging ONLY=egress`, the
+  release written, the two applies, the chain started and followed; what it could not prove is the
+  pipeline's own half, `uv run` on the runner and the deploy role's calls against its grants (Stage 10
+  verification ii), and xi's parity, which the pipeline's leg reads against these objects.

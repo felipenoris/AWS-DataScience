@@ -233,7 +233,10 @@ first promotion carries a lake the job role has written (decision 23).
    runner, the deploy role's Cloud Control and Glue calls against their grants, the worker's preparation
    with no `ecr.*` endpoint (Stage 10 verification xvi), `TriggerMode`'s literal, the key's encryption
    context in the saver's and the worker's calls (Stage 10 decision 2), and Staging's `release.auto.tfvars.json`
-   kept as an artifact (the `VersionId`s 3.7 records).
+   kept as an artifact (the `VersionId`s 3.7 records). **3.8 ran by hand first, on 2026-10-23** (Stage 8's and
+   Stage 10's logs): the worker's preparation with no `ecr.*` endpoint, `TriggerMode`'s literal and the key's
+   encryption context are read, and two statements gained `kms:GenerateDataKey` for the XCom encryption
+   (`orchestration-v0.2.0`); `uv run` on the runner, the deploy role's calls and the artifact remain the leg's.
 4. **[user] The gate** (3.5): `production-plan` read beside `staging-test`'s artifacts, then
    `production-gate` by a `deployment-managers` member. Before `production-deploy`: `make up
    ENV=production` by the user (§P's step 4 if the sitting is one), since a Production run needs
@@ -244,7 +247,8 @@ first promotion carries a lake the job role has written (decision 23).
    `CI-8` diffed across the run (INT-08).
 6. **[user] 3.7**: both `release.tf`s committed with the tag, the digest, the bundle's SHA256 and the
    Staging and Production `VersionId`s from the two legs' artifacts; the mirror pushed again.
-7. **[user] 3.8**: the by-hand parity once, the sequence in Stage 8 3.8, as `awsds-infra-staging`.
+7. **[user] 3.8**: the by-hand parity once, the sequence in Stage 8 3.8, as `awsds-infra-staging`. **Run by
+   Claude first on 2026-10-23**; the parity reading now belongs to the pipeline's leg.
 8. **[user + pipeline] Stage 10 6.1**: the schedule fires at 06:30 UTC with `workloads-egress/` up,
    or the cron is moved into the sitting by a commit and the pipeline applies it; the pause lever
    (`state = DISABLED`) through the slice; 3.2's deliberate break through the slice, the failure rule
