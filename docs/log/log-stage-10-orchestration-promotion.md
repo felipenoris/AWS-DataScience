@@ -654,3 +654,27 @@ stage's log carries the release and the applies). Times UTC.*
   a project key (where the role held `kms:*` through the project) could not show. The fix is one action
   on that statement in `staging/data/` and `production/data/`, planned next; no processing job started,
   so verification xvi's worker-preparation clause is still open.
+
+## 2026-10-23 — the failure rules heard: the alert e-mails of the first chain
+
+*The user's hand (the e-mails received and pasted in chat), Claude recording; the account id masked.*
+
+- **[user] Two e-mails received at 19:51 local time (22:51 UTC)** from Staging's alerts topic, the
+  workflow's and the chain's failure rules of 3.4 (`OR-4` had read both `ENABLED` at 22:49). The one
+  pasted, verbatim:
+
+  ```
+  awsds-staging-wf-app-etl-failed: a workflow run ended FAILED."
+  "When: 2026-10-23T22:51:29Z"
+  "Event: MWAA Serverless Workflow Run Failed"
+  "Workflow: arn:aws:airflow-serverless:us-west-2:<Staging>:workflow/awsds-staging-wf-app-etl-hHNGu2YFTv"
+  "Run: 7sLvJ2334shWqn5"
+  "Diagnose with mwaa-serverless list-task-instances and get-task-instance (Stage 10 step 3.2)."
+  "EventBridge event id: 413d9e05-1762-6379-3ab5-5e12b1e7d492"
+  ```
+
+- **[Claude] The reading**: the service emitted the run's `FAILED` event at 22:51:29, 72 s after the run
+  ended (its `ModifiedAt` 22:51:28), and the rule's input transformer, the topic and the subscription
+  delivered it in the same minute; the second e-mail is the chain's own rule on the execution's `FAILED`
+  of 22:52:25. The failure rule 6.1 expects to hear is heard here, on a failure nobody staged, and its
+  text names the diagnosis commands that found the task (the entry above).
