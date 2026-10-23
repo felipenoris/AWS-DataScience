@@ -325,7 +325,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   in `production/data/` (1 to add, 1 to change) attached in `identity/sso/` (1 to add, 1 to change; the
   inline form read 10,550 of 10,240), `GetDataAccess` added, both applied 2026-10-22; step 9.1's
   `production/warehouse/` (9 to add) and `warehouse-compute/` written, the compute held from `make up` by
-  `layers.py` refusal 9 until the namespace is applied; 2.4-2.6 have no job yet (2.4 specifies one).
+  `layers.py` refusal 9 until the namespace is applied; 2.4-2.6 have no job yet (2.4 specifies one); 6.3's
+  window opened, exercised and closed 2026-10-22, the refusal read 2026-10-23.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, never fired (no model package exists). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`

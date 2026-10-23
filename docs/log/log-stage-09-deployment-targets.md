@@ -1035,3 +1035,24 @@ novo, para fechar a janela agora; depois eu rodo o assume-role e colo a recusa."
   `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`. The window was open 25 minutes, 23:09:55 to 23:35:09.
 - **[Claude] What follows**: the persona's `assume-role` against the closed trust, the refusal pasted
   here and read in the trail by `errorCode`, which closes 6.3 and verification xi.
+
+## 2026-10-23 — 6.3: the assumption refused against the closed trust
+
+*The user's hand, the command run as the Data Scientist User after the closing apply of 2026-10-22
+23:35 UTC and pasted into this chat on 2026-10-23, copied here with the account id and the sign-in
+address replaced by placeholders; Claude's reading. The infrastructure user's token had expired by
+the time of the reading (15:25 UTC), so the trail's `errorCode` for this attempt is owed to the next
+sign-in.*
+
+- **[user] The refusal**, the step's command with the session name `debug-window-closed`: *"An error
+  occurred (AccessDenied) when calling the AssumeRole operation: User:
+  arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the
+  data-science user> is not authorized to perform: sts:AssumeRole on resource:
+  arn:aws:iam::<Production>:role/awsds-prod-debug"*.
+- **[Claude] The reading**: the same wording as the four refusals of the malformed ARN, now on the real
+  ARN, from the trust's `DateLessThan` with the default in the past: STS names no condition in its
+  message, so the trail's record is what attributes it, a refused `AssumeRole` with `requestParameters`
+  null and `errorCode` `AccessDenied` by the persona's reserved role, the shape Stage 8 4.6 read. The
+  escape hatch is closed at rest, open in an approved window alone, alarmed on each assumption, and
+  cannot become a notebook: 6.3 is done, verification xi answered but for the OU wording, which the
+  role's own policy pre-empts (Lesson 20).
