@@ -321,13 +321,19 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `staging/sagemaker/`, `production/workloads/` on `vpc-v0.4.0`; `deploytargets.py` and `datalake.py` 0
   failed. Both egress slices, seven endpoints with `lakeformation`, rise with their next `make up`. The
   `s3-bucket` module turns Bucket Keys on for every bucket it creates, so D31's zero-cost variant is
-  unavailable (PR #225).
+  unavailable (PR #225). **Pass 4 prepared 2026-10-22**: 5.1 is the managed policy `awsds-prod-data-scientist`
+  in `production/data/` (1 to add, 1 to change) attached in `identity/sso/` (1 to add, 1 to change; the
+  inline form read 10,550 of 10,240), `GetDataAccess` added, both applied 2026-10-22; step 9.1's
+  `production/warehouse/` (9 to add) and `warehouse-compute/` written, the compute held from `make up` by
+  `layers.py` refusal 9 until the namespace is applied; 2.4-2.6 have no job yet (2.4 specifies one); 6.3's
+  window opened, exercised and closed 2026-10-22, the refusal read 2026-10-23.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, never fired (no model package exists). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
   (rank 59, `[E]`) written and planned, `OR-9` written; the module is tagged `orchestration-v0.1.0` (`26bfc15d`),
   and both slices pin it, each planning `No changes` with no release (PR #246); every Stage 10 decision
-  was taken 2026-10-22. Passes 1-2 run with Stage 8's pass 4 (decision 23); the objects they stopped at,
+  was taken 2026-10-22; 2.3's lint runs in the legs' release job; pass 3 waits on the training and
+  transform quotas, 5.1's task a second workflow after them. Passes 1-2 run with Stage 8's pass 4 (decision 23); the objects they stopped at,
   Stage 8's application ceilings and Stage 9's data keys, outputs buckets and Staging's job role, exist
   since 2026-10-22.
   The MWAA Serverless service-linked role exists in Staging, not in Production, whose first apply needs
@@ -394,7 +400,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   with Stage 10 decision 11's decrypt carve-out on `DeploymentManagerAccess`: the orchestration grant is two managed policies, since inline it took Staging's
   role past IAM's 10,240 characters, and `check-copies.py` keeps the two `foundation/` copies identical.
   Pass 4's code written 2026-10-22 (PR #244), its Glue job grant applied: `<env>/app/app-etl/` (planned), the
-  render and release scripts, and the template's promotion legs, which reach GitLab by an MR.
+  render and release scripts, and the template's promotion legs, which reach GitLab by an MR; the legs lint
+  each rendered copy in Stage 10 2.3's promoted mode (`release-application.py --lint`, read offline on
+  `v0.2.1`) and keep Staging's release file as an artifact; 3.8 carries the by-hand sequence.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.

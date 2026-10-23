@@ -95,3 +95,11 @@ variable "cost_center" {
   type        = string
   default     = "stage-09"
 }
+
+# Generated into the tfvars, never typed (Lesson 14): the name identity/sso/ attaches to
+# DataScientistProdAccess, from scripts/tfhygiene/backend.py's PERSONA_PRODUCTION_POLICY_NAME.
+variable "persona_policy_name" {
+  description = "The customer-managed policy that carries DataScientistProdAccess's allows on this slice's objects (Stage 9 step 5.1, persona.tf); identity/sso/ references it by this name."
+  type        = string
+  nullable    = false
+}

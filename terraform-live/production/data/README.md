@@ -36,6 +36,23 @@ Every role is the account root narrowed by `aws:PrincipalArn`, which KMS does no
 | `AllowCloudWatchLogsForTheJobAndWorkflowGroups` | `logs.<region>.amazonaws.com` | the key's use for the job groups (`/aws/sagemaker/*`, `/aws-glue/*`) and Stage 10's (`/awsds/prod/wf/*`, the chains' group), by `kms:EncryptionContext:aws:logs:arn` |
 | `AllowRedshiftServerlessViaServiceInThisAccount` | this account, through Redshift Serverless | the governed warehouse's namespace (9.1); without it `CreateNamespace` fails and leaves an orphan secret (`EXC-12`) |
 
+## The production persona's managed policy (`persona.tf`)
+
+`awsds-prod-data-scientist`, the customer-managed policy `identity/sso/` attaches to `DataScientistProdAccess`
+by name (Stage 9 step 5.1; the name is `backend.py`'s `PERSONA_PRODUCTION_POLICY_NAME`). Each ARN is this
+slice's own; the debug role is named by contract, as `main.tf` names it. Written and applied 2026-10-22, then
+`identity/sso/`'s attachment; the set's role in Production carries it.
+
+| `Sid` | Allows |
+|---|---|
+| `RunQueriesOnTheProductionWorkgroup` | the six `athena:` query and history actions on `awsds-prod-athena` alone (1.2, decision 11) |
+| `ReadTheNamedApplicationOutputs` | `GetObject`, `GetObjectVersion` under each of `persona_read_prefixes` in `awsds-prod-outputs`, the list the bucket policy's principal branch is written from |
+| `ListTheNamedApplicationOutputs` | `ListBucket` with `s3:prefix` held to those prefixes and the root, `GetBucketLocation` |
+| `ReadAndWriteTheQueryResults` | `PutObject`, `GetObject`, `AbortMultipartUpload`, `ListMultipartUploadParts` under `results/` of `awsds-prod-derived`: Athena writes as the caller |
+| `ListTheQueryResults` | `ListBucket`, `GetBucketLocation` on `awsds-prod-derived` |
+| `UseTheDataKeyThroughS3` | `Decrypt`, `GenerateDataKey` on the data key with `kms:ViaService` S3, the identity half of `AllowTheDataScientistViaS3` |
+| `AssumeTheDebugRoleInsideAnApprovedWindow` | `sts:AssumeRole` on `awsds-prod-debug` (6.1): the trust decides the window |
+
 ## `awsds-prod-outputs`'s policy (`buckets.tf`)
 
 Beside the module's TLS-only and presigned-age denies.

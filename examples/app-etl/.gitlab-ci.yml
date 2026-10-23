@@ -305,9 +305,11 @@ staging-up:
       make up ENV=staging ONLY=egress PROFILE=awsds-deploy-staging AUTO=1
 
 # 3.2: the bundle read as the runner's own role (decision 20) and checked before a file of it is read;
-# the release job writes its tree into Staging's outputs bucket with the workflow rendered for the
-# account (Stage 10 step 2.4); then the application slice and the orchestration slice, each with the
-# release this pipeline promotes.
+# the release job lints each rendered workflow in the promoted mode (Stage 10 step 2.3, with the
+# pipeline's AWSDS_WORKFLOWS, IMAGE_REPO and LINT_INSTANCE_TYPES) and writes the bundle's tree into
+# Staging's outputs bucket (Stage 10 step 2.4); then the application slice and the orchestration slice,
+# each with the release this pipeline promotes. The orchestration slice's release file is kept as an
+# artifact: its VersionIds are what step 3.7 records as Staging's release.tf defaults.
 staging-deploy:
   extends: .promotion
   stage: staging
@@ -320,7 +322,7 @@ staging-deploy:
       AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" bundle.zip --only-show-errors
       echo "$BUNDLE_SHA256  bundle.zip" | sha256sum -c -
       export AWS_PROFILE=awsds-deploy-staging
-      ./scripts/release-application.py staging --bundle bundle.zip --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --image-uri "$JOB_IMAGE_URI" --release-vars terraform-live/staging/orchestration/release.auto.tfvars.json
+      ./scripts/release-application.py staging --bundle bundle.zip --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --image-uri "$JOB_IMAGE_URI" --lint --release-vars terraform-live/staging/orchestration/release.auto.tfvars.json
       printf '{"release": {"tag": "%s", "digest": "%s", "bundle_sha256": "%s"}}\n' "$CI_COMMIT_TAG" "${JOB_IMAGE_URI##*@}" "$BUNDLE_SHA256" > terraform-live/staging/app/app-etl/release.auto.tfvars.json
       for slice in app/app-etl orchestration; do
         ./scripts/gen-backend-hcl.py staging "$slice"
@@ -328,6 +330,10 @@ staging-deploy:
         terraform -chdir="terraform-live/staging/$slice" init -backend-config=backend.hcl -input=false
         terraform -chdir="terraform-live/staging/$slice" apply -input=false -auto-approve
       done
+      cat terraform-live/staging/orchestration/release.auto.tfvars.json
+  artifacts:
+    paths: [infrastructure/terraform-live/staging/orchestration/release.auto.tfvars.json]
+    expire_in: 1 year
 
 # 3.3: the deployed artifact run in the account, the chain's machine started by the leg and followed to
 # its end (Stage 10 decision 19), the schedule being DISABLED in Staging.
@@ -423,7 +429,7 @@ production-deploy:
       AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" bundle.zip --only-show-errors
       echo "$BUNDLE_SHA256  bundle.zip" | sha256sum -c -
       export AWS_PROFILE=awsds-deploy-prod
-      ./scripts/release-application.py production --bundle bundle.zip --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --image-uri "$JOB_IMAGE_URI" --release-vars terraform-live/production/orchestration/release.auto.tfvars.json
+      ./scripts/release-application.py production --bundle bundle.zip --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --image-uri "$JOB_IMAGE_URI" --lint --release-vars terraform-live/production/orchestration/release.auto.tfvars.json
       printf '{"release": {"tag": "%s", "digest": "%s", "bundle_sha256": "%s"}}\n' "$CI_COMMIT_TAG" "${JOB_IMAGE_URI##*@}" "$BUNDLE_SHA256" > terraform-live/production/app/app-etl/release.auto.tfvars.json
       for slice in app/app-etl orchestration; do
         ./scripts/gen-backend-hcl.py production "$slice"

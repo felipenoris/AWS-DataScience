@@ -3,9 +3,19 @@
 # definitions home, the release job of each promotion leg (Stage 8 steps 3.2 and 3.6).
 #
 #   run:      ./scripts/release-application.py <account> --bundle <app>.zip --sha256 <hex>
-#                 --tag vX.Y.Z --image-uri <uri> [--app app-etl] [--release-vars <file>] [--dry-run]
+#                 --tag vX.Y.Z --image-uri <uri> [--app app-etl] [--release-vars <file>] [--lint]
+#                 [--dry-run]
 #   reads:    the bundle, already downloaded by the runner's own role (Stage 8 decision 20); data/'s
 #             state for the outputs bucket; the states render-workflow.py reads.
+#   lint:     with --lint, each rendered workflow passes the D28 lint in its promoted mode before a
+#             byte is written (Stage 10 step 2.3): `awsds-workflows lint <copy> --promoted --prefix
+#             s3://<bucket>/applications/<app>/<tag>/ --image-repository $IMAGE_REPO --instance-type
+#             <each of LINT_INSTANCE_TYPES>`, the tool taken from AWSDS_WORKFLOWS (the `uvx --from`
+#             source the template's .gitlab-ci.yml pins) or from PATH. The three variables are read
+#             from the environment, the names the template's pipeline defines, and an empty one
+#             fails: without them the lint reads neither ceiling and prints ok all the same (Lesson
+#             71). The repository is the application's, never read off the image URI, or a release
+#             built on the wrong image would name the repository it should be refused for.
 #   writes:   s3://<outputs bucket>/applications/<app>/<tag>/, the bundle's tree with each workflow
 #             rendered for the account and MANIFEST.sha256 last; the inbox inbox/<app>/ from samples/
 #             (decision 20 (d)); with --release-vars, the orchestration slice's `release` as tfvars
@@ -26,7 +36,9 @@ import argparse
 import base64
 import hashlib
 import json
+import os
 import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -99,6 +111,36 @@ def render(account: str, source: Path, out: Path, tag: str, image_uri: str, app:
         raise ReleaseError(f"render {source.name}: {res.stderr.strip()}")
 
 
+def lint(rendered: Path, prefix_uri: str) -> None:
+    """The promoted-mode lint on one rendered copy; a refusal is the job's failure."""
+    repository = os.environ.get("IMAGE_REPO", "")
+    if not repository:
+        raise ReleaseError("IMAGE_REPO is empty: the lint would read no image repository")
+    types = os.environ.get("LINT_INSTANCE_TYPES", "").split()
+    if not types:
+        raise ReleaseError("LINT_INSTANCE_TYPES is empty: the lint would read no instance ceiling")
+    source = os.environ.get("AWSDS_WORKFLOWS", "")
+    tool = ["uvx", "--from", source, "awsds-workflows"] if source else ["awsds-workflows"]
+    cmd = [
+        *tool,
+        "lint",
+        str(rendered),
+        "--promoted",
+        "--prefix",
+        prefix_uri,
+        "--image-repository",
+        repository,
+    ]
+    for t in types:
+        cmd += ["--instance-type", t]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    print(f"  lint {rendered.name}: {' '.join(shlex.quote(c) for c in cmd[len(tool) :])}")
+    for line in (res.stdout + res.stderr).splitlines():
+        print(f"    {line}")
+    if res.returncode != 0:
+        raise ReleaseError(f"{rendered.name}: refused by the promoted lint (exit {res.returncode})")
+
+
 def put(bucket: str, key: str, path: Path, dry: bool) -> dict:
     if dry:
         return {"VersionId": "(dry run)"}
@@ -164,6 +206,8 @@ def release(args) -> int:
             if re.fullmatch(r"workflows/[^/]+\.ya?ml", name):
                 written = rendered / Path(name).name
                 render(args.account, source, written, args.tag, args.image_uri, args.app)
+                if args.lint:
+                    lint(written, f"s3://{bucket}/{prefix}")
             files[name] = (written, sha256_hex(written), sha256_hex(source))
 
         version_ids = {}
@@ -238,6 +282,7 @@ def main(argv: list) -> int:
     ap.add_argument("--image-uri", required=True)
     ap.add_argument("--app", default="app-etl")
     ap.add_argument("--release-vars", type=Path)
+    ap.add_argument("--lint", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args(argv)
     if not re.fullmatch(r"v\d+\.\d+\.\d+", args.tag):

@@ -127,6 +127,11 @@ JOB_LOG_GROUPS = (
 # Step 5.1's marks in DataScientistProdAccess, one apply: the workgroup, the debug role and the
 # Redshift deny land together, so some of them without the others is a partial 5.3.
 PROD_SET_OWED = (PROD_WG, DEBUG_ROLE, "DenyMintingARedshiftDatabaseSession")
+# Step 5.1's allows are a customer-managed policy production/data/ creates and the set attaches by
+# name (backend.py PERSONA_PRODUCTION_POLICY_NAME): the inline document holds the denies and the
+# Lake Formation read, the policy holds every allow that names an object of Production's. DT-10
+# reads both, so the markers are searched in the two documents together.
+PROD_PERSONA_POLICY = "awsds-prod-data-scientist"
 
 # The branches the outputs bucket's network deny carries (Stage 9 step 1.1, D39): the endpoint
 # and service branches, and a principal branch for DataScientistProdAccess's read of the named
@@ -795,6 +800,7 @@ def main(argv: list) -> int:
         )
         instance = (res.stdout or "").strip() if res.ok else ""
         inline_by_name: dict = {}
+        prod_refs: list = []
         if instance:
             res = cli.run(
                 "sso-admin",
@@ -838,15 +844,67 @@ def main(argv: list) -> int:
                     log=False,
                 )
                 inline_by_name[name] = r.stdout or "" if r.ok else ""
+                if name == "DataScientistProdAccess":
+                    r = cli.run(
+                        "sso-admin",
+                        "list-customer-managed-policy-references-in-permission-set",
+                        "--instance-arn",
+                        instance,
+                        "--permission-set-arn",
+                        ps_arn,
+                        "--query",
+                        "CustomerManagedPolicyReferences[].Name",
+                        "--output",
+                        "json",
+                        log=False,
+                    )
+                    prod_refs = json.loads(r.stdout or "[]") if r.ok and r.stdout else []
         prod_inline = inline_by_name.get("DataScientistProdAccess", "")
+        # The managed half (step 5.1): the attached policy's document, read in Production. Absent
+        # from the set's references or from the account, the inline document alone is searched,
+        # and the markers it lacks read as owed.
+        prod_managed = ""
+        if prod_inline and PROD_PERSONA_POLICY in prod_refs and prod_live and prod_account:
+            pcli = cli_for(PROD_PROFILE)
+            parn = f"arn:aws:iam::{prod_account}:policy/{PROD_PERSONA_POLICY}"
+            r = pcli.run(
+                "iam",
+                "get-policy",
+                "--policy-arn",
+                parn,
+                "--query",
+                "Policy.DefaultVersionId",
+                "--output",
+                "text",
+                log=False,
+            )
+            version = (r.stdout or "").strip() if r.ok else ""
+            if version:
+                r = pcli.run(
+                    "iam",
+                    "get-policy-version",
+                    "--policy-arn",
+                    parn,
+                    "--version-id",
+                    version,
+                    "--query",
+                    "PolicyVersion.Document",
+                    "--output",
+                    "json",
+                    log=False,
+                )
+                prod_managed = r.stdout or "" if r.ok else ""
         if prod_inline:
-            marks = [m for m in PROD_SET_OWED if m in prod_inline]
+            searched = prod_inline + prod_managed
+            marks = [m for m in PROD_SET_OWED if m in searched]
+            attached = PROD_PERSONA_POLICY in prod_refs
             set_rows.append(
                 (
                     "DataScientistProdAccess",
-                    "; ".join(f"{m}: {'yes' if m in marks else 'no'}" for m in PROD_SET_OWED),
+                    "; ".join(f"{m}: {'yes' if m in marks else 'no'}" for m in PROD_SET_OWED)
+                    + f"; {PROD_PERSONA_POLICY}: {'attached' if attached else 'not attached'}",
                     "ok"
-                    if len(marks) == len(PROD_SET_OWED)
+                    if len(marks) == len(PROD_SET_OWED) and attached
                     else ("owed" if not marks else "partial"),
                 )
             )

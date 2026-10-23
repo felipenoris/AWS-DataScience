@@ -93,6 +93,7 @@ data "aws_iam_policy_document" "data_scientist" {
   source_policy_documents = [
     data.aws_iam_policy_document.shared_denies.json,
     data.aws_iam_policy_document.stage6_denies.json,
+    data.aws_iam_policy_document.redshift_denies.json,
   ]
 
   # Reading the catalog is not reading the data. Lake Formation is the entitlement mechanism
@@ -298,65 +299,9 @@ data "aws_iam_policy_document" "data_scientist" {
     resources = ["*"]
   }
 
-  # THE LOAD-BEARING ABSENCE, WRITTEN AS A DENY (Stage 5b step 2.3). `GetCredentials` mints a
-  # database session, so a persona holding it reaches the warehouse with no connection, no
-  # project tag and no project - around both gate layers of the Stage 6h design at once, and
-  # onto a shared RPU meter where an ad-hoc query and a project's job are the same money.
-  #
-  # `redshift-data:` is here for the same reason by a different route: the Data API needs no
-  # network path at all, so a grant of ExecuteStatement is a query path from anywhere the
-  # persona can reach the AWS endpoint. Measured on 2026-09-20, from a laptop outside the VPC:
-  # the Data API runs SQL on this warehouse with nothing but an IAM identity and the admin
-  # secret. That is how this repository's own instruments read the database, and it is exactly
-  # why the persona must not have it.
-  #
-  # `redshift:` is the PROVISIONED-cluster family. Nothing here has a cluster and Stage 5b 3.1
-  # denies creating one organization-wide, but `GetClusterCredentials` is a credential call of
-  # the same shape and is refused here so the persona's ceiling does not depend on that SCP
-  # staying attached.
-  #
-  # Written as a Deny rather than left to omission for the reason the Lake Formation deny below
-  # gives: these actions sit in services this set is granted real reads on, so an omission
-  # would be one AWS managed policy away from being undone.
-  statement {
-    sid    = "DenyMintingARedshiftDatabaseSession"
-    effect = "Deny"
-
-    actions = [
-      "redshift-data:BatchExecuteStatement",
-      "redshift-data:ExecuteStatement",
-      "redshift-data:GetStatementResult",
-      "redshift:GetClusterCredentials",
-      "redshift:GetClusterCredentialsWithIAM",
-      "redshift-serverless:GetCredentials",
-    ]
-
-    resources = ["*"]
-  }
-
-  # The cost guard is not the persona's to edit (Stage 5b step 2.3 and decision 3). There is NO
-  # IAM condition key for base capacity, so no policy anywhere can say "never above 4": the
-  # ceiling is the workgroup's own two fields plus the usage limit, and what a policy can do is
-  # stop those being edited away. This is the persona's half; the organization's half is 5b
-  # 3.2's SCP, which covers every principal this document does not reach.
-  statement {
-    sid    = "DenyRedshiftCostGuardAndCompute"
-    effect = "Deny"
-
-    actions = [
-      "redshift-serverless:CreateNamespace",
-      "redshift-serverless:CreateUsageLimit",
-      "redshift-serverless:CreateWorkgroup",
-      "redshift-serverless:DeleteNamespace",
-      "redshift-serverless:DeleteUsageLimit",
-      "redshift-serverless:DeleteWorkgroup",
-      "redshift-serverless:UpdateNamespace",
-      "redshift-serverless:UpdateUsageLimit",
-      "redshift-serverless:UpdateWorkgroup",
-    ]
-
-    resources = ["*"]
-  }
+  # The two warehouse denies, DenyMintingARedshiftDatabaseSession and
+  # DenyRedshiftCostGuardAndCompute, are the shared fragment redshift_denies (policies-shared.tf)
+  # since Stage 9 step 5.1 gave DataScientistProdAccess the same two: one document, two sets.
 
   # The grantor is somebody else, and that separation is the point (1b step 3.7). A principal
   # that can grant itself a Lake Formation permission has an entitlement mechanism that
@@ -506,16 +451,20 @@ data "aws_iam_policy_document" "data_scientist_staging" {
 # grant. The ingestion drop-box is not here - it moved to Data Governance with the lake (D22)
 # and is granted by bucket policy to the Interactive-OU roles, not by a permission set.
 #
-# Still owed: Stage 9 s3:GetObject on the named application-output prefixes and
-# athena:StartQueryExecution on the dedicated Production workgroup (its step 5.1) - Production
-# only joins DATA_CONSUMERS at Stage 9 (backend.py), so Stage 5a could not have written these
-# ARNs; Stage 7 ecr pull.
+# Stage 9 step 5.1's allows are the customer-managed policy production/data/ creates and this set
+# attaches by name (permission-sets.tf): the enforced workgroup, the named output prefixes, the
+# results bucket Athena writes as the caller, the data CMK through S3 and the debug role's
+# assumption, each ARN the creating slice's own. Inline they took this document to 10,550 characters
+# (planned 2026-10-22), past the 10,240 the precondition allows, which is the case the vending
+# policy set the precedent for. What stays inline is the credential-vending call every Lake
+# Formation read needs, below. Stage 7's ecr pull is the application repositories' statement.
 
 data "aws_iam_policy_document" "data_scientist_prod" {
   # checkov:skip=CKV_AWS_356:one document, N accounts - no ARN can name the account; see the CKV_AWS_356 note in policies-data-scientists.tf
   source_policy_documents = [
     data.aws_iam_policy_document.shared_denies.json,
     data.aws_iam_policy_document.stage6_denies.json,
+    data.aws_iam_policy_document.redshift_denies.json,
   ]
 
   statement {
@@ -596,6 +545,29 @@ data "aws_iam_policy_document" "data_scientist_prod" {
       "athena:ListDatabases",
       "athena:ListTableMetadata",
       "athena:ListWorkGroups",
+    ]
+
+    resources = ["*"]
+  }
+
+  # ------------------------------------------------------------- Stage 9 step 5.1 (D18, D39)
+  #
+  # The read side of Lake Formation, as DataScientistAccess holds it: the credential-vending call
+  # is what makes a query over a resource link read anything. Stage 9 step 2.3's regrants give this
+  # persona's role SELECT on the shared tables; without this allow the regrant reaches nothing
+  # (Lesson 28), the failure Stage 5a pass 4c met on the drop-box. Inline rather than in the
+  # customer-managed policy because it names no object of Production's.
+  statement {
+    sid    = "ReadThroughLakeFormation"
+    effect = "Allow"
+
+    actions = [
+      "lakeformation:GetDataAccess",
+      "lakeformation:GetLFTag",
+      "lakeformation:GetResourceLFTags",
+      "lakeformation:ListLFTags",
+      "lakeformation:SearchDatabasesByLFTags",
+      "lakeformation:SearchTablesByLFTags",
     ]
 
     resources = ["*"]

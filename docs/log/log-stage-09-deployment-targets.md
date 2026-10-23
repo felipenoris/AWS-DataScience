@@ -810,3 +810,266 @@ beyond the readings recorded above.*
 - **[Claude] `docs/PRICING.md`**: the KMS row counts 17 keys with the two deploy targets' data keys, and
   the monthly floor rises by 2 USD in both Regions (`sa-east-1` ~USD 32-45, central ~38; `us-west-2`
   ~USD 27-36, central ~32), in §2 and in the regional comparison.
+
+## 2026-10-22 — the third sitting with the environment down: 5.1 as a managed policy, the warehouse pair written, 2.4 has no job
+
+*Claude's hand, in the session `stages-8-9-10-review`, on the user's request quoted in Stage 8's entry of
+the same sitting. AWS read as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`,
+`awsds-infra-staging`, `awsds-infra-data`, `awsds-infra-identity`, `awsds-infra-sandbox-1`), reads and
+plans only, the tunnel down (`NO_PROXY='*'`); the plans saved outside the repository. Nothing applied.
+Times UTC.*
+
+- **[Claude] The instruments, between 22:00 and 22:10**: `./aws/deploytargets.py` 0 FAILED, `DT-10` a
+  note (`DataScientistProdAccess`: the three markers `no`, owed by 5.1); `./aws/datalake.py` 0 FAILED,
+  `DL-5` 4 / TRUE.
+- **[Claude] 5.1, first as inline statements**: the six allows and the two Redshift denies, with the
+  ARNs read from `production/data/` and `production/sagemaker/`'s states through a `deployment_target`
+  map. The plan as `awsds-infra-identity` at 22:14:09 failed the slice's own precondition:
+  *"Inline policy for DataScientistProdAccess is 10550 characters, over the 10240 the plan allows. See
+  step 5.2: the way out is a customer-managed policy, not a larger threshold."* The set read 7,098
+  before. The set also lacked `lakeformation:GetDataAccess` (read in the document), without which 2.3's
+  regrants reach nothing.
+- **[Claude] 5.1 as written**: `production/data/persona.tf`, the `aws_iam_policy`
+  `awsds-prod-data-scientist` (`backend.py`'s `PERSONA_PRODUCTION_POLICY_NAME`, generated into both
+  slices) with seven statements on the slice's own objects: the six Athena query and history actions on
+  `awsds-prod-athena`, `GetObject` and `GetObjectVersion` under `PERSONA_READ_PREFIXES`
+  (`app-etl/outbox/`, one list in `backend.py`, generated into `production/data/` for the bucket policy
+  and the policy alike), `ListBucket` held to those prefixes, the results' read and write under
+  `results/` of `awsds-prod-derived`, `Decrypt` and `GenerateDataKey` on the data key through S3, and
+  `sts:AssumeRole` on `awsds-prod-debug`; `identity/sso/` attaches it to `data_scientist_prod` by name,
+  keeps `ReadThroughLakeFormation` inline, and composes the two Redshift denies from the new fragment
+  `redshift_denies`, which both data-science sets read. `production/data/`'s key policy admits
+  `/aws/redshift/*` for 9.1's audit groups. Plans: `production/data/` as `awsds-infra-prod` at 22:22:18
+  *"Plan: 1 to add, 1 to change, 0 to destroy."* (the policy; the key policy's CloudWatch statement);
+  `identity/sso/` as `awsds-infra-identity` at 22:22:31 *"Plan: 1 to add, 1 to change, 0 to destroy."*
+  (the attachment; `DataScientistProdAccess` 7,098 to 8,438), `DataScientistAccess` unchanged.
+- **[Claude] `DT-10` amended**: it reads the set's customer-managed policy references and, when
+  `awsds-prod-data-scientist` is among them, the policy's default version in Production, and searches
+  the markers in both documents; live at 22:28: a note, the markers `no` and the policy `not attached`,
+  0 failed.
+- **[Claude] 9.1, written by a fork of this session**: `terraform-live/production/warehouse/` and
+  `production/warehouse-compute/` from the Sandbox slices with the step's differences; the four states'
+  outputs read at 22:08:20; the namespace planned as `awsds-infra-prod` at 22:13:52 to 22:14:12,
+  *"Plan: 9 to add, 0 to change, 0 to destroy."* (three log groups, two alarms, the role, the namespace,
+  the security group, the ingress rule); the compute's plan at 22:14:16 to 22:14:26 *"Error: Unable to
+  find remote state … No stored state was found"* for `production/warehouse/`, the expected reading;
+  `awsds-prod-tfstate` holds no object under `production/warehouse` (22:14:51). `layers.py` gains the
+  two rows and refusal 9, `HELD_FROM_UP`, keyed `("production", "warehouse-compute")`: `make up
+  ENV=production DRY=1` prints the refusal and raises nothing of it. `docs/NETWORK.md` gains the pair's
+  rows in §2, §2.1 and §9; `check-network-doc.py` clean.
+- **[Claude] 2.4 read against the code**: no job writes `curated.trades`. The pipeline's Glue job runs
+  `glue/transform.py` (inbox to one CSV), and the template carries no schema, so 2.4 to 2.6 have no job
+  to run; the step now specifies the proof job (`awsds-prod-producer-proof`, `[P]` in
+  `production/sagemaker/`, its scripts under `applications/stage-09-proofs/v0/glue/`), unwritten.
+- **[Claude] The plan**: the Status row, the build table, 2.4, 4.6, 5.1, 5.3 and 9.1.
+
+## 2026-10-22 — 5.1 applied: the persona's managed policy in Production, its attachment in Identity
+
+*Claude's hand, the same session, as the infrastructure user (`awsds-infra-prod`, `awsds-infra-identity`,
+each `InfrastructureAccess`), on the user's authorization in this chat. Every plan was made afresh and
+applied only after its summary line read what the reviewed plan had read. Times UTC.*
+
+- **[user] The authorization**: *"Autorizo aplicar production/data como awsds-infra-prod e depois
+  identity/sso como awsds-infra-identity, cada um a partir de um plano novo, avisando as outras sessões
+  antes."*
+- **[Claude] Before**: the app's session list read at 22:49, no session running, so none to warn; both
+  profiles answered `get-caller-identity`; the worktree clean at `c9800c78`.
+- **[Claude] `production/data/`** (Production, `awsds-infra-prod`): the fresh plan at 22:50:22 to 22:50:56
+  read *"Plan: 1 to add, 1 to change, 0 to destroy."* (`aws_iam_policy.persona`; the data key's policy);
+  the apply, 22:50:56 to 22:51:16, *"Apply complete! Resources: 1 added, 1 changed, 0 destroyed."*, the
+  key modified in 8 s and the policy created in 1 s; the re-plan at 22:52:31 *"No changes."*
+- **[Claude] `identity/sso/`** (Identity, `awsds-infra-identity`): the fresh plan at 22:51:39 to 22:51:53
+  read *"Plan: 1 to add, 1 to change, 0 to destroy."* with `data_scientist_prod` 7098 → 8438; the apply,
+  22:51:53 to 22:52:13, *"Apply complete! Resources: 1 added, 1 changed, 0 destroyed."*, the attachment
+  created in 7 s and the inline policy modified in 9 s, `inline_policy_bytes` reading 8438 for the set;
+  the re-plan at 22:53:50 *"No changes."*
+- **[Claude] Read back**, 22:54 to 22:56: `awsds-prod-data-scientist` at `v1`, created 22:51:13, attachment
+  count 1, its seven `Sid`s the ones `persona.tf` writes; the set's customer-managed policy references name
+  it at path `/`, provisioned in one account; Production's `AWSReservedSSO_DataScientistProdAccess_*` role
+  carries `CloudWatchLogsReadOnlyAccess` and `awsds-prod-data-scientist` attached, and its inline policy
+  `DenyMintingARedshiftDatabaseSession`, `DenyRedshiftCostGuardAndCompute` and `ReadThroughLakeFormation`;
+  the data key's `AllowCloudWatchLogsForTheJobAndWorkflowGroups` lists `/aws/redshift/*` between
+  `/aws-glue/*` and `/awsds/prod/wf/*`. `./aws/deploytargets.py` on the five infrastructure profiles at
+  22:55:43: *"0 check(s) FAILED."*, `DT-10` passing for `DataScientistProdAccess` (the three markers `yes`,
+  the policy `attached`) and for `DataScientistStagingAccess`.
+- **[Claude] The records**: the stage file (the Status, 5.1, 5.3), both slices' READMEs, the waiting
+  list, `CLAUDE.md`, the plan core and both indexes; `docs/AWS_STATE.md`'s row on `deploytargets.py`,
+  which still described the seven fails of 2026-10-18, brought to the 0-failed reading with `DT-10`
+  passing.
+- **[Claude] What follows**: 5.4 and 8.1 to 8.4 are the user's, in the data-science persona's sessions;
+  6.3 may run now, the persona holding the debug role's assumption.
+
+## 2026-10-22 — 6.3: the deployment manager's approval of a debugging window, and the apply planned
+
+*Claude's hand, the same session. The approval is the user's, in this chat; the plan a read as the
+infrastructure user (`awsds-infra-prod`); nothing applied in this entry. Times UTC.*
+
+- **[user] The approval**, as the deployment manager, 23:0x: *"Sim: registre minha aprovação como
+  deployment manager, planeje o apply da variável debug_window_end em production/sagemaker e me diga
+  o que eu faço na sessão da persona."* It answers this session's question of the same minute,
+  *"Quer abrir agora a janela do escape hatch (6.3), com sua aprovação escrita e o apply da
+  variável?"*. The window proposed: until 2026-10-23T01:00:00Z, about two hours from the approval, long
+  enough for the persona's sign-in, one assumption inside it and the refused one after it.
+- **[Claude] The plan**, `production/sagemaker/` as `awsds-infra-prod` with `-var
+  debug_window_end=2026-10-23T01:00:00Z`, 23:07:28 to 23:07:44: *"Plan: 0 to add, 1 to change, 0 to
+  destroy."*, the debug role's trust alone (`DateLessThan` moving from the default to the window), and
+  the slice's own check printing *"The debug window on awsds-prod-debug is open until
+  2026-10-23T01:00:00Z: close it in the same sitting with an apply without -var debug_window_end"*, the
+  reminder 6.3 relies on. The apply waits on the user's word; the persona's sequence is the step's.
+
+## 2026-10-22 — 6.3: the window opened
+
+*Claude's hand, the same session, as the infrastructure user (`awsds-infra-prod`), on the user's
+authorization in this chat: "Autorizo o apply de production/sagemaker como awsds-infra-prod a partir do
+plano salvo, abrindo a janela do awsds-prod-debug até 2026-10-23T01:00:00Z." Times UTC.*
+
+- **[Claude] Before**: the app's session list read at 23:09, no session running.
+- **[Claude] The apply**, from the plan saved at 23:07 (`production/sagemaker/`, Production): 23:09:43 to
+  23:09:55, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*, the role modified in 1 s,
+  the check warning *"The debug window on awsds-prod-debug is open until 2026-10-23T01:00:00Z"* printed
+  with it.
+- **[Claude] Read back**: `get-role` at 23:10:19 shows the trust's `DateLessThan aws:CurrentTime
+  2026-10-23T01:00:00Z` beside `aws:RequestedRegion us-west-2`, the session ceiling 3600 s;
+  `./aws/deploytargets.py awsds-infra-prod` at 23:10:50 *"0 check(s) FAILED."*, `DT-9` a note, *"OPEN
+  until 2026-10-23T01:00:00Z - close it in the same sitting (6.3)"*, both assumption rules
+  `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`; the re-plan with the flag at 23:11:04 *"No changes."*
+  with the same warning.
+- **[Claude] What follows**: the persona's sequence (6.3), the user's; then the refused assumption after
+  01:00Z read in the trail, and the closing apply without the flag.
+
+## 2026-10-22 — 6.3: the persona's assumption inside the window, the alarm heard on the receiving side
+
+*The user's hand for the persona's commands, pasted into this chat and copied here with the account id
+and the sign-in address replaced by placeholders; Claude's hand for the readings, as the infrastructure
+user (`awsds-infra-prod`), after the user signed in again as that user (the persona's login had emptied
+the `awsds` token: *"Token for awsds does not exist"* at 23:22). Times UTC.*
+
+- **[user] A first attempt with the placeholder left in the ARN**, three calls refused the same way:
+  *"An error occurred (AccessDenied) when calling the AssumeRole operation: User:
+  arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the
+  data-science user> is not authorized to perform: sts:AssumeRole on resource:
+  arn:aws:iam::<Production>:role/awsds-prod-debug"*, the resource string carrying the literal
+  `<Production>` of the step's text. The trail records them in Production as `AccessDenied` on
+  `AssumeRole` with `requestParameters` null (4 events, 23:18:16, 23:18:27, 23:18:36, 23:20:51), the shape Stage 8 4.6 read
+  for a refused assumption. The step's command now reads the account id from the persona's own profile.
+- **[user] The assumption inside the window**, the step's command with the real ARN:
+  *"arn:aws:sts::<Production>:assumed-role/awsds-prod-debug/debug-window-proof"*.
+- **[user] The reads through the assuming profile**: `aws s3 ls s3://awsds-prod-outputs/` answered
+  nothing and refused nothing (the bucket holds no object yet, so the listing is the reading and
+  `GetObject` stays unexercised); `describe-log-groups` under `/aws/sagemaker/` listed
+  `/aws/sagemaker/ProcessingJobs`, `/aws/sagemaker/TrainingJobs` and `/aws/sagemaker/TransformJobs`.
+- **[Claude] The receiving side**, 23:25:44: the rule `awsds-prod-debug-assume` read `TriggeredRules` 2 in
+  the 23:21 minute and `Invocations` 1 at 23:21 and 1 at 23:22; the topic `awsds-prod-alerts`
+  `NumberOfMessagesPublished` 1 and 1 in the same minutes, its one subscription an e-mail, `confirmed`
+  (23:26:17). The trail, read at 23:26: two `AssumeRole` events naming the role, both by the persona's
+  reserved role in `us-west-2` with no error: 23:21:29 session `debug-window-proof` (event
+  `14013946-3962-41c9-8391-7cc6cc1db228`) and 23:22:00 session `botocore-session-1792711318` (event
+  `2acc588b-f660-4c47-9abc-ea3c7ff286e4`), the second the assuming profile's own call at the first read.
+  So one proof assumption produced two alarms, the direct call's and the profile's, each a message.
+- **[Claude] What follows**: the two negatives and, after 01:00Z, the refused assumption, then the closing
+  apply.
+- **[Claude] A correction to the entry above**: the trail holds four refused attempts with the
+  placeholder, not three: 23:18:16, 23:18:27, 23:18:36 and 23:20:51, each `AccessDenied` with
+  `requestParameters` null.
+
+## 2026-10-22 — 6.3: the two negatives under the debug role, each refused one layer before the one the step named
+
+*The user's hand, the commands run as the Data Scientist User through the assuming profile, pasted into
+this chat and copied here with the account id replaced by its placeholder; Claude's reading of them.*
+
+- **[user] The write**: *"upload failed: - to s3://awsds-prod-outputs/app-etl/outbox/probe.txt An error
+  occurred (AccessDenied) when calling the PutObject operation: User:
+  arn:aws:sts::<Production>:assumed-role/awsds-prod-debug/botocore-session-1792711318 is not authorized to
+  perform: kms:GenerateDataKey on resource:
+  arn:aws:kms:us-west-2:<Production>:key/0415a6f0-9b15-4049-841d-d51e7a65d09c because no resource-based
+  policy allows the kms:GenerateDataKey action"*.
+- **[user] The `CreateSpace`**: *"An error occurred (AccessDeniedException) when calling the CreateSpace
+  operation: User: arn:aws:sts::<Production>:assumed-role/awsds-prod-debug/botocore-session-1792711318 is
+  not authorized to perform: sagemaker:CreateSpace on resource:
+  arn:aws:sagemaker:us-west-2:<Production>:space/d-0000000000000/awsds-canary-probe because no
+  identity-based policy allows the sagemaker:CreateSpace action"*.
+- **[Claude] The reading** (Lesson 20): both refused, neither by the policy the step named. The write
+  met the data key before the bucket: the key policy's `AllowTheDebugRoleToDecryptViaS3` grants the role
+  `Decrypt` alone, and a `PutObject` under SSE-KMS needs `GenerateDataKey`, so the key refused and the
+  bucket's `DenyThePersonaAndTheDebugRoleAnyWrite` stays attached and unexercised for this principal. The
+  `CreateSpace` met the role's own identity policy, `Describe*` and `List*`, an implicit deny; the
+  `Workloads` document's `DenyInteractiveSageMakerSurface` names itself only to a principal whose
+  identity policy allows the action, the battery's infrastructure user, so for the debug role the SCP
+  stays attached and unexercised, as the inline policy's absence of the action already refuses it. The
+  role is read-by-API by two layers in each direction, and one of each pair is proven. The step's
+  expectation is corrected to the measured wording.
+
+## 2026-10-22 — 6.3: the alarm's messages received, and a third assumption inside the window
+
+*The user's hand for the messages and the command, pasted into this chat and copied here with the
+account id, the sign-in address and the laptop's address replaced by placeholders; Claude's reading as
+the infrastructure user (`awsds-infra-prod`). Times UTC.*
+
+- **[user] The alerts**: *"Sim, recebi dois emails de alerta"*, one per assumption; the second's body,
+  verbatim but for the placeholders, the input transformer's eight lines:
+  *"awsds-prod-debug-assume: the production debug role was assumed." / "When: 2026-10-22T23:22:00Z" /
+  "Role: arn:aws:iam::<Production>:role/awsds-prod-debug" / "Caller: AROAW6L3NRTR5S22T5TS5:<the
+  data-science user>" / "Session name: botocore-session-1792711318" / "Source address: <the laptop>" /
+  "CloudTrail event id: 2acc588b-f660-4c47-9abc-ea3c7ff286e4"*. No credential in it, as 6.2 wrote the
+  transformer; the caller is the reserved role's unique id and the sign-in name.
+- **[user] The after-window command, run before the window's end**: the step's `assume-role` with the
+  session name `debug-window-after` answered
+  *"arn:aws:sts::<Production>:assumed-role/awsds-prod-debug/debug-window-after"*, a third successful
+  assumption, since the window is open until 01:00Z. The refusal is the next reading, after the window
+  closes, by the clock or by the closing apply.
+
+## 2026-10-22 — 6.3: the window closed by the apply, read back
+
+*Claude's hand, as the infrastructure user (`awsds-infra-prod`), on the user's authorization in this
+chat: "Autorizo o apply de production/sagemaker sem a flag, como awsds-infra-prod, a partir de um plano
+novo, para fechar a janela agora; depois eu rodo o assume-role e colo a recusa." Times UTC.*
+
+- **[Claude] Before**: no session running (the app's list at 23:34); the trail read at 23:34:29 holds
+  three successful `AssumeRole` events on the role, all by the persona's reserved role in `us-west-2`:
+  23:21:29 `debug-window-proof`, 23:22:00 `botocore-session-1792711318`, 23:32:07 `debug-window-after`
+  (event `371cc413-9835-40b0-aec1-86ef80c0b962`).
+- **[Claude] The closing apply** (`production/sagemaker/`, Production): the fresh plan without the flag,
+  23:34:42 to 23:34:58, *"Plan: 0 to add, 1 to change, 0 to destroy."*, `aws:CurrentTime` moving from
+  `2026-10-23T01:00:00Z` back to `2026-01-01T00:00:00Z`, no check warning; the apply, 23:34:58 to
+  23:35:09, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*, the role modified in 1 s.
+- **[Claude] Read back**: the re-plan at 23:35:36 *"No changes."* with no warning; `get-role` at 23:35:38
+  shows `DateLessThan aws:CurrentTime 2026-01-01T00:00:00Z` beside `aws:RequestedRegion us-west-2`;
+  `./aws/deploytargets.py awsds-infra-prod` at 23:36:06 *"0 check(s) FAILED."*, `DT-9` passing, *"window
+  on awsds-prod-debug closed (ends 2026-01-01T00:00:00Z)"*, both rules
+  `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`. The window was open 25 minutes, 23:09:55 to 23:35:09.
+- **[Claude] What follows**: the persona's `assume-role` against the closed trust, the refusal pasted
+  here and read in the trail by `errorCode`, which closes 6.3 and verification xi.
+
+## 2026-10-23 — 6.3: the assumption refused against the closed trust
+
+*The user's hand, the command run as the Data Scientist User after the closing apply of 2026-10-22
+23:35 UTC and pasted into this chat on 2026-10-23, copied here with the account id and the sign-in
+address replaced by placeholders; Claude's reading. The infrastructure user's token had expired by
+the time of the reading (15:25 UTC), so the trail's `errorCode` for this attempt is owed to the next
+sign-in.*
+
+- **[user] The refusal**, the step's command with the session name `debug-window-closed`: *"An error
+  occurred (AccessDenied) when calling the AssumeRole operation: User:
+  arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the
+  data-science user> is not authorized to perform: sts:AssumeRole on resource:
+  arn:aws:iam::<Production>:role/awsds-prod-debug"*.
+- **[Claude] The reading**: the same wording as the four refusals of the malformed ARN, now on the real
+  ARN, from the trust's `DateLessThan` with the default in the past: STS names no condition in its
+  message, so the trail's record is what attributes it, a refused `AssumeRole` with `requestParameters`
+  null and `errorCode` `AccessDenied` by the persona's reserved role, the shape Stage 8 4.6 read. The
+  escape hatch is closed at rest, open in an approved window alone, alarmed on each assumption, and
+  cannot become a notebook: 6.3 is done, verification xi answered but for the OU wording, which the
+  role's own policy pre-empts (Lesson 20).
+
+## 2026-10-23 — 6.3: the refusal's record read in the trail
+
+*Claude's hand, as the infrastructure user (`awsds-infra-prod`), after the user signed in again on
+request. Read-only. Times UTC.*
+
+- **[Claude] The trail**, every `AssumeRole` in Production from 2026-10-22 23:30 to 2026-10-23 15:28,
+  paginated whole (471 events, none truncated), two by the persona's reserved role: the third assumption
+  inside the window, 2026-10-22 23:32:07, session `debug-window-after`, no error; and the refusal,
+  **2026-10-23 15:25:28, `errorCode` `AccessDenied`, `requestParameters` null**, `us-west-2`, event
+  `47e12fbc-5061-4a34-bc1f-e73217fbf313`, its `errorMessage` the text the user pasted, both from the
+  laptop's address. The refused call records no session name and no role ARN, the shape Stage 8 4.6
+  read; the window had been closed for 15 h 50 min. 6.3 and verification xi are closed.
