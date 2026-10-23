@@ -515,3 +515,66 @@ applied. Times UTC.*
 - **[Claude] The sittings**: pass 1's `deploy --targets dev` in the Sandbox sitting, passes 1 and 2 in the
   tag's, pass 3 after the quotas, each in [`runbooks/promotion.md`](../plan/runbooks/promotion.md) (§T, §Q).
 - **[Claude] The plan**: the Status row, 0.5 and 6.2.
+
+## 2026-10-23 — 6.2 begun by the user from the laptop: the workflow calls refused
+
+*The commands the user's, from the laptop signed in as the Data Scientist User through
+`DataScientistProdAccess` (`awsds-scientist-prod`), the tunnel down; the paste the user's, the account id
+and the address masked; the reading Claude's. The first form of the two commands, `aws
+airflow-serverless …`, was refused by the CLI (*"Found invalid choice 'airflow-serverless'"*): the command
+is `mwaa-serverless`, corrected in the step.*
+
+- **[user]**
+
+  ```
+  ➜  AWS-DataScience git:(main) aws mwaa-serverless start-workflow-run --workflow-arn "arn:aws:airflow-serverless:us-west-2:<Production>:workflow/awsds-prod-wf-app-etl-0000000000" --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the StartWorkflowRun operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: airflow-serverless:StartWorkflowRun on resource: arn:aws:airflow-serverless:us-west-2:<Production>:workflow/awsds-prod-wf-app-etl-0000000000 because no identity-based policy allows the airflow-serverless:StartWorkflowRun action
+  ➜  AWS-DataScience git:(main) aws mwaa-serverless list-workflows --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the ListWorkflows operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: airflow-serverless:ListWorkflows on resource: * because no identity-based policy allows the airflow-serverless:ListWorkflows action
+  ```
+
+- **[Claude]** Both the implicit deny the step expects, *"no identity-based policy allows"*: the set
+  names no `airflow-serverless:` action, and decision 11 gave the reads to the approver's set alone. The
+  service authorized a workflow ARN that does not exist, so the reading needed no workflow. The chain
+  layer's two calls, the provisioned environment and the topic are the block's next four.
+
+## 2026-10-23 — 6.2's chain-layer calls, the provisioned environment and the topic
+
+*The commands the user's, the same session and profile; the paste the user's, the account id and the
+addresses masked; the reading Claude's. Two commands were first run with the `<Production>` placeholder
+left in, which the service refused as a malformed input, and one of them was re-run.*
+
+- **[user]**
+
+  ```
+  ➜  AWS-DataScience git:(main) aws stepfunctions start-execution --state-machine-arn "arn:aws:states:us-west-2:<Production>:stateMachine:awsds-prod-chain-app-etl" --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the StartExecution operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: states:StartExecution on resource: arn:aws:states:us-west-2:<Production>:stateMachine:awsds-prod-chain-app-etl because no identity-based policy allows the states:StartExecution action
+  ➜  AWS-DataScience git:(main) aws scheduler create-schedule --name awsds-canary-probe --schedule-expression 'rate(1 day)' --flexible-time-window Mode=OFF --target '{"Arn":"arn:aws:states:us-west-2:<Production>:stateMachine:awsds-prod-chain-app-etl","RoleArn":"arn:aws:iam::<Production>:role/awsds-prod-chain-scheduler"}' --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the CreateSchedule operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: scheduler:CreateSchedule on resource: arn:aws:scheduler:us-west-2:<Production>:schedule/default/awsds-canary-probe because no identity-based policy allows the scheduler:CreateSchedule action
+  ➜  AWS-DataScience git:(main) aws mwaa create-environment --name awsds-canary-probe --dag-s3-path dags --execution-role-arn "arn:aws:iam::<Production>:role/awsds-prod-job-exec" --source-bucket-arn arn:aws:s3:::awsds-prod-outputs --network-configuration SecurityGroupIds=sg-00000000000000000,SubnetIds=subnet-00000000000000000,subnet-00000000000000001 --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the CreateEnvironment operation: Cross-account pass role is not allowed.
+  ➜  AWS-DataScience git:(main) aws mwaa create-environment --name awsds-canary-probe --dag-s3-path dags --execution-role-arn "arn:aws:iam::<Production>:role/awsds-prod-job-exec" --source-bucket-arn arn:aws:s3:::awsds-prod-outputs --network-configuration SecurityGroupIds=sg-00000000000000000,SubnetIds=subnet-00000000000000000,subnet-00000000000000001 --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the CreateEnvironment operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: airflow:CreateEnvironment on resource: arn:aws:airflow:us-west-2:<Production>:environment/awsds-canary-probe because no identity-based policy allows the airflow:CreateEnvironment action
+  ➜  AWS-DataScience git:(main) aws sns publish --topic-arn "arn:aws:sns:us-west-2:<Production>:awsds-prod-alerts" --message probe --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (InvalidParameter) when calling the Publish operation: Invalid parameter: TopicArn Reason: Invalid namespace: <Production>
+  ```
+
+  The first `create-environment` carried the literal placeholder in the role ARN, which the service read
+  as another account's role, *"Cross-account pass role is not allowed"*; the second carried the account's
+  id. The `publish` carried the placeholder in the topic ARN and was refused as a malformed parameter,
+  never authorized; it is run again with the id.
+- **[Claude] The readings.** `states:StartExecution` and `scheduler:CreateSchedule`: the implicit deny,
+  *"no identity-based policy allows"*, as the step expects. **`airflow:CreateEnvironment` was refused by
+  the set's own implicit deny**, *"no identity-based policy allows the airflow:CreateEnvironment action"*,
+  one layer before the root baseline's `DenyProvisionedMwaa` (Lesson 20): IAM names the explicit deny of
+  a service control policy only to a principal whose identity policy allows the action, and no persona
+  set holds an `airflow:` allow. So that statement is exercised from a persona session by nobody, and its
+  proof stays the battery's `root` row as the infrastructure user (2026-10-18, `DENY-SCP`), the same shape
+  Stage 9 6.3 read for `CreateSpace` under the debug role. The step's expectation is corrected.

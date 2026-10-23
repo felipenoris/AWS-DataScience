@@ -957,7 +957,10 @@ session; read every denial by its wording (standing rule since 1c).
   ```
 
   The CLI's command is `mwaa-serverless`; `airflow-serverless` is the IAM prefix and the ARN's service,
-  never a CLI command (`Found invalid choice 'airflow-serverless'`, 2026-10-23).
+  never a CLI command (`Found invalid choice 'airflow-serverless'`, 2026-10-23). **Run by the user
+  2026-10-23** (the log): both refused *"no identity-based policy allows"*, on a workflow ARN that does
+  not exist, which the service authorized before resolving; `states:StartExecution` and
+  `scheduler:CreateSchedule` the same, so the chain layer's writes are closed to the set by omission.
 
   ```bash
   aws stepfunctions start-execution --state-machine-arn "arn:aws:states:us-west-2:<Production>:stateMachine:awsds-prod-chain-app-etl" --profile awsds-scientist-prod --region us-west-2
@@ -967,9 +970,12 @@ session; read every denial by its wording (standing rule since 1c).
   aws scheduler create-schedule --name awsds-canary-probe --schedule-expression 'rate(1 day)' --flexible-time-window Mode=OFF --target '{"Arn":"arn:aws:states:us-west-2:<Production>:stateMachine:awsds-prod-chain-app-etl","RoleArn":"arn:aws:iam::<Production>:role/awsds-prod-chain-scheduler"}' --profile awsds-scientist-prod --region us-west-2
   ```
 
-  The provisioned environment, refused by `DenyProvisionedMwaa`, *"an explicit deny in a service control
-  policy"*, the root baseline's statement exercised from a persona session (the battery's row ran it as
-  the infrastructure user on 2026-10-18):
+  The provisioned environment, expected refused by `DenyProvisionedMwaa` and **refused one layer before
+  it** (run 2026-10-23, the log): *"no identity-based policy allows the airflow:CreateEnvironment
+  action"*, the set's own implicit deny, since IAM names an SCP's explicit deny only to a principal whose
+  identity policy allows the action (Lesson 20), and no persona set holds an `airflow:` allow. The
+  statement's proof stays the battery's `root` row as the infrastructure user (2026-10-18); a persona
+  session cannot exercise it:
 
   ```bash
   aws mwaa create-environment --name awsds-canary-probe --dag-s3-path dags --execution-role-arn "arn:aws:iam::<Production>:role/awsds-prod-job-exec" --source-bucket-arn arn:aws:s3:::awsds-prod-outputs --network-configuration SecurityGroupIds=sg-00000000000000000,SubnetIds=subnet-00000000000000000,subnet-00000000000000001 --profile awsds-scientist-prod --region us-west-2

@@ -662,7 +662,9 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   trust widened to a person for one sitting (`DenyChangingTheDeployIdentities` exists to keep it fixed).
   **The laptop half, written 2026-10-23**, signed in as the Data Scientist User in Sandbox
   (`awsds-scientist-sandbox`), the group named by its ARN since the account is another; the account id is
-  the one the laptop's config carries for `awsds-scientist-prod`. The read answers:
+  the one the laptop's config carries for `awsds-scientist-prod`. The read answers (**run by the user
+  2026-10-23**: the group's record, `Completed`, created by the infrastructure user on 2026-10-18, the
+  log):
 
   ```bash
   aws sagemaker describe-model-package-group --model-package-group-name "arn:aws:sagemaker:us-west-2:<Production>:model-package-group/awsds-prod-model-app-etl" --profile awsds-scientist-sandbox --region us-west-2
@@ -925,6 +927,10 @@ data source the slice already uses — never a literal id (`CLAUDE.md`), never a
   ```bash
   aws s3api get-object --bucket awsds-prod-outputs --key applications/stage-09-proofs/v0/glue/producer_proof.py /dev/null --profile awsds-scientist-prod --region us-west-2
   ```
+
+  Run the same evening: refused on `s3:ListBucket` by the listing deny, since the object does not
+  exist yet and S3 reads the listing permission to choose between a 403 and a 404; the read deny is
+  exercised by the same command once the script is uploaded (the log).
 
 ### 6. The production debugging escape hatch (D17)
 

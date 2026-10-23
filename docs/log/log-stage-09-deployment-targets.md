@@ -1272,3 +1272,54 @@ this entry. Times: the paste carries none; the block ran about 20:20 to 20:35 UT
   `DenyThePersonaListingsOutsideTheNamedPrefixes`; the release's tree refused as a bare `403` on
   `HeadObject`, which carries no wording, so that refusal is attributed by a `get-object` instead, whose
   error body names the policy (the next command).
+
+## 2026-10-23 — 5.4's read outside the prefixes, attributed by `get-object`
+
+*The command the user's, as the Data Scientist User through `DataScientistProdAccess`; the paste the
+user's, the account id and the address masked; the reading Claude's.*
+
+- **[user]**
+
+  ```
+  ➜  AWS-DataScience git:(main) aws s3api get-object --bucket awsds-prod-outputs --key applications/stage-09-proofs/v0/glue/producer_proof.py /dev/null --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDenied) when calling the GetObject operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::awsds-prod-outputs" with an explicit deny in a resource-based policy
+  ```
+
+- **[Claude]** The object does not exist yet (the script is uploaded at the Production sitting), so S3
+  evaluated `s3:ListBucket` to choose between a 403 and a 404, and the bucket's
+  `DenyThePersonaListingsOutsideTheNamedPrefixes` answered. The read deny,
+  `DenyThePersonaReadsOutsideTheNamedPrefixes`, is attached and still unexercised for this principal: the
+  same `get-object` after the upload is the reading that names it (Lesson 20).
+
+## 2026-10-23 — 3.4's laptop half, the read: the persona from Sandbox reads the group
+
+*The command the user's, from the laptop signed in as the Data Scientist User through
+`DataScientistAccess` (`awsds-scientist-sandbox`); the paste the user's, the account id, the addresses
+and the principal's unique id masked; the reading Claude's.*
+
+- **[user]**
+
+  ```
+  ➜  AWS-DataScience git:(main) aws sagemaker describe-model-package-group --model-package-group-name "arn:aws:sagemaker:us-west-2:<Production>:model-package-group/awsds-prod-model-app-etl" --profile awsds-scientist-sandbox --region us-west-2
+
+
+  {
+      "ModelPackageGroupName": "awsds-prod-model-app-etl",
+      "ModelPackageGroupArn": "arn:aws:sagemaker:us-west-2:<Production>:model-package-group/awsds-prod-model-app-etl",
+      "ModelPackageGroupDescription": "app-etl's model versions: registered and approved by the Production deploy role alone (Stage 9 step 3.2, D28 item 6)",
+      "CreationTime": "2026-10-18T16:59:03.981000-03:00",
+      "CreatedBy": {
+          "IamIdentity": {
+              "Arn": "arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_InfrastructureAccess_c2bcabf74c885115/<the infrastructure user>",
+              "PrincipalId": "<unique id>:<the infrastructure user>"
+          }
+      },
+      "ModelPackageGroupStatus": "Completed"
+  }
+  ```
+
+- **[Claude]** The read-status half of verification v, the persona's side: the group's record came back
+  across the account boundary, through the group policy's read-status statement (3.2, decision 10) and
+  the set's `ReadSageMakerStatus`, both halves of Lesson 28's intersection exercised by one call. The
+  write half is the next command, `create-model-package`.
