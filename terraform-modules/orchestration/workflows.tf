@@ -235,16 +235,18 @@ data "aws_iam_policy_document" "workflow" {
     }
   }
 
-  # The worker's session decrypts directly through the kms endpoint (Stage 18 step 4.4, on a key the
-  # log did not name), so the role decrypts what is encrypted for its own workflow and nothing else:
-  # the ten ? are the suffix the service appends, so app-etl's role cannot read app-etl-check's.
+  # The worker's session calls the key directly through the kms endpoint: Decrypt for its workflow
+  # (Stage 18 step 4.4) and GenerateDataKey for every XCom a task pushes (read 2026-10-23 in Staging:
+  # without it the first task fails after its job has run), both with the workflow's ARN as
+  # encryption context, so the role uses the key for its own workflow and nothing else: the ten ?
+  # are the suffix the service appends, so app-etl's role cannot read app-etl-check's.
   dynamic "statement" {
     for_each = var.workflow_encryption == "CUSTOMER_MANAGED_KEY" ? [1] : []
 
     content {
-      sid       = "DecryptItsWorkflow"
+      sid       = "UseTheKeyForItsWorkflow"
       effect    = "Allow"
-      actions   = ["kms:Decrypt"]
+      actions   = ["kms:Decrypt", "kms:GenerateDataKey"]
       resources = [var.data_key_arn]
 
       condition {
