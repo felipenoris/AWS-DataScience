@@ -1136,3 +1136,16 @@ plans saved outside the repository. Nothing applied. Times UTC.*
   Production and GitLab rows, its decision and act rows, and the three stage files point at it.
 - **[Claude] The plan**: the Status row, the build table, 2.4, 2.5, 2.6, 3.1, 3.4, 3.5, 5.4, 8.1-8.4,
   9.1, 9.3, 9.4, 9.8, decision 13 and verification xxviii.
+
+## 2026-10-23 — decision 13 taken by the user, as recommended: (a)
+
+*Claude's hand, the same session; no AWS call.*
+
+- **[user]** Asked for the decision's context, its options and the recommendation, read them, and took
+  it: *"Ok com a recomendação (a)."* `AllowFullTableExternalDataAccess` goes on in Production by the
+  console's Application integration settings, the user's act as the infrastructure user, between two
+  `DT-5` readings of Claude's, with nothing up; the lake's half waits for the proof job's first wording.
+- **[Claude]** The decision recorded in the stage file (decision 13, the Status row), the act in
+  `waiting-on-the-user.md`'s acts and in `runbooks/promotion.md` §0.3 with its three steps, the indexes
+  and `CLAUDE.md` following. Stage 11's threat-model row and `AWS_STATE.md`'s word on the flag are
+  written when the flag reads on.

@@ -329,8 +329,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `layers.py` refusal 9 until the namespace is applied; 6.3's window opened, exercised and closed
   2026-10-22, the refusal read 2026-10-23. **2026-10-23**: 2.4's proof job `awsds-prod-producer-proof`
   written in `production/sagemaker/` with its script (1 to add, 1 to change), one run per mode; decision
-  13 open, the `AllowFullTableExternalDataAccess` flag a Glue write needs, unset in Production and the
-  lake; 9.4's grant written (1 to change), `workloads-egress/` taking `GROUPS=redshift`; the quota codes
+  13 taken as (a): the `AllowFullTableExternalDataAccess` flag a Glue write needs, unset in Production
+  and the lake, goes on in Production by the console, the user's act between two `DT-5` readings; 9.4's
+  grant written (1 to change), `workloads-egress/` taking `GROUPS=redshift`; the quota codes
   in 3.5, no request ever made; the persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 runnable now;
   the sittings in `runbooks/promotion.md`.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's

@@ -13,7 +13,7 @@ chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs
 
 | § | Holds |
 |---|---|
-| [§0](#0-before-any-sitting-with-the-environment-down) | what runs today, with nothing up: the persona proofs, the quota requests, one decision |
+| [§0](#0-before-any-sitting-with-the-environment-down) | what runs today, with nothing up: the persona proofs, the quota requests, the flag of decision 13 |
 | [§H](#h-the-hub-and-gitlab) | the hub and GitLab: the user's GitLab acts, the legs' merge request, the next house image |
 | [§P](#p-production-stage-9s-pass-3-and-stage-10s-05) | Production: the proof job's two runs, Stage 9's producer pair and pickup |
 | [§T](#t-the-tag-stage-8s-pass-4-with-stage-10s-passes-1-and-2) | the tag: Stage 8's pass 4 with Stage 10's passes 1 and 2, and Stage 9's 8.5 |
@@ -51,13 +51,27 @@ request ever made in either account (read 2026-10-23: `list-requested-service-qu
 empty in both). Stage 10's pass 3 waits on them; the commands, with each quota's code, are in Stage 9
 [3.5](../stages/stage-09-deployment-targets.md). The user runs them; a request takes hours to days.
 
-### 0.3 The one decision the Production sitting needs first
+### 0.3 The one act the Production sitting needs first
 
-Stage 9 decision 13: whether `AllowFullTableExternalDataAccess` is turned on in Production's Lake
-Formation settings before the proof job runs, and by which hand. AWS's page on full-table access names
-it as the first step of the only mode a Glue Spark job writes a registered table in, and both Production
-and the lake read it unset on 2026-10-23. The decision's reasoning, its recommendation and its cost in
-the threat model are in the stage file.
+Stage 9 decision 13, taken 2026-10-23 as (a): `AllowFullTableExternalDataAccess` turned on in Production's
+Lake Formation settings before the proof job runs, by the user's hand in the console. AWS's page on
+full-table access names it as the first step of the only mode a Glue Spark job writes a registered
+table in, and both Production and the lake read it unset on 2026-10-23; the reasoning and the cost in
+the threat model are in the stage file. The act needs nothing up:
+
+1. **[Claude]** the before-reading, `./aws/deploytargets.py awsds-infra-prod` (`DT-5`) and
+   `aws lakeformation get-data-lake-settings --profile awsds-infra-prod`, the admins, the two default
+   lists, the parameters and the flag, kept for the after-reading.
+2. **[user]** signed in to the console as the infrastructure user (`InfrastructureAccess`, the account's
+   Lake Formation administrator), in Production: *Lake Formation → Administration → Application
+   integration settings → Allow external engines to access data in Amazon S3 locations with full table
+   access*, saved.
+3. **[Claude]** the after-reading, the same two commands: the flag `true`, and the admin, the default
+   lists and the parameters as before. A moved parameter is INT-11's failure and is put back by the
+   same page before anything else runs. Then Stage 11's threat-model row, and `AWS_STATE.md`'s word on
+   the flag per account.
+
+The lake's half, its own `lakeformation.tf`, waits for the first run's wording (§P step 5).
 
 ## H. The hub and GitLab
 
@@ -92,9 +106,7 @@ the DNS Firewall), `runners/` and `probes/`, leaves the hub alone (refusal 6) an
 `warehouse-compute/` (refusal 9). The sitting needs the hub up for `make up`'s check and nothing else
 of §H.
 
-1. **Decision 13 taken** (§0.3). If it turns the flag on, the user's act or a `[Claude⚡]`
-   `put-data-lake-settings` carrying the structure read back first, then `./aws/deploytargets.py`
-   `DT-5` reads the parameters unchanged.
+1. **The flag on in Production** (§0.3), read back with `DT-5`.
 2. **[Claude⚡] `production/sagemaker/` applied** as `awsds-infra-prod` from a fresh plan (Recipe A):
    the proof job added and the job role's `CommitTheIcebergWrites` statement changed, read 2026-10-23
    as *1 to add, 1 to change*.
