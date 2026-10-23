@@ -627,7 +627,9 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
 
   The state of each request is read with `list-requested-service-quota-change-history --service-code
   sagemaker` on the same profile; Stage 17's three requests of 2026-10-17 in Sandbox read `CASE_OPENED`
-  for days.
+  for days. **Requested by the user 2026-10-23, 20:00 UTC**: `ml.m5.large` training and transform at 2
+  in Production and in Staging, the four reading `PENDING` with no case id at 20:02 UTC (the log); the
+  other codes wait for a workload that names the type.
 - **3.6 — [Claude] Read the enforcement back.** `./aws/deploytargets.py` gains **`DT-11`** (`DT-9` is the
   escape hatch): under (a), the five statements present in the `Workloads` OU document and the document
   attached; under (b), every role that can call `Create*Job` in the two accounts carries the boundary, read

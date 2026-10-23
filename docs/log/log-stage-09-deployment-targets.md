@@ -1178,3 +1178,32 @@ the write the user's, in the console. Times UTC.*
 - **[Claude]** `TM-26` written in the threat model's ledger, the flag per account in `AWS_STATE.md` §C,
   decision 13 and the Status row brought to the act, the act's rows out of `waiting-on-the-user.md`,
   `runbooks/promotion.md` §0.3 marked done with the Region note.
+
+## 2026-10-23 — 3.5: the `ml.m5.large` quota pair requested in both accounts
+
+*Claude's hand, the same session; the requests the user's, from the laptop as the infrastructure user
+(`awsds-infra-prod`, `awsds-infra-staging`); the reading Claude's. Times as printed, then UTC.*
+
+- **[user]** Ran 3.5's two commands, training `L-611FA074` and transform `L-236AE59F` of `ml.m5.large`
+  at 2 in each account, and pasted the history read in both:
+
+  ```
+  -----------------------------------------------------------------------------------------------
+  |                           ListRequestedServiceQuotaChangeHistory                            |
+  +--------------------------------------+------+----------+------------------------------------+
+  |  ml.m5.large for transform job usage |  2.0 |  PENDING |  2026-10-23T17:00:45.330000-03:00  |
+  |  ml.m5.large for training job usage  |  2.0 |  PENDING |  2026-10-23T17:00:42.296000-03:00  |
+  +--------------------------------------+------+----------+------------------------------------+
+
+  -----------------------------------------------------------------------------------------------
+  |                           ListRequestedServiceQuotaChangeHistory                            |
+  +--------------------------------------+------+----------+------------------------------------+
+  |  ml.m5.large for transform job usage |  2.0 |  PENDING |  2026-10-23T17:00:54.511000-03:00  |
+  |  ml.m5.large for training job usage  |  2.0 |  PENDING |  2026-10-23T17:00:52.318000-03:00  |
+  +--------------------------------------+------+----------+------------------------------------+
+  ```
+
+- **[Claude]** Read again at 20:02:06 UTC in Production and 20:02:07 in Staging: the four requests
+  `PENDING`, created 20:00:42 to 20:00:54 UTC, no case id yet. Stage 17's requests of 2026-10-17 moved
+  to `CASE_OPENED` and stayed there for days, so the next reading is the sitting's. The stage's 3.5,
+  `waiting-on-the-user.md`, `runbooks/promotion.md` §0.2 and `CLAUDE.md` carry the state.

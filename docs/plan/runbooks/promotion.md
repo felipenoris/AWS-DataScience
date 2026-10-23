@@ -50,6 +50,8 @@ Every type inside the ceiling reads 0 for training and transform in Staging and 
 request ever made in either account (read 2026-10-23: `list-requested-service-quota-change-history`
 empty in both). Stage 10's pass 3 waits on them; the commands, with each quota's code, are in Stage 9
 [3.5](../stages/stage-09-deployment-targets.md). The user runs them; a request takes hours to days.
+**Requested 2026-10-23**: `ml.m5.large` training and transform at 2 in both accounts, `PENDING`; §Q opens
+when both accounts read them above zero.
 
 ### 0.3 The one act the Production sitting needs first
 

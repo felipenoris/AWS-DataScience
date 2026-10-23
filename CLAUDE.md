@@ -310,7 +310,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   carve-out removed, Stage 9 3.5's instance-preference rows run for the first time) and `root` 25 / 0 / 0 on 2026-10-18. **SageMaker job quotas for `ml.m5.large`,
   `.xlarge` and `.2xlarge` are 0 in Production and Staging** (processing and training; training is 0 for
   every type inside the ceiling in both, read 2026-10-20 and 2026-10-22), **and no type inside the ceiling
-  has a transform quota above 0 in either** (2026-10-22), with no increase requested; `ml.t3.medium`,
+  has a transform quota above 0 in either** (2026-10-22); `ml.m5.large`'s training and transform were
+  requested at 2 in both on 2026-10-23, `PENDING`; `ml.t3.medium`,
   `app-etl`'s processing type, is 4 in both, and Staging ran a job on it on 2026-10-19. The probes read `ResourceLimitExceeded` as authorized; the `ou`
   phase's seven instance-preference rows (Stage 9 3.5, PR #216) ran 2026-10-22, each as expected.
 - **Stage 9**: pass 1 applied 2026-10-18 (`awsds-org-scp-ou-workloads`, nine statements; `production/sagemaker/`,
@@ -332,7 +333,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   13 taken as (a) and done: the `AllowFullTableExternalDataAccess` flag a Glue write needs is on in
   Production since 2026-10-23 19:49 UTC (the user's console act, `DT-5` unchanged, `TM-26`), unset in the
   lake and Staging, on in Sandbox since SMUS; 9.4's grant written (1 to change), `workloads-egress/` taking `GROUPS=redshift`; the quota codes
-  in 3.5, no request ever made; the persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 runnable now;
+  in 3.5, the `ml.m5.large` pair requested 2026-10-23; the persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 runnable now;
   the sittings in `runbooks/promotion.md`.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, never fired (no model package exists). Prepared
