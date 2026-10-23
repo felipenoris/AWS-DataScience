@@ -2613,6 +2613,19 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   reaches the owner's trail, as a shared event; `GetTemporaryGlueTableCredentials` never appears as an
   event name. Where: `log-stage-09-deployment-targets.md`, the 2026-10-23 entries; Stage 9 decision 13.
 
+### MWAA Serverless
+
+- **A worker encrypts every XCom a task pushes with its own `kms:GenerateDataKey` on the workflow's key,
+  after the task's work is done** (measured 2026-10-23, Stage 8 3.8's by-hand leg in Staging). The data
+  key admitted the execution role's `Decrypt` with the workflow's ARN as encryption context, the call
+  Stage 18 had read, and the first chain failed at its first task: `GlueJobOperator` started the Glue
+  job, the job ran to `SUCCEEDED` in 98 s, and the task ended `FAILED` on *"Failed to encrypt XCom
+  value"*, the `GenerateDataKey` refused *"because no resource-based policy allows"*; the three tasks
+  behind it `UPSTREAM_FAILED`. A key policy read against the service's documented calls misses the
+  XCom backend's, and a run on a key the role already held `kms:*` on (Stage 18's project key) could
+  not show it. Where: `log-stage-10-orchestration-promotion.md`, the 2026-10-23 entries;
+  `staging/data/main.tf`'s `AllowTheWorkflowRolesForTheirWorkflows`.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

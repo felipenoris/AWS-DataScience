@@ -660,8 +660,10 @@ ran in the lab on 2026-10-15 (D41).
   policy, the deploy role's `GenerateDataKey` and `Decrypt` through S3 and its `CreateGrant`,
   `GenerateDataKey`, `Decrypt` and `DescribeKey` for the workflow (decision 2), `awsds-<env>-chain-exec`'s
   `GenerateDataKey` and `Decrypt` with the workflow's ARN as encryption context, the pattern
-  `awsds-<env>-wf-*`'s `GenerateDataKey` and `Decrypt` through S3, its `Decrypt` with its workflow's ARN as
-  context and its `CreateGrant` through SageMaker for a job's volume, and `logs.<region>.amazonaws.com`
+  `awsds-<env>-wf-*`'s `GenerateDataKey` and `Decrypt` through S3, its `Decrypt` and `GenerateDataKey` with its
+  workflow's ARN as context (the second added 2026-10-23: the worker encrypts each XCom a task pushes with its
+  own `GenerateDataKey`, and the first chain in Staging failed at its first task without it, the log) and its
+  `CreateGrant` through SageMaker for a job's volume, and `logs.<region>.amazonaws.com`
   for the groups the module encrypts (`kms:EncryptionContext:aws:logs:arn`).
 
 ### 3. Schedule, retry, alerting, and the chain layer (D28 item 5, D41)
@@ -1093,6 +1095,12 @@ Each is decided during the stage and written into `docs/log/log-stage-10-orchest
    exists (Stage 9 creates both, its decision 1 recommending Production's dedicated), so each slice's plan
    stops at the key's lookup. The module takes the choice as `workflow_encryption`, default
    `CUSTOMER_MANAGED_KEY`, and 2.4 lists the key statements the recommendation needs. **Taken by the user 2026-10-22, as recommended.**
+   **Read 2026-10-23 in Staging on `alias/awsds-staging-data`** (the log, Stage 8 3.8's by-hand leg): at the
+   `CreateWorkflow`, two `CreateGrant` and three `GenerateDataKey` in the saver's session with the context
+   `aws:airflow-serverless:workflow-arn`; at the chain's start, `awsds-staging-chain-exec`'s `GenerateDataKey` and
+   `Decrypt` with the same context; then the worker's own `Decrypt`, the session
+   `awsds-staging-wf-app-etl/AmazonMWAAServerless` with no `invokedBy`, the same context: the execution role's
+   direct grant is exercised on the data key, and Cloud Control's path applied under `InfrastructureAccess`.
 3. **The endpoint set's AZs** (1.2) — recommended: **single-AZ, like every other endpoint set in the
    estate**. 6i's workers landed in both AZs and reached Sandbox's single-AZ endpoints, so nothing is
    duplicated unless a reading shows an endpoint refused from the second AZ, and the module places every
@@ -1272,7 +1280,7 @@ Each is decided during the stage and written into `docs/log/log-stage-10-orchest
     actions in Staging alone (1.5). The alternative, a direct `StartWorkflowRun` from the leg, skips the
     machine and gives the deploy role `airflow-serverless:StartWorkflowRun` and the workflow key's
     `GenerateDataKey` and `Decrypt` (Stage 18 0.4 measured that path), a wider grant that tests less.
-    Production's schedule is `ENABLED` and 6.1 is its proof. **Taken by the user 2026-10-22, as recommended.**
+    Production's schedule is `ENABLED` and 6.1 is its proof. **Taken by the user 2026-10-22, as recommended.** **Read 2026-10-23 in Staging** (Stage 8's log, 3.8 by hand): the schedule `DISABLED` on `cron(30 6 * * ? *)` UTC in the group `awsds-staging-chains`, targeting the machine; the workflow `READY` with `TriggerMode` `manual_only`, its definition at the release's `VersionId`, `CUSTOMER_MANAGED_KEY`, two subnets in two AZs and the workers' group; `./aws/orchestration.py` all checks passed before the first execution.
 20. **The render's tool and the names it maps** (2.4, decision 6; one contract with Stage 8's application
     slice). The table below maps every value of `examples/app-etl/workflows/app-etl.yaml` the CLI resolves
     from a project. Two rows and the tool are choices; two rows follow Stage 9 decision 12 (a), taken by the

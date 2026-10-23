@@ -812,7 +812,10 @@ approval gate (decision 1).
   record (read 2026-10-22), so its names answering NXDOMAIN in the VPC cost nothing. **No AZ pin**: 6i
   measured MWAA Serverless workers placed in both AZs reaching Sandbox's single-AZ endpoints, and a
   SageMaker job's `VpcConfig` names both subnets. As in 3.3a, this plane has no proxy, so a missing
-  endpoint fails at the firewall or as a timeout, never as a 403.
+  endpoint fails at the firewall or as a timeout, never as a 403. **Applied 2026-10-23** by the user's
+  `make up ENV=staging ONLY=egress` for Stage 8 3.8's by-hand leg (the log): the seven endpoints `available`
+  in `usw2-az1` (`glue`, `kms`, `lakeformation`, `logs`, `sagemaker.api`, `secretsmanager`, `sts`) and the
+  firewall group `awsds-staging-egress`, `./aws/egress.py` all checks passed at 0.070 USD/h.
 - **4.4 — Withdrawn by decision 3**: Staging holds no seeded or synthetic stand-in for governed data, and
   Stage 8's seed job in `examples/app-etl/` is not written. One exception, Stage 10 decision 20 (d), taken
   by the user on 2026-10-22 for the template: the release job seeds `s3://awsds-<env>-outputs/inbox/app-etl/`

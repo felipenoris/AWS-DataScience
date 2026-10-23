@@ -606,3 +606,51 @@ no write. Times UTC.*
   `vpce-0925d883174fd23c1`. The event name is `GetDataAccess`, never `GetTemporaryGlueTableCredentials`,
   and the vend comes in two legs, the driver's own call and Glue's on its behalf. The Sandbox endpoint
   question 6d left in this step is answerable from this reading.
+
+## 2026-10-23 — the orchestration slice's first apply with a release, in Staging, by hand
+
+*Claude's hand, on the user's authorization in chat (*"pode prosseguir com o plano"*), as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-staging`), Stage 8 3.8's by-hand leg (that
+stage's log carries the release and the applies). Times UTC.*
+
+- **[Claude] `staging/orchestration/` with `v0.2.1`**: *"Plan: 21 to add, 0 to change, 0 to destroy."*,
+  applied 22:47:39 to 22:48:02, re-planned `No changes`; `awscc_mwaaserverless_workflow.this["app-etl"]`
+  created in 7 s as `awsds-staging-wf-app-etl-hHNGu2YFTv`, with the service-linked role Stage 18's first
+  `CreateWorkflow` had left in the account (1.5's premise holds here; Production's first apply still owes
+  `iam:CreateServiceLinkedRole`). Verification ii's deploy-role half is not answered by this apply, made
+  under `InfrastructureAccess`; the pipeline's leg answers it.
+- **[Claude] The key's calls in Staging's trail** (read 22:56, the key `74f5ebbc-…` the workflow names,
+  the account data CMK): at the `CreateWorkflow` of 22:47:51, two `CreateGrant` and three
+  `GenerateDataKey` invoked by `airflow-serverless.amazonaws.com` in the saver's session
+  (`InfrastructureAccess`), each `GenerateDataKey` carrying the encryption context
+  `aws:airflow-serverless:workflow-arn` = the workflow's ARN beside `aws-crypto-public-key`; at the
+  chain's start, 22:49:25, `GenerateDataKey` and `Decrypt` in `awsds-staging-chain-exec`'s session with
+  the same context; at 22:50:06 a `Decrypt` by the worker itself, the session
+  `awsds-staging-wf-app-etl/AmazonMWAAServerless`, no `invokedBy`, the same context; the log groups'
+  calls carry `aws:logs:arn` and the bucket's `aws:s3:arn`. Decision 2's premise reads true: the
+  worker's and the saver's calls carry the workflow's ARN as encryption context.
+- **[Claude] The chain's first execution, `v0-2-1-byhand-224923`**, started by `start-execution` as the
+  infrastructure user at 22:49:24 (decision 19's shape, the leg's own command): the machine started the
+  workflow run `7sLvJ2334shWqn5` (`ON_DEMAND`), polled it (`QUEUED` at 22:50:25 and 22:51:25), read it
+  `FAILED` at 22:52:25 and ended **`FAILED`** with its own error `WorkflowRunNotSucceeded`, *"The run of
+  awsds-staging-wf-app-etl ended FAILED, TIMEOUT or STOPPED: its task instances name the task (Stage 10
+  step 3.2)"*: the chain layer's diagnosis path, exercised before 3.2 broke anything on purpose.
+- **[Claude] The run**: 48 s, started 22:49:29, ended 22:50:17; `transform` (`GlueJobOperator`) **`FAILED`**
+  after 11 s, `process`, `summarize` and `write_result` `UPSTREAM_FAILED`. The task's log
+  (`/awsds/staging/wf/app-etl`, one stream, `task_id=transform/attempt=1`): *"Error encrypting:
+  ClientError('An error occurred (AccessDeniedException) when calling the GenerateDataKey operation: User:
+  arn:aws:sts::<Staging>:assumed-role/awsds-staging-wf-app-etl/AmazonMWAAServerless is not authorized to
+  perform: kms:GenerateDataKey on resource: arn:aws:kms:us-west-2:<Staging>:key/74f5ebbc-… because no
+  resource-based policy allows the kms:GenerateDataKey action')"*, then *"Failed to encrypt XCom value"*
+  and *"XCom with key='glue_job_run_details' … not found"*. The trail: the worker's `GenerateDataKey`
+  at 22:50:11 through the `kms` endpoint `vpce-07b2884c5d3d77925`, `AccessDenied`, its context not
+  logged. **The Glue job the task had started ran to the end**: `awsds-staging-app-etl` run `jr_2273904b…`
+  `SUCCEEDED`, 22:50:10 to 22:52:08, 98 s, 196 DPU-seconds, `--SOURCE_PATH s3://awsds-staging-outputs/inbox/app-etl/`,
+  `--TARGET_PATH …/app-etl/work/glue/trades.csv`, two `G.1X`, Glue 6.0; the task failed pushing the
+  run's details as an XCom, not at the job.
+- **[Claude] The reading**: the data key's `AllowTheWorkflowRolesForTheirWorkflows` admits the pattern
+  `awsds-staging-wf-*` to `kms:Decrypt` with the workflow's ARN as context, and the worker encrypts each
+  XCom with its own `GenerateDataKey` under the workflow key, a call no page names and Stage 18's run on
+  a project key (where the role held `kms:*` through the project) could not show. The fix is one action
+  on that statement in `staging/data/` and `production/data/`, planned next; no processing job started,
+  so verification xvi's worker-preparation clause is still open.

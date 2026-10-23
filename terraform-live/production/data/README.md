@@ -31,7 +31,7 @@ Every role is the account root narrowed by `aws:PrincipalArn`, which KMS does no
 | `AllowTheChainRoleForItsWorkflows` | `awsds-prod-chain-exec` | `Decrypt`, `GenerateDataKey` with the workflow's ARN as context |
 | `AllowTheDeploymentManagerToReadWorkflowRuns` | `DeploymentManagerAccess` | `Decrypt` with a workflow's ARN as encryption context alone: the service decrypts a run in the reader's session at each `GetWorkflowRun` (Stage 10 decisions 2, 11). No S3 object carries that context, so the approver still decrypts no output (D31) |
 | `AllowTheWorkflowRolesViaS3` | `awsds-prod-wf-*` | `Decrypt`, `GenerateDataKey` through S3: the result file and the inbox markers |
-| `AllowTheWorkflowRolesForTheirWorkflows` | `awsds-prod-wf-*` | `Decrypt` with the workflow's ARN as context |
+| `AllowTheWorkflowRolesForTheirWorkflows` | `awsds-prod-wf-*` | `Decrypt` and `GenerateDataKey` with the workflow's ARN as context: its own workflow, and each XCom a task pushes, which the worker encrypts with its own `GenerateDataKey` (read 2026-10-23 in Staging: without it the first task fails after its job has run) |
 | `AllowJobVolumeGrantsThroughSageMaker` | `awsds-prod-wf-*`, `awsds-deploy-prod` | `CreateGrant`, `DescribeKey` through SageMaker: a job's volume key, granted in the submitting session (6i) |
 | `AllowCloudWatchLogsForTheJobAndWorkflowGroups` | `logs.<region>.amazonaws.com` | the key's use for the job groups (`/aws/sagemaker/*`, `/aws-glue/*`) and Stage 10's (`/awsds/prod/wf/*`, the chains' group), by `kms:EncryptionContext:aws:logs:arn` |
 | `AllowRedshiftServerlessViaServiceInThisAccount` | this account, through Redshift Serverless | the governed warehouse's namespace (9.1); without it `CreateNamespace` fails and leaves an orphan secret (`EXC-12`) |

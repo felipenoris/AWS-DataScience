@@ -1637,3 +1637,28 @@ user as the Data Scientist User in Sandbox at 20:47 UTC. Times UTC.*
   from 22:11:12 to 22:11:21, every `Decrypt` on the curated data is the registration role's
   (`awsds-data-lf-registration`, sessions `AWSLF-00-NA-…`), the credentials Lake Formation vended: the
   job role's own session touched no `curated` object, which is D13 read in the trail.
+
+## 2026-10-23 — 4.3a's first apply of the re-cut `staging/egress/`, read back
+
+*The apply the user's, `make up ENV=staging ONLY=egress` from the project folder as the infrastructure
+user with `InfrastructureAccess` (`awsds-infra-staging`), the hub up (the user's words: "staging está
+no ar"); Claude's hand reading. Times UTC.*
+
+- **[user] The apply**, the slice's first since 4.3a re-cut it to `VPC-Workloads`' endpoint set (16 to
+  add). **[Claude] Read at 22:44**: `./aws/egress.py awsds-infra-staging` all checks passed, `EG-1` and
+  `EG-2` on each endpoint, `EG-5` ~0.070 USD/h; the seven interface endpoints `available`, `glue`,
+  `kms`, `lakeformation`, `logs`, `sagemaker.api`, `secretsmanager` and `sts`, each single-AZ in
+  `usw2-az1`, no `ecr.*` among them (Stage 10 verification xvi's premise); the DNS Firewall rule group
+  `awsds-staging-egress`.
+
+## 2026-10-23 — the Production sitting's end: `workloads-egress/` down, zero burn
+
+*The teardown the user's, `make down ENV=production` from the project folder as the infrastructure user
+with `InfrastructureAccess` (the user's words: "production está sendo destruído"); Claude's hand
+reading. Times UTC.*
+
+- **[Claude] The reading**: Production's interface endpoints gone at 22:48; `./aws/egress.py
+  awsds-infra-prod` at 22:49:56 reads 0 interface endpoints, 0 NAT gateways, 0.000 USD/h, `EG-5`
+  *"none - the correct between-sessions state (D11)"*. The hub stays up for the Staging leg (Stage 8's
+  log). The sitting's balance in Production: the proof job's three runs (one refused, two
+  `SUCCEEDED`), `curated.trades` at twenty rows, the lake's flag on, the governed namespace applied.
