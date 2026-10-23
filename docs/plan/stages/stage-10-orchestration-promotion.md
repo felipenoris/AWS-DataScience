@@ -353,7 +353,7 @@ run, plus the `[E]` endpoint set while tasks are in the VPC.
   **Written 2026-10-22** in the module: the execution role's policy (`workflows.tf`) holds, per workflow,
   only the statements its entry asks for (its log group; the Glue jobs it names; its processing or
   training prefix with `PassRole` of the job role and SageMaker's grant on the volume key; its outputs
-  prefixes with the data key through S3), plus `DecryptItsWorkflow`: Stage 18's 4.4 read the worker's
+  prefixes with the data key through S3), plus `UseTheKeyForItsWorkflow` (`Decrypt`, and since 2026-10-23 `GenerateDataKey`, the XCom encryption, `orchestration-v0.2.0`): Stage 18's 4.4 read the worker's
   session calling `Decrypt` directly through the `kms` endpoint, so the role decrypts what carries its own
   workflow's ARN as encryption context, the ten-character suffix matched by ten `?` so `app-etl`'s role
   cannot read `app-etl-check`'s. Whether that context is the one the worker uses is the first run's

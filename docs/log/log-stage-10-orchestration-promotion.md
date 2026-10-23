@@ -678,3 +678,49 @@ stage's log carries the release and the applies). Times UTC.*
   delivered it in the same minute; the second e-mail is the chain's own rule on the execution's `FAILED`
   of 22:52:25. The failure rule 6.1 expects to hear is heard here, on a failure nobody staged, and its
   text names the diagnosis commands that found the task (the entry above).
+
+## 2026-10-23 — the data keys' workflow-role statement gains `kms:GenerateDataKey`, both targets
+
+*Claude's hand, on the user's authorization in chat (*"autorizado o apply"*, after the box named both
+slices), as the infrastructure user with `InfrastructureAccess` (`awsds-infra-staging`, then
+`awsds-infra-prod`); Recipe A, each plan outside the repository, no other session running on the machine.
+Times UTC.*
+
+- **[Claude] The change**: `AllowTheWorkflowRolesForTheirWorkflows` in `staging/data/main.tf` and
+  `production/data/main.tf` admits the pattern `awsds-<env>-wf-*` to `kms:Decrypt` **and
+  `kms:GenerateDataKey`** with the workflow's ARN as encryption context; the comment names the XCom
+  encryption and the date it was read; `production/data/README.md`'s row follows. The planned diff in
+  each account: one resource, `module.consumer_data.module.data_key.aws_kms_key.this` updated in place,
+  `+ "kms:GenerateDataKey"` in that statement's `Action`.
+- **[Claude] Staging**: the fresh plan at 23:07:25 to 23:07:42, *"Plan: 0 to add, 1 to change, 0 to
+  destroy."*; applied 23:07:42 to 23:07:58, *"Modifications complete after 6s"* on the key
+  `74f5ebbc-…`; re-planned `No changes`.
+- **[Claude] Production**: the fresh plan at 23:08:14 to 23:08:30, the same counts; applied 23:08:30 to
+  23:08:45, *"Modifications complete after 6s"* on the key `0415a6f0-…`; re-planned `No changes`. The
+  two slices' key policies stay identical in this statement.
+- **[Claude] The chain's second execution, `v0-2-1-byhand-230927`** (23:09:28, after the key policies):
+  **`FAILED`** again at 23:12:29 on the same `WorkflowRunNotSucceeded`; the run `ojUePHoPNgNdm0v` 51 s,
+  `transform` `FAILED` after 14 s, the three others `UPSTREAM_FAILED`, the Glue job `jr_dfb8a65d…`
+  `SUCCEEDED` again (23:10:20 to 23:12:18, 98 s, 196 DPU-seconds). The task log's wording moved one
+  layer: *"not authorized to perform: kms:GenerateDataKey … because no identity-based policy allows
+  the kms:GenerateDataKey action"* (23:10:21, the worker's own call through the `kms` endpoint), where
+  the first run read *"no resource-based policy"*: the key policy now admits the call and the
+  execution role's own policy, `orchestration-v0.1.0`'s `orchestrate` document, does not. The worker's
+  `Decrypt` of 23:10:14 with the workflow's ARN as context was answered. The failure rules mailed
+  again (the user's inbox, 20:11 local time).
+
+## 2026-10-23 — `orchestration-v0.2.0`: the execution role's `GenerateDataKey`, applied in Staging
+
+*Claude's hand, the same authorization; Recipe B. Times UTC.*
+
+- **[Claude] The module**: `workflows.tf`'s statement `DecryptItsWorkflow` becomes `UseTheKeyForItsWorkflow`,
+  `kms:Decrypt` and `kms:GenerateDataKey` on the data key with the workflow's ARN as encryption context;
+  `validate` passes alone, and `staging/orchestration/` planned against the local path reads *"0 to add,
+  1 to change, 0 to destroy"*, the inline `orchestrate` policy alone, the source reverted and re-initialised.
+  Commit `f5429253` carries the module alone; origin's tags read `orchestration-v0.1.0` alone at the moment
+  of tagging; the tag `orchestration-v0.2.0` on `f5429253`, pushed with the branch and read back from origin.
+- **[Claude] The callers**: both slices pin `orchestration-v0.2.0`. `staging/orchestration/` re-initialised
+  on the tag, planned *"0 to add, 1 to change, 0 to destroy"* and applied at 23:20:27, *"Modifications complete
+  after 0s"* on `awsds-staging-wf-app-etl:orchestrate`, re-planned `No changes`; `production/orchestration/`
+  re-initialised on the tag and planned `No changes` (no release). The callers' commit failed its hook once,
+  the slices not yet initialised on the new tag, and landed after the applies.
