@@ -949,12 +949,15 @@ session; read every denial by its wording (standing rule since 1c).
   set):
 
   ```bash
-  aws airflow-serverless start-workflow-run --workflow-arn "arn:aws:airflow-serverless:us-west-2:<Production>:workflow/awsds-prod-wf-app-etl-0000000000" --profile awsds-scientist-prod --region us-west-2
+  aws mwaa-serverless start-workflow-run --workflow-arn "arn:aws:airflow-serverless:us-west-2:<Production>:workflow/awsds-prod-wf-app-etl-0000000000" --profile awsds-scientist-prod --region us-west-2
   ```
 
   ```bash
-  aws airflow-serverless list-workflows --profile awsds-scientist-prod --region us-west-2
+  aws mwaa-serverless list-workflows --profile awsds-scientist-prod --region us-west-2
   ```
+
+  The CLI's command is `mwaa-serverless`; `airflow-serverless` is the IAM prefix and the ARN's service,
+  never a CLI command (`Found invalid choice 'airflow-serverless'`, 2026-10-23).
 
   ```bash
   aws stepfunctions start-execution --state-machine-arn "arn:aws:states:us-west-2:<Production>:stateMachine:awsds-prod-chain-app-etl" --profile awsds-scientist-prod --region us-west-2

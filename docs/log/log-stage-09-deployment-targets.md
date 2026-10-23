@@ -1207,3 +1207,68 @@ the write the user's, in the console. Times UTC.*
   `PENDING`, created 20:00:42 to 20:00:54 UTC, no case id yet. Stage 17's requests of 2026-10-17 moved
   to `CASE_OPENED` and stayed there for days, so the next reading is the sitting's. The stage's 3.5,
   `waiting-on-the-user.md`, `runbooks/promotion.md` §0.2 and `CLAUDE.md` carry the state.
+
+## 2026-10-23 — 5.4 and 8.3 run by the user from the laptop: the workgroup's override, the Production negatives, the prefixes
+
+*The commands the user's, from the laptop signed in as the Data Scientist User through
+`DataScientistProdAccess` (`awsds-scientist-prod`), the tunnel down; the paste the user's, the account id
+and the address masked; the readings Claude's. The user's hand ran every command; Claude's hand wrote
+this entry. Times: the paste carries none; the block ran about 20:20 to 20:35 UTC.*
+
+- **[user] Block A, pasted:**
+
+  ```
+  aws athena start-query-execution --work-group awsds-prod-athena --query-string 'SELECT count(*) AS n FROM curated.trades' --query-execution-context Database=curated --result-configuration OutputLocation=s3://awsds-prod-outputs/not-enforced/ --profile awsds-scientist-prod --region us-west-2
+
+  {
+      "QueryExecutionId": "74895f10-caf8-460d-9186-654049b0820d"
+  }
+
+  aws athena get-query-execution --query-execution-id "74895f10-caf8-460d-9186-654049b0820d" --query 'QueryExecution.[Status.State,ResultConfiguration.OutputLocation,Statistics.DataScannedInBytes]' --output text --profile awsds-scientist-prod --region us-west-2
+
+  SUCCEEDED       s3://awsds-prod-derived/results/74895f10-caf8-460d-9186-654049b0820d.csv        0
+
+  aws athena get-query-results --query-execution-id "74895f10-caf8-460d-9186-654049b0820d" --query 'ResultSet.Rows[*].Data[*].VarCharValue' --output text --profile awsds-scientist-prod --region us-west-2
+
+  n
+  0
+
+  aws athena get-work-group --work-group awsds-prod-athena --query 'WorkGroup.Configuration.[EnforceWorkGroupConfiguration,BytesScannedCutoffPerQuery]' --output text --profile awsds-scientist-prod --region us-west-2
+
+  True    10737418240
+
+  ➜  AWS-DataScience git:(main) aws sagemaker create-model-package-group --model-package-group-name awsds-canary-probe --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the CreateModelPackageGroup operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: sagemaker:CreateModelPackageGroup on resource: arn:aws:sagemaker:us-west-2:<Production>:model-package-group/awsds-canary-probe with an explicit deny in an identity-based policy
+  ➜  AWS-DataScience git:(main) aws glue start-job-run --job-name awsds-prod-producer-proof --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the StartJobRun operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: glue:StartJobRun on resource: arn:aws:glue:us-west-2:<Production>:job/awsds-prod-producer-proof with an explicit deny in an identity-based policy
+  ➜  AWS-DataScience git:(main) aws redshift-data execute-statement --workgroup-name awsds-prod-warehouse --database warehouse --sql 'select 1' --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (ValidationException) when calling the ExecuteStatement operation: Redshift endpoint doesn't exist in this region.
+  ➜  AWS-DataScience git:(main)
+
+  ➜  AWS-DataScience git:(main) aws s3 ls s3://awsds-prod-outputs/app-etl/outbox/ --profile awsds-scientist-prod --region us-west-2
+  ➜  AWS-DataScience git:(main) aws s3 ls s3://awsds-prod-outputs/ --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDenied) when calling the ListObjectsV2 operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::awsds-prod-outputs" with an explicit deny in a resource-based policy
+  ➜  AWS-DataScience git:(main) aws s3 cp s3://awsds-prod-outputs/applications/stage-09-proofs/v0/glue/producer_proof.py - --profile awsds-scientist-prod --region us-west-2
+  download failed: s3://awsds-prod-outputs/applications/stage-09-proofs/v0/glue/producer_proof.py to - An error occurred (403) when calling the HeadObject operation: Forbidden
+  ```
+
+- **[Claude] The readings.** The override, verification vi's first half: the query asked for
+  `s3://awsds-prod-outputs/not-enforced/` and its result landed under `s3://awsds-prod-derived/results/`,
+  the enforced location, `SUCCEEDED`, 0 bytes scanned, the count 0 (the table empty until 2.4's job);
+  the workgroup reads `EnforceWorkGroupConfiguration` true and the cutoff 10,737,418,240 bytes, decision
+  2's 10 GB. The two negatives of the set: `CreateModelPackageGroup` and `StartJobRun` refused *"with an
+  explicit deny in an identity-based policy"*, `DenyProductionControlPlane`'s families (`sagemaker:Create*`,
+  `glue:Start*`), the one layer that answers a control-plane action the `Workloads` document does not name.
+  **`redshift-data:ExecuteStatement` validated before it authorized** (Lesson 21): with no workgroup in
+  Production, the Data API answered *"Redshift endpoint doesn't exist in this region"*, a
+  `ValidationException` and no authorization at all, so `DenyMintingARedshiftDatabaseSession` stays
+  attached and unexercised for this set; the same command is run again at pass 6, with the workgroup up.
+  The prefixes, 8.3's reading too, the tunnel down: `app-etl/outbox/` answered, empty; the bucket's root
+  refused *"with an explicit deny in a resource-based policy"*, the bucket's
+  `DenyThePersonaListingsOutsideTheNamedPrefixes`; the release's tree refused as a bare `403` on
+  `HeadObject`, which carries no wording, so that refusal is attributed by a `get-object` instead, whose
+  error body names the policy (the next command).
