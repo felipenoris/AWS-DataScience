@@ -348,7 +348,10 @@ The two carry the same seven interface endpoints, the jobs' set: `sts`, `logs`, 
 `lakeformation`, `sagemaker.api` and `secretsmanager`, Staging's since 4.3a's re-cut (written
 2026-10-22, raised by the next `make up ENV=staging`) against the four a worker called there on
 2026-10-19 (Stage 18 4.4), and `lakeformation` in both for decision 12 (a)'s jobs, which vend Lake
-Formation credentials from inside the VPC.
+Formation credentials from inside the VPC. VPC-Workloads' slice also takes an optional group per apply
+since 2026-10-23, `make up ENV=production GROUPS=redshift` adding the `redshift-serverless` endpoint for
+a job that calls the governed warehouse's API from inside the VPC (Stage 9 step 9.1), the way
+`sandbox/egress/` takes its groups; Staging's slice takes none.
 `VPC-Networking` carries none: the proxy has to resolve.
 
 **It was ten until 2026-09-09**, when the same reading that repaired `NO_PROXY` was pointed at this

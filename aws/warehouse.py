@@ -334,6 +334,9 @@ def read_account(
     """Every reading for one account, as data. No checks are decided here."""
     name = NAME_TMPL.format(env=env)
     facts: dict = {"env": env, "name": name}
+    # The lifecycle target that destroys this account's compute, the one guard that is not a setting
+    # (WH-15): the env token names the account folder except in Production (Stage 9 step 9.8).
+    facts["make_env"] = {"prod": "production"}.get(env, env)
 
     res = cli.run(
         "redshift-serverless",
@@ -782,7 +785,7 @@ def judge(checks: Checks, facts: dict, authored: dict | None, want_sql: bool) ->
                 "enforced. Read `select query_id, status, elapsed_time/1000000.0 from "
                 "sys_query_history where status = 'running'`; end one with "
                 "pg_terminate_backend(<session_id>), or destroy the compute with `make down "
-                "ENV=sandbox`, which is the only guard that is not a setting. If the work is "
+                f"ENV={facts['make_env']}`, which is the only guard that is not a setting. If the work is "
                 "legitimate, this row is the receipt for it rather than a fault",
             )
         elif rate >= 0.1:

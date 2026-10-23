@@ -2578,3 +2578,24 @@ plans only, the tunnel down (`NO_PROXY='*'`). Nothing applied. Times UTC.*
   22:4x UTC, and every later commit of the session joined it: Stage 9's 5.1 applies, its 6.3 from the
   approval to the refusal read in the trail, and the records. The description was rewritten on
   2026-10-23 to carry the whole branch.
+
+## 2026-10-23 — the fourth sitting with the environment down: the sittings in order, the GitLab acts before the tag
+
+*Claude's hand, in the session `stages-8-9-10-prep-2`, on the user's request quoted in Stage 9's entry of
+the same sitting. AWS read as the infrastructure user (`awsds-infra-prod`, `awsds-infra-staging`,
+`awsds-infra-sandbox-1`, `awsds-infra-data`, `awsds-infra-identity`), reads only, the tunnel down. Nothing
+applied. Times UTC.*
+
+- **[Claude] `./aws/cicd.py`**, 16:19: *"all checks passed"* on the five infrastructure profiles;
+  `./aws/egress.py` at 16:23: the burn 0.000 USD/h in the five accounts, no interface endpoint, no NAT
+  gateway. `make check` OK at 16:17 on `main`'s tree.
+- **[Claude] The laptop's Terraform**: `terraform version` reads 1.15.8, so the bump of 2026-10-22 waits on
+  the user's install, and the two pins (`offline-gates.yml`, the deploy image's recipe) stay at 1.15.8 by
+  `upstream-releases.md`'s order.
+- **[Claude] Pass 4's sittings written in order**: [`runbooks/promotion.md`](../plan/runbooks/promotion.md),
+  §H the hub and GitLab (decision 2's settings and the memberships, MR !4, the legs' merge request built
+  from `examples/app-etl/` at `main` by `gitlab.md`'s "The application template" procedure,
+  `default-v0.9.0` as version 10, the deploy image on 1.16.6), §T the tag with Stage 10's passes 1 and 2
+  and Stage 9's 8.5, job by job, with what each leg reads for the first time; `waiting-on-the-user.md`'s
+  GitLab row carries the legs' merge request.
+- **[Claude] The plan**: the Status row.

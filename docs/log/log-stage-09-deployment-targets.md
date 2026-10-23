@@ -1073,3 +1073,66 @@ request. Read-only. Times UTC.*
   `47e12fbc-5061-4a34-bc1f-e73217fbf313`, its `errorMessage` the text the user pasted, both from the
   laptop's address. The refused call records no session name and no role ARN, the shape Stage 8 4.6
   read; the window had been closed for 15 h 50 min. 6.3 and verification xi are closed.
+
+## 2026-10-23 — the fourth sitting with the environment down: 2.4's proof job, decision 13, pass 6's grants, the persona sequences
+
+*Claude's hand, in the session `stages-8-9-10-prep-2` (the branch `claude/stages-8-9-10-prep-2`, cut from
+`main` after PR #247's merge retired the previous branch), on the user's request: "Em relação aos
+estágios 8, 9 e 10, peço fazer o seguinte: verifique o status atual de cada estágio. revise o plano
+destes estágios considerando o andamento atual, o resultado com as leituras e preparações prévias
+realizadas para execução destes estágios. Faça a preparação necessária para a execução destes
+estágios com tudo o que pode ser feito sem que seja necessário subir o ambiente. Prepare tudo que for
+necessário para executarmos de forma mais célere estas etapas uma vez que eu consiga subir o
+ambiente. Usuário infra sso logado para as leituras." AWS read as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`, `awsds-infra-sandbox-1`,
+`awsds-infra-data`, `awsds-infra-identity`), reads and plans only, the tunnel down (`NO_PROXY='*'`); the
+plans saved outside the repository. Nothing applied. Times UTC.*
+
+- **[Claude] The instruments**, 16:05 to 16:16 over every `awsds-*` profile, where the six persona
+  profiles' identity calls failed with no session (not a check); again 16:19 to 16:23 on the five
+  infrastructure profiles alone: `cicd.py`, `deploytargets.py`, `orchestration.py`, `datalake.py` and
+  `egress.py` each *"all checks passed"*, `DT-10` passing on the managed policy, `DT-12` six groups at
+  30 days in both accounts, `DL-5` `CROSS_ACCOUNT_VERSION=4, SET_CONTEXT=TRUE`, `OR-9` a note (nothing of
+  the layer exists), the burn 0.000 USD/h in the five accounts, no interface endpoint and no NAT
+  gateway; `warehouse.py` exit 0. `make check` OK at 16:17.
+- **[Claude] 2.4 read against AWS's pages** ("Using AWS Glue with AWS Lake Formation for Full Table
+  Access", "Application integration for full table access", both in `REFERENCES.md`): a Glue Spark job
+  writes a Lake Formation table in the full-table-access mode alone, which asks first for
+  `AllowFullTableExternalDataAccess`, says a write needs `ALL`, and ends an Iceberg commit in
+  `glue:UpdateTable`. Read live at 16:00: the flag unset in Production and in the lake, both reading one
+  administrator, `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE`, `AllowExternalDataFiltering` false.
+- **[Claude] 2.4 written**: `terraform-live/production/sagemaker/producer-proof.tf`, the `[P]` Glue 6.0 job
+  `awsds-prod-producer-proof` on `awsds-prod-jobs` as the job role, its script
+  `proofs/producer_proof.py` at `applications/stage-09-proofs/v0/glue/` of the outputs bucket, the Iceberg
+  catalog `lake` over the lake account's catalog (its id read from the lake state's key ARN) with Lake
+  Formation vending on, one run per `--MODE`: `producer` (the ten sample rows inserted, read back, the
+  direct put attempted and the run failed if it lands) and `pickup` (every `.csv` under `incoming/`
+  read as the role, curated, deleted and read gone; a run with nothing to pick fails). The job role
+  gains `CommitTheIcebergWrites`, `glue:UpdateTable` on the lake's `curated` tables and this account's
+  `app_outputs` tables. Plan as `awsds-infra-prod` at 16:23:43 to 16:24:07: *"Plan: 1 to add, 1 to
+  change, 0 to destroy."*, the job and the role's inline policy. The script compiles and passes `ruff`;
+  it has run nowhere (Lesson 54): the first run's readings are verification xxviii.
+- **[Claude] Decision 13 opened** (the stage file): the flag, where and by which hand, (a) Production's by
+  the console recommended, its cost in the threat model named, (b) and (c) weighed.
+- **[Claude] Pass 6's owed code**: `production/foundation/deploy-anchors.tf`'s
+  `apply_application_in_this_account` gains `RunTheGovernedWarehouseDdl` (9.4), planned as
+  `awsds-infra-prod` with the alerts var-file at 16:24:29 to 16:24:55, *"Plan: 0 to add, 1 to change, 0
+  to destroy."*, the inline `apply-application`; `production/workloads-egress/` gains
+  `optional_service_groups` and its wiring, so `make up ENV=production GROUPS=redshift` raises the
+  warehouse's endpoint (9.1), its plan unchanged at 16:24:07 to 16:24:29, *"Plan: 16 to add, 0 to
+  change, 0 to destroy."*; `aws/warehouse.py` `WH-15` names each account's own `make down` (9.8);
+  9.3's statements prepared in the step, the theme `trades` and 1 TB proposed; `docs/NETWORK.md`'s
+  firewall paragraph carries the group.
+- **[Claude] The quotas**, read in both accounts with `list-service-quotas` (16:10 to 16:45, the
+  Staging read slow enough to move to the background): every training and transform code of the
+  ceiling's types at 0 in Staging as in Production, `ml.t3.medium`, `ml.t3.large` and `ml.t3.xlarge`
+  processing at 4, 4 and 2 in both; `list-requested-service-quota-change-history` empty in both, so no
+  request was ever made in either account. The codes and the request commands are in 3.5.
+- **[Claude] The persona sequences written**, each runnable with nothing up (D39): 3.4's laptop half,
+  5.4, 8.1's laptop half, 8.2, 8.3, 8.4 (no laptop profile reaches `DataScientistStagingAccess`; the
+  block to add is in the step) and 2.5's drop, 2.6's read-back; Stage 10 6.2's in its file.
+- **[Claude] The sittings in order**: [`runbooks/promotion.md`](../plan/runbooks/promotion.md), §0 to §R,
+  one section per sitting, the command and the reading of each step; `waiting-on-the-user.md`'s
+  Production and GitLab rows, its decision and act rows, and the three stage files point at it.
+- **[Claude] The plan**: the Status row, the build table, 2.4, 2.5, 2.6, 3.1, 3.4, 3.5, 5.4, 8.1-8.4,
+  9.1, 9.3, 9.4, 9.8, decision 13 and verification xxviii.

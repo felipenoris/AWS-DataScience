@@ -495,3 +495,23 @@ the same sitting. AWS read as the infrastructure user (`awsds-infra-staging`, `a
   workflow would pass `test` and fail the Staging leg; 5.1 now puts it in a second workflow with its own
   chain, written after the quota increase, and pass 3 waits on that increase.
 - **[Claude] The plan**: the Status row, 2.3 and 5.1.
+
+## 2026-10-23 — the fourth sitting with the environment down: 6.2's commands, 0.5's instrument, the sittings in order
+
+*Claude's hand, in the session `stages-8-9-10-prep-2`, on the user's request quoted in Stage 9's entry of
+the same sitting. AWS read as the infrastructure user (`awsds-infra-prod`, `awsds-infra-staging`,
+`awsds-infra-sandbox-1`, `awsds-infra-data`, `awsds-infra-identity`), reads only, the tunnel down. Nothing
+applied. Times UTC.*
+
+- **[Claude] `./aws/orchestration.py`**, 16:21: *"all checks passed"* on the five infrastructure profiles,
+  `OR-9` a note in both accounts, nothing of the chain layer existing.
+- **[Claude] 6.2's negatives written as commands** in the step, runnable from a `DataScientistProdAccess`
+  session with the environment down: the four `airflow-serverless`, `states` and `scheduler` calls (the
+  set's implicit deny), `mwaa create-environment` (`DenyProvisionedMwaa`, exercised from a persona
+  session) and `sns publish`.
+- **[Claude] 0.5's instrument**: Stage 9 2.4's proof job, written this sitting, vends Lake Formation
+  credentials from inside `VPC-Workloads`; its runs' `GetTemporaryGlue*Credentials` events in Production's
+  CloudTrail are the `vpcEndpointId` reading, the command in Stage 9's step.
+- **[Claude] The sittings**: pass 1's `deploy --targets dev` in the Sandbox sitting, passes 1 and 2 in the
+  tag's, pass 3 after the quotas, each in [`runbooks/promotion.md`](../plan/runbooks/promotion.md) (§T, §Q).
+- **[Claude] The plan**: the Status row, 0.5 and 6.2.

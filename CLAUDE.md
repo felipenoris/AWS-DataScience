@@ -283,6 +283,7 @@ This table is the only routing map; every other file points here rather than rep
 | Anything egress, proxy or the hub topology: where the internet is reached, which VPC a thing belongs in, why there is no NAT gateway | [`docs/plan/decisions/D38-single-egress-hub.md`](docs/plan/decisions/D38-single-egress-hub.md) and [`docs/plan/stages/stage-06c-networking-hub.md`](docs/plan/stages/stage-06c-networking-hub.md) |
 | The network as built: VPCs, subnets, routes, peerings, egress, VPN, DNS, security groups, addresses; how a SageMaker app sees the internet and what can reach one | [`docs/NETWORK.md`](docs/NETWORK.md), code plus measurement |
 | Building the images: the pipeline on the build runner, what to check before a build, every tag spent and its digests (the buildbox, retired at Stage 7 step 6.5, built the first six) | [`gitlab/awsds/dev-env/README.md`](gitlab/awsds/dev-env/README.md), a copy of GitLab's ([`gitlab/README.md`](gitlab/README.md)) |
+| The first promotion: the sittings that close Stages 8, 9 and 10, in order and command by command, from the proofs that need nothing up to the governed warehouse | [`docs/plan/runbooks/promotion.md`](docs/plan/runbooks/promotion.md): §0 with the environment down, §H the hub and GitLab, §P Production (Stage 9's proof job), §T the tag, §W the warehouse, §Q after the quotas |
 | Anything GitLab: the host and its session (`make gitlab-up`/`gitlab-down`, the order with the hub and the tunnel), how a host is built from nothing (the applies, what the first boot does, a rebuild), a fresh host's initial setup (trusting the root, the first sign-in, the instance settings), a `gitlab.rb` change reaching the host, the leaves and their re-issue, trusting the root on a laptop, the backup and the restore, the runner's token, SAML's inputs | [`docs/plan/runbooks/gitlab.md`](docs/plan/runbooks/gitlab.md): §S the pieces, §U up and down, §P the installation, §I the initial setup, §R the refresh, §C the certificates, §B backup and restore, §K the runners, §G the gates project, §M the image projects and the mirror, §A SAML, §V the instruments |
 | Making a custom image selectable in SageMaker: the slice that registers it, the attach to the blueprint's domain, a release and its retirement, why the proxy variables are not on the app image configuration | [`docs/plan/runbooks/dev-env.md`](docs/plan/runbooks/dev-env.md) |
 | Anything remote IDE: attaching a laptop's VS Code to a space, the Windows client and its pin, where an extension installs and which gallery serves it, which calls the plane refuses, how a file or a repository gets in | [`docs/plan/runbooks/remote-ide.md`](docs/plan/runbooks/remote-ide.md): §O the pieces, §I the identity, §W the pinned client, §E extensions, §N the egress readings, §C moving files, §V the instruments |
@@ -325,8 +326,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   in `production/data/` (1 to add, 1 to change) attached in `identity/sso/` (1 to add, 1 to change; the
   inline form read 10,550 of 10,240), `GetDataAccess` added, both applied 2026-10-22; step 9.1's
   `production/warehouse/` (9 to add) and `warehouse-compute/` written, the compute held from `make up` by
-  `layers.py` refusal 9 until the namespace is applied; 2.4-2.6 have no job yet (2.4 specifies one); 6.3's
-  window opened, exercised and closed 2026-10-22, the refusal read 2026-10-23.
+  `layers.py` refusal 9 until the namespace is applied; 6.3's window opened, exercised and closed
+  2026-10-22, the refusal read 2026-10-23. **2026-10-23**: 2.4's proof job `awsds-prod-producer-proof`
+  written in `production/sagemaker/` with its script (1 to add, 1 to change), one run per mode; decision
+  13 open, the `AllowFullTableExternalDataAccess` flag a Glue write needs, unset in Production and the
+  lake; 9.4's grant written (1 to change), `workloads-egress/` taking `GROUPS=redshift`; the quota codes
+  in 3.5, no request ever made; the persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 runnable now;
+  the sittings in `runbooks/promotion.md`.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, never fired (no model package exists). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
