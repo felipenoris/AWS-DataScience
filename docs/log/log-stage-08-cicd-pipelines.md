@@ -2647,3 +2647,12 @@ Staging's `egress/` up (Stage 9's log), Production coming down. Times UTC.*
   release written, the two applies, the chain started and followed; what it could not prove is the
   pipeline's own half, `uv run` on the runner and the deploy role's calls against its grants (Stage 10
   verification ii), and xi's parity, which the pipeline's leg reads against these objects.
+- **[Claude] 3.4's `make down ENV=staging`** (`AUTO=1`, 23:41:56 to 23:50:25): the three `[E]` slices
+  destroyed in rank order, `orchestration/` *"21 destroyed"* (the machine took 80 s to go), `app/app-etl/`
+  *"1 destroyed"*, `egress/` *"16 destroyed"*; the four `[P]` slices refused as always. After it, at
+  23:53: `./aws/egress.py awsds-infra-staging` reads no interface endpoint and no NAT, `EG-5` *"none - the
+  correct between-sessions state"*; 0 workflows, 0 state machines, the Glue job gone; `make status` reads
+  every `[E]` slice down and the burn 0.0156 USD/h, the hub's two hosts alone, whose `make hub-down` is the
+  user's. What the leg leaves in Staging: the release tree, the inbox seed, `app-etl/work/` and
+  `app-etl/outbox/report.json` in the `[P]` outputs bucket, the data key's amended statement, and the
+  service-linked role; `release.auto.tfvars.json` in both slices, gitignored, carries the `VersionId`s for 3.7.
