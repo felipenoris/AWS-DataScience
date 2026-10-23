@@ -1449,3 +1449,12 @@ nothing clicked but the navigation; the console's messages quoted as shown. Abou
   under a named prefix reached by URL, with its downloads; the bucket list, the root listing and every
   bucket-level tab refuse. The console is a URL-and-prefix tool for this persona, and `README.md` says
   so; open question 8 is closed, and the CLI is the whole surface beyond that page.
+
+## 2026-10-23 — the session's branch and its PR
+
+*Claude, the same session; no AWS call.*
+
+- **[Claude] The PR**: the session's first commit opened PR #248 against `main` on 2026-10-23 at
+  16:38 UTC, from the branch `claude/stages-8-9-10-prep-2` cut from `main` after PR #247's merge retired
+  the previous branch, and every later commit of the session joined it: decision 13 taken and done, the
+  quota requests, the persona proofs block by block, and the records. The description follows the branch.

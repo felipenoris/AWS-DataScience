@@ -84,6 +84,26 @@ the Lake Formation console is opened in `us-west-2`.
 
 The lake's half, its own `lakeformation.tf`, waits for the first run's wording (§P step 5).
 
+### 0.4 The applies that need nothing up
+
+Each is a `[P]` slice or an S3 write the infrastructure user makes from the laptop, with the tunnel
+down; each shortens the Production sitting by one apply. `[Claude⚡]` on the user's word, as
+`awsds-infra-prod`, each from a fresh plan (Recipe A) and re-planned `No changes`:
+
+1. `production/sagemaker/`, 2.4's proof job and the job role's `CommitTheIcebergWrites` (*1 to add,
+   1 to change*, 2026-10-23); then the script's upload (§P step 3), the one write the user's hand or
+   Claude's makes under `applications/stage-09-proofs/`.
+2. `production/workloads/` on `vpc-v0.4.0`, the S3 gateway endpoint's policy admitting the workers'
+   code bucket (Stage 10 1.2; *1 to change*, planned 2026-10-22), owed before a Production worker runs
+   a Python task.
+3. `production/foundation/`, 9.4's `RunTheGovernedWarehouseDdl` on the deploy role (*1 to change*, with
+   the alerts var-file), pass 6's, harmless before it.
+4. `production/warehouse/`, the namespace and its guards (*9 to add*), pass 6's start: it bills the
+   admin secret from its creation and opens `EXC-13`'s Production row, so it waits for the user to want
+   pass 6 begun; the compute stays held either way.
+
+What stays with the environment: the runs, the legs, the warehouse's compute and SQL.
+
 ## H. The hub and GitLab
 
 `make hub-up`, then `make gitlab-up`, the tunnel, in [`gitlab.md`](gitlab.md) §U's order. What this
@@ -112,10 +132,14 @@ sitting closes besides Stages 8 to 10 is the waiting list's Hub and GitLab rows.
 
 ## P. Production: Stage 9's pass 3 and Stage 10's 0.5
 
-`make up ENV=production` raises `egress/`, `workloads-egress/` (16 to add, the seven endpoints and
-the DNS Firewall), `runners/` and `probes/`, leaves the hub alone (refusal 6) and holds
-`warehouse-compute/` (refusal 9). The sitting needs the hub up for `make up`'s check and nothing else
-of §H.
+The proof job needs `workloads-egress/` alone (16 to add, the seven endpoints and the DNS Firewall):
+`make up ENV=production` with no `ONLY=` would also raise `egress/` (SharedServices' twelve endpoints),
+`runners/` (three hosts that register with a GitLab that is down) and `probes/`, so the sitting runs
+`make up ENV=production ONLY=workloads-egress`. Every `make up` checks the hub, so `make hub-up` comes
+first; VPC-Workloads has no proxy path, so the hub serves the check alone, and with the hub down the
+slice is applied by hand instead (Recipe A, as `awsds-infra-prod`), the check guarding proxy clients
+that this VPC has none of. `make down ENV=production ONLY=workloads-egress` ends it. Nothing else of §H
+is needed.
 
 1. **The flag on in Production** (§0.3, done 2026-10-23), `DT-5` read again at the sitting.
 2. **[Claude⚡] `production/sagemaker/` applied** as `awsds-infra-prod` from a fresh plan (Recipe A):
@@ -129,7 +153,8 @@ of §H.
    aws s3 cp terraform-live/production/sagemaker/proofs/producer_proof.py s3://awsds-prod-outputs/applications/stage-09-proofs/v0/glue/producer_proof.py --profile awsds-infra-prod --region us-west-2
    ```
 
-4. **[user] `make up ENV=production`**, as the infrastructure user, the hub up.
+4. **[user] `make up ENV=production ONLY=workloads-egress`**, as the infrastructure user, the hub up
+   (or the slice by hand with the hub down, above).
 5. **[Claude⚡] The producer run** (Stage 9 2.4), then its readings:
 
    ```bash
@@ -156,19 +181,14 @@ of §H.
    A refusal names its layer: Lake Formation's wording (*"Insufficient Lake Formation permission(s)"*,
    which permission) is the grant's shape, decision 13's fallback or 2.1's `ALL`; an IAM wording naming
    `glue:UpdateTable` is the role's; a timeout at the Glue or Lake Formation API is the endpoint set.
-6. **[user] The drop** (Stage 9 2.5's first half), from a laptop as the Data Scientist User in Sandbox:
+6. **The drop is in place** (Stage 9 2.5's first half, done 2026-10-23): `incoming/2026/10/23/trades.csv`,
+   and 2.6 read the same evening, the writer's read-back refused by the set's implicit deny. A second
+   drop before the pickup is optional, the same command on the day's prefix as the Data Scientist User
+   in Sandbox:
 
    ```bash
    aws s3 cp examples/app-etl/samples/trades.csv "s3://awsds-data-dropbox/incoming/$(date -u +%Y/%m/%d)/trades.csv" --profile awsds-scientist-sandbox --region us-west-2
    ```
-
-   and 2.6 at once, before the pickup empties the letterbox, the same session reading back what it wrote:
-
-   ```bash
-   aws s3 cp "s3://awsds-data-dropbox/incoming/$(date -u +%Y/%m/%d)/trades.csv" - --profile awsds-scientist-sandbox --region us-west-2
-   ```
-
-   expected refused, the implicit deny of Stage 5a pass 4d.
 7. **[Claude⚡] The pickup run** (2.5), `--arguments '{"--MODE":"pickup"}'` on the same command, then its
    readings: the keys the job listed, the rows read (the KMS half: a refusal on the lake key surfaces
    as an S3 error naming the object), the rows curated, each key gone after its delete (`404` on the
@@ -228,9 +248,10 @@ Separable and last; nothing needs it. In a Production sitting with the hub up.
    role, planned 2026-10-23 (the alerts var-file on the command line, or the subscription is destroyed).
 2. **[Claude⚡] `production/warehouse/` applied** (9 to add) as `awsds-infra-prod`, by hand; the
    refusal-9 row removed from `layers.py` in the same sitting; `EXC-13`'s Production row written.
-3. **[user] `make up ENV=production GROUPS=redshift`**: `warehouse-compute/` with the namespace in
-   place, and the `redshift-serverless` endpoint in VPC-Workloads for a job that calls the API (9.1).
-   The usage limit counts from zero with each workgroup.
+3. **[user] `make up ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift`**:
+   `warehouse-compute/` with the namespace in place, and the `redshift-serverless` endpoint in
+   VPC-Workloads for a job that calls the API (9.1). The usage limit counts from zero with each
+   workgroup.
 4. **[Claude⚡] 9.3's SQL** through the Data API with the admin secret, the statements in the step:
    the `PUBLIC` revokes on the three databases, `governed`, the owner user, the schema with its quota,
    the role, the two database users, the default privileges.
