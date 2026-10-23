@@ -90,6 +90,11 @@ follows is still unanswered:
    INT-06's allow-list must carry the VPN home's endpoint — the same axis rule Lesson 33's second
    finding states for the lake — and the open half narrows to *which* calls the S3 console actually
    makes, from where.
+   **Closed 2026-10-23** (Stage 9 8.2, the log): under the principal branch, from a laptop with no tunnel,
+   the console works for `DataScientistProdAccess` on one page, the object listing under a named prefix
+   reached by its URL, with its downloads; the bucket list (`s3:ListAllMyBuckets`, which the set lacks),
+   the bucket's root listing (`s3:ListBucket` outside the prefixes) and every bucket-level tab refuse,
+   Block Public Access showing the bucket policy's explicit deny. `README.md` carries the sentence.
 9. ~~**Whether sampled or synthetic Staging data makes the integration tests meaningful**~~ — **closed
    2026-10-22 by Stage 9 decision 3** (D20 amended): Staging reads the governed lake in place, read-only,
    so its tests meet production's distribution and volume, and the copy D20 refuses stays refused. The

@@ -333,7 +333,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   13 taken as (a) and done: the `AllowFullTableExternalDataAccess` flag a Glue write needs is on in
   Production since 2026-10-23 19:49 UTC (the user's console act, `DT-5` unchanged, `TM-26`), unset in the
   lake and Staging, on in Sandbox since SMUS; 9.4's grant written (1 to change), `workloads-egress/` taking `GROUPS=redshift`; the quota codes
-  in 3.5, the `ml.m5.large` pair requested 2026-10-23; the persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 runnable now;
+  in 3.5, the `ml.m5.large` pair requested 2026-10-23; the persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run the same evening but the space halves and the Data API negative (INT-06 answered, open question 8 closed);
   the sittings in `runbooks/promotion.md`.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, never fired (no model package exists). Prepared

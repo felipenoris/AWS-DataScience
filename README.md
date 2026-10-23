@@ -198,7 +198,10 @@ network, and nothing else is conditioned on it ([D39](docs/plan/decisions/D39-ac
    tunnel down, because `VpcOnly` governs the app's traffic and never the user's ingress. The governed
    lake keeps a network deny of its own: it admits a consumer's gateway endpoint, a Data Governance
    principal or a service acting for its caller, and the laptop's one direct path, the data scientist's
-   drop-box write, by principal.
+   drop-box write, by principal. **The S3 console is a URL tool for the Production data scientist**
+   (read 2026-10-23, Stage 9 8.2): the bucket list and a bucket's root and settings pages refuse, and
+   the one page that works is the object listing under a prefix the persona is named for, reached by
+   its URL; everything else is the CLI.
 3. **The data-leakage circuit, by premise.** `docs/plan/objectives.md` grants an identity only on a
    laptop the institution monitors, carrying Microsoft 365 DLP, so what leaves through SageMaker, the
    console or the APIs lands on a managed device. The lab models that premise and does not enforce it,

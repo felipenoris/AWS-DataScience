@@ -1398,3 +1398,54 @@ readings Claude's.*
   `DenyThePersonaAnyWrite` stay attached and unexercised by this call (Lesson 20), the same order 6.3
   read on Production's data key. A write that takes no key, a delete, exercises the set's own deny; the
   next command.
+
+## 2026-10-23 — 2.6's read-back and 8.4's delete, attributed
+
+*The commands the user's, as the Data Scientist User through `DataScientistAccess`
+(`awsds-scientist-sandbox`) and `DataScientistStagingAccess` (`awsds-scientist-staging`); the paste the
+user's, the account ids and the address masked; the readings Claude's.*
+
+- **[user]**
+
+  ```
+  ➜  AWS-DataScience git:(main) aws s3api get-object --bucket awsds-data-dropbox --key incoming/2026/10/23/trades.csv /dev/null --profile awsds-scientist-sandbox --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDenied) when calling the GetObject operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<the data scientist user> is not authorized to perform: s3:GetObject on resource: "arn:aws:s3:::awsds-data-dropbox/incoming/2026/10/23/trades.csv" because no identity-based policy allows the s3:GetObject action
+  ➜  AWS-DataScience git:(main) aws s3api delete-object --bucket awsds-staging-outputs --key probe.txt --profile awsds-scientist-staging --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDenied) when calling the DeleteObject operation: User: arn:aws:sts::<Staging>:assumed-role/AWSReservedSSO_DataScientistStagingAccess_c242dbe2f89a1229/<the data scientist user> is not authorized to perform: s3:DeleteObject on resource: "arn:aws:s3:::awsds-staging-outputs/probe.txt" with an explicit deny in a resource-based policy
+  ```
+
+- **[Claude] The readings.** **2.6 is closed**: the writer's read of what it wrote is refused by the
+  set's implicit deny, *"no identity-based policy allows the s3:GetObject action"*, the wording Stage 5a
+  pass 4d read; the letterbox asymmetry holds with the consumer now existing. **8.4's delete** was
+  refused *"with an explicit deny in a resource-based policy"*, the bucket's `DenyThePersonaAnyWrite`,
+  which IAM named ahead of the set's `DenyEveryWrite` (`s3:Delete*`), two explicit denies of which one is
+  reported (Lesson 20): the set's deny is proven on Glue (`StartJobRun`), the bucket's on S3, and the
+  set's S3 half stays attached and unexercised. The Staging persona writes nothing of the outputs bucket
+  through three layers, the key, the bucket and the set, each read once.
+
+## 2026-10-23 — 8.2: the S3 console under the principal branch, read in the user's browser session
+
+*Claude's hand, reading the AWS console in the user's Chrome session, signed in by the user as the
+Data Scientist User in Production through `DataScientistProdAccess`, `us-west-2`; five pages read,
+nothing clicked but the navigation; the console's messages quoted as shown. About 21:00 UTC.*
+
+- **The bucket list** (`S3 → General purpose buckets`): *"You don't have permissions to list
+  buckets"*, naming `s3:ListAllMyBuckets`, the list empty. The persona reaches a bucket by its URL alone.
+- **`awsds-prod-outputs`, Objects at the root**: *"Insufficient permissions to list objects"*, naming
+  `s3:ListBucket`, the bucket's listing deny outside the named prefixes.
+- **`awsds-prod-outputs`, Objects at `app-etl/outbox/`** (the URL with `prefix=app-etl/outbox/`): the
+  listing opens, *"Objects (0)"*, *"You don't have any objects in this folder"*; the one page that works.
+  A download from it is the `s3:GetObject` the policy allows and waits for an object.
+- **Properties**: *"Insufficient permissions"* on the overview, and every panel refused by name:
+  versioning, ABAC, tags, default encryption, archive tiers, server access logging, event
+  notifications, transfer acceleration, Object Lock, requester pays.
+- **Permissions**: the bucket policy, Object ownership, the ACL and CORS refused; Block Public Access
+  shows the API response, `s3:GetBucketPublicAccessBlock` refused *"with an explicit deny in a
+  resource-based policy"*, the bucket's deny on the persona's reads outside the named prefixes; the
+  Access Analyzer panel *"could not load the content for the page"*.
+- **The fraction, INT-06's answer**: one page of the console works for the persona, the object listing
+  under a named prefix reached by URL, with its downloads; the bucket list, the root listing and every
+  bucket-level tab refuse. The console is a URL-and-prefix tool for this persona, and `README.md` says
+  so; open question 8 is closed, and the CLI is the whole surface beyond that page.

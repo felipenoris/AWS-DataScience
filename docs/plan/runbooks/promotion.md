@@ -43,6 +43,11 @@ commands and the expected wording are in the steps:
 | the orchestration negatives from Production | Data Scientist User, `awsds-scientist-prod` | Stage 10 [6.2](../stages/stage-10-orchestration-promotion.md) |
 
 A proof that touches a Sandbox space (8.1's project-role half, 3.4's) waits for the Sandbox sitting.
+**Run 2026-10-23**, every row but the space halves, the readings in Stage 9's and Stage 10's logs: the
+override and the control-plane negatives, the registry gate's persona half, the drop and its read-back,
+Staging's three layers, the console's one working page; 5.4's Data API negative waits for a workgroup
+(pass 6), and 6.2's provisioned deny is the battery's to exercise, a persona's implicit deny answering
+first.
 
 ### 0.2 The quota requests
 
