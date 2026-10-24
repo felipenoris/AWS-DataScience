@@ -310,8 +310,14 @@ first promotion carries a lake the job role has written (decision 23).
    (Stage 10 2.1, Stage 8 decision 22), and the reads 2.1 lists, when the Sandbox sitting is up anyway.
 2. **[user] The tag** `v0.3.0` on `awsds/app-etl`'s `main`, after the legs merged (**run 2026-10-24,
    pipeline #64**: `test-deploy` passed, then `release` and the legs' clone refused the lab's CA, the
-   legs raising nothing; the fix, the CA root the runner mounts, is MR-borne, and the first promotion's
-   tag is **`v0.3.1`**, Stage 8's log): the pipeline runs
+   legs raising nothing; the fix, the CA root the runner mounts, is MR-borne. `v0.3.1` named the legs'
+   merge, its pipeline #66 cancelled. **`v0.3.2`, pipeline #68**: `release` passed; `staging-deploy`
+   stopped at the workflow's tag-on-create and `staging-down` at the Studio hook, both fixed in this
+   repository and the grant applied the same evening; the retried `staging-test` stopped at the clone,
+   in the folder its downloaded artifact had created, the template's fix MR-borne. The first promotion's
+   tag is **`v0.3.3`**. While the mirror stays at `0236a99d` its `staging-down` stops at the hook, so
+   Staging comes down by hand, `make down ENV=staging` as the infrastructure user. Stage 8's and Stage
+   10's logs): the pipeline runs
    `test`, `build-image`, `build-task-code`, `test-deploy` (the CLI into the `test` project as
    `awsds-deploy-sandbox-test`), `store-bundle`, `release` (verification xx's `cli` image reading), then
    the legs.
@@ -325,7 +331,7 @@ first promotion carries a lake the job role has written (decision 23).
    runner, the deploy role's Cloud Control and Glue calls against their grants, the worker's preparation
    with no `ecr.*` endpoint (Stage 10 verification xvi), `TriggerMode`'s literal, the key's encryption
    context in the saver's and the worker's calls (Stage 10 decision 2), and Staging's `release.auto.tfvars.json`
-   kept as an artifact (the `VersionId`s 3.7 records). **3.8 ran by hand first, on 2026-10-23** (Stage 8's and
+   kept as the artifact `staging-release.auto.tfvars.json` (the `VersionId`s 3.7 records). **3.8 ran by hand first, on 2026-10-23** (Stage 8's and
    Stage 10's logs): the worker's preparation with no `ecr.*` endpoint, `TriggerMode`'s literal and the key's
    encryption context are read, and two statements gained `kms:GenerateDataKey` for the XCom encryption
    (`orchestration-v0.2.0`); `uv run` on the runner, the deploy role's calls and the artifact remain the leg's.

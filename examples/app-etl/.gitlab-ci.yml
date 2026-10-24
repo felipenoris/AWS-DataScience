@@ -332,7 +332,9 @@ staging-up:
 # lint-plan has read its Glue job under the release's glue/ folder (Stage 10 step 2.3, rule (2c)); the
 # plan and its JSON carry state, so they stay in the job's temporary folder and are never an artifact.
 # The orchestration slice's release file is kept as an artifact: its VersionIds are what step 3.7
-# records as Staging's release.tf defaults.
+# records as Staging's release.tf defaults. The artifact sits beside the clone, never inside it: a job
+# that downloads it before cloning the mirror into infrastructure/ finds that folder not empty (refused
+# 2026-10-24, v0.3.2's job 325).
 staging-deploy:
   extends: .promotion
   stage: staging
@@ -358,9 +360,10 @@ staging-deploy:
       ./scripts/lint-plan.py staging "$plans/app-etl.json" --tag "$CI_COMMIT_TAG"
       terraform -chdir=terraform-live/staging/app/app-etl apply -input=false "$plans/app-etl.tfplan"
       terraform -chdir=terraform-live/staging/orchestration apply -input=false -auto-approve
-      cat terraform-live/staging/orchestration/release.auto.tfvars.json
+      cp terraform-live/staging/orchestration/release.auto.tfvars.json "$CI_PROJECT_DIR/staging-release.auto.tfvars.json"
+      cat "$CI_PROJECT_DIR/staging-release.auto.tfvars.json"
   artifacts:
-    paths: [infrastructure/terraform-live/staging/orchestration/release.auto.tfvars.json]
+    paths: [staging-release.auto.tfvars.json]
     expire_in: 1 year
 
 # 3.3: the deployed artifact run in the account, each chain's machine started by the leg and followed to
@@ -496,9 +499,10 @@ production-deploy:
       ./scripts/lint-plan.py production "$plans/app-etl.json" --tag "$CI_COMMIT_TAG"
       terraform -chdir=terraform-live/production/app/app-etl apply -input=false "$plans/app-etl.tfplan"
       terraform -chdir=terraform-live/production/orchestration apply -input=false -auto-approve
-      cat terraform-live/production/orchestration/release.auto.tfvars.json
+      cp terraform-live/production/orchestration/release.auto.tfvars.json "$CI_PROJECT_DIR/production-release.auto.tfvars.json"
+      cat "$CI_PROJECT_DIR/production-release.auto.tfvars.json"
   artifacts:
-    paths: [infrastructure/terraform-live/production/orchestration/release.auto.tfvars.json]
+    paths: [production-release.auto.tfvars.json]
     expire_in: 1 year
 
 # Stage 9 step 9.4: the warehouse's DDL, warehouse/trades.sql, through the Data API as awsds-deploy-prod,

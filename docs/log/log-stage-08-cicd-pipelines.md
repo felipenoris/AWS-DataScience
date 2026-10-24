@@ -2858,3 +2858,51 @@ in a tab of its own (the job pages and their raw traces), and as the infrastruct
   directory, which Go reads beside the image's bundle. The same two hunks apply to v0.3.0's template
   (`0236a99d`, checked with `git apply --check`) and to v0.4.0's; the tag `v0.3.0` is spent, so the
   first promotion is `v0.3.1`.
+
+## 2026-10-24 — `v0.3.2`'s pipeline #68: the release trusted the CA, the Staging leg stopped three times on the deploy runner
+
+*The user's hand for the tags, the merge request and the retry; Claude's for the reading, through the
+user's Chrome session (the job pages, their raw traces and GitLab's API), and as the infrastructure user
+with `InfrastructureAccess` for AWS. Times UTC.*
+
+- **[user]** *"Apliquei o patch, mesclei o MR ca-root e criei a tag v0.3.1; o pipeline está rodando."*
+  **[Claude] read back**: `v0.3.1` named `5a7d009a`, MR !5's merge, because the branch `ca-root`
+  (`780aa419`, pipeline #65 passed at 19:36:10) had no merge request yet; pipeline #66 ran the v0.3.0
+  template again. The user cancelled #66 (19:44:19) and merged MR !6, *"The legs' clone and the release
+  trust the CA root the runner mounts"*, at 19:45:20 as `f4e4dcf3`; its `.gitlab-ci.yml`, blob
+  `74cae03f`, is the template at `0236a99d` with the patch. `v0.3.1` is spent.
+- **[user]** The tag `v0.3.2` on `f4e4dcf3`, pipeline #68 created 19:46:13. `scan-gate` (job 319) failed
+  and is allowed to (decision 1): 725 CRITICAL or HIGH findings, 130 in the baseline, 595 outside it,
+  593 of them `linux-libc-dev 6.8.0-142.142` and one each `zlib` and `zlib1g 1.3.dfsg-3.1ubuntu2.2`.
+  `test-deploy` (job 320) passed, 19:49:17 to 20:05:00; `store-bundle` (321) passed; `release` (322)
+  passed at 20:05:17, glab trusting the CA through `SSL_CERT_DIR` (verification xx answered).
+  `staging-up` (323) passed, 20:05:10 to 20:07:16, the mirror's clone at `0236a99d`, and Staging's seven
+  interface endpoints read `available` at 20:07:31.
+- **[Claude] `staging-deploy` (job 324)**, 20:07:19 to 20:09:57: the tree written to
+  `s3://awsds-staging-outputs/applications/app-etl/v0.3.2/`, the promoted lint `ok`, 8 objects read
+  back; `staging/app/app-etl/` applied, the Glue job; `staging/orchestration/` stopped at the workflow,
+  *"not authorized to perform: airflow-serverless:TagResource on resource: … workflow/*"*. The refusal,
+  its fix and its applies are Stage 10 1.5's, in that log's entry of this date.
+- **[Claude] `staging-down` (job 326)**, 20:10:00 to 20:10:15: `make down ENV=staging
+  PROFILE=awsds-deploy-staging AUTO=1` stopped at step 8.6's hook before any destroy, *"could not list
+  domains in staging (awsds-infra-staging) … The config profile (awsds-infra-staging) could not be
+  found"*: `down-studio-apps.py` signs in with `backend.PROFILES`, which the deploy runner does not hold.
+  The fix, in `c60ad8d6`: with a deploy profile, `slices.py down` skips the hook and prints why (refusal
+  8 keeps the profile in the Workloads accounts, where `DenyInteractiveSageMakerSurface` refuses
+  `CreateDomain` and `CreateApp`). It reaches the runner with the mirror's next push.
+- **[user]** *"Cliquei em Retry no staging-deploy (job 324)."* **[Claude]** Job 330, 20:32:33 to 20:35:03,
+  passed: the mirror at `0236a99d`, the tree written again, the application slice `No changes` after
+  `lint-plan`, the orchestration slice *"Apply complete! Resources: 7 added, 0 changed, 0 destroyed."*
+  (Stage 10's log). `staging-test` (job 325), 20:35:06 to 20:35:14, failed before its first AWS call:
+  *"fatal: destination path '/builds/awsds/app-etl/infrastructure' already exists and is not an empty
+  directory."* Its `needs: [staging-deploy]` downloads that job's artifact,
+  `infrastructure/terraform-live/staging/orchestration/release.auto.tfvars.json`, before the `.promotion`
+  clone into the same folder; `staging-down` downloads it too, by stage, and `production-deploy`'s artifact
+  sits on the same path for v0.4.0's jobs that need it. A retry runs the tag's YAML, so the fix needs a
+  new tag.
+- **[Claude] The template's fix**: each deploy job copies the release file beside the clone,
+  `staging-release.auto.tfvars.json` and `production-release.auto.tfvars.json` in `$CI_PROJECT_DIR`, and
+  keeps that copy as the artifact; written in `examples/app-etl/.gitlab-ci.yml` (v0.4.0) and as a patch
+  on `f4e4dcf3` for `v0.3.3`, both read by `./scripts/check-gitlab-ci.py` and parsed. Staging stays up
+  meanwhile: the seven endpoints, the Glue job and the orchestration slice's 21 resources, the chain never
+  started.

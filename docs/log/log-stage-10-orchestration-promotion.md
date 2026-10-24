@@ -935,3 +935,51 @@ Times UTC.*
   `implicitDeny`, the organization no longer denying and the identity statement scoped to
   `transform-job/app-etl-*`, and without the key `explicitDeny` from the organization. The first real
   call is v0.4.0's `staging-model`.
+
+## 2026-10-24 — pipeline #68: the deploy role refused the workflow's tag-on-create, then applied the orchestration slice in Staging
+
+*Claude's hand for the reading (the job traces through the user's Chrome session, AWS as the
+infrastructure user with `InfrastructureAccess`), the fix and the applies, on the user's authorization
+quoted below; the user's for the retry. Times UTC.*
+
+- **[Claude] The refusal**, `staging-deploy` (Stage 8's log), by 20:09:57: `staging/orchestration/` planned
+  21 to add and stopped at `awscc_mwaaserverless_workflow.this["app-etl"]`: *"Waiting for Cloud Control
+  API service CreateResource operation completion returned: waiter state transitioned to FAILED.
+  StatusMessage: User: arn:aws:sts::<account>:assumed-role/awsds-deploy-staging/aws-go-sdk-… is not
+  authorized to perform: airflow-serverless:TagResource on resource:
+  arn:aws:airflow-serverless:us-west-2:<account>:workflow/* because no identity-based policy allows the
+  airflow-serverless:TagResource action … ErrorCode: UnauthorizedTaggingOperation"*. A workflow's ARN ends
+  in a suffix the service generates (`awsds-staging-wf-app-etl-hHNGu2YFTv` on 2026-10-23), so
+  `CreateWorkflow` authorizes the tags it carries on `workflow/*`; `ManageTheWorkflows` named
+  `workflow/awsds-<env>-wf-*` alone. Read at 20:20 as `awsds-infra-staging`: `list-workflows` empty; the
+  roles `awsds-staging-wf-app-etl`, `-chain-events`, `-chain-exec` and `-chain-scheduler`, the workers'
+  group, the log groups `/awsds/staging/wf/app-etl` and `/aws/vendedlogs/states/awsds-staging-chains`; no
+  state machine.
+- **[Claude] Why 2026-10-24's replay missed it** (1.5, verification ii's simulator half; the reading of
+  the peer session *Estágios 8, 9 e 10 — preparação e revisão*): the tag-on-create check runs inside
+  `CreateWorkflow` and leaves no CloudTrail event of its own, and 3.8's by-hand leg ran as
+  `InfrastructureAccess`, so no trail held the call to replay. The legs' other tag-on-create checks are on
+  ARNs the caller names: `states`, `scheduler`, `events`, `logs`, `iam`, and `ec2:CreateTags` under
+  `ec2:CreateAction`.
+- **[Claude] The fix, `c60ad8d6`**: `TagTheWorkflowsAtCreation` in both `foundation/apply-orchestration.tf`
+  copies, `airflow-serverless:TagResource` on `workflow/*` for a request whose `aws:RequestTag/Name` is
+  `awsds-<env>-wf-*`, the tag the module writes; the service's condition keys are `aws:RequestTag/*`,
+  `aws:ResourceTag/*` and `aws:TagKeys` (the policy generator's table, read the same evening). Plans
+  *"0 to add, 1 to change, 0 to destroy"* each, `aws_iam_policy.orchestration["resources"]` in place,
+  4,743 and 4,343 compact characters of 6,144.
+- **[user]** *"Autorizo os applies dos planos salvos de staging/foundation e production/foundation, como
+  usuário de infraestrutura com InfrastructureAccess (awsds-infra-staging e awsds-infra-prod), e as
+  leituras depois."* **[Claude]** The five peer sessions told first. Staging applied 20:28:51 to 20:29:02,
+  Production 20:29:10 to 20:29:21, each *"Modifications complete after 2s"*, both policies at `v3`;
+  re-planned `No changes`. The simulator, `aws:RequestedRegion` in the context: `TagResource` on
+  `workflow/*` reads `allowed` for `awsds-deploy-staging` and `awsds-deploy-prod` with
+  `Name=awsds-<env>-wf-app-etl`, matched by `awsds-<env>-deploy-orchestration-resources`, and
+  `implicitDeny` with `Name=other-workflow`.
+- **[user]** The retry. **[Claude] Job 330** as `awsds-deploy-staging`: *"Plan: 7 to add, 0 to change, 0
+  to destroy."*, the workflow *"Creation complete after 5s"* at 20:34:57, then the failure rule and its
+  target, the chain's state machine, its schedule and the chain's failure rule and target, *"Apply
+  complete! Resources: 7 added, 0 changed, 0 destroyed."* at 20:34:59; the workflow and the machine read
+  in Staging at 20:35:00. INT-14 is answered in Staging: `awscc_mwaaserverless_workflow` applies under the
+  deploy role's boundary (verification ii's deploy-role half), and so do `aws_sfn_state_machine` and
+  `aws_scheduler_schedule` beside it (verification xxvi's Staging half). The chain was not started:
+  `staging-test` stopped at its clone (Stage 8's log).

@@ -697,7 +697,9 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   Stage 10 2.3's promoted mode before it writes (`--lint`): the prefix is the release's, the repository
   `IMAGE_REPO` and the instance types `LINT_INSTANCE_TYPES`, the pipeline's own variables, and an empty
   one fails the job rather than a lint that reads no ceiling (Lesson 71). The job keeps
-  `staging/orchestration/release.auto.tfvars.json` as an artifact, Staging's half of 3.7's record.
+  `staging/orchestration/release.auto.tfvars.json` as the artifact `staging-release.auto.tfvars.json`,
+  Staging's half of 3.7's record, beside the clone: a job that downloads it into `infrastructure/`
+  cannot clone the mirror there (v0.3.2's `staging-test`, 2026-10-24).
 - **3.3 — [pipeline] Run the integration tests against Staging** — the deployed artifact against a real
   catalog, real IAM and a real network, which is what justifies the account. **The tests are API calls from
   the runner or jobs inside Staging**: no network path leads from `VPC-SharedServices` into Staging
