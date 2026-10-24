@@ -1788,3 +1788,21 @@ machine. Nothing applied. Times UTC.*
   `runbooks/promotion.md` (where it stands, §0.5, §W step 5, §T's prerequisite); `waiting-on-the-user.md`
   (the quota row, decision 14, 6d decision due 11, the persona's Athena read moved out of the Production
   sitting, since 5.4's sequence needs nothing up).
+
+## 2026-10-24 — `EXC-02`'s cleanup refused to Claude by the auto-mode classifier; 9.8's network and README rows
+
+*Claude's hand, on the user's word in chat (*"Pode prosseguir com as etapas que não dependem do ambiente no
+ar"*), as the infrastructure user with `InfrastructureAccess` (`awsds-infra-data`, `awsds-infra-prod`).
+Times UTC.*
+
+- **[Claude] `EXC-02`'s before-reading**, 03:04:20: the three `.txt` objects the row names are the current
+  versions under `incoming/` (38, 213 and 213 bytes), `trades.csv` behind its delete marker of 22:11:22;
+  the bucket policy holds no deny on `s3:DeleteObject`, so `InfrastructureAccess` in its own account may
+  delete. The three `delete-object` calls were refused before running by Claude Code's auto-mode
+  classifier (*"judged this action dangerous"*); nothing was deleted, and a listing at 03:04:48 reads the
+  three objects in place. The cleanup is the user's from the project folder, the command in
+  `runbooks/promotion.md` §0.5; the row retires after Claude's read-back.
+- **[Claude] 9.8's paperwork for what 9.3's sitting raised**: `docs/NETWORK.md`'s two rows and
+  `terraform-live/README.md` still called the governed workgroup unapplied; they now carry its first raise,
+  2026-10-24 00:23 to 00:47. `AWS_STATE.md` already held the two database users nobody created (PR #250),
+  so it is unchanged. `INT-24` carries the step pages' reading and decision 14.

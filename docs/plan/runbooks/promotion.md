@@ -125,7 +125,13 @@ What stays with the environment: the runs, the legs, the warehouse's compute and
    nothing up (D39). The commands are 5.4's.
 3. **[Claude⚡] `EXC-02`'s cleanup**, on the user's word, as `awsds-infra-data`: the three `.txt` objects
    the row names deleted from `awsds-data-dropbox`, a delete marker each under the 90-day noncurrent
-   rule, and the row retired in `AWS_STATE.md`.
+   rule, and the row retired in `AWS_STATE.md`. **2026-10-24**: Claude Code's auto-mode classifier
+   refused Claude's delete, so the user runs it from the project folder as the infrastructure user, and
+   Claude reads the bucket back and retires the row:
+
+   ```bash
+   for k in incoming/2026/08/20/probe-4d-sandbox.txt incoming/2026/09/18/awsds-6g-24-probe.txt incoming/2026/09/18/awsds-6g-24-probe-tunnel.txt; do aws s3api delete-object --bucket awsds-data-dropbox --key "$k" --profile awsds-infra-data --region us-west-2; done
+   ```
 4. **[user] Stage 9 decision 14**, the account that registers the datashare (recommended: Data
    Governance), before §W step 5; and 6d decision due 11, Sandbox's `lakeformation` endpoint (recommended:
    keep it, Stage 10 0.5).

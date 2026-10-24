@@ -859,3 +859,13 @@ applies touch nothing it reads. Times UTC.*
   each matched by its account's `awsds-<env>-deploy-orchestration-resources`, the boundary and the
   organization's policies allowing. The legs' orchestration applies no longer stop at the plan; whether
   the service's own calls then succeed is the leg's reading (verification ii).
+
+## 2026-10-24 — the `staging-test` leg's calls read by the simulator
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-staging`), reads only.
+Times UTC.*
+
+- **[Claude] The calls the first replay left out**, made by the CLI rather than Terraform: the leg's
+  `states:StartExecution` on `stateMachine:awsds-staging-chain-app-etl`, and `states:DescribeExecution`
+  and `states:GetExecutionHistory` on one of its executions, read `allowed` for `awsds-deploy-staging` at
+  03:05, each matched by `awsds-staging-deploy-orchestration-resources` (decision 19's start of the chain).
