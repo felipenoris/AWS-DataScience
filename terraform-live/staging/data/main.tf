@@ -133,7 +133,9 @@ module "consumer_data" {
       }
     },
     # A workflow's execution role writes the result file and the inbox markers through S3, decrypts its
-    # own workflow, and grants SageMaker the processing job's volume key in the submitting session (6i).
+    # own workflow and encrypts every XCom a task pushes (its own GenerateDataKey with the workflow's
+    # ARN as context, read 2026-10-23: without it the first task fails after its job has run), and
+    # grants SageMaker the processing job's volume key in the submitting session (6i).
     {
       Sid       = "AllowTheWorkflowRolesViaS3"
       Effect    = "Allow"
@@ -149,7 +151,7 @@ module "consumer_data" {
       Sid       = "AllowTheWorkflowRolesForTheirWorkflows"
       Effect    = "Allow"
       Principal = { AWS = local.account_root }
-      Action    = ["kms:Decrypt"]
+      Action    = ["kms:Decrypt", "kms:GenerateDataKey"]
       Resource  = "*"
       Condition = {
         ArnLike    = { "aws:PrincipalArn" = local.workflow_role_pattern }

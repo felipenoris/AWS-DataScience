@@ -306,7 +306,26 @@ module "deploy_role" {
 
 # Production's statements in apply-application.tf's document: none yet. Stage 9 step 9.4's Data API
 # grant joins here at that stage's pass 6.
-data "aws_iam_policy_document" "apply_application_in_this_account" {}
+# Production's statement in apply-application.tf's document: Stage 9 step 9.4's door to the governed
+# warehouse, the Data API with IAM authentication, the deploy runner's only path to the workgroup
+# (VPC-SharedServices and VPC-Workloads do not peer). workgroup/* because the id changes on every
+# re-create of the [E] compute, as the root SCP's DenyRedshiftCostGuardTamperingExceptInfrastructure
+# reasons; the admin secret stays closed to this role (6h decision 2), and the compute is raised and
+# taken down by hand, since that SCP exempts InfrastructureAccess alone.
+data "aws_iam_policy_document" "apply_application_in_this_account" {
+  statement {
+    sid    = "RunTheGovernedWarehouseDdl"
+    effect = "Allow"
+    actions = [
+      "redshift-data:CancelStatement",
+      "redshift-data:DescribeStatement",
+      "redshift-data:ExecuteStatement",
+      "redshift-data:GetStatementResult",
+      "redshift-serverless:GetCredentials",
+    ]
+    resources = ["arn:${local.partition}:redshift-serverless:${local.region_account}:workgroup/*"]
+  }
+}
 
 # Production's statement in apply-orchestration.tf's resources policy:
 # AWSServiceRoleForAmazonMWAAServerless exists in Staging and not here (read 2026-10-22), so the first

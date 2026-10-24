@@ -495,3 +495,251 @@ the same sitting. AWS read as the infrastructure user (`awsds-infra-staging`, `a
   workflow would pass `test` and fail the Staging leg; 5.1 now puts it in a second workflow with its own
   chain, written after the quota increase, and pass 3 waits on that increase.
 - **[Claude] The plan**: the Status row, 2.3 and 5.1.
+
+## 2026-10-23 — the fourth sitting with the environment down: 6.2's commands, 0.5's instrument, the sittings in order
+
+*Claude's hand, in the session `stages-8-9-10-prep-2`, on the user's request quoted in Stage 9's entry of
+the same sitting. AWS read as the infrastructure user (`awsds-infra-prod`, `awsds-infra-staging`,
+`awsds-infra-sandbox-1`, `awsds-infra-data`, `awsds-infra-identity`), reads only, the tunnel down. Nothing
+applied. Times UTC.*
+
+- **[Claude] `./aws/orchestration.py`**, 16:21: *"all checks passed"* on the five infrastructure profiles,
+  `OR-9` a note in both accounts, nothing of the chain layer existing.
+- **[Claude] 6.2's negatives written as commands** in the step, runnable from a `DataScientistProdAccess`
+  session with the environment down: the four `airflow-serverless`, `states` and `scheduler` calls (the
+  set's implicit deny), `mwaa create-environment` (`DenyProvisionedMwaa`, exercised from a persona
+  session) and `sns publish`.
+- **[Claude] 0.5's instrument**: Stage 9 2.4's proof job, written this sitting, vends Lake Formation
+  credentials from inside `VPC-Workloads`; its runs' `GetTemporaryGlue*Credentials` events in Production's
+  CloudTrail are the `vpcEndpointId` reading, the command in Stage 9's step.
+- **[Claude] The sittings**: pass 1's `deploy --targets dev` in the Sandbox sitting, passes 1 and 2 in the
+  tag's, pass 3 after the quotas, each in [`runbooks/promotion.md`](../plan/runbooks/promotion.md) (§T, §Q).
+- **[Claude] The plan**: the Status row, 0.5 and 6.2.
+
+## 2026-10-23 — 6.2 begun by the user from the laptop: the workflow calls refused
+
+*The commands the user's, from the laptop signed in as the Data Scientist User through
+`DataScientistProdAccess` (`awsds-scientist-prod`), the tunnel down; the paste the user's, the account id
+and the address masked; the reading Claude's. The first form of the two commands, `aws
+airflow-serverless …`, was refused by the CLI (*"Found invalid choice 'airflow-serverless'"*): the command
+is `mwaa-serverless`, corrected in the step.*
+
+- **[user]**
+
+  ```
+  ➜  AWS-DataScience git:(main) aws mwaa-serverless start-workflow-run --workflow-arn "arn:aws:airflow-serverless:us-west-2:<Production>:workflow/awsds-prod-wf-app-etl-0000000000" --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the StartWorkflowRun operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: airflow-serverless:StartWorkflowRun on resource: arn:aws:airflow-serverless:us-west-2:<Production>:workflow/awsds-prod-wf-app-etl-0000000000 because no identity-based policy allows the airflow-serverless:StartWorkflowRun action
+  ➜  AWS-DataScience git:(main) aws mwaa-serverless list-workflows --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the ListWorkflows operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: airflow-serverless:ListWorkflows on resource: * because no identity-based policy allows the airflow-serverless:ListWorkflows action
+  ```
+
+- **[Claude]** Both the implicit deny the step expects, *"no identity-based policy allows"*: the set
+  names no `airflow-serverless:` action, and decision 11 gave the reads to the approver's set alone. The
+  service authorized a workflow ARN that does not exist, so the reading needed no workflow. The chain
+  layer's two calls, the provisioned environment and the topic are the block's next four.
+
+## 2026-10-23 — 6.2's chain-layer calls, the provisioned environment and the topic
+
+*The commands the user's, the same session and profile; the paste the user's, the account id and the
+addresses masked; the reading Claude's. Two commands were first run with the `<Production>` placeholder
+left in, which the service refused as a malformed input, and one of them was re-run.*
+
+- **[user]**
+
+  ```
+  ➜  AWS-DataScience git:(main) aws stepfunctions start-execution --state-machine-arn "arn:aws:states:us-west-2:<Production>:stateMachine:awsds-prod-chain-app-etl" --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the StartExecution operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: states:StartExecution on resource: arn:aws:states:us-west-2:<Production>:stateMachine:awsds-prod-chain-app-etl because no identity-based policy allows the states:StartExecution action
+  ➜  AWS-DataScience git:(main) aws scheduler create-schedule --name awsds-canary-probe --schedule-expression 'rate(1 day)' --flexible-time-window Mode=OFF --target '{"Arn":"arn:aws:states:us-west-2:<Production>:stateMachine:awsds-prod-chain-app-etl","RoleArn":"arn:aws:iam::<Production>:role/awsds-prod-chain-scheduler"}' --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the CreateSchedule operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: scheduler:CreateSchedule on resource: arn:aws:scheduler:us-west-2:<Production>:schedule/default/awsds-canary-probe because no identity-based policy allows the scheduler:CreateSchedule action
+  ➜  AWS-DataScience git:(main) aws mwaa create-environment --name awsds-canary-probe --dag-s3-path dags --execution-role-arn "arn:aws:iam::<Production>:role/awsds-prod-job-exec" --source-bucket-arn arn:aws:s3:::awsds-prod-outputs --network-configuration SecurityGroupIds=sg-00000000000000000,SubnetIds=subnet-00000000000000000,subnet-00000000000000001 --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the CreateEnvironment operation: Cross-account pass role is not allowed.
+  ➜  AWS-DataScience git:(main) aws mwaa create-environment --name awsds-canary-probe --dag-s3-path dags --execution-role-arn "arn:aws:iam::<Production>:role/awsds-prod-job-exec" --source-bucket-arn arn:aws:s3:::awsds-prod-outputs --network-configuration SecurityGroupIds=sg-00000000000000000,SubnetIds=subnet-00000000000000000,subnet-00000000000000001 --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the CreateEnvironment operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: airflow:CreateEnvironment on resource: arn:aws:airflow:us-west-2:<Production>:environment/awsds-canary-probe because no identity-based policy allows the airflow:CreateEnvironment action
+  ➜  AWS-DataScience git:(main) aws sns publish --topic-arn "arn:aws:sns:us-west-2:<Production>:awsds-prod-alerts" --message probe --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (InvalidParameter) when calling the Publish operation: Invalid parameter: TopicArn Reason: Invalid namespace: <Production>
+  ```
+
+  The first `create-environment` carried the literal placeholder in the role ARN, which the service read
+  as another account's role, *"Cross-account pass role is not allowed"*; the second carried the account's
+  id. The `publish` carried the placeholder in the topic ARN and was refused as a malformed parameter,
+  never authorized; it is run again with the id.
+- **[Claude] The readings.** `states:StartExecution` and `scheduler:CreateSchedule`: the implicit deny,
+  *"no identity-based policy allows"*, as the step expects. **`airflow:CreateEnvironment` was refused by
+  the set's own implicit deny**, *"no identity-based policy allows the airflow:CreateEnvironment action"*,
+  one layer before the root baseline's `DenyProvisionedMwaa` (Lesson 20): IAM names the explicit deny of
+  a service control policy only to a principal whose identity policy allows the action, and no persona
+  set holds an `airflow:` allow. So that statement is exercised from a persona session by nobody, and its
+  proof stays the battery's `root` row as the infrastructure user (2026-10-18, `DENY-SCP`), the same shape
+  Stage 9 6.3 read for `CreateSpace` under the debug role. The step's expectation is corrected.
+
+## 2026-10-23 — 6.2's topic, run again with the account id
+
+*The command the user's, the same session and profile; the paste the user's, the account id and the
+address masked; the reading Claude's.*
+
+- **[user]**
+
+  ```
+  ➜  AWS-DataScience git:(main) aws sns publish --topic-arn "arn:aws:sns:us-west-2:${PROD}:awsds-prod-alerts" --message probe --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AuthorizationError) when calling the Publish operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: SNS:Publish on resource: arn:aws:sns:us-west-2:<Production>:awsds-prod-alerts because no identity-based policy allows the SNS:Publish action
+  ```
+
+- **[Claude]** The implicit deny, the set naming no `sns:` write; 6.2's six calls are read, every one
+  refused by the set's own policy, and the provisioned deny's exercise stays the battery's.
+
+## 2026-10-23 — 0.5's reading: the Lake Formation call carries the endpoint's id
+
+*Claude's hand, reading Production's CloudTrail after Stage 9 2.4's runs, which that stage's log carries;
+no write. Times UTC.*
+
+- **[Claude] The reading**: the proof job's `GetDataAccess` events of 21:44, 22:05-22:06 and 22:11 each
+  carry `vpcEndpointId` `vpce-0431cce5692733205`, the `lakeformation` interface endpoint
+  `production/workloads-egress/` raises in `VPC-Workloads`; its `GetTable`s carry the `glue` endpoint's,
+  `vpce-0925d883174fd23c1`. The event name is `GetDataAccess`, never `GetTemporaryGlueTableCredentials`,
+  and the vend comes in two legs, the driver's own call and Glue's on its behalf. The Sandbox endpoint
+  question 6d left in this step is answerable from this reading.
+
+## 2026-10-23 — the orchestration slice's first apply with a release, in Staging, by hand
+
+*Claude's hand, on the user's authorization in chat (*"pode prosseguir com o plano"*), as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-staging`), Stage 8 3.8's by-hand leg (that
+stage's log carries the release and the applies). Times UTC.*
+
+- **[Claude] `staging/orchestration/` with `v0.2.1`**: *"Plan: 21 to add, 0 to change, 0 to destroy."*,
+  applied 22:47:39 to 22:48:02, re-planned `No changes`; `awscc_mwaaserverless_workflow.this["app-etl"]`
+  created in 7 s as `awsds-staging-wf-app-etl-hHNGu2YFTv`, with the service-linked role Stage 18's first
+  `CreateWorkflow` had left in the account (1.5's premise holds here; Production's first apply still owes
+  `iam:CreateServiceLinkedRole`). Verification ii's deploy-role half is not answered by this apply, made
+  under `InfrastructureAccess`; the pipeline's leg answers it.
+- **[Claude] The key's calls in Staging's trail** (read 22:56, the key `74f5ebbc-…` the workflow names,
+  the account data CMK): at the `CreateWorkflow` of 22:47:51, two `CreateGrant` and three
+  `GenerateDataKey` invoked by `airflow-serverless.amazonaws.com` in the saver's session
+  (`InfrastructureAccess`), each `GenerateDataKey` carrying the encryption context
+  `aws:airflow-serverless:workflow-arn` = the workflow's ARN beside `aws-crypto-public-key`; at the
+  chain's start, 22:49:25, `GenerateDataKey` and `Decrypt` in `awsds-staging-chain-exec`'s session with
+  the same context; at 22:50:06 a `Decrypt` by the worker itself, the session
+  `awsds-staging-wf-app-etl/AmazonMWAAServerless`, no `invokedBy`, the same context; the log groups'
+  calls carry `aws:logs:arn` and the bucket's `aws:s3:arn`. Decision 2's premise reads true: the
+  worker's and the saver's calls carry the workflow's ARN as encryption context.
+- **[Claude] The chain's first execution, `v0-2-1-byhand-224923`**, started by `start-execution` as the
+  infrastructure user at 22:49:24 (decision 19's shape, the leg's own command): the machine started the
+  workflow run `7sLvJ2334shWqn5` (`ON_DEMAND`), polled it (`QUEUED` at 22:50:25 and 22:51:25), read it
+  `FAILED` at 22:52:25 and ended **`FAILED`** with its own error `WorkflowRunNotSucceeded`, *"The run of
+  awsds-staging-wf-app-etl ended FAILED, TIMEOUT or STOPPED: its task instances name the task (Stage 10
+  step 3.2)"*: the chain layer's diagnosis path, exercised before 3.2 broke anything on purpose.
+- **[Claude] The run**: 48 s, started 22:49:29, ended 22:50:17; `transform` (`GlueJobOperator`) **`FAILED`**
+  after 11 s, `process`, `summarize` and `write_result` `UPSTREAM_FAILED`. The task's log
+  (`/awsds/staging/wf/app-etl`, one stream, `task_id=transform/attempt=1`): *"Error encrypting:
+  ClientError('An error occurred (AccessDeniedException) when calling the GenerateDataKey operation: User:
+  arn:aws:sts::<Staging>:assumed-role/awsds-staging-wf-app-etl/AmazonMWAAServerless is not authorized to
+  perform: kms:GenerateDataKey on resource: arn:aws:kms:us-west-2:<Staging>:key/74f5ebbc-… because no
+  resource-based policy allows the kms:GenerateDataKey action')"*, then *"Failed to encrypt XCom value"*
+  and *"XCom with key='glue_job_run_details' … not found"*. The trail: the worker's `GenerateDataKey`
+  at 22:50:11 through the `kms` endpoint `vpce-07b2884c5d3d77925`, `AccessDenied`, its context not
+  logged. **The Glue job the task had started ran to the end**: `awsds-staging-app-etl` run `jr_2273904b…`
+  `SUCCEEDED`, 22:50:10 to 22:52:08, 98 s, 196 DPU-seconds, `--SOURCE_PATH s3://awsds-staging-outputs/inbox/app-etl/`,
+  `--TARGET_PATH …/app-etl/work/glue/trades.csv`, two `G.1X`, Glue 6.0; the task failed pushing the
+  run's details as an XCom, not at the job.
+- **[Claude] The reading**: the data key's `AllowTheWorkflowRolesForTheirWorkflows` admits the pattern
+  `awsds-staging-wf-*` to `kms:Decrypt` with the workflow's ARN as context, and the worker encrypts each
+  XCom with its own `GenerateDataKey` under the workflow key, a call no page names and Stage 18's run on
+  a project key (where the role held `kms:*` through the project) could not show. The fix is one action
+  on that statement in `staging/data/` and `production/data/`, planned next; no processing job started,
+  so verification xvi's worker-preparation clause is still open.
+
+## 2026-10-23 — the failure rules heard: the alert e-mails of the first chain
+
+*The user's hand (the e-mails received and pasted in chat), Claude recording; the account id masked.*
+
+- **[user] Two e-mails received at 19:51 local time (22:51 UTC)** from Staging's alerts topic, the
+  workflow's and the chain's failure rules of 3.4 (`OR-4` had read both `ENABLED` at 22:49). The one
+  pasted, verbatim:
+
+  ```
+  awsds-staging-wf-app-etl-failed: a workflow run ended FAILED."
+  "When: 2026-10-23T22:51:29Z"
+  "Event: MWAA Serverless Workflow Run Failed"
+  "Workflow: arn:aws:airflow-serverless:us-west-2:<Staging>:workflow/awsds-staging-wf-app-etl-hHNGu2YFTv"
+  "Run: 7sLvJ2334shWqn5"
+  "Diagnose with mwaa-serverless list-task-instances and get-task-instance (Stage 10 step 3.2)."
+  "EventBridge event id: 413d9e05-1762-6379-3ab5-5e12b1e7d492"
+  ```
+
+- **[Claude] The reading**: the service emitted the run's `FAILED` event at 22:51:29, 72 s after the run
+  ended (its `ModifiedAt` 22:51:28), and the rule's input transformer, the topic and the subscription
+  delivered it in the same minute; the second e-mail is the chain's own rule on the execution's `FAILED`
+  of 22:52:25. The failure rule 6.1 expects to hear is heard here, on a failure nobody staged, and its
+  text names the diagnosis commands that found the task (the entry above).
+
+## 2026-10-23 — the data keys' workflow-role statement gains `kms:GenerateDataKey`, both targets
+
+*Claude's hand, on the user's authorization in chat (*"autorizado o apply"*, after the box named both
+slices), as the infrastructure user with `InfrastructureAccess` (`awsds-infra-staging`, then
+`awsds-infra-prod`); Recipe A, each plan outside the repository, no other session running on the machine.
+Times UTC.*
+
+- **[Claude] The change**: `AllowTheWorkflowRolesForTheirWorkflows` in `staging/data/main.tf` and
+  `production/data/main.tf` admits the pattern `awsds-<env>-wf-*` to `kms:Decrypt` **and
+  `kms:GenerateDataKey`** with the workflow's ARN as encryption context; the comment names the XCom
+  encryption and the date it was read; `production/data/README.md`'s row follows. The planned diff in
+  each account: one resource, `module.consumer_data.module.data_key.aws_kms_key.this` updated in place,
+  `+ "kms:GenerateDataKey"` in that statement's `Action`.
+- **[Claude] Staging**: the fresh plan at 23:07:25 to 23:07:42, *"Plan: 0 to add, 1 to change, 0 to
+  destroy."*; applied 23:07:42 to 23:07:58, *"Modifications complete after 6s"* on the key
+  `74f5ebbc-…`; re-planned `No changes`.
+- **[Claude] Production**: the fresh plan at 23:08:14 to 23:08:30, the same counts; applied 23:08:30 to
+  23:08:45, *"Modifications complete after 6s"* on the key `0415a6f0-…`; re-planned `No changes`. The
+  two slices' key policies stay identical in this statement.
+- **[Claude] The chain's second execution, `v0-2-1-byhand-230927`** (23:09:28, after the key policies):
+  **`FAILED`** again at 23:12:29 on the same `WorkflowRunNotSucceeded`; the run `ojUePHoPNgNdm0v` 51 s,
+  `transform` `FAILED` after 14 s, the three others `UPSTREAM_FAILED`, the Glue job `jr_dfb8a65d…`
+  `SUCCEEDED` again (23:10:20 to 23:12:18, 98 s, 196 DPU-seconds). The task log's wording moved one
+  layer: *"not authorized to perform: kms:GenerateDataKey … because no identity-based policy allows
+  the kms:GenerateDataKey action"* (23:10:21, the worker's own call through the `kms` endpoint), where
+  the first run read *"no resource-based policy"*: the key policy now admits the call and the
+  execution role's own policy, `orchestration-v0.1.0`'s `orchestrate` document, does not. The worker's
+  `Decrypt` of 23:10:14 with the workflow's ARN as context was answered. The failure rules mailed
+  again (the user's inbox, 20:11 local time).
+
+## 2026-10-23 — `orchestration-v0.2.0`: the execution role's `GenerateDataKey`, applied in Staging
+
+*Claude's hand, the same authorization; Recipe B. Times UTC.*
+
+- **[Claude] The module**: `workflows.tf`'s statement `DecryptItsWorkflow` becomes `UseTheKeyForItsWorkflow`,
+  `kms:Decrypt` and `kms:GenerateDataKey` on the data key with the workflow's ARN as encryption context;
+  `validate` passes alone, and `staging/orchestration/` planned against the local path reads *"0 to add,
+  1 to change, 0 to destroy"*, the inline `orchestrate` policy alone, the source reverted and re-initialised.
+  Commit `f5429253` carries the module alone; origin's tags read `orchestration-v0.1.0` alone at the moment
+  of tagging; the tag `orchestration-v0.2.0` on `f5429253`, pushed with the branch and read back from origin.
+- **[Claude] The callers**: both slices pin `orchestration-v0.2.0`. `staging/orchestration/` re-initialised
+  on the tag, planned *"0 to add, 1 to change, 0 to destroy"* and applied at 23:20:27, *"Modifications complete
+  after 0s"* on `awsds-staging-wf-app-etl:orchestrate`, re-planned `No changes`; `production/orchestration/`
+  re-initialised on the tag and planned `No changes` (no release). The callers' commit failed its hook once,
+  the slices not yet initialised on the new tag, and landed after the applies.
+- **[Claude] The chain's third execution, `v0-2-1-byhand-232145`** (23:21:47, after the role's policy):
+  **`SUCCEEDED`** at 23:36:51, output `{"runId":"2gSJPosjsAlFvxB","runState":"SUCCESS"}`; the run 767 s,
+  23:21:54 to 23:34:42, four tasks `SUCCESS`: `transform` 106 s (the Glue job `jr_f8abc018…`, 76 s, 153
+  DPU-seconds, `work/glue/trades.csv` 436 bytes), `process` 491 s (the processing job
+  `app-etl-20261023T232509`, `Completed`, 23:26:04 to 23:30:28 on `ml.t3.medium`, network isolation on,
+  the two private subnets, the jobs' group, the image `awsds-prod-ecr-app-etl@sha256:247ec6b6…` pulled
+  across the account boundary, the volume under the data key; `work/job/trades.parquet` 2,126 bytes and
+  `trades.summary.json` 511), `summarize` 7 s (*"1 table(s), 10 rows, under
+  s3://awsds-staging-outputs/app-etl/work/job/"*), `write_result` 6 s (`app-etl/outbox/report.json`, 332
+  bytes: 10 rows, `notional` 49850.5, `quantity` 1530, the input's SHA256). `./aws/orchestration.py` all
+  checks passed after the run.
+- **[Claude] The worker's calls in the trail**: `glue:GetJob`, `StartJobRun` and seventeen `GetJobRun`
+  through `vpce-029bcdb3b71c415e6` (`glue`); `sagemaker:CreateProcessingJob` and eighteen
+  `DescribeProcessingJob` through `vpce-04b5fe9741bc3c295` (`sagemaker.api`), the first `Describe` a
+  `ValidationException` before the job existed; the key's `GenerateDataKey` and `Decrypt` through
+  `vpce-07b2884c5d3d77925` (`kms`), `logs:CreateLogStream` through `vpce-0813d1026921373f2`; one
+  `ec2:CreateNetworkInterface` in the worker's session at 23:25:12, `Client.UnauthorizedOperation`, the job
+  unaffected. The two tasks' hosts, `ip-10-50-110-196` (`process`) and `ip-10-50-50-227` (`summarize`),
+  sit one in each private subnet, so the single-AZ endpoints were reached from both AZs (verification xvi).

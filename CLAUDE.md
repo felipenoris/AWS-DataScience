@@ -283,6 +283,7 @@ This table is the only routing map; every other file points here rather than rep
 | Anything egress, proxy or the hub topology: where the internet is reached, which VPC a thing belongs in, why there is no NAT gateway | [`docs/plan/decisions/D38-single-egress-hub.md`](docs/plan/decisions/D38-single-egress-hub.md) and [`docs/plan/stages/stage-06c-networking-hub.md`](docs/plan/stages/stage-06c-networking-hub.md) |
 | The network as built: VPCs, subnets, routes, peerings, egress, VPN, DNS, security groups, addresses; how a SageMaker app sees the internet and what can reach one | [`docs/NETWORK.md`](docs/NETWORK.md), code plus measurement |
 | Building the images: the pipeline on the build runner, what to check before a build, every tag spent and its digests (the buildbox, retired at Stage 7 step 6.5, built the first six) | [`gitlab/awsds/dev-env/README.md`](gitlab/awsds/dev-env/README.md), a copy of GitLab's ([`gitlab/README.md`](gitlab/README.md)) |
+| The first promotion: the sittings that close Stages 8, 9 and 10, in order and command by command, from the proofs that need nothing up to the governed warehouse | [`docs/plan/runbooks/promotion.md`](docs/plan/runbooks/promotion.md): §0 with the environment down, §H the hub and GitLab, §P Production (Stage 9's proof job), §T the tag, §W the warehouse, §Q after the quotas |
 | Anything GitLab: the host and its session (`make gitlab-up`/`gitlab-down`, the order with the hub and the tunnel), how a host is built from nothing (the applies, what the first boot does, a rebuild), a fresh host's initial setup (trusting the root, the first sign-in, the instance settings), a `gitlab.rb` change reaching the host, the leaves and their re-issue, trusting the root on a laptop, the backup and the restore, the runner's token, SAML's inputs | [`docs/plan/runbooks/gitlab.md`](docs/plan/runbooks/gitlab.md): §S the pieces, §U up and down, §P the installation, §I the initial setup, §R the refresh, §C the certificates, §B backup and restore, §K the runners, §G the gates project, §M the image projects and the mirror, §A SAML, §V the instruments |
 | Making a custom image selectable in SageMaker: the slice that registers it, the attach to the blueprint's domain, a release and its retirement, why the proxy variables are not on the app image configuration | [`docs/plan/runbooks/dev-env.md`](docs/plan/runbooks/dev-env.md) |
 | Anything remote IDE: attaching a laptop's VS Code to a space, the Windows client and its pin, where an extension installs and which gallery serves it, which calls the plane refuses, how a file or a repository gets in | [`docs/plan/runbooks/remote-ide.md`](docs/plan/runbooks/remote-ide.md): §O the pieces, §I the identity, §W the pinned client, §E extensions, §N the egress readings, §C moving files, §V the instruments |
@@ -309,7 +310,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   carve-out removed, Stage 9 3.5's instance-preference rows run for the first time) and `root` 25 / 0 / 0 on 2026-10-18. **SageMaker job quotas for `ml.m5.large`,
   `.xlarge` and `.2xlarge` are 0 in Production and Staging** (processing and training; training is 0 for
   every type inside the ceiling in both, read 2026-10-20 and 2026-10-22), **and no type inside the ceiling
-  has a transform quota above 0 in either** (2026-10-22), with no increase requested; `ml.t3.medium`,
+  has a transform quota above 0 in either** (2026-10-22); `ml.m5.large`'s training and transform were
+  requested at 2 in both on 2026-10-23, `PENDING`; `ml.t3.medium`,
   `app-etl`'s processing type, is 4 in both, and Staging ran a job on it on 2026-10-19. The probes read `ResourceLimitExceeded` as authorized; the `ou`
   phase's seven instance-preference rows (Stage 9 3.5, PR #216) ran 2026-10-22, each as expected.
 - **Stage 9**: pass 1 applied 2026-10-18 (`awsds-org-scp-ou-workloads`, nine statements; `production/sagemaker/`,
@@ -323,10 +325,20 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `s3-bucket` module turns Bucket Keys on for every bucket it creates, so D31's zero-cost variant is
   unavailable (PR #225). **Pass 4 prepared 2026-10-22**: 5.1 is the managed policy `awsds-prod-data-scientist`
   in `production/data/` (1 to add, 1 to change) attached in `identity/sso/` (1 to add, 1 to change; the
-  inline form read 10,550 of 10,240), `GetDataAccess` added, both applied 2026-10-22; step 9.1's
-  `production/warehouse/` (9 to add) and `warehouse-compute/` written, the compute held from `make up` by
-  `layers.py` refusal 9 until the namespace is applied; 2.4-2.6 have no job yet (2.4 specifies one); 6.3's
-  window opened, exercised and closed 2026-10-22, the refusal read 2026-10-23.
+  inline form read 10,550 of 10,240), `GetDataAccess` added, both applied 2026-10-22; step 9.1's two
+  slices written; 6.3's window opened, exercised and closed
+  2026-10-22, the refusal read 2026-10-23. **2026-10-23**: 2.4's proof job `awsds-prod-producer-proof`
+  (`production/sagemaker/`) ran both modes in the Production sitting: the `producer` write committed and the
+  `pickup` consumed the drop, `curated.trades` at 20 rows, after decision 13's two halves: the
+  `AllowFullTableExternalDataAccess` flag on in Production (the user's console, 19:49 UTC) was not enough,
+  the vend refused *"Verify the data lake settings for account"*, and the lake's `lakeformation.tf` carries it
+  since 22:03 UTC (`TM-26`); the flag is on in Production, Sandbox and the lake, unset in Staging; whether
+  Production's is needed beside the lake's is unmeasured (a third run, the user's console). 9.1's
+  `production/warehouse/` applied 22:07 UTC (the namespace; `EXC-13`'s Production sentence), refusal 9
+  lifted, `warehouse-compute/` planning 2 to add, 9.3's theme `trades` and quota 1 TB confirmed by the user 2026-10-24, §W the next Production sitting; 9.4's grant applied,
+  `workloads-egress/` taking `GROUPS=redshift`; the `ml.m5.large` pair requested 2026-10-23 (`PENDING`); the
+  persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run but the space halves and the Data API negative
+  (INT-06 answered, open question 8 closed); the sittings in `runbooks/promotion.md`.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, never fired (no model package exists). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
@@ -337,7 +349,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Stage 8's application ceilings and Stage 9's data keys, outputs buckets and Staging's job role, exist
   since 2026-10-22.
   The MWAA Serverless service-linked role exists in Staging, not in Production, whose first apply needs
-  `iam:CreateServiceLinkedRole` (1.5).
+  `iam:CreateServiceLinkedRole` (1.5). **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
+  3.8): the workflow created by `awscc` under `InfrastructureAccess`, the chain's machine started, diagnosed two
+  failures (the worker's XCom encryption needs `kms:GenerateDataKey` in the key policy and in the role's, both
+  fixed) and `SUCCEEDED`; 0.5, decision 19, decision 2's context and verification xvi's worker clauses read; the
+  failure rules mailed; verification ii's deploy-role half and 3.2's deliberate break wait for the pipeline.
 - **The Sandbox warehouse (5b, 6h)**: `sandbox/warehouse/` rank 53 `[P]` and `sandbox/warehouse-compute/`
   rank 54 `[E]` (base 4 / max 8 RPU, usage limit 10 RPU-h monthly `deactivate`), database `sandbox`, schema
   `lab`. One project per tag key is admitted (`avhvbqn37ty7m8`); decision 8 owns the second,
@@ -402,7 +418,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Pass 4's code written 2026-10-22 (PR #244), its Glue job grant applied: `<env>/app/app-etl/` (planned), the
   render and release scripts, and the template's promotion legs, which reach GitLab by an MR; the legs lint
   each rendered copy in Stage 10 2.3's promoted mode (`release-application.py --lint`, read offline on
-  `v0.2.1`) and keep Staging's release file as an artifact; 3.8 carries the by-hand sequence.
+  `v0.2.1`) and keep Staging's release file as an artifact; 3.8 carries the by-hand sequence. **3.8 ran by hand on 2026-10-23, before the pipeline's leg** (Stage 8's
+  log): `v0.2.1` released into Staging, both slices applied, the chain `SUCCEEDED` at its third execution after
+  two policy fixes, the data keys' and the execution role's `kms:GenerateDataKey` for the XCom encryption
+  (`orchestration-v0.2.0`); the pipeline's leg owes verification xi's parity, `uv run` on the runner and the
+  deploy role's calls.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
@@ -438,7 +458,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
   `--no-browser`.
-- **Module tags**: `orchestration-v0.1.0` (PR #246, unapplied), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
+- **Module tags**: `orchestration-v0.2.0` (`staging/orchestration` applied 2026-10-23 in Stage 8 3.8's by-hand
+  leg; `production/orchestration` pinned, no release), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit

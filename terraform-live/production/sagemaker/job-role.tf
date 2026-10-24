@@ -94,6 +94,24 @@ data "aws_iam_policy_document" "job" {
     resources = ["*"]
   }
 
+  # An Iceberg commit ends in glue:UpdateTable, the metadata pointer moved on the Glue table, and
+  # IAM is evaluated beside Lake Formation's ALTER (Lesson 28): the lake's curated tables, addressed
+  # in the lake account's catalog, and this account's app_outputs tables, which the job writes rows
+  # into. The lake account is read from its state (producer-proof.tf), never pasted.
+  statement {
+    sid     = "CommitTheIcebergWrites"
+    effect  = "Allow"
+    actions = ["glue:UpdateTable"]
+    resources = [
+      "arn:${local.partition}:glue:${var.region}:${local.lake_account_id}:catalog",
+      "arn:${local.partition}:glue:${var.region}:${local.lake_account_id}:database/${data.terraform_remote_state.lake.outputs.database_names["curated"]}",
+      "arn:${local.partition}:glue:${var.region}:${local.lake_account_id}:table/${data.terraform_remote_state.lake.outputs.database_names["curated"]}/*",
+      "arn:${local.partition}:glue:${var.region}:${local.account_id}:catalog",
+      "arn:${local.partition}:glue:${var.region}:${local.account_id}:database/app_outputs",
+      "arn:${local.partition}:glue:${var.region}:${local.account_id}:table/app_outputs/*",
+    ]
+  }
+
   # A Glue job given a network connection reads it as this role before it starts: Glue's
   # GlueJobRunnerSession called glue:GetConnection four times in Staging on 2026-10-19, as the role
   # of Stage 18 4.4's job. Read-only and held to this account's connections; step 2.4 decides

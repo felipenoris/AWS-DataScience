@@ -1215,6 +1215,23 @@
 
 - AWS Glue Data Catalog: <https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html>.
 
+- **A Glue Spark job writing a Lake Formation table: full-table access (read 2026-10-23, for Stage 9
+  step 2.4's proof job).** *"AWS Glue 5.0 and above supports Full Table Access (FTA) control in Apache
+  Spark"*, the mode that *"enables read and write operations from your AWS Glue Spark jobs on AWS Lake
+  Formation registered tables when the job role has full table access"*; fine-grained access reads only,
+  and *"a job cannot simultaneously run Full Table Access (FTA) and Fine-Grained Access Control (FGAC)"*.
+  Its first step is Lake Formation's application integration setting (*"allow third-party query engines
+  to access data without the IAM session tag validation"*, `AllowFullTableExternalDataAccess`), its IAM
+  need `lakeformation:GetDataAccess` beside the Glue catalog actions (`glue:UpdateTable` among them), and
+  its Lake Formation need *"ALL permission"* for a job that writes or deletes, `SELECT` for a read. The
+  Iceberg catalog's settings: `spark.sql.catalog.<name>.glue.lakeformation-enabled=true` with
+  `glue.id`/`glue.account-id`, `catalog-impl` `GlueCatalog`, `io-impl` `S3FileIO`, EMRFS's
+  `fs.s3.credentialsResolverClass` `AWSLakeFormationCredentialResolver` and the directory-object settings;
+  *"Full Table Access works exclusively with EMR Filesystem (EMRFS)"*:
+  <https://docs.aws.amazon.com/glue/latest/dg/security-access-control-fta.html>. The setting's page,
+  console and `put-data-lake-settings`, which says in neither which account's setting a cross-account
+  vend reads: <https://docs.aws.amazon.com/lake-formation/latest/dg/full-table-credential-vending.html>.
+
 - Redshift and the Glue Data Catalog, both directions (read 2026-09-13, for Stage 6f's institutional pattern). A Redshift provisioned cluster or serverless namespace registered to the Data Catalog becomes a federated catalog (namespace → multi-level catalog, database → catalog, schema → database, table → table), governed by Lake Formation and queried by Iceberg-compatible engines such as Athena and EMR Serverless: <https://docs.aws.amazon.com/lake-formation/latest/dg/managing-namespaces-datacatalog.html>. Redshift reads the Data Catalog through the `awsdatacatalog` database (RA3 or Serverless; `data_catalog_auto_mount`), and *"Queries against the `awsdatacatalog` database can only be read-only"*: <https://docs.aws.amazon.com/redshift/latest/mgmt/query-editor-v2-glue.html>. The crawler's data stores: S3, DynamoDB, Delta Lake, Iceberg and Hudi natively; Amazon Redshift, Snowflake, Aurora, MariaDB, SQL Server, MySQL, Oracle and PostgreSQL over JDBC; MongoDB, MongoDB Atlas and DocumentDB through the MongoDB client: <https://docs.aws.amazon.com/glue/latest/dg/crawler-data-stores.html>.
 
 - **Redshift Serverless — capacity, billing, network and audit (read 2026-09-19, for

@@ -2578,3 +2578,81 @@ plans only, the tunnel down (`NO_PROXY='*'`). Nothing applied. Times UTC.*
   22:4x UTC, and every later commit of the session joined it: Stage 9's 5.1 applies, its 6.3 from the
   approval to the refusal read in the trail, and the records. The description was rewritten on
   2026-10-23 to carry the whole branch.
+
+## 2026-10-23 — the fourth sitting with the environment down: the sittings in order, the GitLab acts before the tag
+
+*Claude's hand, in the session `stages-8-9-10-prep-2`, on the user's request quoted in Stage 9's entry of
+the same sitting. AWS read as the infrastructure user (`awsds-infra-prod`, `awsds-infra-staging`,
+`awsds-infra-sandbox-1`, `awsds-infra-data`, `awsds-infra-identity`), reads only, the tunnel down. Nothing
+applied. Times UTC.*
+
+- **[Claude] `./aws/cicd.py`**, 16:19: *"all checks passed"* on the five infrastructure profiles;
+  `./aws/egress.py` at 16:23: the burn 0.000 USD/h in the five accounts, no interface endpoint, no NAT
+  gateway. `make check` OK at 16:17 on `main`'s tree.
+- **[Claude] The laptop's Terraform**: `terraform version` reads 1.15.8, so the bump of 2026-10-22 waits on
+  the user's install, and the two pins (`offline-gates.yml`, the deploy image's recipe) stay at 1.15.8 by
+  `upstream-releases.md`'s order.
+- **[Claude] Pass 4's sittings written in order**: [`runbooks/promotion.md`](../plan/runbooks/promotion.md),
+  §H the hub and GitLab (decision 2's settings and the memberships, MR !4, the legs' merge request built
+  from `examples/app-etl/` at `main` by `gitlab.md`'s "The application template" procedure,
+  `default-v0.9.0` as version 10, the deploy image on 1.16.6), §T the tag with Stage 10's passes 1 and 2
+  and Stage 9's 8.5, job by job, with what each leg reads for the first time; `waiting-on-the-user.md`'s
+  GitLab row carries the legs' merge request.
+- **[Claude] The plan**: the Status row.
+
+## 2026-10-23 — 3.8 by hand before the pipeline's leg: the release `v0.2.1` written into Staging
+
+*Claude's hand, on the user's authorization in chat (*"pode prosseguir com o plano"*, after the leg was
+spelled out command by command), as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-staging` for the writes, `awsds-infra-prod` for the bundle and the image digest);
+Staging's `egress/` up (Stage 9's log), Production coming down. Times UTC.*
+
+- **[Claude] The inputs**: the bundle `s3://awsds-prod-releases/app-etl/v0.2.1/app-etl.zip`, 6,988
+  bytes, SHA256 `7fb374d15c23953cb6ad6d9f5473f97d2c83ff2db167703a5a830d96add95fff` computed on the
+  download, seven files inside (`code/app-etl.zip`, three under `src/app_etl/`, `glue/transform.py`,
+  `samples/trades.csv`, `workflows/app-etl.yaml`); the image `awsds-prod-ecr-app-etl` tagged
+  `v0.2.1-1e756091`, digest `sha256:247ec6b661ceb03d2927e1ce5a3c07d9287280a639abed18ce8daf898ed4ce0c`,
+  pushed 2026-10-19 19:27 UTC; the pipeline's three variables exported by hand (`IMAGE_REPO`,
+  `LINT_INSTANCE_TYPES`, `AWSDS_WORKFLOWS`).
+- **[Claude] The dry run** at 22:45:01, exit 0: the render from Staging's live state, the promoted lint
+  *"ok: 1 arquivo(s)"*, seven objects and the manifest listed, the YAML the one file whose SHA256 differs
+  from the bundle's (`5b7900ee…` to `d367ab29…`, 3,351 bytes), the inbox seed listed.
+- **[Claude] The release** at 22:45:11 to 22:45:42, exit 0: eight objects written under
+  `s3://awsds-staging-outputs/applications/app-etl/v0.2.1/`, the seven and `MANIFEST.sha256`, *"read
+  back: 8 objects, each checksum the manifest's"*; the inbox `inbox/app-etl/trades.csv` written; the
+  orchestration slice's `release.auto.tfvars.json` carries `definition_version_id`
+  `SdX0AVkSy1aoIiHQMcvDMC8vQvzfXYwe` and `code_version_id` `NSfKoAyWNRb0FS6R6BlVtIwAAUDpu5jM`, the
+  values 3.7 records; the application slice's release file written by hand from the tag, the digest and
+  the SHA256.
+- **[Claude] The two applies**, each from a fresh plan (Recipe A), as `awsds-infra-staging`:
+  `staging/app/app-etl/` planned at 22:47:04 *"1 to add"* and applied at 22:47:13, the Glue job
+  `awsds-staging-app-etl` created in 1 s, re-planned `No changes`; `staging/orchestration/` planned at
+  22:47:39 *"21 to add, 0 to change, 0 to destroy"* and applied 22:47:39 to 22:48:02, every resource of
+  `orchestration-v0.1.0` with the release: the workflow `awsds-staging-wf-app-etl-hHNGu2YFTv` (the
+  `awscc` resource, created in 7 s), the machine `awsds-staging-chain-app-etl`, the schedule in the
+  group `awsds-staging-chains`, the roles `awsds-staging-wf-app-etl`, `-chain-exec`, `-chain-scheduler`
+  and `-chain-events`, the workers' group `sg-0f4a4308a0ac1e29a`, the log groups `/awsds/staging/wf/app-etl`
+  and `/aws/vendedlogs/states/awsds-staging-chains`, the two failure rules and their targets;
+  re-planned `No changes`. The classifier let both applies through on the user's authorization in chat.
+- **[Claude] The chain, 22:49 to 22:52**: `FAILED` at the first task, the worker refused
+  `kms:GenerateDataKey` on the data key while encrypting its XCom after its Glue job had succeeded
+  (Stage 10's log carries the run, the task log and the trail); the fix is the data key's statement for
+  the `awsds-<env>-wf-*` roles, in both deployment targets. Verification xi's parity reading waits for the
+  pipeline's leg; what this leg proved so far: the release path, both slices' applies, the machine's start
+  and diagnosis, the Glue job on the release's script.
+- **[Claude] 3.8's chain, at the third execution** (23:21 to 23:36, after the data keys' and the
+  execution role's `GenerateDataKey`, Stage 10's log): `SUCCEEDED` end to end, the Glue job, the
+  processing job on the release's image, the summary and `app-etl/outbox/report.json` (10 rows). The
+  by-hand sequence of 3.8 is proven before the pipeline's leg: `make up ENV=staging ONLY=egress`, the
+  release written, the two applies, the chain started and followed; what it could not prove is the
+  pipeline's own half, `uv run` on the runner and the deploy role's calls against its grants (Stage 10
+  verification ii), and xi's parity, which the pipeline's leg reads against these objects.
+- **[Claude] 3.4's `make down ENV=staging`** (`AUTO=1`, 23:41:56 to 23:50:25): the three `[E]` slices
+  destroyed in rank order, `orchestration/` *"21 destroyed"* (the machine took 80 s to go), `app/app-etl/`
+  *"1 destroyed"*, `egress/` *"16 destroyed"*; the four `[P]` slices refused as always. After it, at
+  23:53: `./aws/egress.py awsds-infra-staging` reads no interface endpoint and no NAT, `EG-5` *"none - the
+  correct between-sessions state"*; 0 workflows, 0 state machines, the Glue job gone; `make status` reads
+  every `[E]` slice down and the burn 0.0156 USD/h, the hub's two hosts alone, whose `make hub-down` is the
+  user's. What the leg leaves in Staging: the release tree, the inbox seed, `app-etl/work/` and
+  `app-etl/outbox/report.json` in the `[P]` outputs bucket, the data key's amended statement, and the
+  service-linked role; `release.auto.tfvars.json` in both slices, gitignored, carries the `VersionId`s for 3.7.
