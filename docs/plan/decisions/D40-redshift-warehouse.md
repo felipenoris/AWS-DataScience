@@ -163,14 +163,15 @@ Two warehouses cost no more than one at rest: compute meters per query and stora
 second namespace adds cents, not a second floor.
 
 **What the split costs, and it is a real cost.** A governed warehouse in Production is the **first governed
-store outside Data Governance**, which is D22's line. The compensation is that the governed namespace is
-**registered to the Glue Data Catalog as a federated catalog**, so Lake Formation governs its schemas and
-tables exactly as it governs the lake's — the shape
+store outside Data Governance**, which is D22's line. The compensation is that the governed namespace
+reaches readers through a **Lake Formation-managed datashare registered in Data Governance's catalog as a
+federated database** (Stage 9 decisions 5 and 14, taken 2026-10-22 and 2026-10-24), so Lake Formation
+governs its schemas and tables exactly as it governs the lake's — the shape
 [`institutional-delta.md`](../institutional-delta.md) already described as the institutional answer, now
-half-built. The grantor for those tables is Production rather than Data Governance, so the grant register
-gains a second grantor account; Stage 9 owns that consequence. Giving Data Governance a VPC to keep one
-grantor was declined for the same reasons D26 declined it for INT-13: a CIDR, two peerings, a child zone
-and an `egress/` slice, bought for tidiness.
+half-built. The grantor for those tables is Data Governance, so the Lake Formation grants keep one grantor
+without the VPC Data Governance would need to host the warehouse, which was declined for the same reasons
+D26 declined it for INT-13: a CIDR, two peerings, a child zone and an `egress/` slice, bought for tidiness.
+The `GRANT`s inside the namespace are Production's.
 
 ## D13 is not weakened, and the reason has to be written down
 

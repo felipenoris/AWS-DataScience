@@ -2632,3 +2632,12 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
+- **MWAA Serverless calls `iam:CreateServiceLinkedRole` in the saver's session on a workflow created
+  through Cloud Control, with its service-linked role already in the account** (read 2026-10-24 in
+  Staging's trail of 2026-10-23). At Stage 8 3.8's apply the call came at 22:47:51, invoked by
+  `airflow-serverless.amazonaws.com`, answered `InvalidInputException`, and the creation went on; Stage
+  18's later CLI creations of 2026-10-19 made no such call. Under a role without the grant the call is
+  refused before IAM reads whether the role exists, and how the service takes that refusal is
+  unmeasured, so a grant written "until the role exists" is written for both accounts. Where:
+  `log-stage-10-orchestration-promotion.md`, 2026-10-24; Staging's `deploy-role.tf` and Production's
+  `deploy-anchors.tf`, `CreateTheWorkflowServiceLinkedRole`.

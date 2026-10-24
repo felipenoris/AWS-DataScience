@@ -473,8 +473,8 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     read/list/delete verbs implicit-deny). So the drop-box **accepts files and nothing catalogues them**,
     and this question is the only thing between a delivered file and a usable table. A second consequence
     of the same measurement, for whoever answers this: the writer holds no delete and the collector is
-    Stage 9's, so **anything written to the letterbox stays there** until that stage lands
-    (`AWS_STATE.md` `EXC-02` declares the one object that already has). An answer that starts the crawler
+    Stage 9's, so **anything written to the letterbox stays there** until a pickup consumes it; Stage 9's
+    first ran on 2026-10-23, and the proof objects `EXC-02` declared were removed by hand on 2026-10-24. An answer that starts the crawler
     does not empty the box; only the pickup does.
 
     **The first consumer is Stage 6 step 2.1** (recorded at both ends, Lesson 34). That step is where a

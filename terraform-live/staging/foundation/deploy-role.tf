@@ -224,7 +224,11 @@ data "aws_iam_policy_document" "apply_application_in_this_account" {
 }
 
 # Staging's statements in apply-orchestration.tf's resources policy: the leg starts the chain's
-# machine and follows it to its end (Stage 10 decision 19).
+# machine and follows it to its end (Stage 10 decision 19). The workflow service calls
+# iam:CreateServiceLinkedRole in the saver's session on a creation through Cloud Control although
+# AWSServiceRoleForAmazonMWAAServerless exists here (InvalidInputException in Stage 8 3.8's trail,
+# 2026-10-23), so Staging carries Production's statement: a refusal there would be the service's to
+# handle, and nothing measured how it does.
 data "aws_iam_policy_document" "apply_orchestration_in_this_account" {
   statement {
     sid       = "StartTheChainInTheLeg"
@@ -238,6 +242,19 @@ data "aws_iam_policy_document" "apply_orchestration_in_this_account" {
     effect    = "Allow"
     actions   = ["states:DescribeExecution", "states:GetExecutionHistory"]
     resources = ["arn:${local.partition}:states:${local.region_account}:execution:awsds-${var.env}-chain-*:*"]
+  }
+
+  statement {
+    sid       = "CreateTheWorkflowServiceLinkedRole"
+    effect    = "Allow"
+    actions   = ["iam:CreateServiceLinkedRole"]
+    resources = ["arn:${local.partition}:iam::${local.account_id}:role/aws-service-role/airflow-serverless.amazonaws.com/AWSServiceRoleForAmazonMWAAServerless"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:AWSServiceName"
+      values   = ["airflow-serverless.amazonaws.com"]
+    }
   }
 }
 
