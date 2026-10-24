@@ -1676,3 +1676,13 @@ other session running on the machine. Times UTC, past midnight into 2026-10-24.*
   with 0 resources, the three `[D]` hosts stopped, the burn **0.0000 USD/h**. The evening's balance:
   Stage 9 2.4-2.6 and 9.1, Stage 10 0.5 and the Staging half of passes 1-2 by hand (Stage 8 3.8), two
   policy fixes, one module release, the estate at zero burn.
+
+## 2026-10-23 — 9.3's theme and quota, the user's decision
+
+*The user's hand, in chat (00:15 UTC on 2026-10-24); Claude recording.*
+
+- **[user]** *"Confirmo o tema trades e a cota de 1 TB para o primeiro schema governado (Stage 9 9.3)."*
+  The proposal of 2026-10-23 stands as the decision: the schema `trades` in the database `governed`, owner
+  `gov_trades_owner`, `QUOTA 1 TB`, the roles `gov_trades_rw` and `gov_trades_ddl`, the statements as 9.3
+  carries them. The waiting list's row leaves; §W runs them at the next Production sitting, the compute
+  raised with `GROUPS=redshift`.

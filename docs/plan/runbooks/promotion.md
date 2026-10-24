@@ -271,7 +271,8 @@ Separable and last; nothing needs it. In a Production sitting with the hub up.
    `warehouse-compute/` with the namespace in place, and the `redshift-serverless` endpoint in
    VPC-Workloads for a job that calls the API (9.1). The usage limit counts from zero with each
    workgroup.
-4. **[Claude⚡] 9.3's SQL** through the Data API with the admin secret, the statements in the step:
+4. **[Claude⚡] 9.3's SQL** through the Data API with the admin secret, the statements in the step (the theme
+   `trades` and the quota 1 TB confirmed by the user on 2026-10-24):
    the `PUBLIC` revokes on the three databases, `governed`, the owner user, the schema with its quota,
    the role, the two database users, the default privileges.
 5. **9.5's shape** (decision 5, the datashare) and 9.5a's reading first; 9.6's pair; 9.7's INT-24 from

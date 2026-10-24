@@ -1293,8 +1293,9 @@ carry 5b's readings, with the differences 9.1 lists. What is new in this account
     chooses between this and DDL run as the job role, which keeps one creator and gives up 9.4's separation.
   - **The statements, prepared 2026-10-23** for the Data API as the admin (`redshift-connection.md` §S's
     shape, 6h's order), one `execute-statement` each, `--workgroup-name awsds-prod-warehouse
-    --secret-arn <the namespace's admin secret>` and the database named per statement. The theme is a
-    proposal: `trades`, the data `curated.trades` holds, to confirm or rename before the first statement.
+    --secret-arn <the namespace's admin secret>` and the database named per statement. The theme was a
+    proposal, `trades`, the data `curated.trades` holds; **confirmed by the user on 2026-10-24 (chat), with the
+    quota of 1 TB**, so the statements below run as written at the next Production sitting (`runbooks/promotion.md` §W).
     First the readings 9.3 asks for, `select nspname, nspacl from pg_namespace where nspname = 'public'`
     in `warehouse`, `dev` and `governed`, then:
 
@@ -1321,7 +1322,7 @@ carry 5b's readings, with the differences 9.1 lists. What is new in this account
 
     The two `IAMR:` names assume a session carrying no `RedshiftDbUser` tag (6h verification iii);
     verification xxv reads `pg_user` after each role's first connection and renames a user that landed
-    elsewhere. The quota is the sandbox rule's figure until the user names the governed one.
+    elsewhere. The quota, 1 TB, is the user's figure for the governed schema (2026-10-24).
   - **Role tags.** These roles are this repository's, so their `tags` can pin `RedshiftDbUser` and
     `RedshiftDbRoles`, the mechanism 6h could not use on a role SMUS owns. Whether a Glue or SageMaker session
     overrides a role tag is unmeasured, and a `RedshiftDbRoles` value naming a missing role is ignored without
