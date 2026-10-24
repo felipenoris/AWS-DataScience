@@ -343,9 +343,15 @@ first promotion carries a lake the job role has written (decision 23).
 5. **[pipeline] `production-deploy`** (3.6, `awsds-deploy-prod`): the service-linked role's creation
    in the deploy role's session on Production's first `CreateWorkflow` (Stage 10 1.5's statement, 1.6's
    record), then `production/orchestration/` with the chain's schedule `ENABLED`; verification vi,
-   `CI-8` diffed across the run (INT-08).
+   `CI-8` diffed across the run (INT-08). **Run 2026-10-24, `v0.3.3`'s pipeline #71** (Stage 8's and Stage
+   10's logs): Staging's leg `SUCCEEDED` (`v0-3-3-71`, 15 min), `staging-down` stopped at the Studio hook
+   and the user's `make down ENV=staging` took Staging down; the gate at 21:31 UTC, and
+   `production-deploy` created the job, the workflow and the chain, the service-linked role made in the
+   deploy role's session at 21:33:58 UTC.
 6. **[user] 3.7**: both `release.tf`s committed with the tag, the digest, the bundle's SHA256 and the
-   Staging and Production `VersionId`s from the two legs' artifacts; the mirror pushed again.
+   Staging and Production `VersionId`s from the two legs' artifacts; the mirror pushed again. **`v0.3.3`
+   recorded in PR #254 on 2026-10-24**, each `VersionId` read back by `head-object`; the mirror's push
+   follows the merge.
 7. **[user] 3.8**: the by-hand parity once, the sequence in Stage 8 3.8, as `awsds-infra-staging`. **Run by
    Claude first on 2026-10-23**; the parity reading now belongs to the pipeline's leg.
 8. **[user + pipeline] Stage 10 6.1**: the schedule fires at 06:30 UTC with `workloads-egress/` up,

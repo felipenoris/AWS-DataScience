@@ -2906,3 +2906,47 @@ with `InfrastructureAccess` for AWS. Times UTC.*
   on `f4e4dcf3` for `v0.3.3`, both read by `./scripts/check-gitlab-ci.py` and parsed. Staging stays up
   meanwhile: the seven endpoints, the Glue job and the orchestration slice's 21 resources, the chain never
   started.
+
+## 2026-10-24 — `v0.3.3`'s pipeline #71: the first promotion, Staging's leg `SUCCEEDED` and Production deployed
+
+*The user's hand for the merge request, the tag, the gate and Staging's teardown; Claude's for the
+reading (the job traces and GitLab's API through the user's Chrome session, AWS as the infrastructure
+user with `InfrastructureAccess`) and for 3.7's record. Times UTC.*
+
+- **[user]** The patch applied in `awsds/app-etl` on the branch `artifact-path` (`2b3da15b`, pipeline #69
+  passed), MR !7, *"The legs keep their release file beside the clone"*, merged at 20:48:59 as
+  `ff4caf1c`, its `.gitlab-ci.yml` blob `fd85db90`, the patched file. A first attempt ran the commands in
+  the project folder, where `git apply` found no `.gitlab-ci.yml` and changed nothing: Claude's
+  instructions had dropped the clone's `-C`. The tag `v0.3.3` on `ff4caf1c`, pipeline #71 created
+  20:50:40.
+- **[Claude] The build half**: `pip-audit`, `test`, `build-task-code` and `build-image` (20:51:01 to
+  20:53:43) passed; `scan-gate` failed, allowed (decision 1); `test-deploy` 20:53:44 to 21:09:33;
+  `store-bundle`; `release` at 21:09:49, its notes naming the bundle
+  `s3://awsds-prod-releases/app-etl/v0.3.3/app-etl.zip`, SHA256 `24aea329…02e9`, and the image
+  `awsds-prod-ecr-app-etl@sha256:89d0ea21…2aac`.
+- **[Claude] The Staging leg**, the mirror at `0236a99d`: `staging-up` 21:09:42 to 21:10:25, no change;
+  `staging-deploy` 21:10:28 to 21:12:59, the tree written and read back (8 objects, the promoted lint
+  `ok`), the Glue job updated in place to v0.3.3 and the workflow *"Modifications complete after 6s"*
+  through Cloud Control as `awsds-deploy-staging`; `staging-test` 21:13:02 to 21:28:39, the execution
+  `v0-3-3-71` started by the leg and `SUCCEEDED` from 21:13:12 to 21:28:16, its artifacts
+  `execution.json` and `staging-release.auto.tfvars.json`; `staging-down` 21:28:42 to 21:28:55 stopped at
+  step 8.6's hook as on #68, its clone passing.
+- **[user]** `make down ENV=staging`, after `DRY=1`, from the project folder at `0236a99d` as
+  `awsds-infra-staging`. **[Claude] read back** at 21:37:43: no interface endpoint, workflow,
+  `awsds-staging-chain-*` machine, Glue job `awsds-staging-app-etl`, `wf` or `chain` role, workers' group,
+  schedule group or `/awsds/staging/wf/` log group, and no NAT gateway; the `[P]` rule
+  `awsds-staging-deploy-misuse` kept.
+- **[Claude] `production-plan`**, 21:28:55 to 21:29:39: *"Plan: 1 to add"*, `aws_glue_job.this[0]` named
+  `awsds-prod-app-etl` on `s3://awsds-prod-outputs/applications/app-etl/v0.3.3/glue/transform.py`,
+  `lint-plan` *"ok: 1 job(s) do Glue"*.
+- **[user]** `production-gate` at 21:31:29. **[Claude] `production-deploy`**, 21:31:37 to 21:34:08 as
+  `awsds-deploy-prod`: the tree written and read back, the inbox's `trades.csv` written at 21:32:24,
+  before any bridge existed; the application slice *"1 added"* at 21:33:32; the orchestration slice
+  *"21 added"* at 21:34:04 (Stage 10's log); the release file kept as
+  `production-release.auto.tfvars.json`.
+- **[Claude] 3.7, recorded in this repository**: both application slices' `release.tf` default to
+  `v0.3.3` with the digest and the bundle's SHA256 of the tag's GitLab release; both orchestration
+  slices' to the legs' `VersionId`s, Staging's `i1L7O01m…oOXm` and `mqDM5asD…eQal`, Production's
+  `jU1vr4IL…eHZX` and `K.apAb_C…eBtxN`. Each object version read back by `head-object` (3,351 and 1,246
+  bytes in Staging, 3,324 and 1,246 in Production), and Production's two match `get-workflow`. The
+  mirror's push is the user's, after the merge.

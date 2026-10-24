@@ -348,8 +348,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Staging retrains), the lint's rule `treino` at `awsds-workflows` `d60e1ad`, the user's merge. Passes 1-2 run with Stage 8's pass 4 (decision 23); the objects they stopped at,
   Stage 8's application ceilings and Stage 9's data keys, outputs buckets and Staging's job role, exist
   since 2026-10-22.
-  The MWAA Serverless service-linked role exists in Staging, not in Production, whose first apply needs
-  `iam:CreateServiceLinkedRole` (1.5). **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
+  The MWAA Serverless service-linked role exists in both accounts, Production's created 2026-10-24 in
+  `awsds-deploy-prod`'s session at pipeline #71's first `CreateWorkflow`, INT-14 answered in both. **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
   3.8): the workflow created by `awscc` under `InfrastructureAccess`, the chain's machine started, diagnosed two
   failures (the worker's XCom encryption needs `kms:GenerateDataKey` in the key policy and in the role's, both
   fixed) and `SUCCEEDED`; 0.5, decision 19, decision 2's context and verification xvi's worker clauses read; the
@@ -425,7 +425,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (`orchestration-v0.2.0`); the pipeline's leg owes verification xi's parity, `uv run` on the runner and the
   deploy role's calls. **v0.4.0 written 2026-10-24** (`examples/app-etl/` at `main`; v0.3.0 is the template
   at `0236a99d`): 8.5's governed read, 9.4, Stage 10's pass 3; its six `[P]` applies done 2026-10-24
-  (`runbooks/promotion.md` §0.6), the sittings §T then §V.
+  (`runbooks/promotion.md` §0.6), the sittings §T then §V. **The first promotion ran 2026-10-24**: `v0.3.3`'s
+  pipeline #71 took Staging's leg to `SUCCEEDED` and deployed Production, once the lab's CA, the workflow's
+  tag-on-create, the Studio hook under a deploy profile and the release file inside the clone's folder were
+  fixed; Staging comes down by hand until the mirror leaves `0236a99d`; 3.7 recorded `v0.3.3`.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
