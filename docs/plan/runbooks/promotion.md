@@ -13,8 +13,8 @@ chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs
 
 **Where it stands, 2026-10-24**: §0 and §P done, §0.5 included; §W's steps 1 to 4 done (the
 namespace, 9.3's schema). The quotas are above zero in both targets (§0.2), and the release that closes
-what v0.3.0 leaves, v0.4.0, is written. Left, in order: §0.6 (six `[P]` applies, nothing up), §H (the
-hub and GitLab), §T (the tag `v0.3.0`), §V (the tag `v0.4.0`, with the warehouse's table, the datashare
+what v0.3.0 leaves, v0.4.0, is written, its six `[P]` applies done (§0.6). Left, in order: §H (the hub
+and GitLab), §T (the tag `v0.3.0`), §V (the tag `v0.4.0`, with the warehouse's table, the datashare
 of §W step 5 and the model chain).
 
 | § | Holds |
@@ -162,7 +162,10 @@ v0.3.0 runs the same on either side of them.
 Then `./aws/deploytargets.py` on the five infrastructure profiles, `./scripts/check-copies.py`, and the
 policy simulator as each deploy role on `sagemaker:CreateModel`, `CreateTransformJob` and, for
 `awsds-deploy-prod`, `CreateModelPackage` and `UpdateModelPackage` on the group's ARN, expected
-`allowed`.
+`allowed`. **Done 2026-10-24, 17:51 to 17:55 UTC** (Stage 9's and Stage 10's logs): each slice applied
+from a fresh plan of the counts above and re-planned `No changes`, `deploytargets.py` all checks passed
+before and after, the simulator reading every new call `allowed` but `CreateTransformJob` against a job's
+ARN, where it drops the volume key (`lessons.md`); the first real transform is `staging-model`'s.
 
 Beside them, the user's two acts that need nothing up: the merge of `awsds-workflows` PR (the branch
 `treino-e-repositorio-de-algoritmo`, `d60e1ad`, the rule `treino`); the template pins `d60e1ad`, which

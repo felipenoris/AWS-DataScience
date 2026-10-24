@@ -1929,3 +1929,36 @@ told which stage-file forms this session takes. Nothing applied. Times UTC.*
   is unset, and whether an engine's flag is needed beside the lake's is verification xxviii's third
   clause. The third producer run, Production's flag off, comes before that leg; if it is refused, the
   user turns Staging's flag on in its console as Production's was.
+
+## 2026-10-24 — v0.4.0's data and sagemaker slices applied, read before and after
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo os seis applies do §0.6 (production/data,
+staging/data, production/sagemaker, staging/sagemaker, production/foundation, staging/foundation) como
+usuário de infraestrutura com InfrastructureAccess, cada um de um plano fresco, com o var-file de alertas
+nos foundation, e as leituras depois."*), as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`, `awsds-infra-staging`, the identity read at 17:48:39); Recipe A, each plan outside
+the repository, from the branch at `be2fdf17`. The six other sessions on the machine, all idle, were told
+before the first write; one answered that PR #248's changes, live in four of the slices, must be in the
+tree, which the plans confirmed by showing only this branch's additions. Times UTC.*
+
+- **[Claude] Before**, 17:49:09: `./aws/deploytargets.py` on the five infrastructure profiles, all checks
+  passed; `DT-5` reads `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE`, the create-defaults emptied and one
+  administrator in Data Governance, Production and Staging.
+- **[Claude] `production/data/`**: the fresh plan at 17:51:01, *"Plan: 0 to add, 1 to change, 0 to
+  destroy."*, the outputs bucket's policy; applied 17:51:16, *"Modifications complete after 1s
+  [id=awsds-prod-outputs]"*, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*, the four
+  outputs written; re-planned `No changes` at 17:51:26.
+- **[Claude] `staging/data/`**: plan 17:51:46, the same counts; applied 17:52:02 on
+  `awsds-staging-outputs`, *"0 added, 1 changed, 0 destroyed"*; re-planned `No changes` at 17:52:11.
+- **[Claude] `production/sagemaker/`**: plan 17:52:51, *"Plan: 0 to add, 1 to change, 0 to destroy."*, the
+  job role's inline policy; applied 17:53:04, *"Modifications complete after 1s
+  [id=awsds-prod-job-exec:job]"*; re-planned `No changes` at 17:53:13; the output `training_image_uri`
+  names `sagemaker-xgboost@sha256:0b5d9341…3a78`.
+- **[Claude] `staging/sagemaker/`**: plan 17:53:30, the output alone; applied 17:53:41, *"Apply complete!
+  Resources: 0 added, 0 changed, 0 destroyed."*; re-planned `No changes` at 17:53:49.
+- **[Claude] After**, 17:56:04: `./aws/deploytargets.py` on the five profiles, all checks passed, `DT-5`
+  as before; `./scripts/check-copies.py` OK. `production/data/`'s outputs read back: `curated_database`
+  `curated`, `curated_table` `trades`, `curated_bucket_name` `awsds-data-curated`, `lake_catalog_id` the
+  lake account's. The simulator, `aws:RequestedRegion` in the context: `redshift-serverless:GetCredentials`
+  and `GetWorkgroup` on a `workgroup/…` ARN `allowed` for `awsds-prod-job-exec`, matched by its inline
+  `job` policy.

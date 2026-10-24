@@ -424,7 +424,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   two policy fixes, the data keys' and the execution role's `kms:GenerateDataKey` for the XCom encryption
   (`orchestration-v0.2.0`); the pipeline's leg owes verification xi's parity, `uv run` on the runner and the
   deploy role's calls. **v0.4.0 written 2026-10-24** (`examples/app-etl/` at `main`; v0.3.0 is the template
-  at `0236a99d`): 8.5's governed read, 9.4, Stage 10's pass 3; its six `[P]` applies planned, unapplied
+  at `0236a99d`): 8.5's governed read, 9.4, Stage 10's pass 3; its six `[P]` applies done 2026-10-24
   (`runbooks/promotion.md` §0.6), the sittings §T then §V.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass

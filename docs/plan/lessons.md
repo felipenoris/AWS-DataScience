@@ -2117,7 +2117,9 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   a `CreateProcessingJob` or `CreateTrainingJob` that supplied the key against `processing-job/…` or
   `training-job/…`, and did not match against `*`; `sagemaker:VpcSubnets` was read both ways. The real
   call reads the key: 6i's four jobs carried `VolumeKmsKeyId` past the boundary's copy of the same deny.
-  A simulation of a job's settings runs with the default resource `*`. Where: 6d step 1.3.
+  A simulation of a job's settings runs with the default resource `*`. Where: 6d step 1.3. Read again
+  2026-10-24 for `CreateTransformJob` against `transform-job/…`, in `simulate-principal-policy` through the
+  live `Workloads` document too (`log-stage-10`, 2026-10-24).
 
 - **`CreateProcessingJob` checks the instance quota after authorization and before the role** (measured
   2026-10-17 and read in CloudTrail on 2026-10-18, Stage 9). In Production, where the processing quotas of

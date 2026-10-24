@@ -9,7 +9,6 @@ own Decisions-due table keeps the reasoning and the recommendation.
 
 | Item | Where | What it holds up |
 |---|---|---|
-| The authorization of v0.4.0's six `[P]` applies, each planned 2026-10-24 (`production/data/`, `staging/data/`, `production/sagemaker/`, `staging/sagemaker/`, `production/foundation/`, `staging/foundation/`) | [`runbooks/promotion.md`](runbooks/promotion.md) §0.6 | v0.4.0's legs: the application slice reads the data slices' new outputs, the model chain's jobs the deploy roles' new statements, the load the job role's |
 | Which principal the data cells filters bind, and whether the row half is a Lake Formation RLS policy | [Stage 11](stages/stage-11-dlp.md) decision 12, with 6f decision 1 | pass 1's two lake applies and 2.3's proof; the code is written and creates nothing |
 | The three Claude 5.5 model agreements (Sonnet 4.5 is Legacy since 2026-10-08) | [6e](stages/stage-06e-claude-code-bedrock.md) decision 17, PR #108 | PR #108's applies and the image's model pins; the PR conflicts with main in `CLAUDE.md`, `docs/AWS_STATE.md` and `docs/log/INDEX.md` (read 2026-10-18), for its session to resolve when the agreements arrive |
 | The registry proof's Sandbox half (the persona from a laptop, the project role from a space); the approval half runs as a pipeline job at Stage 10's first registration. The escape-hatch window ran 2026-10-22 and closed, its refusal read in the trail 2026-10-23 (6.3 done) | Stage 9 3.4 | verification v |

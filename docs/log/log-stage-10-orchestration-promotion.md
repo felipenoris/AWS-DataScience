@@ -905,3 +905,33 @@ applied. Times UTC.*
   `cron(0 7 * * ? *)` in Production), `app-etl-warehouse` and its chain in Production; a chain whose
   workflows a release lacks is not created, so v0.3.0's `release.tf` creates neither. Both slices
   validate; `orchestration-v0.2.0` already carries `training_job_prefix`.
+
+## 2026-10-24 — the deploy roles' model-chain grants applied in both `foundation/` slices, read by the simulator
+
+*Claude's hand, on the user's authorization quoted in Stage 9's entry of this date, as the infrastructure
+user with `InfrastructureAccess`; Recipe A with `-var-file=<project folder>/secrets/alerts.auto.tfvars`.
+Times UTC.*
+
+- **[Claude] `production/foundation/`** as `awsds-infra-prod`: plan 17:54:19, *"Plan: 0 to add, 1 to
+  change, 0 to destroy."*, `aws_iam_role_policy.inline["apply-application"]` in place; applied 17:54:37,
+  *"Modifications complete after 1s [id=awsds-deploy-prod:apply-application]"*; re-planned `No changes`
+  at 17:54:48.
+- **[Claude] `staging/foundation/`** as `awsds-infra-staging`: plan 17:55:10, the same counts; applied
+  17:55:24 on `awsds-deploy-staging:apply-application`; re-planned `No changes` at 17:55:34.
+- **[Claude] The simulator**, 17:58 to 18:05, `aws:RequestedRegion` in every context (without it the
+  Control Tower ceiling denies everything, the shape `lessons.md` records). `allowed`, matched by each
+  role's `apply-application`: `DescribeModel`, `DeleteModel`, `DescribeTransformJob`,
+  `StopTransformJob`, `DescribeTrainingJob` on `app-etl-train-*`, `ListTrainingJobs`, `s3:GetObject` on
+  `models/…` of the account's outputs bucket and `glue:CreateJob` on `awsds-<env>-app-etl-load`, for both
+  roles; `CreateModelPackage` on a version of `awsds-prod-model-app-etl`, `UpdateModelPackage`,
+  `DescribeModelPackage` and `DescribeModelPackageGroup` for `awsds-deploy-prod`, and `CreateModelPackage`
+  `implicitDeny` for `awsds-deploy-staging`, the negative control. `CreateModel` on `model/app-etl-…`
+  reads `allowed` with `sagemaker:VpcSubnets`, `VpcSecurityGroupIds` and `NetworkIsolation` in the
+  context and `explicitDeny` from the organization without them, so the `Workloads` document's job
+  settings bind each deploy role (Stage 9 verification xv's deploy-role half, by simulation).
+  `CreateTransformJob` on a `transform-job/…` ARN reads `explicitDeny` with the volume key given: the
+  simulator drops `sagemaker:VolumeKmsKey` against a job's ARN, `CreateTrainingJob` alike (the entry
+  `lessons.md` holds since 6d, extended to the transform). Against `*` the same request reads
+  `implicitDeny`, the organization no longer denying and the identity statement scoped to
+  `transform-job/app-etl-*`, and without the key `explicitDeny` from the organization. The first real
+  call is v0.4.0's `staging-model`.
