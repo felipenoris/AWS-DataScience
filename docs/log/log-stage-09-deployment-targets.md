@@ -1847,3 +1847,18 @@ awsds-scientist --no-browser`, the tunnel down. Times UTC.*
   was not approached. A read-back of the query as `awsds-infra-prod` found no SSO token for the `awsds`
   session after the persona's sign-in (*"Error loading SSO Token: Token for awsds does not exist"*); it was
   not retried, the pasted output being the measurement.
+
+## 2026-10-24 — 5.4's query read back from the account and its trail
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), reads only,
+after the user signed the `awsds` session in again. Times UTC.*
+
+- **[Claude] The query** `d78c3939-168a-4c28-8313-246620114d06`, read at 03:31:52: workgroup
+  `awsds-prod-athena`, database `curated`, `SUCCEEDED`, submitted 03:21:58.720 and completed 03:22:01.049
+  (2,329 ms), Athena engine version 3, 0 bytes scanned, the result at
+  `s3://awsds-prod-derived/results/d78c3939-168a-4c28-8313-246620114d06.csv` under `SSE_KMS`.
+- **[Claude] Production's trail**: `StartQueryExecution` at 03:21:58 in a `DataScientistProdAccess`
+  session, from a public address (the laptop off the VPN, D39), naming the workgroup and returning that
+  id; then the vend pair at 03:21:59, `lakeformation:GetDataAccess` in the same session invoked by
+  `glue.amazonaws.com` and by `athena.amazonaws.com`, both answered. The persona's read of the governed
+  table is attributed by its own session, not by the profile's name.
