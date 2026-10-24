@@ -275,8 +275,11 @@ So [`gitlab/awsds/dev-env/dev-env/Dockerfile`](../../../gitlab/awsds/dev-env/dev
 two files the variables alone do not cover — `/etc/apt/apt.conf.d/01proxy` and a sudoers `env_keep`,
 because `sudo` resets the environment (measured 2026-09-08, and true under every candidate).
 
-**The list is a dated literal in the Dockerfile**, Sandbox's, read on 2026-10-10 (70 entries,
-sha256 `aafa08da98a61f5c`): the output `no_proxy_all_groups` of `<account>/egress`, verbatim. The image
+**The list is a dated literal in the Dockerfile**, Sandbox's: the output `no_proxy_all_groups` of
+`<account>/egress`, verbatim. The copy under `gitlab/` carries the reading of 2026-10-18 (72 entries,
+sha256 `6faf2e4761622508`, the `mlflow` group's names among them), which reaches GitLab with the next
+release's merge request; version 9, `default-v0.8.0`, bakes the reading of 2026-10-10 (70 entries,
+sha256 `aafa08da98a61f5c`). The image
 serves every session, so it carries every optional endpoint group's names whatever `GROUPS=` a session
 names. Without them, a session that turns a group on sends that group's calls out through the proxy as
 public calls; with them, a session that leaves it off times out on those names. The output reads each
@@ -341,6 +344,11 @@ taken 2026-10-15). Nothing in this repository changes and no domain write follow
 the image with no version number (§C6), so the portal offers the new version at once, at the top of the
 picker, and a new space created on it pins it. A **list change** reaches the same place by a longer road,
 §E's chain, because the proxy environment is baked at build time.
+
+A release's tag pipeline runs on all three runners: `build-images` and the two scans on the build runner,
+`release-gate` on the test runner, `register` and `retire` on the deploy runner. Its GitLab session is
+therefore `make gitlab-up BUILD=1` ([`gitlab.md`](gitlab.md) §U), and without the flag the chain stops at
+`build-images`, *stuck* with no runner to take it.
 
 ### The release, and the reading that ends it
 

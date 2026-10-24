@@ -930,7 +930,7 @@ The chain is [`dev-env.md`](dev-env.md) §B, and its shape is:
    reads the copy (`GM-6` that it parses, `GM-7` and `GM-8` its Bedrock settings against the SCP and the
    grant), `pre-commit`'s `check-json` parses it in this repository and the Dockerfile re-parses it
    during the build, so a trailing comma fails before it reaches a space.
-2. Build both images with the build runner's pipeline ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)) and push under a **new**
+2. Build both images with the build runner's pipeline ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)), in a GitLab session raised with `make gitlab-up BUILD=1` ([`gitlab.md`](gitlab.md) §U), and push under a **new**
    `<flavour>-v<semver>` tag. The ECR repository is immutable-tagged: a rebuild is a new tag, never
    a re-push of an existing one.
 3. Release it: the steward's `release-gate`, then `register` creates the image version in every

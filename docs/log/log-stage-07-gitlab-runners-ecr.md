@@ -886,3 +886,39 @@ stopped or written in AWS. Times UTC; the deploy and test runners are Stage 8's 
   runner, its instance profile, its role and the role's three inline policies and one attachment.
   `make status` against fabricated states priced the slice 0.0376 without the build runner and 0.2493
   with it. `make check` passed.
+
+## 2026-10-24 — the runbooks read against decision 5's amendment and the plan's revisions of 2026-10-22..24
+
+*Claude's sitting, in the session `runbooks-review`, on the user's request in chat (the runbooks reviewed
+against the plan's recent revisions, `gitlab.md` against `make gitlab-up` with and without the runners).
+No AWS call: the code, the pipeline files, the stage logs and the battery's snapshot of 2026-10-22 01:53Z
+in Stage 18's worktree were read, and `./scripts/slices.py up --env production --dry-run`, which runs
+nothing.*
+
+- **[Claude] Which runner takes which job**, read from the pipeline files: `awsds/app-etl`'s `pages`
+  extends `.gates-uv` and carries `awsds-test` (since the template's first commit, 2026-10-14), so
+  `main`'s pipelines run on the test runner; the build runner's untagged jobs are `app-etl`'s
+  `build-image`, `scan-gate`, `store-bundle`, `release` and `production-gate` on a tag, `dev-env`'s
+  `build-images`, `scan-base` and `scan-dev-env` on a release tag, and `deploy-image`'s
+  `build-deploy-image` on a web pipeline. The help text and `gitlab.md` §U of 2026-10-24 named "Pages on
+  `main`" among them; both corrected.
+- **[Claude] What the session targets do**, read from `slices.py`: only `up` checks the hub, and only
+  the proxy refuses; `make gitlab-down` reads neither. `RUNNERS=0` leaves `runners/` unapplied, so runners
+  an earlier `make gitlab-up` raised keep running. The dry run of `make up ENV=production` starts GitLab
+  and applies `egress/`, `workloads-egress/`, `warehouse-compute/`, `runners/` and `probes/`, refusing
+  `app/app-etl` and `orchestration` (refusal 7); with `build_runner` false, its `runners/` apply destroys a
+  build runner.
+- **[Claude] Corrected**: `gitlab.md` §S, §U (a table of the three forms, `BUILD=1`'s one-apply life,
+  `make up ENV=production`'s effect, `RUNNERS=0`, the prices), §I, §C, §K (the runners' table, a build
+  runner subsection, `awsds/deploy-image`'s assignment, the template procedure reused by a later change)
+  and pass 3's session; `promotion.md` §H, §P and §T step 4, whose bare `make up ENV=production` before
+  `production-deploy` would destroy the build runner `production-gate` runs on, now
+  `ONLY=workloads-egress`, as is the waiting list's Promotion row; `dev-env.md` §B (a release runs on the
+  three runners) and §E (the copy under `gitlab/` at 72 entries, read 2026-10-18; version 9 at 70);
+  `claude-code-sagemaker.md`'s rebuild step; `scp-battery.md`'s instance-preference rows, which ran
+  2026-10-22, each `ok`; `terraform-changes.md`, `sandbox/observability/` among the slices reading
+  `alerts.auto.tfvars`; `log-debugging.md`, Stage 10's two log groups and the chain's reading order; the
+  Makefile's help for `RUNNERS=0`, `BUILD=1` and `GROUPS`, which `production/workloads-egress/` takes
+  since 2026-10-23.
+- **[Claude] Left to the stages' own sessions**: the bare `make up ENV=production` in Stage 8 3.6's text
+  and Stage 9 2.4's and 9.1's, each a record of what ran or a step a runbook now names with `ONLY=`.
