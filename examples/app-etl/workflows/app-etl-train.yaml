@@ -56,7 +56,7 @@ app-etl-train:
       dependencies: [train]
       python_callable: app_etl_tasks.evaluate
       op_kwargs:
-        training_job: "{{ ti.xcom_pull(task_ids='train')['Training']['TrainingJobName'] }}"
+        training: "{{ ti.xcom_pull(task_ids='train') }}"
         batch: "{proj.connection.default.s3_shared.s3Uri}app-etl/work/train/batch/batch.csv"
         models: "{proj.connection.default.s3_shared.s3Uri}app-etl/models/"
       retries: 0

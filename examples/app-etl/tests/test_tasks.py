@@ -140,7 +140,7 @@ def run_evaluate(monkeypatch, training):
     boto3.client = lambda service: clients
     monkeypatch.setitem(sys.modules, "boto3", boto3)
     result = app_etl_tasks.evaluate(
-        training["TrainingJobName"],
+        json.dumps({"Training": training}),
         batch="s3://bucket/app-etl/work/train/batch/batch.csv",
         models="s3://bucket/models/app-etl/",
     )
@@ -166,3 +166,25 @@ def test_evaluate_refuses_a_job_without_the_validation_metric(monkeypatch):
     training = {**TRAINING, "FinalMetricDataList": [{"MetricName": "train:rmse", "Value": 1.0}]}
     with pytest.raises(RuntimeError, match="reports no validation:rmse"):
         run_evaluate(monkeypatch, training)
+
+
+def test_the_job_name_is_read_from_the_xcom_as_the_worker_renders_it():
+    rendered = json.dumps({"Training": TRAINING})
+    assert app_etl_tasks.training_job_name(rendered) == "app-etl-train-20261024T120000"
+
+
+def test_the_job_name_is_read_from_twice_encoded_text_a_dict_and_a_literal():
+    name = "app-etl-train-20261024T120000"
+    assert app_etl_tasks.training_job_name(json.dumps(json.dumps({"Training": TRAINING}))) == name
+    assert app_etl_tasks.training_job_name({"Training": TRAINING}) == name
+    assert app_etl_tasks.training_job_name(repr({"Training": TRAINING})) == name
+
+
+def test_an_xcom_without_the_job_fails_naming_its_keys():
+    with pytest.raises(RuntimeError, match=r"names no training job: \['Processing'\]"):
+        app_etl_tasks.training_job_name(json.dumps({"Processing": {}}))
+
+
+def test_an_xcom_that_is_not_json_fails():
+    with pytest.raises(RuntimeError, match="neither JSON nor a literal"):
+        app_etl_tasks.training_job_name("app-etl-train-20261024T120000 (")
