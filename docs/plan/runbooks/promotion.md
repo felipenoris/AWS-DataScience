@@ -308,7 +308,10 @@ first promotion carries a lake the job role has written (decision 23).
 
 1. **[user] Pass 1's `deploy --targets dev`** from a space on the house image as the project role
    (Stage 10 2.1, Stage 8 decision 22), and the reads 2.1 lists, when the Sandbox sitting is up anyway.
-2. **[user] The tag** `v0.3.0` on `awsds/app-etl`'s `main`, after the legs merged: the pipeline runs
+2. **[user] The tag** `v0.3.0` on `awsds/app-etl`'s `main`, after the legs merged (**run 2026-10-24,
+   pipeline #64**: `test-deploy` passed, then `release` and the legs' clone refused the lab's CA, the
+   legs raising nothing; the fix, the CA root the runner mounts, is MR-borne, and the first promotion's
+   tag is **`v0.3.1`**, Stage 8's log): the pipeline runs
    `test`, `build-image`, `build-task-code`, `test-deploy` (the CLI into the `test` project as
    `awsds-deploy-sandbox-test`), `store-bundle`, `release` (verification xx's `cli` image reading), then
    the legs.

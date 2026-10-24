@@ -2827,3 +2827,34 @@ profiles), reads only, and git reads over the tunnel. Times UTC.*
   `awsds-workflows` `ff25eae`. The job token's allowlist, the deployment managers' seat and the variable
   `TRAINING_IMAGE_URI` are GitLab settings no read here reaches; the legs' clone of the mirror and
   v0.4.0's `test-deploy` read them.
+
+## 2026-10-24 — `v0.3.0`'s pipeline #64: `test-deploy` passed, the release and the legs refused the lab's CA
+
+*The user's hand for the tag and the egress; Claude's for the reading, through the user's Chrome session
+in a tab of its own (the job pages and their raw traces), and as the infrastructure user with
+`InfrastructureAccess` for AWS. Times UTC.*
+
+- **[user]** The tag `v0.3.0` on `5a7d009a`, after `make up ENV=sandbox ONLY=egress`; *"falhou no job de
+  release."* Pipeline #64, 15 jobs, 19 min 20 s: `pip-audit`, `test`, `build-image` (2 min 49 s),
+  `build-task-code` passed; `scan-gate` failed and is allowed to (decision 1); `test-deploy` passed in 15
+  min 49 s as `awsds-deploy-sandbox-test`; `store-bundle` passed, the bundle
+  `s3://awsds-prod-releases/app-etl/v0.3.0/app-etl.zip`, SHA256 `2c6b7dd4…3705`, the image
+  `awsds-prod-ecr-app-etl@sha256:7d18db09…0e61`.
+- **[Claude] `release` (job 280)**, 19:19:49: glab logged in with the job token and stopped at its first
+  API call, *"Get "https://gitlab.awsds.internal/api/v4/projects/awsds%2Fapp-etl/releases/v0%2E3%2E0":
+  tls: failed to verify certificate: x509: certificate signed by unknown authority."* Verification xx's
+  open half is answered: GitLab's `cli` image does not trust the lab's CA.
+- **[Claude] `staging-up` (job 281)**, 19:19:47, on the deploy runner: the `.promotion` clone of the
+  mirror refused, *"fatal: unable to access 'https://gitlab.awsds.internal/awsds/infrastructure.git/':
+  server verification failed: certificate signer not trusted. (CAfile:
+  /etc/ssl/certs/ca-certificates.crt CRLfile: none)"*, exit 128; `staging-down` (job 284) the same, so
+  `staging-deploy`, `staging-test`, `production-plan`, the gate and `production-deploy` were skipped.
+  Staging holds no interface endpoint (read 19:3x), so the leg raised nothing. The project's own checkout
+  passed in both jobs: the runner's helper installs the CA root it mounts at
+  `/etc/gitlab-runner/certs/ca.crt`, and `runbooks/gitlab.md` §K leaves every other HTTPS call to
+  GitLab to use that file itself, which the legs, never run in a pipeline before, did not.
+- **[Claude] The fix**, in the template's `.gitlab-ci.yml`: the `.promotion` clone carries `-c
+  http.sslCAInfo=/etc/gitlab-runner/certs/ca.crt`, and `release` sets `SSL_CERT_DIR` to the mounted
+  directory, which Go reads beside the image's bundle. The same two hunks apply to v0.3.0's template
+  (`0236a99d`, checked with `git apply --check`) and to v0.4.0's; the tag `v0.3.0` is spent, so the
+  first promotion is `v0.3.1`.
