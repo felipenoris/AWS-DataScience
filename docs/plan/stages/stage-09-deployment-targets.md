@@ -1193,7 +1193,7 @@ read every denial by its wording, never its exit code.
   promotion. **Written 2026-10-24 in the template's v0.4.0** (the log): the Glue job reads
   `curated.trades` through the share on the application slice's `--SOURCE_TABLE`, writes
   `app_outputs.trades_notional` and reads it back, inside the chain `staging-test` follows, which also
-  reads the table as the deploy role; a planted drift in `GOVERNED_COLUMNS` fails that leg and passes
+  reads the table as the deploy role; a planted drift in `GOVERNED_COLUMNS`, the unit tests' mocked schema moved with it, fails that leg and passes
   `test` (verification xiii). v0.3.0, the first run, carries none of it.
 
 ### 9. `production/warehouse/` — the governed class of database (D40)
