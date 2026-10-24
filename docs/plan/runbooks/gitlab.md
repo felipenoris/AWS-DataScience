@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Scope** | The GitLab host (`production/tooling/`, `[D]`), its anchors (`production/foundation/`), the internal CA that certifies it (`production/pki/`), the build runner (`production/runners/`, `[E]`) and the acts a person performs on them. Built by [Stage 7](../stages/stage-07-gitlab-runners-ecr.md); the design is in the stage file and the slices' own comments, and this file repeats none of it |
+| **Scope** | The GitLab host (`production/tooling/`, `[D]`), its anchors (`production/foundation/`), the internal CA that certifies it (`production/pki/`), the runners (`production/runners/`, `[E]`) and the acts a person performs on them. Built by [Stage 7](../stages/stage-07-gitlab-runners-ecr.md); the design is in the stage file and the slices' own comments, and this file repeats none of it |
 | **Operator** | The **infrastructure user** through `awsds-infra-prod` (Production, `InfrastructureAccess`) for every AWS act; GitLab's local administrator (`felipenoris`, §I) or a SAML user for everything inside GitLab's UI |
 | **Instruments** | `./aws/supplychain.py` (`SC-1`..`SC-13`), `./aws/proxy.py`, `./aws/egress.py` §6 at the session's end; `./scripts/check-gitlab-pins.py` offline, in `make check` |
 
@@ -17,7 +17,7 @@
 | the object-storage bucket, the backup bucket, their key `alias/awsds-prod-gitlab` | `production/foundation/` | `[P]` |
 | `awsds-prod-gitlab-secrets` (`gitlab-secrets.json`), `awsds-prod-runner-token` | `production/foundation/`, containers only | `[P]` |
 | the root CA, the two leaves, their keys in `awsds-prod-tls-gitlab` / `awsds-prod-tls-pages`, the certificates in `/datascience/prod/pki/*-pem` and `s3://awsds-prod-gitlab-objects/pki/` | `production/pki/` | `[P]`, never destroyed |
-| the runner `awsds-prod-runner`, an `m8i.xlarge` | `VPC-SharedServices`, private tier, az1 | `[E]` `production/runners/`, on `make gitlab-up BUILD=1` alone |
+| the build runner `awsds-prod-runner`, an `m8i.xlarge` | `VPC-SharedServices`, private tier, az1 | `[E]` `production/runners/`, on `make gitlab-up BUILD=1` alone |
 | the deploy runner `awsds-prod-runner-deploy` and the test runner `awsds-prod-runner-test`, two `t3a.small` | the same | `[E]` `production/runners/`; their token containers in `production/foundation/` |
 | the `secretsmanager` endpoint beside 6c's eleven, its thirteen less the SageMaker pair (Stage 7 decision 9) | `production/egress/` | `[E]` |
 
@@ -25,7 +25,7 @@ Everything reaches the internet through `proxy.awsds.internal:3128` and nothing 
 
 ## U. The session: up and down
 
-The hub is somebody else's dependency, so a GitLab session leaves it alone (Stage 7 step 1.6): `make gitlab-up` and `make gitlab-down` touch `tooling/`, `egress/` and `runners/` and nothing else, and both refuse while a hub host is stopped. `make up ENV=production` / `make down ENV=production` do the same for every Production `[E]` slice and never touch the hub pair either (refusal 6).
+The hub is somebody else's dependency, so a GitLab session leaves it alone (Stage 7 step 1.6): `make gitlab-up` and `make gitlab-down` touch `tooling/`, `egress/` and `runners/` and nothing else. `make gitlab-up` refuses while the proxy is stopped, as every `make up` does; a stopped WireGuard host refuses nothing (D39), and `make gitlab-down` reads neither. `make up ENV=production` / `make down ENV=production` do the same for every Production `[E]` slice and never touch the hub pair either (refusal 6).
 
 **Up**, in this order:
 
@@ -41,40 +41,52 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
    make hub-up
    ```
 
-3. GitLab's slices: the host started, `VPC-SharedServices`' endpoints applied, the deploy and test runners applied and registering at boot (§K):
+3. GitLab's slices: the host started, `VPC-SharedServices`' endpoints applied, and the runners the session's pipelines need, each registering at its first boot (§K). The flags choose the runners:
+
+   | Command | Runners | Their USD/h | For a session that |
+   |---|---|---|---|
+   | `make gitlab-up RUNNERS=0` | none | 0 | runs no pipeline, or comes before the runners' tokens are in their containers (§K): a runner that cannot register bills until `make gitlab-down` |
+   | `make gitlab-up` | the deploy and test runners | 0.0376 | runs branch, merge-request and `main` pipelines, whose jobs all carry the test runner's tag, `pages` among them |
+   | `make gitlab-up BUILD=1` | the build runner too | 0.2493 | runs a tag pipeline or builds an image: an `awsds/app-etl` tag `v<semver>`, an `awsds/dev-env` release `<flavour>-v<semver>`, `awsds/deploy-image`'s pipeline. Their untagged jobs (`build-image`, `build-images`, the scans, `store-bundle`, `release`, `production-gate`, `build-deploy-image`) run on the build runner alone, and wait as *stuck* without it |
+
+   The default raises the deploy and test runners:
 
    ```bash
    make gitlab-up
    ```
 
-   With the build runner too, for a session that builds an image or runs any pipeline on a protected
-   branch or tag: the build runner is the one runner that takes untagged jobs there (an image build, a
-   tag pipeline's `build-image`, scans, bundle, release and production gate, Pages on `main`), and
-   without it they wait as *stuck*. A later `make gitlab-up` without the flag destroys it, so every
-   `make gitlab-up` of such a session carries the flag:
+   A session that needs the build runner passes the flag to every `make gitlab-up` it runs:
 
    ```bash
    make gitlab-up BUILD=1
    ```
+
+   `RUNNERS=0` raises no runner:
+
+   ```bash
+   make gitlab-up RUNNERS=0
+   ```
+
+   **`BUILD=1` lasts one apply**, like `GROUPS`: an apply of `runners/` without it destroys the build
+   runner, whether a later `make gitlab-up` or a `make up ENV=production`, which applies `runners/` with
+   the account's other `[E]` slices. A Production sitting beside a GitLab session names its slices with
+   `ONLY=` ([`promotion.md`](promotion.md) §P). `RUNNERS=0` leaves `runners/` unapplied, so the runners
+   an earlier `make gitlab-up` raised keep running until `make gitlab-down`; beside `BUILD=1` it is
+   refused. `make status` prices `runners/` at 0.0376 USD/h, and at 0.2493 `with aws_instance.runner`
+   while the state holds the build runner.
 
    Run it from a checkout at `origin/main`. On 2026-10-12 a project folder four merges behind ignored
    `RUNNERS=0`, since its Makefile predates the flag and make takes an unknown variable in silence, and
    applied that checkout's `egress/` and runner; a checkout from before `BUILD` raises the build runner
    on every `make gitlab-up`.
 
-   Without any runner, for a session that runs no pipeline, and always until the runners' tokens are in their containers (§K), or a runner boots that cannot register and bills until `gitlab-down`. `make gitlab-down` destroys the runners either way:
-
-   ```bash
-   make gitlab-up RUNNERS=0
-   ```
-
 4. The tunnel on the laptop ([client runbook](client-vpn-proxy-configuration.md) §1); `gitlab.awsds.internal` resolves through it and nowhere else.
 
-5. `https://gitlab.awsds.internal` answered within four minutes of the one start that was read (2026-10-12: started 15:59 UTC, the sign-in page `200` at 16:03; a start reconfigures nothing, and Stage 7 8.1 owes the timed figure); the runner appears on `awsds/app-etl`'s **Settings → CI/CD → Runners** at the end of its own first boot (§K).
+5. `https://gitlab.awsds.internal` answered within four minutes of the one start that was read (2026-10-12: started 15:59 UTC, the sign-in page `200` at 16:03; a start reconfigures nothing, and Stage 7 8.1 owes the timed figure); each runner raised appears on `awsds/app-etl`'s **Settings → CI/CD → Runners** at the end of its own first boot (§K).
 
 **Down**, in the reverse order:
 
-1. The runner and the endpoints destroyed, then GitLab stopped:
+1. The runners and the endpoints destroyed, then GitLab stopped. The target takes no runner flag and destroys every runner the state holds:
 
    ```bash
    make gitlab-down
@@ -92,7 +104,7 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
    make status
    ```
 
-Stopped, GitLab bills its two volumes and its snapshots; running, `make status` prices the host. The endpoints are `production/egress/`'s whole set, 12 at 0.010 USD/h each since Stage 7 decision 9 dropped the SageMaker pair; the module's data-plane three (`athena`, `glue`, `lakeformation`) stay, so a GitLab session carries them whether or not anything in the VPC calls them.
+Stopped, GitLab bills its two volumes and its snapshots; running, `make status` prices the host and the runners (step 3). The whole hour, volumes included, is [`docs/PRICING.md`](../../PRICING.md)'s GitLab session: 0.1994 USD/h with `RUNNERS=0`, 0.2436 by default, 0.4623 with `BUILD=1`. The endpoints are `production/egress/`'s whole set, 12 at 0.010 USD/h each since Stage 7 decision 9 dropped the SageMaker pair; the module's data-plane three (`athena`, `glue`, `lakeformation`) stay, so a GitLab session carries them whether or not anything in the VPC calls them.
 
 **The first boot** of a fresh instance took nine minutes to `gitlab Reconfigured!` on 2026-10-12 and fourteen to the end of cloud-init: the Omnibus package through the proxy, `gitlab-ctl reconfigure` (5 min), the readiness probe over loopback. Its log is `/var/log/awsds-gitlab-boot.log` on the host, readable with no SSM endpoint through the serial console:
 
@@ -178,7 +190,7 @@ Once per host: after the stage's first apply, and after a replacement or the res
 
 7. **The namespace, the groups and the repositories** (Stage 7 steps 3.4-3.6): the group `awsds/`; inside it the four persona groups `data-scientists`, `deployment-managers`, `governance-managers` and `dev-env-stewards`, whose membership mirrors the Identity Center groups by hand and whose names are deliberately bare; the repositories `awsds/app-etl` and `awsds/dev-env`, created empty and private. On `dev-env`, **Manage → Members → Invite a group**: `awsds/data-scientists` as Developer and `awsds/dev-env-stewards` as Maintainer; **Settings → Repository → Protected tags → Add tag**: the wildcard `*-v*` (the image tag convention `<flavour>-v<semver>`; `v*` would match nothing this repository tags), allowed to create **Maintainers**, which in CE is the whole of the release gate. Done 2026-10-12.
 
-8. **Then the runner** (§K), **SAML** (§A), and **Pages**, which the first pipeline proves (Stage 7 step 4.2).
+8. **Then the runners** (§K), **SAML** (§A), and **Pages**, which the first pipeline proves (Stage 7 step 4.2).
 
 ## R. A configuration change
 
@@ -204,7 +216,7 @@ The leaves live 375 days and Terraform proposes their replacement inside the las
 2. Apply, then §R step 3 on the host, which installs the new pair.
 3. Record the date in the stage log.
 
-**The root** lives ten years and its rotation is a rebuild of every client surface (D36 §6, rehearsed at Stage 12): the laptop, the `dev-env` image, the runner and GitLab itself. Its fingerprint is in the stage log; the one check that the root a client trusts is the one this slice generated is:
+**The root** lives ten years and its rotation is a rebuild of every client surface (D36 §6, rehearsed at Stage 12): the laptop, the `dev-env` image, the runners and GitLab itself. Its fingerprint is in the stage log; the one check that the root a client trusts is the one this slice generated is:
 
 ```bash
 aws ssm get-parameter --profile awsds-infra-prod --region us-west-2 --name /datascience/prod/pki/ca-root-pem --query Parameter.Value --output text | openssl x509 -noout -fingerprint -sha256
@@ -242,7 +254,7 @@ aws ssm get-parameter --profile awsds-infra-prod --region us-west-2 --name /data
    curl -sS -o /dev/null -w 'http=%{http_code} ssl_verify=%{ssl_verify_result}\n' https://gitlab.awsds.internal/users/sign_in
    ```
 
-Python's `requests` and `botocore` read `certifi`, not the keychain; for a session that must reach GitLab from Python on the laptop, `REQUESTS_CA_BUNDLE` pointing at a bundle that holds the root plus `certifi`'s, or `verify=` in the call. The `dev-env` image takes the root at build time (step 2.6); the runner at boot (step 6.1); GitLab itself in `/etc/gitlab/trusted-certs/` (step 1.3).
+Python's `requests` and `botocore` read `certifi`, not the keychain; for a session that must reach GitLab from Python on the laptop, `REQUESTS_CA_BUNDLE` pointing at a bundle that holds the root plus `certifi`'s, or `verify=` in the call. The `dev-env` image takes the root at build time (step 2.6); each runner at boot (step 6.1); GitLab itself in `/etc/gitlab/trusted-certs/` (step 1.3).
 
 ## B. Backup and restore
 
@@ -272,9 +284,19 @@ The backup file is fetched first from the backup bucket into `/var/opt/gitlab/ba
 
 **The release.** GitLab restores a backup only into the release that created it, and `gitlab-backup restore` stops on `GitLab version mismatch` otherwise. A backup's name carries its release before `_gitlab_backup.tar` (`1792033259_2026_10_15_19.4.2_gitlab_backup.tar`), and the re-apply installs `gitlab_ce_version` (§P), so the two are compared before the destroy: `./aws/supplychain.py` `SC-13` compares them for the newest backup. A backup older than the last upgrade is restored by a re-apply with `-var gitlab_ce_version=<the backup's release>`, then upgraded again along §P.
 
-## K. The runner
+## K. The runners
 
-The runner is a **protected project runner** of `awsds/app-etl`, never an instance runner (step 6.1). Any job on the host reads the instance role's credentials through the metadata service, and the role pushes to the three image repositories. An instance runner serves every project on the instance, including a self-registered account's while sign-up is open; a protected project runner serves only the protected branches and tags of the projects it is enabled in, so whoever can push an image is whoever can push a protected ref there.
+Each runner is a project runner, never an instance runner (step 6.1), and an `[E]` host of `production/runners/` that registers at its first boot from its token container. Which `make gitlab-up` raises which runner is §U step 3.
+
+| Runner | Host | Takes | Projects | Raised by |
+|---|---|---|---|---|
+| the build runner `awsds-prod-runner` | `m8i.xlarge` | untagged jobs, on protected refs alone | `awsds/app-etl`, `awsds/dev-env`, and `awsds/deploy-image`, assigned in the admin area | `make gitlab-up BUILD=1` |
+| the deploy runner `awsds-prod-runner-deploy` | `t3a.small` | jobs tagged `awsds-deploy`, on protected refs alone | `awsds/app-etl`, `awsds/dev-env` | `make gitlab-up`, with or without `BUILD=1`, once `deploy_image_digest` is set |
+| the test runner `awsds-prod-runner-test` | `t3a.small` | jobs tagged `awsds-test`, on any ref | `awsds/app-etl`, `awsds/dev-env`, `awsds/ci-gates` | `make gitlab-up`, with or without `BUILD=1` |
+
+### The build runner
+
+The build runner is a **protected project runner** of `awsds/app-etl` (step 6.1). Any job on the host reads the instance role's credentials through the metadata service, and the role pushes to the three image repositories. An instance runner serves every project on the instance, including a self-registered account's while sign-up is open; a protected project runner serves only the protected branches and tags of the projects it is enabled in, so whoever can push an image is whoever can push a protected ref there.
 
 1. **Create it in GitLab**, as the local administrator: `awsds/app-etl` → **Settings → CI/CD → Runners → Create project runner**: no tags, **Run untagged jobs** checked, description `awsds-prod-runner`, **Protected** checked. GitLab shows the authentication token (`glrt-…`) once.
 
@@ -284,9 +306,9 @@ The runner is a **protected project runner** of `awsds/app-etl`, never an instan
    aws secretsmanager put-secret-value --profile awsds-infra-prod --region us-west-2 --secret-id awsds-prod-runner-token --secret-string "$(read -rs T && printf '%s' "$T")"
    ```
 
-3. **Link it to `dev-env`**: `awsds/dev-env` → **Settings → CI/CD → Runners → Other available project runners → Link** (GitLab 19.4's label for what older versions call Enable), then on the runner's edit page **Lock to current projects**, so no third project links it. Done 2026-10-12 for step 2.6, whose pipeline `dev-env` carries ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)).
+3. **Link it to `dev-env`**: `awsds/dev-env` → **Settings → CI/CD → Runners → Other available project runners → Link** (GitLab 19.4's label for what older versions call Enable), then on the runner's edit page **Lock to current projects**, so no third project links it. Done 2026-10-12 for step 2.6, whose pipeline `dev-env` carries ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)). `awsds/deploy-image` was assigned the runner in the admin area, the runner staying locked ([`gitlab/awsds/deploy-image/README.md`](../../../gitlab/awsds/deploy-image/README.md)).
 
-Every `make gitlab-up BUILD=1` then boots a new instance that retries its first AWS call, the CA root's read, for up to five minutes while its role's credentials propagate, installs the `gitlab-runner` release `runners/variables.tf` pins, waits up to ten minutes for GitLab's sign-in page, reads the token and registers as a new runner manager under the same runner. The pin follows the server's major.minor, `tooling/variables.tf`'s `gitlab_ce_version` (Stage 8 decision 24, Stage 7 decision 10), so a GitLab upgrade moves both in the same sitting (§P). The instance's AMI is the public parameter's value when it is created, held for its life (Stage 8 decision 25), so an Amazon Linux release replaces no running runner. `make gitlab-down` destroys it; GitLab removes a manager that stops contacting it. The runner's first-boot log is `/var/log/awsds-runner-boot.log`, readable through the serial console like GitLab's (§U); `gitlab-runner verify` and `/etc/gitlab-runner/config.toml` are on the host, reachable like §U's shell.
+A `make gitlab-up BUILD=1` that finds no build runner then boots a new instance that retries its first AWS call, the CA root's read, for up to five minutes while its role's credentials propagate, installs the `gitlab-runner` release `runners/variables.tf` pins, waits up to ten minutes for GitLab's sign-in page, reads the token and registers as a new runner manager under the same runner. The pin follows the server's major.minor, `tooling/variables.tf`'s `gitlab_ce_version` (Stage 8 decision 24, Stage 7 decision 10), so a GitLab upgrade moves both in the same sitting (§P). The instance's AMI is the public parameter's value when it is created, held for its life (Stage 8 decision 25), so an Amazon Linux release replaces no running runner. `make gitlab-down` destroys it, and so does any apply of the slice without the flag (§U step 3); GitLab removes a manager that stops contacting it. The runner's first-boot log is `/var/log/awsds-runner-boot.log`, readable through the serial console like GitLab's (§U); `gitlab-runner verify` and `/etc/gitlab-runner/config.toml` are on the host, reachable like §U's shell.
 
 **What a job can rely on**:
 
@@ -417,9 +439,9 @@ If rootless BuildKit fails with `operation not permitted` under the runner's `se
 
 ### The application template
 
-Stage 8 step 2.2 replaces everything on `awsds/app-etl`'s `main` with [`examples/app-etl/`](../../../examples/app-etl/README.md). Three things come first: `awsds/ci-gates` tagged (§G), its commit in the template's `include:` `ref`, and the test runner registered (below). The commands run on the laptop with the tunnel up and git trusting the root (§C step 3), from a checkout of this repository that carries that `ref`.
+Stage 8 step 2.2 replaced everything on `awsds/app-etl`'s `main` with [`examples/app-etl/`](../../../examples/app-etl/README.md), and a later change to the template reaches GitLab the same way: steps 1 to 4 on a branch and with a commit message named for the change (pass 4's promotion legs, [`promotion.md`](promotion.md) §H step 2), then the release's own tag (§T there). At step 2.2 three things came first: `awsds/ci-gates` tagged (§G), its commit in the template's `include:` `ref`, and the test runner registered (below). The commands run on the laptop with the tunnel up and git trusting the root (§C step 3), from a checkout of this repository that carries that `ref`.
 
-1. **Clone the project and branch off `main`**:
+1. **Clone the project and branch off `main`**, into a directory that does not exist yet (`git clone` refuses one that holds files):
 
    ```bash
    git clone https://gitlab.awsds.internal/awsds/app-etl.git "$HOME/tmp/app-etl"
@@ -459,7 +481,7 @@ Stage 8 step 2.2 replaces everything on `awsds/app-etl`'s `main` with [`examples
 
 4. **Merge it into `main`** through a merge request. `main`'s pipeline adds `pages`, published at `$CI_PAGES_URL` (**Deploy → Pages**).
 
-5. **Tag the release** on `main`, as a Maintainer. The tag pipeline runs `test` and `pip-audit` on the test runner, then `build-image` (the smoke build, then the push as `v0.1.0-<short sha>`) and `scan-gate` (verification iv) on the build runner; the scan gate informs, so its failure leaves the pipeline going (Stage 8 decision 1):
+5. **Tag the release** on `main`, as a Maintainer, with the build runner up (`make gitlab-up BUILD=1`, §U). The tag pipeline runs `test` and `pip-audit` on the test runner, then `build-image` (the smoke build, then the push as `v0.1.0-<short sha>`) and `scan-gate` (verification iv) on the build runner; the scan gate informs, so its failure leaves the pipeline going (Stage 8 decision 1):
 
    ```bash
    git -C "$HOME/tmp/app-etl" switch main && git -C "$HOME/tmp/app-etl" pull
@@ -473,7 +495,7 @@ Stage 8 step 2.2 replaces everything on `awsds/app-etl`'s `main` with [`examples
 
 ### The deploy runner
 
-The deploy runner (Stage 8 step 4.3) is a second protected project runner of `awsds/app-etl`, linked to `awsds/dev-env` and locked, with the tag `awsds-deploy` and no untagged jobs. Its instance profile is the only path to the deploy roles, so a job reaches them only by carrying `tags: [awsds-deploy]` on a protected ref of those two projects. The role, the instance profile and the token container are anchors in `production/foundation/`; the host is `production/runners/`'s, `[E]`, raised by `make gitlab-up` once `deploy_image_digest` is set.
+The deploy runner (Stage 8 step 4.3) is a second protected project runner of `awsds/app-etl`, linked to `awsds/dev-env` and locked, with the tag `awsds-deploy` and no untagged jobs. Its instance profile is the only path to the deploy roles, so a job reaches them only by carrying `tags: [awsds-deploy]` on a protected ref of those two projects. The role, the instance profile and the token container are anchors in `production/foundation/`; the host is `production/runners/`'s, `[E]`, raised by `make gitlab-up`, with or without `BUILD=1`, once `deploy_image_digest` is set.
 
 A pipeline is protected or not from the moment GitLab creates it. A ref protected after its pipeline exists leaves that pipeline unprotected: the deploy runner takes none of its jobs (*"no runners for the protected branch"*) and no protected variable reaches them. The fix, in order: the branch under **Settings → Repository → Protected branches** (a branch name under Protected tags leaves the branch unprotected), a stuck job holding a `resource_group` cancelled, then a new pipeline from **Build → Pipelines → Run pipeline** (Stage 18, 2026-10-21).
 
@@ -615,7 +637,9 @@ Two copies, in opposite directions. The image recipes live in GitLab since Stage
 
 ### Stage 8 pass 3's session, in order
 
-1. `make hub-up`, then `make gitlab-up` from a checkout carrying `production/runners/`' runner profile (decision 14): this worktree until PR #131 merges.
+Ran 2026-10-14 and 2026-10-15 ([Stage 8's log](../../log/log-stage-08-cicd-pipelines.md)), when every `make gitlab-up` raised the build runner.
+
+1. `make hub-up`, then `make gitlab-up BUILD=1`: step 6's tag builds on the build runner.
 2. `gates-v0.3.0`: §G step 4 with this repository's four `ci-gates/` files, then the tag, and read its commit back.
 3. The seeds of `awsds/dev-env` and `awsds/deploy-image` (above), then `./scripts/gitlab-mirror.py`.
 4. Stage 8 step 1.0's owed reading: as the data-scientist persona, a Developer, create the tag `default-v0.0.0` on `awsds/dev-env`; GitLab must refuse it.

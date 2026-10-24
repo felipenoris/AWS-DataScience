@@ -107,8 +107,9 @@ What stays with the environment: the runs, the legs, the warehouse's compute and
 ## H. The hub and GitLab
 
 `make hub-up`, then `make gitlab-up BUILD=1`, the tunnel, in [`gitlab.md`](gitlab.md) §U's order: the
-build runner takes the image builds of steps 3 and 4 and the pipelines on `main`. What this sitting
-closes besides Stages 8 to 10 is the waiting list's Hub and GitLab rows.
+build runner takes the image builds of steps 3 and 4, and the test runner the merge requests' and
+`main`'s pipelines. What this sitting closes besides Stages 8 to 10 is the waiting list's Hub and GitLab
+rows.
 
 1. **[user] GitLab's settings for pass 4** (Stage 8 decision 2, `gitlab.md` §M): `main` pushed to
    `awsds/infrastructure` from the project folder at `origin/main` (`git push gitlab main`), the job
@@ -118,7 +119,8 @@ closes besides Stages 8 to 10 is the waiting list's Hub and GitLab rows.
    stale push shows in the job's log.
 2. **[user] MR !4 merged** on `awsds/app-etl` (the release's notes without backticks), then the legs'
    merge request: a branch of `awsds/app-etl` from `examples/app-etl/` at this repository's `main`,
-   by `gitlab.md`'s "The application template" procedure (clone, `rsync`, commit, push, MR), which
+   by `gitlab.md`'s "The application template" procedure (a fresh clone, the files swapped through
+   `git archive`, a branch pushed, the MR), which
    brings `.gitlab-ci.yml`'s `staging-*`, `production-*` jobs and the `--lint` option. The pipeline
    editor validates it before the push; its branch pipeline runs the test stage alone.
 3. **[user] The house image `default-v0.9.0`** with the 72-name `NO_PROXY` literal (Stage 8 1.1, Stage
@@ -127,16 +129,17 @@ closes besides Stages 8 to 10 is the waiting list's Hub and GitLab rows.
    merge. `DE-5` turns green with it.
 4. **[user] The deploy image on Terraform 1.16.6**, once the laptop runs it (the user's install;
    `upstream-releases.md`): the two pins in `gitlab/awsds/deploy-image/Dockerfile`, the merge request,
-   the tag, its digest into `production/runners/` and a `production/runners/` apply, `make gitlab-up
-   BUILD=1` again so the build runner stays. Until then the deploy image runs 1.15.8, which every
+   the tag, its digest into `production/runners/variables.tf`, and the slice applied by `make gitlab-up
+   BUILD=1`, which keeps the build runner; the flag left out destroys it. Until then the deploy image runs 1.15.8, which every
    slice's `versions.tf` admits.
 5. **[Claude]** `./aws/cicd.py` after the runners' boot (`CI-1`, `CI-9`), and `GM-1` to `GM-8` on the copies.
 
 ## P. Production: Stage 9's pass 3 and Stage 10's 0.5
 
 The proof job needs `workloads-egress/` alone (16 to add, the seven endpoints and the DNS Firewall):
-`make up ENV=production` with no `ONLY=` would also raise `egress/` (SharedServices' twelve endpoints),
-`runners/` (three hosts that register with a GitLab that is down) and `probes/`, so the sitting runs
+`make up ENV=production` with no `ONLY=` would also start GitLab and raise `egress/` (SharedServices'
+twelve endpoints), `warehouse-compute/` (the 4-RPU workgroup), `runners/` (the deploy and test runners,
+a build runner destroyed) and `probes/`, so the sitting runs
 `make up ENV=production ONLY=workloads-egress`. Every `make up` checks the hub, so `make hub-up` comes
 first; VPC-Workloads has no proxy path, so the hub serves the check alone, and with the hub down the
 slice is applied by hand instead (Recipe A, as `awsds-infra-prod`), the check guarding proxy clients
@@ -243,8 +246,9 @@ first promotion carries a lake the job role has written (decision 23).
    (`orchestration-v0.2.0`); `uv run` on the runner, the deploy role's calls and the artifact remain the leg's.
 4. **[user] The gate** (3.5): `production-plan`, its plan passed by `lint-plan`, read beside `staging-test`'s artifacts, then
    `production-gate` by a `deployment-managers` member. Before `production-deploy`: `make up
-   ENV=production` by the user (§P's step 4 if the sitting is one), since a Production run needs
-   `workloads-egress/`.
+   ENV=production ONLY=workloads-egress` by the user (§P step 4), since a Production run needs
+   `workloads-egress/`. The command without `ONLY=` applies `runners/` without `BUILD=1`, and destroys
+   the build runner `production-gate` runs on.
 5. **[pipeline] `production-deploy`** (3.6, `awsds-deploy-prod`): the service-linked role's creation
    in the deploy role's session on Production's first `CreateWorkflow` (Stage 10 1.5's statement, 1.6's
    record), then `production/orchestration/` with the chain's schedule `ENABLED`; verification vi,

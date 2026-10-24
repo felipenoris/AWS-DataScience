@@ -23,6 +23,8 @@ it bounds every "this has never happened" claim below.
 | `awsds-<env>-vpc-flow-logs` **30 d** | per account · same | the `vpc` module (`[P]` — always on) | ACCEPT/REJECT per flow: **addresses and ports, never names** |
 | `/awsds/prod/vpn` **30 d** | Production · `awsds-infra-prod` | the WireGuard host | the tunnel host's own output |
 | `/awsds/<env>/studio` **30 d** | the compute account · same | `sagemaker-prereqs` | Studio app output |
+| `/awsds/<env>/wf/<workflow>` **90 d** | Staging and Production · `awsds-infra-<env>` | the `orchestration` module (Stage 10), the workflow's `LoggingConfiguration` | a promoted workflow's task output, one stream per task attempt (`task_id=<task>/attempt=<n>`) |
+| `/aws/vendedlogs/states/awsds-<env>-chains` **90 d** | the same | the `orchestration` module's chain layer | every state of a chain's Step Functions execution, with its data: the run it started, its polls, its own error |
 | CloudTrail — no group; the `lookup-events` **API** | every account · any profile that can read it | the organization trail | which **principal** made which API call, and **by which door** |
 
 **Families this estate did not create and does not control**, so that none is mistaken for ours:
@@ -312,6 +314,25 @@ aws mwaa-serverless list-task-instances --workflow-arn "$WF" --run-id "$RUN"    
   that drops it silently re-points the logs at a service-default group — the symptom is *"the run produced
   no logs"* while a second, orphan group fills up ([Lesson 60](../lessons.md)).
 
+**In Staging and Production a run starts from its chain**, the state machine `awsds-<env>-chain-<chain>`
+(Stage 10; read in Staging on 2026-10-23), so the execution holds the first verdict: a run that did not
+succeed ends it `FAILED` with the machine's own error, `WorkflowRunNotSucceeded`, naming the workflow. The
+newest executions, then the last events of one, as the pipeline's `staging-test` reads them:
+
+```bash
+aws stepfunctions list-executions --state-machine-arn "$(aws stepfunctions list-state-machines --query "stateMachines[?name=='awsds-staging-chain-app-etl'].stateMachineArn" --output text --profile awsds-infra-staging --region us-west-2)" --max-items 5 --query 'executions[].[name,status,startDate]' --output table --profile awsds-infra-staging --region us-west-2
+```
+
+```bash
+aws stepfunctions get-execution-history --execution-arn "<execution arn>" --reverse-order --max-items 20 --profile awsds-infra-staging --region us-west-2
+```
+
+Then the run's task instances, as above, and the failed task's stream in `/awsds/<env>/wf/<workflow>`.
+A task can fail after the work it started: on 2026-10-23 `transform` failed pushing its Glue run's
+details as an XCom, refused `kms:GenerateDataKey` by the key policy (*"Failed to encrypt XCom value"*),
+while the Glue run it had started `SUCCEEDED`. The job's own run is read apart, with `aws glue
+get-job-runs`.
+
 ---
 
 ## 7. The readings that recur
@@ -360,7 +381,7 @@ the browser, not which profile to log in with.
 |---|---|---|
 | `/awsds/prod/proxy`, `/awsds/prod/vpn`, the Production flow logs | `awsds-infra-prod` | `InfrastructureAccess` |
 | `/awsds/sandbox/*`, `/aws/mwaa-serverless/*` and the `mwaa-serverless` API, the Sandbox flow logs, CloudTrail in Sandbox | `awsds-infra-sandbox-1` | idem |
-| `/awsds/staging/*` | `awsds-infra-staging` | idem |
+| `/awsds/staging/*`, `/aws/vendedlogs/states/awsds-staging-chains`, the `stepfunctions` and `mwaa-serverless` APIs in Staging | `awsds-infra-staging` | idem |
 
 **Log Archive and Audit hold no CLI profile** — the organization trail's S3 copy is not read this way.
 Everything above is a **read**; nothing in this runbook writes.

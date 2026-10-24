@@ -414,16 +414,17 @@ retry is safe: a role that exists would let an authorized call create a job, whi
 from CloudTrail. The compliant row turning into a deny is the finding that matters most: either the volume
 key stopped populating under its old name, or another statement reaches further than written.
 
-**The instance-preference rows are written and not run.** Since 2026-09-15 a job may name up to five
+**The instance-preference rows ran on 2026-10-22**, in Stage 18 8.7's `--phase ou` (01:53Z, 47 as
+expected, 0 unexpected, 7 not measured), each as expected. Since 2026-09-15 a job may name up to five
 instance types as a preference list in place of `InstanceType`:
 `ProcessingResources.ClusterConfig.InstancePreferences` for a processing job,
 `ResourceConfig.InstancePreferences` for a training job, the list excluding `InstanceType` and the one
 `InstanceCount` staying on the cluster. `DenySageMakerInstanceCeiling` is `ForAnyValue:StringNotEquals` on
-`sagemaker:InstanceTypes`, which leaves alone a request in which the key is absent, and whether SageMaker
-fills the key from the list is unread ([`upstream-releases.md`](../upstream-releases.md), 2026-10-18).
-The rows below ask it, in `probes.py` beside the processing rows above, `blocked` for the same reason and
-each carrying the other four settings. They run with the next `--phase ou`, before a job in `Workloads` or
-Stage 17's training job names its types as a list:
+`sagemaker:InstanceTypes`, which leaves alone a request in which the key is absent
+([`upstream-releases.md`](../upstream-releases.md), 2026-10-18), and SageMaker fills the key from the
+list: for both actions each list naming `ml.m5.2xlarge` answered `DENY-SCP`, and the list naming
+`ml.m5.large` alone reached authorization. The rows sit in `probes.py` beside the processing rows above,
+`blocked` for the same reason and each carrying the other four settings:
 
 | Probe (`aws sagemaker …`, from `awsds-infra-prod`) | Expected | What it answers |
 |---|---|---|
