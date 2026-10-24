@@ -1040,3 +1040,43 @@ below; the user's for the gate. Times UTC.*
   the same holds for `/awsds/prod/wf/app-etl` and `/aws/vendedlogs/states/awsds-prod-chains` (90 days) on
   a destroy of `production/orchestration/`, which `make down ENV=production ONLY=workloads-egress` never
   runs: Production's run history and chain logs persist between sessions while the slice stands.
+
+## 2026-10-24 — `v0.4.1`'s Staging leg: the train chain's first run, `evaluate` failing at its template, the diagnosis from the service's APIs
+
+*Claude's hand for the readings, as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-staging`), reads only; the run was the pipeline's (Stage 8's log, pipeline #77), in the
+session of `runbooks/promotion.md` §V (the branch `claude/eloquent-ishizaka-04f598`). Times UTC.*
+
+- **[Claude] The orchestration slice in Staging**: `staging-deploy` applied *"31 added"*, the workflows
+  `awsds-staging-wf-app-etl` and `awsds-staging-wf-app-etl-train` and their two chains, `DISABLED`
+  (decision 19); the warehouse workflow's definition was rendered and written but no workflow made, as
+  decision 15 has it. The release file's `VersionId`s: `app-etl` definition `PE1nwZT0…R1D7`, code
+  `o_PmDbA1…idKy`; `app-etl-train` definition `enBzmuTu…fOdQo`, code `G7qnbCvy…03UJyYL`; `app-etl-warehouse`
+  definition `uAsosO2S…8bc3Xin`.
+- **[Claude] The app-etl chain**: `v0-4-1-77-app-etl` `SUCCEEDED`, 23:20:23 to 23:33:26.
+- **[Claude] The train chain's first run anywhere** (5.1; `test-deploy` creates the workflow in the
+  `test` project and never runs it): `v0-4-1-77-app-etl-train`, 23:33:46 to 23:40:48, `FAILED` with
+  *"WorkflowRunNotSucceeded"*. The run `yCiuDo0tu6ofGpx`, 23:34:01 to 23:38:53: `train` `SUCCESS` in 219 s,
+  the training job `app-etl-train-20261024T233434` on `ml.m5.large` as `awsds-staging-job-exec`, AWS's
+  XGBoost by digest, the data key on the volume and the model, network isolation and inter-container
+  encryption, two subnets, `MaxRuntimeInSeconds` 1800, training from 23:35:32 to 23:37:26 (114 billable
+  seconds), `validation:rmse` 1016.31; `evaluate` `FAILED` in 10 s.
+- **[Claude] The diagnosis, from the service's APIs alone** (3.2's path): the machine's `cause` names the
+  workflow; `get-workflow-run` reads *"Workflow execution failed, please check the task execution logs for
+  more details"* and `RunType` null; `list-task-instances` names `evaluate` `FAILED`; `get-task-instance`
+  gives its `LogStream`, `workflow_id=awsds-staging-wf-app-etl-train-wjwLbosH4U/run_id=yCiuDo0tu6ofGpx/task_id=evaluate/attempt=1.log`;
+  the stream in `/awsds/staging/wf/app-etl-train`, read at about 23:43, before `staging-down` destroyed
+  the group: *"Exception rendering Jinja template for task 'evaluate', field 'op_kwargs'"* on
+  `ti.xcom_pull(task_ids='train')['Training']['TrainingJobName']`, *"UndefinedError … 'str object' has no
+  attribute 'Training'"*. The worker renders an XCom as the JSON of its value: Staging's
+  `app-etl/outbox/report.json` (336 bytes, 23:30:31) holds the JSON text of the report's string, the same
+  rendering one task earlier. The code package imported (*"Successfully generated DAGs"*), and no call
+  of the task's reached AWS.
+- **[Claude] The failure rules** (verification vi): `awsds-staging-wf-app-etl-train-failed` triggered and
+  invoked once at 23:39, `awsds-staging-chain-app-etl-train-failed` at 23:40, and `awsds-staging-alerts`
+  published and delivered two notifications at 23:40 (`AWS/Events` and `AWS/SNS`, read after the
+  teardown, since the rules die with the slice).
+- **[Claude] The fix**, in the template: `evaluate` takes the whole XCom and `training_job_name` decodes
+  it; 31 tests and the workflow lint pass. The release is `v0.4.2` (Stage 8's log). 6.3's sentence holds
+  on a failure: the task's log group went with the slice, and the reading survives only because it was
+  taken before `staging-down`.

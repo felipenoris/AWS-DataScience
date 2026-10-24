@@ -3011,3 +3011,41 @@ traces through GitLab's API in the user's Chrome session, AWS as the infrastruct
   `v0.4.0` is spent; the data release is `v0.4.1`, and verification ix's drift takes `v0.4.2`.
 - **[user]** MR !9 (`test-deploy-run`, `a9a1358f`) merged at 22:54:29 as `d1ee24cb`, read back with the tree
   `8974b06d`; the tag `v0.4.1` on `d1ee24cb`, pipeline #77 created at 22:55:06.
+
+## 2026-10-24 — `v0.4.1`'s pipeline #77: `test-deploy` fixed, the Staging leg's governed read, `evaluate` stopped at its template, `staging-down` at zero
+
+*The user's hand for the tag; Claude's for the readings (the job traces through GitLab's API in the
+user's Chrome session, AWS as the infrastructure user with `InfrastructureAccess`). Times UTC.*
+
+- **[Claude] The build half**: `pip-audit` (job 401) and `test` (402) passed, 22:55:08 to 22:55:29,
+  *"27 passed"*, the lint on `awsds-workflows` `d856982c`; `build-image` (403), 22:55:32 to 22:58:15,
+  *"== pushed …/awsds-prod-ecr-app-etl:v0.4.1-d1ee24cb@sha256:3032e812…7d42"*; `build-task-code` (404)
+  passed; `scan-gate` (405) failed, allowed, the same 725, 130 and 595.
+- **[Claude] `test-deploy` (406)**, 22:58:16 to 23:14:10, passed with the fix: *"Workflow triggered:
+  app_etl_test_experimentation_app_etl (run_id: C1qEAcWUjr2puBg)"*, then *"deploy: exit 0, run
+  C1qEAcWUjr2puBg of …workflow/app_etl_test_experimentation_app_etl-cu3XfT7WrY"*, the run `ON_DEMAND` and
+  `SUCCESS` from 23:00:03 to 23:12:36; the bundle 15,638 bytes, SHA256 `0203d20f…3bed`.
+- **[Claude] `store-bundle` (407) and `release` (408)**, 23:14:12 to 23:14:26: the bundle at
+  `s3://awsds-prod-releases/app-etl/v0.4.1/app-etl.zip`, the release `v0.4.1` at 23:14:25 naming it, its
+  SHA256 and the image.
+- **[Claude] The Staging leg**, the mirror at `c714c47d`: `staging-up` (409), 23:14:19 to 23:16:56, the
+  seven interface endpoints `available` at 23:16:28; `staging-deploy` (410), 23:16:59 to 23:20:08,
+  *"bundle.zip: OK"*, the three workflows rendered and linted in the promoted mode (*"ok: 1 arquivo(s)"*
+  each, `app-etl-warehouse` among them), *"read back: 12 objects, each checksum the manifest's"*, the
+  application slice *"Plan: 2 to add"* (the Glue job and `app_outputs.trades_notional`), `lint-plan`
+  *"ok: 1 job(s) do Glue"*, *"2 added"*, the orchestration slice *"31 added"*; `staging-test` (411), 23:20:11
+  to 23:41:02: the app-etl chain `SUCCEEDED`, its Glue job `jr_4c6f4a78…ab71` from 23:21:15 to 23:22:57
+  as `awsds-staging-job-exec`, *"reading SELECT trade_date, desk, instrument, quantity, price FROM
+  lake.curated.trades"*, *"read 30 row(s)"*, the table written with 30 rows and the training sets with
+  24, 6 and 30 lines, Staging's full-table flag unset (Stage 9 8.5's governed read); then the train
+  chain `FAILED` at `evaluate`, *"FATAL: the chain app-etl-train ended FAILED"* (Stage 10's log: the
+  task's template met the XCom as JSON text). `staging-model` and every Production job skipped: the
+  gate's needs held Production untouched, verification ix's mechanism met by an unplanted defect.
+- **[Claude] `staging-down` (413)**, 23:41:05 to 23:49:24, as `awsds-deploy-staging`: *"Destroy
+  complete! Resources: 31 destroyed."*, *"2 destroyed."*, *"16 destroyed."*, the hook skipped.
+  `./aws/egress.py awsds-infra-staging` after it: all checks passed, no interface endpoint and no NAT.
+  **Verification xii answered yes**: after a failed leg that raised something, the teardown left Staging
+  at zero burn.
+- **[Claude] The fix** (`evaluate`, Stage 10's log), its patch over `d1ee24cb` checked to give the
+  template's tree `e8c12563`, with the README's two sentences; the data release is `v0.4.2`, and ix's
+  drift takes `v0.4.3`.
