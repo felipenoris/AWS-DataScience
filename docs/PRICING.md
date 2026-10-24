@@ -328,7 +328,8 @@ plus 0.005 for its public IPv4.
 ### The GitLab session, by category
 
 A GitLab session runs from `make gitlab-up` to `make gitlab-down` ([runbook](plan/runbooks/gitlab.md) §U):
-the `[D]` host started, `production/egress/`'s endpoints and `production/runners/`' three hosts applied. Read
+the `[D]` host started, `production/egress/`'s endpoints and `production/runners/`' hosts applied, the build
+runner among them only with `BUILD=1` (Stage 7 decision 5). Read
 2026-10-14 from the slices, from `describe-*` in Production and from Production's Cost Explorer for
 2026-10-11..10-14, whose effective rates (cost ÷ quantity) equal this section's table: `t4g.large` 0.0672,
 `m8i.xlarge` 0.2117, `t3a.small` 0.0188, endpoint-hour 0.010, gp3 0.08/GB-mo, snapshot 0.05/GB-mo, secret
@@ -351,13 +352,13 @@ As built there is no ALB and no NAT, so the full-stack hour above does not descr
 | | the private zone `awsds-pages.internal` | `[P]` | 0.0007 |
 | | the CloudWatch alarm (inside the free ten), DLM, Session Manager, same-AZ peering (`DataTransfer-AZ-*` 9.20 GB each way on 2026-10-12, billed 0) | | 0 |
 
-| Category | With runners | `RUNNERS=0` | Stopped |
-|---|---|---|---|
-| VPC endpoints | 0.1200 | 0.1200 | 0 |
-| Compute | 0.3165 | 0.0672 | 0 |
-| Storage | 0.0205 | 0.0069 | 0.0069 |
-| Other services | 0.0053 | 0.0053 | 0.0053 |
-| **Total** | **0.4623** | **0.1994** | **0.0122** (8.91/month) |
+| Category | `BUILD=1` | Default | `RUNNERS=0` | Stopped |
+|---|---|---|---|---|
+| VPC endpoints | 0.1200 | 0.1200 | 0.1200 | 0 |
+| Compute | 0.3165 | 0.1048 | 0.0672 | 0 |
+| Storage | 0.0205 | 0.0135 | 0.0069 | 0.0069 |
+| Other services | 0.0053 | 0.0053 | 0.0053 | 0.0053 |
+| **Total** | **0.4623** | **0.2436** | **0.1994** | **0.0122** (8.91/month) |
 
 Billed beside the hour:
 
@@ -377,10 +378,12 @@ billed on 2026-10-11, ~30 GB at 0.10, ~3.00/month).
 
 Readings of the table:
 
-- The build runner is 46% of a session with runners; `RUNNERS=0` takes the hour to 0.1994.
+- The build runner and its 64 GiB root are 47% of a `BUILD=1` session; the default leaves both out at
+  0.2436, and `RUNNERS=0` takes the hour to 0.1994.
 - Without the runners the endpoints are 60% of the hour. `athena`, `glue` and `lakeformation` (0.030/h)
   serve no caller in a GitLab session; they are `vpc-egress`'s core list, which no caller overrides.
-- Always on, the session would bill 337.48/month with runners and 145.56 without, both above D12's 50.
+- Always on, the session would bill 337.48/month with `BUILD=1`, 177.83 by default and 145.56 without
+  runners, all above D12's 50.
 
 ### A Sandbox unit (Stage 14)
 
@@ -949,18 +952,24 @@ Paulo that discipline is worth exactly twice as much.
 | EC2 `t4g.small` (2 GiB) | 0.0268 | 0.0168 | 1.60 |
 | EC2 `t4g.medium` (4 GiB) | 0.0536 | 0.0336 | 1.60 |
 | EC2 `t4g.large` (8 GiB) | 0.1072 | 0.0672 | 1.60 |
+| EC2 `t4g.xlarge` (4 vCPU, 16 GiB) — measured 2026-10-24 with the Price List Query API (`USW2-BoxUsage:t4g.xlarge`, offer published 2026-10-23T22:13:55Z), the one size above GitLab's that `production/tooling/` admits | 0.2144 | 0.1344 | 1.60 |
 | EC2 `t3.nano` (0.5 GiB, x86) | 0.0084 | 0.0052 | 1.62 |
 | EC2 `t3.micro` (1 GiB, x86) | 0.0168 | 0.0104 | 1.62 |
 | EC2 `t3.small` (2 GiB, x86) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3.small`), a Stage 8 deploy runner candidate (decision 4) | 0.0336 | 0.0208 | 1.62 |
+| EC2 `t3a.micro` (1 GiB, x86, AMD) — measured 2026-10-24 (`USW2-BoxUsage:t3a.micro`, the same offer), the size below the deploy and test runners | 0.0151 | 0.0094 | 1.61 |
 | EC2 `t3a.small` (2 GiB, x86, AMD) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3a.small`), the Stage 8 deploy runner (decision 4) and the test runner (decision 11) | 0.0302 | 0.0188 | 1.61 |
+| EC2 `t3a.medium` (4 GiB, x86, AMD) — measured 2026-10-24 (`USW2-BoxUsage:t3a.medium`), the size above the deploy and test runners that both variables admit | 0.0605 | 0.0376 | 1.61 |
 | EC2 `t3.medium` (4 GiB, x86) | 0.0672 | 0.0416 | 1.62 |
 | EC2 `t3.large` (8 GiB, x86) | 0.1344 | 0.0832 | 1.62 |
 | EC2 `t3.xlarge` (4 vCPU, 16 GiB, x86) — the Stage 6 build host until 2026-09-11 | 0.2688 | 0.1664 | 1.62 |
+| EC2 `t3a.xlarge` (4 vCPU, 16 GiB, x86, AMD EPYC 7571 at 2.5 GHz) — measured 2026-10-24 (`USW2-BoxUsage:t3a.xlarge`) | 0.2419 | 0.1504 | 1.61 |
 | EC2 `t3.2xlarge` (8 vCPU, 32 GiB, x86) | 0.5376 | 0.3328 | 1.62 |
 | EC2 `m5.large` (8 GiB, x86) | 0.1530 | 0.0960 | 1.59 |
 | EC2 `m8i.large` (2 vCPU, 8 GiB, x86) — measured 2026-09-11 | 0.1687 | 0.1058 | 1.59 |
 | EC2 `m8i.xlarge` (4 vCPU, 16 GiB, x86) — **the image build host**: the buildbox from 2026-09-11, Stage 7's build runner since; 3.9 GHz dedicated, EBS 156.25 MB/s and 6000 IOPS | 0.3374 | **0.2117** | 1.59 |
 | EC2 `m8i.2xlarge` (8 vCPU, 32 GiB, x86) — measured 2026-09-11 | 0.6747 | 0.4234 | 1.59 |
+| EC2 `m8i-flex.xlarge` (4 vCPU, 16 GiB, x86, the same 3.9 GHz Xeon 6) — measured 2026-10-24 (`USW2-BoxUsage:m8i-flex.xlarge`); EBS baseline 630 Mbps against `m8i.xlarge`'s 1250, both bursting to 10,000 | 0.3205 | 0.2011 | 1.59 |
+| EC2 `c8i.xlarge` (4 vCPU, 8 GiB, x86, the same 3.9 GHz Xeon 6) — measured 2026-10-24 (`USW2-BoxUsage:c8i.xlarge`) | 0.2889 | 0.1874 | 1.54 |
 | EBS `gp3` storage (USD/GB-mo) | 0.152 | 0.08 | 1.90 |
 | EBS `gp3` provisioned IOPS (USD/IOPS-mo) | 0.0095 | — | |
 | EBS snapshot storage (USD/GB-mo) — `us-west-2` **measured 2026-10-12** with the Price List Query API (`USW2-EBS:SnapshotUsage`; the archive tier is 0.0125), for Stage 7 step 1.2's daily DLM snapshots of GitLab's data volume | 0.068 | **0.05** | 1.36 |

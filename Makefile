@@ -42,8 +42,8 @@ SHELL := /bin/bash
 # make takes an unknown variable in silence, and every flag here is upper case: `auto=1` applies with
 # no -auto-approve and `runners=0` raises the runner anyway (both seen 2026-10-12). The lower-case
 # spellings of the flags are refused before any target runs.
-ifneq ($(strip $(auto)$(dry)$(env)$(groups)$(only)$(profile)$(runners)),)
-$(error the flags are upper case - AUTO, DRY, ENV, GROUPS, ONLY, PROFILE, RUNNERS; a lower-case one would be ignored)
+ifneq ($(strip $(auto)$(build)$(dry)$(env)$(groups)$(only)$(profile)$(runners)),)
+$(error the flags are upper case - AUTO, BUILD, DRY, ENV, GROUPS, ONLY, PROFILE, RUNNERS; a lower-case one would be ignored)
 endif
 .PHONY: help check check-ou check-docs check-all clean up down hub-up hub-down gitlab-up gitlab-down status slices guard-env
 
@@ -80,7 +80,8 @@ help:
 	@printf '  hub-down    STOP them - nothing is destroyed: the addresses, the host key and\n'
 	@printf '              the security groups are [P] anchors and survive the stop\n'
 	@printf '  gitlab-up   START GitLab and APPLY production/egress and production/runners - a\n'
-	@printf '              GitLab session, leaving the hub to hub-up (Stage 7 step 1.6)\n'
+	@printf '              GitLab session, leaving the hub to hub-up (Stage 7 step 1.6): the\n'
+	@printf '              deploy and test runners always, the build runner with BUILD=1\n'
 	@printf '  gitlab-down DESTROY the runners and the SharedServices endpoints, STOP GitLab; the\n'
 	@printf '              hub keeps running for every other session\n'
 	@printf '\n'
@@ -95,8 +96,12 @@ help:
 	@printf '    PROFILE=p   up and down - every command runs as profile p instead of the\n'
 	@printf '                account default: the deploy runner names its deploy role. A deploy\n'
 	@printf '                role applies no sandbox slice (refusal 8, Stage 8 step 2.4)\n'
-	@printf '    RUNNERS=0   gitlab-up only - GitLab and the endpoints without the runners\n'
-	@printf '                (0.2493 USD/h); gitlab-down destroys them regardless\n'
+	@printf '    RUNNERS=0   gitlab-up only - GitLab and the endpoints without the deploy and\n'
+	@printf '                test runners (0.0376 USD/h); gitlab-down destroys them regardless\n'
+	@printf '    BUILD=1     gitlab-up only - the build runner too (m8i.xlarge, 0.2117 USD/h),\n'
+	@printf '                the one runner that takes untagged jobs on a protected ref: image\n'
+	@printf '                builds, tag pipelines, Pages on main. Like GROUPS it lasts one\n'
+	@printf '                apply: a gitlab-up without it destroys a build runner raised earlier\n'
 	@printf '\n'
 	@printf '\033[1mLAYERS\033[0m - what [P], [D] and [E] mean, and what each target does to a slice\n'
 	@printf 'wearing one (D11; the definitions and the reasoning: docs/plan/conventions.md 5.1)\n'
@@ -259,17 +264,26 @@ hub-down:
 #
 # RUNNERS=0 leaves the runners out: a session that runs no pipeline, or one before a runner's
 # token is in its container (runbook K). Any other value but 1 is refused, so a typo never raises
-# 0.2493 USD/h of hosts unasked. `$(comma)` keeps the separator out of `$(if)`'s own arguments.
+# hosts unasked. `$(comma)` keeps the separator out of `$(if)`'s own arguments.
+#
+# BUILD=1 adds the build runner (Stage 7 decision 5) by becoming TF_VAR_build_runner, the way GROUPS
+# becomes TF_VAR_optional_service_groups in `up`. Unset or 0 is false, the variable's default, so a
+# session with no image build and no protected pipeline bills 0.0376 USD/h of runners, not 0.2493.
+# It lasts one apply: a `make gitlab-up` without it destroys a build runner an earlier one raised.
+# With RUNNERS=0 it is refused, since it acts on the slice RUNNERS=0 leaves out.
 comma := ,
 
 gitlab-up:
 	@case "$(RUNNERS)" in ""|0|1) ;; *) printf 'RUNNERS must be 0 or 1 (unset means 1), not "%s"\n' "$(RUNNERS)"; exit 2;; esac
-	@./scripts/slices.py up --env production --only tooling,egress$(if $(filter 0,$(RUNNERS)),,$(comma)runners) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
+	@case "$(BUILD)" in ""|0|1) ;; *) printf 'BUILD must be 0 or 1 (unset means 0), not "%s"\n' "$(BUILD)"; exit 2;; esac
+	@if [ "$(RUNNERS)" = 0 ] && [ "$(BUILD)" = 1 ]; then printf 'BUILD=1 acts on production/runners/, which RUNNERS=0 leaves out\n'; exit 2; fi
+	@$(if $(filter 0,$(RUNNERS)),true,printf '\033[1mbuild runner\033[0m: %s\n' '$(if $(filter 1,$(BUILD)),yes - BUILD=1,no - BUILD=1 raises it)')
+	@TF_VAR_build_runner=$(if $(filter 1,$(BUILD)),true,false) ./scripts/slices.py up --env production --only tooling,egress$(if $(filter 0,$(RUNNERS)),,$(comma)runners) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
 
 # The reverse order is the script's: the runners and the endpoints are destroyed, then GitLab is
 # stopped. Nothing here touches the hub, so every other session's proxy and tunnel stay up.
-# RUNNERS is ignored: destroying an absent runner is a no-op, and a forgotten one is this stage's
-# likeliest leak.
+# RUNNERS and BUILD are ignored: destroying an absent runner is a no-op, and a forgotten one is this
+# stage's likeliest leak.
 gitlab-down:
 	@./scripts/slices.py down --env production --only tooling,egress,runners $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
 

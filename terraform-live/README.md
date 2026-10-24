@@ -168,8 +168,8 @@ forever.
 **GitLab is the third `[D]` row** (Stage 7 step 1.2, 2026-10-12): [`production/tooling/`](production/tooling/)
 (rank 42) holds the `t4g.large`, its 50 GiB data volume and the two internal records, and is applied by
 hand like the hub hosts. Its session is **`make gitlab-up` / `make gitlab-down`** — `--only
-tooling,egress,runners`: the host started, VPC-SharedServices' endpoints and the build runner applied,
-and the hub left alone. `make up`/`make down ENV=production` **never touch the hub pair** since the
+tooling,egress,runners`: the host started, VPC-SharedServices' endpoints and the runners applied, and
+the hub left alone. `make up`/`make down ENV=production` **never touch the hub pair** since the
 same step (refusal 6 in `scripts/slices.py`): a Production session that stopped the proxy would
 blackhole every peer's spoke. The host's Name tag is `awsds-prod-gitlab`, not the slice's name, and
 `layers.DORMANT_HOST_NAMES` is where the dormant hook learns it.
@@ -187,7 +187,9 @@ endpoints are the only door into the host) rather than a slice a build could avo
 
 **`runners/` is raised by `make gitlab-up`**, with GitLab and `egress/` (`RUNNERS=0` leaves it out), and
 destroyed by `make gitlab-down`; `make up ENV=production` applies it too, with the account's other `[E]`
-slices. Its first boot waits for GitLab and registers from the token container
+slices. The build runner exists only while an apply sets `build_runner`, which `make gitlab-up BUILD=1`
+alone does; every other apply of the slice creates or keeps the deploy and test runners and destroys a
+build runner. Each runner's first boot waits for GitLab and registers from its token container
 ([`docs/plan/runbooks/gitlab.md`](../docs/plan/runbooks/gitlab.md) §K).
 
 **The `[D]` slices are where the layer decides the folder rather than the topic.** The hub's durable
@@ -296,7 +298,7 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   `egress/`'s output. Anchors in `production/foundation/`: the two buckets, their key, the
   `gitlab-secrets.json` and runner-token containers.
 - **`production/runners/` `[E]` — the build runner** (Stage 7 step 6, the buildbox's successor): one
-  `m8i.xlarge`, registered against GitLab at boot with the token in the runner-token container, pushing
+  `m8i.xlarge`, on `make gitlab-up BUILD=1` alone (decision 5), registered against GitLab at boot with the token in the runner-token container, pushing
   to the three image repositories with its own instance profile and pulling through the cache - and no
   deploy permission. It reads `egress/`'s generated `no_proxy`, which is the dependency the rank records.
   Since Stage 8 pass 1 (2026-10-13) the slice also holds the **deploy runner** `awsds-prod-runner-deploy`,

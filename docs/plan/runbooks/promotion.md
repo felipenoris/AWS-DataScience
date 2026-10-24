@@ -131,8 +131,9 @@ What stays with the environment: the runs, the legs, the warehouse's compute and
 
 ## H. The hub and GitLab
 
-`make hub-up`, then `make gitlab-up`, the tunnel, in [`gitlab.md`](gitlab.md) §U's order. What this
-sitting closes besides Stages 8 to 10 is the waiting list's Hub and GitLab rows.
+`make hub-up`, then `make gitlab-up BUILD=1`, the tunnel, in [`gitlab.md`](gitlab.md) §U's order: the
+build runner takes the image builds of steps 3 and 4 and the pipelines on `main`. What this sitting
+closes besides Stages 8 to 10 is the waiting list's Hub and GitLab rows.
 
 1. **[user] GitLab's settings for pass 4** (Stage 8 decision 2, `gitlab.md` §M): `main` pushed to
    `awsds/infrastructure` from the project folder at `origin/main` (`git push gitlab main`), the job
@@ -154,8 +155,9 @@ sitting closes besides Stages 8 to 10 is the waiting list's Hub and GitLab rows.
    merge. `DE-5` turns green with it.
 4. **[user] The deploy image on Terraform 1.16.6**, once the laptop runs it (the user's install;
    `upstream-releases.md`): the two pins in `gitlab/awsds/deploy-image/Dockerfile`, the merge request,
-   the tag, its digest into `production/runners/` and a `production/runners/` apply. Until then the
-   deploy image runs 1.15.8, which every slice's `versions.tf` admits.
+   the tag, its digest into `production/runners/` and a `production/runners/` apply, `make gitlab-up
+   BUILD=1` again so the build runner stays. Until then the deploy image runs 1.15.8, which every
+   slice's `versions.tf` admits.
 5. **[Claude]** `./aws/cicd.py` after the runners' boot (`CI-1`, `CI-9`), and `GM-1` to `GM-8` on the copies.
 
 ## P. Production: Stage 9's pass 3 and Stage 10's 0.5
@@ -242,7 +244,8 @@ is needed.
 ## T. The tag: Stage 8's pass 4 with Stage 10's passes 1 and 2
 
 Needs §0.5's grant applied, §H done (the legs on `awsds/app-etl`'s `main`, the mirror pushed, the memberships), the hub,
-GitLab and the runners up, and Sandbox's `egress/` up (`make up ENV=sandbox ONLY=egress`, the
+GitLab and the three runners up (`make gitlab-up BUILD=1`: the tag pipeline's untagged jobs, the
+production gate among them, run on the build runner alone), and Sandbox's `egress/` up (`make up ENV=sandbox ONLY=egress`, the
 infrastructure user's, since no pipeline identity raises it). Stage 9's pass 3 (§P) before it, so the
 first promotion carries a lake the job role has written (decision 23).
 

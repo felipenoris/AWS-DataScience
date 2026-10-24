@@ -50,6 +50,13 @@ variable "account_folder" {
   nullable    = false
 }
 
+variable "build_runner" {
+  description = "Whether this apply creates the build runner, its role and its instance profile (decision 5). True only through `make gitlab-up BUILD=1`, which sets TF_VAR_build_runner: the host takes every untagged job of a protected ref and bills 0.2117 USD/h, and on 2026-10-12..22 its image builds held 1.25 of the 30.91 hours it ran (Stage 7's log, 2026-10-24). The deploy and test runners exist either way."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
 variable "instance_type" {
   description = "The runner's size - the buildbox's measured shape (decision 5): m8i.xlarge, 4 vCPU, 16 GiB, 0.2117 USD/h (docs/PRICING.md 8), because the dev-env build is CPU-bound and saturated four burstable vCPUs on 2026-09-11. x86_64, and not a preference: the images are amd64 and SageMaker runs them on x86."
   type        = string
