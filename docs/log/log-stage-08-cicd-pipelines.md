@@ -2971,3 +2971,43 @@ user with `InfrastructureAccess`) and for 3.7's record. Times UTC.*
   (INT-07). Production's own run pulled it at 21:44:50 as `awsds-prod-job-exec`, and one call at
   21:45:36 answered `InvalidParameterException` with no repository named, the run unaffected, as Stage
   18 read on 2026-10-19.
+
+## 2026-10-24 — v0.4.0's merge request and pipeline #74: `test-deploy` read the wrong workflow's ARN
+
+*The user's hand for the merge requests and the tags; Claude's for the patches and the readings (the job
+traces through GitLab's API in the user's Chrome session, AWS as the infrastructure user with
+`InfrastructureAccess`), in the session of `runbooks/promotion.md` §V (the branch
+`claude/eloquent-ishizaka-04f598`). Times UTC.*
+
+- **[Claude] §V step 2's inputs**: the mirror `awsds/infrastructure` read at `c714c47d` (`ls-remote`), PR
+  #254's squash merge, which carries `c60ad8d6`'s three files; the patch from `awsds/app-etl`'s `main`
+  (`ff4caf1c`, tree `1833426e`) to `examples/app-etl/` at `c714c47d`, 13 files, applied in a scratch
+  repository and checked to give the tree `495b8953`.
+- **[user]** The branch `data-release` (`8c8e8f48`), MR !8 merged at 22:25:23 as `edff65f9`, read back
+  with the tree `495b8953`; the tag `v0.4.0` on `edff65f9`, pipeline #74 created at 22:30:07.
+- **[Claude] Pipeline #74's build half**: `pip-audit` (job 370) and `test` (371) passed, 22:30:08 to
+  22:30:25, ruff *"All checks passed!"*, *"27 passed"*, and the lint with `--algorithm-repository` *"ok: 9
+  arquivo(s)"* on `awsds-workflows` `d60e1ad`; `build-task-code` (373) passed; `build-image` (372),
+  22:30:28 to 22:33:12, *"== pushed …/awsds-prod-ecr-app-etl:v0.4.0-edff65f9@sha256:16165035…093f"*;
+  `scan-gate` (374) failed, allowed (decision 1), *"CRITICAL and HIGH: 725 found, 130 in the baseline"*,
+  the 595 outside it `linux-libc-dev 6.8.0-142.142`, `zlib` and `zlib1g`, as on #68.
+- **[Claude] `test-deploy` (375)**, 22:33:15 to 22:49:01, failed after a deploy that worked: the bundle,
+  15,638 bytes with both workers' packages and `glue/load_warehouse.py`; in the `test` project the workflow
+  `app_etl_test_experimentation_app_etl` updated at 22:34:40 and `app_etl_test_experimentation_app_etl_train`
+  created at 22:34:50; the run `GMzt8Abreb3WQCO` triggered at 22:34:52, *"Workflow triggered:
+  app_etl_test_experimentation_app_etl (run_id: GMzt8Abreb3WQCO)"*, `SUCCESS` at 22:49:01. The job's
+  `get-workflow-run` then answered *"An error occurred (ResourceNotFoundException) when calling the
+  GetWorkflowRun operation: Workflow run not found"*, exit 254: the script took the last *"ARN:"* line of
+  `deploy.log`, app-etl-train's, for app-etl's run. Every later job was skipped but `staging-down`.
+- **[Claude] `staging-down` (382)**, 22:49:04 to 22:50:55, the mirror at `c714c47d`: the three `[E]`
+  slices destroyed as `awsds-deploy-staging`, *"Destroy complete! Resources: 0 destroyed."* each, Staging
+  being down, and step 8.6's hook *"skipped - a deploy profile acts in a Workloads account, which runs no
+  Studio app"*. Verification xii's mechanism holds; its zero-burn half needs a leg that raised something.
+- **[Claude] The fix**, in the template: `test-deploy` takes the workflow's name from the run line and the
+  *"ARN:"* line carrying that name, read in `bash` and `sh` against the run's log lines (an absent run line
+  yields the FATAL) and by `./scripts/check-gitlab-ci.py`. The same change moves `AWSDS_WORKFLOWS` to
+  `d856982c`, `awsds-workflows` PR #24's squash merge, whose tree is `d60e1ad`'s (both archives `200`,
+  315,757 bytes). The patch over `edff65f9` checked to give the template's tree `8974b06d`. The tag
+  `v0.4.0` is spent; the data release is `v0.4.1`, and verification ix's drift takes `v0.4.2`.
+- **[user]** MR !9 (`test-deploy-run`, `a9a1358f`) merged at 22:54:29 as `d1ee24cb`, read back with the tree
+  `8974b06d`; the tag `v0.4.1` on `d1ee24cb`, pipeline #77 created at 22:55:06.
