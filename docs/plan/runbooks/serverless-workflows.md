@@ -90,7 +90,9 @@ reference for every option and every message; this section says how this lab use
 | `package-job` | builds a processing job's code folder for the job's image (§J1) | `operators/package-uv-job.py` |
 | `job-constraints` | prints the image environment's versions as requirements (§J1) | `package-uv-job.py --constraints` |
 | `package-task` | builds a Python or Bash task's archive for the worker (§C2) | `operators/package-uv.sh` |
-| `lint <path>` | checks an application folder, or one definition, against the rules of MWAA Serverless and of the pipeline, offline: each refusal is a line `file: rule: reason` with exit 1, otherwise `ok`; `--promoted --prefix` reads one rendered copy, `--image-repository` and `--instance-type` restrict a processing job. The rules are [Stage 8](../stages/stage-08-cicd-pipelines.md) 5.6's, and `app-etl`'s template (`examples/app-etl/.gitlab-ci.yml`) runs `lint .` with both, the application's repository and the ceiling's instance types | — |
+| `prepare-offline <project> <archive>` | writes the `.tar.gz` of a project folder prepared with its own interpreter, a processing job's code input that the job extracts on its volume; in the package since 2026-10-13 (`6bdbcad`) | — |
+| `lint <path>` | checks an application folder, or one definition, against the rules of MWAA Serverless and of the pipeline, offline: each refusal is a line `file: rule: reason` with exit 1, otherwise `ok`; `--promoted --prefix` reads one rendered copy, `--image-repository` and `--instance-type` restrict a processing job. Since `ff25eae` (2026-10-24) the promoted mode refuses a Glue task that keeps `create_job_kwargs`, `script_location`, `iam_role_arn`, `update_config` or `job_desc` (Stage 10 2.3's rule (6)), and the manifest rule an `include` holding `*`, `?` or `[`, a glob the CLI 1.0.9's `bundle` does not expand. The rules are [Stage 8](../stages/stage-08-cicd-pipelines.md) 5.6's, and `app-etl`'s template (`examples/app-etl/.gitlab-ci.yml`) runs `lint .` with both, the application's repository and the ceiling's instance types | — |
+| `lint-plan <plan.json> --prefix <s3-prefix>` | checks the Glue jobs of a saved Terraform plan, the JSON of `terraform show -json`, before the apply: in each `aws_glue_job` the apply leaves, the script and every file or module its arguments name lie under a `--prefix` (repeatable), and no module is named by its PyPI name; `ok: N job(s) do Glue: …` with exit 0, otherwise one `file: glue: address: reason` line per refusal with exit 1. Stage 10 2.3's rule (2c), since `ff25eae`; the promotion legs run it through `scripts/lint-plan.py` | — |
 
 **Install it by URL, from its `main`**, never by name: the name is free on PyPI, and a package someone
 else published there under it would install instead (the package's documentation, read 2026-10-11).
@@ -106,7 +108,8 @@ uv tool upgrade awsds-workflows
 The second command takes the newest commit of `main`: measured 2026-10-12 with uv 0.12.13, on an install
 from a local git remote that gained a commit. The commit installed is the `commit_id` in
 `direct_url.json`, under `$(uv tool dir)/awsds-workflows/`. The laptop's install was at `c9a4c20` on
-2026-10-18, older than `lint` (`3c1708e`, 2026-10-16), and answered `invalid choice: 'lint'`. The
+2026-10-18, older than `lint` (`3c1708e`, 2026-10-16), and answered `invalid choice: 'lint'`; still at
+`c9a4c20` on 2026-10-24, it answered `invalid choice: 'lint-plan'`. The
 package needs Python 3.12 or newer, which uv installs. It calls `uv` as a program, and `aws` for
 `--profile`.
 

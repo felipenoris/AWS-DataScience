@@ -45,7 +45,10 @@
 - `awsds-workflows`: <https://github.com/felipenoris/awsds-workflows>. Renders a serverless workflow's
   definition and packages its tasks' code; installed by git URL from `main`, never by name, and since
   2026-10-12 the tool of `docs/plan/runbooks/serverless-workflows.md` (§T). Its documentation, in
-  Portuguese, read 2026-10-12 at `937a66a` and `3499530`: <https://felipenoris.github.io/awsds-workflows/>.
+  Portuguese, read 2026-10-12 at `937a66a` and `3499530`: <https://felipenoris.github.io/awsds-workflows/>;
+  its section *O plano do Terraform* read 2026-10-24 at `ff25eae`. Its PR #23, merged 2026-10-24 as
+  `ff25eae`, writes Stage 10 2.3's rules (2c), `lint-plan`, and (6), and the `manifest` rule's refusal of
+  a glob include: <https://github.com/felipenoris/awsds-workflows/pull/23>.
 
 ## Organization and identity
 

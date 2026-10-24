@@ -145,11 +145,12 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   `gitlab_runner_version`, and fails when their major.minor differ: GitLab keeps a runner's major.minor
   with the server's. `check-copies.py` compares the files one slice keeps as a copy of another's, the
   application ceiling and the application and orchestration grants in Staging's and Production's
-  `foundation/`, and fails when one has diverged. `render-workflow.py` and `release-application.py`
-  are the promotion's two tools (Stage 10 decision 20 and step 2.4): the first renders an application's
-  workflow for a deployment target from the slices that own each value, and its `--check` runs in
-  `make check`; the second writes a release's bundle into the target's outputs bucket and reads it
-  back.
+  `foundation/`, and fails when one has diverged. `render-workflow.py`, `release-application.py` and
+  `lint-plan.py` are the promotion's tools (Stage 10 decision 20 and steps 2.4 and 2.3): the first
+  renders an application's workflow for a deployment target from the slices that own each value, and its
+  `--check` runs in `make check`; the second writes a release's bundle into the target's outputs bucket
+  and reads it back; the third runs `awsds-workflows lint-plan` on an application slice's saved plan
+  before a promotion leg applies it.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree. `make`
   itself is a convenience, not a dependency — every target is a direct call to scripts that also run

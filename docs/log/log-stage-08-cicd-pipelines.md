@@ -2656,3 +2656,55 @@ Staging's `egress/` up (Stage 9's log), Production coming down. Times UTC.*
   user's. What the leg leaves in Staging: the release tree, the inbox seed, `app-etl/work/` and
   `app-etl/outbox/report.json` in the `[P]` outputs bucket, the data key's amended statement, and the
   service-linked role; `release.auto.tfvars.json` in both slices, gitignored, carries the `VersionId`s for 3.7.
+
+## 2026-10-24 — the template's pin at `ff25eae` and the plan lint in the legs
+
+*Claude's hand, in the session `awsds-workflows-ff25eae-plan`, on the user's request pasted in chat (a
+prompt the project's cloud session wrote after `awsds-workflows` PR #23), which authorised plans and
+reads as the infrastructure user (`awsds-infra-staging`, `awsds-infra-prod`, `InfrastructureAccess`) and
+no apply. The plans, their JSON and the stand-in release's tfvars stayed under `$TMPDIR`; nothing was
+applied or written in AWS, nothing done in GitLab. Times UTC.*
+
+- **[Claude] The starting point**, 00:58: `origin/main` at `1d3a5f2`, the template's `AWSDS_WORKFLOWS` at
+  `3c1708e`; `awsds-workflows` PR #23 merged at 00:38:02 as `ff25eae`, that repository's `main`. Asked
+  whether `runbooks/promotion.md` §H step 2 had run, the user asked Claude to verify it: the legs' merge
+  request cannot exist, since `awsds-prod-gitlab` is `stopped` since 2026-10-22 01:01:50 and the legs
+  reached `main` with PR #244 at 2026-10-22 21:38:07, so this PR's `examples/app-etl/` is the MR's
+  source.
+- **[Claude] The pin** moved to `ff25eae`; the template's own line at 01:04:22, offline, the seven
+  instance types and `--image-repository awsds-prod-ecr-app-etl`: *"ok: 6 arquivo(s)"*, exit 0.
+- **[Claude] `scripts/lint-plan.py`**, beside `release-application.py`: `lint-plan.py <account> <plan.json>
+  --tag <tag>` reads the outputs bucket from `data/`'s state as the release job does, builds
+  `s3://<bucket>/applications/<app>/<tag>/glue/` and runs `awsds-workflows lint-plan` from
+  `AWSDS_WORKFLOWS` or PATH; a plan leaving no `aws_glue_job` fails after the tool's `ok: 0 job(s)`
+  (Lesson 71), and so does an empty bucket name. The legs: `staging-deploy` and `production-deploy` plan
+  `app/app-etl/` with `-out` into `mktemp -d`, write `show -json` beside it, lint it and apply that plan;
+  `production-plan` lints its plan, so a refusal stops the pipeline before the gate; `orchestration/`
+  unchanged. `check-gitlab-ci.py` OK, 40 script items through `bash -n`; ruff passes.
+- **[Claude] The script on fabricated plans**, 01:13:27, a stand-in `aws` serving `data/`'s state:
+  exit 0 for a created job and a kept one under `v0.2.1`'s prefix; exit 1 for another tag's prefix, a
+  PyPI module (`pandas==2.2.3`), an `--extra-py-files` item outside, a script unknown in the plan,
+  Production's bucket on Staging's plan (each a `glue` refusal), a state and a non-JSON file (`forma`), a
+  plan with no Glue job and one deleting it (the tool's `ok: 0 job(s) do Glue: -`, the script's failure),
+  a state without `outputs_bucket_name`, no tool, and the laptop's installed tool, still at `c9a4c20`
+  (*"invalid choice: 'lint-plan'"*); exit 2 for a tag that is not `vX.Y.Z`.
+- **[Claude] The release's promoted lint at the new pin**: the bundle
+  `s3://awsds-prod-releases/app-etl/v0.2.1/app-etl.zip` downloaded as `awsds-infra-prod` at 01:17:26,
+  6,988 bytes, SHA256 `7fb374d1…5fff`, the logs' value. `release-application.py staging … --lint
+  --dry-run` (01:17:38 to 01:17:45, `AWSDS_WORKFLOWS` at `ff25eae`, `IMAGE_REPO` and the seven types):
+  *"ok: 1 arquivo(s)"*, seven objects and the manifest listed, the rendered YAML `5b7900ee…` as 3.8's,
+  exit 0, nothing written. The same for Production (01:18:06 to 01:18:14): *"ok: 1 arquivo(s)"*, the
+  rendered YAML `fc79af2b…`, 3,324 bytes, exit 0.
+- **[Claude] Verification xiv at `ff25eae`**, 01:18:49 to 01:20:01: Staging's rendered copy of the
+  template's workflow (the source `d367ab29…`, the bundle's) `ok: 1 arquivo(s)` in the promoted mode; each
+  of rule (6)'s five keys put back on its Glue task refused under `glue`, exit 1, and the unrendered source
+  in the promoted mode refused sixteen times, rule (6) naming all five; a copy of `examples/app-etl/` with
+  `include: code/*.zip` refused under `manifest`, *"é um glob, que o bundle não expande"*, exit 1, the
+  untouched copy `ok: 6 arquivo(s)`; a rendered copy with a `dev-env` image and `ml.m5.2xlarge` `ok` without
+  the two options and refused twice with them. `lint-plan`'s refusals on the two application slices' plans
+  are Stage 10's entry of this date. The 40 violations of 2026-10-18 were not run again.
+- **[Claude] The texts**: the plan's 3.2, 3.5, 3.6, pass 4's bullets, 5.6 with its table, the bundle's
+  include item and xiv, and the Status row; the template's `.gitlab-ci.yml` comments, `manifest.yaml`'s
+  header and `README.md`; the root `README.md`; `runbooks/serverless-workflows.md` §T (the `lint` row,
+  a `lint-plan` row, and a `prepare-offline` row, in the package since 2026-10-13 and missing from the
+  table, outside PR #23); `runbooks/promotion.md` §T.

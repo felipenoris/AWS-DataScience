@@ -342,10 +342,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, never fired (no model package exists). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
-  (rank 59, `[E]`) written and planned, `OR-9` written; the module is tagged `orchestration-v0.1.0` (`26bfc15d`),
-  and both slices pin it, each planning `No changes` with no release (PR #246); every Stage 10 decision
-  was taken 2026-10-22; 2.3's lint runs in the legs' release job; pass 3 waits on the training and
-  transform quotas, 5.1's task a second workflow after them. Passes 1-2 run with Stage 8's pass 4 (decision 23); the objects they stopped at,
+  (rank 59, `[E]`) written and planned, `OR-9` written, both slices on the module's tag; every Stage 10
+  decision was taken 2026-10-22; 2.3's lint runs in the legs' release job, and since 2026-10-24 (2c)'s
+  `lint-plan` (`awsds-workflows` `ff25eae`) on the application slice's saved plan; pass 3 waits on the
+  training and transform quotas, 5.1's task a second workflow after them. Passes 1-2 run with Stage 8's pass 4 (decision 23); the objects they stopped at,
   Stage 8's application ceilings and Stage 9's data keys, outputs buckets and Staging's job role, exist
   since 2026-10-22.
   The MWAA Serverless service-linked role exists in Staging, not in Production, whose first apply needs
