@@ -333,7 +333,7 @@ shape is `when: manual` under `rules:` on a protected tag.
 - **3.4 — [user] Create the shared namespace `awsds/`** — one group holding `base`, `dev-env` and `app-etl`.
   It is what D21's larger branch requires: with one Interactive account, the repositories are shared by
   every persona rather than owned per environment.
-- **3.5 — Done 2026-10-12** the same way: `awsds/data-scientists` (5), `awsds/deployment-managers` (6), `awsds/governance-managers` (7), `awsds/dev-env-stewards` (8), private, the administrator their only member at creation. The data-scientist persona is a Developer in `awsds/data-scientists` since 2026-10-12, added by the user after its first SAML sign-in; the other three follow the same way.
+- **3.5 — Done 2026-10-12** the same way: `awsds/data-scientists` (5), `awsds/deployment-managers` (6), `awsds/governance-managers` (7), `awsds/dev-env-stewards` (8), private, the administrator their only member at creation. The data-scientist persona is a Developer in `awsds/data-scientists` since 2026-10-12, added by the user after its first SAML sign-in; the other three follow the same way. **The other three joined their groups on 2026-10-24**, at `runbooks/promotion.md` §H's sitting, by the user (the log).
 - **3.5 — [user] Create the four persona groups inside it**, mirroring the Identity Center groups 1:1 in
   *membership* and deliberately not in name — `data-scientists`, `deployment-managers`,
   `governance-managers`, `dev-env-stewards`, **without** the `sso-group-` prefix (the identity seam's first

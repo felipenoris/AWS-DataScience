@@ -13,8 +13,9 @@ chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs
 
 **Where it stands, 2026-10-24**: §0 and §P done, §0.5 included; §W's steps 1 to 4 done (the
 namespace, 9.3's schema). The quotas are above zero in both targets (§0.2), and the release that closes
-what v0.3.0 leaves, v0.4.0, is written, its six `[P]` applies done (§0.6). Left, in order: §H (the hub
-and GitLab), §T (the tag `v0.3.0`), §V (the tag `v0.4.0`, with the warehouse's table, the datashare
+what v0.3.0 leaves, v0.4.0, is written, its six `[P]` applies done (§0.6), and §H done the same
+evening (the mirror at `0236a99d`, the legs on `awsds/app-etl`'s `main`). Left, in order: §T (the tag
+`v0.3.0`), §V (the tag `v0.4.0`, with the warehouse's table, the datashare
 of §W step 5 and the model chain).
 
 | § | Holds |
@@ -205,6 +206,12 @@ rows.
    BUILD=1`, which keeps the build runner; the flag left out destroys it. Until then the deploy image runs 1.15.8, which every
    slice's `versions.tf` admits.
 5. **[Claude]** `./aws/cicd.py` after the runners' boot (`CI-1`, `CI-9`), and `GM-1` to `GM-8` on the copies.
+
+**Done 2026-10-24** (Stage 8's log): the environment raised by the user at 18:10 UTC, `cicd.py` 0
+failed; steps 1, 2 and 6 by the user, read back at 18:47: the mirror at `0236a99d`, MR !4 merged and the
+legs' MR !5 merged, `awsds/app-etl`'s `main` at `5a7d009a` identical to `examples/app-etl/` at
+`0236a99d`. Steps 3 and 4 are left: the house image does not hold Stages 8 to 10, and the laptop still
+runs Terraform 1.15.8.
 6. **[user] The CI/CD variable `TRAINING_IMAGE_URI`** on `awsds/app-etl`, protected, for v0.4.0's
    `test-deploy`: the value `terraform -chdir=terraform-live/staging/sagemaker output -raw
    training_image_uri` after §0.6, AWS's XGBoost image by digest. v0.3.0 reads no such variable.

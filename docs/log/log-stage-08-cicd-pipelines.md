@@ -2799,3 +2799,31 @@ the request), no AWS write. Times UTC.*
 - **[Claude]** The branch `claude/planejamento-estagios-8-9-10-847863` pushed and PR #254 opened against
   `main`; `awsds-workflows`' branch `treino-e-repositorio-de-algoritmo` pushed and its PR #24 opened, the
   merge of both the user's.
+
+## 2026-10-24 — `runbooks/promotion.md` §H: the environment up, the mirror at `0236a99d`, the legs on `main`
+
+*The user's hand for the environment and every GitLab act; Claude's for the readings, as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-prod` and the four other infrastructure
+profiles), reads only, and git reads over the tunnel. Times UTC.*
+
+- **[user]** *"Subi o hub e o GitLab (make hub-up, make gitlab-up BUILD=1) e liguei o túnel."* **[Claude]
+  read back**, 18:14 to 18:27: `make status` names `production/vpn/`, `production/proxy/` and
+  `production/tooling/` up with one instance each, `production/egress/` with 12 resources and
+  `production/runners/` with 13 (the instances launched 18:10:11 to 18:13:17: `t3.nano`, `t3.micro`,
+  `t4g.large`, two `t3a.small` and the `m8i.xlarge` build runner), the burn estimated at 0.4521 USD/h;
+  `./aws/cicd.py` on the five profiles, 0 checks failed (`CI-1` the deploy runner running, `CI-9` the
+  test runner with IMDSv2 required and hop limit 1, its role holding its token, the CA root and Session
+  Manager alone). The mirror `awsds/infrastructure` read at `5b9de6b8` (PR #151), an ancestor of
+  `0236a99d` 102 commits behind it, so the push was a fast-forward; `awsds/app-etl`'s `main` at `v0.2.1`
+  (`1e756091`) with MR !4 open.
+- **[user]** *"Fiz os atos do §H: o espelho em 0236a99d, as configurações e memberships, o MR !4 e o MR
+  das pernas mesclados, e a variável TRAINING_IMAGE_URI criada."* **[Claude] read back** at 18:43: the
+  mirror's `main` at `0236a99d5577b0925e3cd87cbdde238ea6098bba`; `awsds/app-etl`'s `main` at `628f17e`,
+  MR !4's merge, with the legs' branch `promotion-legs` (`6a342bc`, MR !5) not in it, its tree identical
+  to `examples/app-etl/` at `0236a99d`. The tag was held until the merge.
+- **[user]** *"Mesclei o MR !5 na main do awsds/app-etl."* **[Claude] read back** at 18:47:53: `main` at
+  `5a7d009a` (*"Merge branch 'promotion-legs' into 'main'"*), its tree identical to `examples/app-etl/`
+  at `0236a99d` (`diff -r` against `git archive`), seven `staging-*` and `production-*` jobs, the lint at
+  `awsds-workflows` `ff25eae`. The job token's allowlist, the deployment managers' seat and the variable
+  `TRAINING_IMAGE_URI` are GitLab settings no read here reaches; the legs' clone of the mirror and
+  v0.4.0's `test-deploy` read them.

@@ -12,7 +12,6 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | Which principal the data cells filters bind, and whether the row half is a Lake Formation RLS policy | [Stage 11](stages/stage-11-dlp.md) decision 12, with 6f decision 1 | pass 1's two lake applies and 2.3's proof; the code is written and creates nothing |
 | The three Claude 5.5 model agreements (Sonnet 4.5 is Legacy since 2026-10-08) | [6e](stages/stage-06e-claude-code-bedrock.md) decision 17, PR #108 | PR #108's applies and the image's model pins; the PR conflicts with main in `CLAUDE.md`, `docs/AWS_STATE.md` and `docs/log/INDEX.md` (read 2026-10-18), for its session to resolve when the agreements arrive |
 | The registry proof's Sandbox half (the persona from a laptop, the project role from a space); the approval half runs as a pipeline job at Stage 10's first registration. The escape-hatch window ran 2026-10-22 and closed, its refusal read in the trail 2026-10-23 (6.3 done) | Stage 9 3.4 | verification v |
-| MR !4's merge on `awsds/app-etl`, the release's notes without backticks: `v0.2.1`'s GitLab release failed on them, and the next tag makes one | [Stage 18](stages/stage-18-staging-deployment-project.md), [Stage 8](stages/stage-08-cicd-pipelines.md) verification xx | a GitLab release for the next tag |
 
 ## Decisions
 
@@ -44,7 +43,7 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | Activate the cost allocation tags in Management's Billing console; the analyzer in Audit | Stage 12 4.1, 7.1 |
 | Read Cost Explorer for August and September in Management, Log Archive and Audit, the accounts no CLI profile reaches | Stage 12 4.2 |
 | The persona's refused job and its implicit-deny attempt | 6d 1.1, 1.2 |
-| The three persona memberships in GitLab; Auto DevOps and the restricted visibility level; the CodeConnections attempt from Data Governance's console | [Stage 7](stages/stage-07-gitlab-runners-ecr.md) 3.5, runbook §I step 6, 7.2 |
+| Auto DevOps and the restricted visibility level; the CodeConnections attempt from Data Governance's console | [Stage 7](stages/stage-07-gitlab-runners-ecr.md) 3.5, runbook §I step 6, 7.2 |
 | 6h 5.3 and 5.4's real attempts, for the refusals' wording, with the compute up (the simulator read both as designed on 2026-10-18) | [6h](stages/stage-06h-redshift-connection.md) |
 | Merge `awsds-workflows`' branch `treino-e-repositorio-de-algoritmo` (`d60e1ad`, the lint's rule `treino` for a training task, `--algorithm-repository`); the template pins the commit | [Stage 10](stages/stage-10-orchestration-promotion.md) 5.1 |
 | Install Terraform 1.16.6 on the laptop, the bump taken 2026-10-22 for CVE-2026-78669; the pins in `.github/workflows/offline-gates.yml` and the deploy image follow, the image's release at a GitLab sitting (the laptop still ran 1.15.8 on 2026-10-23) | [`upstream-releases.md`](upstream-releases.md) |
