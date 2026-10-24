@@ -2631,9 +2631,6 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   the 2026-10-23 entries; `staging/data/main.tf`'s `AllowTheWorkflowRolesForTheirWorkflows` and the
   orchestration module's `UseTheKeyForItsWorkflow`.
 
----
-
-*Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
 - **MWAA Serverless calls `iam:CreateServiceLinkedRole` in the saver's session on a workflow created
   through Cloud Control, with its service-linked role already in the account** (read 2026-10-24 in
   Staging's trail of 2026-10-23). At Stage 8 3.8's apply the call came at 22:47:51, invoked by
@@ -2643,3 +2640,19 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   unmeasured, so a grant written "until the role exists" is written for both accounts. Where:
   `log-stage-10-orchestration-promotion.md`, 2026-10-24; Staging's `deploy-role.tf` and Production's
   `deploy-anchors.tf`, `CreateTheWorkflowServiceLinkedRole`.
+
+- **MWAA Serverless authorizes the tags a `CreateWorkflow` carries as `airflow-serverless:TagResource` on
+  `workflow/*`, and no trail shows that check** (measured 2026-10-24, pipeline #68 in Staging). A
+  workflow's ARN ends in a suffix the service generates (`awsds-staging-wf-app-etl-hHNGu2YFTv`), so
+  `TagResource` granted on the name pattern `workflow/awsds-<env>-wf-*` misses the creation: Cloud
+  Control's handler failed with `UnauthorizedTaggingOperation`, *"not authorized to perform:
+  airflow-serverless:TagResource on resource: …workflow/*"*. The check runs inside `CreateWorkflow` and
+  leaves no CloudTrail event of its own, so a trail replayed through the policy simulator cannot show
+  it, and a by-hand apply under a broad permission set passes it unseen. The service's condition keys
+  are `aws:RequestTag/*`, `aws:ResourceTag/*` and `aws:TagKeys`; held to `aws:RequestTag/Name`, the
+  retried apply created the workflow in 5 s. Where: `log-stage-10-orchestration-promotion.md`,
+  2026-10-24; both `foundation/apply-orchestration.tf`, `TagTheWorkflowsAtCreation`.
+
+---
+
+*Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

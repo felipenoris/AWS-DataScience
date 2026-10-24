@@ -2073,6 +2073,8 @@
 
 - `awscc_mwaaserverless_workflow` - the Cloud Control (awscc provider) resource generated from that registry type: <https://registry.terraform.io/providers/hashicorp/awscc/latest/docs/resources/mwaaserverless_workflow>.
 
+- The IAM policy generator's service table, read for MWAA Serverless (`airflow-serverless`) on 2026-10-24: its condition keys are `aws:RequestTag/${TagKey}`, `aws:ResourceTag/${TagKey}` and `aws:TagKeys`, no service key, which `TagTheWorkflowsAtCreation` holds to `aws:RequestTag/Name` (Stage 10 1.5): <https://awspolicygen.s3.amazonaws.com/js/policies.js>.
+
 - Amazon MWAA Serverless key concepts (YAML workflows, per-workflow IAM role, EventBridge Scheduler underneath, no Airflow UI): <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/mwaas-concepts.html>.
 
 - Stage 10's documentation pass (read 2026-08-16):
