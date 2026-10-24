@@ -202,11 +202,14 @@ test-deploy:
       rc=0
       aws-smus-cicd-cli deploy --manifest manifest.yaml --targets test --skip-validation --no-events > deploy.log 2>&1 || rc=$?
       cat deploy.log
-      # The CLI 1.0.9 prints the workflow as "ARN: <arn>" and the run as "(run_id: <id>)". sed, not
-      # grep: a missing line yields an empty value and the FATAL below, where grep's exit status under
-      # the runner's pipefail would end the job before any message.
-      arn="$(sed -n 's/.*ARN: \(arn:[^ ]*\).*/\1/p' deploy.log | tail -1)"
-      run_id="$(sed -n 's/.*(run_id: \([^)]*\)).*/\1/p' deploy.log | tail -1)"
+      # The CLI 1.0.9 prints each workflow it creates as "ARN: <arn>" and the run as "Workflow
+      # triggered: <name> (run_id: <id>)". The manifest creates two workflows and runs one, so the ARN
+      # is the one whose name the run line carries, never the last printed (refused 2026-10-24,
+      # v0.4.0's job 375). sed, not grep: a missing line yields an empty value and the FATAL below,
+      # where grep's exit status under the runner's pipefail would end the job before any message.
+      name="$(sed -n 's/.*Workflow triggered: \([^ ]*\) (run_id: .*/\1/p' deploy.log | tail -1)"
+      run_id="$(sed -n 's/.*Workflow triggered: [^ ]* (run_id: \([^)]*\)).*/\1/p' deploy.log | tail -1)"
+      arn="$(sed -n "s/.*ARN: \(arn:[^ ]*:workflow\/${name:-none}-[^ ]*\).*/\1/p" deploy.log | tail -1)"
       echo "deploy: exit $rc, run $run_id of $arn"
       if [ -z "$arn" ] || [ -z "$run_id" ]; then echo "FATAL: deploy.log names no workflow ARN or run id"; exit 1; fi
       aws mwaa-serverless get-workflow-run --workflow-arn "$arn" --run-id "$run_id" --output json > run.json

@@ -414,12 +414,16 @@ ENV=production` here carries `ONLY=`, or the build runner is destroyed.
    says an engine's flag is not needed, and Staging's leg reads through the lake's flag alone; a refusal
    says it is, and **[user]** Staging's flag goes on the same way before step 3 (`DT-5` bracketing it).
    The run adds ten rows to `curated.trades`, which the tests count from, not assume.
+   **Done 2026-10-24, 22:14 to 22:29 UTC** (Stage 9's log): the run committed with Production's flag off,
+   so Staging's flag stays unset; `curated.trades` at 30 rows, Production's flag on again, `DT-5` passing.
 2. **[user] The legs' merge request for v0.4.0** on `awsds/app-etl`, from `examples/app-etl/` at `main`
    (the procedure of §H step 2), merged; the mirror pushed at `main` (`git push gitlab main`), since the
    legs clone the new scripts and slices (`model-chain.py`, the render's classes, the application and
    orchestration slices). The push also carries `c60ad8d6`, so `staging-down` destroys as
    `awsds-deploy-staging` for the first time (Stage 8 verification xii). `awsds/app-etl`'s `main` is the
    v0.3.x template with MR !6's and MR !7's fixes (`ff4caf1c`), both already in `examples/app-etl/`.
+   **Done 2026-10-24**: the mirror at `c714c47d`; the branch `data-release`, a patch over `ff4caf1c`
+   checked to give `examples/app-etl/`'s tree `495b8953`, merged at 22:25 UTC as `edff65f9`.
 3. **[user] The tag `v0.4.0`**. What it reads first: `test` with `--algorithm-repository`; `test-deploy`
    creating both workflows in the `test` project and running `app-etl`, whose Glue job now writes the
    table and the training sets under the project's prefix; then the Staging leg: the render of three
