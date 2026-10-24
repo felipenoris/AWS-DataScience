@@ -1737,3 +1737,7 @@ the nine of `VPC-Workloads`. Times UTC.*
   reads no interface endpoint and no NAT; `make status` at 00:48 reads every `[E]` slice down and the burn
   0.0156 USD/h, the hub's two hosts, whose `make hub-down` is the user's. 9.5's datashare (both sides),
   9.6 and 9.7 are the sitting that follows.
+- **[Claude] `make hub-down`** (00:52:15 to 00:52:20, on the user's authorization in chat, *"Autorizo make
+  hub-down agora, com a leitura do make status depois."*): the dormant hook stopped `awsds-prod-vpn` and
+  `awsds-prod-proxy`, both `stopped` a minute later; `make status` at 00:53 reads the three `[D]` hosts
+  stopped, every `[E]` slice down and the burn **0.0000 USD/h**. No other session running on the machine.
