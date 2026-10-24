@@ -462,7 +462,10 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     (S3 → EventBridge → Glue workflow, landing on the 3.4 service-guard side), already asked by the
     stage — **measure it against the guard rather than assuming it lands on the allow side**; if it
     does not qualify, event-driven ingestion is blocked by the SCP as written and that becomes a
-    decision in its own right. (c) Whether Stage 9's writer makes `awsds-data-raw` redundant.
+    decision in its own right. (c) Whether Stage 9's writer makes `awsds-data-raw` redundant. **Read
+    2026-10-23**: Stage 9 2.5's pickup wrote `curated.trades` from the drop-box with no `raw` zone in
+    between and no crawler, the Iceberg writer registering its own table, which is (c)'s first reading;
+    the collector exists now, so a drop stays in the box only until the next pickup.
     **The consequence of leaving it open**: D25's drop-box stays inert **even after
     `DenyControlPlaneOffVpn` is amended**. The write and the catalogue are independent failures, and
     fixing the first alone produces a bucket that accepts files nothing ever reads.
