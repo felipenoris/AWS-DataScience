@@ -1862,3 +1862,19 @@ after the user signed the `awsds` session in again. Times UTC.*
   id; then the vend pair at 03:21:59, `lakeformation:GetDataAccess` in the same session invoked by
   `glue.amazonaws.com` and by `athena.amazonaws.com`, both answered. The persona's read of the governed
   table is attributed by its own session, not by the profile's name.
+
+## 2026-10-24 — decision 14 taken by the user, as recommended: Data Governance
+
+*The user's hand, in chat; Claude recording.*
+
+- **[user]** *"Aceito as duas recomendações: Stage 9 decisão 14 como (a), Data Governance registra e
+  concede o datashare; e 6d decisão 11, manter o endpoint lakeformation do Sandbox. Registre as
+  decisões."*
+- **[Claude] What it fixes**: 9.5's `<LF>` is Data Governance. Production grants the datashare `VIA DATA
+  CATALOG` to it and authorizes `DataCatalog/<Data Governance>`; the lake's administrator associates,
+  registers, creates the federated database and grants Sandbox, with the lake's own LF-Tags; Sandbox's
+  administrator grants the project's role. The Lake Formation grants keep one grantor, so the step's
+  callout, 9.8, the risk on the register, D40's compensation paragraph and `GOVERNANCE.md` no longer
+  speak of a second grantor account; the `GRANT`s inside `governed` stay Production's, in the register's
+  Redshift half. The registration is permanent under `DenyLakeDeletionAndDeregistration`. The waiting
+  list's row leaves; 6d decision due 11 is that stage's log.

@@ -11,9 +11,9 @@ record. What a step reads is recorded in that stage's log, in the sitting it ran
 Written 2026-10-23 with the environment down. Every `[Claude⚡]` apply waits for the user's word in
 chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs.
 
-**Where it stands, 2026-10-24**: §0 and §P done but the items §0.5 lists; §W's steps 1 to 4 done (the
-namespace, 9.3's schema); left, in order: §0.5's item 4 (the two decisions; items 1 to 3 done), §H (the hub and GitLab), §T (the tag), §W
-step 5 (the datashare, after Stage 9 decision 14), §Q (after the quotas, which read `CASE_OPENED`).
+**Where it stands, 2026-10-24**: §0 and §P done, §0.5 included; §W's steps 1 to 4 done (the
+namespace, 9.3's schema); left, in order: §H (the hub and GitLab), §T (the tag), §W
+step 5 (the datashare, Data Governance registering it by Stage 9 decision 14), §Q (after the quotas, which read `CASE_OPENED`).
 
 | § | Holds |
 |---|---|
@@ -134,9 +134,9 @@ What stays with the environment: the runs, the legs, the warehouse's compute and
    ```bash
    for k in incoming/2026/08/20/probe-4d-sandbox.txt incoming/2026/09/18/awsds-6g-24-probe.txt incoming/2026/09/18/awsds-6g-24-probe-tunnel.txt; do aws s3api delete-object --bucket awsds-data-dropbox --key "$k" --profile awsds-infra-data --region us-west-2; done
    ```
-4. **[user] Stage 9 decision 14**, the account that registers the datashare (recommended: Data
-   Governance), before §W step 5; and 6d decision due 11, Sandbox's `lakeformation` endpoint (recommended:
-   keep it, Stage 10 0.5).
+4. **[user] Stage 9 decision 14**, the account that registers the datashare, and 6d decision due 11,
+   Sandbox's `lakeformation` endpoint. **Taken 2026-10-24, as recommended**: Data Governance registers and
+   grants the datashare; the Sandbox endpoint stays.
 
 ## H. The hub and GitLab
 
@@ -322,8 +322,8 @@ Separable and last; nothing needs it. In a Production sitting with the hub up.
    §6; `make down ENV=production` before the sitting ends, the only guard that is not a setting.
    **9.5 and 9.5a are a sitting of their own**: the datashare's two sides, the producer's SQL in Production and
    the lake's registration and federated database, then the Sandbox mount for 9.7; 9.6 and 9.7 are the user's.
-   **Read 2026-10-24**: 9.5 carries the command sequence, five steps across Production, the account Stage 9
-   decision 14 names and Sandbox; 9.5a is settled by decision 5 (no switch); the sitting raises both
+   **Read 2026-10-24**: 9.5 carries the command sequence, five steps across Production, Data Governance
+   (Stage 9 decision 14) and Sandbox; 9.5a is settled by decision 5 (no switch); the sitting raises both
    warehouses' compute (`make up ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift`, then
    Sandbox's `warehouse-compute/`) and measures first whether Sandbox reads with Production's workgroup
    gone; 9.6 and 9.7 wait for a table in `trades`, which 9.4's DDL and load job create in a release after

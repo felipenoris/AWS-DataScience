@@ -336,7 +336,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Production's is needed beside the lake's is unmeasured (a third run, the user's console). 9.1's
   `production/warehouse/` applied 22:07 UTC (the namespace; `EXC-13`'s Production sentence), refusal 9
   lifted, `warehouse-compute/` planning 2 to add, 9.3 run 2026-10-24 (the schema `trades` at 1 TB, the roles, the `IAMR:` users, the default privileges, every `PUBLIC`
-  `CREATE` revoked), 9.5's datashare (written as commands 2026-10-24, decision 14 open: the account that registers it, Data Governance recommended) and 9.6-9.7 left, those two waiting on a table in `trades` from 9.4's unwritten DDL; 9.4's grant applied,
+  `CREATE` revoked), 9.5's datashare (written as commands 2026-10-24, decision 14 taken 2026-10-24: Data Governance registers and grants it) and 9.6-9.7 left, those two waiting on a table in `trades` from 9.4's unwritten DDL; 9.4's grant applied,
   `workloads-egress/` taking `GROUPS=redshift`; the `ml.m5.large` pair requested 2026-10-23 (`CASE_OPENED`); the
   persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run but the space halves and the Data API negative
   (INT-06 answered, open question 8 closed); the sittings in `runbooks/promotion.md`.

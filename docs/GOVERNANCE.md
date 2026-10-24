@@ -74,8 +74,8 @@ The Staging and Production rows describe Stage 9; neither data slice is built.
 a *base* is a Redshift `schema`** (`objectives.md`, 2026-09-20), so the Redshift `database` is only a class
 container and every grain below is per schema. `Sandbox` gains `awsds-sandbox-warehouse` with one `sandbox`
 database of themed schemas, outside Lake Formation like the sandbox lake beside it;
-`Production` gains `awsds-prod-warehouse` with the `governed` database, inside Lake Formation as a federated
-catalog. `Data Governance` gains **nothing** — a Redshift Serverless workgroup needs subnets, that account has
+`Production` gains `awsds-prod-warehouse` with the `governed` database, inside Lake Formation through a
+datashare Data Governance registers as a federated database (Stage 9 decisions 5 and 14). `Data Governance` gains **nothing** — a Redshift Serverless workgroup needs subnets, that account has
 no VPC by decision, and the same absence that sends INT-13 to its manual fallback sends the warehouse to the
 two accounts that have VPCs. `Staging` gains nothing either: it reads the governed lake through its share, and
 a warehouse it has no writer for would hold nothing of its own.
@@ -278,7 +278,8 @@ Consequences this file has to carry rather than leave to a stage:
   The SQL itself would be in the warehouse's audit export, which carries nothing while a workgroup exists
   (`EXC-16`), so [Stage 11](plan/stages/stage-11-dlp.md) has no Redshift feed to build on yet.
 - **The governed class is the first governed store outside Data Governance**, which is D22's line. The
-  federated-catalog registration is the compensation and the **grant register gains a second grantor account**.
+  datashare Data Governance registers and grants is the compensation (Stage 9 decisions 5 and 14), so **the
+  Lake Formation grants keep one grantor**; the `GRANT`s inside `governed` are Production's.
 - **A sandbox schema is D19's shape in a fourth store**: a project can write into it anything it can read,
   a governed copy included. The copy is not prevented; the destination is inside the perimeter, under the
   account's own data CMK, and Lesson 1 applies — a copy somewhere less governed is not a hole to be closed.

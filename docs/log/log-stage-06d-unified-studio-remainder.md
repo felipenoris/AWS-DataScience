@@ -3139,3 +3139,17 @@ policy"*.
   been applied since `vpc-egress-v0.11.1`.
 
 ---
+
+## 2026-10-24 — decision due 11 taken by the user, as recommended: the `lakeformation` endpoint stays
+
+*The user's hand, in chat, in the session `stages-8-9-10-prep-f13bc2`; Claude recording.*
+
+- **[user]** *"Aceito as duas recomendações: Stage 9 decisão 14 como (a), Data Governance registra e
+  concede o datashare; e 6d decisão 11, manter o endpoint lakeformation do Sandbox. Registre as
+  decisões."*
+- **[Claude] The reading it rests on** (Stage 10 0.5, 2026-10-23): Stage 9's Glue proof job, inside
+  `VPC-Workloads` with no default route, vended its Lake Formation credentials through Production's
+  `lakeformation` endpoint, `GetDataAccess` carrying `vpcEndpointId`. A Glue job or session a Sandbox
+  project runs on the lake share is the same flow, and removing the endpoint would cost a house-image
+  release, the image's `NO_PROXY` naming the service. `sandbox/egress/` keeps it, USD 0.010 per AZ-hour
+  while the slice is up; the waiting list's row leaves.
