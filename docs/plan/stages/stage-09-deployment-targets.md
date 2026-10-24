@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **pass 0 read and pass 1 applied on 2026-10-18** ([the log](../../log/log-stage-09-deployment-targets.md)), from a laptop session as the infrastructure user: the `Workloads` OU document's job settings and serverless deny (9 statements, the battery's `ou` phase after the apply 39 as expected, 0 unexpected, 7 not measured, `DT-11` passing) and `production/sagemaker/` (16 resources, re-plan `No changes`); `production/workloads-egress/`'s endpoints and DNS Firewall raised by the next Production `make up` (seven endpoints with decision 12 (a), 16 to add). Decisions 4, 9 (a), 10 and 3.7 (b) taken as recommended. Verification viii is answered, its assignment half by `./aws/list-identities.py` and the Identity account's CloudTrail (2026-10-18). Owed in pass 1: 3.4's registry proof and 6.3's window, the user's; 3.5's instance-preference rows ran on 2026-10-22 in Stage 18's 8.7 battery, each as expected. **The processing-job quotas of `ml.m5.large`, `ml.m5.xlarge` and `ml.m5.2xlarge` read 0 in Production and Staging** (2026-10-18, Production's again on 2026-10-20); `ml.t3.medium`, the type `app-etl`'s `process` task names, reads 4 in both, AWS's default (Production's re-read 2026-10-20, no increase requested), and Staging's first SageMaker job ran on it on 2026-10-19, `app-etl-20261019T205205` ([Stage 18](stage-18-staging-deployment-project.md) 4.4), refused by no statement of the `Workloads` document. Production's training quotas read 0 for every type inside the ceiling that has one (2026-10-20, 3.5). Pass 2 waited on decision 3. **Prepared 2026-10-22 with the environment down** (the log): Stage 8's decision of that day makes this stage's `awsds-<env>-job-exec` the job role in Staging and Production, so 4.3's `staging/sagemaker/` stands before Stage 8's pass 4; 4.3a re-cuts `staging/egress/` to `VPC-Workloads`' endpoint set (planned, 16 to add with decision 12 (a)); `production/sagemaker/`'s job role gains `glue:GetConnection`; and `./aws/deploytargets.py` reads each pass from its own objects, 0 failed and 8 notes where the same state read 7 failed, with Staging's job role and the job log groups (`DT-12`) added. Staging's training quotas read 0 like Production's, and no type inside the ceiling has a transform quota above 0 in either account. Every open decision was taken by the user the same day, as recommended, 1 and 3 among them: Staging keeps no mirror and reads the governed lake through a read-only share, and reads nothing of Production's outputs; no decision holds a pass now. **Passes 2, 3 and 5 and decision 12 (a) applied the same day**, 19:35-19:59 UTC, on the user's authorization: `data-governance/data/` (8 added, 5 changed: the read shares to Staging and Production, Production's named write on `curated`, the table `curated.trades` with `classification=internal`, the lake's trusted endpoints), `production/data/` and `staging/data/` by Recipe D (the settings, then 34 and 33 added), the jobs' security group and Glue connection in both `sagemaker/` slices, and `production/workloads/` on `vpc-v0.4.0` for Stage 10; every re-plan reads `No changes`, `./aws/deploytargets.py` and `./aws/datalake.py` 0 failed, and verification xiv is answered. `lakeformation` joins both egress slices at the next `make up` (16 to add each), and `DT-8` reads the read-only share. **The third sitting of 2026-10-22, the environment down**: 5.1 written as the customer-managed policy `awsds-prod-data-scientist` in `production/data/` (planned: 1 to add, 1 to change, the key policy admitting the warehouse's audit groups) and its attachment in `identity/sso/` (1 to add, 1 to change: `DataScientistProdAccess` 7,098 to 8,438 characters), after the inline form rendered 10,550 against the 10,240 ceiling; `lakeformation:GetDataAccess` joins the set, without which 2.3's regrants reach nothing; the two warehouse denies become one shared fragment; `DT-10` reads the managed half. **Both applied the same evening on the user's authorization**, 22:50 to 22:52 UTC, each re-plan `No changes` and `DT-10` passing. Step 9.1's two slices written: `production/warehouse/` plans 9 to add, and `production/warehouse-compute/` is held from `make up ENV=production` (`layers.py` refusal 9) until the namespace it reads is applied. **6.3 done**: the window approved, opened by apply at 23:09 UTC, exercised (three assumptions, each alarmed and mailed; the reads; both negatives refused one layer before the ones the step named), closed by apply at 23:35, and the refusal against the closed trust read in the trail on 2026-10-23. Owed after that sitting: 2.4-2.6's runs, the space halves of 3.4 and 8.1, and 5.4's Data API negative. **Prepared 2026-10-23 with the environment down** (the log): 2.4's proof job written, `awsds-prod-producer-proof` in `production/sagemaker/` with its script under `proofs/` and its two modes, the job role gaining `glue:UpdateTable` for an Iceberg commit, the slice planned *1 to add, 1 to change* and **applied the same evening with the script uploaded**, 9.4's grant applied with it, `production/workloads/` read `No changes` (its bump applied 2026-10-22); decision 13 opened and taken by the user the same day as recommended, (a): the full-table-access flag AWS's page names for a Glue write, unset in Production and in the lake, turned on in Production by the user's hand in the console at 19:49 UTC, read back with the parameters intact (`TM-26`); 9.4's Data API grant written on `awsds-deploy-prod` (planned *1 to change*) and `production/workloads-egress/` taking `GROUPS=redshift`; `WH-15` naming each account's `make down`; the persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 written as commands, runnable with nothing up; the quota codes and the request commands in 3.5, no request ever made in either account; the sittings in order in [`runbooks/promotion.md`](../runbooks/promotion.md). **The persona proofs run by the user the same evening** (the log): 5.4 and 8.3 (the override and the two control-plane negatives answered, the Data API negative validating before authorizing with no workgroup, re-run at pass 6), 3.4's persona half (the registry pair, verification v), 8.1's laptop half, 8.4 (three layers, the key, the bucket and the set), 2.5's drop and 2.6's read-back, and 8.2 in the user's console session (INT-06 answered: one page works, open question 8 closed); the space halves wait for the Sandbox sitting. **Staging is the renamed `Development`** ([6b](stage-06b-development-becomes-staging.md)): 10.50.0.0/16 with its `[P]` gateway endpoint, peered with `VPC-Networking` only, no default route, and an `egress/` slice still cut for an Interactive account, which 4.3a re-cuts. **Production's jobs run in `VPC-Workloads`** ([6c](stage-06c-networking-hub.md)), whose endpoint slice holds the jobs' six endpoints once pass 1 is applied (3.3a) and whose gateway endpoint, not `production/foundation/`'s, is their INT-05 anchor (1.4). Three measurements from [6d](stage-06d-unified-studio-remainder.md) and [6i](stage-06i-sandbox-orchestration.md) reshape the runtime: a SageMaker job's settings are enforced on whoever calls `Create*Job`, never on the role the job runs as (3.5, decision 9); a job under network isolation reads no governed data, so the producer and the pickup stay Glue (3.1); and `consumer-data-v0.6.0` supplies neither a workgroup nor a results bucket, so this stage authors both (decision 11, [D19](../decisions/D19-derived-zone.md)'s re-decision). **The Staging data CMK is created here**, as `alias/awsds-staging-data`. Step 9 adds the governed half of the Redshift warehouse ([D40](../decisions/D40-redshift-warehouse.md)), copied from the Sandbox slices [Stage 5b](stage-05b-redshift-serverless.md) built and [6h](stage-06h-redshift-connection.md) measured **The Production sitting of 2026-10-23** (the log): 2.4's first run refused at the vend with Production's flag alone, decision 13's lake half applied at 22:03 UTC, the second run committed at 22:06 and 2.5's pickup consumed the drop at 22:11, `curated.trades` at twenty rows; Stage 10 0.5 answered; 9.1's namespace applied at 22:07, refusal 9 lifted, the compute planning *2 to add* and waiting on 9.3's theme and quota; `deploytargets.py` and `datalake.py` all checks passed. Owed: the third run with Production's flag off, the space halves, 5.4's Data API negative, the persona's Athena read of the rows, pass 6's SQL **9.3 run 2026-10-24** (the log): the compute raised by the user with `GROUPS=redshift`, the nineteen statements `FINISHED` through the Data API as the admin, the schema `trades` at 1 TB with its owner, roles, `IAMR:` users and default privileges, every `PUBLIC` `CREATE` revoked, `warehouse.py --sql` passing, the audit groups carrying the session; 9.5's datashare, 9.6 and 9.7 left |
+| **Status** | **pass 0 read and pass 1 applied on 2026-10-18** ([the log](../../log/log-stage-09-deployment-targets.md)), from a laptop session as the infrastructure user: the `Workloads` OU document's job settings and serverless deny (9 statements, the battery's `ou` phase after the apply 39 as expected, 0 unexpected, 7 not measured, `DT-11` passing) and `production/sagemaker/` (16 resources, re-plan `No changes`); `production/workloads-egress/`'s endpoints and DNS Firewall raised by the next Production `make up` (seven endpoints with decision 12 (a), 16 to add). Decisions 4, 9 (a), 10 and 3.7 (b) taken as recommended. Verification viii is answered, its assignment half by `./aws/list-identities.py` and the Identity account's CloudTrail (2026-10-18). Owed in pass 1: 3.4's registry proof and 6.3's window, the user's; 3.5's instance-preference rows ran on 2026-10-22 in Stage 18's 8.7 battery, each as expected. **The processing-job quotas of `ml.m5.large`, `ml.m5.xlarge` and `ml.m5.2xlarge` read 0 in Production and Staging** (2026-10-18, Production's again on 2026-10-20); `ml.t3.medium`, the type `app-etl`'s `process` task names, reads 4 in both, AWS's default (Production's re-read 2026-10-20, no increase requested), and Staging's first SageMaker job ran on it on 2026-10-19, `app-etl-20261019T205205` ([Stage 18](stage-18-staging-deployment-project.md) 4.4), refused by no statement of the `Workloads` document. Production's training quotas read 0 for every type inside the ceiling that has one (2026-10-20, 3.5). Pass 2 waited on decision 3. **Prepared 2026-10-22 with the environment down** (the log): Stage 8's decision of that day makes this stage's `awsds-<env>-job-exec` the job role in Staging and Production, so 4.3's `staging/sagemaker/` stands before Stage 8's pass 4; 4.3a re-cuts `staging/egress/` to `VPC-Workloads`' endpoint set (planned, 16 to add with decision 12 (a)); `production/sagemaker/`'s job role gains `glue:GetConnection`; and `./aws/deploytargets.py` reads each pass from its own objects, 0 failed and 8 notes where the same state read 7 failed, with Staging's job role and the job log groups (`DT-12`) added. Staging's training quotas read 0 like Production's, and no type inside the ceiling has a transform quota above 0 in either account. Every open decision was taken by the user the same day, as recommended, 1 and 3 among them: Staging keeps no mirror and reads the governed lake through a read-only share, and reads nothing of Production's outputs; no decision holds a pass now. **Passes 2, 3 and 5 and decision 12 (a) applied the same day**, 19:35-19:59 UTC, on the user's authorization: `data-governance/data/` (8 added, 5 changed: the read shares to Staging and Production, Production's named write on `curated`, the table `curated.trades` with `classification=internal`, the lake's trusted endpoints), `production/data/` and `staging/data/` by Recipe D (the settings, then 34 and 33 added), the jobs' security group and Glue connection in both `sagemaker/` slices, and `production/workloads/` on `vpc-v0.4.0` for Stage 10; every re-plan reads `No changes`, `./aws/deploytargets.py` and `./aws/datalake.py` 0 failed, and verification xiv is answered. `lakeformation` joins both egress slices at the next `make up` (16 to add each), and `DT-8` reads the read-only share. **The third sitting of 2026-10-22, the environment down**: 5.1 written as the customer-managed policy `awsds-prod-data-scientist` in `production/data/` (planned: 1 to add, 1 to change, the key policy admitting the warehouse's audit groups) and its attachment in `identity/sso/` (1 to add, 1 to change: `DataScientistProdAccess` 7,098 to 8,438 characters), after the inline form rendered 10,550 against the 10,240 ceiling; `lakeformation:GetDataAccess` joins the set, without which 2.3's regrants reach nothing; the two warehouse denies become one shared fragment; `DT-10` reads the managed half. **Both applied the same evening on the user's authorization**, 22:50 to 22:52 UTC, each re-plan `No changes` and `DT-10` passing. Step 9.1's two slices written: `production/warehouse/` plans 9 to add, and `production/warehouse-compute/` is held from `make up ENV=production` (`layers.py` refusal 9) until the namespace it reads is applied. **6.3 done**: the window approved, opened by apply at 23:09 UTC, exercised (three assumptions, each alarmed and mailed; the reads; both negatives refused one layer before the ones the step named), closed by apply at 23:35, and the refusal against the closed trust read in the trail on 2026-10-23. Owed after that sitting: 2.4-2.6's runs, the space halves of 3.4 and 8.1, and 5.4's Data API negative. **Prepared 2026-10-23 with the environment down** (the log): 2.4's proof job written, `awsds-prod-producer-proof` in `production/sagemaker/` with its script under `proofs/` and its two modes, the job role gaining `glue:UpdateTable` for an Iceberg commit, the slice planned *1 to add, 1 to change* and **applied the same evening with the script uploaded**, 9.4's grant applied with it, `production/workloads/` read `No changes` (its bump applied 2026-10-22); decision 13 opened and taken by the user the same day as recommended, (a): the full-table-access flag AWS's page names for a Glue write, unset in Production and in the lake, turned on in Production by the user's hand in the console at 19:49 UTC, read back with the parameters intact (`TM-26`); 9.4's Data API grant written on `awsds-deploy-prod` (planned *1 to change*) and `production/workloads-egress/` taking `GROUPS=redshift`; `WH-15` naming each account's `make down`; the persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 written as commands, runnable with nothing up; the quota codes and the request commands in 3.5, no request ever made in either account; the sittings in order in [`runbooks/promotion.md`](../runbooks/promotion.md). **The persona proofs run by the user the same evening** (the log): 5.4 and 8.3 (the override and the two control-plane negatives answered, the Data API negative validating before authorizing with no workgroup, re-run at pass 6), 3.4's persona half (the registry pair, verification v), 8.1's laptop half, 8.4 (three layers, the key, the bucket and the set), 2.5's drop and 2.6's read-back, and 8.2 in the user's console session (INT-06 answered: one page works, open question 8 closed); the space halves wait for the Sandbox sitting. **Staging is the renamed `Development`** ([6b](stage-06b-development-becomes-staging.md)): 10.50.0.0/16 with its `[P]` gateway endpoint, peered with `VPC-Networking` only, no default route, and an `egress/` slice still cut for an Interactive account, which 4.3a re-cuts. **Production's jobs run in `VPC-Workloads`** ([6c](stage-06c-networking-hub.md)), whose endpoint slice holds the jobs' six endpoints once pass 1 is applied (3.3a) and whose gateway endpoint, not `production/foundation/`'s, is their INT-05 anchor (1.4). Three measurements from [6d](stage-06d-unified-studio-remainder.md) and [6i](stage-06i-sandbox-orchestration.md) reshape the runtime: a SageMaker job's settings are enforced on whoever calls `Create*Job`, never on the role the job runs as (3.5, decision 9); a job under network isolation reads no governed data, so the producer and the pickup stay Glue (3.1); and `consumer-data-v0.6.0` supplies neither a workgroup nor a results bucket, so this stage authors both (decision 11, [D19](../decisions/D19-derived-zone.md)'s re-decision). **The Staging data CMK is created here**, as `alias/awsds-staging-data`. Step 9 adds the governed half of the Redshift warehouse ([D40](../decisions/D40-redshift-warehouse.md)), copied from the Sandbox slices [Stage 5b](stage-05b-redshift-serverless.md) built and [6h](stage-06h-redshift-connection.md) measured. **The Production sitting of 2026-10-23** (the log): 2.4's first run refused at the vend with Production's flag alone, decision 13's lake half applied at 22:03 UTC, the second run committed at 22:06 and 2.5's pickup consumed the drop at 22:11, `curated.trades` at twenty rows; Stage 10 0.5 answered; 9.1's namespace applied at 22:07, refusal 9 lifted, the compute planning *2 to add* and waiting on 9.3's theme and quota; `deploytargets.py` and `datalake.py` all checks passed. Owed: the third run with Production's flag off, the space halves, 5.4's Data API negative, the persona's Athena read of the rows, pass 6's SQL. **9.3 run 2026-10-24** (the log): the compute raised by the user with `GROUPS=redshift`, the nineteen statements `FINISHED` through the Data API as the admin, the schema `trades` at 1 TB with its owner, roles, `IAMR:` users and default privileges, every `PUBLIC` `CREATE` revoked, `warehouse.py --sql` passing, the audit groups carrying the session; 9.5's datashare, 9.6 and 9.7 left. **2026-10-24, the environment down** (the log): `deploytargets.py`, `warehouse.py` and `datalake.py` all checks passed, the burn 0.000 USD/h; the `ml.m5.large` pair reads `CASE_OPENED` in both accounts (3.5); 9.5's datashare read on AWS's step pages and written as a command sequence, which opens decision 14 (the account that registers the share and grants it), taken by the user the same night as recommended, Data Governance, and names what 9.6 and 9.7 still need: a table in `trades`, which 9.4's DDL and load job create, unwritten. The same night the user read `curated.trades` as the Data Scientist User through `awsds-prod-athena` (5.4's first query: `SUCCEEDED`, 20 rows, the result under the enforced location despite the request's own) and deleted `EXC-02`'s three objects, the row retired |
 | **Prerequisites** | Stage 3: `production/foundation/` and `production/workloads/` with their `[P]` gateway endpoints. Stage 5a: the lake, the LF settings under `DL-5`'s guard, the drop-box statements written against this stage's role name. **Stage 8 pass 1**: step 3's resource policies name `awsds-deploy-prod` and `awsds-deploy-staging`, and a resource policy naming a principal that does not exist fails at put time; the full chain only for pass 5. 6b and 6c: Staging and the three Production VPCs as built. For step 9 alone: [5b](stage-05b-redshift-serverless.md) (the warehouse slices and their readings, its verification (i) answered with two subnets) and [6h](stage-06h-redshift-connection.md) (the database users and grants measured through both doors). Redshift waits on no quota (5b 0.4 read 25 namespaces and 25 workgroups per account); SageMaker does: the processing-job quotas of `ml.m5.large`, `ml.m5.xlarge` and `ml.m5.2xlarge` read 0 in Production and Staging (2026-10-18). [Stage 18](stage-18-staging-deployment-project.md) ran on pass 1's `Workloads` document and its battery (its 0.3 and 0.5) and is done (2026-10-22): D41 item 2 kept, and pass 5 finds Staging at Stage 18's 0.3 reading, with no association, no project, no `staging/studio/` and `SMUS_DEPLOYMENT_MEMBERS` empty (`backend.py`), except `AWSServiceRoleForAmazonMWAAServerless`, Stage 10's, and the project key, `PendingDeletion` until 2026-11-21 |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D14](../decisions/D14-supply-chain-account.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D22](../decisions/D22-data-governance-account.md), [D25](../decisions/D25-drop-box-consumer.md), [D28](../decisions/D28-workflow-contract.md), [D31](../decisions/D31-approver-read.md), [D38](../decisions/D38-single-egress-hub.md), [D39](../decisions/D39-access-by-identity.md), [D40](../decisions/D40-redshift-warehouse.md) |
 | **Proves** | [INT-03](../integrations.md) **the write share** (the two read shares are Stage 5a's); [INT-05](../integrations.md) (the Production branch, anchored on `VPC-Workloads`, and the persona's principal branch); [INT-06](../integrations.md); [INT-07](../integrations.md) **in part**, the model-registry read half, which absorbed INT-04 at 6b (the image half is Stage 8 step 3.2's); [INT-10](../integrations.md) **the pickup half** (the writer and maintenance halves are Stage 5a's); [INT-24](../integrations.md), a Sandbox project reading a governed Redshift table that lives in Production |
@@ -439,8 +439,9 @@ shape).
   governed table through 2.4's write path, and **deletes what it consumed**. Verify the KMS half
   explicitly: an `AccessDenied` on the drop-box key surfaces as an S3 error naming the object, not the
   key (D25's forgotten half — the grant was written in Stage 5a against this stage's role name; this is
-  where a typo in that contract fails). The three objects `EXC-02` declares (Stage 5a's and Stage 6g's
-  proofs) are collected by this run, which retires the row; open question 19's third part, whether this
+  where a typo in that contract fails). The three objects `EXC-02` declared (Stage 5a's and Stage 6g's
+  proofs) are not CSV, so this run passed them over, and the infrastructure user removed them on
+  2026-10-24, which retired the row; open question 19's third part, whether this
   writer makes `awsds-data-raw` redundant, is answered here.
 - **2.5 — The sequence, written 2026-10-23** (`runbooks/promotion.md` §P). The drop, from a laptop as the
   Data Scientist User in Sandbox, the dated key the convention names:
@@ -461,7 +462,7 @@ shape).
   a refusal there surfaces as an S3 error naming the object), inserts them into `curated.trades`
   through the share, deletes each consumed key and reads it gone (a `404` on `head-object`). `EXC-02`'s
   three `.txt` objects are not CSV and stay: the row retires with a deliberate `InfrastructureAccess`
-  cleanup once the pickup has run, as `AWS_STATE.md` has it. **Run 2026-10-23 at 22:09 UTC** (the log):
+  cleanup once the pickup has run, as `AWS_STATE.md` has it (done 2026-10-24, the user's hand). **Run 2026-10-23 at 22:09 UTC** (the log):
   `SUCCEEDED` in 97 s; one CSV listed, ten rows read as the role under the lake key (the KMS half, a
   `kms:Decrypt` through S3 in Production's trail), ten rows curated, the table at 20 through the share,
   the key deleted and read gone. The delete is a delete marker over a version the bucket's 90-day
@@ -654,7 +655,9 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   sagemaker` on the same profile; Stage 17's three requests of 2026-10-17 in Sandbox read `CASE_OPENED`
   for days. **Requested by the user 2026-10-23, 20:00 UTC**: `ml.m5.large` training and transform at 2
   in Production and in Staging, the four reading `PENDING` with no case id at 20:02 UTC (the log); the
-  other codes wait for a workload that names the type.
+  other codes wait for a workload that names the type. **Read 2026-10-24, 01:58 UTC**: the four read
+  `CASE_OPENED`, each with a support case id, last updated 2026-10-23 between 20:03 and 21:00 UTC: a
+  person at AWS answers them, as Stage 17's Sandbox requests have waited since 2026-10-17.
 - **3.6 — [Claude] Read the enforcement back.** `./aws/deploytargets.py` gains **`DT-11`** (`DT-9` is the
   escape hatch): under (a), the five statements present in the `Workloads` OU document and the document
   attached; under (b), every role that can call `Create*Job` in the two accounts carries the boundary, read
@@ -898,7 +901,7 @@ data source the slice already uses — never a literal id (`CLAUDE.md`), never a
   `DenyMintingARedshiftDatabaseSession`; and nothing outside the enumerated prefixes answers.
   **The sequence, written 2026-10-23**, runnable with the environment down (D39), as the Data
   Scientist User through `awsds-scientist-prod`. The override: a query asking for a location of its
-  own, whose result lands under the enforced one; the count reads 0 before 2.4's run, 10 after it and
+  own, whose result lands under the enforced one (read 20 on 2026-10-24, the log); the count reads 0 before 2.4's run, 10 after it and
   20 after the pickup:
 
   ```bash
@@ -1195,9 +1198,10 @@ carry 5b's readings, with the differences 9.1 lists. What is new in this account
 
 > **This is the first governed store outside Data Governance, and D22 is the line it crosses.** D40 argues
 > the trade and names the compensation: the warehouse's schemas reach readers only through Lake Formation
-> (9.5), with the same permission layer as the lake's. The grant register gains a second grantor account,
-> Production granting on `governed` beside Data Governance on `raw`/`curated`, and 9.8 tells the register in
-> the same sitting.
+> (9.5), with the same permission layer as the lake's. The Lake Formation grants keep one grantor: Data
+> Governance registers the datashare and grants it beside `raw` and `curated` (decision 14, taken
+> 2026-10-24), while the `GRANT`s inside `governed` are Production's, in the register's Redshift half, and
+> 9.8 tells the register in the same sitting.
 
 - **9.1 — [Claude] Write `production/warehouse/` and `production/warehouse-compute/` from the Sandbox
   slices**, with the same `[P]`/`[E]` split: the namespace holds the data, the users and the `GRANT`s and is
@@ -1395,6 +1399,57 @@ carry 5b's readings, with the differences 9.1 lists. What is new in this account
   > catalog, database → catalog, schema → database, table → table*: a Redshift "database" is a Glue
   > *catalog* and a Redshift "schema" is a Glue *database*, so a grant written from intuition addresses the
   > wrong level (Lesson 53).
+
+  **Shape (ii) as commands, read on AWS's step pages 2026-10-24** (`docs/REFERENCES.md`), for the
+  Lake Formation account, written `<LF>`: Data Governance, by decision 14 (taken 2026-10-24).
+  The datashare's ARN is `arn:aws:redshift:us-west-2:<Production>:datashare:<namespace id>/trades_lf`
+  and exists only after the first statement:
+  1. **[Claude⚡] Production, the compute up, the Data API as the namespace's admin in `governed`**, one
+     statement each: `CREATE DATASHARE trades_lf;`, `ALTER DATASHARE trades_lf ADD SCHEMA trades;`,
+     `ALTER DATASHARE trades_lf SET INCLUDENEW = TRUE FOR SCHEMA trades;` (later tables join; an existing
+     one needs `ADD ALL TABLES IN SCHEMA trades`), `GRANT USAGE ON DATASHARE trades_lf TO ACCOUNT '<LF>'
+     VIA DATA CATALOG;`. `SYS_DATASHARE_CHANGE_LOG` records each.
+  2. **[Claude⚡] Production, as `awsds-infra-prod`**: `aws redshift authorize-data-share
+     --data-share-arn <ARN> --consumer-identifier DataCatalog/<LF>`, expected `AUTHORIZED`.
+  3. **[Claude⚡] `<LF>`, its Lake Formation administrator**: `aws redshift describe-data-shares
+     --data-share-arn <ARN>`; `aws redshift associate-data-share-consumer --data-share-arn <ARN>
+     --consumer-arn arn:aws:glue:us-west-2:<LF>:catalog`, expected `ACTIVE`; `aws lakeformation
+     register-resource --resource-arn <ARN>`, no role and no federation flag; `aws glue create-database`
+     with `FederatedDatabase` `{"Identifier": <ARN>, "ConnectionName": "aws:redshift"}` and
+     `CreateTableDefaultPermissions` `[]`, read back by `list-permissions` for `IAM_ALLOWED_PRINCIPALS`
+     before anything else (the second callout above); the LF-Tags on the database, and on its tables once
+     one exists; the grant to Sandbox's account, `DESCRIBE` on the database and `SELECT` on its tables,
+     by LF-Tag expression or by name. A federated database takes no write or metadata permission.
+  4. **[Claude⚡] Sandbox, its Lake Formation administrator**: the RAM invitation if one is pending, then
+     `DESCRIBE` and `SELECT` to the project's role on `<LF>`'s database (a receiving account grants only
+     to its own principals and cannot pass the share on).
+  5. **[Claude⚡] Sandbox, its workgroup up, the Data API as its admin**: `CREATE DATABASE governed_trades
+     FROM ARN 'arn:aws:glue:us-west-2:<LF>:database/governed_trades' WITH DATA CATALOG SCHEMA
+     governed_trades;`, a statement of its own (no transaction), then `GRANT USAGE ON DATABASE
+     governed_trades` to the project's database user once its first IAM connection has created it; a
+     consumer grants on the whole database only.
+     9.7 reads it as the project with `SELECT`, the only verb a shared object takes.
+
+  What the pages leave unsaid and the sitting measures before 9.7 relies on it: **whether Sandbox reads
+  while Production has no workgroup**, the estate's state between sittings (a paused provisioned producer
+  keeps sharing; a Serverless producer with no workgroup is not documented), so a read may cost both
+  workgroups at once, 2.88 USD per hour; whether a cross-account LF-Tag grant works on a federated
+  database (named grants are the fallback); which principal Lake Formation evaluates for a database user
+  the `RedshiftDbUser` tag names, the SMUS access role's mechanism (6h), when the pages show only
+  `IAMR:<role>` users; and whether a share with no table registers, since `trades` has none. One page says
+  a `CREATE USER` user cannot read a share registered with Lake Formation, while AWS's two blogs create
+  `IAMR:` users with `PASSWORD DISABLE` and read: on the consumer side no user is created by hand, the
+  first IAM connection creates it. The cost: the consumer pays its compute, the producer its storage. The
+  producer's row- and column-level security does not travel; Lake Formation's filters do. Terraform
+  covers parts of steps 2 and 3 (`aws_redshift_data_share_authorization`,
+  `aws_redshift_data_share_consumer_association`, `aws_lakeformation_resource`, `aws_glue_catalog_database`'s
+  `federated_database`), each with an unmeasured mismatch the step pages show: the authorization's read
+  keeps the resource only while that identifier is listed, the registration sends `UseServiceLinkedRole`
+  unless told not to, and the database cannot send an empty `CreateTableDefaultPermissions`. So the first
+  sitting runs the commands, reads each object back, and Terraform adopts what plans `No changes` after an
+  import. **9.6 and 9.7 need a table in `trades`**, which 9.4's DDL and load job create through the
+  pipeline (decision 6), unwritten on 2026-10-24: they ride a release of `app-etl` after `v0.3.0`'s first
+  promotion, and 9.5's share can wait for it or be created first, `INCLUDENEW` adding the table.
 - **9.5a — [Claude reads, user decides] Settle the collision between the Iceberg-engine switch and
   `DenyRedshiftProvisionedClusters`**, which is live at the root since 5b. If AWS Glue creates its managed
   cluster in this account, the deny is either what breaks the Athena path or what the path breaks, the same
@@ -1406,7 +1461,8 @@ carry 5b's readings, with the differences 9.1 lists. What is new in this account
   one of: **(a)** carve the Glue service principal out of the deny, which reopens what the estate wanted
   closed; **(b)** take shape (ii), which needs no switch and therefore no cluster; **(c)** leave the switch
   off, which makes the federated catalog readable from Redshift only and leaves a Sandbox project nothing to
-  read. **Recommended: (b)**, decision 5.
+  read. **Recommended: (b)**, decision 5. Decision 5 took the datashare on 2026-10-22: no switch, so no
+  cluster, and this reading is owed only if the federated catalog comes back.
 - **9.6 — [user] Prove the governed pair, the way 2.4 proved the lake's.** Under `awsds-prod-job-exec`: a
   write into the governed schema succeeds; the same role's direct `PutObject` to a lake bucket is still denied;
   and the namespace role reaches no lake prefix. Read every wording.
@@ -1427,8 +1483,8 @@ carry 5b's readings, with the differences 9.1 lists. What is new in this account
   from `eventName`. A table's *"Required Describe"* says nothing of its existence: `glue get-table` gives it
   for a missing table and an existing one alike to a principal with no grant, where `get-database` answers
   a missing database `EntityNotFoundException` (Stage 18 7.2, 2026-10-22).
-- **9.8 — [Claude] Close the paperwork in the same sitting**: `docs/AWS_STATE.md` (the Redshift grant
-  register's second grantor, `EXC-13`'s Production row, and the database users nobody created:
+- **9.8 — [Claude] Close the paperwork in the same sitting**: `docs/AWS_STATE.md` (the Lake Formation
+  grants on the federated database, Data Governance's by decision 14, `EXC-13`'s Production row, and the database users nobody created:
   `IAMR:AWSReservedSSO_InfrastructureAccess_<suffix>`, a superuser session whenever `InfrastructureAccess`
   reaches the database by IAM, and the service's `rdsdb`), `docs/GOVERNANCE.md` (§Accounts' Production row,
   and the warehouse as a thing Lake Formation governs), `terraform-live/README.md`, `docs/NETWORK.md`
@@ -1454,7 +1510,7 @@ where decision 9 put them (`DT-11`); the job log groups in both accounts (`DT-12
 - **The producer pair (INT-03):** a curated Iceberg table, declared before its first write, written
   cross-account under `awsds-prod-job-exec` — and the same role's direct `PutObject` to the same bucket
   denied.
-- **The pickup (INT-10):** the drop-box read, curated, and emptied by the job, `EXC-02`'s objects with it;
+- **The pickup (INT-10):** the drop-box read, curated, and emptied by the job of what it consumes, `EXC-02`'s objects removed by hand on 2026-10-24;
   the writer still cannot read back what it wrote.
 - **The registry gate (INT-07):** approval only under `awsds-deploy-prod` among the principals outside this
   account; the Sandbox reader decision 10 named reads status and nothing else; the Staging deploy role reads an approved version.
@@ -1511,7 +1567,8 @@ Measured (`docs/PRICING.md`, `docs/plan/cost-model.md`), us-west-2:
 
 Each is decided during the stage and written into `docs/log/log-stage-09-deployment-targets.md`
 (Lesson 16), with a recommendation stated. Decisions 4, 9 and 10 and step 3.7 were taken on 2026-10-16,
-and the rest by the user on 2026-10-22, each as recommended.
+1 to 3, 5 to 8, 11 and 12 by the user on 2026-10-22, 13 on 2026-10-23 and 14 on 2026-10-24, each as
+recommended.
 
 1. **The Production data CMK, and what of Production's outputs Staging reads** (1.1, 4.6) — **the alias
    is not open**: `docs/GOVERNANCE.md` §Encryption settles it (one data CMK per account), which gives
@@ -1688,6 +1745,30 @@ and the rest by the user on 2026-10-22, each as recommended.
     unset; the console refused the settings page first in `us-east-2`, `CT.MULTISERVICE.PV.1`'s guardrail
     naming itself, and answered in `us-west-2`; the after-reading at 19:49 UTC, the flag `true` and the
     rest as before, `DT-5` passing. `TM-26` carries the residual, `AWS_STATE.md` §C the flag per account. **The lake's half, 2026-10-23** (the log): the first run, with Production's flag alone, was refused at the vend *"Insufficient Lake Formation permissions. Verify the data lake settings for account"*, so `lakeformation.tf` gained `allow_full_table_external_data_access = true`, planned *1 to change* and applied at 22:03 UTC as `awsds-infra-data` under `DL-5`'s bracket (`4` / `TRUE` before and after, the administrator and the empty lists unchanged, the re-plan `No changes`); the second run committed at 22:06. The flag reads `true` in Production, Sandbox and Data Governance and unset in Staging; whether Production's is needed beside the lake's is unmeasured, a third run with it off, the user's hand. `TM-26` carries the lake's residual too.
+14. **The account that registers the datashare, and so grants it** (9.5, 9.7, INT-24), opened 2026-10-24
+    from AWS's step pages for shape (ii). Two rules decide it: an LF-Tag created in one account cannot be
+    put on a resource shared from another, and an account that receives a Lake Formation share cannot
+    pass it on. AWS's own pattern puts a central governance account, which registers and grants, between
+    the producer and the consumer.
+    - **Recommended: (a) Data Governance.** Production grants the share `VIA DATA CATALOG` to the lake's
+      account and authorizes `DataCatalog/<Data Governance>`; the lake's administrator associates it,
+      registers it, creates the federated database, tags it with the lake's own `layer`,
+      `businessunit` and `classification`, and grants Sandbox; Sandbox's administrator grants the
+      project's role. One ontology and one grantor for every governed read, which is what
+      `objectives.md`'s "the governance model does not fork" asks.
+    - **The alternatives**: (b) Production registers its own share and grants Sandbox, with LF-Tags of
+      its own (a second ontology) or named grants only, the producer governing its own rows; (c) Sandbox
+      registers it, whose Lake Formation administrators include the SMUS roles (open question 24), the
+      least-governed account granting governed rows.
+    - **What (a) changes**: the grant register's second grantor is Data Governance on a federated
+      database, not Production on `governed` (9.8, D40's compensation sentence); the registration is
+      permanent, since `DenyLakeDeletionAndDeregistration` refuses `lakeformation:DeregisterResource` in
+      the `Data` OU, so its removal is an SCP amendment, like the lake's own locations. The lake
+      administrator's calls (`redshift:AssociateDataShareConsumer`, `redshift:DescribeDataShares`,
+      `glue:PassConnection` on `aws:redshift`) are inside `InfrastructureAccess`, and no organization
+      policy denies them in the `Data` OU (read 2026-10-24), so no grant is written.
+
+    **Taken by the user 2026-10-24, as recommended: (a) Data Governance** (the log).
 
 ## Verifications to answer while executing
 
@@ -1786,7 +1867,7 @@ Record every answer, including the ones that come out fine.
 - **A Redshift "database" is a Glue "catalog" and a Redshift "schema" is a Glue "database".** The federated
   mapping inverts two levels, and a grant written from intuition lands one level off — where it will
   frequently *work* on the easy case and be wrong on the one that matters (Lesson 53).
-- **The grant register gains a second grantor account** and Redshift grants have no `list-permissions`: they
+- **The register holds Production's Redshift `GRANT`s beside the lake's Lake Formation grants**, and Redshift grants have no `list-permissions`: they
   are read from `SVV_*` inside a database session, which means the instrument needs a credential the other
   instruments do not. `WH-12` reports the grants and always passes; `WH-14` is the check that fails, on a
   table no role can read.

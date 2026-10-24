@@ -777,3 +777,95 @@ under `$TMPDIR`, nothing applied. Times UTC.*
 - **[Claude] (6)** is read on Staging's rendered copy, each key refused: Stage 8's entry, verification xiv.
 - **[Claude] The plan**: 2.3 (the rules written, where the legs call `lint-plan`, the readings), 5.1's
   sentence at the new pin, the Status row.
+
+## 2026-10-24 — 3.8's calls replayed as the deploy roles: `ValidateStateMachineDefinition` missing from both
+
+*Claude's hand, in the session `stages-8-9-10-prep-f13bc2`, on the user's request to check the state of
+Stages 8, 9 and 10, review their plans against the recent work and prepare everything that needs no
+environment (the request is quoted in Stage 9's entry of this date). AWS read as the infrastructure user
+with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`, `awsds-infra-sandbox-1`,
+`awsds-infra-data`, `awsds-infra-identity`), reads, simulations and plans only, the tunnel down. Nothing
+applied. Times UTC.*
+
+- **[Claude] The trail**: Staging's management events of 2026-10-23 22:25 to 23:55, us-west-2 (2,671
+  events, 1,369 in the infrastructure user's session) and us-east-1 for IAM and Organizations, kept outside
+  the repository. Terraform's calls (user agent `APN/1.0 … Terraform/1.15.8`) and the services' calls in
+  that session (`userIdentity.invokedBy`) were taken from four windows: `make up ENV=staging ONLY=egress`
+  (22:39 to 22:44), the two applies (22:46:30 to 22:48:30), the orchestration update (23:19:30 to 23:21)
+  and `make down ENV=staging` (23:41 to 23:51).
+- **[Claude] The replay**, 02:22 to 02:40: each distinct call put through `iam simulate-principal-policy`
+  as `awsds-deploy-staging`, with `aws:RequestedRegion`, the organization and account keys, and the
+  condition keys each statement reads (`iam:PermissionsBoundary`, `iam:PassedToService`,
+  `kms:ResourceAliases`, `kms:ViaService`, the workflow's encryption context, `kms:GrantIsForAWSResource`,
+  the workers' group's `Name` tag); then renamed for Production as `awsds-deploy-prod`, the egress slice
+  left out (the user raises `workloads-egress/`). Added by hand, since no management event shows them: the
+  five `iam:PassRole`s (the workflow, chain, scheduler and bridge roles, the Glue job role), the release's
+  S3 objects and the data key through S3, the state objects, and Production's
+  `iam:CreateServiceLinkedRole`. 161 simulations in Staging, 129 in Production.
+- **[Claude] The readings**: every call `allowed` but two. `states:ValidateStateMachineDefinition` reads
+  `implicitDeny` for both roles, the boundary and the organization's policies allowing it; with a state
+  machine's ARN the simulator applies no statement, so the action takes no resource. Called once in the
+  by-hand leg, at 22:47:58 beside `CreateStateMachine`; the aws provider's `stateMachineDefinitionValidate`
+  (v6.70.0, read in its source) runs in `CustomizeDiff` when the definition is new or changed and returns
+  any error, so both legs would have stopped at the orchestration apply. `iam:CreateServiceLinkedRole`
+  reads `implicitDeny` for `awsds-deploy-staging`: the trail holds it at 22:47:51, invoked by
+  `airflow-serverless.amazonaws.com` in the saver's session during the Cloud Control creation, answered
+  `InvalidInputException` because the role exists; under a role without the grant the call is refused
+  first, and how the service takes the refusal is unmeasured. The other first-pass refusals were the
+  replay's ARNs, re-read with resources of each action's type (the Route 53 Resolver set, `DescribeLogGroups`
+  and `CreateWorkflow` on `*`), all `allowed`. Both data keys' policies were read the same night: the
+  deploy role and `InfrastructureAccess` named for `CreateGrant`, `DescribeKey`, and `Decrypt` and
+  `GenerateDataKey` under the workflow's encryption context.
+- **[Claude] The fix**: `apply-orchestration.tf`, the same file in both `foundation/` slices, gains
+  `ValidateTheChainDefinitions`; Staging's `deploy-role.tf` gains Production's
+  `CreateTheWorkflowServiceLinkedRole`, and Production's comment no longer removes it once the role
+  exists. `staging/foundation/` planned as `awsds-infra-staging` at 02:33:42 to 02:33:59 and
+  `production/foundation/` as `awsds-infra-prod` at 02:34:59 to 02:35:16, each with the alerts var-file:
+  *"Plan: 0 to add, 1 to change, 0 to destroy."*, `aws_iam_policy.orchestration["resources"]` updated in
+  place, the two statements in Staging and the one in Production, the plans outside the repository. The
+  managed policies measured 4,063 and 4,490 characters before the change, under the 6,144 a managed policy
+  holds. The applies wait for the user's authorization (`runbooks/promotion.md` §0.5).
+- **[Claude] `./aws/orchestration.py`** on the five infrastructure profiles at 02:07: all checks passed,
+  `OR-1` and `OR-9` notes in both accounts (no workflow, no chain, `[E]` between sessions). A first run
+  with no profile named tried every profile in the config and failed on the persona profiles with no
+  session; it measured nothing.
+- **[Claude] 0.5's consequence for 6d decision due 11**, written in the step: keep Sandbox's
+  `lakeformation` endpoint, recommended, the decision the user's.
+- **[Claude] The plan**: 1.5's grant list and its replay, verification ii's simulator half, 0.5 and the
+  Status row.
+
+## 2026-10-24 — the two statements applied in both `foundation/` slices, read back by the simulator
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo os applies de staging/foundation/
+(awsds-infra-staging) e production/foundation/ (awsds-infra-prod), como usuário de infraestrutura com
+InfrastructureAccess, cada um de um plano fresco com o var-file de alertas, e a leitura do simulador
+depois."*), as the infrastructure user with `InfrastructureAccess`; Recipe A, each plan outside the
+repository, with `-var-file=<project folder>/secrets/alerts.auto.tfvars`, from the branch at `c5a479db`.
+The one other session on the machine, idle, was told before the first write and answered that the
+applies touch nothing it reads. Times UTC.*
+
+- **[Claude] `staging/foundation/`** as `awsds-infra-staging`: the fresh plan at 02:51:53 to 02:52:08,
+  *"Plan: 0 to add, 1 to change, 0 to destroy."*, `aws_iam_policy.orchestration["resources"]` gaining
+  `CreateTheWorkflowServiceLinkedRole` and `ValidateTheChainDefinitions`; applied 02:52:20 to 02:52:30,
+  *"Modifications complete after 1s"* on `awsds-staging-deploy-orchestration-resources`, *"Apply
+  complete! Resources: 0 added, 1 changed, 0 destroyed."*; re-planned `No changes` at 02:52:44.
+- **[Claude] `production/foundation/`** as `awsds-infra-prod`: the fresh plan at 02:52:53 to 02:53:11, the
+  same counts, `ValidateTheChainDefinitions` alone; applied 02:53:24 to 02:53:36, *"Modifications
+  complete after 1s"* on `awsds-prod-deploy-orchestration-resources`, *"Apply complete! Resources: 0
+  added, 1 changed, 0 destroyed."*; re-planned `No changes` at 02:53:56.
+- **[Claude] The simulator**, 02:54:08 to 02:54:14: `states:ValidateStateMachineDefinition` on `*` and
+  `iam:CreateServiceLinkedRole` on the MWAA Serverless service-linked role (`iam:AWSServiceName`
+  `airflow-serverless.amazonaws.com`) read `allowed` for `awsds-deploy-staging` and `awsds-deploy-prod`,
+  each matched by its account's `awsds-<env>-deploy-orchestration-resources`, the boundary and the
+  organization's policies allowing. The legs' orchestration applies no longer stop at the plan; whether
+  the service's own calls then succeed is the leg's reading (verification ii).
+
+## 2026-10-24 — the `staging-test` leg's calls read by the simulator
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-staging`), reads only.
+Times UTC.*
+
+- **[Claude] The calls the first replay left out**, made by the CLI rather than Terraform: the leg's
+  `states:StartExecution` on `stateMachine:awsds-staging-chain-app-etl`, and `states:DescribeExecution`
+  and `states:GetExecutionHistory` on one of its executions, read `allowed` for `awsds-deploy-staging` at
+  03:05, each matched by `awsds-staging-deploy-orchestration-resources` (decision 19's start of the chain).

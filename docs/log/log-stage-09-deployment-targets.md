@@ -1741,3 +1741,140 @@ the nine of `VPC-Workloads`. Times UTC.*
   hub-down agora, com a leitura do make status depois."*): the dormant hook stopped `awsds-prod-vpn` and
   `awsds-prod-proxy`, both `stopped` a minute later; `make status` at 00:53 reads the three `[D]` hosts
   stopped, every `[E]` slice down and the burn **0.0000 USD/h**. No other session running on the machine.
+
+## 2026-10-24 — the fifth sitting with the environment down: the readings, 9.5 as commands, decision 14
+
+*Claude's hand, in the session `stages-8-9-10-prep-f13bc2` (the branch `claude/stages-8-9-10-prep-f13bc2`,
+cut from `main` at PR #250's merge), on the user's request. AWS read as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`, `awsds-infra-sandbox-1`,
+`awsds-infra-data`, `awsds-infra-identity`), reads only, the tunnel down; no other session running on the
+machine. Nothing applied. Times UTC.*
+
+- **[user] The request**: *"Em relação aos estágios 8, 9 e 10, peço fazer o seguinte: verifique o status
+  atual de cada estágio. revise o plano destes estágios considerando o andamento atual, o resultado com as
+  leituras e preparações prévias realizadas para execução destes estágios. Faça a preparação necessária
+  para a execução destes estágios com tudo o que pode ser feito sem que seja necessário subir o ambiente.
+  Prepare tudo que for necessário para executarmos de forma mais célere estas etapas uma vez que eu consiga
+  subir o ambiente. Verifique o andamento recente e os últimos commits. Propague as correções e alterações
+  necessárias aos passos restantes do plano considerando isso. Usuário infra sso logado para as
+  leituras."*
+- **[Claude] The quota requests**, 01:58: the four `ml.m5.large` requests of 2026-10-23 (training
+  `L-611FA074` and transform `L-236AE59F`, 2 each, Production and Staging) read `CASE_OPENED`, each with a
+  support case id, last updated between 20:03 and 21:00 on 2026-10-23.
+- **[Claude] The instruments**, 01:59 to 02:07: `./aws/egress.py` on the three compute profiles all checks
+  passed, `EG-5` *"none - the correct between-sessions state"*; `./aws/warehouse.py awsds-infra-prod` and
+  `./aws/datalake.py awsds-infra-data` OK; `./aws/deploytargets.py` on the five infrastructure profiles
+  all checks passed. A first run of it on Production and Staging alone failed `DT-8` (*"none while
+  staging/data/ stands"*) while its section 5 listed Staging's two resource links to the lake: without
+  `awsds-infra-data` the check cannot resolve the lake's account, so the failure was the invocation's
+  (Lesson 62). `make status`, 02:08 to 02:22: every `[E]` slice down with 0 resources, the estimated
+  burn 0.0000 USD/h. `terraform version` reads 1.15.8, so the 1.16.6 pins still wait on the user's install.
+- **[Claude] 9.5 read on AWS's step pages**, by a research agent of this session: the Redshift guide's
+  Lake Formation producer, consumer and considerations pages, `CREATE DATASHARE`, `ALTER DATASHARE`,
+  `GRANT`, `CREATE DATABASE`, the Lake Formation guide's prerequisites, permissions, notes, LF-Tag and
+  cross-account pages, the API references and two AWS blogs (`docs/REFERENCES.md`). 9.5 now carries shape
+  (ii) as five steps across Production, the Lake Formation account and Sandbox, and what the pages leave
+  unsaid: a read with Production's workgroup gone, a cross-account LF-Tag grant on a federated database,
+  the principal behind a `RedshiftDbUser` tag, an empty share's registration, and the `CREATE USER`
+  contradiction between one page and both blogs. Two rules open **decision 14**, the account that
+  registers and grants: an LF-Tag cannot be put on a resource shared from another account, and a
+  receiving account cannot pass a share on. Recommended: Data Governance, whose registration
+  `DenyLakeDeletionAndDeregistration` makes permanent. 9.5a is settled by decision 5 (no switch).
+- **[Claude] What 9.6 and 9.7 still need**: a table in `trades`. 9.4's DDL and load job, which decision 6
+  puts in the application repository and the pipeline runs, are unwritten; they ride a release after
+  `v0.3.0`'s first promotion.
+- **[Claude] The texts**: 3.5 (the requests' state), 9.5, 9.5a, decision 14 and the decisions' preamble,
+  the Status row (two sentences joined without a stop since PRs #248 and #250, separated);
+  `runbooks/promotion.md` (where it stands, §0.5, §W step 5, §T's prerequisite); `waiting-on-the-user.md`
+  (the quota row, decision 14, 6d decision due 11, the persona's Athena read moved out of the Production
+  sitting, since 5.4's sequence needs nothing up).
+
+## 2026-10-24 — `EXC-02`'s cleanup refused to Claude by the auto-mode classifier; 9.8's network and README rows
+
+*Claude's hand, on the user's word in chat (*"Pode prosseguir com as etapas que não dependem do ambiente no
+ar"*), as the infrastructure user with `InfrastructureAccess` (`awsds-infra-data`, `awsds-infra-prod`).
+Times UTC.*
+
+- **[Claude] `EXC-02`'s before-reading**, 03:04:20: the three `.txt` objects the row names are the current
+  versions under `incoming/` (38, 213 and 213 bytes), `trades.csv` behind its delete marker of 22:11:22;
+  the bucket policy holds no deny on `s3:DeleteObject`, so `InfrastructureAccess` in its own account may
+  delete. The three `delete-object` calls were refused before running by Claude Code's auto-mode
+  classifier (*"judged this action dangerous"*); nothing was deleted, and a listing at 03:04:48 reads the
+  three objects in place. The cleanup is the user's from the project folder, the command in
+  `runbooks/promotion.md` §0.5; the row retires after Claude's read-back.
+- **[Claude] 9.8's paperwork for what 9.3's sitting raised**: `docs/NETWORK.md`'s two rows and
+  `terraform-live/README.md` still called the governed workgroup unapplied; they now carry its first raise,
+  2026-10-24 00:23 to 00:47. `AWS_STATE.md` already held the two database users nobody created (PR #250),
+  so it is unchanged. `INT-24` carries the step pages' reading and decision 14.
+
+## 2026-10-24 — `EXC-02`'s cleanup by the user, read back; 5.4's read of the twenty rows as the persona
+
+*The user's hand for the delete and the query, Claude's for the read-back and the record. The delete as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-data`), from the project folder, with
+`runbooks/promotion.md` §0.5's command; the query as the Data Scientist User with
+`DataScientistProdAccess` (`awsds-scientist-prod`), signed in with `aws sso login --sso-session
+awsds-scientist --no-browser`, the tunnel down. Times UTC.*
+
+- **[user] `EXC-02`'s three `.txt` objects deleted** from `awsds-data-dropbox`, the auto-mode classifier
+  having refused Claude's delete. **[Claude] Read back at 03:12:47** as `awsds-infra-data`: `incoming/`
+  holds no current object; each `.txt` is a delete marker, `probe-4d-sandbox.txt` at 03:12:22,
+  `awsds-6g-24-probe.txt` at 03:12:28 and `awsds-6g-24-probe-tunnel.txt` at 03:12:32, over its version
+  (38, 213 and 213 bytes), which the bucket's 90-day noncurrent rule expires; `trades.csv` behind its
+  marker of 2026-10-23. `AWS_STATE.md`'s row is closed, and `GOVERNANCE.md`, open question 19, the lake's
+  README, `buckets.tf`'s comment and 2.5's text say the collector exists.
+- **[user] 5.4's first query**, the output pasted in chat, verbatim:
+
+  ```
+  aws athena start-query-execution --work-group awsds-prod-athena --query-string 'SELECT count(*) AS n FROM curated.trades' --query-execution-context Database=curated --result-configuration OutputLocation=s3://awsds-prod-outputs/not-enforced/ --profile awsds-scientist-prod --region us-west-2
+
+  {
+      "QueryExecutionId": "d78c3939-168a-4c28-8313-246620114d06"
+  }
+
+  aws athena get-query-execution --query-execution-id "d78c3939-168a-4c28-8313-246620114d06" --query 'QueryExecution.[Status.State,ResultConfiguration.OutputLocation,Statistics.DataScannedInBytes]' --output text --profile awsds-scientist-prod --region us-west-2
+
+  SUCCEEDED       s3://awsds-prod-derived/results/d78c3939-168a-4c28-8313-246620114d06.csv        0
+
+  aws athena get-query-results --query-execution-id "d78c3939-168a-4c28-8313-246620114d06" --query 'ResultSet.Rows[].Data[].VarCharValue' --output text --profile awsds-scientist-prod --region us-west-2
+
+  n       20
+  ```
+
+- **[Claude] The reading**: the persona reads `curated.trades` through Production's resource link, the
+  share's `SELECT` and `awsds-prod-athena`, the count 20 the producer's ten and the pickup's ten; the
+  workgroup's enforced location overrode the request's `not-enforced/`, the override 5.4 asks about;
+  0 bytes scanned, a `count(*)` Athena can answer from the Iceberg table's metadata, so the scan limit
+  was not approached. A read-back of the query as `awsds-infra-prod` found no SSO token for the `awsds`
+  session after the persona's sign-in (*"Error loading SSO Token: Token for awsds does not exist"*); it was
+  not retried, the pasted output being the measurement.
+
+## 2026-10-24 — 5.4's query read back from the account and its trail
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), reads only,
+after the user signed the `awsds` session in again. Times UTC.*
+
+- **[Claude] The query** `d78c3939-168a-4c28-8313-246620114d06`, read at 03:31:52: workgroup
+  `awsds-prod-athena`, database `curated`, `SUCCEEDED`, submitted 03:21:58.720 and completed 03:22:01.049
+  (2,329 ms), Athena engine version 3, 0 bytes scanned, the result at
+  `s3://awsds-prod-derived/results/d78c3939-168a-4c28-8313-246620114d06.csv` under `SSE_KMS`.
+- **[Claude] Production's trail**: `StartQueryExecution` at 03:21:58 in a `DataScientistProdAccess`
+  session, from a public address (the laptop off the VPN, D39), naming the workgroup and returning that
+  id; then the vend pair at 03:21:59, `lakeformation:GetDataAccess` in the same session invoked by
+  `glue.amazonaws.com` and by `athena.amazonaws.com`, both answered. The persona's read of the governed
+  table is attributed by its own session, not by the profile's name.
+
+## 2026-10-24 — decision 14 taken by the user, as recommended: Data Governance
+
+*The user's hand, in chat; Claude recording.*
+
+- **[user]** *"Aceito as duas recomendações: Stage 9 decisão 14 como (a), Data Governance registra e
+  concede o datashare; e 6d decisão 11, manter o endpoint lakeformation do Sandbox. Registre as
+  decisões."*
+- **[Claude] What it fixes**: 9.5's `<LF>` is Data Governance. Production grants the datashare `VIA DATA
+  CATALOG` to it and authorizes `DataCatalog/<Data Governance>`; the lake's administrator associates,
+  registers, creates the federated database and grants Sandbox, with the lake's own LF-Tags; Sandbox's
+  administrator grants the project's role. The Lake Formation grants keep one grantor, so the step's
+  callout, 9.8, the risk on the register, D40's compensation paragraph and `GOVERNANCE.md` no longer
+  speak of a second grantor account; the `GRANT`s inside `governed` stay Production's, in the register's
+  Redshift half. The registration is permanent under `DenyLakeDeletionAndDeregistration`. The waiting
+  list's row leaves; 6d decision due 11 is that stage's log.

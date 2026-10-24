@@ -329,8 +329,9 @@ data "aws_iam_policy_document" "apply_application_in_this_account" {
 
 # Production's statement in apply-orchestration.tf's resources policy:
 # AWSServiceRoleForAmazonMWAAServerless exists in Staging and not here (read 2026-10-22), so the first
-# workflow's creation makes it in the deploy role's session (Stage 10 step 1.5). The statement goes
-# once the role exists (Stage 10 verification iii).
+# workflow's creation makes it in the deploy role's session (Stage 10 step 1.5). The statement stays
+# once the role exists: the service calls the action on a creation through Cloud Control with the role
+# in place (Stage 8 3.8's trail in Staging, 2026-10-23), and Staging carries the same statement.
 data "aws_iam_policy_document" "apply_orchestration_in_this_account" {
   statement {
     sid       = "CreateTheWorkflowServiceLinkedRole"

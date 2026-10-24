@@ -1597,6 +1597,32 @@
   Lake Formation's row-level security operations in botocore's model:
   <https://github.com/boto/botocore/blob/develop/botocore/data/lakeformation/2017-03-31/service-2.json>.
 
+- **Lake Formation-managed datashares, the step pages (read 2026-10-24, for [Stage 9](plan/stages/stage-09-deployment-targets.md)
+  step 9.5 and its decision 14).** The producer creates the share, adds the schema, sets `INCLUDENEW` and
+  grants usage to an account `VIA DATA CATALOG`, then authorizes `DataCatalog/<account>`; that account's
+  Lake Formation administrator associates the share with its catalog, registers it with
+  `register-resource` (no role), creates a federated database (`ConnectionName` `aws:redshift`) with
+  `CreateTableDefaultPermissions` empty, and grants on the database, its tables and columns, never a write;
+  a Redshift consumer mounts it with `CREATE DATABASE … FROM ARN '<database ARN>' WITH DATA CATALOG SCHEMA`
+  and reads with `SELECT` alone. An LF-Tag created in one account cannot be put on a resource shared from
+  another, a receiving account cannot pass a share on, and AWS's own example spans three accounts
+  (producer, a central account that registers and grants, the consumer). The pages say nothing of a
+  Serverless producer with no workgroup, and one page's sentence that `CREATE USER` users cannot read
+  meets two blogs whose `IAMR:` users do:
+  <https://docs.aws.amazon.com/redshift/latest/dg/lake-formation-getting-started-producer.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/lake-formation-getting-started-consumer.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/lake-formation-considerations.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_DATASHARE.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_DATABASE.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/redshift-ds-prereqs.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/setup-ds-perms.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/notes-rs-datashare.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/lf-tag-considerations.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/cross-account-notes.html>,
+  <https://aws.amazon.com/blogs/big-data/centrally-manage-access-and-permissions-for-amazon-redshift-data-sharing-with-aws-lake-formation/>
+  and
+  <https://aws.amazon.com/blogs/big-data/implement-tag-based-access-control-for-your-data-lake-and-amazon-redshift-data-sharing-with-aws-lake-formation/>.
+
 ## Containers, CI/CD and orchestration
 
 - Amazon ECR: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/what-is-ecr.html>.
@@ -2113,6 +2139,14 @@
   Serverless's model in botocore and the `AmazonMWAA` offer of 2026-09-11:
   <https://github.com/boto/botocore/blob/develop/botocore/data/mwaa-serverless/2024-07-26/service-2.json>,
   <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonMWAA/current/us-west-2/index.json>.
+
+- **The aws provider's state machine validation (read 2026-10-24, for [Stage 10](plan/stages/stage-10-orchestration-promotion.md)
+  step 1.5 and Stage 8's deploy roles).** `aws_sfn_state_machine` registers `stateMachineDefinitionValidate`
+  in its `CustomizeDiff`; when the definition is new or changed it calls `ValidateStateMachineDefinition`
+  and returns any error, an access denial included, so the deploy role needs
+  `states:ValidateStateMachineDefinition`, an action with no resource type, for every plan that creates or
+  changes a machine:
+  <https://raw.githubusercontent.com/hashicorp/terraform-provider-aws/v6.70.0/internal/service/sfn/state_machine.go>.
 
 ## Security, monitoring and cost
 

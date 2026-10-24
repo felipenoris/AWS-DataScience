@@ -52,7 +52,7 @@ resource "aws_iam_role_policy_attachment" "orchestration" {
 
 # ----------------------------------------------------------- the resources the slice creates
 data "aws_iam_policy_document" "orchestration_resources" {
-  # checkov:skip=CKV_AWS_111:Cloud Control, CreateWorkflow, ListWorkflows and the Describe calls take no resource narrower than "*"; every other write names this account's resources by name or by pattern
+  # checkov:skip=CKV_AWS_111:Cloud Control, CreateWorkflow, ListWorkflows, ValidateStateMachineDefinition and the Describe calls take no resource narrower than "*"; every other write names this account's resources by name or by pattern
   # checkov:skip=CKV_AWS_356:idem
   source_policy_documents = [data.aws_iam_policy_document.apply_orchestration_in_this_account.json]
 
@@ -108,6 +108,17 @@ data "aws_iam_policy_document" "orchestration_resources" {
       "states:UpdateStateMachine",
     ]
     resources = ["arn:${local.partition}:states:${local.region_account}:stateMachine:awsds-${var.env}-chain-*"]
+  }
+
+  # The aws provider validates a new or changed definition while it plans a state machine, at the apply
+  # too, and fails on any error from the call (stateMachineDefinitionValidate, v6.70.0). The action
+  # takes no resource. Read in Staging's trail of Stage 8 3.8 (2026-10-23), the simulator refusing it
+  # to both deploy roles on 2026-10-24.
+  statement {
+    sid       = "ValidateTheChainDefinitions"
+    effect    = "Allow"
+    actions   = ["states:ValidateStateMachineDefinition"]
+    resources = ["*"]
   }
 
   statement {
