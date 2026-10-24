@@ -808,3 +808,55 @@ no apply.*
   destroyed"*, the state object written at 21:07:44Z, no lock left; the re-plan `No changes`
   (`-detailed-exitcode` 0). The failed apply's `errored.tfstate` moved out of the slice to the session's
   scratch directory.
+
+## 2026-10-24 — GitLab's and the build runner's load history, read against their instance types
+
+*Claude's hand, in the session `gitlab-runners-instance-analysis`, on the user's request in chat (the load
+history of the runners and of the GitLab server, whether their instance types fit, and the types to use), as
+the infrastructure user (`awsds-infra-prod`, `InfrastructureAccess`). Reads only; nothing was started,
+stopped or written in AWS. Times UTC; the deploy and test runners are Stage 8's log entry of the same date.*
+
+- **[Claude] The method.** CloudTrail's event history gave every `RunInstances`, `StartInstances`,
+  `StopInstances` and `TerminateInstances` in Production since 2026-09-01 (242 events), and from them each
+  host's running windows. CloudWatch's `AWS/EC2` metrics at five minutes were read over each window (basic
+  monitoring: a point carries the statistics of up to five one-minute samples, so its `Maximum` is the
+  busiest minute), with `AWS/EBS` for GitLab's two volumes; `get-console-output --latest` gave the newest
+  instances' kernel console; the prices are the Price List Query API's, offer published
+  2026-10-23T22:13:55Z (`docs/PRICING.md` §8). No host runs the CloudWatch agent, so memory and disk use
+  have no history.
+- **[Claude] GitLab, `t4g.large`**: 10 sessions and 37.02 h, 2026-10-12 14:11 to 2026-10-22 01:01 (the first
+  host, deadlocked at its boot, left out). Past a session's first 15 minutes the CPU averaged 10.0%, p50
+  9.2%, p95 14.1%, p99 19.9%, peak 36.9% (five-minute averages), against a 30% baseline; the first 15
+  minutes averaged 14.6% and peaked at 59.1% with the fresh install's reconfigure on 2026-10-12, the busiest
+  minutes at 99%. The credit balance climbed from 0 at the first start to 851.8 of the type's 864 by
+  2026-10-22, since T4g keeps it for seven days after a stop; 4.12 surplus credits were borrowed once, at
+  that first boot, and nothing was charged. The data volume read p95 4 IOPS (peak 31) and the root p95 6
+  (peak 172), against gp3's 3,000 IOPS and 125 MB/s, at 0.6 ms per read and 1.0 ms per write (p50);
+  `EBSIOBalance%` stayed at 99 or more; the network peaked at 4.1 MB/s in. The kernel reports 7,808 MB and
+  the host has no swap: the user data creates none and the zram generator declined. The console of the
+  2026-10-21 session, boot to power-off, holds no OOM-killer line.
+- **[Claude] The build runner, `m8i.xlarge`**: 11 instances over 8 GitLab sessions, 30.91 h. Five image
+  builds (2026-10-12 19:21, 2026-10-15 00:42, 01:27 and 16:06, 2026-10-16 21:43), each 15 minutes with two
+  five-minute samples at 38-59% and a busiest minute at 98-99.8%; Stage 8's log times `build-images` at 951
+  and 956 s. Outside them the CPU sits at 0.5% (p50): the mean is 2.5%, and the builds hold 1.25 h of the
+  30.91 h. Four of the eight sessions built no image: 12.60 h, 2.67 USD of the 6.54 the runner's hours cost
+  at 0.2117. The disk peaked at 74 MB/s and 759 IOPS against the root's gp3 125 MB/s and 3,000 IOPS, the
+  network at 19.4 MB/s in (the cache's pull) and 13.3 MB/s out (the push), `EBSByteBalance%` at 99 or more.
+  The console of the 2026-10-19 and 2026-10-21 instances, whole sessions, holds no OOM line; neither session
+  built an image.
+- **[Claude] The verdicts** (analysis, prices from `docs/PRICING.md` §8):
+  - GitLab's `t4g.large` fits. The CPU uses a third of its baseline and the credit balance is at its cap,
+    so a burst costs nothing, and the disk and the network are idle. GitLab's requirements page discourages
+    burstable types for inconsistent performance, which needs the credits to run out; this host's never did
+    after its first boot. Memory sizes GitLab and is unmeasured: the same page names 8 GB as the
+    memory-constrained minimum and 16 GB as a single node's baseline. `t4g.medium` (4 GiB) is below that
+    minimum, and `t4g.xlarge` (16 GiB, 0.1344 USD/h, twice the rate) would follow a memory reading, never
+    the CPU.
+  - The build runner's `m8i.xlarge` fits the build: the build fills the four vCPUs at its peaks, so
+    `m8i.large` (2 vCPU, 0.1058) lengthens it, and an 8 GiB type such as `c8i.xlarge` (0.1874) bets on a
+    memory figure nobody has read. The hours do not fit: the host is busy about 4% of the time it bills.
+    `m8i-flex.xlarge` (0.2011) keeps the processor and the memory, halves the EBS baseline and saves 5%;
+    raising the runner only for a session that builds saves the 12.60 h above.
+  - A memory reading is what would move either verdict: `free -m`, `/proc/pressure/memory` and the
+    processes' resident sizes in a GitLab session, and on the build runner during a build, or the
+    CloudWatch agent's `mem_used_percent` on both hosts.

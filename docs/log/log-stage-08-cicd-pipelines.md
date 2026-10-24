@@ -2708,3 +2708,30 @@ applied or written in AWS, nothing done in GitLab. Times UTC.*
   header and `README.md`; the root `README.md`; `runbooks/serverless-workflows.md` §T (the `lint` row,
   a `lint-plan` row, and a `prepare-offline` row, in the package since 2026-10-13 and missing from the
   table, outside PR #23); `runbooks/promotion.md` §T.
+
+## 2026-10-24 — the deploy and test runners' load history, read against their instance type
+
+*Claude's hand, in the session `gitlab-runners-instance-analysis`, on the user's request in chat (the
+runners' load history, whether their instance types fit, and the types to use), as the infrastructure user
+(`awsds-infra-prod`, `InfrastructureAccess`). Reads only. Times UTC; GitLab and the build runner are Stage
+7's log entry of the same date.*
+
+- **[Claude] The method**: each instance's running window from CloudTrail's `RunInstances` and
+  `TerminateInstances` in Production, CloudWatch's `AWS/EC2` metrics at five minutes over it (a point's
+  `Maximum` is its busiest minute), the newest instances' kernel console (`get-console-output --latest`),
+  and the Price List Query API's offer of 2026-10-23T22:13:55Z. Neither runner runs the CloudWatch agent,
+  so memory has no history.
+- **[Claude] The deploy runner (decision 4) and the test runner (decision 11), both `t3a.small`**: 11
+  deploy-runner instances, 27.26 h from 2026-10-13 03:59, and 8 test-runner instances, 25.53 h from
+  2026-10-14 16:22, to 2026-10-22 00:53. Past the first 15 minutes the deploy runner averaged 0.8% (p95
+  2.2%, peak 9.8%) and the test runner 1.1% (p95 5.3%, peak 16.1%), against a 20% baseline; the boot
+  (packages, registration, the image pull) peaks at 38-40% over five minutes and about 60% in its busiest
+  minute, about one vCPU. Each instance starts with no credits, T3a having no launch credits, borrows 0.4
+  to 2.6 surplus credits at its boot and repays them within the session; nothing was charged. The disk
+  stayed under 50 IOPS and 4 MB/s at p95 (peak 131 IOPS and 12 MB/s), the network under 3.5 MB/s. The
+  console of both runners' 2026-10-19 and 2026-10-21 instances holds no OOM-killer line (the test runner's
+  from 4,104 s and 278 s of uptime, the 64 KB window).
+- **[Claude] The verdict** (analysis, prices from `docs/PRICING.md` §8): `t3a.small` fits both. After the
+  boot the CPU never reaches the baseline; memory, 2 GiB, is what the size buys and is unmeasured.
+  `t3a.micro` (1 GiB, 0.0094 USD/h) halves it on no reading, and `t3a.medium` (4 GiB, 0.0376), which both
+  variables admit, would follow a memory reading of the test runner running two jobs at once.

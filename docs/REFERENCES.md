@@ -1981,6 +1981,21 @@
     and Amazon Inspector v2
     <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonInspectorV2/current/us-west-2/index.json>.
 
+- The load history of GitLab and the runners, read 2026-10-24 against their instance types (Stage 7's and
+  Stage 8's logs):
+  - *GitLab installation requirements*: a single node's baseline is 8 vCPU and 16 GB; a memory-constrained
+    one runs with at least 8 GB; burstable types are discouraged for inconsistent performance; swap is
+    disabled where possible: <https://docs.gitlab.com/install/requirements/>.
+  - *Running GitLab in a memory-constrained environment*: 2 GB of RAM and 1 GB of swap at the least, and
+    what each setting saves (Puma's single mode 100-400 MB, the monitoring stack about 300 MB):
+    <https://docs.gitlab.com/omnibus/settings/memory_constrained_envs/>.
+  - *Burstable performance instances, key concepts*: T3, T3a, T4g and T8i launch `unlimited` with no launch
+    credits, accrue at most a day's earnings (864 credits for a `t4g.large`), and keep the balance for seven
+    days after a stop:
+    <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/burstable-credits-baseline-concepts.html>.
+  - *Amazon EC2 M8i and M8i-flex*: Xeon 6 at a sustained 3.9 GHz all-core turbo; M8i-flex from large to
+    16xlarge, at full compute performance 95% of the time: <https://aws.amazon.com/ec2/instance-types/m8i/>.
+
 - Amazon MWAA (Managed Workflows for Apache Airflow): <https://docs.aws.amazon.com/mwaa/latest/userguide/what-is-mwaa.html>.
 
 - Amazon MWAA pricing (environment fee billed hourly, at one-second resolution, for as long as the environment exists): <https://aws.amazon.com/managed-workflows-for-apache-airflow/pricing/>.

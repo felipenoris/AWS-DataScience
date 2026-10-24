@@ -949,18 +949,24 @@ Paulo that discipline is worth exactly twice as much.
 | EC2 `t4g.small` (2 GiB) | 0.0268 | 0.0168 | 1.60 |
 | EC2 `t4g.medium` (4 GiB) | 0.0536 | 0.0336 | 1.60 |
 | EC2 `t4g.large` (8 GiB) | 0.1072 | 0.0672 | 1.60 |
+| EC2 `t4g.xlarge` (4 vCPU, 16 GiB) — measured 2026-10-24 with the Price List Query API (`USW2-BoxUsage:t4g.xlarge`, offer published 2026-10-23T22:13:55Z), the one size above GitLab's that `production/tooling/` admits | 0.2144 | 0.1344 | 1.60 |
 | EC2 `t3.nano` (0.5 GiB, x86) | 0.0084 | 0.0052 | 1.62 |
 | EC2 `t3.micro` (1 GiB, x86) | 0.0168 | 0.0104 | 1.62 |
 | EC2 `t3.small` (2 GiB, x86) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3.small`), a Stage 8 deploy runner candidate (decision 4) | 0.0336 | 0.0208 | 1.62 |
+| EC2 `t3a.micro` (1 GiB, x86, AMD) — measured 2026-10-24 (`USW2-BoxUsage:t3a.micro`, the same offer), the size below the deploy and test runners | 0.0151 | 0.0094 | 1.61 |
 | EC2 `t3a.small` (2 GiB, x86, AMD) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3a.small`), the Stage 8 deploy runner (decision 4) and the test runner (decision 11) | 0.0302 | 0.0188 | 1.61 |
+| EC2 `t3a.medium` (4 GiB, x86, AMD) — measured 2026-10-24 (`USW2-BoxUsage:t3a.medium`), the size above the deploy and test runners that both variables admit | 0.0605 | 0.0376 | 1.61 |
 | EC2 `t3.medium` (4 GiB, x86) | 0.0672 | 0.0416 | 1.62 |
 | EC2 `t3.large` (8 GiB, x86) | 0.1344 | 0.0832 | 1.62 |
 | EC2 `t3.xlarge` (4 vCPU, 16 GiB, x86) — the Stage 6 build host until 2026-09-11 | 0.2688 | 0.1664 | 1.62 |
+| EC2 `t3a.xlarge` (4 vCPU, 16 GiB, x86, AMD EPYC 7571 at 2.5 GHz) — measured 2026-10-24 (`USW2-BoxUsage:t3a.xlarge`) | 0.2419 | 0.1504 | 1.61 |
 | EC2 `t3.2xlarge` (8 vCPU, 32 GiB, x86) | 0.5376 | 0.3328 | 1.62 |
 | EC2 `m5.large` (8 GiB, x86) | 0.1530 | 0.0960 | 1.59 |
 | EC2 `m8i.large` (2 vCPU, 8 GiB, x86) — measured 2026-09-11 | 0.1687 | 0.1058 | 1.59 |
 | EC2 `m8i.xlarge` (4 vCPU, 16 GiB, x86) — **the image build host**: the buildbox from 2026-09-11, Stage 7's build runner since; 3.9 GHz dedicated, EBS 156.25 MB/s and 6000 IOPS | 0.3374 | **0.2117** | 1.59 |
 | EC2 `m8i.2xlarge` (8 vCPU, 32 GiB, x86) — measured 2026-09-11 | 0.6747 | 0.4234 | 1.59 |
+| EC2 `m8i-flex.xlarge` (4 vCPU, 16 GiB, x86, the same 3.9 GHz Xeon 6) — measured 2026-10-24 (`USW2-BoxUsage:m8i-flex.xlarge`); EBS baseline 630 Mbps against `m8i.xlarge`'s 1250, both bursting to 10,000 | 0.3205 | 0.2011 | 1.59 |
+| EC2 `c8i.xlarge` (4 vCPU, 8 GiB, x86, the same 3.9 GHz Xeon 6) — measured 2026-10-24 (`USW2-BoxUsage:c8i.xlarge`) | 0.2889 | 0.1874 | 1.54 |
 | EBS `gp3` storage (USD/GB-mo) | 0.152 | 0.08 | 1.90 |
 | EBS `gp3` provisioned IOPS (USD/IOPS-mo) | 0.0095 | — | |
 | EBS snapshot storage (USD/GB-mo) — `us-west-2` **measured 2026-10-12** with the Price List Query API (`USW2-EBS:SnapshotUsage`; the archive tier is 0.0125), for Stage 7 step 1.2's daily DLM snapshots of GitLab's data volume | 0.068 | **0.05** | 1.36 |
