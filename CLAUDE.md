@@ -349,7 +349,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Stage 8's application ceilings and Stage 9's data keys, outputs buckets and Staging's job role, exist
   since 2026-10-22.
   The MWAA Serverless service-linked role exists in both accounts, Production's created 2026-10-24 in
-  `awsds-deploy-prod`'s session at pipeline #71's first `CreateWorkflow`, INT-14 answered in both. **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
+  `awsds-deploy-prod`'s session at pipeline #71's first `CreateWorkflow`, INT-14 answered in both; Production's
+  first run `SUCCEEDED` by hand (15 min), and 6.1 reads the schedule's firing at 06:30 UTC on 2026-10-25. **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
   3.8): the workflow created by `awscc` under `InfrastructureAccess`, the chain's machine started, diagnosed two
   failures (the worker's XCom encryption needs `kms:GenerateDataKey` in the key policy and in the role's, both
   fixed) and `SUCCEEDED`; 0.5, decision 19, decision 2's context and verification xvi's worker clauses read; the

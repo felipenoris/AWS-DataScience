@@ -1962,3 +1962,18 @@ tree, which the plans confirmed by showing only this branch's additions. Times U
   lake account's. The simulator, `aws:RequestedRegion` in the context: `redshift-serverless:GetCredentials`
   and `GetWorkgroup` on a `workgroup/…` ARN `allowed` for `awsds-prod-job-exec`, matched by its inline
   `job` policy.
+
+## 2026-10-24 — the first promotion's Production run: the job role's jobs in `VPC-Workloads`
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (the run is Stage 10's, its entry of
+this date). Times UTC.*
+
+- **[Claude]** The release's Glue job `awsds-prod-app-etl`, declared by `production/app/app-etl/` at
+  `v0.3.3`, ran as `awsds-prod-job-exec` on the `[P]` connection `awsds-prod-jobs` (decision 12):
+  `jr_56c29738…e022`, `SUCCEEDED` from 21:42:08 to 21:44:01, 93 s. The processing job
+  `app-etl-20261024T214447` ran as the same role on `ml.t3.medium` with network isolation, inter-container
+  encryption and two subnets (decision 9's settings, submitted by the workflow's execution role), on the
+  release's image `awsds-prod-ecr-app-etl@sha256:89d0ea21…2aac`, `Completed` from 21:45:36 to 21:50:11.
+  The job role wrote `app-etl/work/` and `app-etl/outbox/` of `awsds-prod-outputs` (four objects,
+  21:43:51 to 21:54:12) and touched no lake prefix: v0.3.3 reads the inbox, and the governed read is
+  v0.4.0's (8.5).

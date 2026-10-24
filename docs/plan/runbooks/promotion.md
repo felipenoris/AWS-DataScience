@@ -396,11 +396,13 @@ Separable and last; nothing needs it. In a Production sitting with the hub up.
 
 ## V. The data release: v0.4.0
 
-What v0.3.0 leaves, written 2026-10-24 (the stage logs): the Glue job's governed read and the
+What v0.3.x leaves, written 2026-10-24 (the stage logs): the Glue job's governed read and the
 application's table (Stage 9 8.5), the warehouse's DDL job and its load workflow (9.4, decision 15), the
-model chain (Stage 10 pass 3, decisions 21 and 22), and the scheduled end-to-end (6.1). Needs §T done
-and recorded (3.7), §0.6 applied, §H step 6, the hub, GitLab and the three runners up, and Sandbox's
-`egress/` up. Every `make up ENV=production` here carries `ONLY=`, or the build runner is destroyed.
+model chain (Stage 10 pass 3, decisions 21 and 22), and the scheduled end-to-end (6.1). Needs §T, run
+2026-10-24 with `v0.3.3` and recorded in PR #254 (3.7); PR #254 merged, and `awsds-workflows`' PR #24,
+whose commit `d60e1ad` the template pins (re-pinned if the merge leaves it off every branch); §0.6
+applied, §H step 6, the hub, GitLab and the three runners up, and Sandbox's `egress/` up. Every `make up
+ENV=production` here carries `ONLY=`, or the build runner is destroyed.
 
 1. **[user + Claude] The third producer run first** (verification xxviii's last clause): Production's
    full-table flag off in its Lake Formation console, `DT-5` read, the run, the flag on again and `DT-5`
@@ -411,7 +413,9 @@ and recorded (3.7), §0.6 applied, §H step 6, the hub, GitLab and the three run
 2. **[user] The legs' merge request for v0.4.0** on `awsds/app-etl`, from `examples/app-etl/` at `main`
    (the procedure of §H step 2), merged; the mirror pushed at `main` (`git push gitlab main`), since the
    legs clone the new scripts and slices (`model-chain.py`, the render's classes, the application and
-   orchestration slices).
+   orchestration slices). The push also carries `c60ad8d6`, so `staging-down` destroys as
+   `awsds-deploy-staging` for the first time (Stage 8 verification xii). `awsds/app-etl`'s `main` is the
+   v0.3.x template with MR !6's and MR !7's fixes (`ff4caf1c`), both already in `examples/app-etl/`.
 3. **[user] The tag `v0.4.0`**. What it reads first: `test` with `--algorithm-repository`; `test-deploy`
    creating both workflows in the `test` project and running `app-etl`, whose Glue job now writes the
    table and the training sets under the project's prefix; then the Staging leg: the render of three

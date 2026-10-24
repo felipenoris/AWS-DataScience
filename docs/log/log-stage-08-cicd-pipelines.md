@@ -2950,3 +2950,24 @@ user with `InfrastructureAccess`) and for 3.7's record. Times UTC.*
   `jU1vr4IL…eHZX` and `K.apAb_C…eBtxN`. Each object version read back by `head-object` (3,351 and 1,246
   bytes in Staging, 3,324 and 1,246 in Production), and Production's two match `get-workflow`. The
   mirror's push is the user's, after the merge.
+
+## 2026-10-24 — the readings after the first promotion: `CI-8` and the verifications the run answers
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess`. Times UTC.*
+
+- **[Claude] `./aws/cicd.py`** on the five infrastructure profiles, after pipeline #71: *"0 check(s)
+  FAILED"*; `CI-8` reads 97 deploy-role assumptions, every caller the deploy runner, the three deliberate
+  assumptions of 2026-10-13 excused by session name and minute (verification vi, INT-08).
+- **[Claude] What the stage file now records**: xi's parity (the leg's 21 orchestration resources and its
+  chain's `SUCCEEDED` against 3.8's by-hand run, the tag-on-create the one difference); xii read as *no* at
+  the mirror's `0236a99d`, `staging-down` stopping at the Studio hook after #68's failure and #71's success,
+  Staging's slices up until the user's `make down`; xx's `release` jobs creating their releases with the CA
+  root; xxii's `release.tf` half, the download checked against the SHA256 both application slices record;
+  3.4 carries the hook's fix and its reach.
+- **[Claude] Verification v's pass 4 half**, Production's trail: three `BatchGetImage` calls on
+  `awsds-prod-ecr-app-etl` from Staging at 21:17:02, 21:17:03 and 21:17:52, each `AWSAccount` whose
+  principal id is `awsds-staging-job-exec`'s with the session `SageMaker`, the last invoked by
+  `ecr.amazonaws.com`: the processing job's role pulled the release's image across the boundary
+  (INT-07). Production's own run pulled it at 21:44:50 as `awsds-prod-job-exec`, and one call at
+  21:45:36 answered `InvalidParameterException` with no repository named, the run unaffected, as Stage
+  18 read on 2026-10-19.

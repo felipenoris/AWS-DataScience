@@ -983,3 +983,39 @@ quoted below; the user's for the retry. Times UTC.*
   deploy role's boundary (verification ii's deploy-role half), and so do `aws_sfn_state_machine` and
   `aws_scheduler_schedule` beside it (verification xxvi's Staging half). The chain was not started:
   `staging-test` stopped at its clone (Stage 8's log).
+
+## 2026-10-24 — Production's half of passes 1 and 2 through pipeline #71, and the chain's first run there
+
+*Claude's hand for the readings (the job traces through the user's Chrome session, AWS as the
+infrastructure user with `InfrastructureAccess`) and for the run, on the user's authorization quoted
+below; the user's for the gate. Times UTC.*
+
+- **[Claude] `production-deploy`** (Stage 8's log), as `awsds-deploy-prod`: `production/orchestration/`
+  *"Plan: 21 to add"*, the workflow *"Creation complete after 5s"* at 21:34:01, the chain's machine at
+  21:34:03, its schedule at 21:34:03, *"Apply complete! Resources: 21 added, 0 changed, 0 destroyed."* at
+  21:34:04. INT-14 holds in Production (verification ii). CloudTrail, `us-east-1`: `CreateServiceLinkedRole`
+  at 21:33:58, session issuer `awsds-deploy-prod`, invoked by `airflow-serverless.amazonaws.com`, no error;
+  `AWSServiceRoleForAmazonMWAAServerless` created 21:33:58 (verification iii's Production half, 1.5's
+  statement `CreateTheWorkflowServiceLinkedRole` exercised). Read at 21:38: `awsds-prod-wf-app-etl`
+  `READY`, `manual_only`, its definition `jU1vr4IL…eHZX` and code `K.apAb_C…eBtxN`; the schedule
+  `awsds-prod-chain-app-etl` `ENABLED` on `cron(30 6 * * ? *)` UTC; no execution.
+- **[user]** *"Autorizo disparar a chain awsds-prod-chain-app-etl agora, à mão, como usuário de
+  infraestrutura com InfrastructureAccess (awsds-infra-prod), e acompanhar até o fim. O workloads-egress
+  fica no ar até o schedule das 06:30 UTC."* **[Claude]** The five peer sessions told first;
+  `start-execution` as `awsds-infra-prod` at 21:41:17, the execution `v0-3-3-by-hand-2026-10-24` started
+  21:41:19 and `SUCCEEDED` at 21:56:23 (15 min 4 s). The workflow run `TjivGiTkS0VAZOV`, `RunType`
+  `ON_DEMAND`, `SUCCESS` from 21:41:24 to 21:54:12, its four tasks `SUCCESS`: the Glue job
+  `awsds-prod-app-etl`, run `jr_56c29738…e022`, `SUCCEEDED` from 21:42:08 to 21:44:01 (93 s, Glue 6.0, two
+  `G.1X`); the processing job `app-etl-20261024T214447` `Completed` from 21:45:36 to 21:50:11; then the
+  summary and the report. The outputs, under `s3://awsds-prod-outputs/app-etl/`: `work/glue/trades.csv`
+  (436 bytes, 21:43:51), `work/job/trades.parquet` (2,126) and `trades.summary.json` (511) at 21:50:07,
+  `outbox/report.json` (332) at 21:54:12.
+- **[Claude] 6.1**: `workloads-egress/` stays up, by the user's decision, so the schedule's first firing
+  at 06:30 UTC on 2026-10-25 runs unattended (verification xxiv); its reading and 6.3's sentence come
+  before the first `make down ENV=production`.
+- **[Claude] The instruments**, on the five infrastructure profiles: `./aws/orchestration.py` 13 passes and
+  two notes, Staging's workflows and chains absent after the user's `make down`: `OR-1` `READY`, `OR-3`
+  bounded with no lake reach and two subnets in two AZs with no default route, `OR-5` the definition at
+  `v0.3.3`'s version, `OR-6` none in 6 accounts, `OR-7` 1/50, `OR-9` the three chain roles on
+  `awsds-prod-app-boundary` and the chain's schedule and failure rule `ENABLED` (verification xxvi's
+  `OR-9` half). The persona profiles hold no session, so the script exits 1 on section 1 alone.
