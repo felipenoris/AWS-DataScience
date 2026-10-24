@@ -268,17 +268,21 @@ Separable and last; nothing needs it. In a Production sitting with the hub up.
 2. **[Claude⚡] `production/warehouse/` applied** (9 to add) as `awsds-infra-prod`, by hand; the
    refusal-9 row removed from `layers.py` in the same sitting; `EXC-13`'s Production row written.
    **Done 2026-10-23, 22:07 UTC**, the re-plan `No changes`; `warehouse-compute/` plans *2 to add* (22:10).
-3. **[user] `make up ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift`**:
+3. **[user] `make up ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift`** (run by the user on
+   2026-10-24, the workgroup `AVAILABLE` at 00:23 UTC):
    `warehouse-compute/` with the namespace in place, and the `redshift-serverless` endpoint in
    VPC-Workloads for a job that calls the API (9.1). The usage limit counts from zero with each
    workgroup.
 4. **[Claude⚡] 9.3's SQL** through the Data API with the admin secret, the statements in the step (the theme
    `trades` and the quota 1 TB confirmed by the user on 2026-10-24):
    the `PUBLIC` revokes on the three databases, `governed`, the owner user, the schema with its quota,
-   the role, the two database users, the default privileges.
+   the role, the two database users, the default privileges. **Done 2026-10-24, 00:27 to 00:29 UTC** (Stage 9's log).
 5. **9.5's shape** (decision 5, the datashare) and 9.5a's reading first; 9.6's pair; 9.7's INT-24 from
    a Sandbox project; 9.8's paperwork; `./aws/warehouse.py --sql` and its burn line beside `egress.py`
    §6; `make down ENV=production` before the sitting ends, the only guard that is not a setting.
+   **9.5 and 9.5a are a sitting of their own**: the datashare's two sides, the producer's SQL in Production and
+   the lake's registration and federated database, then the Sandbox mount for 9.7; 9.6 and 9.7 are the user's.
+   `./aws/warehouse.py awsds-infra-prod --sql` passed on 2026-10-24, and `make down ENV=production` ended the sitting.
 
 ## Q. After the quotas: Stage 10's pass 3
 

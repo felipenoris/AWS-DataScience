@@ -335,7 +335,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   since 22:03 UTC (`TM-26`); the flag is on in Production, Sandbox and the lake, unset in Staging; whether
   Production's is needed beside the lake's is unmeasured (a third run, the user's console). 9.1's
   `production/warehouse/` applied 22:07 UTC (the namespace; `EXC-13`'s Production sentence), refusal 9
-  lifted, `warehouse-compute/` planning 2 to add, 9.3's theme `trades` and quota 1 TB confirmed by the user 2026-10-24, §W the next Production sitting; 9.4's grant applied,
+  lifted, `warehouse-compute/` planning 2 to add, 9.3 run 2026-10-24 (the schema `trades` at 1 TB, the roles, the `IAMR:` users, the default privileges, every `PUBLIC`
+  `CREATE` revoked), 9.5's datashare and 9.6-9.7 left; 9.4's grant applied,
   `workloads-egress/` taking `GROUPS=redshift`; the `ml.m5.large` pair requested 2026-10-23 (`PENDING`); the
   persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run but the space halves and the Data API negative
   (INT-06 answered, open question 8 closed); the sittings in `runbooks/promotion.md`.
