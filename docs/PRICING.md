@@ -328,7 +328,8 @@ plus 0.005 for its public IPv4.
 ### The GitLab session, by category
 
 A GitLab session runs from `make gitlab-up` to `make gitlab-down` ([runbook](plan/runbooks/gitlab.md) §U):
-the `[D]` host started, `production/egress/`'s endpoints and `production/runners/`' three hosts applied. Read
+the `[D]` host started, `production/egress/`'s endpoints and `production/runners/`' hosts applied, the build
+runner among them only with `BUILD=1` (Stage 7 decision 5). Read
 2026-10-14 from the slices, from `describe-*` in Production and from Production's Cost Explorer for
 2026-10-11..10-14, whose effective rates (cost ÷ quantity) equal this section's table: `t4g.large` 0.0672,
 `m8i.xlarge` 0.2117, `t3a.small` 0.0188, endpoint-hour 0.010, gp3 0.08/GB-mo, snapshot 0.05/GB-mo, secret
@@ -351,13 +352,13 @@ As built there is no ALB and no NAT, so the full-stack hour above does not descr
 | | the private zone `awsds-pages.internal` | `[P]` | 0.0007 |
 | | the CloudWatch alarm (inside the free ten), DLM, Session Manager, same-AZ peering (`DataTransfer-AZ-*` 9.20 GB each way on 2026-10-12, billed 0) | | 0 |
 
-| Category | With runners | `RUNNERS=0` | Stopped |
-|---|---|---|---|
-| VPC endpoints | 0.1200 | 0.1200 | 0 |
-| Compute | 0.3165 | 0.0672 | 0 |
-| Storage | 0.0205 | 0.0069 | 0.0069 |
-| Other services | 0.0053 | 0.0053 | 0.0053 |
-| **Total** | **0.4623** | **0.1994** | **0.0122** (8.91/month) |
+| Category | `BUILD=1` | Default | `RUNNERS=0` | Stopped |
+|---|---|---|---|---|
+| VPC endpoints | 0.1200 | 0.1200 | 0.1200 | 0 |
+| Compute | 0.3165 | 0.1048 | 0.0672 | 0 |
+| Storage | 0.0205 | 0.0135 | 0.0069 | 0.0069 |
+| Other services | 0.0053 | 0.0053 | 0.0053 | 0.0053 |
+| **Total** | **0.4623** | **0.2436** | **0.1994** | **0.0122** (8.91/month) |
 
 Billed beside the hour:
 
@@ -377,10 +378,12 @@ billed on 2026-10-11, ~30 GB at 0.10, ~3.00/month).
 
 Readings of the table:
 
-- The build runner is 46% of a session with runners; `RUNNERS=0` takes the hour to 0.1994.
+- The build runner and its 64 GiB root are 47% of a `BUILD=1` session; the default leaves both out at
+  0.2436, and `RUNNERS=0` takes the hour to 0.1994.
 - Without the runners the endpoints are 60% of the hour. `athena`, `glue` and `lakeformation` (0.030/h)
   serve no caller in a GitLab session; they are `vpc-egress`'s core list, which no caller overrides.
-- Always on, the session would bill 337.48/month with runners and 145.56 without, both above D12's 50.
+- Always on, the session would bill 337.48/month with `BUILD=1`, 177.83 by default and 145.56 without
+  runners, all above D12's 50.
 
 ### A Sandbox unit (Stage 14)
 

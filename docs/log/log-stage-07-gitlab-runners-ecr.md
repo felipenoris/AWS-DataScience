@@ -860,3 +860,29 @@ stopped or written in AWS. Times UTC; the deploy and test runners are Stage 8's 
   - A memory reading is what would move either verdict: `free -m`, `/proc/pressure/memory` and the
     processes' resident sizes in a GitLab session, and on the build runner during a build, or the
     CloudWatch agent's `mem_used_percent` on both hosts.
+
+## 2026-10-24 — decision 5 amended: the build runner rises on `make gitlab-up BUILD=1`
+
+*Claude's hand, in the session `gitlab-runners-instance-analysis`, as the infrastructure user
+(`awsds-infra-prod`, `InfrastructureAccess`). Code and plans only; nothing was applied. Times UTC.*
+
+- **[user] The request**, in chat after the load-history entry above (Claude's rendering): the option for
+  `make gitlab-up` to raise the build runner only when asked, the test and deploy runners kept.
+- **[Claude] What was written.** `production/runners/`: `build_runner` (bool, default `false`) as the
+  `count` of the build runner's role module, instance profile and instance, and its three outputs through
+  `one()`. The Makefile: `BUILD` (`0` or `1`, unset `0`) becomes `TF_VAR_build_runner` on `gitlab-up`, the
+  way `GROUPS` reaches `up`, and lasts one apply; `BUILD=1` beside `RUNNERS=0` and a lower-case `build=`
+  are refused. `layers.Slice.optional_hosts`: the runners row is 0.0376 USD/h, and `make status` adds
+  `aws_instance.runner`'s 0.2117 while the state holds it. Runbooks `gitlab.md` §S, §U and §K and
+  `promotion.md` §H and §T, whose image builds and tag pipeline need the build runner, now say
+  `BUILD=1`; so do `terraform-live/README.md`, `NETWORK.md`'s row, the waiting list's Promotion row and
+  `PRICING.md`'s GitLab session, 0.2436 USD/h by default against 0.4623 with the flag.
+- **[Claude] The readings.** The slice's state held no managed resource before the change (serial 42),
+  so no address moved. `make -n gitlab-up` expands `TF_VAR_build_runner=false`, and `true` with
+  `BUILD=1`; `BUILD=2` and `RUNNERS=0 BUILD=1` exit 2. With `egress/` down the slice cannot plan (its
+  user data reads `egress/`'s `no_proxy`), so a copy of it planned against the real state with that one
+  local overridden: `build_runner=false` *"6 to add"*, the deploy and test runners and the test runner's
+  role, the three build-runner outputs null; `build_runner=true` *"13 to add"*, the same six and the build
+  runner, its instance profile, its role and the role's three inline policies and one attachment.
+  `make status` against fabricated states priced the slice 0.0376 without the build runner and 0.2493
+  with it. `make check` passed.

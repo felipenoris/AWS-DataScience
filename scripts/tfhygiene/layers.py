@@ -251,6 +251,10 @@ class Slice:
     layer: str  # P | D | E
     why: str  # what the slice holds, in one line - so a reader need not open it
     usd_per_hour: float = 0.0  # 0.0 when nothing in the slice is metered by the hour
+    # A host the slice creates only when an apply asks for it, as (resource address, USD/h) pairs:
+    # usd_per_hour is the slice without them, and `make status` adds a pair's rate for each instance
+    # of that address the state holds.
+    optional_hosts: tuple[tuple[str, float], ...] = ()
 
     @property
     def path(self) -> str:
@@ -505,14 +509,17 @@ SLICES = [
     # Stage 7 step 6.1 - the build runner, [E], and the buildbox's successor on the same measured
     # shape (m8i.xlarge 0.2117/h, docs/PRICING.md 8); Stage 8 step 4.3 adds the deploy runner
     # (t3a.small 0.0188/h) once deploy_image_digest is set, and decision 11 the test runner (t3a.small
-    # 0.0188/h). Destroyed by `make gitlab-down` and by `make down ENV=production`; a forgotten set is
-    # this stage's likeliest leak, at 0.2493/h.
+    # 0.0188/h). The build runner exists only while an apply sets var.build_runner (`make gitlab-up
+    # BUILD=1`, Stage 7 decision 5), so it is an optional host and the slice's own rate is the other
+    # two. Destroyed by `make gitlab-down` and by `make down ENV=production`; a forgotten set is this
+    # stage's likeliest leak, at 0.2493/h with the build runner.
     Slice(
         "production",
         "runners",
         EPHEMERAL,
-        "the build, deploy and test runners (St.7 6.1, St.8 4.3 and decision 11)",
-        0.2493,
+        "the deploy and test runners, and the build runner on BUILD=1 (St.7 6.1, St.8 4.3, d. 11)",
+        0.0376,
+        optional_hosts=(("aws_instance.runner", 0.2117),),
     ),
     # Stage 6 pass 0 - Stage 7 step 5.a, applied one stage early because Stage 6 step 5.0
     # pushes the first dev-env image into it. [P] and floor-priced at rest: one CMK (key-month,
