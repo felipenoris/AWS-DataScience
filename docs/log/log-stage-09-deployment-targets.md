@@ -1662,3 +1662,17 @@ reading. Times UTC.*
   *"none - the correct between-sessions state (D11)"*. The hub stays up for the Staging leg (Stage 8's
   log). The sitting's balance in Production: the proof job's three runs (one refused, two
   `SUCCEEDED`), `curated.trades` at twenty rows, the lake's flag on, the governed namespace applied.
+
+## 2026-10-23 — the sitting's end: the hub down
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo make hub-down agora, com a leitura do
+make status depois."*), as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`); no
+other session running on the machine. Times UTC, past midnight into 2026-10-24.*
+
+- **[Claude] `make hub-down`** at 00:06:39 to 00:06:49: the dormant hook stopped `awsds-prod-vpn`
+  (`i-011ffd7b…`) and `awsds-prod-proxy` (`i-0d42d039…`), every other slice refused as always. A
+  `make status` in the same minute still read the proxy `UP` while it was stopping; at 00:09 both
+  hosts read `stopped` (`t3.nano`, `t3.micro`), and `make status` at 00:10 reads every `[E]` slice down
+  with 0 resources, the three `[D]` hosts stopped, the burn **0.0000 USD/h**. The evening's balance:
+  Stage 9 2.4-2.6 and 9.1, Stage 10 0.5 and the Staging half of passes 1-2 by hand (Stage 8 3.8), two
+  policy fixes, one module release, the estate at zero burn.
