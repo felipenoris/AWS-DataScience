@@ -572,11 +572,11 @@ reading. Two consequences:
   policy all fire on one call, because the drop-box is SSE-KMS and S3 calls `kms:GenerateDataKey` with
   the caller's credentials. This term is invisible on failure — it surfaces as a KMS error against the
   S3 call — and legible only in a successful `PutObject`'s `SSEKMSKeyId`.
-- The letterbox has no collector yet. The writer cannot clean up after itself by design, and the pickup
-  is Stage 9's `awsds-prod-job-exec`. Until that exists, anything written here stays — including the
-  proof object, declared as `EXC-02` in `docs/AWS_STATE.md`. This is the drop-box working, not failing;
-  the letterbox fills monotonically until Stage 9 lands, and the crawler that would at least catalogue
-  the arrivals has no demander either (open question 19).
+- The letterbox's collector is Stage 9's `awsds-prod-job-exec`, whose pickup first ran on 2026-10-23
+  and consumes CSV objects alone. The writer cannot clean up after itself by design, so anything the
+  pickup does not consume stays until a deliberate `InfrastructureAccess` cleanup, as the proof objects
+  `EXC-02` declared did until 2026-10-24. This is the drop-box working, not failing; the crawler that
+  would at least catalogue the arrivals has no demander (open question 19).
 
 The catalog half of the asymmetry: the drop-box has a catalog database and a crawler, so it has metadata
 that a grant can reach even though its bucket holds nothing a consumer may read. The controls that keep

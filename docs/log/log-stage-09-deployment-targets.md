@@ -1806,3 +1806,44 @@ Times UTC.*
   `terraform-live/README.md` still called the governed workgroup unapplied; they now carry its first raise,
   2026-10-24 00:23 to 00:47. `AWS_STATE.md` already held the two database users nobody created (PR #250),
   so it is unchanged. `INT-24` carries the step pages' reading and decision 14.
+
+## 2026-10-24 — `EXC-02`'s cleanup by the user, read back; 5.4's read of the twenty rows as the persona
+
+*The user's hand for the delete and the query, Claude's for the read-back and the record. The delete as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-data`), from the project folder, with
+`runbooks/promotion.md` §0.5's command; the query as the Data Scientist User with
+`DataScientistProdAccess` (`awsds-scientist-prod`), signed in with `aws sso login --sso-session
+awsds-scientist --no-browser`, the tunnel down. Times UTC.*
+
+- **[user] `EXC-02`'s three `.txt` objects deleted** from `awsds-data-dropbox`, the auto-mode classifier
+  having refused Claude's delete. **[Claude] Read back at 03:12:47** as `awsds-infra-data`: `incoming/`
+  holds no current object; each `.txt` is a delete marker, `probe-4d-sandbox.txt` at 03:12:22,
+  `awsds-6g-24-probe.txt` at 03:12:28 and `awsds-6g-24-probe-tunnel.txt` at 03:12:32, over its version
+  (38, 213 and 213 bytes), which the bucket's 90-day noncurrent rule expires; `trades.csv` behind its
+  marker of 2026-10-23. `AWS_STATE.md`'s row is closed, and `GOVERNANCE.md`, open question 19, the lake's
+  README, `buckets.tf`'s comment and 2.5's text say the collector exists.
+- **[user] 5.4's first query**, the output pasted in chat, verbatim:
+
+  ```
+  aws athena start-query-execution --work-group awsds-prod-athena --query-string 'SELECT count(*) AS n FROM curated.trades' --query-execution-context Database=curated --result-configuration OutputLocation=s3://awsds-prod-outputs/not-enforced/ --profile awsds-scientist-prod --region us-west-2
+
+  {
+      "QueryExecutionId": "d78c3939-168a-4c28-8313-246620114d06"
+  }
+
+  aws athena get-query-execution --query-execution-id "d78c3939-168a-4c28-8313-246620114d06" --query 'QueryExecution.[Status.State,ResultConfiguration.OutputLocation,Statistics.DataScannedInBytes]' --output text --profile awsds-scientist-prod --region us-west-2
+
+  SUCCEEDED       s3://awsds-prod-derived/results/d78c3939-168a-4c28-8313-246620114d06.csv        0
+
+  aws athena get-query-results --query-execution-id "d78c3939-168a-4c28-8313-246620114d06" --query 'ResultSet.Rows[].Data[].VarCharValue' --output text --profile awsds-scientist-prod --region us-west-2
+
+  n       20
+  ```
+
+- **[Claude] The reading**: the persona reads `curated.trades` through Production's resource link, the
+  share's `SELECT` and `awsds-prod-athena`, the count 20 the producer's ten and the pickup's ten; the
+  workgroup's enforced location overrode the request's `not-enforced/`, the override 5.4 asks about;
+  0 bytes scanned, a `count(*)` Athena can answer from the Iceberg table's metadata, so the scan limit
+  was not approached. A read-back of the query as `awsds-infra-prod` found no SSO token for the `awsds`
+  session after the persona's sign-in (*"Error loading SSO Token: Token for awsds does not exist"*); it was
+  not retried, the pasted output being the measurement.

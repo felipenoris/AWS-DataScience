@@ -12,7 +12,7 @@ Written 2026-10-23 with the environment down. Every `[Claude⚡]` apply waits fo
 chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs.
 
 **Where it stands, 2026-10-24**: §0 and §P done but the items §0.5 lists; §W's steps 1 to 4 done (the
-namespace, 9.3's schema); left, in order: §0.5's items 2 to 4 (nothing up; the grant is applied), §H (the hub and GitLab), §T (the tag), §W
+namespace, 9.3's schema); left, in order: §0.5's item 4 (the two decisions; items 1 to 3 done), §H (the hub and GitLab), §T (the tag), §W
 step 5 (the datashare, after Stage 9 decision 14), §Q (after the quotas, which read `CASE_OPENED`).
 
 | § | Holds |
@@ -122,12 +122,14 @@ What stays with the environment: the runs, the legs, the warehouse's compute and
    re-planned `No changes`, the simulator reading both actions `allowed` for both roles.
 2. **[user] The persona's read of the twenty rows** (Stage 9 5.4's first query, the count 20 after the
    pickup), as the Data Scientist User through `awsds-scientist-prod`; Athena and the `[P]` workgroup need
-   nothing up (D39). The commands are 5.4's.
+   nothing up (D39). The commands are 5.4's. **Done 2026-10-24**: `SUCCEEDED`, `n` 20, the result at
+   `s3://awsds-prod-derived/results/<id>.csv` and not at the request's `not-enforced/` (Stage 9's log).
 3. **[Claude⚡] `EXC-02`'s cleanup**, on the user's word, as `awsds-infra-data`: the three `.txt` objects
    the row names deleted from `awsds-data-dropbox`, a delete marker each under the 90-day noncurrent
    rule, and the row retired in `AWS_STATE.md`. **2026-10-24**: Claude Code's auto-mode classifier
    refused Claude's delete, so the user runs it from the project folder as the infrastructure user, and
-   Claude reads the bucket back and retires the row:
+   Claude reads the bucket back and retires the row (**done 2026-10-24**, the delete markers at 03:12 UTC,
+   the row closed):
 
    ```bash
    for k in incoming/2026/08/20/probe-4d-sandbox.txt incoming/2026/09/18/awsds-6g-24-probe.txt incoming/2026/09/18/awsds-6g-24-probe-tunnel.txt; do aws s3api delete-object --bucket awsds-data-dropbox --key "$k" --profile awsds-infra-data --region us-west-2; done
