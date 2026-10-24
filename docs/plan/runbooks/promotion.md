@@ -227,7 +227,8 @@ first promotion carries a lake the job role has written (decision 23).
 3. **[pipeline] The Staging leg**: `staging-up` (3.1, `make up ENV=staging ONLY=egress` as
    `awsds-deploy-staging`, 4.3a's first apply, 16 to add), `staging-deploy` (3.2: the bundle checked,
    the render, 2.3's lint, the tree under `awsds-staging-outputs/applications/app-etl/<tag>/`, the
-   application and orchestration slices applied, INT-14 in Staging, Stage 10 verification ii),
+   application slice's saved plan through 2.3's `lint-plan` and applied, the orchestration slice
+   applied, INT-14 in Staging, Stage 10 verification ii),
    `staging-test` (3.3: the chain's machine started and followed, Stage 10 decision 19), `staging-down`
    (3.4). What is read at this leg and nowhere before: whether `uv run` resolves the dev group on the
    runner, the deploy role's Cloud Control and Glue calls against their grants, the worker's preparation
@@ -237,7 +238,7 @@ first promotion carries a lake the job role has written (decision 23).
    Stage 10's logs): the worker's preparation with no `ecr.*` endpoint, `TriggerMode`'s literal and the key's
    encryption context are read, and two statements gained `kms:GenerateDataKey` for the XCom encryption
    (`orchestration-v0.2.0`); `uv run` on the runner, the deploy role's calls and the artifact remain the leg's.
-4. **[user] The gate** (3.5): `production-plan` read beside `staging-test`'s artifacts, then
+4. **[user] The gate** (3.5): `production-plan`, its plan passed by `lint-plan`, read beside `staging-test`'s artifacts, then
    `production-gate` by a `deployment-managers` member. Before `production-deploy`: `make up
    ENV=production` by the user (§P's step 4 if the sitting is one), since a Production run needs
    `workloads-egress/`.

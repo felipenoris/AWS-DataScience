@@ -124,14 +124,16 @@ is "Pattern not found" with the zip present, while `deploy` expands it; read in 
 offline on 2026-10-16), so the manifest names the zip by its name.
 
 The promotion (Stage 8 step 3) runs on the deploy runner, each job cloning `awsds/infrastructure` with the
-job token (Stage 8 decision 2), where the slices and the two scripts it calls live. Staging's egress is
+job token (Stage 8 decision 2), where the slices and the scripts it calls live. Staging's egress is
 raised; the bundle is read as the runner's own role and checked against the SHA256 `test-deploy` passed;
 `scripts/release-application.py` writes its tree into the account's outputs bucket with the workflow
-rendered by `scripts/render-workflow.py`, then the application and orchestration slices apply; the leg
+rendered by `scripts/render-workflow.py` and passed by the lint's promoted mode; the application slice
+applies the plan it saved once `scripts/lint-plan.py` has passed its Glue job through `awsds-workflows
+lint-plan`, the script under the release's `glue/` folder, then the orchestration slice applies; the leg
 starts the chain's machine and follows it, and Staging is torn down whatever the outcome. Production
-gets a plan, the manual gate and the same bundle and image. The jobs need the hub and the deploy runner,
-and a Production run `production/workloads-egress/` (`make up ENV=production`). Written 2026-10-22, not
-yet run.
+gets a plan, linted the same way before the manual gate, and the same bundle and image. The jobs need
+the hub and the deploy runner, and a Production run `production/workloads-egress/` (`make up
+ENV=production`). Written 2026-10-22, the plan lint 2026-10-24, not yet run.
 
 Read on 2026-10-16 and not yet run: the first tag's pipeline, which shows whether the `test` run reaches
 `outbox/report.json`, the XCom of `summarize` pulled in `write_result`'s template, the project role's

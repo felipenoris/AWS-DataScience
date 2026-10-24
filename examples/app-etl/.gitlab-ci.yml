@@ -29,8 +29,8 @@ variables:
   GATES_UV_PROJECTS: "."
   IMAGE_REPO: awsds-prod-ecr-app-etl
   # The workflow tooling, by commit: its lint reads manifest.yaml and workflows/ against the rules of
-  # a SageMaker application (D28), offline.
-  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/3c1708eb0fcff1d7f4d14e3e59cdd69bad83e033.zip"
+  # a SageMaker application (D28), offline; the promotion legs run its promoted lint and its lint-plan.
+  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/ff25eaeae0a28b705a87ebca01c2a47c8d983e75.zip"
   # The instance types a processing job may ask for: the ceiling DenySageMakerInstanceCeiling carries
   # in the Workloads SCP and in Sandbox's project boundary, the list terraform-modules/sagemaker-denies
   # holds (allowed_instance_types) in the infrastructure repository. A copy, since the application's
@@ -308,8 +308,11 @@ staging-up:
 # the release job lints each rendered workflow in the promoted mode (Stage 10 step 2.3, with the
 # pipeline's AWSDS_WORKFLOWS, IMAGE_REPO and LINT_INSTANCE_TYPES) and writes the bundle's tree into
 # Staging's outputs bucket (Stage 10 step 2.4); then the application slice and the orchestration slice,
-# each with the release this pipeline promotes. The orchestration slice's release file is kept as an
-# artifact: its VersionIds are what step 3.7 records as Staging's release.tf defaults.
+# each with the release this pipeline promotes. The application slice applies the plan it saved once
+# lint-plan has read its Glue job under the release's glue/ folder (Stage 10 step 2.3, rule (2c)); the
+# plan and its JSON carry state, so they stay in the job's temporary folder and are never an artifact.
+# The orchestration slice's release file is kept as an artifact: its VersionIds are what step 3.7
+# records as Staging's release.tf defaults.
 staging-deploy:
   extends: .promotion
   stage: staging
@@ -328,8 +331,13 @@ staging-deploy:
         ./scripts/gen-backend-hcl.py staging "$slice"
         ./scripts/gen-tfvars.py --pipeline staging "$slice"
         terraform -chdir="terraform-live/staging/$slice" init -backend-config=backend.hcl -input=false
-        terraform -chdir="terraform-live/staging/$slice" apply -input=false -auto-approve
       done
+      plans="$(mktemp -d)"
+      terraform -chdir=terraform-live/staging/app/app-etl plan -input=false -out="$plans/app-etl.tfplan"
+      terraform -chdir=terraform-live/staging/app/app-etl show -json "$plans/app-etl.tfplan" > "$plans/app-etl.json"
+      ./scripts/lint-plan.py staging "$plans/app-etl.json" --tag "$CI_COMMIT_TAG"
+      terraform -chdir=terraform-live/staging/app/app-etl apply -input=false "$plans/app-etl.tfplan"
+      terraform -chdir=terraform-live/staging/orchestration apply -input=false -auto-approve
       cat terraform-live/staging/orchestration/release.auto.tfvars.json
   artifacts:
     paths: [infrastructure/terraform-live/staging/orchestration/release.auto.tfvars.json]
@@ -381,7 +389,8 @@ staging-down:
       cd "$INFRA_DIR"
       make down ENV=staging PROFILE=awsds-deploy-staging AUTO=1
 
-# 3.5: Production's plan of the application slice, read beside Staging's results before the gate.
+# 3.5: Production's plan of the application slice, read beside Staging's results before the gate, and
+# lint-plan on it, so a refusal stops the pipeline before the gate asks anyone to approve.
 production-plan:
   extends: .promotion
   stage: gate
@@ -396,8 +405,11 @@ production-plan:
       ./scripts/gen-backend-hcl.py production app/app-etl
       ./scripts/gen-tfvars.py --pipeline production app/app-etl
       terraform -chdir=terraform-live/production/app/app-etl init -backend-config=backend.hcl -input=false
-      terraform -chdir=terraform-live/production/app/app-etl plan -input=false -no-color > "$CI_PROJECT_DIR/production-plan.txt"
+      plans="$(mktemp -d)"
+      terraform -chdir=terraform-live/production/app/app-etl plan -input=false -no-color -out="$plans/app-etl.tfplan" > "$CI_PROJECT_DIR/production-plan.txt"
       cat "$CI_PROJECT_DIR/production-plan.txt"
+      terraform -chdir=terraform-live/production/app/app-etl show -json "$plans/app-etl.tfplan" > "$plans/app-etl.json"
+      ./scripts/lint-plan.py production "$plans/app-etl.json" --tag "$CI_COMMIT_TAG"
   artifacts:
     paths: [production-plan.txt]
     expire_in: 1 year
@@ -417,6 +429,7 @@ production-gate:
 
 # 3.6: the same bundle and image by digest, nothing rebuilt; named slices only, never `make up` or
 # `make down ENV=production`. A Production run needs production/workloads-egress/ raised by the user.
+# The application slice applies a plan of its own, linted as Staging's: 3.5's plan is read, never applied.
 production-deploy:
   extends: .promotion
   stage: production
@@ -435,8 +448,13 @@ production-deploy:
         ./scripts/gen-backend-hcl.py production "$slice"
         ./scripts/gen-tfvars.py --pipeline production "$slice"
         terraform -chdir="terraform-live/production/$slice" init -backend-config=backend.hcl -input=false
-        terraform -chdir="terraform-live/production/$slice" apply -input=false -auto-approve
       done
+      plans="$(mktemp -d)"
+      terraform -chdir=terraform-live/production/app/app-etl plan -input=false -out="$plans/app-etl.tfplan"
+      terraform -chdir=terraform-live/production/app/app-etl show -json "$plans/app-etl.tfplan" > "$plans/app-etl.json"
+      ./scripts/lint-plan.py production "$plans/app-etl.json" --tag "$CI_COMMIT_TAG"
+      terraform -chdir=terraform-live/production/app/app-etl apply -input=false "$plans/app-etl.tfplan"
+      terraform -chdir=terraform-live/production/orchestration apply -input=false -auto-approve
       cat terraform-live/production/orchestration/release.auto.tfvars.json
   artifacts:
     paths: [infrastructure/terraform-live/production/orchestration/release.auto.tfvars.json]

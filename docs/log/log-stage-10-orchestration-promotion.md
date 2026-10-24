@@ -743,3 +743,37 @@ Times UTC.*
   `ec2:CreateNetworkInterface` in the worker's session at 23:25:12, `Client.UnauthorizedOperation`, the job
   unaffected. The two tasks' hosts, `ip-10-50-110-196` (`process`) and `ip-10-50-50-227` (`summarize`),
   sit one in each private subnet, so the single-AZ endpoints were reached from both AZs (verification xvi).
+
+## 2026-10-24 — 2.3's rules (2c) and (6) written in `awsds-workflows`, read on both application slices
+
+*Claude's hand, the session and authorisation of Stage 8's entry of the same date: plans and reads as
+the infrastructure user (`awsds-infra-staging`, `awsds-infra-prod`, `InfrastructureAccess`), the plans
+under `$TMPDIR`, nothing applied. Times UTC.*
+
+- **[Claude] The rules**: `awsds-workflows` PR #23, merged 2026-10-24 at 00:38:02 as `ff25eae`, writes
+  (2c), the command `lint-plan <plan.json> --prefix <s3://…>` over `terraform show -json` on a saved plan,
+  and (6), the promoted mode's refusal of a Glue task keeping `create_job_kwargs`, `script_location`,
+  `iam_role_arn`, `update_config` or `job_desc`; read in its code at that commit. 5.1's training rule stays
+  specified: the pin's `job` rule reads a `SageMakerProcessingOperator` alone and its image rule `ImageUri`
+  keys, no rule names a training job. The template pins `ff25eae`, and the legs run (2c) through
+  `scripts/lint-plan.py` (Stage 8's entry).
+- **[Claude] (2c) on Staging's application slice**, `v0.2.1` as the stand-in release (the tag, the
+  digest `sha256:247ec6b6…ce0c` and the bundle's `7fb374d1…5fff`, as on 2026-10-22): planned at 01:15:36,
+  *"Plan: 1 to add, 0 to change, 0 to destroy."*, the job `awsds-staging-app-etl` on
+  `awsds-staging-job-exec` and `awsds-staging-jobs`, its script
+  `s3://awsds-staging-outputs/applications/app-etl/v0.2.1/glue/transform.py`. `lint-plan.py staging …
+  --tag v0.2.1` at 01:15:57: *"ok: 1 job(s) do Glue: aws_glue_job.this[0]"*, exit 0; `--tag v9.9.9`:
+  *"glue: aws_glue_job.this[0]: o script
+  s3://awsds-staging-outputs/applications/app-etl/v0.2.1/glue/transform.py está fora de
+  s3://awsds-staging-outputs/applications/app-etl/v9.9.9/glue/"*, exit 1; the tool called directly with the
+  two prefixes printed the same, exits 0 and 1.
+- **[Claude] (2c) on Production's**, the same release: planned at 01:16:25, *"Plan: 1 to add"*, the job
+  `awsds-prod-app-etl` on `awsds-prod-job-exec` and `awsds-prod-jobs`, its script under
+  `s3://awsds-prod-outputs/applications/app-etl/v0.2.1/glue/`. `lint-plan.py production … --tag v0.2.1` at
+  01:16:35: *"ok: 1 job(s) do Glue: aws_glue_job.this[0]"*, exit 0; `--tag v9.9.9`: the script refused under
+  `glue`, exit 1.
+- **[Claude] Staging's slice with no release**, 01:17:02: `No changes`; the tool printed *"ok: 0 job(s) do
+  Glue: -"* and `lint-plan.py` exited 1, *"no aws_glue_job is left by the apply, so none was read"*.
+- **[Claude] (6)** is read on Staging's rendered copy, each key refused: Stage 8's entry, verification xiv.
+- **[Claude] The plan**: 2.3 (the rules written, where the legs call `lint-plan`, the readings), 5.1's
+  sentence at the new pin, the Status row.

@@ -1,7 +1,8 @@
 # app-etl's manifest (Stage 8 step 2.5, D41): what the CI/CD CLI copies to a project, in the notation
 # the CLI resolves. The storage items are folders of this tree: `deploy` syncs each to its stage's
 # `targetDirectory` under the project's shared prefix, a directory include keeping the paths inside the
-# folder and a glob include flattened to the file's name. The stages read `${VAR}` from the shell, and
+# folder. An include names a file or a folder: `deploy` expands a glob, flattened to the file's name, but
+# `bundle` (CLI 1.0.9) does not, and the lint refuses one. The stages read `${VAR}` from the shell, and
 # each `{env.VAR}` the workflow names is a stage variable of both stages, filled on a run the CLI
 # starts. The workflow's `code` is the worker's package, which the pipeline builds before any deploy.
 applicationName: app-etl
