@@ -1686,3 +1686,58 @@ other session running on the machine. Times UTC, past midnight into 2026-10-24.*
   `gov_trades_owner`, `QUOTA 1 TB`, the roles `gov_trades_rw` and `gov_trades_ddl`, the statements as 9.3
   carries them. The waiting list's row leaves; §W runs them at the next Production sitting, the compute
   raised with `GROUPS=redshift`.
+
+## 2026-10-24 — 9.3's governed schema: the statements run through the Data API
+
+*Claude's hand, on the user's authorization in chat (*"rodei make hub-up e make up ENV=production
+ONLY=workloads-egress,warehouse-compute GROUPS=redshift. Pode prosseguir. Autorizo os applies
+necessários."*), as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), through
+`redshift-data` with the namespace's admin secret (`redshift!awsds-prod-warehouse-dbadmin-…`), one
+`execute-statement` per statement. The workgroup `awsds-prod-warehouse` `AVAILABLE` since 00:23:05, base 4
+and max 8 RPU, the usage limit 10 RPU-hours monthly `deactivate`, the `redshift-serverless` endpoint among
+the nine of `VPC-Workloads`. Times UTC.*
+
+- **[Claude] The readings first** (00:26:52 to 00:27:05): the secret authenticated at the first call, so
+  `EXC-13`'s database half reads true for a namespace no rotation has touched; `public`'s ACL in
+  `warehouse` and in `dev` `{rdsdb=UCDA/rdsdb,=UC/rdsdb}`, so `PUBLIC` held `USAGE` and `CREATE` on both,
+  the `CREATE` owed a revoke; both databases' `datacl` null, the defaults.
+- **[Claude] The statements** (00:27:50 to 00:29:21, each `FINISHED`, none above 0.6 s): in `warehouse`,
+  `REVOKE CREATE ON SCHEMA public FROM PUBLIC`, `REVOKE ALL ON DATABASE warehouse FROM PUBLIC`,
+  `CREATE DATABASE governed`; in `dev`, the same two revokes; in `governed`, `public`'s ACL read the same
+  `=UC/rdsdb` and the two revokes ran, then `CREATE USER gov_trades_owner PASSWORD DISABLE NOCREATEDB
+  NOCREATEUSER`, `CREATE SCHEMA trades AUTHORIZATION gov_trades_owner QUOTA 1 TB`, `CREATE ROLE
+  gov_trades_rw`, `GRANT USAGE ON SCHEMA trades TO ROLE gov_trades_rw`, `CREATE ROLE gov_trades_ddl`,
+  `GRANT USAGE, CREATE ON SCHEMA trades TO ROLE gov_trades_ddl`, `CREATE USER "IAMR:awsds-prod-job-exec"`
+  and `CREATE USER "IAMR:awsds-deploy-prod"` (both `PASSWORD DISABLE NOCREATEDB NOCREATEUSER`), `GRANT
+  ROLE gov_trades_rw TO "IAMR:awsds-prod-job-exec"`, `GRANT ROLE gov_trades_ddl TO "IAMR:awsds-deploy-prod"`,
+  `ALTER DEFAULT PRIVILEGES FOR USER "IAMR:awsds-deploy-prod" IN SCHEMA trades GRANT SELECT, INSERT,
+  DELETE ON TABLES TO ROLE gov_trades_rw`. The theme and the quota are the user's decision of 00:15.
+- **[Claude] Read back** (00:30:33 to 00:31:15, the Data API as the admin): `pg_user` holds six users:
+  `rdsdb`, `dbadmin`, `gov_trades_owner`, `IAMR:awsds-prod-job-exec`, `IAMR:awsds-deploy-prod` and
+  **`IAMR:AWSReservedSSO_InfrastructureAccess_c2bcabf74c885115`, superuser**, the user 9.8 predicted
+  nobody would create, born of the first IAM-authenticated session (`./aws/warehouse.py` or the compute's
+  apply) and not of this sitting's statements; `svv_roles` the two roles, owner `dbadmin`;
+  `svv_user_grants` `IAMR:awsds-deploy-prod` → `gov_trades_ddl` and `IAMR:awsds-prod-job-exec` →
+  `gov_trades_rw`; `pg_namespace` `trades` owned by `gov_trades_owner`; `svv_default_privileges` three
+  rows for `trades`, `RELATION`, owner `IAMR:awsds-deploy-prod`, `SELECT`, `INSERT` and `DELETE` to the
+  role `gov_trades_rw`; the databases' ACLs `{dbadmin=CTA/dbadmin}` for `warehouse` and `governed`,
+  `{rdsdb=CTA/rdsdb}` for `dev`, `PUBLIC` gone from all three; `public`'s ACL `=U/rdsdb` in each, the
+  `CREATE` revoked. `./aws/warehouse.py awsds-infra-prod --sql` at 00:31:19: OK, `WH-6` *"`governed` plus
+  the inert ['dev', 'warehouse']"*, `WH-12` one themed schema, `WH-15` idle at 8 RPU-seconds, `WH-14` a note
+  until a table exists, `WH-13` the quota unreadable.
+- **[Claude] The audit groups** (read 00:35, Lesson 62): `connectionlog` carries the admin's Data API
+  session (*"authenticated | 00:26:52 | 127.0.0.1 | warehouse | dbadmin | password | TLSv1.3"*),
+  `useractivitylog` its statements (*"db=governed user=dbadmin … LOG: CREATE SCHEMA trades AUTHORIZATION
+  gov_trades_owner QUOTA 1 TB"*), `userlog` the three `create` events of 00:28:31, 00:29:01 and 00:29:06;
+  Production's export carries what Sandbox's never did (`EXC-16`).
+- **[Claude] `make down ENV=production`** (`AUTO=1`, to 00:47:16): `warehouse-compute/` *"2 destroyed"*,
+  the workgroup and its usage limit, `workloads-egress/` *"17 destroyed"*, the seven endpoints with the
+  `redshift-serverless` one `GROUPS=redshift` added and the firewall, every other `[E]` slice 0; the
+  namespace `AVAILABLE` with `governed` and its schema, `[P]`. `./aws/egress.py awsds-infra-prod` at 00:47:34
+  reads no interface endpoint and no NAT; `make status` at 00:48 reads every `[E]` slice down and the burn
+  0.0156 USD/h, the hub's two hosts, whose `make hub-down` is the user's. 9.5's datashare (both sides),
+  9.6 and 9.7 are the sitting that follows.
+- **[Claude] `make hub-down`** (00:52:15 to 00:52:20, on the user's authorization in chat, *"Autorizo make
+  hub-down agora, com a leitura do make status depois."*): the dormant hook stopped `awsds-prod-vpn` and
+  `awsds-prod-proxy`, both `stopped` a minute later; `make status` at 00:53 reads the three `[D]` hosts
+  stopped, every `[E]` slice down and the burn **0.0000 USD/h**. No other session running on the machine.
