@@ -2791,3 +2791,11 @@ the request), no AWS write. Times UTC.*
 - **[Claude] The peer's note**: Stage 8 3.6 and Stage 9 2.4 and 9.1 wrote the bare `make up
   ENV=production`, which applies `production/runners/` without `BUILD=1` and destroys the build runner;
   they now carry the `ONLY=` forms.
+
+## 2026-10-24 — the session's branch and its PRs
+
+*Claude's hand.*
+
+- **[Claude]** The branch `claude/planejamento-estagios-8-9-10-847863` pushed and PR #254 opened against
+  `main`; `awsds-workflows`' branch `treino-e-repositorio-de-algoritmo` pushed and its PR #24 opened, the
+  merge of both the user's.
