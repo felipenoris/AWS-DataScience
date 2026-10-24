@@ -79,6 +79,22 @@ data "aws_iam_policy_document" "orchestration_resources" {
     resources = ["*"]
   }
 
+  # A workflow's ARN ends in a suffix the service generates, so CreateWorkflow authorizes the tags it
+  # carries as TagResource on workflow/*; held here to the Name the module writes. Refused to
+  # awsds-deploy-staging as UnauthorizedTaggingOperation in pipeline #68 (2026-10-24).
+  statement {
+    sid       = "TagTheWorkflowsAtCreation"
+    effect    = "Allow"
+    actions   = ["airflow-serverless:TagResource"]
+    resources = ["arn:${local.partition}:airflow-serverless:${local.region_account}:workflow/*"]
+
+    condition {
+      test     = "StringLike"
+      variable = "aws:RequestTag/Name"
+      values   = ["awsds-${var.env}-wf-*"]
+    }
+  }
+
   statement {
     sid    = "ManageTheWorkflows"
     effect = "Allow"
