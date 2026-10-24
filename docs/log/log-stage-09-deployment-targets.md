@@ -1977,3 +1977,40 @@ this date). Times UTC.*
   The job role wrote `app-etl/work/` and `app-etl/outbox/` of `awsds-prod-outputs` (four objects,
   21:43:51 to 21:54:12) and touched no lake prefix: v0.3.3 reads the inbox, and the governed read is
   v0.4.0's (8.5).
+
+## 2026-10-24 — 2.4's third producer run, Production's flag off: the commit needs the owner's flag alone
+
+*The user's hand for the two console acts; Claude's for the readings and the run, on the user's
+authorization in chat (*"Autorizo a execução --MODE producer do job awsds-prod-producer-proof agora, como
+usuário de infraestrutura com InfrastructureAccess em Production (awsds-infra-prod), e as leituras dos
+resultados."*), as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), in the session
+of `runbooks/promotion.md` §V (the branch `claude/eloquent-ishizaka-04f598`); §V step 1, the hub and
+`production/workloads-egress/` up. The seven other sessions on the machine were told before the run.
+Times UTC.*
+
+- **[Claude] Before**, 22:14:40: `get-data-lake-settings` reads `AllowFullTableExternalDataAccess` `true`,
+  one administrator, both create-default lists empty, `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE`;
+  `./aws/deploytargets.py awsds-infra-prod` all checks passed (`DT-5`).
+- **[user]** *"Desliguei a flag de full-table access de Production no console do Lake Formation
+  (us-west-2)."* The trail holds the console's `PutDataLakeSettings` at 22:23:32. **[Claude] read back** at
+  22:23:53: the flag absent from the settings, which the console removes rather than writing `false`, the
+  rest as before; `DT-5` passing.
+- **[Claude] The run**: `start-job-run` at 22:24:58, run
+  `jr_39e590285fd3b47097708bb1a6c133c1e3080fde2415a21c9b36002ef264064d`, **`SUCCEEDED`** at 22:27:01 after
+  102 s of execution, 204 DPU-seconds. The script's lines: *"running as
+  …awsds-prod-job-exec/GlueJobRunnerSession, mode producer"* 22:26:07; *"inserting 10 sample rows into
+  lake.curated.trades"* 22:26:22; *"the insert committed"* 22:26:46; *"lake.curated.trades holds 30 row(s)
+  through the share"* 22:26:48; the direct put refused by the lake's data key, *"not authorized to perform:
+  kms:GenerateDataKey on this resource because the resource does not exist in this Region, no
+  resource-based policies allow access, or a resource-based policy explicitly denies access"*, 22:26:50, as
+  on 2026-10-23; *"done"*.
+- **[Claude] Production's trail**: eight `GetDataAccess` on the lake's `table/curated/trades` between
+  22:26:27 and 22:26:49, in pairs, one from the driver's SDK and one invoked by `glue.amazonaws.com`, every
+  one answered, each carrying a `sharedEventID`, all through `vpce-05f87e3d8b6ce302d`, the `lakeformation`
+  endpoint `workloads-egress/` raised at 18:58.
+- **[user]** *"Religuei a flag de full-table access de Production no console do Lake Formation
+  (us-west-2)."* **[Claude] read back** at 22:29:42: the flag `true`, the rest as before, `DT-5` passing.
+- **Verification xxviii's third clause**: with the lake's flag on and Production's off, the write
+  commits, so the engine account's flag is not needed. Staging's leg reads through the lake's flag alone,
+  and Staging's stays unset. Production's flag is back on, as decision 13 (a) left it; whether it stays is
+  the user's to decide against `TM-26`. `curated.trades` holds 30 rows.
