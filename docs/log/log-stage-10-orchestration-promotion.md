@@ -869,3 +869,39 @@ Times UTC.*
   `states:StartExecution` on `stateMachine:awsds-staging-chain-app-etl`, and `states:DescribeExecution`
   and `states:GetExecutionHistory` on one of its executions, read `allowed` for `awsds-deploy-staging` at
   03:05, each matched by `awsds-staging-deploy-orchestration-resources` (decision 19's start of the chain).
+
+## 2026-10-24 — pass 3 written, the quotas raised: decisions 21 and 22, the training rule
+
+*Claude's hand, in the session `planejamento-estagios-8-9-10-847863` (Stage 9's entry of this date quotes
+the request), as the infrastructure user with `InfrastructureAccess`, reads and plans only. Nothing
+applied. Times UTC.*
+
+- **[user] The decisions**, answered in the session's question: *"Tudo agora (Recomendado)"* for when
+  v0.4.0 is written, its tag after v0.3.0 has passed; decision 21, the model, *"XGBoost da AWS
+  (Recomendado)"*; decision 22, how Staging tests a model it cannot read from Production, *"Retreina em
+  Staging (Recomendado)"*.
+- **[Claude] The image**: `aws ecr describe-images` on AWS's `sagemaker-xgboost` repository, tag `3.0-5`,
+  as `awsds-infra-prod`: `sha256:0b5d9341baa09ab2432fc9efbc329425e69325ba33562b1e2a015fd6f16e3a78`,
+  pushed 2026-10-11, tags `3.0-5`, `3.0-5-cpu-py3` and `3.0-5-1.0.64.0`. `*/sagemaker/training-image.tf`
+  composes the URI from the provider's table of prebuilt images and that digest, so no account id is in
+  the repository.
+- **[Claude] 5.1 written**: the workflow `app-etl-train`, `train` (`SageMakerTrainingOperator`,
+  `ml.m5.large`, the job subnets, network isolation, the data key on the volume and the model,
+  `action_if_job_exists: fail`) and `evaluate` (the training job's `validation:rmse` as SageMaker's
+  model-quality statistics beside the model, with the batch's row count). The job's name reaches
+  `evaluate` through `train`'s XCom, since `{{ ts_nodash }}` is midnight in a manual run. The lint's
+  rule `treino` and the `TrainingImage` half of `imagem` are `awsds-workflows` `d60e1ad` (branch
+  `treino-e-repositorio-de-algoritmo`, its merge the user's): 135 lint tests pass, and the 7 of
+  `prepare_offline` that fail on Darwin arm64 fail the same at `ff25eae`. The template's lint and the
+  release's promoted lint pass `--algorithm-repository sagemaker-xgboost` (`LINT_ALGORITHM_REPOSITORIES`);
+  each rendered copy, stand-in values, reads `ok`.
+- **[Claude] 5.2 and 5.4 written**: `scripts/model-chain.py` (`register`, `approve`, `transform`, and
+  `--check` in `make check`) and the template's jobs `staging-model`, `production-register` and
+  `production-approve` (manual) and `production-transform`. 5.4's Staging half now serves Staging's own
+  retrained model, as Stage 9 decision 1 requires. The deploy roles' grants planned 17:20 to 17:21 with
+  the alerts var-file: *"Plan: 0 to add, 1 to change, 0 to destroy."* in each `foundation/`, the
+  inline totals 3,637 (Production) and 6,183 (Staging) characters of 10,240.
+- **[Claude] The orchestration slices**: `app-etl-train` and its chain in both (`DISABLED` in Staging,
+  `cron(0 7 * * ? *)` in Production), `app-etl-warehouse` and its chain in Production; a chain whose
+  workflows a release lacks is not created, so v0.3.0's `release.tf` creates neither. Both slices
+  validate; `orchestration-v0.2.0` already carries `training_job_prefix`.

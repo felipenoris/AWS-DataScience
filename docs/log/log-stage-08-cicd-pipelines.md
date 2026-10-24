@@ -2767,3 +2767,27 @@ readings. Times UTC.*
   re-planned `No changes`; both deploy roles read `allowed` for `states:ValidateStateMachineDefinition`
   and the MWAA Serverless service-linked role. `runbooks/promotion.md` §0.5's first item is done, and §T
   no longer waits on it.
+
+## 2026-10-24 — v0.4.0's legs written; verification xxii's substituted bundle refused offline
+
+*Claude's hand, in the session `planejamento-estagios-8-9-10-847863` (Stage 9's entry of this date quotes
+the request), no AWS write. Times UTC.*
+
+- **[Claude] The branch synced** at the user's word: fast-forwarded to `0236a99d` (PR #253, the runbooks
+  review); nothing of the branch was committed yet.
+- **[Claude] The template's v0.4.0 legs**: `build-task-code` zips `code/app_etl_tasks.py` once per
+  workflow; `test-deploy` requires the CI/CD variable `TRAINING_IMAGE_URI` (the user adds it, the value
+  `terraform output -raw training_image_uri` on `staging/sagemaker/`); `staging-test` follows both
+  chains and reads the application's table; `staging-model` serves Staging's model; after
+  `production-deploy`, the manual `production-warehouse-ddl`, `production-register` and
+  `production-approve`, then `production-transform`. `check-gitlab-ci.py` OK; the template's 27 tests and
+  its lint pass.
+- **[Claude] Which template each tag carries**: v0.3.0, the first promotion, is `examples/app-etl/` at
+  `0236a99d`; v0.4.0 is `examples/app-etl/` at `main` once this branch is merged.
+- **[Claude] Verification xxii's substituted-file half**, 17:31:02, offline: `release-application.py
+  staging` handed a bundle of other files with `v0.2.1`'s SHA256, under a profile that does not exist,
+  answered *"SHA256 differs from the value the tag pipeline passed"* and exit 1, before reading a state,
+  rendering or writing. The `release.tf` half stays 3.7's.
+- **[Claude] The peer's note**: Stage 8 3.6 and Stage 9 2.4 and 9.1 wrote the bare `make up
+  ENV=production`, which applies `production/runners/` without `BUILD=1` and destroys the build runner;
+  they now carry the `ONLY=` forms.

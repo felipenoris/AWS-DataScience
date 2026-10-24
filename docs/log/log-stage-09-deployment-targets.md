@@ -1878,3 +1878,54 @@ after the user signed the `awsds` session in again. Times UTC.*
   speak of a second grantor account; the `GRANT`s inside `governed` stay Production's, in the register's
   Redshift half. The registration is permanent under `DenyLakeDeletionAndDeregistration`. The waiting
   list's row leaves; 6d decision due 11 is that stage's log.
+
+## 2026-10-24 — the sixth sitting with the environment down: the quotas raised, 9.4 written, decision 15
+
+*Claude's hand, in the session `planejamento-estagios-8-9-10-847863` (the branch
+`claude/planejamento-estagios-8-9-10-847863`, cut from `main` at PR #252's merge and fast-forwarded to
+PR #253's at the user's word), on the user's request. AWS read as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`, `awsds-infra-sandbox-1`), reads and
+plans only, the tunnel down; the one other session on the machine, the runbooks review (PR #253), was
+told which stage-file forms this session takes. Nothing applied. Times UTC.*
+
+- **[user] The request**: *"Planeje as próximas atividades para concluirmos os estágios 8, 9 e 10.
+  Antecipe todas as etapas que podem ser feitas neste momento sem o ambiente no ar. Em seguida, planeje
+  a execução destas etapas e me avise para subir o ambiente e prosseguirmos com a implementação do
+  plano."* Later in the sitting: *"Peço sincronizar o repositório em relação à main. houve revisão dos
+  runbooks."*
+- **[Claude] 3.5's quotas**, 03:47 to 03:48: the four `ml.m5.large` requests still read `CASE_OPENED`,
+  last updated 2026-10-23 between 20:03 and 21:00, and the applied values `list-service-quotas` returns
+  are no longer 0. In Production and Staging alike: training 20 for `ml.m5.large`, `ml.m5.xlarge`,
+  `ml.c5.xlarge` and `ml.m5.2xlarge`, 1 for `ml.t3.large` and `ml.t3.xlarge`; transform 8, 4, 8 and 2 for
+  the first four; processing 8 for `ml.m5.large`, `ml.m5.xlarge` and `ml.c5.xlarge`, 4 for
+  `ml.m5.2xlarge`, 10 for `ml.t3.medium` (4 before) and `ml.t3.large`, 5 for `ml.t3.xlarge`. Sandbox
+  reads the same values. `get-aws-default-service-quota` still reads 0.0 for `L-611FA074`, so these are
+  the two accounts' applied quotas, raised past the requests' 2. Stage 10's pass 3 waits on no quota.
+- **[user] Decision 15**, the warehouse load's trigger, answered in the session's question: *"Workflow
+  só de Produção"*, against the recommendation of a manual job in the Production leg. The load is a
+  task of its own workflow with its own chain, Production's alone, and fails whenever the compute is
+  down.
+- **[Claude] 9.4 written** in the template (`examples/app-etl/`) and its slices: `warehouse/trades.sql`
+  (`CREATE TABLE IF NOT EXISTS trades.trades_notional`, the deployer's user its owner); the pipeline's
+  manual job `production-warehouse-ddl` (the Data API as `awsds-deploy-prod`, a read every 5 s, cancelled
+  past 300 s and read back, verifications xxii and xxvii); `glue/load_warehouse.py` (`GetCredentials` and
+  `GetWorkgroup`, then JDBC on the workgroup's port as `IAMR:awsds-prod-job-exec`, delete and insert in
+  one transaction, the count read back); the job `awsds-prod-app-etl-load`, Production's alone in the
+  shared application slice; the workflow `app-etl-warehouse` and its chain at `cron(30 7 * * ? *)`; the
+  job role's `ConnectToTheGovernedWarehouse`. AWS's JDBC page names `redshift-jdbc42-2.1.0.29` for Glue
+  5.0 and 5.1 and says Glue provides the drivers to its Spark jobs; Glue 6.0's row is not in its table,
+  so the first run reads whether the driver loads.
+- **[Claude] 8.5's half**: the template's Glue job reads `curated.trades` through the share when the
+  application slice gives it `--SOURCE_TABLE` (2.4's catalog settings), writes
+  `app_outputs.trades_notional` and reads it back against the rows read; `staging-test` reads the table
+  by `get-table` as the deploy role. A planted drift, `GOVERNED_COLUMNS` naming a column `curated.trades`
+  lacks, fails Staging's leg and passes `test` (verification xiii, Stage 8's ix).
+- **[Claude] The plans**, 17:17 to 17:21, each outside the repository: `production/data/` and
+  `staging/data/` *"Plan: 0 to add, 1 to change, 0 to destroy."*, the outputs bucket's policy with
+  `models/` among the deploy role's prefixes, and four outputs (`lake_catalog_id`, `curated_database`,
+  `curated_table`, `curated_bucket_name`); `production/sagemaker/` the same counts, the job role's inline
+  policy, and `training_image_uri`; `staging/sagemaker/` the output alone. The applies wait for the user.
+- **[Claude] What the Staging leg of v0.4.0 depends on**: Staging's `AllowFullTableExternalDataAccess`
+  is unset, and whether an engine's flag is needed beside the lake's is verification xxviii's third
+  clause. The third producer run, Production's flag off, comes before that leg; if it is refused, the
+  user turns Staging's flag on in its console as Production's was.
