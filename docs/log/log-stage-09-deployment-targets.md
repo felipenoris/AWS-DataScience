@@ -1725,3 +1725,15 @@ the nine of `VPC-Workloads`. Times UTC.*
   `CREATE` revoked. `./aws/warehouse.py awsds-infra-prod --sql` at 00:31:19: OK, `WH-6` *"`governed` plus
   the inert ['dev', 'warehouse']"*, `WH-12` one themed schema, `WH-15` idle at 8 RPU-seconds, `WH-14` a note
   until a table exists, `WH-13` the quota unreadable.
+- **[Claude] The audit groups** (read 00:35, Lesson 62): `connectionlog` carries the admin's Data API
+  session (*"authenticated | 00:26:52 | 127.0.0.1 | warehouse | dbadmin | password | TLSv1.3"*),
+  `useractivitylog` its statements (*"db=governed user=dbadmin … LOG: CREATE SCHEMA trades AUTHORIZATION
+  gov_trades_owner QUOTA 1 TB"*), `userlog` the three `create` events of 00:28:31, 00:29:01 and 00:29:06;
+  Production's export carries what Sandbox's never did (`EXC-16`).
+- **[Claude] `make down ENV=production`** (`AUTO=1`, to 00:47:16): `warehouse-compute/` *"2 destroyed"*,
+  the workgroup and its usage limit, `workloads-egress/` *"17 destroyed"*, the seven endpoints with the
+  `redshift-serverless` one `GROUPS=redshift` added and the firewall, every other `[E]` slice 0; the
+  namespace `AVAILABLE` with `governed` and its schema, `[P]`. `./aws/egress.py awsds-infra-prod` at 00:47:34
+  reads no interface endpoint and no NAT; `make status` at 00:48 reads every `[E]` slice down and the burn
+  0.0156 USD/h, the hub's two hosts, whose `make hub-down` is the user's. 9.5's datashare (both sides),
+  9.6 and 9.7 are the sitting that follows.
