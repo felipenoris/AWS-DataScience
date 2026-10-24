@@ -2755,3 +2755,15 @@ only, the tunnel down. Nothing applied. Times UTC.*
   alerts var-file, the applies the user's, before the tag (`runbooks/promotion.md` §0.5 and §T).
 - **[Claude] The plan**: the Status row (a sentence of 2026-10-23 joined to the next without a stop,
   separated).
+
+## 2026-10-24 — 4.1's amended grant applied in Staging and Production
+
+*Claude's hand, on the user's authorization in chat, as the infrastructure user with
+`InfrastructureAccess`; Stage 10's log of this date carries the plans, the applies and the simulator's
+readings. Times UTC.*
+
+- **[Claude] The applies**: `staging/foundation/` at 02:52:30 and `production/foundation/` at 02:53:36,
+  each *"0 added, 1 changed, 0 destroyed"* on `awsds-<env>-deploy-orchestration-resources`, each
+  re-planned `No changes`; both deploy roles read `allowed` for `states:ValidateStateMachineDefinition`
+  and the MWAA Serverless service-linked role. `runbooks/promotion.md` §0.5's first item is done, and §T
+  no longer waits on it.

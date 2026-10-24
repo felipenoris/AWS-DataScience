@@ -345,7 +345,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
   (rank 59, `[E]`) written and planned, `OR-9` written, both slices on the module's tag; every Stage 10
   decision was taken 2026-10-22; 2.3's lint runs in the legs' release job, and since 2026-10-24 (2c)'s
-  `lint-plan` (`awsds-workflows` `ff25eae`) on the application slice's saved plan; **3.8's calls replayed as both deploy roles (2026-10-24) found `states:ValidateStateMachineDefinition` granted to neither, which stops both legs' orchestration apply: written in `*/foundation/`, planned *1 to change* each, to apply before the tag**; pass 3 waits on the
+  `lint-plan` (`awsds-workflows` `ff25eae`) on the application slice's saved plan; **3.8's calls replayed as both deploy roles (2026-10-24) found `states:ValidateStateMachineDefinition` granted to neither, which stops both legs' orchestration apply: written in `*/foundation/` and applied the same night, both roles reading `allowed`**; pass 3 waits on the
   training and transform quotas, 5.1's task a second workflow after them. Passes 1-2 run with Stage 8's pass 4 (decision 23); the objects they stopped at,
   Stage 8's application ceilings and Stage 9's data keys, outputs buckets and Staging's job role, exist
   since 2026-10-22.

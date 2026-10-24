@@ -12,7 +12,7 @@ Written 2026-10-23 with the environment down. Every `[Claude⚡]` apply waits fo
 chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs.
 
 **Where it stands, 2026-10-24**: §0 and §P done but the items §0.5 lists; §W's steps 1 to 4 done (the
-namespace, 9.3's schema); left, in order: §0.5 (nothing up), §H (the hub and GitLab), §T (the tag), §W
+namespace, 9.3's schema); left, in order: §0.5's items 2 to 4 (nothing up; the grant is applied), §H (the hub and GitLab), §T (the tag), §W
 step 5 (the datashare, after Stage 9 decision 14), §Q (after the quotas, which read `CASE_OPENED`).
 
 | § | Holds |
@@ -118,7 +118,8 @@ What stays with the environment: the runs, the legs, the warehouse's compute and
    `staging/foundation/` as `awsds-infra-staging` and `production/foundation/` as `awsds-infra-prod`, each
    *0 to add, 1 to change*, the policy `awsds-<env>-deploy-orchestration-resources`; then the simulator,
    `states:ValidateStateMachineDefinition` on `*` read `allowed` for `awsds-deploy-staging` and
-   `awsds-deploy-prod`, and `./scripts/check-copies.py`.
+   `awsds-deploy-prod`, and `./scripts/check-copies.py`. **Done 2026-10-24, 02:52 and 02:53 UTC**, each
+   re-planned `No changes`, the simulator reading both actions `allowed` for both roles.
 2. **[user] The persona's read of the twenty rows** (Stage 9 5.4's first query, the count 20 after the
    pickup), as the Data Scientist User through `awsds-scientist-prod`; Athena and the `[P]` workgroup need
    nothing up (D39). The commands are 5.4's.
@@ -243,7 +244,7 @@ is needed.
 
 ## T. The tag: Stage 8's pass 4 with Stage 10's passes 1 and 2
 
-Needs §0.5's grant applied, §H done (the legs on `awsds/app-etl`'s `main`, the mirror pushed, the memberships), the hub,
+Needs §H done (the legs on `awsds/app-etl`'s `main`, the mirror pushed, the memberships), the hub,
 GitLab and the three runners up (`make gitlab-up BUILD=1`: the tag pipeline's untagged jobs, the
 production gate among them, run on the build runner alone), and Sandbox's `egress/` up (`make up ENV=sandbox ONLY=egress`, the
 infrastructure user's, since no pipeline identity raises it). Stage 9's pass 3 (§P) before it, so the

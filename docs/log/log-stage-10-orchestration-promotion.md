@@ -833,3 +833,29 @@ applied. Times UTC.*
   `lakeformation` endpoint, recommended, the decision the user's.
 - **[Claude] The plan**: 1.5's grant list and its replay, verification ii's simulator half, 0.5 and the
   Status row.
+
+## 2026-10-24 — the two statements applied in both `foundation/` slices, read back by the simulator
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo os applies de staging/foundation/
+(awsds-infra-staging) e production/foundation/ (awsds-infra-prod), como usuário de infraestrutura com
+InfrastructureAccess, cada um de um plano fresco com o var-file de alertas, e a leitura do simulador
+depois."*), as the infrastructure user with `InfrastructureAccess`; Recipe A, each plan outside the
+repository, with `-var-file=<project folder>/secrets/alerts.auto.tfvars`, from the branch at `c5a479db`.
+The one other session on the machine, idle, was told before the first write and answered that the
+applies touch nothing it reads. Times UTC.*
+
+- **[Claude] `staging/foundation/`** as `awsds-infra-staging`: the fresh plan at 02:51:53 to 02:52:08,
+  *"Plan: 0 to add, 1 to change, 0 to destroy."*, `aws_iam_policy.orchestration["resources"]` gaining
+  `CreateTheWorkflowServiceLinkedRole` and `ValidateTheChainDefinitions`; applied 02:52:20 to 02:52:30,
+  *"Modifications complete after 1s"* on `awsds-staging-deploy-orchestration-resources`, *"Apply
+  complete! Resources: 0 added, 1 changed, 0 destroyed."*; re-planned `No changes` at 02:52:44.
+- **[Claude] `production/foundation/`** as `awsds-infra-prod`: the fresh plan at 02:52:53 to 02:53:11, the
+  same counts, `ValidateTheChainDefinitions` alone; applied 02:53:24 to 02:53:36, *"Modifications
+  complete after 1s"* on `awsds-prod-deploy-orchestration-resources`, *"Apply complete! Resources: 0
+  added, 1 changed, 0 destroyed."*; re-planned `No changes` at 02:53:56.
+- **[Claude] The simulator**, 02:54:08 to 02:54:14: `states:ValidateStateMachineDefinition` on `*` and
+  `iam:CreateServiceLinkedRole` on the MWAA Serverless service-linked role (`iam:AWSServiceName`
+  `airflow-serverless.amazonaws.com`) read `allowed` for `awsds-deploy-staging` and `awsds-deploy-prod`,
+  each matched by its account's `awsds-<env>-deploy-orchestration-resources`, the boundary and the
+  organization's policies allowing. The legs' orchestration applies no longer stop at the plan; whether
+  the service's own calls then succeed is the leg's reading (verification ii).
