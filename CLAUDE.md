@@ -311,7 +311,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `.xlarge` and `.2xlarge` are 0 in Production and Staging** (processing and training; training is 0 for
   every type inside the ceiling in both, read 2026-10-20 and 2026-10-22), **and no type inside the ceiling
   has a transform quota above 0 in either** (2026-10-22); `ml.m5.large`'s training and transform were
-  requested at 2 in both on 2026-10-23, `PENDING`; `ml.t3.medium`,
+  requested at 2 in both on 2026-10-23, `CASE_OPENED` on 2026-10-24; `ml.t3.medium`,
   `app-etl`'s processing type, is 4 in both, and Staging ran a job on it on 2026-10-19. The probes read `ResourceLimitExceeded` as authorized; the `ou`
   phase's seven instance-preference rows (Stage 9 3.5, PR #216) ran 2026-10-22, each as expected.
 - **Stage 9**: pass 1 applied 2026-10-18 (`awsds-org-scp-ou-workloads`, nine statements; `production/sagemaker/`,
@@ -336,8 +336,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Production's is needed beside the lake's is unmeasured (a third run, the user's console). 9.1's
   `production/warehouse/` applied 22:07 UTC (the namespace; `EXC-13`'s Production sentence), refusal 9
   lifted, `warehouse-compute/` planning 2 to add, 9.3 run 2026-10-24 (the schema `trades` at 1 TB, the roles, the `IAMR:` users, the default privileges, every `PUBLIC`
-  `CREATE` revoked), 9.5's datashare and 9.6-9.7 left; 9.4's grant applied,
-  `workloads-egress/` taking `GROUPS=redshift`; the `ml.m5.large` pair requested 2026-10-23 (`PENDING`); the
+  `CREATE` revoked), 9.5's datashare (written as commands 2026-10-24, decision 14 open: the account that registers it, Data Governance recommended) and 9.6-9.7 left, those two waiting on a table in `trades` from 9.4's unwritten DDL; 9.4's grant applied,
+  `workloads-egress/` taking `GROUPS=redshift`; the `ml.m5.large` pair requested 2026-10-23 (`CASE_OPENED`); the
   persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run but the space halves and the Data API negative
   (INT-06 answered, open question 8 closed); the sittings in `runbooks/promotion.md`.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
@@ -345,7 +345,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
   (rank 59, `[E]`) written and planned, `OR-9` written, both slices on the module's tag; every Stage 10
   decision was taken 2026-10-22; 2.3's lint runs in the legs' release job, and since 2026-10-24 (2c)'s
-  `lint-plan` (`awsds-workflows` `ff25eae`) on the application slice's saved plan; pass 3 waits on the
+  `lint-plan` (`awsds-workflows` `ff25eae`) on the application slice's saved plan; **3.8's calls replayed as both deploy roles (2026-10-24) found `states:ValidateStateMachineDefinition` granted to neither, which stops both legs' orchestration apply: written in `*/foundation/`, planned *1 to change* each, to apply before the tag**; pass 3 waits on the
   training and transform quotas, 5.1's task a second workflow after them. Passes 1-2 run with Stage 8's pass 4 (decision 23); the objects they stopped at,
   Stage 8's application ceilings and Stage 9's data keys, outputs buckets and Staging's job role, exist
   since 2026-10-22.

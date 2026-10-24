@@ -1741,3 +1741,50 @@ the nine of `VPC-Workloads`. Times UTC.*
   hub-down agora, com a leitura do make status depois."*): the dormant hook stopped `awsds-prod-vpn` and
   `awsds-prod-proxy`, both `stopped` a minute later; `make status` at 00:53 reads the three `[D]` hosts
   stopped, every `[E]` slice down and the burn **0.0000 USD/h**. No other session running on the machine.
+
+## 2026-10-24 — the fifth sitting with the environment down: the readings, 9.5 as commands, decision 14
+
+*Claude's hand, in the session `stages-8-9-10-prep-f13bc2` (the branch `claude/stages-8-9-10-prep-f13bc2`,
+cut from `main` at PR #250's merge), on the user's request. AWS read as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`, `awsds-infra-sandbox-1`,
+`awsds-infra-data`, `awsds-infra-identity`), reads only, the tunnel down; no other session running on the
+machine. Nothing applied. Times UTC.*
+
+- **[user] The request**: *"Em relação aos estágios 8, 9 e 10, peço fazer o seguinte: verifique o status
+  atual de cada estágio. revise o plano destes estágios considerando o andamento atual, o resultado com as
+  leituras e preparações prévias realizadas para execução destes estágios. Faça a preparação necessária
+  para a execução destes estágios com tudo o que pode ser feito sem que seja necessário subir o ambiente.
+  Prepare tudo que for necessário para executarmos de forma mais célere estas etapas uma vez que eu consiga
+  subir o ambiente. Verifique o andamento recente e os últimos commits. Propague as correções e alterações
+  necessárias aos passos restantes do plano considerando isso. Usuário infra sso logado para as
+  leituras."*
+- **[Claude] The quota requests**, 01:58: the four `ml.m5.large` requests of 2026-10-23 (training
+  `L-611FA074` and transform `L-236AE59F`, 2 each, Production and Staging) read `CASE_OPENED`, each with a
+  support case id, last updated between 20:03 and 21:00 on 2026-10-23.
+- **[Claude] The instruments**, 01:59 to 02:07: `./aws/egress.py` on the three compute profiles all checks
+  passed, `EG-5` *"none - the correct between-sessions state"*; `./aws/warehouse.py awsds-infra-prod` and
+  `./aws/datalake.py awsds-infra-data` OK; `./aws/deploytargets.py` on the five infrastructure profiles
+  all checks passed. A first run of it on Production and Staging alone failed `DT-8` (*"none while
+  staging/data/ stands"*) while its section 5 listed Staging's two resource links to the lake: without
+  `awsds-infra-data` the check cannot resolve the lake's account, so the failure was the invocation's
+  (Lesson 62). `make status`, 02:08 to 02:22: every `[E]` slice down with 0 resources, the estimated
+  burn 0.0000 USD/h. `terraform version` reads 1.15.8, so the 1.16.6 pins still wait on the user's install.
+- **[Claude] 9.5 read on AWS's step pages**, by a research agent of this session: the Redshift guide's
+  Lake Formation producer, consumer and considerations pages, `CREATE DATASHARE`, `ALTER DATASHARE`,
+  `GRANT`, `CREATE DATABASE`, the Lake Formation guide's prerequisites, permissions, notes, LF-Tag and
+  cross-account pages, the API references and two AWS blogs (`docs/REFERENCES.md`). 9.5 now carries shape
+  (ii) as five steps across Production, the Lake Formation account and Sandbox, and what the pages leave
+  unsaid: a read with Production's workgroup gone, a cross-account LF-Tag grant on a federated database,
+  the principal behind a `RedshiftDbUser` tag, an empty share's registration, and the `CREATE USER`
+  contradiction between one page and both blogs. Two rules open **decision 14**, the account that
+  registers and grants: an LF-Tag cannot be put on a resource shared from another account, and a
+  receiving account cannot pass a share on. Recommended: Data Governance, whose registration
+  `DenyLakeDeletionAndDeregistration` makes permanent. 9.5a is settled by decision 5 (no switch).
+- **[Claude] What 9.6 and 9.7 still need**: a table in `trades`. 9.4's DDL and load job, which decision 6
+  puts in the application repository and the pipeline runs, are unwritten; they ride a release after
+  `v0.3.0`'s first promotion.
+- **[Claude] The texts**: 3.5 (the requests' state), 9.5, 9.5a, decision 14 and the decisions' preamble,
+  the Status row (two sentences joined without a stop since PRs #248 and #250, separated);
+  `runbooks/promotion.md` (where it stands, §0.5, §W step 5, §T's prerequisite); `waiting-on-the-user.md`
+  (the quota row, decision 14, 6d decision due 11, the persona's Athena read moved out of the Production
+  sitting, since 5.4's sequence needs nothing up).

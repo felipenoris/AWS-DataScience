@@ -11,9 +11,13 @@ record. What a step reads is recorded in that stage's log, in the sitting it ran
 Written 2026-10-23 with the environment down. Every `[Claude⚡]` apply waits for the user's word in
 chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs.
 
+**Where it stands, 2026-10-24**: §0 and §P done but the items §0.5 lists; §W's steps 1 to 4 done (the
+namespace, 9.3's schema); left, in order: §0.5 (nothing up), §H (the hub and GitLab), §T (the tag), §W
+step 5 (the datashare, after Stage 9 decision 14), §Q (after the quotas, which read `CASE_OPENED`).
+
 | § | Holds |
 |---|---|
-| [§0](#0-before-any-sitting-with-the-environment-down) | what runs today, with nothing up: the persona proofs, the quota requests, the flag of decision 13 |
+| [§0](#0-before-any-sitting-with-the-environment-down) | what runs today, with nothing up: the persona proofs, the quota requests, the flag of decision 13, the deploy roles' grant (§0.5) |
 | [§H](#h-the-hub-and-gitlab) | the hub and GitLab: the user's GitLab acts, the legs' merge request, the next house image |
 | [§P](#p-production-stage-9s-pass-3-and-stage-10s-05) | Production: the proof job's two runs, Stage 9's producer pair and pickup |
 | [§T](#t-the-tag-stage-8s-pass-4-with-stage-10s-passes-1-and-2) | the tag: Stage 8's pass 4 with Stage 10's passes 1 and 2, and Stage 9's 8.5 |
@@ -56,7 +60,8 @@ request ever made in either account (read 2026-10-23: `list-requested-service-qu
 empty in both). Stage 10's pass 3 waits on them; the commands, with each quota's code, are in Stage 9
 [3.5](../stages/stage-09-deployment-targets.md). The user runs them; a request takes hours to days.
 **Requested 2026-10-23**: `ml.m5.large` training and transform at 2 in both accounts, `PENDING`; §Q opens
-when both accounts read them above zero.
+when both accounts read them above zero. **Read 2026-10-24**: the four `CASE_OPENED`, each with a support
+case id, the answer a person's at AWS.
 
 ### 0.3 The one act the Production sitting needs first
 
@@ -104,6 +109,26 @@ down; each shortens the Production sitting by one apply. `[Claude⚡]` on the us
 
 What stays with the environment: the runs, the legs, the warehouse's compute and SQL.
 
+### 0.5 What runs before the next sitting, read 2026-10-24
+
+1. **[Claude⚡] The deploy roles' orchestration grant**, before §T: 3.8's calls replayed through the
+   policy simulator as both deploy roles found `states:ValidateStateMachineDefinition` granted to neither,
+   and the provider calls it while it plans a state machine, so both legs would stop at the orchestration
+   apply (Stage 10 1.5). As the infrastructure user, Recipe A, each with the alerts var-file:
+   `staging/foundation/` as `awsds-infra-staging` and `production/foundation/` as `awsds-infra-prod`, each
+   *0 to add, 1 to change*, the policy `awsds-<env>-deploy-orchestration-resources`; then the simulator,
+   `states:ValidateStateMachineDefinition` on `*` read `allowed` for `awsds-deploy-staging` and
+   `awsds-deploy-prod`, and `./scripts/check-copies.py`.
+2. **[user] The persona's read of the twenty rows** (Stage 9 5.4's first query, the count 20 after the
+   pickup), as the Data Scientist User through `awsds-scientist-prod`; Athena and the `[P]` workgroup need
+   nothing up (D39). The commands are 5.4's.
+3. **[Claude⚡] `EXC-02`'s cleanup**, on the user's word, as `awsds-infra-data`: the three `.txt` objects
+   the row names deleted from `awsds-data-dropbox`, a delete marker each under the 90-day noncurrent
+   rule, and the row retired in `AWS_STATE.md`.
+4. **[user] Stage 9 decision 14**, the account that registers the datashare (recommended: Data
+   Governance), before §W step 5; and 6d decision due 11, Sandbox's `lakeformation` endpoint (recommended:
+   keep it, Stage 10 0.5).
+
 ## H. The hub and GitLab
 
 `make hub-up`, then `make gitlab-up`, the tunnel, in [`gitlab.md`](gitlab.md) §U's order. What this
@@ -119,7 +144,10 @@ sitting closes besides Stages 8 to 10 is the waiting list's Hub and GitLab rows.
    merge request: a branch of `awsds/app-etl` from `examples/app-etl/` at this repository's `main`,
    by `gitlab.md`'s "The application template" procedure (clone, `rsync`, commit, push, MR), which
    brings `.gitlab-ci.yml`'s `staging-*`, `production-*` jobs and the `--lint` option. The pipeline
-   editor validates it before the push; its branch pipeline runs the test stage alone.
+   editor validates it before the push; its branch pipeline runs the test stage alone. The legs need no
+   CI/CD variable beyond the eleven the project holds (read 2026-10-24): `INFRA_DIR`, `IMAGE_REPO`,
+   `AWSDS_WORKFLOWS` and `LINT_INSTANCE_TYPES` are the file's, `BUNDLE_OBJECT`, `BUNDLE_SHA256` and
+   `JOB_IMAGE_URI` earlier jobs' dotenv artifacts.
 3. **[user] The house image `default-v0.9.0`** with the 72-name `NO_PROXY` literal (Stage 8 1.1, Stage
    17 decision 4), registered as version 10: the merge request on `awsds/dev-env` from the copy under
    `gitlab/awsds/dev-env/`, the steward's tag, the release gate; `./scripts/gitlab-mirror.py` after the
@@ -213,7 +241,7 @@ is needed.
 
 ## T. The tag: Stage 8's pass 4 with Stage 10's passes 1 and 2
 
-Needs §H done (the legs on `awsds/app-etl`'s `main`, the mirror pushed, the memberships), the hub,
+Needs §0.5's grant applied, §H done (the legs on `awsds/app-etl`'s `main`, the mirror pushed, the memberships), the hub,
 GitLab and the runners up, and Sandbox's `egress/` up (`make up ENV=sandbox ONLY=egress`, the
 infrastructure user's, since no pipeline identity raises it). Stage 9's pass 3 (§P) before it, so the
 first promotion carries a lake the job role has written (decision 23).
@@ -282,6 +310,12 @@ Separable and last; nothing needs it. In a Production sitting with the hub up.
    §6; `make down ENV=production` before the sitting ends, the only guard that is not a setting.
    **9.5 and 9.5a are a sitting of their own**: the datashare's two sides, the producer's SQL in Production and
    the lake's registration and federated database, then the Sandbox mount for 9.7; 9.6 and 9.7 are the user's.
+   **Read 2026-10-24**: 9.5 carries the command sequence, five steps across Production, the account Stage 9
+   decision 14 names and Sandbox; 9.5a is settled by decision 5 (no switch); the sitting raises both
+   warehouses' compute (`make up ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift`, then
+   Sandbox's `warehouse-compute/`) and measures first whether Sandbox reads with Production's workgroup
+   gone; 9.6 and 9.7 wait for a table in `trades`, which 9.4's DDL and load job create in a release after
+   `v0.3.0`.
    `./aws/warehouse.py awsds-infra-prod --sql` passed on 2026-10-24, and `make down ENV=production` ended the sitting.
 
 ## Q. After the quotas: Stage 10's pass 3

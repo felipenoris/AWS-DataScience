@@ -2708,3 +2708,23 @@ applied or written in AWS, nothing done in GitLab. Times UTC.*
   header and `README.md`; the root `README.md`; `runbooks/serverless-workflows.md` §T (the `lint` row,
   a `lint-plan` row, and a `prepare-offline` row, in the package since 2026-10-13 and missing from the
   table, outside PR #23); `runbooks/promotion.md` §T.
+
+## 2026-10-24 — the legs' calls replayed as the deploy roles, and the grant they lack
+
+*Claude's hand, in the session `stages-8-9-10-prep-f13bc2`, on the user's request quoted in Stage 9's entry
+of this date. AWS read as the infrastructure user with `InfrastructureAccess`, reads, simulations and plans
+only, the tunnel down. Nothing applied. Times UTC.*
+
+- **[Claude] `./aws/cicd.py`** on the five infrastructure profiles at 02:05: all checks passed, `CI-1` and
+  `CI-9` notes (both runners absent, `[E]`), `CI-6` *"N = 1"*, `CI-8` the three assumptions of 2026-10-13.
+- **[Claude] 3.8's calls replayed** through the policy simulator as `awsds-deploy-staging` and
+  `awsds-deploy-prod` (Stage 10's log carries the method and the readings): the legs would have stopped at
+  `staging/orchestration/`'s and `production/orchestration/`'s applies, the provider's plan of the state
+  machine calling `states:ValidateStateMachineDefinition`, which neither role holds; Staging's role also
+  lacks the `iam:CreateServiceLinkedRole` the workflow service calls with its role in place. Every other
+  call of `staging-up`, `staging-deploy`, `staging-down` and their Production twins reads `allowed`.
+- **[Claude] 4.1's grant amended**: `apply-orchestration.tf` (both copies, `check-copies.py`) and Staging's
+  `deploy-role.tf`; `staging/foundation/` and `production/foundation/` each planned *1 to change* with the
+  alerts var-file, the applies the user's, before the tag (`runbooks/promotion.md` §0.5 and §T).
+- **[Claude] The plan**: the Status row (a sentence of 2026-10-23 joined to the next without a stop,
+  separated).
