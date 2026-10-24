@@ -46,3 +46,27 @@ output "app_outputs_database" {
   description = "The local Glue database applications write their tables to (step 1.3)."
   value       = aws_glue_catalog_database.app_outputs.name
 }
+
+# The governed source an application's Glue job reads through Lake Formation's full-table-access mode,
+# on an Iceberg catalog over the lake account's Glue catalog (Stage 9 2.4's recipe): the catalog's id,
+# the curated database and table, and the curated bucket its warehouse setting names. The application
+# slice reads them here, since the deploy role reads no other account's state.
+output "lake_catalog_id" {
+  description = "The lake account's Glue catalog id, the Iceberg catalog's glue.id."
+  value       = data.aws_caller_identity.lake.account_id
+}
+
+output "curated_database" {
+  description = "The lake's curated database, as the lake account's catalog names it."
+  value       = data.terraform_remote_state.lake.outputs.database_names["curated"]
+}
+
+output "curated_table" {
+  description = "The governed table an application reads, curated.trades (Stage 9 step 2.1)."
+  value       = data.terraform_remote_state.lake.outputs.producer_table_name
+}
+
+output "curated_bucket_name" {
+  description = "The curated bucket, whose warehouse/ prefix is the Iceberg catalog's root."
+  value       = data.terraform_remote_state.lake.outputs.bucket_names["curated"]
+}

@@ -1,8 +1,10 @@
 # apply-application.tf - Stage 8 step 4.1's application grant, the deploy role's inline
-# apply-application: what <folder>/app/* declares - the application's Glue job, the job role it hands to
+# apply-application: what <folder>/app/* declares - the application's Glue jobs, the job role it hands to
 # a job service - and the application's tables it creates in app_outputs (steps 3.2 and 3.6, Stage 9
-# steps 2.5 and 4.1). Lake Formation's half, CREATE_TABLE on app_outputs and ALTER and DROP on its
-# tables, is in each account's data/lakeformation.tf.
+# steps 2.5 and 4.1); and the model chain's jobs, which read the training jobs and serve a model by a
+# batch transform as the job role (Stage 10 steps 5.2 and 5.4, scripts/model-chain.py). Lake
+# Formation's half, CREATE_TABLE on app_outputs and ALTER and DROP on its tables, is in each account's
+# data/lakeformation.tf.
 #
 # The statements one account adds are apply_application_in_this_account's: deploy-role.tf's in
 # Staging, deploy-anchors.tf's in Production.
@@ -25,8 +27,8 @@ data "aws_iam_policy_document" "apply_application" {
     }
   }
 
-  # The application slice's Glue job, by its name (Stage 10 decision 20 (a)); a second application
-  # names its own.
+  # The application slice's Glue jobs, by name (Stage 10 decision 20 (a)): awsds-<env>-app-etl and the
+  # jobs it suffixes, Production's warehouse load among them; a second application names its own.
   statement {
     sid    = "ManageTheApplicationGlueJob"
     effect = "Allow"
@@ -40,7 +42,10 @@ data "aws_iam_policy_document" "apply_application" {
       "glue:UntagResource",
       "glue:UpdateJob",
     ]
-    resources = ["arn:${local.partition}:glue:${local.region_account}:job/awsds-${var.env}-app-etl"]
+    resources = [
+      "arn:${local.partition}:glue:${local.region_account}:job/awsds-${var.env}-app-etl",
+      "arn:${local.partition}:glue:${local.region_account}:job/awsds-${var.env}-app-etl-*",
+    ]
   }
 
   statement {
@@ -59,5 +64,47 @@ data "aws_iam_policy_document" "apply_application" {
       "arn:${local.partition}:glue:${local.region_account}:database/app_outputs",
       "arn:${local.partition}:glue:${local.region_account}:table/app_outputs/*",
     ]
+  }
+
+  # Stage 10 step 5.4: the newest completed training job of app-etl-train, the model it made served by a
+  # batch transform under the job role, the model deleted after. ListTrainingJobs takes no resource.
+  statement {
+    sid       = "FindTheTrainingJobs"
+    effect    = "Allow"
+    actions   = ["sagemaker:ListTrainingJobs"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid       = "ReadTheTrainingJobs"
+    effect    = "Allow"
+    actions   = ["sagemaker:DescribeTrainingJob"]
+    resources = ["arn:${local.partition}:sagemaker:${local.region_account}:training-job/app-etl-train-*"]
+  }
+
+  statement {
+    sid    = "ServeTheModels"
+    effect = "Allow"
+    actions = [
+      "sagemaker:CreateModel",
+      "sagemaker:CreateTransformJob",
+      "sagemaker:DeleteModel",
+      "sagemaker:DescribeModel",
+      "sagemaker:DescribeTransformJob",
+      "sagemaker:StopTransformJob",
+    ]
+    resources = [
+      "arn:${local.partition}:sagemaker:${local.region_account}:model/app-etl-*",
+      "arn:${local.partition}:sagemaker:${local.region_account}:transform-job/app-etl-*",
+    ]
+  }
+
+  # The evaluation beside a model and a transform's output, read; the outputs bucket's policy holds
+  # this role to its prefixes, models/ among them (data/locals.tf).
+  statement {
+    sid       = "ReadTheModelFiles"
+    effect    = "Allow"
+    actions   = ["s3:GetObject"]
+    resources = ["arn:${local.partition}:s3:::awsds-${var.env}-outputs/models/*"]
   }
 }

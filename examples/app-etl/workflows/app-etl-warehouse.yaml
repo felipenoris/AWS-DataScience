@@ -1,0 +1,11 @@
+# {"load":{"x":120,"y":200}}
+app-etl-warehouse:
+  dag_id: app-etl-warehouse
+  tasks:
+    load:
+      operator: airflow.providers.amazon.aws.operators.glue.GlueJobOperator
+      job_name: app-etl-load-{proj.id}
+      region_name: "{domain.region}"
+      script_args:
+        "--TABLE_PATH": "{proj.connection.default.s3_shared.s3Uri}app-etl/tables/trades_notional/"
+      retries: 0

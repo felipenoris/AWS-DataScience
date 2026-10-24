@@ -13,6 +13,8 @@ app-etl:
       script_args:
         "--SOURCE_PATH": "{proj.connection.default.s3_shared.s3Uri}app-etl/inbox/"
         "--TARGET_PATH": "{proj.connection.default.s3_shared.s3Uri}app-etl/work/glue/trades.csv"
+        "--TABLE_PATH": "{proj.connection.default.s3_shared.s3Uri}app-etl/tables/trades_notional/"
+        "--TRAIN_PATH": "{proj.connection.default.s3_shared.s3Uri}app-etl/work/train/"
       create_job_kwargs:
         Command:
           Name: glueetl

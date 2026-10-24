@@ -262,6 +262,18 @@ data "aws_iam_policy_document" "job" {
     }
   }
 
+  # Stage 9 step 9.4: the warehouse load, app-etl's Glue job awsds-<env>-app-etl-load, reads the
+  # workgroup's endpoint and asks for temporary credentials on its database, then connects on its port
+  # from the job's security group (9.1). workgroup/* because the id changes on every re-create of the
+  # [E] compute; the session lands on the database user 9.3 created, IAMR:awsds-prod-job-exec, which
+  # holds the schema's writes through its role, and the admin secret stays closed to this role.
+  statement {
+    sid       = "ConnectToTheGovernedWarehouse"
+    effect    = "Allow"
+    actions   = ["redshift-serverless:GetCredentials", "redshift-serverless:GetWorkgroup"]
+    resources = ["arn:${local.partition}:redshift-serverless:${var.region}:${local.account_id}:workgroup/*"]
+  }
+
   # ----------------------------------------------------------------- a job inside the VPC
   #
   # A SageMaker job in a VPC gets its interfaces from the service acting as this role (the SageMaker

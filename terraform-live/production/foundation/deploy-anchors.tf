@@ -304,8 +304,6 @@ module "deploy_role" {
   alerts_topic_arn = aws_sns_topic.alerts.arn
 }
 
-# Production's statements in apply-application.tf's document: none yet. Stage 9 step 9.4's Data API
-# grant joins here at that stage's pass 6.
 # Production's statement in apply-application.tf's document: Stage 9 step 9.4's door to the governed
 # warehouse, the Data API with IAM authentication, the deploy runner's only path to the workgroup
 # (VPC-SharedServices and VPC-Workloads do not peer). workgroup/* because the id changes on every
@@ -324,6 +322,26 @@ data "aws_iam_policy_document" "apply_application_in_this_account" {
       "redshift-serverless:GetCredentials",
     ]
     resources = ["arn:${local.partition}:redshift-serverless:${local.region_account}:workgroup/*"]
+  }
+
+  # Stage 10 step 5.2: the version of app-etl's model registered PendingManualApproval and approved at
+  # the pipeline's manual job, read back, and named by the batch transform's model. The group's resource
+  # policy names this role for the two writes (sagemaker/registry.tf), and inside the account it is this
+  # identity policy that admits them.
+  statement {
+    sid    = "RegisterAndApproveTheModel"
+    effect = "Allow"
+    actions = [
+      "sagemaker:CreateModelPackage",
+      "sagemaker:DescribeModelPackage",
+      "sagemaker:DescribeModelPackageGroup",
+      "sagemaker:ListModelPackages",
+      "sagemaker:UpdateModelPackage",
+    ]
+    resources = [
+      "arn:${local.partition}:sagemaker:${local.region_account}:model-package-group/awsds-${var.env}-model-app-etl",
+      "arn:${local.partition}:sagemaker:${local.region_account}:model-package/awsds-${var.env}-model-app-etl/*",
+    ]
   }
 }
 

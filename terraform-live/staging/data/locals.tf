@@ -32,9 +32,10 @@ locals {
   derived_bucket_name = "awsds-${var.env}-derived"
   outputs_bucket_arn  = "arn:${local.partition}:s3:::${local.outputs_bucket_name}"
 
-  # The prefixes the release job writes from the deploy runner (Stage 10): the release's tree and the
-  # inbox it seeds from the bundle's samples.
-  deploy_prefixes = ["applications/", "inbox/"]
+  # The prefixes the deploy role reaches from the deploy runner (Stage 10): the release's tree and the
+  # inbox it seeds from the bundle's samples, written; and models/, read by the model chain's jobs,
+  # the evaluation beside a model and a batch transform's output (steps 5.2 and 5.4).
+  deploy_prefixes = ["applications/", "inbox/", "models/"]
 
   # The log groups the data key encrypts or will: the job groups staging/sagemaker/ declares and
   # associates with the key, and Stage 10's workflow and chain groups.

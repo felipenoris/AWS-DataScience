@@ -10,12 +10,15 @@
 #   lint:     with --lint, each rendered workflow passes the D28 lint in its promoted mode before a
 #             byte is written (Stage 10 step 2.3): `awsds-workflows lint <copy> --promoted --prefix
 #             s3://<bucket>/applications/<app>/<tag>/ --image-repository $IMAGE_REPO --instance-type
-#             <each of LINT_INSTANCE_TYPES>`, the tool taken from AWSDS_WORKFLOWS (the `uvx --from`
-#             source the template's .gitlab-ci.yml pins) or from PATH. The three variables are read
-#             from the environment, the names the template's pipeline defines, and an empty one
-#             fails: without them the lint reads neither ceiling and prints ok all the same (Lesson
-#             71). The repository is the application's, never read off the image URI, or a release
-#             built on the wrong image would name the repository it should be refused for.
+#             <each of LINT_INSTANCE_TYPES> [--algorithm-repository <each of
+#             LINT_ALGORITHM_REPOSITORIES>]`, the tool taken from AWSDS_WORKFLOWS (the `uvx --from`
+#             source the template's .gitlab-ci.yml pins) or from PATH. The variables are read from the
+#             environment, the names the template's pipeline defines, and an empty IMAGE_REPO or
+#             LINT_INSTANCE_TYPES fails: without them the lint reads neither ceiling and prints ok all
+#             the same (Lesson 71). An empty LINT_ALGORITHM_REPOSITORIES admits no AWS algorithm image,
+#             the stricter reading. The repository is the application's, never read off the image URI,
+#             or a release built on the wrong image would name the repository it should be refused
+#             for.
 #   writes:   s3://<outputs bucket>/applications/<app>/<tag>/, the bundle's tree with each workflow
 #             rendered for the account and MANIFEST.sha256 last; the inbox inbox/<app>/ from samples/
 #             (decision 20 (d)); with --release-vars, the orchestration slice's `release` as tfvars
@@ -133,6 +136,8 @@ def lint(rendered: Path, prefix_uri: str) -> None:
     ]
     for t in types:
         cmd += ["--instance-type", t]
+    for algorithm in os.environ.get("LINT_ALGORITHM_REPOSITORIES", "").split():
+        cmd += ["--algorithm-repository", algorithm]
     res = subprocess.run(cmd, capture_output=True, text=True)
     print(f"  lint {rendered.name}: {' '.join(shlex.quote(c) for c in cmd[len(tool) :])}")
     for line in (res.stdout + res.stderr).splitlines():

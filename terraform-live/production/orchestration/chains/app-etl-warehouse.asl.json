@@ -1,0 +1,76 @@
+{
+  "Comment": "awsds-${env}-chain-app-etl-warehouse (Stage 10 step 3.5, decisions 13 and 14): starts awsds-${env}-wf-app-etl-warehouse and polls its run every 60 s until the run ends.",
+  "QueryLanguage": "JSONata",
+  "TimeoutSeconds": 14400,
+  "StartAt": "Start app-etl-warehouse",
+  "States": {
+    "Start app-etl-warehouse": {
+      "Type": "Task",
+      "Resource": "arn:${partition}:states:::aws-sdk:mwaaserverless:startWorkflowRun",
+      "Arguments": {
+        "WorkflowArn": "${workflow_arn["app-etl-warehouse"]}",
+        "ClientToken": "{% $states.context.Execution.Name & '-app-etl-warehouse' %}"
+      },
+      "Assign": {
+        "runId": "{% $states.result.RunId %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 10,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Wait for app-etl-warehouse"
+    },
+    "Wait for app-etl-warehouse": {
+      "Type": "Wait",
+      "Seconds": 60,
+      "Next": "Read app-etl-warehouse"
+    },
+    "Read app-etl-warehouse": {
+      "Type": "Task",
+      "Resource": "arn:${partition}:states:::aws-sdk:mwaaserverless:getWorkflowRun",
+      "Arguments": {
+        "WorkflowArn": "${workflow_arn["app-etl-warehouse"]}",
+        "RunId": "{% $runId %}"
+      },
+      "Output": {
+        "runId": "{% $runId %}",
+        "runState": "{% $states.result.RunDetail.RunState %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 10,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Has app-etl-warehouse ended"
+    },
+    "Has app-etl-warehouse ended": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $states.input.runState = 'SUCCESS' %}",
+          "Next": "The chain succeeded"
+        },
+        {
+          "Condition": "{% $states.input.runState in ['FAILED', 'TIMEOUT', 'STOPPED'] %}",
+          "Next": "app-etl-warehouse did not succeed"
+        }
+      ],
+      "Default": "Wait for app-etl-warehouse"
+    },
+    "app-etl-warehouse did not succeed": {
+      "Type": "Fail",
+      "Error": "WorkflowRunNotSucceeded",
+      "Cause": "The run of awsds-${env}-wf-app-etl-warehouse ended FAILED, TIMEOUT or STOPPED: its task instances name the task (Stage 10 step 3.2)."
+    },
+    "The chain succeeded": {
+      "Type": "Succeed"
+    }
+  }
+}

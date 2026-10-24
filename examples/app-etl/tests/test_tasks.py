@@ -97,3 +97,72 @@ def test_summarize_returns_the_report_as_json_text(s3, capsys):
 def test_summarize_refuses_a_prefix_without_summaries(s3):
     with pytest.raises(RuntimeError, match="no .summary.json under"):
         app_etl_tasks.summarize("s3://bucket/app-etl/work/empty/")
+
+
+TRAINING = {
+    "TrainingJobName": "app-etl-train-20261024T120000",
+    "TrainingJobStatus": "Completed",
+    "ModelArtifacts": {
+        "S3ModelArtifacts": (
+            "s3://bucket/models/app-etl/app-etl-train-20261024T120000/output/model.tar.gz"
+        )
+    },
+    "FinalMetricDataList": [
+        {"MetricName": "train:rmse", "Value": 12.5},
+        {"MetricName": "validation:rmse", "Value": 40.25},
+    ],
+}
+
+
+class FakeClients:
+    """The SageMaker and S3 calls `evaluate` makes, over TRAINING and a batch of three rows."""
+
+    def __init__(self, training):
+        self.training = training
+        self.put = {}
+
+    def describe_training_job(self, TrainingJobName):
+        assert TrainingJobName == self.training["TrainingJobName"]
+        return self.training
+
+    def get_object(self, Bucket, Key):
+        assert (Bucket, Key) == ("bucket", "app-etl/work/train/batch/batch.csv")
+        body = b"120,98.5\n500,1.08\n80,99.75\n"
+        return {"Body": types.SimpleNamespace(read=lambda: body)}
+
+    def put_object(self, Bucket, Key, Body):
+        self.put[f"s3://{Bucket}/{Key}"] = json.loads(Body)
+
+
+def run_evaluate(monkeypatch, training):
+    clients = FakeClients(training)
+    boto3 = types.ModuleType("boto3")
+    boto3.client = lambda service: clients
+    monkeypatch.setitem(sys.modules, "boto3", boto3)
+    result = app_etl_tasks.evaluate(
+        training["TrainingJobName"],
+        batch="s3://bucket/app-etl/work/train/batch/batch.csv",
+        models="s3://bucket/models/app-etl/",
+    )
+    return clients, json.loads(result)
+
+
+def test_evaluate_writes_the_model_quality_beside_the_model(monkeypatch, capsys):
+    clients, result = run_evaluate(monkeypatch, TRAINING)
+    key = "s3://bucket/models/app-etl/app-etl-train-20261024T120000/evaluation.json"
+    assert clients.put[key] == result
+    assert result["regression_metrics"]["rmse"] == {"value": 40.25, "standard_deviation": "NaN"}
+    assert result["awsds"]["batch_rows"] == 3
+    assert result["awsds"]["model_data"].endswith("/output/model.tar.gz")
+    assert "validation:rmse 40.25, 3 batch row(s)" in capsys.readouterr().out
+
+
+def test_evaluate_refuses_a_job_that_did_not_complete(monkeypatch):
+    with pytest.raises(RuntimeError, match="is Failed, not Completed"):
+        run_evaluate(monkeypatch, {**TRAINING, "TrainingJobStatus": "Failed"})
+
+
+def test_evaluate_refuses_a_job_without_the_validation_metric(monkeypatch):
+    training = {**TRAINING, "FinalMetricDataList": [{"MetricName": "train:rmse", "Value": 1.0}]}
+    with pytest.raises(RuntimeError, match="reports no validation:rmse"):
+        run_evaluate(monkeypatch, training)
