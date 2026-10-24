@@ -1056,7 +1056,11 @@ session; read every denial by its wording (standing rule since 1c).
   history lives in the service against the workflow resource and **dies with the `[E]` slice**, and the
   machines' execution history with them. The log
   group is `[P]`-adjacent and its retention bounds what CloudWatch keeps; write that sentence in the log
-  rather than leaving it implicit (conventions §5.1 rule 2).
+  rather than leaving it implicit (conventions §5.1 rule 2). **Written 2026-10-24 from Staging's teardown**
+  (the log): the workflow's and the chain's log groups are the module's, inside the `[E]` slice, and a
+  destroy deletes them with the runs and the executions; the task logs survive in `sagemaker/`'s `[P]`
+  groups at 30 days, and the leg's artifacts for a year. Production's persist while
+  `production/orchestration/` stands, which no session's `make down ENV=production ONLY=...` destroys.
 
 ---
 

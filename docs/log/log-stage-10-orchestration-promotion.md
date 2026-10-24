@@ -1019,3 +1019,24 @@ below; the user's for the gate. Times UTC.*
   `v0.3.3`'s version, `OR-6` none in 6 accounts, `OR-7` 1/50, `OR-9` the three chain roles on
   `awsds-prod-app-boundary` and the chain's schedule and failure rule `ENABLED` (verification xxvi's
   `OR-9` half). The persona profiles hold no session, so the script exits 1 on section 1 alone.
+
+## 2026-10-24 — 1.6's record in Production and 6.3's run-history disposition, read on Staging's teardown
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess`. Times UTC.*
+
+- **[Claude] 1.6, Production**: the first `CreateWorkflow` created `workflow/awsds-prod-wf-app-etl-DHhc8FiTZC`,
+  version 1 of 50 (`OR-7`). `AWSServiceRoleForAmazonMWAAServerless` sits at
+  `/aws-service-role/airflow-serverless.amazonaws.com/`, created 21:33:58, its trust
+  `airflow-serverless.amazonaws.com`, no boundary, no inline policy, one attached policy,
+  `AmazonMWAAServerlessServiceRolePolicy` at `v1`: Staging's shape of 2026-10-20 (verification iii).
+- **[Claude] 6.3, the disposition, measured on Staging after the user's `make down ENV=staging`** (read
+  about 22:00): the destroy of `staging/orchestration/` deleted the workflow with its two versions and its runs,
+  the chain's machine with its executions (`v0-3-3-71` among them), and both log groups the module creates,
+  `/awsds/staging/wf/app-etl` and `/aws/vendedlogs/states/awsds-staging-chains`. The step's sentence that
+  the log group is `[P]`-adjacent does not hold for these two: they live in the `[E]` slice and die with
+  it. What survives a teardown: the Glue and processing jobs' logs in `/aws-glue/jobs/*` and
+  `/aws/sagemaker/ProcessingJobs`, `[P]` groups of `sagemaker/` at 30 days; the leg's artifacts
+  `execution.json` and `history.json`, kept a year; the objects under the outputs bucket. In Production
+  the same holds for `/awsds/prod/wf/app-etl` and `/aws/vendedlogs/states/awsds-prod-chains` (90 days) on
+  a destroy of `production/orchestration/`, which `make down ENV=production ONLY=workloads-egress` never
+  runs: Production's run history and chain logs persist between sessions while the slice stands.

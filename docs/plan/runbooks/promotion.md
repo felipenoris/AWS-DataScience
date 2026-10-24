@@ -358,7 +358,11 @@ first promotion carries a lake the job role has written (decision 23).
    or the cron is moved into the sitting by a commit and the pipeline applies it; the pause lever
    (`state = DISABLED`) through the slice; 3.2's deliberate break through the slice, the failure rule
    heard, the diagnosis from the APIs; 6.3's sentence in the log before the first `make down
-   ENV=production`.
+   ENV=production`. **2026-10-24**: Production's first run `SUCCEEDED` by hand (Claude, the user's
+   authorization), 6.3's sentence written from Staging's teardown, and `workloads-egress/` left up for the
+   schedule's firing at 06:30 UTC on 2026-10-25. The next morning: **[Claude]** the execution the schedule
+   started and its run's `RunType` (verification xxiv); §V step 1's third producer run fits there, the
+   endpoints still up; then **[user]** `make down ENV=production ONLY=workloads-egress`.
 9. **[Claude]** `./aws/orchestration.py` (`OR-9` on the layer), `./aws/cicd.py`, `./aws/egress.py` §6
    after `make down` in every account the sitting raised: zero burn, no NAT gateway.
 
