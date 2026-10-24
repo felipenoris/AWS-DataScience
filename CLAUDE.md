@@ -431,7 +431,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   tag-on-create, the Studio hook under a deploy profile and the release file inside the clone's folder were
   fixed; 3.7 recorded `v0.3.3`. **§V, 2026-10-24**: the mirror at `c714c47d` (`staging-down` skips the hook
   as a deploy role); `v0.4.0`'s pipeline #74 stopped at `test-deploy`, which read app-etl-train's ARN for
-  app-etl's run (fixed in MR !9), so the data release is `v0.4.1` and ix's drift `v0.4.2`.
+  app-etl's run (MR !9), and `v0.4.1`'s #77 at `evaluate`, whose template met the XCom as JSON text
+  (MR !10), so the data release is `v0.4.2` and ix's drift `v0.4.3`.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
