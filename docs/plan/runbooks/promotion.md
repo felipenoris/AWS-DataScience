@@ -12,8 +12,11 @@ Written 2026-10-23 with the environment down. Every `[Claude⚡]` apply waits fo
 chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs.
 
 **Where it stands, 2026-10-24**: §0 and §P done, §0.5 included; §W's steps 1 to 4 done (the
-namespace, 9.3's schema); left, in order: §H (the hub and GitLab), §T (the tag), §W
-step 5 (the datashare, Data Governance registering it by Stage 9 decision 14), §Q (after the quotas, which read `CASE_OPENED`).
+namespace, 9.3's schema). The quotas are above zero in both targets (§0.2), and the release that closes
+what v0.3.0 leaves, v0.4.0, is written, its six `[P]` applies done (§0.6), and §H done the same
+evening (the mirror at `0236a99d`, the legs on `awsds/app-etl`'s `main`). Left, in order: §T (the tag
+`v0.3.0`), §V (the tag `v0.4.0`, with the warehouse's table, the datashare
+of §W step 5 and the model chain).
 
 | § | Holds |
 |---|---|
@@ -21,8 +24,9 @@ step 5 (the datashare, Data Governance registering it by Stage 9 decision 14), �
 | [§H](#h-the-hub-and-gitlab) | the hub and GitLab: the user's GitLab acts, the legs' merge request, the next house image |
 | [§P](#p-production-stage-9s-pass-3-and-stage-10s-05) | Production: the proof job's two runs, Stage 9's producer pair and pickup |
 | [§T](#t-the-tag-stage-8s-pass-4-with-stage-10s-passes-1-and-2) | the tag: Stage 8's pass 4 with Stage 10's passes 1 and 2, and Stage 9's 8.5 |
-| [§W](#w-the-governed-warehouse-stage-9s-pass-6) | the governed warehouse, Stage 9's pass 6, separable and last |
-| [§Q](#q-after-the-quotas-stage-10s-pass-3) | after the quotas: Stage 10's pass 3 |
+| [§W](#w-the-governed-warehouse-stage-9s-pass-6) | the governed warehouse, Stage 9's pass 6: steps 1 to 4 done, step 5 run within §V |
+| [§V](#v-the-data-release-v040) | the tag `v0.4.0`: Stage 9's 8.5 and 9.4 to 9.7, Stage 10's pass 3 and 6.1, Stage 8's ix |
+| [§Q](#q-after-the-quotas-stage-10s-pass-3) | after the quotas: Stage 10's pass 3, now within §V |
 | [§R](#r-the-readings-at-the-end-of-every-sitting) | the readings at the end of every sitting |
 
 ## 0. Before any sitting, with the environment down
@@ -61,7 +65,9 @@ empty in both). Stage 10's pass 3 waits on them; the commands, with each quota's
 [3.5](../stages/stage-09-deployment-targets.md). The user runs them; a request takes hours to days.
 **Requested 2026-10-23**: `ml.m5.large` training and transform at 2 in both accounts, `PENDING`; §Q opens
 when both accounts read them above zero. **Read 2026-10-24**: the four `CASE_OPENED`, each with a support
-case id, the answer a person's at AWS.
+case id, the answer a person's at AWS. **Read 2026-10-24, 03:47 UTC**: the applied quotas above zero
+in both accounts, 20 for `ml.m5.large`'s training and 8 for its transform among them (Stage 9 3.5), the
+requests still `CASE_OPENED`; §Q opens, and its steps are §V's.
 
 ### 0.3 The one act the Production sitting needs first
 
@@ -138,6 +144,34 @@ What stays with the environment: the runs, the legs, the warehouse's compute and
    Sandbox's `lakeformation` endpoint. **Taken 2026-10-24, as recommended**: Data Governance registers and
    grants the datashare; the Sandbox endpoint stays.
 
+### 0.6 The applies v0.4.0 needs, with nothing up
+
+Each a `[P]` slice, planned 2026-10-24 (the logs): **[Claude⚡]** on the user's word, as the
+infrastructure user with `InfrastructureAccess`, from a fresh plan (Recipe A), re-planned `No changes`,
+the `foundation/` plans with `-var-file=<project folder>/secrets/alerts.auto.tfvars`. Each only adds:
+v0.3.0 runs the same on either side of them.
+
+| Slice | Profile | Plan | What it adds |
+|---|---|---|---|
+| `production/data/` | `awsds-infra-prod` | 0 / 1 / 0 | `models/` among the deploy role's prefixes on `awsds-prod-outputs`; the governed source's four outputs the application slice reads |
+| `staging/data/` | `awsds-infra-staging` | 0 / 1 / 0 | the same on `awsds-staging-outputs` |
+| `production/sagemaker/` | `awsds-infra-prod` | 0 / 1 / 0 | `ConnectToTheGovernedWarehouse` on the job role; the output `training_image_uri` |
+| `staging/sagemaker/` | `awsds-infra-staging` | outputs | the output `training_image_uri` |
+| `production/foundation/` | `awsds-infra-prod` | 0 / 1 / 0 | the deploy role's model, transform and registry calls, `models/` read, the load job's name |
+| `staging/foundation/` | `awsds-infra-staging` | 0 / 1 / 0 | the same without the registry |
+
+Then `./aws/deploytargets.py` on the five infrastructure profiles, `./scripts/check-copies.py`, and the
+policy simulator as each deploy role on `sagemaker:CreateModel`, `CreateTransformJob` and, for
+`awsds-deploy-prod`, `CreateModelPackage` and `UpdateModelPackage` on the group's ARN, expected
+`allowed`. **Done 2026-10-24, 17:51 to 17:55 UTC** (Stage 9's and Stage 10's logs): each slice applied
+from a fresh plan of the counts above and re-planned `No changes`, `deploytargets.py` all checks passed
+before and after, the simulator reading every new call `allowed` but `CreateTransformJob` against a job's
+ARN, where it drops the volume key (`lessons.md`); the first real transform is `staging-model`'s.
+
+Beside them, the user's two acts that need nothing up: the merge of `awsds-workflows` PR (the branch
+`treino-e-repositorio-de-algoritmo`, `d60e1ad`, the rule `treino`); the template pins `d60e1ad`, which
+stays reachable through the PR, and the pin moves to the merge's commit in the next template change.
+
 ## H. The hub and GitLab
 
 `make hub-up`, then `make gitlab-up BUILD=1`, the tunnel, in [`gitlab.md`](gitlab.md) §U's order: the
@@ -145,14 +179,16 @@ build runner takes the image builds of steps 3 and 4, and the test runner the me
 `main`'s pipelines. What this sitting closes besides Stages 8 to 10 is the waiting list's Hub and GitLab
 rows.
 
-1. **[user] GitLab's settings for pass 4** (Stage 8 decision 2, `gitlab.md` §M): `main` pushed to
-   `awsds/infrastructure` from the project folder at `origin/main` (`git push gitlab main`), the job
+1. **[user] GitLab's settings for pass 4** (Stage 8 decision 2, `gitlab.md` §M): the mirror
+   `awsds/infrastructure` pushed from the project folder at `0236a99d`, the commit v0.3.0's legs were
+   prepared and read against (`git push gitlab 0236a99d:refs/heads/main`; §V pushes `main` itself), the job
    token's allowlist of `awsds/infrastructure` admitting `awsds/app-etl` and dropping `awsds/dev-env`,
    `awsds/deployment-managers` a member of `awsds/infrastructure`, and Stage 7 3.5's three persona
    memberships. The promotion legs clone the mirror with the job token and print its commit, so a
    stale push shows in the job's log.
 2. **[user] MR !4 merged** on `awsds/app-etl` (the release's notes without backticks), then the legs'
-   merge request: a branch of `awsds/app-etl` from `examples/app-etl/` at this repository's `main`,
+   merge request: a branch of `awsds/app-etl` from `examples/app-etl/` at `0236a99d`, v0.3.0's template
+   (`main` since 2026-10-24 carries v0.4.0's, §V),
    by `gitlab.md`'s "The application template" procedure (a fresh clone, the files swapped through
    `git archive`, a branch pushed, the MR), which
    brings `.gitlab-ci.yml`'s `staging-*`, `production-*` jobs and the `--lint` option. The pipeline
@@ -170,6 +206,15 @@ rows.
    BUILD=1`, which keeps the build runner; the flag left out destroys it. Until then the deploy image runs 1.15.8, which every
    slice's `versions.tf` admits.
 5. **[Claude]** `./aws/cicd.py` after the runners' boot (`CI-1`, `CI-9`), and `GM-1` to `GM-8` on the copies.
+
+**Done 2026-10-24** (Stage 8's log): the environment raised by the user at 18:10 UTC, `cicd.py` 0
+failed; steps 1, 2 and 6 by the user, read back at 18:47: the mirror at `0236a99d`, MR !4 merged and the
+legs' MR !5 merged, `awsds/app-etl`'s `main` at `5a7d009a` identical to `examples/app-etl/` at
+`0236a99d`. Steps 3 and 4 are left: the house image does not hold Stages 8 to 10, and the laptop still
+runs Terraform 1.15.8.
+6. **[user] The CI/CD variable `TRAINING_IMAGE_URI`** on `awsds/app-etl`, protected, for v0.4.0's
+   `test-deploy`: the value `terraform -chdir=terraform-live/staging/sagemaker output -raw
+   training_image_uri` after §0.6, AWS's XGBoost image by digest. v0.3.0 reads no such variable.
 
 ## P. Production: Stage 9's pass 3 and Stage 10's 0.5
 
@@ -263,7 +308,16 @@ first promotion carries a lake the job role has written (decision 23).
 
 1. **[user] Pass 1's `deploy --targets dev`** from a space on the house image as the project role
    (Stage 10 2.1, Stage 8 decision 22), and the reads 2.1 lists, when the Sandbox sitting is up anyway.
-2. **[user] The tag** `v0.3.0` on `awsds/app-etl`'s `main`, after the legs merged: the pipeline runs
+2. **[user] The tag** `v0.3.0` on `awsds/app-etl`'s `main`, after the legs merged (**run 2026-10-24,
+   pipeline #64**: `test-deploy` passed, then `release` and the legs' clone refused the lab's CA, the
+   legs raising nothing; the fix, the CA root the runner mounts, is MR-borne. `v0.3.1` named the legs'
+   merge, its pipeline #66 cancelled. **`v0.3.2`, pipeline #68**: `release` passed; `staging-deploy`
+   stopped at the workflow's tag-on-create and `staging-down` at the Studio hook, both fixed in this
+   repository and the grant applied the same evening; the retried `staging-test` stopped at the clone,
+   in the folder its downloaded artifact had created, the template's fix MR-borne. The first promotion's
+   tag is **`v0.3.3`**. While the mirror stays at `0236a99d` its `staging-down` stops at the hook, so
+   Staging comes down by hand, `make down ENV=staging` as the infrastructure user. Stage 8's and Stage
+   10's logs): the pipeline runs
    `test`, `build-image`, `build-task-code`, `test-deploy` (the CLI into the `test` project as
    `awsds-deploy-sandbox-test`), `store-bundle`, `release` (verification xx's `cli` image reading), then
    the legs.
@@ -277,7 +331,7 @@ first promotion carries a lake the job role has written (decision 23).
    runner, the deploy role's Cloud Control and Glue calls against their grants, the worker's preparation
    with no `ecr.*` endpoint (Stage 10 verification xvi), `TriggerMode`'s literal, the key's encryption
    context in the saver's and the worker's calls (Stage 10 decision 2), and Staging's `release.auto.tfvars.json`
-   kept as an artifact (the `VersionId`s 3.7 records). **3.8 ran by hand first, on 2026-10-23** (Stage 8's and
+   kept as the artifact `staging-release.auto.tfvars.json` (the `VersionId`s 3.7 records). **3.8 ran by hand first, on 2026-10-23** (Stage 8's and
    Stage 10's logs): the worker's preparation with no `ecr.*` endpoint, `TriggerMode`'s literal and the key's
    encryption context are read, and two statements gained `kms:GenerateDataKey` for the XCom encryption
    (`orchestration-v0.2.0`); `uv run` on the runner, the deploy role's calls and the artifact remain the leg's.
@@ -289,16 +343,26 @@ first promotion carries a lake the job role has written (decision 23).
 5. **[pipeline] `production-deploy`** (3.6, `awsds-deploy-prod`): the service-linked role's creation
    in the deploy role's session on Production's first `CreateWorkflow` (Stage 10 1.5's statement, 1.6's
    record), then `production/orchestration/` with the chain's schedule `ENABLED`; verification vi,
-   `CI-8` diffed across the run (INT-08).
+   `CI-8` diffed across the run (INT-08). **Run 2026-10-24, `v0.3.3`'s pipeline #71** (Stage 8's and Stage
+   10's logs): Staging's leg `SUCCEEDED` (`v0-3-3-71`, 15 min), `staging-down` stopped at the Studio hook
+   and the user's `make down ENV=staging` took Staging down; the gate at 21:31 UTC, and
+   `production-deploy` created the job, the workflow and the chain, the service-linked role made in the
+   deploy role's session at 21:33:58 UTC.
 6. **[user] 3.7**: both `release.tf`s committed with the tag, the digest, the bundle's SHA256 and the
-   Staging and Production `VersionId`s from the two legs' artifacts; the mirror pushed again.
+   Staging and Production `VersionId`s from the two legs' artifacts; the mirror pushed again. **`v0.3.3`
+   recorded in PR #254 on 2026-10-24**, each `VersionId` read back by `head-object`; the mirror's push
+   follows the merge.
 7. **[user] 3.8**: the by-hand parity once, the sequence in Stage 8 3.8, as `awsds-infra-staging`. **Run by
    Claude first on 2026-10-23**; the parity reading now belongs to the pipeline's leg.
 8. **[user + pipeline] Stage 10 6.1**: the schedule fires at 06:30 UTC with `workloads-egress/` up,
    or the cron is moved into the sitting by a commit and the pipeline applies it; the pause lever
    (`state = DISABLED`) through the slice; 3.2's deliberate break through the slice, the failure rule
    heard, the diagnosis from the APIs; 6.3's sentence in the log before the first `make down
-   ENV=production`.
+   ENV=production`. **2026-10-24**: Production's first run `SUCCEEDED` by hand (Claude, the user's
+   authorization), 6.3's sentence written from Staging's teardown, and `workloads-egress/` left up for the
+   schedule's firing at 06:30 UTC on 2026-10-25. The next morning: **[Claude]** the execution the schedule
+   started and its run's `RunType` (verification xxiv); §V step 1's third producer run fits there, the
+   endpoints still up; then **[user]** `make down ENV=production ONLY=workloads-egress`.
 9. **[Claude]** `./aws/orchestration.py` (`OR-9` on the layer), `./aws/cicd.py`, `./aws/egress.py` §6
    after `make down` in every account the sitting raised: zero burn, no NAT gateway.
 
@@ -334,12 +398,65 @@ Separable and last; nothing needs it. In a Production sitting with the hub up.
    `v0.3.0`.
    `./aws/warehouse.py awsds-infra-prod --sql` passed on 2026-10-24, and `make down ENV=production` ended the sitting.
 
+## V. The data release: v0.4.0
+
+What v0.3.x leaves, written 2026-10-24 (the stage logs): the Glue job's governed read and the
+application's table (Stage 9 8.5), the warehouse's DDL job and its load workflow (9.4, decision 15), the
+model chain (Stage 10 pass 3, decisions 21 and 22), and the scheduled end-to-end (6.1). Needs §T, run
+2026-10-24 with `v0.3.3` and recorded in PR #254 (3.7); PR #254 merged, and `awsds-workflows`' PR #24,
+whose commit `d60e1ad` the template pins (re-pinned if the merge leaves it off every branch); §0.6
+applied, §H step 6, the hub, GitLab and the three runners up, and Sandbox's `egress/` up. Every `make up
+ENV=production` here carries `ONLY=`, or the build runner is destroyed.
+
+1. **[user + Claude] The third producer run first** (verification xxviii's last clause): Production's
+   full-table flag off in its Lake Formation console, `DT-5` read, the run, the flag on again and `DT-5`
+   read, with `workloads-egress/` up (§P steps 4 and 5's commands). A commit with Production's flag off
+   says an engine's flag is not needed, and Staging's leg reads through the lake's flag alone; a refusal
+   says it is, and **[user]** Staging's flag goes on the same way before step 3 (`DT-5` bracketing it).
+   The run adds ten rows to `curated.trades`, which the tests count from, not assume.
+2. **[user] The legs' merge request for v0.4.0** on `awsds/app-etl`, from `examples/app-etl/` at `main`
+   (the procedure of §H step 2), merged; the mirror pushed at `main` (`git push gitlab main`), since the
+   legs clone the new scripts and slices (`model-chain.py`, the render's classes, the application and
+   orchestration slices). The push also carries `c60ad8d6`, so `staging-down` destroys as
+   `awsds-deploy-staging` for the first time (Stage 8 verification xii). `awsds/app-etl`'s `main` is the
+   v0.3.x template with MR !6's and MR !7's fixes (`ff4caf1c`), both already in `examples/app-etl/`.
+3. **[user] The tag `v0.4.0`**. What it reads first: `test` with `--algorithm-repository`; `test-deploy`
+   creating both workflows in the `test` project and running `app-etl`, whose Glue job now writes the
+   table and the training sets under the project's prefix; then the Staging leg: the render of three
+   workflows and the application slice's table and job arguments (`lint-plan` on its plan), the
+   orchestration slice's two chains, `staging-test` (the governed read through Staging's share as
+   `awsds-staging-job-exec`, the table read back, then Staging's first training job), `staging-model`
+   (Staging's first batch transform), `staging-down`.
+4. **[user] The gate**, as §T step 4, after `make up ENV=production ONLY=workloads-egress`.
+5. **[pipeline] `production-deploy`**: the application slice with the table and the load job, the
+   orchestration slice with three workflows and three chains, their schedules at 06:30, 07:00 and 07:30
+   UTC.
+6. **[Claude⚡] Production's runs**, as `awsds-infra-prod`, each followed to its end: the app-etl chain,
+   then the train chain (`aws stepfunctions start-execution --state-machine-arn
+   arn:aws:states:us-west-2:<Production>:stateMachine:awsds-prod-chain-<chain>`); or the schedules, if
+   the sitting spans their minutes.
+7. **[user] The model's registration and approval**: `production-register`, then `production-approve`
+   by a `deployment-managers` member, which `production-transform` follows; then Stage 10 5.5 from
+   Sandbox as the persona, `DescribeModelPackage` answering and `UpdateModelPackage` refused.
+8. **[user + Claude⚡] The warehouse** (9.4 to 9.7): `make up ENV=production
+   ONLY=workloads-egress,warehouse-compute GROUPS=redshift`; `production-warehouse-ddl`; the warehouse
+   chain started as in step 6; 9.6's readings (the job's log: the database user and the count;
+   verification xxv in `pg_user`); §W step 5's datashare, the table now existing, and 9.7 from a Sandbox
+   project with Sandbox's `warehouse-compute/` up.
+9. **[user] Verification ix**: a tag `v0.4.1` from a branch whose `GOVERNED_COLUMNS` names a column
+   `curated.trades` lacks (`book`), expected to pass `test` and fail `staging-test` at the governed read,
+   Production untouched; the branch deleted after, `main` unchanged.
+10. **[user + pipeline] Stage 10 6.1**: the schedules fire with `workloads-egress/` up, or the cron moves
+    into the sitting by a commit, the mirror pushed and `production-deploy` retried; the pause lever
+    through the slice; 3.2's deliberate break; 6.3's sentence before the first `make down ENV=production`.
+11. **[user] 3.7 again**: both `release.tf`s with v0.4.0's tag, digest, SHA256 and `VersionId`s, the
+    orchestration slices' three workflows among them; the mirror pushed.
+12. **[Claude]** §R, `./aws/warehouse.py awsds-infra-prod --sql` and `./aws/orchestration.py` (`OR-9` on
+    three chains), then `make down ENV=production ONLY=workloads-egress,warehouse-compute`.
+
 ## Q. After the quotas: Stage 10's pass 3
 
-When the training and transform quotas of `ml.m5.large` are above zero in both accounts (§0.2): 5.1's
-training task as a second workflow of the manifest with a chain of its own, 5.2's registration and
-approval jobs, 5.4's batch transform in Staging then Production, 5.5's far-side proof — a release of
-`app-etl` that runs §T's chain again.
+The quotas are above zero since 2026-10-24 (§0.2), and pass 3 is v0.4.0's (§V steps 3, 6 and 7).
 
 ## R. The readings at the end of every sitting
 

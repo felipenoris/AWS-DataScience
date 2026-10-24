@@ -922,3 +922,15 @@ nothing.*
   since 2026-10-23.
 - **[Claude] Left to the stages' own sessions**: the bare `make up ENV=production` in Stage 8 3.6's text
   and Stage 9 2.4's and 9.1's, each a record of what ran or a step a runbook now names with `ONLY=`.
+
+## 2026-10-24 — 3.5's three persona memberships, by the user
+
+*The user's hand, at the GitLab sitting of `runbooks/promotion.md` §H; Claude recording, in the session
+that holds Stages 8 to 10.*
+
+- **[user]** The Deployment Manager, Governance Manager and Dev-env Steward personas signed in once by
+  SAML and were added by the administrator to `awsds/deployment-managers`, `awsds/governance-managers`
+  and `awsds/dev-env-stewards`; `awsds/deployment-managers` joined `awsds/infrastructure` as Reporter
+  and `awsds/dev-env-stewards` left it, and the mirror's job token admits `awsds/app-etl` in place of
+  `awsds/dev-env` (Stage 8 decision 2). Reported in chat (*"Fiz os atos do §H: ... as configurações e
+  memberships ..."*); no read of GitLab's members reaches them from the laptop.

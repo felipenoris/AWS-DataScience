@@ -56,8 +56,19 @@ locals {
       code                  = true
       glue_jobs             = ["awsds-${var.env}-app-etl"]
       processing_job_prefix = "app-etl-"
+      training_job_prefix   = null
       reads                 = ["app-etl/work/job/"]
       writes                = ["app-etl/outbox/"]
+    }
+    "app-etl-train" = {
+      application           = "app-etl"
+      description           = "app-etl-train: XGBoost trained on the sets app-etl wrote, and its evaluation beside the model (Stage 10 step 5.1)"
+      code                  = true
+      glue_jobs             = []
+      processing_job_prefix = null
+      training_job_prefix   = "app-etl-train-"
+      reads                 = ["app-etl/work/train/"]
+      writes                = ["models/app-etl/"]
     }
   }
 
@@ -76,15 +87,16 @@ locals {
       } : null
       glue_jobs             = a.glue_jobs
       processing_job_prefix = a.processing_job_prefix
+      training_job_prefix   = a.training_job_prefix
       reads                 = a.reads
       writes                = a.writes
     } if contains(keys(var.release.workflows), k)
   }
 
-  # The schedule is DISABLED here (decision 19): the slice lives for the Staging leg alone, which starts
-  # the chain's machine itself and follows the execution (Stage 8 step 3.3). Production's schedule is
-  # the one that fires unattended (step 6.1).
-  chains = var.release == null ? {} : {
+  # The schedules are DISABLED here (decision 19): the slice lives for the Staging leg alone, which starts
+  # each chain's machine itself and follows the execution (Stage 8 step 3.3). Production's schedules are
+  # the ones that fire unattended (step 6.1).
+  chain_specs = {
     "app-etl" = {
       definition_template = file("${path.module}/chains/app-etl.asl.json")
       workflows           = ["app-etl"]
@@ -92,7 +104,18 @@ locals {
       schedule_timezone   = "UTC"
       schedule_enabled    = false
     }
+    "app-etl-train" = {
+      definition_template = file("${path.module}/chains/app-etl-train.asl.json")
+      workflows           = ["app-etl-train"]
+      schedule_expression = "cron(0 7 * * ? *)"
+      schedule_timezone   = "UTC"
+      schedule_enabled    = false
+    }
   }
+
+  # A chain whose workflows the release carries: a release recorded before a workflow existed creates
+  # neither the workflow nor its chain.
+  chains = { for k, c in local.chain_specs : k => c if alltrue([for w in c.workflows : contains(keys(local.workflows), w)]) }
 }
 
 module "orchestration" {

@@ -131,7 +131,17 @@ repos:
         entry: ./scripts/render-workflow.py --check
         language: system
         pass_filenames: false
-        files: ^(examples/app-etl/(workflows/.*|manifest\.yaml)|scripts/render-workflow\.py)$
+        files: ^(examples/app-etl/(workflows/.*|manifest\.yaml)|scripts/render-workflow\.py|scripts/tfhygiene/targets\.py)$
+
+      # Stage 10 steps 5.2 and 5.4 - the model chain's requests, built from stand-in values: a model
+      # without network isolation or a transform without the data key fails here, not at the
+      # Workloads OU's document in a pipeline job.
+      - id: model-chain-check
+        name: the model chain's requests carry the job settings
+        entry: ./scripts/model-chain.py --check
+        language: system
+        pass_filenames: false
+        files: ^scripts/(model-chain\.py|tfhygiene/targets\.py)$
 
       # 8.1 - every slice on disk declares its D11 layer in scripts/tfhygiene/layers.py. The
       # direction that costs money is a slice with no row: `make down` skips it in silence,

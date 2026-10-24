@@ -26,6 +26,7 @@ from pathlib import Path
 
 DEPLOY_TARGETS = ("terraform-live/staging/foundation", "terraform-live/production/foundation")
 APPLICATION = ("terraform-live/staging/app/app-etl", "terraform-live/production/app/app-etl")
+JOB_RUNTIME = ("terraform-live/staging/sagemaker", "terraform-live/production/sagemaker")
 
 # (file name, the slices holding it). The first slice is the reference a divergence is reported
 # against.
@@ -33,6 +34,7 @@ COPIES = (
     ("app-boundary.tf", DEPLOY_TARGETS),
     ("apply-application.tf", DEPLOY_TARGETS),
     ("apply-orchestration.tf", DEPLOY_TARGETS),
+    ("training-image.tf", JOB_RUNTIME),
     *(
         (name, APPLICATION)
         for name in (

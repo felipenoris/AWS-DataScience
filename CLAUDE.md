@@ -307,12 +307,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   user is [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md)**: read it before asking
   the user anything, and remove a row in the sitting that takes it.
 - **The SCP battery** read `ou` 47 as expected / 0 unexpected / 7 not measured on 2026-10-22 (Stage 18's
-  carve-out removed, Stage 9 3.5's instance-preference rows run for the first time) and `root` 25 / 0 / 0 on 2026-10-18. **SageMaker job quotas for `ml.m5.large`,
-  `.xlarge` and `.2xlarge` are 0 in Production and Staging** (processing and training; training is 0 for
-  every type inside the ceiling in both, read 2026-10-20 and 2026-10-22), **and no type inside the ceiling
-  has a transform quota above 0 in either** (2026-10-22); `ml.m5.large`'s training and transform were
-  requested at 2 in both on 2026-10-23, `CASE_OPENED` on 2026-10-24; `ml.t3.medium`,
-  `app-etl`'s processing type, is 4 in both, and Staging ran a job on it on 2026-10-19. The probes read `ResourceLimitExceeded` as authorized; the `ou`
+  carve-out removed, Stage 9 3.5's instance-preference rows run for the first time) and `root` 25 / 0 / 0 on 2026-10-18. **SageMaker job quotas are above zero in
+  Production and Staging since 2026-10-24** (read 03:47 UTC, Sandbox's values: training 20 and transform 8
+  for `ml.m5.large`, processing 8, `ml.t3.medium` 10), the four requests of 2026-10-23 still
+  `CASE_OPENED`. The probes read `ResourceLimitExceeded` as authorized; the `ou`
   phase's seven instance-preference rows (Stage 9 3.5, PR #216) ran 2026-10-22, each as expected.
 - **Stage 9**: pass 1 applied 2026-10-18 (`awsds-org-scp-ou-workloads`, nine statements; `production/sagemaker/`,
   rank 46). Every decision taken 2026-10-22: no mirror, Staging reading the governed lake through a
@@ -336,7 +334,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Production's is needed beside the lake's is unmeasured (a third run, the user's console). 9.1's
   `production/warehouse/` applied 22:07 UTC (the namespace; `EXC-13`'s Production sentence), refusal 9
   lifted, `warehouse-compute/` planning 2 to add, 9.3 run 2026-10-24 (the schema `trades` at 1 TB, the roles, the `IAMR:` users, the default privileges, every `PUBLIC`
-  `CREATE` revoked), 9.5's datashare (written as commands 2026-10-24, decision 14 taken 2026-10-24: Data Governance registers and grants it) and 9.6-9.7 left, those two waiting on a table in `trades` from 9.4's unwritten DDL; 9.4's grant applied,
+  `CREATE` revoked), 9.5's datashare (written as commands 2026-10-24, decision 14 taken 2026-10-24: Data Governance registers and grants it) and 9.6-9.7 left, those two waiting on `trades.trades_notional`, which v0.4.0's DDL job and load workflow create (written 2026-10-24; decision 15, a Production-only workflow, the user's against the recommendation); 9.4's grant applied,
   `workloads-egress/` taking `GROUPS=redshift`; the `ml.m5.large` pair requested 2026-10-23 (`CASE_OPENED`); the
   persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run but the space halves and the Data API negative
   (INT-06 answered, open question 8 closed); the sittings in `runbooks/promotion.md`.
@@ -345,12 +343,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
   (rank 59, `[E]`) written and planned, `OR-9` written, both slices on the module's tag; every Stage 10
   decision was taken 2026-10-22; 2.3's lint runs in the legs' release job, and since 2026-10-24 (2c)'s
-  `lint-plan` (`awsds-workflows` `ff25eae`) on the application slice's saved plan; **3.8's calls replayed as both deploy roles (2026-10-24) found `states:ValidateStateMachineDefinition` granted to neither, which stops both legs' orchestration apply: written in `*/foundation/` and applied the same night, both roles reading `allowed`**; pass 3 waits on the
-  training and transform quotas, 5.1's task a second workflow after them. Passes 1-2 run with Stage 8's pass 4 (decision 23); the objects they stopped at,
+  `lint-plan` (`awsds-workflows` `ff25eae`) on the application slice's saved plan; **3.8's calls replayed as both deploy roles (2026-10-24) found `states:ValidateStateMachineDefinition` granted to neither, which stops both legs' orchestration apply: written in `*/foundation/` and applied the same night, both roles reading `allowed`**; pass 3
+  written 2026-10-24 in the template's v0.4.0 (decisions 21, AWS's XGBoost 3.0-5 by digest, and 22,
+  Staging retrains), the lint's rule `treino` at `awsds-workflows` `d60e1ad`, the user's merge. Passes 1-2 run with Stage 8's pass 4 (decision 23); the objects they stopped at,
   Stage 8's application ceilings and Stage 9's data keys, outputs buckets and Staging's job role, exist
   since 2026-10-22.
-  The MWAA Serverless service-linked role exists in Staging, not in Production, whose first apply needs
-  `iam:CreateServiceLinkedRole` (1.5). **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
+  The MWAA Serverless service-linked role exists in both accounts, Production's created 2026-10-24 in
+  `awsds-deploy-prod`'s session at pipeline #71's first `CreateWorkflow`, INT-14 answered in both; Production's
+  first run `SUCCEEDED` by hand (15 min), and 6.1 reads the schedule's firing at 06:30 UTC on 2026-10-25. **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
   3.8): the workflow created by `awscc` under `InfrastructureAccess`, the chain's machine started, diagnosed two
   failures (the worker's XCom encryption needs `kms:GenerateDataKey` in the key policy and in the role's, both
   fixed) and `SUCCEEDED`; 0.5, decision 19, decision 2's context and verification xvi's worker clauses read; the
@@ -399,7 +399,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (7.2 left), pass 4's 8.4 done. Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
   `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners out, and the build runner rises
   only with `BUILD=1` (decision 5, 2026-10-24). Owed: INT-09's clone from a
-  notebook, the memberships, 8.1-8.3; 5.6's ECR grant applied 2026-10-22. The GitLab backups leave the bucket on 2026-11-13 and 2026-11-15.
+  notebook, 8.1-8.3 (3.5's memberships done 2026-10-24); 5.6's ECR grant applied 2026-10-22. The GitLab backups leave the bucket on 2026-11-13 and 2026-11-15.
   **`saml.auto.tfvars` lives in the project folder's `secrets/`**: a `tooling/` plan passes
   `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block.
 - **Stage 8 in progress**: passes 0-3 done (`awsds/ci-gates`, the test runner, the house image on Python
@@ -424,7 +424,12 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   log): `v0.2.1` released into Staging, both slices applied, the chain `SUCCEEDED` at its third execution after
   two policy fixes, the data keys' and the execution role's `kms:GenerateDataKey` for the XCom encryption
   (`orchestration-v0.2.0`); the pipeline's leg owes verification xi's parity, `uv run` on the runner and the
-  deploy role's calls.
+  deploy role's calls. **v0.4.0 written 2026-10-24** (`examples/app-etl/` at `main`; v0.3.0 is the template
+  at `0236a99d`): 8.5's governed read, 9.4, Stage 10's pass 3; its six `[P]` applies done 2026-10-24
+  (`runbooks/promotion.md` §0.6), the sittings §T then §V. **The first promotion ran 2026-10-24**: `v0.3.3`'s
+  pipeline #71 took Staging's leg to `SUCCEEDED` and deployed Production, once the lab's CA, the workflow's
+  tag-on-create, the Studio hook under a deploy profile and the release file inside the clone's folder were
+  fixed; Staging comes down by hand until the mirror leaves `0236a99d`; 3.7 recorded `v0.3.3`.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.

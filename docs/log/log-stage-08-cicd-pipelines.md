@@ -2767,3 +2767,207 @@ readings. Times UTC.*
   re-planned `No changes`; both deploy roles read `allowed` for `states:ValidateStateMachineDefinition`
   and the MWAA Serverless service-linked role. `runbooks/promotion.md` §0.5's first item is done, and §T
   no longer waits on it.
+
+## 2026-10-24 — v0.4.0's legs written; verification xxii's substituted bundle refused offline
+
+*Claude's hand, in the session `planejamento-estagios-8-9-10-847863` (Stage 9's entry of this date quotes
+the request), no AWS write. Times UTC.*
+
+- **[Claude] The branch synced** at the user's word: fast-forwarded to `0236a99d` (PR #253, the runbooks
+  review); nothing of the branch was committed yet.
+- **[Claude] The template's v0.4.0 legs**: `build-task-code` zips `code/app_etl_tasks.py` once per
+  workflow; `test-deploy` requires the CI/CD variable `TRAINING_IMAGE_URI` (the user adds it, the value
+  `terraform output -raw training_image_uri` on `staging/sagemaker/`); `staging-test` follows both
+  chains and reads the application's table; `staging-model` serves Staging's model; after
+  `production-deploy`, the manual `production-warehouse-ddl`, `production-register` and
+  `production-approve`, then `production-transform`. `check-gitlab-ci.py` OK; the template's 27 tests and
+  its lint pass.
+- **[Claude] Which template each tag carries**: v0.3.0, the first promotion, is `examples/app-etl/` at
+  `0236a99d`; v0.4.0 is `examples/app-etl/` at `main` once this branch is merged.
+- **[Claude] Verification xxii's substituted-file half**, 17:31:02, offline: `release-application.py
+  staging` handed a bundle of other files with `v0.2.1`'s SHA256, under a profile that does not exist,
+  answered *"SHA256 differs from the value the tag pipeline passed"* and exit 1, before reading a state,
+  rendering or writing. The `release.tf` half stays 3.7's.
+- **[Claude] The peer's note**: Stage 8 3.6 and Stage 9 2.4 and 9.1 wrote the bare `make up
+  ENV=production`, which applies `production/runners/` without `BUILD=1` and destroys the build runner;
+  they now carry the `ONLY=` forms.
+
+## 2026-10-24 — the session's branch and its PRs
+
+*Claude's hand.*
+
+- **[Claude]** The branch `claude/planejamento-estagios-8-9-10-847863` pushed and PR #254 opened against
+  `main`; `awsds-workflows`' branch `treino-e-repositorio-de-algoritmo` pushed and its PR #24 opened, the
+  merge of both the user's.
+
+## 2026-10-24 — `runbooks/promotion.md` §H: the environment up, the mirror at `0236a99d`, the legs on `main`
+
+*The user's hand for the environment and every GitLab act; Claude's for the readings, as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-prod` and the four other infrastructure
+profiles), reads only, and git reads over the tunnel. Times UTC.*
+
+- **[user]** *"Subi o hub e o GitLab (make hub-up, make gitlab-up BUILD=1) e liguei o túnel."* **[Claude]
+  read back**, 18:14 to 18:27: `make status` names `production/vpn/`, `production/proxy/` and
+  `production/tooling/` up with one instance each, `production/egress/` with 12 resources and
+  `production/runners/` with 13 (the instances launched 18:10:11 to 18:13:17: `t3.nano`, `t3.micro`,
+  `t4g.large`, two `t3a.small` and the `m8i.xlarge` build runner), the burn estimated at 0.4521 USD/h;
+  `./aws/cicd.py` on the five profiles, 0 checks failed (`CI-1` the deploy runner running, `CI-9` the
+  test runner with IMDSv2 required and hop limit 1, its role holding its token, the CA root and Session
+  Manager alone). The mirror `awsds/infrastructure` read at `5b9de6b8` (PR #151), an ancestor of
+  `0236a99d` 102 commits behind it, so the push was a fast-forward; `awsds/app-etl`'s `main` at `v0.2.1`
+  (`1e756091`) with MR !4 open.
+- **[user]** *"Fiz os atos do §H: o espelho em 0236a99d, as configurações e memberships, o MR !4 e o MR
+  das pernas mesclados, e a variável TRAINING_IMAGE_URI criada."* **[Claude] read back** at 18:43: the
+  mirror's `main` at `0236a99d5577b0925e3cd87cbdde238ea6098bba`; `awsds/app-etl`'s `main` at `628f17e`,
+  MR !4's merge, with the legs' branch `promotion-legs` (`6a342bc`, MR !5) not in it, its tree identical
+  to `examples/app-etl/` at `0236a99d`. The tag was held until the merge.
+- **[user]** *"Mesclei o MR !5 na main do awsds/app-etl."* **[Claude] read back** at 18:47:53: `main` at
+  `5a7d009a` (*"Merge branch 'promotion-legs' into 'main'"*), its tree identical to `examples/app-etl/`
+  at `0236a99d` (`diff -r` against `git archive`), seven `staging-*` and `production-*` jobs, the lint at
+  `awsds-workflows` `ff25eae`. The job token's allowlist, the deployment managers' seat and the variable
+  `TRAINING_IMAGE_URI` are GitLab settings no read here reaches; the legs' clone of the mirror and
+  v0.4.0's `test-deploy` read them.
+
+## 2026-10-24 — `v0.3.0`'s pipeline #64: `test-deploy` passed, the release and the legs refused the lab's CA
+
+*The user's hand for the tag and the egress; Claude's for the reading, through the user's Chrome session
+in a tab of its own (the job pages and their raw traces), and as the infrastructure user with
+`InfrastructureAccess` for AWS. Times UTC.*
+
+- **[user]** The tag `v0.3.0` on `5a7d009a`, after `make up ENV=sandbox ONLY=egress`; *"falhou no job de
+  release."* Pipeline #64, 15 jobs, 19 min 20 s: `pip-audit`, `test`, `build-image` (2 min 49 s),
+  `build-task-code` passed; `scan-gate` failed and is allowed to (decision 1); `test-deploy` passed in 15
+  min 49 s as `awsds-deploy-sandbox-test`; `store-bundle` passed, the bundle
+  `s3://awsds-prod-releases/app-etl/v0.3.0/app-etl.zip`, SHA256 `2c6b7dd4…3705`, the image
+  `awsds-prod-ecr-app-etl@sha256:7d18db09…0e61`.
+- **[Claude] `release` (job 280)**, 19:19:49: glab logged in with the job token and stopped at its first
+  API call, *"Get "https://gitlab.awsds.internal/api/v4/projects/awsds%2Fapp-etl/releases/v0%2E3%2E0":
+  tls: failed to verify certificate: x509: certificate signed by unknown authority."* Verification xx's
+  open half is answered: GitLab's `cli` image does not trust the lab's CA.
+- **[Claude] `staging-up` (job 281)**, 19:19:47, on the deploy runner: the `.promotion` clone of the
+  mirror refused, *"fatal: unable to access 'https://gitlab.awsds.internal/awsds/infrastructure.git/':
+  server verification failed: certificate signer not trusted. (CAfile:
+  /etc/ssl/certs/ca-certificates.crt CRLfile: none)"*, exit 128; `staging-down` (job 284) the same, so
+  `staging-deploy`, `staging-test`, `production-plan`, the gate and `production-deploy` were skipped.
+  Staging holds no interface endpoint (read 19:3x), so the leg raised nothing. The project's own checkout
+  passed in both jobs: the runner's helper installs the CA root it mounts at
+  `/etc/gitlab-runner/certs/ca.crt`, and `runbooks/gitlab.md` §K leaves every other HTTPS call to
+  GitLab to use that file itself, which the legs, never run in a pipeline before, did not.
+- **[Claude] The fix**, in the template's `.gitlab-ci.yml`: the `.promotion` clone carries `-c
+  http.sslCAInfo=/etc/gitlab-runner/certs/ca.crt`, and `release` sets `SSL_CERT_DIR` to the mounted
+  directory, which Go reads beside the image's bundle. The same two hunks apply to v0.3.0's template
+  (`0236a99d`, checked with `git apply --check`) and to v0.4.0's; the tag `v0.3.0` is spent, so the
+  first promotion is `v0.3.1`.
+
+## 2026-10-24 — `v0.3.2`'s pipeline #68: the release trusted the CA, the Staging leg stopped three times on the deploy runner
+
+*The user's hand for the tags, the merge request and the retry; Claude's for the reading, through the
+user's Chrome session (the job pages, their raw traces and GitLab's API), and as the infrastructure user
+with `InfrastructureAccess` for AWS. Times UTC.*
+
+- **[user]** *"Apliquei o patch, mesclei o MR ca-root e criei a tag v0.3.1; o pipeline está rodando."*
+  **[Claude] read back**: `v0.3.1` named `5a7d009a`, MR !5's merge, because the branch `ca-root`
+  (`780aa419`, pipeline #65 passed at 19:36:10) had no merge request yet; pipeline #66 ran the v0.3.0
+  template again. The user cancelled #66 (19:44:19) and merged MR !6, *"The legs' clone and the release
+  trust the CA root the runner mounts"*, at 19:45:20 as `f4e4dcf3`; its `.gitlab-ci.yml`, blob
+  `74cae03f`, is the template at `0236a99d` with the patch. `v0.3.1` is spent.
+- **[user]** The tag `v0.3.2` on `f4e4dcf3`, pipeline #68 created 19:46:13. `scan-gate` (job 319) failed
+  and is allowed to (decision 1): 725 CRITICAL or HIGH findings, 130 in the baseline, 595 outside it,
+  593 of them `linux-libc-dev 6.8.0-142.142` and one each `zlib` and `zlib1g 1.3.dfsg-3.1ubuntu2.2`.
+  `test-deploy` (job 320) passed, 19:49:17 to 20:05:00; `store-bundle` (321) passed; `release` (322)
+  passed at 20:05:17, glab trusting the CA through `SSL_CERT_DIR` (verification xx answered).
+  `staging-up` (323) passed, 20:05:10 to 20:07:16, the mirror's clone at `0236a99d`, and Staging's seven
+  interface endpoints read `available` at 20:07:31.
+- **[Claude] `staging-deploy` (job 324)**, 20:07:19 to 20:09:57: the tree written to
+  `s3://awsds-staging-outputs/applications/app-etl/v0.3.2/`, the promoted lint `ok`, 8 objects read
+  back; `staging/app/app-etl/` applied, the Glue job; `staging/orchestration/` stopped at the workflow,
+  *"not authorized to perform: airflow-serverless:TagResource on resource: … workflow/*"*. The refusal,
+  its fix and its applies are Stage 10 1.5's, in that log's entry of this date.
+- **[Claude] `staging-down` (job 326)**, 20:10:00 to 20:10:15: `make down ENV=staging
+  PROFILE=awsds-deploy-staging AUTO=1` stopped at step 8.6's hook before any destroy, *"could not list
+  domains in staging (awsds-infra-staging) … The config profile (awsds-infra-staging) could not be
+  found"*: `down-studio-apps.py` signs in with `backend.PROFILES`, which the deploy runner does not hold.
+  The fix, in `c60ad8d6`: with a deploy profile, `slices.py down` skips the hook and prints why (refusal
+  8 keeps the profile in the Workloads accounts, where `DenyInteractiveSageMakerSurface` refuses
+  `CreateDomain` and `CreateApp`). It reaches the runner with the mirror's next push.
+- **[user]** *"Cliquei em Retry no staging-deploy (job 324)."* **[Claude]** Job 330, 20:32:33 to 20:35:03,
+  passed: the mirror at `0236a99d`, the tree written again, the application slice `No changes` after
+  `lint-plan`, the orchestration slice *"Apply complete! Resources: 7 added, 0 changed, 0 destroyed."*
+  (Stage 10's log). `staging-test` (job 325), 20:35:06 to 20:35:14, failed before its first AWS call:
+  *"fatal: destination path '/builds/awsds/app-etl/infrastructure' already exists and is not an empty
+  directory."* Its `needs: [staging-deploy]` downloads that job's artifact,
+  `infrastructure/terraform-live/staging/orchestration/release.auto.tfvars.json`, before the `.promotion`
+  clone into the same folder; `staging-down` downloads it too, by stage, and `production-deploy`'s artifact
+  sits on the same path for v0.4.0's jobs that need it. A retry runs the tag's YAML, so the fix needs a
+  new tag.
+- **[Claude] The template's fix**: each deploy job copies the release file beside the clone,
+  `staging-release.auto.tfvars.json` and `production-release.auto.tfvars.json` in `$CI_PROJECT_DIR`, and
+  keeps that copy as the artifact; written in `examples/app-etl/.gitlab-ci.yml` (v0.4.0) and as a patch
+  on `f4e4dcf3` for `v0.3.3`, both read by `./scripts/check-gitlab-ci.py` and parsed. Staging stays up
+  meanwhile: the seven endpoints, the Glue job and the orchestration slice's 21 resources, the chain never
+  started.
+
+## 2026-10-24 — `v0.3.3`'s pipeline #71: the first promotion, Staging's leg `SUCCEEDED` and Production deployed
+
+*The user's hand for the merge request, the tag, the gate and Staging's teardown; Claude's for the
+reading (the job traces and GitLab's API through the user's Chrome session, AWS as the infrastructure
+user with `InfrastructureAccess`) and for 3.7's record. Times UTC.*
+
+- **[user]** The patch applied in `awsds/app-etl` on the branch `artifact-path` (`2b3da15b`, pipeline #69
+  passed), MR !7, *"The legs keep their release file beside the clone"*, merged at 20:48:59 as
+  `ff4caf1c`, its `.gitlab-ci.yml` blob `fd85db90`, the patched file. A first attempt ran the commands in
+  the project folder, where `git apply` found no `.gitlab-ci.yml` and changed nothing: Claude's
+  instructions had dropped the clone's `-C`. The tag `v0.3.3` on `ff4caf1c`, pipeline #71 created
+  20:50:40.
+- **[Claude] The build half**: `pip-audit`, `test`, `build-task-code` and `build-image` (20:51:01 to
+  20:53:43) passed; `scan-gate` failed, allowed (decision 1); `test-deploy` 20:53:44 to 21:09:33;
+  `store-bundle`; `release` at 21:09:49, its notes naming the bundle
+  `s3://awsds-prod-releases/app-etl/v0.3.3/app-etl.zip`, SHA256 `24aea329…02e9`, and the image
+  `awsds-prod-ecr-app-etl@sha256:89d0ea21…2aac`.
+- **[Claude] The Staging leg**, the mirror at `0236a99d`: `staging-up` 21:09:42 to 21:10:25, no change;
+  `staging-deploy` 21:10:28 to 21:12:59, the tree written and read back (8 objects, the promoted lint
+  `ok`), the Glue job updated in place to v0.3.3 and the workflow *"Modifications complete after 6s"*
+  through Cloud Control as `awsds-deploy-staging`; `staging-test` 21:13:02 to 21:28:39, the execution
+  `v0-3-3-71` started by the leg and `SUCCEEDED` from 21:13:12 to 21:28:16, its artifacts
+  `execution.json` and `staging-release.auto.tfvars.json`; `staging-down` 21:28:42 to 21:28:55 stopped at
+  step 8.6's hook as on #68, its clone passing.
+- **[user]** `make down ENV=staging`, after `DRY=1`, from the project folder at `0236a99d` as
+  `awsds-infra-staging`. **[Claude] read back** at 21:37:43: no interface endpoint, workflow,
+  `awsds-staging-chain-*` machine, Glue job `awsds-staging-app-etl`, `wf` or `chain` role, workers' group,
+  schedule group or `/awsds/staging/wf/` log group, and no NAT gateway; the `[P]` rule
+  `awsds-staging-deploy-misuse` kept.
+- **[Claude] `production-plan`**, 21:28:55 to 21:29:39: *"Plan: 1 to add"*, `aws_glue_job.this[0]` named
+  `awsds-prod-app-etl` on `s3://awsds-prod-outputs/applications/app-etl/v0.3.3/glue/transform.py`,
+  `lint-plan` *"ok: 1 job(s) do Glue"*.
+- **[user]** `production-gate` at 21:31:29. **[Claude] `production-deploy`**, 21:31:37 to 21:34:08 as
+  `awsds-deploy-prod`: the tree written and read back, the inbox's `trades.csv` written at 21:32:24,
+  before any bridge existed; the application slice *"1 added"* at 21:33:32; the orchestration slice
+  *"21 added"* at 21:34:04 (Stage 10's log); the release file kept as
+  `production-release.auto.tfvars.json`.
+- **[Claude] 3.7, recorded in this repository**: both application slices' `release.tf` default to
+  `v0.3.3` with the digest and the bundle's SHA256 of the tag's GitLab release; both orchestration
+  slices' to the legs' `VersionId`s, Staging's `i1L7O01m…oOXm` and `mqDM5asD…eQal`, Production's
+  `jU1vr4IL…eHZX` and `K.apAb_C…eBtxN`. Each object version read back by `head-object` (3,351 and 1,246
+  bytes in Staging, 3,324 and 1,246 in Production), and Production's two match `get-workflow`. The
+  mirror's push is the user's, after the merge.
+
+## 2026-10-24 — the readings after the first promotion: `CI-8` and the verifications the run answers
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess`. Times UTC.*
+
+- **[Claude] `./aws/cicd.py`** on the five infrastructure profiles, after pipeline #71: *"0 check(s)
+  FAILED"*; `CI-8` reads 97 deploy-role assumptions, every caller the deploy runner, the three deliberate
+  assumptions of 2026-10-13 excused by session name and minute (verification vi, INT-08).
+- **[Claude] What the stage file now records**: xi's parity (the leg's 21 orchestration resources and its
+  chain's `SUCCEEDED` against 3.8's by-hand run, the tag-on-create the one difference); xii read as *no* at
+  the mirror's `0236a99d`, `staging-down` stopping at the Studio hook after #68's failure and #71's success,
+  Staging's slices up until the user's `make down`; xx's `release` jobs creating their releases with the CA
+  root; xxii's `release.tf` half, the download checked against the SHA256 both application slices record;
+  3.4 carries the hook's fix and its reach.
+- **[Claude] Verification v's pass 4 half**, Production's trail: three `BatchGetImage` calls on
+  `awsds-prod-ecr-app-etl` from Staging at 21:17:02, 21:17:03 and 21:17:52, each `AWSAccount` whose
+  principal id is `awsds-staging-job-exec`'s with the session `SageMaker`, the last invoked by
+  `ecr.amazonaws.com`: the processing job's role pulled the release's image across the boundary
+  (INT-07). Production's own run pulled it at 21:44:50 as `awsds-prod-job-exec`, and one call at
+  21:45:36 answered `InvalidParameterException` with no repository named, the run unaffected, as Stage
+  18 read on 2026-10-19.

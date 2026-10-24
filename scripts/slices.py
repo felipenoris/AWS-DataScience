@@ -509,6 +509,14 @@ def cmd_updown(args) -> int:
             # make a no-op `make down` fail on credentials, which is a target that reports a
             # problem it does not have. It rides on the session the destroy already needs.
             print("    skipped - nothing to destroy in this env, so this run opens no session")
+        elif profile in layers.deploy_profiles():
+            # Refusal 8 keeps a deploy profile in the Workloads accounts, where the OU's
+            # DenyInteractiveSageMakerSurface refuses CreateDomain and CreateApp, and the hook signs
+            # in with backend.PROFILES, which the deploy runner does not hold (pipeline #68,
+            # 2026-10-24).
+            print(
+                "    skipped - a deploy profile acts in a Workloads account, which runs no Studio app"
+            )
         elif studio_apps(args.env, args.dry_run) != 0:
             return 1
 

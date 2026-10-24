@@ -1878,3 +1878,102 @@ after the user signed the `awsds` session in again. Times UTC.*
   speak of a second grantor account; the `GRANT`s inside `governed` stay Production's, in the register's
   Redshift half. The registration is permanent under `DenyLakeDeletionAndDeregistration`. The waiting
   list's row leaves; 6d decision due 11 is that stage's log.
+
+## 2026-10-24 — the sixth sitting with the environment down: the quotas raised, 9.4 written, decision 15
+
+*Claude's hand, in the session `planejamento-estagios-8-9-10-847863` (the branch
+`claude/planejamento-estagios-8-9-10-847863`, cut from `main` at PR #252's merge and fast-forwarded to
+PR #253's at the user's word), on the user's request. AWS read as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`, `awsds-infra-sandbox-1`), reads and
+plans only, the tunnel down; the one other session on the machine, the runbooks review (PR #253), was
+told which stage-file forms this session takes. Nothing applied. Times UTC.*
+
+- **[user] The request**: *"Planeje as próximas atividades para concluirmos os estágios 8, 9 e 10.
+  Antecipe todas as etapas que podem ser feitas neste momento sem o ambiente no ar. Em seguida, planeje
+  a execução destas etapas e me avise para subir o ambiente e prosseguirmos com a implementação do
+  plano."* Later in the sitting: *"Peço sincronizar o repositório em relação à main. houve revisão dos
+  runbooks."*
+- **[Claude] 3.5's quotas**, 03:47 to 03:48: the four `ml.m5.large` requests still read `CASE_OPENED`,
+  last updated 2026-10-23 between 20:03 and 21:00, and the applied values `list-service-quotas` returns
+  are no longer 0. In Production and Staging alike: training 20 for `ml.m5.large`, `ml.m5.xlarge`,
+  `ml.c5.xlarge` and `ml.m5.2xlarge`, 1 for `ml.t3.large` and `ml.t3.xlarge`; transform 8, 4, 8 and 2 for
+  the first four; processing 8 for `ml.m5.large`, `ml.m5.xlarge` and `ml.c5.xlarge`, 4 for
+  `ml.m5.2xlarge`, 10 for `ml.t3.medium` (4 before) and `ml.t3.large`, 5 for `ml.t3.xlarge`. Sandbox
+  reads the same values. `get-aws-default-service-quota` still reads 0.0 for `L-611FA074`, so these are
+  the two accounts' applied quotas, raised past the requests' 2. Stage 10's pass 3 waits on no quota.
+- **[user] Decision 15**, the warehouse load's trigger, answered in the session's question: *"Workflow
+  só de Produção"*, against the recommendation of a manual job in the Production leg. The load is a
+  task of its own workflow with its own chain, Production's alone, and fails whenever the compute is
+  down.
+- **[Claude] 9.4 written** in the template (`examples/app-etl/`) and its slices: `warehouse/trades.sql`
+  (`CREATE TABLE IF NOT EXISTS trades.trades_notional`, the deployer's user its owner); the pipeline's
+  manual job `production-warehouse-ddl` (the Data API as `awsds-deploy-prod`, a read every 5 s, cancelled
+  past 300 s and read back, verifications xxii and xxvii); `glue/load_warehouse.py` (`GetCredentials` and
+  `GetWorkgroup`, then JDBC on the workgroup's port as `IAMR:awsds-prod-job-exec`, delete and insert in
+  one transaction, the count read back); the job `awsds-prod-app-etl-load`, Production's alone in the
+  shared application slice; the workflow `app-etl-warehouse` and its chain at `cron(30 7 * * ? *)`; the
+  job role's `ConnectToTheGovernedWarehouse`. AWS's JDBC page names `redshift-jdbc42-2.1.0.29` for Glue
+  5.0 and 5.1 and says Glue provides the drivers to its Spark jobs; Glue 6.0's row is not in its table,
+  so the first run reads whether the driver loads.
+- **[Claude] 8.5's half**: the template's Glue job reads `curated.trades` through the share when the
+  application slice gives it `--SOURCE_TABLE` (2.4's catalog settings), writes
+  `app_outputs.trades_notional` and reads it back against the rows read; `staging-test` reads the table
+  by `get-table` as the deploy role. A planted drift, `GOVERNED_COLUMNS` naming a column `curated.trades`
+  lacks, fails Staging's leg and passes `test` (verification xiii, Stage 8's ix).
+- **[Claude] The plans**, 17:17 to 17:21, each outside the repository: `production/data/` and
+  `staging/data/` *"Plan: 0 to add, 1 to change, 0 to destroy."*, the outputs bucket's policy with
+  `models/` among the deploy role's prefixes, and four outputs (`lake_catalog_id`, `curated_database`,
+  `curated_table`, `curated_bucket_name`); `production/sagemaker/` the same counts, the job role's inline
+  policy, and `training_image_uri`; `staging/sagemaker/` the output alone. The applies wait for the user.
+- **[Claude] What the Staging leg of v0.4.0 depends on**: Staging's `AllowFullTableExternalDataAccess`
+  is unset, and whether an engine's flag is needed beside the lake's is verification xxviii's third
+  clause. The third producer run, Production's flag off, comes before that leg; if it is refused, the
+  user turns Staging's flag on in its console as Production's was.
+
+## 2026-10-24 — v0.4.0's data and sagemaker slices applied, read before and after
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo os seis applies do §0.6 (production/data,
+staging/data, production/sagemaker, staging/sagemaker, production/foundation, staging/foundation) como
+usuário de infraestrutura com InfrastructureAccess, cada um de um plano fresco, com o var-file de alertas
+nos foundation, e as leituras depois."*), as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`, `awsds-infra-staging`, the identity read at 17:48:39); Recipe A, each plan outside
+the repository, from the branch at `be2fdf17`. The six other sessions on the machine, all idle, were told
+before the first write; one answered that PR #248's changes, live in four of the slices, must be in the
+tree, which the plans confirmed by showing only this branch's additions. Times UTC.*
+
+- **[Claude] Before**, 17:49:09: `./aws/deploytargets.py` on the five infrastructure profiles, all checks
+  passed; `DT-5` reads `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE`, the create-defaults emptied and one
+  administrator in Data Governance, Production and Staging.
+- **[Claude] `production/data/`**: the fresh plan at 17:51:01, *"Plan: 0 to add, 1 to change, 0 to
+  destroy."*, the outputs bucket's policy; applied 17:51:16, *"Modifications complete after 1s
+  [id=awsds-prod-outputs]"*, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*, the four
+  outputs written; re-planned `No changes` at 17:51:26.
+- **[Claude] `staging/data/`**: plan 17:51:46, the same counts; applied 17:52:02 on
+  `awsds-staging-outputs`, *"0 added, 1 changed, 0 destroyed"*; re-planned `No changes` at 17:52:11.
+- **[Claude] `production/sagemaker/`**: plan 17:52:51, *"Plan: 0 to add, 1 to change, 0 to destroy."*, the
+  job role's inline policy; applied 17:53:04, *"Modifications complete after 1s
+  [id=awsds-prod-job-exec:job]"*; re-planned `No changes` at 17:53:13; the output `training_image_uri`
+  names `sagemaker-xgboost@sha256:0b5d9341…3a78`.
+- **[Claude] `staging/sagemaker/`**: plan 17:53:30, the output alone; applied 17:53:41, *"Apply complete!
+  Resources: 0 added, 0 changed, 0 destroyed."*; re-planned `No changes` at 17:53:49.
+- **[Claude] After**, 17:56:04: `./aws/deploytargets.py` on the five profiles, all checks passed, `DT-5`
+  as before; `./scripts/check-copies.py` OK. `production/data/`'s outputs read back: `curated_database`
+  `curated`, `curated_table` `trades`, `curated_bucket_name` `awsds-data-curated`, `lake_catalog_id` the
+  lake account's. The simulator, `aws:RequestedRegion` in the context: `redshift-serverless:GetCredentials`
+  and `GetWorkgroup` on a `workgroup/…` ARN `allowed` for `awsds-prod-job-exec`, matched by its inline
+  `job` policy.
+
+## 2026-10-24 — the first promotion's Production run: the job role's jobs in `VPC-Workloads`
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (the run is Stage 10's, its entry of
+this date). Times UTC.*
+
+- **[Claude]** The release's Glue job `awsds-prod-app-etl`, declared by `production/app/app-etl/` at
+  `v0.3.3`, ran as `awsds-prod-job-exec` on the `[P]` connection `awsds-prod-jobs` (decision 12):
+  `jr_56c29738…e022`, `SUCCEEDED` from 21:42:08 to 21:44:01, 93 s. The processing job
+  `app-etl-20261024T214447` ran as the same role on `ml.t3.medium` with network isolation, inter-container
+  encryption and two subnets (decision 9's settings, submitted by the workflow's execution role), on the
+  release's image `awsds-prod-ecr-app-etl@sha256:89d0ea21…2aac`, `Completed` from 21:45:36 to 21:50:11.
+  The job role wrote `app-etl/work/` and `app-etl/outbox/` of `awsds-prod-outputs` (four objects,
+  21:43:51 to 21:54:12) and touched no lake prefix: v0.3.3 reads the inbox, and the governed read is
+  v0.4.0's (8.5).

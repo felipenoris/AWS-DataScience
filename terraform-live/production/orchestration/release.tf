@@ -5,8 +5,9 @@
 # recorded as this variable's default, so a by-hand apply after `make down ENV=production` creates the
 # same workflows from the same object versions (Lesson 4).
 #
-# Null until the first promotion, and the slice creates nothing while it is: no workflow can exist
-# before its definition does, and a chain names its workflows.
+# The default is v0.3.3, the first promotion (pipeline #71, 2026-10-24), its VersionIds read from the
+# leg's artifact. Null creates nothing: no workflow can exist before its definition does, and a chain
+# names its workflows.
 
 variable "release" {
   description = "The release this slice runs: the application's tag, and per workflow key the S3 VersionId of its rendered definition and, when it has Python or Bash tasks, of its code package. Null creates nothing."
@@ -17,7 +18,15 @@ variable "release" {
       code_version_id       = optional(string)
     }))
   })
-  default = null
+  default = {
+    tag = "v0.3.3"
+    workflows = {
+      "app-etl" = {
+        definition_version_id = "jU1vr4ILQpHWXk6F_65vxA0d21n4eHZX"
+        code_version_id       = "K.apAb_C.Q_cLd3lspgdxccsaUEeBtxN"
+      }
+    }
+  }
 
   validation {
     condition     = var.release == null ? true : can(regex("^v[0-9]+\\.[0-9]+\\.[0-9]+$", var.release.tag))

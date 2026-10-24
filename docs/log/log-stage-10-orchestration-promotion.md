@@ -869,3 +869,174 @@ Times UTC.*
   `states:StartExecution` on `stateMachine:awsds-staging-chain-app-etl`, and `states:DescribeExecution`
   and `states:GetExecutionHistory` on one of its executions, read `allowed` for `awsds-deploy-staging` at
   03:05, each matched by `awsds-staging-deploy-orchestration-resources` (decision 19's start of the chain).
+
+## 2026-10-24 — pass 3 written, the quotas raised: decisions 21 and 22, the training rule
+
+*Claude's hand, in the session `planejamento-estagios-8-9-10-847863` (Stage 9's entry of this date quotes
+the request), as the infrastructure user with `InfrastructureAccess`, reads and plans only. Nothing
+applied. Times UTC.*
+
+- **[user] The decisions**, answered in the session's question: *"Tudo agora (Recomendado)"* for when
+  v0.4.0 is written, its tag after v0.3.0 has passed; decision 21, the model, *"XGBoost da AWS
+  (Recomendado)"*; decision 22, how Staging tests a model it cannot read from Production, *"Retreina em
+  Staging (Recomendado)"*.
+- **[Claude] The image**: `aws ecr describe-images` on AWS's `sagemaker-xgboost` repository, tag `3.0-5`,
+  as `awsds-infra-prod`: `sha256:0b5d9341baa09ab2432fc9efbc329425e69325ba33562b1e2a015fd6f16e3a78`,
+  pushed 2026-10-11, tags `3.0-5`, `3.0-5-cpu-py3` and `3.0-5-1.0.64.0`. `*/sagemaker/training-image.tf`
+  composes the URI from the provider's table of prebuilt images and that digest, so no account id is in
+  the repository.
+- **[Claude] 5.1 written**: the workflow `app-etl-train`, `train` (`SageMakerTrainingOperator`,
+  `ml.m5.large`, the job subnets, network isolation, the data key on the volume and the model,
+  `action_if_job_exists: fail`) and `evaluate` (the training job's `validation:rmse` as SageMaker's
+  model-quality statistics beside the model, with the batch's row count). The job's name reaches
+  `evaluate` through `train`'s XCom, since `{{ ts_nodash }}` is midnight in a manual run. The lint's
+  rule `treino` and the `TrainingImage` half of `imagem` are `awsds-workflows` `d60e1ad` (branch
+  `treino-e-repositorio-de-algoritmo`, its merge the user's): 135 lint tests pass, and the 7 of
+  `prepare_offline` that fail on Darwin arm64 fail the same at `ff25eae`. The template's lint and the
+  release's promoted lint pass `--algorithm-repository sagemaker-xgboost` (`LINT_ALGORITHM_REPOSITORIES`);
+  each rendered copy, stand-in values, reads `ok`.
+- **[Claude] 5.2 and 5.4 written**: `scripts/model-chain.py` (`register`, `approve`, `transform`, and
+  `--check` in `make check`) and the template's jobs `staging-model`, `production-register` and
+  `production-approve` (manual) and `production-transform`. 5.4's Staging half now serves Staging's own
+  retrained model, as Stage 9 decision 1 requires. The deploy roles' grants planned 17:20 to 17:21 with
+  the alerts var-file: *"Plan: 0 to add, 1 to change, 0 to destroy."* in each `foundation/`, the
+  inline totals 3,637 (Production) and 6,183 (Staging) characters of 10,240.
+- **[Claude] The orchestration slices**: `app-etl-train` and its chain in both (`DISABLED` in Staging,
+  `cron(0 7 * * ? *)` in Production), `app-etl-warehouse` and its chain in Production; a chain whose
+  workflows a release lacks is not created, so v0.3.0's `release.tf` creates neither. Both slices
+  validate; `orchestration-v0.2.0` already carries `training_job_prefix`.
+
+## 2026-10-24 — the deploy roles' model-chain grants applied in both `foundation/` slices, read by the simulator
+
+*Claude's hand, on the user's authorization quoted in Stage 9's entry of this date, as the infrastructure
+user with `InfrastructureAccess`; Recipe A with `-var-file=<project folder>/secrets/alerts.auto.tfvars`.
+Times UTC.*
+
+- **[Claude] `production/foundation/`** as `awsds-infra-prod`: plan 17:54:19, *"Plan: 0 to add, 1 to
+  change, 0 to destroy."*, `aws_iam_role_policy.inline["apply-application"]` in place; applied 17:54:37,
+  *"Modifications complete after 1s [id=awsds-deploy-prod:apply-application]"*; re-planned `No changes`
+  at 17:54:48.
+- **[Claude] `staging/foundation/`** as `awsds-infra-staging`: plan 17:55:10, the same counts; applied
+  17:55:24 on `awsds-deploy-staging:apply-application`; re-planned `No changes` at 17:55:34.
+- **[Claude] The simulator**, 17:58 to 18:05, `aws:RequestedRegion` in every context (without it the
+  Control Tower ceiling denies everything, the shape `lessons.md` records). `allowed`, matched by each
+  role's `apply-application`: `DescribeModel`, `DeleteModel`, `DescribeTransformJob`,
+  `StopTransformJob`, `DescribeTrainingJob` on `app-etl-train-*`, `ListTrainingJobs`, `s3:GetObject` on
+  `models/…` of the account's outputs bucket and `glue:CreateJob` on `awsds-<env>-app-etl-load`, for both
+  roles; `CreateModelPackage` on a version of `awsds-prod-model-app-etl`, `UpdateModelPackage`,
+  `DescribeModelPackage` and `DescribeModelPackageGroup` for `awsds-deploy-prod`, and `CreateModelPackage`
+  `implicitDeny` for `awsds-deploy-staging`, the negative control. `CreateModel` on `model/app-etl-…`
+  reads `allowed` with `sagemaker:VpcSubnets`, `VpcSecurityGroupIds` and `NetworkIsolation` in the
+  context and `explicitDeny` from the organization without them, so the `Workloads` document's job
+  settings bind each deploy role (Stage 9 verification xv's deploy-role half, by simulation).
+  `CreateTransformJob` on a `transform-job/…` ARN reads `explicitDeny` with the volume key given: the
+  simulator drops `sagemaker:VolumeKmsKey` against a job's ARN, `CreateTrainingJob` alike (the entry
+  `lessons.md` holds since 6d, extended to the transform). Against `*` the same request reads
+  `implicitDeny`, the organization no longer denying and the identity statement scoped to
+  `transform-job/app-etl-*`, and without the key `explicitDeny` from the organization. The first real
+  call is v0.4.0's `staging-model`.
+
+## 2026-10-24 — pipeline #68: the deploy role refused the workflow's tag-on-create, then applied the orchestration slice in Staging
+
+*Claude's hand for the reading (the job traces through the user's Chrome session, AWS as the
+infrastructure user with `InfrastructureAccess`), the fix and the applies, on the user's authorization
+quoted below; the user's for the retry. Times UTC.*
+
+- **[Claude] The refusal**, `staging-deploy` (Stage 8's log), by 20:09:57: `staging/orchestration/` planned
+  21 to add and stopped at `awscc_mwaaserverless_workflow.this["app-etl"]`: *"Waiting for Cloud Control
+  API service CreateResource operation completion returned: waiter state transitioned to FAILED.
+  StatusMessage: User: arn:aws:sts::<account>:assumed-role/awsds-deploy-staging/aws-go-sdk-… is not
+  authorized to perform: airflow-serverless:TagResource on resource:
+  arn:aws:airflow-serverless:us-west-2:<account>:workflow/* because no identity-based policy allows the
+  airflow-serverless:TagResource action … ErrorCode: UnauthorizedTaggingOperation"*. A workflow's ARN ends
+  in a suffix the service generates (`awsds-staging-wf-app-etl-hHNGu2YFTv` on 2026-10-23), so
+  `CreateWorkflow` authorizes the tags it carries on `workflow/*`; `ManageTheWorkflows` named
+  `workflow/awsds-<env>-wf-*` alone. Read at 20:20 as `awsds-infra-staging`: `list-workflows` empty; the
+  roles `awsds-staging-wf-app-etl`, `-chain-events`, `-chain-exec` and `-chain-scheduler`, the workers'
+  group, the log groups `/awsds/staging/wf/app-etl` and `/aws/vendedlogs/states/awsds-staging-chains`; no
+  state machine.
+- **[Claude] Why 2026-10-24's replay missed it** (1.5, verification ii's simulator half; the reading of
+  the peer session *Estágios 8, 9 e 10 — preparação e revisão*): the tag-on-create check runs inside
+  `CreateWorkflow` and leaves no CloudTrail event of its own, and 3.8's by-hand leg ran as
+  `InfrastructureAccess`, so no trail held the call to replay. The legs' other tag-on-create checks are on
+  ARNs the caller names: `states`, `scheduler`, `events`, `logs`, `iam`, and `ec2:CreateTags` under
+  `ec2:CreateAction`.
+- **[Claude] The fix, `c60ad8d6`**: `TagTheWorkflowsAtCreation` in both `foundation/apply-orchestration.tf`
+  copies, `airflow-serverless:TagResource` on `workflow/*` for a request whose `aws:RequestTag/Name` is
+  `awsds-<env>-wf-*`, the tag the module writes; the service's condition keys are `aws:RequestTag/*`,
+  `aws:ResourceTag/*` and `aws:TagKeys` (the policy generator's table, read the same evening). Plans
+  *"0 to add, 1 to change, 0 to destroy"* each, `aws_iam_policy.orchestration["resources"]` in place,
+  4,743 and 4,343 compact characters of 6,144.
+- **[user]** *"Autorizo os applies dos planos salvos de staging/foundation e production/foundation, como
+  usuário de infraestrutura com InfrastructureAccess (awsds-infra-staging e awsds-infra-prod), e as
+  leituras depois."* **[Claude]** The five peer sessions told first. Staging applied 20:28:51 to 20:29:02,
+  Production 20:29:10 to 20:29:21, each *"Modifications complete after 2s"*, both policies at `v3`;
+  re-planned `No changes`. The simulator, `aws:RequestedRegion` in the context: `TagResource` on
+  `workflow/*` reads `allowed` for `awsds-deploy-staging` and `awsds-deploy-prod` with
+  `Name=awsds-<env>-wf-app-etl`, matched by `awsds-<env>-deploy-orchestration-resources`, and
+  `implicitDeny` with `Name=other-workflow`.
+- **[user]** The retry. **[Claude] Job 330** as `awsds-deploy-staging`: *"Plan: 7 to add, 0 to change, 0
+  to destroy."*, the workflow *"Creation complete after 5s"* at 20:34:57, then the failure rule and its
+  target, the chain's state machine, its schedule and the chain's failure rule and target, *"Apply
+  complete! Resources: 7 added, 0 changed, 0 destroyed."* at 20:34:59; the workflow and the machine read
+  in Staging at 20:35:00. INT-14 is answered in Staging: `awscc_mwaaserverless_workflow` applies under the
+  deploy role's boundary (verification ii's deploy-role half), and so do `aws_sfn_state_machine` and
+  `aws_scheduler_schedule` beside it (verification xxvi's Staging half). The chain was not started:
+  `staging-test` stopped at its clone (Stage 8's log).
+
+## 2026-10-24 — Production's half of passes 1 and 2 through pipeline #71, and the chain's first run there
+
+*Claude's hand for the readings (the job traces through the user's Chrome session, AWS as the
+infrastructure user with `InfrastructureAccess`) and for the run, on the user's authorization quoted
+below; the user's for the gate. Times UTC.*
+
+- **[Claude] `production-deploy`** (Stage 8's log), as `awsds-deploy-prod`: `production/orchestration/`
+  *"Plan: 21 to add"*, the workflow *"Creation complete after 5s"* at 21:34:01, the chain's machine at
+  21:34:03, its schedule at 21:34:03, *"Apply complete! Resources: 21 added, 0 changed, 0 destroyed."* at
+  21:34:04. INT-14 holds in Production (verification ii). CloudTrail, `us-east-1`: `CreateServiceLinkedRole`
+  at 21:33:58, session issuer `awsds-deploy-prod`, invoked by `airflow-serverless.amazonaws.com`, no error;
+  `AWSServiceRoleForAmazonMWAAServerless` created 21:33:58 (verification iii's Production half, 1.5's
+  statement `CreateTheWorkflowServiceLinkedRole` exercised). Read at 21:38: `awsds-prod-wf-app-etl`
+  `READY`, `manual_only`, its definition `jU1vr4IL…eHZX` and code `K.apAb_C…eBtxN`; the schedule
+  `awsds-prod-chain-app-etl` `ENABLED` on `cron(30 6 * * ? *)` UTC; no execution.
+- **[user]** *"Autorizo disparar a chain awsds-prod-chain-app-etl agora, à mão, como usuário de
+  infraestrutura com InfrastructureAccess (awsds-infra-prod), e acompanhar até o fim. O workloads-egress
+  fica no ar até o schedule das 06:30 UTC."* **[Claude]** The five peer sessions told first;
+  `start-execution` as `awsds-infra-prod` at 21:41:17, the execution `v0-3-3-by-hand-2026-10-24` started
+  21:41:19 and `SUCCEEDED` at 21:56:23 (15 min 4 s). The workflow run `TjivGiTkS0VAZOV`, `RunType`
+  `ON_DEMAND`, `SUCCESS` from 21:41:24 to 21:54:12, its four tasks `SUCCESS`: the Glue job
+  `awsds-prod-app-etl`, run `jr_56c29738…e022`, `SUCCEEDED` from 21:42:08 to 21:44:01 (93 s, Glue 6.0, two
+  `G.1X`); the processing job `app-etl-20261024T214447` `Completed` from 21:45:36 to 21:50:11; then the
+  summary and the report. The outputs, under `s3://awsds-prod-outputs/app-etl/`: `work/glue/trades.csv`
+  (436 bytes, 21:43:51), `work/job/trades.parquet` (2,126) and `trades.summary.json` (511) at 21:50:07,
+  `outbox/report.json` (332) at 21:54:12.
+- **[Claude] 6.1**: `workloads-egress/` stays up, by the user's decision, so the schedule's first firing
+  at 06:30 UTC on 2026-10-25 runs unattended (verification xxiv); its reading and 6.3's sentence come
+  before the first `make down ENV=production`.
+- **[Claude] The instruments**, on the five infrastructure profiles: `./aws/orchestration.py` 13 passes and
+  two notes, Staging's workflows and chains absent after the user's `make down`: `OR-1` `READY`, `OR-3`
+  bounded with no lake reach and two subnets in two AZs with no default route, `OR-5` the definition at
+  `v0.3.3`'s version, `OR-6` none in 6 accounts, `OR-7` 1/50, `OR-9` the three chain roles on
+  `awsds-prod-app-boundary` and the chain's schedule and failure rule `ENABLED` (verification xxvi's
+  `OR-9` half). The persona profiles hold no session, so the script exits 1 on section 1 alone.
+
+## 2026-10-24 — 1.6's record in Production and 6.3's run-history disposition, read on Staging's teardown
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess`. Times UTC.*
+
+- **[Claude] 1.6, Production**: the first `CreateWorkflow` created `workflow/awsds-prod-wf-app-etl-DHhc8FiTZC`,
+  version 1 of 50 (`OR-7`). `AWSServiceRoleForAmazonMWAAServerless` sits at
+  `/aws-service-role/airflow-serverless.amazonaws.com/`, created 21:33:58, its trust
+  `airflow-serverless.amazonaws.com`, no boundary, no inline policy, one attached policy,
+  `AmazonMWAAServerlessServiceRolePolicy` at `v1`: Staging's shape of 2026-10-20 (verification iii).
+- **[Claude] 6.3, the disposition, measured on Staging after the user's `make down ENV=staging`** (read
+  about 22:00): the destroy of `staging/orchestration/` deleted the workflow with its two versions and its runs,
+  the chain's machine with its executions (`v0-3-3-71` among them), and both log groups the module creates,
+  `/awsds/staging/wf/app-etl` and `/aws/vendedlogs/states/awsds-staging-chains`. The step's sentence that
+  the log group is `[P]`-adjacent does not hold for these two: they live in the `[E]` slice and die with
+  it. What survives a teardown: the Glue and processing jobs' logs in `/aws-glue/jobs/*` and
+  `/aws/sagemaker/ProcessingJobs`, `[P]` groups of `sagemaker/` at 30 days; the leg's artifacts
+  `execution.json` and `history.json`, kept a year; the objects under the outputs bucket. In Production
+  the same holds for `/awsds/prod/wf/app-etl` and `/aws/vendedlogs/states/awsds-prod-chains` (90 days) on
+  a destroy of `production/orchestration/`, which `make down ENV=production ONLY=workloads-egress` never
+  runs: Production's run history and chain logs persist between sessions while the slice stands.

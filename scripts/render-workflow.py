@@ -17,7 +17,9 @@
 # `{proj.*}`, `{env.*}` or `{domain.*}` the table does not know fails the render, as the promoted D28
 # lint fails it on the rendered copy (Stage 10 step 2.3). The Glue task loses the keys with which the
 # operator creates its job, the job being the application slice's (D41 item 9); a SageMaker task loses
-# its project tag (D41 item 2). The YAML's leading comment lines, the portal's layout, are kept.
+# its project tag (D41 item 2). A Glue job `<app>-<suffix>-{proj.id}` becomes `awsds-<env>-<app>-<suffix>`
+# as `<app>-{proj.id}` becomes `awsds-<env>-<app>`. The training image is sagemaker/'s output, read only
+# when a workflow names it. The YAML's leading comment lines, the portal's layout, are kept.
 
 from __future__ import annotations
 
@@ -29,20 +31,22 @@ from pathlib import Path
 
 import yaml
 from tfhygiene import backend
-from tfhygiene.states import StateError, state_outputs
+from tfhygiene.states import StateError
+from tfhygiene.targets import NETWORK_SLICE, TargetError
+from tfhygiene.targets import account_values as target_values
 
 REPO = Path(__file__).resolve().parents[1]
 
 S3_URI = "{proj.connection.default.s3_shared.s3Uri}"
 
-# The slice that owns the account's private subnets: Staging's single VPC, Production's VPC-Workloads.
-NETWORK_SLICE = {"staging": "foundation", "production": "workloads"}
-
 # The classes of an application's prefix under the project's s3Uri, and where each lands in the
-# account's outputs bucket (decisions 1, 6, 7 and 12, decision 20 (d)).
+# account's outputs bucket (decisions 1, 6, 7 and 12, decision 20 (d)): the application's table under
+# tables/ beside work/ and outbox/, and a training job's model under models/<app>/, the prefix Stage 9
+# step 1.1 names for model archives and the lint holds a promoted training task to.
 RELEASE_CLASSES = ("glue", "src")
 INBOX_CLASS = "inbox"
-OUTPUT_CLASSES = ("work", "outbox")
+OUTPUT_CLASSES = ("work", "outbox", "tables")
+MODEL_CLASS = "models"
 
 GLUE_OPERATOR = "airflow.providers.amazon.aws.operators.glue.GlueJobOperator"
 GLUE_JOB_KEYS = (
@@ -62,22 +66,11 @@ class RenderError(Exception):
 
 
 def account_values(account: str) -> dict:
-    """The table's account column, each value from the slice that owns it."""
-    if account not in NETWORK_SLICE:
-        raise RenderError(f"{account}: not a deployment target ({', '.join(NETWORK_SLICE)})")
-    data = state_outputs(account, "data")
-    sagemaker = state_outputs(account, "sagemaker")
-    network = state_outputs(account, NETWORK_SLICE[account])
-    subnets = network["private_subnet_ids"]
-    return {
-        "env": backend.ENV_TOKENS[account],
-        "region": backend.REGION,
-        "bucket": data["outputs_bucket_name"],
-        "data_key_arn": data["data_key_arn"],
-        "job_role_arn": sagemaker["job_role_arn"],
-        "security_group": sagemaker["job_security_group_id"],
-        "subnets": [subnets[z] for z in backend.ZONE_IDS[account]],
-    }
+    """The table's account column, each value from the slice that owns it (tfhygiene.targets)."""
+    try:
+        return target_values(account)
+    except TargetError as e:
+        raise RenderError(str(e)) from e
 
 
 def s3_target(rest: str, app: str, values: dict) -> str:
@@ -93,6 +86,8 @@ def s3_target(rest: str, app: str, values: dict) -> str:
         return f"s3://{bucket}/inbox/{app}/{path}"
     if cls in OUTPUT_CLASSES:
         return f"s3://{bucket}/{app}/{cls}/{path}"
+    if cls == MODEL_CLASS:
+        return f"s3://{bucket}/{MODEL_CLASS}/{app}/{path}"
     raise RenderError(f"{S3_URI}{rest}: the class {cls!r} has no row in the render table")
 
 
@@ -102,17 +97,23 @@ def render_string(text: str, app: str, values: dict) -> str:
         lambda m: s3_target(m.group(1), app, values),
         text,
     )
+    text = re.sub(
+        re.escape(app) + r"((?:-[a-z0-9]+)*)-\{proj\.id\}",
+        lambda m: f"awsds-{values['env']}-{app}{m.group(1)}",
+        text,
+    )
     for placeholder, value in (
         ("{proj.iam_role_arn}", values["job_role_arn"]),
-        (f"{app}-{{proj.id}}", f"awsds-{values['env']}-{app}"),
         ("{env.JOB_IMAGE_URI}", values["image_uri"]),
+        ("{env.TRAINING_IMAGE_URI}", values.get("training_image_uri")),
         ("{env.SUBNET_AZ1}", values["subnets"][0]),
         ("{env.SUBNET_AZ2}", values["subnets"][1]),
         ("{env.PROJECT_SG}", values["security_group"]),
         ("{env.PROJECT_KEY_ARN}", values["data_key_arn"]),
         ("{domain.region}", values["region"]),
     ):
-        text = text.replace(placeholder, value)
+        if value is not None:
+            text = text.replace(placeholder, value)
     left = LEFT_OVER.findall(text)
     if left:
         raise RenderError(f"{', '.join(sorted(set(left)))}: no row in the render table")
@@ -171,6 +172,7 @@ def check() -> int:
         "job_role_arn": "arn:aws:iam::account:role/awsds-staging-job-exec",
         "security_group": "sg-stand-in",
         "subnets": ["subnet-stand-in-1", "subnet-stand-in-2"],
+        "training_image_uri": "registry.example/sagemaker-xgboost@sha256:" + "1" * 64,
     }
     app_dir = REPO / "examples" / "app-etl"
     app = yaml.safe_load((app_dir / "manifest.yaml").read_text(encoding="utf-8"))["applicationName"]
@@ -192,8 +194,9 @@ def check() -> int:
                     kept = [k for k in GLUE_JOB_KEYS if k in task]
                     if kept:
                         problems.append(f"{name} keeps {', '.join(kept)}")
-                    if task.get("job_name") != f"awsds-staging-{app}":
-                        problems.append(f"{name}'s job_name is {task.get('job_name')!r}")
+                    job = str(task.get("job_name"))
+                    if not re.fullmatch(rf"awsds-staging-{re.escape(app)}(-[a-z0-9]+)*", job):
+                        problems.append(f"{name}'s job_name is {job!r}")
         flat = json.dumps(doc)
         for uri in re.findall(r"s3://[^\"\s]+", flat):
             if not uri.startswith(f"s3://{values['bucket']}/"):

@@ -1623,6 +1623,8 @@
   and
   <https://aws.amazon.com/blogs/big-data/implement-tag-based-access-control-for-your-data-lake-and-amazon-redshift-data-sharing-with-aws-lake-formation/>.
 
+- AWS Glue's JDBC connections (read 2026-10-24, for Stage 9 step 9.4's warehouse load): Glue provides the JDBC libraries to its Spark jobs, and the Amazon Redshift driver it supports is `redshift-jdbc42-2.1.0.29` for Glue 5.0 and 5.1 and `2.1.0.16` for 4.0; Glue 6.0 has no row: <https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-connect-jdbc-home.html>.
+
 ## Containers, CI/CD and orchestration
 
 - Amazon ECR: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/what-is-ecr.html>.
@@ -2070,6 +2072,8 @@
 - `AWS::MWAAServerless::Workflow` CloudFormation resource - the registry type that closes the gap above (D28): <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-mwaaserverless-workflow.html>.
 
 - `awscc_mwaaserverless_workflow` - the Cloud Control (awscc provider) resource generated from that registry type: <https://registry.terraform.io/providers/hashicorp/awscc/latest/docs/resources/mwaaserverless_workflow>.
+
+- The IAM policy generator's service table, read for MWAA Serverless (`airflow-serverless`) on 2026-10-24: its condition keys are `aws:RequestTag/${TagKey}`, `aws:ResourceTag/${TagKey}` and `aws:TagKeys`, no service key, which `TagTheWorkflowsAtCreation` holds to `aws:RequestTag/Name` (Stage 10 1.5): <https://awspolicygen.s3.amazonaws.com/js/policies.js>.
 
 - Amazon MWAA Serverless key concepts (YAML workflows, per-workflow IAM role, EventBridge Scheduler underneath, no Airflow UI): <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/mwaas-concepts.html>.
 

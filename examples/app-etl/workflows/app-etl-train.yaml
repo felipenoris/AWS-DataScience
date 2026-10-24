@@ -1,0 +1,62 @@
+# {"train":{"x":120,"y":200},"evaluate":{"x":420,"y":200}}
+app-etl-train:
+  dag_id: app-etl-train
+  tasks:
+    train:
+      operator: airflow.providers.amazon.aws.operators.sagemaker.SageMakerTrainingOperator
+      action_if_job_exists: fail
+      retries: 0
+      config:
+        TrainingJobName: "app-etl-train-{{ macros.time.strftime('%Y%m%dT%H%M%S', macros.time.gmtime()) }}"
+        RoleArn: "{proj.iam_role_arn}"
+        AlgorithmSpecification:
+          TrainingImage: "{env.TRAINING_IMAGE_URI}"
+          TrainingInputMode: File
+        HyperParameters:
+          objective: "reg:squarederror"
+          eval_metric: rmse
+          num_round: "50"
+          max_depth: "3"
+          eta: "0.3"
+        InputDataConfig:
+          - ChannelName: train
+            ContentType: text/csv
+            DataSource:
+              S3DataSource:
+                S3DataType: S3Prefix
+                S3Uri: "{proj.connection.default.s3_shared.s3Uri}app-etl/work/train/train/"
+                S3DataDistributionType: FullyReplicated
+          - ChannelName: validation
+            ContentType: text/csv
+            DataSource:
+              S3DataSource:
+                S3DataType: S3Prefix
+                S3Uri: "{proj.connection.default.s3_shared.s3Uri}app-etl/work/train/validation/"
+                S3DataDistributionType: FullyReplicated
+        OutputDataConfig:
+          S3OutputPath: "{proj.connection.default.s3_shared.s3Uri}app-etl/models/"
+          KmsKeyId: "{env.PROJECT_KEY_ARN}"
+        ResourceConfig:
+          InstanceType: ml.m5.large
+          InstanceCount: 1
+          VolumeSizeInGB: 10
+          VolumeKmsKeyId: "{env.PROJECT_KEY_ARN}"
+        VpcConfig:
+          Subnets: ["{env.SUBNET_AZ1}", "{env.SUBNET_AZ2}"]
+          SecurityGroupIds: ["{env.PROJECT_SG}"]
+        EnableNetworkIsolation: true
+        EnableInterContainerTrafficEncryption: true
+        StoppingCondition:
+          MaxRuntimeInSeconds: 1800
+        Tags:
+          - Key: AmazonDataZoneProject
+            Value: "{proj.id}"
+    evaluate:
+      operator: airflow.providers.standard.operators.python.PythonOperator
+      dependencies: [train]
+      python_callable: app_etl_tasks.evaluate
+      op_kwargs:
+        training_job: "{{ ti.xcom_pull(task_ids='train')['Training']['TrainingJobName'] }}"
+        batch: "{proj.connection.default.s3_shared.s3Uri}app-etl/work/train/batch/batch.csv"
+        models: "{proj.connection.default.s3_shared.s3Uri}app-etl/models/"
+      retries: 0
