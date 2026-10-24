@@ -17,7 +17,7 @@
 | the object-storage bucket, the backup bucket, their key `alias/awsds-prod-gitlab` | `production/foundation/` | `[P]` |
 | `awsds-prod-gitlab-secrets` (`gitlab-secrets.json`), `awsds-prod-runner-token` | `production/foundation/`, containers only | `[P]` |
 | the root CA, the two leaves, their keys in `awsds-prod-tls-gitlab` / `awsds-prod-tls-pages`, the certificates in `/datascience/prod/pki/*-pem` and `s3://awsds-prod-gitlab-objects/pki/` | `production/pki/` | `[P]`, never destroyed |
-| the runner `awsds-prod-runner`, an `m8i.xlarge` | `VPC-SharedServices`, private tier, az1 | `[E]` `production/runners/` |
+| the runner `awsds-prod-runner`, an `m8i.xlarge` | `VPC-SharedServices`, private tier, az1 | `[E]` `production/runners/`, on `make gitlab-up BUILD=1` alone |
 | the deploy runner `awsds-prod-runner-deploy` and the test runner `awsds-prod-runner-test`, two `t3a.small` | the same | `[E]` `production/runners/`; their token containers in `production/foundation/` |
 | the `secretsmanager` endpoint beside 6c's eleven, its thirteen less the SageMaker pair (Stage 7 decision 9) | `production/egress/` | `[E]` |
 
@@ -41,17 +41,28 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
    make hub-up
    ```
 
-3. GitLab's slices: the host started, `VPC-SharedServices`' endpoints applied, the runner applied and registering at boot (§K):
+3. GitLab's slices: the host started, `VPC-SharedServices`' endpoints applied, the deploy and test runners applied and registering at boot (§K):
 
    ```bash
    make gitlab-up
    ```
 
+   With the build runner too, for a session that builds an image or runs any pipeline on a protected
+   branch or tag: the build runner is the one runner that takes untagged jobs there (an image build, a
+   tag pipeline's `build-image`, scans, bundle, release and production gate, Pages on `main`), and
+   without it they wait as *stuck*. A later `make gitlab-up` without the flag destroys it, so every
+   `make gitlab-up` of such a session carries the flag:
+
+   ```bash
+   make gitlab-up BUILD=1
+   ```
+
    Run it from a checkout at `origin/main`. On 2026-10-12 a project folder four merges behind ignored
    `RUNNERS=0`, since its Makefile predates the flag and make takes an unknown variable in silence, and
-   applied that checkout's `egress/` and runner.
+   applied that checkout's `egress/` and runner; a checkout from before `BUILD` raises the build runner
+   on every `make gitlab-up`.
 
-   Without the runner, for a session that runs no pipeline, and always until the runner's token is in its container (§K), or a runner boots that cannot register and bills until `gitlab-down`. `make gitlab-down` destroys the runner either way:
+   Without any runner, for a session that runs no pipeline, and always until the runners' tokens are in their containers (§K), or a runner boots that cannot register and bills until `gitlab-down`. `make gitlab-down` destroys the runners either way:
 
    ```bash
    make gitlab-up RUNNERS=0
@@ -275,7 +286,7 @@ The runner is a **protected project runner** of `awsds/app-etl`, never an instan
 
 3. **Link it to `dev-env`**: `awsds/dev-env` → **Settings → CI/CD → Runners → Other available project runners → Link** (GitLab 19.4's label for what older versions call Enable), then on the runner's edit page **Lock to current projects**, so no third project links it. Done 2026-10-12 for step 2.6, whose pipeline `dev-env` carries ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)).
 
-Every `make gitlab-up` then boots a new instance that retries its first AWS call, the CA root's read, for up to five minutes while its role's credentials propagate, installs the `gitlab-runner` release `runners/variables.tf` pins, waits up to ten minutes for GitLab's sign-in page, reads the token and registers as a new runner manager under the same runner. The pin follows the server's major.minor, `tooling/variables.tf`'s `gitlab_ce_version` (Stage 8 decision 24, Stage 7 decision 10), so a GitLab upgrade moves both in the same sitting (§P). The instance's AMI is the public parameter's value when it is created, held for its life (Stage 8 decision 25), so an Amazon Linux release replaces no running runner. `make gitlab-down` destroys it; GitLab removes a manager that stops contacting it. The runner's first-boot log is `/var/log/awsds-runner-boot.log`, readable through the serial console like GitLab's (§U); `gitlab-runner verify` and `/etc/gitlab-runner/config.toml` are on the host, reachable like §U's shell.
+Every `make gitlab-up BUILD=1` then boots a new instance that retries its first AWS call, the CA root's read, for up to five minutes while its role's credentials propagate, installs the `gitlab-runner` release `runners/variables.tf` pins, waits up to ten minutes for GitLab's sign-in page, reads the token and registers as a new runner manager under the same runner. The pin follows the server's major.minor, `tooling/variables.tf`'s `gitlab_ce_version` (Stage 8 decision 24, Stage 7 decision 10), so a GitLab upgrade moves both in the same sitting (§P). The instance's AMI is the public parameter's value when it is created, held for its life (Stage 8 decision 25), so an Amazon Linux release replaces no running runner. `make gitlab-down` destroys it; GitLab removes a manager that stops contacting it. The runner's first-boot log is `/var/log/awsds-runner-boot.log`, readable through the serial console like GitLab's (§U); `gitlab-runner verify` and `/etc/gitlab-runner/config.toml` are on the host, reachable like §U's shell.
 
 **What a job can rely on**:
 

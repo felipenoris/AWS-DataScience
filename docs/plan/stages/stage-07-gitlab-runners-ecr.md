@@ -719,7 +719,9 @@ awkward, and it would land in `production/egress/`.
    recommended.**
 5. **Runner shape** (6.1) — **taken 2026-10-12 as written**: **one `[E]` `amd64` instance, `m8i.xlarge` as measured on the
    buildbox, docker executor**, rebuilt per session. The docker-autoscaler/fleeting path is adopted when a
-   measured queue wait justifies it.
+   measured queue wait justifies it. **Amended by the user 2026-10-24**: the host rises only in a session
+   that asks for it, `make gitlab-up BUILD=1` (`var.build_runner`), after its load history read it busy
+   about 4% of the 30.91 h it ran (the log); the shape stays.
 6. **CodeArtifact** (5.3). **Taken by the user 2026-10-12, as recommended.** Nothing consumes it, and it costs nothing at rest. Recommended: **keep it, idle,
    and add neither its endpoints nor the `assets` bucket family until a consumer exists**; the first consumer
    that needs it is a build that must not reach public PyPI, and it arrives with a token mechanism, an

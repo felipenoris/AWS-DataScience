@@ -655,10 +655,19 @@ def cmd_status(args) -> int:
         state = json.loads(res.stdout or "{}").get("values", {}).get("root_module", {})
         n = managed_resources(state)
         up = n > 0
-        total += sl.usd_per_hour if up else 0.0
+        # An optional host bills only when the state holds it, which is the apply having asked for
+        # it (layers.Slice.optional_hosts): the build runner on `make gitlab-up BUILD=1`.
+        held = [
+            f"{r['type']}.{r['name']}"
+            for r in state.get("resources", [])
+            if r.get("mode") == "managed"
+        ]
+        rate = sl.usd_per_hour + sum(usd * held.count(addr) for addr, usd in sl.optional_hosts)
+        with_hosts = ", ".join(addr for addr, _ in sl.optional_hosts if addr in held)
+        total += rate if up else 0.0
         print(
             f"  {sl.path:<40} {'UP' if up else 'down':<5} {n:>3} resource(s)"
-            f"   {sl.usd_per_hour:.4f} USD/h"
+            f"   {rate:.4f} USD/h" + (f"   with {with_hosts}" if with_hosts else "")
         )
 
     print(f"\n  estimated burn: USD {total:.4f}/h   (rates: docs/PRICING.md 3, static)")
