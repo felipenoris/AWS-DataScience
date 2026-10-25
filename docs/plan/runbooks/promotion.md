@@ -11,20 +11,22 @@ record. What a step reads is recorded in that stage's log, in the sitting it ran
 Written 2026-10-23 with the environment down. Every `[Claude⚡]` apply waits for the user's word in
 chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs.
 
-**Where it stands, 2026-10-25**: §0, §P, §H, §T and §V done. `v0.3.3` was the first promotion; the data
-release `v0.4.2` (after `v0.4.0` and `v0.4.1` stopped in their legs) reached Production, the model chain ran
-and was approved, the warehouse was loaded, §W step 5's datashare was built and read from a Sandbox
-project, verification ix was answered on `v0.4.5`, the 06:30 and 07:00 UTC schedules started their chains
-unattended (6.1), and §R read zero burn in every account after the downs.
+**Where it stands, 2026-10-25**: §0, §P, §T, §W and §V done, and §H but its steps 3 and 4, which §N
+carries. `v0.3.3` was the first promotion; the data release `v0.4.2` (after `v0.4.0` and `v0.4.1` stopped
+in their legs) reached Production, the model chain ran and was approved, the warehouse was loaded, §W
+step 5's datashare was built and read from a Sandbox project, verification ix was answered on `v0.4.5`,
+the 06:30 and 07:00 UTC schedules started their chains unattended (6.1), and §R read zero burn in every
+account after the downs. What the three stages leave is §N, ordered by the sitting that runs it.
 
 | § | Holds |
 |---|---|
 | [§0](#0-before-any-sitting-with-the-environment-down) | what runs today, with nothing up: the persona proofs, the quota requests, the flag of decision 13, the deploy roles' grant (§0.5) |
-| [§H](#h-the-hub-and-gitlab) | the hub and GitLab: the user's GitLab acts, the legs' merge request, the next house image |
+| [§H](#h-the-hub-and-gitlab) | the hub and GitLab: the user's GitLab acts, the legs' merge request; its steps 3 and 4, the next house image and the deploy image, are §N's |
 | [§P](#p-production-stage-9s-pass-3-and-stage-10s-05) | Production: the proof job's two runs, Stage 9's producer pair and pickup |
 | [§T](#t-the-tag-stage-8s-pass-4-with-stage-10s-passes-1-and-2) | the tag: Stage 8's pass 4 with Stage 10's passes 1 and 2, and Stage 9's 8.5 |
 | [§W](#w-the-governed-warehouse-stage-9s-pass-6) | the governed warehouse, Stage 9's pass 6: steps 1 to 4 done, step 5 run within §V |
 | [§V](#v-the-data-release-v040) | the data release, the tag `v0.4.2` since `v0.4.0` and `v0.4.1` stopped in their legs: Stage 9's 8.5 and 9.4 to 9.7, Stage 10's pass 3 and 6.1, Stage 8's ix |
+| [§N](#n-the-next-release-what-stages-8-9-and-10-leave) | what Stages 8, 9 and 10 leave, by sitting: the steps that need nothing up, the next release through Staging and Production (`EXC-22`, Stage 8 xxiv, Stage 9 xii, the Scheduler's placeholder), the warehouses, a Sandbox space, the deliberate exercises, and what waits on something else |
 | [§Q](#q-after-the-quotas-stage-10s-pass-3) | after the quotas: Stage 10's pass 3, now within §V |
 | [§R](#r-the-readings-at-the-end-of-every-sitting) | the readings at the end of every sitting |
 
@@ -308,7 +310,8 @@ ONLY=egress`, the infrastructure user's: no pipeline identity raises a shared sl
 first promotion carries a lake the job role has written (decision 23).
 
 1. **[user] Pass 1's `deploy --targets dev`** from a space on the house image as the project role
-   (Stage 10 2.1, Stage 8 decision 22), and the reads 2.1 lists, when the Sandbox sitting is up anyway.
+   (Stage 10 2.1, Stage 8 decision 22), and the reads 2.1 lists, when the Sandbox sitting is up anyway;
+   §N.3 carries it.
 2. **[user] The tag** `v0.3.0` on `awsds/app-etl`'s `main`, after the legs merged (**run 2026-10-24,
    pipeline #64**: `test-deploy` passed, then `release` and the legs' clone refused the lab's CA, the
    legs raising nothing; the fix, the CA root the runner mounts, is MR-borne. `v0.3.1` named the legs'
@@ -401,6 +404,7 @@ Separable and last; nothing needs it. In a Production sitting with the hub up.
    gone; 9.6 and 9.7 wait for a table in `trades`, which 9.4's DDL and load job create in a release after
    `v0.3.0`.
    `./aws/warehouse.py awsds-infra-prod --sql` passed on 2026-10-24, and `make down ENV=production` ended the sitting.
+   9.5 to 9.7 ran on 2026-10-25 within §V step 8.
 
 ## V. The data release: v0.4.0
 
@@ -489,7 +493,7 @@ ENV=production` here carries `ONLY=`, or the build runner is destroyed.
     `DISABLED` through the slice at 01:15:54, silent at 07:30. Between sittings a run fails on the absent
     endpoints, so the app-etl and train schedules went `DISABLED` through the slice at 14:39 (the user's
     decision, with `orchestration-v0.2.1`): a sitting that wants the scheduled runs raises `workloads-egress/`
-    and turns them on by a commit. 3.2's break waits (the waiting list).
+    and turns them on by a commit. 3.2's break waits for the user's decision (§N.0).
 11. **[user] 3.7 again**: both `release.tf`s with `v0.4.2`'s tag, digest, SHA256 and `VersionId`s, the
     orchestration slices' three workflows among them; the mirror pushed. **Done 2026-10-25** in PR #255
     (Production's two slices planned `No changes` by hand), the mirror at `79651026`.
@@ -499,9 +503,255 @@ ENV=production` here carries `ONLY=`, or the build runner is destroyed.
     `workloads-egress/`; at 07:14 `./aws/egress.py` read 0 interface endpoints, 0 NAT and 0.000 USD/h in
     Production, Staging and Sandbox, `make status` 0.0000 USD/h with the application and orchestration slices up, and
     `orchestration.py` passed every Production check, `OR-9` on the three chains. `warehouse.py` ran without
-    `--sql`: both workgroups were gone, so `EXC-13`'s database reading waits for the next warehouse sitting.
+    `--sql`: both workgroups were gone, so its database readings wait for the next warehouse sitting (§N.2);
+    `EXC-13`'s database half was read from the day's Data API sessions instead (Stage 9's log).
     Staging's `make down` met Lake Formation's refusal of the application table's delete, fixed by
     `app_outputs`' infrastructure grant (Stage 9's log).
+
+## N. The next release: what Stages 8, 9 and 10 leave
+
+Each stage file's status cell ends with what is left on 2026-10-25; this section orders it by the sitting
+that runs it. Written 2026-10-25 with the environment down. N.1 needs the hub, GitLab and the three
+runners, then Staging's and Production's endpoints; N.2 the warehouses' compute; N.3 a Sandbox space;
+N.4's exercises each wait for the user's word; N.5 waits on something no sitting provides. Every command
+runs as the infrastructure user (`InfrastructureAccess`, the `awsds-infra-*` profile of the account it
+names) unless it names the Data Scientist User or a pipeline job, and every `make up ENV=production`
+carries `ONLY=`, or the build runner is destroyed.
+
+### N.0 The steps that need nothing up
+
+1. **[user] Stage 10 3.2, decided before the tag**: (a) recorded as answered by `v0.4.1`'s unplanted
+   failure (verification vi: both failure rules fired, the diagnosis from the APIs alone); (b) recorded
+   from `v0.4.5`'s planted drift (pipeline #87), if step 2 reads its rules firing; or (c) a deliberate
+   break through a branch's tag, as verification ix's was, after N.1's release: a wrong job argument is
+   3.2's own example, and one naming a Glue job the application slice does not declare would also answer
+   Stage 10 xx's second half.
+2. **[Claude] #87's failure rules**, for (b): the slice went with `make down ENV=staging` at 06:30 UTC,
+   and its metrics stayed; `AWS/SNS` `NumberOfNotificationsDelivered` on `TopicName=awsds-staging-alerts`
+   is read over the same window beside them:
+
+   ```bash
+   for rule in awsds-staging-wf-app-etl-failed awsds-staging-chain-app-etl-failed; do aws cloudwatch get-metric-statistics --namespace AWS/Events --metric-name TriggeredRules --dimensions Name=RuleName,Value=$rule --start-time 2026-10-25T05:55:00Z --end-time 2026-10-25T06:15:00Z --period 60 --statistics Sum --profile awsds-infra-staging --region us-west-2; done
+   ```
+
+3. **[Claude] Stage 9 xii's call**, written where a Staging deploy session runs, the user choosing where:
+   `scripts/model-chain.py transform staging` reading Production's newest approved version before it
+   serves Staging's own model, which reaches the runner with the mirror's push (N.1 step 4), or a manual
+   job beside `staging-model` in the template, which rides N.1 step 5's merge request. Either runs
+   `describe-model-package` and `list-model-packages` on `awsds-prod-model-app-etl` as
+   `awsds-deploy-staging`, whose trust names the deploy runner's role alone (Stage 8 4.1).
+4. **[Claude] Stage 8 xiv at `awsds-workflows` `d856982c` and Stage 10 xi's offline half**: the 40
+   deliberate violations of 2026-10-18 run again against scratch copies of `examples/app-etl/`; the lint
+   on a portal-scoped definition, on a container named by anything but an ECR URI and digest and on a
+   definition over 50 KB; and `build-task-code`'s import line on a package whose module imports what the
+   zip lacks. Each is expected to fail with exit 1.
+5. **[Claude] Stage 9 9.5's Terraform adoption**: import blocks for the share's authorization
+   (Production), the consumer association, the registration and the federated database (Data
+   Governance), written and planned; an object is adopted only where its plan after the import reads
+   `No changes`, 9.5's three mismatches read first. **[Claude⚡]** the applies, on the user's word.
+6. **[user] Stage 9 5.4's read deny**, as the Data Scientist User through `awsds-scientist-prod`, the
+   script in place since 2026-10-23; expected refused on `s3:GetObject` *"with an explicit deny in a
+   resource-based policy"*, `DenyThePersonaReadsOutsideTheNamedPrefixes`:
+
+   ```bash
+   aws s3api get-object --bucket awsds-prod-outputs --key applications/stage-09-proofs/v0/glue/producer_proof.py /dev/null --profile awsds-scientist-prod --region us-west-2
+   ```
+
+7. **[user] Stage 8 xxi's attempt half**, the waiting list's row: a test object written and deleted in
+   `awsds-prod-releases` as `awsds-infra-prod`, beside the refusals xxi names.
+8. **[Claude] Stage 9 rows i and iii**, filled from 2.2's and 2.4's readings in Stage 9's log.
+
+### N.1 The release through Staging and Production
+
+`make hub-up`, then `make gitlab-up BUILD=1` and the tunnel ([`gitlab.md`](gitlab.md) §U). Sandbox's
+`egress/` stays down until step 6 has read its negative.
+
+1. **[user] Stage 8 1.1, the house image `default-v0.9.0`** (§H step 3), its 72-name literal passing `GM-1`
+   to `GM-8` on 2026-10-25 at 07:41 UTC; `DE-5` turns green with it.
+2. **[user] The deploy image on Terraform 1.16.6** (§H step 4), once the laptop runs it.
+3. **[Claude] Readings with GitLab up**: `./aws/cicd.py` (`CI-1`, `CI-9`); `awsds/app-etl`'s branch list,
+   verification ix's branches deleted on 2026-10-25 by the user's word; and Stage 8 xxvii's plan half, a
+   read-only plan of `production/runners/` once the Amazon Linux parameter has moved past the runners'
+   image, expected `No changes` (decision 25 (b)):
+
+   ```bash
+   aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 --query Parameter.Value --output text --profile awsds-infra-prod --region us-west-2
+   ```
+
+   ```bash
+   ./scripts/gen-backend-hcl.py production runners && ./scripts/gen-tfvars.py production runners && AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/runners init -backend-config=backend.hcl -input=false && TF_VAR_build_runner=true AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/runners plan -input=false
+   ```
+
+4. **[user] The mirror pushed at `main`** (`git push gitlab main` from the project folder) once `main`
+   carries `orchestration-v0.2.1` and the paused schedules: read at `79651026` on 2026-10-25, the mirror
+   holds `production/orchestration/` on `orchestration-v0.2.0` with the app-etl and train schedules
+   `ENABLED`, which `production-deploy` would apply over the pause.
+5. **[user] The template's merge request on `awsds/app-etl`** (`EXC-22`, Stage 10 xxviii), from
+   `examples/app-etl/` at `main` once `workflows/app-etl.yaml` there carries
+   `ProcessingOutputConfig.KmsKeyId: "{env.PROJECT_KEY_ARN}"`, by `gitlab.md`'s "The application
+   template" procedure. In the same sitting, Stage 10 xi's CI half: a branch carrying N.0 step 4's
+   portal-scoped definition, its branch pipeline's `test` expected red, the branch deleted after.
+6. **[user] The tag**, `v0.4.6` unless `git ls-remote --tags` on `awsds/app-etl` reads it spent, with
+   Sandbox's `egress/` down: Stage 8 xxiv, `test-deploy` expected to fail in seconds before `deploy`
+   writes anything, *"FATAL: no sagemaker.api endpoint: is Sandbox's egress up (make up ENV=sandbox
+   ONLY=egress)?"*; then `make up ENV=sandbox ONLY=egress` and the job's retry.
+7. **[Claude] After `test-deploy`**: Stage 10 xix, the domain's lineage events, twice with a delay between
+   (Lesson 62); Stage 10 xxiii's second half, the `test` project's workflows' `Code` object (`aws
+   mwaa-serverless get-workflow`) against the bundle's `code/<workflow>.zip`; and Stage 8 iv's re-scan
+   half, **[Claude⚡]** on the user's word, `aws ecr start-image-scan` on the tag's image in
+   `awsds-prod-ecr-app-etl`, scanned on push minutes before, expected refused rather than absorbed:
+
+   ```bash
+   aws datazone list-lineage-events --domain-identifier <the CI/CD variable DOMAIN_ID> --profile awsds-infra-sandbox-1 --region us-west-2
+   ```
+
+   ```bash
+   aws mwaa-serverless get-workflow --workflow-arn <the test project's workflow ARN, test-deploy's log> --profile awsds-infra-sandbox-1 --region us-west-2
+   ```
+
+   ```bash
+   aws ecr start-image-scan --repository-name awsds-prod-ecr-app-etl --image-id imageTag=<the tag>-<its short sha, build-image's log> --profile awsds-infra-prod --region us-west-2
+   ```
+
+8. **[user] `make up ENV=staging ONLY=egress`**, then `staging-gate` (decision 28). **[pipeline]**
+   `staging-check`, `staging-deploy`, `staging-test` and `staging-model`, which carries Stage 9 xii's
+   call if N.0 step 3 put it there.
+9. **[Claude] Staging's readings**: Stage 10 ix's Staging half, `OR-3` in `./aws/orchestration.py` with
+   the slice up; `EXC-22`'s Staging half, the processing output under the key of `aws kms describe-key
+   --key-id alias/awsds-staging-data` and no longer `aws/s3`; and Stage 9 xii, the call in the job's
+   trace and as `DescribeModelPackage` in Production's trail from Staging's account, under
+   `awsds-deploy-staging`'s principal id:
+
+   ```bash
+   aws s3api head-object --bucket awsds-staging-outputs --key app-etl/work/job/trades.summary.json --query '[LastModified,ServerSideEncryption,SSEKMSKeyId]' --profile awsds-infra-staging --region us-west-2
+   ```
+
+10. **[user] `make up ENV=production ONLY=workloads-egress`**, then `production-gate`. **[pipeline]**
+    `production-deploy`: the application and orchestration slices on the new tag, the three schedules
+    staying `DISABLED` as the slice declares them.
+11. **[Claude⚡] Production's app-etl chain**, on the user's word, followed to its end; then `EXC-22`'s
+    Production half, the processing output under `alias/awsds-prod-data`'s key, which closes the row with
+    step 9's:
+
+    ```bash
+    aws stepfunctions start-execution --state-machine-arn "arn:aws:states:us-west-2:<Production>:stateMachine:awsds-prod-chain-app-etl" --profile awsds-infra-prod --region us-west-2
+    ```
+
+    ```bash
+    aws s3api head-object --bucket awsds-prod-outputs --key app-etl/work/job/trades.summary.json --query '[LastModified,ServerSideEncryption,SSEKMSKeyId]' --profile awsds-infra-prod --region us-west-2
+    ```
+
+12. **[user decides] Stage 10 3.5's substitution**: a commit turns the app-etl schedule on
+    (`schedule_enabled = true` in `production/orchestration/main.tf`), its cron moved into the sitting
+    or kept at 06:30 UTC with `workloads-egress/` up across it, applied by **[Claude⚡]** (Recipe A) or by
+    the next `production-deploy` once the mirror carries it. **[Claude]** at the firing, the execution's
+    input: a timestamp says the Scheduler substitutes the placeholder, the literal
+    `<aws.scheduler.scheduled-time>` says it does not. A commit turns the schedule `DISABLED` again before
+    the sitting ends, since between sittings a run fails on the absent endpoints:
+
+    ```bash
+    aws stepfunctions list-executions --state-machine-arn "arn:aws:states:us-west-2:<Production>:stateMachine:awsds-prod-chain-app-etl" --max-results 1 --query 'executions[0].executionArn' --output text --profile awsds-infra-prod --region us-west-2
+    ```
+
+    ```bash
+    aws stepfunctions describe-execution --execution-arn <the execution's ARN> --query input --output text --profile awsds-infra-prod --region us-west-2
+    ```
+
+13. **[user] 3.7**: both `release.tf`s with the new tag's values, the mirror pushed after the merge.
+14. **If N.0 step 1 took (c)**: the break's branch and its tag, expected to stop in Staging's leg with
+    Production untouched; **[Claude]** the failure rules' `TriggeredRules` and the diagnosis from
+    `list-task-instances`, `get-task-instance` and the task's log group, read before any `make down
+    ENV=staging`; the branch deleted after.
+15. **[Claude]** §R, `./aws/orchestration.py` and `./aws/cicd.py`; **[user]** `make down ENV=staging`,
+    the first after a release since `app_outputs`' infrastructure grant and so its measurement, then
+    `make down ENV=production ONLY=workloads-egress`, `make down ENV=sandbox`, `make gitlab-down` and
+    `make hub-down`.
+
+### N.2 The warehouses
+
+Separable from N.1, with the hub up. Each workgroup bills 1.44 USD per query-hour at 4 RPU and nothing
+idle, so its `make down` is the guarantee.
+
+1. **[user] The free trial's Production balance**, read in the Redshift console (Stage 9's cost row, 5b
+   decision 9), its window open since Production's first compute on 2026-10-24; then `make up
+   ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift`.
+2. **[Claude] Stage 9 xviii's last clause**, expected `DISABLED`, then `./aws/warehouse.py
+   awsds-infra-prod --sql` (`WH-6`, `WH-12`, `WH-14`):
+
+   ```bash
+   aws redshift-serverless get-workgroup --workgroup-name awsds-prod-warehouse --query 'workgroup.pricePerformanceTarget' --profile awsds-infra-prod --region us-west-2
+   ```
+
+3. **[user] Stage 9 5.4's Data API negative** (verification vii's third), as the Data Scientist User;
+   expected refused naming `DenyMintingARedshiftDatabaseSession`, where the absent workgroup answered
+   first on 2026-10-23:
+
+   ```bash
+   aws redshift-data execute-statement --workgroup-name awsds-prod-warehouse --database warehouse --sql 'select 1' --profile awsds-scientist-prod --region us-west-2
+   ```
+
+4. **[user] `make down ENV=production ONLY=workloads-egress,warehouse-compute`**, then `make up
+   ENV=sandbox ONLY=warehouse-compute`.
+5. **[user] Stage 9 9.7 again**, from `eighth-experimentation`'s Query editor, the project role's Lake
+   Formation grant revoked on 2026-10-25 and Production's workgroup down; 30 rows say the access role's
+   grant alone serves the door:
+
+   ```sql
+   SELECT current_user, count(*), min(trade_date), max(trade_date) FROM governed_trades.trades.trades_notional;
+   ```
+
+6. **[Claude] `./aws/warehouse.py awsds-infra-sandbox-1 --sql`**, the instrument's own `EXC-13` reading
+   in Sandbox, whose database half was read from the Data API's password sessions of 2026-10-25 (Stage
+   9's log).
+7. **[user] `make down ENV=sandbox ONLY=warehouse-compute`**; **[Claude]** §R and `./aws/warehouse.py` on
+   both profiles; **[user]** the free trial's balance again, once the sitting's last half-hour interval
+   has landed (Stage 9's Validation, `ComputeSeconds`).
+
+### N.3 The proofs from a Sandbox space
+
+`make hub-up`, `make up ENV=sandbox`, a space on the house image (version 10 once N.1 step 1 has run).
+
+1. **[user] Stage 9 3.4's project-role half** (verification v): 3.4's two commands from the space's
+   terminal with no `--profile`, so the project role answers: the group read answers, the write is
+   refused with the group policy's wording.
+2. **[user] Stage 9 8.1's space half**: the project's query editor answering `SELECT count(*) FROM
+   curated.trades` and refusing an `INSERT` with Lake Formation's wording. First: 6f decision 1. The
+   project role holds no Lake Formation grant on the lake, Sandbox's tag re-grants naming the Data
+   Scientist User's set (Stage 9's log, 2026-10-25), so the `SELECT` reads a refusal until it holds one,
+   as 6g 2.4's read does.
+3. **[user] Stage 10 2.1**, pass 1's `deploy --targets dev` from the space as the project role (Stage 8
+   decision 22), and 2.1's reads.
+4. **[user] Stage 10 xxix's second half**: the `test` project's app-etl workflow started from the portal
+   with no `OverrideParameters`; **[Claude]** the run's state and its first task's log.
+
+### N.4 The deliberate exercises, each the user's decision
+
+Each costs minutes of a sitting and leaves a recorded reading; none holds up another.
+
+| Exercise | Sitting | The act | The reading |
+|---|---|---|---|
+| Stage 8 xv | N.1 | the proxy host stopped alone, a `.promotion` job retried, the proxy started again | the job's own check failing in about 20 s, *"no answer through the proxy"* |
+| Stage 8 xxviii's active half | N.1 | an `AssumeRole` of a deploy role through `sts.amazonaws.com`: a manual job on the deploy runner, or xvi's 15 s trust widening | `us-east-1`'s trail and, for the widened principal, whether the misuse rule fires; a regional assumption beside it reads 4.6's transformed message |
+| Stage 9 xxiv | N.2 | `REVOKE USAGE ON DATASHARE trades_lf FROM ACCOUNT '<Data Governance>' VIA DATA CATALOG`, then 9.5's steps 1 to 3 again | the Lake Formation rows the revoke leaves, and whether the register notices; INT-24's door is shut until the rebuild |
+| Stage 10's network negative (1.2) | N.1, Staging | **[Claude⚡]** a workflow created by hand with no `NetworkConfiguration`, run once and deleted | the worker's address in the CloudTrail record of its first AWS call, beside a configured run's private address |
+
+### N.5 The items that wait on something else
+
+- **A second application**: Stage 10's chain order and xxv (decision 18); the split of
+  `staging/orchestration/` per application (Stage 8 decision 27).
+- **A `monitoring` endpoint** as the positive control: Stage 10 xvi's metrics clause.
+- **S3 data events** (Stage 11): Stage 8 xx's writing identity.
+- **A release that removes a file**: Stage 8 xxvi. **A workflow's 50th version**: Stage 8 xxiii.
+- **A blueprint reconciliation**: Stage 8 vii's third half, read in Sandbox's trail (`UpdateDomain`,
+  `UpdateStack`) at any sitting.
+- **A date**: `EXC-13`'s Production half, after the secret's first rotation, due by 2026-11-22.
+- **No step provokes them yet**: Stage 8 xxvii's retry (an apply that creates a role and its host
+  together); Stage 9 vi's cancel (no table past 10 GB), ix's `VPC-Workloads` branch and off-endpoint
+  refusal, xv's deploy- and execution-role halves and xxvii's cancel (no statement past 300 s); Stage 10
+  xviii and xxviii's inbox marker (no task writes one).
+- **Not written**: Stage 8 3.3's read pinned to an Iceberg snapshot (Stage 9 4.4).
+- **The user's word**: Production's full-table flag, kept or turned off against `TM-26`, the lake's flag
+  sufficing since 2026-10-24 (Stage 9 decision 13).
 
 ## Q. After the quotas: Stage 10's pass 3
 
