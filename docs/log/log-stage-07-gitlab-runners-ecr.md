@@ -1002,3 +1002,9 @@ pages (`docs/REFERENCES.md`). No AWS call, nothing created.*
   authorship"* and say nothing about where the author's name and e-mail come from; what GitLab records as the
   pusher is the connection's user. Today's spaces hold no such clone: INT-09's clone is made by hand in the
   space with the person's own GitLab credential and `git config`, a different channel.
+- **[Claude] The user's second follow-up, several connections**: a host takes one or more connections, each the
+  GitLab user who authorized it, who needs the Owner role on the repositories; but an enabled connection reaches
+  every user of every domain in the account and the member chooses the connection when adding a repository, so
+  several connections are several shared identities, not one per person. Binding a connection to a project by
+  IAM (`UseConnection` on one ARN per project role) is conceivable and unmeasured, and would still be per
+  project. Recorded in INT-13.
