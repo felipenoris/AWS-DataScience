@@ -204,7 +204,8 @@ rows.
    #89 to #91 on the lock of 2026-10-16, so first `gates-v0.5.0` with the 42 acceptances
    ([`gitlab.md`](gitlab.md) §G), then the merge request on `awsds/dev-env` from the copy under
    `gitlab/awsds/dev-env/` (the lock, the `include:` `ref`), the steward's tag, the release gate;
-   `./scripts/gitlab-mirror.py` after the merge. `DE-5` turns green with it.
+   `./scripts/gitlab-mirror.py` after the merge. `DE-5` turns green with it. **Done 2026-10-25**: pipeline
+   #96, version 10 with alias `0.9.1`, `DE-5` passing at 22:11 UTC.
 4. **[user] The deploy image on Terraform 1.16.6**, the laptop running it since 2026-10-25 and the two pins moved in
    `gitlab/awsds/deploy-image/Dockerfile` (`upstream-releases.md`): the merge request,
    the tag, its digest into `production/runners/variables.tf`, and the slice applied by `make gitlab-up
@@ -592,7 +593,7 @@ carries `ONLY=`, or the build runner is destroyed.
 
 1. **[user] Stage 8 1.1, the house image `default-v0.9.1`** (§H step 3), its 72-name literal passing `GM-1`
    to `GM-8` on 2026-10-25 at 07:41 UTC, after `gates-v0.5.0`; `default-v0.9.0` was spent at `pip-audit` the
-   same day. `DE-5` turns green with it.
+   same day. **Done 2026-10-25**: pipeline #96 registered version 10, `DE-5` passing.
 2. **[user] The deploy image on Terraform 1.16.6** (§H step 4; **built 2026-10-25 as `v0.3.0`**, its digest
    pinned in `production/runners/variables.tf`, the runner's replacement by `make gitlab-up BUILD=1` once the
    pin is on `main`), the laptop on it since 2026-10-25: **before steps 8

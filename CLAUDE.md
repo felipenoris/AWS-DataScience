@@ -221,12 +221,12 @@ per laptop, never one per session.
 - A module tag is repository-global and never moves (`terraform-changes.md`, Recipe B). The next
   version is read from `git ls-remote --tags origin` at the moment of tagging, never from memory: a
   peer may have taken it.
-- **The Terraform binary is one per laptop, and every session's.** It runs 1.16.6 since 2026-10-25 while
-  the deploy image runs 1.15.8 until its rebuild, the first act of the next GitLab sitting. Until then no
-  session applies or raises a slice the pipeline reads or applies (the application and orchestration
-  slices, `staging/egress`, `production/workloads-egress`, and both targets' `data/`, `sagemaker/`,
-  `foundation/` and `workloads/`): a state written by 1.16.6 is refused by 1.15.8 (Lesson 76). `make hub-up`
-  and `make gitlab-up` touch no such slice and are free.
+- **The Terraform binary is one per laptop, and every session's.** The laptop and the deploy image both run
+  1.16.6 since 2026-10-25 (`v0.3.0`, the deploy runner replaced 20:40 UTC). A laptop upgrade comes after the
+  image's rebuild, never before: a state written by a newer Terraform is refused by the image's older one in
+  every pipeline job that reads it (Lesson 76), and the slices the pipeline reads are the application and
+  orchestration slices, `staging/egress`, `production/workloads-egress`, and both targets' `data/`,
+  `sagemaker/`, `foundation/` and `workloads/`.
 - **Parallel sessions, measured 2026-10-18.** The app starts a session only on a turn the user's own
   message began: a turn begun right after `/compact` is refused, and so are a request the user sends
   mid-turn and one sent over Remote Control, where a proposed card does not show either. In that case
@@ -375,10 +375,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   any workgroup through `sqlworkbench`, and the secrets tagged with its project or
   `for-use-with-all-datazone-projects`: the admin secret stays closed by its tags alone (`INV-20`, PR #187).
 - **Stage 6d in progress**: steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half (a reconciliation that
-  writes the domain). The house image is `awsds-sandbox-dev-env` version 9, `default-v0.8.0-7c59998c`
-  (2026-10-16); its `NO_PROXY` literal holds 70 names, while main's `vpc-egress-v0.18.0` makes 72 and the
-  copy under `gitlab/` carries them since PR #172, so `DE-5` reads red, the environment down included,
-  until that image ships (Stage 17 decision 4: the image first). The remote IDE works (6d step 7, 2026-09-11).
+  writes the domain). The house image is `awsds-sandbox-dev-env` version 10, `default-v0.9.1-746ef084`
+  (2026-10-25, alias `0.9.1`), its `NO_PROXY` literal the 72 names of `vpc-egress-v0.18.0`: `DE-5` passes
+  (read 2026-10-25), and Stage 17 1.4's apply of the module on `sandbox/egress` is no longer held by the
+  image (decision 4). The remote IDE works (6d step 7, 2026-09-11).
 - **Stage 6e** is held by PR #108 (decision 17, the user's 5.5 agreements; Sonnet 4.5 is Legacy since
   2026-10-08). A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint);
   retention mode `none` is declared in all 17 Regions and frozen by 7.5; `claude-opus-5` and
@@ -480,8 +480,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `DISABLED` between sittings), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
-- **Standing rules**: `-input=false` on every plan and apply (Lesson 47); until the deploy image is rebuilt on
-  1.16.6, no slice the pipeline reads is applied or raised from the laptop (Lesson 76); never pipe a command whose exit
+- **Standing rules**: `-input=false` on every plan and apply (Lesson 47); the laptop's Terraform never moves ahead of
+  the deploy image's (Lesson 76); never pipe a command whose exit
   code matters (Lesson 46); a module change is exercised by planning a caller, never by `validate`;
   `-refresh=false` is forbidden on `sandbox/data/`, where SMUS is a Lake Formation admin (OQ 24); never add
   an `sts:` action to the RCP without reading `CT.STS.PV.1`'s exclusion note; resolve an account by exact

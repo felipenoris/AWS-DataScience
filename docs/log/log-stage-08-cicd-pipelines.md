@@ -3582,3 +3582,50 @@ session in Chrome. Times UTC.*
   running since 21:38; `scan-base` (#570), `scan-dev-env` (#571), `release-gate` (#572, manual), `register`
   (#573) and `retire` (#574) created. The gate's reading of the day agrees with the laptop's of 21:23: the
   same 58 lines in the same 5 packages.
+
+## 2026-10-25 — `default-v0.9.1` released: pipeline #96's evidence, version 10 in Sandbox, `DE-5` passing
+
+*The user's hand for the release gate; Claude's for the readings, from the user's GitLab session in Chrome
+(the pipeline API, the job logs, the artifacts through the pages host `awsds.awsds-pages.internal`) and
+from ECR and SageMaker as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`,
+`awsds-infra-sandbox-1`), reads only. Times UTC.*
+
+- **[Claude] Pipeline #96**, the API read at 22:06: `build-images` (#569) 21:38:16 to 21:54:26, 970 s;
+  `scan-base` (#570) 21:54:28 to 21:55:11 and `scan-dev-env` (#571) 21:54:29 to 22:02:12, 464 s waiting
+  for the push's own scan, both failed as allowed; `release-gate` (#572) **[user]** 22:04:00 to 22:04:09;
+  `register` (#573) 22:04:11 to 22:04:42; `retire` (#574) 22:04:45 to 22:05:21; the pipeline `success`.
+- **[Claude] The images in ECR** (`describe-images`, 22:05): `awsds-prod-ecr-base:default-v0.9.1-746ef084`
+  pushed 21:41:27, 3,754,767,181 bytes, `sha256:ac9bd82b2b9ee441fad814eda819abd72ddc9c364f87f984c1715b0a7898044e`;
+  `awsds-prod-ecr-dev-env:default-v0.9.1-746ef084` pushed 21:52:45, 6,687,899,330 bytes,
+  `sha256:20a1017a0680c4f837211c02076260815ad998f5f9d863ea746004d97829ca39`; 9,117,662 and 9,325,492 bytes
+  more than `v0.8.0`'s, the base's growth carried into `dev-env`.
+- **[Claude] The manifests**, `build-images`' artifacts against `v0.8.0`'s (job #162): `runtimes.txt` the
+  same but the base digest (Python 3.12.14 in both environments, uv 0.12.17, Julia 1.12.7, R 4.5.3, rustc
+  1.98.0); `trust.txt` the same (curl, urllib and requests in both Pythons answer 200 on the lab's root, git
+  refused for want of a username, as before); `proxy.txt` 72 entries, sha256 `6faf2e4761622508`, against 70
+  and `aafa08da98a61f5c`; `imports.txt` the same but `mlflow 3.17.2`; `julia.txt` and `r.txt` the same;
+  `python-awsds.txt` 454 lines equal to the lock's export, 17 moves against `v0.8.0`'s, the lock's;
+  `python-conda.txt` identical, 621 lines. The raw log's tail: 26 Julia dependencies precompiled in 75 s,
+  the eight manifests written, the smoke stage `DONE 77.7s`.
+- **[Claude] Both scans**, ECR's basic scan read whole at 22:07 and the gate jobs' own summaries: CRITICAL
+  113, HIGH 612, MEDIUM 158, LOW 16, UNDEFINED 438 for each image, 725 CRITICAL or HIGH findings, 130 in the
+  baseline, 595 absent from it: 593 on `linux-libc-dev` 6.8.0-142.142 and two new since `v0.8.0`,
+  `CVE-2026-85091` on `zlib` and `zlib1g` 1.3.dfsg-3.1ubuntu2.2 (HIGH 610 → 612), the two images' sets
+  identical. Job #570's lines: *"== CRITICAL and HIGH: 725 found, 130 in the baseline"*, *"WARN: 595
+  CRITICAL or HIGH finding(s) absent from the baseline, for the operator to read"*, *"The job fails and the
+  pipeline goes on (decision 1)"*. Whether the zlib pair enters the lineage's baseline by name is the
+  steward's; the deploy lineage's baseline carries `CVE-2026-85091|zlib` for Debian's 1.3.dfsg+really1.3.1-1.
+- **[Claude] `register` and `retire` read**: *"proxy answers (404)"*, 3 versions found, then
+  *"awsds-sandbox-dev-env version 10: CREATED, alias 0.9.1"* with `ContainerImage` at the pushed digest;
+  `retire --keep 10` kept versions 10 (`0.9.1`), 9 (`0.8.0`), 8 (`0.7.3`) and 7.
+- **[Claude] AWS read back** at 22:10: `list-image-versions` 10, 9, 8 and 7 all `CREATED`, version 10 created
+  22:04:39 with `ContainerImage` and `BaseImage` at the dev-env digest and release notes
+  `default-v0.9.1-746ef084`; aliases `0.7.3`, `0.8.0`, `0.9.1`. `./aws/devenv.py` at 22:11: `DE-5` passes,
+  version 10's config blob (`sha256:89474298…80ff`, hash checked) carrying 72 names, sha256
+  `6faf2e4761622508`, the Dockerfile's; `DE-1` and `DE-4` pass; `DE-2` fails with `sandbox/egress` down, the
+  reading of 2026-10-18, so `DE-3` and `DE-6` are not compared. Stage 17 1.4's apply of `vpc-egress-v0.18.0`
+  on `sandbox/egress` is no longer held by the image (Stage 17 decision 4).
+- **[Claude] Written**: the release row in the copy's README, GitLab's `main` to hold by the steward's
+  hand; `CLAUDE.md` (version 10, `DE-5` passing, the deploy image on 1.16.6); the stage file's 1.1,
+  `promotion.md` §H step 3 and §N.1 step 1, `waiting-on-the-user.md` (the item taken), `AWS_STATE.md`'s
+  `DE-5` sentence.
