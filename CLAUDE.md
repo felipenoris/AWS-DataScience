@@ -330,8 +330,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `pickup` consumed the drop, `curated.trades` at 20 rows, after decision 13's two halves: the
   `AllowFullTableExternalDataAccess` flag on in Production (the user's console, 19:49 UTC) was not enough,
   the vend refused *"Verify the data lake settings for account"*, and the lake's `lakeformation.tf` carries it
-  since 22:03 UTC (`TM-26`); the flag is on in Production, Sandbox and the lake, unset in Staging; whether
-  Production's is needed beside the lake's is unmeasured (a third run, the user's console). 9.1's
+  since 22:03 UTC (`TM-26`); the flag is on in Production, Sandbox and the lake, unset in Staging;
+  Production's is not needed beside the lake's (the third run with it off committed, 2026-10-24, xxviii). 9.1's
   `production/warehouse/` applied 22:07 UTC (the namespace; `EXC-13`'s Production sentence), refusal 9
   lifted, `warehouse-compute/` planning 2 to add, 9.3 run 2026-10-24 (the schema `trades` at 1 TB, the roles, the `IAMR:` users, the default privileges, every `PUBLIC`
   `CREATE` revoked), 9.5's datashare (written as commands 2026-10-24, decision 14 taken 2026-10-24: Data Governance registers and grants it) and 9.6-9.7 left, those two waiting on `trades.trades_notional`, which v0.4.0's DDL job and load workflow create (written 2026-10-24; decision 15, a Production-only workflow, the user's against the recommendation); 9.4's grant applied,
@@ -345,7 +345,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   decision was taken 2026-10-22; 2.3's lint runs in the legs' release job, and since 2026-10-24 (2c)'s
   `lint-plan` (`awsds-workflows` `ff25eae`) on the application slice's saved plan; **3.8's calls replayed as both deploy roles (2026-10-24) found `states:ValidateStateMachineDefinition` granted to neither, which stops both legs' orchestration apply: written in `*/foundation/` and applied the same night, both roles reading `allowed`**; pass 3
   written 2026-10-24 in the template's v0.4.0 (decisions 21, AWS's XGBoost 3.0-5 by digest, and 22,
-  Staging retrains), the lint's rule `treino` at `awsds-workflows` `d60e1ad`, the user's merge. Passes 1-2 run with Stage 8's pass 4 (decision 23); the objects they stopped at,
+  Staging retrains), the lint's rule `treino` at `awsds-workflows` `d856982c`, PR #24's merge (`d60e1ad`'s tree). Passes 1-2 run with Stage 8's pass 4 (decision 23); the objects they stopped at,
   Stage 8's application ceilings and Stage 9's data keys, outputs buckets and Staging's job role, exist
   since 2026-10-22.
   The MWAA Serverless service-linked role exists in both accounts, Production's created 2026-10-24 in
@@ -429,7 +429,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (`runbooks/promotion.md` §0.6), the sittings §T then §V. **The first promotion ran 2026-10-24**: `v0.3.3`'s
   pipeline #71 took Staging's leg to `SUCCEEDED` and deployed Production, once the lab's CA, the workflow's
   tag-on-create, the Studio hook under a deploy profile and the release file inside the clone's folder were
-  fixed; Staging comes down by hand until the mirror leaves `0236a99d`; 3.7 recorded `v0.3.3`.
+  fixed; 3.7 recorded `v0.3.3`. **§V, 2026-10-24**: the mirror at `c714c47d` (`staging-down` skips the hook
+  as a deploy role); `v0.4.0`'s pipeline #74 stopped at `test-deploy`, which read app-etl-train's ARN for
+  app-etl's run (MR !9), and `v0.4.1`'s #77 at `evaluate`, whose template met the XCom as JSON text
+  (MR !10), so the data release is `v0.4.2` and ix's drift `v0.4.3`.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
@@ -614,6 +617,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
 71. **A lint that prints `ok` for a clause its invocation leaves unchecked reads as a pass on every clause.**
 72. **An action left out of the policy you write is not denied to a principal that carries policies you
     do not write — a claim about what a role lacks is made about the role, never about one policy on it.**
+73. **A selector that takes the last match is a claim that there is one — and the change that adds the
+    second is never read against it.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

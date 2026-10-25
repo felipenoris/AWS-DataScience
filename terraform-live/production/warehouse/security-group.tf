@@ -35,6 +35,19 @@ resource "aws_vpc_security_group_ingress_rule" "jobs_5439" {
   description = "The job security group to Redshift 5439 (Stage 9 step 9.1)"
 }
 
+# The same path's other half, on the job group: production/sagemaker/ gives that group egress to the
+# interface endpoints and the S3 gateway alone, so the load job's JDBC connection needs this rule to
+# leave it (refused as "Connect timed out" on 2026-10-25, the rule absent). Written beside the ingress it
+# pairs with, so the slice that brings the warehouse brings both halves.
+resource "aws_vpc_security_group_egress_rule" "jobs_to_warehouse_5439" {
+  security_group_id            = local.job_security_group_id
+  referenced_security_group_id = aws_security_group.warehouse.id
+  from_port                    = 5439
+  to_port                      = 5439
+  ip_protocol                  = "tcp"
+  description                  = "The job security group to Redshift 5439 (Stage 9 step 9.4)"
+}
+
 # No egress rule, and the absence is deliberate. A Redshift Serverless workgroup's ENIs answer
 # queries; nothing in this design has the warehouse originate a connection. COPY and UNLOAD would,
 # and step 9.2 gives the namespace role no lake reach, so the day one is granted is the day an egress

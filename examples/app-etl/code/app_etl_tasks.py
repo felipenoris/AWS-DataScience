@@ -14,6 +14,7 @@ workflow's log group, so they print counts, names and metrics, never a value of 
 
 from __future__ import annotations
 
+import ast
 import json
 from operator import itemgetter
 from urllib.parse import urlparse
@@ -86,10 +87,37 @@ def model_quality(training: dict) -> dict:
     }
 
 
-def evaluate(training_job: str, batch: str, models: str, **context) -> str:
-    """The evaluation of `training_job`, written to `<models><job>/evaluation.json`; its JSON."""
+def training_job_name(training: str | dict) -> str:
+    """The job's name in the train task's XCom, which reaches a template as JSON text.
+
+    The worker renders an XCom as the JSON of its value (read 2026-10-24 in Staging: indexing the
+    training operator's XCom failed on a string), so the text is decoded until the operator's dict
+    appears; a dict, and the Python literal a template renders one as, are read too.
+    """
+    value = training
+    for _ in range(3):
+        if not isinstance(value, str):
+            break
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            try:
+                value = ast.literal_eval(value)
+            except (ValueError, SyntaxError) as exc:
+                raise RuntimeError("the train task's XCom is neither JSON nor a literal") from exc
+    try:
+        return value["Training"]["TrainingJobName"]
+    except (KeyError, TypeError) as exc:
+        shape = sorted(value) if isinstance(value, dict) else type(value).__name__
+        raise RuntimeError(f"the train task's XCom names no training job: {shape}") from exc
+
+
+def evaluate(training: str, batch: str, models: str, **context) -> str:
+    """The evaluation of the job the train task's XCom names, written to
+    `<models><job>/evaluation.json`; its JSON."""
     import boto3
 
+    training_job = training_job_name(training)
     training = boto3.client("sagemaker").describe_training_job(TrainingJobName=training_job)
     if training["TrainingJobStatus"] != "Completed":
         raise RuntimeError(f"{training_job} is {training['TrainingJobStatus']}, not Completed")
