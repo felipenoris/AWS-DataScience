@@ -2417,3 +2417,6 @@ address by its role; Claude's reading. Times UTC.*
   sign-in wrote its own token (19:45): the infrastructure user's token no longer loads, the sign-in as another
   user in the shared browser having ended the session that issued it (`aws/AWS-CLI.md`, "Signing in"). xxi waits
   for a new sign-in as the infrastructure user; the persona's token is untouched.
+- **[user]** Signed in again as the infrastructure user (*"usuário sso infra logado"*): the `awsds` token file
+  rewritten at 19:47:46, its access token good to 20:47:46, and `get-caller-identity` answering again from this
+  session; the persona's token file untouched. xxi's attempt is the user's next command.
