@@ -1457,8 +1457,9 @@ carry 5b's readings, with the differences 9.1 lists. What is new in this account
      one exists; the grant to Sandbox's account, `DESCRIBE` on the database and `SELECT` on its tables,
      by LF-Tag expression or by name. A federated database takes no write or metadata permission.
   4. **[Claude⚡] Sandbox, its Lake Formation administrator**: the RAM invitation if one is pending, then
-     `DESCRIBE` and `SELECT` to the project's role on `<LF>`'s database (a receiving account grants only
-     to its own principals and cannot pass the share on).
+     `DESCRIBE` and `SELECT` to the project's access role on `<LF>`'s database (a receiving account grants
+     only to its own principals and cannot pass the share on). The project role is not the principal the
+     door evaluates (9.7): its grant of 2026-10-25 went unused and was revoked the same day.
   5. **[Claude⚡] Sandbox, its workgroup up, the Data API as its admin**: `CREATE DATABASE governed_trades
      FROM ARN 'arn:aws:glue:us-west-2:<LF>:database/governed_trades' WITH DATA CATALOG SCHEMA
      governed_trades;`, a statement of its own (no transaction), then `GRANT USAGE ON DATABASE

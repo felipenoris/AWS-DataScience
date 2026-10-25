@@ -2698,6 +2698,14 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   occurred"*. Which grant is missing comes from the client's output or from `list-permissions`, never from
   the trail. Where: `log-stage-09-deployment-targets.md`, 2026-10-25.
 
+- **`lakeformation list-permissions` filtered by principal returns nothing on a resource another account's
+  catalog holds** (measured 2026-10-25 in Sandbox, on Data Governance's `governed_trades`). For the project's
+  access role, whose grant serves every read of the governed table, and for the project role alike, the
+  principal-filtered listing of the database and of the table came back empty; listed by resource alone, the
+  same calls returned both roles' `DESCRIBE` and `SELECT`, the latter as `TableWithColumns`. A read-back after a
+  grant or a revoke on a shared resource lists by resource. Where: `log-stage-09-deployment-targets.md`,
+  2026-10-25.
+
 ### MWAA Serverless
 
 - **A worker encrypts every XCom a task pushes with its own `kms:GenerateDataKey` on the workflow's key,

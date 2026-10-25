@@ -2246,3 +2246,21 @@ Times UTC.*
   role for the two reads on `model-package/awsds-prod-model-app-etl/*`; the simulator cannot evaluate a role as a
   resource-policy principal, and Production's trail holds no `DescribeModelPackage` from Staging, so the proof is a
   call from a Staging deploy session.
+
+## 2026-10-25 — 9.5 step 4's grant to the project role revoked
+
+*Claude's hand, on the user's authorization in chat (*"Sobre "3. Decidir sobre o grant LF ao papel do projeto",
+pode fazer conforme sua recomendação e revogar."*), as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-sandbox-1`, Sandbox's Lake Formation administrator); the forked session told before the write.
+Times UTC.*
+
+- **[Claude] Before**, at 14:57: `list-permissions` filtered by principal returned nothing on `<Data Governance>`'s
+  `governed_trades` and its table, for the project role and for the access role alike, while the access role's
+  grant serves the door; listed by resource alone, the database read `DESCRIBE` for both roles and the table
+  `DESCRIBE` (`Table`) and `SELECT` (`TableWithColumns`) for both.
+- **[Claude] The revoke**, 14:57:51 to 14:57:54, each exit 0: `DESCRIBE` on the database, `DESCRIBE` on
+  `trades.trades_notional` and `SELECT` on its column wildcard, from
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`.
+- **[Claude] Read back** by resource at 14:58:07: the database holds `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`'s
+  `DESCRIBE` alone, the table its `DESCRIBE` and `SELECT`. The project's door is unchanged, since the consumer
+  evaluates the access role; the next warehouse sitting's query from `eighth-experimentation` is its reading.

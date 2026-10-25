@@ -205,8 +205,11 @@ aws lakeformation revoke-permissions --principal "DataLakePrincipalIdentifier=ar
 ```
 
 and the same with `{"Database":{"CatalogId":"<Data Governance>","Name":"governed_trades"}}` and `DESCRIBE`.
-A Lake Formation grant to a role that no longer exists stays listed against its ARN, so the revoke comes
-before the apply that removes the access role.
+The table's `SELECT` is stored on its column wildcard: if the `Table` form leaves it, revoke it on
+`{"TableWithColumns":{…,"ColumnWildcard":{}}}`. Read the result back by resource, never by principal: a
+`list-permissions` filtered by principal returns nothing on these resources, held in Data Governance's catalog,
+even for a grant that works (2026-10-25). A Lake Formation grant to a role that no longer exists stays listed
+against its ARN, so the revoke comes before the apply that removes the access role.
 
 **The connection object stays.** It is DataZone's, no apply touches it, and this repository does not
 author it (`EXC-17`): removing it is a portal act by a project member. Until then it names an access

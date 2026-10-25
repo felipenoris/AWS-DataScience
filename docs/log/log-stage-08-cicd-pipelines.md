@@ -3314,3 +3314,11 @@ simulator alone. Times UTC.*
   plan of `sandbox/egress/` (down), exit 0: `GM-1` to `GM-8` pass, the copy at `5d5391abd7a3` (2026-10-16), the
   Dockerfile's `NO_PROXY_LIST` and the account's list both 72 names, `sha256 6faf2e4761622508`. The tag
   `default-v0.9.0` stays the user's GitLab act.
+
+## 2026-10-25 — verification ix's branches deleted
+
+*The user's hand; recorded from the user's word in chat (*"Sobre "2. Apagar no GitLab as branches", isso já foi
+feito."*), not read back, GitLab down.*
+
+- **[user]** `awsds/app-etl`'s branches `ix-governed-drift` and `ix-governed-drift-2` deleted; `main` carries none of
+  the drift.
