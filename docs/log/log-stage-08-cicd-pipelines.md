@@ -3544,3 +3544,17 @@ UTC.*
   `gates-v0.5.0` commit on `awsds/ci-gates` (`gitlab.md` §G), the dev-env `include:` `ref` to its commit, the
   merge request carrying the lock and the `ref`, the tag. `examples/app-etl/` stays at `gates-v0.4.0`: the
   change is the dev-env list alone.
+
+## 2026-10-25 — `gates-v0.5.0` pushed; the dev-env `include:` `ref` moved to it
+
+*The user's hand for the GitLab push, as a Maintainer of `awsds/ci-gates`; Claude's for the reading of the
+laptop's clone and the copy. Times UTC.*
+
+- **[user]** `awsds/ci-gates` at `7c3552b7effb0cfa1e43f4b91c7a9101d5be257b`, committed 21:32:42 and tagged
+  `gates-v0.5.0`: the 42 acceptances and the README's row, the two gates files unchanged since `gates-v0.4.0`;
+  the message names the steward and the two upper bounds. `origin`'s `main` and the tag both read that commit
+  from the laptop's clone, and its four files equal the copy under `ci-gates/`.
+- **[Claude]** `gitlab/awsds/dev-env/.gitlab-ci.yml`'s `include:` `ref` moved from `6fcea132…` (`gates-v0.4.0`)
+  to `7c3552b7…` (`gates-v0.5.0`), `./scripts/check-gitlab-ci.py` passing. The merge request on `awsds/dev-env`
+  carries the lock, the README and this file; its `pip-audit` is the gate's reading of the day, 50 accepted
+  and none blocking expected.
