@@ -2366,3 +2366,19 @@ UTC.*
   (`Project`, `Environment`, `Owner`, `ManagedBy`, `CostCenter` `stage-05`); `./aws/datalake.py awsds-infra-data`
   0 failed; `./aws/warehouse.py awsds-infra-prod` every check a pass or a note, the notes the absent workgroup's
   and `--sql`'s; `make check` passing.
+
+## 2026-10-25 — Production's full-table flag turned off, decision 13's loose end
+
+*The user's hand in the console; Claude's for the two readings, as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`), reads only. Times UTC.*
+
+- **[Claude] Before**, 17:38:59: `get-data-lake-settings` reads one administrator (`InfrastructureAccess`), both
+  create-default lists `[]`, `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE`, `AllowFullTableExternalDataAccess`
+  `true`, `AllowExternalDataFiltering` `false`; `./aws/deploytargets.py awsds-infra-prod` all checks passed.
+- **[user]** *"Desliguei a flag AllowFullTableExternalDataAccess de Production no console do Lake Formation
+  (us-west-2)."*
+- **[Claude] After**, 17:45:00: the key `AllowFullTableExternalDataAccess` absent from the settings, as the
+  console writes an off flag; the administrator, both lists, the parameters and `AllowExternalDataFiltering` as
+  before; `deploytargets.py` all checks passed. The other accounts the same minute: the lake `true`, Sandbox
+  `true`, Staging unset. `TM-26`'s Production half is closed, `AWS_STATE.md`'s flag row and the waiting list
+  brought to it; the lake's flag, the one the vend reads, stays on.

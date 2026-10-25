@@ -768,8 +768,8 @@ Each costs minutes of a sitting and leaves a recorded reading; none holds up ano
   refusal, xv's deploy- and execution-role halves and xxvii's cancel (no statement past 300 s); Stage 10
   xviii and xxviii's inbox marker (no task writes one).
 - **Not written**: Stage 8 3.3's read pinned to an Iceberg snapshot (Stage 9 4.4).
-- **The user's word**: Production's full-table flag, kept or turned off against `TM-26`, the lake's flag
-  sufficing since 2026-10-24 (Stage 9 decision 13).
+- **Taken 2026-10-25**: Production's full-table flag turned off by the user in the console, bracketed by
+  `DT-5` (Stage 9 decision 13; `TM-26`'s Production half closed, the lake's flag sufficing).
 
 ## Q. After the quotas: Stage 10's pass 3
 
