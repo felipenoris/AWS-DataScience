@@ -3296,3 +3296,17 @@ simulator alone. Times UTC.*
   account, `EG-5` *"none - the correct between-sessions state (D11)"*; `make status`, *"estimated burn: USD
   0.0000/h"*, Production's application and orchestration slices up at 0.0000 USD/h, every other `[E]` slice
   down and the three `[D]` hosts stopped.
+
+## 2026-10-25 — with the environment down: verification vii's attachment read again, the lint's clause table
+
+*Claude's hand, at the user's request to prepare what needs no environment, as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-sandbox-1`), reads only. Times UTC.*
+
+- **[Claude] vii's third half**: both Sandbox domains (`d-p6gthxc82ckg`, `d-lfgbdrjncmsu`) carry
+  `awsds-sandbox-dev-env` with no version in `JupyterLabAppSettings` and `CodeEditorAppSettings`, each
+  `LastModifiedTime` its last `UpdateDomain` (2026-10-15 06:14:05Z and 2026-10-16 00:31:25Z, both by
+  `InfrastructureAccess`). `lookup-events` reads no `UpdateDomain` and no `UpdateStack` since 2026-10-18, the same
+  lookup listing the eight re-attach writes of 2026-10-15 and 16: no reconciliation in ten days, the half open.
+- **[Claude] 5.6's clause table**: the training task's (f) is `awsds-workflows`' `treino`, in the template's line
+  since v0.4.0 (`--algorithm-repository` on `.gitlab-ci.yml` line 69); (f) for any other operator stays without a
+  rule until a workflow uses one.

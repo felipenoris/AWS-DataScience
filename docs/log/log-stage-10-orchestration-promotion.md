@@ -1220,3 +1220,14 @@ qualquer passo pendente do plano que não dependa do ambiente no ar."*), as the 
   `production/orchestration/` beside the warehouse chain's and saved as a plan, *"Plan: 0 to add, 3 to change, 0
   to destroy."*: the three inputs and the two states `ENABLED` → `DISABLED`. The apply waits for the user's
   decision (the waiting list).
+
+## 2026-10-25 — with the environment down: verification xiv read from the network ACLs
+
+*Claude's hand, at the user's request to prepare what needs no environment, as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`), reads only. Times UTC.*
+
+- **[Claude] xiv**: `describe-network-acls` on `VPC-Workloads` and on Staging's VPC reads one ACL each, the
+  default, over six subnets, rule 100 allowing all traffic in and out before the final deny; the `vpc` module
+  declares no network ACL (`main.tf`, *"NACLs stay at the default allow, by decision (step 2.3)"*). The guide's
+  outbound deny-all was never applied, and the workers reached the endpoints through the default ACL in every
+  run from 2026-10-23 to 2026-10-25.

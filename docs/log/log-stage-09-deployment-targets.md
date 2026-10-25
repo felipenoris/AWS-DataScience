@@ -2225,3 +2225,12 @@ Times UTC.*
   are gone, so the database readings (`WH-6`, `WH-12`, `WH-14`) and `EXC-13`'s password wait for the next
   warehouse sitting. `WH-9` reads the Sandbox connection's `lineageSync` `ENABLED` on `cron(43 3 * * ? *)`, 15
   runs, none completed (`EXC-17`).
+
+## 2026-10-25 — with the environment down: the verification table brought up to the log
+
+*Claude's hand, at the user's request to prepare what needs no environment; no AWS call. Times UTC.*
+
+- **[Claude]** Rows iv, v (the approval half), xiii, xviii, xix, xx (the write half), xxi, xxiii and xxvi now
+  carry the answers this log and the step text already held; xxiii has had no subject since decision 5 took
+  shape (ii). Rows i and iii stay as they were: their evidence is spread across 2.2's and 2.4's readings and
+  was not re-read in this sitting.
