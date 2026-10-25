@@ -617,12 +617,15 @@ carries `ONLY=`, or the build runner is destroyed.
 4. **[user] The mirror pushed at `main`** (`git push gitlab main` from the project folder) once `main`
    carries `orchestration-v0.2.1` and the paused schedules: read at `79651026` on 2026-10-25, the mirror
    holds `production/orchestration/` on `orchestration-v0.2.0` with the app-etl and train schedules
-   `ENABLED`, which `production-deploy` would apply over the pause.
+   `ENABLED`, which `production-deploy` would apply over the pause. **Done 2026-10-25**: the mirror at
+   `2d3160f1`, `origin`'s `main`, read at 22:45 UTC.
 5. **[user] The template's merge request on `awsds/app-etl`** (`EXC-22`, Stage 10 xxviii), from
    `examples/app-etl/` at `main` once `workflows/app-etl.yaml` there carries
    `ProcessingOutputConfig.KmsKeyId: "{env.PROJECT_KEY_ARN}"`, by `gitlab.md`'s "The application
    template" procedure. In the same sitting, Stage 10 xi's CI half: a branch carrying N.0 step 4's
-   portal-scoped definition, its branch pipeline's `test` expected red, the branch deleted after.
+   portal-scoped definition, its branch pipeline's `test` expected red, the branch deleted after. **Done
+   2026-10-25**: the merge request merged as `8d50f685` (pipelines #99 and #100 green); xi's branch
+   `xi-portal-scoped`, pipeline #101's `test` red on the lint's `projeto` rule (Stage 10's log).
 6. **[user] The tag**, `v0.4.6` unless `git ls-remote --tags` on `awsds/app-etl` reads it spent, with
    Sandbox's `egress/` down: Stage 8 xxiv, `test-deploy` expected to fail in seconds before `deploy`
    writes anything, *"FATAL: no sagemaker.api endpoint: is Sandbox's egress up (make up ENV=sandbox

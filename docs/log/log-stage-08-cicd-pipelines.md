@@ -3655,3 +3655,17 @@ the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`). Times 
   reads *"No changes"*.
 - **[Claude] `make status`** at 22:31: every `[E]` slice down but the hub's and GitLab's, Sandbox's `egress/`
   among them, as step 6's negative needs; the burn 0.4521 USD/h.
+
+## 2026-10-25 — §N.1 steps 4 and 5: the mirror at `main`, the template's `KmsKeyId` merged
+
+*The user's hand for the push and the merge request; Claude's for the readings (`git ls-remote`, the
+pipeline API in the user's GitLab session). Times UTC.*
+
+- **[user]** `git push gitlab main` from the project folder: `awsds/infrastructure`'s `main` reads
+  `2d3160f1` at 22:45, `origin`'s, so the promotion legs clone `orchestration-v0.2.1`, the paused schedules
+  and `model-chain.py`'s registry read.
+- **[user]** The merge request `kms-key-id` on `awsds/app-etl`, one line, `ProcessingOutputConfig.KmsKeyId:
+  "{env.PROJECT_KEY_ARN}"` in `workflows/app-etl.yaml` (`EXC-22`, Stage 10 xxviii): its branch pipeline #99
+  (`e915deac`) passed at 22:43, merged as `8d50f685`, whose `main` pipeline #100 passed at 22:44. **[Claude]**
+  the archive compared beforehand: GitLab's `main` and `examples/app-etl/` at `origin/main` differed in that
+  line alone.

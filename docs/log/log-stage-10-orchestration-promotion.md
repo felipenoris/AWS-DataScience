@@ -1382,3 +1382,18 @@ Times UTC.*
   `allowed` with `*`, while its real calls pass the battery's rows and the pipeline's jobs run. The denial is
   the instrument's (Lesson 30), so the five statements cannot be told apart by simulation against a job ARN;
   xviii and xv's halves stay a real job's reading (§N.4).
+
+## 2026-10-25 — verification xi's CI half: the lint turns a branch pipeline red on a portal-scoped definition
+
+*The user's hand for the branch; Claude's for the readings, from the user's GitLab session in Chrome (the
+pipeline API and the job's log). Times UTC.*
+
+- **[user]** The branch `xi-portal-scoped` of `awsds/app-etl` at `81a1a0af`, cut from `main` at `8d50f685`
+  (the `KmsKeyId` merge), one change: line 42 of `workflows/app-etl.yaml`, `RoleArn: "{proj.iam_role_arn}"`
+  replaced by a literal naming `datazone_usr_role_xi_probe` under a twelve-digit placeholder account.
+- **[Claude] Pipeline #101**, read at 22:45: `test` (#598) failed at 22:44:55 after `ruff check`, `ruff format
+  --check` and the 31 tests passed, the lint (`awsds-workflows` at `d856982c`) printing
+  *"workflows/app-etl.yaml: projeto: linha 42: um papel de projeto, datazone_usr_role_, um valor do projeto de
+  autoria: datazone_usr_role_"* and *"ERROR: Job failed: exit code 1"*; `pip-audit` (#597),
+  `secret_detection` (#595) and `secret-detection-gate` (#596) passed, `gate-without-proxy` (#599) skipped.
+  Verification xi is answered on both halves: the branch is the user's to delete, nothing of it merged.
