@@ -2382,3 +2382,18 @@ UTC.*
   before; `deploytargets.py` all checks passed. The other accounts the same minute: the lake `true`, Sandbox
   `true`, Staging unset. `TM-26`'s Production half is closed, `AWS_STATE.md`'s flag row and the waiting list
   brought to it; the lake's flag, the one the vend reads, stays on.
+
+## 2026-10-25 — the Redshift free-trial balances, read by the user in the console
+
+*The user's hand in the Redshift Serverless console, pasted in chat verbatim; Claude's reading of it.*
+
+- **[user]** Production: *"Free trial credits remaining $299.71 out of $300.00"*, *"Free trial expiration
+  January 21, 2027"*. Sandbox: *"Free trial credits remaining $287.51 out of $300.00"*, *"Free trial expiration
+  December 19, 2026"*.
+- **[Claude] The reading**: Production has spent 0.29 USD of credit on the warehouse sittings of 2026-10-24
+  and 2026-10-25 (9.3's statements, 9.4's load, 9.5's datashare, 9.6 and 9.7's reads, the compute up about four
+  hours in all), the "before" reading for the next warehouse sitting (`runbooks/promotion.md` §N.2). Sandbox
+  has spent 12.49 in all, 0.39 since 2026-10-17's 287.90. Production's expiration, 2027-01-21, is 90 days after
+  the namespace's creation (9.1, 2026-10-23 22:07 UTC) and not after the first workgroup (2026-10-24), as
+  Sandbox's 2026-12-19 is 90 days after its namespace of 2026-09-20: the free trial's window opens with the
+  namespace. The waiting list, the cost row, `PRICING.md`, `cost-model.md` and §N.2 carry the figures.

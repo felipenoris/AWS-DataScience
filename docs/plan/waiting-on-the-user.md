@@ -36,7 +36,6 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | 6e decision 11: carve one probe principal out of `DenyInvokingModelsThatRetain` for one sitting and invoke the Fable profile as it, or accept the vendor's sentence with its date (recommended: the carve-out) | 6e | the only negative control `mode: none` can have; the probe may meet `EXC-08`'s commercial gate before the retention mode |
 | 6e decision 13, taken by Claude on 2026-09-12 and never reviewed: only `bedrock-runtime` carries an action scope, not the `bedrock` control-plane endpoint | 6e | `PutModelInvocationLoggingConfiguration` still traverses that door; five weeks of readings show only `ListInferenceProfiles` through it |
 | `TM-01`: `-n` on the allow-list planes' `dstdomain` ACL, so a raw address matches no name (never on the deny-list ACL, which it would widen) | Stage 11, [`threat-model.md`](threat-model.md) | the proxy may admit a raw public address whose reverse record names an allowed host (inferred, unexercised); the change replaces the proxy host, so it rides the hub sitting's `production/proxy/` apply |
-| Stage 10 3.2, the deliberate break: (a) recorded as answered by `v0.4.1`'s unplanted failure, (b) by `v0.4.5`'s planted drift (recommended: both failure rules fired once, 06:03 and 06:04 UTC on 2026-10-25, two notifications delivered, read in Stage 10's log), or (c) one more break through a branch's tag after the next release | [Stage 10](stages/stage-10-orchestration-promotion.md) 3.2 and 3.7, [`runbooks/promotion.md`](runbooks/promotion.md) §N.0 | the stage's close; (c) costs a Staging leg |
 | Stage 17's decisions 5 (keep or delete at close), 6 (the endpoint's lifetime), 7 (the grants the measurements name), 10 (the Function entry) and 12 (the vector store), each recommended and none taken | [Stage 17](stages/stage-17-sandbox-machine-learning.md) |
 | Stage 11's decisions 1 (Macie's mechanism), 2 (its results repository), 5 (Malware Protection on the drop-box) and 9 (ECR enhanced scanning), each recommended; then Macie's acts 1.1 to 1.4 in Management and Audit | [Stage 11](stages/stage-11-dlp.md) |
 
@@ -59,7 +58,7 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | The account quota, D34's rung (recommended: the auto-enrollment rung), and the Account Factory product's reading in Management | [Stage 14](stages/stage-14-sandbox-vending.md) |
 | 6d 6.1 (xvii), the `GetEnvironmentCredentials` attempt; an optional new Querybook quota request | [6d](stages/stage-06d-unified-studio-remainder.md), `docs/SMUS.md` |
 | Stage 12's 2.4 (provoke one alarm of each class once, after the `[D]` hosts' wiring), 8.4 (the RTO tests for GitLab, the Terraform state and the lake) and 8.5 (rotate the internal CA's root once) | [Stage 12](stages/stage-12-observability-finops.md) |
-| Read Production's Redshift free-trial balance in the console, before and after a warehouse sitting (5b decision 9): its 90-day window opened with Production's first compute on 2026-10-24 | [Stage 9](stages/stage-09-deployment-targets.md) step 9, 5b |
+| Read Production's Redshift free-trial balance in the console before and after a warehouse sitting (5b decision 9): 299.71 of 300.00 on 2026-10-25, the window open since the namespace's creation on 2026-10-23 and closing 2027-01-21 | [Stage 9](stages/stage-09-deployment-targets.md) step 9, 5b |
 | Delete Stage 18's two clones under `$HOME/tmp/` | [Stage 18](stages/stage-18-staging-deployment-project.md)'s log, 2026-10-22 |
 
 ## Sittings with the environment up
@@ -86,4 +85,5 @@ the user's hands. Each row names what must be decided or done first. The sitting
 |---|---|
 | 2026-11-01 | Stage 11 2.1.3's internal-access analyzer bills at setup and on each 1st: create it after this date, delete it before 2026-12-01 |
 | 2026-11-13, 2026-11-15 and 2026-11-25 | the GitLab backups of 2026-10-13, 2026-10-15 and 2026-10-25 (03:01 UTC, read in the bucket 2026-10-25) expire, 31 days each; with GitLab down past 2026-11-25 no current backup is left, and 8.2 starts with a fresh one |
-| 2026-12-19 | the Redshift free trial ends, and 5b's and 6h's bill halves become readable |
+| 2026-12-19 | Sandbox's Redshift free trial ends (287.51 of 300.00 left on 2026-10-25), and 5b's and 6h's bill halves become readable |
+| 2027-01-21 | Production's Redshift free trial ends, 90 days after the namespace's creation (299.71 of 300.00 left on 2026-10-25); Stage 9's warehouse bill becomes readable |

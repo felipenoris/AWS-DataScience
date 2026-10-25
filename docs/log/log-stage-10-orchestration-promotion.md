@@ -1341,3 +1341,15 @@ review what is left; no AWS write.*
   passing with exit 0; the same under Python 3.9 and the example's pinned 3.12. The CI half, a branch whose
   pipeline's `test` goes red on the portal-scoped definition, is the GitLab sitting's
   (`runbooks/promotion.md` §N.1 step 5).
+
+## 2026-10-25 — 3.2 and 3.7 closed by the user's decision, (b)
+
+*The user's decision in chat (*"Ok, vamos pela sua recomendação."*, on the three options laid out there);
+Claude's hand for the record. No AWS call.*
+
+- **[user] (b)**: 3.2 is answered by `v0.4.5`'s planted drift (pipeline #87, Stage 8 verification ix), promoted
+  by the pipeline and failing the Glue job inside `awsds-staging-chain-app-etl`: both failure rules fired once
+  (06:03 and 06:04 UTC, this log's earlier entry of the day), two notifications delivered; 3.7 with it, the break
+  having run through a chain. The diagnosis path stays #77's reading (verification vi). No further break is
+  owed; a branch whose `GlueJobOperator` names an undeclared Glue job is an N.4 exercise for verification xx,
+  the user's to call at a release sitting.

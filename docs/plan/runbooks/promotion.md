@@ -535,7 +535,9 @@ carries `ONLY=`, or the build runner is destroyed.
    ```
 
    **Read 2026-10-25** (Stage 10's log): each rule `Sum` 1, at 06:03 and 06:04 UTC, and two notifications
-   delivered in the same minutes; (b) has its reading, 3.7's proof with it.
+   delivered in the same minutes; (b) has its reading, 3.7's proof with it. **Taken 2026-10-25, (b)**, the
+   user's decision as recommended: 3.2 and 3.7 closed on #87's reading; the undeclared-job break stays an N.4
+   exercise for Stage 10 xx.
 
 3. **[Claude] Stage 9 xii's call**, written where a Staging deploy session runs, the user choosing where:
    `scripts/model-chain.py transform staging` reading Production's newest approved version before it
@@ -676,7 +678,7 @@ carries `ONLY=`, or the build runner is destroyed.
     ```
 
 13. **[user] 3.7**: both `release.tf`s with the new tag's values, the mirror pushed after the merge.
-14. **If N.0 step 1 took (c)**: the break's branch and its tag, expected to stop in Staging's leg with
+14. **Not owed: N.0 step 1 took (b).** Run only as N.4's exercise for Stage 10 xx: the break's branch and its tag, expected to stop in Staging's leg with
     Production untouched; **[Claude]** the failure rules' `TriggeredRules` and the diagnosis from
     `list-task-instances`, `get-task-instance` and the task's log group, read before any `make down
     ENV=staging`; the branch deleted after.
@@ -691,7 +693,8 @@ Separable from N.1, with the hub up. Each workgroup bills 1.44 USD per query-hou
 idle, so its `make down` is the guarantee.
 
 1. **[user] The free trial's Production balance**, read in the Redshift console (Stage 9's cost row, 5b
-   decision 9), its window open since Production's first compute on 2026-10-24; then `make up
+   decision 9), 299.71 of 300.00 on 2026-10-25, the window open since the namespace's creation on 2026-10-23 and
+   closing 2027-01-21 (Stage 9's log); then `make up
    ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift`.
 2. **[Claude] Stage 9 xviii's last clause**, expected `DISABLED`, then `./aws/warehouse.py
    awsds-infra-prod --sql` (`WH-6`, `WH-12`, `WH-14`):
@@ -751,6 +754,7 @@ Each costs minutes of a sitting and leaves a recorded reading; none holds up ano
 | Stage 8 xv | N.1 | the proxy host stopped alone, a `.promotion` job retried, the proxy started again | the job's own check failing in about 20 s, *"no answer through the proxy"* |
 | Stage 8 xxviii's active half | N.1 | an `AssumeRole` of a deploy role through `sts.amazonaws.com`: a manual job on the deploy runner, or xvi's 15 s trust widening | `us-east-1`'s trail and, for the widened principal, whether the misuse rule fires; a regional assumption beside it reads 4.6's transformed message |
 | Stage 9 xxiv | N.2 | `REVOKE USAGE ON DATASHARE trades_lf FROM ACCOUNT '<Data Governance>' VIA DATA CATALOG`, then 9.5's steps 1 to 3 again | the Lake Formation rows the revoke leaves, and whether the register notices; INT-24's door is shut until the rebuild |
+| Stage 10 xx's second half | N.1, Staging | a branch's tag whose `GlueJobOperator` names a Glue job the application slice does not declare | the task failing on `CreateJob` rather than creating a job, the two failure rules firing once more |
 | Stage 10's network negative (1.2) | N.1, Staging | **[Claude⚡]** a workflow created by hand with no `NetworkConfiguration`, run once and deleted | the worker's address in the CloudTrail record of its first AWS call, beside a configured run's private address |
 
 ### N.5 The items that wait on something else
