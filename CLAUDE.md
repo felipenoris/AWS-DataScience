@@ -429,7 +429,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (`runbooks/promotion.md` §0.6), the sittings §T then §V. **The first promotion ran 2026-10-24**: `v0.3.3`'s
   pipeline #71 took Staging's leg to `SUCCEEDED` and deployed Production, once the lab's CA, the workflow's
   tag-on-create, the Studio hook under a deploy profile and the release file inside the clone's folder were
-  fixed; 3.7 recorded `v0.3.3`. **§V, 2026-10-24**: the mirror at `c714c47d` (`staging-down` skips the hook
+  fixed; **Staging's `egress/` is the user's up and down (decision 27, 2026-10-24: the pipeline raises and destroys no shared slice; `staging-check` reads it, no teardown job, `staging-gate` before the leg (decision 28, 2026-10-25), refusal 10, the deploy roles' egress grant narrowed to the read, planned and unapplied)**; 3.7 recorded `v0.3.3`. **§V, 2026-10-24**: the mirror at `c714c47d` (`staging-down` skips the hook
   as a deploy role); `v0.4.0`'s pipeline #74 stopped at `test-deploy`, which read app-etl-train's ARN for
   app-etl's run (MR !9), and `v0.4.1`'s #77 at `evaluate`, whose template met the XCom as JSON text
   (MR !10), so the data release is `v0.4.2` and ix's drift `v0.4.3`.

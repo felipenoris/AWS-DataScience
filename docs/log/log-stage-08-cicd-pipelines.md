@@ -3084,6 +3084,62 @@ with `InfrastructureAccess`, whose session expired at 00:52 UTC and was renewed 
   `awsds-prod-wf-app-etl`, `-app-etl-train` and `-app-etl-warehouse` `READY`, modified 00:57:33 to
   00:57:37, and the three schedules `ENABLED`.
 
+## 2026-10-24 — decision 27: the pipeline raises and destroys no shared slice
+
+*Claude's hand, with the environment as the promotion sitting left it; every call a read. Times UTC.*
+
+- **[user] The decision**, in chat, after the first promotion's legs were read: *"todo o estado
+  compartilhado será gerenciado pelo usuário pelo make up, seja o ENV sandbox/staging/production"*. What
+  it answers: a Staging `egress/` up/down cycle records about 200 AWS Config items, about 0.60 USD (107 in
+  the 20:00 UTC hour of 2026-10-24 for one `staging-up` and two `staging-deploy` attempts,
+  `docs/PRICING.md` §2 and §3), paid by every pipeline run; and `staging-down`'s `make down ENV=staging`
+  destroys every `[E]` slice of the account, what the user or another application raised in the one
+  state they share.
+- **[Claude] The template** (`examples/app-etl/.gitlab-ci.yml` on this repository's branch; `awsds/app-etl`
+  and the mirror untouched while §V's promotion runs on the current legs): `staging-up` became
+  `staging-check`, `scripts/check-egress.py staging egress` as `awsds-deploy-staging`, which reads the
+  slice's state and fails with `make up ENV=staging ONLY=egress` and the identity that runs it;
+  `production-deploy` reads `workloads-egress/` the same way as `awsds-deploy-prod`, before the bundle;
+  `staging-down` runs `make down ENV=staging ONLY=app/app-etl`, the application's slice alone,
+  `orchestration/` staying up between legs (decision 27 says why). `check-gitlab-ci.py` passes.
+- **[Claude] `check-egress.py` run by hand** as the infrastructure user, between 00:20 and 00:30 on
+  2026-10-25: `staging/egress/` up, seven endpoints `available` and the DNS Firewall association
+  `COMPLETE` (the promotion sitting's); `production/workloads-egress/` the same seven, up for 6.1's
+  firing at 06:30; the Staging state read as `awsds-infra-prod` answered `403` on `HeadObject`, and the
+  script exited 2 with the refusal's text, not "down" (Lesson 62).
+- **[Claude] The scripts**: `layers.py` refusal 10, a deploy profile acts on an application slice and the
+  orchestration slice alone; `make up ENV=staging ONLY=egress PROFILE=awsds-deploy-staging DRY=1` prints
+  it on `staging/egress`, and `make down ENV=staging ONLY=app/app-etl PROFILE=awsds-deploy-staging DRY=1`
+  lists the one destroy; `tfhygiene/states.py` gained `state_document`. `make check` OK.
+- **[Claude] The grants, written and planned, not applied**: `awsds-deploy-staging` loses `apply-egress`
+  and the `staging/egress/` state prefix; both deploy roles gain `DescribeTheEgressEndpoints` and
+  `ReadTheDnsFirewallAssociation` in `apply-application`, and the egress slice's state as a read key.
+  `staging/foundation/` planned *0 to add, 3 to change, 1 to destroy* (the role's description,
+  `apply-application` and `state` changed, `apply-egress` destroyed); `production/foundation/` *0 to add, 3 to
+  change, 0 to destroy* (the same three). A `terraform init` run beside pre-commit's `terraform_validate`
+  in the same slice folder failed twice (`fetch-pack: invalid index-pack output`, then *Required plugins
+  are not installed*) and passed alone. The applies wait for the mirror to carry the new legs: the
+  narrowed role refuses the current `staging-up`.
+- **[Claude, from §V's session] Readings on the orchestration slice staying up**, pipeline #77: the
+  `evaluate` task's log (`/awsds/staging/wf/app-etl-train`) was read at about 23:43, minutes before
+  `staging-down` destroyed the log groups with the slice; with the slice up between legs a failed
+  execution's log survives until the user's `make down`. The slice accumulates workflow versions until
+  then, each leg updating the workflow (the 50-version quota, `OR-7`), and the chains' executions,
+  `<tag>-<pipeline>-<chain>`; the destroy took about 2 min and the recreate about 1 min. Recorded in
+  decision 27.
+- **[user] The teardown job removed, the same sitting** (2026-10-25 UTC): *"Vamos alterar a solução
+  proposta para não precisar do `staging-down`. Desta forma, o staging vai funcionar de forma similar ao
+  que já é feito no production."* The application slice is a Glue job definition and a catalog table,
+  billing nothing at rest, so its destroy bought housekeeping and not cost; Staging holds the last
+  release between legs, as Production, and the user's `make down ENV=staging` destroys the three `[E]`
+  slices. The maintenance in GitLab (the MR, the mirror's push, the two applies) waits for §V's
+  promotion to end, the user's instruction.
+- **[user] A gate before Staging** (2026-10-25 UTC): *"peço criar um 'staging-gate' como etapa de
+  aprovação para transição entre 'release' e 'staging', nos mesmos moldes do que existe hoje para
+  'production-gate'"*. **[Claude]** written as decision 28: `staging-gate`, the stage `staging-gate`
+  between `release` and `staging`, manual and blocking, `needs: [release, store-bundle, test-deploy]`,
+  `resource_group: staging`; `staging-check` needs it. `check-gitlab-ci.py` passes.
+
 ## 2026-10-25 — `production-warehouse-ddl` retried; `v0.4.3`'s pipeline #82 for verification ix, cancelled by the user
 
 *The user's hand for the retry, the tag and the cancel; Claude's for the readings (the traces through

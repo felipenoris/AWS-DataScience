@@ -751,22 +751,39 @@ def deploy_profiles() -> set:
 
 
 def pipeline_refusal(account: str, slice_name: str, profile: str) -> str | None:
-    """Refusal 8 (Stage 8 step 2.4): why a pipeline profile must not apply this slice, or None.
+    """Refusals 8 and 10: why a pipeline profile must not act on this slice, or None.
 
     A pipeline profile is a deploy role's (backend.DEPLOY_ROLES and DEPLOY_ROLES_BY_SLICE; the deploy
-    runner names each profile after its role). In an Interactive account it applies no slice: CI
-    never applies into Sandbox (D21's surviving objection), and the two flows that write where people
-    work create their objects through the API - the dev-env release its image versions (step 1.6,
-    decision 18), the test deploy its workflow (decision 19). Neither deploy role holds state access,
-    which refuses the same writes in IAM; this says so before anything runs.
+    runner names each profile after its role). Refusal 8 (Stage 8 step 2.4): in an Interactive account
+    it applies no slice. CI never applies into Sandbox (D21's surviving objection), and the two flows
+    that write where people work create their objects through the API - the dev-env release its image
+    versions (step 1.6, decision 18), the test deploy its workflow (decision 19). Neither deploy role
+    holds state access, which refuses the same writes in IAM; this says so before anything runs.
+
+    Refusal 10 (Stage 8 decision 27, 2026-10-24): in a deployment target it acts on an application
+    slice and the orchestration slice alone. Every shared slice, the egress slices first, is the user's
+    `make up`/`make down` in every account: a leg's `make up ENV=staging ONLY=egress` recorded about
+    200 AWS Config items per cycle, about 0.60 USD on every pipeline run, and its `make down
+    ENV=staging` destroyed what the user or another application had raised in the one state they
+    share. The leg reads the egress slice instead (scripts/check-egress.py).
     """
-    if profile not in deploy_profiles() or account not in backend.SMUS_MEMBERS:
+    if profile not in deploy_profiles():
         return None
-    return (
-        f"refusal 8: the pipeline profile {profile} applies no {account}/ slice - CI never applies "
-        "into the account people work in; the dev-env release creates image versions and the test "
-        "deploy its workflow through the API (Stage 8 step 2.4, decisions 18 and 19)"
-    )
+    if account in backend.SMUS_MEMBERS:
+        return (
+            f"refusal 8: the pipeline profile {profile} applies no {account}/ slice - CI never applies "
+            "into the account people work in; the dev-env release creates image versions and the test "
+            "deploy its workflow through the API (Stage 8 step 2.4, decisions 18 and 19)"
+        )
+    if not (
+        slice_name.startswith(f"{APPLICATION_PARENT}/") or slice_name in APPLIED_BY_THEIR_OWN_HAND
+    ):
+        return (
+            f"refusal 10: the pipeline profile {profile} raises and destroys no shared slice - "
+            f"{account}/{slice_name}/ is the user's `make up`/`make down`, and a deploy profile acts on "
+            "an application slice and the orchestration slice alone (Stage 8 decision 27, 2026-10-24)"
+        )
+    return None
 
 
 # A slice folder sits under its account folder, or one level further down under one of these parents

@@ -278,8 +278,10 @@ resource "aws_secretsmanager_secret_policy" "deploy_runner_token" {
 # -------------------------------------------------------------------- the deploy role (4.1)
 #
 # What it applies from the runner: production/app/* (step 3.6) and production/orchestration/ (Stage
-# 10), and no other slice - the pipeline never runs `make up` or `make down ENV=production`. Its grant
-# is the inline document apply-application (apply-application.tf) and the orchestration grant's two
+# 10), and no other slice - the pipeline never runs `make up` or `make down ENV=production`, and the
+# leg reads production/workloads-egress/ before it deploys (scripts/check-egress.py, decision 27). Its
+# grant is the inline document apply-application (apply-application.tf), which carries that read, and
+# the orchestration grant's two
 # managed policies (apply-orchestration.tf). Every role those slices create carries
 # awsds-prod-app-boundary (app-boundary.tf, step 3.0).
 module "deploy_role" {
@@ -287,12 +289,12 @@ module "deploy_role" {
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.3.0"
 
   name            = var.deploy_role_name
-  description     = "Stage 8's promotion into Production (INT-08, step 3.6) - assumed only by the deploy runner's role; applies production/app/* and production/orchestration/"
+  description     = "Stage 8's promotion into Production (INT-08, step 3.6) - assumed only by the deploy runner's role; applies production/app/* and production/orchestration/, reads production/workloads-egress/"
   env             = var.env
   runner_role_arn = module.deploy_runner_role.role_arn
   runner_role_id  = data.aws_iam_role.deploy_runner.unique_id
   state_prefixes  = ["${var.account_folder}/app/", "${var.account_folder}/orchestration/"]
-  state_read_keys = [for s in ["workloads", "foundation", "sagemaker", "data"] : "${var.account_folder}/${s}/terraform.tfstate"]
+  state_read_keys = [for s in ["workloads", "foundation", "sagemaker", "data", "workloads-egress"] : "${var.account_folder}/${s}/terraform.tfstate"]
 
   inline_policies = {
     "apply-application" = data.aws_iam_policy_document.apply_application.json
