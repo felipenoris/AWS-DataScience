@@ -132,12 +132,14 @@ locals {
       schedule_timezone   = "UTC"
       schedule_enabled    = true
     }
+    # Paused: the load fails whenever the warehouse compute, [E], is down (Stage 9 decision 15), so its
+    # chain is started by hand in a sitting that raises the compute.
     "app-etl-warehouse" = {
       definition_template = file("${path.module}/chains/app-etl-warehouse.asl.json")
       workflows           = ["app-etl-warehouse"]
       schedule_expression = "cron(30 7 * * ? *)"
       schedule_timezone   = "UTC"
-      schedule_enabled    = true
+      schedule_enabled    = false
     }
   }
 
