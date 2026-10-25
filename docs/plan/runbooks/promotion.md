@@ -590,7 +590,9 @@ carries `ONLY=`, or the build runner is destroyed.
 
 1. **[user] Stage 8 1.1, the house image `default-v0.9.0`** (§H step 3), its 72-name literal passing `GM-1`
    to `GM-8` on 2026-10-25 at 07:41 UTC; `DE-5` turns green with it.
-2. **[user] The deploy image on Terraform 1.16.6** (§H step 4), the laptop on it since 2026-10-25: **before steps 8
+2. **[user] The deploy image on Terraform 1.16.6** (§H step 4; **built 2026-10-25 as `v0.3.0`**, its digest
+   pinned in `production/runners/variables.tf`, the runner's replacement by `make gitlab-up BUILD=1` once the
+   pin is on `main`), the laptop on it since 2026-10-25: **before steps 8
    and 10, and before any laptop apply or `make up` of a slice the pipeline reads or applies** (the application
    and orchestration slices, `staging/egress`, `production/workloads-egress`, and the `data/`, `sagemaker/`,
    `foundation/` and `workloads/` states their `terraform_remote_state` reads), since the image's 1.15.8 refuses

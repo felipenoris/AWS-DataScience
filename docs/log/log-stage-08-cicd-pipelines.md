@@ -3464,3 +3464,26 @@ Times UTC.*
   `production/egress/`'s twelve endpoints; every other `[E]` slice down.
 - **[Claude]** `https://gitlab.awsds.internal/users/sign_in` answered `200` through the tunnel at 20:18, eleven
   minutes after the start.
+
+## 2026-10-25 — §H step 4: the deploy image `v0.3.0` on Terraform 1.16.6, built; its digest pinned
+
+*The user's hand in GitLab (the merge request `terraform-1-16-6` on `awsds/deploy-image`, merged at 20:29:27
+UTC as `e502078b`; the pipeline on `main` with `IMAGE_TAG` `v0.3.0`, *"build demorou pouco menos de 1min e
+30seg"*, the job's `deploy.json` printing `containerimage.digest` `sha256:9965f1b2…6736`); Claude's for the
+readings and the pin, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), reads and a
+plan only. Times UTC.*
+
+- **[Claude] The image in ECR** at 20:32: `awsds-prod-ecr-deploy:v0.3.0`, digest
+  `sha256:9965f1b2a3f1d5705bfdebceb02191de66e5b2c10b68e6789da9a4e941f26736`, 257,379,357 bytes, pushed
+  20:31:21. The push's scan, complete at 20:33:02: CRITICAL 0, HIGH 5, MEDIUM 10, LOW 5, against `v0.2.0`'s
+  HIGH 4, MEDIUM 10, LOW 4 of 2026-10-16; the four HIGHs of `v0.2.0` stay (`zlib` CVE-2026-85091, `glibc`
+  CVE-2026-19499 and CVE-2026-5435, `gnupg2` CVE-2026-24882) and `cyrus-sasl2` CVE-2026-107161 joins them, the
+  Debian 13 base's (`python:3.14-slim`); no finding names Terraform, which the scanner does not read.
+- **[Claude] The pin**: `deploy_image_digest` in `production/runners/variables.tf` moved to the new digest,
+  the description naming `v0.3.0`; a read-only plan with `TF_VAR_build_runner=true` at 20:33 reads *"1 to add,
+  0 to change, 1 to destroy"*, `aws_instance.deploy_runner[0]` replaced on its user data, the build and test
+  runners untouched. The apply is the user's `make gitlab-up BUILD=1` from the project folder once the pin is
+  on `main` (PR #260), and from then on the deploy runner's jobs run Terraform 1.16.6, the laptop's version.
+- **[Claude] The copy**: `./scripts/gitlab-mirror.py awsds/deploy-image` at 20:34 read GitLab's `main` at
+  `e502078b` holding the copy's six files unchanged, and wrote `gitlab/mirror.json`. The README's release row
+  for `v0.3.0` is GitLab's to hold first, the mirror then copying it back.
