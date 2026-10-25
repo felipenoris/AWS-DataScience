@@ -2646,6 +2646,12 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   reaches the owner's trail, as a shared event; `GetTemporaryGlueTableCredentials` never appears as an
   event name. Where: `log-stage-09-deployment-targets.md`, the 2026-10-23 entries; Stage 9 decision 13.
 
+- **A Lake Formation refusal reaches CloudTrail without the permission it lacked** (measured 2026-10-25,
+  Staging's `make down`). The client read *"Insufficient Lake Formation permission(s): Required Drop on
+  trades_notional"*, while the trail's two `DeleteTable` events read `AccessDenied`, *"An unknown error
+  occurred"*. Which grant is missing comes from the client's output or from `list-permissions`, never from
+  the trail. Where: `log-stage-09-deployment-targets.md`, 2026-10-25.
+
 ### MWAA Serverless
 
 - **A worker encrypts every XCom a task pushes with its own `kms:GenerateDataKey` on the workflow's key,

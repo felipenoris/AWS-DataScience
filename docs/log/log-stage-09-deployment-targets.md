@@ -2173,3 +2173,30 @@ readings, as the infrastructure user with `InfrastructureAccess`. Times UTC.*
   9.5's open measurement is answered: a Serverless producer with no workgroup keeps serving a Lake
   Formation-managed datashare from its namespace, so a Sandbox read costs Sandbox's compute alone, never both
   workgroups at once.
+
+## 2026-10-25 — Staging's `make down` refused the application table's delete; the infrastructure user's grant on `app_outputs`
+
+*The user's hand for `make down ENV=staging` and the grant that unblocked it; the forked session's for the
+reading of Staging after the down; Claude's for the trail's reading and the code, as the infrastructure user
+with `InfrastructureAccess` (`awsds-infra-staging`, `awsds-infra-prod`). Times UTC.*
+
+- **[user] `make down ENV=staging`**, as the infrastructure user: the application slice's Glue job destroyed,
+  the table refused, *"AccessDeniedException: Insufficient Lake Formation permission(s): Required Drop on
+  trades_notional"* (the forked session's quote of the output). **[Claude] Staging's trail**: `DeleteTable` on
+  `app_outputs.trades_notional` refused at 06:30:24 and 06:31:52, Terraform 1.15.8, the trail reading
+  `AccessDenied`, *"An unknown error occurred"*. The table's creator was `awsds-deploy-staging`, through
+  pipeline #87's `staging-deploy`, and Lake Formation gives a table's creator its permissions and no one else:
+  the account's administrator, who created `app_outputs`, holds no `DROP` on a table another principal created
+  in it.
+- **[user] The unblock**, `aws lakeformation grant-permissions` from the CLI at 06:34:37: `DROP` on
+  `app_outputs.trades_notional`, by name, to `InfrastructureAccess`; `DeleteTable` passed at 06:36:00 and the
+  down completed. **[forked session]** Staging read at zero at about 06:47: `./aws/egress.py awsds-infra-staging`
+  0 interface endpoints, 0 NAT, 0.000 USD/h; no workflow; the Glue job and the table gone. **[Claude] read at
+  06:49**: `app_outputs` holds no table, and the grants on its tables list the job role, the persona and the
+  deploy role; the by-name grant left with its table.
+- **[Claude] The fix**, at the forked session's request on the user's behalf: since Stage 8's decision 27 the
+  pipeline applies an application slice and the user destroys it, so every release's table meets this refusal
+  at the next down. `infrastructure_app_outputs_tables` in `staging/data/` and `production/data/` gives
+  `InfrastructureAccess` the deploy role's catalog operations on every table of `app_outputs`, `ALTER`, `DROP`
+  and `DESCRIBE`, no data permission; planned at 06:44 in each slice, *"Plan: 1 to add, 0 to change, 0 to
+  destroy."*, the plans saved, the applies waiting for the user's authorization.
