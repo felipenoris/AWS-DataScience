@@ -579,7 +579,7 @@ carries `ONLY=`, or the build runner is destroyed.
    ```
 
 7. **[user] Stage 8 xxi's attempt half**, the waiting list's row: a test object written and deleted in
-   `awsds-prod-releases` as `awsds-infra-prod`, beside the refusals xxi names.
+   `awsds-prod-releases` as `awsds-infra-prod`, beside the refusals xxi names. **Done 2026-10-25** (Stage 8's log).
 8. **[Claude] Stage 9 rows i and iii**, filled from 2.2's and 2.4's readings in Stage 9's log. **Done
    2026-10-25.**
 

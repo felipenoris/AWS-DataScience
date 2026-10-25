@@ -3421,3 +3421,20 @@ Times UTC.*
 - **[Claude] After**, 19:43:13: the scan `COMPLETE` with the same completion time, nothing re-run: a second
   scan inside 24 h is refused, not absorbed, and the gate's read of the push's scan is the one reading an image
   gets that day.
+
+## 2026-10-25 — verification xxi's attempt half: the infrastructure user writes and deletes on the release bucket
+
+*The user's hand, the command pasted in chat; Claude's read-back as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`), reads only. Times UTC.*
+
+- **[user]** `echo xxi > /tmp/xxi-probe.txt && aws s3 cp /tmp/xxi-probe.txt
+  s3://awsds-prod-releases/xxi-probe/probe.txt --profile awsds-infra-prod --region us-west-2 && aws s3 rm
+  s3://awsds-prod-releases/xxi-probe/probe.txt --profile awsds-infra-prod --region us-west-2`: *"upload:
+  ../../../../tmp/xxi-probe.txt to s3://awsds-prod-releases/xxi-probe/probe.txt"*, *"delete:
+  s3://awsds-prod-releases/xxi-probe/probe.txt"*.
+- **[Claude] Read back** at 19:50:55: one version of `xxi-probe/probe.txt`, 4 bytes, 19:50:20, noncurrent,
+  under `aws:kms` with the registry key (`alias/awsds-prod-registry`'s id); a delete marker current at
+  19:50:21. The lifecycle expires noncurrent versions at 90 days and carries no rule for expired delete
+  markers, so the marker outlives the version; nothing else to clean. The bucket's
+  `DenyDeletesExceptInfrastructure` spared the infrastructure user as written, the simulator's half of
+  2026-10-18 reading the same for the other principals.

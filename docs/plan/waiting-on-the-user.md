@@ -51,7 +51,6 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | 6h 5.3 and 5.4's real attempts, for the refusals' wording, with the compute up (the simulator read both as designed on 2026-10-18) | [6h](stages/stage-06h-redshift-connection.md) |
 | The persona proofs that need a space, run from a Sandbox space as the project role: Stage 9 3.4's project-role half (the registry pair) and 8.1's share read-but-not-write in the query editor, which waits on 6f decision 1 since the project role holds no Lake Formation grant on the lake; and 5.4's Data API negative, which validates before it authorizes, so it needs Production's workgroup up | [Stage 9](stages/stage-09-deployment-targets.md), [Stage 10](stages/stage-10-orchestration-promotion.md); [`runbooks/promotion.md`](runbooks/promotion.md) §0 |
 | The template's MR on `awsds/app-etl` carrying `ProcessingOutputConfig.KmsKeyId` (`examples/app-etl/workflows/app-etl.yaml` at this PR's merge), then a tag: the processing output leaves `aws/s3` for the account's data key at each account's next run (`EXC-22`) | [Stage 10](stages/stage-10-orchestration-promotion.md) xxviii, `AWS_STATE.md` `EXC-22` |
-| Verification xxi's attempt half, an S3 put and delete on the release bucket | Stage 8 |
 | Step 2's portal acts: a consumer project, a subscription, an approval as the Governance Manager, whose project membership hands that user the project role (Stage 18 6.1) | 6f step 2, 4.3 |
 | 0.4's portal half; 6.4, keep or drop `lab` | 6h |
 | The domain name | [Stage 13](stages/stage-13-public-web-tier.md) |
