@@ -23,12 +23,4 @@ resource "aws_redshift_data_share_authorization" "trades_lf_to_lake" {
   consumer_identifier = "DataCatalog/${data.terraform_remote_state.data.outputs.lake_catalog_id}"
 }
 
-# The adoption of the authorization of 2026-10-25 01:52 UTC, made by hand (Stage 9's log). The import
-# block reads the share's ARN from the account's own list rather than from the namespace resource, so
-# its id is known at plan time; the block and the data source go in the commit after the apply.
-data "aws_redshift_data_shares" "this" {}
-
-import {
-  to = aws_redshift_data_share_authorization.trades_lf_to_lake
-  id = "${one([for s in data.aws_redshift_data_shares.this.data_shares : s.data_share_arn if endswith(s.data_share_arn, "/trades_lf")])},DataCatalog/${data.terraform_remote_state.data.outputs.lake_catalog_id}"
-}
+# Adopted into this state on 2026-10-25 from the authorization made by hand (Stage 9 9.5, the log).

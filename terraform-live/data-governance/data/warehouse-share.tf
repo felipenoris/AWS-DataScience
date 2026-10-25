@@ -43,14 +43,5 @@ resource "aws_glue_catalog_database" "governed_trades" {
   depends_on = [aws_lakeformation_data_lake_settings.this, aws_redshift_data_share_consumer_association.trades_lf]
 }
 
-# The adoption of the objects of 2026-10-25 01:52 and 01:53 UTC, made by hand (Stage 9's log). The
-# import blocks go in the commit after the apply.
-import {
-  to = aws_redshift_data_share_consumer_association.trades_lf
-  id = "${local.trades_lf_datashare_arn},,${local.catalog_arn},"
-}
-
-import {
-  to = aws_glue_catalog_database.governed_trades
-  id = "${data.aws_caller_identity.current.account_id}:governed_trades"
-}
+# Both adopted into this state on 2026-10-25 from the objects made by hand (Stage 9 9.5, the log); the
+# provider's five default tags landed on the database at the adoption.

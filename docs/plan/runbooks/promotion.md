@@ -546,8 +546,8 @@ carries `ONLY=`, or the build runner is destroyed.
    2026-10-25** in `scripts/model-chain.py transform staging`: before Staging's own model is served, the
    newest approved version of Production's group is listed and described, an empty group reported and a
    refusal failing the job; the group ARN comes from `staging/foundation/`'s new output
-   `registry_model_package_group_arn_prefix` (planned, outputs alone), **[Claude⚡]** applied with the
-   alerts var-file on the user's word, and the script reaches the runner with the mirror's push (N.1 step 4).
+   `registry_model_package_group_arn_prefix`, applied with the alerts var-file on 2026-10-25 (*0 added, 0
+   changed*, the output written), and the script reaches the runner with the mirror's push (N.1 step 4).
 4. **[Claude] Stage 8 xiv at `awsds-workflows` `d856982c` and Stage 10 xi's offline half**: the 40
    deliberate violations of 2026-10-18 run again against scratch copies of `examples/app-etl/`; the lint
    on a portal-scoped definition, on a container named by anything but an ECR URI and digest and on a
@@ -563,8 +563,9 @@ carries `ONLY=`, or the build runner is destroyed.
    `production/warehouse/datashare.tf` reads *1 to import* and no change, once `allow_writes` was left
    undeclared; the association and the federated database in `data-governance/data/warehouse-share.tf`
    read *2 to import, 1 to change*, the change the provider's five default tags on the database. The
-   registration and the two LF-Tag assignments stay by hand, neither resource importable. The applies run
-   as `awsds-infra-prod` then `awsds-infra-data`, and the import blocks go in the commit after.
+   registration and the two LF-Tag assignments stay by hand, neither resource importable. **Applied
+   2026-10-25**, 17:25 to 17:26 UTC, on the user's authorization: *1 imported* and *2 imported, 1 changed*,
+   each re-planned `No changes`, the import blocks removed after (Stage 9's log).
 6. **[user] Stage 9 5.4's read deny**, as the Data Scientist User through `awsds-scientist-prod`, the
    script in place since 2026-10-23; expected refused on `s3:GetObject` *"with an explicit deny in a
    resource-based policy"*, `DenyThePersonaReadsOutsideTheNamedPrefixes`:

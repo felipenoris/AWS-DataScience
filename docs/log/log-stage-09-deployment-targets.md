@@ -2338,3 +2338,31 @@ infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infr
   2026-10-24 (2.2's brackets, 2.4's commit and the key's refusal of the direct put).
 - **[Claude] 3.5's requests**, read in both accounts: the four `ml.m5.large` requests still
   `CASE_OPENED`, each with its case id, the applied quotas above them since 2026-10-24; nothing waits on them.
+
+## 2026-10-25 — 9.5's adoption and xii's output applied, with the environment down
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo os três applies com nada no ar, como usuário de
+infraestrutura com InfrastructureAccess: staging/foundation (só o output, com o var-file de alertas,
+awsds-infra-staging), production/warehouse (1 to import, awsds-infra-prod) e data-governance/data (2 to import,
+1 to change, awsds-infra-data)"*), as the infrastructure user with `InfrastructureAccess`; the one peer session
+on this machine told before the writes. Recipe A: a fresh plan saved, the saved plan applied, a re-plan. Times
+UTC.*
+
+- **[Claude] `staging/foundation/`**, with the alerts var-file: the plan at 17:24:36 read *Changes to Outputs*
+  alone; the apply at 17:24:53 to 17:25:04, *"0 added, 0 changed, 0 destroyed"*, the output
+  `registry_model_package_group_arn_prefix` written as `arn:aws:sagemaker:us-west-2:<Production>:model-package-group/awsds-prod-model-`;
+  re-planned `No changes`.
+- **[Claude] `production/warehouse/`**: the plan at 17:25:19, *"1 to import, 0 to add, 0 to change, 0 to
+  destroy"*; the apply at 17:25:31 to 17:25:39, `aws_redshift_data_share_authorization.trades_lf_to_lake`
+  *"Import complete"*, *"1 imported, 0 added, 0 changed, 0 destroyed"*; re-planned `No changes`.
+- **[Claude] `data-governance/data/`**: the plan at 17:25:51, *"2 to import, 0 to add, 1 to change, 0 to
+  destroy"*; the apply at 17:26:09 to 17:26:19, `aws_redshift_data_share_consumer_association.trades_lf` and
+  `aws_glue_catalog_database.governed_trades` *"Import complete"*, the database's *"Modifications complete after
+  2s"* (the five default tags), *"2 imported, 0 added, 1 changed, 0 destroyed"*; re-planned `No changes`, the
+  import blocks still in the configuration, which Terraform treats as done.
+- **[Claude] The import blocks removed** from both files, with the warehouse slice's import-only data source,
+  and both slices re-planned `No changes`.
+- **[Claude] Read back**: both states list the adopted addresses; the database carries the five tags
+  (`Project`, `Environment`, `Owner`, `ManagedBy`, `CostCenter` `stage-05`); `./aws/datalake.py awsds-infra-data`
+  0 failed; `./aws/warehouse.py awsds-infra-prod` every check a pass or a note, the notes the absent workgroup's
+  and `--sql`'s; `make check` passing.
