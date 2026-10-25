@@ -3766,3 +3766,15 @@ reads only. Times UTC.*
 - Step 9 is closed: ix's Staging half (`OR-3`), `EXC-22`'s Staging half, xii. `production-plan` (#613)
   started 23:51:40; `production-gate` (#614) is the manual job step 10 opens after
   `make up ENV=production ONLY=workloads-egress`.
+
+## 2026-10-25 — `production-plan` green; the pipeline at `production-gate`
+
+*Claude's hand; the job's log in the user's GitLab session. Times UTC.*
+
+- **[Claude] `production-plan` (#613)**, 23:51:40 to 23:52:30, succeeded with `production/workloads-egress/`
+  still down: `production/app/app-etl/`'s plan *"0 to add, 2 to change, 0 to destroy"*, the Glue job
+  `awsds-prod-app-etl`'s `script_location` moving from `applications/app-etl/v0.4.2/glue/transform.py` to
+  `v0.4.6`'s, the outputs `image_uri` from `sha256:9735e42e…6fd5` to `sha256:ba8d41bf…f98d` and
+  `release_prefix` to `applications/app-etl/v0.4.6`; the saved plan; `lint-plan` *"ok: 2 job(s) do Glue:
+  aws_glue_job.load[0], aws_glue_job.this[0]"* (Stage 10 2.3's rule (2c)) with `awsds-workflows` at
+  `d856982c`. The pipeline reads `manual` at `production-gate` (#614), §N.1 step 10's.
