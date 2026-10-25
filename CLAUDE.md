@@ -221,6 +221,12 @@ per laptop, never one per session.
 - A module tag is repository-global and never moves (`terraform-changes.md`, Recipe B). The next
   version is read from `git ls-remote --tags origin` at the moment of tagging, never from memory: a
   peer may have taken it.
+- **The Terraform binary is one per laptop, and every session's.** It runs 1.16.6 since 2026-10-25 while
+  the deploy image runs 1.15.8 until its rebuild, the first act of the next GitLab sitting. Until then no
+  session applies or raises a slice the pipeline reads or applies (the application and orchestration
+  slices, `staging/egress`, `production/workloads-egress`, and both targets' `data/`, `sagemaker/`,
+  `foundation/` and `workloads/`): a state written by 1.16.6 is refused by 1.15.8 (Lesson 76). `make hub-up`
+  and `make gitlab-up` touch no such slice and are free.
 - **Parallel sessions, measured 2026-10-18.** The app starts a session only on a turn the user's own
   message began: a turn begun right after `/compact` is refused, and so are a request the user sends
   mid-turn and one sent over Remote Control, where a proposed card does not show either. In that case
@@ -474,7 +480,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `DISABLED` between sittings), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
-- **Standing rules**: `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit
+- **Standing rules**: `-input=false` on every plan and apply (Lesson 47); until the deploy image is rebuilt on
+  1.16.6, no slice the pipeline reads is applied or raised from the laptop (Lesson 76); never pipe a command whose exit
   code matters (Lesson 46); a module change is exercised by planning a caller, never by `validate`;
   `-refresh=false` is forbidden on `sandbox/data/`, where SMUS is a Lake Formation admin (OQ 24); never add
   an `sts:` action to the RCP without reading `CT.STS.PV.1`'s exclusion note; resolve an account by exact
@@ -625,6 +632,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     textually — and the plan that fixes it calls the change whitespace.**
 75. **A permission the creator holds without a grant moves with whoever creates the object — a decision that
     moves the teardown to another identity owes that identity the grant nobody had to write.**
+76. **A toolchain upgrade on one writer locks out every older reader of the states it writes — the readers
+    that cannot move on the spot move first, or the writer stays off the shared states.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

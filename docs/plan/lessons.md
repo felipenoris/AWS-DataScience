@@ -1685,6 +1685,33 @@ same change, and run the act once as the new identity before relying on it.
 **What makes it expensive.** It surfaces at the teardown, the step nobody rehearses, after the work succeeded,
 and the hand grant that unblocks it leaves with its object and teaches the next release nothing.
 
+## Lesson 76 — a toolchain upgrade on one writer locks out every older reader of the states it writes, and the readers that cannot move on the spot move first
+
+**What happened.** The laptop moved from Terraform 1.15.8 to 1.16.6 on 2026-10-25 (the bump taken 2026-10-22
+for CVE-2026-78669), while the deploy image the pipeline's jobs run in carries 1.15.8 until its next release, a
+GitLab act. Terraform refuses a state snapshot written by a newer version, *"state snapshot was created by
+Terraform vX, which is newer than current vY"*, in a plan, in a `terraform_remote_state` read and in `terraform
+output` alike. Every state the pipeline reads or applies was still 1.15.8's that day, because the sitting's
+three applies ran before the install; the first laptop apply or `make up` of such a slice after it would have
+put the state out of the image's reach: `staging-check` on `staging/egress`, `production-deploy` on
+`production/workloads-egress`, and the application and orchestration slices' `terraform_remote_state` reads of
+`data/`, `sagemaker/`, `foundation/` and `workloads/` in both targets.
+
+**Why it is a class rather than a slip.** A version is a property of every state a binary writes, not of the
+machine alone (Lesson 65's mirror): the laptop and the image are two writers and two readers of the same
+states, and upgrading one changes what the other can read without touching a file either of them reads.
+Nothing in the plan, the diff or the apply names the second reader; the refusal arrives in a pipeline job,
+days later, as the failure of a slice nobody changed.
+
+**The rule.** When two toolchains read the same states, the readers that cannot be upgraded on the spot (an
+image, a runner) move first, or every writer that moved stays off the states they share until they do. Here:
+the deploy image is rebuilt before any laptop apply or `make up` of a slice the pipeline reads or applies
+([`runbooks/promotion.md`](runbooks/promotion.md) §N.1 step 2); the hub and GitLab slices, which no pipeline
+reads, are free.
+
+**What makes it expensive.** The lockout is invisible until the pipeline runs, and the way back is a
+downgrade of the laptop or an image rebuild in the middle of a release.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits; the entries here are facts about the platform that cost a measurement

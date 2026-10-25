@@ -3401,3 +3401,6 @@ reading of the binary and the edits. No AWS write.*
   date ran before the install). At the next sitting the image is rebuilt before `make up ENV=staging
   ONLY=egress`, `make up ENV=production ONLY=workloads-egress` and any laptop apply of `data/`, `sagemaker/`,
   `foundation/` or `workloads/` in either target (`runbooks/promotion.md` §N.1 step 2, the waiting list).
+- **[Claude] Lesson 76** written at the user's request, with its key in `CLAUDE.md`, a bullet in its
+  parallel-sessions section and a standing rule, and a note in `terraform-changes.md` §1, so a parallel
+  session reads the order before its first apply.

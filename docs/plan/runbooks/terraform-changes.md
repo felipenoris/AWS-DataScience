@@ -33,6 +33,11 @@
 export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
 ```
 
+The laptop runs Terraform 1.16.6 since 2026-10-25 and the deploy image 1.15.8 until its rebuild: a state the
+laptop writes is refused by the image, so until then no by-hand apply or `make up` touches a slice the pipeline
+reads or applies (the application and orchestration slices, `staging/egress`, `production/workloads-egress`,
+and both targets' `data/`, `sagemaker/`, `foundation/` and `workloads/`; Lesson 76).
+
 ```bash
 aws sso login --sso-session awsds
 ```
