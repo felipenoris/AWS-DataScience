@@ -1397,3 +1397,23 @@ pipeline API and the job's log). Times UTC.*
   autoria: datazone_usr_role_"* and *"ERROR: Job failed: exit code 1"*; `pip-audit` (#597),
   `secret_detection` (#595) and `secret-detection-gate` (#596) passed, `gate-without-proxy` (#599) skipped.
   Verification xi is answered on both halves: the branch is the user's to delete, nothing of it merged.
+
+## 2026-10-25 — verification ix's Staging half: `OR-3` with the slices up, after `v0.4.6`'s `staging-deploy`
+
+*Claude's hand; `./aws/orchestration.py` as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-staging`), reads only; the job's log in the user's GitLab session. Times UTC.*
+
+- **[Claude] `staging-deploy` (#610)**, pipeline #102, 23:17:12 to 23:20:39: the orchestration module's
+  apply created the workers' security group and rules, the workflows `awsds-staging-wf-app-etl-train`
+  (`0lvmGNsPwe`, 5 s) and `awsds-staging-wf-app-etl` (`ea2ZHUGxVL`, 11 s), the failure rules and their
+  targets, the two chains' state machines, schedules and chain-failure rules, between 23:20:21 and
+  23:20:35.
+- **[Claude] `./aws/orchestration.py awsds-infra-staging`** at 23:21, all checks passed: `OR-1` both
+  workflows `READY`, trigger `manual_only`; `OR-2` their log groups; **`OR-3` the two per-workflow roles
+  bounded, trusting `airflow-serverless.amazonaws.com` alone, no lake reach, and each workflow's
+  `NetworkConfiguration` two subnets in two AZs with no default route and one security group**; `OR-4`
+  both failure rules `ENABLED`; `OR-5` the definitions at
+  `s3://awsds-staging-outputs/applications/app-etl/v0.4.6/workflows/` (versions `fhXHG8FBQ6bV`,
+  `5JF0gcXNzpnc`); `OR-6` no provisioned environment; `OR-7` 1/50 versions each; `OR-9` the three chain
+  roles on `awsds-staging-app-boundary`, both chains' schedules `DISABLED` and failure rules `ENABLED`.
+  Verification ix's Staging half is answered.
