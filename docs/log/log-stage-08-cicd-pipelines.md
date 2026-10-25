@@ -3558,3 +3558,27 @@ laptop's clone and the copy. Times UTC.*
   to `7c3552b7…` (`gates-v0.5.0`), `./scripts/check-gitlab-ci.py` passing. The merge request on `awsds/dev-env`
   carries the lock, the README and this file; its `pip-audit` is the gate's reading of the day, 50 accepted
   and none blocking expected.
+
+## 2026-10-25 — `default-v0.9.1` tagged by the user; pipeline #96 past the gate; the copy read back
+
+*The user's hand for the merge request, its merge and the tag, as the Dev Env Steward; Claude's for the
+readings, from a clone without a checkout in the scratch folder, the mirror script and the user's GitLab
+session in Chrome. Times UTC.*
+
+- **[user]** The branch `lock-2026-10-25` at `03e94e4` (21:34:01): the lock, the README and the `include:`
+  `ref` at `7c3552b7`; merged into `main` as `746ef084` (21:36:01), and the tag `default-v0.9.1` created on
+  that commit.
+- **[Claude] The commits read**: `origin`'s `main` and the tag both at `746ef084`, whose parents are
+  `f71cafcd` (`default-v0.9.0`) and `03e94e4`; `main` changed three files since `default-v0.9.0`
+  (`.gitlab-ci.yml` 2 lines, `README.md` +25, `dev-env/python/uv.lock` 112), each byte-equal to the copy
+  under `gitlab/awsds/dev-env/`, and the tree's 14 files equal the copy. `./scripts/gitlab-mirror.py
+  awsds/dev-env` at 21:40 read *"the copy already holds this commit's 14 file(s)"* and wrote
+  `gitlab/mirror.json` at `746ef084`.
+- **[Claude] Pipeline #96 on the tag**, read at 21:41: `pip-audit` (#567, 21:36:56 to 21:38:12) printed
+  *"== awsds/dev-env: 50 accepted finding(s)"*, *"454 pinned package(s), audited against OSV"*, *"Found 58
+  known vulnerabilities in 5 packages"*, every fsspec, pillow, setuptools and sqlparse line `accpt`, nltk
+  3.10.3's `PYSEC-2026-3740` `warn` with no fixed version, no `gone` line, and *"454 of 454 pinned package(s)
+  audited, 0 blocking vulnerability(ies)"*; `recipe-checks` (#568) passed in 6 s; `build-images` (#569)
+  running since 21:38; `scan-base` (#570), `scan-dev-env` (#571), `release-gate` (#572, manual), `register`
+  (#573) and `retire` (#574) created. The gate's reading of the day agrees with the laptop's of 21:23: the
+  same 58 lines in the same 5 packages.
