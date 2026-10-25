@@ -3629,3 +3629,29 @@ from ECR and SageMaker as the infrastructure user with `InfrastructureAccess` (`
   hand; `CLAUDE.md` (version 10, `DE-5` passing, the deploy image on 1.16.6); the stage file's 1.1,
   `promotion.md` §H step 3 and §N.1 step 1, `waiting-on-the-user.md` (the item taken), `AWS_STATE.md`'s
   `DE-5` sentence.
+
+## 2026-10-25 — the README row mirrored; §N.1 step 3's readings with GitLab up
+
+*Claude's hand; the mirror script, `./aws/cicd.py`, `git ls-remote` on GitLab, SSM, EC2 and a read-only plan as
+the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`). Times UTC.*
+
+- **[user]** The merge request `the-releases-v0.9.1` merged as `6ba33971` (22:27:51), the release row on
+  GitLab's `main`. **[Claude]** `./scripts/gitlab-mirror.py awsds/dev-env` at 22:28: *"the copy already holds
+  this commit's 14 file(s)"*, `gitlab/mirror.json` at `6ba33971`.
+- **[Claude] `./aws/cicd.py awsds-infra-prod`** at 22:29: all checks passed, `CI-1` the deploy runner
+  `i-0acaf7ded0e455dcd` running, `CI-8` 72 assumption events, every caller the deploy runner, `CI-9` the test
+  runner `i-0e7427191bcddf332`.
+- **[Claude] `awsds/app-etl`'s refs** (`git ls-remote`, 22:30): one branch, `main` at `163cccaa`; verification
+  ix's branches gone, as the user said on 2026-10-25; tags `v0.1.0` to `v0.4.5`, so `v0.4.6` is free for
+  step 6.
+- **[Claude] The infrastructure mirror** (`awsds/infrastructure`, `git ls-remote`, 22:30): `main` at
+  `e011eb14`, PR #257's merge, while `origin`'s and the project folder's `main` read `2d3160f1` (PR #260):
+  `orchestration-v0.2.1` and the paused schedules (PR #258) are not on the mirror yet, step 4's push.
+- **[Claude] Stage 8 xxvii's plan half**: the parameter
+  `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64` reads `ami-0829b74b2a8c619b7`,
+  modified 2026-10-24 21:01, and all three runners run that image, launched today (the test runner 20:09:59,
+  the build runner 20:10:04, the deploy runner 20:40:08), so the parameter has not moved past them and the
+  half still waits; the read-only plan of `production/runners/` with `TF_VAR_build_runner=true` at 22:30
+  reads *"No changes"*.
+- **[Claude] `make status`** at 22:31: every `[E]` slice down but the hub's and GitLab's, Sandbox's `egress/`
+  among them, as step 6's negative needs; the burn 0.4521 USD/h.
