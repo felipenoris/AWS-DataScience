@@ -2292,3 +2292,49 @@ review what is left; no AWS write.*
   `EXC-22` in `GOVERNANCE.md`'s encryption rule and the threat model, the save's KMS grant behind every workflow
   run, the plan's `# whitespace changes` on a JSON string in `terraform-changes.md`, the principal-filtered
   `list-permissions` in `log-debugging.md`, and `aws/orchestration.py`'s report texts.
+
+## 2026-10-25 — with the environment down: 9.5's adoption written and planned, xii's call written, rows i and iii filled
+
+*Claude's hand, at the user's request to prepare what Stages 7 to 10 leave with nothing up, as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-data`,
+`awsds-infra-staging`), reads and plans only. Times UTC.*
+
+- **[Claude] 9.5's objects read back** before writing: the datashare `trades_lf` on namespace
+  `b15e9682-064d-4c48-a4cc-4d607622c379`, `AUTHORIZED` for `DataCatalog/<Data Governance>` and `ACTIVE` for
+  the lake's catalog ARN, `ProducerAllowedWrites` false; the registration, which `list-resources` does not
+  list (it reads the two S3 registrations alone) and `describe-resource` on the datashare's ARN reads with no
+  role, `HybridAccessEnabled` and `WithPrivilegedAccess` false, `NOT_VERIFIED`; the database `governed_trades`,
+  its `FederatedDatabase` the datashare's ARN on `aws:redshift`, `CreateTableDefaultPermissions` `[]`, no
+  description; the LF-Tags `layer=curated` on the database and, on `trades.trades_notional`, `layer=curated`
+  inherited and `classification=internal`, six tagged columns; the creator's `ALL` with grant option the
+  database's only permission.
+- **[Claude] The provider, read in its documentation and source at the slices' pins** (6.68.0 in Production,
+  6.60.0 in the lake): `aws_redshift_data_share_authorization` imports as `<arn>,<consumer identifier>`;
+  `aws_redshift_data_share_consumer_association` as `<arn>,<entire account>,<consumer arn>,<region>` with the
+  unused fields empty; `aws_glue_catalog_database` as `<catalog id>:<name>`; `aws_lakeformation_resource`
+  declares no importer (its Create sends `UseServiceLinkedRole: true` when no role is given, its Read never
+  sets the attribute); `aws_lakeformation_resource_lf_tags` documents no import. The data source
+  `aws_redshift_data_shares` lists the shares an account sees, which gives both slices the ARN without a
+  pasted namespace id.
+- **[Claude] The adoption written**: `production/warehouse/datashare.tf` (the authorization, the consumer
+  identifier built from `production/data/`'s `lake_catalog_id` output) and
+  `data-governance/data/warehouse-share.tf` (the association on the catalog's ARN and the federated database,
+  with the two import blocks). Baseline plans of both slices read `No changes` before the edit. **The first
+  Production plan read *1 to import, 1 to add, 1 to destroy***: `allow_writes = false` *"forces replacement"*,
+  the provider reading the attribute back as unset; left undeclared, the plan reads *1 to import, 0 to add, 0
+  to change, 0 to destroy*. **The lake's plan reads *2 to import, 0 to add, 1 to change***: the association
+  with no change, the database updated in place with the provider's five default tags
+  (`tags_all`) and nothing else. Neither apply run: both wait for the user's word, `awsds-infra-prod` then
+  `awsds-infra-data`, and the import blocks go in the commit after.
+- **[Claude] xii's call written** (4.6): `staging/foundation/outputs.tf` gains
+  `registry_model_package_group_arn_prefix`, built from the deploy role's own locals (the registry account
+  resolved through the `deploy_runner` alias, the env token), planned with the alerts var-file as *Changes to
+  Outputs* alone; `tfhygiene.targets.account_values` reads it for Staging (`REGISTRY_SLICE`), and
+  `scripts/model-chain.py transform staging` lists and describes Production's newest approved version of
+  `awsds-prod-model-app-etl` before it serves Staging's own model, an empty group reported and a refusal
+  failing the job. `--check` passes offline, ruff clean. The reading is the next Staging leg's
+  (`staging-model`), once the mirror carries the script.
+- **[Claude] Rows i and iii** of the verification table filled from this log's entries of 2026-10-22 to
+  2026-10-24 (2.2's brackets, 2.4's commit and the key's refusal of the direct put).
+- **[Claude] 3.5's requests**, read in both accounts: the four `ml.m5.large` requests still
+  `CASE_OPENED`, each with its case id, the applied quotas above them since 2026-10-24; nothing waits on them.

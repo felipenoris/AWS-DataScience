@@ -337,7 +337,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `CREATE` revoked), **9.4 to 9.7 done 2026-10-25**: the DDL job and the load (decision 15's Production-only workflow, its schedule `DISABLED` through the slice) after the deploy role's `FollowItsOwnStatements` and the job group's 5439 egress; 9.5's datashare across Production, Data Governance (decision 14) and Sandbox; 9.7 read from `eighth-experimentation` through the access role's catalog read, its Lake Formation grant and `TEMP` (`redshift-connection.md` §G), and with Production's workgroup gone;
   `workloads-egress/` taking `GROUPS=redshift`; the `ml.m5.large` pair requested 2026-10-23 (`CASE_OPENED`); the
   persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run but the space halves and the Data API negative
-  (INT-06 answered, open question 8 closed); the sittings in `runbooks/promotion.md`.
+  (INT-06 answered, open question 8 closed); the sittings in `runbooks/promotion.md`. 2026-10-25, nothing up: 9.5's
+  Terraform adoption written and planned (the applies owed), xii's registry read in `model-chain.py transform
+  staging` with `staging/foundation/`'s output (planned).
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, first fired 2026-10-25 (version 1 registered and approved by `awsds-deploy-prod`; pass 3 done, both transforms, 5.5). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`

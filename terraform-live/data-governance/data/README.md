@@ -290,6 +290,21 @@ resource policy (the version 1/2 path). Measured 2026-08-19 — `glue:GetResourc
 `EntityNotFoundException` — and the grants then produced four **ACTIVE** RAM shares, held by both
 consumers with no invitation, which is the falsifier not firing.
 
+## `warehouse-share.tf` — the governed warehouse's share into the catalog (Stage 9 step 9.5)
+
+Production's datashare `trades_lf` reaches this catalog as a federated database (decision 5's shape (ii),
+decision 14), and the lake's TBAC grants reach it as they reach `curated`: Sandbox's account read it
+through its tag grants alone (9.7). The producer's half, the authorization, is
+`production/warehouse/datashare.tf`. Written 2026-10-25 from the objects made by hand that day.
+
+| Resource / object | What it does once applied |
+|---|---|
+| `data.aws_redshift_data_shares.visible` | lists the shares this account sees; the share is the ARN ending in `/trades_lf`, since the ARN carries Production's namespace id, which no state here holds |
+| `aws_redshift_data_share_consumer_association.trades_lf` | the share associated with this account's Data Catalog (`consumer_arn` the catalog's ARN), `ACTIVE`. Adopted from the association of 2026-10-25 01:52 UTC by an `import` block, removed after the apply; the import plan showed no change to it |
+| `aws_glue_catalog_database.governed_trades` | the federated database over the share (`connection_name` `aws:redshift`), with no description, which the API refuses beside a federation source, and no `create_table_default_permission`, the account's default list being empty (Recipe D). Its tables are the share's, `trades.trades_notional` today. Adopted the same way; the import plan adds the provider's five default tags and nothing else |
+| — by hand: the registration | `register-resource` on the datashare's ARN, no role, `HybridAccessEnabled` and `WithPrivilegedAccess` false (2026-10-25 01:52 UTC), read back with `describe-resource`; `list-resources` does not list it. `aws_lakeformation_resource` has no importer (the provider's source at v6.60.0), deregistering is denied by the Data OU SCP, and a second registration of the ARN is a conflict, so the registration stays by hand until the provider gains an importer |
+| — by hand: the LF-Tag assignments | `layer=curated` on `governed_trades` and `classification=internal` on `trades.trades_notional` (2026-10-25 01:54 UTC), the values `catalog.tf` gives a curated table; `aws_lakeformation_resource_lf_tags` documents no import, so the assignments are read with `get-resource-lf-tags`, not declared |
+
 ## `filters.tf` — the data cells filters (Stage 11 pass 1, steps 2.1a and 2.1b)
 
 The explicit `restricted` grant, narrowed. The default share above carries `classification ∈ {public,

@@ -534,12 +534,20 @@ carries `ONLY=`, or the build runner is destroyed.
    for rule in awsds-staging-wf-app-etl-failed awsds-staging-chain-app-etl-failed; do aws cloudwatch get-metric-statistics --namespace AWS/Events --metric-name TriggeredRules --dimensions Name=RuleName,Value=$rule --start-time 2026-10-25T05:55:00Z --end-time 2026-10-25T06:15:00Z --period 60 --statistics Sum --profile awsds-infra-staging --region us-west-2; done
    ```
 
+   **Read 2026-10-25** (Stage 10's log): each rule `Sum` 1, at 06:03 and 06:04 UTC, and two notifications
+   delivered in the same minutes; (b) has its reading, 3.7's proof with it.
+
 3. **[Claude] Stage 9 xii's call**, written where a Staging deploy session runs, the user choosing where:
    `scripts/model-chain.py transform staging` reading Production's newest approved version before it
    serves Staging's own model, which reaches the runner with the mirror's push (N.1 step 4), or a manual
    job beside `staging-model` in the template, which rides N.1 step 5's merge request. Either runs
    `describe-model-package` and `list-model-packages` on `awsds-prod-model-app-etl` as
-   `awsds-deploy-staging`, whose trust names the deploy runner's role alone (Stage 8 4.1).
+   `awsds-deploy-staging`, whose trust names the deploy runner's role alone (Stage 8 4.1). **Written
+   2026-10-25** in `scripts/model-chain.py transform staging`: before Staging's own model is served, the
+   newest approved version of Production's group is listed and described, an empty group reported and a
+   refusal failing the job; the group ARN comes from `staging/foundation/`'s new output
+   `registry_model_package_group_arn_prefix` (planned, outputs alone), **[Claude⚡]** applied with the
+   alerts var-file on the user's word, and the script reaches the runner with the mirror's push (N.1 step 4).
 4. **[Claude] Stage 8 xiv at `awsds-workflows` `d856982c` and Stage 10 xi's offline half**: the 40
    deliberate violations of 2026-10-18 run again against scratch copies of `examples/app-etl/`; the lint
    on a portal-scoped definition, on a container named by anything but an ECR URI and digest and on a
@@ -549,6 +557,12 @@ carries `ONLY=`, or the build runner is destroyed.
    (Production), the consumer association, the registration and the federated database (Data
    Governance), written and planned; an object is adopted only where its plan after the import reads
    `No changes`, 9.5's three mismatches read first. **[Claude⚡]** the applies, on the user's word.
+   **Written and planned 2026-10-25** (Stage 9's log): the authorization in
+   `production/warehouse/datashare.tf` reads *1 to import* and no change, once `allow_writes` was left
+   undeclared; the association and the federated database in `data-governance/data/warehouse-share.tf`
+   read *2 to import, 1 to change*, the change the provider's five default tags on the database. The
+   registration and the two LF-Tag assignments stay by hand, neither resource importable. The applies run
+   as `awsds-infra-prod` then `awsds-infra-data`, and the import blocks go in the commit after.
 6. **[user] Stage 9 5.4's read deny**, as the Data Scientist User through `awsds-scientist-prod`, the
    script in place since 2026-10-23; expected refused on `s3:GetObject` *"with an explicit deny in a
    resource-based policy"*, `DenyThePersonaReadsOutsideTheNamedPrefixes`:
@@ -559,7 +573,8 @@ carries `ONLY=`, or the build runner is destroyed.
 
 7. **[user] Stage 8 xxi's attempt half**, the waiting list's row: a test object written and deleted in
    `awsds-prod-releases` as `awsds-infra-prod`, beside the refusals xxi names.
-8. **[Claude] Stage 9 rows i and iii**, filled from 2.2's and 2.4's readings in Stage 9's log.
+8. **[Claude] Stage 9 rows i and iii**, filled from 2.2's and 2.4's readings in Stage 9's log. **Done
+   2026-10-25.**
 
 ### N.1 The release through Staging and Production
 

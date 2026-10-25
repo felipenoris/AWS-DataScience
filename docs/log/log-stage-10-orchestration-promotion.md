@@ -1310,3 +1310,18 @@ review what is left; no AWS write.*
   `EXC-22` in `GOVERNANCE.md`'s encryption rule and the threat model, the save's KMS grant behind every workflow
   run, the plan's `# whitespace changes` on a JSON string in `terraform-changes.md`, the principal-filtered
   `list-permissions` in `log-debugging.md`, and `aws/orchestration.py`'s report texts.
+
+## 2026-10-25 — with the environment down: #87's failure rules read for 3.2's option (b)
+
+*Claude's hand, at the user's request to prepare what needs no environment, as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-staging`), reads only. Times UTC.*
+
+- **[Claude] The rules' metric**, `AWS/Events` `TriggeredRules` over 05:55 to 06:15, the window of `v0.4.5`'s
+  `staging-test` (pipeline #87, verification ix): `awsds-staging-wf-app-etl-failed` `Sum` 1 in the minute of
+  06:03, `awsds-staging-chain-app-etl-failed` `Sum` 1 in the minute of 06:04, nothing else in the window;
+  `AWS/SNS` `NumberOfNotificationsDelivered` on `awsds-staging-alerts` 1 at 06:03 and 1 at 06:04. The rules
+  themselves are gone with the user's `make down ENV=staging` (`list-rules` on the prefix reads the misuse rule
+  alone), the metrics kept. So the planted drift fired both rules through the chain and both notifications were
+  delivered: option (b) has its reading, and 3.7's proof with it, the break having run through
+  `awsds-staging-chain-app-etl`. The choice between (a), (b) and (c) stays the user's
+  (`runbooks/promotion.md` §N.0, the waiting list).
