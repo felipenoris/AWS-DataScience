@@ -3310,3 +3310,7 @@ simulator alone. Times UTC.*
 - **[Claude] 5.6's clause table**: the training task's (f) is `awsds-workflows`' `treino`, in the template's line
   since v0.4.0 (`--algorithm-repository` on `.gitlab-ci.yml` line 69); (f) for any other operator stays without a
   rule until a workflow uses one.
+- **[Claude] 1.1's proposal still current**: `./scripts/check-gitlab-mirror.py --plan` at 07:41, from a read-only
+  plan of `sandbox/egress/` (down), exit 0: `GM-1` to `GM-8` pass, the copy at `5d5391abd7a3` (2026-10-16), the
+  Dockerfile's `NO_PROXY_LIST` and the account's list both 72 names, `sha256 6faf2e4761622508`. The tag
+  `default-v0.9.0` stays the user's GitLab act.
