@@ -1910,7 +1910,9 @@ Measured (`docs/PRICING.md`), us-west-2:
     the `staging/egress/` state prefix, and both deploy roles gain `DescribeTheEgressEndpoints`,
     `ReadTheDnsFirewallAssociation` and the egress slice's state as a read key, in `apply-application.tf`
     (planned, the user's apply after the mirror's legs stop raising `egress/`: the narrowed role would
-    refuse the current `staging-up`). `test-deploy`'s read of Sandbox's `egress/` keeps its live form,
+    refuse the current `staging-up`). The mirror's push of this code waits for the same moment: refusal
+    10 on the mirror fails the current legs' `staging-up` and leaves their `staging-down` refusing
+    `egress/`, so `git push gitlab main` follows §V's last tag, or travels with the MR of the new legs. `test-deploy`'s read of Sandbox's `egress/` keeps its live form,
     three services by name, since `awsds-deploy-sandbox-test` reads no state (D21). What the
     user's `make down ENV=staging` destroys, with the environment: `egress/`, `orchestration/` and the
     application slice, the last two recreated by the next leg.
