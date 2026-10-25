@@ -634,6 +634,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     moves the teardown to another identity owes that identity the grant nobody had to write.**
 76. **A toolchain upgrade on one writer locks out every older reader of the states it writes — the readers
     that cannot move on the spot move first, or the writer stays off the shared states.**
+77. **A gate that reads a feed gives a dated verdict — the lock that passed when it was cut fails when it is
+    tagged, so the gate runs on the laptop the day of the tag, before the tag.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

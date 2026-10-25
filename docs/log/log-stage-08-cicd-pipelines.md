@@ -3504,3 +3504,43 @@ only. This session's records continue on a branch cut from the merged `main`. Ti
   copy, `dev-env/Dockerfile`, the 72-name `NO_PROXY` literal; `./scripts/check-gitlab-mirror.py --plan`
   reads `GM-1` to `GM-8` passing on the copy, 72 names and sha256 `6faf2e4761622508` on both sides. The
   merge request carries that one file; the tag `default-v0.9.0` and the gate are the steward's.
+
+## 2026-10-25 — `default-v0.9.0` spent at `pip-audit`: the lock of 2026-10-16 aged; the targeted upgrade and 42 acceptances written for `gates-v0.5.0`
+
+*Claude's hand, from the user's GitLab session read in Chrome and the laptop's own audit; no AWS call. Times
+UTC.*
+
+- **[Claude] The gate's verdict**: `awsds/dev-env`'s pipelines #89, #90 and #91, all on `f71cafcd` (the merge
+  request's one file, the 72-name literal), failed at `pip-audit` (job #547): 73 blocking findings with a fixed
+  version, in `dev-env/python/uv.lock` of 2026-10-16, unchanged since `default-v0.8.0` passed the same gate on
+  it. The tag `default-v0.9.0` is spent with nothing built (the README: a tag is spent on first landing), so the
+  release is `default-v0.9.1`.
+- **[Claude] The same lock on the laptop**, 21:06 to 21:09: the gate's audit (pip-audit 2.10.1, OSV) over the
+  export with its environment markers stripped, since every line names `linux` and `x86_64` and the laptop
+  matches none (verification x). 89 lines, 82 findings once the marker-split duplicates fold: 73 blocking in 11
+  packages (aiohttp 3.14.3, brotli 1.2.0, certifi 2026.7.22, filelock 3.32.6, gitpython 3.1.62, mlflow 3.16.0,
+  nbconvert 7.17.1, opentelemetry-api 1.44.0, pillow 12.3.0, setuptools 81.0.0, virtualenv 21.14.7), the 8
+  accepted (fsspec, setuptools, sqlparse) matched, and nltk 3.10.3's `PYSEC-2026-3740`, with no fixed version,
+  the gate's warning.
+- **[Claude] The lock moved** by `uv lock --upgrade-package` naming the 11, after a bare `--upgrade` resolved an
+  older autogluon and failed building `configspace`: 17 entries in 9 packages, aiohttp 3.14.5, brotli 1.2.1,
+  certifi 2026.10.23, filelock 4.2.4, gitpython 3.2.1, mlflow, mlflow-skinny and mlflow-tracing 3.17.2, nbconvert
+  7.17.2, opentelemetry-api and -sdk 1.45.1 with -exporter-prometheus, -instrumentation,
+  -instrumentation-threading and -semantic-conventions 0.66b1, virtualenv 21.14.13, yarl 1.25.1;
+  `pyproject.toml` untouched, `uv lock --check` passing, the export 454 pins as before. Pillow stays at
+  12.3.0: autogluon-multimodal 1.6.1 requires `Pillow<13,>=10.0.1` (PyPI's metadata, read 21:14), and 13.0.0,
+  published 2026-10-16, fixes all 41. setuptools stays at 81.0.0: autogluon-core 1.6.1 requires
+  `setuptools<82`, and 84.1.0 (2026-10-19) fixes `GHSA-xmj3-9gf7-h52w`. Forcing either resolves an older
+  autogluon, torch 2.13 to 2.9.1 and transformers 5.14 to 4.57 among the moves.
+- **[Claude] The new lock audited the same way**, 21:23 to 21:25 (2 min 25 s; the recipe is now the dev-env
+  README's *Before a build*): 454 pins audited, 58 lines in 5 packages, pillow's 41 and setuptools' second the
+  only ones outside the accepted list; fsspec's and sqlparse's accepted, nltk's the warning.
+- **[Claude] Written**: the lock into the copy `gitlab/awsds/dev-env/dev-env/python/uv.lock`; 42 entries into
+  `ci-gates/baselines.gitlab-ci.yml`'s `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV`, pillow's 41 ids as OSV reports them
+  and `GHSA-xmj3-9gf7-h52w|setuptools`, each with its version, its fix and the requirement that forbids it, 50
+  entries in all; the gates README's row; Lesson 77 (a gate that reads a feed gives a dated verdict); the
+  plan's sentences moved from `default-v0.9.0` to `default-v0.9.1` (`promotion.md` §H step 3 and §N.1 step 1,
+  the stage file, `waiting-on-the-user.md`). The acceptance is the user's, as the Dev Env Steward: the
+  `gates-v0.5.0` commit on `awsds/ci-gates` (`gitlab.md` §G), the dev-env `include:` `ref` to its commit, the
+  merge request carrying the lock and the `ref`, the tag. `examples/app-etl/` stays at `gates-v0.4.0`: the
+  change is the dev-env list alone.

@@ -199,10 +199,12 @@ rows.
    CI/CD variable beyond the eleven the project holds (read 2026-10-24): `INFRA_DIR`, `IMAGE_REPO`,
    `AWSDS_WORKFLOWS` and `LINT_INSTANCE_TYPES` are the file's, `BUNDLE_OBJECT`, `BUNDLE_SHA256` and
    `JOB_IMAGE_URI` earlier jobs' dotenv artifacts.
-3. **[user] The house image `default-v0.9.0`** with the 72-name `NO_PROXY` literal (Stage 8 1.1, Stage
-   17 decision 4), registered as version 10: the merge request on `awsds/dev-env` from the copy under
-   `gitlab/awsds/dev-env/`, the steward's tag, the release gate; `./scripts/gitlab-mirror.py` after the
-   merge. `DE-5` turns green with it.
+3. **[user] The house image `default-v0.9.1`** with the 72-name `NO_PROXY` literal (Stage 8 1.1, Stage
+   17 decision 4), registered as version 10. `default-v0.9.0` was spent 2026-10-25 at `pip-audit`, pipelines
+   #89 to #91 on the lock of 2026-10-16, so first `gates-v0.5.0` with the 42 acceptances
+   ([`gitlab.md`](gitlab.md) §G), then the merge request on `awsds/dev-env` from the copy under
+   `gitlab/awsds/dev-env/` (the lock, the `include:` `ref`), the steward's tag, the release gate;
+   `./scripts/gitlab-mirror.py` after the merge. `DE-5` turns green with it.
 4. **[user] The deploy image on Terraform 1.16.6**, the laptop running it since 2026-10-25 and the two pins moved in
    `gitlab/awsds/deploy-image/Dockerfile` (`upstream-releases.md`): the merge request,
    the tag, its digest into `production/runners/variables.tf`, and the slice applied by `make gitlab-up
@@ -588,8 +590,9 @@ carries `ONLY=`, or the build runner is destroyed.
 `make hub-up`, then `make gitlab-up BUILD=1` and the tunnel ([`gitlab.md`](gitlab.md) §U). Sandbox's
 `egress/` stays down until step 6 has read its negative.
 
-1. **[user] Stage 8 1.1, the house image `default-v0.9.0`** (§H step 3), its 72-name literal passing `GM-1`
-   to `GM-8` on 2026-10-25 at 07:41 UTC; `DE-5` turns green with it.
+1. **[user] Stage 8 1.1, the house image `default-v0.9.1`** (§H step 3), its 72-name literal passing `GM-1`
+   to `GM-8` on 2026-10-25 at 07:41 UTC, after `gates-v0.5.0`; `default-v0.9.0` was spent at `pip-audit` the
+   same day. `DE-5` turns green with it.
 2. **[user] The deploy image on Terraform 1.16.6** (§H step 4; **built 2026-10-25 as `v0.3.0`**, its digest
    pinned in `production/runners/variables.tf`, the runner's replacement by `make gitlab-up BUILD=1` once the
    pin is on `main`), the laptop on it since 2026-10-25: **before steps 8

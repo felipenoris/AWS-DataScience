@@ -112,6 +112,31 @@ image** is `/opt/awsds-proxy.txt` inside it, the entry count and the first 16 he
 Neither is enforced by a gate: both are readings, and [`dev-env.md`](https://github.com/felipenoris/AWS-DataScience/blob/main/docs/plan/runbooks/dev-env.md)
 §E says when to take them.
 
+**Audit the lock on the laptop before the tag.** `pip-audit` reads OSV's records of the day, so the gate's
+verdict is dated: the lock of 2026-10-16 passed `default-v0.8.0`'s gate and met 73 blocking findings at
+`default-v0.9.0`'s on 2026-10-25 (pipelines #89 to #91), which spent the tag with nothing built. The gate's
+own audit runs on the laptop in about two and a half minutes once the export's environment markers are
+stripped: pip-audit skips a line whose marker the running interpreter does not match, and every line names
+`linux` and `x86_64` (AWS-DataScience Stage 8 verification x). From a checkout of AWS-DataScience:
+
+```bash
+uv export --project gitlab/awsds/dev-env/dev-env/python --locked --no-dev --no-emit-project --format requirements-txt --quiet --output-file "$HOME/tmp/dev-env-pins.txt"
+```
+
+```bash
+sed -i '' -E 's/ ; [^\\]*( \\)?$/\1/' "$HOME/tmp/dev-env-pins.txt"
+```
+
+```bash
+uvx --from pip-audit==2.10.1 pip-audit --requirement "$HOME/tmp/dev-env-pins.txt" --disable-pip --require-hashes --vulnerability-service osv --progress-spinner off
+```
+
+What it prints beyond the accepted list in `ci-gates/baselines.gitlab-ci.yml` blocks the tag. A finding with a
+fixed version leaves by `uv lock --upgrade-package <name>`, one per blocked package, never a bare `--upgrade`,
+which on 2026-10-25 resolved an older autogluon and failed building `configspace`; a fixed version another
+package forbids (`Pillow<13` from autogluon-multimodal 1.6.1) enters the accepted list by name, through a
+`gates-v*` tag and this file's `include:` `ref` ([`gitlab.md`](https://github.com/felipenoris/AWS-DataScience/blob/main/docs/plan/runbooks/gitlab.md) §G).
+
 **The uv cache must never be written into a layer.** Measured on the first `default-v0.2.0` build
 (2026-09-11): the Python layer came out at 10.7 GB against a 5.2 GB environment, because `uv` unpacks
 every wheel into `/root/.cache/uv` before materialising it into the venv and both live in the same

@@ -1712,6 +1712,27 @@ reads, are free.
 **What makes it expensive.** The lockout is invisible until the pipeline runs, and the way back is a
 downgrade of the laptop or an image rebuild in the middle of a release.
 
+## Lesson 77 — a gate that reads a feed gives a dated verdict: the lock that passed on the day it was cut fails on the day it is tagged, and the tag is spent either way
+
+**What happened.** `awsds/dev-env`'s lock was cut on 2026-10-16 and passed `pip-audit` at `default-v0.8.0`'s
+release that day. The recipe then changed in one literal, and on 2026-10-25 the same lock met 73 blocking
+findings at the gate, in 11 packages, three pipelines (#89 to #91) failing on the tag `default-v0.9.0`, which
+the convention spends on first landing: pillow's 41 alone were published against 12.3.0 once 13.0.0 shipped
+on 2026-10-16, setuptools' fix 84.1.0 on 2026-10-19. Nine packages moved by a targeted `uv lock
+--upgrade-package`; pillow and setuptools could not, their fixed versions forbidden by autogluon 1.6.1's upper
+bounds, and entered the accepted list by name (42 entries, `gates-v0.5.0`).
+
+**Why it is a class rather than a slip.** The gate's input is two things, the lock and OSV's records of the
+day, and only the first is in the commit. A green pipeline is a reading of the feed at that hour, not a
+property of the lock; a tag cut from the same commit days later reads a different feed, and the failure lands
+on the one object the project cannot reuse. Lesson 54's three verdicts gain an axis: *when*.
+
+**The rule.** A gate that reads a moving feed is run on the laptop the day of the tag, before the tag, with
+the gate's own flags (the dev-env README's *Before a build*); the tag is cut on a green reading, the lock
+moved package by package past what moved, and what a dependency's upper bound forbids is accepted by name,
+dated and attributed. A bare `--upgrade` is not the move: on 2026-10-25 it resolved an older autogluon and
+failed building `configspace`.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits; the entries here are facts about the platform that cost a measurement
