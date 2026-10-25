@@ -1381,7 +1381,13 @@ carry 5b's readings, with the differences 9.1 lists. What is new in this account
     `redshift-serverless:GetCredentials` on `workgroup/*`, inline on `awsds-deploy-prod`'s
     `apply-application`. Planned as `awsds-infra-prod` with the alerts var-file at 16:24 UTC: *"Plan: 0
     to add, 1 to change, 0 to destroy."*; **applied 2026-10-23 at 21:19 UTC** from a fresh plan of the
-    same count, on the user's authorization, re-planned `No changes` (the log).
+    same count, on the user's authorization, re-planned `No changes` (the log). **Amended 2026-10-25**
+    (the log): `DescribeStatement`, `GetStatementResult` and `CancelStatement` authorize on no resource, so
+    under `workgroup/*` they matched nothing and v0.4.2's DDL job was refused following its own statement
+    after the table was created; they moved to `FollowItsOwnStatements`, `Resource "*"` with
+    `redshift-data:statement-owner-iam-userid` equal to `aws:userid`, applied 01:47 UTC. The load job's
+    path needed the job group's egress to the workgroup's group on 5439, which 9.1 had written only as
+    the warehouse's ingress: `production/warehouse/`'s `jobs_to_warehouse_5439`, applied 01:59 UTC.
   - **Written 2026-10-24** (the log; decision 15), in the template's next release, v0.4.0, after
     v0.3.0's first promotion: `warehouse/trades.sql`, `CREATE TABLE IF NOT EXISTS
     trades.trades_notional`, run by the Production leg's manual job `production-warehouse-ddl` through
