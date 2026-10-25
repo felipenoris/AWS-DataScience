@@ -171,7 +171,7 @@ was watching**, running at base capacity after its client stopped polling: 19% o
 sitting. The Redshift Serverless console read *"Free trial credits remaining $287.90 out of $300.00"* and an
 expiry of December 19, 2026 on 2026-10-17, and Cost Explorer carries no Amazon Redshift line through
 October 17 (`docs/PRICING.md` §5, Stage 5b verification xiii). After that date the warehouse bills at the
-rates above.
+rates above. On 2026-10-25 Sandbox read *"$287.51 out of $300.00"* and Production *"$299.71 out of $300.00"*, its window closing 2027-01-21, 90 days after its namespace (Stage 9's log).
 
 Three guards did not catch the runaway. `max_query_execution_time` did not stop the query, and three
 explanations are live: Redshift exempts a superuser from the rule, the standalone parameter is not

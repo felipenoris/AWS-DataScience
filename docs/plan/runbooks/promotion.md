@@ -203,18 +203,19 @@ rows.
    17 decision 4), registered as version 10: the merge request on `awsds/dev-env` from the copy under
    `gitlab/awsds/dev-env/`, the steward's tag, the release gate; `./scripts/gitlab-mirror.py` after the
    merge. `DE-5` turns green with it.
-4. **[user] The deploy image on Terraform 1.16.6**, once the laptop runs it (the user's install;
-   `upstream-releases.md`): the two pins in `gitlab/awsds/deploy-image/Dockerfile`, the merge request,
+4. **[user] The deploy image on Terraform 1.16.6**, the laptop running it since 2026-10-25 and the two pins moved in
+   `gitlab/awsds/deploy-image/Dockerfile` (`upstream-releases.md`): the merge request,
    the tag, its digest into `production/runners/variables.tf`, and the slice applied by `make gitlab-up
    BUILD=1`, which keeps the build runner; the flag left out destroys it. Until then the deploy image runs 1.15.8, which every
-   slice's `versions.tf` admits.
+   slice's `versions.tf` admits and which refuses a state the laptop's 1.16.6 has written: this step comes
+   before any laptop apply or `make up` of a slice the pipeline reads or applies (N.1 step 2).
 5. **[Claude]** `./aws/cicd.py` after the runners' boot (`CI-1`, `CI-9`), and `GM-1` to `GM-8` on the copies.
 
 **Done 2026-10-24** (Stage 8's log): the environment raised by the user at 18:10 UTC, `cicd.py` 0
 failed; steps 1, 2 and 6 by the user, read back at 18:47: the mirror at `0236a99d`, MR !4 merged and the
 legs' MR !5 merged, `awsds/app-etl`'s `main` at `5a7d009a` identical to `examples/app-etl/` at
-`0236a99d`. Steps 3 and 4 are left: the house image does not hold Stages 8 to 10, and the laptop still
-runs Terraform 1.15.8.
+`0236a99d`. Steps 3 and 4 are left: the house image does not hold Stages 8 to 10, and the deploy image is rebuilt
+now that the laptop runs Terraform 1.16.6 (since 2026-10-25).
 6. **[user] The CI/CD variable `TRAINING_IMAGE_URI`** on `awsds/app-etl`, protected, for v0.4.0's
    `test-deploy`: the value `terraform -chdir=terraform-live/staging/sagemaker output -raw
    training_image_uri` after §0.6, AWS's XGBoost image by digest. v0.3.0 reads no such variable.
@@ -534,32 +535,53 @@ carries `ONLY=`, or the build runner is destroyed.
    for rule in awsds-staging-wf-app-etl-failed awsds-staging-chain-app-etl-failed; do aws cloudwatch get-metric-statistics --namespace AWS/Events --metric-name TriggeredRules --dimensions Name=RuleName,Value=$rule --start-time 2026-10-25T05:55:00Z --end-time 2026-10-25T06:15:00Z --period 60 --statistics Sum --profile awsds-infra-staging --region us-west-2; done
    ```
 
+   **Read 2026-10-25** (Stage 10's log): each rule `Sum` 1, at 06:03 and 06:04 UTC, and two notifications
+   delivered in the same minutes; (b) has its reading, 3.7's proof with it. **Taken 2026-10-25, (b)**, the
+   user's decision as recommended: 3.2 and 3.7 closed on #87's reading; the undeclared-job break stays an N.4
+   exercise for Stage 10 xx.
+
 3. **[Claude] Stage 9 xii's call**, written where a Staging deploy session runs, the user choosing where:
    `scripts/model-chain.py transform staging` reading Production's newest approved version before it
    serves Staging's own model, which reaches the runner with the mirror's push (N.1 step 4), or a manual
    job beside `staging-model` in the template, which rides N.1 step 5's merge request. Either runs
    `describe-model-package` and `list-model-packages` on `awsds-prod-model-app-etl` as
-   `awsds-deploy-staging`, whose trust names the deploy runner's role alone (Stage 8 4.1).
+   `awsds-deploy-staging`, whose trust names the deploy runner's role alone (Stage 8 4.1). **Written
+   2026-10-25** in `scripts/model-chain.py transform staging`: before Staging's own model is served, the
+   newest approved version of Production's group is listed and described, an empty group reported and a
+   refusal failing the job; the group ARN comes from `staging/foundation/`'s new output
+   `registry_model_package_group_arn_prefix`, applied with the alerts var-file on 2026-10-25 (*0 added, 0
+   changed*, the output written), and the script reaches the runner with the mirror's push (N.1 step 4).
 4. **[Claude] Stage 8 xiv at `awsds-workflows` `d856982c` and Stage 10 xi's offline half**: the 40
    deliberate violations of 2026-10-18 run again against scratch copies of `examples/app-etl/`; the lint
    on a portal-scoped definition, on a container named by anything but an ECR URI and digest and on a
    definition over 50 KB; and `build-task-code`'s import line on a package whose module imports what the
-   zip lacks. Each is expected to fail with exit 1.
+   zip lacks. Each is expected to fail with exit 1. **Done 2026-10-25** (Stage 8's and Stage 10's logs):
+   the 40 reproduced at `d856982c` and the rules since refused, 61 refusals, every control passing; xi's
+   four offline readings taken, its CI half N.1 step 5's.
 5. **[Claude] Stage 9 9.5's Terraform adoption**: import blocks for the share's authorization
    (Production), the consumer association, the registration and the federated database (Data
    Governance), written and planned; an object is adopted only where its plan after the import reads
    `No changes`, 9.5's three mismatches read first. **[Claude⚡]** the applies, on the user's word.
+   **Written and planned 2026-10-25** (Stage 9's log): the authorization in
+   `production/warehouse/datashare.tf` reads *1 to import* and no change, once `allow_writes` was left
+   undeclared; the association and the federated database in `data-governance/data/warehouse-share.tf`
+   read *2 to import, 1 to change*, the change the provider's five default tags on the database. The
+   registration and the two LF-Tag assignments stay by hand, neither resource importable. **Applied
+   2026-10-25**, 17:25 to 17:26 UTC, on the user's authorization: *1 imported* and *2 imported, 1 changed*,
+   each re-planned `No changes`, the import blocks removed after (Stage 9's log).
 6. **[user] Stage 9 5.4's read deny**, as the Data Scientist User through `awsds-scientist-prod`, the
    script in place since 2026-10-23; expected refused on `s3:GetObject` *"with an explicit deny in a
-   resource-based policy"*, `DenyThePersonaReadsOutsideTheNamedPrefixes`:
+   resource-based policy"*, `DenyThePersonaReadsOutsideTheNamedPrefixes`. **Done 2026-10-25** (Stage 9's log),
+   the wording as expected:
 
    ```bash
    aws s3api get-object --bucket awsds-prod-outputs --key applications/stage-09-proofs/v0/glue/producer_proof.py /dev/null --profile awsds-scientist-prod --region us-west-2
    ```
 
 7. **[user] Stage 8 xxi's attempt half**, the waiting list's row: a test object written and deleted in
-   `awsds-prod-releases` as `awsds-infra-prod`, beside the refusals xxi names.
-8. **[Claude] Stage 9 rows i and iii**, filled from 2.2's and 2.4's readings in Stage 9's log.
+   `awsds-prod-releases` as `awsds-infra-prod`, beside the refusals xxi names. **Done 2026-10-25** (Stage 8's log).
+8. **[Claude] Stage 9 rows i and iii**, filled from 2.2's and 2.4's readings in Stage 9's log. **Done
+   2026-10-25.**
 
 ### N.1 The release through Staging and Production
 
@@ -568,7 +590,11 @@ carries `ONLY=`, or the build runner is destroyed.
 
 1. **[user] Stage 8 1.1, the house image `default-v0.9.0`** (§H step 3), its 72-name literal passing `GM-1`
    to `GM-8` on 2026-10-25 at 07:41 UTC; `DE-5` turns green with it.
-2. **[user] The deploy image on Terraform 1.16.6** (§H step 4), once the laptop runs it.
+2. **[user] The deploy image on Terraform 1.16.6** (§H step 4), the laptop on it since 2026-10-25: **before steps 8
+   and 10, and before any laptop apply or `make up` of a slice the pipeline reads or applies** (the application
+   and orchestration slices, `staging/egress`, `production/workloads-egress`, and the `data/`, `sagemaker/`,
+   `foundation/` and `workloads/` states their `terraform_remote_state` reads), since the image's 1.15.8 refuses
+   a state written by 1.16.6.
 3. **[Claude] Readings with GitLab up**: `./aws/cicd.py` (`CI-1`, `CI-9`); `awsds/app-etl`'s branch list,
    verification ix's branches deleted on 2026-10-25 by the user's word; and Stage 8 xxvii's plan half, a
    read-only plan of `production/runners/` once the Amazon Linux parameter has moved past the runners'
@@ -595,7 +621,8 @@ carries `ONLY=`, or the build runner is destroyed.
    Sandbox's `egress/` down: Stage 8 xxiv, `test-deploy` expected to fail in seconds before `deploy`
    writes anything, *"FATAL: no sagemaker.api endpoint: is Sandbox's egress up (make up ENV=sandbox
    ONLY=egress)?"*; then `make up ENV=sandbox ONLY=egress` and the job's retry.
-7. **[Claude] After `test-deploy`**: Stage 10 xix, the domain's lineage events, twice with a delay between
+7. **[Claude] After `test-deploy`** (**xix, xxiii's second half and Stage 8 iv's re-scan half read 2026-10-25 with nothing up**, on the
+   `test` project's workflows of #87 and on `v0.4.5`'s image, the two stages' logs): Stage 10 xix, the domain's lineage events, twice with a delay between
    (Lesson 62); Stage 10 xxiii's second half, the `test` project's workflows' `Code` object (`aws
    mwaa-serverless get-workflow`) against the bundle's `code/<workflow>.zip`; and Stage 8 iv's re-scan
    half, **[Claude⚡]** on the user's word, `aws ecr start-image-scan` on the tag's image in
@@ -658,7 +685,7 @@ carries `ONLY=`, or the build runner is destroyed.
     ```
 
 13. **[user] 3.7**: both `release.tf`s with the new tag's values, the mirror pushed after the merge.
-14. **If N.0 step 1 took (c)**: the break's branch and its tag, expected to stop in Staging's leg with
+14. **Not owed: N.0 step 1 took (b).** Run only as N.4's exercise for Stage 10 xx: the break's branch and its tag, expected to stop in Staging's leg with
     Production untouched; **[Claude]** the failure rules' `TriggeredRules` and the diagnosis from
     `list-task-instances`, `get-task-instance` and the task's log group, read before any `make down
     ENV=staging`; the branch deleted after.
@@ -673,7 +700,8 @@ Separable from N.1, with the hub up. Each workgroup bills 1.44 USD per query-hou
 idle, so its `make down` is the guarantee.
 
 1. **[user] The free trial's Production balance**, read in the Redshift console (Stage 9's cost row, 5b
-   decision 9), its window open since Production's first compute on 2026-10-24; then `make up
+   decision 9), 299.71 of 300.00 on 2026-10-25, the window open since the namespace's creation on 2026-10-23 and
+   closing 2027-01-21 (Stage 9's log); then `make up
    ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift`.
 2. **[Claude] Stage 9 xviii's last clause**, expected `DISABLED`, then `./aws/warehouse.py
    awsds-infra-prod --sql` (`WH-6`, `WH-12`, `WH-14`):
@@ -733,6 +761,7 @@ Each costs minutes of a sitting and leaves a recorded reading; none holds up ano
 | Stage 8 xv | N.1 | the proxy host stopped alone, a `.promotion` job retried, the proxy started again | the job's own check failing in about 20 s, *"no answer through the proxy"* |
 | Stage 8 xxviii's active half | N.1 | an `AssumeRole` of a deploy role through `sts.amazonaws.com`: a manual job on the deploy runner, or xvi's 15 s trust widening | `us-east-1`'s trail and, for the widened principal, whether the misuse rule fires; a regional assumption beside it reads 4.6's transformed message |
 | Stage 9 xxiv | N.2 | `REVOKE USAGE ON DATASHARE trades_lf FROM ACCOUNT '<Data Governance>' VIA DATA CATALOG`, then 9.5's steps 1 to 3 again | the Lake Formation rows the revoke leaves, and whether the register notices; INT-24's door is shut until the rebuild |
+| Stage 10 xx's second half | N.1, Staging | a branch's tag whose `GlueJobOperator` names a Glue job the application slice does not declare | the task failing on `CreateJob` rather than creating a job, the two failure rules firing once more |
 | Stage 10's network negative (1.2) | N.1, Staging | **[Claude⚡]** a workflow created by hand with no `NetworkConfiguration`, run once and deleted | the worker's address in the CloudTrail record of its first AWS call, beside a configured run's private address |
 
 ### N.5 The items that wait on something else
@@ -750,8 +779,8 @@ Each costs minutes of a sitting and leaves a recorded reading; none holds up ano
   refusal, xv's deploy- and execution-role halves and xxvii's cancel (no statement past 300 s); Stage 10
   xviii and xxviii's inbox marker (no task writes one).
 - **Not written**: Stage 8 3.3's read pinned to an Iceberg snapshot (Stage 9 4.4).
-- **The user's word**: Production's full-table flag, kept or turned off against `TM-26`, the lake's flag
-  sufficing since 2026-10-24 (Stage 9 decision 13).
+- **Taken 2026-10-25**: Production's full-table flag turned off by the user in the console, bracketed by
+  `DT-5` (Stage 9 decision 13; `TM-26`'s Production half closed, the lake's flag sufficing).
 
 ## Q. After the quotas: Stage 10's pass 3
 

@@ -3340,3 +3340,101 @@ review what is left; no AWS write.*
   `EXC-22` in `GOVERNANCE.md`'s encryption rule and the threat model, the save's KMS grant behind every workflow
   run, the plan's `# whitespace changes` on a JSON string in `terraform-changes.md`, the principal-filtered
   `list-permissions` in `log-debugging.md`, and `aws/orchestration.py`'s report texts.
+
+## 2026-10-25 — with the environment down: verification xiv's battery at `d856982c`
+
+*An agent of this session ran the lint offline, at the user's request to prepare what Stages 7 to 10 leave
+with nothing up; Claude's hand for the record. No AWS call, no change to the repository or to the user's
+`awsds-workflows` checkout, which holds no object `d856982c` (its `main` is `ff25eae`): the lint's source was
+read from the uvx cache's copy of the pinned archive. 76 cases, one scratch copy of `examples/app-etl/` each.*
+
+- **[agent] The invocation**: the template's `test` line, `uvx --from "awsds-workflows @ <the d856982c
+  archive>" awsds-workflows lint app-etl --image-repository awsds-prod-ecr-app-etl`, one `--instance-type` per
+  name of `LINT_INSTANCE_TYPES` (the ceiling's seven) and `--algorithm-repository sagemaker-xgboost`
+  (`LINT_ALGORITHM_REPOSITORIES`), each read from `.gitlab-ci.yml`; the promoted mode on one rendered file with
+  `--prefix s3://awsds-staging-outputs/applications/app-etl/v9.9.9/` and the same options. The rendered copies
+  came from a copy of `scripts/render-workflow.py`'s table with stand-in values, and both passed the promoted
+  mode at the first attempt.
+- **[agent] The untouched copy** reads `ok: 9 arquivo(s)` (6 on 2026-10-18: the train and warehouse workflows
+  and `glue/load_warehouse.py` since v0.4.0); each clean rendered copy `ok: 1 arquivo(s)`. The controls hold:
+  a `dev-env` image by digest passes without `--image-repository`, in both modes; a job without its volume key
+  passes in the authoring mode; a rendered `ml.m5.2xlarge` passes without `--instance-type` (Lesson 71).
+- **[agent] The 40 violations of 2026-10-18 reproduced**, each exit 1 under its rule: `projeto` 8 (the eight
+  `_PROJECT_PATTERNS`), `datas` 3, `operador` 2, `limites` 4, `imagem` 2, `job` 5, `templates` 2, `codigo` 1,
+  `glue` 2 and `manifest` 8 in the authoring mode; in the promoted mode `projeto` on the unrendered source (16
+  findings: nine CLI variables, two promoted patterns, rule (6), `glue`, `imagem`, `codigo`) and on a rendered
+  copy with a `datazone-<project>-dev` prefix, and `job` on a rendered copy without its volume key.
+- **[agent] The rules since `3c1708e`**: rule (6)'s five keys each refused on a rendered copy under `glue`
+  (`create_job_kwargs`, `script_location`, `iam_role_arn`, `update_config`, `job_desc`); `treino` refusing
+  `action_if_job_exists` left off, network isolation off, `ml.g5.xlarge`, a validation channel in another
+  bucket, a missing `S3OutputPath`, and on a rendered copy an output outside `models/` and a missing output
+  key, seven in all; `--instance-type` refusing `ml.m5.2xlarge` and `ml.g5.xlarge` on the processing task and
+  `ml.g5.xlarge` on the training task; `--image-repository` refusing the `dev-env` image on `ImageUri` in both
+  modes and on `TrainingImage`. 61 refusals in all, every control passing.
+- **[agent] Three readings**: a `dev-env` `TrainingImage` is refused under `imagem`, not `treino`
+  (`_check_images` reads both `ImageUri` and `TrainingImage`); a CLI variable outside the lint's table
+  (`{proj.name}`) is refused under `projeto` and leaves the text untranslated, so four collateral lines follow
+  (`glue` twice, `imagem`, `codigo`); the pattern `datazone-<projeto>-dev` does not match the source's
+  `datazone-{proj.id}-dev`, whose braces break the word boundary, the file refused on the variable anyway and
+  the rendered form caught. Cosmetic: `_check_glue` prints one script location twice when `script_location`
+  and `create_job_kwargs.Command.ScriptLocation` carry the same path. No rule reads a `VersionId` or compares
+  with a release's manifest, as before.
+
+## 2026-10-25 — the laptop's Terraform at 1.16.6; the pins moved; the deploy image's rebuild ordered first
+
+*The user's hand for the install (*"Rodei os comandos.. aparentemente atualizou para a versão 1.17.0"*); Claude's
+reading of the binary and the edits. No AWS write.*
+
+- **[user]** `terraform_1.16.6_darwin_arm64.zip` and the published sums downloaded, the checksum checked, the
+  executable unzipped over `~/local/bin/terraform` (the only `terraform` on the PATH, read with `which -a`).
+- **[Claude] The reading**: `terraform version` prints `Terraform v1.16.6 on darwin_arm64`; the "1.17.0" the user
+  saw is the CLI's own notice, *"Your version of Terraform is out of date! The latest version is 1.17.0"*, so
+  1.17.0 is released (`upstream-releases.md`) and the lab stays on 1.16.6, the bump taken 2026-10-22. A read-only
+  plan of `production/warehouse/` under the new binary read `No changes`.
+- **[Claude] The pins** (`upstream-releases.md`'s order): `CLAUDE.md`'s tool list, `.github/workflows/offline-gates.yml`'s
+  `TERRAFORM_VERSION` and `gitlab/awsds/deploy-image/Dockerfile`'s `TERRAFORM_VERSION` and `TERRAFORM_SHA256`
+  (the published `linux_amd64` sum), with the recipe's README; the image's release is the GitLab sitting's
+  merge request and tag (§H step 4).
+- **[Claude] The order this fixes**: Terraform refuses a state snapshot written by a newer version, so the
+  deploy image's 1.15.8 cannot plan, read through `terraform_remote_state` or `terraform output` a state the
+  laptop's 1.16.6 has written. Every state the pipeline touches is 1.15.8's today (the three applies of this
+  date ran before the install). At the next sitting the image is rebuilt before `make up ENV=staging
+  ONLY=egress`, `make up ENV=production ONLY=workloads-egress` and any laptop apply of `data/`, `sagemaker/`,
+  `foundation/` or `workloads/` in either target (`runbooks/promotion.md` §N.1 step 2, the waiting list).
+- **[Claude] Lesson 76** written at the user's request, with its key in `CLAUDE.md`, a bullet in its
+  parallel-sessions section and a standing rule, and a note in `terraform-changes.md` §1, so a parallel
+  session reads the order before its first apply.
+
+## 2026-10-25 — verification iv's re-scan half: a second scan inside 24 h is refused
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo o aws ecr start-image-scan na imagem v0.4.5 de
+awsds-prod-ecr-app-etl como usuário de infraestrutura (awsds-infra-prod), para ler a recusa da releitura dentro
+de 24 h."*), as the infrastructure user with `InfrastructureAccess`; the one peer session told before the call.
+Times UTC.*
+
+- **[Claude] Before**, 19:43:06: `describe-image-scan-findings` on `v0.4.5-268964ad` reads `COMPLETE`,
+  completed 05:36:43 (the push's scan, two minutes after the push at 05:34), CRITICAL 113, HIGH 612, MEDIUM
+  158, LOW 16, UNDEFINED 466.
+- **[Claude] The call**, 19:43:08: `start-image-scan` refused, *"An error occurred (LimitExceededException) when
+  calling the StartImageScan operation (reached max retries: 2): The scan quota per image has been exceeded.
+  Wait and try again."*
+- **[Claude] After**, 19:43:13: the scan `COMPLETE` with the same completion time, nothing re-run: a second
+  scan inside 24 h is refused, not absorbed, and the gate's read of the push's scan is the one reading an image
+  gets that day.
+
+## 2026-10-25 — verification xxi's attempt half: the infrastructure user writes and deletes on the release bucket
+
+*The user's hand, the command pasted in chat; Claude's read-back as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`), reads only. Times UTC.*
+
+- **[user]** `echo xxi > /tmp/xxi-probe.txt && aws s3 cp /tmp/xxi-probe.txt
+  s3://awsds-prod-releases/xxi-probe/probe.txt --profile awsds-infra-prod --region us-west-2 && aws s3 rm
+  s3://awsds-prod-releases/xxi-probe/probe.txt --profile awsds-infra-prod --region us-west-2`: *"upload:
+  ../../../../tmp/xxi-probe.txt to s3://awsds-prod-releases/xxi-probe/probe.txt"*, *"delete:
+  s3://awsds-prod-releases/xxi-probe/probe.txt"*.
+- **[Claude] Read back** at 19:50:55: one version of `xxi-probe/probe.txt`, 4 bytes, 19:50:20, noncurrent,
+  under `aws:kms` with the registry key (`alias/awsds-prod-registry`'s id); a delete marker current at
+  19:50:21. The lifecycle expires noncurrent versions at 90 days and carries no rule for expired delete
+  markers, so the marker outlives the version; nothing else to clean. The bucket's
+  `DenyDeletesExceptInfrastructure` spared the infrastructure user as written, the simulator's half of
+  2026-10-18 reading the same for the other principals.

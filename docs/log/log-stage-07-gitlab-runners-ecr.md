@@ -934,3 +934,84 @@ that holds Stages 8 to 10.*
   and `awsds/dev-env-stewards` left it, and the mirror's job token admits `awsds/app-etl` in place of
   `awsds/dev-env` (Stage 8 decision 2). Reported in chat (*"Fiz os atos do §H: ... as configurações e
   memberships ..."*); no read of GitLab's members reaches them from the laptop.
+
+## 2026-10-25 — 7.2, INT-13's VPC half: the console's host form in Data Governance offers no VPC
+
+*Claude's hand, reading the AWS console through the user's Chrome session (Claude in Chrome, a tab of its own,
+closed after) as the infrastructure user with `InfrastructureAccess` in Data Governance, `us-west-2`, at the
+user's request; nothing created, no form submitted. About 18:51 UTC.*
+
+- **[Claude] The pages**: *Developer Tools → Connections* lists no connection and its *Hosts* tab reads *"No
+  hosts configured"*; *Create host* opens the form at `/codesuite/settings/connections/hosts/new`.
+- **[Claude] The form**: *Select a provider* offers `GitHub Enterprise Server` and `GitLab self-managed`; *URL*,
+  *"The endpoint of the server to connect to"*; *VPC configuration*, *"Choose to set up a network-connected host
+  or a host with an Amazon VPC configuration"*, with two options: *No VPC*, *"If your GitHub Enterprise Server is
+  only accessible in a VPC, configure details here. Otherwise, skip this step."* (the text names GitHub with
+  `GitLab self-managed` selected), and *Use a VPC*, *"If the endpoint is accessible via a VPC you may configure
+  this here."*. With *Use a VPC* marked and `GitLab self-managed` selected, the *VPC ID* selector (*"Choose the
+  VPC for your configuration. Your VPC must be in the same AWS Region as your host."*) reads **`No results`**
+  once loaded, and *TLS certificate - optional* appears for a private CA. No SCP names `codeconnections`, so the
+  console met no organization policy.
+- **[Claude] The reading**: a host for the private instance needs a VPC in the host's account, and Data
+  Governance has none to offer (D22, D26): INT-13's answer, as expected. The *No VPC* form would try the public
+  internet, where `gitlab.awsds.internal` does not exist; creating that host and running *Set up host* is the
+  user's optional half, for the wording of the failed setup, deleted after. The accepted path stays the manual
+  `git remote add` and push from inside a project (INT-09).
+
+## 2026-10-25 — 7.2 closed on the VPC half, by the user's decision
+
+*The user's decision in chat (*"Fico com a leitura da metade VPC; cancelo o formulário sem criar o host."*); Claude's
+hand for the record. No AWS call.*
+
+- **[user]** The *Create host* form cancelled, no host created; the *No VPC* attempt not run.
+- **[Claude]** 7.2 and verification ix are closed on the reading above: INT-13's answer is *no*, the console
+  offering no VPC in Data Governance for a GitLab self-managed host, and the accepted path stays the manual
+  `git remote add` and push from inside a project. The waiting list keeps only §I step 6's GitLab settings for
+  this stage.
+
+## 2026-10-25 — the user's observation: Production's host form lists its VPCs; the path INT-13 lacked, read on AWS's pages
+
+*The user's hand in the console (*"Notei que entrando em production, Developer Tools, Hosts, criar uma conexão
+com gitlab lista as VPCs. Esse não seria um caminho possível de configuração?"*); Claude's reading of five AWS
+pages (`docs/REFERENCES.md`). No AWS call, nothing created.*
+
+- **[user]** In Production the same *Create host* form offers the account's VPCs under *Use a VPC*.
+- **[Claude] The pages**: a GitLab self-managed host takes a VPC, subnets and security groups *"for the
+  infrastructure where your host is installed"*, a TLS certificate for a private CA, and is set up with a GitLab
+  administrator's PAT (`api`, and `admin_mode` if enabled); a connection on it is authorized by a GitLab user,
+  and *"connections only provide access for the account that was used to create and authorize the
+  connection"*. `codeconnections` connections are shared across accounts through RAM. SageMaker Unified Studio's
+  Git connections live at the account level since 2026-07-30 (*Settings → Account settings → Git connections*),
+  reach every domain and project in the account once enabled, and may come from another account through RAM
+  with `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess` at its latest version; *"all users who can
+  sign in to any domain in the account have read and write access to all repositories on that connection"*,
+  regardless of project membership.
+- **[Claude] The reading**: the path exists, a host in Production's VPC-SharedServices, a connection on it, the
+  connection shared to Data Governance and enabled there, which INT-13's row of 2026-09 did not have. Its cost
+  is an identity flattening (every domain user writes as the one GitLab user who authorized the connection,
+  against Stage 7's per-persona roles and the CE gate, Lesson 12), a service-managed ingress into
+  VPC-SharedServices and an administrator PAT at setup; nothing in Stages 7 to 10 needs it. Recorded in INT-13,
+  7.2, `SMUS.md`, `upstream-releases.md` and the waiting list as the user's decision, recommended not now; the
+  first reading, the account-level Git connections page in Data Governance's SageMaker Unified Studio console,
+  needs nothing up.
+- **[Claude] The user's follow-up, how a connection authenticates** (the user guide's repository pages,
+  `docs/REFERENCES.md`): a member brings no SSH key, PAT or password; the service clones the repository into the
+  project's S3 bucket, shared by every member, and pushes and pulls with the connection's token, so a disabled
+  connection leaves the clone and stops every push and pull. JupyterLab's Git panel and the terminal's `git`
+  act on that clone, the terminal's changes showing on the *Repositories* page. The pages promise *"per-commit
+  authorship"* and say nothing about where the author's name and e-mail come from; what GitLab records as the
+  pusher is the connection's user. Today's spaces hold no such clone: INT-09's clone is made by hand in the
+  space with the person's own GitLab credential and `git config`, a different channel.
+- **[Claude] The user's second follow-up, several connections**: a host takes one or more connections, each the
+  GitLab user who authorized it, who needs the Owner role on the repositories; but an enabled connection reaches
+  every user of every domain in the account and the member chooses the connection when adding a repository, so
+  several connections are several shared identities, not one per person. Binding a connection to a project by
+  IAM (`UseConnection` on one ARN per project role) is conceivable and unmeasured, and would still be per
+  project. Recorded in INT-13.
+- **[Claude] The user's design, a low-privilege identity for the connection**: a dedicated Identity Center user
+  signing in to GitLab by SAML (no local account), a Developer on the chosen projects alone, so the connection
+  lists those repositories and pushes only to unprotected branches, `main` and the `*-v*` tags staying
+  Maintainers' through merge requests the person opens. It narrows the shared identity to one low-privilege
+  pusher and keeps the gate in GitLab. Unmeasured: the vendor's note naming the Owner role for the authorizing
+  user, the author the service writes, the OAuth refresh past the SAML session, and the IAM narrowing. Recorded
+  in INT-13 for the evaluation, if the path is ever wanted.

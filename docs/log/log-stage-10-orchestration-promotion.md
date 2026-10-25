@@ -1310,3 +1310,75 @@ review what is left; no AWS write.*
   `EXC-22` in `GOVERNANCE.md`'s encryption rule and the threat model, the save's KMS grant behind every workflow
   run, the plan's `# whitespace changes` on a JSON string in `terraform-changes.md`, the principal-filtered
   `list-permissions` in `log-debugging.md`, and `aws/orchestration.py`'s report texts.
+
+## 2026-10-25 — with the environment down: #87's failure rules read for 3.2's option (b)
+
+*Claude's hand, at the user's request to prepare what needs no environment, as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-staging`), reads only. Times UTC.*
+
+- **[Claude] The rules' metric**, `AWS/Events` `TriggeredRules` over 05:55 to 06:15, the window of `v0.4.5`'s
+  `staging-test` (pipeline #87, verification ix): `awsds-staging-wf-app-etl-failed` `Sum` 1 in the minute of
+  06:03, `awsds-staging-chain-app-etl-failed` `Sum` 1 in the minute of 06:04, nothing else in the window;
+  `AWS/SNS` `NumberOfNotificationsDelivered` on `awsds-staging-alerts` 1 at 06:03 and 1 at 06:04. The rules
+  themselves are gone with the user's `make down ENV=staging` (`list-rules` on the prefix reads the misuse rule
+  alone), the metrics kept. So the planted drift fired both rules through the chain and both notifications were
+  delivered: option (b) has its reading, and 3.7's proof with it, the break having run through
+  `awsds-staging-chain-app-etl`. The choice between (a), (b) and (c) stays the user's
+  (`runbooks/promotion.md` §N.0, the waiting list).
+
+## 2026-10-25 — with the environment down: verification xi's offline half
+
+*The same agent's run as Stage 8's xiv entry of this date; Claude's hand for the record. No AWS call.*
+
+- **[agent] The lint refuses**, each exit 1: a portal-scoped rendered definition (`datazone_usr_role_*` in a
+  `RoleArn`, a `dzd-` domain id, `ProjectS3Path` and a `DataZone*` variable in a Glue argument), four cases
+  under `projeto`; a container named by anything but an ECR URI and digest, `awsds-prod-ecr-app-etl:v1.0.0`
+  (a tag) and `python:3.12` (a Docker Hub name), under `imagem`; a definition padded past 50 KB, 50,061 bytes
+  rendered and 50,045 in the authoring mode, under `limites`.
+- **[agent] `build-task-code`'s import line**: a copy of `code/app_etl_tasks.py` with a top-level import of a
+  package no interpreter has, zipped by the job's own command, fails `PYTHONPATH="code/app-etl.zip" python3 -c
+  "import app_etl_tasks"` with exit 1 and `ModuleNotFoundError` raised from inside the zip, the untouched copy
+  passing with exit 0; the same under Python 3.9 and the example's pinned 3.12. The CI half, a branch whose
+  pipeline's `test` goes red on the portal-scoped definition, is the GitLab sitting's
+  (`runbooks/promotion.md` §N.1 step 5).
+
+## 2026-10-25 — 3.2 and 3.7 closed by the user's decision, (b)
+
+*The user's decision in chat (*"Ok, vamos pela sua recomendação."*, on the three options laid out there);
+Claude's hand for the record. No AWS call.*
+
+- **[user] (b)**: 3.2 is answered by `v0.4.5`'s planted drift (pipeline #87, Stage 8 verification ix), promoted
+  by the pipeline and failing the Glue job inside `awsds-staging-chain-app-etl`: both failure rules fired once
+  (06:03 and 06:04 UTC, this log's earlier entry of the day), two notifications delivered; 3.7 with it, the break
+  having run through a chain. The diagnosis path stays #77's reading (verification vi). No further break is
+  owed; a branch whose `GlueJobOperator` names an undeclared Glue job is an N.4 exercise for verification xx,
+  the user's to call at a release sitting.
+
+## 2026-10-25 — with the environment down: xix's two reads, xxiii's `Code` copy, xviii's simulator attempt
+
+*Claude's hand, at the user's request to stay within Stages 7 to 10 with nothing up, as the infrastructure user
+with `InfrastructureAccess` (`awsds-infra-data`, `awsds-infra-sandbox-1`, `awsds-infra-prod`), reads only.
+Times UTC.*
+
+- **[Claude] xix**: `list-lineage-events` on the domain at 19:32:58 and again at 19:35:29: 44 events both
+  times, the same ids, every one from Stage 18's Staging Glue job `app_etl_<project>` of 2026-10-19 and
+  2026-10-21, which carried the OpenLineage settings; nothing from the `test` project's nine workflow runs of
+  2026-10-24 and 25 (xxiii's image half counted them). The service emits nothing of its own, and a Glue job
+  without the OpenLineage settings posts nothing (3.3).
+- **[Claude] xxiii's `Code` copy**: `get-workflow` on `app_etl_test_experimentation_app_etl` (version
+  `b50f321b…`, modified 05:36:25, #87's `test-deploy`) returns `Code` at the project's
+  `shared/operatorFiles/app-etl-<timestamp>.zip`, 2,448 bytes, `CodeSnapshottedAt` 05:36:25, under the project
+  key, `TriggerMode` `manual_only`; its sha256 `41969961…ba6b` equals `code/app-etl.zip` inside `v0.4.5`'s
+  bundle in `awsds-prod-releases` (16,442 bytes, 05:50:56), and `code/app-etl-train.zip` is the same file. The
+  deploy copies the task package as `workflow.create` copies the definition.
+- **[Claude] xviii, and Stage 9 xv's deploy- and execution-role halves, through the simulator**:
+  `sagemaker:CreateProcessingJob` as `awsds-prod-wf-app-etl` with `aws:RequestedRegion`, the organization and
+  account keys and the five settings in the context (`sagemaker:VpcSubnets`, `InstanceTypes` `ml.t3.medium`,
+  `NetworkIsolation` true, `InterContainerTrafficEncryption` true, `VolumeKmsKey`) reads `explicitDeny`,
+  `AllowedByOrganizations` false, against `processing-job/app-etl-probe`, and so does every variant with one
+  setting missing; with `*` as the resource the organization allows and the role's own statement, scoped to
+  `processing-job/app-etl-*`, does not match. The same for `awsds-deploy-prod`'s `CreateTransformJob`. The
+  discriminator: the infrastructure user's own role reads `explicitDeny` on the same call with the ARN and
+  `allowed` with `*`, while its real calls pass the battery's rows and the pipeline's jobs run. The denial is
+  the instrument's (Lesson 30), so the five statements cannot be told apart by simulation against a job ARN;
+  xviii and xv's halves stay a real job's reading (§N.4).

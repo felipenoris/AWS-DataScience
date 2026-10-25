@@ -77,3 +77,13 @@ output "alerts_topic_arn" {
   description = "awsds-<env>-alerts - the misuse rule's target, adopted by Stage 9, Stage 10 and Stage 12 (Stage 8 decision 5)."
   value       = aws_sns_topic.alerts.arn
 }
+
+# Stage 9 step 4.6 - Production's Model Registry, read from Staging as the deploy role (INT-07's
+# registry half, verification xii): the group ARNs begin with this prefix, production/sagemaker/
+# registry.tf's `awsds-<env>-model-<family>`, and scripts/model-chain.py appends the family. Built from
+# the same locals as the deploy role's grant on those groups (deploy-role.tf), so no second copy of
+# the registry's account or naming exists here.
+output "registry_model_package_group_arn_prefix" {
+  description = "The start of every Model Registry group ARN in Production (awsds-<env>-model-<family>), which the Staging deploy role reads approved versions from (Stage 9 4.6)."
+  value       = "arn:${local.partition}:sagemaker:${data.aws_region.current.region}:${local.registry_account_id}:model-package-group/awsds-${local.registry_env}-model-"
+}

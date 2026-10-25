@@ -13,7 +13,9 @@
 #                 # the requests built from stand-in values, offline: what `make check` runs
 #   reads:    the account's data/, sagemaker/ and network slices' state objects (tfhygiene.targets);
 #             the training jobs app-etl-train-*; the evaluation the workflow's evaluate task wrote
-#             beside the model; the transform's output. Nothing with --check.
+#             beside the model; the transform's output; in Staging, Production's newest approved
+#             version of the application's registry group, before Staging's own model is served
+#             (Stage 9 4.6, INT-07's registry half, verification xii). Nothing with --check.
 #   writes:   register, a version of awsds-prod-model-app-etl; approve, its status; transform, a model
 #             it deletes after and a transform job's output under models/app-etl/transform/<job>/.
 #   exit:     0 done | 1 a check failed | 2 usage
@@ -256,6 +258,42 @@ def wait_for_transform(name: str) -> str:
             raise ChainError(f"{name} still {status} after {TRANSFORM_BOUND_SECONDS} s: stopped")
 
 
+def read_production_registry(values: dict) -> None:
+    """Stage 9 4.6, INT-07's registry half: the Staging deploy role reads Production's newest approved
+    version of the application's group before Staging serves its own model (Stage 10 decision 22). A
+    group with no approved version is reported; a refusal fails the job."""
+    prefix = values.get("registry_group_arn_prefix")
+    if not prefix:
+        raise ChainError("foundation/'s state names no registry group prefix (Stage 9 4.6)")
+    group_arn = f"{prefix}{APP}"
+    listed = aws_json(
+        "sagemaker",
+        "list-model-packages",
+        "--model-package-group-name",
+        group_arn,
+        "--model-approval-status",
+        "Approved",
+        "--sort-by",
+        "CreationTime",
+        "--sort-order",
+        "Descending",
+        "--max-results",
+        "1",
+    ).get("ModelPackageSummaryList", [])
+    if not listed:
+        print(f"  Production's registry: no approved version in {group_arn}")
+        return
+    package = aws_json(
+        "sagemaker", "describe-model-package", "--model-package-name", listed[0]["ModelPackageArn"]
+    )
+    metadata = package.get("CustomerMetadataProperties", {})
+    print(
+        f"  Production's registry: version {package.get('ModelPackageVersion')} of {group_arn} is "
+        f"{package['ModelApprovalStatus']}, {metadata.get('git_tag', '?')} trained by "
+        f"{metadata.get('training_job', '?')}"
+    )
+
+
 def transform(args) -> int:
     values = account_values(args.account)
     if args.account == "production":
@@ -271,6 +309,7 @@ def transform(args) -> int:
         job = package["CustomerMetadataProperties"]["training_job"]
         container = {"ModelPackageName": args.package_arn}
     else:
+        read_production_registry(values)
         training = newest_training_job()
         job = training["TrainingJobName"]
         container = {
@@ -304,6 +343,7 @@ def check() -> int:
         "job_role_arn": "arn:aws:iam::account:role/awsds-staging-job-exec",
         "security_group": "sg-stand-in",
         "subnets": ["subnet-stand-in-1", "subnet-stand-in-2"],
+        "registry_group_arn_prefix": "arn:aws:sagemaker:region:account:model-package-group/awsds-prod-model-",
     }
     training = {
         "TrainingJobName": "app-etl-train-20261024T120000",
@@ -337,6 +377,12 @@ def check() -> int:
         problems.append("a transform without the data key on its volume and output")
     if job["TransformResources"]["InstanceType"] != INSTANCE_TYPE:
         problems.append("a transform off the instance type its quota covers")
+    group_arn = f"{values['registry_group_arn_prefix']}{APP}"
+    if not re.fullmatch(
+        r"arn:aws:sagemaker:[a-z0-9-]+:[a-z0-9]+:model-package-group/awsds-[a-z]+-model-[a-z0-9-]+",
+        group_arn,
+    ):
+        problems.append(f"the registry group {group_arn!r} is not a group ARN")
     try:
         predictions("1.5\n2.5\n", 3)
         problems.append("a short output passed the check")

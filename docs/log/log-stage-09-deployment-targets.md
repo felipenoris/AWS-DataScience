@@ -2292,3 +2292,131 @@ review what is left; no AWS write.*
   `EXC-22` in `GOVERNANCE.md`'s encryption rule and the threat model, the save's KMS grant behind every workflow
   run, the plan's `# whitespace changes` on a JSON string in `terraform-changes.md`, the principal-filtered
   `list-permissions` in `log-debugging.md`, and `aws/orchestration.py`'s report texts.
+
+## 2026-10-25 — with the environment down: 9.5's adoption written and planned, xii's call written, rows i and iii filled
+
+*Claude's hand, at the user's request to prepare what Stages 7 to 10 leave with nothing up, as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-data`,
+`awsds-infra-staging`), reads and plans only. Times UTC.*
+
+- **[Claude] 9.5's objects read back** before writing: the datashare `trades_lf` on namespace
+  `b15e9682-064d-4c48-a4cc-4d607622c379`, `AUTHORIZED` for `DataCatalog/<Data Governance>` and `ACTIVE` for
+  the lake's catalog ARN, `ProducerAllowedWrites` false; the registration, which `list-resources` does not
+  list (it reads the two S3 registrations alone) and `describe-resource` on the datashare's ARN reads with no
+  role, `HybridAccessEnabled` and `WithPrivilegedAccess` false, `NOT_VERIFIED`; the database `governed_trades`,
+  its `FederatedDatabase` the datashare's ARN on `aws:redshift`, `CreateTableDefaultPermissions` `[]`, no
+  description; the LF-Tags `layer=curated` on the database and, on `trades.trades_notional`, `layer=curated`
+  inherited and `classification=internal`, six tagged columns; the creator's `ALL` with grant option the
+  database's only permission.
+- **[Claude] The provider, read in its documentation and source at the slices' pins** (6.68.0 in Production,
+  6.60.0 in the lake): `aws_redshift_data_share_authorization` imports as `<arn>,<consumer identifier>`;
+  `aws_redshift_data_share_consumer_association` as `<arn>,<entire account>,<consumer arn>,<region>` with the
+  unused fields empty; `aws_glue_catalog_database` as `<catalog id>:<name>`; `aws_lakeformation_resource`
+  declares no importer (its Create sends `UseServiceLinkedRole: true` when no role is given, its Read never
+  sets the attribute); `aws_lakeformation_resource_lf_tags` documents no import. The data source
+  `aws_redshift_data_shares` lists the shares an account sees, which gives both slices the ARN without a
+  pasted namespace id.
+- **[Claude] The adoption written**: `production/warehouse/datashare.tf` (the authorization, the consumer
+  identifier built from `production/data/`'s `lake_catalog_id` output) and
+  `data-governance/data/warehouse-share.tf` (the association on the catalog's ARN and the federated database,
+  with the two import blocks). Baseline plans of both slices read `No changes` before the edit. **The first
+  Production plan read *1 to import, 1 to add, 1 to destroy***: `allow_writes = false` *"forces replacement"*,
+  the provider reading the attribute back as unset; left undeclared, the plan reads *1 to import, 0 to add, 0
+  to change, 0 to destroy*. **The lake's plan reads *2 to import, 0 to add, 1 to change***: the association
+  with no change, the database updated in place with the provider's five default tags
+  (`tags_all`) and nothing else. Neither apply run: both wait for the user's word, `awsds-infra-prod` then
+  `awsds-infra-data`, and the import blocks go in the commit after.
+- **[Claude] xii's call written** (4.6): `staging/foundation/outputs.tf` gains
+  `registry_model_package_group_arn_prefix`, built from the deploy role's own locals (the registry account
+  resolved through the `deploy_runner` alias, the env token), planned with the alerts var-file as *Changes to
+  Outputs* alone; `tfhygiene.targets.account_values` reads it for Staging (`REGISTRY_SLICE`), and
+  `scripts/model-chain.py transform staging` lists and describes Production's newest approved version of
+  `awsds-prod-model-app-etl` before it serves Staging's own model, an empty group reported and a refusal
+  failing the job. `--check` passes offline, ruff clean. The reading is the next Staging leg's
+  (`staging-model`), once the mirror carries the script.
+- **[Claude] Rows i and iii** of the verification table filled from this log's entries of 2026-10-22 to
+  2026-10-24 (2.2's brackets, 2.4's commit and the key's refusal of the direct put).
+- **[Claude] 3.5's requests**, read in both accounts: the four `ml.m5.large` requests still
+  `CASE_OPENED`, each with its case id, the applied quotas above them since 2026-10-24; nothing waits on them.
+
+## 2026-10-25 — 9.5's adoption and xii's output applied, with the environment down
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo os três applies com nada no ar, como usuário de
+infraestrutura com InfrastructureAccess: staging/foundation (só o output, com o var-file de alertas,
+awsds-infra-staging), production/warehouse (1 to import, awsds-infra-prod) e data-governance/data (2 to import,
+1 to change, awsds-infra-data)"*), as the infrastructure user with `InfrastructureAccess`; the one peer session
+on this machine told before the writes. Recipe A: a fresh plan saved, the saved plan applied, a re-plan. Times
+UTC.*
+
+- **[Claude] `staging/foundation/`**, with the alerts var-file: the plan at 17:24:36 read *Changes to Outputs*
+  alone; the apply at 17:24:53 to 17:25:04, *"0 added, 0 changed, 0 destroyed"*, the output
+  `registry_model_package_group_arn_prefix` written as `arn:aws:sagemaker:us-west-2:<Production>:model-package-group/awsds-prod-model-`;
+  re-planned `No changes`.
+- **[Claude] `production/warehouse/`**: the plan at 17:25:19, *"1 to import, 0 to add, 0 to change, 0 to
+  destroy"*; the apply at 17:25:31 to 17:25:39, `aws_redshift_data_share_authorization.trades_lf_to_lake`
+  *"Import complete"*, *"1 imported, 0 added, 0 changed, 0 destroyed"*; re-planned `No changes`.
+- **[Claude] `data-governance/data/`**: the plan at 17:25:51, *"2 to import, 0 to add, 1 to change, 0 to
+  destroy"*; the apply at 17:26:09 to 17:26:19, `aws_redshift_data_share_consumer_association.trades_lf` and
+  `aws_glue_catalog_database.governed_trades` *"Import complete"*, the database's *"Modifications complete after
+  2s"* (the five default tags), *"2 imported, 0 added, 1 changed, 0 destroyed"*; re-planned `No changes`, the
+  import blocks still in the configuration, which Terraform treats as done.
+- **[Claude] The import blocks removed** from both files, with the warehouse slice's import-only data source,
+  and both slices re-planned `No changes`.
+- **[Claude] Read back**: both states list the adopted addresses; the database carries the five tags
+  (`Project`, `Environment`, `Owner`, `ManagedBy`, `CostCenter` `stage-05`); `./aws/datalake.py awsds-infra-data`
+  0 failed; `./aws/warehouse.py awsds-infra-prod` every check a pass or a note, the notes the absent workgroup's
+  and `--sql`'s; `make check` passing.
+
+## 2026-10-25 — Production's full-table flag turned off, decision 13's loose end
+
+*The user's hand in the console; Claude's for the two readings, as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`), reads only. Times UTC.*
+
+- **[Claude] Before**, 17:38:59: `get-data-lake-settings` reads one administrator (`InfrastructureAccess`), both
+  create-default lists `[]`, `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE`, `AllowFullTableExternalDataAccess`
+  `true`, `AllowExternalDataFiltering` `false`; `./aws/deploytargets.py awsds-infra-prod` all checks passed.
+- **[user]** *"Desliguei a flag AllowFullTableExternalDataAccess de Production no console do Lake Formation
+  (us-west-2)."*
+- **[Claude] After**, 17:45:00: the key `AllowFullTableExternalDataAccess` absent from the settings, as the
+  console writes an off flag; the administrator, both lists, the parameters and `AllowExternalDataFiltering` as
+  before; `deploytargets.py` all checks passed. The other accounts the same minute: the lake `true`, Sandbox
+  `true`, Staging unset. `TM-26`'s Production half is closed, `AWS_STATE.md`'s flag row and the waiting list
+  brought to it; the lake's flag, the one the vend reads, stays on.
+
+## 2026-10-25 — the Redshift free-trial balances, read by the user in the console
+
+*The user's hand in the Redshift Serverless console, pasted in chat verbatim; Claude's reading of it.*
+
+- **[user]** Production: *"Free trial credits remaining $299.71 out of $300.00"*, *"Free trial expiration
+  January 21, 2027"*. Sandbox: *"Free trial credits remaining $287.51 out of $300.00"*, *"Free trial expiration
+  December 19, 2026"*.
+- **[Claude] The reading**: Production has spent 0.29 USD of credit on the warehouse sittings of 2026-10-24
+  and 2026-10-25 (9.3's statements, 9.4's load, 9.5's datashare, 9.6 and 9.7's reads, the compute up about four
+  hours in all), the "before" reading for the next warehouse sitting (`runbooks/promotion.md` §N.2). Sandbox
+  has spent 12.49 in all, 0.39 since 2026-10-17's 287.90. Production's expiration, 2027-01-21, is 90 days after
+  the namespace's creation (9.1, 2026-10-23 22:07 UTC) and not after the first workgroup (2026-10-24), as
+  Sandbox's 2026-12-19 is 90 days after its namespace of 2026-09-20: the free trial's window opens with the
+  namespace. The waiting list, the cost row, `PRICING.md`, `cost-model.md` and §N.2 carry the figures.
+
+## 2026-10-25 — 5.4's read deny, run by the user as the Data Scientist User
+
+*The user's hand, the command pasted in chat with the account id replaced by its placeholder and the user's
+address by its role; Claude's reading. Times UTC.*
+
+- **[user]** `aws s3api get-object --bucket awsds-prod-outputs --key
+  applications/stage-09-proofs/v0/glue/producer_proof.py /dev/null --profile awsds-scientist-prod`: *"An error
+  occurred (AccessDenied) when calling the GetObject operation: User:
+  arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data
+  scientist user> is not authorized to perform: s3:GetObject on resource:
+  "arn:aws:s3:::awsds-prod-outputs/applications/stage-09-proofs/v0/glue/producer_proof.py" with an explicit deny
+  in a resource-based policy"*.
+- **[Claude] The reading**: the bucket's `DenyThePersonaReadsOutsideTheNamedPrefixes` answers, as 5.4 expected;
+  the persona reads nothing of a release's tree.
+- **[user] Stage 8 xxi's attempt**, in the same shell right after: *"Error loading SSO Token: Token for awsds
+  does not exist"*. **[Claude]** read the same from this session at 19:46:59, one minute after the persona's
+  sign-in wrote its own token (19:45): the infrastructure user's token no longer loads, the sign-in as another
+  user in the shared browser having ended the session that issued it (`aws/AWS-CLI.md`, "Signing in"). xxi waits
+  for a new sign-in as the infrastructure user; the persona's token is untouched.
+- **[user]** Signed in again as the infrastructure user (*"usuário sso infra logado"*): the `awsds` token file
+  rewritten at 19:47:46, its access token good to 20:47:46, and `get-caller-identity` answering again from this
+  session; the persona's token file untouched. xxi's attempt is the user's next command.

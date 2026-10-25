@@ -24,7 +24,7 @@ All infrastructure will be deployed in the `us-west-2` Region.
 
 ## Tools installed in the current environment
 
-`terraform` **1.15.8**, the `aws` client, `uv` **v0.12.13**, `jq`,
+`terraform` **1.16.6**, the `aws` client, `uv` **v0.12.13**, `jq`,
 `pre-commit` **4.6.2**, `checkov` **3.3.11** (`uv tool install`), `tflint` **v0.64.0**. Python **3.14**
 pinned by `uv` (`pyproject.toml`/`uv.lock`), `WireGuard` **v1.0.16** (App Store), `wireguard-tools` **v1.0.20260223** (homebrew) which provides the `wg` utility, `session-manager-plugin` **1.2.835.0** (homebrew cask); `ruff` lints/formats.
 
@@ -221,6 +221,12 @@ per laptop, never one per session.
 - A module tag is repository-global and never moves (`terraform-changes.md`, Recipe B). The next
   version is read from `git ls-remote --tags origin` at the moment of tagging, never from memory: a
   peer may have taken it.
+- **The Terraform binary is one per laptop, and every session's.** It runs 1.16.6 since 2026-10-25 while
+  the deploy image runs 1.15.8 until its rebuild, the first act of the next GitLab sitting. Until then no
+  session applies or raises a slice the pipeline reads or applies (the application and orchestration
+  slices, `staging/egress`, `production/workloads-egress`, and both targets' `data/`, `sagemaker/`,
+  `foundation/` and `workloads/`): a state written by 1.16.6 is refused by 1.15.8 (Lesson 76). `make hub-up`
+  and `make gitlab-up` touch no such slice and are free.
 - **Parallel sessions, measured 2026-10-18.** The app starts a session only on a turn the user's own
   message began: a turn begun right after `/compact` is refused, and so are a request the user sends
   mid-turn and one sent over Remote Control, where a proposed card does not show either. In that case
@@ -330,14 +336,16 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `pickup` consumed the drop, `curated.trades` at 20 rows, after decision 13's two halves: the
   `AllowFullTableExternalDataAccess` flag on in Production (the user's console, 19:49 UTC) was not enough,
   the vend refused *"Verify the data lake settings for account"*, and the lake's `lakeformation.tf` carries it
-  since 22:03 UTC (`TM-26`); the flag is on in Production, Sandbox and the lake, unset in Staging;
-  Production's is not needed beside the lake's (the third run with it off committed, 2026-10-24, xxviii). 9.1's
+  since 22:03 UTC (`TM-26`); the flag is on in Sandbox and the lake, unset in Staging and, since the user turned it off on 2026-10-25,
+  in Production, whose flag the third run showed unnecessary (2026-10-24, xxviii). 9.1's
   `production/warehouse/` applied 22:07 UTC (the namespace; `EXC-13`'s Production sentence), refusal 9
   lifted, `warehouse-compute/` planning 2 to add, 9.3 run 2026-10-24 (the schema `trades` at 1 TB, the roles, the `IAMR:` users, the default privileges, every `PUBLIC`
   `CREATE` revoked), **9.4 to 9.7 done 2026-10-25**: the DDL job and the load (decision 15's Production-only workflow, its schedule `DISABLED` through the slice) after the deploy role's `FollowItsOwnStatements` and the job group's 5439 egress; 9.5's datashare across Production, Data Governance (decision 14) and Sandbox; 9.7 read from `eighth-experimentation` through the access role's catalog read, its Lake Formation grant and `TEMP` (`redshift-connection.md` §G), and with Production's workgroup gone;
   `workloads-egress/` taking `GROUPS=redshift`; the `ml.m5.large` pair requested 2026-10-23 (`CASE_OPENED`); the
   persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run but the space halves and the Data API negative
-  (INT-06 answered, open question 8 closed); the sittings in `runbooks/promotion.md`.
+  (INT-06 answered, open question 8 closed); the sittings in `runbooks/promotion.md`. 2026-10-25, nothing up: 9.5's
+  Terraform adoption applied (the registration and the LF-Tags by hand, no importer), xii's registry read in
+  `model-chain.py transform staging` with `staging/foundation/`'s output, applied.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, first fired 2026-10-25 (version 1 registered and approved by `awsds-deploy-prod`; pass 3 done, both transforms, 5.5). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
@@ -361,7 +369,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `test-experimentation`. The connection (`EXC-17`) carries **`lineageSync` on, daily 03:43 UTC, every run
   failing** (decision 3, the user's). **Cost**: 1.44 USD per query-hour at 4 RPU and 0.00 idle, with no
   pause, so `make down` is the guarantee; the ratchet past 4 never returns; the free trial, 300 USD per
-  account for 90 days, absorbs the bill to 2026-12-19. **`EXC-13`**: the admin secret's first rotation succeeded on 2026-10-20 with no workgroup,
+  account for 90 days, absorbs the bill to 2026-12-19 in Sandbox and to 2027-01-21 in Production (287.51 and 299.71 USD left on 2026-10-25; the window opens with the namespace). **`EXC-13`**: the admin secret's first rotation succeeded on 2026-10-20 with no workgroup,
   against AWS's page, and the database took the password (the Data API as `dbadmin` through the secret, 2026-10-25). SQL from a notebook is `redshift-connection.md` §J. AWS's `SageMakerStudioProjectUserRolePolicy` v75 grants
   every project role `GetCredentials` and the Data API on a workgroup tagged with its project, `GetCredentials` on
   any workgroup through `sqlworkbench`, and the secrets tagged with its project or
@@ -396,7 +404,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Functions machine per chain with a Scheduler schedule starts the workflows. The tooling is
   `awsds-workflows` (runbook §T).
 - **Stage 7 in progress**: passes 1-2 closed 2026-10-12 but three persona memberships, pass 3 nearly done
-  (7.2 left), pass 4's 8.4 done. Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
+  (7.2 read 2026-10-25), pass 4's 8.4 done. Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
   `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners out, and the build runner rises
   only with `BUILD=1` (decision 5, 2026-10-24). Owed: INT-09's clone from a
   notebook, 8.1-8.3 (3.5's memberships done 2026-10-24); 5.6's ECR grant applied 2026-10-22. The GitLab backups of 2026-10-13, 10-15 and 10-25 leave the bucket on 2026-11-13, 11-15 and 11-25.
@@ -472,7 +480,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `DISABLED` between sittings), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
-- **Standing rules**: `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit
+- **Standing rules**: `-input=false` on every plan and apply (Lesson 47); until the deploy image is rebuilt on
+  1.16.6, no slice the pipeline reads is applied or raised from the laptop (Lesson 76); never pipe a command whose exit
   code matters (Lesson 46); a module change is exercised by planning a caller, never by `validate`;
   `-refresh=false` is forbidden on `sandbox/data/`, where SMUS is a Lake Formation admin (OQ 24); never add
   an `sts:` action to the RCP without reading `CT.STS.PV.1`'s exclusion note; resolve an account by exact
@@ -623,6 +632,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     textually — and the plan that fixes it calls the change whitespace.**
 75. **A permission the creator holds without a grant moves with whoever creates the object — a decision that
     moves the teardown to another identity owes that identity the grant nobody had to write.**
+76. **A toolchain upgrade on one writer locks out every older reader of the states it writes — the readers
+    that cannot move on the spot move first, or the writer stays off the shared states.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

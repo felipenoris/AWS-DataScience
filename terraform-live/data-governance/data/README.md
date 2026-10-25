@@ -85,7 +85,7 @@ is how the first governed `INSERT` failed the day before — and legible only in
 |---|---|
 | `aws_lakeformation_data_lake_settings` · `admins` | `InfrastructureAccess` **alone** (decision 5). The governance manager is absent — an approver who can already grant everything exercises no control (Lesson 9, D31). Stage 6's DataZone fulfilment principal is the named revision trigger. Stage 18 read it in `Staging`: the fulfilment acted as the publishing project's role and took no seat (2026-10-22), while the first `Tooling` environment's provisioning seated two SMUS roles by a full replace of these settings (2026-10-19), which this resource, with no `ignore_changes`, would plan to remove, as `sandbox/data/`'s first plan did on 2026-08-26 |
 | — · `parameters` | `CROSS_ACCOUNT_VERSION = 4`, `SET_CONTEXT = TRUE`, written **from the reading** and never from memory. This resource **replaces the whole structure**: naming admins while omitting parameters resets the version to 1, after which every share appears to succeed and never arrives (INT-11, the silent failure `DL-5` brackets) |
-| — · `allow_full_table_external_data_access` | `true` (Stage 9 decision 13): Lake Formation vends S3 credentials for a whole registered table to a caller holding full-table permissions on it, outside an integrated engine, which is the one mode a consumer's Glue Spark job writes `curated` in (Stage 9 2.4, 2.5; Stage 10's workflows). The owner's flag is the one the vend reads: Production's alone, on since 2026-10-23, left the first write refused *"Verify the data lake settings for account"*. The residual is `TM-26`: `awsds-prod-job-exec` and `DataScientistProdAccess` hold full-table `SELECT` on `curated` through the shares and can read a table's objects by a direct vend, logged as `GetDataAccess` in their account's trail |
+| — · `allow_full_table_external_data_access` | `true` (Stage 9 decision 13): Lake Formation vends S3 credentials for a whole registered table to a caller holding full-table permissions on it, outside an integrated engine, which is the one mode a consumer's Glue Spark job writes `curated` in (Stage 9 2.4, 2.5; Stage 10's workflows). The owner's flag is the one the vend reads: Production's alone, on from 2026-10-23 to 2026-10-25, left the first write refused *"Verify the data lake settings for account"*. The residual is `TM-26`: `awsds-prod-job-exec` and `DataScientistProdAccess` hold full-table `SELECT` on `curated` through the shares and can read a table's objects by a direct vend, logged as `GetDataAccess` in their account's trail |
 | — · the two default-permission blocks | **Omitted**, which clears them (measured). Their applied state grants `ALL` to `IAM_ALLOWED_PRINCIPALS` *at creation time*, so a database created before this lands is born deferring to plain IAM — D13 as decoration, with no error anywhere |
 | `aws_lakeformation_resource.raw` / `.curated` | Registers the two prefixes: reads stop being "whoever holds `s3:GetObject`" and become "the engine asks Lake Formation". **`dropbox`, `artifacts` and `logs` stay unregistered by design** — D13's non-registered class, plain IAM/bucket-policy control. Deregistration is denied by the Data OU SCP |
 | `aws_lakeformation_lf_tag.classification` | `public` / `internal` / `restricted` / `personal` — the DLP dimension. The default grant reaches the first two read-only; the other two travel only on enumerated grants |
@@ -289,6 +289,21 @@ or `classification` value joining every consumer share by inheritance is the wid
 resource policy (the version 1/2 path). Measured 2026-08-19 — `glue:GetResourcePolicy` →
 `EntityNotFoundException` — and the grants then produced four **ACTIVE** RAM shares, held by both
 consumers with no invitation, which is the falsifier not firing.
+
+## `warehouse-share.tf` — the governed warehouse's share into the catalog (Stage 9 step 9.5)
+
+Production's datashare `trades_lf` reaches this catalog as a federated database (decision 5's shape (ii),
+decision 14), and the lake's TBAC grants reach it as they reach `curated`: Sandbox's account read it
+through its tag grants alone (9.7). The producer's half, the authorization, is
+`production/warehouse/datashare.tf`. Written 2026-10-25 from the objects made by hand that day.
+
+| Resource / object | What it does once applied |
+|---|---|
+| `data.aws_redshift_data_shares.visible` | lists the shares this account sees; the share is the ARN ending in `/trades_lf`, since the ARN carries Production's namespace id, which no state here holds |
+| `aws_redshift_data_share_consumer_association.trades_lf` | the share associated with this account's Data Catalog (`consumer_arn` the catalog's ARN), `ACTIVE`. Adopted from the association of 2026-10-25 01:52 UTC by an `import` block, removed after the apply; the import plan showed no change to it |
+| `aws_glue_catalog_database.governed_trades` | the federated database over the share (`connection_name` `aws:redshift`), with no description, which the API refuses beside a federation source, and no `create_table_default_permission`, the account's default list being empty (Recipe D). Its tables are the share's, `trades.trades_notional` today. Adopted the same way; the import plan adds the provider's five default tags and nothing else |
+| — by hand: the registration | `register-resource` on the datashare's ARN, no role, `HybridAccessEnabled` and `WithPrivilegedAccess` false (2026-10-25 01:52 UTC), read back with `describe-resource`; `list-resources` does not list it. `aws_lakeformation_resource` has no importer (the provider's source at v6.60.0), deregistering is denied by the Data OU SCP, and a second registration of the ARN is a conflict, so the registration stays by hand until the provider gains an importer |
+| — by hand: the LF-Tag assignments | `layer=curated` on `governed_trades` and `classification=internal` on `trades.trades_notional` (2026-10-25 01:54 UTC), the values `catalog.tf` gives a curated table; `aws_lakeformation_resource_lf_tags` documents no import, so the assignments are read with `get-resource-lf-tags`, not declared |
 
 ## `filters.tf` — the data cells filters (Stage 11 pass 1, steps 2.1a and 2.1b)
 

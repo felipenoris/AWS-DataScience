@@ -12,6 +12,11 @@ from tfhygiene.states import state_outputs
 # The slice that owns the account's private subnets: Staging's single VPC, Production's VPC-Workloads.
 NETWORK_SLICE = {"staging": "foundation", "production": "workloads"}
 
+# The slice whose outputs name another account's Model Registry: Staging's foundation/, where the
+# deploy role's grant on Production's groups is written (Stage 9 4.6). Production owns its registry,
+# read from its own sagemaker/ outputs.
+REGISTRY_SLICE = {"staging": "foundation"}
+
 
 class TargetError(Exception):
     pass
@@ -19,12 +24,14 @@ class TargetError(Exception):
 
 def account_values(account: str) -> dict:
     """The account's names: its env token and Region, the outputs bucket and the data key, the job
-    role, its security group and subnets, and the training image when sagemaker/ outputs one."""
+    role, its security group and subnets, the training image when sagemaker/ outputs one, and the
+    prefix of another account's registry group ARNs when the account reads one."""
     if account not in NETWORK_SLICE:
         raise TargetError(f"{account}: not a deployment target ({', '.join(NETWORK_SLICE)})")
     data = state_outputs(account, "data")
     sagemaker = state_outputs(account, "sagemaker")
     network = state_outputs(account, NETWORK_SLICE[account])
+    registry = state_outputs(account, REGISTRY_SLICE[account]) if account in REGISTRY_SLICE else {}
     subnets = network["private_subnet_ids"]
     return {
         "env": backend.ENV_TOKENS[account],
@@ -36,4 +43,5 @@ def account_values(account: str) -> dict:
         "subnets": [subnets[z] for z in backend.ZONE_IDS[account]],
         "training_image_uri": sagemaker.get("training_image_uri"),
         "model_package_group_arns": sagemaker.get("model_package_group_arns") or {},
+        "registry_group_arn_prefix": registry.get("registry_model_package_group_arn_prefix"),
     }
