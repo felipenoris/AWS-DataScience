@@ -3008,3 +3008,10 @@ user with `InfrastructureAccess`) and for 3.7's record. Times UTC.*
   in the same slice folder failed twice (`fetch-pack: invalid index-pack output`, then *Required plugins
   are not installed*) and passed alone. The applies wait for the mirror to carry the new legs: the
   narrowed role refuses the current `staging-up`.
+- **[Claude, from §V's session] Readings on the orchestration slice staying up**, pipeline #77: the
+  `evaluate` task's log (`/awsds/staging/wf/app-etl-train`) was read at about 23:43, minutes before
+  `staging-down` destroyed the log groups with the slice; with the slice up between legs a failed
+  execution's log survives until the user's `make down`. The slice accumulates workflow versions until
+  then, each leg updating the workflow (the 50-version quota, `OR-7`), and the chains' executions,
+  `<tag>-<pipeline>-<chain>`; the destroy took about 2 min and the recreate about 1 min. Recorded in
+  decision 27.
