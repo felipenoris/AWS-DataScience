@@ -2160,3 +2160,16 @@ UTC.*
   of Production's warehouse through Lake Formation, the lake's tag grant reaching the federated database,
   with no network path between the accounts. The door needs, per project, the access role's catalog read
   (IAM), its Lake Formation grant, `USAGE` on the consumer database and `TEMP` on the session's database.
+
+## 2026-10-25 — 9.7 with Production's workgroup gone: the share still reads
+
+*The user's hand for `make down ENV=production ONLY=warehouse-compute` and the query; Claude's for the
+readings, as the infrastructure user with `InfrastructureAccess`. Times UTC.*
+
+- **[user]** `make down ENV=production ONLY=warehouse-compute`; **[Claude] read back** at 06:13:30: no workgroup
+  in Production, `DeleteWorkgroup` in its trail from 06:11:56 to 06:12:01, the namespace `awsds-prod-warehouse`
+  `AVAILABLE`; Sandbox's workgroup `AVAILABLE`.
+- **[user]** The same query from `eighth-experimentation` ran successfully with the producer's workgroup gone.
+  9.5's open measurement is answered: a Serverless producer with no workgroup keeps serving a Lake
+  Formation-managed datashare from its namespace, so a Sandbox read costs Sandbox's compute alone, never both
+  workgroups at once.
