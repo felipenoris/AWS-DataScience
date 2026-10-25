@@ -3731,3 +3731,15 @@ infrastructure user with `InfrastructureAccess` (`awsds-infra-staging`), reads o
   longer under `aws/s3`, the template's `ProcessingOutputConfig.KmsKeyId` at work. The run's other objects:
   `work/glue/trades.csv` 23:23:06, the `tables/trades_notional/` parts 23:23:08, the train inputs under
   `work/train/` 23:23:11, `work/job/trades.parquet` 23:29:20, `outbox/report.json` 23:33:21.
+
+## 2026-10-25 — §N.1 step 9, second half: Staging's train chain `SUCCEEDED`, `staging-model` started
+
+*Claude's hand; Step Functions as the infrastructure user (`awsds-infra-staging`), the pipeline API in the
+user's GitLab session, reads only. Times UTC.*
+
+- **[Claude]** `staging-test` (#611) started the execution `v0-4-6-102-app-etl-train` of
+  `awsds-staging-chain-app-etl-train` at 23:36:19, after the app-etl chain; it read `SUCCEEDED` at 23:45:29
+  from the laptop (stopped 23:45:22, 9 min 3 s), Staging retraining on the release (Stage 10 decision 22).
+- **[Claude]** `staging-model` (#612) started 23:45:43 on the deploy runner, Stage 9 xii's registry read
+  before Staging's own model; Production's trail showed no `ListModelPackages` or `DescribeModelPackage`
+  yet at 23:46 (the trail lags the call).
