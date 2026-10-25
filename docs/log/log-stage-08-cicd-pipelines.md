@@ -3157,3 +3157,26 @@ Times UTC.*
   first. **[Claude] read back** at 02:17: Staging holds no interface endpoint and no workflow, Production is
   untouched, and the `test` project's newest run is still `v0.4.2`'s `1DCL6kFnnjzKqX6`. The tag `v0.4.3` is
   spent; verification ix waits for the next tag on the new legs.
+
+## 2026-10-25 — decision 27's maintenance: the mirror and the legs' merge request
+
+*Claude's hand, in the sitting the user and the §V session hold (the hub, GitLab and the tunnel up); the
+user's authorization in this chat for each push. Times UTC.*
+
+- **[user]** PR #256 merged at 02:28:08 as `79651026` (squash), after #255 (`f259e49a`, 02:22:28); this
+  session's branch retired with it, and the maintenance's commits go on
+  `claude/pipeline-app-slices-maintenance-55a372`, cut from `main`.
+- **[Claude] The mirror**, `git push gitlab origin/main:refs/heads/main`, authorized at 02:37: *"Everything
+  up-to-date"*, `awsds/infrastructure`'s `main` already at `79651026` at 02:37:56, pushed earlier by another
+  hand (the §V session was asked; unanswered when this was written). The runner clones refusal 10 and
+  `scripts/check-egress.py` from it.
+- **[Claude] The legs' merge request**, MR !11 on `awsds/app-etl`: a fresh clone of `main` (`863f30b1`, the
+  template's tree `e8c12563`, v0.4.2) into `$HOME/tmp/app-etl-legs-27`, the files swapped from
+  `examples/app-etl/` at `79651026` (`gitlab.md`, "The application template"), commit `764bfe9` with the
+  tree `b9f49fa8`, the same as `examples/app-etl`'s at `main`; the diff against `main`: `.gitlab-ci.yml` (58
+  lines) and `README.md` (2), nothing else. Pushed at 02:39:09 with the push options that create the merge
+  request (`merge_request.create`, target `main`, the source branch removed on merge); the validation in
+  the pipeline editor and the merge are the user's. Until it merges, no tag: the narrowed
+  `awsds-deploy-staging` the §V session applies refuses the old `staging-up`.
+- **[§V's session] The two `foundation/` applies** of decision 27, the user's authorization in that chat,
+  are that session's to run and record; this session touched neither slice.
