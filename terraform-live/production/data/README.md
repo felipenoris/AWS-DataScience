@@ -81,6 +81,7 @@ Beside the module's TLS-only and presigned-age denies.
 | `job_curated_write` | idem | every table of the lake's `curated`, by name | `SELECT`, `INSERT`, `DELETE`, `ALTER`, `DESCRIBE`: the governed write (2.3) |
 | `release_app_outputs_database` | `awsds-deploy-prod` | database `app_outputs` | `CREATE_TABLE`, `DESCRIBE` |
 | `release_app_outputs_tables` | idem | every table of `app_outputs` | `ALTER`, `DROP`, `DESCRIBE` |
+| `infrastructure_app_outputs_tables` | `InfrastructureAccess` | idem | `ALTER`, `DROP`, `DESCRIBE`: an application slice the deploy role applied, applied or destroyed by the infrastructure user, since Lake Formation gives a table's creator alone its permissions (Stage 8 decision 27) |
 | `job_app_outputs_database` · `_tables` | `awsds-prod-job-exec` | `app_outputs` and its tables | `DESCRIBE`; `SELECT`, `INSERT`, `DELETE`, `ALTER`, `DESCRIBE` |
 | `persona_app_outputs_database` · `_tables` | `DataScientistProdAccess` | idem | `DESCRIBE`; `SELECT`, `DESCRIBE` |
 

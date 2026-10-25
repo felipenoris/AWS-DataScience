@@ -3158,6 +3158,28 @@ Times UTC.*
   untouched, and the `test` project's newest run is still `v0.4.2`'s `1DCL6kFnnjzKqX6`. The tag `v0.4.3` is
   spent; verification ix waits for the next tag on the new legs.
 
+## 2026-10-25 — decision 27's grants applied in both `foundation/` slices, after PRs #255 and #256
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo os applies dos planos salvos de
+production/foundation (0/3/0, awsds-infra-prod) e staging/foundation (0/3/1, awsds-infra-staging) e os
+passos 4 e 5 do 9.5 no Sandbox (awsds-infra-sandbox-1)."*), as the infrastructure user with
+`InfrastructureAccess`, from `main` at `79651026` (PR #256's merge, after PR #255's `f259e49a`), in the
+session's second branch; PR #256's session and the planning session told before the writes. Times UTC.*
+
+- **[Claude] The plans**, 02:31:52 and 02:32:25, each with the alerts var-file: `production/foundation/`
+  *"Plan: 0 to add, 3 to change, 0 to destroy."*, the deploy role's description, `apply-application`
+  gaining `DescribeTheEgressEndpoints` and `ReadTheDnsFirewallAssociation`, and the state policy reading
+  `production/workloads-egress/terraform.tfstate`, with `FollowItsOwnStatements` absent from the diff;
+  `staging/foundation/` *"Plan: 0 to add, 3 to change, 1 to destroy."*, the same two reads, the egress state
+  moved from the role's writable prefixes to its read keys, and the inline policy `apply-egress` destroyed.
+- **[Claude] The applies**: `production/foundation/` at 02:35:29, *"Apply complete! Resources: 0 added, 3
+  changed, 0 destroyed."*; `staging/foundation/` at 02:36:00, *"Destruction complete after 3s"* for
+  `apply-egress`, *"Apply complete! Resources: 0 added, 3 changed, 1 destroyed."*; both re-planned `No
+  changes`; `./scripts/check-copies.py` OK. The simulator, `aws:RequestedRegion` in the context:
+  `ec2:DescribeVpcEndpoints` `allowed` for both deploy roles, `route53resolver:GetFirewallRuleGroupAssociation`
+  `allowed` on an association's ARN (`implicitDeny` on `"*"`, the grant naming the association's type), and
+  `ec2:CreateVpcEndpoint` `implicitDeny`: neither role raises an egress slice any more.
+
 ## 2026-10-25 — decision 27's maintenance: the mirror and the legs' merge request
 
 *Claude's hand, in the sitting the user and the §V session hold (the hub, GitLab and the tunnel up); the
@@ -3208,3 +3230,113 @@ user's authorization in this chat for each push. Times UTC.*
 - **[user] The mirror's push was theirs**, confirmed in chat (2026-10-25): `git push gitlab main` from the
   project folder after #256's merge, before this session's authorized push read *"Everything up-to-date"*
   at 02:37:56. The attribution above is closed.
+
+## 2026-10-25 — the legs of decisions 27 and 28 on `v0.4.4` (pipeline #85) and verification ix on `v0.4.5` (pipeline #87)
+
+*The user's hand for MR !11 (opened by PR #256's session), the tags, the gates, `make up ENV=staging
+ONLY=egress` and the cancel; Claude's for the readings (the traces through GitLab's API in the user's Chrome
+session, AWS as the infrastructure user with `InfrastructureAccess`). Times UTC.*
+
+- **[user]** MR !11 merged at 02:42:32, `awsds/app-etl`'s `main` at `163ccca`, the template's tree `b9f49fa8`
+  (`examples/app-etl/` at `79651026`), `staging-gate` and `staging-check` in, `staging-down` out.
+- **[Claude] `v0.4.4`, pipeline #85**, the tag on `163cccaa` (`main`, no drift): the build half and
+  `test-deploy` passed (02:48:52 to 03:08:06); **the staging gate** clicked by the user at 03:22:54; **the
+  negative**: `staging-check` (job 501, 03:23:00 to 03:23:11) as `awsds-deploy-staging`, *"FATAL:
+  staging/egress/ is down: its state holds no interface endpoint; run `make up ENV=staging ONLY=egress` from the
+  project folder as the infrastructure user…"*; then the user's `make up ENV=staging ONLY=egress`, and **the
+  positive**, the retry (job 512, 04:34:22 to 04:34:35): seven endpoints listed `available` (`glue`, `kms`,
+  `lakeformation`, `logs`, `sagemaker.api`, `secretsmanager`, `sts`), *"DNS Firewall association
+  rslvr-frgassoc-18e6e7bc55304d6b COMPLETE"*, *"ok: staging/egress/ is up: 7 interface endpoint(s) available and 1
+  DNS Firewall association(s) COMPLETE"*; `staging-deploy`, `staging-test`, `staging-model` and
+  `production-plan` passed (04:34:39 to 05:08:02); the user cancelled the pipeline at 05:28:34 at
+  `production-gate`, since the tag carried no drift. Staging stayed up, as decision 27 has it: egress 16
+  resources, the application slice 2 and the orchestration slice 31.
+- **[Claude] `v0.4.5`, pipeline #87, verification ix**: the branch `ix-governed-drift-2` (`268964ad`, the tree
+  `9587ab57`, `b9f49fa8` with the drift patch checked); `test` passed at 05:32:05 with the drift and its tests,
+  and `test-deploy` passed (05:34:54 to 05:50:49), the `test` project reading the inbox; the staging gate at
+  05:54:57; `staging-check` passed (05:55:07 to 05:55:23) on the egress already up; `staging-deploy` (05:55:26 to
+  05:58:43); `staging-test` failed (05:58:46 to 06:04:14), the Glue job `jr_4636eb75…582d` *"RuntimeError:
+  lake.curated.trades lacks book: the application's schema source and the governed table disagree"*, the chain
+  *"FATAL: the chain app-etl ended FAILED"*; `staging-model` and every Production job skipped, the pipeline
+  `failed` at 06:04:15. **Verification ix answered yes**: a deliberately broken version passes `test` and stops
+  at 3.3 with Production untouched. The branches `ix-governed-drift` and `ix-governed-drift-2` are owed their
+  delete, the user's; `main` is unchanged.
+
+## 2026-10-25 — the simulator's `explicitDeny` on Staging's egress state, attributed
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-staging`), the policy
+simulator alone. Times UTC.*
+
+- **[Claude] The reading of 02:42**, `s3:PutObject` by `awsds-deploy-staging` on
+  `staging/egress/terraform.tfstate` read `explicitDeny` (the maintenance entry above), is the perimeter SCP's
+  `DenyS3ObjectWriteOutsideOrganization`, never the role. Re-read at 06:35 with `aws:RequestedRegion` alone:
+  `explicitDeny`, *"AllowedByOrganizations: false"*, no matched statement, on `staging/egress/` and on
+  `staging/orchestration/`, a key the role writes at every leg. With `aws:ResourceOrgID` set to the
+  organization's id beside it, so that the statement's `StringNotEqualsIfExists` no longer matches an absent
+  key: `staging/orchestration/` `allowed` by `role_awsds-deploy-staging_state`, `staging/egress/`
+  `implicitDeny`. Decision 27's narrowing holds as written: no grant writes the egress state, and no deny is
+  involved.
+
+## 2026-10-25 — §R: the downs, and zero burn in every account
+
+*The user's hand for the downs; Claude's for the readings, as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`, `awsds-infra-staging`, `awsds-infra-sandbox-1`). Times UTC.*
+
+- **[user] The downs before 06:57**: `make down ENV=staging` (06:30 to 06:36, its table delete refused and
+  unblocked: Stage 9's log), Sandbox and GitLab; Production's `workloads-egress/` kept up for the 07:00 train
+  chain.
+- **[Claude] Read at 06:57 and 07:01**: `./aws/egress.py` reads 8 interface endpoints in Production (`glue`, `kms`,
+  `lakeformation`, `logs`, `sagemaker.api`, `secretsmanager`, `sts`, and `redshift-serverless`, raised by
+  `GROUPS=redshift` for the paused warehouse chain), 0.080 USD/h, Staging and Sandbox 0, no NAT anywhere;
+  `make status` reads the VPN, proxy and GitLab hosts `stopped`, Production's `workloads-egress/` (17
+  resources), `app/app-etl/` (3) and `orchestration/` (41) up, every other `[E]` slice down; no EC2 instance
+  running, no Redshift workgroup, no SageMaker app, endpoint or job and no Glue run in the three accounts.
+- **[user] `make down ENV=production ONLY=workloads-egress`**, after the train chain ended at 07:07:38.
+- **[Claude] Read at 07:14 and 07:19**: `./aws/egress.py`, 0 interface endpoints, 0 NAT and 0.000 USD/h in each
+  account, `EG-5` *"none - the correct between-sessions state (D11)"*; `make status`, *"estimated burn: USD
+  0.0000/h"*, Production's application and orchestration slices up at 0.0000 USD/h, every other `[E]` slice
+  down and the three `[D]` hosts stopped.
+
+## 2026-10-25 — with the environment down: verification vii's attachment read again, the lint's clause table
+
+*Claude's hand, at the user's request to prepare what needs no environment, as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-sandbox-1`), reads only. Times UTC.*
+
+- **[Claude] vii's third half**: both Sandbox domains (`d-p6gthxc82ckg`, `d-lfgbdrjncmsu`) carry
+  `awsds-sandbox-dev-env` with no version in `JupyterLabAppSettings` and `CodeEditorAppSettings`, each
+  `LastModifiedTime` its last `UpdateDomain` (2026-10-15 06:14:05Z and 2026-10-16 00:31:25Z, both by
+  `InfrastructureAccess`). `lookup-events` reads no `UpdateDomain` and no `UpdateStack` since 2026-10-18, the same
+  lookup listing the eight re-attach writes of 2026-10-15 and 16: no reconciliation in ten days, the half open.
+- **[Claude] 5.6's clause table**: the training task's (f) is `awsds-workflows`' `treino`, in the template's line
+  since v0.4.0 (`--algorithm-repository` on `.gitlab-ci.yml` line 69); (f) for any other operator stays without a
+  rule until a workflow uses one.
+- **[Claude] 1.1's proposal still current**: `./scripts/check-gitlab-mirror.py --plan` at 07:41, from a read-only
+  plan of `sandbox/egress/` (down), exit 0: `GM-1` to `GM-8` pass, the copy at `5d5391abd7a3` (2026-10-16), the
+  Dockerfile's `NO_PROXY_LIST` and the account's list both 72 names, `sha256 6faf2e4761622508`. The tag
+  `default-v0.9.0` stays the user's GitLab act.
+
+## 2026-10-25 — verification ix's branches deleted
+
+*The user's hand; recorded from the user's word in chat (*"Sobre "2. Apagar no GitLab as branches", isso já foi
+feito."*), not read back, GitLab down.*
+
+- **[user]** `awsds/app-etl`'s branches `ix-governed-drift` and `ix-governed-drift-2` deleted; `main` carries none of
+  the drift.
+
+## 2026-10-25 — the plan read for what is left; the next release's sitting written
+
+*Claude's hand, with two editing agents of this session, at the user's request to review the documentation, the
+runbooks and the Terraform comments against the session's learnings, to prepare what can be anticipated and to
+review what is left; no AWS write.*
+
+- **[Claude]** The stage file's status cell ends with what is left on 2026-10-25, its stale clauses corrected
+  against this log; `runbooks/promotion.md` §N orders every step left in Stages 8, 9 and 10 by the sitting that
+  runs it (nothing up, the release through Staging and Production, the warehouses, a Sandbox space, the
+  deliberate exercises, what waits on something else). The next tag needs PR #258 merged and `main` pushed to the
+  GitLab mirror first, since the mirror at `79651026` holds `production/orchestration/` on `orchestration-v0.2.0`
+  with the app-etl and train schedules `ENABLED` (the waiting list).
+- **[Claude]** The documentation, runbooks and Terraform comments read against the learnings: Staging's release
+  stays until the user's `make down` (decision 27), the governed warehouse is a Lake Formation-managed datashare,
+  `EXC-22` in `GOVERNANCE.md`'s encryption rule and the threat model, the save's KMS grant behind every workflow
+  run, the plan's `# whitespace changes` on a JSON string in `terraform-changes.md`, the principal-filtered
+  `list-permissions` in `log-debugging.md`, and `aws/orchestration.py`'s report texts.

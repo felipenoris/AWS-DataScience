@@ -259,7 +259,7 @@ This table is the only routing map; every other file points here rather than rep
 | Anything on the SMUS surface: a blueprint, the network mode, a Stage 6 cost, a domain/project/profile concept, the custom-image tag convention `<flavour>-v<semver>` | [`docs/SMUS.md`](docs/SMUS.md). Review it whenever SageMaker changes |
 | What SMUS, the CI/CD CLI, Terraform and its providers released since the plan read them, and which step, decision or pin each release moves | [`docs/plan/upstream-releases.md`](docs/plan/upstream-releases.md); re-read every two weeks while a dependent stage is in progress |
 | Anything Databricks: how it deploys on AWS, its notebook and terminal, Lakeflow Jobs and pipelines, Unity Catalog, its AI stack, bundles and the promotion model, read against the requirements for the comparison with SMUS | [`docs/DATABRICKS.md`](docs/DATABRICKS.md), opening with the names that changed in 2025 and 2026 |
-| Anything Redshift: the warehouse, its 4-RPU floor, the cost ceiling, the two classes of database, or how a SageMaker project gets write on one | [`redshift-connection.md`](docs/plan/runbooks/redshift-connection.md) for the recurring procedure — adding a schema, wiring and unwiring a project, which layer a failure came from, **§J running SQL from a notebook** (the connection recipe, the cost per query, the readings that mislead), and the one command that gets a database session; [`D40`](docs/plan/decisions/D40-redshift-warehouse.md) for what is and is not built, [`stage-05b`](docs/plan/stages/stage-05b-redshift-serverless.md) for the warehouse, [`stage-06h`](docs/plan/stages/stage-06h-redshift-connection.md) for the connection's three layers, `docs/SMUS.md` §Connections for the mechanism |
+| Anything Redshift: the warehouse, its 4-RPU floor, the cost ceiling, the two classes of database, or how a SageMaker project gets write on one | [`redshift-connection.md`](docs/plan/runbooks/redshift-connection.md) for the recurring procedure — adding a schema, wiring and unwiring a project, which layer a failure came from, **§J running SQL from a notebook** (the connection recipe, the cost per query, the readings that mislead), **§G reading a governed share from a project** (the access role's catalog read and Lake Formation grant, the consumer database's `USAGE`, `TEMP`), and the one command that gets a database session; [`D40`](docs/plan/decisions/D40-redshift-warehouse.md) for what is and is not built, [`stage-05b`](docs/plan/stages/stage-05b-redshift-serverless.md) for the warehouse, [`stage-06h`](docs/plan/stages/stage-06h-redshift-connection.md) for the connection's three layers, `docs/SMUS.md` §Connections for the mechanism |
 | How the deployed tree is organised, and what is in it today | [`terraform-live/README.md`](terraform-live/README.md); the slice layout itself is `docs/plan/conventions.md` §6, the authority when the two disagree |
 | What a policy statement denies, and why it exists | [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md), one row per `Sid`. Policy ids and attachment dates are in the stage log |
 | What governs the lake: a bucket-policy branch, a key-policy statement, a tag assignment, an LF grant | Producer side [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md); consumer side [`terraform-modules/consumer-data/README.md`](terraform-modules/consumer-data/README.md). They say what the code declares; applied triples are `docs/AWS_STATE.md`'s grant register. Read the producer README's "A permission here is the intersection of two systems" before claiming what a principal can do (Lesson 28) |
@@ -334,12 +334,12 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Production's is not needed beside the lake's (the third run with it off committed, 2026-10-24, xxviii). 9.1's
   `production/warehouse/` applied 22:07 UTC (the namespace; `EXC-13`'s Production sentence), refusal 9
   lifted, `warehouse-compute/` planning 2 to add, 9.3 run 2026-10-24 (the schema `trades` at 1 TB, the roles, the `IAMR:` users, the default privileges, every `PUBLIC`
-  `CREATE` revoked), 9.5's datashare (written as commands 2026-10-24, decision 14 taken 2026-10-24: Data Governance registers and grants it) and 9.6-9.7 left, those two waiting on `trades.trades_notional`, which v0.4.0's DDL job and load workflow create (written 2026-10-24; decision 15, a Production-only workflow, the user's against the recommendation); 9.4's grant applied,
+  `CREATE` revoked), **9.4 to 9.7 done 2026-10-25**: the DDL job and the load (decision 15's Production-only workflow, its schedule `DISABLED` through the slice) after the deploy role's `FollowItsOwnStatements` and the job group's 5439 egress; 9.5's datashare across Production, Data Governance (decision 14) and Sandbox; 9.7 read from `eighth-experimentation` through the access role's catalog read, its Lake Formation grant and `TEMP` (`redshift-connection.md` §G), and with Production's workgroup gone;
   `workloads-egress/` taking `GROUPS=redshift`; the `ml.m5.large` pair requested 2026-10-23 (`CASE_OPENED`); the
   persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run but the space halves and the Data API negative
   (INT-06 answered, open question 8 closed); the sittings in `runbooks/promotion.md`.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
-  `awsds-prod-model-approval` applied the same day, never fired (no model package exists). Prepared
+  `awsds-prod-model-approval` applied the same day, first fired 2026-10-25 (version 1 registered and approved by `awsds-deploy-prod`; pass 3 done, both transforms, 5.5). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
   (rank 59, `[E]`) written and planned, `OR-9` written, both slices on the module's tag; every Stage 10
   decision was taken 2026-10-22; 2.3's lint runs in the legs' release job, and since 2026-10-24 (2c)'s
@@ -350,7 +350,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   since 2026-10-22.
   The MWAA Serverless service-linked role exists in both accounts, Production's created 2026-10-24 in
   `awsds-deploy-prod`'s session at pipeline #71's first `CreateWorkflow`, INT-14 answered in both; Production's
-  first run `SUCCEEDED` by hand (15 min), and 6.1 reads the schedule's firing at 06:30 UTC on 2026-10-25. **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
+  first run `SUCCEEDED` by hand (15 min); **6.1 read 2026-10-25**: the schedules started the app-etl and train chains unattended, both `SUCCEEDED`, each run `ON_DEMAND`, the `DISABLED` warehouse schedule silent at 07:30 (xxiv), and the `scheduledTime` placeholder never substituted until `orchestration-v0.2.1`. **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
   3.8): the workflow created by `awscc` under `InfrastructureAccess`, the chain's machine started, diagnosed two
   failures (the worker's XCom encryption needs `kms:GenerateDataKey` in the key policy and in the role's, both
   fixed) and `SUCCEEDED`; 0.5, decision 19, decision 2's context and verification xvi's worker clauses read; the
@@ -362,7 +362,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   failing** (decision 3, the user's). **Cost**: 1.44 USD per query-hour at 4 RPU and 0.00 idle, with no
   pause, so `make down` is the guarantee; the ratchet past 4 never returns; the free trial, 300 USD per
   account for 90 days, absorbs the bill to 2026-12-19. **`EXC-13`**: the admin secret's first rotation succeeded on 2026-10-20 with no workgroup,
-  against AWS's page; whether the database took the password is the next `./aws/warehouse.py --sql`'s reading. SQL from a notebook is `redshift-connection.md` §J. AWS's `SageMakerStudioProjectUserRolePolicy` v75 grants
+  against AWS's page, and the database took the password (the Data API as `dbadmin` through the secret, 2026-10-25). SQL from a notebook is `redshift-connection.md` §J. AWS's `SageMakerStudioProjectUserRolePolicy` v75 grants
   every project role `GetCredentials` and the Data API on a workgroup tagged with its project, `GetCredentials` on
   any workgroup through `sqlworkbench`, and the secrets tagged with its project or
   `for-use-with-all-datazone-projects`: the admin secret stays closed by its tags alone (`INV-20`, PR #187).
@@ -399,7 +399,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (7.2 left), pass 4's 8.4 done. Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
   `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners out, and the build runner rises
   only with `BUILD=1` (decision 5, 2026-10-24). Owed: INT-09's clone from a
-  notebook, 8.1-8.3 (3.5's memberships done 2026-10-24); 5.6's ECR grant applied 2026-10-22. The GitLab backups leave the bucket on 2026-11-13 and 2026-11-15.
+  notebook, 8.1-8.3 (3.5's memberships done 2026-10-24); 5.6's ECR grant applied 2026-10-22. The GitLab backups of 2026-10-13, 10-15 and 10-25 leave the bucket on 2026-11-13, 11-15 and 11-25.
   **`saml.auto.tfvars` lives in the project folder's `secrets/`**: a `tooling/` plan passes
   `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block.
 - **Stage 8 in progress**: passes 0-3 done (`awsds/ci-gates`, the test runner, the house image on Python
@@ -423,8 +423,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `v0.2.1`) and keep Staging's release file as an artifact; 3.8 carries the by-hand sequence. **3.8 ran by hand on 2026-10-23, before the pipeline's leg** (Stage 8's
   log): `v0.2.1` released into Staging, both slices applied, the chain `SUCCEEDED` at its third execution after
   two policy fixes, the data keys' and the execution role's `kms:GenerateDataKey` for the XCom encryption
-  (`orchestration-v0.2.0`); the pipeline's leg owes verification xi's parity, `uv run` on the runner and the
-  deploy role's calls. **v0.4.0 written 2026-10-24** (`examples/app-etl/` at `main`; v0.3.0 is the template
+  (`orchestration-v0.2.0`). **v0.4.0 written 2026-10-24** (`examples/app-etl/` at `main`; v0.3.0 is the template
   at `0236a99d`): 8.5's governed read, 9.4, Stage 10's pass 3; its six `[P]` applies done 2026-10-24
   (`runbooks/promotion.md` §0.6), the sittings §T then §V. **The first promotion ran 2026-10-24**: `v0.3.3`'s
   pipeline #71 took Staging's leg to `SUCCEEDED` and deployed Production, once the lab's CA, the workflow's
@@ -468,8 +467,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
   `--no-browser`.
-- **Module tags**: `orchestration-v0.2.0` (`staging/orchestration` applied 2026-10-23 in Stage 8 3.8's by-hand
-  leg; `production/orchestration` pinned, no release), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
+- **Module tags**: `orchestration-v0.2.1` (both callers pinned 2026-10-25, the schedule's input carrying the
+  Scheduler's placeholder literally; `production/orchestration` applied on it 2026-10-25, its three schedules
+  `DISABLED` between sittings), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit
@@ -619,6 +619,10 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     do not write — a claim about what a role lacks is made about the role, never about one policy on it.**
 73. **A selector that takes the last match is a claim that there is one — and the change that adds the
     second is never read against it.**
+74. **A placeholder that reads correctly after decoding can be inert to the service that substitutes it
+    textually — and the plan that fixes it calls the change whitespace.**
+75. **A permission the creator holds without a grant moves with whoever creates the object — a decision that
+    moves the teardown to another identity owes that identity the grant nobody had to write.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

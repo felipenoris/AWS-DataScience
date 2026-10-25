@@ -94,9 +94,9 @@ locals {
     } if contains(keys(var.release.workflows), k)
   }
 
-  # The schedules are DISABLED here (decision 19): the slice lives for the Staging leg alone, which starts
-  # each chain's machine itself and follows the execution (Stage 8 step 3.3). Production's schedules are
-  # the ones that fire unattended (step 6.1).
+  # The schedules are DISABLED here (decision 19): the Staging leg starts each chain's machine itself and
+  # follows the execution (Stage 8 step 3.3). Production's fire unattended in a sitting that turns them on
+  # (step 6.1).
   chain_specs = {
     "app-etl" = {
       definition_template = file("${path.module}/chains/app-etl.asl.json")
@@ -121,7 +121,7 @@ locals {
 
 module "orchestration" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/orchestration?ref=orchestration-v0.2.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/orchestration?ref=orchestration-v0.2.1"
   count  = var.release == null ? 0 : 1
 
   env                      = var.env

@@ -1152,3 +1152,161 @@ Account 1>` and `<AWS registry>` and the e-mail by `<data scientist user>`. Time
   arn:aws:sagemaker:us-west-2:<Production>:model-package/awsds-prod-model-app-etl/1 because no
   resource-based policy allows the sagemaker:UpdateModelPackage action"*. The gate holds from the far side,
   the refusal the group policy's absence of a grant.
+
+## 2026-10-25 — 6.1: the schedules start both chains unattended, and the paused one does not fire
+
+*Claude's hand, on the user's authorization in chat for the pause (*"Sim: pause o schedule
+awsds-prod-chain-app-etl-warehouse (DISABLED) pelo slice production/orchestration, com um commit no PR e o apply
+manual como usuário de infraestrutura (awsds-infra-prod); app-etl (06:30) e treino (07:00) disparam sozinhos
+amanhã."*), and for the readings, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`);
+nobody at the keyboard for the runs, `production/workloads-egress/` up since the warehouse sitting. Times UTC.*
+
+- **[Claude] The lever, through the slice**: the warehouse chain's `schedule_enabled = false` in
+  `production/orchestration/` (Stage 9 decision 15: the load fails whenever the warehouse compute is down),
+  planned at 01:15, *"Plan: 0 to add, 1 to change, 0 to destroy."*, the schedule's `state` `ENABLED` →
+  `DISABLED` alone; applied at 01:15:54, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*,
+  re-planned `No changes`; the app-etl and train schedules left `ENABLED`.
+- **[Claude] 06:30, the app-etl chain**: CloudTrail's `AssumeRole` at 06:30:17 by `scheduler.amazonaws.com` on
+  `awsds-prod-chain-scheduler`, and `StartExecution` by that session in the same second; the execution
+  `226adda1-…-841c0c8b1529`, the machine's third (the first two by hand), `SUCCEEDED` at 06:45:20. Its
+  `startWorkflowRun` started `wisIec9vNuC4No1` with the `ClientToken` `<execution name>-app-etl`, and
+  `get-workflow-run` reads **`RunType` `ON_DEMAND`**, `SUCCESS` from 06:30:22 to 06:43:01 (758 s): `transform`
+  118 s, `process` 487 s, `summarize` 6 s, `write_result` 5 s. The Glue job `jr_6c8d2e06…e99a` (06:31:09 to
+  06:32:58): *"reading SELECT trade_date, desk, instrument, quantity, price FROM lake.curated.trades"*, *"read 30
+  row(s)"*, *"wrote 30 row(s) to the table at s3://awsds-prod-outputs/app-etl/tables/trades_notional/"*, the
+  training sets at 24, 6 and 30 lines; four `GetDataAccess` at 06:32:12 and 06:32:39 to `awsds-prod-job-exec` on
+  the lake's `curated.trades`, through `vpce-05f87e3d8b6ce302d`, INT-03's read under the job role; the processing
+  job `app-etl-20261025T063334` `Completed` (06:33:35 to 06:38:58).
+- **[Claude] 07:00, the train chain**: `StartExecution` at 07:00:36 by the same Scheduler session; the execution
+  `906adda8-…-0739f9833f3e` `SUCCEEDED` at 07:07:38; the run `ouuzAXNpOfPrTV4` `ON_DEMAND`, `SUCCESS` in 296 s
+  (`train` 219 s, `evaluate` 5 s); the training job `app-etl-train-20261025T070126` `Completed` (07:02:35 to
+  07:04:29, 114 billable seconds) as `awsds-prod-job-exec`, with network isolation, inter-container encryption
+  and the data key on its volume and its output, `validation:rmse` 1016.31; `evaluation.json` at 07:05:42.
+- **[Claude] The failure rules stayed quiet**: `AWS/Events` `TriggeredRules` holds no datapoint for the four rules
+  of the two chains over each run's window, the instrument that read `awsds-prod-model-approval`'s triggers at
+  01:28 and 01:29.
+- **[Claude] The schedule's date never reached a chain**: both executions' input reads
+  `"scheduledTime":"<aws.scheduler.scheduled-time>"`, the schedule's stored `Target.Input` the same
+  text. The module's `jsonencode` escapes the angle brackets, and the Scheduler substitutes none of it; no chain
+  forwards the field (3.5).
+- **[Claude] 07:30, the paused chain** (verification xxiv's third clause), read at 07:32:01: the warehouse
+  schedule `DISABLED` on `cron(30 7 * * ? *)` UTC, and the machine's executions the two by hand of 01:49:52
+  (`FAILED`) and 01:59:59 (`SUCCEEDED`) alone, while the two `ENABLED` schedules had fired at theirs. The lever
+  holds.
+- **[Claude] `./aws/orchestration.py`** at 07:16, `workloads-egress/` already down: every Production check passes,
+  the three workflows `READY` with `TriggerMode` `manual_only` and their definitions at `v0.4.2`'s `VersionId`s,
+  `OR-8` *"2 event(s), every caller is awsds-deploy-prod"*, `OR-9` on the three chains (the warehouse's schedule
+  `DISABLED`); Staging's workflows and chains absent, a note. The failed calls of its section 14 are the profiles
+  of identities with no SSO session.
+
+## 2026-10-25 — `orchestration-v0.2.1`: the schedule's input carries the placeholder literally
+
+*Claude's hand, at the user's request to prepare what needs no environment (*"Aproveite para adiantar e preparar
+qualquer passo pendente do plano que não dependa do ambiente no ar."*), as the infrastructure user with
+`InfrastructureAccess`, plans only. Times UTC.*
+
+- **[Claude] The module**: `chains.tf` writes the schedule's input as a template with the chain's key alone
+  encoded, `{"chain":<key>,"scheduledTime":"<aws.scheduler.scheduled-time>"}`; a scratch configuration printed the
+  rendered string with literal angle brackets. Planned against `production/orchestration/` from the local path
+  (Recipe B's first step): *"Plan: 0 to add, 3 to change, 0 to destroy."*, each schedule's `input`, which the plan
+  renders as `jsonencode( # whitespace changes`; the caller back on its pin, re-initialised, `No changes`.
+- **[Claude] The tag**: read from origin at the moment of tagging, `orchestration-v0.2.0` the last; the commit
+  `8f3cfba8`, the tag `orchestration-v0.2.1` on it, pushed alone with the branch and read back by `git ls-remote`.
+- **[Claude] The callers**: both slices pin `orchestration-v0.2.1` (`4c9c7fa0`). Production plans *"0 to add, 3
+  to change, 0 to destroy."*, the three inputs; Staging's slice is down and plans its 21 resources from the
+  defaulted release, which the pipeline's Staging leg applies.
+- **[Claude] The pause, prepared**: between sittings `workloads-egress/` is down and a scheduled run fails on the
+  absent endpoints, so the app-etl and train chains' `schedule_enabled = false` is written in
+  `production/orchestration/` beside the warehouse chain's and saved as a plan, *"Plan: 0 to add, 3 to change, 0
+  to destroy."*: the three inputs and the two states `ENABLED` → `DISABLED`. The apply waits for the user's
+  decision (the waiting list).
+
+## 2026-10-25 — with the environment down: verification xiv read from the network ACLs
+
+*Claude's hand, at the user's request to prepare what needs no environment, as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`), reads only. Times UTC.*
+
+- **[Claude] xiv**: `describe-network-acls` on `VPC-Workloads` and on Staging's VPC reads one ACL each, the
+  default, over six subnets, rule 100 allowing all traffic in and out before the final deny; the `vpc` module
+  declares no network ACL (`main.tf`, *"NACLs stay at the default allow, by decision (step 2.3)"*). The guide's
+  outbound deny-all was never applied, and the workers reached the endpoints through the default ACL in every
+  run from 2026-10-23 to 2026-10-25.
+
+## 2026-10-25 — with the environment down: xvi, xvii, xxi, xxiii and xxviii from the trail and the simulator; the processing output under `aws/s3`
+
+*A read-only agent of this session took the readings as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`, `awsds-infra-staging`, `awsds-infra-sandbox-1`), at the user's request to prepare what needs
+no environment; Claude's hand for the spot checks and the template's change. The simulator ran with
+`aws:RequestedRegion` and `aws:ResourceOrgID` in its context. Times UTC.*
+
+- **[agent] xvii**: at each save, `awsds-deploy-prod` made the key calls `airflow-serverless.amazonaws.com` invoked
+  on `alias/awsds-prod-data` under the workflow's ARN, `GenerateDataKey`, `Decrypt` and a `CreateGrant` naming
+  `airflow-serverless.us-west-2.amazonaws.com` as grantee and retiring principal (00:57:35 to 00:57:40 on
+  2026-10-25), and an S3-forwarded `Decrypt` in the same session; `awsds-deploy-staging` the same in Staging. At run
+  time the execution role made no S3-forwarded `Decrypt`: one `GenerateDataKey` per app-etl run, the result write;
+  its `s3:GetObject` on the release's YAML and code reads `implicitDeny`, `awsds-deploy-prod`'s `allowed`. The
+  service reads the definition and the code under the save's grant.
+- **[agent] xxviii**: `app-etl/outbox/report.json` at 06:43:01 under the data key, after the execution role's
+  S3-forwarded `GenerateDataKey` at 06:43:00; the simulator matches the key policy's `AllowTheWorkflowRolesViaS3`
+  and the role's `UseTheDataKeyThroughS3`. `v0.4.2`'s workflow writes no inbox marker, so that clause is
+  unexercised. The lake read is refused: `GetObject` on `awsds-data-curated`, `-raw` and `-dropbox`, `ListBucket`
+  and `GetDataAccess` read `implicitDeny` for the three execution roles, by their policy and their boundary.
+- **[agent] xxi**: with the live bucket policy as resource policy, `PutObject` and `DeleteObject` on
+  `applications/app-etl/` read `explicitDeny` for `awsds-prod-job-exec`, matched by
+  `DenyWritesToApplicationsButTheReleaseRoles` alone; `allowed` on `app-etl/work/job/` for it and on
+  `applications/` for `awsds-deploy-prod`; the release copy is twelve objects under `applications/app-etl/v0.4.2/`,
+  00:55:13 to 00:55:31, `MANIFEST.sha256` last. **[Claude]** read the policy's nine `Deny` statements back, that one
+  among them.
+- **[agent] xxiii's image half**: Sandbox's trail names `test-experimentation`'s project role, session `SageMaker`,
+  pulling `awsds-prod-ecr-app-etl` in the same second as each of nine `CreateProcessingJob` calls by that role
+  (2026-10-24 19:08:22 to 2026-10-25 05:40:10), the image by digest; Production's trail holds the same pulls by
+  account.
+- **[agent] xvi**: the workers' addresses fell in both AZs' subnets in every app-etl and train run, the endpoints
+  single-AZ in `private-usw2-az1`, no `ecr.*` and no `monitoring` endpoint; the logs arrive, `IncomingLogEvents` 105,
+  142 and 104 on `/awsds/prod/wf/app-etl` in the 21:00, 01:00 and 06:00 hours; no MWAA Serverless or Airflow metric
+  namespace exists in the three accounts over `list-metrics`' 14 days, which a `monitoring` endpoint would turn into
+  a reading.
+- **[agent, Claude] The processing output under `aws/s3`** (`EXC-22`): `app-etl/work/job/trades.summary.json`,
+  written at 06:38:54 by the processing job, is SSE-KMS under the AWS managed key `aws/s3`, read back by Claude
+  with `head-object` against both keys' ids; `report.json` is under the data key. The job's
+  `ProcessingOutputConfig` names no `KmsKeyId` while its volume carries the data key. **[Claude] The template**:
+  `examples/app-etl/workflows/app-etl.yaml` gains `ProcessingOutputConfig.KmsKeyId: "{env.PROJECT_KEY_ARN}"`, which
+  the render resolves to each account's data key and the manifest to the Sandbox project's key; the render check and
+  the template's 31 tests pass. The GitLab MR and its tag are the user's.
+- **[agent, Claude] A refusal during 5.4's `CreateModel`**: at 01:29:33 `awsds-prod-job-exec`, session
+  `sagemaker-inference`, was refused `sagemaker:DescribeModelPackage` on version 1, *"is not authorized to
+  perform: sagemaker:DescribeModelPackage"*, read back by Claude; the model and the transform completed. SageMaker
+  describes the package as the model's role and goes on without it today.
+
+## 2026-10-25 — `production/orchestration/` on `orchestration-v0.2.1`, the schedules paused between sittings
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo o apply do plano salvo de production/orchestration
+(0 to add, 3 to change: as três entradas corrigidas e os agendamentos app-etl e treino para DISABLED), como usuário
+de infraestrutura com InfrastructureAccess (awsds-infra-prod)."*), as the infrastructure user with
+`InfrastructureAccess`; the forked session told before the write. Times UTC.*
+
+- **[Claude] The apply** of the plan saved at 07:27: at 14:39:24, *"Apply complete! Resources: 0 added, 3 changed, 0
+  destroyed."*, the three schedules modified in place; re-planned `No changes`.
+- **[Claude] Read back** at 14:39:56 with `get-schedule`: `awsds-prod-chain-app-etl`, `-app-etl-train` and
+  `-app-etl-warehouse` `DISABLED` on `cron(30 6 * * ? *)`, `cron(0 7 * * ? *)` and `cron(30 7 * * ? *)`, each
+  `Target.Input` now `{"chain":"<key>","scheduledTime":"<aws.scheduler.scheduled-time>"}` with the angle brackets
+  literal. Whether the Scheduler substitutes the literal form is read at the next firing, when a sitting turns a
+  schedule on by a commit.
+
+## 2026-10-25 — the plan read for what is left; the next release's sitting written
+
+*Claude's hand, with two editing agents of this session, at the user's request to review the documentation, the
+runbooks and the Terraform comments against the session's learnings, to prepare what can be anticipated and to
+review what is left; no AWS write.*
+
+- **[Claude]** The stage file's status cell ends with what is left on 2026-10-25, its stale clauses corrected
+  against this log; `runbooks/promotion.md` §N orders every step left in Stages 8, 9 and 10 by the sitting that
+  runs it (nothing up, the release through Staging and Production, the warehouses, a Sandbox space, the
+  deliberate exercises, what waits on something else). The next tag needs PR #258 merged and `main` pushed to the
+  GitLab mirror first, since the mirror at `79651026` holds `production/orchestration/` on `orchestration-v0.2.0`
+  with the app-etl and train schedules `ENABLED` (the waiting list).
+- **[Claude]** The documentation, runbooks and Terraform comments read against the learnings: Staging's release
+  stays until the user's `make down` (decision 27), the governed warehouse is a Lake Formation-managed datashare,
+  `EXC-22` in `GOVERNANCE.md`'s encryption rule and the threat model, the save's KMS grant behind every workflow
+  run, the plan's `# whitespace changes` on a JSON string in `terraform-changes.md`, the principal-filtered
+  `list-permissions` in `log-debugging.md`, and `aws/orchestration.py`'s report texts.

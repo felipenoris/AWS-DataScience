@@ -397,6 +397,23 @@ data "aws_iam_policy_document" "project_access_portal" {
     ]
   }
 
+  # A governed table Lake Formation shares to this account from the lake's (Stage 9 9.5's datashare,
+  # registered there as the federated database governed_trades), read through the warehouse's consumer
+  # database of the same name. The Redshift consumer calls Glue as THIS role, the session's IAM
+  # principal, and never as the project role the database user is named after (refused 2026-10-25,
+  # glue:GetTable); Lake Formation's grant to this role decides which tables, and this decides only
+  # that the catalog may be read.
+  statement {
+    sid     = "ReadTheGovernedShareCatalog"
+    effect  = "Allow"
+    actions = ["glue:GetDatabase", "glue:GetDatabases", "glue:GetTable", "glue:GetTables"]
+    resources = [
+      "arn:aws:glue:${var.region}:${local.lake_catalog_id}:catalog",
+      "arn:aws:glue:${var.region}:${local.lake_catalog_id}:database/governed_trades",
+      "arn:aws:glue:${var.region}:${local.lake_catalog_id}:table/governed_trades/*",
+    ]
+  }
+
   # The tag reads AWS names for "signing in using IAM credentials", where the database user comes
   # from a tag key and value. UNEXERCISED as of 2026-10-10 - the trail shows no `tag:GetResources`,
   # and the sqlworkbench refusals may have stopped the flow before it got here. The condition is

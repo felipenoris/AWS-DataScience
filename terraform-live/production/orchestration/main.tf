@@ -117,20 +117,22 @@ locals {
 
   # Decision 13: every production workflow starts from a chain, a chain of one included. The cron is
   # UTC; the schedule's state is the pause lever (step 6.1).
+  # Paused between sittings: a run needs production/workloads-egress/'s endpoints, [E] (step 6.1), so a
+  # sitting that wants the scheduled runs raises the endpoints and turns these two on by a commit.
   chain_specs = {
     "app-etl" = {
       definition_template = file("${path.module}/chains/app-etl.asl.json")
       workflows           = ["app-etl"]
       schedule_expression = "cron(30 6 * * ? *)"
       schedule_timezone   = "UTC"
-      schedule_enabled    = true
+      schedule_enabled    = false
     }
     "app-etl-train" = {
       definition_template = file("${path.module}/chains/app-etl-train.asl.json")
       workflows           = ["app-etl-train"]
       schedule_expression = "cron(0 7 * * ? *)"
       schedule_timezone   = "UTC"
-      schedule_enabled    = true
+      schedule_enabled    = false
     }
     # Paused: the load fails whenever the warehouse compute, [E], is down (Stage 9 decision 15), so its
     # chain is started by hand in a sitting that raises the compute.
@@ -150,7 +152,7 @@ locals {
 
 module "orchestration" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/orchestration?ref=orchestration-v0.2.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/orchestration?ref=orchestration-v0.2.1"
   count  = var.release == null ? 0 : 1
 
   env                      = var.env

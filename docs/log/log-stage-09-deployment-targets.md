@@ -2088,3 +2088,207 @@ infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infr
   `trades.trades_notional` (six columns, `notional` among them), with no RAM invitation pending: no named
   grant was needed for the account. In Sandbox the tag re-grants name the Data Scientist User's set, not a
   project role, so step 4's grant to the project role is still owed, with steps 5 and 9.7.
+
+## 2026-10-25 — 9.5's steps 4 and 5 in Sandbox: the project role's grant, the consumer database; the administrator reads it
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo os applies dos planos salvos de
+production/foundation (0/3/0, awsds-infra-prod) e staging/foundation (0/3/1, awsds-infra-staging) e os
+passos 4 e 5 do 9.5 no Sandbox (awsds-infra-sandbox-1)."*), as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-sandbox-1`, Sandbox's Lake Formation administrator), in the session's
+second branch (`claude/eloquent-ishizaka-04f598-2`, cut from `main` after PRs #255 and #256); the user raised
+`sandbox/warehouse-compute/` (the workgroup `AVAILABLE`, created 02:11:54). Times UTC.*
+
+- **[Claude] Step 4**, at 02:37:27 and 02:37:28: `grant-permissions` to
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` (`eighth-experimentation`, the project the warehouse
+  admits), `DESCRIBE` on `<Data Governance>`'s `governed_trades` and `SELECT`, `DESCRIBE` on its table
+  `trades.trades_notional`, by name, so the project reaches this table alone and not every `curated` /
+  `internal` table the account's tag grant covers. Read back: `DESCRIBE` on the database and the table and
+  `SELECT` as `TableWithColumns` with the column wildcard, which a `list-permissions` filtered by principal and
+  `Table` resource does not return.
+- **[Claude] Step 5**, the Data API as the namespace's admin in `warehouse`: `CREATE DATABASE governed_trades
+  FROM ARN 'arn:aws:glue:us-west-2:<Data Governance>:database/governed_trades' WITH DATA CATALOG SCHEMA
+  governed_trades` `FINISHED` at 02:38:48, and `GRANT USAGE ON DATABASE governed_trades TO
+  "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"` at 02:38:52, the user in `pg_user` since 6h.
+  `svv_redshift_databases` reads it `shared via data catalog`, `{"datacatalog_schema":"governed_trades"}`.
+- **[Claude] What the pages left open, read**: as `dbadmin`, a password user, `svv_all_tables` lists nothing in
+  `governed_trades` and a `SELECT` is refused, *"ERROR: Current user is not authenticated with IAM
+  credentials."*: a share registered with Lake Formation is read by an IAM-derived user alone. Through the Data
+  API with IAM authentication, as `IAMR:AWSReservedSSO_InfrastructureAccess_59e5b26af457128d`, the table is
+  `governed_trades.trades.trades_notional`, an `EXTERNAL TABLE` under the producer's schema name `trades`, not
+  the Glue database's; and `SELECT count(*)` read **30**, at 02:40, with no grant to that role: the account's
+  Lake Formation administrator reads under the grant the account holds from the lake, as it reads the lake's
+  `curated` tables. The project role's read is 9.7's, the user's.
+- **[Claude] 9.6's namespace half**: `awsds-prod-warehouse-exec` holds no inline and no attached policy (read
+  02:41), so the namespace role reaches no lake prefix (9.2).
+
+## 2026-10-25 — 9.7: a Sandbox project reads the governed table, after three grants the pages did not name
+
+*The user's hand for the queries, from the project `eighth-experimentation`'s Query editor in the portal;
+Claude's for the grants and the applies, on the user's authorizations in chat (*"Autorizo, como
+awsds-infra-sandbox-1: o apply de sandbox/data (só a saída lake_catalog_id), o apply de sandbox/warehouse se
+o plano mostrar só a política do papel de acesso, e o grant DESCRIBE/SELECT em governed_trades ao
+awsds-sandbox-warehouse-access-avhvbqn37ty7m8."* and *"Autorizo, como awsds-infra-sandbox-1 pela Data API com
+o segredo do admin: GRANT TEMP ON DATABASE sandbox TO "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"."*),
+as the infrastructure user with `InfrastructureAccess` (`awsds-infra-sandbox-1`); the planning session told
+before the writes. In the user's pasted output the account id is replaced by `<Sandbox Account 1>`. Times
+UTC.*
+
+- **[user] The first attempt**, refused: *"ERROR: AwsClientException: AccessDeniedException from glue - User:
+  arn:aws:sts::<Sandbox Account 1>:assumed-role/awsds-sandbox-warehouse-access-avhvbqn37ty7m8/28f1b390-…@5hkjdsy3umpi1c
+  is not authorized to perform: glue:GetTable on resource: ar…"*. **The principal the consumer evaluates is
+  the session's**, the project's access role, which the portal's connection assumes; the database user
+  `IAMR:datazone_usr_role_…` is a name the access role's `RedshiftDbUser` tag gives, and neither Glue nor
+  Lake Formation sees that role. Step 4's grant to the project role is unused by this door.
+- **[Claude] The access role's two layers**: `sandbox/data/` gained the output `lake_catalog_id` (planned
+  05:56:20, *"Changes to Outputs: + lake_catalog_id"*, applied 05:57:35, *"0 added, 0 changed, 0 destroyed"*,
+  re-planned `No changes`); `sandbox/warehouse/` gained `ReadTheGovernedShareCatalog` on the access role's
+  portal policy, `glue:GetDatabase`, `GetDatabases`, `GetTable` and `GetTables` on the lake's catalog,
+  `database/governed_trades` and `table/governed_trades/*` (planned 05:58:05, *"Plan: 0 to add, 1 to change, 0
+  to destroy."*, `aws_iam_policy.project_access_portal["avhvbqn37ty7m8"]` alone; applied 05:58:34; re-planned
+  `No changes`); Lake Formation at 05:59:03, `DESCRIBE` on `governed_trades` and `SELECT`, `DESCRIBE` on its
+  table to `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`, read back beside step 4's grant to the project role.
+- **[user] The second attempt**, refused by Redshift: *"ERROR: Failed to incorporate external table
+  "trades"."trades_notional" into local catalog. Error=permission denied to create temporary tables in database
+  "sandbox""*. The share's table is an external table, and the session's database holds the temporary objects a
+  query on one needs; 5b and 6h revoked every database privilege from `PUBLIC`, `TEMP` with it.
+- **[Claude] The third layer**: in `sandbox` as the admin, `GRANT TEMP ON DATABASE sandbox TO
+  "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"` at 06:04:42, the ACL from `{dbadmin=CTA/dbadmin}` to
+  `{dbadmin=CTA/dbadmin,"IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"=T/dbadmin}`.
+- **[user] The third attempt**, `SELECT current_user, count(*), min(trade_date), max(trade_date) FROM
+  governed_trades.trades.trades_notional;`: *"current_user = IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c,
+  count = 30, min 2026-10-01, max = 2026-10-05"*. **INT-24 holds**: a Sandbox project reads a governed table
+  of Production's warehouse through Lake Formation, the lake's tag grant reaching the federated database,
+  with no network path between the accounts. The door needs, per project, the access role's catalog read
+  (IAM), its Lake Formation grant, `USAGE` on the consumer database and `TEMP` on the session's database.
+
+## 2026-10-25 — 9.7 with Production's workgroup gone: the share still reads
+
+*The user's hand for `make down ENV=production ONLY=warehouse-compute` and the query; Claude's for the
+readings, as the infrastructure user with `InfrastructureAccess`. Times UTC.*
+
+- **[user]** `make down ENV=production ONLY=warehouse-compute`; **[Claude] read back** at 06:13:30: no workgroup
+  in Production, `DeleteWorkgroup` in its trail from 06:11:56 to 06:12:01, the namespace `awsds-prod-warehouse`
+  `AVAILABLE`; Sandbox's workgroup `AVAILABLE`.
+- **[user]** The same query from `eighth-experimentation` ran successfully with the producer's workgroup gone.
+  9.5's open measurement is answered: a Serverless producer with no workgroup keeps serving a Lake
+  Formation-managed datashare from its namespace, so a Sandbox read costs Sandbox's compute alone, never both
+  workgroups at once.
+
+## 2026-10-25 — Staging's `make down` refused the application table's delete; the infrastructure user's grant on `app_outputs`
+
+*The user's hand for `make down ENV=staging` and the grant that unblocked it; the forked session's for the
+reading of Staging after the down; Claude's for the trail's reading and the code, as the infrastructure user
+with `InfrastructureAccess` (`awsds-infra-staging`, `awsds-infra-prod`). Times UTC.*
+
+- **[user] `make down ENV=staging`**, as the infrastructure user: the application slice's Glue job destroyed,
+  the table refused, *"AccessDeniedException: Insufficient Lake Formation permission(s): Required Drop on
+  trades_notional"* (the forked session's quote of the output). **[Claude] Staging's trail**: `DeleteTable` on
+  `app_outputs.trades_notional` refused at 06:30:24 and 06:31:52, Terraform 1.15.8, the trail reading
+  `AccessDenied`, *"An unknown error occurred"*. The table's creator was `awsds-deploy-staging`, through
+  pipeline #87's `staging-deploy`, and Lake Formation gives a table's creator its permissions and no one else:
+  the account's administrator, who created `app_outputs`, holds no `DROP` on a table another principal created
+  in it.
+- **[user] The unblock**, `aws lakeformation grant-permissions` from the CLI at 06:34:37: `DROP` on
+  `app_outputs.trades_notional`, by name, to `InfrastructureAccess`; `DeleteTable` passed at 06:36:00 and the
+  down completed. **[forked session]** Staging read at zero at about 06:47: `./aws/egress.py awsds-infra-staging`
+  0 interface endpoints, 0 NAT, 0.000 USD/h; no workflow; the Glue job and the table gone. **[Claude] read at
+  06:49**: `app_outputs` holds no table, and the grants on its tables list the job role, the persona and the
+  deploy role; the by-name grant left with its table.
+- **[Claude] The fix**, at the forked session's request on the user's behalf: since Stage 8's decision 27 the
+  pipeline applies an application slice and the user destroys it, so every release's table meets this refusal
+  at the next down. `infrastructure_app_outputs_tables` in `staging/data/` and `production/data/` gives
+  `InfrastructureAccess` the deploy role's catalog operations on every table of `app_outputs`, `ALTER`, `DROP`
+  and `DESCRIBE`, no data permission; planned at 06:44 in each slice, *"Plan: 1 to add, 0 to change, 0 to
+  destroy."*, the plans saved, the applies waiting for the user's authorization.
+
+## 2026-10-25 — `infrastructure_app_outputs_tables` applied in both data slices
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo os applies dos planos salvos de staging/data
+(1 to add, awsds-infra-staging) e production/data (1 to add, awsds-infra-prod), como usuário de infraestrutura
+com InfrastructureAccess."*), as the infrastructure user with `InfrastructureAccess`; the forked session told
+before the writes. Times UTC.*
+
+- **[Claude] The applies** of the saved plans: `staging/data/` at 06:52:58 and `production/data/` at 06:53:17,
+  each *"Apply complete! Resources: 1 added, 0 changed, 0 destroyed."*; both re-planned `No changes`.
+- **[Claude] Read back** at 06:54 with `list-permissions` on every table of `app_outputs`: in each account
+  `InfrastructureAccess` holds `ALTER`, `DESCRIBE`, `DROP`, beside the deploy role's same three, the job role's
+  `ALTER`, `DELETE`, `DESCRIBE`, `INSERT`, `SELECT` and the persona's `DESCRIBE`, `SELECT`. The next
+  `make down ENV=staging` after a release is the grant's measurement.
+
+## 2026-10-25 — the warehouse instrument after the downs
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-sandbox-1`, `awsds-infra-prod`).
+Times UTC.*
+
+- **[Claude] `./aws/warehouse.py`** at 07:15: in each account `WH-8` *"1 namespace(s), 0 workgroup(s), all
+  expected"*, and `WH-4`, `WH-4b`, `WH-5`, `WH-7` and `WH-1b` pass; run without `--sql`, since both workgroups
+  are gone, so the database readings (`WH-6`, `WH-12`, `WH-14`) and `EXC-13`'s password wait for the next
+  warehouse sitting. `WH-9` reads the Sandbox connection's `lineageSync` `ENABLED` on `cron(43 3 * * ? *)`, 15
+  runs, none completed (`EXC-17`).
+
+## 2026-10-25 — with the environment down: the verification table brought up to the log
+
+*Claude's hand, at the user's request to prepare what needs no environment; no AWS call. Times UTC.*
+
+- **[Claude]** Rows iv, v (the approval half), xiii, xviii, xix, xx (the write half), xxi, xxiii and xxvi now
+  carry the answers this log and the step text already held; xxiii has had no subject since decision 5 took
+  shape (ii). Rows i and iii stay as they were: their evidence is spread across 2.2's and 2.4's readings and
+  was not re-read in this sitting.
+
+## 2026-10-25 — with the environment down: xii's identity half by the simulator
+
+*A read-only agent of this session took the reading as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-staging`, `awsds-infra-prod`), the simulator with `aws:RequestedRegion` and `aws:ResourceOrgID`.*
+
+- **[agent] xii**: in Staging,
+  `awsds-deploy-staging`'s `DescribeModelPackage` and `ListModelPackages` read `allowed` by `apply-application`,
+  `UpdateModelPackage` `implicitDeny`. Production's group policy `ReadTheVersionsAsTheStagingDeployRole` names that
+  role for the two reads on `model-package/awsds-prod-model-app-etl/*`; the simulator cannot evaluate a role as a
+  resource-policy principal, and Production's trail holds no `DescribeModelPackage` from Staging, so the proof is a
+  call from a Staging deploy session.
+
+## 2026-10-25 — 9.5 step 4's grant to the project role revoked
+
+*Claude's hand, on the user's authorization in chat (*"Sobre "3. Decidir sobre o grant LF ao papel do projeto",
+pode fazer conforme sua recomendação e revogar."*), as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-sandbox-1`, Sandbox's Lake Formation administrator); the forked session told before the write.
+Times UTC.*
+
+- **[Claude] Before**, at 14:57: `list-permissions` filtered by principal returned nothing on `<Data Governance>`'s
+  `governed_trades` and its table, for the project role and for the access role alike, while the access role's
+  grant serves the door; listed by resource alone, the database read `DESCRIBE` for both roles and the table
+  `DESCRIBE` (`Table`) and `SELECT` (`TableWithColumns`) for both.
+- **[Claude] The revoke**, 14:57:51 to 14:57:54, each exit 0: `DESCRIBE` on the database, `DESCRIBE` on
+  `trades.trades_notional` and `SELECT` on its column wildcard, from
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`.
+- **[Claude] Read back** by resource at 14:58:07: the database holds `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`'s
+  `DESCRIBE` alone, the table its `DESCRIBE` and `SELECT`. The project's door is unchanged, since the consumer
+  evaluates the access role; the next warehouse sitting's query from `eighth-experimentation` is its reading.
+
+## 2026-10-25 — `EXC-13`'s database half was already read
+
+*Claude's hand, from this log; no AWS call.*
+
+- **[Claude] A correction of the 07:15 entry**, which left `EXC-13`'s password to the next warehouse sitting: the
+  reading was taken earlier the same day. The Data API authenticated as `dbadmin` through Sandbox's admin secret
+  at 02:38 (9.5's step 5, `CREATE DATABASE governed_trades`) and at 06:04 (`GRANT TEMP`), so the database holds
+  the password the secret's rotation of 2026-10-20 wrote. Production's secret rotates first by 2026-11-22, the
+  same reading due then.
+
+## 2026-10-25 — the plan read for what is left; the next release's sitting written
+
+*Claude's hand, with two editing agents of this session, at the user's request to review the documentation, the
+runbooks and the Terraform comments against the session's learnings, to prepare what can be anticipated and to
+review what is left; no AWS write.*
+
+- **[Claude]** The stage file's status cell ends with what is left on 2026-10-25, its stale clauses corrected
+  against this log; `runbooks/promotion.md` §N orders every step left in Stages 8, 9 and 10 by the sitting that
+  runs it (nothing up, the release through Staging and Production, the warehouses, a Sandbox space, the
+  deliberate exercises, what waits on something else). The next tag needs PR #258 merged and `main` pushed to the
+  GitLab mirror first, since the mirror at `79651026` holds `production/orchestration/` on `orchestration-v0.2.0`
+  with the app-etl and train schedules `ENABLED` (the waiting list).
+- **[Claude]** The documentation, runbooks and Terraform comments read against the learnings: Staging's release
+  stays until the user's `make down` (decision 27), the governed warehouse is a Lake Formation-managed datashare,
+  `EXC-22` in `GOVERNANCE.md`'s encryption rule and the threat model, the save's KMS grant behind every workflow
+  run, the plan's `# whitespace changes` on a JSON string in `terraform-changes.md`, the principal-filtered
+  `list-permissions` in `log-debugging.md`, and `aws/orchestration.py`'s report texts.

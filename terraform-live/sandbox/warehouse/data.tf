@@ -74,6 +74,7 @@ locals {
   name = "awsds-${var.env}-warehouse"
 
   data_key_arn     = data.terraform_remote_state.data.outputs.data_key_arn
+  lake_catalog_id  = data.terraform_remote_state.data.outputs.lake_catalog_id
   alerts_topic_arn = data.terraform_remote_state.observability.outputs.alerts_topic_arn
   boundary_name    = "awsds-${var.env}-project-boundary"
 

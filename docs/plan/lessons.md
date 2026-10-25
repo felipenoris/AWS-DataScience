@@ -1639,6 +1639,52 @@ tag.
 **What makes it expensive.** It fails at the last step of a long job, after the work it was meant to check
 succeeded, on an identifier that names something that exists; on a tag pipeline the fix costs a new tag.
 
+## Lesson 74 — a placeholder that reads correctly after decoding can be inert to a service that substitutes it textually, and the plan that fixes it calls the change whitespace
+
+**What happened.** Stage 10, 2026-10-25. The orchestration module wrote each schedule's target input with
+`jsonencode({ chain = …, scheduledTime = "<aws.scheduler.scheduled-time>" })`. `jsonencode` writes `<` and
+`>` as `\u003c` and `\u003e`, and EventBridge Scheduler substitutes a context attribute only where the input
+carries it literally, so Production's first scheduled executions received the placeholder unsubstituted.
+Every reader decoded the JSON first: the HCL, `describe-execution`'s input as a parser reads it, the plan.
+The fix's plan rendered the change as `jsonencode( # whitespace changes`.
+
+**Why it is a class rather than a slip.** A service that substitutes placeholders matches bytes: the
+Scheduler's `<aws.scheduler.*>` attributes, an EventBridge input transformer's `<path>` names. Every tool
+between the author and the service decodes before it shows anything, so an encoder that escapes the
+placeholder's delimiters makes it inert while every view reads it as intended. Lesson 56's inert line,
+produced by an encoder instead of a missing capability.
+
+**The rule.** Write a value a service substitutes into as a literal template with only the parts that need
+encoding encoded (here the chain's key); read back the stored raw string from the service's own API at the
+first apply; and read a plan's "whitespace changes" on a JSON string as a byte change.
+
+**What makes it expensive.** It is silent until something consumes the value. No chain forwarded the date, so
+the defect cost nothing yet; the first chain that reads it would receive a literal where a timestamp was
+expected, at a scheduled run in Production.
+
+## Lesson 75 — a permission the creator holds without a grant moves with whoever creates the object, and a decision that moves the teardown to another identity owes it the grant nobody had to write
+
+**What happened.** Stage 8's decision 27 (2026-10-24) moved Staging's teardown from the pipeline's deploy role
+to the user's `make down`. The application slice's table in `app_outputs` is created by the deploy role at
+the leg, and Lake Formation gives a table's creator its permissions and nobody else: the account's
+administrator, who created the database, holds no `DROP` on a table another principal created in it. The
+first such down, 2026-10-25, was refused *"Required Drop on trades_notional"*; the user unblocked it with a
+grant by name, which left with the table, and `app_outputs` gained a wildcard grant to the infrastructure
+identity. The decision, its plans and its applies were read against IAM, the deploy roles' grants narrowed
+and the user's permission set, and the creator's half was written in neither.
+
+**Why it is a class rather than a slip.** Creator-held permissions exist in more than one system here: Lake
+Formation's creator permissions on databases and tables, and Redshift's ownership, under which only an
+object's owner or a superuser drops it. A decision that changes who creates or who destroys an object changes
+who holds that half, and no policy diff shows it, because the permission was never written.
+
+**The rule.** When a decision moves an act (create, alter, destroy) to another identity, list the objects the
+act touches and, per object, what its creator holds without a grant; write the new identity's grant in the
+same change, and run the act once as the new identity before relying on it.
+
+**What makes it expensive.** It surfaces at the teardown, the step nobody rehearses, after the work succeeded,
+and the hand grant that unblocks it leaves with its object and teaches the next release nothing.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits; the entries here are facts about the platform that cost a measurement
@@ -1824,7 +1870,13 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   organization denies, the result names no identity statement, so the identity layer under an SCP deny is
   read by forcing the SCP's carve-out into the context; and the SCP evaluation reads `aws:PrincipalArn`
   as the role's own ARN when the context gives none, a key the simulator's page does not list among
-  those it populates. Where: `log-stage-06h`, 2026-10-18.
+  those it populates. Where: `log-stage-06h`, 2026-10-18. Read again on 2026-10-25 in Production, where
+  `redshift-data:ExecuteStatement` and `sagemaker:DescribeModelPackage`, both working calls, read
+  `explicitDeny` until the context named the Region (`log-stage-09`). The perimeter SCP's
+  `DenyS3ObjectWriteOutsideOrganization` reads the same way while the context lacks `aws:ResourceOrgID`,
+  its `StringNotEqualsIfExists` matching the absent key: Staging's deploy role read `explicitDeny` on
+  `s3:PutObject` to its own orchestration state, which it writes at every leg, and with the organization's
+  id in the context `allowed` there and `implicitDeny` on the egress state (`log-stage-08`, 2026-10-25).
 - **`sso-admin list-account-assignments-for-principal` answers from the Identity Center delegated
   administrator**, where its API reference says the action *"must be called from the management
   account"* (measured 2026-10-18 as `InfrastructureAccess` in Identity, Stage 14: the shared
@@ -2640,6 +2692,20 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   reaches the owner's trail, as a shared event; `GetTemporaryGlueTableCredentials` never appears as an
   event name. Where: `log-stage-09-deployment-targets.md`, the 2026-10-23 entries; Stage 9 decision 13.
 
+- **A Lake Formation refusal reaches CloudTrail without the permission it lacked** (measured 2026-10-25,
+  Staging's `make down`). The client read *"Insufficient Lake Formation permission(s): Required Drop on
+  trades_notional"*, while the trail's two `DeleteTable` events read `AccessDenied`, *"An unknown error
+  occurred"*. Which grant is missing comes from the client's output or from `list-permissions`, never from
+  the trail. Where: `log-stage-09-deployment-targets.md`, 2026-10-25.
+
+- **`lakeformation list-permissions` filtered by principal returns nothing on a resource another account's
+  catalog holds** (measured 2026-10-25 in Sandbox, on Data Governance's `governed_trades`). For the project's
+  access role, whose grant serves every read of the governed table, and for the project role alike, the
+  principal-filtered listing of the database and of the table came back empty; listed by resource alone, the
+  same calls returned both roles' `DESCRIBE` and `SELECT`, the latter as `TableWithColumns`. A read-back after a
+  grant or a revoke on a shared resource lists by resource. Where: `log-stage-09-deployment-targets.md`,
+  2026-10-25.
+
 ### MWAA Serverless
 
 - **A worker encrypts every XCom a task pushes with its own `kms:GenerateDataKey` on the workflow's key,
@@ -2677,6 +2743,61 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   are `aws:RequestTag/*`, `aws:ResourceTag/*` and `aws:TagKeys`; held to `aws:RequestTag/Name`, the
   retried apply created the workflow in 5 s. Where: `log-stage-10-orchestration-promotion.md`,
   2026-10-24; both `foundation/apply-orchestration.tf`, `TagTheWorkflowsAtCreation`.
+
+- **The MWAA Serverless worker renders an XCom into a template as the JSON of its value** (measured
+  2026-10-25, `v0.4.1`'s train chain in Staging). `{{ ti.xcom_pull(task_ids='train')['Training'] }}` failed
+  with *"'str object' has no attribute 'Training'"*: the training operator's dict reached Jinja as text, and
+  `report.json`, written from `{{ ti.xcom_pull(task_ids='summarize') }}`, holds the JSON text of the report's
+  string. A template indexes nothing; the callable decodes. Where: `log-stage-10-orchestration-promotion.md`,
+  2026-10-24; `examples/app-etl/code/app_etl_tasks.py`, `training_job_name`.
+
+### Redshift
+
+- **The Data API authorizes following, reading and cancelling a statement on no resource** (measured
+  2026-10-25, `production-warehouse-ddl`). `DescribeStatement`, `GetStatementResult` and `CancelStatement`
+  granted on `workgroup/*` matched nothing, *"no identity-based policy allows"*, while `ExecuteStatement`
+  on the same ARN passed; the three take `"*"` and the condition key
+  `redshift-data:statement-owner-iam-userid`. The CLI on the deploy runner keeps one role session across a
+  job, so `aws:userid` matches between the two calls. Where: `log-stage-09-deployment-targets.md`,
+  2026-10-25; `production/foundation/deploy-anchors.tf`, `FollowItsOwnStatements`.
+
+- **A Redshift consumer of a Lake Formation-managed datashare calls Glue and Lake Formation as the
+  session's IAM principal, needs `TEMP` on the session's database, and reads with the producer's workgroup
+  gone** (measured 2026-10-25, Stage 9 9.7). A SageMaker project's portal session assumes its access role,
+  whose `RedshiftDbUser` tag names the database user `IAMR:datazone_usr_role_…`: the refusal named the
+  access role (`glue:GetTable`), so the catalog read and the Lake Formation grant belong to the access role,
+  never to the role the user is named after. A password user is refused, *"Current user is not
+  authenticated with IAM credentials"*; the share's table is an external table, and the query needs
+  `TEMP` on the database the session is in, *"permission denied to create temporary tables"*; and a
+  Serverless producer whose workgroup was destroyed keeps serving the share from its namespace. The
+  consumer account's Lake Formation administrator reads under the account's grant with no grant of its own.
+  Where: `log-stage-09-deployment-targets.md`, 2026-10-25; `sandbox/warehouse/iam.tf`,
+  `ReadTheGovernedShareCatalog`.
+
+### Glue
+
+- **A Glue database with a `FederatedDatabase` refuses a `Description`**: *"Description and federation
+  source cannot exist together in a database!"* (measured 2026-10-25, Data Governance's `governed_trades`).
+  Where: `log-stage-09-deployment-targets.md`, 2026-10-25.
+
+### EventBridge Scheduler
+
+- **EventBridge Scheduler does not substitute a context attribute whose angle brackets arrive JSON-escaped**
+  (measured 2026-10-25, Production's first scheduled execution, Stage 10 6.1). The orchestration module
+  writes the target's input with Terraform's `jsonencode`, which escapes `<` and `>`: the schedule stored
+  `{"chain":"app-etl","scheduledTime":"\u003caws.scheduler.scheduled-time\u003e"}` and the execution
+  received the same text, which a JSON parser reads back as the unsubstituted
+  `<aws.scheduler.scheduled-time>`. Where: `log-stage-10-orchestration-promotion.md`, 2026-10-25;
+  `terraform-modules/orchestration/chains.tf`, the schedule's `input`.
+
+### SageMaker models
+
+- **`CreateModel` from a model package describes the package as the model's execution role, and goes on when
+  refused** (measured 2026-10-25, Stage 10 5.4 in Production). At 01:29:33 the deploy role's `CreateModel` on
+  `awsds-prod-model-app-etl/1` was followed by a `DescribeModelPackage` as `awsds-prod-job-exec`, session
+  `sagemaker-inference`, refused *"is not authorized to perform: sagemaker:DescribeModelPackage"*; the model
+  was created and the batch transform completed. A trail reader meets an `AccessDenied` on a run that
+  succeeded. Where: `log-stage-10-orchestration-promotion.md`, 2026-10-25.
 
 ---
 

@@ -308,7 +308,8 @@ resource "aws_cloudwatch_log_group" "workflow" {
 #
 # An update replaces every attribute it is not given (Lesson 60), so every attribute the service
 # accepts is declared. The definition and the code package are pinned by S3 VersionId: the service
-# reads both at save time, in the saver's session (the deploy role's, step 1.5). A workflow a chain
+# reads both at save time, in the saver's session (the deploy role's, step 1.5), and at run time under
+# the KMS grant that save creates for airflow-serverless, never as the execution role. A workflow a chain
 # starts carries no schedule of its own (decision 13) and the TriggerMode the service writes when
 # none is given. Name and EncryptionConfiguration are create-only: a change to either is a new ARN
 # and loses the run history.

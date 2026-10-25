@@ -93,7 +93,8 @@ AWS Organization (Management account - console only)                        [P]
     │   │     deploy; the governed lake read in place, read-only via LF     [P]
     │   ├── SageMaker job execution roles (no domain, no Model Registry)    [P]
     │   ├── interface VPC endpoints, no NAT (only during a promotion run)  [E]
-    │   └── app slices, deployed by the pipeline and torn down after tests  [E]
+    │   └── app slices, deployed by the pipeline and kept between legs;
+    │         destroyed by the user's make down (Stage 8 decision 27)       [E]
     │
     └── Production account   <- no human runs code here; no Studio domain   D17
         │                       and, since 6c (D38), the network platform

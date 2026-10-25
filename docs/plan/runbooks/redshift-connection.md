@@ -9,7 +9,7 @@ the S3 connection.*
 | | |
 |---|---|
 | **Who runs this** | the infrastructure user (`felipenoris+infrastructure_user@…`), profile `awsds-infra-sandbox-1`, account `Sandbox Account 1`, permission set `InfrastructureAccess`. The SQL halves need the namespace admin secret, which only that identity can read |
-| **What it does not cover** | the governed class. A governed database gets **no project connection**: it is read through the federated catalog Lake Formation governs ([Stage 9](../stages/stage-09-deployment-targets.md) 9.5) and written by a pipeline. Reusing anything below there would put a Redshift `GRANT` beside a Lake Formation grant over governed data |
+| **What it does not cover** | the governed class's own database, Production's `governed`, written by a pipeline and never connected to a project. A Sandbox project reads a governed table through the Lake Formation-managed datashare ([Stage 9](../stages/stage-09-deployment-targets.md) 9.5) over its existing connection, §G below; Lake Formation decides which tables, and the Redshift grants there are the consumer database's `USAGE` and the session's `TEMP` |
 
 ---
 
@@ -189,6 +189,27 @@ DROP USER "<identifier>";
 ```
 
 `WH-12` is what finds a role membership nothing declares; this section is what prevents it.
+
+**A project that reads a governed share (§G) leaves two more grants in two more systems**, neither in any
+plan: the Lake Formation grant to its access role, and the consumer database's `USAGE` and `sandbox`'s
+`TEMP` for its database user. The access role itself goes with the map, `ReadTheGovernedShareCatalog`
+with it.
+
+```sql
+REVOKE USAGE ON DATABASE governed_trades FROM "<identifier>";
+REVOKE TEMP ON DATABASE sandbox FROM "<identifier>";
+```
+
+```bash
+aws lakeformation revoke-permissions --principal "DataLakePrincipalIdentifier=arn:aws:iam::<Sandbox>:role/awsds-sandbox-warehouse-access-<project>" --resource '{"Table":{"CatalogId":"<Data Governance>","DatabaseName":"governed_trades","Name":"trades.trades_notional"}}' --permissions SELECT DESCRIBE --profile awsds-infra-sandbox-1 --region us-west-2
+```
+
+and the same with `{"Database":{"CatalogId":"<Data Governance>","Name":"governed_trades"}}` and `DESCRIBE`.
+The table's `SELECT` is stored on its column wildcard: if the `Table` form leaves it, revoke it on
+`{"TableWithColumns":{…,"ColumnWildcard":{}}}`. Read the result back by resource, never by principal: a
+`list-permissions` filtered by principal returns nothing on these resources, held in Data Governance's catalog,
+even for a grant that works (2026-10-25). A Lake Formation grant to a role that no longer exists stays listed
+against its ARN, so the revoke comes before the apply that removes the access role.
 
 **The connection object stays.** It is DataZone's, no apply touches it, and this repository does not
 author it (`EXC-17`): removing it is a portal act by a project member. Until then it names an access
@@ -379,6 +400,35 @@ hours at 1.44 USD/h, past an 1800-second limit and through two minutes of a brea
 | `pg_default_acl` is **empty** after `ALTER DEFAULT PRIVILEGES` | the privilege is in `svv_default_privileges` alone |
 | `stl_connection_log` is **refused** | to a superuser too; `sys_connection_log` is the readable one, and it has only ever held internal sessions |
 | a `drop table` raises `KeyError` first in the traceback | the driver's prepared-statement cache missing, then the real error below it — read the bottom frame |
+
+---
+
+## §G Reading a governed share from a project
+
+A governed table of Production's warehouse reaches Sandbox as the consumer database `governed_trades`,
+created from the federated database Data Governance registers (Stage 9 9.5). Measured on 2026-10-25 (9.7,
+the log): the project's session needs four pieces, and the two that live in AWS belong to the **access
+role**, the principal the portal's connection assumes, never to the project role the database user is named
+after.
+
+| Piece | Lives in | What its absence looks like |
+|---|---|---|
+| the access role's catalog read, `glue:GetDatabase`/`GetDatabases`/`GetTable`/`GetTables` on the lake's catalog, the federated database and its tables | Terraform, `sandbox/warehouse/`'s `ReadTheGovernedShareCatalog`, per project | *"AccessDeniedException from glue - User: …assumed-role/awsds-sandbox-warehouse-access-<project>/… is not authorized to perform: glue:GetTable"* |
+| the access role's Lake Formation grant, `DESCRIBE` on `governed_trades` and `SELECT` on its tables | Sandbox's Lake Formation, granted by its administrator (the account holds the lake's tag grant with grant option) | Lake Formation's *"Insufficient Lake Formation permission(s)"* |
+| `USAGE ON DATABASE governed_trades` for the project's database user | SQL, as the admin | the database is listed and refuses the query |
+| `TEMP ON DATABASE sandbox` for the same user: the share's table is an external table, and the session's database holds the query's temporary objects | SQL, as the admin; `PUBLIC` holds no database privilege since 5b and 6h | *"Failed to incorporate external table … permission denied to create temporary tables in database "sandbox""* |
+
+The table's name in Redshift is `governed_trades.trades.trades_notional`: the producer's schema, not the
+Glue database's. A password user (`dbadmin`) is refused, *"Current user is not authenticated with IAM
+credentials"*, so the admin reads the metadata alone, and through the Data API with IAM authentication the
+infrastructure user, Sandbox's Lake Formation administrator, reads under the account's grant. The read needs
+Sandbox's workgroup alone: Production's may be down.
+
+**A second governed database** repeats two pieces once, whatever the number of projects: the consumer
+database in Sandbox's warehouse (`CREATE DATABASE <name> FROM ARN 'arn:aws:glue:us-west-2:<Data
+Governance>:database/<name>' WITH DATA CATALOG SCHEMA <name>`, a statement of its own, as the admin), and
+its database and tables among `ReadTheGovernedShareCatalog`'s resources, which name `governed_trades` alone.
+Then the per-project grants above. Unwiring is §U.
 
 ---
 

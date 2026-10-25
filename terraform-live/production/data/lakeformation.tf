@@ -103,6 +103,21 @@ resource "aws_lakeformation_permissions" "release_app_outputs_tables" {
   }
 }
 
+# The infrastructure user applies and destroys an application slice the deploy role may have applied
+# (Stage 8 decision 27 and its 3.8 by hand). Lake Formation gives a table's creator its permissions and
+# no one else, and the account's administrator holds DESCRIBE alone without a grant, so the user's
+# destroy of a table the deploy role created is refused "Required Drop". The deploy role's catalog
+# operations, no data permission.
+resource "aws_lakeformation_permissions" "infrastructure_app_outputs_tables" {
+  principal   = local.infrastructure_access_role_arn
+  permissions = ["ALTER", "DROP", "DESCRIBE"]
+
+  table {
+    database_name = aws_glue_catalog_database.app_outputs.name
+    wildcard      = true
+  }
+}
+
 resource "aws_lakeformation_permissions" "job_app_outputs_database" {
   principal   = local.job_role_arn
   permissions = ["DESCRIBE"]
