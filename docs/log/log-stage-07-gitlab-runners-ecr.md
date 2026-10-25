@@ -968,3 +968,29 @@ hand for the record. No AWS call.*
   offering no VPC in Data Governance for a GitLab self-managed host, and the accepted path stays the manual
   `git remote add` and push from inside a project. The waiting list keeps only §I step 6's GitLab settings for
   this stage.
+
+## 2026-10-25 — the user's observation: Production's host form lists its VPCs; the path INT-13 lacked, read on AWS's pages
+
+*The user's hand in the console (*"Notei que entrando em production, Developer Tools, Hosts, criar uma conexão
+com gitlab lista as VPCs. Esse não seria um caminho possível de configuração?"*); Claude's reading of five AWS
+pages (`docs/REFERENCES.md`). No AWS call, nothing created.*
+
+- **[user]** In Production the same *Create host* form offers the account's VPCs under *Use a VPC*.
+- **[Claude] The pages**: a GitLab self-managed host takes a VPC, subnets and security groups *"for the
+  infrastructure where your host is installed"*, a TLS certificate for a private CA, and is set up with a GitLab
+  administrator's PAT (`api`, and `admin_mode` if enabled); a connection on it is authorized by a GitLab user,
+  and *"connections only provide access for the account that was used to create and authorize the
+  connection"*. `codeconnections` connections are shared across accounts through RAM. SageMaker Unified Studio's
+  Git connections live at the account level since 2026-07-30 (*Settings → Account settings → Git connections*),
+  reach every domain and project in the account once enabled, and may come from another account through RAM
+  with `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess` at its latest version; *"all users who can
+  sign in to any domain in the account have read and write access to all repositories on that connection"*,
+  regardless of project membership.
+- **[Claude] The reading**: the path exists, a host in Production's VPC-SharedServices, a connection on it, the
+  connection shared to Data Governance and enabled there, which INT-13's row of 2026-09 did not have. Its cost
+  is an identity flattening (every domain user writes as the one GitLab user who authorized the connection,
+  against Stage 7's per-persona roles and the CE gate, Lesson 12), a service-managed ingress into
+  VPC-SharedServices and an administrator PAT at setup; nothing in Stages 7 to 10 needs it. Recorded in INT-13,
+  7.2, `SMUS.md`, `upstream-releases.md` and the waiting list as the user's decision, recommended not now; the
+  first reading, the account-level Git connections page in Data Governance's SageMaker Unified Studio console,
+  needs nothing up.

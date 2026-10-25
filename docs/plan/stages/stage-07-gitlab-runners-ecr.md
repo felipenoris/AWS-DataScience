@@ -573,7 +573,11 @@ recordings, not builds.
   results"*), so a host for the private instance has nowhere to attach; the *No VPC* option's text names GitHub
   Enterprise Server, and no SCP names the service. The *No VPC* half, a host created and *Set up host* run toward
   the private URL, would add the failed setup's wording to the same answer; **the user declined it the same day**
-  and cancelled the form, so 7.2 is closed on the VPC half. Nothing was created.
+  and cancelled the form, so 7.2 is closed on the VPC half. Nothing was created. **The same day the user read
+  Production's form listing its VPCs**, and AWS's pages (`docs/REFERENCES.md`) now carry a path this step's
+  premise lacked: a host with a VPC configuration in Production, a connection on it, the connection shared to
+  Data Governance by RAM and enabled at the account level in SageMaker Unified Studio (the 2026-07-30 release).
+  INT-13's row carries the path and its cost; building it is a decision of the user's, recommended not now.
 
 ### 8. Prove the lifecycle and rehearse the restore (D11, conventions §5.1 rule 6)
 

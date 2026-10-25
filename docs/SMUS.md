@@ -953,7 +953,7 @@ binding carrying an **auto-sync** flag. **`gitConnectionArn` is `isEditable = fa
 template's own doing, not a lock this project wrote — so a project cannot bring its own connection and
 the profile must carry one: **no project in this domain can have a project repository today.** Whether
 enabling it *syncs* the folder or *replaces* it is unmeasured. The connection is Stage 7's surface
-(INT-09/INT-13), and **open question 26** carries the promotion question all of this opens.
+(INT-09/INT-13), and **open question 26** carries the promotion question all of this opens. **Read 2026-10-25 on AWS's pages** (`upstream-releases.md`): since 2026-07-30 Git connections are created and enabled at the account level (*Settings → Account settings → Git connections*), reach every domain and project in the account, may come from another account through RAM, and new project profiles no longer choose S3 or Git; whether this domain's page offers the GitLab self-managed flow, and what it asks, is a console reading owed in Data Governance (the waiting list, INT-13).
 
 **3. The lake — reached through the catalog, never mounted.** Governed data enters a project by
 publish/subscribe on the SageMaker Catalog, fulfilled on the Lake Formation substrate Stage 5a built
