@@ -994,3 +994,11 @@ pages (`docs/REFERENCES.md`). No AWS call, nothing created.*
   7.2, `SMUS.md`, `upstream-releases.md` and the waiting list as the user's decision, recommended not now; the
   first reading, the account-level Git connections page in Data Governance's SageMaker Unified Studio console,
   needs nothing up.
+- **[Claude] The user's follow-up, how a connection authenticates** (the user guide's repository pages,
+  `docs/REFERENCES.md`): a member brings no SSH key, PAT or password; the service clones the repository into the
+  project's S3 bucket, shared by every member, and pushes and pulls with the connection's token, so a disabled
+  connection leaves the clone and stops every push and pull. JupyterLab's Git panel and the terminal's `git`
+  act on that clone, the terminal's changes showing on the *Repositories* page. The pages promise *"per-commit
+  authorship"* and say nothing about where the author's name and e-mail come from; what GitLab records as the
+  pusher is the connection's user. Today's spaces hold no such clone: INT-09's clone is made by hand in the
+  space with the person's own GitLab credential and `git config`, a different channel.

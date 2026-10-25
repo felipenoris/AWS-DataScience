@@ -1219,7 +1219,10 @@
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/cross-account-git.html>,
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html> (2026-07-30),
   <https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-gitlab-managed.html>,
-  <https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-share.html>. A host with a VPC
+  <https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-share.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/working-with-repositories.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/performing-git-operations.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/storage.html>. A host with a VPC
   configuration in the GitLab's account, a connection authorized by one GitLab user, the connection shared by
   RAM and enabled for every domain of the receiving account: the path INT-13's row now carries, with its cost.
 
