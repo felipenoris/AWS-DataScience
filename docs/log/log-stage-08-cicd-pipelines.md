@@ -3049,3 +3049,37 @@ user's Chrome session, AWS as the infrastructure user with `InfrastructureAccess
 - **[Claude] The fix** (`evaluate`, Stage 10's log), its patch over `d1ee24cb` checked to give the
   template's tree `e8c12563`, with the README's two sentences; the data release is `v0.4.2`, and ix's
   drift takes `v0.4.3`.
+
+## 2026-10-24 — `v0.4.2`'s pipeline #80: the data release through Staging's leg, the gate and `production-deploy`
+
+*The user's hand for MR !10, the tag and the gate; Claude's for the patch and the readings (the job
+traces and artifacts through GitLab's API in the user's Chrome session, AWS as the infrastructure user
+with `InfrastructureAccess`, whose session expired at 00:52 UTC and was renewed by the user with
+`./aws/login.py`). Times UTC, the pipeline crossing midnight into 2026-10-25.*
+
+- **[user]** MR !10 (`evaluate-xcom`, `cc62f13f`) merged at 23:51:31 as `863f30b1`, read back with the
+  template's tree `e8c12563`; the tag `v0.4.2` on it, pipeline #80 created at 23:51:57.
+- **[Claude] The build half**: `test` (434) passed; `build-image` (435), 23:52:28 to 23:55:12, *"== pushed
+  …/awsds-prod-ecr-app-etl:v0.4.2-863f30b1@sha256:9735e42e…06fd5"*; `scan-gate` (437) failed, allowed;
+  `test-deploy` (438), 23:55:15 to 00:11:09, the run `1DCL6kFnnjzKqX6` `SUCCESS`; `store-bundle` (439) and
+  `release` (440), 00:11:11 to 00:11:26, the bundle `s3://awsds-prod-releases/app-etl/v0.4.2/app-etl.zip`,
+  SHA256 `745955fa…cc3e`.
+- **[Claude] The Staging leg**, the mirror at `c714c47d`: `staging-up` (441), 00:11:18 to 00:13:55;
+  `staging-deploy` (442), 00:13:58 to 00:17:00, the same counts as #77 (*"2 added"*, *"31 added"*, the
+  three workflows linted, 12 objects read back), its artifact's `VersionId`s `app-etl` `nHLndSk3…duuxA`
+  and `53rV3UoC…hAINr`, `app-etl-train` `XubSXeT1…l9MsG` and `QvMe.XCe…fN61`, `app-etl-warehouse`
+  `MDqIlYw8…YFQgVq`; `staging-test` (443), 00:17:03 to 00:39:56, both chains `SUCCEEDED` and the table read
+  back; `staging-model` (444), 00:39:59 to 00:45:46, *"30 prediction(s), one per input row"*, the model
+  deleted (Stage 10's log); `staging-down` (445), 00:45:49 to 00:51:28.
+- **[Claude] `production-plan` (446)**, 00:51:28 to 00:52:19: *"Plan: 2 to add, 1 to change, 0 to
+  destroy."*, `aws_glue_catalog_table.trades_notional[0]` and `aws_glue_job.load[0]` created,
+  `aws_glue_job.this[0]` updated in place; *"ok: 2 job(s) do Glue: aws_glue_job.load[0],
+  aws_glue_job.this[0]"*.
+- **[user]** `production-gate` (447) at 00:54:31.
+- **[Claude] `production-deploy` (448)**, 00:54:37 to 00:57:51, as `awsds-deploy-prod`: *"bundle.zip:
+  OK"*, *"read back: 12 objects"*, *"inbox inbox/app-etl/trades.csv: unchanged"*, the application slice
+  *"2 added, 1 changed"*, the orchestration slice *"20 added, 1 changed"*; its artifact's `VersionId`s
+  `app-etl` `0zqwVd2e…pa5wBa` and `NiUAbhcu…p3HKKC`, `app-etl-train` `KYxMwRRM…ei.aGf1` and
+  `8LwP7yZe…uKD1d`, `app-etl-warehouse` `GlCsV_FM…KMRB1`. Read at 00:58: the workflows
+  `awsds-prod-wf-app-etl`, `-app-etl-train` and `-app-etl-warehouse` `READY`, modified 00:57:33 to
+  00:57:37, and the three schedules `ENABLED`.

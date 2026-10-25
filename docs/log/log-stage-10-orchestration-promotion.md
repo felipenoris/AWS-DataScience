@@ -1080,3 +1080,26 @@ session of `runbooks/promotion.md` §V (the branch `claude/eloquent-ishizaka-04f
   it; 31 tests and the workflow lint pass. The release is `v0.4.2` (Stage 8's log). 6.3's sentence holds
   on a failure: the task's log group went with the slice, and the reading survives only because it was
   taken before `staging-down`.
+
+## 2026-10-25 — `v0.4.2`'s Staging leg: the train chain, Staging's first batch transform (5.4's Staging half), Production's three chains
+
+*Claude's hand for the readings, as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-staging`, `awsds-infra-prod`); the runs were the pipeline's (Stage 8's log, pipeline #80).
+Times UTC.*
+
+- **[Claude] The train chain in Staging**, with `evaluate`'s fix: the app-etl chain `SUCCEEDED` (about
+  00:17 to 00:32), then the train chain `SUCCEEDED` (about 00:32 to 00:40): the training job
+  `app-etl-train-20261025T003320` `Completed` with the settings #77's job carried, and `evaluate` wrote
+  `models/app-etl/app-etl-train-20261025T003320/evaluation.json` on `awsds-staging-outputs`, `rmse`
+  1016.31 and `batch_rows` 30, the job and its model named in the file's `awsds` block.
+- **[Claude] 5.4's Staging half**, `staging-model` (`scripts/model-chain.py transform staging`): the
+  model `app-etl-v0-4-2-20261025T004019` as `awsds-staging-job-exec`, network-isolated in the two job
+  subnets, AWS's XGBoost by digest over `app-etl-train-20261025T003320`'s artifact; the transform job of the
+  same name on one `ml.m5.large`, the data key on its volume and its output, the input
+  `app-etl/work/train/batch/` split by line, the output under `models/app-etl/transform/<job>/`;
+  `Completed` at 00:45:41, *"30 prediction(s), one per input row"*, the model deleted after. Staging served
+  its own model before Production's deploy ran (decision 22, verification x's order).
+- **[Claude] Production's orchestration apply** (`production-deploy`, 00:54:37 to 00:57:51, as
+  `awsds-deploy-prod`): *"20 added, 1 changed"*, the app-etl workflow updated to `v0.4.2` and
+  `awsds-prod-wf-app-etl-train` and `awsds-prod-wf-app-etl-warehouse` created, each with its chain and its
+  schedule `ENABLED` (06:30, 07:00 and 07:30 UTC), so the schedules fire `v0.4.2`'s chains from 2026-10-25.
