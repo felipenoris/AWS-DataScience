@@ -2,7 +2,7 @@
 
 The image the deploy runner's jobs run in (AWS-DataScience's
 [Stage 8](https://github.com/felipenoris/AWS-DataScience/blob/main/docs/plan/stages/stage-08-cicd-pipelines.md)
-steps 3.1 and 4.3): make, uv, Python 3.14, Terraform 1.15.8, git, the AWS CLI and the SageMaker CI/CD
+steps 3.1 and 4.3): make, uv, Python 3.14, Terraform 1.16.6 (the recipe since 2026-10-25; `v0.2.0`, the image the runner serves, carries 1.15.8 until the next release), git, the AWS CLI and the SageMaker CI/CD
 CLI `aws-smus-cicd-cli` 1.0.9 (step 2.5, D41), every download pinned, built for `amd64`, the deploy
 runner's architecture (Stage 8 decision 4). This project is its
 source of truth since 2026-10-14 (Stage 8 decision 16), and the infrastructure repository keeps a copy of

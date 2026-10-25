@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      TERRAFORM_VERSION: 1.15.8
+      TERRAFORM_VERSION: 1.16.6
       TFLINT_VERSION: v0.64.0
       UV_VERSION: 0.12.13
       PRE_COMMIT_VERSION: 4.6.2

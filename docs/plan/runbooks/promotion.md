@@ -203,18 +203,19 @@ rows.
    17 decision 4), registered as version 10: the merge request on `awsds/dev-env` from the copy under
    `gitlab/awsds/dev-env/`, the steward's tag, the release gate; `./scripts/gitlab-mirror.py` after the
    merge. `DE-5` turns green with it.
-4. **[user] The deploy image on Terraform 1.16.6**, once the laptop runs it (the user's install;
-   `upstream-releases.md`): the two pins in `gitlab/awsds/deploy-image/Dockerfile`, the merge request,
+4. **[user] The deploy image on Terraform 1.16.6**, the laptop running it since 2026-10-25 and the two pins moved in
+   `gitlab/awsds/deploy-image/Dockerfile` (`upstream-releases.md`): the merge request,
    the tag, its digest into `production/runners/variables.tf`, and the slice applied by `make gitlab-up
    BUILD=1`, which keeps the build runner; the flag left out destroys it. Until then the deploy image runs 1.15.8, which every
-   slice's `versions.tf` admits.
+   slice's `versions.tf` admits and which refuses a state the laptop's 1.16.6 has written: this step comes
+   before any laptop apply or `make up` of a slice the pipeline reads or applies (N.1 step 2).
 5. **[Claude]** `./aws/cicd.py` after the runners' boot (`CI-1`, `CI-9`), and `GM-1` to `GM-8` on the copies.
 
 **Done 2026-10-24** (Stage 8's log): the environment raised by the user at 18:10 UTC, `cicd.py` 0
 failed; steps 1, 2 and 6 by the user, read back at 18:47: the mirror at `0236a99d`, MR !4 merged and the
 legs' MR !5 merged, `awsds/app-etl`'s `main` at `5a7d009a` identical to `examples/app-etl/` at
-`0236a99d`. Steps 3 and 4 are left: the house image does not hold Stages 8 to 10, and the laptop still
-runs Terraform 1.15.8.
+`0236a99d`. Steps 3 and 4 are left: the house image does not hold Stages 8 to 10, and the deploy image is rebuilt
+now that the laptop runs Terraform 1.16.6 (since 2026-10-25).
 6. **[user] The CI/CD variable `TRAINING_IMAGE_URI`** on `awsds/app-etl`, protected, for v0.4.0's
    `test-deploy`: the value `terraform -chdir=terraform-live/staging/sagemaker output -raw
    training_image_uri` after §0.6, AWS's XGBoost image by digest. v0.3.0 reads no such variable.
@@ -588,7 +589,11 @@ carries `ONLY=`, or the build runner is destroyed.
 
 1. **[user] Stage 8 1.1, the house image `default-v0.9.0`** (§H step 3), its 72-name literal passing `GM-1`
    to `GM-8` on 2026-10-25 at 07:41 UTC; `DE-5` turns green with it.
-2. **[user] The deploy image on Terraform 1.16.6** (§H step 4), once the laptop runs it.
+2. **[user] The deploy image on Terraform 1.16.6** (§H step 4), the laptop on it since 2026-10-25: **before steps 8
+   and 10, and before any laptop apply or `make up` of a slice the pipeline reads or applies** (the application
+   and orchestration slices, `staging/egress`, `production/workloads-egress`, and the `data/`, `sagemaker/`,
+   `foundation/` and `workloads/` states their `terraform_remote_state` reads), since the image's 1.15.8 refuses
+   a state written by 1.16.6.
 3. **[Claude] Readings with GitLab up**: `./aws/cicd.py` (`CI-1`, `CI-9`); `awsds/app-etl`'s branch list,
    verification ix's branches deleted on 2026-10-25 by the user's word; and Stage 8 xxvii's plan half, a
    read-only plan of `production/runners/` once the Amazon Linux parameter has moved past the runners'

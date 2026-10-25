@@ -3379,3 +3379,25 @@ read from the uvx cache's copy of the pinned archive. 76 cases, one scratch copy
   the rendered form caught. Cosmetic: `_check_glue` prints one script location twice when `script_location`
   and `create_job_kwargs.Command.ScriptLocation` carry the same path. No rule reads a `VersionId` or compares
   with a release's manifest, as before.
+
+## 2026-10-25 — the laptop's Terraform at 1.16.6; the pins moved; the deploy image's rebuild ordered first
+
+*The user's hand for the install (*"Rodei os comandos.. aparentemente atualizou para a versão 1.17.0"*); Claude's
+reading of the binary and the edits. No AWS write.*
+
+- **[user]** `terraform_1.16.6_darwin_arm64.zip` and the published sums downloaded, the checksum checked, the
+  executable unzipped over `~/local/bin/terraform` (the only `terraform` on the PATH, read with `which -a`).
+- **[Claude] The reading**: `terraform version` prints `Terraform v1.16.6 on darwin_arm64`; the "1.17.0" the user
+  saw is the CLI's own notice, *"Your version of Terraform is out of date! The latest version is 1.17.0"*, so
+  1.17.0 is released (`upstream-releases.md`) and the lab stays on 1.16.6, the bump taken 2026-10-22. A read-only
+  plan of `production/warehouse/` under the new binary read `No changes`.
+- **[Claude] The pins** (`upstream-releases.md`'s order): `CLAUDE.md`'s tool list, `.github/workflows/offline-gates.yml`'s
+  `TERRAFORM_VERSION` and `gitlab/awsds/deploy-image/Dockerfile`'s `TERRAFORM_VERSION` and `TERRAFORM_SHA256`
+  (the published `linux_amd64` sum), with the recipe's README; the image's release is the GitLab sitting's
+  merge request and tag (§H step 4).
+- **[Claude] The order this fixes**: Terraform refuses a state snapshot written by a newer version, so the
+  deploy image's 1.15.8 cannot plan, read through `terraform_remote_state` or `terraform output` a state the
+  laptop's 1.16.6 has written. Every state the pipeline touches is 1.15.8's today (the three applies of this
+  date ran before the install). At the next sitting the image is rebuilt before `make up ENV=staging
+  ONLY=egress`, `make up ENV=production ONLY=workloads-egress` and any laptop apply of `data/`, `sagemaker/`,
+  `foundation/` or `workloads/` in either target (`runbooks/promotion.md` §N.1 step 2, the waiting list).

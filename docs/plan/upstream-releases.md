@@ -103,7 +103,9 @@ botocore's `develop`.
 **Written against**: 1.15.8 (2026-07-08), the version `CLAUDE.md`'s tool list,
 `.github/workflows/offline-gates.yml` and `gitlab/awsds/deploy-image/Dockerfile` pin; every slice requires
 `~> 1.15`, which admits 1.16 and 1.17. **Read 2026-10-18**: 1.16.6 (2026-10-14) is the latest release, and
-1.17.0-rc2 the latest candidate ([releases](https://github.com/hashicorp/terraform/releases)).
+1.17.0-rc2 the latest candidate ([releases](https://github.com/hashicorp/terraform/releases)). **Read 2026-10-25**
+from the CLI's own version notice on the laptop: 1.17.0 is released; its `-minimal-refresh` rule is due (the list
+below), and the lab stays on 1.16.6.
 
 | Change | Plan items it moves | Verdict | Confirmed by |
 |---|---|---|---|
@@ -159,7 +161,7 @@ None is applied here; each is a change of its own, with the plan read first.
 
 | Pin | From → to | Serves | Where | Read at the bump |
 |---|---|---|---|---|
-| Terraform core, **taken by the user 2026-10-22** | 1.15.8 → 1.16.6 | CVE-2026-78669; `lifecycle { destroy = false }`; module `import` blocks | in order: the laptop's binary (the user's install) and `CLAUDE.md`'s tool list, then `.github/workflows/offline-gates.yml` (`TERRAFORM_VERSION`) and `gitlab/awsds/deploy-image/Dockerfile` (`TERRAFORM_VERSION`, `TERRAFORM_SHA256`, a new deploy image release at a GitLab sitting); no `versions.tf` changes | the published `linux_amd64` checksum `38034b38…f1b7` against its signature; every slice re-plans `No changes` |
+| Terraform core, **taken by the user 2026-10-22** | 1.15.8 → 1.16.6 | CVE-2026-78669; `lifecycle { destroy = false }`; module `import` blocks | in order: the laptop's binary (the user's install) and `CLAUDE.md`'s tool list, then `.github/workflows/offline-gates.yml` (`TERRAFORM_VERSION`) and `gitlab/awsds/deploy-image/Dockerfile` (`TERRAFORM_VERSION`, `TERRAFORM_SHA256`, a new deploy image release at a GitLab sitting); no `versions.tf` changes | the published `linux_amd64` checksum `38034b38…f1b7` against its signature; every slice re-plans `No changes`. **The laptop runs 1.16.6 since 2026-10-25** (the user's install, the `darwin_arm64` zip checked against the published sums), `CLAUDE.md`'s list, the workflow's pin and the Dockerfile's two pins moved the same day, `production/warehouse/` re-planned `No changes` under it. The image's release is owed at the GitLab sitting and comes **before any laptop apply or `make up` of a slice the pipeline reads or applies**: a state written by 1.16.6 is refused by the image's 1.15.8, by a plan, a `terraform_remote_state` read or `terraform output` alike (*state snapshot was created by a newer version*) |
 | `awscc` | none for the two 1.98.0 locks | No planned step on those slices needs a newer schema | — | a slice that first declares `awscc_mwaaserverless_workflow` (`staging/orchestration/`, `production/orchestration/`) initialises at the latest, 1.99.0 or later |
 | `aws` | none required | `rotation_enabled` is in `sandbox/warehouse/`'s 6.64.0 | `data-governance/data/` at its next change | the `aws_glue_catalog_table` plan |
 | `aws` on `identity/org-policies/` | 6.60.0 → 6.68.0 or later, only if Stage 15 decision 4 authors the GuardDuty policy there | the `GUARDDUTY_POLICY` type | the slice's `.terraform.lock.hcl`; the `~> 6.60` constraint admits it | the ten documents re-plan `No changes` before the policy joins them (`type` is ForceNew) |
@@ -175,7 +177,8 @@ None is applied here; each is a change of its own, with the plan read first.
   fallback in `helpers/datazone.py` and `workflow_create_handler.py`, and PR #289.
 - **DataZone's model and the custom blueprint pages**: closed 2026-10-19, when the applies of Stage 18's
   passes 1 and 2 took its decisions 1-3, decision 1 on the managed `Tooling` blueprint.
-- **Terraform 1.17.0**, when released: the `-minimal-refresh` rule.
+- **Terraform 1.17.0**, released by 2026-10-25 (the CLI's version notice): the `-minimal-refresh` rule, and whether
+  the lab moves past 1.16.6.
 - **A battery run of the instance-preference rows** PR #216 wrote (`./aws/probes/scp-battery.py --phase
   ou`, Production, `awsds-infra-prod`): closed 2026-10-22, when Stage 18 8.7's battery ran the seven rows
   at 01:53Z, each as expected.
