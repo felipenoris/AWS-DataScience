@@ -5,8 +5,9 @@
 # recorded as this variable's default, so a by-hand apply after `make down ENV=staging` creates the
 # same workflows from the same object versions (Lesson 4).
 #
-# The default is v0.3.3, the first promotion (pipeline #71, 2026-10-24), its VersionIds read from the
-# leg's artifact. Null creates nothing: no workflow can exist before its definition does, and a chain
+# The default is v0.4.2, the data release (pipeline #80, 2026-10-25), its VersionIds read from the
+# leg's artifact; Staging creates no workflow for app-etl-warehouse, Production's alone (Stage 9
+# decision 15). Null creates nothing: no workflow can exist before its definition does, and a chain
 # names its workflows.
 
 variable "release" {
@@ -19,11 +20,18 @@ variable "release" {
     }))
   })
   default = {
-    tag = "v0.3.3"
+    tag = "v0.4.2"
     workflows = {
       "app-etl" = {
-        definition_version_id = "i1L7O01mTu4bkRtJ5coxsPC4ZTxOoOXm"
-        code_version_id       = "mqDM5asDsavvAjzhsqg6OMEIT_YeeQal"
+        definition_version_id = "nHLndSk3eZbua2r5Fn7vB5Tk8bXxuduA"
+        code_version_id       = "53rV3UoC10MF_omZw5J5r3f0SLuhAINr"
+      }
+      "app-etl-train" = {
+        definition_version_id = "XubSXeT1DKYUlZ6jZH3Iojqxsb_l9MsG"
+        code_version_id       = "QvMe.XCeHe6UHvYOlkuUkuq7fOtGfN61"
+      }
+      "app-etl-warehouse" = {
+        definition_version_id = "MDqIlYw8.Yud4kT5ff26xf5MJnYFQgVq"
       }
     }
   }

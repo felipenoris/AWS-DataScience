@@ -14,9 +14,11 @@ chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs
 **Where it stands, 2026-10-24**: §0 and §P done, §0.5 included; §W's steps 1 to 4 done (the
 namespace, 9.3's schema). The quotas are above zero in both targets (§0.2), and the release that closes
 what v0.3.0 leaves, v0.4.0, is written, its six `[P]` applies done (§0.6), and §H done the same
-evening (the mirror at `0236a99d`, the legs on `awsds/app-etl`'s `main`). Left, in order: §T (the tag
-`v0.3.0`), §V (the tag `v0.4.0`, with the warehouse's table, the datashare
-of §W step 5 and the model chain).
+evening (the mirror at `0236a99d`, the legs on `awsds/app-etl`'s `main`). §T ran as `v0.3.3`, the
+first promotion. §V is under way: steps 1 and 2 done, `v0.4.0`'s pipeline stopped at `test-deploy` on
+the job's own read of the run, `v0.4.1`'s at the train chain's `evaluate`, and the data release is the
+tag `v0.4.2` (§V step 3), with the
+warehouse's table, the datashare of §W step 5 and the model chain.
 
 | § | Holds |
 |---|---|
@@ -25,7 +27,7 @@ of §W step 5 and the model chain).
 | [§P](#p-production-stage-9s-pass-3-and-stage-10s-05) | Production: the proof job's two runs, Stage 9's producer pair and pickup |
 | [§T](#t-the-tag-stage-8s-pass-4-with-stage-10s-passes-1-and-2) | the tag: Stage 8's pass 4 with Stage 10's passes 1 and 2, and Stage 9's 8.5 |
 | [§W](#w-the-governed-warehouse-stage-9s-pass-6) | the governed warehouse, Stage 9's pass 6: steps 1 to 4 done, step 5 run within §V |
-| [§V](#v-the-data-release-v040) | the tag `v0.4.0`: Stage 9's 8.5 and 9.4 to 9.7, Stage 10's pass 3 and 6.1, Stage 8's ix |
+| [§V](#v-the-data-release-v040) | the data release, the tag `v0.4.2` since `v0.4.0` and `v0.4.1` stopped in their legs: Stage 9's 8.5 and 9.4 to 9.7, Stage 10's pass 3 and 6.1, Stage 8's ix |
 | [§Q](#q-after-the-quotas-stage-10s-pass-3) | after the quotas: Stage 10's pass 3, now within §V |
 | [§R](#r-the-readings-at-the-end-of-every-sitting) | the readings at the end of every sitting |
 
@@ -171,6 +173,8 @@ ARN, where it drops the volume key (`lessons.md`); the first real transform is `
 Beside them, the user's two acts that need nothing up: the merge of `awsds-workflows` PR (the branch
 `treino-e-repositorio-de-algoritmo`, `d60e1ad`, the rule `treino`); the template pins `d60e1ad`, which
 stays reachable through the PR, and the pin moves to the merge's commit in the next template change.
+**Done 2026-10-24**: PR #24 squash-merged as `d856982c`, the tree of `d60e1ad`; `v0.4.0` ran on `d60e1ad`,
+and MR !9 moved the template's pin to `d856982c`.
 
 ## H. The hub and GitLab
 
@@ -407,7 +411,7 @@ What v0.3.x leaves, written 2026-10-24 (the stage logs): the Glue job's governed
 application's table (Stage 9 8.5), the warehouse's DDL job and its load workflow (9.4, decision 15), the
 model chain (Stage 10 pass 3, decisions 21 and 22), and the scheduled end-to-end (6.1). Needs §T, run
 2026-10-24 with `v0.3.3` and recorded in PR #254 (3.7); PR #254 merged, and `awsds-workflows`' PR #24,
-whose commit `d60e1ad` the template pins (re-pinned if the merge leaves it off every branch); §0.6
+merged as `d856982c`, the template's pin since MR !9; §0.6
 applied, §H step 6, the hub, GitLab and the three runners up, and Sandbox's `egress/` up. Every `make up
 ENV=production` here carries `ONLY=`, or the build runner is destroyed.
 
@@ -417,12 +421,16 @@ ENV=production` here carries `ONLY=`, or the build runner is destroyed.
    says an engine's flag is not needed, and Staging's leg reads through the lake's flag alone; a refusal
    says it is, and **[user]** Staging's flag goes on the same way before step 3 (`DT-5` bracketing it).
    The run adds ten rows to `curated.trades`, which the tests count from, not assume.
+   **Done 2026-10-24, 22:14 to 22:29 UTC** (Stage 9's log): the run committed with Production's flag off,
+   so Staging's flag stays unset; `curated.trades` at 30 rows, Production's flag on again, `DT-5` passing.
 2. **[user] The legs' merge request for v0.4.0** on `awsds/app-etl`, from `examples/app-etl/` at `main`
    (the procedure of §H step 2), merged; the mirror pushed at `main` (`git push gitlab main`), since the
    legs clone the new scripts and slices (`model-chain.py`, the render's classes, the application and
    orchestration slices). The push also carries `c60ad8d6`, so `staging-down` destroys as
    `awsds-deploy-staging` for the first time (Stage 8 verification xii). `awsds/app-etl`'s `main` is the
    v0.3.x template with MR !6's and MR !7's fixes (`ff4caf1c`), both already in `examples/app-etl/`.
+   **Done 2026-10-24**: the mirror at `c714c47d`; the branch `data-release`, a patch over `ff4caf1c`
+   checked to give `examples/app-etl/`'s tree `495b8953`, merged at 22:25 UTC as `edff65f9`.
 3. **[user] The tag `v0.4.0`**. What it reads first: `test` with `--algorithm-repository`; `test-deploy`
    creating both workflows in the `test` project and running `app-etl`, whose Glue job now writes the
    table and the training sets under the project's prefix; then the Staging leg: the render of three
@@ -432,6 +440,16 @@ ENV=production` here carries `ONLY=`, or the build runner is destroyed.
    (Staging's first batch transform), `staging-down` (gone once the mirror carries decision 27's
    legs; Staging's `egress/` is the user's, `make up ENV=staging ONLY=egress` before the tag and `make
    down ENV=staging` after the leg).
+   **Run 2026-10-24, pipeline #74** (Stage 8's log): `test` passed, and `test-deploy` created both
+   workflows and ran `app-etl` to `SUCCESS`, then failed its own read of the run: the job took the last
+   *"ARN:"* line of the CLI's log, now app-etl-train's, for app-etl's run (*"Workflow run not found"*).
+   The fix, MR !9 (`d1ee24cb`, the template's tree `8974b06d`), reads the ARN of the workflow the run line names and moves the
+   `awsds-workflows` pin to `d856982c`; `v0.4.0` is spent. **`v0.4.1`, pipeline #77**: `test-deploy`
+   passed, and Staging's leg read `curated.trades` through its share (30 rows), wrote the table and trained
+   Staging's first model, then the train chain failed at `evaluate`, whose template indexed the training
+   task's XCom and met it as JSON text (Stage 10's log); `staging-down` took Staging to zero as the deploy
+   role. The fix, MR !10 (`863f30b1`, the template's tree `e8c12563`), and the data release is
+   **`v0.4.2`**, pipeline #80.
 4. **[user] The gate**, as §T step 4, after `make up ENV=production ONLY=workloads-egress`.
 5. **[pipeline] `production-deploy`**: the application slice with the table and the load job, the
    orchestration slice with three workflows and three chains, their schedules at 06:30, 07:00 and 07:30
@@ -448,20 +466,24 @@ ENV=production` here carries `ONLY=`, or the build runner is destroyed.
    chain started as in step 6; 9.6's readings (the job's log: the database user and the count;
    verification xxv in `pg_user`); §W step 5's datashare, the table now existing, and 9.7 from a Sandbox
    project with Sandbox's `warehouse-compute/` up.
-9. **[user] Verification ix**: a tag `v0.4.1` from a branch whose `GOVERNED_COLUMNS` names a column
+9. **[user] Verification ix**: a tag `v0.4.3` from a branch whose `GOVERNED_COLUMNS` names a column
    `curated.trades` lacks (`book`), expected to pass `test` and fail `staging-test` at the governed read,
-   Production untouched; the branch deleted after, `main` unchanged.
+   Production untouched; the branch deleted after, `main` unchanged. The unit tests mock the governed
+   table with the list's columns and compare the query it builds (`tests/test_glue_script.py`'s `SCHEMA`
+   and expected queries), so the branch moves them with the list, as a developer would; the list alone
+   fails `test` first and leaves the leg's gate unmeasured. The patch, read 2026-10-24: ruff clean and
+   27 tests passing.
 10. **[user + pipeline] Stage 10 6.1**: the schedules fire with `workloads-egress/` up, or the cron moves
     into the sitting by a commit, the mirror pushed and `production-deploy` retried; the pause lever
     through the slice; 3.2's deliberate break; 6.3's sentence before the first `make down ENV=production`.
-11. **[user] 3.7 again**: both `release.tf`s with v0.4.0's tag, digest, SHA256 and `VersionId`s, the
+11. **[user] 3.7 again**: both `release.tf`s with `v0.4.2`'s tag, digest, SHA256 and `VersionId`s, the
     orchestration slices' three workflows among them; the mirror pushed.
 12. **[Claude]** §R, `./aws/warehouse.py awsds-infra-prod --sql` and `./aws/orchestration.py` (`OR-9` on
     three chains), then `make down ENV=production ONLY=workloads-egress,warehouse-compute`.
 
 ## Q. After the quotas: Stage 10's pass 3
 
-The quotas are above zero since 2026-10-24 (§0.2), and pass 3 is v0.4.0's (§V steps 3, 6 and 7).
+The quotas are above zero since 2026-10-24 (§0.2), and pass 3 is the data release's (§V steps 3, 6 and 7).
 
 ## R. The readings at the end of every sitting
 

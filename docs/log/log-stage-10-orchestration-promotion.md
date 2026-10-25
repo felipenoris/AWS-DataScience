@@ -1040,3 +1040,115 @@ below; the user's for the gate. Times UTC.*
   the same holds for `/awsds/prod/wf/app-etl` and `/aws/vendedlogs/states/awsds-prod-chains` (90 days) on
   a destroy of `production/orchestration/`, which `make down ENV=production ONLY=workloads-egress` never
   runs: Production's run history and chain logs persist between sessions while the slice stands.
+
+## 2026-10-24 — `v0.4.1`'s Staging leg: the train chain's first run, `evaluate` failing at its template, the diagnosis from the service's APIs
+
+*Claude's hand for the readings, as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-staging`), reads only; the run was the pipeline's (Stage 8's log, pipeline #77), in the
+session of `runbooks/promotion.md` §V (the branch `claude/eloquent-ishizaka-04f598`). Times UTC.*
+
+- **[Claude] The orchestration slice in Staging**: `staging-deploy` applied *"31 added"*, the workflows
+  `awsds-staging-wf-app-etl` and `awsds-staging-wf-app-etl-train` and their two chains, `DISABLED`
+  (decision 19); the warehouse workflow's definition was rendered and written but no workflow made, as
+  decision 15 has it. The release file's `VersionId`s: `app-etl` definition `PE1nwZT0…R1D7`, code
+  `o_PmDbA1…idKy`; `app-etl-train` definition `enBzmuTu…fOdQo`, code `G7qnbCvy…03UJyYL`; `app-etl-warehouse`
+  definition `uAsosO2S…8bc3Xin`.
+- **[Claude] The app-etl chain**: `v0-4-1-77-app-etl` `SUCCEEDED`, 23:20:23 to 23:33:26.
+- **[Claude] The train chain's first run anywhere** (5.1; `test-deploy` creates the workflow in the
+  `test` project and never runs it): `v0-4-1-77-app-etl-train`, 23:33:46 to 23:40:48, `FAILED` with
+  *"WorkflowRunNotSucceeded"*. The run `yCiuDo0tu6ofGpx`, 23:34:01 to 23:38:53: `train` `SUCCESS` in 219 s,
+  the training job `app-etl-train-20261024T233434` on `ml.m5.large` as `awsds-staging-job-exec`, AWS's
+  XGBoost by digest, the data key on the volume and the model, network isolation and inter-container
+  encryption, two subnets, `MaxRuntimeInSeconds` 1800, training from 23:35:32 to 23:37:26 (114 billable
+  seconds), `validation:rmse` 1016.31; `evaluate` `FAILED` in 10 s.
+- **[Claude] The diagnosis, from the service's APIs alone** (3.2's path): the machine's `cause` names the
+  workflow; `get-workflow-run` reads *"Workflow execution failed, please check the task execution logs for
+  more details"* and `RunType` null; `list-task-instances` names `evaluate` `FAILED`; `get-task-instance`
+  gives its `LogStream`, `workflow_id=awsds-staging-wf-app-etl-train-wjwLbosH4U/run_id=yCiuDo0tu6ofGpx/task_id=evaluate/attempt=1.log`;
+  the stream in `/awsds/staging/wf/app-etl-train`, read at about 23:43, before `staging-down` destroyed
+  the group: *"Exception rendering Jinja template for task 'evaluate', field 'op_kwargs'"* on
+  `ti.xcom_pull(task_ids='train')['Training']['TrainingJobName']`, *"UndefinedError … 'str object' has no
+  attribute 'Training'"*. The worker renders an XCom as the JSON of its value: Staging's
+  `app-etl/outbox/report.json` (336 bytes, 23:30:31) holds the JSON text of the report's string, the same
+  rendering one task earlier. The code package imported (*"Successfully generated DAGs"*), and no call
+  of the task's reached AWS.
+- **[Claude] The failure rules** (verification vi): `awsds-staging-wf-app-etl-train-failed` triggered and
+  invoked once at 23:39, `awsds-staging-chain-app-etl-train-failed` at 23:40, and `awsds-staging-alerts`
+  published and delivered two notifications at 23:40 (`AWS/Events` and `AWS/SNS`, read after the
+  teardown, since the rules die with the slice).
+- **[Claude] The fix**, in the template: `evaluate` takes the whole XCom and `training_job_name` decodes
+  it; 31 tests and the workflow lint pass. The release is `v0.4.2` (Stage 8's log). 6.3's sentence holds
+  on a failure: the task's log group went with the slice, and the reading survives only because it was
+  taken before `staging-down`.
+
+## 2026-10-25 — `v0.4.2`'s Staging leg: the train chain, Staging's first batch transform (5.4's Staging half), Production's three chains
+
+*Claude's hand for the readings, as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-staging`, `awsds-infra-prod`); the runs were the pipeline's (Stage 8's log, pipeline #80).
+Times UTC.*
+
+- **[Claude] The train chain in Staging**, with `evaluate`'s fix: the app-etl chain `SUCCEEDED` (about
+  00:17 to 00:32), then the train chain `SUCCEEDED` (about 00:32 to 00:40): the training job
+  `app-etl-train-20261025T003320` `Completed` with the settings #77's job carried, and `evaluate` wrote
+  `models/app-etl/app-etl-train-20261025T003320/evaluation.json` on `awsds-staging-outputs`, `rmse`
+  1016.31 and `batch_rows` 30, the job and its model named in the file's `awsds` block.
+- **[Claude] 5.4's Staging half**, `staging-model` (`scripts/model-chain.py transform staging`): the
+  model `app-etl-v0-4-2-20261025T004019` as `awsds-staging-job-exec`, network-isolated in the two job
+  subnets, AWS's XGBoost by digest over `app-etl-train-20261025T003320`'s artifact; the transform job of the
+  same name on one `ml.m5.large`, the data key on its volume and its output, the input
+  `app-etl/work/train/batch/` split by line, the output under `models/app-etl/transform/<job>/`;
+  `Completed` at 00:45:41, *"30 prediction(s), one per input row"*, the model deleted after. Staging served
+  its own model before Production's deploy ran (decision 22, verification x's order).
+- **[Claude] Production's orchestration apply** (`production-deploy`, 00:54:37 to 00:57:51, as
+  `awsds-deploy-prod`): *"20 added, 1 changed"*, the app-etl workflow updated to `v0.4.2` and
+  `awsds-prod-wf-app-etl-train` and `awsds-prod-wf-app-etl-warehouse` created, each with its chain and its
+  schedule `ENABLED` (06:30, 07:00 and 07:30 UTC), so the schedules fire `v0.4.2`'s chains from 2026-10-25.
+
+## 2026-10-25 — Production's runs by hand, the model's registration and approval, the first batch transform there, 5.5 from Sandbox
+
+*Claude's hand for the runs, on the user's authorization in chat (*"Autorizo iniciar, depois do
+production-deploy da v0.4.0, as chains awsds-prod-chain-app-etl e em seguida
+awsds-prod-chain-app-etl-train em Production, como usuário de infraestrutura com InfrastructureAccess
+(awsds-infra-prod), e acompanhar cada uma até o fim."*), and for the readings, as the infrastructure user
+with `InfrastructureAccess`; the user's for the pipeline's manual jobs and for 5.5, signed in as the Data
+Scientist User. In the user's pasted output the account ids are replaced by `<Production>`, `<Sandbox
+Account 1>` and `<AWS registry>` and the e-mail by `<data scientist user>`. Times UTC.*
+
+- **[Claude] The app-etl chain**, `v0-4-2-by-hand-2026-10-25-app-etl`, started at 00:58:42, `SUCCEEDED` at
+  01:17:47: the Glue job `jr_45a3c84d…f19c` (00:59:28 to 01:05:04) *"reading SELECT trade_date, desk,
+  instrument, quantity, price FROM lake.curated.trades"*, *"read 30 row(s)"*, the table and the training
+  sets written (24, 6 and 30 lines); the processing job `app-etl-20261025T010552` `Completed`.
+- **[Claude] The train chain**, `v0-4-2-by-hand-2026-10-25-app-etl-train`, 01:18:16 to 01:25:18,
+  `SUCCEEDED`: Production's first training job `app-etl-train-20261025T011858` as `awsds-prod-job-exec`
+  on `ml.m5.large`, Production's data key on its volume and its output (`OutputDataConfig.KmsKeyId`,
+  verification x), network isolation and inter-container encryption, training 01:19:45 to 01:21:49 (124
+  billable seconds), `validation:rmse` 1016.31; `evaluate` wrote its `evaluation.json`, 30 batch rows.
+- **[user] 5.2's jobs**: `production-register` (job 450, 01:28:13 to 01:28:39), *"registered
+  …model-package/awsds-prod-model-app-etl/1 from app-etl-train-20261025T011858, PendingManualApproval"*;
+  `production-approve` (451, 01:29:00 to 01:29:13), *"…/awsds-prod-model-app-etl/1: Approved"*.
+  **[Claude] read back**: version 1 `Completed` and `Approved`, `ApprovalDescription` *"approved by felipenoris
+  at the promotion pipeline's manual job"*, `CustomerMetadataProperties` `git_tag` `v0.4.2`, the training
+  job and its `validation_rmse`, `ModelMetrics.ModelQuality` the `evaluation.json`; CloudTrail:
+  `CreateModelPackage` at 01:28:36 and `UpdateModelPackage` at 01:29:10, both `awsds-deploy-prod`, no
+  error (verification x's registration clause).
+- **[Claude] 5.3's rule fired for the first time**: `awsds-prod-model-approval` triggered at 01:28 and at
+  01:29, and `awsds-prod-alerts` delivered one notification each minute.
+- **[pipeline] 5.4's Production half**, `production-transform` (452, 01:29:16 to 01:35:30): CloudTrail
+  `CreateModel` at 01:29:33 as `awsds-deploy-prod` with `Containers` `[{"modelPackageName":
+  "…/awsds-prod-model-app-etl/1"}]`, the execution role `awsds-prod-job-exec`, network isolation and the
+  job subnets; the transform `app-etl-v0-4-2-20261025T012931` on `ml.m5.large`, the data key on its volume
+  and its output, 01:33:24 to 01:35:03, *"30 prediction(s), one per input row"*; `DeleteModel` at
+  01:35:28. Pipeline #80 ended `success`, `production-warehouse-ddl` left manual.
+- **[user] 5.5 from Sandbox**, as the Data Scientist User through `awsds-scientist-sandbox`: `aws
+  sagemaker describe-model-package --model-package-name
+  "arn:aws:sagemaker:us-west-2:<Production>:model-package/awsds-prod-model-app-etl/1"` answered with the
+  whole record, `ModelApprovalStatus` `Approved`, `CreatedBy` and `LastModifiedBy`
+  `arn:aws:sts::<Production>:assumed-role/awsds-deploy-prod/botocore-session-…`, the image
+  `<AWS registry>.dkr.ecr.us-west-2.amazonaws.com/sagemaker-xgboost@sha256:0b5d9341…3a78`; `aws sagemaker
+  update-model-package … --model-approval-status Approved` was refused: *"An error occurred
+  (AccessDeniedException) when calling the UpdateModelPackage operation: User: arn:aws:sts::<Sandbox Account
+  1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user> is not
+  authorized to perform: sagemaker:UpdateModelPackage on resource:
+  arn:aws:sagemaker:us-west-2:<Production>:model-package/awsds-prod-model-app-etl/1 because no
+  resource-based policy allows the sagemaker:UpdateModelPackage action"*. The gate holds from the far side,
+  the refusal the group policy's absence of a grant.

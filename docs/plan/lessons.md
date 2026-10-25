@@ -1614,6 +1614,31 @@ policy alone admits.
 the layer (`WH-11`) reads the repository's policy only, and the finding arrived as a by-product of another
 measurement.
 
+## Lesson 73 — a selector that takes the last match is a claim that there is one, and the change that adds the second is never read against it
+
+**What happened.** Stage 8, 2026-10-24. `app-etl`'s `test-deploy` followed its run with `get-workflow-run`,
+taking the workflow's ARN from the CLI's log with `sed … | tail -1` on *"ARN:"*, written when the manifest
+held one workflow. v0.4.0 added `app-etl-train`, created in the same deploy after `app-etl`, so the last
+*"ARN:"* line became the train workflow's while the run was app-etl's. The deploy and the run passed; the
+job failed 16 minutes in on *"Workflow run not found"*, and the tag `v0.4.0` was spent, since a retry runs
+the tag's YAML. The release that added the second workflow was written, linted and unit-tested, and none of
+that reads the job's selector.
+
+**Why it is a class rather than a slip.** "The last line", "the first element", `[0]`, `tail -1` and
+`head -1` answer correctly for every input their author ran, and the inputs grow through a change made
+elsewhere: a manifest's list, an account's resources, a log's verbosity. The change is reviewed against its
+own files; the selector lives in a job, a script or a query, often in another repository, and fails only
+when it runs, after everything before it passed. Lesson 49 is the same claim held by a comment.
+
+**The rule.** Select by identity, never by position: the name the run line carries, the key an object is
+created under, a filter on the attribute that tells the items apart. Where a position is the only handle,
+assert the count first and fail naming it. When a change adds a second instance of something (a workflow,
+a chain, a bucket, a target), search its consumers for positional selectors over that thing before the
+tag.
+
+**What makes it expensive.** It fails at the last step of a long job, after the work it was meant to check
+succeeded, on an identifier that names something that exists; on a tag pipeline the fix costs a new tag.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits; the entries here are facts about the platform that cost a measurement

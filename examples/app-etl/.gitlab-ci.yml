@@ -35,7 +35,7 @@ variables:
   IMAGE_REPO: awsds-prod-ecr-app-etl
   # The workflow tooling, by commit: its lint reads manifest.yaml and workflows/ against the rules of
   # a SageMaker application (D28), offline; the promotion legs run its promoted lint and its lint-plan.
-  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/d60e1ad9424837e5e89acc128d37bdbbbcc216f2.zip"
+  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/d856982c0482de79916ce114662a37799936a6ee.zip"
   # The instance types a processing job may ask for: the ceiling DenySageMakerInstanceCeiling carries
   # in the Workloads SCP and in Sandbox's project boundary, the list terraform-modules/sagemaker-denies
   # holds (allowed_instance_types) in the infrastructure repository. A copy, since the application's
@@ -204,11 +204,14 @@ test-deploy:
       rc=0
       aws-smus-cicd-cli deploy --manifest manifest.yaml --targets test --skip-validation --no-events > deploy.log 2>&1 || rc=$?
       cat deploy.log
-      # The CLI 1.0.9 prints the workflow as "ARN: <arn>" and the run as "(run_id: <id>)". sed, not
-      # grep: a missing line yields an empty value and the FATAL below, where grep's exit status under
-      # the runner's pipefail would end the job before any message.
-      arn="$(sed -n 's/.*ARN: \(arn:[^ ]*\).*/\1/p' deploy.log | tail -1)"
-      run_id="$(sed -n 's/.*(run_id: \([^)]*\)).*/\1/p' deploy.log | tail -1)"
+      # The CLI 1.0.9 prints each workflow it creates as "ARN: <arn>" and the run as "Workflow
+      # triggered: <name> (run_id: <id>)". The manifest creates two workflows and runs one, so the ARN
+      # is the one whose name the run line carries, never the last printed (refused 2026-10-24,
+      # v0.4.0's job 375). sed, not grep: a missing line yields an empty value and the FATAL below,
+      # where grep's exit status under the runner's pipefail would end the job before any message.
+      name="$(sed -n 's/.*Workflow triggered: \([^ ]*\) (run_id: .*/\1/p' deploy.log | tail -1)"
+      run_id="$(sed -n 's/.*Workflow triggered: [^ ]* (run_id: \([^)]*\)).*/\1/p' deploy.log | tail -1)"
+      arn="$(sed -n "s/.*ARN: \(arn:[^ ]*:workflow\/${name:-none}-[^ ]*\).*/\1/p" deploy.log | tail -1)"
       echo "deploy: exit $rc, run $run_id of $arn"
       if [ -z "$arn" ] || [ -z "$run_id" ]; then echo "FATAL: deploy.log names no workflow ARN or run id"; exit 1; fi
       aws mwaa-serverless get-workflow-run --workflow-arn "$arn" --run-id "$run_id" --output json > run.json

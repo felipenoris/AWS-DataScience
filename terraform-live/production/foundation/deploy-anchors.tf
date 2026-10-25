@@ -317,13 +317,30 @@ data "aws_iam_policy_document" "apply_application_in_this_account" {
     sid    = "RunTheGovernedWarehouseDdl"
     effect = "Allow"
     actions = [
-      "redshift-data:CancelStatement",
-      "redshift-data:DescribeStatement",
       "redshift-data:ExecuteStatement",
-      "redshift-data:GetStatementResult",
       "redshift-serverless:GetCredentials",
     ]
     resources = ["arn:${local.partition}:redshift-serverless:${local.region_account}:workgroup/*"]
+  }
+
+  # A statement is followed, read and cancelled on no resource: the Data API authorizes these three on
+  # "*" and scopes them by the statement's owner, so the role reaches its own statements alone (refused
+  # under the workgroup ARN on 2026-10-25, v0.4.2's production-warehouse-ddl).
+  statement {
+    sid    = "FollowItsOwnStatements"
+    effect = "Allow"
+    actions = [
+      "redshift-data:CancelStatement",
+      "redshift-data:DescribeStatement",
+      "redshift-data:GetStatementResult",
+    ]
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "redshift-data:statement-owner-iam-userid"
+      values   = ["$${aws:userid}"]
+    }
   }
 
   # Stage 10 step 5.2: the version of app-etl's model registered PendingManualApproval and approved at

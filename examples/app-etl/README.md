@@ -51,8 +51,10 @@ label first, no header, every fifth row held out for validation) with `batch/bat
 alone. In a project it reads the inbox; in Staging and Production the application slice gives it
 `--SOURCE_TABLE`, the governed `curated.trades` read through Lake Formation on an Iceberg catalog over
 the lake account's, and the columns `GOVERNED_COLUMNS` names, so a governed table that lacks one fails
-the run at Staging's leg, never at `test`. The table is what Staging's integration test reads (Stage 9
-step 8.5).
+the run at Staging's leg, never at `test`. The unit tests mock the governed table with the list's
+columns and compare the query it builds, so a change to `GOVERNED_COLUMNS` changes `SCHEMA` and the
+expected queries in `tests/test_glue_script.py` with it. The table is what Staging's integration test
+reads (Stage 9 step 8.5).
 
 `app-etl-train` runs two tasks after `app-etl`: `train`, a SageMaker training job on AWS's XGBoost 3.0-5
 by digest (`{env.TRAINING_IMAGE_URI}`), `ml.m5.large`, network-isolated in the job subnets, its volume
@@ -146,7 +148,8 @@ CI/CD variables `DOMAIN_ID`, `DOMAIN_REGION`, `DEV_PROJECT_NAME`, `TEST_PROJECT_
 the XGBoost image by digest, `terraform output -raw training_image_uri` on `staging/sagemaker/` in the
 infrastructure repository. Its run needs Sandbox's
 egress up (`make up ENV=sandbox ONLY=egress`, as the infrastructure user), which the job reads before it
-deploys; the bundle's SHA256 and the image go down the pipeline as a dotenv report, and the release's
+deploys. The deploy creates both workflows and runs `app-etl`, and the job follows the run of the workflow
+the CLI's *"Workflow triggered: <name>"* line names, by the *"ARN:"* line carrying that name; the bundle's SHA256 and the image go down the pipeline as a dotenv report, and the release's
 notes name them. `bundle` resolves an `include` as a file or a directory and not as a glob (`code/*.zip`
 is "Pattern not found" with the zip present, while `deploy` expands it; read in 1.0.9's code and run
 offline on 2026-10-16), so the manifest names the zip by its name.
