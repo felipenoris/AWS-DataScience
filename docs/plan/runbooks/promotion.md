@@ -571,7 +571,8 @@ carries `ONLY=`, or the build runner is destroyed.
    each re-planned `No changes`, the import blocks removed after (Stage 9's log).
 6. **[user] Stage 9 5.4's read deny**, as the Data Scientist User through `awsds-scientist-prod`, the
    script in place since 2026-10-23; expected refused on `s3:GetObject` *"with an explicit deny in a
-   resource-based policy"*, `DenyThePersonaReadsOutsideTheNamedPrefixes`:
+   resource-based policy"*, `DenyThePersonaReadsOutsideTheNamedPrefixes`. **Done 2026-10-25** (Stage 9's log),
+   the wording as expected:
 
    ```bash
    aws s3api get-object --bucket awsds-prod-outputs --key applications/stage-09-proofs/v0/glue/producer_proof.py /dev/null --profile awsds-scientist-prod --region us-west-2

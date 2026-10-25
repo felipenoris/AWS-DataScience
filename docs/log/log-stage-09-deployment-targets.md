@@ -2397,3 +2397,23 @@ UTC.*
   the namespace's creation (9.1, 2026-10-23 22:07 UTC) and not after the first workgroup (2026-10-24), as
   Sandbox's 2026-12-19 is 90 days after its namespace of 2026-09-20: the free trial's window opens with the
   namespace. The waiting list, the cost row, `PRICING.md`, `cost-model.md` and §N.2 carry the figures.
+
+## 2026-10-25 — 5.4's read deny, run by the user as the Data Scientist User
+
+*The user's hand, the command pasted in chat with the account id replaced by its placeholder and the user's
+address by its role; Claude's reading. Times UTC.*
+
+- **[user]** `aws s3api get-object --bucket awsds-prod-outputs --key
+  applications/stage-09-proofs/v0/glue/producer_proof.py /dev/null --profile awsds-scientist-prod`: *"An error
+  occurred (AccessDenied) when calling the GetObject operation: User:
+  arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data
+  scientist user> is not authorized to perform: s3:GetObject on resource:
+  "arn:aws:s3:::awsds-prod-outputs/applications/stage-09-proofs/v0/glue/producer_proof.py" with an explicit deny
+  in a resource-based policy"*.
+- **[Claude] The reading**: the bucket's `DenyThePersonaReadsOutsideTheNamedPrefixes` answers, as 5.4 expected;
+  the persona reads nothing of a release's tree.
+- **[user] Stage 8 xxi's attempt**, in the same shell right after: *"Error loading SSO Token: Token for awsds
+  does not exist"*. **[Claude]** read the same from this session at 19:46:59, one minute after the persona's
+  sign-in wrote its own token (19:45): the infrastructure user's token no longer loads, the sign-in as another
+  user in the shared browser having ended the session that issued it (`aws/AWS-CLI.md`, "Signing in"). xxi waits
+  for a new sign-in as the infrastructure user; the persona's token is untouched.
