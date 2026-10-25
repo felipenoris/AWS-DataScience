@@ -934,3 +934,26 @@ that holds Stages 8 to 10.*
   and `awsds/dev-env-stewards` left it, and the mirror's job token admits `awsds/app-etl` in place of
   `awsds/dev-env` (Stage 8 decision 2). Reported in chat (*"Fiz os atos do §H: ... as configurações e
   memberships ..."*); no read of GitLab's members reaches them from the laptop.
+
+## 2026-10-25 — 7.2, INT-13's VPC half: the console's host form in Data Governance offers no VPC
+
+*Claude's hand, reading the AWS console through the user's Chrome session (Claude in Chrome, a tab of its own,
+closed after) as the infrastructure user with `InfrastructureAccess` in Data Governance, `us-west-2`, at the
+user's request; nothing created, no form submitted. About 18:51 UTC.*
+
+- **[Claude] The pages**: *Developer Tools → Connections* lists no connection and its *Hosts* tab reads *"No
+  hosts configured"*; *Create host* opens the form at `/codesuite/settings/connections/hosts/new`.
+- **[Claude] The form**: *Select a provider* offers `GitHub Enterprise Server` and `GitLab self-managed`; *URL*,
+  *"The endpoint of the server to connect to"*; *VPC configuration*, *"Choose to set up a network-connected host
+  or a host with an Amazon VPC configuration"*, with two options: *No VPC*, *"If your GitHub Enterprise Server is
+  only accessible in a VPC, configure details here. Otherwise, skip this step."* (the text names GitHub with
+  `GitLab self-managed` selected), and *Use a VPC*, *"If the endpoint is accessible via a VPC you may configure
+  this here."*. With *Use a VPC* marked and `GitLab self-managed` selected, the *VPC ID* selector (*"Choose the
+  VPC for your configuration. Your VPC must be in the same AWS Region as your host."*) reads **`No results`**
+  once loaded, and *TLS certificate - optional* appears for a private CA. No SCP names `codeconnections`, so the
+  console met no organization policy.
+- **[Claude] The reading**: a host for the private instance needs a VPC in the host's account, and Data
+  Governance has none to offer (D22, D26): INT-13's answer, as expected. The *No VPC* form would try the public
+  internet, where `gitlab.awsds.internal` does not exist; creating that host and running *Set up host* is the
+  user's optional half, for the wording of the failed setup, deleted after. The accepted path stays the manual
+  `git remote add` and push from inside a project (INT-09).
