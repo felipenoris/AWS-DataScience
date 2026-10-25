@@ -3205,3 +3205,6 @@ user's authorization in this chat for each push. Times UTC.*
   ENV=staging ONLY=egress` from the project folder as the infrastructure user (profile awsds-infra-staging:
   account Staging, permission set InfrastructureAccess), then retry this job"*, exit 1, the script's "down"
   branch read for the first time. The pipeline's readings are the §V session's, the pointers this log's.
+- **[user] The mirror's push was theirs**, confirmed in chat (2026-10-25): `git push gitlab main` from the
+  project folder after #256's merge, before this session's authorized push read *"Everything up-to-date"*
+  at 02:37:56. The attribution above is closed.
