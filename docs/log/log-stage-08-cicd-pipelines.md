@@ -3404,3 +3404,20 @@ reading of the binary and the edits. No AWS write.*
 - **[Claude] Lesson 76** written at the user's request, with its key in `CLAUDE.md`, a bullet in its
   parallel-sessions section and a standing rule, and a note in `terraform-changes.md` §1, so a parallel
   session reads the order before its first apply.
+
+## 2026-10-25 — verification iv's re-scan half: a second scan inside 24 h is refused
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo o aws ecr start-image-scan na imagem v0.4.5 de
+awsds-prod-ecr-app-etl como usuário de infraestrutura (awsds-infra-prod), para ler a recusa da releitura dentro
+de 24 h."*), as the infrastructure user with `InfrastructureAccess`; the one peer session told before the call.
+Times UTC.*
+
+- **[Claude] Before**, 19:43:06: `describe-image-scan-findings` on `v0.4.5-268964ad` reads `COMPLETE`,
+  completed 05:36:43 (the push's scan, two minutes after the push at 05:34), CRITICAL 113, HIGH 612, MEDIUM
+  158, LOW 16, UNDEFINED 466.
+- **[Claude] The call**, 19:43:08: `start-image-scan` refused, *"An error occurred (LimitExceededException) when
+  calling the StartImageScan operation (reached max retries: 2): The scan quota per image has been exceeded.
+  Wait and try again."*
+- **[Claude] After**, 19:43:13: the scan `COMPLETE` with the same completion time, nothing re-run: a second
+  scan inside 24 h is refused, not absorbed, and the gate's read of the push's scan is the one reading an image
+  gets that day.
