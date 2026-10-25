@@ -1,7 +1,7 @@
 # The release this slice runs (Stage 8 decision 12 and step 3.7): the application tag, the image
 # digest its pipeline pushed and the bundle's SHA256. The pipeline passes the release it promotes, and
 # step 3.7 records it here as the default, so a by-hand re-apply after a teardown runs the same
-# release (Lesson 4). The default is v0.3.3, the first promotion (pipeline #71, 2026-10-24), read from
+# release (Lesson 4). The default is v0.4.2, the data release (pipeline #80, 2026-10-25), read from
 # the tag's GitLab release. Null creates nothing.
 
 variable "release" {
@@ -12,9 +12,9 @@ variable "release" {
     bundle_sha256 = string
   })
   default = {
-    tag           = "v0.3.3"
-    digest        = "sha256:89d0ea2119618b3b8b1f16e8fa8bef8ac4bb8d1baa2b788cc4a16307a3032aac"
-    bundle_sha256 = "24aea3290b65f2c2a72855b4e25aff1e6fcb1d6c40d4dbaea3741e45b93702e9"
+    tag           = "v0.4.2"
+    digest        = "sha256:9735e42ec679c5ec3d18f46357704f32c8112c4e5a7d9d94996eb88c9e206fd5"
+    bundle_sha256 = "745955fa6113eba9d3d6196309fc847a10382d3e5d32f06eca10161ba576cc3e"
   }
 
   validation {
