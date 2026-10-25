@@ -3015,3 +3015,10 @@ user with `InfrastructureAccess`) and for 3.7's record. Times UTC.*
   then, each leg updating the workflow (the 50-version quota, `OR-7`), and the chains' executions,
   `<tag>-<pipeline>-<chain>`; the destroy took about 2 min and the recreate about 1 min. Recorded in
   decision 27.
+- **[user] The teardown job removed, the same sitting** (2026-10-25 UTC): *"Vamos alterar a solução
+  proposta para não precisar do `staging-down`. Desta forma, o staging vai funcionar de forma similar ao
+  que já é feito no production."* The application slice is a Glue job definition and a catalog table,
+  billing nothing at rest, so its destroy bought housekeeping and not cost; Staging holds the last
+  release between legs, as Production, and the user's `make down ENV=staging` destroys the three `[E]`
+  slices. The maintenance in GitLab (the MR, the mirror's push, the two applies) waits for §V's
+  promotion to end, the user's instruction.

@@ -327,9 +327,8 @@ first promotion carries a lake the job role has written (decision 23).
    the render, 2.3's lint, the tree under `awsds-staging-outputs/applications/app-etl/<tag>/`, the
    application slice's saved plan through 2.3's `lint-plan` and applied, the orchestration slice
    applied, INT-14 in Staging, Stage 10 verification ii),
-   `staging-test` (3.3: the chain's machine started and followed, Stage 10 decision 19), `staging-down`
-   (3.4, the application's slice alone since decision 27; the user's `make down ENV=staging` ends the
-   sitting). What is read at this leg and nowhere before: whether `uv run` resolves the dev group on the
+   `staging-test` (3.3: the chain's machine started and followed, Stage 10 decision 19), and no
+   teardown job since decision 27 (3.4 retired): the user's `make down ENV=staging` ends the sitting. What is read at this leg and nowhere before: whether `uv run` resolves the dev group on the
    runner, the deploy role's Cloud Control and Glue calls against their grants, the worker's preparation
    with no `ecr.*` endpoint (Stage 10 verification xvi), `TriggerMode`'s literal, the key's encryption
    context in the saver's and the worker's calls (Stage 10 decision 2), and Staging's `release.auto.tfvars.json`
@@ -429,9 +428,9 @@ ENV=production` here carries `ONLY=`, or the build runner is destroyed.
    workflows and the application slice's table and job arguments (`lint-plan` on its plan), the
    orchestration slice's two chains, `staging-test` (the governed read through Staging's share as
    `awsds-staging-job-exec`, the table read back, then Staging's first training job), `staging-model`
-   (Staging's first batch transform), `staging-down` (the application's slice alone once the mirror
-   carries decision 27's legs; Staging's `egress/` is the user's, `make up ENV=staging ONLY=egress` before
-   the tag and `make down ENV=staging` after the leg).
+   (Staging's first batch transform), `staging-down` (gone once the mirror carries decision 27's
+   legs; Staging's `egress/` is the user's, `make up ENV=staging ONLY=egress` before the tag and `make
+   down ENV=staging` after the leg).
 4. **[user] The gate**, as §T step 4, after `make up ENV=production ONLY=workloads-egress`.
 5. **[pipeline] `production-deploy`**: the application slice with the table and the load job, the
    orchestration slice with three workflows and three chains, their schedules at 06:30, 07:00 and 07:30

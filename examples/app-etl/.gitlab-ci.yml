@@ -10,8 +10,8 @@
 #                         awsds-prod-releases and the tag's GitLab release, which names it (D41,
 #                         decisions 19 and 20); then the promotion (Stage 8 step 3): Staging's egress
 #                         read (the user raises it, decision 27), the application deployed from the
-#                         bundle, run, its slice destroyed, a manual gate, and Production, its egress
-#                         read the same way;
+#                         bundle and run (nothing torn down: the user's `make down`), a manual gate, and
+#                         Production, its egress read the same way;
 #                         then three manual jobs of Production: the warehouse's DDL (Stage 9 9.4), and
 #                         the model's registration and approval, which the batch transform follows
 #                         (Stage 10 steps 5.2 and 5.4)
@@ -28,7 +28,7 @@ include:
     ref: 6fcea132896746c3938411c0d081f4421ca0dce8 # gates-v0.4.0
     file: [/gates.gitlab-ci.yml, /baselines.gitlab-ci.yml]
 
-stages: [test, build, verify, deploy, release, staging, staging-teardown, gate, production]
+stages: [test, build, verify, deploy, release, staging, gate, production]
 
 variables:
   GATES_UV_PROJECTS: "."
@@ -424,23 +424,9 @@ staging-model:
       cd "$INFRA_DIR"
       AWS_PROFILE=awsds-deploy-staging ./scripts/model-chain.py transform staging --tag "$CI_COMMIT_TAG"
 
-# 3.4: the application's slice destroyed whatever the leg's outcome, and nothing else (decision 27):
-# egress/ is the user's, and orchestration/ holds every application's workflows and chains, bills
-# nothing at rest and keeps its schedules DISABLED here, so it stays up between legs and the next leg
-# recreates the Glue job before it starts a chain. `make down ENV=staging` without ONLY= never runs
-# from the pipeline: refusal 10 keeps a deploy profile off every shared slice.
-staging-down:
-  extends: .promotion
-  stage: staging-teardown
-  rules:
-    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
-      when: always
-  resource_group: staging
-  script:
-    - |
-      set -eu
-      cd "$INFRA_DIR"
-      make down ENV=staging ONLY=app/app-etl PROFILE=awsds-deploy-staging AUTO=1
+# 3.4 is retired (decision 27): the pipeline destroys nothing in Staging, as in Production. The
+# application and orchestration slices hold the last release at rest, billing nothing, and the user's
+# `make down ENV=staging` takes them down with egress/.
 
 # 3.5: Production's plan of the application slice, read beside Staging's results before the gate, and
 # lint-plan on it, so a refusal stops the pipeline before the gate asks anyone to approve.

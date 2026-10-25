@@ -2,7 +2,7 @@
 # Staging's VPC, keys and roles, and the application's workflows and chains, the same module and the
 # same statements as Production's (D20). Applied by the pipeline as awsds-deploy-staging in the Staging
 # leg (step 1.5, INT-14), left up between legs and destroyed by the user's `make down ENV=staging`
-# (Stage 8 decision 27: the leg's `staging-down` destroys the application slice alone); `make up`
+# (Stage 8 decision 27: the pipeline destroys nothing here, as in Production); `make up`
 # refuses it (layers.py refusal 7).
 
 data "terraform_remote_state" "foundation" {

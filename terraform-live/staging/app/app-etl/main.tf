@@ -3,9 +3,9 @@
 # transform task starts by name; the application's table in app_outputs, which that job writes and
 # reads back (Stage 9 step 8.5); and in Production the warehouse load, awsds-prod-app-etl-load, which
 # the workflow awsds-prod-wf-app-etl-warehouse starts (Stage 9 step 9.4, decision 15). Layer [E]: the
-# Staging leg's `make down ENV=staging ONLY=app/app-etl` destroys it after the run (Stage 8 decision 27)
-# and the user's `make down` otherwise, and `make up` never applies it (layers.py refusal 7); the
-# pipeline applies it with the release it promotes.
+# user's `make down ENV=staging` destroys it (Stage 8 decision 27: the pipeline destroys nothing, as in
+# Production), and `make up` never applies it (layers.py refusal 7); the pipeline applies it with the
+# release it promotes.
 #
 # The job runs the release's script, which the release job copied under the release's prefix of the
 # outputs bucket (Stage 10 decisions 1 and 12), as Stage 9's [P] awsds-<env>-job-exec, on the
