@@ -620,7 +620,9 @@ carries `ONLY=`, or the build runner is destroyed.
    Sandbox's `egress/` down: Stage 8 xxiv, `test-deploy` expected to fail in seconds before `deploy`
    writes anything, *"FATAL: no sagemaker.api endpoint: is Sandbox's egress up (make up ENV=sandbox
    ONLY=egress)?"*; then `make up ENV=sandbox ONLY=egress` and the job's retry.
-7. **[Claude] After `test-deploy`**: Stage 10 xix, the domain's lineage events, twice with a delay between
+7. **[Claude] After `test-deploy`** (**xix and xxiii's second half read 2026-10-25 with nothing up**, on the
+   `test` project's workflows of #87, Stage 10's log; left here: Stage 8 iv's re-scan half, inside 24 h of
+   `v0.4.5`'s push until 05:34 UTC on 2026-10-26, or at the next tag): Stage 10 xix, the domain's lineage events, twice with a delay between
    (Lesson 62); Stage 10 xxiii's second half, the `test` project's workflows' `Code` object (`aws
    mwaa-serverless get-workflow`) against the bundle's `code/<workflow>.zip`; and Stage 8 iv's re-scan
    half, **[Claude⚡]** on the user's word, `aws ecr start-image-scan` on the tag's image in

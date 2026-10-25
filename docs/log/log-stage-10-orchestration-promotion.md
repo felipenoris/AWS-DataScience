@@ -1353,3 +1353,32 @@ Claude's hand for the record. No AWS call.*
   having run through a chain. The diagnosis path stays #77's reading (verification vi). No further break is
   owed; a branch whose `GlueJobOperator` names an undeclared Glue job is an N.4 exercise for verification xx,
   the user's to call at a release sitting.
+
+## 2026-10-25 — with the environment down: xix's two reads, xxiii's `Code` copy, xviii's simulator attempt
+
+*Claude's hand, at the user's request to stay within Stages 7 to 10 with nothing up, as the infrastructure user
+with `InfrastructureAccess` (`awsds-infra-data`, `awsds-infra-sandbox-1`, `awsds-infra-prod`), reads only.
+Times UTC.*
+
+- **[Claude] xix**: `list-lineage-events` on the domain at 19:32:58 and again at 19:35:29: 44 events both
+  times, the same ids, every one from Stage 18's Staging Glue job `app_etl_<project>` of 2026-10-19 and
+  2026-10-21, which carried the OpenLineage settings; nothing from the `test` project's nine workflow runs of
+  2026-10-24 and 25 (xxiii's image half counted them). The service emits nothing of its own, and a Glue job
+  without the OpenLineage settings posts nothing (3.3).
+- **[Claude] xxiii's `Code` copy**: `get-workflow` on `app_etl_test_experimentation_app_etl` (version
+  `b50f321b…`, modified 05:36:25, #87's `test-deploy`) returns `Code` at the project's
+  `shared/operatorFiles/app-etl-<timestamp>.zip`, 2,448 bytes, `CodeSnapshottedAt` 05:36:25, under the project
+  key, `TriggerMode` `manual_only`; its sha256 `41969961…ba6b` equals `code/app-etl.zip` inside `v0.4.5`'s
+  bundle in `awsds-prod-releases` (16,442 bytes, 05:50:56), and `code/app-etl-train.zip` is the same file. The
+  deploy copies the task package as `workflow.create` copies the definition.
+- **[Claude] xviii, and Stage 9 xv's deploy- and execution-role halves, through the simulator**:
+  `sagemaker:CreateProcessingJob` as `awsds-prod-wf-app-etl` with `aws:RequestedRegion`, the organization and
+  account keys and the five settings in the context (`sagemaker:VpcSubnets`, `InstanceTypes` `ml.t3.medium`,
+  `NetworkIsolation` true, `InterContainerTrafficEncryption` true, `VolumeKmsKey`) reads `explicitDeny`,
+  `AllowedByOrganizations` false, against `processing-job/app-etl-probe`, and so does every variant with one
+  setting missing; with `*` as the resource the organization allows and the role's own statement, scoped to
+  `processing-job/app-etl-*`, does not match. The same for `awsds-deploy-prod`'s `CreateTransformJob`. The
+  discriminator: the infrastructure user's own role reads `explicitDeny` on the same call with the ARN and
+  `allowed` with `*`, while its real calls pass the battery's rows and the pipeline's jobs run. The denial is
+  the instrument's (Lesson 30), so the five statements cannot be told apart by simulation against a job ARN;
+  xviii and xv's halves stay a real job's reading (§N.4).
