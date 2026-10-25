@@ -3192,3 +3192,8 @@ user's authorization in this chat for each push. Times UTC.*
   `s3:PutObject` on Staging's egress state `explicitDeny`. The `waiting-on-the-user.md` row removed. The
   mirror's push was not the §V session's, which never pushes to GitLab; the user had said they would push
   `main` after #256's merge, so the attribution is theirs, to confirm.
+- **[user] MR !11 merged** at 02:42:32 (`awsds/app-etl`'s `main` `163ccca`, the merge commit; the source
+  branch removed). **[Claude] read back** at 02:46: the tree `b9f49fa8`, the same as `examples/app-etl`'s at
+  `79651026`; `staging-gate` in the file, no `staging-down`. The new legs exist from the next tag on:
+  `staging-gate` manual before anything of the leg, `staging-check` reading Staging's `egress/` as
+  `awsds-deploy-staging`, `production-deploy` reading `workloads-egress/` first.
