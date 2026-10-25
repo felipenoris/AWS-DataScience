@@ -1103,3 +1103,52 @@ Times UTC.*
   `awsds-deploy-prod`): *"20 added, 1 changed"*, the app-etl workflow updated to `v0.4.2` and
   `awsds-prod-wf-app-etl-train` and `awsds-prod-wf-app-etl-warehouse` created, each with its chain and its
   schedule `ENABLED` (06:30, 07:00 and 07:30 UTC), so the schedules fire `v0.4.2`'s chains from 2026-10-25.
+
+## 2026-10-25 — Production's runs by hand, the model's registration and approval, the first batch transform there, 5.5 from Sandbox
+
+*Claude's hand for the runs, on the user's authorization in chat (*"Autorizo iniciar, depois do
+production-deploy da v0.4.0, as chains awsds-prod-chain-app-etl e em seguida
+awsds-prod-chain-app-etl-train em Production, como usuário de infraestrutura com InfrastructureAccess
+(awsds-infra-prod), e acompanhar cada uma até o fim."*), and for the readings, as the infrastructure user
+with `InfrastructureAccess`; the user's for the pipeline's manual jobs and for 5.5, signed in as the Data
+Scientist User. In the user's pasted output the account ids are replaced by `<Production>`, `<Sandbox
+Account 1>` and `<AWS registry>` and the e-mail by `<data scientist user>`. Times UTC.*
+
+- **[Claude] The app-etl chain**, `v0-4-2-by-hand-2026-10-25-app-etl`, started at 00:58:42, `SUCCEEDED` at
+  01:17:47: the Glue job `jr_45a3c84d…f19c` (00:59:28 to 01:05:04) *"reading SELECT trade_date, desk,
+  instrument, quantity, price FROM lake.curated.trades"*, *"read 30 row(s)"*, the table and the training
+  sets written (24, 6 and 30 lines); the processing job `app-etl-20261025T010552` `Completed`.
+- **[Claude] The train chain**, `v0-4-2-by-hand-2026-10-25-app-etl-train`, 01:18:16 to 01:25:18,
+  `SUCCEEDED`: Production's first training job `app-etl-train-20261025T011858` as `awsds-prod-job-exec`
+  on `ml.m5.large`, Production's data key on its volume and its output (`OutputDataConfig.KmsKeyId`,
+  verification x), network isolation and inter-container encryption, training 01:19:45 to 01:21:49 (124
+  billable seconds), `validation:rmse` 1016.31; `evaluate` wrote its `evaluation.json`, 30 batch rows.
+- **[user] 5.2's jobs**: `production-register` (job 450, 01:28:13 to 01:28:39), *"registered
+  …model-package/awsds-prod-model-app-etl/1 from app-etl-train-20261025T011858, PendingManualApproval"*;
+  `production-approve` (451, 01:29:00 to 01:29:13), *"…/awsds-prod-model-app-etl/1: Approved"*.
+  **[Claude] read back**: version 1 `Completed` and `Approved`, `ApprovalDescription` *"approved by felipenoris
+  at the promotion pipeline's manual job"*, `CustomerMetadataProperties` `git_tag` `v0.4.2`, the training
+  job and its `validation_rmse`, `ModelMetrics.ModelQuality` the `evaluation.json`; CloudTrail:
+  `CreateModelPackage` at 01:28:36 and `UpdateModelPackage` at 01:29:10, both `awsds-deploy-prod`, no
+  error (verification x's registration clause).
+- **[Claude] 5.3's rule fired for the first time**: `awsds-prod-model-approval` triggered at 01:28 and at
+  01:29, and `awsds-prod-alerts` delivered one notification each minute.
+- **[pipeline] 5.4's Production half**, `production-transform` (452, 01:29:16 to 01:35:30): CloudTrail
+  `CreateModel` at 01:29:33 as `awsds-deploy-prod` with `Containers` `[{"modelPackageName":
+  "…/awsds-prod-model-app-etl/1"}]`, the execution role `awsds-prod-job-exec`, network isolation and the
+  job subnets; the transform `app-etl-v0-4-2-20261025T012931` on `ml.m5.large`, the data key on its volume
+  and its output, 01:33:24 to 01:35:03, *"30 prediction(s), one per input row"*; `DeleteModel` at
+  01:35:28. Pipeline #80 ended `success`, `production-warehouse-ddl` left manual.
+- **[user] 5.5 from Sandbox**, as the Data Scientist User through `awsds-scientist-sandbox`: `aws
+  sagemaker describe-model-package --model-package-name
+  "arn:aws:sagemaker:us-west-2:<Production>:model-package/awsds-prod-model-app-etl/1"` answered with the
+  whole record, `ModelApprovalStatus` `Approved`, `CreatedBy` and `LastModifiedBy`
+  `arn:aws:sts::<Production>:assumed-role/awsds-deploy-prod/botocore-session-…`, the image
+  `<AWS registry>.dkr.ecr.us-west-2.amazonaws.com/sagemaker-xgboost@sha256:0b5d9341…3a78`; `aws sagemaker
+  update-model-package … --model-approval-status Approved` was refused: *"An error occurred
+  (AccessDeniedException) when calling the UpdateModelPackage operation: User: arn:aws:sts::<Sandbox Account
+  1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user> is not
+  authorized to perform: sagemaker:UpdateModelPackage on resource:
+  arn:aws:sagemaker:us-west-2:<Production>:model-package/awsds-prod-model-app-etl/1 because no
+  resource-based policy allows the sagemaker:UpdateModelPackage action"*. The gate holds from the far side,
+  the refusal the group policy's absence of a grant.
