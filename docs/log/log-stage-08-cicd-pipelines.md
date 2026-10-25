@@ -3714,3 +3714,20 @@ readings, from the user's GitLab session in Chrome. Times UTC.*
   holds the seven interface endpoints `available` (glue, kms, lakeformation, logs, sagemaker.api,
   secretsmanager, sts) and the DNS Firewall association `COMPLETE`: *"ok: staging/egress/ is up"*, decision
   27's read of the user's slice. `staging-deploy` (#610) running from 23:17.
+
+## 2026-10-25 — §N.1 step 9, first half: Staging's app-etl chain `SUCCEEDED`, `EXC-22`'s Staging half closed
+
+*Claude's hand; `staging-test`'s log in the user's GitLab session, Step Functions, S3 and KMS as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-staging`), reads only. Times UTC.*
+
+- **[Claude] `staging-test` (#611)** started 23:20:42, the mirror at `2d3160f1`, and at 23:20:53 started the
+  execution `v0-4-6-102-app-etl` of `awsds-staging-chain-app-etl`, polled every minute; the execution read
+  `SUCCEEDED` at 23:36:55 from the laptop (`list-executions`: stopped 23:35:57, 15 min 4 s), the job's own
+  poll printing *"23:36:17 app-etl SUCCEEDED"*; the job went on to the train chain.
+- **[Claude] `EXC-22`'s Staging half**, read 23:37:32: `awsds-staging-outputs/app-etl/work/job/trades.summary.json`,
+  written 23:29:20, 519 bytes, `ServerSideEncryption` `aws:kms`, `SSEKMSKeyId`
+  `arn:aws:kms:us-west-2:…:key/74f5ebbc-41bb-4165-9047-f84a952a833f`, the key `alias/awsds-staging-data`
+  resolves to (`describe-key`, `CUSTOMER`): the processing output is under the project's data key and no
+  longer under `aws/s3`, the template's `ProcessingOutputConfig.KmsKeyId` at work. The run's other objects:
+  `work/glue/trades.csv` 23:23:06, the `tables/trades_notional/` parts 23:23:08, the train inputs under
+  `work/train/` 23:23:11, `work/job/trades.parquet` 23:29:20, `outbox/report.json` 23:33:21.
