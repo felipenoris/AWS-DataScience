@@ -190,6 +190,24 @@ DROP USER "<identifier>";
 
 `WH-12` is what finds a role membership nothing declares; this section is what prevents it.
 
+**A project that reads a governed share (§G) leaves two more grants in two more systems**, neither in any
+plan: the Lake Formation grant to its access role, and the consumer database's `USAGE` and `sandbox`'s
+`TEMP` for its database user. The access role itself goes with the map, `ReadTheGovernedShareCatalog`
+with it.
+
+```sql
+REVOKE USAGE ON DATABASE governed_trades FROM "<identifier>";
+REVOKE TEMP ON DATABASE sandbox FROM "<identifier>";
+```
+
+```bash
+aws lakeformation revoke-permissions --principal "DataLakePrincipalIdentifier=arn:aws:iam::<Sandbox>:role/awsds-sandbox-warehouse-access-<project>" --resource '{"Table":{"CatalogId":"<Data Governance>","DatabaseName":"governed_trades","Name":"trades.trades_notional"}}' --permissions SELECT DESCRIBE --profile awsds-infra-sandbox-1 --region us-west-2
+```
+
+and the same with `{"Database":{"CatalogId":"<Data Governance>","Name":"governed_trades"}}` and `DESCRIBE`.
+A Lake Formation grant to a role that no longer exists stays listed against its ARN, so the revoke comes
+before the apply that removes the access role.
+
 **The connection object stays.** It is DataZone's, no apply touches it, and this repository does not
 author it (`EXC-17`): removing it is a portal act by a project member. Until then it names an access
 role the apply destroyed, which `WH-9` reports.
@@ -402,6 +420,12 @@ Glue database's. A password user (`dbadmin`) is refused, *"Current user is not a
 credentials"*, so the admin reads the metadata alone, and through the Data API with IAM authentication the
 infrastructure user, Sandbox's Lake Formation administrator, reads under the account's grant. The read needs
 Sandbox's workgroup alone: Production's may be down.
+
+**A second governed database** repeats two pieces once, whatever the number of projects: the consumer
+database in Sandbox's warehouse (`CREATE DATABASE <name> FROM ARN 'arn:aws:glue:us-west-2:<Data
+Governance>:database/<name>' WITH DATA CATALOG SCHEMA <name>`, a statement of its own, as the admin), and
+its database and tables among `ReadTheGovernedShareCatalog`'s resources, which name `governed_trades` alone.
+Then the per-project grants above. Unwiring is §U.
 
 ---
 
