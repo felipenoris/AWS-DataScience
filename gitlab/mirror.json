@@ -1,9 +1,9 @@
 {
   "awsds/deploy-image": {
     "branch": "main",
-    "commit": "7bf9acf6843e6e0e20a5d8a8e6c789b545dafc36",
-    "committed": "2026-10-16T21:28:08Z",
-    "subject": "Merge branch 'the-releases-v0.2.0' into 'main'"
+    "commit": "e502078bfdf9e369b0d34f9719e78150893342b5",
+    "committed": "2026-10-25T20:29:27Z",
+    "subject": "Merge branch 'terraform-1-16-6' into 'main'"
   },
   "awsds/dev-env": {
     "branch": "main",

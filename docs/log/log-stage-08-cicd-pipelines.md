@@ -3438,3 +3438,52 @@ Times UTC.*
   markers, so the marker outlives the version; nothing else to clean. The bucket's
   `DenyDeletesExceptInfrastructure` spared the infrastructure user as written, the simulator's half of
   2026-10-18 reading the same for the other principals.
+
+
+## 2026-10-25 — the §N sitting raised: the hub, GitLab with the three runners, the tunnel; the readings
+
+*The user's hand for `make hub-up`, `make gitlab-up BUILD=1` and the tunnel, from the project folder at `main`
+(PR #259 merged at 20:06 UTC and pulled); Claude's for the readings, as the infrastructure user with
+`InfrastructureAccess`, reads only. This session continues on a branch cut from the merged `main`
+(`claude/stages-7-10-env-sitting-1`), the PR's own branch retired. Times UTC.*
+
+- **[user]** `awsds-prod-vpn` and `awsds-prod-proxy` started at 20:07:04 and 20:07:07, `awsds-prod-gitlab` at
+  20:07:45; the runners launched at 20:09:52 (deploy, `t3a.small`), 20:09:59 (test, `t3a.small`) and 20:10:04
+  (build, `m8i.xlarge`); the tunnel on the laptop.
+- **[Claude] `./aws/cicd.py`** on the five infrastructure profiles at 20:12: all checks passed; `CI-1` the deploy
+  runner running, `CI-9` the test runner running with IMDSv2 and hop limit 1, `CI-8` 572 deploy-role
+  assumptions, every caller the deploy runner, `CI-5` the application repository's policy admitting Sandbox
+  and Staging.
+- **[Claude] `./aws/egress.py`** at 20:13: all checks passed, no NAT gateway, `EG-5`:
+  `PROFILE                IF ENDPOINTS  NATs  USD/HOUR`
+  `awsds-infra-prod       12            0     0.120`
+  `awsds-infra-staging    0             0     0.000`
+  `awsds-infra-sandbox-1  0             0     0.000`
+  `TOTAL                  12            0     0.120`
+- **[Claude] `make status`** at 20:14: 0.4521 USD/h, the hub's two hosts, GitLab, the three runners and
+  `production/egress/`'s twelve endpoints; every other `[E]` slice down.
+- **[Claude]** `https://gitlab.awsds.internal/users/sign_in` answered `200` through the tunnel at 20:18, eleven
+  minutes after the start.
+
+## 2026-10-25 — §H step 4: the deploy image `v0.3.0` on Terraform 1.16.6, built; its digest pinned
+
+*The user's hand in GitLab (the merge request `terraform-1-16-6` on `awsds/deploy-image`, merged at 20:29:27
+UTC as `e502078b`; the pipeline on `main` with `IMAGE_TAG` `v0.3.0`, *"build demorou pouco menos de 1min e
+30seg"*, the job's `deploy.json` printing `containerimage.digest` `sha256:9965f1b2…6736`); Claude's for the
+readings and the pin, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), reads and a
+plan only. Times UTC.*
+
+- **[Claude] The image in ECR** at 20:32: `awsds-prod-ecr-deploy:v0.3.0`, digest
+  `sha256:9965f1b2a3f1d5705bfdebceb02191de66e5b2c10b68e6789da9a4e941f26736`, 257,379,357 bytes, pushed
+  20:31:21. The push's scan, complete at 20:33:02: CRITICAL 0, HIGH 5, MEDIUM 10, LOW 5, against `v0.2.0`'s
+  HIGH 4, MEDIUM 10, LOW 4 of 2026-10-16; the four HIGHs of `v0.2.0` stay (`zlib` CVE-2026-85091, `glibc`
+  CVE-2026-19499 and CVE-2026-5435, `gnupg2` CVE-2026-24882) and `cyrus-sasl2` CVE-2026-107161 joins them, the
+  Debian 13 base's (`python:3.14-slim`); no finding names Terraform, which the scanner does not read.
+- **[Claude] The pin**: `deploy_image_digest` in `production/runners/variables.tf` moved to the new digest,
+  the description naming `v0.3.0`; a read-only plan with `TF_VAR_build_runner=true` at 20:33 reads *"1 to add,
+  0 to change, 1 to destroy"*, `aws_instance.deploy_runner[0]` replaced on its user data, the build and test
+  runners untouched. The apply is the user's `make gitlab-up BUILD=1` from the project folder once the pin is
+  on `main` (PR #260), and from then on the deploy runner's jobs run Terraform 1.16.6, the laptop's version.
+- **[Claude] The copy**: `./scripts/gitlab-mirror.py awsds/deploy-image` at 20:34 read GitLab's `main` at
+  `e502078b` holding the copy's six files unchanged, and wrote `gitlab/mirror.json`. The README's release row
+  for `v0.3.0` is GitLab's to hold first, the mirror then copying it back.
