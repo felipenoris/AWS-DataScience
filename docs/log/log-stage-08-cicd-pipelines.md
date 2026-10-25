@@ -3261,3 +3261,18 @@ session, AWS as the infrastructure user with `InfrastructureAccess`). Times UTC.
   `failed` at 06:04:15. **Verification ix answered yes**: a deliberately broken version passes `test` and stops
   at 3.3 with Production untouched. The branches `ix-governed-drift` and `ix-governed-drift-2` are owed their
   delete, the user's; `main` is unchanged.
+
+## 2026-10-25 — the simulator's `explicitDeny` on Staging's egress state, attributed
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-staging`), the policy
+simulator alone. Times UTC.*
+
+- **[Claude] The reading of 02:42**, `s3:PutObject` by `awsds-deploy-staging` on
+  `staging/egress/terraform.tfstate` read `explicitDeny` (the maintenance entry above), is the perimeter SCP's
+  `DenyS3ObjectWriteOutsideOrganization`, never the role. Re-read at 06:35 with `aws:RequestedRegion` alone:
+  `explicitDeny`, *"AllowedByOrganizations: false"*, no matched statement, on `staging/egress/` and on
+  `staging/orchestration/`, a key the role writes at every leg. With `aws:ResourceOrgID` set to the
+  organization's id beside it, so that the statement's `StringNotEqualsIfExists` no longer matches an absent
+  key: `staging/orchestration/` `allowed` by `role_awsds-deploy-staging_state`, `staging/egress/`
+  `implicitDeny`. Decision 27's narrowing holds as written: no grant writes the egress state, and no deny is
+  involved.

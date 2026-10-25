@@ -817,7 +817,11 @@ state machine (3.5) and what carries data between them is a contract on S3 (3.6)
   `RunDetail.RunState` (`SUCCESS` ends the chain, `FAILED`, `TIMEOUT` and `STOPPED` reach a `Fail`, any
   other state waits again), each call retried three times; the machine times out at 4 h, past four tasks
   of the service's 3600 s cap. The schedule passes `{"chain", "scheduledTime"}` as the execution's input,
-  and the chain forwards nothing to the run, `app-etl`'s YAML reading no date. Staging's schedule is
+  and the chain forwards nothing to the run, `app-etl`'s YAML reading no date. **Read 2026-10-25 at the
+  first scheduled execution** (6.1): `scheduledTime` arrives as the literal
+  `<aws.scheduler.scheduled-time>`, since the module's `jsonencode` stores the angle brackets as `\u003c` and
+  `\u003e` and the Scheduler substitutes none of it; no chain forwards the field, so no run read it, and a
+  chain that needs the date waits on the module writing the input without `jsonencode`. Staging's schedule is
   `DISABLED` and Production's `ENABLED`, `cron(30 6 * * ? *)` in UTC (decision 19). Rendered with a
   stand-in ARN, the definition read `OK` from `ValidateStateMachineDefinition` (verification xxii).
 - **3.6 — [Claude] Write how one workflow depends on another** (D41): inside a chain the machine's order

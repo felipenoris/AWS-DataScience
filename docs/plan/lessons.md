@@ -1824,7 +1824,13 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   organization denies, the result names no identity statement, so the identity layer under an SCP deny is
   read by forcing the SCP's carve-out into the context; and the SCP evaluation reads `aws:PrincipalArn`
   as the role's own ARN when the context gives none, a key the simulator's page does not list among
-  those it populates. Where: `log-stage-06h`, 2026-10-18.
+  those it populates. Where: `log-stage-06h`, 2026-10-18. Read again on 2026-10-25 in Production, where
+  `redshift-data:ExecuteStatement` and `sagemaker:DescribeModelPackage`, both working calls, read
+  `explicitDeny` until the context named the Region (`log-stage-09`). The perimeter SCP's
+  `DenyS3ObjectWriteOutsideOrganization` reads the same way while the context lacks `aws:ResourceOrgID`,
+  its `StringNotEqualsIfExists` matching the absent key: Staging's deploy role read `explicitDeny` on
+  `s3:PutObject` to its own orchestration state, which it writes at every leg, and with the organization's
+  id in the context `allowed` there and `implicitDeny` on the egress state (`log-stage-08`, 2026-10-25).
 - **`sso-admin list-account-assignments-for-principal` answers from the Identity Center delegated
   administrator**, where its API reference says the action *"must be called from the management
   account"* (measured 2026-10-18 as `InfrastructureAccess` in Identity, Stage 14: the shared
@@ -2685,6 +2691,8 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   string. A template indexes nothing; the callable decodes. Where: `log-stage-10-orchestration-promotion.md`,
   2026-10-24; `examples/app-etl/code/app_etl_tasks.py`, `training_job_name`.
 
+### Redshift
+
 - **The Data API authorizes following, reading and cancelling a statement on no resource** (measured
   2026-10-25, `production-warehouse-ddl`). `DescribeStatement`, `GetStatementResult` and `CancelStatement`
   granted on `workgroup/*` matched nothing, *"no identity-based policy allows"*, while `ExecuteStatement`
@@ -2692,16 +2700,6 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   `redshift-data:statement-owner-iam-userid`. The CLI on the deploy runner keeps one role session across a
   job, so `aws:userid` matches between the two calls. Where: `log-stage-09-deployment-targets.md`,
   2026-10-25; `production/foundation/deploy-anchors.tf`, `FollowItsOwnStatements`.
-
-- **The IAM policy simulator reads every action `explicitDeny` under a Region-ceiling SCP when the context
-  lacks `aws:RequestedRegion`** (measured 2026-10-25 in Production): `redshift-data:ExecuteStatement` and
-  `sagemaker:DescribeModelPackage`, both working calls, read `explicitDeny` with *"AllowedByOrganizations:
-  False"* and no matched statement; with `aws:RequestedRegion=us-west-2` in the context they read `allowed`.
-  Where: `log-stage-09-deployment-targets.md`, 2026-10-25.
-
-- **A Glue database with a `FederatedDatabase` refuses a `Description`**: *"Description and federation
-  source cannot exist together in a database!"* (measured 2026-10-25, Data Governance's `governed_trades`).
-  Where: `log-stage-09-deployment-targets.md`, 2026-10-25.
 
 - **A Redshift consumer of a Lake Formation-managed datashare calls Glue and Lake Formation as the
   session's IAM principal, needs `TEMP` on the session's database, and reads with the producer's workgroup
@@ -2715,6 +2713,22 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   consumer account's Lake Formation administrator reads under the account's grant with no grant of its own.
   Where: `log-stage-09-deployment-targets.md`, 2026-10-25; `sandbox/warehouse/iam.tf`,
   `ReadTheGovernedShareCatalog`.
+
+### Glue
+
+- **A Glue database with a `FederatedDatabase` refuses a `Description`**: *"Description and federation
+  source cannot exist together in a database!"* (measured 2026-10-25, Data Governance's `governed_trades`).
+  Where: `log-stage-09-deployment-targets.md`, 2026-10-25.
+
+### EventBridge Scheduler
+
+- **EventBridge Scheduler does not substitute a context attribute whose angle brackets arrive JSON-escaped**
+  (measured 2026-10-25, Production's first scheduled execution, Stage 10 6.1). The orchestration module
+  writes the target's input with Terraform's `jsonencode`, which escapes `<` and `>`: the schedule stored
+  `{"chain":"app-etl","scheduledTime":"\u003caws.scheduler.scheduled-time\u003e"}` and the execution
+  received the same text, which a JSON parser reads back as the unsubstituted
+  `<aws.scheduler.scheduled-time>`. Where: `log-stage-10-orchestration-promotion.md`, 2026-10-25;
+  `terraform-modules/orchestration/chains.tf`, the schedule's `input`.
 
 ---
 
