@@ -39,6 +39,10 @@
 #   9. an [E] slice held from up        layers.HELD_FROM_UP, keyed (account, slice), while the [P]
 #      until its [P] state exists       state it reads is unapplied (Stage 9 pass 6's compute, held
 #                                       until 2026-10-23); the table is empty today. `down` is unaffected
+#  10. a pipeline profile raises and    layers.pipeline_refusal, when --profile names a deploy role:
+#      destroys no shared slice         an application slice and the orchestration slice alone; every
+#                                       shared slice is the user's make up/down in every account
+#                                       (Stage 8 decision 27, 2026-10-24)
 #
 # How it authenticates: AWS_PROFILE is set on each command, from backend.PROFILES or from --profile
 # (Stage 8 step 4.4, the deploy runner's profiles), and no credential is ever exported into this

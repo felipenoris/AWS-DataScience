@@ -260,7 +260,11 @@ Five types are 71% of the window: `AWS::EC2::NetworkInterface` 510, `AWS::EC2::V
 `AWS::Config::ResourceCompliance` 279 beside them. A VPC that never changes records 123 items because each
 ENI created or deleted changes the relationship list of its VPC, subnet and security group. Production's
 742 items in the same window follow the same shape (`ResourceCompliance` 172, ENI 148, endpoint 138,
-instance 76). The per-cycle figure is §3's.
+instance 76). The per-cycle figure is §3's. Staging's cycle, read 2026-10-24 (CloudWatch `AWS/Config`
+`ConfigurationItemsRecorded`, Staging): 107 items in the 20:00 UTC hour for one `staging-up` and two
+`staging-deploy` attempts, about 0.32 USD, and a full `egress/` up/down cycle about 200 items, about 0.60
+USD, paid by every pipeline run that raised it; Stage 8 decision 27 moved the cycle to the user's `make up`
+/ `make down`, once per sitting.
 
 Two corrections on 2026-08-08. The "Staging, Development, Data Governance at rest" row double-counted a
 Config recorder and a KMS key for those accounts — the Config row already covers every governed account —
@@ -286,6 +290,7 @@ the real bill.
 | — Sandbox **18** endpoints **as built** (6c step 5.2, counted from the slice's plan: the core 8, the SMUS 3, `s3tables`, `datazone`, the SSM trio, `ec2`, `secretsmanager`) | 0.378 | **0.180** | 2.10 |
 | — Staging **7** / `VPC-SharedServices` **12** / `VPC-Workloads` **7** (6c step 5.5 counts; `VPC-SharedServices` 13 until Stage 7 step 1.7 added `secretsmanager` and decision 9 dropped the SageMaker pair; `VPC-Workloads` 0 until Stage 9 step 3.3a named the jobs' `sts`, `logs`, `kms`, `glue`, `sagemaker.api`, `secretsmanager`, and `lakeformation` joined both for decision 12 (a); Staging 11 until Stage 9 step 4.3a gave it the same set, written 2026-10-22 and applied by its next `make up`) | 0.147 / 0.252 / 0.147 | **0.070 / 0.120 / 0.070** | 2.10 |
 | AWS Config per Sandbox `[E]` cycle — **not hourly**: one `make up` + `make down` of `sandbox/egress` records 120-290 items, whatever the time between, 63-90% of them the endpoints, their ENIs, and the subnets, VPC and security groups those ENIs relate to (eight cycles measured 2026-09-14..10-12, §2) | 0.36-0.87 per cycle | **0.36-0.87 per cycle** | **1.00** |
+| AWS Config per Staging `[E]` cycle — **not hourly**: one `make up` + `make down` of `staging/egress` about 200 items; 107 recorded in the 20:00 UTC hour of 2026-10-24 for one `staging-up` and two `staging-deploy` attempts (CloudWatch `AWS/Config` `ConfigurationItemsRecorded`, Staging). The user's cycle since Stage 8 decision 27, once per sitting, never per pipeline run | about 0.60 per cycle | **about 0.60 per cycle** | **1.00** |
 | AWS Config per GitLab cycle — **not hourly**: one `make gitlab-up` + `make gitlab-down` with the runners and a hub start/stop recorded 70 items on 2026-10-14, 35 up and 35 down (CloudWatch `AWS/Config` `ConfigurationItemsRecorded`, Production). The endpoints' ENIs were absent from both halves at 21:17 UTC; in the previous cycle 17 of them landed 2-3 h after the destroy. The 2026-10-13 billing day carried 125 items (0.375) for a session whose applies removed two endpoints, replaced a runner and added one. Without the runners about 40 items, read from the per-type split (the GitLab session below) | 0.21-0.38 per cycle | **0.21-0.38 per cycle** | **1.00** |
 | GitLab EC2 `t4g.large` | 0.1072 | 0.0672 | 1.60 |
 | — `t3.large`, the x86 equivalent | 0.1344 | 0.0832 | 1.62 |

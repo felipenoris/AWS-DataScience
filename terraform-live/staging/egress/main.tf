@@ -1,8 +1,9 @@
 # staging/egress/ - Staging's [E] metered network (Stage 3 pass 3, re-cut by Stage 9 step 4.3a): the
 # interface endpoints a job and a worker call, with step 9's org policy on every entry, and the DNS
-# Firewall. Lifecycle belongs to `make up ENV=staging` / `make down ENV=staging` (D11) and to the
-# promotion pipeline's Staging leg (Stage 8 step 3.1), never to a by-hand apply (runbook, "What you
-# never do"); `./aws/egress.py` 6 is the burn meter.
+# Firewall. Lifecycle belongs to the user's `make up ENV=staging` / `make down ENV=staging` (D11), never
+# to the promotion pipeline, which reads this slice before its Staging leg and raises nothing (Stage 8
+# decision 27, scripts/check-egress.py), and never to a by-hand apply (runbook, "What you never do");
+# `./aws/egress.py` 6 is the burn meter.
 #
 # There is no NAT gateway here, and none anywhere in the estate: under D38 a spoke reaches the
 # internet as a client of the explicit proxy in VPC-Networking rather than through a route, and this

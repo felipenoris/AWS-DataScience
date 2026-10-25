@@ -302,8 +302,8 @@ is needed.
 
 Needs §H done (the legs on `awsds/app-etl`'s `main`, the mirror pushed, the memberships), the hub,
 GitLab and the three runners up (`make gitlab-up BUILD=1`: the tag pipeline's untagged jobs, the
-production gate among them, run on the build runner alone), and Sandbox's `egress/` up (`make up ENV=sandbox ONLY=egress`, the
-infrastructure user's, since no pipeline identity raises it). Stage 9's pass 3 (§P) before it, so the
+production gate among them, run on the build runner alone), and Sandbox's and Staging's `egress/` up (`make up ENV=sandbox ONLY=egress`, `make up ENV=staging
+ONLY=egress`, the infrastructure user's: no pipeline identity raises a shared slice, Stage 8 decision 27). Stage 9's pass 3 (§P) before it, so the
 first promotion carries a lake the job role has written (decision 23).
 
 1. **[user] Pass 1's `deploy --targets dev`** from a space on the house image as the project role
@@ -321,13 +321,15 @@ first promotion carries a lake the job role has written (decision 23).
    `test`, `build-image`, `build-task-code`, `test-deploy` (the CLI into the `test` project as
    `awsds-deploy-sandbox-test`), `store-bundle`, `release` (verification xx's `cli` image reading), then
    the legs.
-3. **[pipeline] The Staging leg**: `staging-up` (3.1, `make up ENV=staging ONLY=egress` as
-   `awsds-deploy-staging`, 4.3a's first apply, 16 to add), `staging-deploy` (3.2: the bundle checked,
+3. **[pipeline] The Staging leg**: `staging-check` (3.1 since decision 27: Staging's `egress/` read as
+   `awsds-deploy-staging`, the user having raised it; the legs of 2026-10-24 ran `staging-up`, `make up
+   ENV=staging ONLY=egress` as the role, 4.3a's first apply, 16 to add), `staging-deploy` (3.2: the bundle checked,
    the render, 2.3's lint, the tree under `awsds-staging-outputs/applications/app-etl/<tag>/`, the
    application slice's saved plan through 2.3's `lint-plan` and applied, the orchestration slice
    applied, INT-14 in Staging, Stage 10 verification ii),
    `staging-test` (3.3: the chain's machine started and followed, Stage 10 decision 19), `staging-down`
-   (3.4). What is read at this leg and nowhere before: whether `uv run` resolves the dev group on the
+   (3.4, the application's slice alone since decision 27; the user's `make down ENV=staging` ends the
+   sitting). What is read at this leg and nowhere before: whether `uv run` resolves the dev group on the
    runner, the deploy role's Cloud Control and Glue calls against their grants, the worker's preparation
    with no `ecr.*` endpoint (Stage 10 verification xvi), `TriggerMode`'s literal, the key's encryption
    context in the saver's and the worker's calls (Stage 10 decision 2), and Staging's `release.auto.tfvars.json`
@@ -338,7 +340,8 @@ first promotion carries a lake the job role has written (decision 23).
 4. **[user] The gate** (3.5): `production-plan`, its plan passed by `lint-plan`, read beside `staging-test`'s artifacts, then
    `production-gate` by a `deployment-managers` member. Before `production-deploy`: `make up
    ENV=production ONLY=workloads-egress` by the user (§P step 4), since a Production run needs
-   `workloads-egress/`. The command without `ONLY=` applies `runners/` without `BUILD=1`, and destroys
+   `workloads-egress/`; `production-deploy` reads the slice first (decision 27) and fails with that command
+   while it is down. The command without `ONLY=` applies `runners/` without `BUILD=1`, and destroys
    the build runner `production-gate` runs on.
 5. **[pipeline] `production-deploy`** (3.6, `awsds-deploy-prod`): the service-linked role's creation
    in the deploy role's session on Production's first `CreateWorkflow` (Stage 10 1.5's statement, 1.6's
@@ -426,7 +429,9 @@ ENV=production` here carries `ONLY=`, or the build runner is destroyed.
    workflows and the application slice's table and job arguments (`lint-plan` on its plan), the
    orchestration slice's two chains, `staging-test` (the governed read through Staging's share as
    `awsds-staging-job-exec`, the table read back, then Staging's first training job), `staging-model`
-   (Staging's first batch transform), `staging-down`.
+   (Staging's first batch transform), `staging-down` (the application's slice alone once the mirror
+   carries decision 27's legs; Staging's `egress/` is the user's, `make up ENV=staging ONLY=egress` before
+   the tag and `make down ENV=staging` after the leg).
 4. **[user] The gate**, as §T step 4, after `make up ENV=production ONLY=workloads-egress`.
 5. **[pipeline] `production-deploy`**: the application slice with the table and the load job, the
    orchestration slice with three workflows and three chains, their schedules at 06:30, 07:00 and 07:30

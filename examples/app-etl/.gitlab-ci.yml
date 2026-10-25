@@ -8,8 +8,10 @@
 #                         the application: the worker's package built, the bundle for the `test` project
 #                         built and deployed there with a run of the workflow, the bundle stored in
 #                         awsds-prod-releases and the tag's GitLab release, which names it (D41,
-#                         decisions 19 and 20); then the promotion (Stage 8 step 3): Staging raised,
-#                         deployed from the bundle, run and torn down, a manual gate, and Production;
+#                         decisions 19 and 20); then the promotion (Stage 8 step 3): Staging's egress
+#                         read (the user raises it, decision 27), the application deployed from the
+#                         bundle, run, its slice destroyed, a manual gate, and Production, its egress
+#                         read the same way;
 #                         then three manual jobs of Production: the warehouse's DDL (Stage 9 9.4), and
 #                         the model's registration and approval, which the batch transform follows
 #                         (Stage 10 steps 5.2 and 5.4)
@@ -312,8 +314,12 @@ gate-without-proxy:
       git -c http.sslCAInfo=/etc/gitlab-runner/certs/ca.crt clone --quiet --depth 1 "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/awsds/infrastructure.git" "$INFRA_DIR"
       echo "awsds/infrastructure at $(git -C "$INFRA_DIR" rev-parse HEAD)"
 
-# 3.1: Staging's [E] egress, its interface endpoints and DNS Firewall, raised for this run alone.
-staging-up:
+# 3.1: Staging's [E] egress/, its interface endpoints and DNS Firewall, read before the leg writes and
+# never raised: every shared slice is the user's `make up` / `make down` (decision 27). check-egress.py
+# reads the slice's state and asks EC2 and Route 53 Resolver whether every endpoint it holds is
+# available and its DNS Firewall association complete; a slice that is down fails the job with the
+# command and the identity that raise it.
+staging-check:
   extends: .promotion
   stage: staging
   needs: [store-bundle]
@@ -322,7 +328,7 @@ staging-up:
     - |
       set -eu
       cd "$INFRA_DIR"
-      make up ENV=staging ONLY=egress PROFILE=awsds-deploy-staging AUTO=1
+      AWS_PROFILE=awsds-deploy-staging ./scripts/check-egress.py staging egress
 
 # 3.2: the bundle read as the runner's own role (decision 20) and checked before a file of it is read;
 # the release job lints each rendered workflow in the promoted mode (Stage 10 step 2.3, with the
@@ -338,7 +344,7 @@ staging-up:
 staging-deploy:
   extends: .promotion
   stage: staging
-  needs: [staging-up, test-deploy, store-bundle]
+  needs: [staging-check, test-deploy, store-bundle]
   resource_group: staging
   script:
     - |
@@ -418,8 +424,11 @@ staging-model:
       cd "$INFRA_DIR"
       AWS_PROFILE=awsds-deploy-staging ./scripts/model-chain.py transform staging --tag "$CI_COMMIT_TAG"
 
-# 3.4: every [E] Staging slice destroyed whatever the leg's outcome, by descending rank, the
-# orchestration and application slices before egress: an endpoint set left up is a bill.
+# 3.4: the application's slice destroyed whatever the leg's outcome, and nothing else (decision 27):
+# egress/ is the user's, and orchestration/ holds every application's workflows and chains, bills
+# nothing at rest and keeps its schedules DISABLED here, so it stays up between legs and the next leg
+# recreates the Glue job before it starts a chain. `make down ENV=staging` without ONLY= never runs
+# from the pipeline: refusal 10 keeps a deploy profile off every shared slice.
 staging-down:
   extends: .promotion
   stage: staging-teardown
@@ -431,7 +440,7 @@ staging-down:
     - |
       set -eu
       cd "$INFRA_DIR"
-      make down ENV=staging PROFILE=awsds-deploy-staging AUTO=1
+      make down ENV=staging ONLY=app/app-etl PROFILE=awsds-deploy-staging AUTO=1
 
 # 3.5: Production's plan of the application slice, read beside Staging's results before the gate, and
 # lint-plan on it, so a refusal stops the pipeline before the gate asks anyone to approve.
@@ -472,7 +481,8 @@ production-gate:
     - echo "$CI_COMMIT_TAG promoted by $GITLAB_USER_LOGIN"
 
 # 3.6: the same bundle and image by digest, nothing rebuilt; named slices only, never `make up` or
-# `make down ENV=production`. A Production run needs production/workloads-egress/ raised by the user.
+# `make down ENV=production`. A Production run needs production/workloads-egress/ raised by the user,
+# which the job reads first, as staging-check reads Staging's (decision 27), and never raises.
 # The application slice applies a plan of its own, linted as Staging's: 3.5's plan is read, never applied.
 production-deploy:
   extends: .promotion
@@ -483,6 +493,7 @@ production-deploy:
     - |
       set -eu
       cd "$INFRA_DIR"
+      AWS_PROFILE=awsds-deploy-prod ./scripts/check-egress.py production workloads-egress
       AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" bundle.zip --only-show-errors
       echo "$BUNDLE_SHA256  bundle.zip" | sha256sum -c -
       export AWS_PROFILE=awsds-deploy-prod

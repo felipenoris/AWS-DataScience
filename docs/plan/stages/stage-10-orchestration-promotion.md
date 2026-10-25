@@ -1338,7 +1338,8 @@ Each is decided during the stage and written into `docs/log/log-stage-10-orchest
     verification xxv stay open until one exists. **Taken by the user 2026-10-16, as the alternative.**
 19. **Staging's schedule, and how the Staging leg starts a chain** (3.5, 6.1; Stage 8 step 3.3). Staging's
     slice lives for the leg alone: the pipeline applies it, and the leg's `make down ENV=staging` destroys it
-    (Stage 8 3.4), so an `ENABLED` nightly schedule there would fire only if a leg spanned its minute.
+    (Stage 8 3.4; since Stage 8 decision 27, 2026-10-24, the slice stays up between legs and the user's
+    `make down ENV=staging` destroys it), so an `ENABLED` nightly schedule there would fire only if a leg spanned its minute.
     Recommended: **the schedule `DISABLED` in Staging, the leg starting the chain's machine itself**,
     `states:StartExecution` on `awsds-staging-chain-app-etl`, then `DescribeExecution` until it ends and
     `GetExecutionHistory` on a failure: the leg then tests the layer Production runs, the machine starting

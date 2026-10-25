@@ -2971,3 +2971,40 @@ user with `InfrastructureAccess`) and for 3.7's record. Times UTC.*
   (INT-07). Production's own run pulled it at 21:44:50 as `awsds-prod-job-exec`, and one call at
   21:45:36 answered `InvalidParameterException` with no repository named, the run unaffected, as Stage
   18 read on 2026-10-19.
+
+## 2026-10-24 — decision 27: the pipeline raises and destroys no shared slice
+
+*Claude's hand, with the environment as the promotion sitting left it; every call a read. Times UTC.*
+
+- **[user] The decision**, in chat, after the first promotion's legs were read: *"todo o estado
+  compartilhado será gerenciado pelo usuário pelo make up, seja o ENV sandbox/staging/production"*. What
+  it answers: a Staging `egress/` up/down cycle records about 200 AWS Config items, about 0.60 USD (107 in
+  the 20:00 UTC hour of 2026-10-24 for one `staging-up` and two `staging-deploy` attempts,
+  `docs/PRICING.md` §2 and §3), paid by every pipeline run; and `staging-down`'s `make down ENV=staging`
+  destroys every `[E]` slice of the account, what the user or another application raised in the one
+  state they share.
+- **[Claude] The template** (`examples/app-etl/.gitlab-ci.yml` on this repository's branch; `awsds/app-etl`
+  and the mirror untouched while §V's promotion runs on the current legs): `staging-up` became
+  `staging-check`, `scripts/check-egress.py staging egress` as `awsds-deploy-staging`, which reads the
+  slice's state and fails with `make up ENV=staging ONLY=egress` and the identity that runs it;
+  `production-deploy` reads `workloads-egress/` the same way as `awsds-deploy-prod`, before the bundle;
+  `staging-down` runs `make down ENV=staging ONLY=app/app-etl`, the application's slice alone,
+  `orchestration/` staying up between legs (decision 27 says why). `check-gitlab-ci.py` passes.
+- **[Claude] `check-egress.py` run by hand** as the infrastructure user, between 00:20 and 00:30 on
+  2026-10-25: `staging/egress/` up, seven endpoints `available` and the DNS Firewall association
+  `COMPLETE` (the promotion sitting's); `production/workloads-egress/` the same seven, up for 6.1's
+  firing at 06:30; the Staging state read as `awsds-infra-prod` answered `403` on `HeadObject`, and the
+  script exited 2 with the refusal's text, not "down" (Lesson 62).
+- **[Claude] The scripts**: `layers.py` refusal 10, a deploy profile acts on an application slice and the
+  orchestration slice alone; `make up ENV=staging ONLY=egress PROFILE=awsds-deploy-staging DRY=1` prints
+  it on `staging/egress`, and `make down ENV=staging ONLY=app/app-etl PROFILE=awsds-deploy-staging DRY=1`
+  lists the one destroy; `tfhygiene/states.py` gained `state_document`. `make check` OK.
+- **[Claude] The grants, written and planned, not applied**: `awsds-deploy-staging` loses `apply-egress`
+  and the `staging/egress/` state prefix; both deploy roles gain `DescribeTheEgressEndpoints` and
+  `ReadTheDnsFirewallAssociation` in `apply-application`, and the egress slice's state as a read key.
+  `staging/foundation/` planned *0 to add, 3 to change, 1 to destroy* (the role's description,
+  `apply-application` and `state` changed, `apply-egress` destroyed); `production/foundation/` *0 to add, 3 to
+  change, 0 to destroy* (the same three). A `terraform init` run beside pre-commit's `terraform_validate`
+  in the same slice folder failed twice (`fetch-pack: invalid index-pack output`, then *Required plugins
+  are not installed*) and passed alone. The applies wait for the mirror to carry the new legs: the
+  narrowed role refuses the current `staging-up`.

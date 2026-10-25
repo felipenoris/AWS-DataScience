@@ -501,10 +501,12 @@ provisioned into the account (D26), so the teardown is `sagemaker:ListApps`/`Del
 space) scoped to that domain, never a call against the DataZone domain, which owns no compute. `make down`
 discovers the domain ID rather than having it pasted in, since the blueprint chose it.
 
-`ENV=staging` is the one environment a human normally never runs these against: `make up ENV=staging` and
-`make down ENV=staging` are steps *inside* the promotion pipeline (Stage 8), which brings Staging up,
-deploys, tests, and tears it down again. They still have to work by hand — a rebuild that only works from
-CI is the same bug as one that only works by hand — but the expected caller is the pipeline.
+`ENV=staging` is raised and taken down by the user, as every other environment (Stage 8 decision 27,
+2026-10-24): `make up ENV=staging ONLY=egress` before a promotion's tag and `make down ENV=staging` after
+its leg. The pipeline applies the application's own slices alone, `staging/app/<app>/` and
+`staging/orchestration/`, destroys `staging/app/<app>/` at the leg's end, and `layers.py` refusal 10 keeps
+its profile off every shared slice. Both paths work by hand — a rebuild that only works from CI is the
+same bug as one that only works by hand.
 
 **Terraform rules:**
 
