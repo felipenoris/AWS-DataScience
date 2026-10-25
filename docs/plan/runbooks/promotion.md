@@ -496,8 +496,8 @@ ENV=production` here carries `ONLY=`, or the build runner is destroyed.
 12. **[Claude]** §R, `./aws/warehouse.py awsds-infra-prod --sql` and `./aws/orchestration.py` (`OR-9` on
     three chains), then `make down ENV=production ONLY=workloads-egress,warehouse-compute`. **Done
     2026-10-25**: the user's downs of Staging, Sandbox, GitLab, the hub and, after the train chain,
-    `workloads-egress/`; at 07:14 `./aws/egress.py` read 0 interface endpoints, 0 NAT and 0.000 USD/h in the
-    three accounts, `make status` 0.0000 USD/h with the application and orchestration slices up, and
+    `workloads-egress/`; at 07:14 `./aws/egress.py` read 0 interface endpoints, 0 NAT and 0.000 USD/h in
+    Production, Staging and Sandbox, `make status` 0.0000 USD/h with the application and orchestration slices up, and
     `orchestration.py` passed every Production check, `OR-9` on the three chains. `warehouse.py` ran without
     `--sql`: both workgroups were gone, so `EXC-13`'s database reading waits for the next warehouse sitting.
     Staging's `make down` met Lake Formation's refusal of the application table's delete, fixed by
