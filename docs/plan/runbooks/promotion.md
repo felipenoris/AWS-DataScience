@@ -11,14 +11,11 @@ record. What a step reads is recorded in that stage's log, in the sitting it ran
 Written 2026-10-23 with the environment down. Every `[Claude⚡]` apply waits for the user's word in
 chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs.
 
-**Where it stands, 2026-10-24**: §0 and §P done, §0.5 included; §W's steps 1 to 4 done (the
-namespace, 9.3's schema). The quotas are above zero in both targets (§0.2), and the release that closes
-what v0.3.0 leaves, v0.4.0, is written, its six `[P]` applies done (§0.6), and §H done the same
-evening (the mirror at `0236a99d`, the legs on `awsds/app-etl`'s `main`). §T ran as `v0.3.3`, the
-first promotion. §V is under way: steps 1 and 2 done, `v0.4.0`'s pipeline stopped at `test-deploy` on
-the job's own read of the run, `v0.4.1`'s at the train chain's `evaluate`, and the data release is the
-tag `v0.4.2` (§V step 3), with the
-warehouse's table, the datashare of §W step 5 and the model chain.
+**Where it stands, 2026-10-25**: §0, §P, §H and §T done (`v0.3.3`, the first promotion). §V is done
+but its step 10 and step 12: the data release `v0.4.2` (after `v0.4.0` and `v0.4.1` stopped in their legs)
+promoted to Production, the model chain run and approved, the warehouse loaded, §W step 5's datashare
+built and read from a Sandbox project, verification ix answered on `v0.4.5`. Left: 6.1's reading of the
+06:30 and 07:00 UTC schedules (the 07:30 one paused through the slice), §R and the downs.
 
 | § | Holds |
 |---|---|
@@ -450,34 +447,46 @@ ENV=production` here carries `ONLY=`, or the build runner is destroyed.
    task's XCom and met it as JSON text (Stage 10's log); `staging-down` took Staging to zero as the deploy
    role. The fix, MR !10 (`863f30b1`, the template's tree `e8c12563`), and the data release is
    **`v0.4.2`**, pipeline #80.
-4. **[user] The gate**, as §T step 4, after `make up ENV=production ONLY=workloads-egress`.
+4. **[user] The gate**, as §T step 4, after `make up ENV=production ONLY=workloads-egress`. **Done
+   2026-10-25 at 00:54 UTC** on `v0.4.2`'s pipeline #80, after Staging's leg passed whole (both chains,
+   Staging's first training job and batch transform).
 5. **[pipeline] `production-deploy`**: the application slice with the table and the load job, the
    orchestration slice with three workflows and three chains, their schedules at 06:30, 07:00 and 07:30
-   UTC.
+   UTC. **Done 2026-10-25, 00:54 to 00:57 UTC**: *"2 added, 1 changed"* and *"20 added, 1 changed"*.
 6. **[Claude⚡] Production's runs**, as `awsds-infra-prod`, each followed to its end: the app-etl chain,
    then the train chain (`aws stepfunctions start-execution --state-machine-arn
    arn:aws:states:us-west-2:<Production>:stateMachine:awsds-prod-chain-<chain>`); or the schedules, if
-   the sitting spans their minutes.
+   the sitting spans their minutes. **Done 2026-10-25** (Stage 10's log): the app-etl chain 00:58 to
+   01:17 UTC (the governed read, 30 rows), the train chain 01:18 to 01:25 (Production's first model).
 7. **[user] The model's registration and approval**: `production-register`, then `production-approve`
    by a `deployment-managers` member, which `production-transform` follows; then Stage 10 5.5 from
-   Sandbox as the persona, `DescribeModelPackage` answering and `UpdateModelPackage` refused.
+   Sandbox as the persona, `DescribeModelPackage` answering and `UpdateModelPackage` refused. **Done
+   2026-10-25**: version 1 registered and approved by `awsds-deploy-prod` (01:28, 01:29 UTC), 5.3's rule
+   firing, Production's transform from the approved package (30 predictions), 5.5 read by the user.
 8. **[user + Claude⚡] The warehouse** (9.4 to 9.7): `make up ENV=production
    ONLY=workloads-egress,warehouse-compute GROUPS=redshift`; `production-warehouse-ddl`; the warehouse
    chain started as in step 6; 9.6's readings (the job's log: the database user and the count;
    verification xxv in `pg_user`); §W step 5's datashare, the table now existing, and 9.7 from a Sandbox
-   project with Sandbox's `warehouse-compute/` up.
+   project with Sandbox's `warehouse-compute/` up. **Done 2026-10-25** (Stage 9's log), after four grants
+   the plan had not named: the deploy role's Data API follow-up (`FollowItsOwnStatements`), the job
+   group's 5439 egress, and for 9.7 the access role's catalog read and Lake Formation grant and `TEMP` on
+   `sandbox` (`redshift-connection.md` §G); 9.7 read 30 rows, and again with Production's workgroup gone.
 9. **[user] Verification ix**: a tag `v0.4.3` from a branch whose `GOVERNED_COLUMNS` names a column
    `curated.trades` lacks (`book`), expected to pass `test` and fail `staging-test` at the governed read,
    Production untouched; the branch deleted after, `main` unchanged. The unit tests mock the governed
    table with the list's columns and compare the query it builds (`tests/test_glue_script.py`'s `SCHEMA`
    and expected queries), so the branch moves them with the list, as a developer would; the list alone
    fails `test` first and leaves the leg's gate unmeasured. The patch, read 2026-10-24: ruff clean and
-   27 tests passing.
+   27 tests passing. **Done 2026-10-25 on `v0.4.5`** (pipeline #87, the branch `ix-governed-drift-2`, on
+   decision 27's legs): `staging-test` failed at *"lake.curated.trades lacks book"*, Production untouched;
+   `v0.4.3` was cancelled before decision 27's legs, and `v0.4.4`, tagged on `main` without the drift,
+   read `staging-check`'s negative and positive. The two branches' delete is the user's.
 10. **[user + pipeline] Stage 10 6.1**: the schedules fire with `workloads-egress/` up, or the cron moves
     into the sitting by a commit, the mirror pushed and `production-deploy` retried; the pause lever
     through the slice; 3.2's deliberate break; 6.3's sentence before the first `make down ENV=production`.
 11. **[user] 3.7 again**: both `release.tf`s with `v0.4.2`'s tag, digest, SHA256 and `VersionId`s, the
-    orchestration slices' three workflows among them; the mirror pushed.
+    orchestration slices' three workflows among them; the mirror pushed. **Done 2026-10-25** in PR #255
+    (Production's two slices planned `No changes` by hand), the mirror at `79651026`.
 12. **[Claude]** §R, `./aws/warehouse.py awsds-infra-prod --sql` and `./aws/orchestration.py` (`OR-9` on
     three chains), then `make down ENV=production ONLY=workloads-egress,warehouse-compute`.
 

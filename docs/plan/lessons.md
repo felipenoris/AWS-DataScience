@@ -2678,6 +2678,44 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   retried apply created the workflow in 5 s. Where: `log-stage-10-orchestration-promotion.md`,
   2026-10-24; both `foundation/apply-orchestration.tf`, `TagTheWorkflowsAtCreation`.
 
+- **The MWAA Serverless worker renders an XCom into a template as the JSON of its value** (measured
+  2026-10-25, `v0.4.1`'s train chain in Staging). `{{ ti.xcom_pull(task_ids='train')['Training'] }}` failed
+  with *"'str object' has no attribute 'Training'"*: the training operator's dict reached Jinja as text, and
+  `report.json`, written from `{{ ti.xcom_pull(task_ids='summarize') }}`, holds the JSON text of the report's
+  string. A template indexes nothing; the callable decodes. Where: `log-stage-10-orchestration-promotion.md`,
+  2026-10-24; `examples/app-etl/code/app_etl_tasks.py`, `training_job_name`.
+
+- **The Data API authorizes following, reading and cancelling a statement on no resource** (measured
+  2026-10-25, `production-warehouse-ddl`). `DescribeStatement`, `GetStatementResult` and `CancelStatement`
+  granted on `workgroup/*` matched nothing, *"no identity-based policy allows"*, while `ExecuteStatement`
+  on the same ARN passed; the three take `"*"` and the condition key
+  `redshift-data:statement-owner-iam-userid`. The CLI on the deploy runner keeps one role session across a
+  job, so `aws:userid` matches between the two calls. Where: `log-stage-09-deployment-targets.md`,
+  2026-10-25; `production/foundation/deploy-anchors.tf`, `FollowItsOwnStatements`.
+
+- **The IAM policy simulator reads every action `explicitDeny` under a Region-ceiling SCP when the context
+  lacks `aws:RequestedRegion`** (measured 2026-10-25 in Production): `redshift-data:ExecuteStatement` and
+  `sagemaker:DescribeModelPackage`, both working calls, read `explicitDeny` with *"AllowedByOrganizations:
+  False"* and no matched statement; with `aws:RequestedRegion=us-west-2` in the context they read `allowed`.
+  Where: `log-stage-09-deployment-targets.md`, 2026-10-25.
+
+- **A Glue database with a `FederatedDatabase` refuses a `Description`**: *"Description and federation
+  source cannot exist together in a database!"* (measured 2026-10-25, Data Governance's `governed_trades`).
+  Where: `log-stage-09-deployment-targets.md`, 2026-10-25.
+
+- **A Redshift consumer of a Lake Formation-managed datashare calls Glue and Lake Formation as the
+  session's IAM principal, needs `TEMP` on the session's database, and reads with the producer's workgroup
+  gone** (measured 2026-10-25, Stage 9 9.7). A SageMaker project's portal session assumes its access role,
+  whose `RedshiftDbUser` tag names the database user `IAMR:datazone_usr_role_…`: the refusal named the
+  access role (`glue:GetTable`), so the catalog read and the Lake Formation grant belong to the access role,
+  never to the role the user is named after. A password user is refused, *"Current user is not
+  authenticated with IAM credentials"*; the share's table is an external table, and the query needs
+  `TEMP` on the database the session is in, *"permission denied to create temporary tables"*; and a
+  Serverless producer whose workgroup was destroyed keeps serving the share from its namespace. The
+  consumer account's Lake Formation administrator reads under the account's grant with no grant of its own.
+  Where: `log-stage-09-deployment-targets.md`, 2026-10-25; `sandbox/warehouse/iam.tf`,
+  `ReadTheGovernedShareCatalog`.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

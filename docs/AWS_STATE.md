@@ -180,6 +180,11 @@ A Redshift `GRANT` is a **fourth permission system** and cannot share the Lake F
 | `Production` | `governed` | — | user `IAMR:awsds-deploy-prod` | created the same way; `GRANT ROLE gov_trades_ddl` | 2026-10-24 |
 | `Production` | `governed` | `trades` | role `gov_trades_rw` | **default privilege**: `SELECT, INSERT, DELETE ON TABLES` for every relation `IAMR:awsds-deploy-prod` creates (`svv_default_privileges`, three rows) | 2026-10-24 |
 | `Production` | — | — | user `IAMR:AWSReservedSSO_InfrastructureAccess_c2bcabf74c885115` | **created by the platform, not by this register**, at `InfrastructureAccess`'s first IAM-authenticated session, `usesuper` and `usecreatedb` true (9.8's user nobody created); `rdsdb` is the service's | read 2026-10-24 |
+| `Production` | `governed` | `trades` | datashare `trades_lf` | `ADD SCHEMA trades`, `ADD ALL TABLES IN SCHEMA trades`, `SET INCLUDENEW = TRUE FOR SCHEMA trades`; `GRANT USAGE ON DATASHARE trades_lf TO ACCOUNT '<Data Governance>' VIA DATA CATALOG`; `authorize-data-share` to `DataCatalog/<Data Governance>`, `AUTHORIZED`, writes off (Stage 9 9.5) | 2026-10-25 |
+| `Production` | `governed` | `trades` | table `trades_notional` | owner `IAMR:awsds-deploy-prod`, created by v0.4.2's DDL job; `gov_trades_rw`'s default privilege reaches it, and `IAMR:awsds-prod-job-exec` wrote its 30 rows (9.6, verification xxv) | 2026-10-25 |
+| `Sandbox Account 1` | `governed_trades` | — | consumer database | `CREATE DATABASE governed_trades FROM ARN 'arn:aws:glue:us-west-2:<Data Governance>:database/governed_trades' WITH DATA CATALOG SCHEMA governed_trades`, as the admin; `shared via data catalog`, the table `governed_trades.trades.trades_notional` (Stage 9 9.5) | 2026-10-25 |
+| `Sandbox Account 1` | `governed_trades` | — | user `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` | `USAGE ON DATABASE governed_trades` | 2026-10-25 |
+| `Sandbox Account 1` | `sandbox` | — | the same user | `TEMP ON DATABASE sandbox`, the temporary objects a query on the share's external table needs (9.7) | 2026-10-25 |
 
 **Project `avhvbqn37ty7m8` (`eighth-experimentation`) holds `sbx_lab_rw` since 2026-09-21**, so `lab` is
 reachable by that project and the namespace admin. The two statements, verbatim, because nothing
@@ -320,6 +325,9 @@ and `terraform-live/staging/data/README.md`: 21 grants in Production, 22 in Stag
 | 2026-10-22 | idem | LF-Tag expression on **tables**: `layer ∈ {raw, curated}` **AND** `classification ∈ {public, internal}` | `SELECT`, `DESCRIBE` **with grant option** | idem |
 | 2026-10-22 | idem | database `curated`, named | `DESCRIBE` **with grant option** | Stage 9 pass 2: the producer's named write (INT-03) |
 | 2026-10-22 | idem | every table of `curated` (`ALL_TABLES`), named — **2 listed triples**, `SELECT` on the column wildcard | `SELECT`, `INSERT`, `DELETE`, `ALTER`, `DESCRIBE` **with grant option** | idem |
+| 2026-10-25 | Data Governance's administrator, the creator | federated database `governed_trades` over Production's datashare `trades_lf`, registered with no role; LF-Tags `layer=curated` on it and `classification=internal` on its table `trades.trades_notional` | `ALL` with grant option, the creator's alone; none to `IAM_ALLOWED_PRINCIPALS` | Stage 9 9.5 step 3; Sandbox's account reaches it through its tag grants above |
+| 2026-10-25 | role `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, in Sandbox | `<Data Governance>`'s database `governed_trades` and its table `trades.trades_notional`, named | `DESCRIBE`; `SELECT` on the column wildcard, `DESCRIBE` | Stage 9 9.5 step 4; unused by the portal's door, which evaluates the access role (9.7) |
+| 2026-10-25 | role `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`, in Sandbox | idem | `DESCRIBE`; `SELECT` on the column wildcard, `DESCRIBE` | Stage 9 9.7: the session's principal, which the Redshift consumer evaluates |
 
 Not a row, but visible in `list-permissions` and expected in the consumer accounts and in Data Governance since pass 4: each consumer
 account's `InfrastructureAccess` holds `ALL, DESCRIBE, DROP` **with grant option** on the two resource
