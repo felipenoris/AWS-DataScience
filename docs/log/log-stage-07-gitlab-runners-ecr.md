@@ -1008,3 +1008,10 @@ pages (`docs/REFERENCES.md`). No AWS call, nothing created.*
   several connections are several shared identities, not one per person. Binding a connection to a project by
   IAM (`UseConnection` on one ARN per project role) is conceivable and unmeasured, and would still be per
   project. Recorded in INT-13.
+- **[Claude] The user's design, a low-privilege identity for the connection**: a dedicated Identity Center user
+  signing in to GitLab by SAML (no local account), a Developer on the chosen projects alone, so the connection
+  lists those repositories and pushes only to unprotected branches, `main` and the `*-v*` tags staying
+  Maintainers' through merge requests the person opens. It narrows the shared identity to one low-privilege
+  pusher and keeps the gate in GitLab. Unmeasured: the vendor's note naming the Owner role for the authorizing
+  user, the author the service writes, the OAuth refresh past the SAML session, and the IAM narrowing. Recorded
+  in INT-13 for the evaluation, if the path is ever wanted.
