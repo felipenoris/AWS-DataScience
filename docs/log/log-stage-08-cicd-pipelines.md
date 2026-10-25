@@ -3276,3 +3276,23 @@ simulator alone. Times UTC.*
   key: `staging/orchestration/` `allowed` by `role_awsds-deploy-staging_state`, `staging/egress/`
   `implicitDeny`. Decision 27's narrowing holds as written: no grant writes the egress state, and no deny is
   involved.
+
+## 2026-10-25 — §R: the downs, and zero burn in every account
+
+*The user's hand for the downs; Claude's for the readings, as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`, `awsds-infra-staging`, `awsds-infra-sandbox-1`). Times UTC.*
+
+- **[user] The downs before 06:57**: `make down ENV=staging` (06:30 to 06:36, its table delete refused and
+  unblocked: Stage 9's log), Sandbox and GitLab; Production's `workloads-egress/` kept up for the 07:00 train
+  chain.
+- **[Claude] Read at 06:57 and 07:01**: `./aws/egress.py` reads 8 interface endpoints in Production (`glue`, `kms`,
+  `lakeformation`, `logs`, `sagemaker.api`, `secretsmanager`, `sts`, and `redshift-serverless`, raised by
+  `GROUPS=redshift` for the paused warehouse chain), 0.080 USD/h, Staging and Sandbox 0, no NAT anywhere;
+  `make status` reads the VPN, proxy and GitLab hosts `stopped`, Production's `workloads-egress/` (17
+  resources), `app/app-etl/` (3) and `orchestration/` (41) up, every other `[E]` slice down; no EC2 instance
+  running, no Redshift workgroup, no SageMaker app, endpoint or job and no Glue run in the three accounts.
+- **[user] `make down ENV=production ONLY=workloads-egress`**, after the train chain ended at 07:07:38.
+- **[Claude] Read at 07:14 and 07:19**: `./aws/egress.py`, 0 interface endpoints, 0 NAT and 0.000 USD/h in each
+  account, `EG-5` *"none - the correct between-sessions state (D11)"*; `make status`, *"estimated burn: USD
+  0.0000/h"*, Production's application and orchestration slices up at 0.0000 USD/h, every other `[E]` slice
+  down and the three `[D]` hosts stopped.

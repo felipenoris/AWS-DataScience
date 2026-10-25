@@ -11,11 +11,11 @@ record. What a step reads is recorded in that stage's log, in the sitting it ran
 Written 2026-10-23 with the environment down. Every `[Claude⚡]` apply waits for the user's word in
 chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs.
 
-**Where it stands, 2026-10-25**: §0, §P, §H and §T done (`v0.3.3`, the first promotion). §V is done
-but its step 10 and step 12: the data release `v0.4.2` (after `v0.4.0` and `v0.4.1` stopped in their legs)
-promoted to Production, the model chain run and approved, the warehouse loaded, §W step 5's datashare
-built and read from a Sandbox project, verification ix answered on `v0.4.5`. Left: 6.1's reading of the
-06:30 and 07:00 UTC schedules (the 07:30 one paused through the slice), §R and the downs.
+**Where it stands, 2026-10-25**: §0, §P, §H, §T and §V done. `v0.3.3` was the first promotion; the data
+release `v0.4.2` (after `v0.4.0` and `v0.4.1` stopped in their legs) reached Production, the model chain ran
+and was approved, the warehouse was loaded, §W step 5's datashare was built and read from a Sandbox
+project, verification ix was answered on `v0.4.5`, the 06:30 and 07:00 UTC schedules started their chains
+unattended (6.1), and §R read zero burn in every account after the downs.
 
 | § | Holds |
 |---|---|
@@ -484,11 +484,23 @@ ENV=production` here carries `ONLY=`, or the build runner is destroyed.
 10. **[user + pipeline] Stage 10 6.1**: the schedules fire with `workloads-egress/` up, or the cron moves
     into the sitting by a commit, the mirror pushed and `production-deploy` retried; the pause lever
     through the slice; 3.2's deliberate break; 6.3's sentence before the first `make down ENV=production`.
+    **Done 2026-10-25** with the endpoints up: the app-etl chain at 06:30:17 and the train chain at 07:00:36,
+    started by `scheduler.amazonaws.com`, both `SUCCEEDED`, each run `ON_DEMAND`; the warehouse schedule,
+    `DISABLED` through the slice at 01:15:54, silent at 07:30. Between sittings a run fails on the absent
+    endpoints: the two schedules' pause through the slice is planned and waits for the user (the waiting
+    list), as does 3.2's break.
 11. **[user] 3.7 again**: both `release.tf`s with `v0.4.2`'s tag, digest, SHA256 and `VersionId`s, the
     orchestration slices' three workflows among them; the mirror pushed. **Done 2026-10-25** in PR #255
     (Production's two slices planned `No changes` by hand), the mirror at `79651026`.
 12. **[Claude]** §R, `./aws/warehouse.py awsds-infra-prod --sql` and `./aws/orchestration.py` (`OR-9` on
-    three chains), then `make down ENV=production ONLY=workloads-egress,warehouse-compute`.
+    three chains), then `make down ENV=production ONLY=workloads-egress,warehouse-compute`. **Done
+    2026-10-25**: the user's downs of Staging, Sandbox, GitLab, the hub and, after the train chain,
+    `workloads-egress/`; at 07:14 `./aws/egress.py` read 0 interface endpoints, 0 NAT and 0.000 USD/h in the
+    three accounts, `make status` 0.0000 USD/h with the application and orchestration slices up, and
+    `orchestration.py` passed every Production check, `OR-9` on the three chains. `warehouse.py` ran without
+    `--sql`: both workgroups were gone, so `EXC-13`'s database reading waits for the next warehouse sitting.
+    Staging's `make down` met Lake Formation's refusal of the application table's delete, fixed by
+    `app_outputs`' infrastructure grant (Stage 9's log).
 
 ## Q. After the quotas: Stage 10's pass 3
 

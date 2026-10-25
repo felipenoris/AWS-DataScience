@@ -350,7 +350,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   since 2026-10-22.
   The MWAA Serverless service-linked role exists in both accounts, Production's created 2026-10-24 in
   `awsds-deploy-prod`'s session at pipeline #71's first `CreateWorkflow`, INT-14 answered in both; Production's
-  first run `SUCCEEDED` by hand (15 min), and 6.1 reads the schedule's firing at 06:30 UTC on 2026-10-25. **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
+  first run `SUCCEEDED` by hand (15 min); **6.1 read 2026-10-25**: the schedules started the app-etl and train chains unattended, both `SUCCEEDED`, each run `ON_DEMAND`, the `DISABLED` warehouse schedule silent at 07:30 (xxiv), and the `scheduledTime` placeholder never substituted until `orchestration-v0.2.1`. **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
   3.8): the workflow created by `awscc` under `InfrastructureAccess`, the chain's machine started, diagnosed two
   failures (the worker's XCom encryption needs `kms:GenerateDataKey` in the key policy and in the role's, both
   fixed) and `SUCCEEDED`; 0.5, decision 19, decision 2's context and verification xvi's worker clauses read; the
@@ -468,8 +468,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
   `--no-browser`.
-- **Module tags**: `orchestration-v0.2.0` (`staging/orchestration` applied 2026-10-23 in Stage 8 3.8's by-hand
-  leg; `production/orchestration` pinned, no release), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
+- **Module tags**: `orchestration-v0.2.1` (both callers pinned 2026-10-25, the schedule's input carrying the
+  Scheduler's placeholder literally; `production/orchestration` applied on `v0.2.0`), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit
@@ -619,6 +619,10 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     do not write — a claim about what a role lacks is made about the role, never about one policy on it.**
 73. **A selector that takes the last match is a claim that there is one — and the change that adds the
     second is never read against it.**
+74. **A placeholder that reads correctly after decoding can be inert to the service that substitutes it
+    textually — and the plan that fixes it calls the change whitespace.**
+75. **A permission the creator holds without a grant moves with whoever creates the object — a decision that
+    moves the teardown to another identity owes that identity the grant nobody had to write.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

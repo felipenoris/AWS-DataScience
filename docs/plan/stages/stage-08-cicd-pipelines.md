@@ -749,7 +749,11 @@ through a pipe whose exit code would hide its own (Lessons 46, 47).
   the application and orchestration slices hold the last release at rest, billing nothing (a Glue job
   definition, a catalog table, workflows and machines), and the user's `make down ENV=staging` takes them
   down with `egress/` after the leg. Refusal 10 refuses a deploy profile every slice but an application's
-  and the orchestration slice, so no `make down` of the pipeline's reaches `egress/`.
+  and the orchestration slice, so no `make down` of the pipeline's reaches `egress/`. **The first such down,
+  2026-10-25** (Stage 9's log), met Lake Formation's refusal of the application table's delete: the deploy
+  role created it, and a table's creator alone holds its permissions; `app_outputs`' infrastructure grant
+  (`ALTER`, `DROP`, `DESCRIBE`, applied the same day in both data slices) lets the user's identity apply and
+  destroy what the deploy role created.
 - **3.5 — [user] Run the production gate**: a **blocking manual job** (`when: manual` under `rules:`) with
   the Staging test results and the Production `terraform plan` in its artifacts, the plan read by Stage 10
   2.3's `lint-plan` first, so a refusal stops the pipeline before the gate; `resource_group:

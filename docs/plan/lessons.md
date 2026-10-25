@@ -1639,6 +1639,52 @@ tag.
 **What makes it expensive.** It fails at the last step of a long job, after the work it was meant to check
 succeeded, on an identifier that names something that exists; on a tag pipeline the fix costs a new tag.
 
+## Lesson 74 — a placeholder that reads correctly after decoding can be inert to a service that substitutes it textually, and the plan that fixes it calls the change whitespace
+
+**What happened.** Stage 10, 2026-10-25. The orchestration module wrote each schedule's target input with
+`jsonencode({ chain = …, scheduledTime = "<aws.scheduler.scheduled-time>" })`. `jsonencode` writes `<` and
+`>` as `\u003c` and `\u003e`, and EventBridge Scheduler substitutes a context attribute only where the input
+carries it literally, so Production's first scheduled executions received the placeholder unsubstituted.
+Every reader decoded the JSON first: the HCL, `describe-execution`'s input as a parser reads it, the plan.
+The fix's plan rendered the change as `jsonencode( # whitespace changes`.
+
+**Why it is a class rather than a slip.** A service that substitutes placeholders matches bytes: the
+Scheduler's `<aws.scheduler.*>` attributes, an EventBridge input transformer's `<path>` names. Every tool
+between the author and the service decodes before it shows anything, so an encoder that escapes the
+placeholder's delimiters makes it inert while every view reads it as intended. Lesson 56's inert line,
+produced by an encoder instead of a missing capability.
+
+**The rule.** Write a value a service substitutes into as a literal template with only the parts that need
+encoding encoded (here the chain's key); read back the stored raw string from the service's own API at the
+first apply; and read a plan's "whitespace changes" on a JSON string as a byte change.
+
+**What makes it expensive.** It is silent until something consumes the value. No chain forwarded the date, so
+the defect cost nothing yet; the first chain that reads it would receive a literal where a timestamp was
+expected, at a scheduled run in Production.
+
+## Lesson 75 — a permission the creator holds without a grant moves with whoever creates the object, and a decision that moves the teardown to another identity owes it the grant nobody had to write
+
+**What happened.** Stage 8's decision 27 (2026-10-24) moved Staging's teardown from the pipeline's deploy role
+to the user's `make down`. The application slice's table in `app_outputs` is created by the deploy role at
+the leg, and Lake Formation gives a table's creator its permissions and nobody else: the account's
+administrator, who created the database, holds no `DROP` on a table another principal created in it. The
+first such down, 2026-10-25, was refused *"Required Drop on trades_notional"*; the user unblocked it with a
+grant by name, which left with the table, and `app_outputs` gained a wildcard grant to the infrastructure
+identity. The decision, its plans and its applies were read against IAM, the deploy roles' grants narrowed
+and the user's permission set, and the creator's half was written in neither.
+
+**Why it is a class rather than a slip.** Creator-held permissions exist in more than one system here: Lake
+Formation's creator permissions on databases and tables, and Redshift's ownership, under which only an
+object's owner or a superuser drops it. A decision that changes who creates or who destroys an object changes
+who holds that half, and no policy diff shows it, because the permission was never written.
+
+**The rule.** When a decision moves an act (create, alter, destroy) to another identity, list the objects the
+act touches and, per object, what its creator holds without a grant; write the new identity's grant in the
+same change, and run the act once as the new identity before relying on it.
+
+**What makes it expensive.** It surfaces at the teardown, the step nobody rehearses, after the work succeeded,
+and the hand grant that unblocks it leaves with its object and teaches the next release nothing.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits; the entries here are facts about the platform that cost a measurement

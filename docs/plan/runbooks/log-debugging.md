@@ -106,7 +106,10 @@ aws cloudtrail lookup-events \
 > Two services give no action at all, and then the event name is all there is: **Glue** answered
 > `An unknown error occurred` for a refused `GetCatalogs`, and **Lake Formation** answered
 > *"Insufficient Lake Formation permission(s): Required Describe on raw"* — which is not an IAM failure,
-> and no IAM grant fixes it.
+> and no IAM grant fixes it. The trail does not carry that sentence: a `DeleteTable` Lake Formation
+> refused for want of `DROP` reads `AccessDenied`, *"An unknown error occurred"* in CloudTrail, while the
+> client read *"Required Drop on trades_notional"* (2026-10-25, Staging's `make down`). The missing grant
+> comes from the client's output or from `lakeformation list-permissions`, never from the trail.
 
 > **An absence from `lookup-events` is not evidence until the instrument has shown a presence.** A
 > lookup by `EventName=GetResources` returned no events while a lookup by

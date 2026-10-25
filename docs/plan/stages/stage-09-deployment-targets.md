@@ -212,7 +212,10 @@ another stage creates and survives a role's re-creation under its name.
   (admins = this account's `InfrastructureAccess` role, create-default permissions emptied — Stage 5a
   step 5.2's kill, repeated here — and **`parameters` carried explicitly from a read**, 1.5); **resource
   links** to the shared `raw` and `curated` databases; a local Glue database `app_outputs` for what
-  applications write to 1.1. The **regrants** are 2.3's — they need the share first.
+  applications write to 1.1. The **regrants** are 2.3's — they need the share first. **2026-10-25**: the
+  infrastructure user's `ALTER`, `DROP` and `DESCRIBE` on every table of `app_outputs`
+  (`infrastructure_app_outputs_tables`, in both data slices), after Staging's `make down` was refused the
+  delete of a table the deploy role created (the log).
   - **The admin seat.** Since `consumer-data-v0.5.0` the module declares the admin list once, at creation,
     with `ignore_changes` on it, and `DL-13` is the only defence. Production has no SMUS, so any second admin
     is a finding: `./aws/datalake.py` gains Production (`awsds-infra-prod` in its consumer profiles) for

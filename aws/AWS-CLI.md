@@ -94,6 +94,26 @@ runbook](../docs/plan/runbooks/scp-battery.md), "the class the battery cannot re
 aws organizations describe-policy --policy-id p-kve97k0o --profile awsds-infra-identity --query 'Policy.Content' --output text | python3 -m json.tool
 ```
 
+## The policy simulator
+
+`iam simulate-principal-policy` evaluates the organization's policies on the context it is given, and fills
+in neither the Region nor the resource's organization. Without them the Region-ceiling SCP, and the perimeter
+SCP's `IfExists` conditions on S3 writes, read `explicitDeny` for calls that work. Pass both when the
+question is the identity layer's, as the infrastructure user in the role's account:
+
+```bash
+ORG=$(aws organizations describe-organization --query Organization.Id --output text)
+aws iam simulate-principal-policy --policy-source-arn "arn:aws:iam::${ACC}:role/<role>" \
+  --action-names <action> --resource-arns <arn> \
+  --context-entries "ContextKeyName=aws:RequestedRegion,ContextKeyValues=us-west-2,ContextKeyType=string" \
+  "ContextKeyName=aws:ResourceOrgID,ContextKeyValues=${ORG},ContextKeyType=string"
+```
+
+With several resources, read `ResourceSpecificResults`: the top-level `EvalDecision` is the action's over all
+of them. A decision with `AllowedByOrganizations: false` and no matched statement is the organization's, and
+the identity layer under it is read by giving the context the SCP's carve-out. The measurements are in
+`docs/plan/lessons.md`, "What AWS does that its documentation does not say".
+
 ## Identity Center change alerts
 
 Metric:

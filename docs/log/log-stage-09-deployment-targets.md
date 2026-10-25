@@ -2214,3 +2214,14 @@ before the writes. Times UTC.*
   `InfrastructureAccess` holds `ALTER`, `DESCRIBE`, `DROP`, beside the deploy role's same three, the job role's
   `ALTER`, `DELETE`, `DESCRIBE`, `INSERT`, `SELECT` and the persona's `DESCRIBE`, `SELECT`. The next
   `make down ENV=staging` after a release is the grant's measurement.
+
+## 2026-10-25 — the warehouse instrument after the downs
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-sandbox-1`, `awsds-infra-prod`).
+Times UTC.*
+
+- **[Claude] `./aws/warehouse.py`** at 07:15: in each account `WH-8` *"1 namespace(s), 0 workgroup(s), all
+  expected"*, and `WH-4`, `WH-4b`, `WH-5`, `WH-7` and `WH-1b` pass; run without `--sql`, since both workgroups
+  are gone, so the database readings (`WH-6`, `WH-12`, `WH-14`) and `EXC-13`'s password wait for the next
+  warehouse sitting. `WH-9` reads the Sandbox connection's `lineageSync` `ENABLED` on `cron(43 3 * * ? *)`, 15
+  runs, none completed (`EXC-17`).

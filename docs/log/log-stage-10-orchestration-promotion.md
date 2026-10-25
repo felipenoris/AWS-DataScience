@@ -1152,3 +1152,71 @@ Account 1>` and `<AWS registry>` and the e-mail by `<data scientist user>`. Time
   arn:aws:sagemaker:us-west-2:<Production>:model-package/awsds-prod-model-app-etl/1 because no
   resource-based policy allows the sagemaker:UpdateModelPackage action"*. The gate holds from the far side,
   the refusal the group policy's absence of a grant.
+
+## 2026-10-25 — 6.1: the schedules start both chains unattended, and the paused one does not fire
+
+*Claude's hand, on the user's authorization in chat for the pause (*"Sim: pause o schedule
+awsds-prod-chain-app-etl-warehouse (DISABLED) pelo slice production/orchestration, com um commit no PR e o apply
+manual como usuário de infraestrutura (awsds-infra-prod); app-etl (06:30) e treino (07:00) disparam sozinhos
+amanhã."*), and for the readings, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`);
+nobody at the keyboard for the runs, `production/workloads-egress/` up since the warehouse sitting. Times UTC.*
+
+- **[Claude] The lever, through the slice**: the warehouse chain's `schedule_enabled = false` in
+  `production/orchestration/` (Stage 9 decision 15: the load fails whenever the warehouse compute is down),
+  planned at 01:15, *"Plan: 0 to add, 1 to change, 0 to destroy."*, the schedule's `state` `ENABLED` →
+  `DISABLED` alone; applied at 01:15:54, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*,
+  re-planned `No changes`; the app-etl and train schedules left `ENABLED`.
+- **[Claude] 06:30, the app-etl chain**: CloudTrail's `AssumeRole` at 06:30:17 by `scheduler.amazonaws.com` on
+  `awsds-prod-chain-scheduler`, and `StartExecution` by that session in the same second; the execution
+  `226adda1-…-841c0c8b1529`, the machine's third (the first two by hand), `SUCCEEDED` at 06:45:20. Its
+  `startWorkflowRun` started `wisIec9vNuC4No1` with the `ClientToken` `<execution name>-app-etl`, and
+  `get-workflow-run` reads **`RunType` `ON_DEMAND`**, `SUCCESS` from 06:30:22 to 06:43:01 (758 s): `transform`
+  118 s, `process` 487 s, `summarize` 6 s, `write_result` 5 s. The Glue job `jr_6c8d2e06…e99a` (06:31:09 to
+  06:32:58): *"reading SELECT trade_date, desk, instrument, quantity, price FROM lake.curated.trades"*, *"read 30
+  row(s)"*, *"wrote 30 row(s) to the table at s3://awsds-prod-outputs/app-etl/tables/trades_notional/"*, the
+  training sets at 24, 6 and 30 lines; four `GetDataAccess` at 06:32:12 and 06:32:39 to `awsds-prod-job-exec` on
+  the lake's `curated.trades`, through `vpce-05f87e3d8b6ce302d`, INT-03's read under the job role; the processing
+  job `app-etl-20261025T063334` `Completed` (06:33:35 to 06:38:58).
+- **[Claude] 07:00, the train chain**: `StartExecution` at 07:00:36 by the same Scheduler session; the execution
+  `906adda8-…-0739f9833f3e` `SUCCEEDED` at 07:07:38; the run `ouuzAXNpOfPrTV4` `ON_DEMAND`, `SUCCESS` in 296 s
+  (`train` 219 s, `evaluate` 5 s); the training job `app-etl-train-20261025T070126` `Completed` (07:02:35 to
+  07:04:29, 114 billable seconds) as `awsds-prod-job-exec`, with network isolation, inter-container encryption
+  and the data key on its volume and its output, `validation:rmse` 1016.31; `evaluation.json` at 07:05:42.
+- **[Claude] The failure rules stayed quiet**: `AWS/Events` `TriggeredRules` holds no datapoint for the four rules
+  of the two chains over each run's window, the instrument that read `awsds-prod-model-approval`'s triggers at
+  01:28 and 01:29.
+- **[Claude] The schedule's date never reached a chain**: both executions' input reads
+  `"scheduledTime":"<aws.scheduler.scheduled-time>"`, the schedule's stored `Target.Input` the same
+  text. The module's `jsonencode` escapes the angle brackets, and the Scheduler substitutes none of it; no chain
+  forwards the field (3.5).
+- **[Claude] 07:30, the paused chain** (verification xxiv's third clause), read at 07:32:01: the warehouse
+  schedule `DISABLED` on `cron(30 7 * * ? *)` UTC, and the machine's executions the two by hand of 01:49:52
+  (`FAILED`) and 01:59:59 (`SUCCEEDED`) alone, while the two `ENABLED` schedules had fired at theirs. The lever
+  holds.
+- **[Claude] `./aws/orchestration.py`** at 07:16, `workloads-egress/` already down: every Production check passes,
+  the three workflows `READY` with `TriggerMode` `manual_only` and their definitions at `v0.4.2`'s `VersionId`s,
+  `OR-8` *"2 event(s), every caller is awsds-deploy-prod"*, `OR-9` on the three chains (the warehouse's schedule
+  `DISABLED`); Staging's workflows and chains absent, a note. The failed calls of its section 14 are the profiles
+  of identities with no SSO session.
+
+## 2026-10-25 — `orchestration-v0.2.1`: the schedule's input carries the placeholder literally
+
+*Claude's hand, at the user's request to prepare what needs no environment (*"Aproveite para adiantar e preparar
+qualquer passo pendente do plano que não dependa do ambiente no ar."*), as the infrastructure user with
+`InfrastructureAccess`, plans only. Times UTC.*
+
+- **[Claude] The module**: `chains.tf` writes the schedule's input as a template with the chain's key alone
+  encoded, `{"chain":<key>,"scheduledTime":"<aws.scheduler.scheduled-time>"}`; a scratch configuration printed the
+  rendered string with literal angle brackets. Planned against `production/orchestration/` from the local path
+  (Recipe B's first step): *"Plan: 0 to add, 3 to change, 0 to destroy."*, each schedule's `input`, which the plan
+  renders as `jsonencode( # whitespace changes`; the caller back on its pin, re-initialised, `No changes`.
+- **[Claude] The tag**: read from origin at the moment of tagging, `orchestration-v0.2.0` the last; the commit
+  `8f3cfba8`, the tag `orchestration-v0.2.1` on it, pushed alone with the branch and read back by `git ls-remote`.
+- **[Claude] The callers**: both slices pin `orchestration-v0.2.1` (`4c9c7fa0`). Production plans *"0 to add, 3
+  to change, 0 to destroy."*, the three inputs; Staging's slice is down and plans its 21 resources from the
+  defaulted release, which the pipeline's Staging leg applies.
+- **[Claude] The pause, prepared**: between sittings `workloads-egress/` is down and a scheduled run fails on the
+  absent endpoints, so the app-etl and train chains' `schedule_enabled = false` is written in
+  `production/orchestration/` beside the warehouse chain's and saved as a plan, *"Plan: 0 to add, 3 to change, 0
+  to destroy."*: the three inputs and the two states `ENABLED` → `DISABLED`. The apply waits for the user's
+  decision (the waiting list).
