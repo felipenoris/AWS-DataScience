@@ -3487,3 +3487,20 @@ plan only. Times UTC.*
 - **[Claude] The copy**: `./scripts/gitlab-mirror.py awsds/deploy-image` at 20:34 read GitLab's `main` at
   `e502078b` holding the copy's six files unchanged, and wrote `gitlab/mirror.json`. The README's release row
   for `v0.3.0` is GitLab's to hold first, the mirror then copying it back.
+
+## 2026-10-25 — the deploy runner replaced on `v0.3.0`; the house image's merge request read
+
+*The user's hand for the merge of PR #260, `git pull` and `make gitlab-up BUILD=1` from the project folder;
+Claude's for the readings, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), reads
+only. This session's records continue on a branch cut from the merged `main`. Times UTC.*
+
+- **[user]** `make gitlab-up BUILD=1`: the deploy runner `i-04c2be6e15f27b9d8` terminated and
+  `i-0acaf7ded0e455dcd` launched at 20:40:08, `t3a.small`, the build and test runners untouched.
+- **[Claude] `./aws/cicd.py awsds-infra-prod`** at 20:42: all checks passed, `CI-1` the new deploy runner
+  running, `CI-9` the test runner as before. From here the deploy runner's jobs run Terraform 1.16.6, and a
+  slice the pipeline reads may be raised or applied from the laptop again (Lesson 76).
+- **[Claude] Stage 8 1.1's merge request, read before the user's act**: `./scripts/gitlab-mirror.py --dry-run
+  awsds/dev-env` at 20:42 reads GitLab's `main` at `5d5391ab` (2026-10-16) and one file differing from the
+  copy, `dev-env/Dockerfile`, the 72-name `NO_PROXY` literal; `./scripts/check-gitlab-mirror.py --plan`
+  reads `GM-1` to `GM-8` passing on the copy, 72 names and sha256 `6faf2e4761622508` on both sides. The
+  merge request carries that one file; the tag `default-v0.9.0` and the gate are the steward's.
