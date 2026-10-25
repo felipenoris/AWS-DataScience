@@ -2088,3 +2088,35 @@ infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infr
   `trades.trades_notional` (six columns, `notional` among them), with no RAM invitation pending: no named
   grant was needed for the account. In Sandbox the tag re-grants name the Data Scientist User's set, not a
   project role, so step 4's grant to the project role is still owed, with steps 5 and 9.7.
+
+## 2026-10-25 — 9.5's steps 4 and 5 in Sandbox: the project role's grant, the consumer database; the administrator reads it
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo os applies dos planos salvos de
+production/foundation (0/3/0, awsds-infra-prod) e staging/foundation (0/3/1, awsds-infra-staging) e os
+passos 4 e 5 do 9.5 no Sandbox (awsds-infra-sandbox-1)."*), as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-sandbox-1`, Sandbox's Lake Formation administrator), in the session's
+second branch (`claude/eloquent-ishizaka-04f598-2`, cut from `main` after PRs #255 and #256); the user raised
+`sandbox/warehouse-compute/` (the workgroup `AVAILABLE`, created 02:11:54). Times UTC.*
+
+- **[Claude] Step 4**, at 02:37:27 and 02:37:28: `grant-permissions` to
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` (`eighth-experimentation`, the project the warehouse
+  admits), `DESCRIBE` on `<Data Governance>`'s `governed_trades` and `SELECT`, `DESCRIBE` on its table
+  `trades.trades_notional`, by name, so the project reaches this table alone and not every `curated` /
+  `internal` table the account's tag grant covers. Read back: `DESCRIBE` on the database and the table and
+  `SELECT` as `TableWithColumns` with the column wildcard, which a `list-permissions` filtered by principal and
+  `Table` resource does not return.
+- **[Claude] Step 5**, the Data API as the namespace's admin in `warehouse`: `CREATE DATABASE governed_trades
+  FROM ARN 'arn:aws:glue:us-west-2:<Data Governance>:database/governed_trades' WITH DATA CATALOG SCHEMA
+  governed_trades` `FINISHED` at 02:38:48, and `GRANT USAGE ON DATABASE governed_trades TO
+  "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"` at 02:38:52, the user in `pg_user` since 6h.
+  `svv_redshift_databases` reads it `shared via data catalog`, `{"datacatalog_schema":"governed_trades"}`.
+- **[Claude] What the pages left open, read**: as `dbadmin`, a password user, `svv_all_tables` lists nothing in
+  `governed_trades` and a `SELECT` is refused, *"ERROR: Current user is not authenticated with IAM
+  credentials."*: a share registered with Lake Formation is read by an IAM-derived user alone. Through the Data
+  API with IAM authentication, as `IAMR:AWSReservedSSO_InfrastructureAccess_59e5b26af457128d`, the table is
+  `governed_trades.trades.trades_notional`, an `EXTERNAL TABLE` under the producer's schema name `trades`, not
+  the Glue database's; and `SELECT count(*)` read **30**, at 02:40, with no grant to that role: the account's
+  Lake Formation administrator reads under the grant the account holds from the lake, as it reads the lake's
+  `curated` tables. The project role's read is 9.7's, the user's.
+- **[Claude] 9.6's namespace half**: `awsds-prod-warehouse-exec` holds no inline and no attached policy (read
+  02:41), so the namespace role reaches no lake prefix (9.2).
