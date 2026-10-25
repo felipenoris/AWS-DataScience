@@ -75,6 +75,7 @@ app-etl:
               S3InputMode: File
               S3DataDistributionType: FullyReplicated
         ProcessingOutputConfig:
+          KmsKeyId: "{env.PROJECT_KEY_ARN}"
           Outputs:
             - OutputName: output
               S3Output:

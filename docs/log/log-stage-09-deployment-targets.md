@@ -2234,3 +2234,15 @@ Times UTC.*
   carry the answers this log and the step text already held; xxiii has had no subject since decision 5 took
   shape (ii). Rows i and iii stay as they were: their evidence is spread across 2.2's and 2.4's readings and
   was not re-read in this sitting.
+
+## 2026-10-25 — with the environment down: xii's identity half by the simulator
+
+*A read-only agent of this session took the reading as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-staging`, `awsds-infra-prod`), the simulator with `aws:RequestedRegion` and `aws:ResourceOrgID`.*
+
+- **[agent] xii**: in Staging,
+  `awsds-deploy-staging`'s `DescribeModelPackage` and `ListModelPackages` read `allowed` by `apply-application`,
+  `UpdateModelPackage` `implicitDeny`. Production's group policy `ReadTheVersionsAsTheStagingDeployRole` names that
+  role for the two reads on `model-package/awsds-prod-model-app-etl/*`; the simulator cannot evaluate a role as a
+  resource-policy principal, and Production's trail holds no `DescribeModelPackage` from Staging, so the proof is a
+  call from a Staging deploy session.

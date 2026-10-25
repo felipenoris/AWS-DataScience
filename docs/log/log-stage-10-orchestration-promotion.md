@@ -1231,3 +1231,49 @@ qualquer passo pendente do plano que não dependa do ambiente no ar."*), as the 
   declares no network ACL (`main.tf`, *"NACLs stay at the default allow, by decision (step 2.3)"*). The guide's
   outbound deny-all was never applied, and the workers reached the endpoints through the default ACL in every
   run from 2026-10-23 to 2026-10-25.
+
+## 2026-10-25 — with the environment down: xvi, xvii, xxi, xxiii and xxviii from the trail and the simulator; the processing output under `aws/s3`
+
+*A read-only agent of this session took the readings as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`, `awsds-infra-staging`, `awsds-infra-sandbox-1`), at the user's request to prepare what needs
+no environment; Claude's hand for the spot checks and the template's change. The simulator ran with
+`aws:RequestedRegion` and `aws:ResourceOrgID` in its context. Times UTC.*
+
+- **[agent] xvii**: at each save, `awsds-deploy-prod` made the key calls `airflow-serverless.amazonaws.com` invoked
+  on `alias/awsds-prod-data` under the workflow's ARN, `GenerateDataKey`, `Decrypt` and a `CreateGrant` naming
+  `airflow-serverless.us-west-2.amazonaws.com` as grantee and retiring principal (00:57:35 to 00:57:40 on
+  2026-10-25), and an S3-forwarded `Decrypt` in the same session; `awsds-deploy-staging` the same in Staging. At run
+  time the execution role made no S3-forwarded `Decrypt`: one `GenerateDataKey` per app-etl run, the result write;
+  its `s3:GetObject` on the release's YAML and code reads `implicitDeny`, `awsds-deploy-prod`'s `allowed`. The
+  service reads the definition and the code under the save's grant.
+- **[agent] xxviii**: `app-etl/outbox/report.json` at 06:43:01 under the data key, after the execution role's
+  S3-forwarded `GenerateDataKey` at 06:43:00; the simulator matches the key policy's `AllowTheWorkflowRolesViaS3`
+  and the role's `UseTheDataKeyThroughS3`. `v0.4.2`'s workflow writes no inbox marker, so that clause is
+  unexercised. The lake read is refused: `GetObject` on `awsds-data-curated`, `-raw` and `-dropbox`, `ListBucket`
+  and `GetDataAccess` read `implicitDeny` for the three execution roles, by their policy and their boundary.
+- **[agent] xxi**: with the live bucket policy as resource policy, `PutObject` and `DeleteObject` on
+  `applications/app-etl/` read `explicitDeny` for `awsds-prod-job-exec`, matched by
+  `DenyWritesToApplicationsButTheReleaseRoles` alone; `allowed` on `app-etl/work/job/` for it and on
+  `applications/` for `awsds-deploy-prod`; the release copy is twelve objects under `applications/app-etl/v0.4.2/`,
+  00:55:13 to 00:55:31, `MANIFEST.sha256` last. **[Claude]** read the policy's nine `Deny` statements back, that one
+  among them.
+- **[agent] xxiii's image half**: Sandbox's trail names `test-experimentation`'s project role, session `SageMaker`,
+  pulling `awsds-prod-ecr-app-etl` in the same second as each of nine `CreateProcessingJob` calls by that role
+  (2026-10-24 19:08:22 to 2026-10-25 05:40:10), the image by digest; Production's trail holds the same pulls by
+  account.
+- **[agent] xvi**: the workers' addresses fell in both AZs' subnets in every app-etl and train run, the endpoints
+  single-AZ in `private-usw2-az1`, no `ecr.*` and no `monitoring` endpoint; the logs arrive, `IncomingLogEvents` 105,
+  142 and 104 on `/awsds/prod/wf/app-etl` in the 21:00, 01:00 and 06:00 hours; no MWAA Serverless or Airflow metric
+  namespace exists in the three accounts over `list-metrics`' 14 days, which a `monitoring` endpoint would turn into
+  a reading.
+- **[agent, Claude] The processing output under `aws/s3`** (`EXC-22`): `app-etl/work/job/trades.summary.json`,
+  written at 06:38:54 by the processing job, is SSE-KMS under the AWS managed key `aws/s3`, read back by Claude
+  with `head-object` against both keys' ids; `report.json` is under the data key. The job's
+  `ProcessingOutputConfig` names no `KmsKeyId` while its volume carries the data key. **[Claude] The template**:
+  `examples/app-etl/workflows/app-etl.yaml` gains `ProcessingOutputConfig.KmsKeyId: "{env.PROJECT_KEY_ARN}"`, which
+  the render resolves to each account's data key and the manifest to the Sandbox project's key; the render check and
+  the template's 31 tests pass. The GitLab MR and its tag are the user's.
+- **[agent, Claude] A refusal during 5.4's `CreateModel`**: at 01:29:33 `awsds-prod-job-exec`, session
+  `sagemaker-inference`, was refused `sagemaker:DescribeModelPackage` on version 1, *"is not authorized to
+  perform: sagemaker:DescribeModelPackage"*, read back by Claude; the model and the transform completed. SageMaker
+  describes the package as the model's role and goes on without it today.
