@@ -3743,3 +3743,26 @@ user's GitLab session, reads only. Times UTC.*
 - **[Claude]** `staging-model` (#612) started 23:45:43 on the deploy runner, Stage 9 xii's registry read
   before Staging's own model; Production's trail showed no `ListModelPackages` or `DescribeModelPackage`
   yet at 23:46 (the trail lags the call).
+
+## 2026-10-25 — §N.1 step 9 closed: `staging-model`, Stage 9 xii's call in the job and in Production's trail
+
+*Claude's hand; the job's log in the user's GitLab session, SageMaker as `awsds-infra-staging`, CloudTrail
+and IAM as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`),
+reads only. Times UTC.*
+
+- **[Claude] `staging-model` (#612)**, 23:45:43 to 23:51:36, succeeded: first *"Production's registry:
+  version 1 of arn:aws:sagemaker:us-west-2:…:model-package-group/awsds-prod-model-app-etl is Approved, v0.4.2
+  trained by app-etl-train-20261025T011858"*, then *"== app-etl-v0-4-6-20261025T234609: the model of
+  app-etl-train-20261025T233703 on 30 batch row(s)"*, the transform `InProgress` from 23:46:45 and
+  `Completed` at 23:51:32 (SageMaker: created 23:46:13, ended 23:51:22), *"30 prediction(s), one per input
+  row, at s3://awsds-staging-outputs/models/app-etl/transform/app-etl-v0-4-6-20261025T234609/batch.csv.out"*,
+  the model deleted after.
+- **[Claude] Stage 9 xii in Production's trail** (`lookup-events`, 23:52): `DescribeModelPackage` at 23:46:03
+  on `model-package/awsds-prod-model-app-etl/1`, no error, `principalId`
+  `AROAZ4XFWAR7MPYEZXRTM:botocore-session-1792971953`, and `AROAZ4XFWAR7MPYEZXRTM` is `awsds-deploy-staging`'s
+  role id (`get-role`): Staging's deploy session read Production's registry through its own account's
+  credentials, the cross-account grant of Stage 8 4.1 exercised. `ListModelPackages`, the call before it,
+  had not reached the trail at 23:52.
+- Step 9 is closed: ix's Staging half (`OR-3`), `EXC-22`'s Staging half, xii. `production-plan` (#613)
+  started 23:51:40; `production-gate` (#614) is the manual job step 10 opens after
+  `make up ENV=production ONLY=workloads-egress`.
