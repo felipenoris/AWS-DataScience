@@ -3083,3 +3083,21 @@ with `InfrastructureAccess`, whose session expired at 00:52 UTC and was renewed 
   `8LwP7yZe…uKD1d`, `app-etl-warehouse` `GlCsV_FM…KMRB1`. Read at 00:58: the workflows
   `awsds-prod-wf-app-etl`, `-app-etl-train` and `-app-etl-warehouse` `READY`, modified 00:57:33 to
   00:57:37, and the three schedules `ENABLED`.
+
+## 2026-10-25 — `production-warehouse-ddl` retried; `v0.4.3`'s pipeline #82 for verification ix, cancelled by the user
+
+*The user's hand for the retry, the tag and the cancel; Claude's for the readings (the traces through
+GitLab's API in the user's Chrome session, AWS as the infrastructure user with `InfrastructureAccess`).
+Times UTC.*
+
+- **[user] `production-warehouse-ddl` retried** (job 454, 02:10:11 to 02:10:37), after the deploy role's
+  `FollowItsOwnStatements` (Stage 9's log): both statements `FINISHED`, the read-back *"IAMR:awsds-deploy-prod"*
+  and *"30"*. Verification xxii: the DDL runs again over the existing table; xxvii's reading half: the job
+  follows its statement with `DescribeStatement`.
+- **[user]** The branch `ix-governed-drift` (the drift patch, `GOVERNED_COLUMNS` with `book` and the tests'
+  mock moved with it) and the tag `v0.4.3` on it, pipeline #82 created at 02:11:24 on `3e86c3c6`: `test` and
+  `pip-audit` passed (02:11:40 to 02:11:58), `build-image` pushed `v0.4.3-3e86c3c6` (02:12:00 to 02:14:43);
+  the user cancelled the pipeline at 02:15 during `test-deploy`, to deploy the promotion legs of PR #256
+  first. **[Claude] read back** at 02:17: Staging holds no interface endpoint and no workflow, Production is
+  untouched, and the `test` project's newest run is still `v0.4.2`'s `1DCL6kFnnjzKqX6`. The tag `v0.4.3` is
+  spent; verification ix waits for the next tag on the new legs.
