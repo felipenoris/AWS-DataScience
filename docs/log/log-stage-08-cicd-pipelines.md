@@ -3438,3 +3438,29 @@ Times UTC.*
   markers, so the marker outlives the version; nothing else to clean. The bucket's
   `DenyDeletesExceptInfrastructure` spared the infrastructure user as written, the simulator's half of
   2026-10-18 reading the same for the other principals.
+
+
+## 2026-10-25 — the §N sitting raised: the hub, GitLab with the three runners, the tunnel; the readings
+
+*The user's hand for `make hub-up`, `make gitlab-up BUILD=1` and the tunnel, from the project folder at `main`
+(PR #259 merged at 20:06 UTC and pulled); Claude's for the readings, as the infrastructure user with
+`InfrastructureAccess`, reads only. This session continues on a branch cut from the merged `main`
+(`claude/stages-7-10-env-sitting-1`), the PR's own branch retired. Times UTC.*
+
+- **[user]** `awsds-prod-vpn` and `awsds-prod-proxy` started at 20:07:04 and 20:07:07, `awsds-prod-gitlab` at
+  20:07:45; the runners launched at 20:09:52 (deploy, `t3a.small`), 20:09:59 (test, `t3a.small`) and 20:10:04
+  (build, `m8i.xlarge`); the tunnel on the laptop.
+- **[Claude] `./aws/cicd.py`** on the five infrastructure profiles at 20:12: all checks passed; `CI-1` the deploy
+  runner running, `CI-9` the test runner running with IMDSv2 and hop limit 1, `CI-8` 572 deploy-role
+  assumptions, every caller the deploy runner, `CI-5` the application repository's policy admitting Sandbox
+  and Staging.
+- **[Claude] `./aws/egress.py`** at 20:13: all checks passed, no NAT gateway, `EG-5`:
+  `PROFILE                IF ENDPOINTS  NATs  USD/HOUR`
+  `awsds-infra-prod       12            0     0.120`
+  `awsds-infra-staging    0             0     0.000`
+  `awsds-infra-sandbox-1  0             0     0.000`
+  `TOTAL                  12            0     0.120`
+- **[Claude] `make status`** at 20:14: 0.4521 USD/h, the hub's two hosts, GitLab, the three runners and
+  `production/egress/`'s twelve endpoints; every other `[E]` slice down.
+- **[Claude]** `https://gitlab.awsds.internal/users/sign_in` answered `200` through the tunnel at 20:18, eleven
+  minutes after the start.
