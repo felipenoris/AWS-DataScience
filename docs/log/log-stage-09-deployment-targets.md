@@ -2014,3 +2014,77 @@ Times UTC.*
   commits, so the engine account's flag is not needed. Staging's leg reads through the lake's flag alone,
   and Staging's stays unset. Production's flag is back on, as decision 13 (a) left it; whether it stays is
   the user's to decide against `TM-26`. `curated.trades` holds 30 rows.
+
+## 2026-10-25 — §V step 8: the DDL, the load (9.6, xxv), two grants found missing, 9.5's first three steps
+
+*The user's hand for `make up ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift` and
+the pipeline's manual job; Claude's for the readings, the applies, the chain's runs and the datashare's
+commands, on the user's authorizations in chat (*"Autorizo o apply de production/foundation (plano salvo,
+0/1/0) como awsds-infra-prod, a chain awsds-prod-chain-app-etl-warehouse e os passos 1 a 3 do 9.5 (SQL do
+datashare em Production, authorize-data-share e o lado de Data Governance)."* and *"Autorizo o apply de
+production/warehouse (plano salvo, 1 to add: o egress 5439 do awsds-prod-jobs para o awsds-prod-warehouse)
+como awsds-infra-prod e rodar de novo a chain awsds-prod-chain-app-etl-warehouse."*), as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-data`,
+`awsds-infra-sandbox-1`); the planning session told before each apply. Times UTC.*
+
+- **[user] The compute**: the `redshift-serverless` endpoint `available` at 01:37:44, the workgroup
+  `awsds-prod-warehouse` created at 01:38:36 and `AVAILABLE` at 01:40:41, base 4 and max 8 RPU, not public,
+  the usage limit 10 RPU-hours monthly `deactivate`.
+- **[user] `production-warehouse-ddl`** (pipeline #80, job 449), about 01:42: **[Claude]** the trail holds
+  `ExecuteStatement` at 01:42:23 as `awsds-deploy-prod`, no error, and `DescribeStatement` at 01:42:30 in the
+  same role session, `AccessDenied`; the job stopped on *"is not authorized to perform:
+  redshift-data:DescribeStatement because no identity-based policy allows the redshift-data:DescribeStatement
+  action"*, exit 254. The statement had run: `./aws/warehouse.py awsds-infra-prod --sql` read `WH-14`
+  *"1 relation(s), each reachable by a role through a grant or a default privilege"*. The Data API
+  authorizes `DescribeStatement`, `GetStatementResult` and `CancelStatement` on no resource, so the grant
+  under `workgroup/*` matched nothing.
+- **[Claude] The deploy role's fix**: `FollowItsOwnStatements` in `production/foundation/deploy-anchors.tf`,
+  the three actions on `"*"` with `redshift-data:statement-owner-iam-userid` equal to `aws:userid`; planned
+  at 01:46:09 with the alerts var-file, *"Plan: 0 to add, 1 to change, 0 to destroy."*, the inline policies
+  at about 3,803 of 10,240 characters after; applied at 01:47:41, *"Modifications complete after 1s
+  [id=awsds-deploy-prod:apply-application]"*; re-planned `No changes`. The simulator, with
+  `aws:RequestedRegion` in the context, reads the three `allowed` on the role's own statement and
+  `implicitDeny` on another owner's; without that key it reads every action `explicitDeny`, the Region
+  ceiling's SCP, even `ExecuteStatement` and `sagemaker:DescribeModelPackage`, which work.
+- **[Claude] The warehouse chain, first run**, `v0-4-2-by-hand-2026-10-25-app-etl-warehouse`, 01:49:52 to
+  01:54:55, `FAILED`: the load job `jr_190a5fd2…0337` (01:50:40 to 01:52:37) *"read 30 row(s) from
+  s3://awsds-prod-outputs/app-etl/tables/trades_notional/"*, *"connecting to
+  jdbc:redshift://awsds-prod-warehouse.<Production>.us-west-2.redshift-serverless.amazonaws.com:5439/governed as
+  IAMR:awsds-prod-job-exec"*, then *"java.net.SocketTimeoutException: Connect timed out"*. The name resolved;
+  the job group `awsds-prod-jobs` (`sg-0b8b0b803f6fed9cc`) held egress to the interface endpoints, the S3
+  prefix list and itself, and none to the warehouse's group `sg-0f018ef6c4848a9a3`, whose ingress from it
+  9.1 had written. The workgroup's ENIs `10.32.85.148` and `10.32.42.6`, in the connection's subnet among
+  them.
+- **[Claude] The egress fix**: `jobs_to_warehouse_5439` in `production/warehouse/security-group.tf`,
+  planned at 01:57:14, *"Plan: 1 to add"*; applied at 01:59:33, *"Creation complete after 2s
+  [id=sgr-0c9aea27065a1d2b0]"*; re-planned `No changes`.
+- **[Claude] 9.6, the second run**, `v0-4-2-by-hand-2026-10-25-app-etl-warehouse-2`, 01:59:59 to 02:05:12,
+  `SUCCEEDED`: the load job `jr_453d7bb9…2870` (02:00:53 to 02:03:15) *"trades.trades_notional: 0 row(s)
+  deleted, 30 inserted, 30 counted for the load's dates, as IAMR:awsds-prod-job-exec"*. **Verification xxv**,
+  read at 02:05:55 through the Data API as the admin: `pg_user` holds `IAMR:awsds-prod-job-exec` and
+  `IAMR:awsds-deploy-prod`, neither a superuser, beside `dbadmin`, `rdsdb`, `gov_trades_owner` and the
+  infrastructure user's `IAMR:` user; `trades.trades_notional`'s owner is `IAMR:awsds-deploy-prod`, and it
+  holds 30 rows dated 2026-10-01 to 2026-10-05, written by the job role.
+- **[Claude] 9.5's step 1**, in `governed` as the admin, 01:51:05 to 01:51:22, each `FINISHED`: `CREATE
+  DATASHARE trades_lf`, `ALTER DATASHARE trades_lf ADD SCHEMA trades`, `ADD ALL TABLES IN SCHEMA trades`,
+  `SET INCLUDENEW = TRUE FOR SCHEMA trades`, `GRANT USAGE ON DATASHARE trades_lf TO ACCOUNT '<Data
+  Governance>' VIA DATA CATALOG`; `svv_datashare_objects` the schema `trades` and the table
+  `trades.trades_notional`, `svv_datashare_consumers` `DC:<Data Governance>`.
+- **[Claude] Step 2**, as `awsds-infra-prod`: `authorize-data-share` for `DataCatalog/<Data Governance>`,
+  `AUTHORIZED` at 01:52:05, `ProducerAllowedWrites` false, no publicly accessible consumer.
+- **[Claude] Step 3**, as `awsds-infra-data`: the share `AVAILABLE` to the consumer; `associate-data-share-consumer`
+  on the lake's catalog `ACTIVE` at 01:52:29; `register-resource` on the datashare's ARN at 01:52:38, no role,
+  `HybridAccessEnabled` and `WithPrivilegedAccess` false, `NOT_VERIFIED`; the create-defaults read empty
+  first. `glue create-database` with a description was refused, *"Description and federation source cannot
+  exist together in a database!"*; without it `governed_trades` was created at 01:53:16, its
+  `FederatedDatabase` the datashare's ARN on `aws:redshift`, `CreateTableDefaultPermissions` `[]`, its only
+  permission the creator's (`InfrastructureAccess`, `ALL` with grant option), none to
+  `IAM_ALLOWED_PRINCIPALS`; its table `trades.trades_notional`. LF-Tags at 01:54:06, `layer=curated` on the
+  database and `classification=internal` on the table, no failure.
+- **[Claude] The tag grant reaches the federated database**: Sandbox's account holds the lake's TBAC grants
+  (`DESCRIBE` on databases with `layer` in `curated`, `raw`; `DESCRIBE` and `SELECT` on tables with
+  `classification` in `internal`, `public` and `layer` in `curated`, `raw`, both grantable), and from Sandbox
+  `glue get-database` and `get-table` on `<Data Governance>`'s catalog answered for `governed_trades` and
+  `trades.trades_notional` (six columns, `notional` among them), with no RAM invitation pending: no named
+  grant was needed for the account. In Sandbox the tag re-grants name the Data Scientist User's set, not a
+  project role, so step 4's grant to the project role is still owed, with steps 5 and 9.7.
