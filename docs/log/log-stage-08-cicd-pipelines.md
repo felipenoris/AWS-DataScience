@@ -3680,7 +3680,7 @@ UTC.*
   pipeline #102, created 22:48:19.
 - **[Claude] The stages before the deploy**: `test` (#601) passed in 14 s; `build-image` (#602) passed in
   2 min 44 s, the app layers `CACHED` from the previous build, and printed *"== pushed
-  …/awsds-prod-ecr-app-etl:v0.4.6-8d50f685@sha256:ba8d41bf08bebeee084b38e7df9b8efa28e6fcccaf9865e0591fdec7d0462f98d"*
+  …/awsds-prod-ecr-app-etl:v0.4.6-8d50f685@sha256:ba8d41bf08bebee084b38e7df9b8efa28e6fcccaf9865e0591fdec7d0462f98d"*
   at 22:51:21, the base `awsds-prod-ecr-base@sha256:94359041…1975` as the template pins it; `build-task-code`
   (#603) passed in 8 s; `scan-gate` (#604) failed as allowed after 2 min 25 s: the push's scan at 22:53:39
   read CRITICAL 113, HIGH 612, MEDIUM 158, LOW 16, UNDEFINED 466, *"725 found, 130 in the baseline"*, *"595
@@ -3693,3 +3693,24 @@ UTC.*
 - **[user]** `make up ENV=sandbox ONLY=egress`, then the job's retry: `test-deploy` (#620) running from
   about 22:58. `store-bundle` (#606) and `release` (#607) follow it; `staging-gate` (#608) is the manual
   job step 8 opens.
+
+## 2026-10-25 — §N.1 steps 6 to 8: `test-deploy` retried, the release stored, Staging's gate and check
+
+*The user's hand for the retry, `make up ENV=staging ONLY=egress` and `staging-gate`; Claude's for the
+readings, from the user's GitLab session in Chrome. Times UTC.*
+
+- **[Claude] `test-deploy` (#620)**, 22:58:23 to 23:14:26, 16 min 3 s: the bundle `artifacts/app-etl.zip`,
+  16,440 bytes, sha256 `7334604b2f58564ebb3ee3032dea9900b4916966b84376880e36f4c9737fb50c`, the deploy to the
+  `test` project, its workflow run `GK8LmpHGAx9OcqR` (`ON_DEMAND`) started 23:00:16, completed 23:12:49,
+  `Duration` 753, `RunState` `SUCCESS`, four task instances (`transform`, `process`, `summarize`,
+  `write_result`); the known `datazone:GetGroupProfile` warnings of the deploy role.
+- **[Claude] `store-bundle` (#606)** at 23:14:32: *"artifacts/app-etl.zip: OK"*, uploaded to
+  `s3://awsds-prod-releases/app-etl/v0.4.6/app-etl.zip`. **`release` (#607)** at 23:14:44: *"release v0.4.6,
+  bundle s3://awsds-prod-releases/app-etl/v0.4.6/app-etl.zip, sha256 7334604b…b50c, image
+  …/awsds-prod-ecr-app-etl@sha256:ba8d41bf08bebee084b38e7df9b8efa28e6fcccaf9865e0591fdec7d0462f98d"*, the
+  GitLab release created; the three values of 3.7's record.
+- **[user]** `make up ENV=staging ONLY=egress`, then `staging-gate` (#608) at about 23:16. **[Claude]
+  `staging-check` (#609)**, 23:16:58 to 23:17:08: the mirror cloned at `2d3160f1`; `staging/egress/`'s state
+  holds the seven interface endpoints `available` (glue, kms, lakeformation, logs, sagemaker.api,
+  secretsmanager, sts) and the DNS Firewall association `COMPLETE`: *"ok: staging/egress/ is up"*, decision
+  27's read of the user's slice. `staging-deploy` (#610) running from 23:17.
