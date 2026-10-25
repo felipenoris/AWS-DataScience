@@ -200,6 +200,8 @@ resource "aws_sfn_state_machine" "chain" {
 
 # The pause lever is the schedule's state (step 6.1). The machine receives the scheduled time as its
 # input; a chain forwards it to a run as an OverrideParameters entry only where its workflow reads one.
+# The Scheduler substitutes a context attribute only where the input carries it literally, and
+# jsonencode writes < and > as \u003c and \u003e, so the input is a template with the key alone encoded.
 resource "aws_scheduler_schedule" "chain" {
   # checkov:skip=CKV_AWS_297:the schedule holds the chain's name and the scheduled-time placeholder and no data; a CMK would put the Scheduler's role and the deploy role on the data key's policy to protect neither
   for_each = var.chains
@@ -218,7 +220,7 @@ resource "aws_scheduler_schedule" "chain" {
   target {
     arn      = aws_sfn_state_machine.chain[each.key].arn
     role_arn = module.chain_starter_role["scheduler"].role_arn
-    input    = jsonencode({ chain = each.key, scheduledTime = "<aws.scheduler.scheduled-time>" })
+    input    = "{\"chain\":${jsonencode(each.key)},\"scheduledTime\":\"<aws.scheduler.scheduled-time>\"}"
 
     retry_policy {
       maximum_event_age_in_seconds = 3600
