@@ -3180,3 +3180,15 @@ user's authorization in this chat for each push. Times UTC.*
   `awsds-deploy-staging` the §V session applies refuses the old `staging-up`.
 - **[§V's session] The two `foundation/` applies** of decision 27, the user's authorization in that chat,
   are that session's to run and record; this session touched neither slice.
+- **[Claude] The applies read back at 02:43:04**, after the §V session reported them (its log entry, commit
+  `8873e500` on its branch: plans 02:31:52 and 02:32:25, applies 02:35:29 and 02:36:00, re-plans *No
+  changes*): `awsds-deploy-staging` holds the inline policies `apply-application` and `state` alone, no
+  `apply-egress`; both roles' `apply-application` carries `DescribeTheEgressEndpoints` and
+  `ReadTheDnsFirewallAssociation`, Production's `FollowItsOwnStatements` beside them; each `state` names the
+  egress slice's state key (`staging/egress/`, `production/workloads-egress/`). The §V session's simulator
+  readings, with `aws:RequestedRegion`: `DescribeVpcEndpoints` `allowed` for both roles,
+  `GetFirewallRuleGroupAssociation` `allowed` on an association ARN (`implicitDeny` on `*`),
+  `CreateVpcEndpoint` `implicitDeny` for both, `s3:GetObject` on the egress state key `allowed` for both,
+  `s3:PutObject` on Staging's egress state `explicitDeny`. The `waiting-on-the-user.md` row removed. The
+  mirror's push was not the §V session's, which never pushes to GitLab; the user had said they would push
+  `main` after #256's merge, so the attribution is theirs, to confirm.
