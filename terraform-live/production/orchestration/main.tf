@@ -117,20 +117,22 @@ locals {
 
   # Decision 13: every production workflow starts from a chain, a chain of one included. The cron is
   # UTC; the schedule's state is the pause lever (step 6.1).
+  # Paused between sittings: a run needs production/workloads-egress/'s endpoints, [E] (step 6.1), so a
+  # sitting that wants the scheduled runs raises the endpoints and turns these two on by a commit.
   chain_specs = {
     "app-etl" = {
       definition_template = file("${path.module}/chains/app-etl.asl.json")
       workflows           = ["app-etl"]
       schedule_expression = "cron(30 6 * * ? *)"
       schedule_timezone   = "UTC"
-      schedule_enabled    = true
+      schedule_enabled    = false
     }
     "app-etl-train" = {
       definition_template = file("${path.module}/chains/app-etl-train.asl.json")
       workflows           = ["app-etl-train"]
       schedule_expression = "cron(0 7 * * ? *)"
       schedule_timezone   = "UTC"
-      schedule_enabled    = true
+      schedule_enabled    = false
     }
     # Paused: the load fails whenever the warehouse compute, [E], is down (Stage 9 decision 15), so its
     # chain is started by hand in a sitting that raises the compute.

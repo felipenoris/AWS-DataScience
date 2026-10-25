@@ -487,8 +487,9 @@ ENV=production` here carries `ONLY=`, or the build runner is destroyed.
     **Done 2026-10-25** with the endpoints up: the app-etl chain at 06:30:17 and the train chain at 07:00:36,
     started by `scheduler.amazonaws.com`, both `SUCCEEDED`, each run `ON_DEMAND`; the warehouse schedule,
     `DISABLED` through the slice at 01:15:54, silent at 07:30. Between sittings a run fails on the absent
-    endpoints: the two schedules' pause through the slice is planned and waits for the user (the waiting
-    list), as does 3.2's break.
+    endpoints, so the app-etl and train schedules went `DISABLED` through the slice at 14:39 (the user's
+    decision, with `orchestration-v0.2.1`): a sitting that wants the scheduled runs raises `workloads-egress/`
+    and turns them on by a commit. 3.2's break waits (the waiting list).
 11. **[user] 3.7 again**: both `release.tf`s with `v0.4.2`'s tag, digest, SHA256 and `VersionId`s, the
     orchestration slices' three workflows among them; the mirror pushed. **Done 2026-10-25** in PR #255
     (Production's two slices planned `No changes` by hand), the mirror at `79651026`.

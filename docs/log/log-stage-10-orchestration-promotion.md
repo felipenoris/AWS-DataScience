@@ -1277,3 +1277,18 @@ no environment; Claude's hand for the spot checks and the template's change. The
   `sagemaker-inference`, was refused `sagemaker:DescribeModelPackage` on version 1, *"is not authorized to
   perform: sagemaker:DescribeModelPackage"*, read back by Claude; the model and the transform completed. SageMaker
   describes the package as the model's role and goes on without it today.
+
+## 2026-10-25 — `production/orchestration/` on `orchestration-v0.2.1`, the schedules paused between sittings
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo o apply do plano salvo de production/orchestration
+(0 to add, 3 to change: as três entradas corrigidas e os agendamentos app-etl e treino para DISABLED), como usuário
+de infraestrutura com InfrastructureAccess (awsds-infra-prod)."*), as the infrastructure user with
+`InfrastructureAccess`; the forked session told before the write. Times UTC.*
+
+- **[Claude] The apply** of the plan saved at 07:27: at 14:39:24, *"Apply complete! Resources: 0 added, 3 changed, 0
+  destroyed."*, the three schedules modified in place; re-planned `No changes`.
+- **[Claude] Read back** at 14:39:56 with `get-schedule`: `awsds-prod-chain-app-etl`, `-app-etl-train` and
+  `-app-etl-warehouse` `DISABLED` on `cron(30 6 * * ? *)`, `cron(0 7 * * ? *)` and `cron(30 7 * * ? *)`, each
+  `Target.Input` now `{"chain":"<key>","scheduledTime":"<aws.scheduler.scheduled-time>"}` with the angle brackets
+  literal. Whether the Scheduler substitutes the literal form is read at the next firing, when a sitting turns a
+  schedule on by a commit.

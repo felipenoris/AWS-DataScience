@@ -469,7 +469,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
   `--no-browser`.
 - **Module tags**: `orchestration-v0.2.1` (both callers pinned 2026-10-25, the schedule's input carrying the
-  Scheduler's placeholder literally; `production/orchestration` applied on `v0.2.0`), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
+  Scheduler's placeholder literally; `production/orchestration` applied on it 2026-10-25, its three schedules
+  `DISABLED` between sittings), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); never pipe a command whose exit
