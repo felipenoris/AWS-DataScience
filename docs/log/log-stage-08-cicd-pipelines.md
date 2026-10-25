@@ -3157,3 +3157,54 @@ Times UTC.*
   first. **[Claude] read back** at 02:17: Staging holds no interface endpoint and no workflow, Production is
   untouched, and the `test` project's newest run is still `v0.4.2`'s `1DCL6kFnnjzKqX6`. The tag `v0.4.3` is
   spent; verification ix waits for the next tag on the new legs.
+
+## 2026-10-25 — decision 27's maintenance: the mirror and the legs' merge request
+
+*Claude's hand, in the sitting the user and the §V session hold (the hub, GitLab and the tunnel up); the
+user's authorization in this chat for each push. Times UTC.*
+
+- **[user]** PR #256 merged at 02:28:08 as `79651026` (squash), after #255 (`f259e49a`, 02:22:28); this
+  session's branch retired with it, and the maintenance's commits go on
+  `claude/pipeline-app-slices-maintenance-55a372`, cut from `main`.
+- **[Claude] The mirror**, `git push gitlab origin/main:refs/heads/main`, authorized at 02:37: *"Everything
+  up-to-date"*, `awsds/infrastructure`'s `main` already at `79651026` at 02:37:56, pushed earlier by another
+  hand (the §V session was asked; unanswered when this was written). The runner clones refusal 10 and
+  `scripts/check-egress.py` from it.
+- **[Claude] The legs' merge request**, MR !11 on `awsds/app-etl`: a fresh clone of `main` (`863f30b1`, the
+  template's tree `e8c12563`, v0.4.2) into `$HOME/tmp/app-etl-legs-27`, the files swapped from
+  `examples/app-etl/` at `79651026` (`gitlab.md`, "The application template"), commit `764bfe9` with the
+  tree `b9f49fa8`, the same as `examples/app-etl`'s at `main`; the diff against `main`: `.gitlab-ci.yml` (58
+  lines) and `README.md` (2), nothing else. Pushed at 02:39:09 with the push options that create the merge
+  request (`merge_request.create`, target `main`, the source branch removed on merge); the validation in
+  the pipeline editor and the merge are the user's. Until it merges, no tag: the narrowed
+  `awsds-deploy-staging` the §V session applies refuses the old `staging-up`.
+- **[§V's session] The two `foundation/` applies** of decision 27, the user's authorization in that chat,
+  are that session's to run and record; this session touched neither slice.
+- **[Claude] The applies read back at 02:43:04**, after the §V session reported them (its log entry, commit
+  `8873e500` on its branch: plans 02:31:52 and 02:32:25, applies 02:35:29 and 02:36:00, re-plans *No
+  changes*): `awsds-deploy-staging` holds the inline policies `apply-application` and `state` alone, no
+  `apply-egress`; both roles' `apply-application` carries `DescribeTheEgressEndpoints` and
+  `ReadTheDnsFirewallAssociation`, Production's `FollowItsOwnStatements` beside them; each `state` names the
+  egress slice's state key (`staging/egress/`, `production/workloads-egress/`). The §V session's simulator
+  readings, with `aws:RequestedRegion`: `DescribeVpcEndpoints` `allowed` for both roles,
+  `GetFirewallRuleGroupAssociation` `allowed` on an association ARN (`implicitDeny` on `*`),
+  `CreateVpcEndpoint` `implicitDeny` for both, `s3:GetObject` on the egress state key `allowed` for both,
+  `s3:PutObject` on Staging's egress state `explicitDeny`. The `waiting-on-the-user.md` row removed. The
+  mirror's push was not the §V session's, which never pushes to GitLab; the user had said they would push
+  `main` after #256's merge, so the attribution is theirs, to confirm.
+- **[user] MR !11 merged** at 02:42:32 (`awsds/app-etl`'s `main` `163ccca`, the merge commit; the source
+  branch removed). **[Claude] read back** at 02:46: the tree `b9f49fa8`, the same as `examples/app-etl`'s at
+  `79651026`; `staging-gate` in the file, no `staging-down`. The new legs exist from the next tag on:
+  `staging-gate` manual before anything of the leg, `staging-check` reading Staging's `egress/` as
+  `awsds-deploy-staging`, `production-deploy` reading `workloads-egress/` first.
+- **[user] How the first tag on the new legs reads `staging-check`** (2026-10-25 UTC): *"na v0.4.4 clico o
+  staging-gate com o egress de Staging derrubado para ler a falha do staging-check, depois make up
+  ENV=staging ONLY=egress e retry"*: the negative first, at no cost, then the positive on the job's retry.
+  **[Claude] The precondition read at 02:47:19**, `./scripts/check-egress.py staging egress` as the
+  infrastructure user: *"FATAL: staging/egress/ is down: its state holds no interface endpoint; run `make up
+  ENV=staging ONLY=egress` from the project folder as the infrastructure user (profile awsds-infra-staging:
+  account Staging, permission set InfrastructureAccess), then retry this job"*, exit 1, the script's "down"
+  branch read for the first time. The pipeline's readings are the §V session's, the pointers this log's.
+- **[user] The mirror's push was theirs**, confirmed in chat (2026-10-25): `git push gitlab main` from the
+  project folder after #256's merge, before this session's authorized push read *"Everything up-to-date"*
+  at 02:37:56. The attribution above is closed.
