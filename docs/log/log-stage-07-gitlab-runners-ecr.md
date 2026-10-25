@@ -957,3 +957,14 @@ user's request; nothing created, no form submitted. About 18:51 UTC.*
   internet, where `gitlab.awsds.internal` does not exist; creating that host and running *Set up host* is the
   user's optional half, for the wording of the failed setup, deleted after. The accepted path stays the manual
   `git remote add` and push from inside a project (INT-09).
+
+## 2026-10-25 — 7.2 closed on the VPC half, by the user's decision
+
+*The user's decision in chat (*"Fico com a leitura da metade VPC; cancelo o formulário sem criar o host."*); Claude's
+hand for the record. No AWS call.*
+
+- **[user]** The *Create host* form cancelled, no host created; the *No VPC* attempt not run.
+- **[Claude]** 7.2 and verification ix are closed on the reading above: INT-13's answer is *no*, the console
+  offering no VPC in Data Governance for a GitLab self-managed host, and the accepted path stays the manual
+  `git remote add` and push from inside a project. The waiting list keeps only §I step 6's GitLab settings for
+  this stage.
