@@ -3197,3 +3197,11 @@ user's authorization in this chat for each push. Times UTC.*
   `79651026`; `staging-gate` in the file, no `staging-down`. The new legs exist from the next tag on:
   `staging-gate` manual before anything of the leg, `staging-check` reading Staging's `egress/` as
   `awsds-deploy-staging`, `production-deploy` reading `workloads-egress/` first.
+- **[user] How the first tag on the new legs reads `staging-check`** (2026-10-25 UTC): *"na v0.4.4 clico o
+  staging-gate com o egress de Staging derrubado para ler a falha do staging-check, depois make up
+  ENV=staging ONLY=egress e retry"*: the negative first, at no cost, then the positive on the job's retry.
+  **[Claude] The precondition read at 02:47:19**, `./scripts/check-egress.py staging egress` as the
+  infrastructure user: *"FATAL: staging/egress/ is down: its state holds no interface endpoint; run `make up
+  ENV=staging ONLY=egress` from the project folder as the infrastructure user (profile awsds-infra-staging:
+  account Staging, permission set InfrastructureAccess), then retry this job"*, exit 1, the script's "down"
+  branch read for the first time. The pipeline's readings are the §V session's, the pointers this log's.
