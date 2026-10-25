@@ -1292,3 +1292,21 @@ de infraestrutura com InfrastructureAccess (awsds-infra-prod)."*), as the infras
   `Target.Input` now `{"chain":"<key>","scheduledTime":"<aws.scheduler.scheduled-time>"}` with the angle brackets
   literal. Whether the Scheduler substitutes the literal form is read at the next firing, when a sitting turns a
   schedule on by a commit.
+
+## 2026-10-25 — the plan read for what is left; the next release's sitting written
+
+*Claude's hand, with two editing agents of this session, at the user's request to review the documentation, the
+runbooks and the Terraform comments against the session's learnings, to prepare what can be anticipated and to
+review what is left; no AWS write.*
+
+- **[Claude]** The stage file's status cell ends with what is left on 2026-10-25, its stale clauses corrected
+  against this log; `runbooks/promotion.md` §N orders every step left in Stages 8, 9 and 10 by the sitting that
+  runs it (nothing up, the release through Staging and Production, the warehouses, a Sandbox space, the
+  deliberate exercises, what waits on something else). The next tag needs PR #258 merged and `main` pushed to the
+  GitLab mirror first, since the mirror at `79651026` holds `production/orchestration/` on `orchestration-v0.2.0`
+  with the app-etl and train schedules `ENABLED` (the waiting list).
+- **[Claude]** The documentation, runbooks and Terraform comments read against the learnings: Staging's release
+  stays until the user's `make down` (decision 27), the governed warehouse is a Lake Formation-managed datashare,
+  `EXC-22` in `GOVERNANCE.md`'s encryption rule and the threat model, the save's KMS grant behind every workflow
+  run, the plan's `# whitespace changes` on a JSON string in `terraform-changes.md`, the principal-filtered
+  `list-permissions` in `log-debugging.md`, and `aws/orchestration.py`'s report texts.

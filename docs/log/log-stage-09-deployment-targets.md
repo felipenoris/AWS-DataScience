@@ -2264,3 +2264,31 @@ Times UTC.*
 - **[Claude] Read back** by resource at 14:58:07: the database holds `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`'s
   `DESCRIBE` alone, the table its `DESCRIBE` and `SELECT`. The project's door is unchanged, since the consumer
   evaluates the access role; the next warehouse sitting's query from `eighth-experimentation` is its reading.
+
+## 2026-10-25 — `EXC-13`'s database half was already read
+
+*Claude's hand, from this log; no AWS call.*
+
+- **[Claude] A correction of the 07:15 entry**, which left `EXC-13`'s password to the next warehouse sitting: the
+  reading was taken earlier the same day. The Data API authenticated as `dbadmin` through Sandbox's admin secret
+  at 02:38 (9.5's step 5, `CREATE DATABASE governed_trades`) and at 06:04 (`GRANT TEMP`), so the database holds
+  the password the secret's rotation of 2026-10-20 wrote. Production's secret rotates first by 2026-11-22, the
+  same reading due then.
+
+## 2026-10-25 — the plan read for what is left; the next release's sitting written
+
+*Claude's hand, with two editing agents of this session, at the user's request to review the documentation, the
+runbooks and the Terraform comments against the session's learnings, to prepare what can be anticipated and to
+review what is left; no AWS write.*
+
+- **[Claude]** The stage file's status cell ends with what is left on 2026-10-25, its stale clauses corrected
+  against this log; `runbooks/promotion.md` §N orders every step left in Stages 8, 9 and 10 by the sitting that
+  runs it (nothing up, the release through Staging and Production, the warehouses, a Sandbox space, the
+  deliberate exercises, what waits on something else). The next tag needs PR #258 merged and `main` pushed to the
+  GitLab mirror first, since the mirror at `79651026` holds `production/orchestration/` on `orchestration-v0.2.0`
+  with the app-etl and train schedules `ENABLED` (the waiting list).
+- **[Claude]** The documentation, runbooks and Terraform comments read against the learnings: Staging's release
+  stays until the user's `make down` (decision 27), the governed warehouse is a Lake Formation-managed datashare,
+  `EXC-22` in `GOVERNANCE.md`'s encryption rule and the threat model, the save's KMS grant behind every workflow
+  run, the plan's `# whitespace changes` on a JSON string in `terraform-changes.md`, the principal-filtered
+  `list-permissions` in `log-debugging.md`, and `aws/orchestration.py`'s report texts.

@@ -362,7 +362,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   failing** (decision 3, the user's). **Cost**: 1.44 USD per query-hour at 4 RPU and 0.00 idle, with no
   pause, so `make down` is the guarantee; the ratchet past 4 never returns; the free trial, 300 USD per
   account for 90 days, absorbs the bill to 2026-12-19. **`EXC-13`**: the admin secret's first rotation succeeded on 2026-10-20 with no workgroup,
-  against AWS's page; whether the database took the password is the next `./aws/warehouse.py --sql`'s reading. SQL from a notebook is `redshift-connection.md` §J. AWS's `SageMakerStudioProjectUserRolePolicy` v75 grants
+  against AWS's page, and the database took the password (the Data API as `dbadmin` through the secret, 2026-10-25). SQL from a notebook is `redshift-connection.md` §J. AWS's `SageMakerStudioProjectUserRolePolicy` v75 grants
   every project role `GetCredentials` and the Data API on a workgroup tagged with its project, `GetCredentials` on
   any workgroup through `sqlworkbench`, and the secrets tagged with its project or
   `for-use-with-all-datazone-projects`: the admin secret stays closed by its tags alone (`INV-20`, PR #187).
@@ -399,7 +399,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (7.2 left), pass 4's 8.4 done. Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
   `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners out, and the build runner rises
   only with `BUILD=1` (decision 5, 2026-10-24). Owed: INT-09's clone from a
-  notebook, 8.1-8.3 (3.5's memberships done 2026-10-24); 5.6's ECR grant applied 2026-10-22. The GitLab backups leave the bucket on 2026-11-13 and 2026-11-15.
+  notebook, 8.1-8.3 (3.5's memberships done 2026-10-24); 5.6's ECR grant applied 2026-10-22. The GitLab backups of 2026-10-13, 10-15 and 10-25 leave the bucket on 2026-11-13, 11-15 and 11-25.
   **`saml.auto.tfvars` lives in the project folder's `secrets/`**: a `tooling/` plan passes
   `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block.
 - **Stage 8 in progress**: passes 0-3 done (`awsds/ci-gates`, the test runner, the house image on Python
@@ -423,8 +423,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `v0.2.1`) and keep Staging's release file as an artifact; 3.8 carries the by-hand sequence. **3.8 ran by hand on 2026-10-23, before the pipeline's leg** (Stage 8's
   log): `v0.2.1` released into Staging, both slices applied, the chain `SUCCEEDED` at its third execution after
   two policy fixes, the data keys' and the execution role's `kms:GenerateDataKey` for the XCom encryption
-  (`orchestration-v0.2.0`); the pipeline's leg owes verification xi's parity, `uv run` on the runner and the
-  deploy role's calls. **v0.4.0 written 2026-10-24** (`examples/app-etl/` at `main`; v0.3.0 is the template
+  (`orchestration-v0.2.0`). **v0.4.0 written 2026-10-24** (`examples/app-etl/` at `main`; v0.3.0 is the template
   at `0236a99d`): 8.5's governed read, 9.4, Stage 10's pass 3; its six `[P]` applies done 2026-10-24
   (`runbooks/promotion.md` §0.6), the sittings §T then §V. **The first promotion ran 2026-10-24**: `v0.3.3`'s
   pipeline #71 took Staging's leg to `SUCCEEDED` and deployed Production, once the lab's CA, the workflow's
