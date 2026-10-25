@@ -3179,3 +3179,34 @@ session's second branch; PR #256's session and the planning session told before 
   `ec2:DescribeVpcEndpoints` `allowed` for both deploy roles, `route53resolver:GetFirewallRuleGroupAssociation`
   `allowed` on an association's ARN (`implicitDeny` on `"*"`, the grant naming the association's type), and
   `ec2:CreateVpcEndpoint` `implicitDeny`: neither role raises an egress slice any more.
+
+## 2026-10-25 — the legs of decisions 27 and 28 on `v0.4.4` (pipeline #85) and verification ix on `v0.4.5` (pipeline #87)
+
+*The user's hand for MR !11 (opened by PR #256's session), the tags, the gates, `make up ENV=staging
+ONLY=egress` and the cancel; Claude's for the readings (the traces through GitLab's API in the user's Chrome
+session, AWS as the infrastructure user with `InfrastructureAccess`). Times UTC.*
+
+- **[user]** MR !11 merged at 02:42:32, `awsds/app-etl`'s `main` at `163ccca`, the template's tree `b9f49fa8`
+  (`examples/app-etl/` at `79651026`), `staging-gate` and `staging-check` in, `staging-down` out.
+- **[Claude] `v0.4.4`, pipeline #85**, the tag on `163cccaa` (`main`, no drift): the build half and
+  `test-deploy` passed (02:48:52 to 03:08:06); **the staging gate** clicked by the user at 03:22:54; **the
+  negative**: `staging-check` (job 501, 03:23:00 to 03:23:11) as `awsds-deploy-staging`, *"FATAL:
+  staging/egress/ is down: its state holds no interface endpoint; run `make up ENV=staging ONLY=egress` from the
+  project folder as the infrastructure user…"*; then the user's `make up ENV=staging ONLY=egress`, and **the
+  positive**, the retry (job 512, 04:34:22 to 04:34:35): seven endpoints listed `available` (`glue`, `kms`,
+  `lakeformation`, `logs`, `sagemaker.api`, `secretsmanager`, `sts`), *"DNS Firewall association
+  rslvr-frgassoc-18e6e7bc55304d6b COMPLETE"*, *"ok: staging/egress/ is up: 7 interface endpoint(s) available and 1
+  DNS Firewall association(s) COMPLETE"*; `staging-deploy`, `staging-test`, `staging-model` and
+  `production-plan` passed (04:34:39 to 05:08:02); the user cancelled the pipeline at 05:28:34 at
+  `production-gate`, since the tag carried no drift. Staging stayed up, as decision 27 has it: egress 16
+  resources, the application slice 2 and the orchestration slice 31.
+- **[Claude] `v0.4.5`, pipeline #87, verification ix**: the branch `ix-governed-drift-2` (`268964ad`, the tree
+  `9587ab57`, `b9f49fa8` with the drift patch checked); `test` passed at 05:32:05 with the drift and its tests,
+  and `test-deploy` passed (05:34:54 to 05:50:49), the `test` project reading the inbox; the staging gate at
+  05:54:57; `staging-check` passed (05:55:07 to 05:55:23) on the egress already up; `staging-deploy` (05:55:26 to
+  05:58:43); `staging-test` failed (05:58:46 to 06:04:14), the Glue job `jr_4636eb75…582d` *"RuntimeError:
+  lake.curated.trades lacks book: the application's schema source and the governed table disagree"*, the chain
+  *"FATAL: the chain app-etl ended FAILED"*; `staging-model` and every Production job skipped, the pipeline
+  `failed` at 06:04:15. **Verification ix answered yes**: a deliberately broken version passes `test` and stops
+  at 3.3 with Production untouched. The branches `ix-governed-drift` and `ix-governed-drift-2` are owed their
+  delete, the user's; `main` is unchanged.

@@ -2120,3 +2120,43 @@ second branch (`claude/eloquent-ishizaka-04f598-2`, cut from `main` after PRs #2
   `curated` tables. The project role's read is 9.7's, the user's.
 - **[Claude] 9.6's namespace half**: `awsds-prod-warehouse-exec` holds no inline and no attached policy (read
   02:41), so the namespace role reaches no lake prefix (9.2).
+
+## 2026-10-25 — 9.7: a Sandbox project reads the governed table, after three grants the pages did not name
+
+*The user's hand for the queries, from the project `eighth-experimentation`'s Query editor in the portal;
+Claude's for the grants and the applies, on the user's authorizations in chat (*"Autorizo, como
+awsds-infra-sandbox-1: o apply de sandbox/data (só a saída lake_catalog_id), o apply de sandbox/warehouse se
+o plano mostrar só a política do papel de acesso, e o grant DESCRIBE/SELECT em governed_trades ao
+awsds-sandbox-warehouse-access-avhvbqn37ty7m8."* and *"Autorizo, como awsds-infra-sandbox-1 pela Data API com
+o segredo do admin: GRANT TEMP ON DATABASE sandbox TO "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"."*),
+as the infrastructure user with `InfrastructureAccess` (`awsds-infra-sandbox-1`); the planning session told
+before the writes. In the user's pasted output the account id is replaced by `<Sandbox Account 1>`. Times
+UTC.*
+
+- **[user] The first attempt**, refused: *"ERROR: AwsClientException: AccessDeniedException from glue - User:
+  arn:aws:sts::<Sandbox Account 1>:assumed-role/awsds-sandbox-warehouse-access-avhvbqn37ty7m8/28f1b390-…@5hkjdsy3umpi1c
+  is not authorized to perform: glue:GetTable on resource: ar…"*. **The principal the consumer evaluates is
+  the session's**, the project's access role, which the portal's connection assumes; the database user
+  `IAMR:datazone_usr_role_…` is a name the access role's `RedshiftDbUser` tag gives, and neither Glue nor
+  Lake Formation sees that role. Step 4's grant to the project role is unused by this door.
+- **[Claude] The access role's two layers**: `sandbox/data/` gained the output `lake_catalog_id` (planned
+  05:56:20, *"Changes to Outputs: + lake_catalog_id"*, applied 05:57:35, *"0 added, 0 changed, 0 destroyed"*,
+  re-planned `No changes`); `sandbox/warehouse/` gained `ReadTheGovernedShareCatalog` on the access role's
+  portal policy, `glue:GetDatabase`, `GetDatabases`, `GetTable` and `GetTables` on the lake's catalog,
+  `database/governed_trades` and `table/governed_trades/*` (planned 05:58:05, *"Plan: 0 to add, 1 to change, 0
+  to destroy."*, `aws_iam_policy.project_access_portal["avhvbqn37ty7m8"]` alone; applied 05:58:34; re-planned
+  `No changes`); Lake Formation at 05:59:03, `DESCRIBE` on `governed_trades` and `SELECT`, `DESCRIBE` on its
+  table to `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`, read back beside step 4's grant to the project role.
+- **[user] The second attempt**, refused by Redshift: *"ERROR: Failed to incorporate external table
+  "trades"."trades_notional" into local catalog. Error=permission denied to create temporary tables in database
+  "sandbox""*. The share's table is an external table, and the session's database holds the temporary objects a
+  query on one needs; 5b and 6h revoked every database privilege from `PUBLIC`, `TEMP` with it.
+- **[Claude] The third layer**: in `sandbox` as the admin, `GRANT TEMP ON DATABASE sandbox TO
+  "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"` at 06:04:42, the ACL from `{dbadmin=CTA/dbadmin}` to
+  `{dbadmin=CTA/dbadmin,"IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"=T/dbadmin}`.
+- **[user] The third attempt**, `SELECT current_user, count(*), min(trade_date), max(trade_date) FROM
+  governed_trades.trades.trades_notional;`: *"current_user = IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c,
+  count = 30, min 2026-10-01, max = 2026-10-05"*. **INT-24 holds**: a Sandbox project reads a governed table
+  of Production's warehouse through Lake Formation, the lake's tag grant reaching the federated database,
+  with no network path between the accounts. The door needs, per project, the access role's catalog read
+  (IAM), its Lake Formation grant, `USAGE` on the consumer database and `TEMP` on the session's database.
