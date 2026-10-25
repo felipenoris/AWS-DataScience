@@ -1325,3 +1325,19 @@ review what is left; no AWS write.*
   delivered: option (b) has its reading, and 3.7's proof with it, the break having run through
   `awsds-staging-chain-app-etl`. The choice between (a), (b) and (c) stays the user's
   (`runbooks/promotion.md` §N.0, the waiting list).
+
+## 2026-10-25 — with the environment down: verification xi's offline half
+
+*The same agent's run as Stage 8's xiv entry of this date; Claude's hand for the record. No AWS call.*
+
+- **[agent] The lint refuses**, each exit 1: a portal-scoped rendered definition (`datazone_usr_role_*` in a
+  `RoleArn`, a `dzd-` domain id, `ProjectS3Path` and a `DataZone*` variable in a Glue argument), four cases
+  under `projeto`; a container named by anything but an ECR URI and digest, `awsds-prod-ecr-app-etl:v1.0.0`
+  (a tag) and `python:3.12` (a Docker Hub name), under `imagem`; a definition padded past 50 KB, 50,061 bytes
+  rendered and 50,045 in the authoring mode, under `limites`.
+- **[agent] `build-task-code`'s import line**: a copy of `code/app_etl_tasks.py` with a top-level import of a
+  package no interpreter has, zipped by the job's own command, fails `PYTHONPATH="code/app-etl.zip" python3 -c
+  "import app_etl_tasks"` with exit 1 and `ModuleNotFoundError` raised from inside the zip, the untouched copy
+  passing with exit 0; the same under Python 3.9 and the example's pinned 3.12. The CI half, a branch whose
+  pipeline's `test` goes red on the portal-scoped definition, is the GitLab sitting's
+  (`runbooks/promotion.md` §N.1 step 5).

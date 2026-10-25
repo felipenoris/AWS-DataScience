@@ -552,7 +552,9 @@ carries `ONLY=`, or the build runner is destroyed.
    deliberate violations of 2026-10-18 run again against scratch copies of `examples/app-etl/`; the lint
    on a portal-scoped definition, on a container named by anything but an ECR URI and digest and on a
    definition over 50 KB; and `build-task-code`'s import line on a package whose module imports what the
-   zip lacks. Each is expected to fail with exit 1.
+   zip lacks. Each is expected to fail with exit 1. **Done 2026-10-25** (Stage 8's and Stage 10's logs):
+   the 40 reproduced at `d856982c` and the rules since refused, 61 refusals, every control passing; xi's
+   four offline readings taken, its CI half N.1 step 5's.
 5. **[Claude] Stage 9 9.5's Terraform adoption**: import blocks for the share's authorization
    (Production), the consumer association, the registration and the federated database (Data
    Governance), written and planned; an object is adopted only where its plan after the import reads

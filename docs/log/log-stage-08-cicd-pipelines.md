@@ -3340,3 +3340,42 @@ review what is left; no AWS write.*
   `EXC-22` in `GOVERNANCE.md`'s encryption rule and the threat model, the save's KMS grant behind every workflow
   run, the plan's `# whitespace changes` on a JSON string in `terraform-changes.md`, the principal-filtered
   `list-permissions` in `log-debugging.md`, and `aws/orchestration.py`'s report texts.
+
+## 2026-10-25 — with the environment down: verification xiv's battery at `d856982c`
+
+*An agent of this session ran the lint offline, at the user's request to prepare what Stages 7 to 10 leave
+with nothing up; Claude's hand for the record. No AWS call, no change to the repository or to the user's
+`awsds-workflows` checkout, which holds no object `d856982c` (its `main` is `ff25eae`): the lint's source was
+read from the uvx cache's copy of the pinned archive. 76 cases, one scratch copy of `examples/app-etl/` each.*
+
+- **[agent] The invocation**: the template's `test` line, `uvx --from "awsds-workflows @ <the d856982c
+  archive>" awsds-workflows lint app-etl --image-repository awsds-prod-ecr-app-etl`, one `--instance-type` per
+  name of `LINT_INSTANCE_TYPES` (the ceiling's seven) and `--algorithm-repository sagemaker-xgboost`
+  (`LINT_ALGORITHM_REPOSITORIES`), each read from `.gitlab-ci.yml`; the promoted mode on one rendered file with
+  `--prefix s3://awsds-staging-outputs/applications/app-etl/v9.9.9/` and the same options. The rendered copies
+  came from a copy of `scripts/render-workflow.py`'s table with stand-in values, and both passed the promoted
+  mode at the first attempt.
+- **[agent] The untouched copy** reads `ok: 9 arquivo(s)` (6 on 2026-10-18: the train and warehouse workflows
+  and `glue/load_warehouse.py` since v0.4.0); each clean rendered copy `ok: 1 arquivo(s)`. The controls hold:
+  a `dev-env` image by digest passes without `--image-repository`, in both modes; a job without its volume key
+  passes in the authoring mode; a rendered `ml.m5.2xlarge` passes without `--instance-type` (Lesson 71).
+- **[agent] The 40 violations of 2026-10-18 reproduced**, each exit 1 under its rule: `projeto` 8 (the eight
+  `_PROJECT_PATTERNS`), `datas` 3, `operador` 2, `limites` 4, `imagem` 2, `job` 5, `templates` 2, `codigo` 1,
+  `glue` 2 and `manifest` 8 in the authoring mode; in the promoted mode `projeto` on the unrendered source (16
+  findings: nine CLI variables, two promoted patterns, rule (6), `glue`, `imagem`, `codigo`) and on a rendered
+  copy with a `datazone-<project>-dev` prefix, and `job` on a rendered copy without its volume key.
+- **[agent] The rules since `3c1708e`**: rule (6)'s five keys each refused on a rendered copy under `glue`
+  (`create_job_kwargs`, `script_location`, `iam_role_arn`, `update_config`, `job_desc`); `treino` refusing
+  `action_if_job_exists` left off, network isolation off, `ml.g5.xlarge`, a validation channel in another
+  bucket, a missing `S3OutputPath`, and on a rendered copy an output outside `models/` and a missing output
+  key, seven in all; `--instance-type` refusing `ml.m5.2xlarge` and `ml.g5.xlarge` on the processing task and
+  `ml.g5.xlarge` on the training task; `--image-repository` refusing the `dev-env` image on `ImageUri` in both
+  modes and on `TrainingImage`. 61 refusals in all, every control passing.
+- **[agent] Three readings**: a `dev-env` `TrainingImage` is refused under `imagem`, not `treino`
+  (`_check_images` reads both `ImageUri` and `TrainingImage`); a CLI variable outside the lint's table
+  (`{proj.name}`) is refused under `projeto` and leaves the text untranslated, so four collateral lines follow
+  (`glue` twice, `imagem`, `codigo`); the pattern `datazone-<projeto>-dev` does not match the source's
+  `datazone-{proj.id}-dev`, whose braces break the word boundary, the file refused on the variable anyway and
+  the rendered form caught. Cosmetic: `_check_glue` prints one script location twice when `script_location`
+  and `create_job_kwargs.Command.ScriptLocation` carry the same path. No rule reads a `VersionId` or compares
+  with a release's manifest, as before.
