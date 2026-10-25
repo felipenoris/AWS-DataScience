@@ -3669,3 +3669,27 @@ pipeline API in the user's GitLab session). Times UTC.*
   (`e915deac`) passed at 22:43, merged as `8d50f685`, whose `main` pipeline #100 passed at 22:44. **[Claude]**
   the archive compared beforehand: GitLab's `main` and `examples/app-etl/` at `origin/main` differed in that
   line alone.
+
+## 2026-10-25 — §N.1 step 6: the tag `v0.4.6`, verification xxiv's negative, Sandbox's egress raised
+
+*The user's hand for the branch's deletion, the tag, `make up ENV=sandbox ONLY=egress` and the job's retry;
+Claude's for the readings, from the user's GitLab session in Chrome (the pipeline API, the job logs). Times
+UTC.*
+
+- **[user]** `xi-portal-scoped` deleted; the tag `v0.4.6` on `8d50f685` with Sandbox's `egress/` down:
+  pipeline #102, created 22:48:19.
+- **[Claude] The stages before the deploy**: `test` (#601) passed in 14 s; `build-image` (#602) passed in
+  2 min 44 s, the app layers `CACHED` from the previous build, and printed *"== pushed
+  …/awsds-prod-ecr-app-etl:v0.4.6-8d50f685@sha256:ba8d41bf08bebeee084b38e7df9b8efa28e6fcccaf9865e0591fdec7d0462f98d"*
+  at 22:51:21, the base `awsds-prod-ecr-base@sha256:94359041…1975` as the template pins it; `build-task-code`
+  (#603) passed in 8 s; `scan-gate` (#604) failed as allowed after 2 min 25 s: the push's scan at 22:53:39
+  read CRITICAL 113, HIGH 612, MEDIUM 158, LOW 16, UNDEFINED 466, *"725 found, 130 in the baseline"*, *"595
+  CRITICAL or HIGH finding(s) absent from the baseline"*, the `linux-libc-dev` list.
+- **[Claude] Verification xxiv's negative**: `test-deploy` (#605) started 22:51:27 and failed at 22:51:36,
+  10 s, before any write: *"== the hub: the proxy answers for the SageMaker API"*, *"== Sandbox's egress: the
+  interface endpoints the run needs"*, *"sagemaker.api: None"*, *"FATAL: no sagemaker.api endpoint: is
+  Sandbox's egress up (make up ENV=sandbox ONLY=egress)?"*, then *"bundle.env: no matching files"* at the
+  artifact upload: the guard reads the endpoint before the deploy, as written.
+- **[user]** `make up ENV=sandbox ONLY=egress`, then the job's retry: `test-deploy` (#620) running from
+  about 22:58. `store-bundle` (#606) and `release` (#607) follow it; `staging-gate` (#608) is the manual
+  job step 8 opens.
