@@ -3022,3 +3022,8 @@ user with `InfrastructureAccess`) and for 3.7's record. Times UTC.*
   release between legs, as Production, and the user's `make down ENV=staging` destroys the three `[E]`
   slices. The maintenance in GitLab (the MR, the mirror's push, the two applies) waits for §V's
   promotion to end, the user's instruction.
+- **[user] A gate before Staging** (2026-10-25 UTC): *"peço criar um 'staging-gate' como etapa de
+  aprovação para transição entre 'release' e 'staging', nos mesmos moldes do que existe hoje para
+  'production-gate'"*. **[Claude]** written as decision 28: `staging-gate`, the stage `staging-gate`
+  between `release` and `staging`, manual and blocking, `needs: [release, store-bundle, test-deploy]`,
+  `resource_group: staging`; `staging-check` needs it. `check-gitlab-ci.py` passes.

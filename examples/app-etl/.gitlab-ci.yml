@@ -8,10 +8,10 @@
 #                         the application: the worker's package built, the bundle for the `test` project
 #                         built and deployed there with a run of the workflow, the bundle stored in
 #                         awsds-prod-releases and the tag's GitLab release, which names it (D41,
-#                         decisions 19 and 20); then the promotion (Stage 8 step 3): Staging's egress
-#                         read (the user raises it, decision 27), the application deployed from the
-#                         bundle and run (nothing torn down: the user's `make down`), a manual gate, and
-#                         Production, its egress read the same way;
+#                         decisions 19 and 20); then the promotion (Stage 8 step 3): a manual gate into
+#                         Staging (decision 28), Staging's egress read (the user raises it, decision 27),
+#                         the application deployed from the bundle and run (nothing torn down: the user's
+#                         `make down`), a manual gate, and Production, its egress read the same way;
 #                         then three manual jobs of Production: the warehouse's DDL (Stage 9 9.4), and
 #                         the model's registration and approval, which the batch transform follows
 #                         (Stage 10 steps 5.2 and 5.4)
@@ -28,7 +28,7 @@ include:
     ref: 6fcea132896746c3938411c0d081f4421ca0dce8 # gates-v0.4.0
     file: [/gates.gitlab-ci.yml, /baselines.gitlab-ci.yml]
 
-stages: [test, build, verify, deploy, release, staging, gate, production]
+stages: [test, build, verify, deploy, release, staging-gate, staging, gate, production]
 
 variables:
   GATES_UV_PROJECTS: "."
@@ -314,6 +314,21 @@ gate-without-proxy:
       git -c http.sslCAInfo=/etc/gitlab-runner/certs/ca.crt clone --quiet --depth 1 "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/awsds/infrastructure.git" "$INFRA_DIR"
       echo "awsds/infrastructure at $(git -C "$INFRA_DIR" rev-parse HEAD)"
 
+# The staging gate (decision 28): a blocking manual job between the release and the Staging leg, the
+# shape of production-gate. Its needs name the release's jobs, never `needs: []`, which would let it
+# start past a failed one; who may start it is whoever may run the protected tag's pipeline (step 2.1).
+# The leg writes into Staging and runs its jobs, so nothing of it starts before the gate.
+staging-gate:
+  stage: staging-gate
+  needs: [release, store-bundle, test-deploy]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+      when: manual
+  allow_failure: false
+  resource_group: staging
+  script:
+    - echo "$CI_COMMIT_TAG admitted to Staging by $GITLAB_USER_LOGIN"
+
 # 3.1: Staging's [E] egress/, its interface endpoints and DNS Firewall, read before the leg writes and
 # never raised: every shared slice is the user's `make up` / `make down` (decision 27). check-egress.py
 # reads the slice's state and asks EC2 and Route 53 Resolver whether every endpoint it holds is
@@ -322,7 +337,7 @@ gate-without-proxy:
 staging-check:
   extends: .promotion
   stage: staging
-  needs: [store-bundle]
+  needs: [staging-gate]
   resource_group: staging
   script:
     - |

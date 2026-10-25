@@ -321,7 +321,8 @@ first promotion carries a lake the job role has written (decision 23).
    `test`, `build-image`, `build-task-code`, `test-deploy` (the CLI into the `test` project as
    `awsds-deploy-sandbox-test`), `store-bundle`, `release` (verification xx's `cli` image reading), then
    the legs.
-3. **[pipeline] The Staging leg**: `staging-check` (3.1 since decision 27: Staging's `egress/` read as
+3. **[user] `staging-gate`** (decision 28, once the mirror carries it), then **[pipeline] the Staging
+   leg**: `staging-check` (3.1 since decision 27: Staging's `egress/` read as
    `awsds-deploy-staging`, the user having raised it; the legs of 2026-10-24 ran `staging-up`, `make up
    ENV=staging ONLY=egress` as the role, 4.3a's first apply, 16 to add), `staging-deploy` (3.2: the bundle checked,
    the render, 2.3's lint, the tree under `awsds-staging-outputs/applications/app-etl/<tag>/`, the
