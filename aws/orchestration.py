@@ -1291,8 +1291,11 @@ starts jobs; awsds-<env>-job-exec touches data (D13 one level up).""")
 A chain's state machine starts its workflows and polls each run; its Scheduler
 schedule starts the machine, and the schedule's state is the pause lever (steps
 3.4-3.7, D41). Staging's schedule is DISABLED by design (decision 19): the leg
-starts the machine itself. A failure rule passes OR-4 only when its pattern names
-both MWAA Serverless run-failure detail types the service emits.""")
+starts the machine itself. Production's are DISABLED between sittings since
+2026-10-25, since a run needs workloads-egress/'s [E] endpoints; a sitting that
+wants the scheduled runs turns them on by a commit (step 6.1). A failure rule
+passes OR-4 only when its pattern names both MWAA Serverless run-failure detail
+types the service emits.""")
 
         # ==============================================================================
         rep.h1("7. Recent runs")
@@ -1306,9 +1309,9 @@ both MWAA Serverless run-failure detail types the service emits.""")
         else:
             rep.line("No recorded run.")
         rep.text("""
-A run a chain's machine starts is expected to read ON_DEMAND, the type of a
-StartWorkflowRun call, inferred until verification xxiv reads it; the unattended
-proof is the machine's execution the schedule started (OR-9). The type
+A run a chain's machine starts reads ON_DEMAND, the type of a StartWorkflowRun
+call, scheduled runs included (verification xxiv, read 2026-10-25); the unattended
+proof is CloudTrail's StartExecution by the Scheduler's role. The type
 is read per run with get-workflow-run: list-workflow-runs returns RunType null for
 every run (measured 2026-10-10). Runs and their history
 die with the [E] slice (Lesson 4) - 6.3 writes the disposition into the log

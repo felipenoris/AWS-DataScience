@@ -64,11 +64,11 @@ flowchart LR
 | Account | Holds, on the governance side | Reaches the lake | In the domain |
 |---|---|---|---|
 | Data Governance | the lake buckets (§Persistence), the lake's Glue Data Catalog, Lake Formation with the LF-Tags and the D13 registrations, the drop-box, the crawlers (D27), the domain and the SageMaker Catalog. No user compute, no interactive sign-in (D22) | owns it | hosts it; the portal's catalog calls run here as `awsds-data-studio-domain-execution` (measured 2026-09-13) |
-| Sandbox | the projects' apps, the projects bucket `awsds-sandbox-smus-projects`, a Glue Data Catalog of its own holding each project's databases and the resource links to `raw` and `curated`, and the sandbox lake `awsds-sandbox-lake`, outside Lake Formation by design (Stage 16) | read, through the TBAC share and the local re-grants (§Grants), which name the persona role: no project role holds one yet, so no project reads the lake (Stage 6f 0.7). The one write is the persona's `PutObject` into the drop-box | associated; every project provisions here |
+| Sandbox | the projects' apps, the projects bucket `awsds-sandbox-smus-projects`, a Glue Data Catalog of its own holding each project's databases and the resource links to `raw` and `curated`, and the sandbox lake `awsds-sandbox-lake`, outside Lake Formation by design (Stage 16) | read, through the TBAC share and the local re-grants (§Grants), which name the persona role: no project role holds one yet, so no project reads the lake (Stage 6f 0.7). `eighth-experimentation`'s warehouse access role holds `DESCRIBE` and `SELECT` on the lake catalog's `governed_trades` alone, the governed warehouse's share, read through Redshift (Stage 9 9.7, 2026-10-25). The one write is the persona's `PutObject` into the drop-box | associated; every project provisions here |
 | Staging | its own Glue Data Catalog, which each deploy fills with the application's tables, with resource links to `raw` and `curated` (Stage 9 4.1) | read, through the TBAC share and the local re-grants to the job role, `DESCRIBE` and `SELECT` alone (Stage 9 decision 3, D20 as amended 2026-10-22, `TM-25`) | never (D26, `DenyDataZoneEntirely`) |
 | Production | the supply chain (D14), the job execution role, the orchestration (Stage 10), `awsds-prod-outputs`, a Glue Data Catalog of its own with resource links to the lake (Stage 9 1) | read and the governed write, the producer path (Stage 9 2); the drop-box pickup (D25) | never |
 
-The Staging and Production rows describe Stage 9; neither data slice is built.
+The Staging and Production rows describe Stage 9, whose data slices were applied on 2026-10-22.
 
 **The warehouse adds a store to two of those rows** (D40). **`Sandbox`'s exists since 2026-09-20** ([Stage 5b](plan/stages/stage-05b-redshift-serverless.md) pass 1); **Production's namespace exists since 2026-10-23** ([Stage 9](plan/stages/stage-09-deployment-targets.md) 9.1), with the `governed` database and the schema `trades` (1 TB, owner `gov_trades_owner`, the roles `gov_trades_rw` and `gov_trades_ddl`) since 2026-10-24 (9.3). **What the brief calls
 a *base* is a Redshift `schema`** (`objectives.md`, 2026-09-20), so the Redshift `database` is only a class
@@ -169,7 +169,11 @@ lake's own `logs` bucket *is* data and sits under the data key.
 
 The binding is mechanical and per bucket: each bucket's default-encryption configuration points at the
 account key (the `s3-bucket` module's `kms_key_arn`), so a bucket belongs to exactly one key and the key
-boundary is a bucket boundary. No catalog attribute is involved anywhere in the chain.
+boundary is a bucket boundary. A writer can still put an object under another key, which no bucket
+statement refuses: a SageMaker processing job whose `ProcessingOutputConfig` names no `KmsKeyId` uploads
+under the AWS managed key `aws/s3`, over the bucket's default, and any principal the bucket policy admits
+reads that object without the data key's grant (`EXC-22`, read 2026-10-25 in `awsds-prod-outputs`). No
+catalog attribute is involved anywhere in the chain.
 
 What the single key costs (Stage 5a decision 3's deviation): INT-10's key grants — the Production job
 role and the maintenance role need the drop-box's key — land on the account key, so at the KMS layer
@@ -222,7 +226,8 @@ A data product, the lake and a warehouse are different things. A data product is
 set of assets under one listing, and stores nothing. The lake is where the governed tables live,
 Iceberg on S3 in the lake's Glue Data Catalog. A Redshift warehouse is a store and an engine: it reads
 the Glue Data Catalog through its auto-mounted `awsdatacatalog` database, read-only, and a namespace
-registered to the catalog becomes a federated catalog governed by Lake Formation.
+reaches the catalog under Lake Formation either registered as a federated catalog or through a Lake
+Formation-managed datashare mapped to a federated database, the shape this estate built (Stage 9 decision 5).
 
 **A warehouse is built — the Sandbox one since 2026-09-20 — and the `RedshiftServerless` blueprint is still
 excluded** ([D40](plan/decisions/D40-redshift-warehouse.md)). [`objectives.md`](plan/objectives.md) carries the
@@ -241,7 +246,7 @@ sandbox lake. Two classes of database, on the two axes this file already separat
 | Class | Account | Written by | Under Lake Formation | Stage |
 |---|---|---|---|---|
 | **sandbox** — themed **schemas** in the `sandbox` database | `Sandbox` | SageMaker project roles, per **schema × project**, and one schema may be shared by several projects | **no, and the catalog is bypassed entirely** — `objectives.md` (2026-09-20) grants the project role directly and lets a member create tables freely in the schema, which carries a **1 TB `QUOTA`** and is owned by a **non-login database user**, never by a project. Like `awsds-sandbox-lake`, outside Lake Formation by design | [5b](plan/stages/stage-05b-redshift-serverless.md), [6h](plan/stages/stage-06h-redshift-connection.md) |
-| **governed** — the `governed` database | `Production` | `awsds-prod-job-exec` alone | **yes** — the namespace registered as a **federated catalog** | [9](plan/stages/stage-09-deployment-targets.md) step 9 |
+| **governed** — the `governed` database | `Production` | `awsds-prod-job-exec` alone, into tables the pipeline's DDL job creates, owned by `IAMR:awsds-deploy-prod` (9.4) | **yes** — a Lake Formation-managed datashare, `trades_lf`, mapped to the federated database `governed_trades` in Data Governance (Stage 9 decision 5's shape (ii), decision 14) | [9](plan/stages/stage-09-deployment-targets.md) step 9 |
 
 **Two things the first build corrected, both measured 2026-09-20.** *Ownership is a user, not a role*:
 `CREATE SCHEMA … AUTHORIZATION` takes a database **user** and answers `user "<name>" does not exist` when
@@ -486,7 +491,11 @@ consumer today (`Development` left the list on 2026-09-06 when the account becam
 `Staging`, which rejoins as a read-only consumer at Stage 9 4.1, decision 3), plus one more per business unit at N>1 (INT-03's N+2) — for
 the cross-account shares; inside accounts, the persona permission-set roles;
 `awsds-data-catalog-maintenance` for catalog work; from Stage 6, the project execution roles; from
-Stage 9, `awsds-prod-job-exec` (read + the governed write). LF-Tags never gate the read/write direction
+Stage 9, `awsds-prod-job-exec` (read + the governed write), the deploy roles and `InfrastructureAccess` on
+each deployment target's `app_outputs`, and a project's warehouse access role on the governed share it
+reads through Redshift (9.7). Lake Formation gives a table's creator its permissions and nobody else, so
+the user's `make down` of a table the deploy role created needs `InfrastructureAccess`'s `DROP`, granted
+on every `app_outputs` table since 2026-10-25 (Lesson 75). LF-Tags never gate the read/write direction
 — the verbs in the permission list do; the tags say what the data *is*.
 
 **The grain.** Entitlement follows the toolset's own practice: grants go to roles and projects, assumed
@@ -719,9 +728,10 @@ flowchart LR
   package on a release tag, then bundles the application, has the CI/CD CLI deploy the same files to
   the Sandbox `test` project and run it there, and stores the bundle in Production's releases bucket,
   which the tag's GitLab release names, before Staging (Stage 8 step 2.5, decisions 19 and 20); the
-  promotion pipeline applies the tag and that bundle into Staging, runs the integration tests, tears
-  Staging down, pauses at the Deployment Manager's manual gate with the test results and the Production
-  plan in front of them, and applies into Production as `awsds-deploy-prod`.
+  promotion pipeline waits at a manual gate (decision 28), applies the tag and that bundle into Staging and
+  runs the integration tests, leaving the release there for the user's `make down` (decision 27), pauses
+  at the Deployment Manager's manual gate with the test results and the Production plan in front of them,
+  and applies into Production as `awsds-deploy-prod`.
 - **A workflow is authored in the application repository** (Stage 10 steps 2.1-2.2, D41): the CI/CD CLI
   deploys it into the Sandbox `dev` and `test` projects and bundles it, the D28 lint refuses anything
   portal-scoped in the copy rendered per account, and in Production the definition is deployed to

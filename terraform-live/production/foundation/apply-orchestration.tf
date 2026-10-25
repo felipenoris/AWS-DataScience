@@ -429,6 +429,8 @@ data "aws_iam_policy_document" "orchestration_access" {
     }
   }
 
+  # The save creates a grant for airflow-serverless on the workflow's ARN, under which the service reads
+  # the definition and the code at every run (Stage 10 verification xvii, read 2026-10-25).
   statement {
     sid       = "GrantTheDataKeyToTheServices"
     effect    = "Allow"

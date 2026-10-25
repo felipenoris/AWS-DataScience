@@ -2790,6 +2790,15 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   `<aws.scheduler.scheduled-time>`. Where: `log-stage-10-orchestration-promotion.md`, 2026-10-25;
   `terraform-modules/orchestration/chains.tf`, the schedule's `input`.
 
+### SageMaker models
+
+- **`CreateModel` from a model package describes the package as the model's execution role, and goes on when
+  refused** (measured 2026-10-25, Stage 10 5.4 in Production). At 01:29:33 the deploy role's `CreateModel` on
+  `awsds-prod-model-app-etl/1` was followed by a `DescribeModelPackage` as `awsds-prod-job-exec`, session
+  `sagemaker-inference`, refused *"is not authorized to perform: sagemaker:DescribeModelPackage"*; the model
+  was created and the batch transform completed. A trail reader meets an `AccessDenied` on a run that
+  succeeded. Where: `log-stage-10-orchestration-promotion.md`, 2026-10-25.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

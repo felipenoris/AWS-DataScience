@@ -109,7 +109,9 @@ aws cloudtrail lookup-events \
 > and no IAM grant fixes it. The trail does not carry that sentence: a `DeleteTable` Lake Formation
 > refused for want of `DROP` reads `AccessDenied`, *"An unknown error occurred"* in CloudTrail, while the
 > client read *"Required Drop on trades_notional"* (2026-10-25, Staging's `make down`). The missing grant
-> comes from the client's output or from `lakeformation list-permissions`, never from the trail.
+> comes from the client's output or from `lakeformation list-permissions`, never from the trail; on a
+> resource another account's catalog holds, list by resource, since a principal filter returns nothing
+> there even for a grant that works (2026-10-25).
 
 > **An absence from `lookup-events` is not evidence until the instrument has shown a presence.** A
 > lookup by `EventName=GetResources` returned no events while a lookup by
@@ -319,8 +321,11 @@ aws mwaa-serverless list-task-instances --workflow-arn "$WF" --run-id "$RUN"    
 
 **In Staging and Production a run starts from its chain**, the state machine `awsds-<env>-chain-<chain>`
 (Stage 10; read in Staging on 2026-10-23), so the execution holds the first verdict: a run that did not
-succeed ends it `FAILED` with the machine's own error, `WorkflowRunNotSucceeded`, naming the workflow. The
-newest executions, then the last events of one, as the pipeline's `staging-test` reads them:
+succeed ends it `FAILED` with the machine's own error, `WorkflowRunNotSucceeded`, naming the workflow. A
+run the schedule started reads `RunType` `ON_DEMAND` like any other, since the machine starts it; the
+schedule's start is CloudTrail's, `scheduler.amazonaws.com` assuming `awsds-<env>-chain-scheduler` and
+`StartExecution` in that session (read 2026-10-25 in Production, Stage 10 6.1). The newest executions,
+then the last events of one, as the pipeline's `staging-test` reads them:
 
 ```bash
 aws stepfunctions list-executions --state-machine-arn "$(aws stepfunctions list-state-machines --query "stateMachines[?name=='awsds-staging-chain-app-etl'].stateMachineArn" --output text --profile awsds-infra-staging --region us-west-2)" --max-items 5 --query 'executions[].[name,status,startDate]' --output table --profile awsds-infra-staging --region us-west-2

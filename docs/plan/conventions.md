@@ -347,7 +347,7 @@ terraform-live/
 │   │                     #     (D38). Measured empty at the migration; D11 leaves it torn
 │   │                     #     down between sittings
 │   └── app/
-│       └── app-etl/      # [E] deployed by the pipeline, torn down after the tests
+│       └── app-etl/      # [E] deployed by the pipeline, destroyed by the user's make down
 └── production/
     ├── bootstrap/        # [P]
     ├── foundation/       # [P] VPC-SharedServices (10.30.0.0/16 - the VPC built at Stage 3,
@@ -436,7 +436,8 @@ terraform-live/
     │                     #     this account needs no new network work. Holds the `governed`
     │                     #     database, whose rows awsds-prod-job-exec writes, and reaches readers
     │                     #     only through Lake Formation, by Stage 9 decision 5's shape: a
-    │                     #     federated catalog or a Lake Formation-managed datashare. No project
+    │                     #     Lake Formation-managed datashare Data Governance registers
+    │                     #     (decision 14), read from Sandbox on 2026-10-25. No project
     │                     #     tag, no connection: D26 keeps deployment targets out of the domain,
     │                     #     so 6h's three layers collapse to the GRANT alone
     ├── sagemaker/        # [P] Model Registry (model package groups) + the execution role
@@ -505,7 +506,9 @@ discovers the domain ID rather than having it pasted in, since the blueprint cho
 2026-10-24): `make up ENV=staging ONLY=egress` before a promotion's tag and `make down ENV=staging` after
 its leg. The pipeline applies the application's own slices alone, `staging/app/<app>/` and
 `staging/orchestration/`, destroys nothing, as in Production, and `layers.py` refusal 10 keeps its profile
-off every shared slice. Both paths work by hand — a rebuild that only works from CI is the
+off every shared slice. The user's destroy of a table the deploy role created rests on
+`InfrastructureAccess`'s `DROP` on `app_outputs` ([`GOVERNANCE.md`](../GOVERNANCE.md) §Grants, Lesson 75).
+Both paths work by hand — a rebuild that only works from CI is the
 same bug as one that only works by hand.
 
 **Terraform rules:**

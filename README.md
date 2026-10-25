@@ -346,10 +346,11 @@ Artifacts cross in one direction only, through the pipeline, and they pass throu
 - workflow definitions and application code (a Git tag),
 - the Terraform that instantiates them.
 
-The chain is **Sandbox → Staging → Production**. Staging receives the built artifact, runs the
-integration tests against the governed lake, read in place and read-only, and is torn down again; only then does the
+The chain is **Sandbox → Staging → Production**. Staging receives the built artifact and runs the
+integration tests against the governed lake, read in place and read-only; only then does the
 **Deployment Manager**'s approval release the same artifact to Production. A failure in Staging stops the
-chain, and Production is never touched. Sandbox sits *before* the chain, not at its head: experimentation
+chain, and Production is never touched. Staging keeps the release, at rest, until the user's `make down`.
+Sandbox sits *before* the chain, not at its head: experimentation
 graduates into an **engineering repository** through git — a rewrite and a review, not an automated lift —
 and only what lands in such a repository can be promoted.
 

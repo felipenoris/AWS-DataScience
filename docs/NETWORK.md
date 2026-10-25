@@ -82,7 +82,7 @@ module's arithmetic:
 | **Build runner** `awsds-prod-runner` | **VPC-SharedServices · private** · az1 | `[E]`, new every `make gitlab-up BUILD=1` (Stage 7 step 6.1 and decision 5) | `[E]` `production/runners/` |
 | **Deploy runner** `awsds-prod-runner-deploy` and **test runner** `awsds-prod-runner-test` | **VPC-SharedServices · private** · az1 | `[E]`, new every `make gitlab-up` (Stage 8 step 4.3 and decision 11) | `[E]` `production/runners/` |
 | **Redshift Serverless workgroup** `awsds-sandbox-warehouse` | Sandbox · **private · both AZs** | ENIs in both private subnets, new on every `make up`; reached at `awsds-sandbox-warehouse.<accountId>.us-west-2.redshift-serverless.amazonaws.com:5439`, a name the service derives and which resolves to those ENIs — **no interface endpoint is involved in the 5439 path**. From a space on 2026-10-10 it answered two private addresses, the workgroup's own managed-endpoint ENIs, never the `redshift-serverless` API endpoint's | `[E]` `sandbox/warehouse-compute/`, security group `[P]` in `sandbox/warehouse/` |
-| **Redshift Serverless workgroup** `awsds-prod-warehouse` | **VPC-Workloads · private · both AZs** | **the namespace since 2026-10-23; the workgroup raised 2026-10-24 00:23 to 00:47 UTC for Stage 9 9.3, and from 2026-10-25 01:38 UTC for v0.4.2's DDL, load and datashare** (step 9.1): ENIs in VPC-Workloads' two private subnets, new on every `make up`, reached at `awsds-prod-warehouse.<accountId>.us-west-2.redshift-serverless.amazonaws.com:5439` by `awsds-prod-job-exec`'s jobs alone; the deploy runner has no path to it, VPC-SharedServices and VPC-Workloads not peering, so its door is the Data API (Stage 9 9.4) | `[E]` `production/warehouse-compute/`, security group `[P]` in `production/warehouse/` |
+| **Redshift Serverless workgroup** `awsds-prod-warehouse` | **VPC-Workloads · private · both AZs** | **the namespace since 2026-10-23; the workgroup raised 2026-10-24 00:23 to 00:47 UTC for Stage 9 9.3, and 2026-10-25 01:38 to 06:12 UTC for v0.4.2's DDL, load and datashare** (step 9.1): ENIs in VPC-Workloads' two private subnets, new on every `make up`, reached at `awsds-prod-warehouse.<accountId>.us-west-2.redshift-serverless.amazonaws.com:5439` by `awsds-prod-job-exec`'s jobs alone; the deploy runner has no path to it, VPC-SharedServices and VPC-Workloads not peering, so its door is the Data API (Stage 9 9.4) | `[E]` `production/warehouse-compute/`, security group `[P]` in `production/warehouse/` |
 
 **No NAT gateway appears in this table, in any VPC** ([D38](plan/decisions/D38-single-egress-hub.md)).
 
@@ -107,8 +107,8 @@ module's arithmetic:
 | `sandbox/warehouse/` | `[P]` | the warehouse's **security group** and one ingress rule per admitted SMUS project. The group is here rather than in the compute slice because it is free and is referenced by the workgroup rather than the reverse, so it survives a `make down` unattached |
 | `sandbox/warehouse-compute/` | `[E]` | the **workgroup**, which is what puts ENIs in the two private subnets. Destroyed by `make down ENV=sandbox`: Redshift Serverless has no pause, so *off* means *absent* |
 | `production/warehouse/` | `[P]` | **applied 2026-10-23** (Stage 9 step 9.1): the governed warehouse's **security group** `awsds-prod-warehouse` and its one ingress rule, TCP/5439 from the jobs' group `awsds-prod-jobs`, group-to-group, with the matching egress rule on `awsds-prod-jobs` since 2026-10-25 (Stage 9 9.4); the group is here for Sandbox's reason, free and referenced by the workgroup, so it survives a `make down` unattached |
-| `production/warehouse-compute/` | `[E]` | **first applied 2026-10-24 for Stage 9 9.3's SQL (2 added at 00:23, 2 destroyed by `make down ENV=production` at 00:47 UTC)**: the governed **workgroup**, which puts ENIs in VPC-Workloads' two private subnets. Destroyed by `make down ENV=production`; raised by the sitting that runs Stage 9 9.3 (`GROUPS=redshift`) |
-| `staging/orchestration/` · `production/orchestration/` | `[E]` | **Staging's applied for Stage 8 3.8's leg on 2026-10-23 and destroyed by its `make down`, Production's unapplied** (Stage 10 step 1.2): the workers' security group `awsds-<env>-wf-workers`, declared in the `orchestration` module; at run time the service-linked role puts each MWAA Serverless worker's interface in the two private subnets of Staging's VPC or VPC-Workloads |
+| `production/warehouse-compute/` | `[E]` | **first applied 2026-10-24 for Stage 9 9.3's SQL (2 added at 00:23, 2 destroyed by `make down ENV=production` at 00:47 UTC)**: the governed **workgroup**, which puts ENIs in VPC-Workloads' two private subnets. Destroyed by `make down ENV=production`; raised by a sitting that uses the warehouse: 9.3's, and 2026-10-25's DDL, load and datashare with `make up ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift` |
+| `staging/orchestration/` · `production/orchestration/` | `[E]` | **Applied by the pipeline in both accounts since 2026-10-24, Staging's first by hand for Stage 8 3.8 on 2026-10-23; Staging's destroyed by the user's `make down ENV=staging` (Stage 8 decision 27), Production's up between sittings with its schedules `DISABLED`** (Stage 10 steps 1.2 and 6.1): the workers' security group `awsds-<env>-wf-workers`, declared in the `orchestration` module; at run time the service-linked role puts each MWAA Serverless worker's interface in the two private subnets of Staging's VPC or VPC-Workloads |
 
 ---
 
@@ -346,9 +346,11 @@ only, so `gitlab`, `proxy` and every `prod.awsds.internal` or `staging.awsds.int
 NXDOMAIN there: GitLab is in a VPC neither peers with, and the proxy refuses both planes everything.
 The two carry the same seven interface endpoints, the jobs' set: `sts`, `logs`, `kms`, `glue`,
 `lakeformation`, `sagemaker.api` and `secretsmanager`, Staging's since 4.3a's re-cut (written
-2026-10-22, raised by the next `make up ENV=staging`) against the four a worker called there on
-2026-10-19 (Stage 18 4.4), and `lakeformation` in both for decision 12 (a)'s jobs, which vend Lake
-Formation credentials from inside the VPC. VPC-Workloads' slice also takes an optional group per apply
+2026-10-22, the seven read `available` by the pipeline's `staging-check` on 2026-10-25) against the four
+a worker called there on 2026-10-19 (Stage 18 4.4), and `lakeformation` in both for decision 12 (a)'s
+jobs, which vend Lake Formation credentials from inside the VPC. The workers ran on them from both AZs'
+subnets, with no `ecr.*` and no `monitoring` endpoint, in every Production app-etl and train run read on
+2026-10-25 (Stage 10 verification xvi). VPC-Workloads' slice also takes an optional group per apply
 since 2026-10-23, `make up ENV=production GROUPS=redshift` adding the `redshift-serverless` endpoint for
 a job that calls the governed warehouse's API from inside the VPC (Stage 9 step 9.1), the way
 `sandbox/egress/` takes its groups; Staging's slice takes none.
