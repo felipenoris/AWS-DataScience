@@ -3157,3 +3157,25 @@ Times UTC.*
   first. **[Claude] read back** at 02:17: Staging holds no interface endpoint and no workflow, Production is
   untouched, and the `test` project's newest run is still `v0.4.2`'s `1DCL6kFnnjzKqX6`. The tag `v0.4.3` is
   spent; verification ix waits for the next tag on the new legs.
+
+## 2026-10-25 — decision 27's grants applied in both `foundation/` slices, after PRs #255 and #256
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo os applies dos planos salvos de
+production/foundation (0/3/0, awsds-infra-prod) e staging/foundation (0/3/1, awsds-infra-staging) e os
+passos 4 e 5 do 9.5 no Sandbox (awsds-infra-sandbox-1)."*), as the infrastructure user with
+`InfrastructureAccess`, from `main` at `79651026` (PR #256's merge, after PR #255's `f259e49a`), in the
+session's second branch; PR #256's session and the planning session told before the writes. Times UTC.*
+
+- **[Claude] The plans**, 02:31:52 and 02:32:25, each with the alerts var-file: `production/foundation/`
+  *"Plan: 0 to add, 3 to change, 0 to destroy."*, the deploy role's description, `apply-application`
+  gaining `DescribeTheEgressEndpoints` and `ReadTheDnsFirewallAssociation`, and the state policy reading
+  `production/workloads-egress/terraform.tfstate`, with `FollowItsOwnStatements` absent from the diff;
+  `staging/foundation/` *"Plan: 0 to add, 3 to change, 1 to destroy."*, the same two reads, the egress state
+  moved from the role's writable prefixes to its read keys, and the inline policy `apply-egress` destroyed.
+- **[Claude] The applies**: `production/foundation/` at 02:35:29, *"Apply complete! Resources: 0 added, 3
+  changed, 0 destroyed."*; `staging/foundation/` at 02:36:00, *"Destruction complete after 3s"* for
+  `apply-egress`, *"Apply complete! Resources: 0 added, 3 changed, 1 destroyed."*; both re-planned `No
+  changes`; `./scripts/check-copies.py` OK. The simulator, `aws:RequestedRegion` in the context:
+  `ec2:DescribeVpcEndpoints` `allowed` for both deploy roles, `route53resolver:GetFirewallRuleGroupAssociation`
+  `allowed` on an association's ARN (`implicitDeny` on `"*"`, the grant naming the association's type), and
+  `ec2:CreateVpcEndpoint` `implicitDeny`: neither role raises an egress slice any more.
