@@ -302,7 +302,9 @@ and Sandbox matched every standing triple. Stage 9's pass 2 (2026-10-22) adds si
 to an account with the grant option: Staging's read-only share (decision 3), Production's read share and
 its named write on `curated` (INT-03); `list-permissions` in Data Governance read all seven that evening.
 The regrants inside each account and `app_outputs`' grants are indexed in `terraform-live/production/data/README.md`
-and `terraform-live/staging/data/README.md`: 21 grants in Production, 22 in Staging (read 2026-10-22).*
+and `terraform-live/staging/data/README.md`: 21 grants in Production, 22 in Staging (read 2026-10-22), one more
+in each since 2026-10-25, `infrastructure_app_outputs_tables` (`ALTER`, `DROP`, `DESCRIBE` on every table of
+`app_outputs` to `InfrastructureAccess`), read back by `list-permissions` after the applies.*
 
 | Date | Principal | Expression / resource | Permissions | Why (log entry) |
 |---|---|---|---|---|

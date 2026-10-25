@@ -2200,3 +2200,17 @@ with `InfrastructureAccess` (`awsds-infra-staging`, `awsds-infra-prod`). Times U
   `InfrastructureAccess` the deploy role's catalog operations on every table of `app_outputs`, `ALTER`, `DROP`
   and `DESCRIBE`, no data permission; planned at 06:44 in each slice, *"Plan: 1 to add, 0 to change, 0 to
   destroy."*, the plans saved, the applies waiting for the user's authorization.
+
+## 2026-10-25 — `infrastructure_app_outputs_tables` applied in both data slices
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo os applies dos planos salvos de staging/data
+(1 to add, awsds-infra-staging) e production/data (1 to add, awsds-infra-prod), como usuário de infraestrutura
+com InfrastructureAccess."*), as the infrastructure user with `InfrastructureAccess`; the forked session told
+before the writes. Times UTC.*
+
+- **[Claude] The applies** of the saved plans: `staging/data/` at 06:52:58 and `production/data/` at 06:53:17,
+  each *"Apply complete! Resources: 1 added, 0 changed, 0 destroyed."*; both re-planned `No changes`.
+- **[Claude] Read back** at 06:54 with `list-permissions` on every table of `app_outputs`: in each account
+  `InfrastructureAccess` holds `ALTER`, `DESCRIBE`, `DROP`, beside the deploy role's same three, the job role's
+  `ALTER`, `DELETE`, `DESCRIBE`, `INSERT`, `SELECT` and the persona's `DESCRIBE`, `SELECT`. The next
+  `make down ENV=staging` after a release is the grant's measurement.
