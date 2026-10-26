@@ -1466,3 +1466,40 @@ told beforehand. Times UTC.*
 - **[Claude]** The execution `236adea1-d8c1-4aa8-9164-8be161e8600a`, the firing of 00:42, read `SUCCEEDED` at
   00:58:16 (stopped 00:57:20, 15 min 3 s), the second run of the day on `v0.4.6` after the by-hand one; the
   Stage 9 session told that Production is free of this session's writes.
+
+## 2026-10-26 — 1.2's network negative in Staging: a workflow without `NetworkConfiguration`, one run, deleted
+
+*The user's authorization in chat; Claude's hand, as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-staging`); the four peer sessions told before the write. Times UTC.*
+
+- **[Claude⚡] The workflow**: `create-workflow` at 01:03:05, `awsds-staging-wf-net-negative-7OVpD8feyh`, with
+  `awsds-staging-wf-app-etl`'s role, definition (`v0.4.6/workflows/app-etl.yaml`, `fhXHG8FB…`), code
+  (`app-etl.zip`, `wGkGPacW…`), log group `/awsds/staging/wf/app-etl` and the data key, and no
+  `NetworkConfiguration` (`get-workflow` reads it `null`; the service warned *"ignored attributes:
+  region_name"*). `start-workflow-run` at 01:03:10: run `EJDzueJeMsueGky`, `QUEUED`, `RUNNING` from
+  01:03:15, `FAILED` at 01:05:03; its `transform` task (`GlueJobOperator`, attempt 1) failed after 68 s with
+  one log line, *"Execution environment preparation failed due to an internal server error."*
+  (`mwaa-serverless-initialization`, 01:03:56); `process`, `summarize` and `write_result` never ran.
+- **[Claude] The reading, 1.2's**: Staging's trail holds the worker's two calls at 01:03:56 as the role's
+  session `AmazonMWAAServerless`, both from `sourceIPAddress` `10.1.11.134` with `vpcEndpointId`
+  `airflow-serverless.amazonaws.com`, `exec-env/AWS_ECS_FARGATE`: the worker ran in the service's network,
+  outside every endpoint of the estate. Beside it, the configured run of 23:21 to 23:36 (pipeline #102's
+  chain): the same role's `DescribeProcessingJob`, `GenerateDataKey`, `Decrypt` and `CreateLogStream` from
+  `10.50.7.171`, `10.50.79.173` and `10.50.34.55` through `vpce-0e7ac557a5a2e4512` (sagemaker.api),
+  `vpce-0fdbd606bf9ed7f53` (kms) and `vpce-0f78062ebc4afc9e2` (logs), and two KMS calls from
+  `fas.s3.amazonaws.com`, S3's forward-access session for the key. A task started without the
+  configuration lands outside the VPC, read from the instrument that shows the presence.
+- **[Claude] What stopped the run**, not the network: `CreateLogStream` succeeded, and `kms:Decrypt` on the
+  data key was refused, *"… assumed-role/awsds-staging-wf-app-etl/AmazonMWAAServerless is not authorized to
+  perform: kms:Decrypt on resource: …/key/74f5ebbc-… because no identity-based policy allows the kms:Decrypt
+  action"*. The role's `UseTheKeyForItsWorkflow` allows `Decrypt` and `GenerateDataKey` only with
+  `kms:EncryptionContext:aws:airflow-serverless:workflow-arn` matching
+  `…:workflow/awsds-staging-wf-app-etl-??????????` (the module's binding of each role to its own
+  workflow), and the borrowed role met the negative's ARN. So a workflow created by hand on another
+  workflow's role fails at environment preparation, and the service's task log attributes it to an
+  internal error while the trail names the refusal (Lesson 42's shape). Whether an unconfigured worker
+  reaches the internet was not measured: no task code ran.
+- **[Claude⚡] The deletion**: `delete-workflow` at 01:09:14; `list-workflows` reads `awsds-staging-wf-app-etl`
+  and `awsds-staging-wf-app-etl-train` alone. Left behind: the run's log stream in `/awsds/staging/wf/app-etl`
+  (`workflow_id=awsds-staging-wf-net-negative-7OVpD8feyh/run_id=EJDzueJeMsueGky/...`), the group's
+  retention taking it, and the trail's records.

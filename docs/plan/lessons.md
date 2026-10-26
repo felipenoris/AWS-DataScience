@@ -2799,6 +2799,16 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   string. A template indexes nothing; the callable decodes. Where: `log-stage-10-orchestration-promotion.md`,
   2026-10-24; `examples/app-etl/code/app_etl_tasks.py`, `training_job_name`.
 
+- **A workflow created without `NetworkConfiguration` runs its worker in the service's own network, and a
+  borrowed execution role fails it at environment preparation with a log line that names no refusal**
+  (measured 2026-10-26, Stage 10 1.2 in Staging). The worker's first calls came from `10.1.11.134` with
+  `vpcEndpointId` `airflow-serverless.amazonaws.com` (`exec-env/AWS_ECS_FARGATE`), outside every endpoint of
+  the estate, where a configured run's workers call from `10.50.x` through `vpce-…`. Its `kms:Decrypt` was
+  refused because the role's statement binds the key to its own workflow's ARN through
+  `kms:EncryptionContext:aws:airflow-serverless:workflow-arn`, and the task log said only *"Execution
+  environment preparation failed due to an internal server error."*; the trail carried the `AccessDenied`.
+  Where: `log-stage-10-orchestration-promotion.md`, 2026-10-26.
+
 ### Redshift
 
 - **The Data API authorizes following, reading and cancelling a statement on no resource** (measured

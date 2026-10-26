@@ -779,7 +779,7 @@ Each costs minutes of a sitting and leaves a recorded reading; none holds up ano
 | Stage 8 xxviii's active half | N.1 | an `AssumeRole` of a deploy role through `sts.amazonaws.com`: a manual job on the deploy runner, or xvi's 15 s trust widening | `us-east-1`'s trail and, for the widened principal, whether the misuse rule fires; a regional assumption beside it reads 4.6's transformed message |
 | Stage 9 xxiv | N.2 | `REVOKE USAGE ON DATASHARE trades_lf FROM ACCOUNT '<Data Governance>' VIA DATA CATALOG`, then 9.5's steps 1 to 3 again | the Lake Formation rows the revoke leaves, and whether the register notices; INT-24's door is shut until the rebuild |
 | Stage 10 xx's second half | N.1, Staging | a branch's tag whose `GlueJobOperator` names a Glue job the application slice does not declare | the task failing on `CreateJob` rather than creating a job, the two failure rules firing once more |
-| Stage 10's network negative (1.2) | N.1, Staging | **[Claude⚡]** a workflow created by hand with no `NetworkConfiguration`, run once and deleted | the worker's address in the CloudTrail record of its first AWS call, beside a configured run's private address |
+| Stage 10's network negative (1.2) | N.1, Staging | **[Claude⚡]** a workflow created by hand with no `NetworkConfiguration`, run once and deleted. **Done 2026-10-26** (Stage 10's log) | the worker's address in the CloudTrail record of its first AWS call, beside a configured run's private address: `10.1.11.134` through `airflow-serverless.amazonaws.com` against `10.50.x` through `vpce-…` |
 
 ### N.5 The items that wait on something else
 
