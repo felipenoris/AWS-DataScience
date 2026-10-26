@@ -166,13 +166,15 @@ reads a `[D]` row's **power state from EC2**, not its state file, or a stopped h
 forever.
 
 **GitLab is the third `[D]` row** (Stage 7 step 1.2, 2026-10-12): [`production/tooling/`](production/tooling/)
-(rank 42) holds the `t4g.large`, its 50 GiB data volume and the two internal records, and is applied by
-hand like the hub hosts. Its session is **`make gitlab-up` / `make gitlab-down`** — `--only
-tooling,egress,runners`: the host started, VPC-SharedServices' endpoints and the runners applied, and
-the hub left alone. `make up`/`make down ENV=production` **never touch the hub pair** since the
-same step (refusal 6 in `scripts/slices.py`): a Production session that stopped the proxy would
-blackhole every peer's spoke. The host's Name tag is `awsds-prod-gitlab`, not the slice's name, and
-`layers.DORMANT_HOST_NAMES` is where the dormant hook learns it.
+(rank 52, above `egress/`'s 50: the host's Session Manager agent registers through the `ssm` endpoint,
+so the host starts after the endpoints exist and stops before they are destroyed) holds the `t4g.large`,
+its 50 GiB data volume and the two internal records, and is applied by hand like the hub hosts. Its
+session is **`make gitlab-up` / `make gitlab-down`** — `--only tooling,egress,runners`, in rank order:
+VPC-SharedServices' endpoints applied, the host started, the runners applied, and the hub left alone;
+`gitlab-down` walks the same order backwards. `make up`/`make down ENV=production` **never touch the
+hub pair** since the same step (refusal 6 in `scripts/slices.py`): a Production session that stopped the
+proxy would blackhole every peer's spoke. The host's Name tag is `awsds-prod-gitlab`, not the slice's
+name, and `layers.DORMANT_HOST_NAMES` is where the dormant hook learns it.
 
 **The WireGuard host was also a NAT instance for the isolated tier, from Stage 6 step 5.0 until 6c step
 5.8.** `wireguard-v0.4.0`'s `vpc_nat_cidrs` input turned source/destination checking **off** and added

@@ -1242,3 +1242,29 @@ the API through the user's browser session. Times UTC.*
   Stages 7-10 session's. The bucket holds the four archives (2026-10-13, 10-15, 10-25 and 10-26), the newest
   expiring 2026-11-26. **Pass 4 is closed.** The sitting's GitLab bill: the host 20:07 to 02:39 and the
   rebuild's hour, the endpoints and the runners by `make status` at each descent.
+
+## 2026-10-26 — `make gitlab-up`'s order: `egress/` applied before the host starts (8.1's reading)
+
+*Claude's hand, in a session the Stages 7-10 session started for the lifecycle script, from a worktree of its
+own; no AWS call, nothing started, applied or destroyed. Times UTC.*
+
+- **[Claude] The change**, from 02:52: `scripts/slices.py` walks the `[D]` rows and the `[E]` rows in one
+  rank order, ascending on `up` and descending on `down`, where it had run the `[D]` hook as one block before
+  the `[E]` loop on `up` and after it on `down`; `tooling` moves from rank 42 to 52 in
+  `scripts/tfhygiene/layers.py`, above `egress` (50) and below `runners` (57), whose first boot waits ten
+  minutes for the sign-in page. The hub pair keeps 40 and 41, under every `[E]` slice; refusal 6 and the hub
+  check are unchanged. A failed init, apply, destroy, start or stop halts the run and prints the rows it left
+  untouched.
+- **[Claude] Read with `DRY=1`** (every command printed, none run): `make gitlab-up DRY=1` lists `[D] hosts and
+  [E] slices (3), in dependency order` as `production/egress [E] apply`, `production/tooling [D] start`
+  (`would start whatever is tagged awsds-prod-gitlab and currently stopped`), `production/runners [E] apply`,
+  and `make gitlab-down DRY=1` the three in reverse: the runners destroyed, the host stopped, the endpoints
+  destroyed. `make hub-up DRY=1` starts `vpn` then `proxy` and applies nothing, `make hub-down DRY=1` the
+  reverse; `make up ENV=production DRY=1` prints refusal 6 for both hub rows and the host's start between
+  `workloads-egress` and `warehouse-compute`; `make up ENV=sandbox DRY=1` reads `none declared in sandbox`
+  and its three `[E]` slices. `make check` green at 03:01.
+- **[Claude] Owed**: the first `make gitlab-up` in that order, at the next GitLab sitting with the hub up (the
+  user's act, with authorization in chat), read in `describe-instance-information`: the host `Online` minutes
+  after the start, against 01:31 to 01:51 of 8.1 (`waiting-on-the-user.md`, the GitLab sitting). The order is
+  carried by runbook §U steps 3 and 5 and §B, the `Makefile`'s help and comments, `conventions.md` §6,
+  `terraform-live/README.md`, `PRICING.md`'s GitLab session, the stage's 1.6 and 8.1 and `CLAUDE.md`.

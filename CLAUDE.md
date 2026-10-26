@@ -408,6 +408,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners out, and the build runner rises
   only with `BUILD=1` (decision 5, 2026-10-24). Owed: INT-09's clone from a
   notebook, 8.1-8.3 (3.5's memberships done 2026-10-24); 5.6's ECR grant applied 2026-10-22. The GitLab backups of 2026-10-13, 10-15 and 10-25 leave the bucket on 2026-11-13, 11-15 and 11-25.
+  `make gitlab-up` applies `egress/` before it starts the host (2026-10-26: `tooling` at rank 52, one rank
+  order for `[D]` and `[E]` in `scripts/slices.py`), so the Session Manager agent meets the `ssm` endpoint
+  at its start instead of hibernating for twenty minutes; the first run of that order is owed at the next
+  GitLab sitting.
   **`saml.auto.tfvars` lives in the project folder's `secrets/`**: a `tooling/` plan passes
   `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block.
 - **Stage 8 in progress**: passes 0-3 done (`awsds/ci-gates`, the test runner, the house image on Python

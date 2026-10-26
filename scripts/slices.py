@@ -4,8 +4,9 @@
 #   ./scripts/slices.py envs               the ENV values, and what each one acts on
 #   ./scripts/slices.py list [<env>]        the layer table, whole or for one account folder
 #   ./scripts/slices.py check               table vs. disk - runs inside `make check`
-#   ./scripts/slices.py up   --env <env>    start the [D] slices, apply the [E] ones
-#   ./scripts/slices.py down --env <env>    delete the Studio apps, destroy [E], stop [D]
+#   ./scripts/slices.py up   --env <env>    start the [D] slices, apply the [E] ones, by rank
+#   ./scripts/slices.py down --env <env>    delete the Studio apps, then destroy [E] and stop [D],
+#                                           by rank descending
 #   ./scripts/slices.py status [--env <env>] what is up, and the hourly burn
 #
 #   exit: 0 clean | 1 something failed | 2 a usage or refusal error
@@ -266,12 +267,29 @@ def refuse_if_hub_down(env: str, dry: bool, only: list | None = None) -> bool:
     return False
 
 
-def dormant(
-    env: str, action: str, dry: bool, only: list | None = None, profile: str | None = None
-) -> None:
-    """[D] is stop/start and never destroy (D11). Stage 4 step 1.3 gave this hook its body.
+def dormant_rows(env: str, only: list | None) -> tuple:
+    """([D] rows this run acts on, [D] rows refusal 6 leaves alone), for one env.
 
-    The instances are found by Name tag, not by state file (instance_name above), with two
+    Refusal 6 (Stage 7 step 1.6): the hub pair is every other account's dependency, so
+    `make up`/`make down ENV=production` leave it alone and say so. `make hub-up` and
+    `make hub-down` reach it through `--only`, which narrows and never widens.
+    """
+    declared = [s for s in layers.for_env(env) if s.layer == layers.DORMANT]
+    if only is not None:
+        return [s for s in declared if s.name in only], []
+    if env == HUB_ENV:
+        return (
+            [s for s in declared if s.name not in HUB_SLICES],
+            [s for s in declared if s.name in HUB_SLICES],
+        )
+    return declared, []
+
+
+def dormant(sl: layers.Slice, action: str, dry: bool, profile: str | None = None) -> bool:
+    """Start or stop one [D] row's host; False when a read or the call failed.
+
+    [D] is stop/start and never destroy (D11). Stage 4 step 1.3 gave this hook its body. The
+    instance is found by Name tag, not by state file (instance_name above), with two
     consequences. It keeps working when the slice's state is empty: it finds nothing and says
     which of the two nothings it found. And it cannot destroy - the only mutating calls below
     are start-instances and stop-instances - so half of refusal 5 is structural rather than a
@@ -282,75 +300,52 @@ def dormant(
     tagged X" and "already stopped" are different findings: the first means the slice was
     never applied or its host is gone, the second means the hook had nothing left to do.
     """
-    declared = [s for s in layers.for_env(env) if s.layer == layers.DORMANT]
-    if only is not None:
-        declared = [s for s in declared if s.name in only]
-    elif env == HUB_ENV:
-        # Refusal 6 (Stage 7 step 1.6): the hub pair is every other account's dependency, so
-        # `make up`/`make down ENV=production` leave it alone and say so. `make hub-up` and
-        # `make hub-down` reach it through `--only`, which is the branch above.
-        left = [s for s in declared if s.name in HUB_SLICES]
-        declared = [s for s in declared if s.name not in HUB_SLICES]
-        for s in left:
-            print(
-                f"    {s.path}: refusal 6 - the hub is not {'started' if action == 'up' else 'stopped'}"
-                f" by ENV={env}; `make hub-{'up' if action == 'up' else 'down'}` is its target"
-            )
-    if not declared:
-        print(f"  [D] none declared in {env} - nothing to {'start' if action == 'up' else 'stop'}")
-        return
-
-    profile = profile or backend.profile(env)
+    profile = profile or backend.profile(sl.account)
     verb, wanted, ready = (
         ("start", "running", "stopped") if action == "up" else ("stop", "stopped", "running")
     )
+    name = instance_name(sl.account, sl.name)
+    found = instance_states(sl.account, sl.name, dry, profile)
+    if found is None:
+        if dry:  # the command above was printed and not run
+            print(f"    would {verb} whatever is tagged {name} and currently {ready}")
+            return True
+        return False
 
-    for sl in declared:
-        name = instance_name(env, sl.name)
-        found = instance_states(env, sl.name, dry, profile)
-        if found is None:
-            if dry:  # the command above was printed and not run
-                print(f"    would {verb} whatever is tagged {name} and currently {ready}")
-                continue
-            raise SystemExit(1)
+    if not found:
+        print(f"    no instance tagged {name} - {sl.path} is not applied, or its host is gone")
+        return True
 
-        if not found:
-            print(f"    no instance tagged {name} - {sl.path} is not applied, or its host is gone")
-            continue
+    todo = [i for i, st in found if st == ready]
+    for i, st in found:
+        if st == wanted:
+            print(f"    {i} already {wanted}")
+        elif st != ready:
+            # pending or stopping: acting now races the transition, so it is reported.
+            print(f"    {i} is {st} - transitional, left alone; re-run when it settles")
+    if not todo:
+        return True
 
-        todo = [i for i, st in found if st == ready]
-        for i, st in found:
-            if st == wanted:
-                print(f"    {i} already {wanted}")
-            elif st != ready:
-                # pending or stopping: acting now races the transition, so it is reported.
-                print(f"    {i} is {st} - transitional, left alone; re-run when it settles")
-        if not todo:
-            continue
-
-        res = run(
-            [
-                "aws",
-                "ec2",
-                f"{verb}-instances",
-                "--region",
-                backend.REGION,
-                "--instance-ids",
-                *todo,
-            ],
-            env_extra={"AWS_PROFILE": profile},
-            dry=dry,
-            capture=True,
-        )
-        if res is not None and res.returncode != 0:
-            print(f"    FAILED to {verb} {', '.join(todo)}", file=sys.stderr)
-            print(res.stderr.strip(), file=sys.stderr)
-            raise SystemExit(1)
-        print(
-            f"    {verb}ped {', '.join(todo)}  ({name})"
-            if verb == "stop"
-            else f"    started {', '.join(todo)}  ({name})"
-        )
+    res = run(
+        [
+            "aws",
+            "ec2",
+            f"{verb}-instances",
+            "--region",
+            backend.REGION,
+            "--instance-ids",
+            *todo,
+        ],
+        env_extra={"AWS_PROFILE": profile},
+        dry=dry,
+        capture=True,
+    )
+    if res is not None and res.returncode != 0:
+        print(f"    FAILED to {verb} {', '.join(todo)}", file=sys.stderr)
+        print(res.stderr.strip(), file=sys.stderr)
+        return False
+    print(f"    {'stopped' if verb == 'stop' else 'started'} {', '.join(todo)}  ({name})")
+    return True
 
 
 def studio_apps(env: str, dry: bool) -> int:
@@ -524,37 +519,67 @@ def cmd_updown(args) -> int:
         elif studio_apps(args.env, args.dry_run) != 0:
             return 1
 
-    # The [D] hook runs on the side of the [E] loop its rank says it should. Stage 4 step 1.3
-    # put `vpn` at 40, below `egress` at 50: "the tunnel is the first thing up and the last thing
-    # down". An operator on the monitored profile sends every AWS call through the tunnel and the
-    # proxy, so stopping the hosts and only then destroying slices over the AWS API would strand
-    # the destroys. The constraint is that route, never a policy: no permission set needs the
-    # tunnel (D39).
-    #
-    # A rank is not an intention (Lesson 5): it decides the order inside the [E] loop, and it
-    # has to decide which side of that loop the hook sits on too.
-    def run_dormant() -> None:
-        print("\n  dormant [D] (step 8.2):")
-        dormant(args.env, action, args.dry_run, only=only, profile=profile)
-
-    # The hub check goes before the [D] hook and before the first apply (step 7.2), because a
+    # The hub check goes before the first start and the first apply (step 7.2), because a
     # refusal after either would leave the env half-raised, which is worse than not starting.
     if action == "up" and not refuse_if_hub_down(args.env, args.dry_run, only):
         return 1
 
-    if action == "up":
-        run_dormant()
-
+    # One sequence for both layers: the [D] rows and the [E] rows, ascending by rank on `up` and
+    # descending on `down`, so a host starts and stops where its rank puts it among the applies
+    # and the destroys, never as a block on one side of them. The rank is the only order
+    # (Lesson 5), and layers.RANKS says what each one buys: `vpn` 40 and `proxy` 41 under every
+    # [E] slice, so a run holding both starts the tunnel first and stops it last, the route an
+    # operator on the monitored profile reaches AWS by (D39: a route, never a policy); `tooling`
+    # 52 over `egress` 50 and under `runners` 57, so GitLab's host starts after the `ssm`
+    # endpoint its agent registers through exists and before the runners that wait for its
+    # sign-in page, and stops before that endpoint is destroyed.
+    hosts, left = dormant_rows(args.env, only)
+    verb, done = ("start", "started") if action == "up" else ("stop", "stopped")
     print(
-        f"\n  ephemeral [E] ({len(take)}), in {'reverse ' if action == 'down' else ''}dependency order:"
+        "\n  dormant [D] (step 8.2): "
+        + (
+            f"{len(hosts)} to {verb}, each where its rank falls among the [E] slices below"
+            if hosts
+            else f"none declared in {args.env} - nothing to {verb}"
+        )
     )
-    if not take:
-        print("    none - every [E] slice in this env is refused above, so this half is a NO-OP.")
-    for sl in take:
-        print(f"\n  --- {sl.path}")
+    for s in left:
+        print(
+            f"    {s.path}: refusal 6 - the hub is not {done} by ENV={args.env};"
+            f" `make hub-{action}` is its target"
+        )
+
+    sequence = sorted(
+        [*hosts, *take], key=lambda s: (s.rank, s.account, s.name), reverse=(action == "down")
+    )
+    print(
+        f"\n  [D] hosts and [E] slices ({len(sequence)}), in"
+        f" {'reverse ' if action == 'down' else ''}dependency order:"
+    )
+    if not sequence:
+        print("    none - every slice in this env is refused above, so this target is a NO-OP.")
+
+    def halt(i: int, what: str) -> int:
+        # What was not done is printed beside what failed (Lesson 13). A [D] host left running
+        # by a failed `down` is on purpose: the fix may need the private network, or the
+        # monitored profile's route to AWS, and a stop would close both.
+        rest = ", ".join(s.path for s in sequence[i + 1 :]) or "none"
+        print(
+            f"\n  HALTED at {sequence[i].path}: {what}. The rows after it are untouched: {rest}."
+            f"\n  Re-run `make {action}` once it is fixed.",
+            file=sys.stderr,
+        )
+        return 1
+
+    for i, sl in enumerate(sequence):
+        if sl.layer == layers.DORMANT:
+            print(f"\n  --- {sl.path}  [D] {verb}")
+            if not dormant(sl, action, args.dry_run, profile):
+                return halt(i, f"its host was not {done}")
+            continue
+        print(f"\n  --- {sl.path}  [E] {'destroy' if action == 'down' else 'apply'}")
         if not prepare(sl, args.dry_run, profile):
-            print(f"    init failed for {sl.path}", file=sys.stderr)
-            return 1
+            return halt(i, "init failed")
         # -input=false makes an unset variable an immediate error, not a prompt that waits on stdin
         # holding the state lock (Lesson 47). The approval is a separate prompt that only
         # -auto-approve skips, so without AUTO apply and destroy still ask for a yes. The Terraform
@@ -571,21 +596,7 @@ def cmd_updown(args) -> int:
             cmd, env_extra={"AWS_PROFILE": profile or backend.profile(sl.account)}, dry=args.dry_run
         )
         if res is not None and res.returncode != 0:
-            # The host is left running on purpose when a destroy fails: the fix may need the
-            # private network, or the monitored profile's route to AWS, and this hook would close
-            # both.
-            print(
-                "\n  dormant [D]: NOT stopped - an [E] destroy failed above and the fix may",
-                file=sys.stderr,
-            )
-            print(
-                "  need the tunnel. Re-run `make down` once it is fixed.",
-                file=sys.stderr,
-            )
-            return 1
-
-    if action == "down":
-        run_dormant()
+            return halt(i, f"terraform {cmd[2]} failed above")
     return 0
 
 

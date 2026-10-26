@@ -333,7 +333,7 @@ plus 0.005 for its public IPv4.
 ### The GitLab session, by category
 
 A GitLab session runs from `make gitlab-up` to `make gitlab-down` ([runbook](plan/runbooks/gitlab.md) §U):
-the `[D]` host started, `production/egress/`'s endpoints and `production/runners/`' hosts applied, the build
+`production/egress/`'s endpoints applied, the `[D]` host started, `production/runners/`' hosts applied, the build
 runner among them only with `BUILD=1` (Stage 7 decision 5). Read
 2026-10-14 from the slices, from `describe-*` in Production and from Production's Cost Explorer for
 2026-10-11..10-14, whose effective rates (cost ÷ quantity) equal this section's table: `t4g.large` 0.0672,

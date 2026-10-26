@@ -72,19 +72,20 @@ help:
 	@printf '              Never secrets/, never anything in AWS\n'
 	@printf '\n'
 	@printf '\033[1mWRITE\033[0m - changes AWS; run one only when it was asked for by name\n'
-	@printf '  up   ENV=x  START the [D] hosts of one account folder, then terraform APPLY its\n'
-	@printf '              [E] slices in dependency order. Refuses while a hub host is stopped.\n'
-	@printf '              ENV=production leaves the hub pair to hub-up (Stage 7 step 1.6)\n'
-	@printf '  down ENV=x  DELETE the running Studio apps, terraform DESTROY the [E] slices in\n'
-	@printf '              reverse order, then STOP the [D] hosts. Spaces and their volumes stay\n'
+	@printf '  up   ENV=x  START the [D] hosts and terraform APPLY the [E] slices of one account\n'
+	@printf '              folder, in one dependency order: a host starts where its rank falls.\n'
+	@printf '              Refuses while a hub host is stopped. ENV=production leaves the hub\n'
+	@printf '              pair to hub-up (Stage 7 step 1.6)\n'
+	@printf '  down ENV=x  DELETE the running Studio apps, then terraform DESTROY the [E] slices\n'
+	@printf '              and STOP the [D] hosts in reverse order. Spaces and their volumes stay\n'
 	@printf '  hub-up      START the two hub hosts and nothing else - no apply, no endpoint\n'
 	@printf '  hub-down    STOP them - nothing is destroyed: the addresses, the host key and\n'
 	@printf '              the security groups are [P] anchors and survive the stop\n'
-	@printf '  gitlab-up   START GitLab and APPLY production/egress and production/runners - a\n'
+	@printf '  gitlab-up   APPLY production/egress, START GitLab, APPLY production/runners - a\n'
 	@printf '              GitLab session, leaving the hub to hub-up (Stage 7 step 1.6): the\n'
 	@printf '              deploy and test runners always, the build runner with BUILD=1\n'
-	@printf '  gitlab-down DESTROY the runners and the SharedServices endpoints, STOP GitLab; the\n'
-	@printf '              hub keeps running for every other session\n'
+	@printf '  gitlab-down DESTROY the runners, STOP GitLab, DESTROY the SharedServices\n'
+	@printf '              endpoints; the hub keeps running for every other session\n'
 	@printf '\n'
 	@printf '  flags of the WRITE targets:\n'
 	@printf '    DRY=1       print every command the target would run, and run none\n'
@@ -265,9 +266,10 @@ hub-up:
 hub-down:
 	@./scripts/slices.py down --env production --only vpn,proxy $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
 
-# GitLab's session (Stage 7 step 1.6): the [D] host started, VPC-SharedServices' endpoints and the
-# runners applied, and the hub left to `hub-up`. `make up ENV=production` would do the same
-# and also raise `workloads-egress/` and `probes/`, which a GitLab session never needs.
+# GitLab's session (Stage 7 step 1.6), in the script's rank order: VPC-SharedServices' endpoints
+# applied, the [D] host started (its Session Manager agent registers through the `ssm` endpoint
+# among them), the runners applied, and the hub left to `hub-up`. `make up ENV=production` would do
+# the same and also raise `workloads-egress/` and `probes/`, which a GitLab session never needs.
 #
 # RUNNERS=0 leaves the runners out: a session that runs no pipeline, or one before a runner's
 # token is in its container (runbook K). Any other value but 1 is refused, so a typo never raises
@@ -287,8 +289,9 @@ gitlab-up:
 	@$(if $(filter 0,$(RUNNERS)),true,printf '\033[1mbuild runner\033[0m: %s\n' '$(if $(filter 1,$(BUILD)),yes - BUILD=1,no - BUILD=1 raises it)')
 	@TF_VAR_build_runner=$(if $(filter 1,$(BUILD)),true,false) ./scripts/slices.py up --env production --only tooling,egress$(if $(filter 0,$(RUNNERS)),,$(comma)runners) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
 
-# The reverse order is the script's: the runners and the endpoints are destroyed, then GitLab is
-# stopped. Nothing here touches the hub, so every other session's proxy and tunnel stay up.
+# The reverse order is the script's: the runners are destroyed, GitLab is stopped, then the
+# endpoints are destroyed. Nothing here touches the hub, so every other session's proxy and tunnel
+# stay up.
 # RUNNERS and BUILD are ignored: destroying an absent runner is a no-op, and a forgotten one is this
 # stage's likeliest leak.
 gitlab-down:
