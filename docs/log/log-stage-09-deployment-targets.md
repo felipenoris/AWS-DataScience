@@ -3002,3 +3002,28 @@ UTC.*
   - 6h 3.2: a session on `dev` reads no governed share.
   - The waiting list: a decision on the connection's database.
   - `aws/INDEX.md`, `AWS_STATE.md`, INT-24, the stage file and the summary rows now name `WH-16`.
+
+## 2026-10-26 — the estate at zero after the GitLab sitting's downs
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`,
+`awsds-infra-sandbox-1`), reads only, after the Stage 7-8 GitLab sitting reported its `make gitlab-down` and
+`make hub-down`. Times UTC.*
+
+- **[Claude] Read** at 22:42:50: `awsds-prod-vpn`, `awsds-prod-proxy` and `awsds-prod-gitlab` `stopped`;
+  `./aws/egress.py awsds-infra-prod awsds-infra-staging awsds-infra-sandbox-1` 0 interface endpoints, 0 NAT
+  and 0.000 USD/h in each account, `EG-5` *"none - the correct between-sessions state (D11)"*; no workgroup in
+  Production or Sandbox. The 12 endpoints of xxiv's §R reading were the GitLab sitting's, and they are gone.
+
+## 2026-10-26 — the free trial's Production balance after xxiv's sitting
+
+*The user's hand in the Redshift Serverless console, pasted in chat verbatim at about 22:45 UTC; Claude's reading.*
+
+- **[user]** Production: *"Free trial credits remaining $299.54 out of $300.00"*, *"Free trial expiration January
+  21, 2027"*.
+- **[Claude] The reading**: 0.12 USD of credit for the sitting, 299.66 to 299.54, where `ComputeSeconds` read
+  78 RPU-seconds, 0.0078 USD at the rate. 0.12 USD is 300 seconds at 4 RPU; the sitting's Production
+  statements came in four windows (21:27:58 to 21:29:24, 21:48:32 to 21:51:08, 21:56:44 to 21:56:55, 22:03:01
+  to 22:03:49), each billed 60 seconds at least. The earlier sitting read 0.05 against 79 RPU-seconds once its
+  late 0.03 had landed. So the metric under-reads a sitting of short statements by an order of magnitude, and
+  the balance is the figure kept (Lesson 6). This reading came about 38 minutes after Production's workgroup
+  went; a reading the next day says whether more lands.
