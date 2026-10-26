@@ -2640,3 +2640,33 @@ done. Times UTC.*
   statements and the balance is the figure to keep (Lesson 6). Sandbox reads as on 2026-10-25, its 18
   RPU-seconds (9.7's query and the history read) not yet visible, a lag or below the cent; the next reading
   says which. The cost row, `PRICING.md` and `cost-model.md` carry both figures.
+
+## 2026-10-26 — with the environment down: xxiv's procedure rewritten (§N.4a), 3.1's logs-land half, the quota cases, the record read against the plan
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`, no write to
+AWS; the session that read Stages 7 to 10 for what is left. Times UTC.*
+
+- **[Claude] Verification xxiv's procedure** for the adopted resources written as `runbooks/promotion.md`
+  §N.4a: the before-readings, the revoke by SQL as the namespace's admin, the readings after, the two
+  slices' plans read and never applied there (`production/warehouse/` expected *1 to add*, the authorization
+  gone from the read; `data-governance/data/` expected to fail at the association's `data_share_arn` if the
+  consumer no longer sees the share, since `warehouse-share.tf` finds it through
+  `data.aws_redshift_data_shares.visible`), the re-grant by SQL with the two applies as its second half, 9.7
+  again, the downs. It runs in a warehouse sitting on the user's word (§N.4).
+- **[Claude] 3.1's first-job reading, the logs-land half** (`describe-log-groups` and `describe-log-streams`,
+  03:50): the six job log groups per account are under the account's data key with 30 days' retention and
+  hold the jobs' streams, in Production `app-etl-20261026T004534` (processing), `app-etl-train-20261025T070126`
+  (training), `app-etl-v0-4-2-20261025T012931` (transform) and `jr_a910b7a1…aacdc6` (Glue output and error),
+  in Staging `app-etl-20261025T232400`, `app-etl-train-20261025T233703`, `app-etl-v0-4-6-20261025T234609` and
+  `jr_a7dbfda9…8177ff`; `/aws-glue/jobs/logs-v2` answers no stream in either account. The debug role's read
+  waits for a 6.3 window.
+- **[Claude] 3.5's four cases**: `list-requested-service-quota-change-history` reads the `ml.m5.large`
+  training and transform pair `CASE_OPENED` in both accounts, created 2026-10-23 at 20:00, the applied
+  values 20 and 8; nothing waits on them.
+- **[Claude] The record read against the plan**: xii's call (read 2026-10-25) moved out of the status cell's
+  Left list and 4.6's text; 2.4's closing sentence dated (the engine's flag not needed since the third run,
+  `glue:UpdateTable` the one clause unmeasured); Validation item 4's `WH-15` sentence brought to 9.8; 9.8's
+  carried list gains `docs/GOVERNANCE.md`; INT-07's row carries its measurements; `EXC-13`'s Production date
+  joins the waiting list's Dates; the summary rows in `CLAUDE.md`, `GENERAL_PLAN.md` and `stages/INDEX.md`
+  brought to the record. What the stage leaves is the status cell's list: the two space halves, xxiv on
+  §N.4a, `EXC-13`'s Production half after 2026-11-22, and the halves no step provokes.

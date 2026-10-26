@@ -1293,3 +1293,28 @@ and the serial console, nothing started or changed by Claude. Times UTC.*
   hibernation line; `describe-instance-information` reads the host `Online`, last ping 03:16:29, **1 min 20 s
   after the start**, against 01:31 to 01:51 in 8.1's cycle. The owed run is done and its row leaves
   `waiting-on-the-user.md`.
+
+## 2026-10-26 — with the environment down: Validation 2's offline half, Validation 3's reading, the record read against the plan
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess` (the
+`awsds-infra-*` profiles), no write to AWS; the session that read Stages 7 to 10 for what is left. Times UTC.*
+
+- **[Claude] Validation 2's offline half**, `./aws/proxy.py` at 03:41: `PX-1` passing (five rules, every one
+  TCP/3128 from the private ranges `10.20.0.0/16`, `10.30.0.0/16`, `10.32.0.0/16`, `10.50.0.0/16` and
+  `10.90.0.0/24`), `PX-2`'s committed half passing (`deny to_private` line 1 of 4, above every allow), `PX-3`
+  a note (not answered without `--on-host`, the proxy host stopped) and `PX-4` a note by decision
+  (`/awsds/prod/proxy` at 365 days, no export until Stage 11 5.1). `PX-3` waits for a hub sitting and the
+  flag's deliberate run.
+- **[Claude] Validation 3**, `./aws/egress.py` at 03:34 on the three profiles: 0 interface endpoints, 0 NAT
+  and 0.000 USD/h in Production, Staging and Sandbox. The three `[D]` hosts read stopped, GitLab
+  (`i-0b4cb5f62e65abf70`) at 03:23:34, the proxy at 03:26:09 and the VPN host at 03:26:11, after the 03:13 run
+  in the new order; no runner instance exists. The descent after that run had no entry here; this reading
+  is its record.
+- **[Claude] The record read against the plan**: 8.4's sentence that 8.3's up half was owed (run 2026-10-26 at
+  00:47, above) corrected; verification xi's cell dated, version 10 existing since 2026-10-25; INT-09's row
+  named version 10 as `default-v0.9.0`, a tag spent with nothing built, corrected to
+  `default-v0.9.1-746ef084` (Lesson 38); the status cell's phrase on the three personas' memberships, done
+  2026-10-24, and the stale rows in `GENERAL_PLAN.md`, `stages/INDEX.md` and `CLAUDE.md` brought to the
+  record. What the stage leaves: INT-09's clone and INT-19's notebook surface (verifications xi and x) from
+  a Sandbox space on version 10 with GitLab up and a persona PAT, Validation 2's `PX-3`, a GitLab backup
+  before 2026-11-26, the leaves' re-issue by 2027-09-22, and INT-13's path, the user's decision.

@@ -1503,3 +1503,43 @@ told beforehand. Times UTC.*
   and `awsds-staging-wf-app-etl-train` alone. Left behind: the run's log stream in `/awsds/staging/wf/app-etl`
   (`workflow_id=awsds-staging-wf-net-negative-7OVpD8feyh/run_id=EJDzueJeMsueGky/...`), the group's
   retention taking it, and the trail's records.
+
+## 2026-10-26 — with the environment down: 3.6's bridge read, decision 11's trail reading, the training operator's refused log read, the record read against the plan
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`, no write to
+AWS; the session that read Stages 7 to 10 for what is left. Times UTC.*
+
+- **[Claude] 3.6's bridge**: `get-bucket-notification-configuration` on `awsds-prod-outputs` and
+  `awsds-staging-outputs` answers `EventBridgeConfiguration` on both, so both buckets publish to
+  EventBridge, as `buckets.tf` declares since 2026-10-22; the clause 3.6 left unread is read.
+- **[Claude] Decision 11's reading, in Staging's trail over `v0.4.6`'s leg** (23:10 to 00:10, read at
+  03:55): the chain role's `GetWorkflowRun` polls at hh:mm:21 each pair with a `Decrypt` the same second,
+  `invokedBy airflow-serverless.amazonaws.com`, under the workflow-ARN encryption context
+  (`awsds-staging-wf-app-etl-train-0lvmGNsPwe`); the deploy role's two `GetWorkflow` and two
+  `ListTagsForResource`, and the infrastructure user's `GetWorkflow`, `ListWorkflowRuns`,
+  `ListWorkflowVersions` and `ListWorkflows`, pair with no `Decrypt` through the service (their decrypts in
+  the window are all `fas.s3`'s, on the state and outputs buckets); `GetTaskInstance` was not called in the
+  window (the user's calls of 2026-10-24 23:42 and 2026-10-26 01:08 are the only ones in three days), so it
+  stays unread. `GetWorkflowRun` decrypts through the service and `GetWorkflow` and `ListWorkflowRuns` do
+  not: the carve-out's `kms:ViaService` narrowing has its trail evidence, the value
+  `airflow-serverless.<region>.amazonaws.com` by the key's convention, which no code here carries yet;
+  writing it is the user's decision (the waiting list), read by a Deployment Manager session afterwards.
+- **[Claude] The training operator's log read, refused at the key**: in the same window
+  `awsds-staging-wf-app-etl-train`'s session (`AmazonMWAAServerless`) was refused `Decrypt` six times,
+  `invokedBy logs.amazonaws.com`, no encryption context, 23:40:07 to 23:40:38, the minutes of `v0.4.6`'s
+  training task, whose `print_log` reads `/aws/sagemaker/TrainingJobs`, a group under the data key (Stage 9
+  3.1); the task read `SUCCESS` regardless. Production's trail holds the same six for
+  `awsds-prod-wf-app-etl-train` during the train chain of 2026-10-25 01:18. 1.3's reading of the operator's
+  code said a refused log read fails the task after the create; the measurement says the task survives it
+  and the trail carries six refusals per training run. The task's log group goes with the `[E]` slice, so
+  what the operator printed is read at the next leg. Two remedies, the user's decision (the waiting list):
+  the data key's policy and the per-workflow role admitting `kms:Decrypt` via `logs.<region>.amazonaws.com`,
+  or `print_log: false` on the template's training task.
+- **[Claude] The record read against the plan**: ix's Staging half (`OR-3`, 2026-10-25) and xi's CI half
+  moved out of the status cell's Left list, and `EXC-22`'s row closed in `AWS_STATE.md` (Production's half
+  at 00:27:20 UTC); 3.5's body dated with the firing; the `identity/sso/` row of the table brought to
+  decision 11; the waiting list's row on PR #258's mirror push replaced by the push the next tag needs;
+  `CLAUDE.md`'s last sentence (ii's deploy-role half and 3.2's break) corrected. What the stage leaves: 2.1
+  and xxix's second half (a Sandbox space), xx's second half and xviii (exercises), xvi's metrics clause (a
+  `monitoring` endpoint), xxv, the chain's order and xxviii's inbox marker (a second application), and
+  decision 11's two readings above.

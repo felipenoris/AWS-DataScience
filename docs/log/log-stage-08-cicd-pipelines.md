@@ -3874,3 +3874,31 @@ tunnel gone, reads only. Times UTC.*
   three `[D]` hosts stopped and every `[E]` slice at 0 resources; the sessions' work is in PRs #261 (this
   one), #262 (Stage 9, merged) and #263 (Stage 7), and the `make gitlab-up` order fix of Stage 7's finding
   runs in a session of its own.
+
+## 2026-10-26 — with the environment down: vii's third half read again, xxvii's parameter, 3.3's pin in the template, the record read against the plan
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`, no write to
+AWS; the session that read Stages 7 to 10 for what is left. Times UTC.*
+
+- **[Claude] Verification vii's third half** (`describe-domain` on both Sandbox domains and `lookup-events`
+  in Sandbox's trail, 03:30 to 03:45): both domains carry the version-less `awsds-sandbox-dev-env`
+  attachment in JupyterLab and the Code Editor, `LastModifiedTime` 2026-10-16 00:31:26Z and 2026-10-15
+  06:14:06Z, as on 2026-10-25; the trail's last `UpdateStack` by the environment deployer is 2026-10-11
+  22:05:48Z and the last `UpdateDomain` the infrastructure user's at 2026-10-16 00:31:25Z, none since.
+  No reconciliation in fifteen days; the third half stays open on the same terms.
+- **[Claude] xxvii's plan half**: the parameter
+  `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64` still reads
+  `ami-0829b74b2a8c619b7`, the runners' image, so the half still waits, and its plan needs the runners up.
+- **[Claude] 3.3's snapshot pin, read in the template**: `glue/transform.py` takes `--SOURCE_SNAPSHOT` since
+  v0.4.0 and appends `VERSION AS OF` to the governed query, its tests covering both forms; no workflow,
+  slice or leg passes one. What §N.5 calls not written is the leg's source of the snapshot id and its path
+  into the job's arguments, a decision before a template change, recorded in the waiting list with a
+  recommendation (the job records the snapshot it read and takes a pin when one is given).
+- **[Claude] The record read against the plan**: xxiv answered in the table from #102's `test-deploy`
+  (2026-10-25); `v0.4.6` and 3.7's record (PR #261) added to the status cell; 3.1's text moved off the deploy
+  image `v0.2.0`; 2.1 marked done (2026-10-14); 5.6's sentence on the archive never run dated; the Risks
+  bullet on the mirror rewritten: pushed to `2d3160f1` on 2026-10-25, it lacks main's five commits of
+  2026-10-26 (#261 to #265), the four `release.tf`s at `v0.4.6` and `production/runners/`' deploy-image pin
+  among them, so `main` is pushed before the next tag (the waiting list's first table); `promotion.md`
+  §N.1's done markers written; INT-07's and INT-08's measurements written in `integrations.md`;
+  `CLAUDE.md`'s "planned and unapplied" on decision 27's egress grant (applied 2026-10-25) corrected.
