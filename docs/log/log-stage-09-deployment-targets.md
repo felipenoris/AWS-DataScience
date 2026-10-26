@@ -3027,3 +3027,13 @@ UTC.*
   late 0.03 had landed. So the metric under-reads a sitting of short statements by an order of magnitude, and
   the balance is the figure kept (Lesson 6). This reading came about 38 minutes after Production's workgroup
   went; a reading the next day says whether more lands.
+
+## 2026-10-26 — 8.1's space half: the subscription it waited on is approved
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-data`), one read. Times
+UTC.*
+
+- **[Claude]** `datazone get-subscription` on `6ubv3kbnjqjogg`, read at 22:48: `APPROVED`, updated 21:36:15, the
+  project `eighth-experimentation` subscribed to the listing `trades` (6f step 11.8). 8.1's space half, the
+  project's `SELECT` on `curated.trades` and its refused `INSERT`, no longer waits on the subscription and is
+  the next Sandbox sitting's; the status cell and 8.1's text are brought to it.
