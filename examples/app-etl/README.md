@@ -7,7 +7,8 @@ Data Science environment, and the template its other applications start from: th
 the CI/CD CLI deploys to a project, and its workflows: `app-etl`, four tasks over the trades;
 `app-etl-train`, an XGBoost model trained on what `app-etl` prepared (Stage 10 step 5.1); and
 `app-etl-warehouse`, Production's load of the application's table into the governed warehouse (Stage 9
-step 9.4), which no project receives.
+step 9.4), which no project receives. The cycle an application on this template follows, from a space to
+Production, hand by hand, is `docs/plan/runbooks/sagemaker-application.md` in the infrastructure repository.
 
 | Path | What it is |
 |---|---|
