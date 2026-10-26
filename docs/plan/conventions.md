@@ -288,7 +288,18 @@ terraform-live/
 │   │                     #     cross-account shares to sandbox (+ production at Stage 9;
 │   │                     #     development's was revoked 2026-09-06, Stage 6b step 2.3),
 │   │                     #     Glue Crawlers on raw + drop-box under the D27 exception
-│   │                     #     (config is free at rest; runs are metered, event-driven)
+│   │                     #     (config is free at rest; runs are metered, event-driven);
+│   │                     #     behind LAKE_PUBLISHERS, the two SMUS administrator seats and
+│   │                     #     the publisher's grant on each published table (publishing.tf)
+│   ├── publishing/       # [P] Stage 6f step 11, the lake-publishing pilot (decision 1,
+│   │                     #     shape (b), 2026-10-26; D22 amended): the VPC the managed
+│   │                     #     Tooling template takes (vpc module, no internet route, no
+│   │                     #     peering) and terraform-modules/sagemaker-prereqs/ with Tooling
+│   │                     #     alone; the configuration and its grant follow LAKE_PUBLISHERS,
+│   │                     #     the domain's own account needing no association. Rank 46;
+│   │                     #     both applies 2026-10-26 (11.2, 11.3). The
+│   │                     #     rollback destroys it but the projects bucket, which the Data
+│   │                     #     OU's s3:DeleteBucket deny keeps
 │   └── governance/       # [P] the SageMaker unified domain (DataZone V2, D26), applied
 │                         #     2026-08-21. Verification (ii) answered: the aws-ia module
 │                         #     was not consumed - its root requires vpc_id/subnet_ids and
@@ -304,9 +315,12 @@ terraform-live/
 │                         #     API - and the blueprint configurations are applied from the
 │                         #     member account (see */sagemaker/ below).
 │                         #     A registry: blueprints provision compute into those
-│                         #     accounts, never into this one. No foundation/ slice: no
-│                         #     VPC, no user compute, nothing standing - which is why
-│                         #     INT-13 has no host. Since Stage 17 decision 13 also the
+│                         #     accounts, never into this one; the lake-publishing pilot's
+│                         #     Tooling, with spaces off, is the one environment it
+│                         #     provisions into itself (the `lake-publishing` profile,
+│                         #     LAKE_PUBLISHERS). No foundation/ slice and no user compute;
+│                         #     the one VPC is publishing/'s and peers with nothing, which
+│                         #     is why INT-13 still has no host. Since Stage 17 decision 13 also the
 │                         #     project the console's model access publishes into,
 │                         #     GenerativeAIModelGovernanceProject, its profile with no
 │                         #     environment configuration, and Sandbox's InfrastructureAccess

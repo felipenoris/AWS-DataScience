@@ -31,9 +31,11 @@ creates plain DataZone (V1), which is *not* Unified Studio ([`GLOSSARY.md`](GLOS
 Properties this design leans on:
 
 - **A domain is a registry, not a runtime.** It holds projects, profiles, blueprint configurations and
-  the catalog; all compute comes from blueprints, and no blueprint is enabled in the domain account.
-  The domain lives in `Data Governance`, where `sagemaker:Create*` is denied (1c step 7.6) — a denial
-  that stays free because of this split (Stage 6 step 0.4).
+  the catalog; all compute comes from blueprints, and no blueprint is enabled in the domain account but
+  the lake-publishing pilot's `Tooling`, with spaces off ([Stage 6f](plan/stages/stage-06f-data-governance.md)
+  step 11, D22 amended 2026-10-26; configured 2026-10-26, 11.3). The domain lives in `Data Governance`, where
+  `sagemaker:Create*` is denied (1c step 7.6) — a denial that stays free because of this split (Stage 6
+  step 0.4), and because the pilot's profile locks `enableSpaces` to `false`.
 - **Member accounts join by *account association*** — console-only (**no public API**, read
   2026-08-16): a RAM share DataZone initiates. Sandbox alone is associated since 2026-09-06 — the
   second association was removed from the member side at Stage 6b step 1.4; **Staging and Production
@@ -196,7 +198,7 @@ parameters
 | Object | Written by | Lives in | In this design |
 |---|---|---|---|
 | blueprint | AWS | the service | the 23 in the table below (custom blueprints are made with `CreateEnvironmentBlueprint`, and since 2026-10-09 one with the `TOOLING` category can be a profile's base, [`upstream-releases.md`](plan/upstream-releases.md); outside decision 5, so outside `US-3`'s allow-list; the domain held none on 2026-10-18) |
-| blueprint configuration | Terraform, per member account (1.4) | domain × account | category 1's **thirteen**, in one account: eleven applied 2026-08-21 in Sandbox and in Development, Development's 22 objects (11 configurations and their 11 grants) destroyed 2026-09-06, and `MLflowApp`'s and `AmazonBedrockKnowledgeBase`'s applied in Sandbox 2026-10-19 (Stage 17 1.3 and 7.0b) |
+| blueprint configuration | Terraform, per member account (1.4) | domain × account | category 1's **thirteen**, in one account: eleven applied 2026-08-21 in Sandbox and in Development, Development's 22 objects (11 configurations and their 11 grants) destroyed 2026-09-06, and `MLflowApp`'s and `AmazonBedrockKnowledgeBase`'s applied in Sandbox 2026-10-19 (Stage 17 1.3 and 7.0b). `Tooling` in Data Governance, from `data-governance/publishing/`, is Stage 6f step 11's (applied 2026-10-26, 11.3) |
 | project profile + its environment configurations | domain admin (1.5) | the domain | `experimentation`, `engineering` |
 | project | an authorized user, in the portal | the domain (registry) | step 2.4's throwaway first |
 | environment | DataZone, through the provisioning role | the member account | read back by `US-8` / step 2.5 |
@@ -213,6 +215,7 @@ model governance profile on 2026-10-19 (Stage 17 decision 13):
 | `experimentation` | **Sandbox** | a notebook — experimentation happens where nothing downstream depends on it | `sso-group-data-scientists` |
 | `Generative AI model governance` | nothing: no environment configuration; the console creates one custom environment per enabled model, in the model's account | the project `GenerativeAIModelGovernanceProject`, which owns the Amazon Bedrock model listings the console publishes | Terraform's identity, the root domain unit's owner; Sandbox's InfrastructureAccess is a `PROJECT_CONTRIBUTOR` through its session group |
 | ~~`deployment`~~ | ~~**Staging**~~ | **Destroyed 2026-10-22** (Stage 18 step 8.2), at the end of that stage's window: its verdict kept D41 item 2, so no project provisions into a deployment account | — |
+| `lake-publishing` | **Data Governance**, the domain's own account | the lake's published tables: `Tooling` alone, `enableSpaces` `false` locked, no compute. Stage 6f decision 1's pilot, behind `LAKE_PUBLISHERS`, applied 2026-10-26 (11.3); its project `governed-lake` created the same evening (11.4) | `sso-group-governance-managers`; its one project, `governed-lake`, is the Governance Manager's |
 | ~~`engineering`~~ | ~~**Development**~~ | **Destroyed 2026-09-06** (Stage 6b step 1.1). The account it targeted became the headless `Staging`, and the chain now starts at a repository rather than an account | — |
 
 Identical in everything but the target account: **eleven environment configurations** (decision 5's
@@ -400,8 +403,8 @@ bump, in this order:
    1.5):
    - **The MLflow entries** (*Create MLflow App*, *Create MLflow Tracking Server*) resolve the blueprint
      by name from `ListEnvironmentBlueprintConfigurations`, called with the domain id alone as the
-     domain execution role, so they read Data Governance's configurations, which `US-3` keeps at zero
-     (D22). They stay greyed in every project whatever the profile carries, *Update project* has nothing
+     domain execution role, so they read Data Governance's configurations, where `US-3` admits the
+     lake-publishing pilot's `Tooling` alone (D22, Stage 6f step 11). They stay greyed in every project whatever the profile carries, *Update project* has nothing
      to apply (`UPDATE_NOT_AVAILABLE`), and a project created later reads the same list. What the
      entry would send is a `CreateEnvironment` with the profile's configuration id, and that call,
      made through the API by a project contributor, creates the tool (the `MLflowApp` environment and
@@ -700,6 +703,20 @@ and its log); D41 item 2 kept the rule above.
 The business catalog over this domain is [Stage 6f](plan/stages/stage-06f-data-governance.md)'s
 subject and [`GOVERNANCE.md`](GOVERNANCE.md) holds the model. What belongs here is what the SMUS
 objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/catalog.py).
+
+- **Publishing the lake needs a project in the lake's account, and that project needs a VPC there.**
+  Stage 6f decision 1 took shape (b) on 2026-10-26, and its step 11 writes it. Read from the two
+  templates that day: `Tooling` (`ToolingDefault-prod-20260918`) takes `vpcId`, `subnets` and
+  `availabilityZones` with no default and creates the project's security group in that VPC unless one is
+  passed, with spaces off as with them; `DataLake` (`DataLakeDefault-prod-20250618`) imports
+  `s3BucketPath-<project>-<scope>`, which only the same account's `Tooling` stack exports, so neither
+  runs alone in an account with no VPC. `Tooling`'s `LakeFormationResourceToRegisterProjectsS3Location`
+  carries no `DeletionPolicy`, so deleting a project calls `lakeformation:DeregisterResource`, which
+  `Data Governance`'s OU denies to every principal.
+- **A subscription's fulfilment writes per-resource catalog policies, not the account's** (read
+  2026-10-26, 6f 11.9). The publishing role's four `glue:PutResourcePolicy` calls carry a `resourceArn`
+  (`catalog`, `database/*`, `table/*/*`) and `enableHybrid` `TRUE`; `glue get-resource-policies` lists
+  what they wrote, and `glue get-resource-policy` keeps answering *"Policy not found"*.
 
 - **A project's Tooling environment creates a data source nobody asked for, and it fails.**
   `Tooling-default-sagemaker-modelpackagegroup-datasource` tracks `SageMakerModelPackageGroupAssetType`
