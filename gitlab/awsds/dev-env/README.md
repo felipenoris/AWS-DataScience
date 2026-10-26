@@ -45,7 +45,7 @@ A release is a tag `<flavour>-v<semver>` on `main`, which only a Maintainer can 
 
 | Stage | Job | What it does | Runner |
 |---|---|---|---|
-| build | `build-images` | builds `base` with the distribution through the pull-through cache and pushes it as `<tag>-<short sha>`, builds `dev-env` `FROM` that base by digest and pushes it under the same tag, then builds [`smoke/`](smoke/Dockerfile) `FROM` the pushed `dev-env`: the trust checks, the runtimes at the pinned versions, the key imports, and the manifests | build |
+| build | `build-images` | builds `base` with the distribution through the pull-through cache and pushes it as `<tag>-<short sha>`, builds `dev-env` `FROM` that base by digest and pushes it under the same tag, then builds [`smoke/`](smoke/Dockerfile) `FROM` the pushed `dev-env`: the trust checks, the runtimes at the pinned versions, the CI/CD CLI by its name after `micromamba activate base`, the key imports, and the manifests | build |
 | verify | `scan-base`, `scan-dev-env` | each push's own scan against the lineage's baseline in `awsds/ci-gates`; informative, a red one stops nothing | build |
 | release | `release-gate` | the steward's gate, a manual job the chain waits on; running it is the approval, and it keeps the evidence | test |
 | register | `register` | on the deploy runner: [`release/versions.py`](release/versions.py) `register` creates the release's SageMaker image version in every target account from the pushed digest, with the release's semver as an alias, and reads it back against that digest | deploy |
@@ -240,6 +240,14 @@ this environment is 3.13 against the distribution's 3.12, so a project asking fo
 unless it names it; the recipe carries 3.12 since 2026-10-14 (Stage 8 decision 13), the distribution's
 minor, and the first image built from it is `default-v0.7.0`. A later image version that exported
 `UV_PYTHON_INSTALL_DIR=/opt/awsds/python` would make it discoverable to every uv command.
+
+**In a space, `aws-smus-cicd-cli` is the house environment's from `default-v0.10.0`.** The distribution
+ships its own 1.0.8 in `/opt/conda/bin`, and every start script of a space runs `micromamba activate
+base`, which puts `/opt/conda/bin` first whatever the image's `ENV PATH` says. So the recipe adds
+`/opt/awsds/bin`, a symlink to the house CLI's entry point and nothing else, and the base environment's
+activation hook `/opt/conda/etc/conda/activate.d/zz-awsds-bin.sh` prepends it after each activation:
+`python`, `pip` and `jupyter` stay the distribution's (AWS-DataScience's Stage 8 decision 22). The
+smoke reads the name after the same activation and writes `cicd-cli.txt`.
 
 **For two of those rows the merge request review is the only control there is.** Measured 2026-08-22,
 when Stage 6a step 5.0 pushed the first images: ECR's scan read `base` and `dev-env` to identical

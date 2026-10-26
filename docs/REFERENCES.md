@@ -2190,6 +2190,8 @@
   <https://raw.githubusercontent.com/mamba-org/micromamba-docker/main/debian.Dockerfile>,
   <https://raw.githubusercontent.com/mamba-org/micromamba-docker/main/_dockerfile_shell.sh>,
   <https://raw.githubusercontent.com/mamba-org/micromamba-docker/main/_activate_current_env.sh>.
+  The report of the lookup, opened by the user from PR #269's draft the same day (open at 18:25:19 UTC):
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413>.
 
 - **The aws provider's state machine validation (read 2026-10-24, for [Stage 10](plan/stages/stage-10-orchestration-promotion.md)
   step 1.5 and Stage 8's deploy roles).** `aws_sfn_state_machine` registers `stateMachineDefinitionValidate`

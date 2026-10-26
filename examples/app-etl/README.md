@@ -129,9 +129,10 @@ scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-etl
 ```
 
 `scripts/dev-cli.sh` passes every argument to the CLI and answers two things for it. The CLI is the house
-image's, run by its path (`$AWSDS_PYTHON_ENV/bin/python`), since the SageMaker Distribution's own 1.0.8
-comes first on a space's `PATH` and refuses the manifest's `code` field. And the CLI's domain lookup by
-name, a `ListDomains` call that DataZone refuses to a project's role, is answered with `DOMAIN_ID`. The
+image's, run by its path (`$AWSDS_PYTHON_ENV/bin/python`), since up to the house image's version 10 the
+SageMaker Distribution's own 1.0.8 comes first on a space's `PATH` and refuses the manifest's `code`
+field. And the CLI's domain lookup by name, a `ListDomains` call that DataZone refuses to a project's
+role, is answered with `DOMAIN_ID` ([issue 413](https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413) asks the CLI to use the manifest's id). The
 script refuses to start when `AWSDS_PYTHON_ENV` or `DOMAIN_ID` is unset. `--skip-validation` because the
 CLI's pre-deployment validation simulates the IAM calls without their context keys and fails here every
 time; `--no-events` because the event it would publish has no handler in 1.0.9. Which identity runs the

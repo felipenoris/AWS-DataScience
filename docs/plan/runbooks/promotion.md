@@ -1174,8 +1174,9 @@ build runner 0.2117, the test and deploy runners 0.0376 and their root volumes 0
    request moves the image's pin with it. The application template's pin moves with its own next merge
    request.
 4. **[user] The merge request on `awsds/dev-env`** from the copy under `gitlab/awsds/dev-env/`: the
-   Dockerfile's `NO_PROXY_LIST` at 73 names, and the CI/CD CLI by its name if the user takes the
-   activation hook (Stage 8 decision 22), by `gitlab.md` §M's procedure; the branch pipeline runs the recipe
+   Dockerfile's `NO_PROXY_LIST` at 73 names, and the CI/CD CLI by its name through the base
+   environment's activation hook (Stage 8 decision 22, taken 2026-10-26), by `gitlab.md` §M's procedure;
+   the branch pipeline runs the recipe
    checks and the gates, and the steward merges. `./scripts/gitlab-mirror.py` then copies the merge back.
    An order set by the image's `ENV PATH` is not the hook's equivalent: every start script of the
    SageMaker Distribution runs `micromamba activate base`, which puts `/opt/conda/bin` first, so such an
@@ -1187,8 +1188,9 @@ build runner 0.2117, the test and deploy runners 0.0376 and their root volumes 0
    the build runner, runs the smoke and the scans, waits on the release gate, the user's manual job, and
    `register` creates Sandbox's version 11, alias `0.10.0`.
 6. **[Claude] The readings**: `./aws/devenv.py` (`DE-5` passing against version 11, `DE-1` 73 entries), the
-   version's `ContainerImage` the pushed digest, the smoke's `cicd-cli.txt` naming the house CLI by its
-   name when the hook ships, and the README's release row with both digests and sizes, in the copy.
+   version's `ContainerImage` the pushed digest, the smoke's `cicd-cli.txt` reading
+   `/opt/awsds/bin/aws-smus-cicd-cli` under `/opt/awsds/venv/bin/` and the house environment's version,
+   and the README's release row with both digests and sizes, in the copy.
 7. **[user] The mirror** pushed at `main` from the project folder, read at the commit `origin/main` holds:
 
    ```bash
@@ -1274,10 +1276,10 @@ the `dev` deploy from a space on version 11 by [`sagemaker-application.md`](sage
 `scripts/dev-cli.sh` for steps 6 and 7, with no `NO_PROXY` export, `getent hosts
 airflow-serverless.us-west-2.api.aws` answering a `10.20.x` address and the proxy log silent on the name.
 The clone carries the script once the template's merge request with it has merged on `awsds/app-etl`
-([`gitlab.md`](gitlab.md) "The application template"), which needs GitLab up. If the activation hook
-shipped, the space's terminal reads `type -a aws-smus-cicd-cli` with `/opt/awsds/bin/aws-smus-cicd-cli`
-first and `aws-smus-cicd-cli --version` 1.0.9, the reading the smoke cannot take, since a build starts
-no space. The space's image is set to `awsds-sandbox-dev-env` version 11 (alias `0.10.0`) in its settings
+([`gitlab.md`](gitlab.md) "The application template"), which needs GitLab up. The space's terminal
+reads `type -a aws-smus-cicd-cli` with `/opt/awsds/bin/aws-smus-cicd-cli` first and
+`aws-smus-cicd-cli --version` 1.0.9, the activation hook's reading the smoke cannot take, since a build
+starts no space. The space's image is set to `awsds-sandbox-dev-env` version 11 (alias `0.10.0`) in its settings
 before *Start*, as N.3 step 3 does for version 10: an image's environment is read when its app starts.
 
 #### N.7.4 Stage 10 decision 11's narrowing: the applies and the Deployment Manager's read

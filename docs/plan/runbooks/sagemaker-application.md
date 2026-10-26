@@ -68,7 +68,7 @@ estate gives it, with the section that develops it.
 | **XCom** | Airflow's channel between tasks: what a task returns, read by a later task's template. §C |
 | **a Glue job** | AWS Glue, serverless Spark: the task kind that reads and writes governed data, since Lake Formation hands credentials to Glue and to no other engine here. §G |
 | **a processing job, a training job** | SageMaker jobs: a container run on an instance SageMaker provisions, with inputs copied in before the command and outputs copied out after it; the container has no network. §C |
-| **the CI/CD CLI** | `aws-smus-cicd-cli`, AWS's command-line tool for SageMaker Unified Studio: it reads the manifest, copies the application's files into a project and creates its workflows there. It never reaches Staging or Production. The house image carries 1.0.9 in its own environment, which the template's `scripts/dev-cli.sh` runs by its path, since a space's `PATH` reaches the SageMaker Distribution's 1.0.8 first (§D). §M |
+| **the CI/CD CLI** | `aws-smus-cicd-cli`, AWS's command-line tool for SageMaker Unified Studio: it reads the manifest, copies the application's files into a project and creates its workflows there. It never reaches Staging or Production. The house image carries 1.0.9 in its own environment, which the template's `scripts/dev-cli.sh` runs by its path: up to the image's version 10 a space's `PATH` reaches the SageMaker Distribution's 1.0.8 first (§D). §M |
 | **the manifest** | `manifest.yaml`, the CLI's description of the application: what to copy, which workflows to create, and the two projects (`dev`, `test`) it deploys to. §M |
 | **the bundle** | the zip the CLI makes of the manifest's folders, the release's content; Staging and Production receive the bundle's files, rendered for the account. §M, §T |
 | **a release** | a git tag `v<major>.<minor>.<patch>` on `main`; its pipeline builds the image, tests the bundle in a project, stores the bundle and promotes it. §T |
@@ -389,7 +389,10 @@ settles, so the down runs again.
    ```
 
    Its first line names the CLI's version and interpreter, and it refuses to start, naming the variable,
-   when `AWSDS_PYTHON_ENV` (a space on another image) or `DOMAIN_ID` (step 3 not run) is unset.
+   when `AWSDS_PYTHON_ENV` (a space on another image) or `DOMAIN_ID` (step 3 not run) is unset. From the
+   house image `default-v0.10.0` the name `aws-smus-cicd-cli` is the house's too, through the base
+   environment's activation hook (Stage 8 decision 22), and the script stays for the lookup until a CLI
+   release takes the manifest's id ([issue 413](https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413), opened 2026-10-26).
    `--skip-validation` because the CLI's pre-deployment validation simulates the IAM calls without their
    context keys and reads every conditioned SCP as a deny (a failure of the tool, not of the estate,
    Lesson 30); `--no-events` because the event it would publish has no handler in 1.0.9. The refusal of
@@ -555,7 +558,7 @@ by the tags the CLI wrote, and neither has run here. On every `deploy` with boot
 step resolves the domain by name with `ListDomains`, and `workflow.create` finds the project's role the
 same way: the deploy roles hold the call and DataZone answers it with the associated domain, while it
 refuses the call to a project's role, which `scripts/dev-cli.sh` answers (§D; read in 1.0.9's
-`project_manager.py` and measured 2026-10-26).
+`project_manager.py` and measured 2026-10-26; reported upstream as [issue 413](https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413)).
 
 The stages' names, `dev` and `test`, their `environment_variables` names and the connection names are
 fixed by the pipeline and the render: an application adds no stage, since Staging and Production are

@@ -5,12 +5,14 @@
 #   scripts/dev-cli.sh deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
 #   scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-etl
 #
-# It runs the house environment's CLI by its path: the SageMaker Distribution's aws-smus-cicd-cli 1.0.8
-# comes first on a space's PATH and refuses the manifest's `code` field. It answers the CLI's domain
-# lookup by name with DOMAIN_ID, the id the manifest reads: the CLI 1.0.9 resolves the domain with
-# ListDomains on every deploy with bootstrap actions, the manifest's id notwithstanding, and DataZone
-# refuses that call to a project's role. The answer is the same for every caller of the lookup, the id
-# the deploy roles' own call returns in the pipeline, which runs the CLI by its name and not this script.
+# It runs the house environment's CLI by its path, whatever a space's PATH resolves: up to the house
+# image's version 10 the SageMaker Distribution's aws-smus-cicd-cli 1.0.8 comes first and refuses the
+# manifest's `code` field. It answers the CLI's domain lookup by name with DOMAIN_ID, the id the manifest
+# reads: the CLI 1.0.9 resolves the domain with ListDomains on every deploy with bootstrap actions, the
+# manifest's id notwithstanding, and DataZone refuses that call to a project's role
+# (aws/CICD-for-SageMakerUnifiedStudio issue 413). The answer is the same for every caller of the lookup,
+# the id the deploy roles' own call returns in the pipeline, which runs the CLI by its name and not this
+# script.
 set -eu
 
 if [ -z "${AWSDS_PYTHON_ENV:-}" ]; then

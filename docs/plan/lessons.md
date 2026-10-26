@@ -2942,7 +2942,8 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   The role's managed policy grants `datazone:List*` on `*` and nothing denies it, yet the call reads *"User is
   not permitted to perform operation: ListDomains"*, CloudTrail `AccessDenied` with no `errorMessage`. The
   CI/CD CLI 1.0.9 makes the call on every deploy with bootstrap actions, the manifest's domain id unused, so a
-  deploy from a space stops there. Where: `log-stage-10-orchestration-promotion.md`, 2026-10-26.
+  deploy from a space stops there; reported upstream as [issue 413](https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413). Where:
+  `log-stage-10-orchestration-promotion.md`, 2026-10-26.
 
 ### MWAA Serverless
 
