@@ -1096,3 +1096,48 @@ Claude's, on the user's word below; the four other sessions on the laptop were t
 - **[Claude] Recorded**: the switch row in `backend.py`; the stage file (status, 11.3 done); `AWS_STATE.md`
   (the lake's three administrators, section C's row); `SMUS.md`; `GOVERNANCE.md`; conventions §6; D22; the
   producer README; the hand-over note.
+
+## 2026-10-26 — 11.4: `governed-lake` created by the Governance Manager, and what its environment wrote
+
+*The user in the portal as the Governance Manager user; Claude read AWS as the infrastructure user with
+`InfrastructureAccess` in `Data Governance Account` (`awsds-infra-data`), reads alone. Times UTC.*
+
+- **[user] The project**, in the portal as the Governance Manager user: `governed-lake` from
+  `lake-publishing`. Then: *"Criei o projeto. Mas não sei qual Data Governance InfrastructureAccess é para
+  adicionar. Aparecem os nomes com códigos, então não consigo saber qual é."*
+- **[Claude] Which role**: the domain's `IAM` user profiles mapped to their accounts by ARN. Data
+  Governance's `InfrastructureAccess` is `AWSReservedSSO_InfrastructureAccess_ba1899ccb658ab35` (profile
+  `9e7cfd86-4ddb-4ea1-b43f-04417861d609`); `…_59e5b26af457128d` is Sandbox's and `…_7edd72025c361e9b`
+  Staging's, a residue of Stage 18.
+- **[user]** *"Adicionei AWSReservedSSO_InfrastructureAccess_ba1899ccb658ab35 no projeto"*.
+- **[Claude] The project**: `3j4l4xmvz7fggg`, `ACTIVE`, created 20:30:00Z by an `SSO` profile, the Governance
+  Manager user's; its stack `DataZone-Env-52webn93119ouo` started 20:30:14Z and `CREATE_COMPLETE`; the
+  environment `Tooling` `52webn93119ouo` `ACTIVE`. Members: the Governance Manager as `PROJECT_OWNER`;
+  the project role's `IAM` profile and the session group of Data Governance's `InfrastructureAccess`
+  (`ASSIGNED`, the user's addition) as `PROJECT_CONTRIBUTOR`.
+- **[Claude] The stack**, thirteen resources as Staging's at Stage 18 3.3: `ToolingUserRole`
+  (`datazone_usr_role_3j4l4xmvz7fggg_52webn93119ouo`), `BedrockServiceRole` and
+  `BedrockLambdaExecutionRole`, all three under `awsds-data-project-boundary`; `ToolingSecurityGroup` and
+  its ingress rule; `GlueNetworkConnection0` and `1`; two Athena workgroups; the log group; the schedule
+  group; `LakeFormationResourceToRegisterProjectsS3Location`; the CDK metadata. Its parameters: the pilot's
+  VPC and its two private subnets, `enableSpaces` `false`, `enableAthena` `true`,
+  `enableS3AccessGrantsForTools` `true`, the boundary, the projects bucket. No SageMaker AI domain.
+- **[Claude] Outside the stack**: the S3 Access Grants instance `default`, created 20:31:21Z by DataZone's
+  environment deployer session, with one location, the project's prefix, under the project role;
+  `AWSServiceRoleForAmazonAthena`, created 20:30:53Z; nine connections in the project, `project.iam` and
+  `project.default_lakehouse` among them; no data source, as Staging's project had none; two subscription
+  targets on the `Tooling` environment, for Bedrock models and for feature groups and model package groups,
+  none for Glue tables.
+- **[Claude] Lake Formation and Glue, from the trail** (20:29 to 20:45Z), every write the provisioning
+  role's: `CreateConnection` twice at 20:30:34Z; `RegisterResource` of
+  `awsds-data-smus-projects/dzd-d8yrvx1ko7im6o/3j4l4xmvz7fggg/dev/` under the project role at 20:30:53Z;
+  `CreateDatabase` of `default` in the lake's catalog at 20:31:21Z, no location and no create-table
+  default; `BatchGrantPermissions` at 20:31:22Z, `DESCRIBE` on `default` and `DATA_LOCATION_ACCESS` on the
+  project's `dev/` to `IAMPrincipals` and `arn:aws:identitystore:::user/*`, each under
+  `context.datazone.projectId=="3j4l4xmvz7fggg"`. The creator's `ALL` on `default` is the provisioning
+  role's. No `PutDataLakeSettings` since 20:17Z: with both seats declared, the provisioning wrote no
+  settings. Neither seat granted anything on `raw`, `curated` or `dropbox`.
+- **[Claude] The settings and the plan after**, 20:34Z: Lake Formation unchanged, the three seats,
+  `Parameters` 4/`TRUE`, the flag `true`, both default lists and the read-only administrators empty;
+  `data/` re-plans *"No changes."*. Verification x is answered: the first environment changed no setting
+  `data/` declares and granted nothing on the lake.

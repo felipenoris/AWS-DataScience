@@ -54,7 +54,10 @@ variable "lake_publishing_enabled" {
 variable "lake_publisher_role" {
   description = "The publishing project's role, by NAME, hand-written after its Tooling environment exists (Stage 6f step 11.5), the way sandbox/bedrock/ names project roles. null grants nothing. The role receives DESCRIBE on curated and DESCRIBE and SELECT with the grant option on each table of publishing.tf's list, the terms DataZone sets for publishing a Glue table."
   type        = string
-  default     = null
+
+  # governed-lake, created by the Governance Manager on 2026-10-26 (6f step 11.4) and read from its
+  # stack the same evening: `3j4l4xmvz7fggg` is the project and `52webn93119ouo` the environment.
+  default = "datazone_usr_role_3j4l4xmvz7fggg_52webn93119ouo"
 
   validation {
     condition     = var.lake_publisher_role == null || can(regex("^datazone_usr_role_[a-z0-9]+_[a-z0-9]+$", var.lake_publisher_role))
