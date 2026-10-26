@@ -1277,3 +1277,19 @@ own; no AWS call, nothing started, applied or destroyed. Times UTC.*
   after the start, against 01:31 to 01:51 of 8.1 (`waiting-on-the-user.md`, the GitLab sitting). The order is
   carried by runbook §U steps 3 and 5 and §B, the `Makefile`'s help and comments, `conventions.md` §6,
   `terraform-live/README.md`, `PRICING.md`'s GitLab session, the stage's 1.6 and 8.1 and `CLAUDE.md`.
+
+## 2026-10-26 — the first `make gitlab-up` in the new order: the agent `Online` 1 min 20 s after the start
+
+*The user's hand for `make hub-up` and `make gitlab-up`, from a terminal of their own (the output not read
+here); Claude's readings as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`): EC2, SSM
+and the serial console, nothing started or changed by Claude. Times UTC.*
+
+- **[Claude] The order, read back from AWS at 03:17**: the hub pair started 03:13:00 (`awsds-prod-vpn`) and
+  03:13:03 (`awsds-prod-proxy`); the 12 interface endpoints of `production/egress/` created from 03:13:46 (`ssm`,
+  `ec2messages` and eight more in the same second) to 03:14:30 (`ssmmessages` 03:14:20, `secretsmanager` last);
+  the host `i-0b4cb5f62e65abf70` started 03:15:09, 39 s after the last endpoint; the deploy and test runners
+  launched 03:15:29 and 03:15:37, after the host.
+- **[Claude] The agent**: the serial console logs `Amazon SSM Agent v3.3.5390.0 is running` at 03:15:25 and no
+  hibernation line; `describe-instance-information` reads the host `Online`, last ping 03:16:29, **1 min 20 s
+  after the start**, against 01:31 to 01:51 in 8.1's cycle. The owed run is done and its row leaves
+  `waiting-on-the-user.md`.

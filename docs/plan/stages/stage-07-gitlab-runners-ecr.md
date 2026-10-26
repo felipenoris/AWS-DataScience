@@ -591,8 +591,8 @@ rehearsal happens now, while the instance holds throwaway content.
   01:29:03 and the sign-in page answered `200` at 01:30:45, **1 min 42 s from the start to the first HTTPS
   answer** (verification vi), the address kept. The Session Manager agent of a host started before the `ssm`
   endpoint exists hibernates for 20 minutes (the log; runbook §U): since 2026-10-26 `scripts/slices.py` applies
-  `egress/` before it starts the host (`tooling` at rank 52), and the first `make gitlab-up` in that order, the
-  host `Online` minutes after the start, is owed.
+  `egress/` before it starts the host (`tooling` at rank 52), and the first `make gitlab-up` in that order read
+  the host `Online` 1 min 20 s after its start (the same night, 03:15 UTC).
 - **8.2 — Done 2026-10-26** (runbook §B carries the procedure). The user's `gitlab-backup create
   STRATEGY=copy` (the archive in the bucket at 01:53:19, 15 MB), the destroy of `tooling/` by Claude on the
   user's authorization (`17 destroyed`, 02:00:33 to 02:01:50), the re-apply with the SAML variable file
