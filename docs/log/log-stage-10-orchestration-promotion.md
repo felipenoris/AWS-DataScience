@@ -1672,3 +1672,27 @@ written to AWS.*
   the template's merge request) and the image row carrying C; Stage 8 decision 22 and 2.1 here name the
   remedy. The implementation is a session of its own, at the user's request, proposed as a card: a turn
   begun by another session's message cannot start one.
+
+## 2026-10-26 — 2.1's remedy written: `scripts/dev-cli.sh` in the template, the upstream report drafted
+
+*Claude's hand, in the session started by the one that recorded the decision, from a laptop with no AWS
+call: the CLI 1.0.9's wheel read from PyPI, the template's tests and lint run offline.*
+
+- **[Claude] The lookup's callers, read in the 1.0.9 wheel** (its sha256 the house lock's, `bd7258c0…4903`):
+  `get_domain_id_by_name` lists domains through `resolve_domain_id`. `ProjectManager` resolves the
+  manifest's id and name with `get_domain_from_target_config` (a `GetDomain`) and hands
+  `_ensure_environments_exist` the name alone, which looks the id up again; `workflow.create` and
+  `ContextResolver` resolve the role through `get_project_user_role_arn`, which does the same. Every caller
+  reaches the function through its module, so replacing the module's attribute answers all of them.
+- **[Claude] B**: `examples/app-etl/scripts/dev-cli.sh` runs `"$AWSDS_PYTHON_ENV/bin/python"` with the
+  lookup answered by `DOMAIN_ID` and every argument passed through. It exits 2 before the CLI runs when
+  `AWSDS_PYTHON_ENV` or `DOMAIN_ID` is unset or the environment holds no interpreter, and 1 on a CLI with no
+  `get_domain_id_by_name`. `tests/test_dev_cli.py` runs it over a double of the CLI's package, 8 tests; a
+  copy of the script without the replacement fails 2 of them. The template: `uv run pytest` 39 passed,
+  `ruff check` and `ruff format --check` clean, the lint at `d856982c` *"ok: 9 arquivo(s)"*. No storage item
+  names `scripts/` and the Dockerfile copies nothing from it, so neither the bundle nor the image carries it.
+- **[Claude] A**: the report for `aws/CICD-for-SageMakerUnifiedStudio` drafted in the PR's description, with
+  no account, domain or project id; posting it is the user's act.
+- **[Claude] The record**: `sagemaker-application.md` §A, §O, §R, §D steps 6 and 7, §E and §M; the template's
+  README; `conventions.md`'s layout; `promotion.md` §N.7.3; 2.1 here; `docs/SMUS.md`, `upstream-releases.md`.
+  The third part, the image's `PATH`, is Stage 8's log of the same day.

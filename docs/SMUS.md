@@ -632,7 +632,11 @@ network under a service-managed key (its `helpers/datazone.py`; [`upstream-relea
 - **Two CLIs in one image.** The SageMaker Distribution ships `aws-smus-cicd-cli` 1.0.8 in
   `/opt/conda/bin`, first on a space's `PATH`, and it refuses a manifest's `content.workflows[].code`
   (*"Additional properties are not allowed ('code' was unexpected)"*); the house environment's 1.0.9 is
-  reached by its path.
+  reached by its path, through the template's `scripts/dev-cli.sh`. An image's `ENV PATH` cannot reorder
+  the two: every start script of the distribution runs `micromamba activate base` before its server, and
+  the activation puts `/opt/conda/bin` first, so the server and its terminals see conda's directory
+  first whatever the image declares; the base environment's `etc/conda/activate.d/` scripts run after
+  that export (read 2026-10-26 in 4.5.2's scripts and libmamba's activation, not measured in a space).
 - **DataZone refuses `ListDomains` to a project's role** (*"User is not permitted to perform operation:
   ListDomains"*, CloudTrail `AccessDenied` with no message) though the role's managed policy allows
   `datazone:List*`; the CLI 1.0.9 resolves the domain by name with that call in the project step of every

@@ -19,7 +19,8 @@ Production, hand by hand, is `docs/plan/runbooks/sagemaker-application.md` in th
 | `warehouse/trades.sql` | the warehouse table's DDL, run by the pipeline's manual job `production-warehouse-ddl` through the Data API as the deploy role, its owner (Stage 9 decision 6) |
 | `workflows/` | the three workflow definitions, in the CI/CD CLI's notation |
 | `manifest.yaml` | the application: its content, the folders the CLI copies, and its stages `dev` and `test` |
-| `tests/` | pytest, offline, against `samples/`; the Glue script and the worker's task run over doubles |
+| `scripts/dev-cli.sh` | the CI/CD CLI for the `dev` stage in a space: the house image's CLI by its path, its domain lookup answered by `DOMAIN_ID`; no storage item names `scripts/`, so the bundle never carries it |
+| `tests/` | pytest, offline, against `samples/`; the Glue script, the worker's task and `scripts/dev-cli.sh` run over doubles |
 | `samples/` | synthetic trades: the input of the image's smoke test, of a Sandbox job and of the workflow's `inbox/` |
 | `Dockerfile` | the application image, which is also the job image: `FROM` base by digest, the lock's dependencies in a virtual environment of their own on base's CPython 3.12, no code; target `app` is the image, `smoke` runs the job's command on it with `src/` mounted as the job's input |
 | `.gitlab-ci.yml` | the pipeline, with the shared gates from `awsds/ci-gates` |
@@ -108,26 +109,32 @@ the ceiling (`LINT_INSTANCE_TYPES` in `.gitlab-ci.yml`) as the ones a processing
 awsds-workflows lint . --image-repository awsds-prod-ecr-app-etl --instance-type ml.t3.medium --instance-type ml.t3.large --instance-type ml.t3.xlarge --instance-type ml.m5.large --instance-type ml.m5.xlarge --instance-type ml.c5.large --instance-type ml.c5.xlarge
 ```
 
-The deploy to the `dev` project runs the CI/CD CLI (`aws-smus-cicd-cli` 1.0.9) with the shell variables
-the manifest reads, `JOB_IMAGE_URI` being the image the last release's notes name. The worker's package
-comes first, since `bundle` and `deploy` copy and never build; then the deploy, which copies the folders
-and creates the workflow, and a run:
+The deploy to the `dev` project runs the CI/CD CLI (`aws-smus-cicd-cli` 1.0.9) from a space on the house
+image, as the project's role, with the shell variables the manifest reads, `JOB_IMAGE_URI` being the image
+the last release's notes name. The worker's package comes first, since `bundle` and `deploy` copy and
+never build; then the deploy, which copies the folders and creates the workflow, and a run:
 
 ```bash
 python3 -m zipfile -c code/app-etl.zip code/app_etl_tasks.py
 ```
 
 ```bash
-aws-smus-cicd-cli deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
+scripts/dev-cli.sh deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
 ```
 
 ```bash
-aws-smus-cicd-cli run --manifest manifest.yaml --targets dev --workflow app-etl
+scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-etl
 ```
 
-`--skip-validation` because the CLI's pre-deployment validation simulates the IAM calls without their
-context keys and fails here every time; `--no-events` because the event it would publish has no
-handler in 1.0.9. Which identity runs the `dev` deploy, and from where, is Stage 8 decision 22.
+`scripts/dev-cli.sh` passes every argument to the CLI and answers two things for it. The CLI is the house
+image's, run by its path (`$AWSDS_PYTHON_ENV/bin/python`), since the SageMaker Distribution's own 1.0.8
+comes first on a space's `PATH` and refuses the manifest's `code` field. And the CLI's domain lookup by
+name, a `ListDomains` call that DataZone refuses to a project's role, is answered with `DOMAIN_ID`. The
+script refuses to start when `AWSDS_PYTHON_ENV` or `DOMAIN_ID` is unset. `--skip-validation` because the
+CLI's pre-deployment validation simulates the IAM calls without their context keys and fails here every
+time; `--no-events` because the event it would publish has no handler in 1.0.9. Which identity runs the
+`dev` deploy, and from where, is Stage 8 decision 22; the session around it is the infrastructure
+repository's `docs/plan/runbooks/sagemaker-application.md` §D.
 
 ## The pipeline
 

@@ -68,7 +68,7 @@ estate gives it, with the section that develops it.
 | **XCom** | Airflow's channel between tasks: what a task returns, read by a later task's template. §C |
 | **a Glue job** | AWS Glue, serverless Spark: the task kind that reads and writes governed data, since Lake Formation hands credentials to Glue and to no other engine here. §G |
 | **a processing job, a training job** | SageMaker jobs: a container run on an instance SageMaker provisions, with inputs copied in before the command and outputs copied out after it; the container has no network. §C |
-| **the CI/CD CLI** | `aws-smus-cicd-cli`, AWS's command-line tool for SageMaker Unified Studio: it reads the manifest, copies the application's files into a project and creates its workflows there. It never reaches Staging or Production. The house image carries 1.0.9 in its own environment, which a space's `PATH` reaches after the SageMaker Distribution's 1.0.8 (§D). §M |
+| **the CI/CD CLI** | `aws-smus-cicd-cli`, AWS's command-line tool for SageMaker Unified Studio: it reads the manifest, copies the application's files into a project and creates its workflows there. It never reaches Staging or Production. The house image carries 1.0.9 in its own environment, which the template's `scripts/dev-cli.sh` runs by its path, since a space's `PATH` reaches the SageMaker Distribution's 1.0.8 first (§D). §M |
 | **the manifest** | `manifest.yaml`, the CLI's description of the application: what to copy, which workflows to create, and the two projects (`dev`, `test`) it deploys to. §M |
 | **the bundle** | the zip the CLI makes of the manifest's folders, the release's content; Staging and Production receive the bundle's files, rendered for the account. §M, §T |
 | **a release** | a git tag `v<major>.<minor>.<patch>` on `main`; its pipeline builds the image, tests the bundle in a project, stores the bundle and promotes it. §T |
@@ -108,7 +108,7 @@ pipeline writes and only workflows run.
 
 | Stage | Where it runs | Deployed by | Identity of the tasks | Data |
 |---|---|---|---|---|
-| `dev` | the Sandbox project `eighth-experimentation` | the CI/CD CLI (`aws-smus-cicd-cli` 1.0.9, the house image's by its path), from a space, while the application is engineered (§D) | the project role, `datazone_usr_role_<project>_<env>` | the project's `shared/<app>/` prefix under the project key |
+| `dev` | the Sandbox project `eighth-experimentation` | the CI/CD CLI (`aws-smus-cicd-cli` 1.0.9, the house image's, through `scripts/dev-cli.sh`), from a space, while the application is engineered (§D) | the project role, `datazone_usr_role_<project>_<env>` | the project's `shared/<app>/` prefix under the project key |
 | `test` | the Sandbox project `test-experimentation` | the CLI, in the tag pipeline's `test-deploy` job, as `awsds-deploy-sandbox-test` (Stage 8 decision 19) | the project role | the project's `shared/<app>/`, emptied before each deploy |
 | Staging | the Staging account, no project and no portal | the pipeline's `staging-deploy` as `awsds-deploy-staging`, from the release's bundle | `awsds-staging-wf-<workflow>` on the worker, `awsds-staging-job-exec` in every job | `awsds-staging-outputs` under `alias/awsds-staging-data`; the lake read-only through Staging's share |
 | Production | the Production account, `VPC-Workloads` | the pipeline's `production-deploy` as `awsds-deploy-prod`, after two manual gates | `awsds-prod-wf-<workflow>`, `awsds-prod-job-exec` | `awsds-prod-outputs` under `alias/awsds-prod-data`; the lake read and, for the declared tables, written; the governed warehouse |
@@ -189,6 +189,7 @@ zipped or not rendered, and the failure shows at the first deploy. The layout is
 ├── glue/<script>.py   # one script per Glue job (class 2c)
 ├── workflows/<workflow>.yaml   # one definition per workflow, in the CLI's notation
 ├── manifest.yaml      # the application: its content, the folders the CLI copies, its stages
+├── scripts/dev-cli.sh # the CI/CD CLI for the dev stage in a space (§D); no storage item names it, so it is never bundled
 ├── Dockerfile         # the application image and the job image: the lock's dependencies, no code
 ├── tests/             # pytest, offline (§E)
 ├── samples/           # synthetic input: the smoke build, the tests, the `test` run and the inbox seed read it
@@ -304,7 +305,8 @@ The space's `~/shared/` folder is the project's `shared/` S3 prefix, its house e
 CI/CD CLI (Stage 8 decision 22), and every command it runs holds the project role's credentials. The
 loop below ran end to end from a space on 2026-10-26 ([`promotion.md`](promotion.md) §N.3, Stage 10
 2.1). Steps 1, 4 and 6 carry what the image and the CLI do not yet do for the developer: git's credential
-helpers, the MWAA Serverless API's name in `NO_PROXY`, and the CLI's domain lookup.
+helpers, the MWAA Serverless API's name in `NO_PROXY`, and the CLI's domain lookup, which the template's
+`scripts/dev-cli.sh` answers.
 
 **The session is the infrastructure user's.** `make hub-up`; `make gitlab-up RUNNERS=0` while the
 checkout is cloned or pushed; and Sandbox's endpoints with the MWAA Serverless group:
@@ -371,20 +373,23 @@ settles, so the down runs again.
 
 6. **The deploy to `dev`.** "Deploy", for the CLI, means two things: copy the manifest's folders under the
    project's `shared/<app>/`, and create (or update) each workflow the manifest's `bootstrap` names, with
-   the project's network and key. It runs none. Two answers make the command longer than the CLI's own.
-   The CLI is the house image's, called by its path: the SageMaker Distribution's own
-   `aws-smus-cicd-cli`, 1.0.8, comes first on the space's `PATH` and refuses the manifest's `code` field
-   (*"Additional properties are not allowed ('code' was unexpected)"*). And the CLI 1.0.9 looks the
-   domain up by name with `ListDomains` on every deploy with bootstrap actions, the manifest's id
-   notwithstanding, which DataZone refuses to a project's role (*"User is not permitted to perform
-   operation: ListDomains"*) though its IAM policy allows `datazone:List*`. The deploy roles' call returns
-   the domain, since the pipeline's `test-deploy` creates its workflows through the same lookup, so the
-   command answers that one lookup with the manifest's `DOMAIN_ID`, and every other call is the CLI's own:
+   the project's network and key. It runs none. The command is the template's `scripts/dev-cli.sh`, which
+   passes every argument to the CLI and answers two things for it. The CLI is the house image's, run by
+   its path (`$AWSDS_PYTHON_ENV/bin/python`): the SageMaker Distribution's own `aws-smus-cicd-cli`, 1.0.8,
+   comes first on the space's `PATH` and refuses the manifest's `code` field (*"Additional properties are
+   not allowed ('code' was unexpected)"*). And the CLI 1.0.9 looks the domain up by name with
+   `ListDomains` on every deploy with bootstrap actions, the manifest's id notwithstanding, which DataZone
+   refuses to a project's role (*"User is not permitted to perform operation: ListDomains"*) though its
+   IAM policy allows `datazone:List*`. The deploy roles' call returns the domain, since the pipeline's
+   `test-deploy` creates its workflows through the same lookup, so the script answers the lookup with the
+   manifest's `DOMAIN_ID` for each of its callers, and every other call is the CLI's own:
 
    ```bash
-   "$AWSDS_PYTHON_ENV/bin/python" -c 'import os, sys, smus_cicd.helpers.datazone as dz; dz.get_domain_id_by_name = lambda name, region: os.environ["DOMAIN_ID"]; from smus_cicd.cli import app; sys.argv[0] = "aws-smus-cicd-cli"; app()' deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
+   scripts/dev-cli.sh deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
    ```
 
+   Its first line names the CLI's version and interpreter, and it refuses to start, naming the variable,
+   when `AWSDS_PYTHON_ENV` (a space on another image) or `DOMAIN_ID` (step 3 not run) is unset.
    `--skip-validation` because the CLI's pre-deployment validation simulates the IAM calls without their
    context keys and reads every conditioned SCP as a deny (a failure of the tool, not of the estate,
    Lesson 30); `--no-events` because the event it would publish has no handler in 1.0.9. The refusal of
@@ -398,10 +403,10 @@ settles, so the down runs again.
    key and creates the workflow in the service's own network, printing one line, which is the quiet
    failure to watch for. A deploy that stops after the copy leaves the copied files, which the next
    deploy syncs over, and its operator zips under `shared/operatorFiles/`, which nothing prunes.
-7. **A run**, with the same command and `run`:
+7. **A run**, with the same script and `run`:
 
    ```bash
-   "$AWSDS_PYTHON_ENV/bin/python" -c 'import os, sys, smus_cicd.helpers.datazone as dz; dz.get_domain_id_by_name = lambda name, region: os.environ["DOMAIN_ID"]; from smus_cicd.cli import app; sys.argv[0] = "aws-smus-cicd-cli"; app()' run --manifest manifest.yaml --targets dev --workflow <workflow>
+   scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow <workflow>
    ```
 
    `run` returns once the service accepts the start and prints the run id, after refusals of
@@ -482,6 +487,10 @@ script's imports resolve without Spark or AWS and the test can read what the scr
   drift the Staging leg catches is the one the unit tests cannot: a column the governed table lacks
   (verification ix, read on `v0.4.5`).
 - **A warehouse load** (`tests/test_load_warehouse.py`): the statements it builds, over a JDBC double.
+- **The `dev` launcher** (`tests/test_dev_cli.py`): `scripts/dev-cli.sh` over a double of the CLI's
+  package, the tests' own interpreter standing in for the house's: the lookup answered by
+  `DOMAIN_ID` through the module and from inside it, the arguments passed through unchanged, the CLI's
+  exit code kept, and each refusal before the CLI runs.
 
 **The rules of the tests.** No test reaches AWS: the test runner holds no AWS identity, by design (Stage
 8 decision 11), so a test that calls boto3 for real fails there. No test reads real data: `samples/`
@@ -542,7 +551,7 @@ service holds. `describe --connect` lists a project's connections; `monitor` and
 by the tags the CLI wrote, and neither has run here. On every `deploy` with bootstrap actions the project
 step resolves the domain by name with `ListDomains`, and `workflow.create` finds the project's role the
 same way: the deploy roles hold the call and DataZone answers it with the associated domain, while it
-refuses the call to a project's role, which §D answers in the command (read in 1.0.9's
+refuses the call to a project's role, which `scripts/dev-cli.sh` answers (§D; read in 1.0.9's
 `project_manager.py` and measured 2026-10-26).
 
 The stages' names, `dev` and `test`, their `environment_variables` names and the connection names are

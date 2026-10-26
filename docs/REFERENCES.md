@@ -2162,6 +2162,35 @@
   <https://github.com/boto/botocore/blob/develop/botocore/data/mwaa-serverless/2024-07-26/service-2.json>,
   <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonMWAA/current/us-west-2/index.json>.
 
+- The CI/CD CLI's domain lookup and a space's `PATH` (read 2026-10-26, for [Stage 8](plan/stages/stage-08-cicd-pipelines.md)
+  decision 22's remedy and `examples/app-etl/scripts/dev-cli.sh`). The 1.0.9 wheel, its sha256 the house
+  lock's (`bd7258c0…4903`): `get_domain_id_by_name` lists domains through `resolve_domain_id`, every
+  caller reaches it through the module (`helpers/datazone.py`, `helpers/project_manager.py`,
+  `bootstrap/handlers/workflow_create_handler.py`, `helpers/context_resolver.py`), and `--version` prints
+  `aws-smus-cicd-cli <version>`: <https://pypi.org/pypi/aws-smus-cicd-cli/1.0.9/json>. The SageMaker
+  Distribution 4.5.2's `ENV PATH` (`/opt/conda/bin` after `/etc/sagemaker-inference-server`), its start
+  scripts, each running `micromamba activate base` before its server, `apply_patches.sh` (`pip show`
+  before the entrypoint's activation), the supervisord program and the server's
+  `terminado_settings`, `shell_command: ["/bin/bash"]`:
+  <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/build_artifacts/v4/v4.5/v4.5.2/Dockerfile>,
+  <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/build_artifacts/v4/v4.5/v4.5.2/dirs/usr/local/bin/entrypoint-sagemaker-ui-jupyter-server>,
+  <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/build_artifacts/v4/v4.5/v4.5.2/dirs/usr/local/bin/start-sagemaker-ui-jupyter-server>,
+  <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/build_artifacts/v4/v4.5/v4.5.2/dirs/usr/local/bin/entrypoint-sagemaker-ui-code-editor>,
+  <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/build_artifacts/v4/v4.5/v4.5.2/dirs/usr/local/bin/start-sagemaker-ui-code-editor>,
+  <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/build_artifacts/v4/v4.5/v4.5.2/dirs/etc/patches/apply_patches.sh>,
+  <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/build_artifacts/v4/v4.5/v4.5.2/dirs/etc/supervisor/conf.d/supervisord-sagemaker-ui.conf>,
+  <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/build_artifacts/v4/v4.5/v4.5.2/dirs/etc/sagemaker-ui/jupyter/server/jupyter_server_config.py>.
+  libmamba's activation at `micromamba-1.5.11`, the distribution's floor, and at `main`: the first
+  activation puts the prefix's `bin` ahead of the existing `PATH`, a reactivation removes it and puts it
+  first again, and the script exports `PATH` before it sources `etc/conda/activate.d/*.sh` in sorted order:
+  <https://raw.githubusercontent.com/mamba-org/mamba/micromamba-1.5.11/libmamba/src/core/activation.cpp>,
+  <https://raw.githubusercontent.com/mamba-org/mamba/main/libmamba/src/core/activation.cpp>. The micromamba
+  image the distribution starts from: `SHELL ["/usr/local/bin/_dockerfile_shell.sh"]`, which activates
+  only when `MAMBA_DOCKERFILE_ACTIVATE` is `1`, and `ENTRYPOINT ["/usr/local/bin/_entrypoint.sh"]`:
+  <https://raw.githubusercontent.com/mamba-org/micromamba-docker/main/debian.Dockerfile>,
+  <https://raw.githubusercontent.com/mamba-org/micromamba-docker/main/_dockerfile_shell.sh>,
+  <https://raw.githubusercontent.com/mamba-org/micromamba-docker/main/_activate_current_env.sh>.
+
 - **The aws provider's state machine validation (read 2026-10-24, for [Stage 10](plan/stages/stage-10-orchestration-promotion.md)
   step 1.5 and Stage 8's deploy roles).** `aws_sfn_state_machine` registers `stateMachineDefinitionValidate`
   in its `CustomizeDiff`; when the definition is new or changed it calls `ValidateStateMachineDefinition`

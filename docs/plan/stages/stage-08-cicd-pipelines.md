@@ -218,7 +218,8 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   holds it (decision 16); the recipe changes, so the tag is a minor, `default-v0.10.0`. Until its version
   registers, `./aws/devenv.py` reads `DE-5` red against version 10, one name missing, and a session that
   deploys from a space exports the name ([`sagemaker-application.md`](../runbooks/sagemaker-application.md)
-  §D step 4). The same release is the occasion for the image's `PATH` order, the waiting list's CLI row.
+  §D step 4). The same release is the occasion for the CI/CD CLI by its name, in the form decision 22
+  leaves to the user: the base environment's activation hook, or none.
 - **1.1 — [Claude] Write the build jobs**: both images with **BuildKit rootless** on the build runner
   (Stage 7 step 6.2), tagged **`<flavour>-v<semver>-<short-sha>`** — the release tag this pipeline runs
   on, plus the commit — pushed nowhere yet. The `-<short-sha>` suffix keeps two builds of the same release
@@ -1836,6 +1837,18 @@ Measured (`docs/PRICING.md`), us-west-2:
     template's manifest that answers the lookup and calls the house CLI by its path, and the house
     environment's `bin` before `/opt/conda/bin` on the image's `PATH` in `default-v0.10.0`, checked in
     its smoke.
+    **Written 2026-10-26** (the log): the script is `examples/app-etl/scripts/dev-cli.sh` with
+    `tests/test_dev_cli.py`, and the report is drafted, its posting the user's. The third part was read
+    against the SageMaker Distribution 4.5.2's start scripts before it was written: each runs `micromamba
+    activate base` before its server, and the activation puts `/opt/conda/bin` first whatever the image's
+    `ENV PATH` says, so the order as decided reaches no space's server or terminal, and the smoke's `RUN`,
+    which activates nothing, passes on it. The whole `bin` ahead of conda in a place that survives the
+    activation would make `jupyter` the house environment's in the server. The form that reaches a space
+    is the base environment's activation hook (`/opt/conda/etc/conda/activate.d/`), prepending
+    `/opt/awsds/bin`, which holds the house CLI's entry point alone, with the smoke reading the name after
+    the activation: prepared and not in the recipe copy, one file of ours in the distribution's
+    environment against the user's rule of 2026-09-10. **Due, the user's**: the hook, or no third part,
+    the script standing alone.
 23. **When pass 4 runs** (step 3; Stage 9; Stage 10 passes 1-2). The pass table gives pass 4 "passes 1-2"
     as its need, and "On ordering" exercises the chain with an application that touches no data until
     Stage 9 builds the platforms. In D41's form the promotion writes into `awsds-<env>-outputs` (Stage 9
