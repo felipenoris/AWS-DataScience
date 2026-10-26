@@ -3937,3 +3937,26 @@ AWS; the session that read Stages 7 to 10 for what is left. Times UTC.*
   `sagemaker-application.md` §D rewritten as the sequence that ran; `upstream-releases.md` (1.0.9 still the
   newest on PyPI, the domain lookup's row), `docs/SMUS.md`, `dev-env.md` and `sg-proxy.md` at 73 names;
   `promotion.md` §N.7.1, the GitLab sitting for `default-v0.10.0`, and the waiting list's image row.
+
+## 2026-10-26 — xxviii's active half: the user's option B, the job written
+
+*Claude's hand, no AWS call. The user's decision, taken in the chat of the session forked from this one and
+relayed by it: "Stage 8 xxviii, metade ativa = opção B. Um job manual no runner de deploy na próxima
+sentada do GitLab (a da default-v0.10.0, promotion.md §N.7.1) chama AssumeRole de um papel de deploy pelo
+endpoint global sts.amazonaws.com; lê-se a trilha de us-east-1 e a mensagem da regra 4.6. Sem alargar
+trust."*
+
+- **[Claude] What the job can read**, from the code: the deploy roles' trust, `OnlyTheDeployRunner`, admits
+  the runner's role with no condition, so the runner's assumption through the global endpoint succeeds; the
+  misuse rule's pattern exempts the runner's role by its unique id (`anything-but` prefix), so the runner's
+  assumption fires no rule through either endpoint, and 4.6's message cannot appear in this form. The job
+  reads the Region each record lands in: a record written in `us-east-1` reaches no `us-west-2` rule,
+  whoever its caller. The `aws:RequestedRegion` clause stays unread, the trust pinning nothing.
+- **[Claude] The job**: `sts-global-probe` in the copy of `awsds/dev-env`'s pipeline
+  (`gitlab/awsds/dev-env/.gitlab-ci.yml`), tag `awsds-deploy`, `needs: []`, created only in a pipeline run
+  on the default branch with `STS_GLOBAL_PROBE` set, and manual there. As the runner's own role it assumes
+  both deploy roles through `sts.us-west-2.amazonaws.com` and through `sts.amazonaws.com`, session name
+  `xxviii-<pipeline id>`, and prints each ARN; its script parses under `bash -n`. It reaches GitLab with
+  `default-v0.10.0`'s merge request.
+- **[Claude] The record**: xxviii's row, `promotion.md` §N.5, §N.6 and §N.7.1 step 7, and the waiting
+  list's GitLab row.
