@@ -3977,3 +3977,51 @@ awsds/dev-env move junto)."*
   tag and its commit read back into the image project's `include:` `ref`, before step 4's merge request on
   `awsds/dev-env`; the application template's pin moves with its own next merge request.
 - **[Claude] The record**: 1.4's text, the waiting list's GitLab row, `promotion.md` §N.6 and §N.7.1.
+
+## 2026-10-26 — decision 22's third part read against the distribution's start scripts: the `ENV PATH` order reaches no space
+
+*Claude's hand (the session of PR #269), from a laptop with no AWS call: the SageMaker Distribution
+4.5.2's sources, libmamba's activation and the micromamba image read on GitHub.*
+
+- **[Claude] A space's `PATH`**: the distribution's `ENV PATH` opens `/etc/sagemaker-inference-server:/opt/conda/bin`;
+  `entrypoint-sagemaker-ui-jupyter-server` and `start-sagemaker-ui-jupyter-server` each run `micromamba
+  activate base` before `jupyter lab`, as the Code Editor's pair does; libmamba (`micromamba-1.5.11` and
+  `main`) puts `/opt/conda/bin` first on activation and, on a reactivation, removes it and puts it first
+  again; the server's `terminado_settings` is `{"shell_command": ["/bin/bash"]}`, so a terminal inherits the
+  server's `PATH`. The house `bin` ahead of `/opt/conda/bin` on the image's `ENV PATH` leaves
+  `aws-smus-cicd-cli` the distribution's 1.0.8 in a space, and a smoke `RUN`, unactivated
+  (`_dockerfile_shell.sh` activates only when `MAMBA_DOCKERFILE_ACTIVATE` is `1`, an `ARG` of the
+  distribution's own build), reads the house's and passes. The order reaches what runs unactivated: a
+  descendant's `RUN`, and, when the container starts without `_entrypoint.sh`, `apply_patches.sh`, whose
+  `pip show botocore` and `pip show hdijupyterutils` decide the patches it applies to `/opt/conda`. The house
+  lock carries `jupyterlab`, `jupyter-server`, `jupyter-core`, `notebook`, `ipython` and `pip`, so the whole
+  `bin` placed where it survives the activation would start the house's JupyterLab as the space's server.
+- **[Claude] The form prepared, not in the recipe copy**: `/opt/awsds/bin` holding a symlink to the house
+  CLI's entry point alone, prepended by `/opt/conda/etc/conda/activate.d/zz-awsds-bin.sh`, one `case` that
+  returns 0 under `set -euf -o pipefail` (run under bash and sh on the laptop), and libmamba exports `PATH`
+  before it sources the hook; the smoke reading the name after `micromamba activate base`, failing unless it
+  resolves under `$AWSDS_PYTHON_ENV/bin/` and `--version` reports the house environment's version. Neither
+  Dockerfile was built. The hook is a file of ours in the distribution's environment, which the user's rule
+  of 2026-09-10 leaves as it ships, so the choice between it and no third part is the user's.
+- **[Claude] The record**: decision 22 and 1.1's bullet; `promotion.md` §N.7.1 steps 4 and 6;
+  `docs/SMUS.md`; a platform entry in `lessons.md`; `docs/REFERENCES.md`.
+
+## 2026-10-26 — 3.3's snapshot, option A, written in the template
+
+*Claude's hand (the session of PR #269), from a laptop with no AWS call; the decision the user's, relayed
+by the session the user forked.*
+
+- **[user] Option A**: the Glue job records the snapshot of `curated.trades` it read and keeps taking
+  `--SOURCE_SNAPSHOT`; the leg, the chains and the workflows unchanged; the parity of Staging and
+  Production by id (option B) waits until it is a requirement.
+- **[Claude] The template** (`b65233b1`): `glue/transform.py` reads at the pinned snapshot or else the
+  table's current one, `SHOW TBLPROPERTIES <table> ('current-snapshot-id')`, appends `VERSION AS OF <id>`
+  and writes `trades.source.json` beside `trades.csv` once `keep_one_file` has emptied the prefix (the
+  table, the snapshot, whether pinned); a table reporting no current snapshot fails the run.
+  `src/app_etl/pipeline.py` copies a CSV's record into its summary as `source`, and
+  `code/app_etl_tasks.py`'s report carries it. The job role's `s3:PutObject` on the outputs bucket covers
+  the record. `uv run pytest` 45 passed, ruff clean, the lint at `d856982c` *"ok: 9 arquivo(s)"*,
+  `./scripts/render-workflow.py --check` OK. Unrun until the next tag's Staging leg, where `SHOW
+  TBLPROPERTIES` meets the job's Lake Formation catalog for the first time.
+- **[Claude] The record**: 3.3, its 3.8 sub-bullet and the status cell; `sagemaker-application.md` §E, §G
+  and §V; the template's README.
