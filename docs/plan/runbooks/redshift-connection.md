@@ -417,8 +417,11 @@ after.
 | the access role's Lake Formation grant, `DESCRIBE` on `governed_trades` and `SELECT` on its tables | Sandbox's Lake Formation, granted by its administrator (the account holds the lake's tag grant with grant option) | Lake Formation's *"Insufficient Lake Formation permission(s)"* |
 | `USAGE ON DATABASE governed_trades` for the project's database user | SQL, as the admin | the database is listed and refuses the query |
 | `TEMP ON DATABASE sandbox` for the same user: the share's table is an external table, and the session's database holds the query's temporary objects | SQL, as the admin; `PUBLIC` holds no database privilege since 5b and 6h | *"Failed to incorporate external table … permission denied to create temporary tables in database "sandbox""* |
+| the producer's share: Production's `GRANT USAGE … VIA DATA CATALOG`, its authorization, and Data Governance's association with its catalog | SQL in Production; `production/warehouse/datashare.tf`; `data-governance/data/warehouse-share.tf` | *"AwsClientException: EntityNotFoundException from glue - No glue catalog datashare is found with arn …"*. Every Lake Formation grant stays after a revoke, so the grants prove nothing about the share (Stage 9 xxiv, 2026-10-26) |
 
-The table's name in Redshift is `governed_trades.trades.trades_notional`: the producer's schema, not the
+The project's connection, `redshift-serverless.redshift`, names `dev` as its database, so the Query editor
+opens there and the read is refused for want of `TEMP` in `dev`: select `sandbox` (read 2026-10-26). The
+table's name in Redshift is `governed_trades.trades.trades_notional`: the producer's schema, not the
 Glue database's. A password user (`dbadmin`) is refused, *"Current user is not authenticated with IAM
 credentials"*, so the admin reads the metadata alone, and through the Data API with IAM authentication the
 infrastructure user, Sandbox's Lake Formation administrator, reads under the account's grant. The read needs

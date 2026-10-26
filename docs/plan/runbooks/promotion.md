@@ -1012,7 +1012,7 @@ Each costs minutes of a sitting and leaves a recorded reading; none holds up ano
 |---|---|---|---|
 | Stage 8 xv | N.1 | the proxy host stopped alone, a `.promotion` job retried, the proxy started again | the job's own check failing in about 20 s, *"no answer through the proxy"* |
 | Stage 8 xxviii's active half | N.1 | an `AssumeRole` of a deploy role through `sts.amazonaws.com`: a manual job on the deploy runner, or xvi's 15 s trust widening | `us-east-1`'s trail and, for the widened principal, whether the misuse rule fires; a regional assumption beside it reads 4.6's transformed message |
-| Stage 9 xxiv | a warehouse sitting (N.2's raises, both computes) | N.4a: the revoke by SQL, the two adopted slices' plans read, the re-grant by SQL and their applies; deferred by the user on 2026-10-26 | the Lake Formation rows the revoke leaves, whether the register notices, and what each adopted resource's plan reads; INT-24's door shut until the re-grant |
+| Stage 9 xxiv | a warehouse sitting (N.2's raises, both computes) | N.4a: the revoke by SQL, the two adopted slices' plans read, the re-grant by SQL and their applies. **Done 2026-10-26** (Stage 9's log) | the Lake Formation rows the revoke leaves, whether the register notices, and what each adopted resource's plan reads; INT-24's door shut until the re-grant |
 | Stage 10 xx's second half | N.1, Staging | a branch's tag whose `GlueJobOperator` names a Glue job the application slice does not declare | the task failing on `CreateJob` rather than creating a job, the two failure rules firing once more |
 | Stage 10's network negative (1.2) | N.1, Staging | **[Claude⚡]** a workflow created by hand with no `NetworkConfiguration`, run once and deleted. **Done 2026-10-26** (Stage 10's log) | the worker's address in the CloudTrail record of its first AWS call, beside a configured run's private address: `10.1.11.134` through `airflow-serverless.amazonaws.com` against `10.50.x` through `vpce-…` |
 
@@ -1030,6 +1030,17 @@ not automatically deleted"*), and does the register notice. `<ARN>` is the datas
 user's word; the sitting is a warehouse sitting (N.2's raises: `make up ENV=production
 ONLY=workloads-egress,warehouse-compute GROUPS=redshift`, and Sandbox's `warehouse-compute/` for steps 3
 and 6), at 1.44 USD per query-hour per workgroup.
+
+**Run 2026-10-26** (Stage 9's log), with four readings a second run starts from:
+- **The lake's plans:** `data-governance/data/` is planned from a tree that carries every change applied to the
+  slice. That evening it was the 6f pilot's branch, since `main` lacked its seats and grants.
+- **A positive control first:** 9.7's query runs before the revoke, in the database `sandbox`. The project's
+  connection opens the Query editor on `dev`, where the read is refused for want of `TEMP`.
+- **Step 4's lake plan:** it fails at `data.aws_redshift_data_shares.visible`, whose list reads null when the
+  account sees no share. It never reaches `one()`.
+- **Step 5's order:** the `GRANT` leaves the consumer `PENDING_AUTHORIZATION`, and Data Governance sees no share
+  until `production/warehouse/` is applied. That apply comes before the lake's plan. The federated database
+  survived, so no by-hand half was owed.
 
 1. **[Claude] The before-reading**, kept for the diff: as `awsds-infra-prod`, `aws redshift
    describe-data-shares --data-share-arn <ARN>` (the consumer `DataCatalog/<Data Governance>`
@@ -1132,8 +1143,8 @@ metered.
    parameter moves.
 5. **The second Sandbox sitting** (N.7.3), once `default-v0.10.0` is registered or 6f step 11's subscription is approved:
    Stage 9 8.1's space half, and the `dev` deploy on the new version with no session export.
-6. **The warehouse sitting** (both computes): xxiv on N.4a; after 2026-11-22, `EXC-13`'s Production half;
-   the free trial's pair of readings.
+6. **The warehouse sitting** (both computes): after 2026-11-22, `EXC-13`'s Production half and the free
+   trial's pair of readings. xxiv ran on N.4a on 2026-10-26.
 7. **What waits on something else** (N.5): a second application (Stage 10 xxv, the chain's order,
    xxviii's inbox marker), Stage 11's S3 data events (Stage 8 xx; Stage 9 ix's `VPC-Workloads` branch,
    which a management-event trail cannot show), a workflow's 50th version, a release that removes a

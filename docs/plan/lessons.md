@@ -2875,6 +2875,16 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   Where: `log-stage-09-deployment-targets.md`, 2026-10-25; `sandbox/warehouse/iam.tf`,
   `ReadTheGovernedShareCatalog`.
 
+- **A producer's `REVOKE` on a Lake Formation-managed datashare takes the share out of both accounts' control
+  plane and keeps every Lake Formation object** (measured 2026-10-26, Stage 9 xxiv). After `REVOKE USAGE ON
+  DATASHARE … FROM ACCOUNT … VIA DATA CATALOG`, `describe-data-shares` by ARN answered `InvalidDataShareFault`,
+  *"the ARN doesn't exist"*, to the producer too. The authorization and the consumer's association with its
+  catalog were gone, and the federated table read *"No glue catalog datashare is found"*. The registration,
+  the federated database, its grants and its LF-Tag, and another account's named grants on the table all
+  stayed. A `GRANT` alone brings the consumer back as `PENDING_AUTHORIZATION`, invisible to the Lake Formation
+  account. The authorization and a new association are owed, after which the table and its tag assignment
+  return by name. Where: `log-stage-09-deployment-targets.md`, 2026-10-26.
+
 ### Glue
 
 - **A Glue database with a `FederatedDatabase` refuses a `Description`**: *"Description and federation

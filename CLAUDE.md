@@ -348,8 +348,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Terraform adoption applied (the registration and the LF-Tags by hand, no importer), xii's registry read in
   `model-chain.py transform staging` with `staging/foundation/`'s output, applied. **§N.2 run 2026-10-26**: xviii and
   vii closed, 9.4's DDL job idempotent from pipeline #102, 9.7 read with the project role's grant revoked and
-  Production's workgroup gone, `EXC-13`'s Sandbox half twice, xxiv deferred, its procedure for the adopted resources
-  written 2026-10-26 (`promotion.md` §N.4a); both computes down. 3.1 read 2026-10-26, the debug role's
+  Production's workgroup gone, `EXC-13`'s Sandbox half twice; both computes down. **xxiv run 2026-10-26 on
+  §N.4a**: the revoke takes the share and leaves the Lake Formation rows, no instrument notices, and
+  `data-governance/data/` cannot plan until the re-grant's SQL and two applies. 3.1 read 2026-10-26, the debug role's
   job-log read in a window included; the quota cases still `CASE_OPENED`.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, first fired 2026-10-25 (version 1 registered and approved by `awsds-deploy-prod`; pass 3 done, both transforms, 5.5). Prepared

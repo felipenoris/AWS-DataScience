@@ -2802,3 +2802,166 @@ janela." Times UTC.*
 - **[Claude] The verdict**: 3.1's debug-role half is answered. The escape hatch reads a job's log under the
   data key with no key grant through `logs`, the trail carrying the role's refused `Decrypt` beside the
   service's own, and the alarm heard both assumptions.
+
+## 2026-10-26 — xxiv's warehouse sitting: the balance, the raises, the before-readings, the two plans
+
+*The user's hand for the console reading and the two `make up`s, the hub already up by the user's `make hub-up` for
+the Stage 7-8 GitLab sitting; Claude's for the readings and the plans, as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-data`, `awsds-infra-sandbox-1`), reads only; the two peer
+sessions on the laptop (the GitLab sitting and the 6f pilot, which holds `data-governance/data/`) told before each
+write of the sitting. Procedure: `runbooks/promotion.md` §N.4a. Times UTC.*
+
+- **[Claude] Before the raise**, 21:15: no workgroup in either account, the namespace `awsds-prod-warehouse`
+  `AVAILABLE`; the hub's hosts `stopped`, so the `make up`s waited for the proxy (`slices.py` refusal 7.2).
+- **[Claude] `data-governance/data/` planned from the 6f pilot's tree**: `main` at `94ed050d` lacked what the
+  pilot had applied that day (the two SMUS Lake Formation seats and the publisher's grants, behind
+  `LAKE_PUBLISHERS`), so a plan from it reverts them, *1 to change, 2 to destroy* by the 6f session's reading.
+  The slice was planned and applied from a detached checkout of `claude/angry-burnell-3c64df` (`03716c13`, then
+  `ab7e9b56`, a documentation commit), its regenerated tfvars carrying `lake_publishing_enabled = true`. PR #270
+  merged into `main` at 21:59 as `c997ef73`, after which `main` plans the same.
+- **[Claude] The control-plane before-readings**, 21:17:33: the producer lists `DataCatalog/<Data Governance>`
+  `AUTHORIZED` (status since 2026-10-25 01:52:05) and the lake's catalog `ACTIVE` (01:52:29), the consumer the
+  same pair with the first one `AVAILABLE`; the registration `NOT_VERIFIED`, no role; `governed_trades` with its
+  `FederatedDatabase`, its table `trades.trades_notional`; the creator's `ALL` with grant option the database's
+  one Lake Formation row and none on the table; `layer=curated` on the database, `classification=internal` on the
+  table and its six columns; in Sandbox the access role's `DESCRIBE` on the database and `DESCRIBE` and `SELECT` on
+  the table (2026-10-25 05:59).
+- **[Claude] The two plans**, 21:20:55 to 21:21:35: `production/warehouse/` and `data-governance/data/` read `No
+  changes`.
+- **[user] The free trial's Production balance, before**: *"$299,66 com diferença de $300,00"*, *"January 21,
+  2027"*. **[Claude]** 0.03 below the 299.69 read at about 01:50 after that night's §N.2 sitting, with no
+  `CreateWorkgroup` or `DeleteWorkgroup` in Production's trail since 01:40: that sitting's charges kept landing
+  after its after-reading, 0.05 in all.
+- **[user] The raises**: `make up ENV=sandbox ONLY=warehouse-compute` (the workgroup created 21:23:41) and `make up
+  ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift` (21:24:33). **[Claude] Read back** at
+  21:27:52: both `AVAILABLE`, base 4 / max 8 RPU, not public, price-performance `DISABLED`; the
+  `redshift-serverless` endpoint `available` in `VPC-Workloads`.
+- **[Claude] The SQL half of step 1**, as the admin in `governed`: `svv_datashare_consumers` `trades_lf` →
+  `DC:<Data Governance>`, shared 2026-10-25 01:51:19; `sys_datashare_change_log` the five statements of
+  2026-10-25 01:51, its `consumer_account` column cutting the id at twelve characters. `./aws/warehouse.py
+  awsds-infra-prod --sql`, 21:28:35 to 21:29:24: every check a pass or a note, `WH-12` 3 user-role grants with the
+  share's `ds:` pair. `./aws/datalake.py awsds-infra-data`: `main`'s copy failed `DL-2` on
+  `awsds-data-smus-projects`, the pilot's bucket it does not know; the pilot's copy passed every check (21:30:56 to
+  21:31:38).
+
+## 2026-10-26 — xxiv's positive control: the Query editor opens on the connection's database, `dev`
+
+*The user's hand for the queries, in `eighth-experimentation`'s Query editor as the Data Scientist User; Claude's
+for the readings, Sandbox's query history through the Data API as the admin and Sandbox's trail, as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-sandbox-1`). Times UTC.*
+
+- **[Claude] What ran before it**: the 6f session's 11.7 created the `DataLake` environment
+  `eighth-experimentation-lakehouse` (`ACTIVE` 21:26:00), and the user's 11.8 subscribed the project to
+  `curated.trades` (requested 21:34:55, approved 21:36:15, its grant `COMPLETED` 21:37:18). The control-plane
+  readings taken again at about 21:44 match the first ones on every object of the chain; the lake's account-level
+  catalog policy reads *"Policy not found"*, and its RAM-set per-resource policies date from 2026-10-22 and from
+  11.8's 21:36:50.
+- **[user] The first attempt**, refused: *"ERROR: Failed to incorporate external table "trades"."trades_notional"
+  into local catalog. Error=permission denied to create temporary tables in database "dev""*. **[Claude]** In
+  Sandbox's history the editor's session sat in `dev` as `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`
+  from 21:40:07; a query through `awsdatacatalog.governed_trades…` was refused at 21:40:29, *"permission denied for
+  database awsdatacatalog"*, and 9.7's at 21:40:35. The trail's `GetCredentials` came from the access role
+  `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`, the first at 21:38:42 with `dbName` `dev`. The project's one
+  Redshift connection, `redshift-serverless.redshift`, names `dev` as its database (`WH-9` prints it), and the
+  sittings of 2026-10-25 and 26 had `sandbox` selected, the database where the user holds `TEMP`.
+- **[user] The second attempt**, with `sandbox` selected: the expected result. **[Claude]** Query 10683058,
+  `success`, 21:45:07.726 to 21:45:09.250, one row, in `sandbox`: the door open before the revoke.
+
+## 2026-10-26 — xxiv's revoke: the share leaves both control planes, the Lake Formation rows stay, no instrument notices
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo o REVOKE USAGE ON DATASHARE trades_lf FROM ACCOUNT
+Data Governance VIA DATA CATALOG, como awsds-infra-prod pela Data API com o segredo do admin em governed (passo 2 do
+§N.4a)."*), as the infrastructure user with `InfrastructureAccess`; the user's hand for the Sandbox query, pasted
+with the two account ids replaced here; the two peer sessions told before the write. Times UTC.*
+
+- **[Claude] The revoke**, through the Data API as the admin in `governed`: `REVOKE USAGE ON DATASHARE trades_lf
+  FROM ACCOUNT '<Data Governance>' VIA DATA CATALOG`, submitted 21:48:32.8, `FINISHED` 21:48:51.7;
+  `sys_datashare_change_log` *"REVOKE USAGE FROM DATASHARE"* at 21:48:43, `dbadmin`, status 0, `DC:<Data
+  Governance>`; `svv_datashare_consumers` empty.
+- **[Claude] What it took**, read from about 21:49: `describe-data-shares` by ARN answers `InvalidDataShareFault`,
+  *"The datashare Amazon Resource Name (ARN) isn't valid because the ARN doesn't exist. Use a valid datashare
+  ARN."*, to the producer and the consumer alike, so both associations are gone, the authorization and the lake
+  catalog's; Data Governance's listing reads `[]`. The federated table went with them: `glue get-tables
+  governed_trades` answers *"No glue catalog datashare is found with arn <the share's ARN> and consumerId <Data
+  Governance>"*, `FromFederationSource: True`; Sandbox's `get-table` *"Entity Not Found"*, and the table's LF-Tags
+  are unreadable, *"Entity Not Found"*.
+- **[Claude] What it left**, AWS's sentence (*"the associated permissions and objects in Lake Formation are not
+  automatically deleted"*) measured: the registration (`NOT_VERIFIED`, no role), the federated database with its
+  `FederatedDatabase` unchanged, the creator's `ALL`, `layer=curated` on the database, and in Sandbox the access
+  role's `DESCRIBE` on the database and `DESCRIBE` and `SELECT` on the table nobody can resolve.
+- **[Claude] Whether the register notices: no.** `./aws/datalake.py awsds-infra-data` passed every check (21:51:09
+  to 21:51:49), its only difference from the before-reading 11.8's RAM share; `./aws/warehouse.py awsds-infra-prod
+  --sql` (21:50:22 to 21:51:08) passed every check, `WH-12` reading 2 user-role grants where it read 3, the `ds:`
+  pair gone. No instrument under `aws/` reads `describe-data-shares`, `svv_datashare_*` or `governed_trades`.
+- **[user] The Sandbox read**, `sandbox` selected, refused: *"ERROR: AwsClientException: EntityNotFoundException
+  from glue - No glue catalog datashare is found with arn
+  arn:aws:redshift:us-west-2:<Production>:datashare:b15e9682-064d-4c48-a4cc-4d607622c379/trades_lf and consumerId
+  <Data Governance>."* **[Claude]** Query 10683162, `failed`, 21:54:37: Glue's refusal and not Lake Formation's,
+  INT-24's door shut with its grants standing.
+- **[Claude] The plans**, step 4, never applied: `production/warehouse/` (21:52:18 to 21:52:34) *"Warning: AWS
+  resource not found during refresh"*, *"Original error: couldn't find resource"*, *"Plan: 1 to add, 0 to change, 0
+  to destroy."*, the authorization; `data-governance/data/` (21:52:34 to 21:52:55) *"Planning failed"*, *"Error:
+  Iteration over null value"* on `warehouse-share.tf` line 24, *"data.aws_redshift_data_shares.visible.data_shares
+  is null"*. The data source returns null rather than an empty list when the account sees no share, so the plan
+  fails one expression before the association's `data_share_arn`, which §N.4a expected, and no change of the lake's
+  slice can be planned while the share is revoked.
+
+## 2026-10-26 — xxiv's re-grant: the SQL, the two applies, the chain back
+
+*Claude's hand, on the user's authorizations in chat (*"Autorizo o GRANT USAGE ON DATASHARE trades_lf TO ACCOUNT
+Data Governance VIA DATA CATALOG, como awsds-infra-prod pela Data API com o segredo do admin em governed (passo 5 do
+§N.4a). Os applies dos dois slices depois de ver os planos."*, then *"autorizo o apply"* for `production/warehouse/`'s
+saved plan and *"Autorizo o apply do plano salvo de data-governance/data (1 to add:
+aws_redshift_data_share_consumer_association.trades_lf) como awsds-infra-data, a partir da árvore do 6f
+(ab7e9b56)."*), as the infrastructure user with `InfrastructureAccess`; the 6f session sent the lake plan's summary
+before its apply; the two peer sessions told before each write. Recipe A. Times UTC.*
+
+- **[Claude] The grant**, as the admin in `governed`: `GRANT USAGE ON DATASHARE trades_lf TO ACCOUNT '<Data
+  Governance>' VIA DATA CATALOG`, `FINISHED` at 21:56:45; the change log's *"GRANT USAGE ON DATASHARE"* at 21:56:44,
+  `svv_datashare_consumers` the consumer again. The producer lists `DataCatalog/<Data Governance>`
+  `PENDING_AUTHORIZATION` (21:56:44) and nothing else, and Data Governance sees no share.
+- **[Claude] `production/warehouse/`**: the plan at 21:57:20, *"Plan: 1 to add, 0 to change, 0 to destroy."*, the
+  authorization after *"Original error: empty result"*; the apply of the saved plan, 21:58:46 to 21:58:57,
+  *"Creation complete after 1s"*, *"Apply complete! Resources: 1 added, 0 changed, 0 destroyed."*; re-planned `No
+  changes`. The consumer `AUTHORIZED` at 21:58:56, `AVAILABLE` to Data Governance.
+- **[Claude] `data-governance/data/`**, from the pilot's tree: the plan at 21:59:40, *"Plan: 1 to add, 0 to change,
+  0 to destroy."*, `aws_redshift_data_share_consumer_association.trades_lf` alone after *"Original error: empty
+  result"*, nothing on the settings, the publisher's grants or `governed_trades`; the apply of the saved plan,
+  22:01:14 to 22:01:27, *"Creation complete after 2s"*, *"Apply complete! Resources: 1 added, 0 changed, 0
+  destroyed."*; re-planned `No changes` at 22:01:48. The federated database was not replaced, so §N.4a's by-hand
+  half (Recipe D's read-back, the two LF-Tags) was owed nothing.
+- **[Claude] Read back** at 22:02:04: the lake catalog's association `ACTIVE` since 22:01:25 and the authorization
+  `AUTHORIZED`; `trades.trades_notional` listed again, its `classification=internal` and its six columns' tags as
+  before the revoke, the assignment kept by name; Sandbox's `get-table` answering; the registration and every Lake
+  Formation row as before. `./aws/warehouse.py awsds-infra-prod --sql` (22:03:01 to 22:03:49): every check a pass
+  or a note, `WH-12` 3 user-role grants, the `ds:` pair back. The 6f session read its pilot intact from 22:05:48:
+  the three administrators, the publisher's grants, the subscription's grant, its RAM share, and the Glue
+  per-resource policies at their earlier update times.
+
+## 2026-10-26 — xxiv's restored read, the downs, §R
+
+*The user's hand for the query and the two `make down`s, the Query editor closed before the second; Claude's for
+the readings, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`,
+`awsds-infra-sandbox-1`, `awsds-infra-data`); the two peer sessions told before each down. Times UTC.*
+
+- **[user] 9.7 again**, `sandbox` selected: 30 rows and the expected dates. **[Claude]** Query 11086021, 22:05:30.554
+  to 22:05:56.541, 26 s for the first read after the re-grant where the positive control took 1.5 s, and 11086028
+  at 22:06:19, 0.2 s; Sandbox's consumer database needed no re-creation.
+- **[Claude] `./aws/warehouse.py awsds-infra-sandbox-1 --sql`** (22:06:47 to 22:07:39): every check a pass or a
+  note; `WH-9` *"redshift-serverless.redshift (database dev): lineageSync ENABLED on cron(43 3 * * ? *), 16
+  run(s), none completed"* (`EXC-17`). The admin secret authenticated every Data API session of the sitting in
+  Sandbox, `EXC-13`'s Sandbox half a third time. `./aws/datalake.py awsds-infra-data` (22:07:56 to 22:08:36): all
+  checks passed.
+- **[user] The downs**: Production's, `DeleteWorkgroup` at 22:07:50 and 22:07:52 and `VPC-Workloads`' endpoints
+  deleted; Sandbox's, the hook's `DeleteApp` of `eighth-experimentation`'s JupyterLab at 22:10:09, then
+  `DeleteWorkgroup` refused five times with `ConflictException` from 22:10:35 to 22:10:44, the provider retrying,
+  and through at 22:10:52.
+- **[Claude] §R**, from 22:13:58: no workgroup in either account, both namespaces `AVAILABLE`; no Studio app in
+  either domain; `./aws/egress.py awsds-infra-prod awsds-infra-staging awsds-infra-sandbox-1` all checks passed,
+  `EG-5` 12 interface endpoints and 0 NAT, ~0.120 USD/h, every one in Production's `VPC-SharedServices` (the
+  GitLab sitting's `egress/`), Staging and Sandbox 0; `./aws/warehouse.py awsds-infra-prod awsds-infra-sandbox-1`
+  `WH-8` *"1 namespace(s), 0 workgroup(s), all expected"* in each. `ComputeSeconds` per half hour from 21:00:
+  Production 8, 68 and 2 RPU-seconds, 78 in all, 0.0078 USD at the rate; Sandbox 0, 130 and 110, 240 in all,
+  0.024 USD; the interval starting 22:00 still open at 22:16. `make status` (22:16 to 22:19): this sitting's three
+  slices down, the hub, `production/egress`, `tooling` and `runners` up for the GitLab sitting, estimated 0.4521
+  USD/h by the static rates.
