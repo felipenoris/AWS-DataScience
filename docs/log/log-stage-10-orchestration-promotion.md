@@ -1503,3 +1503,281 @@ told beforehand. Times UTC.*
   and `awsds-staging-wf-app-etl-train` alone. Left behind: the run's log stream in `/awsds/staging/wf/app-etl`
   (`workflow_id=awsds-staging-wf-net-negative-7OVpD8feyh/run_id=EJDzueJeMsueGky/...`), the group's
   retention taking it, and the trail's records.
+
+## 2026-10-26 — with the environment down: 3.6's bridge read, decision 11's trail reading, the training operator's refused log read, the record read against the plan
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`, no write to
+AWS; the session that read Stages 7 to 10 for what is left. Times UTC.*
+
+- **[Claude] 3.6's bridge**: `get-bucket-notification-configuration` on `awsds-prod-outputs` and
+  `awsds-staging-outputs` answers `EventBridgeConfiguration` on both, so both buckets publish to
+  EventBridge, as `buckets.tf` declares since 2026-10-22; the clause 3.6 left unread is read.
+- **[Claude] Decision 11's reading, in Staging's trail over `v0.4.6`'s leg** (23:10 to 00:10, read at
+  03:55): the chain role's `GetWorkflowRun` polls at hh:mm:21 each pair with a `Decrypt` the same second,
+  `invokedBy airflow-serverless.amazonaws.com`, under the workflow-ARN encryption context
+  (`awsds-staging-wf-app-etl-train-0lvmGNsPwe`); the deploy role's two `GetWorkflow` and two
+  `ListTagsForResource`, and the infrastructure user's `GetWorkflow`, `ListWorkflowRuns`,
+  `ListWorkflowVersions` and `ListWorkflows`, pair with no `Decrypt` through the service (their decrypts in
+  the window are all `fas.s3`'s, on the state and outputs buckets); `GetTaskInstance` was not called in the
+  window (the user's calls of 2026-10-24 23:42 and 2026-10-26 01:08 are the only ones in three days), so it
+  stays unread. `GetWorkflowRun` decrypts through the service and `GetWorkflow` and `ListWorkflowRuns` do
+  not: the carve-out's `kms:ViaService` narrowing has its trail evidence, the value
+  `airflow-serverless.<region>.amazonaws.com` by the key's convention, which no code here carries yet;
+  writing it is the user's decision (the waiting list), read by a Deployment Manager session afterwards.
+- **[Claude] The training operator's log read, refused at the key**: in the same window
+  `awsds-staging-wf-app-etl-train`'s session (`AmazonMWAAServerless`) was refused `Decrypt` six times,
+  `invokedBy logs.amazonaws.com`, no encryption context, 23:40:07 to 23:40:38, the minutes of `v0.4.6`'s
+  training task, whose `print_log` reads `/aws/sagemaker/TrainingJobs`, a group under the data key (Stage 9
+  3.1); the task read `SUCCESS` regardless. Production's trail holds the same six for
+  `awsds-prod-wf-app-etl-train` during the train chain of 2026-10-25 01:18. 1.3's reading of the operator's
+  code said a refused log read fails the task after the create; the measurement says the task survives it
+  and the trail carries six refusals per training run. The task's log group goes with the `[E]` slice, so
+  what the operator printed is read at the next leg. Two remedies, the user's decision (the waiting list):
+  the data key's policy and the per-workflow role admitting `kms:Decrypt` via `logs.<region>.amazonaws.com`,
+  or `print_log: false` on the template's training task.
+- **[Claude] The record read against the plan**: ix's Staging half (`OR-3`, 2026-10-25) and xi's CI half
+  moved out of the status cell's Left list, and `EXC-22`'s row closed in `AWS_STATE.md` (Production's half
+  at 00:27:20 UTC); 3.5's body dated with the firing; the `identity/sso/` row of the table brought to
+  decision 11; the waiting list's row on PR #258's mirror push replaced by the push the next tag needs;
+  `CLAUDE.md`'s last sentence (ii's deploy-role half and 3.2's break) corrected. What the stage leaves: 2.1
+  and xxix's second half (a Sandbox space), xx's second half and xviii (exercises), xvi's metrics clause (a
+  `monitoring` endpoint), xxv, the chain's order and xxviii's inbox marker (a second application), and
+  decision 11's two readings above.
+
+## 2026-10-26 — with the environment down: the Sandbox sitting written (`promotion.md` §N.3), 2.1's and xxix's preconditions read
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-sandbox-1`, `awsds-infra-data`, `awsds-infra-prod`), no write to AWS; the sitting the user
+asked to have prepared. Times UTC.*
+
+- **[Claude] The projects**: the domain lists `eighth-experimentation` (`avhvbqn37ty7m8`, the manifest's
+  `dev`) and `test-experimentation` (`4gqfau9xuo6e4w`, its `test`), each owned by the Data Scientist User,
+  each project's role a contributor carrying `awsds-sandbox-workflows`, each Tooling environment carrying
+  `kmsKeyArn`, `securityGroup`, `privateSubnets` and two Glue network connections. The `dev` project holds no
+  `app-etl` workflow (its one CLI-made workflow is the lab's `houseprice_etl`), so 2.1's deploy creates two;
+  the `test` project holds `app_etl_test_experimentation_app_etl` and its `_train` twin, last modified by
+  `v0.4.6`'s `test-deploy` at 22:59 on 2026-10-25.
+- **[Claude] The spaces**: one per project, both the persona's, private, `ml.t3.medium`; `eighth-experimentation`'s
+  reads `awsds-sandbox-dev-env` version 10 as its default image, `test-experimentation`'s AWS's SageMaker
+  Distribution 4.5; no app runs in either domain.
+- **[Claude] The CLI 1.0.9, read in its installed code**: `load_yaml` refuses a manifest whose `${VAR}` is
+  unset or empty (`find_missing_env_vars` tests `not os.getenv`), the `test` stage's names included, so a
+  `dev` deploy sets all twelve; `ContextResolver` writes each `{env.VAR}` as `{{ params.VAR }}` with no
+  default, and `run` passes the stage's `environment_variables` as `OverrideParameters`. A deploy embeds no
+  value, and a portal run (xxix) gets none.
+- **[Claude] The procedure**, `runbooks/promotion.md` §N.3: the raises (`make up ENV=sandbox ONLY=egress`,
+  since a plain `make up ENV=sandbox` also raises `warehouse-compute/` and `probes/`), the persona's token,
+  INT-19 and INT-09 (Stage 7), Stage 9 3.4's project-role half, 2.1 with the values from the package's
+  `space_values.py` and the image of `v0.4.6`'s `release.tf`, xxix from the portal, 8.1's space half behind
+  6f decision 1, and the downs.
+
+## 2026-10-26 — the Sandbox sitting: 2.1 from a space after three findings, `vpc-egress-v0.19.0`, xxix's portal run
+
+*The user's hand in the spaces (`eighth-experimentation`'s `default`, then a new space `jup-dev-env` on version
+10, `ml.t3.large`) and in the portal, as the Data Scientist User; Claude's for the readings, the module change,
+its tag and the apply of `sandbox/egress`, as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-sandbox-1`), the apply on the user's agreement in chat to the correction. Times UTC.*
+
+- **[user] 2.1 as written**, from the `default` space: `space_values.py` and the exports ran; `aws-smus-cicd-cli
+  deploy` refused the manifest, *"Additional properties are not allowed ('code' was unexpected)"*.
+  `type -a aws-smus-cicd-cli` read `/opt/conda/bin/aws-smus-cicd-cli` first, 1.0.8 in the conda Python, 1.0.9
+  in `/opt/awsds/venv`: the SageMaker Distribution's CLI shadows the house's.
+- **[user] The house CLI by its path**, 05:15: the project step called `ListDomains` and stopped, *"User is not
+  permitted to perform operation: ListDomains"*. **[Claude]** Sandbox's trail: `ListDomains` at 05:15:13 by
+  the project role through the `datazone` endpoint, `AccessDenied`, no `errorMessage`. The role's
+  `SageMakerStudioProjectRoleMachineLearningPolicy` (v45) allows `datazone:List*` on `*`, the boundary's
+  ceiling is `*`, the endpoint policy admits the organization and no SCP denies the action in Sandbox, so the
+  refusal is DataZone's; the simulator reads `explicitDeny` for `ListConnections` too, which answered in the
+  real call (Lesson 30). In the CLI's code, `_ensure_environments_exist` resolves the domain by name with
+  `get_domain_id_by_name` whenever the stage has `bootstrap` actions, the manifest's id unused; PyPI's newest
+  is 1.0.9 (2026-10-05).
+- **[user] The lookup answered**, first with `None` (05:22): storage synced, 11 files, then `workflow.create`
+  failed, *"Domain 'awsds-studio' not found"*: the same lookup finds the role, so in the pipeline the deploy
+  role's `ListDomains` returns the associated domain, not an empty list. With the domain's id (05:25):
+  `CreateWorkflow` failed, *"Failed to connect to proxy URL"*. **[Claude]** The proxy log: five `CONNECT
+  airflow-serverless.us-west-2.api.aws:443 403 TCP_DENIED` from 05:26:45 to 05:26:51 (CloudFormation and S3
+  Control passed with `200`). The endpoint service `com.amazonaws.us-west-2.airflow-serverless` answers only
+  `airflow-serverless.us-west-2.api.aws`, and no `.amazonaws.com` name resolves: with no endpoint in Sandbox
+  and `.api.aws` refused on the compute plane, a space reached the API by no path.
+- **[Claude] The correction**, the user's agreement in chat: `vpc-egress`'s `mwaa` group filled with
+  `airflow-serverless` (`0ec1cbdd`, tag `vpc-egress-v0.19.0` read on origin), `sandbox/egress` pinned to it
+  with the image recipe copy's `NO_PROXY` literal at 73 names (`60402d82`; the first try blocked by
+  `terraform_validate`'s *"Module source has changed"*, the local `.terraform` re-initialised); the saved plan
+  *1 to add*, applied 05:41:02 to 05:41:56, `vpce-02b3bc930bd6b3e76` after 45 s, re-plan `No changes`;
+  `DE-5` red (version 10's 72 names against 73), `DE-1` to `DE-4` and `DE-6` passing.
+- **[user] 2.1 from `jup-dev-env`** with the name in the session's `NO_PROXY` (`getent hosts` read
+  `10.20.0.204`), after a first clone there refused *"server certificate verification failed"* and a retry
+  that passed: the deploy (05:53:09 to 05:54:26) created `app_etl_eighth_experimentation_app_etl` and its
+  `_train` twin, and `run` started `73MVxeRDJt3DcrH` at 05:55:41, `ListTagsForResource` refused on the `test`
+  project's workflows (warnings). **[Claude]** Sandbox's trail: both `CreateWorkflow` (05:54:13, 05:54:25) and
+  `StartWorkflowRun` (05:55:41) from `10.20.47.191` through `vpce-02b3bc930bd6b3e76`, no error; the proxy log
+  silent on the API since 05:42. 2.1's reads: both workflows `READY`, `manual_only`, the project role, its
+  two private subnets and group, `CUSTOMER_MANAGED_KEY` the project key, the six tags, the log groups under the
+  project key with no retention; each `WorkflowDefinition` byte-identical to the resolved YAML (seven
+  `{{ params.* }}`, no `{proj.*}` left), the `Code` object byte-identical to the synced zip (2,448 bytes); the
+  run `ON_DEMAND` with the six stage variables as `OverrideParameters`. The run reached `SUCCESS` at 06:07:19 UTC (11 min 34 s), its four tasks `SUCCESS`: the Glue job `app-etl-avhvbqn37ty7m8` over the synced inbox (66 s, two G.1X workers), the processing job `app-etl-20261026T055826` on the release's image by digest (`ml.t3.medium`, network-isolated, 5 min 21 s), and the report under `shared/app-etl/outbox/` (10 rows, `notional` 49,850.5), both outputs under the project key.
+- **[user] xxix's second half**: the `test` project's workflow run from the portal at 05:32:19, no parameter,
+  nothing saved; **[Claude]** `OverrideParameters` the service's `mwaa_serverless_workflow_id` alone, failed at
+  05:34:25 before any task, *"User template error: DAG template rendering failed: 'dict object' has no
+  attribute 'SUBNET_AZ1'"*. Verification xxix is answered.
+- **[Claude] Studio apps**: `CreateApp` read the `default` space at 04:45:43, `jup-dev-env` at 04:46:46 and the
+  `test` project's `default` at 05:31:47, when the portal opened that project; `list-apps` shows 2026-10-25 05:40
+  as `CreationTime` for both `default` spaces, the app name's first creation and not the latest start.
+
+## 2026-10-26 — after the Sandbox sitting, nothing up: the clone's refusal unattributed, the training operator's read answered, the runbooks revised
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`, `awsds-infra-sandbox-1`): reads only. Times UTC.*
+
+- **[Claude] A correction to the sitting's entry**: the first clone refused *"server certificate verification
+  failed"* is not `jup-dev-env`'s. The user ran it in a new space the record does not identify; `jup-dev-env`
+  runs version 10, whose base installs the internal root, and its clone passed. The refusal reads a space
+  without that root.
+- **[Claude] The training operator's log read answers**: Production's train task log
+  (`/awsds/prod/wf/app-etl-train`, run `T9AaRO2Z13vNiX3` of 2026-10-25 01:18, 210 events, read at 07:05:03)
+  carries the training job's own lines, printed through `print_log`: *"Train matrix has 24 rows and 2
+  columns"*, then *"[0]#011train-rmse:2988.79028#011validation-rmse:1973.72229"* to *"[8]#011train-rmse:
+  337.62412#011validation-rmse:730.20996"*. The six refused `Decrypt` per run, `invokedBy logs.amazonaws.com`
+  with no encryption context, are CloudWatch Logs' attempt with the reader's identity before it decrypts
+  through its own path (Stage 9's log, the same morning). The remedy the earlier entry of this day left to
+  the user answers nothing: its waiting row is removed, and 1.3's text and the status are corrected.
+- **[Claude] The runbooks revised from the sitting**: `sagemaker-application.md` §D rewritten as the
+  sequence that ran (the session with `GROUPS=mwaa` and the portal closed before the down, the clone's
+  helper reset, every `${VAR}` set, the API's name in `NO_PROXY`, the house CLI by its path with the domain's
+  id answering the lookup, the portal never running a CLI workflow), with §A, §O, §M, §V and the reach
+  table; `serverless-workflows.md` (xxix's wording, the space script from a clone), `remote-ide.md` (the
+  clone is the route now), `log-debugging.md` (botocore's report of a proxy refusal, the refused `Decrypt`
+  that is no refused read, DataZone's refusal with no message, the portal's `CreateApp`),
+  `client-vpn-proxy-configuration.md` (`scutil --nc list`), `sg-proxy.md` and `dev-env.md` (73 names),
+  `docs/SMUS.md`, `upstream-releases.md`; 6c's and this stage's `mwaa` passages, which said the group stays
+  empty; Lesson 78, a stand-in answering what the real call answers, from the launcher's `None`; two
+  platform entries, the portal's apps and the log decrypt.
+- **[Claude] Prepared**: `promotion.md` §N.6's order after the sitting and §N.7's sittings: the GitLab
+  sitting for `default-v0.10.0` (N.7.1), the debug window (N.7.2) and the second Sandbox sitting, where a
+  `dev` deploy on version 11 runs with no session export (N.7.3).
+
+## 2026-10-26 — 2.1's CLI findings: the user's remedy
+
+*Claude's hand. The user's decision, taken in the chat of the session forked from this one and relayed by
+that session at 15:1x UTC: "remediação do ListDomains do CI/CD CLI = A + B + C, como recomendado". Nothing
+written to AWS.*
+
+- **[user] The decision**, the waiting list's three parts: (A) a report upstream, in
+  `aws/CICD-for-SageMakerUnifiedStudio`, that the CLI 1.0.9 resolves the domain by name with `ListDomains`
+  whatever the manifest's `domain.id`, a call DataZone refuses to a project's role; (B) a script in the
+  template beside the manifest that runs the house CLI by its path with the domain lookup answered by
+  `DOMAIN_ID`, the launcher of `sagemaker-application.md` §D; (C) the house environment's `bin` before
+  `/opt/conda/bin` on the image's `PATH` in `default-v0.10.0`, checked in its smoke.
+- **[Claude] The record**: the waiting list's decision row replaced by the acts left (the report's posting,
+  the template's merge request) and the image row carrying C; Stage 8 decision 22 and 2.1 here name the
+  remedy. The implementation is a session of its own, at the user's request, proposed as a card: a turn
+  begun by another session's message cannot start one.
+
+## 2026-10-26 — decision 11's narrowing: the user's option A, written and planned
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-identity`,
+`awsds-infra-prod`, `awsds-infra-staging`): the code and read-only plans, no write to AWS. The user's
+decision, taken in the chat of the session forked from this one and relayed by it: "Stage 10 decisão 11 =
+opção A. Estreitar o carve-out de kms:Decrypt do DeploymentManagerAccess com kms:ViaService =
+airflow-serverless.<region>.amazonaws.com, na política da chave de dados (*/data/) e no permission set
+(identity/sso/), em Staging e Production." Times UTC.*
+
+- **[Claude] The code**: `identity/sso/`'s `DecryptWhatTheWorkflowServiceEncrypts` and both data keys'
+  `AllowTheDeploymentManagerToReadWorkflowRuns` gain `StringEquals` on `kms:ViaService`,
+  `airflow-serverless.${var.region}.amazonaws.com`; both slices' READMEs follow.
+- **[Claude] The plans**, saved outside the repository: `identity/sso/` (Identity) 15:50:11 to 15:50:41,
+  `production/data/` 15:50:41 to 15:51:55 and `staging/data/` 15:51:55 to 15:53:35, each *"Plan: 0 to add, 1
+  to change, 0 to destroy."*, the added `StringEquals` alone: the set's inline policy, `deployment_manager`
+  from 8,223 to 8,333 characters of 10,240, and each data key's policy.
+- **[Claude] What the read needs**: Production holds the three workflows `READY`, and the infrastructure
+  user's `get-workflow-run` on an `app-etl` run answered `SUCCESS` the same hour; Staging's `list-workflows`
+  is empty between legs, so its half is read at the next leg. The laptop's `awsds-deploy` session holds a
+  Sandbox profile alone, so the Deployment Manager's read in Production needs a profile first
+  (`promotion.md` §N.7.4). `list-workflow-runs --max-items 1` prints the CLI's `None` token after the id,
+  which `get-workflow-run` refuses as a run id, so the runbook's command takes `--max-results 1
+  --no-paginate`.
+- **[Claude] The record**: decision 11's text, the waiting list's act row, `promotion.md` §N.6 and §N.7.4.
+
+## 2026-10-26 — decision 11's narrowing applied in Production, Staging and Identity
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`,
+`awsds-infra-staging`, `awsds-infra-identity`), on the user's authorization in this chat: "Autorizo os três
+applies da decisão 11 (production/data, staging/data e identity/sso), como os perfis awsds-infra de cada
+conta, a partir de planos novos. Depois me passe a leitura do Deployment Manager." Times UTC.*
+
+- **[Claude] Fresh plans**, 16:13:40 to 16:14:40, each *"Plan: 0 to add, 1 to change, 0 to destroy."* with
+  the added `kms:ViaService` `airflow-serverless.us-west-2.amazonaws.com` alone, as the plans of 15:50.
+- **[Claude] Before the applies**: the three peer sessions told.
+- **[Claude] The applies**, each from its saved plan, *"Apply complete! Resources: 0 added, 1 changed, 0
+  destroyed."*: `production/data/` 16:15:08 to 16:15:30, the data key modified in 7 s; `staging/data/`
+  16:15:30 to 16:17:17, in 7 s; `identity/sso/` 16:17:17 to 16:19:47, the `deployment_manager` inline policy
+  in 9 s.
+- **[Claude] Read back**: the three re-plans *"No changes."* (16:20:26 to 16:23:13); both data keys'
+  `AllowTheDeploymentManagerToReadWorkflowRuns` carry the `kms:ViaService` condition beside the
+  workflow-ARN context and the principal; the reserved `DeploymentManagerAccess` role's `AwsSSOInlinePolicy`
+  in Production and in Staging carries it in `DecryptWhatTheWorkflowServiceEncrypts`, the set provisioned
+  in both accounts (16:23:20).
+- **[Claude] What follows**: the Deployment Manager User's `GetWorkflowRun` on a Production run
+  (`promotion.md` §N.7.4 step 3), after a Production profile on the `awsds-deploy` session; a refusal
+  naming `kms:Decrypt` reverts the three slices.
+
+## 2026-10-26 — 2.1's remedy written: `scripts/dev-cli.sh` in the template, the upstream report drafted
+
+*Claude's hand (the session of PR #269), from a laptop with no AWS call: the CLI 1.0.9's wheel read from
+PyPI, the template's tests and lint run offline.*
+
+- **[Claude] The lookup's callers, read in the 1.0.9 wheel** (its sha256 the house lock's, `bd7258c0…4903`):
+  `get_domain_id_by_name` lists domains through `resolve_domain_id`. `ProjectManager` resolves the
+  manifest's id and name with `get_domain_from_target_config` (a `GetDomain`) and hands
+  `_ensure_environments_exist` the name alone, which looks the id up again; `workflow.create` and
+  `ContextResolver` resolve the role through `get_project_user_role_arn`, which does the same. Every caller
+  reaches the function through its module, so replacing the module's attribute answers all of them.
+- **[Claude] B**: `examples/app-etl/scripts/dev-cli.sh` runs `"$AWSDS_PYTHON_ENV/bin/python"` with the
+  lookup answered by `DOMAIN_ID` and every argument passed through. It exits 2 before the CLI runs when
+  `AWSDS_PYTHON_ENV` or `DOMAIN_ID` is unset or the environment holds no interpreter, and 1 on a CLI with no
+  `get_domain_id_by_name`. `tests/test_dev_cli.py` runs it over a double of the CLI's package, 8 tests; a
+  copy of the script without the replacement fails 2 of them. The template at `0b57bea3`: `uv run pytest`
+  39 passed, `ruff check` and `ruff format --check` clean, the lint at `d856982c` *"ok: 9 arquivo(s)"*. No
+  storage item names `scripts/` and the Dockerfile copies nothing from it, so neither the bundle nor the
+  image carries it.
+- **[Claude] A**: the report for `aws/CICD-for-SageMakerUnifiedStudio` drafted in PR #269's description,
+  with no account, domain or project id; posting it is the user's act.
+- **[Claude] The record**: `sagemaker-application.md` §A, §O, §R, §D steps 6 and 7, §E and §M; the
+  template's README; `conventions.md`'s layout; `promotion.md` §N.7.3; 2.1; `docs/SMUS.md`,
+  `upstream-releases.md`. The third part, the image's `PATH`, is Stage 8's log of the same day.
+
+## 2026-10-26 — decision 11's read: the Deployment Manager's `GetWorkflowRun` answers under the narrowing
+
+*The user's hand, as the Deployment Manager User on the laptop, through a Production profile added on the
+`awsds-deploy` session (`awsds-deploy-prod`, `DeploymentManagerAccess`), the result pasted in this chat
+before 20:02 UTC; Claude's for the record.*
+
+- **[user] The read** (`promotion.md` §N.7.4 step 3), the run of `awsds-prod-wf-app-etl` the listing named:
+
+  ```
+  aws mwaa-serverless get-workflow-run --workflow-arn "$W" --run-id "$R" --profile awsds-deploy-prod --region us-west-2 --query 'RunDetail.RunState' --output text
+  ```
+
+  *"SUCCESS"*. The service decrypts a run in the reader's session at each `GetWorkflowRun`, and the read is
+  refused when that decrypt is (Stage 18 0.4), so the narrowed allow admitted it: `kms:ViaService` carries
+  `airflow-serverless.us-west-2.amazonaws.com` for these calls, the value the key's convention gave. No
+  revert.
+- **[Claude] What waits**: the trail's `Decrypt` beside the read, `invokedBy airflow-serverless.amazonaws.com`
+  with no error (§N.7.4 step 4), behind the infrastructure user's session, whose token the CLI reported gone
+  at 20:02:09 (*"Error loading SSO Token: Token for awsds does not exist"*). Staging's half waits for a
+  workflow there, at its next leg.
+
+## 2026-10-26 — decision 11's read in the trail: the service's decrypt in the Deployment Manager's session
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), after the
+user's new login (`get-caller-identity` at 20:04:13 UTC). Times UTC.*
+
+- **[Claude] The calls** in Production's trail, each by the reserved `DeploymentManagerAccess` role from the
+  laptop's own uplink, with no error: `ListWorkflows` at 20:01:08, `ListWorkflowRuns` on
+  `awsds-prod-wf-app-etl` at 20:01:12, and `GetWorkflowRun` on run `NQBIfRdrsxVpRgT` at 20:01:18.
+- **[Claude] The decrypt** in the same second, 20:01:18: `Decrypt` in the Deployment Manager's session,
+  `invokedBy airflow-serverless.amazonaws.com`, under the encryption context
+  `aws:airflow-serverless:workflow-arn` (the `app-etl` workflow) with an `aws-crypto-public-key` entry
+  beside it, no error. The narrowed allow and the key's statement admitted it, `kms:ViaService` carrying
+  `airflow-serverless.us-west-2.amazonaws.com`. Decision 11's Production half is closed; Staging's waits
+  for a workflow there, at its next leg.

@@ -117,7 +117,8 @@ package needs Python 3.12 or newer, which uv installs. It calls `uv` as a progra
 
 - **the laptop**: the readings below ran there on 2026-10-12. uv reaches PyPI, and `--profile` reads the
   account;
-- **a space**: not run there yet, its installation included. The script `package-job` replaced built a
+- **a space**: the tool not run there yet, its installation included; its `scripts/space_values.py` runs
+  from a clone with no installation (below). The script `package-job` replaced built a
   job folder in a space (Stage 6i step 3.6). uv in a house-image space finds the distribution's
   interpreter only ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)), so a project is packaged for the
   house environment with `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"` set: 3.13 up to `default-v0.6.0`,
@@ -144,6 +145,9 @@ A data scientist without that identity reads the same values from a project spac
 `scripts/space_values.py`, which prints what `values` prints without `--image-name`; in a Sandbox space
 on 2026-10-11 the two printed the same JSON, byte for byte
 ([its documentation](https://felipenoris.github.io/awsds-workflows/awsds_workflows.html#os-valores-de-dentro-de-um-espaco)).
+On 2026-10-26 it ran from a shallow clone under `/tmp`, on the distribution's Python, for the values a
+manifest reads in the `dev` deploy ([`sagemaker-application.md`](sagemaker-application.md) §D step 3); the
+clone reaches GitHub through the proxy.
 
 **The placeholders** of this repository's files are the package's names: `REGION`, `ACCOUNT_ID`,
 `PROJECT_ROLE_NAME`, `PROJECT_ID`, `DOMAIN_ID`, `PROJECTS_BUCKET`, `PROJECT_KEY_ID`, `PROJECT_SG`,
@@ -247,9 +251,11 @@ the application's repository and deploy again with the CLI.
   the portal on 2026-10-15 with no save; no save has measured either.
 - **A run started from the portal** passes no `OverrideParameters`. The CLI writes each `{env.VAR}` of
   the workflow as `{{ params.VAR }}` and fills it only in a run it starts, from the stage's
-  `environment_variables` (its 1.0.9 code, read 2026-10-15), so such a run gets none of their values;
-  what it renders in their place is [Stage 10](../stages/stage-10-orchestration-promotion.md)
-  verification xxix. Start the run from the CLI, or with `start-workflow-run` carrying the parameters as
+  `environment_variables` (its 1.0.9 code, read 2026-10-15), so such a run gets none of their values.
+  It carries the service's own `mwaa_serverless_workflow_id` alone and fails at the DAG's template
+  before any task: *"User template error: DAG template rendering failed: 'dict object' has no attribute
+  'SUBNET_AZ1'"* ([Stage 10](../stages/stage-10-orchestration-promotion.md) verification xxix, read
+  2026-10-26). Start the run from the CLI, or with `start-workflow-run` carrying the parameters as
   `OverrideParameters`: DataZone does not gate a start, which takes the IAM action and, in the starter's
   session, `kms:GenerateDataKey` and `kms:Decrypt` on the project key (Stage 18 0.4, 2026-10-19). The
   CLI's `run` returns once the service accepts the start; `get-workflow-run` follows the run to its end.

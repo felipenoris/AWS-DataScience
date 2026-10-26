@@ -3874,3 +3874,173 @@ tunnel gone, reads only. Times UTC.*
   three `[D]` hosts stopped and every `[E]` slice at 0 resources; the sessions' work is in PRs #261 (this
   one), #262 (Stage 9, merged) and #263 (Stage 7), and the `make gitlab-up` order fix of Stage 7's finding
   runs in a session of its own.
+
+## 2026-10-26 — with the environment down: vii's third half read again, xxvii's parameter, 3.3's pin in the template, the record read against the plan
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`, no write to
+AWS; the session that read Stages 7 to 10 for what is left. Times UTC.*
+
+- **[Claude] Verification vii's third half** (`describe-domain` on both Sandbox domains and `lookup-events`
+  in Sandbox's trail, 03:30 to 03:45): both domains carry the version-less `awsds-sandbox-dev-env`
+  attachment in JupyterLab and the Code Editor, `LastModifiedTime` 2026-10-16 00:31:26Z and 2026-10-15
+  06:14:06Z, as on 2026-10-25; the trail's last `UpdateStack` by the environment deployer is 2026-10-11
+  22:05:48Z and the last `UpdateDomain` the infrastructure user's at 2026-10-16 00:31:25Z, none since.
+  No reconciliation in fifteen days; the third half stays open on the same terms.
+- **[Claude] xxvii's plan half**: the parameter
+  `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64` still reads
+  `ami-0829b74b2a8c619b7`, the runners' image, so the half still waits, and its plan needs the runners up.
+- **[Claude] 3.3's snapshot pin, read in the template**: `glue/transform.py` takes `--SOURCE_SNAPSHOT` since
+  v0.4.0 and appends `VERSION AS OF` to the governed query, its tests covering both forms; no workflow,
+  slice or leg passes one. What §N.5 calls not written is the leg's source of the snapshot id and its path
+  into the job's arguments, a decision before a template change, recorded in the waiting list with a
+  recommendation (the job records the snapshot it read and takes a pin when one is given).
+- **[Claude] The record read against the plan**: xxiv answered in the table from #102's `test-deploy`
+  (2026-10-25); `v0.4.6` and 3.7's record (PR #261) added to the status cell; 3.1's text moved off the deploy
+  image `v0.2.0`; 2.1 marked done (2026-10-14); 5.6's sentence on the archive never run dated; the Risks
+  bullet on the mirror rewritten: pushed to `2d3160f1` on 2026-10-25, it lacks main's five commits of
+  2026-10-26 (#261 to #265), the four `release.tf`s at `v0.4.6` and `production/runners/`' deploy-image pin
+  among them, so `main` is pushed before the next tag (the waiting list's first table); `promotion.md`
+  §N.1's done markers written; INT-07's and INT-08's measurements written in `integrations.md`;
+  `CLAUDE.md`'s "planned and unapplied" on decision 27's egress grant (applied 2026-10-25) corrected.
+
+## 2026-10-26 — after the Sandbox sitting, nothing up: decision 22 measured, 1.1's literal at 73 names, the lock's audit, decision 26's version 10
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`, `awsds-infra-sandbox-1`): reads and one read-only plan, no write to AWS. Times UTC.*
+
+- **[Claude] Decision 22 measured**: the `dev` deploy ran from a space as the project role on 2026-10-26
+  (Stage 10's log, 2.1): both workflows in the project's network under its key, the run `SUCCEEDED`, the CLI
+  reading the role as a member and its boto3 finding the role's credentials with no configuration. Three
+  findings stood between the recipe and the run, each answered in `sagemaker-application.md` §D: the
+  SageMaker Distribution's CLI 1.0.8 first on the space's `PATH`, DataZone refusing `ListDomains` to the
+  project role, and the MWAA Serverless API on `.api.aws` alone.
+- **[Claude] 1.1's literal against the estate**: `vpc-egress-v0.19.0`'s tree equals `HEAD`'s
+  `terraform-modules/vpc-egress` (`6f867470…`, Recipe B's content check); `./scripts/check-gitlab-mirror.py
+  --plan` exit 0: `GM-1` the copy at `awsds/dev-env` `6ba33971a1d0` (2026-10-25), `GM-2` to `GM-4` 73
+  entries, `61f1e1646df12c14` on both sides, `GM-5` to `GM-8` passing. The recipe changes, so the next tag
+  is a minor, `default-v0.10.0`.
+- **[Claude] The lock's audit on the laptop**, the gate's own command (`pip-audit` 2.10.1, OSV), 06:55:18 to
+  06:57:30: 454 pins, 454 audited, 58 findings in 5 packages; by the gate's matcher against
+  `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV` (50 entries), 57 accepted by id or alias, none blocking, one warning
+  (`nltk` 3.10.3, `PYSEC-2026-3740`, aliases `GHSA-8mgp-746c-j5xp` and `CVE-2026-81726`, no fixed version),
+  no accepted entry gone. A dated verdict (Lesson 77), taken again the day of the tag.
+- **[Claude] Decision 26's version 10**: ECR reads the base of `default-v0.9.1-746ef084` as
+  `sha256:ac9bd82b…044e`, 3,754,767,181 bytes, and `default-v0.6.0`'s as `sha256:94359041…1975`,
+  3,745,648,934 bytes; the two share their first 25 of 30 layers, as v0.8.0's did on 2026-10-22, and the
+  copy's `base/` holds no commit since `default-v0.8.0`. Version 10 is equivalent to `app-etl`'s base by the
+  decision's definition, and the waiting list's row for it is removed.
+- **[Claude] xxiii's counts**: the `test` project's `app_etl` at 12 versions and its `_train` twin at 6, the
+  `dev` project's at 1 each, `houseprice-etl` at 3.
+- **[Claude] xxvii's plan half**: the Amazon Linux parameter still reads `ami-0829b74b2a8c619b7` (modified
+  2026-10-24 21:01 UTC), so the half waits.
+- **[Claude] What changed in the record**: 1.1's bullet, decisions 22 and 26, xxiii and the status cell;
+  `sagemaker-application.md` §D rewritten as the sequence that ran; `upstream-releases.md` (1.0.9 still the
+  newest on PyPI, the domain lookup's row), `docs/SMUS.md`, `dev-env.md` and `sg-proxy.md` at 73 names;
+  `promotion.md` §N.7.1, the GitLab sitting for `default-v0.10.0`, and the waiting list's image row.
+
+## 2026-10-26 — xxviii's active half: the user's option B, the job written
+
+*Claude's hand, no AWS call. The user's decision, taken in the chat of the session forked from this one and
+relayed by it: "Stage 8 xxviii, metade ativa = opção B. Um job manual no runner de deploy na próxima
+sentada do GitLab (a da default-v0.10.0, promotion.md §N.7.1) chama AssumeRole de um papel de deploy pelo
+endpoint global sts.amazonaws.com; lê-se a trilha de us-east-1 e a mensagem da regra 4.6. Sem alargar
+trust."*
+
+- **[Claude] What the job can read**, from the code: the deploy roles' trust, `OnlyTheDeployRunner`, admits
+  the runner's role with no condition, so the runner's assumption through the global endpoint succeeds; the
+  misuse rule's pattern exempts the runner's role by its unique id (`anything-but` prefix), so the runner's
+  assumption fires no rule through either endpoint, and 4.6's message cannot appear in this form. The job
+  reads the Region each record lands in: a record written in `us-east-1` reaches no `us-west-2` rule,
+  whoever its caller. The `aws:RequestedRegion` clause stays unread, the trust pinning nothing.
+- **[Claude] The job**: `sts-global-probe` in the copy of `awsds/dev-env`'s pipeline
+  (`gitlab/awsds/dev-env/.gitlab-ci.yml`), tag `awsds-deploy`, `needs: []`, created only in a pipeline run
+  on the default branch with `STS_GLOBAL_PROBE` set, and manual there. As the runner's own role it assumes
+  both deploy roles through `sts.us-west-2.amazonaws.com` and through `sts.amazonaws.com`, session name
+  `xxviii-<pipeline id>`, and prints each ARN; its script parses under `bash -n`. It reaches GitLab with
+  `default-v0.10.0`'s merge request.
+- **[Claude] The record**: xxviii's row, `promotion.md` §N.5, §N.6 and §N.7.1 step 7, and the waiting
+  list's GitLab row.
+
+## 2026-10-26 — decision 1's zlib pair: the user's option A, the baseline written for gates-v0.6.0
+
+*Claude's hand, no AWS call. The user's decision as the Dev Env Steward, taken in the chat of the session
+forked from this one and relayed by it: "Stage 8 decisão 1, par zlib = opção A. CVE-2026-85091 em zlib e
+zlib1g entra na baseline da linhagem SageMaker por nome, datado e atribuído ao usuário, em
+ci-gates/baselines.gitlab-ci.yml, tag gates-v0.6.0 antes da imagem default-v0.10.0 (o include ref do
+awsds/dev-env move junto)."*
+
+- **[Claude] The baseline**: `CVE-2026-85091|zlib` and `CVE-2026-85091|zlib1g`, `HIGH 1.3.dfsg-3.1ubuntu2.2`
+  as `default-v0.9.1`'s scans read them on 2026-10-25, appended to `GATES_BASELINE_SAGEMAKER_DISTRIBUTION`
+  in the copy's `ci-gates/baselines.gitlab-ci.yml`, the list's comment naming the acceptance, its date and
+  `gates-v0.6.0`. The deploy lineage's `CVE-2026-85091|zlib`, Debian's package, is unchanged.
+- **[Claude] The sitting**: `promotion.md` §N.7.1 gains step 3, the merge request on `awsds/ci-gates`, the
+  tag and its commit read back into the image project's `include:` `ref`, before step 4's merge request on
+  `awsds/dev-env`; the application template's pin moves with its own next merge request.
+- **[Claude] The record**: 1.4's text, the waiting list's GitLab row, `promotion.md` §N.6 and §N.7.1.
+
+## 2026-10-26 — decision 22's third part read against the distribution's start scripts: the `ENV PATH` order reaches no space
+
+*Claude's hand (the session of PR #269), from a laptop with no AWS call: the SageMaker Distribution
+4.5.2's sources, libmamba's activation and the micromamba image read on GitHub.*
+
+- **[Claude] A space's `PATH`**: the distribution's `ENV PATH` opens `/etc/sagemaker-inference-server:/opt/conda/bin`;
+  `entrypoint-sagemaker-ui-jupyter-server` and `start-sagemaker-ui-jupyter-server` each run `micromamba
+  activate base` before `jupyter lab`, as the Code Editor's pair does; libmamba (`micromamba-1.5.11` and
+  `main`) puts `/opt/conda/bin` first on activation and, on a reactivation, removes it and puts it first
+  again; the server's `terminado_settings` is `{"shell_command": ["/bin/bash"]}`, so a terminal inherits the
+  server's `PATH`. The house `bin` ahead of `/opt/conda/bin` on the image's `ENV PATH` leaves
+  `aws-smus-cicd-cli` the distribution's 1.0.8 in a space, and a smoke `RUN`, unactivated
+  (`_dockerfile_shell.sh` activates only when `MAMBA_DOCKERFILE_ACTIVATE` is `1`, an `ARG` of the
+  distribution's own build), reads the house's and passes. The order reaches what runs unactivated: a
+  descendant's `RUN`, and, when the container starts without `_entrypoint.sh`, `apply_patches.sh`, whose
+  `pip show botocore` and `pip show hdijupyterutils` decide the patches it applies to `/opt/conda`. The house
+  lock carries `jupyterlab`, `jupyter-server`, `jupyter-core`, `notebook`, `ipython` and `pip`, so the whole
+  `bin` placed where it survives the activation would start the house's JupyterLab as the space's server.
+- **[Claude] The form prepared, not in the recipe copy**: `/opt/awsds/bin` holding a symlink to the house
+  CLI's entry point alone, prepended by `/opt/conda/etc/conda/activate.d/zz-awsds-bin.sh`, one `case` that
+  returns 0 under `set -euf -o pipefail` (run under bash and sh on the laptop), and libmamba exports `PATH`
+  before it sources the hook; the smoke reading the name after `micromamba activate base`, failing unless it
+  resolves under `$AWSDS_PYTHON_ENV/bin/` and `--version` reports the house environment's version. Neither
+  Dockerfile was built. The hook is a file of ours in the distribution's environment, which the user's rule
+  of 2026-09-10 leaves as it ships, so the choice between it and no third part is the user's.
+- **[Claude] The record**: decision 22 and 1.1's bullet; `promotion.md` §N.7.1 steps 4 and 6;
+  `docs/SMUS.md`; a platform entry in `lessons.md`; `docs/REFERENCES.md`.
+
+## 2026-10-26 — 3.3's snapshot, option A, written in the template
+
+*Claude's hand (the session of PR #269), from a laptop with no AWS call; the decision the user's, relayed
+by the session the user forked.*
+
+- **[user] Option A**: the Glue job records the snapshot of `curated.trades` it read and keeps taking
+  `--SOURCE_SNAPSHOT`; the leg, the chains and the workflows unchanged; the parity of Staging and
+  Production by id (option B) waits until it is a requirement.
+- **[Claude] The template** (`b65233b1`): `glue/transform.py` reads at the pinned snapshot or else the
+  table's current one, `SHOW TBLPROPERTIES <table> ('current-snapshot-id')`, appends `VERSION AS OF <id>`
+  and writes `trades.source.json` beside `trades.csv` once `keep_one_file` has emptied the prefix (the
+  table, the snapshot, whether pinned); a table reporting no current snapshot fails the run.
+  `src/app_etl/pipeline.py` copies a CSV's record into its summary as `source`, and
+  `code/app_etl_tasks.py`'s report carries it. The job role's `s3:PutObject` on the outputs bucket covers
+  the record. `uv run pytest` 45 passed, ruff clean, the lint at `d856982c` *"ok: 9 arquivo(s)"*,
+  `./scripts/render-workflow.py --check` OK. Unrun until the next tag's Staging leg, where `SHOW
+  TBLPROPERTIES` meets the job's Lake Formation catalog for the first time.
+- **[Claude] The record**: 3.3, its 3.8 sub-bullet and the status cell; `sagemaker-application.md` §E, §G
+  and §V; the template's README.
+
+## 2026-10-26 — decision 22's third part taken as the activation hook, written in the recipe copy; the report upstream posted as issue 413
+
+*Claude's hand (the session of PR #269), from a laptop with no AWS call but one `sts get-caller-identity`;
+the choice and the issue the user's, in that session's chat.*
+
+- **[user] The choice**: the base environment's activation hook with the narrow directory, over no third
+  part.
+- **[Claude] The recipe copy** (`e7901335`): `dev-env/Dockerfile` adds `/opt/awsds/bin`, a symlink to
+  `$AWSDS_PYTHON_ENV/bin/aws-smus-cicd-cli` alone, and `/opt/conda/etc/conda/activate.d/zz-awsds-bin.sh`,
+  one `case` prepending it after each `micromamba activate base`; `smoke/Dockerfile` reads the name after
+  that activation, fails unless it resolves under `$AWSDS_PYTHON_ENV/bin/` and `--version` reports the
+  house environment's version, and writes `cicd-cli.txt`; the copy's README carries both. Both `RUN`
+  bodies pass `bash -n`; neither Dockerfile was built. `make check-docs` and the hooks pass.
+- **[user] The report upstream**: aws/CICD-for-SageMakerUnifiedStudio issue 413, opened from the PR's
+  draft; **[Claude]** read open, created 18:25:19 UTC, its title the draft's.
+- **[Claude] The record**: decision 22, 1.1's bullet, Stage 10 2.1, `promotion.md` §N.7.1 steps 4 and 6
+  and §N.7.3, `sagemaker-application.md` §A, §D and §M, the template's README and script, `docs/SMUS.md`,
+  `upstream-releases.md`, `lessons.md`, `docs/REFERENCES.md`.

@@ -166,6 +166,11 @@ repository on 2026-09-09, by reading raw counts as MiB.
 - **A `403` over `https` reads `000` at the client.** The refusal is a `CONNECT` refusal, so
   `curl -w '%{http_code}'` shows `000` while this log shows a named `403`. Two views of one event — and
   the reason a probe that must be legible is run over `http://`.
+- **botocore reports a refused `CONNECT` as an unreachable proxy.** A boto3 call the plane refuses fails
+  at the client as *"Failed to connect to proxy URL: http://proxy.awsds.internal:3128"*, while this log
+  holds a named `403 TCP_DENIED` per retry: five for the CI/CD CLI's `CreateWorkflow` to
+  `airflow-serverless.us-west-2.api.aws` on 2026-10-26, the same client's other calls tunnelling through
+  the same proxy in the same minute. Read this log before suspecting the network.
 - **`.amazonaws.com` is on the compute plane**, so a missing bypass entry for an AWS name comes back
   **`200`**, not `403` — it succeeds, publicly, without `aws:SourceVpce`. **The loud failure is the lucky
   one**; see §7's second rule.
@@ -268,7 +273,14 @@ addresses; only CloudTrail carries `vpcEndpointId`.
   with a gateway endpoint id**. Same host, same second, different families.
 - **Who deleted it** (6d, 2026-09-09): `DeleteApp` from a browser `userAgent` is a person restarting a
   space; the same call from `AWSServiceRoleForAmazonSageMakerNotebooks` is **idle shutdown**. The API
-  cannot tell you, the `userAgent` and the identity can.
+  cannot tell you, the `userAgent` and the identity can. The mirror case (2026-10-26): `CreateApp` from a
+  browser `userAgent` under a project's role, minutes after `make down`'s hook deleted the apps, is the
+  portal starting a space for an open project page, and `list-apps`' `CreationTime` is the app name's
+  first creation, never its latest start.
+- **A refusal with no `errorMessage`** (2026-10-26): DataZone's refusal of `ListDomains` to a project's
+  role is recorded as `AccessDenied` with no message, while the client prints *"User is not permitted to
+  perform operation: ListDomains"*; no IAM or SCP layer refused it, the role's policy allowing
+  `datazone:List*`. The service's own authorization speaks only at the client.
 
 ```bash
 python3 - <<'PY'
@@ -371,6 +383,8 @@ get-job-runs`.
 | `firewall_rule_action` **absent** ≠ allowed by a rule | it means no rule fired |
 | `%<st` is **bytes** (2026-09-09) | a figure ~5 % too large, labelled MiB |
 | a `403` over https is **`000`** at the client | the proxy log has the real code |
+| botocore's *"Failed to connect to proxy URL"* (2026-10-26) | a refused `CONNECT`: the proxy log names the host and the `403` |
+| a reader's `Decrypt` refused `invokedBy logs.amazonaws.com`, no encryption context (2026-10-26) | not a refused read: CloudWatch Logs tries the reader's identity, then decrypts through its own path (`fas.s3.amazonaws.com`) and returns the events |
 | CloudTrail has **no data events** yet | `GetObject` will never appear; that is Stage 11 |
 | a piped command's exit code ([Lesson 46](../lessons.md)) | a truncated read that looks like a finding |
 | a name searched with no `--start-time` is bounded by the group's **creation** | say *"never, since <date>"*, not *"never"* |

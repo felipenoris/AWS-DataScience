@@ -2640,3 +2640,165 @@ done. Times UTC.*
   statements and the balance is the figure to keep (Lesson 6). Sandbox reads as on 2026-10-25, its 18
   RPU-seconds (9.7's query and the history read) not yet visible, a lag or below the cent; the next reading
   says which. The cost row, `PRICING.md` and `cost-model.md` carry both figures.
+
+## 2026-10-26 — with the environment down: xxiv's procedure rewritten (§N.4a), 3.1's logs-land half, the quota cases, the record read against the plan
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`, no write to
+AWS; the session that read Stages 7 to 10 for what is left. Times UTC.*
+
+- **[Claude] Verification xxiv's procedure** for the adopted resources written as `runbooks/promotion.md`
+  §N.4a: the before-readings, the revoke by SQL as the namespace's admin, the readings after, the two
+  slices' plans read and never applied there (`production/warehouse/` expected *1 to add*, the authorization
+  gone from the read; `data-governance/data/` expected to fail at the association's `data_share_arn` if the
+  consumer no longer sees the share, since `warehouse-share.tf` finds it through
+  `data.aws_redshift_data_shares.visible`), the re-grant by SQL with the two applies as its second half, 9.7
+  again, the downs. It runs in a warehouse sitting on the user's word (§N.4).
+- **[Claude] 3.1's first-job reading, the logs-land half** (`describe-log-groups` and `describe-log-streams`,
+  03:50): the six job log groups per account are under the account's data key with 30 days' retention and
+  hold the jobs' streams, in Production `app-etl-20261026T004534` (processing), `app-etl-train-20261025T070126`
+  (training), `app-etl-v0-4-2-20261025T012931` (transform) and `jr_a910b7a1…aacdc6` (Glue output and error),
+  in Staging `app-etl-20261025T232400`, `app-etl-train-20261025T233703`, `app-etl-v0-4-6-20261025T234609` and
+  `jr_a7dbfda9…8177ff`; `/aws-glue/jobs/logs-v2` answers no stream in either account. The debug role's read
+  waits for a 6.3 window.
+- **[Claude] 3.5's four cases**: `list-requested-service-quota-change-history` reads the `ml.m5.large`
+  training and transform pair `CASE_OPENED` in both accounts, created 2026-10-23 at 20:00, the applied
+  values 20 and 8; nothing waits on them.
+- **[Claude] The record read against the plan**: xii's call (read 2026-10-25) moved out of the status cell's
+  Left list and 4.6's text; 2.4's closing sentence dated (the engine's flag not needed since the third run,
+  `glue:UpdateTable` the one clause unmeasured); Validation item 4's `WH-15` sentence brought to 9.8; 9.8's
+  carried list gains `docs/GOVERNANCE.md`; INT-07's row carries its measurements; `EXC-13`'s Production date
+  joins the waiting list's Dates; the summary rows in `CLAUDE.md`, `GENERAL_PLAN.md` and `stages/INDEX.md`
+  brought to the record. What the stage leaves is the status cell's list: the two space halves, xxiv on
+  §N.4a, `EXC-13`'s Production half after 2026-11-22, and the halves no step provokes.
+
+## 2026-10-26 — with the environment down: 3.4's project-role half placed in the Sandbox sitting
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`, no write to
+AWS. Times UTC.*
+
+- **[Claude] 3.4's project-role half** is `runbooks/promotion.md` §N.3 step 6: the two commands from
+  `eighth-experimentation`'s space with no `--profile`, Production's account id typed at the prompt and
+  never written, the calls read afterwards in Production's trail. `ReadTheStatusFromSandbox` admits
+  `datazone_usr_role_*` of Sandbox (`production/sagemaker/registry.tf`), and the project's role,
+  `datazone_usr_role_avhvbqn37ty7m8_…`, is a contributor of the project. 8.1's space half stays behind 6f
+  decision 1 (step 9).
+
+## 2026-10-26 — the Sandbox sitting: 3.4's project-role half from a space
+
+*The user's hand in `eighth-experimentation`'s space as the Data Scientist User, no `--profile`, so the
+project role answered; Claude's for the trails, as the infrastructure user. Times UTC.*
+
+- **[user] 3.4's two calls** (`promotion.md` §N.3 step 6), Production's account id typed at the prompt:
+  `describe-model-package-group` answered, `awsds-prod-model-app-etl`, `Completed`, created 2026-10-18 19:59:03
+  UTC by the infrastructure user; `create-model-package` refused, *"User: arn:aws:sts::<Sandbox>:assumed-role/
+  datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform:
+  sagemaker:CreateModelPackage on resource: arn:aws:sagemaker:us-west-2:<Production>:model-package/
+  awsds-prod-model-app-etl/new because no resource-based policy allows the sagemaker:CreateModelPackage
+  action"*, the persona's wording of 2026-10-23. Verification v's project-role half is answered.
+- **[Claude] The trails**, read at 05:59 after a first lookup at 05:10 found neither call (delivery lag):
+  `DescribeModelPackageGroup` at 05:09:37 in both accounts' trails, from `10.20.56.248` through Sandbox's
+  `sagemaker.api` endpoint `vpce-0c34c55bf1eaa47ff`, no error, Production's record carrying no caller ARN;
+  `CreateModelPackage` at 05:09:45 in Sandbox's trail alone, `AccessDenied`, through the same endpoint.
+
+## 2026-10-26 — after the Sandbox sitting, nothing up: 3.1's log read by a principal the key does not admit, the debug window prepared
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`): reads only. Times UTC.*
+
+- **[Claude] The data key's policy** (`alias/awsds-prod-data`, 15 statements): `Decrypt` through S3 for the job
+  role, the persona, the debug role (`AllowTheDebugRoleToDecryptViaS3`) and the release roles with
+  `InfrastructureAccess`; under the workflow-ARN context for the release, chain, deployment-manager and
+  workflow roles; and for the service principal `logs.us-west-2.amazonaws.com` under
+  `kms:EncryptionContext:aws:logs:arn`. No statement admits the infrastructure user or the debug role
+  through `logs`.
+- **[Claude] A job stream read anyway**: `get-log-events` on `/aws/sagemaker/ProcessingJobs`, stream
+  `app-etl-20261026T004534/algo-1-1792975588`, at 07:02:59 returned its events (*"app-etl 0.1.0, python
+  3.12.14 at /opt/app-etl/venv/bin/python"*). Production's trail, read at 07:04:30: a `Decrypt` by the
+  infrastructure user's session `invokedBy logs.amazonaws.com`, no encryption context, `AccessDenied`, at
+  07:02:49 (a `filter-log-events` whose first page was empty) and at 07:02:59; and at 07:02:59 a `Decrypt`
+  by `fas.s3.amazonaws.com` under CloudWatch Logs' chunk store's `aws:s3:arn`, no error. CloudWatch Logs
+  tries the reader's identity, then decrypts through its own path, so a reader needs no key grant. The
+  debug role's read is expected to take the same path and still waits for a window.
+- **[Claude] The policy simulator** read the debug role's `kms:Decrypt` as `implicitDeny` through `logs` and
+  through S3 alike; the S3 control is false for want of `kms:ResourceAliases` in the simulated context, so
+  the simulator is no instrument here (Lesson 30).
+- **[Claude] What changed in the record**: 3.1's text; `promotion.md` §N.7.2, the window's commands (the
+  approval, the plan and apply of `production/sagemaker/`, the persona's assumption and read, the trail,
+  the closing apply); the waiting list's act row for it.
+
+## 2026-10-26 — 3.1's debug-role read: the deployment manager's approval, the window opened
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), on the user's
+approval and authorization in this chat. The approval, as the deployment manager: "Aprovo, como deployment
+manager, uma janela de uma hora no awsds-prod-debug. Planeje o apply de production/sagemaker e me diga o
+que eu faço na sessão da persona (promotion.md §N.7.2)." The authorization of the apply: "Autorizo o
+apply necessário". Times UTC.*
+
+- **[Claude] The plan** (`production/sagemaker/`, Production, the slice initialised in this worktree), 15:08:20
+  to 15:08:40, with `-var debug_window_end=2026-10-26T16:10:00Z`, an hour from the plan: *"Plan: 0 to add, 1
+  to change, 0 to destroy."*, `module.debug_role.aws_iam_role.this` alone, its trust's `aws:CurrentTime`
+  moving from `2026-01-01T00:00:00Z` to `2026-10-26T16:10:00Z`, and the slice's check warning *"The debug
+  window on awsds-prod-debug is open until 2026-10-26T16:10:00Z"*. The plan saved outside the repository.
+- **[Claude] Before the apply**: the two peer sessions on the laptop, both idle, told of the apply and of the
+  closing one to come.
+- **[Claude] The apply** of the saved plan, 15:09:12 to 15:09:55: the role modified in 1 s, *"Apply complete!
+  Resources: 0 added, 1 changed, 0 destroyed."*, the check's warning printed with it.
+- **[Claude] Read back**: `get-role` at 15:10:06 shows the trust's `DateLessThan aws:CurrentTime
+  2026-10-26T16:10:00Z` beside `aws:RequestedRegion us-west-2`, the session ceiling 3600 s;
+  `./aws/deploytargets.py awsds-infra-prod` all checks passed, `DT-9` a note, *"OPEN until
+  2026-10-26T16:10:00Z - close it in the same sitting (6.3)"*, both assumption rules
+  `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`; the re-plan with the flag at 15:10:52 *"No changes."*
+- **[Claude] What follows**: the persona's assumption and its read of
+  `app-etl-20261026T004534/algo-1-1792975588` in `/aws/sagemaker/ProcessingJobs`, the stream the
+  infrastructure user read at 07:02:59 (`promotion.md` §N.7.2 step 3); then the trail, and the closing apply
+  on the user's word.
+
+## 2026-10-26 — 3.1's debug-role read: the persona's assumption and its read answered
+
+*The user's hand, as the Data Scientist User on the laptop (`awsds-scientist-prod`, `DataScientistProdAccess`,
+then the assuming profile `awsds-scientist-prod-debug`), the outputs pasted in this chat at about 15:20 UTC,
+the account id replaced here; Claude's for the record.*
+
+- **[user] The assumption** (`promotion.md` §N.7.2 step 3):
+  `arn:aws:sts::<Production>:assumed-role/awsds-prod-debug/debug-window-logs`.
+- **[user] The read** through the assuming profile, `get-log-events` on `/aws/sagemaker/ProcessingJobs`,
+  stream `app-etl-20261026T004534/algo-1-1792975588`, `--limit 5`: *"app-etl 0.1.0, python 3.12.14 at
+  /opt/app-etl/venv/bin/python   pyarrow 25.0.1 from /opt/app-etl/venv/lib/python3.12/site-packages/pyarrow
+  trades.csv: 30 rows -> trades.parquet   1 file(s) processed"*. The debug role, whose only key grant is
+  `Decrypt` through S3, read a job stream under the data key: 3.1's debug-role half is answered.
+- **[Claude] What waits**: the trail (the two assumptions, the read and its `Decrypt` pair) and the closing
+  apply, both behind the infrastructure user's session, which the CLI reported gone at 15:20:34 (*"Error
+  loading SSO Token: Token for awsds does not exist"*); the trust ends the window at 16:10 UTC regardless.
+
+## 2026-10-26 — 3.1's debug window: the trail, the alarm, the window closed
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), after the user's
+new login and on the user's authorization in this chat: "Fiz login como usuário de infraestrutura. Autorizo o
+apply de production/sagemaker sem a flag, como awsds-infra-prod, a partir de um plano novo, para fechar a
+janela." Times UTC.*
+
+- **[Claude] The session**: `get-caller-identity` answered at 15:23:46, the token missing at 15:20:34.
+- **[Claude] The trail**, read at 15:24: two `AssumeRole` on `awsds-prod-debug` by the persona's reserved role
+  in `us-west-2`, from the laptop's own uplink, no error: 15:17:42 `debug-window-logs` and 15:18:33
+  `botocore-session-1793027895`, the assuming profile's own. `GetLogEvents` at 15:18:34 by
+  `awsds-prod-debug/botocore-session-1793027895` on `app-etl-20261026T004534/algo-1-1792975588`, no error. In
+  the same second the pair the infrastructure user's read showed in the morning: the debug role's `Decrypt`
+  `invokedBy logs.amazonaws.com`, no encryption context, `AccessDenied`, and a `Decrypt` by
+  `fas.s3.amazonaws.com` under `aws:logs:arn` (the `/aws/sagemaker/ProcessingJobs` group) and `aws:s3:arn`
+  (CloudWatch Logs' chunk store), no error.
+- **[Claude] The alarm**: `awsds-prod-debug-assume`'s `TriggeredRules` 1 at 15:17 and 1 at 15:18, and
+  `awsds-prod-alerts`' `NumberOfNotificationsDelivered` 1 and 1 in the same minutes, one notification per
+  assumption.
+- **[Claude] Before the apply**: the three peer sessions told, the two idle ones and the session implementing
+  the CLI remedy, which queued the message.
+- **[Claude] The closing apply** (`production/sagemaker/`, Production): the fresh plan without the flag,
+  15:24:25 to 15:24:41, *"Plan: 0 to add, 1 to change, 0 to destroy."*, `aws:CurrentTime` moving from
+  `2026-10-26T16:10:00Z` back to `2026-01-01T00:00:00Z`, no check warning; the apply, 15:24:53 to 15:25:44,
+  the role modified in 5 s, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*
+- **[Claude] Read back**: `get-role` at 15:25:58 shows `DateLessThan aws:CurrentTime 2026-01-01T00:00:00Z`
+  beside `aws:RequestedRegion us-west-2`; `./aws/deploytargets.py awsds-infra-prod` all checks passed, `DT-9`
+  *"closed (ends 2026-01-01T00:00:00Z)"*, both assumption rules enabled; the re-plan without the flag *"No
+  changes."* The window stayed open from 15:09:55 to 15:25:44.
+- **[Claude] The verdict**: 3.1's debug-role half is answered. The escape hatch reads a job's log under the
+  data key with no key grant through `logs`, the trail carrying the role's refused `Decrypt` beside the
+  service's own, and the alarm heard both assumptions.

@@ -17,7 +17,8 @@
     # 4.5.2-cpu), the release the steward last approved, registered as Sandbox's image version 6 at Stage 7
     # step 2.6: scanned 2026-10-12, CRITICAL 0 and HIGH 130, identical in base and dev-env. 121 of the 130
     # are linux-libc-dev, the kernel headers the distribution's build-essential pulls in; a container runs
-    # its host's kernel, never these.
+    # its host's kernel, never these. The zlib pair, new in default-v0.9.1's scans of 2026-10-25, was
+    # accepted by name by the user as the Dev Env Steward on 2026-10-26, for gates-v0.6.0.
     GATES_BASELINE_SAGEMAKER_DISTRIBUTION: |
       CVE-2026-66046|expat           # HIGH 2.6.1-2ubuntu0.5
       CVE-2026-76641|expat           # HIGH 2.6.1-2ubuntu0.5
@@ -149,6 +150,8 @@
       CVE-2026-64524|linux-libc-dev  # HIGH 6.8.0-142.142
       CVE-2026-84782|openssl         # HIGH 3.0.13-0ubuntu3.15
       CVE-2026-96512|sudo            # HIGH 1.9.15p5-3ubuntu5.24.04.3
+      CVE-2026-85091|zlib            # HIGH 1.3.dfsg-3.1ubuntu2.2
+      CVE-2026-85091|zlib1g          # HIGH 1.3.dfsg-3.1ubuntu2.2
     # The deploy image's lineage: awsds-prod-ecr-deploy, on python:3.14-slim (Debian 13). Seeded from
     # v0.1.0, scanned 2026-10-13: CRITICAL 2 and HIGH 8. The two CRITICALs are Debian 13's curl, with no
     # fixed package (the tracker reads <no-dsa>), and git links libcurl; the user accepted them by name on

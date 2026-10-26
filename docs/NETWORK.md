@@ -192,9 +192,15 @@ proxy, and a group left off times out on its names instead. That literal is gene
 output, `no_proxy_all_groups` (`vpc-egress-v0.17.0`), reads every declarable service's names from the
 endpoint-service catalog at plan time, which returns the names `dns_entry` carries (compared on seven
 services, 2026-10-10), so it is the same whatever `GROUPS=` an apply named. The `mlflow` group of
-`vpc-egress-v0.18.0` (Stage 17, written 2026-10-17, not applied) is outside the 70 entries until an
-image carries the next literal: the MLflow plugin's host, `mlflow.sagemaker.<region>.app.aws`, is
-under `.app.aws`, so a space on the 70-entry image is refused for it with a 403 (Stage 17 decision 4).
+`vpc-egress-v0.18.0` (Stage 17) is inside the 72 entries of `default-v0.9.1` (`DE-5`, 2026-10-25): the
+MLflow plugin's host, `mlflow.sagemaker.<region>.app.aws`, is under `.app.aws`, which the proxy refuses
+to a space with a 403, so an image without the name loses the call (Stage 17 decision 4). The `mwaa`
+group, reserved and empty until `vpc-egress-v0.19.0` (2026-10-26), carries `airflow-serverless`, whose
+only name is `airflow-serverless.<region>.api.aws`: without the endpoint a space's MWAA Serverless calls
+reach the proxy and are refused, `403 TCP_DENIED` five times for the CI/CD CLI's `CreateWorkflow` on
+2026-10-26, so a session that deploys from a space is `make up ENV=sandbox ONLY=egress GROUPS=mwaa`. The
+name joins the image's literal (73 entries) with the next house image; until then the session exports it
+beside the image's list.
 
 **A missing entry fails two different ways and only one of them is visible:**
 

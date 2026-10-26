@@ -120,7 +120,7 @@ module "consumer_data" {
     # The deployment manager reads a workflow's runs (Stage 10 decision 11), and the service decrypts the
     # run in the reader's session at each GetWorkflowRun (decision 2). The condition admits a workflow's
     # encryption context alone, which no S3 object carries (its context is the bucket's ARN), so the
-    # approver still decrypts no output (D31).
+    # approver still decrypts no output (D31), and kms:ViaService the workflow service's calls alone.
     {
       Sid       = "AllowTheDeploymentManagerToReadWorkflowRuns"
       Effect    = "Allow"
@@ -128,8 +128,9 @@ module "consumer_data" {
       Action    = ["kms:Decrypt"]
       Resource  = "*"
       Condition = {
-        ArnLike    = { "aws:PrincipalArn" = local.deployment_manager_pattern }
-        StringLike = { "kms:EncryptionContext:aws:airflow-serverless:workflow-arn" = local.workflow_arn_pattern }
+        ArnLike      = { "aws:PrincipalArn" = local.deployment_manager_pattern }
+        StringLike   = { "kms:EncryptionContext:aws:airflow-serverless:workflow-arn" = local.workflow_arn_pattern }
+        StringEquals = { "kms:ViaService" = "airflow-serverless.${var.region}.amazonaws.com" }
       }
     },
     # A workflow's execution role writes the result file and the inbox markers through S3, decrypts its

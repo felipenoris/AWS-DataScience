@@ -73,7 +73,7 @@ variable "cost_center" {
 # edited back, and a flag left on in a file is the failure mode the empty default exists to avoid.
 # The closed list of names lives in the module, where the group map is.
 variable "optional_service_groups" {
-  description = "Optional endpoint families for this apply: bedrock-base, bedrock-agent, emr, mlflow, redshift (mwaa is reserved and empty). Empty by default. Set with `make up ENV=sandbox GROUPS=bedrock-base,emr`; each endpoint is ~USD 0.010/h while the slice is up."
+  description = "Optional endpoint families for this apply: bedrock-base, bedrock-agent, emr, mlflow, mwaa, redshift. Empty by default. Set with `make up ENV=sandbox GROUPS=bedrock-base,emr`; each endpoint is ~USD 0.010/h while the slice is up."
   type        = list(string)
   default     = []
 }
