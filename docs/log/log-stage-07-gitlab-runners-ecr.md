@@ -1015,3 +1015,12 @@ pages (`docs/REFERENCES.md`). No AWS call, nothing created.*
   pusher and keeps the gate in GitLab. Unmeasured: the vendor's note naming the Owner role for the authorizing
   user, the author the service writes, the OAuth refresh past the SAML session, and the IAM narrowing. Recorded
   in INT-13 for the evaluation, if the path is ever wanted.
+
+## 2026-10-26 — `awsds/app-etl`'s protected refs read free of Stage 18's branch
+
+*Claude's hand; the project's API in the user's GitLab session, reads only. Time UTC.*
+
+- **[Claude]** `protected_branches` and `protected_tags` of `awsds/app-etl` at 00:21: one protected
+  branch, `main`, push and merge by Maintainers, force push off; one protected tag pattern, `v*`, created
+  by Maintainers. `stage-18-staging`, Stage 18's branch, protects nothing any more: the leftover of
+  2026-10-22 is read.

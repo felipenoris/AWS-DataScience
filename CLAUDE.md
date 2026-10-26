@@ -469,8 +469,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **Stage 18 DONE 2026-10-22: D41 item 2 kept** (the user's verdict): a deployment-only project measured in
   Staging and removed, the estate back to its reading before the stage, `EXC-20` and `EXC-21` closed, the
   measurements in `SMUS.md`'s deployment-project section and `lessons.md`. Left: the domain's two `IAM`
-  profiles, a group profile and 44 lineage events (no delete API), the project key until 2026-11-21, and
-  `awsds/app-etl`'s Protected branches and tags to read at the next GitLab sitting.
+  profiles, a group profile and 44 lineage events (no delete API), and the project key until 2026-11-21
+  (the protected refs read free of its branch on 2026-10-26).
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
