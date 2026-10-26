@@ -1092,11 +1092,12 @@ and 6), at 1.44 USD per query-hour per workgroup.
   together); Stage 9 vi's cancel (no table past 10 GB), ix's `VPC-Workloads` branch and off-endpoint
   refusal, xv's deploy- and execution-role halves and xxvii's cancel (no statement past 300 s); Stage 10
   xviii and xxviii's inbox marker (no task writes one).
-- **Not written**: Stage 8 3.3's read pinned to an Iceberg snapshot (Stage 9 4.4). Read 2026-10-26: the
-  Glue script takes `--SOURCE_SNAPSHOT` since v0.4.0 and appends `VERSION AS OF` to the governed query,
-  and no workflow, slice or leg passes one; what is unwritten is where the leg reads the snapshot id and
-  how it reaches the job's arguments, the user's decision (the waiting list) before the template change,
-  which rides a merge request and the next tag's Staging leg.
+- **The template's next merge request**: Stage 8 3.3's read pinned to an Iceberg snapshot (Stage 9 4.4),
+  option A taken by the user on 2026-10-26: the Glue job records in its summary the snapshot of
+  `curated.trades` it read and keeps taking `--SOURCE_SNAPSHOT` when one is given, which it does since
+  v0.4.0 with `VERSION AS OF`; the leg, the chain and the workflow do not change, and the parity of Staging
+  and Production by id waits until it is a requirement. It rides the merge request of the session that
+  writes the CLI remedy's script, then the next tag's Staging leg.
 - **A form to choose**: Stage 8 xxviii's active half in its trust-widening shape needs nothing up but an
   IAM write on both deploy roles' trust (the user's word) and a laptop `AssumeRole` through
   `sts.amazonaws.com`; its job shape needs N.1's runner.
@@ -1109,19 +1110,18 @@ Read on 2026-10-26 against the four stage files and their logs (Stages 7 to 10),
 N.3. Each sitting closes what the one before it cannot; a sitting starts on the user's word, since it is
 metered.
 
-1. **With nothing up, the user's decisions** (the waiting list): the CI/CD CLI's domain lookup from a space
-   (the upstream report, the template's script, the house image's `PATH` order), which the next house image
-   carries if taken; the mirror's push before the next tag; Stage 8 3.3's snapshot pin, where the leg reads
-   the id and how it reaches the job; Stage 10 decision 11's `kms:ViaService` narrowing, its evidence read;
-   Stage 8 xxviii's active half's form; Stage 8 decision 1's zlib pair (the steward's); INT-13's path; the
-   deployment manager's approval of a debug window (N.7.2); and, outside the four stages, 6f decision 1,
-   which 8.1's space half waits on. The training operator's refused log read is no longer among them:
-   the read answers (Stage 10 1.3, 2026-10-26).
-2. **The debug window** (N.7.2), with nothing up: Stage 9 3.1's debug-role read of a job log.
+1. **With nothing up, the user's decisions** (the waiting list): the mirror's push before the next tag;
+   Stage 10 decision 11's `kms:ViaService` narrowing, its evidence read; Stage 8 xxviii's active half's
+   form; Stage 8 decision 1's zlib pair (the steward's); INT-13's path; and, outside the four stages, 6f
+   decision 1, which 8.1's space half waits on. Taken on 2026-10-26: the CI/CD CLI remedy (the upstream
+   report, the template's script, the house image's `PATH` order) and Stage 8 3.3's snapshot pin (option
+   A), both written by one session in one merge request; the training operator's log read needs no
+   remedy (Stage 10 1.3).
+2. **The debug window** (N.7.2): run 2026-10-26, Stage 9 3.1's debug-role read answered.
 3. **The GitLab sitting** (N.7.1): the house image `default-v0.10.0` with the 73-name literal, the mirror
    pushed at `main`, Stage 7 Validation 2's `PX-3` and a GitLab backup.
 4. **The next release** (N.1's shape: the hub, `make gitlab-up BUILD=1`, Staging's `egress/`, Production's
-   `workloads-egress/`): the template's merge request with what step 1's decisions wrote, the tag, the legs,
+   `workloads-egress/`): the template's merge request with the deploy script and the snapshot record, the tag, the legs,
    3.7; and the exercises the user takes with it: Stage 8 xv (the proxy stopped alone), xxviii's active
    half in its job form, Stage 10 xx's second half (an undeclared Glue job on a branch's tag), Stage 8
    xxvii's plan half once the Amazon Linux parameter moves.
