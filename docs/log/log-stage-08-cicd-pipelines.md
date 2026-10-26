@@ -4111,3 +4111,43 @@ events through the user's GitLab session in Chrome). Times UTC.*
   event *"pushed to"* `main` by `felipenoris` at 21:29:16, `2d3160f1` to `94ed050d`, 8 commits (#261 to #269);
   `awsds/infrastructure`'s `main`, `origin`'s and the project folder's all at `94ed050df119`. The next tag's
   legs clone the commit `origin/main` holds.
+
+## 2026-10-26 — §N.7.1 step 8: verification xxviii's active half, `sts-global-probe` and the trails
+
+*The user's hand for the pipeline and the manual job on `awsds/dev-env`; Claude's for the reads: the job log
+through the user's GitLab session in Chrome, CloudTrail, EventBridge and CloudWatch as the infrastructure user
+with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`). No trust widened. Times UTC.*
+
+- **[user] The run**: *Build → Pipelines → Run pipeline* on `main` (`c8bac16e`) with `STS_GLOBAL_PROBE=1`,
+  pipeline #110 (21:50:47, `web`), then the manual job `sts-global-probe` (#649), 21:51:30 to 21:51:48 on
+  `awsds-prod-runner-deploy-i-05e260a19231bb5e5`. **[Claude] Its log**: *"caller:
+  arn:aws:sts::<Production>:assumed-role/awsds-prod-runner-deploy/i-05e260a19231bb5e5"*, then
+  `assumed-role/awsds-deploy-prod/xxviii-110` through `https://sts.us-west-2.amazonaws.com` and through
+  `https://sts.amazonaws.com`, and `assumed-role/awsds-deploy-staging/xxviii-110` through each; *"Job succeeded"*.
+- **[Claude] The trails** (`lookup-events`, 21:52 to 21:57), six records, each with no error:
+
+  | Trail | Region | Time | Role | Host header |
+  |---|---|---|---|---|
+  | Production | `us-west-2` | 21:51:42 | `awsds-deploy-prod` | `sts.us-west-2.amazonaws.com` |
+  | Production | `us-east-1` | 21:51:43 | `awsds-deploy-prod` | `sts.amazonaws.com` |
+  | Production | `us-west-2` | 21:51:46 | `awsds-deploy-staging`, the caller's copy | `sts.us-west-2.amazonaws.com` |
+  | Production | `us-east-1` | 21:51:47 | `awsds-deploy-staging`, the caller's copy | `sts.amazonaws.com` |
+  | Staging | `us-west-2` | 21:51:46 | `awsds-deploy-staging`, caller `AWSAccount` | `sts.us-west-2.amazonaws.com` |
+  | Staging | `us-east-1` | 21:51:47 | `awsds-deploy-staging`, caller `AWSAccount` | `sts.amazonaws.com` |
+
+  Each global call's records sit in `us-east-1` alone and each regional call's in `us-west-2`, in both
+  accounts. In Staging's `us-east-1` trail the `xxviii-110` record is the role's only assumption since
+  2026-10-25; every earlier one, the legs' `botocore-session-*`, is in `us-west-2`, xxviii's passive half.
+  A first watch of the trails reported Staging empty: its `jq` filter failed on the cross-account caller's
+  null `userIdentity.arn` and dropped the account's answer; the resource-name lookup above read both records,
+  the earlier assumptions its positive control (Lesson 62).
+- **[Claude] The rules**: `awsds-prod-deploy-misuse` and `awsds-staging-deploy-misuse` live in `us-west-2`
+  (`ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`); `events:ListRules` in `us-east-1` answers *"with an explicit
+  deny in a service control policy"* (the Region ceiling) in both accounts, so no rule there can be read or
+  written by these principals. `MatchedEvents`, `TriggeredRules` and `Invocations` read no datapoint from 21:00
+  to 22:04 for either rule, against one `TriggeredRules` each at 2026-10-13 05:00 (verification xvi's firing),
+  the instrument's positive control: the runner's role is exempt, and nothing fired.
+- **[Claude] The verdict**: an `AssumeRole` of a deploy role through `sts.amazonaws.com` is recorded in
+  `us-east-1` and never reaches 4.6's rules, which see `us-west-2` alone, whoever the caller; the Region ceiling
+  keeps a rule out of `us-east-1`. Whether a trust pinning `aws:RequestedRegion` refuses the global call stays
+  unread, the deploy roles' trust pinning nothing.
