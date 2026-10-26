@@ -2752,3 +2752,20 @@ apply necessário". Times UTC.*
   `app-etl-20261026T004534/algo-1-1792975588` in `/aws/sagemaker/ProcessingJobs`, the stream the
   infrastructure user read at 07:02:59 (`promotion.md` §N.7.2 step 3); then the trail, and the closing apply
   on the user's word.
+
+## 2026-10-26 — 3.1's debug-role read: the persona's assumption and its read answered
+
+*The user's hand, as the Data Scientist User on the laptop (`awsds-scientist-prod`, `DataScientistProdAccess`,
+then the assuming profile `awsds-scientist-prod-debug`), the outputs pasted in this chat at about 15:20 UTC,
+the account id replaced here; Claude's for the record.*
+
+- **[user] The assumption** (`promotion.md` §N.7.2 step 3):
+  `arn:aws:sts::<Production>:assumed-role/awsds-prod-debug/debug-window-logs`.
+- **[user] The read** through the assuming profile, `get-log-events` on `/aws/sagemaker/ProcessingJobs`,
+  stream `app-etl-20261026T004534/algo-1-1792975588`, `--limit 5`: *"app-etl 0.1.0, python 3.12.14 at
+  /opt/app-etl/venv/bin/python   pyarrow 25.0.1 from /opt/app-etl/venv/lib/python3.12/site-packages/pyarrow
+  trades.csv: 30 rows -> trades.parquet   1 file(s) processed"*. The debug role, whose only key grant is
+  `Decrypt` through S3, read a job stream under the data key: 3.1's debug-role half is answered.
+- **[Claude] What waits**: the trail (the two assumptions, the read and its `Decrypt` pair) and the closing
+  apply, both behind the infrastructure user's session, which the CLI reported gone at 15:20:34 (*"Error
+  loading SSO Token: Token for awsds does not exist"*); the trust ends the window at 16:10 UTC regardless.

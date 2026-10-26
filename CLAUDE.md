@@ -349,8 +349,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `model-chain.py transform staging` with `staging/foundation/`'s output, applied. **§N.2 run 2026-10-26**: xviii and
   vii closed, 9.4's DDL job idempotent from pipeline #102, 9.7 read with the project role's grant revoked and
   Production's workgroup gone, `EXC-13`'s Sandbox half twice, xxiv deferred, its procedure for the adopted resources
-  written 2026-10-26 (`promotion.md` §N.4a); both computes down. 3.1's logs-land half read 2026-10-26; the
-  quota cases still `CASE_OPENED`.
+  written 2026-10-26 (`promotion.md` §N.4a); both computes down. 3.1 read 2026-10-26, the debug role's
+  job-log read in a window included; the quota cases still `CASE_OPENED`.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, first fired 2026-10-25 (version 1 registered and approved by `awsds-deploy-prod`; pass 3 done, both transforms, 5.5). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
