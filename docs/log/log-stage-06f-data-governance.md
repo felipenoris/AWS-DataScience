@@ -1171,3 +1171,38 @@ the laptop were told first. Times UTC.*
   `governed-lake`). `datalake.py` exits 1 on the unsigned profiles alone.
 - **[Claude] Recorded**: the stage file (11.5 done), the grant register's two rows in `AWS_STATE.md`, the
   producer README.
+
+## 2026-10-26 — 11.6: `trades` published from `governed-lake`
+
+*The user in the portal as the Governance Manager user; Claude read AWS as the infrastructure user with
+`InfrastructureAccess` in `Data Governance Account` (`awsds-infra-data`), a contributor of `governed-lake`
+since 11.4, and in `Sandbox Account 1` (`awsds-infra-sandbox-1`), reads alone. Times UTC.*
+
+- **[user] The step's menu was not there**: *"Entendi que é no SMUS, certo? Não encontrei menu "data
+  sources" no SMUS."*
+- **[Claude] The step corrected** to the path the portal offered on 2026-09-13 (this log's first sitting):
+  *Data → Catalogs → AwsDataCatalog → `curated` → tables → `trades` → Publish to Catalog*, an act that
+  creates its own data source with business-name generation on.
+- **[user]** *"Executei estas etapas no portal"*, the path above, as the Governance Manager user.
+- **[Claude] The trail**, every write as `awsds-data-studio-domain-execution` in the session
+  `user-e8a1f320-…`, the Governance Manager's DataZone profile: `CreateDataSource` at 21:17:26Z,
+  `CreateAsset` at 21:17:28Z, `CreateListingChangeSet` `PUBLISH` at 21:17:29Z; then two `CreateLineageNode`
+  by `datazone.amazonaws.com` at 21:17:32Z. No `GrantPermissions`, `BatchGrantPermissions`,
+  `RevokePermissions`, `RegisterResource`, `PutDataLakeSettings`, `CreateTable` or `UpdateTable` in the
+  account from 21:15Z, read at 21:20:16Z with the creation events already delivered.
+- **[Claude] The data source**: `aus07vzuom8ntc`, named after the account's catalog and `curated`, type
+  `GLUE`, `READY`, over `curated` with `INCLUDE *`, `publishOnImport` false,
+  `enableBusinessNameGeneration` true, the project role as its data access role, no schedule, no run.
+- **[Claude] The asset and its listing**: `c9joopl3avwd1s`, `trades`, `amazon.datazone.GlueTableAssetType`,
+  revision 1, external identifier the table's ARN suffixed with the project id; its forms `GlueTableForm`,
+  `DataSourceReferenceForm`, `SubscriptionTermsForm` and `CommonDetails`, with `lakeFormationDetails`
+  empty and nothing naming `classification` or an LF-Tag, though the table carries
+  `classification=internal` (verification vi's lake half: the catalog shows no LF-Tag). The listing
+  `b3bagfgnvev3tc` is `ACTIVE`, and Sandbox's `search-listings` finds it, owned by `3j4l4xmvz7fggg`.
+- **[Claude] Lake Formation**, at 21:18:38Z, every grant on `curated`, on its table wildcard, on `trades`
+  and on `sample_trades`: the publisher's three of 11.5, the Governance Manager's `DESCRIBE`s,
+  `InfrastructureAccess`'s, the maintenance role's and Production's share, and nothing new. The source's
+  creation wrote no grant (verification xi), as Sandbox's publish of 2026-09-13 wrote none.
+- **[Claude] `./aws/catalog.py`** at 21:22:13Z, *"all checks passed"*: `CT-3` five access acts across nine
+  listings; `CT-4` all five sources with `publishOnImport` false; `CT-5` noting two sources that generate
+  business names, `mydatabase`'s and `curated`'s; `CT-7` the catalog road's three grants alone.
