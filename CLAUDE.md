@@ -375,7 +375,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   attempt with the reader's identity before its own (read the same day). **2.1 ran from a space on 2026-10-26**: the house CLI by its path, the CLI 1.0.9's
   `ListDomains` (refused to a project's role) answered by the domain's id, and Sandbox's `mwaa` group's
   `airflow-serverless` endpoint (`GROUPS=mwaa`, the name in the session's `NO_PROXY` until the next image);
-  xxix's portal run fails at the DAG's template.
+  xxix's portal run fails at the DAG's template. The template's `scripts/dev-cli.sh` carries both answers
+  (PR #269), the lookup is reported upstream as issue 413, and `default-v0.10.0`'s recipe makes the CLI's
+  name the house's through the base environment's activation hook.
 - **The Sandbox warehouse (5b, 6h)**: `sandbox/warehouse/` rank 53 `[P]` and `sandbox/warehouse-compute/`
   rank 54 `[E]` (base 4 / max 8 RPU, usage limit 10 RPU-h monthly `deactivate`), database `sandbox`, schema
   `lab`. One project per tag key is admitted (`avhvbqn37ty7m8`); decision 8 owns the second,
@@ -399,9 +401,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `claude-sonnet-5` are refused for this account (`EXC-08`).
 - **Stage 6f in progress**: decision 1 taken 2026-10-26 by the user as (b), a pilot of SMUS's native
   flow even without LF-Tags (D22 and D26 amended; `GOVERNANCE.md` §Grants' catalog road; `TM-27`). Step
-  11 written and planned, unapplied (PR #270): `data-governance/publishing/` (the VPC `10.70.0.0/16` the
-  managed `Tooling` takes, the prerequisites; 44 to add with `LAKE_PUBLISHERS` empty), `governance/`'s
-  `lake-publishing` profile, `data/`'s two SMUS seats and the publisher's grant on `curated.trades`; the
+  11 written and planned (PR #270), its 11.2 applied 2026-10-26: `data-governance/publishing/` (the VPC
+  `10.70.0.0/16` the managed `Tooling` takes, the prerequisites, 44 objects), then, behind
+  `LAKE_PUBLISHERS`, `governance/`'s `lake-publishing` profile, `data/`'s two SMUS seats and the publisher's grant on `curated.trades`; the
   Governance Manager creates `governed-lake` and approves `eighth-experimentation`'s subscription in the
   portal; a rollback leaves the projects bucket and one registration (the Data OU's deny). No IAM
   condition key reaches business-name generation, decision 3's last input (PR #187); each
