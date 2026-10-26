@@ -990,7 +990,10 @@ authorized in this session's chat: the release of a state lock this session's pl
 - **[Claude] The instruments on today's estate**, with the amended checks: `./aws/catalog.py` *"all checks
   passed"*; `./aws/studio.py`'s checks all pass, `US-3` *"no blueprint configured in the domain account"*
   and `US-4` the two contracted profiles, its exit 1 from the sign-in of profiles other than the
-  infrastructure user's.
+  infrastructure user's; `./aws/datalake.py` no failure, `DL-1` and `DL-2` on the five lake buckets,
+  `DL-5`, `DL-6` and `DL-7` passing, `DL-13` the lake's `InfrastructureAccess` seat alone;
+  `./aws/networking.py` no failure, with no `NT-1` row, Data Governance holding no VPC. Both exit 1 on
+  the same unsigned profiles.
 - **[Claude] Recorded**: the stage file (status, decision 1 taken, decisions 2 to 5, step 11, the
   verifications x to xiii, 3.3 and 7.2, the cost); D22 and D26 amended, and D22's index row;
   `GOVERNANCE.md` (§Grants' catalog road, §Access control, the accounts and catalogs tables, the
