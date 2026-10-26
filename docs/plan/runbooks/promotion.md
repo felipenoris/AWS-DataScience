@@ -1110,8 +1110,9 @@ Read on 2026-10-26 against the four stage files and their logs (Stages 7 to 10),
 N.3. Each sitting closes what the one before it cannot; a sitting starts on the user's word, since it is
 metered.
 
-1. **With nothing up, the user's decisions** (the waiting list): the mirror's push before the next tag;
-   the CI/CD CLI remedy's third part, its narrow form in the image or none (PR #269). Taken on 2026-10-26:
+1. **With nothing up, the user's decisions** (the waiting list): the mirror's push before the next tag.
+   Taken on 2026-10-26: the CI/CD CLI remedy's third part as an activation hook in the image (PR #269), its
+   report posted as `aws/CICD-for-SageMakerUnifiedStudio#413`;
    6f decision 1 (shape (b) in a pilot, recorded and planned as 6f step 11 in PR #270); the CI/CD CLI
    remedy's report and script and Stage 8 3.3's snapshot pin (option A), written in PR #269; Stage 10 decision
    11's narrowing (option A), applied the same day; Stage 8 xxviii's active half by a job (option B); Stage

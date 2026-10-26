@@ -4025,3 +4025,22 @@ by the session the user forked.*
   TBLPROPERTIES` meets the job's Lake Formation catalog for the first time.
 - **[Claude] The record**: 3.3, its 3.8 sub-bullet and the status cell; `sagemaker-application.md` §E, §G
   and §V; the template's README.
+
+## 2026-10-26 — decision 22's third part taken as the activation hook, written in the recipe copy; the report upstream posted as issue 413
+
+*Claude's hand (the session of PR #269), from a laptop with no AWS call but one `sts get-caller-identity`;
+the choice and the issue the user's, in that session's chat.*
+
+- **[user] The choice**: the base environment's activation hook with the narrow directory, over no third
+  part.
+- **[Claude] The recipe copy** (`e7901335`): `dev-env/Dockerfile` adds `/opt/awsds/bin`, a symlink to
+  `$AWSDS_PYTHON_ENV/bin/aws-smus-cicd-cli` alone, and `/opt/conda/etc/conda/activate.d/zz-awsds-bin.sh`,
+  one `case` prepending it after each `micromamba activate base`; `smoke/Dockerfile` reads the name after
+  that activation, fails unless it resolves under `$AWSDS_PYTHON_ENV/bin/` and `--version` reports the
+  house environment's version, and writes `cicd-cli.txt`; the copy's README carries both. Both `RUN`
+  bodies pass `bash -n`; neither Dockerfile was built. `make check-docs` and the hooks pass.
+- **[user] The report upstream**: aws/CICD-for-SageMakerUnifiedStudio issue 413, opened from the PR's
+  draft; **[Claude]** read open, created 18:25:19 UTC, its title the draft's.
+- **[Claude] The record**: decision 22, 1.1's bullet, Stage 10 2.1, `promotion.md` §N.7.1 steps 4 and 6
+  and §N.7.3, `sagemaker-application.md` §A, §D and §M, the template's README and script, `docs/SMUS.md`,
+  `upstream-releases.md`, `lessons.md`, `docs/REFERENCES.md`.
