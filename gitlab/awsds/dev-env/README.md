@@ -112,6 +112,31 @@ image** is `/opt/awsds-proxy.txt` inside it, the entry count and the first 16 he
 Neither is enforced by a gate: both are readings, and [`dev-env.md`](https://github.com/felipenoris/AWS-DataScience/blob/main/docs/plan/runbooks/dev-env.md)
 §E says when to take them.
 
+**Audit the lock on the laptop before the tag.** `pip-audit` reads OSV's records of the day, so the gate's
+verdict is dated: the lock of 2026-10-16 passed `default-v0.8.0`'s gate and met 73 blocking findings at
+`default-v0.9.0`'s on 2026-10-25 (pipelines #89 to #91), which spent the tag with nothing built. The gate's
+own audit runs on the laptop in about two and a half minutes once the export's environment markers are
+stripped: pip-audit skips a line whose marker the running interpreter does not match, and every line names
+`linux` and `x86_64` (AWS-DataScience Stage 8 verification x). From a checkout of AWS-DataScience:
+
+```bash
+uv export --project gitlab/awsds/dev-env/dev-env/python --locked --no-dev --no-emit-project --format requirements-txt --quiet --output-file "$HOME/tmp/dev-env-pins.txt"
+```
+
+```bash
+sed -i '' -E 's/ ; [^\\]*( \\)?$/\1/' "$HOME/tmp/dev-env-pins.txt"
+```
+
+```bash
+uvx --from pip-audit==2.10.1 pip-audit --requirement "$HOME/tmp/dev-env-pins.txt" --disable-pip --require-hashes --vulnerability-service osv --progress-spinner off
+```
+
+What it prints beyond the accepted list in `ci-gates/baselines.gitlab-ci.yml` blocks the tag. A finding with a
+fixed version leaves by `uv lock --upgrade-package <name>`, one per blocked package, never a bare `--upgrade`,
+which on 2026-10-25 resolved an older autogluon and failed building `configspace`; a fixed version another
+package forbids (`Pillow<13` from autogluon-multimodal 1.6.1) enters the accepted list by name, through a
+`gates-v*` tag and this file's `include:` `ref` ([`gitlab.md`](https://github.com/felipenoris/AWS-DataScience/blob/main/docs/plan/runbooks/gitlab.md) §G).
+
 **The uv cache must never be written into a layer.** Measured on the first `default-v0.2.0` build
 (2026-09-11): the Python layer came out at 10.7 GB against a 5.2 GB environment, because `uv` unpacks
 every wheel into `/root/.cache/uv` before materialising it into the venv and both live in the same
@@ -157,6 +182,7 @@ Stage 7 step 6.5). Sizes are ECR's, compressed and per repository.
 | `default-v0.7.1` | 2026-10-15, release pipeline #28 from `c268de48` | the release gate's quote (!2); the recipe is `v0.7.0`'s | `default-v0.7.1-c268de48`: `base` 3,745,649,509 (`sha256:4accbaf5…e525`), `dev-env` 6,678,358,952 (`sha256:3b6d706a…84a4`), built in 956 s, the manifests `v0.7.0`'s but the base digest; both scans CRITICAL 113 and HIGH 610, the 593 past the baseline all `linux-libc-dev`; registered by `register` as Sandbox's version 7 |
 | `default-v0.7.3` | 2026-10-15, release pipeline #38 from `15fac237` | nothing in the recipe: the include at `gates-v0.4.0` (!5), whose pip-audit accepts a finding by any of its ids, after `default-v0.7.2` at `8e78ab53` stopped at `pip-audit` on fsspec's accepted finding under a new OSV id and pushed nothing | `default-v0.7.3-15fac237`: `base` 3,745,649,508 (`sha256:b05552a8…2ba1`), `dev-env` 6,682,673,224 (`sha256:38f4864c…dd6f`), built in 983 s, the manifests `v0.7.1`'s but the base digest; both scans CRITICAL 113 and HIGH 610, the 593 past the baseline all `linux-libc-dev`; the first release under AWS-DataScience Stage 8 decision 18: `register` created Sandbox's version 8, alias `0.7.3`, with no domain write, and `retire` kept versions 8 and 7 |
 | `default-v0.8.0` | 2026-10-16, release pipeline #46 from `7c59998c` | the SageMaker CI/CD CLI `aws-smus-cicd-cli` 1.0.9 in the house Python environment (AWS-DataScience Stage 8 decision 22, !7), and `mcp` held to `>=1.30.0,<2`, the 1.x line's fix for CVE-2026-59951, since `strands-agents` requires `mcp<2.2` | `default-v0.8.0-7c59998c`: `base` 3,745,649,519 (`sha256:681dcb20…f23e`), `dev-env` 6,678,573,838 (`sha256:b788dbd9…1b87`), built in 955 s; the Python manifest adds `aws-smus-cicd-cli` 1.0.9, `httpx-sse` 0.4.3 and `pydantic-settings` 2.16.0, moves `mcp` 2.1.1 → 1.30.0 and drops `mcp-types`, the other manifests `v0.7.3`'s but the base digest; both scans CRITICAL 113 and HIGH 610, the 593 past the baseline all `linux-libc-dev`; `register` created Sandbox's version 9, alias `0.8.0`, with no domain write, and `retire` kept versions 9, 8 and 7 |
+| `default-v0.9.1` | 2026-10-25, release pipeline #96 from `746ef084` | the 72-name `NO_PROXY` literal of `vpc-egress-v0.18.0` (AWS-DataScience Stage 8 1.1, merged as `f71cafcd`); the lock moved past the findings OSV published since 2026-10-16, 17 entries in 9 packages (`aiohttp`, `brotli`, `certifi`, `filelock`, `gitpython`, `mlflow` with `-skinny` and `-tracing`, `nbconvert`, the opentelemetry family, `virtualenv`, `yarl`); the include at `gates-v0.5.0`, whose dev-env list accepts pillow 12.3.0's 41 findings and setuptools' second by name (!10), after `default-v0.9.0` at `f71cafcd` stopped at `pip-audit` on the lock of 2026-10-16 (73 blocking) and pushed nothing | `default-v0.9.1-746ef084`: `base` 3,754,767,181 (`sha256:ac9bd82b…044e`), `dev-env` 6,687,899,330 (`sha256:20a1017a…ca39`), built in 970 s; `pip-audit` 50 accepted and 0 blocking; the Python manifest moves the lock's 17 entries, `proxy.txt` 72 entries `6faf2e4761622508`, the other manifests `v0.8.0`'s but the base digest; both scans CRITICAL 113 and HIGH 612, the 595 past the baseline 593 `linux-libc-dev` and, new, `CVE-2026-85091` on `zlib` and `zlib1g`; `register` created Sandbox's version 10, alias `0.9.1`, with no domain write, and `retire` kept versions 10, 9, 8 and 7 |
 
 **The recipe is not reproducible byte-for-byte**: `v0.1.1` moved both digests with no commit to the
 recipe, and a retry of the same commit builds another manifest (Stage 7 6.4). A pipeline that assumes

@@ -1728,6 +1728,12 @@
     iniconfig 2.3.1 on 2026-10-06, which `exclude-newer = "2026-09-29T00:00:00Z"` keeps out of the lock
     (it holds 25.0.1, 0.16.9 and 2.3.0): <https://pypi.org/pypi/pyarrow/26.0.0/json>, the same path for
     each package.
+  - The upper bounds behind the dev-env accepted list (read 2026-10-25, the `gates-v0.5.0` entries):
+    autogluon.multimodal 1.6.1 requires `Pillow<13,>=10.0.1`, `fsspec[http]<=2025.3` and `nltk<3.11,>=3.10`,
+    autogluon.core 1.6.1 `setuptools<82`: <https://pypi.org/pypi/autogluon.multimodal/1.6.1/json>,
+    <https://pypi.org/pypi/autogluon.core/1.6.1/json>; the fixed versions' upload dates, pillow 13.0.0 on
+    2026-10-16 and setuptools 84.1.0 on 2026-10-19: <https://pypi.org/pypi/pillow/13.0.0/json>,
+    <https://pypi.org/pypi/setuptools/84.1.0/json>.
 - The GitLab CI rules `scripts/check-gitlab-ci.py` encodes (read 2026-10-14, after pipeline #12 of
   `awsds/app-etl`; Stage 8 step 6.4):
   - The YAML reference: the global keywords are `default`, `include`, `stages`, `variables` and

@@ -199,10 +199,13 @@ rows.
    CI/CD variable beyond the eleven the project holds (read 2026-10-24): `INFRA_DIR`, `IMAGE_REPO`,
    `AWSDS_WORKFLOWS` and `LINT_INSTANCE_TYPES` are the file's, `BUNDLE_OBJECT`, `BUNDLE_SHA256` and
    `JOB_IMAGE_URI` earlier jobs' dotenv artifacts.
-3. **[user] The house image `default-v0.9.0`** with the 72-name `NO_PROXY` literal (Stage 8 1.1, Stage
-   17 decision 4), registered as version 10: the merge request on `awsds/dev-env` from the copy under
-   `gitlab/awsds/dev-env/`, the steward's tag, the release gate; `./scripts/gitlab-mirror.py` after the
-   merge. `DE-5` turns green with it.
+3. **[user] The house image `default-v0.9.1`** with the 72-name `NO_PROXY` literal (Stage 8 1.1, Stage
+   17 decision 4), registered as version 10. `default-v0.9.0` was spent 2026-10-25 at `pip-audit`, pipelines
+   #89 to #91 on the lock of 2026-10-16, so first `gates-v0.5.0` with the 42 acceptances
+   ([`gitlab.md`](gitlab.md) §G), then the merge request on `awsds/dev-env` from the copy under
+   `gitlab/awsds/dev-env/` (the lock, the `include:` `ref`), the steward's tag, the release gate;
+   `./scripts/gitlab-mirror.py` after the merge. `DE-5` turns green with it. **Done 2026-10-25**: pipeline
+   #96, version 10 with alias `0.9.1`, `DE-5` passing at 22:11 UTC.
 4. **[user] The deploy image on Terraform 1.16.6**, the laptop running it since 2026-10-25 and the two pins moved in
    `gitlab/awsds/deploy-image/Dockerfile` (`upstream-releases.md`): the merge request,
    the tag, its digest into `production/runners/variables.tf`, and the slice applied by `make gitlab-up
@@ -588,8 +591,9 @@ carries `ONLY=`, or the build runner is destroyed.
 `make hub-up`, then `make gitlab-up BUILD=1` and the tunnel ([`gitlab.md`](gitlab.md) §U). Sandbox's
 `egress/` stays down until step 6 has read its negative.
 
-1. **[user] Stage 8 1.1, the house image `default-v0.9.0`** (§H step 3), its 72-name literal passing `GM-1`
-   to `GM-8` on 2026-10-25 at 07:41 UTC; `DE-5` turns green with it.
+1. **[user] Stage 8 1.1, the house image `default-v0.9.1`** (§H step 3), its 72-name literal passing `GM-1`
+   to `GM-8` on 2026-10-25 at 07:41 UTC, after `gates-v0.5.0`; `default-v0.9.0` was spent at `pip-audit` the
+   same day. **Done 2026-10-25**: pipeline #96 registered version 10, `DE-5` passing.
 2. **[user] The deploy image on Terraform 1.16.6** (§H step 4; **built 2026-10-25 as `v0.3.0`**, its digest
    pinned in `production/runners/variables.tf`, the runner's replacement by `make gitlab-up BUILD=1` once the
    pin is on `main`), the laptop on it since 2026-10-25: **before steps 8
@@ -613,12 +617,15 @@ carries `ONLY=`, or the build runner is destroyed.
 4. **[user] The mirror pushed at `main`** (`git push gitlab main` from the project folder) once `main`
    carries `orchestration-v0.2.1` and the paused schedules: read at `79651026` on 2026-10-25, the mirror
    holds `production/orchestration/` on `orchestration-v0.2.0` with the app-etl and train schedules
-   `ENABLED`, which `production-deploy` would apply over the pause.
+   `ENABLED`, which `production-deploy` would apply over the pause. **Done 2026-10-25**: the mirror at
+   `2d3160f1`, `origin`'s `main`, read at 22:45 UTC.
 5. **[user] The template's merge request on `awsds/app-etl`** (`EXC-22`, Stage 10 xxviii), from
    `examples/app-etl/` at `main` once `workflows/app-etl.yaml` there carries
    `ProcessingOutputConfig.KmsKeyId: "{env.PROJECT_KEY_ARN}"`, by `gitlab.md`'s "The application
    template" procedure. In the same sitting, Stage 10 xi's CI half: a branch carrying N.0 step 4's
-   portal-scoped definition, its branch pipeline's `test` expected red, the branch deleted after.
+   portal-scoped definition, its branch pipeline's `test` expected red, the branch deleted after. **Done
+   2026-10-25**: the merge request merged as `8d50f685` (pipelines #99 and #100 green); xi's branch
+   `xi-portal-scoped`, pipeline #101's `test` red on the lint's `projeto` rule (Stage 10's log).
 6. **[user] The tag**, `v0.4.6` unless `git ls-remote --tags` on `awsds/app-etl` reads it spent, with
    Sandbox's `egress/` down: Stage 8 xxiv, `test-deploy` expected to fail in seconds before `deploy`
    writes anything, *"FATAL: no sagemaker.api endpoint: is Sandbox's egress up (make up ENV=sandbox
@@ -670,7 +677,10 @@ carries `ONLY=`, or the build runner is destroyed.
     aws s3api head-object --bucket awsds-prod-outputs --key app-etl/work/job/trades.summary.json --query '[LastModified,ServerSideEncryption,SSEKMSKeyId]' --profile awsds-infra-prod --region us-west-2
     ```
 
-12. **[user decides] Stage 10 3.5's substitution**: a commit turns the app-etl schedule on
+12. **[user decides] Stage 10 3.5's substitution** (**done 2026-10-26**: the user's decision in chat, the
+    schedule on by a commit and an apply at 00:30 UTC with `cron(42 0 26 10 ? 2026)`, the firing's
+    execution input `"scheduledTime":"2026-10-26T00:42:00Z"`, the schedule `DISABLED` again at 00:43:55;
+    Stage 10's log): a commit turns the app-etl schedule on
     (`schedule_enabled = true` in `production/orchestration/main.tf`), its cron moved into the sitting
     or kept at 06:30 UTC with `workloads-egress/` up across it, applied by **[Claude⚡]** (Recipe A) or by
     the next `production-deploy` once the mirror carries it. **[Claude]** at the firing, the execution's
@@ -686,7 +696,12 @@ carries `ONLY=`, or the build runner is destroyed.
     aws stepfunctions describe-execution --execution-arn <the execution's ARN> --query input --output text --profile awsds-infra-prod --region us-west-2
     ```
 
-13. **[user] 3.7**: both `release.tf`s with the new tag's values, the mirror pushed after the merge.
+13. **[user] 3.7**: the four `release.tf`s with the new tag's values, the two application slices' (the tag,
+    the image digest, the bundle's SHA256) and the two orchestration slices' (the tag and each workflow's
+    definition and code VersionIds, the legs' `*-release.auto.tfvars.json` artifacts), the mirror pushed
+    after the merge. An orchestration slice applied by hand on a stale default rolls its workflows back
+    to the recorded release (read 2026-10-26 at step 12: a plan of 4 changes until the default moved).
+    **Written 2026-10-26** in PR #261, every slice planning `No changes`.
 14. **Not owed: N.0 step 1 took (b).** Run only as N.4's exercise for Stage 10 xx: the break's branch and its tag, expected to stop in Staging's leg with
     Production untouched; **[Claude]** the failure rules' `TriggeredRules` and the diagnosis from
     `list-task-instances`, `get-task-instance` and the task's log group, read before any `make down
@@ -764,7 +779,7 @@ Each costs minutes of a sitting and leaves a recorded reading; none holds up ano
 | Stage 8 xxviii's active half | N.1 | an `AssumeRole` of a deploy role through `sts.amazonaws.com`: a manual job on the deploy runner, or xvi's 15 s trust widening | `us-east-1`'s trail and, for the widened principal, whether the misuse rule fires; a regional assumption beside it reads 4.6's transformed message |
 | Stage 9 xxiv | N.2 | `REVOKE USAGE ON DATASHARE trades_lf FROM ACCOUNT '<Data Governance>' VIA DATA CATALOG`, then 9.5's steps 1 to 3 again | the Lake Formation rows the revoke leaves, and whether the register notices; INT-24's door is shut until the rebuild |
 | Stage 10 xx's second half | N.1, Staging | a branch's tag whose `GlueJobOperator` names a Glue job the application slice does not declare | the task failing on `CreateJob` rather than creating a job, the two failure rules firing once more |
-| Stage 10's network negative (1.2) | N.1, Staging | **[Claude⚡]** a workflow created by hand with no `NetworkConfiguration`, run once and deleted | the worker's address in the CloudTrail record of its first AWS call, beside a configured run's private address |
+| Stage 10's network negative (1.2) | N.1, Staging | **[Claude⚡]** a workflow created by hand with no `NetworkConfiguration`, run once and deleted. **Done 2026-10-26** (Stage 10's log) | the worker's address in the CloudTrail record of its first AWS call, beside a configured run's private address: `10.1.11.134` through `airflow-serverless.amazonaws.com` against `10.50.x` through `vpce-…` |
 
 ### N.5 The items that wait on something else
 

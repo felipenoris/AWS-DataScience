@@ -1382,3 +1382,124 @@ Times UTC.*
   `allowed` with `*`, while its real calls pass the battery's rows and the pipeline's jobs run. The denial is
   the instrument's (Lesson 30), so the five statements cannot be told apart by simulation against a job ARN;
   xviii and xv's halves stay a real job's reading (§N.4).
+
+## 2026-10-25 — verification xi's CI half: the lint turns a branch pipeline red on a portal-scoped definition
+
+*The user's hand for the branch; Claude's for the readings, from the user's GitLab session in Chrome (the
+pipeline API and the job's log). Times UTC.*
+
+- **[user]** The branch `xi-portal-scoped` of `awsds/app-etl` at `81a1a0af`, cut from `main` at `8d50f685`
+  (the `KmsKeyId` merge), one change: line 42 of `workflows/app-etl.yaml`, `RoleArn: "{proj.iam_role_arn}"`
+  replaced by a literal naming `datazone_usr_role_xi_probe` under a twelve-digit placeholder account.
+- **[Claude] Pipeline #101**, read at 22:45: `test` (#598) failed at 22:44:55 after `ruff check`, `ruff format
+  --check` and the 31 tests passed, the lint (`awsds-workflows` at `d856982c`) printing
+  *"workflows/app-etl.yaml: projeto: linha 42: um papel de projeto, datazone_usr_role_, um valor do projeto de
+  autoria: datazone_usr_role_"* and *"ERROR: Job failed: exit code 1"*; `pip-audit` (#597),
+  `secret_detection` (#595) and `secret-detection-gate` (#596) passed, `gate-without-proxy` (#599) skipped.
+  Verification xi is answered on both halves: the branch is the user's to delete, nothing of it merged.
+
+## 2026-10-25 — verification ix's Staging half: `OR-3` with the slices up, after `v0.4.6`'s `staging-deploy`
+
+*Claude's hand; `./aws/orchestration.py` as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-staging`), reads only; the job's log in the user's GitLab session. Times UTC.*
+
+- **[Claude] `staging-deploy` (#610)**, pipeline #102, 23:17:12 to 23:20:39: the orchestration module's
+  apply created the workers' security group and rules, the workflows `awsds-staging-wf-app-etl-train`
+  (`0lvmGNsPwe`, 5 s) and `awsds-staging-wf-app-etl` (`ea2ZHUGxVL`, 11 s), the failure rules and their
+  targets, the two chains' state machines, schedules and chain-failure rules, between 23:20:21 and
+  23:20:35.
+- **[Claude] `./aws/orchestration.py awsds-infra-staging`** at 23:21, all checks passed: `OR-1` both
+  workflows `READY`, trigger `manual_only`; `OR-2` their log groups; **`OR-3` the two per-workflow roles
+  bounded, trusting `airflow-serverless.amazonaws.com` alone, no lake reach, and each workflow's
+  `NetworkConfiguration` two subnets in two AZs with no default route and one security group**; `OR-4`
+  both failure rules `ENABLED`; `OR-5` the definitions at
+  `s3://awsds-staging-outputs/applications/app-etl/v0.4.6/workflows/` (versions `fhXHG8FBQ6bV`,
+  `5JF0gcXNzpnc`); `OR-6` no provisioned environment; `OR-7` 1/50 versions each; `OR-9` the three chain
+  roles on `awsds-staging-app-boundary`, both chains' schedules `DISABLED` and failure rules `ENABLED`.
+  Verification ix's Staging half is answered.
+
+## 2026-10-26 — step 3.5's substitution reading (promotion.md §N.1 step 12): the app-etl schedule on for one firing
+
+*The user's decision in chat (2026-10-26, *"vamos fazer hoje"*); Claude's hand for the commit and the apply
+(Recipe A, the infrastructure user with `InfrastructureAccess`, `awsds-infra-prod`), the two peer sessions
+told beforehand. Times UTC.*
+
+- **[Claude] The commit**: `production/orchestration/main.tf`, the `app-etl` chain's
+  `schedule_expression` `cron(42 0 26 10 ? 2026)` (one firing, 00:42) and `schedule_enabled = true`; the
+  other two chains untouched.
+- **[Claude] The first plan read 4 changes**, not 1: the schedule, and the three workflows' definition
+  and code objects moving from `v0.4.6` back to `v0.4.2`, because the slice's `release` default still
+  recorded `v0.4.2`'s VersionIds and the laptop has no `release.auto.tfvars.json`, the file the leg writes
+  beside the slice (Lesson 61's shape: the procedure depended on a file it did not create). The plan was not
+  applied. `production/orchestration/release.tf`'s default moved to `v0.4.6`'s record (job #621's
+  `production-release.auto.tfvars.json`: `app-etl` `4NS.8XnUqg…` and `l1L3_a6Gp…`, `app-etl-train`
+  `HGgrM4Qb…` and `KkRVOadt…`, `app-etl-warehouse` `IXw8uLnP…`), and `staging/orchestration/release.tf`'s to
+  the objects Staging's workflows name (`get-workflow`, `list-object-versions`: `fhXHG8FB…`, `wGkGPacW…`,
+  `5JF0gcXN…`, `t.nAODdI…`); the re-plan read *"0 to add, 1 to change, 0 to destroy"*, the schedule alone,
+  and `staging/orchestration` planned `No changes`.
+- **[Claude⚡] The apply** at 00:30:41, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed"*, 2 s;
+  `get-schedule` at 00:30:51: `ENABLED`, `cron(42 0 26 10 ? 2026)`, `UTC`, `Target.Input`
+  `{"chain":"app-etl","scheduledTime":"<aws.scheduler.scheduled-time>"}` with the brackets literal;
+  `production/orchestration` re-planned `No changes` at 00:31:45.
+
+## 2026-10-26 — 3.5's substitution read: the Scheduler fills the literal placeholder; the schedule off again
+
+*Claude's hand; Step Functions and the Scheduler as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`); the second apply on the same authorization as the first (step 12). Times UTC.*
+
+- **[Claude] The firing**: the schedule fired at 00:42, and the execution `236adea1-d8c1-4aa8-9164-8be161e8600a`
+  of `awsds-prod-chain-app-etl` started 00:42:17 with the input
+  `{"chain":"app-etl","scheduledTime":"2026-10-26T00:42:00Z"}`: the Scheduler substituted the placeholder
+  the stored input carries literally since `orchestration-v0.2.1`, where 2026-10-25's two firings had
+  received `<aws.scheduler.scheduled-time>` from the JSON-escaped form (6.1, Lesson 74). 3.5's date reaches
+  a chain; no chain forwards it to a workflow yet.
+- **[Claude⚡] The return**: `main.tf` back to `cron(30 6 * * ? *)` and `schedule_enabled = false`, the plan
+  *"0 to add, 1 to change, 0 to destroy"* at 00:43:32, the apply complete at 00:43:55 (1 s), and
+  `get-schedule` at 00:44:04 reading `DISABLED`, `cron(30 6 * * ? *)`, `UTC`; `list-schedules` reads the
+  three chains `DISABLED`. The execution of 00:42 runs on, unaffected by the schedule's state; its end is
+  the next entry's.
+
+## 2026-10-26 — the scheduled execution's end
+
+*Claude's hand; Step Functions as the infrastructure user (`awsds-infra-prod`), reads only. Times UTC.*
+
+- **[Claude]** The execution `236adea1-d8c1-4aa8-9164-8be161e8600a`, the firing of 00:42, read `SUCCEEDED` at
+  00:58:16 (stopped 00:57:20, 15 min 3 s), the second run of the day on `v0.4.6` after the by-hand one; the
+  Stage 9 session told that Production is free of this session's writes.
+
+## 2026-10-26 — 1.2's network negative in Staging: a workflow without `NetworkConfiguration`, one run, deleted
+
+*The user's authorization in chat; Claude's hand, as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-staging`); the four peer sessions told before the write. Times UTC.*
+
+- **[Claude⚡] The workflow**: `create-workflow` at 01:03:05, `awsds-staging-wf-net-negative-7OVpD8feyh`, with
+  `awsds-staging-wf-app-etl`'s role, definition (`v0.4.6/workflows/app-etl.yaml`, `fhXHG8FB…`), code
+  (`app-etl.zip`, `wGkGPacW…`), log group `/awsds/staging/wf/app-etl` and the data key, and no
+  `NetworkConfiguration` (`get-workflow` reads it `null`; the service warned *"ignored attributes:
+  region_name"*). `start-workflow-run` at 01:03:10: run `EJDzueJeMsueGky`, `QUEUED`, `RUNNING` from
+  01:03:15, `FAILED` at 01:05:03; its `transform` task (`GlueJobOperator`, attempt 1) failed after 68 s with
+  one log line, *"Execution environment preparation failed due to an internal server error."*
+  (`mwaa-serverless-initialization`, 01:03:56); `process`, `summarize` and `write_result` never ran.
+- **[Claude] The reading, 1.2's**: Staging's trail holds the worker's two calls at 01:03:56 as the role's
+  session `AmazonMWAAServerless`, both from `sourceIPAddress` `10.1.11.134` with `vpcEndpointId`
+  `airflow-serverless.amazonaws.com`, `exec-env/AWS_ECS_FARGATE`: the worker ran in the service's network,
+  outside every endpoint of the estate. Beside it, the configured run of 23:21 to 23:36 (pipeline #102's
+  chain): the same role's `DescribeProcessingJob`, `GenerateDataKey`, `Decrypt` and `CreateLogStream` from
+  `10.50.7.171`, `10.50.79.173` and `10.50.34.55` through `vpce-0e7ac557a5a2e4512` (sagemaker.api),
+  `vpce-0fdbd606bf9ed7f53` (kms) and `vpce-0f78062ebc4afc9e2` (logs), and two KMS calls from
+  `fas.s3.amazonaws.com`, S3's forward-access session for the key. A task started without the
+  configuration lands outside the VPC, read from the instrument that shows the presence.
+- **[Claude] What stopped the run**, not the network: `CreateLogStream` succeeded, and `kms:Decrypt` on the
+  data key was refused, *"… assumed-role/awsds-staging-wf-app-etl/AmazonMWAAServerless is not authorized to
+  perform: kms:Decrypt on resource: …/key/74f5ebbc-… because no identity-based policy allows the kms:Decrypt
+  action"*. The role's `UseTheKeyForItsWorkflow` allows `Decrypt` and `GenerateDataKey` only with
+  `kms:EncryptionContext:aws:airflow-serverless:workflow-arn` matching
+  `…:workflow/awsds-staging-wf-app-etl-??????????` (the module's binding of each role to its own
+  workflow), and the borrowed role met the negative's ARN. So a workflow created by hand on another
+  workflow's role fails at environment preparation, and the service's task log attributes it to an
+  internal error while the trail names the refusal (Lesson 42's shape). Whether an unconfigured worker
+  reaches the internet was not measured: no task code ran.
+- **[Claude⚡] The deletion**: `delete-workflow` at 01:09:14; `list-workflows` reads `awsds-staging-wf-app-etl`
+  and `awsds-staging-wf-app-etl-train` alone. Left behind: the run's log stream in `/awsds/staging/wf/app-etl`
+  (`workflow_id=awsds-staging-wf-net-negative-7OVpD8feyh/run_id=EJDzueJeMsueGky/...`), the group's
+  retention taking it, and the trail's records.

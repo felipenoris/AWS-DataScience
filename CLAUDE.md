@@ -221,12 +221,12 @@ per laptop, never one per session.
 - A module tag is repository-global and never moves (`terraform-changes.md`, Recipe B). The next
   version is read from `git ls-remote --tags origin` at the moment of tagging, never from memory: a
   peer may have taken it.
-- **The Terraform binary is one per laptop, and every session's.** It runs 1.16.6 since 2026-10-25 while
-  the deploy image runs 1.15.8 until its rebuild, the first act of the next GitLab sitting. Until then no
-  session applies or raises a slice the pipeline reads or applies (the application and orchestration
-  slices, `staging/egress`, `production/workloads-egress`, and both targets' `data/`, `sagemaker/`,
-  `foundation/` and `workloads/`): a state written by 1.16.6 is refused by 1.15.8 (Lesson 76). `make hub-up`
-  and `make gitlab-up` touch no such slice and are free.
+- **The Terraform binary is one per laptop, and every session's.** The laptop and the deploy image both run
+  1.16.6 since 2026-10-25 (`v0.3.0`, the deploy runner replaced 20:40 UTC). A laptop upgrade comes after the
+  image's rebuild, never before: a state written by a newer Terraform is refused by the image's older one in
+  every pipeline job that reads it (Lesson 76), and the slices the pipeline reads are the application and
+  orchestration slices, `staging/egress`, `production/workloads-egress`, and both targets' `data/`,
+  `sagemaker/`, `foundation/` and `workloads/`.
 - **Parallel sessions, measured 2026-10-18.** The app starts a session only on a turn the user's own
   message began: a turn begun right after `/compact` is refused, and so are a request the user sends
   mid-turn and one sent over Remote Control, where a proposed card does not show either. In that case
@@ -345,7 +345,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run but the space halves and the Data API negative
   (INT-06 answered, open question 8 closed); the sittings in `runbooks/promotion.md`. 2026-10-25, nothing up: 9.5's
   Terraform adoption applied (the registration and the LF-Tags by hand, no importer), xii's registry read in
-  `model-chain.py transform staging` with `staging/foundation/`'s output, applied.
+  `model-chain.py transform staging` with `staging/foundation/`'s output, applied. **§N.2 run 2026-10-26**: xviii and
+  vii closed, 9.4's DDL job idempotent from pipeline #102, 9.7 read with the project role's grant revoked and
+  Production's workgroup gone, `EXC-13`'s Sandbox half twice, xxiv deferred (§N.4's procedure to be rewritten for
+  the adopted resources); both computes down.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, first fired 2026-10-25 (version 1 registered and approved by `awsds-deploy-prod`; pass 3 done, both transforms, 5.5). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
@@ -358,7 +361,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   since 2026-10-22.
   The MWAA Serverless service-linked role exists in both accounts, Production's created 2026-10-24 in
   `awsds-deploy-prod`'s session at pipeline #71's first `CreateWorkflow`, INT-14 answered in both; Production's
-  first run `SUCCEEDED` by hand (15 min); **6.1 read 2026-10-25**: the schedules started the app-etl and train chains unattended, both `SUCCEEDED`, each run `ON_DEMAND`, the `DISABLED` warehouse schedule silent at 07:30 (xxiv), and the `scheduledTime` placeholder never substituted until `orchestration-v0.2.1`. **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
+  first run `SUCCEEDED` by hand (15 min); **6.1 read 2026-10-25**: the schedules started the app-etl and train chains unattended, both `SUCCEEDED`, each run `ON_DEMAND`, the `DISABLED` warehouse schedule silent at 07:30 (xxiv), and the `scheduledTime` placeholder never substituted until `orchestration-v0.2.1`, whose literal form the Scheduler filled at a firing on 2026-10-26 (3.5 read); 1.2's network negative read the same night (an unconfigured worker at `10.1.11.134` through `airflow-serverless.amazonaws.com`), xi's CI half and ix's Staging half on `v0.4.6`. **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
   3.8): the workflow created by `awscc` under `InfrastructureAccess`, the chain's machine started, diagnosed two
   failures (the worker's XCom encryption needs `kms:GenerateDataKey` in the key policy and in the role's, both
   fixed) and `SUCCEEDED`; 0.5, decision 19, decision 2's context and verification xvi's worker clauses read; the
@@ -369,16 +372,16 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `test-experimentation`. The connection (`EXC-17`) carries **`lineageSync` on, daily 03:43 UTC, every run
   failing** (decision 3, the user's). **Cost**: 1.44 USD per query-hour at 4 RPU and 0.00 idle, with no
   pause, so `make down` is the guarantee; the ratchet past 4 never returns; the free trial, 300 USD per
-  account for 90 days, absorbs the bill to 2026-12-19 in Sandbox and to 2027-01-21 in Production (287.51 and 299.71 USD left on 2026-10-25; the window opens with the namespace). **`EXC-13`**: the admin secret's first rotation succeeded on 2026-10-20 with no workgroup,
+  account for 90 days, absorbs the bill to 2026-12-19 in Sandbox and to 2027-01-21 in Production (299.69 USD left in Production and 287.51 in Sandbox on 2026-10-26; the window opens with the namespace). **`EXC-13`**: the admin secret's first rotation succeeded on 2026-10-20 with no workgroup,
   against AWS's page, and the database took the password (the Data API as `dbadmin` through the secret, 2026-10-25). SQL from a notebook is `redshift-connection.md` §J. AWS's `SageMakerStudioProjectUserRolePolicy` v75 grants
   every project role `GetCredentials` and the Data API on a workgroup tagged with its project, `GetCredentials` on
   any workgroup through `sqlworkbench`, and the secrets tagged with its project or
   `for-use-with-all-datazone-projects`: the admin secret stays closed by its tags alone (`INV-20`, PR #187).
 - **Stage 6d in progress**: steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half (a reconciliation that
-  writes the domain). The house image is `awsds-sandbox-dev-env` version 9, `default-v0.8.0-7c59998c`
-  (2026-10-16); its `NO_PROXY` literal holds 70 names, while main's `vpc-egress-v0.18.0` makes 72 and the
-  copy under `gitlab/` carries them since PR #172, so `DE-5` reads red, the environment down included,
-  until that image ships (Stage 17 decision 4: the image first). The remote IDE works (6d step 7, 2026-09-11).
+  writes the domain). The house image is `awsds-sandbox-dev-env` version 10, `default-v0.9.1-746ef084`
+  (2026-10-25, alias `0.9.1`), its `NO_PROXY` literal the 72 names of `vpc-egress-v0.18.0`: `DE-5` passes
+  (read 2026-10-25), and Stage 17 1.4's apply of the module on `sandbox/egress` is no longer held by the
+  image (decision 4). The remote IDE works (6d step 7, 2026-09-11).
 - **Stage 6e** is held by PR #108 (decision 17, the user's 5.5 agreements; Sonnet 4.5 is Legacy since
   2026-10-08). A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint);
   retention mode `none` is declared in all 17 Regions and frozen by 7.5; `claude-opus-5` and
@@ -404,14 +407,18 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Functions machine per chain with a Scheduler schedule starts the workflows. The tooling is
   `awsds-workflows` (runbook §T).
 - **Stage 7 in progress**: passes 1-2 closed 2026-10-12 but three persona memberships, pass 3 nearly done
-  (7.2 read 2026-10-25), pass 4's 8.4 done. Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
+  (7.2 read 2026-10-25), **pass 4 closed 2026-10-26** (8.1's start 1 min 42 s to the first HTTPS answer; 8.2's
+  rehearsal 24 min 16 s from destroy to the restored sign-in page, the host `i-0b4cb5f62e65abf70` since, on a new data volume; 8.3
+  diffed), §I step 6's settings done the same day (event tracking, Service Ping, the version check, the runner
+  release fetch and Auto DevOps off, Public restricted, sign-up kept on, no `TM` row). Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
   `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners out, and the build runner rises
   only with `BUILD=1` (decision 5, 2026-10-24). Owed: INT-09's clone from a
-  notebook, 8.1-8.3 (3.5's memberships done 2026-10-24); 5.6's ECR grant applied 2026-10-22. The GitLab backups of 2026-10-13, 10-15 and 10-25 leave the bucket on 2026-11-13, 11-15 and 11-25.
-  `make gitlab-up` applies `egress/` before it starts the host (2026-10-26: `tooling` at rank 52, one rank
-  order for `[D]` and `[E]` in `scripts/slices.py`), so the Session Manager agent meets the `ssm` endpoint
-  at its start instead of hibernating for twenty minutes; the first run of that order is owed at the next
-  GitLab sitting.
+  notebook (a space on version 10 with a persona PAT) and INT-19's notebook surface; 3.5's memberships done
+  2026-10-24, 5.6's ECR grant applied 2026-10-22. The GitLab backups of 2026-10-13, 10-15, 10-25 and 10-26 leave
+  the bucket on 2026-11-13, 11-15, 11-25 and 11-26. `make gitlab-up` applies `egress/` before it starts the host
+  (2026-10-26: `tooling` at rank 52, one rank order for `[D]` and `[E]` in `scripts/slices.py`), so the Session
+  Manager agent meets the `ssm` endpoint at its start instead of hibernating for twenty minutes; the first run
+  of that order is owed at the next GitLab sitting.
   **`saml.auto.tfvars` lives in the project folder's `secrets/`**: a `tooling/` plan passes
   `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block.
 - **Stage 8 in progress**: passes 0-3 done (`awsds/ci-gates`, the test runner, the house image on Python
@@ -443,7 +450,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   fixed; **Staging's `egress/` is the user's up and down (decision 27, 2026-10-24: the pipeline raises and destroys no shared slice; `staging-check` reads it, no teardown job, `staging-gate` before the leg (decision 28, 2026-10-25), refusal 10, the deploy roles' egress grant narrowed to the read, planned and unapplied)**; 3.7 recorded `v0.3.3`. **§V, 2026-10-24**: the mirror at `c714c47d` (`staging-down` skips the hook
   as a deploy role); `v0.4.0`'s pipeline #74 stopped at `test-deploy`, which read app-etl-train's ARN for
   app-etl's run (MR !9), and `v0.4.1`'s #77 at `evaluate`, whose template met the XCom as JSON text
-  (MR !10), so the data release is `v0.4.2` and ix's drift `v0.4.3`.
+  (MR !10), so the data release is `v0.4.2` and ix's drift `v0.4.3`. **`v0.4.6` promoted 2026-10-25/26**
+  (pipeline #102, `EXC-22`'s `KmsKeyId`): both legs green, `EXC-22` closed in both accounts, xii's call read
+  in Production's trail, the four `release.tf`s at `v0.4.6` (the orchestration slices' defaults too: a by-hand
+  apply on a stale default rolls the workflows back), Staging's first post-release `make down` clean.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
@@ -473,8 +483,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **Stage 18 DONE 2026-10-22: D41 item 2 kept** (the user's verdict): a deployment-only project measured in
   Staging and removed, the estate back to its reading before the stage, `EXC-20` and `EXC-21` closed, the
   measurements in `SMUS.md`'s deployment-project section and `lessons.md`. Left: the domain's two `IAM`
-  profiles, a group profile and 44 lineage events (no delete API), the project key until 2026-11-21, and
-  `awsds/app-etl`'s Protected branches and tags to read at the next GitLab sitting.
+  profiles, a group profile and 44 lineage events (no delete API), and the project key until 2026-11-21
+  (the protected refs read free of its branch on 2026-10-26).
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
@@ -484,8 +494,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `DISABLED` between sittings), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
-- **Standing rules**: `-input=false` on every plan and apply (Lesson 47); until the deploy image is rebuilt on
-  1.16.6, no slice the pipeline reads is applied or raised from the laptop (Lesson 76); never pipe a command whose exit
+- **Standing rules**: `-input=false` on every plan and apply (Lesson 47); the laptop's Terraform never moves ahead of
+  the deploy image's (Lesson 76); never pipe a command whose exit
   code matters (Lesson 46); a module change is exercised by planning a caller, never by `validate`;
   `-refresh=false` is forbidden on `sandbox/data/`, where SMUS is a Lake Formation admin (OQ 24); never add
   an `sts:` action to the RCP without reading `CT.STS.PV.1`'s exclusion note; resolve an account by exact
@@ -638,6 +648,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     moves the teardown to another identity owes that identity the grant nobody had to write.**
 76. **A toolchain upgrade on one writer locks out every older reader of the states it writes — the readers
     that cannot move on the spot move first, or the writer stays off the shared states.**
+77. **A gate that reads a feed gives a dated verdict — the lock that passed when it was cut fails when it is
+    tagged, so the gate runs on the laptop the day of the tag, before the tag.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

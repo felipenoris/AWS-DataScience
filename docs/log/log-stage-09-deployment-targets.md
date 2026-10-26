@@ -2421,6 +2421,23 @@ address by its role; Claude's reading. Times UTC.*
   rewritten at 19:47:46, its access token good to 20:47:46, and `get-caller-identity` answering again from this
   session; the persona's token file untouched. xxi's attempt is the user's next command.
 
+## 2026-10-25 — verification xii's call: Staging's deploy session reads Production's registry
+
+*Claude's hand; the job's log in the user's GitLab session, CloudTrail and IAM as the infrastructure user
+with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`), reads only. Times UTC.*
+
+- **[Claude]** `v0.4.6`'s pipeline #102, job `staging-model` (#612) on the deploy runner as
+  `awsds-deploy-staging`, 23:45:43 to 23:51:36: `scripts/model-chain.py transform staging` printed
+  *"Production's registry: version 1 of arn:aws:sagemaker:us-west-2:…:model-package-group/awsds-prod-model-app-etl
+  is Approved, v0.4.2 trained by app-etl-train-20261025T011858"* before serving Staging's own model (the
+  transform `app-etl-v0-4-6-20261025T234609`, 30 predictions).
+- **[Claude]** Production's trail at 23:52: `DescribeModelPackage` at 23:46:03 on
+  `model-package/awsds-prod-model-app-etl/1`, no `errorCode`, `principalId`
+  `AROAZ4XFWAR7MPYEZXRTM:botocore-session-1792971953`; `aws iam get-role awsds-deploy-staging` reads the
+  role id `AROAZ4XFWAR7MPYEZXRTM`. The group policy's `ReadTheVersionsAsTheStagingDeployRole` admitted the
+  Staging role across the account boundary, the half the simulator could not evaluate on 2026-10-25
+  morning. `ListModelPackages` had not reached the trail at 23:52.
+
 ## 2026-10-26 — §N.2, the warehouse sitting: Production's balance, the compute up, xviii's last clause, the instrument's database half
 
 *The user's hand for the console reading and `make up ENV=production ONLY=workloads-egress,warehouse-compute
