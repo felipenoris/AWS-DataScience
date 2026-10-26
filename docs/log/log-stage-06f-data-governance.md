@@ -1313,3 +1313,26 @@ alone. Times UTC.*
   `curated/trades` by `AWSAccount`, invoked by `glue.amazonaws.com`, the cross-account form Stage 18 7.2
   read. Verification xiii is answered: a Sandbox project reads a lake table through the catalog road, its
   project role holding no TBAC grant.
+
+## 2026-10-26 — 11.6's follow-up: the data source's generation off, its filter on `trades`
+
+*Claude, the same session; AWS as the infrastructure user with `InfrastructureAccess` in `Data Governance
+Account` (`awsds-infra-data`), a contributor of `governed-lake`. The write is Claude's, on the user's word
+below; the five other sessions on the laptop were told first. Times UTC.*
+
+- **[user]** *"Autorizo o update-data-source da fonte aus07vzuom8ntc no governed-lake: geração de nomes por
+  IA desligada e filtro restrito a trades, como infrastructure user, conta Data Governance,
+  InfrastructureAccess (awsds-infra-data)."*
+- **[Claude] Before**, 21:53:17Z, saved whole: `READY`, `enableBusinessNameGeneration` true,
+  `publishOnImport` false, `enableSetting` `ENABLED`, no schedule, the connection `3gsa696gljypzk`, and a
+  `glueRunConfiguration` of `curated` with `INCLUDE *`, the project role as data access role and the
+  account's catalog.
+- **[Claude⚡] The update**, its configuration built from the saved one with the filter alone changed: the
+  first call, 21:53:31Z, refused, *"For Glue dataSources that use Connection, dataAccessRole must be
+  null"*, nothing changed; the second, 21:53:45Z, without the role, `UPDATING`, then `READY` by 21:53:55Z.
+  The trail holds the two calls as `InfrastructureAccess` and a third `UpdateDataSource` at 21:53:46Z with
+  no session issuer, and no Lake Formation call.
+- **[Claude] After**, diffed against the saved source: two fields moved, the filter to `INCLUDE trades` and
+  `enableBusinessNameGeneration` to false; the data access role, read from the connection, and every other
+  field as before. No run; the asset `trades` still `ACTIVE`. `./aws/catalog.py` at 21:55:40Z, *"all checks
+  passed"*: `CT-5` notes `mydatabase`'s source alone, `CT-4` six sources with `publishOnImport` false.
