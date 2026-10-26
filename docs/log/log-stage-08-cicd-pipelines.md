@@ -3778,3 +3778,32 @@ reads only. Times UTC.*
   `release_prefix` to `applications/app-etl/v0.4.6`; the saved plan; `lint-plan` *"ok: 2 job(s) do Glue:
   aws_glue_job.load[0], aws_glue_job.this[0]"* (Stage 10 2.3's rule (2c)) with `awsds-workflows` at
   `d856982c`. The pipeline reads `manual` at `production-gate` (#614), §N.1 step 10's.
+
+## 2026-10-26 — §N.1 steps 10 and 11: the Production guard's negative, `production-deploy` on the retry, the chain started by hand
+
+*The user's hand for `production-gate`, `make up ENV=production ONLY=workloads-egress` and the retry;
+Claude's for the readings (the user's GitLab session, EC2 and Step Functions as the infrastructure user with
+`InfrastructureAccess`, `awsds-infra-prod`) and, on the user's authorization in chat, for the
+`start-execution`. Times UTC.*
+
+- **[user]** `production-gate` (#614) at 00:02:35, before the slice: **[Claude]** `production-deploy` (#615)
+  failed at 00:02:57 after the mirror's clone, *"FATAL: production/workloads-egress/ is down: its state holds
+  no interface endpoint; run `make up ENV=production ONLY=workloads-egress` from the project folder as the
+  infrastructure user (profile awsds-infra-prod: account Production, permission set InfrastructureAccess),
+  then retry this job"*, nothing applied: decision 27's Production guard read on its negative, as Sandbox's
+  was at step 6.
+- **[user]** `make up ENV=production ONLY=workloads-egress`: the workloads VPC's seven interface endpoints
+  (secretsmanager, sagemaker.api, glue, lakeformation, logs, sts, kms) created 00:03:25 to 00:03:38
+  (`describe-vpc-endpoints`), the shared-services VPC's seven of 20:08 untouched; then the retry.
+- **[Claude] `production-deploy` (#621)**, 3 min 12 s, passed at 00:09:05: the application slice's 2
+  changes applied and the orchestration slice's outputs printed, the workflows
+  `awsds-prod-wf-app-etl-DHhc8FiTZC`, `awsds-prod-wf-app-etl-train-tM4WIaNABi` and
+  `awsds-prod-wf-app-etl-warehouse-w8XH78cHx3`, the three chains' state machines and the chain roles
+  `awsds-prod-chain-exec`, `-scheduler`, `-events`; the release record `v0.4.6` with a definition version id
+  per workflow and a code version id for `app-etl` and `app-etl-train`, kept as
+  `production-release.auto.tfvars.json`. The three schedules read `DISABLED` at 00:09 (`list-schedules`),
+  as the slice declares them.
+- **[Claude⚡] Step 11, on the user's authorization**: `aws stepfunctions start-execution` on
+  `awsds-prod-chain-app-etl` as the infrastructure user at 00:10:48, the execution
+  `v0-4-6-by-hand-2026-10-26-app-etl`; the previous executions, 2026-10-24's two by hand and the schedule's
+  of 2026-10-25 03:30, all `SUCCEEDED`.
