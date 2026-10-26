@@ -8,7 +8,7 @@
 #   run:      ./aws/warehouse.py                        # every profiled account
 #             ./aws/warehouse.py awsds-infra-sandbox-1  # one of them
 #   writes:   aws/output/warehouse.txt   (untracked - see .gitignore)
-#   reads:    redshift-serverless Get*/List*, logs:DescribeLogGroups, cloudwatch
+#   reads:    redshift-serverless Get*/List*, redshift DescribeDataShares, logs:DescribeLogGroups, cloudwatch
 #             DescribeAlarms + GetMetricStatistics, iam Get*/List*, secretsmanager
 #             DescribeSecret, datazone ListConnections + GetConnection + ListJobRuns - all
 #             reads. It also runs SELECT statements through redshift-data (see "the one call
@@ -103,6 +103,13 @@ DOMAIN_DEFAULT_RE = re.compile(r'\n\s*default\s*=\s*"(dzd-[a-z0-9]+)"')
 # not here: whether it minted a database session is `GetCredentials` by the access role.
 LINEAGE_RAN = ("IN_PROGRESS", "SUCCESS", "PARTIALLY_SUCCEEDED")
 
+# The governed datashares, read from the producer's slice rather than carried (Lesson 33): each
+# `datashare:${...}/<name>` in it is a share WH-16 expects authorized to a Data Catalog and associated
+# with it. A producer-side REVOKE removes both associations and leaves every Lake Formation row in the
+# lake standing (Stage 9 verification xxiv, 2026-10-26), so WH-16 is the reading that notices it.
+SHARES_TF = "terraform-live/production/warehouse/datashare.tf"
+SHARE_NAME_RE = re.compile(r'datashare:\$\{[^}]+\}/([A-Za-z0-9_]+)"')
+
 
 def authored_projects(path: Path) -> dict | None:
     """The projects map as the slice declares it, or None when the file cannot be read.
@@ -138,6 +145,13 @@ def authored_projects(path: Path) -> dict | None:
         fields = dict(re.findall(r'(\w+)\s*=\s*"([^"]+)"', m.group("body")))
         out[m.group("id")] = fields
     return out
+
+
+def authored_shares(path: Path) -> list | None:
+    """The datashare names the producer's slice authorizes, or None when the file cannot be read."""
+    if not path.is_file():
+        return None
+    return sorted(set(SHARE_NAME_RE.findall(path.read_text(encoding="utf-8"))))
 
 
 def authored_domain(path: Path) -> str | None:
@@ -421,6 +435,23 @@ def read_account(
         facts["log_groups"] = {
             g["logGroupName"]: g.get("retentionInDays") for g in json.loads(res.stdout)["logGroups"]
         }
+
+    # THE DATASHARES this namespace produces, from the control plane, which lists a share only while
+    # it is granted to a consumer: a revoked share is absent here and still defined in the database.
+    # `None` means the read failed and is in the failed calls.
+    facts["datashares"] = None
+    ns_arn = facts.get("namespace", {}).get("namespaceArn")
+    if ns_arn:
+        res = cli.run("redshift", "describe-data-shares", "--output", "json")
+        if res.ok:
+            facts["datashares"] = {
+                s["DataShareArn"].rsplit("/", 1)[-1]: [
+                    (a["ConsumerIdentifier"], a["Status"])
+                    for a in s.get("DataShareAssociations", [])
+                ]
+                for s in json.loads(res.stdout).get("DataShares", [])
+                if s.get("ProducerArn") == ns_arn
+            }
 
     # THE NAMESPACE ROLE is read only where the namespace exists: an account without one has no
     # role either (Production's is Stage 9 step 9.2's), and WH-1b reads that as a note. Where the
@@ -1252,6 +1283,61 @@ def judge(checks: Checks, facts: dict, authored: dict | None, want_sql: bool) ->
         "runbook's CREATE SCHEMA and proven by breach, not by a describe",
     )
 
+    # ------------------------------ WH-16: each governed datashare reaches the lake's catalog
+    #
+    # The chain's producer half, read with nothing up: the Data Catalog consumer AUTHORIZED
+    # (production/warehouse/datashare.tf) and the lake catalog's association ACTIVE
+    # (data-governance/data/warehouse-share.tf). Every other reading of the chain, the lake's Lake
+    # Formation rows and Sandbox's grants among them, stays green under a revoke (Stage 9 xxiv).
+    what16 = f"{tag} the governed datashare reaches the lake's catalog"
+    shares = facts.get("authored_shares")
+    if env != "prod":
+        checks.note(
+            "WH-16",
+            what16,
+            "this warehouse produces no datashare; its governed read is the consumer database "
+            "(redshift-connection.md §G)",
+        )
+    elif shares is None:
+        checks.note("WH-16", what16, f"unread: {SHARES_TF} could not be read")
+    elif not shares:
+        checks.note("WH-16", what16, f"{SHARES_TF} authorizes no datashare")
+    elif ns is None:
+        checks.note("WH-16", what16, "no namespace")
+    elif facts.get("datashares") is None:
+        checks.note("WH-16", what16, "unread: describe-data-shares failed (see the failed calls)")
+    else:
+        problems, good = [], []
+        for share in shares:
+            assoc = facts["datashares"].get(share)
+            if assoc is None:
+                problems.append(
+                    f"{share} is not in the control plane: a producer-side REVOKE removes it with "
+                    "both associations and leaves every Lake Formation row standing (Stage 9 xxiv). "
+                    "Re-grant it by promotion.md §N.4a step 5"
+                )
+                continue
+            catalog = [s for c, s in assoc if c.startswith("DataCatalog/")]
+            lake = [s for c, s in assoc if c.startswith("arn:") and c.endswith(":catalog")]
+            if "AUTHORIZED" not in catalog:
+                problems.append(
+                    f"{share}: the Data Catalog consumer reads {catalog or 'absent'}, and "
+                    "production/warehouse/'s apply authorizes it"
+                )
+            elif "ACTIVE" not in lake:
+                problems.append(
+                    f"{share}: the lake catalog's association reads {lake or 'absent'}, and "
+                    "data-governance/data/'s apply re-creates it"
+                )
+            else:
+                good.append(
+                    f"{share}: the Data Catalog consumer AUTHORIZED, the lake's catalog ACTIVE"
+                )
+        if problems:
+            checks.fail("WH-16", what16, "; ".join(problems))
+        else:
+            checks.ok("WH-16", what16, "; ".join(good))
+
 
 def main(argv: list) -> int:
     want_sql = "--sql" in argv
@@ -1265,6 +1351,7 @@ def main(argv: list) -> int:
     callers = profiles.preflight(wanted, errors, out_label=out_label)
     authored = authored_projects(ctx.repo_root / PROJECTS_VARS)
     domain = authored_domain(ctx.repo_root / PROJECTS_VARS)
+    shares = authored_shares(ctx.repo_root / SHARES_TF)
 
     checks = Checks()
     per_account = []
@@ -1273,6 +1360,7 @@ def main(argv: list) -> int:
             continue
         cli = profiles.cli_for(caller.profile, errors)
         facts = read_account(cli, env_of(caller.profile), want_sql, authored, domain)
+        facts["authored_shares"] = shares
         per_account.append((caller, facts))
         judge(checks, facts, authored, want_sql)
 

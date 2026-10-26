@@ -11,8 +11,8 @@
 # (read 2026-10-25); a federated database takes no write anyway.
 #
 # The provider keeps this resource only while the identifier is listed `AUTHORIZED` on the share
-# (9.5's first mismatch): a producer-side revoke (verification xxiv) makes the next plan re-create it,
-# which is the reading, not a defect.
+# (9.5's first mismatch): after a producer-side revoke, and after the re-grant's
+# `PENDING_AUTHORIZATION`, the next plan re-creates it (verification xxiv, 2026-10-26).
 
 locals {
   trades_lf_datashare_arn = "arn:aws:redshift:${var.region}:${data.aws_caller_identity.current.account_id}:datashare:${aws_redshiftserverless_namespace.this.namespace_id}/trades_lf"

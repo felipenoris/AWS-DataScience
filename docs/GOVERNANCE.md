@@ -285,7 +285,10 @@ Consequences this file has to carry rather than leave to a stage:
   (`EXC-16`), so [Stage 11](plan/stages/stage-11-dlp.md) has no Redshift feed to build on yet.
 - **The governed class is the first governed store outside Data Governance**, which is D22's line. The
   datashare Data Governance registers and grants is the compensation (Stage 9 decisions 5 and 14), so **the
-  Lake Formation grants keep one grantor**; the `GRANT`s inside `governed` are Production's.
+  Lake Formation grants keep one grantor**; the `GRANT`s inside `governed` are Production's. Withdrawing a
+  reader is a Lake Formation revoke in Data Governance. Production's `REVOKE` of the share shuts every
+  reader at once and leaves each grant standing, so the next re-grant restores them all (Stage 9 xxiv,
+  measured 2026-10-26).
 - **A sandbox schema is D19's shape in a fourth store**: a project can write into it anything it can read,
   a governed copy included. The copy is not prevented; the destination is inside the perimeter, under the
   account's own data CMK, and Lesson 1 applies — a copy somewhere less governed is not a hole to be closed.

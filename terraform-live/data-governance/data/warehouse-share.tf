@@ -13,7 +13,10 @@
 # aws_lakeformation_resource_lf_tags documents no import. Both are README rows and ./aws/datalake.py's.
 #
 # The datashare's ARN carries Production's namespace id, which no state here holds, so the data source
-# lists the shares this account sees and the share is the one ending in its name. The database's
+# lists the shares this account sees and the share is the one ending in its name. The list reads null,
+# not empty, when this account sees no share, so after a producer-side revoke every plan of this slice
+# fails at the `for` below until the share is granted and authorized again (verification xxiv,
+# 2026-10-26). The database's
 # `create_table_default_permission` is omitted: the account's default list is empty (Recipe D), and the
 # API refuses a description beside a federation source (read 2026-10-25).
 
