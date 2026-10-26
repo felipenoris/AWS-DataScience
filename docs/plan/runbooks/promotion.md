@@ -1316,6 +1316,10 @@ after the applies is the measurement, and a refusal reverts all three.
    workflow between legs, so its half is read at its next leg's run, by the same commands with a Staging
    profile.
 
+**Applied 2026-10-26** (Stage 10's log): the user's authorization in chat; fresh plans as step 1's; the
+applies from 16:15:08 to 16:19:47 UTC, each re-planned `No changes`, the condition read back in both key
+policies and in the set's role policy in Production and Staging. Step 3's read is owed.
+
 ## Q. After the quotas: Stage 10's pass 3
 
 The quotas are above zero since 2026-10-24 (§0.2), and pass 3 is the data release's (§V steps 3, 6 and 7).

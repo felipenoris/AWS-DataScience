@@ -1697,3 +1697,26 @@ airflow-serverless.<region>.amazonaws.com, na política da chave de dados (*/dat
   which `get-workflow-run` refuses as a run id, so the runbook's command takes `--max-results 1
   --no-paginate`.
 - **[Claude] The record**: decision 11's text, the waiting list's act row, `promotion.md` §N.6 and §N.7.4.
+
+## 2026-10-26 — decision 11's narrowing applied in Production, Staging and Identity
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`,
+`awsds-infra-staging`, `awsds-infra-identity`), on the user's authorization in this chat: "Autorizo os três
+applies da decisão 11 (production/data, staging/data e identity/sso), como os perfis awsds-infra de cada
+conta, a partir de planos novos. Depois me passe a leitura do Deployment Manager." Times UTC.*
+
+- **[Claude] Fresh plans**, 16:13:40 to 16:14:40, each *"Plan: 0 to add, 1 to change, 0 to destroy."* with
+  the added `kms:ViaService` `airflow-serverless.us-west-2.amazonaws.com` alone, as the plans of 15:50.
+- **[Claude] Before the applies**: the three peer sessions told.
+- **[Claude] The applies**, each from its saved plan, *"Apply complete! Resources: 0 added, 1 changed, 0
+  destroyed."*: `production/data/` 16:15:08 to 16:15:30, the data key modified in 7 s; `staging/data/`
+  16:15:30 to 16:17:17, in 7 s; `identity/sso/` 16:17:17 to 16:19:47, the `deployment_manager` inline policy
+  in 9 s.
+- **[Claude] Read back**: the three re-plans *"No changes."* (16:20:26 to 16:23:13); both data keys'
+  `AllowTheDeploymentManagerToReadWorkflowRuns` carry the `kms:ViaService` condition beside the
+  workflow-ARN context and the principal; the reserved `DeploymentManagerAccess` role's `AwsSSOInlinePolicy`
+  in Production and in Staging carries it in `DecryptWhatTheWorkflowServiceEncrypts`, the set provisioned
+  in both accounts (16:23:20).
+- **[Claude] What follows**: the Deployment Manager User's `GetWorkflowRun` on a Production run
+  (`promotion.md` §N.7.4 step 3), after a Production profile on the `awsds-deploy` session; a refusal
+  naming `kms:Decrypt` reverts the three slices.
