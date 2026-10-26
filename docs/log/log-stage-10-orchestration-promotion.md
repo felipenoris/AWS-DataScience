@@ -1655,3 +1655,20 @@ its tag and the apply of `sandbox/egress`, as the infrastructure user with `Infr
 - **[Claude] Prepared**: `promotion.md` §N.6's order after the sitting and §N.7's sittings: the GitLab
   sitting for `default-v0.10.0` (N.7.1), the debug window (N.7.2) and the second Sandbox sitting, where a
   `dev` deploy on version 11 runs with no session export (N.7.3).
+
+## 2026-10-26 — 2.1's CLI findings: the user's remedy
+
+*Claude's hand. The user's decision, taken in the chat of the session forked from this one and relayed by
+that session at 15:1x UTC: "remediação do ListDomains do CI/CD CLI = A + B + C, como recomendado". Nothing
+written to AWS.*
+
+- **[user] The decision**, the waiting list's three parts: (A) a report upstream, in
+  `aws/CICD-for-SageMakerUnifiedStudio`, that the CLI 1.0.9 resolves the domain by name with `ListDomains`
+  whatever the manifest's `domain.id`, a call DataZone refuses to a project's role; (B) a script in the
+  template beside the manifest that runs the house CLI by its path with the domain lookup answered by
+  `DOMAIN_ID`, the launcher of `sagemaker-application.md` §D; (C) the house environment's `bin` before
+  `/opt/conda/bin` on the image's `PATH` in `default-v0.10.0`, checked in its smoke.
+- **[Claude] The record**: the waiting list's decision row replaced by the acts left (the report's posting,
+  the template's merge request) and the image row carrying C; Stage 8 decision 22 and 2.1 here name the
+  remedy. The implementation is a session of its own, at the user's request, proposed as a card: a turn
+  begun by another session's message cannot start one.

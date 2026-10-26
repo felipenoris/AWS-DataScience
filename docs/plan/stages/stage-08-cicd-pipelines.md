@@ -1832,7 +1832,10 @@ Measured (`docs/PRICING.md`), us-west-2:
     field; DataZone refuses `ListDomains` to a project's role, which the CLI 1.0.9 calls on every deploy
     with bootstrap actions; and the MWAA Serverless API answers on `.api.aws` alone, which the compute
     plane's proxy refuses, so `vpc-egress-v0.19.0` adds its endpoint to the `mwaa` group. The remedy for
-    the first two is the user's (the waiting list).
+    the first two, taken by the user the same day as recommended: a report upstream, a script beside the
+    template's manifest that answers the lookup and calls the house CLI by its path, and the house
+    environment's `bin` before `/opt/conda/bin` on the image's `PATH` in `default-v0.10.0`, checked in
+    its smoke.
 23. **When pass 4 runs** (step 3; Stage 9; Stage 10 passes 1-2). The pass table gives pass 4 "passes 1-2"
     as its need, and "On ordering" exercises the chain with an application that touches no data until
     Stage 9 builds the platforms. In D41's form the promotion writes into `awsds-<env>-outputs` (Stage 9
