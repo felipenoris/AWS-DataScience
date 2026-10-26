@@ -532,15 +532,20 @@ Staging (its 3.3 and 7.2); the lake account's own readings are 11.4 and 11.9.
   re-plan `No changes`; read per resource, since `list-permissions` refuses a principal with no resource:
   `DESCRIBE` on `curated`, not grantable, and `DESCRIBE` and `SELECT` on `curated.trades`, each grantable;
   Lake Formation's settings unchanged. The grant register holds the two rows.
-- **11.6 [user] The Governance Manager publishes `trades`**, in `governed-lake`: *Data sources → Create*,
-  type AWS Glue, database `curated`, table selection *include* `trades`, *automated business name
-  generation* off, *publish assets automatically* off, no schedule; *Run*; the asset `trades` reviewed
-  and *Published*. [Claude] reads: `CreateDataSource` and `StartDataSourceRun` in the trail, with any
-  Lake Formation grant written between them (3.1's documentation said a data source grants the
-  environment role read on every table of the database it names); the source's `publishOnImport` and
-  `enableBusinessNameGeneration` (`CT-4`, `CT-5`); the run's assets; the listing in `search-listings` from
-  Sandbox; and whether the asset carries `classification=internal` anywhere in its forms (verification
-  vi's lake half).
+- **11.6 [user] The Governance Manager publishes `trades`**, in `governed-lake`: *Data → Catalogs →
+  AwsDataCatalog → `curated` → tables → `trades` → Publish to Catalog*, the path the portal offered on
+  2026-09-13 (the log's first sitting); on 2026-10-26 the user found no *Data sources* page in it. That
+  act creates the source itself, as the domain execution role in the person's session: `GLUE` over the
+  whole database (`INCLUDE *`), `publishOnImport` false, business-name generation on, no schedule and no
+  run; then the asset and its listing. [Claude] reads: `CreateDataSource`, `CreateAsset` and
+  `CreateListingChangeSet` in the trail, with any Lake Formation grant written beside them (3.1's
+  documentation said a data source grants the environment role read on every table of the database it
+  names; Sandbox's publish of 2026-09-13 wrote none); the source's fields (`CT-4`, `CT-5`); the listing
+  in `search-listings` from Sandbox; and whether the asset carries `classification=internal` anywhere in
+  its forms (verification vi's lake half). **[Claude⚡] then, on the user's word**, `update-data-source`
+  turns business-name generation off on that source and narrows its filter to `trades`, decision due
+  3's recommendation for a source over the governed lake: the flag stays inert while nobody runs the
+  source, and an inert setting is still the one a run would obey (Lesson 5).
 - **11.7 [Claude⚡] `eighth-experimentation`'s subscription target**, a `DataLake` environment, as
   `awsds-infra-sandbox-1`, a contributor of the project, the form 2.0 ran for `test-experimentation`:
 
