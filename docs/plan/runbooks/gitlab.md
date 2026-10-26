@@ -92,15 +92,13 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
    make gitlab-down
    ```
 
-2. The tunnel down ([client runbook](client-vpn-proxy-configuration.md) §2), unless another session needs it, and `proxy-off` in the shell that runs the next step (§4.1 [b] there).
+2. The tunnel down ([client runbook](client-vpn-proxy-configuration.md) §2), unless another session needs it.
 
 3. The hub, unless another session is on it; then what is left to bill:
 
    ```bash
-   NO_PROXY='*' make hub-down
+   make hub-down
    ```
-
-   With the tunnel down, a proxy setting that names `proxy.awsds.internal` sends the stop calls to a name that resolves only through the tunnel: on 2026-10-26 `make hub-down` stopped neither host twice (06:17 and 22:27 UTC, neither output read), and the run with `NO_PROXY='*'`, which overrides the shell's variables and macOS's system proxy alike, stopped both at 22:29.
 
    ```bash
    make status

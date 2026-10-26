@@ -4208,3 +4208,12 @@ mirror script and the record. Times UTC.*
   row; the waiting list (the image's and the mirror's rows removed, decision 29 added, the Hub, GitLab and
   Promotion sittings' rows trimmed, the backup of 22:15 dated); `GENERAL_PLAN.md`, `stages/INDEX.md`,
   `docs/log/INDEX.md` and `CLAUDE.md`'s Current position.
+
+## 2026-10-26 — amending the record's entry above: the hub-down changes withdrawn
+
+*Claude's hand, on the user's correction in this chat, quoted in Stage 7's log: no `make hub-down` ran before
+the readings that took it as stopping nothing.*
+
+- **[Claude] Withdrawn** from the changes the entry above lists: `promotion.md` §N.7.1 step 10's `proxy-off` and
+  `NO_PROXY='*'`, `gitlab.md` §U's on the down, and the client runbook's §2. §N.7.1's run keeps the two readings
+  that stand, the smoke after both pushes and GitLab's agent's late first call.

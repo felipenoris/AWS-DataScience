@@ -57,10 +57,7 @@ hosts; it needs a spoke's `[E]` slices only when it uses them.
 
 1. **Tunnel down on every device first** (§3.5): with a monitored (full) tunnel up, a stopped host
    strands the laptop's default route until `wg-quick down` runs; under split-tunnel it strands the
-   private routes and the DNS. Then `proxy-off` in every terminal that ran `proxy-on` (§4.1 [b]): a
-   shell that keeps the variables sends steps 2 and 3's `aws` calls to `proxy.awsds.internal`, which no
-   longer resolves, and on 2026-10-26 `make hub-down` stopped neither host twice until it ran as
-   `NO_PROXY='*' make hub-down`, the override for the variables and the system proxy alike.
+   private routes and the DNS.
 2. **`make down ENV=<account>`** for each account whose `[E]` slices are up — it deletes the running
    Studio apps, destroys the `[E]` slices, then stops that account's `[D]` hosts. `ENV` is never
    optional.
@@ -68,7 +65,7 @@ hosts; it needs a spoke's `[E]` slices only when it uses them.
    destroyed, and no client config moves: the addresses, the host key and the security groups are
    `[P]`.
 4. **`make status`** must show nothing running. What still bills is the monthly floor — two Elastic
-   IPs, the secret, two volumes — `docs/plan/cost-model.md`'s.
+   IPs, the secret, two volumes — `docs/plan/cost-model.md`'s. On the laptop, proxy off (§4).
 
 ---
 

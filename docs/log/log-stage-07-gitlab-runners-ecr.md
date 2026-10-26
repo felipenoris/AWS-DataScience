@@ -1495,3 +1495,17 @@ finished its writes at 22:10:52 and needed the hub no more. Times UTC.*
   host at 22:29:11 (`aws-cli/2.37.12`), all three `[D]` hosts `stopped` at 22:30:41.
 - **[Claude] §R**: `make status` at 22:31:33, the hub pair and `tooling/` `stopped`, `egress/`, `runners/` and every
   other `[E]` slice down, Production's application and orchestration slices up at 0.0000, the burn 0.0000 USD/h.
+
+## 2026-10-26 — amending §N.7.1 step 10's entry and the Sandbox sitting's downs: the two `make hub-down` read as stopping nothing were never run
+
+*The user's correction in this chat, quoted: "Sobre "make hub-down com o túnel desligado não parou nada, pela
+segunda vez no dia", na verdade eu que esqueci de rodar o hub-down nas duas ocasiões. Então não precisa mencionar
+isso como problema na documentação." Claude's hand for this entry and the text it withdraws.*
+
+- **[user] The correction**: no `make hub-down` ran before the reading of 22:27 (step 10's entry above) nor before
+  the Sandbox sitting's first round at 06:17 (its downs' entry, *"the first `make hub-down` stopped nothing, its
+  cause unread"*); both hub hosts read `running` because no stop had been asked. The run of 22:29 was this
+  sitting's only `make hub-down`, and the 06:20 stops the Sandbox sitting's.
+- **[Claude] What leaves the text**: the down procedures go back to `make hub-down` as they stood (`gitlab.md`
+  §U, the client runbook's §2, `promotion.md` §N.7.1 step 10 and its run), and `docs/log/INDEX.md`'s Stage 7
+  row says what this file now holds.

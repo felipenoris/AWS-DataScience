@@ -1220,8 +1220,8 @@ build runner 0.2117, the test and deploy runners 0.0376 and their root volumes 0
    ./aws/proxy.py --on-host
    ```
 
-10. **The downs**: `make gitlab-down`, the tunnel and `proxy-off`, then `NO_PROXY='*' make hub-down`
-   ([`gitlab.md`](gitlab.md) §U); **[Claude]** §R and each step's entry in Stage 7's and Stage 8's logs.
+10. **The downs**: `make gitlab-down`, the tunnel, `make hub-down`; **[Claude]** §R and each step's entry in
+   Stage 7's and Stage 8's logs.
 
 **Run 2026-10-26** (Stage 7's and Stage 8's logs), 21:16 to 22:31 UTC, beside N.4a's warehouse sitting,
 which shared the hub: the lock's audit (0 blocking) and `GM-1` to `GM-8` the day of the tag;
@@ -1230,12 +1230,10 @@ which shared the hub: the lock's audit (0 blocking) and `GM-1` to `GM-8` the day
 22 min 39 s from the tag, its smoke reading the CLI by its name as the house's 1.0.9 after `micromamba
 activate base` and `./aws/devenv.py` reading `DE-5` passing at 73 names; the mirror at `94ed050d`;
 `sts-global-probe` (pipeline #110) put each global call's records in `us-east-1` alone, past 4.6's
-rules (Stage 8 decision 29); `PX-3` passing; the backup `1793052899_2026_10_26_19.4.2`. Three readings
-changed the text: the smoke runs after both pushes in `build-images`, so a red smoke spends the release
-tag and both ECR tags; GitLab's agent registered 7 min 21 s after the start, its first call timed out
-at the `ssm` endpoint's address ([`gitlab.md`](gitlab.md) §U step 5); and with the tunnel down `make
-hub-down` stopped neither host until it ran as `NO_PROXY='*' make hub-down` ([client
-runbook](client-vpn-proxy-configuration.md) §2).
+rules (Stage 8 decision 29); `PX-3` passing; the backup `1793052899_2026_10_26_19.4.2`. Two readings
+are new: the smoke runs after both pushes in `build-images`, so a red smoke spends the release tag and
+both ECR tags; and GitLab's agent registered 7 min 21 s after the start, its first call timed out at
+the `ssm` endpoint's address ([`gitlab.md`](gitlab.md) §U step 5).
 
 #### N.7.2 The debug window: Stage 9 3.1's debug-role read
 
