@@ -3821,3 +3821,18 @@ Claude's for the readings (the user's GitLab session, EC2 and Step Functions as 
   (00:19:47, 519 bytes) `ServerSideEncryption` `aws:kms`, `SSEKMSKeyId`
   `arn:aws:kms:us-west-2:…:key/0415a6f0-9b15-4049-841d-d51e7a65d09c`, the key `alias/awsds-prod-data`
   resolves to (`CUSTOMER`): no longer `aws/s3`. Both halves read, `EXC-22` closes.
+
+## 2026-10-26 — §R before the downs: the instruments with Staging up and Production's egress going down
+
+*Claude's hand; `./aws/orchestration.py` and `./aws/cicd.py` as the infrastructure user, reads only. Times UTC.*
+
+- **[Claude] `./aws/orchestration.py`** at 01:11, every profile: 45 checks pass, 0 fail; the only calls
+  that failed are the persona and `ctadmin` profiles' `get-caller-identity`, whose SSO sessions hold no
+  token tonight (section 14), the instrument reporting them and judging nothing on them.
+- **[Claude] `./aws/cicd.py awsds-infra-prod`** at 01:13: all 9 checks pass, `CI-1` the deploy runner
+  `i-0acaf7ded0e455dcd`, `CI-9` the test runner.
+- **The downs**: `make down ENV=staging` is the user's next act here, the first after a release since
+  `app_outputs`' infrastructure grant (step 15's measurement); `production/workloads-egress` and both
+  `warehouse-compute` slices are the Stage 9 session's (down in progress at 01:05 for Production);
+  `sandbox/egress` follows that session's word; `make gitlab-down` is the Stage 7 session's cycle's first
+  act, and `make hub-down` closes the sitting after both report.
