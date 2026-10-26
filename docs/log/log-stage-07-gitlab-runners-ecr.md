@@ -1236,3 +1236,9 @@ the API through the user's browser session. Times UTC.*
   https://gitlab.awsds.internal/awsds/app-etl.git` received 33 objects and `rev-parse HEAD` printed
   `8d50f6851af08f394e18ac17099a4e5db68b3fc4`, `main`'s commit before the backup: **a pre-backup repository
   clones cleanly from the restored host** (8.2's proof, the stage's lifecycle deliverable). The clone deleted.
+- **[user] The sitting's last `make gitlab-down`** (the Stages 7-10 session's agreed final descent for
+  GitLab): no runner to destroy, the 12 endpoints gone by 02:38:01, the host's stop `User initiated
+  (2026-10-26 02:38:08 GMT)`, `stopped` at 02:39:13; the proxy left running for the hub's own descent, the
+  Stages 7-10 session's. The bucket holds the four archives (2026-10-13, 10-15, 10-25 and 10-26), the newest
+  expiring 2026-11-26. **Pass 4 is closed.** The sitting's GitLab bill: the host 20:07 to 02:39 and the
+  rebuild's hour, the endpoints and the runners by `make status` at each descent.
