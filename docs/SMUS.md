@@ -640,8 +640,9 @@ network under a service-managed key (its `helpers/datazone.py`; [`upstream-relea
   the activation puts `/opt/conda/bin` first, so the server and its terminals see conda's directory
   first whatever the image declares; the base environment's `etc/conda/activate.d/` scripts run after
   that export (read 2026-10-26 in 4.5.2's scripts and libmamba's activation, not measured in a space).
-  The recipe copy prepends `/opt/awsds/bin`, the house CLI's entry point alone, through such a hook from
-  `default-v0.10.0` (Stage 8 decision 22, unbuilt).
+  The house image prepends `/opt/awsds/bin`, the house CLI's entry point alone, through such a hook from
+  `default-v0.10.0`, Sandbox's version 11 (Stage 8 decision 22): its smoke read the name as the house's
+  1.0.9 after `micromamba activate base` on 2026-10-26, and a space's reading is `promotion.md` §N.7.3.
 - **DataZone refuses `ListDomains` to a project's role** (*"User is not permitted to perform operation:
   ListDomains"*, CloudTrail `AccessDenied` with no message) though the role's managed policy allows
   `datazone:List*`; the CLI 1.0.9 resolves the domain by name with that call in the project step of every

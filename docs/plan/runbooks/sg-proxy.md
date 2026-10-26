@@ -30,10 +30,10 @@ export http_proxy=http://proxy.awsds.internal:3128 https_proxy=$http_proxy HTTP_
 ## Latest reading of `NO_PROXY`
 
 **73 entries**, sha256 `61f1e1646df12c14`, the value of `no_proxy_all_groups` in the plan of
-`vpc-egress-v0.19.0` (2026-10-26) and the literal the recipe copy under `gitlab/` holds for the next
-house image: every optional group's names (`bedrock-base`, `bedrock-agent`, `emr`, `redshift`, `mlflow`,
+`vpc-egress-v0.19.0` (2026-10-26) and the literal version 11 of the house image bakes,
+`default-v0.10.0` (2026-10-26): every optional group's names (`bedrock-base`, `bedrock-agent`, `emr`, `redshift`, `mlflow`,
 `mwaa`). Version 10, `default-v0.9.1`, bakes the 72 of 2026-10-18 (`6faf2e4761622508`), which lack
-`airflow-serverless.us-west-2.api.aws`, so a session that calls MWAA Serverless from a space exports that
+`airflow-serverless.us-west-2.api.aws`, so a session on version 10 that calls MWAA Serverless from a space exports that
 name beside the image's list ([`sagemaker-application.md`](sagemaker-application.md) §D step 4).
 `no_proxy` names only the groups its last apply enabled — 51 entries under `GROUPS=mwaa` (2026-10-26) —
 so a copy of it drops a group's names, and the day that group is on, its `.amazonaws.com` calls leave

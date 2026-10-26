@@ -1124,13 +1124,13 @@ metered.
    the same day (N.7.4).
 3. **The GitLab sitting** (N.7.1): `gates-v0.6.0` with the zlib pair, the house image `default-v0.10.0`
    with the 73-name literal, the mirror pushed at `main`, Stage 8 xxviii's job, Stage 7 Validation 2's
-   `PX-3` and a GitLab backup.
+   `PX-3` and a GitLab backup. **Run 2026-10-26** (N.7.1).
 4. **The next release** (N.1's shape: the hub, `make gitlab-up BUILD=1`, Staging's `egress/`, Production's
    `workloads-egress/`): the template's merge request with the deploy script and the snapshot record, the tag, the legs,
    3.7; and the exercises the user takes with it: Stage 8 xv (the proxy stopped alone), Stage 10 xx's
    second half (an undeclared Glue job on a branch's tag), Stage 8 xxvii's plan half once the Amazon Linux
    parameter moves.
-5. **The second Sandbox sitting** (N.7.3), once `default-v0.10.0` is registered or 6f step 11's subscription is approved:
+5. **The second Sandbox sitting** (N.7.3), `default-v0.10.0` registered as version 11 on 2026-10-26, and once 6f step 11's subscription is approved:
    Stage 9 8.1's space half, and the `dev` deploy on the new version with no session export.
 6. **The warehouse sitting** (both computes): xxiv on N.4a; after 2026-11-22, `EXC-13`'s Production half;
    the free trial's pair of readings.
@@ -1220,8 +1220,22 @@ build runner 0.2117, the test and deploy runners 0.0376 and their root volumes 0
    ./aws/proxy.py --on-host
    ```
 
-10. **The downs**: `make gitlab-down`, the tunnel, `make hub-down`; **[Claude]** §R and each step's entry in
-   Stage 7's and Stage 8's logs.
+10. **The downs**: `make gitlab-down`, the tunnel and `proxy-off`, then `NO_PROXY='*' make hub-down`
+   ([`gitlab.md`](gitlab.md) §U); **[Claude]** §R and each step's entry in Stage 7's and Stage 8's logs.
+
+**Run 2026-10-26** (Stage 7's and Stage 8's logs), 21:16 to 22:31 UTC, beside N.4a's warehouse sitting,
+which shared the hub: the lock's audit (0 blocking) and `GM-1` to `GM-8` the day of the tag;
+`awsds/ci-gates` !1 merged and tagged `gates-v0.6.0` (`d0b895c8`); `awsds/dev-env` !12 merged as
+`c8bac16e`; the tag's pipeline #109 registered `default-v0.10.0-c8bac16e` as version 11, alias `0.10.0`,
+22 min 39 s from the tag, its smoke reading the CLI by its name as the house's 1.0.9 after `micromamba
+activate base` and `./aws/devenv.py` reading `DE-5` passing at 73 names; the mirror at `94ed050d`;
+`sts-global-probe` (pipeline #110) put each global call's records in `us-east-1` alone, past 4.6's
+rules (Stage 8 decision 29); `PX-3` passing; the backup `1793052899_2026_10_26_19.4.2`. Three readings
+changed the text: the smoke runs after both pushes in `build-images`, so a red smoke spends the release
+tag and both ECR tags; GitLab's agent registered 7 min 21 s after the start, its first call timed out
+at the `ssm` endpoint's address ([`gitlab.md`](gitlab.md) §U step 5); and with the tunnel down `make
+hub-down` stopped neither host until it ran as `NO_PROXY='*' make hub-down` ([client
+runbook](client-vpn-proxy-configuration.md) §2).
 
 #### N.7.2 The debug window: Stage 9 3.1's debug-role read
 
@@ -1272,8 +1286,8 @@ pair, and the alarm fired once per assumption with a notification delivered each
 #### N.7.3 The second Sandbox sitting
 
 N.3's raises and downs, without GitLab when no clone is owed. What it closes: Stage 9 8.1's space half
-once 6f step 11's subscription is approved (N.3 step 9); and, once `default-v0.10.0` is registered,
-the `dev` deploy from a space on version 11 by [`sagemaker-application.md`](sagemaker-application.md) §D,
+once 6f step 11's subscription is approved (N.3 step 9); and, `default-v0.10.0` registered as version 11
+on 2026-10-26, the `dev` deploy from a space on it by [`sagemaker-application.md`](sagemaker-application.md) §D,
 `scripts/dev-cli.sh` for steps 6 and 7, with no `NO_PROXY` export, `getent hosts
 airflow-serverless.us-west-2.api.aws` answering a `10.20.x` address and the proxy log silent on the name.
 The clone carries the script once the template's merge request with it has merged on `awsds/app-etl`

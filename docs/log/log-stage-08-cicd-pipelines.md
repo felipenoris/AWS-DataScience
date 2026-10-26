@@ -4189,3 +4189,22 @@ SageMaker as the infrastructure user with `InfrastructureAccess` (`awsds-infra-p
   failing with `sandbox/egress` down, the reading of 2026-10-25, so `DE-3` and `DE-6` are not compared.
 - **[Claude] The release row** in the copy's README, both digests and sizes; the branch `the-releases-v0.10.0`
   at `fb5722b` in the clone, for GitLab's `main` by the steward's hand.
+
+## 2026-10-26 — §N.7.1 after the release: the README row on GitLab's `main`; the plan read against the sitting
+
+*The user's hand for the push and the merge, as the Dev Env Steward; Claude's for the branch's commit, the
+mirror script and the record. Times UTC.*
+
+- **[user] The release row**: the branch `the-releases-v0.10.0` (`fb5722b`, one line in `README.md`) pushed with
+  its merge request and merged as `6eff9056` (22:14:02). **[Claude]** `./scripts/gitlab-mirror.py awsds/dev-env`
+  at 22:16 *"the copy already holds this commit's 14 file(s)"*, `gitlab/mirror.json` at `6eff9056`.
+- **[Claude] What the sitting changed in the plan**, at the user's request to read it against the findings:
+  1.1's and 1.4's bullets and decision 22 marked done; xxviii's row answered and **decision 29** opened, the
+  global STS endpoint past 4.6's rules, recommended (b), an SCP statement, not taken; the status cell;
+  `promotion.md` §N.6, §N.7.1 (its run, step 10's `proxy-off` and `NO_PROXY='*'`) and §N.7.3; `gitlab.md` §U (the
+  agent's reading of 21:18, the down's `proxy-off` and `NO_PROXY='*'`) and the client runbook's §2; a Systems
+  Manager entry in `lessons.md`'s platform list; version 11 in `sagemaker-application.md` §D step 4,
+  `sg-proxy.md`, `dev-env.md`, `docs/SMUS.md`, `upstream-releases.md`, Stage 10 2.1 and `AWS_STATE.md`'s `DE-5`
+  row; the waiting list (the image's and the mirror's rows removed, decision 29 added, the Hub, GitLab and
+  Promotion sittings' rows trimmed, the backup of 22:15 dated); `GENERAL_PLAN.md`, `stages/INDEX.md`,
+  `docs/log/INDEX.md` and `CLAUDE.md`'s Current position.
