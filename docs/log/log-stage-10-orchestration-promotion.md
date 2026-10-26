@@ -1745,3 +1745,24 @@ PyPI, the template's tests and lint run offline.*
 - **[Claude] The record**: `sagemaker-application.md` §A, §O, §R, §D steps 6 and 7, §E and §M; the
   template's README; `conventions.md`'s layout; `promotion.md` §N.7.3; 2.1; `docs/SMUS.md`,
   `upstream-releases.md`. The third part, the image's `PATH`, is Stage 8's log of the same day.
+
+## 2026-10-26 — decision 11's read: the Deployment Manager's `GetWorkflowRun` answers under the narrowing
+
+*The user's hand, as the Deployment Manager User on the laptop, through a Production profile added on the
+`awsds-deploy` session (`awsds-deploy-prod`, `DeploymentManagerAccess`), the result pasted in this chat
+before 20:02 UTC; Claude's for the record.*
+
+- **[user] The read** (`promotion.md` §N.7.4 step 3), the run of `awsds-prod-wf-app-etl` the listing named:
+
+  ```
+  aws mwaa-serverless get-workflow-run --workflow-arn "$W" --run-id "$R" --profile awsds-deploy-prod --region us-west-2 --query 'RunDetail.RunState' --output text
+  ```
+
+  *"SUCCESS"*. The service decrypts a run in the reader's session at each `GetWorkflowRun`, and the read is
+  refused when that decrypt is (Stage 18 0.4), so the narrowed allow admitted it: `kms:ViaService` carries
+  `airflow-serverless.us-west-2.amazonaws.com` for these calls, the value the key's convention gave. No
+  revert.
+- **[Claude] What waits**: the trail's `Decrypt` beside the read, `invokedBy airflow-serverless.amazonaws.com`
+  with no error (§N.7.4 step 4), behind the infrastructure user's session, whose token the CLI reported gone
+  at 20:02:09 (*"Error loading SSO Token: Token for awsds does not exist"*). Staging's half waits for a
+  workflow there, at its next leg.

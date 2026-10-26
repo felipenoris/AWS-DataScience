@@ -1119,8 +1119,8 @@ metered.
    now (option A, the path kept in issue #268); the training operator's log read needs no remedy (Stage
    10 1.3).
 2. **With nothing up, the user's acts**: the debug window (N.7.2), run 2026-10-26, Stage 9 3.1's
-   debug-role read answered; decision 11's applies, done the same day, and the Deployment Manager's read in
-   Production (N.7.4).
+   debug-role read answered; decision 11's applies and the Deployment Manager's read in Production, done
+   the same day (N.7.4).
 3. **The GitLab sitting** (N.7.1): `gates-v0.6.0` with the zlib pair, the house image `default-v0.10.0`
    with the 73-name literal, the mirror pushed at `main`, Stage 8 xxviii's job, Stage 7 Validation 2's
    `PX-3` and a GitLab backup.
@@ -1319,7 +1319,9 @@ after the applies is the measurement, and a refusal reverts all three.
 
 **Applied 2026-10-26** (Stage 10's log): the user's authorization in chat; fresh plans as step 1's; the
 applies from 16:15:08 to 16:19:47 UTC, each re-planned `No changes`, the condition read back in both key
-policies and in the set's role policy in Production and Staging. Step 3's read is owed.
+policies and in the set's role policy in Production and Staging. **Step 3 read the same day**: the
+Deployment Manager's `GetWorkflowRun` answered `SUCCESS`, so the value holds and nothing reverts; step 4's
+trail reading and Staging's half are owed.
 
 ## Q. After the quotas: Stage 10's pass 3
 

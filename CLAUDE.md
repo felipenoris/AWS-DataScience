@@ -370,7 +370,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   failure rules mailed; ii's deploy-role half read 2026-10-24 and 3.2 closed 2026-10-25 by (b). Read
   2026-10-26 with nothing up: both outputs buckets publish to EventBridge (3.6); `GetWorkflowRun` decrypts
   through the service and `GetWorkflow` does not (decision 11's `kms:ViaService` narrowing applied
-  2026-10-26, the Deployment Manager's read owed);
+  2026-10-26, the Deployment Manager's `GetWorkflowRun` answering `SUCCESS` under it);
   the training operator's `print_log` read answers, its six `Decrypt` refusals per run CloudWatch Logs'
   attempt with the reader's identity before its own (read the same day). **2.1 ran from a space on 2026-10-26**: the house CLI by its path, the CLI 1.0.9's
   `ListDomains` (refused to a project's role) answered by the domain's id, and Sandbox's `mwaa` group's
