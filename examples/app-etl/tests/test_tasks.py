@@ -85,6 +85,15 @@ def test_report_orders_the_tables_by_input_and_totals_the_rows():
     assert result["rows"] == 12
 
 
+def test_the_report_carries_a_governed_source_and_no_other():
+    source = {"table": "lake.curated.trades", "snapshot_id": 5512, "pinned": False}
+    found = [{**SUMMARIES["app-etl/work/job/trades.summary.json"], "source": source}]
+    found.append(SUMMARIES["app-etl/work/job/fees.summary.json"])
+    tables = app_etl_tasks.report(found)["tables"]
+    assert "source" not in tables[0]
+    assert tables[1]["source"] == source
+
+
 def test_summarize_returns_the_report_as_json_text(s3, capsys):
     text = app_etl_tasks.summarize("s3://bucket/app-etl/work/job/", ti=None)
     assert text.endswith("}\n")

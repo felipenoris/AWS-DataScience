@@ -67,5 +67,20 @@ def test_the_command_processes_every_csv(tmp_path, capsys):
     assert "UST10Y" not in out
 
 
+def test_an_inbox_csv_has_no_source(tmp_path):
+    assert "source" not in pipeline.process(SAMPLE, tmp_path)
+
+
+def test_the_record_beside_a_governed_csv_reaches_the_summary(tmp_path):
+    source, target = tmp_path / "in", tmp_path / "out"
+    source.mkdir()
+    (source / "trades.csv").write_bytes(SAMPLE.read_bytes())
+    record = {"table": "lake.curated.trades", "snapshot_id": 5512, "pinned": False}
+    (source / "trades.source.json").write_text(json.dumps(record))
+    assert command.main(["--input", str(source), "--output", str(target)]) == 0
+    assert sorted(p.name for p in target.iterdir()) == ["trades.parquet", "trades.summary.json"]
+    assert json.loads((target / "trades.summary.json").read_text())["source"] == record
+
+
 def test_the_command_fails_with_no_csv(tmp_path):
     assert command.main(["--input", str(tmp_path), "--output", str(tmp_path / "out")]) == 1

@@ -152,7 +152,7 @@ different claim:
 
 | # | Command | Must read |
 |---|---|---|
-| 1 | `sudo wg show` — or, with the App Store app, its window: `wg` does not list a Network Extension tunnel (2026-09-08) | `latest handshake` seconds ago and non-zero `transfer`; in the app, *Latest handshake* and *Data received / sent* under the peer; the interface is a `utun*` on macOS |
+| 1 | `sudo wg show` — or, with the App Store app, its window: `wg` does not list a Network Extension tunnel (2026-09-08). `scutil --nc list` names each of the app's tunnels with its state and needs no `sudo` | `latest handshake` seconds ago and non-zero `transfer`; in the app, *Latest handshake* and *Data received / sent* under the peer; the interface is a `utun*` on macOS. `scutil` reads `(Connected)` on the profile in use: on 2026-10-26 it read every profile `(Disconnected)` while the tunnel was believed up, and `gitlab.awsds.internal` did not resolve |
 | 2 | `dig +short SOA prod.awsds.internal ; dig +short SOA sandbox.internal` | the first **answers**, the second is **empty** — the resolver in use is the hub's. Then `dig +short proxy.awsds.internal` → a **private** address in `10.31.160.0/24` |
 | 3 | `curl -sS --max-time 15 https://1.1.1.1` | **fails** — as `curl: (28)` timeout or as `curl: (7) … after 194 ms`, both measured 2026-09-07: the host refuses every time and rate-limits the ICMP that says so (Lesson 55). A `200` is the finding |
 | 4 | `curl -s --max-time 20 -x http://proxy.awsds.internal:3128 https://checkip.amazonaws.com` | an address that is **not** the laptop's own — the proxy's current one, which `./aws/proxy.py` prints and which changes at every start (6g decision 1). The tunnel, the peering, the return route and the client plane, in one line |

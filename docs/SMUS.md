@@ -629,6 +629,34 @@ connection or the Tooling environment's `privateSubnets`, `securityGroup` and `k
 omits the network and the key, prints one line and creates the workflow in the service's default worker
 network under a service-managed key (its `helpers/datazone.py`; [`upstream-releases.md`](plan/upstream-releases.md)).
 
+**From a space, as the project role** (Stage 8 decision 22), the deploy and its run measured on
+2026-10-26 (Stage 10 2.1), after three findings that the lab's laptop run could not show:
+
+- **Two CLIs in one image.** The SageMaker Distribution ships `aws-smus-cicd-cli` 1.0.8 in
+  `/opt/conda/bin`, first on a space's `PATH`, and it refuses a manifest's `content.workflows[].code`
+  (*"Additional properties are not allowed ('code' was unexpected)"*); the house environment's 1.0.9 is
+  reached by its path, through the template's `scripts/dev-cli.sh`. An image's `ENV PATH` cannot reorder
+  the two: every start script of the distribution runs `micromamba activate base` before its server, and
+  the activation puts `/opt/conda/bin` first, so the server and its terminals see conda's directory
+  first whatever the image declares; the base environment's `etc/conda/activate.d/` scripts run after
+  that export (read 2026-10-26 in 4.5.2's scripts and libmamba's activation, not measured in a space).
+  The recipe copy prepends `/opt/awsds/bin`, the house CLI's entry point alone, through such a hook from
+  `default-v0.10.0` (Stage 8 decision 22, unbuilt).
+- **DataZone refuses `ListDomains` to a project's role** (*"User is not permitted to perform operation:
+  ListDomains"*, CloudTrail `AccessDenied` with no message) though the role's managed policy allows
+  `datazone:List*`; the CLI 1.0.9 resolves the domain by name with that call in the project step of every
+  deploy with bootstrap actions and again in `workflow.create`, the manifest's id notwithstanding. The
+  deploy roles' call returns the associated domain, so the pipeline never meets it. Reported upstream as
+  [issue 413](https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413) (2026-10-26).
+- **The MWAA Serverless API answers on `airflow-serverless.<region>.api.aws` alone**, a family the compute
+  plane's proxy refuses, so a space reaches it only through the interface endpoint
+  (`com.amazonaws.<region>.airflow-serverless`, private DNS on), `vpc-egress`'s `mwaa` group since
+  `v0.19.0`, with the name in `NO_PROXY`.
+
+[`runbooks/sagemaker-application.md`](plan/runbooks/sagemaker-application.md) §D carries the commands. A
+run started from the portal on a workflow the CLI made carries none of the stage's variables and fails at
+the DAG's template before any task (Stage 10 xxix).
+
 ### A deployment project in a `Workloads` account
 
 Measured in `Staging` from 2026-10-19 to 2026-10-22 and removed ([Stage 18](plan/stages/stage-18-staging-deployment-project.md)

@@ -62,8 +62,8 @@ USER root
 # A second Python, complete and separate, with its own kernel in the Launcher. The
 # distribution's environment is left exactly as it ships (the user's decision, 2026-09-10): no
 # package of ours goes into it, its `python3` kernelspec is not touched, and nothing of ours
-# joins PATH ahead of its interpreter. A space therefore offers two Python kernels, and only
-# the second one is ours to curate.
+# joins PATH ahead of its interpreter but the CI/CD CLI's entry point (the end of this section).
+# A space therefore offers two Python kernels, and only the second one is ours to curate.
 #
 # uv owns this environment end to end: it installs the interpreter (a managed CPython under
 # /opt/awsds/python, not conda's) and resolves the packages from python/pyproject.toml through
@@ -122,6 +122,25 @@ RUN set -eu; \
     ls /opt/conda/share/jupyter/kernels; \
     "${AWSDS_PYTHON_ENV}/bin/python" -c 'import sys; print("== awsds python", sys.version)'; \
     chmod -R a+rX /opt/awsds /opt/conda/share/jupyter/kernels/awsds-python
+
+# The CI/CD CLI by its name (AWS-DataScience's Stage 8 decision 22). The distribution's own
+# aws-smus-cicd-cli, 1.0.8 in 4.5.2, is in /opt/conda/bin and refuses an application manifest's `code`
+# field. Every start script of the distribution runs `micromamba activate base`, which puts
+# /opt/conda/bin first on PATH whatever an ENV here says, so an order set by ENV reaches no space. The
+# base environment's activation hook runs after the activation has exported PATH and prepends
+# /opt/awsds/bin, which holds the house CLI's entry point and nothing else: `python`, `pip` and
+# `jupyter` stay the distribution's in the server and in a terminal. The hook is one `case`, which
+# returns 0 under the `set -e` the start scripts run with.
+RUN set -eu; \
+    test -x "${AWSDS_PYTHON_ENV}/bin/aws-smus-cicd-cli" \
+      || { echo "FATAL: the house environment carries no aws-smus-cicd-cli entry point." >&2; exit 1; }; \
+    mkdir -p /opt/awsds/bin /opt/conda/etc/conda/activate.d; \
+    ln -s "${AWSDS_PYTHON_ENV}/bin/aws-smus-cicd-cli" /opt/awsds/bin/aws-smus-cicd-cli; \
+    test "$(ls /opt/awsds/bin)" = "aws-smus-cicd-cli"; \
+    printf '%s\n' 'case "${PATH}" in /opt/awsds/bin:*) ;; *) PATH="/opt/awsds/bin:${PATH}" ;; esac' \
+      > /opt/conda/etc/conda/activate.d/zz-awsds-bin.sh; \
+    chmod 0644 /opt/conda/etc/conda/activate.d/zz-awsds-bin.sh; \
+    cat /opt/conda/etc/conda/activate.d/zz-awsds-bin.sh
 
 # --------------------------------------------------------------------------------- 2. Julia
 #
@@ -356,7 +375,7 @@ RUN set -eu; \
 # on the VPC endpoints. A proxy without its bypass list does not fail: the call goes out through the
 # hub as a public one, with no aws:SourceVpc and no aws:SourceVpce, so the perimeter is lost silently.
 #
-# The list below is Sandbox's, read on 2026-10-18: 72 entries, sha256 6faf2e4761622508. It is the
+# The list below is Sandbox's, read on 2026-10-26: 73 entries, sha256 61f1e1646df12c14. It is the
 # output `no_proxy_all_groups` of sandbox/egress, verbatim:
 #
 #   AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/egress output -raw no_proxy_all_groups
@@ -383,7 +402,7 @@ RUN set -eu; \
 # same reason in reverse - it writes a file and sets nothing, so its position does not matter, and
 # it is placed before rather than after so that this one keeps the last word.
 ARG PROXY_URL=http://proxy.awsds.internal:3128
-ARG NO_PROXY_LIST=".awsds-pages.internal,.awsds.internal,.dashboard.emr-serverless.us-west-2.amazonaws.com,.dkr-ecr.us-west-2.on.aws,.dkr.ecr.us-west-2.amazonaws.com,.elasticmapreduce-services.us-west-2.amazonaws.com,.emrappui-prod.us-west-2.amazonaws.com,.emrappui.us-west-2.on.aws,.livy.emr-serverless-services.us-west-2.amazonaws.com,.mlflow.sagemaker.us-west-2.app.aws,.s.emr-serverless-services.us-west-2.amazonaws.com,.studio.sagemaker.us-west-2.app.aws,.studio.us-west-2.sagemaker.aws,127.0.0.1,169.254.169.254,169.254.170.2,api.ecr.us-west-2.amazonaws.com,api.sagemaker.us-west-2.amazonaws.com,api.sagemaker.us-west-2.api.aws,athena.us-west-2.amazonaws.com,athena.us-west-2.api.aws,bedrock-agent-runtime.us-west-2.amazonaws.com,bedrock-agent.us-west-2.amazonaws.com,bedrock-runtime.us-west-2.amazonaws.com,bedrock.us-west-2.amazonaws.com,dashboard.emr-serverless.us-west-2.amazonaws.com,datazone.us-west-2.amazonaws.com,datazone.us-west-2.api.aws,dkr-ecr.us-west-2.on.aws,dkr.ecr.us-west-2.amazonaws.com,dynamodb.dualstack.us-west-2.amazonaws.com,dynamodb.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,ec2.us-west-2.api.aws,ec2messages.us-west-2.amazonaws.com,ecr.us-west-2.api.aws,elasticmapreduce-services.us-west-2.amazonaws.com,elasticmapreduce.us-west-2.amazonaws.com,elasticmapreduce.us-west-2.api.aws,emr-serverless.us-west-2.amazonaws.com,emrappui-prod.us-west-2.amazonaws.com,emrappui.us-west-2.on.aws,glue.us-west-2.amazonaws.com,glue.us-west-2.api.aws,kms.us-west-2.amazonaws.com,kms.us-west-2.api.aws,lakeformation.us-west-2.amazonaws.com,lakeformation.us-west-2.api.aws,livy.emr-serverless-services.us-west-2.amazonaws.com,localhost,logs.us-west-2.amazonaws.com,logs.us-west-2.api.aws,mlflow.sagemaker.us-west-2.app.aws,redshift-serverless.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.api.aws,s.emr-serverless-services.us-west-2.amazonaws.com,s3.dualstack.us-west-2.amazonaws.com,s3.us-west-2.amazonaws.com,s3tables.us-west-2.amazonaws.com,s3tables.us-west-2.api.aws,secretsmanager.us-west-2.amazonaws.com,ssm.us-west-2.amazonaws.com,ssm.us-west-2.api.aws,ssmmessages.us-west-2.amazonaws.com,ssmmessages.us-west-2.api.aws,streaming-logs.us-west-2.amazonaws.com,streaming-logs.us-west-2.api.aws,sts.us-west-2.amazonaws.com,sts.us-west-2.api.aws,studio.sagemaker.us-west-2.app.aws,studio.us-west-2.sagemaker.aws"
+ARG NO_PROXY_LIST=".awsds-pages.internal,.awsds.internal,.dashboard.emr-serverless.us-west-2.amazonaws.com,.dkr-ecr.us-west-2.on.aws,.dkr.ecr.us-west-2.amazonaws.com,.elasticmapreduce-services.us-west-2.amazonaws.com,.emrappui-prod.us-west-2.amazonaws.com,.emrappui.us-west-2.on.aws,.livy.emr-serverless-services.us-west-2.amazonaws.com,.mlflow.sagemaker.us-west-2.app.aws,.s.emr-serverless-services.us-west-2.amazonaws.com,.studio.sagemaker.us-west-2.app.aws,.studio.us-west-2.sagemaker.aws,127.0.0.1,169.254.169.254,169.254.170.2,airflow-serverless.us-west-2.api.aws,api.ecr.us-west-2.amazonaws.com,api.sagemaker.us-west-2.amazonaws.com,api.sagemaker.us-west-2.api.aws,athena.us-west-2.amazonaws.com,athena.us-west-2.api.aws,bedrock-agent-runtime.us-west-2.amazonaws.com,bedrock-agent.us-west-2.amazonaws.com,bedrock-runtime.us-west-2.amazonaws.com,bedrock.us-west-2.amazonaws.com,dashboard.emr-serverless.us-west-2.amazonaws.com,datazone.us-west-2.amazonaws.com,datazone.us-west-2.api.aws,dkr-ecr.us-west-2.on.aws,dkr.ecr.us-west-2.amazonaws.com,dynamodb.dualstack.us-west-2.amazonaws.com,dynamodb.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,ec2.us-west-2.api.aws,ec2messages.us-west-2.amazonaws.com,ecr.us-west-2.api.aws,elasticmapreduce-services.us-west-2.amazonaws.com,elasticmapreduce.us-west-2.amazonaws.com,elasticmapreduce.us-west-2.api.aws,emr-serverless.us-west-2.amazonaws.com,emrappui-prod.us-west-2.amazonaws.com,emrappui.us-west-2.on.aws,glue.us-west-2.amazonaws.com,glue.us-west-2.api.aws,kms.us-west-2.amazonaws.com,kms.us-west-2.api.aws,lakeformation.us-west-2.amazonaws.com,lakeformation.us-west-2.api.aws,livy.emr-serverless-services.us-west-2.amazonaws.com,localhost,logs.us-west-2.amazonaws.com,logs.us-west-2.api.aws,mlflow.sagemaker.us-west-2.app.aws,redshift-serverless.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.api.aws,s.emr-serverless-services.us-west-2.amazonaws.com,s3.dualstack.us-west-2.amazonaws.com,s3.us-west-2.amazonaws.com,s3tables.us-west-2.amazonaws.com,s3tables.us-west-2.api.aws,secretsmanager.us-west-2.amazonaws.com,ssm.us-west-2.amazonaws.com,ssm.us-west-2.api.aws,ssmmessages.us-west-2.amazonaws.com,ssmmessages.us-west-2.api.aws,streaming-logs.us-west-2.amazonaws.com,streaming-logs.us-west-2.api.aws,sts.us-west-2.amazonaws.com,sts.us-west-2.api.aws,studio.sagemaker.us-west-2.app.aws,studio.us-west-2.sagemaker.aws"
 
 # The variables alone are not enough, measured 2026-09-08 (6d step 3.1): `sudo` resets the
 # environment, so `apt` ran with no proxy and failed to resolve a name that is on the plane. apt gets

@@ -14,10 +14,15 @@ The job reads the trades, applies `transform` and writes what the next steps rea
   `batch/batch.csv`, the batch transform's input (Stage 10 steps 5.1 and 5.4).
 
 Where the trades come from: with --SOURCE_TABLE, the governed table on the job's Iceberg catalog,
-pinned to --SOURCE_SNAPSHOT when one is given, the columns GOVERNED_COLUMNS name and nothing else,
-so a governed table that lacks one of them fails the run naming the column; without it, every CSV
-under --SOURCE_PATH, the inbox the samples seed. The Sandbox projects run the inbox path; the
-application slice of a deployment target gives the job --SOURCE_TABLE and the catalog.
+the columns GOVERNED_COLUMNS name and nothing else, so a governed table that lacks one of them fails
+the run naming the column; without it, every CSV under --SOURCE_PATH, the inbox the samples seed.
+The Sandbox projects run the inbox path; the application slice of a deployment target gives the job
+--SOURCE_TABLE and the catalog.
+
+A governed read is read at one snapshot, the one --SOURCE_SNAPSHOT names or else the table's current
+one, and the job writes which beside the CSV: `<stem>.source.json` under --TARGET_PATH's prefix, the
+table, the snapshot and whether it was pinned, which the processing job copies into its summary. A
+table that reports no current snapshot fails the run. The inbox path leaves no record.
 
 A second run overwrites every output. Glue 6.0 runs it; the test runs it over doubles of awsglue,
 pyspark and boto3. What it prints are counts, names and paths, never a value of the data.
@@ -26,6 +31,7 @@ pyspark and boto3. What it prints are counts, names and paths, never a value of 
 from __future__ import annotations
 
 import io
+import json
 import sys
 from urllib.parse import urlparse
 
@@ -43,6 +49,9 @@ FEATURES = ("quantity", "price")
 VALIDATION_EVERY = 5
 
 OPTIONAL = ("SOURCE_TABLE", "SOURCE_SNAPSHOT", "TABLE_PATH", "TRAIN_PATH")
+
+# The governed read's record, beside the CSV it describes; the processing job reads the same name.
+RECORD_SUFFIX = ".source.json"
 
 
 def transform(trades: DataFrame) -> DataFrame:
@@ -62,7 +71,7 @@ def optional_options(argv: list[str], names: tuple[str, ...]) -> dict[str, str]:
     return getResolvedOptions(argv, present) if present else {}
 
 
-def governed_query(table: str, columns: tuple[str, ...], snapshot: str | None) -> str:
+def governed_query(table: str, columns: tuple[str, ...], snapshot: int | str | None) -> str:
     """The governed read: the named columns of `table`, at `snapshot` when one is given."""
     query = f"SELECT {', '.join(columns)} FROM {table}"
     if snapshot:
@@ -75,25 +84,38 @@ def missing_columns(available: list[str], wanted: tuple[str, ...]) -> list[str]:
     return [name for name in wanted if name not in available]
 
 
-def read_source(spark: SparkSession, arguments: dict[str, str]) -> DataFrame:
-    """The trades: the governed table when --SOURCE_TABLE names one, the inbox's CSVs otherwise."""
+def current_snapshot(spark: SparkSession, table: str) -> int:
+    """The snapshot `table` reads at now: the `current-snapshot-id` Iceberg reports to Spark."""
+    rows = spark.sql(f"SHOW TBLPROPERTIES {table} ('current-snapshot-id')").collect()
+    value = str(rows[0]["value"]) if rows else ""
+    if not value.isdigit():
+        raise RuntimeError(f"{table} reports no current snapshot to read at: {value!r}")
+    return int(value)
+
+
+def read_source(spark: SparkSession, arguments: dict[str, str]) -> tuple[DataFrame, dict | None]:
+    """The trades and the record of their source: the governed table at a snapshot when
+    --SOURCE_TABLE names one, the inbox's CSVs and no record otherwise."""
     table = arguments.get("SOURCE_TABLE")
     if not table:
         print(f"reading {arguments['SOURCE_PATH']}")
-        return (
+        trades = (
             spark.read.option("header", True)
             .option("inferSchema", True)
             .csv(arguments["SOURCE_PATH"])
         )
+        return trades, None
     missing = missing_columns(spark.table(table).columns, GOVERNED_COLUMNS)
     if missing:
         raise RuntimeError(
             f"{table} lacks {', '.join(missing)}: the application's schema source and the "
             "governed table disagree"
         )
-    query = governed_query(table, GOVERNED_COLUMNS, arguments.get("SOURCE_SNAPSHOT"))
+    pinned = arguments.get("SOURCE_SNAPSHOT")
+    snapshot = int(pinned) if pinned else current_snapshot(spark, table)
+    query = governed_query(table, GOVERNED_COLUMNS, snapshot)
     print(f"reading {query}")
-    return spark.sql(query)
+    return spark.sql(query), {"table": table, "snapshot_id": snapshot, "pinned": bool(pinned)}
 
 
 def keep_one_file(target: str) -> None:
@@ -108,6 +130,16 @@ def keep_one_file(target: str) -> None:
     s3.copy_object(Bucket=bucket, Key=key, CopySource={"Bucket": bucket, "Key": parts[0]})
     leftovers = [{"Key": item["Key"]} for item in written if item["Key"] != key]
     s3.delete_objects(Bucket=bucket, Delete={"Objects": leftovers})
+
+
+def write_record(target: str, record: dict) -> None:
+    """The governed read's record beside `target`, `<stem>.source.json`."""
+    bucket, key = split_uri(target)
+    stem = key[: -len(".csv")] if key.lower().endswith(".csv") else key
+    s3 = boto3.client("s3")
+    body = json.dumps(record, sort_keys=True) + "\n"
+    s3.put_object(Bucket=bucket, Key=stem + RECORD_SUFFIX, Body=body.encode())
+    print(f"wrote s3://{bucket}/{stem}{RECORD_SUFFIX}, snapshot {record['snapshot_id']}")
 
 
 def write_table(spark: SparkSession, result: DataFrame, path: str, rows: int) -> None:
@@ -150,7 +182,7 @@ def main() -> None:
     arguments.update(optional_options(sys.argv, OPTIONAL))
     target = arguments["TARGET_PATH"]
     spark = SparkSession.builder.getOrCreate()
-    trades = read_source(spark, arguments)
+    trades, record = read_source(spark, arguments)
     rows = trades.count()
     print(f"read {rows} row(s)")
     result = trades.transform(transform)
@@ -159,6 +191,9 @@ def main() -> None:
     )
     keep_one_file(target)
     print(f"wrote {target}")
+    # After keep_one_file, which deletes every other object under the target's prefix.
+    if record:
+        write_record(target, record)
     if arguments.get("TABLE_PATH"):
         write_table(spark, result, arguments["TABLE_PATH"], rows)
     if arguments.get("TRAIN_PATH"):

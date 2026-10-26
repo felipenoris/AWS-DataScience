@@ -1293,3 +1293,119 @@ and the serial console, nothing started or changed by Claude. Times UTC.*
   hibernation line; `describe-instance-information` reads the host `Online`, last ping 03:16:29, **1 min 20 s
   after the start**, against 01:31 to 01:51 in 8.1's cycle. The owed run is done and its row leaves
   `waiting-on-the-user.md`.
+
+## 2026-10-26 — with the environment down: Validation 2's offline half, Validation 3's reading, the record read against the plan
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess` (the
+`awsds-infra-*` profiles), no write to AWS; the session that read Stages 7 to 10 for what is left. Times UTC.*
+
+- **[Claude] Validation 2's offline half**, `./aws/proxy.py` at 03:41: `PX-1` passing (five rules, every one
+  TCP/3128 from the private ranges `10.20.0.0/16`, `10.30.0.0/16`, `10.32.0.0/16`, `10.50.0.0/16` and
+  `10.90.0.0/24`), `PX-2`'s committed half passing (`deny to_private` line 1 of 4, above every allow), `PX-3`
+  a note (not answered without `--on-host`, the proxy host stopped) and `PX-4` a note by decision
+  (`/awsds/prod/proxy` at 365 days, no export until Stage 11 5.1). `PX-3` waits for a hub sitting and the
+  flag's deliberate run.
+- **[Claude] Validation 3**, `./aws/egress.py` at 03:34 on the three profiles: 0 interface endpoints, 0 NAT
+  and 0.000 USD/h in Production, Staging and Sandbox. The three `[D]` hosts read stopped, GitLab
+  (`i-0b4cb5f62e65abf70`) at 03:23:34, the proxy at 03:26:09 and the VPN host at 03:26:11, after the 03:13 run
+  in the new order; no runner instance exists. The descent after that run had no entry here; this reading
+  is its record.
+- **[Claude] The record read against the plan**: 8.4's sentence that 8.3's up half was owed (run 2026-10-26 at
+  00:47, above) corrected; verification xi's cell dated, version 10 existing since 2026-10-25; INT-09's row
+  named version 10 as `default-v0.9.0`, a tag spent with nothing built, corrected to
+  `default-v0.9.1-746ef084` (Lesson 38); the status cell's phrase on the three personas' memberships, done
+  2026-10-24, and the stale rows in `GENERAL_PLAN.md`, `stages/INDEX.md` and `CLAUDE.md` brought to the
+  record. What the stage leaves: INT-09's clone and INT-19's notebook surface (verifications xi and x) from
+  a Sandbox space on version 10 with GitLab up and a persona PAT, Validation 2's `PX-3`, a GitLab backup
+  before 2026-11-26, the leaves' re-issue by 2027-09-22, and INT-13's path, the user's decision.
+
+## 2026-10-26 — with the environment down: INT-09's procedure written, its network reading prepared
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`, no write to
+AWS; the Sandbox sitting the user asked to have prepared. Times UTC.*
+
+- **[Claude] INT-09 and INT-19's notebook surface placed in `runbooks/promotion.md` §N.3** (steps 4 and 5):
+  the smoke test's reads from the space's terminal and a notebook cell, the clone with the persona's token at
+  git's prompt held by the cache helper for an hour, a branch pushed on `main`'s commit with `ci.skip` (no
+  pipeline queued with `RUNNERS=0`) and deleted, the token revoked at the close.
+- **[Claude] What the path is read from**: both VPCs' flow logs are on, `awsds-prod-shared-vpc-flow-logs`
+  and `awsds-sandbox-vpc-flow-logs`, default format with 600 s aggregation; GitLab's host is at
+  `10.30.39.111` since 8.2's rebuild, and Sandbox is `10.20.0.0/16`. An accepted flow from a `10.20.x`
+  address to `10.30.39.111:443` is the clone over the peering, with no proxy between.
+- **[Claude] The space**: `eighth-experimentation`'s one space, the Data Scientist User's, reads
+  `awsds-sandbox-dev-env` version 10 as its default image since 2026-10-25 22:55 UTC; the Data Scientist
+  User owns both Sandbox projects.
+
+## 2026-10-26 — the Sandbox sitting (`promotion.md` §N.3): INT-19's notebook surface and INT-09's clone and push from a space
+
+*The user's hand for the raises (`make hub-up`, `make gitlab-up RUNNERS=0`, `make up ENV=sandbox ONLY=egress`),
+the tunnel, GitLab's token and everything inside the space, as the Data Scientist User in a private window;
+Claude's for the readings, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`,
+`awsds-infra-sandbox-1`). The one idle peer session told. Times UTC.*
+
+- **[user] The raises**; **[Claude] read back**: the WireGuard host, the proxy and GitLab started 04:25:45,
+  04:25:48 and 04:27:47; `./aws/egress.py` 12 endpoints in SharedServices and 18 in Sandbox, 0 NAT, 0.300
+  USD/h, `EG-1` to `EG-4` passing; `./aws/devenv.py` `DE-1` to `DE-6` passing (72 names, version 10);
+  `make status` 0.3828 USD/h before the space. The laptop's four WireGuard profiles read *Disconnected*
+  (`scutil --nc list`) until the user connected `mbp-split-tunnel` at 04:40: `utun4` at `10.90.0.2`,
+  `gitlab.awsds.internal` resolving to `10.30.39.111`, the sign-in page `200 ssl_verify=0` with the SAML
+  button.
+- **[user] INT-19's notebook surface** (verification x), from `eighth-experimentation`'s space on version 10:
+  curl `200 ssl_verify=0`; the `ls-remote` refused at the authentication wall (*"HTTP Basic: Access denied"*),
+  no certificate error; `/opt/conda/bin/python 200 200` and `/opt/awsds/venv/bin/python 200 200`; a notebook
+  cell `200`. Every surface of INT-19 answered.
+- **[user] INT-09** (verification xi): the clone did not prompt and failed, *"aws: [ERROR]: … Unknown options:
+  --ignore-host-check"*, then *"HTTP Basic: Access denied"*. `git config --show-origin --get-regexp
+  '^credential\.'` read `file:/home/sagemaker-user/.gitconfig` with `credential.helper !aws codecommit
+  credential-helper --ignore-host-check $@` and `credential.usehttppath true`: the helper answers for every
+  host, so GitLab receives its credential and git never prompts. With the list reset (`-c credential.helper=
+  -c credential.helper='cache --timeout=3600'`) git prompted for the persona's username and token, cloned
+  `awsds/app-etl` (128 objects, 68.96 KiB), pushed `HEAD:refs/heads/int-09-probe` with `-o ci.skip` and
+  deleted it, about 05:04.
+- **[Claude] The path**: SharedServices' flow log holds the space's address `10.20.56.248` to
+  `10.30.39.111:443`, accepted, on GitLab's interface, from 04:57:17 (the failed attempts) to 05:04:52 (the
+  clone); the proxy log holds no request naming GitLab in the window. The clone went over the peering, direct.
+- **[Claude] What changed in the record**: verifications x and xi answered, pass 3 closed with them, INT-09's
+  and INT-19's rows measured; the clone's credential reset written in `promotion.md` §N.3 step 5 and
+  `sagemaker-application.md` §D.
+
+## 2026-10-26 — the Sandbox sitting's downs: the portal's apps, a second round, zero burn
+
+*The user's hand for the downs (the token revoked, `make down ENV=sandbox`, `make gitlab-down`, the tunnel,
+`make hub-down`; then every portal tab closed and both downs again); Claude's for the readings, as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`,
+`awsds-infra-sandbox-1`). The idle peer session told before the first down and after the last. Times UTC.*
+
+- **[user] The first round**, reported about 06:17. **[Claude] Read back** 06:18 to 06:19: `./aws/egress.py`
+  no endpoint, no NAT and 0.000 USD/h in Production, Staging and Sandbox; GitLab stopped at 06:11:15
+  (`StopInstances` by `InfrastructureAccess`); the WireGuard host and the proxy still running, no
+  `StopInstances` for either in the trail since 06:00, so the first `make hub-down` stopped nothing, its
+  cause unread. The hook's `DeleteApp` at 06:10:14, 06:10:16 and 06:10:17 took the `test` project's
+  `default`, `jup-dev-env` and `eighth-experimentation`'s `default`; the persona's open portal tabs then
+  created both `default` apps again, 06:13:27 to 06:13:32 (`CreateApp`, a browser `userAgent`, each
+  project's role), the `test` one `InService` and `eighth-experimentation`'s `Pending` at 06:19.
+- **[user] The second round**, every portal tab closed: **[Claude]** `StopInstances` on the proxy at 06:20:48
+  and 06:20:49 and on the WireGuard host at 06:20:51; the hook's `DeleteApp` on `eighth-experimentation`'s
+  `default` refused eight times from 06:21:58 to 06:25:04, *"State transition from [PendingCheckout] to
+  [Deleting] is not allowed."*, the re-created app still starting; then the `test` project's at 06:26:10 and
+  `eighth-experimentation`'s at 06:26:12, both accepted.
+- **[Claude] §R** at 06:30 to 06:31: no endpoint, no NAT and 0.000 USD/h in the three accounts, both hosts
+  stopped, no Studio app in either domain, `make status` 0.0000 USD/h (Production's application and
+  orchestration slices up at 0.0000). Read again at 07:09:30 to 07:10:04: the same three zeros, no instance
+  running in Production, no Studio app in either domain.
+- **[Claude] What changed in the record**: `promotion.md` §N.3 step 10 closes every portal tab before the
+  down and §R reads the Studio apps after a Sandbox sitting; the portal's re-creation joins `lessons.md`'s
+  platform list and `log-debugging.md` §C; `client-vpn-proxy-configuration.md` §3.4 carries `scutil --nc list`
+  for the tunnel's state, which read every profile *Disconnected* at the sitting's start.
+
+## 2026-10-26 — INT-13: the user's option A, not built now
+
+*Claude's hand, no AWS call. The user's decision, taken in the chat of the session forked from this one and
+relayed by it: "INT-13 = opção A, não construir agora; o caminho B (CodeConnections com host em VPC) fica
+para a issue https://github.com/felipenoris/AWS-DataScience/issues/268, a pedido do usuário."*
+
+- **[user] The decision**: no CodeConnections host, connection or account-level Git connection is built
+  now; the path read on 2026-10-25, a host with a VPC configuration in Production shared to Data Governance,
+  waits in issue #268 for a later evaluation.
+- **[Claude] The record**: INT-13's row and 7.2's text point to the issue, the waiting list's row is
+  removed, and `promotion.md` §N.6 lists the decision as taken.

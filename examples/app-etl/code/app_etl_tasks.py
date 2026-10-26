@@ -44,18 +44,20 @@ def summaries(outputs: str) -> list[dict]:
 
 
 def report(found: list[dict]) -> dict:
-    """The run's report: one entry per table, by input name, and the rows over all of them."""
+    """The run's report: one entry per table, by input name, with the governed table and snapshot
+    it was read from when its summary names them, and the rows over all of them."""
     tables = []
     for summary in sorted(found, key=itemgetter("input")):
         sums = {name: stats["sum"] for name, stats in summary["numeric"].items()}
-        tables.append(
-            {
-                "input": summary["input"],
-                "sha256": summary["sha256"],
-                "rows": summary["rows"],
-                "sums": sums,
-            }
-        )
+        entry = {
+            "input": summary["input"],
+            "sha256": summary["sha256"],
+            "rows": summary["rows"],
+            "sums": sums,
+        }
+        if "source" in summary:
+            entry["source"] = summary["source"]
+        tables.append(entry)
     return {"tables": tables, "rows": sum(table["rows"] for table in tables)}
 
 

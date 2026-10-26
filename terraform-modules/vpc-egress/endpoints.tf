@@ -53,15 +53,21 @@ locals {
       "elasticmapreduce-services",
     ]
 
-    # Reserved and empty, which is a state and not a stub (the user's decision, 2026-09-06).
-    # The `Workflows` blueprint is category 3 and Stage 10 builds orchestration on MWAA
-    # Serverless only, and the catalog splits the two shapes: `airflow-serverless` against the
-    # provisioned trio `airflow.api` / `airflow.env` / `airflow.ops`, plus `monitoring`, which is
-    # not in core_services. Which names the workers need is Stage 10's reading (step 1.2), and
-    # filling this in now would choose it by accident. The name is reserved so the day it is
-    # answered is one edit, and the empty list means a `GROUPS=mwaa` today creates nothing
-    # rather than erroring.
-    mwaa = []
+    # The MWAA Serverless API from the compute plane: the CI/CD CLI's `CreateWorkflow`,
+    # `StartWorkflowRun` and reads when a space deploys to the `dev` project (Stage 10 step 2.1,
+    # Stage 8 decision 22). The API has one name, `airflow-serverless.<region>.api.aws`, the endpoint
+    # service's private DNS name (the Region's catalog, 2026-10-26); no `.amazonaws.com` name
+    # resolves, and the compute plane's proxy refuses `.api.aws`, so without this endpoint a space
+    # reaches the API by no path (the proxy's `403 TCP_DENIED` five times on 2026-10-26).
+    #
+    #   airflow-serverless     HERE.
+    #   airflow.api/.env/.ops  NOT here: provisioned MWAA, denied at the root (`DenyProvisionedMwaa`).
+    #   monitoring             NOT here: it joins only if a reading shows the workers' metrics
+    #                          refused (Stage 10 verification xvi).
+    #
+    # The workers need none of it: configured runs succeed in every account without this endpoint
+    # (Stage 10 step 1.2).
+    mwaa = ["airflow-serverless"]
 
     # Stage 5b step 1.10 - the Redshift Serverless warehouse's API door, added 2026-09-20 because
     # the plan did not have one (the user found it by asking, before anything was built). Without

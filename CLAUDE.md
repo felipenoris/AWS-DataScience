@@ -326,7 +326,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   read shares and Production's write on `curated` with `curated.trades`, `production/data/` and
   `staging/data/` (data keys, outputs and derived buckets, workgroups, `app_outputs`), the job network,
   `staging/sagemaker/`, `production/workloads/` on `vpc-v0.4.0`; `deploytargets.py` and `datalake.py` 0
-  failed. Both egress slices, seven endpoints with `lakeformation`, rise with their next `make up`. The
+  failed. Both egress slices carry seven endpoints with `lakeformation` (first raised 2026-10-23). The
   `s3-bucket` module turns Bucket Keys on for every bucket it creates, so D31's zero-cost variant is
   unavailable (PR #225). **Pass 4 prepared 2026-10-22**: 5.1 is the managed policy `awsds-prod-data-scientist`
   in `production/data/` (1 to add, 1 to change) attached in `identity/sso/` (1 to add, 1 to change; the
@@ -340,16 +340,17 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   since 22:03 UTC (`TM-26`); the flag is on in Sandbox and the lake, unset in Staging and, since the user turned it off on 2026-10-25,
   in Production, whose flag the third run showed unnecessary (2026-10-24, xxviii). 9.1's
   `production/warehouse/` applied 22:07 UTC (the namespace; `EXC-13`'s Production sentence), refusal 9
-  lifted, `warehouse-compute/` planning 2 to add, 9.3 run 2026-10-24 (the schema `trades` at 1 TB, the roles, the `IAMR:` users, the default privileges, every `PUBLIC`
+  lifted, `warehouse-compute/` raised per warehouse sitting, 9.3 run 2026-10-24 (the schema `trades` at 1 TB, the roles, the `IAMR:` users, the default privileges, every `PUBLIC`
   `CREATE` revoked), **9.4 to 9.7 done 2026-10-25**: the DDL job and the load (decision 15's Production-only workflow, its schedule `DISABLED` through the slice) after the deploy role's `FollowItsOwnStatements` and the job group's 5439 egress; 9.5's datashare across Production, Data Governance (decision 14) and Sandbox; 9.7 read from `eighth-experimentation` through the access role's catalog read, its Lake Formation grant and `TEMP` (`redshift-connection.md` §G), and with Production's workgroup gone;
   `workloads-egress/` taking `GROUPS=redshift`; the `ml.m5.large` pair requested 2026-10-23 (`CASE_OPENED`); the
-  persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run but the space halves and the Data API negative
-  (INT-06 answered, open question 8 closed); the sittings in `runbooks/promotion.md`. 2026-10-25, nothing up: 9.5's
+  persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run but 8.1's space half (3.4's from a space 2026-10-26; INT-06 answered, open
+  question 8 closed; the Data API negative 2026-10-26); the sittings in `runbooks/promotion.md`. 2026-10-25, nothing up: 9.5's
   Terraform adoption applied (the registration and the LF-Tags by hand, no importer), xii's registry read in
   `model-chain.py transform staging` with `staging/foundation/`'s output, applied. **§N.2 run 2026-10-26**: xviii and
   vii closed, 9.4's DDL job idempotent from pipeline #102, 9.7 read with the project role's grant revoked and
-  Production's workgroup gone, `EXC-13`'s Sandbox half twice, xxiv deferred (§N.4's procedure to be rewritten for
-  the adopted resources); both computes down.
+  Production's workgroup gone, `EXC-13`'s Sandbox half twice, xxiv deferred, its procedure for the adopted resources
+  written 2026-10-26 (`promotion.md` §N.4a); both computes down. 3.1 read 2026-10-26, the debug role's
+  job-log read in a window included; the quota cases still `CASE_OPENED`.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, first fired 2026-10-25 (version 1 registered and approved by `awsds-deploy-prod`; pass 3 done, both transforms, 5.5). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
@@ -366,7 +367,17 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   3.8): the workflow created by `awscc` under `InfrastructureAccess`, the chain's machine started, diagnosed two
   failures (the worker's XCom encryption needs `kms:GenerateDataKey` in the key policy and in the role's, both
   fixed) and `SUCCEEDED`; 0.5, decision 19, decision 2's context and verification xvi's worker clauses read; the
-  failure rules mailed; verification ii's deploy-role half and 3.2's deliberate break wait for the pipeline.
+  failure rules mailed; ii's deploy-role half read 2026-10-24 and 3.2 closed 2026-10-25 by (b). Read
+  2026-10-26 with nothing up: both outputs buckets publish to EventBridge (3.6); `GetWorkflowRun` decrypts
+  through the service and `GetWorkflow` does not (decision 11's `kms:ViaService` narrowing applied
+  2026-10-26, the Deployment Manager's `GetWorkflowRun` answering `SUCCESS` under it);
+  the training operator's `print_log` read answers, its six `Decrypt` refusals per run CloudWatch Logs'
+  attempt with the reader's identity before its own (read the same day). **2.1 ran from a space on 2026-10-26**: the house CLI by its path, the CLI 1.0.9's
+  `ListDomains` (refused to a project's role) answered by the domain's id, and Sandbox's `mwaa` group's
+  `airflow-serverless` endpoint (`GROUPS=mwaa`, the name in the session's `NO_PROXY` until the next image);
+  xxix's portal run fails at the DAG's template. The template's `scripts/dev-cli.sh` carries both answers
+  (PR #269), the lookup is reported upstream as issue 413, and `default-v0.10.0`'s recipe makes the CLI's
+  name the house's through the base environment's activation hook.
 - **The Sandbox warehouse (5b, 6h)**: `sandbox/warehouse/` rank 53 `[P]` and `sandbox/warehouse-compute/`
   rank 54 `[E]` (base 4 / max 8 RPU, usage limit 10 RPU-h monthly `deactivate`), database `sandbox`, schema
   `lab`. One project per tag key is admitted (`avhvbqn37ty7m8`); decision 8 owns the second,
@@ -380,20 +391,27 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `for-use-with-all-datazone-projects`: the admin secret stays closed by its tags alone (`INV-20`, PR #187).
 - **Stage 6d in progress**: steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half (a reconciliation that
   writes the domain). The house image is `awsds-sandbox-dev-env` version 10, `default-v0.9.1-746ef084`
-  (2026-10-25, alias `0.9.1`), its `NO_PROXY` literal the 72 names of `vpc-egress-v0.18.0`: `DE-5` passes
-  (read 2026-10-25), and Stage 17 1.4's apply of the module on `sandbox/egress` is no longer held by the
+  (2026-10-25, alias `0.9.1`), its `NO_PROXY` literal the 72 names of `vpc-egress-v0.18.0`: `DE-5` fails
+  since `vpc-egress-v0.19.0`'s apply (2026-10-26), one name short, until `default-v0.10.0` carries the
+  recipe copy's 73, and Stage 17 1.4's apply of the module on `sandbox/egress` is no longer held by the
   image (decision 4). The remote IDE works (6d step 7, 2026-09-11).
 - **Stage 6e** is held by PR #108 (decision 17, the user's 5.5 agreements; Sonnet 4.5 is Legacy since
   2026-10-08). A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint);
   retention mode `none` is declared in all 17 Regions and frozen by 7.5; `claude-opus-5` and
   `claude-sonnet-5` are refused for this account (`EXC-08`).
-- **Stage 6f in progress**: `CT-7` says the catalog road has not reached the lake, and decision 1
-  recommends (c); no IAM condition key reaches business-name generation, decision 3's last input (PR #187); each
+- **Stage 6f in progress**: decision 1 taken 2026-10-26 by the user as (b), a pilot of SMUS's native
+  flow even without LF-Tags (D22 and D26 amended; `GOVERNANCE.md` §Grants' catalog road; `TM-27`). Step
+  11 written and planned (PR #270), its 11.2 applied 2026-10-26: `data-governance/publishing/` (the VPC
+  `10.70.0.0/16` the managed `Tooling` takes, the prerequisites, 44 objects), then, behind
+  `LAKE_PUBLISHERS`, `governance/`'s `lake-publishing` profile, `data/`'s two SMUS seats and the publisher's grant on `curated.trades`; the
+  Governance Manager creates `governed-lake` and approves `eighth-experimentation`'s subscription in the
+  portal; a rollback leaves the projects bucket and one registration (the Data OU's deny). No IAM
+  condition key reaches business-name generation, decision 3's last input (PR #187); each
   project's `Tooling` data source fails daily (`EXC-11`); `sagemaker-prereqs-v0.8.0` gives the manage-access
   role the Glue policy every `DataLake` environment failed without, applied 2026-10-20; decision 6 taken:
   `test-experimentation` holds an `ACTIVE` `DataLake` environment, `eighth-experimentation`'s failed record
   waits for 2.7. **6g** owes 2.4's Athena
-  read, refused as written, and decision 1's proxy-host replacement at the next `production/proxy/` apply.
+  read, refused as written and unlocked by 6f step 11's subscription, and decision 1's proxy-host replacement at the next `production/proxy/` apply.
 - **Security Hub paused 2026-10-09** (`EXC-14`): `awsds-fsbp-only` keeps the service with no standard;
   the revert is `runbooks/security-hub.md` §R.
 - **The hub (D38, 6c)**: five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
@@ -407,15 +425,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   it between the two Sandbox projects and bundles it, the pipeline deploys the bundle, and a Step
   Functions machine per chain with a Scheduler schedule starts the workflows. The tooling is
   `awsds-workflows` (runbook §T).
-- **Stage 7 in progress**: passes 1-2 closed 2026-10-12 but three persona memberships, pass 3 nearly done
-  (7.2 read 2026-10-25), **pass 4 closed 2026-10-26** (8.1's start 1 min 42 s to the first HTTPS answer; 8.2's
+- **Stage 7 in progress**: passes 1-2 closed (3.5's memberships 2026-10-24), pass 3 with INT-09's clone from a space (2026-10-26),
+  **pass 4 closed 2026-10-26** (8.1's start 1 min 42 s to the first HTTPS answer; 8.2's
   rehearsal 24 min 16 s from destroy to the restored sign-in page, the host `i-0b4cb5f62e65abf70` since, on a new data volume; 8.3
   diffed), §I step 6's settings done the same day (event tracking, Service Ping, the version check, the runner
   release fetch and Auto DevOps off, Public restricted, sign-up kept on, no `TM` row). Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
   `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners out, and the build runner rises
-  only with `BUILD=1` (decision 5, 2026-10-24). Owed: INT-09's clone from a
-  notebook (a space on version 10 with a persona PAT) and INT-19's notebook surface; 3.5's memberships done
-  2026-10-24, 5.6's ECR grant applied 2026-10-22. The GitLab backups of 2026-10-13, 10-15, 10-25 and 10-26 leave
+  only with `BUILD=1` (decision 5, 2026-10-24). Owed: Validation 2's `PX-3`
+  (the proxy running, `--on-host`; the offline half read 2026-10-26), a backup before 2026-11-26. The GitLab backups of 2026-10-13, 10-15, 10-25 and 10-26 leave
   the bucket on 2026-11-13, 11-15, 11-25 and 11-26. `make gitlab-up` applies `egress/` before it starts the host
   (2026-10-26: `tooling` at rank 52, one rank order for `[D]` and `[E]` in `scripts/slices.py`), so the Session
   Manager agent meets the `ssm` endpoint at its start instead of hibernating for twenty minutes; the first run
@@ -426,7 +443,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   3.12 with its recipe in GitLab, copied under `gitlab/`), four deploy roles, and `examples/app-etl/` an
   application since 2.5, on GitLab's `main` since 2026-10-19 with its eleven CI/CD variables;
   `v0.2.1`'s pipeline passed `test-deploy` and stored the bundle, and its GitLab release failed on the
-  notes' backticks, fixed in MR !4. Pass 4 runs after Stage 9 with Stage 10's passes 1-2
+  notes' backticks, fixed in MR !4. Pass 4 ran after Stage 9 with Stage 10's passes 1-2
   (decision 23). Taken by the user 2026-10-22, as recommended: decision 2 keeps `awsds/infrastructure` for
   pass 4, 2.5 makes Stage 9's `awsds-<env>-job-exec` the Staging and Production job role, 3.9 writes no S3
   grant, decision 20's `If-None-Match` deny is not written; decision 26 leaves an application's base pin
@@ -448,17 +465,19 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (`runbooks/promotion.md` §0.6), the sittings §T then §V. **The first promotion ran 2026-10-24**: `v0.3.3`'s
   pipeline #71 took Staging's leg to `SUCCEEDED` and deployed Production, once the lab's CA, the workflow's
   tag-on-create, the Studio hook under a deploy profile and the release file inside the clone's folder were
-  fixed; **Staging's `egress/` is the user's up and down (decision 27, 2026-10-24: the pipeline raises and destroys no shared slice; `staging-check` reads it, no teardown job, `staging-gate` before the leg (decision 28, 2026-10-25), refusal 10, the deploy roles' egress grant narrowed to the read, planned and unapplied)**; 3.7 recorded `v0.3.3`. **§V, 2026-10-24**: the mirror at `c714c47d` (`staging-down` skips the hook
+  fixed; **Staging's `egress/` is the user's up and down (decision 27, 2026-10-24: the pipeline raises and destroys no shared slice; `staging-check` reads it, no teardown job, `staging-gate` before the leg (decision 28, 2026-10-25), refusal 10, the deploy roles' egress grant narrowed to the read, applied 2026-10-25)**; 3.7 recorded `v0.3.3`. **§V, 2026-10-24**: the mirror at `c714c47d` (`staging-down` skips the hook
   as a deploy role); `v0.4.0`'s pipeline #74 stopped at `test-deploy`, which read app-etl-train's ARN for
   app-etl's run (MR !9), and `v0.4.1`'s #77 at `evaluate`, whose template met the XCom as JSON text
   (MR !10), so the data release is `v0.4.2` and ix's drift `v0.4.3`. **`v0.4.6` promoted 2026-10-25/26**
   (pipeline #102, `EXC-22`'s `KmsKeyId`): both legs green, `EXC-22` closed in both accounts, xii's call read
   in Production's trail, the four `release.tf`s at `v0.4.6` (the orchestration slices' defaults too: a by-hand
-  apply on a stale default rolls the workflows back), Staging's first post-release `make down` clean.
+  apply on a stale default rolls the workflows back), Staging's first post-release `make down` clean. With nothing up on 2026-10-26: xxiv answered, vii's third
+  half still open (no reconciliation), 3.3's pin read (the script takes `--SOURCE_SNAPSHOT`; the leg's source
+  of the id is a decision), the mirror five commits behind `main`, pushed before the next tag.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
-- **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-25`): `TM-17`, the project role's managed policy
+- **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-27`): `TM-17`, the project role's managed policy
   reaching other accounts' `airflow-celery-*` queues and Bedrock functions, is the user's to decide;
   `TM-21` applied 2026-10-19 with Stage 17's 1.3, its finding `RESOLVED` (read 2026-10-21); the data cells filters
   create nothing until decision 12, which since 2026-10-20 also weighs Lake Formation's RLS policies (an
@@ -492,11 +511,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `--no-browser`.
 - **Module tags**: `orchestration-v0.2.1` (both callers pinned 2026-10-25, the schedule's input carrying the
   Scheduler's placeholder literally; `production/orchestration` applied on it 2026-10-25, its three schedules
-  `DISABLED` between sittings), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
+  `DISABLED` between sittings), `vpc-egress-v0.19.0` (`sandbox/egress`, the `mwaa` group's `airflow-serverless`, applied 2026-10-26 with
+  `GROUPS=mwaa`; the other callers `v0.17.0`), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); the laptop's Terraform never moves ahead of
-  the deploy image's (Lesson 76); never pipe a command whose exit
+  the deploy image's (Lesson 76); a deploy from a space takes `GROUPS=mwaa`, and every portal tab is closed
+  before `make down ENV=sandbox` (`sagemaker-application.md` §D); never pipe a command whose exit
   code matters (Lesson 46); a module change is exercised by planning a caller, never by `validate`;
   `-refresh=false` is forbidden on `sandbox/data/`, where SMUS is a Lake Formation admin (OQ 24); never add
   an `sts:` action to the RCP without reading `CT.STS.PV.1`'s exclusion note; resolve an account by exact
@@ -651,6 +672,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     that cannot move on the spot move first, or the writer stays off the shared states.**
 77. **A gate that reads a feed gives a dated verdict — the lock that passed when it was cut fails when it is
     tagged, so the gate runs on the laptop the day of the tag, before the tag.**
+78. **A stand-in for a refused call answers what the real call answers to the identity it imitates — read
+    from the path that already works, never from what the first caller tolerates.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

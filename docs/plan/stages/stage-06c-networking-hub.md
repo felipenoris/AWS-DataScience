@@ -729,7 +729,9 @@ premise (no public egress) becomes true.
   call) is a different service from `bedrock-agent`. `mwaa` is **reserved and empty**: `Workflows` is
   category 2 and the estate's decision is *MWAA Serverless only*, while the catalog splits
   `airflow-serverless` from the provisioned trio, so filling it in now would settle a Stage 10 question
-  by accident. Measured end to end: **12** interface endpoints with no flag, **23** with `bedrock,emr`.
+  by accident. Stage 10 settled it on 2026-10-26: `vpc-egress-v0.19.0` fills the group with
+  `airflow-serverless` alone, the API the CI/CD CLI calls from a space, and the provisioned trio stays out.
+  Measured end to end: **12** interface endpoints with no flag, **23** with `bedrock,emr`.
   *The original step follows:*
 - **5.3 — [Claude reads, user decides] Close the gap between the required table and the enabled
   blueprints**: the guide's **optional** table is keyed to *"projects that include blueprints using the

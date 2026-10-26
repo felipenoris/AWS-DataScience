@@ -693,6 +693,7 @@ app-etl/
 ├── .gitlab-ci.yml    # the pipeline, with the shared gates of awsds/ci-gates
 ├── Dockerfile        # the application image and the job image, FROM base by digest: the lock's dependencies, not the project
 ├── manifest.yaml     # the SageMaker application: its name, its content and its stages (D41)
+├── scripts/dev-cli.sh  # the CI/CD CLI for the `dev` stage in a space (Stage 8 decision 22); never bundled
 ├── workflows/
 │   └── app-etl.yaml  # the MWAA Serverless definition in the CI/CD CLI's notation, checked by the D28 lint on its rendered copy
 ├── code/             # modules for PythonOperator/BashOperator tasks, zipped by CI (D28 class 2b)

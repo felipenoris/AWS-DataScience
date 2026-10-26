@@ -131,8 +131,9 @@ data "aws_iam_policy_document" "deployment_manager" {
 
   # A ciphertext decrypts only under the encryption context it was encrypted with, and only what the
   # workflow service encrypts carries a workflow's ARN in it: no S3 object's context does, so the set
-  # still decrypts no output (D31). The data key's policy names this set's role for the same call
-  # (Stage 9's data/ slices); kms:ViaService narrows it once a trail shows the calls carry it.
+  # still decrypts no output (D31). kms:ViaService admits the decrypts the workflow service makes in the
+  # reader's session at GetWorkflowRun, and no direct call (Stage 10 decision 11). The data key's policy
+  # names this set's role for the same call, under the same two conditions (Stage 9's data/ slices).
   statement {
     sid       = "DecryptWhatTheWorkflowServiceEncrypts"
     effect    = "Allow"
@@ -143,6 +144,12 @@ data "aws_iam_policy_document" "deployment_manager" {
       test     = "Null"
       variable = "kms:EncryptionContext:aws:airflow-serverless:workflow-arn"
       values   = ["false"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["airflow-serverless.${var.region}.amazonaws.com"]
     }
   }
 
