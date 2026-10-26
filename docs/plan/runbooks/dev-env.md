@@ -276,10 +276,11 @@ two files the variables alone do not cover — `/etc/apt/apt.conf.d/01proxy` and
 because `sudo` resets the environment (measured 2026-09-08, and true under every candidate).
 
 **The list is a dated literal in the Dockerfile**, Sandbox's: the output `no_proxy_all_groups` of
-`<account>/egress`, verbatim. The copy under `gitlab/` carries the reading of 2026-10-18 (72 entries,
-sha256 `6faf2e4761622508`, the `mlflow` group's names among them), which reaches GitLab with the next
-release's merge request; version 9, `default-v0.8.0`, bakes the reading of 2026-10-10 (70 entries,
-sha256 `aafa08da98a61f5c`). The image
+`<account>/egress`, verbatim. The copy under `gitlab/` carries the reading of 2026-10-26 (73 entries,
+sha256 `61f1e1646df12c14`, the `mwaa` group's `airflow-serverless.us-west-2.api.aws` the newest), which
+reaches GitLab with the next release's merge request; version 10, `default-v0.9.1`, bakes the reading of
+2026-10-18 (72 entries, sha256 `6faf2e4761622508`, the `mlflow` group's names among them), and version 9,
+`default-v0.8.0`, the reading of 2026-10-10 (70 entries, sha256 `aafa08da98a61f5c`). The image
 serves every session, so it carries every optional endpoint group's names whatever `GROUPS=` a session
 names. Without them, a session that turns a group on sends that group's calls out through the proxy as
 public calls; with them, a session that leaves it off times out on those names. The output reads each

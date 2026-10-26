@@ -985,8 +985,8 @@ cycle charge (0.36 to 0.87 per Sandbox `[E]` cycle, 0.21 to 0.38 per GitLab cycl
    `SELECT` reads a refusal, as 6g 2.4's read does, and the step stays owed.
 
 10. **The downs**: **[user]** the token revoked (*Access tokens → Revoke*) and `git credential-cache exit`
-    in the terminal; a query editor left open closed first (an app the portal is checking out refuses the
-    hook's delete, Stage 9's log of 2026-10-26); then:
+    in the terminal; every portal tab closed first, since an open project page starts the space's app
+    again and an app the portal is starting refuses the hook's delete (Stage 9's log of 2026-10-26); then:
 
     ```bash
     make down ENV=sandbox
@@ -995,7 +995,13 @@ cycle charge (0.36 to 0.87 per Sandbox `[E]` cycle, 0.21 to 0.38 per GitLab cycl
     which deletes the Studio apps before it destroys `egress/` (the space and its volume stay), then
     `make gitlab-down`, the tunnel down, `make hub-down`. **[Claude]** §R on the three profiles,
     `make status`, and each step's entry in its stage's log: Stage 7's for x and xi, Stage 9's for 3.4,
-    Stage 10's for 2.1 and xxix.
+    Stage 10's for 2.1 and xxix. **Done 2026-10-26** (Stage 7's log): GitLab stopped at 06:11:15 UTC; the
+    hook deleted the three apps at 06:10, and the open portal tabs started both projects' apps again at
+    06:13; the first `make hub-down` left no `StopInstances` in the trail. With every tab closed the user
+    ran both downs again: the proxy and the WireGuard host stopped at 06:20:48 to 06:20:51, the hook's
+    `DeleteApp` refused eight times on the app still `PendingCheckout` until 06:25:04, both apps deleted at
+    06:26:10 and 06:26:12; §R read no endpoint, no NAT and 0.000 USD/h in Production, Staging and Sandbox at 06:30, and
+    `make status` 0.0000 USD/h.
 
 ### N.4 The deliberate exercises, each the user's decision
 
@@ -1076,7 +1082,8 @@ and 6), at 1.44 USD per query-hour per workgroup.
   `staging/orchestration/` per application (Stage 8 decision 27).
 - **A `monitoring` endpoint** as the positive control: Stage 10 xvi's metrics clause.
 - **S3 data events** (Stage 11): Stage 8 xx's writing identity.
-- **A release that removes a file**: Stage 8 xxvi. **A workflow's 50th version**: Stage 8 xxiii.
+- **A release that removes a file**: Stage 8 xxvi. **A workflow's 50th version**: Stage 8 xxiii, read
+  2026-10-26 at 12 for the `test` project's `app-etl` and 6 for its `_train` twin.
 - **A blueprint reconciliation**: Stage 8 vii's third half, read in Sandbox's trail (`UpdateDomain`,
   `UpdateStack`) at any sitting; read again 2026-10-26 with nothing up, none since 2026-10-11.
 - **A date**: `EXC-13`'s Production half, after the secret's first rotation, due by 2026-11-22, read at the
@@ -1096,35 +1103,139 @@ and 6), at 1.44 USD per query-hour per workgroup.
 - **Taken 2026-10-25**: Production's full-table flag turned off by the user in the console, bracketed by
   `DT-5` (Stage 9 decision 13; `TM-26`'s Production half closed, the lake's flag sufficing).
 
-### N.6 The order of what is left, 2026-10-26
+### N.6 The order of what is left, after the Sandbox sitting of 2026-10-26
 
-Read on 2026-10-26 against the four stage files and their logs (Stages 7 to 10), with nothing up. Each
-sitting closes what the one before it cannot; a sitting starts on the user's word, since it is metered.
+Read on 2026-10-26 against the four stage files and their logs (Stages 7 to 10), with nothing up, after
+N.3. Each sitting closes what the one before it cannot; a sitting starts on the user's word, since it is
+metered.
 
-1. **With nothing up, the user's decisions** (the waiting list): the mirror's push before the next tag;
-   Stage 8 3.3's snapshot pin, where the leg reads the id and how it reaches the job; Stage 10 decision
-   11's `kms:ViaService` narrowing, its evidence read; the training operator's refused log read, a key
-   grant through `logs` or `print_log: false` in the template; Stage 8 xxviii's active half's form; Stage
-   8 decision 1's zlib pair (the steward's); decision 26's equivalence list, version 10 unread; INT-13's
-   path; and, outside the four stages, 6f decision 1, which 8.1's space half waits on.
-2. **The Sandbox sitting**, N.3 command by command (`make hub-up`, `make gitlab-up RUNNERS=0`, the
-   tunnel, `make up ENV=sandbox ONLY=egress`, the persona's space on version 10): Stage 7's INT-09 clone
-   and push with INT-19's notebook surface (verifications xi and x; a persona token first), Stage 9 3.4's
-   project-role half, Stage 10 2.1 and xxix's second half, and 8.1's space half once 6f decision 1 is
-   taken. The waiting list's Sandbox row carries the other stages' items for the same sitting.
-3. **The next release** (N.1's shape: the hub, `make gitlab-up BUILD=1`, Staging's `egress/`, Production's
-   `workloads-egress/`): the mirror pushed, the template's merge request with what step 1's decisions
-   wrote, the tag, the legs, 3.7; and the exercises the user takes with it: Stage 8 xv (the proxy stopped
-   alone), xxviii's active half in its job form, Stage 10 xx's second half (an undeclared Glue job on a
-   branch's tag), Stage 8 xxvii's plan half once the Amazon Linux parameter moves, Stage 7 Validation 2's
-   `PX-3` (`./aws/proxy.py --on-host` with the proxy running) and a GitLab backup before 2026-11-26.
-4. **The warehouse sitting** (both computes): xxiv on N.4a; after 2026-11-22, `EXC-13`'s Production half;
+1. **With nothing up, the user's decisions** (the waiting list): the CI/CD CLI's domain lookup from a space
+   (the upstream report, the template's script, the house image's `PATH` order), which the next house image
+   carries if taken; the mirror's push before the next tag; Stage 8 3.3's snapshot pin, where the leg reads
+   the id and how it reaches the job; Stage 10 decision 11's `kms:ViaService` narrowing, its evidence read;
+   Stage 8 xxviii's active half's form; Stage 8 decision 1's zlib pair (the steward's); INT-13's path; the
+   deployment manager's approval of a debug window (N.7.2); and, outside the four stages, 6f decision 1,
+   which 8.1's space half waits on. The training operator's refused log read is no longer among them:
+   the read answers (Stage 10 1.3, 2026-10-26).
+2. **The debug window** (N.7.2), with nothing up: Stage 9 3.1's debug-role read of a job log.
+3. **The GitLab sitting** (N.7.1): the house image `default-v0.10.0` with the 73-name literal, the mirror
+   pushed at `main`, Stage 7 Validation 2's `PX-3` and a GitLab backup.
+4. **The next release** (N.1's shape: the hub, `make gitlab-up BUILD=1`, Staging's `egress/`, Production's
+   `workloads-egress/`): the template's merge request with what step 1's decisions wrote, the tag, the legs,
+   3.7; and the exercises the user takes with it: Stage 8 xv (the proxy stopped alone), xxviii's active
+   half in its job form, Stage 10 xx's second half (an undeclared Glue job on a branch's tag), Stage 8
+   xxvii's plan half once the Amazon Linux parameter moves.
+5. **The second Sandbox sitting** (N.7.3), once `default-v0.10.0` is registered or 6f decision 1 is taken:
+   Stage 9 8.1's space half, and the `dev` deploy on the new version with no session export.
+6. **The warehouse sitting** (both computes): xxiv on N.4a; after 2026-11-22, `EXC-13`'s Production half;
    the free trial's pair of readings.
-5. **What waits on something else** (N.5): a second application (Stage 10 xxv, the chain's order,
+7. **What waits on something else** (N.5): a second application (Stage 10 xxv, the chain's order,
    xxviii's inbox marker), Stage 11's S3 data events (Stage 8 xx; Stage 9 ix's `VPC-Workloads` branch,
    which a management-event trail cannot show), a workflow's 50th version, a release that removes a
    file, a blueprint reconciliation, and the halves no step provokes (Stage 9 xv's role halves, xxvii's
    cancel, vi's 10 GB table, xxviii's `glue:UpdateTable` run; Stage 10 xvi's metrics clause and xviii).
+
+### N.7 The sittings prepared 2026-10-26
+
+Written with nothing up, after N.3. N.1, N.2 and N.4a carry the release's and the warehouse's commands;
+these are the sittings N.6 adds.
+
+#### N.7.1 The GitLab sitting: the house image `default-v0.10.0`
+
+What it closes: Stage 8 1.1's 73-name literal, so `DE-5` passes again and a deploy from a space needs no
+session export (Stage 10 2.1); with it, the mirror at `main` before the next tag, Stage 7 Validation 2's
+`PX-3`, and a GitLab backup before the oldest leaves the bucket on 2026-11-13. While up, at
+`cost-model.md`'s rates: the hub about 0.026 USD/h, GitLab and SharedServices' twelve endpoints 0.187, the
+build runner 0.2117, the test and deploy runners 0.0376 and their root volumes 0.0136, about 0.48 USD/h.
+
+1. **[Claude] The day of the tag, before it** (Lesson 77): the lock's audit on the laptop
+   ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md), *Before a build*) and the
+   copy against the estate:
+
+   ```bash
+   ./scripts/check-gitlab-mirror.py --plan
+   ```
+
+   **Read 2026-10-26** (Stage 8's log): 454 pins audited, 57 findings accepted by id or alias, none
+   blocking, `nltk` 3.10.3's `PYSEC-2026-3740` a warning with no fixed version; `GM-1` to `GM-8` passing,
+   73 names, `61f1e1646df12c14` on both sides. A reading of another day is taken again.
+2. **[user] The raises**: `make hub-up`, `make gitlab-up BUILD=1`, the tunnel ([`gitlab.md`](gitlab.md) §U).
+3. **[user] The merge request on `awsds/dev-env`** from the copy under `gitlab/awsds/dev-env/`: the
+   Dockerfile's `NO_PROXY_LIST` at 73 names, and the `PATH` order if the user takes it (step 1 of N.6), by
+   `gitlab.md` §M's procedure; the branch pipeline runs the recipe checks and the gates, and the steward
+   merges. `./scripts/gitlab-mirror.py` then copies the merge back.
+4. **[user] The tag** `default-v0.10.0` on the merge, a minor since the recipe changes, once `git
+   ls-remote --tags` on `awsds/dev-env` reads it free: the release pipeline builds `base` and `dev-env` on
+   the build runner, runs the smoke and the scans, waits on the release gate, the user's manual job, and
+   `register` creates Sandbox's version 11, alias `0.10.0`.
+5. **[Claude] The readings**: `./aws/devenv.py` (`DE-5` passing against version 11, `DE-1` 73 entries), the
+   version's `ContainerImage` the pushed digest, and the README's release row with both digests and sizes,
+   in the copy.
+6. **[user] The mirror** pushed at `main` from the project folder, read at the commit `origin/main` holds:
+
+   ```bash
+   git push gitlab main
+   ```
+
+7. **[user] A GitLab backup** by hand in a Session Manager shell ([`gitlab.md`](gitlab.md) §B), read in the
+   bucket after. **[Claude⚡]** `PX-3`, deliberately, since the flag's SSM Run Command is a write API:
+
+   ```bash
+   ./aws/proxy.py --on-host
+   ```
+
+8. **The downs**: `make gitlab-down`, the tunnel, `make hub-down`; **[Claude]** §R and each step's entry in
+   Stage 7's and Stage 8's logs.
+
+#### N.7.2 The debug window: Stage 9 3.1's debug-role read
+
+Needs nothing up: the window is an apply on `production/sagemaker/`'s trust, the read a CloudWatch Logs call.
+Step 6.3's sequence, run on 2026-10-22, with one read added. The infrastructure user's read of a job stream
+on 2026-10-26 answered with no key grant through `logs` (Stage 9's log), so the debug role's read is
+expected to answer the same way, its refused `Decrypt` in the trail beside the service's own.
+
+1. **[user] The approval** in writing in this chat, as the deployment manager, with the window's end (an
+   hour from the apply is enough for one assumption and the read).
+2. **[Claude⚡]** the plan as `awsds-infra-prod`, from an initialised slice folder ([`terraform-changes.md`](terraform-changes.md)
+   Recipe A), expected *0 to add, 1 to change*, the trust's `DateLessThan` alone and the slice's check
+   warning that the window is open; the apply on the user's word:
+
+   ```bash
+   AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/sagemaker plan -input=false -var debug_window_end=<the approved end> -out="$HOME/tmp/debug-window.tfplan"
+   ```
+
+   ```bash
+   AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/sagemaker apply -input=false "$HOME/tmp/debug-window.tfplan"
+   ```
+
+3. **[user] The persona's session** as the Data Scientist User (`aws sso login --sso-session
+   awsds-scientist --no-browser`, the URL answered in a private window), the assumption of 6.3's item 1,
+   then the read through the assuming profile, a job stream named by `describe-log-streams`:
+
+   ```bash
+   aws logs describe-log-streams --log-group-name /aws/sagemaker/ProcessingJobs --order-by LastEventTime --descending --max-items 1 --query 'logStreams[0].logStreamName' --output text --profile awsds-scientist-prod-debug --region us-west-2
+   ```
+
+   ```bash
+   aws logs get-log-events --log-group-name /aws/sagemaker/ProcessingJobs --log-stream-name '<the stream>' --limit 5 --start-from-head --profile awsds-scientist-prod-debug --region us-west-2
+   ```
+
+   Expected: the events; a refusal is recorded with its wording, and its layer read in the trail.
+4. **[Claude]** the trail: the assumption, the read, and the `Decrypt` pair, the debug role's refused one
+   `invokedBy logs.amazonaws.com` and the service's through `fas.s3.amazonaws.com`. The alarm's mail is
+   the user's to read.
+5. **[Claude⚡] The closing apply** without the variable, re-planned `No changes`, and `./aws/deploytargets.py
+   awsds-infra-prod` reading `DT-9` closed, in the same sitting.
+
+#### N.7.3 The second Sandbox sitting
+
+N.3's raises and downs, without GitLab when no clone is owed. What it closes: Stage 9 8.1's space half
+once 6f decision 1 is taken and its grant applied (N.3 step 9); and, once `default-v0.10.0` is registered,
+the `dev` deploy from a space on version 11 by [`sagemaker-application.md`](sagemaker-application.md) §D
+with no `NO_PROXY` export, `getent hosts airflow-serverless.us-west-2.api.aws` answering a `10.20.x` address
+and the proxy log silent on the name, and with the CLI by its name if the image's `PATH` order changed.
+The space's image is set to `awsds-sandbox-dev-env` version 11 (alias `0.10.0`) in its settings before
+*Start*, as N.3 step 3 does for version 10: an image's environment is read when its app starts.
 
 ## Q. After the quotas: Stage 10's pass 3
 
@@ -1138,4 +1249,10 @@ The quotas are above zero since 2026-10-24 (§0.2), and pass 3 is the data relea
 
 Zero burn in every account the sitting raised, no interface endpoint left, no NAT gateway anywhere;
 then the stage's own instrument (`cicd.py`, `deploytargets.py`, `orchestration.py`, `datalake.py`,
-`warehouse.py` after §W), `make status`, and the log entry of each step, in the sitting it ran.
+`warehouse.py` after §W), `make status`, and the log entry of each step, in the sitting it ran. After a
+Sandbox sitting, no Studio app in either project's domain, since an open portal page starts one again
+after the down's hook (N.3 step 10):
+
+```bash
+for d in d-p6gthxc82ckg d-lfgbdrjncmsu; do aws sagemaker list-apps --domain-id-equals "$d" --query 'Apps[?Status!=`Deleted`].[SpaceName,AppType,Status]' --output text --profile awsds-infra-sandbox-1 --region us-west-2; done
+```

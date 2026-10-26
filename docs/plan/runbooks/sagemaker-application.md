@@ -68,7 +68,7 @@ estate gives it, with the section that develops it.
 | **XCom** | Airflow's channel between tasks: what a task returns, read by a later task's template. §C |
 | **a Glue job** | AWS Glue, serverless Spark: the task kind that reads and writes governed data, since Lake Formation hands credentials to Glue and to no other engine here. §G |
 | **a processing job, a training job** | SageMaker jobs: a container run on an instance SageMaker provisions, with inputs copied in before the command and outputs copied out after it; the container has no network. §C |
-| **the CI/CD CLI** | `aws-smus-cicd-cli`, AWS's command-line tool for SageMaker Unified Studio: it reads the manifest, copies the application's files into a project and creates its workflows there. It never reaches Staging or Production. §M |
+| **the CI/CD CLI** | `aws-smus-cicd-cli`, AWS's command-line tool for SageMaker Unified Studio: it reads the manifest, copies the application's files into a project and creates its workflows there. It never reaches Staging or Production. The house image carries 1.0.9 in its own environment, which a space's `PATH` reaches after the SageMaker Distribution's 1.0.8 (§D). §M |
 | **the manifest** | `manifest.yaml`, the CLI's description of the application: what to copy, which workflows to create, and the two projects (`dev`, `test`) it deploys to. §M |
 | **the bundle** | the zip the CLI makes of the manifest's folders, the release's content; Staging and Production receive the bundle's files, rendered for the account. §M, §T |
 | **a release** | a git tag `v<major>.<minor>.<patch>` on `main`; its pipeline builds the image, tests the bundle in a project, stores the bundle and promotes it. §T |
@@ -108,7 +108,7 @@ pipeline writes and only workflows run.
 
 | Stage | Where it runs | Deployed by | Identity of the tasks | Data |
 |---|---|---|---|---|
-| `dev` | the Sandbox project `eighth-experimentation` | the CI/CD CLI (`aws-smus-cicd-cli` 1.0.9), from a space, while the application is engineered | the project role, `datazone_usr_role_<project>_<env>` | the project's `shared/<app>/` prefix under the project key |
+| `dev` | the Sandbox project `eighth-experimentation` | the CI/CD CLI (`aws-smus-cicd-cli` 1.0.9, the house image's by its path), from a space, while the application is engineered (§D) | the project role, `datazone_usr_role_<project>_<env>` | the project's `shared/<app>/` prefix under the project key |
 | `test` | the Sandbox project `test-experimentation` | the CLI, in the tag pipeline's `test-deploy` job, as `awsds-deploy-sandbox-test` (Stage 8 decision 19) | the project role | the project's `shared/<app>/`, emptied before each deploy |
 | Staging | the Staging account, no project and no portal | the pipeline's `staging-deploy` as `awsds-deploy-staging`, from the release's bundle | `awsds-staging-wf-<workflow>` on the worker, `awsds-staging-job-exec` in every job | `awsds-staging-outputs` under `alias/awsds-staging-data`; the lake read-only through Staging's share |
 | Production | the Production account, `VPC-Workloads` | the pipeline's `production-deploy` as `awsds-deploy-prod`, after two manual gates | `awsds-prod-wf-<workflow>`, `awsds-prod-job-exec` | `awsds-prod-outputs` under `alias/awsds-prod-data`; the lake read and, for the declared tables, written; the governed warehouse |
@@ -121,12 +121,12 @@ pattern is.
 |---|---|---|
 | the workflow | `<app>_<project>_<workflow>`, every character outside `[A-Za-z0-9_]` turned into `_`, created by the CLI's `workflow.create` with the project role, the Tooling subnets, the project's group and key, tagged `CreatedBy=SMUS-CICD` and `Pipeline=<app>` | `awsds-<env>-wf-<key>`, an `awscc_mwaaserverless_workflow` of `<env>/orchestration/`, pinned to the S3 `VersionId` of its rendered definition and of its code package, `trigger_mode` `manual_only` |
 | the execution role | the project role | `awsds-<env>-wf-<key>`, under `awsds-<env>-app-boundary`, holding the job starts, its prefixes of the outputs bucket and nothing of the lake |
-| the log group | `/aws/mwaa-serverless/<domain>-<project>/<name>`, no retention | `/awsds/<env>/wf/<key>`, 90 days, under the data key |
+| the log group | `/aws/mwaa-serverless/<domain>-<project>/<name>`, under the project key, no retention | `/awsds/<env>/wf/<key>`, 90 days, under the data key |
 | the Glue job | `<app>-{proj.id}`, created and updated by the task itself from `create_job_kwargs` | `awsds-<env>-<app>` and `awsds-<env>-<app>-<suffix>`, declared by `<env>/app/<app>/` on the job role and the account's Glue connection |
 | a SageMaker job | the project role, the project's subnets, group and key, the application image by digest from Production's registry | the job role, the job subnets and group of `<env>/sagemaker/`, the data key, the same image by digest |
 | the definitions and the code | `shared/<app>/{workflows,src,glue,code}/`, written by the CLI's `deploy` | `applications/<app>/<tag>/` in the outputs bucket, written by the release job with each workflow rendered for the account |
 | the inbox and the results | `shared/<app>/inbox/`, `work/`, `outbox/`, `tables/`, `models/` | `inbox/<app>/`, `<app>/work/`, `<app>/outbox/`, `<app>/tables/`, `models/<app>/` in the outputs bucket (§W, the render table) |
-| what starts a run | the CLI's `run`, or the manifest's `workflow.run` at the `test` deploy | a chain: the Step Functions machine `awsds-<env>-chain-<key>`, started by its EventBridge Scheduler schedule, by the Staging leg or by a person (§X) |
+| what starts a run | the CLI's `run`, or the manifest's `workflow.run` at the `test` deploy; never the portal, whose run carries no stage variable and fails at the template (§D) | a chain: the Step Functions machine `awsds-<env>-chain-<key>`, started by its EventBridge Scheduler schedule, by the Staging leg or by a person (§X) |
 | the alert on a failure | none | the rules `awsds-<env>-wf-<key>-failed` and `awsds-<env>-chain-<key>-failed`, mailing `awsds-<env>-alerts` |
 
 **What a release is made of.** D28 names the artifact classes that may cross into a deployment account,
@@ -298,70 +298,131 @@ is a control (the runners' half is [`gitlab.md`](gitlab.md) §K, the gates' §G,
 
 ## D. The development cycle in Sandbox
 
-A data scientist works in a *space*, a JupyterLab or Code Editor instance inside the Sandbox project,
-on the house image (`awsds-sandbox-dev-env`). The space's `~/shared/` folder is the project's `shared/`
-S3 prefix, its Python carries the CI/CD CLI (Stage 8 decision 22), and every command it runs holds the
-project role's credentials, so nothing has to be configured to reach AWS. The checkout of the
-application lives in the space or on the laptop. A clone in a space resets git's credential helpers first
-(`git -c credential.helper= -c credential.helper='cache --timeout=3600' clone …`, the persona's token at the
-prompt): the space's `~/.gitconfig` names the CodeCommit helper for every host, whose credential GitLab
-refuses (measured 2026-10-26). The loop:
+A data scientist works in a *space*, a JupyterLab or Code Editor instance inside the Sandbox project
+that is the manifest's `dev` stage, on the house image (`awsds-sandbox-dev-env`, version 10 or later).
+The space's `~/shared/` folder is the project's `shared/` S3 prefix, its house environment carries the
+CI/CD CLI (Stage 8 decision 22), and every command it runs holds the project role's credentials. The
+loop below ran end to end from a space on 2026-10-26 ([`promotion.md`](promotion.md) §N.3, Stage 10
+2.1). Steps 1, 4 and 6 carry what the image and the CLI do not yet do for the developer: git's credential
+helpers, the MWAA Serverless API's name in `NO_PROXY`, and the CLI's domain lookup.
 
-1. **The tests and the lint**, §E's first two rungs, on the laptop or in the space.
-2. **The worker's package.** The CLI copies files and builds nothing, so the zip a Python task runs
-   from is built first:
+**The session is the infrastructure user's.** `make hub-up`; `make gitlab-up RUNNERS=0` while the
+checkout is cloned or pushed; and Sandbox's endpoints with the MWAA Serverless group:
+
+```bash
+make up ENV=sandbox ONLY=egress GROUPS=mwaa
+```
+
+The MWAA Serverless API's only name is `airflow-serverless.<region>.api.aws`, which the proxy refuses to
+the compute plane, so without the `mwaa` group's endpoint (`vpc-egress-v0.19.0`) every CLI call to the
+service from a space reaches the proxy and is refused: `CreateWorkflow` read *"Failed to connect to proxy
+URL"* on 2026-10-26, botocore's report of the proxy's `403 TCP_DENIED`. A run's own tasks need no group.
+**The portal starts a space's app whenever one of the project's pages is open**, so every portal tab is
+closed before `make down ENV=sandbox`, whose hook deletes the running apps: on 2026-10-26 the portal
+re-created both projects' apps three minutes after the hook had deleted them, and an app it is starting
+refuses the delete (*"State transition from [PendingCheckout] to [Deleting] is not allowed"*) until it
+settles, so the down runs again.
+
+1. **The checkout.** The persona signs in to GitLab through SAML, which hands `git` no credential, and
+   creates a personal access token (*Edit profile → Access tokens*, the scopes `read_repository` and
+   `write_repository`, the shortest expiry the work allows), typed at git's prompt and nowhere else. The
+   space's `~/.gitconfig` names the CodeCommit credential helper for every host (`credential.helper !aws
+   codecommit credential-helper --ignore-host-check $@`), whose credential GitLab refuses with *"HTTP
+   Basic: Access denied"* before git would prompt, so each command resets the helper list for itself:
+
+   ```bash
+   git -c credential.helper= -c credential.helper='cache --timeout=3600' clone https://gitlab.awsds.internal/awsds/<app>.git
+   ```
+
+   The cache holds the token in memory for an hour, for the pushes that follow with the same two `-c`
+   options. The clone travels the `Sandbox ↔ VPC-SharedServices` peering, never the proxy (INT-09), and
+   needs the internal CA's root, which the house image's base installs and AWS's SageMaker Distribution
+   cannot carry: a space without it stops at *"server certificate verification failed"*.
+2. **The tests and the lint**, §E's first two rungs, in the space or on the laptop.
+3. **The values the manifest reads** (§M). The CLI refuses to load a manifest whose `${VAR}` is unset or
+   empty, the stage the command does not target included. The project's own values come from its Tooling
+   environment, read in the space by the `awsds-workflows` package's script, cloned rather than installed
+   ([`serverless-workflows.md`](serverless-workflows.md) §T); `JOB_IMAGE_URI` is the image the last
+   release's notes name, by digest, whose registry host carries Production's account id, typed and never
+   written down; a name neither the deploy nor the run reads gets a placeholder:
+
+   ```bash
+   git clone --depth 1 https://github.com/felipenoris/awsds-workflows /tmp/awsds-workflows
+   /opt/conda/bin/python /tmp/awsds-workflows/scripts/space_values.py > /tmp/space_values.json
+   eval "$(/opt/conda/bin/python -c 'import json; v = json.load(open("/tmp/space_values.json")); k = "arn:aws:kms:%s:%s:key/%s" % (v["REGION"], v["ACCOUNT_ID"], v["PROJECT_KEY_ID"]); print("\n".join("export %s=%s" % p for p in (("DOMAIN_ID", v["DOMAIN_ID"]), ("DOMAIN_REGION", v["REGION"]), ("SUBNET_AZ1", v["SUBNET_AZ1"]), ("SUBNET_AZ2", v["SUBNET_AZ2"]), ("DEV_PROJECT_SG", v["PROJECT_SG"]), ("DEV_PROJECT_KEY_ARN", k))))')"
+   export DEV_PROJECT_NAME=<dev project> TEST_PROJECT_NAME=<test project> TEST_PROJECT_SG=unused-by-dev TEST_PROJECT_KEY_ARN=unused-by-dev
+   export JOB_IMAGE_URI="<the release's image by digest>" TRAINING_IMAGE_URI="<the XGBoost image by digest, or unused-by-<app> when no run reads it>"
+   ```
+
+4. **The API's name in `NO_PROXY`**, until the house image carries it (the next release after
+   `default-v0.9.1`): without it boto3 sends the call to the proxy, which refuses it, even with the
+   endpoint up. `getent hosts` answers the endpoint's `10.20.x` address:
+
+   ```bash
+   export NO_PROXY="$NO_PROXY,airflow-serverless.us-west-2.api.aws" no_proxy="$no_proxy,airflow-serverless.us-west-2.api.aws"
+   ```
+
+5. **The worker's packages.** The CLI copies files and builds nothing, so the zip a Python task runs from
+   is built first, one per workflow the manifest names with a `code` field:
 
    ```bash
    python3 -m zipfile -c code/<workflow>.zip code/<tasks>.py
    ```
 
-3. **The deploy to `dev`.** "Deploy", for the CLI, means two things: copy the manifest's folders under
-   the project's `shared/<app>/`, and create (or update) each workflow the manifest's `bootstrap`
-   names, with the project's network and key. It runs none:
+6. **The deploy to `dev`.** "Deploy", for the CLI, means two things: copy the manifest's folders under the
+   project's `shared/<app>/`, and create (or update) each workflow the manifest's `bootstrap` names, with
+   the project's network and key. It runs none. Two answers make the command longer than the CLI's own.
+   The CLI is the house image's, called by its path: the SageMaker Distribution's own
+   `aws-smus-cicd-cli`, 1.0.8, comes first on the space's `PATH` and refuses the manifest's `code` field
+   (*"Additional properties are not allowed ('code' was unexpected)"*). And the CLI 1.0.9 looks the
+   domain up by name with `ListDomains` on every deploy with bootstrap actions, the manifest's id
+   notwithstanding, which DataZone refuses to a project's role (*"User is not permitted to perform
+   operation: ListDomains"*) though its IAM policy allows `datazone:List*`. The deploy roles' call returns
+   the domain, since the pipeline's `test-deploy` creates its workflows through the same lookup, so the
+   command answers that one lookup with the manifest's `DOMAIN_ID`, and every other call is the CLI's own:
 
    ```bash
-   aws-smus-cicd-cli deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
+   "$AWSDS_PYTHON_ENV/bin/python" -c 'import os, sys, smus_cicd.helpers.datazone as dz; dz.get_domain_id_by_name = lambda name, region: os.environ["DOMAIN_ID"]; from smus_cicd.cli import app; sys.argv[0] = "aws-smus-cicd-cli"; app()' deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
    ```
 
    `--skip-validation` because the CLI's pre-deployment validation simulates the IAM calls without their
    context keys and reads every conditioned SCP as a deny (a failure of the tool, not of the estate,
-   Lesson 30); `--no-events` because the event it would publish has no handler in 1.0.9. The manifest's
-   `${VAR}` names are read from the shell (§M): the domain, the project, the subnets, the group and the
-   key, and `JOB_IMAGE_URI`, the image the last release's notes name. In a space the project role's
-   credentials are the session's; on a laptop the CLI's boto3 reads no credential the `aws` CLI cached,
-   so `aws configure export-credentials` or a fresh login precedes it. Which identity runs it, and from
-   where, is Stage 8 decision 22: from a space as the project role, the identity the project's grants
-   are written for (`sandbox/workflows/`, [`serverless-workflows.md`](serverless-workflows.md) §G), so no
-   person gains a grant; the lab's first deploy ran from the laptop as the infrastructure user on
-   2026-10-15, and the space's on 2026-10-26 ([`promotion.md`](promotion.md) §N.3 step 7), which a space
-   needs three things for: the house image's CLI by its path (`$AWSDS_PYTHON_ENV/bin/aws-smus-cicd-cli`;
-   the SageMaker Distribution's 1.0.8 comes first on `PATH` and refuses the manifest), the domain lookup
-   answered by id (the CLI 1.0.9's `ListDomains` is refused to a project's role; the step's command), and
-   Sandbox's `mwaa` endpoint group with `airflow-serverless.<region>.api.aws` in `NO_PROXY` (the proxy
-   refuses the API's only name). The deploying identity
-   is a member of the project: for a non-member the CLI omits the network and the key and creates the
-   workflow in the service's own network, printing one line, which is the quiet failure to watch for.
-4. **A run**, and its reading:
+   Lesson 30); `--no-events` because the event it would publish has no handler in 1.0.9. The refusal of
+   `GetGroupProfile` it prints at each storage item, by the domain's resource policy, changes nothing.
+   Which identity runs it is Stage 8 decision 22: from a space as the project
+   role, the identity the project's grants are written for (`sandbox/workflows/`,
+   [`serverless-workflows.md`](serverless-workflows.md) §G), so no person gains a grant; the lab's first
+   deploy ran from the laptop as the infrastructure user on 2026-10-15, where the CLI's boto3 reads no
+   credential the `aws` CLI cached, so `aws configure export-credentials` or a fresh login precedes it.
+   The deploying identity is a member of the project: for a non-member the CLI omits the network and the
+   key and creates the workflow in the service's own network, printing one line, which is the quiet
+   failure to watch for. A deploy that stops after the copy leaves the copied files, which the next
+   deploy syncs over, and its operator zips under `shared/operatorFiles/`, which nothing prunes.
+7. **A run**, with the same command and `run`:
 
    ```bash
-   aws-smus-cicd-cli run --manifest manifest.yaml --targets dev --workflow <workflow>
+   "$AWSDS_PYTHON_ENV/bin/python" -c 'import os, sys, smus_cicd.helpers.datazone as dz; dz.get_domain_id_by_name = lambda name, region: os.environ["DOMAIN_ID"]; from smus_cicd.cli import app; sys.argv[0] = "aws-smus-cicd-cli"; app()' run --manifest manifest.yaml --targets dev --workflow <workflow>
    ```
 
-   `run` returns once the service accepts the start and prints the run id; `get-workflow-run` and
+   `run` returns once the service accepts the start and prints the run id, after refusals of
+   `ListTagsForResource` on other projects' workflows that change nothing; `get-workflow-run` and
    `list-task-instances` follow it (§V). The CLI fills each `{env.VAR}` of the workflow as the run's
-   `OverrideParameters`, from the stage's `environment_variables`; a run started in the portal has no
-   value for them, so a workflow the CLI made is read in the portal and never saved or run there
-   (`serverless-workflows.md` §A).
-5. **A change**: to the code in `src/`, `code/` or `glue/`, or to a workflow, is step 3 again, since the
-   job reads the code as its input and the operator updates the Glue job from the definition
+   `OverrideParameters`, from the stage's `environment_variables`. A workflow the CLI made is read in the
+   portal and never saved or run there: a run started from the portal carries the service's own
+   `mwaa_serverless_workflow_id` alone and fails before any task, *"User template error: DAG template
+   rendering failed: 'dict object' has no attribute 'SUBNET_AZ1'"* (Stage 10 xxix), and a save replaces
+   the definition whole (`serverless-workflows.md` §A).
+8. **A change**: to the code in `src/`, `code/` or `glue/`, or to a workflow, is steps 5 and 6 again,
+   since the job reads the code as its input and the operator updates the Glue job from the definition
    (`update_config: true`); the image does not change, which is the point of keeping the code out of it
    (§I). `deploy` syncs without deleting, so a file a change removed stays in the prefix until it is
    emptied by hand (`aws s3 rm --recursive` on `shared/<app>/`, as `test-deploy` does). A change to a
    dependency is a new lock and a new release: the image is built by the tag pipeline alone, so a
    processing task has no image to run on until the first tag has pushed one. A workflow with Glue and
    worker tasks alone needs no image.
-6. **The merge request**, whose branch pipeline runs `test`, Secret Detection and `pip-audit` on the test
-   runner; a Maintainer merges, and `main`'s pipeline adds `pages`. Then the tag (§T).
+9. **The merge request**, pushed with step 1's options, whose branch pipeline runs `test`, Secret Detection
+   and `pip-audit` on the test runner; a Maintainer merges, and `main`'s pipeline adds `pages`. Then the tag
+   (§T). The token is revoked when the work ends (*Access tokens → Revoke*).
 
 **What the project gives, and what it does not.** The project role runs every task, inside the project's
 network and under the project key, with the D13 boundary on every job: `NetworkConfig` with the two
@@ -372,13 +433,14 @@ operator's first describe of a job name needs the grant `sandbox/workflows/` hol
 once per project (§G of `serverless-workflows.md`). The project holds no Lake Formation grant on the
 governed lake yet (6f decision 1), so a Glue task that reads a governed table runs in Staging first,
 never in `dev`: in a project the application reads its inbox (§K). Each deploy spends one of the
-workflow's 50 versions.
+workflow's 50 versions (read 2026-10-26: the `test` project's `app-etl` at 12, the `dev` project's at 1).
 
 **Cost of the loop**: a worker task bills 0.088 USD per task-hour with a one-minute minimum, a processing
-task holds its worker for its whole job, about 15 minutes and 0.03 USD for a one-second command in the
-house image (6i's reading), and a Glue job bills its workers per DPU-hour. Sandbox's `egress/` must be up
-for a run, `make up ENV=sandbox ONLY=egress` by the infrastructure user, and the space itself bills while
-it runs.
+task holds its worker for its whole job, and a Glue job bills its workers per DPU-hour; `app-etl`'s run of
+2026-10-26 took 11 min 34 s, the Glue job 66 s on two G.1X workers and the processing job 5 min 21 s on
+`ml.t3.medium`. Sandbox's `egress/` must be up for a run (eighteen endpoints, 0.180 USD/h, and 0.010 for
+the `mwaa` group's one), and the space itself bills while it runs (0.050 USD/h on `ml.t3.medium`, 0.100
+on `ml.t3.large`).
 
 ---
 
@@ -454,7 +516,7 @@ manifest:
 | `content.storage[]` | the folders the CLI copies, each a `name` with `include` and `exclude` lists: `code` (the zips, named one by one), `src`, `glue`, `samples`, `workflows`. An include names a file or a folder, never a glob: `deploy` expands one, `bundle` in 1.0.9 does not, and the lint refuses one. No item names a connection, no `git`, `catalog` or `notebooks` content: the lint refuses content taken from outside the tag, since a release must be reproducible from the tag alone |
 | `content.workflows[]` | each workflow the CLI creates in a project: its `workflowName`, the file `workflows/<name>.yaml`; `connectionName: default.workflow_serverless`; `code: code/<name>.zip` when the workflow has a Python or Bash task. A workflow left out of this list is still bundled and rendered for a deployment target, and never created in a project: `app-etl-warehouse`, Production's alone |
 | `stages.dev`, `stages.test` | one SMUS project each, `stage: DEV` and `TEST`, the domain by `${DOMAIN_ID}` and `${DOMAIN_REGION}`, the project by name; `project.create` never true |
-| `stages.<s>.environment_variables` | `JOB_IMAGE_URI`, `SUBNET_AZ1`, `SUBNET_AZ2`, `PROJECT_SG`, `PROJECT_KEY_ARN`, `TRAINING_IMAGE_URI`, each `${VAR}` from the shell; a workflow's `{env.VAR}` is one of these names, declared in both stages, filled on a run the CLI starts |
+| `stages.<s>.environment_variables` | `JOB_IMAGE_URI`, `SUBNET_AZ1`, `SUBNET_AZ2`, `PROJECT_SG`, `PROJECT_KEY_ARN`, `TRAINING_IMAGE_URI`, each `${VAR}` from the shell; a workflow's `{env.VAR}` is one of these names, declared in both stages, filled on a run the CLI starts. Every `${VAR}` of the file must be set and non-empty for any command, the other stage's included (1.0.9's `find_missing_env_vars`, read in its code 2026-10-26) |
 | `stages.<s>.bootstrap.actions` | `workflow.create` per workflow, which resolves the YAML's `{proj.*}` and `{domain.*}`, writes the resolved copy at the same key and calls `CreateWorkflow`; `workflow.run` with `trailLogs: true` in `test` alone, the run `test-deploy` follows (`wait` crashes 1.0.9) |
 | `stages.<s>.deployment_configuration.storage[]` | where each content item lands: `connectionName: default.s3_shared`, `targetDirectory: <app>/<class>`; `samples` lands in `<app>/inbox`, the run's input. Every target directory sits under `<app>/`, since the project's root is shared between applications |
 
@@ -477,7 +539,11 @@ one object per deploy that nothing prunes; `run` starts one workflow and returns
 storage items' files as they are, the YAML with its variables unresolved, and builds nothing; `destroy`
 removes the workflows the manifest names and the prefix, reading the Glue jobs from the definition the
 service holds. `describe --connect` lists a project's connections; `monitor` and `logs` filter workflows
-by the tags the CLI wrote, and neither has run here.
+by the tags the CLI wrote, and neither has run here. On every `deploy` with bootstrap actions the project
+step resolves the domain by name with `ListDomains`, and `workflow.create` finds the project's role the
+same way: the deploy roles hold the call and DataZone answers it with the associated domain, while it
+refuses the call to a project's role, which §D answers in the command (read in 1.0.9's
+`project_manager.py` and measured 2026-10-26).
 
 The stages' names, `dev` and `test`, their `environment_variables` names and the connection names are
 fixed by the pipeline and the render: an application adds no stage, since Staging and Production are
@@ -975,7 +1041,8 @@ topic. Start from the question, and the table names the place:
 |---|---|
 | did the chain run, when, how did it end | `aws stepfunctions list-executions --state-machine-arn <machine>`; `describe-execution`; the execution's input (`scheduledTime` for a scheduled start); the machine's log group `/aws/vendedlogs/states/awsds-<env>-chains` |
 | which workflow run did it start, and how did each task end | `get-execution-history` names the run id; `aws mwaa-serverless list-task-instances --workflow-arn <arn> --run-id <id>` and `get-task-instance`: read a task's `DurationInSeconds` and state, never the run's `RunState`, which lags its tasks |
-| why did a task fail | its stream `workflow_id=<workflow>/run_id=<id>/task_id=<task>/attempt=<n>.log` in `/awsds/<env>/wf/<key>` ([`log-debugging.md`](log-debugging.md) §W) |
+| why did a task fail | its stream `workflow_id=<workflow>/run_id=<id>/task_id=<task>/attempt=<n>.log` in `/awsds/<env>/wf/<key>` ([`log-debugging.md`](log-debugging.md) §W); in `dev` and `test`, in `/aws/mwaa-serverless/<domain>-<project>/<name>` |
+| a run in `dev`, from the space | the same `mwaa-serverless` reads as the project role, which need the `mwaa` group and the API's name in `NO_PROXY` (§D); from a laptop, as the infrastructure user with `awsds-infra-sandbox-1` |
 | what did the Glue job do | `aws glue get-job-runs --job-name awsds-<env>-<app>`; the run's stream in `/aws-glue/jobs/logs-v2` (continuous logging), every line the script prints |
 | what did the processing or training job print, did it respect the boundary | `aws sagemaker describe-processing-job`, `describe-training-job` (`FailureReason`, the network and key settings); the container's stream in `/aws/sagemaker/ProcessingJobs` or `/aws/sagemaker/TrainingJobs` |
 | did the result land, under which key | `aws s3api head-object --bucket awsds-<env>-outputs --key <app>/outbox/<file>` with `--checksum-mode ENABLED`; `SSEKMSKeyId` the data key |
@@ -1078,7 +1145,8 @@ for each kind of task in each stage; where one term is missing, the reach is abs
 | Athena | a person in the project's query editor, as the project role on the project's enforced workgroup: the project's tables; the lake's links once the project role holds a grant | the persona through `awsds-prod-athena` on `app_outputs` and the lake's `public` and `internal` tables, from any network; Staging's persona set holds no Athena action; no task in the template calls Athena, and the execution role holds no grant for it |
 | Redshift | the sandbox warehouse through the project's connection, the Data page as the access role and a notebook through it (`redshift-connection.md` §J); the governed warehouse through the datashare alone, since Sandbox does not peer with `VPC-Workloads` | Production's job role over JDBC as `IAMR:awsds-prod-job-exec`; the deploy role through the Data API for the DDL; the persona refused a session (`DenyMintingARedshiftDatabaseSession`) |
 | S3 | the project prefix; the sandbox lake through the project's S3 connection; the drop-box's `PutObject` as the persona from a laptop, never read back | the outputs and derived buckets; the lake's buckets only through Lake Formation's credentials in a Glue job; the release store read by the runner's own role |
-| GitLab | a space clones over the VPN's names, with a persona PAT (INT-09, owed) | the deploy runner clones the mirror with the job token; no task reaches it |
+| GitLab | a space clones over the `Sandbox ↔ VPC-SharedServices` peering, `gitlab.awsds.internal` answered by the apex zone every VPC is associated with, with a persona's personal access token and git's credential helpers reset (INT-09, measured 2026-10-26; §D) | the deploy runner clones the mirror with the job token; no task reaches it |
+| the MWAA Serverless API | from a space, through the `mwaa` group's endpoint alone (`GROUPS=mwaa`, the name in `NO_PROXY`): the API's only name, under `.api.aws`, is refused by the compute plane's proxy; a task never calls it | the deploy runner's calls, through the proxy's open build plane in `VPC-SharedServices`; the chain's machine through Step Functions' own integration; a task never calls it |
 | the internet | a space through the proxy's allow-list; a job and a worker never | never: anything a task needs is in the image, in the zip or behind an endpoint |
 
 ---

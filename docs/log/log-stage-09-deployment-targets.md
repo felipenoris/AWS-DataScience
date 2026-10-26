@@ -2699,3 +2699,29 @@ project role answered; Claude's for the trails, as the infrastructure user. Time
   `DescribeModelPackageGroup` at 05:09:37 in both accounts' trails, from `10.20.56.248` through Sandbox's
   `sagemaker.api` endpoint `vpce-0c34c55bf1eaa47ff`, no error, Production's record carrying no caller ARN;
   `CreateModelPackage` at 05:09:45 in Sandbox's trail alone, `AccessDenied`, through the same endpoint.
+
+## 2026-10-26 — after the Sandbox sitting, nothing up: 3.1's log read by a principal the key does not admit, the debug window prepared
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`): reads only. Times UTC.*
+
+- **[Claude] The data key's policy** (`alias/awsds-prod-data`, 15 statements): `Decrypt` through S3 for the job
+  role, the persona, the debug role (`AllowTheDebugRoleToDecryptViaS3`) and the release roles with
+  `InfrastructureAccess`; under the workflow-ARN context for the release, chain, deployment-manager and
+  workflow roles; and for the service principal `logs.us-west-2.amazonaws.com` under
+  `kms:EncryptionContext:aws:logs:arn`. No statement admits the infrastructure user or the debug role
+  through `logs`.
+- **[Claude] A job stream read anyway**: `get-log-events` on `/aws/sagemaker/ProcessingJobs`, stream
+  `app-etl-20261026T004534/algo-1-1792975588`, at 07:02:59 returned its events (*"app-etl 0.1.0, python
+  3.12.14 at /opt/app-etl/venv/bin/python"*). Production's trail, read at 07:04:30: a `Decrypt` by the
+  infrastructure user's session `invokedBy logs.amazonaws.com`, no encryption context, `AccessDenied`, at
+  07:02:49 (a `filter-log-events` whose first page was empty) and at 07:02:59; and at 07:02:59 a `Decrypt`
+  by `fas.s3.amazonaws.com` under CloudWatch Logs' chunk store's `aws:s3:arn`, no error. CloudWatch Logs
+  tries the reader's identity, then decrypts through its own path, so a reader needs no key grant. The
+  debug role's read is expected to take the same path and still waits for a window.
+- **[Claude] The policy simulator** read the debug role's `kms:Decrypt` as `implicitDeny` through `logs` and
+  through S3 alike; the S3 control is false for want of `kms:ResourceAliases` in the simulated context, so
+  the simulator is no instrument here (Lesson 30).
+- **[Claude] What changed in the record**: 3.1's text; `promotion.md` §N.7.2, the window's commands (the
+  approval, the plan and apply of `production/sagemaker/`, the persona's assumption and read, the trail,
+  the closing apply); the waiting list's act row for it.

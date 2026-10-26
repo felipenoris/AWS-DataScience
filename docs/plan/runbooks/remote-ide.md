@@ -351,11 +351,12 @@ and 2026-09-19: `github.com` came off it on the first date and returned on the s
 ([`NETWORK.md`](../../NETWORK.md) ‖), so `git clone`, `fetch` and `push` from a space failed by decision
 in that window and work now. The procedure below stays written because it is the path for a host that
 still cannot reach GitHub, and because a redirect target such as `codeload.github.com` is refused even
-today. **This is the path for today and not the design.** The estate's GitLab is internal — it lands
-in `VPC-SharedServices`, reached over the `Sandbox ↔ VPC-SharedServices` peering that
-[INT-09](../integrations.md) already carries — so from
-[Stage 7](../stages/stage-07-gitlab-runners-ecr.md) a space clones over private addresses with no laptop
-in the middle, and this section becomes the exception rather than the route.
+today. **This path is the exception, and the estate's GitLab the route.** GitLab is internal, in
+`VPC-SharedServices`, reached over the `Sandbox ↔ VPC-SharedServices` peering that
+[INT-09](../integrations.md) carries: since 2026-10-26 a space clones and pushes over private addresses
+with no laptop in the middle, with a persona's personal access token and git's credential helpers reset
+([`sagemaker-application.md`](sagemaker-application.md) §D step 1,
+[Stage 7](../stages/stage-07-gitlab-runners-ecr.md) verification xi).
 
 **A file arrives by drag and drop.** Drag it from the laptop's file manager — Explorer on Windows,
 Finder on macOS — onto the file tree of the **remote** window. It lands in the directory it is dropped

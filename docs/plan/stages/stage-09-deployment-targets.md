@@ -549,7 +549,10 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   `DT-12` reads each group's key and passes in both accounts (21:03:22Z); the AWS-owned key, another key
   or a partial apply fails it. The first job shows whether its logs land and the debug role reads them
   with no grant on the key: **the logs land, read 2026-10-26** (the six groups per account hold the jobs'
-  streams under the data key; `logs-v2` answers none); the debug role's read waits for a 6.3 window. `iam:PassRole` to
+  streams under the data key; `logs-v2` answers none); the debug role's read waits for a 6.3 window. The
+  infrastructure user, whom the key admits through no `logs` path, read a job stream's events the same day
+  (07:02:59 UTC), the trail pairing its refused `Decrypt` through `logs.amazonaws.com` with the service's own
+  through `fas.s3.amazonaws.com`: the path the debug role's read is expected to take. `iam:PassRole` to
   the role is granted only to Stage 8's deploy roles and Stage 10's execution roles, scoped by
   `iam:PassedToService`.
 - **3.2 — [Claude] Write the package groups and their resource policies**: one group per application or

@@ -1623,3 +1623,35 @@ its tag and the apply of `sandbox/egress`, as the infrastructure user with `Infr
 - **[Claude] Studio apps**: `CreateApp` read the `default` space at 04:45:43, `jup-dev-env` at 04:46:46 and the
   `test` project's `default` at 05:31:47, when the portal opened that project; `list-apps` shows 2026-10-25 05:40
   as `CreationTime` for both `default` spaces, the app name's first creation and not the latest start.
+
+## 2026-10-26 — after the Sandbox sitting, nothing up: the clone's refusal unattributed, the training operator's read answered, the runbooks revised
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`, `awsds-infra-sandbox-1`): reads only. Times UTC.*
+
+- **[Claude] A correction to the sitting's entry**: the first clone refused *"server certificate verification
+  failed"* is not `jup-dev-env`'s. The user ran it in a new space the record does not identify; `jup-dev-env`
+  runs version 10, whose base installs the internal root, and its clone passed. The refusal reads a space
+  without that root.
+- **[Claude] The training operator's log read answers**: Production's train task log
+  (`/awsds/prod/wf/app-etl-train`, run `T9AaRO2Z13vNiX3` of 2026-10-25 01:18, 210 events, read at 07:05:03)
+  carries the training job's own lines, printed through `print_log`: *"Train matrix has 24 rows and 2
+  columns"*, then *"[0]#011train-rmse:2988.79028#011validation-rmse:1973.72229"* to *"[8]#011train-rmse:
+  337.62412#011validation-rmse:730.20996"*. The six refused `Decrypt` per run, `invokedBy logs.amazonaws.com`
+  with no encryption context, are CloudWatch Logs' attempt with the reader's identity before it decrypts
+  through its own path (Stage 9's log, the same morning). The remedy the earlier entry of this day left to
+  the user answers nothing: its waiting row is removed, and 1.3's text and the status are corrected.
+- **[Claude] The runbooks revised from the sitting**: `sagemaker-application.md` §D rewritten as the
+  sequence that ran (the session with `GROUPS=mwaa` and the portal closed before the down, the clone's
+  helper reset, every `${VAR}` set, the API's name in `NO_PROXY`, the house CLI by its path with the domain's
+  id answering the lookup, the portal never running a CLI workflow), with §A, §O, §M, §V and the reach
+  table; `serverless-workflows.md` (xxix's wording, the space script from a clone), `remote-ide.md` (the
+  clone is the route now), `log-debugging.md` (botocore's report of a proxy refusal, the refused `Decrypt`
+  that is no refused read, DataZone's refusal with no message, the portal's `CreateApp`),
+  `client-vpn-proxy-configuration.md` (`scutil --nc list`), `sg-proxy.md` and `dev-env.md` (73 names),
+  `docs/SMUS.md`, `upstream-releases.md`; 6c's and this stage's `mwaa` passages, which said the group stays
+  empty; Lesson 78, a stand-in answering what the real call answers, from the launcher's `None`; two
+  platform entries, the portal's apps and the log decrypt.
+- **[Claude] Prepared**: `promotion.md` §N.6's order after the sitting and §N.7's sittings: the GitLab
+  sitting for `default-v0.10.0` (N.7.1), the debug window (N.7.2) and the second Sandbox sitting, where a
+  `dev` deploy on version 11 runs with no session export (N.7.3).

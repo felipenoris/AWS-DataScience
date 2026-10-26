@@ -1733,6 +1733,34 @@ moved package by package past what moved, and what a dependency's upper bound fo
 dated and attributed. A bare `--upgrade` is not the move: on 2026-10-25 it resolved an older autogluon and
 failed building `configspace`.
 
+## Lesson 78 — a stand-in for a refused call answers what the real call answers to the identity it imitates, read from the path that already works, never from what the first caller tolerates
+
+**What happened.** On 2026-10-26 the CI/CD CLI's `dev` deploy from a space stopped at `ListDomains`, which
+DataZone refuses to a project's role (Stage 10 2.1). The command replaced the CLI's lookup,
+`get_domain_id_by_name`, with a stand-in whose first answer was `None`, on the premise that the deploy role's
+own call in Sandbox returns an empty list, the domain living in Data Governance. The project step, the
+lookup's first caller, accepts `None` and goes on; the deploy copied the application's files under the
+project's `shared/` and two operator zips under `shared/operatorFiles/`, then stopped in `workflow.create`,
+the second caller, which resolves the project's role through the same lookup: *"Domain 'awsds-studio' not
+found in region us-west-2"*. The premise was contradicted by a record already in hand: the pipeline's
+`test-deploy` creates its workflows through that second caller as the deploy role, so the role's call
+returns the domain. The stand-in answering with the manifest's domain id passed both callers, and the deploy
+and its run succeeded.
+
+**Why it is a class rather than a slip.** A stand-in replaces a function for every caller, and the caller
+that runs first is the one that tests the guess; a tolerant caller passes a wrong answer through, and the
+failure arrives at a later caller, after side effects. The guess was about a value nobody read: what the real
+call returns to the identity the stand-in imitates. That value was knowable without a call, from a run of the
+same code path that had already succeeded.
+
+**The rule.** Before writing a stand-in, list every caller of the function it replaces and read what the real
+call returns, to the identity being imitated, from a run that went through all of them; return that. A
+stand-in that satisfies only the caller that failed is a second defect, and its first symptom names a later
+caller, never the stand-in.
+
+**What makes it expensive.** Each wrong answer costs a deploy and leaves its partial write behind: the copied
+files a later deploy syncs over, and operator zips nothing prunes.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits; the entries here are facts about the platform that cost a measurement
@@ -2733,6 +2761,14 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   applied value. A reading that looked for a SageMaker namespace recorded "no running-app metric exists"
   (`EXC-10`, 2026-09-12), Lesson 62's wrong path. Where: `log-stage-12-observability-finops.md`, the
   2026-10-18 entry.
+- **A read of a log group under a customer key records a refused `Decrypt` by the reader and returns the
+  events anyway** (measured 2026-10-26, Stage 9 3.1 and Stage 10 1.3). The infrastructure user, whom
+  Production's data key admits through no `logs` path, read a job stream with `get-log-events`: the trail
+  holds its `Decrypt` `invokedBy logs.amazonaws.com`, no encryption context, `AccessDenied`, and in the same
+  second a `Decrypt` by `fas.s3.amazonaws.com` under CloudWatch Logs' chunk store's `aws:s3:arn`, which
+  succeeded, and the events came back. The training operator's six refusals per run have the first shape
+  while its task log carries the training job's lines. A refusal of this shape is not a refused read.
+  Where: `log-stage-10-orchestration-promotion.md`, 2026-10-26.
 
 ### Lake Formation
 
@@ -2881,6 +2917,13 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
 - **`list-apps` reports an app's first creation, not its latest start** (measured 2026-10-26). Both `default`
   spaces' apps read `CreationTime` 2026-10-25 05:40 UTC while CloudTrail's `CreateApp` started them at 04:45
   and 05:31 UTC on 2026-10-26: an app's age is read from `CreateApp`. Where: the same log.
+- **An open portal page starts its project's space app again after `make down` deleted it** (measured
+  2026-10-26). The Studio-apps hook deleted both projects' apps at 06:10 UTC; the persona's open portal tabs
+  created them again at 06:13 (`CreateApp`, a browser `userAgent`, each project's role), and `DeleteApp`
+  refused the one still starting eight times from 06:21:58 to 06:25:04, *"State transition from
+  [PendingCheckout] to [Deleting] is not allowed."*, until it went through at 06:26:12 with every tab closed.
+  The Query editor's case is the entry under Lake Formation and SageMaker Unified Studio above. Where:
+  `log-stage-07-gitlab-runners-ecr.md`, 2026-10-26.
 
 ### DataZone and the CI/CD CLI
 

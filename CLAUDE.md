@@ -370,8 +370,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   failure rules mailed; ii's deploy-role half read 2026-10-24 and 3.2 closed 2026-10-25 by (b). Read
   2026-10-26 with nothing up: both outputs buckets publish to EventBridge (3.6); `GetWorkflowRun` decrypts
   through the service and `GetWorkflow` does not (decision 11's `kms:ViaService` narrowing is the user's);
-  the training operator's `print_log` read is refused at the data key six times per run, the task surviving
-  (the remedy the user's). **2.1 ran from a space on 2026-10-26**: the house CLI by its path, the CLI 1.0.9's
+  the training operator's `print_log` read answers, its six `Decrypt` refusals per run CloudWatch Logs'
+  attempt with the reader's identity before its own (read the same day). **2.1 ran from a space on 2026-10-26**: the house CLI by its path, the CLI 1.0.9's
   `ListDomains` (refused to a project's role) answered by the domain's id, and Sandbox's `mwaa` group's
   `airflow-serverless` endpoint (`GROUPS=mwaa`, the name in the session's `NO_PROXY` until the next image);
   xxix's portal run fails at the DAG's template.
@@ -388,8 +388,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `for-use-with-all-datazone-projects`: the admin secret stays closed by its tags alone (`INV-20`, PR #187).
 - **Stage 6d in progress**: steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half (a reconciliation that
   writes the domain). The house image is `awsds-sandbox-dev-env` version 10, `default-v0.9.1-746ef084`
-  (2026-10-25, alias `0.9.1`), its `NO_PROXY` literal the 72 names of `vpc-egress-v0.18.0`: `DE-5` passes
-  (read 2026-10-25), and Stage 17 1.4's apply of the module on `sandbox/egress` is no longer held by the
+  (2026-10-25, alias `0.9.1`), its `NO_PROXY` literal the 72 names of `vpc-egress-v0.18.0`: `DE-5` fails
+  since `vpc-egress-v0.19.0`'s apply (2026-10-26), one name short, until `default-v0.10.0` carries the
+  recipe copy's 73, and Stage 17 1.4's apply of the module on `sandbox/egress` is no longer held by the
   image (decision 4). The remote IDE works (6d step 7, 2026-09-11).
 - **Stage 6e** is held by PR #108 (decision 17, the user's 5.5 agreements; Sonnet 4.5 is Legacy since
   2026-10-08). A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint);
@@ -506,7 +507,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); the laptop's Terraform never moves ahead of
-  the deploy image's (Lesson 76); never pipe a command whose exit
+  the deploy image's (Lesson 76); a deploy from a space takes `GROUPS=mwaa`, and every portal tab is closed
+  before `make down ENV=sandbox` (`sagemaker-application.md` §D); never pipe a command whose exit
   code matters (Lesson 46); a module change is exercised by planning a caller, never by `validate`;
   `-refresh=false` is forbidden on `sandbox/data/`, where SMUS is a Lake Formation admin (OQ 24); never add
   an `sts:` action to the RCP without reading `CT.STS.PV.1`'s exclusion note; resolve an account by exact
@@ -661,6 +663,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     that cannot move on the spot move first, or the writer stays off the shared states.**
 77. **A gate that reads a feed gives a dated verdict — the lock that passed when it was cut fails when it is
     tagged, so the gate runs on the laptop the day of the tag, before the tag.**
+78. **A stand-in for a refused call answers what the real call answers to the identity it imitates — read
+    from the path that already works, never from what the first caller tolerates.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

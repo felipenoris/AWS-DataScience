@@ -1368,3 +1368,32 @@ Claude's for the readings, as the infrastructure user with `InfrastructureAccess
 - **[Claude] What changed in the record**: verifications x and xi answered, pass 3 closed with them, INT-09's
   and INT-19's rows measured; the clone's credential reset written in `promotion.md` §N.3 step 5 and
   `sagemaker-application.md` §D.
+
+## 2026-10-26 — the Sandbox sitting's downs: the portal's apps, a second round, zero burn
+
+*The user's hand for the downs (the token revoked, `make down ENV=sandbox`, `make gitlab-down`, the tunnel,
+`make hub-down`; then every portal tab closed and both downs again); Claude's for the readings, as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`,
+`awsds-infra-sandbox-1`). The idle peer session told before the first down and after the last. Times UTC.*
+
+- **[user] The first round**, reported about 06:17. **[Claude] Read back** 06:18 to 06:19: `./aws/egress.py`
+  no endpoint, no NAT and 0.000 USD/h in Production, Staging and Sandbox; GitLab stopped at 06:11:15
+  (`StopInstances` by `InfrastructureAccess`); the WireGuard host and the proxy still running, no
+  `StopInstances` for either in the trail since 06:00, so the first `make hub-down` stopped nothing, its
+  cause unread. The hook's `DeleteApp` at 06:10:14, 06:10:16 and 06:10:17 took the `test` project's
+  `default`, `jup-dev-env` and `eighth-experimentation`'s `default`; the persona's open portal tabs then
+  created both `default` apps again, 06:13:27 to 06:13:32 (`CreateApp`, a browser `userAgent`, each
+  project's role), the `test` one `InService` and `eighth-experimentation`'s `Pending` at 06:19.
+- **[user] The second round**, every portal tab closed: **[Claude]** `StopInstances` on the proxy at 06:20:48
+  and 06:20:49 and on the WireGuard host at 06:20:51; the hook's `DeleteApp` on `eighth-experimentation`'s
+  `default` refused eight times from 06:21:58 to 06:25:04, *"State transition from [PendingCheckout] to
+  [Deleting] is not allowed."*, the re-created app still starting; then the `test` project's at 06:26:10 and
+  `eighth-experimentation`'s at 06:26:12, both accepted.
+- **[Claude] §R** at 06:30 to 06:31: no endpoint, no NAT and 0.000 USD/h in the three accounts, both hosts
+  stopped, no Studio app in either domain, `make status` 0.0000 USD/h (Production's application and
+  orchestration slices up at 0.0000). Read again at 07:09:30 to 07:10:04: the same three zeros, no instance
+  running in Production, no Studio app in either domain.
+- **[Claude] What changed in the record**: `promotion.md` §N.3 step 10 closes every portal tab before the
+  down and §R reads the Studio apps after a Sandbox sitting; the portal's re-creation joins `lessons.md`'s
+  platform list and `log-debugging.md` §C; `client-vpn-proxy-configuration.md` §3.4 carries `scutil --nc list`
+  for the tunnel's state, which read every profile *Disconnected* at the sitting's start.

@@ -3902,3 +3902,38 @@ AWS; the session that read Stages 7 to 10 for what is left. Times UTC.*
   among them, so `main` is pushed before the next tag (the waiting list's first table); `promotion.md`
   §N.1's done markers written; INT-07's and INT-08's measurements written in `integrations.md`;
   `CLAUDE.md`'s "planned and unapplied" on decision 27's egress grant (applied 2026-10-25) corrected.
+
+## 2026-10-26 — after the Sandbox sitting, nothing up: decision 22 measured, 1.1's literal at 73 names, the lock's audit, decision 26's version 10
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`, `awsds-infra-sandbox-1`): reads and one read-only plan, no write to AWS. Times UTC.*
+
+- **[Claude] Decision 22 measured**: the `dev` deploy ran from a space as the project role on 2026-10-26
+  (Stage 10's log, 2.1): both workflows in the project's network under its key, the run `SUCCEEDED`, the CLI
+  reading the role as a member and its boto3 finding the role's credentials with no configuration. Three
+  findings stood between the recipe and the run, each answered in `sagemaker-application.md` §D: the
+  SageMaker Distribution's CLI 1.0.8 first on the space's `PATH`, DataZone refusing `ListDomains` to the
+  project role, and the MWAA Serverless API on `.api.aws` alone.
+- **[Claude] 1.1's literal against the estate**: `vpc-egress-v0.19.0`'s tree equals `HEAD`'s
+  `terraform-modules/vpc-egress` (`6f867470…`, Recipe B's content check); `./scripts/check-gitlab-mirror.py
+  --plan` exit 0: `GM-1` the copy at `awsds/dev-env` `6ba33971a1d0` (2026-10-25), `GM-2` to `GM-4` 73
+  entries, `61f1e1646df12c14` on both sides, `GM-5` to `GM-8` passing. The recipe changes, so the next tag
+  is a minor, `default-v0.10.0`.
+- **[Claude] The lock's audit on the laptop**, the gate's own command (`pip-audit` 2.10.1, OSV), 06:55:18 to
+  06:57:30: 454 pins, 454 audited, 58 findings in 5 packages; by the gate's matcher against
+  `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV` (50 entries), 57 accepted by id or alias, none blocking, one warning
+  (`nltk` 3.10.3, `PYSEC-2026-3740`, aliases `GHSA-8mgp-746c-j5xp` and `CVE-2026-81726`, no fixed version),
+  no accepted entry gone. A dated verdict (Lesson 77), taken again the day of the tag.
+- **[Claude] Decision 26's version 10**: ECR reads the base of `default-v0.9.1-746ef084` as
+  `sha256:ac9bd82b…044e`, 3,754,767,181 bytes, and `default-v0.6.0`'s as `sha256:94359041…1975`,
+  3,745,648,934 bytes; the two share their first 25 of 30 layers, as v0.8.0's did on 2026-10-22, and the
+  copy's `base/` holds no commit since `default-v0.8.0`. Version 10 is equivalent to `app-etl`'s base by the
+  decision's definition, and the waiting list's row for it is removed.
+- **[Claude] xxiii's counts**: the `test` project's `app_etl` at 12 versions and its `_train` twin at 6, the
+  `dev` project's at 1 each, `houseprice-etl` at 3.
+- **[Claude] xxvii's plan half**: the Amazon Linux parameter still reads `ami-0829b74b2a8c619b7` (modified
+  2026-10-24 21:01 UTC), so the half waits.
+- **[Claude] What changed in the record**: 1.1's bullet, decisions 22 and 26, xxiii and the status cell;
+  `sagemaker-application.md` §D rewritten as the sequence that ran; `upstream-releases.md` (1.0.9 still the
+  newest on PyPI, the domain lookup's row), `docs/SMUS.md`, `dev-env.md` and `sg-proxy.md` at 73 names;
+  `promotion.md` §N.7.1, the GitLab sitting for `default-v0.10.0`, and the waiting list's image row.
