@@ -345,7 +345,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run but the space halves and the Data API negative
   (INT-06 answered, open question 8 closed); the sittings in `runbooks/promotion.md`. 2026-10-25, nothing up: 9.5's
   Terraform adoption applied (the registration and the LF-Tags by hand, no importer), xii's registry read in
-  `model-chain.py transform staging` with `staging/foundation/`'s output, applied.
+  `model-chain.py transform staging` with `staging/foundation/`'s output, applied. **§N.2 run 2026-10-26**: xviii and
+  vii closed, 9.4's DDL job idempotent from pipeline #102, 9.7 read with the project role's grant revoked and
+  Production's workgroup gone, `EXC-13`'s Sandbox half twice, xxiv deferred (§N.4's procedure to be rewritten for
+  the adopted resources); both computes down.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, first fired 2026-10-25 (version 1 registered and approved by `awsds-deploy-prod`; pass 3 done, both transforms, 5.5). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
@@ -369,7 +372,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `test-experimentation`. The connection (`EXC-17`) carries **`lineageSync` on, daily 03:43 UTC, every run
   failing** (decision 3, the user's). **Cost**: 1.44 USD per query-hour at 4 RPU and 0.00 idle, with no
   pause, so `make down` is the guarantee; the ratchet past 4 never returns; the free trial, 300 USD per
-  account for 90 days, absorbs the bill to 2026-12-19 in Sandbox and to 2027-01-21 in Production (287.51 and 299.71 USD left on 2026-10-25; the window opens with the namespace). **`EXC-13`**: the admin secret's first rotation succeeded on 2026-10-20 with no workgroup,
+  account for 90 days, absorbs the bill to 2026-12-19 in Sandbox and to 2027-01-21 in Production (299.69 USD left in Production and 287.51 in Sandbox on 2026-10-26; the window opens with the namespace). **`EXC-13`**: the admin secret's first rotation succeeded on 2026-10-20 with no workgroup,
   against AWS's page, and the database took the password (the Data API as `dbadmin` through the secret, 2026-10-25). SQL from a notebook is `redshift-connection.md` §J. AWS's `SageMakerStudioProjectUserRolePolicy` v75 grants
   every project role `GetCredentials` and the Data API on a workgroup tagged with its project, `GetCredentials` on
   any workgroup through `sqlworkbench`, and the secrets tagged with its project or

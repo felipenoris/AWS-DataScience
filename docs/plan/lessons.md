@@ -2127,6 +2127,12 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   Where: `log-stage-18`'s 7.2 and C1 entries.
 - **Deleting a `Tooling` environment leaves its log group** (measured 2026-10-22, Stage 18 8.1): the
   stack reached `DELETE_COMPLETE` and `datazone-<project>-dev`, at 731 days, stayed.
+- **SMUS's Query editor creates the project space's JupyterLab app on opening, beside its own `sqlworkbench`
+  session, and the app sits in `PendingCheckout`, a state `DeleteApp` cannot take to `Deleting`** (measured
+  2026-10-26, 01:26 to 01:37 UTC, the Stage 9 session's warehouse sitting). The query ran without the app;
+  `make down ENV=sandbox` minutes later met the app in `PendingCheckout` (`ValidationException`) and the
+  Studio-apps hook stopped the down twice, until the user closed the editor, the portal stopped polling at
+  01:36:20 and `DeleteApp` went through at 01:37:03. Where: `log-stage-09-deployment-targets.md`, 2026-10-26.
 
 ### MWAA, provisioned
 
