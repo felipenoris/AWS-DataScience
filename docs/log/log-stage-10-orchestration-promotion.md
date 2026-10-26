@@ -1458,3 +1458,11 @@ told beforehand. Times UTC.*
   `get-schedule` at 00:44:04 reading `DISABLED`, `cron(30 6 * * ? *)`, `UTC`; `list-schedules` reads the
   three chains `DISABLED`. The execution of 00:42 runs on, unaffected by the schedule's state; its end is
   the next entry's.
+
+## 2026-10-26 — the scheduled execution's end
+
+*Claude's hand; Step Functions as the infrastructure user (`awsds-infra-prod`), reads only. Times UTC.*
+
+- **[Claude]** The execution `236adea1-d8c1-4aa8-9164-8be161e8600a`, the firing of 00:42, read `SUCCEEDED` at
+  00:58:16 (stopped 00:57:20, 15 min 3 s), the second run of the day on `v0.4.6` after the by-hand one; the
+  Stage 9 session told that Production is free of this session's writes.
