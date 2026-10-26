@@ -1206,3 +1206,38 @@ since 11.4, and in `Sandbox Account 1` (`awsds-infra-sandbox-1`), reads alone. T
 - **[Claude] `./aws/catalog.py`** at 21:22:13Z, *"all checks passed"*: `CT-3` five access acts across nine
   listings; `CT-4` all five sources with `publishOnImport` false; `CT-5` noting two sources that generate
   business names, `mydatabase`'s and `curated`'s; `CT-7` the catalog road's three grants alone.
+
+## 2026-10-26 — 11.7: `eighth-experimentation`'s `DataLake` environment
+
+*Claude, the same session; AWS as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1`
+(`awsds-infra-sandbox-1`), a contributor of `eighth-experimentation` since 2026-10-15. The write is Claude's,
+on the user's word below; the five other sessions on the laptop were told first, the warehouse sitting's
+message delivered into its running turn. Times UTC.*
+
+- **[user]** *"Autorizo o 11.7: create-environment do DataLake no eighth-experimentation, como
+  infrastructure user, conta Sandbox Account 1, InfrastructureAccess (awsds-infra-sandbox-1), mantendo o
+  registro falho 4lrapnc3syxd74."*
+- **[Claude] Before**, 21:25:00Z: the project's environments `Tooling` `ACTIVE`, `ml-demo-mlflow` `ACTIVE`
+  and `4lrapnc3syxd74` `CREATE_FAILED`, the last on the `DataLake` configuration
+  `40631117-4a84-42b1-b2dc-c2deef6c3d52`, which confirms the id (`GetProjectProfile` from Sandbox is refused,
+  *"no resource-based policy allows the datazone:GetProjectProfile action"*); Lake Formation's three seats,
+  `Parameters` 4/`TRUE`, both default lists empty; the Glue databases `curated`, `default`,
+  `glue_db_4zojr4rr6bmnww`, `mydatabase` and `raw`, `mydatabase` holding `house-price`.
+- **[Claude⚡] The create**, 21:25:23Z: `create-environment` with that configuration, blueprint
+  `d8w7c3fmbsz5cg`, name `eighth-experimentation-lakehouse`; `blerpkhn9nj7o0` `CREATING` at 21:25:24Z and
+  `ACTIVE` at 21:26:00Z, `lastDeployment` `SUCCESSFUL`. DataZone took a second environment from one
+  configuration beside the failed record, so 2.7 did not have to come first.
+- **[Claude] What it holds**: the database `glue_db_blerpkhn9nj7o0` under the project's
+  `dev/data/catalogs/`, no create-table default; the stack `DataZone-Env-blerpkhn9nj7o0`; the subscription
+  target `eighth-experimentation-lakehouse-default-target` (`3qjec3ymbu5p5c`) for `GlueTableAssetType` and
+  `GlueViewAssetType`, its `manageAccessRole` the project role and its authorized principal
+  `abac:CURRENT_PROJECT`; a Glue data source over the database, `5w1ic2yqcs5uog`, `READY`, daily
+  `cron(25 21 * * ? *)`, the minute of its creation.
+- **[Claude] The writes, from Sandbox's trail**: `CreateDatabase` at 21:25:41Z, two `BatchGrantPermissions`
+  at 21:25:49Z and three `GrantPermissions` at 21:25:50Z, all the provisioning role's; the manage-access
+  role's `CreateLakeFormationOptIn` at 21:25:50Z, passing, and its `RevokePermissions` from
+  `IAM_ALLOWED_PRINCIPALS` at 21:25:51Z, *"InvalidInputException"*, nothing to revoke; the provisioning
+  role's `TagResource` at 21:25:52Z. 2.0's pattern, call for call. On the database: `IAMPrincipals` with
+  `CREATE_TABLE`, `DESCRIBE` and `DROP` under `eighth-experimentation`'s condition, the provisioning role's
+  creator `ALL`, and the manage-access role's `CREATE_TABLE` and `DESCRIBE`, `DESCRIBE` grantable.
+- **[Claude] After**: `mydatabase` still holds `house-price`; Lake Formation's settings unchanged.

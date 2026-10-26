@@ -405,7 +405,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `10.70.0.0/16` the managed `Tooling` takes, the prerequisites, the `Tooling` configuration),
   `LAKE_PUBLISHERS` set, `governance/`'s `lake-publishing` profile, `data/`'s two SMUS seats and the publisher's grant on `curated.trades`; the
   Governance Manager created `governed-lake`, whose environment wrote no Lake Formation setting, and
-  approves `eighth-experimentation`'s subscription in the portal; 11.6 published `trades`; next 11.7; a rollback leaves the projects bucket and one registration (the Data OU's deny). No IAM
+  approves `eighth-experimentation`'s subscription in the portal; 11.6 published `trades`, 11.7 made
+  `eighth-experimentation`'s `DataLake` target; next 11.8; a rollback leaves the projects bucket and one registration (the Data OU's deny). No IAM
   condition key reaches business-name generation, decision 3's last input (PR #187); each
   project's `Tooling` data source fails daily (`EXC-11`); `sagemaker-prereqs-v0.8.0` gives the manage-access
   role the Glue policy every `DataLake` environment failed without, applied 2026-10-20; decision 6 taken:
