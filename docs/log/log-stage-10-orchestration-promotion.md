@@ -1720,3 +1720,64 @@ conta, a partir de planos novos. Depois me passe a leitura do Deployment Manager
 - **[Claude] What follows**: the Deployment Manager User's `GetWorkflowRun` on a Production run
   (`promotion.md` §N.7.4 step 3), after a Production profile on the `awsds-deploy` session; a refusal
   naming `kms:Decrypt` reverts the three slices.
+
+## 2026-10-26 — 2.1's remedy written: `scripts/dev-cli.sh` in the template, the upstream report drafted
+
+*Claude's hand (the session of PR #269), from a laptop with no AWS call: the CLI 1.0.9's wheel read from
+PyPI, the template's tests and lint run offline.*
+
+- **[Claude] The lookup's callers, read in the 1.0.9 wheel** (its sha256 the house lock's, `bd7258c0…4903`):
+  `get_domain_id_by_name` lists domains through `resolve_domain_id`. `ProjectManager` resolves the
+  manifest's id and name with `get_domain_from_target_config` (a `GetDomain`) and hands
+  `_ensure_environments_exist` the name alone, which looks the id up again; `workflow.create` and
+  `ContextResolver` resolve the role through `get_project_user_role_arn`, which does the same. Every caller
+  reaches the function through its module, so replacing the module's attribute answers all of them.
+- **[Claude] B**: `examples/app-etl/scripts/dev-cli.sh` runs `"$AWSDS_PYTHON_ENV/bin/python"` with the
+  lookup answered by `DOMAIN_ID` and every argument passed through. It exits 2 before the CLI runs when
+  `AWSDS_PYTHON_ENV` or `DOMAIN_ID` is unset or the environment holds no interpreter, and 1 on a CLI with no
+  `get_domain_id_by_name`. `tests/test_dev_cli.py` runs it over a double of the CLI's package, 8 tests; a
+  copy of the script without the replacement fails 2 of them. The template at `0b57bea3`: `uv run pytest`
+  39 passed, `ruff check` and `ruff format --check` clean, the lint at `d856982c` *"ok: 9 arquivo(s)"*. No
+  storage item names `scripts/` and the Dockerfile copies nothing from it, so neither the bundle nor the
+  image carries it.
+- **[Claude] A**: the report for `aws/CICD-for-SageMakerUnifiedStudio` drafted in PR #269's description,
+  with no account, domain or project id; posting it is the user's act.
+- **[Claude] The record**: `sagemaker-application.md` §A, §O, §R, §D steps 6 and 7, §E and §M; the
+  template's README; `conventions.md`'s layout; `promotion.md` §N.7.3; 2.1; `docs/SMUS.md`,
+  `upstream-releases.md`. The third part, the image's `PATH`, is Stage 8's log of the same day.
+
+## 2026-10-26 — decision 11's read: the Deployment Manager's `GetWorkflowRun` answers under the narrowing
+
+*The user's hand, as the Deployment Manager User on the laptop, through a Production profile added on the
+`awsds-deploy` session (`awsds-deploy-prod`, `DeploymentManagerAccess`), the result pasted in this chat
+before 20:02 UTC; Claude's for the record.*
+
+- **[user] The read** (`promotion.md` §N.7.4 step 3), the run of `awsds-prod-wf-app-etl` the listing named:
+
+  ```
+  aws mwaa-serverless get-workflow-run --workflow-arn "$W" --run-id "$R" --profile awsds-deploy-prod --region us-west-2 --query 'RunDetail.RunState' --output text
+  ```
+
+  *"SUCCESS"*. The service decrypts a run in the reader's session at each `GetWorkflowRun`, and the read is
+  refused when that decrypt is (Stage 18 0.4), so the narrowed allow admitted it: `kms:ViaService` carries
+  `airflow-serverless.us-west-2.amazonaws.com` for these calls, the value the key's convention gave. No
+  revert.
+- **[Claude] What waits**: the trail's `Decrypt` beside the read, `invokedBy airflow-serverless.amazonaws.com`
+  with no error (§N.7.4 step 4), behind the infrastructure user's session, whose token the CLI reported gone
+  at 20:02:09 (*"Error loading SSO Token: Token for awsds does not exist"*). Staging's half waits for a
+  workflow there, at its next leg.
+
+## 2026-10-26 — decision 11's read in the trail: the service's decrypt in the Deployment Manager's session
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), after the
+user's new login (`get-caller-identity` at 20:04:13 UTC). Times UTC.*
+
+- **[Claude] The calls** in Production's trail, each by the reserved `DeploymentManagerAccess` role from the
+  laptop's own uplink, with no error: `ListWorkflows` at 20:01:08, `ListWorkflowRuns` on
+  `awsds-prod-wf-app-etl` at 20:01:12, and `GetWorkflowRun` on run `NQBIfRdrsxVpRgT` at 20:01:18.
+- **[Claude] The decrypt** in the same second, 20:01:18: `Decrypt` in the Deployment Manager's session,
+  `invokedBy airflow-serverless.amazonaws.com`, under the encryption context
+  `aws:airflow-serverless:workflow-arn` (the `app-etl` workflow) with an `aws-crypto-public-key` entry
+  beside it, no error. The narrowed allow and the key's statement admitted it, `kms:ViaService` carrying
+  `airflow-serverless.us-west-2.amazonaws.com`. Decision 11's Production half is closed; Staging's waits
+  for a workflow there, at its next leg.

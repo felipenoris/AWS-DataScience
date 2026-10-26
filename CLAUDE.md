@@ -370,7 +370,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   failure rules mailed; ii's deploy-role half read 2026-10-24 and 3.2 closed 2026-10-25 by (b). Read
   2026-10-26 with nothing up: both outputs buckets publish to EventBridge (3.6); `GetWorkflowRun` decrypts
   through the service and `GetWorkflow` does not (decision 11's `kms:ViaService` narrowing applied
-  2026-10-26, the Deployment Manager's read owed);
+  2026-10-26, the Deployment Manager's `GetWorkflowRun` answering `SUCCESS` under it);
   the training operator's `print_log` read answers, its six `Decrypt` refusals per run CloudWatch Logs'
   attempt with the reader's identity before its own (read the same day). **2.1 ran from a space on 2026-10-26**: the house CLI by its path, the CLI 1.0.9's
   `ListDomains` (refused to a project's role) answered by the domain's id, and Sandbox's `mwaa` group's
@@ -397,13 +397,19 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   2026-10-08). A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint);
   retention mode `none` is declared in all 17 Regions and frozen by 7.5; `claude-opus-5` and
   `claude-sonnet-5` are refused for this account (`EXC-08`).
-- **Stage 6f in progress**: `CT-7` says the catalog road has not reached the lake, and decision 1
-  recommends (c); no IAM condition key reaches business-name generation, decision 3's last input (PR #187); each
+- **Stage 6f in progress**: decision 1 taken 2026-10-26 by the user as (b), a pilot of SMUS's native
+  flow even without LF-Tags (D22 and D26 amended; `GOVERNANCE.md` §Grants' catalog road; `TM-27`). Step
+  11 written and planned, unapplied (PR #270): `data-governance/publishing/` (the VPC `10.70.0.0/16` the
+  managed `Tooling` takes, the prerequisites; 44 to add with `LAKE_PUBLISHERS` empty), `governance/`'s
+  `lake-publishing` profile, `data/`'s two SMUS seats and the publisher's grant on `curated.trades`; the
+  Governance Manager creates `governed-lake` and approves `eighth-experimentation`'s subscription in the
+  portal; a rollback leaves the projects bucket and one registration (the Data OU's deny). No IAM
+  condition key reaches business-name generation, decision 3's last input (PR #187); each
   project's `Tooling` data source fails daily (`EXC-11`); `sagemaker-prereqs-v0.8.0` gives the manage-access
   role the Glue policy every `DataLake` environment failed without, applied 2026-10-20; decision 6 taken:
   `test-experimentation` holds an `ACTIVE` `DataLake` environment, `eighth-experimentation`'s failed record
   waits for 2.7. **6g** owes 2.4's Athena
-  read, refused as written, and decision 1's proxy-host replacement at the next `production/proxy/` apply.
+  read, refused as written and unlocked by 6f step 11's subscription, and decision 1's proxy-host replacement at the next `production/proxy/` apply.
 - **Security Hub paused 2026-10-09** (`EXC-14`): `awsds-fsbp-only` keeps the service with no standard;
   the revert is `runbooks/security-hub.md` §R.
 - **The hub (D38, 6c)**: five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
@@ -469,7 +475,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
-- **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-25`): `TM-17`, the project role's managed policy
+- **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-27`): `TM-17`, the project role's managed policy
   reaching other accounts' `airflow-celery-*` queues and Bedrock functions, is the user's to decide;
   `TM-21` applied 2026-10-19 with Stage 17's 1.3, its finding `RESOLVED` (read 2026-10-21); the data cells filters
   create nothing until decision 12, which since 2026-10-20 also weighs Lake Formation's RLS policies (an

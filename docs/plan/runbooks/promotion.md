@@ -978,11 +978,12 @@ cycle charge (0.36 to 0.87 per Sandbox `[E]` cycle, 0.21 to 0.38 per GitLab cycl
    **Done 2026-10-26**: run at 05:32:19 UTC, failed at 05:34:25 at the DAG's template, *"'dict object' has no
    attribute 'SUBNET_AZ1'"*, no task instance.
 
-9. **[user] Stage 9 8.1's space half, only once 6f decision 1 is taken** and its grant applied: the
-   project's query editor answering `SELECT count(*) FROM curated.trades` and refusing an `INSERT` with
-   Lake Formation's wording. The project role holds no Lake Formation grant on the lake, Sandbox's tag
-   re-grants naming the Data Scientist User's set (Stage 9's log, 2026-10-25), so without the decision the
-   `SELECT` reads a refusal, as 6g 2.4's read does, and the step stays owed.
+9. **[user] Stage 9 8.1's space half, only once 6f step 11's subscription is approved** (decision 1, taken
+   2026-10-26 as (b), the pilot in PR #270): the project's query editor answering `SELECT count(*) FROM
+   curated.trades` and refusing an `INSERT` with Lake Formation's wording. The project role holds no Lake
+   Formation grant on the lake, Sandbox's tag re-grants naming the Data Scientist User's set (Stage 9's log,
+   2026-10-25), so before the subscription the `SELECT` reads a refusal, as 6g 2.4's read does, and the step
+   stays owed.
 
 10. **The downs**: **[user]** the token revoked (*Access tokens → Revoke*) and `git credential-cache exit`
     in the terminal; every portal tab closed first, since an open project page starts the space's app
@@ -1110,16 +1111,16 @@ N.3. Each sitting closes what the one before it cannot; a sitting starts on the 
 metered.
 
 1. **With nothing up, the user's decisions** (the waiting list): the mirror's push before the next tag;
-   and, outside the four stages, 6f decision 1, which 8.1's space half waits on. Taken on 2026-10-26: the
-   CI/CD CLI remedy (the upstream report, the template's script, the house image's `PATH` order) and Stage
-   8 3.3's snapshot pin (option A), both written by one session in one merge request; Stage 10 decision
-   11's narrowing (option A), written and planned; Stage 8 xxviii's active half by a job (option B); Stage
+   the CI/CD CLI remedy's third part, its narrow form in the image or none (PR #269). Taken on 2026-10-26:
+   6f decision 1 (shape (b) in a pilot, recorded and planned as 6f step 11 in PR #270); the CI/CD CLI
+   remedy's report and script and Stage 8 3.3's snapshot pin (option A), written in PR #269; Stage 10 decision
+   11's narrowing (option A), applied the same day; Stage 8 xxviii's active half by a job (option B); Stage
    8 decision 1's zlib pair into the baseline (option A, `gates-v0.6.0` before the image); INT-13 not built
    now (option A, the path kept in issue #268); the training operator's log read needs no remedy (Stage
    10 1.3).
 2. **With nothing up, the user's acts**: the debug window (N.7.2), run 2026-10-26, Stage 9 3.1's
-   debug-role read answered; decision 11's three applies and the Deployment Manager's read in Production
-   (N.7.4).
+   debug-role read answered; decision 11's applies and the Deployment Manager's read in Production, done
+   the same day (N.7.4).
 3. **The GitLab sitting** (N.7.1): `gates-v0.6.0` with the zlib pair, the house image `default-v0.10.0`
    with the 73-name literal, the mirror pushed at `main`, Stage 8 xxviii's job, Stage 7 Validation 2's
    `PX-3` and a GitLab backup.
@@ -1128,7 +1129,7 @@ metered.
    3.7; and the exercises the user takes with it: Stage 8 xv (the proxy stopped alone), Stage 10 xx's
    second half (an undeclared Glue job on a branch's tag), Stage 8 xxvii's plan half once the Amazon Linux
    parameter moves.
-5. **The second Sandbox sitting** (N.7.3), once `default-v0.10.0` is registered or 6f decision 1 is taken:
+5. **The second Sandbox sitting** (N.7.3), once `default-v0.10.0` is registered or 6f step 11's subscription is approved:
    Stage 9 8.1's space half, and the `dev` deploy on the new version with no session export.
 6. **The warehouse sitting** (both computes): xxiv on N.4a; after 2026-11-22, `EXC-13`'s Production half;
    the free trial's pair of readings.
@@ -1268,7 +1269,7 @@ pair, and the alarm fired once per assumption with a notification delivered each
 #### N.7.3 The second Sandbox sitting
 
 N.3's raises and downs, without GitLab when no clone is owed. What it closes: Stage 9 8.1's space half
-once 6f decision 1 is taken and its grant applied (N.3 step 9); and, once `default-v0.10.0` is registered,
+once 6f step 11's subscription is approved (N.3 step 9); and, once `default-v0.10.0` is registered,
 the `dev` deploy from a space on version 11 by [`sagemaker-application.md`](sagemaker-application.md) §D,
 `scripts/dev-cli.sh` for steps 6 and 7, with no `NO_PROXY` export, `getent hosts
 airflow-serverless.us-west-2.api.aws` answering a `10.20.x` address and the proxy log silent on the name.
@@ -1327,7 +1328,10 @@ after the applies is the measurement, and a refusal reverts all three.
 
 **Applied 2026-10-26** (Stage 10's log): the user's authorization in chat; fresh plans as step 1's; the
 applies from 16:15:08 to 16:19:47 UTC, each re-planned `No changes`, the condition read back in both key
-policies and in the set's role policy in Production and Staging. Step 3's read is owed.
+policies and in the set's role policy in Production and Staging. **Step 3 read the same day**: the
+Deployment Manager's `GetWorkflowRun` answered `SUCCESS`, so the value holds and nothing reverts; step 4
+read the same evening, the service's `Decrypt` in the Deployment Manager's session at 20:01:18 UTC with no
+error. Staging's half is owed, at its next leg.
 
 ## Q. After the quotas: Stage 10's pass 3
 

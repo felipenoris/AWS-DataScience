@@ -1337,8 +1337,9 @@ Each is decided during the stage and written into `docs/log/log-stage-10-orchest
     user on 2026-10-26 (option A) and written the same day in the set's `DecryptWhatTheWorkflowServiceEncrypts`
     and both data keys' `AllowTheDeploymentManagerToReadWorkflowRuns`, each plan *0 to add, 1 to change*.
     Applied on the user's authorization the same day, 16:15 to 16:19 UTC, each re-planned `No changes`
-    and the set provisioned in Production and Staging; a Deployment Manager's `GetWorkflowRun` in
-    Production reads the value, and a refusal reverts all three (`promotion.md` §N.7.4). The key-policy half is
+    and the set provisioned in Production and Staging; the Deployment Manager's `GetWorkflowRun` in
+    Production answered `SUCCESS` the same day, so the value holds (`promotion.md` §N.7.4). Staging's half
+    is read at its next leg. The key-policy half is
     Stage 9's PR #245, `AllowTheDeploymentManagerToReadWorkflowRuns`.
 12. **Where a Glue job's script lives, and who may write it** (1.3, 2.4; D28 class 2c). Glue reads a job's
     `ScriptLocation`, and every file its arguments name, from S3 when each run starts and pins no version,
