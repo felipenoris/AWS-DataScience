@@ -358,7 +358,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   since 2026-10-22.
   The MWAA Serverless service-linked role exists in both accounts, Production's created 2026-10-24 in
   `awsds-deploy-prod`'s session at pipeline #71's first `CreateWorkflow`, INT-14 answered in both; Production's
-  first run `SUCCEEDED` by hand (15 min); **6.1 read 2026-10-25**: the schedules started the app-etl and train chains unattended, both `SUCCEEDED`, each run `ON_DEMAND`, the `DISABLED` warehouse schedule silent at 07:30 (xxiv), and the `scheduledTime` placeholder never substituted until `orchestration-v0.2.1`, whose literal form the Scheduler filled at a firing on 2026-10-26 (3.5 read). **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
+  first run `SUCCEEDED` by hand (15 min); **6.1 read 2026-10-25**: the schedules started the app-etl and train chains unattended, both `SUCCEEDED`, each run `ON_DEMAND`, the `DISABLED` warehouse schedule silent at 07:30 (xxiv), and the `scheduledTime` placeholder never substituted until `orchestration-v0.2.1`, whose literal form the Scheduler filled at a firing on 2026-10-26 (3.5 read); 1.2's network negative read the same night (an unconfigured worker at `10.1.11.134` through `airflow-serverless.amazonaws.com`), xi's CI half and ix's Staging half on `v0.4.6`. **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
   3.8): the workflow created by `awscc` under `InfrastructureAccess`, the chain's machine started, diagnosed two
   failures (the worker's XCom encryption needs `kms:GenerateDataKey` in the key policy and in the role's, both
   fixed) and `SUCCEEDED`; 0.5, decision 19, decision 2's context and verification xvi's worker clauses read; the
@@ -439,7 +439,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   fixed; **Staging's `egress/` is the user's up and down (decision 27, 2026-10-24: the pipeline raises and destroys no shared slice; `staging-check` reads it, no teardown job, `staging-gate` before the leg (decision 28, 2026-10-25), refusal 10, the deploy roles' egress grant narrowed to the read, planned and unapplied)**; 3.7 recorded `v0.3.3`. **§V, 2026-10-24**: the mirror at `c714c47d` (`staging-down` skips the hook
   as a deploy role); `v0.4.0`'s pipeline #74 stopped at `test-deploy`, which read app-etl-train's ARN for
   app-etl's run (MR !9), and `v0.4.1`'s #77 at `evaluate`, whose template met the XCom as JSON text
-  (MR !10), so the data release is `v0.4.2` and ix's drift `v0.4.3`.
+  (MR !10), so the data release is `v0.4.2` and ix's drift `v0.4.3`. **`v0.4.6` promoted 2026-10-25/26**
+  (pipeline #102, `EXC-22`'s `KmsKeyId`): both legs green, `EXC-22` closed in both accounts, xii's call read
+  in Production's trail, the four `release.tf`s at `v0.4.6` (the orchestration slices' defaults too: a by-hand
+  apply on a stale default rolls the workflows back), Staging's first post-release `make down` clean.
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
