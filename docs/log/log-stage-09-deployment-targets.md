@@ -2725,3 +2725,30 @@ project role answered; Claude's for the trails, as the infrastructure user. Time
 - **[Claude] What changed in the record**: 3.1's text; `promotion.md` §N.7.2, the window's commands (the
   approval, the plan and apply of `production/sagemaker/`, the persona's assumption and read, the trail,
   the closing apply); the waiting list's act row for it.
+
+## 2026-10-26 — 3.1's debug-role read: the deployment manager's approval, the window opened
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), on the user's
+approval and authorization in this chat. The approval, as the deployment manager: "Aprovo, como deployment
+manager, uma janela de uma hora no awsds-prod-debug. Planeje o apply de production/sagemaker e me diga o
+que eu faço na sessão da persona (promotion.md §N.7.2)." The authorization of the apply: "Autorizo o
+apply necessário". Times UTC.*
+
+- **[Claude] The plan** (`production/sagemaker/`, Production, the slice initialised in this worktree), 15:08:20
+  to 15:08:40, with `-var debug_window_end=2026-10-26T16:10:00Z`, an hour from the plan: *"Plan: 0 to add, 1
+  to change, 0 to destroy."*, `module.debug_role.aws_iam_role.this` alone, its trust's `aws:CurrentTime`
+  moving from `2026-01-01T00:00:00Z` to `2026-10-26T16:10:00Z`, and the slice's check warning *"The debug
+  window on awsds-prod-debug is open until 2026-10-26T16:10:00Z"*. The plan saved outside the repository.
+- **[Claude] Before the apply**: the two peer sessions on the laptop, both idle, told of the apply and of the
+  closing one to come.
+- **[Claude] The apply** of the saved plan, 15:09:12 to 15:09:55: the role modified in 1 s, *"Apply complete!
+  Resources: 0 added, 1 changed, 0 destroyed."*, the check's warning printed with it.
+- **[Claude] Read back**: `get-role` at 15:10:06 shows the trust's `DateLessThan aws:CurrentTime
+  2026-10-26T16:10:00Z` beside `aws:RequestedRegion us-west-2`, the session ceiling 3600 s;
+  `./aws/deploytargets.py awsds-infra-prod` all checks passed, `DT-9` a note, *"OPEN until
+  2026-10-26T16:10:00Z - close it in the same sitting (6.3)"*, both assumption rules
+  `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`; the re-plan with the flag at 15:10:52 *"No changes."*
+- **[Claude] What follows**: the persona's assumption and its read of
+  `app-etl-20261026T004534/algo-1-1792975588` in `/aws/sagemaker/ProcessingJobs`, the stream the
+  infrastructure user read at 07:02:59 (`promotion.md` §N.7.2 step 3); then the trail, and the closing apply
+  on the user's word.
