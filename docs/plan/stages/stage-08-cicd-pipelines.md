@@ -263,6 +263,11 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   two constraints on the gate: the `dev-env` scan of `default-v0.6.0` completed 7 min 22 s after its push,
   past the waiter's 300 s (it exits 255 after 60 checks), so the gate polls under a bound of its own; and the
   counts come from `DescribeImageScanFindings`, since `DescribeImages` carries no scan field here.
+  **The zlib pair, taken 2026-10-26** (decision 1, option A, the user as the Dev Env Steward):
+  `CVE-2026-85091` on `zlib` and `zlib1g` 1.3.dfsg-3.1ubuntu2.2, new in `default-v0.9.1`'s scans, enters the
+  SageMaker Distribution lineage's baseline by name, dated and attributed, in the copy's
+  `ci-gates/baselines.gitlab-ci.yml`; it reaches GitLab as `gates-v0.6.0` before `default-v0.10.0`, the image
+  project's `include:` `ref` moved with it ([`promotion.md`](../runbooks/promotion.md) §N.7.1 step 3).
 - **1.5 — [user] Run the release gate**: a **blocking manual job** — `when: manual` under `rules:`, so
   `allow_failure` defaults false and the pipeline stops — with the package manifests, the scan report and
   the smoke output in its artifacts. A byte diff is not evidence here: a rebuild of an unchanged recipe moved

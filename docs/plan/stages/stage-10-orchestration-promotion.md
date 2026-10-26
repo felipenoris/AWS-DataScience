@@ -1336,7 +1336,8 @@ Each is decided during the stage and written into `docs/log/log-stage-10-orchest
     and the narrowing, `airflow-serverless.<region>.amazonaws.com` by the key's convention, was taken by the
     user on 2026-10-26 (option A) and written the same day in the set's `DecryptWhatTheWorkflowServiceEncrypts`
     and both data keys' `AllowTheDeploymentManagerToReadWorkflowRuns`, each plan *0 to add, 1 to change*.
-    Its applies wait on the user's authorization; then a Deployment Manager's `GetWorkflowRun` in
+    Applied on the user's authorization the same day, 16:15 to 16:19 UTC, each re-planned `No changes`
+    and the set provisioned in Production and Staging; a Deployment Manager's `GetWorkflowRun` in
     Production reads the value, and a refusal reverts all three (`promotion.md` §N.7.4). The key-policy half is
     Stage 9's PR #245, `AllowTheDeploymentManagerToReadWorkflowRuns`.
 12. **Where a Glue job's script lives, and who may write it** (1.3, 2.4; D28 class 2c). Glue reads a job's
