@@ -3861,3 +3861,16 @@ reads only. Times UTC.*
 - **The estate at 02:00**: Staging down (01:24), Production's `workloads-egress` and `warehouse-compute` down
   (01:12 and 01:10, the Stage 9 session's), Sandbox down; the hub up for the Stage 7 session's GitLab cycle
   (its PR to come; Stage 9's is #262), `make hub-down` the sitting's last act after it.
+
+## 2026-10-26 — `make hub-down`: the sitting's end
+
+*The user's hand for the down; Claude's for the reading as the infrastructure user, `NO_PROXY='*'` with the
+tunnel gone, reads only. Times UTC.*
+
+- **[user]** `make hub-down` after the Stage 7 session's `make gitlab-down` (the host stopped 02:39:13, the
+  shared-services endpoints gone 02:38:01). **[Claude]** read at 02:44:13: `awsds-prod-vpn` and
+  `awsds-prod-gitlab` `stopped`, `awsds-prod-proxy` `stopping`; 0 interface endpoints in Production, Sandbox
+  and Staging. The sitting that began with the environment down on 2026-10-25 ends with it down again, the
+  three `[D]` hosts stopped and every `[E]` slice at 0 resources; the sessions' work is in PRs #261 (this
+  one), #262 (Stage 9, merged) and #263 (Stage 7), and the `make gitlab-up` order fix of Stage 7's finding
+  runs in a session of its own.
