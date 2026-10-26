@@ -19,7 +19,8 @@ Production, hand by hand, is `docs/plan/runbooks/sagemaker-application.md` in th
 | `warehouse/trades.sql` | the warehouse table's DDL, run by the pipeline's manual job `production-warehouse-ddl` through the Data API as the deploy role, its owner (Stage 9 decision 6) |
 | `workflows/` | the three workflow definitions, in the CI/CD CLI's notation |
 | `manifest.yaml` | the application: its content, the folders the CLI copies, and its stages `dev` and `test` |
-| `tests/` | pytest, offline, against `samples/`; the Glue script and the worker's task run over doubles |
+| `scripts/dev-cli.sh` | the CI/CD CLI for the `dev` stage in a space: the house image's CLI by its path, its domain lookup answered by `DOMAIN_ID`; no storage item names `scripts/`, so the bundle never carries it |
+| `tests/` | pytest, offline, against `samples/`; the Glue script, the worker's task and `scripts/dev-cli.sh` run over doubles |
 | `samples/` | synthetic trades: the input of the image's smoke test, of a Sandbox job and of the workflow's `inbox/` |
 | `Dockerfile` | the application image, which is also the job image: `FROM` base by digest, the lock's dependencies in a virtual environment of their own on base's CPython 3.12, no code; target `app` is the image, `smoke` runs the job's command on it with `src/` mounted as the job's input |
 | `.gitlab-ci.yml` | the pipeline, with the shared gates from `awsds/ci-gates` |
@@ -36,9 +37,9 @@ Four tasks, in order, every path under the project's shared prefix,
 
 | Task | Operator | Reads | Writes |
 |---|---|---|---|
-| `transform` | `GlueJobOperator`: the Glue job `app-etl-<project id>`, created or updated by the task from `create_job_kwargs` (`update_config: true`), running `glue/transform.py` | `inbox/` | `work/glue/trades.csv`, one CSV with each trade's notional |
-| `process` | `SageMakerProcessingOperator`: a processing job on the application image, network-isolated, its volume under the project key, `src/` as its input `code`, the command `cd /opt/ml/processing/code && python -m app_etl` | `work/glue/` | `work/job/`: `trades.parquet` and `trades.summary.json` |
-| `summarize` | `PythonOperator` on the worker: `app_etl_tasks.summarize`, from `code/app-etl.zip` | `work/job/*.summary.json` | its XCom, the run's report as JSON |
+| `transform` | `GlueJobOperator`: the Glue job `app-etl-<project id>`, created or updated by the task from `create_job_kwargs` (`update_config: true`), running `glue/transform.py` | `inbox/` | `work/glue/trades.csv`, one CSV with each trade's notional; on a governed read, `work/glue/trades.source.json` beside it, the table and the snapshot read |
+| `process` | `SageMakerProcessingOperator`: a processing job on the application image, network-isolated, its volume under the project key, `src/` as its input `code`, the command `cd /opt/ml/processing/code && python -m app_etl` | `work/glue/` | `work/job/`: `trades.parquet` and `trades.summary.json`, which carries the governed read's record as `source` |
+| `summarize` | `PythonOperator` on the worker: `app_etl_tasks.summarize`, from `code/app-etl.zip` | `work/job/*.summary.json` | its XCom, the run's report as JSON, each table's `source` with it |
 | `write_result` | `S3CreateObjectOperator`: the XCom of `summarize`, pulled in its template | | `outbox/report.json` |
 
 Every run overwrites the same keys: the Glue job keeps one file under `work/glue/` (Spark names the
@@ -52,7 +53,9 @@ label first, no header, every fifth row held out for validation) with `batch/bat
 alone. In a project it reads the inbox; in Staging and Production the application slice gives it
 `--SOURCE_TABLE`, the governed `curated.trades` read through Lake Formation on an Iceberg catalog over
 the lake account's, and the columns `GOVERNED_COLUMNS` names, so a governed table that lacks one fails
-the run at Staging's leg, never at `test`. The unit tests mock the governed table with the list's
+the run at Staging's leg, never at `test`. The governed read is at one snapshot, the one
+`--SOURCE_SNAPSHOT` names or else the table's current one, which the job records beside the CSV; the
+summary and the report carry it as `source`, so a run's result names the snapshot it was computed from. The unit tests mock the governed table with the list's
 columns and compare the query it builds, so a change to `GOVERNED_COLUMNS` changes `SCHEMA` and the
 expected queries in `tests/test_glue_script.py` with it. The table is what Staging's integration test
 reads (Stage 9 step 8.5).
@@ -108,26 +111,33 @@ the ceiling (`LINT_INSTANCE_TYPES` in `.gitlab-ci.yml`) as the ones a processing
 awsds-workflows lint . --image-repository awsds-prod-ecr-app-etl --instance-type ml.t3.medium --instance-type ml.t3.large --instance-type ml.t3.xlarge --instance-type ml.m5.large --instance-type ml.m5.xlarge --instance-type ml.c5.large --instance-type ml.c5.xlarge
 ```
 
-The deploy to the `dev` project runs the CI/CD CLI (`aws-smus-cicd-cli` 1.0.9) with the shell variables
-the manifest reads, `JOB_IMAGE_URI` being the image the last release's notes name. The worker's package
-comes first, since `bundle` and `deploy` copy and never build; then the deploy, which copies the folders
-and creates the workflow, and a run:
+The deploy to the `dev` project runs the CI/CD CLI (`aws-smus-cicd-cli` 1.0.9) from a space on the house
+image, as the project's role, with the shell variables the manifest reads, `JOB_IMAGE_URI` being the image
+the last release's notes name. The worker's package comes first, since `bundle` and `deploy` copy and
+never build; then the deploy, which copies the folders and creates the workflow, and a run:
 
 ```bash
 python3 -m zipfile -c code/app-etl.zip code/app_etl_tasks.py
 ```
 
 ```bash
-aws-smus-cicd-cli deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
+scripts/dev-cli.sh deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
 ```
 
 ```bash
-aws-smus-cicd-cli run --manifest manifest.yaml --targets dev --workflow app-etl
+scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-etl
 ```
 
-`--skip-validation` because the CLI's pre-deployment validation simulates the IAM calls without their
-context keys and fails here every time; `--no-events` because the event it would publish has no
-handler in 1.0.9. Which identity runs the `dev` deploy, and from where, is Stage 8 decision 22.
+`scripts/dev-cli.sh` passes every argument to the CLI and answers two things for it. The CLI is the house
+image's, run by its path (`$AWSDS_PYTHON_ENV/bin/python`), since up to the house image's version 10 the
+SageMaker Distribution's own 1.0.8 comes first on a space's `PATH` and refuses the manifest's `code`
+field. And the CLI's domain lookup by name, a `ListDomains` call that DataZone refuses to a project's
+role, is answered with `DOMAIN_ID` ([issue 413](https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413) asks the CLI to use the manifest's id). The
+script refuses to start when `AWSDS_PYTHON_ENV` or `DOMAIN_ID` is unset. `--skip-validation` because the
+CLI's pre-deployment validation simulates the IAM calls without their context keys and fails here every
+time; `--no-events` because the event it would publish has no handler in 1.0.9. Which identity runs the
+`dev` deploy, and from where, is Stage 8 decision 22; the session around it is the infrastructure
+repository's `docs/plan/runbooks/sagemaker-application.md` §D.
 
 ## The pipeline
 

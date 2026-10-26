@@ -62,8 +62,8 @@ USER root
 # A second Python, complete and separate, with its own kernel in the Launcher. The
 # distribution's environment is left exactly as it ships (the user's decision, 2026-09-10): no
 # package of ours goes into it, its `python3` kernelspec is not touched, and nothing of ours
-# joins PATH ahead of its interpreter. A space therefore offers two Python kernels, and only
-# the second one is ours to curate.
+# joins PATH ahead of its interpreter but the CI/CD CLI's entry point (the end of this section).
+# A space therefore offers two Python kernels, and only the second one is ours to curate.
 #
 # uv owns this environment end to end: it installs the interpreter (a managed CPython under
 # /opt/awsds/python, not conda's) and resolves the packages from python/pyproject.toml through
@@ -122,6 +122,25 @@ RUN set -eu; \
     ls /opt/conda/share/jupyter/kernels; \
     "${AWSDS_PYTHON_ENV}/bin/python" -c 'import sys; print("== awsds python", sys.version)'; \
     chmod -R a+rX /opt/awsds /opt/conda/share/jupyter/kernels/awsds-python
+
+# The CI/CD CLI by its name (AWS-DataScience's Stage 8 decision 22). The distribution's own
+# aws-smus-cicd-cli, 1.0.8 in 4.5.2, is in /opt/conda/bin and refuses an application manifest's `code`
+# field. Every start script of the distribution runs `micromamba activate base`, which puts
+# /opt/conda/bin first on PATH whatever an ENV here says, so an order set by ENV reaches no space. The
+# base environment's activation hook runs after the activation has exported PATH and prepends
+# /opt/awsds/bin, which holds the house CLI's entry point and nothing else: `python`, `pip` and
+# `jupyter` stay the distribution's in the server and in a terminal. The hook is one `case`, which
+# returns 0 under the `set -e` the start scripts run with.
+RUN set -eu; \
+    test -x "${AWSDS_PYTHON_ENV}/bin/aws-smus-cicd-cli" \
+      || { echo "FATAL: the house environment carries no aws-smus-cicd-cli entry point." >&2; exit 1; }; \
+    mkdir -p /opt/awsds/bin /opt/conda/etc/conda/activate.d; \
+    ln -s "${AWSDS_PYTHON_ENV}/bin/aws-smus-cicd-cli" /opt/awsds/bin/aws-smus-cicd-cli; \
+    test "$(ls /opt/awsds/bin)" = "aws-smus-cicd-cli"; \
+    printf '%s\n' 'case "${PATH}" in /opt/awsds/bin:*) ;; *) PATH="/opt/awsds/bin:${PATH}" ;; esac' \
+      > /opt/conda/etc/conda/activate.d/zz-awsds-bin.sh; \
+    chmod 0644 /opt/conda/etc/conda/activate.d/zz-awsds-bin.sh; \
+    cat /opt/conda/etc/conda/activate.d/zz-awsds-bin.sh
 
 # --------------------------------------------------------------------------------- 2. Julia
 #

@@ -2915,6 +2915,16 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   2026-10-26, Stage 10 2.1). In a house-image space, `type -a` reads `/opt/conda/bin/aws-smus-cicd-cli`,
   1.0.8, ahead of the house environment's 1.0.9; the 1.0.8 refuses a manifest whose `content.workflows[]`
   carries `code`. Where: `log-stage-10-orchestration-promotion.md`, 2026-10-26.
+- **A space's `PATH` is the base environment's activation, not the image's `ENV`** (read 2026-10-26 in the
+  SageMaker Distribution 4.5.2's start scripts and libmamba's activation, not measured in a space).
+  `entrypoint-sagemaker-ui-jupyter-server`, `start-sagemaker-ui-jupyter-server` and the Code Editor's pair
+  each run `micromamba activate base` before their server, and libmamba puts the environment's `bin` first
+  on activation and on reactivation removes it from wherever it was and puts it first again; the server's
+  terminal (`shell_command: ["/bin/bash"]`) inherits that `PATH`. A directory an image places ahead of
+  `/opt/conda/bin` reaches only what runs without the activation: a descendant's Dockerfile `RUN`, which
+  `_dockerfile_shell.sh` runs unactivated, and a job's `ContainerEntrypoint`. The base environment's
+  `etc/conda/activate.d/*.sh` run after the activation exports `PATH`. Where: `log-stage-08-cicd-pipelines.md`,
+  2026-10-26.
 - **`list-apps` reports an app's first creation, not its latest start** (measured 2026-10-26). Both `default`
   spaces' apps read `CreationTime` 2026-10-25 05:40 UTC while CloudTrail's `CreateApp` started them at 04:45
   and 05:31 UTC on 2026-10-26: an app's age is read from `CreateApp`. Where: the same log.
@@ -2932,7 +2942,8 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   The role's managed policy grants `datazone:List*` on `*` and nothing denies it, yet the call reads *"User is
   not permitted to perform operation: ListDomains"*, CloudTrail `AccessDenied` with no `errorMessage`. The
   CI/CD CLI 1.0.9 makes the call on every deploy with bootstrap actions, the manifest's domain id unused, so a
-  deploy from a space stops there. Where: `log-stage-10-orchestration-promotion.md`, 2026-10-26.
+  deploy from a space stops there; reported upstream as [issue 413](https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413). Where:
+  `log-stage-10-orchestration-promotion.md`, 2026-10-26.
 
 ### MWAA Serverless
 

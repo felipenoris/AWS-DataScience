@@ -632,12 +632,19 @@ network under a service-managed key (its `helpers/datazone.py`; [`upstream-relea
 - **Two CLIs in one image.** The SageMaker Distribution ships `aws-smus-cicd-cli` 1.0.8 in
   `/opt/conda/bin`, first on a space's `PATH`, and it refuses a manifest's `content.workflows[].code`
   (*"Additional properties are not allowed ('code' was unexpected)"*); the house environment's 1.0.9 is
-  reached by its path.
+  reached by its path, through the template's `scripts/dev-cli.sh`. An image's `ENV PATH` cannot reorder
+  the two: every start script of the distribution runs `micromamba activate base` before its server, and
+  the activation puts `/opt/conda/bin` first, so the server and its terminals see conda's directory
+  first whatever the image declares; the base environment's `etc/conda/activate.d/` scripts run after
+  that export (read 2026-10-26 in 4.5.2's scripts and libmamba's activation, not measured in a space).
+  The recipe copy prepends `/opt/awsds/bin`, the house CLI's entry point alone, through such a hook from
+  `default-v0.10.0` (Stage 8 decision 22, unbuilt).
 - **DataZone refuses `ListDomains` to a project's role** (*"User is not permitted to perform operation:
   ListDomains"*, CloudTrail `AccessDenied` with no message) though the role's managed policy allows
   `datazone:List*`; the CLI 1.0.9 resolves the domain by name with that call in the project step of every
   deploy with bootstrap actions and again in `workflow.create`, the manifest's id notwithstanding. The
-  deploy roles' call returns the associated domain, so the pipeline never meets it.
+  deploy roles' call returns the associated domain, so the pipeline never meets it. Reported upstream as
+  [issue 413](https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413) (2026-10-26).
 - **The MWAA Serverless API answers on `airflow-serverless.<region>.api.aws` alone**, a family the compute
   plane's proxy refuses, so a space reaches it only through the interface endpoint
   (`com.amazonaws.<region>.airflow-serverless`, private DNS on), `vpc-egress`'s `mwaa` group since

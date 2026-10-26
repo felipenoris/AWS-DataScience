@@ -1,9 +1,10 @@
 """The Glue script, run over doubles of awsglue, pyspark and boto3: what it reads, the column it
-adds, the one file it writes and the files it deletes; with its options, the governed read, the
-application's table read back and the training sets."""
+adds, the one file it writes and the files it deletes; with its options, the governed read at its
+snapshot and the record of it, the application's table read back and the training sets."""
 
 from __future__ import annotations
 
+import json
 import runpy
 import sys
 import types
@@ -18,6 +19,7 @@ PART = "app-etl/work/glue/part-00000-0f6a-c000.csv"
 TABLE = "s3://bucket/app-etl/tables/trades_notional/"
 TRAIN = "s3://bucket/app-etl/work/train/"
 GOVERNED = "lake.curated.trades"
+RECORD = "s3://bucket/app-etl/work/glue/trades.source.json"
 ROWS = [
     {"notional": 11820.0, "quantity": 120, "price": 98.5},
     {"notional": 540.0, "quantity": 500, "price": 1.08},
@@ -119,16 +121,21 @@ class FakeReader:
 
 
 class FakeSession:
-    def __init__(self, log, read_back, columns):
+    def __init__(self, log, read_back, columns, snapshot):
         self.log = log
         self.read = FakeReader(log, read_back)
         self.columns = columns
+        self.snapshot = snapshot
 
     def table(self, name):
         self.log["described"] = name
         return types.SimpleNamespace(columns=self.columns)
 
     def sql(self, query):
+        if query.startswith("SHOW TBLPROPERTIES"):
+            self.log.setdefault("properties", []).append(query)
+            row = {"key": "current-snapshot-id", "value": self.snapshot}
+            return types.SimpleNamespace(collect=lambda: [row])
         self.log["query"] = query
         return FakeFrame(self.log)
 
@@ -141,21 +148,25 @@ class FakeS3:
         self.copied = []
         self.deleted = []
         self.put = {}
+        self.calls = []
 
     def list_objects_v2(self, Bucket, Prefix):
         return {"Contents": [{"Key": key} for key in self.keys if key.startswith(Prefix)]}
 
     def copy_object(self, Bucket, Key, CopySource):
         self.copied.append((CopySource["Key"], Key))
+        self.calls.append(("copy", Key))
 
     def delete_objects(self, Bucket, Delete):
         self.deleted.append([item["Key"] for item in Delete["Objects"]])
+        self.calls.append(("delete", None))
 
     def put_object(self, Bucket, Key, Body):
         self.put[f"s3://{Bucket}/{Key}"] = Body.decode()
+        self.calls.append(("put", Key))
 
 
-def run_script(monkeypatch, log, keys, options=(), read_back=6, columns=SCHEMA):
+def run_script(monkeypatch, log, keys, options=(), read_back=6, columns=SCHEMA, snapshot="5512"):
     """Run the script as Glue would, with its three libraries doubled; return the S3 double."""
     s3 = FakeS3(keys)
 
@@ -165,7 +176,7 @@ def run_script(monkeypatch, log, keys, options=(), read_back=6, columns=SCHEMA):
     functions = types.ModuleType("pyspark.sql.functions")
     functions.col = lambda name: FakeColumn(f"col({name})")
     functions.round = lambda column, scale: FakeColumn(f"round({column.text}, {scale})")
-    session = FakeSession(log, read_back, columns)
+    session = FakeSession(log, read_back, columns, snapshot)
     builder = types.SimpleNamespace(getOrCreate=lambda: session)
     sql = types.ModuleType("pyspark.sql")
     sql.DataFrame = FakeFrame
@@ -212,13 +223,16 @@ def test_the_script_refuses_more_than_one_part_file(monkeypatch):
 def test_the_governed_read_names_its_columns_and_its_snapshot(monkeypatch):
     log = {}
     options = ["--SOURCE_TABLE", GOVERNED, "--SOURCE_SNAPSHOT", "123456789"]
-    run_script(monkeypatch, log, [PART], options)
+    s3 = run_script(monkeypatch, log, [PART], options)
     assert "read" not in log
     assert log["described"] == GOVERNED
+    assert "properties" not in log
     assert log["query"] == (
         f"SELECT trade_date, desk, instrument, quantity, price FROM {GOVERNED} "
         "VERSION AS OF 123456789"
     )
+    record = {"table": GOVERNED, "snapshot_id": 123456789, "pinned": True}
+    assert json.loads(s3.put[RECORD]) == record
 
 
 def test_a_governed_table_without_a_column_fails_naming_it(monkeypatch):
@@ -257,10 +271,33 @@ def test_the_training_sets_are_xgboost_csv_with_every_fifth_row_held_out(monkeyp
     ]
 
 
-def test_the_governed_read_without_a_snapshot_reads_the_current_one(monkeypatch):
+def test_the_governed_read_without_a_snapshot_reads_at_the_current_one(monkeypatch, capsys):
     log = {}
-    run_script(monkeypatch, log, [PART], ["--SOURCE_TABLE", GOVERNED])
-    assert log["query"] == f"SELECT trade_date, desk, instrument, quantity, price FROM {GOVERNED}"
+    s3 = run_script(monkeypatch, log, [PART], ["--SOURCE_TABLE", GOVERNED])
+    assert log["properties"] == [f"SHOW TBLPROPERTIES {GOVERNED} ('current-snapshot-id')"]
+    assert log["query"] == (
+        f"SELECT trade_date, desk, instrument, quantity, price FROM {GOVERNED} VERSION AS OF 5512"
+    )
+    assert json.loads(s3.put[RECORD]) == {"table": GOVERNED, "snapshot_id": 5512, "pinned": False}
+    assert f"wrote {RECORD}, snapshot 5512" in capsys.readouterr().out
+
+
+def test_the_record_is_written_once_the_prefix_holds_the_target_alone(monkeypatch):
+    keys = [PART, "app-etl/work/glue/_SUCCESS"]
+    s3 = run_script(monkeypatch, {}, keys, ["--SOURCE_TABLE", GOVERNED])
+    assert s3.calls == [
+        ("copy", "app-etl/work/glue/trades.csv"),
+        ("delete", None),
+        ("put", "app-etl/work/glue/trades.source.json"),
+    ]
+
+
+@pytest.mark.parametrize(
+    "value", ["none", f"Table {GOVERNED} does not have property: current-snapshot-id"]
+)
+def test_a_table_without_a_current_snapshot_fails_the_run(monkeypatch, value):
+    with pytest.raises(RuntimeError, match="reports no current snapshot to read at"):
+        run_script(monkeypatch, {}, [PART], ["--SOURCE_TABLE", GOVERNED], snapshot=value)
 
 
 def test_a_snapshot_that_is_not_a_number_fails_the_run(monkeypatch):
