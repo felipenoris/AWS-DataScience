@@ -1409,3 +1409,30 @@ para a issue https://github.com/felipenoris/AWS-DataScience/issues/268, a pedido
   waits in issue #268 for a later evaluation.
 - **[Claude] The record**: INT-13's row and 7.2's text point to the issue, the waiting list's row is
   removed, and `promotion.md` §N.6 lists the decision as taken.
+
+## 2026-10-26 — the GitLab sitting (`promotion.md` §N.7.1), step 2: the raises read back; the agent's first call timed out at the endpoint
+
+*The user's hand for `make hub-up`, `make gitlab-up BUILD=1` and the tunnel, from the project folder at
+`origin/main` (`94ed050d`); Claude's readings as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`): EC2, SSM, the serial console and `make status`, nothing started or changed by Claude.
+The running peer sessions told before the raises. Times UTC.*
+
+- **[Claude] The order, read back at 21:19**: the WireGuard host started 21:16:29 and the proxy 21:16:32; the 12
+  interface endpoints of `production/egress/` created from 21:17:09 (ten in the same second) to 21:17:53
+  (`glue` 21:17:43, `ssm` last); the host `i-0b4cb5f62e65abf70` started 21:18:34, 41 s after the last
+  endpoint; the deploy, test and build runners launched 21:18:57, 21:19:05 and 21:19:06, their first boots
+  logged from 21:19:14 to 21:19:21.
+- **[user] The tunnel**: `mbp-split-tunnel` read *Connected* at 21:20:35 (`scutil --nc list`), `utun` at
+  `10.90.0.2`; **[Claude]** `gitlab.awsds.internal` resolving to `10.30.39.111` and the sign-in page `200
+  ssl_verify=0` at 21:20:35. Every profile read *Disconnected* at 21:19:57 and 21:20:10, before the user's
+  connect.
+- **[Claude] The host's agent**: the serial console logs at 21:20:53 *"SSM Agent unable to acquire
+  credentials ... RequestError: send request failed caused by: Post "https://ssm.us-west-2.amazonaws.com/":
+  dial tcp 10.30.4.117:443: i/o timeout"*: the name resolved to the `ssm` endpoint's address and the
+  connection was not answered. No hibernation line followed; *"Amazon SSM Agent v3.3.5390.0 is running"* at
+  21:25:55 and `describe-instance-information` `Online`, last ping 21:29:16, 7 min 21 s after the start
+  against 1 min 20 s on the run of 03:15. The runners and the hub pair, started after or with the same
+  endpoints, read `Online` from 21:20:11 (the WireGuard host) to 21:21:31.
+- **[Claude] `make status`** at 21:22: the hub pair, `egress/` 12 resources, `tooling/` and `runners/` 13
+  resources `with aws_instance.runner` up, 0.5221 USD/h in all, of which 0.0700 is `workloads-egress/`,
+  raised at 21:22:20 by the warehouse sitting running beside this one, and 0.4521 this sitting's.

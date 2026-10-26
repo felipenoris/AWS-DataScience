@@ -4044,3 +4044,40 @@ the choice and the issue the user's, in that session's chat.*
 - **[Claude] The record**: decision 22, 1.1's bullet, Stage 10 2.1, `promotion.md` §N.7.1 steps 4 and 6
   and §N.7.3, `sagemaker-application.md` §A, §D and §M, the template's README and script, `docs/SMUS.md`,
   `upstream-releases.md`, `lessons.md`, `docs/REFERENCES.md`.
+
+## 2026-10-26 — the GitLab sitting (`promotion.md` §N.7.1), step 1: the lock's audit and the copy against the estate, the day of the tag
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-sandbox-1`): reads and one read-only plan, no write to AWS. Times UTC.*
+
+- **[Claude] The copy against the estate**, `./scripts/check-gitlab-mirror.py --plan`, 21:08:01 to 21:08:27,
+  exit 0: `GM-1` the copy at `awsds/dev-env` `6ba33971a1d0` (2026-10-25), `GM-2` to `GM-4` 73 entries,
+  `61f1e1646df12c14` on both sides, `GM-5` to `GM-8` passing.
+- **[Claude] The lock's audit on the laptop**, the gate's command with its JSON report and matcher (`pip-audit`
+  2.10.1, OSV), 21:08:01 to 21:11:08: 454 pins, 454 audited, 58 findings in 5 packages; against
+  `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV` (50 entries), 57 accepted by id or alias, fsspec's `PYSEC-2026-4217`
+  through its alias `CVE-2026-104851`, none blocking, one warning (`nltk` 3.10.3, `PYSEC-2026-3740`, no fixed
+  version), no accepted entry gone. The morning's reading (06:55), so the tag meets no new finding.
+- **[Claude] The checkout**: the project folder on `main` at `94ed050d`, `origin`'s, clean, the `gitlab`
+  remote in place.
+
+## 2026-10-26 — §N.7.1 step 3: `gates-v0.6.0` with decision 1's zlib pair; the image's `include:` `ref` moved
+
+*The user's hand for the push, the merge request's merge and the tag, as the Dev Env Steward (GitLab's
+`felipenoris`); Claude's for the clone, the branch's commit, the reads (`git ls-remote`, the API through the
+user's GitLab session in Chrome) and the copy's edit. Times UTC.*
+
+- **[Claude] Before**: `git ls-remote` at 21:21:03, `main` at `7c3552b7` (`gates-v0.5.0`), tags `gates-v0.1.0` to
+  `gates-v0.5.0`, so `gates-v0.6.0` free. A clone at `$HOME/tmp/ci-gates-v0.6.0` differed from this
+  repository's `ci-gates/` in `baselines.gitlab-ci.yml` alone; the branch `zlib-pair` carried it as `acd31c6`,
+  the message naming the acceptance: *"accepted by name in the SageMaker Distribution lineage (the Dev Env
+  Steward, 2026-10-26)"*, the pair new in `default-v0.9.1`'s scans and identical in `base` and `dev-env`.
+- **[user] The merge request**: the push opened `awsds/ci-gates` !1 at 21:26:50; the branch pipeline #104 green
+  (`baselines-shape`, `secret_detection`, `secret-detection-gate`); merged at 21:28:20 as `d0b895c8` (parents
+  `7c3552b` and `acd31c6`), `main`'s pipeline #105 green. **[Claude]** `main`'s four files byte-equal to
+  `ci-gates/`; `gates-v0.6.0` still free at 21:28:41.
+- **[user] The tag** `gates-v0.6.0` on `d0b895c8`, its pipeline #106 green at 21:31 (`baselines-shape`).
+  **[Claude] Read back** at 21:33:44: `refs/tags/gates-v0.6.0` at `d0b895c8159e655f6e4af83cc096e37993087c81`.
+- **[Claude] The copy**: `gitlab/awsds/dev-env/.gitlab-ci.yml`'s `include:` `ref` from `7c3552b7` (`gates-v0.5.0`)
+  to `d0b895c8` (`gates-v0.6.0`), the only gates pin in the copy, carried by step 4's merge request.
+  `./scripts/check-gitlab-ci.py` OK: `dev-env`'s 12 jobs from 3 files, 44 script items under `bash -n`.
