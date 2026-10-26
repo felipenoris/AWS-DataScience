@@ -3836,3 +3836,16 @@ Claude's for the readings (the user's GitLab session, EC2 and Step Functions as 
   `warehouse-compute` slices are the Stage 9 session's (down in progress at 01:05 for Production);
   `sandbox/egress` follows that session's word; `make gitlab-down` is the Stage 7 session's cycle's first
   act, and `make hub-down` closes the sitting after both report.
+
+## 2026-10-26 — `make down ENV=staging`, the first after a release since `app_outputs`' grant
+
+*The user's hand for the down, from the project folder; Claude's for the readings as the infrastructure user
+(`awsds-infra-staging`), reads only. Times UTC.*
+
+- **[user]** `make down ENV=staging` at about 01:18. **[Claude]** read at 01:21:51: no workflow, no
+  `awsds-staging-chain-*` state machine, no schedule, no Glue job `awsds-staging-app-etl`, no
+  `/awsds/staging/wf/*` log group (the negative run's stream went with its group); the seven interface
+  endpoints `deleting`; `make status` at 01:21:58 read `staging/app/app-etl` and `staging/orchestration`
+  down with 0 resources and `staging/egress` still `UP` with 10. At 01:24:37 the account held 0 interface
+  endpoints and the egress state 0 resources: the three `[E]` slices down, the release's teardown
+  unhindered by `app_outputs`' infrastructure grant (step 15's measurement).
