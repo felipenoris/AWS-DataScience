@@ -418,7 +418,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the bucket on 2026-11-13, 11-15, 11-25 and 11-26. `make gitlab-up` applies `egress/` before it starts the host
   (2026-10-26: `tooling` at rank 52, one rank order for `[D]` and `[E]` in `scripts/slices.py`), so the Session
   Manager agent meets the `ssm` endpoint at its start instead of hibernating for twenty minutes; the first run
-  of that order is owed at the next GitLab sitting.
+  of that order, the same night, read the host `Online` 1 min 20 s after its start.
   **`saml.auto.tfvars` lives in the project folder's `secrets/`**: a `tooling/` plan passes
   `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block.
 - **Stage 8 in progress**: passes 0-3 done (`awsds/ci-gates`, the test runner, the house image on Python
