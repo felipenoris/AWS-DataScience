@@ -4081,3 +4081,23 @@ user's GitLab session in Chrome) and the copy's edit. Times UTC.*
 - **[Claude] The copy**: `gitlab/awsds/dev-env/.gitlab-ci.yml`'s `include:` `ref` from `7c3552b7` (`gates-v0.5.0`)
   to `d0b895c8` (`gates-v0.6.0`), the only gates pin in the copy, carried by step 4's merge request.
   `./scripts/check-gitlab-ci.py` OK: `dev-env`'s 12 jobs from 3 files, 44 script items under `bash -n`.
+
+## 2026-10-26 — §N.7.1 step 4: `awsds/dev-env` !12, the 73-name literal, the activation hook and the probe job merged
+
+*The user's hand for the push and the merge, as the Dev Env Steward; Claude's for the clone, the branch's
+commit, the reads (the API through the user's GitLab session in Chrome) and the mirror script. Times UTC.*
+
+- **[Claude] The branch**: a clone at `$HOME/tmp/dev-env-v0.10.0`, `main` at `6ba3397` (the copy's commit), the copy
+  under `gitlab/awsds/dev-env/` written over it with `rsync --delete`: four files, `.gitlab-ci.yml` (the
+  `include:` at `gates-v0.6.0`, `sts-global-probe`), `README.md`, `dev-env/Dockerfile` (the 73 names, the
+  activation hook) and `smoke/Dockerfile` (the CLI read after `micromamba activate base`), 90 insertions and 9
+  deletions, committed as `8d904e7` on `no-proxy-73-cli-hook`.
+- **[user] The merge request** `awsds/dev-env` !12, opened by the push at 21:33:00; its pipeline #107 green from
+  21:33:06 to 21:34:32 on the test runner: `recipe-checks` *"NO_PROXY_LIST: 73 entries"*, the managed
+  settings parsing; `pip-audit` *"== awsds/dev-env: 50 accepted finding(s)"*, *"Found 58 known vulnerabilities in
+  5 packages"*, nltk 3.10.3's `PYSEC-2026-3740` `warn`, *"454 of 454 pinned package(s) audited, 0 blocking
+  vulnerability(ies)"*, the laptop's reading of 21:11; `secret_detection` and its gate green. Merged at
+  21:44:01 as `c8bac16e`; `main`'s pipeline #108 started 21:44:02.
+- **[Claude] The copy read back**: `./scripts/gitlab-mirror.py awsds/dev-env` at 21:44 *"the copy already holds
+  this commit's 14 file(s)"*, `gitlab/mirror.json` at `c8bac16e`. `default-v0.10.0` free at 21:44:23, the
+  project's newest tag `default-v0.9.1`.
