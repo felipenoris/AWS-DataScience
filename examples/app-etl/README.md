@@ -37,9 +37,9 @@ Four tasks, in order, every path under the project's shared prefix,
 
 | Task | Operator | Reads | Writes |
 |---|---|---|---|
-| `transform` | `GlueJobOperator`: the Glue job `app-etl-<project id>`, created or updated by the task from `create_job_kwargs` (`update_config: true`), running `glue/transform.py` | `inbox/` | `work/glue/trades.csv`, one CSV with each trade's notional |
-| `process` | `SageMakerProcessingOperator`: a processing job on the application image, network-isolated, its volume under the project key, `src/` as its input `code`, the command `cd /opt/ml/processing/code && python -m app_etl` | `work/glue/` | `work/job/`: `trades.parquet` and `trades.summary.json` |
-| `summarize` | `PythonOperator` on the worker: `app_etl_tasks.summarize`, from `code/app-etl.zip` | `work/job/*.summary.json` | its XCom, the run's report as JSON |
+| `transform` | `GlueJobOperator`: the Glue job `app-etl-<project id>`, created or updated by the task from `create_job_kwargs` (`update_config: true`), running `glue/transform.py` | `inbox/` | `work/glue/trades.csv`, one CSV with each trade's notional; on a governed read, `work/glue/trades.source.json` beside it, the table and the snapshot read |
+| `process` | `SageMakerProcessingOperator`: a processing job on the application image, network-isolated, its volume under the project key, `src/` as its input `code`, the command `cd /opt/ml/processing/code && python -m app_etl` | `work/glue/` | `work/job/`: `trades.parquet` and `trades.summary.json`, which carries the governed read's record as `source` |
+| `summarize` | `PythonOperator` on the worker: `app_etl_tasks.summarize`, from `code/app-etl.zip` | `work/job/*.summary.json` | its XCom, the run's report as JSON, each table's `source` with it |
 | `write_result` | `S3CreateObjectOperator`: the XCom of `summarize`, pulled in its template | | `outbox/report.json` |
 
 Every run overwrites the same keys: the Glue job keeps one file under `work/glue/` (Spark names the
@@ -53,7 +53,9 @@ label first, no header, every fifth row held out for validation) with `batch/bat
 alone. In a project it reads the inbox; in Staging and Production the application slice gives it
 `--SOURCE_TABLE`, the governed `curated.trades` read through Lake Formation on an Iceberg catalog over
 the lake account's, and the columns `GOVERNED_COLUMNS` names, so a governed table that lacks one fails
-the run at Staging's leg, never at `test`. The unit tests mock the governed table with the list's
+the run at Staging's leg, never at `test`. The governed read is at one snapshot, the one
+`--SOURCE_SNAPSHOT` names or else the table's current one, which the job records beside the CSV; the
+summary and the report carry it as `source`, so a run's result names the snapshot it was computed from. The unit tests mock the governed table with the list's
 columns and compare the query it builds, so a change to `GOVERNED_COLUMNS` changes `SCHEMA` and the
 expected queries in `tests/test_glue_script.py` with it. The table is what Staging's integration test
 reads (Stage 9 step 8.5).

@@ -475,14 +475,17 @@ placed in `sys.modules` under the real module's name (`boto3`, `pyspark.sql`, `a
 script's imports resolve without Spark or AWS and the test can read what the script asked of them:
 
 - **The processing command** (`tests/test_pipeline.py`): `main()` over a temporary directory holding
-  copies of `samples/`, asserting the files it leaves and the summary's counts.
+  copies of `samples/`, asserting the files it leaves and the summary's counts, and a governed read's
+  record beside a CSV carried into its summary as `source`.
 - **The worker's tasks** (`tests/test_tasks.py`): `code/` on `pythonpath` (`pyproject.toml`'s pytest
   section), a double of `boto3` answering fabricated summaries, since the project installs no boto3 (the
-  worker carries it); the XCom asserted as the JSON text the next task decodes.
+  worker carries it); the XCom asserted as the JSON text the next task decodes, a summary's `source`
+  carried into the report.
 - **The Glue script** (`tests/test_glue_script.py`): loaded with `runpy` over doubles of `awsglue.utils`,
   `pyspark.sql` and `boto3`, asserting what it reads, the column it adds, the one file it copies and the
   files it deletes, with and without its optional arguments; the governed table mocked by its column
-  list, `SCHEMA`, and the query the script builds compared literally. A change to `GOVERNED_COLUMNS`
+  list, `SCHEMA`, and its current snapshot, the query the script builds compared literally, and the
+  record written once the prefix holds the CSV alone. A change to `GOVERNED_COLUMNS`
   therefore changes `SCHEMA` and the expected queries in the same commit, as a developer would, and the
   drift the Staging leg catches is the one the unit tests cannot: a column the governed table lacks
   (verification ix, read on `v0.4.5`).
@@ -709,8 +712,14 @@ format of the lake, a layout of Parquet files plus metadata that lets an engine 
 snapshot and commit a write atomically. The script reads the columns `GOVERNED_COLUMNS` names and
 nothing else, and a governed table that lacks one fails the run naming the column, in Staging's leg
 (verification ix, read on `v0.4.5`). In a project the same script reads the inbox's CSVs, since no
-`--SOURCE_TABLE` reaches it there. `--SOURCE_SNAPSHOT` pins an Iceberg snapshot when given; nothing
-passes it today.
+`--SOURCE_TABLE` reaches it there. The read is at one snapshot, the one `--SOURCE_SNAPSHOT` names or else
+the table's current one, the `current-snapshot-id` Iceberg reports to Spark, and the script writes
+`<stem>.source.json` beside its CSV: the table, the snapshot and whether it was pinned. The processing
+job, which reads the CSV's prefix, copies the record into its summary as `source`, and the worker's
+report carries it, so a run's result names the snapshot it was computed from (Stage 8 3.3, option A,
+2026-10-26). A table that reports no current snapshot fails the run. Nothing passes `--SOURCE_SNAPSHOT`
+today: Staging and Production each read their current snapshot, and their parity by id waits until it
+is a requirement.
 
 **The governed write**, Production alone: the job role's named grant on `curated`'s tables (`SELECT`,
 `INSERT`, `DELETE`, `ALTER`, `DESCRIBE`), the commit through Lake Formation's full-table-access mode with
@@ -1053,6 +1062,7 @@ topic. Start from the question, and the table names the place:
 | why did a task fail | its stream `workflow_id=<workflow>/run_id=<id>/task_id=<task>/attempt=<n>.log` in `/awsds/<env>/wf/<key>` ([`log-debugging.md`](log-debugging.md) §W); in `dev` and `test`, in `/aws/mwaa-serverless/<domain>-<project>/<name>` |
 | a run in `dev`, from the space | the same `mwaa-serverless` reads as the project role, which need the `mwaa` group and the API's name in `NO_PROXY` (§D); from a laptop, as the infrastructure user with `awsds-infra-sandbox-1` |
 | what did the Glue job do | `aws glue get-job-runs --job-name awsds-<env>-<app>`; the run's stream in `/aws-glue/jobs/logs-v2` (continuous logging), every line the script prints |
+| which snapshot of the governed table did a run read | `source` in `<app>/outbox/report.json` and in `<app>/work/job/<stem>.summary.json`; the Glue run's line *"reading SELECT … VERSION AS OF <id>"* |
 | what did the processing or training job print, did it respect the boundary | `aws sagemaker describe-processing-job`, `describe-training-job` (`FailureReason`, the network and key settings); the container's stream in `/aws/sagemaker/ProcessingJobs` or `/aws/sagemaker/TrainingJobs` |
 | did the result land, under which key | `aws s3api head-object --bucket awsds-<env>-outputs --key <app>/outbox/<file>` with `--checksum-mode ENABLED`; `SSEKMSKeyId` the data key |
 | what did the release write | `applications/<app>/<tag>/MANIFEST.sha256`, each object's SHA256 beside its bundled one; `aws mwaa-serverless get-workflow` for the definition's and the code's `VersionId` |
