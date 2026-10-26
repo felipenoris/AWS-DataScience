@@ -1766,3 +1766,18 @@ before 20:02 UTC; Claude's for the record.*
   with no error (§N.7.4 step 4), behind the infrastructure user's session, whose token the CLI reported gone
   at 20:02:09 (*"Error loading SSO Token: Token for awsds does not exist"*). Staging's half waits for a
   workflow there, at its next leg.
+
+## 2026-10-26 — decision 11's read in the trail: the service's decrypt in the Deployment Manager's session
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), after the
+user's new login (`get-caller-identity` at 20:04:13 UTC). Times UTC.*
+
+- **[Claude] The calls** in Production's trail, each by the reserved `DeploymentManagerAccess` role from the
+  laptop's own uplink, with no error: `ListWorkflows` at 20:01:08, `ListWorkflowRuns` on
+  `awsds-prod-wf-app-etl` at 20:01:12, and `GetWorkflowRun` on run `NQBIfRdrsxVpRgT` at 20:01:18.
+- **[Claude] The decrypt** in the same second, 20:01:18: `Decrypt` in the Deployment Manager's session,
+  `invokedBy airflow-serverless.amazonaws.com`, under the encryption context
+  `aws:airflow-serverless:workflow-arn` (the `app-etl` workflow) with an `aws-crypto-public-key` entry
+  beside it, no error. The narrowed allow and the key's statement admitted it, `kms:ViaService` carrying
+  `airflow-serverless.us-west-2.amazonaws.com`. Decision 11's Production half is closed; Staging's waits
+  for a workflow there, at its next leg.

@@ -1320,8 +1320,9 @@ after the applies is the measurement, and a refusal reverts all three.
 **Applied 2026-10-26** (Stage 10's log): the user's authorization in chat; fresh plans as step 1's; the
 applies from 16:15:08 to 16:19:47 UTC, each re-planned `No changes`, the condition read back in both key
 policies and in the set's role policy in Production and Staging. **Step 3 read the same day**: the
-Deployment Manager's `GetWorkflowRun` answered `SUCCESS`, so the value holds and nothing reverts; step 4's
-trail reading and Staging's half are owed.
+Deployment Manager's `GetWorkflowRun` answered `SUCCESS`, so the value holds and nothing reverts; step 4
+read the same evening, the service's `Decrypt` in the Deployment Manager's session at 20:01:18 UTC with no
+error. Staging's half is owed, at its next leg.
 
 ## Q. After the quotas: Stage 10's pass 3
 
