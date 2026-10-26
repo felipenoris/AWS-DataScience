@@ -3849,3 +3849,15 @@ Claude's for the readings (the user's GitLab session, EC2 and Step Functions as 
   down with 0 resources and `staging/egress` still `UP` with 10. At 01:24:37 the account held 0 interface
   endpoints and the egress state 0 resources: the three `[E]` slices down, the release's teardown
   unhindered by `app_outputs`' infrastructure grant (step 15's measurement).
+
+## 2026-10-26 — `make down ENV=sandbox`; the sitting's slices down but the hub and GitLab's cycle
+
+*The user's hand for the down; Claude's for the readings as the infrastructure user (`awsds-infra-sandbox-1`),
+reads only. Times UTC.*
+
+- **[user]** `make down ENV=sandbox` after the Stage 9 session's `warehouse-compute` down of 01:37.
+  **[Claude]** read at 02:00:37: 0 interface endpoints, 0 workgroups, 0 Studio apps running, and
+  `sandbox/egress`, `sandbox/warehouse-compute` and `sandbox/probes` at 0 resources in state.
+- **The estate at 02:00**: Staging down (01:24), Production's `workloads-egress` and `warehouse-compute` down
+  (01:12 and 01:10, the Stage 9 session's), Sandbox down; the hub up for the Stage 7 session's GitLab cycle
+  (its PR to come; Stage 9's is #262), `make hub-down` the sitting's last act after it.
