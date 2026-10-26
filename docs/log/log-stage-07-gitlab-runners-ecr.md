@@ -1474,3 +1474,24 @@ the instrument, reads only. Times UTC.*
   56 entries, `0f80372bf880bb16`, in the four env blocks, and each runner's `NOPROXY` at egress's 36. Its exit
   1 is section 10's: the profiles of the SSO sessions this laptop holds no token for (`awsds-ctadmin`,
   `awsds-deploy`, the personas), none of which a check reads.
+
+## 2026-10-26 — §N.7.1 step 10: the downs; the first `make hub-down` stopped nothing; §R at zero
+
+*The user's hand for `make gitlab-down`, the tunnel and `make hub-down`, from the project folder; Claude's for
+the readings as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`,
+`awsds-infra-sandbox-1`), reads only. The warehouse sitting beside this one told before the downs; it had
+finished its writes at 22:10:52 and needed the hub no more. Times UTC.*
+
+- **[user] `make gitlab-down`**; **[Claude] read back**: `TerminateInstances` on the three runners at 22:18:57,
+  `StopInstances` on GitLab's host at 22:19:34; `./aws/egress.py` at 22:27 on the three profiles: 0 interface
+  endpoints, 0 NAT and 0.000 USD/h in each, `EG-1` and `EG-4` passing, `EG-5` *"none - the correct
+  between-sessions state"*.
+- **[user] The tunnel down, then `make hub-down`**; **[Claude]** at 22:27:49 both hub hosts read `running` and the
+  trail held no `StopInstances` for either since 22:15: the run stopped nothing, the second time on 2026-10-26
+  (the Sandbox sitting's first round at 06:17 is the first). Its output was not read. The client runbook's §4.1
+  names the mechanism that fails this way with the tunnel down, a proxy setting pointing at
+  `proxy.awsds.internal`, and its override.
+- **[user] `NO_PROXY='*' make hub-down`**; **[Claude]** `StopInstances` on the proxy at 22:29:09 and on the WireGuard
+  host at 22:29:11 (`aws-cli/2.37.12`), all three `[D]` hosts `stopped` at 22:30:41.
+- **[Claude] §R**: `make status` at 22:31:33, the hub pair and `tooling/` `stopped`, `egress/`, `runners/` and every
+  other `[E]` slice down, Production's application and orchestration slices up at 0.0000, the burn 0.0000 USD/h.
