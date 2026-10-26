@@ -1441,3 +1441,20 @@ told beforehand. Times UTC.*
   `get-schedule` at 00:30:51: `ENABLED`, `cron(42 0 26 10 ? 2026)`, `UTC`, `Target.Input`
   `{"chain":"app-etl","scheduledTime":"<aws.scheduler.scheduled-time>"}` with the brackets literal;
   `production/orchestration` re-planned `No changes` at 00:31:45.
+
+## 2026-10-26 — 3.5's substitution read: the Scheduler fills the literal placeholder; the schedule off again
+
+*Claude's hand; Step Functions and the Scheduler as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`); the second apply on the same authorization as the first (step 12). Times UTC.*
+
+- **[Claude] The firing**: the schedule fired at 00:42, and the execution `236adea1-d8c1-4aa8-9164-8be161e8600a`
+  of `awsds-prod-chain-app-etl` started 00:42:17 with the input
+  `{"chain":"app-etl","scheduledTime":"2026-10-26T00:42:00Z"}`: the Scheduler substituted the placeholder
+  the stored input carries literally since `orchestration-v0.2.1`, where 2026-10-25's two firings had
+  received `<aws.scheduler.scheduled-time>` from the JSON-escaped form (6.1, Lesson 74). 3.5's date reaches
+  a chain; no chain forwards it to a workflow yet.
+- **[Claude⚡] The return**: `main.tf` back to `cron(30 6 * * ? *)` and `schedule_enabled = false`, the plan
+  *"0 to add, 1 to change, 0 to destroy"* at 00:43:32, the apply complete at 00:43:55 (1 s), and
+  `get-schedule` at 00:44:04 reading `DISABLED`, `cron(30 6 * * ? *)`, `UTC`; `list-schedules` reads the
+  three chains `DISABLED`. The execution of 00:42 runs on, unaffected by the schedule's state; its end is
+  the next entry's.

@@ -677,7 +677,10 @@ carries `ONLY=`, or the build runner is destroyed.
     aws s3api head-object --bucket awsds-prod-outputs --key app-etl/work/job/trades.summary.json --query '[LastModified,ServerSideEncryption,SSEKMSKeyId]' --profile awsds-infra-prod --region us-west-2
     ```
 
-12. **[user decides] Stage 10 3.5's substitution**: a commit turns the app-etl schedule on
+12. **[user decides] Stage 10 3.5's substitution** (**done 2026-10-26**: the user's decision in chat, the
+    schedule on by a commit and an apply at 00:30 UTC with `cron(42 0 26 10 ? 2026)`, the firing's
+    execution input `"scheduledTime":"2026-10-26T00:42:00Z"`, the schedule `DISABLED` again at 00:43:55;
+    Stage 10's log): a commit turns the app-etl schedule on
     (`schedule_enabled = true` in `production/orchestration/main.tf`), its cron moved into the sitting
     or kept at 06:30 UTC with `workloads-egress/` up across it, applied by **[Claude⚡]** (Recipe A) or by
     the next `production-deploy` once the mirror carries it. **[Claude]** at the firing, the execution's

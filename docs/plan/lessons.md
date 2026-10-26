@@ -2835,8 +2835,10 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   writes the target's input with Terraform's `jsonencode`, which escapes `<` and `>`: the schedule stored
   `{"chain":"app-etl","scheduledTime":"\u003caws.scheduler.scheduled-time\u003e"}` and the execution
   received the same text, which a JSON parser reads back as the unsubstituted
-  `<aws.scheduler.scheduled-time>`. Where: `log-stage-10-orchestration-promotion.md`, 2026-10-25;
-  `terraform-modules/orchestration/chains.tf`, the schedule's `input`.
+  `<aws.scheduler.scheduled-time>`. With the brackets literal in the stored input (`orchestration-v0.2.1`),
+  the firing of 2026-10-26 00:42 UTC received `"scheduledTime":"2026-10-26T00:42:00Z"`. Where:
+  `log-stage-10-orchestration-promotion.md`, 2026-10-25 and 2026-10-26; `terraform-modules/orchestration/chains.tf`,
+  the schedule's `input`.
 
 ### SageMaker models
 

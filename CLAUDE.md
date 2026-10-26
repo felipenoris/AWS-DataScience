@@ -358,7 +358,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   since 2026-10-22.
   The MWAA Serverless service-linked role exists in both accounts, Production's created 2026-10-24 in
   `awsds-deploy-prod`'s session at pipeline #71's first `CreateWorkflow`, INT-14 answered in both; Production's
-  first run `SUCCEEDED` by hand (15 min); **6.1 read 2026-10-25**: the schedules started the app-etl and train chains unattended, both `SUCCEEDED`, each run `ON_DEMAND`, the `DISABLED` warehouse schedule silent at 07:30 (xxiv), and the `scheduledTime` placeholder never substituted until `orchestration-v0.2.1`. **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
+  first run `SUCCEEDED` by hand (15 min); **6.1 read 2026-10-25**: the schedules started the app-etl and train chains unattended, both `SUCCEEDED`, each run `ON_DEMAND`, the `DISABLED` warehouse schedule silent at 07:30 (xxiv), and the `scheduledTime` placeholder never substituted until `orchestration-v0.2.1`, whose literal form the Scheduler filled at a firing on 2026-10-26 (3.5 read). **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
   3.8): the workflow created by `awscc` under `InfrastructureAccess`, the chain's machine started, diagnosed two
   failures (the worker's XCom encryption needs `kms:GenerateDataKey` in the key policy and in the role's, both
   fixed) and `SUCCEEDED`; 0.5, decision 19, decision 2's context and verification xvi's worker clauses read; the

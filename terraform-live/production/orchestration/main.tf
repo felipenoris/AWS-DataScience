@@ -123,11 +123,9 @@ locals {
     "app-etl" = {
       definition_template = file("${path.module}/chains/app-etl.asl.json")
       workflows           = ["app-etl"]
-      # Stage 10 step 3.5's substitution reading (promotion.md §N.1 step 12): one dated firing in the
-      # sitting of 2026-10-26, turned off again by the next commit.
-      schedule_expression = "cron(42 0 26 10 ? 2026)"
+      schedule_expression = "cron(30 6 * * ? *)"
       schedule_timezone   = "UTC"
-      schedule_enabled    = true
+      schedule_enabled    = false
     }
     "app-etl-train" = {
       definition_template = file("${path.module}/chains/app-etl-train.asl.json")
