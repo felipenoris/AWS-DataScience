@@ -2767,8 +2767,9 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   holds its `Decrypt` `invokedBy logs.amazonaws.com`, no encryption context, `AccessDenied`, and in the same
   second a `Decrypt` by `fas.s3.amazonaws.com` under CloudWatch Logs' chunk store's `aws:s3:arn`, which
   succeeded, and the events came back. The training operator's six refusals per run have the first shape
-  while its task log carries the training job's lines. A refusal of this shape is not a refused read.
-  Where: `log-stage-10-orchestration-promotion.md`, 2026-10-26.
+  while its task log carries the training job's lines, and `awsds-prod-debug`'s read in a window the same
+  afternoon showed the same pair. A refusal of this shape is not a refused read. Where:
+  `log-stage-10-orchestration-promotion.md` and `log-stage-09-deployment-targets.md`, 2026-10-26.
 
 ### Lake Formation
 

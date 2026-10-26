@@ -1229,7 +1229,9 @@ expected to answer the same way, its refused `Decrypt` in the trail beside the s
 
 **Run 2026-10-26** (Stage 9's log): the approval in chat; the window applied at 15:09:55 UTC until 16:10, the
 plan *0 to add, 1 to change*; the persona's assumption `debug-window-logs` and its read answered, the stream's
-first lines returned through the debug role.
+first lines returned through the debug role; the trail held both assumptions, the read and the `Decrypt`
+pair, and the alarm fired once per assumption with a notification delivered each time; the closing apply at
+15:25:44 UTC, `DT-9` closed and the re-plan `No changes`.
 
 #### N.7.3 The second Sandbox sitting
 
