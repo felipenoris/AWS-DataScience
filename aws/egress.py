@@ -635,8 +635,9 @@ What the checks are, and where each comes from:
   - Management, Log Archive and Audit hold NO CLI profile, by design (D33/D34),
     and none of them gets an egress/ slice.
   - Every Sandbox beyond the first has no profile until Stage 14 vends it (D35).
-  - Data Governance IS measured and should show NOTHING here: no VPC (D22), so no
-    endpoint and no NAT - its consumers bring their own endpoints.""")
+  - Data Governance IS measured and shows no interface endpoint and no NAT: its
+    consumers bring their own endpoints. Its one VPC, Stage 6f step 11's (D22,
+    amended 2026-10-26), carries the vpc module's two gateway endpoints alone.""")
 
         # ==============================================================================
         rep.h1("10. Calls that failed")

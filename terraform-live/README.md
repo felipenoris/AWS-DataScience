@@ -96,7 +96,9 @@ the hosts the perimeter, both peerings and the flow logs were measured from, kep
 that has to be rewritten is a probe nobody re-runs. Staging's left at Stage 8 step 3.1: its target is in
 `VPC-SharedServices`, which Staging stopped peering with at 6c. **`data-governance/` has no
 `foundation/` and never will** (D22 — a registry needs no VPC), which is why `layers.py` carries an
-explicit comment where its row would be. What stands right now is the `[P]` half alone: the `[E]`
+explicit comment where its row would be; its one VPC is Stage 6f step 11's, inside
+`data-governance/publishing/`, because the managed `Tooling` template of the lake-publishing project
+takes one, and it peers with nothing. What stands right now is the `[P]` half alone: the `[E]`
 slices are destroyed and the tree bills **USD 0.0000/h** between sessions, while `foundation/`
 re-plans `No changes` — that pair is D11's proof.
 
@@ -265,8 +267,9 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   grants on the root domain unit (`grants.tf`, 2026-08-22 — without them the profiles were templates
   nobody could instantiate). **No compute lives here and none ever may**:
   `sagemaker:Create*` is denied in this account by the `Data` OU document, a deny that stays free because
-  no blueprint is enabled here, and Stage 6 step 0.4 reads the slice's own plan for any `aws_sagemaker_*`
-  resource before every apply.
+  no blueprint is enabled here but the lake-publishing pilot's `Tooling`, with spaces off
+  (`data-governance/publishing/`, Stage 6f step 11), and Stage 6 step 0.4 reads the slice's own plan for
+  any `aws_sagemaker_*` resource before every apply.
 - **`sandbox/sagemaker/` `[P]` — the runtime's prerequisites**, one module
   (`terraform-modules/sagemaker-prereqs/`). It was applied **twice** until 2026-09-06, in Sandbox and in
   Development, so the two could not drift; **Stage 6b step 1.7 destroyed the Development copy and deleted

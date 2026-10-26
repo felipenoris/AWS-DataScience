@@ -40,10 +40,14 @@
 #         successor's startedAt, so a daily source reads RUNNING however long it has been failing.
 #         The exception is by name and each project's Tooling environment creates one source, so
 #         the note prints how many sources it covered.
-#   CT-7  no SMUS-managed principal holds a grant on a lake database, a lake table or an LF-Tag.
-#         The design reads the lake through TBAC re-grants to a persona (GOVERNANCE.md §Grants),
-#         so a project role or a conditioned IAMPrincipals entry reaching `raw`, `curated` or
-#         `dropbox` is a second road into governed data with no row in the register.
+#   CT-7  no SMUS-managed principal holds a grant on a lake database, a lake table or an LF-Tag,
+#         but on the catalog road. The design reads the lake through TBAC re-grants to a persona
+#         (GOVERNANCE.md §Grants), so a project role or a conditioned IAMPrincipals entry reaching
+#         `raw`, `curated` or `dropbox` is a second road into governed data with no row in the
+#         register. Since Stage 6f decision 1 (2026-10-26) one such road is designed: a table in
+#         PUBLISHED_LAKE_TABLES carries the publishing project role's grant and the grants DataZone
+#         fulfils, which this check lists as a note, the register's reading of them (6f decision
+#         due 2's first option); any other SMUS grant on the lake fails as before.
 #   CT-8  every conditioned IAMPrincipals grant carries the project condition. An unconditioned
 #         one grants the whole account, which is what that principal means without a Condition.
 #   CT-9  nobody may override a project owner or a domain unit owner. The owner project's approval
@@ -88,11 +92,18 @@ SANDBOX_PROFILE = "awsds-infra-sandbox-1"
 # CT-7's finding; a project's own database is not.
 LAKE_DATABASES = ("raw", "curated", "dropbox")
 
+# The lake tables the lake-publishing pilot publishes (Stage 6f decision 1, step 11), as
+# `<database>.<table>`: the same list as data-governance/data/publishing.tf's `published_tables`.
+# A SMUS grant on one of these is the catalog road's; a table published there and missing here
+# fails CT-7, which is the reading that keeps the two lists together (Lesson 14).
+PUBLISHED_LAKE_TABLES = ("curated.trades",)
+
 # What makes a principal SMUS-managed. The service names its own roles by prefix and writes the
 # account-wide entry as `<account>:IAMPrincipals`, which is a grant to everyone in the account
 # unless a Condition narrows it (CT-8).
+PROJECT_ROLE_MARKER = "datazone_usr_role_"
 SMUS_ROLE_MARKERS = (
-    "datazone_usr_role_",
+    PROJECT_ROLE_MARKER,
     "-smus-provisioning",
     "-smus-manage-access",
     "AmazonDataZone",
@@ -174,6 +185,17 @@ def resource_of(resource: dict) -> tuple[str, str]:
         expr = body.get("Expression") or []
         return (kind, " AND ".join(f"{e.get('TagKey')}∈{e.get('TagValues')}" for e in expr) or "-")
     return (kind, "-")
+
+
+def on_catalog_road(principal: str, kind: str, name: str, permissions: str) -> bool:
+    """True for a SMUS grant the lake-publishing pilot designs: any grant on a published table, and
+    a project role's DESCRIBE alone on the database that holds one (data/publishing.tf)."""
+    if kind in ("Table", "TableWithColumns"):
+        return name in PUBLISHED_LAKE_TABLES
+    if kind == "Database":
+        holders = {t.split(".", 1)[0] for t in PUBLISHED_LAKE_TABLES}
+        return name in holders and permissions == "DESCRIBE" and PROJECT_ROLE_MARKER in principal
+    return False
 
 
 def touches_lake(kind: str, name: str) -> bool:
@@ -541,7 +563,9 @@ def main(argv: list) -> int:
     partial = f"not read to its last page: {', '.join(unlisted)} (section 5)"
 
     # ---------------------------------------------------------------- CT-7 SMUS reaching the lake
-    reaching = [g for g in smus_grants if touches_lake(g[2], g[3])]
+    lake_grants = [g for g in smus_grants if touches_lake(g[2], g[3])]
+    catalog_road = [g for g in lake_grants if on_catalog_road(g[1], g[2], g[3], g[4])]
+    reaching = [g for g in lake_grants if g not in catalog_road]
     if not grant_rows:
         checks.note("CT-7", "no SMUS principal reaches the governed lake", "no grant read")
     elif reaching:
@@ -555,7 +579,21 @@ def main(argv: list) -> int:
         checks.note(
             "CT-7",
             "no SMUS principal reaches the governed lake",
-            f"{len(smus_grants)} SMUS grants read, all on project-owned objects; {partial}",
+            f"{len(smus_grants)} SMUS grants read, {len(catalog_road)} on the catalog road and "
+            f"the rest on project-owned objects; {partial}",
+        )
+    elif catalog_road:
+        checks.note(
+            "CT-7",
+            "no SMUS principal reaches the governed lake but through the catalog road",
+            "; ".join(
+                f"{short_principal(g[1])} on {g[2]} {g[3]}: {g[4]}"
+                + (f" (grantable {g[5]})" if g[5] != "-" else "")
+                + (f" [{g[6]}]" if g[6] else "")
+                for g in catalog_road
+            )
+            + f" - Stage 6f decision 1's published tables; the other "
+            f"{len(smus_grants) - len(catalog_road)} SMUS grants are on project-owned objects",
         )
     else:
         checks.ok(

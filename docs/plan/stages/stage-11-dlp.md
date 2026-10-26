@@ -710,6 +710,19 @@ during the stage and written into `docs/log/log-stage-11-dlp.md` (Lesson 16), wi
     the filter read as the project's and said so; its row half the written data cells filter while that
     role holds no other `SELECT` on the table, and an RLS policy attached to it once (c) regrants the
     table.
+    **Re-read 2026-10-26: 6f decision 1 was taken as (b)**, a pilot that publishes `curated.trades` and
+    leaves the LF-Tags off the catalog road (6f step 11), so the recommendation's premise is gone: no
+    regrant to a project role is written in `sandbox/data/`. A project role's lake grant is now DataZone's
+    fulfilment, `SELECT` on the subscribed table to Sandbox's `IAMPrincipals` under the subscribing
+    project's `context.datazone.projectId` (Stage 18 7.2's shape), on `curated.trades` rather than on
+    `sample_trades`, whose column the filters were written for. Both mechanisms are re-read against it:
+    a data cells filter cannot narrow that grant, an all-rows `SELECT` prevailing over a filter's row
+    predicate, while an RLS policy attached to the table binds whichever grant carries the `SELECT`, the
+    subscription's included. And a `restricted` table reaches a project role on this road only after 6f
+    decision due 2 admits `restricted` tables to the catalog. **The recommendation becomes**: the filtered
+    principal is the subscribing project's context on a published table, its row half an RLS policy on
+    that table, and the decision waits for 6f step 11's reading of the grant DataZone writes in the lake
+    (11.9) and for 6f decision 2. The decision stays the user's.
 13. **The warehouse's query record** (5.1, `TM-16`, `EXC-16`) — the namespace's CloudWatch groups as
     configured, which have held 23 minutes of user activity since 2026-09-20 and nothing while a workgroup
     exists, or Redshift's system-table integration with S3 Tables (2026-08-20): per namespace, a hand

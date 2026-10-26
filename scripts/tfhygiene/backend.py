@@ -114,6 +114,11 @@ SANDBOX_SUPERNET = "10.16.0.0/13"  # room for 8 business units; avoids 10.30/10.
 # belongs to nobody. `./aws/networking.py`'s NT-3/NT-5/NT-6 measure that AWS agrees.
 # 10.60.0.0/16 is D38's reservation for the day an account slot frees.
 #
+# 10.70.0.0/16 is Data Governance's one VPC, Stage 6f step 11's: the managed `Tooling` blueprint
+# takes a VPC and subnets with no default and creates a security group in them, so publishing the
+# lake through a project in its own account needs a VPC there (6f decision 1, shape (b), D22 as
+# amended 2026-10-26). It peers with nothing and routes nowhere: no PEERINGS row names it.
+#
 # The two Production rows with no folder yet are here under the same rule as `layers.py`'s ranks:
 # declared before the slice arrives, because the address plan is the part that gets got wrong
 # once. `networking` is D38's hub (the estate's only IGW); `workloads` is the production runtime.
@@ -123,6 +128,7 @@ VPC_CIDRS = {
     ("production", "networking"): "10.31.0.0/16",  # VPC-Networking, D38's hub (6c step 1.2)
     ("production", "workloads"): "10.32.0.0/16",  # VPC-Workloads (6c step 1.3)
     ("staging", "foundation"): "10.50.0.0/16",  # the renamed Development - a CIDR is immutable
+    ("data-governance", "publishing"): "10.70.0.0/16",  # 6f step 11: unpeered, no route out
 }
 
 
@@ -460,6 +466,16 @@ if set(SMUS_MEMBERS) & set(SMUS_DEPLOYMENT_MEMBERS):
     raise ValueError(
         "SMUS_DEPLOYMENT_MEMBERS: an account people work in belongs in SMUS_MEMBERS alone"
     )
+# The lake account publishing its own catalog through a project provisioned into it (Stage 6f
+# decision 1, shape (b), the pilot of 2026-10-26; step 11). The domain account needs no
+# association, so the row is the switch, and it moves three slices of that account in one edit:
+# publishing/'s `Tooling` configuration and its grant (`blueprints_enabled`), governance/'s
+# `lake-publishing` profile and its create grant, and data/'s two SMUS administrator seats
+# (`lake_publishing_enabled`). Written after publishing/'s first apply, whose roles data/'s seats
+# name; the three applies then run data/, publishing/, governance/, in that order (step 11.3).
+LAKE_PUBLISHERS: list = ["data-governance"]
+if not set(LAKE_PUBLISHERS) <= set(DATA_LAKE):
+    raise ValueError("LAKE_PUBLISHERS: only the account that owns the lake publishes it (D22)")
 
 # ------------------------------------------------- the persona's project-storage vending policy
 #
@@ -545,6 +561,7 @@ ZONE_IDS = {
     "production": ["usw2-az1", "usw2-az2"],
     "staging": ["usw2-az1", "usw2-az2"],
     "development": ["usw2-az1", "usw2-az2"],
+    "data-governance": ["usw2-az1", "usw2-az2"],
 }
 
 # The slices whose generated tfvars carry the allocation. bootstrap/ deliberately does not:
@@ -566,13 +583,20 @@ NETWORK_SLICES = {
     # read production/foundation/'s state for the subnet and anchor on a zone id.
     "tooling",
     "runners",
+    # Stage 6f step 11: Data Governance's VPC and the blueprint prerequisites it carries, one slice
+    # (VPC_SLICES below).
+    "publishing",
 }
 
 # The subset that creates a VPC rather than living inside one, named the day Production got three
 # (6c step 0.2). `foundation` was the whole answer while every account had one VPC; now
 # `vpc_cidr` is emitted to whichever slice owns a VPC, and every other network slice reads its
 # host VPC's [P] facts through terraform_remote_state instead.
-VPC_SLICES = {"foundation", "networking", "workloads"}
+#
+# `publishing` is Data Governance's (Stage 6f step 11): the VPC and the prerequisites of the
+# blueprint that needs it share one state, so the slice plans whole before its first apply and the
+# rollback destroys them together.
+VPC_SLICES = {"foundation", "networking", "workloads", "publishing"}
 
 # The private tier of an Interactive account's VPC, cut the way terraform-modules/vpc/main.tf
 # cuts it: a /18 per AZ, `cidrsubnet(cidr, 2, 0..1)`. Stage 7 step 1.2's GitLab security group
@@ -679,8 +703,9 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
 
     `pipeline` is a deploy job's run on the deploy runner (Stage 8 decision 14): the registry's
     state is read through DEPLOY_RUNNER_PROFILE instead of the laptop's SSO profile.
-    The D22 guard covers every network slice: Data Governance has no VPC and no CIDRS row,
-    so a network slice there fails loudly here rather than applying with a hole.
+    The guard covers every network slice: an account with no CIDRS row holds no VPC, so a
+    network slice there fails loudly here rather than applying with a hole. Data Governance's one
+    row is Stage 6f step 11's `publishing` VPC (D22 as amended 2026-10-26).
     """
     token = env_token(account)  # raises UnknownAccountFolder before anything else is read
     values = {
@@ -695,7 +720,8 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         if not any(a == account for a, _s in VPC_CIDRS):
             raise UnknownAccountFolder(
                 f"{account}: network slice '{slice_name}' but no CIDR allocation anywhere - "
-                "D22 accounts hold no VPC; a new account is added to VPC_CIDRS deliberately"
+                "an account without a row holds no VPC; a new one is added to VPC_CIDRS "
+                "deliberately"
             )
         values["zone_ids"] = ZONE_IDS[account]
         if slice_name in VPC_SLICES:
@@ -835,6 +861,9 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         values["producers"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_PRODUCERS
         }
+        # Stage 6f step 11: the two SMUS administrator seats the publishing project's first
+        # environment writes, declared here behind the LAKE_PUBLISHERS row.
+        values["lake_publishing_enabled"] = account in LAKE_PUBLISHERS
 
     # The consumer side of the lake (Stage 5a pass 4). Emitted for `data` in any account that
     # consumes the lake, never for data-governance itself, which owns it and whose own `data`
@@ -986,6 +1015,19 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_DOMAIN
         }
 
+    # Stage 6f step 11 - the publishing project's prerequisites in the lake account: the two maps
+    # the member branch above emits, and the configuration's flag from LAKE_PUBLISHERS rather than
+    # SMUS_ASSOCIATED, since the domain's own account is configured with no association. The VPC
+    # values come from the network branch, `publishing` being a VPC slice.
+    elif slice_name == "publishing":
+        values["lake"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
+        }
+        values["domain"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_DOMAIN
+        }
+        values["blueprints_enabled"] = account in LAKE_PUBLISHERS
+
     # Stage 6 pass 2 - the domain account's own slice. The members map is what the project
     # profiles' environment configurations are built from (one per member account); the flag is
     # a SMUS_ASSOCIATED reading over the same members, so the profiles cannot be written before
@@ -1004,6 +1046,8 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         # slice's locals.tf; only the profile that can resolve them comes from here, the same
         # way every other cross-account read in this table does.
         values["identity_profile"] = PROFILES["identity"]
+        # Stage 6f step 11: the `lake-publishing` profile, provisioning into this account.
+        values["lake_publishing_enabled"] = account in LAKE_PUBLISHERS
 
     # The persona's vending policy: the object half, in each account the set reaches (the name
     # block above carries the argument). foundation/ rather than sagemaker/ because a permission
@@ -1176,6 +1220,8 @@ def render_tfvars(account: str, slice_name: str, pipeline: bool = False) -> str:
         out += f"blueprints_enabled = {str(v['blueprints_enabled']).lower()}\n"
     if "profiles_enabled" in v:
         out += f"profiles_enabled = {str(v['profiles_enabled']).lower()}\n"
+    if "lake_publishing_enabled" in v:
+        out += f"lake_publishing_enabled = {str(v['lake_publishing_enabled']).lower()}\n"
     if "domain" in v:
         rows = "".join(
             f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'

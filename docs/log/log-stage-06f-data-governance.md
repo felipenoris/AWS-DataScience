@@ -935,3 +935,404 @@ session on the laptop was running. Times are UTC.*
 - **[Claude] The log re-read against the session**: the two writes marked `[Claude⚡]`; the first entry's
   heading and provenance corrected, the user's apply being part of it; the pull request, the records,
   the checks and the hand-over to the Stage 18 session added to both entries.
+
+## 2026-10-26 — decision due 1 taken as (b), and the pilot written and planned
+
+*Claude, in a session started from another session with the user's decision relayed; AWS read as the
+infrastructure user with `InfrastructureAccess` in `Data Governance Account` (`awsds-infra-data`) and
+`Sandbox Account 1` (`awsds-infra-sandbox-1`), reads and `terraform plan` alone, and one write the user
+authorized in this session's chat: the release of a state lock this session's plan had left. Times UTC.*
+
+- **[user] Decision due 1**, relayed: shape (b), as a pilot, for SageMaker Unified Studio's native flow,
+  subscription and approval in the portal granting and DataZone fulfilling, with no Terraform apply per
+  grant; one `internal` table, `curated.trades`, published by a project in `Data Governance` and
+  subscribed by `eighth-experimentation`, read before anything widens. The complement, in the user's
+  words: *"vamos priorizar a solução nativa do SMUS, mesmo que isso implique em não utilizar as LF-TAGS"*.
+- **[Claude] The lake account before**, read before 19:00Z: no VPC (`describe-vpcs` `[]`); zero blueprint
+  configurations; the Data Catalog resource policy *"Policy not found"*; Lake Formation's administrators
+  the `InfrastructureAccess` seat alone, `Parameters` 4/`TRUE`, `AllowFullTableExternalDataAccess` `true`
+  since 2026-10-23 (Stage 9 decision 13, so the brief's "unset" was a reading from before that date),
+  both default lists empty; the RAM shares it owns all `LakeFormation-V4-*`. The first `glue` call failed
+  on the laptop's proxy and passed with `NO_PROXY='*'`.
+- **[Claude] The two templates**, read with signed `s3 cp` from the blueprints' `templateUrl` (an unsigned
+  `curl` is refused for SigV4): `ToolingDefault-prod-20260918` takes `vpcId`, `subnets` and
+  `availabilityZones` with no default, creates `ToolingSecurityGroup` in the VPC unless
+  `vpcConnectionSecurityGroup` is passed, and Glue network connections while `enableGlueNetworkConnection`
+  is `true`, neither of them a user parameter; the project role reads `vpcId` in two tags alone; and
+  `LakeFormationResourceToRegisterProjectsS3Location` carries no `DeletionPolicy`.
+  `DataLakeDefault-prod-20250618` imports `s3BucketPath-<project>-<scope>`, which only the same account's
+  Tooling stack exports. So shape (b) needs a VPC in `Data Governance`, and a project deleted there calls
+  `lakeformation:DeregisterResource`, which the Data OU's `DenyLakeDeletionAndDeregistration` denies to
+  every principal.
+- **[Claude] The code** (the stage's step 11.1): `data-governance/publishing/`, a new `[P]` slice at rank
+  46 holding the VPC `10.70.0.0/16` through `vpc-v0.4.0` with `public_internet_route = false` and no
+  peering, its flow-log role, and `sagemaker-prereqs-v0.8.0` with `Tooling` alone; `governance/`'s
+  profile `lake-publishing` and its create grant to `sso-group-governance-managers`; `data/`'s two SMUS
+  seats and the publisher's grant (`publishing.tf`); `backend.py`'s `LAKE_PUBLISHERS`, its `VPC_CIDRS` and
+  `ZONE_IDS` rows and the `publishing` emission; `layers.py`'s rank and row. The instruments with it:
+  `US-3` and `US-4` (`studio.py`), `CT-7` (`catalog.py`), the projects bucket out of `DL-1` and `DL-2` and
+  `DL-13`'s reason in the lake (`datalake.py`), `NT-1` (`networking.py`), `egress.py`'s text.
+- **[Claude] The plans**, as `awsds-infra-data`, saved under the session's scratchpad. The switch off:
+  `publishing/` *"Plan: 44 to add, 0 to change, 0 to destroy."*, `governance/` and `data/` *"No changes."*
+  The switch on in the working copy, then restored and the tfvars regenerated: `publishing/` *"Plan: 46 to
+  add, 0 to change, 0 to destroy."*; `governance/` *"Plan: 2 to add, 0 to change, 0 to destroy."*, the
+  profile with `experimentation`'s six Tooling overrides and `enableSpaces` `false` locked, and its
+  grant; `data/` refused at plan, *"reading IAM Role (awsds-data-smus-manage-access): couldn't find
+  resource"* and the same for the provisioning role, the refusal the lookups exist for before 11.2.
+- **[Claude] A lock left by a plan.** The first switch-on run lost DNS mid-plan (*"dial tcp: lookup
+  cloudcontrolapi.us-west-2.amazonaws.com: no such host"*) and could not release `governance/`'s lock:
+  the object `data-governance/governance/terraform.tfstate.tflock` read `Operation` `OperationTypePlan`,
+  created 19:04:26Z by this run, with the four other sessions on the laptop idle.
+- **[user]** Asked whether to release it, against `CLAUDE.md`'s rule on `force-unlock`: *"Sim, libere"*.
+- **[Claude⚡] The lock released** at 19:22Z, `terraform force-unlock -force` on that lock's id as
+  `awsds-infra-data`, and the object read gone; both switch-on plans re-run after, leaving no lock on
+  `governance/` or `data/`.
+- **[Claude] The instruments on today's estate**, with the amended checks: `./aws/catalog.py` *"all checks
+  passed"*; `./aws/studio.py`'s checks all pass, `US-3` *"no blueprint configured in the domain account"*
+  and `US-4` the two contracted profiles, its exit 1 from the sign-in of profiles other than the
+  infrastructure user's; `./aws/datalake.py` no failure, `DL-1` and `DL-2` on the five lake buckets,
+  `DL-5`, `DL-6` and `DL-7` passing, `DL-13` the lake's `InfrastructureAccess` seat alone;
+  `./aws/networking.py` no failure, with no `NT-1` row, Data Governance holding no VPC. Both exit 1 on
+  the same unsigned profiles.
+- **[Claude] Recorded**: the stage file (status, decision 1 taken, decisions 2 to 5, step 11, the
+  verifications x to xiii, 3.3 and 7.2, the cost); D22 and D26 amended, and D22's index row;
+  `GOVERNANCE.md` (§Grants' catalog road, §Access control, the accounts and catalogs tables, the
+  development cycle); Stage 11 decision 12 re-read; `SMUS.md`; `NETWORK.md`; conventions §6;
+  `AWS_STATE.md` section C; `TM-27`; the producer README; `terraform-live/README.md`; `ORGANIZATION.md`.
+
+## 2026-10-26 — 11.2: `data-governance/publishing/` applied
+
+*Claude, the same session; AWS as the infrastructure user with `InfrastructureAccess` in `Data Governance
+Account` (`awsds-infra-data`). The apply is Claude's, on the user's word below; the four other sessions on
+the laptop were told first. Times UTC.*
+
+- **[user]** *"Autorizo o 11.2: apply de data-governance/publishing/ com LAKE_PUBLISHERS vazio, como
+  infrastructure user, conta Data Governance, InfrastructureAccess (awsds-infra-data), aceitando a VPC
+  10.70.0.0/16."*
+- **[Claude] The other sessions told** before the apply, each message delivered to its inbox: "Pendências
+  estágios 7-10" (busy), "Chat lateral", "Worktrees para apagar" and "CI/CD CLI remedy" (idle).
+- **[Claude] The plan**, 20:05:10Z, with `LAKE_PUBLISHERS` empty and `blueprints_enabled = false` in the
+  regenerated tfvars: *"Plan: 44 to add, 0 to change, 0 to destroy."*, saved.
+- **[Claude⚡] The apply** of the saved plan, 20:05:22Z to 20:06:53Z: *"Apply complete! Resources: 44
+  added, 0 changed, 0 destroyed."* The re-plan at 20:07:29Z: *"No changes."* `data/` at 20:10:46Z and
+  `governance/` at 20:11:25Z re-plan *"No changes."*, and no lock is left on any of the three states.
+- **[Claude] Read back**, 20:07 to 20:08Z: `vpc-01b526900ef0ef311`, `10.70.0.0/16`, named
+  `awsds-data-vpc`, not default; six subnets, private `10.70.0.0/18` and `10.70.64.0/18`, isolated
+  `10.70.128.0/20` and `10.70.144.0/20`, public `10.70.160.0/24` and `10.70.161.0/24`, in `usw2-az1` and
+  `usw2-az2`, none mapping a public address; every route table carrying the S3 and DynamoDB prefix lists
+  alone, no `0.0.0.0/0`; the internet gateway attached and unrouted; both gateway endpoints `available`;
+  the flow log `ACTIVE`, `ALL` traffic, into `awsds-data-vpc-flow-logs`; zero peerings. The roles, created
+  20:05:31Z: `awsds-data-smus-provisioning` trusting `datazone.amazonaws.com` and
+  `cloudformation.amazonaws.com` under `aws:SourceAccount` this account, with
+  `SageMakerStudioProjectProvisioningRolePolicy`; `awsds-data-smus-manage-access` trusting
+  `datazone.amazonaws.com` the same way, with the SageMaker and Glue manage-access policies;
+  `awsds-data-vpc-flow-logs` trusting `vpc-flow-logs.amazonaws.com`. The boundary
+  `awsds-data-project-boundary` at `v1`; `alias/awsds-data-project` `Enabled`, customer-managed;
+  `awsds-data-smus-projects` versioned, all four public-access blocks on, `aws:kms` with the Bucket Key;
+  `/awsds/data/studio` and `awsds-data-vpc-flow-logs` at 30 days. Unchanged: Lake Formation's settings,
+  the `InfrastructureAccess` seat alone with 4/`TRUE`, the full-table flag `true` and both default lists
+  empty; zero blueprint configurations.
+- **[Claude] `./aws/datalake.py`**, done 20:09:54Z: no failure; `DL-1` and `DL-2` on the five lake buckets,
+  `awsds-data-smus-projects` left out; `DL-7` nine shares out; `DL-13` the lake's seat alone. Exit 1 on the
+  unsigned profiles, as before.
+
+## 2026-10-26 — 11.3: the switch, and `data/`, `publishing/` and `governance/` applied
+
+*Claude, the same session; AWS as the infrastructure user with `InfrastructureAccess` in `Data Governance
+Account` (`awsds-infra-data`), and the directory read through `awsds-infra-identity`. The three applies are
+Claude's, on the user's word below; the four other sessions on the laptop were told first. Times UTC.*
+
+- **[user]** *"Autorizo o 11.3: LAKE_PUBLISHERS = ["data-governance"] e os três applies na ordem data/,
+  publishing/, governance/, como infrastructure user, conta Data Governance, InfrastructureAccess
+  (awsds-infra-data)."*
+- **[Claude] 11.2's last instruments**, which finished as this step began: `./aws/networking.py` at
+  20:14:25Z, no failure, `NT-1` a note on `vpc-01b526900ef0ef311` (`10.70.0.0/16`, the pilot's), `NT-5`
+  six VPCs with no overlap, `NT-7` its flow log present; `./aws/studio.py` at 20:16:48Z, before the
+  configuration existed, `US-2` no SageMaker domain in Data Governance and `US-3` no configuration
+  there; `./aws/egress.py` at 20:17:54Z, no failure, `EG-1` the organization condition on both new
+  gateway endpoints and `EG-4` the AWS-owned bucket allow on the S3 one. Each exits 1 on the unsigned
+  profiles alone.
+- **[Claude] The other sessions told** before the first apply, each message delivered: "Pendências estágios
+  7-10" and "CI/CD CLI remedy" (busy), "Chat lateral" and "Worktrees para apagar" (idle).
+- **[Claude] The switch**: `LAKE_PUBLISHERS = ["data-governance"]` in `backend.py`, the three tfvars
+  regenerated: `lake_publishing_enabled = true` for `data/` and `governance/`, `blueprints_enabled = true`
+  for `publishing/`.
+- **[Claude⚡] `data/`**. Lake Formation before, 20:15:41Z: the `InfrastructureAccess` seat alone,
+  `Parameters` 4/`TRUE`, the flag `true`, both default lists empty. The plan, 20:16:04Z: *"Plan: 0 to add,
+  1 to change, 0 to destroy."*, `aws_lakeformation_data_lake_settings.this` with `admins` gaining
+  `awsds-data-smus-manage-access` and `awsds-data-smus-provisioning` and *"(8 unchanged attributes
+  hidden)"*. The apply, 20:16:21Z to 20:16:33Z: *"Apply complete! Resources: 0 added, 1 changed, 0
+  destroyed."* The re-plan at 20:16:54Z: *"No changes."* Lake Formation after: the three seats,
+  `Parameters` 4/`TRUE`, the flag `true`, both default lists empty.
+- **[Claude⚡] `publishing/`**. The plan, 20:17:23Z: *"Plan: 2 to add, 1 to change, 0 to destroy."*: the
+  `Tooling` configuration, its `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant, and the project key's policy
+  gaining `awsds-data-studio-domain-execution` in two statements and the project-role statements
+  (`GrantKMSPermissionsForAllProjectRoles` and its `kms:CreateGrant` sibling). The apply, 20:17:37Z to
+  20:18:17Z: *"Apply complete! Resources: 2 added, 1 changed, 0 destroyed."* The re-plan at 20:18:37Z:
+  *"No changes."*
+- **[Claude⚡] `governance/`**. The plan, 20:19:20Z: *"Plan: 2 to add, 0 to change, 0 to destroy."*, the
+  profile and its grant, nothing of `experimentation` destroyed. The apply, 20:19:31Z to 20:20:04Z: *"Apply
+  complete! Resources: 2 added, 0 changed, 0 destroyed."* The re-plan at 20:20:36Z: *"No changes."*
+- **[Claude] Read back**, from 20:20:50Z: the `Tooling` configuration (blueprint `4k186sfh08eqxc`),
+  created 20:18:00Z, `us-west-2`, the boundary `awsds-data-project-boundary`, the two roles, and the
+  regional parameters `AZs`, `KmsKeyArn`, `S3Location`, `Subnets`, `VpcId`; its grant to `CONTRIBUTOR`
+  projects of the root domain unit `bzq0cbh2gd0f4g`, child units excluded; three profiles `ENABLED`, the
+  model governance one, `experimentation` and `lake-publishing` (`cc45618tw9f7yo`), the last with `Tooling`
+  `ON_CREATE` at order 0 in this account and `us-west-2`, and the overrides `sagemakerDomainNetworkType`
+  `VpcOnly`, `lifecycleManagement` `ENABLED`, `idleTimeoutInMinutes` 60 (editable),
+  `maxIdleTimeoutInMinutes` 120, `maxEbsVolumeSize` 100, `enableTrustedIdentityPropagationPermissions`
+  `false` and `enableSpaces` `false`; on the root unit, `CREATE_PROJECT_FROM_PROJECT_PROFILE` for
+  `lake-publishing` to the group the directory names `sso-group-governance-managers`, and for
+  `experimentation` to `sso-group-data-scientists`, as before.
+- **[Claude] The trail**: one `PutDataLakeSettings` in the lake since 20:00Z, at 20:16:31Z, the apply's, by
+  the infrastructure user's session. The project key's policy holds nine statements, as Staging's did at
+  Stage 18 2.5.
+- **[Claude] The instruments after the three applies**: `./aws/studio.py` at 20:23:10Z, no failure, `US-3`
+  a note on `Tooling`, the pilot's, and `US-4` passing with `lake-publishing`, `US-2` no SageMaker domain
+  in Data Governance; `./aws/datalake.py` at 20:24:36Z, no failure, `DL-5` 4/`TRUE` and `DL-6` passing in
+  the lake, `DL-13` a note on its required seat and the two SMUS seats, declared; `./aws/catalog.py` at
+  20:25:42Z, *"all checks passed"*, `CT-7` 21 SMUS grants, all on project-owned objects, `CT-8` and `CT-9`
+  passing. `studio.py` and `datalake.py` exit 1 on the unsigned profiles alone.
+- **[Claude] Recorded**: the switch row in `backend.py`; the stage file (status, 11.3 done); `AWS_STATE.md`
+  (the lake's three administrators, section C's row); `SMUS.md`; `GOVERNANCE.md`; conventions §6; D22; the
+  producer README; the hand-over note.
+
+## 2026-10-26 — 11.4: `governed-lake` created by the Governance Manager, and what its environment wrote
+
+*The user in the portal as the Governance Manager user; Claude read AWS as the infrastructure user with
+`InfrastructureAccess` in `Data Governance Account` (`awsds-infra-data`), reads alone. Times UTC.*
+
+- **[user] The project**, in the portal as the Governance Manager user: `governed-lake` from
+  `lake-publishing`. Then: *"Criei o projeto. Mas não sei qual Data Governance InfrastructureAccess é para
+  adicionar. Aparecem os nomes com códigos, então não consigo saber qual é."*
+- **[Claude] Which role**: the domain's `IAM` user profiles mapped to their accounts by ARN. Data
+  Governance's `InfrastructureAccess` is `AWSReservedSSO_InfrastructureAccess_ba1899ccb658ab35` (profile
+  `9e7cfd86-4ddb-4ea1-b43f-04417861d609`); `…_59e5b26af457128d` is Sandbox's and `…_7edd72025c361e9b`
+  Staging's, a residue of Stage 18.
+- **[user]** *"Adicionei AWSReservedSSO_InfrastructureAccess_ba1899ccb658ab35 no projeto"*.
+- **[Claude] The project**: `3j4l4xmvz7fggg`, `ACTIVE`, created 20:30:00Z by an `SSO` profile, the Governance
+  Manager user's; its stack `DataZone-Env-52webn93119ouo` started 20:30:14Z and `CREATE_COMPLETE`; the
+  environment `Tooling` `52webn93119ouo` `ACTIVE`. Members: the Governance Manager as `PROJECT_OWNER`;
+  the project role's `IAM` profile and the session group of Data Governance's `InfrastructureAccess`
+  (`ASSIGNED`, the user's addition) as `PROJECT_CONTRIBUTOR`.
+- **[Claude] The stack**, thirteen resources as Staging's at Stage 18 3.3: `ToolingUserRole`
+  (`datazone_usr_role_3j4l4xmvz7fggg_52webn93119ouo`), `BedrockServiceRole` and
+  `BedrockLambdaExecutionRole`, all three under `awsds-data-project-boundary`; `ToolingSecurityGroup` and
+  its ingress rule; `GlueNetworkConnection0` and `1`; two Athena workgroups; the log group; the schedule
+  group; `LakeFormationResourceToRegisterProjectsS3Location`; the CDK metadata. Its parameters: the pilot's
+  VPC and its two private subnets, `enableSpaces` `false`, `enableAthena` `true`,
+  `enableS3AccessGrantsForTools` `true`, the boundary, the projects bucket. No SageMaker AI domain.
+- **[Claude] Outside the stack**: the S3 Access Grants instance `default`, created 20:31:21Z by DataZone's
+  environment deployer session, with one location, the project's prefix, under the project role;
+  `AWSServiceRoleForAmazonAthena`, created 20:30:53Z; nine connections in the project, `project.iam` and
+  `project.default_lakehouse` among them; no data source, as Staging's project had none; two subscription
+  targets on the `Tooling` environment, for Bedrock models and for feature groups and model package groups,
+  none for Glue tables.
+- **[Claude] Lake Formation and Glue, from the trail** (20:29 to 20:45Z), every write the provisioning
+  role's: `CreateConnection` twice at 20:30:34Z; `RegisterResource` of
+  `awsds-data-smus-projects/dzd-d8yrvx1ko7im6o/3j4l4xmvz7fggg/dev/` under the project role at 20:30:53Z;
+  `CreateDatabase` of `default` in the lake's catalog at 20:31:21Z, no location and no create-table
+  default; `BatchGrantPermissions` at 20:31:22Z, `DESCRIBE` on `default` and `DATA_LOCATION_ACCESS` on the
+  project's `dev/` to `IAMPrincipals` and `arn:aws:identitystore:::user/*`, each under
+  `context.datazone.projectId=="3j4l4xmvz7fggg"`. The creator's `ALL` on `default` is the provisioning
+  role's. No `PutDataLakeSettings` since 20:17Z: with both seats declared, the provisioning wrote no
+  settings. Neither seat granted anything on `raw`, `curated` or `dropbox`.
+- **[Claude] The settings and the plan after**, 20:34Z: Lake Formation unchanged, the three seats,
+  `Parameters` 4/`TRUE`, the flag `true`, both default lists and the read-only administrators empty;
+  `data/` re-plans *"No changes."*. Verification x is answered: the first environment changed no setting
+  `data/` declares and granted nothing on the lake.
+
+## 2026-10-26 — 11.5: the publisher's grant applied
+
+*Claude, the same session; AWS as the infrastructure user with `InfrastructureAccess` in `Data Governance
+Account` (`awsds-infra-data`). The apply is Claude's, on the user's word below; the four other sessions on
+the laptop were told first. Times UTC.*
+
+- **[user]** *"Autorizo o 11.5: apply de data-governance/data/ com o grant do publicador (DESCRIBE em
+  curated; DESCRIBE e SELECT com grant option em trades) ao papel do governed-lake, como infrastructure
+  user, conta Data Governance, InfrastructureAccess (awsds-infra-data)."*
+- **[Claude] The other sessions told**, each message delivered: "Pendências estágios 7-10", "Chat lateral"
+  and "Worktrees para apagar" (idle), "CI/CD CLI remedy" (busy).
+- **[Claude] Before**, 21:04:53Z: Lake Formation's three seats, `Parameters` 4/`TRUE`, the flag `true`,
+  both default lists empty. `lake_publisher_role` defaults to
+  `datazone_usr_role_3j4l4xmvz7fggg_52webn93119ouo`, read at 11.4; the plan, 21:05:23Z: *"Plan: 2 to add, 0
+  to change, 0 to destroy."*, `publisher_database[0]` and `publisher_tables["trades"]`, the preconditions
+  passing (the switch set, the role under `awsds-data-project-boundary`).
+- **[Claude⚡] The apply**, 21:05:34Z to 21:06:10Z: *"Apply complete! Resources: 2 added, 0 changed, 0
+  destroyed."* The re-plan at 21:06:36Z: *"No changes."*
+- **[Claude] Read back**: `list-permissions` refuses a principal with no resource (*"Resource is mandatory
+  if Principal is set in the input"*), so each resource was read and filtered to the role: `DESCRIBE` on
+  `curated`, no grant option; `DESCRIBE` and `SELECT` on `curated.trades`, each with the grant option.
+  Lake Formation at 21:06:49Z: three administrators, `Parameters` 4/`TRUE`, both default lists empty.
+- **[Claude] The instruments**: `./aws/datalake.py` at 21:08:23Z, no failure, `DL-5`, `DL-6` and `DL-7`
+  passing and `DL-13` noting the two declared seats; `./aws/catalog.py` at 21:09:31Z, *"all checks
+  passed"*, `CT-7` a note naming the catalog road's three grants, the publisher role's on `curated` and
+  on `curated.trades`, and `CT-8` twelve `IAMPrincipals` grants, all conditioned on a project (ten before
+  `governed-lake`). `datalake.py` exits 1 on the unsigned profiles alone.
+- **[Claude] Recorded**: the stage file (11.5 done), the grant register's two rows in `AWS_STATE.md`, the
+  producer README.
+
+## 2026-10-26 — 11.6: `trades` published from `governed-lake`
+
+*The user in the portal as the Governance Manager user; Claude read AWS as the infrastructure user with
+`InfrastructureAccess` in `Data Governance Account` (`awsds-infra-data`), a contributor of `governed-lake`
+since 11.4, and in `Sandbox Account 1` (`awsds-infra-sandbox-1`), reads alone. Times UTC.*
+
+- **[user] The step's menu was not there**: *"Entendi que é no SMUS, certo? Não encontrei menu "data
+  sources" no SMUS."*
+- **[Claude] The step corrected** to the path the portal offered on 2026-09-13 (this log's first sitting):
+  *Data → Catalogs → AwsDataCatalog → `curated` → tables → `trades` → Publish to Catalog*, an act that
+  creates its own data source with business-name generation on.
+- **[user]** *"Executei estas etapas no portal"*, the path above, as the Governance Manager user.
+- **[Claude] The trail**, every write as `awsds-data-studio-domain-execution` in the session
+  `user-e8a1f320-…`, the Governance Manager's DataZone profile: `CreateDataSource` at 21:17:26Z,
+  `CreateAsset` at 21:17:28Z, `CreateListingChangeSet` `PUBLISH` at 21:17:29Z; then two `CreateLineageNode`
+  by `datazone.amazonaws.com` at 21:17:32Z. No `GrantPermissions`, `BatchGrantPermissions`,
+  `RevokePermissions`, `RegisterResource`, `PutDataLakeSettings`, `CreateTable` or `UpdateTable` in the
+  account from 21:15Z, read at 21:20:16Z with the creation events already delivered.
+- **[Claude] The data source**: `aus07vzuom8ntc`, named after the account's catalog and `curated`, type
+  `GLUE`, `READY`, over `curated` with `INCLUDE *`, `publishOnImport` false,
+  `enableBusinessNameGeneration` true, the project role as its data access role, no schedule, no run.
+- **[Claude] The asset and its listing**: `c9joopl3avwd1s`, `trades`, `amazon.datazone.GlueTableAssetType`,
+  revision 1, external identifier the table's ARN suffixed with the project id; its forms `GlueTableForm`,
+  `DataSourceReferenceForm`, `SubscriptionTermsForm` and `CommonDetails`, with `lakeFormationDetails`
+  empty and nothing naming `classification` or an LF-Tag, though the table carries
+  `classification=internal` (verification vi's lake half: the catalog shows no LF-Tag). The listing
+  `b3bagfgnvev3tc` is `ACTIVE`, and Sandbox's `search-listings` finds it, owned by `3j4l4xmvz7fggg`.
+- **[Claude] Lake Formation**, at 21:18:38Z, every grant on `curated`, on its table wildcard, on `trades`
+  and on `sample_trades`: the publisher's three of 11.5, the Governance Manager's `DESCRIBE`s,
+  `InfrastructureAccess`'s, the maintenance role's and Production's share, and nothing new. The source's
+  creation wrote no grant (verification xi), as Sandbox's publish of 2026-09-13 wrote none.
+- **[Claude] `./aws/catalog.py`** at 21:22:13Z, *"all checks passed"*: `CT-3` five access acts across nine
+  listings; `CT-4` all five sources with `publishOnImport` false; `CT-5` noting two sources that generate
+  business names, `mydatabase`'s and `curated`'s; `CT-7` the catalog road's three grants alone.
+
+## 2026-10-26 — 11.7: `eighth-experimentation`'s `DataLake` environment
+
+*Claude, the same session; AWS as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1`
+(`awsds-infra-sandbox-1`), a contributor of `eighth-experimentation` since 2026-10-15. The write is Claude's,
+on the user's word below; the five other sessions on the laptop were told first, the warehouse sitting's
+message delivered into its running turn. Times UTC.*
+
+- **[user]** *"Autorizo o 11.7: create-environment do DataLake no eighth-experimentation, como
+  infrastructure user, conta Sandbox Account 1, InfrastructureAccess (awsds-infra-sandbox-1), mantendo o
+  registro falho 4lrapnc3syxd74."*
+- **[Claude] Before**, 21:25:00Z: the project's environments `Tooling` `ACTIVE`, `ml-demo-mlflow` `ACTIVE`
+  and `4lrapnc3syxd74` `CREATE_FAILED`, the last on the `DataLake` configuration
+  `40631117-4a84-42b1-b2dc-c2deef6c3d52`, which confirms the id (`GetProjectProfile` from Sandbox is refused,
+  *"no resource-based policy allows the datazone:GetProjectProfile action"*); Lake Formation's three seats,
+  `Parameters` 4/`TRUE`, both default lists empty; the Glue databases `curated`, `default`,
+  `glue_db_4zojr4rr6bmnww`, `mydatabase` and `raw`, `mydatabase` holding `house-price`.
+- **[Claude⚡] The create**, 21:25:23Z: `create-environment` with that configuration, blueprint
+  `d8w7c3fmbsz5cg`, name `eighth-experimentation-lakehouse`; `blerpkhn9nj7o0` `CREATING` at 21:25:24Z and
+  `ACTIVE` at 21:26:00Z, `lastDeployment` `SUCCESSFUL`. DataZone took a second environment from one
+  configuration beside the failed record, so 2.7 did not have to come first.
+- **[Claude] What it holds**: the database `glue_db_blerpkhn9nj7o0` under the project's
+  `dev/data/catalogs/`, no create-table default; the stack `DataZone-Env-blerpkhn9nj7o0`; the subscription
+  target `eighth-experimentation-lakehouse-default-target` (`3qjec3ymbu5p5c`) for `GlueTableAssetType` and
+  `GlueViewAssetType`, its `manageAccessRole` the project role and its authorized principal
+  `abac:CURRENT_PROJECT`; a Glue data source over the database, `5w1ic2yqcs5uog`, `READY`, daily
+  `cron(25 21 * * ? *)`, the minute of its creation.
+- **[Claude] The writes, from Sandbox's trail**: `CreateDatabase` at 21:25:41Z, two `BatchGrantPermissions`
+  at 21:25:49Z and three `GrantPermissions` at 21:25:50Z, all the provisioning role's; the manage-access
+  role's `CreateLakeFormationOptIn` at 21:25:50Z, passing, and its `RevokePermissions` from
+  `IAM_ALLOWED_PRINCIPALS` at 21:25:51Z, *"InvalidInputException"*, nothing to revoke; the provisioning
+  role's `TagResource` at 21:25:52Z. 2.0's pattern, call for call. On the database: `IAMPrincipals` with
+  `CREATE_TABLE`, `DESCRIBE` and `DROP` under `eighth-experimentation`'s condition, the provisioning role's
+  creator `ALL`, and the manage-access role's `CREATE_TABLE` and `DESCRIBE`, `DESCRIBE` grantable.
+- **[Claude] After**: `mydatabase` still holds `house-price`; Lake Formation's settings unchanged.
+
+## 2026-10-26 — 11.8 and 11.9: the subscription, its approval, and what the fulfilment wrote
+
+*The user in the portal as the Data Scientist User and as the Governance Manager user; Claude read AWS as the
+infrastructure user with `InfrastructureAccess` in `Data Governance Account` (`awsds-infra-data`) and in
+`Sandbox Account 1` (`awsds-infra-sandbox-1`), contributor of both projects, reads and `terraform plan`
+alone. Times UTC.*
+
+- **[user]** *"Pedi a assinatura da trades como Data Scientist User no eighth-experimentation e aprovei como
+  Governance Manager no governed-lake. Leia o 11.8 e o 11.9."*
+- **[Claude] The request and its approval**: `blqgeezyxnosnk`, created 21:34:55Z by an `SSO` profile, the Data
+  Scientist User's, for `eighth-experimentation`, reason *"test"*; `ACCEPTED` at 21:36:15Z, its reviewer the
+  Governance Manager's profile. The subscription `6ubv3kbnjqjogg` `APPROVED`; its grant `d2zjuni9kjonio` to
+  the target `3qjec3ymbu5p5c` `IN_PROGRESS` from 21:36:17Z and `COMPLETED`, the asset `GRANTED`, at
+  21:37:18Z, 63 s after the approval.
+- **[Claude] Verification vii, from the trail**: `CreateSubscriptionRequest` at 21:34:55Z and
+  `AcceptSubscriptionRequest` at 21:36:15Z, both as `awsds-data-studio-domain-execution`, in sessions named
+  after the person, `user-28f1b390-…` and `user-e8a1f320-…`. The approval ran as the domain execution role
+  under DataZone's ownership check, and `GovernanceManagerAccess` made no call.
+- **[Claude] The fulfilment in Data Governance**, the publishing role
+  `datazone_usr_role_3j4l4xmvz7fggg_52webn93119ouo` in `AWSDataZone-Subscriptions` sessions with no source
+  identity: `BatchGrantPermissions` and `ram:CreateResourceShare` at 21:36:50Z, then four
+  `glue:PutResourcePolicy`, 21:36:50Z to 21:36:51Z, on `database/*` (twice), `table/*/*` and `catalog`,
+  each with `enableHybrid` `TRUE`; nothing refused.
+  - The grant: `SELECT` on `curated.trades` to Sandbox's `IAMPrincipals` under
+    `context.datazone.projectId=="avhvbqn37ty7m8"`, no grant option.
+  - The share: `LakeFormation-V5-ZKUYXYESG4`, created 21:36:49Z, `allowExternalPrincipals` false, resources
+    the lake's `catalog`, `database/*` and `table/*/*`, its one principal Sandbox's account, three
+    permissions; `ACTIVE` among Sandbox's received shares, no invitation pending.
+  - The policies are per resource, not the account's: `glue get-resource-policy` still answers *"Policy not
+    found"*, and `glue get-resource-policies` lists them. The new ones grant Sandbox's account root the
+    Glue table and partition actions, reads and writes, on `catalog`, `database/*` and `table/*/*` under
+    `aws:PrincipalOrgID`, and restate `AWSRAMPermissionLFTag…` statements for the three consumer accounts
+    under `glue:EvaluatedByLakeFormationTags`. Per-resource policies already stood on `database/curated` and
+    `table/curated/*` since 2026-10-22, from Production's named share. Lake Formation still gates every
+    write: no Sandbox principal holds `ALTER` or `DROP` on a lake table.
+- **[Claude] The fulfilment in Sandbox**, `eighth-experimentation`'s role in an `AWSDataZone-Subscriptions`
+  session with no source identity, at 21:37:09Z: `CreateTable` of the resource link `trades` in
+  `glue_db_blerpkhn9nj7o0`, targeting the lake's `curated.trades`, and `BatchGrantPermissions`, `DESCRIBE`
+  on it to `IAMPrincipals` under the project's condition; the creator holds `ALL`, `DESCRIBE` and `DROP`,
+  grantable. Glue reports the link's `CreateTime` as the target table's, 2026-10-22.
+- **[Claude] The slices and the instruments**: `data/` re-plans *"No changes."* at 21:40:42Z, DataZone's
+  grant, share and policies being no declared resource; `./aws/catalog.py` at 21:42:11Z, *"all checks
+  passed"*, `CT-7` naming the catalog road's grants, the publisher's three and the fulfilment's `SELECT`,
+  `CT-8` seventeen conditioned `IAMPrincipals` grants, `CT-3` seven access acts across nine listings;
+  `./aws/datalake.py` at 21:43:36Z, no failure, `DL-5` 4/`TRUE`, `DL-7` ten shares out, `DL-13` the two
+  declared seats.
+- **[Claude] The warehouse sitting told** at 21:40Z that the subscription had run, with its times: it had
+  asked the user to hold it until its 9.7 read after the re-grant.
+
+## 2026-10-26 — 11.10: `eighth-experimentation` reads `curated.trades` through the subscription
+
+*The user in the portal as the Data Scientist User; Claude read AWS as the infrastructure user with
+`InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and `Data Governance Account`
+(`awsds-infra-data`), reads alone. Times UTC.*
+
+- **[user]** *"A consulta rodou com sucesso quando selecionei Athena (SQL) como compute"*, in
+  `eighth-experimentation`'s query editor, with no space.
+- **[Claude] The query**: `f71c904f-7fa4-42f6-9526-413c8b7a4074` in `workgroup-avhvbqn37ty7m8-5hkjdsy3umpi1c`,
+  *"SELECT * FROM "glue_db_blerpkhn9nj7o0"."trades" LIMIT 10"*, `SUCCEEDED`, submitted 21:47:19Z, 535 bytes
+  scanned, 1,550 ms in the engine, Athena engine version 3.
+- **[Claude] Sandbox's trail**: at 21:47:13Z an `ExecuteQuery` as `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`,
+  the project's Redshift connection, the editor's first compute; at 21:47:19Z `ExecuteQuery` and, invoked by
+  `sqlworkbench.amazonaws.com`, `StartQueryExecution`, both as the project role
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` with the Data Scientist User's profile as source
+  identity; at 21:47:20Z `lakeformation:GetDataAccess` for `SELECT`, invoked by `athena.amazonaws.com` on the
+  resource link `glue_db_blerpkhn9nj7o0/trades` and by `glue.amazonaws.com` on the lake's `curated/trades`.
+  No error.
+- **[Claude] Data Governance's trail**: the same vend at 21:47:20Z, `GetDataAccess` for `SELECT` on
+  `curated/trades` by `AWSAccount`, invoked by `glue.amazonaws.com`, the cross-account form Stage 18 7.2
+  read. Verification xiii is answered: a Sandbox project reads a lake table through the catalog road, its
+  project role holding no TBAC grant.
+
+## 2026-10-26 — 11.6's follow-up: the data source's generation off, its filter on `trades`
+
+*Claude, the same session; AWS as the infrastructure user with `InfrastructureAccess` in `Data Governance
+Account` (`awsds-infra-data`), a contributor of `governed-lake`. The write is Claude's, on the user's word
+below; the five other sessions on the laptop were told first. Times UTC.*
+
+- **[user]** *"Autorizo o update-data-source da fonte aus07vzuom8ntc no governed-lake: geração de nomes por
+  IA desligada e filtro restrito a trades, como infrastructure user, conta Data Governance,
+  InfrastructureAccess (awsds-infra-data)."*
+- **[Claude] Before**, 21:53:17Z, saved whole: `READY`, `enableBusinessNameGeneration` true,
+  `publishOnImport` false, `enableSetting` `ENABLED`, no schedule, the connection `3gsa696gljypzk`, and a
+  `glueRunConfiguration` of `curated` with `INCLUDE *`, the project role as data access role and the
+  account's catalog.
+- **[Claude⚡] The update**, its configuration built from the saved one with the filter alone changed: the
+  first call, 21:53:31Z, refused, *"For Glue dataSources that use Connection, dataAccessRole must be
+  null"*, nothing changed; the second, 21:53:45Z, without the role, `UPDATING`, then `READY` by 21:53:55Z.
+  The trail holds the two calls as `InfrastructureAccess` and a third `UpdateDataSource` at 21:53:46Z with
+  no session issuer, and no Lake Formation call.
+- **[Claude] After**, diffed against the saved source: two fields moved, the filter to `INCLUDE trades` and
+  `enableBusinessNameGeneration` to false; the data access role, read from the connection, and every other
+  field as before. No run; the asset `trades` still `ACTIVE`. `./aws/catalog.py` at 21:55:40Z, *"all checks
+  passed"*: `CT-5` notes `mydatabase`'s source alone, `CT-4` six sources with `publishOnImport` false.
