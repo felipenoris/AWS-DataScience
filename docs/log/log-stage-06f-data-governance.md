@@ -1035,3 +1035,64 @@ the laptop were told first. Times UTC.*
 - **[Claude] `./aws/datalake.py`**, done 20:09:54Z: no failure; `DL-1` and `DL-2` on the five lake buckets,
   `awsds-data-smus-projects` left out; `DL-7` nine shares out; `DL-13` the lake's seat alone. Exit 1 on the
   unsigned profiles, as before.
+
+## 2026-10-26 — 11.3: the switch, and `data/`, `publishing/` and `governance/` applied
+
+*Claude, the same session; AWS as the infrastructure user with `InfrastructureAccess` in `Data Governance
+Account` (`awsds-infra-data`), and the directory read through `awsds-infra-identity`. The three applies are
+Claude's, on the user's word below; the four other sessions on the laptop were told first. Times UTC.*
+
+- **[user]** *"Autorizo o 11.3: LAKE_PUBLISHERS = ["data-governance"] e os três applies na ordem data/,
+  publishing/, governance/, como infrastructure user, conta Data Governance, InfrastructureAccess
+  (awsds-infra-data)."*
+- **[Claude] 11.2's last instruments**, which finished as this step began: `./aws/networking.py` at
+  20:14:25Z, no failure, `NT-1` a note on `vpc-01b526900ef0ef311` (`10.70.0.0/16`, the pilot's), `NT-5`
+  six VPCs with no overlap, `NT-7` its flow log present; `./aws/studio.py` at 20:16:48Z, before the
+  configuration existed, `US-2` no SageMaker domain in Data Governance and `US-3` no configuration
+  there; `./aws/egress.py` at 20:17:54Z, no failure, `EG-1` the organization condition on both new
+  gateway endpoints and `EG-4` the AWS-owned bucket allow on the S3 one. Each exits 1 on the unsigned
+  profiles alone.
+- **[Claude] The other sessions told** before the first apply, each message delivered: "Pendências estágios
+  7-10" and "CI/CD CLI remedy" (busy), "Chat lateral" and "Worktrees para apagar" (idle).
+- **[Claude] The switch**: `LAKE_PUBLISHERS = ["data-governance"]` in `backend.py`, the three tfvars
+  regenerated: `lake_publishing_enabled = true` for `data/` and `governance/`, `blueprints_enabled = true`
+  for `publishing/`.
+- **[Claude⚡] `data/`**. Lake Formation before, 20:15:41Z: the `InfrastructureAccess` seat alone,
+  `Parameters` 4/`TRUE`, the flag `true`, both default lists empty. The plan, 20:16:04Z: *"Plan: 0 to add,
+  1 to change, 0 to destroy."*, `aws_lakeformation_data_lake_settings.this` with `admins` gaining
+  `awsds-data-smus-manage-access` and `awsds-data-smus-provisioning` and *"(8 unchanged attributes
+  hidden)"*. The apply, 20:16:21Z to 20:16:33Z: *"Apply complete! Resources: 0 added, 1 changed, 0
+  destroyed."* The re-plan at 20:16:54Z: *"No changes."* Lake Formation after: the three seats,
+  `Parameters` 4/`TRUE`, the flag `true`, both default lists empty.
+- **[Claude⚡] `publishing/`**. The plan, 20:17:23Z: *"Plan: 2 to add, 1 to change, 0 to destroy."*: the
+  `Tooling` configuration, its `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant, and the project key's policy
+  gaining `awsds-data-studio-domain-execution` in two statements and the project-role statements
+  (`GrantKMSPermissionsForAllProjectRoles` and its `kms:CreateGrant` sibling). The apply, 20:17:37Z to
+  20:18:17Z: *"Apply complete! Resources: 2 added, 1 changed, 0 destroyed."* The re-plan at 20:18:37Z:
+  *"No changes."*
+- **[Claude⚡] `governance/`**. The plan, 20:19:20Z: *"Plan: 2 to add, 0 to change, 0 to destroy."*, the
+  profile and its grant, nothing of `experimentation` destroyed. The apply, 20:19:31Z to 20:20:04Z: *"Apply
+  complete! Resources: 2 added, 0 changed, 0 destroyed."* The re-plan at 20:20:36Z: *"No changes."*
+- **[Claude] Read back**, from 20:20:50Z: the `Tooling` configuration (blueprint `4k186sfh08eqxc`),
+  created 20:18:00Z, `us-west-2`, the boundary `awsds-data-project-boundary`, the two roles, and the
+  regional parameters `AZs`, `KmsKeyArn`, `S3Location`, `Subnets`, `VpcId`; its grant to `CONTRIBUTOR`
+  projects of the root domain unit `bzq0cbh2gd0f4g`, child units excluded; three profiles `ENABLED`, the
+  model governance one, `experimentation` and `lake-publishing` (`cc45618tw9f7yo`), the last with `Tooling`
+  `ON_CREATE` at order 0 in this account and `us-west-2`, and the overrides `sagemakerDomainNetworkType`
+  `VpcOnly`, `lifecycleManagement` `ENABLED`, `idleTimeoutInMinutes` 60 (editable),
+  `maxIdleTimeoutInMinutes` 120, `maxEbsVolumeSize` 100, `enableTrustedIdentityPropagationPermissions`
+  `false` and `enableSpaces` `false`; on the root unit, `CREATE_PROJECT_FROM_PROJECT_PROFILE` for
+  `lake-publishing` to the group the directory names `sso-group-governance-managers`, and for
+  `experimentation` to `sso-group-data-scientists`, as before.
+- **[Claude] The trail**: one `PutDataLakeSettings` in the lake since 20:00Z, at 20:16:31Z, the apply's, by
+  the infrastructure user's session. The project key's policy holds nine statements, as Staging's did at
+  Stage 18 2.5.
+- **[Claude] The instruments after the three applies**: `./aws/studio.py` at 20:23:10Z, no failure, `US-3`
+  a note on `Tooling`, the pilot's, and `US-4` passing with `lake-publishing`, `US-2` no SageMaker domain
+  in Data Governance; `./aws/datalake.py` at 20:24:36Z, no failure, `DL-5` 4/`TRUE` and `DL-6` passing in
+  the lake, `DL-13` a note on its required seat and the two SMUS seats, declared; `./aws/catalog.py` at
+  20:25:42Z, *"all checks passed"*, `CT-7` 21 SMUS grants, all on project-owned objects, `CT-8` and `CT-9`
+  passing. `studio.py` and `datalake.py` exit 1 on the unsigned profiles alone.
+- **[Claude] Recorded**: the switch row in `backend.py`; the stage file (status, 11.3 done); `AWS_STATE.md`
+  (the lake's three administrators, section C's row); `SMUS.md`; `GOVERNANCE.md`; conventions §6; D22; the
+  producer README; the hand-over note.

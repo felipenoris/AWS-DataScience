@@ -473,7 +473,7 @@ if set(SMUS_MEMBERS) & set(SMUS_DEPLOYMENT_MEMBERS):
 # `lake-publishing` profile and its create grant, and data/'s two SMUS administrator seats
 # (`lake_publishing_enabled`). Written after publishing/'s first apply, whose roles data/'s seats
 # name; the three applies then run data/, publishing/, governance/, in that order (step 11.3).
-LAKE_PUBLISHERS: list = []
+LAKE_PUBLISHERS: list = ["data-governance"]
 if not set(LAKE_PUBLISHERS) <= set(DATA_LAKE):
     raise ValueError("LAKE_PUBLISHERS: only the account that owns the lake publishes it (D22)")
 
