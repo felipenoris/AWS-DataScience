@@ -2437,3 +2437,206 @@ with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`), reads o
   role id `AROAZ4XFWAR7MPYEZXRTM`. The group policy's `ReadTheVersionsAsTheStagingDeployRole` admitted the
   Staging role across the account boundary, the half the simulator could not evaluate on 2026-10-25
   morning. `ListModelPackages` had not reached the trail at 23:52.
+
+## 2026-10-26 — §N.2, the warehouse sitting: Production's balance, the compute up, xviii's last clause, the instrument's database half
+
+*The user's hand for the console reading and `make up ENV=production ONLY=workloads-egress,warehouse-compute
+GROUPS=redshift`, from the project folder, with `workloads-egress/` already up without the group (the user's
+`make up` of 00:03); Claude's for the readings, as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`); the two peer sessions on this machine (Stages 7-10's orchestrating session and the Stage 7
+session) told before the up, and neither holds the slices. In the instrument's output the account id is
+replaced by `<Data Governance>`. Times UTC.*
+
+- **[user] The free trial's Production balance, before the sitting**, pasted verbatim: *"Free trial credits
+  remaining $299.71 out of $300.00"*, *"Free trial expiration January 21, 2027"*. **[Claude]** Unchanged
+  since 2026-10-25: no workgroup existed in between, and the governed schema's storage, 30 rows, draws
+  nothing the balance shows.
+- **[user] The compute**: **[Claude] read back** at 00:46: the `redshift-serverless` endpoint `available` in
+  `VPC-Workloads`, created 00:42:03; the workgroup `awsds-prod-warehouse` created 00:43:06, `AVAILABLE`,
+  base 4 / max 8 RPU, not publicly accessible, no enhanced VPC routing, port 5439, the usage limit
+  `serverless-compute` 10 RPU-hours monthly `deactivate`; the ten config parameters as the slice declares
+  them (`require_ssl` true, `enable_user_activity_logging` true, `max_query_execution_time` 120, `auto_mv`
+  false).
+- **[Claude] Verification xviii's last clause**, at 00:46:12: `aws redshift-serverless get-workgroup
+  --workgroup-name awsds-prod-warehouse --query workgroup.pricePerformanceTarget` reads `{"status":
+  "DISABLED"}`. xviii is answered whole.
+- **[Claude] `./aws/warehouse.py awsds-infra-prod --sql`**, 00:46:16 to 00:46:56, every call successful:
+  `WH-1`, `WH-2` (*"price-performance target DISABLED"*), `WH-3`, `WH-4`, `WH-4b`, `WH-5`, `WH-7`, `WH-8`,
+  `WH-1b`, `WH-6`, `WH-12` and `WH-14` pass; `WH-15`, `WH-11`, `WH-9` and `WH-13` are notes (no interval
+  published yet, no project outside Sandbox, the quota view unreadable). `WH-6`: `governed` plus the inert
+  `dev` and `warehouse`. `WH-14`: *"1 relation(s), each reachable by a role through a grant or a default
+  privilege; 1 default-privilege pair(s) cover future tables"*. `WH-12`: 1 themed schema, 1 role grant and
+  **3 user-role grants** where the register writes two: `IAMR:awsds-deploy-prod` → `gov_trades_ddl`,
+  `IAMR:awsds-prod-job-exec` → `gov_trades_rw`, and `ds:trades_lf_acc_DC_<Data Governance>` →
+  `ds:trades_lf`, a user and a role Redshift created for the datashare's Lake Formation consumer
+  (`DC:<Data Governance>`, 9.5 step 1's `GRANT USAGE … VIA DATA CATALOG`), the first `--sql` reading since
+  the share exists; the pair is absent from `pg_user`'s six users. Recorded in `AWS_STATE.md`'s register as
+  the platform's, beside the `IAMR:AWSReservedSSO_InfrastructureAccess_*` user (9.8). The admin secret
+  authenticated the session, as on 2026-10-24: no rotation has run in Production, so `EXC-13`'s Production
+  reading stays due after 2026-11-22.
+
+## 2026-10-26 — 5.4's Data API negative with the workgroup up: verification vii's third, refused by the set
+
+*The user's hand, signed in as the Data Scientist User on the `awsds-scientist` session (`--no-browser`,
+answered outside the shared browser), the command pasted in chat with the account id replaced by its
+placeholder and the user's address by its role; Claude's reading, as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`). Times UTC.*
+
+- **[user]** `aws redshift-data execute-statement --workgroup-name awsds-prod-warehouse --database warehouse
+  --sql 'select 1' --profile awsds-scientist-prod --region us-west-2`: *"An error occurred
+  (AccessDeniedException) when calling the ExecuteStatement operation: User:
+  arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data
+  scientist user> is not authorized to perform: redshift-data:ExecuteStatement on resource:
+  arn:aws:redshift-serverless:us-west-2:<Production>:workgroup/7e4b0850-aad8-4685-89f6-1d332ec793ce with an
+  explicit deny in an identity-based policy"*.
+- **[Claude] The reading**: Production's trail holds the `ExecuteStatement` at 00:59:46, `AccessDenied`, from
+  the laptop (no `vpcEndpointId`); the resource is the workgroup's own ARN, so the call reached
+  authorization this time, where 2026-10-23's answered *"Redshift endpoint doesn't exist in this region"*
+  before it (Lesson 21). The wording names an identity-based policy and no SCP; the one statement on
+  `DataScientistProdAccess` that denies `redshift-data:ExecuteStatement` is
+  `DenyMintingARedshiftDatabaseSession`, the shared fragment `redshift_denies` of
+  `identity/sso/policies-shared.tf` carried by both persona sets (5.1's managed policy in `production/data/`
+  holds no `redshift-data` statement). **Verification vii is three of three.**
+- **[Claude]** The infrastructure user's token survived the persona's sign-in (`get-caller-identity` at
+  01:01:19), the login answered outside the shared browser, where 2026-10-25's answered inside it.
+
+## 2026-10-26 — 9.4's DDL job run again from the pipeline: idempotent, the table counted by its owner
+
+*The user's hand for the job's trigger in GitLab (`awsds/app-etl`, pipeline #102 of `v0.4.6`, the manual job
+`production-warehouse-ddl`, #616); Claude's for the readings, the job's record and trace through GitLab's API in
+the user's browser session, and the Data API as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`). The Stage 7 session held its GitLab cycle while the job ran. Times UTC.*
+
+- **[user]** The job started at 01:04:21 on `awsds-prod-runner-deploy` (runner manager 19.4.1, the deploy
+  image by digest `9965f1b2…`), `allow_failure`, after `production-deploy`'s artifacts (job 621); the
+  infrastructure clone at `2d3160f1`, `main`'s head.
+- **[Claude] The trace**: `warehouse/trades.sql` (`CREATE TABLE IF NOT EXISTS trades.trades_notional …`)
+  `85d1ae82-d706-4fef-aafe-a1537dd6c319 FINISHED` at 01:04:58, about 29 s after the script began (the Data
+  API's first session of the sitting as `awsds-deploy-prod`); the job's own read, `SELECT current_user,
+  count(*) FROM trades.trades_notional`, `8b41a5ca-0af6-44a1-b04f-9b8faa970432 FINISHED` at 01:05:12, its
+  result `IAMR:awsds-deploy-prod` and `30`; *"Job succeeded"* at 01:05:15, 54 s in all. Verification xxii:
+  a second release's DDL changes nothing, and the table keeps the 30 rows of 2026-10-25's load. The
+  deploy role's `DescribeStatement` and `GetStatementResult` on its own statements worked, as
+  `FollowItsOwnStatements` grants since 2026-10-25.
+- **[Claude]** `describe-statement` on either id as the infrastructure user: *"ResourceNotFoundException
+  … Query does not exist"*. The Data API shows a statement to the identity that ran it and to no other,
+  so the job's record is its trace and the trail; the trail's `ExecuteStatement` events are read at §R.
+
+## 2026-10-26 — xxiv deferred by the user; Production's compute and endpoints down, read back
+
+*The user's decision in chat and the user's hand for `make down ENV=production
+ONLY=workloads-egress,warehouse-compute`, from the project folder; Claude's for the readings, as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`); the two peer sessions told before the
+down, the orchestrating session having released Production at 00:57 (its chain's run `SUCCEEDED`, the three
+schedules `DISABLED`). Times UTC.*
+
+- **[user] Verification xxiv's exercise skipped this sitting** (*"Pulo o exercício xxiv nesta sentada"*), as
+  recommended: §N.4's procedure, the revoke and 9.5's steps 1 to 3 by command, predates the adoption of the
+  authorization and the association by Terraform on 2026-10-25 (Lesson 35), so the exercise waits for a
+  rewrite in which the plans of `production/warehouse/` and `data-governance/data/` are read after the
+  revoke and the re-grant is their apply.
+- **[Claude] The job's calls in the trail**, read at 01:12: `ExecuteStatement` at 01:04:31 and 01:04:59, the
+  `DescribeStatement` polls every five to six seconds and `GetStatementResult` at 01:05:14, every one as
+  `awsds-deploy-prod` (`botocore-session-1792976671`) with no error, `sourceIPAddress` a public address of
+  the egress path and no `vpcEndpointId`: the module carries no `redshift-data` endpoint by design
+  (`vpc-egress/endpoints.tf`). The infrastructure user's two `DescribeStatement` calls of 01:06:35 and
+  01:06:36, which the CLI answered *"Query does not exist"*, carry no `errorCode` in the trail.
+- **[user] The down**; **[Claude] read back** at 01:20: no workgroup in Production, the namespace
+  `awsds-prod-warehouse` `AVAILABLE`; `VPC-Workloads` holds its two gateway endpoints (`s3`, `dynamodb`)
+  and no interface endpoint. The trail: `DeleteWorkgroup` refused five times from 01:10:38 to 01:10:47,
+  `ConflictException` *"There is an operation running on the workgroup. Try to delete it later."*, the
+  provider retrying (Terraform 1.16.6's user agent) until the sixth call at 01:10:55 went through; the
+  slice's `DeleteVpcEndpoints` at 01:11:12 and 01:12:54. The eight `DeleteVpcEndpoints` of 01:20:00 are the
+  Stage 7 session's `make gitlab-down` in `VPC-SharedServices`, announced in chat.
+
+## 2026-10-26 — Sandbox's compute up; the instrument's database half, `EXC-13`'s second Sandbox reading
+
+*The user's hand for `make up ENV=sandbox ONLY=warehouse-compute`, from the project folder; Claude's for the
+readings, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-sandbox-1`); the two peer
+sessions told. Times UTC.*
+
+- **[user] The compute**; **[Claude] read back** at 01:25: the workgroup `awsds-sandbox-warehouse` created
+  01:22:41, `AVAILABLE`, base 4 / max 8 RPU, not publicly accessible, `pricePerformanceTarget` `DISABLED`, the
+  usage limit 10 RPU-hours monthly `deactivate`.
+- **[Claude] `./aws/warehouse.py awsds-infra-sandbox-1 --sql`**, 01:25:14 to 01:26:01, every call successful:
+  every check passes but the three notes, `WH-15` (no interval published yet), `WH-9` (`EXC-17`: `lineageSync`
+  `ENABLED` on `cron(43 3 * * ? *)`, 15 runs, none completed, the count of 2026-10-25) and `WH-13`. `WH-7`
+  and `WH-11` read `avhvbqn37ty7m8` on both objects and inside the boundary; `WH-12` 1 themed schema in
+  `sandbox`, 2 role grants, 1 user-role grant; `WH-14` 2 relations reachable, 1 default-privilege pair.
+  **`EXC-13`'s Sandbox half, a second time**: the admin secret authenticated the Data API's session, so the
+  database still holds the password the rotation of 2026-10-20 wrote (the first reading 2026-10-25, 02:38
+  and 06:04); the next rotation is due by 2026-11-19.
+
+## 2026-10-26 — 9.7 a third time: the access role's grant alone serves the door
+
+*The user's hand for the query, from the project `eighth-experimentation`'s Query editor in the portal, reported
+in chat (*"A consulta de `trades_notional` retornou os resultados esperados."*); Claude's for the reading, one
+`SELECT` on `sys_query_history` through the Data API as the namespace's admin (`awsds-infra-sandbox-1`, the
+admin secret). Times UTC.*
+
+- **[user]** `SELECT current_user, count(*), min(trade_date), max(trade_date) FROM
+  governed_trades.trades.trades_notional;`, the expected result: the project's database user, 30, 2026-10-01
+  and 2026-10-05.
+- **[Claude] The query in Sandbox's history**, read at 01:28:48: query 9876897, `success`, 01:27:20.914 to
+  01:27:22.896, 1 row returned, database `sandbox`, user `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`,
+  the text as above with the editor's `limit 100` appended. The read ran with the project role's Lake
+  Formation grant revoked (2026-10-25, 14:57) and Production's workgroup destroyed (01:10:55): the access
+  role's catalog read, its Lake Formation grant, `USAGE` on `governed_trades` and `TEMP` on `sandbox` are the
+  whole door (`redshift-connection.md` §G), and INT-24 holds on the revoke's reading too.
+
+## 2026-10-26 — Sandbox's compute down: the Studio-apps hook against the query editor's app, then §R
+
+*The user's hand for `make down ENV=sandbox ONLY=warehouse-compute AUTO=1`, twice, the first output pasted in
+chat; Claude's for the readings, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-sandbox-1`,
+`awsds-infra-prod`, `awsds-infra-staging`); the two peer sessions told before the down and when Sandbox was
+done. Times UTC.*
+
+- **[user] The first `make down`**, about 01:30, refused by the hook of step 8.6 (`./scripts/down-studio-apps.py
+  sandbox`): *"FAILED to delete JupyterLab/default (default-28f1b390-0041-7068-8cc7-9ccef94277d1): … (ValidationException)
+  when calling the DeleteApp operation: State transition from [PendingCheckout] to [Deleting] is not allowed."*,
+  *"1 failure(s) - `make down` stops here rather than destroying the network under an app that is still
+  billing."* **[Claude] Where the app came from**: Sandbox holds one SageMaker domain per SMUS project
+  (`d-lfgbdrjncmsu` for `test-experimentation`, `d-p6gthxc82ckg` for `eighth-experimentation`), and the
+  hook's *"no running app"* line was the first domain's. In the second, the portal's project session called
+  `CreateApp` for the space's JupyterLab at 01:26:54, as the user opened the project's Query editor for 9.7,
+  and polled `DescribeApp` every two seconds; the query itself ran through `sqlworkbench` (`ExecuteQuery`
+  01:27:20, after `redshift-serverless:GetCredentials`) and did not wait for the app. The hook's `DeleteApp`
+  met the app in `PendingCheckout` at 01:30:31 and 01:30:53, a state the API does not leave for `Deleting`;
+  a second `CreateApp` by the portal at 01:31:54 read `ResourceInUse`; the polling stopped at 01:36:20, when
+  the user closed the editor.
+- **[user] The second `make down`**, about 01:36: the hook's `DeleteApp` refused once more at 01:36:35 and
+  accepted at 01:37:03; `DeleteWorkgroup` refused four times from 01:37:26 to 01:37:30, `ConflictException`,
+  the provider retrying, and through at 01:37:34. **[Claude] read back** at 01:39: no workgroup in Sandbox,
+  the namespace `AVAILABLE`, the app `Deleted`, the space `InService`. The Query editor opens the space's
+  JupyterLab beside its own `sqlworkbench` session, so a `make down` within minutes of a portal query meets
+  an app the hook cannot delete yet: wait for `InService` (the hook deletes it) or for the portal to give
+  it up, as here.
+- **[Claude] §R**, 01:40 to 01:42. `./aws/egress.py awsds-infra-prod awsds-infra-staging awsds-infra-sandbox-1`:
+  all checks passed; `EG-5` 30 interface endpoints, 0 NAT, ~0.300 USD/h, of which Production's 12 are
+  `VPC-SharedServices`' (the Stage 7 session's GitLab cycle, `VPC-Workloads` holding no interface endpoint),
+  Staging 0 and Sandbox's 18 `sandbox/egress`'s, the orchestrating session's to bring down.
+  `./aws/warehouse.py awsds-infra-prod awsds-infra-sandbox-1`: `WH-8` *"1 namespace(s), 0 workgroup(s), all
+  expected"* in each, every other check a pass or the no-workgroup note; the burn, from `ComputeSeconds`:
+  Production 79 RPU-seconds today, 0.0079 USD at the rate, 78 of them in the interval starting 01:00 (9.4's
+  two statements), and Sandbox 18 RPU-seconds, 0.0018 USD, in the same interval (9.7's query and the history
+  read), the interval starting 01:30 published at 0: both sittings' last intervals have landed. The free
+  trial's balances are the user's reading.
+- **[Claude] `make status`**, 01:43 to 01:49, read-only: `production/workloads-egress` and `production/warehouse-compute`
+  down, `sandbox/warehouse-compute` down, `staging/egress` down; up and none of this stage's, `production/vpn`,
+  `proxy` and `tooling` (the hub and the Stage 7 cycle's GitLab), `production/egress` (12 resources),
+  `sandbox/egress` (27), and the two 0.00 USD/h slices `production/app/app-etl` and `production/orchestration`;
+  the estimated burn 0.2028 USD/h in Production and 0.1800 in Sandbox, by the static rates.
+
+## 2026-10-26 — the free-trial balances after the sitting
+
+*The user's hand in the Redshift Serverless console, pasted in chat verbatim at about 01:50 UTC; Claude's reading.*
+
+- **[user]** Production: *"Free trial credits remaining $299.69 out of $300.00"*, *"Free trial expiration January
+  21, 2027"*. Sandbox: *"Free trial credits remaining $287.51 out of $300.00"*, *"Free trial expiration December
+  19, 2026"*.
+- **[Claude] The reading**: Production spent 0.02 USD of credit in the sitting, 299.71 to 299.69, against 79
+  RPU-seconds in `ComputeSeconds` (0.0079 USD at the rate): the balance shows a query billed at the 60-second
+  minimum, 240 RPU-seconds, 0.024 USD, which the metric does not, so the metric under-reads a sitting of short
+  statements and the balance is the figure to keep (Lesson 6). Sandbox reads as on 2026-10-25, its 18
+  RPU-seconds (9.7's query and the history read) not yet visible, a lag or below the cent; the next reading
+  says which. The cost row, `PRICING.md` and `cost-model.md` carry both figures.
