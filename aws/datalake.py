@@ -86,6 +86,10 @@ CONSUMER_PROFILES = ("awsds-infra-sandbox-1",)
 # Contracts named in the stage file, so a rename fails loudly rather than silently.
 MAINT_ROLE = "awsds-data-catalog-maintenance"  # Stage 5a step 3.2, the SCP contract
 LAKE_PREFIX = "awsds-data-"  # conventions: awsds-data-raw, -curated, -artifacts, -logs
+# The two buckets of that prefix that are not the lake's: the state bucket, and the projects bucket
+# of the lake-publishing pilot (Stage 6f step 11), a SageMaker project's storage under its own
+# policy and the project key, which DL-1 and DL-2's lake perimeter do not describe.
+NOT_LAKE_SUFFIXES = ("-tfstate", "-smus-projects")
 # The tag a SageMaker AI domain stamps on the home EFS it creates for itself and retains
 # past deletion (conventions 5.1 rule 2) - DL-10's one exemption from "none is the design".
 SM_DOMAIN_TAG = "ManagedByAmazonSageMakerResource"
@@ -134,7 +138,7 @@ def main(argv: list) -> int:
         if not res.ok:
             logerr(DATA_PROFILE, "s3api list-buckets", res.stderr)
         for b in sorted(names):
-            if not b.startswith(LAKE_PREFIX) or b.endswith("-tfstate"):
+            if not b.startswith(LAKE_PREFIX) or b.endswith(NOT_LAKE_SUFFIXES):
                 continue
             r = cli.run(
                 "s3api",
@@ -816,13 +820,21 @@ def main(argv: list) -> int:
                 + " - an administrator can grant itself anything in the local catalog.",
             )
         elif smus_seats:
+            # In the lake the seats are declared, not adopted: data-governance/data/ writes them
+            # behind LAKE_PUBLISHERS for Stage 6f decision 1's pilot, so a plan defends them there.
+            why = (
+                "declared by data-governance/data/ for the lake-publishing pilot (Stage 6f "
+                "decision 1, step 11); an administrator of the lake grants itself anything "
+                "in raw and curated (TM-27)."
+                if prof == DATA_PROFILE
+                else "service-appointed, standing by the user's 2026-08-26 decision; open "
+                "question 24 owns whether they stay."
+            )
             checks.note(
                 "DL-13",
                 f"data lake administrators ({prof})",
                 f"required seat + {len(smus_seats)} SMUS seat(s) "
-                f"({', '.join(a.rsplit('/', 1)[-1] for a in smus_seats)}) - "
-                "service-appointed, standing by the user's 2026-08-26 decision; open "
-                "question 24 owns whether they stay.",
+                f"({', '.join(a.rsplit('/', 1)[-1] for a in smus_seats)}) - {why}",
             )
         else:
             checks.ok(

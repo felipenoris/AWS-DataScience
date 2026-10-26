@@ -43,6 +43,25 @@ variable "producers" {
   nullable    = false
 }
 
+# ------------------------------------------------- Stage 6f step 11, the lake-publishing pilot
+
+variable "lake_publishing_enabled" {
+  description = "From backend.LAKE_PUBLISHERS (generated). true seats awsds-data-smus-provisioning and awsds-data-smus-manage-access as Lake Formation administrators beside InfrastructureAccess (publishing.tf), before the publishing project's first environment writes the same list."
+  type        = bool
+  default     = false
+}
+
+variable "lake_publisher_role" {
+  description = "The publishing project's role, by NAME, hand-written after its Tooling environment exists (Stage 6f step 11.5), the way sandbox/bedrock/ names project roles. null grants nothing. The role receives DESCRIBE on curated and DESCRIBE and SELECT with the grant option on each table of publishing.tf's list, the terms DataZone sets for publishing a Glue table."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.lake_publisher_role == null || can(regex("^datazone_usr_role_[a-z0-9]+_[a-z0-9]+$", var.lake_publisher_role))
+    error_message = "the publisher is a SMUS project role, `datazone_usr_role_<project>_<environment>`."
+  }
+}
+
 variable "project" {
   description = "Project tag. Fixed by docs/plan/conventions.md and by 1c's tag policy."
   type        = string

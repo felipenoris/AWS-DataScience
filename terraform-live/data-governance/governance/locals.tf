@@ -69,6 +69,8 @@ locals {
 
   member_account_ids = {
     sandbox = data.aws_caller_identity.sandbox.account_id
+    # The domain's own account, a profile's target since Stage 6f step 11 (no association).
+    data-governance = data.aws_caller_identity.current.account_id
   }
 
   # The profiles, where each provisions, and who may create from it (D21/D26). The names are a
@@ -93,14 +95,29 @@ locals {
   #
   # `blueprints` is the profile's own list, in deployment order with Tooling first (profiles.tf
   # refuses any other order and any blueprint outside category 1).
-  project_profiles = {
-    experimentation = {
-      account     = "sandbox"
-      blueprints  = local.category_one_blueprints
-      group       = "sso-group-data-scientists"
-      description = "Experimentation (D21): the unit of work is a notebook. Provisions into a business unit's Sandbox."
-    }
-  }
+  project_profiles = merge(
+    {
+      experimentation = {
+        account     = "sandbox"
+        blueprints  = local.category_one_blueprints
+        group       = "sso-group-data-scientists"
+        description = "Experimentation (D21): the unit of work is a notebook. Provisions into a business unit's Sandbox."
+      }
+    },
+    # Stage 6f step 11 (decision 1, shape (b), the pilot of 2026-10-26): the project that publishes
+    # the lake's tables, in the lake's own account, where its Glue data source reads the catalog.
+    # Tooling alone, spaces off: no compute, and the Data OU denies every launch here anyway. The
+    # Governance Manager creates it and owns it, so a subscription is approved by the person whose
+    # decisions the grant model resolves to (docs/ORGANIZATION.md), never by the requester.
+    var.lake_publishing_enabled ? {
+      lake-publishing = {
+        account     = "data-governance"
+        blueprints  = ["Tooling"]
+        group       = "sso-group-governance-managers"
+        description = "Lake publishing (Stage 6f step 11): publishes the governed lake's tables to the catalog from the lake's own account. Tooling with spaces off; no compute."
+      }
+    } : {},
+  )
 
   # The Tooling parameters Stage 6 step 1.5 locks. The non-editable flag is the difference
   # between a default and a control (Lesson 5): the parameters exist so nobody can flip a project
@@ -150,8 +167,16 @@ locals {
     ]
   }
 
-  # The overrides each profile passes, by profile name.
+  # The overrides each profile passes, by profile name. `lake-publishing` takes experimentation's
+  # Tooling rows plus `enableSpaces` false and locked: the template creates the project's SageMaker
+  # AI domain only when it is true (read 2026-10-19), the Data OU denies sagemaker:Create*, and the
+  # value is the one Stage 18 measured deploying with no CreateDomain (its step 3.2).
   profile_parameters = {
     experimentation = local.blueprint_parameters
+    lake-publishing = {
+      Tooling = concat(local.tooling_parameters, [
+        { name = "enableSpaces", value = "false", is_editable = false },
+      ])
+    }
   }
 }

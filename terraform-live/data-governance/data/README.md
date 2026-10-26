@@ -83,7 +83,7 @@ is how the first governed `INSERT` failed the day before — and legible only in
 
 | Resource / attribute | What it does once applied |
 |---|---|
-| `aws_lakeformation_data_lake_settings` · `admins` | `InfrastructureAccess` **alone** (decision 5). The governance manager is absent — an approver who can already grant everything exercises no control (Lesson 9, D31). Stage 6's DataZone fulfilment principal is the named revision trigger. Stage 18 read it in `Staging`: the fulfilment acted as the publishing project's role and took no seat (2026-10-22), while the first `Tooling` environment's provisioning seated two SMUS roles by a full replace of these settings (2026-10-19), which this resource, with no `ignore_changes`, would plan to remove, as `sandbox/data/`'s first plan did on 2026-08-26 |
+| `aws_lakeformation_data_lake_settings` · `admins` | `InfrastructureAccess` **alone** (decision 5). The governance manager is absent — an approver who can already grant everything exercises no control (Lesson 9, D31). Stage 6's DataZone fulfilment principal is the named revision trigger. Stage 18 read it in `Staging`: the fulfilment acted as the publishing project's role and took no seat (2026-10-22), while the first `Tooling` environment's provisioning seated two SMUS roles by a full replace of these settings (2026-10-19), which this resource, with no `ignore_changes`, would plan to remove, as `sandbox/data/`'s first plan did on 2026-08-26. **The trigger fired with Stage 6f decision 1 (2026-10-26)**: behind `LAKE_PUBLISHERS` the list also names `awsds-data-smus-provisioning` and `awsds-data-smus-manage-access` (`publishing.tf`), declared before the publishing project's first environment writes them, so its re-plan reads the full replace (6f step 11.4); each seat can grant itself anything in `raw` and `curated` (`TM-27`) |
 | — · `parameters` | `CROSS_ACCOUNT_VERSION = 4`, `SET_CONTEXT = TRUE`, written **from the reading** and never from memory. This resource **replaces the whole structure**: naming admins while omitting parameters resets the version to 1, after which every share appears to succeed and never arrives (INT-11, the silent failure `DL-5` brackets) |
 | — · `allow_full_table_external_data_access` | `true` (Stage 9 decision 13): Lake Formation vends S3 credentials for a whole registered table to a caller holding full-table permissions on it, outside an integrated engine, which is the one mode a consumer's Glue Spark job writes `curated` in (Stage 9 2.4, 2.5; Stage 10's workflows). The owner's flag is the one the vend reads: Production's alone, on from 2026-10-23 to 2026-10-25, left the first write refused *"Verify the data lake settings for account"*. The residual is `TM-26`: `awsds-prod-job-exec` and `DataScientistProdAccess` hold full-table `SELECT` on `curated` through the shares and can read a table's objects by a direct vend, logged as `GetDataAccess` in their account's trail |
 | — · the two default-permission blocks | **Omitted**, which clears them (measured). Their applied state grants `ALL` to `IAM_ALLOWED_PRINCIPALS` *at creation time*, so a database created before this lands is born deferring to plain IAM — D13 as decoration, with no error anywhere |
@@ -289,6 +289,21 @@ or `classification` value joining every consumer share by inheritance is the wid
 resource policy (the version 1/2 path). Measured 2026-08-19 — `glue:GetResourcePolicy` →
 `EntityNotFoundException` — and the grants then produced four **ACTIVE** RAM shares, held by both
 consumers with no invitation, which is the falsifier not firing.
+
+## `publishing.tf` — the catalog road's declared half (Stage 6f decision 1, step 11)
+
+The lake-publishing pilot: `governed-lake`, a SageMaker project in this account, publishes
+`curated.trades`, and DataZone grants each approved subscription (`GOVERNANCE.md` §Grants, the catalog
+road). This file declares what DataZone needs and does not write; the fulfilment's own grants, RAM share
+and catalog-policy statements are DataZone's, read into the register by `./aws/catalog.py` `CT-7`.
+**Written 2026-10-26 and not applied**: with `LAKE_PUBLISHERS` empty and `lake_publisher_role` null the
+slice plans `No changes`.
+
+| Resource / object | What it does once applied | The constraint behind its shape |
+|---|---|---|
+| `data.aws_iam_role.smus_seat` → `admins` | adds the two SMUS service roles of `data-governance/publishing/` to the settings above, behind `lake_publishing_enabled` | read by name, so a seat whose role does not exist yet fails at plan, naming it (measured 2026-10-26, before 11.2) |
+| `aws_lakeformation_permissions.publisher_database` | `DESCRIBE` on `curated` to the publishing project's role, named in `lake_publisher_role` | the data source lists the table's database as that role; preconditions refuse a role while `LAKE_PUBLISHERS` is empty or one outside `awsds-data-project-boundary` |
+| `aws_lakeformation_permissions.publisher_tables` (one per `published_tables` entry) | `DESCRIBE` and `SELECT` **+ grant option** on `curated.trades` to the same role | DataZone's terms for publishing a Glue table, named rather than tagged since DataZone documents no LF-TBAC support for the assets it manages; the grant option bounds what a subscription can regrant. A `restricted` or `personal` table joins the list only after 6f decision 2 |
 
 ## `warehouse-share.tf` — the governed warehouse's share into the catalog (Stage 9 step 9.5)
 

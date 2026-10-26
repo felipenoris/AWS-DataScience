@@ -935,3 +935,64 @@ session on the laptop was running. Times are UTC.*
 - **[Claude] The log re-read against the session**: the two writes marked `[Claude⚡]`; the first entry's
   heading and provenance corrected, the user's apply being part of it; the pull request, the records,
   the checks and the hand-over to the Stage 18 session added to both entries.
+
+## 2026-10-26 — decision due 1 taken as (b), and the pilot written and planned
+
+*Claude, in a session started from another session with the user's decision relayed; AWS read as the
+infrastructure user with `InfrastructureAccess` in `Data Governance Account` (`awsds-infra-data`) and
+`Sandbox Account 1` (`awsds-infra-sandbox-1`), reads and `terraform plan` alone, and one write the user
+authorized in this session's chat: the release of a state lock this session's plan had left. Times UTC.*
+
+- **[user] Decision due 1**, relayed: shape (b), as a pilot, for SageMaker Unified Studio's native flow,
+  subscription and approval in the portal granting and DataZone fulfilling, with no Terraform apply per
+  grant; one `internal` table, `curated.trades`, published by a project in `Data Governance` and
+  subscribed by `eighth-experimentation`, read before anything widens. The complement, in the user's
+  words: *"vamos priorizar a solução nativa do SMUS, mesmo que isso implique em não utilizar as LF-TAGS"*.
+- **[Claude] The lake account before**, read before 19:00Z: no VPC (`describe-vpcs` `[]`); zero blueprint
+  configurations; the Data Catalog resource policy *"Policy not found"*; Lake Formation's administrators
+  the `InfrastructureAccess` seat alone, `Parameters` 4/`TRUE`, `AllowFullTableExternalDataAccess` `true`
+  since 2026-10-23 (Stage 9 decision 13, so the brief's "unset" was a reading from before that date),
+  both default lists empty; the RAM shares it owns all `LakeFormation-V4-*`. The first `glue` call failed
+  on the laptop's proxy and passed with `NO_PROXY='*'`.
+- **[Claude] The two templates**, read with signed `s3 cp` from the blueprints' `templateUrl` (an unsigned
+  `curl` is refused for SigV4): `ToolingDefault-prod-20260918` takes `vpcId`, `subnets` and
+  `availabilityZones` with no default, creates `ToolingSecurityGroup` in the VPC unless
+  `vpcConnectionSecurityGroup` is passed, and Glue network connections while `enableGlueNetworkConnection`
+  is `true`, neither of them a user parameter; the project role reads `vpcId` in two tags alone; and
+  `LakeFormationResourceToRegisterProjectsS3Location` carries no `DeletionPolicy`.
+  `DataLakeDefault-prod-20250618` imports `s3BucketPath-<project>-<scope>`, which only the same account's
+  Tooling stack exports. So shape (b) needs a VPC in `Data Governance`, and a project deleted there calls
+  `lakeformation:DeregisterResource`, which the Data OU's `DenyLakeDeletionAndDeregistration` denies to
+  every principal.
+- **[Claude] The code** (the stage's step 11.1): `data-governance/publishing/`, a new `[P]` slice at rank
+  46 holding the VPC `10.70.0.0/16` through `vpc-v0.4.0` with `public_internet_route = false` and no
+  peering, its flow-log role, and `sagemaker-prereqs-v0.8.0` with `Tooling` alone; `governance/`'s
+  profile `lake-publishing` and its create grant to `sso-group-governance-managers`; `data/`'s two SMUS
+  seats and the publisher's grant (`publishing.tf`); `backend.py`'s `LAKE_PUBLISHERS`, its `VPC_CIDRS` and
+  `ZONE_IDS` rows and the `publishing` emission; `layers.py`'s rank and row. The instruments with it:
+  `US-3` and `US-4` (`studio.py`), `CT-7` (`catalog.py`), the projects bucket out of `DL-1` and `DL-2` and
+  `DL-13`'s reason in the lake (`datalake.py`), `NT-1` (`networking.py`), `egress.py`'s text.
+- **[Claude] The plans**, as `awsds-infra-data`, saved under the session's scratchpad. The switch off:
+  `publishing/` *"Plan: 44 to add, 0 to change, 0 to destroy."*, `governance/` and `data/` *"No changes."*
+  The switch on in the working copy, then restored and the tfvars regenerated: `publishing/` *"Plan: 46 to
+  add, 0 to change, 0 to destroy."*; `governance/` *"Plan: 2 to add, 0 to change, 0 to destroy."*, the
+  profile with `experimentation`'s six Tooling overrides and `enableSpaces` `false` locked, and its
+  grant; `data/` refused at plan, *"reading IAM Role (awsds-data-smus-manage-access): couldn't find
+  resource"* and the same for the provisioning role, the refusal the lookups exist for before 11.2.
+- **[Claude] A lock left by a plan.** The first switch-on run lost DNS mid-plan (*"dial tcp: lookup
+  cloudcontrolapi.us-west-2.amazonaws.com: no such host"*) and could not release `governance/`'s lock:
+  the object `data-governance/governance/terraform.tfstate.tflock` read `Operation` `OperationTypePlan`,
+  created 19:04:26Z by this run, with the four other sessions on the laptop idle.
+- **[user]** Asked whether to release it, against `CLAUDE.md`'s rule on `force-unlock`: *"Sim, libere"*.
+- **[Claude⚡] The lock released** at 19:22Z, `terraform force-unlock -force` on that lock's id as
+  `awsds-infra-data`, and the object read gone; both switch-on plans re-run after, leaving no lock on
+  `governance/` or `data/`.
+- **[Claude] The instruments on today's estate**, with the amended checks: `./aws/catalog.py` *"all checks
+  passed"*; `./aws/studio.py`'s checks all pass, `US-3` *"no blueprint configured in the domain account"*
+  and `US-4` the two contracted profiles, its exit 1 from the sign-in of profiles other than the
+  infrastructure user's.
+- **[Claude] Recorded**: the stage file (status, decision 1 taken, decisions 2 to 5, step 11, the
+  verifications x to xiii, 3.3 and 7.2, the cost); D22 and D26 amended, and D22's index row;
+  `GOVERNANCE.md` (§Grants' catalog road, §Access control, the accounts and catalogs tables, the
+  development cycle); Stage 11 decision 12 re-read; `SMUS.md`; `NETWORK.md`; conventions §6;
+  `AWS_STATE.md` section C; `TM-27`; the producer README; `terraform-live/README.md`; `ORGANIZATION.md`.

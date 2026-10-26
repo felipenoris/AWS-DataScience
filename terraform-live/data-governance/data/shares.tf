@@ -84,6 +84,12 @@
 # this grant applies without error and no RAM share appears. Step 7.3's readings are that test -
 # `ram get-resource-shares --resource-owner SELF` on this side, the catalog on the other - and a
 # missing share is the answer.
+#
+# The absence holds while no catalog subscription lives. A subscription to a table published from
+# this account (Stage 6f step 11) writes statements into the policy, DataZone's fulfilment acting as
+# the publishing project's role (measured in Staging, 2026-10-22), so a change to this file is planned
+# after reading `glue get-resource-policy`: with a policy present, the Prerequisites page asks for
+# glue:ShareResource to ram.amazonaws.com.
 
 # ------------------------------------------------------------------- the database share (7.2)
 

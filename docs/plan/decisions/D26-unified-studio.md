@@ -14,6 +14,13 @@ is associated for the length of one measurement, a project whose only member is 
 deploys, and the association is removed at that stage's pass 8. Production is not associated, and the
 sentence above holds unless the stage's verdict reopens D41 item 2.
 
+**Amended 2026-10-26 ([Stage 6f](../stages/stage-06f-data-governance.md) decision 1, the user's, for a
+pilot):** the domain's own account provisions one project, `governed-lake`, from the profile
+`lake-publishing`: a `Tooling` environment with spaces off that publishes the lake's tables to the
+catalog, so the business catalog and the technical catalog meet in the account that approves. The
+registry still runs no user compute; [D22](D22-data-governance-account.md)'s amendment lists what the
+account gains. A deployment target is still never associated.
+
 **Applied 2026-09-06.** The `engineering` profile is destroyed, the second member's **22** objects (11 blueprint configurations and their 11 grants) are gone, and the association was removed from the member side — `studio.py` reads one associated account and one project profile. `US-4` fails if the retired name ever returns.
 
 **In one line:** One SageMaker unified domain (DataZone V2) in Data Governance, associated to the Sandboxes alone since 6b; a registry, never a runtime.

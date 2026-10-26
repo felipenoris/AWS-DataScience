@@ -9,7 +9,9 @@
 #   1. Name the admins (5.3, decision 5): InfrastructureAccess alone. The measured state is
 #      DataLakeAdmins: [] - nobody can change these settings until this lands. The governance
 #      manager is not here: an approver who can already grant everything exercises no control
-#      (Lesson 9, D31). Stage 6's DataZone fulfilment principal is the named revision trigger.
+#      (Lesson 9, D31). Stage 6's DataZone fulfilment principal was the named revision trigger,
+#      and it fired with Stage 6f decision 1 (2026-10-26): behind LAKE_PUBLISHERS the list also
+#      names the two SMUS service roles (publishing.tf).
 #   2. Carry the parameters explicitly (5.4, INT-11): this resource replaces the whole
 #      DataLakeSettings structure, so naming admins and omitting parameters resets
 #      CROSS_ACCOUNT_VERSION to 1, after which every share appears to succeed and never
@@ -43,7 +45,7 @@
 #      5.2's other half - revoke, then re-read - before the second apply, not after.
 
 resource "aws_lakeformation_data_lake_settings" "this" {
-  admins = [local.infrastructure_access_role_arn]
+  admins = concat([local.infrastructure_access_role_arn], local.smus_admin_seats)
 
   parameters = {
     CROSS_ACCOUNT_VERSION = "4"

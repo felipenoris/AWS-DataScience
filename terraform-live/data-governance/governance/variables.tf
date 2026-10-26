@@ -47,6 +47,12 @@ variable "profiles_enabled" {
   default     = false
 }
 
+variable "lake_publishing_enabled" {
+  description = "Stage 6f step 11's switch, from backend.LAKE_PUBLISHERS: true adds the `lake-publishing` profile, which provisions Tooling into this account (6f decision 1, shape (b)), and its create grant to the Governance Manager's group. Written after data-governance/publishing/'s first apply."
+  type        = bool
+  default     = false
+}
+
 variable "domain_name" {
   description = "The SMUS domain name. One domain for the whole design (D26) - the plural is the thing INT-12's forbidden fallback would create."
   type        = string

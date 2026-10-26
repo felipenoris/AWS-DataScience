@@ -6,11 +6,13 @@
 
 **Applied 2026-09-06.** `datalake.py` reads one consumer; the RAM share and both re-grants are revoked (step 2.3), and six rows of the grant register in `docs/AWS_STATE.md` carry a dated **REVOKED** annotation rather than being deleted.
 
+**Amended 2026-10-26 by the user, for a pilot** ([Stage 6f](../stages/stage-06f-data-governance.md) decision 1, shape (b); step 11 builds it, unapplied): the lake publishes its own tables through the SageMaker Catalog from this account, so subscription and approval in the portal grant and DataZone fulfils, with no Terraform apply per grant. Data Governance gains what that needs: a `Tooling` blueprint configuration with its two SMUS service roles, which the first environment seats as Lake Formation administrators of the lake; the publishing project `governed-lake`, owned by the Governance Manager, its `Tooling` environment with spaces off; the VPC the managed `Tooling` template requires (no internet route, no peering, no endpoint but the two gateways); a projects bucket and a project key. **What never lives here holds**: no user compute, since spaces are off and the Data OU still denies every launch, `sagemaker:Create*` and Athena queries. The pilot is one `internal` table, `curated.trades`, subscribed by `eighth-experimentation`, and what DataZone writes is read before anything widens. Step 11's rollback undoes it but for two objects the Data OU's `DenyLakeDeletionAndDeregistration` keeps: the projects bucket and the project's `dev/` registration.
+
 **In one line:** The governed lake moves to a dedicated Data Governance account; every environment reaches it through Lake Formation shares.
 
 **Related decisions:** [D13](D13-lake-formation-enforcement.md), [D18](D18-data-scientist-access.md), [D20](D20-staging-account.md)
 
-**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 1d](../stages/stage-01d-org-wide-enablement.md), [Stage 3](../stages/stage-03-networking.md), [Stage 5a](../stages/stage-05a-data-foundation.md), [Stage 9](../stages/stage-09-deployment-targets.md), [Stage 11](../stages/stage-11-dlp.md)
+**Referenced by stages:** [Stage 1a](../stages/stage-01a-landing-zone.md), [Stage 1b](../stages/stage-01b-identity-and-controls.md), [Stage 1c](../stages/stage-01c-preventive-policies.md), [Stage 1d](../stages/stage-01d-org-wide-enablement.md), [Stage 3](../stages/stage-03-networking.md), [Stage 5a](../stages/stage-05a-data-foundation.md), [Stage 6f](../stages/stage-06f-data-governance.md), [Stage 9](../stages/stage-09-deployment-targets.md), [Stage 11](../stages/stage-11-dlp.md)
 
 ---
 

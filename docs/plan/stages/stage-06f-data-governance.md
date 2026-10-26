@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **In progress: steps 1 and 2.0 are done, 5.1 and 6.1 are read, and no access act of this stage has run.** ([log](../../log/log-stage-06f-data-governance.md)). Stage 18 7.2 ran one into `test-experimentation` on 2026-10-22, revoked the same night. 2026-09-12/13: a database and a table created in the portal, and the project path found LF-registered by the service (`GOVERNANCE.md` corrected, `DL-14` written). 2026-09-13: the table published, a data product built on it and published, and both measured to change no grant. **2026-09-18, read-only: step 1 closed** — [`./aws/catalog.py`](../../../aws/catalog.py) written and run (`CT-1`..`CT-9`), the domain's authorization read on the root domain unit, and the domain execution role's managed policy read at **v23**. What those readings settle: **the catalog road has not reached the lake** (`CT-7`: twelve SMUS grants, fourteen on 2026-10-18 with the second project's, all on project-owned objects), **nothing at the domain level restricts a direct Share** and **`ADD_TO_PROJECT_MEMBER_POOL` is open to every user by default**, so decision due 5's control belongs on the domain execution role — which also holds `AddPolicyGrant` over the policies that would carry it. Verification vi is answered ahead of its step: **a published asset shows no LF-Tag**, though this one had none to show. Two things nobody had asked about: the `Tooling` blueprint's own data source runs on a daily cron nobody wrote and has failed every run since 2026-08-24 (`EXC-11`, Lesson 17), and AI business-name generation is **on** for the Glue source, which is decision due 3's first measurement. **Five decisions remain open** and no subscription or Share has run. **Step 3.1 is read on both halves the same day, and decision due 1's recommendation moved to (c)**: shape (d) needs a custom asset type, because *managed* is a property of the asset type and `GlueTableAssetType` is one; and shape (a) **writes Lake Formation grants at creation**, over every table in the database named, before any subscription exists. **Steps 6.2, 8.1 and 9.1 are done the same day**: lineage arrives by three routes, with the MWAA-Serverless question handed to Stage 10 step 3.3; the warehouse row is in `institutional-delta.md`; and a vend adds a **domain unit**, written into Stage 14. **2026-10-18, read-only, the environment down**: 5.1 is closed from AWS's pages (generation runs on Bedrock in the Region, from the asset's metadata, and has never run here); 6.1 is answered (the two publish-time nodes link an asset to its listing and nothing else); 6.2's blueprint setting is corrected (the Glue sync is a property of each project's connections, `true` in both projects, and no Terraform declares lineage); decision due 5's DataZone half is read (each project role is a DataZone user and a contributor of its own project); and `EXC-11` counts two failing `Tooling` data sources, one per project. Decision due 3's last input is read the same day: no IAM condition key reaches business-name generation. **2026-10-20**: the manage-access role's missing Lake Formation actions, the reason every Sandbox `DataLake` environment failed, are written into `sagemaker-prereqs-v0.8.0` and applied by the user, and the two failed environments are decision due 6, taken the same night: `test-experimentation` holds an `ACTIVE` `DataLake` environment, the Glue subscription target 2.2 needs, its opt-in the manage-access role's first passing call in Sandbox. Steps 2.0-2.6 are the user's acts |
+| **Status** | **In progress: steps 1 and 2.0 are done, 5.1 and 6.1 are read, and no access act of this stage has run.** ([log](../../log/log-stage-06f-data-governance.md)). **Decision due 1 taken 2026-10-26 by the user: shape (b), as a pilot**, the SageMaker Catalog's native flow over the lake even without LF-Tags; [D22](../decisions/D22-data-governance-account.md) and [D26](../decisions/D26-unified-studio.md) amended. **Step 11 is the pilot, written and planned the same day, nothing applied**: `data-governance/publishing/` plans 44 to add with its switch off, `governance/` and `data/` re-plan `No changes`. The pilot needs a VPC in `Data Governance`, since the managed `Tooling` template takes one with no default, and its rollback leaves the projects bucket and one Lake Formation registration, which the Data OU's deny keeps. Stage 18 7.2 ran one into `test-experimentation` on 2026-10-22, revoked the same night. 2026-09-12/13: a database and a table created in the portal, and the project path found LF-registered by the service (`GOVERNANCE.md` corrected, `DL-14` written). 2026-09-13: the table published, a data product built on it and published, and both measured to change no grant. **2026-09-18, read-only: step 1 closed** — [`./aws/catalog.py`](../../../aws/catalog.py) written and run (`CT-1`..`CT-9`), the domain's authorization read on the root domain unit, and the domain execution role's managed policy read at **v23**. What those readings settle: **the catalog road has not reached the lake** (`CT-7`: twelve SMUS grants, fourteen on 2026-10-18 with the second project's, all on project-owned objects), **nothing at the domain level restricts a direct Share** and **`ADD_TO_PROJECT_MEMBER_POOL` is open to every user by default**, so decision due 5's control belongs on the domain execution role — which also holds `AddPolicyGrant` over the policies that would carry it. Verification vi is answered ahead of its step: **a published asset shows no LF-Tag**, though this one had none to show. Two things nobody had asked about: the `Tooling` blueprint's own data source runs on a daily cron nobody wrote and has failed every run since 2026-08-24 (`EXC-11`, Lesson 17), and AI business-name generation is **on** for the Glue source, which is decision due 3's first measurement. **Five decisions remain open** and no subscription or Share has run. **Step 3.1 is read on both halves the same day, and decision due 1's recommendation moved to (c)**: shape (d) needs a custom asset type, because *managed* is a property of the asset type and `GlueTableAssetType` is one; and shape (a) **writes Lake Formation grants at creation**, over every table in the database named, before any subscription exists. **Steps 6.2, 8.1 and 9.1 are done the same day**: lineage arrives by three routes, with the MWAA-Serverless question handed to Stage 10 step 3.3; the warehouse row is in `institutional-delta.md`; and a vend adds a **domain unit**, written into Stage 14. **2026-10-18, read-only, the environment down**: 5.1 is closed from AWS's pages (generation runs on Bedrock in the Region, from the asset's metadata, and has never run here); 6.1 is answered (the two publish-time nodes link an asset to its listing and nothing else); 6.2's blueprint setting is corrected (the Glue sync is a property of each project's connections, `true` in both projects, and no Terraform declares lineage); decision due 5's DataZone half is read (each project role is a DataZone user and a contributor of its own project); and `EXC-11` counts two failing `Tooling` data sources, one per project. Decision due 3's last input is read the same day: no IAM condition key reaches business-name generation. **2026-10-20**: the manage-access role's missing Lake Formation actions, the reason every Sandbox `DataLake` environment failed, are written into `sagemaker-prereqs-v0.8.0` and applied by the user, and the two failed environments are decision due 6, taken the same night: `test-experimentation` holds an `ACTIVE` `DataLake` environment, the Glue subscription target 2.2 needs, its opt-in the manage-access role's first passing call in Sandbox. Steps 2.0-2.6 are the user's acts |
 | **Prerequisites** | **None that block.** A Glue table's subscription target is a `DataLake` environment's, and every `DataLake` environment in Sandbox failed on the manage-access role's Lake Formation opt-in until `sagemaker-prereqs-v0.8.0` attached the policy that carries it (applied by the user 2026-10-20); `test-experimentation` holds an `ACTIVE` one since the same night (2.0, decision due 6), so 2.1's recommended consumer has the target. The rest is in place: Stage 5a's lake and its TBAC shares, 6a's domain and association, and two live projects: `eighth-experimentation`, holding a published asset and a published data product, and `test-experimentation`, created 2026-10-15 as D41's `test` project. Step 2.1 names the consumer: the second project exists, so a third is created only if the user prefers one |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D22](../decisions/D22-data-governance-account.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D28](../decisions/D28-workflow-contract.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md) |
 | **Proves** | [INT-23](../integrations.md) (new): a catalog access act becomes a Lake Formation grant in the account that owns the table |
@@ -40,8 +40,9 @@ control is the owner project's approval; on the register road, the tag and the e
    Sandbox. In this design Production's pipeline writes into the governed lake through Stage 9's write
    share, so the authoritative table is in `Data Governance`'s catalog, and the publishing act belongs
    beside it (D26: *"co-locating the business catalog with the technical catalog makes every approval
-   local"*). `US-3` fails on any blueprint configuration in `Data Governance`; step 3 measures whether
-   publishing the lake needs one. The revision trigger on `DenyDataZoneEntirely` stands as written.
+   local"*). Publishing the lake needs one blueprint configuration in `Data Governance`, `Tooling`, and
+   decision due 1 (2026-10-26) admits it for step 11's pilot, `US-3` admitting that one and failing on
+   any other. The revision trigger on `DenyDataZoneEntirely` stands as written.
 2. **Redshift and the Glue Data Catalog connect in both directions, and this stage builds neither.**
    The Sandbox warehouse exists since 2026-09-20 ([D40](../decisions/D40-redshift-warehouse.md),
    [Stage 5b](stage-05b-redshift-serverless.md), built by hand); the `RedshiftServerless` blueprint
@@ -275,8 +276,9 @@ The same-account half of INT-23, and the reading open question 24 still owes.
   kind `GOVERNANCE.md` §Grants keeps for exceptions; under (d) the catalog writes none.
 - **3.3 [user] Exercise (a), or (d) if 3.1 finds a table publishable unmanaged, on
   `curated.sample_trades`**, with `publishOnImport` and name generation off. [Claude] reads what the run
-  imported and what a subscription would require.
-- **3.4 Decision due 1.**
+  imported and what a subscription would require. **Not run**: decision due 1 took neither (a) nor (d),
+  and step 11 exercises (b) on `curated.trades`.
+- **3.4 Decision due 1.** Taken 2026-10-26: (b), as a pilot (Decisions due).
 
 ### 4. Classification and approval in the catalog
 
@@ -377,7 +379,8 @@ The same-account half of INT-23, and the reading open question 24 still owes.
   stays unassociated.
 - **7.2 [Claude] If decision 1 publishes the lake, write the publish act into Stage 8 or 9**: the role in
   `Data Governance` that runs the data source or the listing change after a deploy, and its `datazone:`
-  allow.
+  allow. Decision 1 publishes the lake (2026-10-26); in the pilot the Governance Manager publishes by
+  hand in the portal (11.6), and this step is written once step 11's readings say what a run needs.
 - **7.3 Decision due 4.**
 
 ### 8. Redshift in the institutional pattern
@@ -391,6 +394,193 @@ The same-account half of INT-23, and the reading open question 24 still owes.
 
 - **9.1 [Claude] Read what a domain unit scopes** (projects, glossaries, policies, owners) and, if one unit
   per business unit fits D35, write it into Stage 14.
+
+### 11. The pilot of shape (b): `curated.trades` published from the lake account
+
+Decision due 1, taken 2026-10-26 as (b). The Governance Manager's project `governed-lake`, provisioned
+into `Data Governance`, publishes one `internal` table, `curated.trades`; `eighth-experimentation`
+subscribes from Sandbox; the Governance Manager approves in the portal and DataZone fulfils. What
+DataZone writes is read before anything widens (11.11). Nothing here is applied: every apply and
+every AWS write below waits for the user's word in this stage's chat, after the other sessions on the
+laptop are listed and told (`CLAUDE.md`, "What the sessions share").
+
+**Identities.** The applies and the CLI writes run as the infrastructure user, permission set
+`InfrastructureAccess`: in `Data Governance` through `awsds-infra-data`, in `Sandbox Account 1` through
+`awsds-infra-sandbox-1`. The portal acts are two Identity Center users, signed in to the portal with
+no permission set: the Governance Manager user (`sso-group-governance-managers`) and the Data Scientist
+User. One SSO login covers both profiles; the portal sign-in is per person, from a separate browser
+profile for the second one (Stage 18 7.2's form).
+
+**What the code holds** (11.1). One switch, `scripts/tfhygiene/backend.py`'s `LAKE_PUBLISHERS`, moves
+three slices of `Data Governance`:
+
+| Slice | With the switch off | With `LAKE_PUBLISHERS = ["data-governance"]` |
+|---|---|---|
+| `data-governance/publishing/` (new, rank 46, `[P]`) | the VPC `10.70.0.0/16` through the `vpc` module (3×2, no internet route, no peering, the two gateway endpoints, flow logs), the flow-log role, and `sagemaker-prereqs-v0.8.0` with `Tooling` alone: the provisioning and manage-access roles, the D13 boundary `awsds-data-project-boundary`, the project key `alias/awsds-data-project`, the projects bucket `awsds-data-smus-projects`, the log group | adds the `Tooling` configuration (the boundary, the two roles, the VPC and its private subnets, `S3Location`, `KmsKeyArn`) and its `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant to `CONTRIBUTOR` projects of the root domain unit; the project key's policy gains the domain execution role |
+| `data-governance/governance/` | unchanged | adds the profile `lake-publishing` (`Tooling` `ON_CREATE` in `Data Governance`, `experimentation`'s six Tooling overrides and `enableSpaces` `false`, locked) and its `CREATE_PROJECT_FROM_PROJECT_PROFILE` grant to `sso-group-governance-managers` |
+| `data-governance/data/` | unchanged | the Lake Formation administrators gain `awsds-data-smus-provisioning` and `awsds-data-smus-manage-access` beside `InfrastructureAccess` (`publishing.tf`); `lake_publisher_role`, null until 11.5, then grants the publishing project's role `DESCRIBE` on `curated` and `DESCRIBE` and `SELECT` with the grant option on `trades` |
+
+**What DataZone writes, and how each slice stays consistent with it.** Stage 18 measured the shape in
+Staging (its 3.3 and 7.2); the lake account's own readings are 11.4 and 11.9.
+
+| Object | Written by | The slice that meets it | How it stays consistent |
+|---|---|---|---|
+| Lake Formation settings: the two SMUS seats, `AllowFullTableExternalDataAccess`, `Parameters`, the create-defaults (`PutDataLakeSettings`, a full replace) | the provisioning role, at the first `Tooling` environment | `data/` (`lakeformation.tf`) | the seats are declared before the environment (11.3); the flag is `true` in code since 2026-10-23 (Stage 9 decision 13, `TM-26`); `Parameters` 4/`TRUE` and empty defaults are what the provisioning kept in Sandbox (open question 24). `data/` re-plans `No changes` after 11.4, or the diff names what the service changed, with `DL-5` read before and after |
+| the registration of `s3://awsds-data-smus-projects/<domain>/<project>/dev/` | the Tooling stack, under the project role | none: `data/` declares `raw` and `curated` alone | none needed; the Data OU denies its deregistration (11.12) |
+| project-conditioned grants on the project's `dev/` location and databases, and a `default` database if the account has none | the provisioning role | none | a grant to another principal drifts no `aws_lakeformation_permissions` resource; `catalog.py` `CT-8` reads the condition |
+| the publisher's grant on `curated` and `curated.trades` | Terraform, `data/publishing.tf` | `data/` | declared; the register's exception, recorded in the producer README |
+| the fulfilment: `SELECT` on `curated.trades` to Sandbox's `IAMPrincipals` under `eighth-experimentation`'s context, `CROSS_ACCOUNT_VERSION` 5 in the grant | the publishing project's role, `AWSDataZone-Subscriptions` sessions | none | not Terraform's: `catalog.py` reads it into the register (decision due 2's first option) |
+| a RAM share `LakeFormation-V5-*` of the lake's catalog, `database/*` and `table/*/*` to Sandbox's account | the same sessions | none: `shares.tf`'s TBAC grants own their `LakeFormation-V4-*` shares | RAM shares are in no state; `DL-7` counts one more share out. The share is a ceiling: Lake Formation's `SELECT` scopes the read |
+| three statements in the lake's Data Catalog resource policy, naming Sandbox's account for table and partition reads and writes | the same sessions | none: `shares.tf` keeps the policy absent on purpose | no `aws_glue_resource_policy` exists, so nothing drifts, and `shares.tf`'s premise is false while a subscription lives: the Prerequisites page asks for `glue:ShareResource` to `ram.amazonaws.com` once an account shares through a catalog policy, read at 11.9 before any later `shares.tf` change |
+| a resource link `trades` in `eighth-experimentation`'s `DataLake` database, and `DESCRIBE` on it to the project's context | `eighth-experimentation`'s role | none: `sandbox/data/` declares the persona's regrants | a DataZone-owned database, outside every state |
+
+- **11.1 [Claude] The code, written and planned 2026-10-26** (the log). The switch off: `publishing/`
+  plans 44 to add, nothing changed or destroyed; `governance/` and `data/` re-plan `No changes`. The
+  switch on in the working copy and back: `publishing/` 46 to add, the configuration and its grant
+  beside the 44; `governance/` 2 to add, the profile and its grant; `data/` refused at plan, *"reading
+  IAM Role (awsds-data-smus-provisioning): couldn't find resource"* and the same for the manage-access
+  role, the designed refusal before 11.2 creates them. Written with it, so each reads
+  the pilot at the apply that makes it true (Lesson 50): `./aws/studio.py` `US-3` admits `Tooling`
+  alone in `Data Governance` and `US-4` the profile `lake-publishing`; `./aws/catalog.py` `CT-7`
+  reads the publisher's grant and the fulfilment's on a published table as the catalog road's, and any
+  other SMUS grant on the lake as before; `./aws/datalake.py` leaves `awsds-data-smus-projects` out of
+  the lake's buckets; `./aws/networking.py` `NT-1` admits the `VPC_CIDRS` row of `Data Governance`.
+- **11.2 [Claude⚡] Apply `data-governance/publishing/`, the switch off**, as `awsds-infra-data`:
+
+  ```bash
+  ./scripts/gen-tfvars.py data-governance publishing && ./scripts/gen-backend-hcl.py data-governance publishing
+  AWS_PROFILE=awsds-infra-data terraform -chdir=terraform-live/data-governance/publishing init -backend-config=backend.hcl -input=false
+  AWS_PROFILE=awsds-infra-data terraform -chdir=terraform-live/data-governance/publishing plan -input=false -out="$HOME/tmp/6f-11-2.tfplan"
+  AWS_PROFILE=awsds-infra-data terraform -chdir=terraform-live/data-governance/publishing apply -input=false "$HOME/tmp/6f-11-2.tfplan"
+  ```
+
+  A plan other than 44 to add stops the step. [Claude] reads after: the re-plan `No changes`; the VPC,
+  its six subnets and no route to the gateway (`./aws/networking.py`); both roles' trusts naming
+  `datazone.amazonaws.com` from this account; the bucket versioned, every public-access block on;
+  `./aws/datalake.py`'s `DL-1` and `DL-2` on the five lake buckets alone.
+- **11.3 [Claude] The switch**: `LAKE_PUBLISHERS = ["data-governance"]`, the three tfvars regenerated,
+  committed to the step's branch. **[Claude⚡] The three applies, in this order**, each from a saved plan
+  and re-planned `No changes` after:
+  1. `data/`: 1 to change, the settings' admin list alone. `./aws/datalake.py` before and after:
+     `DL-5` 4/`TRUE`, `DL-6` no create-default, `DL-13` the required seat and two SMUS seats as a note.
+     Any other attribute in the diff stops the step (INT-11).
+  2. `publishing/`: the configuration and its grant added, the key's policy changed.
+  3. `governance/`: the profile and its grant added, `experimentation` and the model governance project
+     unchanged. A plan that destroys `awscc_datazone_project_profile.this["experimentation"]` stops it.
+
+  [Claude] reads: `datazone list-environment-blueprint-configurations` as `awsds-infra-data` returns
+  `Tooling` alone, with the boundary and both roles; `list-policy-grants` on it and on the root domain
+  unit; `./aws/studio.py` `US-3` and `US-4`.
+- **11.4 [user] The Governance Manager creates the project**: signed in to the portal as the Governance
+  Manager user, *Create project*, profile `lake-publishing`, name `governed-lake`. Then, as its owner,
+  *Members → Add members*, `Data Governance`'s `InfrastructureAccess` role as `PROJECT_CONTRIBUTOR`, so
+  Claude's DataZone reads of the project pass (0.6). Claude never approves a request in it. **[Claude]
+  reads**, as `awsds-infra-data`:
+  - the project `SUCCESSFUL` and `Tooling` `ACTIVE`, with no SageMaker AI domain (`US-2`); a failure is
+    read from the refused call and its policy's wording, and goes to 11.12;
+  - the stack's resources against Stage 18 3.3's list: three roles under the boundary, the security
+    group, two Glue connections, two Athena workgroups, the log group, the `dev/` registration, the
+    schedule group; outside the stack, the S3 Access Grants instance and its location, and
+    `AWSServiceRoleForAmazonAthena`;
+  - Lake Formation's settings field by field, then `data/`'s plan: `No changes` means the full replace
+    wrote only what the code declares;
+  - every `lakeformation:`, `glue:` and `datazone:` call in `Data Governance`'s trail from the project's
+    creation, by principal: whether the provisioning role created `default` in the lake's catalog,
+    and whether either seat granted anything on `raw` or `curated`;
+  - the project role's name, `datazone_usr_role_<project>_<environment>`, which 11.5 writes;
+  - the `Tooling` environment's data source (`EXC-11`'s name, covered by `CT-6`).
+- **11.5 [Claude⚡] The publisher's grant**: `lake_publisher_role` in `data/variables.tf` defaults to the
+  role 11.4 read, committed; plan 2 to add (`DESCRIBE` on `curated`; `DESCRIBE` and `SELECT` with the
+  grant option on `trades`), applied, re-planned `No changes`, `DL-5` before and after. [Claude] reads
+  `lakeformation list-permissions --principal DataLakePrincipalIdentifier=<role ARN>`, and the producer
+  README and the grant register gain their rows.
+- **11.6 [user] The Governance Manager publishes `trades`**, in `governed-lake`: *Data sources → Create*,
+  type AWS Glue, database `curated`, table selection *include* `trades`, *automated business name
+  generation* off, *publish assets automatically* off, no schedule; *Run*; the asset `trades` reviewed
+  and *Published*. [Claude] reads: `CreateDataSource` and `StartDataSourceRun` in the trail, with any
+  Lake Formation grant written between them (3.1's documentation said a data source grants the
+  environment role read on every table of the database it names); the source's `publishOnImport` and
+  `enableBusinessNameGeneration` (`CT-4`, `CT-5`); the run's assets; the listing in `search-listings` from
+  Sandbox; and whether the asset carries `classification=internal` anywhere in its forms (verification
+  vi's lake half).
+- **11.7 [Claude⚡] `eighth-experimentation`'s subscription target**, a `DataLake` environment, as
+  `awsds-infra-sandbox-1`, a contributor of the project, the form 2.0 ran for `test-experimentation`:
+
+  ```bash
+  aws datazone create-environment --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier avhvbqn37ty7m8 --environment-configuration-id 40631117-4a84-42b1-b2dc-c2deef6c3d52 --environment-blueprint-identifier d8w7c3fmbsz5cg --name eighth-experimentation-lakehouse --profile awsds-infra-sandbox-1 --region us-west-2
+  ```
+
+  The failed record `4lrapnc3syxd74` stays until 2.7 (decision due 6). If DataZone refuses a second
+  environment from one configuration in one project, 2.7 runs first, the user's call, with `mydatabase`
+  and `house-price` read back. [Claude] reads the environment `ACTIVE`, its database
+  `glue_db_<environment id>`, the target `eighth-experimentation-lakehouse-default-target` for
+  `GlueTableAssetType`, the conditioned grants and the opt-in, as 2.0 read them.
+- **11.8 [user] The subscription and its approval.** Signed in as the Data Scientist User, who is no
+  member of `governed-lake`: search the catalog for `trades`, *Subscribe*, project
+  `eighth-experimentation`, a reason. Signed in as the Governance Manager user: *Subscription requests*
+  in `governed-lake`, *Approve*. The request waits for the approval because its requester is a member of
+  one project alone (2.1). [Claude] reads verification vii: the `AcceptSubscriptionRequest` event, the
+  role it ran as and the identity in its session name; the subscription `APPROVED` and its grant to
+  `COMPLETED`, with the times.
+- **11.9 [Claude] The fulfilment, read to its end**, in both accounts:
+  - in `Data Governance`'s trail, every call of the publishing role's `AWSDataZone-Subscriptions`
+    sessions: `ListPermissions`, `BatchGrantPermissions`, `ram:CreateResourceShare`,
+    `glue:PutResourcePolicy`, and any refusal;
+  - `lakeformation list-permissions` on `curated.trades` as `awsds-infra-data`: the grant's principal,
+    condition and permissions;
+  - `glue get-resource-policy` as `awsds-infra-data`: the statements, and whether one gives
+    `glue:ShareResource` to `ram.amazonaws.com`;
+  - `ram get-resource-shares --resource-owner SELF` and `list-resources` on the new share, and the same
+    share among Sandbox's received ones, `ACTIVE`, with no invitation;
+  - in Sandbox, the resource link in `glue_db_<environment id>` and its `DESCRIBE`, through
+    `glue get-tables` and `lakeformation list-permissions` as `awsds-infra-sandbox-1`;
+  - `./aws/catalog.py` (`CT-7` the catalog road's grants, `CT-8`), `./aws/datalake.py` (`DL-5`, `DL-7`,
+    `DL-13`), and `data/`'s re-plan `No changes`.
+- **11.10 [user] The read.** Signed in as the Data Scientist User, `eighth-experimentation`'s query editor,
+  with no space:
+
+  ```sql
+  SELECT * FROM "glue_db_<environment id>"."trades" LIMIT 10;
+  ```
+
+  [Claude] reads `lakeformation:GetDataAccess` in both trails and the query's state and bytes scanned.
+  The rows reached, the pilot unlocks two reads a project role could not make without a lake grant,
+  each in its own stage's sitting with a space up: [Stage 9](stage-09-deployment-targets.md) 8.1's space
+  half (a lake table read through the subscription, never written) and
+  [6g](stage-06g-access-by-identity.md) 2.4's (an Athena query over `curated` from a Sandbox space).
+- **11.11 [Claude] What DataZone wrote, before anything widens**: the log entry; the grant register's
+  rows for the fulfilment, its RAM share and catalog policy, marked as DataZone's; the producer README's
+  rows; `docs/SMUS.md`'s catalog section; `TM-27` read against the measurement. No second table and no
+  second subscriber until then, and no `restricted` or `personal` table in `publishing.tf`'s list before
+  decision due 2 rules on them.
+- **11.12 The rollback**, whenever the user calls it, in this order; each write [Claude⚡] on the user's
+  word, or the user's from Claude's saved plans:
+  1. The subscription revoked: `revoke-subscription --no-retain-permissions`, or the portal's *Revoke*
+     (whose `retainPermissions` is read); then read gone on both sides, Stage 18 8.1's way: the grant,
+     the RAM share, the catalog policy back to *"Policy not found"*, the resource link.
+  2. The listing unpublished, the asset and the data source deleted, by the Governance Manager in the
+     portal or as the contributor.
+  3. `data/`: `lake_publisher_role` back to null, 2 to destroy, `DL-5` bracketing it.
+  4. `governed-lake` deleted, `delete-project --skip-deletion-check` as `awsds-infra-data`. The Tooling
+     stack's `LakeFormationResourceToRegisterProjectsS3Location` has no `DeletionPolicy`, and the Data
+     OU's `DenyLakeDeletionAndDeregistration` denies `lakeformation:DeregisterResource` to every
+     principal, so the stack is expected to stop `DELETE_FAILED` on it. Then `cloudformation delete-stack
+     --stack-name DataZone-Env-<environment id> --retain-resources
+     LakeFormationResourceToRegisterProjectsS3Location` as `awsds-infra-data`, and the deletion retried.
+     The registration stays, its role gone, unless the user amends the deny for that sitting (battery
+     phase 4b). Outside the stack, removed by hand as Stage 18 8.1 did: the S3 Access Grants location and
+     instance, the Athena service-linked role, the log group `datazone-<project>-dev` and its two
+     siblings, and the `default` database if 11.4 found the provisioning created it.
+  5. `LAKE_PUBLISHERS = []`, then `governance/` (the profile and its grant destroyed), `publishing/` (the
+     configuration and its grant), `data/` (the two seats), each re-planned `No changes`.
+  6. `publishing/` destroyed but for the projects bucket: every version and delete marker removed, the
+     bucket's six resources taken out of state (`terraform state rm`), then `terraform destroy`; the key
+     goes to `PendingDeletion`. The bucket stays, empty: the Data OU denies `s3:DeleteBucket`.
+  7. The slice's folder and rows, the `VPC_CIDRS` row, the instruments' admissions and D22's amendment
+     marked reverted, in one commit.
+
+  `eighth-experimentation`'s `DataLake` environment stays: it is the project's subscription target, and
+  its database is `Retain` at every deletion.
 
 ### 10. Close
 
@@ -418,6 +608,10 @@ The same-account half of INT-23, and the reading open question 24 still owes.
 | vii | Which policy decides an approval made in the portal? | 4.3 |
 | viii | Where does AI metadata generation run, and what does it send? | 5.1 |
 | ix | What do the publish-time lineage nodes link? | 6.1 |
+| x | Does the publishing project's first environment change any Lake Formation setting `data/` declares, and does it grant anything on `raw` or `curated`? | 11.4 |
+| xi | Does a Glue data source over `curated` write a Lake Formation grant at its creation, and on which tables? | 11.6 |
+| xii | Which role writes the fulfilment from the lake, and what does it add to the lake's RAM shares and Data Catalog resource policy? | 11.9 |
+| xiii | Does `eighth-experimentation` read `curated.trades` through the subscription, with no space? | 11.10 |
 
 ## Decisions due
 
@@ -445,10 +639,35 @@ The same-account half of INT-23, and the reading open question 24 still owes.
    would write in Sandbox (0.10), and Sandbox's TBAC shares carry the grant option, so under (c) what
    keeps the lake out of the catalog is that nothing publishes it or points a data source at its
    resource links. `CT-7` reads that, and a narrower seat is open question 24's other half.
+
+   **Taken 2026-10-26 by the user: (b), as a pilot** (relayed to this stage's session the same day).
+   The reason is the native flow: subscription and approval in the portal grant, DataZone fulfils, and
+   no Terraform apply is owed per grant. The user's complement: *"vamos priorizar a solução nativa do
+   SMUS, mesmo que isso implique em não utilizar as LF-TAGS"*. So, for what enters through the catalog,
+   DataZone's named-resource grants prevail over the TBAC model, and `GOVERNANCE.md` §Grants' rule that
+   keeps named-resource grants for exceptions stops applying to that path; the TBAC shares stay
+   whole for every reader they already reach. It reverses D22 for the pilot (its amendment): `Data
+   Governance` gains a `Tooling` configuration and a publishing project. The pilot is step 11, one
+   `internal` table, `curated.trades`, published by `governed-lake` and subscribed by
+   `eighth-experimentation`, and what DataZone writes is read before anything widens. Stage 18's
+   measurements become the plan's terms: the Lake Formation administrators are declared in `data/`
+   rather than left to the service; the full-table flag is already on in the lake (`TM-26`); the RAM
+   share and the catalog policy are read at 11.9 against `shares.tf`'s premise; and the grants are read
+   into the register by `catalog.py`. Writing the step found a price the readings had not: the
+   managed `Tooling` template takes a VPC, so `Data Governance` gains one with no route out, and the
+   Data OU's deny keeps the projects bucket and one registration past a rollback (11.12).
+
+   **What the pilot unlocks**: [Stage 9](stage-09-deployment-targets.md) 8.1's space half and
+   [6g](stage-06g-access-by-identity.md) 2.4's, both a project role reading a lake table, which no
+   project role could without a lake grant (0.7). **What it opens**: decisions due 2 to 5 below, each
+   now about a live path, and Stage 11 decision 12, whose recommendation assumed (c).
 2. **How a fulfilment grant enters the grant register**, and whether `restricted` and `personal` tables
    may be managed assets at all: register every fulfilment grant by reading it (`catalog.py`), or publish
    only `public` and `internal` as managed assets and keep the rest unmanaged, approved by the Governance
-   Manager and granted by Terraform.
+   Manager and granted by Terraform. **Live since decision 1 (2026-10-26)**: the pilot takes the first
+   option for its one table, `CT-7` reading the fulfilment as the catalog road's, and the second half
+   is the gate on widening: no `restricted` or `personal` table enters `data/publishing.tf`'s list until
+   this decision rules on them.
 3. **AI metadata generation**: on, off per data source, or denied. 5.1's readings are the inputs:
    the generation runs in `us-west-2` from the asset's metadata, bills names as compute (USD 1.776 per
    unit, 0.2 free a month) and descriptions by token, has never run here, and the Glue source the
@@ -468,14 +687,17 @@ The same-account half of INT-23, and the reading open question 24 still owes.
    governed lake until what DataZone sends to Bedrock, and under which retention, is read** (5.1 read where
    the generation runs, not what it keeps), the setting read by `CT-5` as an intention rather than a
    control (Lesson 5); not the action-level deny, which refuses descriptions and glossary associations with
-   the names and leaves a data source's own run untouched. The decision stays the user's.
+   the names and leaves a data source's own run untouched. The decision stays the user's. **The pilot's
+   source over `curated` follows the recommendation** (11.6): generation off, read by `CT-5`, the first
+   source over the governed lake.
 4. **Whether a deployment target is ever associated.** Recommended: no, as a standing association.
    Production publishes through the lake, and `DenyDataZoneEntirely` stands with its revision trigger.
    [Stage 18](stage-18-staging-deployment-project.md) associated `Staging Account` on
    2026-10-19, carved it out of `DenyDataZoneEntirely` for one measurement, unwound both at its pass 8
    on 2026-10-22, and its verdict kept D41 item 2 the same day ([D26](../decisions/D26-unified-studio.md)
    records it). The
-   recommendation is about a standing association, which D26 still excludes.
+   recommendation is about a standing association, which D26 still excludes. Decision 1's pilot
+   associates no account: its project is provisioned into the domain's own account.
 5. **Whether a direct Share is allowed**, and where its control lives: DataZone's authorization, a deny on
    the domain execution role, or detection by `catalog.py`. A reading of 2026-10-17
    ([Stage 17's log](../../log/log-stage-17-sandbox-machine-learning.md)) adds the project role to the
@@ -502,8 +724,11 @@ The same-account half of INT-23, and the reading open question 24 still owes.
      to authorize. Stage 18 7.2 measured more on 2026-10-22: the fulfilment's session of the producer's
      project role called `lakeformation:BatchGrantPermissions`, `ram:CreateResourceShare` and
      `glue:PutResourcePolicy`, none refused. Which statement admits them, and whether a space's session
-     of the role is admitted too, letting a project grant its own tables outside any approval, is unread. The lake is outside both halves today: no lake table is published (decision 1 is
-     open) and `CT-7` reads no SMUS grant on it.
+     of the role is admitted too, letting a project grant its own tables outside any approval, is unread. The lake is outside both halves today: no lake table is published and `CT-7` reads no
+     SMUS grant on it. **Decision 1's pilot brings it in**: `governed-lake`'s role holds `SELECT` with
+     the grant option on `curated.trades` (11.5), and a direct Share of that asset, or a member's
+     session of the role granting it outside an approval, would reach the lake; 11.9's reading of
+     which statement admits the fulfilment's calls is this decision's input.
 6. **The two failed `DataLake` environments, once `sandbox/sagemaker/` runs `sagemaker-prereqs-v0.8.0`.**
    Both are `CREATE_FAILED` on the manage-access role's `lakeformation:CreateLakeFormationOptIn`, hold no
    resource (`provisionedResources` null, each stack `DELETE_COMPLETE`) and bill nothing. Read
@@ -555,6 +780,12 @@ The same-account half of INT-23, and the reading open question 24 still owes.
   1,000 output tokens; business names as compute, USD 1.776 per unit with 0.2 free a month, billed per
   completed job (the pricing page, read 2026-10-18).
 - Athena: USD 5.00 per TB scanned; step 2's queries scan kilobytes.
+- Step 11's pilot: the project key in `Data Governance`, USD 1.00 a month while it exists (`PRICING.md`
+  §2); the VPC, its subnets, route tables, security groups, gateway endpoints and the unattached
+  route's gateway are free; its flow logs bill by the GB ingested, and nothing in the VPC sends traffic
+  (inferred); the `Tooling` environment bills nothing without an app, and spaces are off; the data
+  source runs on demand, in compute units per completed run; `eighth-experimentation`'s new `DataLake`
+  environment adds a daily source like 2.0's.
 - Layers: projects, environments, databases, listings, glossaries and grants are `[P]` metadata, free at
   rest. The stage creates no `[E]` resource.
 

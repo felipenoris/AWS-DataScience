@@ -111,6 +111,12 @@ PROJECT_PROFILE_NAMES = ("experimentation",)
 # A profile admitted for a stage's window alone. Empty since Stage 18 step 8.2, which deleted
 # `deployment`, so a `deployment` profile reappearing reads as an uncontracted one.
 WINDOW_PROFILE_NAMES: tuple = ()
+# The lake-publishing pilot (Stage 6f decision 1, shape (b), step 11): its profile provisions into the
+# domain's own account, and its one blueprint configuration there is the only one US-3 admits in that
+# account. Both are rows of data-governance/governance/'s locals.tf and data-governance/publishing/,
+# behind scripts/tfhygiene/backend.py's LAKE_PUBLISHERS, and leave with the pilot's rollback.
+PILOT_PROFILE_NAMES = ("lake-publishing",)
+DOMAIN_ACCOUNT_BLUEPRINTS = ("Tooling",)
 # The governance project's profile (Stage 17 decision 13): no environment configuration, so it
 # provisions nothing anywhere. The console's model access publishes into the project born of it,
 # GenerativeAIModelGovernanceProject, and the name is the console's contract, not this file's.
@@ -649,13 +655,22 @@ def main(argv: list) -> int:
     # verdict is a note while the association does not exist, since before it the call cannot
     # succeed at all.
     if data_live and domain_id:
-        if bp_configs.get(DATA_PROFILE):
+        domain_bps = [n for n, *_ in bp_configs.get(DATA_PROFILE) or []]
+        stray = [n for n in domain_bps if n not in DOMAIN_ACCOUNT_BLUEPRINTS]
+        if stray:
             checks.fail(
                 "US-3",
                 "blueprint configured in the DOMAIN account",
-                f"{', '.join(n for n, *_ in bp_configs[DATA_PROFILE])} - D22 puts no compute in "
-                "Data Governance and the OU's sagemaker:Create* deny is free only because "
-                "nothing is enabled here (Stage 6 step 0.4).",
+                f"{', '.join(stray)} - D22 admits one configuration in Data Governance, the "
+                "lake-publishing pilot's Tooling (Stage 6f step 11), and the OU's "
+                "sagemaker:Create* deny is free only because nothing else is enabled here.",
+            )
+        elif domain_bps:
+            checks.note(
+                "US-3",
+                "blueprint configured in the domain account",
+                f"{', '.join(domain_bps)} - the lake-publishing pilot's (Stage 6f decision 1, "
+                "step 11; D22 amended 2026-10-26), with spaces off; its rollback removes it.",
             )
         else:
             checks.ok(
@@ -730,6 +745,7 @@ def main(argv: list) -> int:
             set(PROJECT_PROFILE_NAMES)
             | set(WINDOW_PROFILE_NAMES)
             | set(MODEL_GOVERNANCE_PROFILE_NAMES)
+            | set(PILOT_PROFILE_NAMES)
         )
         unknown = sorted(have - contracted - set(RETIRED_PROFILE_NAMES))
         window = sorted(have & set(WINDOW_PROFILE_NAMES))
@@ -774,6 +790,11 @@ def main(argv: list) -> int:
                 + (
                     ", the model governance profile Stage 17 decision 13's"
                     if have & set(MODEL_GOVERNANCE_PROFILE_NAMES)
+                    else ""
+                )
+                + (
+                    ", lake-publishing Stage 6f step 11's pilot"
+                    if have & set(PILOT_PROFILE_NAMES)
                     else ""
                 ),
             )
@@ -1001,7 +1022,8 @@ account that CALLED PutEnvironmentBlueprintConfiguration - the API takes a domai
 and no account - so an associated member enables blueprints against the shared
 domain, and a reading taken only in Data Governance cannot tell "nothing is
 configured" from "everything is configured where it belongs" (Lesson 13). Rows in
-awsds-infra-data are a US-3 FAILURE, not a success: D22 puts no compute there.""")
+awsds-infra-data are a US-3 FAILURE, not a success, but for the lake-publishing
+pilot's Tooling (Stage 6f step 11, D22 amended 2026-10-26).""")
             rep.line()
             if project_profiles:
                 rep.tabulate(
@@ -1117,11 +1139,13 @@ What the checks are, and where each comes from:
          nothing SageMaker-shaped in Data Governance
          (step 0's second preflight; the registry/runtime split)
   US-3   blueprint configurations, read PER ACCOUNT and judged in opposite
-         directions: NONE in the domain account (D22 - one there is a finding),
-         and in each member account none Redshift-backed and none outside
-         decision 5's category 1 (step 1.4; D12/D26, docs/SMUS.md)
+         directions: in the domain account none but the lake-publishing pilot's
+         Tooling (D22 amended; Stage 6f step 11), and in each member account none
+         Redshift-backed and none outside decision 5's category 1 (step 1.4;
+         D12/D26, docs/SMUS.md)
   US-4   the `experimentation` project profile exists and no uncontracted one does -
          a stage's window profile is admitted while WINDOW_PROFILE_NAMES names it,
+         the lake-publishing pilot's while PILOT_PROFILE_NAMES does,
          `engineering` was retired by Stage 6b step 1.1 and its return is a failure
   US-5   every Interactive SageMaker AI domain is VpcOnly (step 1)
   US-6   the deployment targets stay headless (D28): no SageMaker domain there,

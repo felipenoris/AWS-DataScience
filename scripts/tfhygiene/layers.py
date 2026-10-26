@@ -133,6 +133,12 @@ RANKS = {
     # inversion the two-pass split exists to make safe - the same shape Stage 3 pass 2 has for
     # the peerings, covered by the cross-account exception note above.
     "sagemaker": 46,
+    # Stage 6f step 11 - the same prerequisites in the lake account, with the VPC the `Tooling`
+    # blueprint needs, under a name of its own because the slice exists for the pilot of shape (b)
+    # and its rollback destroys it whole. The same rank as sagemaker for the same reason: [P],
+    # its configuration reads governance/'s domain on the second apply, and nothing in up/down
+    # ever acts on the number.
+    "publishing": 46,
     "governance": 47,
     # Stage 16's sandbox lake. After `data` (45), the only real dependency of the three ranks
     # below it: the bucket encrypts under alias/awsds-<env>-data, which the `data` slice's
@@ -300,7 +306,8 @@ SLICES = [
     Slice("identity", "org-policies", PERSISTENT, "the 10 SCP/RCP/tag/declarative docs + 10 att."),
     # Stage 3 pass 1. Free at rest, [P]: VPC, subnets, IGW, route tables, SGs, gateway
     # endpoints + their policies, flow log - plus zones where the account owns one.
-    # data-governance has no row here by decision (D22: no VPC at all).
+    # data-governance has no foundation/ (D22): its one VPC is publishing/'s, below the sagemaker
+    # row (Stage 6f step 11).
     Slice("sandbox", "foundation", PERSISTENT, "VPC 3x2, gw endpoints, sandbox.awsds.internal"),
     Slice("staging", "foundation", PERSISTENT, "VPC 3x2, gateway endpoints, no zone (4.2)"),
     Slice("production", "foundation", PERSISTENT, "VPC 3x2, gw endpoints, the apex + Pages zones"),
@@ -543,6 +550,11 @@ SLICES = [
     # the running apps are the [E] half, deleted by scripts/down-studio-apps.py rather than
     # by terraform destroy (conventions 6; Stage 6 step 8.3).
     Slice("sandbox", "sagemaker", PERSISTENT, "blueprint prereqs: 2 roles, D13 boundary, CMK"),
+    # Stage 6f step 11 - the lake-publishing pilot's objects in the lake account: the VPC the
+    # Tooling blueprint takes (3x2, no internet route, no peering) and the same prerequisites as
+    # the row above, plus the projects bucket, which the Data OU's s3:DeleteBucket deny makes
+    # permanent. Free at rest but the project key's key-month.
+    Slice("data-governance", "publishing", PERSISTENT, "6f step 11: VPC 3x2 + blueprint prereqs"),
     # Stage 9 step 3 - the same slice name in a deployment target, and a different content: the
     # job role, the Model Registry's package groups, the debug role and its alarm, the job log
     # groups (D17's runtime half). [P] and free at rest: roles, rules and empty groups cost
