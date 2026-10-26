@@ -751,9 +751,10 @@ UTC, Production's balance 299.69.
 
 4. **[user] `make down ENV=production ONLY=workloads-egress,warehouse-compute`**, then `make up
    ENV=sandbox ONLY=warehouse-compute`.
-5. **[user] Stage 9 9.7 again**, from `eighth-experimentation`'s Query editor, the project role's Lake
-   Formation grant revoked on 2026-10-25 and Production's workgroup down; 30 rows say the access role's
-   grant alone serves the door:
+5. **[user] Stage 9 9.7 again**, from `eighth-experimentation`'s Query editor with the database `sandbox`
+   selected (the connection opens on `dev`, where the read is refused for want of `TEMP`), the project
+   role's Lake Formation grant revoked on 2026-10-25 and Production's workgroup down; 30 rows say the access
+   role's grant alone serves the door:
 
    ```sql
    SELECT current_user, count(*), min(trade_date), max(trade_date) FROM governed_trades.trades.trades_notional;
@@ -764,7 +765,8 @@ UTC, Production's balance 299.69.
    9's log).
 7. **[user] `make down ENV=sandbox ONLY=warehouse-compute`**; **[Claude]** §R and `./aws/warehouse.py` on
    both profiles; **[user]** the free trial's balance again, once the sitting's last half-hour interval
-   has landed (Stage 9's Validation, `ComputeSeconds`).
+   has closed (Stage 9's Validation, `ComputeSeconds`), and the next day. The reading at about 01:50 on
+   2026-10-26 missed 0.03 that the next reading showed.
 
 ### N.3 The Sandbox sitting: the proofs from a space and INT-09's clone
 
@@ -1012,70 +1014,86 @@ Each costs minutes of a sitting and leaves a recorded reading; none holds up ano
 |---|---|---|---|
 | Stage 8 xv | N.1 | the proxy host stopped alone, a `.promotion` job retried, the proxy started again | the job's own check failing in about 20 s, *"no answer through the proxy"* |
 | Stage 8 xxviii's active half | N.1 | an `AssumeRole` of a deploy role through `sts.amazonaws.com`: a manual job on the deploy runner, or xvi's 15 s trust widening | `us-east-1`'s trail and, for the widened principal, whether the misuse rule fires; a regional assumption beside it reads 4.6's transformed message |
-| Stage 9 xxiv | a warehouse sitting (N.2's raises, both computes) | N.4a: the revoke by SQL, the two adopted slices' plans read, the re-grant by SQL and their applies; deferred by the user on 2026-10-26 | the Lake Formation rows the revoke leaves, whether the register notices, and what each adopted resource's plan reads; INT-24's door shut until the re-grant |
+| Stage 9 xxiv | a warehouse sitting (N.2's raises, both computes) | N.4a: the revoke by SQL, the two adopted slices' plans read, the re-grant by SQL and their applies. **Done 2026-10-26** (Stage 9's log) | the Lake Formation rows the revoke leaves, whether the register notices, and what each adopted resource's plan reads; INT-24's door shut until the re-grant |
 | Stage 10 xx's second half | N.1, Staging | a branch's tag whose `GlueJobOperator` names a Glue job the application slice does not declare | the task failing on `CreateJob` rather than creating a job, the two failure rules firing once more |
 | Stage 10's network negative (1.2) | N.1, Staging | **[Claude⚡]** a workflow created by hand with no `NetworkConfiguration`, run once and deleted. **Done 2026-10-26** (Stage 10's log) | the worker's address in the CloudTrail record of its first AWS call, beside a configured run's private address: `10.1.11.134` through `airflow-serverless.amazonaws.com` against `10.50.x` through `vpce-…` |
 
 ### N.4a Stage 9 xxiv on the adopted datashare: the producer-side revoke
 
-Written 2026-10-26 with the environment down, after the user deferred the exercise (Stage 9's log of that
-day): the procedure of 2026-10-25, the revoke and 9.5's steps 1 to 3 by command, predates the adoption of
-the authorization (`production/warehouse/datashare.tf`) and of the association and the federated database
-(`data-governance/data/warehouse-share.tf`) by Terraform on 2026-10-25 (Lesson 35), so a re-grant by
-command would leave both states drifted. The registration and the two LF-Tag assignments stay by hand
-(`AWS_STATE.md`'s registers). The question (Stage 9 xxiv): does a producer-side revoke leave the Lake
-Formation rows behind, as AWS's page says (*"the associated permissions and objects in Lake Formation are
-not automatically deleted"*), and does the register notice. `<ARN>` is the datashare's,
-`arn:aws:redshift:us-west-2:<Production>:datashare:<namespace id>/trades_lf`. Each `[Claude⚡]` act on the
-user's word; the sitting is a warehouse sitting (N.2's raises: `make up ENV=production
-ONLY=workloads-egress,warehouse-compute GROUPS=redshift`, and Sandbox's `warehouse-compute/` for steps 3
-and 6), at 1.44 USD per query-hour per workgroup.
+**Run 2026-10-26** (Stage 9's log). The steps below are the measured procedure, for a second run or for a
+revoke that happens by accident. The authorization (`production/warehouse/datashare.tf`), the association and
+the federated database (`data-governance/data/warehouse-share.tf`) are Terraform's since 2026-10-25, so a
+re-grant by command would leave both states drifted (Lesson 35). The registration and the two LF-Tag
+assignments stay by hand (`AWS_STATE.md`'s registers). The question (Stage 9 xxiv): does a producer-side
+revoke leave the Lake Formation rows behind, as AWS's page says (*"the associated permissions and objects in
+Lake Formation are not automatically deleted"*), and does the register notice. It does leave them, and only
+`WH-16`, written after the run, notices. `<ARN>` is the datashare's,
+`arn:aws:redshift:us-west-2:<Production>:datashare:<namespace id>/trades_lf`. Each `[Claude⚡]` act is on the
+user's word. The sitting is a warehouse sitting with the hub up, since a spoke's `make up` refuses while the
+proxy is stopped and the downs need no hub: `make up ENV=production ONLY=workloads-egress,warehouse-compute
+GROUPS=redshift` and `make up ENV=sandbox ONLY=warehouse-compute`, at 1.44 USD per query-hour per workgroup.
+`data-governance/data/` is planned from a tree that carries every change applied to the slice (Lesson 79):
+on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its plan reverted them.
 
-1. **[Claude] The before-reading**, kept for the diff: as `awsds-infra-prod`, `aws redshift
-   describe-data-shares --data-share-arn <ARN>` (the consumer `DataCatalog/<Data Governance>`
-   `AUTHORIZED`) and, through the Data API as the namespace's admin in `governed` (9.3's door), `SELECT *
-   FROM svv_datashare_consumers;`; as `awsds-infra-data`, `aws redshift describe-data-shares
-   --data-share-arn <ARN>` (the share `ACTIVE` for the catalog), `aws lakeformation list-resources` (the
-   registration), `aws glue get-database --name governed_trades`, `aws lakeformation list-permissions
-   --resource '{"Database":{"Name":"governed_trades"}}'` and the same on the table `trades_notional` (the
-   creator's `ALL`; the tag assignments, through which the lake's TBAC grants reach Sandbox's account);
-   `./aws/datalake.py awsds-infra-data` and `./aws/warehouse.py awsds-infra-prod --sql` (`WH-12`'s `ds:`
-   pair); the two slices planning `No changes`, `production/warehouse/` as `awsds-infra-prod` and
-   `data-governance/data/` as `awsds-infra-data` (Recipe A, read-only).
+1. **The before-reading**, kept for the diff:
+   - **[user]** the free trial's Production balance in the Redshift console;
+   - **[Claude]** as `awsds-infra-prod`: `aws redshift describe-data-shares --data-share-arn <ARN>`, the
+     consumer `DataCatalog/<Data Governance>` `AUTHORIZED` and the lake's catalog ARN `ACTIVE`; through the
+     Data API as the namespace's admin in `governed` (9.3's door), `SELECT * FROM svv_datashare_consumers;`;
+     `./aws/warehouse.py awsds-infra-prod --sql`, `WH-16` passing and `WH-12` counting the `ds:` pair;
+   - **[Claude]** as `awsds-infra-data`: the same `describe-data-shares`; `aws lakeformation describe-resource
+     --resource-arn <ARN>` for the registration, which `list-resources` does not list; `aws glue get-database
+     --name governed_trades` and `get-tables --database-name governed_trades`, the table
+     `trades.trades_notional`; `aws lakeformation list-permissions` on the database and on that table, every
+     `NextToken` followed; `get-resource-lf-tags` on both; `./aws/datalake.py awsds-infra-data`;
+   - **[Claude]** as `awsds-infra-sandbox-1`: `list-permissions` on Data Governance's database and table, the
+     access role's grants;
+   - **[Claude]** the two slices planning `No changes`, `production/warehouse/` as `awsds-infra-prod` and
+     `data-governance/data/` as `awsds-infra-data` (Recipe A, read-only);
+   - **[user] the positive control**: 9.7's query from `eighth-experimentation`'s Query editor with the
+     database **`sandbox`** selected, 30 rows. The project's connection opens the editor on `dev`, where the
+     read is refused for want of `TEMP` (`redshift-connection.md` §G). The refusal after step 2 means
+     something only beside this read.
 2. **[Claude⚡] The revoke**, one statement through the Data API as the admin in `governed`: `REVOKE USAGE
    ON DATASHARE trades_lf FROM ACCOUNT '<Data Governance>' VIA DATA CATALOG;`, then `SELECT * FROM
    sys_datashare_change_log ORDER BY record_time DESC LIMIT 5;` for the revoke's row and
    `svv_datashare_consumers` for the consumer's absence.
-3. **[Claude] The readings after the revoke**, step 1's commands again, each a reading and none a verdict
-   in advance: whether the producer's `describe-data-shares` still lists the consumer, and with which
-   status; whether the consumer account still sees the share (`describe-data-shares` as
-   `awsds-infra-data`: an empty answer is what breaks `warehouse-share.tf`'s lookup, step 4); whether the
-   federated database, the registration and the Lake Formation rows survive, the page's claim; and the
-   Sandbox read, 9.7's query from `eighth-experimentation`'s Query editor with Sandbox's compute up,
-   expected refused, its wording recorded (INT-24's door shut).
-4. **[Claude] The plans after the revoke**, read and never applied here. `production/warehouse/`: the
-   provider keeps `aws_redshift_data_share_authorization.trades_lf_to_lake` only while the consumer is
-   listed `AUTHORIZED` (9.5's first mismatch), so *1 to add* is the expected reading, the authorization
-   gone from the read. `data-governance/data/`: `warehouse-share.tf` finds the share through
-   `data.aws_redshift_data_shares.visible`, so a share the account no longer sees makes `one()` return
-   null and the plan fail at the association's `data_share_arn` rather than read, recorded as the reading
-   (a producer's revoke takes the consumer slice's plan with it, Lesson 4's shape); a share still visible
-   leaves the association's and the database's lines as the reading.
-5. **[Claude⚡] The re-grant**, by SQL as the admin: `GRANT USAGE ON DATASHARE trades_lf TO ACCOUNT '<Data
-   Governance>' VIA DATA CATALOG;`; then the two plans again and their applies on the user's word, the
-   re-grant's second half: `production/warehouse/` re-creates the authorization (*1 to add*, then `No
-   changes`), and `data-governance/data/` re-creates what the revoke took (the association; the federated
-   database if the provider plans its replacement, which makes a new object: Recipe D's read-back for
-   `IAM_ALLOWED_PRINCIPALS`, the two LF-Tags by hand again, 9.5 step 3, and `AWS_STATE.md`'s two registers
-   brought to it). No `authorize-data-share` or `associate-data-share-consumer` by command: the states
-   would drift.
-6. **[user] 9.7 again** from the Sandbox project, 30 rows, Sandbox's consumer database `governed_trades`
-   re-created from the ARN first if its mapping broke (9.5 step 5); **[Claude]** `./aws/warehouse.py` on
-   both profiles and `./aws/datalake.py awsds-infra-data`, `data-governance/data/README.md`'s rows read
-   against what survived, the log entry.
-7. **[user]** `make down ENV=production ONLY=workloads-egress,warehouse-compute` and `make down ENV=sandbox
-   ONLY=warehouse-compute`; **[Claude]** §R; **[user]** the free trial's balance once the last half-hour
-   interval has landed.
+3. **The readings after the revoke**:
+   - **[Claude]** step 1's commands again. Measured 2026-10-26: `describe-data-shares` answers
+     `InvalidDataShareFault` in both accounts; the federated table reads *"No glue catalog datashare is
+     found"* and its LF-Tags *"Entity Not Found"*; the registration, the database, its grants and LF-Tag, and
+     Sandbox's grants stay; `WH-16` fails and every other check passes;
+   - **[user]** the same 9.7 query, `sandbox` selected. It is refused by Glue with that wording, which shuts
+     INT-24's door.
+4. **[Claude] The plans after the revoke**, read and never applied:
+   - `production/warehouse/` reads *1 to add*, the authorization gone from the read;
+   - `data-governance/data/` fails with *"Iteration over null value"* at `warehouse-share.tf`. The data
+     source lists null when the account sees no share, so no plan of the lake's slice runs until step 5's two
+     applies.
+5. **[Claude⚡] The re-grant**, three acts in this order, each on the user's word:
+   1. By SQL as the admin, `GRANT USAGE ON DATASHARE trades_lf TO ACCOUNT '<Data Governance>' VIA DATA
+      CATALOG;`. The consumer comes back `PENDING_AUTHORIZATION`, and Data Governance does not see the share
+      yet.
+   2. `production/warehouse/`'s plan, *1 to add*, the authorization; its apply, then `No changes`. The
+      consumer reads `AUTHORIZED`, and the share is `AVAILABLE` to Data Governance.
+   3. `data-governance/data/`'s plan, *1 to add*, the association. Any line on another resource of the slice
+      stops the step. Then its apply, and `No changes`. If the plan instead replaces the federated database,
+      the new object owes Recipe D's read-back for `IAM_ALLOWED_PRINCIPALS`, the two LF-Tags by hand (9.5
+      step 3) and `AWS_STATE.md`'s two registers. On 2026-10-26 the database survived and owed nothing.
+
+   No `authorize-data-share` or `associate-data-share-consumer` by command: the states would drift.
+6. **The restored read**:
+   - **[user]** 9.7 again, `sandbox` selected, 30 rows; the first read after the re-grant took 26 s. Sandbox's
+     consumer database `governed_trades` is re-created from the ARN only if its mapping broke (9.5 step 5);
+   - **[Claude]** step 1's readings, `WH-16` passing, then `data-governance/data/README.md`'s rows read
+     against what survived, and the log entry.
+7. **The downs**:
+   - **[user]** `make down ENV=production ONLY=workloads-egress,warehouse-compute`, and, with the Query editor
+     closed, `make down ENV=sandbox ONLY=warehouse-compute`;
+   - **[Claude]** §R;
+   - **[user]** the free trial's balance, read after the last half-hour interval has closed and again the
+     next day. A reading twenty minutes after the end of 2026-10-26's early sitting missed 0.03 that the next
+     reading showed.
 
 ### N.5 The items that wait on something else
 
@@ -1132,8 +1150,8 @@ metered.
    parameter moves.
 5. **The second Sandbox sitting** (N.7.3), once `default-v0.10.0` is registered or 6f step 11's subscription is approved:
    Stage 9 8.1's space half, and the `dev` deploy on the new version with no session export.
-6. **The warehouse sitting** (both computes): xxiv on N.4a; after 2026-11-22, `EXC-13`'s Production half;
-   the free trial's pair of readings.
+6. **The warehouse sitting** (both computes): after 2026-11-22, `EXC-13`'s Production half and the free
+   trial's pair of readings. xxiv ran on N.4a on 2026-10-26.
 7. **What waits on something else** (N.5): a second application (Stage 10 xxv, the chain's order,
    xxviii's inbox marker), Stage 11's S3 data events (Stage 8 xx; Stage 9 ix's `VPC-Workloads` branch,
    which a management-event trail cannot show), a workflow's 50th version, a release that removes a

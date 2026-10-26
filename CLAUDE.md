@@ -348,8 +348,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Terraform adoption applied (the registration and the LF-Tags by hand, no importer), xii's registry read in
   `model-chain.py transform staging` with `staging/foundation/`'s output, applied. **§N.2 run 2026-10-26**: xviii and
   vii closed, 9.4's DDL job idempotent from pipeline #102, 9.7 read with the project role's grant revoked and
-  Production's workgroup gone, `EXC-13`'s Sandbox half twice, xxiv deferred, its procedure for the adopted resources
-  written 2026-10-26 (`promotion.md` §N.4a); both computes down. 3.1 read 2026-10-26, the debug role's
+  Production's workgroup gone, `EXC-13`'s Sandbox half twice; both computes down. **xxiv run 2026-10-26 on
+  §N.4a**: the revoke takes the share and leaves the Lake Formation rows, which only `WH-16` notices
+  (written after it), and `data-governance/data/` cannot plan until the re-grant's SQL and two applies. 3.1 read 2026-10-26, the debug role's
   job-log read in a window included; the quota cases still `CASE_OPENED`.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, first fired 2026-10-25 (version 1 registered and approved by `awsds-deploy-prod`; pass 3 done, both transforms, 5.5). Prepared
@@ -384,7 +385,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `test-experimentation`. The connection (`EXC-17`) carries **`lineageSync` on, daily 03:43 UTC, every run
   failing** (decision 3, the user's). **Cost**: 1.44 USD per query-hour at 4 RPU and 0.00 idle, with no
   pause, so `make down` is the guarantee; the ratchet past 4 never returns; the free trial, 300 USD per
-  account for 90 days, absorbs the bill to 2026-12-19 in Sandbox and to 2027-01-21 in Production (299.69 USD left in Production and 287.51 in Sandbox on 2026-10-26; the window opens with the namespace). **`EXC-13`**: the admin secret's first rotation succeeded on 2026-10-20 with no workgroup,
+  account for 90 days, absorbs the bill to 2026-12-19 in Sandbox and to 2027-01-21 in Production (299.54 USD left in Production and 287.51 in Sandbox on 2026-10-26; the window opens with the namespace). **`EXC-13`**: the admin secret's first rotation succeeded on 2026-10-20 with no workgroup,
   against AWS's page, and the database took the password (the Data API as `dbadmin` through the secret, 2026-10-25). SQL from a notebook is `redshift-connection.md` §J. AWS's `SageMakerStudioProjectUserRolePolicy` v75 grants
   every project role `GetCredentials` and the Data API on a workgroup tagged with its project, `GetCredentials` on
   any workgroup through `sqlworkbench`, and the secrets tagged with its project or
@@ -676,6 +677,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     tagged, so the gate runs on the laptop the day of the tag, before the tag.**
 78. **A stand-in for a refused call answers what the real call answers to the identity it imitates — read
     from the path that already works, never from what the first caller tolerates.**
+79. **A slice applied from an unmerged branch is a revert in every other tree — plan it from the tree that
+    applied it, or after its merge.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its

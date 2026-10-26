@@ -1761,6 +1761,32 @@ caller, never the stand-in.
 **What makes it expensive.** Each wrong answer costs a deploy and leaves its partial write behind: the copied
 files a later deploy syncs over, and operator zips nothing prunes.
 
+## Lesson 79 — a slice applied from an unmerged branch is a revert in every other tree, and its plan reads like a small change of your own
+
+**What happened.** On 2026-10-26 the 6f session applied its pilot to `data-governance/data/` from its PR's
+branch: two SMUS Lake Formation seats in `aws_lakeformation_data_lake_settings.this`, and the publisher's
+grants. The same evening Stage 9 xxiv's sitting had to plan and apply that slice for the datashare's
+association, from a worktree cut from `main` before the PR merged. From `main`'s tree the plan read *1 to
+change, 2 to destroy* beside the association: the seats leaving the administrators and the grants destroyed.
+The tfvars that tree generates lack `lake_publishing_enabled`, which then defaults to `false`. The sitting
+planned from a detached checkout of the pilot's branch, its tfvars regenerated there, read `No changes`, and
+applied the association alone. The PR merged during the sitting, after which `main` plans the same.
+
+**Why it is a class rather than a slip.** A slice has one state and every tree has its own code. Once a branch
+applies, every tree without its commits describes an older slice, and its plan proposes undoing the newer one
+in the words of the change at hand: a `1 to change` on a settings resource reads like drift, a `destroy` of
+grants like cleanup, and nothing in the plan names the branch that applied. The rule that sessions hold
+slices apart does not cover a cross-stage act, such as xxiv applying the lake's slice. The generated tfvars
+add a second way to diverge: two trees whose `backend.py` differ generate different values for one slice.
+
+**The rule.** Before planning a slice another session applied, ask that session, or read its PR, which tree
+carries what is applied. Plan from that tree with its tfvars regenerated there, or wait for the merge and
+sync. A plan that changes or destroys a resource the change at hand does not touch is stopped, and its author
+asked, before anything is applied.
+
+**What makes it expensive.** An apply from the older tree removes another session's applied work without an
+error, and that session learns it from its next reading.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits; the entries here are facts about the platform that cost a measurement
@@ -2874,6 +2900,16 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   consumer account's Lake Formation administrator reads under the account's grant with no grant of its own.
   Where: `log-stage-09-deployment-targets.md`, 2026-10-25; `sandbox/warehouse/iam.tf`,
   `ReadTheGovernedShareCatalog`.
+
+- **A producer's `REVOKE` on a Lake Formation-managed datashare takes the share out of both accounts' control
+  plane and keeps every Lake Formation object** (measured 2026-10-26, Stage 9 xxiv). After `REVOKE USAGE ON
+  DATASHARE … FROM ACCOUNT … VIA DATA CATALOG`, `describe-data-shares` by ARN answered `InvalidDataShareFault`,
+  *"the ARN doesn't exist"*, to the producer too. The authorization and the consumer's association with its
+  catalog were gone, and the federated table read *"No glue catalog datashare is found"*. The registration,
+  the federated database, its grants and its LF-Tag, and another account's named grants on the table all
+  stayed. A `GRANT` alone brings the consumer back as `PENDING_AUTHORIZATION`, invisible to the Lake Formation
+  account. The authorization and a new association are owed, after which the table and its tag assignment
+  return by name. Where: `log-stage-09-deployment-targets.md`, 2026-10-26.
 
 ### Glue
 

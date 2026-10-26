@@ -335,7 +335,7 @@ picks one.
   `awsds-sandbox-warehouse-access-<project>`, applied 2026-10-09, the form accepted. **`Available` mints
   no database session**: `pg_user` was unchanged until the first query. The object names database `dev`:
   the portal's `GetCredentials` carry `dbName: dev` (read 2026-10-17), and `get-connection` reads
-  `databaseName: dev` (2026-10-18). The `dev` confined nothing: the Query editor lists `dev`, `sandbox` and `warehouse` alike, and 3.4's write landed in `lab`.
+  `databaseName: dev` (2026-10-18). The `dev` confined nothing: the Query editor lists `dev`, `sandbox` and `warehouse` alike, and 3.4's write landed in `lab`. A session left on `dev` reads no governed share, for want of `TEMP` there (Stage 9 xxiv, 2026-10-26).
   **[user] Create the connection.** Measured at the form on 2026-09-21: the compute **did appear** in the
   dropdown, so layer 1 works; `Access role ARN` is mandatory and `AWS Secret` optional; there is **no
   `lineageSync` toggle**; and it is offered as database **`dev`**, while `lab` is in `sandbox` — a
