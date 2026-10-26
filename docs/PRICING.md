@@ -508,7 +508,7 @@ measured from `ComputeSeconds`. **The free trial absorbed it.** The Redshift Ser
 that day, which is how AWS says trial usage looks; the Management credits page that showed no credit on
 2026-09-20 does not carry this trial. 12.10 USD consumed against `ComputeSeconds`' 11.91 USD since
 2026-09-19, the rest storage (inferred). Every Redshift figure until 2026-12-19 is absorbed rather than
-billed ([Stage 5b](plan/stages/stage-05b-redshift-serverless.md) verification xiii). Read again by the user on 2026-10-25: Sandbox *"$287.51 out of $300.00"*, the same expiration; Production *"$299.71 out of $300.00"* and *"Free trial expiration January 21, 2027"*, 90 days after the namespace's creation on 2026-10-23, so the window opens with the namespace and not with the first workgroup (Stage 9's log).
+billed ([Stage 5b](plan/stages/stage-05b-redshift-serverless.md) verification xiii). Read again by the user on 2026-10-25: Sandbox *"$287.51 out of $300.00"*, the same expiration; Production *"$299.71 out of $300.00"* and *"Free trial expiration January 21, 2027"*, 90 days after the namespace's creation on 2026-10-23, so the window opens with the namespace and not with the first workgroup (Stage 9's log). On 2026-10-26, before and after the warehouse sitting of §N.2: Production 299.71 then 299.69, 0.02 USD for two Data API statements and a `--sql` session whose `ComputeSeconds` read 79 RPU-seconds (0.0079 at the rate), the 60-second minimum per query being what the balance bills; Sandbox 287.51 unchanged, its 18 RPU-seconds not yet visible.
 
 **Almost all of it was one forgotten query, and the number was recorded wrong twice before it settled.** A
 `count(*)` over a triple cross join ran **6 h 33 min** at base capacity after its client stopped polling — the

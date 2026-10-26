@@ -2609,3 +2609,17 @@ done. Times UTC.*
   `proxy` and `tooling` (the hub and the Stage 7 cycle's GitLab), `production/egress` (12 resources),
   `sandbox/egress` (27), and the two 0.00 USD/h slices `production/app/app-etl` and `production/orchestration`;
   the estimated burn 0.2028 USD/h in Production and 0.1800 in Sandbox, by the static rates.
+
+## 2026-10-26 — the free-trial balances after the sitting
+
+*The user's hand in the Redshift Serverless console, pasted in chat verbatim at about 01:50 UTC; Claude's reading.*
+
+- **[user]** Production: *"Free trial credits remaining $299.69 out of $300.00"*, *"Free trial expiration January
+  21, 2027"*. Sandbox: *"Free trial credits remaining $287.51 out of $300.00"*, *"Free trial expiration December
+  19, 2026"*.
+- **[Claude] The reading**: Production spent 0.02 USD of credit in the sitting, 299.71 to 299.69, against 79
+  RPU-seconds in `ComputeSeconds` (0.0079 USD at the rate): the balance shows a query billed at the 60-second
+  minimum, 240 RPU-seconds, 0.024 USD, which the metric does not, so the metric under-reads a sitting of short
+  statements and the balance is the figure to keep (Lesson 6). Sandbox reads as on 2026-10-25, its 18
+  RPU-seconds (9.7's query and the history read) not yet visible, a lag or below the cent; the next reading
+  says which. The cost row, `PRICING.md` and `cost-model.md` carry both figures.
