@@ -1436,3 +1436,19 @@ The running peer sessions told before the raises. Times UTC.*
 - **[Claude] `make status`** at 21:22: the hub pair, `egress/` 12 resources, `tooling/` and `runners/` 13
   resources `with aws_instance.runner` up, 0.5221 USD/h in all, of which 0.0700 is `workloads-egress/`,
   raised at 21:22:20 by the warehouse sitting running beside this one, and 0.4521 this sitting's.
+
+## 2026-10-26 — §N.7.1 step 9's `PX-3`: Validation 2 with the proxy running
+
+*Claude's hand, on the user's word in this chat (*"Pode rodar o PX-3 (./aws/proxy.py --on-host) agora."*), as
+the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`): one SSM Run Command on the proxy
+host, every command it carries a read. Times UTC.*
+
+- **[Claude] `./aws/proxy.py --on-host`**, 21:55:39 to 21:55:52, exit 0: `PX-1` passing (five rules, every one
+  TCP/3128 from `10.20.0.0/16`, `10.30.0.0/16`, `10.32.0.0/16`, `10.50.0.0/16` and `10.90.0.0/24`); `PX-2`
+  passing on both halves, *"committed: `deny to_private` is line 1 of 4, above every allow; running: `deny
+  to_private` is line 1 of 4, above every allow"*; **`PX-3` passing**, *"5 planes, entry for entry - the render
+  is current"*: the parameter `/datascience/prod/proxy/allowlist` holds `production-foundation` `open` 0,
+  `production-workloads` `allowlist` 0, `sandbox-foundation` `allowlist` 41, `staging-foundation` `allowlist` 0
+  and `tunnel` `open` 0, and the host's `squid.conf` serves `production_foundation` `open` 0,
+  `sandbox_foundation` `allowlist` 41 and `tunnel` `open` 0; `PX-4` a note by decision (`/awsds/prod/proxy` at
+  365 days, no export until Stage 11 5.1). Validation 2 is answered, its offline half read at 03:41.
