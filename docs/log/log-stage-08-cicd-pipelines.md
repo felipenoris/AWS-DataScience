@@ -4151,3 +4151,41 @@ with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`). No trus
   `us-east-1` and never reaches 4.6's rules, which see `us-west-2` alone, whoever the caller; the Region ceiling
   keeps a rule out of `us-east-1`. Whether a trust pinning `aws:RequestedRegion` refuses the global call stays
   unread, the deploy roles' trust pinning nothing.
+
+## 2026-10-26 — §N.7.1 steps 5 and 6: `default-v0.10.0` released, Sandbox's version 11, `DE-5` passing
+
+*The user's hand for the tag and the release gate, as the Dev Env Steward; Claude's for the readings: the
+pipeline API, the job logs and the artifacts through the user's GitLab session in Chrome, and ECR and
+SageMaker as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`,
+`awsds-infra-sandbox-1`), reads only. Times UTC.*
+
+- **[user] The tag** `default-v0.10.0` on `c8bac16e`, read at 21:46:37 (`refs/tags/default-v0.10.0`), free at
+  21:44:23. Pipeline #109, created 21:46:14: `pip-audit` (#637) 21:46:17 to 21:47:48, its reading the branch's;
+  `recipe-checks` (#638) 6 s; `build-images` (#639) 21:47:49 to 22:04:09, 980 s.
+- **[Claude] The images in ECR**: `awsds-prod-ecr-base:default-v0.10.0-c8bac16e` pushed 21:51:10, 3,754,767,169
+  bytes, `sha256:78e253ce9f0785f3b4c02293ecbf0225378f5262f0e493ef515b58840e07f741`, 12 bytes under `v0.9.1`'s
+  with `base/` unchanged; `awsds-prod-ecr-dev-env:default-v0.10.0-c8bac16e` pushed 22:02:20, 6,688,199,603 bytes,
+  `sha256:658c05d125554950cbac0ad204c44b9fd46b19a6c5508d55f36c9ea8456c19f9`, 300,273 bytes over `v0.9.1`'s. The
+  smoke runs after both pushes in `build-images`, so a red smoke would have spent the release tag and both ECR
+  tags, the next release being a patch from a fixed commit.
+- **[Claude] The smoke, decision 22's first reading**: step `[check 7/9]`, after `micromamba activate base`,
+  *"aws-smus-cicd-cli by its name: /opt/awsds/bin/aws-smus-cicd-cli -> /opt/awsds/venv/bin/aws-smus-cicd-cli,
+  'aws-smus-cicd-cli 1.0.9'; the house environment carries 1.0.9"*. The manifests against `v0.9.1`'s (job
+  #569): `cicd-cli.txt` new; `proxy.txt` 73 entries, sha256 `61f1e1646df12c14`, against 72 and
+  `6faf2e4761622508`; `runtimes.txt` the same but the base digest; `trust.txt`, `imports.txt`, `julia.txt`,
+  `r.txt` (70 lines), `python-awsds.txt` (454) and `python-conda.txt` (621) identical.
+- **[Claude] Both scans**: ECR's scan of `base` complete 21:53:16 and of `dev-env` 22:07:03, each CRITICAL 113 and
+  HIGH 612; `scan-base` (#640) and `scan-dev-env` (#641) *"CRITICAL and HIGH: 725 found, 132 in the baseline"*,
+  *"WARN: 593 CRITICAL or HIGH finding(s) absent from the baseline"*, all 593 `linux-libc-dev`, both failed as
+  allowed: the zlib pair is in the baseline since `gates-v0.6.0` (130 to 132), and no finding is new.
+- **[user] `release-gate`** (#642) 22:08:19 to 22:08:27. **[Claude]** `register` (#643) 22:08:28 to 22:08:56:
+  *"awsds-sandbox-dev-env version 11: CREATED, alias 0.10.0"*, `ContainerImage` at the pushed digest; `retire`
+  (#644) 22:08:59 to 22:09:36: 5 versions, *"keep"* 11 (`0.10.0`), 10 (`0.9.1`), 9 (`0.8.0`), 8 (`0.7.3`) and 7;
+  the pipeline `success` at 22:09:36, 22 min 39 s from the tag to the version, the gate waiting 34 s.
+- **[Claude] AWS read back** at 22:09: `list-image-versions` 11 to 7 `CREATED`, version 11 created 22:08:53,
+  `ContainerImage` and `BaseImage` at the dev-env digest, release notes `default-v0.10.0-c8bac16e`; aliases
+  `0.10.0`, `0.7.3`, `0.8.0`, `0.9.1`. `./aws/devenv.py`: **`DE-5` passing**, *"version 11,
+  sha256:658c05d12555...: 73 names, sha256 61f1e1646df12c14"*; `DE-1` (73 entries) and `DE-4` passing; `DE-2`
+  failing with `sandbox/egress` down, the reading of 2026-10-25, so `DE-3` and `DE-6` are not compared.
+- **[Claude] The release row** in the copy's README, both digests and sizes; the branch `the-releases-v0.10.0`
+  at `fb5722b` in the clone, for GitLab's `main` by the steward's hand.
