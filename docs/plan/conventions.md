@@ -453,8 +453,10 @@ terraform-live/
     │                     #     code left vpc-egress at v0.6.0, 6c 5.1). No internal ALB: Stage 7
     │                     #     decision 1 terminates TLS on GitLab's own nginx
     ├── probes/           # [E] Stage 3's instrument here: the peering target
-    ├── tooling/          # [D] GitLab CE on a t4g.large + its data volume (D8, D14), rank 42,
-    │                     #     applied 2026-10-12. TLS terminates on its own nginx with pki/'s
+    ├── tooling/          # [D] GitLab CE on a t4g.large + its data volume (D8, D14), rank 52,
+    │                     #     above egress/ (50): the host starts after the ssm endpoint its
+    │                     #     agent registers through exists, and stops before it is destroyed.
+    │                     #     Applied 2026-10-12. TLS terminates on its own nginx with pki/'s
     │                     #     leaves (Stage 7 decision 1); letsencrypt['enable'] = false is
     │                     #     mandatory, since Omnibus turns it on whenever external_url is
     │                     #     https and retries every reconfigure (1.3). gitlab.rb is rendered

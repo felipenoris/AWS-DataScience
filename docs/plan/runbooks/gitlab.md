@@ -41,7 +41,7 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
    make hub-up
    ```
 
-3. GitLab's slices: the host started, `VPC-SharedServices`' endpoints applied, and the runners the session's pipelines need, each registering at its first boot (§K). The flags choose the runners:
+3. GitLab's slices, in the script's rank order: `VPC-SharedServices`' endpoints applied, the host started (its Session Manager agent registers through the `ssm` endpoint among them), and the runners the session's pipelines need applied, each registering at its first boot (§K). The flags choose the runners:
 
    | Command | Runners | Their USD/h | For a session that |
    |---|---|---|---|
@@ -82,11 +82,11 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
 
 4. The tunnel on the laptop ([client runbook](client-vpn-proxy-configuration.md) §1); `gitlab.awsds.internal` resolves through it and nowhere else.
 
-5. `https://gitlab.awsds.internal` answers **1 min 42 s after the start** (2026-10-26: started 01:29:03 UTC, nginx `502` from 01:29:17, the sign-in page `200` at 01:30:45; a start reconfigures nothing); each runner raised appears on `awsds/app-etl`'s **Settings → CI/CD → Runners** at the end of its own first boot (§K). **A Session Manager shell on the started host waits about twenty minutes**: `make gitlab-up` starts the `[D]` host before it applies `egress/`, the agent's first call finds no `ssm` endpoint, resolves the public address, times out and hibernates (`SSM Agent entering hibernation due to error` on the serial console), and `start-session` answers `TargetNotConnected` until the hibernation's retry registers the host (01:31 to 01:51 on 2026-10-26). A fresh host after a re-apply meets the endpoints and registers at once.
+5. `https://gitlab.awsds.internal` answers **1 min 42 s after the start** (2026-10-26: started 01:29:03 UTC, nginx `502` from 01:29:17, the sign-in page `200` at 01:30:45; a start reconfigures nothing); each runner raised appears on `awsds/app-etl`'s **Settings → CI/CD → Runners** at the end of its own first boot (§K). **A Session Manager shell on the started host** opens once the agent registers, through the `ssm` endpoint: `make gitlab-up` applies `egress/` before it starts the `[D]` host (`scripts/slices.py`, `tooling` ranked above `egress`), and `describe-instance-information` read the host `Online` 1 min 20 s after its start on 2026-10-26 (started 03:15:09 UTC, 39 s after the last endpoint; `Online` at 03:16:29). A host started before the endpoint resolves the public address, times out and hibernates (`SSM Agent entering hibernation due to error` on the serial console), and `start-session` answers `TargetNotConnected` until the hibernation's retry registers it twenty minutes later (01:31 to 01:51 on 2026-10-26, the host started first). A fresh host after a re-apply meets the endpoints and registers at once.
 
 **Down**, in the reverse order:
 
-1. The runners and the endpoints destroyed, then GitLab stopped. The target takes no runner flag and destroys every runner the state holds:
+1. The runners destroyed, GitLab stopped, then the endpoints destroyed: the up order walked backwards. The target takes no runner flag and destroys every runner the state holds:
 
    ```bash
    make gitlab-down
@@ -277,7 +277,7 @@ Python's `requests` and `botocore` read `certifi`, not the keychain; for a sessi
 sudo gitlab-backup create STRATEGY=copy
 ```
 
-The command ends with the archive's name, `Uploading backup archive to remote storage awsds-prod-gitlab-backup ... done` and `Backup is done.` (15 MB on 2026-10-26, under two minutes). After `make gitlab-up` the shell opens only once the agent's hibernation retry has passed: the host starts before the `ssm` endpoint exists, the agent's first call times out on the public address and it hibernates, `Online` again 20 minutes later (01:31 to 01:51 UTC on 2026-10-26); until then `start-session` answers `TargetNotConnected`. The gate before a destroy is the object read in the bucket, name, size and time:
+The command ends with the archive's name, `Uploading backup archive to remote storage awsds-prod-gitlab-backup ... done` and `Backup is done.` (15 MB on 2026-10-26, under two minutes). After `make gitlab-up` the shell opens once the agent registers through the `ssm` endpoint, which the target applies before it starts the host (§U step 5); a host started before the endpoint hibernates and answers `TargetNotConnected` for twenty minutes (01:31 to 01:51 UTC on 2026-10-26, the host started first). The gate before a destroy is the object read in the bucket, name, size and time:
 
 ```bash
 aws s3api list-objects-v2 --profile awsds-infra-prod --region us-west-2 --bucket awsds-prod-gitlab-backup --query 'sort_by(Contents,&LastModified)[].{Key:Key,Size:Size,LastModified:LastModified}' --output table

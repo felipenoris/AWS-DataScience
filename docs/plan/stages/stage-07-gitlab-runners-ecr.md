@@ -205,7 +205,7 @@ lives in `[P]` slices.
   the proxy variables for itself (cloud-init does not read `/etc/environment`), leaves `dnf` unproxied (the
   AL2023 repositories come through the S3 gateway, and `dnf.conf`'s `proxy=` broke them), and reaches
   Secrets Manager through `egress/`'s endpoint, so the first boot happens with `egress/` up.
-- **1.6 — Done 2026-10-12**: `tooling` 42 `[D]`, `runners` 57 `[E]`, `layers.DORMANT_HOST_NAMES` (the slice is `tooling/`, the host `awsds-prod-gitlab`); `slices.py` refusal 6 and the hub check on Production's own `up`; `make gitlab-up`/`gitlab-down`. `scripts/slices.py` passes `-input=false` to `apply` and `destroy` (Lesson 47).
+- **1.6 — Done 2026-10-12**: `tooling` 42 `[D]` (52 since 2026-10-26, above `egress`: 8.1's reading), `runners` 57 `[E]`, `layers.DORMANT_HOST_NAMES` (the slice is `tooling/`, the host `awsds-prod-gitlab`); `slices.py` refusal 6 and the hub check on Production's own `up`; `make gitlab-up`/`gitlab-down`. `scripts/slices.py` passes `-input=false` to `apply` and `destroy` (Lesson 47).
 - **1.6 — [Claude] Add the machinery in the same commit**: `("production", "tooling")` `[D]` and
   `("production", "runners")` `[E]` in `scripts/tfhygiene/layers.py`, `runners` ranked **above `egress`
   (50)**, since it needs the endpoints and the `[D]` hook acts on GitLab as one block before or after the
@@ -589,8 +589,10 @@ rehearsal happens now, while the instance holds throwaway content.
 - **8.1 — Done 2026-10-26.** `make gitlab-down` destroyed the three runners and the 12 endpoints and
   stopped GitLab (`stopped` at 01:25:35, the hub untouched); `make gitlab-up RUNNERS=0` started it at
   01:29:03 and the sign-in page answered `200` at 01:30:45, **1 min 42 s from the start to the first HTTPS
-  answer** (verification vi), the address kept. The Session Manager agent of a started host hibernates
-  until 20 minutes later, since the host starts before the `ssm` endpoint exists (the log; runbook §U).
+  answer** (verification vi), the address kept. The Session Manager agent of a host started before the `ssm`
+  endpoint exists hibernates for 20 minutes (the log; runbook §U): since 2026-10-26 `scripts/slices.py` applies
+  `egress/` before it starts the host (`tooling` at rank 52), and the first `make gitlab-up` in that order read
+  the host `Online` 1 min 20 s after its start (the same night, 03:15 UTC).
 - **8.2 — Done 2026-10-26** (runbook §B carries the procedure). The user's `gitlab-backup create
   STRATEGY=copy` (the archive in the bucket at 01:53:19, 15 MB), the destroy of `tooling/` by Claude on the
   user's authorization (`17 destroyed`, 02:00:33 to 02:01:50), the re-apply with the SAML variable file
