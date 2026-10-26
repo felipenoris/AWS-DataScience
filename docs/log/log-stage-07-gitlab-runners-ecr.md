@@ -1397,3 +1397,15 @@ infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infr
   down and §R reads the Studio apps after a Sandbox sitting; the portal's re-creation joins `lessons.md`'s
   platform list and `log-debugging.md` §C; `client-vpn-proxy-configuration.md` §3.4 carries `scutil --nc list`
   for the tunnel's state, which read every profile *Disconnected* at the sitting's start.
+
+## 2026-10-26 — INT-13: the user's option A, not built now
+
+*Claude's hand, no AWS call. The user's decision, taken in the chat of the session forked from this one and
+relayed by it: "INT-13 = opção A, não construir agora; o caminho B (CodeConnections com host em VPC) fica
+para a issue https://github.com/felipenoris/AWS-DataScience/issues/268, a pedido do usuário."*
+
+- **[user] The decision**: no CodeConnections host, connection or account-level Git connection is built
+  now; the path read on 2026-10-25, a host with a VPC configuration in Production shared to Data Governance,
+  waits in issue #268 for a later evaluation.
+- **[Claude] The record**: INT-13's row and 7.2's text point to the issue, the waiting list's row is
+  removed, and `promotion.md` §N.6 lists the decision as taken.

@@ -577,7 +577,8 @@ recordings, not builds.
   Production's form listing its VPCs**, and AWS's pages (`docs/REFERENCES.md`) now carry a path this step's
   premise lacked: a host with a VPC configuration in Production, a connection on it, the connection shared to
   Data Governance by RAM and enabled at the account level in SageMaker Unified Studio (the 2026-07-30 release).
-  INT-13's row carries the path and its cost; building it is a decision of the user's, recommended not now.
+  INT-13's row carries the path and its cost. The user decided on 2026-10-26 not to build it now, as
+  recommended (option A), the path kept in [issue #268](https://github.com/felipenoris/AWS-DataScience/issues/268).
 
 ### 8. Prove the lifecycle and rehearse the restore (D11, conventions §5.1 rule 6)
 

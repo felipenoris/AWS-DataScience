@@ -3960,3 +3960,20 @@ trust."*
   `default-v0.10.0`'s merge request.
 - **[Claude] The record**: xxviii's row, `promotion.md` §N.5, §N.6 and §N.7.1 step 7, and the waiting
   list's GitLab row.
+
+## 2026-10-26 — decision 1's zlib pair: the user's option A, the baseline written for gates-v0.6.0
+
+*Claude's hand, no AWS call. The user's decision as the Dev Env Steward, taken in the chat of the session
+forked from this one and relayed by it: "Stage 8 decisão 1, par zlib = opção A. CVE-2026-85091 em zlib e
+zlib1g entra na baseline da linhagem SageMaker por nome, datado e atribuído ao usuário, em
+ci-gates/baselines.gitlab-ci.yml, tag gates-v0.6.0 antes da imagem default-v0.10.0 (o include ref do
+awsds/dev-env move junto)."*
+
+- **[Claude] The baseline**: `CVE-2026-85091|zlib` and `CVE-2026-85091|zlib1g`, `HIGH 1.3.dfsg-3.1ubuntu2.2`
+  as `default-v0.9.1`'s scans read them on 2026-10-25, appended to `GATES_BASELINE_SAGEMAKER_DISTRIBUTION`
+  in the copy's `ci-gates/baselines.gitlab-ci.yml`, the list's comment naming the acceptance, its date and
+  `gates-v0.6.0`. The deploy lineage's `CVE-2026-85091|zlib`, Debian's package, is unchanged.
+- **[Claude] The sitting**: `promotion.md` §N.7.1 gains step 3, the merge request on `awsds/ci-gates`, the
+  tag and its commit read back into the image project's `include:` `ref`, before step 4's merge request on
+  `awsds/dev-env`; the application template's pin moves with its own next merge request.
+- **[Claude] The record**: 1.4's text, the waiting list's GitLab row, `promotion.md` §N.6 and §N.7.1.
