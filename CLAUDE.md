@@ -401,11 +401,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `claude-sonnet-5` are refused for this account (`EXC-08`).
 - **Stage 6f in progress**: decision 1 taken 2026-10-26 by the user as (b), a pilot of SMUS's native
   flow even without LF-Tags (D22 and D26 amended; `GOVERNANCE.md` §Grants' catalog road; `TM-27`). Step
-  11 written and planned (PR #270), its 11.2 applied 2026-10-26: `data-governance/publishing/` (the VPC
-  `10.70.0.0/16` the managed `Tooling` takes, the prerequisites, 44 objects), then, behind
-  `LAKE_PUBLISHERS`, `governance/`'s `lake-publishing` profile, `data/`'s two SMUS seats and the publisher's grant on `curated.trades`; the
-  Governance Manager creates `governed-lake` and approves `eighth-experimentation`'s subscription in the
-  portal; a rollback leaves the projects bucket and one registration (the Data OU's deny). No IAM
+  11 written (PR #270), 11.2 to 11.5 applied 2026-10-26: `data-governance/publishing/` (the VPC
+  `10.70.0.0/16` the managed `Tooling` takes, the prerequisites, the `Tooling` configuration),
+  `LAKE_PUBLISHERS` set, `governance/`'s `lake-publishing` profile, `data/`'s two SMUS seats and the publisher's grant on `curated.trades`; the
+  Governance Manager created `governed-lake`, whose environment wrote no Lake Formation setting, and
+  approves `eighth-experimentation`'s subscription in the portal; next 11.6, its data source and publish; a rollback leaves the projects bucket and one registration (the Data OU's deny). No IAM
   condition key reaches business-name generation, decision 3's last input (PR #187); each
   project's `Tooling` data source fails daily (`EXC-11`); `sagemaker-prereqs-v0.8.0` gives the manage-access
   role the Glue policy every `DataLake` environment failed without, applied 2026-10-20; decision 6 taken:
