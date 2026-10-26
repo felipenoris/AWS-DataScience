@@ -999,3 +999,39 @@ authorized in this session's chat: the release of a state lock this session's pl
   `GOVERNANCE.md` (§Grants' catalog road, §Access control, the accounts and catalogs tables, the
   development cycle); Stage 11 decision 12 re-read; `SMUS.md`; `NETWORK.md`; conventions §6;
   `AWS_STATE.md` section C; `TM-27`; the producer README; `terraform-live/README.md`; `ORGANIZATION.md`.
+
+## 2026-10-26 — 11.2: `data-governance/publishing/` applied
+
+*Claude, the same session; AWS as the infrastructure user with `InfrastructureAccess` in `Data Governance
+Account` (`awsds-infra-data`). The apply is Claude's, on the user's word below; the four other sessions on
+the laptop were told first. Times UTC.*
+
+- **[user]** *"Autorizo o 11.2: apply de data-governance/publishing/ com LAKE_PUBLISHERS vazio, como
+  infrastructure user, conta Data Governance, InfrastructureAccess (awsds-infra-data), aceitando a VPC
+  10.70.0.0/16."*
+- **[Claude] The other sessions told** before the apply, each message delivered to its inbox: "Pendências
+  estágios 7-10" (busy), "Chat lateral", "Worktrees para apagar" and "CI/CD CLI remedy" (idle).
+- **[Claude] The plan**, 20:05:10Z, with `LAKE_PUBLISHERS` empty and `blueprints_enabled = false` in the
+  regenerated tfvars: *"Plan: 44 to add, 0 to change, 0 to destroy."*, saved.
+- **[Claude⚡] The apply** of the saved plan, 20:05:22Z to 20:06:53Z: *"Apply complete! Resources: 44
+  added, 0 changed, 0 destroyed."* The re-plan at 20:07:29Z: *"No changes."* `data/` at 20:10:46Z and
+  `governance/` at 20:11:25Z re-plan *"No changes."*, and no lock is left on any of the three states.
+- **[Claude] Read back**, 20:07 to 20:08Z: `vpc-01b526900ef0ef311`, `10.70.0.0/16`, named
+  `awsds-data-vpc`, not default; six subnets, private `10.70.0.0/18` and `10.70.64.0/18`, isolated
+  `10.70.128.0/20` and `10.70.144.0/20`, public `10.70.160.0/24` and `10.70.161.0/24`, in `usw2-az1` and
+  `usw2-az2`, none mapping a public address; every route table carrying the S3 and DynamoDB prefix lists
+  alone, no `0.0.0.0/0`; the internet gateway attached and unrouted; both gateway endpoints `available`;
+  the flow log `ACTIVE`, `ALL` traffic, into `awsds-data-vpc-flow-logs`; zero peerings. The roles, created
+  20:05:31Z: `awsds-data-smus-provisioning` trusting `datazone.amazonaws.com` and
+  `cloudformation.amazonaws.com` under `aws:SourceAccount` this account, with
+  `SageMakerStudioProjectProvisioningRolePolicy`; `awsds-data-smus-manage-access` trusting
+  `datazone.amazonaws.com` the same way, with the SageMaker and Glue manage-access policies;
+  `awsds-data-vpc-flow-logs` trusting `vpc-flow-logs.amazonaws.com`. The boundary
+  `awsds-data-project-boundary` at `v1`; `alias/awsds-data-project` `Enabled`, customer-managed;
+  `awsds-data-smus-projects` versioned, all four public-access blocks on, `aws:kms` with the Bucket Key;
+  `/awsds/data/studio` and `awsds-data-vpc-flow-logs` at 30 days. Unchanged: Lake Formation's settings,
+  the `InfrastructureAccess` seat alone with 4/`TRUE`, the full-table flag `true` and both default lists
+  empty; zero blueprint configurations.
+- **[Claude] `./aws/datalake.py`**, done 20:09:54Z: no failure; `DL-1` and `DL-2` on the five lake buckets,
+  `awsds-data-smus-projects` left out; `DL-7` nine shares out; `DL-13` the lake's seat alone. Exit 1 on the
+  unsigned profiles, as before.

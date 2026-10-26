@@ -296,7 +296,8 @@ terraform-live/
 │   │                     #     Tooling template takes (vpc module, no internet route, no
 │   │                     #     peering) and terraform-modules/sagemaker-prereqs/ with Tooling
 │   │                     #     alone; the configuration and its grant follow LAKE_PUBLISHERS,
-│   │                     #     the domain's own account needing no association. Rank 46. The
+│   │                     #     the domain's own account needing no association. Rank 46;
+│   │                     #     first apply 2026-10-26 (11.2), the configuration unapplied. The
 │   │                     #     rollback destroys it but the projects bucket, which the Data
 │   │                     #     OU's s3:DeleteBucket deny keeps
 │   └── governance/       # [P] the SageMaker unified domain (DataZone V2, D26), applied

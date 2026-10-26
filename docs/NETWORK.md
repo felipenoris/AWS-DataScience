@@ -39,7 +39,7 @@ the plan.
 | **VPC-Networking** | `10.31.0.0/16` | Production | **the only internet gateway that serves a host**; the WireGuard host; the Squid proxy |
 | **VPC-Workloads** | `10.32.0.0/16` | Production | the production SageMaker runtime, MWAA Serverless workers; Stage 9's proof job ran in it on 2026-10-23 |
 | Staging | `10.50.0.0/16` | Staging | the runtime target — **the CIDR is inherited, not re-cut**: a VPC CIDR is immutable, and the `[P]` gateway-endpoint ids the lake names survive with it |
-| Data Governance | `10.70.0.0/16` | Data Governance | **written 2026-10-26, unapplied**: the lake-publishing pilot's (Stage 6f step 11). The managed `Tooling` template takes a VPC, and its security group and Glue connections are the VPC's only tenants. No internet route, no peering, no interface endpoint |
+| Data Governance | `10.70.0.0/16` | Data Governance | **applied 2026-10-26** (Stage 6f step 11.2, `awsds-data-vpc`): the lake-publishing pilot's. The managed `Tooling` template takes a VPC, and its security group and Glue connections are the VPC's only tenants. No internet route, no peering, no interface endpoint |
 | WireGuard peers | `10.90.0.0/24` + `fd90::/64` | — | in **no** route table except VPC-Networking's public tier (`NT-4` asserts both halves) |
 
 `10.40.0.0/16` is released and stays unallocated. `10.60.0.0/16` is reserved for the `shared` platform
@@ -65,7 +65,7 @@ module's arithmetic:
 | **VPC-Networking** | `10.31.0.0/18` · `10.31.64.0/18` | `10.31.128.0/20` · `10.31.144.0/20` | `10.31.160.0/24` · `10.31.161.0/24` |
 | **VPC-Workloads** | `10.32.0.0/18` · `10.32.64.0/18` | `10.32.128.0/20` · `10.32.144.0/20` | `10.32.160.0/24` · `10.32.161.0/24` |
 | **Staging** | `10.50.0.0/18` · `10.50.64.0/18` | `10.50.128.0/20` · `10.50.144.0/20` | `10.50.160.0/24` · `10.50.161.0/24` |
-| **Data Governance** (unapplied) | `10.70.0.0/18` · `10.70.64.0/18` | `10.70.128.0/20` · `10.70.144.0/20` | `10.70.160.0/24` · `10.70.161.0/24` |
+| **Data Governance** | `10.70.0.0/18` · `10.70.64.0/18` | `10.70.128.0/20` · `10.70.144.0/20` | `10.70.160.0/24` · `10.70.161.0/24` |
 
 ---
 
@@ -104,7 +104,7 @@ module's arithmetic:
 | `sandbox/probes/` · `production/probes/` | `[E]` | the throwaway hosts that measure what a `describe` cannot |
 | `production/tooling/` | `[D]` | the GitLab host, its data volume, the `gitlab.awsds.internal` and `*.awsds-pages.internal` records, GitLab's security group **and the runners' group**, declared here so GitLab's HTTPS rule never names an `[E]` object (Stage 7 steps 1.2, 1.4) |
 | `production/runners/` | `[E]` | the build, deploy and test runners, in the group `tooling/` declares - and no route at all, like the buildbox the build runner replaced at Stage 7 step 6.5 |
-| `data-governance/publishing/` | `[P]` | **written 2026-10-26, unapplied** (Stage 6f step 11): Data Governance's VPC 3×2 through the `vpc` module with `public_internet_route = false`, its two gateway endpoints and its flow log, and no peering (a `check` block holds `peerings` empty). Its tenants are the publishing project's `Tooling` stack, a security group and two Glue network connections, which no launch in the Data OU ever uses |
+| `data-governance/publishing/` | `[P]` | **applied 2026-10-26** (Stage 6f step 11.2): Data Governance's VPC 3×2 through the `vpc` module with `public_internet_route = false`, its two gateway endpoints and its flow log, and no peering (a `check` block holds `peerings` empty). Its tenants are the publishing project's `Tooling` stack, a security group and two Glue network connections, which no launch in the Data OU ever uses |
 | `sandbox/sagemaker/` | `[P]` | **no network object of its own** — it hands the blueprint the VPC, the private subnets and their zone ids, which is what makes every project app land where §5 describes |
 | `production/sagemaker/` · `staging/sagemaker/` | `[P]` | the job security group `awsds-<env>-jobs` and the Glue network connection on the first zone's private subnet, in VPC-Workloads and Staging's VPC (Stage 9 decision 12 (a), applied 2026-10-22): every pipeline-submitted Glue and SageMaker job runs in it |
 | `sandbox/warehouse/` | `[P]` | the warehouse's **security group** and one ingress rule per admitted SMUS project. The group is here rather than in the compute slice because it is free and is referenced by the workgroup rather than the reverse, so it survives a `make down` unattached |
