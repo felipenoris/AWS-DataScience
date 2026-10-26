@@ -2965,3 +2965,40 @@ the readings, as the infrastructure user with `InfrastructureAccess` (`awsds-inf
   0.024 USD; the interval starting 22:00 still open at 22:16. `make status` (22:16 to 22:19): this sitting's three
   slices down, the hub, `production/egress`, `tooling` and `runners` up for the GitLab sitting, estimated 0.4521
   USD/h by the static rates.
+
+## 2026-10-26 — after xxiv's sitting, nothing up: the record, the plan brought to the findings, `WH-16`
+
+*Claude's hand. The user asked in chat to check the log against the session and to bring the plan and the
+runbooks to the sitting's findings (*"Verifique se todo o andamento desta sessão está registrado no log da
+sessão. Analise a necessidade de efetuar ajustes no plano tendo em vista os achados desta sessão e faça as
+correções necessárias, incluindo os procedimentos nos runbooks."*). Work as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-sandbox-1`, `awsds-infra-data`), reads only. Times
+UTC.*
+
+- **[Claude] The record**: the sitting's entries above, written on the branch after it was brought to `main`
+  at `c997ef73` (PR #270's merge), then PR #271 at about 22:24. `make check` refused `docs/GENERAL_PLAN.md` at
+  40,063 bytes of its 40,000 and passed once the Stage 9 row's clause was shortened (39,991). The pilot's
+  detached checkout was removed after the applies.
+- **[Claude] The log read against the session**: every step of the sitting is in its entries. One reading is
+  withdrawn rather than written. After the grant, `describe-data-shares-for-consumer` refused *"The consumer
+  ARN isn't valid because the format is incorrect"*, because zsh read `$DG:catalog` as a modifier and mangled
+  the ARN; the same call from the bash script answered `ACTIVE` at 22:02 (Lesson 30).
+- **[Claude] `WH-16`** in `./aws/warehouse.py` checks the governed datashare's two associations, read with
+  nothing up: the Data Catalog consumer `AUTHORIZED` and the lake catalog's `ACTIVE`, for each share
+  `production/warehouse/datashare.tf` names. It is a note outside Production. Read live at 22:35: a pass in
+  Production, a note in Sandbox. Read offline against built facts: a revoked share, a `PENDING_AUTHORIZATION`
+  consumer and a missing lake association each fail with their own wording, and the whole share passes.
+- **[Claude] The plan brought to the findings**:
+  - `runbooks/promotion.md` §N.4a is now the measured procedure: the hub, the tree that applied the lake's
+    slice, the positive control in `sandbox`, the registration read by `describe-resource`, the table
+    `trades.trades_notional`, each `NextToken` followed, step 4's failure at the null list, step 5's three
+    acts in order, and the balance read the next day. §N.2's step 5 now selects `sandbox` and its step 7
+    reads the balance the next day.
+  - `runbooks/redshift-connection.md`: §P (the connection keeps `dev`), §G (the share's row, `WH-16`) and §V.
+  - `runbooks/terraform-changes.md` Recipe A step 5, with Lesson 79: a slice applied from an unmerged branch
+    is a revert in every other tree.
+  - `GOVERNANCE.md`: withdrawing a reader is a Lake Formation revoke in Data Governance, because Production's
+    `REVOKE` leaves each grant to come back with the next re-grant.
+  - 6h 3.2: a session on `dev` reads no governed share.
+  - The waiting list: a decision on the connection's database.
+  - `aws/INDEX.md`, `AWS_STATE.md`, INT-24, the stage file and the summary rows now name `WH-16`.

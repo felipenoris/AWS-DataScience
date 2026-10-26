@@ -142,12 +142,14 @@ connect but sees nothing"* as the expected state for a while — which is the am
      over `terraform output project_access_role_arns`. AWS's same-account procedure names no access
      role and the field's help calls it *"optional. Required when connecting to resources in a
      different AWS account"* — both wrong against the running form.
-   - **The compute dropdown offers the namespace's `dev` database.** The themed schema is in the class
-     container (`sandbox`), and a cross-database **write** does not work in Redshift, so the
-     connection must name that database — by a database field if the form has one, otherwise through
-     the JDBC URL with the `/dev` suffix replaced. Measured 2026-10-10: the Query editor lists every
-     database in the namespace (`dev`, `sandbox`, `warehouse`) and the project wrote `lab.hello` from
-     it; the connection object names `dev` (read 2026-10-18).
+   - **The compute dropdown offers the namespace's `dev` database, and the connection keeps it.** The
+     themed schema is in the class container (`sandbox`), and a cross-database **write** does not work
+     in Redshift. Measured 2026-10-10: the Query editor lists every database in the namespace (`dev`,
+     `sandbox`, `warehouse`), and the project wrote `lab.hello` from it. The connection object names
+     `dev` (read 2026-10-18 and 2026-10-26), so the editor opens there, and a session in `dev` reads no
+     governed share for want of `TEMP` (§G). The person selects `sandbox`. Whether a member's
+     `UpdateConnection` can change the database is unmeasured, and a full-replace update needs every
+     field passed (Lesson 60).
    - **There is no `lineageSync` toggle** on this path, and the connection it wrote has the sync
      **on**: the object read 2026-10-18 has `lineageSync.enabled: true` on a daily cron, and every run
      so far failed without minting a database session (6h decision 3). A run that succeeds is a
@@ -417,7 +419,7 @@ after.
 | the access role's Lake Formation grant, `DESCRIBE` on `governed_trades` and `SELECT` on its tables | Sandbox's Lake Formation, granted by its administrator (the account holds the lake's tag grant with grant option) | Lake Formation's *"Insufficient Lake Formation permission(s)"* |
 | `USAGE ON DATABASE governed_trades` for the project's database user | SQL, as the admin | the database is listed and refuses the query |
 | `TEMP ON DATABASE sandbox` for the same user: the share's table is an external table, and the session's database holds the query's temporary objects | SQL, as the admin; `PUBLIC` holds no database privilege since 5b and 6h | *"Failed to incorporate external table … permission denied to create temporary tables in database "sandbox""* |
-| the producer's share: Production's `GRANT USAGE … VIA DATA CATALOG`, its authorization, and Data Governance's association with its catalog | SQL in Production; `production/warehouse/datashare.tf`; `data-governance/data/warehouse-share.tf` | *"AwsClientException: EntityNotFoundException from glue - No glue catalog datashare is found with arn …"*. Every Lake Formation grant stays after a revoke, so the grants prove nothing about the share (Stage 9 xxiv, 2026-10-26) |
+| the producer's share: Production's `GRANT USAGE … VIA DATA CATALOG`, its authorization, and Data Governance's association with its catalog | SQL in Production; `production/warehouse/datashare.tf`; `data-governance/data/warehouse-share.tf` | *"AwsClientException: EntityNotFoundException from glue - No glue catalog datashare is found with arn …"*, and `WH-16` fails. Every Lake Formation grant stays after a revoke, so the grants prove nothing about the share, and `data-governance/data/` plans nothing until the re-grant (Stage 9 xxiv, 2026-10-26; `promotion.md` §N.4a step 5) |
 
 The project's connection, `redshift-serverless.redshift`, names `dev` as its database, so the Query editor
 opens there and the read is refused for want of `TEMP` in `dev`: select `sandbox` (read 2026-10-26). The
@@ -454,6 +456,11 @@ Then the per-project grants above. Unwiring is §U.
 
 `WH-11` reads as a `note` where nothing is admitted, because a check that is green for an absence is
 green for the wrong reason (Lesson 50).
+
+**`WH-16` reads Production's governed datashare** in the control plane, with nothing up: the Data Catalog
+consumer `AUTHORIZED` and the lake catalog's association `ACTIVE`, for each share
+`production/warehouse/datashare.tf` names. It is the one reading that fails on a producer-side revoke:
+every Lake Formation row stays green (§G, Stage 9 xxiv).
 
 **A session for the SQL above**, from a laptop, with no network path into the VPC — the Data API
 reaches the database with an IAM identity and the admin secret alone:

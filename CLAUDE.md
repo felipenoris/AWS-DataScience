@@ -349,8 +349,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `model-chain.py transform staging` with `staging/foundation/`'s output, applied. **§N.2 run 2026-10-26**: xviii and
   vii closed, 9.4's DDL job idempotent from pipeline #102, 9.7 read with the project role's grant revoked and
   Production's workgroup gone, `EXC-13`'s Sandbox half twice; both computes down. **xxiv run 2026-10-26 on
-  §N.4a**: the revoke takes the share and leaves the Lake Formation rows, no instrument notices, and
-  `data-governance/data/` cannot plan until the re-grant's SQL and two applies. 3.1 read 2026-10-26, the debug role's
+  §N.4a**: the revoke takes the share and leaves the Lake Formation rows, which only `WH-16` notices
+  (written after it), and `data-governance/data/` cannot plan until the re-grant's SQL and two applies. 3.1 read 2026-10-26, the debug role's
   job-log read in a window included; the quota cases still `CASE_OPENED`.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, first fired 2026-10-25 (version 1 registered and approved by `awsds-deploy-prod`; pass 3 done, both transforms, 5.5). Prepared
@@ -677,6 +677,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     tagged, so the gate runs on the laptop the day of the tag, before the tag.**
 78. **A stand-in for a refused call answers what the real call answers to the identity it imitates — read
     from the path that already works, never from what the first caller tolerates.**
+79. **A slice applied from an unmerged branch is a revert in every other tree — plan it from the tree that
+    applied it, or after its merge.**
 
 **[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
 documentation does not say"** — platform behaviours that cost a measurement to learn, each with its
