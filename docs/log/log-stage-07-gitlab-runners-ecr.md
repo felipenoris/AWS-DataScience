@@ -1024,3 +1024,230 @@ pages (`docs/REFERENCES.md`). No AWS call, nothing created.*
   branch, `main`, push and merge by Maintainers, force push off; one protected tag pattern, `v*`, created
   by Maintainers. `stage-18-staging`, Stage 18's branch, protects nothing any more: the leftover of
   2026-10-22 is read.
+
+## 2026-10-26 — the readings before the acts: the instance settings, the host's outbound calls, 8.2's pre-flight
+
+*Claude's hand, in the session that holds Stage 7 at the sitting of `runbooks/promotion.md` §N (the hub,
+GitLab with its three runners and the tunnel up, raised by the user on 2026-10-25 at 20:07 UTC). GitLab read
+through the user's Chrome session as the local administrator (Claude in Chrome, a tab of its own, closed
+after); AWS read as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), reads only;
+the two Terraform plans saved outside the repository. Times UTC.*
+
+- **[Claude] The instance settings**, `GET /api/v4/application/settings` at 00:43: `signup_enabled` true
+  with `require_admin_approval_after_user_signup` true (the user's choice of 2026-10-12);
+  `auto_devops_enabled` true; `restricted_visibility_levels` empty; `usage_ping_enabled` true,
+  `usage_ping_generation_enabled` true, `usage_ping_features_enabled` false,
+  `include_optional_metrics_in_service_ping` true; `version_check_enabled` true;
+  `gitlab_product_usage_data_enabled` true with `gitlab_product_usage_data_source` `database` and
+  `snowplow_enabled` false; `update_runner_versions_enabled` true. The admin pages of 19.4.2 name them:
+  **Metrics and profiling → Usage statistics**: *Enable version check*, *Enable Service Ping*, *Enable
+  Service Ping Generation*, *Enable Registration Features*; **Metrics and profiling → Event tracking**:
+  *Enable event tracking — Send event data to GitLab* and *Enable Snowplow tracking — Send event data to
+  your own Snowplow collector*, *"Only one can be selected at a time"*; **CI/CD → Runners**: *Fetch GitLab
+  Runner release version data from GitLab.com*; **CI/CD → Auto DevOps**: *Default to Auto DevOps pipeline
+  for all projects*; **General → Visibility and access controls → Restricted visibility levels**: three
+  checkboxes, *Public* the third; **General → New user account restrictions**: *Allow new user accounts*.
+- **[Claude] The host's outbound calls**, `logs filter-log-events` on `/awsds/prod/proxy` for `10.30.52.94`
+  from 2026-10-12 00:00 to 00:50 today (Squid's `awsds` format: destination, status, bytes from the server,
+  bytes from the client): 9,313 lines, every one `200 TCP_TUNNEL`.
+
+  | Destination | `CONNECT`s | From the client | From the server | First .. last |
+  |---|---|---|---|---|
+  | `events.gitlab.net:443` | 9,240 | 38.5 MB | 44.6 MB | 2026-10-12 14:56 .. 2026-10-26 00:45 |
+  | `packages.gitlab.com:443` | 51 | 59 KB | 278.0 MB | 2026-10-12 14:12 .. 2026-10-25 20:08 |
+  | `version.gitlab.com:443` | 14 | 27 KB | 81 KB | 2026-10-12 14:57 .. 2026-10-25 22:54 |
+  | `gitlab.com:443` | 7 | 13 KB | 189 KB | 2026-10-12 18:18 .. 2026-10-25 20:14 |
+  | `storage.googleapis.com:443` | 1 | 5 KB | 1.06 GB | 2026-10-12 14:12 |
+
+  Stage 12's 4,049 are the first five days (729, 328, 814, 1,406 and 772); the count follows the use of the
+  instance (1,970 on 2026-10-24 and 2,233 on 2026-10-25, the promotion sittings). `packages.gitlab.com` and
+  the one Google storage call are the package installs and dnf's metadata; `version.gitlab.com` carries the
+  version check and Service Ping; `gitlab.com` the runner release reading [inferred:
+  `update_runner_versions_enabled` is the only setting that names gitlab.com].
+- **[Claude] 8.3's up half**, `./aws/supplychain.py` with every profile at 00:47: 0 checks failed; `SC-1`
+  running, `SC-10` three runners (a note), `SC-11` read in the three runners' user data, `SC-13` the backup of
+  2026-10-25 03:01:03 made by 19.4.2; the persona profiles read `(failed)` in section 10, no session for
+  them. The report is kept outside git for 8.3's diff.
+- **[Claude] 8.2's pre-flight.** `production/tooling/` initialised in the worktree and planned with
+  `-var-file=<project folder>/secrets/saml.auto.tfvars`: `No changes`; `plan -destroy`: `17 to destroy`,
+  the instance, the data volume and its attachment, the two records, the `gitlab.rb` object, the host's role
+  with its two inline policies, its managed attachment and the instance profile, the DLM role and policy,
+  the two security groups and the status-check alarm. `production/runners/` reads
+  `runner_security_group_id` and `gitlab_url` from this state and no other slice reads it, so the runners
+  go before the slice does. The secrets' resource policies name the host's role as a string in
+  `aws:PrincipalArn`, never as a `Principal`, so a re-created role keeps its reads. The backup bucket holds
+  the backups of 2026-10-13, 2026-10-15 and 2026-10-25 (03:01:03, 14,233,600 bytes); the data volume
+  `vol-072c3d3dc9883b104`, created 2026-10-12, has seven DLM snapshots, 2026-10-19 to 2026-10-25, which
+  outlive the policy. The host's role holds `s3:GetObject` on the backup bucket, the restore's fetch. From
+  the laptop, `/users/sign_in` answers `200` in about 0.9 s with the root at `$HOME/awsds-root.crt`.
+- **[Claude] The runners**, `GET /api/v4/runners/all`: ids 1 (`awsds-prod-runner`), 3
+  (`awsds-prod-runner-deploy`) and 4 (`awsds-prod-runner-test`), project runners, all `online` and idle.
+- **[Claude] Coordination**: the Stage 9 session's manual job `production-warehouse-ddl` (#616, pipeline
+  #102) and the Stages 7-10 session's Stage 10 exercises hold GitLab and the runners; the cycle waits for
+  both, and the first act is asked of the user only then.
+
+## 2026-10-26 — §I step 6: the usage data off, Auto DevOps off, Public restricted
+
+*The user's hand for the decision and the first act, in their browser as the local administrator
+`felipenoris`; Claude's hand for the rest, in the same browser session through a tab of its own (Claude in
+Chrome), at the user's request (*"Abri uma sessão no chrome para você. Pode continuar por lá e fazer as
+ações."*); read back from `GET /api/v4/application/settings`. No AWS call. About 01:00 to 01:15 UTC.*
+
+- **[user] The decision**: the recommendation accepted whole: event tracking, Service Ping with its
+  generation, the version check and the runner release fetch off; Auto DevOps off; Public restricted;
+  sign-up kept on with admin approval; no `TM` row.
+- **[user]** *Metrics and profiling → Event tracking → Enable event tracking* unchecked and saved
+  (*"Desliguei "Enable event tracking""*). *Enable Service Ping* would not uncheck in the user's tab
+  (*"observei que não consigo desmarcar"*).
+- **[Claude]** In a tab of its own on the same session the checkbox unchecked at the first click, which also
+  freed *Enable Service Ping Generation* (disabled while Service Ping is on); *Enable version check* and the
+  generation unchecked too, *Save changes* of the Usage statistics form: *"Application settings saved
+  successfully"*. Then *CI/CD → Continuous Integration and Deployment → Default to Auto DevOps pipeline
+  for all projects* off, saved; *CI/CD → Runners → Fetch GitLab Runner release version data from GitLab.com*
+  off, saved; *General → Visibility and access controls → Restricted visibility levels → Public* checked,
+  saved; each with the same flash.
+- **[Claude] Read back at 01:15**: `gitlab_product_usage_data_enabled` false, `snowplow_enabled` false,
+  `usage_ping_enabled` false, `usage_ping_generation_enabled` false, `usage_ping_features_enabled` false,
+  `version_check_enabled` false, `update_runner_versions_enabled` false, `auto_devops_enabled` false,
+  `restricted_visibility_levels` `["public"]`, `signup_enabled` true with
+  `require_admin_approval_after_user_signup` true. The forms re-submitted their empty fields as empty
+  strings where the API had read `null` (`auto_devops_domain`, `default_ci_config_path`,
+  `enabled_git_access_protocol`, `custom_http_clone_url_root`, `shared_runners_text`, the three
+  `snowplow_*` strings), the same meaning.
+- **[Claude]** The settings precede 8.2's backup on purpose: a restore carries the database, and a fresh
+  host without one carries the defaults (Lesson 17). Whether the events stopped is read in
+  `/awsds/prod/proxy` at the end of the sitting.
+
+## 2026-10-26 — 8.1: the cycle, with the boot timed (verification vi)
+
+*The user's hand for the two targets, run from a terminal of their own in this worktree, with the user's
+authorization in chat (*"Sim, fazemos o ciclo 8.1-8.3 hoje."*); Claude's for the readings: EC2 as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), and `GET /users/sign_in` from the laptop
+through the tunnel every five seconds. The two peer sessions were told before the first target (the Stages 7-10
+session had agreed that this `make gitlab-down` is the sitting's last for GitLab, `make hub-down` staying its own;
+the Stage 9 session's manual job `production-warehouse-ddl` had finished at 01:05:15). Times UTC.*
+
+- **[user]** `make gitlab-down`: the three runners `terminated`, zero interface endpoints left in the account
+  (the Stage 9 session had taken `workloads-egress/` down minutes before), the host's stop `User initiated
+  (2026-10-26 01:24:33 GMT)`, `stopped` read at 01:25:35.
+- **[user]** `make gitlab-up RUNNERS=0`: the host `running` with `LaunchTime` 01:29:03, the same address
+  `10.30.52.94` (verification i, again); nginx answered `502` from 01:29:17 and the sign-in page `200` at
+  01:30:45, **1 min 42 s from the start to the first HTTPS answer** (the poll's step is five seconds plus two
+  calls); the 12 endpoints of `production/egress/` back by 01:31.
+- **[user]** The SSM session for the backup refused at about 01:35: `An error occurred (TargetNotConnected)
+  when calling the StartSession operation: i-0e661200795f0e62e is not connected`.
+- **[Claude] Why**, from the serial console and `describe-instance-information`: `make gitlab-up` starts the
+  `[D]` host before it applies `production/egress/`, so the agent came up at 01:29:16 with no `ssm` endpoint
+  (created 01:29:56), resolved the public `ssm.us-west-2.amazonaws.com` (`44.248.101.66`), timed out with
+  no route and logged `SSM Agent entering hibernation due to error` at 01:31:26; the host had no record in
+  SSM until the hibernation's retry registered it `Online` at 01:51:26, twenty minutes after. The proxy saw
+  only the two `packages.gitlab.com` calls of dnf's start. An `[E]` runner never meets this: its first boot
+  comes after the endpoints. A session right after `make gitlab-up` waits for that retry, or
+  `scripts/slices.py` applies `egress/` before it starts `tooling/`, a change for the session that owns
+  the lifecycle script (runbook §U carries the reading).
+
+## 2026-10-26 — 8.2: the fresh backup
+
+*The user's hand in an SSM session on the host, Claude's reading of the bucket as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`). Times UTC.*
+
+- **[user]** `sudo gitlab-backup create STRATEGY=copy`, from a Session Manager shell opened once the agent was
+  `Online`.
+- **[Claude]** The bucket at 01:56: `1792979588_2026_10_26_19.4.2_gitlab_backup.tar`, 15,073,280 bytes,
+  `LastModified` 01:53:19, `aws:kms`, `Expiration` 2026-11-26 by `expire-current-versions`, beside the three
+  of 2026-10-13, 2026-10-15 and 2026-10-25 (the gate before the destroy: a backup made by 19.4.2, the pin).
+
+## 2026-10-26 — 8.2: the destroy and the re-apply of `production/tooling/`
+
+*Claude's hand from this worktree, the slice initialised here, with the user's authorization in chat
+(*"Autorizo o terraform destroy de production/tooling/ (17 recursos, volume de dados incluído) e o re-apply em
+seguida."*), as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`); both plans with
+`-var-file=<project folder>/secrets/saml.auto.tfvars`, saved outside the repository. Times UTC.*
+
+- **[Claude] The destroy**, `plan -destroy` then `apply` of the saved plan: `Apply complete! Resources: 0 added,
+  0 changed, 17 destroyed`, 02:00:33 to 02:01:50. The attachment took 52 s (the instance stopped before the
+  detach), the two records 16 s, the volume 10 s, the instance 11 s, the rest a second or less; no
+  `DependencyViolation`, the runners being gone since 8.1.
+- **[Claude] The re-apply**: `plan` read `17 to add, 0 to change, 0 to destroy` (02:02:15) and the apply ended
+  02:03:24, `17 added`, 58 s: the new host `i-0b4cb5f62e65abf70`, the new data volume `vol-0e0fff3694f95fa63`
+  (formatted by the first boot), the two records on the new address, the DLM policy `policy-0776691c894780872`,
+  the status-check alarm, the role and profile under their old names. The first boot's markers and the first
+  HTTPS answer are polled from the laptop (the serial console and `/users/sign_in`).
+- **[Claude] The first boot**, read on the serial console: `=== awsds gitlab first boot: 02:02:56` (the
+  instance launched 02:02:45), `installing gitlab-ce 19.4.2` at +53 s, the package through the proxy
+  (`packages.gitlab.com` 73.5 MB, then `storage.googleapis.com` 1.07 GB, logged at 02:04:34), `gitlab
+  Reconfigured!` at +471 s, `/-/readiness -> 200` at +482 s and `=== awsds gitlab first boot done:
+  02:10:52 ===`, **8 min 07 s from launch to the end of cloud-init** (13 min 54 s on 2026-10-12, when the
+  readiness probe waited five minutes). The console buffer keeps the tail alone, so the `rpm -q` line and
+  the secrets' `restored from Secrets Manager` are read in `/var/log/awsds-gitlab-boot.log` at the restore.
+  The agent registered `Online` at 02:16:32 with the endpoints already there. The new address is
+  `10.30.39.111`, both records on it at 02:03; `dig` on the laptop answers it, while `curl` by name failed
+  at once (`000` in 4 ms) and by `--resolve` read `200`, the macOS resolver's cache holding the old name
+  [inferred]; the browser is read next.
+
+## 2026-10-26 — 8.2: the restore on the new host (verifications ii, v and xv)
+
+*The user's hand in a Session Manager shell on the new host, the output pasted in chat; Claude's readings
+from the laptop: the sign-in page by address every five seconds, the proxy log, `./aws/supplychain.py` and
+the API through the user's browser session. Times UTC.*
+
+- **[user] The boot log**, `grep` on `/var/log/awsds-gitlab-boot.log`: `gitlab-ce-19.4.2-ce.0.amazon2023.aarch64`
+  twice (dnf's line and `rpm -q`), **verification xv's first half: the rebuild installed the pinned release**;
+  `restored from Secrets Manager`, **verification ii's restore half: the fresh boot took `gitlab-secrets.json`
+  from its container**; `first boot done: 02:10:52`.
+- **[user]** `aws s3 cp` of the archive into `/var/opt/gitlab/backups/` and `chown git:git`, with the host's
+  role; `gitlab-ctl stop puma` and `stop sidekiq` (`ok: down`); the sign-in page went `502` at 02:20:46.
+- **[user]** `gitlab-backup restore BACKUP=1792979588_2026_10_26_19.4.2`, 02:21:29 to 02:22:27: the
+  database wiped and restored (six `ERROR: must be owner of extension pg_trgm | btree_gist | amcheck` lines,
+  GitLab's documented noise for a restore run as the `gitlab` database user, no `version mismatch`;
+  **verification xv's second half**), `Source backup for the database ci doesn't exist. Skipping`, the six
+  repositories and their wikis restored (`unable to reset refs ... repository not found. Proceeding with a
+  normal restore` on each, the empty Gitaly), uploads, builds, artifacts, pages, lfs, terraform states,
+  packages, ci secure files, agent plan content, CI catalog bundles and external diffs each `done` in the
+  same second (they live in the object-storage bucket, outside the archive), `authorized_keys` rebuilt,
+  `Restore task is done`.
+- **[user]** `gitlab-ctl reconfigure` (`3/779 resources updated in 14 seconds`, `gitlab Reconfigured!` at
+  02:22:57), `gitlab-ctl restart` (ten services `ok: run`), `gitlab-rake gitlab:check SANITIZE=true` straight
+  after: GitLab Shell's *Internal API available: FAILED - Internal API unreachable* and *Sidekiq: Running?
+  ... no*, the two services still booting behind the restart [inferred from the timing]; the GitLab App block
+  all `yes`: migrations up, the six projects with their namespaces, `Active users: ... 5`, hashed storage.
+- **[user]** `gitlab-rake gitlab:doctor:secrets` at 02:25:07: every model `failures: 0`, `Ci::Variable`,
+  `Ci::Runner`, `ApplicationSetting`, `User` and `Project` among them, `Total: 0 row(s) affected`: **the
+  restored secrets file decrypts the restored database**.
+- **[Claude] The sign-in page** by address: `200` until 02:20:46, `502` through the restore and the
+  restart, `200` again at 02:24:49. **Verification v: from the destroy's start at 02:00:33 to the restored
+  sign-in page, 24 min 16 s**, of which the first boot 8 min 07 s and the restore itself 58 s; the backup
+  two minutes before the destroy.
+- **[Claude] The API through the user's browser session, which survived the restore**: the six projects
+  with their ids and `last_activity_at` as before the backup; the repository reads below.
+- **[Claude] 8.3's diff**, `./aws/supplychain.py` with every profile after the restore (02:26), 0 checks
+  failed, against the run of 00:47 with everything up: `SC-1` carries the new instance id, `SC-10` reads *no
+  runner instance* (a pass) where it read three runners (a note), `SC-11`'s three runner lines became the
+  note for an absent `[E]` runner, and `SC-13` names the new archive; every other line identical, `SC-3`'s
+  container `last changed 2026-10-12` among them. **Only the instance, the `[E]` runners and the timestamps
+  moved: nothing leaked into the wrong layer.**
+- **[Claude] The proxy after §I step 6**: the old host's last `CONNECT` to `events.gitlab.net` at 01:08:32,
+  then only dnf's two `packages.gitlab.com` at its restart; the new host, 02:02 to 02:27, `packages.gitlab.com`
+  15 times and `storage.googleapis.com` once, no `events.gitlab.net` and no `version.gitlab.com`: **the
+  settings travelled with the database, and the channel is closed.**
+- **[Claude] The restored instance read from outside, 02:27 to 02:29**: `awsds/app-etl`'s `main` at
+  `8d50f685` and its 14 tags, `v0.4.6` on that commit, as before the backup (a Gitaly read of the restored
+  repositories); the six users and the runners' three records (ids 1, 3 and 4, read `online` on their
+  restored `contacted_at`, their hosts gone since 8.1); the application settings of §I step 6 as set before
+  the backup (`gitlab_product_usage_data_enabled`, `usage_ping_enabled`, `version_check_enabled`,
+  `update_runner_versions_enabled` and `auto_devops_enabled` false, `restricted_visibility_levels`
+  `["public"]`); Sidekiq's one process started 02:24:49, so `gitlab:check`'s two failures were the services
+  behind the restart; the Pages site `https://app-etl-ffa1fa.awsds-pages.internal/` answering `302` to its
+  OAuth sign-in, the private project's access control read from the restored database; the help page `200`.
+  The administrator's browser session outlived the restore through its remember-me cookie (a sign-in
+  recorded at 02:27:25); the laptop's resolver answered the new address by 02:28.
+- **[user] The clone**, from the laptop over the tunnel at about 02:33: `git clone --depth 1
+  https://gitlab.awsds.internal/awsds/app-etl.git` received 33 objects and `rev-parse HEAD` printed
+  `8d50f6851af08f394e18ac17099a4e5db68b3fc4`, `main`'s commit before the backup: **a pre-backup repository
+  clones cleanly from the restored host** (8.2's proof, the stage's lifecycle deliverable). The clone deleted.
+- **[user] The sitting's last `make gitlab-down`** (the Stages 7-10 session's agreed final descent for
+  GitLab): no runner to destroy, the 12 endpoints gone by 02:38:01, the host's stop `User initiated
+  (2026-10-26 02:38:08 GMT)`, `stopped` at 02:39:13; the proxy left running for the hub's own descent, the
+  Stages 7-10 session's. The bucket holds the four archives (2026-10-13, 10-15, 10-25 and 10-26), the newest
+  expiring 2026-11-26. **Pass 4 is closed.** The sitting's GitLab bill: the host 20:07 to 02:39 and the
+  rebuild's hour, the endpoints and the runners by `make status` at each descent.

@@ -82,7 +82,7 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
 
 4. The tunnel on the laptop ([client runbook](client-vpn-proxy-configuration.md) §1); `gitlab.awsds.internal` resolves through it and nowhere else.
 
-5. `https://gitlab.awsds.internal` answered within four minutes of the one start that was read (2026-10-12: started 15:59 UTC, the sign-in page `200` at 16:03; a start reconfigures nothing, and Stage 7 8.1 owes the timed figure); each runner raised appears on `awsds/app-etl`'s **Settings → CI/CD → Runners** at the end of its own first boot (§K).
+5. `https://gitlab.awsds.internal` answers **1 min 42 s after the start** (2026-10-26: started 01:29:03 UTC, nginx `502` from 01:29:17, the sign-in page `200` at 01:30:45; a start reconfigures nothing); each runner raised appears on `awsds/app-etl`'s **Settings → CI/CD → Runners** at the end of its own first boot (§K). **A Session Manager shell on the started host waits about twenty minutes**: `make gitlab-up` starts the `[D]` host before it applies `egress/`, the agent's first call finds no `ssm` endpoint, resolves the public address, times out and hibernates (`SSM Agent entering hibernation due to error` on the serial console), and `start-session` answers `TargetNotConnected` until the hibernation's retry registers the host (01:31 to 01:51 on 2026-10-26). A fresh host after a re-apply meets the endpoints and registers at once.
 
 **Down**, in the reverse order:
 
@@ -106,7 +106,7 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
 
 Stopped, GitLab bills its two volumes and its snapshots; running, `make status` prices the host and the runners (step 3). The whole hour, volumes included, is [`docs/PRICING.md`](../../PRICING.md)'s GitLab session: 0.1994 USD/h with `RUNNERS=0`, 0.2436 by default, 0.4623 with `BUILD=1`. The endpoints are `production/egress/`'s whole set, 12 at 0.010 USD/h each since Stage 7 decision 9 dropped the SageMaker pair; the module's data-plane three (`athena`, `glue`, `lakeformation`) stay, so a GitLab session carries them whether or not anything in the VPC calls them.
 
-**The first boot** of a fresh instance took nine minutes to `gitlab Reconfigured!` on 2026-10-12 and fourteen to the end of cloud-init: the Omnibus package through the proxy, `gitlab-ctl reconfigure` (5 min), the readiness probe over loopback. Its log is `/var/log/awsds-gitlab-boot.log` on the host, readable with no SSM endpoint through the serial console:
+**The first boot** of a fresh instance took nine minutes to `gitlab Reconfigured!` on 2026-10-12 and fourteen to the end of cloud-init, and 8 min 07 s to the end of cloud-init on 2026-10-26 (the readiness probe answering at once): the Omnibus package through the proxy (1.07 GB from Google's storage behind `packages.gitlab.com`), `gitlab-ctl reconfigure` (5 min), the readiness probe over loopback. Its log is `/var/log/awsds-gitlab-boot.log` on the host, readable with no SSM endpoint through the serial console:
 
 ```bash
 aws ec2 get-console-output --profile awsds-infra-prod --region us-west-2 --instance-id "$(aws ec2 describe-instances --profile awsds-infra-prod --region us-west-2 --filters Name=tag:Name,Values=awsds-prod-gitlab Name=instance-state-name,Values=running --query 'Reservations[0].Instances[0].InstanceId' --output text)" --latest --output text
@@ -186,7 +186,18 @@ Once per host: after the stage's first apply, and after a replacement or the res
    sudo awsds-gitlab-refresh
    ```
 
-6. **The instance settings**, once. **Admin area → Settings → General → New user account restrictions → Allow new user accounts** off (the home page's *"allows anyone to register"* banner is this), since Identity Center is the only sign-in and the local administrator the one exception (Stage 7 step 3), kept on by the user through pass 1 (2026-10-12); **Visibility and access controls → Restricted visibility levels → Public** checked, since nothing here is reachable off the VPN and a public project would still be readable by anything on it; **Admin area → Settings → CI/CD → Auto DevOps → Default to Auto DevOps pipeline for all projects** off, or a project without a `.gitlab-ci.yml` runs a pipeline nobody wrote once a runner exists. The user list holds a `GitLab Duo` bot the instance created by itself (read 2026-10-12, v19.4.2); it holds nothing and stays. Of the three settings only the first has a recorded act, the user keeping sign-up on (2026-10-12); Auto DevOps read `instance enabled` that day and no entry records the other two, so both wait for the next session with GitLab up. **Product usage data** is a fourth setting, under **Admin area → Settings → Metrics and profiling** (the field's exact name is read on the host): the instance sent 4,049 `CONNECT`s and 17.3 MB to `events.gitlab.net` through the proxy between 2026-10-12 and 2026-10-16 (read 2026-10-18, [Stage 12](../stages/stage-12-observability-finops.md) 4.2), and whether it stays on is the user's decision.
+6. **The instance settings**, once per database: a restore (§B) carries them, and a fresh host without one comes up with GitLab's defaults, every setting below on (Lesson 17). The user list holds a `GitLab Duo` bot the instance created by itself (read 2026-10-12, v19.4.2); it holds nothing and stays. Done 2026-10-26 (Stage 7's log), read back from `GET /api/v4/application/settings`:
+
+   | Page | Setting | Value |
+   |---|---|---|
+   | **General → Visibility and access controls → Restricted visibility levels** | *Public* | checked (`restricted_visibility_levels` `["public"]`): nothing here is reachable off the VPN, and a public project would still be readable by anything on it |
+   | **General → New user account restrictions** | *Allow new user accounts* | on, with admin approval required (`signup_enabled`, `require_admin_approval_after_user_signup`), the user's choice of 2026-10-12 kept on 2026-10-26; Identity Center is the sign-in (Stage 7 step 3) and the local administrator the one exception |
+   | **CI/CD → Continuous Integration and Deployment** | *Default to Auto DevOps pipeline for all projects* | off (`auto_devops_enabled`): a project without a `.gitlab-ci.yml` would run a pipeline nobody wrote once a runner exists |
+   | **CI/CD → Runners → Runner version management** | *Fetch GitLab Runner release version data from GitLab.com* | off (`update_runner_versions_enabled`): the runner's release is pinned (Stage 8 decision 24), and the fetch was the host's only call to `gitlab.com` |
+   | **Metrics and profiling → Usage statistics** | *Enable version check*, *Enable Service Ping*, *Enable Service Ping Generation*, *Enable Registration Features* | all off (`version_check_enabled`, `usage_ping_enabled`, `usage_ping_generation_enabled`, `usage_ping_features_enabled`): the daily version check and the weekly Service Ping went to `version.gitlab.com`; the release is pinned (Stage 7 decision 10) and read on the laptop (`upstream-releases.md`) |
+   | **Metrics and profiling → Event tracking** | *Enable event tracking* (*Send event data to GitLab*), *Enable Snowplow tracking* | both off (`gitlab_product_usage_data_enabled`, `snowplow_enabled`): the product usage events, 9,240 `CONNECT`s and 38.5 MB sent to `events.gitlab.net` through the proxy between 2026-10-12 and 2026-10-26, the host's largest outbound by count, metadata leaving through the `open` build plane. The user's decision of 2026-10-26, no `TM` row |
+
+   What the host still calls through the proxy: `packages.gitlab.com` and its Google storage redirect, at a package install or a dnf metadata refresh (§P). A release may add a channel: after an upgrade the two pages are read again, and `/awsds/prod/proxy` filtered on the host's address is the measurement.
 
 7. **The namespace, the groups and the repositories** (Stage 7 steps 3.4-3.6): the group `awsds/`; inside it the four persona groups `data-scientists`, `deployment-managers`, `governance-managers` and `dev-env-stewards`, whose membership mirrors the Identity Center groups by hand and whose names are deliberately bare; the repositories `awsds/app-etl` and `awsds/dev-env`, created empty and private. On `dev-env`, **Manage → Members → Invite a group**: `awsds/data-scientists` as Developer and `awsds/dev-env-stewards` as Maintainer; **Settings → Repository → Protected tags → Add tag**: the wildcard `*-v*` (the image tag convention `<flavour>-v<semver>`; `v*` would match nothing this repository tags), allowed to create **Maintainers**, which in CE is the whole of the release gate. Done 2026-10-12.
 
@@ -258,31 +269,75 @@ Python's `requests` and `botocore` read `certifi`, not the keychain; for a sessi
 
 ## B. Backup and restore
 
-A daily `gitlab-backup create` runs at 03:00 UTC while the host is up (`awsds-gitlab-backup.timer`) and uploads to `awsds-prod-gitlab-backup`, where every object expires after 30 days: `aws s3api head-object` reports a backup's date in its `Expiration` header (2026-11-13 and 2026-11-15 for the backups of 2026-10-13 and 2026-10-15), and a host kept down past it leaves the bucket with no current backup until its next `gitlab-backup create`. The data volume is snapshotted daily by DLM besides, host stopped or not. `gitlab-secrets.json` is **not** in the backup by GitLab's design: it is in `awsds-prod-gitlab-secrets`, pushed by the first boot, and a fresh boot restores it from there before the first reconfigure (step 1.5).
+**The daily backup.** `awsds-gitlab-backup.timer` runs `gitlab-backup create CRON=1 STRATEGY=copy` at 03:00 UTC while the host is up and uploads the archive to `awsds-prod-gitlab-backup` (`backup_upload_connection` in `gitlab.rb`, the host's role, the bucket's key); a host down at 03:00 writes none, and every object expires 30 days after its upload (`aws s3api head-object` reports the date in its `Expiration` header: 2026-11-26 for the archive of 2026-10-26). The archive holds the database, the repositories and the local Pages deployments. `gitlab-secrets.json` is **not** in it, by GitLab's design: it lives in `awsds-prod-gitlab-secrets`, pushed by the first boot and restored by every later first boot before the first reconfigure (§P, step 1.5); the object-storage bucket is outside it too and survives the host. The data volume is snapshotted daily by DLM besides, host stopped or not, and no procedure here restores from a snapshot.
 
-A backup by hand, in the shell:
+**A backup by hand**, before anything that can lose the host (the rehearsal, a rebuild, an upgrade): a Session Manager shell on the host (§U) and
 
 ```bash
 sudo gitlab-backup create STRATEGY=copy
 ```
 
-**The restore rehearsal** (step 8.2) is: a backup, `terraform destroy` of `production/tooling/` (the only slice a destroy may ever reach here; `pki/` refuses it), a re-apply, a wait for the first boot - which restores the secrets file from its container - then on the host:
+The command ends with the archive's name, `Uploading backup archive to remote storage awsds-prod-gitlab-backup ... done` and `Backup is done.` (15 MB on 2026-10-26, under two minutes). After `make gitlab-up` the shell opens only once the agent's hibernation retry has passed: the host starts before the `ssm` endpoint exists, the agent's first call times out on the public address and it hibernates, `Online` again 20 minutes later (01:31 to 01:51 UTC on 2026-10-26); until then `start-session` answers `TargetNotConnected`. The gate before a destroy is the object read in the bucket, name, size and time:
 
 ```bash
-sudo gitlab-ctl stop puma && sudo gitlab-ctl stop sidekiq
+aws s3api list-objects-v2 --profile awsds-infra-prod --region us-west-2 --bucket awsds-prod-gitlab-backup --query 'sort_by(Contents,&LastModified)[].{Key:Key,Size:Size,LastModified:LastModified}' --output table
+```
+
+**The release.** The name carries it before `_gitlab_backup.tar` (`1792979588_2026_10_26_19.4.2_gitlab_backup.tar`), and GitLab restores an archive only into the release that made it, `gitlab-backup restore` stopping on `GitLab version mismatch` otherwise; the re-apply installs `gitlab_ce_version` (§P, Stage 7 decision 10), so the two are compared before the destroy, which `./aws/supplychain.py` `SC-13` does for the newest archive. A backup older than the last upgrade is restored by a re-apply with `-var gitlab_ce_version=<the backup's release>`, then upgraded again along §P.
+
+**The restore rehearsal** (Stage 7 step 8.2) is the backup above, `terraform destroy` of `production/tooling/` by hand (`scripts/slices.py` never destroys a `[D]` slice; `pki/` refuses a destroy outright), the re-apply, the first boot and the restore below. The runners are destroyed first (`make gitlab-down`: their security group is this slice's), and `production/egress/` stays up (the first boot reads SSM and Secrets Manager through the endpoints). Both plans take `-var-file=<project folder>/secrets/saml.auto.tfvars`, or the host comes up without its SAML block; from an initialised slice folder ([`terraform-changes.md`](terraform-changes.md) Recipe A):
+
+```bash
+AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/tooling plan -destroy -input=false -var-file=<project folder>/secrets/saml.auto.tfvars -out="$HOME/tmp/tooling-destroy.tfplan"
 ```
 
 ```bash
-sudo gitlab-backup restore BACKUP=<timestamp_gitlab_backup>
+AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/tooling apply -input=false "$HOME/tmp/tooling-destroy.tfplan"
 ```
 
 ```bash
-sudo gitlab-ctl reconfigure && sudo gitlab-ctl restart && sudo gitlab-rake gitlab:check SANITIZE=true
+AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/tooling plan -input=false -var-file=<project folder>/secrets/saml.auto.tfvars -out="$HOME/tmp/tooling-apply.tfplan"
 ```
 
-The backup file is fetched first from the backup bucket into `/var/opt/gitlab/backups/`, as `git` (`aws s3 cp` as root, then `chown git:git`). A restore proves itself by a pre-backup repository cloning cleanly.
+```bash
+AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/tooling apply -input=false "$HOME/tmp/tooling-apply.tfplan"
+```
 
-**The release.** GitLab restores a backup only into the release that created it, and `gitlab-backup restore` stops on `GitLab version mismatch` otherwise. A backup's name carries its release before `_gitlab_backup.tar` (`1792033259_2026_10_15_19.4.2_gitlab_backup.tar`), and the re-apply installs `gitlab_ce_version` (§P), so the two are compared before the destroy: `./aws/supplychain.py` `SC-13` compares them for the newest backup. A backup older than the last upgrade is restored by a re-apply with `-var gitlab_ce_version=<the backup's release>`, then upgraded again along §P.
+The destroy lists 17 resources (2026-10-26): the instance, the data volume with its attachment and DLM policy, the two records, the `gitlab.rb` object, the host's role and profile, the two security groups, the status-check alarm. The secrets' resource policies name the host's role as a string in `aws:PrincipalArn`, so the re-created role keeps its reads. The first boot (§U) ends in `=== awsds gitlab first boot done`, with `restored from Secrets Manager` and the `rpm -q gitlab-ce` line of the pinned release in `/var/log/awsds-gitlab-boot.log`, readable from the serial console before the agent is up.
+
+**The restore**, in a Session Manager shell on the new host:
+
+1. The archive, fetched as `git`'s (the host's role reads the bucket and decrypts under its key):
+
+   ```bash
+   sudo aws s3 cp "s3://awsds-prod-gitlab-backup/<archive>" /var/opt/gitlab/backups/ --region us-west-2 && sudo chown git:git "/var/opt/gitlab/backups/<archive>"
+   ```
+
+2. The processes that write the database stopped:
+
+   ```bash
+   sudo gitlab-ctl stop puma && sudo gitlab-ctl stop sidekiq
+   ```
+
+3. The restore, `BACKUP` being the name before `_gitlab_backup.tar`; it asks twice, the database wiped and `authorized_keys` rebuilt:
+
+   ```bash
+   sudo gitlab-backup restore BACKUP=<timestamp>_<date>_<release>
+   ```
+
+4. Reconfigure, restart, check:
+
+   ```bash
+   sudo gitlab-ctl reconfigure && sudo gitlab-ctl restart && sudo gitlab-rake gitlab:check SANITIZE=true
+   ```
+
+5. The secrets file against the database it decrypts (a mismatch leaves every encrypted column unreadable, the CI/CD variables and the runner tokens among them):
+
+   ```bash
+   sudo gitlab-rake gitlab:doctor:secrets
+   ```
+
+A restore proves itself by a pre-backup repository cloning cleanly and the API reading what it read before the backup: the projects, `main`'s commit and the tags, the users and groups, the runners (their records survive and read `online` on their restored `contacted_at` until the timeout; the hosts re-register at the next `make gitlab-up`), and the instance settings, which travel with the database (§I step 6), while a fresh host without a restore carries GitLab's defaults. **Measured 2026-10-26** (Stage 7 step 8.2, the log): the destroy 1 min 17 s, the re-apply 58 s, the first boot 8 min 07 s, the fetch and the restore of a 15 MB archive 58 s (six `ERROR: must be owner of extension` lines, GitLab's documented noise for a restore run as the `gitlab` database user; `unable to reset refs ... Proceeding with a normal restore` per repository on the empty Gitaly), `reconfigure` 14 s, the sign-in page back 24 min 16 s after the destroy began. `gitlab:check` run straight after the restart reports GitLab Shell's internal API and Sidekiq down while they boot; a minute later both are up. The object-storage families (`uploads`, `artifacts`, `pages`, `lfs`, `packages`, ...) each restore in a second: they live in the bucket. A browser session outlives the restore through its remember-me cookie; Redis is not in the archive, so a plain session signs in again.
 
 ## K. The runners
 
