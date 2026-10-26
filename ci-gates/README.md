@@ -56,7 +56,7 @@ reports one id per alias group and OSV's records decide which (fsspec's `CVE-202
 
 | List | Project | Seeded from |
 |---|---|---|
-| `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV` | `awsds/dev-env`, its `dev-env/python/uv.lock` | the lock a targeted `uv lock --upgrade-package` left on 2026-10-14: 8 findings whose fixed version another package of the environment forbids (fsspec, setuptools, sqlparse), accepted by name by the user as the Dev Env Steward |
+| `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV` | `awsds/dev-env`, its `dev-env/python/uv.lock` | the lock a targeted `uv lock --upgrade-package` left on 2026-10-14: 8 findings whose fixed version another package of the environment forbids (fsspec, setuptools, sqlparse), accepted by name by the user as the Dev Env Steward; 42 more read the same way on 2026-10-25 for `gates-v0.5.0`, when the lock of 2026-10-16 met 73 blocking findings at `default-v0.9.0`'s gate: pillow 12.3.0's 41, their fix 13.0.0 forbidden by autogluon-multimodal 1.6.1's `Pillow<13`, and setuptools' second, 84.1.0 behind the same `<82` |
 
 **A finding enters a list by name**, in a reviewed commit whose message says who accepted it and why; for
 the SageMaker Distribution lineage that is the Dev Env Steward approving the release that carries it

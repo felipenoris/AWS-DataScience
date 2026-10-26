@@ -3487,3 +3487,390 @@ plan only. Times UTC.*
 - **[Claude] The copy**: `./scripts/gitlab-mirror.py awsds/deploy-image` at 20:34 read GitLab's `main` at
   `e502078b` holding the copy's six files unchanged, and wrote `gitlab/mirror.json`. The README's release row
   for `v0.3.0` is GitLab's to hold first, the mirror then copying it back.
+
+## 2026-10-25 — the deploy runner replaced on `v0.3.0`; the house image's merge request read
+
+*The user's hand for the merge of PR #260, `git pull` and `make gitlab-up BUILD=1` from the project folder;
+Claude's for the readings, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), reads
+only. This session's records continue on a branch cut from the merged `main`. Times UTC.*
+
+- **[user]** `make gitlab-up BUILD=1`: the deploy runner `i-04c2be6e15f27b9d8` terminated and
+  `i-0acaf7ded0e455dcd` launched at 20:40:08, `t3a.small`, the build and test runners untouched.
+- **[Claude] `./aws/cicd.py awsds-infra-prod`** at 20:42: all checks passed, `CI-1` the new deploy runner
+  running, `CI-9` the test runner as before. From here the deploy runner's jobs run Terraform 1.16.6, and a
+  slice the pipeline reads may be raised or applied from the laptop again (Lesson 76).
+- **[Claude] Stage 8 1.1's merge request, read before the user's act**: `./scripts/gitlab-mirror.py --dry-run
+  awsds/dev-env` at 20:42 reads GitLab's `main` at `5d5391ab` (2026-10-16) and one file differing from the
+  copy, `dev-env/Dockerfile`, the 72-name `NO_PROXY` literal; `./scripts/check-gitlab-mirror.py --plan`
+  reads `GM-1` to `GM-8` passing on the copy, 72 names and sha256 `6faf2e4761622508` on both sides. The
+  merge request carries that one file; the tag `default-v0.9.0` and the gate are the steward's.
+
+## 2026-10-25 — `default-v0.9.0` spent at `pip-audit`: the lock of 2026-10-16 aged; the targeted upgrade and 42 acceptances written for `gates-v0.5.0`
+
+*Claude's hand, from the user's GitLab session read in Chrome and the laptop's own audit; no AWS call. Times
+UTC.*
+
+- **[Claude] The gate's verdict**: `awsds/dev-env`'s pipelines #89, #90 and #91, all on `f71cafcd` (the merge
+  request's one file, the 72-name literal), failed at `pip-audit` (job #547): 73 blocking findings with a fixed
+  version, in `dev-env/python/uv.lock` of 2026-10-16, unchanged since `default-v0.8.0` passed the same gate on
+  it. The tag `default-v0.9.0` is spent with nothing built (the README: a tag is spent on first landing), so the
+  release is `default-v0.9.1`.
+- **[Claude] The same lock on the laptop**, 21:06 to 21:09: the gate's audit (pip-audit 2.10.1, OSV) over the
+  export with its environment markers stripped, since every line names `linux` and `x86_64` and the laptop
+  matches none (verification x). 89 lines, 82 findings once the marker-split duplicates fold: 73 blocking in 11
+  packages (aiohttp 3.14.3, brotli 1.2.0, certifi 2026.7.22, filelock 3.32.6, gitpython 3.1.62, mlflow 3.16.0,
+  nbconvert 7.17.1, opentelemetry-api 1.44.0, pillow 12.3.0, setuptools 81.0.0, virtualenv 21.14.7), the 8
+  accepted (fsspec, setuptools, sqlparse) matched, and nltk 3.10.3's `PYSEC-2026-3740`, with no fixed version,
+  the gate's warning.
+- **[Claude] The lock moved** by `uv lock --upgrade-package` naming the 11, after a bare `--upgrade` resolved an
+  older autogluon and failed building `configspace`: 17 entries in 9 packages, aiohttp 3.14.5, brotli 1.2.1,
+  certifi 2026.10.23, filelock 4.2.4, gitpython 3.2.1, mlflow, mlflow-skinny and mlflow-tracing 3.17.2, nbconvert
+  7.17.2, opentelemetry-api and -sdk 1.45.1 with -exporter-prometheus, -instrumentation,
+  -instrumentation-threading and -semantic-conventions 0.66b1, virtualenv 21.14.13, yarl 1.25.1;
+  `pyproject.toml` untouched, `uv lock --check` passing, the export 454 pins as before. Pillow stays at
+  12.3.0: autogluon-multimodal 1.6.1 requires `Pillow<13,>=10.0.1` (PyPI's metadata, read 21:14), and 13.0.0,
+  published 2026-10-16, fixes all 41. setuptools stays at 81.0.0: autogluon-core 1.6.1 requires
+  `setuptools<82`, and 84.1.0 (2026-10-19) fixes `GHSA-xmj3-9gf7-h52w`. Forcing either resolves an older
+  autogluon, torch 2.13 to 2.9.1 and transformers 5.14 to 4.57 among the moves.
+- **[Claude] The new lock audited the same way**, 21:23 to 21:25 (2 min 25 s; the recipe is now the dev-env
+  README's *Before a build*): 454 pins audited, 58 lines in 5 packages, pillow's 41 and setuptools' second the
+  only ones outside the accepted list; fsspec's and sqlparse's accepted, nltk's the warning.
+- **[Claude] Written**: the lock into the copy `gitlab/awsds/dev-env/dev-env/python/uv.lock`; 42 entries into
+  `ci-gates/baselines.gitlab-ci.yml`'s `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV`, pillow's 41 ids as OSV reports them
+  and `GHSA-xmj3-9gf7-h52w|setuptools`, each with its version, its fix and the requirement that forbids it, 50
+  entries in all; the gates README's row; Lesson 77 (a gate that reads a feed gives a dated verdict); the
+  plan's sentences moved from `default-v0.9.0` to `default-v0.9.1` (`promotion.md` §H step 3 and §N.1 step 1,
+  the stage file, `waiting-on-the-user.md`). The acceptance is the user's, as the Dev Env Steward: the
+  `gates-v0.5.0` commit on `awsds/ci-gates` (`gitlab.md` §G), the dev-env `include:` `ref` to its commit, the
+  merge request carrying the lock and the `ref`, the tag. `examples/app-etl/` stays at `gates-v0.4.0`: the
+  change is the dev-env list alone.
+
+## 2026-10-25 — `gates-v0.5.0` pushed; the dev-env `include:` `ref` moved to it
+
+*The user's hand for the GitLab push, as a Maintainer of `awsds/ci-gates`; Claude's for the reading of the
+laptop's clone and the copy. Times UTC.*
+
+- **[user]** `awsds/ci-gates` at `7c3552b7effb0cfa1e43f4b91c7a9101d5be257b`, committed 21:32:42 and tagged
+  `gates-v0.5.0`: the 42 acceptances and the README's row, the two gates files unchanged since `gates-v0.4.0`;
+  the message names the steward and the two upper bounds. `origin`'s `main` and the tag both read that commit
+  from the laptop's clone, and its four files equal the copy under `ci-gates/`.
+- **[Claude]** `gitlab/awsds/dev-env/.gitlab-ci.yml`'s `include:` `ref` moved from `6fcea132…` (`gates-v0.4.0`)
+  to `7c3552b7…` (`gates-v0.5.0`), `./scripts/check-gitlab-ci.py` passing. The merge request on `awsds/dev-env`
+  carries the lock, the README and this file; its `pip-audit` is the gate's reading of the day, 50 accepted
+  and none blocking expected.
+
+## 2026-10-25 — `default-v0.9.1` tagged by the user; pipeline #96 past the gate; the copy read back
+
+*The user's hand for the merge request, its merge and the tag, as the Dev Env Steward; Claude's for the
+readings, from a clone without a checkout in the scratch folder, the mirror script and the user's GitLab
+session in Chrome. Times UTC.*
+
+- **[user]** The branch `lock-2026-10-25` at `03e94e4` (21:34:01): the lock, the README and the `include:`
+  `ref` at `7c3552b7`; merged into `main` as `746ef084` (21:36:01), and the tag `default-v0.9.1` created on
+  that commit.
+- **[Claude] The commits read**: `origin`'s `main` and the tag both at `746ef084`, whose parents are
+  `f71cafcd` (`default-v0.9.0`) and `03e94e4`; `main` changed three files since `default-v0.9.0`
+  (`.gitlab-ci.yml` 2 lines, `README.md` +25, `dev-env/python/uv.lock` 112), each byte-equal to the copy
+  under `gitlab/awsds/dev-env/`, and the tree's 14 files equal the copy. `./scripts/gitlab-mirror.py
+  awsds/dev-env` at 21:40 read *"the copy already holds this commit's 14 file(s)"* and wrote
+  `gitlab/mirror.json` at `746ef084`.
+- **[Claude] Pipeline #96 on the tag**, read at 21:41: `pip-audit` (#567, 21:36:56 to 21:38:12) printed
+  *"== awsds/dev-env: 50 accepted finding(s)"*, *"454 pinned package(s), audited against OSV"*, *"Found 58
+  known vulnerabilities in 5 packages"*, every fsspec, pillow, setuptools and sqlparse line `accpt`, nltk
+  3.10.3's `PYSEC-2026-3740` `warn` with no fixed version, no `gone` line, and *"454 of 454 pinned package(s)
+  audited, 0 blocking vulnerability(ies)"*; `recipe-checks` (#568) passed in 6 s; `build-images` (#569)
+  running since 21:38; `scan-base` (#570), `scan-dev-env` (#571), `release-gate` (#572, manual), `register`
+  (#573) and `retire` (#574) created. The gate's reading of the day agrees with the laptop's of 21:23: the
+  same 58 lines in the same 5 packages.
+
+## 2026-10-25 — `default-v0.9.1` released: pipeline #96's evidence, version 10 in Sandbox, `DE-5` passing
+
+*The user's hand for the release gate; Claude's for the readings, from the user's GitLab session in Chrome
+(the pipeline API, the job logs, the artifacts through the pages host `awsds.awsds-pages.internal`) and
+from ECR and SageMaker as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`,
+`awsds-infra-sandbox-1`), reads only. Times UTC.*
+
+- **[Claude] Pipeline #96**, the API read at 22:06: `build-images` (#569) 21:38:16 to 21:54:26, 970 s;
+  `scan-base` (#570) 21:54:28 to 21:55:11 and `scan-dev-env` (#571) 21:54:29 to 22:02:12, 464 s waiting
+  for the push's own scan, both failed as allowed; `release-gate` (#572) **[user]** 22:04:00 to 22:04:09;
+  `register` (#573) 22:04:11 to 22:04:42; `retire` (#574) 22:04:45 to 22:05:21; the pipeline `success`.
+- **[Claude] The images in ECR** (`describe-images`, 22:05): `awsds-prod-ecr-base:default-v0.9.1-746ef084`
+  pushed 21:41:27, 3,754,767,181 bytes, `sha256:ac9bd82b2b9ee441fad814eda819abd72ddc9c364f87f984c1715b0a7898044e`;
+  `awsds-prod-ecr-dev-env:default-v0.9.1-746ef084` pushed 21:52:45, 6,687,899,330 bytes,
+  `sha256:20a1017a0680c4f837211c02076260815ad998f5f9d863ea746004d97829ca39`; 9,117,662 and 9,325,492 bytes
+  more than `v0.8.0`'s, the base's growth carried into `dev-env`.
+- **[Claude] The manifests**, `build-images`' artifacts against `v0.8.0`'s (job #162): `runtimes.txt` the
+  same but the base digest (Python 3.12.14 in both environments, uv 0.12.17, Julia 1.12.7, R 4.5.3, rustc
+  1.98.0); `trust.txt` the same (curl, urllib and requests in both Pythons answer 200 on the lab's root, git
+  refused for want of a username, as before); `proxy.txt` 72 entries, sha256 `6faf2e4761622508`, against 70
+  and `aafa08da98a61f5c`; `imports.txt` the same but `mlflow 3.17.2`; `julia.txt` and `r.txt` the same;
+  `python-awsds.txt` 454 lines equal to the lock's export, 17 moves against `v0.8.0`'s, the lock's;
+  `python-conda.txt` identical, 621 lines. The raw log's tail: 26 Julia dependencies precompiled in 75 s,
+  the eight manifests written, the smoke stage `DONE 77.7s`.
+- **[Claude] Both scans**, ECR's basic scan read whole at 22:07 and the gate jobs' own summaries: CRITICAL
+  113, HIGH 612, MEDIUM 158, LOW 16, UNDEFINED 438 for each image, 725 CRITICAL or HIGH findings, 130 in the
+  baseline, 595 absent from it: 593 on `linux-libc-dev` 6.8.0-142.142 and two new since `v0.8.0`,
+  `CVE-2026-85091` on `zlib` and `zlib1g` 1.3.dfsg-3.1ubuntu2.2 (HIGH 610 → 612), the two images' sets
+  identical. Job #570's lines: *"== CRITICAL and HIGH: 725 found, 130 in the baseline"*, *"WARN: 595
+  CRITICAL or HIGH finding(s) absent from the baseline, for the operator to read"*, *"The job fails and the
+  pipeline goes on (decision 1)"*. Whether the zlib pair enters the lineage's baseline by name is the
+  steward's; the deploy lineage's baseline carries `CVE-2026-85091|zlib` for Debian's 1.3.dfsg+really1.3.1-1.
+- **[Claude] `register` and `retire` read**: *"proxy answers (404)"*, 3 versions found, then
+  *"awsds-sandbox-dev-env version 10: CREATED, alias 0.9.1"* with `ContainerImage` at the pushed digest;
+  `retire --keep 10` kept versions 10 (`0.9.1`), 9 (`0.8.0`), 8 (`0.7.3`) and 7.
+- **[Claude] AWS read back** at 22:10: `list-image-versions` 10, 9, 8 and 7 all `CREATED`, version 10 created
+  22:04:39 with `ContainerImage` and `BaseImage` at the dev-env digest and release notes
+  `default-v0.9.1-746ef084`; aliases `0.7.3`, `0.8.0`, `0.9.1`. `./aws/devenv.py` at 22:11: `DE-5` passes,
+  version 10's config blob (`sha256:89474298…80ff`, hash checked) carrying 72 names, sha256
+  `6faf2e4761622508`, the Dockerfile's; `DE-1` and `DE-4` pass; `DE-2` fails with `sandbox/egress` down, the
+  reading of 2026-10-18, so `DE-3` and `DE-6` are not compared. Stage 17 1.4's apply of `vpc-egress-v0.18.0`
+  on `sandbox/egress` is no longer held by the image (Stage 17 decision 4).
+- **[Claude] Written**: the release row in the copy's README, GitLab's `main` to hold by the steward's
+  hand; `CLAUDE.md` (version 10, `DE-5` passing, the deploy image on 1.16.6); the stage file's 1.1,
+  `promotion.md` §H step 3 and §N.1 step 1, `waiting-on-the-user.md` (the item taken), `AWS_STATE.md`'s
+  `DE-5` sentence.
+
+## 2026-10-25 — the README row mirrored; §N.1 step 3's readings with GitLab up
+
+*Claude's hand; the mirror script, `./aws/cicd.py`, `git ls-remote` on GitLab, SSM, EC2 and a read-only plan as
+the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`). Times UTC.*
+
+- **[user]** The merge request `the-releases-v0.9.1` merged as `6ba33971` (22:27:51), the release row on
+  GitLab's `main`. **[Claude]** `./scripts/gitlab-mirror.py awsds/dev-env` at 22:28: *"the copy already holds
+  this commit's 14 file(s)"*, `gitlab/mirror.json` at `6ba33971`.
+- **[Claude] `./aws/cicd.py awsds-infra-prod`** at 22:29: all checks passed, `CI-1` the deploy runner
+  `i-0acaf7ded0e455dcd` running, `CI-8` 72 assumption events, every caller the deploy runner, `CI-9` the test
+  runner `i-0e7427191bcddf332`.
+- **[Claude] `awsds/app-etl`'s refs** (`git ls-remote`, 22:30): one branch, `main` at `163cccaa`; verification
+  ix's branches gone, as the user said on 2026-10-25; tags `v0.1.0` to `v0.4.5`, so `v0.4.6` is free for
+  step 6.
+- **[Claude] The infrastructure mirror** (`awsds/infrastructure`, `git ls-remote`, 22:30): `main` at
+  `e011eb14`, PR #257's merge, while `origin`'s and the project folder's `main` read `2d3160f1` (PR #260):
+  `orchestration-v0.2.1` and the paused schedules (PR #258) are not on the mirror yet, step 4's push.
+- **[Claude] Stage 8 xxvii's plan half**: the parameter
+  `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64` reads `ami-0829b74b2a8c619b7`,
+  modified 2026-10-24 21:01, and all three runners run that image, launched today (the test runner 20:09:59,
+  the build runner 20:10:04, the deploy runner 20:40:08), so the parameter has not moved past them and the
+  half still waits; the read-only plan of `production/runners/` with `TF_VAR_build_runner=true` at 22:30
+  reads *"No changes"*.
+- **[Claude] `make status`** at 22:31: every `[E]` slice down but the hub's and GitLab's, Sandbox's `egress/`
+  among them, as step 6's negative needs; the burn 0.4521 USD/h.
+
+## 2026-10-25 — §N.1 steps 4 and 5: the mirror at `main`, the template's `KmsKeyId` merged
+
+*The user's hand for the push and the merge request; Claude's for the readings (`git ls-remote`, the
+pipeline API in the user's GitLab session). Times UTC.*
+
+- **[user]** `git push gitlab main` from the project folder: `awsds/infrastructure`'s `main` reads
+  `2d3160f1` at 22:45, `origin`'s, so the promotion legs clone `orchestration-v0.2.1`, the paused schedules
+  and `model-chain.py`'s registry read.
+- **[user]** The merge request `kms-key-id` on `awsds/app-etl`, one line, `ProcessingOutputConfig.KmsKeyId:
+  "{env.PROJECT_KEY_ARN}"` in `workflows/app-etl.yaml` (`EXC-22`, Stage 10 xxviii): its branch pipeline #99
+  (`e915deac`) passed at 22:43, merged as `8d50f685`, whose `main` pipeline #100 passed at 22:44. **[Claude]**
+  the archive compared beforehand: GitLab's `main` and `examples/app-etl/` at `origin/main` differed in that
+  line alone.
+
+## 2026-10-25 — §N.1 step 6: the tag `v0.4.6`, verification xxiv's negative, Sandbox's egress raised
+
+*The user's hand for the branch's deletion, the tag, `make up ENV=sandbox ONLY=egress` and the job's retry;
+Claude's for the readings, from the user's GitLab session in Chrome (the pipeline API, the job logs). Times
+UTC.*
+
+- **[user]** `xi-portal-scoped` deleted; the tag `v0.4.6` on `8d50f685` with Sandbox's `egress/` down:
+  pipeline #102, created 22:48:19.
+- **[Claude] The stages before the deploy**: `test` (#601) passed in 14 s; `build-image` (#602) passed in
+  2 min 44 s, the app layers `CACHED` from the previous build, and printed *"== pushed
+  …/awsds-prod-ecr-app-etl:v0.4.6-8d50f685@sha256:ba8d41bf08bebee084b38e7df9b8efa28e6fcccaf9865e0591fdec7d0462f98d"*
+  at 22:51:21, the base `awsds-prod-ecr-base@sha256:94359041…1975` as the template pins it; `build-task-code`
+  (#603) passed in 8 s; `scan-gate` (#604) failed as allowed after 2 min 25 s: the push's scan at 22:53:39
+  read CRITICAL 113, HIGH 612, MEDIUM 158, LOW 16, UNDEFINED 466, *"725 found, 130 in the baseline"*, *"595
+  CRITICAL or HIGH finding(s) absent from the baseline"*, the `linux-libc-dev` list.
+- **[Claude] Verification xxiv's negative**: `test-deploy` (#605) started 22:51:27 and failed at 22:51:36,
+  10 s, before any write: *"== the hub: the proxy answers for the SageMaker API"*, *"== Sandbox's egress: the
+  interface endpoints the run needs"*, *"sagemaker.api: None"*, *"FATAL: no sagemaker.api endpoint: is
+  Sandbox's egress up (make up ENV=sandbox ONLY=egress)?"*, then *"bundle.env: no matching files"* at the
+  artifact upload: the guard reads the endpoint before the deploy, as written.
+- **[user]** `make up ENV=sandbox ONLY=egress`, then the job's retry: `test-deploy` (#620) running from
+  about 22:58. `store-bundle` (#606) and `release` (#607) follow it; `staging-gate` (#608) is the manual
+  job step 8 opens.
+
+## 2026-10-25 — §N.1 steps 6 to 8: `test-deploy` retried, the release stored, Staging's gate and check
+
+*The user's hand for the retry, `make up ENV=staging ONLY=egress` and `staging-gate`; Claude's for the
+readings, from the user's GitLab session in Chrome. Times UTC.*
+
+- **[Claude] `test-deploy` (#620)**, 22:58:23 to 23:14:26, 16 min 3 s: the bundle `artifacts/app-etl.zip`,
+  16,440 bytes, sha256 `7334604b2f58564ebb3ee3032dea9900b4916966b84376880e36f4c9737fb50c`, the deploy to the
+  `test` project, its workflow run `GK8LmpHGAx9OcqR` (`ON_DEMAND`) started 23:00:16, completed 23:12:49,
+  `Duration` 753, `RunState` `SUCCESS`, four task instances (`transform`, `process`, `summarize`,
+  `write_result`); the known `datazone:GetGroupProfile` warnings of the deploy role.
+- **[Claude] `store-bundle` (#606)** at 23:14:32: *"artifacts/app-etl.zip: OK"*, uploaded to
+  `s3://awsds-prod-releases/app-etl/v0.4.6/app-etl.zip`. **`release` (#607)** at 23:14:44: *"release v0.4.6,
+  bundle s3://awsds-prod-releases/app-etl/v0.4.6/app-etl.zip, sha256 7334604b…b50c, image
+  …/awsds-prod-ecr-app-etl@sha256:ba8d41bf08bebee084b38e7df9b8efa28e6fcccaf9865e0591fdec7d0462f98d"*, the
+  GitLab release created; the three values of 3.7's record.
+- **[user]** `make up ENV=staging ONLY=egress`, then `staging-gate` (#608) at about 23:16. **[Claude]
+  `staging-check` (#609)**, 23:16:58 to 23:17:08: the mirror cloned at `2d3160f1`; `staging/egress/`'s state
+  holds the seven interface endpoints `available` (glue, kms, lakeformation, logs, sagemaker.api,
+  secretsmanager, sts) and the DNS Firewall association `COMPLETE`: *"ok: staging/egress/ is up"*, decision
+  27's read of the user's slice. `staging-deploy` (#610) running from 23:17.
+
+## 2026-10-25 — §N.1 step 9, first half: Staging's app-etl chain `SUCCEEDED`, `EXC-22`'s Staging half closed
+
+*Claude's hand; `staging-test`'s log in the user's GitLab session, Step Functions, S3 and KMS as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-staging`), reads only. Times UTC.*
+
+- **[Claude] `staging-test` (#611)** started 23:20:42, the mirror at `2d3160f1`, and at 23:20:53 started the
+  execution `v0-4-6-102-app-etl` of `awsds-staging-chain-app-etl`, polled every minute; the execution read
+  `SUCCEEDED` at 23:36:55 from the laptop (`list-executions`: stopped 23:35:57, 15 min 4 s), the job's own
+  poll printing *"23:36:17 app-etl SUCCEEDED"*; the job went on to the train chain.
+- **[Claude] `EXC-22`'s Staging half**, read 23:37:32: `awsds-staging-outputs/app-etl/work/job/trades.summary.json`,
+  written 23:29:20, 519 bytes, `ServerSideEncryption` `aws:kms`, `SSEKMSKeyId`
+  `arn:aws:kms:us-west-2:…:key/74f5ebbc-41bb-4165-9047-f84a952a833f`, the key `alias/awsds-staging-data`
+  resolves to (`describe-key`, `CUSTOMER`): the processing output is under the project's data key and no
+  longer under `aws/s3`, the template's `ProcessingOutputConfig.KmsKeyId` at work. The run's other objects:
+  `work/glue/trades.csv` 23:23:06, the `tables/trades_notional/` parts 23:23:08, the train inputs under
+  `work/train/` 23:23:11, `work/job/trades.parquet` 23:29:20, `outbox/report.json` 23:33:21.
+
+## 2026-10-25 — §N.1 step 9, second half: Staging's train chain `SUCCEEDED`, `staging-model` started
+
+*Claude's hand; Step Functions as the infrastructure user (`awsds-infra-staging`), the pipeline API in the
+user's GitLab session, reads only. Times UTC.*
+
+- **[Claude]** `staging-test` (#611) started the execution `v0-4-6-102-app-etl-train` of
+  `awsds-staging-chain-app-etl-train` at 23:36:19, after the app-etl chain; it read `SUCCEEDED` at 23:45:29
+  from the laptop (stopped 23:45:22, 9 min 3 s), Staging retraining on the release (Stage 10 decision 22).
+- **[Claude]** `staging-model` (#612) started 23:45:43 on the deploy runner, Stage 9 xii's registry read
+  before Staging's own model; Production's trail showed no `ListModelPackages` or `DescribeModelPackage`
+  yet at 23:46 (the trail lags the call).
+
+## 2026-10-25 — §N.1 step 9 closed: `staging-model`, Stage 9 xii's call in the job and in Production's trail
+
+*Claude's hand; the job's log in the user's GitLab session, SageMaker as `awsds-infra-staging`, CloudTrail
+and IAM as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`),
+reads only. Times UTC.*
+
+- **[Claude] `staging-model` (#612)**, 23:45:43 to 23:51:36, succeeded: first *"Production's registry:
+  version 1 of arn:aws:sagemaker:us-west-2:…:model-package-group/awsds-prod-model-app-etl is Approved, v0.4.2
+  trained by app-etl-train-20261025T011858"*, then *"== app-etl-v0-4-6-20261025T234609: the model of
+  app-etl-train-20261025T233703 on 30 batch row(s)"*, the transform `InProgress` from 23:46:45 and
+  `Completed` at 23:51:32 (SageMaker: created 23:46:13, ended 23:51:22), *"30 prediction(s), one per input
+  row, at s3://awsds-staging-outputs/models/app-etl/transform/app-etl-v0-4-6-20261025T234609/batch.csv.out"*,
+  the model deleted after.
+- **[Claude] Stage 9 xii in Production's trail** (`lookup-events`, 23:52): `DescribeModelPackage` at 23:46:03
+  on `model-package/awsds-prod-model-app-etl/1`, no error, `principalId`
+  `AROAZ4XFWAR7MPYEZXRTM:botocore-session-1792971953`, and `AROAZ4XFWAR7MPYEZXRTM` is `awsds-deploy-staging`'s
+  role id (`get-role`): Staging's deploy session read Production's registry through its own account's
+  credentials, the cross-account grant of Stage 8 4.1 exercised. `ListModelPackages`, the call before it,
+  had not reached the trail at 23:52.
+- Step 9 is closed: ix's Staging half (`OR-3`), `EXC-22`'s Staging half, xii. `production-plan` (#613)
+  started 23:51:40; `production-gate` (#614) is the manual job step 10 opens after
+  `make up ENV=production ONLY=workloads-egress`.
+
+## 2026-10-25 — `production-plan` green; the pipeline at `production-gate`
+
+*Claude's hand; the job's log in the user's GitLab session. Times UTC.*
+
+- **[Claude] `production-plan` (#613)**, 23:51:40 to 23:52:30, succeeded with `production/workloads-egress/`
+  still down: `production/app/app-etl/`'s plan *"0 to add, 2 to change, 0 to destroy"*, the Glue job
+  `awsds-prod-app-etl`'s `script_location` moving from `applications/app-etl/v0.4.2/glue/transform.py` to
+  `v0.4.6`'s, the outputs `image_uri` from `sha256:9735e42e…6fd5` to `sha256:ba8d41bf…f98d` and
+  `release_prefix` to `applications/app-etl/v0.4.6`; the saved plan; `lint-plan` *"ok: 2 job(s) do Glue:
+  aws_glue_job.load[0], aws_glue_job.this[0]"* (Stage 10 2.3's rule (2c)) with `awsds-workflows` at
+  `d856982c`. The pipeline reads `manual` at `production-gate` (#614), §N.1 step 10's.
+
+## 2026-10-26 — §N.1 steps 10 and 11: the Production guard's negative, `production-deploy` on the retry, the chain started by hand
+
+*The user's hand for `production-gate`, `make up ENV=production ONLY=workloads-egress` and the retry;
+Claude's for the readings (the user's GitLab session, EC2 and Step Functions as the infrastructure user with
+`InfrastructureAccess`, `awsds-infra-prod`) and, on the user's authorization in chat, for the
+`start-execution`. Times UTC.*
+
+- **[user]** `production-gate` (#614) at 00:02:35, before the slice: **[Claude]** `production-deploy` (#615)
+  failed at 00:02:57 after the mirror's clone, *"FATAL: production/workloads-egress/ is down: its state holds
+  no interface endpoint; run `make up ENV=production ONLY=workloads-egress` from the project folder as the
+  infrastructure user (profile awsds-infra-prod: account Production, permission set InfrastructureAccess),
+  then retry this job"*, nothing applied: decision 27's Production guard read on its negative, as Sandbox's
+  was at step 6.
+- **[user]** `make up ENV=production ONLY=workloads-egress`: the workloads VPC's seven interface endpoints
+  (secretsmanager, sagemaker.api, glue, lakeformation, logs, sts, kms) created 00:03:25 to 00:03:38
+  (`describe-vpc-endpoints`), the shared-services VPC's seven of 20:08 untouched; then the retry.
+- **[Claude] `production-deploy` (#621)**, 3 min 12 s, passed at 00:09:05: the application slice's 2
+  changes applied and the orchestration slice's outputs printed, the workflows
+  `awsds-prod-wf-app-etl-DHhc8FiTZC`, `awsds-prod-wf-app-etl-train-tM4WIaNABi` and
+  `awsds-prod-wf-app-etl-warehouse-w8XH78cHx3`, the three chains' state machines and the chain roles
+  `awsds-prod-chain-exec`, `-scheduler`, `-events`; the release record `v0.4.6` with a definition version id
+  per workflow and a code version id for `app-etl` and `app-etl-train`, kept as
+  `production-release.auto.tfvars.json`. The three schedules read `DISABLED` at 00:09 (`list-schedules`),
+  as the slice declares them.
+- **[Claude⚡] Step 11, on the user's authorization**: `aws stepfunctions start-execution` on
+  `awsds-prod-chain-app-etl` as the infrastructure user at 00:10:48, the execution
+  `v0-4-6-by-hand-2026-10-26-app-etl`; the previous executions, 2026-10-24's two by hand and the schedule's
+  of 2026-10-25 03:30, all `SUCCEEDED`.
+
+## 2026-10-26 — step 11 closed: Production's chain `SUCCEEDED`, `EXC-22`'s Production half
+
+*Claude's hand; Step Functions, S3 and KMS as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`), reads only. Times UTC.*
+
+- **[Claude]** The execution `v0-4-6-by-hand-2026-10-26-app-etl` of `awsds-prod-chain-app-etl` read
+  `SUCCEEDED` at 00:26:41 (stopped 00:25:52, 15 min 4 s), input `{}`, started by hand: the Glue table's
+  parts at 00:13:12, the train inputs at 00:13:15, `work/job/trades.parquet` and `trades.summary.json` at
+  00:19:47, `outbox/report.json` at 00:23:45.
+- **[Claude] `EXC-22`'s Production half**, read 00:27:20: `awsds-prod-outputs/app-etl/work/job/trades.summary.json`
+  (00:19:47, 519 bytes) `ServerSideEncryption` `aws:kms`, `SSEKMSKeyId`
+  `arn:aws:kms:us-west-2:…:key/0415a6f0-9b15-4049-841d-d51e7a65d09c`, the key `alias/awsds-prod-data`
+  resolves to (`CUSTOMER`): no longer `aws/s3`. Both halves read, `EXC-22` closes.
+
+## 2026-10-26 — §R before the downs: the instruments with Staging up and Production's egress going down
+
+*Claude's hand; `./aws/orchestration.py` and `./aws/cicd.py` as the infrastructure user, reads only. Times UTC.*
+
+- **[Claude] `./aws/orchestration.py`** at 01:11, every profile: 45 checks pass, 0 fail; the only calls
+  that failed are the persona and `ctadmin` profiles' `get-caller-identity`, whose SSO sessions hold no
+  token tonight (section 14), the instrument reporting them and judging nothing on them.
+- **[Claude] `./aws/cicd.py awsds-infra-prod`** at 01:13: all 9 checks pass, `CI-1` the deploy runner
+  `i-0acaf7ded0e455dcd`, `CI-9` the test runner.
+- **The downs**: `make down ENV=staging` is the user's next act here, the first after a release since
+  `app_outputs`' infrastructure grant (step 15's measurement); `production/workloads-egress` and both
+  `warehouse-compute` slices are the Stage 9 session's (down in progress at 01:05 for Production);
+  `sandbox/egress` follows that session's word; `make gitlab-down` is the Stage 7 session's cycle's first
+  act, and `make hub-down` closes the sitting after both report.
+
+## 2026-10-26 — `make down ENV=staging`, the first after a release since `app_outputs`' grant
+
+*The user's hand for the down, from the project folder; Claude's for the readings as the infrastructure user
+(`awsds-infra-staging`), reads only. Times UTC.*
+
+- **[user]** `make down ENV=staging` at about 01:18. **[Claude]** read at 01:21:51: no workflow, no
+  `awsds-staging-chain-*` state machine, no schedule, no Glue job `awsds-staging-app-etl`, no
+  `/awsds/staging/wf/*` log group (the negative run's stream went with its group); the seven interface
+  endpoints `deleting`; `make status` at 01:21:58 read `staging/app/app-etl` and `staging/orchestration`
+  down with 0 resources and `staging/egress` still `UP` with 10. At 01:24:37 the account held 0 interface
+  endpoints and the egress state 0 resources: the three `[E]` slices down, the release's teardown
+  unhindered by `app_outputs`' infrastructure grant (step 15's measurement).
+
+## 2026-10-26 — `make down ENV=sandbox`; the sitting's slices down but the hub and GitLab's cycle
+
+*The user's hand for the down; Claude's for the readings as the infrastructure user (`awsds-infra-sandbox-1`),
+reads only. Times UTC.*
+
+- **[user]** `make down ENV=sandbox` after the Stage 9 session's `warehouse-compute` down of 01:37.
+  **[Claude]** read at 02:00:37: 0 interface endpoints, 0 workgroups, 0 Studio apps running, and
+  `sandbox/egress`, `sandbox/warehouse-compute` and `sandbox/probes` at 0 resources in state.
+- **The estate at 02:00**: Staging down (01:24), Production's `workloads-egress` and `warehouse-compute` down
+  (01:12 and 01:10, the Stage 9 session's), Sandbox down; the hub up for the Stage 7 session's GitLab cycle
+  (its PR to come; Stage 9's is #262), `make hub-down` the sitting's last act after it.
+
+## 2026-10-26 — `make hub-down`: the sitting's end
+
+*The user's hand for the down; Claude's for the reading as the infrastructure user, `NO_PROXY='*'` with the
+tunnel gone, reads only. Times UTC.*
+
+- **[user]** `make hub-down` after the Stage 7 session's `make gitlab-down` (the host stopped 02:39:13, the
+  shared-services endpoints gone 02:38:01). **[Claude]** read at 02:44:13: `awsds-prod-vpn` and
+  `awsds-prod-gitlab` `stopped`, `awsds-prod-proxy` `stopping`; 0 interface endpoints in Production, Sandbox
+  and Staging. The sitting that began with the environment down on 2026-10-25 ends with it down again, the
+  three `[D]` hosts stopped and every `[E]` slice at 0 resources; the sessions' work is in PRs #261 (this
+  one), #262 (Stage 9, merged) and #263 (Stage 7), and the `make gitlab-up` order fix of Stage 7's finding
+  runs in a session of its own.
