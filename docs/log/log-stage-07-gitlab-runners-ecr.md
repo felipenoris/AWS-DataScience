@@ -1452,3 +1452,25 @@ host, every command it carries a read. Times UTC.*
   and `tunnel` `open` 0, and the host's `squid.conf` serves `production_foundation` `open` 0,
   `sandbox_foundation` `allowlist` 41 and `tunnel` `open` 0; `PX-4` a note by decision (`/awsds/prod/proxy` at
   365 days, no export until Stage 11 5.1). Validation 2 is answered, its offline half read at 03:41.
+
+## 2026-10-26 — §N.7.1 step 9: the backup by hand, read in the bucket; `./aws/supplychain.py` with GitLab up
+
+*The user's hand for the Session Manager shell and the backup on the host, as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`), its output pasted in this chat; Claude's for the readings, S3 and
+the instrument, reads only. Times UTC.*
+
+- **[user] `sudo gitlab-backup create STRATEGY=copy`** in a shell on `i-0b4cb5f62e65abf70`, after `awsds/dev-env`'s
+  !12 and `the-releases-v0.10.0` merges; quoted from the paste: *"2026-10-26 22:15:00 UTC -- Dumping database ..."*,
+  the eight projects' repositories and wikis dumped from 22:15:07 to 22:15:08, *"Creating backup archive:
+  1793052899_2026_10_26_19.4.2_gitlab_backup.tar ... done"*, *"Uploading backup archive to remote storage
+  awsds-prod-gitlab-backup ... done (encrypted with aws:kms)"*, *"Deleting old backups ... done. (0 removed)"*,
+  *"Backup 1793052899_2026_10_26_19.4.2 is done."* at 22:15:10.
+- **[Claude] The bucket** at 22:15:56: five archives, the new one 14,356,480 bytes at 22:15:11, `aws:kms`, its
+  `Expiration` *"expiry-date="Thu, 26 Nov 2026 00:00:00 GMT", rule-id="expire-current-versions""*, the same day
+  as the 01:53 archive's; the oldest, of 2026-10-13, leaves on 2026-11-13.
+- **[Claude] `./aws/supplychain.py`**, 22:16:20 to 22:17:23: every `SC-*` row passing but `SC-10`, a note (*"3
+  runner(s) running"*, the session's); `SC-13` *"1793052899_2026_10_26_19.4.2_gitlab_backup.tar
+  (2026-10-26T22:15:11+00:00), made by 19.4.2, equal to gitlab_ce_version"*; `SC-11` the GitLab bypass list at
+  56 entries, `0f80372bf880bb16`, in the four env blocks, and each runner's `NOPROXY` at egress's 36. Its exit
+  1 is section 10's: the profiles of the SSO sessions this laptop holds no token for (`awsds-ctadmin`,
+  `awsds-deploy`, the personas), none of which a check reads.
