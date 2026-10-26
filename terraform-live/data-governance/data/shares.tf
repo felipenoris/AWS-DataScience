@@ -85,11 +85,11 @@
 # `ram get-resource-shares --resource-owner SELF` on this side, the catalog on the other - and a
 # missing share is the answer.
 #
-# The absence holds while no catalog subscription lives. A subscription to a table published from
-# this account (Stage 6f step 11) writes statements into the policy, DataZone's fulfilment acting as
-# the publishing project's role (measured in Staging, 2026-10-22), so a change to this file is planned
-# after reading `glue get-resource-policy`: with a policy present, the Prerequisites page asks for
-# glue:ShareResource to ram.amazonaws.com.
+# The account's policy stays absent with a catalog subscription live. The fulfilment of a table
+# published from this account (Stage 6f step 11) writes per-resource policies through RAM on
+# `catalog`, `database/*` and `table/*/*`, read with `glue get-resource-policies`, beside the ones
+# Production's named share wrote on `database/curated` and `table/curated/*`; `get-resource-policy`
+# still answers "Policy not found" (2026-10-26).
 
 # ------------------------------------------------------------------- the database share (7.2)
 

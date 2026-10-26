@@ -295,7 +295,7 @@ consumers with no invitation, which is the falsifier not firing.
 The lake-publishing pilot: `governed-lake`, a SageMaker project in this account, publishes
 `curated.trades`, and DataZone grants each approved subscription (`GOVERNANCE.md` §Grants, the catalog
 road). This file declares what DataZone needs and does not write; the fulfilment's own grants, RAM share
-and catalog-policy statements are DataZone's, read into the register by `./aws/catalog.py` `CT-7`.
+and per-resource catalog policies are DataZone's, read into the register by `./aws/catalog.py` `CT-7`.
 **Applied 2026-10-26**: the seats at 6f 11.3 (20:16 UTC: 1 changed, the admin list alone, `DL-5`
 holding), and the publisher's grant at 11.5 (21:06 UTC: 2 added) to `governed-lake`'s role,
 `datazone_usr_role_3j4l4xmvz7fggg_52webn93119ouo`, `lake_publisher_role`'s default.

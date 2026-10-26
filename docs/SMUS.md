@@ -713,6 +713,10 @@ objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/cat
   runs alone in an account with no VPC. `Tooling`'s `LakeFormationResourceToRegisterProjectsS3Location`
   carries no `DeletionPolicy`, so deleting a project calls `lakeformation:DeregisterResource`, which
   `Data Governance`'s OU denies to every principal.
+- **A subscription's fulfilment writes per-resource catalog policies, not the account's** (read
+  2026-10-26, 6f 11.9). The publishing role's four `glue:PutResourcePolicy` calls carry a `resourceArn`
+  (`catalog`, `database/*`, `table/*/*`) and `enableHybrid` `TRUE`; `glue get-resource-policies` lists
+  what they wrote, and `glue get-resource-policy` keeps answering *"Policy not found"*.
 
 - **A project's Tooling environment creates a data source nobody asked for, and it fails.**
   `Tooling-default-sagemaker-modelpackagegroup-datasource` tracks `SageMakerModelPackageGroupAssetType`

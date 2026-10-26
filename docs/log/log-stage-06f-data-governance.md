@@ -1241,3 +1241,52 @@ message delivered into its running turn. Times UTC.*
   `CREATE_TABLE`, `DESCRIBE` and `DROP` under `eighth-experimentation`'s condition, the provisioning role's
   creator `ALL`, and the manage-access role's `CREATE_TABLE` and `DESCRIBE`, `DESCRIBE` grantable.
 - **[Claude] After**: `mydatabase` still holds `house-price`; Lake Formation's settings unchanged.
+
+## 2026-10-26 — 11.8 and 11.9: the subscription, its approval, and what the fulfilment wrote
+
+*The user in the portal as the Data Scientist User and as the Governance Manager user; Claude read AWS as the
+infrastructure user with `InfrastructureAccess` in `Data Governance Account` (`awsds-infra-data`) and in
+`Sandbox Account 1` (`awsds-infra-sandbox-1`), contributor of both projects, reads and `terraform plan`
+alone. Times UTC.*
+
+- **[user]** *"Pedi a assinatura da trades como Data Scientist User no eighth-experimentation e aprovei como
+  Governance Manager no governed-lake. Leia o 11.8 e o 11.9."*
+- **[Claude] The request and its approval**: `blqgeezyxnosnk`, created 21:34:55Z by an `SSO` profile, the Data
+  Scientist User's, for `eighth-experimentation`, reason *"test"*; `ACCEPTED` at 21:36:15Z, its reviewer the
+  Governance Manager's profile. The subscription `6ubv3kbnjqjogg` `APPROVED`; its grant `d2zjuni9kjonio` to
+  the target `3qjec3ymbu5p5c` `IN_PROGRESS` from 21:36:17Z and `COMPLETED`, the asset `GRANTED`, at
+  21:37:18Z, 63 s after the approval.
+- **[Claude] Verification vii, from the trail**: `CreateSubscriptionRequest` at 21:34:55Z and
+  `AcceptSubscriptionRequest` at 21:36:15Z, both as `awsds-data-studio-domain-execution`, in sessions named
+  after the person, `user-28f1b390-…` and `user-e8a1f320-…`. The approval ran as the domain execution role
+  under DataZone's ownership check, and `GovernanceManagerAccess` made no call.
+- **[Claude] The fulfilment in Data Governance**, the publishing role
+  `datazone_usr_role_3j4l4xmvz7fggg_52webn93119ouo` in `AWSDataZone-Subscriptions` sessions with no source
+  identity: `BatchGrantPermissions` and `ram:CreateResourceShare` at 21:36:50Z, then four
+  `glue:PutResourcePolicy`, 21:36:50Z to 21:36:51Z, on `database/*` (twice), `table/*/*` and `catalog`,
+  each with `enableHybrid` `TRUE`; nothing refused.
+  - The grant: `SELECT` on `curated.trades` to Sandbox's `IAMPrincipals` under
+    `context.datazone.projectId=="avhvbqn37ty7m8"`, no grant option.
+  - The share: `LakeFormation-V5-ZKUYXYESG4`, created 21:36:49Z, `allowExternalPrincipals` false, resources
+    the lake's `catalog`, `database/*` and `table/*/*`, its one principal Sandbox's account, three
+    permissions; `ACTIVE` among Sandbox's received shares, no invitation pending.
+  - The policies are per resource, not the account's: `glue get-resource-policy` still answers *"Policy not
+    found"*, and `glue get-resource-policies` lists them. The new ones grant Sandbox's account root the
+    Glue table and partition actions, reads and writes, on `catalog`, `database/*` and `table/*/*` under
+    `aws:PrincipalOrgID`, and restate `AWSRAMPermissionLFTag…` statements for the three consumer accounts
+    under `glue:EvaluatedByLakeFormationTags`. Per-resource policies already stood on `database/curated` and
+    `table/curated/*` since 2026-10-22, from Production's named share. Lake Formation still gates every
+    write: no Sandbox principal holds `ALTER` or `DROP` on a lake table.
+- **[Claude] The fulfilment in Sandbox**, `eighth-experimentation`'s role in an `AWSDataZone-Subscriptions`
+  session with no source identity, at 21:37:09Z: `CreateTable` of the resource link `trades` in
+  `glue_db_blerpkhn9nj7o0`, targeting the lake's `curated.trades`, and `BatchGrantPermissions`, `DESCRIBE`
+  on it to `IAMPrincipals` under the project's condition; the creator holds `ALL`, `DESCRIBE` and `DROP`,
+  grantable. Glue reports the link's `CreateTime` as the target table's, 2026-10-22.
+- **[Claude] The slices and the instruments**: `data/` re-plans *"No changes."* at 21:40:42Z, DataZone's
+  grant, share and policies being no declared resource; `./aws/catalog.py` at 21:42:11Z, *"all checks
+  passed"*, `CT-7` naming the catalog road's grants, the publisher's three and the fulfilment's `SELECT`,
+  `CT-8` seventeen conditioned `IAMPrincipals` grants, `CT-3` seven access acts across nine listings;
+  `./aws/datalake.py` at 21:43:36Z, no failure, `DL-5` 4/`TRUE`, `DL-7` ten shares out, `DL-13` the two
+  declared seats.
+- **[Claude] The warehouse sitting told** at 21:40Z that the subscription had run, with its times: it had
+  asked the user to hold it until its 9.7 read after the re-grant.
