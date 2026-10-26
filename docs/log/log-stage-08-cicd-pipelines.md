@@ -4101,3 +4101,13 @@ commit, the reads (the API through the user's GitLab session in Chrome) and the 
 - **[Claude] The copy read back**: `./scripts/gitlab-mirror.py awsds/dev-env` at 21:44 *"the copy already holds
   this commit's 14 file(s)"*, `gitlab/mirror.json` at `c8bac16e`. `default-v0.10.0` free at 21:44:23, the
   project's newest tag `default-v0.9.1`.
+
+## 2026-10-26 — §N.7.1 step 7: the infrastructure mirror at `main`
+
+*The user's hand for the push from the project folder; Claude's for the reads (`git ls-remote`, the project's
+events through the user's GitLab session in Chrome). Times UTC.*
+
+- **[user] `git push gitlab main`** from the project folder at `94ed050d`. **[Claude] Read** at 21:47:30: the
+  event *"pushed to"* `main` by `felipenoris` at 21:29:16, `2d3160f1` to `94ed050d`, 8 commits (#261 to #269);
+  `awsds/infrastructure`'s `main`, `origin`'s and the project folder's all at `94ed050df119`. The next tag's
+  legs clone the commit `origin/main` holds.
