@@ -408,9 +408,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `awsds-workflows` (runbook §T).
 - **Stage 7 in progress**: passes 1-2 closed 2026-10-12 but three persona memberships, pass 3 nearly done
   (7.2 read 2026-10-25), **pass 4 closed 2026-10-26** (8.1's start 1 min 42 s to the first HTTPS answer; 8.2's
-  rehearsal 24 min 16 s from destroy to the restored sign-in page, the host `i-0b4cb5f62e65abf70` since; 8.3
+  rehearsal 24 min 16 s from destroy to the restored sign-in page, the host `i-0b4cb5f62e65abf70` since, on a new data volume; 8.3
   diffed), §I step 6's settings done the same day (event tracking, Service Ping, the version check, the runner
-  release fetch and Auto DevOps off, Public restricted, sign-up kept on). Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
+  release fetch and Auto DevOps off, Public restricted, sign-up kept on, no `TM` row). Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
   `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners out, and the build runner rises
   only with `BUILD=1` (decision 5, 2026-10-24). Owed: INT-09's clone from a
   notebook (a space on version 10 with a persona PAT) and INT-19's notebook surface; 3.5's memberships done
