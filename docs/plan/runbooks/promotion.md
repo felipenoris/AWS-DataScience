@@ -693,7 +693,12 @@ carries `ONLY=`, or the build runner is destroyed.
     aws stepfunctions describe-execution --execution-arn <the execution's ARN> --query input --output text --profile awsds-infra-prod --region us-west-2
     ```
 
-13. **[user] 3.7**: both `release.tf`s with the new tag's values, the mirror pushed after the merge.
+13. **[user] 3.7**: the four `release.tf`s with the new tag's values, the two application slices' (the tag,
+    the image digest, the bundle's SHA256) and the two orchestration slices' (the tag and each workflow's
+    definition and code VersionIds, the legs' `*-release.auto.tfvars.json` artifacts), the mirror pushed
+    after the merge. An orchestration slice applied by hand on a stale default rolls its workflows back
+    to the recorded release (read 2026-10-26 at step 12: a plan of 4 changes until the default moved).
+    **Written 2026-10-26** in PR #261, every slice planning `No changes`.
 14. **Not owed: N.0 step 1 took (b).** Run only as N.4's exercise for Stage 10 xx: the break's branch and its tag, expected to stop in Staging's leg with
     Production untouched; **[Claude]** the failure rules' `TriggeredRules` and the diagnosis from
     `list-task-instances`, `get-task-instance` and the task's log group, read before any `make down

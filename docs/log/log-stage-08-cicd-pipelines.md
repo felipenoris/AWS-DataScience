@@ -3807,3 +3807,17 @@ Claude's for the readings (the user's GitLab session, EC2 and Step Functions as 
   `awsds-prod-chain-app-etl` as the infrastructure user at 00:10:48, the execution
   `v0-4-6-by-hand-2026-10-26-app-etl`; the previous executions, 2026-10-24's two by hand and the schedule's
   of 2026-10-25 03:30, all `SUCCEEDED`.
+
+## 2026-10-26 — step 11 closed: Production's chain `SUCCEEDED`, `EXC-22`'s Production half
+
+*Claude's hand; Step Functions, S3 and KMS as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`), reads only. Times UTC.*
+
+- **[Claude]** The execution `v0-4-6-by-hand-2026-10-26-app-etl` of `awsds-prod-chain-app-etl` read
+  `SUCCEEDED` at 00:26:41 (stopped 00:25:52, 15 min 4 s), input `{}`, started by hand: the Glue table's
+  parts at 00:13:12, the train inputs at 00:13:15, `work/job/trades.parquet` and `trades.summary.json` at
+  00:19:47, `outbox/report.json` at 00:23:45.
+- **[Claude] `EXC-22`'s Production half**, read 00:27:20: `awsds-prod-outputs/app-etl/work/job/trades.summary.json`
+  (00:19:47, 519 bytes) `ServerSideEncryption` `aws:kms`, `SSEKMSKeyId`
+  `arn:aws:kms:us-west-2:…:key/0415a6f0-9b15-4049-841d-d51e7a65d09c`, the key `alias/awsds-prod-data`
+  resolves to (`CUSTOMER`): no longer `aws/s3`. Both halves read, `EXC-22` closes.

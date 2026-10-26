@@ -1417,3 +1417,27 @@ pipeline API and the job's log). Times UTC.*
   `5JF0gcXNzpnc`); `OR-6` no provisioned environment; `OR-7` 1/50 versions each; `OR-9` the three chain
   roles on `awsds-staging-app-boundary`, both chains' schedules `DISABLED` and failure rules `ENABLED`.
   Verification ix's Staging half is answered.
+
+## 2026-10-26 — step 3.5's substitution reading (promotion.md §N.1 step 12): the app-etl schedule on for one firing
+
+*The user's decision in chat (2026-10-26, *"vamos fazer hoje"*); Claude's hand for the commit and the apply
+(Recipe A, the infrastructure user with `InfrastructureAccess`, `awsds-infra-prod`), the two peer sessions
+told beforehand. Times UTC.*
+
+- **[Claude] The commit**: `production/orchestration/main.tf`, the `app-etl` chain's
+  `schedule_expression` `cron(42 0 26 10 ? 2026)` (one firing, 00:42) and `schedule_enabled = true`; the
+  other two chains untouched.
+- **[Claude] The first plan read 4 changes**, not 1: the schedule, and the three workflows' definition
+  and code objects moving from `v0.4.6` back to `v0.4.2`, because the slice's `release` default still
+  recorded `v0.4.2`'s VersionIds and the laptop has no `release.auto.tfvars.json`, the file the leg writes
+  beside the slice (Lesson 61's shape: the procedure depended on a file it did not create). The plan was not
+  applied. `production/orchestration/release.tf`'s default moved to `v0.4.6`'s record (job #621's
+  `production-release.auto.tfvars.json`: `app-etl` `4NS.8XnUqg…` and `l1L3_a6Gp…`, `app-etl-train`
+  `HGgrM4Qb…` and `KkRVOadt…`, `app-etl-warehouse` `IXw8uLnP…`), and `staging/orchestration/release.tf`'s to
+  the objects Staging's workflows name (`get-workflow`, `list-object-versions`: `fhXHG8FB…`, `wGkGPacW…`,
+  `5JF0gcXN…`, `t.nAODdI…`); the re-plan read *"0 to add, 1 to change, 0 to destroy"*, the schedule alone,
+  and `staging/orchestration` planned `No changes`.
+- **[Claude⚡] The apply** at 00:30:41, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed"*, 2 s;
+  `get-schedule` at 00:30:51: `ENABLED`, `cron(42 0 26 10 ? 2026)`, `UTC`, `Target.Input`
+  `{"chain":"app-etl","scheduledTime":"<aws.scheduler.scheduled-time>"}` with the brackets literal;
+  `production/orchestration` re-planned `No changes` at 00:31:45.
