@@ -3938,31 +3938,25 @@ AWS; the session that read Stages 7 to 10 for what is left. Times UTC.*
   newest on PyPI, the domain lookup's row), `docs/SMUS.md`, `dev-env.md` and `sg-proxy.md` at 73 names;
   `promotion.md` §N.7.1, the GitLab sitting for `default-v0.10.0`, and the waiting list's image row.
 
-## 2026-10-26 — decision 22's third part read against the distribution's start scripts: the `ENV PATH` order reaches no space
+## 2026-10-26 — xxviii's active half: the user's option B, the job written
 
-*Claude's hand, in the session started by the one that recorded the decision, from a laptop with no AWS
-call: the SageMaker Distribution 4.5.2's sources, libmamba's activation and the micromamba image read on
-GitHub.*
+*Claude's hand, no AWS call. The user's decision, taken in the chat of the session forked from this one and
+relayed by it: "Stage 8 xxviii, metade ativa = opção B. Um job manual no runner de deploy na próxima
+sentada do GitLab (a da default-v0.10.0, promotion.md §N.7.1) chama AssumeRole de um papel de deploy pelo
+endpoint global sts.amazonaws.com; lê-se a trilha de us-east-1 e a mensagem da regra 4.6. Sem alargar
+trust."*
 
-- **[Claude] A space's `PATH`**: the distribution's `ENV PATH` opens `/etc/sagemaker-inference-server:/opt/conda/bin`;
-  `entrypoint-sagemaker-ui-jupyter-server` and `start-sagemaker-ui-jupyter-server` each run `micromamba
-  activate base` before `jupyter lab`, as the Code Editor's pair does; libmamba (`micromamba-1.5.11` and
-  `main`) puts `/opt/conda/bin` first on activation and, on a reactivation, removes it and puts it first
-  again; the server's `terminado_settings` is `{"shell_command": ["/bin/bash"]}`, so a terminal inherits the
-  server's `PATH`. The house `bin` ahead of `/opt/conda/bin` on the image's `ENV PATH` leaves
-  `aws-smus-cicd-cli` the distribution's 1.0.8 in a space, and a smoke `RUN`, unactivated
-  (`_dockerfile_shell.sh` activates only when `MAMBA_DOCKERFILE_ACTIVATE` is `1`, an `ARG` of the
-  distribution's own build), reads the house's and passes. The order reaches what runs unactivated: a
-  descendant's `RUN`, and, when the container starts without `_entrypoint.sh`, `apply_patches.sh`, whose
-  `pip show botocore` and `pip show hdijupyterutils` decide the patches it applies to `/opt/conda`. The house
-  lock carries `jupyterlab`, `jupyter-server`, `jupyter-core`, `notebook`, `ipython` and `pip`, so the whole
-  `bin` placed where it survives the activation would start the house's JupyterLab as the space's server.
-- **[Claude] The form prepared, not in the recipe copy**: `/opt/awsds/bin` holding a symlink to the house
-  CLI's entry point alone, prepended by `/opt/conda/etc/conda/activate.d/zz-awsds-bin.sh`, one `case` that
-  returns 0 under `set -euf -o pipefail` (run under bash and sh on the laptop), and libmamba exports `PATH`
-  before it sources the hook; the smoke reading the name after `micromamba activate base`, failing unless it
-  resolves under `$AWSDS_PYTHON_ENV/bin/` and `--version` reports the house environment's version. Neither
-  Dockerfile was built. The hook is a file of ours in the distribution's environment, which the user's rule
-  of 2026-09-10 leaves as it ships, so the choice between it and no third part is the user's.
-- **[Claude] The record**: decision 22 and 1.1's bullet; `promotion.md` §N.6 step 1 and §N.7.1 steps 3 and 5;
-  `docs/SMUS.md`; a platform entry in `lessons.md`; `docs/REFERENCES.md`.
+- **[Claude] What the job can read**, from the code: the deploy roles' trust, `OnlyTheDeployRunner`, admits
+  the runner's role with no condition, so the runner's assumption through the global endpoint succeeds; the
+  misuse rule's pattern exempts the runner's role by its unique id (`anything-but` prefix), so the runner's
+  assumption fires no rule through either endpoint, and 4.6's message cannot appear in this form. The job
+  reads the Region each record lands in: a record written in `us-east-1` reaches no `us-west-2` rule,
+  whoever its caller. The `aws:RequestedRegion` clause stays unread, the trust pinning nothing.
+- **[Claude] The job**: `sts-global-probe` in the copy of `awsds/dev-env`'s pipeline
+  (`gitlab/awsds/dev-env/.gitlab-ci.yml`), tag `awsds-deploy`, `needs: []`, created only in a pipeline run
+  on the default branch with `STS_GLOBAL_PROBE` set, and manual there. As the runner's own role it assumes
+  both deploy roles through `sts.us-west-2.amazonaws.com` and through `sts.amazonaws.com`, session name
+  `xxviii-<pipeline id>`, and prints each ARN; its script parses under `bash -n`. It reaches GitLab with
+  `default-v0.10.0`'s merge request.
+- **[Claude] The record**: xxviii's row, `promotion.md` §N.5, §N.6 and §N.7.1 step 7, and the waiting
+  list's GitLab row.

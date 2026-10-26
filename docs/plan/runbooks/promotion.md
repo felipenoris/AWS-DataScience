@@ -1092,14 +1092,14 @@ and 6), at 1.44 USD per query-hour per workgroup.
   together); Stage 9 vi's cancel (no table past 10 GB), ix's `VPC-Workloads` branch and off-endpoint
   refusal, xv's deploy- and execution-role halves and xxvii's cancel (no statement past 300 s); Stage 10
   xviii and xxviii's inbox marker (no task writes one).
-- **Not written**: Stage 8 3.3's read pinned to an Iceberg snapshot (Stage 9 4.4). Read 2026-10-26: the
-  Glue script takes `--SOURCE_SNAPSHOT` since v0.4.0 and appends `VERSION AS OF` to the governed query,
-  and no workflow, slice or leg passes one; what is unwritten is where the leg reads the snapshot id and
-  how it reaches the job's arguments, the user's decision (the waiting list) before the template change,
-  which rides a merge request and the next tag's Staging leg.
-- **A form to choose**: Stage 8 xxviii's active half in its trust-widening shape needs nothing up but an
-  IAM write on both deploy roles' trust (the user's word) and a laptop `AssumeRole` through
-  `sts.amazonaws.com`; its job shape needs N.1's runner.
+- **The template's next merge request**: Stage 8 3.3's read pinned to an Iceberg snapshot (Stage 9 4.4),
+  option A taken by the user on 2026-10-26: the Glue job records in its summary the snapshot of
+  `curated.trades` it read and keeps taking `--SOURCE_SNAPSHOT` when one is given, which it does since
+  v0.4.0 with `VERSION AS OF`; the leg, the chain and the workflow do not change, and the parity of Staging
+  and Production by id waits until it is a requirement. It rides the merge request of the session that
+  writes the CLI remedy's script, then the next tag's Staging leg.
+- **Taken 2026-10-26, option B**: Stage 8 xxviii's active half by the manual job `sts-global-probe` on the
+  deploy runner at N.7.1, with no trust widening.
 - **Taken 2026-10-25**: Production's full-table flag turned off by the user in the console, bracketed by
   `DT-5` (Stage 9 decision 13; `TM-26`'s Production half closed, the lake's flag sufficing).
 
@@ -1109,24 +1109,23 @@ Read on 2026-10-26 against the four stage files and their logs (Stages 7 to 10),
 N.3. Each sitting closes what the one before it cannot; a sitting starts on the user's word, since it is
 metered.
 
-1. **With nothing up, the user's decisions** (the waiting list): the form of the CI/CD CLI remedy's third
-   part, the base environment's activation hook or none, since an order in the image's `ENV PATH` reaches
-   no space (Stage 8 decision 22, 2026-10-26), which the next house image carries if taken; the upstream
-   report's posting and the template's merge request with `scripts/dev-cli.sh`; the mirror's push before
-   the next tag; Stage 8 3.3's snapshot pin, where the leg reads
-   the id and how it reaches the job; Stage 10 decision 11's `kms:ViaService` narrowing, its evidence read;
-   Stage 8 xxviii's active half's form; Stage 8 decision 1's zlib pair (the steward's); INT-13's path; the
-   deployment manager's approval of a debug window (N.7.2); and, outside the four stages, 6f decision 1,
-   which 8.1's space half waits on. The training operator's refused log read is no longer among them:
-   the read answers (Stage 10 1.3, 2026-10-26).
-2. **The debug window** (N.7.2), with nothing up: Stage 9 3.1's debug-role read of a job log.
+1. **With nothing up, the user's decisions** (the waiting list): the mirror's push before the next tag;
+   Stage 8 decision 1's zlib pair (the steward's); INT-13's path; and, outside the four stages, 6f
+   decision 1, which 8.1's space half waits on. Taken on 2026-10-26: the CI/CD CLI remedy (the upstream
+   report, the template's script, the house image's `PATH` order) and Stage 8 3.3's snapshot pin (option
+   A), both written by one session in one merge request; Stage 10 decision 11's narrowing (option A),
+   written and planned; Stage 8 xxviii's active half by a job (option B); the training operator's log
+   read needs no remedy (Stage 10 1.3).
+2. **With nothing up, the user's acts**: the debug window (N.7.2), run 2026-10-26, Stage 9 3.1's
+   debug-role read answered; decision 11's three applies and the Deployment Manager's read in Production
+   (N.7.4).
 3. **The GitLab sitting** (N.7.1): the house image `default-v0.10.0` with the 73-name literal, the mirror
-   pushed at `main`, Stage 7 Validation 2's `PX-3` and a GitLab backup.
+   pushed at `main`, Stage 8 xxviii's job, Stage 7 Validation 2's `PX-3` and a GitLab backup.
 4. **The next release** (N.1's shape: the hub, `make gitlab-up BUILD=1`, Staging's `egress/`, Production's
-   `workloads-egress/`): the template's merge request with what step 1's decisions wrote, the tag, the legs,
-   3.7; and the exercises the user takes with it: Stage 8 xv (the proxy stopped alone), xxviii's active
-   half in its job form, Stage 10 xx's second half (an undeclared Glue job on a branch's tag), Stage 8
-   xxvii's plan half once the Amazon Linux parameter moves.
+   `workloads-egress/`): the template's merge request with the deploy script and the snapshot record, the tag, the legs,
+   3.7; and the exercises the user takes with it: Stage 8 xv (the proxy stopped alone), Stage 10 xx's
+   second half (an undeclared Glue job on a branch's tag), Stage 8 xxvii's plan half once the Amazon Linux
+   parameter moves.
 5. **The second Sandbox sitting** (N.7.3), once `default-v0.10.0` is registered or 6f decision 1 is taken:
    Stage 9 8.1's space half, and the `dev` deploy on the new version with no session export.
 6. **The warehouse sitting** (both computes): xxiv on N.4a; after 2026-11-22, `EXC-13`'s Production half;
@@ -1145,8 +1144,9 @@ these are the sittings N.6 adds.
 #### N.7.1 The GitLab sitting: the house image `default-v0.10.0`
 
 What it closes: Stage 8 1.1's 73-name literal, so `DE-5` passes again and a deploy from a space needs no
-session export (Stage 10 2.1); with it, the mirror at `main` before the next tag, Stage 7 Validation 2's
-`PX-3`, and a GitLab backup before the oldest leaves the bucket on 2026-11-13. While up, at
+session export (Stage 10 2.1); with it, the mirror at `main` before the next tag, Stage 8 xxviii's active
+half by a job on the deploy runner, Stage 7 Validation 2's `PX-3`, and a GitLab backup before the oldest
+leaves the bucket on 2026-11-13. While up, at
 `cost-model.md`'s rates: the hub about 0.026 USD/h, GitLab and SharedServices' twelve endpoints 0.187, the
 build runner 0.2117, the test and deploy runners 0.0376 and their root volumes 0.0136, about 0.48 USD/h.
 
@@ -1164,7 +1164,7 @@ build runner 0.2117, the test and deploy runners 0.0376 and their root volumes 0
 2. **[user] The raises**: `make hub-up`, `make gitlab-up BUILD=1`, the tunnel ([`gitlab.md`](gitlab.md) §U).
 3. **[user] The merge request on `awsds/dev-env`** from the copy under `gitlab/awsds/dev-env/`: the
    Dockerfile's `NO_PROXY_LIST` at 73 names, and the CI/CD CLI by its name if the user takes the
-   activation hook (step 1 of N.6), by `gitlab.md` §M's procedure; the branch pipeline runs the recipe
+   activation hook (Stage 8 decision 22), by `gitlab.md` §M's procedure; the branch pipeline runs the recipe
    checks and the gates, and the steward merges. `./scripts/gitlab-mirror.py` then copies the merge back.
    An order set by the image's `ENV PATH` is not the hook's equivalent: every start script of the
    SageMaker Distribution runs `micromamba activate base`, which puts `/opt/conda/bin` first, so such an
@@ -1184,14 +1184,29 @@ build runner 0.2117, the test and deploy runners 0.0376 and their root volumes 0
    git push gitlab main
    ```
 
-7. **[user] A GitLab backup** by hand in a Session Manager shell ([`gitlab.md`](gitlab.md) §B), read in the
+7. **[user] Stage 8 xxviii's active half** (option B, taken 2026-10-26), with no trust widening: the job
+   `sts-global-probe` arrives with step 3's merge request. On `awsds/dev-env`, *Build → Pipelines → Run
+   pipeline* on `main` with the variable `STS_GLOBAL_PROBE` set to `1`, then *Run* on the manual job: the
+   deploy runner assumes both deploy roles as its own role through `sts.us-west-2.amazonaws.com` and
+   through `sts.amazonaws.com`, and prints each session's ARN. **[Claude]** the trails, read after their
+   delay (Lesson 62), the session name `xxviii-<pipeline id>`:
+
+   ```bash
+   for p in awsds-infra-prod awsds-infra-staging; do for r in us-west-2 us-east-1; do echo "== $p $r"; aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=AssumeRole --start-time <the job's minute> --profile "$p" --region "$r" --query 'Events[?contains(CloudTrailEvent, `xxviii-`)].EventTime' --output text; done; done
+   ```
+
+   Expected: each global call's records in `us-east-1` alone and each regional call's in `us-west-2`; the
+   misuse rules exempt the runner's role, so none fires. A record in `us-east-1` reaches no `us-west-2`
+   rule, whoever its caller, which is xxviii's question; whether a trust pinning `aws:RequestedRegion`
+   refuses the call stays unread, the deploy roles' trust pinning nothing.
+8. **[user] A GitLab backup** by hand in a Session Manager shell ([`gitlab.md`](gitlab.md) §B), read in the
    bucket after. **[Claude⚡]** `PX-3`, deliberately, since the flag's SSM Run Command is a write API:
 
    ```bash
    ./aws/proxy.py --on-host
    ```
 
-8. **The downs**: `make gitlab-down`, the tunnel, `make hub-down`; **[Claude]** §R and each step's entry in
+9. **The downs**: `make gitlab-down`, the tunnel, `make hub-down`; **[Claude]** §R and each step's entry in
    Stage 7's and Stage 8's logs.
 
 #### N.7.2 The debug window: Stage 9 3.1's debug-role read
@@ -1234,6 +1249,12 @@ expected to answer the same way, its refused `Decrypt` in the trail beside the s
 5. **[Claude⚡] The closing apply** without the variable, re-planned `No changes`, and `./aws/deploytargets.py
    awsds-infra-prod` reading `DT-9` closed, in the same sitting.
 
+**Run 2026-10-26** (Stage 9's log): the approval in chat; the window applied at 15:09:55 UTC until 16:10, the
+plan *0 to add, 1 to change*; the persona's assumption `debug-window-logs` and its read answered, the stream's
+first lines returned through the debug role; the trail held both assumptions, the read and the `Decrypt`
+pair, and the alarm fired once per assumption with a notification delivered each time; the closing apply at
+15:25:44 UTC, `DT-9` closed and the re-plan `No changes`.
+
 #### N.7.3 The second Sandbox sitting
 
 N.3's raises and downs, without GitLab when no clone is owed. What it closes: Stage 9 8.1's space half
@@ -1247,6 +1268,52 @@ shipped, the space's terminal reads `type -a aws-smus-cicd-cli` with `/opt/awsds
 first and `aws-smus-cicd-cli --version` 1.0.9, the reading the smoke cannot take, since a build starts
 no space. The space's image is set to `awsds-sandbox-dev-env` version 11 (alias `0.10.0`) in its settings
 before *Start*, as N.3 step 3 does for version 10: an image's environment is read when its app starts.
+
+#### N.7.4 Stage 10 decision 11's narrowing: the applies and the Deployment Manager's read
+
+Needs nothing up: three policy writes and an API read. Option A, taken by the user on 2026-10-26:
+`kms:ViaService` `airflow-serverless.<region>.amazonaws.com` on the Deployment Manager's decrypt, in the
+permission set (`identity/sso/`'s `DecryptWhatTheWorkflowServiceEncrypts`) and in both data keys
+(`AllowTheDeploymentManagerToReadWorkflowRuns`). The value is the key's convention and unmeasured: the read
+after the applies is the measurement, and a refusal reverts all three.
+
+1. **[Claude] The plans**, read 2026-10-26 (Stage 10's log): `identity/sso/` as `awsds-infra-identity`,
+   `production/data/` as `awsds-infra-prod` and `staging/data/` as `awsds-infra-staging`, each *0 to add,
+   1 to change*, the condition alone, the set's inline policy from 8,223 to 8,333 characters. Fresh plans
+   at the applies.
+2. **[Claude⚡] The applies**, on the user's authorization in chat and the other sessions told first: the
+   two data slices, then `identity/sso/`, each re-planned `No changes`.
+3. **[user] The Deployment Manager's read** in Production. The laptop holds no Production profile on the
+   `awsds-deploy` session, so one is added first, its account id read from the infrastructure user's
+   profile and written into no file of the repository:
+
+   ```bash
+   aws configure set sso_session awsds-deploy --profile awsds-deploy-prod
+   aws configure set sso_account_id "$(aws configure get sso_account_id --profile awsds-infra-prod)" --profile awsds-deploy-prod
+   aws configure set sso_role_name DeploymentManagerAccess --profile awsds-deploy-prod
+   aws configure set region us-west-2 --profile awsds-deploy-prod
+   ```
+
+   Then the sign-in as the Deployment Manager User, the URL answered in a private window, and a run of the
+   `app-etl` workflow read:
+
+   ```bash
+   aws sso login --sso-session awsds-deploy --no-browser
+   ```
+
+   ```bash
+   W=$(aws mwaa-serverless list-workflows --profile awsds-deploy-prod --region us-west-2 --query "Workflows[?Name=='awsds-prod-wf-app-etl'].WorkflowArn | [0]" --output text)
+   R=$(aws mwaa-serverless list-workflow-runs --workflow-arn "$W" --profile awsds-deploy-prod --region us-west-2 --max-results 1 --no-paginate --query 'WorkflowRuns[0].RunId' --output text)
+   aws mwaa-serverless get-workflow-run --workflow-arn "$W" --run-id "$R" --profile awsds-deploy-prod --region us-west-2 --query 'RunDetail.RunState' --output text
+   ```
+
+   Expected: the run's state, `SUCCESS` for the runs of 2026-10-25, as the infrastructure user read it on
+   2026-10-26. A refusal naming `kms:Decrypt` is the value's verdict: the three slices return to the commit
+   before the narrowing, by the same plans and applies.
+4. **[Claude]** the trail: the `Decrypt` paired with the `GetWorkflowRun`, `invokedBy
+   airflow-serverless.amazonaws.com`, under the workflow-ARN context, with no error. Staging holds no
+   workflow between legs, so its half is read at its next leg's run, by the same commands with a Staging
+   profile.
 
 ## Q. After the quotas: Stage 10's pass 3
 

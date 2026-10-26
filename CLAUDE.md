@@ -349,8 +349,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `model-chain.py transform staging` with `staging/foundation/`'s output, applied. **§N.2 run 2026-10-26**: xviii and
   vii closed, 9.4's DDL job idempotent from pipeline #102, 9.7 read with the project role's grant revoked and
   Production's workgroup gone, `EXC-13`'s Sandbox half twice, xxiv deferred, its procedure for the adopted resources
-  written 2026-10-26 (`promotion.md` §N.4a); both computes down. 3.1's logs-land half read 2026-10-26; the
-  quota cases still `CASE_OPENED`.
+  written 2026-10-26 (`promotion.md` §N.4a); both computes down. 3.1 read 2026-10-26, the debug role's
+  job-log read in a window included; the quota cases still `CASE_OPENED`.
   **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
   `awsds-prod-model-approval` applied the same day, first fired 2026-10-25 (version 1 registered and approved by `awsds-deploy-prod`; pass 3 done, both transforms, 5.5). Prepared
   2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
@@ -369,7 +369,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   fixed) and `SUCCEEDED`; 0.5, decision 19, decision 2's context and verification xvi's worker clauses read; the
   failure rules mailed; ii's deploy-role half read 2026-10-24 and 3.2 closed 2026-10-25 by (b). Read
   2026-10-26 with nothing up: both outputs buckets publish to EventBridge (3.6); `GetWorkflowRun` decrypts
-  through the service and `GetWorkflow` does not (decision 11's `kms:ViaService` narrowing is the user's);
+  through the service and `GetWorkflow` does not (decision 11's `kms:ViaService` narrowing taken 2026-10-26,
+  written and planned, its applies the user's);
   the training operator's `print_log` read answers, its six `Decrypt` refusals per run CloudWatch Logs'
   attempt with the reader's identity before its own (read the same day). **2.1 ran from a space on 2026-10-26**: the house CLI by its path, the CLI 1.0.9's
   `ListDomains` (refused to a project's role) answered by the domain's id, and Sandbox's `mwaa` group's

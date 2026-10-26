@@ -2752,3 +2752,53 @@ apply necessário". Times UTC.*
   `app-etl-20261026T004534/algo-1-1792975588` in `/aws/sagemaker/ProcessingJobs`, the stream the
   infrastructure user read at 07:02:59 (`promotion.md` §N.7.2 step 3); then the trail, and the closing apply
   on the user's word.
+
+## 2026-10-26 — 3.1's debug-role read: the persona's assumption and its read answered
+
+*The user's hand, as the Data Scientist User on the laptop (`awsds-scientist-prod`, `DataScientistProdAccess`,
+then the assuming profile `awsds-scientist-prod-debug`), the outputs pasted in this chat at about 15:20 UTC,
+the account id replaced here; Claude's for the record.*
+
+- **[user] The assumption** (`promotion.md` §N.7.2 step 3):
+  `arn:aws:sts::<Production>:assumed-role/awsds-prod-debug/debug-window-logs`.
+- **[user] The read** through the assuming profile, `get-log-events` on `/aws/sagemaker/ProcessingJobs`,
+  stream `app-etl-20261026T004534/algo-1-1792975588`, `--limit 5`: *"app-etl 0.1.0, python 3.12.14 at
+  /opt/app-etl/venv/bin/python   pyarrow 25.0.1 from /opt/app-etl/venv/lib/python3.12/site-packages/pyarrow
+  trades.csv: 30 rows -> trades.parquet   1 file(s) processed"*. The debug role, whose only key grant is
+  `Decrypt` through S3, read a job stream under the data key: 3.1's debug-role half is answered.
+- **[Claude] What waits**: the trail (the two assumptions, the read and its `Decrypt` pair) and the closing
+  apply, both behind the infrastructure user's session, which the CLI reported gone at 15:20:34 (*"Error
+  loading SSO Token: Token for awsds does not exist"*); the trust ends the window at 16:10 UTC regardless.
+
+## 2026-10-26 — 3.1's debug window: the trail, the alarm, the window closed
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), after the user's
+new login and on the user's authorization in this chat: "Fiz login como usuário de infraestrutura. Autorizo o
+apply de production/sagemaker sem a flag, como awsds-infra-prod, a partir de um plano novo, para fechar a
+janela." Times UTC.*
+
+- **[Claude] The session**: `get-caller-identity` answered at 15:23:46, the token missing at 15:20:34.
+- **[Claude] The trail**, read at 15:24: two `AssumeRole` on `awsds-prod-debug` by the persona's reserved role
+  in `us-west-2`, from the laptop's own uplink, no error: 15:17:42 `debug-window-logs` and 15:18:33
+  `botocore-session-1793027895`, the assuming profile's own. `GetLogEvents` at 15:18:34 by
+  `awsds-prod-debug/botocore-session-1793027895` on `app-etl-20261026T004534/algo-1-1792975588`, no error. In
+  the same second the pair the infrastructure user's read showed in the morning: the debug role's `Decrypt`
+  `invokedBy logs.amazonaws.com`, no encryption context, `AccessDenied`, and a `Decrypt` by
+  `fas.s3.amazonaws.com` under `aws:logs:arn` (the `/aws/sagemaker/ProcessingJobs` group) and `aws:s3:arn`
+  (CloudWatch Logs' chunk store), no error.
+- **[Claude] The alarm**: `awsds-prod-debug-assume`'s `TriggeredRules` 1 at 15:17 and 1 at 15:18, and
+  `awsds-prod-alerts`' `NumberOfNotificationsDelivered` 1 and 1 in the same minutes, one notification per
+  assumption.
+- **[Claude] Before the apply**: the three peer sessions told, the two idle ones and the session implementing
+  the CLI remedy, which queued the message.
+- **[Claude] The closing apply** (`production/sagemaker/`, Production): the fresh plan without the flag,
+  15:24:25 to 15:24:41, *"Plan: 0 to add, 1 to change, 0 to destroy."*, `aws:CurrentTime` moving from
+  `2026-10-26T16:10:00Z` back to `2026-01-01T00:00:00Z`, no check warning; the apply, 15:24:53 to 15:25:44,
+  the role modified in 5 s, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*
+- **[Claude] Read back**: `get-role` at 15:25:58 shows `DateLessThan aws:CurrentTime 2026-01-01T00:00:00Z`
+  beside `aws:RequestedRegion us-west-2`; `./aws/deploytargets.py awsds-infra-prod` all checks passed, `DT-9`
+  *"closed (ends 2026-01-01T00:00:00Z)"*, both assumption rules enabled; the re-plan without the flag *"No
+  changes."* The window stayed open from 15:09:55 to 15:25:44.
+- **[Claude] The verdict**: 3.1's debug-role half is answered. The escape hatch reads a job's log under the
+  data key with no key grant through `logs`, the trail carrying the role's refused `Decrypt` beside the
+  service's own, and the alarm heard both assumptions.

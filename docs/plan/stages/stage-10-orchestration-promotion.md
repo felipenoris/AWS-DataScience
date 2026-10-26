@@ -1333,8 +1333,11 @@ Each is decided during the stage and written into `docs/log/log-stage-10-orchest
     add, 1 to change"*, the set's inline policy from 7,289 to 8,223 characters of 10,240, applied the same
     day on the user's authorization and provisioned in Sandbox, Staging and Production.
     `kms:ViaService` narrows the allow once a trail shows the calls carry it: the trail of 2026-10-26 does,
-    and the narrowing, `airflow-serverless.<region>.amazonaws.com` by the key's convention, is the user's
-    decision (the waiting list), read by a Deployment Manager session after its apply. The key-policy half is
+    and the narrowing, `airflow-serverless.<region>.amazonaws.com` by the key's convention, was taken by the
+    user on 2026-10-26 (option A) and written the same day in the set's `DecryptWhatTheWorkflowServiceEncrypts`
+    and both data keys' `AllowTheDeploymentManagerToReadWorkflowRuns`, each plan *0 to add, 1 to change*.
+    Its applies wait on the user's authorization; then a Deployment Manager's `GetWorkflowRun` in
+    Production reads the value, and a refusal reverts all three (`promotion.md` §N.7.4). The key-policy half is
     Stage 9's PR #245, `AllowTheDeploymentManagerToReadWorkflowRuns`.
 12. **Where a Glue job's script lives, and who may write it** (1.3, 2.4; D28 class 2c). Glue reads a job's
     `ScriptLocation`, and every file its arguments name, from S3 when each run starts and pins no version,

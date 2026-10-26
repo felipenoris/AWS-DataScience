@@ -1673,26 +1673,27 @@ written to AWS.*
   remedy. The implementation is a session of its own, at the user's request, proposed as a card: a turn
   begun by another session's message cannot start one.
 
-## 2026-10-26 — 2.1's remedy written: `scripts/dev-cli.sh` in the template, the upstream report drafted
+## 2026-10-26 — decision 11's narrowing: the user's option A, written and planned
 
-*Claude's hand, in the session started by the one that recorded the decision, from a laptop with no AWS
-call: the CLI 1.0.9's wheel read from PyPI, the template's tests and lint run offline.*
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-identity`,
+`awsds-infra-prod`, `awsds-infra-staging`): the code and read-only plans, no write to AWS. The user's
+decision, taken in the chat of the session forked from this one and relayed by it: "Stage 10 decisão 11 =
+opção A. Estreitar o carve-out de kms:Decrypt do DeploymentManagerAccess com kms:ViaService =
+airflow-serverless.<region>.amazonaws.com, na política da chave de dados (*/data/) e no permission set
+(identity/sso/), em Staging e Production." Times UTC.*
 
-- **[Claude] The lookup's callers, read in the 1.0.9 wheel** (its sha256 the house lock's, `bd7258c0…4903`):
-  `get_domain_id_by_name` lists domains through `resolve_domain_id`. `ProjectManager` resolves the
-  manifest's id and name with `get_domain_from_target_config` (a `GetDomain`) and hands
-  `_ensure_environments_exist` the name alone, which looks the id up again; `workflow.create` and
-  `ContextResolver` resolve the role through `get_project_user_role_arn`, which does the same. Every caller
-  reaches the function through its module, so replacing the module's attribute answers all of them.
-- **[Claude] B**: `examples/app-etl/scripts/dev-cli.sh` runs `"$AWSDS_PYTHON_ENV/bin/python"` with the
-  lookup answered by `DOMAIN_ID` and every argument passed through. It exits 2 before the CLI runs when
-  `AWSDS_PYTHON_ENV` or `DOMAIN_ID` is unset or the environment holds no interpreter, and 1 on a CLI with no
-  `get_domain_id_by_name`. `tests/test_dev_cli.py` runs it over a double of the CLI's package, 8 tests; a
-  copy of the script without the replacement fails 2 of them. The template: `uv run pytest` 39 passed,
-  `ruff check` and `ruff format --check` clean, the lint at `d856982c` *"ok: 9 arquivo(s)"*. No storage item
-  names `scripts/` and the Dockerfile copies nothing from it, so neither the bundle nor the image carries it.
-- **[Claude] A**: the report for `aws/CICD-for-SageMakerUnifiedStudio` drafted in the PR's description, with
-  no account, domain or project id; posting it is the user's act.
-- **[Claude] The record**: `sagemaker-application.md` §A, §O, §R, §D steps 6 and 7, §E and §M; the template's
-  README; `conventions.md`'s layout; `promotion.md` §N.7.3; 2.1 here; `docs/SMUS.md`, `upstream-releases.md`.
-  The third part, the image's `PATH`, is Stage 8's log of the same day.
+- **[Claude] The code**: `identity/sso/`'s `DecryptWhatTheWorkflowServiceEncrypts` and both data keys'
+  `AllowTheDeploymentManagerToReadWorkflowRuns` gain `StringEquals` on `kms:ViaService`,
+  `airflow-serverless.${var.region}.amazonaws.com`; both slices' READMEs follow.
+- **[Claude] The plans**, saved outside the repository: `identity/sso/` (Identity) 15:50:11 to 15:50:41,
+  `production/data/` 15:50:41 to 15:51:55 and `staging/data/` 15:51:55 to 15:53:35, each *"Plan: 0 to add, 1
+  to change, 0 to destroy."*, the added `StringEquals` alone: the set's inline policy, `deployment_manager`
+  from 8,223 to 8,333 characters of 10,240, and each data key's policy.
+- **[Claude] What the read needs**: Production holds the three workflows `READY`, and the infrastructure
+  user's `get-workflow-run` on an `app-etl` run answered `SUCCESS` the same hour; Staging's `list-workflows`
+  is empty between legs, so its half is read at the next leg. The laptop's `awsds-deploy` session holds a
+  Sandbox profile alone, so the Deployment Manager's read in Production needs a profile first
+  (`promotion.md` §N.7.4). `list-workflow-runs --max-items 1` prints the CLI's `None` token after the id,
+  which `get-workflow-run` refuses as a run id, so the runbook's command takes `--max-results 1
+  --no-paginate`.
+- **[Claude] The record**: decision 11's text, the waiting list's act row, `promotion.md` §N.6 and §N.7.4.
