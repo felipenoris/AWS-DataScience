@@ -1570,3 +1570,56 @@ asked to have prepared. Times UTC.*
   INT-19 and INT-09 (Stage 7), Stage 9 3.4's project-role half, 2.1 with the values from the package's
   `space_values.py` and the image of `v0.4.6`'s `release.tf`, xxix from the portal, 8.1's space half behind
   6f decision 1, and the downs.
+
+## 2026-10-26 — the Sandbox sitting: 2.1 from a space after three findings, `vpc-egress-v0.19.0`, xxix's portal run
+
+*The user's hand in the spaces (`eighth-experimentation`'s `default`, then a new space `jup-dev-env` on version
+10, `ml.t3.large`) and in the portal, as the Data Scientist User; Claude's for the readings, the module change,
+its tag and the apply of `sandbox/egress`, as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-sandbox-1`), the apply on the user's agreement in chat to the correction. Times UTC.*
+
+- **[user] 2.1 as written**, from the `default` space: `space_values.py` and the exports ran; `aws-smus-cicd-cli
+  deploy` refused the manifest, *"Additional properties are not allowed ('code' was unexpected)"*.
+  `type -a aws-smus-cicd-cli` read `/opt/conda/bin/aws-smus-cicd-cli` first, 1.0.8 in the conda Python, 1.0.9
+  in `/opt/awsds/venv`: the SageMaker Distribution's CLI shadows the house's.
+- **[user] The house CLI by its path**, 05:15: the project step called `ListDomains` and stopped, *"User is not
+  permitted to perform operation: ListDomains"*. **[Claude]** Sandbox's trail: `ListDomains` at 05:15:13 by
+  the project role through the `datazone` endpoint, `AccessDenied`, no `errorMessage`. The role's
+  `SageMakerStudioProjectRoleMachineLearningPolicy` (v45) allows `datazone:List*` on `*`, the boundary's
+  ceiling is `*`, the endpoint policy admits the organization and no SCP denies the action in Sandbox, so the
+  refusal is DataZone's; the simulator reads `explicitDeny` for `ListConnections` too, which answered in the
+  real call (Lesson 30). In the CLI's code, `_ensure_environments_exist` resolves the domain by name with
+  `get_domain_id_by_name` whenever the stage has `bootstrap` actions, the manifest's id unused; PyPI's newest
+  is 1.0.9 (2026-10-05).
+- **[user] The lookup answered**, first with `None` (05:22): storage synced, 11 files, then `workflow.create`
+  failed, *"Domain 'awsds-studio' not found"*: the same lookup finds the role, so in the pipeline the deploy
+  role's `ListDomains` returns the associated domain, not an empty list. With the domain's id (05:25):
+  `CreateWorkflow` failed, *"Failed to connect to proxy URL"*. **[Claude]** The proxy log: five `CONNECT
+  airflow-serverless.us-west-2.api.aws:443 403 TCP_DENIED` from 05:26:45 to 05:26:51 (CloudFormation and S3
+  Control passed with `200`). The endpoint service `com.amazonaws.us-west-2.airflow-serverless` answers only
+  `airflow-serverless.us-west-2.api.aws`, and no `.amazonaws.com` name resolves: with no endpoint in Sandbox
+  and `.api.aws` refused on the compute plane, a space reached the API by no path.
+- **[Claude] The correction**, the user's agreement in chat: `vpc-egress`'s `mwaa` group filled with
+  `airflow-serverless` (`0ec1cbdd`, tag `vpc-egress-v0.19.0` read on origin), `sandbox/egress` pinned to it
+  with the image recipe copy's `NO_PROXY` literal at 73 names (`60402d82`; the first try blocked by
+  `terraform_validate`'s *"Module source has changed"*, the local `.terraform` re-initialised); the saved plan
+  *1 to add*, applied 05:41:02 to 05:41:56, `vpce-02b3bc930bd6b3e76` after 45 s, re-plan `No changes`;
+  `DE-5` red (version 10's 72 names against 73), `DE-1` to `DE-4` and `DE-6` passing.
+- **[user] 2.1 from `jup-dev-env`** with the name in the session's `NO_PROXY` (`getent hosts` read
+  `10.20.0.204`), after a first clone there refused *"server certificate verification failed"* and a retry
+  that passed: the deploy (05:53:09 to 05:54:26) created `app_etl_eighth_experimentation_app_etl` and its
+  `_train` twin, and `run` started `73MVxeRDJt3DcrH` at 05:55:41, `ListTagsForResource` refused on the `test`
+  project's workflows (warnings). **[Claude]** Sandbox's trail: both `CreateWorkflow` (05:54:13, 05:54:25) and
+  `StartWorkflowRun` (05:55:41) from `10.20.47.191` through `vpce-02b3bc930bd6b3e76`, no error; the proxy log
+  silent on the API since 05:42. 2.1's reads: both workflows `READY`, `manual_only`, the project role, its
+  two private subnets and group, `CUSTOMER_MANAGED_KEY` the project key, the six tags, the log groups under the
+  project key with no retention; each `WorkflowDefinition` byte-identical to the resolved YAML (seven
+  `{{ params.* }}`, no `{proj.*}` left), the `Code` object byte-identical to the synced zip (2,448 bytes); the
+  run `ON_DEMAND` with the six stage variables as `OverrideParameters`. The run reached `SUCCESS` at 06:07:19 UTC (11 min 34 s), its four tasks `SUCCESS`: the Glue job `app-etl-avhvbqn37ty7m8` over the synced inbox (66 s, two G.1X workers), the processing job `app-etl-20261026T055826` on the release's image by digest (`ml.t3.medium`, network-isolated, 5 min 21 s), and the report under `shared/app-etl/outbox/` (10 rows, `notional` 49,850.5), both outputs under the project key.
+- **[user] xxix's second half**: the `test` project's workflow run from the portal at 05:32:19, no parameter,
+  nothing saved; **[Claude]** `OverrideParameters` the service's `mwaa_serverless_workflow_id` alone, failed at
+  05:34:25 before any task, *"User template error: DAG template rendering failed: 'dict object' has no
+  attribute 'SUBNET_AZ1'"*. Verification xxix is answered.
+- **[Claude] Studio apps**: `CreateApp` read the `default` space at 04:45:43, `jup-dev-env` at 04:46:46 and the
+  `test` project's `default` at 05:31:47, when the portal opened that project; `list-apps` shows 2026-10-25 05:40
+  as `CreationTime` for both `default` spaces, the app name's first creation and not the latest start.

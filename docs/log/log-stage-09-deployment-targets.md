@@ -2682,3 +2682,20 @@ AWS. Times UTC.*
   `datazone_usr_role_*` of Sandbox (`production/sagemaker/registry.tf`), and the project's role,
   `datazone_usr_role_avhvbqn37ty7m8_…`, is a contributor of the project. 8.1's space half stays behind 6f
   decision 1 (step 9).
+
+## 2026-10-26 — the Sandbox sitting: 3.4's project-role half from a space
+
+*The user's hand in `eighth-experimentation`'s space as the Data Scientist User, no `--profile`, so the
+project role answered; Claude's for the trails, as the infrastructure user. Times UTC.*
+
+- **[user] 3.4's two calls** (`promotion.md` §N.3 step 6), Production's account id typed at the prompt:
+  `describe-model-package-group` answered, `awsds-prod-model-app-etl`, `Completed`, created 2026-10-18 19:59:03
+  UTC by the infrastructure user; `create-model-package` refused, *"User: arn:aws:sts::<Sandbox>:assumed-role/
+  datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform:
+  sagemaker:CreateModelPackage on resource: arn:aws:sagemaker:us-west-2:<Production>:model-package/
+  awsds-prod-model-app-etl/new because no resource-based policy allows the sagemaker:CreateModelPackage
+  action"*, the persona's wording of 2026-10-23. Verification v's project-role half is answered.
+- **[Claude] The trails**, read at 05:59 after a first lookup at 05:10 found neither call (delivery lag):
+  `DescribeModelPackageGroup` at 05:09:37 in both accounts' trails, from `10.20.56.248` through Sandbox's
+  `sagemaker.api` endpoint `vpce-0c34c55bf1eaa47ff`, no error, Production's record carrying no caller ARN;
+  `CreateModelPackage` at 05:09:45 in Sandbox's trail alone, `AccessDenied`, through the same endpoint.

@@ -1335,3 +1335,36 @@ AWS; the Sandbox sitting the user asked to have prepared. Times UTC.*
 - **[Claude] The space**: `eighth-experimentation`'s one space, the Data Scientist User's, reads
   `awsds-sandbox-dev-env` version 10 as its default image since 2026-10-25 22:55 UTC; the Data Scientist
   User owns both Sandbox projects.
+
+## 2026-10-26 — the Sandbox sitting (`promotion.md` §N.3): INT-19's notebook surface and INT-09's clone and push from a space
+
+*The user's hand for the raises (`make hub-up`, `make gitlab-up RUNNERS=0`, `make up ENV=sandbox ONLY=egress`),
+the tunnel, GitLab's token and everything inside the space, as the Data Scientist User in a private window;
+Claude's for the readings, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`,
+`awsds-infra-sandbox-1`). The one idle peer session told. Times UTC.*
+
+- **[user] The raises**; **[Claude] read back**: the WireGuard host, the proxy and GitLab started 04:25:45,
+  04:25:48 and 04:27:47; `./aws/egress.py` 12 endpoints in SharedServices and 18 in Sandbox, 0 NAT, 0.300
+  USD/h, `EG-1` to `EG-4` passing; `./aws/devenv.py` `DE-1` to `DE-6` passing (72 names, version 10);
+  `make status` 0.3828 USD/h before the space. The laptop's four WireGuard profiles read *Disconnected*
+  (`scutil --nc list`) until the user connected `mbp-split-tunnel` at 04:40: `utun4` at `10.90.0.2`,
+  `gitlab.awsds.internal` resolving to `10.30.39.111`, the sign-in page `200 ssl_verify=0` with the SAML
+  button.
+- **[user] INT-19's notebook surface** (verification x), from `eighth-experimentation`'s space on version 10:
+  curl `200 ssl_verify=0`; the `ls-remote` refused at the authentication wall (*"HTTP Basic: Access denied"*),
+  no certificate error; `/opt/conda/bin/python 200 200` and `/opt/awsds/venv/bin/python 200 200`; a notebook
+  cell `200`. Every surface of INT-19 answered.
+- **[user] INT-09** (verification xi): the clone did not prompt and failed, *"aws: [ERROR]: … Unknown options:
+  --ignore-host-check"*, then *"HTTP Basic: Access denied"*. `git config --show-origin --get-regexp
+  '^credential\.'` read `file:/home/sagemaker-user/.gitconfig` with `credential.helper !aws codecommit
+  credential-helper --ignore-host-check $@` and `credential.usehttppath true`: the helper answers for every
+  host, so GitLab receives its credential and git never prompts. With the list reset (`-c credential.helper=
+  -c credential.helper='cache --timeout=3600'`) git prompted for the persona's username and token, cloned
+  `awsds/app-etl` (128 objects, 68.96 KiB), pushed `HEAD:refs/heads/int-09-probe` with `-o ci.skip` and
+  deleted it, about 05:04.
+- **[Claude] The path**: SharedServices' flow log holds the space's address `10.20.56.248` to
+  `10.30.39.111:443`, accepted, on GitLab's interface, from 04:57:17 (the failed attempts) to 05:04:52 (the
+  clone); the proxy log holds no request naming GitLab in the window. The clone went over the peering, direct.
+- **[Claude] What changed in the record**: verifications x and xi answered, pass 3 closed with them, INT-09's
+  and INT-19's rows measured; the clone's credential reset written in `promotion.md` §N.3 step 5 and
+  `sagemaker-application.md` §D.

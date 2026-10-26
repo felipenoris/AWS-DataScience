@@ -343,7 +343,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   lifted, `warehouse-compute/` raised per warehouse sitting, 9.3 run 2026-10-24 (the schema `trades` at 1 TB, the roles, the `IAMR:` users, the default privileges, every `PUBLIC`
   `CREATE` revoked), **9.4 to 9.7 done 2026-10-25**: the DDL job and the load (decision 15's Production-only workflow, its schedule `DISABLED` through the slice) after the deploy role's `FollowItsOwnStatements` and the job group's 5439 egress; 9.5's datashare across Production, Data Governance (decision 14) and Sandbox; 9.7 read from `eighth-experimentation` through the access role's catalog read, its Lake Formation grant and `TEMP` (`redshift-connection.md` §G), and with Production's workgroup gone;
   `workloads-egress/` taking `GROUPS=redshift`; the `ml.m5.large` pair requested 2026-10-23 (`CASE_OPENED`); the
-  persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run but the two space halves (INT-06 answered, open
+  persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run but 8.1's space half (3.4's from a space 2026-10-26; INT-06 answered, open
   question 8 closed; the Data API negative 2026-10-26); the sittings in `runbooks/promotion.md`. 2026-10-25, nothing up: 9.5's
   Terraform adoption applied (the registration and the LF-Tags by hand, no importer), xii's registry read in
   `model-chain.py transform staging` with `staging/foundation/`'s output, applied. **§N.2 run 2026-10-26**: xviii and
@@ -371,7 +371,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   2026-10-26 with nothing up: both outputs buckets publish to EventBridge (3.6); `GetWorkflowRun` decrypts
   through the service and `GetWorkflow` does not (decision 11's `kms:ViaService` narrowing is the user's);
   the training operator's `print_log` read is refused at the data key six times per run, the task surviving
-  (the remedy the user's).
+  (the remedy the user's). **2.1 ran from a space on 2026-10-26**: the house CLI by its path, the CLI 1.0.9's
+  `ListDomains` (refused to a project's role) answered by the domain's id, and Sandbox's `mwaa` group's
+  `airflow-serverless` endpoint (`GROUPS=mwaa`, the name in the session's `NO_PROXY` until the next image);
+  xxix's portal run fails at the DAG's template.
 - **The Sandbox warehouse (5b, 6h)**: `sandbox/warehouse/` rank 53 `[P]` and `sandbox/warehouse-compute/`
   rank 54 `[E]` (base 4 / max 8 RPU, usage limit 10 RPU-h monthly `deactivate`), database `sandbox`, schema
   `lab`. One project per tag key is admitted (`avhvbqn37ty7m8`); decision 8 owns the second,
@@ -412,14 +415,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   it between the two Sandbox projects and bundles it, the pipeline deploys the bundle, and a Step
   Functions machine per chain with a Scheduler schedule starts the workflows. The tooling is
   `awsds-workflows` (runbook §T).
-- **Stage 7 in progress**: passes 1-2 closed (3.5's memberships 2026-10-24), pass 3 but INT-09's clone,
+- **Stage 7 in progress**: passes 1-2 closed (3.5's memberships 2026-10-24), pass 3 with INT-09's clone from a space (2026-10-26),
   **pass 4 closed 2026-10-26** (8.1's start 1 min 42 s to the first HTTPS answer; 8.2's
   rehearsal 24 min 16 s from destroy to the restored sign-in page, the host `i-0b4cb5f62e65abf70` since, on a new data volume; 8.3
   diffed), §I step 6's settings done the same day (event tracking, Service Ping, the version check, the runner
   release fetch and Auto DevOps off, Public restricted, sign-up kept on, no `TM` row). Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
   `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners out, and the build runner rises
-  only with `BUILD=1` (decision 5, 2026-10-24). Owed: INT-09's clone from a
-  notebook (a space on version 10 with a persona PAT) and INT-19's notebook surface, Validation 2's `PX-3`
+  only with `BUILD=1` (decision 5, 2026-10-24). Owed: Validation 2's `PX-3`
   (the proxy running, `--on-host`; the offline half read 2026-10-26), a backup before 2026-11-26. The GitLab backups of 2026-10-13, 10-15, 10-25 and 10-26 leave
   the bucket on 2026-11-13, 11-15, 11-25 and 11-26. `make gitlab-up` applies `egress/` before it starts the host
   (2026-10-26: `tooling` at rank 52, one rank order for `[D]` and `[E]` in `scripts/slices.py`), so the Session
@@ -499,7 +501,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `--no-browser`.
 - **Module tags**: `orchestration-v0.2.1` (both callers pinned 2026-10-25, the schedule's input carrying the
   Scheduler's placeholder literally; `production/orchestration` applied on it 2026-10-25, its three schedules
-  `DISABLED` between sittings), `vpc-egress-v0.18.0` (unapplied), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
+  `DISABLED` between sittings), `vpc-egress-v0.19.0` (`sandbox/egress`, the `mwaa` group's `airflow-serverless`, applied 2026-10-26 with
+  `GROUPS=mwaa`; the other callers `v0.17.0`), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); the laptop's Terraform never moves ahead of

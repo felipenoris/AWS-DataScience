@@ -2865,6 +2865,39 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   was created and the batch transform completed. A trail reader meets an `AccessDenied` on a run that
   succeeded. Where: `log-stage-10-orchestration-promotion.md`, 2026-10-25.
 
+
+### SageMaker Unified Studio spaces
+
+- **A space's home `.gitconfig` names the CodeCommit credential helper for every host** (measured 2026-10-26,
+  Stage 7 xi). `credential.helper !aws codecommit credential-helper --ignore-host-check $@` with
+  `credential.usehttppath true` sits in `/home/sagemaker-user/.gitconfig`: a clone of any HTTPS remote sends
+  that helper's credential, GitLab answers *"HTTP Basic: Access denied"*, and git never prompts for a token.
+  `-c credential.helper=` resets the list for one command. Where: `log-stage-07-gitlab-runners-ecr.md`,
+  2026-10-26.
+- **The SageMaker Distribution's own `aws-smus-cicd-cli` comes first on a space's `PATH`** (measured
+  2026-10-26, Stage 10 2.1). In a house-image space, `type -a` reads `/opt/conda/bin/aws-smus-cicd-cli`,
+  1.0.8, ahead of the house environment's 1.0.9; the 1.0.8 refuses a manifest whose `content.workflows[]`
+  carries `code`. Where: `log-stage-10-orchestration-promotion.md`, 2026-10-26.
+- **`list-apps` reports an app's first creation, not its latest start** (measured 2026-10-26). Both `default`
+  spaces' apps read `CreationTime` 2026-10-25 05:40 UTC while CloudTrail's `CreateApp` started them at 04:45
+  and 05:31 UTC on 2026-10-26: an app's age is read from `CreateApp`. Where: the same log.
+
+### DataZone and the CI/CD CLI
+
+- **DataZone refuses `ListDomains` to a project's role that IAM allows** (measured 2026-10-26, Stage 10 2.1).
+  The role's managed policy grants `datazone:List*` on `*` and nothing denies it, yet the call reads *"User is
+  not permitted to perform operation: ListDomains"*, CloudTrail `AccessDenied` with no `errorMessage`. The
+  CI/CD CLI 1.0.9 makes the call on every deploy with bootstrap actions, the manifest's domain id unused, so a
+  deploy from a space stops there. Where: `log-stage-10-orchestration-promotion.md`, 2026-10-26.
+
+### MWAA Serverless
+
+- **The API has no `.amazonaws.com` name, and botocore reports a proxy's refusal as a connection failure**
+  (measured 2026-10-26, Stage 10 2.1). `airflow-serverless.<region>.api.aws` is the endpoint service's only
+  private name and the only public one that resolves; a compute plane that refuses `.api.aws` at its proxy
+  leaves an interface endpoint as the one path. The proxy's `403` to `CONNECT` reached the CLI as *"Failed to
+  connect to proxy URL"*; the proxy log names the host. Where: the same log.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

@@ -811,15 +811,19 @@ cycle charge (0.36 to 0.87 per Sandbox `[E]` cycle, 0.21 to 0.38 per GitLab cycl
    then the tunnel ([`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §3.4), then:
 
    ```bash
-   make up ENV=sandbox ONLY=egress
+   make up ENV=sandbox ONLY=egress GROUPS=mwaa
    ```
 
    `ONLY=egress` because a plain `make up ENV=sandbox` also raises `warehouse-compute/` (the 4-RPU
    workgroup, whose connection's `lineageSync` queries daily at 03:43 UTC) and `probes/`, neither of which
-   this sitting uses; no `GROUPS=`, since no step calls Bedrock or MLflow. **[Claude]** the other sessions
+   this sitting uses; `GROUPS=mwaa` for step 7's MWAA Serverless endpoint (`vpc-egress-v0.19.0`), and no
+   other group, since no step calls Bedrock or MLflow. **[Claude]** the other sessions
    on the laptop told before the first raise; after the last, `./aws/egress.py awsds-infra-prod
    awsds-infra-sandbox-1` (SharedServices' twelve endpoints, Sandbox's eighteen), `./aws/devenv.py`
-   (`DE-3` and `DE-5` with the session up) and `make status`.
+   (`DE-3` and `DE-5` with the session up) and `make status`. **Run 2026-10-26** (Stage 7's log): the hub
+   and GitLab started at 04:25 to 04:27 UTC, Sandbox's egress raised without the group (added at step 7),
+   30 endpoints and 0.300 USD/h, `DE-1` to `DE-6` passing; the tunnel read *Disconnected* on this laptop
+   until the user connected `mbp-split-tunnel` at 04:40.
 
 2. **[user] The persona's token in GitLab**: in the private window, through the tunnel,
    `https://gitlab.awsds.internal` → *Sign in with SAML* as the Data Scientist User; *Edit profile →
@@ -850,28 +854,35 @@ cycle charge (0.36 to 0.87 per Sandbox `[E]` cycle, 0.21 to 0.38 per GitLab cycl
    import requests; requests.get("https://gitlab.awsds.internal/users/sign_in", timeout=20).status_code
    ```
 
-   Expected: `200 ssl_verify=0`; the anonymous `ls-remote` stopped at the authentication wall, never at a
-   certificate; `200 200` from both Pythons and `200` from the cell. A certificate error is INT-19's
+   Expected: `200 ssl_verify=0`; the `ls-remote` stopped at the authentication wall, never at a
+   certificate; `200 200` from both Pythons and `200` from the cell. **Read 2026-10-26**: as expected, the
+   wall reading *"HTTP Basic: Access denied"* after an AWS credential helper's error (step 5). A certificate error is INT-19's
    failure, the image's trust; a timeout is the network's (the peering, GitLab's group on 443, `NO_PROXY`).
+   **Read 2026-10-26** (Stage 7 x): `200 ssl_verify=0`, the wall, `200 200` twice, the cell `200`.
 
 5. **[user] INT-09's clone and push** (Stage 7 xi), the token at git's password prompt, kept in memory
-   for an hour by git's cache helper and never on disk:
+   for an hour by git's cache helper and never on disk. The space's git configuration names an AWS
+   credential helper for every host (`--ignore-host-check`, the CodeCommit helper's option; read
+   2026-10-26): it errors, a credential GitLab refuses reaches the server, and git never prompts. The
+   empty `credential.helper=` resets that list before the cache helper joins it:
 
    ```bash
-   cd ~ && git -c credential.helper='cache --timeout=3600' clone https://gitlab.awsds.internal/awsds/app-etl.git
+   cd ~ && git -c credential.helper= -c credential.helper='cache --timeout=3600' clone https://gitlab.awsds.internal/awsds/app-etl.git
    ```
 
    ```bash
-   cd ~/app-etl && git -c credential.helper='cache --timeout=3600' push -o ci.skip origin HEAD:refs/heads/int-09-probe
+   cd ~/app-etl && git -c credential.helper= -c credential.helper='cache --timeout=3600' push -o ci.skip origin HEAD:refs/heads/int-09-probe
    ```
 
    ```bash
-   git -c credential.helper='cache --timeout=3600' push origin --delete int-09-probe
+   git -c credential.helper= -c credential.helper='cache --timeout=3600' push origin --delete int-09-probe
    ```
 
    The push creates a branch on `main`'s commit, no new object, and `ci.skip` keeps GitLab from queueing
    a pipeline that no runner would take with `RUNNERS=0`. **[Claude]** the path, about 15 minutes after
-   the clone (the logs aggregate over 600 s, and an early empty answer is no answer, Lesson 62): accepted
+   the clone (the logs aggregate over 600 s, and an early empty answer is no answer, Lesson 62). **Done
+   2026-10-26** (Stage 7 xi): the clone at 05:04 UTC, the branch pushed and deleted, the flows from
+   `10.20.56.248` accepted and the proxy log silent on GitLab. The reading's shape: accepted
    flows from a `10.20.x` address to `10.30.39.111:443` in SharedServices' log, the space's own address
    and no proxy between, since `NO_PROXY` names `.awsds.internal`:
 
@@ -897,7 +908,9 @@ cycle charge (0.36 to 0.87 per Sandbox `[E]` cycle, 0.21 to 0.38 per GitLab cycl
    whichever layer answers first (Lesson 20); the persona's laptop half read *"because no resource-based
    policy allows the sagemaker:CreateModelPackage action"* on 2026-10-23. **[Claude]** both calls in
    Production's trail under `datazone_usr_role_avhvbqn37ty7m8_…`, the read with no error and the write's
-   `errorMessage`.
+   `errorMessage`. **Done 2026-10-26** (Stage 9 v): `DescribeModelPackageGroup` at 05:09:37 UTC in both
+   trails, `CreateModelPackage` refused at 05:09:45 with the persona's wording, in Sandbox's trail alone, both
+   through Sandbox's `sagemaker.api` endpoint.
 
 7. **[user] Stage 10 2.1**, the first `deploy --targets dev` from a space, as the project role, in
    `~/app-etl` (step 5's clone, at `main`). The values the manifest reads ([`sagemaker-application.md`](sagemaker-application.md)
@@ -915,19 +928,31 @@ cycle charge (0.36 to 0.87 per Sandbox `[E]` cycle, 0.21 to 0.38 per GitLab cycl
    export JOB_IMAGE_URI="${PROD}.dkr.ecr.us-west-2.amazonaws.com/awsds-prod-ecr-app-etl@sha256:ba8d41bf08bebee084b38e7df9b8efa28e6fcccaf9865e0591fdec7d0462f98d"
    ```
 
+   The MWAA Serverless API's only name, `airflow-serverless.<region>.api.aws`, is refused by the compute
+   plane's proxy, so the session needs the `mwaa` group's endpoint (step 1) and the name in its
+   `NO_PROXY` until the house image carries it (`getent hosts` answers a `10.20.x` address):
+
+   ```bash
+   export NO_PROXY="$NO_PROXY,airflow-serverless.us-west-2.api.aws" no_proxy="$no_proxy,airflow-serverless.us-west-2.api.aws"
+   ```
+
    Then the worker's packages, as `build-task-code` builds them, the deploy, and one run of `app-etl` (the
-   train workflow trains on `ml.m5.large` and is not 2.1's):
+   train workflow trains on `ml.m5.large` and is not 2.1's). The CLI is the house image's, by its path:
+   the SageMaker Distribution's own, 1.0.8, comes first on `PATH` and refuses the manifest's `code` field.
+   The CLI 1.0.9 looks the domain up by name with `ListDomains`, which DataZone refuses to a project's role,
+   so each command answers that lookup with the manifest's domain id, as the deploy role's `ListDomains`
+   answers in the pipeline:
 
    ```bash
    for w in app-etl app-etl-train; do python3 -m zipfile -c "code/$w.zip" code/app_etl_tasks.py; done
    ```
 
    ```bash
-   aws-smus-cicd-cli deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
+   "$AWSDS_PYTHON_ENV/bin/python" -c 'import os, sys, smus_cicd.helpers.datazone as dz; dz.get_domain_id_by_name = lambda name, region: os.environ["DOMAIN_ID"]; from smus_cicd.cli import app; sys.argv[0] = "aws-smus-cicd-cli"; app()' deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
    ```
 
    ```bash
-   aws-smus-cicd-cli run --manifest manifest.yaml --targets dev --workflow app-etl
+   "$AWSDS_PYTHON_ENV/bin/python" -c 'import os, sys, smus_cicd.helpers.datazone as dz; dz.get_domain_id_by_name = lambda name, region: os.environ["DOMAIN_ID"]; from smus_cicd.cli import app; sys.argv[0] = "aws-smus-cicd-cli"; app()' run --manifest manifest.yaml --targets dev --workflow app-etl
    ```
 
    The deploy creates both workflows at their first of 50 versions; a line saying the network or the
@@ -939,7 +964,9 @@ cycle charge (0.36 to 0.87 per Sandbox `[E]` cycle, 0.21 to 0.38 per GitLab cycl
    to its end (`get-workflow-run`, `list-task-instances`): the Glue job `app-etl-avhvbqn37ty7m8` over the
    inbox the deploy synced, the processing job on the release's image, the report under
    `shared/app-etl/outbox/`. The run costs cents: two G.1X workers for minutes, about 15 minutes of
-   `ml.t3.medium`, worker tasks at 0.088 USD per task-hour.
+   `ml.t3.medium`, worker tasks at 0.088 USD per task-hour. **Done 2026-10-26** (Stage 10's log): the three
+   findings above met in that order, the endpoint applied at 05:41:56 UTC; the deploy created both workflows
+   at 05:54, and from 05:55:41 the run reached `SUCCESS` at 06:07:19 UTC (11 min 34 s), its four tasks `SUCCESS`: the Glue job `app-etl-avhvbqn37ty7m8` over the synced inbox (66 s, two G.1X workers), the processing job `app-etl-20261026T055826` on the release's image by digest (`ml.t3.medium`, network-isolated, 5 min 21 s), and the report under `shared/app-etl/outbox/` (10 rows, `notional` 49,850.5), both outputs under the project key.
 
 8. **[user] Stage 10 xxix's second half**: in the portal, `test-experimentation`'s *Workflows* page,
    `app_etl_test_experimentation_app_etl` → *Run*, with no parameter, and nothing saved (a save replaces
@@ -948,6 +975,8 @@ cycle charge (0.36 to 0.87 per Sandbox `[E]` cycle, 0.21 to 0.38 per GitLab cycl
    in the workflow's `/aws/mwaa-serverless/` group. `transform` names `{{ params.SUBNET_AZ1 }}` in its
    connections, so the run is expected to stop there, at Airflow's template or at Glue's connection, with
    the wording the verification records; the processing task's image is a parameter too. A worker minute.
+   **Done 2026-10-26**: run at 05:32:19 UTC, failed at 05:34:25 at the DAG's template, *"'dict object' has no
+   attribute 'SUBNET_AZ1'"*, no task instance.
 
 9. **[user] Stage 9 8.1's space half, only once 6f decision 1 is taken** and its grant applied: the
    project's query editor answering `SELECT count(*) FROM curated.trades` and refusing an `INSERT` with

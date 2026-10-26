@@ -302,7 +302,10 @@ A data scientist works in a *space*, a JupyterLab or Code Editor instance inside
 on the house image (`awsds-sandbox-dev-env`). The space's `~/shared/` folder is the project's `shared/`
 S3 prefix, its Python carries the CI/CD CLI (Stage 8 decision 22), and every command it runs holds the
 project role's credentials, so nothing has to be configured to reach AWS. The checkout of the
-application lives in the space or on the laptop. The loop:
+application lives in the space or on the laptop. A clone in a space resets git's credential helpers first
+(`git -c credential.helper= -c credential.helper='cache --timeout=3600' clone …`, the persona's token at the
+prompt): the space's `~/.gitconfig` names the CodeCommit helper for every host, whose credential GitLab
+refuses (measured 2026-10-26). The loop:
 
 1. **The tests and the lint**, §E's first two rungs, on the laptop or in the space.
 2. **The worker's package.** The CLI copies files and builds nothing, so the zip a Python task runs
@@ -330,7 +333,12 @@ application lives in the space or on the laptop. The loop:
    where, is Stage 8 decision 22: from a space as the project role, the identity the project's grants
    are written for (`sandbox/workflows/`, [`serverless-workflows.md`](serverless-workflows.md) §G), so no
    person gains a grant; the lab's first deploy ran from the laptop as the infrastructure user on
-   2026-10-15, and the space run is owed ([`promotion.md`](promotion.md) §N.3). The deploying identity
+   2026-10-15, and the space's on 2026-10-26 ([`promotion.md`](promotion.md) §N.3 step 7), which a space
+   needs three things for: the house image's CLI by its path (`$AWSDS_PYTHON_ENV/bin/aws-smus-cicd-cli`;
+   the SageMaker Distribution's 1.0.8 comes first on `PATH` and refuses the manifest), the domain lookup
+   answered by id (the CLI 1.0.9's `ListDomains` is refused to a project's role; the step's command), and
+   Sandbox's `mwaa` endpoint group with `airflow-serverless.<region>.api.aws` in `NO_PROXY` (the proxy
+   refuses the API's only name). The deploying identity
    is a member of the project: for a non-member the CLI omits the network and the key and creates the
    workflow in the service's own network, printing one line, which is the quiet failure to watch for.
 4. **A run**, and its reading:
