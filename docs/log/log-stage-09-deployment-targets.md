@@ -2670,3 +2670,15 @@ AWS; the session that read Stages 7 to 10 for what is left. Times UTC.*
   joins the waiting list's Dates; the summary rows in `CLAUDE.md`, `GENERAL_PLAN.md` and `stages/INDEX.md`
   brought to the record. What the stage leaves is the status cell's list: the two space halves, xxiv on
   §N.4a, `EXC-13`'s Production half after 2026-11-22, and the halves no step provokes.
+
+## 2026-10-26 — with the environment down: 3.4's project-role half placed in the Sandbox sitting
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`, no write to
+AWS. Times UTC.*
+
+- **[Claude] 3.4's project-role half** is `runbooks/promotion.md` §N.3 step 6: the two commands from
+  `eighth-experimentation`'s space with no `--profile`, Production's account id typed at the prompt and
+  never written, the calls read afterwards in Production's trail. `ReadTheStatusFromSandbox` admits
+  `datazone_usr_role_*` of Sandbox (`production/sagemaker/registry.tf`), and the project's role,
+  `datazone_usr_role_avhvbqn37ty7m8_…`, is a contributor of the project. 8.1's space half stays behind 6f
+  decision 1 (step 9).

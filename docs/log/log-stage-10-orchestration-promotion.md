@@ -1543,3 +1543,30 @@ AWS; the session that read Stages 7 to 10 for what is left. Times UTC.*
   and xxix's second half (a Sandbox space), xx's second half and xviii (exercises), xvi's metrics clause (a
   `monitoring` endpoint), xxv, the chain's order and xxviii's inbox marker (a second application), and
   decision 11's two readings above.
+
+## 2026-10-26 — with the environment down: the Sandbox sitting written (`promotion.md` §N.3), 2.1's and xxix's preconditions read
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-sandbox-1`, `awsds-infra-data`, `awsds-infra-prod`), no write to AWS; the sitting the user
+asked to have prepared. Times UTC.*
+
+- **[Claude] The projects**: the domain lists `eighth-experimentation` (`avhvbqn37ty7m8`, the manifest's
+  `dev`) and `test-experimentation` (`4gqfau9xuo6e4w`, its `test`), each owned by the Data Scientist User,
+  each project's role a contributor carrying `awsds-sandbox-workflows`, each Tooling environment carrying
+  `kmsKeyArn`, `securityGroup`, `privateSubnets` and two Glue network connections. The `dev` project holds no
+  `app-etl` workflow (its one CLI-made workflow is the lab's `houseprice_etl`), so 2.1's deploy creates two;
+  the `test` project holds `app_etl_test_experimentation_app_etl` and its `_train` twin, last modified by
+  `v0.4.6`'s `test-deploy` at 22:59 on 2026-10-25.
+- **[Claude] The spaces**: one per project, both the persona's, private, `ml.t3.medium`; `eighth-experimentation`'s
+  reads `awsds-sandbox-dev-env` version 10 as its default image, `test-experimentation`'s AWS's SageMaker
+  Distribution 4.5; no app runs in either domain.
+- **[Claude] The CLI 1.0.9, read in its installed code**: `load_yaml` refuses a manifest whose `${VAR}` is
+  unset or empty (`find_missing_env_vars` tests `not os.getenv`), the `test` stage's names included, so a
+  `dev` deploy sets all twelve; `ContextResolver` writes each `{env.VAR}` as `{{ params.VAR }}` with no
+  default, and `run` passes the stage's `environment_variables` as `OverrideParameters`. A deploy embeds no
+  value, and a portal run (xxix) gets none.
+- **[Claude] The procedure**, `runbooks/promotion.md` §N.3: the raises (`make up ENV=sandbox ONLY=egress`,
+  since a plain `make up ENV=sandbox` also raises `warehouse-compute/` and `probes/`), the persona's token,
+  INT-19 and INT-09 (Stage 7), Stage 9 3.4's project-role half, 2.1 with the values from the package's
+  `space_values.py` and the image of `v0.4.6`'s `release.tf`, xxix from the portal, 8.1's space half behind
+  6f decision 1, and the downs.

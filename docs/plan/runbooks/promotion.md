@@ -766,22 +766,207 @@ UTC, Production's balance 299.69.
    both profiles; **[user]** the free trial's balance again, once the sitting's last half-hour interval
    has landed (Stage 9's Validation, `ComputeSeconds`).
 
-### N.3 The proofs from a Sandbox space
+### N.3 The Sandbox sitting: the proofs from a space and INT-09's clone
 
-`make hub-up`, `make up ENV=sandbox`, a space on the house image (version 10 once N.1 step 1 has run).
+What this sitting closes: Stage 7's INT-09 clone and push (verification xi) with INT-19's notebook
+surface (x), Stage 9 3.4's project-role half (v), Stage 10 2.1 (the first `deploy --targets dev` from a
+space) and xxix's second half (a portal run with no overrides). Stage 9 8.1's space half waits on 6f
+decision 1 (step 9). The raises and the downs are the infrastructure user's (`felipenoris+infrastructure_user@…`,
+`InfrastructureAccess`, the profiles `awsds-infra-prod` and `awsds-infra-sandbox-1`), from the project
+folder; the portal, the space and GitLab are the Data Scientist User's, signed in through Identity Center
+in one private window, since a sign-in answered in a browser holding another user's portal session ends
+that session; every reading is Claude's, as the infrastructure user. While up, at `cost-model.md`'s rates:
+the hub about 0.026 USD/h, GitLab and SharedServices' twelve endpoints 0.187, Sandbox's eighteen endpoints
+0.180 and the space on `ml.t3.medium` 0.050, about 0.44 USD/h, plus the runs (cents) and AWS Config's
+cycle charge (0.36 to 0.87 per Sandbox `[E]` cycle, 0.21 to 0.38 per GitLab cycle).
 
-1. **[user] Stage 9 3.4's project-role half** (verification v): 3.4's two commands from the space's
-   terminal with no `--profile`, so the project role answers: the group read answers, the write is
-   refused with the group policy's wording.
-2. **[user] Stage 9 8.1's space half**: the project's query editor answering `SELECT count(*) FROM
-   curated.trades` and refusing an `INSERT` with Lake Formation's wording. First: 6f decision 1. The
-   project role holds no Lake Formation grant on the lake, Sandbox's tag re-grants naming the Data
-   Scientist User's set (Stage 9's log, 2026-10-25), so the `SELECT` reads a refusal until it holds one,
-   as 6g 2.4's read does.
-3. **[user] Stage 10 2.1**, pass 1's `deploy --targets dev` from the space as the project role (Stage 8
-   decision 22), and 2.1's reads.
-4. **[user] Stage 10 xxix's second half**: the `test` project's app-etl workflow started from the portal
-   with no `OverrideParameters`; **[Claude]** the run's state and its first task's log.
+**Read 2026-10-26 with nothing up** (the stage logs):
+
+- Both Sandbox projects are the Data Scientist User's (`PROJECT_OWNER`): `eighth-experimentation`, the
+  manifest's `dev` (domain `d-p6gthxc82ckg`), and `test-experimentation`, its `test` (`d-lfgbdrjncmsu`).
+  Each project's role is a contributor and carries `awsds-sandbox-workflows`, and each Tooling environment
+  carries its `kmsKeyArn`, its two Glue network connections and its security group.
+- `eighth-experimentation`'s space, `default-28f1…` (the persona's, private, `ml.t3.medium`), reads
+  `awsds-sandbox-dev-env` version 10 as its default image since 2026-10-25 22:55 UTC; the `test`
+  project's space runs AWS's SageMaker Distribution 4.5. No app runs in either domain.
+- The `dev` project holds no `app-etl` workflow, so step 7 creates two; the `test` project holds
+  `app_etl_test_experimentation_app_etl` and its `_train` twin, last updated by `v0.4.6`'s `test-deploy`.
+- `ReadTheStatusFromSandbox` on `awsds-prod-model-app-etl` admits `datazone_usr_role_*` of Sandbox.
+- Both VPCs' flow logs are on (`awsds-prod-shared-vpc-flow-logs`, `awsds-sandbox-vpc-flow-logs`), default
+  format, 600 s aggregation; GitLab's host answers at `10.30.39.111`, and Sandbox is `10.20.0.0/16`.
+- The CI/CD CLI 1.0.9, read in its code: it refuses a manifest with any `${VAR}` unset or empty, the
+  `test` stage's included (`find_missing_env_vars`), and writes each `{env.VAR}` as `{{ params.VAR }}`
+  with no default, so a deploy embeds no value and only a run the CLI starts fills one.
+
+1. **[user] The raises**, in this order:
+
+   ```bash
+   make hub-up
+   ```
+
+   ```bash
+   make gitlab-up RUNNERS=0
+   ```
+
+   then the tunnel ([`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §3.4), then:
+
+   ```bash
+   make up ENV=sandbox ONLY=egress
+   ```
+
+   `ONLY=egress` because a plain `make up ENV=sandbox` also raises `warehouse-compute/` (the 4-RPU
+   workgroup, whose connection's `lineageSync` queries daily at 03:43 UTC) and `probes/`, neither of which
+   this sitting uses; no `GROUPS=`, since no step calls Bedrock or MLflow. **[Claude]** the other sessions
+   on the laptop told before the first raise; after the last, `./aws/egress.py awsds-infra-prod
+   awsds-infra-sandbox-1` (SharedServices' twelve endpoints, Sandbox's eighteen), `./aws/devenv.py`
+   (`DE-3` and `DE-5` with the session up) and `make status`.
+
+2. **[user] The persona's token in GitLab**: in the private window, through the tunnel,
+   `https://gitlab.awsds.internal` → *Sign in with SAML* as the Data Scientist User; *Edit profile →
+   Access tokens → Add new token*: the name `int-09`, the expiry tomorrow, the scopes `read_repository`
+   and `write_repository`. GitLab shows the token once; it is typed at step 5's prompt and nowhere else,
+   never into chat or a file. The same pages give the username the clone asks for, and `awsds/app-etl`
+   lists the persona as Developer through `awsds/data-scientists` (Stage 8 2.1).
+
+3. **[user] The space**: in the same private window, the portal, `eighth-experimentation` → *Compute →
+   Spaces*: the JupyterLab space's image `awsds-sandbox-dev-env` version 10 (alias `0.9.1`) on
+   `ml.t3.medium`, confirmed in its settings before *Start*; then *Open* and a terminal (*File → New →
+   Terminal*). The space bills from its start.
+
+4. **[user] INT-19's notebook surface** (Stage 7 x): the image's own trust, read as the release smoke test
+   reads it (`gitlab/awsds/dev-env/smoke/Dockerfile`), in the terminal:
+
+   ```bash
+   G=https://gitlab.awsds.internal
+   curl -sS -o /dev/null -w '%{http_code} ssl_verify=%{ssl_verify_result}\n' "$G/users/sign_in"
+   GIT_TERMINAL_PROMPT=0 git ls-remote "$G/awsds/app-etl.git"
+   for py in /opt/conda/bin/python "$AWSDS_PYTHON_ENV/bin/python"; do "$py" -c "import sys, urllib.request, requests; u = sys.argv[1]; print(sys.executable, urllib.request.urlopen(u, timeout=20).status, requests.get(u, timeout=20).status_code)" "$G/users/sign_in"; done
+   ```
+
+   and in a notebook cell on the house kernel (`$AWSDS_PYTHON_ENV`, `/opt/awsds/venv`), the surface the verification
+   names:
+
+   ```python
+   import requests; requests.get("https://gitlab.awsds.internal/users/sign_in", timeout=20).status_code
+   ```
+
+   Expected: `200 ssl_verify=0`; the anonymous `ls-remote` stopped at the authentication wall, never at a
+   certificate; `200 200` from both Pythons and `200` from the cell. A certificate error is INT-19's
+   failure, the image's trust; a timeout is the network's (the peering, GitLab's group on 443, `NO_PROXY`).
+
+5. **[user] INT-09's clone and push** (Stage 7 xi), the token at git's password prompt, kept in memory
+   for an hour by git's cache helper and never on disk:
+
+   ```bash
+   cd ~ && git -c credential.helper='cache --timeout=3600' clone https://gitlab.awsds.internal/awsds/app-etl.git
+   ```
+
+   ```bash
+   cd ~/app-etl && git -c credential.helper='cache --timeout=3600' push -o ci.skip origin HEAD:refs/heads/int-09-probe
+   ```
+
+   ```bash
+   git -c credential.helper='cache --timeout=3600' push origin --delete int-09-probe
+   ```
+
+   The push creates a branch on `main`'s commit, no new object, and `ci.skip` keeps GitLab from queueing
+   a pipeline that no runner would take with `RUNNERS=0`. **[Claude]** the path, about 15 minutes after
+   the clone (the logs aggregate over 600 s, and an early empty answer is no answer, Lesson 62): accepted
+   flows from a `10.20.x` address to `10.30.39.111:443` in SharedServices' log, the space's own address
+   and no proxy between, since `NO_PROXY` names `.awsds.internal`:
+
+   ```bash
+   aws logs filter-log-events --log-group-name awsds-prod-shared-vpc-flow-logs --start-time <the clone's minute, epoch ms> --filter-pattern '[version, account, eni, srcaddr="10.20.*", dstaddr="10.30.39.111", srcport, dstport="443", protocol, packets, bytes, start, end, action, status]' --profile awsds-infra-prod --region us-west-2
+   ```
+
+6. **[user] Stage 9 3.4's project-role half** (v), in the terminal with no `--profile`, so the project
+   role answers. Production's account id is typed, never written into a file; on the laptop,
+   `aws configure get sso_account_id --profile awsds-infra-prod` prints it:
+
+   ```bash
+   export PROD=<Production's account id>
+   GROUP="arn:aws:sagemaker:us-west-2:${PROD}:model-package-group/awsds-prod-model-app-etl"
+   aws sagemaker describe-model-package-group --model-package-group-name "$GROUP" --region us-west-2
+   ```
+
+   ```bash
+   aws sagemaker create-model-package --model-package-group-name "$GROUP" --model-package-description probe --inference-specification "{\"Containers\":[{\"Image\":\"${PROD}.dkr.ecr.us-west-2.amazonaws.com/awsds-prod-ecr-app-etl:v0.2.1\"}],\"SupportedContentTypes\":[\"text/csv\"],\"SupportedResponseMIMETypes\":[\"text/csv\"]}" --region us-west-2
+   ```
+
+   Expected: the read answers (the group `Completed`), and the write is refused, the wording recorded
+   whichever layer answers first (Lesson 20); the persona's laptop half read *"because no resource-based
+   policy allows the sagemaker:CreateModelPackage action"* on 2026-10-23. **[Claude]** both calls in
+   Production's trail under `datazone_usr_role_avhvbqn37ty7m8_…`, the read with no error and the write's
+   `errorMessage`.
+
+7. **[user] Stage 10 2.1**, the first `deploy --targets dev` from a space, as the project role, in
+   `~/app-etl` (step 5's clone, at `main`). The values the manifest reads ([`sagemaker-application.md`](sagemaker-application.md)
+   §M): the project's own from its Tooling environment by the package's in-space script
+   ([`serverless-workflows.md`](serverless-workflows.md) §T), the image from the release `v0.4.6`
+   records (`production/app/app-etl/release.tf`), and placeholders for the four names neither the `dev`
+   deploy nor `app-etl`'s run reads:
+
+   ```bash
+   git clone --depth 1 https://github.com/felipenoris/awsds-workflows /tmp/awsds-workflows
+   /opt/conda/bin/python /tmp/awsds-workflows/scripts/space_values.py > /tmp/space_values.json
+   eval "$(/opt/conda/bin/python -c 'import json; v = json.load(open("/tmp/space_values.json")); k = "arn:aws:kms:%s:%s:key/%s" % (v["REGION"], v["ACCOUNT_ID"], v["PROJECT_KEY_ID"]); print("\n".join("export %s=%s" % p for p in (("DOMAIN_ID", v["DOMAIN_ID"]), ("DOMAIN_REGION", v["REGION"]), ("SUBNET_AZ1", v["SUBNET_AZ1"]), ("SUBNET_AZ2", v["SUBNET_AZ2"]), ("DEV_PROJECT_SG", v["PROJECT_SG"]), ("DEV_PROJECT_KEY_ARN", k))))')"
+   export DEV_PROJECT_NAME=eighth-experimentation TEST_PROJECT_NAME=test-experimentation
+   export TEST_PROJECT_SG=unused-by-dev TEST_PROJECT_KEY_ARN=unused-by-dev TRAINING_IMAGE_URI=unused-by-app-etl
+   export JOB_IMAGE_URI="${PROD}.dkr.ecr.us-west-2.amazonaws.com/awsds-prod-ecr-app-etl@sha256:ba8d41bf08bebee084b38e7df9b8efa28e6fcccaf9865e0591fdec7d0462f98d"
+   ```
+
+   Then the worker's packages, as `build-task-code` builds them, the deploy, and one run of `app-etl` (the
+   train workflow trains on `ml.m5.large` and is not 2.1's):
+
+   ```bash
+   for w in app-etl app-etl-train; do python3 -m zipfile -c "code/$w.zip" code/app_etl_tasks.py; done
+   ```
+
+   ```bash
+   aws-smus-cicd-cli deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
+   ```
+
+   ```bash
+   aws-smus-cicd-cli run --manifest manifest.yaml --targets dev --workflow app-etl
+   ```
+
+   The deploy creates both workflows at their first of 50 versions; a line saying the network or the
+   key was omitted would be the non-member's quiet failure (`sagemaker-application.md` §D), not expected
+   for the project's own role. `run` prints the run id and returns. **[Claude]** 2.1's reads: both
+   workflows `READY` under the project key, each definition object identical to the resolved
+   `shared/app-etl/workflows/*.yaml`, the six tags, the `Code` object under `shared/operatorFiles/`
+   against its zip, and the two log groups under `/aws/mwaa-serverless/`, with no retention; then the run
+   to its end (`get-workflow-run`, `list-task-instances`): the Glue job `app-etl-avhvbqn37ty7m8` over the
+   inbox the deploy synced, the processing job on the release's image, the report under
+   `shared/app-etl/outbox/`. The run costs cents: two G.1X workers for minutes, about 15 minutes of
+   `ml.t3.medium`, worker tasks at 0.088 USD per task-hour.
+
+8. **[user] Stage 10 xxix's second half**: in the portal, `test-experimentation`'s *Workflows* page,
+   `app_etl_test_experimentation_app_etl` → *Run*, with no parameter, and nothing saved (a save replaces
+   the CLI's definition whole, Lesson 60). **[Claude]** the run as the infrastructure user:
+   `list-workflow-runs` (its `RunType`), `get-workflow-run`, `list-task-instances` and the first task's log
+   in the workflow's `/aws/mwaa-serverless/` group. `transform` names `{{ params.SUBNET_AZ1 }}` in its
+   connections, so the run is expected to stop there, at Airflow's template or at Glue's connection, with
+   the wording the verification records; the processing task's image is a parameter too. A worker minute.
+
+9. **[user] Stage 9 8.1's space half, only once 6f decision 1 is taken** and its grant applied: the
+   project's query editor answering `SELECT count(*) FROM curated.trades` and refusing an `INSERT` with
+   Lake Formation's wording. The project role holds no Lake Formation grant on the lake, Sandbox's tag
+   re-grants naming the Data Scientist User's set (Stage 9's log, 2026-10-25), so without the decision the
+   `SELECT` reads a refusal, as 6g 2.4's read does, and the step stays owed.
+
+10. **The downs**: **[user]** the token revoked (*Access tokens → Revoke*) and `git credential-cache exit`
+    in the terminal; a query editor left open closed first (an app the portal is checking out refuses the
+    hook's delete, Stage 9's log of 2026-10-26); then:
+
+    ```bash
+    make down ENV=sandbox
+    ```
+
+    which deletes the Studio apps before it destroys `egress/` (the space and its volume stay), then
+    `make gitlab-down`, the tunnel down, `make hub-down`. **[Claude]** §R on the three profiles,
+    `make status`, and each step's entry in its stage's log: Stage 7's for x and xi, Stage 9's for 3.4,
+    Stage 10's for 2.1 and xxix.
 
 ### N.4 The deliberate exercises, each the user's decision
 
@@ -893,11 +1078,11 @@ sitting closes what the one before it cannot; a sitting starts on the user's wor
    grant through `logs` or `print_log: false` in the template; Stage 8 xxviii's active half's form; Stage
    8 decision 1's zlib pair (the steward's); decision 26's equivalence list, version 10 unread; INT-13's
    path; and, outside the four stages, 6f decision 1, which 8.1's space half waits on.
-2. **The Sandbox sitting** (`make hub-up`, `make gitlab-up RUNNERS=0`, `make up ENV=sandbox`, a space on
-   version 10): N.3's four proofs (Stage 9 3.4's project-role half, 8.1's space half after 6f decision 1,
-   Stage 10 2.1 and xxix's second half) and Stage 7's INT-09 clone with INT-19's notebook surface
-   (verifications xi and x; a persona PAT first). The waiting list's Sandbox row carries the other stages'
-   items for the same sitting.
+2. **The Sandbox sitting**, N.3 command by command (`make hub-up`, `make gitlab-up RUNNERS=0`, the
+   tunnel, `make up ENV=sandbox ONLY=egress`, the persona's space on version 10): Stage 7's INT-09 clone
+   and push with INT-19's notebook surface (verifications xi and x; a persona token first), Stage 9 3.4's
+   project-role half, Stage 10 2.1 and xxix's second half, and 8.1's space half once 6f decision 1 is
+   taken. The waiting list's Sandbox row carries the other stages' items for the same sitting.
 3. **The next release** (N.1's shape: the hub, `make gitlab-up BUILD=1`, Staging's `egress/`, Production's
    `workloads-egress/`): the mirror pushed, the template's merge request with what step 1's decisions
    wrote, the tag, the legs, 3.7; and the exercises the user takes with it: Stage 8 xv (the proxy stopped

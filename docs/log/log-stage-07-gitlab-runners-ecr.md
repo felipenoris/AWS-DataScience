@@ -1318,3 +1318,20 @@ and the serial console, nothing started or changed by Claude. Times UTC.*
   record. What the stage leaves: INT-09's clone and INT-19's notebook surface (verifications xi and x) from
   a Sandbox space on version 10 with GitLab up and a persona PAT, Validation 2's `PX-3`, a GitLab backup
   before 2026-11-26, the leaves' re-issue by 2027-09-22, and INT-13's path, the user's decision.
+
+## 2026-10-26 — with the environment down: INT-09's procedure written, its network reading prepared
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`, no write to
+AWS; the Sandbox sitting the user asked to have prepared. Times UTC.*
+
+- **[Claude] INT-09 and INT-19's notebook surface placed in `runbooks/promotion.md` §N.3** (steps 4 and 5):
+  the smoke test's reads from the space's terminal and a notebook cell, the clone with the persona's token at
+  git's prompt held by the cache helper for an hour, a branch pushed on `main`'s commit with `ci.skip` (no
+  pipeline queued with `RUNNERS=0`) and deleted, the token revoked at the close.
+- **[Claude] What the path is read from**: both VPCs' flow logs are on, `awsds-prod-shared-vpc-flow-logs`
+  and `awsds-sandbox-vpc-flow-logs`, default format with 600 s aggregation; GitLab's host is at
+  `10.30.39.111` since 8.2's rebuild, and Sandbox is `10.20.0.0/16`. An accepted flow from a `10.20.x`
+  address to `10.30.39.111:443` is the clone over the peering, with no proxy between.
+- **[Claude] The space**: `eighth-experimentation`'s one space, the Data Scientist User's, reads
+  `awsds-sandbox-dev-env` version 10 as its default image since 2026-10-25 22:55 UTC; the Data Scientist
+  User owns both Sandbox projects.
