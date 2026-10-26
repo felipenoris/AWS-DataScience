@@ -1290,3 +1290,26 @@ alone. Times UTC.*
   declared seats.
 - **[Claude] The warehouse sitting told** at 21:40Z that the subscription had run, with its times: it had
   asked the user to hold it until its 9.7 read after the re-grant.
+
+## 2026-10-26 — 11.10: `eighth-experimentation` reads `curated.trades` through the subscription
+
+*The user in the portal as the Data Scientist User; Claude read AWS as the infrastructure user with
+`InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and `Data Governance Account`
+(`awsds-infra-data`), reads alone. Times UTC.*
+
+- **[user]** *"A consulta rodou com sucesso quando selecionei Athena (SQL) como compute"*, in
+  `eighth-experimentation`'s query editor, with no space.
+- **[Claude] The query**: `f71c904f-7fa4-42f6-9526-413c8b7a4074` in `workgroup-avhvbqn37ty7m8-5hkjdsy3umpi1c`,
+  *"SELECT * FROM "glue_db_blerpkhn9nj7o0"."trades" LIMIT 10"*, `SUCCEEDED`, submitted 21:47:19Z, 535 bytes
+  scanned, 1,550 ms in the engine, Athena engine version 3.
+- **[Claude] Sandbox's trail**: at 21:47:13Z an `ExecuteQuery` as `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`,
+  the project's Redshift connection, the editor's first compute; at 21:47:19Z `ExecuteQuery` and, invoked by
+  `sqlworkbench.amazonaws.com`, `StartQueryExecution`, both as the project role
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` with the Data Scientist User's profile as source
+  identity; at 21:47:20Z `lakeformation:GetDataAccess` for `SELECT`, invoked by `athena.amazonaws.com` on the
+  resource link `glue_db_blerpkhn9nj7o0/trades` and by `glue.amazonaws.com` on the lake's `curated/trades`.
+  No error.
+- **[Claude] Data Governance's trail**: the same vend at 21:47:20Z, `GetDataAccess` for `SELECT` on
+  `curated/trades` by `AWSAccount`, invoked by `glue.amazonaws.com`, the cross-account form Stage 18 7.2
+  read. Verification xiii is answered: a Sandbox project reads a lake table through the catalog road, its
+  project role holding no TBAC grant.
