@@ -706,7 +706,8 @@ the definition that starts that code on a schedule or on demand, with `code/` ho
 code its Python and Bash tasks run on the worker, never a data path, the line the CLI's manifest draws
 the same way (D41). The application's slice is structure, applied by the pipeline at deploy time with no
 workflow. A notebook's logic graduates as code in `src/` plus a task in `workflows/app-etl.yaml` that
-calls it; the notebook itself does not graduate (6d decision due 14).
+calls it; the notebook itself does not graduate (6d decision due 14). What a team does with this layout,
+from a space to Production, hand by hand, is [`runbooks/sagemaker-application.md`](runbooks/sagemaker-application.md).
 
 ---
 

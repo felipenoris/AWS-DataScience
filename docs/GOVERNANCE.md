@@ -722,7 +722,9 @@ flowchart LR
   on the `app-etl` template in the GitLab group `awsds/` (Stages 7-8), and the deployable set is D28's
   artifact classes — the image, the workflow definition, the code its tasks read from S3, a per-workflow
   execution role, the orchestration resource with its chain's state machine and schedule, its log group
-  and, for ML, the model package group — carried by the repository, never by the portal.
+  and, for ML, the model package group — carried by the repository, never by the portal. The
+  application's own cycle, from a space to Production, hand by hand, is
+  [`plan/runbooks/sagemaker-application.md`](plan/runbooks/sagemaker-application.md).
 - **The pipelines** (Stage 8): the `dev-env` pipeline releases the runtime image behind the Dev Env
   Steward's gate; the application pipeline tests, lints and builds the image and the application's code
   package on a release tag, then bundles the application, has the CI/CD CLI deploy the same files to
