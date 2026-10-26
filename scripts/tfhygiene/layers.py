@@ -203,19 +203,23 @@ RANKS = {
     # is no NAT gateway anywhere, so a spoke with its endpoints up and no proxy has no route to
     # the internet at all.
     "proxy": 41,
-    # Stage 7 step 1.6 - GitLab, [D]. Below `egress` (50) for the reason `vpn` and `proxy` are:
-    # `up` ascends, so the host is started before the [E] slices exist, and `down` descends, so it
-    # is stopped after they are gone. A started GitLab needs nothing from `egress/` to serve: its
-    # configuration, certificates and secrets are on its data volume from the first boot, S3 is
-    # the gateway endpoint, and the proxy is in another account. Only the FIRST boot needs the
-    # endpoints (the bootstrap reads Secrets Manager and registers with SSM), and that apply is by
-    # hand, after `egress/` (step 1.7). The host's Name tag is `awsds-prod-gitlab`, not the slice
-    # name - DORMANT_HOST_NAMES below carries the exception.
-    "tooling": 42,
     "egress": 50,
     # VPC-Workloads' own [E] endpoint slice (Stage 6c step 1.3a). 51 rather than 50 only so the
     # two Production egress slices have a defined order between them; both sit above `proxy`.
     "workloads-egress": 51,
+    # Stage 7 step 1.6 - GitLab, [D]. Above `egress` (50) and below `runners` (57): `up` and `down`
+    # walk the [D] rows and the [E] rows in one rank order (slices.py), so the host starts after
+    # VPC-SharedServices' endpoints exist and stops before they are destroyed. The order is the
+    # agent's: Session Manager's agent registers at every start through the `ssm` endpoint
+    # `egress/` creates, and the private tier has no route to the public endpoint (no NAT, no
+    # internet gateway; the agent takes no proxy), so a host started first resolves the public
+    # address, times out and hibernates, with no shell until its retry twenty minutes later
+    # (01:31 to 01:51 UTC on 2026-10-26, Stage 7's log). The runners' first boot waits ten minutes
+    # for the sign-in page, the bound on the other side. GitLab itself serves without the
+    # endpoints: its configuration, certificates and secrets are on the data volume from the first
+    # boot, S3 is the gateway endpoint, and the proxy is in another account. The host's Name tag is
+    # `awsds-prod-gitlab`, not the slice name - DORMANT_HOST_NAMES below carries the exception.
+    "tooling": 52,
     # Stage 7 step 6.1 - the build runner, [E], the buildbox's successor (the buildbox, rank 55,
     # retired at 6.5). Above `egress` (50): it needs the SSM endpoints for its only door and reads
     # `egress/`'s `no_proxy` output at apply time, which a destroyed slice fails by name.
