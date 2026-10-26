@@ -1141,3 +1141,33 @@ Claude's, on the user's word below; the four other sessions on the laptop were t
   `Parameters` 4/`TRUE`, the flag `true`, both default lists and the read-only administrators empty;
   `data/` re-plans *"No changes."*. Verification x is answered: the first environment changed no setting
   `data/` declares and granted nothing on the lake.
+
+## 2026-10-26 — 11.5: the publisher's grant applied
+
+*Claude, the same session; AWS as the infrastructure user with `InfrastructureAccess` in `Data Governance
+Account` (`awsds-infra-data`). The apply is Claude's, on the user's word below; the four other sessions on
+the laptop were told first. Times UTC.*
+
+- **[user]** *"Autorizo o 11.5: apply de data-governance/data/ com o grant do publicador (DESCRIBE em
+  curated; DESCRIBE e SELECT com grant option em trades) ao papel do governed-lake, como infrastructure
+  user, conta Data Governance, InfrastructureAccess (awsds-infra-data)."*
+- **[Claude] The other sessions told**, each message delivered: "Pendências estágios 7-10", "Chat lateral"
+  and "Worktrees para apagar" (idle), "CI/CD CLI remedy" (busy).
+- **[Claude] Before**, 21:04:53Z: Lake Formation's three seats, `Parameters` 4/`TRUE`, the flag `true`,
+  both default lists empty. `lake_publisher_role` defaults to
+  `datazone_usr_role_3j4l4xmvz7fggg_52webn93119ouo`, read at 11.4; the plan, 21:05:23Z: *"Plan: 2 to add, 0
+  to change, 0 to destroy."*, `publisher_database[0]` and `publisher_tables["trades"]`, the preconditions
+  passing (the switch set, the role under `awsds-data-project-boundary`).
+- **[Claude⚡] The apply**, 21:05:34Z to 21:06:10Z: *"Apply complete! Resources: 2 added, 0 changed, 0
+  destroyed."* The re-plan at 21:06:36Z: *"No changes."*
+- **[Claude] Read back**: `list-permissions` refuses a principal with no resource (*"Resource is mandatory
+  if Principal is set in the input"*), so each resource was read and filtered to the role: `DESCRIBE` on
+  `curated`, no grant option; `DESCRIBE` and `SELECT` on `curated.trades`, each with the grant option.
+  Lake Formation at 21:06:49Z: three administrators, `Parameters` 4/`TRUE`, both default lists empty.
+- **[Claude] The instruments**: `./aws/datalake.py` at 21:08:23Z, no failure, `DL-5`, `DL-6` and `DL-7`
+  passing and `DL-13` noting the two declared seats; `./aws/catalog.py` at 21:09:31Z, *"all checks
+  passed"*, `CT-7` a note naming the catalog road's three grants, the publisher role's on `curated` and
+  on `curated.trades`, and `CT-8` twelve `IAMPrincipals` grants, all conditioned on a project (ten before
+  `governed-lake`). `datalake.py` exits 1 on the unsigned profiles alone.
+- **[Claude] Recorded**: the stage file (11.5 done), the grant register's two rows in `AWS_STATE.md`, the
+  producer README.

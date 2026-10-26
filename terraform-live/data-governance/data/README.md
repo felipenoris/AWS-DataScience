@@ -296,8 +296,9 @@ The lake-publishing pilot: `governed-lake`, a SageMaker project in this account,
 `curated.trades`, and DataZone grants each approved subscription (`GOVERNANCE.md` §Grants, the catalog
 road). This file declares what DataZone needs and does not write; the fulfilment's own grants, RAM share
 and catalog-policy statements are DataZone's, read into the register by `./aws/catalog.py` `CT-7`.
-**The seats applied 2026-10-26** (6f 11.3, 20:16 UTC: 1 changed, the admin list alone, `DL-5` holding);
-the publisher's grant waits for the project role (11.5), `lake_publisher_role` null until then.
+**Applied 2026-10-26**: the seats at 6f 11.3 (20:16 UTC: 1 changed, the admin list alone, `DL-5`
+holding), and the publisher's grant at 11.5 (21:06 UTC: 2 added) to `governed-lake`'s role,
+`datazone_usr_role_3j4l4xmvz7fggg_52webn93119ouo`, `lake_publisher_role`'s default.
 
 | Resource / object | What it does once applied | The constraint behind its shape |
 |---|---|---|
