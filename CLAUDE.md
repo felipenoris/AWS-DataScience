@@ -407,10 +407,17 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Functions machine per chain with a Scheduler schedule starts the workflows. The tooling is
   `awsds-workflows` (runbook §T).
 - **Stage 7 in progress**: passes 1-2 closed 2026-10-12 but three persona memberships, pass 3 nearly done
-  (7.2 read 2026-10-25), pass 4's 8.4 done. Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
+  (7.2 read 2026-10-25), **pass 4 closed 2026-10-26** (8.1's start 1 min 42 s to the first HTTPS answer; 8.2's
+  rehearsal 24 min 16 s from destroy to the restored sign-in page, the host `i-0b4cb5f62e65abf70` since; 8.3
+  diffed), §I step 6's settings done the same day (event tracking, Service Ping, the version check, the runner
+  release fetch and Auto DevOps off, Public restricted, sign-up kept on). Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
   `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners out, and the build runner rises
   only with `BUILD=1` (decision 5, 2026-10-24). Owed: INT-09's clone from a
-  notebook, 8.1-8.3 (3.5's memberships done 2026-10-24); 5.6's ECR grant applied 2026-10-22. The GitLab backups of 2026-10-13, 10-15 and 10-25 leave the bucket on 2026-11-13, 11-15 and 11-25.
+  notebook (a space on version 10 with a persona PAT) and INT-19's notebook surface; 3.5's memberships done
+  2026-10-24, 5.6's ECR grant applied 2026-10-22. The GitLab backups of 2026-10-13, 10-15, 10-25 and 10-26 leave
+  the bucket on 2026-11-13, 11-15, 11-25 and 11-26. A `make gitlab-up` leaves the host's Session Manager agent
+  hibernating for twenty minutes (the host starts before the `ssm` endpoint): `scripts/slices.py` applying
+  `egress/` before starting `tooling/` is the fix, not written.
   **`saml.auto.tfvars` lives in the project folder's `secrets/`**: a `tooling/` plan passes
   `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block.
 - **Stage 8 in progress**: passes 0-3 done (`awsds/ci-gates`, the test runner, the house image on Python
