@@ -60,6 +60,12 @@ WHITELIST = {
     "exempt side was measured on 2026-09-20 (UpdateUsageLimit succeeded as InfrastructureAccess, "
     "was denied as the canary's AWSAdministratorAccess), which is what turns the pattern from a "
     "hope into a reading",
+    (
+        "awsds-org-scp-baseline.json",
+        "DenyDeployRoleAssumptionOutsideTheRegion",
+    ): "Stage 8 decision 29 - the wildcard is a deny's resource, not a carve-out: the four deploy "
+    "roles live in three accounts, and a role of the prefix minted anywhere is refused the same way, "
+    "so the wildcard widens what the deny refuses and admits nobody",
 }
 
 PATTERN = re.compile(r"arn:aws:iam::\*:")

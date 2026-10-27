@@ -1994,6 +1994,14 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   permission set and account that `./aws/list-identities.py` makes, and `./aws/vending.py` `VN-6`
   rests on it: the day the page is enforced, that check fails on a refused call, never on an empty
   list. Where: `log-stage-14-sandbox-vending.md`, 2026-10-18.
+- **An SCP's deny on `sts:AssumeRole` does not show behind the refusal of a role that does not exist**
+  (measured 2026-10-27, Stage 8 decision 29, in `Policy Canary`). With `DenyDeployRoleAssumptionOutsideTheRegion`
+  attached, an `AssumeRole` of `awsds-deploy-battery-probe`, which exists nowhere, through `sts.amazonaws.com`
+  answered STS's plain *"not authorized to perform: sts:AssumeRole on resource"* for ten minutes, the
+  wording of before the apply, and CloudTrail recorded that message in `us-east-1`, while the IAM simulator
+  read the same call `explicitDeny`. A battery row built on a role that does not exist, the shape that
+  measures most other denies here, cannot measure one on `sts:AssumeRole`; a caller the role trusts can.
+  Where: `log-stage-08-cicd-pipelines.md`, 2026-10-27.
 
 ### Lake Formation and SageMaker Unified Studio
 

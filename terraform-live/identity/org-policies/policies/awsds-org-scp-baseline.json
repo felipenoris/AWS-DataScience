@@ -142,6 +142,17 @@
       "Effect": "Deny",
       "Action": "airflow:CreateEnvironment",
       "Resource": "*"
+    },
+    {
+      "Sid": "DenyDeployRoleAssumptionOutsideTheRegion",
+      "Effect": "Deny",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::*:role/awsds-deploy-*",
+      "Condition": {
+        "StringNotEquals": {
+          "aws:RequestedRegion": "us-west-2"
+        }
+      }
     }
   ]
 }

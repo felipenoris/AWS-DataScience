@@ -1781,3 +1781,20 @@ user's new login (`get-caller-identity` at 20:04:13 UTC). Times UTC.*
   beside it, no error. The narrowed allow and the key's statement admitted it, `kms:ViaService` carrying
   `airflow-serverless.us-west-2.amazonaws.com`. Decision 11's Production half is closed; Staging's waits
   for a workflow there, at its next leg.
+
+## 2026-10-27 — with nothing up: `OR-*` read, decision 11's Staging half and 2.1's script placed in the release sitting
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (the five `awsds-infra-*` profiles),
+reads only. Times UTC.*
+
+- **[Claude] `./aws/orchestration.py`** at 02:25, *"all checks passed"*: Production's three workflows at 3, 2
+  and 2 of 50 versions (`OR-7`), no provisioned environment in five accounts (`OR-6`), and Staging's
+  workflows and chains absent between legs (`OR-1` and `OR-9` notes).
+- **[Claude] Decision 11's Staging half** is the release sitting's (`promotion.md` §N.8.2 step 9): Staging
+  holds no workflow between legs, `DeploymentManagerAccess` is assigned in Staging (`identity/sso/`'s
+  `deployment-manager@staging`), and the laptop holds no Staging profile on the `awsds-deploy` session, so
+  the step adds one as N.7.4 did for Production.
+- **[Claude] 2.1's script in GitLab**: the template's next merge request carries `scripts/dev-cli.sh`, its
+  tests passing on the laptop (Stage 8's log), and N.7.3's `dev` deploy on version 11 runs inside the
+  release sitting (§N.8.2 step 13), Sandbox's `egress/` with the `mwaa` group being up for `test-deploy`
+  anyway.

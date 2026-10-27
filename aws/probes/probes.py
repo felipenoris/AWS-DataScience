@@ -272,6 +272,17 @@ probe("root", "prod", "deny", None, "blocked",
        '{"SubnetIds":["@SUBNET@","@SUBNET@"],"SecurityGroupIds":["sg-0123456789abcdef0"]}',
        "--region", "us-west-2"])
 
+# --- DenyDeployRoleAssumptionOutsideTheRegion (Stage 8 decision 29) IS NOT PROBED, and that is a
+#     measurement (2026-10-27). With the statement attached at 02:58 UTC, an AssumeRole of
+#     awsds-deploy-battery-probe, a role that exists nowhere, through sts.amazonaws.com still answered
+#     the plain "not authorized to perform: sts:AssumeRole on resource", the wording of before the apply,
+#     at the battery's run at 02:59 and in 20 tries from 03:00 to 03:09, and CloudTrail recorded the same
+#     message in us-east-1, while the IAM simulator read the call explicitDeny for us-east-1 and allowed
+#     for us-west-2. The refusal of a role that does not exist hides the deny, so a row on one reads
+#     ALLOWED for ever: Lesson 50's permanently-red check. The statement's measurement is the job
+#     sts-global-probe on the deploy runner, whose role the deploy roles trust, so that a refusal through
+#     the global endpoint can only be the baseline's; POLICIES.md says so.
+
 # --- the floor, on the canary
 probe("root", "canary", "allow", None, "ro", "floor: sts:GetCallerIdentity",
       ["sts", "get-caller-identity"])

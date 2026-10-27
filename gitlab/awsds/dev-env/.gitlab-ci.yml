@@ -258,8 +258,10 @@ retire:
 # runner's own role through the regional STS endpoint and through the global one, sts.amazonaws.com, whose
 # records CloudTrail writes in us-east-1. The runner's AWS config pins sts_regional_endpoints = regional,
 # so each call names its endpoint. The misuse rules exempt this runner's role, so none fires: the reading
-# is the Region each record lands in, in both accounts' trails. Created only in a pipeline run on the
-# default branch with STS_GLOBAL_PROBE set (Build → Pipelines → Run pipeline), and manual there.
+# is the Region each record lands in, in both accounts' trails. Since decision 29 the root baseline's
+# DenyDeployRoleAssumptionOutsideTheRegion refuses each global call, so every call prints its answer or
+# its refusal and the loop goes on. Created only in a pipeline run on the default branch with
+# STS_GLOBAL_PROBE set (Build → Pipelines → Run pipeline), and manual there.
 sts-global-probe:
   stage: register
   needs: []
@@ -279,7 +281,7 @@ sts-global-probe:
           if [ "$endpoint" = "https://sts.amazonaws.com" ]; then region=us-east-1; else region=us-west-2; fi
           printf '%s through %s: ' "$profile" "$endpoint"
           aws sts assume-role --role-arn "$role" --role-session-name "xxviii-$CI_PIPELINE_ID" \
-            --endpoint-url "$endpoint" --region "$region" --query 'AssumedRoleUser.Arn' --output text
+            --endpoint-url "$endpoint" --region "$region" --query 'AssumedRoleUser.Arn' --output text 2>&1 || true
         done
       done
       echo "the readings: AssumeRole with session name xxviii-$CI_PIPELINE_ID in us-east-1 and us-west-2 of both accounts"

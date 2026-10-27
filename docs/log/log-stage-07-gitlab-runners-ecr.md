@@ -1509,3 +1509,26 @@ isso como problema na documentação." Claude's hand for this entry and the text
 - **[Claude] What leaves the text**: the down procedures go back to `make hub-down` as they stood (`gitlab.md`
   §U, the client runbook's §2, `promotion.md` §N.7.1 step 10 and its run), and `docs/log/INDEX.md`'s Stage 7
   row says what this file now holds.
+
+## 2026-10-27 — the stage closed, the user's decision; the backups and the leaves read
+
+*Claude's hand for the readings, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, and
+the five `awsds-infra-*` profiles for `./aws/supplychain.py`), reads only, with nothing up; the decision the
+user's, in this session's chat. Times UTC.*
+
+- **[Claude] The readings**, 02:20 to 02:30: `./aws/supplychain.py` on the five profiles, *"all checks
+  passed"*, `SC-8` reading both leaves with 360 days of runway, to 2027-10-22 06:35:12 UTC, and `SC-11` two
+  notes (`production/egress` down, no runner instance); `./aws/egress.py` 0 interface endpoints, 0 NAT and
+  0.000 USD/h in Production, Staging and Sandbox. `awsds-prod-gitlab-backup` holds five backups,
+  `1791860449_2026_10_13`, `1792033259_2026_10_15`, `1792897252_2026_10_25`, `1792979588_2026_10_26` (01:53:19)
+  and `1793052899_2026_10_26` (22:15:11), each `19.4.2`, under the rules `expire-current-versions` (30 days),
+  `expire-noncurrent-versions` (7) and `abort-incomplete-multipart-uploads`.
+- **[Claude] What the stage held**: every pass closed, every verification answered (i to xv), decisions 1 to
+  10 taken; owed only what recurs, a backup before the newest leaves the bucket on 2026-11-26 and the leaves'
+  re-issue by 2027-09-22 (`early_renewal_hours` 720 before 2027-10-22).
+- **[user] The decision**, to the question whether to close the stage now with those two as dated
+  obligations: *"Encerrar agora"*.
+- **[Claude] The record**: the status cell DONE 2026-10-27; `GENERAL_PLAN.md`, `stages/INDEX.md` and
+  `CLAUDE.md`'s Current position; the waiting list's Dates gain the leaves' re-issue and its GitLab row
+  keeps the backup; `runbooks/promotion.md` §N.6 and §N.8 place the next backups in the release sitting and
+  in the warehouse sitting of 2026-11-22 to 11-25.
