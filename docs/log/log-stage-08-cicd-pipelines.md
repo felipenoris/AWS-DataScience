@@ -4044,3 +4044,176 @@ the choice and the issue the user's, in that session's chat.*
 - **[Claude] The record**: decision 22, 1.1's bullet, Stage 10 2.1, `promotion.md` §N.7.1 steps 4 and 6
   and §N.7.3, `sagemaker-application.md` §A, §D and §M, the template's README and script, `docs/SMUS.md`,
   `upstream-releases.md`, `lessons.md`, `docs/REFERENCES.md`.
+
+## 2026-10-26 — the GitLab sitting (`promotion.md` §N.7.1), step 1: the lock's audit and the copy against the estate, the day of the tag
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-sandbox-1`): reads and one read-only plan, no write to AWS. Times UTC.*
+
+- **[Claude] The copy against the estate**, `./scripts/check-gitlab-mirror.py --plan`, 21:08:01 to 21:08:27,
+  exit 0: `GM-1` the copy at `awsds/dev-env` `6ba33971a1d0` (2026-10-25), `GM-2` to `GM-4` 73 entries,
+  `61f1e1646df12c14` on both sides, `GM-5` to `GM-8` passing.
+- **[Claude] The lock's audit on the laptop**, the gate's command with its JSON report and matcher (`pip-audit`
+  2.10.1, OSV), 21:08:01 to 21:11:08: 454 pins, 454 audited, 58 findings in 5 packages; against
+  `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV` (50 entries), 57 accepted by id or alias, fsspec's `PYSEC-2026-4217`
+  through its alias `CVE-2026-104851`, none blocking, one warning (`nltk` 3.10.3, `PYSEC-2026-3740`, no fixed
+  version), no accepted entry gone. The morning's reading (06:55), so the tag meets no new finding.
+- **[Claude] The checkout**: the project folder on `main` at `94ed050d`, `origin`'s, clean, the `gitlab`
+  remote in place.
+
+## 2026-10-26 — §N.7.1 step 3: `gates-v0.6.0` with decision 1's zlib pair; the image's `include:` `ref` moved
+
+*The user's hand for the push, the merge request's merge and the tag, as the Dev Env Steward (GitLab's
+`felipenoris`); Claude's for the clone, the branch's commit, the reads (`git ls-remote`, the API through the
+user's GitLab session in Chrome) and the copy's edit. Times UTC.*
+
+- **[Claude] Before**: `git ls-remote` at 21:21:03, `main` at `7c3552b7` (`gates-v0.5.0`), tags `gates-v0.1.0` to
+  `gates-v0.5.0`, so `gates-v0.6.0` free. A clone at `$HOME/tmp/ci-gates-v0.6.0` differed from this
+  repository's `ci-gates/` in `baselines.gitlab-ci.yml` alone; the branch `zlib-pair` carried it as `acd31c6`,
+  the message naming the acceptance: *"accepted by name in the SageMaker Distribution lineage (the Dev Env
+  Steward, 2026-10-26)"*, the pair new in `default-v0.9.1`'s scans and identical in `base` and `dev-env`.
+- **[user] The merge request**: the push opened `awsds/ci-gates` !1 at 21:26:50; the branch pipeline #104 green
+  (`baselines-shape`, `secret_detection`, `secret-detection-gate`); merged at 21:28:20 as `d0b895c8` (parents
+  `7c3552b` and `acd31c6`), `main`'s pipeline #105 green. **[Claude]** `main`'s four files byte-equal to
+  `ci-gates/`; `gates-v0.6.0` still free at 21:28:41.
+- **[user] The tag** `gates-v0.6.0` on `d0b895c8`, its pipeline #106 green at 21:31 (`baselines-shape`).
+  **[Claude] Read back** at 21:33:44: `refs/tags/gates-v0.6.0` at `d0b895c8159e655f6e4af83cc096e37993087c81`.
+- **[Claude] The copy**: `gitlab/awsds/dev-env/.gitlab-ci.yml`'s `include:` `ref` from `7c3552b7` (`gates-v0.5.0`)
+  to `d0b895c8` (`gates-v0.6.0`), the only gates pin in the copy, carried by step 4's merge request.
+  `./scripts/check-gitlab-ci.py` OK: `dev-env`'s 12 jobs from 3 files, 44 script items under `bash -n`.
+
+## 2026-10-26 — §N.7.1 step 4: `awsds/dev-env` !12, the 73-name literal, the activation hook and the probe job merged
+
+*The user's hand for the push and the merge, as the Dev Env Steward; Claude's for the clone, the branch's
+commit, the reads (the API through the user's GitLab session in Chrome) and the mirror script. Times UTC.*
+
+- **[Claude] The branch**: a clone at `$HOME/tmp/dev-env-v0.10.0`, `main` at `6ba3397` (the copy's commit), the copy
+  under `gitlab/awsds/dev-env/` written over it with `rsync --delete`: four files, `.gitlab-ci.yml` (the
+  `include:` at `gates-v0.6.0`, `sts-global-probe`), `README.md`, `dev-env/Dockerfile` (the 73 names, the
+  activation hook) and `smoke/Dockerfile` (the CLI read after `micromamba activate base`), 90 insertions and 9
+  deletions, committed as `8d904e7` on `no-proxy-73-cli-hook`.
+- **[user] The merge request** `awsds/dev-env` !12, opened by the push at 21:33:00; its pipeline #107 green from
+  21:33:06 to 21:34:32 on the test runner: `recipe-checks` *"NO_PROXY_LIST: 73 entries"*, the managed
+  settings parsing; `pip-audit` *"== awsds/dev-env: 50 accepted finding(s)"*, *"Found 58 known vulnerabilities in
+  5 packages"*, nltk 3.10.3's `PYSEC-2026-3740` `warn`, *"454 of 454 pinned package(s) audited, 0 blocking
+  vulnerability(ies)"*, the laptop's reading of 21:11; `secret_detection` and its gate green. Merged at
+  21:44:01 as `c8bac16e`; `main`'s pipeline #108 started 21:44:02.
+- **[Claude] The copy read back**: `./scripts/gitlab-mirror.py awsds/dev-env` at 21:44 *"the copy already holds
+  this commit's 14 file(s)"*, `gitlab/mirror.json` at `c8bac16e`. `default-v0.10.0` free at 21:44:23, the
+  project's newest tag `default-v0.9.1`.
+
+## 2026-10-26 — §N.7.1 step 7: the infrastructure mirror at `main`
+
+*The user's hand for the push from the project folder; Claude's for the reads (`git ls-remote`, the project's
+events through the user's GitLab session in Chrome). Times UTC.*
+
+- **[user] `git push gitlab main`** from the project folder at `94ed050d`. **[Claude] Read** at 21:47:30: the
+  event *"pushed to"* `main` by `felipenoris` at 21:29:16, `2d3160f1` to `94ed050d`, 8 commits (#261 to #269);
+  `awsds/infrastructure`'s `main`, `origin`'s and the project folder's all at `94ed050df119`. The next tag's
+  legs clone the commit `origin/main` holds.
+
+## 2026-10-26 — §N.7.1 step 8: verification xxviii's active half, `sts-global-probe` and the trails
+
+*The user's hand for the pipeline and the manual job on `awsds/dev-env`; Claude's for the reads: the job log
+through the user's GitLab session in Chrome, CloudTrail, EventBridge and CloudWatch as the infrastructure user
+with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`). No trust widened. Times UTC.*
+
+- **[user] The run**: *Build → Pipelines → Run pipeline* on `main` (`c8bac16e`) with `STS_GLOBAL_PROBE=1`,
+  pipeline #110 (21:50:47, `web`), then the manual job `sts-global-probe` (#649), 21:51:30 to 21:51:48 on
+  `awsds-prod-runner-deploy-i-05e260a19231bb5e5`. **[Claude] Its log**: *"caller:
+  arn:aws:sts::<Production>:assumed-role/awsds-prod-runner-deploy/i-05e260a19231bb5e5"*, then
+  `assumed-role/awsds-deploy-prod/xxviii-110` through `https://sts.us-west-2.amazonaws.com` and through
+  `https://sts.amazonaws.com`, and `assumed-role/awsds-deploy-staging/xxviii-110` through each; *"Job succeeded"*.
+- **[Claude] The trails** (`lookup-events`, 21:52 to 21:57), six records, each with no error:
+
+  | Trail | Region | Time | Role | Host header |
+  |---|---|---|---|---|
+  | Production | `us-west-2` | 21:51:42 | `awsds-deploy-prod` | `sts.us-west-2.amazonaws.com` |
+  | Production | `us-east-1` | 21:51:43 | `awsds-deploy-prod` | `sts.amazonaws.com` |
+  | Production | `us-west-2` | 21:51:46 | `awsds-deploy-staging`, the caller's copy | `sts.us-west-2.amazonaws.com` |
+  | Production | `us-east-1` | 21:51:47 | `awsds-deploy-staging`, the caller's copy | `sts.amazonaws.com` |
+  | Staging | `us-west-2` | 21:51:46 | `awsds-deploy-staging`, caller `AWSAccount` | `sts.us-west-2.amazonaws.com` |
+  | Staging | `us-east-1` | 21:51:47 | `awsds-deploy-staging`, caller `AWSAccount` | `sts.amazonaws.com` |
+
+  Each global call's records sit in `us-east-1` alone and each regional call's in `us-west-2`, in both
+  accounts. In Staging's `us-east-1` trail the `xxviii-110` record is the role's only assumption since
+  2026-10-25; every earlier one, the legs' `botocore-session-*`, is in `us-west-2`, xxviii's passive half.
+  A first watch of the trails reported Staging empty: its `jq` filter failed on the cross-account caller's
+  null `userIdentity.arn` and dropped the account's answer; the resource-name lookup above read both records,
+  the earlier assumptions its positive control (Lesson 62).
+- **[Claude] The rules**: `awsds-prod-deploy-misuse` and `awsds-staging-deploy-misuse` live in `us-west-2`
+  (`ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`); `events:ListRules` in `us-east-1` answers *"with an explicit
+  deny in a service control policy"* (the Region ceiling) in both accounts, so no rule there can be read or
+  written by these principals. `MatchedEvents`, `TriggeredRules` and `Invocations` read no datapoint from 21:00
+  to 22:04 for either rule, against one `TriggeredRules` each at 2026-10-13 05:00 (verification xvi's firing),
+  the instrument's positive control: the runner's role is exempt, and nothing fired.
+- **[Claude] The verdict**: an `AssumeRole` of a deploy role through `sts.amazonaws.com` is recorded in
+  `us-east-1` and never reaches 4.6's rules, which see `us-west-2` alone, whoever the caller; the Region ceiling
+  keeps a rule out of `us-east-1`. Whether a trust pinning `aws:RequestedRegion` refuses the global call stays
+  unread, the deploy roles' trust pinning nothing.
+
+## 2026-10-26 — §N.7.1 steps 5 and 6: `default-v0.10.0` released, Sandbox's version 11, `DE-5` passing
+
+*The user's hand for the tag and the release gate, as the Dev Env Steward; Claude's for the readings: the
+pipeline API, the job logs and the artifacts through the user's GitLab session in Chrome, and ECR and
+SageMaker as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`,
+`awsds-infra-sandbox-1`), reads only. Times UTC.*
+
+- **[user] The tag** `default-v0.10.0` on `c8bac16e`, read at 21:46:37 (`refs/tags/default-v0.10.0`), free at
+  21:44:23. Pipeline #109, created 21:46:14: `pip-audit` (#637) 21:46:17 to 21:47:48, its reading the branch's;
+  `recipe-checks` (#638) 6 s; `build-images` (#639) 21:47:49 to 22:04:09, 980 s.
+- **[Claude] The images in ECR**: `awsds-prod-ecr-base:default-v0.10.0-c8bac16e` pushed 21:51:10, 3,754,767,169
+  bytes, `sha256:78e253ce9f0785f3b4c02293ecbf0225378f5262f0e493ef515b58840e07f741`, 12 bytes under `v0.9.1`'s
+  with `base/` unchanged; `awsds-prod-ecr-dev-env:default-v0.10.0-c8bac16e` pushed 22:02:20, 6,688,199,603 bytes,
+  `sha256:658c05d125554950cbac0ad204c44b9fd46b19a6c5508d55f36c9ea8456c19f9`, 300,273 bytes over `v0.9.1`'s. The
+  smoke runs after both pushes in `build-images`, so a red smoke would have spent the release tag and both ECR
+  tags, the next release being a patch from a fixed commit.
+- **[Claude] The smoke, decision 22's first reading**: step `[check 7/9]`, after `micromamba activate base`,
+  *"aws-smus-cicd-cli by its name: /opt/awsds/bin/aws-smus-cicd-cli -> /opt/awsds/venv/bin/aws-smus-cicd-cli,
+  'aws-smus-cicd-cli 1.0.9'; the house environment carries 1.0.9"*. The manifests against `v0.9.1`'s (job
+  #569): `cicd-cli.txt` new; `proxy.txt` 73 entries, sha256 `61f1e1646df12c14`, against 72 and
+  `6faf2e4761622508`; `runtimes.txt` the same but the base digest; `trust.txt`, `imports.txt`, `julia.txt`,
+  `r.txt` (70 lines), `python-awsds.txt` (454) and `python-conda.txt` (621) identical.
+- **[Claude] Both scans**: ECR's scan of `base` complete 21:53:16 and of `dev-env` 22:07:03, each CRITICAL 113 and
+  HIGH 612; `scan-base` (#640) and `scan-dev-env` (#641) *"CRITICAL and HIGH: 725 found, 132 in the baseline"*,
+  *"WARN: 593 CRITICAL or HIGH finding(s) absent from the baseline"*, all 593 `linux-libc-dev`, both failed as
+  allowed: the zlib pair is in the baseline since `gates-v0.6.0` (130 to 132), and no finding is new.
+- **[user] `release-gate`** (#642) 22:08:19 to 22:08:27. **[Claude]** `register` (#643) 22:08:28 to 22:08:56:
+  *"awsds-sandbox-dev-env version 11: CREATED, alias 0.10.0"*, `ContainerImage` at the pushed digest; `retire`
+  (#644) 22:08:59 to 22:09:36: 5 versions, *"keep"* 11 (`0.10.0`), 10 (`0.9.1`), 9 (`0.8.0`), 8 (`0.7.3`) and 7;
+  the pipeline `success` at 22:09:36, 22 min 39 s from the tag to the version, the gate waiting 34 s.
+- **[Claude] AWS read back** at 22:09: `list-image-versions` 11 to 7 `CREATED`, version 11 created 22:08:53,
+  `ContainerImage` and `BaseImage` at the dev-env digest, release notes `default-v0.10.0-c8bac16e`; aliases
+  `0.10.0`, `0.7.3`, `0.8.0`, `0.9.1`. `./aws/devenv.py`: **`DE-5` passing**, *"version 11,
+  sha256:658c05d12555...: 73 names, sha256 61f1e1646df12c14"*; `DE-1` (73 entries) and `DE-4` passing; `DE-2`
+  failing with `sandbox/egress` down, the reading of 2026-10-25, so `DE-3` and `DE-6` are not compared.
+- **[Claude] The release row** in the copy's README, both digests and sizes; the branch `the-releases-v0.10.0`
+  at `fb5722b` in the clone, for GitLab's `main` by the steward's hand.
+
+## 2026-10-26 — §N.7.1 after the release: the README row on GitLab's `main`; the plan read against the sitting
+
+*The user's hand for the push and the merge, as the Dev Env Steward; Claude's for the branch's commit, the
+mirror script and the record. Times UTC.*
+
+- **[user] The release row**: the branch `the-releases-v0.10.0` (`fb5722b`, one line in `README.md`) pushed with
+  its merge request and merged as `6eff9056` (22:14:02). **[Claude]** `./scripts/gitlab-mirror.py awsds/dev-env`
+  at 22:16 *"the copy already holds this commit's 14 file(s)"*, `gitlab/mirror.json` at `6eff9056`.
+- **[Claude] What the sitting changed in the plan**, at the user's request to read it against the findings:
+  1.1's and 1.4's bullets and decision 22 marked done; xxviii's row answered and **decision 29** opened, the
+  global STS endpoint past 4.6's rules, recommended (b), an SCP statement, not taken; the status cell;
+  `promotion.md` §N.6, §N.7.1 (its run, step 10's `proxy-off` and `NO_PROXY='*'`) and §N.7.3; `gitlab.md` §U (the
+  agent's reading of 21:18, the down's `proxy-off` and `NO_PROXY='*'`) and the client runbook's §2; a Systems
+  Manager entry in `lessons.md`'s platform list; version 11 in `sagemaker-application.md` §D step 4,
+  `sg-proxy.md`, `dev-env.md`, `docs/SMUS.md`, `upstream-releases.md`, Stage 10 2.1 and `AWS_STATE.md`'s `DE-5`
+  row; the waiting list (the image's and the mirror's rows removed, decision 29 added, the Hub, GitLab and
+  Promotion sittings' rows trimmed, the backup of 22:15 dated); `GENERAL_PLAN.md`, `stages/INDEX.md`,
+  `docs/log/INDEX.md` and `CLAUDE.md`'s Current position.
+
+## 2026-10-26 — amending the record's entry above: the hub-down changes withdrawn
+
+*Claude's hand, on the user's correction in this chat, quoted in Stage 7's log: no `make hub-down` ran before
+the readings that took it as stopping nothing.*
+
+- **[Claude] Withdrawn** from the changes the entry above lists: `promotion.md` §N.7.1 step 10's `proxy-off` and
+  `NO_PROXY='*'`, `gitlab.md` §U's on the down, and the client runbook's §2. §N.7.1's run keeps the two readings
+  that stand, the smoke after both pushes and GitLab's agent's late first call.

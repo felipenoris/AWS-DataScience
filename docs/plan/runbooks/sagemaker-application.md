@@ -356,9 +356,10 @@ settles, so the down runs again.
    export JOB_IMAGE_URI="<the release's image by digest>" TRAINING_IMAGE_URI="<the XGBoost image by digest, or unused-by-<app> when no run reads it>"
    ```
 
-4. **The API's name in `NO_PROXY`**, until the house image carries it (the next release after
-   `default-v0.9.1`): without it boto3 sends the call to the proxy, which refuses it, even with the
-   endpoint up. `getent hosts` answers the endpoint's `10.20.x` address:
+4. **The API's name in `NO_PROXY`**, in a space on version 10 or older: version 11, `default-v0.10.0`
+   (2026-10-26), carries it, and a space on it needs no export, read from a space at
+   [`promotion.md`](promotion.md) §N.7.3. Without it boto3 sends the call to the proxy, which refuses it,
+   even with the endpoint up. `getent hosts` answers the endpoint's `10.20.x` address:
 
    ```bash
    export NO_PROXY="$NO_PROXY,airflow-serverless.us-west-2.api.aws" no_proxy="$no_proxy,airflow-serverless.us-west-2.api.aws"
@@ -390,7 +391,7 @@ settles, so the down runs again.
 
    Its first line names the CLI's version and interpreter, and it refuses to start, naming the variable,
    when `AWSDS_PYTHON_ENV` (a space on another image) or `DOMAIN_ID` (step 3 not run) is unset. From the
-   house image `default-v0.10.0` the name `aws-smus-cicd-cli` is the house's too, through the base
+   house image `default-v0.10.0`, Sandbox's version 11 since 2026-10-26, the name `aws-smus-cicd-cli` is the house's too, through the base
    environment's activation hook (Stage 8 decision 22), and the script stays for the lookup until a CLI
    release takes the manifest's id ([issue 413](https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413), opened 2026-10-26).
    `--skip-validation` because the CLI's pre-deployment validation simulates the IAM calls without their

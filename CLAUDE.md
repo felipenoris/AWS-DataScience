@@ -377,8 +377,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `ListDomains` (refused to a project's role) answered by the domain's id, and Sandbox's `mwaa` group's
   `airflow-serverless` endpoint (`GROUPS=mwaa`, the name in the session's `NO_PROXY` until the next image);
   xxix's portal run fails at the DAG's template. The template's `scripts/dev-cli.sh` carries both answers
-  (PR #269), the lookup is reported upstream as issue 413, and `default-v0.10.0`'s recipe makes the CLI's
-  name the house's through the base environment's activation hook.
+  (PR #269), the lookup is reported upstream as issue 413, and `default-v0.10.0`, Sandbox's version 11 since
+  2026-10-26, makes the CLI's name the house's through the base environment's activation hook.
 - **The Sandbox warehouse (5b, 6h)**: `sandbox/warehouse/` rank 53 `[P]` and `sandbox/warehouse-compute/`
   rank 54 `[E]` (base 4 / max 8 RPU, usage limit 10 RPU-h monthly `deactivate`), database `sandbox`, schema
   `lab`. One project per tag key is admitted (`avhvbqn37ty7m8`); decision 8 owns the second,
@@ -391,10 +391,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   any workgroup through `sqlworkbench`, and the secrets tagged with its project or
   `for-use-with-all-datazone-projects`: the admin secret stays closed by its tags alone (`INV-20`, PR #187).
 - **Stage 6d in progress**: steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half (a reconciliation that
-  writes the domain). The house image is `awsds-sandbox-dev-env` version 10, `default-v0.9.1-746ef084`
-  (2026-10-25, alias `0.9.1`), its `NO_PROXY` literal the 72 names of `vpc-egress-v0.18.0`: `DE-5` fails
-  since `vpc-egress-v0.19.0`'s apply (2026-10-26), one name short, until `default-v0.10.0` carries the
-  recipe copy's 73, and Stage 17 1.4's apply of the module on `sandbox/egress` is no longer held by the
+  writes the domain). The house image is `awsds-sandbox-dev-env` version 11, `default-v0.10.0-c8bac16e`
+  (2026-10-26, alias `0.10.0`), its `NO_PROXY` literal the 73 names of `vpc-egress-v0.19.0`, `DE-5`
+  passing; the CI/CD CLI by its name is the house's through the activation hook, read by the smoke.
+  Stage 17 1.4's apply of the module on `sandbox/egress` is no longer held by the
   image (decision 4). The remote IDE works (6d step 7, 2026-09-11).
 - **Stage 6e** is held by PR #108 (decision 17, the user's 5.5 agreements; Sonnet 4.5 is Legacy since
   2026-10-08). A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint);
@@ -434,8 +434,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   diffed), §I step 6's settings done the same day (event tracking, Service Ping, the version check, the runner
   release fetch and Auto DevOps off, Public restricted, sign-up kept on, no `TM` row). Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
   `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners out, and the build runner rises
-  only with `BUILD=1` (decision 5, 2026-10-24). Owed: Validation 2's `PX-3`
-  (the proxy running, `--on-host`; the offline half read 2026-10-26), a backup before 2026-11-26. The GitLab backups of 2026-10-13, 10-15, 10-25 and 10-26 leave
+  only with `BUILD=1` (decision 5, 2026-10-24). Validation 2's `PX-3`
+  passed 2026-10-26 with the proxy running (`--on-host`); owed: a backup before 2026-11-26. The GitLab backups of 2026-10-13, 10-15, 10-25 and 10-26 (two, the newest 22:15 UTC) leave
   the bucket on 2026-11-13, 11-15, 11-25 and 11-26. `make gitlab-up` applies `egress/` before it starts the host
   (2026-10-26: `tooling` at rank 52, one rank order for `[D]` and `[E]` in `scripts/slices.py`), so the Session
   Manager agent meets the `ssm` endpoint at its start instead of hibernating for twenty minutes; the first run
@@ -476,7 +476,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   in Production's trail, the four `release.tf`s at `v0.4.6` (the orchestration slices' defaults too: a by-hand
   apply on a stale default rolls the workflows back), Staging's first post-release `make down` clean. With nothing up on 2026-10-26: xxiv answered, vii's third
   half still open (no reconciliation), 3.3's pin read (the script takes `--SOURCE_SNAPSHOT`; the leg's source
-  of the id is a decision), the mirror five commits behind `main`, pushed before the next tag.
+  of the id is a decision). **The GitLab sitting of 2026-10-26** (`runbooks/promotion.md` §N.7.1): the
+  mirror at `main`, `gates-v0.6.0` with decision 1's zlib pair, `default-v0.10.0` as Sandbox's version 11,
+  xxviii's active half (a global-endpoint `AssumeRole` lands in `us-east-1`, past 4.6's rules: decision
+  29, the user's).
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.

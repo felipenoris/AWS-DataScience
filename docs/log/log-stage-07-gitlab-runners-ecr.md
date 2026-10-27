@@ -1409,3 +1409,103 @@ para a issue https://github.com/felipenoris/AWS-DataScience/issues/268, a pedido
   waits in issue #268 for a later evaluation.
 - **[Claude] The record**: INT-13's row and 7.2's text point to the issue, the waiting list's row is
   removed, and `promotion.md` §N.6 lists the decision as taken.
+
+## 2026-10-26 — the GitLab sitting (`promotion.md` §N.7.1), step 2: the raises read back; the agent's first call timed out at the endpoint
+
+*The user's hand for `make hub-up`, `make gitlab-up BUILD=1` and the tunnel, from the project folder at
+`origin/main` (`94ed050d`); Claude's readings as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`): EC2, SSM, the serial console and `make status`, nothing started or changed by Claude.
+The running peer sessions told before the raises. Times UTC.*
+
+- **[Claude] The order, read back at 21:19**: the WireGuard host started 21:16:29 and the proxy 21:16:32; the 12
+  interface endpoints of `production/egress/` created from 21:17:09 (ten in the same second) to 21:17:53
+  (`glue` 21:17:43, `ssm` last); the host `i-0b4cb5f62e65abf70` started 21:18:34, 41 s after the last
+  endpoint; the deploy, test and build runners launched 21:18:57, 21:19:05 and 21:19:06, their first boots
+  logged from 21:19:14 to 21:19:21.
+- **[user] The tunnel**: `mbp-split-tunnel` read *Connected* at 21:20:35 (`scutil --nc list`), `utun` at
+  `10.90.0.2`; **[Claude]** `gitlab.awsds.internal` resolving to `10.30.39.111` and the sign-in page `200
+  ssl_verify=0` at 21:20:35. Every profile read *Disconnected* at 21:19:57 and 21:20:10, before the user's
+  connect.
+- **[Claude] The host's agent**: the serial console logs at 21:20:53 *"SSM Agent unable to acquire
+  credentials ... RequestError: send request failed caused by: Post "https://ssm.us-west-2.amazonaws.com/":
+  dial tcp 10.30.4.117:443: i/o timeout"*: the name resolved to the `ssm` endpoint's address and the
+  connection was not answered. No hibernation line followed; *"Amazon SSM Agent v3.3.5390.0 is running"* at
+  21:25:55 and `describe-instance-information` `Online`, last ping 21:29:16, 7 min 21 s after the start
+  against 1 min 20 s on the run of 03:15. The runners and the hub pair, started after or with the same
+  endpoints, read `Online` from 21:20:11 (the WireGuard host) to 21:21:31.
+- **[Claude] `make status`** at 21:22: the hub pair, `egress/` 12 resources, `tooling/` and `runners/` 13
+  resources `with aws_instance.runner` up, 0.5221 USD/h in all, of which 0.0700 is `workloads-egress/`,
+  raised at 21:22:20 by the warehouse sitting running beside this one, and 0.4521 this sitting's.
+
+## 2026-10-26 — §N.7.1 step 9's `PX-3`: Validation 2 with the proxy running
+
+*Claude's hand, on the user's word in this chat (*"Pode rodar o PX-3 (./aws/proxy.py --on-host) agora."*), as
+the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`): one SSM Run Command on the proxy
+host, every command it carries a read. Times UTC.*
+
+- **[Claude] `./aws/proxy.py --on-host`**, 21:55:39 to 21:55:52, exit 0: `PX-1` passing (five rules, every one
+  TCP/3128 from `10.20.0.0/16`, `10.30.0.0/16`, `10.32.0.0/16`, `10.50.0.0/16` and `10.90.0.0/24`); `PX-2`
+  passing on both halves, *"committed: `deny to_private` is line 1 of 4, above every allow; running: `deny
+  to_private` is line 1 of 4, above every allow"*; **`PX-3` passing**, *"5 planes, entry for entry - the render
+  is current"*: the parameter `/datascience/prod/proxy/allowlist` holds `production-foundation` `open` 0,
+  `production-workloads` `allowlist` 0, `sandbox-foundation` `allowlist` 41, `staging-foundation` `allowlist` 0
+  and `tunnel` `open` 0, and the host's `squid.conf` serves `production_foundation` `open` 0,
+  `sandbox_foundation` `allowlist` 41 and `tunnel` `open` 0; `PX-4` a note by decision (`/awsds/prod/proxy` at
+  365 days, no export until Stage 11 5.1). Validation 2 is answered, its offline half read at 03:41.
+
+## 2026-10-26 — §N.7.1 step 9: the backup by hand, read in the bucket; `./aws/supplychain.py` with GitLab up
+
+*The user's hand for the Session Manager shell and the backup on the host, as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`), its output pasted in this chat; Claude's for the readings, S3 and
+the instrument, reads only. Times UTC.*
+
+- **[user] `sudo gitlab-backup create STRATEGY=copy`** in a shell on `i-0b4cb5f62e65abf70`, after `awsds/dev-env`'s
+  !12 and `the-releases-v0.10.0` merges; quoted from the paste: *"2026-10-26 22:15:00 UTC -- Dumping database ..."*,
+  the eight projects' repositories and wikis dumped from 22:15:07 to 22:15:08, *"Creating backup archive:
+  1793052899_2026_10_26_19.4.2_gitlab_backup.tar ... done"*, *"Uploading backup archive to remote storage
+  awsds-prod-gitlab-backup ... done (encrypted with aws:kms)"*, *"Deleting old backups ... done. (0 removed)"*,
+  *"Backup 1793052899_2026_10_26_19.4.2 is done."* at 22:15:10.
+- **[Claude] The bucket** at 22:15:56: five archives, the new one 14,356,480 bytes at 22:15:11, `aws:kms`, its
+  `Expiration` *"expiry-date="Thu, 26 Nov 2026 00:00:00 GMT", rule-id="expire-current-versions""*, the same day
+  as the 01:53 archive's; the oldest, of 2026-10-13, leaves on 2026-11-13.
+- **[Claude] `./aws/supplychain.py`**, 22:16:20 to 22:17:23: every `SC-*` row passing but `SC-10`, a note (*"3
+  runner(s) running"*, the session's); `SC-13` *"1793052899_2026_10_26_19.4.2_gitlab_backup.tar
+  (2026-10-26T22:15:11+00:00), made by 19.4.2, equal to gitlab_ce_version"*; `SC-11` the GitLab bypass list at
+  56 entries, `0f80372bf880bb16`, in the four env blocks, and each runner's `NOPROXY` at egress's 36. Its exit
+  1 is section 10's: the profiles of the SSO sessions this laptop holds no token for (`awsds-ctadmin`,
+  `awsds-deploy`, the personas), none of which a check reads.
+
+## 2026-10-26 — §N.7.1 step 10: the downs; the first `make hub-down` stopped nothing; §R at zero
+
+*The user's hand for `make gitlab-down`, the tunnel and `make hub-down`, from the project folder; Claude's for
+the readings as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`,
+`awsds-infra-sandbox-1`), reads only. The warehouse sitting beside this one told before the downs; it had
+finished its writes at 22:10:52 and needed the hub no more. Times UTC.*
+
+- **[user] `make gitlab-down`**; **[Claude] read back**: `TerminateInstances` on the three runners at 22:18:57,
+  `StopInstances` on GitLab's host at 22:19:34; `./aws/egress.py` at 22:27 on the three profiles: 0 interface
+  endpoints, 0 NAT and 0.000 USD/h in each, `EG-1` and `EG-4` passing, `EG-5` *"none - the correct
+  between-sessions state"*.
+- **[user] The tunnel down, then `make hub-down`**; **[Claude]** at 22:27:49 both hub hosts read `running` and the
+  trail held no `StopInstances` for either since 22:15: the run stopped nothing, the second time on 2026-10-26
+  (the Sandbox sitting's first round at 06:17 is the first). Its output was not read. The client runbook's §4.1
+  names the mechanism that fails this way with the tunnel down, a proxy setting pointing at
+  `proxy.awsds.internal`, and its override.
+- **[user] `NO_PROXY='*' make hub-down`**; **[Claude]** `StopInstances` on the proxy at 22:29:09 and on the WireGuard
+  host at 22:29:11 (`aws-cli/2.37.12`), all three `[D]` hosts `stopped` at 22:30:41.
+- **[Claude] §R**: `make status` at 22:31:33, the hub pair and `tooling/` `stopped`, `egress/`, `runners/` and every
+  other `[E]` slice down, Production's application and orchestration slices up at 0.0000, the burn 0.0000 USD/h.
+
+## 2026-10-26 — amending §N.7.1 step 10's entry and the Sandbox sitting's downs: the two `make hub-down` read as stopping nothing were never run
+
+*The user's correction in this chat, quoted: "Sobre "make hub-down com o túnel desligado não parou nada, pela
+segunda vez no dia", na verdade eu que esqueci de rodar o hub-down nas duas ocasiões. Então não precisa mencionar
+isso como problema na documentação." Claude's hand for this entry and the text it withdraws.*
+
+- **[user] The correction**: no `make hub-down` ran before the reading of 22:27 (step 10's entry above) nor before
+  the Sandbox sitting's first round at 06:17 (its downs' entry, *"the first `make hub-down` stopped nothing, its
+  cause unread"*); both hub hosts read `running` because no stop had been asked. The run of 22:29 was this
+  sitting's only `make hub-down`, and the 06:20 stops the Sandbox sitting's.
+- **[Claude] What leaves the text**: the down procedures go back to `make hub-down` as they stood (`gitlab.md`
+  §U, the client runbook's §2, `promotion.md` §N.7.1 step 10 and its run), and `docs/log/INDEX.md`'s Stage 7
+  row says what this file now holds.

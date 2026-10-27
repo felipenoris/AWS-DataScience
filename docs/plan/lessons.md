@@ -1844,6 +1844,14 @@ starting at a state nobody named. Each entry carries the stage that found it.
   parameter named at a past moment is read from `describe-images` (owner `amazon`, name and
   `CreationDate`), never from Parameter Store. Neither the EC2 page that recommends the parameter nor
   Parameter Store's page on public parameters says so (both read the same day).
+- **An interface endpoint can leave connections unanswered after the apply that created it returned**
+  (measured 2026-10-26, Stage 7, `promotion.md` §N.7.1 step 2). `production/egress/`'s `ssm` endpoint was
+  created at 21:17:53 UTC and `make gitlab-up` went on to start GitLab's host at 21:18:34; the host resolved
+  `ssm.us-west-2.amazonaws.com` to the endpoint's address and its agent logged *"dial tcp 10.30.4.117:443:
+  i/o timeout"* at 21:20:53, registering 7 min 21 s after the start, where the run of 03:15 the same day,
+  in the same order and 39 s after the last endpoint, read `Online` in 1 min 20 s. The runners, started 20
+  to 30 s after the host, were `Online` by 21:21:31. An endpoint's existence is not its readiness, and the
+  first caller meets the gap.
 
 ### ECR, S3 and the NAT
 
