@@ -723,6 +723,13 @@ during the stage and written into `docs/log/log-stage-11-dlp.md` (Lesson 16), wi
     principal is the subscribing project's context on a published table, its row half an RLS policy on
     that table, and the decision waits for 6f step 11's reading of the grant DataZone writes in the lake
     (11.9) and for 6f decision 2. The decision stays the user's.
+    **Both inputs arrived on 2026-10-27** ([6f's log](../../log/log-stage-06f-data-governance.md)): 11.9
+    read the grant as described above, and 6f decision 2 keeps `restricted` and `personal` data off the
+    catalog road, on the table and on every column. So `sample_trades`, whose `counterparty` the filters
+    were written for, is never published, and a filter on that road could only narrow an `internal`
+    table. AWS documents a subscription approved with row and column filters as one data cells filter
+    granted `SELECT` in place of the table, so it would narrow the subscription's own grant rather than
+    sit beside it; never run here.
 13. **The warehouse's query record** (5.1, `TM-16`, `EXC-16`) — the namespace's CloudWatch groups as
     configured, which have held 23 minutes of user activity since 2026-09-20 and nothing while a workgroup
     exists, or Redshift's system-table integration with S3 Tables (2026-08-20): per namespace, a hand

@@ -308,7 +308,10 @@ its named write on `curated` (INT-03); `list-permissions` in Data Governance rea
 The regrants inside each account and `app_outputs`' grants are indexed in `terraform-live/production/data/README.md`
 and `terraform-live/staging/data/README.md`: 21 grants in Production, 22 in Staging (read 2026-10-22), one more
 in each since 2026-10-25, `infrastructure_app_outputs_tables` (`ALTER`, `DROP`, `DESCRIBE` on every table of
-`app_outputs` to `InfrastructureAccess`), read back by `list-permissions` after the applies.*
+`app_outputs` to `InfrastructureAccess`), read back by `list-permissions` after the applies. The catalog
+road's fulfilments are one row by class since 6f decision 2 (2026-10-27), DataZone's subscription being
+each grant's record and `./aws/catalog.py` `CT-10` the join; the RAM share and the catalog policies a
+fulfilment writes are rows too, marked DataZone's.*
 
 | Date | Principal | Expression / resource | Permissions | Why (log entry) |
 |---|---|---|---|---|
@@ -336,7 +339,9 @@ in each since 2026-10-25, `infrastructure_app_outputs_tables` (`ALTER`, `DROP`, 
 | 2026-10-25 | role `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`, in Sandbox | idem | `DESCRIBE`; `SELECT` on the column wildcard, `DESCRIBE` | Stage 9 9.7: the session's principal, which the Redshift consumer evaluates |
 | 2026-10-26 | role `datazone_usr_role_3j4l4xmvz7fggg_52webn93119ouo`, `governed-lake`'s project role (Data Governance) | database `curated`, named | `DESCRIBE` | Stage 6f 11.5, the catalog road's declared half (`data/publishing.tf`, `GOVERNANCE.md` §Grants): the publisher's data source lists the table's database |
 | 2026-10-26 | idem | table `curated.trades`, named | `DESCRIBE`, `SELECT` **with grant option** | idem: DataZone's terms for publishing a Glue table; a subscription regrants what this grant holds, as the publishing role |
-| 2026-10-26 | Sandbox's `IAMPrincipals`, under `context.datazone.projectId=="avhvbqn37ty7m8"` (`eighth-experimentation`) — **DataZone's**, not Terraform's | table `curated.trades`, named | `SELECT` | the fulfilment of 6f 11.8's subscription `6ubv3kbnjqjogg`, written as `governed-lake`'s role (11.9); revoked by the subscription's revocation; `catalog.py` `CT-7` lists it as the catalog road's |
+| 2026-10-26 | **DataZone's, one per approved subscription to a published lake table** (6f decision 2, 2026-10-27): the consumer account's `IAMPrincipals` under the subscribing project's `context.datazone.projectId`; the first, Sandbox's under `eighth-experimentation`'s `avhvbqn37ty7m8` | a table of `data/publishing.tf`'s list, named; `curated.trades` | `SELECT`, no grant option | registered by reading: DataZone's subscription is each grant's record (requester, approver, reason, dates, revocation), and `catalog.py` `CT-10` fails on a grant on a published table that no approved subscription with a completed grant explains. The first is 6f 11.8's subscription `6ubv3kbnjqjogg`, written as `governed-lake`'s role (11.9), revoked by the subscription's revocation |
+| 2026-10-26 | **DataZone's**: the RAM share `LakeFormation-V5-ZKUYXYESG4`, to Sandbox's account, closed to external principals | the lake's `catalog`, `database/*` and `table/*/*` | three RAM permissions, a ceiling: Lake Formation's grants scope the read | written by 6f 11.9's fulfilment through Lake Formation (`aws:CalledVia`); `ACTIVE` on 2026-10-27; `datalake.py` `DL-7` counts it among the shares out |
+| 2026-10-26 | **DataZone's**: per-resource Data Catalog policies, `enableHybrid` `TRUE` | the lake's `catalog`, `database/*` and `table/*/*` | Glue table and partition reads and writes to Sandbox's account, under `aws:PrincipalOrgID` | written through RAM at 6f 11.9 (`glue get-resource-policies`; five on 2026-10-27 with Production's two on `curated` of 2026-10-22). The account's policy stays absent, `shares.tf`'s premise; Lake Formation still refuses every write, no Sandbox principal holding `ALTER` or `DROP` on a lake table (`TM-27`) |
 
 Not a row, but visible in `list-permissions` and expected in the consumer accounts and in Data Governance since pass 4: each consumer
 account's `InfrastructureAccess` holds `ALL, DESCRIBE, DROP` **with grant option** on the two resource

@@ -718,6 +718,19 @@ objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/cat
   2026-10-26, 6f 11.9). The publishing role's four `glue:PutResourcePolicy` calls carry a `resourceArn`
   (`catalog`, `database/*`, `table/*/*`) and `enableHybrid` `TRUE`; `glue get-resource-policies` lists
   what they wrote, and `glue get-resource-policy` keeps answering *"Policy not found"*.
+- **The publishing project's role can regrant its published tables in any session** (read 2026-10-27,
+  6f decision 5). `SageMakerStudioProjectUserRolePolicy` v75's `LFResourceSharingPermissions` allows
+  `lakeformation:BatchGrantPermissions` on `*` with no condition; the RAM share and the catalog policies
+  of a cross-account grant follow through `aws:CalledVia` (`XAcctLFCreate`, `XAcctRAMGlue`). What the
+  role can regrant is what Lake Formation gave it with the grant option, so the publisher's grant is the
+  bound, and `./aws/catalog.py` `CT-10` is what notices a grant no subscription explains.
+- **A listing carries its approval switch, and a copy of its source.** `get-listing` returns the forms
+  as a JSON string: `SubscriptionTermsForm.approvalRequired` (`YES` on `trades`, read by `CT-11`), the
+  `GlueTableForm` naming the table, and a `DataSourceReferenceForm` holding the source's configuration
+  as it was at the publish, which keeps reading generation `true` after the source itself was turned off.
+- **A subscription can be approved with row and column filters** (AWS's page, read 2026-10-27): the
+  fulfilment unions them into one Lake Formation data cells filter and grants `SELECT` on it. Never run
+  here; 6f decision 2 keeps `restricted` and `personal` data off the road instead.
 
 - **A project's Tooling environment creates a data source nobody asked for, and it fails.**
   `Tooling-default-sagemaker-modelpackagegroup-datasource` tracks `SageMakerModelPackageGroupAssetType`
@@ -727,8 +740,8 @@ objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/cat
   nothing (`publishOnImport: false`), finds no asset and bills nothing, but it is a scheduled run this
   repository did not write (Lesson 17). The Glue data source a person creates in the portal carries no
   schedule and **`enableBusinessNameGeneration: true`**, which sends the asset's metadata (table and
-  column names, producer-supplied metadata) to a Bedrock model in the Region and has never run here —
-  6f decision 3.
+  column names, producer-supplied metadata) to a Bedrock model in the Region and has never run here.
+  6f decision 3 keeps it off on every source over the lake (2026-10-27), which `CT-5` checks.
 - **Lineage sync is a connection property.** `glueLineageSyncEnabled` is `true` on each project's
   `LAKEHOUSE` and `IAM` connections (read 2026-10-18, never updated since creation), and the blueprint
   configuration carries no lineage field. The Redshift connection's `lineageSync` is the separate
@@ -755,7 +768,8 @@ objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/cat
 - **Every user of the domain may be added to any project's member pool.**
   `ADD_TO_PROJECT_MEMBER_POOL` on the root domain unit reads `allUsersGrantFilter`, DataZone's
   default. Both override policy types are empty, so the owner project's approval is the control on a
-  subscription — and nothing at the domain level restricts a direct Share.
+  subscription — and nothing at the domain level restricts a direct Share. 6f decision 5 (2026-10-27)
+  allows none on a lake listing, and `CT-11` detects one from the subscription's record.
 - **The domain execution role carries more than the approval verbs.**
   `SageMakerStudioDomainExecutionRolePolicy`, at **v23**, grants the whole subscription cycle plus
   `AddPolicyGrant` and `RemovePolicyGrant` over the policies above, `datazone:GetEnvironmentCredentials`,
