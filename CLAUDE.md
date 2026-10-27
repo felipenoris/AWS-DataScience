@@ -308,7 +308,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 ### Current position
 
-- **Done**: Stages 0-1d, 2, 3, 4, 5a, 6a, 6b, 6c, 6i, 16 and 18; 5b's passes are applied, its owed readings
+- **Done**: Stages 0-1d, 2, 3, 4, 5a, 6a, 6b, 6c, 6i, 7, 16 and 18; 5b's passes are applied, its owed readings
   dated. The chain is Sandbox → Staging → Production: no Development account, ever; interactive compute
   is Sandbox only. All 41 decisions are closed. Gates: `make check`, `make check-ou`. **What waits on the
   user is [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md)**: read it before asking
@@ -430,18 +430,12 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   it between the two Sandbox projects and bundles it, the pipeline deploys the bundle, and a Step
   Functions machine per chain with a Scheduler schedule starts the workflows. The tooling is
   `awsds-workflows` (runbook §T).
-- **Stage 7 in progress**: passes 1-2 closed (3.5's memberships 2026-10-24), pass 3 with INT-09's clone from a space (2026-10-26),
-  **pass 4 closed 2026-10-26** (8.1's start 1 min 42 s to the first HTTPS answer; 8.2's
-  rehearsal 24 min 16 s from destroy to the restored sign-in page, the host `i-0b4cb5f62e65abf70` since, on a new data volume; 8.3
-  diffed), §I step 6's settings done the same day (event tracking, Service Ping, the version check, the runner
-  release fetch and Auto DevOps off, Public restricted, sign-up kept on, no `TM` row). Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
-  `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners out, and the build runner rises
-  only with `BUILD=1` (decision 5, 2026-10-24). Validation 2's `PX-3`
-  passed 2026-10-26 with the proxy running (`--on-host`); owed: a backup before 2026-11-26. The GitLab backups of 2026-10-13, 10-15, 10-25 and 10-26 (two, the newest 22:15 UTC) leave
-  the bucket on 2026-11-13, 11-15, 11-25 and 11-26. `make gitlab-up` applies `egress/` before it starts the host
-  (2026-10-26: `tooling` at rank 52, one rank order for `[D]` and `[E]` in `scripts/slices.py`), so the Session
-  Manager agent meets the `ssm` endpoint at its start instead of hibernating for twenty minutes; the first run
-  of that order, the same night, read the host `Online` 1 min 20 s after its start.
+- **Stage 7 DONE 2026-10-27** (the user's decision): pass 4 closed 2026-10-26 (8.2's restore rehearsal 24 min
+  16 s, the host `i-0b4cb5f62e65abf70` since, on a new data volume). Production holds `pki/`, `tooling/` (GitLab CE
+  v19.4.2, `[D]`), `runners/` (`[E]`), `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners
+  out, the build runner rises only with `BUILD=1`, and `make gitlab-up` applies `egress/` before it starts the
+  host. What recurs: a backup before the newest leaves the bucket (those of 2026-10-13, 10-15, 10-25 and 10-26,
+  the newest 22:15 UTC, leave on 2026-11-13, 11-15, 11-25 and 11-26) and the leaves' re-issue by 2027-09-22.
   **`saml.auto.tfvars` lives in the project folder's `secrets/`**: a `tooling/` plan passes
   `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block.
 - **Stage 8 in progress**: passes 0-3 done (`awsds/ci-gates`, the test runner, the house image on Python
@@ -480,8 +474,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   half still open (no reconciliation), 3.3's pin read (the script takes `--SOURCE_SNAPSHOT`; the leg's source
   of the id is a decision). **The GitLab sitting of 2026-10-26** (`runbooks/promotion.md` §N.7.1): the
   mirror at `main`, `gates-v0.6.0` with decision 1's zlib pair, `default-v0.10.0` as Sandbox's version 11,
-  xxviii's active half (a global-endpoint `AssumeRole` lands in `us-east-1`, past 4.6's rules: decision
-  29, the user's).
+  xxviii's active half (a global-endpoint `AssumeRole` lands in `us-east-1`, past 4.6's rules). **Decision
+  29 taken 2026-10-27 as (b)**: the root baseline's `DenyDeployRoleAssumptionOutsideTheRegion` applied the
+  same day (14 statements), not reachable by the battery (a role that does not exist hides the deny), so
+  `sts-global-probe` measures it; the next release's sitting is
+  `runbooks/promotion.md` §N.8.2, the warehouse and backup sitting §N.8.3 (2026-11-22 to 11-25).
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.

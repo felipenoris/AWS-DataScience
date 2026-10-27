@@ -25,7 +25,7 @@
 
 include:
   - project: awsds/ci-gates
-    ref: 6fcea132896746c3938411c0d081f4421ca0dce8 # gates-v0.4.0
+    ref: d0b895c8159e655f6e4af83cc096e37993087c81 # gates-v0.6.0
     file: [/gates.gitlab-ci.yml, /baselines.gitlab-ci.yml]
 
 stages: [test, build, verify, deploy, release, staging-gate, staging, gate, production]

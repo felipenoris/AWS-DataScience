@@ -4217,3 +4217,92 @@ the readings that took it as stopping nothing.*
 - **[Claude] Withdrawn** from the changes the entry above lists: `promotion.md` §N.7.1 step 10's `proxy-off` and
   `NO_PROXY='*'`, `gitlab.md` §U's on the down, and the client runbook's §2. §N.7.1's run keeps the two readings
   that stand, the smoke after both pushes and GitLab's agent's late first call.
+
+## 2026-10-27 — with nothing up: the readings, the template's next merge request prepared, decision 29 taken as (b), written and planned
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess` (the five
+`awsds-infra-*` profiles) and, for the battery's two calls, `AWSAdministratorAccess` in `Policy Canary`
+(`awsds-policy-canary`, the same user); reads, two refused `AssumeRole` calls and a `terraform plan`, nothing
+applied. The decision the user's, in this session's chat. Times UTC.*
+
+- **[Claude] The readings**, 02:20 to 02:30: `./aws/cicd.py` *"all checks passed"* (`CI-1` and `CI-9` notes, no
+  runner up); `./aws/devenv.py` `DE-5` passing on version 11 (`sha256:658c05d12555…`, 73 names, sha256
+  `61f1e1646df12c14`) and `DE-2` the known absence with `sandbox/egress` down; `./aws/egress.py` 0.000 USD/h in
+  the three accounts. Verification xxvii: the parameter
+  `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64` still reads
+  `ami-0829b74b2a8c619b7`, last modified 2026-10-24 21:01:26 UTC, so the plan half still waits. Verification
+  vii: both Sandbox domains carry the version-less attachment, `LastModifiedTime` 2026-10-15 06:14:06 and
+  2026-10-16 00:31:26 UTC as before, and the trail holds no `UpdateStack` or `UpdateDomain` since 2026-10-26
+  03:00; the third half stays open.
+- **[Claude] The template's next merge request**: GitLab's `main` (`8d50f685`) merged `examples/app-etl/` at
+  `2d3160f1`, and `main` adds 9 files since (346 lines in, 45 out: `scripts/dev-cli.sh` and its test, the
+  snapshot record in `glue/transform.py`, `src/app_etl/pipeline.py`, `code/app_etl_tasks.py`, their tests and
+  the README). Read on the laptop: `uv run pytest` 45 passed (8 of them `test_dev_cli.py`), `ruff check` and
+  `ruff format --check` clean, the lint at `d856982c` with the job's options *"ok: 9 arquivo(s)"*,
+  `./scripts/render-workflow.py --check` OK; `pip-audit` 2.10.1 over the runtime set as the gate exports it,
+  at 02:38, `pyarrow` 25.0.1 and *"No known vulnerabilities found"*. The template's `include:` moved from
+  `6fcea132` (`gates-v0.4.0`) to `d0b895c8` (`gates-v0.6.0`), which N.7.1 step 3 left to the template's next
+  merge request; the gates file is unchanged since `gates-v0.4.0`, and `./scripts/check-gitlab-ci.py` passes.
+- **[user] Decision 29**, to the question with its four options: *"(b) SCP preventiva"*.
+- **[Claude] Written**: `DenyDeployRoleAssumptionOutsideTheRegion`, the root baseline's fourteenth statement,
+  `sts:AssumeRole` on `arn:aws:iam::*:role/awsds-deploy-*` denied when `aws:RequestedRegion` is not
+  `us-west-2`; the document's description from 439 to 511 characters, under Organizations' 512, naming no
+  Region, since `check-tf-conventions.py` refuses a Region literal in a `.tf` file; the
+  `POLICIES.md` row (`./scripts/check-index.py` clean); the Sid in `check-iam-wildcards.py`'s list, the
+  account wildcard being a deny's resource that admits nobody; two `root` rows in `probes.py` on a role of the prefix
+  that exists nowhere (27 in the phase), the global endpoint expected `DENY-SCP` and `us-west-2`'s the
+  trust's refusal; the amendment's table in `runbooks/scp-battery.md`; and the copy's `sts-global-probe`, which
+  now prints each call's answer or refusal and goes on, since the first global call's refusal would end the
+  job before Staging's role. The RCP's `EnforceOrgIdentitiesOnRoleAssumption` already refuses a principal
+  outside the organization on either endpoint.
+- **[Claude] The negative control before the apply**, as `awsds-policy-canary`: at 02:32:15 both calls answered
+  `AccessDenied` *"… is not authorized to perform: sts:AssumeRole on resource: arn:aws:iam::<canary>:role/awsds-deploy-battery-probe"*,
+  no policy named, the global one through `sts.amazonaws.com` in `us-east-1` and the other through
+  `sts.us-west-2.amazonaws.com`: the trust's refusal on both endpoints. A first try at 02:31:58 read
+  `ValidationError … is invalid` on both: zsh read `$A:r` in the ARN as a modifier and sent a malformed ARN,
+  the tool's failure and not the service's (Lesson 30); the runbook's table says so.
+- **[Claude] The plan** at 02:33:08 as `awsds-infra-identity` (Recipe A, the slice initialised in this
+  worktree), made again at 02:47:05 once the description lost its Region literal: *"Plan: 0 to add, 1 to
+  change, 0 to destroy."*, `aws_organizations_policy.this["awsds-org-scp-baseline"]`
+  (`p-1fp032g8`) in place, the statement added after `DenyProvisionedMwaa` and the description;
+  `policy_document_bytes` 3042 → 3251. Saved as `$HOME/tmp/decision29-org-policies.tfplan`; not applied, the
+  apply waiting for the user's authorization.
+- **[Claude] The record**: decision 29, 4.6's bullet, verification xxviii and the status cell; `POLICIES.md`;
+  `AWS_STATE.md`'s baseline row; the waiting list (decision 29 out of the decisions, its apply in the items
+  that hold up a run, the GitLab sitting's second reading); `runbooks/promotion.md` §N.6 rewritten as the
+  order read today and §N.8 the sittings prepared (§N.8.1 nothing up, §N.8.2 the release `v0.4.7` with the
+  Sandbox half and the exercises, §N.8.3 the warehouse and backup sitting of 2026-11-22 to 11-25).
+
+## 2026-10-27 — decision 29 applied; the battery cannot reach the statement on a role that does not exist
+
+*The user's authorization in this session's chat; Claude's hand for the apply, as the infrastructure user with
+`InfrastructureAccess` in Identity (`awsds-infra-identity`), and for the battery and the readings, with
+`AWSAdministratorAccess` in `Policy Canary` (`awsds-policy-canary`, the same user). The peer session on the laptop
+was told before the apply. Times UTC.*
+
+- **[user]** *"Autorizo o apply do plano salvo da decisão 29 (identity/org-policies, awsds-infra-identity,
+  Identity, InfrastructureAccess) e a bateria --phase root em seguida."*
+- **[Claude⚡] The apply** of the saved plan of 02:47:05, 02:58:10 to 02:58:22: `p-1fp032g8` modified in 1 s,
+  *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*, `policy_document_bytes` 3251. The re-plan
+  *"No changes."*; `describe-policy` read 14 statements, the last `DenyDeployRoleAssumptionOutsideTheRegion`.
+  The saved plan was deleted.
+- **[Claude] The battery's `root` phase**, 02:59:09 to 02:59:44: *"26 as expected, 1 unexpected, 0 not
+  measured"*. Every earlier row as expected, `p-1fp032g8` named on each deny; the new pair read
+  `ALLOWED reached-authorization` on both, the global row's `FAIL`: STS's plain *"… is not authorized to
+  perform: sts:AssumeRole on resource: …/awsds-deploy-battery-probe"*, the wording of 02:32, before the apply.
+- **[Claude] Propagation ruled out**: 20 tries of the global call, every 30 s from 03:00:04 to 03:09:52, read the
+  same wording, and CloudTrail recorded the tries of 03:03:42 to 03:07:18 in `us-east-1`, `AccessDenied` with
+  that message. The IAM simulator, as the canary's `AWSAdministratorAccess` role on `sts:AssumeRole` of that
+  ARN, read `explicitDeny` with `AllowedByOrganizations` false when the context named `aws:RequestedRegion`
+  `us-east-1`, and `allowed` with `us-west-2`: the document is the one written. The refusal of a role that does
+  not exist hides the deny, so a row built on one reads `ALLOWED` for ever (Lesson 50).
+- **[Claude] Refused to Claude**: an `AssumeRole` of `awsds-deploy-prod` as `awsds-infra-prod` through both
+  endpoints, refused either way, to read whether STS shows the deny behind the refusal of a role that exists
+  but does not trust the caller; the session's auto-mode classifier refused the command (*Credential
+  Materialization*), and nothing ran. It is the user's, optional (`promotion.md` §N.8.1 step 2).
+- **[Claude] What changed**: the two rows left `probes.py`, its comment saying why, so the `root` phase holds its
+  25; `POLICIES.md` reads the statement applied, attached and not exercised; `runbooks/scp-battery.md` the
+  readings before and after; `lessons.md`'s platform list the reading; decision 29, verification xxviii,
+  `AWS_STATE.md`, the waiting list and `promotion.md` §N.6 and §N.8.1. The statement's measurement is
+  `sts-global-probe` at the next GitLab sitting (§N.8.2 step 5): the deploy roles trust the runner, so a refusal
+  of its global call can only be the baseline's.
