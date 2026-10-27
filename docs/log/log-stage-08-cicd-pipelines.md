@@ -4272,3 +4272,37 @@ applied. The decision the user's, in this session's chat. Times UTC.*
   that hold up a run, the GitLab sitting's second reading); `runbooks/promotion.md` §N.6 rewritten as the
   order read today and §N.8 the sittings prepared (§N.8.1 nothing up, §N.8.2 the release `v0.4.7` with the
   Sandbox half and the exercises, §N.8.3 the warehouse and backup sitting of 2026-11-22 to 11-25).
+
+## 2026-10-27 — decision 29 applied; the battery cannot reach the statement on a role that does not exist
+
+*The user's authorization in this session's chat; Claude's hand for the apply, as the infrastructure user with
+`InfrastructureAccess` in Identity (`awsds-infra-identity`), and for the battery and the readings, with
+`AWSAdministratorAccess` in `Policy Canary` (`awsds-policy-canary`, the same user). The peer session on the laptop
+was told before the apply. Times UTC.*
+
+- **[user]** *"Autorizo o apply do plano salvo da decisão 29 (identity/org-policies, awsds-infra-identity,
+  Identity, InfrastructureAccess) e a bateria --phase root em seguida."*
+- **[Claude⚡] The apply** of the saved plan of 02:47:05, 02:58:10 to 02:58:22: `p-1fp032g8` modified in 1 s,
+  *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*, `policy_document_bytes` 3251. The re-plan
+  *"No changes."*; `describe-policy` read 14 statements, the last `DenyDeployRoleAssumptionOutsideTheRegion`.
+  The saved plan was deleted.
+- **[Claude] The battery's `root` phase**, 02:59:09 to 02:59:44: *"26 as expected, 1 unexpected, 0 not
+  measured"*. Every earlier row as expected, `p-1fp032g8` named on each deny; the new pair read
+  `ALLOWED reached-authorization` on both, the global row's `FAIL`: STS's plain *"… is not authorized to
+  perform: sts:AssumeRole on resource: …/awsds-deploy-battery-probe"*, the wording of 02:32, before the apply.
+- **[Claude] Propagation ruled out**: 20 tries of the global call, every 30 s from 03:00:04 to 03:09:52, read the
+  same wording, and CloudTrail recorded the tries of 03:03:42 to 03:07:18 in `us-east-1`, `AccessDenied` with
+  that message. The IAM simulator, as the canary's `AWSAdministratorAccess` role on `sts:AssumeRole` of that
+  ARN, read `explicitDeny` with `AllowedByOrganizations` false when the context named `aws:RequestedRegion`
+  `us-east-1`, and `allowed` with `us-west-2`: the document is the one written. The refusal of a role that does
+  not exist hides the deny, so a row built on one reads `ALLOWED` for ever (Lesson 50).
+- **[Claude] Refused to Claude**: an `AssumeRole` of `awsds-deploy-prod` as `awsds-infra-prod` through both
+  endpoints, refused either way, to read whether STS shows the deny behind the refusal of a role that exists
+  but does not trust the caller; the session's auto-mode classifier refused the command (*Credential
+  Materialization*), and nothing ran. It is the user's, optional (`promotion.md` §N.8.1 step 2).
+- **[Claude] What changed**: the two rows left `probes.py`, its comment saying why, so the `root` phase holds its
+  25; `POLICIES.md` reads the statement applied, attached and not exercised; `runbooks/scp-battery.md` the
+  readings before and after; `lessons.md`'s platform list the reading; decision 29, verification xxviii,
+  `AWS_STATE.md`, the waiting list and `promotion.md` §N.6 and §N.8.1. The statement's measurement is
+  `sts-global-probe` at the next GitLab sitting (§N.8.2 step 5): the deploy roles trust the runner, so a refusal
+  of its global call can only be the baseline's.

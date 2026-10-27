@@ -272,22 +272,16 @@ probe("root", "prod", "deny", None, "blocked",
        '{"SubnetIds":["@SUBNET@","@SUBNET@"],"SecurityGroupIds":["sg-0123456789abcdef0"]}',
        "--region", "us-west-2"])
 
-# --- DenyDeployRoleAssumptionOutsideTheRegion (Stage 8 decision 29). The global endpoint signs in
-#     us-east-1, so aws:RequestedRegion reads us-east-1 there and us-west-2 at the regional one; each
-#     row names its endpoint rather than leaning on the CLI's default. `blocked`: no role of the
-#     prefix exists in the canary, so a lifted deny leaves the call refused by STS as for any role
-#     that does not trust the caller, the wording the allowed regex names, and the global row reads
-#     ALLOWED instead of a note. The us-west-2 row is the contrast: that refusal, never the baseline.
-_ASSUME_REFUSED = "not authorized to perform: sts:AssumeRole on resource"
-_DEPLOY_ROLE = "arn:aws:iam::@ACCT@:role/awsds-deploy-battery-probe"
-probe("root", "canary", "deny", _ASSUME_REFUSED, "blocked",
-      "sts:AssumeRole of awsds-deploy-* through the global endpoint (no such role)",
-      ["sts", "assume-role", "--role-arn", _DEPLOY_ROLE, "--role-session-name", "scp-battery",
-       "--endpoint-url", "https://sts.amazonaws.com", "--region", "us-east-1"])
-probe("root", "canary", "allow", _ASSUME_REFUSED, "blocked",
-      "sts:AssumeRole of awsds-deploy-* through us-west-2's endpoint reaches the trust (contrast)",
-      ["sts", "assume-role", "--role-arn", _DEPLOY_ROLE, "--role-session-name", "scp-battery",
-       "--endpoint-url", "https://sts.us-west-2.amazonaws.com", "--region", "us-west-2"])
+# --- DenyDeployRoleAssumptionOutsideTheRegion (Stage 8 decision 29) IS NOT PROBED, and that is a
+#     measurement (2026-10-27). With the statement attached at 02:58 UTC, an AssumeRole of
+#     awsds-deploy-battery-probe, a role that exists nowhere, through sts.amazonaws.com still answered
+#     the plain "not authorized to perform: sts:AssumeRole on resource", the wording of before the apply,
+#     at the battery's run at 02:59 and in 20 tries from 03:00 to 03:09, and CloudTrail recorded the same
+#     message in us-east-1, while the IAM simulator read the call explicitDeny for us-east-1 and allowed
+#     for us-west-2. The refusal of a role that does not exist hides the deny, so a row on one reads
+#     ALLOWED for ever: Lesson 50's permanently-red check. The statement's measurement is the job
+#     sts-global-probe on the deploy runner, whose role the deploy roles trust, so that a refusal through
+#     the global endpoint can only be the baseline's; POLICIES.md says so.
 
 # --- the floor, on the canary
 probe("root", "canary", "allow", None, "ro", "floor: sts:GetCallerIdentity",

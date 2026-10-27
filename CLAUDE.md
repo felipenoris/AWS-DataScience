@@ -473,8 +473,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   of the id is a decision). **The GitLab sitting of 2026-10-26** (`runbooks/promotion.md` §N.7.1): the
   mirror at `main`, `gates-v0.6.0` with decision 1's zlib pair, `default-v0.10.0` as Sandbox's version 11,
   xxviii's active half (a global-endpoint `AssumeRole` lands in `us-east-1`, past 4.6's rules). **Decision
-  29 taken 2026-10-27 as (b)**: the root baseline's `DenyDeployRoleAssumptionOutsideTheRegion` written and
-  planned (*1 to change*), its apply the user's authorization; the next release's sitting is
+  29 taken 2026-10-27 as (b)**: the root baseline's `DenyDeployRoleAssumptionOutsideTheRegion` applied the
+  same day (14 statements), not reachable by the battery (a role that does not exist hides the deny), so
+  `sts-global-probe` measures it; the next release's sitting is
   `runbooks/promotion.md` §N.8.2, the warehouse and backup sitting §N.8.3 (2026-11-22 to 11-25).
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass

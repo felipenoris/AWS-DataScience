@@ -1129,8 +1129,8 @@ warehouse sittings of 2026-10-26. Stage 7 closed the same day, the user's decisi
 GitLab backup before the newest leaves the bucket and the leaves' re-issue by 2027-09-22, rides the sittings
 below. Each sitting starts on the user's word, since it is metered.
 
-1. **With nothing up** (N.8.1): Stage 8 decision 29's apply, taken 2026-10-27 as (b) and planned, then the
-   battery's `root` phase; Stage 9 8.1's read-but-not-write from the portal's query editor on Athena, which
+1. **With nothing up** (N.8.1): Stage 8 decision 29's apply and the battery's `root` phase, done 2026-10-27,
+   the statement measured by N.8.2 step 5's job since the battery cannot reach it; Stage 9 8.1's read-but-not-write from the portal's query editor on Athena, which
    runs with no space; Production's free-trial balance the day after xxiv's sitting.
 2. **The release sitting** (N.8.2), `v0.4.7`: the template's merge request (the deploy script, the snapshot
    record, `gates-v0.6.0`), the mirror at `main`, the tag and both legs, Stage 8 3.3's record read in
@@ -1392,6 +1392,8 @@ identity.
    ```
 
    The slice is applied from this change's branch, so another tree plans it after the merge (Lesson 79).
+   **Done 2026-10-27** (Stage 8's log): the apply 02:58:10 to 02:58:22 UTC, *"0 added, 1 changed, 0
+   destroyed"*, the re-plan `No changes`, 14 statements read back.
 2. **[Claude] The battery's `root` phase**, deliberately ([`scp-battery.md`](scp-battery.md), the decision 29
    amendment):
 
@@ -1399,9 +1401,21 @@ identity.
    ./aws/probes/scp-battery.py --phase root
    ```
 
-   Expected: 27 as expected, 0 unexpected; the global row `DENY-SCP` naming `p-1fp032g8`, the `us-west-2`
-   row `ALLOWED` on the trust's refusal. Both calls read that refusal before the apply (2026-10-27 02:32
-   UTC), no policy named.
+   **Run 2026-10-27 at 02:59 UTC** (Stage 8's log): 26 as expected and 1 unexpected, the global row on a role
+   that exists nowhere reading STS's plain refusal, as before the apply and in 20 tries to 03:09, while the
+   IAM simulator read the call `explicitDeny`. The refusal of a role that does not exist hides the deny, so
+   the two rows left `probes.py` and the phase holds its 25, each read as expected in that run; the
+   statement's measurement is N.8.2 step 5's job ([`scp-battery.md`](scp-battery.md)).
+   **[user] Optional, with nothing up**: whether STS shows the deny behind the refusal of a role that exists
+   but does not trust the caller, which would let a battery row measure it. The session's classifier refused
+   this attempt to Claude on 2026-10-27. Both calls are refused, the trust naming the runner alone; the
+   global one names the service control policy if STS shows it:
+
+   ```bash
+   P=$(aws sts get-caller-identity --profile awsds-infra-prod --query Account --output text)
+   aws sts assume-role --role-arn "arn:aws:iam::${P}:role/awsds-deploy-prod" --role-session-name scp-probe --endpoint-url https://sts.amazonaws.com --region us-east-1 --profile awsds-infra-prod
+   aws sts assume-role --role-arn "arn:aws:iam::${P}:role/awsds-deploy-prod" --role-session-name scp-probe --endpoint-url https://sts.us-west-2.amazonaws.com --region us-west-2 --profile awsds-infra-prod
+   ```
 3. **[user] Stage 9 8.1's read-but-not-write**, as the Data Scientist User in a private window: the portal,
    `eighth-experimentation`'s query editor with *Athena (SQL)* as the compute, which 6f 11.10 ran with no
    space and Sandbox's `egress/` down. The subscription's resource link `glue_db_blerpkhn9nj7o0.trades`
@@ -1480,9 +1494,11 @@ seven 0.07, Production's `workloads-egress/` seven 0.07 and the space 0.050, abo
    first global call does not stop it before Staging's role; `./scripts/gitlab-mirror.py awsds/dev-env`
    copies the merge back. Then, once N.8.1 step 1 has applied, *Build → Pipelines → Run pipeline* on `main`
    with `STS_GLOBAL_PROBE` set to `1`, and *Run* on the manual job. **[Claude]** the job's log and, after the
-   trail's delay (Lesson 62), N.7.1 step 8's command: each global call refused naming `p-1fp032g8`, recorded
-   in the caller's account in `us-east-1` with its `errorCode`, and each regional call answered in
-   `us-west-2` (verification xxviii's second reading).
+   trail's delay (Lesson 62), N.7.1 step 8's command: each global call refused, recorded in the caller's
+   account in `us-east-1` with its `errorCode`, and each regional call answered in `us-west-2`
+   (verification xxviii's second reading). The deploy roles trust the runner, so a global refusal can only be
+   `DenyDeployRoleAssumptionOutsideTheRegion`'s: the statement's one measurement, which the battery could not
+   take (N.8.1 step 2); its wording says whether STS names the policy.
 6. **[user] The tag** `v0.4.7` on the template's merge, once `git ls-remote --tags` on `awsds/app-etl` reads it
    free; Sandbox's `egress/` is up, so `test-deploy` runs on its first try. **[pipeline]** `test`,
    `pip-audit`, `build-image`, `scan-gate`, `build-task-code`, `test-deploy`, `store-bundle`, `release`.

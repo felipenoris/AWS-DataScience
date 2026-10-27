@@ -358,15 +358,23 @@ If the `inherit` row reads `ALLOWED` and the run stopped before the next row, pu
 `aws bedrock put-account-data-retention --mode none --region us-west-2 --profile awsds-policy-canary`.
 
 **The Stage 8 decision 29 amendment to `awsds-org-scp-baseline`** — `DenyDeployRoleAssumptionOutsideTheRegion`,
-written 2026-10-27. Its two rows in `probes.py` run with `--phase root` after the apply; the role exists in no
-account, so neither call can succeed:
+applied 2026-10-27 at 02:58 UTC, **has no row in `probes.py`, and that is a measurement**. The two calls below,
+from `awsds-policy-canary` on a role of the prefix that exists in no account, answered the same before and after
+the apply:
 
-| Probe (from `awsds-policy-canary`) | Expected | Read before the apply, 2026-10-27 02:32 UTC |
+| Probe (from `awsds-policy-canary`) | Before the apply, 02:32 UTC | After it, 02:59 to 03:09 UTC |
 |---|---|---|
-| `aws sts assume-role --role-arn arn:aws:iam::<ACCT>:role/awsds-deploy-battery-probe --role-session-name scp-battery --endpoint-url https://sts.amazonaws.com --region us-east-1` | `AccessDenied` naming the baseline | `AccessDenied` *"is not authorized to perform: sts:AssumeRole on resource"*, no policy named: the trust's refusal |
-| the same with `--endpoint-url https://sts.us-west-2.amazonaws.com --region us-west-2` | the trust's refusal, never the baseline | the same |
+| `aws sts assume-role --role-arn arn:aws:iam::<ACCT>:role/awsds-deploy-battery-probe --role-session-name scp-battery --endpoint-url https://sts.amazonaws.com --region us-east-1` | `AccessDenied` *"is not authorized to perform: sts:AssumeRole on resource"*, no policy named | the same, at the battery's run and in 20 tries, CloudTrail recording that message in `us-east-1` |
+| the same with `--endpoint-url https://sts.us-west-2.amazonaws.com --region us-west-2` | the same | the same |
 
-In zsh the account goes into the ARN as `${ACCT}:role`: `$ACCT:r` is a modifier, and the malformed ARN it
+The IAM simulator read the global call `explicitDeny` (`AllowedByOrganizations` false) and the regional one
+`allowed`, so the document says what it was written to say; the refusal of a role that does not exist hides the
+deny, and a row on one reads `ALLOWED` for ever (Lesson 50). The statement is measured by the job
+`sts-global-probe` on the deploy runner, whose role the deploy roles trust ([`promotion.md`](promotion.md) §N.8.2
+step 5). Whether an existing role that does not trust the caller shows the deny is unread: that attempt, on
+`awsds-deploy-prod`, was refused to Claude by the session's classifier on 2026-10-27 and waits for the user.
+
+In zsh the account goes into an ARN as `${ACCT}:role`: `$ACCT:r` is a modifier, and the malformed ARN it
 leaves is refused with `ValidationError` before authorization (2026-10-27).
 
 ### Phase 4b — re-probing an amended document, in place
