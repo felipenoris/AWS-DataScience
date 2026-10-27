@@ -272,6 +272,23 @@ probe("root", "prod", "deny", None, "blocked",
        '{"SubnetIds":["@SUBNET@","@SUBNET@"],"SecurityGroupIds":["sg-0123456789abcdef0"]}',
        "--region", "us-west-2"])
 
+# --- DenyDeployRoleAssumptionOutsideTheRegion (Stage 8 decision 29). The global endpoint signs in
+#     us-east-1, so aws:RequestedRegion reads us-east-1 there and us-west-2 at the regional one; each
+#     row names its endpoint rather than leaning on the CLI's default. `blocked`: no role of the
+#     prefix exists in the canary, so a lifted deny leaves the call refused by STS as for any role
+#     that does not trust the caller, the wording the allowed regex names, and the global row reads
+#     ALLOWED instead of a note. The us-west-2 row is the contrast: that refusal, never the baseline.
+_ASSUME_REFUSED = "not authorized to perform: sts:AssumeRole on resource"
+_DEPLOY_ROLE = "arn:aws:iam::@ACCT@:role/awsds-deploy-battery-probe"
+probe("root", "canary", "deny", _ASSUME_REFUSED, "blocked",
+      "sts:AssumeRole of awsds-deploy-* through the global endpoint (no such role)",
+      ["sts", "assume-role", "--role-arn", _DEPLOY_ROLE, "--role-session-name", "scp-battery",
+       "--endpoint-url", "https://sts.amazonaws.com", "--region", "us-east-1"])
+probe("root", "canary", "allow", _ASSUME_REFUSED, "blocked",
+      "sts:AssumeRole of awsds-deploy-* through us-west-2's endpoint reaches the trust (contrast)",
+      ["sts", "assume-role", "--role-arn", _DEPLOY_ROLE, "--role-session-name", "scp-battery",
+       "--endpoint-url", "https://sts.us-west-2.amazonaws.com", "--region", "us-west-2"])
+
 # --- the floor, on the canary
 probe("root", "canary", "allow", None, "ro", "floor: sts:GetCallerIdentity",
       ["sts", "get-caller-identity"])

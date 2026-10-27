@@ -3037,3 +3037,27 @@ UTC.*
   project `eighth-experimentation` subscribed to the listing `trades` (6f step 11.8). 8.1's space half, the
   project's `SELECT` on `curated.trades` and its refused `INSERT`, no longer waits on the subscription and is
   the next Sandbox sitting's; the status cell and 8.1's text are brought to it.
+
+## 2026-10-27 — with nothing up: the instruments, the quota cases, the admin secret's first rotation, 8.1's half placed in the portal
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (the five `awsds-infra-*` profiles),
+reads only. Times UTC.*
+
+- **[Claude] The instruments**, 02:20 to 02:30: `./aws/deploytargets.py` and `./aws/datalake.py` on the five
+  profiles, *"all checks passed"* (`DT-9` the window closed; `DL-5` 4/`TRUE` in Data Governance and Sandbox);
+  `./aws/warehouse.py` no workgroup in either account and `WH-16` passing in Production, `trades_lf`'s Data
+  Catalog consumer `AUTHORIZED` and the lake's catalog `ACTIVE`.
+- **[Claude] 3.5's quota cases**: `list-requested-service-quota-change-history` reads the four `ml.m5.large`
+  requests of 2026-10-23 20:00 still `CASE_OPENED` in Production and Staging, the applied quotas above them
+  since 2026-10-24; nothing waits on them.
+- **[Claude] `EXC-13`'s Production half, the date**: `redshift!awsds-prod-warehouse-dbadmin`, created
+  2026-10-23 22:07:17, never rotated, `NextRotationDate` 2026-11-22 01:59:59, rotation on every 30 days.
+  Sandbox's secret, last rotated 2026-10-20 01:22:07, rotates next on 2026-11-19 01:59:59. Whether
+  Production's database takes the rotated password is the warehouse sitting's (`promotion.md` §N.8.3).
+- **[Claude] 8.1's space half needs no space**: 6f 11.10 read `curated.trades` through the subscription
+  from `eighth-experimentation`'s query editor on Athena with no space and Sandbox's `egress/` down, so the
+  read and the refused `INSERT` are the user's with nothing up (`promotion.md` §N.8.1 step 3). The insert is
+  written against `glue get-table` on `curated.trades` as `awsds-infra-data`, `ICEBERG` with five columns
+  (`trade_date` date, `desk` and `instrument` string, `quantity` and `price` double), so it reaches
+  authorization rather than stopping at its shape (Lesson 21).
+- **[Claude] The record**: 8.1's text and the status cell; the waiting list's row; `promotion.md` §N.6 and §N.8.

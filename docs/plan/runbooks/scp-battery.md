@@ -357,6 +357,18 @@ and `DenyInvokingModelsThatRetain`, probed by hand on 2026-09-12 after the apply
 If the `inherit` row reads `ALLOWED` and the run stopped before the next row, put the mode back by hand:
 `aws bedrock put-account-data-retention --mode none --region us-west-2 --profile awsds-policy-canary`.
 
+**The Stage 8 decision 29 amendment to `awsds-org-scp-baseline`** — `DenyDeployRoleAssumptionOutsideTheRegion`,
+written 2026-10-27. Its two rows in `probes.py` run with `--phase root` after the apply; the role exists in no
+account, so neither call can succeed:
+
+| Probe (from `awsds-policy-canary`) | Expected | Read before the apply, 2026-10-27 02:32 UTC |
+|---|---|---|
+| `aws sts assume-role --role-arn arn:aws:iam::<ACCT>:role/awsds-deploy-battery-probe --role-session-name scp-battery --endpoint-url https://sts.amazonaws.com --region us-east-1` | `AccessDenied` naming the baseline | `AccessDenied` *"is not authorized to perform: sts:AssumeRole on resource"*, no policy named: the trust's refusal |
+| the same with `--endpoint-url https://sts.us-west-2.amazonaws.com --region us-west-2` | the trust's refusal, never the baseline | the same |
+
+In zsh the account goes into the ARN as `${ACCT}:role`: `$ACCT:r` is a modifier, and the malformed ARN it
+leaves is refused with `ValidationError` before authorization (2026-10-27).
+
 ### Phase 4b — re-probing an amended document, in place
 
 **An amendment is phase 4 with a shorter probe list.** Once a document sits on its real OU, the update

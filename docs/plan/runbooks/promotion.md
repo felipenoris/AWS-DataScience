@@ -1122,37 +1122,30 @@ on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its pla
 - **Taken 2026-10-25**: Production's full-table flag turned off by the user in the console, bracketed by
   `DT-5` (Stage 9 decision 13; `TM-26`'s Production half closed, the lake's flag sufficing).
 
-### N.6 The order of what is left, after the Sandbox sitting of 2026-10-26
+### N.6 The order of what is left, read 2026-10-27
 
-Read on 2026-10-26 against the four stage files and their logs (Stages 7 to 10), with nothing up, after
-N.3. Each sitting closes what the one before it cannot; a sitting starts on the user's word, since it is
-metered.
+Read on 2026-10-27 against the four stage files and their logs, with nothing up, after the GitLab and
+warehouse sittings of 2026-10-26. Stage 7 closed the same day, the user's decision; what recurs of it, a
+GitLab backup before the newest leaves the bucket and the leaves' re-issue by 2027-09-22, rides the sittings
+below. Each sitting starts on the user's word, since it is metered.
 
-1. **With nothing up, the user's decisions** (the waiting list): the mirror's push before the next tag.
-   Taken on 2026-10-26: the CI/CD CLI remedy's third part as an activation hook in the image (PR #269), its
-   report posted as `aws/CICD-for-SageMakerUnifiedStudio#413`;
-   6f decision 1 (shape (b) in a pilot, recorded and planned as 6f step 11 in PR #270); the CI/CD CLI
-   remedy's report and script and Stage 8 3.3's snapshot pin (option A), written in PR #269; Stage 10 decision
-   11's narrowing (option A), applied the same day; Stage 8 xxviii's active half by a job (option B); Stage
-   8 decision 1's zlib pair into the baseline (option A, `gates-v0.6.0` before the image); INT-13 not built
-   now (option A, the path kept in issue #268); the training operator's log read needs no remedy (Stage
-   10 1.3).
-2. **With nothing up, the user's acts**: the debug window (N.7.2), run 2026-10-26, Stage 9 3.1's
-   debug-role read answered; decision 11's applies and the Deployment Manager's read in Production, done
-   the same day (N.7.4).
-3. **The GitLab sitting** (N.7.1): `gates-v0.6.0` with the zlib pair, the house image `default-v0.10.0`
-   with the 73-name literal, the mirror pushed at `main`, Stage 8 xxviii's job, Stage 7 Validation 2's
-   `PX-3` and a GitLab backup. **Run 2026-10-26** (N.7.1).
-4. **The next release** (N.1's shape: the hub, `make gitlab-up BUILD=1`, Staging's `egress/`, Production's
-   `workloads-egress/`): the template's merge request with the deploy script and the snapshot record, the tag, the legs,
-   3.7; and the exercises the user takes with it: Stage 8 xv (the proxy stopped alone), Stage 10 xx's
-   second half (an undeclared Glue job on a branch's tag), Stage 8 xxvii's plan half once the Amazon Linux
-   parameter moves.
-5. **The second Sandbox sitting** (N.7.3), `default-v0.10.0` registered as version 11 on 2026-10-26, and once 6f step 11's subscription is approved:
-   Stage 9 8.1's space half, and the `dev` deploy on the new version with no session export.
-6. **The warehouse sitting** (both computes): after 2026-11-22, `EXC-13`'s Production half and the free
-   trial's pair of readings. xxiv ran on N.4a on 2026-10-26.
-7. **What waits on something else** (N.5): a second application (Stage 10 xxv, the chain's order,
+1. **With nothing up** (N.8.1): Stage 8 decision 29's apply, taken 2026-10-27 as (b) and planned, then the
+   battery's `root` phase; Stage 9 8.1's read-but-not-write from the portal's query editor on Athena, which
+   runs with no space; Production's free-trial balance the day after xxiv's sitting.
+2. **The release sitting** (N.8.2), `v0.4.7`: the template's merge request (the deploy script, the snapshot
+   record, `gates-v0.6.0`), the mirror at `main`, the tag and both legs, Stage 8 3.3's record read in
+   Staging and Production, Stage 10 decision 11's Staging half, 3.7; `awsds/dev-env`'s merge request and
+   `sts-global-probe` after decision 29's apply; N.7.3's `dev` deploy from a space on version 11; a GitLab
+   backup; and the exercises the user takes with it: Stage 8 xv, Stage 10 xx's second half, and Stage 8
+   xxvii's plan half once the Amazon Linux parameter moves.
+3. **The warehouse and backup sitting** (N.8.3), between 2026-11-22 and 2026-11-25: `EXC-13`'s Production
+   half after the admin secret's first rotation, scheduled 2026-11-22 01:59:59 UTC, the free trial's pair,
+   and a GitLab backup before the newest, of 2026-10-26 22:15 UTC, leaves the bucket on 2026-11-26. A release
+   sitting inside that window carries the backup instead.
+4. **The stages' close**: after 2 and 3, Stages 8, 9 and 10 hold only what N.5 lists, and each can close
+   as Stage 4 did, what waits moved to the trigger or the stage that provides its subject. The user's
+   decision, read then.
+5. **What waits on something else** (N.5): a second application (Stage 10 xxv, the chain's order,
    xxviii's inbox marker), Stage 11's S3 data events (Stage 8 xx; Stage 9 ix's `VPC-Workloads` branch,
    which a management-event trail cannot show), a workflow's 50th version, a release that removes a
    file, a blueprint reconciliation, and the halves no step provokes (Stage 9 xv's role halves, xxvii's
@@ -1301,7 +1294,8 @@ pair, and the alarm fired once per assumption with a notification delivered each
 
 #### N.7.3 The second Sandbox sitting
 
-N.3's raises and downs, without GitLab when no clone is owed. What it closes: Stage 9 8.1's space half
+Since 2026-10-27 it runs inside the release sitting, N.8.2 step 13, whose raises it shares, and Stage 9
+8.1's half is N.8.1 step 3, the portal's query editor needing no space. N.3's raises and downs, without GitLab when no clone is owed. What it closes: Stage 9 8.1's space half
 once 6f step 11's subscription is approved (N.3 step 9); and, `default-v0.10.0` registered as version 11
 on 2026-10-26, the `dev` deploy from a space on it by [`sagemaker-application.md`](sagemaker-application.md) §D,
 `scripts/dev-cli.sh` for steps 6 and 7, with no `NO_PROXY` export, `getent hosts
@@ -1365,6 +1359,247 @@ policies and in the set's role policy in Production and Staging. **Step 3 read t
 Deployment Manager's `GetWorkflowRun` answered `SUCCESS`, so the value holds and nothing reverts; step 4
 read the same evening, the service's `Decrypt` in the Deployment Manager's session at 20:01:18 UTC with no
 error. Staging's half is owed, at its next leg.
+
+### N.8 The sittings prepared 2026-10-27
+
+Written with nothing up, after the readings of 2026-10-27 (the stage logs): every instrument passing but
+`DE-2`, the known absence with `sandbox/egress` down, and 0.000 USD/h in Production, Staging and Sandbox;
+the Amazon Linux parameter at the runners' image; no blueprint reconciliation since 2026-10-11; the four
+`ml.m5.large` quota cases `CASE_OPENED`; five GitLab backups, the newest 2026-10-26 22:15 UTC; Production's
+admin secret's first rotation scheduled 2026-11-22 01:59:59 UTC. Every command runs as the infrastructure
+user (`InfrastructureAccess`, the `awsds-infra-*` profile of the account it names) unless it names another
+identity.
+
+#### N.8.1 The steps with nothing up
+
+1. **[Claude⚡] Stage 8 decision 29's apply**, on the user's authorization in chat, the other sessions on
+   the laptop told first. The saved plan of 2026-10-27 reads *0 to add, 1 to change*, `p-1fp032g8` in place,
+   its content and description; a plan older than another apply to the slice is made again (Recipe A):
+
+   ```bash
+   AWS_PROFILE=awsds-infra-identity terraform -chdir=terraform-live/identity/org-policies apply -input=false "$HOME/tmp/decision29-org-policies.tfplan"
+   ```
+
+   Then the re-plan, expected `No changes`, and the document read back, its last statement
+   `DenyDeployRoleAssumptionOutsideTheRegion` and 14 in all:
+
+   ```bash
+   AWS_PROFILE=awsds-infra-identity terraform -chdir=terraform-live/identity/org-policies plan -input=false
+   ```
+
+   ```bash
+   aws organizations describe-policy --policy-id p-1fp032g8 --query Policy.Content --output text --profile awsds-infra-identity | jq -r '.Statement[-1].Sid, (.Statement | length)'
+   ```
+
+   The slice is applied from this change's branch, so another tree plans it after the merge (Lesson 79).
+2. **[Claude] The battery's `root` phase**, deliberately ([`scp-battery.md`](scp-battery.md), the decision 29
+   amendment):
+
+   ```bash
+   ./aws/probes/scp-battery.py --phase root
+   ```
+
+   Expected: 27 as expected, 0 unexpected; the global row `DENY-SCP` naming `p-1fp032g8`, the `us-west-2`
+   row `ALLOWED` on the trust's refusal. Both calls read that refusal before the apply (2026-10-27 02:32
+   UTC), no policy named.
+3. **[user] Stage 9 8.1's read-but-not-write**, as the Data Scientist User in a private window: the portal,
+   `eighth-experimentation`'s query editor with *Athena (SQL)* as the compute, which 6f 11.10 ran with no
+   space and Sandbox's `egress/` down. The subscription's resource link `glue_db_blerpkhn9nj7o0.trades`
+   points at the lake's `curated.trades`:
+
+   ```sql
+   SELECT count(*) FROM "glue_db_blerpkhn9nj7o0"."trades";
+   ```
+
+   ```sql
+   INSERT INTO "glue_db_blerpkhn9nj7o0"."trades" VALUES (DATE '2026-10-27', 'probe-8-1', 'probe', 0.0, 0.0);
+   ```
+
+   The row matches the table's five columns (`trade_date`, `desk`, `instrument`, `quantity`, `price`), so
+   the statement reaches authorization instead of stopping at its shape (Lesson 21). Expected: the count
+   answers, and the insert is refused, its wording recorded whichever layer answers first (Lesson 20),
+   Lake Formation's expected, since the project role holds `SELECT` alone through the subscription's grant.
+   A row that lands names itself (`desk = 'probe-8-1'`) and is the producer's to delete. **[Claude]** both
+   executions and the trails: Sandbox's `StartQueryExecution` as the project role with the user's source
+   identity, the read's `GetDataAccess` in both accounts, and the write's refusal with its `errorCode`:
+
+   ```bash
+   aws athena list-query-executions --work-group workgroup-avhvbqn37ty7m8-5hkjdsy3umpi1c --max-items 5 --profile awsds-infra-sandbox-1 --region us-west-2
+   ```
+
+   ```bash
+   aws athena batch-get-query-execution --query-execution-ids <the two ids> --query 'QueryExecutions[].[QueryExecutionId,Status.State,Status.StateChangeReason]' --output text --profile awsds-infra-sandbox-1 --region us-west-2
+   ```
+
+4. **[user] Production's free-trial balance** in the Redshift console, the day after xxiv's sitting: 299.54
+   of 300.00 on 2026-10-26 at about 22:45 UTC.
+
+#### N.8.2 The release sitting: `v0.4.7`, the Sandbox half and the exercises
+
+What it closes: the template's next release through both legs, with Stage 8 3.3's snapshot record read in
+Staging and Production and the deploy script in GitLab; Stage 10 decision 11's Staging half; Stage 8
+xxviii's second reading, after decision 29's apply; N.7.3's `dev` deploy from a space on version 11 with no
+export; a GitLab backup; and, each on the user's word, Stage 8 xv, Stage 10 xx's second half and Stage 8
+xxvii's plan half. While everything is up, at [`cost-model.md`](../cost-model.md)'s rates: the hub about
+0.026 USD/h, GitLab and SharedServices' twelve endpoints 0.187, the build runner 0.2117, the test and deploy
+runners 0.0376 and their volumes 0.0136, Sandbox's nineteen endpoints with the `mwaa` group 0.19, Staging's
+seven 0.07, Production's `workloads-egress/` seven 0.07 and the space 0.050, about 0.86 USD/h, plus the runs
+(cents) and AWS Config's cycle charges.
+
+1. **[Claude] The day of the tag, before the raises** (Lesson 77): the template's gates on the laptop,
+   `pip-audit` over its runtime set as the gate runs it (`pyarrow` 25.0.1 and no finding on 2026-10-27), its
+   tests, ruff and the lint at `d856982c` (45 passed and *"ok: 9 arquivo(s)"* on 2026-10-27),
+   `./scripts/check-gitlab-ci.py`; and the Amazon Linux parameter (N.1 step 3), `ami-0829b74b2a8c619b7` on
+   2026-10-27.
+2. **[user] The raises**, after this change's merge: `make hub-up`, `make gitlab-up BUILD=1`, the tunnel, and
+   Sandbox's endpoints with the MWAA Serverless group, which `test-deploy` and step 13's space both read:
+
+   ```bash
+   make up ENV=sandbox ONLY=egress GROUPS=mwaa
+   ```
+
+   **[Claude]** the other sessions told before the first raise; `./aws/cicd.py`, `./aws/egress.py
+   awsds-infra-prod awsds-infra-sandbox-1` and `make status`; Stage 8 xxvii's plan half (N.1 step 3) if the
+   parameter has moved.
+3. **[user] The mirror at `main`**, from the project folder; **[Claude]** read at `origin/main`'s commit:
+
+   ```bash
+   git push gitlab main
+   ```
+
+4. **[user] The template's merge request on `awsds/app-etl`**, from `examples/app-etl/` at `main`
+   ([`gitlab.md`](gitlab.md) "The application template", steps 1 to 4, a branch named for the change):
+   `scripts/dev-cli.sh` and its test (Stage 8 decision 22), the Glue job's snapshot record (3.3, option A:
+   `glue/transform.py`, `src/app_etl/pipeline.py`, `code/app_etl_tasks.py` and their tests), the README, and
+   the gates' `include:` at `gates-v0.6.0` (`d0b895c8`), whose gates file is `gates-v0.4.0`'s and whose
+   baseline adds decision 1's zlib pair to the scan that informs. **[Claude]** beforehand, GitLab's `main`
+   against the archive: the difference is `examples/app-etl/` from `2d3160f1`, the tree `8d50f685` merged,
+   to `main`. The branch pipeline's `test`, `secret_detection` and `pip-audit` green before the merge.
+5. **[user] `awsds/dev-env`'s merge request** from the copy under `gitlab/awsds/dev-env/` ([`gitlab.md`](gitlab.md)
+   §M): `sts-global-probe` prints each call's answer or refusal and goes on, so decision 29's refusal of the
+   first global call does not stop it before Staging's role; `./scripts/gitlab-mirror.py awsds/dev-env`
+   copies the merge back. Then, once N.8.1 step 1 has applied, *Build → Pipelines → Run pipeline* on `main`
+   with `STS_GLOBAL_PROBE` set to `1`, and *Run* on the manual job. **[Claude]** the job's log and, after the
+   trail's delay (Lesson 62), N.7.1 step 8's command: each global call refused naming `p-1fp032g8`, recorded
+   in the caller's account in `us-east-1` with its `errorCode`, and each regional call answered in
+   `us-west-2` (verification xxviii's second reading).
+6. **[user] The tag** `v0.4.7` on the template's merge, once `git ls-remote --tags` on `awsds/app-etl` reads it
+   free; Sandbox's `egress/` is up, so `test-deploy` runs on its first try. **[pipeline]** `test`,
+   `pip-audit`, `build-image`, `scan-gate`, `build-task-code`, `test-deploy`, `store-bundle`, `release`.
+   **[Claude]** after `test-deploy`, the `test` project's workflows, their versions and `Code` objects (N.1
+   step 7's commands; Stage 8 xxiii's count, 12 and 6 before the tag).
+7. **[user] `make up ENV=staging ONLY=egress`**, then `staging-gate`. **[pipeline]** `staging-check`,
+   `staging-deploy`, `staging-test`, `staging-model`.
+8. **[Claude] Staging's readings**, with the slices up: `./aws/orchestration.py` (`OR-1` to `OR-9`); Stage 8
+   3.3's record, the first `SHOW TBLPROPERTIES` against the job's Lake Formation catalog, read in the Glue
+   run's output log (*"reading … VERSION AS OF <id>"*, *"wrote …/trades.source.json, snapshot <id>"*) and in
+   the object, expected the table, an integer `snapshot_id` and `pinned` false, the same object as the
+   summary's `source`:
+
+   ```bash
+   aws s3 cp s3://awsds-staging-outputs/app-etl/work/glue/trades.source.json - --profile awsds-infra-staging --region us-west-2
+   ```
+
+   ```bash
+   aws s3 cp s3://awsds-staging-outputs/app-etl/work/job/trades.summary.json - --profile awsds-infra-staging --region us-west-2 | jq .source
+   ```
+
+   A refusal of `SHOW TBLPROPERTIES` fails the run naming the table, at `staging-test`, before the gate.
+9. **[user] Stage 10 decision 11's Staging half**, with Staging's workflows up: the Deployment Manager's read
+   of a run, N.7.4 step 3 with a Staging profile, added once, its account id read from the infrastructure
+   user's profile and written into no file of the repository:
+
+   ```bash
+   aws configure set sso_session awsds-deploy --profile awsds-deploy-staging
+   aws configure set sso_account_id "$(aws configure get sso_account_id --profile awsds-infra-staging)" --profile awsds-deploy-staging
+   aws configure set sso_role_name DeploymentManagerAccess --profile awsds-deploy-staging
+   aws configure set region us-west-2 --profile awsds-deploy-staging
+   ```
+
+   Then `aws sso login --sso-session awsds-deploy --no-browser`, answered in a private window as the
+   Deployment Manager User, and:
+
+   ```bash
+   W=$(aws mwaa-serverless list-workflows --profile awsds-deploy-staging --region us-west-2 --query "Workflows[?Name=='awsds-staging-wf-app-etl'].WorkflowArn | [0]" --output text)
+   R=$(aws mwaa-serverless list-workflow-runs --workflow-arn "$W" --profile awsds-deploy-staging --region us-west-2 --max-results 1 --no-paginate --query 'WorkflowRuns[0].RunId' --output text)
+   aws mwaa-serverless get-workflow-run --workflow-arn "$W" --run-id "$R" --profile awsds-deploy-staging --region us-west-2 --query 'RunDetail.RunState' --output text
+   ```
+
+   Expected `SUCCESS`. **[Claude]** Staging's trail: the `Decrypt` paired with the `GetWorkflowRun`, `invokedBy
+   airflow-serverless.amazonaws.com`, in the Deployment Manager's session, with no error.
+10. **[user] `make up ENV=production ONLY=workloads-egress`**, then `production-gate`. **[pipeline]**
+    `production-deploy`, the three schedules staying `DISABLED`.
+11. **[Claude⚡] Production's app-etl chain**, on the user's word (N.1 step 11's command), followed to its end;
+    3.3's record in Production, step 8's two reads on `awsds-prod-outputs` with `awsds-infra-prod`. The two
+    legs' snapshot ids are equal unless the producer wrote between them: a parity observed, not enforced
+    (option A).
+12. **The exercises**, each on the user's word (N.4's table):
+    Stage 8 xv, the proxy stopped alone and a promotion job retried, before the downs; and Stage 10 xx's
+    second half, a branch's tag `v0.4.8` whose `GlueJobOperator` names a Glue job no application slice
+    declares, its design read against the lint's `glue` rule first so that it reaches Staging's leg rather
+    than stopping at `test`, as verification ix's first break did; **[Claude]** the failure rules'
+    `TriggeredRules` and the diagnosis from the APIs before any `make down ENV=staging`, Production
+    untouched, the branch deleted after.
+13. **The Sandbox half** (N.7.3), Sandbox's `egress/` up since step 2:
+    - **[user]** the persona's GitLab token (N.3 step 2); the space, `eighth-experimentation`'s JupyterLab
+      space set to `awsds-sandbox-dev-env` version 11 (alias `0.10.0`) on `ml.t3.medium` in its settings
+      before *Start*, then a terminal;
+    - **[user]** the activation hook's reading, which no build can take, and the endpoint's name:
+
+      ```bash
+      type -a aws-smus-cicd-cli; aws-smus-cicd-cli --version; getent hosts airflow-serverless.us-west-2.api.aws; printenv NO_PROXY | tr , '\n' | grep -c .
+      ```
+
+      expected `/opt/awsds/bin/aws-smus-cicd-cli` first, 1.0.9, a `10.20.x` address and 73;
+    - **[user]** the clone (N.3 step 5's command), then [`sagemaker-application.md`](sagemaker-application.md)
+      §D steps 3, 5, 6 and 7 with `scripts/dev-cli.sh` and no `NO_PROXY` export, `JOB_IMAGE_URI` the image
+      `v0.4.7`'s `build-image` pushed, by digest;
+    - **[Claude]** 2.1's reads (N.3 step 7) and the run to its end, and the proxy's log silent on the name
+      over the deploy's minutes:
+
+      ```bash
+      aws logs filter-log-events --log-group-name /awsds/prod/proxy --start-time <the deploy's minute, epoch ms> --filter-pattern airflow-serverless --profile awsds-infra-prod --region us-west-2
+      ```
+
+14. **[Claude] 3.7**: the four `release.tf`s with `v0.4.7`'s values (the two application slices' tag, image
+    digest and bundle SHA256; the two orchestration slices' tag and each workflow's definition and code
+    `VersionId`s, from the legs' `*-release.auto.tfvars.json` artifacts), each slice planning `No changes`,
+    in a change the user merges; the mirror pushed after the merge.
+15. **[user] A GitLab backup** by hand in a Session Manager shell ([`gitlab.md`](gitlab.md) §B), or the timer's
+    at 03:00 UTC with the host up; **[Claude]** read in the bucket.
+16. **The downs**: **[user]** the token revoked and `git credential-cache exit` in the terminal, every portal
+    tab closed, then `make down ENV=sandbox`, `make down ENV=staging`, `make down ENV=production
+    ONLY=workloads-egress`, `make gitlab-down`, the tunnel down, `make hub-down`; **[Claude]** §R on the three
+    profiles, `./aws/cicd.py`, `./aws/orchestration.py`, `make status`, and each step's entry in its stage's
+    log.
+
+#### N.8.3 The warehouse and backup sitting, between 2026-11-22 and 2026-11-25
+
+What it closes: `EXC-13`'s Production half, whether the database took the password the admin secret's first
+rotation wrote; the free trial's pair of readings around a warehouse sitting; and a GitLab backup before
+the newest, of 2026-10-26 22:15 UTC, leaves the bucket on 2026-11-26. A release sitting inside the window
+carries the backup, and the Sandbox warehouse's owed items (the waiting list's Warehouse row) can ride the
+same hub start, each after its decision.
+
+1. **[Claude] The rotation**, with nothing up, expected `LastRotatedDate` on 2026-11-22:
+
+   ```bash
+   aws secretsmanager describe-secret --secret-id 'redshift!awsds-prod-warehouse-dbadmin' --query '[LastRotatedDate,NextRotationDate]' --output text --profile awsds-infra-prod --region us-west-2
+   ```
+
+2. **[user]** the free trial's Production balance; `make hub-up`; then:
+
+   ```bash
+   make up ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift
+   ```
+
+3. **[Claude]** `./aws/warehouse.py awsds-infra-prod --sql`: its database half signs in as `dbadmin` through
+   the secret, so a session answering means the database took the rotated password, as Sandbox's did
+   (2026-10-25); a refusal of the password is `EXC-13`'s finding.
+4. **[user]** `make down ENV=production ONLY=workloads-egress,warehouse-compute`; `make gitlab-up RUNNERS=0`, a
+   backup by hand ([`gitlab.md`](gitlab.md) §B), `make gitlab-down`; the tunnel down and `make hub-down`.
+   **[Claude]** the backup in the bucket and §R. **[user]** the balance after the last half-hour interval
+   has closed and again the next day.
 
 ## Q. After the quotas: Stage 10's pass 3
 
