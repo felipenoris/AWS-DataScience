@@ -1012,10 +1012,10 @@ Each costs minutes of a sitting and leaves a recorded reading; none holds up ano
 
 | Exercise | Sitting | The act | The reading |
 |---|---|---|---|
-| Stage 8 xv | N.1 | the proxy host stopped alone, a `.promotion` job retried, the proxy started again | the job's own check failing in about 20 s, *"no answer through the proxy"* |
+| Stage 8 xv | N.8.2 step 12b, on `v0.4.7` or later | the proxy host stopped alone, `staging-check` retried, the proxy started again and the job retried | the job's own check failing in about 20 s, *"no answer through the proxy"*, which the template's check gives only since the fix of 2026-10-28 (12b) |
 | Stage 8 xxviii's active half | N.1 | an `AssumeRole` of a deploy role through `sts.amazonaws.com`: a manual job on the deploy runner, or xvi's 15 s trust widening | `us-east-1`'s trail and, for the widened principal, whether the misuse rule fires; a regional assumption beside it reads 4.6's transformed message |
 | Stage 9 xxiv | a warehouse sitting (N.2's raises, both computes) | N.4a: the revoke by SQL, the two adopted slices' plans read, the re-grant by SQL and their applies. **Done 2026-10-26** (Stage 9's log) | the Lake Formation rows the revoke leaves, whether the register notices, and what each adopted resource's plan reads; INT-24's door shut until the re-grant |
-| Stage 10 xx's second half | N.1, Staging | a branch's tag whose `GlueJobOperator` names a Glue job the application slice does not declare | the task failing on `CreateJob` rather than creating a job, the two failure rules firing once more |
+| Stage 10 xx's second half | N.8.2 step 12a, Staging | a branch's tag whose `GlueJobOperator` names a Glue job the application slice does not declare | the task failing on its `GetJob`, which the workflow's role is refused, before any `CreateJob`, no job created, the two failure rules firing once more |
 | Stage 10's network negative (1.2) | N.1, Staging | **[Claude⚡]** a workflow created by hand with no `NetworkConfiguration`, run once and deleted. **Done 2026-10-26** (Stage 10's log) | the worker's address in the CloudTrail record of its first AWS call, beside a configured run's private address: `10.1.11.134` through `airflow-serverless.amazonaws.com` against `10.50.x` through `vpce-…` |
 
 ### N.4a Stage 9 xxiv on the adopted datashare: the producer-side revoke
@@ -1484,9 +1484,10 @@ seven 0.07, Production's `workloads-egress/` seven 0.07 and the space 0.050, abo
 4. **[user] The template's merge request on `awsds/app-etl`**, from `examples/app-etl/` at `main`
    ([`gitlab.md`](gitlab.md) "The application template", steps 1 to 4, a branch named for the change):
    `scripts/dev-cli.sh` and its test (Stage 8 decision 22), the Glue job's snapshot record (3.3, option A:
-   `glue/transform.py`, `src/app_etl/pipeline.py`, `code/app_etl_tasks.py` and their tests), the README, and
+   `glue/transform.py`, `src/app_etl/pipeline.py`, `code/app_etl_tasks.py` and their tests), the README,
    the gates' `include:` at `gates-v0.6.0` (`d0b895c8`), whose gates file is `gates-v0.4.0`'s and whose
-   baseline adds decision 1's zlib pair to the scan that informs. **[Claude]** beforehand, GitLab's `main`
+   baseline adds decision 1's zlib pair to the scan that informs, and the two proxy checks of
+   `.gitlab-ci.yml` fixed for Stage 8 xv (step 12b). **[Claude]** beforehand, GitLab's `main`
    against the archive: the difference is `examples/app-etl/` from `2d3160f1`, the tree `8d50f685` merged,
    to `main`. The branch pipeline's `test`, `secret_detection` and `pip-audit` green before the merge.
 5. **[user] `awsds/dev-env`'s merge request** from the copy under `gitlab/awsds/dev-env/` ([`gitlab.md`](gitlab.md)
@@ -1549,13 +1550,179 @@ seven 0.07, Production's `workloads-egress/` seven 0.07 and the space 0.050, abo
     3.3's record in Production, step 8's two reads on `awsds-prod-outputs` with `awsds-infra-prod`. The two
     legs' snapshot ids are equal unless the producer wrote between them: a parity observed, not enforced
     (option A).
-12. **The exercises**, each on the user's word (N.4's table):
-    Stage 8 xv, the proxy stopped alone and a promotion job retried, before the downs; and Stage 10 xx's
-    second half, a branch's tag `v0.4.8` whose `GlueJobOperator` names a Glue job no application slice
-    declares, its design read against the lint's `glue` rule first so that it reaches Staging's leg rather
-    than stopping at `test`, as verification ix's first break did; **[Claude]** the failure rules'
-    `TriggeredRules` and the diagnosis from the APIs before any `make down ENV=staging`, Production
-    untouched, the branch deleted after.
+12. **The exercises**, each on the user's word (N.4's table), after step 11 and before the downs, with no
+    other job running: 12a, then 12b, which retries a job of 12a's pipeline. Both were prepared with
+    nothing up on 2026-10-27 and 2026-10-28 (Stage 8's and Stage 10's logs).
+
+    **12a. Stage 10 xx's second half: a Glue job no application slice declares.** Nothing between the
+    branch and the run compares a task's `job_name` with the job the application slice declares. The
+    lint's `glue` rule at `d856982c` reads a `GlueJobOperator`'s script and `--extra-*` files against the
+    allowed prefixes and, in the promoted mode, refuses the creation keys, never the name;
+    `scripts/render-workflow.py` turns `app-etl-<suffix>-{proj.id}` into `awsds-<env>-app-etl-<suffix>`;
+    `scripts/lint-plan.py` reads the slice's own job; the orchestration slice grants the workflow's role
+    `glue_jobs`, `awsds-<env>-app-etl` alone. The policy simulator on Production's `awsds-prod-wf-app-etl`,
+    the module Staging's role comes from, read 2026-10-27: `glue:GetJob` `allowed` on
+    `job/awsds-prod-app-etl` and `implicitDeny` on `job/awsds-prod-app-etl-undeclared`, `glue:CreateJob`
+    `implicitDeny` on both. The operator reads the job before it creates one and counts only
+    `EntityNotFoundException` as absent (provider 9.32.0; the lab's run of 2026-10-16 stopped at `GetJob`
+    with `AccessDenied` and no `CreateJob`), so the task is expected to stop at `GetJob` and never call
+    `CreateJob`.
+
+    1. **[user] The branch and its tag**, in step 4's clone, from `awsds/app-etl`'s `main` after step 4's
+       merge, one line changed. Read offline on 2026-10-27 and again on 2026-10-28, on a copy of
+       `examples/app-etl/` with that line:
+       ruff, 45 tests passed, the lint *"ok: 9 arquivo(s)"* with the job's options, the render for Staging
+       naming `awsds-staging-app-etl-undeclared` with no creation key, and each of the three rendered
+       copies *"ok: 1 arquivo(s)"* in the promoted mode:
+
+       ```bash
+       git -C "$HOME/tmp/app-etl" switch main && git -C "$HOME/tmp/app-etl" pull && git -C "$HOME/tmp/app-etl" switch -c xx-undeclared-glue-job
+       ```
+
+       ```bash
+       sed -i '' 's/job_name: app-etl-{proj.id}/job_name: app-etl-undeclared-{proj.id}/' "$HOME/tmp/app-etl/workflows/app-etl.yaml"
+       ```
+
+       ```bash
+       git -C "$HOME/tmp/app-etl" commit -am "Stage 10 xx: the Glue task names a job no application slice declares, a deliberate break" && git -C "$HOME/tmp/app-etl" push -u origin xx-undeclared-glue-job
+       ```
+
+       The branch pipeline's `test` green, then the tag on the branch's commit once `git ls-remote` reads
+       `v0.4.8` free, or the next free patch:
+
+       ```bash
+       git -C "$HOME/tmp/app-etl" ls-remote --tags origin 'v0.4.*'
+       ```
+
+       ```bash
+       git -C "$HOME/tmp/app-etl" tag v0.4.8 && git -C "$HOME/tmp/app-etl" push origin v0.4.8
+       ```
+
+    2. **[pipeline]** `test` to `release`, as in step 6. `test-deploy` is expected green: in the `test`
+       project the operator reads `app-etl-undeclared-<the test project's id>` under
+       `GetAGlueJobNoProjectHolds` (`sandbox/workflows/`), finds it absent and creates it with the project's
+       tag, the way `app-etl-<id>` was created on 2026-10-16. That job is the exercise's residue in
+       Sandbox, and the `test` project's `app-etl` workflow keeps the branch's definition until the next
+       tag's `test-deploy`.
+    3. **[user]** `staging-gate`. **[pipeline]** `staging-check`; `staging-deploy`, the promoted lint `ok`
+       on each copy and `lint-plan` *"ok: 1 job(s) do Glue: aws_glue_job.this[0]"*, both applies;
+       `staging-test` expected to fail with *"FATAL: the chain app-etl ended FAILED"*; `staging-model` and
+       every Production job skipped.
+    4. **[Claude] The diagnosis from the APIs**, before any `make down ENV=staging`, which destroys both
+       `[E]` slices and the failure rules with them. The execution is the one `staging-test`'s log names:
+
+       ```bash
+       aws stepfunctions describe-execution --execution-arn <the execution> --query '[status,error,cause]' --output text --profile awsds-infra-staging --region us-west-2
+       ```
+
+       ```bash
+       W=$(aws mwaa-serverless list-workflows --profile awsds-infra-staging --region us-west-2 --query "Workflows[?Name=='awsds-staging-wf-app-etl'].WorkflowArn | [0]" --output text)
+       R=$(aws mwaa-serverless list-workflow-runs --workflow-arn "$W" --profile awsds-infra-staging --region us-west-2 --max-results 1 --no-paginate --query 'WorkflowRuns[0].RunId' --output text)
+       aws mwaa-serverless list-task-instances --workflow-arn "$W" --run-id "$R" --profile awsds-infra-staging --region us-west-2
+       ```
+
+       ```bash
+       aws mwaa-serverless get-task-instance --workflow-arn "$W" --run-id "$R" --task-instance-id <transform's id> --profile awsds-infra-staging --region us-west-2
+       ```
+
+       Expected: `transform` `FAILED` in seconds, its stream in `/awsds/staging/wf/app-etl` holding the
+       operator's *"Checking if job already exists: awsds-staging-app-etl-undeclared"* and an
+       `AccessDeniedException` on `GetJob`, and no *"Creating job"*. Then the trail, after its delay
+       (Lesson 62); the refused `GetJob` is the positive control of the `CreateJob` lookup's zero:
+
+       ```bash
+       aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=GetJob --start-time <staging-test's start> --profile awsds-infra-staging --region us-west-2 --query 'Events[].CloudTrailEvent' --output json | jq -r '.[] | fromjson | [.eventTime, .userIdentity.arn, (.errorCode // "-"), (.errorMessage // .requestParameters.jobName)] | @tsv'
+       ```
+
+       ```bash
+       aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=CreateJob --start-time <staging-test's start> --profile awsds-infra-staging --region us-west-2 --query 'length(Events)'
+       ```
+
+       Expected: the workflow role's `GetJob` on the undeclared name refused, and 0. The failure rules and
+       the topic over the run's window, as N.0 step 2 read them:
+
+       ```bash
+       for rule in awsds-staging-wf-app-etl-failed awsds-staging-chain-app-etl-failed; do aws cloudwatch get-metric-statistics --namespace AWS/Events --metric-name TriggeredRules --dimensions Name=RuleName,Value=$rule --start-time <staging-test's start> --end-time <its end plus 10 minutes> --period 60 --statistics Sum --profile awsds-infra-staging --region us-west-2; done
+       ```
+
+       ```bash
+       aws cloudwatch get-metric-statistics --namespace AWS/SNS --metric-name NumberOfNotificationsDelivered --dimensions Name=TopicName,Value=awsds-staging-alerts --start-time <staging-test's start> --end-time <its end plus 10 minutes> --period 60 --statistics Sum --profile awsds-infra-staging --region us-west-2
+       ```
+
+       Expected each rule `Sum` 1 and two notifications delivered. Production is untouched when its job
+       still reads `v0.4.7`'s prefix and the undeclared name does not exist there (read 2026-10-28:
+       `v0.4.6`'s prefix and *"Job not found"*):
+
+       ```bash
+       aws glue get-job --job-name awsds-prod-app-etl --query 'Job.Command.ScriptLocation' --output text --profile awsds-infra-prod --region us-west-2
+       ```
+
+       ```bash
+       aws glue get-job --job-name awsds-prod-app-etl-undeclared --profile awsds-infra-prod --region us-west-2
+       ```
+
+    5. **After the readings**: **[user]** the branch deleted in GitLab; **[Claude⚡]** on the user's word, the
+       Sandbox residue, its name read first:
+
+       ```bash
+       aws glue get-jobs --query "Jobs[?starts_with(Name, 'app-etl-undeclared-')].Name" --output text --profile awsds-infra-sandbox-1 --region us-west-2
+       ```
+
+       ```bash
+       aws glue delete-job --job-name <the name> --profile awsds-infra-sandbox-1 --region us-west-2
+       ```
+
+       The tag `v0.4.8` stays spent. Step 14 records `v0.4.7`'s values, never the `*-release.auto.tfvars.json`
+       of `v0.4.8`'s pipeline. **[Claude]** `terraform-modules/orchestration/workflows.tf`'s comment on
+       `RunTheApplicationsGlueJobs` says an undeclared name reaches `CreateJob`; it is brought to the
+       reading in the module's next tag.
+
+    **12b. Stage 8 xv: the proxy stopped alone.** Through `v0.4.6` the template's check could not see a
+    stopped proxy (read 2026-10-27 and 2026-10-28, Stage 8's log). The `.promotion` check read
+    `sts.us-west-2.amazonaws.com`, a name the deploy runner's `NO_PROXY` carries since VPC-SharedServices'
+    `egress/` holds an `sts` endpoint (the `vpc-egress` core): the runner's regional `AssumeRole` calls of
+    2026-10-26 21:51:42 and 21:51:46 UTC came from `10.30.20.81` through `vpce-0bf41975f9312dbc0`, its
+    global ones of 21:51:43 and 21:51:47 from the proxy's `44.244.33.52`. Under the job's `set -eu`, a
+    failed `code="$(curl …)"` also ends the script with curl's own status before the `if`: on the laptop,
+    against a proxy that does not answer, the old check exited 28 after 20 s with nothing printed, and with
+    the STS name in `NO_PROXY` it read `302` in 1 s and passed. A `.promotion` job of `v0.4.6` would pass
+    the check and fail at its first call through the proxy, `uv run`'s download from PyPI, since the deploy
+    image holds no project environment and the runner mounts no uv cache. The fix rides step 4's merge
+    request: both checks read the SageMaker API, which VPC-SharedServices holds no endpoint for (Stage 7
+    decision 9), with `|| true` inside the substitution; against a proxy that does not answer, the fixed
+    check printed the FATAL line and exited 1 after 20 s (2026-10-28).
+
+    The laptop is on the split-tunnel profile: under the monitored one a stopped proxy leaves it no path to
+    AWS ([`vpn.md`](vpn.md) §C7), and step 3's start could not reach EC2. While the proxy is stopped no
+    runner and no space reaches the internet; GitLab answers through the tunnel, `.awsds.internal`
+    bypassing the proxy.
+
+    1. **[user] The stop**, the proxy host alone, from the project folder as the infrastructure user
+       (`awsds-infra-prod`, account Production, `InfrastructureAccess`); **[Claude]** the host read
+       `stopped`:
+
+       ```bash
+       ./scripts/slices.py down --env production --only proxy
+       ```
+
+       ```bash
+       aws ec2 describe-instances --filters Name=tag:Name,Values=awsds-prod-proxy --query 'Reservations[].Instances[].[InstanceId,State.Name]' --output text --profile awsds-infra-prod --region us-west-2
+       ```
+
+    2. **[user] The negative**: *Retry* on `staging-check` in 12a's pipeline, already failed, or in
+       `v0.4.7`'s when 12a is not run, which the positive turns green again. The job reads Staging's
+       `egress/` and nothing else, and every `.promotion` job runs the same check first. Expected about
+       20 s after the job starts, before the clone: *"FATAL: no answer through the proxy: is the hub up
+       (make hub-up)?"*, exit 1.
+    3. **[user] The start**; **[Claude]** the host read `running`, by step 1's command:
+
+       ```bash
+       ./scripts/slices.py up --env production --only proxy
+       ```
+
+    4. **[user] The positive**, a minute after `running`: *Retry* on the same job, expected *"the proxy
+       answers (<code>)"*, the clone's commit and the job green. **[Claude]** both runs' times and lines,
+       from the job logs.
 13. **The Sandbox half** (N.7.3), Sandbox's `egress/` up since step 2:
     - **[user]** the persona's GitLab token (N.3 step 2); the space, `eighth-experimentation`'s JupyterLab
       space set to `awsds-sandbox-dev-env` version 11 (alias `0.10.0`) on `ml.t3.medium` in its settings

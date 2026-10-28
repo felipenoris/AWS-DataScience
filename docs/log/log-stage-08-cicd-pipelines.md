@@ -4306,3 +4306,44 @@ was told before the apply. Times UTC.*
   `AWS_STATE.md`, the waiting list and `promotion.md` §N.6 and §N.8.1. The statement's measurement is
   `sts-global-probe` at the next GitLab sitting (§N.8.2 step 5): the deploy roles trust the runner, so a refusal
   of its global call can only be the baseline's.
+
+## 2026-10-27 and 2026-10-28 — verification xv read with nothing up; the template's proxy checks fixed for `v0.4.7`
+
+*Claude's hand, at the request to prepare `promotion.md` §N.8.2 step 12 with nothing up: AWS as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), reads only; the shell readings on the
+laptop with no tunnel; the template's change on the user's word in chat, *"Sim, corrigir"* (2026-10-28), to the
+question whether the template's proxy checks are fixed before `v0.4.7`. Times UTC.*
+
+- **[Claude] What the check reads** (2026-10-27, before 03:34): `.promotion`'s `before_script` curls
+  `https://sts.us-west-2.amazonaws.com/`. VPC-SharedServices' `egress/` holds an `sts` endpoint (the
+  `vpc-egress` core, twelve endpoints in all), and the runners' `NO_PROXY` is that slice's generated `no_proxy`,
+  every name its endpoints answer for. Production's trail, the `AssumeRole` calls of the `sts-global-probe` job
+  (#649) on 2026-10-26: the regional ones of 21:51:42 (`awsds-deploy-prod`) and 21:51:46 (`awsds-deploy-staging`)
+  from `10.30.20.81` through `vpce-0bf41975f9312dbc0`, host `sts.us-west-2.amazonaws.com`; the global ones of
+  21:51:43 and 21:51:47, in `us-east-1`, from `44.244.33.52`, the proxy's address, with no endpoint. So the
+  check is answered by the endpoint whether the proxy runs or not.
+- **[Claude] What `set -eu` does to it** (2026-10-27, before 03:34): `set -eu; code="$(…)"` with a command that
+  exits 28 ends the script with 28 and runs nothing after it, in bash and in sh, and so does a `curl --max-time
+  3` to an address that never answers. The `if [ "$code" = "000" ]` behind both of the template's checks is
+  never reached when curl fails.
+- **[Claude] What a `.promotion` job of `v0.4.6` would meet instead**: its first call through the proxy. The
+  deploy image sets `UV_PYTHON_DOWNLOADS=never` and holds no project environment, and the deploy runner mounts
+  no uv cache into a job, so `uv run` downloads the infrastructure repository's dev group and its packages'
+  build backend from PyPI in every job that runs a script (read in `gitlab/awsds/deploy-image/Dockerfile` and
+  `deploy-user-data.sh.tftpl`, not measured).
+- **[Claude] The fix**, in `examples/app-etl/.gitlab-ci.yml` (2026-10-28): both checks read
+  `https://sagemaker.<region>.amazonaws.com/`, which VPC-SharedServices holds no endpoint for (Stage 7 decision
+  9) and which `awsds/dev-env`'s `register` already reads, with `|| true` inside the substitution; `.promotion`
+  prints *"the proxy answers (<code>)"* on success, and the comment above it names what the runner reaches
+  through the proxy. Step 3.1's design, one request to an AWS name outside the runner's `NO_PROXY`, is
+  unchanged; the template had stopped meeting it. `./scripts/check-gitlab-ci.py` OK.
+- **[Claude] Read on the laptop** (2026-10-28, 22:17 to 22:19), each check's `before_script` lines without the
+  clone, `DOMAIN_REGION=us-west-2`: the fixed check against a proxy that does not answer
+  (`HTTPS_PROXY=http://10.255.255.1:3128`) printed *"FATAL: no answer through the proxy: is the hub up (make
+  hub-up)?"* and exited 1 after 20 s, and with no proxy *"the proxy answers (404)"*, exit 0; the old check
+  against the same proxy exited 28 after 20 s with nothing printed, and with `sts.us-west-2.amazonaws.com` in
+  `NO_PROXY` it read `302` in 1 s and went on.
+- **[Claude] The exercise**, `promotion.md` §N.8.2 step 12b, on `v0.4.7` or later: the proxy host stopped alone
+  (`./scripts/slices.py down --env production --only proxy`, the user's), `staging-check` retried, the start and
+  the positive retry, on the split-tunnel profile, since a stopped proxy leaves a laptop on the monitored one no
+  path to AWS. Step 4's merge request carries the fix, and verification xv's row reads the defect.
