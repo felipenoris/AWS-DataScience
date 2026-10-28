@@ -510,6 +510,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   measurements in `SMUS.md`'s deployment-project section and `lessons.md`. Left: the domain's two `IAM`
   profiles, a group profile and 44 lineage events (no delete API), and the project key until 2026-11-21
   (the protected refs read free of its branch on 2026-10-26).
+- **Stage 19 written 2026-10-28, nothing run** (`stage-19-smus-native-data-product.md`): a data product
+  produced and published by a SageMaker application on SMUS's native path under the user's four premises;
+  the catalog reviewed across the plan; twelve decisions due, the user's, decision 6 (where the promoted
+  product lives; (a) the lake through `governed-lake` recommended) the hinge. Read 2026-10-28: the
+  consumer's daily `DataLake` source imported the subscription's resource link as an inventory asset
+  (2026-10-27 21:32 UTC, the 6f follow-up's check); a portal *Create database* is one `DataLake`
+  environment per database, with no subscription target; no Redshift subscription target and no federated
+  catalog exist anywhere.
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes

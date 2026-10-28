@@ -1137,7 +1137,8 @@ Staging reads nothing of Production's outputs (`TM-25`).
    moment it carries its tags; a `restricted` table, or a `restricted` column, stays out of the default
    share and is read through an explicit grant to enumerated principals, one register row each.
 4. After the first write, the table is published in the SageMaker Catalog with its business metadata by
-   the owner project (Stage 6f decision due 1, its shape open).
+   `governed-lake`, the Governance Manager's project in Data Governance (Stage 6f decision 1, shape (b),
+   taken 2026-10-26; `curated.trades` published at 11.6 the same day).
 
 The authoritative product never lives in Production: the table is in the lake's catalog and the
 lake's bucket. Production's local outputs, the model artifacts among them, stay in Production. The
@@ -1162,10 +1163,10 @@ for each kind of task in each stage; where one term is missing, the reach is abs
 
 | From | In `dev` and `test` (Sandbox) | In Staging and Production |
 |---|---|---|
-| a Glue task | the project role on the project's two Glue network connections, under the project key; reads and writes the project's `shared/<app>/`; the lake only once the project role holds a grant (6f decision 1, none today) | the job role on `glue_connection_name` of `<env>/sagemaker/`, in the job security group `awsds-<env>-jobs`; reads the lake through Lake Formation's vended credentials (the share's `SELECT`), writes the outputs bucket and `app_outputs`; in Production, writes `curated`'s declared tables and connects to the warehouse over JDBC through the `redshift-serverless` endpoint |
+| a Glue task | the project role on the project's two Glue network connections, under the project key; reads and writes the project's `shared/<app>/`; the lake's tables a subscription fulfilled for the project, through their resource links in the project's `DataLake` database (`curated.trades` in `eighth-experimentation` since 6f 11.9, 2026-10-26) | the job role on `glue_connection_name` of `<env>/sagemaker/`, in the job security group `awsds-<env>-jobs`; reads the lake through Lake Formation's vended credentials (the share's `SELECT`), writes the outputs bucket and `app_outputs`; in Production, writes `curated`'s declared tables and connects to the warehouse over JDBC through the `redshift-serverless` endpoint |
 | a processing or training job | the project role, the project's subnets and group, network isolation; the image pulled by SageMaker's side from Production's registry by digest; inputs and outputs staged by the platform from the project prefix | the job role, the job subnets and group, network isolation, the data key; inputs and outputs staged from the outputs bucket; no lake bucket, ever (D13) |
 | a Python or Bash task on the worker | the project role in the project's network: AWS through the VPC endpoints, S3 through the gateway endpoint, no internet, no proxy | `awsds-<env>-wf-<key>` on `awsds-<env>-wf-workers` in the private subnets: the interface endpoints of `workloads-egress/` (`egress/` in Staging), the S3 gateway, the declared prefixes of the outputs bucket, the data key for its XCom; no internet, no proxy |
-| Athena | a person in the project's query editor, as the project role on the project's enforced workgroup: the project's tables; the lake's links once the project role holds a grant | the persona through `awsds-prod-athena` on `app_outputs` and the lake's `public` and `internal` tables, from any network; Staging's persona set holds no Athena action; no task in the template calls Athena, and the execution role holds no grant for it |
+| Athena | a person in the project's query editor, as the project role on the project's enforced workgroup: the project's tables; the lake's tables the project subscribed to, through their resource links (6f 11.10, 2026-10-26) | the persona through `awsds-prod-athena` on `app_outputs` and the lake's `public` and `internal` tables, from any network; Staging's persona set holds no Athena action; no task in the template calls Athena, and the execution role holds no grant for it |
 | Redshift | the sandbox warehouse through the project's connection, the Data page as the access role and a notebook through it (`redshift-connection.md` §J); the governed warehouse through the datashare alone, since Sandbox does not peer with `VPC-Workloads` | Production's job role over JDBC as `IAMR:awsds-prod-job-exec`; the deploy role through the Data API for the DDL; the persona refused a session (`DenyMintingARedshiftDatabaseSession`) |
 | S3 | the project prefix; the sandbox lake through the project's S3 connection; the drop-box's `PutObject` as the persona from a laptop, never read back | the outputs and derived buckets; the lake's buckets only through Lake Formation's credentials in a Glue job; the release store read by the runner's own role |
 | GitLab | a space clones over the `Sandbox ↔ VPC-SharedServices` peering, `gitlab.awsds.internal` answered by the apex zone every VPC is associated with, with a persona's personal access token and git's credential helpers reset (INT-09, measured 2026-10-26; §D) | the deploy runner clones the mirror with the job token; no task reaches it |
@@ -1184,9 +1185,11 @@ product lives in the lake, not in Production, and every account reads that one l
   account's tables through one TBAC share, `restricted` excluded, so what a data scientist reads in
   Sandbox is what the application reads in Production, in place: no copy of Production's data is made
   for development (Lesson 1). Today the share's local re-grants in Sandbox name the persona, whose set
-  carries no Athena action since D19's revision, and no project role holds a grant (6f decision 1), so a
-  governed lake row is read from Sandbox through the warehouse's datashare alone, and the first read of
-  a governed table by an application is Staging's leg.
+  carries no Athena action since D19's revision; a project role holds what a subscription fulfilled for its
+  project (`eighth-experimentation`'s `SELECT` on `curated.trades` since 6f 11.9, 2026-10-26, read from the
+  query editor at 11.10), so a governed lake row is read from Sandbox through that subscription or through
+  the warehouse's datashare, and the first read of a governed table by an application's job is still
+  Staging's leg.
 - **Production's outputs stay in Production.** The persona reads the application's result file under
   `<app>/outbox/` and its `app_outputs` tables through Athena, and nothing else of `awsds-prod-outputs`;
   a read outside the named prefixes is refused by the bucket policy
