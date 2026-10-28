@@ -477,6 +477,7 @@ São Paulo as in Oregon.
 | **Redshift Serverless** compute (USD per RPU-hour) | 0.5976 | **0.36** | 1.66 |
 | — at `base_capacity = 4`, the documented floor (USD per hour **a query runs**) | 2.3904 | **1.44** | 1.66 |
 | — a workgroup serving no query | 0.00 | **0.00** | — |
+| — data lake queries from Serverless (`awsdatacatalog`, Iceberg, Spectrum-shaped): *"not billed for separately and are included in the amount billed for Amazon Redshift Serverless in RPU-hr amounts"* (the pricing page, read 2026-10-28 for [Stage 19](plan/stages/stage-19-smus-native-data-product.md)) | included | **included** | — |
 | Redshift Managed Storage, serverless (USD/GB-mo) | 0.043 | 0.024 | 1.79 |
 | — a schema filled to its 1 TB quota (USD/month) | 41.47 | **24.58** | 1.79 |
 | Redshift serverless paid snapshots (USD/GB-mo) | 0.0405 | 0.023 | 1.76 |
@@ -606,6 +607,7 @@ per-region entries — one price everywhere the service exists):
 | Metadata storage | 0.40 | per GiB-month |
 | Compute units (ingestion, business-name generation, data quality) | 1.776 | per compute unit; 0.2 free a month, per completed job (pricing page, 2026-10-18) |
 | AI recommendations for descriptions — input / output | 0.015 / 0.075 | per 1 000 tokens |
+| A subscription, a data product, a listing | 0.00 | no charge listed; the free tiers are 20 MB of metadata and 4,000 requests a month per account (the pricing page, read 2026-10-28 for [Stage 19](plan/stages/stage-19-smus-native-data-product.md)) |
 
 At lab scale the domain itself is **cents per month**: a single user cannot produce 100k metadata requests
 by hand, and the metadata for a lake this size is megabytes. The cost of Unified Studio is what the

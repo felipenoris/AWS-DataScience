@@ -726,6 +726,82 @@
   are unioned into one Lake Formation data cells filter, and the subscriber project gets read-only
   `SELECT` through it; for Redshift, a late-binding view:
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-with-filters.html>.
+- SageMaker Unified Studio workflows and the MWAA Serverless operators (read 2026-10-28, for
+  [Stage 19](plan/stages/stage-19-smus-native-data-product.md) question 1): the editor's "over 80 tasks"
+  and its General Purpose group:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/serverless-visual-workflows.html>;
+  the supported operators by family, the Catalog family holding `GlueCatalogCreateDatabaseOperator`,
+  `GlueCatalogCreateTableOperator`, `GlueCatalogDeleteTableOperator`, the partition sensor and the crawler
+  operators, and no DataZone operator:
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators.html>; the nineteen
+  operators announced 2026-07-08:
+  <https://aws.amazon.com/about-aws/whats-new/2026/07/apache-airflow-operators-amazon-sagemaker-unified-studio-workflows/>;
+  the provider's `GlueCatalogCreateTableOperator` (`database_name`, `table_name`, `table_input`,
+  `catalog_id`, `if_exists`), whose `execute` passes `DatabaseName`, `TableInput` and `CatalogId` alone:
+  <https://airflow.apache.org/docs/apache-airflow-providers-amazon/stable/_api/airflow/providers/amazon/aws/operators/glue_catalog/index.html>,
+  <https://airflow.apache.org/docs/apache-airflow-providers-amazon/stable/_modules/airflow/providers/amazon/aws/operators/glue_catalog.html>;
+  Glue's `CreateTable` taking `OpenTableFormatInput` beside `TableInput`:
+  <https://docs.aws.amazon.com/glue/latest/webapi/API_CreateTable.html>.
+- Publishing, data products and subscriptions in SageMaker Unified Studio (read 2026-10-28, for Stage 19
+  questions 1 and 2). The data source's publishing setting and schedule, created by API with
+  `publishOnImport`: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-data-source.html>;
+  publishing from the inventory by an owner or a contributor, the latest revision alone:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/update-metadata.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-publishing.html>; data
+  products, "a single request", publishing one publishes its assets through it alone, republishing moves
+  the subscribers' access, the owning project grants:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-products.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-new-data-product.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/publish-data-product.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/subscribe-data-product.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/review-grant-subscription-to-data-product.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/republish-data-product.html>;
+  approval by a member of the owning project, auto-approval when the requester is one, full or filtered
+  access: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/approve-reject-subscription-request.html>;
+  managed and unmanaged assets:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-unmanaged-asset.html>;
+  a Glue asset's fulfilment, the publisher's grants, no LF-TBAC, the subscribed table queried from
+  Athena, Redshift or Spark:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-glue-asset.html>;
+  a Redshift asset's fulfilment, grants in one database, a datashare and a view across workgroups, the
+  authorization across accounts, no cross-Region:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-redshift-asset.html>;
+  no subscription to a resource link:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/troubleshooting-issues.html>;
+  the DataZone APIs and the subscription target in a custom environment, Glue or Redshift:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateDataProduct.html>,
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateListingChangeSet.html>,
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_StartDataSourceRun.html>,
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateDataSource.html>,
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateSubscriptionRequest.html>,
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateSubscriptionTarget.html>,
+  <https://docs.aws.amazon.com/datazone/latest/userguide/configure-subscription-target-in-custom-environment.html>,
+  <https://docs.aws.amazon.com/datazone/latest/userguide/datazone-concepts.html>,
+  <https://docs.aws.amazon.com/datazone/latest/userguide/working-with-blueprints.html>.
+- The CI/CD CLI's catalog export and import (read 2026-10-28, for Stage 19 0.9 and pass 3): the
+  manifest's `catalog` content, the same-name assumption, the asynchronous listing failure, and the
+  stages in different domains, accounts and Regions:
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/README.md>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/manifest.md>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/cli-commands.md>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/catalog-import-export-guide.md>;
+  the stages, each its own project, and the application resources the page names:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd.html>; 1.0.9 still the
+  latest on PyPI: <https://pypi.org/project/aws-smus-cicd-cli/>.
+- The lakehouse in SageMaker Unified Studio (read 2026-10-28, for Stage 19 question 3): catalogs mounted
+  as databases in Redshift, RMS and federated catalogs, the project profiles the lakehouse needs, *Query
+  with Amazon Redshift*, *Publish to catalog*:
+  <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/lakehouse-how.html>,
+  <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/onboarding-data-sagemaker-lakehouse.html>,
+  <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/lakehouse-get-started.html>,
+  <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/rms-integration.html>,
+  <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/lakehouse-publish.html>;
+  the blueprints `RedshiftServerless`, `LakehouseCatalog` and `DataLake`, and the SQL analytics profile:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/supported-blueprints.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/sql-analytics.html>; the
+  Redshift compute connection and its prerequisites (the tags, the `RedshiftDbUser` tag across accounts,
+  the VPC rule): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/compute-redshift.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/compute-prerequisite-redshift.html>.
 
 - S3 Access Grants locations — registering a location (the location role's trust to `access-grants.s3.amazonaws.com`, the `s3:AccessGrantsInstanceArn` self-restriction pattern, and the KMS `Decrypt`/`GenerateDataKey` statement the location role needs for SSE-KMS data — Stage 16 step 2.1's shape); Access Grants assumes the location's role to vend a grantee's credentials, which is why the vended session's ARN names the access role: <https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-location-register.html>, <https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-location.html>. Read 2026-08-26.
 
@@ -1253,6 +1329,52 @@
   vend reads: <https://docs.aws.amazon.com/lake-formation/latest/dg/full-table-credential-vending.html>.
 
 - Redshift and the Glue Data Catalog, both directions (read 2026-09-13, for Stage 6f's institutional pattern). A Redshift provisioned cluster or serverless namespace registered to the Data Catalog becomes a federated catalog (namespace → multi-level catalog, database → catalog, schema → database, table → table), governed by Lake Formation and queried by Iceberg-compatible engines such as Athena and EMR Serverless: <https://docs.aws.amazon.com/lake-formation/latest/dg/managing-namespaces-datacatalog.html>. Redshift reads the Data Catalog through the `awsdatacatalog` database (RA3 or Serverless; `data_catalog_auto_mount`), and *"Queries against the `awsdatacatalog` database can only be read-only"*: <https://docs.aws.amazon.com/redshift/latest/mgmt/query-editor-v2-glue.html>. The crawler's data stores: S3, DynamoDB, Delta Lake, Iceberg and Hudi natively; Amazon Redshift, Snowflake, Aurora, MariaDB, SQL Server, MySQL, Oracle and PostgreSQL over JDBC; MongoDB, MongoDB Atlas and DocumentDB through the MongoDB client: <https://docs.aws.amazon.com/glue/latest/dg/crawler-data-stores.html>.
+- Redshift as the warehouse for a Glue-catalog product (read 2026-10-28, for
+  [Stage 19](plan/stages/stage-19-smus-native-data-product.md) question 3 and decision 9).
+  `awsdatacatalog` from a Serverless workgroup: the federated user, `USAGE` to `IAMR:`, read-only, the
+  `CREATE TABLE AS` example, `data_catalog_auto_mount`:
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/query-editor-v2-glue.html>; the integrated data lake
+  query engine of RG and Serverless, no Spectrum charge:
+  <https://docs.aws.amazon.com/redshift/latest/gsg/data-lake.html>; Lake Formation vending to Spectrum,
+  permissions by database user, no role chaining:
+  <https://docs.aws.amazon.com/redshift/latest/dg/spectrum-lake-formation.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/c-getting-started-using-spectrum.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/RSPC-lf.html>; Iceberg v1 to v3 read, Lake
+  Formation fine-grained access on Iceberg, `INSERT INTO` or `CREATE TABLE AS` from an Iceberg table and
+  no `COPY` from one, Iceberg writes through `awsdatacatalog`:
+  <https://docs.aws.amazon.com/redshift/latest/dg/querying-iceberg.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/iceberg-writes.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/iceberg-writes-sql-syntax.html>; `COPY` from Parquet
+  and the auto-copy job on an S3 event integration:
+  <https://docs.aws.amazon.com/redshift/latest/dg/copy-usage_notes-copy-from-columnar.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/loading-data-copy-job.html>; zero-ETL sources, none of
+  them S3, Iceberg or a Glue table: <https://docs.aws.amazon.com/redshift/latest/mgmt/zero-etl-using.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/zero-etl-using.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/zero-etl-target.html>; materialized views over data lake
+  tables, incremental on Iceberg, Iceberg materialized views registered in the Data Catalog and refreshed
+  by hand, Lake Formation's changes unverified on a view:
+  <https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-create-sql-command.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-refresh.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-external-table.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-iceberg.html>; a namespace registered
+  as a federated catalog, mounted as an external database, its Region list without `US West (Oregon)`,
+  and its limits (no materialized view, no external schema):
+  <https://docs.aws.amazon.com/redshift/latest/dg/iceberg-integration_overview.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/query-redshift-fed-catalog.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/notes-ns-catalog.html>. Prices: the Oregon
+  offer file (0.36 USD per RPU-hour, 0.024 per GB-month, 5.00 per TB of data scan):
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRedshift/current/us-west-2/index.csv>;
+  the pricing page (4 to 1024 RPUs, the 60-second minimum, Serverless data lake queries included in the
+  RPU-hours, no zero-ETL fee, the 300 USD trial): <https://aws.amazon.com/redshift/pricing/>,
+  <https://aws.amazon.com/redshift/free-trial/>,
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-billing.html>; the 4 RPU floor
+  (2025-06-30): <https://aws.amazon.com/about-aws/whats-new/2025/06/amazon-redshift-serverless-4-rpu-capacity-option>;
+  DataZone's pricing (metadata 0.40 per GB-month with 20 MB free, requests 10.00 per 100,000 with 4,000
+  free, 1.776 per compute unit with 0.2 free, no charge for a subscription or a data product):
+  <https://aws.amazon.com/datazone/pricing/>; SageMaker's page naming the Catalog's charge:
+  <https://aws.amazon.com/sagemaker/pricing/>; Glue's catalog free tier and DPU-hour, Lake Formation
+  free, Athena's example rate: <https://aws.amazon.com/glue/pricing/>,
+  <https://aws.amazon.com/lake-formation/pricing/>, <https://aws.amazon.com/athena/pricing/>.
 
 - **Redshift Serverless — capacity, billing, network and audit (read 2026-09-19, for
   [D40](plan/decisions/D40-redshift-warehouse.md) and
