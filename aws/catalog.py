@@ -9,19 +9,22 @@
 #   run:      ./aws/catalog.py
 #   writes:   aws/output/catalog.txt   (untracked - see .gitignore)
 #   reads:    in Data Governance - datazone:ListDomains, GetDomain, ListProjects,
-#             ListProjectMemberships, SearchListings, GetListing, ListDataSources, GetDataSource,
-#             ListSubscriptions, ListSubscriptionRequests, ListSubscriptionGrants,
-#             ListPolicyGrants, ListLineageEvents, lakeformation:ListPermissions, ListLFTags,
-#             glue:GetDatabases; in Sandbox - lakeformation:ListPermissions, ListLFTags,
-#             glue:GetDatabases; and sts:GetCallerIdentity. Every one is a read.
+#             ListProjectMemberships, GetUserProfile, GetGroupProfile, SearchListings, GetListing,
+#             ListDataSources, GetDataSource, ListSubscriptions, ListSubscriptionRequests,
+#             ListSubscriptionGrants, ListPolicyGrants, ListLineageEvents,
+#             lakeformation:ListPermissions, GetResourceLFTags, ListLFTags, glue:GetDatabases; in
+#             Sandbox - lakeformation:ListPermissions, ListLFTags, glue:GetDatabases; and
+#             sts:GetCallerIdentity. Every one is a read.
 #   exits:    0 every check passed | 1 a call failed | 2 a check FAILED
 #
 # THE TWO ROADS AN ACCESS ACT CAN TAKE, which is what this script exists to keep apart. On the
 # catalog road a subscription or a direct Share is approved in the portal and DataZone writes a Lake
 # Formation grant in the account that owns the table (INT-23). On the register road a grant is
-# written by Terraform and carries a row in docs/AWS_STATE.md's grant register. A grant on the first
-# road with no row on the second is invisible to every review this estate performs, so section 5
-# reads both and CT-7 is the comparison.
+# written by Terraform and carries a row in docs/AWS_STATE.md's grant register. Since Stage 6f
+# decision 2 (2026-10-27) the catalog road's grants on the lake are registered by reading: DataZone's
+# subscription is each grant's record, and CT-10 is the join that fails on a grant no subscription
+# explains. Section 5 reads Lake Formation, section 6 the road's records, and CT-7 and CT-10 are the
+# comparison.
 #
 # The checks:
 #   CT-1  one domain, AVAILABLE, in the registry account - and no domain in the consumer account
@@ -31,9 +34,12 @@
 #         today; when one exists, CT-7 is what says whether it is registered.
 #   CT-4  no data source publishes on import. A publish that happens at import time is a listing
 #         nobody reviewed, and publishOnImport is the only switch that does it.
-#   CT-5  the data sources that generate business names with AI, reported with their schedule.
-#         A note until Stage 6f decision 3 settles it (Lesson 50: a check written to a stage's
-#         final expectation is red on every pass until that stage ends).
+#   CT-5  no data source over a lake database generates business names with AI. Stage 6f
+#         decision 3 (2026-10-27) keeps the generation off on every source over the governed
+#         lake; no IAM condition key reaches the flag, so this reading is the only place the
+#         setting is checked. The portal's Publish to Catalog creates its source with the flag on,
+#         so each publish is followed by update-data-source. Sources over a project's own
+#         database are the project's choice and are listed in the detail.
 #   CT-6  every scheduled data source run is one somebody chose, AND succeeds. A blueprint-created
 #         data source on a cron nobody wrote is Lesson 17's shape; one whose completed runs have all
 #         failed is EXC-11's, and the live `status` field does not show it - a run's stoppedAt is its
@@ -46,12 +52,34 @@
 #         `raw`, `curated` or `dropbox` is a second road into governed data with no row in the
 #         register. Since Stage 6f decision 1 (2026-10-26) one such road is designed: a table in
 #         PUBLISHED_LAKE_TABLES carries the publishing project role's grant and the grants DataZone
-#         fulfils, which this check lists as a note, the register's reading of them (6f decision
-#         due 2's first option); any other SMUS grant on the lake fails as before.
+#         fulfils, which this check lists as a note; CT-10 judges each of them. Any other SMUS
+#         grant on the lake fails as before.
 #   CT-8  every conditioned IAMPrincipals grant carries the project condition. An unconditioned
 #         one grants the whole account, which is what that principal means without a Condition.
 #   CT-9  nobody may override a project owner or a domain unit owner. The owner project's approval
 #         is the control on the catalog road; an override grant removes it.
+#   CT-10 every grant on a published lake table is explained, whatever its principal: the
+#         publishing project role's read with the grant option (data/publishing.tf), the
+#         administrator's and creator's, or a fulfilment - SELECT or DESCRIBE, no grant option, to
+#         the consumer account's IAMPrincipals under the context of a project that holds an
+#         APPROVED subscription to the table's listing with a COMPLETED grant. Stage 6f decision 2
+#         (2026-10-27) makes DataZone's subscription the per-grant record of the catalog road and
+#         this join its register. The publishing role may regrant what it holds with the grant
+#         option in any session (SageMakerStudioProjectUserRolePolicy's LFResourceSharingPermissions
+#         allows lakeformation:BatchGrantPermissions on * with no condition, read 2026-10-27), so a
+#         grant no subscription explains is the finding.
+#   CT-11 every access act on a lake listing went through the approval. Stage 6f decision 5
+#         (2026-10-27) allows no direct Share on the lake: each APPROVED subscription to a lake
+#         listing is a project's, comes from an ACCEPTED request whose requester is no member of
+#         the owning project and whose reviewer is its owner, and the listing requires approval.
+#         The owning project's members are its owner, an Identity Center user, its own project
+#         role and this account's InfrastructureAccess: a member can approve, and holds the
+#         project role's sessions.
+#   CT-12 what the lake publishes is the declared list, and each table on it is public or
+#         internal on the table and on every column (Stage 6f decision 2, 2026-10-27). DataZone
+#         fulfils by name and reads no LF-Tag, so a restricted column on a published table would
+#         reach every subscriber whole; restricted and personal tables travel on TBAC grants
+#         alone.
 #
 # CT-7 and CT-8 read every page of ListPermissions in both accounts: the CLI has no paginator for
 # that operation, so one call answers the first page and a NextToken. A listing not read to its
@@ -68,13 +96,15 @@
 # `arn:aws:identitystore:::user/*` on a project's database and its tables under the project
 # condition (CloudTrail BatchGrantPermissions, no failure), ListPermissions by resource omits it,
 # and asked for that principal it answers InvalidInputException, "LakeFormation Identity Center
-# Configuration not configured for requested catalog". CT-7 and CT-8 judge the role and
+# Configuration not configured for requested catalog". CT-7, CT-8 and CT-10 judge the role and
 # IAMPrincipals grants alone; a grant to an Identity Center user is read in CloudTrail or not at
-# all.
+# all. A subscription that would be fulfilled for one is a user's or a group's, which CT-11 fails
+# from DataZone's own record.
 
 from __future__ import annotations
 
 import json
+import re
 import sys
 
 from awslib import context, profiles
@@ -97,6 +127,23 @@ LAKE_DATABASES = ("raw", "curated", "dropbox")
 # A SMUS grant on one of these is the catalog road's; a table published there and missing here
 # fails CT-7, which is the reading that keeps the two lists together (Lesson 14).
 PUBLISHED_LAKE_TABLES = ("curated.trades",)
+
+# The classifications the catalog road admits on a published table and on each of its columns
+# (Stage 6f decision 2, CT-12): data/publishing.tf refuses the same at plan.
+CATALOG_ROAD_CLASSIFICATIONS = ("public", "internal")
+
+# What each kind of principal may hold on a published table (CT-10). The publisher holds the read
+# with the grant option, which DataZone's terms for a Glue table require; a fulfilment is read-only
+# and carries no grant option.
+PUBLISHER_PERMISSIONS = frozenset({"DESCRIBE", "SELECT"})
+FULFILMENT_PERMISSIONS = frozenset({"DESCRIBE", "SELECT"})
+
+# The registry account's administrator, which also creates the lake's tables and holds the
+# creator's permissions on them (AWS_STATE.md, the note under the grant register).
+ADMIN_ROLE_MARKER = "AWSReservedSSO_InfrastructureAccess_"
+
+# A data source name embeds the account id of its catalog; this mask keeps it out of the report.
+ACCOUNT_ID = re.compile(r"\b\d{12}\b")
 
 # What makes a principal SMUS-managed. The service names its own roles by prefix and writes the
 # account-wide entry as `<account>:IAMPrincipals`, which is a grant to everyone in the account
@@ -184,13 +231,180 @@ def resource_of(resource: dict) -> tuple[str, str]:
     if kind == "LFTagPolicy":
         expr = body.get("Expression") or []
         return (kind, " AND ".join(f"{e.get('TagKey')}∈{e.get('TagValues')}" for e in expr) or "-")
+    if kind == "DataCellsFilter":
+        # A subscription approved with row or column filters is fulfilled as SELECT on one data
+        # cells filter over the table, so the filter is read as a grant on that table.
+        return (kind, f"{body.get('DatabaseName', '-')}.{body.get('TableName', '-')}")
     return (kind, "-")
+
+
+TABLE_KINDS = ("Table", "TableWithColumns", "DataCellsFilter")
+
+
+def mask_account(text: str) -> str:
+    """A name without the account id DataZone embeds in it."""
+    return ACCOUNT_ID.sub("ACCOUNT", text)
+
+
+def condition_project(expression: str) -> str:
+    """The project id a SMUS grant's Cedar condition names, or empty when it names none."""
+    m = re.search(r'context\.datazone\.projectId\s*==\s*"([^"]+)"', expression or "")
+    return m.group(1) if m else ""
+
+
+def listing_forms(body: dict) -> dict:
+    """GetListing's forms, which the API returns as a JSON string inside the asset listing."""
+    raw = ((body.get("item") or {}).get("assetListing") or {}).get("forms")
+    if isinstance(raw, dict):
+        return raw
+    return json_or_none(raw) or {}
+
+
+def explain_grant(
+    row: tuple,
+    registry_account: str,
+    consumer_account: str,
+    listed_owner: str,
+    fulfilled_projects: set,
+) -> str:
+    """Why a grant on a published lake table exists, or empty when nothing explains it (CT-10).
+
+    `row` is a section-5 grant row; `listed_owner` the project that owns the table's listing, empty
+    before the table is listed; `fulfilled_projects` the projects holding an APPROVED subscription
+    to that listing whose grant is COMPLETED."""
+    _, ident, _, _, perms, grantable, cond = row
+    held = set(perms.split("+")) if perms != "-" else set()
+    regrant = set(grantable.split("+")) if grantable != "-" else set()
+    if ADMIN_ROLE_MARKER in ident and f":{registry_account}:" in ident:
+        return "the administrator, the table's creator"
+    if f":{registry_account}:role/{PROJECT_ROLE_MARKER}" in ident:
+        project = ident.split(f":role/{PROJECT_ROLE_MARKER}", 1)[1].split("_", 1)[0]
+        if listed_owner and project != listed_owner:
+            return ""
+        if held <= PUBLISHER_PERMISSIONS and regrant <= PUBLISHER_PERMISSIONS:
+            return "the publishing project role's declared read (data/publishing.tf)"
+        return ""
+    if ident.endswith(IAM_PRINCIPALS_SUFFIX):
+        account = ident[: -len(IAM_PRINCIPALS_SUFFIX)]
+        project = condition_project(cond)
+        if (
+            account == consumer_account
+            and project in fulfilled_projects
+            and held <= FULFILMENT_PERMISSIONS
+            and not regrant
+        ):
+            return f"the fulfilment of {project}'s approved subscription"
+    return ""
+
+
+def road_problems(
+    lake_listings: list,
+    subscriptions: list,
+    requests: dict,
+    members: dict,
+    profiles_by_id: dict,
+) -> list:
+    """What breaks CT-11's rule on the lake road, one sentence per finding.
+
+    `lake_listings` holds (listing id, table, owning project, approvalRequired); `subscriptions`
+    (listing id, table, subscription id, status, principal kind, project id, request id);
+    `requests` maps an ACCEPTED request id to (requester, reviewer); `members` maps a project id
+    to its (kind, member id, designation, principal ARN or "-") rows; `profiles_by_id` maps a
+    user profile id to (type, IAM ARN or "-")."""
+    problems = []
+    owner_of = {lid: owner for lid, _, owner, _ in lake_listings}
+    for lid, table, owner, approval in lake_listings:
+        if approval != "YES":
+            problems.append(
+                f"{table}'s listing reads approvalRequired {approval}: every request is approved at creation"
+            )
+    for project, rows in members.items():
+        owners = [r for r in rows if r[2] == "PROJECT_OWNER"]
+        if (
+            len(owners) != 1
+            or owners[0][0] != "user"
+            or profiles_by_id.get(owners[0][1], ("-",))[0] != "SSO"
+        ):
+            problems.append(f"{project} has {len(owners)} owner(s), not one Identity Center user")
+        for kind, mid, designation, arn in rows:
+            if designation == "PROJECT_OWNER":
+                continue
+            own_role = (
+                kind == "user"
+                and f":role/{PROJECT_ROLE_MARKER}{project}_"
+                in profiles_by_id.get(mid, ("-", "-"))[1]
+            )
+            admin_group = kind == "group" and ADMIN_ROLE_MARKER in arn
+            if designation != "PROJECT_CONTRIBUTOR" or not (own_role or admin_group):
+                problems.append(
+                    f"{project} counts a member outside the design: {kind} {mid} as {designation}"
+                )
+    for lid, table, sid, status, kind, project, rid in subscriptions:
+        if status != "APPROVED":
+            continue
+        if kind != "project":
+            problems.append(
+                f"subscription {sid} to {table} is a {kind}'s: Lake Formation lists no grant to an Identity Center principal"
+            )
+            continue
+        if rid not in requests:
+            problems.append(
+                f"subscription {sid} to {table} has no ACCEPTED request: a direct Share"
+            )
+            continue
+        requester, reviewer = requests[rid]
+        owner = owner_of.get(lid, "")
+        rows = members.get(owner, [])
+        member_ids = {mid for k, mid, _, _ in rows if k == "user"}
+        member_roles = {arn for k, _, _, arn in rows if k == "group" and arn != "-"}
+        requester_arn = profiles_by_id.get(requester, ("-", "-"))[1]
+        if requester in member_ids or requester_arn in member_roles:
+            problems.append(
+                f"subscription {sid} to {table} was requested by a member of {owner}: a Share or a self-approval"
+            )
+        owner_ids = {mid for k, mid, d, _ in rows if k == "user" and d == "PROJECT_OWNER"}
+        if reviewer not in owner_ids:
+            problems.append(
+                f"subscription {sid} to {table} was approved by {reviewer}, not by {owner}'s owner"
+            )
+    return problems
+
+
+def classes(entries: list) -> list:
+    """The classification values in a list of LF-Tag entries."""
+    return [
+        v
+        for e in entries or []
+        if e.get("TagKey") == "classification"
+        for v in e.get("TagValues") or []
+    ]
+
+
+def table_classes(tags: dict) -> list:
+    """A table's own classification, or its database's when the table carries none."""
+    return classes(tags.get("LFTagsOnTable")) or classes(tags.get("LFTagOnDatabase"))
+
+
+def classification_problems(table: str, tags: dict) -> list:
+    """What breaks CT-12's rule on one published table, from GetResourceLFTags's answer."""
+    problems = []
+    on_table = table_classes(tags)
+    if not on_table:
+        problems.append(f"{table} carries no classification")
+    for v in on_table:
+        if v not in CATALOG_ROAD_CLASSIFICATIONS:
+            problems.append(f"{table} is {v}")
+    for col in tags.get("LFTagsOnColumns") or []:
+        for v in classes(col.get("LFTags")):
+            if v not in CATALOG_ROAD_CLASSIFICATIONS:
+                problems.append(f"{table}.{col.get('Name', '-')} is {v}")
+    return problems
 
 
 def on_catalog_road(principal: str, kind: str, name: str, permissions: str) -> bool:
     """True for a SMUS grant the lake-publishing pilot designs: any grant on a published table, and
     a project role's DESCRIBE alone on the database that holds one (data/publishing.tf)."""
-    if kind in ("Table", "TableWithColumns"):
+    if kind in TABLE_KINDS:
         return name in PUBLISHED_LAKE_TABLES
     if kind == "Database":
         holders = {t.split(".", 1)[0] for t in PUBLISHED_LAKE_TABLES}
@@ -385,6 +599,7 @@ def main(argv: list) -> int:
 
     # ---------------------------------------------------------------- the data sources
     sources: list = []
+    source_dbs: dict = {}  # data source id -> the databases its Glue filter names (CT-5)
     for pid, pname in projects.items():
         res = dat.run(
             "datazone",
@@ -410,10 +625,15 @@ def main(argv: list) -> int:
                 "json",
             )
             body = json_or_none(res.stdout) or {}
+            glue_run = (body.get("configuration") or {}).get("glueRunConfiguration") or {}
+            source_dbs[dsid] = [
+                f.get("databaseName", "-")
+                for f in glue_run.get("relationalFilterConfigurations") or []
+            ]
             sources.append(
                 (
                     pname,
-                    body.get("name", "-"),
+                    mask_account(body.get("name", "-")),
                     body.get("type", "-"),
                     bool(body.get("publishOnImport")),
                     bool((body.get("recommendation") or {}).get("enableBusinessNameGeneration")),
@@ -463,12 +683,39 @@ def main(argv: list) -> int:
         )
 
     # ---------------------------------------------------------------- CT-5 AI business names
-    ai_on = [n for _, n, _, _, ai, _, _, _, _ in sources if ai]
-    checks.note(
-        "CT-5",
-        "the data sources that generate business names with AI",
-        f"{', '.join(ai_on) if ai_on else 'none'} - Stage 6f decision 3 decides whether this stays on",
+    lake_ai = [
+        f"{n} in {p}"
+        for p, n, _, _, ai, _, _, _, d in sources
+        if ai and set(source_dbs.get(d, [])) & set(LAKE_DATABASES)
+    ]
+    project_ai = [
+        n
+        for _, n, _, _, ai, _, _, _, d in sources
+        if ai and not set(source_dbs.get(d, [])) & set(LAKE_DATABASES)
+    ]
+    lake_sources = [d for d, dbs in source_dbs.items() if set(dbs) & set(LAKE_DATABASES)]
+    elsewhere = (
+        f"; over a project's own database: {', '.join(project_ai)}, the project's choice"
+        if project_ai
+        else ""
     )
+    if not sources:
+        checks.note("CT-5", "no source over the lake generates business names", "no source read")
+    elif lake_ai:
+        checks.fail(
+            "CT-5",
+            "no source over the lake generates business names",
+            f"{', '.join(lake_ai)} - Stage 6f decision 3 keeps the generation off on every lake "
+            "source; update-data-source --recommendation enableBusinessNameGeneration=false"
+            + elsewhere,
+        )
+    else:
+        checks.ok(
+            "CT-5",
+            "no source over the lake generates business names",
+            f"{len(lake_sources)} source(s) over the lake, each with the generation off"
+            + elsewhere,
+        )
 
     # ---------------------------------------------------------------- CT-6 the schedules
     # The first draft of this check read the schedule and stopped there, and passed over 26 days of
@@ -687,6 +934,309 @@ def main(argv: list) -> int:
             "both override policy types are empty; approval stays with the owner project",
         )
 
+    # ---------------------------------------------------------------- the catalog road's records
+    # A listing is the lake's when its Glue table form names a lake database in the registry
+    # account's catalog. SearchListings carries no form, so each Glue table listing is read whole.
+    road_unread: list = []  # the reads CT-10 and CT-11 could not make; an absence there proves nothing
+    lake_listings: list = []  # (listing id, "<db>.<table>", owning project, approvalRequired)
+    for lid, _, etype, owner, _ in listings:
+        if etype != "GlueTableAssetType":
+            continue
+        res = dat.run(
+            "datazone",
+            "get-listing",
+            "--domain-identifier",
+            domain_id,
+            "--identifier",
+            lid,
+            "--output",
+            "json",
+            tolerate="AccessDeniedException",
+        )
+        if not res.ok:
+            road_unread.append(f"GetListing {lid}")
+            continue
+        forms = listing_forms(json_or_none(res.stdout) or {})
+        glue = forms.get("GlueTableForm") or {}
+        if (
+            glue.get("catalogId") != registry_account
+            or glue.get("databaseName") not in LAKE_DATABASES
+        ):
+            continue
+        lake_listings.append(
+            (
+                lid,
+                f"{glue.get('databaseName')}.{glue.get('tableName', '-')}",
+                owner,
+                (forms.get("SubscriptionTermsForm") or {}).get("approvalRequired", "-"),
+            )
+        )
+
+    road_subs: list = []  # (listing id, table, subscription id, status, principal kind, project, request)
+    road_requests: dict = {}  # ACCEPTED request id -> (requester, reviewer)
+    completed: dict = {}  # listing id -> subscription ids whose grant is COMPLETED
+    for lid, table, _, _ in lake_listings:
+        for verb, extra in (
+            ("list-subscriptions", ()),
+            ("list-subscription-requests", ("--status", "ACCEPTED")),
+            ("list-subscription-grants", ()),
+        ):
+            res = dat.run(
+                "datazone",
+                verb,
+                "--domain-identifier",
+                domain_id,
+                "--subscribed-listing-id",
+                lid,
+                *extra,
+                "--output",
+                "json",
+            )
+            if not res.ok:
+                road_unread.append(f"{verb} {lid}")
+                continue
+            for item in (json_or_none(res.stdout) or {}).get("items", []):
+                if verb == "list-subscriptions":
+                    principal = item.get("subscribedPrincipal") or {}
+                    road_subs.append(
+                        (
+                            lid,
+                            table,
+                            item.get("id", "-"),
+                            item.get("status", "-"),
+                            next(iter(principal), "-"),
+                            (principal.get("project") or {}).get("id", "-"),
+                            item.get("subscriptionRequestId") or "-",
+                        )
+                    )
+                elif verb == "list-subscription-requests":
+                    road_requests[item.get("id", "-")] = (
+                        item.get("createdBy", "-"),
+                        item.get("reviewerId", "-"),
+                    )
+                elif item.get("status") == "COMPLETED":
+                    completed.setdefault(lid, set()).add(item.get("subscriptionId", "-"))
+
+    # The publishing projects' members, each resolved to what it is: an approver holds the project
+    # role's sessions too, so the membership is the boundary of who can regrant a published table.
+    road_members: dict = {}  # project id -> [(kind, member id, designation, role ARN or "-")]
+    profiles_by_id: dict = {}  # user profile id -> (type, IAM ARN or "-")
+
+    def profile(user_id: str) -> tuple:
+        if user_id not in profiles_by_id:
+            res = dat.run(
+                "datazone",
+                "get-user-profile",
+                "--domain-identifier",
+                domain_id,
+                "--user-identifier",
+                user_id,
+                "--output",
+                "json",
+            )
+            body = json_or_none(res.stdout) or {}
+            if not res.ok:
+                road_unread.append(f"GetUserProfile {user_id}")
+            profiles_by_id[user_id] = (
+                body.get("type", "-"),
+                ((body.get("details") or {}).get("iam") or {}).get("arn", "-"),
+            )
+        return profiles_by_id[user_id]
+
+    for project in sorted({owner for _, _, owner, _ in lake_listings}):
+        res = dat.run(
+            "datazone",
+            "list-project-memberships",
+            "--domain-identifier",
+            domain_id,
+            "--project-identifier",
+            project,
+            "--output",
+            "json",
+        )
+        if not res.ok:
+            road_unread.append(f"ListProjectMemberships {project}")
+            continue
+        rows = []
+        for m in (json_or_none(res.stdout) or {}).get("members", []):
+            details = m.get("memberDetails") or {}
+            if "user" in details:
+                uid = (details.get("user") or {}).get("userId", "-")
+                profile(uid)
+                rows.append(("user", uid, m.get("designation", "-"), "-"))
+            else:
+                gid = (details.get("group") or {}).get("groupId", "-")
+                res = dat.run(
+                    "datazone",
+                    "get-group-profile",
+                    "--domain-identifier",
+                    domain_id,
+                    "--group-identifier",
+                    gid,
+                    "--output",
+                    "json",
+                )
+                if not res.ok:
+                    road_unread.append(f"GetGroupProfile {gid}")
+                body = json_or_none(res.stdout) or {}
+                rows.append(
+                    ("group", gid, m.get("designation", "-"), body.get("rolePrincipalArn") or "-")
+                )
+        road_members[project] = rows
+    for requester, _ in road_requests.values():
+        profile(requester)
+
+    # The classification of every table the road covers, table and columns, read live.
+    road_tables = sorted(set(PUBLISHED_LAKE_TABLES) | {t for _, t, _, _ in lake_listings})
+    classifications: dict = {}  # table -> GetResourceLFTags's answer
+    for table in road_tables:
+        db, name = table.split(".", 1)
+        res = dat.run(
+            "lakeformation",
+            "get-resource-lf-tags",
+            "--resource",
+            json.dumps({"Table": {"DatabaseName": db, "Name": name}}),
+            "--show-assigned-lf-tags",
+            "--output",
+            "json",
+        )
+        if res.ok:
+            classifications[table] = json_or_none(res.stdout) or {}
+        else:
+            road_unread.append(f"GetResourceLFTags {table}")
+
+    # ---------------------------------------------------------------- CT-10 every road grant explained
+    listed_owner = {t: owner for _, t, owner, _ in lake_listings}
+    listing_of = {t: lid for lid, t, _, _ in lake_listings}
+    road_rows = [
+        g for g in grant_rows if g[0] == "registry" and g[2] in TABLE_KINDS and g[3] in road_tables
+    ]
+    explained: list = []  # (row, why)
+    unexplained: list = []
+    for g in road_rows:
+        lid = listing_of.get(g[3], "")
+        fulfilled = {
+            s[5]
+            for s in road_subs
+            if s[0] == lid and s[3] == "APPROVED" and s[2] in completed.get(lid, set())
+        }
+        why = explain_grant(
+            g,
+            registry_account or "-",
+            consumer_account or "-",
+            listed_owner.get(g[3], ""),
+            fulfilled,
+        )
+        (explained if why else unexplained).append((g, why))
+    fulfilments = [g for g, why in explained if why.startswith("the fulfilment")]
+    unfulfilled = [
+        s
+        for s in road_subs
+        if s[3] == "APPROVED"
+        and not any(condition_project(g[6]) == s[5] and g[3] == s[1] for g in fulfilments)
+    ]
+    gap = (
+        f"; {len(unfulfilled)} APPROVED subscription(s) the lake holds no grant for: "
+        + ", ".join(s[2] for s in unfulfilled)
+        if unfulfilled
+        else ""
+    )
+    if unexplained:
+        checks.fail(
+            "CT-10",
+            "every grant on a published lake table is explained",
+            "; ".join(
+                f"{short_principal(g[1])} on {g[2]} {g[3]}: {g[4]}"
+                + (f" (grantable {g[5]})" if g[5] != "-" else "")
+                for g, _ in unexplained
+            )
+            + " - neither data/publishing.tf nor an approved subscription explains it",
+        )
+    elif unlisted or road_unread or not live[SANDBOX_PROFILE].live:
+        checks.note(
+            "CT-10",
+            "every grant on a published lake table is explained",
+            f"{len(explained)} explained; not read: "
+            + ", ".join(
+                [f"{w} grants" for w in unlisted]
+                + road_unread
+                + ([] if live[SANDBOX_PROFILE].live else ["the consumer account"])
+            )
+            + gap,
+        )
+    elif not road_rows:
+        checks.note(
+            "CT-10", "every grant on a published lake table is explained", "no grant on the road"
+        )
+    else:
+        checks.ok(
+            "CT-10",
+            "every grant on a published lake table is explained",
+            f"{len(road_rows)} grants on {', '.join(road_tables)}: "
+            f"{len(fulfilments)} fulfilment(s), each an approved subscription's, and "
+            f"{len(explained) - len(fulfilments)} the publisher's or the administrator's" + gap,
+        )
+
+    # ---------------------------------------------------------------- CT-11 the approvals
+    problems = road_problems(lake_listings, road_subs, road_requests, road_members, profiles_by_id)
+    approved = [s for s in road_subs if s[3] == "APPROVED"]
+    if problems:
+        checks.fail(
+            "CT-11",
+            "every access act on the lake went through the owner's approval",
+            "; ".join(problems),
+        )
+    elif road_unread:
+        checks.note(
+            "CT-11",
+            "every access act on the lake went through the owner's approval",
+            f"not read: {', '.join(road_unread)}",
+        )
+    elif not lake_listings:
+        checks.note(
+            "CT-11",
+            "every access act on the lake went through the owner's approval",
+            "nothing of the lake is published",
+        )
+    else:
+        checks.ok(
+            "CT-11",
+            "every access act on the lake went through the owner's approval",
+            f"{len(lake_listings)} lake listing(s) requiring approval, {len(approved)} approved "
+            "subscription(s), each a project's request approved by the owner, no direct Share; "
+            "the publishing projects hold their designed members alone",
+        )
+
+    # ---------------------------------------------------------------- CT-12 what the lake publishes
+    findings = [
+        f"{t} is published and absent from data/publishing.tf's list"
+        for _, t, _, _ in lake_listings
+        if t not in PUBLISHED_LAKE_TABLES
+    ]
+    for table in road_tables:
+        if table in classifications:
+            findings.extend(classification_problems(table, classifications[table]))
+    if findings:
+        checks.fail(
+            "CT-12",
+            "the lake publishes the declared list, public or internal throughout",
+            "; ".join(findings)
+            + " - DataZone fulfils by name and reads no LF-Tag (Stage 6f decision 2)",
+        )
+    elif len(classifications) < len(road_tables):
+        checks.note(
+            "CT-12",
+            "the lake publishes the declared list, public or internal throughout",
+            f"not read: {', '.join(t for t in road_tables if t not in classifications)}",
+        )
+    else:
+        checks.ok(
+            "CT-12",
+            "the lake publishes the declared list, public or internal throughout",
+            "; ".join(f"{t} {'/'.join(table_classes(classifications[t]))}" for t in road_tables)
+            + f", no column outside {' or '.join(CATALOG_ROAD_CLASSIFICATIONS)}",
+        )
+
     # ---------------------------------------------------------------- the LF-Tag ontology
     tag_rows: list = []
     for label, cli, profile in (
@@ -707,8 +1257,9 @@ def main(argv: list) -> int:
         rep.line()
         rep.text(
             "The catalog road and the register road are different systems. This report reads both:\n"
-            "sections 1 to 4 are the catalog (DataZone), section 5 is Lake Formation, and CT-7 is\n"
-            "the question of whether one has reached into the other."
+            "sections 1 to 4 are the catalog (DataZone), section 5 is Lake Formation, section 6\n"
+            "joins them on the lake's published tables, and CT-7 and CT-10 are the question of\n"
+            "whether one has reached into the other."
         )
 
         rep.h1("1. The domain")
@@ -777,28 +1328,99 @@ def main(argv: list) -> int:
             ["WHERE\tGRANTS\tPAGES\tLISTING"]
             + [
                 f"{w}\t{g}\t{p}\t"
-                + ("read to its last page" if whole else "NOT read to its last page - section 9")
+                + ("read to its last page" if whole else "NOT read to its last page - section 10")
                 for w, (g, p, whole) in lf_read.items()
             ]
         )
 
-        rep.h1("6. The LF-Tag ontology, by account")
+        rep.h1("6. The catalog road into the lake")
+        if not lake_listings:
+            rep.text("No lake table is published.")
+        else:
+            rep.tabulate(
+                ["LISTING\tTABLE\tOWNER PROJECT\tAPPROVAL REQUIRED"]
+                + [f"{lid}\t{t}\t{projects.get(o, o)}\t{a}" for lid, t, o, a in lake_listings]
+            )
+            rep.line()
+            rep.tabulate(
+                ["TABLE\tSUBSCRIPTION\tSTATUS\tPRINCIPAL\tREQUEST\tREQUESTER\tREVIEWER\tGRANT"]
+                + [
+                    f"{t}\t{sid}\t{st}\t{kind} {projects.get(p, p)}\t{rid}\t"
+                    + "\t".join(road_requests.get(rid, ("-", "-")))
+                    + f"\t{'COMPLETED' if sid in completed.get(lid, set()) else '-'}"
+                    for lid, t, sid, st, kind, p, rid in road_subs
+                ]
+            )
+            rep.line()
+            rep.tabulate(
+                ["PUBLISHING PROJECT\tMEMBER\tDESIGNATION\tPRINCIPAL"]
+                + [
+                    f"{projects.get(p, p)}\t{k} {mid}\t{d}\t"
+                    + (
+                        short_principal(arn)
+                        if arn != "-"
+                        else profiles_by_id.get(mid, ("-",))[0]
+                        + (
+                            f" {short_principal(profiles_by_id[mid][1])}"
+                            if profiles_by_id.get(mid, ("-", "-"))[1] != "-"
+                            else ""
+                        )
+                    )
+                    for p, rows in road_members.items()
+                    for k, mid, d, arn in rows
+                ]
+            )
+        rep.line()
+        rep.tabulate(
+            ["ROAD TABLE\tON THE TABLE\tON A COLUMN"]
+            + [
+                f"{t}\t"
+                + (
+                    ",".join(table_classes(classifications[t])) or "none"
+                    if t in classifications
+                    else "NOT READ"
+                )
+                + "\t"
+                + (
+                    "; ".join(
+                        f"{c.get('Name')}={v}"
+                        for c in classifications.get(t, {}).get("LFTagsOnColumns") or []
+                        for v in classes(c.get("LFTags"))
+                    )
+                    or "-"
+                )
+                for t in road_tables
+            ]
+        )
+        rep.line()
+        rep.text("Each grant on a road table, and why it exists (CT-10):")
+        rep.tabulate(
+            ["PRINCIPAL\tKIND\tTABLE\tPERMISSIONS\tWITH GRANT\tWHY"]
+            + [
+                f"{short_principal(g[1])}\t{g[2]}\t{g[3]}\t{g[4]}\t{g[5]}\t{why or 'UNEXPLAINED'}"
+                for g, why in explained + unexplained
+            ]
+        )
+
+        rep.h1("7. The LF-Tag ontology, by account")
         if not tag_rows:
             rep.text("No LF-Tag is defined in either account.")
         else:
             rep.tabulate(["WHERE\tKEY\tVALUES"] + [f"{w}\t{k}\t{v}" for w, k, v in tag_rows])
 
-        rep.h1("7. Checks")
+        rep.h1("8. Checks")
         rep.checks_table(checks)
 
-        rep.h1("8. What this report cannot see")
+        rep.h1("9. What this report cannot see")
         rep.text(
             "DataZone refuses GetAsset and GetDataProduct to InfrastructureAccess in Data Governance\n"
             "(Stage 6f 0.6), the session this report reads the domain with, so the asset behind a\n"
             "listing is read through GetListing or not at all, and a DENIED cell in section 4 is the\n"
             "permission ceiling rather than an empty policy. The Sandbox session is answered, as a\n"
-            "contributor of both projects. Whether a fulfilment grant would land where CT-7 looks is\n"
-            "unmeasured until one is made: no subscription or Share has ever run here."
+            "contributor of both projects. A fulfilment lands where CT-7 and CT-10 look (measured\n"
+            "2026-10-26, Stage 6f 11.9). A direct Share has never run here (6f 2.5): CT-11 fails on\n"
+            "a subscription with no accepted request and on one requested by a member of the owning\n"
+            "project, so either record a Share leaves is a failure."
         )
         rep.line()
         rep.text(
@@ -806,11 +1428,12 @@ def main(argv: list) -> int:
             "grants arn:aws:identitystore:::user/* on a project's database and its tables under the\n"
             "project condition (CloudTrail BatchGrantPermissions); ListPermissions by resource omits\n"
             'it, and by principal answers InvalidInputException, "LakeFormation Identity Center\n'
-            'Configuration not configured for requested catalog". CT-7 and CT-8 judge the role and\n'
-            "IAMPrincipals grants of section 5 alone."
+            'Configuration not configured for requested catalog". CT-7, CT-8 and CT-10 judge the\n'
+            "role and IAMPrincipals grants of section 5 alone; a subscription to a user or a group,\n"
+            "which would be fulfilled for an Identity Center principal, fails CT-11 instead."
         )
 
-        rep.h1("9. Calls that failed")
+        rep.h1("10. Calls that failed")
         failed_calls_epilogue(rep, errors)
 
     n_fail = checks.n_fail()

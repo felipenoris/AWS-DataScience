@@ -295,7 +295,9 @@ consumers with no invitation, which is the falsifier not firing.
 The lake-publishing pilot: `governed-lake`, a SageMaker project in this account, publishes
 `curated.trades`, and DataZone grants each approved subscription (`GOVERNANCE.md` §Grants, the catalog
 road). This file declares what DataZone needs and does not write; the fulfilment's own grants, RAM share
-and per-resource catalog policies are DataZone's, read into the register by `./aws/catalog.py` `CT-7`.
+and per-resource catalog policies are DataZone's, registered by reading (6f decision 2, 2026-10-27): the
+subscription is each grant's record, and `./aws/catalog.py` `CT-10` fails on a grant on a published table
+that neither this file nor an approved subscription explains.
 **Applied 2026-10-26**: the seats at 6f 11.3 (20:16 UTC: 1 changed, the admin list alone, `DL-5`
 holding), and the publisher's grant at 11.5 (21:06 UTC: 2 added) to `governed-lake`'s role,
 `datazone_usr_role_3j4l4xmvz7fggg_52webn93119ouo`, `lake_publisher_role`'s default.
@@ -304,7 +306,8 @@ holding), and the publisher's grant at 11.5 (21:06 UTC: 2 added) to `governed-la
 |---|---|---|
 | `data.aws_iam_role.smus_seat` → `admins` | adds the two SMUS service roles of `data-governance/publishing/` to the settings above, behind `lake_publishing_enabled` | read by name, so a seat whose role does not exist yet fails at plan, naming it (measured 2026-10-26, before 11.2) |
 | `aws_lakeformation_permissions.publisher_database` | `DESCRIBE` on `curated` to the publishing project's role, named in `lake_publisher_role` | the data source lists the table's database as that role; preconditions refuse a role while `LAKE_PUBLISHERS` is empty or one outside `awsds-data-project-boundary` |
-| `aws_lakeformation_permissions.publisher_tables` (one per `published_tables` entry) | `DESCRIBE` and `SELECT` **+ grant option** on `curated.trades` to the same role | DataZone's terms for publishing a Glue table, named rather than tagged since DataZone documents no LF-TBAC support for the assets it manages; the grant option bounds what a subscription can regrant. A `restricted` or `personal` table joins the list only after 6f decision 2 |
+| `aws_lakeformation_permissions.publisher_tables` (one per `published_tables` entry) | `DESCRIBE` and `SELECT` **+ grant option** on `curated.trades` to the same role | DataZone's terms for publishing a Glue table, named rather than tagged since DataZone documents no LF-TBAC support for the assets it manages; the grant option bounds what a subscription, or any session of the role, can regrant |
+| `local.declared_classifications` → `publisher_tables`' precondition | each lake table's classification as this slice assigns it, the table's and its columns' together; a table enters `published_tables` only when every value is `public` or `internal` | 6f decision 2: DataZone fulfils by name and reads no LF-Tag, so a `restricted` column on a published table reaches every subscriber whole. A table with no entry is refused too. Measured 2026-10-27: `sample_trades` added in the working copy is refused at plan on `counterparty` |
 
 ## `warehouse-share.tf` — the governed warehouse's share into the catalog (Stage 9 step 9.5)
 

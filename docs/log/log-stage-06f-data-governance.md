@@ -1336,3 +1336,83 @@ below; the five other sessions on the laptop were told first. Times UTC.*
   `enableBusinessNameGeneration` to false; the data access role, read from the connection, and every other
   field as before. No run; the asset `trades` still `ACTIVE`. `./aws/catalog.py` at 21:55:40Z, *"all checks
   passed"*: `CT-5` notes `mydatabase`'s source alone, `CT-4` six sources with `publishOnImport` false.
+
+## 2026-10-27 — decisions due 2 to 5 taken, the catalog road's checks written, and 11.11
+
+*Claude, in a session started from another session; the four decisions are the user's, answered in this
+session's chat. AWS read as the infrastructure user with `InfrastructureAccess` in `Data Governance
+Account` (`awsds-infra-data`) and `Sandbox Account 1` (`awsds-infra-sandbox-1`): reads,
+`iam simulate-principal-policy` and `terraform plan` alone, nothing applied and nothing written in AWS.
+Times UTC.*
+
+- **[Claude] Decision 5's input, the statement behind the fulfilment's calls.** `governed-lake`'s role
+  `datazone_usr_role_3j4l4xmvz7fggg_52webn93119ouo` carries `awsds-data-project-boundary`, no inline
+  policy and three AWS-managed ones: `SageMakerStudioProjectUserRolePolicy` (v75),
+  `SageMakerStudioProjectRoleMachineLearningPolicy` (v45) and
+  `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy`. Its trust names `datazone.amazonaws.com` and
+  `auth.datazone.amazonaws.com`, fourteen service principals under `aws:SourceAccount`, the Redshift pair
+  and the role `awsds-data-smus-provisioning`. In v75: `LFResourceSharingPermissions` allows
+  `lakeformation:BatchGrantPermissions`, `BatchRevokePermissions`, `ListPermissions`, `DescribeResource`
+  and the data cells filter actions on `*`, with no condition; `XAcctLFCreate` allows
+  `ram:CreateResourceShare` with `aws:CalledVia` `lakeformation.amazonaws.com` for the Glue resource
+  types; `XAcctRAMGlue` allows `glue:PutResourcePolicy` and `DeleteResourcePolicy` on the catalog,
+  databases and tables with `aws:CalledVia` `ram.amazonaws.com`. The simulator, with
+  `aws:RequestedRegion=us-west-2` and no other key, reads `BatchGrantPermissions` and
+  `BatchRevokePermissions` allowed by v75, `GrantPermissions`, `RevokePermissions`, `PutDataLakeSettings`,
+  `glue:PutResourcePolicy`, `CreateSubscriptionGrant` and `AcceptSubscriptionRequest` an implicit deny on
+  `*`, and gives `ram:CreateResourceShare` to v45's S3 Access Grants statement, whose `IfExists`
+  condition passes with the key absent: the simulator's attribution, not the call's. So the one decisive
+  allow is the unconditioned `BatchGrantPermissions`, bounded by what Lake Formation lets the role
+  regrant: `DESCRIBE` and `SELECT` on `curated.trades`.
+- **[Claude] The classifications, read live** with `get-resource-lf-tags --show-assigned-lf-tags`:
+  `curated.trades` `internal` on the table, nothing on a column, `layer=curated` on the database;
+  `curated.sample_trades` `internal` on the table and `restricted` on `counterparty`. DataZone fulfils by
+  name and reads no LF-Tag, so a subscription to `sample_trades` would hand over `counterparty` whole.
+- **[Claude] AWS's page on approval with filters** (SageMaker Unified Studio, *Grant access with
+  filters*): a subscription to a Glue table approved with row or column filters is fulfilled as one Lake
+  Formation data cells filter, the union of the filters, and `SELECT` granted on it. Never run here.
+- **[Claude] The road's records.** The subscription `6ubv3kbnjqjogg` `APPROVED`, its `createdBy` the
+  Governance Manager's profile; its request `blqgeezyxnosnk` `ACCEPTED`, requested by the Data Scientist
+  User's profile and reviewed by the Governance Manager's, reason *"test"*; the grant `d2zjuni9kjonio`
+  `COMPLETED`, the asset `GRANTED`. The listing `b3bagfgnvev3tc` at revision 2 carries `approvalRequired`
+  `YES` in its `SubscriptionTermsForm`, and in its `DataSourceReferenceForm` the source's configuration as
+  published, generation `true`, while the source itself reads `false`. `governed-lake`'s members: the
+  Governance Manager's `SSO` profile as owner; the project role's `IAM` profile and the group of Data
+  Governance's `InfrastructureAccess` as contributors.
+- **[Claude] `./aws/catalog.py` before**: *"all checks passed"*; `CT-7` noting the four grants of the
+  road, `CT-5` `mydatabase`'s source. `CT-7` took every grant on a published table as the road's, whatever
+  its principal, and matched none to a subscription.
+- **[Claude] The four decisions put to the user**, each with the stage file's recommendation and the
+  readings above.
+- **[user]** Decision 2: *"Por leitura; fora (Recomendado)"*. Decision 3: *"Off nas fontes do lake
+  (Recomendado)"*. Decision 4: *"Nunca, como permanente (Recomendado)"*. Decision 5: *"Proibido; detecção
+  (Recomendado)"*.
+- **[Claude] The code.** `./aws/catalog.py`: `CT-5` fails on a source over a lake database that generates
+  business names; `CT-10` judges every grant on a published lake table, whatever its principal, against
+  `publishing.tf`'s declared read, the administrator's and creator's, and the approved subscriptions with
+  a completed grant; `CT-11` reads each subscription to a lake listing against its request, the owning
+  project's owner and members, and the listing's `approvalRequired`; `CT-12` reads the published list and
+  each table's classification, table and columns; a data cells filter is read as a grant on its table;
+  source names are masked, `CT-5`'s detail having carried an account id in one since 11.6; section 6
+  prints the road. The new classifiers ran against fabricated grants and records, 34 cases, each as
+  expected; `ruff` clean. `data/publishing.tf`: a precondition on `publisher_tables` over the declared
+  classifications of each lake table.
+- **[Claude] The plans**, `data/` as `awsds-infra-data`: *"No changes. Your infrastructure matches the
+  configuration."* at 03:33:45Z. With `sample_trades` added to `published_tables` in the working copy, at
+  03:34:15Z: *"Error: Resource precondition failed"*, *"curated.sample_trades is not public or internal on
+  the table and on every column, or declares no classification here: 6f decision 2 keeps restricted and
+  personal data off the catalog road."*; the file restored.
+- **[Claude] `./aws/catalog.py` after**, 03:38:30Z: *"all checks passed"*. `CT-5` one source over the
+  lake, generation off; `CT-10` five grants on `curated.trades`, the publisher's two, the
+  administrator's two and the fulfilment; `CT-11` one listing requiring approval and one approved
+  subscription, a project's request approved by the owner; `CT-12` `curated.trades` `internal`, no column
+  outside `public` or `internal`. No account id in the report.
+- **[Claude] 11.11, what DataZone wrote, read before anything widens**: at 03:38:55Z the share
+  `LakeFormation-V5-ZKUYXYESG4` `ACTIVE`, not open to external principals, its one principal Sandbox's
+  account, its resources the lake's `catalog`, `database/*` and `table/*/*`; `glue get-resource-policies`
+  five per-resource policies, the three of 11.9 and Production's two on `curated` of 2026-10-22;
+  `glue get-resource-policy` *"Policy not found"*. `TM-27` read against the measurement.
+- **[Claude] Recorded**: the stage file (status, 11.11, decisions due 2 to 5 and their pointers);
+  `AWS_STATE.md`'s grant register (the fulfilment as a class, the share and the catalog policies as
+  DataZone's rows); `GOVERNANCE.md` §Grants' catalog road; `TM-27`; the producer README; `SMUS.md`'s
+  catalog section; Stage 11 decision 12's input; the waiting list; `aws/INDEX.md`; `REFERENCES.md`.

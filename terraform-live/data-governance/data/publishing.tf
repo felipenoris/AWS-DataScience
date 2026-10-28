@@ -1,7 +1,9 @@
 # Stage 6f step 11 - the lake published through the SageMaker Catalog (decision 1, shape (b), the
 # pilot of 2026-10-26). This file declares two things for it. The grants a subscription becomes are
-# not here: DataZone writes them as named-resource grants, acting as the publishing project's role,
-# and ./aws/catalog.py reads them into the grant register (6f decision 2's first option).
+# not here: DataZone writes them as named-resource grants, acting as the publishing project's role.
+# They are registered by reading (6f decision 2, 2026-10-27): the subscription is each grant's
+# record, and ./aws/catalog.py CT-10 fails on a grant on a published table that neither this file
+# nor an approved subscription explains.
 #
 # 1. The two SMUS administrator seats. The first environment of a project in an account writes
 #    PutDataLakeSettings as the provisioning role, adding itself and the manage-access role; in
@@ -17,9 +19,28 @@
 #    manages and fulfils a subscription by regranting what the publishing role holds.
 
 locals {
-  # The tables the publishing project may publish. One for the pilot; a second is a decision 2
-  # row (a `restricted` or `personal` table is never added here before that decision).
+  # The tables the publishing project may publish; ./aws/catalog.py's PUBLISHED_LAKE_TABLES is the
+  # same list.
   published_tables = [aws_glue_catalog_table.trades.name]
+
+  # 6f decision 2: a table enters the catalog road only when its classification and every
+  # column's are public or internal. DataZone fulfils by name and reads no LF-Tag, so a restricted
+  # column on a published table reaches every subscriber whole; restricted and personal data travel
+  # on TBAC grants alone. Each lake table's assignments as this slice declares them, the table's and
+  # its columns' together; a table with no entry here cannot be published.
+  catalog_road_classifications = ["public", "internal"]
+  declared_classifications = {
+    (aws_glue_catalog_table.trades.name) = [
+      for t in aws_lakeformation_resource_lf_tags.trades_table.lf_tag : t.value
+      if t.key == aws_lakeformation_lf_tag.classification.key
+    ]
+    (aws_glue_catalog_table.sample_trades.name) = [
+      for t in setunion(
+        aws_lakeformation_resource_lf_tags.sample_trades_table.lf_tag,
+        aws_lakeformation_resource_lf_tags.sample_trades_restricted_column.lf_tag,
+      ) : t.value if t.key == aws_lakeformation_lf_tag.classification.key
+    ]
+  }
 
   smus_admin_seats = var.lake_publishing_enabled ? [for r in data.aws_iam_role.smus_seat : r.arn] : []
 }
@@ -74,6 +95,16 @@ resource "aws_lakeformation_permissions" "publisher_tables" {
   table {
     database_name = aws_glue_catalog_database.curated.name
     name          = each.value
+  }
+
+  lifecycle {
+    precondition {
+      condition = length(lookup(local.declared_classifications, each.value, [])) > 0 && alltrue([
+        for v in lookup(local.declared_classifications, each.value, []) :
+        contains(local.catalog_road_classifications, v)
+      ])
+      error_message = "curated.${each.value} is not public or internal on the table and on every column, or declares no classification here: 6f decision 2 keeps restricted and personal data off the catalog road."
+    }
   }
 
   depends_on = [aws_lakeformation_permissions.publisher_database]

@@ -9,7 +9,7 @@ own Decisions-due table keeps the reasoning and the recommendation.
 
 | Item | Where | What it holds up |
 |---|---|---|
-| Which principal the data cells filters bind, and whether the row half is a Lake Formation RLS policy | [Stage 11](stages/stage-11-dlp.md) decision 12, re-read 2026-10-26 under 6f's (b); waits for 6f 11.9 and 6f decision 2 | pass 1's two lake applies and 2.3's proof; the code is written and creates nothing |
+| Which principal the data cells filters bind, and whether the row half is a Lake Formation RLS policy | [Stage 11](stages/stage-11-dlp.md) decision 12, re-read 2026-10-26 under 6f's (b); its inputs arrived 2026-10-27: 6f 11.9 read, and 6f decision 2 keeps `restricted` and `personal` data off the catalog road | pass 1's two lake applies and 2.3's proof; the code is written and creates nothing |
 | The three Claude 5.5 model agreements (Sonnet 4.5 is Legacy since 2026-10-08) | [6e](stages/stage-06e-claude-code-bedrock.md) decision 17, PR #108 | PR #108's applies and the image's model pins; the PR conflicts with main in `CLAUDE.md`, `docs/AWS_STATE.md` and `docs/log/INDEX.md` (read 2026-10-18), for its session to resolve when the agreements arrive |
 
 ## Decisions
@@ -17,7 +17,6 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | Item | Where | Why it matters |
 |---|---|---|
 | `TM-17`: deny `sqs:SendMessage` and Bedrock's cross-account `lambda:InvokeFunction` outside the organization, or accept the channel | Stage 11, [`threat-model.md`](threat-model.md) | the project role's AWS-managed policy reaches other accounts' `airflow-celery-*` queues and `amazon-bedrock*` functions today, and no SCP narrows it |
-| 6f decisions 2 to 5, now about a live path: how a fulfilment grant enters the register and whether restricted and personal tables may be published (2), AI generation (3), an association (4), a direct Share (5) | [6f](stages/stage-06f-data-governance.md) | step 11's widening (11.11): no second table or subscriber before 2's rule; 5's input is 11.9 |
 | Whether Sandbox's `InfrastructureAccess` stays a contributor of both Sandbox projects, added in the portal on 2026-10-15 | 6f, [6h](stages/stage-06h-redshift-connection.md) `EXC-17`, [INT-25](integrations.md) | it opens the projects' connections and assets to the infrastructure user; the instruments now read them from that session |
 | The connection's `lineageSync`, daily at 03:43 UTC and failing: off in the portal, or kept | 6h decision 3 | a query on the 1.44 USD/h meter whenever the workgroup is up at that minute |
 | The connection's database, `dev`, where a session reads no governed share: select `sandbox` in the Query editor each time, as `redshift-connection.md` §P says since 2026-10-26, or measure a member's `UpdateConnection` of it, a full-replace call (Lesson 60) | 6h, Stage 9 9.7 | a project's first governed read, refused for want of `TEMP` in `dev` (Stage 9 xxiv's positive control) |

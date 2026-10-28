@@ -721,6 +721,11 @@
   property behind the Glue lineage sync, which the API reference describes as lineage sync for tables
   managed by Glue crawlers:
   <https://docs.aws.amazon.com/datazone/latest/APIReference/API_LakehousePropertiesOutput.html>.
+- Approving a subscription with row and column filters in SageMaker Unified Studio (read 2026-10-27, for
+  Stage 6f decision 2 and Stage 11 decision 12). For a Glue table the filters applied to a subscription
+  are unioned into one Lake Formation data cells filter, and the subscriber project gets read-only
+  `SELECT` through it; for Redshift, a late-binding view:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-with-filters.html>.
 
 - S3 Access Grants locations — registering a location (the location role's trust to `access-grants.s3.amazonaws.com`, the `s3:AccessGrantsInstanceArn` self-restriction pattern, and the KMS `Decrypt`/`GenerateDataKey` statement the location role needs for SSE-KMS data — Stage 16 step 2.1's shape); Access Grants assumes the location's role to vend a grantee's credentials, which is why the vended session's ARN names the access role: <https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-location-register.html>, <https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-location.html>. Read 2026-08-26.
 

@@ -571,12 +571,12 @@ for exceptions does not apply to them. The TBAC shares stay whole for every read
 | The publisher | `governed-lake`, a project provisioned into Data Governance from the profile `lake-publishing`, owned by the Governance Manager (6f step 11) |
 | What Terraform declares | the publisher role's `DESCRIBE` on the table's database and `DESCRIBE` and `SELECT` with the grant option on each published table, one list in `data-governance/data/publishing.tf`; the two SMUS service roles as Lake Formation administrators, which the first environment in the account writes anyway |
 | What DataZone writes, at each approval | `SELECT` on the table to the consumer account's `IAMPrincipals` under the subscribing project's `context.datazone.projectId`, a RAM share of the lake's whole catalog to that account and per-resource Data Catalog policies on its `catalog`, `database/*` and `table/*/*` (`glue get-resource-policies`), the account's policy staying absent, all as the publishing role (measured 2026-10-26, 6f 11.9); in the consumer account, a resource link and `DESCRIBE` on it to the project's context (Stage 18 7.2's shape, measured across accounts on 2026-10-22) |
-| The control | the owner project's approval; the publisher's grant option bounds what DataZone can regrant |
-| Recorded in | the grant register, read by `./aws/catalog.py` `CT-7`, which lists these grants and fails on any other SMUS grant on the lake (6f decision due 2's first option) |
-| Out of it | `restricted` and `personal` tables: none is published until 6f decision due 2 rules on them, and the TBAC rule above stays their only path |
+| The control | the owner project's approval, with no direct Share on a lake listing (6f decision 5, 2026-10-27); the publisher's grant option bounds what DataZone, or any session of the publishing role, can regrant |
+| Recorded in | the grant register by class: DataZone's subscription is each fulfilment's record (6f decision 2, 2026-10-27). `./aws/catalog.py` `CT-10` fails on a grant on a published table that neither `publishing.tf` nor an approved subscription explains, `CT-11` on an access act that skipped the owner's approval, and `CT-7` on any other SMUS grant on the lake |
+| Out of it | `restricted` and `personal` data, on a table or on a column (6f decision 2): `data/publishing.tf` refuses such a table at plan, `CT-12` reads the live tags, and the TBAC rule above stays their only path. AI name generation, off on every source over the lake (6f decision 3, `CT-5`) |
 
 The pilot is one `internal` table, `curated.trades`, subscribed by `eighth-experimentation`; what DataZone
-writes is read before anything widens (6f step 11.11).
+wrote was read before anything widened (6f step 11.11, 2026-10-27).
 
 ## Drop-box
 
@@ -819,7 +819,8 @@ What changes in the infrastructure, per new curated table:
   naming tables would take a row per product.
 - **In the catalog, one grant per published table** (§Grants, the catalog road): the publisher's, in
   `data-governance/data/publishing.tf`. Every subscription after it is DataZone's grant, with no apply.
-  A `restricted` or `personal` table is not published before Stage 6f decision due 2 rules on it.
+  A table with `restricted` or `personal` data, on the table or on a column, is never published (Stage
+  6f decision 2, 2026-10-27): the slice's plan refuses it.
 
 The Governance Manager's place in the cycle is the taxonomy and the tags (this section), the approval
 of every tag and data grant in the register, and the approvals in the catalog (`docs/ORGANIZATION.md`

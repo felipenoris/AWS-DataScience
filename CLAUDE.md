@@ -408,9 +408,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Governance Manager created `governed-lake`, whose environment wrote no Lake Formation setting, and
   approved `eighth-experimentation`'s subscription in the portal; 11.6 to 11.9 done (`trades` published,
   the target, the subscription, the fulfilment read), 11.10 the read from the query editor, the source's
-  generation off; a rollback leaves the projects bucket and one registration (the Data OU's deny). No IAM
-  condition key reaches business-name generation, decision 3's last input (PR #187); each
-  project's `Tooling` data source fails daily (`EXC-11`); `sagemaker-prereqs-v0.8.0` gives the manage-access
+  generation off; **decisions 2 to 5 taken 2026-10-27 as recommended, 11.11 done**: a fulfilment is
+  registered by reading (the subscription its record, `catalog.py` `CT-10`), `restricted` and `personal`
+  stay off the road on table and column (`publishing.tf`'s precondition, `CT-12`), generation off on lake
+  sources (`CT-5`), no standing association, no direct Share (`CT-11`); a rollback leaves the projects
+  bucket and one registration (the Data OU's deny). Each project's `Tooling` data source fails daily (`EXC-11`); `sagemaker-prereqs-v0.8.0` gives the manage-access
   role the Glue policy every `DataLake` environment failed without, applied 2026-10-20; decision 6 taken:
   `test-experimentation` holds an `ACTIVE` `DataLake` environment, `eighth-experimentation`'s failed record
   waits for 2.7. **6g** owes 2.4's Athena
