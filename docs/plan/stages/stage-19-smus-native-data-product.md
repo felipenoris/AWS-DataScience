@@ -121,7 +121,7 @@ retire, or a decision for the user, named by its number in Decisions due. The re
 | Item | Today | Under the premises |
 |---|---|---|
 | `GOVERNANCE.md` §Catalogs, §Access control, §Grants | "A publish writes to the third column only"; TBAC the default, named grants "for the exceptions"; a grant is a triple registered one row per grant | **amend** at close (step 6): the road's named grant is the product's default; the register carries fulfilments by class since 6f decision 2 |
-| `GOVERNANCE.md` §LF-Tags, §Assigning the LF-Tags | "An untagged curated table ... is invisible to the default grants"; "A curated table exists before its first write"; "The rite below is designed and not yet exercised" (stale: `curated.trades` written 2026-10-23) | **decision 4** for the carrier; the rite's declaration and its publisher-list act retire for a product under P3 and decision 6 (a) |
+| `GOVERNANCE.md` §LF-Tags, §Assigning the LF-Tags | "An untagged curated table ... is invisible to the default grants"; "A curated table exists before its first write"; "The rite below is designed and not yet exercised" (stale: `curated.trades` written 2026-10-23) | **decision 4** for the carrier; the rite's table declaration retires for a product under P3 and decision 6 (a); its publisher-list act stays under (a2) and retires under (a1) |
 | `GOVERNANCE.md` §The development cycle | nodes 4, 7 and 8: the register, TBAC readers, the governed table published after Production; line 737 "until a lake table is published" (stale since 2026-10-26, the 6f follow-up's) | **amend** at close: publication at node 2, consumers through subscriptions |
 | `GOVERNANCE.md` §Publishing and sharing | "Staging and Production are never associated (D26), so a deployment target neither publishes nor subscribes" | **keep** under decision 6 (a) and (c); rewritten under (b) |
 | `SMUS.md` §The catalog surface, §The CI/CD tool | the road's readings of 2026-10-26/27; the CLI "deploys only into projects that already exist"; no `data product`, `subscription target`, `awsdatacatalog` or Redshift asset anywhere | **amend** at close with pass 2's product readings, the targets read 2026-10-28, and pass 5 |
@@ -144,7 +144,7 @@ retire, or a decision for the user, named by its number in Decisions due. The re
 | Item | Today | Under the premises |
 |---|---|---|
 | `examples/app-etl/` | `manifest.yaml` with `storage` and `workflows`, no `catalog`; `transform.py`'s `write_table` writes Parquet by path, no catalog call; no task touches the catalog; `render-workflow.py` removes keys, never a task; `test-deploy` empties the `test` project's `app-etl/` prefix before each deploy | **amend** (pass 1, decisions 1 to 3, 8): the Iceberg write into `{env.PRODUCT_DATABASE}`, the publishing task, the render's task-drop rule, `content.catalog`; a table registered in `test`'s catalog survives the prefix's emptying |
-| `data-governance/data/` | `curated.trades` declared with `open_table_format_input`, tagged `internal`; `publishing.tf`'s per-table list and precondition; the write share without `CREATE_TABLE` | untouched for a product in Sandbox; decision 6 (a) amends the share and the publisher's grain |
+| `data-governance/data/` | `curated.trades` declared with `open_table_format_input`, tagged `internal`; `publishing.tf`'s per-table list and precondition; the write share without `CREATE_TABLE` | untouched for a product in Sandbox; decision 6 (a) amends the share, and the publisher's grain is its sub-choice (a1)/(a2), whose costs the decision states |
 | `<env>/data/` | `app_outputs`; `CREATE_TABLE` to the deploy role, the job role `SELECT`, `INSERT`, `DELETE`, `ALTER`, `DESCRIBE` | decision 6: `CREATE_TABLE` to the job role, the declaration retired |
 | `<env>/app/app-etl/` | `aws_glue_catalog_table.trades_notional`, Parquet, byte-identical in both targets (`check-copies.py`) | decision 6: retired; the Glue job stays |
 | `terraform-modules/orchestration/` | the per-workflow role's five Glue job actions, no `glue:*Table*`, no `datazone:`, no `redshift` | **keep**; decision 8 keeps the publishing task out of the targets |
@@ -211,7 +211,11 @@ teardown leaves (8.1 to 8.6); USD 1.52 for the window. The design that honours t
 portal in every environment makes the lake the promoted product's home: Production's job creates the
 table in `curated` (a `CREATE_TABLE` on the database to the job role, one declaration for every future
 table, not one per table), `governed-lake`'s source over `curated` imports it on its schedule, and the
-Governance Manager publishes it, the act 6f 7.2 owes an automation. Staging's copy stays unpublished,
+Governance Manager publishes it, the act 6f 7.2 owes an automation; the publisher's grant stays per
+table, one `data-governance/data/` apply per product carrying its tag, or moves to the database grain
+at the cost decision 6 states (6f decision 2's plan-time refusal turned into `CT-12`'s detection, the
+`restricted` column of `sample_trades` grantable, the publishing role's unconditioned regrant reaching
+every `curated` table before it is classified). Staging's copy stays unpublished,
 read by the integration test in `app_outputs` as today. The consumer side is unchanged: a Sandbox
 project subscribes and the owner approves. That is decision 6, recommended as (a).
 
@@ -389,9 +393,11 @@ coordinated with the session holding Stages 8-10.
 - **4.1 [Claude] The grants**: `production_write_database` gains `CREATE_TABLE`; `job_curated_write`'s
   regrant too; `staging/data/` and `production/data/` move `CREATE_TABLE` on `app_outputs` from the
   deploy role to the job role, and the `DROP` Lesson 75 needs for `make down`; the application slices
-  drop `aws_glue_catalog_table.trades_notional`; `publishing.tf` grants the publisher at the database
-  grain, its precondition reading the live tags of every published table through `CT-12` instead of a
-  list. Planned, applied on the user's word, each re-planned `No changes`.
+  drop `aws_glue_catalog_table.trades_notional`; `publishing.tf` at the grain decision 6 picks: under
+  (a2) the product table joins `published_tables` with its tag assignment, one apply after the job's
+  first run and before 4.4, the precondition reading its declared classification; under (a1) the grant
+  moves to the database and `CT-12` reads the live tags after the fact. Planned, applied on the user's
+  word, each re-planned `No changes`.
 - **4.2 [Claude] The render**: `PRODUCT_DATABASE` renders to `app_outputs` in Staging and to
   `lake.curated` in Production, through the Iceberg catalog the job's `--conf` names; the publishing
   task is dropped by decision 8's rule; `staging-test` reads the table the run created.
@@ -399,9 +405,10 @@ coordinated with the session holding Stages 8-10.
   table created by the job in each target (`glue:CreateTable` by `awsds-<env>-job-exec`), its Iceberg
   metadata in `curated`, and `data-governance/data/`'s re-plan.
 - **4.4 [user] The publication from the lake**: `governed-lake`'s source over `curated` runs on its
-  schedule or by the Governance Manager's hand (decision 7), who publishes the new asset; the Governance
-  Manager tags the table `classification=internal` by hand if decision 4 keeps the tag for lake tables.
-  **[Claude] reads** the import, the listing, and `CT-10` to `CT-12` on it.
+  schedule or by the Governance Manager's hand (decision 7), who publishes the new asset, after 4.1's
+  apply under (a2) declared the table's tag and its row, or, under (a1), after the Governance Manager
+  tagged it by hand (decision 4 (c)). **[Claude] reads** the import, the listing, and `CT-10` to `CT-12`
+  on it.
 - **4.5 [user] A Sandbox project subscribes**, the pilot's shape (6f 11.8 to 11.10). **[Claude] reads**
   the fulfilment against 6f 11.9's.
 
@@ -442,7 +449,8 @@ Waits on decision 9. Under its recommendation, a warehouse sitting inside a Sand
   `GOVERNANCE.md:737` is the 6f follow-up's.
 - **6.3 [Claude] The threat model**: an entry for the product road, the subscriber's full-table vend
   (xi), the re-listing channel (0.5), a materialized view that outlives a revoke (question 3), with the
-  checks of 6.1 as its triggers.
+  checks of 6.1 as its triggers; under decision 6 (a1), `TM-27`'s bound and triggers rewritten for the
+  database grain.
 - **6.4 [Claude] `PRICING.md`** with pass 5's measured `ComputeSeconds` and the source runs' compute
   units; `cost-model.md`'s per-sitting row.
 
@@ -511,15 +519,41 @@ Waits on decision 9. Under its recommendation, a warehouse sitting inside a Sand
    it (Stage 18 6.1). **Recommended: a third project, and the Governance Manager as a member of the owner
    project** for this stage's approvals, 6f 4.3 read in the same act.
 6. **Where the promoted product lives.** (a) **the lake**: Production's job creates `curated.<table>`
-   (`CREATE_TABLE` to the job role, one declaration), `governed-lake` publishes it, a Sandbox project
-   subscribes; Staging's job creates its table in `app_outputs`, unpublished; the targets stay
-   unassociated. (b) **a project per deployment target**, alternative B: the association, the `Tooling`
+   (`CREATE_TABLE` on `curated` to the job role, one declaration for every future table), `governed-lake`
+   publishes it, a Sandbox project subscribes; Staging's job creates its table in `app_outputs`,
+   unpublished; the targets stay unassociated. The publisher's grain under (a) is a choice of its own:
+   `publishing.tf` today grants `governed-lake`'s role `DESCRIBE` and `SELECT` with the grant option per
+   table of `published_tables`, and refuses at plan a table or column tagged `restricted` or `personal`
+   (6f decision 2, 2026-10-27, measured with `sample_trades` in the working copy).
+   - **(a1) the database grain**: one grant with the grant option on every table of `curated`, present
+     and future, no apply per product. Its cost, each piece re-read on 2026-10-28: the plan-time
+     refusal becomes detection after the fact, `CT-12` reading each published table's live tags; the
+     role holds the grant option on `sample_trades` too, whose column `counterparty` is `restricted`,
+     and DataZone fulfils by name and reads no LF-Tag, so a published `sample_trades` would reach its
+     subscribers whole; `SageMakerStudioProjectUserRolePolicy` v75's `LFResourceSharingPermissions`
+     allows `lakeformation:BatchGrantPermissions` on `*` with no condition (6f decision 5's input), so
+     any session of the publishing role can regrant what it holds with no listing and no approval
+     between, and a table Production's job creates is regrantable the moment it exists, before anyone
+     classifies it; `TM-27`'s residual widens from `publishing.tf`'s list to the whole database, and
+     step 6.3 rewrites its bound and its triggers (a `CT-12` failure on any `curated` table, a grant on
+     one outside an approved subscription, `CT-10`). 6f decision 2 is reopened by it.
+   - **(a2) the per-table list kept**: the job creates the table, and before `governed-lake` publishes
+     it the table joins `published_tables` with its tag assignment (`aws_lakeformation_resource_lf_tags`,
+     a resource on a table Terraform did not create) in one `data-governance/data/` apply as
+     `awsds-infra-data`, so the precondition reads a declared classification; a tag assigned by hand
+     alone (decision 4 (c)) leaves it nothing to read and `CT-12` the only reader. The gate, the regrant
+     bound and `TM-27` hold as written. Its cost is one apply per product table, a Terraform act on a
+     grant and a tag, never on the table, which is also the moment the Governance Manager's
+     classification is recorded.
+
+   (b) **a project per deployment target**, alternative B: the association, the `Tooling`
    configuration, the `datazone:*` carve-out, the CLI deploying every stage, Stage 18's measured price
    (question 2). (c) **the targets as today**: the Terraform table, nothing published from Production,
-   the native cycle Sandbox's alone. **Recommended: (a)**: it meets `DenyDataZoneEntirely`'s trigger
-   through the road 6f built, without an association, consistent with D41 item 2 and 6f decision 4,
-   and P3's one exception is a grant on a database, not a table. (b) is the user's to take with its
-   dated price; (c) answers the user's fifth bullet with no.
+   the native cycle Sandbox's alone. **Recommended: (a) with (a2)**: it meets `DenyDataZoneEntirely`'s
+   trigger through the road 6f built, without an association, consistent with D41 item 2 and 6f
+   decisions 2 and 4; P3 holds for the table and the database, and the one apply per product is the
+   approval's record rather than a side effect. (a1) is the user's to take with the costs above; (b)
+   with its dated price; (c) answers the user's fifth bullet with no.
 7. **The publication from the lake, under 6 (a).** (a) the source's daily schedule imports, the
    Governance Manager publishes the new asset in the portal; (b) a role in `Data Governance` the pipeline
    assumes starts the run and publishes, 6f 7.2's automation. **Recommended: (a)**: the publish is an
