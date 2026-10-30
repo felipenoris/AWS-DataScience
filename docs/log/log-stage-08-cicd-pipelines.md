@@ -4347,3 +4347,42 @@ question whether the template's proxy checks are fixed before `v0.4.7`. Times UT
   (`./scripts/slices.py down --env production --only proxy`, the user's), `staging-check` retried, the start and
   the positive retry, on the split-tunnel profile, since a stopped proxy leaves a laptop on the monitored one no
   path to AWS. Step 4's merge request carries the fix, and verification xv's row reads the defect.
+
+## 2026-10-30 — decision 29's optional reading: the global refusal of `awsds-deploy-prod` attributed to the statement
+
+*The user's hand in their terminal as the infrastructure user with `InfrastructureAccess` in `Production`
+(`awsds-infra-prod`), `promotion.md` §N.8.1 step 2; Claude read the errors in the terminal pane, the account ids
+and the user's address replaced, and read AWS as the same identity and, for 2026-10-27's trail, in `Policy
+Canary` (`awsds-policy-canary`), reads alone. Times UTC.*
+
+- **[user]** Both calls refused. Through `sts.amazonaws.com` (`us-east-1`): *"An error occurred (AccessDenied)
+  when calling the AssumeRole operation: User:
+  arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_InfrastructureAccess_c2bcabf74c885115/<the infrastructure
+  user> is not authorized to perform: sts:AssumeRole on resource: arn:aws:iam::<Production>:role/awsds-deploy-prod.
+  Go to https://us-east-1.console.aws.amazon.com/iam/home?region=us-east-1#/authorization-details/6nclodqv6lgw4r3whjltzl4r0
+  for complete details, or call the GetRequestAuthorizationDetails API with the following authorization id:
+  6nclodqv6lgw4r3whjltzl4r0"*. Through `sts.us-west-2.amazonaws.com`: the same text up to the role's ARN, with no
+  authorization id.
+- **[Claude] The trails**: `us-east-1` recorded the global refusal at 06:09:53, host `sts.amazonaws.com`, its
+  `errorMessage` the text above with the authorization id; `us-west-2` the regional one at 06:10:00, host
+  `sts.us-west-2.amazonaws.com`, with no id. Neither names a policy.
+- **[Claude] The authorization details**, `aws iam-toolbox get-request-authorization-details --authorization-id
+  6nclodqv6lgw4r3whjltzl4r0 --region us-east-1 --profile awsds-infra-prod` (IAM's Access Troubleshooter, a
+  preview): one evaluation, `sts:AssumeRole` on `role/awsds-deploy-prod`, `EXPLICIT_DENY`. The matched deny is
+  `DenyDeployRoleAssumptionOutsideTheRegion` in `p-1fp032g8`, beside the allows of the permission set's
+  `AdministratorAccess` and an inline policy, `FullAWSAccess` and `RCPFullAWSAccess`; the role's trust policy is
+  among the evaluated policies and matched no statement; the request context reads `aws:RequestedRegion`
+  `us-east-1`.
+- **[Claude] 2026-10-27's refusals, re-read**: the 21 global `AssumeRole` refusals of `awsds-deploy-battery-probe`
+  in `Policy Canary` (`us-east-1`, from 02:59:38) carry no authorization id. A role that exists nowhere, the
+  preview's rollout between the two dates, or both: these readings do not separate them.
+- **Verdict**: STS's text does not show the deny behind the refusal of a role that exists but does not trust the
+  caller, on either endpoint; the authorization details do, for the global call. The statement is exercised
+  (Lesson 20): AWS's evaluation names it, not the trust, as the deny. A battery row on `awsds-deploy-prod` in
+  `prod` measures it only by following the id, which `scp-battery.py`'s `classify` does not do: it reads the
+  text, and would read this refusal `DENY-NOT-SCP`, a note. `sts-global-probe` stays the measurement for a
+  caller the role trusts (`promotion.md` §N.8.2 step 5).
+- **[Claude] The record**: `promotion.md` §N.8.1 step 2; decision 29's text and the status cell; `POLICIES.md`'s
+  row and `AWS_STATE.md`'s, from not exercised to exercised; `runbooks/scp-battery.md`; `lessons.md`'s platform
+  list; `CLAUDE.md`'s Current position; the waiting list's optional row, taken; `REFERENCES.md` and `PRICING.md`
+  for the Access Troubleshooter.

@@ -3169,6 +3169,12 @@
   Network access controls for the Identity Store:
   <https://aws.amazon.com/about-aws/whats-new/2026/10/aws-identity-store-network-controls/>.
 
+- IAM's Access Troubleshooter (preview): the authorization id an access denied error carries,
+  `GetRequestAuthorizationDetails` in the Region of the denial, the 24 hours the details are kept, and the cases
+  with no id, read for Stage 8 decision 29 on 2026-10-30:
+  <https://docs.aws.amazon.com/IAM/latest/UserGuide/troubleshoot_access-denied-authorization-id.html>; the API:
+  <https://docs.aws.amazon.com/iam-toolbox/latest/APIReference/API_GetRequestAuthorizationDetails.html>.
+
 ## Databricks
 
 The pages behind [`DATABRICKS.md`](DATABRICKS.md), grouped by the section of the Databricks on AWS docs they come from.

@@ -371,8 +371,11 @@ The IAM simulator read the global call `explicitDeny` (`AllowedByOrganizations` 
 `allowed`, so the document says what it was written to say; the refusal of a role that does not exist hides the
 deny, and a row on one reads `ALLOWED` for ever (Lesson 50). The statement is measured by the job
 `sts-global-probe` on the deploy runner, whose role the deploy roles trust ([`promotion.md`](promotion.md) §N.8.2
-step 5). Whether an existing role that does not trust the caller shows the deny is unread: that attempt, on
-`awsds-deploy-prod`, was refused to Claude by the session's classifier on 2026-10-27 and waits for the user.
+step 5). An existing role that does not trust the caller does not show it in STS's text either (2026-10-30, the
+user's `AssumeRole` of `awsds-deploy-prod` on both endpoints): the global refusal adds an authorization id, whose
+details (IAM's Access Troubleshooter, a preview: `aws iam-toolbox get-request-authorization-details` in
+`us-east-1`) name this statement in `p-1fp032g8` as the matched deny, and the regional refusal carries none.
+`classify` reads the text alone, so a row on that role reads `DENY-NOT-SCP` until it follows the id.
 
 In zsh the account goes into an ARN as `${ACCT}:role`: `$ACCT:r` is a modifier, and the malformed ARN it
 leaves is refused with `ValidationError` before authorization (2026-10-27).

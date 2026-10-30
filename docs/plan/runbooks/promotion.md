@@ -1416,6 +1416,12 @@ identity.
    aws sts assume-role --role-arn "arn:aws:iam::${P}:role/awsds-deploy-prod" --role-session-name scp-probe --endpoint-url https://sts.amazonaws.com --region us-east-1 --profile awsds-infra-prod
    aws sts assume-role --role-arn "arn:aws:iam::${P}:role/awsds-deploy-prod" --role-session-name scp-probe --endpoint-url https://sts.us-west-2.amazonaws.com --region us-west-2 --profile awsds-infra-prod
    ```
+
+   **Run by the user 2026-10-30** (Stage 8's log): both refused, STS's text naming no policy on either endpoint.
+   The global refusal carries an authorization id, whose details (`aws iam-toolbox
+   get-request-authorization-details --region us-east-1`) name `DenyDeployRoleAssumptionOutsideTheRegion` in
+   `p-1fp032g8` as the matched deny, `EXPLICIT_DENY`; the regional refusal carries none.
+
 3. **[user] Stage 9 8.1's read-but-not-write**, as the Data Scientist User in a private window: the portal,
    `eighth-experimentation`'s query editor with *Athena (SQL)* as the compute, which 6f 11.10 ran with no
    space and Sandbox's `egress/` down. The subscription's resource link `glue_db_blerpkhn9nj7o0.trades`

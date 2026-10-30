@@ -818,6 +818,7 @@ step 3.5 is where the missing private path was first recorded). The service has 
 | **IAM Access Analyzer** internal access (USD per monitored resource per analyzer-month — charged at setup, then on the 1st; Stage 11 step 2.1) | 9.00 | 9.00 | **1.00** |
 | Access Analyzer unused access (USD per IAM role/user per month; Stage 12) | 0.20 | 0.20 | **1.00** |
 | Access Analyzer custom policy checks (per API request) | 0.002 | 0.002 | **1.00** |
+| **IAM Access Troubleshooter** `GetRequestAuthorizationDetails`, per call (preview; Stage 8 decision 29's reading, 2026-10-30) | — | no price on its page | |
 | **Amazon Inspector** ECR enhanced scanning, initial scan (USD/image) | 0.11 | 0.09 | 1.22 |
 | Inspector ECR re-scan (each — continuous scanning re-scans on every new CVE) | 0.01 | 0.01 | **1.00** |
 | **Secrets Manager** secret (USD/secret-mo). **Four at Stage 7** (2026-10-12): `gitlab-secrets.json` and the runner token (step 1.1), the two leaf keys (2.4) — 1.60/month on the floor; the VPN host key was the first (6c 4.1); Stage 8 step 4.3 adds the deploy runner's token container (2026-10-12), and decision 11 the test runner's | 0.40 | 0.40 | **1.00** |
