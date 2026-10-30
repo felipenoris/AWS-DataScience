@@ -395,7 +395,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (2026-10-26, alias `0.10.0`), its `NO_PROXY` literal the 73 names of `vpc-egress-v0.19.0`, `DE-5`
   passing; the CI/CD CLI by its name is the house's through the activation hook, read by the smoke.
   Stage 17 1.4's apply of the module on `sandbox/egress` is no longer held by the
-  image (decision 4). The remote IDE works (6d step 7, 2026-09-11).
+  image (decision 4). The remote IDE works (6d step 7, 2026-09-11). **SMUS's October releases read 2026-10-30**
+  (`upstream-releases.md`): the `SageMakerAIDomain` blueprint (24 managed names) carries the image attachment as
+  profile parameters and RStudio behind a Posit licence, decision due 15 the user's; the portal deleted
+  `eighth-experimentation`'s default space (the trail, 03:49 UTC); custom designations are API-only; the project
+  role's managed policies moved to v76/v47 on 2026-10-29 (`TM-28`).
 - **Stage 6e** is held by PR #108 (decision 17, the user's 5.5 agreements; Sonnet 4.5 is Legacy since
   2026-10-08). A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint);
   retention mode `none` is declared in all 17 Regions and frozen by 7.5; `claude-opus-5` and

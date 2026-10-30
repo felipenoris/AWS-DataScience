@@ -106,8 +106,11 @@ The third capability in the definition above is a boundary of **membership**: be
 project is what *grants* — the project roles' powers, and the data the project subscribed to. It is
 a concession mechanism wearing a restriction's name, and what it natively restricts is thin:
 
-- the member's **designation** — owner vs contributor — plus the domain's authorization policies
-  over who creates projects, who joins, who assumes ownership;
+- the member's **designation** — owner vs contributor, and since 2026-10-29 a **custom designation**, a
+  Cedar permit policy over the project's actions the domain defines (`CreateDesignation`;
+  [`upstream-releases.md`](plan/upstream-releases.md)); `awsds-studio` holds the two managed ones alone
+  (read 2026-10-30) — plus the domain's authorization policies over who creates projects, who joins, who
+  assumes ownership;
 - the **surface** — inherited from the profile: which blueprints exist, which parameters are locked.
   The member does not choose it; it came with the mold;
 - **which assets the project reaches** — every catalog asset crosses a subscription request approved
@@ -241,8 +244,9 @@ capability-enable time: `UpdateProjectProfile` demands them declared even though
 
 The fourth column is a separate object from the other three. A project profile is a *template*;
 creating a project from it is an **authorization**, granted on a domain unit and named
-`CREATE_PROJECT_FROM_PROJECT_PROFILE`. Listing the profiles in the portal is a read and needs
-neither.
+`CREATE_PROJECT_FROM_PROJECT_PROFILE`. Listing the profiles is a read and needs neither; the portal's
+*Project profiles* page left on 2026-10-20, the console's domain page lists them, and the creation form still
+offers them.
 
 **Measured 2026-08-22, in step 1.7's portal sitting:** the portal offered both profiles and the
 button returned `User is not permitted to perform operation: CreateProject`, identical with the
@@ -425,8 +429,9 @@ bump, in this order:
 
 The roster is measured. Read 2026-08-21 from the live domain `awsds-studio`,
 `datazone list-environment-blueprints --managed` returns **23**, and the console's *Blueprints* page
-lists **13**; re-read 2026-10-18, the same 23 names. How the two reconcile is why this table is keyed on
-the **API name**:
+lists **13**; re-read 2026-10-18, the same 23 names, and **24** on 2026-10-30, `SageMakerAIDomain` the one
+added (its row below; the release note of 2026-10-20 says the console's *Blueprints* tab lists it, unread
+here). How the two reconcile is why this table is keyed on the **API name**:
 
 - **`AmazonBedrockGenerativeAI` is a console grouping, not an API blueprint.** The console shows one
   entry — *"consists of multiple blueprints"* — and the API returns the **seven** `AmazonBedrock*`
@@ -472,6 +477,7 @@ can be diffed against this table directly.
 | `RedshiftServerless` | A Redshift Serverless workgroup + namespace | **Per use** with a **60-second minimum charge per query** + storage, at **0.36 USD/RPU-hour** measured (`PRICING.md` §5) — and a blueprint-provisioned workgroup takes the service default of **128 base RPUs**, which is **46.08 USD per query-hour** | **Never** — and the trigger changed on 2026-09-19 without the verdict changing. [D40](plan/decisions/D40-redshift-warehouse.md) **admits a warehouse and keeps this blueprint disabled**: the warehouse is one namespace per account, written by Terraform at `base_capacity = 4` with a usage limit, reached through a **connection to an existing compute resource** (§Connections below, [Stage 6h](plan/stages/stage-06h-redshift-connection.md)). Enabling *this* row would put a 128-RPU workgroup one click from every project member, which is the thing D26 refused and D40 did not un-refuse. `US-3` fails if it appears, with its own message. **The warehouse it was refused in favour of exists since 2026-09-20** and reads back at `base 4 / max 8 RPU` with a 10-RPU-hour monthly limit that `deactivate`s on breach — measured refusing queries, so the comparison in this row is now against something real | **3** |
 | `S3Bucket` | *"Create S3 bucket for SageMaker Unified Studio project."* Not offered by the console — read from `get-environment-blueprint` | Storage + requests. Not measured. **The governing question is not cost**: a bucket born here has an encryption key and a policy nobody in this project chose (`docs/GOVERNANCE.md` §Encryption) | — | **1** |
 | `S3TableCatalog` | *"Create S3 table catalog for SageMaker Unified Studio project."* Not offered by the console. **Possibly what `LakehouseCatalog` expands into when its S3-tables form is picked** — the same one-console-entry-to-many-API-rows shape as the Bedrock grouping. **Hypothesis, not a reading** | S3 Tables storage + maintenance. Not measured | — | **1** |
+| `SageMakerAIDomain` | *"A SageMaker AI domain for managing SageMaker spaces and apps"* (read 2026-10-30 from `get-environment-blueprint`; in the roster since the reading of 2026-10-30, `createdAt` 2026-08-21, `updatedAt` 2026-10-22). A standalone SageMaker AI domain per project beside `Tooling`'s, from the template `DataZone-SageMakerAIDomain-prod-20260905`: one `AWS::SageMaker::Domain`, `VpcOnly` on the Tooling environment's network, the project role as every space's execution role, the Tooling key; the profile's parameters carry the custom images (`imageName;appImageConfigName;versionNumber`, 30 per app type), the default image version, the idle timeouts and their ranges, the hidden instance types and distribution versions, the volume ceiling (100 GB), the domain name and `enableRStudio`, whose `true` cannot be undone and which adds an EFS home, service-managed security groups and Posit's RStudio (§Custom images; [`upstream-releases.md`](plan/upstream-releases.md)) | The domain at rest is free (§10); JupyterLab and Code Editor apps bill as `Tooling`'s; an RStudio session bills the instance rate (`ml.t3.medium` **0.050/h**) and the server app **0.00**, the Posit licence outside AWS's price list (`PRICING.md` §8, §11) | 6d decision due 15, the user's | **`undefined`** |
 | `Tooling` | The project's basic environment: the per-project **SageMaker AI domain** (only under the template's `sageMakerDomainRequired`, a default Tooling with `enableSpaces == "true"`, read 2026-10-19 in `ToolingDefault-prod-20260918`: a profile with `enableSpaces` false creates none, Stage 18 decision 1), project roles, security groups, Athena workgroups, the project S3 location — and the parameter surface Stage 6 step 1.5 locks (`sagemakerDomainNetworkType`, idle shutdown, `maxEbsVolumeSize`, TIP). Mandatory — nothing else provisions a working environment | Per **app-hour running** (`ml.t3.medium` JupyterLab/Code Editor at **USD 0.050/h**, `PRICING.md` §8) + EBS. An open app bills whether used or not — the step 8 idle shutdown is what converts "up" into "in use" | default — mandatory | **1** |
 | `ToolingLite` | *"Create basic resources for SageMaker Unified Studio project."* Not offered by the console. **Its template** (`ToolingLiteDefault-prod-20260723`, read 2026-10-19 for [Stage 18](plan/stages/stage-18-staging-deployment-project.md) decision 1): one user parameter, `s3BucketLocation`; a bucket when none is given, a security group, Glue connections, an Athena workgroup, a schedule group and an `AWS::SageMaker::Domain` with no condition; no project role of its own (`executionRoleArn` is a parameter), no log group, no Lake Formation registration; it exports the VPC, the subnets, the security group and the key the CI/CD CLI reads. **Measured at step 1.5 (2026-08-21): a base variant, not a capability** — bundled in a project profile, the service demands `deployment_mode = ON_CREATE` (*"ToolingLite environment blueprint configuration must have deployment mode ON_CREATE"*, DataZone 400), so it cannot ride a `Tooling` profile as an on-demand extra, and a second base would double-provision every new project | Not documented. Presumably the same app-hour shape as `Tooling` with fewer resources — **unread** | amending the decision | **3** |
 | `Workflows` | A **provisioned MWAA (Airflow) environment** from a CloudFormation template — billed hourly while it exists | **Standing**: MWAA `mw1.micro` **≈ USD 211.70/month** left up (`PRICING.md` §1) — the shape D7 rejected for daily use | **Never** while D7 stands: its amendment of 2026-09-05 took provisioned MWAA off INT-14's ladder, which removed the trigger this row's category-2 placement named, and Stage 10 step 4.3's `DenyProvisionedMwaa` (`airflow:CreateEnvironment` on the root SCP) refuses what this blueprint creates once applied. The *serverless* Workflows surface is **not** this blueprint and needs no configuration of its own: 6d step 4 found it already provided by the eleven category-1 configurations (§The workflow surface) | **3** |
@@ -680,8 +686,9 @@ and its log); D41 item 2 kept the rule above.
   workflows tagged with the project, `iam:PassRole` of the project role to the service, the project's
   `shared/` prefix and the project key. `run` starts the workflow and returns; a pipeline follows the
   run with `get-workflow-run`.
-- **A person in it.** The V2 domain admits `PROJECT_OWNER` and `PROJECT_CONTRIBUTOR` alone, a
-  contributor acts as the project role, and with spaces off the portal offers no Workflows tool.
+- **A person in it.** The V2 domain admits `PROJECT_OWNER`, `PROJECT_CONTRIBUTOR` and, since 2026-10-29, a
+  `USER_CREATED_DESIGNATION` of the domain's own (none here, read 2026-10-30); a member of any designation
+  acts as the project role, and with spaces off the portal offers no Workflows tool.
   DataZone sets `aws:SourceIdentity` on the sessions it opens for a member and as `SYSTEM`, and none
   is set on a worker's session or on a subscription fulfilment's.
 - **A subscription across accounts.** The fulfilment acts as each side's project role, in
@@ -1218,6 +1225,17 @@ role** reads it **by digest**, so a space never sees the tag. Both a **JupyterLa
 Editor** space started on this image (2026-09-10) from the `DefaultUserSettings` block, with
 `DefaultSpaceSettings` empty as the control. The recipe, per account and per release, is
 [`runbooks/dev-env.md`](plan/runbooks/dev-env.md).
+
+**The `SageMakerAIDomain` blueprint carries the attachment as profile parameters** (read 2026-10-30 from its
+template; [`upstream-releases.md`](plan/upstream-releases.md)). `customImagesJupyterLab` and
+`customImagesCodeEditor` take `imageName;appImageConfigName;versionNumber` triples, which the template writes
+into the domain's `CustomImages` with the version number set, and `defaultImageVersionArn*` into
+`DefaultResourceSpec`; so on a project born of such a profile the attachment is Terraform's
+(`governance/profiles.tf`), survives a reconciliation by construction, and pins one version per profile: the
+no-version entry the portal reads as every version is not expressible, and a release is a profile change and
+an *Update project* per project. `hiddenSageMakerImageVersionAliases` hides versions of
+`sagemaker_distribution` from the picker, the case of 2026-09-12 below. Whether a Sandbox profile moves to it
+is 6d decision due 15.
 
 **What the app image configuration cannot carry is the proxy environment.**
 `ContainerEnvironmentVariables` caps each value at 256 characters against a generated `NO_PROXY` of

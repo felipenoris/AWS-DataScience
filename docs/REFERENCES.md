@@ -1306,6 +1306,31 @@
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/storage.html>. A host with a VPC
   configuration in the GitLab's account, a connection authorized by one GitLab user, the connection shared by
   RAM and enabled for every domain of the receiving account: the path INT-13's row now carries, with its cost.
+- **SageMaker Unified Studio's October 2026 releases** — read 2026-10-30 for
+  [`upstream-releases.md`](plan/upstream-releases.md), after the user saw RStudio, a deletable default space and an
+  assistant in the portal. The release notes, 2026-10-08 to 2026-10-29 (the `SageMakerAIDomain` blueprint, RStudio,
+  the redesigned catalog, the Spark History Server, light mode, custom designations):
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>; the blueprint's
+  parameters and RStudio's inline policy:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/sagemaker-ai-domain.html>; RStudio
+  spaces: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/rstudio.html>; the licence, from
+  Posit or AWS Marketplace, granted through License Manager in `us-east-1`:
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/rstudio-license.html>; License Manager at no charge:
+  <https://aws.amazon.com/license-manager/pricing/>; the code spaces page, still saying the default JupyterLab
+  space cannot be deleted: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/code-spaces-idc.html>;
+  the generative AI assistance page, Amazon Q and the Data Agent, unchanged:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/amazonq.html>; the document history's
+  policy entries of 2026-10-27 and 2026-10-29:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html>; the designations
+  link, answering page-not-found on 2026-10-30:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designations.html>; botocore's
+  changelog, 1.43.115 to 1.43.122, and the DataZone model the designation calls ran on:
+  <https://github.com/boto/botocore/blob/develop/CHANGELOG.rst>,
+  <https://github.com/boto/botocore/blob/develop/botocore/data/datazone/2018-05-10/service-2.json>; What's New,
+  light mode, the Glue catalog's OAuth and MLflow 3.16:
+  <https://aws.amazon.com/about-aws/whats-new/2026/10/smus-light-mode>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/10/glue-catalog-oauth-iceberg-rest/>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/10/mflow-version-3-16/>.
 
 ## Data platform
 

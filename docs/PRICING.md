@@ -301,6 +301,8 @@ the real bill.
 | SageMaker Studio JupyterLab / CodeEditor `ml.t3.large` — **measured 2026-09-07**, the remote-IDE floor (≥ 8 GB; `ml.t3.medium` is named unsupported for it) | 0.161 (JupyterLab; the offer has no Code Editor row for it there) | **0.100** | 1.61 |
 | SageMaker Studio JupyterLab / CodeEditor `ml.m5.large` — measured 2026-09-07, the 8 GB general-purpose alternative | 0.184 | **0.115** | 1.60 |
 | SageMaker Studio JupyterLab / CodeEditor `ml.t3.xlarge` — **measured 2026-09-11**, the size the first remote-IDE space was created at (6d step 7.3); twice the 8 GB floor above it | 0.323 | **0.200** | 1.62 |
+| SageMaker Studio RStudio server app (`RStudio:RServer-ml.t3.medium`, Posit Workbench's server, one per domain) — **measured 2026-10-30** through the Query API, offer published 2026-10-29 | 0.000 | **0.000** | — |
+| SageMaker Studio RStudio session `ml.t3.medium` (`RStudio:RSession-ml.t3.medium` and `RStudio:RSessionGateway-ml.t3.medium`, one rate; `ml.t3.large` **0.100**) — measured 2026-10-30; the Posit Workbench licence a session needs has no AWS rate (§11) | 0.081 | **0.050** | 1.62 |
 | SageMaker processing job `ml.t3.medium` (2 vCPU, 4 GiB; `USW2-Processing:ml.t3.medium`) — `us-west-2` **measured 2026-10-10**, offer published 2026-10-09 | 0.066 | **0.050** | 1.32 |
 | SageMaker processing job `ml.m5.large` (2 vCPU, 8 GiB) — `us-west-2` measured 2026-10-10 | — | **0.115** | |
 | WireGuard EC2 `t3.nano` (`t4g.nano` at 0.0067 / 0.0042 until 2026-08-20) | 0.0084 | 0.0052 | 1.62 |
@@ -1079,7 +1081,8 @@ third-party resource-type handler operations bill; it is the deploy mechanism of
 environment since 2026-08-22, one `DataZone-Env-…` stack each), S3 gateway VPC endpoints, ECR pull-through cache (you pay only for the stored
 images), SageMaker Studio **domains** and user profiles at rest (only running apps and home-directory
 storage bill), **Amazon Data Lifecycle Manager** (the policy is free; the snapshots it takes are §8's
-EBS snapshot row — Stage 7 step 1.2), the first 30 days of GuardDuty per account, and — read 2026-08-20, a second and separate
+EBS snapshot row — Stage 7 step 1.2), **AWS License Manager** (*"no additional charge"*, read 2026-10-30; what it
+holds is the seller's licence, the Posit Workbench one in §11), the first 30 days of GuardDuty per account, and — read 2026-08-20, a second and separate
 window — the first 30 days of **Security Hub CSPM** per account, from that account's first enablement.
 The two windows open at different stages (Security Hub at Stage 5a step 13, GuardDuty at Stage 15), so "the
 first thirty days" is never one date for the whole floor. Neither trial covers the AWS Config cost
@@ -1095,4 +1098,6 @@ Anything whose volume is unknown until the environment runs: Config configuratio
 Athena TB scanned, inter-AZ traffic driven by the AZ-mapping question in
 `docs/plan/open-questions.md` item 3, and the domain registration itself (registrar price, per TLD). Stage 12
 replaces the estimated rows in §2 and §3 with figures from the real bill; the per-unit rates in this file
-do not change at that point — only the quantities they are multiplied by.
+do not change at that point — only the quantities they are multiplied by. Posit Workbench's licence, which an
+RStudio space needs (read 2026-10-30): sold by Posit or on AWS Marketplace as `Posit Team`, granted through
+License Manager, with no rate in any AWS offer.

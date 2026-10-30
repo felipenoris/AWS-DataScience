@@ -1,8 +1,9 @@
 # Upstream releases read against the plan
 
 What SageMaker Unified Studio, the SMUS CI/CD CLI, Terraform core and the `aws` and `awscc` providers
-released between 2026-08-01 and 2026-10-18, and the older changes the plan still records as a gap, each
-mapped onto the steps, decisions and open questions it moves. Read on 2026-10-18 with the environment down.
+released between 2026-08-01 and 2026-10-30, and the older changes the plan still records as a gap, each
+mapped onto the steps, decisions and open questions it moves. Read on 2026-10-18 with the environment down;
+the SageMaker Unified Studio section and each tool's latest version re-read 2026-10-30, with nothing up.
 Only changes that move something in the plan are listed.
 
 ## How to read this file
@@ -38,7 +39,17 @@ A release note is a claim (Lessons 8, 38 and 41), so the last column says what c
 **Written against**: the readings in [`docs/SMUS.md`](../SMUS.md) (the managed roster of 2026-08-21) and the
 DataZone model of the AWS CLI 2.37.12 the laptop runs since 2026-10-10. **Read 2026-10-18**: What's New to
 2026-10-16 (nothing posted on 2026-10-17 or 2026-10-18), botocore 1.43.114 (2026-10-14), the admin guide's
-document history to 2026-10-08, and the domain `awsds-studio`.
+document history to 2026-10-08, and the domain `awsds-studio`. **Read 2026-10-30**, after the user saw RStudio,
+a deletable default space and an assistant in the portal: the user guide's
+[release notes](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html) to
+2026-10-29, which carry what What's New does not (of the notes' nine October entries, What's New posted two, the custom
+Tooling blueprints and light mode), What's New to 2026-10-29, the document history to 2026-10-29,
+botocore 1.43.122 (2026-10-29) and its `develop` model, the domain `awsds-studio`, Sandbox's SageMaker AI
+domains, spaces and trail, and the project role's managed policies. Light mode for Identity Center domains
+(2026-10-26) moves nothing. The assistant the user saw is unannounced: AWS documents two, Amazon Q Developer
+(`TM-11`, 6d step 10) and the SageMaker Data Agent (`TM-23`), on the
+[generative AI assistance page](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/amazonq.html),
+unchanged on 2026-10-30; which one the portal shows is the user's to name.
 
 | Change | Plan items it moves | Verdict | Confirmed by |
 |---|---|---|---|
@@ -56,6 +67,13 @@ document history to 2026-10-08, and the domain `awsds-studio`.
 | CI/CD notebook promotion and the `generate-bundle-manifest` skill ([announcement](https://aws.amazon.com/about-aws/whats-new/2026/09/sagemaker-cicd-notebook-ai-manifest/), 2026-09-02; CLI 1.0.7) | [D28](decisions/D28-workflow-contract.md) keeps "the notebook does not graduate" and [6d](stages/stage-06d-unified-studio-remainder.md) decision 14 (b) keeps the portal's notebook task out, now as a choice against an available path: the CLI promotes native notebooks between projects, never into a target with no project | holds | note, code |
 | AWS-managed policies of the project and provisioning roles ([document history](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html): 2026-08-24, 2026-09-14, 2026-10-08) | Open question 22. Re-read in Sandbox 2026-10-18: `SageMakerStudioProjectUserRolePolicy` v75, `SageMakerStudioProjectRoleMachineLearningPolicy` v45, `SageMakerStudioProjectProvisioningRolePolicy` v84, `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy` v9 and `SageMakerStudioDomainExecutionRolePolicy` v23, the versions the 2026-10-17 reading and `docs/SMUS.md` record | holds | read |
 | The managed blueprint roster | Read 2026-10-18: 23 names, the ones `docs/SMUS.md`'s table carries. `Tooling` was updated 2026-08-19 and has 26 user parameters, `enableSpaces` among them (default `true`, not editable at the blueprint), which Stage 18 step 2.6 sets | holds | read |
+| The `SageMakerAIDomain` blueprint ([release notes](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html), 2026-10-20; [admin guide](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/sagemaker-ai-domain.html)): a managed blueprint that provisions a standalone SageMaker AI domain for a project, beside the one `Tooling` creates, and puts the code spaces experience in the profile's parameters. Read 2026-10-30 in `awsds-studio`: the managed roster holds **24** names (23 on 2026-10-18), the new one `createdAt` 2026-08-21 and `updatedAt` 2026-10-22, template `DataZone-SageMakerAIDomain-prod-20260905`, downloaded as the infrastructure user in Sandbox (177 KiB): one resource, an `AWS::SageMaker::Domain` in `IAM` auth mode, `VpcOnly` on the Tooling environment's VPC, subnets and security group when it exports them, the Tooling user role as every space's execution role, the Tooling key, `shared/` mounted from the project bucket, Docker access on, the default volume 16 GB; 17 user parameters, all editable and optional: `customImagesJupyterLab` and `customImagesCodeEditor` as comma-separated `imageName;appImageConfigName;versionNumber` triples (30 per app type), `defaultImageVersionArnJupyterLab` and `…CodeEditor`, the idle timeout with its minimum, maximum and `lifecycleManagement` per app type (60, 60, 525600 minutes, `ENABLED`), `hiddenInstanceTypes`, `hiddenSageMakerImageVersionAliases` (of `sagemaker_distribution`), `maxEbsVolumeSize` (100), `domainName` and `enableRStudio` (`false`). The quick-create sample profiles still use `Tooling`'s domain | The image attachment of Stage 6 step 5.1 and 6d step 2 (`CustomImages` as a hand `UpdateDomain` against an object `Tooling` owns, Lesson 60; `dev-env.md` §C6) becomes a profile parameter, Terraform's in `governance/profiles.tf`, and a domain this template writes is rewritten from the parameters at every reconciliation, INT-17's open half by construction. The pin is a version number per profile, so Stage 8 decision 7's open entry (no `ImageVersionNumber`, every version offered) is not expressible, and a release is a profile change plus *Update project* per project. `maxEbsVolumeSize` and the idle settings leave Stage 6 step 1.5's `Tooling` lock for this blueprint's; `hiddenInstanceTypes` hides and `DenySageMakerInstanceCeiling` denies (Lesson 5). Stage 18 decision 1 gains a shape, `Tooling` with `enableSpaces` false beside this blueprint, spaces with no `Tooling` domain, unmeasured. Its category is the user's (Stage 6 decision 5; `docs/SMUS.md`'s table carries it as `undefined`), raised with RStudio as [6d](stages/stage-06d-unified-studio-remainder.md) decision due 15; nothing configures it, and `US-3` judges configurations, so it reads nothing new | unblocks | read, template, page |
+| RStudio spaces ([release notes](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html), 2026-10-20; [user guide](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/rstudio.html); [the licence](https://docs.aws.amazon.com/sagemaker/latest/dg/rstudio-license.html)): a third code space type, in Identity Center domains, only on a `SageMakerAIDomain` with `enableRStudio` true, which cannot be turned off. The template then names the project role as the RStudio domain execution role, creates the domain's EFS home (`HomeEfsFileSystemCreation`), hands the security groups to the service (`AppSecurityGroupManagement` `Service` under `VpcOnly`) and leaves each user's `RStudioServerProAppSettings` `DISABLED`. A Posit Workbench licence, bought from Posit or on AWS Marketplace as `Posit Team` (free for Posit Workbench Enterprise customers), is granted to the account through License Manager in `us-east-1` and accepted in the domain's Region; an inline policy on the project role, written by hand in IAM, grants five `license-manager:` actions, the `logs:` delivery and resource-policy actions, log group and stream writes, and `sagemaker:CreateApp`, `DescribeApp` and `DeleteApp` on `RStudioServerPro/*` and `RSessionGateway/*`. The price list (offer of 2026-10-29, `docs/PRICING.md` §8): the server app `RStudio:RServer-ml.t3.medium` at **0.00 USD/h**, a session (`RSession`, `RSessionGateway`) on `ml.t3.medium` at **0.050** in `us-west-2`, the JupyterLab rate; the licence has no AWS rate | The house image carries R and the proxy environment (6d decision 8), and an RStudio session runs Posit's image, which the parameters do not replace (custom images are JupyterLab's and Code Editor's), so CRAN through the proxy (`sg-proxy.md`) and `NO_PROXY` are unconfigured there; the licence checkout reaches License Manager, a service on no endpoint roster, granted in `us-east-1`, so it meets the proxy's list and the Region ceiling before anything else (`TM-11`'s shape); the service is unonboarded in Sandbox, `ListReceivedLicenses` answering *"Service role not found"* on 2026-10-30. The inline policy is Lessons 11 and 17 by hand on a blueprint-authored role, inside the D13 boundary, which admits every action it does not deny. The EFS and the service-managed groups are `docs/NETWORK.md` facts once applied. 6d decision due 15 | a decision, not a bump | page, template, price list, read |
+| The portal deletes a project's default JupyterLab space. Measured 2026-10-30 in Sandbox's trail: `DeleteSpace` of `default-<user profile id>` in `eighth-experimentation`'s domain at 03:49:33 UTC, by the project role from a browser, no error; the account holds one space afterwards, `test-experimentation`'s default. The [code spaces page](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/code-spaces-idc.html), read the same day, still says *"You cannot delete the default JupyterLab space"* and reads the user profile id off that space's name; no release note names the change | `dev-env.md` §C7 (opening *Spaces* starts the default space, a `CreateApp` billed until idle shutdown): what the page starts in a project with none, and whether the portal recreates the space, are unread; `EXC-09`'s stranded default space has an exit; `docs/REFERENCES.md`'s entry on the page describes the note as it was | stale | read |
+| Custom designations ([release notes](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html), 2026-10-29; botocore 1.43.117, 2026-10-21; AWS CLI 2.38.4): `CreateDesignation`, `GetDesignation`, `ListDesignations`, `UpdateDesignation` and `DeleteDesignation`; a designation is a named Cedar permit policy over a project's actions, with deletion protection, and a membership or policy grant names it as `USER_CREATED_DESIGNATION` with `userCreatedDesignationId`; managed ones cannot be modified. Read 2026-10-30 in `awsds-studio`, the laptop's CLI 2.37.12 running botocore's `develop` model from `AWS_DATA_PATH`: two, `PROJECT_OWNER` (*"full project control including member management, project deletion, and all contributor actions"*) and `PROJECT_CONTRIBUTOR` (*"full data and compute access including discovering, using, and publishing data"*), both `MANAGED`, `createdBy` `system`. The note's link, `adminguide/designations.html`, answers page-not-found | The lesson of 2026-10-20 (*a V2 domain refuses the three catalog designations*) keeps its measurement and loses its conclusion: a designation with no write is now expressible. A designation governs the portal's and the API's project actions, not IAM: a member of any designation still acts as the project role (`docs/SMUS.md`, "A person in it"), so the waiting list's row on `InfrastructureAccess` as a contributor of both Sandbox projects (`EXC-17`, INT-25) gains a candidate, a read-only designation for the instruments, and Stage 18 4.3's `PROJECT_OWNER` for a deploy role could narrow. Cedar is a second policy language in the estate (Lesson 53); the page is read when it exists | unblocks | model, read, note |
+| The redesigned catalog and governance experience ([release notes](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html), 2026-10-20) and the left navigation alone in Identity Center domains (2026-10-08): glossaries, metadata forms and custom asset types on pages of their own; *Browse* leaves *Manage*, the whole catalog is browsed from *Discover* inside a project; a project's outgoing requests under *Discover → My subscriptions*, the requests it receives under *Manage → Subscriptions* (`Requests`, and `Access` with revoke); *View subscription details* replaces the *My subscription* tab; one *Catalog scope* filter replaces the *Inventory* and *Published* tabs; *Query* replaces *Query in Athena* and *Query in Redshift*; the *Project profiles* page is gone, the console's domain page listing them; *Associated accounts* and *Domain users* move to *Domain management*, where an association can be requested | 6f step 11's portal acts of 2026-10-26 and 2026-10-27 and Stage 19's pass 3 were written on the redesigned portal; no plan text names a moved page (read 2026-10-30), and `docs/SMUS.md`'s "listing the profiles in the portal is a read" now reads the console | holds | note |
+| Spark History Server for data processing job runs ([release notes](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html), 2026-10-26): the *Run details* page opens the Spark web UI for a run whose job wrote Spark UI logs, when the project role trusts `elasticmapreduce.amazonaws.com`; *Update project* adds the trust statement to a non-administrative project's role | 6d 2.4's reconciliation of 2026-10-11 was that `UpdateProject`, and its one change was this statement, which the second project's role carries since 2026-10-15: both Sandbox roles meet the prerequisite, and *Update project* is the documented, user-triggered reconciliation 2.4's after half waits for, writing the domain only when the template moves its properties. Stage 9's proof jobs are Terraform's, in no project | unblocks | note, read |
+| The project role's AWS-managed policies ([document history](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html), 2026-10-27 and 2026-10-29): read 2026-10-30 in Sandbox, `SageMakerStudioProjectUserRolePolicy` **v76** (2026-10-29 22:37 UTC, v75 before) and `SageMakerStudioProjectRoleMachineLearningPolicy` **v47** (v46 2026-10-28, v47 2026-10-29 22:27 UTC, v45 before); the provisioning (v84), knowledge-base (v9) and domain execution (v23) policies unmoved. v76: `ACInvoke`, `bedrock:InvokeModel` and `InvokeModelWithResponseStream` on every foundation model and inference profile in every Region for a role tagged `EnableAmazonBedrockPermissions` `true`; `cloudwatch:PutMetricData` in the `Glue`, `AWS/Glue`, `Glue Data Quality` and `bedrock-agentcore` namespaces; `bedrock:GetKnowledgeBase`, `ListInferenceProfiles` and `ListKnowledgeBases`; `cloudformation:ListStackResources` on project-tagged stacks, the Bedrock IDE tag condition dropped from `DZEnvCfn`; agent-builder log groups; `GlueJobCWPutMetricActions` and `CFNGetDataZoneEnvironmentStack` removed. v47: the Bedrock AgentCore block, harnesses, runtimes, memories, gateways, datasets, evaluations and workload identities tagged with the project, plus `ACManagedBuiltInTools` on AWS's code interpreter and browser (`*CodeInterpreterSession`, `InvokeCodeInterpreter`, `*BrowserSession`, `ConnectBrowserAutomationStream`), X-Ray writes and `logs:PutResourcePolicy` on `/aws/bedrock-agentcore/runtimes/*`; `sagemaker:ListApps`, `ListDomains`, `ListUserProfiles` and `ListSpaces` on `*` in place of the scoped statement, `DescribeDomain` by project tag; the SageMaker Notebooks service-linked role in `CreateSLR`; `ecr-public:GetAuthorizationToken` and `sts:GetServiceBearerToken` | Open question 22 fires again: the revision landed and this reading, a day later, is the only instrument. `TM-23`'s five actions stand in v47. `ACInvoke` is wider than `DenyBedrockInvocationOutsideTheScopedModels`, which with the Region ceiling stays the control (Lesson 72). The AgentCore grants open an AWS-side runtime with a managed browser and code interpreter to the project role, which no proxy sees and no SCP names: [`TM-28`](threat-model.md), open, the Agent Builder they serve unannounced on 2026-10-30. `ecr-public` reads go through the proxy's list | risk | read, page |
 
 ## The SMUS CI/CD CLI
 
@@ -63,7 +81,7 @@ document history to 2026-10-08, and the domain `awsds-studio`.
 ([D41](decisions/D41-sagemaker-application.md)) and read from its sdist on 2026-10-17 and 2026-10-18
 (Stage 18 step 0.1). **Read 2026-10-18**: 1.0.9 is the latest release on PyPI and GitHub, and `main` is the
 `v1.0.9` commit `3418ae1b07`. **Read again 2026-10-26** on PyPI: 1.0.9, uploaded 2026-10-05, is still the
-latest.
+latest, and again on 2026-10-30: the same, issue 413 unanswered.
 
 | Change | Plan items it moves | Verdict | Confirmed by |
 |---|---|---|---|
@@ -100,6 +118,8 @@ botocore's `develop`.
 | Bedrock product attributes in Cost Explorer, Budgets and dashboards ([announcement](https://aws.amazon.com/about-aws/whats-new/2026/10/aws-bedrock-attributes-in-cost-explorer/), 2026-10-08): model, provider, inference type, feature | 6e step 8.3 and its decision 6: a budget with a real subscriber can be filtered to one model; 8.4 can attribute spend by model | unblocks | note |
 | GuardDuty managed by AWS Organizations policies ([announcement](https://aws.amazon.com/about-aws/whats-new/2026/10/guardduty-org-enablement-policies/), 2026-10-01; the `GUARDDUTY_POLICY` type, botocore 1.43.106, in which `GetDetector` also marks each feature a policy manages with `ManagedBy`) | [Stage 15](stages/stage-15-guardduty.md) decision 4, read 2026-10-20: `aws_organizations_policy` accepts the type from 6.68.0, the first release bundling the Go SDK's `service/organizations` v1.61.0, whose enum its `type` validator reads; `identity/org-policies/` locks 6.60.0, which refuses it. The policy sets the foundational detector and seven plans per Region, its attachment is the scope, and the delegated administrator stays step 1's act; whether it turns Audit's own plans off past `DenyGuardDutyTampering` is unread | unblocks | code, page, model |
 | Network access controls for the Identity Store ([announcement](https://aws.amazon.com/about-aws/whats-new/2026/10/aws-identity-store-network-controls/), 2026-10-05) | D39 and Stage 11's identity premise stand: the controls bind the Identity Store and SCIM APIs, not the sign-in | holds | note |
+| OAuth 2.0 bearer tokens on the Glue Data Catalog's Iceberg REST endpoint ([announcement](https://aws.amazon.com/about-aws/whats-new/2026/10/glue-catalog-oauth-iceberg-rest/), 2026-10-26): an OIDC identity token is exchanged (RFC 8693, through AWS Sign-In) for a short-lived Glue-scoped bearer token, so Spark, Trino, Flink and partner platforms read Iceberg tables with no AWS credential distributed; IAM and Lake Formation still authorize | An inbound road into the lake's catalog from outside the organization, beside `TM-24`'s outbound one: the principal the token maps to needs a Lake Formation grant, which `CT-10` flags when no subscription explains it, and the lake buckets' policies and the RCP bind the vended session as they bind any. Which principal the exchange mints, and whether the Data OU's denies reach it, are unread (the Sign-In guide unread) | risk | note |
+| MLflow 3.16 on SageMaker MLflow Apps ([announcement](https://aws.amazon.com/about-aws/whats-new/2026/10/mflow-version-3-16/), 2026-10-27): new apps on 3.16, existing ones upgraded in a maintenance window, no act required | Stage 17's `ml-demo-mlflow` (`ML-2`) moves versions on AWS's schedule; `DescribeMlflowApp`'s version is a reading after the window | holds | note |
 
 ## Terraform core
 
@@ -108,7 +128,7 @@ botocore's `develop`.
 `~> 1.15`, which admits 1.16 and 1.17. **Read 2026-10-18**: 1.16.6 (2026-10-14) is the latest release, and
 1.17.0-rc2 the latest candidate ([releases](https://github.com/hashicorp/terraform/releases)). **Read 2026-10-25**
 from the CLI's own version notice on the laptop: 1.17.0 is released; its `-minimal-refresh` rule is due (the list
-below), and the lab stays on 1.16.6.
+below), and the lab stays on 1.16.6. **Read 2026-10-30**: 1.17.1 (2026-10-28) is the latest release.
 
 | Change | Plan items it moves | Verdict | Confirmed by |
 |---|---|---|---|
@@ -123,7 +143,8 @@ below), and the lab stays on 1.16.6.
 **Written against**: the locks, 6.60.0 in most slices and in `sandbox/foundation/`, the tree's reference;
 6.61.0, 6.62.0, 6.64.0 and 6.68.0 elsewhere; 6.69.1 in the two observability slices; constraint `~> 6.60`.
 **Read 2026-10-18**: 6.69.1 (2026-10-15)
-([releases](https://github.com/hashicorp/terraform-provider-aws/releases)).
+([releases](https://github.com/hashicorp/terraform-provider-aws/releases)). **Read 2026-10-30**: 6.71.0
+(2026-10-28); PRs #49927 and #49929 open and unmoved since 2026-09-10 and 2026-09-09.
 
 | Change | Plan items it moves | Verdict | Confirmed by |
 |---|---|---|---|
@@ -138,7 +159,9 @@ below), and the lab stays on 1.16.6.
 **Written against**: 1.98.0 (2026-08-19) in `data-governance/governance/` and `sandbox/sagemaker/`,
 constraint `~> 1.89`. **Read 2026-10-18**: 1.106.0 (2026-10-14)
 ([releases](https://github.com/hashicorp/terraform-provider-awscc/releases)). awscc's changelog lists new
-types only, so the attribute changes below come from the schema diff.
+types only, so the attribute changes below come from the schema diff. **Read 2026-10-30**: 1.108.0 (2026-10-28);
+the 1.107.0 and 1.108.0 changelogs name no `awscc_sagemaker_mlflow_app` or DataZone change, and the schema diff
+is not re-run.
 
 | Change | Plan items it moves | Verdict | Confirmed by |
 |---|---|---|---|
@@ -151,7 +174,9 @@ types only, so the attribute changes below come from the schema diff.
 ## The AWS CLI
 
 **Written against**: 2.37.12 (2026-10-09), on the laptop and pinned in the deploy image. **Read
-2026-10-18**: 2.38.1 (2026-10-14) ([changelog](https://github.com/aws/aws-cli/blob/v2/CHANGELOG.rst)).
+2026-10-18**: 2.38.1 (2026-10-14) ([changelog](https://github.com/aws/aws-cli/blob/v2/CHANGELOG.rst)). **Read
+2026-10-30**: 2.39.2; 2.38.2 carries the Iceberg REST connection types and 2.38.4 the designation operations,
+which the laptop's 2.37.12 ran on 2026-10-30 through botocore's `develop` model in `AWS_DATA_PATH`.
 
 | Change | Plan items it moves | Verdict | Confirmed by |
 |---|---|---|---|
@@ -168,27 +193,32 @@ None is applied here; each is a change of its own, with the plan read first.
 | `awscc` | none for the two 1.98.0 locks | No planned step on those slices needs a newer schema | — | a slice that first declares `awscc_mwaaserverless_workflow` (`staging/orchestration/`, `production/orchestration/`) initialises at the latest, 1.99.0 or later |
 | `aws` | none required | `rotation_enabled` is in `sandbox/warehouse/`'s 6.64.0 | `data-governance/data/` at its next change | the `aws_glue_catalog_table` plan |
 | `aws` on `identity/org-policies/` | 6.60.0 → 6.68.0 or later, only if Stage 15 decision 4 authors the GuardDuty policy there | the `GUARDDUTY_POLICY` type | the slice's `.terraform.lock.hcl`; the `~> 6.60` constraint admits it | the ten documents re-plan `No changes` before the policy joins them (`type` is ForceNew) |
-| AWS CLI in the deploy image | 2.37.12 → 2.38.x, only with a reason | Lake Formation RLS by API | `gitlab/awsds/deploy-image/Dockerfile` (`AWSCLI_VERSION`) | the CRT client behind the proxy |
+| AWS CLI in the deploy image | 2.37.12 → 2.38.4 or later, only with a reason | Lake Formation RLS and DataZone designations by API | `gitlab/awsds/deploy-image/Dockerfile` (`AWSCLI_VERSION`) | the CRT client behind the proxy |
 | `aws-smus-cicd-cli` | none | 1.0.9 is the latest | — | — |
 
 ## Next reading
 
-- **awscc's next weekly release** (expected 2026-10-21): whether `awscc_sagemaker_mlflow_app` gains the key
-  field, since `AWS::SageMaker::MlflowApp` changed on 2026-10-18; and any custom blueprint or RLS type.
-- **The `aws` provider's PRs #49927 and #49929**, before Stage 10 pass 2 writes `orchestration/`.
-- **The CLI** on PyPI and GitHub before Stage 10 pass 1; at a new release, re-read the
-  fallback in `helpers/datazone.py` and `workflow_create_handler.py`, and PR #289.
-- **DataZone's model and the custom blueprint pages**: closed 2026-10-19, when the applies of Stage 18's
-  passes 1 and 2 took its decisions 1-3, decision 1 on the managed `Tooling` blueprint.
-- **Terraform 1.17.0**, released by 2026-10-25 (the CLI's version notice): the `-minimal-refresh` rule, and whether
-  the lab moves past 1.16.6.
-- **A battery run of the instance-preference rows** PR #216 wrote (`./aws/probes/scp-battery.py --phase
-  ou`, Production, `awsds-infra-prod`): closed 2026-10-22, when Stage 18 8.7's battery ran the seven rows
-  at 01:53Z, each as expected.
+- **awscc's schema** against 1.108.0 (2026-10-28): a key on `awscc_sagemaker_mlflow_app` (`AWS::SageMaker::MlflowApp`
+  changed 2026-10-18, and the 1.107.0 and 1.108.0 changelogs name nothing), a custom blueprint or RLS type, and
+  a designation id on `awscc_datazone_project_membership`.
+- **The `aws` provider's PRs #49927 and #49929**, open and unmoved since 2026-09-10, before `orchestration/`
+  leaves `awscc`.
+- **The CLI** on PyPI and GitHub (1.0.9 on 2026-10-30, issue 413 unanswered); at a new release, re-read the
+  domain lookup, the fallback in `helpers/datazone.py` and `workflow_create_handler.py`, and PR #289.
+- **Terraform 1.17.1** (2026-10-28): the `-minimal-refresh` rule, and whether the lab moves past 1.16.6.
+- **The designations page**, when `adminguide/designations.html` answers, and the portal's designation surface:
+  whether a read-only designation fits the instruments' seat (the waiting list's `InfrastructureAccess` row).
+- **The `SageMakerAIDomain` blueprint's console wizard** (Lesson 39) and the portal's *Blueprints* tab, before
+  6d decision due 15 is taken; whether the sample profiles move to it.
+- **The default space**: what *Code spaces* starts in `eighth-experimentation` with no default space, at the
+  user's next portal sitting, and which assistant the portal shows.
+- **The two project policies** after each document-history entry: open question 22's pull-and-diff, run by
+  hand on 2026-10-30.
 - **The price list**: `AWSGlue` and `AmazonS3` when Stage 11 decides the Redshift feed; `AmazonSageMaker` at
   Stage 17 step 8.2 for an MLflow App usage type.
 - **This file**, every two weeks while a stage that depends on these tools is in progress. The method: the
   What's New directory API
   (<https://aws.amazon.com/api/dirs/items/search?item.directoryId=whats-new-v2&sort_by=item.additionalFields.postDateTime&sort_order=desc&size=100&item.locale=en_US&page=0>),
+  the user guide's release notes beside it (October's spaces, RStudio and designation entries were there alone),
   botocore's changelog dated by its PyPI uploads, a provider schema diff in a scratch directory, and
   `describe-type` for each CloudFormation type a row names.

@@ -2987,6 +2987,11 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   [PendingCheckout] to [Deleting] is not allowed."*, until it went through at 06:26:12 with every tab closed.
   The Query editor's case is the entry under Lake Formation and SageMaker Unified Studio above. Where:
   `log-stage-07-gitlab-runners-ecr.md`, 2026-10-26.
+- **The portal deletes a project's default JupyterLab space** (measured 2026-10-30). Sandbox's trail holds
+  `DeleteSpace` of `default-<user profile id>` in `eighth-experimentation`'s domain at 03:49:33 UTC, by the
+  project role from a browser, with no error, while the code spaces page read the same day says *"You cannot
+  delete the default JupyterLab space"*. What *Code spaces* starts in a project with none is unread. Where:
+  `log-stage-06d-unified-studio-remainder.md`, 2026-10-30.
 
 ### DataZone and the CI/CD CLI
 

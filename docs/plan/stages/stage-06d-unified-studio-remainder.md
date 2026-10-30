@@ -188,6 +188,11 @@ work at all* — is still open.
   only when the template changes the domain's own properties, and that case is still unseen: no
   `UpdateStack` and no service-issued `UpdateDomain` since. The first project's stack had one earlier
   update, 2026-08-25, before the first attachment. `US-1`..`US-10` pass the same day.
+- **2.4 — the trigger is a user's act, read 2026-10-30.** The release notes of 2026-10-26 name *Update project*
+  as what adds `elasticmapreduce.amazonaws.com` to a project role's trust policy, the one change the 2026-10-11
+  reconciliation made: the after half can be provoked from the portal when a reading is wanted, and it rewrites
+  the domain only when the template moves the domain's properties, which `Tooling`'s does not for `CustomImages`.
+  The `SageMakerAIDomain` blueprint writes `CustomImages` from the profile's parameters (decision due 15).
 - **2.4 — [Claude] Read reconciliation**: `./aws/studio.py` before and after a blueprint reconciliation. If
   the selector is a blueprint-authored object it may be reset — verification (vi)'s second half.
 - **2.5 done 2026-09-10: INT-01 measured, and the two principals are not one.** The registry account's
@@ -1729,6 +1734,25 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
     the workflow's `Code` object (D28 class (2b), Stage 10 step 2). Stage 8 5.6's lint refuses
     `SageMakerNotebookOperator` by name, so the refusal reads as this decision rather than as a generic
     project-scoped reference.
+
+15. **Whether a Sandbox profile moves its spaces to the `SageMakerAIDomain` blueprint, and whether RStudio
+    comes with it** (step 2; [`upstream-releases.md`](../upstream-releases.md), read 2026-10-30). The blueprint
+    of 2026-10-20 carries the image attachment, the default image, the idle settings, the hidden instance types
+    and the volume ceiling as profile parameters, Terraform's in `governance/profiles.tf`, where today
+    `CustomImages` is a hand `UpdateDomain` on `Tooling`'s domain (2.1, Lesson 60) and a reconciliation may reset
+    it (2.4). Its pin is a version number per profile, so a house-image release becomes a profile change and an
+    *Update project* per project, where Stage 8 decision 7's open entry lets the portal offer every version.
+    RStudio needs the same blueprint with `enableRStudio` `true`, which no later edit turns off, a Posit
+    Workbench licence (no AWS rate; License Manager at no charge) accepted in Sandbox, an inline policy written
+    by hand on each project role, an EFS home and service-managed security groups in the project's VPC, and
+    runs Posit's image with none of decision 8's proxy environment. **(a)** A pilot profile beside
+    `experimentation`: `Tooling` with `enableSpaces` false and this blueprint with the house image pinned, one
+    project, the readings of 2.4 and `US-1`..`US-10` before and after, RStudio off. **(b)** The same with
+    `enableRStudio` `true` and a licence, once the pilot reads clean. **(c)** Stay on `Tooling`'s domain.
+    **Recommended: (a), after the console wizard's fields are read (Lesson 39) and the portal's *Blueprints* tab
+    seen**: the attachment leaves the hand step and the reconciliation question closes by construction; (b) is a
+    licence and a second runtime the proxy does not reach, weighed when R work asks for it. The user's; the
+    waiting list carries it.
 
 ## Verifications to answer while executing
 

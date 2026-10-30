@@ -3153,3 +3153,51 @@ policy"*.
   project runs on the lake share is the same flow, and removing the endpoint would cost a house-image
   release, the image's `NO_PROXY` naming the service. `sandbox/egress/` keeps it, USD 0.010 per AZ-hour
   while the slice is up; the waiting list's row leaves.
+
+---
+
+## 2026-10-30 — SageMaker Unified Studio's October releases read against the plan, with nothing up
+
+*Claude's hand, in the session `smus-updates-76068a`, after the user saw RStudio, a way to delete every space and
+an AI assistant in the portal; read-only calls as the infrastructure user in Sandbox and Data Governance.*
+
+- **[user]** *"Notei que houve atualização de versão do SMUS. Agora é possível apagar todos os spaces no "Code
+  Spaces". E apareceu também opção de criar space do tipo RStudio. Também apareceu um assistente de IA embutido
+  no SMUS. Verifique as novidades do SMUS."*
+- **[Claude] The sources**: the user guide's release notes to 2026-10-29, What's New to 2026-10-29, the admin
+  guide's document history to 2026-10-29, botocore 1.43.122 and its `develop` model, the pages of
+  `docs/REFERENCES.md`'s entry of this date. The rows are `upstream-releases.md`'s.
+- **[Claude] The roster**: `list-environment-blueprints --managed` on `awsds-studio` answers 24 names, 23 on
+  2026-10-18; the new one is `SageMakerAIDomain`, `createdAt` 2026-08-21 00:49 UTC, `updatedAt` 2026-10-22
+  22:46 UTC, template `DataZone-SageMakerAIDomain-prod-20260905` (177 KiB, downloaded as the infrastructure user
+  in Sandbox), 17 user parameters, all editable and optional. Nothing configures it, and `US-3` judges
+  configurations.
+- **[Claude] The spaces**: Sandbox holds one space, `test-experimentation`'s default JupyterLab, and no app. The
+  trail: `DeleteSpace` of `default-<user profile id>` in `eighth-experimentation`'s domain (`d-p6gthxc82ckg`) at
+  2026-10-30 03:49:33 UTC by the project role from a browser, no error, after `jup-dev-env` on 2026-10-26
+  06:13 UTC and six named spaces on 2026-10-16. The user guide's code spaces page still says the default space
+  cannot be deleted; the lessons' AWS list carries the measurement, and what *Code spaces* now starts in that
+  project is unread.
+- **[Claude] RStudio**: a `SageMakerAIDomain` with `enableRStudio` true, a Posit Workbench licence through
+  License Manager, an inline policy on the project role by hand; `license-manager list-received-licenses` in
+  Sandbox answers *"Service role not found"*, and the trail shows AWS Config's `ListLicenses` and
+  `ListDistributedGrants` refused `AccessDenied` twice a day. The price list of 2026-10-29:
+  `RStudio:RServer-ml.t3.medium` 0.00 USD/h, `RSession-ml.t3.medium` and `RSessionGateway-ml.t3.medium` 0.050 in
+  `us-west-2` and 0.081 in `sa-east-1` (`PRICING.md` §8).
+- **[Claude] The assistant**: no October source announces one. AWS documents two, Amazon Q Developer (`TM-11`,
+  step 10) and the SageMaker Data Agent (`TM-23`), on the admin guide's generative AI page, unchanged; which one
+  the portal shows is the user's to name.
+- **[Claude] Designations**: `ListDesignations` on `awsds-studio`, the laptop's CLI 2.37.12 running botocore's
+  `develop` model from `AWS_DATA_PATH`: `PROJECT_OWNER` and `PROJECT_CONTRIBUTOR`, both `MANAGED`, `createdBy`
+  `system`, `deletionProtection` true. The four projects' memberships are the ones of 2026-10-27. The release
+  note's documentation link answers page-not-found.
+- **[Claude] The managed policies**: `SageMakerStudioProjectUserRolePolicy` v76 (2026-10-29 22:37 UTC) and
+  `SageMakerStudioProjectRoleMachineLearningPolicy` v47 (v46 2026-10-28, v47 2026-10-29 22:27 UTC), the diffs in
+  `upstream-releases.md`; the provisioning, knowledge-base and domain execution policies at v84, v9 and v23.
+  `TM-28` written for the AgentCore grants: Sandbox's trail holds no `bedrock-agentcore` call by a project role
+  over fourteen days, only AWS Config's inventory lists. Open question 22 dated.
+- **[Claude] Written**: `upstream-releases.md` (the SMUS section, the services table, each tool's latest version,
+  the next reading), `docs/SMUS.md` (the roster, the blueprint's row, the attachment paragraph, designations, the
+  profiles page), `docs/PRICING.md` §8, §10 and §11, `docs/REFERENCES.md`, `threat-model.md` (`TM-28`),
+  `lessons.md`'s AWS list, `open-questions.md` 22, this stage's decision due 15 and 2.4, the waiting list,
+  `CLAUDE.md`, `docs/log/INDEX.md`.
