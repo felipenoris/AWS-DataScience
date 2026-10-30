@@ -181,7 +181,9 @@ test-deploy:
       if [ -z "${JOB_IMAGE_URI:-}" ]; then echo "FATAL: build-image's dotenv carries no JOB_IMAGE_URI"; exit 1; fi
       export JOB_IMAGE_URI
       echo "== the hub: the proxy answers for the SageMaker API"
-      code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://sagemaker.$DOMAIN_REGION.amazonaws.com/")"
+      # VPC-SharedServices holds no SageMaker endpoint, so only the proxy answers; curl's failure stays
+      # inside the substitution, since under `set -e` a failed assignment ends the job before the message.
+      code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://sagemaker.$DOMAIN_REGION.amazonaws.com/" || true)"
       if [ "$code" = "000" ]; then echo "FATAL: no answer through the proxy: is the hub up (make hub-up)?"; exit 1; fi
       echo "== Sandbox's egress: the interface endpoints the run needs"
       for service in sagemaker.api glue logs; do
@@ -299,7 +301,11 @@ gate-without-proxy:
 # at its default branch with the job token and printing the commit it runs (decision 2): the slices, the
 # render and the release job live there, never here. The job's AWS identity is the profile it names, one
 # per deploy role on the runner; every account value is read at run time from the slice that owns it.
-# The deploy runner reaches AWS through the proxy alone, so each job checks the proxy first (step 3.1).
+# The deploy runner reaches every AWS service VPC-SharedServices holds no endpoint for through the proxy,
+# and STS and the other services of that VPC's endpoints directly, its NO_PROXY naming them. So each job
+# checks the proxy first on the SageMaker API, which that VPC holds no endpoint for (step 3.1, Stage 7
+# decision 9), with curl's failure kept inside the substitution: under `set -e` a failed assignment ends
+# the job before the message.
 # The clone trusts the CA root the runner mounts in every job (runbooks/gitlab.md §K), which the deploy
 # image's own store does not hold (refused 2026-10-24, v0.3.0's job 281).
 .promotion:
@@ -312,8 +318,9 @@ gate-without-proxy:
   before_script:
     - |
       set -eu
-      code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://sts.$DOMAIN_REGION.amazonaws.com/")"
+      code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://sagemaker.$DOMAIN_REGION.amazonaws.com/" || true)"
       if [ "$code" = "000" ]; then echo "FATAL: no answer through the proxy: is the hub up (make hub-up)?"; exit 1; fi
+      echo "the proxy answers ($code)"
       git -c http.sslCAInfo=/etc/gitlab-runner/certs/ca.crt clone --quiet --depth 1 "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/awsds/infrastructure.git" "$INFRA_DIR"
       echo "awsds/infrastructure at $(git -C "$INFRA_DIR" rev-parse HEAD)"
 

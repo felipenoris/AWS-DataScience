@@ -358,9 +358,9 @@ If the `inherit` row reads `ALLOWED` and the run stopped before the next row, pu
 `aws bedrock put-account-data-retention --mode none --region us-west-2 --profile awsds-policy-canary`.
 
 **The Stage 8 decision 29 amendment to `awsds-org-scp-baseline`** — `DenyDeployRoleAssumptionOutsideTheRegion`,
-applied 2026-10-27 at 02:58 UTC, **has no row in `probes.py`, and that is a measurement**. The two calls below,
-from `awsds-policy-canary` on a role of the prefix that exists in no account, answered the same before and after
-the apply:
+applied 2026-10-27 at 02:58 UTC, **has one row in `probes.py`, on a role that exists, and it measures only when
+AWS issues an authorization id**. A row on a role of the prefix that exists in no account cannot reach it: the
+two calls below, from `awsds-policy-canary`, answered the same before and after the apply:
 
 | Probe (from `awsds-policy-canary`) | Before the apply, 02:32 UTC | After it, 02:59 to 03:09 UTC |
 |---|---|---|
@@ -371,8 +371,16 @@ The IAM simulator read the global call `explicitDeny` (`AllowedByOrganizations` 
 `allowed`, so the document says what it was written to say; the refusal of a role that does not exist hides the
 deny, and a row on one reads `ALLOWED` for ever (Lesson 50). The statement is measured by the job
 `sts-global-probe` on the deploy runner, whose role the deploy roles trust ([`promotion.md`](promotion.md) §N.8.2
-step 5). Whether an existing role that does not trust the caller shows the deny is unread: that attempt, on
-`awsds-deploy-prod`, was refused to Claude by the session's classifier on 2026-10-27 and waits for the user.
+step 5). An existing role that does not trust the caller does not show it in STS's text either (2026-10-30, the
+user's `AssumeRole` of `awsds-deploy-prod` on both endpoints): the global refusal adds an authorization id, whose
+details (IAM's Access Troubleshooter, a preview: `aws iam-toolbox get-request-authorization-details` in
+`us-east-1`) name this statement in `p-1fp032g8` as the matched deny, and the regional refusal carries none.
+`classify` follows such an id since 2026-10-30, and the `root` phase's row on `awsds-deploy-prod` through the global
+endpoint reads `DENY-SCP` with the statement's Sid when the refusal carries one. AWS does not issue one on every
+refusal: the battery's first run of the row, at 06:25:03 UTC the same day, met a refusal with none, and the row
+read `DENY-NOT-SCP`, a note with an empty detail (25 as expected, 0 unexpected, 1 not measured). A regression
+never reads `DENY-SCP`, so that reading is a measurement and a note is none; the regional path has no row, its
+refusal carrying no id either way.
 
 In zsh the account goes into an ARN as `${ACCT}:role`: `$ACCT:r` is a modifier, and the malformed ARN it
 leaves is refused with `ValidationError` before authorization (2026-10-27).

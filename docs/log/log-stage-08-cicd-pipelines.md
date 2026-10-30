@@ -4306,3 +4306,109 @@ was told before the apply. Times UTC.*
   `AWS_STATE.md`, the waiting list and `promotion.md` §N.6 and §N.8.1. The statement's measurement is
   `sts-global-probe` at the next GitLab sitting (§N.8.2 step 5): the deploy roles trust the runner, so a refusal
   of its global call can only be the baseline's.
+
+## 2026-10-27 and 2026-10-28 — verification xv read with nothing up; the template's proxy checks fixed for `v0.4.7`
+
+*Claude's hand, at the request to prepare `promotion.md` §N.8.2 step 12 with nothing up: AWS as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), reads only; the shell readings on the
+laptop with no tunnel; the template's change on the user's word in chat, *"Sim, corrigir"* (2026-10-28), to the
+question whether the template's proxy checks are fixed before `v0.4.7`. Times UTC.*
+
+- **[Claude] What the check reads** (2026-10-27, before 03:34): `.promotion`'s `before_script` curls
+  `https://sts.us-west-2.amazonaws.com/`. VPC-SharedServices' `egress/` holds an `sts` endpoint (the
+  `vpc-egress` core, twelve endpoints in all), and the runners' `NO_PROXY` is that slice's generated `no_proxy`,
+  every name its endpoints answer for. Production's trail, the `AssumeRole` calls of the `sts-global-probe` job
+  (#649) on 2026-10-26: the regional ones of 21:51:42 (`awsds-deploy-prod`) and 21:51:46 (`awsds-deploy-staging`)
+  from `10.30.20.81` through `vpce-0bf41975f9312dbc0`, host `sts.us-west-2.amazonaws.com`; the global ones of
+  21:51:43 and 21:51:47, in `us-east-1`, from `44.244.33.52`, the proxy's address, with no endpoint. So the
+  check is answered by the endpoint whether the proxy runs or not.
+- **[Claude] What `set -eu` does to it** (2026-10-27, before 03:34): `set -eu; code="$(…)"` with a command that
+  exits 28 ends the script with 28 and runs nothing after it, in bash and in sh, and so does a `curl --max-time
+  3` to an address that never answers. The `if [ "$code" = "000" ]` behind both of the template's checks is
+  never reached when curl fails.
+- **[Claude] What a `.promotion` job of `v0.4.6` would meet instead**: its first call through the proxy. The
+  deploy image sets `UV_PYTHON_DOWNLOADS=never` and holds no project environment, and the deploy runner mounts
+  no uv cache into a job, so `uv run` downloads the infrastructure repository's dev group and its packages'
+  build backend from PyPI in every job that runs a script (read in `gitlab/awsds/deploy-image/Dockerfile` and
+  `deploy-user-data.sh.tftpl`, not measured).
+- **[Claude] The fix**, in `examples/app-etl/.gitlab-ci.yml` (2026-10-28): both checks read
+  `https://sagemaker.<region>.amazonaws.com/`, which VPC-SharedServices holds no endpoint for (Stage 7 decision
+  9) and which `awsds/dev-env`'s `register` already reads, with `|| true` inside the substitution; `.promotion`
+  prints *"the proxy answers (<code>)"* on success, and the comment above it names what the runner reaches
+  through the proxy. Step 3.1's design, one request to an AWS name outside the runner's `NO_PROXY`, is
+  unchanged; the template had stopped meeting it. `./scripts/check-gitlab-ci.py` OK.
+- **[Claude] Read on the laptop** (2026-10-28, 22:17 to 22:19), each check's `before_script` lines without the
+  clone, `DOMAIN_REGION=us-west-2`: the fixed check against a proxy that does not answer
+  (`HTTPS_PROXY=http://10.255.255.1:3128`) printed *"FATAL: no answer through the proxy: is the hub up (make
+  hub-up)?"* and exited 1 after 20 s, and with no proxy *"the proxy answers (404)"*, exit 0; the old check
+  against the same proxy exited 28 after 20 s with nothing printed, and with `sts.us-west-2.amazonaws.com` in
+  `NO_PROXY` it read `302` in 1 s and went on.
+- **[Claude] The exercise**, `promotion.md` §N.8.2 step 12b, on `v0.4.7` or later: the proxy host stopped alone
+  (`./scripts/slices.py down --env production --only proxy`, the user's), `staging-check` retried, the start and
+  the positive retry, on the split-tunnel profile, since a stopped proxy leaves a laptop on the monitored one no
+  path to AWS. Step 4's merge request carries the fix, and verification xv's row reads the defect.
+
+## 2026-10-30 — decision 29's optional reading: the global refusal of `awsds-deploy-prod` attributed to the statement
+
+*The user's hand in their terminal as the infrastructure user with `InfrastructureAccess` in `Production`
+(`awsds-infra-prod`), `promotion.md` §N.8.1 step 2; Claude read the errors in the terminal pane, the account ids
+and the user's address replaced, and read AWS as the same identity and, for 2026-10-27's trail, in `Policy
+Canary` (`awsds-policy-canary`), reads alone. Times UTC.*
+
+- **[user]** Both calls refused. Through `sts.amazonaws.com` (`us-east-1`): *"An error occurred (AccessDenied)
+  when calling the AssumeRole operation: User:
+  arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_InfrastructureAccess_c2bcabf74c885115/<the infrastructure
+  user> is not authorized to perform: sts:AssumeRole on resource: arn:aws:iam::<Production>:role/awsds-deploy-prod.
+  Go to https://us-east-1.console.aws.amazon.com/iam/home?region=us-east-1#/authorization-details/6nclodqv6lgw4r3whjltzl4r0
+  for complete details, or call the GetRequestAuthorizationDetails API with the following authorization id:
+  6nclodqv6lgw4r3whjltzl4r0"*. Through `sts.us-west-2.amazonaws.com`: the same text up to the role's ARN, with no
+  authorization id.
+- **[Claude] The trails**: `us-east-1` recorded the global refusal at 06:09:53, host `sts.amazonaws.com`, its
+  `errorMessage` the text above with the authorization id; `us-west-2` the regional one at 06:10:00, host
+  `sts.us-west-2.amazonaws.com`, with no id. Neither names a policy.
+- **[Claude] The authorization details**, `aws iam-toolbox get-request-authorization-details --authorization-id
+  6nclodqv6lgw4r3whjltzl4r0 --region us-east-1 --profile awsds-infra-prod` (IAM's Access Troubleshooter, a
+  preview): one evaluation, `sts:AssumeRole` on `role/awsds-deploy-prod`, `EXPLICIT_DENY`. The matched deny is
+  `DenyDeployRoleAssumptionOutsideTheRegion` in `p-1fp032g8`, beside the allows of the permission set's
+  `AdministratorAccess` and an inline policy, `FullAWSAccess` and `RCPFullAWSAccess`; the role's trust policy is
+  among the evaluated policies and matched no statement; the request context reads `aws:RequestedRegion`
+  `us-east-1`.
+- **[Claude] 2026-10-27's refusals, re-read**: the 21 global `AssumeRole` refusals of `awsds-deploy-battery-probe`
+  in `Policy Canary` (`us-east-1`, from 02:59:38) carry no authorization id. A role that exists nowhere, the
+  preview's rollout between the two dates, or both: these readings do not separate them.
+- **Verdict**: STS's text does not show the deny behind the refusal of a role that exists but does not trust the
+  caller, on either endpoint; the authorization details do, for the global call. The statement is exercised
+  (Lesson 20): AWS's evaluation names it, not the trust, as the deny. A battery row on `awsds-deploy-prod` in
+  `prod` measures it only by following the id, which `scp-battery.py`'s `classify` does not do: it reads the
+  text, and would read this refusal `DENY-NOT-SCP`, a note. `sts-global-probe` stays the measurement for a
+  caller the role trusts (`promotion.md` §N.8.2 step 5).
+- **[Claude] The record**: `promotion.md` §N.8.1 step 2; decision 29's text and the status cell; `POLICIES.md`'s
+  row and `AWS_STATE.md`'s, from not exercised to exercised; `runbooks/scp-battery.md`; `lessons.md`'s platform
+  list; `CLAUDE.md`'s Current position; the waiting list's optional row, taken; `REFERENCES.md` and `PRICING.md`
+  for the Access Troubleshooter.
+
+## 2026-10-30 — the battery follows an authorization id: decision 29's row in the `root` phase
+
+*Claude's hand on the user's word in chat (*"Escrever na bateria"*); the battery run by Claude as the
+infrastructure user (`awsds-policy-canary`, `awsds-infra-prod`), reads otherwise. Times UTC.*
+
+- **[Claude] Written**: `scp-battery.py`'s `classify` reads a refusal whose wording names no policy but carries an
+  authorization id through `aws iam-toolbox get-request-authorization-details`, in the Region the message's
+  console link names, asking again for half a minute while the evaluation is not recorded. An explicit deny in
+  an SCP reads `DENY-SCP` with the policy id and the statement's Sid, in an RCP `DENY-RCP`, in any other policy
+  `DENY-NOT-SCP` with its type; an implicit deny or an unread evaluation falls through to the wording, the reason
+  in the detail (`authz: not recorded`, `authz: <error>`). Nine offline cases, the recorded evaluation of 06:09:53
+  among them, read as written. `probes.py`'s `root` phase gains the row *"sts:AssumeRole of awsds-deploy-prod,
+  global endpoint"* in `prod`, `deny`, `blocked`, with no allowed wording; `aws/probes/README.md` gives the two
+  outcomes their meaning.
+- **[Claude] The run**, `./aws/probes/scp-battery.py --phase root`, 06:24:34 to 06:25:07: *"25 as expected, 0
+  unexpected, 1 not measured"*, every earlier row as before and the new one `note ... DENY-NOT-SCP` with an empty
+  detail, so its refusal carried no authorization id. Production's `us-east-1` trail recorded that refusal at
+  06:25:03 with STS's plain text and no id, where the user's identical call at 06:09:53 carried one.
+- **Verdict**: AWS issues the id on some refusals only, here one of two of the same call 15 minutes apart; what
+  decides it, the time since the last one or a sample, these readings do not say. The row reads `DENY-SCP` when
+  the id comes, and a regression never does, so that reading is a measurement and a note is none.
+  `sts-global-probe` stays the measurement for a caller the trust admits.
+- **[Claude] The record**: `probes.py`'s comment, `runbooks/scp-battery.md`, `POLICIES.md`, `AWS_STATE.md`,
+  `lessons.md`'s platform entry, decision 29's text and the status cell, `promotion.md` §N.8.1 step 2 and
+  `CLAUDE.md`'s Current position.

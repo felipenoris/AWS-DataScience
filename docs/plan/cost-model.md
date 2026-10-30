@@ -171,7 +171,7 @@ was watching**, running at base capacity after its client stopped polling: 19% o
 sitting. The Redshift Serverless console read *"Free trial credits remaining $287.90 out of $300.00"* and an
 expiry of December 19, 2026 on 2026-10-17, and Cost Explorer carries no Amazon Redshift line through
 October 17 (`docs/PRICING.md` §5, Stage 5b verification xiii). After that date the warehouse bills at the
-rates above. On 2026-10-25 Sandbox read *"$287.51 out of $300.00"* and Production *"$299.71 out of $300.00"*, its window closing 2027-01-21, 90 days after its namespace (Stage 9's log); on 2026-10-26 Production read 299.69 after a sitting of two short statements, 0.02 USD where `ComputeSeconds` read 0.0079: the 60-second minimum per query is billed from the balance and absent from the metric. Stage 9 xxiv's sitting the same evening read 299.66 then 299.54, 0.12 USD against 0.0078 by the metric.
+rates above. On 2026-10-25 Sandbox read *"$287.51 out of $300.00"* and Production *"$299.71 out of $300.00"*, its window closing 2027-01-21, 90 days after its namespace (Stage 9's log); on 2026-10-26 Production read 299.69 after a sitting of two short statements, 0.02 USD where `ComputeSeconds` read 0.0079: the 60-second minimum per query is billed from the balance and absent from the metric. Stage 9 xxiv's sitting the same evening read 299.66 then 299.54, 0.12 USD against 0.0078 by the metric, and 299.50 on 2026-10-30 with no workgroup in between: 0.16 USD in all.
 
 Three guards did not catch the runaway. `max_query_execution_time` did not stop the query, and three
 explanations are live: Redshift exempts a superuser from the rule, the standalone parameter is not
