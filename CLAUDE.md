@@ -405,8 +405,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `sagemaker-prereqs-v0.9.0`, `experimentation`'s element at order 13 with the image pinned at
   `var.sandbox_dev_env_version` (11), both applied 2026-10-30 (`US-3` at 14). The portal's first environment
   (`test-experimentation`, the entry under RStudio) ended `VALIDATION_FAILED` with the message `[]` and no call
-  into Sandbox, so `enableRStudio` is `false` until the Posit licence (2.6 item 3's discriminator, planned 1 to
-  change, the apply the user's); the licence and the inline policy owed before an RStudio session. Kiro CLI
+  into Sandbox, so `enableRStudio` is `false` until the Posit licence (2.6 item 3's discriminator, applied
+  2026-10-30 18:40 UTC); the licence and the inline policy owed before an RStudio session. Kiro CLI
   is step 10's door (decision 9); the hub is down since 2026-10-26.
 - **Stage 6e** is held by PR #108 (decision 17, the user's 5.5 agreements; Sonnet 4.5 is Legacy since
   2026-10-08). A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint);

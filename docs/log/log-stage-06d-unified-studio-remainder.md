@@ -3311,7 +3311,7 @@ user.*
   (one apply), the failed environment deleted and the entry pressed again; an API `create-environment` with no
   user parameter.
 
-### 2.6 item 3's discriminator: `enableRStudio` off, planned
+### 2.6 item 3's discriminator: `enableRStudio` off
 
 *The user choosing the discriminator in chat (*"Desligar RStudio"*); Claude editing and planning as the
 infrastructure user, in Data Governance.*
@@ -3326,3 +3326,10 @@ infrastructure user, in Data Governance.*
   second `[]` sends the next press to `create-environment` with no user parameter.
 - No other session on the machine was running at the plan (`list_sessions`: the newest activity 18:35 UTC, a
   read-only cost session on PR #278).
+- **The apply** (the user's word in chat, *"Sim, aplique"*; the cost session on PR #278 running by then, and
+  told): `Apply complete! Resources: 0 added, 1 changed, 0 destroyed.`, `Modifications complete after 7s`,
+  started 18:40:02 UTC, the re-plan `No changes`. `get-project-profile`: `experimentation` `ENABLED`,
+  `lastUpdatedAt` 18:40:13 UTC, fourteen configurations, `SageMakerAIDomain` still `ffd41bb5-…` `ON_DEMAND` at
+  order 13 with fourteen overrides, `enableRStudio` `false` locked in the overrides and in the resolved
+  parameters. The failed environment `4dio1qb4twlbm8` still reads `VALIDATION_FAILED`: its deletion from *Code
+  spaces* and the second press are the user's next acts.
