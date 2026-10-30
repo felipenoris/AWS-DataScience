@@ -284,7 +284,8 @@ workgroup, and that is a decision with a written argument, not a map entry.
 silently.
 
 **Two prerequisites, and neither is in the notebook.** The environment must be up with the Redshift
-endpoint group — `make up ENV=sandbox GROUPS=redshift` — because without that endpoint `GetCredentials`
+endpoint group — `make up ENV=sandbox GROUPS=redshift`, the flag that also raises the workgroup
+(`slices.py` refusal 11) — because without that endpoint `GetCredentials`
 leaves through the proxy as a public request: the compute plane admits `.amazonaws.com`, so it is
 answered, through the door the group exists to replace (6h 3.5). And the project must be admitted to the
 warehouse: `sandbox/warehouse/`'s `projects` map, §P.
@@ -484,7 +485,8 @@ query path from anywhere.
 ### The JupyterLab door, from inside a space
 
 **Two doors reach this warehouse and they have different prerequisites**, so one of them answering
-says nothing about the other. The **Data page** reaches it as an AWS service — `sqlworkbench` calling
+says nothing about the other. Both need the workgroup, which `make up ENV=sandbox` raises only with
+`GROUPS=redshift`. The **Data page** reaches it as an AWS service — `sqlworkbench` calling
 Redshift, no network path at all — and the **JupyterLab** door is the space's own ENI opening `5439`
 to the workgroup's ENI inside one VPC. The script below is for the second, and it separates three
 questions a single *"it worked"* cannot:

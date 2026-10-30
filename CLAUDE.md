@@ -380,7 +380,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (PR #269), the lookup is reported upstream as issue 413, and `default-v0.10.0`, Sandbox's version 11 since
   2026-10-26, makes the CLI's name the house's through the base environment's activation hook.
 - **The Sandbox warehouse (5b, 6h)**: `sandbox/warehouse/` rank 53 `[P]` and `sandbox/warehouse-compute/`
-  rank 54 `[E]` (base 4 / max 8 RPU, usage limit 10 RPU-h monthly `deactivate`), database `sandbox`, schema
+  rank 54 `[E]` (base 4 / max 8 RPU, usage limit 10 RPU-h monthly `deactivate`; raised only by `make up
+  ENV=sandbox GROUPS=redshift` or an `ONLY=` naming it, refusal 11), database `sandbox`, schema
   `lab`. One project per tag key is admitted (`avhvbqn37ty7m8`); decision 8 owns the second,
   `test-experimentation`. The connection (`EXC-17`) carries **`lineageSync` on, daily 03:43 UTC, every run
   failing** (decision 3, the user's). **Cost**: 1.44 USD per query-hour at 4 RPU and 0.00 idle, with no

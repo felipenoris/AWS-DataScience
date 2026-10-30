@@ -76,7 +76,7 @@ apply.
 | Where | What | Layer |
 |---|---|---|
 | `sandbox/warehouse/` (new, rank 53) | **the data half**: the namespace `awsds-sandbox-warehouse` under `alias/awsds-sandbox-data`, its Secrets-Manager-managed admin credential, its three audit log groups **pre-created with a retention period**, the namespace IAM role `awsds-sandbox-warehouse-exec`, the workgroup's security group, and the `ComputeCapacity`/`DataStorage` alarms | `[P]` |
-| `sandbox/warehouse-compute/` (new, rank 54) | **the compute half, and nothing else**: the workgroup at `base_capacity = 4` in the private tier, and its `serverless-compute` usage limit. Destroyed by `make down ENV=sandbox`, created by `make up` | `[E]` |
+| `sandbox/warehouse-compute/` (new, rank 54) | **the compute half, and nothing else**: the workgroup at `base_capacity = 4` in the private tier, and its `serverless-compute` usage limit. Destroyed by `make down ENV=sandbox`, created by `make up ENV=sandbox GROUPS=redshift` (`slices.py` refusal 11) | `[E]` |
 | `terraform-modules/vpc-egress` (amended) + `sandbox/egress/` | a fourth optional endpoint group, **`redshift`**, holding `redshift-serverless` alone: `vpc-egress-v0.15.0`, a module change under Recipe B, since the module admitted only `bedrock`, `emr` and `mwaa` then (1.10) | `[E]` |
 | `identity/sso/` (amended) | what a persona may and may not do to the warehouse: the `redshift-serverless:Get*`/`List*` read side, and **no** `UpdateWorkgroup`, **no** `DeleteUsageLimit` | `[P]` |
 | `identity/org-policies/` (amended) | `DenyRedshiftProvisionedClusters` on the organization root, and `DenyRedshiftCostGuardTampering` — the two statements decision 3 settles | `[P]` |
