@@ -409,8 +409,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   lists as the template's `name;config;version` where the service takes JSON and translates (the lessons' AWS
   list); `test-experimentation` holds `lab-sagemaker-ai-domain` (`d-odhynkcev3yw`, environment
   `c9ge4welc308pc`) with the house image pinned at 11, idle 60/60/120 and RStudio off (`enableRStudio`
-  `false` until the Posit licence; the portal's RStudio card refuses), `US-5`/`US-7` passing on it; item 4's
-  space waits for `sandbox/egress`, item 5 the licence and the inline policy. Kiro CLI
+  `false` until the Posit licence; the portal's RStudio card refuses), `US-5`/`US-7` passing on it; item 4
+  closed with `pilot-jupyterlab` on the pinned image (`InService` 22:46 UTC, the pull from the Production
+  registry), item 5 the licence and the inline policy. Kiro CLI
   is step 10's door (decision 9); the hub is down since 2026-10-26.
 - **Stage 6e** is held by PR #108 (decision 17, the user's 5.5 agreements; Sonnet 4.5 is Legacy since
   2026-10-08). A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint);

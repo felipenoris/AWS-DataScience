@@ -3503,3 +3503,28 @@ as the infrastructure user.*
   --keep 10 --dry-run --target awsds-infra-sandbox-1` keeps versions 7 to 11, nothing past the keep; 2.4's
   after half holds by construction, the attachment being the profile's. Left of item 4: a JupyterLab space on
   the pinned image, which needs `sandbox/egress` up for its pull (the hub is down since 2026-10-26).
+
+### 2.6 item 4 closed: a JupyterLab space on the pinned image
+
+*The user saying the hub was up, Claude measuring it; the user's word for the space (*"Sim, clique"*); Claude
+in the user's portal session and reading as the infrastructure user in Sandbox. Times UTC.*
+
+- **The environment up**: `awsds-prod-vpn` and `awsds-prod-proxy` `running` since 15:59, the GitLab host
+  stopped; `slices.py status` reads `sandbox/egress` UP (27 resources, 20 endpoints available) and
+  `sandbox/probes` UP, the estimated burn 0.2090 USD/h.
+- **The dialog**, in the new domain: *Create space* with the *SageMaker AI domain* selector on
+  `lab-sagemaker-ai-domain`, the image opening on *AWS-DataScience dev-env v11* as the default, `ml.t3.medium`
+  (remote access refused below 8 GiB), *Advanced settings* reading *"Enter a value from 16 to 100GB"* and
+  *"Your administrator allows an idle timeout between 1 hour and 2 hours"*, the profile's ceilings in the
+  member's own form; no lifecycle configuration, no EFS. The name `pilot-jupyterlab`, *Create* pressed:
+  *"pilot-jupyterlab created successfully"*.
+- **The space and its app**: `CreateSpace` 22:36:24 by the project role from a browser, `CreateApp`
+  22:36:28 by `sagemaker.amazonaws.com` (`resourceSpec` empty, the space's spec applying); `describe-space`
+  `InService` at once with `SageMakerImageVersionArn` `…/awsds-sandbox-dev-env/11`, `SageMakerImageVersionAlias`
+  `4.5`, EBS 16, idle 60, `Private`, remote access `DISABLED`, the Data Scientist User's profile as owner.
+  The pull at 22:38:13: `GetAuthorizationToken` by the project role in a `SageMaker` session, then
+  `BatchGetImage` on `awsds-prod-ecr-dev-env` by digest `sha256:658c05d1…` and the `GetDownloadUrlForLayer`s,
+  the Production registry read cross-account as INT-01 says; the app `InService` at 22:46:21, ten minutes
+  after its creation. The card reads *Running*, *Instance: ml.t3.medium*, the domain's name, and *Version:
+  4.5*, the alias field rather than the image, a label to read past; its menu holds *Configure space*, *Start
+  space* (greyed while running), *Stop space* and *Delete*. The space was left to the idle shutdown.

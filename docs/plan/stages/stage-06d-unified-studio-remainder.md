@@ -230,7 +230,8 @@ work at all* — is still open.
      `ImageName`, `AppImageConfigName` and `ImageVersionNumber` (measured by an update of the living
      environment); the profile writes the JSON since. **Done 2026-10-30**: the press from the profile with
      its fourteen overrides bore `lab-sagemaker-ai-domain` (`d-odhynkcev3yw`, environment `c9ge4welc308pc`).
-  4. **[Claude]** The readings, taken 2026-10-30 but the space, which waits for `sandbox/egress` (the log):
+  4. **[Claude]** The readings, **taken 2026-10-30** (the log; the space `pilot-jupyterlab` on the pinned
+     image, its app `InService` ten minutes after the pull from the Production registry):
      the environment's stack and the new domain through `describe-domain`
      (`CustomImages` naming `ImageVersionNumber` 11 on both app types, `DefaultResourceSpec`, idle 60/60/120,
      the volume 16/100, `VpcOnly` on the project's subnets and group, `HomeEfsFileSystemId`,
