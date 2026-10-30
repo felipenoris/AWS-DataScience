@@ -44,6 +44,9 @@
 #      destroys no shared slice         an application slice and the orchestration slice alone; every
 #                                       shared slice is the user's make up/down in every account
 #                                       (Stage 8 decision 27, 2026-10-24)
+#  11. the warehouse's compute is       layers.OPT_IN_BY_GROUP: `up` without --only raises
+#      opt-in                           `warehouse-compute` only when --groups names `redshift`,
+#                                       the group that creates its API endpoint. `down` is unaffected
 #
 # How it authenticates: AWS_PROFILE is set on each command, from backend.PROFILES or from --profile
 # (Stage 8 step 4.4, the deploy runner's profiles), and no credential is ever exported into this
@@ -477,6 +480,18 @@ def cmd_updown(args) -> int:
             )
             return 2
         take = [sl for sl in take if sl.name in only]
+    elif action == "up":
+        # Refusal 11: `--groups` is the Makefile's GROUPS, the same list it hands Terraform as
+        # TF_VAR_optional_service_groups. `--only` above is explicit and skips this.
+        groups = [g.strip() for g in (args.groups or "").split(",") if g.strip()]
+        kept = []
+        for sl in take:
+            reason = layers.opt_in_refusal(sl.name, groups)
+            if reason:
+                skipped.append((sl, reason))
+            else:
+                kept.append(sl)
+        take = kept
 
     # --profile (Stage 8 step 4.4): the deploy runner names the role it acts as, since its AWS
     # configuration holds the deploy roles' profiles and none of backend.PROFILES. Refusal 8 is read
@@ -741,6 +756,13 @@ def main(argv: list) -> int:
             "(Stage 8 step 4.4): the deploy runner's profiles are its deploy roles. A deploy-role "
             "profile meets refusal 8 in an Interactive account.",
         )
+        if action == "up":
+            p.add_argument(
+                "--groups",
+                help="comma-separated optional endpoint groups, the Makefile's GROUPS: a slice in "
+                "layers.OPT_IN_BY_GROUP is raised only when its group is named (refusal 11). "
+                "Ignored with --only.",
+            )
         p.set_defaults(fn=cmd_updown, action=action)
     p = sub.add_parser("status")
     p.add_argument("--env")

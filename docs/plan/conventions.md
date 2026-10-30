@@ -507,7 +507,8 @@ terraform-modules/        # reusable modules (the roster and its tags: terraform
 ```
 
 `make down ENV=sandbox` destroys the `[E]` slices in reverse dependency order and stops the `[D]`
-instances; `make up ENV=sandbox` starts the `[D]` instances and applies the `[E]` slices; `make status`
+instances; `make up ENV=sandbox` starts the `[D]` instances and applies the `[E]` slices, `warehouse-compute/`
+only with `GROUPS=redshift` (`slices.py` refusal 11); `make status`
 reports what is running and the current hourly burn. **`ENV` names a business unit's sandbox, not *the*
 sandbox** (D35): Stage 14 step 6 makes the same `up`/`down` pair work against a generated unit, which is
 what makes a unit disposable rather than merely creatable. `[P]` slices are never touched by any of them;
