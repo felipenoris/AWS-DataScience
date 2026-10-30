@@ -985,7 +985,8 @@ cycle charge (0.36 to 0.87 per Sandbox `[E]` cycle, 0.21 to 0.38 per GitLab cycl
    curated.trades` and refusing an `INSERT` with Lake Formation's wording. The project role holds no Lake
    Formation grant on the lake, Sandbox's tag re-grants naming the Data Scientist User's set (Stage 9's log,
    2026-10-25), so before the subscription the `SELECT` reads a refusal, as 6g 2.4's read does, and the step
-   stays owed.
+   stays owed. **Done 2026-10-30 from the portal instead** (N.8.1 step 3, Stage 9's log): 30 rows read through
+   the subscription, the `INSERT` refused by Lake Formation at the vend.
 
 10. **The downs**: **[user]** the token revoked (*Access tokens → Revoke*) and `git credential-cache exit`
     in the terminal; every portal tab closed first, since an open project page starts the space's app
@@ -1129,9 +1130,11 @@ warehouse sittings of 2026-10-26. Stage 7 closed the same day, the user's decisi
 GitLab backup before the newest leaves the bucket and the leaves' re-issue by 2027-09-22, rides the sittings
 below. Each sitting starts on the user's word, since it is metered.
 
-1. **With nothing up** (N.8.1): Stage 8 decision 29's apply and the battery's `root` phase, done 2026-10-27,
-   the statement measured by N.8.2 step 5's job since the battery cannot reach it; Stage 9 8.1's read-but-not-write from the portal's query editor on Athena, which
-   runs with no space; Production's free-trial balance the day after xxiv's sitting.
+1. **With nothing up** (N.8.1), **done**: Stage 8 decision 29's apply and the battery's `root` phase on 2026-10-27;
+   on 2026-10-30 Stage 9 8.1's read-but-not-write from the portal's query editor on Athena, Production's
+   free-trial balance, and decision 29's optional reading, whose authorization id the battery's `root` row reads
+   when AWS issues one (Stage 8's and Stage 9's logs). N.8.2 step 5's job stays the statement's measurement for a
+   caller the trust admits.
 2. **The release sitting** (N.8.2), `v0.4.7`: the template's merge request (the deploy script, the snapshot
    record, `gates-v0.6.0`), the mirror at `main`, the tag and both legs, Stage 8 3.3's record read in
    Staging and Production, Stage 10 decision 11's Staging half, 3.7; `awsds/dev-env`'s merge request and
@@ -1294,10 +1297,10 @@ pair, and the alarm fired once per assumption with a notification delivered each
 
 #### N.7.3 The second Sandbox sitting
 
-Since 2026-10-27 it runs inside the release sitting, N.8.2 step 13, whose raises it shares, and Stage 9
-8.1's half is N.8.1 step 3, the portal's query editor needing no space. N.3's raises and downs, without GitLab when no clone is owed. What it closes: Stage 9 8.1's space half
-once 6f step 11's subscription is approved (N.3 step 9); and, `default-v0.10.0` registered as version 11
-on 2026-10-26, the `dev` deploy from a space on it by [`sagemaker-application.md`](sagemaker-application.md) §D,
+Since 2026-10-27 it runs inside the release sitting, N.8.2 step 13, whose raises it shares; Stage 9 8.1's half
+ran from the portal's query editor on 2026-10-30 (N.8.1 step 3). N.3's raises and downs, without GitLab when no
+clone is owed. What it closes, with `default-v0.10.0` registered as version 11 on 2026-10-26: the `dev` deploy
+from a space on it by [`sagemaker-application.md`](sagemaker-application.md) §D,
 `scripts/dev-cli.sh` for steps 6 and 7, with no `NO_PROXY` export, `getent hosts
 airflow-serverless.us-west-2.api.aws` answering a `10.20.x` address and the proxy log silent on the name.
 The clone carries the script once the template's merge request with it has merged on `awsds/app-etl`

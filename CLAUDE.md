@@ -479,7 +479,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   same day (14 statements), not reachable by the battery's wording (a role that does not exist hides the deny; an existing one's global refusal
   names it only through an authorization id, which the battery's `root` row reads when AWS issues one), so
   `sts-global-probe` measures it; the next release's sitting is
-  `runbooks/promotion.md` §N.8.2, the warehouse and backup sitting §N.8.3 (2026-11-22 to 11-25).
+  `runbooks/promotion.md` §N.8.2 (its step 12 the exercises of Stage 10 xx's second half and of xv on the
+  template's proxy checks, fixed for `v0.4.7` on 2026-10-28), the warehouse and backup sitting §N.8.3
+  (2026-11-22 to 11-25).
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
