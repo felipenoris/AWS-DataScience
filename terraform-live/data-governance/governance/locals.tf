@@ -216,9 +216,15 @@ locals {
     { name = "enableRStudio", value = "false", is_editable = false },
   ]
 
+  # 2.6 item 3's discriminator (2026-10-30): with true the SageMakerAIDomain element carries no
+  # override, so an environment created from the portal takes the template's defaults alone, no
+  # image, no ceiling, RStudio off. The environment's record decides whether the overrides return
+  # whole or one group at a time. False outside that reading.
+  sagemaker_ai_domain_defaults_only = true
+
   blueprint_parameters = {
     Tooling           = local.tooling_parameters
-    SageMakerAIDomain = local.sagemaker_ai_domain_parameters
+    SageMakerAIDomain = [for p in local.sagemaker_ai_domain_parameters : p if !local.sagemaker_ai_domain_defaults_only]
     S3Bucket = [
       { name = "bucketName", value = "changeme-project-bucket", is_editable = true },
     ]
