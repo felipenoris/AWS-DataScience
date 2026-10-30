@@ -3281,3 +3281,32 @@ no other session on the machine running.*
 - **What waits**: 2.6 items 2 and 3 are the user's (the console wizard read and cancelled; *Code spaces* in
   `test-experimentation` enabling the environment), then item 4's readings. A space on the new domain needs
   `sandbox/egress` up for its image pull; the hub is down since 2026-10-26.
+
+### 2.6 items 2 and 3: the portal's entry, and a validation that fails with an empty message
+
+*The user in the portal as the Data Scientist User; Claude reading DataZone and the trails as the infrastructure
+user.*
+
+- **[user]** *Manage → Govern → Blueprints* lists the blueprints, `SageMakerAIDomain` among them, with no action.
+  In `test-experimentation`, *Code spaces → Create space* with *Application* = RStudio offers *Create SageMaker AI
+  domain*; the form asked for a name (`lab-sagemaker-ai-domain`) and the four editable parameters,
+  `hiddenInstanceTypes` and `hiddenSageMakerImageVersionAliases` (left empty) and the two
+  `idleTimeoutInMinutes*` (60); *Create* answered *"SageMaker AI domain environment failed to deploy []"*.
+- **[Claude] The record**: environment `4dio1qb4twlbm8`, name `SageMakerAIDomain`, configuration `ffd41bb5-…`,
+  `createdAt` 16:28:21 UTC, status `VALIDATION_FAILED` at 16:28:34, `lastDeployment` `CREATE` `FAILED` with
+  `failureReason` `{code: "1", message: "[]"}`, no provisioned resource. Data Governance's trail: the portal's
+  `CreateEnvironment` as the domain execution role at 16:28:21 with five user parameters (`domainName`, the two
+  empty lists, the two timeouts), answered `CREATING`; then `GetEnvironmentBlueprint` at 16:28:23 and eight
+  `AssumeRole`s by `datazone.amazonaws.com` to 16:28:35, and no call to any other service. Sandbox's trail holds
+  no event at all in the window: no `AssumeRole` into the provisioning role, no stack, no `CreateDomain`. The
+  project's `Tooling` environment is `ACTIVE` with every value the template reads (`userRoleArn`,
+  `s3BucketArn`, `kmsKeyArn`, `vpcId`, `privateSubnets`, `securityGroup`, `nonGitProjectRepositoryLocation`) and
+  `SageMakerSpacesDomain` `d-lfgbdrjncmsu` from `enableSpaces` `true`; the domain quota is 500.
+- **[Claude] What the pages say**: SageMaker's own `CreateDomain` with RStudio settings *"checks for a valid
+  RStudio license in the account and fails Domain creation if the license is not found"*, a failure that would
+  have reached Sandbox as a stack event; the DataZone API lists `VALIDATION_FAILED` among an environment's
+  statuses and documents nothing of what it validates. The cause is unproven: a pre-check of RStudio's licence
+  inside DataZone, a refusal of a second spaces domain beside `Tooling`'s, or the parameters the portal sent.
+  The discriminators, in order of cost: a second attempt from the portal; `enableRStudio` `false` in the profile
+  (one apply), the failed environment deleted and the entry pressed again; an API `create-environment` with no
+  user parameter.
