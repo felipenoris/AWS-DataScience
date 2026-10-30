@@ -219,19 +219,23 @@ locals {
   # 2.6 item 3's discriminator (2026-10-30): with true the SageMakerAIDomain element carries no
   # override, so an environment created from the portal takes the template's defaults alone, no
   # image, no ceiling, RStudio off. The environment's record decides whether the overrides return
-  # whole or one group at a time. False outside that reading.
+  # whole or one group at a time. False outside that reading. The key leaves the map rather than
+  # holding an empty list: DataZone stores no parameterOverrides for an empty one, and `[]` in the
+  # configuration is a diff on every plan (read 2026-10-30).
   sagemaker_ai_domain_defaults_only = true
 
-  blueprint_parameters = {
-    Tooling           = local.tooling_parameters
-    SageMakerAIDomain = [for p in local.sagemaker_ai_domain_parameters : p if !local.sagemaker_ai_domain_defaults_only]
-    S3Bucket = [
-      { name = "bucketName", value = "changeme-project-bucket", is_editable = true },
-    ]
-    S3TableCatalog = [
-      { name = "catalogName", value = "changemecatalog", is_editable = true },
-    ]
-  }
+  blueprint_parameters = merge(
+    {
+      Tooling = local.tooling_parameters
+      S3Bucket = [
+        { name = "bucketName", value = "changeme-project-bucket", is_editable = true },
+      ]
+      S3TableCatalog = [
+        { name = "catalogName", value = "changemecatalog", is_editable = true },
+      ]
+    },
+    local.sagemaker_ai_domain_defaults_only ? {} : { SageMakerAIDomain = local.sagemaker_ai_domain_parameters },
+  )
 
   # The overrides each profile passes, by profile name. `lake-publishing` takes experimentation's
   # Tooling rows plus `enableSpaces` false and locked: the template creates the project's SageMaker
