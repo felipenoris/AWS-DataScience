@@ -314,7 +314,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   user is [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md)**: read it before asking
   the user anything, and remove a row in the sitting that takes it.
 - **The SCP battery** read `ou` 47 as expected / 0 unexpected / 7 not measured on 2026-10-22 (Stage 18's
-  carve-out removed, Stage 9 3.5's instance-preference rows run for the first time) and `root` 25 / 0 / 0 on 2026-10-18. **SageMaker job quotas are above zero in
+  carve-out removed, Stage 9 3.5's instance-preference rows run for the first time) and `root` 25 / 0 / 1 on 2026-10-30 (decision 29's row a note: its refusal carried no authorization id). **SageMaker job quotas are above zero in
   Production and Staging since 2026-10-24** (read 03:47 UTC, Sandbox's values: training 20 and transform 8
   for `ml.m5.large`, processing 8, `ml.t3.medium` 10), the four requests of 2026-10-23 still
   `CASE_OPENED`. The probes read `ResourceLimitExceeded` as authorized; the `ou`
@@ -343,7 +343,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   lifted, `warehouse-compute/` raised per warehouse sitting, 9.3 run 2026-10-24 (the schema `trades` at 1 TB, the roles, the `IAMR:` users, the default privileges, every `PUBLIC`
   `CREATE` revoked), **9.4 to 9.7 done 2026-10-25**: the DDL job and the load (decision 15's Production-only workflow, its schedule `DISABLED` through the slice) after the deploy role's `FollowItsOwnStatements` and the job group's 5439 egress; 9.5's datashare across Production, Data Governance (decision 14) and Sandbox; 9.7 read from `eighth-experimentation` through the access role's catalog read, its Lake Formation grant and `TEMP` (`redshift-connection.md` §G), and with Production's workgroup gone;
   `workloads-egress/` taking `GROUPS=redshift`; the `ml.m5.large` pair requested 2026-10-23 (`CASE_OPENED`); the
-  persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run but 8.1's space half (3.4's from a space 2026-10-26; INT-06 answered, open
+  persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run (8.1's space half 2026-10-30 from the portal's query editor; 3.4's from a space 2026-10-26; INT-06 answered, open
   question 8 closed; the Data API negative 2026-10-26); the sittings in `runbooks/promotion.md`. 2026-10-25, nothing up: 9.5's
   Terraform adoption applied (the registration and the LF-Tags by hand, no importer), xii's registry read in
   `model-chain.py transform staging` with `staging/foundation/`'s output, applied. **§N.2 run 2026-10-26**: xviii and
@@ -385,7 +385,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `test-experimentation`. The connection (`EXC-17`) carries **`lineageSync` on, daily 03:43 UTC, every run
   failing** (decision 3, the user's). **Cost**: 1.44 USD per query-hour at 4 RPU and 0.00 idle, with no
   pause, so `make down` is the guarantee; the ratchet past 4 never returns; the free trial, 300 USD per
-  account for 90 days, absorbs the bill to 2026-12-19 in Sandbox and to 2027-01-21 in Production (299.54 USD left in Production and 287.51 in Sandbox on 2026-10-26; the window opens with the namespace). **`EXC-13`**: the admin secret's first rotation succeeded on 2026-10-20 with no workgroup,
+  account for 90 days, absorbs the bill to 2026-12-19 in Sandbox and to 2027-01-21 in Production (299.50 USD left in Production on 2026-10-30 and 287.51 in Sandbox on 2026-10-26; the window opens with the namespace). **`EXC-13`**: the admin secret's first rotation succeeded on 2026-10-20 with no workgroup,
   against AWS's page, and the database took the password (the Data API as `dbadmin` through the secret, 2026-10-25). SQL from a notebook is `redshift-connection.md` §J. AWS's `SageMakerStudioProjectUserRolePolicy` v75 grants
   every project role `GetCredentials` and the Data API on a workgroup tagged with its project, `GetCredentials` on
   any workgroup through `sqlworkbench`, and the secrets tagged with its project or
@@ -482,9 +482,12 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   mirror at `main`, `gates-v0.6.0` with decision 1's zlib pair, `default-v0.10.0` as Sandbox's version 11,
   xxviii's active half (a global-endpoint `AssumeRole` lands in `us-east-1`, past 4.6's rules). **Decision
   29 taken 2026-10-27 as (b)**: the root baseline's `DenyDeployRoleAssumptionOutsideTheRegion` applied the
-  same day (14 statements), not reachable by the battery (a role that does not exist hides the deny), so
+  same day (14 statements), not reachable by the battery's wording (a role that does not exist hides the deny; an existing one's global refusal
+  names it only through an authorization id, which the battery's `root` row reads when AWS issues one), so
   `sts-global-probe` measures it; the next release's sitting is
-  `runbooks/promotion.md` §N.8.2, the warehouse and backup sitting §N.8.3 (2026-11-22 to 11-25).
+  `runbooks/promotion.md` §N.8.2 (its step 12 the exercises of Stage 10 xx's second half and of xv on the
+  template's proxy checks, fixed for `v0.4.7` on 2026-10-28), the warehouse and backup sitting §N.8.3
+  (2026-11-22 to 11-25).
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.

@@ -272,16 +272,25 @@ probe("root", "prod", "deny", None, "blocked",
        '{"SubnetIds":["@SUBNET@","@SUBNET@"],"SecurityGroupIds":["sg-0123456789abcdef0"]}',
        "--region", "us-west-2"])
 
-# --- DenyDeployRoleAssumptionOutsideTheRegion (Stage 8 decision 29) IS NOT PROBED, and that is a
-#     measurement (2026-10-27). With the statement attached at 02:58 UTC, an AssumeRole of
-#     awsds-deploy-battery-probe, a role that exists nowhere, through sts.amazonaws.com still answered
-#     the plain "not authorized to perform: sts:AssumeRole on resource", the wording of before the apply,
-#     at the battery's run at 02:59 and in 20 tries from 03:00 to 03:09, and CloudTrail recorded the same
-#     message in us-east-1, while the IAM simulator read the call explicitDeny for us-east-1 and allowed
-#     for us-west-2. The refusal of a role that does not exist hides the deny, so a row on one reads
-#     ALLOWED for ever: Lesson 50's permanently-red check. The statement's measurement is the job
-#     sts-global-probe on the deploy runner, whose role the deploy roles trust, so that a refusal through
-#     the global endpoint can only be the baseline's; POLICIES.md says so.
+# --- DenyDeployRoleAssumptionOutsideTheRegion (Stage 8 decision 29). STS's refusal names no policy, so
+#     the driver reads the evaluation AWS recorded for it through the authorization id the refusal
+#     carries, and the row reads DENY-SCP with the statement's Sid. AWS issues the id on some refusals
+#     only: the user's global AssumeRole of awsds-deploy-prod at 06:09:53 UTC on 2026-10-30 carried one,
+#     whose evaluation named this statement, and the battery's same call at 06:25:03 carried none, so
+#     the row read DENY-NOT-SCP, a note. A regression never reads DENY-SCP: that reading is the
+#     measurement, and a note is none. The role exists and trusts the deploy runner alone; a role that
+#     exists nowhere hides the deny (2026-10-27: 21 global refusals of awsds-deploy-battery-probe in
+#     Policy Canary carried STS's plain text and no id, while the IAM simulator read explicitDeny).
+#     No allowed_re: the trust refuses this call with the same text whatever the ceiling does.
+#     `blocked`: with the deny lifted, the trust still refuses and no credentials are issued. The
+#     regional path has no row: its refusal carried no id on 2026-10-30, so it reads the same whether a
+#     statement denies it or not. sts-global-probe on the deploy runner, whose role the deploy roles
+#     trust, measures both paths for a caller the trust admits.
+probe("root", "prod", "deny", None, "blocked",
+      "sts:AssumeRole of awsds-deploy-prod, global endpoint (the trust names the runner alone)",
+      ["sts", "assume-role", "--role-arn", "arn:aws:iam::@ACCT@:role/awsds-deploy-prod",
+       "--role-session-name", "scp-battery", "--endpoint-url", "https://sts.amazonaws.com",
+       "--region", "us-east-1"])
 
 # --- the floor, on the canary
 probe("root", "canary", "allow", None, "ro", "floor: sts:GetCallerIdentity",

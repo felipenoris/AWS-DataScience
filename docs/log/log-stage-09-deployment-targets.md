@@ -3061,3 +3061,67 @@ reads only. Times UTC.*
   (`trade_date` date, `desk` and `instrument` string, `quantity` and `price` double), so it reaches
   authorization rather than stopping at its shape (Lesson 21).
 - **[Claude] The record**: 8.1's text and the status cell; the waiting list's row; `promotion.md` §N.6 and §N.8.
+
+## 2026-10-30 — 8.1's space half: the project role reads `curated.trades` and is refused the insert
+
+*The user in the portal as the Data Scientist User, `eighth-experimentation`'s query editor with *Athena (SQL)*
+as the compute, nothing up (`promotion.md` §N.8.1 step 3); Claude read AWS as the infrastructure user with
+`InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and `Data Governance Account`
+(`awsds-infra-data`), reads alone. Times UTC.*
+
+- **[user]** The count *"retornou 30"*; the insert's error, pasted verbatim: *"Insufficient permissions to
+  execute the query. Principal does not have any privilege on specified resource . If a data manifest file
+  was generated at
+  's3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/sys/athena/c4744bec-4c60-4805-8998-64646d4cb385-manifest.csv',
+  you may need to manually clean the data from locations specified in the manifest. Athena will not delete
+  data in your account."*
+- **[Claude] The executions** in `workgroup-avhvbqn37ty7m8-5hkjdsy3umpi1c`, the editor appending ` LIMIT 100`
+  to each statement, the insert's included: `e13f4751-2eff-417d-996b-90c199dcea46`, the count, `SUCCEEDED`,
+  submitted 03:45:44, 0 bytes scanned, 1,866 ms in the engine, its result `30`;
+  `c4744bec-4c60-4805-8998-64646d4cb385`, the insert, `FAILED`, submitted 03:46:58 and ended 03:47:00, 0 bytes
+  scanned, its `AthenaError` category 2, type 1500: *"Principal does not have any privilege on specified
+  resource (Service: AWSLakeFormation; Status Code: 400; Error Code: AccessDeniedException; Request ID:
+  808b75b8-6f91-4d28-bec1-eafb3a933bce; Proxy: null)"*.
+- **[Claude] Sandbox's trail**: both `StartQueryExecution` (03:45:44 and 03:46:58) as the project role
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, invoked by `sqlworkbench.amazonaws.com`, the Data
+  Scientist User's profile as source identity. The count's vend at 03:45:45: `GetDataAccess` for `SELECT`,
+  invoked by `athena.amazonaws.com` on the resource link `glue_db_blerpkhn9nj7o0/trades` and by
+  `glue.amazonaws.com` on the lake's `curated/trades`. The insert's, on the same two resources: `SELECT`
+  granted at 03:46:59 (`88d5e667…`), then `INSERT` refused at 03:47:00 (`808b75b8…`, the request the error
+  names) and `DELETE` refused at 03:47:00 and 03:47:01 (`ecf078a2…`), each `AccessDenied` with *"Principal
+  does not have any privilege on specified resource"*. No `UpdateTable`.
+- **[Claude] Data Governance's trail**: the same vends in the cross-account form (`AWSAccount`, invoked by
+  `glue.amazonaws.com`), the two `SELECT` granted and the `INSERT` and `DELETE` refused with the same wording;
+  `awsds-data-lf-registration` decrypting under the lake's key with the context `awsds-data-curated` (ten
+  `Decrypt` at 03:45:45, one at 03:46:59); no `GenerateDataKey` and no `UpdateTable` in the window.
+- **[Claude] Nothing written**: `curated.trades`' current metadata is still
+  `00003-c291e115-64a5-44f0-9756-66d6197e8931.metadata.json`, the table updated last on 2026-10-24 at
+  22:26:46, xxviii's third run. The project's result prefix holds the count's `e13f4751….csv` (13 bytes,
+  03:45:47) and no object named after `c4744bec`, so no manifest was generated and nothing waits to be
+  cleaned.
+- **Verdict**: 8.1's space half is answered, and with the laptop half of 2026-10-23, 8.1. The project role
+  reads the lake's table through the subscription and cannot write it: Lake Formation refused the write at
+  the vend, the layer the step expected, after the role's IAM set had let `GetDataAccess` through (Lesson
+  20). The write never reached S3, so the lake bucket's and key's policies behind the vend are attached, not
+  exercised by this attempt; the laptop half's `aws s3 cp` met the set's implicit deny on the same bucket.
+- **[Claude] The record**: 8.1's text and the status cell; the waiting list's row and the Sandbox sitting's
+  mention; `promotion.md` §N.8.1 step 3.
+
+## 2026-10-30 — the free trial's Production balance, days after xxiv's sitting
+
+*The user's hand in the Redshift Serverless console as the infrastructure user, pasted in chat verbatim at
+about 03:58 UTC (`promotion.md` §N.8.1 step 4); Claude read AWS as the infrastructure user with
+`InfrastructureAccess` in `Production` (`awsds-infra-prod`), reads alone.*
+
+- **[user]** Production: *"Free trial credits remaining $299.50 out of $300.00"*, *"Free trial expiration
+  January 21, 2027"*.
+- **[Claude] No compute since the sitting**: `list-workgroups` empty at 03:58 UTC; the trail's last
+  `DeleteWorkgroup` calls at 2026-10-26 22:07:50 to 22:07:52, xxiv's teardown, and no `CreateWorkgroup` since
+  22:00 that day.
+- **[Claude] The reading**: 0.04 USD landed after the reading of 2026-10-26 at about 22:45 with no workgroup in
+  between, so xxiv's sitting cost 0.16 USD in all (299.66 to 299.50), where `ComputeSeconds` read 78
+  RPU-seconds. The reading 38 minutes after the sitting missed a quarter of its bill, as the 01:50 reading
+  missed 0.03 of §N.2's 0.05. The next pair is the next warehouse sitting's (`promotion.md` §N.8.3).
+- **[Claude] The record**: the waiting list's balance row and the trial's end row; `promotion.md` §N.8.1 step
+  4; the warehouse's cost row here, `docs/PRICING.md` and `docs/plan/cost-model.md`; `CLAUDE.md`'s Current
+  position.

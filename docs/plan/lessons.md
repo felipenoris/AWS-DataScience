@@ -2002,6 +2002,17 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   read the same call `explicitDeny`. A battery row built on a role that does not exist, the shape that
   measures most other denies here, cannot measure one on `sts:AssumeRole`; a caller the role trusts can.
   Where: `log-stage-08-cicd-pipelines.md`, 2026-10-27.
+- **STS's refusal text never names the SCP behind an `sts:AssumeRole` deny; an authorization id can** (measured
+  2026-10-30, Stage 8 decision 29, in Production). An `AssumeRole` of `awsds-deploy-prod`, which exists and
+  trusts the runner alone, through `sts.amazonaws.com` answered the plain *"not authorized to perform:
+  sts:AssumeRole on resource"* and an authorization id, where AWS's page shows a denial naming the policy type
+  and ARN in its text. `aws iam-toolbox get-request-authorization-details --region us-east-1` on the id named
+  `DenyDeployRoleAssumptionOutsideTheRegion` as the matched deny, `EXPLICIT_DENY`. The same call through
+  `sts.us-west-2.amazonaws.com`, refused by the trust alone, carried no id, nor did the 21 global refusals of a
+  role that exists nowhere on 2026-10-27: whether a missing role, the deny's kind or the preview's rollout
+  withholds the id, these readings do not separate. The details are kept 24 hours and read in the Region of
+  the denial. Nor does every refusal carry one: the battery's same call 15 minutes later, at 06:25:03, carried
+  none. Where: `log-stage-08-cicd-pipelines.md`, 2026-10-30.
 
 ### Lake Formation and SageMaker Unified Studio
 

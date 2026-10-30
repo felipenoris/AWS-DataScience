@@ -1798,3 +1798,43 @@ reads only. Times UTC.*
   tests passing on the laptop (Stage 8's log), and N.7.3's `dev` deploy on version 11 runs inside the
   release sitting (§N.8.2 step 13), Sandbox's `egress/` with the `mwaa` group being up for `test-deploy`
   anyway.
+
+## 2026-10-27 and 2026-10-28 — verification xx's second half prepared with nothing up
+
+*Claude's hand, at the request to prepare `promotion.md` §N.8.2 step 12 with nothing up: AWS as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), reads only, the policy simulator among
+them; the template's gates on the laptop, offline. Times UTC.*
+
+- **[Claude] What reads a task's `job_name`**: nothing between the branch and the run. The lint's `glue` rule at
+  `awsds-workflows` `d856982c`, read in the archive the template pins, checks a `GlueJobOperator`'s
+  `script_location`, `Command.ScriptLocation` and `--extra-*` files against the allowed prefixes and, in the
+  promoted mode, refuses `create_job_kwargs`, `script_location`, `iam_role_arn`, `update_config` and `job_desc`;
+  `scripts/render-workflow.py` maps `app-etl-<suffix>-{proj.id}` to `awsds-<env>-app-etl-<suffix>` and drops
+  those keys; `scripts/lint-plan.py` reads the application slice's own `aws_glue_job`; the template's tests read
+  no workflow file. The orchestration slices grant the workflow's role `RunTheApplicationsGlueJobs` on
+  `glue_jobs`, `awsds-<env>-app-etl` alone.
+- **[Claude] The break, offline** (2026-10-27 about 03:31, again 2026-10-28 22:23:39 to 22:23:48 on this change's
+  tree): a copy of `examples/app-etl/` with `job_name: app-etl-undeclared-{proj.id}`, the one line changed; ruff
+  and `ruff format --check` clean, *"45 passed"*, the lint with the job's options *"ok: 9 arquivo(s)"*; rendered
+  for Staging with stand-in values (tag `v0.4.8`), `job_name: awsds-staging-app-etl-undeclared` and no creation
+  key; the promoted lint as `release-application.py --lint` calls it, `--prefix
+  s3://awsds-staging-outputs/applications/app-etl/v0.4.8/`, *"ok: 1 arquivo(s)"* on each of `app-etl.yaml`,
+  `app-etl-train.yaml` and `app-etl-warehouse.yaml`.
+- **[Claude] The policy simulator** (2026-10-27, before 03:34) on `awsds-prod-wf-app-etl`, the role Staging's
+  slice creates from the same module (`orchestration-v0.2.1`), `aws:RequestedRegion` `us-west-2`: `glue:GetJob`
+  and `glue:StartJobRun` `allowed` on `job/awsds-prod-app-etl` by `role_awsds-prod-wf-app-etl_orchestrate`, and
+  `implicitDeny` on `job/awsds-prod-app-etl-undeclared`; `glue:CreateJob` `implicitDeny` on both.
+- **[Claude] The reading it predicts**: the operator reads the job before it creates one and counts only
+  `EntityNotFoundException` as absent (provider 9.32.0; the lab's first run in a project, 2026-10-16, stopped at
+  `GetJob` with `AccessDenied` and no `CreateJob`), so the undeclared name is expected to fail at `GetJob`,
+  refused by the grant, with no `CreateJob` call: xx asked about `CreateJob`, and the name fails closed one call
+  earlier. `terraform-modules/orchestration/workflows.tf`'s comment says such a name reaches `CreateJob`. In
+  Sandbox the break's `test-deploy` creates `app-etl-undeclared-<the test project's id>` under
+  `GetAGlueJobNoProjectHolds` and the blueprint's create grant, the residue the exercise deletes.
+- **[Claude] Production's before** (2026-10-28, about 22:22): `awsds-prod-app-etl` reads
+  `s3://awsds-prod-outputs/applications/app-etl/v0.4.6/glue/transform.py`, and `awsds-prod-app-etl-undeclared`
+  *"Job not found."*
+- **[Claude] The exercise**, `promotion.md` §N.8.2 step 12a: the branch `xx-undeclared-glue-job` and the tag
+  `v0.4.8` if free, the leg to `staging-test`'s failure, the diagnosis from the APIs, the trail and the two
+  rules before any `make down ENV=staging`, Production read untouched, the branch and the Sandbox residue
+  deleted after, and the module's comment brought to the reading at its next tag.
