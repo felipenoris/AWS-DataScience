@@ -215,7 +215,12 @@ work at all* — is still open.
      (Lesson 39): every field it asks for beyond the configuration's.
   3. **[user]** In `test-experimentation`, *Code spaces*: the entry that enables the environment, read before
      it is pressed, then enabled. The fallback is `datazone create-environment` with the profile's
-     configuration id, as a contributor (Stage 17 1.5's path).
+     configuration id, as a contributor (Stage 17 1.5's path). The first press, 2026-10-30, ended
+     `VALIDATION_FAILED` with the message `[]`, thirteen seconds after `CreateEnvironment` and with no call
+     into Sandbox (the log). The discriminator run first: `enableRStudio` `false` in the profile
+     **[Claude⚡]**, the failed environment deleted by its owner and the entry pressed again **[user]**. A
+     domain born this way separates the licence pre-check from the rest; a second `[]` sends the next press
+     to the API form with no user parameter.
   4. **[Claude]** The readings: the environment's stack and the new domain through `describe-domain`
      (`CustomImages` naming `ImageVersionNumber` 11 on both app types, `DefaultResourceSpec`, idle 60/60/120,
      the volume 16/100, `VpcOnly` on the project's subnets and group, `HomeEfsFileSystemId`,
@@ -225,7 +230,10 @@ work at all* — is still open.
      half, by construction.
   5. **[user]** The Posit Workbench licence (from Posit or AWS Marketplace, granted through License Manager
      in `us-east-1`, accepted in Sandbox's console) and the inline policy on the pilot project's role, AWS's
-     JSON from the blueprint's admin page; then an RStudio space and its session. **[Claude]** The session's
+     JSON from the blueprint's admin page. **[Claude⚡]** `enableRStudio` back to `true` in the profile, and
+     the way it reaches the domain, measured: a second environment from the same entry, or SageMaker's
+     `UpdateDomain`, which adds RStudio to a living domain (the template's note says only that it is never
+     removed). **[user]** Then an RStudio space and its session. **[Claude]** The session's
      start in the trail (`CreateApp` on `RStudioServerPro` and `RSessionGateway`, the checkout at
      `license-manager`), the proxy's log for Posit's names, `PRICING.md` §8's rows against the first bill.
   6. **The rollback**: the environment deleted from *Code spaces* by the owner (the domain goes with its stack;

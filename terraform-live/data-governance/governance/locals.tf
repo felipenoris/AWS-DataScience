@@ -183,10 +183,13 @@ locals {
   # template's own and per app type, so Tooling's rows above do not reach this domain: the same
   # ceilings are written again, locked (Lesson 5), from the same variables. The image triples are
   # `imageName;appImageConfigName;versionNumber`, the template's comma-separated form, one entry per
-  # app type. enableRStudio cannot be turned off once true (the template's note), so it is a locked
-  # value, not a member's choice; with it the template adds an EFS home, service-managed security
-  # groups and Posit's RStudio, whose licence and inline policy are the user's acts (the waiting
-  # list). hiddenInstanceTypes, hiddenSageMakerImageVersionAliases and domainName keep the template's
+  # app type. enableRStudio is locked, never a member's choice: the template's note says RStudio is
+  # never removed from a domain. It is false while the account holds no Posit licence: the first
+  # environment created with true ended VALIDATION_FAILED with an empty message and no call into
+  # Sandbox (2.6 item 3, 2026-10-30), and the flip to false is the discriminator. With true the
+  # template adds an EFS home, service-managed security groups and Posit's RStudio, whose licence
+  # and inline policy are the user's acts (the waiting list); the value returns to true at 2.6
+  # item 5. hiddenInstanceTypes, hiddenSageMakerImageVersionAliases and domainName keep the template's
   # empty defaults: the instance ceiling is the SCP's, not a picker's (Lesson 5).
   sagemaker_ai_domain_parameters = [
     {
@@ -210,7 +213,7 @@ locals {
     { name = "maxIdleTimeoutInMinutesJupyterLab", value = tostring(var.max_idle_timeout_minutes), is_editable = false },
     { name = "maxIdleTimeoutInMinutesCodeEditor", value = tostring(var.max_idle_timeout_minutes), is_editable = false },
     { name = "maxEbsVolumeSize", value = tostring(var.max_ebs_volume_size_gb), is_editable = false },
-    { name = "enableRStudio", value = "true", is_editable = false },
+    { name = "enableRStudio", value = "false", is_editable = false },
   ]
 
   blueprint_parameters = {

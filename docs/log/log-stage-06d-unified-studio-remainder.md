@@ -3310,3 +3310,19 @@ user.*
   The discriminators, in order of cost: a second attempt from the portal; `enableRStudio` `false` in the profile
   (one apply), the failed environment deleted and the entry pressed again; an API `create-environment` with no
   user parameter.
+
+### 2.6 item 3's discriminator: `enableRStudio` off, planned
+
+*The user choosing the discriminator in chat (*"Desligar RStudio"*); Claude editing and planning as the
+infrastructure user, in Data Governance.*
+
+- **The change**: `enableRStudio` `false`, still locked, in `experimentation`'s `SageMakerAIDomain` element
+  (`data-governance/governance/locals.tf`); the comment carries the reason and the return to `true` at 2.6
+  item 5. The plan, saved outside the repository at 18:36 UTC: `0 to add, 1 to change, 0 to destroy`,
+  `awscc_datazone_project_profile.this["experimentation"]` updated in place, the one attribute `value "true"
+  -> "false"`, the other thirteen elements unchanged. The apply waits on the user's word.
+- **What follows the apply**: the failed environment `4dio1qb4twlbm8` deleted by its owner from *Code spaces*,
+  the entry pressed again. A domain born separates the licence pre-check from the other two hypotheses; a
+  second `[]` sends the next press to `create-environment` with no user parameter.
+- No other session on the machine was running at the plan (`list_sessions`: the newest activity 18:35 UTC, a
+  read-only cost session on PR #278).
