@@ -3185,8 +3185,9 @@ an AI assistant in the portal; read-only calls as the infrastructure user in San
   `RStudio:RServer-ml.t3.medium` 0.00 USD/h, `RSession-ml.t3.medium` and `RSessionGateway-ml.t3.medium` 0.050 in
   `us-west-2` and 0.081 in `sa-east-1` (`PRICING.md` §8).
 - **[Claude] The assistant**: no October source announces one. AWS documents two, Amazon Q Developer (`TM-11`,
-  step 10) and the SageMaker Data Agent (`TM-23`), on the admin guide's generative AI page, unchanged; which one
-  the portal shows is the user's to name.
+  step 10) and the SageMaker Data Agent (`TM-23`), on the admin guide's generative AI page, unchanged.
+- **[user]** *"SageMaker Data Agent, um assistente de IA integrado ao ambiente de Query Editor do Amazon SageMaker
+  Unified Studio."* `TM-23`'s channel, so the domain's switch is on; `get-domain` carries no field for it.
 - **[Claude] Designations**: `ListDesignations` on `awsds-studio`, the laptop's CLI 2.37.12 running botocore's
   `develop` model from `AWS_DATA_PATH`: `PROJECT_OWNER` and `PROJECT_CONTRIBUTOR`, both `MANAGED`, `createdBy`
   `system`, `deletionProtection` true. The four projects' memberships are the ones of 2026-10-27. The release

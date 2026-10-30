@@ -46,10 +46,12 @@ a deletable default space and an assistant in the portal: the user guide's
 Tooling blueprints and light mode), What's New to 2026-10-29, the document history to 2026-10-29,
 botocore 1.43.122 (2026-10-29) and its `develop` model, the domain `awsds-studio`, Sandbox's SageMaker AI
 domains, spaces and trail, and the project role's managed policies. Light mode for Identity Center domains
-(2026-10-26) moves nothing. The assistant the user saw is unannounced: AWS documents two, Amazon Q Developer
-(`TM-11`, 6d step 10) and the SageMaker Data Agent (`TM-23`), on the
+(2026-10-26) moves nothing. The assistant the user saw is the SageMaker Data Agent in the Query Editor (named
+by the user 2026-10-30), `TM-23`'s channel, offered in Identity Center domains since 2026-04-23 and documented
+beside Amazon Q Developer (`TM-11`, 6d step 10) on the
 [generative AI assistance page](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/amazonq.html),
-unchanged on 2026-10-30; which one the portal shows is the user's to name.
+unchanged on 2026-10-30; no October source announces a change to it, and the sighting reads the domain's
+switch as on.
 
 | Change | Plan items it moves | Verdict | Confirmed by |
 |---|---|---|---|
@@ -211,7 +213,7 @@ None is applied here; each is a change of its own, with the plan read first.
 - **The `SageMakerAIDomain` blueprint's console wizard** (Lesson 39) and the portal's *Blueprints* tab, before
   6d decision due 15 is taken; whether the sample profiles move to it.
 - **The default space**: what *Code spaces* starts in `eighth-experimentation` with no default space, at the
-  user's next portal sitting, and which assistant the portal shows.
+  user's next portal sitting.
 - **The two project policies** after each document-history entry: open question 22's pull-and-diff, run by
   hand on 2026-10-30.
 - **The price list**: `AWSGlue` and `AmazonS3` when Stage 11 decides the Redshift feed; `AmazonSageMaker` at

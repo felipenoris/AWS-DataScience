@@ -399,7 +399,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (`upstream-releases.md`): the `SageMakerAIDomain` blueprint (24 managed names) carries the image attachment as
   profile parameters and RStudio behind a Posit licence, decision due 15 the user's; the portal deleted
   `eighth-experimentation`'s default space (the trail, 03:49 UTC); custom designations are API-only; the project
-  role's managed policies moved to v76/v47 on 2026-10-29 (`TM-28`).
+  role's managed policies moved to v76/v47 on 2026-10-29 (`TM-28`); the assistant the user saw is the Data Agent in
+  the Query Editor (`TM-23`, the domain switch on).
 - **Stage 6e** is held by PR #108 (decision 17, the user's 5.5 agreements; Sonnet 4.5 is Legacy since
   2026-10-08). A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint);
   retention mode `none` is declared in all 17 Regions and frozen by 7.5; `claude-opus-5` and
