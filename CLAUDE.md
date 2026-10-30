@@ -404,10 +404,13 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the Query Editor (`TM-23`, exercised 2026-10-30: the calls in Sandbox's trail as the project role, no Bedrock
   event of its own; the decision beside 6d decision 9 is the user's). **Decision 15 taken 2026-10-30 as (b)**:
   `sagemaker-prereqs-v0.9.0`, `experimentation`'s element at order 13 with the image pinned at
-  `var.sandbox_dev_env_version` (11), both applied 2026-10-30 (`US-3` at 14). The portal's first environment
-  (`test-experimentation`, the entry under RStudio) ended `VALIDATION_FAILED` with the message `[]` and no call
-  into Sandbox, so `enableRStudio` is `false` until the Posit licence (2.6 item 3's discriminator, applied
-  2026-10-30 18:40 UTC); the licence and the inline policy owed before an RStudio session. Kiro CLI
+  `var.sandbox_dev_env_version` (11), both applied 2026-10-30 (`US-3` at 14). **2.6 items 1, 3 and most of 4
+  done 2026-10-30**: two environments ended `VALIDATION_FAILED` with `[]` because the profile wrote the image
+  lists as the template's `name;config;version` where the service takes JSON and translates (the lessons' AWS
+  list); `test-experimentation` holds `lab-sagemaker-ai-domain` (`d-odhynkcev3yw`, environment
+  `c9ge4welc308pc`) with the house image pinned at 11, idle 60/60/120 and RStudio off (`enableRStudio`
+  `false` until the Posit licence; the portal's RStudio card refuses), `US-5`/`US-7` passing on it; item 4's
+  space waits for `sandbox/egress`, item 5 the licence and the inline policy. Kiro CLI
   is step 10's door (decision 9); the hub is down since 2026-10-26.
 - **Stage 6e** is held by PR #108 (decision 17, the user's 5.5 agreements; Sonnet 4.5 is Legacy since
   2026-10-08). A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint);

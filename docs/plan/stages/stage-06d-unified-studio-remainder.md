@@ -228,9 +228,10 @@ work at all* — is still open.
      project, whose `Tooling` already holds a domain. Run 2026-10-30: the domain was born, and the cause is
      the image lists' form, the template's `name;config;version` where the service takes a JSON list of
      `ImageName`, `AppImageConfigName` and `ImageVersionNumber` (measured by an update of the living
-     environment); the profile writes the JSON since, and the press after that apply, from the profile with
-     its fourteen overrides, is the proof.
-  4. **[Claude]** The readings: the environment's stack and the new domain through `describe-domain`
+     environment); the profile writes the JSON since. **Done 2026-10-30**: the press from the profile with
+     its fourteen overrides bore `lab-sagemaker-ai-domain` (`d-odhynkcev3yw`, environment `c9ge4welc308pc`).
+  4. **[Claude]** The readings, taken 2026-10-30 but the space, which waits for `sandbox/egress` (the log):
+     the environment's stack and the new domain through `describe-domain`
      (`CustomImages` naming `ImageVersionNumber` 11 on both app types, `DefaultResourceSpec`, idle 60/60/120,
      the volume 16/100, `VpcOnly` on the project's subnets and group, `HomeEfsFileSystemId`,
      `AppSecurityGroupManagement` `Service`, `RStudioServerProDomainSettings`); `US-1`..`US-10`; `./aws/vpn.py`

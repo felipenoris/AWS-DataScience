@@ -3467,3 +3467,39 @@ UTC−3 and is read from the event's own `eventTime`.*
   the ceilings 60/60/120, `maxEbsVolumeSize` 100, lifecycle `ENABLED`, `enableRStudio` `false`, the two
   default timeouts the only editable rows. The proof that follows: the test domain deleted from the portal's
   *Configure* panel and the entry pressed again, the environment born from the profile.
+
+### 2.6 item 3 closed, item 4's readings
+
+*The user's word for the two writes (*"Sim, os dois"*); Claude in the user's portal session and the readings
+as the infrastructure user.*
+
+- **The test domain deleted** from *Configure → Delete SageMaker AI domain*, a dialog that names the domain,
+  warns that the environment and its code spaces go with it, and takes the word `confirm`: the page's banner
+  *"Deleting your SageMaker AI domain for this project. This can take up to 5 minutes"*; the environment
+  `DELETING` at 22:19:18 UTC and gone at 22:19:29, the stack and the domain `d-tqvlxk2hftsv` gone with it.
+- **The fourth press, from the profile with its fourteen overrides**: the wizard back to the five open fields,
+  the name `lab-sagemaker-ai-domain`; `CreateEnvironment` 22:20:22, the stack `DataZone-Env-c9ge4welc308pc`
+  22:20:34, `SageMakerDomain` complete 22:20:51, the environment `c9ge4welc308pc` `ACTIVE` at 22:21:06 with
+  the `CREATE` deployment `SUCCESSFUL` and `sageMakerDomainId` `d-odhynkcev3yw`. The stack's parameters: the
+  image lists as the translated triples, the default-image ARNs at version 11, idle 60/60/120, lifecycle
+  `ENABLED`, `maxEbsVolumeSize` 100, `enableRStudio` `false`, the hidden lists empty. Item 3 is closed, and
+  the cause was the image lists' form alone: the other twelve overrides deploy as written.
+- **Item 4, the domain** `d-odhynkcev3yw` `lab-sagemaker-ai-domain`, `InService`: `AuthMode` `IAM`, `VpcOnly`
+  on the project's VPC, two subnets and group, no EFS, the project role as the execution role of users and
+  spaces, `CustomImages` naming the house image at `ImageVersionNumber` 11 on both app types,
+  `DefaultResourceSpec` pinned to the version-11 ARN on both, idle 60/60/120 `ENABLED`, EBS 16 default and
+  100 maximum, the portal lists empty, `ExecutionRoleSessionNameMode` `USER_IDENTITY`, no RStudio setting,
+  `AppSecurityGroupManagement` unset (so no service-managed group, and `VP-3` has nothing new to read:
+  `pass`, the VPN home's UDP/51820 the estate's one world-open rule).
+- **Item 4, the portal**: *Create space* now carries a *SageMaker AI domain* selector (*"Choose which of your
+  project's SageMaker AI domains this space is created in"*) naming `lab-sagemaker-ai-domain`, its other
+  options unread; the image picker opens on *AWS-DataScience dev-env v11* as *Default* and lists it alone
+  among the custom images, where `Tooling`'s domain listed five versions, with twenty SageMaker Distribution
+  versions below it (the hidden list being empty). *Create RStudio space* answers *"RStudio is disabled for
+  this project. To enable RStudio, please reach out to your project owner or Admin."*. `eighth-experimentation`
+  holds no `SageMakerAIDomain` environment and its page is unchanged.
+- **Item 4, the instruments**: `./aws/studio.py` reads three domains in Sandbox, `US-5` and `US-7` `pass` on
+  `d-odhynkcev3yw` (`VpcOnly`, `ENABLED/60min ceiling=120min`), `US-3` at 14; `release/versions.py retire
+  --keep 10 --dry-run --target awsds-infra-sandbox-1` keeps versions 7 to 11, nothing past the keep; 2.4's
+  after half holds by construction, the attachment being the profile's. Left of item 4: a JupyterLab space on
+  the pinned image, which needs `sandbox/egress` up for its pull (the hub is down since 2026-10-26).
