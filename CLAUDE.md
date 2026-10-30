@@ -385,7 +385,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `test-experimentation`. The connection (`EXC-17`) carries **`lineageSync` on, daily 03:43 UTC, every run
   failing** (decision 3, the user's). **Cost**: 1.44 USD per query-hour at 4 RPU and 0.00 idle, with no
   pause, so `make down` is the guarantee; the ratchet past 4 never returns; the free trial, 300 USD per
-  account for 90 days, absorbs the bill to 2026-12-19 in Sandbox and to 2027-01-21 in Production (299.54 USD left in Production and 287.51 in Sandbox on 2026-10-26; the window opens with the namespace). **`EXC-13`**: the admin secret's first rotation succeeded on 2026-10-20 with no workgroup,
+  account for 90 days, absorbs the bill to 2026-12-19 in Sandbox and to 2027-01-21 in Production (299.50 USD left in Production on 2026-10-30 and 287.51 in Sandbox on 2026-10-26; the window opens with the namespace). **`EXC-13`**: the admin secret's first rotation succeeded on 2026-10-20 with no workgroup,
   against AWS's page, and the database took the password (the Data API as `dbadmin` through the secret, 2026-10-25). SQL from a notebook is `redshift-connection.md` §J. AWS's `SageMakerStudioProjectUserRolePolicy` v75 grants
   every project role `GetCredentials` and the Data API on a workgroup tagged with its project, `GetCredentials` on
   any workgroup through `sqlworkbench`, and the secrets tagged with its project or

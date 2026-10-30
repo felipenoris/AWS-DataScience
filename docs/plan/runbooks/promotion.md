@@ -1450,7 +1450,9 @@ identity.
    specified resource"* in Sandbox and Data Governance; no commit and no manifest.
 
 4. **[user] Production's free-trial balance** in the Redshift console, the day after xxiv's sitting: 299.54
-   of 300.00 on 2026-10-26 at about 22:45 UTC.
+   of 300.00 on 2026-10-26 at about 22:45 UTC. **Read 2026-10-30** (Stage 9's log): *"$299.50 out of
+   $300.00"*, 0.04 USD after 2026-10-26's reading with no workgroup in between, so xxiv's sitting cost 0.16
+   USD in all.
 
 #### N.8.2 The release sitting: `v0.4.7`, the Sandbox half and the exercises
 

@@ -3106,3 +3106,22 @@ as the compute, nothing up (`promotion.md` §N.8.1 step 3); Claude read AWS as t
   exercised by this attempt; the laptop half's `aws s3 cp` met the set's implicit deny on the same bucket.
 - **[Claude] The record**: 8.1's text and the status cell; the waiting list's row and the Sandbox sitting's
   mention; `promotion.md` §N.8.1 step 3.
+
+## 2026-10-30 — the free trial's Production balance, days after xxiv's sitting
+
+*The user's hand in the Redshift Serverless console as the infrastructure user, pasted in chat verbatim at
+about 03:58 UTC (`promotion.md` §N.8.1 step 4); Claude read AWS as the infrastructure user with
+`InfrastructureAccess` in `Production` (`awsds-infra-prod`), reads alone.*
+
+- **[user]** Production: *"Free trial credits remaining $299.50 out of $300.00"*, *"Free trial expiration
+  January 21, 2027"*.
+- **[Claude] No compute since the sitting**: `list-workgroups` empty at 03:58 UTC; the trail's last
+  `DeleteWorkgroup` calls at 2026-10-26 22:07:50 to 22:07:52, xxiv's teardown, and no `CreateWorkgroup` since
+  22:00 that day.
+- **[Claude] The reading**: 0.04 USD landed after the reading of 2026-10-26 at about 22:45 with no workgroup in
+  between, so xxiv's sitting cost 0.16 USD in all (299.66 to 299.50), where `ComputeSeconds` read 78
+  RPU-seconds. The reading 38 minutes after the sitting missed a quarter of its bill, as the 01:50 reading
+  missed 0.03 of §N.2's 0.05. The next pair is the next warehouse sitting's (`promotion.md` §N.8.3).
+- **[Claude] The record**: the waiting list's balance row and the trial's end row; `promotion.md` §N.8.1 step
+  4; the warehouse's cost row here, `docs/PRICING.md` and `docs/plan/cost-model.md`; `CLAUDE.md`'s Current
+  position.
