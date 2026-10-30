@@ -343,7 +343,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   lifted, `warehouse-compute/` raised per warehouse sitting, 9.3 run 2026-10-24 (the schema `trades` at 1 TB, the roles, the `IAMR:` users, the default privileges, every `PUBLIC`
   `CREATE` revoked), **9.4 to 9.7 done 2026-10-25**: the DDL job and the load (decision 15's Production-only workflow, its schedule `DISABLED` through the slice) after the deploy role's `FollowItsOwnStatements` and the job group's 5439 egress; 9.5's datashare across Production, Data Governance (decision 14) and Sandbox; 9.7 read from `eighth-experimentation` through the access role's catalog read, its Lake Formation grant and `TEMP` (`redshift-connection.md` §G), and with Production's workgroup gone;
   `workloads-egress/` taking `GROUPS=redshift`; the `ml.m5.large` pair requested 2026-10-23 (`CASE_OPENED`); the
-  persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run but 8.1's space half (3.4's from a space 2026-10-26; INT-06 answered, open
+  persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run (8.1's space half 2026-10-30 from the portal's query editor; 3.4's from a space 2026-10-26; INT-06 answered, open
   question 8 closed; the Data API negative 2026-10-26); the sittings in `runbooks/promotion.md`. 2026-10-25, nothing up: 9.5's
   Terraform adoption applied (the registration and the LF-Tags by hand, no importer), xii's registry read in
   `model-chain.py transform staging` with `staging/foundation/`'s output, applied. **§N.2 run 2026-10-26**: xviii and

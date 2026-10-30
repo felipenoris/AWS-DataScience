@@ -1445,6 +1445,10 @@ identity.
    aws athena batch-get-query-execution --query-execution-ids <the two ids> --query 'QueryExecutions[].[QueryExecutionId,Status.State,Status.StateChangeReason]' --output text --profile awsds-infra-sandbox-1 --region us-west-2
    ```
 
+   **Run 2026-10-30** (Stage 9's log): the count 30; the insert refused at the vend, Lake Formation's
+   `GetDataAccess` for `INSERT` and then `DELETE` answering *"Principal does not have any privilege on
+   specified resource"* in Sandbox and Data Governance; no commit and no manifest.
+
 4. **[user] Production's free-trial balance** in the Redshift console, the day after xxiv's sitting: 299.54
    of 300.00 on 2026-10-26 at about 22:45 UTC.
 
