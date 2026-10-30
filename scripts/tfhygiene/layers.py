@@ -440,7 +440,10 @@ SLICES = [
     # in, and a session that killed its own path out would have killed its path in one step
     # earlier. `up` runs it the right way round for the same reason.
     #
-    # 0.0104 is the t3.micro row of docs/PRICING.md 8, measured 2026-09-06 (Lesson 6). The size
+    # 0.0154 is the t3.micro row of docs/PRICING.md 8, 0.0104 measured 2026-09-06 (Lesson 6), plus
+    # the host's public IPv4 at 0.005 (docs/PRICING.md 3). The address is assigned at start and
+    # released at stop (`associate_public_ip_address`), so it bills while the host runs and is
+    # hourly; the VPN's Elastic IP bills stopped or running and stays a floor line. The size
     # is decided by the build and not the steady state: `dnf install squid jq
     # amazon-cloudwatch-agent` was OOM-killed on a nano (415 MiB usable), with the kernel naming
     # it. It fit on the first host and not the second, which makes the nano marginal rather than
@@ -450,7 +453,7 @@ SLICES = [
         "proxy",
         DORMANT,
         "Squid explicit proxy - the estate's only internet exit",
-        0.0104,
+        0.0154,
     ),
     # Stage 5a pass 1. Free or floor-priced at rest: one CMK (key-month), five buckets, catalog
     # objects, LF settings/tags/grants, two on-demand crawlers and the compaction optimizer

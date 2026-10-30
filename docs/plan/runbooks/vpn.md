@@ -120,9 +120,9 @@ is topological:
 | Exit | none for tunnel traffic: the client's internet is the **proxy**, a separate `[D]` host | none. There are zero NAT gateways in this estate (D38); an `egress/` slice is interface endpoints and, in the two compute VPCs, a DNS firewall |
 | Endpoints | the `[P]` **gateway** endpoints of the hub (free, always there) | the `[E]` **interface** endpoints, billed hourly, new ids every `make up` |
 | Who needs it | a laptop reaching a private address or name, and the monitored profile's internet (§S4) | Stage 6's notebooks, Stage 7's runners, the build host — anything that lives in a private subnet, whose only management path is the `ssm` trio |
-| At-rest burn | USD 0.0052/h running, plus the proxy's 0.0104 | 0.180 (Sandbox) · 0.110 (Staging) · 0.130 (`VPC-SharedServices`) · 0 (`VPC-Workloads`) |
+| At-rest burn | USD 0.0052/h running, plus the proxy's 0.0104 and its public IPv4's 0.005 | 0.180 (Sandbox) · 0.110 (Staging) · 0.130 (`VPC-SharedServices`) · 0 (`VPC-Workloads`) |
 
-A session that needs only the tunnel starts only the hub (§S5): `make hub-up`, 0.0156/h against the
+A session that needs only the tunnel starts only the hub (§S5): `make hub-up`, 0.0206/h against the
 0.19+/h an account's `make up` would raise.
 
 The host's second job is gone. From 2026-08-21 to 2026-09-06 it was also a NAT instance for the Sandbox
