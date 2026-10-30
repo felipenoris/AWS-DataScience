@@ -3447,3 +3447,17 @@ UTC−3 and is read from the event's own `eventTime`.*
   stack, and a triple handed to the service is what a validator reporting nothing would refuse (Lesson 53).
   The probe: the panel saved with the two image lists in the JSON form and nothing else; an update that
   succeeds names the format as the cause, and the profile then writes the JSON.
+- **The probe passed** (the user's word, *"Sim, salve"*): the two lists set to
+  `[{"ImageName":"awsds-sandbox-dev-env","AppImageConfigName":"awsds-sandbox-dev-env-<app>","ImageVersionNumber":11}]`
+  and *Save* pressed; the environment `UPDATING` from 22:10:44 UTC, the stack `UPDATE_IN_PROGRESS` 22:11:07,
+  `SageMakerDomain` `UPDATE_COMPLETE` 22:11:19, the stack 22:11:22, the environment `ACTIVE` with the `UPDATE`
+  deployment `SUCCESSFUL` at 22:11:38. The environment's resolved `customImages*` carry the JSON; the stack's
+  parameters carry `awsds-sandbox-dev-env;awsds-sandbox-dev-env-jupyterlab;11` and the Code Editor twin: the
+  service translates. `describe-domain`: `CustomImages` on both app types naming the house image at
+  `ImageVersionNumber` 11, `DefaultResourceSpec` still unset. The cause of the two `[]`s is the profile's
+  triple; the lessons' AWS list, `SMUS.md` and `upstream-releases.md` carry the format.
+- **The profile rewritten**: the two lists as `jsonencode` of the same three fields in `governance/locals.tf`,
+  `sagemaker_ai_domain_defaults_only` back to `false`; the plan, saved outside the repository: `0 to add, 1 to
+  change, 0 to destroy`, the fourteen overrides returning to the element with the two lists in JSON. The apply
+  waits on the user's word; the proof after it is the environment deleted and created again from the profile,
+  which item 4 reads.

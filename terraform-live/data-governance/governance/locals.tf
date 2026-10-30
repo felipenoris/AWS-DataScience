@@ -181,9 +181,11 @@ locals {
 
   # The SageMakerAIDomain blueprint's parameters (6d decision due 15 (b), 2026-10-30). They are the
   # template's own and per app type, so Tooling's rows above do not reach this domain: the same
-  # ceilings are written again, locked (Lesson 5), from the same variables. The image triples are
-  # `imageName;appImageConfigName;versionNumber`, the template's comma-separated form, one entry per
-  # app type. enableRStudio is locked, never a member's choice: the template's note says RStudio is
+  # ceilings are written again, locked (Lesson 5), from the same variables. The image lists are JSON,
+  # `[{"ImageName","AppImageConfigName","ImageVersionNumber"}]`, the form the portal and the service
+  # take; DataZone translates it to the template's `name;config;version` before the stack, and a
+  # triple written here fails the environment's validation with an empty message (measured
+  # 2026-10-30, 2.6 item 3). enableRStudio is locked, never a member's choice: the template's note says RStudio is
   # never removed from a domain. It is false while the account holds no Posit licence: the first
   # environment created with true ended VALIDATION_FAILED with an empty message and no call into
   # Sandbox (2.6 item 3, 2026-10-30), and the flip to false is the discriminator. With true the
@@ -193,13 +195,21 @@ locals {
   # empty defaults: the instance ceiling is the SCP's, not a picker's (Lesson 5).
   sagemaker_ai_domain_parameters = [
     {
-      name        = "customImagesJupyterLab"
-      value       = "${local.sandbox_dev_env_image};${local.sandbox_dev_env_image}-jupyterlab;${var.sandbox_dev_env_version}"
+      name = "customImagesJupyterLab"
+      value = jsonencode([{
+        ImageName          = local.sandbox_dev_env_image
+        AppImageConfigName = "${local.sandbox_dev_env_image}-jupyterlab"
+        ImageVersionNumber = var.sandbox_dev_env_version
+      }])
       is_editable = false
     },
     {
-      name        = "customImagesCodeEditor"
-      value       = "${local.sandbox_dev_env_image};${local.sandbox_dev_env_image}-codeeditor;${var.sandbox_dev_env_version}"
+      name = "customImagesCodeEditor"
+      value = jsonencode([{
+        ImageName          = local.sandbox_dev_env_image
+        AppImageConfigName = "${local.sandbox_dev_env_image}-codeeditor"
+        ImageVersionNumber = var.sandbox_dev_env_version
+      }])
       is_editable = false
     },
     { name = "defaultImageVersionArnJupyterLab", value = local.sandbox_dev_env_image_version_arn, is_editable = false },
@@ -222,7 +232,7 @@ locals {
   # whole or one group at a time. False outside that reading. The key leaves the map rather than
   # holding an empty list: DataZone stores no parameterOverrides for an empty one, and `[]` in the
   # configuration is a diff on every plan (read 2026-10-30).
-  sagemaker_ai_domain_defaults_only = true
+  sagemaker_ai_domain_defaults_only = false
 
   blueprint_parameters = merge(
     {

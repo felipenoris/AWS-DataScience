@@ -225,7 +225,11 @@ work at all* — is still open.
      with `[]` as well, RStudio off and no call into Sandbox, so the licence is not the cause. The next
      discriminator is the API form with no configuration id and no user parameter, the template's defaults
      alone **[Claude⚡]**: a domain born points at the profile's overrides, to bisect; a third `[]` at the
-     project, whose `Tooling` already holds a domain.
+     project, whose `Tooling` already holds a domain. Run 2026-10-30: the domain was born, and the cause is
+     the image lists' form, the template's `name;config;version` where the service takes a JSON list of
+     `ImageName`, `AppImageConfigName` and `ImageVersionNumber` (measured by an update of the living
+     environment); the profile writes the JSON since, and the press after that apply, from the profile with
+     its fourteen overrides, is the proof.
   4. **[Claude]** The readings: the environment's stack and the new domain through `describe-domain`
      (`CustomImages` naming `ImageVersionNumber` 11 on both app types, `DefaultResourceSpec`, idle 60/60/120,
      the volume 16/100, `VpcOnly` on the project's subnets and group, `HomeEfsFileSystemId`,
