@@ -3407,3 +3407,11 @@ UTC−3 and is read from the event's own `eventTime`.*
   same call as the project's owner, from the `awsds-scientist` session the user signs into; or the profile's
   element with its fourteen overrides removed (one apply) and the portal's entry pressed again, which exercises
   the template's defaults through the path that already works.
+- **The overrides emptied** (the user's choice, *"Zerar overrides"*, then *"Sim, aplique"*): the local
+  `sagemaker_ai_domain_defaults_only` in `governance/locals.tf`, `true` for the reading, takes the
+  `SageMakerAIDomain` key out of `blueprint_parameters`; the apply at 21:59:12 UTC, `0 added, 1 changed`,
+  `Modifications complete after 8s`. `get-project-profile` at 21:59:27: the element with no override and
+  seventeen resolved parameters at the template's defaults (`enableRStudio` `false`, the image strings
+  empty, `maxEbsVolumeSize` 100, the maximum idle 525600), every one editable. The first form, an empty
+  `parameter_overrides = []`, re-planned `1 to change` on every run: DataZone stores no `parameterOverrides`
+  for an empty list, so the key leaves the map instead, and the re-plan reads `No changes`.
