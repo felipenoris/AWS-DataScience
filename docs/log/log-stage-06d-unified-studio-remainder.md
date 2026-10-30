@@ -3461,3 +3461,9 @@ UTC−3 and is read from the event's own `eventTime`.*
   change, 0 to destroy`, the fourteen overrides returning to the element with the two lists in JSON. The apply
   waits on the user's word; the proof after it is the environment deleted and created again from the profile,
   which item 4 reads.
+- **Applied** (the user's word, *"Sim, aplique"*) at 22:16:39 UTC: `0 added, 1 changed, 0 destroyed`,
+  `Modifications complete after 7s`, the re-plan `No changes`. `get-project-profile` at 22:16:51: the element
+  with its fourteen overrides, the two image lists as JSON (`ImageVersionNumber` 11), the default-image ARNs,
+  the ceilings 60/60/120, `maxEbsVolumeSize` 100, lifecycle `ENABLED`, `enableRStudio` `false`, the two
+  default timeouts the only editable rows. The proof that follows: the test domain deleted from the portal's
+  *Configure* panel and the entry pressed again, the environment born from the profile.
