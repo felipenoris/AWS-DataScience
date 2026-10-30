@@ -3415,3 +3415,24 @@ UTC−3 and is read from the event's own `eventTime`.*
   empty, `maxEbsVolumeSize` 100, the maximum idle 525600), every one editable. The first form, an empty
   `parameter_overrides = []`, re-planned `1 to change` on every run: DataZone stores no `parameterOverrides`
   for an empty list, so the key leaves the map instead, and the re-plan reads `No changes`.
+- **The third press, with the template's defaults, bore the domain** (the user's word, *"Sim, clique"*; the
+  wizard now listing all seventeen parameters as editable, the name `lab-sagemaker-ai-domain` set, nothing
+  else touched): environment `dawh5juuckvms0`, `CreateEnvironment` 22:05:26 UTC, the stack
+  `DataZone-Env-dawh5juuckvms0` in Sandbox 22:05:38, its one resource `SageMakerDomain` complete 22:05:55, the
+  stack 22:05:56, the environment `ACTIVE` 22:06:10 with the deployment `SUCCESSFUL` and two provisioned
+  resources, `cloudFormationStackId` and `sageMakerDomainId` `d-tqvlxk2hftsv`. The cause of the two `[]`s is
+  therefore inside the fourteen overrides, not the project or its `Tooling` domain.
+- **The stack's parameters**, what DataZone passed: the seventeen at the template's defaults (`enableRStudio`
+  `false`, the image strings empty, idle 60/60/525600, `maxEbsVolumeSize` 100, both hidden lists empty,
+  lifecycle `ENABLED`), the four `datazone*` ids plus `datazoneEnvironmentDomainArn`, `datazoneScopeName`
+  `dev` and `datazoneEnvironmentStage` `prod`, and the seven `sageMakerUnifiedStudio*` values resolved from
+  `Tooling`'s outputs: the project role, the projects bucket's ARN, the Tooling key, the VPC, the two subnets,
+  the security group and the `shared` location. The stack carries the four `AmazonDataZone*` tags.
+- **The domain** `d-tqvlxk2hftsv` `lab-sagemaker-ai-domain`, `InService`: `AuthMode` `IAM`, `VpcOnly` on the
+  project's VPC, subnets and group, no EFS (`HomeEfsFileSystemId` empty, `AutoMountHomeEFS` set), the project
+  role as the default execution role, `CustomImages` empty on both app types, idle 60/60/525600 with lifecycle
+  `ENABLED`, EBS 16 default and 100 maximum, the `StudioWebPortalSettings` lists empty with
+  `ExecutionRoleSessionNameMode` `USER_IDENTITY`, the `shared` S3 mount as a custom file system, no RStudio
+  settings, `UnifiedStudioSettings` naming the domain, project and environment with `ProjectS3Path`
+  `s3://awsds-sandbox-smus-projects/shared/`, a path without the domain and project prefix that `Tooling`'s
+  domain carries. *Code spaces* still reads *"You don't have any code spaces"* and names no domain.
