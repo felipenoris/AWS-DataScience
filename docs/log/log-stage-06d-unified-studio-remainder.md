@@ -3436,3 +3436,14 @@ UTC−3 and is read from the event's own `eventTime`.*
   settings, `UnifiedStudioSettings` naming the domain, project and environment with `ProjectS3Path`
   `s3://awsds-sandbox-smus-projects/shared/`, a path without the domain and project prefix that `Tooling`'s
   domain carries. *Code spaces* still reads *"You don't have any code spaces"* and names no domain.
+- **The actions menu with a living domain** holds one entry, *Configure SageMaker AI domain*, whose panel
+  (*"Domains from the Tooling blueprint aren't configurable here"*) edits every parameter but `domainName`
+  and carries *Delete SageMaker AI domain*. Its placeholders name the formats the portal expects, and they are
+  the suspect: `customImages*` as a JSON array,
+  `[{"ImageName":"my-image","AppImageConfigName":"my-image-aic","ImageVersionNumber":1}]`, where the profile
+  writes the template's own `imageName;appImageConfigName;versionNumber`; `defaultImageVersionArn*` as an
+  image-version ARN, the profile's form; the hidden lists comma-separated. The template splits the parameter
+  on `,` then `;`, so the JSON is the portal's and the service's form, translated to the triple before the
+  stack, and a triple handed to the service is what a validator reporting nothing would refuse (Lesson 53).
+  The probe: the panel saved with the two image lists in the JSON form and nothing else; an update that
+  succeeds names the format as the cause, and the profile then writes the JSON.
