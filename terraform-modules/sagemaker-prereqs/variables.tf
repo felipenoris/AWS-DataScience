@@ -124,8 +124,8 @@ variable "blueprint_names" {
   type        = list(string)
   default = [
     # The base environment, first: it provisions the project's SageMaker AI domain, roles and
-    # security groups, and nothing else works without it. `deployment_order` below is `index()`
-    # into this list.
+    # security groups, and nothing else works without it. The governance slice's profiles read each
+    # environment's `deployment_order` from their own copy of this list (its locals.tf).
     "Tooling",
     # ToolingLite is absent - category 3 since 2026-08-21 (the user's decision). Step 1.5's apply
     # measured what no page documents: it is a base variant, not a capability - the service
@@ -168,5 +168,12 @@ variable "blueprint_names" {
     # kms.tf statement comes with it: AWS's key-permissions page names none for a knowledge base
     # (read 2026-10-19).
     "AmazonBedrockKnowledgeBase",
+    # The SageMakerAIDomain blueprint, released 2026-10-20 and out of `undefined` at 6d decision due
+    # 15 (taken 2026-10-30 by the user as (b): the pilot on `experimentation`, RStudio on). A
+    # standalone SageMaker AI domain per project beside Tooling's, whose spaces' images, idle
+    # settings, hidden instance types and volume ceiling are the profile's parameters
+    # (governance/locals.tf). No kms.tf statement comes with it: the domain uses the Tooling key,
+    # whose statements AWS's key-permissions page already names (read 2026-10-30).
+    "SageMakerAIDomain",
   ]
 }
