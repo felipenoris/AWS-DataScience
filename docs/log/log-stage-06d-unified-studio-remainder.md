@@ -3396,3 +3396,14 @@ UTC−3 and is read from the event's own `eventTime`.*
   Region, no configuration id and no user parameter, so only the template's defaults apply; the failed
   environment deleted first so the name is free. A domain born points at the overrides, to bisect in the
   profile; a third `[]` points at the project.
+- **The API form, run on the user's word** (*"Sim, rode os dois"*): `delete-environment 6derpxg1abon4g` at
+  21:53:35 UTC, `DELETING` for 25 s, gone at 21:54:03. `create-environment` with the blueprint, Sandbox's
+  account and `us-west-2`, no configuration id and no user parameter, as the infrastructure user in Sandbox at
+  21:54:04: `AccessDeniedException`, *"User is not permitted to perform operation: CreateEnvironment
+  DesignationPolicy does not allow access"*. The refusal is DataZone's own authorization, not IAM's: the
+  infrastructure user holds no designation on `test-experimentation` (the owner is the Data Scientist User, the
+  contributors the project's role and two groups), and Stage 17 1.5's precedent carried a configuration id of
+  a profile. The discriminator did not run; the name `SageMakerAIDomain` is free. The remaining forms: the
+  same call as the project's owner, from the `awsds-scientist` session the user signs into; or the profile's
+  element with its fourteen overrides removed (one apply) and the portal's entry pressed again, which exercises
+  the template's defaults through the path that already works.
