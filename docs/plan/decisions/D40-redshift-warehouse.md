@@ -97,7 +97,8 @@ no compute — with only Redshift Managed Storage billing at rest, **USD 0.024/G
 **But "bills nothing" is conditional, so the warehouse is two slices rather than one** (2026-09-20, on the
 user's question of whether the compute can be switched off): the **namespace** is `[P]` because it holds the
 data, the schemas, the database users, the roles and the `GRANT`s — state no plan re-creates — and the
-**workgroup plus its usage limit** is `[E]`, destroyed by `make down` and created by `make up`.
+**workgroup plus its usage limit** is `[E]`, destroyed by `make down` and created by `make up` with
+`GROUPS=redshift`, the group of its API endpoint.
 **Redshift Serverless has no pause**: `create-workgroup` and `delete-workgroup` and nothing in between, no
 stop, no suspend, no zero-capacity setting. So *powered off* means *does not exist* — which is `[E]` by
 definition and also the strongest guarantee available, because an object that does not exist cannot receive a

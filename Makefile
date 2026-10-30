@@ -93,7 +93,8 @@ help:
 	@printf '                start/stop and DeleteApp never ask, with or without it\n'
 	@printf '    ENV=x       up and down: one account folder from the list at the end. Never\n'
 	@printf '                optional - `make down` with no ENV fails, it never means all\n'
-	@printf '    GROUPS=a,b  up only - optional endpoint families for THIS apply (see GROUPS)\n'
+	@printf '    GROUPS=a,b  up only - optional endpoint families for THIS apply, and `redshift`\n'
+	@printf '                the warehouse too (see GROUPS)\n'
 	@printf '    ONLY=a,b    up and down - these slices of ENV and no other (Stage 8 step 4.4)\n'
 	@printf '    PROFILE=p   up and down - every command runs as profile p instead of the\n'
 	@printf '                account default: the deploy runner names its deploy role. A deploy\n'
@@ -164,22 +165,32 @@ help:
 	@printf '    mlflow         1 endpoint, ~0.010 USD/h - the MLflow App s tracking API, for\n'
 	@printf '                   MLflowApp (Stage 17); a space logging a run names it\n'
 	@printf '    redshift       1 endpoint, ~0.010 USD/h - redshift-serverless, the warehouse API\n'
-	@printf '                   door (5b 1.10); a session that queries the warehouse names it\n'
-	@printf '    mwaa           reserved and empty - names nothing. D7 settled MWAA Serverless only;\n'
-	@printf '                   no Sandbox endpoint for it has been measured as needed\n'
+	@printf '                   door (5b 1.10), and the warehouse itself: without ONLY=, `up`\n'
+	@printf '                   applies warehouse-compute/ only with this group (refusal 11),\n'
+	@printf '                   1.44 USD per query-hour, 0 idle. A session that queries the\n'
+	@printf '                   warehouse names it, the portal query editor included\n'
+	@printf '    mwaa           1 endpoint, ~0.010 USD/h - airflow-serverless, the MWAA Serverless\n'
+	@printf '                   API, whose only name is under .api.aws, which the proxy refuses.\n'
+	@printf '                   A space that deploys with the CI/CD CLI names it (Stage 10 2.1).\n'
+	@printf '                   Sandbox only: the other callers pin vpc-egress-v0.17.0, where the\n'
+	@printf '                   group is still empty\n'
 	@printf '\n'
-	@printf '  The default is none: `make up ENV=sandbox` creates no optional endpoint. The flag\n'
-	@printf '  lives in the environment, not in a file, so it lasts exactly one apply, and a\n'
-	@printf '  `make up` without it destroys the optional endpoints.\n'
+	@printf '  The default is none: `make up ENV=sandbox` creates no optional endpoint and no\n'
+	@printf '  warehouse. The flag lives in the environment, not in a file, so it lasts exactly one\n'
+	@printf '  apply, and a `make up` without it destroys the optional endpoints. It leaves a\n'
+	@printf '  warehouse raised earlier running: only `make down` destroys the workgroup.\n'
 	@printf '\n'
 	@printf '    make up ENV=sandbox GROUPS=bedrock-base\n'
 	@printf '    make up ENV=sandbox GROUPS=bedrock-base,bedrock-agent,emr\n'
+	@printf '    make up ENV=sandbox GROUPS=redshift\n'
 	@printf '\n'
 	@printf '  Wired in sandbox/egress, for the SMUS blueprints, and in production/workloads-egress,\n'
 	@printf '  where a job inside VPC-Workloads calls the warehouse API (redshift, Stage 9 9.1).\n'
-	@printf '  There it rides on ONLY=, or the apply takes every Production [E] slice:\n'
+	@printf '  There it rides on ONLY=, or the apply takes every Production [E] slice. ONLY= is an\n'
+	@printf '  explicit list, so the warehouse rises only when it is named:\n'
 	@printf '\n'
 	@printf '    make up ENV=production ONLY=workloads-egress GROUPS=redshift\n'
+	@printf '    make up ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift\n'
 	@printf '\n'
 	@./scripts/slices.py envs
 
@@ -232,10 +243,11 @@ guard-env:
 slices:
 	@./scripts/slices.py list $(ENV)
 
-# GROUPS becomes TF_VAR_optional_service_groups here, not in the script, because it is a Terraform
-# input rather than a slice-lifecycle concept: slices.py passes the whole environment through to
-# every `terraform` it runs. Unset means empty (the variable's own `[]`), the zero-cost case. The
-# expansion is printed before the apply so the operator sees the JSON list Terraform receives.
+# GROUPS becomes TF_VAR_optional_service_groups here, not in the script: slices.py passes the whole
+# environment through to every `terraform` it runs. Unset means empty (the variable's own `[]`), the
+# zero-cost case. The expansion is printed before the apply so the operator sees the JSON list
+# Terraform receives. The same list reaches slices.py as --groups, where `redshift` also selects
+# warehouse-compute/ (refusal 11).
 #
 # ONLY and PROFILE are Stage 8 step 4.4's, for the deploy runner (step 3.1): ONLY narrows ENV to the
 # slices named, PROFILE replaces the account's default profile, and both pass through to slices.py.
@@ -244,7 +256,7 @@ up:
 	@if [ -n "$(GROUPS)" ]; then \
 	  groups="[$$(printf '%s' '$(GROUPS)' | sed 's/[^,][^,]*/"&"/g')]"; \
 	  printf '\033[1moptional endpoint groups\033[0m: %s\n' "$$groups"; \
-	  TF_VAR_optional_service_groups="$$groups" ./scripts/slices.py up --env $(ENV) $(if $(ONLY),--only $(ONLY),) $(if $(PROFILE),--profile $(PROFILE),) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,); \
+	  TF_VAR_optional_service_groups="$$groups" ./scripts/slices.py up --env $(ENV) --groups '$(GROUPS)' $(if $(ONLY),--only $(ONLY),) $(if $(PROFILE),--profile $(PROFILE),) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,); \
 	else \
 	  ./scripts/slices.py up --env $(ENV) $(if $(ONLY),--only $(ONLY),) $(if $(PROFILE),--profile $(PROFILE),) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,); \
 	fi

@@ -816,9 +816,8 @@ cycle charge (0.36 to 0.87 per Sandbox `[E]` cycle, 0.21 to 0.38 per GitLab cycl
    make up ENV=sandbox ONLY=egress GROUPS=mwaa
    ```
 
-   `ONLY=egress` because a plain `make up ENV=sandbox` also raises `warehouse-compute/` (the 4-RPU
-   workgroup, whose connection's `lineageSync` queries daily at 03:43 UTC) and `probes/`, neither of which
-   this sitting uses; `GROUPS=mwaa` for step 7's MWAA Serverless endpoint (`vpc-egress-v0.19.0`), and no
+   `ONLY=egress` because a plain `make up ENV=sandbox` also raises `probes/`, which this sitting does not
+   use; `GROUPS=mwaa` for step 7's MWAA Serverless endpoint (`vpc-egress-v0.19.0`), and no
    other group, since no step calls Bedrock or MLflow. **[Claude]** the other sessions
    on the laptop told before the first raise; after the last, `./aws/egress.py awsds-infra-prod
    awsds-infra-sandbox-1` (SharedServices' twelve endpoints, Sandbox's eighteen), `./aws/devenv.py`

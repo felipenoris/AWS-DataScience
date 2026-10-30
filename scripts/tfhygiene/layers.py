@@ -440,7 +440,10 @@ SLICES = [
     # in, and a session that killed its own path out would have killed its path in one step
     # earlier. `up` runs it the right way round for the same reason.
     #
-    # 0.0104 is the t3.micro row of docs/PRICING.md 8, measured 2026-09-06 (Lesson 6). The size
+    # 0.0154 is the t3.micro row of docs/PRICING.md 8, 0.0104 measured 2026-09-06 (Lesson 6), plus
+    # the host's public IPv4 at 0.005 (docs/PRICING.md 3). The address is assigned at start and
+    # released at stop (`associate_public_ip_address`), so it bills while the host runs and is
+    # hourly; the VPN's Elastic IP bills stopped or running and stays a floor line. The size
     # is decided by the build and not the steady state: `dnf install squid jq
     # amazon-cloudwatch-agent` was OOM-killed on a nano (415 MiB usable), with the kernel naming
     # it. It fit on the first host and not the second, which makes the nano marginal rather than
@@ -450,7 +453,7 @@ SLICES = [
         "proxy",
         DORMANT,
         "Squid explicit proxy - the estate's only internet exit",
-        0.0104,
+        0.0154,
     ),
     # Stage 5a pass 1. Free or floor-priced at rest: one CMK (key-month), five buckets, catalog
     # objects, LF settings/tags/grants, two on-demand crawlers and the compaction optimizer
@@ -653,6 +656,8 @@ SLICES = [
     #                      statement no WLM limit reaches (log-stage-05b, owed item 3).
     #   `make down`        WORKED, and is the only guarantee that is not a setting: no pause exists,
     #                      so destroying the workgroup is what stops the meter.
+    #
+    # `up` raises it only with GROUPS=redshift or with ONLY= naming it (refusal 11, OPT_IN_BY_GROUP).
     Slice(
         "sandbox",
         "warehouse-compute",
@@ -747,6 +752,13 @@ APPLICATION_PARENT = "app"
 # 2026-10-23, and holds nothing today.
 HELD_FROM_UP: dict[tuple[str, str], str] = {}
 #
+# Refusal 11 - an [E] slice `up` raises only when GROUPS names its optional group, keyed by slice
+# name in every account: `GROUPS=redshift` raises the warehouse's compute beside its
+# `redshift-serverless` endpoint, so one flag readies what a warehouse session uses. `--only` is an
+# explicit list and bypasses the rule. `down` is unaffected, and an `up` without the group leaves a
+# workgroup raised earlier running.
+OPT_IN_BY_GROUP = {"warehouse-compute": "redshift"}
+#
 # A [D] slice is refused by both targets, and the power state is handled by the dormant hook
 # instead. Without the refusal a [D] row falls into the same list as the [E] ones, the one
 # `down` runs `terraform destroy` over, and `make down ENV=sandbox` destroys the tunnel
@@ -800,6 +812,17 @@ def pipeline_refusal(account: str, slice_name: str, profile: str) -> str | None:
             "an application slice and the orchestration slice alone (Stage 8 decision 27, 2026-10-24)"
         )
     return None
+
+
+def opt_in_refusal(slice_name: str, groups: list) -> str | None:
+    """Refusal 11: why `up` without `--only` leaves this slice alone, or None (OPT_IN_BY_GROUP)."""
+    group = OPT_IN_BY_GROUP.get(slice_name)
+    if group is None or group in groups:
+        return None
+    return (
+        f"refusal 11: opt-in - raised by `make up GROUPS={group}` with its endpoint, or by ONLY= "
+        f"naming it; a {slice_name}/ raised earlier keeps running until `make down`"
+    )
 
 
 # A slice folder sits under its account folder, or one level further down under one of these parents
