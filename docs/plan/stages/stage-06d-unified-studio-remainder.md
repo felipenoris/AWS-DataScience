@@ -221,8 +221,11 @@ work at all* — is still open.
      **[Claude⚡]**, the failed environment deleted and the entry pressed again **[user]**. The portal lists a
      `VALIDATION_FAILED` environment nowhere and refuses a second with its name, so the deletion is
      `datazone delete-environment` as the infrastructure user in Sandbox, the identity of Stage 17 1.5's
-     `create-environment` **[Claude⚡]**. A domain born this way separates the licence pre-check from the
-     rest; a second `[]` sends the next press to the API form with no user parameter.
+     `create-environment` **[Claude⚡]**. Run 2026-10-30: the second environment ended `VALIDATION_FAILED`
+     with `[]` as well, RStudio off and no call into Sandbox, so the licence is not the cause. The next
+     discriminator is the API form with no configuration id and no user parameter, the template's defaults
+     alone **[Claude⚡]**: a domain born points at the profile's overrides, to bisect; a third `[]` at the
+     project, whose `Tooling` already holds a domain.
   4. **[Claude]** The readings: the environment's stack and the new domain through `describe-domain`
      (`CustomImages` naming `ImageVersionNumber` 11 on both app types, `DefaultResourceSpec`, idle 60/60/120,
      the volume 16/100, `VpcOnly` on the project's subnets and group, `HomeEfsFileSystemId`,

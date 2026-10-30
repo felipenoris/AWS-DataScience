@@ -1331,6 +1331,7 @@
   <https://aws.amazon.com/about-aws/whats-new/2026/10/smus-light-mode>,
   <https://aws.amazon.com/about-aws/whats-new/2026/10/glue-catalog-oauth-iceberg-rest/>,
   <https://aws.amazon.com/about-aws/whats-new/2026/10/mflow-version-3-16/>.
+- Code spaces, and an environment's deployment record — the user-guide page that routes IAM and Identity Center domains to their own code-spaces pages, and the DataZone API's `GetEnvironment` and `EnvironmentDeploymentDetails`, which define `VALIDATION_FAILED`, `FAILED_VALIDATION` and the `failureReason` an environment carries (6d 2.6 item 3, the `[]` read 2026-10-30): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/ide-spaces.html>, <https://docs.aws.amazon.com/datazone/latest/APIReference/API_GetEnvironment.html> and <https://docs.aws.amazon.com/datazone/latest/APIReference/API_EnvironmentDeploymentDetails.html>.
 - **The `SageMakerAIDomain` pilot's admin pages, and Kiro CLI** — read 2026-10-30 for 6d decision 15 and step
   10. Enabling a blueprint from the console's *Blueprints* tab:
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/enable-disable-blueprints.html>; a
