@@ -17,13 +17,13 @@ locals {
   # them before anything was applied.
   #
   # The order is a contract, and only its first element is measured: profiles.tf reads
-  # `index(local.category_one_blueprints, bp)` as each environment's `deployment_order`, so
-  # Tooling must come first - nothing else provisions a working project. The grouping after it is
+  # `index(each.value.blueprints, bp)` as each environment's `deployment_order`, so
+  # Tooling must come first and a name joins at the end - nothing else provisions a working project. The grouping after it is
   # not a dependency graph anybody has read; a stricter order is a measurement at step 2.4.
   category_one_blueprints = [
     # The base environment, first: it provisions the project's SageMaker AI domain, roles and
-    # security groups, and nothing else works without it. `deployment_order` below is `index()`
-    # into this list.
+    # security groups, and nothing else works without it. `deployment_order` is `index()` into
+    # each profile's copy of this list.
     "Tooling",
     # ToolingLite is absent - category 3 since 2026-08-21 (user decision, after step 1.5's apply
     # measured what no page documents: it is a base variant, not a capability. The service
@@ -65,6 +65,12 @@ locals {
     # `blueprint_parameters` declares nothing for it (read 2026-10-19). Appended last, like
     # MLflowApp, so every environment above keeps its `deployment_order`.
     "AmazonBedrockKnowledgeBase",
+    # The SageMakerAIDomain blueprint (released 2026-10-20), out of `undefined` at 6d decision due 15,
+    # taken 2026-10-30 by the user as (b): a standalone SageMaker AI domain per project beside
+    # Tooling's, the code spaces experience as the profile's parameters below, RStudio on. Last, so
+    # every environment above keeps its `deployment_order`; ON_DEMAND, so a project gets the domain
+    # only when an owner enables it from Code spaces.
+    "SageMakerAIDomain",
   ]
 
   member_account_ids = {
@@ -157,8 +163,59 @@ locals {
   # portal pre-fills when a member enables the capability (deployment_mode ON_DEMAND), and
   # is_editable = true so the member replaces it. A project deployed with the placeholder
   # unchanged fails or collides visibly, rather than sharing a name silently.
+  # The house image's objects in Sandbox, by terraform-live/sandbox/dev-env/'s name contract
+  # (`awsds-<env>-dev-env`, one app image configuration per app type). The version is the pin the
+  # SageMakerAIDomain template writes into the domain's CustomImages, so a release reaches the pilot's
+  # domain by moving var.sandbox_dev_env_version and an Update project per project (docs/SMUS.md,
+  # "Custom images"); the default-image ARN carries the same version, which is what the release
+  # pipeline's retire job keeps (gitlab/awsds/dev-env/release/versions.py reads CustomImages alone).
+  sandbox_dev_env_image = "awsds-sandbox-dev-env"
+  sandbox_dev_env_image_version_arn = format(
+    "arn:%s:sagemaker:%s:%s:image-version/%s/%d",
+    data.aws_partition.current.partition,
+    var.region,
+    local.member_account_ids.sandbox,
+    local.sandbox_dev_env_image,
+    var.sandbox_dev_env_version,
+  )
+
+  # The SageMakerAIDomain blueprint's parameters (6d decision due 15 (b), 2026-10-30). They are the
+  # template's own and per app type, so Tooling's rows above do not reach this domain: the same
+  # ceilings are written again, locked (Lesson 5), from the same variables. The image triples are
+  # `imageName;appImageConfigName;versionNumber`, the template's comma-separated form, one entry per
+  # app type. enableRStudio cannot be turned off once true (the template's note), so it is a locked
+  # value, not a member's choice; with it the template adds an EFS home, service-managed security
+  # groups and Posit's RStudio, whose licence and inline policy are the user's acts (the waiting
+  # list). hiddenInstanceTypes, hiddenSageMakerImageVersionAliases and domainName keep the template's
+  # empty defaults: the instance ceiling is the SCP's, not a picker's (Lesson 5).
+  sagemaker_ai_domain_parameters = [
+    {
+      name        = "customImagesJupyterLab"
+      value       = "${local.sandbox_dev_env_image};${local.sandbox_dev_env_image}-jupyterlab;${var.sandbox_dev_env_version}"
+      is_editable = false
+    },
+    {
+      name        = "customImagesCodeEditor"
+      value       = "${local.sandbox_dev_env_image};${local.sandbox_dev_env_image}-codeeditor;${var.sandbox_dev_env_version}"
+      is_editable = false
+    },
+    { name = "defaultImageVersionArnJupyterLab", value = local.sandbox_dev_env_image_version_arn, is_editable = false },
+    { name = "defaultImageVersionArnCodeEditor", value = local.sandbox_dev_env_image_version_arn, is_editable = false },
+    { name = "lifecycleManagementJupyterLab", value = "ENABLED", is_editable = false },
+    { name = "lifecycleManagementCodeEditor", value = "ENABLED", is_editable = false },
+    { name = "idleTimeoutInMinutesJupyterLab", value = tostring(var.idle_timeout_minutes), is_editable = true },
+    { name = "idleTimeoutInMinutesCodeEditor", value = tostring(var.idle_timeout_minutes), is_editable = true },
+    { name = "minIdleTimeoutInMinutesJupyterLab", value = tostring(var.idle_timeout_minutes), is_editable = false },
+    { name = "minIdleTimeoutInMinutesCodeEditor", value = tostring(var.idle_timeout_minutes), is_editable = false },
+    { name = "maxIdleTimeoutInMinutesJupyterLab", value = tostring(var.max_idle_timeout_minutes), is_editable = false },
+    { name = "maxIdleTimeoutInMinutesCodeEditor", value = tostring(var.max_idle_timeout_minutes), is_editable = false },
+    { name = "maxEbsVolumeSize", value = tostring(var.max_ebs_volume_size_gb), is_editable = false },
+    { name = "enableRStudio", value = "true", is_editable = false },
+  ]
+
   blueprint_parameters = {
-    Tooling = local.tooling_parameters
+    Tooling           = local.tooling_parameters
+    SageMakerAIDomain = local.sagemaker_ai_domain_parameters
     S3Bucket = [
       { name = "bucketName", value = "changeme-project-bucket", is_editable = true },
     ]

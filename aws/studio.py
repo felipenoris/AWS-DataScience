@@ -102,6 +102,8 @@ BLUEPRINT_ALLOWLIST = (
     "MLflowApp",
     # Out of category 2 at Stage 17 step 7.0a (decision 1).
     "AmazonBedrockKnowledgeBase",
+    # Out of `undefined` at 6d decision due 15 (b), 2026-10-30: the pilot's spaces domain, RStudio on.
+    "SageMakerAIDomain",
 )
 # `experimentation` provisions into Sandbox. `engineering` was retired at Stage 6b step 1.1:
 # Development became the headless `Staging`, so nothing provisions a Studio project there. The

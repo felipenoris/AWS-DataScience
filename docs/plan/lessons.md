@@ -3001,7 +3001,7 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
 - **The portal deletes a project's default JupyterLab space** (measured 2026-10-30). Sandbox's trail holds
   `DeleteSpace` of `default-<user profile id>` in `eighth-experimentation`'s domain at 03:49:33 UTC, by the
   project role from a browser, with no error, while the code spaces page read the same day says *"You cannot
-  delete the default JupyterLab space"*. What *Code spaces* starts in a project with none is unread. Where:
+  delete the default JupyterLab space"*. Opening that project's *Code spaces* page recreated the space (`CreateSpace` by the project role from a browser, 06:44:45 UTC) and the service started its app. Where:
   `log-stage-06d-unified-studio-remainder.md`, 2026-10-30.
 
 ### DataZone and the CI/CD CLI

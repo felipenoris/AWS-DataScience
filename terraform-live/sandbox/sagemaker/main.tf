@@ -17,7 +17,7 @@
 #   2. (console) request the SMUS account association for this account from the domain account's
 #      console - it auto-accepts (measured 2026-08-21: org-scoped RAM share, no invitation) - then
 #      add its row to SMUS_ASSOCIATED in scripts/tfhygiene/backend.py and regenerate the tfvars
-#   3. terraform apply                       the blueprint configurations + the 11 grants
+#   3. terraform apply                       the blueprint configurations, one grant each
 #
 # Step 2 answers verification (iv) - is there any API path at all? - and is where Lesson 16 applies
 # hardest: record every field the console asks for.
@@ -44,7 +44,7 @@ locals {
 
 module "sagemaker_prereqs" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/sagemaker-prereqs?ref=sagemaker-prereqs-v0.8.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/sagemaker-prereqs?ref=sagemaker-prereqs-v0.9.0"
 
   env    = var.env
   region = var.region

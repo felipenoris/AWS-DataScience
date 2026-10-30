@@ -206,6 +206,31 @@ work at all* — is still open.
   says.
 - **2.5 — [Claude] Read the cross-account pull**: the CloudTrail record showing the Sandbox project role
   reading `awsds-prod-ecr-dev-env` — INT-01 measured rather than assumed.
+- **2.6 — the `SageMakerAIDomain` pilot (decision 15 (b), 2026-10-30)**, in this order:
+  1. **[Claude⚡, the user authorizing each]** `sandbox/sagemaker/` on `sagemaker-prereqs-v0.9.0` (planned
+     2026-10-30: 2 to add, the configuration and its grant), then `data-governance/governance/` (1 to change:
+     `experimentation`'s element at order 13, fourteen overrides, `enableRStudio` `true` locked); each re-plans
+     `No changes`; `US-3` reads 14 configurations.
+  2. **[user]** The console's enable wizard for the blueprint in Sandbox's account, read and cancelled
+     (Lesson 39): every field it asks for beyond the configuration's.
+  3. **[user]** In `test-experimentation`, *Code spaces*: the entry that enables the environment, read before
+     it is pressed, then enabled. The fallback is `datazone create-environment` with the profile's
+     configuration id, as a contributor (Stage 17 1.5's path).
+  4. **[Claude]** The readings: the environment's stack and the new domain through `describe-domain`
+     (`CustomImages` naming `ImageVersionNumber` 11 on both app types, `DefaultResourceSpec`, idle 60/60/120,
+     the volume 16/100, `VpcOnly` on the project's subnets and group, `HomeEfsFileSystemId`,
+     `AppSecurityGroupManagement` `Service`, `RStudioServerProDomainSettings`); `US-1`..`US-10`; `./aws/vpn.py`
+     `VP-3` against the service-managed groups; `release/versions.py references` keeping version 11; which
+     domain the *Code spaces* page lists beside `Tooling`'s; a JupyterLab space on the pinned image; 2.4's after
+     half, by construction.
+  5. **[user]** The Posit Workbench licence (from Posit or AWS Marketplace, granted through License Manager
+     in `us-east-1`, accepted in Sandbox's console) and the inline policy on the pilot project's role, AWS's
+     JSON from the blueprint's admin page; then an RStudio space and its session. **[Claude]** The session's
+     start in the trail (`CreateApp` on `RStudioServerPro` and `RSessionGateway`, the checkout at
+     `license-manager`), the proxy's log for Posit's names, `PRICING.md` §8's rows against the first bill.
+  6. **The rollback**: the environment deleted from *Code spaces* by the owner (the domain goes with its stack;
+     SageMaker retains the EFS home by default, a hand delete), then the name out of the three roster copies in
+     one commit. `enableRStudio` cannot be turned off on a living domain.
 
 ### 3. Run a working session under the proxy
 
@@ -1752,7 +1777,11 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
     **Recommended: (a), after the console wizard's fields are read (Lesson 39) and the portal's *Blueprints* tab
     seen**: the attachment leaves the hand step and the reconciliation question closes by construction; (b) is a
     licence and a second runtime the proxy does not reach, weighed when R work asks for it. The user's; the
-    waiting list carries it.
+    waiting list carries it. **Taken 2026-10-30 by the user as (b)**, on `experimentation` rather than a
+    pilot profile: the code couples a profile's list to `category_one_blueprints`, so the name joins the
+    category and lands in the profile as `ON_DEMAND` at order 13, where no project gets the domain until
+    an owner enables it from *Code spaces*; `test-experimentation` is the pilot project, and step 2.6 the
+    sequence. The licence and the inline policy stay the user's acts (the waiting list).
 
 ## Verifications to answer while executing
 
