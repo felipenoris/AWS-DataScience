@@ -50,8 +50,8 @@ domains, spaces and trail, and the project role's managed policies. Light mode f
 by the user 2026-10-30), `TM-23`'s channel, offered in Identity Center domains since 2026-04-23 and documented
 beside Amazon Q Developer (`TM-11`, 6d step 10) on the
 [generative AI assistance page](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/amazonq.html),
-unchanged on 2026-10-30; no October source announces a change to it, and the sighting reads the domain's
-switch as on.
+unchanged on 2026-10-30; no October source announces a change to it, and the user's calls of 2026-10-30 are in
+Sandbox's trail as the project role (`TM-23`'s readings taken).
 
 | Change | Plan items it moves | Verdict | Confirmed by |
 |---|---|---|---|

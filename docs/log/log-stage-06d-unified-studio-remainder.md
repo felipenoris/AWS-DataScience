@@ -3188,6 +3188,20 @@ an AI assistant in the portal; read-only calls as the infrastructure user in San
   step 10) and the SageMaker Data Agent (`TM-23`), on the admin guide's generative AI page, unchanged.
 - **[user]** *"SageMaker Data Agent, um assistente de IA integrado ao ambiente de Query Editor do Amazon SageMaker
   Unified Studio."* `TM-23`'s channel, so the domain's switch is on; `get-domain` carries no field for it.
+- **[user]** *"Eu fiz algumas chamadas ao assistente SageMaker Data Agent."*
+- **[Claude] The trail, Sandbox, `us-west-2`**: as the project role of `eighth-experimentation` from the browser,
+  the person's Identity Center id as `sourceIdentity`, to `agent.datazone.us-west-2.api.aws`, no VPC endpoint:
+  `StartConversation` at 03:41:27, 03:46:13, 06:15:53 and 06:16:28 UTC, `SendMessage` at 06:16:44 and 06:18:05
+  (317 characters each, an event stream back), `GetConversation` eight and `ListConversations` seven times, no
+  `GenerateCode`, no error; the `resourceContext` is a `QUERY_EDITOR` notebook of `sqlworkbench`, whose own
+  calls (`ExecuteQuery`, `DriverExecute`, `GetQueryResult`) sit in the same window. Data Governance's trail
+  holds none of the agent's calls, and neither account holds a `bedrock` or `bedrock-runtime` event of the
+  agent's in `us-west-2`, `us-east-1` or `us-east-2` (Config's inventory lists apart). `TM-23`'s two readings
+  are taken; the decision stays due, beside decision 9.
+- **[Claude] Beside it, in the same window**: at 06:26:00 UTC DataZone's `AWSDataZone-Subscriptions` session
+  created an application inference profile for `eighth-experimentation` from `us.anthropic.claude-opus-4-5`
+  (Stage 17 decision 13's model road), and at 06:26:50 the playground's consumption role was refused
+  `InvokeModelWithResponseStream` on `amazon.nova-lite-v1:0` by an explicit deny, Stage 17 7.3's reading again.
 - **[Claude] Designations**: `ListDesignations` on `awsds-studio`, the laptop's CLI 2.37.12 running botocore's
   `develop` model from `AWS_DATA_PATH`: `PROJECT_OWNER` and `PROJECT_CONTRIBUTOR`, both `MANAGED`, `createdBy`
   `system`, `deletionProtection` true. The four projects' memberships are the ones of 2026-10-27. The release
