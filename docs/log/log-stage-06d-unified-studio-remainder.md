@@ -3333,3 +3333,14 @@ infrastructure user, in Data Governance.*
   order 13 with fourteen overrides, `enableRStudio` `false` locked in the overrides and in the resolved
   parameters. The failed environment `4dio1qb4twlbm8` still reads `VALIDATION_FAILED`: its deletion from *Code
   spaces* and the second press are the user's next acts.
+- **[user] The second press refused**: *Code spaces → Create space* does not create and points at *Create
+  SageMaker AI domain*; the wizard's *Create* answers *"An environment named SageMakerAIDomain already exists
+  within this project"*. The failed environment holds the name.
+- **[Claude] Where the portal lists it: nowhere.** Claude in Chrome in the user's portal session, nothing
+  submitted: the project menu's *Project details* panel has three tabs (details, the `Tooling` profile
+  parameters, JDBC and ODBC) and no environment list; *Code spaces* reads *"You don't have any code spaces"*
+  and its *SageMaker AI domain actions* menu holds one entry, *Create SageMaker AI domain*. A
+  `VALIDATION_FAILED` environment is reachable only through the API. The identity for `delete-environment`
+  is the one that has already called `create-environment` on this domain without a project membership: the
+  infrastructure user in Sandbox (`awsds-infra-sandbox-1`, Stage 17 1.5, 2026-10-19). `test-experimentation`'s
+  members are the Data Scientist User as owner, the project's own role and two groups as contributors.
