@@ -3258,3 +3258,26 @@ an AI assistant in the portal; read-only calls as the infrastructure user in San
 - **[Claude] The default space**: at 06:44:45 UTC *Code spaces* of `eighth-experimentation` recreated the
   default space deleted at 03:49 (`CreateSpace`, the project role, a browser) and the service started its app
   (`CreateApp` 06:44:50, two `ResourceInUse` after); the lessons' AWS list and `upstream-releases.md` carry it.
+
+### 2.6 item 1: the two applies
+
+*The user's word in chat (*"Sim, aplique os dois"*); Claude applying the saved plans as the infrastructure user,
+no other session on the machine running.*
+
+- **`sandbox/sagemaker`** as `awsds-infra-sandbox-1`: `Apply complete! Resources: 2 added, 0 changed, 0
+  destroyed.`, the re-plan `No changes`. Read back from DataZone: 14 blueprint configurations in Sandbox, the
+  new one created 14:55:40 UTC on `awsds-sandbox-smus-provisioning`, `awsds-sandbox-smus-manage-access`, the
+  `awsds-sandbox-project-boundary` and `us-west-2`; its `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant to every
+  project of the root unit as `CONTRIBUTOR`.
+- **`data-governance/governance`** as `awsds-infra-data`: `Apply complete! Resources: 0 added, 1 changed, 0
+  destroyed.`, the re-plan `No changes`. `get-project-profile`: `experimentation` `ENABLED`, updated 14:56:50
+  UTC, fourteen environment configurations, the first thirteen with their ids and orders unchanged,
+  `SageMakerAIDomain` `ON_DEMAND` at order 13 (configuration `ffd41bb5-…`) with the fourteen overrides as
+  written and the resolved parameters carrying them plus the template's empty `hiddenInstanceTypes`,
+  `hiddenSageMakerImageVersionAliases` and `domainName`.
+- **`./aws/studio.py`**: `US-3` `pass`, *"14 blueprint configuration(s) in awsds-infra-sandbox-1, all inside
+  decision 5's category 1"*; `US-1`, `US-2`, `US-4`, `US-5` (both Tooling domains `VpcOnly`), `US-6` pass; the
+  `(failed)` rows are the persona profiles with no session, as on every run under the `awsds` session alone.
+- **What waits**: 2.6 items 2 and 3 are the user's (the console wizard read and cancelled; *Code spaces* in
+  `test-experimentation` enabling the environment), then item 4's readings. A space on the new domain needs
+  `sandbox/egress` up for its image pull; the hub is down since 2026-10-26.
