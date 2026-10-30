@@ -288,7 +288,7 @@ carries the context, unmeasured (9.7 needed a named grant on the access role). T
   worker reaches DataZone with no proxy and no internet (`serverless-workflows.md`); Staging needed one
   added for the window (Stage 18 7.1).
 - **0.8 The roster grew**: 24 managed blueprints and 24 managed asset types on 2026-10-28, one more of
-  each than 2026-10-18's 23 (`SageMakerAIDomain` is not in `docs/SMUS.md`'s table;
+  each than 2026-10-18's 23 (`SageMakerAIDomain` in `docs/SMUS.md`'s table since 2026-10-30;
   `S3TableBucketAssetType`, `SageMakerUnifiedStudioScheduleAssetType` and
   `SageMakerUnifiedStudioDataQualityRulesetAssetType` are in no document). Step 6.2 writes them.
 - **0.9 The CLI 1.0.9 carries the catalog between projects and creates no table** (its installed code,

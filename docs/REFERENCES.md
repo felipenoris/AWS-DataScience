@@ -1331,6 +1331,28 @@
   <https://aws.amazon.com/about-aws/whats-new/2026/10/smus-light-mode>,
   <https://aws.amazon.com/about-aws/whats-new/2026/10/glue-catalog-oauth-iceberg-rest/>,
   <https://aws.amazon.com/about-aws/whats-new/2026/10/mflow-version-3-16/>.
+- **The `SageMakerAIDomain` pilot's admin pages, and Kiro CLI** — read 2026-10-30 for 6d decision 15 and step
+  10. Enabling a blueprint from the console's *Blueprints* tab:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/enable-disable-blueprints.html>; a
+  blueprint's deployment settings in a profile, with the Editable box:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/add-blueprint-deployment-settings.html>;
+  its authorization by domain unit:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/authorization-for-blueprints.html>;
+  the managed blueprints' dependence on the Tooling environment's exports:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/tooling-managed-compatibility.html>;
+  the Tooling parameters (`enableSpaces` among them):
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/manage-tooling-blueprint.html>; the
+  supported-blueprints table, with the new row:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/supported-blueprints.html>; the KMS
+  statements a customer key needs, none new for this blueprint:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/sagemaker-unified-studio-provisioned-resources-key-permissions.html>.
+  Kiro CLI in a JupyterLab space, pre-installed, Builder ID or Identity Center, *"test network access from
+  your browser, not from the space"*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/q-actions.html>; Kiro the IDE against
+  a space: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/kiro-for-smus.html>; Kiro's
+  login methods and the device flow: <https://kiro.dev/docs/getting-started/authentication/>; the community's
+  reading of *dispatch failure* as the HTTP client failing to send, behind a proxy or without a route:
+  <https://gist.github.com/Chen188/e7d1023c92efb84fa35f72a33a1d14ed>.
 
 ## Data platform
 

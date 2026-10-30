@@ -3216,3 +3216,45 @@ an AI assistant in the portal; read-only calls as the infrastructure user in San
   profiles page), `docs/PRICING.md` §8, §10 and §11, `docs/REFERENCES.md`, `threat-model.md` (`TM-28`),
   `lessons.md`'s AWS list, `open-questions.md` 22, this stage's decision due 15 and 2.4, the waiting list,
   `CLAUDE.md`, `docs/log/INDEX.md`.
+
+### Decision due 15 taken as (b), the pilot's code and its plans
+
+*The user's hand, in chat; Claude recording and writing.*
+
+- **[user]** *"Gostaria de habilitar este blueprint novo para testar suas funcionalidades"*, then *"Pode fazer
+  habilitando o RStudio"*.
+- **[Claude] The shape**: on `experimentation`, not a pilot profile. The code couples a profile's list to
+  `category_one_blueprints` (profiles.tf's precondition and the blueprint lookup), so the name joins the
+  category and lands in the profile as `ON_DEMAND` at order 13, where no project gets the domain until an
+  owner enables it from *Code spaces*; `test-experimentation` is the pilot project. The parameters: the house
+  image version 11 pinned on both app types (`imageName;appImageConfigName;11`, the default-image ARN the same
+  version), idle 60/60/120 and the volume ceiling 100 locked as Tooling's, `enableRStudio` `true` locked;
+  `hiddenInstanceTypes`, `hiddenSageMakerImageVersionAliases` and `domainName` left to the template. AWS's
+  key-permissions page names nothing new, the domain using the Tooling key. No other session on this machine
+  is running.
+- **[Claude] The code**: `sagemaker-prereqs`' `blueprint_names` default (commit `b414aa1f`; the tag
+  `sagemaker-prereqs-v0.9.0` on origin at that commit, `v0.8.0` the newest before it); `sandbox/sagemaker/main.tf`
+  on the tag; `governance/locals.tf` (`category_one_blueprints`, `sagemaker_ai_domain_parameters`, the image
+  locals) and `variables.tf` (`sandbox_dev_env_version`, 11); `aws/studio.py`'s `BLUEPRINT_ALLOWLIST`; the
+  stage's 2.6, `docs/SMUS.md`'s row (category 1), the waiting list.
+- **[Claude] The plans** (Recipe A, saved outside the repository): `sandbox/sagemaker` as `awsds-infra-sandbox-1`,
+  `2 to add, 0 to change, 0 to destroy` (the configuration and its grant); `governance` as `awsds-infra-data`,
+  `0 to add, 1 to change, 0 to destroy` (`experimentation` in place, thirteen elements unchanged, the new one
+  at order 13 with fourteen overrides). The applies wait on the user's word.
+
+### Kiro CLI from a space, and the default space recreated
+
+*The user in a space and in chat; Claude reading the trails and the proxy's log.*
+
+- **[user]** *"num space do smus, agora aparece opção para habilitar agente "Kiro". Ele orienta rodar um comando
+  de login pelo terminal do space"*; the three login methods tried, then *"error: dispatch failure"*.
+- **[Claude] The cause, measured**: `awsds-prod-proxy` and `awsds-prod-vpn` `stopped` since 2026-10-26 21:16
+  UTC, the proxy log's last line 22:15 UTC that day, Sandbox with no interface endpoint: the space started at
+  06:44 UTC has no path. The login's first call, `RegisterClient` on `oidc.us-west-2.amazonaws.com`, died in the
+  space: no `sso-oidc` event in the Identity Center account's trail in `us-west-2` or `us-east-1` over three
+  hours, no proxy line. AWS's page: Kiro CLI pre-installed in the SageMaker image, Builder ID or Identity
+  Center, the device URL opened in a browser. With the hub up, the login meets the plane's `.amazonaws.com`
+  entry and the chat meets the Region ceiling (10.1): step 10's door, decision 9.
+- **[Claude] The default space**: at 06:44:45 UTC *Code spaces* of `eighth-experimentation` recreated the
+  default space deleted at 03:49 (`CreateSpace`, the project role, a browser) and the service started its app
+  (`CreateApp` 06:44:50, two `ResourceInUse` after); the lessons' AWS list and `upstream-releases.md` carry it.

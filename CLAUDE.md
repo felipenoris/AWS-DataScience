@@ -401,7 +401,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `eighth-experimentation`'s default space (the trail, 03:49 UTC); custom designations are API-only; the project
   role's managed policies moved to v76/v47 on 2026-10-29 (`TM-28`); the assistant the user saw is the Data Agent in
   the Query Editor (`TM-23`, exercised 2026-10-30: the calls in Sandbox's trail as the project role, no Bedrock
-  event of its own; the decision beside 6d decision 9 is the user's).
+  event of its own; the decision beside 6d decision 9 is the user's). **Decision 15 taken 2026-10-30 as (b)**:
+  `sagemaker-prereqs-v0.9.0`, `experimentation`'s element at order 13 with the image pinned at
+  `var.sandbox_dev_env_version` (11) and RStudio on; both plans read (Sandbox 2 to add, governance 1 to change),
+  the applies the user's (2.6); the Posit licence and the inline policy owed before an RStudio session. Kiro CLI
+  is step 10's door (decision 9); the hub is down since 2026-10-26.
 - **Stage 6e** is held by PR #108 (decision 17, the user's 5.5 agreements; Sonnet 4.5 is Legacy since
   2026-10-08). A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint);
   retention mode `none` is declared in all 17 Regions and frozen by 7.5; `claude-opus-5` and
