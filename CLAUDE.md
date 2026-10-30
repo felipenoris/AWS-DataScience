@@ -314,7 +314,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   user is [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md)**: read it before asking
   the user anything, and remove a row in the sitting that takes it.
 - **The SCP battery** read `ou` 47 as expected / 0 unexpected / 7 not measured on 2026-10-22 (Stage 18's
-  carve-out removed, Stage 9 3.5's instance-preference rows run for the first time) and `root` 25 / 0 / 0 on 2026-10-18. **SageMaker job quotas are above zero in
+  carve-out removed, Stage 9 3.5's instance-preference rows run for the first time) and `root` 25 / 0 / 1 on 2026-10-30 (decision 29's row a note: its refusal carried no authorization id). **SageMaker job quotas are above zero in
   Production and Staging since 2026-10-24** (read 03:47 UTC, Sandbox's values: training 20 and transform 8
   for `ml.m5.large`, processing 8, `ml.t3.medium` 10), the four requests of 2026-10-23 still
   `CASE_OPENED`. The probes read `ResourceLimitExceeded` as authorized; the `ou`
@@ -476,8 +476,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   mirror at `main`, `gates-v0.6.0` with decision 1's zlib pair, `default-v0.10.0` as Sandbox's version 11,
   xxviii's active half (a global-endpoint `AssumeRole` lands in `us-east-1`, past 4.6's rules). **Decision
   29 taken 2026-10-27 as (b)**: the root baseline's `DenyDeployRoleAssumptionOutsideTheRegion` applied the
-  same day (14 statements), not reachable by the battery (a role that does not exist hides the deny; an existing one's global refusal names it
-  only through its authorization id, 2026-10-30), so
+  same day (14 statements), not reachable by the battery's wording (a role that does not exist hides the deny; an existing one's global refusal
+  names it only through an authorization id, which the battery's `root` row reads when AWS issues one), so
   `sts-global-probe` measures it; the next release's sitting is
   `runbooks/promotion.md` §N.8.2, the warehouse and backup sitting §N.8.3 (2026-11-22 to 11-25).
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,

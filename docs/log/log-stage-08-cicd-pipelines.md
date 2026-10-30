@@ -4386,3 +4386,29 @@ Canary` (`awsds-policy-canary`), reads alone. Times UTC.*
   row and `AWS_STATE.md`'s, from not exercised to exercised; `runbooks/scp-battery.md`; `lessons.md`'s platform
   list; `CLAUDE.md`'s Current position; the waiting list's optional row, taken; `REFERENCES.md` and `PRICING.md`
   for the Access Troubleshooter.
+
+## 2026-10-30 — the battery follows an authorization id: decision 29's row in the `root` phase
+
+*Claude's hand on the user's word in chat (*"Escrever na bateria"*); the battery run by Claude as the
+infrastructure user (`awsds-policy-canary`, `awsds-infra-prod`), reads otherwise. Times UTC.*
+
+- **[Claude] Written**: `scp-battery.py`'s `classify` reads a refusal whose wording names no policy but carries an
+  authorization id through `aws iam-toolbox get-request-authorization-details`, in the Region the message's
+  console link names, asking again for half a minute while the evaluation is not recorded. An explicit deny in
+  an SCP reads `DENY-SCP` with the policy id and the statement's Sid, in an RCP `DENY-RCP`, in any other policy
+  `DENY-NOT-SCP` with its type; an implicit deny or an unread evaluation falls through to the wording, the reason
+  in the detail (`authz: not recorded`, `authz: <error>`). Nine offline cases, the recorded evaluation of 06:09:53
+  among them, read as written. `probes.py`'s `root` phase gains the row *"sts:AssumeRole of awsds-deploy-prod,
+  global endpoint"* in `prod`, `deny`, `blocked`, with no allowed wording; `aws/probes/README.md` gives the two
+  outcomes their meaning.
+- **[Claude] The run**, `./aws/probes/scp-battery.py --phase root`, 06:24:34 to 06:25:07: *"25 as expected, 0
+  unexpected, 1 not measured"*, every earlier row as before and the new one `note ... DENY-NOT-SCP` with an empty
+  detail, so its refusal carried no authorization id. Production's `us-east-1` trail recorded that refusal at
+  06:25:03 with STS's plain text and no id, where the user's identical call at 06:09:53 carried one.
+- **Verdict**: AWS issues the id on some refusals only, here one of two of the same call 15 minutes apart; what
+  decides it, the time since the last one or a sample, these readings do not say. The row reads `DENY-SCP` when
+  the id comes, and a regression never does, so that reading is a measurement and a note is none.
+  `sts-global-probe` stays the measurement for a caller the trust admits.
+- **[Claude] The record**: `probes.py`'s comment, `runbooks/scp-battery.md`, `POLICIES.md`, `AWS_STATE.md`,
+  `lessons.md`'s platform entry, decision 29's text and the status cell, `promotion.md` §N.8.1 step 2 and
+  `CLAUDE.md`'s Current position.

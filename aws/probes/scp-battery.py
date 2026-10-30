@@ -32,7 +32,9 @@
 #      battery can make rather than a reason to stop, so ensure_session reads the wording
 #      too (Lesson 24).
 #   2. The outcome is read from the error wording, never from the exit code, and an
-#      explicit-deny message names the policy id, which is the attribution.
+#      explicit-deny message names the policy id, which is the attribution. A refusal that
+#      names no policy but carries an authorization id is attributed by the evaluation AWS
+#      recorded for it (IAM's Access Troubleshooter): STS's AssumeRole refusals name none.
 #   3. "The service validates before authorizing" is a property of the action, not of the
 #      service (Lesson 21), so each probe declares the wording that proves authorization
 #      was reached for that action. Anything else is untested - never silently "allowed".
@@ -44,6 +46,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -83,6 +86,14 @@ EXPIRY_RE = re.compile(
 
 ACCOUNT_ID_RE = re.compile(r"[0-9]{12}")
 
+# The pointer an access denied message carries to its recorded evaluation (IAM user guide,
+# "Troubleshoot access denied error messages with authorization ID"). The console link names
+# the Region the details are read in, which is the Region of the denial.
+AUTHZ_RE = re.compile(
+    r"https://[a-z0-9-]+\.console\.aws\.amazon\.com/iam/home\?region=([a-z0-9-]+)"
+    r"#/authorization-details/([A-Za-z0-9]+)"
+)
+
 
 def bold(text: str) -> None:
     print(f"\033[1m{text}\033[0m")
@@ -102,6 +113,63 @@ def aws(argv: list) -> tuple[str, int]:
     separated or discarded."""
     proc = subprocess.run(["aws", *argv], capture_output=True, text=True)
     return (proc.stdout + proc.stderr).rstrip("\n"), proc.returncode
+
+
+def authorization_details(authz_id: str, region: str, profile: str) -> tuple[dict | None, str]:
+    """The evaluation AWS recorded for a denied request, read with IAM's Access Troubleshooter
+    (a preview). AWS records it asynchronously and keeps it 24 hours, so a not-found answer is
+    asked again for half a minute. Returns the details, or None and the reason none was read,
+    which the caller shows rather than hides."""
+    for _ in range(6):
+        out, rc = aws(
+            [
+                "iam-toolbox",
+                "get-request-authorization-details",
+                "--authorization-id",
+                authz_id,
+                "--region",
+                region,
+                "--profile",
+                profile,
+                "--output",
+                "json",
+            ]
+        )
+        if rc == 0:
+            try:
+                return json.loads(out), ""
+            except ValueError:
+                return None, "authz: unreadable"
+        if "ResourceNotFound" not in out:
+            m = re.search(r"\(([A-Za-z]+)\)", out)
+            return None, f"authz: {m.group(1) if m else 'no answer'}"
+        time.sleep(5)
+    return None, "authz: not recorded"
+
+
+def explicit_deny(details: dict) -> tuple[str, str] | None:
+    """The first statement the recorded evaluation names as an explicit deny, as the outcome the
+    wording would have given: DENY-SCP or DENY-RCP with the policy id and the statement's Sid,
+    DENY-NOT-SCP with the policy's type for any other kind. None when no evaluation is an
+    explicit deny: an implicit deny says nothing about the ceiling."""
+    kinds = {p.get("uri"): p.get("type", "") for p in details.get("policies", [])}
+    for evaluation in details.get("evaluations", []):
+        if evaluation.get("evaluatedEffect") != "EXPLICIT_DENY":
+            continue
+        for matched in evaluation.get("matchedPolicies", []):
+            uri = matched.get("uri", "")
+            kind = kinds.get(uri, "")
+            policy = re.search(r"p-[a-z0-9]{8,}", uri)
+            for statement in matched.get("matchedStatements", []):
+                if statement.get("evaluatedEffect") != "DENY":
+                    continue
+                sid = statement.get("sid", "")
+                if kind == "SERVICE_CONTROL_POLICY":
+                    return "DENY-SCP", f"{policy.group(0) if policy else ''} {sid}".strip()
+                if kind == "RESOURCE_CONTROL_POLICY":
+                    return "DENY-RCP", f"{policy.group(0) if policy else ''} {sid}".strip()
+                return "DENY-NOT-SCP", f"{kind or 'unknown'} {sid}".strip()
+    return None
 
 
 def assignment_exists(profile: str) -> bool | None:
@@ -310,9 +378,11 @@ class Battery:
         return self.resolve_cache[key]
 
     # ---------------------------------------------------------------- classify
-    def classify(self, out: str, allowed_re: str, rc: int) -> tuple[str, str]:
+    def classify(self, out: str, allowed_re: str, rc: int, profile: str) -> tuple[str, str]:
         """Reads the wording. The order matters: a dead session and an IAM-level deny both
-        contain "AccessDenied", and only the SCP wording names a policy."""
+        contain "AccessDenied", and only the SCP wording names a policy. A refusal whose
+        wording names none but carries an authorization id is read through its recorded
+        evaluation before the probe's allowed wording, which the same refusal can match."""
         if EXPIRY_RE.search(out):
             return "NOANSWER", ""
         if "explicit deny in a service control policy" in out:
@@ -321,6 +391,13 @@ class Battery:
         if "explicit deny in a resource control policy" in out:
             m = re.search(r"p-[a-z0-9]{8,}", out)
             return "DENY-RCP", m.group(0) if m else ""
+        authz_note = ""
+        pointer = AUTHZ_RE.search(out)
+        if pointer and rc != 0:
+            details, authz_note = authorization_details(pointer.group(2), pointer.group(1), profile)
+            found = explicit_deny(details) if details is not None else None
+            if found:
+                return found
         # A declarative policy is enforced in the service's control plane, not in
         # authorization (AWS Organizations user guide, "How declarative policies work"), so
         # it names no policy id and produces no "explicit deny" wording: the attribution is
@@ -346,7 +423,7 @@ class Battery:
         # An AccessDenied that names no policy is an IAM/permission-set deny, not the
         # ceiling, and it answers a different question from the one being asked.
         if re.search("AccessDenied|UnauthorizedOperation|not authorized", out):
-            return "DENY-NOT-SCP", ""
+            return "DENY-NOT-SCP", authz_note
         return "UNTESTED", ""
 
     @staticmethod
@@ -462,7 +539,7 @@ class Battery:
             resolved.append(arg)
 
         out, rc = aws(resolved + ["--profile", profile])
-        outcome, detail = self.classify(out, allowed, rc)
+        outcome, detail = self.classify(out, allowed, rc, profile)
 
         if outcome == "NOANSWER":
             die(
@@ -510,8 +587,8 @@ def main(argv: list) -> int:
         elif a == "--no-readback":
             do_readback = False
         elif a in ("-h", "--help"):
-            # The header comment is the manual; the slice below is lines 2-39.
-            header = Path(__file__).read_text(encoding="utf-8").splitlines()[1:39]
+            # The header comment is the manual; the slice below is lines 2-41.
+            header = Path(__file__).read_text(encoding="utf-8").splitlines()[1:41]
             print(
                 "\n".join(
                     line[2:] if line.startswith("# ") else line.lstrip("#") for line in header

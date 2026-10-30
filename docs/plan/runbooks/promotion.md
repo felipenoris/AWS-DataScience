@@ -1420,7 +1420,9 @@ identity.
    **Run by the user 2026-10-30** (Stage 8's log): both refused, STS's text naming no policy on either endpoint.
    The global refusal carries an authorization id, whose details (`aws iam-toolbox
    get-request-authorization-details --region us-east-1`) name `DenyDeployRoleAssumptionOutsideTheRegion` in
-   `p-1fp032g8` as the matched deny, `EXPLICIT_DENY`; the regional refusal carries none.
+   `p-1fp032g8` as the matched deny, `EXPLICIT_DENY`; the regional refusal carries none. The battery's `root` phase
+   reads such an id since ([`scp-battery.md`](scp-battery.md)): its run at 06:24 UTC, 25 as expected and 1 not
+   measured, met a refusal of the same call with none.
 
 3. **[user] Stage 9 8.1's read-but-not-write**, as the Data Scientist User in a private window: the portal,
    `eighth-experimentation`'s query editor with *Athena (SQL)* as the compute, which 6f 11.10 ran with no

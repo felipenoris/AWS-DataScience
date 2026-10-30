@@ -2011,7 +2011,8 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   `sts.us-west-2.amazonaws.com`, refused by the trust alone, carried no id, nor did the 21 global refusals of a
   role that exists nowhere on 2026-10-27: whether a missing role, the deny's kind or the preview's rollout
   withholds the id, these readings do not separate. The details are kept 24 hours and read in the Region of
-  the denial. Where: `log-stage-08-cicd-pipelines.md`, 2026-10-30.
+  the denial. Nor does every refusal carry one: the battery's same call 15 minutes later, at 06:25:03, carried
+  none. Where: `log-stage-08-cicd-pipelines.md`, 2026-10-30.
 
 ### Lake Formation and SageMaker Unified Studio
 
