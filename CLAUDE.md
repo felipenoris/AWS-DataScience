@@ -396,7 +396,23 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (2026-10-26, alias `0.10.0`), its `NO_PROXY` literal the 73 names of `vpc-egress-v0.19.0`, `DE-5`
   passing; the CI/CD CLI by its name is the house's through the activation hook, read by the smoke.
   Stage 17 1.4's apply of the module on `sandbox/egress` is no longer held by the
-  image (decision 4). The remote IDE works (6d step 7, 2026-09-11).
+  image (decision 4). The remote IDE works (6d step 7, 2026-09-11). **SMUS's October releases read 2026-10-30**
+  (`upstream-releases.md`): the `SageMakerAIDomain` blueprint (24 managed names) carries the image attachment as
+  profile parameters and RStudio behind a Posit licence, decision due 15 the user's; the portal deleted
+  `eighth-experimentation`'s default space (the trail, 03:49 UTC); custom designations are API-only; the project
+  role's managed policies moved to v76/v47 on 2026-10-29 (`TM-28`); the assistant the user saw is the Data Agent in
+  the Query Editor (`TM-23`, exercised 2026-10-30: the calls in Sandbox's trail as the project role, no Bedrock
+  event of its own; the decision beside 6d decision 9 is the user's). **Decision 15 taken 2026-10-30 as (b)**:
+  `sagemaker-prereqs-v0.9.0`, `experimentation`'s element at order 13 with the image pinned at
+  `var.sandbox_dev_env_version` (11), both applied 2026-10-30 (`US-3` at 14). **2.6 items 1, 3 and most of 4
+  done 2026-10-30**: two environments ended `VALIDATION_FAILED` with `[]` because the profile wrote the image
+  lists as the template's `name;config;version` where the service takes JSON and translates (the lessons' AWS
+  list); `test-experimentation` holds `lab-sagemaker-ai-domain` (`d-odhynkcev3yw`, environment
+  `c9ge4welc308pc`) with the house image pinned at 11, idle 60/60/120 and RStudio off (`enableRStudio`
+  `false` until the Posit licence; the portal's RStudio card refuses), `US-5`/`US-7` passing on it; item 4
+  closed with `pilot-jupyterlab` on the pinned image (`InService` 22:46 UTC, the pull from the Production
+  registry), item 5 the licence and the inline policy. Kiro CLI
+  is step 10's door (decision 9); the hub is down since 2026-10-26.
 - **Stage 6e** is held by PR #108 (decision 17, the user's 5.5 agreements; Sonnet 4.5 is Legacy since
   2026-10-08). A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint);
   retention mode `none` is declared in all 17 Regions and frozen by 7.5; `claude-opus-5` and

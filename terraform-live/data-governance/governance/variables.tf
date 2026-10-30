@@ -77,6 +77,12 @@ variable "max_ebs_volume_size_gb" {
   default     = 100
 }
 
+variable "sandbox_dev_env_version" {
+  description = "The house image version the SageMakerAIDomain blueprint pins in Sandbox's profile (6d decision due 15): terraform-live/sandbox/dev-env/'s awsds-sandbox-dev-env, whose versions the release pipeline registers (dev-env.md §B). Moved at a release, with an Update project per project."
+  type        = number
+  default     = 11
+}
+
 variable "enable_trusted_identity_propagation" {
   description = "Stage 6 decision 2, and the recommendation is follow the grain stage 5a chose. Stage 5a decision 6 put the entitlement grain at the assumable role/project (docs/GOVERNANCE.md §'The grain'), and TIP's documented cost is that remote access stops working - so false is the setting that matches the grain already decided. Flipping it to true is a decision that re-opens Stage 5a decision 6, not a tuning knob."
   type        = bool

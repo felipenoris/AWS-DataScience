@@ -47,6 +47,7 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | 6h 5.3 and 5.4's real attempts, for the refusals' wording, with the compute up (the simulator read both as designed on 2026-10-18) | [6h](stages/stage-06h-redshift-connection.md) |
 | Step 2's portal acts: a consumer project, a subscription, an approval as the Governance Manager, whose project membership hands that user the project role (Stage 18 6.1) | 6f step 2, 4.3 |
 | 0.4's portal half; 6.4, keep or drop `lab` | 6h |
+| A Posit Workbench licence for Sandbox (from Posit or AWS Marketplace as `Posit Team`), accepted in License Manager's console, and RStudio's inline policy on the pilot project's role; the console's enable wizard for `SageMakerAIDomain`, read and cancelled | [6d](stages/stage-06d-unified-studio-remainder.md) 2.6 (decision 15 (b), 2026-10-30) |
 | The domain name | [Stage 13](stages/stage-13-public-web-tier.md) |
 | The account quota, D34's rung (recommended: the auto-enrollment rung), and the Account Factory product's reading in Management | [Stage 14](stages/stage-14-sandbox-vending.md) |
 | 6d 6.1 (xvii), the `GetEnvironmentCredentials` attempt; an optional new Querybook quota request | [6d](stages/stage-06d-unified-studio-remainder.md), `docs/SMUS.md` |

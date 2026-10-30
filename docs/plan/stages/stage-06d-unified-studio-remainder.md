@@ -188,6 +188,11 @@ work at all* — is still open.
   only when the template changes the domain's own properties, and that case is still unseen: no
   `UpdateStack` and no service-issued `UpdateDomain` since. The first project's stack had one earlier
   update, 2026-08-25, before the first attachment. `US-1`..`US-10` pass the same day.
+- **2.4 — the trigger is a user's act, read 2026-10-30.** The release notes of 2026-10-26 name *Update project*
+  as what adds `elasticmapreduce.amazonaws.com` to a project role's trust policy, the one change the 2026-10-11
+  reconciliation made: the after half can be provoked from the portal when a reading is wanted, and it rewrites
+  the domain only when the template moves the domain's properties, which `Tooling`'s does not for `CustomImages`.
+  The `SageMakerAIDomain` blueprint writes `CustomImages` from the profile's parameters (decision due 15).
 - **2.4 — [Claude] Read reconciliation**: `./aws/studio.py` before and after a blueprint reconciliation. If
   the selector is a blueprint-authored object it may be reset — verification (vi)'s second half.
 - **2.5 done 2026-09-10: INT-01 measured, and the two principals are not one.** The registry account's
@@ -201,6 +206,50 @@ work at all* — is still open.
   says.
 - **2.5 — [Claude] Read the cross-account pull**: the CloudTrail record showing the Sandbox project role
   reading `awsds-prod-ecr-dev-env` — INT-01 measured rather than assumed.
+- **2.6 — the `SageMakerAIDomain` pilot (decision 15 (b), 2026-10-30)**, in this order:
+  1. **[Claude⚡, the user authorizing each]** `sandbox/sagemaker/` on `sagemaker-prereqs-v0.9.0` (planned
+     2026-10-30: 2 to add, the configuration and its grant), then `data-governance/governance/` (1 to change:
+     `experimentation`'s element at order 13, fourteen overrides, `enableRStudio` `true` locked); each re-plans
+     `No changes`; `US-3` reads 14 configurations.
+  2. **[user]** The console's enable wizard for the blueprint in Sandbox's account, read and cancelled
+     (Lesson 39): every field it asks for beyond the configuration's.
+  3. **[user]** In `test-experimentation`, *Code spaces*: the entry that enables the environment, read before
+     it is pressed, then enabled. The fallback is `datazone create-environment` with the profile's
+     configuration id, as a contributor (Stage 17 1.5's path). The first press, 2026-10-30, ended
+     `VALIDATION_FAILED` with the message `[]`, thirteen seconds after `CreateEnvironment` and with no call
+     into Sandbox (the log). The discriminator run first: `enableRStudio` `false` in the profile
+     **[Claude⚡]**, the failed environment deleted and the entry pressed again **[user]**. The portal lists a
+     `VALIDATION_FAILED` environment nowhere and refuses a second with its name, so the deletion is
+     `datazone delete-environment` as the infrastructure user in Sandbox, the identity of Stage 17 1.5's
+     `create-environment` **[Claude⚡]**. Run 2026-10-30: the second environment ended `VALIDATION_FAILED`
+     with `[]` as well, RStudio off and no call into Sandbox, so the licence is not the cause. The next
+     discriminator is the API form with no configuration id and no user parameter, the template's defaults
+     alone **[Claude⚡]**: a domain born points at the profile's overrides, to bisect; a third `[]` at the
+     project, whose `Tooling` already holds a domain. Run 2026-10-30: the domain was born, and the cause is
+     the image lists' form, the template's `name;config;version` where the service takes a JSON list of
+     `ImageName`, `AppImageConfigName` and `ImageVersionNumber` (measured by an update of the living
+     environment); the profile writes the JSON since. **Done 2026-10-30**: the press from the profile with
+     its fourteen overrides bore `lab-sagemaker-ai-domain` (`d-odhynkcev3yw`, environment `c9ge4welc308pc`).
+  4. **[Claude]** The readings, **taken 2026-10-30** (the log; the space `pilot-jupyterlab` on the pinned
+     image, its app `InService` ten minutes after the pull from the Production registry):
+     the environment's stack and the new domain through `describe-domain`
+     (`CustomImages` naming `ImageVersionNumber` 11 on both app types, `DefaultResourceSpec`, idle 60/60/120,
+     the volume 16/100, `VpcOnly` on the project's subnets and group, `HomeEfsFileSystemId`,
+     `AppSecurityGroupManagement` `Service`, `RStudioServerProDomainSettings`); `US-1`..`US-10`; `./aws/vpn.py`
+     `VP-3` against the service-managed groups; `release/versions.py references` keeping version 11; which
+     domain the *Code spaces* page lists beside `Tooling`'s; a JupyterLab space on the pinned image; 2.4's after
+     half, by construction.
+  5. **[user]** The Posit Workbench licence (from Posit or AWS Marketplace, granted through License Manager
+     in `us-east-1`, accepted in Sandbox's console) and the inline policy on the pilot project's role, AWS's
+     JSON from the blueprint's admin page. **[Claude⚡]** `enableRStudio` back to `true` in the profile, and
+     the way it reaches the domain, measured: a second environment from the same entry, or SageMaker's
+     `UpdateDomain`, which adds RStudio to a living domain (the template's note says only that it is never
+     removed). **[user]** Then an RStudio space and its session. **[Claude]** The session's
+     start in the trail (`CreateApp` on `RStudioServerPro` and `RSessionGateway`, the checkout at
+     `license-manager`), the proxy's log for Posit's names, `PRICING.md` §8's rows against the first bill.
+  6. **The rollback**: the environment deleted from *Code spaces* by the owner (the domain goes with its stack;
+     SageMaker retains the EFS home by default, a hand delete), then the name out of the three roster copies in
+     one commit. `enableRStudio` cannot be turned off on a living domain.
 
 ### 3. Run a working session under the proxy
 
@@ -1729,6 +1778,29 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
     the workflow's `Code` object (D28 class (2b), Stage 10 step 2). Stage 8 5.6's lint refuses
     `SageMakerNotebookOperator` by name, so the refusal reads as this decision rather than as a generic
     project-scoped reference.
+
+15. **Whether a Sandbox profile moves its spaces to the `SageMakerAIDomain` blueprint, and whether RStudio
+    comes with it** (step 2; [`upstream-releases.md`](../upstream-releases.md), read 2026-10-30). The blueprint
+    of 2026-10-20 carries the image attachment, the default image, the idle settings, the hidden instance types
+    and the volume ceiling as profile parameters, Terraform's in `governance/profiles.tf`, where today
+    `CustomImages` is a hand `UpdateDomain` on `Tooling`'s domain (2.1, Lesson 60) and a reconciliation may reset
+    it (2.4). Its pin is a version number per profile, so a house-image release becomes a profile change and an
+    *Update project* per project, where Stage 8 decision 7's open entry lets the portal offer every version.
+    RStudio needs the same blueprint with `enableRStudio` `true`, which no later edit turns off, a Posit
+    Workbench licence (no AWS rate; License Manager at no charge) accepted in Sandbox, an inline policy written
+    by hand on each project role, an EFS home and service-managed security groups in the project's VPC, and
+    runs Posit's image with none of decision 8's proxy environment. **(a)** A pilot profile beside
+    `experimentation`: `Tooling` with `enableSpaces` false and this blueprint with the house image pinned, one
+    project, the readings of 2.4 and `US-1`..`US-10` before and after, RStudio off. **(b)** The same with
+    `enableRStudio` `true` and a licence, once the pilot reads clean. **(c)** Stay on `Tooling`'s domain.
+    **Recommended: (a), after the console wizard's fields are read (Lesson 39) and the portal's *Blueprints* tab
+    seen**: the attachment leaves the hand step and the reconciliation question closes by construction; (b) is a
+    licence and a second runtime the proxy does not reach, weighed when R work asks for it. The user's; the
+    waiting list carries it. **Taken 2026-10-30 by the user as (b)**, on `experimentation` rather than a
+    pilot profile: the code couples a profile's list to `category_one_blueprints`, so the name joins the
+    category and lands in the profile as `ON_DEMAND` at order 13, where no project gets the domain until
+    an owner enables it from *Code spaces*; `test-experimentation` is the pilot project, and step 2.6 the
+    sequence. The licence and the inline policy stay the user's acts (the waiting list).
 
 ## Verifications to answer while executing
 

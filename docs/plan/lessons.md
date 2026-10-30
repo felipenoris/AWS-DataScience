@@ -2998,6 +2998,21 @@ decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentia
   [PendingCheckout] to [Deleting] is not allowed."*, until it went through at 06:26:12 with every tab closed.
   The Query editor's case is the entry under Lake Formation and SageMaker Unified Studio above. Where:
   `log-stage-07-gitlab-runners-ecr.md`, 2026-10-26.
+- **The portal deletes a project's default JupyterLab space** (measured 2026-10-30). Sandbox's trail holds
+  `DeleteSpace` of `default-<user profile id>` in `eighth-experimentation`'s domain at 03:49:33 UTC, by the
+  project role from a browser, with no error, while the code spaces page read the same day says *"You cannot
+  delete the default JupyterLab space"*. Opening that project's *Code spaces* page recreated the space (`CreateSpace` by the project role from a browser, 06:44:45 UTC) and the service started its app. Where:
+  `log-stage-06d-unified-studio-remainder.md`, 2026-10-30.
+- **DataZone takes the `SageMakerAIDomain` blueprint's `customImages*` as JSON and reports nothing when they
+  are not** (measured 2026-10-30). The template declares the parameter as comma-separated
+  `imageName;appImageConfigName;versionNumber` triples and splits it so; the portal's *Configure* panel and
+  the profile take `[{"ImageName","AppImageConfigName","ImageVersionNumber"}]`, and the service writes the
+  triple into the stack (the environment's resolved parameter carries the JSON, the stack's parameter the
+  triple, 22:11 UTC). A profile override in the triple form ends every environment `VALIDATION_FAILED` with
+  `failureReason` `{code: "1", message: "[]"}` 11 to 13 s after `CreateEnvironment`, no call into the member
+  account, the portal's banner reading *"Setting up your SageMaker AI domain"* first; the template's defaults
+  alone deploy, and so does the JSON through an update of the living environment. Where:
+  `log-stage-06d-unified-studio-remainder.md`, 2026-10-30.
 
 ### DataZone and the CI/CD CLI
 

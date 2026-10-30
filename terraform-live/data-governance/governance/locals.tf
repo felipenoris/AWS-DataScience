@@ -17,13 +17,13 @@ locals {
   # them before anything was applied.
   #
   # The order is a contract, and only its first element is measured: profiles.tf reads
-  # `index(local.category_one_blueprints, bp)` as each environment's `deployment_order`, so
-  # Tooling must come first - nothing else provisions a working project. The grouping after it is
+  # `index(each.value.blueprints, bp)` as each environment's `deployment_order`, so
+  # Tooling must come first and a name joins at the end - nothing else provisions a working project. The grouping after it is
   # not a dependency graph anybody has read; a stricter order is a measurement at step 2.4.
   category_one_blueprints = [
     # The base environment, first: it provisions the project's SageMaker AI domain, roles and
-    # security groups, and nothing else works without it. `deployment_order` below is `index()`
-    # into this list.
+    # security groups, and nothing else works without it. `deployment_order` is `index()` into
+    # each profile's copy of this list.
     "Tooling",
     # ToolingLite is absent - category 3 since 2026-08-21 (user decision, after step 1.5's apply
     # measured what no page documents: it is a base variant, not a capability. The service
@@ -65,6 +65,12 @@ locals {
     # `blueprint_parameters` declares nothing for it (read 2026-10-19). Appended last, like
     # MLflowApp, so every environment above keeps its `deployment_order`.
     "AmazonBedrockKnowledgeBase",
+    # The SageMakerAIDomain blueprint (released 2026-10-20), out of `undefined` at 6d decision due 15,
+    # taken 2026-10-30 by the user as (b): a standalone SageMaker AI domain per project beside
+    # Tooling's, the code spaces experience as the profile's parameters below, RStudio on. Last, so
+    # every environment above keeps its `deployment_order`; ON_DEMAND, so a project gets the domain
+    # only when an owner enables it from Code spaces.
+    "SageMakerAIDomain",
   ]
 
   member_account_ids = {
@@ -157,15 +163,89 @@ locals {
   # portal pre-fills when a member enables the capability (deployment_mode ON_DEMAND), and
   # is_editable = true so the member replaces it. A project deployed with the placeholder
   # unchanged fails or collides visibly, rather than sharing a name silently.
-  blueprint_parameters = {
-    Tooling = local.tooling_parameters
-    S3Bucket = [
-      { name = "bucketName", value = "changeme-project-bucket", is_editable = true },
-    ]
-    S3TableCatalog = [
-      { name = "catalogName", value = "changemecatalog", is_editable = true },
-    ]
-  }
+  # The house image's objects in Sandbox, by terraform-live/sandbox/dev-env/'s name contract
+  # (`awsds-<env>-dev-env`, one app image configuration per app type). The version is the pin the
+  # SageMakerAIDomain template writes into the domain's CustomImages, so a release reaches the pilot's
+  # domain by moving var.sandbox_dev_env_version and an Update project per project (docs/SMUS.md,
+  # "Custom images"); the default-image ARN carries the same version, which is what the release
+  # pipeline's retire job keeps (gitlab/awsds/dev-env/release/versions.py reads CustomImages alone).
+  sandbox_dev_env_image = "awsds-sandbox-dev-env"
+  sandbox_dev_env_image_version_arn = format(
+    "arn:%s:sagemaker:%s:%s:image-version/%s/%d",
+    data.aws_partition.current.partition,
+    var.region,
+    local.member_account_ids.sandbox,
+    local.sandbox_dev_env_image,
+    var.sandbox_dev_env_version,
+  )
+
+  # The SageMakerAIDomain blueprint's parameters (6d decision due 15 (b), 2026-10-30). They are the
+  # template's own and per app type, so Tooling's rows above do not reach this domain: the same
+  # ceilings are written again, locked (Lesson 5), from the same variables. The image lists are JSON,
+  # `[{"ImageName","AppImageConfigName","ImageVersionNumber"}]`, the form the portal and the service
+  # take; DataZone translates it to the template's `name;config;version` before the stack, and a
+  # triple written here fails the environment's validation with an empty message (measured
+  # 2026-10-30, 2.6 item 3). enableRStudio is locked, never a member's choice: the template's note says RStudio is
+  # never removed from a domain. It is false while the account holds no Posit licence: the first
+  # environment created with true ended VALIDATION_FAILED with an empty message and no call into
+  # Sandbox (2.6 item 3, 2026-10-30), and the flip to false is the discriminator. With true the
+  # template adds an EFS home, service-managed security groups and Posit's RStudio, whose licence
+  # and inline policy are the user's acts (the waiting list); the value returns to true at 2.6
+  # item 5. hiddenInstanceTypes, hiddenSageMakerImageVersionAliases and domainName keep the template's
+  # empty defaults: the instance ceiling is the SCP's, not a picker's (Lesson 5).
+  sagemaker_ai_domain_parameters = [
+    {
+      name = "customImagesJupyterLab"
+      value = jsonencode([{
+        ImageName          = local.sandbox_dev_env_image
+        AppImageConfigName = "${local.sandbox_dev_env_image}-jupyterlab"
+        ImageVersionNumber = var.sandbox_dev_env_version
+      }])
+      is_editable = false
+    },
+    {
+      name = "customImagesCodeEditor"
+      value = jsonencode([{
+        ImageName          = local.sandbox_dev_env_image
+        AppImageConfigName = "${local.sandbox_dev_env_image}-codeeditor"
+        ImageVersionNumber = var.sandbox_dev_env_version
+      }])
+      is_editable = false
+    },
+    { name = "defaultImageVersionArnJupyterLab", value = local.sandbox_dev_env_image_version_arn, is_editable = false },
+    { name = "defaultImageVersionArnCodeEditor", value = local.sandbox_dev_env_image_version_arn, is_editable = false },
+    { name = "lifecycleManagementJupyterLab", value = "ENABLED", is_editable = false },
+    { name = "lifecycleManagementCodeEditor", value = "ENABLED", is_editable = false },
+    { name = "idleTimeoutInMinutesJupyterLab", value = tostring(var.idle_timeout_minutes), is_editable = true },
+    { name = "idleTimeoutInMinutesCodeEditor", value = tostring(var.idle_timeout_minutes), is_editable = true },
+    { name = "minIdleTimeoutInMinutesJupyterLab", value = tostring(var.idle_timeout_minutes), is_editable = false },
+    { name = "minIdleTimeoutInMinutesCodeEditor", value = tostring(var.idle_timeout_minutes), is_editable = false },
+    { name = "maxIdleTimeoutInMinutesJupyterLab", value = tostring(var.max_idle_timeout_minutes), is_editable = false },
+    { name = "maxIdleTimeoutInMinutesCodeEditor", value = tostring(var.max_idle_timeout_minutes), is_editable = false },
+    { name = "maxEbsVolumeSize", value = tostring(var.max_ebs_volume_size_gb), is_editable = false },
+    { name = "enableRStudio", value = "false", is_editable = false },
+  ]
+
+  # 2.6 item 3's discriminator (2026-10-30): with true the SageMakerAIDomain element carries no
+  # override, so an environment created from the portal takes the template's defaults alone, no
+  # image, no ceiling, RStudio off. The environment's record decides whether the overrides return
+  # whole or one group at a time. False outside that reading. The key leaves the map rather than
+  # holding an empty list: DataZone stores no parameterOverrides for an empty one, and `[]` in the
+  # configuration is a diff on every plan (read 2026-10-30).
+  sagemaker_ai_domain_defaults_only = false
+
+  blueprint_parameters = merge(
+    {
+      Tooling = local.tooling_parameters
+      S3Bucket = [
+        { name = "bucketName", value = "changeme-project-bucket", is_editable = true },
+      ]
+      S3TableCatalog = [
+        { name = "catalogName", value = "changemecatalog", is_editable = true },
+      ]
+    },
+    local.sagemaker_ai_domain_defaults_only ? {} : { SageMakerAIDomain = local.sagemaker_ai_domain_parameters },
+  )
 
   # The overrides each profile passes, by profile name. `lake-publishing` takes experimentation's
   # Tooling rows plus `enableSpaces` false and locked: the template creates the project's SageMaker

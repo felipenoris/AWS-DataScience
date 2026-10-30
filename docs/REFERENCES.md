@@ -1306,6 +1306,54 @@
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/storage.html>. A host with a VPC
   configuration in the GitLab's account, a connection authorized by one GitLab user, the connection shared by
   RAM and enabled for every domain of the receiving account: the path INT-13's row now carries, with its cost.
+- **SageMaker Unified Studio's October 2026 releases** — read 2026-10-30 for
+  [`upstream-releases.md`](plan/upstream-releases.md), after the user saw RStudio, a deletable default space and an
+  assistant in the portal. The release notes, 2026-10-08 to 2026-10-29 (the `SageMakerAIDomain` blueprint, RStudio,
+  the redesigned catalog, the Spark History Server, light mode, custom designations):
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>; the blueprint's
+  parameters and RStudio's inline policy:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/sagemaker-ai-domain.html>; RStudio
+  spaces: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/rstudio.html>; the licence, from
+  Posit or AWS Marketplace, granted through License Manager in `us-east-1`:
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/rstudio-license.html>; License Manager at no charge:
+  <https://aws.amazon.com/license-manager/pricing/>; the code spaces page, still saying the default JupyterLab
+  space cannot be deleted: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/code-spaces-idc.html>;
+  the generative AI assistance page, Amazon Q and the Data Agent, unchanged:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/amazonq.html>; the document history's
+  policy entries of 2026-10-27 and 2026-10-29:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html>; the designations
+  link, answering page-not-found on 2026-10-30:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designations.html>; botocore's
+  changelog, 1.43.115 to 1.43.122, and the DataZone model the designation calls ran on:
+  <https://github.com/boto/botocore/blob/develop/CHANGELOG.rst>,
+  <https://github.com/boto/botocore/blob/develop/botocore/data/datazone/2018-05-10/service-2.json>; What's New,
+  light mode, the Glue catalog's OAuth and MLflow 3.16:
+  <https://aws.amazon.com/about-aws/whats-new/2026/10/smus-light-mode>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/10/glue-catalog-oauth-iceberg-rest/>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/10/mflow-version-3-16/>.
+- Code spaces, and an environment's deployment record — the user-guide page that routes IAM and Identity Center domains to their own code-spaces pages, and the DataZone API's `GetEnvironment` and `EnvironmentDeploymentDetails`, which define `VALIDATION_FAILED`, `FAILED_VALIDATION` and the `failureReason` an environment carries (6d 2.6 item 3, the `[]` read 2026-10-30): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/ide-spaces.html>, <https://docs.aws.amazon.com/datazone/latest/APIReference/API_GetEnvironment.html> and <https://docs.aws.amazon.com/datazone/latest/APIReference/API_EnvironmentDeploymentDetails.html>.
+- **The `SageMakerAIDomain` pilot's admin pages, and Kiro CLI** — read 2026-10-30 for 6d decision 15 and step
+  10. Enabling a blueprint from the console's *Blueprints* tab:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/enable-disable-blueprints.html>; a
+  blueprint's deployment settings in a profile, with the Editable box:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/add-blueprint-deployment-settings.html>;
+  its authorization by domain unit:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/authorization-for-blueprints.html>;
+  the managed blueprints' dependence on the Tooling environment's exports:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/tooling-managed-compatibility.html>;
+  the Tooling parameters (`enableSpaces` among them):
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/manage-tooling-blueprint.html>; the
+  supported-blueprints table, with the new row:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/supported-blueprints.html>; the KMS
+  statements a customer key needs, none new for this blueprint:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/sagemaker-unified-studio-provisioned-resources-key-permissions.html>.
+  Kiro CLI in a JupyterLab space, pre-installed, Builder ID or Identity Center, *"test network access from
+  your browser, not from the space"*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/q-actions.html>; Kiro the IDE against
+  a space: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/kiro-for-smus.html>; Kiro's
+  login methods and the device flow: <https://kiro.dev/docs/getting-started/authentication/>; the community's
+  reading of *dispatch failure* as the HTTP client failing to send, behind a proxy or without a route:
+  <https://gist.github.com/Chen188/e7d1023c92efb84fa35f72a33a1d14ed>.
 
 ## Data platform
 

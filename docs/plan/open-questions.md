@@ -684,6 +684,10 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     template creates carries the policies the template attaches, so a profile on such a blueprint takes the
     load-bearing documents out of AWS's authorship, and the pull-and-diff this item asks for would cover the
     roles the managed blueprints still mint. Stage 18 decision 1 is where the template is first weighed.
+    **Read again 2026-10-30, a day after the revision**: `SageMakerStudioProjectUserRolePolicy` **v76** and
+    `SageMakerStudioProjectRoleMachineLearningPolicy` **v47** (both 2026-10-29), the diff in
+    [`upstream-releases.md`](upstream-releases.md); nothing the claims above rest on moved, and the reading was
+    that file's fortnightly sweep, not an instrument.
 
 ### Raised by the 2026-08-25 objectives clarification
 
