@@ -3528,3 +3528,75 @@ in the user's portal session and reading as the infrastructure user in Sandbox. 
   after its creation. The card reads *Running*, *Instance: ml.t3.medium*, the domain's name, and *Version:
   4.5*, the alias field rather than the image, a label to read past; its menu holds *Configure space*, *Start
   space* (greyed while running), *Stop space* and *Delete*. The space was left to the idle shutdown.
+
+## 2026-10-31 — 2.6 item 5 before the user's acts: the licence, the policy, the network
+
+*Claude's hand, in the session `stage-19-smus-native-data-product-9382ef`, started for item 5 by the session
+`smus-updates-76068a`; read-only calls as the infrastructure user in Sandbox, Data Governance and Identity,
+00:00-00:15 UTC; nothing applied. The hub down: `awsds-prod-vpn` and `awsds-prod-proxy` `stopped`, both launched
+15:59 UTC on 2026-10-30. Neither of the user's two acts is done, so item 5's `enableRStudio` flip waits.*
+
+- **The licence**: License Manager is unonboarded in Sandbox. `list-received-licenses` answers *"Service role not
+  found. Consult setup procedures in License Manager User Guide and create the required role for the service"* in
+  `us-west-2` and `us-east-1`, and none of the three `AWSServiceRoleForAWSLicenseManager*` roles exists; AWS
+  Config's inventory has met the same refusal twice a day since 2026-10-28. Sandbox's trail: the Data Scientist
+  User called `ListReceivedLicenses` four times in `us-east-1` between 00:02 and 00:07 UTC, each *"no
+  identity-based policy allows"*, so `DataScientistAccess` holds no `license-manager:` action. The Region
+  ceiling (`p-umksvu5a`, `CT.MULTISERVICE.PV.1`, 92 `NotAction` entries) exempts `license-manager:ListReceivedLicenses`
+  alone of the service's actions: the infrastructure user's `ListReceivedGrants` in `us-east-1` read *"explicit
+  deny in a service control policy"* while its `ListReceivedLicenses` reached the service, and an acceptance
+  there would be refused. AWS's licence page: Posit grants the licence through License Manager in `us-east-1`
+  within three business days of receiving the account id, the grant is consumed in any supported Region, and
+  the acceptance is made *"in the same region as your Amazon SageMaker AI domain"*, after the console's
+  first-time *Start using AWS License Manager* and *Grant Permissions*, which create the service-linked role
+  (`iam:CreateServiceLinkedRole` reads `allowed` for `InfrastructureAccess` by simulation, SCPs included).
+  Both paths are the user's purchase: AWS Marketplace `Posit Team` (a SaaS contract, then Posit's form for a
+  company name and an e-mail) or Posit directly, with the account id.
+- **The inline policy**: `list-role-policies` on `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw` answers `[]`.
+  The role carries four managed policies (`SageMakerStudioProjectUserRolePolicy`,
+  `SageMakerStudioProjectRoleMachineLearningPolicy`, `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy`,
+  `awsds-sandbox-workflows`), the D13 boundary `awsds-sandbox-project-boundary` (an `Allow *` with denies, none
+  naming `license-manager:` or `logs:`) and a trust policy admitting `sagemaker.amazonaws.com`, which the
+  RStudioServerPro app needs of its `DomainExecutionRoleArn`. AWS's JSON, copied from the admin guide's
+  `sagemaker-ai-domain-rstudio-policy` anchor and passed through `accessanalyzer validate-policy` with no
+  finding, has four statements: `RStudioLicenseManagerAccess` (`CheckoutLicense`, `CheckInLicense`,
+  `ExtendLicenseConsumption`, `GetLicense`, `ListReceivedLicenses` on `*`), `RStudioLogDelivery` (the five
+  `logs:*LogDelivery` actions and `PutResourcePolicy` on `*`), `RStudioDirectLogging` (log group and stream
+  creation, both describes, `GetLogEvents` and `PutLogEvents` on `*`) and `RStudioAppLifecycleAccess`
+  (`CreateApp`, `DescribeApp`, `DeleteApp` on `arn:aws:sagemaker:*:*:app/*/*/RStudioServerPro/*` and the
+  `RSessionGateway` twin). `iam:PutRolePolicy` on the role reads `allowed` for `InfrastructureAccess` by
+  simulation, so Claude attaches it on the user's word, or the user does from IAM's console (*Add permissions →
+  Create inline policy → JSON*).
+- **The network, a prerequisite the stage did not carry** (Lesson 34's shape): AWS's *Network and Storage*
+  page requires of RStudio in VPC-only mode a private subnet with internet access or interface endpoints for
+  both `sagemaker.api` and License Manager, the endpoint's security group admitting the domain's, and no more
+  than two security groups on the domain; the CLI page adds that the RStudioServerPro app makes the licence
+  call and that SageMaker manages the groups (`AppSecurityGroupManagement` `Service`, one rule per user
+  profile). The apps run Posit's image with none of decision 8's proxy environment, and the spoke has no
+  default route (D38), so the proxy's list is never consulted and the call needs the endpoint.
+  `com.amazonaws.us-west-2.license-manager` is in the Region's catalog (private DNS
+  `license-manager.us-west-2.amazonaws.com`, three AZs); `vpc-egress`'s `optional_services` has no such group,
+  and Sandbox's VPC holds the two gateway endpoints alone with `sandbox/egress` down. The endpoint is a module
+  change (Recipe B), a group `sandbox/egress` raises with `GROUPS=` for an RStudio session, whose name joins
+  `no_proxy_all_groups` and so the house image's dated list at the next rebuild (`DE-5`). The DNS Firewall's
+  allow list covers `*.amazonaws.com`; `vpc`'s endpoint group admits 443 from the VPC's CIDR, which covers the
+  service-managed groups; the project group `datazone-4gqfau9xuo6e4w-dev` allows all egress, as the page asks.
+- **What the update will change**, read from the template `DataZone-SageMakerAIDomain-prod-20260905`
+  (downloaded again through its access point with the Sandbox profile) and the registry's schema for
+  `AWS::SageMaker::Domain`: `enableRStudio` `true` sets
+  `DomainSettings.RStudioServerProDomainSettings.DomainExecutionRoleArn` to the Tooling user role (the project
+  role), `AppSecurityGroupManagement` `Service` (VPC-only and RStudio together), `DefaultUserSettings.RStudioServerProAppSettings.AccessStatus`
+  `DISABLED` and `HomeEfsFileSystemCreation` `Enabled`. The schema's create-only properties are `AuthMode`,
+  `DomainName`, `KmsKeyId` and the RStudio `DefaultResourceSpec`, so none of the four replaces the domain, and
+  the CLI's `update-domain` carries `--home-efs-file-system-creation` and `--app-security-group-management`.
+  The pilot domain today: `AppSecurityGroupManagement` unset, `HomeEfsFileSystemId` null, no RStudio setting,
+  one user profile (the Data Scientist User's, created 22:36 UTC on 2026-10-30), the space `pilot-jupyterlab`
+  `InService` with its app `Deleted` since the idle shutdown. AWS's *Add RStudio support to an existing domain*
+  page: every app deleted before the update (the shutdown did it), existing profiles marked `AccessStatus`
+  `DISABLED` by the update and re-enabled one by one with `update-user-profile`
+  (`RStudioServerProAppSettings.AccessStatus` `ENABLED`, 60 users by default), the RStudioServerPro app under
+  the profile `domain-shared`, which `list-apps` shows only when asked for that profile. Whether the portal's
+  *Create space → RStudio* flips the profile itself is item 5's reading.
+- **What waits on the user**: the licence bought and its grant accepted in `us-west-2`; the inline policy
+  (Claude's `put-role-policy` on their word, or the console); the decision on the `license-manager` endpoint;
+  then item 5's sequence with the hub and `sandbox/egress` up. The waiting list's row carries the three.

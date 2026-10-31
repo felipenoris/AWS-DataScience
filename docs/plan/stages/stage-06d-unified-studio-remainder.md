@@ -239,14 +239,29 @@ work at all* — is still open.
      `VP-3` against the service-managed groups; `release/versions.py references` keeping version 11; which
      domain the *Code spaces* page lists beside `Tooling`'s; a JupyterLab space on the pinned image; 2.4's after
      half, by construction.
-  5. **[user]** The Posit Workbench licence (from Posit or AWS Marketplace, granted through License Manager
-     in `us-east-1`, accepted in Sandbox's console) and the inline policy on the pilot project's role, AWS's
-     JSON from the blueprint's admin page. **[Claude⚡]** `enableRStudio` back to `true` in the profile, and
-     the way it reaches the domain, measured: a second environment from the same entry, or SageMaker's
-     `UpdateDomain`, which adds RStudio to a living domain (the template's note says only that it is never
-     removed). **[user]** Then an RStudio space and its session. **[Claude]** The session's
-     start in the trail (`CreateApp` on `RStudioServerPro` and `RSessionGateway`, the checkout at
-     `license-manager`), the proxy's log for Posit's names, `PRICING.md` §8's rows against the first bill.
+  5. **[user]** The Posit Workbench licence (from Posit or AWS Marketplace as `Posit Team`; Posit grants it
+     through License Manager in `us-east-1` within three business days of receiving the account id, and the
+     grant is consumed in any Region) and the inline policy on the pilot project's role, AWS's JSON from the
+     blueprint's admin page (the 6d log of 2026-10-31 carries it; Claude attaches it on the user's word).
+     **Read 2026-10-31, before either act** (the log): License Manager is unonboarded in Sandbox, so the
+     acceptance starts with the console's *Start using AWS License Manager* in **`us-west-2`**, the domain's
+     Region, as the infrastructure user or `AWS Control Tower Admin`; `DataScientistAccess` holds no
+     `license-manager:` action (four refusals in `us-east-1`, 00:02-00:07 UTC), and the Region ceiling refuses
+     `ListReceivedGrants` there. **A VPC-only RStudio domain needs a `license-manager` interface endpoint
+     beside `sagemaker.api`** (AWS's network page): the RStudio apps run Posit's image with no proxy
+     environment and the spoke has no default route, and the `vpc-egress` catalog has no such group, so the
+     endpoint is a module change raised by `sandbox/egress` for the session, the user's decision **[Claude⚡]**.
+     **[Claude⚡]** `enableRStudio` back to `true` in the profile, and the way it reaches the domain, measured
+     through the portal's *Configure SageMaker AI domain* panel first, a fresh environment from the entry if the
+     update is refused: the template's three `Fn::If`s (`RStudioServerProDomainSettings` with the project
+     role, `AppSecurityGroupManagement` `Service`, `RStudioServerProAppSettings` `DISABLED` as the users'
+     default) and `HomeEfsFileSystemCreation` `Enabled`, none create-only in the registry's schema. AWS's
+     page for a living domain wants every app deleted first (`pilot-jupyterlab`'s app `Deleted` since its idle
+     shutdown) and leaves every existing profile's `AccessStatus` `DISABLED`, so the Data Scientist User's
+     profile may need `update-user-profile` before a space. **[user]** Then an RStudio space and its session.
+     **[Claude]** The session's start in the trail (`CreateApp` on `RStudioServerPro` and `RSessionGateway`,
+     the checkout at `license-manager`), the proxy's log for Posit's names, `PRICING.md` §8's rows against the
+     first bill.
   6. **The rollback**: the environment deleted from *Code spaces* by the owner (the domain goes with its stack;
      SageMaker retains the EFS home by default, a hand delete), then the name out of the three roster copies in
      one commit. `enableRStudio` cannot be turned off on a living domain.
