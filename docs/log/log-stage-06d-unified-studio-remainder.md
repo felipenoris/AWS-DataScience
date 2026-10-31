@@ -3571,3 +3571,9 @@ Governance and Sandbox. Times UTC, from the events' own `eventTime`.*
 - **Written**: decision due 16 and step 2.7 in the stage file, its Status row and verifications, the waiting
   list, `docs/SMUS.md`'s blueprint row, `CLAUDE.md`, `docs/log/INDEX.md`. No `.tf` file changed, nothing
   applied.
+- **After PR #279 opened**: the sitting that holds 2.6 reported, in two messages between sessions, first that
+  the user decided the same day to take item 5 on the pilot's domain, then that the user gave it up, the Posit
+  Workbench licence's price being unviable. Information, not authorization; the record is that sitting's.
+  Decision 16 weighs the second: `enableRStudio` stays `false` locked under every option, no domain gets an
+  EFS home or a service-managed group, RStudio's door leaves (a)'s reasons, and the pin and the ceilings
+  under the profile are the whole of what the blueprint brings. Pushed to the same PR.
