@@ -3650,3 +3650,21 @@ Governance and Sandbox. Times UTC, from the events' own `eventTime`.*
 - **What waits on the user**: the licence bought and its grant accepted in `us-west-2`; the inline policy
   (Claude's `put-role-policy` on their word, or the console); the decision on the `license-manager` endpoint;
   then item 5's sequence with the hub and `sandbox/egress` up. The waiting list's row carries the three.
+
+### 2.6 item 5 closed as not taken: the user's decision
+
+*The user's hand, in the chat of the session `smus-updates-76068a` on 2026-10-30 and in this session's on 2026-10-31
+(*"Sim, feche"*); Claude recording, no AWS call.*
+
+- **The decision**: RStudio is given up, the Posit Workbench licence's price being unviable for this estate. The
+  session that ran items 1 to 4 relayed it (*"desistir do RStudio, porque o preço da licença Posit Workbench / Posit
+  Team é inviável"*), its transcript holds the user's words (*"Então vou desistir de contratar o RStudio."*), and the
+  user confirmed the closure here. No licence, inline policy, `license-manager` endpoint, EFS or service-managed
+  group arrives; `enableRStudio` stays `false` and locked in `experimentation`'s `SageMakerAIDomain` element, and
+  the pilot's domain `d-odhynkcev3yw` keeps its JupyterLab and Code Editor spaces on the pinned house image.
+- **The record**: the stage's item 5 holds the prerequisites read above as what a return would take, and item 2's
+  console wizard is superseded by the deploy's own measurement; the waiting list's licence row leaves;
+  `governance/locals.tf`'s comment states the decision instead of promising the flip (a comment, no plan run);
+  `upstream-releases.md`'s RStudio row, `docs/SMUS.md`'s row and `CLAUDE.md`'s 6d bullet carry the verdict in one
+  clause each. 6d decision due 16 (PR #279, merged 00:32 UTC) keeps `enableRStudio` `false` under every option;
+  its branch was merged into this one before these edits.
