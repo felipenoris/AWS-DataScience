@@ -411,7 +411,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `c9ge4welc308pc`) with the house image pinned at 11, idle 60/60/120 and RStudio off (`enableRStudio`
   `false` until the Posit licence; the portal's RStudio card refuses), `US-5`/`US-7` passing on it; item 4
   closed with `pilot-jupyterlab` on the pinned image (`InService` 22:46 UTC, the pull from the Production
-  registry), item 5 the licence and the inline policy. Kiro CLI
+  registry), item 5 the licence and the inline policy; **decision due 16 written 2026-10-30, the user's**: the blueprint as the
+  standard for every Sandbox project ((a) recommended, `Tooling` with `enableSpaces` false and the blueprint
+  `ON_CREATE`; 2.7 its sitting; both `Tooling` domains hold zero spaces). Kiro CLI
   is step 10's door (decision 9); the hub is down since 2026-10-26.
 - **Stage 6e** is held by PR #108 (decision 17, the user's 5.5 agreements; Sonnet 4.5 is Legacy since
   2026-10-08). A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint);
