@@ -7,7 +7,9 @@
 # starts. A workflow's `code` is the worker's package, which the pipeline builds before any deploy.
 # workflows/app-etl-warehouse.yaml is not a workflow of this list: the CLI never creates it in a
 # project, the bundle carries it, and Production's orchestration slice alone deploys it (Stage 9
-# decision 15).
+# decision 15). PRODUCT_DATABASE and PUBLISH_LISTING are literals, the same name in every project and
+# the stages that list the product (Stage 19 decisions 2 and 3); the database is created in each
+# project before the first deploy, never by the application.
 applicationName: app-etl
 
 content:
@@ -57,6 +59,8 @@ stages:
       PROJECT_SG: ${DEV_PROJECT_SG}
       PROJECT_KEY_ARN: ${DEV_PROJECT_KEY_ARN}
       TRAINING_IMAGE_URI: ${TRAINING_IMAGE_URI}
+      PRODUCT_DATABASE: app_etl
+      PUBLISH_LISTING: "true"
     bootstrap:
       actions:
         - type: workflow.create
@@ -95,6 +99,8 @@ stages:
       PROJECT_SG: ${TEST_PROJECT_SG}
       PROJECT_KEY_ARN: ${TEST_PROJECT_KEY_ARN}
       TRAINING_IMAGE_URI: ${TRAINING_IMAGE_URI}
+      PRODUCT_DATABASE: app_etl
+      PUBLISH_LISTING: "true"
     bootstrap:
       actions:
         - type: workflow.create

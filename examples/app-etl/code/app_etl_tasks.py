@@ -1,21 +1,32 @@
-"""The worker's tasks: the run's report, and the evaluation of a training job.
+"""The worker's tasks: the run's report, the publication of the product, and the evaluation of a
+training job.
 
 `summarize`, a task of app-etl, reads every `<name>.summary.json` under the prefix its
 ``op_kwargs`` name, the processing job's output, and returns the run's report as JSON text: the
-task's XCom, which the workflow's last task writes to S3. `evaluate`, a task of app-etl-train, reads
-the training job's final metrics and writes them beside its model as SageMaker's model-quality
-statistics, the file the pipeline's registration names as the version's `ModelMetrics` (Stage 10
-step 5.2), with the rows of the batch transform's input, which the transform's check counts against.
+task's XCom, which the workflow's next task writes to S3. `publish`, the last task of app-etl, puts
+the product the Glue job wrote into the SageMaker Catalog the way the tool intends (Stage 19
+decisions 3 and 14): it runs the project's data source over the product's database, finds the asset
+the run imported for the table and publishes its latest revision as a listing, waiting for `ACTIVE`,
+since the listing API answers before the listing exists and fails later on its own. It runs as the
+project role through the `datazone` endpoint, in the domain and project the worker's environment
+names, and returns at once where the stage variable `PUBLISH_LISTING` is not `true`, the stages
+whose product is never listed. `evaluate`, a task of app-etl-train, reads the training job's final
+metrics and writes them beside its model as SageMaker's model-quality statistics, the file the
+pipeline's registration names as the version's `ModelMetrics` (Stage 10 step 5.2), with the rows of
+the batch transform's input, which the transform's check counts against.
 
 They run on the MWAA Serverless worker with the boto3 the worker carries, so a workflow's code
 package is this file alone, zipped under the workflow's name. What they print lands in the
-workflow's log group, so they print counts, names and metrics, never a value of the data.
+workflow's log group, so they print counts, names, identifiers and metrics, never a value of the
+data.
 """
 
 from __future__ import annotations
 
 import ast
 import json
+import os
+import time
 from operator import itemgetter
 from urllib.parse import urlparse
 
@@ -68,6 +79,137 @@ def summarize(outputs: str, **context) -> str:
         raise RuntimeError(f"no .summary.json under {outputs}")
     result = report(found)
     print(f"{len(result['tables'])} table(s), {result['rows']} rows, under {outputs}")
+    return json.dumps(result, indent=2, sort_keys=True) + "\n"
+
+
+# The publication: the worker's variables that name the project (the portal injects them), how long
+# a source run and a listing may take before the task fails, and the seconds between two readings.
+DOMAIN_VARIABLE = "DataZoneDomainId"
+PROJECT_VARIABLE = "DataZoneProjectId"
+SOURCE_RUN_TIMEOUT = 600
+LISTING_TIMEOUT = 120
+POLL_SECONDS = 5
+
+
+def project_context() -> tuple[str, str]:
+    """The domain and the project the worker runs in, from the variables the portal injects."""
+    try:
+        return os.environ[DOMAIN_VARIABLE], os.environ[PROJECT_VARIABLE]
+    except KeyError as exc:
+        raise RuntimeError(
+            f"the worker carries no {exc.args[0]}: not a project's workflow"
+        ) from exc
+
+
+def find_source(datazone, domain: str, project: str, database: str) -> str:
+    """The id of the project's one Glue data source whose filter names `database`."""
+    found = []
+    paginator = datazone.get_paginator("list_data_sources")
+    for page in paginator.paginate(domainIdentifier=domain, projectIdentifier=project, type="GLUE"):
+        for item in page.get("items", []):
+            source = datazone.get_data_source(
+                domainIdentifier=domain, identifier=item["dataSourceId"]
+            )
+            glue = source.get("configuration", {}).get("glueRunConfiguration", {})
+            databases = [f["databaseName"] for f in glue.get("relationalFilterConfigurations", [])]
+            if database in databases:
+                found.append(item["dataSourceId"])
+    if len(found) != 1:
+        raise RuntimeError(
+            f"{len(found)} data source(s) over {database} in the project, one expected"
+        )
+    return found[0]
+
+
+def run_source(datazone, domain: str, source: str, timeout: int = SOURCE_RUN_TIMEOUT) -> str:
+    """One run of the source, followed to SUCCESS; any other end, or `timeout` seconds, fails."""
+    run = datazone.start_data_source_run(domainIdentifier=domain, dataSourceIdentifier=source)["id"]
+    deadline = time.monotonic() + timeout
+    while True:
+        state = datazone.get_data_source_run(domainIdentifier=domain, identifier=run)
+        status = state["status"]
+        if status == "SUCCESS":
+            counts = state.get("runStatisticsForAssets") or {}
+            print(f"source run {run}: SUCCESS, {json.dumps(counts, sort_keys=True)}")
+            return run
+        if status not in ("REQUESTED", "RUNNING"):
+            raise RuntimeError(f"source run {run} ended {status}: {state.get('errorMessage')}")
+        if time.monotonic() >= deadline:
+            raise RuntimeError(f"source run {run} still {status} after {timeout} s")
+        time.sleep(POLL_SECONDS)
+
+
+def find_asset(datazone, domain: str, project: str, database: str, table: str) -> dict:
+    """The project's one inventory asset whose external identifier ends in `database/table`."""
+    found = []
+    paginator = datazone.get_paginator("search")
+    pages = paginator.paginate(
+        domainIdentifier=domain,
+        searchScope="ASSET",
+        owningProjectIdentifier=project,
+        searchText=table,
+    )
+    for page in pages:
+        for item in page.get("items", []):
+            asset = item.get("assetItem") or {}
+            external = asset.get("externalIdentifier") or ""
+            if external.split("/")[-2:] == [database, table]:
+                found.append(asset)
+    if len(found) != 1:
+        raise RuntimeError(
+            f"{len(found)} asset(s) for {database}/{table} in the project, one expected"
+        )
+    return found[0]
+
+
+def publish_asset(datazone, domain: str, asset: str, timeout: int = LISTING_TIMEOUT) -> dict:
+    """The asset's latest revision published, and the listing read ACTIVE within `timeout`
+    seconds."""
+    change = datazone.create_listing_change_set(
+        domainIdentifier=domain, entityIdentifier=asset, entityType="ASSET", action="PUBLISH"
+    )
+    listing, revision = change["listingId"], change["listingRevision"]
+    deadline = time.monotonic() + timeout
+    while True:
+        status = datazone.get_listing(
+            domainIdentifier=domain, identifier=listing, listingRevision=revision
+        )["status"]
+        if status == "ACTIVE":
+            print(f"listing {listing} revision {revision}: ACTIVE")
+            return {"listing": listing, "listing_revision": revision}
+        if status != "CREATING":
+            raise RuntimeError(f"listing {listing} revision {revision} is {status}")
+        if time.monotonic() >= deadline:
+            raise RuntimeError(
+                f"listing {listing} revision {revision} not ACTIVE after {timeout} s"
+            )
+        time.sleep(POLL_SECONDS)
+
+
+def publish(database: str, table: str, publish_listing: str, **context) -> str:
+    """The product `database.table` imported and listed in the catalog; its identifiers as JSON
+    text, the task's XCom. Nothing when `publish_listing`, the stage variable, is not `true`."""
+    if str(publish_listing).strip().lower() != "true":
+        print(f"publishing off in this stage (PUBLISH_LISTING={publish_listing!r}); nothing listed")
+        return json.dumps({"published": False}) + "\n"
+    import boto3
+
+    domain, project = project_context()
+    datazone = boto3.client("datazone")
+    source = find_source(datazone, domain, project, database)
+    run = run_source(datazone, domain, source)
+    asset = find_asset(datazone, domain, project, database, table)
+    result = {
+        "published": True,
+        "domain": domain,
+        "project": project,
+        "data_source": source,
+        "source_run": run,
+        "asset": asset["identifier"],
+        "asset_revision": asset.get("latestRevision") or asset.get("revision"),
+        **publish_asset(datazone, domain, asset["identifier"]),
+    }
+    print(f"published {database}.{table}: asset {result['asset']}, listing {result['listing']}")
     return json.dumps(result, indent=2, sort_keys=True) + "\n"
 
 

@@ -187,3 +187,28 @@ Account ids are replaced by the account's name in angle brackets.*
   open question 25's expiry rule, D19 to gain two dated lines at 6.2. **Every decision of the stage is
   taken**; the waiting list's row for them is removed, `CLAUDE.md` and the indexes brought to it. Pass 1
   waits on a Sandbox sitting and on decision 1's branch of `awsds/app-etl`.
+
+## 2026-10-31 — 1.1 written: the application change in `examples/app-etl/`, nothing run in AWS
+
+- **[user]** *"Sim, 1.1 agora"*, on the branch of PR #281, the template's copy in this repository; the
+  mirror to `awsds/app-etl` is the next GitLab sitting's.
+- **[Claude] Written**: `glue/transform.py` (the product table as Iceberg on `glue_catalog`, both options
+  or neither, read back and counted), `workflows/app-etl.yaml` (the Glue task's two arguments, the
+  `--datalake-formats` and `--conf` defaults, the fifth task `publish`), `code/app_etl_tasks.py`
+  (`publish` and its helpers, the gate on `publish_listing`), `manifest.yaml` (`PRODUCT_DATABASE:
+  app_etl`, `PUBLISH_LISTING: "true"` in `dev` and `test`, literals), the tests (`FakeWriter.format` and
+  `saveAsTable`, `FakeSession.table` returning a frame, four product-table cases; `FakeDataZone` and nine
+  publication cases), `README.md`, `scripts/render-workflow.py` (`{env.PRODUCT_DATABASE}` to
+  `app_outputs`, `{env.PUBLISH_LISTING}` to `false`, the Glue task's `--TABLE_DATABASE` and
+  `--TABLE_NAME` dropped, an invariant that none survives) and `runbooks/sagemaker-application.md`'s §M
+  and §W rows. `uv run pytest`: 60 passed, 1 skipped; ruff clean; the pinned lint `d856982c` through
+  `uvx` from GitHub: `ok: 9 arquivo(s)`; `./scripts/render-workflow.py --check` OK; `make check` OK;
+  the pre-commit hooks pass.
+- **[Claude] Read on the way**, recorded in 3.1 and 3.3: the pinned lint's rule `manifest` refuses
+  `content.catalog.enabled` (*"o bundle levaria o que o projeto tem, e não a tag"*), so 3.1 waits on a
+  lint release and on the deploy role's DataZone reads for the export; the CLI 1.0.9 refuses every
+  command while any `${VAR}` of the manifest is unset, so the `staging` and `prod` stages, and
+  `app-etl-warehouse`'s entry, are written at 4.9 with their projects' values. The lint's rule on
+  `{env.NOME}` wants each name declared in every stage, which the two literals satisfy. The local
+  `awsds-workflows` (`~/.local/bin`) predates `lint`; the clone at `~/src/awsds-workflows` is at
+  `ff25eae`, behind the pin.

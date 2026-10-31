@@ -54,6 +54,7 @@ class FakeWriter:
         self.log = log
         self.options = {}
         self.save_mode = None
+        self.format_name = None
 
     def option(self, key, value):
         self.options[key] = value
@@ -63,17 +64,25 @@ class FakeWriter:
         self.save_mode = name
         return self
 
+    def format(self, name):
+        self.format_name = name
+        return self
+
     def csv(self, path):
         self.log["write"] = (path, self.options, self.save_mode)
 
     def parquet(self, path):
         self.log["table"] = (path, self.save_mode)
 
+    def saveAsTable(self, name):
+        self.log["product"] = (name, self.format_name, self.save_mode)
+
 
 class FakeFrame:
-    def __init__(self, log, rows=6):
+    def __init__(self, log, rows=6, columns=None):
         self.log = log
         self.rows = rows
+        self.columns = columns
 
     def withColumn(self, name, column):
         self.log.setdefault("columns", {})[name] = column.text
@@ -124,12 +133,13 @@ class FakeSession:
     def __init__(self, log, read_back, columns, snapshot):
         self.log = log
         self.read = FakeReader(log, read_back)
+        self.read_back = read_back
         self.columns = columns
         self.snapshot = snapshot
 
     def table(self, name):
-        self.log["described"] = name
-        return types.SimpleNamespace(columns=self.columns)
+        self.log.setdefault("described", []).append(name)
+        return FakeFrame(self.log, rows=self.read_back, columns=self.columns)
 
     def sql(self, query):
         if query.startswith("SHOW TBLPROPERTIES"):
@@ -225,7 +235,7 @@ def test_the_governed_read_names_its_columns_and_its_snapshot(monkeypatch):
     options = ["--SOURCE_TABLE", GOVERNED, "--SOURCE_SNAPSHOT", "123456789"]
     s3 = run_script(monkeypatch, log, [PART], options)
     assert "read" not in log
-    assert log["described"] == GOVERNED
+    assert log["described"] == [GOVERNED]
     assert "properties" not in log
     assert log["query"] == (
         f"SELECT trade_date, desk, instrument, quantity, price FROM {GOVERNED} "
@@ -252,6 +262,44 @@ def test_the_table_is_written_and_read_back(monkeypatch, capsys):
 def test_a_table_that_reads_back_short_fails_the_run(monkeypatch):
     with pytest.raises(RuntimeError, match="reads 5 row\\(s\\) back, 6 written"):
         run_script(monkeypatch, {}, [PART], ["--TABLE_PATH", TABLE], read_back=5)
+
+
+PRODUCT = ["--TABLE_DATABASE", "app_etl", "--TABLE_NAME", "trades_notional"]
+PRODUCT_TABLE = "glue_catalog.app_etl.trades_notional"
+
+
+def test_the_product_table_is_written_as_iceberg_and_read_back(monkeypatch, capsys):
+    log = {}
+    run_script(monkeypatch, log, [PART], PRODUCT)
+    assert log["product"] == (PRODUCT_TABLE, "iceberg", "overwrite")
+    assert log["described"] == [PRODUCT_TABLE]
+    assert "table" not in log
+    assert f"wrote 6 row(s) to the product table {PRODUCT_TABLE}" in capsys.readouterr().out
+
+
+def test_a_product_table_that_reads_back_short_fails_the_run(monkeypatch):
+    with pytest.raises(RuntimeError, match=f"{PRODUCT_TABLE} reads 5 row\\(s\\) back, 6 written"):
+        run_script(monkeypatch, {}, [PART], PRODUCT, read_back=5)
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        ["--TABLE_NAME", "trades_notional"],
+        ["--TABLE_DATABASE", "", "--TABLE_NAME", "trades_notional"],
+    ],
+)
+def test_half_a_product_table_stops_the_run(monkeypatch, options):
+    log = {}
+    with pytest.raises(ValueError, match="go together"):
+        run_script(monkeypatch, log, [PART], options)
+    assert "product" not in log
+
+
+def test_empty_product_options_write_no_table(monkeypatch):
+    log = {}
+    run_script(monkeypatch, log, [PART], ["--TABLE_DATABASE", "", "--TABLE_NAME", ""])
+    assert "product" not in log and "described" not in log
 
 
 def test_the_training_sets_are_xgboost_csv_with_every_fifth_row_held_out(monkeypatch):

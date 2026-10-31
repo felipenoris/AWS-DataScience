@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Decision 6 taken 2026-10-31 by the user as (b), the AWS model** ([log](../../log/log-stage-19-smus-native-data-product.md)): *"Decido pelo modelo da AWS, com o uso previsto do SMUS e promoção entre ambientes via ferramenta SMUS CICD CLI"*. Staging and Production each gain a deployment project, the CI/CD CLI deploys every stage, and Production publishes its own product; D41 item 2 is reopened, 6f decision 4 reversed, `DenyDataZoneEntirely`'s revision trigger fired. Passes 3 and 4 rewritten the same day around [Stage 18](stage-18-staging-deployment-project.md)'s recipe, decisions 13 to 16 added, and **every decision taken the same day, one at a time**: 1 (a), 2 (a) with (d), 3 (a) gated by `PUBLISH_LISTING`, 4 (a), 5 as recommended with `eighth-experimentation` as Production's consumer, 9 (a), 11 rows by class for the governed accounts, 12 outside, 13 (b) with a subscription deny, 14 (a) with (d), 15 (a), 16 (b) against the recommendation; 7, 8 and 10 moot or amended by decision 6 (b). Nothing changed in AWS. **Written 2026-10-28, nothing run**: the plan, the review of the catalog across the plan and the estate, the user's three questions answered from measurements and dated pages, and every decision due with its recommendation. The readings of 2026-10-28 are read-only, as the infrastructure user; no apply, no AWS write, no portal act. Pass 0 runs with nothing up; passes 1 to 3 are Sandbox sittings; pass 4 runs as promotion sittings once passes 1 to 3 have run; pass 5 inside a Sandbox warehouse sitting after 4.12 |
+| **Status** | **Decision 6 taken 2026-10-31 by the user as (b), the AWS model** ([log](../../log/log-stage-19-smus-native-data-product.md)): *"Decido pelo modelo da AWS, com o uso previsto do SMUS e promoção entre ambientes via ferramenta SMUS CICD CLI"*. Staging and Production each gain a deployment project, the CI/CD CLI deploys every stage, and Production publishes its own product; D41 item 2 is reopened, 6f decision 4 reversed, `DenyDataZoneEntirely`'s revision trigger fired. Passes 3 and 4 rewritten the same day around [Stage 18](stage-18-staging-deployment-project.md)'s recipe, decisions 13 to 16 added, and **every decision taken the same day, one at a time**: 1 (a), 2 (a) with (d), 3 (a) gated by `PUBLISH_LISTING`, 4 (a), 5 as recommended with `eighth-experimentation` as Production's consumer, 9 (a), 11 rows by class for the governed accounts, 12 outside, 13 (b) with a subscription deny, 14 (a) with (d), 15 (a), 16 (b) against the recommendation; 7, 8 and 10 moot or amended by decision 6 (b). **1.1 written 2026-10-31** in `examples/app-etl/`: the Iceberg write, the publishing task, the two stage variables, the tests, the render's interim rows; 3.1 and 3.3 wait on the inputs the same reading found missing (the lint's rule, the deployment projects' values). Nothing changed in AWS. **Written 2026-10-28, nothing run**: the plan, the review of the catalog across the plan and the estate, the user's three questions answered from measurements and dated pages, and every decision due with its recommendation. The readings of 2026-10-28 are read-only, as the infrastructure user; no apply, no AWS write, no portal act. Pass 0 runs with nothing up; passes 1 to 3 are Sandbox sittings; pass 4 runs as promotion sittings once passes 1 to 3 have run; pass 5 inside a Sandbox warehouse sitting after 4.12 |
 | **Prerequisites** | [6f](stage-06f-data-governance.md) step 11, the catalog road live since 2026-10-26: `governed-lake`, its source over `curated`, one subscription fulfilled and read, decisions 1 to 5 taken (2026-10-27). `eighth-experimentation`'s `DataLake` environment (6f 11.7, `blerpkhn9nj7o0`, its database `glue_db_blerpkhn9nj7o0`) and `test-experimentation`'s (6f 2.0): a Glue table's subscription target is a `DataLake` environment's. The application template at `v0.4.6` with `scripts/dev-cli.sh` on the next tag ([Stage 8](stage-08-cicd-pipelines.md) decision 22, the waiting list), the loop from a space run on 2026-10-26 ([Stage 10](stage-10-orchestration-promotion.md) 2.1), `vpc-egress-v0.19.0`'s `mwaa` group and the `datazone` endpoint Sandbox's `egress/` carries in its `extra_services`. The Sandbox warehouse and the project's connection ([5b](stage-05b-redshift-serverless.md), [6h](stage-06h-redshift-connection.md), `EXC-17`) for pass 5. **For pass 4**: [Stage 18](stage-18-staging-deployment-project.md)'s passes 1 to 4 and 7, the recipe for a deployment project in a `Workloads` account, measured 2026-10-17 to 10-22 and unwound; the four deploy roles and the deploy runner ([Stage 8](stage-08-cicd-pipelines.md) pass 1); `staging/egress/` and `production/egress/`, each gaining a `datazone` endpoint; `data-governance/governance/` free of 6d decision 16's apply at the moment of 4.5's (Stage 18 2.7's rule: two stages never share one apply). Nothing blocks pass 0 or pass 1 |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D22](../decisions/D22-data-governance-account.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D40](../decisions/D40-redshift-warehouse.md), [D41](../decisions/D41-sagemaker-application.md); [Stage 18](stage-18-staging-deployment-project.md)'s measurements since decision 6 (b); [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md) and [D35](../decisions/D35-sandbox-cardinality.md) reviewed, none consumed |
 | **Proves** | [INT-26](../integrations.md) (new): a table a workflow creates in a Sandbox project's own database becomes a published asset and a data product, another project reads it through a subscription DataZone fulfils inside one account, and the product reaches the warehouse by the path the tool intends. Since decision 6 (b): the same application promoted by the CLI into a deployment project in Staging and in Production, Production's project publishing the product and a Sandbox project subscribing across accounts, [INT-12](../integrations.md)'s association and [INT-23](../integrations.md)'s cross-account fulfilment as standing states on the `Workloads` accounts |
@@ -143,7 +143,7 @@ retire, or a decision for the user, named by its number in Decisions due. The re
 
 | Item | Today | Under the premises |
 |---|---|---|
-| `examples/app-etl/` | `manifest.yaml` with `storage` and `workflows`, no `catalog`; `transform.py`'s `write_table` writes Parquet by path, no catalog call; no task touches the catalog; `render-workflow.py` removes keys, never a task; `test-deploy` empties the `test` project's `app-etl/` prefix before each deploy | **amend** (pass 1, decisions 1 to 3, 8): the Iceberg write into `{env.PRODUCT_DATABASE}`, the publishing task, the render's task-drop rule, `content.catalog`; a table registered in `test`'s catalog survives the prefix's emptying |
+| `examples/app-etl/` | `manifest.yaml` with `storage` and `workflows`, no `catalog`; `transform.py`'s `write_table` writes Parquet by path, no catalog call; no task touches the catalog; `render-workflow.py` removes keys, never a task; `test-deploy` empties the `test` project's `app-etl/` prefix before each deploy | **amend** (pass 1, decisions 1 to 3): the Iceberg write into `{env.PRODUCT_DATABASE}`, the publishing task and the two stage variables, written 2026-10-31 (1.1); `content.catalog` at 3.1 after the lint's release; the render's interim rows until 4.11; a table registered in `test`'s catalog survives the prefix's emptying |
 | `data-governance/data/` | `curated.trades` declared with `open_table_format_input`, tagged `internal`; `publishing.tf`'s per-table list and precondition; the write share without `CREATE_TABLE` | **untouched** (decision 6 (b)): the product never enters the lake; the lake road and the product road run side by side, `catalog.py` judging both (decision 11) |
 | `<env>/data/` | `app_outputs`; `CREATE_TABLE` to the deploy role, the job role `SELECT`, `INSERT`, `DELETE`, `ALTER`, `DESCRIBE` | decision 6 (b): the application's grants on `app_outputs` retire at 4.11, where the job role's remaining grants are read (decision 16 (b)) |
 | `<env>/app/app-etl/` | `aws_glue_catalog_table.trades_notional`, Parquet, byte-identical in both targets (`check-copies.py`) | decision 6 (b): the slice retires at 4.11, table and Glue job both, the operator creating the job in the project as in `dev` and `test` (Stage 18 4.4); `check-copies.py` loses the pair |
@@ -331,6 +331,26 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
   --action PUBLISH`); every call as the project role, through the `datazone` endpoint; the task returns
   at once where the stage variable `PUBLISH_LISTING` is not `true` (decision 3, 2026-10-31). The tests
   gain a catalog double, and `make check` passes; decision 8's render rule is moot since decision 6 (b).
+  **Written 2026-10-31** on this repository's branch of the template, the mirror to `awsds/app-etl`
+  being the next GitLab sitting's: `glue/transform.py` takes `--TABLE_DATABASE` and `--TABLE_NAME`, both
+  or neither, an empty value no value, and writes `glue_catalog.<database>.<table>` with
+  `write.format("iceberg").mode("overwrite").saveAsTable`, read back and counted; the workflow's Glue
+  task passes them from `{env.PRODUCT_DATABASE}` and `trades_notional`, and its `DefaultArguments` gain
+  `--datalake-formats iceberg` and the `--conf` that declares `glue_catalog` as Iceberg's `GlueCatalog`
+  over the account's catalog with `S3FileIO`, the warehouse under the project's `tables/` class;
+  `code/app_etl_tasks.py` gains `publish` and its helpers (`find_source` by the source's filter,
+  `run_source` to `SUCCESS` within 600 s, `find_asset` by the external identifier's last two segments,
+  `publish_asset` waiting for `ACTIVE` within 120 s, since the API answers before the listing exists),
+  the gate on `publish_listing`, the XCom the identifiers as JSON; the workflow's fifth task `publish`
+  after `write_result`; the manifest's two literals in `dev` and `test`, `PRODUCT_DATABASE: app_etl`
+  and `PUBLISH_LISTING: "true"`, the one case a stage variable is not read from the shell;
+  `scripts/render-workflow.py` renders the two to `app_outputs` and `false` and drops the Glue task's
+  two arguments, so a target writes no product table and lists nothing until 4.11 retires the render
+  (the runbook's §W table carries the rows); the README and the runbook's §M and §W rows. The tests:
+  60 passed, the product table's four cases and the publication's nine among them; the pinned lint
+  `d856982c` `ok` on the nine files; `make check` and the pre-commit hooks pass. Read on the way: the
+  pinned lint refuses `content.catalog.enabled` (3.1), and the CLI refuses every command while a
+  `${VAR}` is unset (3.3).
 - **1.2 [user] Create the product's database in `dev`** (*Data → Create database*, the name of decision
   2), **deploy to `dev` from a space** and run `app-etl`. **[Claude] reads** the new `DataLake`
   environment, its database, its daily source and whether it carries a subscription target (the one of
@@ -380,6 +400,14 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
   name before the listing, or the listing fails asynchronously and the deploy counts a publish failure.
   The lint's rule that refuses content from outside the tag is read against a `catalog` item that names
   no file ([`sagemaker-application.md`](../runbooks/sagemaker-application.md) §M).
+  **Read 2026-10-31 at 1.1**: decision 14 makes `skipPublish` true, the task the publisher; the pinned
+  lint `d856982c` refuses `content.catalog.enabled` by its rule `manifest` (*"o bundle levaria o que o
+  projeto tem, e não a tag"*), so the item enters the manifest only with a lint release that admits a
+  catalog item as the project's live catalog carried beside the tag, pinned in `.gitlab-ci.yml` by
+  `AWSDS_WORKFLOWS`; and `test-deploy`'s `bundle` would then export the catalog as
+  `awsds-deploy-sandbox-test`, whose DataZone reads for the export are written first
+  (`sandbox/foundation/`'s deploy role). Which project `bundle --targets test` exports, `dev`'s or
+  `test`'s, is the code reading that opens the step.
 - **3.2 [user] Create the product's database in `test`** (the same name), then **tag the application**;
   the pipeline's `test-deploy` bundles and deploys to `test` (Stage 8 2.5). **[Claude] reads** the
   bundle's `catalog/catalog_export.json`, the import's calls in the trail as `awsds-deploy-sandbox-test`
@@ -399,6 +427,12 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
   workflow names is defined in every stage, so a workflow posting lineage carries the account in each.
   `.gitlab-ci.yml`'s legs change with it (4.9). Written on the branch of decision 1, lint-checked in the
   promoted mode until 4.9 retires that mode; nothing deploys to a target before pass 4.
+  **Read 2026-10-31 at 1.1**: the CLI 1.0.9 refuses every command while any `${VAR}` of the manifest is
+  unset, the other stages' included (§M's `find_missing_env_vars`; Stage 18 4.1 set `STAGING_*` as CI/CD
+  variables for the same reason), so the two stages are written at 4.9, once 4.6 and 4.8 give them
+  their projects' values, and never before: until then `test-deploy` would stop at the first
+  `${STAGING_*}`. `app-etl-warehouse`'s entry in `content.workflows`, its `create_job_kwargs` and
+  `load_warehouse.py`'s read of the Iceberg product (decision 16 (b)) are written with them.
 
 ### 4. The promoted product: a deployment project in each target, the CLI deploying every stage
 
@@ -967,9 +1001,11 @@ orchestration module's workflow resources return from git.
   by its session, as 4.11 says; Stage 8's legs `staging-deploy`, `production-deploy` and `staging-test`
   take the CLI's form (4.9), decision 1's branch changes the template's workflow, manifest, script and
   tests, and 4.11 retires the application slices and `render-workflow.py`'s promoted mode; the
-  orchestration module keeps its workflow resource for the warehouse workflow alone (decision 16). Each
-  lands on the next tag's sitting, `runbooks/promotion.md` §N.8.2, and this stage's text is the
-  obligation's record at both ends until that session writes its own (Lesson 34).
+  orchestration module's workflow resource retires with the warehouse workflow's move (decision 16
+  (b)). Since 1.1 (2026-10-31) `scripts/render-workflow.py` carries two interim rows and drops the Glue
+  task's product-table arguments, which 4.11 retires with the render. Each lands on the next tag's
+  sitting, `runbooks/promotion.md` §N.8.2, and this stage's text is the obligation's record at both
+  ends until that session writes its own (Lesson 34).
 - **Stage 6d** (the session holding decision due 16): `governance/` is shared between 6d's 2.7 and this
   stage's 4.5; the two never share one apply (Stage 18 2.7's rule), and the `deployment` profile's
   `Tooling` configuration carries spaces off, never the `SageMakerAIDomain` blueprint.

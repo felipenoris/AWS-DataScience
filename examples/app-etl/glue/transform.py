@@ -11,7 +11,13 @@ The job reads the trades, applies `transform` and writes what the next steps rea
   integration test of a deployment target (Stage 9 step 8.5);
 - with --TRAIN_PATH, the training sets in XGBoost's CSV layout, the label first and no header:
   `train/train.csv`, every fifth row in `validation/validation.csv`, and the features alone in
-  `batch/batch.csv`, the batch transform's input (Stage 10 steps 5.1 and 5.4).
+  `batch/batch.csv`, the batch transform's input (Stage 10 steps 5.1 and 5.4);
+- with --TABLE_DATABASE and --TABLE_NAME, both or neither, the product: the result as an Iceberg
+  table of the project's database, on the Spark catalog PRODUCT_CATALOG the job's --conf declares
+  over the account's Glue Data Catalog, read back and counted (Stage 19 decision 2). The Glue table
+  is the job's own `CreateTable`, under the database's conditioned CREATE_TABLE; a second run
+  replaces the data and keeps the table, its listing and its grants. An empty value is no value,
+  since a run the portal starts fills no stage variable.
 
 Where the trades come from: with --SOURCE_TABLE, the governed table on the job's Iceberg catalog,
 the columns GOVERNED_COLUMNS name and nothing else, so a governed table that lacks one of them fails
@@ -48,10 +54,22 @@ LABEL = "notional"
 FEATURES = ("quantity", "price")
 VALIDATION_EVERY = 5
 
-OPTIONAL = ("SOURCE_TABLE", "SOURCE_SNAPSHOT", "TABLE_PATH", "TRAIN_PATH")
+OPTIONAL = (
+    "SOURCE_TABLE",
+    "SOURCE_SNAPSHOT",
+    "TABLE_PATH",
+    "TRAIN_PATH",
+    "TABLE_DATABASE",
+    "TABLE_NAME",
+)
 
 # The governed read's record, beside the CSV it describes; the processing job reads the same name.
 RECORD_SUFFIX = ".source.json"
+
+# The Spark catalog over the account's Glue Data Catalog, which the workflow's --conf declares with
+# Iceberg's GlueCatalog; the product table's name is <catalog>.<database>.<table>.
+PRODUCT_CATALOG = "glue_catalog"
+PRODUCT_OPTIONS = ("TABLE_DATABASE", "TABLE_NAME")
 
 
 def transform(trades: DataFrame) -> DataFrame:
@@ -151,6 +169,27 @@ def write_table(spark: SparkSession, result: DataFrame, path: str, rows: int) ->
     print(f"wrote {rows} row(s) to the table at {path}")
 
 
+def product_table(arguments: dict[str, str]) -> str | None:
+    """`<catalog>.<database>.<table>` when the run names both options with a value, None when it
+    names neither; one without the other stops the run."""
+    named = [name for name in PRODUCT_OPTIONS if arguments.get(name)]
+    if not named:
+        return None
+    if len(named) != len(PRODUCT_OPTIONS):
+        raise ValueError(f"--TABLE_DATABASE and --TABLE_NAME go together; the run names {named}")
+    return f"{PRODUCT_CATALOG}.{arguments['TABLE_DATABASE']}.{arguments['TABLE_NAME']}"
+
+
+def write_product_table(spark: SparkSession, result: DataFrame, name: str, rows: int) -> None:
+    """The product as the Iceberg table `name`, replaced on each run, read back: a count other than
+    `rows` fails the run."""
+    result.write.format("iceberg").mode("overwrite").saveAsTable(name)
+    written = spark.table(name).count()
+    if written != rows:
+        raise RuntimeError(f"{name} reads {written} row(s) back, {rows} written")
+    print(f"wrote {rows} row(s) to the product table {name}")
+
+
 def training_sets(rows: list[dict]) -> dict[str, str]:
     """XGBoost's CSV layout, the label first and no header: the training and validation sets, and
     the batch transform's input, the features alone, by file name."""
@@ -196,6 +235,9 @@ def main() -> None:
         write_record(target, record)
     if arguments.get("TABLE_PATH"):
         write_table(spark, result, arguments["TABLE_PATH"], rows)
+    product = product_table(arguments)
+    if product:
+        write_product_table(spark, result, product, rows)
     if arguments.get("TRAIN_PATH"):
         write_training_sets(result, arguments["TRAIN_PATH"])
 
