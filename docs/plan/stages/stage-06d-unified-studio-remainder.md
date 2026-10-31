@@ -256,8 +256,8 @@ work at all* — is still open.
      update is refused: the template's three `Fn::If`s (`RStudioServerProDomainSettings` with the project
      role, `AppSecurityGroupManagement` `Service`, `RStudioServerProAppSettings` `DISABLED` as the users'
      default) and `HomeEfsFileSystemCreation` `Enabled`, none create-only in the registry's schema. AWS's
-     page for a living domain wants every app deleted first (`pilot-jupyterlab`'s app `Deleted` since its idle
-     shutdown) and leaves every existing profile's `AccessStatus` `DISABLED`, so the Data Scientist User's
+     page for a living domain wants every app deleted first (`pilot-jupyterlab`'s one app `Deleted` since 23:31 UTC on
+     2026-10-30) and leaves every existing profile's `AccessStatus` `DISABLED`, so the Data Scientist User's
      profile may need `update-user-profile` before a space. **[user]** Then an RStudio space and its session.
      **[Claude]** The session's start in the trail (`CreateApp` on `RStudioServerPro` and `RSessionGateway`,
      the checkout at `license-manager`), the proxy's log for Posit's names, `PRICING.md` §8's rows against the

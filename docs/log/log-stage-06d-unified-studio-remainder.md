@@ -3591,8 +3591,9 @@ in the user's portal session and reading as the infrastructure user in Sandbox. 
   the CLI's `update-domain` carries `--home-efs-file-system-creation` and `--app-security-group-management`.
   The pilot domain today: `AppSecurityGroupManagement` unset, `HomeEfsFileSystemId` null, no RStudio setting,
   one user profile (the Data Scientist User's, created 22:36 UTC on 2026-10-30), the space `pilot-jupyterlab`
-  `InService` with its app `Deleted` since the idle shutdown. AWS's *Add RStudio support to an existing domain*
-  page: every app deleted before the update (the shutdown did it), existing profiles marked `AccessStatus`
+  `InService` with its one app `Deleted` by a `delete-app` from the laptop's CLI as the infrastructure user at
+  23:31:46 UTC on 2026-10-30, its last activity 23:31:11. AWS's *Add RStudio support to an existing domain*
+  page: every app deleted before the update (done: the one app is `Deleted`), existing profiles marked `AccessStatus`
   `DISABLED` by the update and re-enabled one by one with `update-user-profile`
   (`RStudioServerProAppSettings.AccessStatus` `ENABLED`, 60 users by default), the RStudioServerPro app under
   the profile `domain-shared`, which `list-apps` shows only when asked for that profile. Whether the portal's
