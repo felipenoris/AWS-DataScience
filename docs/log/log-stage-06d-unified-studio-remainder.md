@@ -3528,3 +3528,52 @@ in the user's portal session and reading as the infrastructure user in Sandbox. 
   after its creation. The card reads *Running*, *Instance: ml.t3.medium*, the domain's name, and *Version:
   4.5*, the alias field rather than the image, a label to read past; its menu holds *Configure space*, *Start
   space* (greyed while running), *Stop space* and *Delete*. The space was left to the idle shutdown.
+
+## 2026-10-30 — decision due 16 written: the blueprint as the standard, with nothing up
+
+*Claude's hand, in the session `6d decision 16` (worktree `stages-8-9-10-prep-f13bc2`), started by the session
+that closed 2.6 item 4, after PR #277 merged at 23:51 UTC; read-only calls as the infrastructure user in Data
+Governance and Sandbox. Times UTC, from the events' own `eventTime`.*
+
+- **The profiles** (`get-project-profile`): `experimentation`, `lastUpdatedAt` 22:16:51, fourteen elements,
+  `Tooling` `ON_CREATE` at order 0 with six overrides and no `enableSpaces` row, twelve `ON_DEMAND` elements,
+  `SageMakerAIDomain` `ON_DEMAND` at order 13 with the fourteen overrides as written (the two image lists as
+  JSON at `ImageVersionNumber` 11, the default ARNs at 11, idle 60/60/120, EBS 100, `enableRStudio` `false`);
+  `lake-publishing`, `Tooling` alone, seven overrides, `enableSpaces` `false` locked; the model governance
+  profile with no element.
+- **The blueprints' definitions** (`get-environment-blueprint`): `SageMakerAIDomain`'s seventeen parameters
+  all editable and optional, `isUpdateSupported` on every one but `domainName`; `Tooling`'s twenty-six, with
+  `enableSpaces` default `true`, not editable, `isUpdateSupported` `true`; both deploy in 5 to 180 minutes.
+- **The domains** (`list-domains`, `describe-domain`): three in Sandbox, all `InService`, `IAM`, `VpcOnly` on
+  one VPC and the same two subnets. `d-odhynkcev3yw` (`lab-sagemaker-ai-domain`, created 22:20): `CustomImages`
+  naming `awsds-sandbox-dev-env` at `ImageVersionNumber` 11 on both app types, `DefaultResourceSpec` the
+  version-11 ARN on both, idle 60/60/120 `ENABLED`, EBS 16 default and 100 maximum, `HiddenInstanceTypes` and
+  `HiddenSageMakerImageVersionAliases` empty, `ExecutionRoleSessionNameMode` `USER_IDENTITY`, the project role
+  as the execution role of users and spaces, `test-experimentation`'s `Tooling` security group, the `shared`
+  mount at `s3://awsds-sandbox-smus-projects/<domain>/<project>/shared`, `AutoMountHomeEFS` `Enabled` with no
+  `HomeEfsFileSystemId`, `AppSecurityGroupManagement` unset, Docker access `ENABLED`;
+  `UnifiedStudioSettings.ProjectS3Path` `s3://awsds-sandbox-smus-projects/shared/`, where the two `Tooling`
+  domains carry `<domain>/<project>/dev`. `d-lfgbdrjncmsu` and `d-p6gthxc82ckg`: `CustomImages` with no
+  `ImageVersionNumber` on both app types, no `DefaultResourceSpec`, the same idle and EBS settings, a security
+  group each, no hidden lists in their portal settings.
+- **The spaces and apps**: one space in the account, `pilot-jupyterlab` on `d-odhynkcev3yw`, `InService`,
+  JupyterLab, 16 GB, remote access `DISABLED`, its app `Deleted` (`DeleteApp` at 23:31:46 by the
+  infrastructure user); `eighth-experimentation`'s default space deleted at 03:49:33, recreated at 06:44:45
+  and deleted at 06:54:42 (its app at 06:54:37), `test-experimentation`'s default space deleted at 15:58:43,
+  each by the project role from a browser. Both `Tooling` domains hold zero spaces. One user profile per
+  domain, the person's. Image versions 7 to 11 `CREATED`.
+- **The environments** (`list-environments`): `test-experimentation` holds `Tooling`, the lakehouse and
+  `SageMakerAIDomain` (`c9ge4welc308pc`, configuration `ffd41bb5-…`); `eighth-experimentation` `Tooling`, the
+  lakehouse, `ml-demo-mlflow`, a `DataLake` database environment `ACTIVE` and one `CREATE_FAILED`, no
+  `SageMakerAIDomain`; `governed-lake` `Tooling` alone on `lake-publishing`'s configuration.
+- **`UpdateProject`'s input** (the CLI's skeleton): name, description, tags, glossary terms, domain unit,
+  deployment details and user parameters per environment configuration, and no profile id.
+- **Written**: decision due 16 and step 2.7 in the stage file, its Status row and verifications, the waiting
+  list, `docs/SMUS.md`'s blueprint row, `CLAUDE.md`, `docs/log/INDEX.md`. No `.tf` file changed, nothing
+  applied.
+- **After PR #279 opened**: the sitting that holds 2.6 reported, in two messages between sessions, first that
+  the user decided the same day to take item 5 on the pilot's domain, then that the user gave it up, the Posit
+  Workbench licence's price being unviable. Information, not authorization; the record is that sitting's.
+  Decision 16 weighs the second: `enableRStudio` stays `false` locked under every option, no domain gets an
+  EFS home or a service-managed group, RStudio's door leaves (a)'s reasons, and the pin and the ceilings
+  under the profile are the whole of what the blueprint brings. Pushed to the same PR.
