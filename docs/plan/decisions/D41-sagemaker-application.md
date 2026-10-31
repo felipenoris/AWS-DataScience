@@ -9,7 +9,10 @@ starts the machine, the shape of `terraform-reference/`'s `modules/orchestration
 [D7](D07-orchestration.md), [D26](D26-unified-studio.md) and [D28](D28-workflow-contract.md) in place,
 each with a dated line. The first CLI deploy into a project ran in the lab the same day. Item 2 kept by
 [Stage 18](../stages/stage-18-staging-deployment-project.md)'s verdict, the user's on 2026-10-22, after measuring its
-alternative.
+alternative. **Item 2 reopened 2026-10-31** by
+[Stage 19](../stages/stage-19-smus-native-data-product.md) decision 6 (b), the user's: the alternative,
+a deployment project in each target and the CLI deploying every stage, is built by that stage's pass
+4; the note at the end of "Where production runs" says what changes and what stands.
 
 **In one line:** the application is the unit, the CI/CD CLI carries it between the Sandbox projects
 and bundles it, the pipeline deploys the bundle, and design B is built as the layer that schedules and
@@ -249,6 +252,20 @@ other properties hold.
 The simpler path to run is B, one tool and one role model everywhere; the simpler path to keep safe is
 A, and the parity that matters for promotion, Staging with Production, is A's. Item 2 stands.
 
+### Item 2 reopened 2026-10-31
+
+[Stage 19](../stages/stage-19-smus-native-data-product.md) decision 6, the user's: *"Decido pelo modelo da AWS, com o uso previsto do SMUS e promoção entre ambientes via ferramenta SMUS CICD CLI"*.
+The trigger named above fired: Stage 19 asks Production to publish a data product of its own, and the
+user chose B over the lake as the product's home, accepting the price the comparison measures. What
+changes: each deployment account is associated and holds one project from the `deployment` profile;
+the CLI deploys every stage from the bundle; in the targets the project role is the application
+workflows' identity and the operator creates their Glue job, so the application slices retire;
+`DenyDataZoneEntirely` is revised (Stage 19 4.1, decision 13). What stands: item 5's chain layer,
+which starts the CLI-made workflow by name (Stage 18 0.4); the warehouse workflow and the lake's write
+on the Terraform path with the job role (Stage 19 decision 16); items 1, 3, 4 and 6 to 8. The
+comparison and Stage 18's readings are the record of the price; `SMUS.md`, `POLICIES.md`, Stage 8's
+legs and Stage 10's 1.1, 2.4 and 4.2 follow Stage 19's pass 4.
+
 ## The chain layer, against `terraform-reference/`
 
 The reference Terraform (`sa-east-1`, its prefix written `<prefix>`) carries the shape, and the lab
@@ -316,7 +333,7 @@ per million. The workflow's own cost is D7's, 0.088 per task-hour, unchanged.
 
 A deployment target that gains a domain association and a project (item 2's alternative), which
 would make the CLI the deployer of every stage: Stage 18 measured its price (2026-10-17 to 2026-10-22),
-and what reopens it is `DenyDataZoneEntirely`'s trigger, Production publishing a data product of its own; a Step Functions integration with MWAA Serverless
+and what reopens it is `DenyDataZoneEntirely`'s trigger, Production publishing a data product of its own, which fired on 2026-10-31 (Stage 19 decision 6 (b), the note above); a Step Functions integration with MWAA Serverless
 that the console does not list, or a `GetWorkflowRun` loop the service's quotas refuse at the chains'
 cadence (Stage 10 verification xxii); or the service gaining a dependency between workflows of its
 own, which would retire the inbox and leave the machine as the scheduler alone.

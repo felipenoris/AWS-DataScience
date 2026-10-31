@@ -115,3 +115,38 @@ Account ids are replaced by the account's name in angle brackets.*
   `docs/GENERAL_PLAN.md` and `docs/log/INDEX.md`, `INT-26` in `docs/plan/integrations.md`, the
   references and the price rows, and the runbook's three stale hunks, in one pull request against
   `main`. Every decision the stage names is due, none taken.
+
+## 2026-10-31 — decision 6 taken as (b), the AWS model; passes 3 and 4 rewritten; nothing changed in AWS
+
+- **[user] The questions before the decision**, in this session from 2026-10-28 to 2026-10-31: what the
+  stage plans; whether Staging and Production should stay without a SMUS project and how that would
+  work; which steps put a table in Terraform; whether every premise is compatible with no project in
+  the targets; what SMUS's intended out-of-the-box use is for production, publication, promotion and
+  Redshift; whether the AWS model could be adopted whole or this stage had to validate something first;
+  decision 6's context and alternatives. Each answered from the stage file, Stage 18's measurements,
+  `docs/SMUS.md`, `docs/plan/upstream-releases.md` and the decision files, with no AWS call.
+- **[Claude] The reading that preceded the decision**: the AWS model is measured (Stage 18, Staging,
+  2026-10-17 to 10-22); what kept D41 item 2 on 2026-10-22 was its price on the perimeter, not an open
+  hypothesis; the stage as written validated the hybrid's hypotheses in pass 4 and the ones both designs
+  share in passes 1 to 3, not the AWS model's; the Redshift subscription target is open under either
+  design (0.6). The recommendation (a) with (a2) was restated with its reasons.
+- **[user] Decision 6**, verbatim: *"Decido pelo modelo da AWS, com o uso previsto do SMUS e promoção
+  entre ambientes via ferramenta SMUS CICD CLI"*. Taken as (b), against the recommendation.
+- **[Claude] Written**: the stage file (Status, Prerequisites, Consumes and Proves; the review tables'
+  rows for D17, D20, D22, D26, D28, D41, Stages 8, 9, 10 and 18, `GOVERNANCE.md` §Publishing, the data
+  and application slices, the orchestration module and `DenyDataZoneEntirely`; question 2's dated
+  outcome; 3.2's verification xvii and the new 3.3, the manifest's `staging` and `prod` stages; pass 4
+  rewritten as 4.1 to 4.13 on Stage 18's recipe, each step citing the Stage 18 step it repeats; pass 5's
+  note; 6.2 and 6.3; verifications xvii to xxv; decision 6 taken, 7 and 8 moot, 10 amended, 13 to 16
+  due with recommendations; Cost, Rollback, What this stage does not do and What concerns the other
+  sessions), D41 (the Status line, the section "Item 2 reopened 2026-10-31", the revision trigger), D26's
+  dated amendment, `POLICIES.md`'s `DenyDataZoneEntirely` row (the trigger fired, the deny standing until
+  4.1's apply), `integrations.md` INT-26, `docs/plan/stages/INDEX.md`, `docs/GENERAL_PLAN.md`,
+  `docs/plan/decisions/INDEX.md`, `docs/log/INDEX.md`, `docs/plan/waiting-on-the-user.md` and
+  `CLAUDE.md`'s Current position. No apply, no AWS write, no portal act.
+- **[Claude] Left to other sessions**, recorded in the stage's "What concerns the other sessions": the
+  note on 6f decision 4, the 6f session's; Stage 10's 1.1, 2.4, 4.2 and decision 9 and Stage 8's legs,
+  the Stages 8-10 session's (4.9, 4.11); `governance/` shared with 6d's 2.7 (4.5).
+- **[Claude] The branch**: the session's branch `claude/estagio-19-planejamento-f55cae` had been merged
+  as PR #275 and its remote deleted, so this sitting's work is on `claude/stage-19-decision-6-aws-model`,
+  cut from `main` at `52ca42e9`.
