@@ -538,9 +538,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Staging and Production each hold a deployment project (Stage 18's recipe as a standing state), the CI/CD
   CLI deploys every stage from the bundle, Production publishes its own product and a Sandbox project
   subscribes across accounts; D41 item 2 reopened, 6f decision 4 reversed (its note the 6f session's), D26
-  amended at the association, `DenyDataZoneEntirely` revised at 4.1 (decision 13), the application slices
-  and the render retire (4.11), the warehouse workflow stays on Terraform (decision 16); decisions 1 to 5,
-  9 and 11 to 16 due, the user's; passes 1 to 3 Sandbox sittings, pass 4 promotion sittings with the
+  amended at the association, `DenyDataZoneEntirely` revised at 4.1 (decision 13), the application slices,
+  the render and the orchestration module's workflow resource retire (4.11), the warehouse workflow
+  following the CLI with Production's project role, which takes the lake's write (decision 16 (b), D22
+  amended); **decisions 13 to 16 taken 2026-10-31** (13 (b) with a subscription deny, 14 (a) with (d), 15
+  (a), 16 (b)), 1 to 5, 9, 11 and 12 due, the user's; passes 1 to 3 Sandbox sittings, pass 4 promotion sittings with the
   Stages 8-10 session, whose Stage 10 1.1, 2.4, 4.2 and decision 9 it rewrites. Read 2026-10-28: the
   consumer's daily `DataLake` source imported the subscription's resource link as an inventory asset
   (2026-10-27 21:32 UTC, the 6f follow-up's check); a portal *Create database* is one `DataLake`

@@ -150,3 +150,18 @@ Account ids are replaced by the account's name in angle brackets.*
 - **[Claude] The branch**: the session's branch `claude/estagio-19-planejamento-f55cae` had been merged
   as PR #275 and its remote deleted, so this sitting's work is on `claude/stage-19-decision-6-aws-model`,
   cut from `main` at `52ca42e9`.
+- **[user] Decision 13**, verbatim: *"Ok em relação a sua recomendação."*, to the recommendation
+  restated in chat as (b) with a subscription deny, revised from the file's (a) because Production is
+  also the hub account; recorded in the stage file with the revision's reasons. Decisions 14 to 16
+  are presented one at a time, at the user's request.
+- **[user] Decision 14**, verbatim: *"Ok em relação a sua recomendação"*, to (a) with (d) and the
+  bootstrap `workflow.run` in Production, as presented in chat; recorded in the stage file.
+- **[user] Decision 15**, verbatim: *"ok em relação a sua recomendação"*, to (a), the Governance
+  Manager as a contributor of `deploy-production` under the person-session deny, (b) the fallback
+  until the deny is applied; verification xxvi added for the domain-defined designation.
+- **[user] Decision 16**, verbatim: *"(b)"*, against the recommendation: the warehouse workflow moves
+  into Production's project with the project role as its identity. **[Claude]** recorded with what it
+  carries (the lake's write share, 9.3's grants and the 5439 ingress to the project role, decision 15's
+  deny grown, the render and the orchestration module's workflow resource retired whole, verification
+  xxvii), and the review rows, 3.3, 4.9, 4.11, 6.2, D41's note, `CLAUDE.md` and the waiting list
+  brought to it. Decisions 13 to 16 are taken; 1 to 5, 9, 11 and 12 stay due.

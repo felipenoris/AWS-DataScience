@@ -261,8 +261,10 @@ changes: each deployment account is associated and holds one project from the `d
 the CLI deploys every stage from the bundle; in the targets the project role is the application
 workflows' identity and the operator creates their Glue job, so the application slices retire;
 `DenyDataZoneEntirely` is revised (Stage 19 4.1, decision 13). What stands: item 5's chain layer,
-which starts the CLI-made workflow by name (Stage 18 0.4); the warehouse workflow and the lake's write
-on the Terraform path with the job role (Stage 19 decision 16); items 1, 3, 4 and 6 to 8. The
+which starts the CLI-made workflow by name (Stage 18 0.4); items 1, 3, 4 and 6 to 8. The warehouse
+workflow follows the CLI too, with Production's project role as its identity (Stage 19 decision 16 (b),
+the same day, against the recommendation), so the lake's governed write leaves the job role: D22's
+amendment. The
 comparison and Stage 18's readings are the record of the price; `SMUS.md`, `POLICIES.md`, Stage 8's
 legs and Stage 10's 1.1, 2.4 and 4.2 follow Stage 19's pass 4.
 
