@@ -186,13 +186,15 @@ locals {
   # take; DataZone translates it to the template's `name;config;version` before the stack, and a
   # triple written here fails the environment's validation with an empty message (measured
   # 2026-10-30, 2.6 item 3). enableRStudio is locked, never a member's choice: the template's note says RStudio is
-  # never removed from a domain. It is false while the account holds no Posit licence: the first
-  # environment created with true ended VALIDATION_FAILED with an empty message and no call into
-  # Sandbox (2.6 item 3, 2026-10-30), and the flip to false is the discriminator. With true the
-  # template adds an EFS home, service-managed security groups and Posit's RStudio, whose licence
-  # and inline policy are the user's acts (the waiting list); the value returns to true at 2.6
-  # item 5. hiddenInstanceTypes, hiddenSageMakerImageVersionAliases and domainName keep the template's
-  # empty defaults: the instance ceiling is the SCP's, not a picker's (Lesson 5).
+  # never removed from a domain. It is false by the user's decision of 2026-10-30 (6d 2.6 item 5, the
+  # Posit Workbench licence's price): with true the template adds an EFS home, service-managed
+  # security groups and Posit's RStudio, which need a licence accepted in License Manager, an inline
+  # policy on the project role and a license-manager interface endpoint in the VPC (read 2026-10-31).
+  # The first environment created with true ended VALIDATION_FAILED with an empty message and no
+  # call into Sandbox (2.6 item 3, 2026-10-30); the flip to false was the discriminator, and the
+  # cause was the image lists' form. hiddenInstanceTypes, hiddenSageMakerImageVersionAliases and
+  # domainName keep the template's empty defaults: the instance ceiling is the SCP's, not a picker's
+  # (Lesson 5).
   sagemaker_ai_domain_parameters = [
     {
       name = "customImagesJupyterLab"
