@@ -165,3 +165,15 @@ Account ids are replaced by the account's name in angle brackets.*
   deny grown, the render and the orchestration module's workflow resource retired whole, verification
   xxvii), and the review rows, 3.3, 4.9, 4.11, 6.2, D41's note, `CLAUDE.md` and the waiting list
   brought to it. Decisions 13 to 16 are taken; 1 to 5, 9, 11 and 12 stay due.
+- **[user] Decision 1**, verbatim: *"conforme sua recomendação"*, to (a): `app-etl` extended on a branch
+  that joins the next tag with decision 6 (b)'s changes.
+- **[user] Decision 2**, verbatim: *"ok em relação as recomendações"*, to (a) with (d): the Spark write
+  into a named database `app_etl`, the same name in every project.
+- **[user] Decision 3**, verbatim: *"ok em relação as recomendações"*, to (a), the workflow's task, with
+  the stage variable `PUBLISH_LISTING` as its gate; 1.1 brought to it.
+- **[user] Decision 4**, verbatim: *"ok em relação as recomendações"*, to (a), a metadata form
+  `classification` on the asset; (c) moot since decision 6 (b).
+- **[user] Decision 5**, verbatim: *"ok em relação as recomendações"*, as recommended with the refinement:
+  a third `experimentation` project as pass 2's consumer, the Governance Manager a contributor of
+  `eighth-experimentation` for its approvals, and `eighth-experimentation` the consumer of Production's
+  listing at 4.12 and pass 5. Decisions 1 to 5 and 13 to 16 are taken; 9, 11 and 12 stay due.

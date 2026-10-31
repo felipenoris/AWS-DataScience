@@ -328,8 +328,9 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
   finds the source whose filter names the database (`list-data-sources`), starts its run
   (`start-data-source-run`), waits for `SUCCESS`, finds the asset whose external identifier names the
   table (`search` on the inventory) and publishes its latest revision (`create-listing-change-set
-  --action PUBLISH`); every call as the project role, through the `datazone` endpoint. The tests gain a
-  catalog double. `render-workflow.py` gains decision 8's rule and `make check` passes.
+  --action PUBLISH`); every call as the project role, through the `datazone` endpoint; the task returns
+  at once where the stage variable `PUBLISH_LISTING` is not `true` (decision 3, 2026-10-31). The tests
+  gain a catalog double, and `make check` passes; decision 8's render rule is moot since decision 6 (b).
 - **1.2 [user] Create the product's database in `dev`** (*Data → Create database*, the name of decision
   2), **deploy to `dev` from a space** and run `app-etl`. **[Claude] reads** the new `DataLake`
   environment, its database, its daily source and whether it carries a subscription target (the one of
@@ -520,7 +521,8 @@ the shape is the templates' and the account's own state is not.
   Production) is amended there. The chain is read at its next scheduled firing: the machine started the
   CLI-made workflow and waited on `GetWorkflowRun` (xxiii).
 - **4.12 [user] A Sandbox project subscribes to Production's listing**, Stage 18 7.2's shape and 6f
-  11.8's acts: the consumer of decision 5 requests, the approver of decision 15 approves. **[Claude]
+  11.8's acts: `eighth-experimentation` requests (decision 5: the project whose warehouse connection pass
+  5 reads through), the approver of decision 15 approves. **[Claude]
   reads** the fulfilment on both sides (the `SELECT` grant to Sandbox's `IAMPrincipals` under the
   consumer's context in Production, `CROSS_ACCOUNT_VERSION` 5 in the grant with Production's setting at
   its own value, the RAM share of Production's catalog, the three statements in Production's Data
@@ -535,7 +537,8 @@ the shape is the templates' and the account's own state is not.
 ### 5. Redshift
 
 Waits on decision 9, which decision 6 (b) leaves as written: the Sandbox warehouse reads the subscribed
-product in place, the subscription now Production's listing (4.12) rather than the lake's. Under its
+product in place, the subscription now Production's listing (4.12) rather than the lake's, through
+`eighth-experimentation`'s connection (`EXC-17`, decision 5), so 6h decision 8 stays deferred. Under its
 recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-compute/` up;
 [`redshift-connection.md`](../runbooks/redshift-connection.md) §J).
 
@@ -631,6 +634,10 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
    image, registry row and slices. **Recommended: (a)**: the template is the house's application and the
    product is its existing output; (b) buys isolation at the price of every Stage 7-8 object a second
    application needs ([`sagemaker-application.md`](../runbooks/sagemaker-application.md) §Z).
+   **Taken 2026-10-31 by the user as (a)** (*"conforme sua recomendação"*): `app-etl` extended on a
+   branch that joins the next tag with decision 6 (b)'s leg changes and 3.3's stages, one release for
+   both; the publishing task is exercised in `dev` and `test` (passes 1 to 3) before any tag reaches a
+   deployment target.
 2. **How the table is created, and in which database.** The hand: (a) the Glue job's Spark write into the
    project database, Iceberg, as Stage 18 7.2 did with Parquet; (b) the workflow editor's Glue Catalog
    Create Table operator, a `TableInput` without `OpenTableFormatInput`, so an external table over the
@@ -644,22 +651,44 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
    which (e) breaks at the first `test` deploy; (b) and (c) separate the table from its writer and are
    measured only if (a) is refused. (d) is a portal act per project, the tool's own, and 1.2 reads
    whether such a database carries the subscription target the consumer needs.
+   **Taken 2026-10-31 by the user as (a) with (d)** (*"ok em relação as recomendações"*): the Glue
+   job's Spark write creates the Iceberg table in the project database `app_etl`, the same name in every
+   project, created in the portal in Sandbox (1.2, 3.2) and by API in the deployment projects (4.6);
+   1.4 reads that an Iceberg overwrite keeps the table, its listing and its grants across runs.
 3. **How the asset is published.** (a) the workflow's task: the source's run, then the listing by name;
    (b) `publishOnImport` on the project's source, with the task starting the run alone; (c) the portal
    after each run, the pilot's way. **Recommended: (a)**: (b) publishes every import, a subscribed
    resource link included (0.5), and `CT-4` fails on it; (c) is a person in the loop of a pipeline. The
    task runs in `dev` and `test` alone (decision 8).
+   **Taken 2026-10-31 by the user as (a)** (*"ok em relação as recomendações"*), with a stage variable as
+   its gate: `PUBLISH_LISTING` `true` in `dev`, `test` and `prod`, `false` in `staging`, where the task
+   neither starts the source nor publishes (decision 14); the sentence above on `dev` and `test` alone is
+   the record of 2026-10-28, decision 8 being moot since decision 6 (b). Each run republishes, so the
+   listing follows the newest revision (1.4).
 4. **Where classification lives without an LF-Tag.** (a) a metadata form `classification` on the asset,
    required by the project, read by `CT-12`'s successor; (b) `internal` by convention for every product;
    (c) the LF-Tag assigned by hand by the Governance Manager on the lake's copy alone (4.4).
    **Recommended: (a) with (c)**: the form is the catalog's own carrier (6f 4.1-4.2), the approver sees
    it, and the lake keeps its tag for the register's readers; (b) states nothing.
+   **Taken 2026-10-31 by the user as (a)** (*"ok em relação as recomendações"*): a form type
+   `classification` with one field enumerated on the four values, filled in `dev` and carried by the
+   bundle's catalog export, read by `CT-12`'s successor on every product listing, which fails a product
+   `restricted` or `personal` or one with no form; (c) is moot since decision 6 (b), the product having no
+   lake copy. The form type's owner, the producing project (recreated per project by the import) or a
+   governance project once, is read at 3.2 (xii); a glossary term is the variant with a native
+   vocabulary, same transport.
 5. **The consumer, and who approves.** The consumer: a third project from `experimentation`
    (`test-experimentation` receives the application itself, so a subscription there reads a copy it
    already holds). The approver: the owner project's members, the Data Scientist User, or the Governance
    Manager added to `eighth-experimentation` as a member (6f 4.3), who then acts as the project role in
    it (Stage 18 6.1). **Recommended: a third project, and the Governance Manager as a member of the owner
    project** for this stage's approvals, 6f 4.3 read in the same act.
+   **Taken 2026-10-31 by the user as recommended** (*"ok em relação as recomendações"*), with one
+   refinement from decision 6 (b): the third project, created in the portal by the Data Scientist User, is
+   pass 2's consumer, and the Governance Manager, a `PROJECT_CONTRIBUTOR` of `eighth-experimentation`,
+   approves there, 6f 4.3 answered in the act; the consumer of Production's listing at 4.12 and pass 5 is
+   `eighth-experimentation` itself, through the warehouse connection it already holds (`EXC-17`), the
+   Governance Manager approving in `deploy-production` (decision 15), so 6h decision 8 stays deferred.
 6. **Where the promoted product lives.** (a) **the lake**: Production's job creates `curated.<table>`
    (`CREATE_TABLE` on `curated` to the job role, one declaration for every future table), `governed-lake`
    publishes it, a Sandbox project subscribes; Staging's job creates its table in `app_outputs`,
