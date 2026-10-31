@@ -177,3 +177,13 @@ Account ids are replaced by the account's name in angle brackets.*
   a third `experimentation` project as pass 2's consumer, the Governance Manager a contributor of
   `eighth-experimentation` for its approvals, and `eighth-experimentation` the consumer of Production's
   listing at 4.12 and pass 5. Decisions 1 to 5 and 13 to 16 are taken; 9, 11 and 12 stay due.
+- **[user] Decision 9**, verbatim: *"ok em relação as recomendações"*, to (a), the read in place through
+  `eighth-experimentation`'s connection on Production's subscribed product, 5.3's Redshift asset read and
+  not subscribed; 5.1 brought to decision 6 (b).
+- **[user] Decision 11**, verbatim: *"ok em relação as recomendações"*, to the recommendation revised in
+  chat: rows by class in the register for what lands in Production and Staging, none for Sandbox's
+  project-owned fulfilments, `catalog.py`'s product-road checks in every case.
+- **[user] Decision 12**, verbatim: *"ok em relação as recomendações"*, to outside: the product outside
+  open question 25's expiry rule, D19 to gain two dated lines at 6.2. **Every decision of the stage is
+  taken**; the waiting list's row for them is removed, `CLAUDE.md` and the indexes brought to it. Pass 1
+  waits on a Sandbox sitting and on decision 1's branch of `awsds/app-etl`.

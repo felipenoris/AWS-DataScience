@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Decision 6 taken 2026-10-31 by the user as (b), the AWS model** ([log](../../log/log-stage-19-smus-native-data-product.md)): *"Decido pelo modelo da AWS, com o uso previsto do SMUS e promoção entre ambientes via ferramenta SMUS CICD CLI"*. Staging and Production each gain a deployment project, the CI/CD CLI deploys every stage, and Production publishes its own product; D41 item 2 is reopened, 6f decision 4 reversed, `DenyDataZoneEntirely`'s revision trigger fired. Passes 3 and 4 rewritten the same day around [Stage 18](stage-18-staging-deployment-project.md)'s recipe, decisions 13 to 16 added and taken the same day, one at a time (13 (b) with a subscription deny, 14 (a) with (d), 15 (a), 16 (b), the last against the recommendation), nothing changed in AWS. **Written 2026-10-28, nothing run**: the plan, the review of the catalog across the plan and the estate, the user's three questions answered from measurements and dated pages, and every decision due with its recommendation. The readings of 2026-10-28 are read-only, as the infrastructure user; no apply, no AWS write, no portal act. Pass 0 runs with nothing up; passes 1 to 3 are Sandbox sittings; pass 4 runs as promotion sittings once decisions 1 to 5 are taken and passes 1 to 3 have run; pass 5 waits on decision due 9 |
+| **Status** | **Decision 6 taken 2026-10-31 by the user as (b), the AWS model** ([log](../../log/log-stage-19-smus-native-data-product.md)): *"Decido pelo modelo da AWS, com o uso previsto do SMUS e promoção entre ambientes via ferramenta SMUS CICD CLI"*. Staging and Production each gain a deployment project, the CI/CD CLI deploys every stage, and Production publishes its own product; D41 item 2 is reopened, 6f decision 4 reversed, `DenyDataZoneEntirely`'s revision trigger fired. Passes 3 and 4 rewritten the same day around [Stage 18](stage-18-staging-deployment-project.md)'s recipe, decisions 13 to 16 added, and **every decision taken the same day, one at a time**: 1 (a), 2 (a) with (d), 3 (a) gated by `PUBLISH_LISTING`, 4 (a), 5 as recommended with `eighth-experimentation` as Production's consumer, 9 (a), 11 rows by class for the governed accounts, 12 outside, 13 (b) with a subscription deny, 14 (a) with (d), 15 (a), 16 (b) against the recommendation; 7, 8 and 10 moot or amended by decision 6 (b). Nothing changed in AWS. **Written 2026-10-28, nothing run**: the plan, the review of the catalog across the plan and the estate, the user's three questions answered from measurements and dated pages, and every decision due with its recommendation. The readings of 2026-10-28 are read-only, as the infrastructure user; no apply, no AWS write, no portal act. Pass 0 runs with nothing up; passes 1 to 3 are Sandbox sittings; pass 4 runs as promotion sittings once passes 1 to 3 have run; pass 5 inside a Sandbox warehouse sitting after 4.12 |
 | **Prerequisites** | [6f](stage-06f-data-governance.md) step 11, the catalog road live since 2026-10-26: `governed-lake`, its source over `curated`, one subscription fulfilled and read, decisions 1 to 5 taken (2026-10-27). `eighth-experimentation`'s `DataLake` environment (6f 11.7, `blerpkhn9nj7o0`, its database `glue_db_blerpkhn9nj7o0`) and `test-experimentation`'s (6f 2.0): a Glue table's subscription target is a `DataLake` environment's. The application template at `v0.4.6` with `scripts/dev-cli.sh` on the next tag ([Stage 8](stage-08-cicd-pipelines.md) decision 22, the waiting list), the loop from a space run on 2026-10-26 ([Stage 10](stage-10-orchestration-promotion.md) 2.1), `vpc-egress-v0.19.0`'s `mwaa` group and the `datazone` endpoint Sandbox's `egress/` carries in its `extra_services`. The Sandbox warehouse and the project's connection ([5b](stage-05b-redshift-serverless.md), [6h](stage-06h-redshift-connection.md), `EXC-17`) for pass 5. **For pass 4**: [Stage 18](stage-18-staging-deployment-project.md)'s passes 1 to 4 and 7, the recipe for a deployment project in a `Workloads` account, measured 2026-10-17 to 10-22 and unwound; the four deploy roles and the deploy runner ([Stage 8](stage-08-cicd-pipelines.md) pass 1); `staging/egress/` and `production/egress/`, each gaining a `datazone` endpoint; `data-governance/governance/` free of 6d decision 16's apply at the moment of 4.5's (Stage 18 2.7's rule: two stages never share one apply). Nothing blocks pass 0 or pass 1 |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D22](../decisions/D22-data-governance-account.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D40](../decisions/D40-redshift-warehouse.md), [D41](../decisions/D41-sagemaker-application.md); [Stage 18](stage-18-staging-deployment-project.md)'s measurements since decision 6 (b); [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md) and [D35](../decisions/D35-sandbox-cardinality.md) reviewed, none consumed |
 | **Proves** | [INT-26](../integrations.md) (new): a table a workflow creates in a Sandbox project's own database becomes a published asset and a data product, another project reads it through a subscription DataZone fulfils inside one account, and the product reaches the warehouse by the path the tool intends. Since decision 6 (b): the same application promoted by the CLI into a deployment project in Staging and in Production, Production's project publishing the product and a Sandbox project subscribing across accounts, [INT-12](../integrations.md)'s association and [INT-23](../integrations.md)'s cross-account fulfilment as standing states on the `Workloads` accounts |
@@ -545,7 +545,10 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
 - **5.1 [Claude⚡] The grant the read in place needs**: on the user's word, Lake Formation `DESCRIBE`
   and `SELECT` on the product's table to the identity the database user carries, read first from
   `SVV_*` as the admin (`IAMR:<project role>` for the access role's chain, 6h decision 8a), and `USAGE
-  ON DATABASE awsdatacatalog` to it in SQL; nothing on the namespace role (5b decision 5 holds).
+  ON DATABASE awsdatacatalog` to it in SQL; nothing on the namespace role (5b decision 5 holds). Since
+  decision 6 (b) the table is Production's and the grant, if xiii says the session carries no project
+  context, is written in Production, from an administrator seat or by the project role as the table's
+  creator (decision 9); the first attempt is the read with DataZone's grant alone.
 - **5.2 [user] From a notebook** through §J's connection: `SELECT ... FROM
   awsdatacatalog.<project database>.trades_notional LIMIT 10`, then `CREATE TABLE lab.trades_hot AS
   SELECT ...` in the project's schema, then a materialized view over the Iceberg table and its
@@ -562,7 +565,7 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
 
 - **6.1 [Claude] The instruments**: `catalog.py` gains the product road (decision 11): every published
   listing of a project's own table judged by `CT-11`'s rules, `CT-10`'s join extended to a same-account
-  fulfilment, a check on an inventory asset that is a resource link (0.5) if the 6f follow-up has not
+  fulfilment and to Production's cross-account one, a check on an inventory asset that is a resource link (0.5) if the 6f follow-up has not
   written it, `CT-5`'s rule for a project's sources as decision 3 reads it; `studio.py` reads each
   project's environments and subscription targets; `datalake.py`'s `DL-14` admits the consumer's
   registration.
@@ -756,6 +759,13 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
    5.3's publication read but not subscribed**: it is the tool's end-to-end path for a Glue asset, costs
    the warehouse's compute alone, and keeps D40; (b) is read as a second half once a target's shape is
    priced; (c) keeps the warehouse outside the premises.
+   **Taken 2026-10-31 by the user as (a)** (*"ok em relação as recomendações"*): the read in place
+   through `eighth-experimentation`'s connection on Production's subscribed product (decisions 5 and 6
+   (b)), the copy and the view in the project's own schema, 5.3's Redshift asset published and never
+   subscribed. Verification xiii decides 5.1's hand: if the Redshift session carries the project's
+   context, DataZone's grant admits it; if not, a named grant in Production to the session's identity,
+   written from an administrator seat there (decision 14 (d)'s shape for Staging) or by the project
+   role's grant option as the table's creator, nothing to the namespace role (5b decision 5).
 10. **Lineage in Sandbox.** The job's OpenLineage settings on in `dev` and `test` (Stage 18 7.1's
     configuration), off in the targets. **Recommended: on**, read at verification v; Production's lineage
     stays Stage 10 decision 9's. **Amended 2026-10-31** (decision 6 (b)): the settings stay on in the
@@ -767,9 +777,23 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     are already outside the register (`AWS_STATE.md`), and the check is what notices a grant no
     subscription explains. The inventory import of 0.5 stays an accepted residual with `publishOnImport`
     off, read by the 6f follow-up's check.
+    **Recommendation revised 2026-10-31 in chat, to (b) for Production and Staging and (a) for Sandbox**:
+    decision 6 (b) put the promoted product's fulfilment in Production, a governed account where the
+    register's drift rule is the authority, so its grants, the RAM share and the catalog policy get one
+    row by class as the lake road's do since 6f decision 2, while Sandbox's project-owned fulfilments
+    stay outside the register as its objects already are; (a)'s checks run in every case.
+    **Taken 2026-10-31 by the user so** (*"ok em relação as recomendações"*): 6.1 writes the product
+    road's checks, 4.12 and 6.2 write the rows by class in `AWS_STATE.md`'s register, and its row on
+    Production's Lake Formation is amended at 4.6 with the SMUS seats.
 12. **D19 and the derived zone.** A published project table is a product outside open question 25's
     expiry rule, or a copy inside it. **Recommended: outside**, with a dated line in D19 at close: a
     product has an owner, a listing and subscribers, which a copy does not.
+    **Taken 2026-10-31 by the user as outside** (*"ok em relação as recomendações"*): the rule open
+    question 25 sets excludes `dev/data/catalogs/` by prefix or selects by tag, the product's life being
+    its owner's; D19 gains two dated lines at 6.2, the product outside the rule and, since decision 6
+    (b), the project path existing in Staging and Production as the product's home and never a person's
+    derived zone, inside Stage 11's scan scope and data events by the name `awsds-<env>-smus-projects`,
+    which 6.3 reads; a `retention` field on decision 4's form is the owner's declaration, optional.
 13. **The shape of `DenyDataZoneEntirely`'s revision** (4.1). (a) the statement removed from the
     `Workloads` document: its three purposes (`POLICIES.md`) are met otherwise or intended now, a local
     domain by the root baseline's `datazone:CreateDomain` deny outside the `Data` OU, the self-association

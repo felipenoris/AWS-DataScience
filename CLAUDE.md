@@ -541,8 +541,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   amended at the association, `DenyDataZoneEntirely` revised at 4.1 (decision 13), the application slices,
   the render and the orchestration module's workflow resource retire (4.11), the warehouse workflow
   following the CLI with Production's project role, which takes the lake's write (decision 16 (b), D22
-  amended); **decisions 13 to 16 taken 2026-10-31** (13 (b) with a subscription deny, 14 (a) with (d), 15
-  (a), 16 (b)), 1 to 5, 9, 11 and 12 due, the user's; passes 1 to 3 Sandbox sittings, pass 4 promotion sittings with the
+  amended); **every decision taken 2026-10-31, one at a time** (1 (a), 2 (a)+(d), 3 (a) gated by
+  `PUBLISH_LISTING`, 4 (a), 5 with `eighth-experimentation` as Production's consumer, 9 (a), 11 rows by class
+  for the governed accounts, 12 outside, 13 (b) with a subscription deny, 14 (a)+(d), 15 (a), 16 (b); 7, 8
+  and 10 moot or amended), so pass 1 can start at the next Sandbox sitting; passes 1 to 3 Sandbox sittings, pass 4 promotion sittings with the
   Stages 8-10 session, whose Stage 10 1.1, 2.4, 4.2 and decision 9 it rewrites. Read 2026-10-28: the
   consumer's daily `DataLake` source imported the subscription's resource link as an inventory asset
   (2026-10-27 21:32 UTC, the 6f follow-up's check); a portal *Create database* is one `DataLake`
