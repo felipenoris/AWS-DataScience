@@ -197,3 +197,162 @@ def test_an_xcom_without_the_job_fails_naming_its_keys():
 def test_an_xcom_that_is_not_json_fails():
     with pytest.raises(RuntimeError, match="neither JSON nor a literal"):
         app_etl_tasks.training_job_name("app-etl-train-20261024T120000 (")
+
+
+DOMAIN, PROJECT = "dzd-example", "prj-example"
+SOURCES = {
+    "src-product": ["app_etl"],
+    "src-default": ["glue_db_example"],
+}
+ASSETS = [
+    {
+        "identifier": "asset-product",
+        "externalIdentifier": "app_etl/trades_notional",
+        "latestRevision": "3",
+    },
+    {"identifier": "asset-other", "externalIdentifier": "glue_db_example/trades_notional"},
+]
+
+
+class FakeDataZone:
+    """The DataZone calls `publish` makes, over SOURCES and ASSETS, each run and listing ending as
+    the sequences say; every call recorded."""
+
+    def __init__(
+        self,
+        sources=SOURCES,
+        assets=ASSETS,
+        run=("RUNNING", "SUCCESS"),
+        listing=("CREATING", "ACTIVE"),
+    ):
+        self.sources, self.assets = sources, assets
+        self.run_statuses, self.listing_statuses = list(run), list(listing)
+        self.calls = []
+
+    def get_paginator(self, name):
+        return types.SimpleNamespace(paginate=lambda **kw: self._pages(name, kw))
+
+    def _pages(self, name, kw):
+        self.calls.append((name, kw))
+        if name == "list_data_sources":
+            assert kw == {"domainIdentifier": DOMAIN, "projectIdentifier": PROJECT, "type": "GLUE"}
+            return [{"items": [{"dataSourceId": source} for source in self.sources]}]
+        assert name == "search" and kw["searchScope"] == "ASSET"
+        assert kw["owningProjectIdentifier"] == PROJECT and kw["searchText"] == "trades_notional"
+        return [{"items": [{"assetItem": asset} for asset in self.assets]}]
+
+    def get_data_source(self, domainIdentifier, identifier):
+        filters = [{"databaseName": name} for name in self.sources[identifier]]
+        return {
+            "configuration": {"glueRunConfiguration": {"relationalFilterConfigurations": filters}}
+        }
+
+    def start_data_source_run(self, domainIdentifier, dataSourceIdentifier):
+        self.calls.append(("start_data_source_run", dataSourceIdentifier))
+        return {"id": "run-1"}
+
+    def get_data_source_run(self, domainIdentifier, identifier):
+        status = self.run_statuses.pop(0) if len(self.run_statuses) > 1 else self.run_statuses[0]
+        return {"status": status, "runStatisticsForAssets": {"added": 1}, "errorMessage": "boom"}
+
+    def create_listing_change_set(self, domainIdentifier, entityIdentifier, entityType, action):
+        self.calls.append(("create_listing_change_set", entityIdentifier, entityType, action))
+        return {"listingId": "listing-1", "listingRevision": "2", "status": "CREATING"}
+
+    def get_listing(self, domainIdentifier, identifier, listingRevision):
+        status = (
+            self.listing_statuses.pop(0)
+            if len(self.listing_statuses) > 1
+            else self.listing_statuses[0]
+        )
+        return {"status": status}
+
+
+@pytest.fixture
+def datazone(monkeypatch):
+    fake = FakeDataZone()
+    boto3 = types.ModuleType("boto3")
+    boto3.client = lambda service: fake if service == "datazone" else None
+    monkeypatch.setitem(sys.modules, "boto3", boto3)
+    monkeypatch.setenv("DataZoneDomainId", DOMAIN)
+    monkeypatch.setenv("DataZoneProjectId", PROJECT)
+    monkeypatch.setattr(app_etl_tasks.time, "sleep", lambda seconds: None)
+    return fake
+
+
+def test_publish_runs_the_source_then_lists_the_assets_latest_revision(datazone, capsys):
+    text = app_etl_tasks.publish("app_etl", "trades_notional", "true", ti=None)
+    result = json.loads(text)
+    assert result == {
+        "published": True,
+        "domain": DOMAIN,
+        "project": PROJECT,
+        "data_source": "src-product",
+        "source_run": "run-1",
+        "asset": "asset-product",
+        "asset_revision": "3",
+        "listing": "listing-1",
+        "listing_revision": "2",
+    }
+    assert ("start_data_source_run", "src-product") in datazone.calls
+    assert ("create_listing_change_set", "asset-product", "ASSET", "PUBLISH") in datazone.calls
+    printed = capsys.readouterr().out
+    assert "source run run-1: SUCCESS" in printed
+    assert "listing listing-1 revision 2: ACTIVE" in printed
+    assert printed.endswith(
+        "published app_etl.trades_notional: asset asset-product, listing listing-1\n"
+    )
+
+
+@pytest.mark.parametrize("value", ["false", "", "True "])
+def test_publish_does_nothing_where_the_stage_lists_no_product(value, capsys):
+    if value.strip().lower() == "true":
+        pytest.skip("the gate admits it")
+    text = app_etl_tasks.publish("app_etl", "trades_notional", value)
+    assert json.loads(text) == {"published": False}
+    assert "nothing listed" in capsys.readouterr().out
+
+
+def test_publish_admits_the_gate_whatever_its_case_and_spaces(datazone):
+    assert json.loads(app_etl_tasks.publish("app_etl", "trades_notional", "True "))["published"]
+
+
+def test_publish_refuses_a_worker_outside_a_project(datazone, monkeypatch):
+    monkeypatch.delenv("DataZoneProjectId")
+    with pytest.raises(RuntimeError, match="carries no DataZoneProjectId"):
+        app_etl_tasks.publish("app_etl", "trades_notional", "true")
+
+
+def test_publish_refuses_a_database_with_no_source_or_two(datazone):
+    with pytest.raises(RuntimeError, match=r"0 data source\(s\) over other_db"):
+        app_etl_tasks.publish("other_db", "trades_notional", "true")
+    datazone.sources = {"src-a": ["app_etl"], "src-b": ["app_etl"]}
+    with pytest.raises(RuntimeError, match=r"2 data source\(s\) over app_etl"):
+        app_etl_tasks.publish("app_etl", "trades_notional", "true")
+
+
+def test_publish_fails_on_a_source_run_that_does_not_succeed(datazone):
+    datazone.run_statuses = ["RUNNING", "FAILED"]
+    with pytest.raises(RuntimeError, match="source run run-1 ended FAILED: boom"):
+        app_etl_tasks.publish("app_etl", "trades_notional", "true")
+    assert not any(call[0] == "search" for call in datazone.calls)
+
+
+def test_publish_fails_when_the_run_outlives_its_timeout(datazone, monkeypatch):
+    datazone.run_statuses = ["RUNNING"]
+    clock = iter([0, 0, 1000])
+    monkeypatch.setattr(app_etl_tasks.time, "monotonic", lambda: next(clock))
+    with pytest.raises(RuntimeError, match="still RUNNING after 600 s"):
+        app_etl_tasks.publish("app_etl", "trades_notional", "true")
+
+
+def test_publish_refuses_a_table_the_run_did_not_import(datazone):
+    datazone.assets = [ASSETS[1]]
+    with pytest.raises(RuntimeError, match=r"0 asset\(s\) for app_etl/trades_notional"):
+        app_etl_tasks.publish("app_etl", "trades_notional", "true")
+
+
+def test_publish_fails_on_a_listing_that_does_not_activate(datazone):
+    datazone.listing_statuses = ["CREATING", "INACTIVE"]
+    with pytest.raises(RuntimeError, match="listing listing-1 revision 2 is INACTIVE"):
+        app_etl_tasks.publish("app_etl", "trades_notional", "true")
