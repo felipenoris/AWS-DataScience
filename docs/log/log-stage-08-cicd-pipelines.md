@@ -4412,3 +4412,33 @@ infrastructure user (`awsds-policy-canary`, `awsds-infra-prod`), reads otherwise
 - **[Claude] The record**: `probes.py`'s comment, `runbooks/scp-battery.md`, `POLICIES.md`, `AWS_STATE.md`,
   `lessons.md`'s platform entry, decision 29's text and the status cell, `promotion.md` §N.8.1 step 2 and
   `CLAUDE.md`'s Current position.
+
+## 2026-11-03 — the house image's old versions deleted by hand: Sandbox's versions 7-10 and 22 ECR images
+
+*Claude's hand on the user's word in chat (*"Apagar, manter v0.5.0"*), as the infrastructure user
+(`InfrastructureAccess`: `awsds-infra-sandbox-1` in Sandbox, `awsds-infra-prod` in Production). Times UTC.*
+
+- **[Claude] Read first**: Sandbox held versions 7 to 11 of `awsds-sandbox-dev-env`, its two `Tooling` domains
+  attaching the image with no version number, and no space, app or user profile in the account. Two images
+  outside that range were still named: `examples/app-etl/Dockerfile` is `FROM awsds-prod-ecr-base` at
+  `default-v0.6.0`'s digest (`sha256:94359041…`), and Sandbox's 6i workflows `demo-devenv-job` and
+  `demo-devenv-deps` (`READY`) run `awsds-prod-ecr-dev-env` at `default-v0.5.0`'s (`sha256:8ec04e35…`). The
+  domain `d-odhynkcev3yw` (`lab-sagemaker-ai-domain`) no longer exists.
+- **[Claude] Storage before and after**, the unique layers of each repository from its manifests: `dev-env` 44.7
+  GB to 9.9 GB, `base` 7.8 GB to 3.8 GB. The image sizes ECR reports sum to 86.6 GB and 49.8 GB, since images in
+  one repository share layers.
+- **[Claude] The versions**: `release/versions.py retire --keep 1 --target awsds-infra-sandbox-1`, its dry run
+  first, deleted versions 10 (`0.9.1`), 9 (`0.8.0`), 8 (`0.7.3`) and 7, exit 0. Version 11 (`0.10.0`) stays.
+- **[Claude] The images**, `aws ecr batch-delete-image` with each image named by tag and digest, `failures` empty
+  in both: `awsds-prod-ecr-dev-env` lost `default-v0.1.0`, `v0.1.1`, `v0.2.0`, `v0.3.0`, `v0.4.0`, `v0.6.0`,
+  `v0.7.0-69ad278e`, `v0.7.1-c268de48`, `v0.7.3-15fac237`, `v0.8.0-7c59998c` and `v0.9.1-746ef084`; and
+  `awsds-prod-ecr-base` lost the same tags with `default-v0.5.0` in place of `v0.6.0`. The auto-mode classifier
+  refused the first form, which computed the set from a keep list (*Unverifiable Deletion Scope*), and let the
+  enumerated one through.
+- **[Claude] Read back**: `dev-env` holds `default-v0.5.0` and `default-v0.10.0-c8bac16e`, `base` holds
+  `default-v0.6.0` and `default-v0.10.0-c8bac16e`, Sandbox holds version 11 alone. `./aws/devenv.py` at 18:38:41:
+  `DE-5` passes on version 11 (`sha256:658c05d1…`, 73 names, `61f1e1646df12c14`); `DE-2` fails because
+  `sandbox/egress` is down (`AWS_STATE.md`).
+- **Verdict**: the house image has one version. The pipeline's retention is unchanged (`retire --keep 10`, the
+  lifecycle policy's 30 tags), so the history grows again from the next release. `app-etl`, `deploy` and the
+  pull-through caches were not touched.
