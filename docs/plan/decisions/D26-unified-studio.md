@@ -21,6 +21,16 @@ catalog, so the business catalog and the technical catalog meet in the account t
 registry still runs no user compute; [D22](D22-data-governance-account.md)'s amendment lists what the
 account gains. A deployment target is still never associated.
 
+**Amended 2026-10-31 ([Stage 19](../stages/stage-19-smus-native-data-product.md) decision 6 (b), the
+user's):** Staging and Production are associated as a standing state, each holding one deployment
+project from the `deployment` profile, `Tooling` with spaces off and `DataLake` on demand, whose
+members are the identities that deploy and the approver Stage 19 decision 15 names; the CI/CD CLI
+deploys every stage, and Production publishes its own data product. The association is made at Stage
+19 4.2 and `DenyDataZoneEntirely` revised at its 4.1; until then the one-line summary below holds. The
+domain is still a registry: a deployment project runs no space and no SageMaker AI domain (Stage 18
+question i). "Staging and Production are never associated" in the rationale is the record of
+2026-08-08; [D41](D41-sagemaker-application.md)'s "Where production runs" carries the reopening.
+
 **Applied 2026-09-06.** The `engineering` profile is destroyed, the second member's **22** objects (11 blueprint configurations and their 11 grants) are gone, and the association was removed from the member side — `studio.py` reads one associated account and one project profile. `US-4` fails if the retired name ever returns.
 
 **In one line:** One SageMaker unified domain (DataZone V2) in Data Governance, associated to the Sandboxes alone since 6b; a registry, never a runtime.

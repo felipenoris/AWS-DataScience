@@ -310,7 +310,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 
 - **Done**: Stages 0-1d, 2, 3, 4, 5a, 6a, 6b, 6c, 6i, 7, 16 and 18; 5b's passes are applied, its owed readings
   dated. The chain is Sandbox → Staging → Production: no Development account, ever; interactive compute
-  is Sandbox only. All 41 decisions are closed. Gates: `make check`, `make check-ou`. **What waits on the
+  is Sandbox only. All 41 decisions are closed; D41 item 2 is reopened since 2026-10-31 (Stage 19 decision 6 (b)). Gates: `make check`, `make check-ou`. **What waits on the
   user is [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md)**: read it before asking
   the user anything, and remove a row in the sitting that takes it.
 - **The SCP battery** read `ou` 47 as expected / 0 unexpected / 7 not measured on 2026-10-22 (Stage 18's
@@ -532,10 +532,20 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   measurements in `SMUS.md`'s deployment-project section and `lessons.md`. Left: the domain's two `IAM`
   profiles, a group profile and 44 lineage events (no delete API), and the project key until 2026-11-21
   (the protected refs read free of its branch on 2026-10-26).
-- **Stage 19 written 2026-10-28, nothing run** (`stage-19-smus-native-data-product.md`): a data product
-  produced and published by a SageMaker application on SMUS's native path under the user's four premises;
-  the catalog reviewed across the plan; twelve decisions due, the user's, decision 6 (where the promoted
-  product lives; (a) the lake through `governed-lake` recommended) the hinge. Read 2026-10-28: the
+- **Stage 19: decision 6 taken 2026-10-31 by the user as (b), the AWS model** (`stage-19-smus-native-data-product.md`;
+  written 2026-10-28, nothing run in AWS): a data product produced and published by a SageMaker application
+  on SMUS's native path under the user's four premises; the catalog reviewed across the plan. Under (b)
+  Staging and Production each hold a deployment project (Stage 18's recipe as a standing state), the CI/CD
+  CLI deploys every stage from the bundle, Production publishes its own product and a Sandbox project
+  subscribes across accounts; D41 item 2 reopened, 6f decision 4 reversed (its note the 6f session's), D26
+  amended at the association, `DenyDataZoneEntirely` revised at 4.1 (decision 13), the application slices,
+  the render and the orchestration module's workflow resource retire (4.11), the warehouse workflow
+  following the CLI with Production's project role, which takes the lake's write (decision 16 (b), D22
+  amended); **every decision taken 2026-10-31, one at a time** (1 (a), 2 (a)+(d), 3 (a) gated by
+  `PUBLISH_LISTING`, 4 (a), 5 with `eighth-experimentation` as Production's consumer, 9 (a), 11 rows by class
+  for the governed accounts, 12 outside, 13 (b) with a subscription deny, 14 (a)+(d), 15 (a), 16 (b); 7, 8
+  and 10 moot or amended), so pass 1 can start at the next Sandbox sitting; passes 1 to 3 Sandbox sittings, pass 4 promotion sittings with the
+  Stages 8-10 session, whose Stage 10 1.1, 2.4, 4.2 and decision 9 it rewrites. Read 2026-10-28: the
   consumer's daily `DataLake` source imported the subscription's resource link as an inventory asset
   (2026-10-27 21:32 UTC, the 6f follow-up's check); a portal *Create database* is one `DataLake`
   environment per database, with no subscription target; no Redshift subscription target and no federated

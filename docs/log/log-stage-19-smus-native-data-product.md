@@ -115,3 +115,100 @@ Account ids are replaced by the account's name in angle brackets.*
   `docs/GENERAL_PLAN.md` and `docs/log/INDEX.md`, `INT-26` in `docs/plan/integrations.md`, the
   references and the price rows, and the runbook's three stale hunks, in one pull request against
   `main`. Every decision the stage names is due, none taken.
+
+## 2026-10-31 — decision 6 taken as (b), the AWS model; passes 3 and 4 rewritten; nothing changed in AWS
+
+- **[user] The questions before the decision**, in this session from 2026-10-28 to 2026-10-31: what the
+  stage plans; whether Staging and Production should stay without a SMUS project and how that would
+  work; which steps put a table in Terraform; whether every premise is compatible with no project in
+  the targets; what SMUS's intended out-of-the-box use is for production, publication, promotion and
+  Redshift; whether the AWS model could be adopted whole or this stage had to validate something first;
+  decision 6's context and alternatives. Each answered from the stage file, Stage 18's measurements,
+  `docs/SMUS.md`, `docs/plan/upstream-releases.md` and the decision files, with no AWS call.
+- **[Claude] The reading that preceded the decision**: the AWS model is measured (Stage 18, Staging,
+  2026-10-17 to 10-22); what kept D41 item 2 on 2026-10-22 was its price on the perimeter, not an open
+  hypothesis; the stage as written validated the hybrid's hypotheses in pass 4 and the ones both designs
+  share in passes 1 to 3, not the AWS model's; the Redshift subscription target is open under either
+  design (0.6). The recommendation (a) with (a2) was restated with its reasons.
+- **[user] Decision 6**, verbatim: *"Decido pelo modelo da AWS, com o uso previsto do SMUS e promoção
+  entre ambientes via ferramenta SMUS CICD CLI"*. Taken as (b), against the recommendation.
+- **[Claude] Written**: the stage file (Status, Prerequisites, Consumes and Proves; the review tables'
+  rows for D17, D20, D22, D26, D28, D41, Stages 8, 9, 10 and 18, `GOVERNANCE.md` §Publishing, the data
+  and application slices, the orchestration module and `DenyDataZoneEntirely`; question 2's dated
+  outcome; 3.2's verification xvii and the new 3.3, the manifest's `staging` and `prod` stages; pass 4
+  rewritten as 4.1 to 4.13 on Stage 18's recipe, each step citing the Stage 18 step it repeats; pass 5's
+  note; 6.2 and 6.3; verifications xvii to xxv; decision 6 taken, 7 and 8 moot, 10 amended, 13 to 16
+  due with recommendations; Cost, Rollback, What this stage does not do and What concerns the other
+  sessions), D41 (the Status line, the section "Item 2 reopened 2026-10-31", the revision trigger), D26's
+  dated amendment, `POLICIES.md`'s `DenyDataZoneEntirely` row (the trigger fired, the deny standing until
+  4.1's apply), `integrations.md` INT-26, `docs/plan/stages/INDEX.md`, `docs/GENERAL_PLAN.md`,
+  `docs/plan/decisions/INDEX.md`, `docs/log/INDEX.md`, `docs/plan/waiting-on-the-user.md` and
+  `CLAUDE.md`'s Current position. No apply, no AWS write, no portal act.
+- **[Claude] Left to other sessions**, recorded in the stage's "What concerns the other sessions": the
+  note on 6f decision 4, the 6f session's; Stage 10's 1.1, 2.4, 4.2 and decision 9 and Stage 8's legs,
+  the Stages 8-10 session's (4.9, 4.11); `governance/` shared with 6d's 2.7 (4.5).
+- **[Claude] The branch**: the session's branch `claude/estagio-19-planejamento-f55cae` had been merged
+  as PR #275 and its remote deleted, so this sitting's work is on `claude/stage-19-decision-6-aws-model`,
+  cut from `main` at `52ca42e9`.
+- **[user] Decision 13**, verbatim: *"Ok em relação a sua recomendação."*, to the recommendation
+  restated in chat as (b) with a subscription deny, revised from the file's (a) because Production is
+  also the hub account; recorded in the stage file with the revision's reasons. Decisions 14 to 16
+  are presented one at a time, at the user's request.
+- **[user] Decision 14**, verbatim: *"Ok em relação a sua recomendação"*, to (a) with (d) and the
+  bootstrap `workflow.run` in Production, as presented in chat; recorded in the stage file.
+- **[user] Decision 15**, verbatim: *"ok em relação a sua recomendação"*, to (a), the Governance
+  Manager as a contributor of `deploy-production` under the person-session deny, (b) the fallback
+  until the deny is applied; verification xxvi added for the domain-defined designation.
+- **[user] Decision 16**, verbatim: *"(b)"*, against the recommendation: the warehouse workflow moves
+  into Production's project with the project role as its identity. **[Claude]** recorded with what it
+  carries (the lake's write share, 9.3's grants and the 5439 ingress to the project role, decision 15's
+  deny grown, the render and the orchestration module's workflow resource retired whole, verification
+  xxvii), and the review rows, 3.3, 4.9, 4.11, 6.2, D41's note, `CLAUDE.md` and the waiting list
+  brought to it. Decisions 13 to 16 are taken; 1 to 5, 9, 11 and 12 stay due.
+- **[user] Decision 1**, verbatim: *"conforme sua recomendação"*, to (a): `app-etl` extended on a branch
+  that joins the next tag with decision 6 (b)'s changes.
+- **[user] Decision 2**, verbatim: *"ok em relação as recomendações"*, to (a) with (d): the Spark write
+  into a named database `app_etl`, the same name in every project.
+- **[user] Decision 3**, verbatim: *"ok em relação as recomendações"*, to (a), the workflow's task, with
+  the stage variable `PUBLISH_LISTING` as its gate; 1.1 brought to it.
+- **[user] Decision 4**, verbatim: *"ok em relação as recomendações"*, to (a), a metadata form
+  `classification` on the asset; (c) moot since decision 6 (b).
+- **[user] Decision 5**, verbatim: *"ok em relação as recomendações"*, as recommended with the refinement:
+  a third `experimentation` project as pass 2's consumer, the Governance Manager a contributor of
+  `eighth-experimentation` for its approvals, and `eighth-experimentation` the consumer of Production's
+  listing at 4.12 and pass 5. Decisions 1 to 5 and 13 to 16 are taken; 9, 11 and 12 stay due.
+- **[user] Decision 9**, verbatim: *"ok em relação as recomendações"*, to (a), the read in place through
+  `eighth-experimentation`'s connection on Production's subscribed product, 5.3's Redshift asset read and
+  not subscribed; 5.1 brought to decision 6 (b).
+- **[user] Decision 11**, verbatim: *"ok em relação as recomendações"*, to the recommendation revised in
+  chat: rows by class in the register for what lands in Production and Staging, none for Sandbox's
+  project-owned fulfilments, `catalog.py`'s product-road checks in every case.
+- **[user] Decision 12**, verbatim: *"ok em relação as recomendações"*, to outside: the product outside
+  open question 25's expiry rule, D19 to gain two dated lines at 6.2. **Every decision of the stage is
+  taken**; the waiting list's row for them is removed, `CLAUDE.md` and the indexes brought to it. Pass 1
+  waits on a Sandbox sitting and on decision 1's branch of `awsds/app-etl`.
+
+## 2026-10-31 — 1.1 written: the application change in `examples/app-etl/`, nothing run in AWS
+
+- **[user]** *"Sim, 1.1 agora"*, on the branch of PR #281, the template's copy in this repository; the
+  mirror to `awsds/app-etl` is the next GitLab sitting's.
+- **[Claude] Written**: `glue/transform.py` (the product table as Iceberg on `glue_catalog`, both options
+  or neither, read back and counted), `workflows/app-etl.yaml` (the Glue task's two arguments, the
+  `--datalake-formats` and `--conf` defaults, the fifth task `publish`), `code/app_etl_tasks.py`
+  (`publish` and its helpers, the gate on `publish_listing`), `manifest.yaml` (`PRODUCT_DATABASE:
+  app_etl`, `PUBLISH_LISTING: "true"` in `dev` and `test`, literals), the tests (`FakeWriter.format` and
+  `saveAsTable`, `FakeSession.table` returning a frame, four product-table cases; `FakeDataZone` and nine
+  publication cases), `README.md`, `scripts/render-workflow.py` (`{env.PRODUCT_DATABASE}` to
+  `app_outputs`, `{env.PUBLISH_LISTING}` to `false`, the Glue task's `--TABLE_DATABASE` and
+  `--TABLE_NAME` dropped, an invariant that none survives) and `runbooks/sagemaker-application.md`'s §M
+  and §W rows. `uv run pytest`: 60 passed, 1 skipped; ruff clean; the pinned lint `d856982c` through
+  `uvx` from GitHub: `ok: 9 arquivo(s)`; `./scripts/render-workflow.py --check` OK; `make check` OK;
+  the pre-commit hooks pass.
+- **[Claude] Read on the way**, recorded in 3.1 and 3.3: the pinned lint's rule `manifest` refuses
+  `content.catalog.enabled` (*"o bundle levaria o que o projeto tem, e não a tag"*), so 3.1 waits on a
+  lint release and on the deploy role's DataZone reads for the export; the CLI 1.0.9 refuses every
+  command while any `${VAR}` of the manifest is unset, so the `staging` and `prod` stages, and
+  `app-etl-warehouse`'s entry, are written at 4.9 with their projects' values. The lint's rule on
+  `{env.NOME}` wants each name declared in every stage, which the two literals satisfy. The local
+  `awsds-workflows` (`~/.local/bin`) predates `lint`; the clone at `~/src/awsds-workflows` is at
+  `ff25eae`, behind the pin.
