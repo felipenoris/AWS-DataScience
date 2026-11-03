@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| **Scope** | The house image as SageMaker AI sees it: the `[P]` slice that registers it in a member account (`sandbox/dev-env/`), the attachment that makes it appear in the portal's image list, the version a release adds and the retirement of old ones, moving a space to another version, and the detach. The build and the push are [`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)'s; the naming rule is [`docs/SMUS.md`](../../SMUS.md)'s. This file is what runs **per account and per release**, forever |
-| **Operator** | The **infrastructure user** — account **Sandbox** (or the member account being configured), permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`. §C's registry read also touches Production through `awsds-infra-prod`, and one SSO login covers both. Every write is authorized per occurrence. §C6 is the one act this repository does not own in code |
+| **Scope** | The house image as SageMaker AI sees it: the `[P]` slice that registers it in a member account (`sandbox/dev-env/`), the attachment that makes it appear in the portal's image list, the version a release adds and the retirement of old ones, the hand cleanup of versions and their ECR images, moving a space to another version, and the detach. The build and the push are [`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)'s; the naming rule is [`docs/SMUS.md`](../../SMUS.md)'s. This file is what runs **per account and per release**, forever |
+| **Operator** | The **infrastructure user** — account **Sandbox** (or the member account being configured), permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`. §C's registry read and §B's hand cleanup also touch Production through `awsds-infra-prod`, and one SSO login covers both. Every write is authorized per occurrence. §C6 is the one act this repository does not own in code |
 | **The rules** | **The domain is the blueprint's object, not Terraform's.** `Tooling` provisions the SageMaker AI domain per project, so the attachment (§C6) is a hand step against a live object and never an `import` (Lesson 17). **A registered version is frozen to a digest**: SageMaker resolves the tag once, at `CreateImageVersion`, and a rebuilt tag would not move it — the repositories are tag-immutable anyway. **Half a proxy environment is worse than none** (§E) |
 | **The picture around it** | Why there is a house image at all: [D17](../decisions/D17-interactive-vs-runtime.md) and `gitlab/awsds/dev-env/README.md`. What a space reaches once it starts: [`docs/NETWORK.md`](../../NETWORK.md) and [`sg-proxy.md`](sg-proxy.md). What the portal does with the image: [`docs/SMUS.md`](../../SMUS.md), *Custom images (BYOI)* |
-| **Written** | 2026-09-10 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 2, and rewritten 2026-10-15 for [Stage 8](../stages/stage-08-cicd-pipelines.md) decisions 7 and 18: a release adds a version, the domain attaches the image with no version number, and a retirement deletes old versions. Every behaviour §B rests on was measured that day on a probe image (the Stage 8 log). Exercised in its earlier form, a version replaced and the domain detached and re-attached around it: §C in full on `default-v0.1.1`, the replace on `default-v0.2.0` to `v0.5.0` and on `default-v0.7.1`, the first release by the pipeline, §X step 1, §V. §B's register and retire jobs ran on `default-v0.7.3` (2026-10-15), version 8 offered by the version-less attach with no domain write. Unexercised, and each says so in place: the console route of §C6, §X steps 2-3, and the reconciliation reading §C7 ends on (step 2.4). The vendor pages are the 2026-09-10, 2026-09-11 and 2026-10-14 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
+| **Written** | 2026-09-10 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 2, and rewritten 2026-10-15 for [Stage 8](../stages/stage-08-cicd-pipelines.md) decisions 7 and 18: a release adds a version, the domain attaches the image with no version number, and a retirement deletes old versions. Every behaviour §B rests on was measured that day on a probe image (the Stage 8 log). Exercised in its earlier form, a version replaced and the domain detached and re-attached around it: §C in full on `default-v0.1.1`, the replace on `default-v0.2.0` to `v0.5.0` and on `default-v0.7.1`, the first release by the pipeline, §X step 1, §V. §B's register and retire jobs ran on `default-v0.7.3` (2026-10-15), version 8 offered by the version-less attach with no domain write. §B's hand cleanup ran on 2026-11-03: versions 7-10 retired and 22 images deleted. Unexercised, and each says so in place: the console route of §C6, §X steps 2-3, and the reconciliation reading §C7 ends on (step 2.4). The vendor pages are the 2026-09-10, 2026-09-11 and 2026-10-14 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
 
 ---
 
@@ -18,7 +18,7 @@ first three are this repository's.
 | Object | What it is | Owner |
 |---|---|---|
 | **Image** | the named thing a domain attaches. Account-scoped, versionless, carries a `RoleArn` | `sandbox/dev-env/`, Terraform |
-| **Image version** | one immutable pointer at one container image. Numbered by the service, 1 upwards | the **release pipeline**: `awsds/dev-env`'s `register` job creates it, its `retire` job deletes it (§B; Stage 8 decision 18) |
+| **Image version** | one immutable pointer at one container image. Numbered by the service, 1 upwards | the **release pipeline**: `awsds/dev-env`'s `register` job creates it, its `retire` job deletes it (§B; Stage 8 decision 18). A shorter history is §B's hand cleanup |
 | **App image configuration** | how a space starts that container: entrypoint, arguments, environment. One per app type | `sandbox/dev-env/`, Terraform |
 | **`CustomImages` on the domain** | the list a space's image picker is built from | the **`Tooling` blueprint**, and §C6 by hand |
 
@@ -410,6 +410,93 @@ What it would delete, read without deleting anything:
 python3 gitlab/awsds/dev-env/release/versions.py retire --dry-run --target awsds-infra-sandbox-1
 ```
 
+### A hand cleanup of the versions and their ECR images
+
+The pipeline bounds the history without emptying it. `retire` keeps 10 versions, and each repository's
+lifecycle policy (`terraform-modules/ecr-repo/`) expires untagged images after 14 days and tagged ones past
+the newest 30. Each release adds a `dev-env` and a `base` image to Production's registry. A shorter history
+is cut by hand by the infrastructure user: `awsds-infra-sandbox-1` deletes the versions and
+`awsds-infra-prod` deletes the images. The stewards' `DevEnvStewardAccess` is denied both deletes
+(`DenyShippingTheArtifactItApproves`). The first cut ran on 2026-11-03 (the Stage 8 log): versions 7-10
+were retired and 22 images deleted. `dev-env` went from 44.7 GB of unique layers to 9.9 GB, and `base`
+from 7.8 GB to 3.8 GB.
+
+A deletion is final: a version or a pin names a digest, and a rebuild from the same git tag gives a new
+one.
+
+**1. Read what names an image besides a version.** `retire` reads spaces and domains. Every image kept is
+the newest one or one these readers name:
+
+| Reader | What it pins | How to read it |
+|---|---|---|
+| A space, or a domain entry with a number | a version | the dry run below lists it, and `retire` keeps its version |
+| The `SageMakerAIDomain` profile | `var.sandbox_dev_env_version` (`data-governance/governance/`), the version a new project's domain is created with | the variable's value. `retire` does not read it, and with no blueprint domain alive nothing keeps that version |
+| A workflow in Sandbox | a `dev-env` digest in a processing task's `ImageUri` | the first command below |
+| An application's Dockerfile | a `base` digest in its `FROM` | the second command below, for `examples/app-etl/`. Every application project on GitLab carries its own Dockerfile |
+
+The readings of 2026-11-03:
+- The 6i workflows `demo-devenv-job` and `demo-devenv-deps` run `dev-env` `default-v0.5.0`
+  (`sha256:8ec04e35…`).
+- `examples/app-etl/Dockerfile` is `FROM` `base` `default-v0.6.0` (`sha256:94359041…`).
+
+Both images were kept. A `base` image is also read when its own release reruns with `SKIP_BASE=1`, which
+only the newest release does.
+
+```bash
+for A in $(aws mwaa-serverless list-workflows --profile awsds-infra-sandbox-1 --query 'Workflows[].WorkflowArn' --output text); do printf '%-50s ' "${A##*/}"; aws mwaa-serverless get-workflow --workflow-arn "$A" --profile awsds-infra-sandbox-1 --query WorkflowDefinition --output text | grep -o -E 'awsds-prod-ecr-[a-z-]+@sha256:[0-9a-f]{12}' | sort -u | tr '\n' ' '; echo; done
+```
+
+```bash
+git grep -n -E 'awsds-prod-ecr-(base|dev-env)@sha256:[0-9a-f]{64}' -- ':!docs'
+```
+
+**2. Measure what a cut frees.** Images in one repository share layers, so the sizes `describe-images`
+reports overstate what the repository stores. On 2026-11-03, `dev-env` read 86.6 GB summed against 44.7
+GB of unique layers. The first command writes each image's layers from its manifest. The second sums the
+repository, and the third sums the tags that stay. Run the pair per repository, and regenerate the file
+each time:
+
+```bash
+R=awsds-prod-ecr-dev-env; for T in $(aws ecr describe-images --repository-name $R --profile awsds-infra-prod --query 'imageDetails[].imageTags[0]' --output text); do aws ecr batch-get-image --repository-name $R --image-ids imageTag=$T --profile awsds-infra-prod --accepted-media-types application/vnd.oci.image.manifest.v1+json --query 'images[0].imageManifest' --output text | jq -r --arg t "$T" '(.layers + [.config])[] | "\($t) \(.digest) \(.size)"'; done > "$HOME/tmp/layers.txt"
+```
+
+```bash
+awk '!seen[$2]++ {s += $3} END {printf "stored: %.1f GB\n", s / 1e9}' "$HOME/tmp/layers.txt" && awk -v keep="<tag> <tag>" 'BEGIN {n = split(keep, k, " "); for (i = 1; i <= n; i++) K[k[i]] = 1} K[$1] && !seen[$2]++ {s += $3} END {printf "kept: %.1f GB\n", s / 1e9}' "$HOME/tmp/layers.txt"
+```
+
+Whether ECR bills a shared layer once is not measured here. The next bill's `TimedStorage-ByteHrs` line
+for ECR answers it.
+
+**3. Retire the versions first**: the dry run, then the same command without `--dry-run`. `--keep`
+counts from the newest and is at least 1. A version that step 1's profile pin names must fall inside the
+kept range, or the cut waits until the pin moves. The versions go before their images: a version whose
+digest is gone stays in the picker, and what a space created on it does is not measured.
+
+```bash
+python3 gitlab/awsds/dev-env/release/versions.py retire --keep <n> --dry-run --target awsds-infra-sandbox-1
+```
+
+**4. Delete the images, each named by tag and digest.** Print the candidates in the form the call takes,
+remove the lines to keep, and write the rest into the call:
+
+```bash
+aws ecr describe-images --repository-name <repository> --profile awsds-infra-prod --query 'sort_by(imageDetails,&imagePushedAt)[].[imageTags[0],imageDigest]' --output text | awk '{print "imageTag=" $1 ",imageDigest=" $2}'
+```
+
+```bash
+aws ecr batch-delete-image --repository-name <repository> --profile awsds-infra-prod --output json --image-ids imageTag=<tag>,imageDigest=<sha256:digest> imageTag=<tag>,imageDigest=<sha256:digest> | jq -c '{deleted: [.imageIds[].imageTag], failures}'
+```
+
+The written list is what the user authorizes, so it is never a set computed from a keep list. Claude
+Code's auto-mode classifier refused that form on 2026-11-03 (*Unverifiable Deletion Scope*). `failures`
+must come back empty; it did for both repositories that day.
+
+**5. Read it back**: `list-image-versions` (§B, *The release, and the reading that ends it*, step 4), `describe-images` on both
+repositories, and `./aws/devenv.py`, whose `DE-5` reads the newest version's digest from the registry.
+`DE-2` fails while `sandbox/egress` is down (`AWS_STATE.md`). The entry goes to the Stage 8 log, whose
+plan holds the retirement. The tag table in `gitlab/awsds/dev-env/README.md` is GitLab's history and stays
+as it is.
+
 ### Moving a space to another version
 
 A space keeps the version it was created on, so a release reaches an existing space only when the space
@@ -472,8 +559,9 @@ Step 1 ran on 2026-09-11 and on 2026-10-15, as the detach half of the replace §
 2. `terraform apply -destroy` on the slice, or delete the resources from the code and apply. The
    versions are not in the slice's state, and `DeleteImage` deletes every version of the image with it,
    as the probe image's deletion did on 2026-10-15.
-3. The ECR image is not this slice's to remove: the repository's lifecycle policy expires it, and
-   `gitlab/awsds/dev-env/README.md` owns that rule.
+3. The ECR image is not this slice's to remove. The repository's lifecycle policy
+   (`terraform-modules/ecr-repo/`) expires it past the newest 30 tags, and a cut by hand is §B, *A hand
+   cleanup of the versions and their ECR images*.
 
 ## V. Reading it back, and what each instrument proves
 
@@ -488,6 +576,7 @@ Step 1 ran on 2026-09-11 and on 2026-10-15, as the detach half of the replace §
 | Is the baked `NO_PROXY` still the account's? | `./aws/devenv.py`, `DE-1`..`DE-3`, `DE-6` | the **recipe** against the account's `no_proxy_all_groups`, name by name and both ways; `DE-6` that the last apply's endpoints answer for no name that list lacks. An image built from an older checkout passes these |
 | Does the image the registry holds carry it? | `./aws/devenv.py`, `DE-5` | the **bytes**: the latest version's digest, its manifest, its config blob hash-checked, and the six variables in its `Env`. Verified both ways 2026-09-12 — `v0.4.0` bakes all six, `v0.1.0` none |
 | Which image is a space **running**? | `describe-app … --query ResourceSpec`, or `cat /opt/awsds-proxy.txt` inside it | the only reading that separates this image from AWS's distribution in the same picker, and `describe-app` still answers after the app is deleted (§C7) |
+| What does each repository store, and what would a cut free? | §B, *A hand cleanup*, step 2 | the unique layers, read from each image's manifest; the sizes `describe-images` reports count a shared layer once per image |
 | Does every space still name a version that exists? | the `describe-space` loop in §B, *Moving a space*, or `release/versions.py retire --dry-run` | a space's own copy of the version number, which overrides the domain default; a space naming a deleted version does not start (`EXC-09`), and `retire` keeps every version a space names |
 
 ## F. Failures, and what each one is
