@@ -1,5 +1,6 @@
-"""The worker's task, offline: the report over fabricated summaries, and the listing over a double
-of boto3, since the project installs no boto3 (the worker carries it)."""
+"""The worker's tasks, offline: the report over fabricated summaries, the listing over a double of
+DataZone, and the evaluation over doubles of SageMaker and S3, since the project installs no boto3
+(the worker carries it)."""
 
 from __future__ import annotations
 

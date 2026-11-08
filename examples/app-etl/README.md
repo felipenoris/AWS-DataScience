@@ -14,14 +14,14 @@ Production, hand by hand, is `docs/plan/runbooks/sagemaker-application.md` in th
 | Path | What it is |
 |---|---|
 | `src/app_etl/` | the code of the processing job: `pipeline.py` the transformation, `__main__.py` the command; the job reads it as its input, never from the image (D28 class 2d) |
-| `code/app_etl_tasks.py` | the worker's tasks: `summarize`, the run's report from the job's summaries, and `evaluate`, a training job's metrics written beside its model; the pipeline zips the file once per workflow, `code/app-etl.zip` and `code/app-etl-train.zip`, each workflow's `code` (class 2b) |
+| `code/app_etl_tasks.py` | the worker's tasks: `summarize`, the run's report from the job's summaries; `publish`, the product listed in the SageMaker Catalog; and `evaluate`, a training job's metrics written beside its model; the pipeline zips the file once per workflow, `code/app-etl.zip` and `code/app-etl-train.zip`, each workflow's `code` (class 2b) |
 | `glue/transform.py` | the Glue job's script, the Spark transform over the trades: the CSV the processing job reads, the application's table and the training sets (class 2c) |
 | `glue/load_warehouse.py` | Production's warehouse load: the application's table into `trades.trades_notional` of the database `governed`, over JDBC as the job role (class 2c) |
 | `warehouse/trades.sql` | the warehouse table's DDL, run by the pipeline's manual job `production-warehouse-ddl` through the Data API as the deploy role, its owner (Stage 9 decision 6) |
 | `workflows/` | the three workflow definitions, in the CI/CD CLI's notation |
 | `manifest.yaml` | the application: its content, the folders the CLI copies, and its stages `dev` and `test` |
 | `scripts/dev-cli.sh` | the CI/CD CLI for the `dev` stage in a space: the house image's CLI by its path, its domain lookup answered by `DOMAIN_ID`; no storage item names `scripts/`, so the bundle never carries it |
-| `tests/` | pytest, offline, against `samples/`; the Glue script, the worker's task and `scripts/dev-cli.sh` run over doubles |
+| `tests/` | pytest, offline, against `samples/`; the Glue script, the worker's tasks and `scripts/dev-cli.sh` run over doubles |
 | `samples/` | synthetic trades: the input of the image's smoke test, of a Sandbox job and of the workflow's `inbox/` |
 | `Dockerfile` | the application image, which is also the job image: `FROM` base by digest, the lock's dependencies in a virtual environment of their own on base's CPython 3.12, no code; target `app` is the image, `smoke` runs the job's command on it with `src/` mounted as the job's input |
 | `.gitlab-ci.yml` | the pipeline, with the shared gates from `awsds/ci-gates` |
@@ -42,7 +42,7 @@ Five tasks, in order, every path under the project's shared prefix,
 | `process` | `SageMakerProcessingOperator`: a processing job on the application image, network-isolated, its volume under the project key, `src/` as its input `code`, the command `cd /opt/ml/processing/code && python -m app_etl` | `work/glue/` | `work/job/`: `trades.parquet` and `trades.summary.json`, which carries the governed read's record as `source` |
 | `summarize` | `PythonOperator` on the worker: `app_etl_tasks.summarize`, from `code/app-etl.zip` | `work/job/*.summary.json` | its XCom, the run's report as JSON, each table's `source` with it |
 | `write_result` | `S3CreateObjectOperator`: the XCom of `summarize`, pulled in its template | | `outbox/report.json` |
-| `publish` | `PythonOperator` on the worker: `app_etl_tasks.publish`, as the project role through the `datazone` endpoint, where the stage variable `PUBLISH_LISTING` is `true` | the project's data source over `{env.PRODUCT_DATABASE}`, run and followed to `SUCCESS`; the inventory asset of `trades_notional` | the asset's latest revision as a listing, read `ACTIVE`; its XCom, the identifiers as JSON |
+| `publish` | `PythonOperator` on the worker: `app_etl_tasks.publish`, as the project role through the `datazone` endpoint, in the domain and project the deploy substitutes (`{domain.id}`, `{proj.id}`), where the stage variable `PUBLISH_LISTING` is `true` | the project's data source over `{env.PRODUCT_DATABASE}`, run and followed to `SUCCESS`; the inventory asset of `trades_notional` | the asset's latest revision as a listing, read `ACTIVE`; its XCom, the identifiers as JSON |
 
 Every run overwrites the same keys: the Glue job keeps one file under `work/glue/` (Spark names the
 file it writes, so the script copies it to `trades.csv` and deletes the rest), the processing job names
@@ -68,8 +68,10 @@ database, `glue_catalog.<database>.trades_notional` on the Spark catalog the job
 over the account's Glue Data Catalog (`--datalake-formats iceberg`), read back and counted. The table is
 the job's own `CreateTable` under the database's conditioned `CREATE_TABLE`, and a second run replaces
 its data and keeps the table, so the listing `publish` makes and the grants a subscription writes
-survive the runs. The database is created in each project before the first deploy, the same name in
-every project, never by the application.
+survive the runs. The source's run needs `datazone:StartDataSourceRun`, which the blueprint's policies
+do not grant the project role and the house grant `terraform-live/sandbox/workflows/` does (Stage 19
+1.1). The database is created in each project before the first deploy, the same name in every project,
+never by the application.
 
 `app-etl-train` runs two tasks after `app-etl`: `train`, a SageMaker training job on AWS's XGBoost 3.0-5
 by digest (`{env.TRAINING_IMAGE_URI}`), `ml.m5.large`, network-isolated in the job subnets, its volume
@@ -84,7 +86,7 @@ with the warehouse's names as its arguments. The manifest does not list it, so `
 it in a project, while `bundle` carries its file and the release renders it.
 
 The project's values are the CLI's variables (`{proj.id}`, `{proj.iam_role_arn}`,
-`{proj.connection.default.s3_shared.s3Uri}`, `{domain.region}`). What no project holds is a stage
+`{proj.connection.default.s3_shared.s3Uri}`, `{domain.id}`, `{domain.region}`). What no project holds is a stage
 variable, `{env.VAR}` in the workflow and `${VAR}` in the manifest, read from the shell:
 `JOB_IMAGE_URI`, the image by digest; `SUBNET_AZ1` and `SUBNET_AZ2`, the domain's subnets, which name
 the Glue connections and the job's network; `PROJECT_SG`, the project's own security group,
@@ -127,11 +129,16 @@ awsds-workflows lint . --image-repository awsds-prod-ecr-app-etl --instance-type
 
 The deploy to the `dev` project runs the CI/CD CLI (`aws-smus-cicd-cli` 1.0.9) from a space on the house
 image, as the project's role, with the shell variables the manifest reads, `JOB_IMAGE_URI` being the image
-the last release's notes name. The worker's package comes first, since `bundle` and `deploy` copy and
-never build; then the deploy, which copies the folders and creates the workflow, and a run:
+the last release's notes name. The workers' packages come first, one per workflow with a `code` field,
+since `bundle` and `deploy` copy and never build; then the deploy, which copies the folders and creates
+both workflows, and a run:
 
 ```bash
 python3 -m zipfile -c code/app-etl.zip code/app_etl_tasks.py
+```
+
+```bash
+python3 -m zipfile -c code/app-etl-train.zip code/app_etl_tasks.py
 ```
 
 ```bash

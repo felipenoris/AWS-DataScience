@@ -1,6 +1,7 @@
 """The Glue script, run over doubles of awsglue, pyspark and boto3: what it reads, the column it
 adds, the one file it writes and the files it deletes; with its options, the governed read at its
-snapshot and the record of it, the application's table read back and the training sets."""
+snapshot and the record of it, the application's table and the product table read back, and the
+training sets."""
 
 from __future__ import annotations
 

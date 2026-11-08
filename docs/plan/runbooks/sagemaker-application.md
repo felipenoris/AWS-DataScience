@@ -664,7 +664,12 @@ account read, so each prints versions, counts, names and paths, never a value of
   role and the key policy carry.
 - The task runs as the execution role, the project role in a project and `awsds-<env>-wf-<key>` in a
   target, which reaches the prefixes the orchestration slice's `reads`, `writes` and `deletes` name and
-  nothing else: a task that lists, reads or writes a new prefix needs its entry there (§S).
+  nothing else: a task that lists, reads or writes a new prefix needs its entry there (§S). The
+  template's `publish` calls DataZone as the project role through the `datazone` endpoint: `Get*`,
+  `List*`, `Search*` and `CreateListingChangeSet` are the blueprint's
+  `SageMakerStudioProjectRoleMachineLearningPolicy`'s, `StartDataSourceRun` the house grant
+  `sandbox/workflows/` attaches (Stage 19 1.1), and a target's deployment project role carries the same
+  statement (Stage 19 4.4).
 
 ---
 
@@ -1145,8 +1150,10 @@ Staging reads nothing of Production's outputs (`TM-25`).
 
 The authoritative product never lives in Production: the table is in the lake's catalog and the
 lake's bucket. Production's local outputs, the model artifacts among them, stay in Production. The
-template writes no governed table: its Glue job writes the application's own table in `app_outputs`,
-and a publish task is an application's own (Stage 9 2.4, Stage 10 6.1).
+template writes no governed table: its Glue job writes the application's own table in `app_outputs`
+(Stage 9 2.4, Stage 10 6.1). Stage 19 decision 6 (b) adds a second road for an application's own
+product: the template's `publish` task lists it in the project's catalog where `PUBLISH_LISTING` is
+`true`, and Production's deployment project publishes it in Production (Stage 19 pass 4).
 
 **The warehouse.** A product that must also be queried in Redshift is loaded by a Production-only Glue
 job into a schema of the database `governed` on `awsds-prod-warehouse` (§G); the schema and its 1 TB
@@ -1168,7 +1175,7 @@ for each kind of task in each stage; where one term is missing, the reach is abs
 |---|---|---|
 | a Glue task | the project role on the project's two Glue network connections, under the project key; reads and writes the project's `shared/<app>/`; the lake's tables a subscription fulfilled for the project, through their resource links in the project's `DataLake` database (`curated.trades` in `eighth-experimentation` since 6f 11.9, 2026-10-26) | the job role on `glue_connection_name` of `<env>/sagemaker/`, in the job security group `awsds-<env>-jobs`; reads the lake through Lake Formation's vended credentials (the share's `SELECT`), writes the outputs bucket and `app_outputs`; in Production, writes `curated`'s declared tables and connects to the warehouse over JDBC through the `redshift-serverless` endpoint |
 | a processing or training job | the project role, the project's subnets and group, network isolation; the image pulled by SageMaker's side from Production's registry by digest; inputs and outputs staged by the platform from the project prefix | the job role, the job subnets and group, network isolation, the data key; inputs and outputs staged from the outputs bucket; no lake bucket, ever (D13) |
-| a Python or Bash task on the worker | the project role in the project's network: AWS through the VPC endpoints, S3 through the gateway endpoint, no internet, no proxy | `awsds-<env>-wf-<key>` on `awsds-<env>-wf-workers` in the private subnets: the interface endpoints of `workloads-egress/` (`egress/` in Staging), the S3 gateway, the declared prefixes of the outputs bucket, the data key for its XCom; no internet, no proxy |
+| a Python or Bash task on the worker | the project role in the project's network: AWS through the VPC endpoints (DataZone among them, the template's `publish`), S3 through the gateway endpoint, no internet, no proxy | `awsds-<env>-wf-<key>` on `awsds-<env>-wf-workers` in the private subnets: the interface endpoints of `workloads-egress/` (`egress/` in Staging), the S3 gateway, the declared prefixes of the outputs bucket, the data key for its XCom; no internet, no proxy |
 | Athena | a person in the project's query editor, as the project role on the project's enforced workgroup: the project's tables; the lake's tables the project subscribed to, through their resource links (6f 11.10, 2026-10-26) | the persona through `awsds-prod-athena` on `app_outputs` and the lake's `public` and `internal` tables, from any network; Staging's persona set holds no Athena action; no task in the template calls Athena, and the execution role holds no grant for it |
 | Redshift | the sandbox warehouse through the project's connection, the Data page as the access role and a notebook through it (`redshift-connection.md` §J); the governed warehouse through the datashare alone, since Sandbox does not peer with `VPC-Workloads` | Production's job role over JDBC as `IAMR:awsds-prod-job-exec`; the deploy role through the Data API for the DDL; the persona refused a session (`DenyMintingARedshiftDatabaseSession`) |
 | S3 | the project prefix; the sandbox lake through the project's S3 connection; the drop-box's `PutObject` as the persona from a laptop, never read back | the outputs and derived buckets; the lake's buckets only through Lake Formation's credentials in a Glue job; the release store read by the runner's own role |

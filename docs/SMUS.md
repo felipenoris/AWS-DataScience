@@ -721,6 +721,12 @@ objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/cat
   runs alone in an account with no VPC. `Tooling`'s `LakeFormationResourceToRegisterProjectsS3Location`
   carries no `DeletionPolicy`, so deleting a project calls `lakeformation:DeregisterResource`, which
   `Data Governance`'s OU denies to every principal.
+- **A project role may read, search and publish in the catalog, and not start a data source run** (read
+  2026-11-08, Stage 19 1.1): `SageMakerStudioProjectRoleMachineLearningPolicy` v47 grants
+  `datazone:Get*`, `List*`, `Search*`, `CreateAsset*`, `CreateListingChangeSet`,
+  `CreateSubscriptionRequest` and `RevokeSubscription` on `*` and no `StartDataSourceRun`;
+  `SageMakerStudioProjectUserRolePolicy` v76 names a list of reads on the domain; the house grant
+  `sandbox/workflows/` adds the one action on the domain for an application's publishing task.
 - **A subscription's fulfilment writes per-resource catalog policies, not the account's** (read
   2026-10-26, 6f 11.9). The publishing role's four `glue:PutResourcePolicy` calls carry a `resourceArn`
   (`catalog`, `database/*`, `table/*/*`) and `enableHybrid` `TRUE`; `glue get-resource-policies` lists

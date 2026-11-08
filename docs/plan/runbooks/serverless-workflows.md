@@ -62,7 +62,9 @@ included, and bills 0.088 USD per task-hour with a one-minute minimum. Measured 
 - `python3` is `/opt/mwaa-serverless-venv/bin/python3`, 3.12.14, with pip 23.2.1 and boto3 1.43.1, and the
   tasks run as `mwaa-serverless-user`;
 - the environment carries `AWS_REGION`, the seven variables the portal injects (`DataZoneDomainId`,
-  `DataZoneProjectId`, `ProjectS3Path` among them) and no proxy variable;
+  `DataZoneProjectId`, `ProjectS3Path` among them) and no proxy variable; the reading is a
+  portal-created workflow's, and whether a workflow the CI/CD CLI creates carries them is unmeasured
+  (the CLI's code passes no `EnvironmentVariables`; Stage 19 1.1 reads its identifiers from the deploy);
 - a name the Sandbox DNS Firewall does not list fails at resolution, as `[Errno 16] Device or resource
   busy` rather than a name error; `/awsds/sandbox/dns-firewall` shows the `BLOCK`.
 
