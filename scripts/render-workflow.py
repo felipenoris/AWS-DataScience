@@ -19,7 +19,11 @@
 # operator creates its job, the job being the application slice's (D41 item 9); a SageMaker task loses
 # its project tag (D41 item 2). A Glue job `<app>-<suffix>-{proj.id}` becomes `awsds-<env>-<app>-<suffix>`
 # as `<app>-{proj.id}` becomes `awsds-<env>-<app>`. The training image is sagemaker/'s output, read only
-# when a workflow names it. The YAML's leading comment lines, the portal's layout, are kept.
+# when a workflow names it. The YAML's leading comment lines, the portal's layout, are kept. The product
+# table of Stage 19 (decision 2) is written in a project's database, which a target has none of until
+# Stage 19 4.11 moves the deploy to the CLI and retires this render: until then `{env.PRODUCT_DATABASE}`
+# renders to the account's `app_outputs`, `{env.PUBLISH_LISTING}` to `false`, and the Glue task loses the
+# `--TABLE_DATABASE` and `--TABLE_NAME` arguments, so a target writes no product table and lists nothing.
 
 from __future__ import annotations
 
@@ -57,6 +61,7 @@ GLUE_JOB_KEYS = (
     "create_job_kwargs",
 )
 PROJECT_TAG = "AmazonDataZoneProject"
+PRODUCT_TABLE_ARGS = ("--TABLE_DATABASE", "--TABLE_NAME")
 
 LEFT_OVER = re.compile(r"\{(?:proj|env|domain)\.[A-Za-z0-9_.]+\}")
 
@@ -110,6 +115,8 @@ def render_string(text: str, app: str, values: dict) -> str:
         ("{env.SUBNET_AZ2}", values["subnets"][1]),
         ("{env.PROJECT_SG}", values["security_group"]),
         ("{env.PROJECT_KEY_ARN}", values["data_key_arn"]),
+        ("{env.PRODUCT_DATABASE}", values.get("product_database", "app_outputs")),
+        ("{env.PUBLISH_LISTING}", values.get("publish_listing", "false")),
         ("{domain.region}", values["region"]),
     ):
         if value is not None:
@@ -131,12 +138,17 @@ def render_value(node, app: str, values: dict):
 
 
 def drop_project_keys(doc: dict) -> None:
-    """The Glue task's job-creation keys and a SageMaker task's project tag, removed in place."""
+    """The Glue task's job-creation keys and product-table arguments, and a SageMaker task's project
+    tag, removed in place."""
     for workflow in doc.values():
         for task in (workflow.get("tasks") or {}).values():
             if task.get("operator") == GLUE_OPERATOR:
                 for key in GLUE_JOB_KEYS:
                     task.pop(key, None)
+                script_args = task.get("script_args")
+                if isinstance(script_args, dict):
+                    for key in PRODUCT_TABLE_ARGS:
+                        script_args.pop(key, None)
             config = task.get("config")
             if isinstance(config, dict) and isinstance(config.get("Tags"), list):
                 config["Tags"] = [t for t in config["Tags"] if t.get("Key") != PROJECT_TAG]
@@ -203,6 +215,8 @@ def check() -> int:
                 problems.append(f"{uri} is outside the account's outputs bucket")
         if PROJECT_TAG in flat:
             problems.append(f"the {PROJECT_TAG} tag survives")
+        if any(arg in flat for arg in PRODUCT_TABLE_ARGS):
+            problems.append("the product table's arguments survive")
         for problem in problems:
             print(f"  FAIL  {rel}: {problem}")
         if problems:

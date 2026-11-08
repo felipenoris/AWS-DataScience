@@ -4,7 +4,8 @@ Every CSV in a directory becomes a Parquet table and a JSON summary. The first a
 Data Science environment, and the template its other applications start from: the GitLab project
 `awsds/app-etl` received this tree from the infrastructure repository's `examples/app-etl/`
 (Stage 8 step 2.2) and holds it since. Since step 2.5 it is a SageMaker application (D41): a manifest
-the CI/CD CLI deploys to a project, and its workflows: `app-etl`, four tasks over the trades;
+the CI/CD CLI deploys to a project, and its workflows: `app-etl`, five tasks over the trades, the last
+listing the product in the SageMaker Catalog (Stage 19);
 `app-etl-train`, an XGBoost model trained on what `app-etl` prepared (Stage 10 step 5.1); and
 `app-etl-warehouse`, Production's load of the application's table into the governed warehouse (Stage 9
 step 9.4), which no project receives. The cycle an application on this template follows, from a space to
@@ -32,7 +33,7 @@ pipeline; Sandbox's retired with decision 21, the `dev` and `test` projects bein
 
 ## The workflow
 
-Four tasks, in order, every path under the project's shared prefix,
+Five tasks, in order, every path under the project's shared prefix,
 `{proj.connection.default.s3_shared.s3Uri}app-etl/`:
 
 | Task | Operator | Reads | Writes |
@@ -41,6 +42,7 @@ Four tasks, in order, every path under the project's shared prefix,
 | `process` | `SageMakerProcessingOperator`: a processing job on the application image, network-isolated, its volume under the project key, `src/` as its input `code`, the command `cd /opt/ml/processing/code && python -m app_etl` | `work/glue/` | `work/job/`: `trades.parquet` and `trades.summary.json`, which carries the governed read's record as `source` |
 | `summarize` | `PythonOperator` on the worker: `app_etl_tasks.summarize`, from `code/app-etl.zip` | `work/job/*.summary.json` | its XCom, the run's report as JSON, each table's `source` with it |
 | `write_result` | `S3CreateObjectOperator`: the XCom of `summarize`, pulled in its template | | `outbox/report.json` |
+| `publish` | `PythonOperator` on the worker: `app_etl_tasks.publish`, as the project role through the `datazone` endpoint, where the stage variable `PUBLISH_LISTING` is `true` | the project's data source over `{env.PRODUCT_DATABASE}`, run and followed to `SUCCESS`; the inventory asset of `trades_notional` | the asset's latest revision as a listing, read `ACTIVE`; its XCom, the identifiers as JSON |
 
 Every run overwrites the same keys: the Glue job keeps one file under `work/glue/` (Spark names the
 file it writes, so the script copies it to `trades.csv` and deletes the rest), the processing job names
@@ -59,6 +61,15 @@ summary and the report carry it as `source`, so a run's result names the snapsho
 columns and compare the query it builds, so a change to `GOVERNED_COLUMNS` changes `SCHEMA` and the
 expected queries in `tests/test_glue_script.py` with it. The table is what Staging's integration test
 reads (Stage 9 step 8.5).
+
+The product (Stage 19 decision 2): with `--TABLE_DATABASE`, the stage variable `PRODUCT_DATABASE`, and
+`--TABLE_NAME trades_notional`, the Glue job also writes the result as an Iceberg table of the project's
+database, `glue_catalog.<database>.trades_notional` on the Spark catalog the job's `--conf` declares
+over the account's Glue Data Catalog (`--datalake-formats iceberg`), read back and counted. The table is
+the job's own `CreateTable` under the database's conditioned `CREATE_TABLE`, and a second run replaces
+its data and keeps the table, so the listing `publish` makes and the grants a subscription writes
+survive the runs. The database is created in each project before the first deploy, the same name in
+every project, never by the application.
 
 `app-etl-train` runs two tasks after `app-etl`: `train`, a SageMaker training job on AWS's XGBoost 3.0-5
 by digest (`{env.TRAINING_IMAGE_URI}`), `ml.m5.large`, network-isolated in the job subnets, its volume
@@ -81,8 +92,11 @@ the Glue connections and the job's network; `PROJECT_SG`, the project's own secu
 key (`kmsKeyArn` in its Tooling environment, whose id `awsds-workflows values` prints as
 `PROJECT_KEY_ID`), `DEV_PROJECT_KEY_ARN` or `TEST_PROJECT_KEY_ARN` in the shell, the processing job's
 `VolumeKmsKeyId`, which Sandbox's D13 boundary requires of every job
-(`DenySageMakerJobsWithoutVolumeEncryption`). The CLI fills them on a run it starts, as the run's
-`OverrideParameters`; a run started in the portal has no value for them.
+(`DenySageMakerJobsWithoutVolumeEncryption`); `PRODUCT_DATABASE`, the product's database, and
+`PUBLISH_LISTING`, whether the run lists its product, both literals the same in every stage that
+lists it (`app_etl`, `true`). The CLI fills them on a run it starts, as the run's
+`OverrideParameters`; a run started in the portal has no value for them, so such a run writes no
+product table and lists nothing.
 
 ## Working on it
 
