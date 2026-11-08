@@ -552,7 +552,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   4.2 and decision 9 it rewrites. **Pass 1 prepared 2026-11-08** (PR #283), its sitting not run: `publish`
   takes `{domain.id}` and `{proj.id}` from the deploy, the project role holds `datazone:StartDataSourceRun`
   from `sandbox/workflows/` (applied, `v4`), and the sitting's order, commands and values are the stage
-  file's list before 1.2; the next session starts after #283's merge.
+  file's list before 1.2, its window the hub, `egress/` and a space (`~/tmp/stage19-pass1.tar`).
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes

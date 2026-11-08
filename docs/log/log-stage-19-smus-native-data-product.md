@@ -289,3 +289,48 @@ Account ids are replaced by the account's name in angle brackets.*
   decision 6 (b)) and §N (DataZone among the worker's endpoints), `serverless-workflows.md` §O (the
   variables read on a portal-created workflow, a CLI-created one unmeasured), `docs/SMUS.md` (the project
   role's DataZone grants, v47 and v76, and the house's one), and the two test modules' docstrings.
+
+## 2026-11-08 — pass 1's sitting prepared, its window narrowed
+
+- **[user]**, verbatim: *"prossiga com o estágio 19"*.
+- **[Claude] Before the sitting**: the branch `claude/estagio-19-97b0ac` at `e36d0a3f` (PR #283's merge),
+  equal to `origin/main`; the project folder on `main` at the same commit, clean. The SSO session valid as
+  the infrastructure user (`awsds-infra-prod`, `awsds-infra-sandbox-1`, `awsds-infra-data`, each
+  `InfrastructureAccess`). `awsds-prod-vpn`, `awsds-prod-proxy` and `awsds-prod-gitlab` `stopped`; Sandbox
+  holds no interface endpoint. The peer sessions on the laptop idle. The mirror's archive from `e36d0a3f`
+  holds 25 files; the digest the list's step 4 carries is `production/app/app-etl/release.tf`'s.
+- **[Claude] Decision 10 found missing from 1.1**: the stage file's decision 10 recommends the job's
+  OpenLineage settings on, amended 2026-10-31 to keep them on in the targets, and verification v reads
+  them at 1.2, but 1.1's workflow carried none. Written in the template as commit `6370da60`: the Glue
+  task's `--conf` gains Stage 18 7.1's settings after the Iceberg catalog; the manifest's `dev` and `test`
+  stages gain `ACCOUNT_ID`, the account `spark.glue.accountId` names, read from STS by whoever deploys and
+  exported by `test-deploy`; the README and `sagemaker-application.md` §M, §W and §D follow. The render
+  drops the job-creation keys that carry it, so the targets are unchanged. The tests 61 passed and 1
+  skipped, the pinned lint `d856982c` `ok` on nine files, `make check` OK. The stage's status calls
+  decision 10 "moot or amended" and records no verdict of the user's on it; the chat asks for one.
+- **[user]**, verbatim: *"revise os próximos passos, preparando o necessário, de forma a minimizar o
+  tempo em que o ambiente precisa ficar no ar"*.
+- **[Claude] The window narrowed**, read with nothing up as the infrastructure user:
+  - `sandbox/egress/`'s plan with `GROUPS=mwaa` on `vpc-egress-v0.19.0`: 28 to add, 0 to change, 0 to
+    destroy, 19 interface endpoints among them (`airflow-serverless`, `datazone`, `glue`,
+    `lakeformation` and `sts` included).
+  - `eighth-experimentation`'s `Tooling` environment: the subnets `subnet-016b5a3a62c739894` and
+    `subnet-09d3399d6b0fec93a`, the security group `sg-0fee1c059b82e3562`, the key
+    `a81b1ef3-716f-4105-bb42-14184a6e2174`. Both `Tooling` domains hold 0 spaces.
+  - The `dev` workflow `app_etl_eighth_experimentation_app_etl`'s last run, started 2026-10-26 05:55
+    UTC, `SUCCESS` in 694 s: `process` 459, `transform` 91, `summarize` 5, `write_result` 6.
+  - DataZone refuses `awsds-infra-data` the project's inventory: `search`, `get-asset` and
+    `list-asset-revisions` answer *"User is not permitted to perform operation"*;
+    `awsds-infra-sandbox-1`, a `PROJECT_CONTRIBUTOR`, reads the asset `cm329mc3bqu39s` (`trades`).
+    `get-lineage-node` on that asset's id answers that the node does not exist, and no lineage was
+    ever posted for it.
+  - The readings' script, the stage file's item 8, run whole against the estate: every call answered
+    but the four on the absent database `app_etl` (`EntityNotFoundException`).
+  - The package `~/tmp/stage19-pass1.tar`: the template's 25 files from `6370da60`, identical to `git
+    archive`, and `pass1.sh` (`bash -n` clean, its parsing of the CLI's `run` output tested, its
+    follower read the run of 2026-10-26 to `SUCCESS`); sha256 `d9fff051995e5429…`.
+
+  The order is the stage file's list before 1.2: the portal's database and form type before the
+  window; in it the hub, `egress/` and a space, 1.3 during run 2; the readings after it; GitLab, the
+  tunnel and the PAT out of the window, the mirror's MR at the next GitLab sitting with the password's
+  rotation. The waiting list's row, the stage index's row and `CLAUDE.md`'s bullet follow. No AWS write.
