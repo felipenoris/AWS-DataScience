@@ -281,3 +281,11 @@ Account ids are replaced by the account's name in angle brackets.*
   negative the grant's comment and §G name), `terraform-live/README.md`'s bullet on `sandbox/workflows/`
   (missing `glue:GetJob` since 2026-10-16 and the DataZone statement, and calling the test deploy role
   unapplied), the stage index and the plan's row.
+- **[user]**, verbatim: *"Faça uma revisão adicional na documentação do projeto e docstrings. Suba os
+  ajustes no mesmo PR."* **[Claude]** brought to the task's design: the template's README (`publish`
+  among the worker's tasks, the deploy's identifiers, the grant its source run needs, both zips the dev
+  deploy builds, `{domain.id}` among the CLI's variables), `sagemaker-application.md` §C (the task's
+  DataZone calls and their policies), §B (the second road an application's own product takes since
+  decision 6 (b)) and §N (DataZone among the worker's endpoints), `serverless-workflows.md` §O (the
+  variables read on a portal-created workflow, a CLI-created one unmeasured), `docs/SMUS.md` (the project
+  role's DataZone grants, v47 and v76, and the house's one), and the two test modules' docstrings.
