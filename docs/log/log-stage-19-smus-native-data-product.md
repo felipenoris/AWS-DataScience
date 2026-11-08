@@ -256,3 +256,11 @@ Account ids are replaced by the account's name in angle brackets.*
   the saved plan: `0 added, 1 changed, 0 destroyed`, `awsds-sandbox-workflows` at `v4` with
   `StartADataSourceRunInTheProjectsDomain`, attached to both project roles, the plan after it `No
   changes`; no other session of this project was running.
+- **[user]**, verbatim: *"Vou ter que parar esta sessão por aqui. Atualize sua memória orientando as
+  próximas sessões sobre como prosseguir. Avalie novamente o que pode ser antecipado neste momento sem o
+  ambiente no ar. Faça as correções necessárias no plano e suba no PR aberto."* **[Claude]** the sitting's
+  order written in the stage file before 1.2, with this pass's values (`v0.4.6`'s digest for
+  `JOB_IMAGE_URI`, both project names, the placeholders, both zips, the readings' commands); two rows in
+  the waiting list (the sitting; the password's rotation); `CLAUDE.md`'s bullet. What stays for the
+  sitting: the mirror's push (the tunnel), the portal's database, the deploy and the runs, the readings.
+  The session ends with the hub, GitLab and Sandbox's `egress/` down; the grant is the day's one write.

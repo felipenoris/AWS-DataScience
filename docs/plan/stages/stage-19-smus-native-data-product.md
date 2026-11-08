@@ -367,6 +367,72 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
   project roles attached, the plan after it `No changes`); 4.4's `workflows.tf` carries the same statement
   for each target's project role. The render's table gains `{domain.id}` and `{proj.id}`, `none` for a target.
   The tests: 61 passed.
+- **The sitting of pass 1, in order**, written 2026-11-08 with nothing up for the session that runs it:
+  `gitlab.md` §U and §K and `sagemaker-application.md` §D are the procedures, this list their order and
+  this pass's values. The session starts after PR #283's merge, so its worktree carries the publishing
+  task's identifiers and these records, and the project folder is pulled to the same commit, since every
+  `make` runs there.
+  1. **[user]** `./aws/login.py` if the SSO session is gone (the infrastructure user; Production,
+     `InfrastructureAccess`; one login covers every `awsds-infra-*` profile); `make hub-up`; the tunnel;
+     `make gitlab-up` (the deploy and test runners, for the MR's pipeline; no `BUILD=1`, since no tag is
+     cut in this pass). GitLab answers 1 min 42 s after the start.
+  2. **[Claude] The mirror**, §K steps 1 to 3 from the worktree's commit, on the laptop with the tunnel
+     up: `git clone https://gitlab.awsds.internal/awsds/app-etl.git <new folder>`, `git switch -c
+     stage-19-product`, `git rm -q -r .`, `git archive --format=tar -o <file> HEAD:examples/app-etl`
+     (25 files), `tar -x -f <file> -C <folder>`, `git add -A`, a commit named `Stage 19 1.1: the product
+     as an Iceberg table and its listing`, `git push -u origin stage-19-product`. The laptop's git holds
+     the credential in the keychain and trusts the root (§C step 3); the pushed commit is recorded.
+     **[user]** opens the MR, whose pipeline runs `test`, `secret_detection` and `pip-audit` on the test
+     runner; the merge into `main` follows 1.4, once the run proved the change, and the tag (§T) waits
+     for the next release's sitting, `promotion.md` §N.8.2.
+  3. **[user]** `make up ENV=sandbox ONLY=egress GROUPS=mwaa`: the `mwaa` group for the CLI's calls from
+     the space, `datazone` among the egress's own services (0.7).
+  4. **[user] In the portal**, as the data scientist in `eighth-experimentation`: *Data → Create
+     database*, the name `app_etl` (decision 2); then a JupyterLab space on the house image (version 11)
+     and its terminal, §D steps 1, 3, 5, 6 and 7 with this pass's values. The PAT is §D step 1's
+     (`read_repository`, `write_repository`, the shortest expiry), revoked when the pass ends:
+
+     ```bash
+     git -c credential.helper= -c credential.helper='cache --timeout=3600' clone -b stage-19-product https://gitlab.awsds.internal/awsds/app-etl.git
+     cd app-etl
+     git clone --depth 1 https://github.com/felipenoris/awsds-workflows /tmp/awsds-workflows
+     /opt/conda/bin/python /tmp/awsds-workflows/scripts/space_values.py > /tmp/space_values.json
+     ```
+
+     then §D step 3's `eval` over `/tmp/space_values.json` (`DOMAIN_ID`, `DOMAIN_REGION`, `SUBNET_AZ1`,
+     `SUBNET_AZ2`, `DEV_PROJECT_SG`, `DEV_PROJECT_KEY_ARN`), and the names the manifest reads from the
+     shell and the values do not carry, every one set since the CLI refuses a manifest with one unset:
+
+     ```bash
+     export DEV_PROJECT_NAME=eighth-experimentation TEST_PROJECT_NAME=test-experimentation TEST_PROJECT_SG=unused-by-dev TEST_PROJECT_KEY_ARN=unused-by-dev
+     export JOB_IMAGE_URI="<Production's registry host>/awsds-prod-ecr-app-etl@sha256:ba8d41bf08bebee084b38e7df9b8efa28e6fcccaf9865e0591fdec7d0462f98d" TRAINING_IMAGE_URI=unused-by-app-etl
+     python3 -m zipfile -c code/app-etl.zip code/app_etl_tasks.py
+     python3 -m zipfile -c code/app-etl-train.zip code/app_etl_tasks.py
+     scripts/dev-cli.sh deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
+     scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-etl
+     ```
+
+     `JOB_IMAGE_URI` is `v0.4.6`'s image, the digest `production/app/app-etl/release.tf` records; its
+     registry host carries Production's account id, typed and never written down. `TRAINING_IMAGE_URI`
+     is a placeholder, since no run of this pass reads it, and both zips are built because the manifest's
+     `code` storage names both. Each deploy spends one of the workflow's 50 versions (the `dev`
+     project's `app-etl` at 1 on 2026-10-26).
+  5. **[Claude] The readings of 1.2** (i to iii, v), as `awsds-infra-sandbox-1` and `awsds-infra-data`
+     with `NO_PROXY='*'` while the tunnel is down, the domain `dzd-d8yrvx1ko7im6o` and the project
+     `avhvbqn37ty7m8`: `get-workflow-run` and `list-task-instances` for the run (§V); `aws glue get-table
+     --database-name app_etl --name trades_notional` (`TableType`, `Parameters.table_type`,
+     `IsRegisteredWithLakeFormation`, `StorageDescriptor.Location`, the database's `LocationUri` or the
+     `--conf` warehouse); `aws cloudtrail lookup-events --lookup-attributes
+     AttributeKey=EventName,AttributeValue=CreateTable` in Sandbox, then `StartDataSourceRun` and
+     `CreateListingChangeSet`, each event's `userIdentity.sessionContext`, `sourceIPAddress` and
+     `vpcEndpointId`, or the refusal's wording; `aws datazone list-data-source-runs` and
+     `get-data-source-run` (the statistics), `search --search-scope ASSET --owning-project-identifier
+     avhvbqn37ty7m8 --search-text trades_notional`, `get-asset` (the forms, `DataSourceReferenceForm`
+     among them), `get-listing` (`status`, `approvalRequired`), `list-lineage-node-history` on the asset;
+     `./aws/catalog.py` and the `dev` project's environments and sources against 2026-11-08's reading
+     (five environments, four sources, 9 listings, 7 sources in the domain).
+  6. **1.3 and 1.4** as written below; then, every portal tab closed, `make down ENV=sandbox`, `make
+     gitlab-down`, `make hub-down` and `make status`, the log and this file written in the sitting.
 - **1.2 [user] Create the product's database in `dev`** (*Data → Create database*, the name of decision
   2), **deploy to `dev` from a space** and run `app-etl`. **[Claude] reads** the new `DataLake`
   environment, its database, its daily source and whether it carries a subscription target (the one of

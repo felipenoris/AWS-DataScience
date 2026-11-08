@@ -549,9 +549,10 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   next Sandbox sitting's; the pinned lint refuses `content.catalog.enabled` (3.1 waits on a lint release), the
   CLI 1.0.9 every command while a manifest `${VAR}` is unset (the `staging` and `prod` stages at 4.9). Passes
   1 to 3 Sandbox sittings, pass 4 promotion sittings with the Stages 8-10 session, whose Stage 10 1.1, 2.4,
-  4.2 and decision 9 it rewrites. **Pass 1 in progress since 2026-11-08** on `claude/stage-19-pass-1`:
-  `publish` takes `{domain.id}` and `{proj.id}` from the deploy, and the project role, which lacked
-  `datazone:StartDataSourceRun`, gets it from `sandbox/workflows/` (applied 2026-11-08, `v4`).
+  4.2 and decision 9 it rewrites. **Pass 1 prepared 2026-11-08** (PR #283), its sitting not run: `publish`
+  takes `{domain.id}` and `{proj.id}` from the deploy, the project role holds `datazone:StartDataSourceRun`
+  from `sandbox/workflows/` (applied, `v4`), and the sitting's order, commands and values are the stage
+  file's list before 1.2; the next session starts after #283's merge.
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
