@@ -534,7 +534,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (the protected refs read free of its branch on 2026-10-26).
 - **Stage 19: decision 6 taken 2026-10-31 by the user as (b), the AWS model** (`stage-19-smus-native-data-product.md`;
   written 2026-10-28, nothing run in AWS): a data product produced and published by a SageMaker application
-  on SMUS's native path under the user's four premises; the catalog reviewed across the plan. Under (b)
+  on SMUS's native path. Under (b)
   Staging and Production each hold a deployment project (Stage 18's recipe as a standing state), the CI/CD
   CLI deploys every stage from the bundle, Production publishes its own product and a Sandbox project
   subscribes across accounts; D41 item 2 reopened, 6f decision 4 reversed (its note the 6f session's), D26
@@ -544,8 +544,12 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   amended); **every decision taken 2026-10-31, one at a time** (1 (a), 2 (a)+(d), 3 (a) gated by
   `PUBLISH_LISTING`, 4 (a), 5 with `eighth-experimentation` as Production's consumer, 9 (a), 11 rows by class
   for the governed accounts, 12 outside, 13 (b) with a subscription deny, 14 (a)+(d), 15 (a), 16 (b); 7, 8
-  and 10 moot or amended), so pass 1 can start at the next Sandbox sitting; passes 1 to 3 Sandbox sittings, pass 4 promotion sittings with the
-  Stages 8-10 session, whose Stage 10 1.1, 2.4, 4.2 and decision 9 it rewrites. Read 2026-10-28: the
+  and 10 moot or amended). **1.1 written 2026-10-31** (PR #281): the Iceberg product table on `glue_catalog` and the task
+  `publish`, gated by `PUBLISH_LISTING`; the mirror to `awsds/app-etl` is the next GitLab sitting's, pass 1 the
+  next Sandbox sitting's; the pinned lint refuses `content.catalog.enabled` (3.1 waits on a lint release), the
+  CLI 1.0.9 every command while a manifest `${VAR}` is unset (the `staging` and `prod` stages at 4.9). Passes
+  1 to 3 Sandbox sittings, pass 4 promotion sittings with the Stages 8-10 session, whose Stage 10 1.1, 2.4,
+  4.2 and decision 9 it rewrites. Read 2026-10-28: the
   consumer's daily `DataLake` source imported the subscription's resource link as an inventory asset
   (2026-10-27 21:32 UTC, the 6f follow-up's check); a portal *Create database* is one `DataLake`
   environment per database, with no subscription target; no Redshift subscription target and no federated
