@@ -333,4 +333,5 @@ Account ids are replaced by the account's name in angle brackets.*
   The order is the stage file's list before 1.2: the portal's database and form type before the
   window; in it the hub, `egress/` and a space, 1.3 during run 2; the readings after it; GitLab, the
   tunnel and the PAT out of the window, the mirror's MR at the next GitLab sitting with the password's
-  rotation. The waiting list's row, the stage index's row and `CLAUDE.md`'s bullet follow. No AWS write.
+  rotation. The waiting list's row, the stage index's row and `CLAUDE.md`'s bullet follow. No AWS write;
+  the work is [PR #284](https://github.com/felipenoris/AWS-DataScience/pull/284).
