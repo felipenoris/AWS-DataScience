@@ -551,7 +551,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   1 to 3 Sandbox sittings, pass 4 promotion sittings with the Stages 8-10 session, whose Stage 10 1.1, 2.4,
   4.2 and decision 9 it rewrites. **Pass 1 in progress since 2026-11-08** on `claude/stage-19-pass-1`:
   `publish` takes `{domain.id}` and `{proj.id}` from the deploy, and the project role, which lacked
-  `datazone:StartDataSourceRun`, gets it from `sandbox/workflows/` (planned 2026-11-08, 1 to change).
+  `datazone:StartDataSourceRun`, gets it from `sandbox/workflows/` (applied 2026-11-08, `v4`).
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes

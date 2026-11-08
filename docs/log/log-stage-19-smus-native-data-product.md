@@ -252,3 +252,7 @@ Account ids are replaced by the account's name in angle brackets.*
 - **[Claude] A credential exposed**: a keychain probe for `gitlab.awsds.internal` printed the GitLab
   user's password into the session's tool output; it is written nowhere else, and its rotation is
   recommended once GitLab is up.
+- **[user]**, verbatim: *"Autorizo o apply"*. **[Claude⚡] Applied** 21:50 UTC as `awsds-infra-sandbox-1`,
+  the saved plan: `0 added, 1 changed, 0 destroyed`, `awsds-sandbox-workflows` at `v4` with
+  `StartADataSourceRunInTheProjectsDomain`, attached to both project roles, the plan after it `No
+  changes`; no other session of this project was running.

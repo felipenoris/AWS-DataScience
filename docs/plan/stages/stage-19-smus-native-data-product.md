@@ -363,8 +363,9 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
   boundary allows what the identity policies grant (`simulate-principal-policy` answers `explicitDeny` to
   every call, `glue:GetTable` included, the conditioned denies read without their context keys, Lesson
   30). `sandbox/workflows/`'s policy gains `StartADataSourceRunInTheProjectsDomain`, the one action on
-  the domain's ARN, planned `1 to change`; 4.4's `workflows.tf` carries the same statement for each
-  target's project role. The render's table gains `{domain.id}` and `{proj.id}`, `none` for a target.
+  the domain's ARN, planned `1 to change` and applied 2026-11-08 21:50 UTC (the policy at `v4`, both
+  project roles attached, the plan after it `No changes`); 4.4's `workflows.tf` carries the same statement
+  for each target's project role. The render's table gains `{domain.id}` and `{proj.id}`, `none` for a target.
   The tests: 61 passed.
 - **1.2 [user] Create the product's database in `dev`** (*Data → Create database*, the name of decision
   2), **deploy to `dev` from a space** and run `app-etl`. **[Claude] reads** the new `DataLake`
