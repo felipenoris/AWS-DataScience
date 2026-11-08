@@ -414,7 +414,9 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
 
   **The window**:
   4. **[user]** `make hub-up`, then `make up ENV=sandbox ONLY=egress GROUPS=mwaa`, its plan 3's. No
-     tunnel and no GitLab: nothing in the window reaches either.
+     tunnel and no GitLab: nothing in the window reaches either. The window keeps clear of 23:41 UTC,
+     the source's own daily run (read 2026-11-08), which a `publish` starting the same source may meet;
+     what DataZone answers to a second run of a source mid-run is unmeasured.
   5. **[user] In the portal**, once the apply ends: a JupyterLab space on the house image (version 11),
      the tar dropped on its file browser, and in its terminal:
 
