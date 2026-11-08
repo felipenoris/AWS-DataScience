@@ -386,12 +386,15 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
 
   **Before the window**, nothing up:
   1. **[user] In the portal**, as the data scientist in `eighth-experimentation`: *Data → Create
-     database*, the name `app_etl` (decision 2); then decision 4's form type `classification`, owned by
-     the project, with no enforcement rule: a required form refuses a publication that lacks it, and
-     run 1 publishes before 1.3 fills it. The project holds no space (both `Tooling` domains read 0 on
-     2026-11-08), so no page of it starts an app.
+     database*, the name `app_etl` (decision 2), **done 2026-11-08 23:41 UTC**; then decision 4's form
+     type `classification`, owned by the project, from *Manage → Catalog management → Metadata forms*,
+     with no metadata rule: a rule requiring the form on publishing acts on run 1's publication, which
+     comes before 1.3 fills it, and AWS's page says what it does in the portal alone. The domain grants
+     no project `CREATE_FORM_TYPE` and the portal's field types hold no enumeration (both read
+     2026-11-08), so the form waits on the user's answer to both. The project holds no space (both
+     `Tooling` domains read 0 on 2026-11-08), so no page of it starts an app.
   2. **[Claude] reads** the new `DataLake` environment, its database, its source and whether it carries
-     a subscription target, 1.2's first half.
+     a subscription target, 1.2's first half: read 2026-11-08 23:44 UTC (the log), no target.
   3. **[Claude] The package** `~/tmp/stage19-pass1.tar`, built on the laptop from the branch's commit:
      `stage19-pass1/app-etl/`, the 25 files of `git archive HEAD:examples/app-etl`, and
      `stage19-pass1/pass1.sh`, which runs the space's half unattended. It checks that the caller is

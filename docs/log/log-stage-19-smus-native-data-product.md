@@ -335,3 +335,42 @@ Account ids are replaced by the account's name in angle brackets.*
   tunnel and the PAT out of the window, the mirror's MR at the next GitLab sitting with the password's
   rotation. The waiting list's row, the stage index's row and `CLAUDE.md`'s bullet follow. No AWS write;
   the work is [PR #284](https://github.com/felipenoris/AWS-DataScience/pull/284).
+- **[user]**, verbatim: *"Vc está me sugerindo tomar a decisão 10 neste momento? Pode me dar o contexto e
+  as opções? Sobre os passos antes de subir o ambiente, criei o database `app_etl`no `AwsDataCatalog` no
+  projeto `eighth-experimentation`. Não entendi o que é para fazer no passo 2 (formulário de metadados).
+  Pode esclarecer?"*
+- **[Claude] 1.2's first half, read** at 23:44 UTC as `awsds-infra-sandbox-1` and `awsds-infra-data`,
+  nothing up:
+  - The database `app_etl`, created 23:41:18 UTC by `awsds-sandbox-smus-provisioning` (session
+    `AmazonDataZoneEnvironmentDeployer-<Sandbox>`) through `datazone.amazonaws.com`, *"Created by
+    DataZone for project eighth-experimentation"*; its `LocationUri` the projects bucket's
+    `…/avhvbqn37ty7m8/dev/data/catalogs/`, `CreateTableDefaultPermissions` empty, no table.
+  - Lake Formation on it: Sandbox's `IAMPrincipals` `CREATE_TABLE`, `DESCRIBE` and `DROP` under the
+    condition `context.datazone.projectId=="avhvbqn37ty7m8"` (verification i's conditioned grant, `CT-8`'s
+    form); `awsds-sandbox-smus-provisioning` `ALL` with the grant option;
+    `awsds-sandbox-smus-manage-access` `CREATE_TABLE` and `DESCRIBE`, `DESCRIBE` grantable. No grant
+    names the project role.
+  - The environment `create-datalake-database-env-app_etl-1794181260651` (`chz5jdb80ohocw`), `ACTIVE`,
+    created 23:41:02 UTC by the user's portal session through Data Governance's
+    `awsds-data-studio-domain-execution`, on the `DataLake` blueprint `d8w7c3fmbsz5cg` and the
+    configuration `40631117-…`: `glueDBName` `app_etl`, the stack `DataZone-Env-chz5jdb80ohocw`,
+    `glueOutputUri` the same prefix, `userRoleArn` the project role. No subscription target, as the one
+    of 2026-10-28.
+  - The source `<Sandbox>-AwsDataCatalog-app_etl-default-datasource` (`budryu9mt9y5u8`): `GLUE`, `READY`,
+    enabled, `publishOnImport` false, `enableBusinessNameGeneration` false, daily at
+    `cron(41 23 * * ? *)`, on the connection `5pf7uc0ugllsb4` with no environment id, the project role its
+    `dataAccessRole`, the filter `app_etl` `INCLUDE *`, `autoImportDataQualityResult` true; no run. The
+    project holds six environments and five sources. The readings' script took the environment from the
+    source, which names none, and now falls back to the environment named for the database.
+- **[Claude] Decision 4's form, read before the user creates it**: the domain's root unit
+  `bzq0cbh2gd0f4g` (`awsds-studio`), owned by Data Governance's `InfrastructureAccess` group profile
+  (`7ee243ab-…`) alone and with no child unit, holds no `CREATE_FORM_TYPE` and no `CREATE_GLOSSARY`
+  grant. AWS's page names the path *Manage → Catalog management → Metadata forms* and the field types
+  `String`, `Integer`, `Long`, `Float`, `Double`, `Boolean`, `Date` and `Business glossary`, none
+  enumerated; a field can be `Required`, and a domain unit's metadata rule makes a form required on
+  publishing. Decision 4's "one field enumerated on the four values" has no such field in the portal: a
+  `String` the check reads, or a `Business glossary` field over a glossary of the four terms.
+- **[Claude] Decision 10's context, read for the user's question**: `SageMakerStudioProjectUserRolePolicy`
+  v76 on the project role carries `datazone:PostLineageEvent`, as v75 did at Stage 18 7.1. The sitting of
+  2026-10-31 recorded decision 10 as amended and took the others one at a time; the chat sets out its
+  options for the user's verdict. No AWS write.

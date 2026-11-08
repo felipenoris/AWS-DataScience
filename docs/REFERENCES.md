@@ -778,6 +778,17 @@
   <https://docs.aws.amazon.com/datazone/latest/userguide/configure-subscription-target-in-custom-environment.html>,
   <https://docs.aws.amazon.com/datazone/latest/userguide/datazone-concepts.html>,
   <https://docs.aws.amazon.com/datazone/latest/userguide/working-with-blueprints.html>.
+- Metadata forms in SageMaker Unified Studio (read 2026-11-08, for Stage 19 decision 4 and 1.3): a form
+  created from *Manage → Catalog management → Metadata forms*, enabled by default, its field types
+  `String`, `Integer`, `Long`, `Float`, `Double`, `Boolean`, `Date` and `Business glossary`, none
+  enumerated, each field optionally `Required`; a form made required on publishing by a domain unit's
+  metadata rule, the portal adding or prompting for it:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/standardize-metadata-forms.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/metadata-rules-publishing.html>;
+  the catalog's items moved under *Manage* on 2026-09-17, 2026-10-08 and 2026-10-20:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>.
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-metadata-form.html>
+  answered an empty page that day.
 - The CI/CD CLI's catalog export and import (read 2026-10-28, for Stage 19 0.9 and pass 3): the
   manifest's `catalog` content, the same-name assumption, the asynchronous listing failure, and the
   stages in different domains, accounts and Regions:
