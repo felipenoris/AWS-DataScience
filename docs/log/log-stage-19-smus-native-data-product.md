@@ -264,3 +264,20 @@ Account ids are replaced by the account's name in angle brackets.*
   the waiting list (the sitting; the password's rotation); `CLAUDE.md`'s bullet. What stays for the
   sitting: the mirror's push (the tunnel), the portal's database, the deploy and the runs, the readings.
   The session ends with the hub, GitLab and Sandbox's `egress/` down; the grant is the day's one write.
+  The day's work is [PR #283](https://github.com/felipenoris/AWS-DataScience/pull/283).
+- **[user]**, verbatim: *"Faça uma revisão no log, verifique se tudo que foi feito nesta sessão está
+  corretamente registrado para as próximas sessões entenderem o estado atual do plano. Revise o restante
+  das atividades deste estágio considerando o andamento até o momento, e corrija o que for necessário."*
+  **[Claude] A correction**: the sentence above, *no document or snapshot of this estate measures
+  `DataZoneDomainId` or `DataZoneProjectId` on a worker*, is false. Stage 6i's log holds the measurement
+  (2026-10-11: a task of the portal-created `demo-bash-operator` printed the seven `DataZone*` variables
+  the portal injects, `get-workflow` returning no `EnvironmentVariables`) and `serverless-workflows.md`
+  §O repeats it. The grep that answered nothing never ran: one of its paths was a zsh glob with no match,
+  the shell refused the whole command, and `2>/dev/null` hid the refusal (Lesson 62, a third instance
+  written there; Lesson 30). What is unmeasured is a CLI-created workflow's worker: the CLI's code passes
+  no `EnvironmentVariables`, and 6i's reading was of a portal-created one. The change stands on that
+  ground, and the stage file's 1.1 says so. Also corrected in the review: the 1.1 specification
+  sentence (the identifiers from the deploy), the header's status, verification ii (the cross-project
+  negative the grant's comment and §G name), `terraform-live/README.md`'s bullet on `sandbox/workflows/`
+  (missing `glue:GetJob` since 2026-10-16 and the DataZone statement, and calling the test deploy role
+  unapplied), the stage index and the plan's row.

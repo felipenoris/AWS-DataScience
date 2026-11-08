@@ -1335,6 +1335,16 @@ decision due 5 twice, once wrongly. Lesson 13 is its sibling (a verification emp
 Lesson 42 its network form (denied is a response, never-arrived is an absence) and Lesson 30 the
 reminder that a tool's failure is not a property of the world.
 
+**A third instance, 2026-11-08** (Stage 19, pass 1's preparation). A `grep` over the logs and runbooks
+for the worker's `DataZoneDomainId` printed nothing, and the nothing was written into the stage file,
+the log and a PR as *no reading of this estate measured the variables on a worker*. The command had
+never run: one of its paths was a zsh glob that matched nothing, the shell refused the whole line, and
+`2>/dev/null` hid the refusal. The 6i log held the measurement (a task of a portal-created workflow
+printed the seven variables, 2026-10-11) and `serverless-workflows.md` §O repeated it. The positive
+control was one word away, the same grep for a name known to be in the file. The design change the
+false absence motivated stood on another ground found afterwards, a CLI-created workflow's injection
+being unmeasured and the CLI's code passing no variable, and the claim was corrected the same day.
+
 ## Lesson 63 — a default is read once, when the consumer is created, and the copy outlives it
 
 **What happened.** The `default-v0.3.0` → `v0.4.0` bump followed [`dev-env.md`](runbooks/dev-env.md) §B

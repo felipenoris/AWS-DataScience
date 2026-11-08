@@ -332,11 +332,14 @@ set: one design split by *which account is allowed to hold what*, D26's argument
 - **`sandbox/workflows/` `[P]` — the workflows grant** (Stage 6i decision 6): one `awsds-<env>-workflows`
   policy allowing `sagemaker:DescribeProcessingJob` on a processing job that carries no
   `AmazonDataZoneProject` tag, which every name not yet taken satisfies, and `sagemaker:AddTags` of that
-  tag with the caller's own value, which creating a tagged job needs; one attachment per SMUS project
+  tag with the caller's own value, which creating a tagged job needs; `glue:GetJob` on an untagged job
+  named for the caller's project, which `GlueJobOperator` reads before creating it (Stage 10 decision
+  12, 2026-10-16); and `datazone:StartDataSourceRun` on the projects' domain, which an application's
+  publishing task calls (Stage 19 decision 3, 2026-11-08); one attachment per SMUS project
   role. `SageMakerProcessingOperator` describes the name it proposes before creating the job,
   and the blueprint's policy lets a project role describe only jobs tagged with its project, so without
   this grant the operator fails before any job exists. Like `sandbox/bedrock/`, its role list is
-  written by hand after a project exists. Since Stage 8 decision 19 (written 2026-10-16, unapplied) the
+  written by hand after a project exists. Since Stage 8 decision 19 (applied 2026-10-16) the
   slice also holds `awsds-deploy-sandbox-test`, the CI/CD CLI's `test` deploy role (INT-25), on the
   `deploy-role` module with its own ceiling `awsds-sandbox-deploy-test-boundary`, trusted by the deploy
   runner's role alone and confined to the `test` project's storage prefix, key, log groups and workflows.
