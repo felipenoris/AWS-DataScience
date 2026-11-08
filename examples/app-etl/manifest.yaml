@@ -10,6 +10,8 @@
 # decision 15). PRODUCT_DATABASE and PUBLISH_LISTING are literals, the same name in every project and
 # the stages that list the product (Stage 19 decisions 2 and 3); the database is created in each
 # project before the first deploy, never by the application.
+# ACCOUNT_ID, the account the Glue job's lineage names (Stage 19 decision 10), is read from STS by
+# whoever deploys: the space's project role in `dev`, the deploy role in `test-deploy`.
 applicationName: app-etl
 
 content:
@@ -61,6 +63,7 @@ stages:
       TRAINING_IMAGE_URI: ${TRAINING_IMAGE_URI}
       PRODUCT_DATABASE: app_etl
       PUBLISH_LISTING: "true"
+      ACCOUNT_ID: ${ACCOUNT_ID}
     bootstrap:
       actions:
         - type: workflow.create
@@ -101,6 +104,7 @@ stages:
       TRAINING_IMAGE_URI: ${TRAINING_IMAGE_URI}
       PRODUCT_DATABASE: app_etl
       PUBLISH_LISTING: "true"
+      ACCOUNT_ID: ${ACCOUNT_ID}
     bootstrap:
       actions:
         - type: workflow.create

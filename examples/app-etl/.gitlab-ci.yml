@@ -160,7 +160,8 @@ build-task-code:
 # DEV_PROJECT_SG, TEST_PROJECT_SG, DEV_PROJECT_KEY_ARN, TEST_PROJECT_KEY_ARN, TEST_PROJECT_S3_URI and
 # TRAINING_IMAGE_URI are CI/CD variables of the GitLab project, the last the XGBoost image by digest that
 # sagemaker/'s output training_image_uri names; JOB_IMAGE_URI is the image build-image pushed, by digest,
-# which the stage passes to the run. The deploy creates both workflows and runs app-etl alone.
+# which the stage passes to the run; ACCOUNT_ID is read from STS as the job's own identity. The deploy
+# creates both workflows and runs app-etl alone.
 test-deploy:
   stage: deploy
   needs: [build-image, build-task-code]
@@ -191,6 +192,9 @@ test-deploy:
         echo "$service: $state"
         if [ "$state" != "available" ]; then echo "FATAL: no $service endpoint: is Sandbox's egress up (make up ENV=sandbox ONLY=egress)?"; exit 1; fi
       done
+      echo "== the account the Glue job's lineage names, the job's own (Stage 19 decision 10)"
+      ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+      export ACCOUNT_ID
       echo "== the test project's prefix, emptied"
       aws s3 rm --recursive "${TEST_PROJECT_S3_URI%/}/app-etl/"
       echo "== bundle"
