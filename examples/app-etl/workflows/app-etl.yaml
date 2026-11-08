@@ -113,4 +113,6 @@ app-etl:
         database: "{env.PRODUCT_DATABASE}"
         table: trades_notional
         publish_listing: "{env.PUBLISH_LISTING}"
+        domain: "{domain.id}"
+        project: "{proj.id}"
       retries: 0

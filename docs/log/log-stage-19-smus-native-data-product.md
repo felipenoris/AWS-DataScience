@@ -212,3 +212,80 @@ Account ids are replaced by the account's name in angle brackets.*
   `{env.NOME}` wants each name declared in every stage, which the two literals satisfy. The local
   `awsds-workflows` (`~/.local/bin`) predates `lint`; the clone at `~/src/awsds-workflows` is at
   `ff25eae`, behind the pin.
+
+## 2026-11-08 — pass 1 taken into this session; the preparation with nothing up
+
+- **[user]**, verbatim: *"Faça esta tarefa aqui: “Stage 19 pass 1: mirror and first Sandbox run”"*, then
+  *"Existe algo que pode ser preparado ou executado para este stage agora antes de subir o ambiente?"*.
+- **[Claude] The branch**: PR #281 merged at 21:17 UTC (squash, `39a50b26`), its branch retired;
+  `claude/stage-19-pass-1` cut from `main` in the same worktree, the project folder at the same commit. No
+  other session of this project running (the one in an AWS-DataScience worktree idle since 2026-11-05).
+- **[Claude] Before-readings**, the SSO session valid, the hub and GitLab `stopped`: `./aws/catalog.py` all
+  checks passed (9 listings, 7 sources, no `app_etl` database); `./aws/studio.py` passed, its failed calls
+  the persona profiles without a token; `eighth-experimentation` (`avhvbqn37ty7m8`, the manifest's `dev`)
+  holds five environments (`Tooling`, `eighth-experimentation-lakehouse`, `new_database` of 2026-10-28,
+  `mydatabase` `CREATE_FAILED` since 2026-09-13, `ml-demo-mlflow`) and four sources, `new_database`'s daily
+  at 06:22 UTC with 11 `SUCCESS`; ten MWAA Serverless workflows in Sandbox, `app_etl_eighth_experimentation_app_etl`
+  of 2026-10-26 among them; the Glue job `app-etl-avhvbqn37ty7m8` carries `--custom-logGroup-prefix` alone
+  in its `DefaultArguments` (modified 2026-10-26). The mirror's tarball: 25 files from `39a50b26`, the CI
+  `include` at `gates-v0.6.0`'s commit, the lint pin `d856982c`.
+- **[Claude] Read**: the project role `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` carries six managed
+  policies and none inline; `SageMakerStudioProjectRoleMachineLearningPolicy` v47 grants `datazone:Get*`,
+  `List*`, `Search*`, `CreateAsset*`, `CreateListingChangeSet`, `CreateSubscriptionRequest` and
+  `RevokeSubscription` on `*`, `SageMakerStudioProjectUserRolePolicy` v76 reads on the domain, the other
+  four no `datazone` action; the boundary `awsds-sandbox-project-boundary` v2 allows `*` and denies the job
+  settings, the lake prefixes and the lake key. `StartDataSourceRun` is granted by none. `simulate-principal-policy`
+  answered `explicitDeny` to every action asked, `glue:GetTable` included: the conditioned denies without
+  their context keys (Lesson 30), so the simulation measures nothing here. `DenyDataZoneEntirely` is the
+  Workloads OU's alone; the baseline denies `datazone:CreateDomain` outside the Data OU. Sandbox's `egress/`
+  lists `datazone` among its services. The CLI's `context_resolver.py` substitutes `{domain.id}`, `{domain.name}`,
+  `{domain.region}`, `{proj.id}`, `{proj.name}`, `{proj.domain_id}`, `{proj.iam_role_arn}` and the
+  connections at the deploy; no document or snapshot of this estate measures `DataZoneDomainId` or
+  `DataZoneProjectId` on a worker.
+- **[Claude] Written**: `publish` takes `domain` and `project` from `{domain.id}` and `{proj.id}` in the
+  workflow's `op_kwargs`, the worker's variables read only for a value left empty; the tests (61 passed),
+  `scripts/render-workflow.py` (`none` for both in a target), the runbook's §W row;
+  `sandbox/workflows/main.tf` gains the statement `StartADataSourceRunInTheProjectsDomain`
+  (`datazone:StartDataSourceRun` on the domain's ARN), planned as `awsds-infra-sandbox-1`: `1 to change`,
+  the policy's new version, nothing else; `serverless-workflows.md` §G and the stage file's 1.1 and 4.4.
+  `make check` passes. **Nothing applied**: the apply waits on the user's word in this chat.
+- **[Claude] A credential exposed**: a keychain probe for `gitlab.awsds.internal` printed the GitLab
+  user's password into the session's tool output; it is written nowhere else, and its rotation is
+  recommended once GitLab is up.
+- **[user]**, verbatim: *"Autorizo o apply"*. **[Claude⚡] Applied** 21:50 UTC as `awsds-infra-sandbox-1`,
+  the saved plan: `0 added, 1 changed, 0 destroyed`, `awsds-sandbox-workflows` at `v4` with
+  `StartADataSourceRunInTheProjectsDomain`, attached to both project roles, the plan after it `No
+  changes`; no other session of this project was running.
+- **[user]**, verbatim: *"Vou ter que parar esta sessão por aqui. Atualize sua memória orientando as
+  próximas sessões sobre como prosseguir. Avalie novamente o que pode ser antecipado neste momento sem o
+  ambiente no ar. Faça as correções necessárias no plano e suba no PR aberto."* **[Claude]** the sitting's
+  order written in the stage file before 1.2, with this pass's values (`v0.4.6`'s digest for
+  `JOB_IMAGE_URI`, both project names, the placeholders, both zips, the readings' commands); two rows in
+  the waiting list (the sitting; the password's rotation); `CLAUDE.md`'s bullet. What stays for the
+  sitting: the mirror's push (the tunnel), the portal's database, the deploy and the runs, the readings.
+  The session ends with the hub, GitLab and Sandbox's `egress/` down; the grant is the day's one write.
+  The day's work is [PR #283](https://github.com/felipenoris/AWS-DataScience/pull/283).
+- **[user]**, verbatim: *"Faça uma revisão no log, verifique se tudo que foi feito nesta sessão está
+  corretamente registrado para as próximas sessões entenderem o estado atual do plano. Revise o restante
+  das atividades deste estágio considerando o andamento até o momento, e corrija o que for necessário."*
+  **[Claude] A correction**: the sentence above, *no document or snapshot of this estate measures
+  `DataZoneDomainId` or `DataZoneProjectId` on a worker*, is false. Stage 6i's log holds the measurement
+  (2026-10-11: a task of the portal-created `demo-bash-operator` printed the seven `DataZone*` variables
+  the portal injects, `get-workflow` returning no `EnvironmentVariables`) and `serverless-workflows.md`
+  §O repeats it. The grep that answered nothing never ran: one of its paths was a zsh glob with no match,
+  the shell refused the whole command, and `2>/dev/null` hid the refusal (Lesson 62, a third instance
+  written there; Lesson 30). What is unmeasured is a CLI-created workflow's worker: the CLI's code passes
+  no `EnvironmentVariables`, and 6i's reading was of a portal-created one. The change stands on that
+  ground, and the stage file's 1.1 says so. Also corrected in the review: the 1.1 specification
+  sentence (the identifiers from the deploy), the header's status, verification ii (the cross-project
+  negative the grant's comment and §G name), `terraform-live/README.md`'s bullet on `sandbox/workflows/`
+  (missing `glue:GetJob` since 2026-10-16 and the DataZone statement, and calling the test deploy role
+  unapplied), the stage index and the plan's row.
+- **[user]**, verbatim: *"Faça uma revisão adicional na documentação do projeto e docstrings. Suba os
+  ajustes no mesmo PR."* **[Claude]** brought to the task's design: the template's README (`publish`
+  among the worker's tasks, the deploy's identifiers, the grant its source run needs, both zips the dev
+  deploy builds, `{domain.id}` among the CLI's variables), `sagemaker-application.md` §C (the task's
+  DataZone calls and their policies), §B (the second road an application's own product takes since
+  decision 6 (b)) and §N (DataZone among the worker's endpoints), `serverless-workflows.md` §O (the
+  variables read on a portal-created workflow, a CLI-created one unmeasured), `docs/SMUS.md` (the project
+  role's DataZone grants, v47 and v76, and the house's one), and the two test modules' docstrings.

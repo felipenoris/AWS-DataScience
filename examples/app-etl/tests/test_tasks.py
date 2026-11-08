@@ -1,5 +1,6 @@
-"""The worker's task, offline: the report over fabricated summaries, and the listing over a double
-of boto3, since the project installs no boto3 (the worker carries it)."""
+"""The worker's tasks, offline: the report over fabricated summaries, the listing over a double of
+DataZone, and the evaluation over doubles of SageMaker and S3, since the project installs no boto3
+(the worker carries it)."""
 
 from __future__ import annotations
 
@@ -274,14 +275,20 @@ def datazone(monkeypatch):
     boto3 = types.ModuleType("boto3")
     boto3.client = lambda service: fake if service == "datazone" else None
     monkeypatch.setitem(sys.modules, "boto3", boto3)
-    monkeypatch.setenv("DataZoneDomainId", DOMAIN)
-    monkeypatch.setenv("DataZoneProjectId", PROJECT)
+    monkeypatch.delenv("DataZoneDomainId", raising=False)
+    monkeypatch.delenv("DataZoneProjectId", raising=False)
     monkeypatch.setattr(app_etl_tasks.time, "sleep", lambda seconds: None)
     return fake
 
 
+def publish(database="app_etl", table="trades_notional", gate="true", **kwargs):
+    """`publish` with the identifiers the deploy substitutes, unless a test passes its own."""
+    ids = {"domain": DOMAIN, "project": PROJECT, **kwargs}
+    return app_etl_tasks.publish(database, table, gate, **ids)
+
+
 def test_publish_runs_the_source_then_lists_the_assets_latest_revision(datazone, capsys):
-    text = app_etl_tasks.publish("app_etl", "trades_notional", "true", ti=None)
+    text = publish(ti=None)
     result = json.loads(text)
     assert result == {
         "published": True,
@@ -314,27 +321,34 @@ def test_publish_does_nothing_where_the_stage_lists_no_product(value, capsys):
 
 
 def test_publish_admits_the_gate_whatever_its_case_and_spaces(datazone):
-    assert json.loads(app_etl_tasks.publish("app_etl", "trades_notional", "True "))["published"]
+    assert json.loads(publish(gate="True "))["published"]
 
 
-def test_publish_refuses_a_worker_outside_a_project(datazone, monkeypatch):
-    monkeypatch.delenv("DataZoneProjectId")
-    with pytest.raises(RuntimeError, match="carries no DataZoneProjectId"):
-        app_etl_tasks.publish("app_etl", "trades_notional", "true")
+def test_publish_reads_the_workers_variable_for_an_identifier_the_deploy_left_empty(
+    datazone, monkeypatch
+):
+    monkeypatch.setenv("DataZoneDomainId", DOMAIN)
+    result = json.loads(publish(domain=""))
+    assert (result["domain"], result["project"]) == (DOMAIN, PROJECT)
+
+
+def test_publish_refuses_a_run_with_no_identifier_anywhere(datazone):
+    with pytest.raises(RuntimeError, match="no DataZoneProjectId: the deploy substituted none"):
+        publish(project=" ")
 
 
 def test_publish_refuses_a_database_with_no_source_or_two(datazone):
     with pytest.raises(RuntimeError, match=r"0 data source\(s\) over other_db"):
-        app_etl_tasks.publish("other_db", "trades_notional", "true")
+        publish(database="other_db")
     datazone.sources = {"src-a": ["app_etl"], "src-b": ["app_etl"]}
     with pytest.raises(RuntimeError, match=r"2 data source\(s\) over app_etl"):
-        app_etl_tasks.publish("app_etl", "trades_notional", "true")
+        publish()
 
 
 def test_publish_fails_on_a_source_run_that_does_not_succeed(datazone):
     datazone.run_statuses = ["RUNNING", "FAILED"]
     with pytest.raises(RuntimeError, match="source run run-1 ended FAILED: boom"):
-        app_etl_tasks.publish("app_etl", "trades_notional", "true")
+        publish()
     assert not any(call[0] == "search" for call in datazone.calls)
 
 
@@ -343,16 +357,16 @@ def test_publish_fails_when_the_run_outlives_its_timeout(datazone, monkeypatch):
     clock = iter([0, 0, 1000])
     monkeypatch.setattr(app_etl_tasks.time, "monotonic", lambda: next(clock))
     with pytest.raises(RuntimeError, match="still RUNNING after 600 s"):
-        app_etl_tasks.publish("app_etl", "trades_notional", "true")
+        publish()
 
 
 def test_publish_refuses_a_table_the_run_did_not_import(datazone):
     datazone.assets = [ASSETS[1]]
     with pytest.raises(RuntimeError, match=r"0 asset\(s\) for app_etl/trades_notional"):
-        app_etl_tasks.publish("app_etl", "trades_notional", "true")
+        publish()
 
 
 def test_publish_fails_on_a_listing_that_does_not_activate(datazone):
     datazone.listing_statuses = ["CREATING", "INACTIVE"]
     with pytest.raises(RuntimeError, match="listing listing-1 revision 2 is INACTIVE"):
-        app_etl_tasks.publish("app_etl", "trades_notional", "true")
+        publish()

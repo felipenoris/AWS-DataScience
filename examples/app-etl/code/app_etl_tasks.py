@@ -8,12 +8,12 @@ the product the Glue job wrote into the SageMaker Catalog the way the tool inten
 decisions 3 and 14): it runs the project's data source over the product's database, finds the asset
 the run imported for the table and publishes its latest revision as a listing, waiting for `ACTIVE`,
 since the listing API answers before the listing exists and fails later on its own. It runs as the
-project role through the `datazone` endpoint, in the domain and project the worker's environment
-names, and returns at once where the stage variable `PUBLISH_LISTING` is not `true`, the stages
-whose product is never listed. `evaluate`, a task of app-etl-train, reads the training job's final
-metrics and writes them beside its model as SageMaker's model-quality statistics, the file the
-pipeline's registration names as the version's `ModelMetrics` (Stage 10 step 5.2), with the rows of
-the batch transform's input, which the transform's check counts against.
+project role through the `datazone` endpoint, in the domain and project the deploy substituted
+(`{domain.id}` and `{proj.id}`), and returns at once where the stage variable `PUBLISH_LISTING` is
+not `true`, the stages whose product is never listed. `evaluate`, a task of app-etl-train, reads the
+training job's final metrics and writes them beside its model as SageMaker's model-quality
+statistics, the file the pipeline's registration names as the version's `ModelMetrics` (Stage 10
+step 5.2), with the rows of the batch transform's input, which the transform's check counts against.
 
 They run on the MWAA Serverless worker with the boto3 the worker carries, so a workflow's code
 package is this file alone, zipped under the workflow's name. What they print lands in the
@@ -82,8 +82,8 @@ def summarize(outputs: str, **context) -> str:
     return json.dumps(result, indent=2, sort_keys=True) + "\n"
 
 
-# The publication: the worker's variables that name the project (the portal injects them), how long
-# a source run and a listing may take before the task fails, and the seconds between two readings.
+# The publication: the worker's variables read for an identifier the deploy left empty, how long a
+# source run and a listing may take before the task fails, and the seconds between two readings.
 DOMAIN_VARIABLE = "DataZoneDomainId"
 PROJECT_VARIABLE = "DataZoneProjectId"
 SOURCE_RUN_TIMEOUT = 600
@@ -91,14 +91,18 @@ LISTING_TIMEOUT = 120
 POLL_SECONDS = 5
 
 
-def project_context() -> tuple[str, str]:
-    """The domain and the project the worker runs in, from the variables the portal injects."""
-    try:
-        return os.environ[DOMAIN_VARIABLE], os.environ[PROJECT_VARIABLE]
-    except KeyError as exc:
-        raise RuntimeError(
-            f"the worker carries no {exc.args[0]}: not a project's workflow"
-        ) from exc
+def project_context(domain: str = "", project: str = "") -> tuple[str, str]:
+    """The domain and the project the task publishes in: the values the deploy substituted, or, for
+    one it left empty, the worker's variable of that name."""
+    found = []
+    for value, variable in ((domain, DOMAIN_VARIABLE), (project, PROJECT_VARIABLE)):
+        value = str(value or "").strip() or os.environ.get(variable, "").strip()
+        if not value:
+            raise RuntimeError(
+                f"no {variable}: the deploy substituted none and the worker carries none"
+            )
+        found.append(value)
+    return found[0], found[1]
 
 
 def find_source(datazone, domain: str, project: str, database: str) -> str:
@@ -186,15 +190,23 @@ def publish_asset(datazone, domain: str, asset: str, timeout: int = LISTING_TIME
         time.sleep(POLL_SECONDS)
 
 
-def publish(database: str, table: str, publish_listing: str, **context) -> str:
-    """The product `database.table` imported and listed in the catalog; its identifiers as JSON
-    text, the task's XCom. Nothing when `publish_listing`, the stage variable, is not `true`."""
+def publish(
+    database: str,
+    table: str,
+    publish_listing: str,
+    domain: str = "",
+    project: str = "",
+    **context,
+) -> str:
+    """The product `database.table` imported and listed in the catalog of `domain` by `project`, the
+    deploy's `{domain.id}` and `{proj.id}`; its identifiers as JSON text, the task's XCom. Nothing
+    when `publish_listing`, the stage variable, is not `true`."""
     if str(publish_listing).strip().lower() != "true":
         print(f"publishing off in this stage (PUBLISH_LISTING={publish_listing!r}); nothing listed")
         return json.dumps({"published": False}) + "\n"
     import boto3
 
-    domain, project = project_context()
+    domain, project = project_context(domain, project)
     datazone = boto3.client("datazone")
     source = find_source(datazone, domain, project, database)
     run = run_source(datazone, domain, source)

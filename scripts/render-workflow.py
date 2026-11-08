@@ -23,7 +23,9 @@
 # table of Stage 19 (decision 2) is written in a project's database, which a target has none of until
 # Stage 19 4.11 moves the deploy to the CLI and retires this render: until then `{env.PRODUCT_DATABASE}`
 # renders to the account's `app_outputs`, `{env.PUBLISH_LISTING}` to `false`, and the Glue task loses the
-# `--TABLE_DATABASE` and `--TABLE_NAME` arguments, so a target writes no product table and lists nothing.
+# `--TABLE_DATABASE` and `--TABLE_NAME` arguments, so a target writes no product table and lists nothing;
+# `{domain.id}` and `{proj.id}`, the publishing task's identifiers, render to `none`, which the task
+# never reads with the listing off.
 
 from __future__ import annotations
 
@@ -118,6 +120,8 @@ def render_string(text: str, app: str, values: dict) -> str:
         ("{env.PRODUCT_DATABASE}", values.get("product_database", "app_outputs")),
         ("{env.PUBLISH_LISTING}", values.get("publish_listing", "false")),
         ("{domain.region}", values["region"]),
+        ("{domain.id}", values.get("domain_id", "none")),
+        ("{proj.id}", values.get("project_id", "none")),
     ):
         if value is not None:
             text = text.replace(placeholder, value)
