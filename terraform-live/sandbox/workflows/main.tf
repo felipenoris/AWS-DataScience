@@ -1,5 +1,5 @@
 # The workflows grant for SMUS project roles (Stage 6i decision 6; the Glue statement, Stage 10
-# decision 12, user 2026-10-16).
+# decision 12, user 2026-10-16; the DataZone statement, Stage 19 decision 3).
 #
 # SageMakerProcessingOperator describes the job name it proposes before it creates the job, and
 # counts only a ValidationException as "absent" (Amazon provider 9.32.0, the MWAA Serverless
@@ -91,6 +91,21 @@ data "aws_iam_policy_document" "workflows" {
       variable = "aws:ResourceTag/AmazonDataZoneProject"
       values   = ["true"]
     }
+  }
+
+  # An application's publishing task (Stage 19 decision 3) starts the run of the project's data
+  # source over the product's database, then publishes the asset the run imported. The blueprint's
+  # SageMakerStudioProjectRoleMachineLearningPolicy (v47, read 2026-11-08) grants the project role
+  # datazone:Get*, List*, Search* and CreateListingChangeSet on every resource and no
+  # StartDataSourceRun; SageMakerStudioProjectUserRolePolicy (v76) names none either, the slice's other
+  # policies carry no datazone action, and the boundary allows what the identity policies grant. This
+  # statement adds that one action, on the projects' domain. Which policy admitted the call, and whether
+  # the role may start another project's source, are Stage 19's verification ii.
+  statement {
+    sid       = "StartADataSourceRunInTheProjectsDomain"
+    effect    = "Allow"
+    actions   = ["datazone:StartDataSourceRun"]
+    resources = ["arn:${data.aws_partition.current.partition}:datazone:${var.region}:*:domain/${var.datazone_domain_id}"]
   }
 }
 

@@ -351,6 +351,21 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
   `d856982c` `ok` on the nine files; `make check` and the pre-commit hooks pass. Read on the way: the
   pinned lint refuses `content.catalog.enabled` (3.1), and the CLI refuses every command while a
   `${VAR}` is unset (3.3).
+  **Prepared 2026-11-08**, nothing up, on `claude/stage-19-pass-1`: `publish` takes the domain and the
+  project from `{domain.id}` and `{proj.id}` in its `op_kwargs`, which the CLI's context resolver
+  substitutes at the deploy (its `domain` carries `id`, `name` and `region`, its `proj` `id`, `name`,
+  `domain_id` and `iam_role_arn`), and reads the worker's `DataZoneDomainId` and `DataZoneProjectId`
+  only for a value the deploy left empty, since no reading of this estate had measured those variables
+  on a worker. The project role holds no `datazone:StartDataSourceRun`:
+  `SageMakerStudioProjectRoleMachineLearningPolicy` v47 grants `datazone:Get*`, `List*`, `Search*`,
+  `CreateAsset*` and `CreateListingChangeSet` on `*`, `SageMakerStudioProjectUserRolePolicy` v76 a list
+  of reads on the domain, the role's four other policies no `datazone` action, none inline, and the D13
+  boundary allows what the identity policies grant (`simulate-principal-policy` answers `explicitDeny` to
+  every call, `glue:GetTable` included, the conditioned denies read without their context keys, Lesson
+  30). `sandbox/workflows/`'s policy gains `StartADataSourceRunInTheProjectsDomain`, the one action on
+  the domain's ARN, planned `1 to change`; 4.4's `workflows.tf` carries the same statement for each
+  target's project role. The render's table gains `{domain.id}` and `{proj.id}`, `none` for a target.
+  The tests: 61 passed.
 - **1.2 [user] Create the product's database in `dev`** (*Data → Create database*, the name of decision
   2), **deploy to `dev` from a space** and run `app-etl`. **[Claude] reads** the new `DataLake`
   environment, its database, its daily source and whether it carries a subscription target (the one of
@@ -475,8 +490,9 @@ the shape is the templates' and the account's own state is not.
   each target: `terraform-modules/sagemaker-prereqs/` at its pinned tag (`v0.9.0` since 2026-10-30) with
   `blueprint_names` `["Tooling", "DataLake"]`, the D13 boundary, the Glue manage-access policy the
   module carries since `v0.8.0` (7.2's first environment failed without it), `workflows.tf` granting the
-  project roles the job actions `sandbox/workflows/` grants (4.4's first run was refused `glue:GetJob`
-  without it), `person-session.tf` under decision 15, `cost_center` `stage-19`; in Staging, `InfrastructureAccess`
+  project roles what `sandbox/workflows/` grants: the job actions (4.4's first run was refused
+  `glue:GetJob` without them) and `datazone:StartDataSourceRun` on the domain (1.1, 2026-11-08),
+  `person-session.tf` under decision 15, `cost_center` `stage-19`; in Staging, `InfrastructureAccess`
   seated as a third Lake Formation administrator and the deploy role granted `DESCRIBE` and `SELECT` on
   the product database's tables, `staging-test`'s door (decision 14 (d)); the `studio` rank and
   `[P]` row in `layers.py`, `backend.py`'s `studio` emission, conventions §6 and `NETWORK.md` §2.1. Each

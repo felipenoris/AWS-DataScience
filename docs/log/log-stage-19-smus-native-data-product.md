@@ -212,3 +212,43 @@ Account ids are replaced by the account's name in angle brackets.*
   `{env.NOME}` wants each name declared in every stage, which the two literals satisfy. The local
   `awsds-workflows` (`~/.local/bin`) predates `lint`; the clone at `~/src/awsds-workflows` is at
   `ff25eae`, behind the pin.
+
+## 2026-11-08 — pass 1 taken into this session; the preparation with nothing up
+
+- **[user]**, verbatim: *"Faça esta tarefa aqui: “Stage 19 pass 1: mirror and first Sandbox run”"*, then
+  *"Existe algo que pode ser preparado ou executado para este stage agora antes de subir o ambiente?"*.
+- **[Claude] The branch**: PR #281 merged at 21:17 UTC (squash, `39a50b26`), its branch retired;
+  `claude/stage-19-pass-1` cut from `main` in the same worktree, the project folder at the same commit. No
+  other session of this project running (the one in an AWS-DataScience worktree idle since 2026-11-05).
+- **[Claude] Before-readings**, the SSO session valid, the hub and GitLab `stopped`: `./aws/catalog.py` all
+  checks passed (9 listings, 7 sources, no `app_etl` database); `./aws/studio.py` passed, its failed calls
+  the persona profiles without a token; `eighth-experimentation` (`avhvbqn37ty7m8`, the manifest's `dev`)
+  holds five environments (`Tooling`, `eighth-experimentation-lakehouse`, `new_database` of 2026-10-28,
+  `mydatabase` `CREATE_FAILED` since 2026-09-13, `ml-demo-mlflow`) and four sources, `new_database`'s daily
+  at 06:22 UTC with 11 `SUCCESS`; ten MWAA Serverless workflows in Sandbox, `app_etl_eighth_experimentation_app_etl`
+  of 2026-10-26 among them; the Glue job `app-etl-avhvbqn37ty7m8` carries `--custom-logGroup-prefix` alone
+  in its `DefaultArguments` (modified 2026-10-26). The mirror's tarball: 25 files from `39a50b26`, the CI
+  `include` at `gates-v0.6.0`'s commit, the lint pin `d856982c`.
+- **[Claude] Read**: the project role `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` carries six managed
+  policies and none inline; `SageMakerStudioProjectRoleMachineLearningPolicy` v47 grants `datazone:Get*`,
+  `List*`, `Search*`, `CreateAsset*`, `CreateListingChangeSet`, `CreateSubscriptionRequest` and
+  `RevokeSubscription` on `*`, `SageMakerStudioProjectUserRolePolicy` v76 reads on the domain, the other
+  four no `datazone` action; the boundary `awsds-sandbox-project-boundary` v2 allows `*` and denies the job
+  settings, the lake prefixes and the lake key. `StartDataSourceRun` is granted by none. `simulate-principal-policy`
+  answered `explicitDeny` to every action asked, `glue:GetTable` included: the conditioned denies without
+  their context keys (Lesson 30), so the simulation measures nothing here. `DenyDataZoneEntirely` is the
+  Workloads OU's alone; the baseline denies `datazone:CreateDomain` outside the Data OU. Sandbox's `egress/`
+  lists `datazone` among its services. The CLI's `context_resolver.py` substitutes `{domain.id}`, `{domain.name}`,
+  `{domain.region}`, `{proj.id}`, `{proj.name}`, `{proj.domain_id}`, `{proj.iam_role_arn}` and the
+  connections at the deploy; no document or snapshot of this estate measures `DataZoneDomainId` or
+  `DataZoneProjectId` on a worker.
+- **[Claude] Written**: `publish` takes `domain` and `project` from `{domain.id}` and `{proj.id}` in the
+  workflow's `op_kwargs`, the worker's variables read only for a value left empty; the tests (61 passed),
+  `scripts/render-workflow.py` (`none` for both in a target), the runbook's §W row;
+  `sandbox/workflows/main.tf` gains the statement `StartADataSourceRunInTheProjectsDomain`
+  (`datazone:StartDataSourceRun` on the domain's ARN), planned as `awsds-infra-sandbox-1`: `1 to change`,
+  the policy's new version, nothing else; `serverless-workflows.md` §G and the stage file's 1.1 and 4.4.
+  `make check` passes. **Nothing applied**: the apply waits on the user's word in this chat.
+- **[Claude] A credential exposed**: a keychain probe for `gitlab.awsds.internal` printed the GitLab
+  user's password into the session's tool output; it is written nowhere else, and its rotation is
+  recommended once GitLab is up.

@@ -773,6 +773,7 @@ value from the Terraform state of the slice that owns it:
 | `{env.PROJECT_SG}` | the project's group | `job_security_group_id` of `<env>/sagemaker/` |
 | `{env.PROJECT_KEY_ARN}` | the project key | the account data key, `alias/awsds-<env>-data` |
 | `{domain.region}` | the domain's Region | the account's Region |
+| `{domain.id}`, `{proj.id}` | the domain's and the project's ids, the publishing task's `op_kwargs` (Stage 19 1.1) | `none`: the task reads neither while `{env.PUBLISH_LISTING}` renders `false` |
 | `{env.PRODUCT_DATABASE}` | the stage variable, `app_etl` in every project (Stage 19 decision 2) | `app_outputs` until Stage 19 4.11 retires the render; the Glue task's `--TABLE_DATABASE` and `--TABLE_NAME` are dropped with it, so a target writes no product table before the CLI deploys it |
 | `{env.PUBLISH_LISTING}` | the stage variable, `true` where a run lists its product (Stage 19 decision 3) | `false`: a target lists nothing until Stage 19 4.9 |
 | the Glue task's job-creation keys; a SageMaker task's `AmazonDataZoneProject` tag | read, and written | dropped |

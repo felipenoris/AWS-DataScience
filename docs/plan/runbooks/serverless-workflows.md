@@ -172,8 +172,9 @@ that hour, against the scripts at `c0baddd`, with the same results at both commi
 
 ## §G — The grant a project needs, once per project
 
-A project role cannot run `SageMakerProcessingOperator`, nor create a Glue job from `GlueJobOperator`,
-with the blueprint's policies alone, for three reasons, two measured on 2026-10-10 and one on 2026-10-16:
+A project role cannot run `SageMakerProcessingOperator`, create a Glue job from `GlueJobOperator` or
+start its own data source's run with the blueprint's policies alone (measured 2026-10-10 and 2026-10-16,
+and read in the policies on 2026-11-08):
 
 - **The operator describes the job name before creating it**, and the blueprint lets a project role
   describe only a job tagged with its own project. A name not yet taken carries no tag, so the first run
@@ -185,6 +186,10 @@ with the blueprint's policies alone, for three reasons, two measured on 2026-10-
   blueprint lets a project role read only a job tagged with its own project. A name not yet taken
   carries no tag, so the first run fails with `AccessDenied` on `glue:GetJob` before any job exists
   (the CI/CD CLI's run `u4AFogXA74olkqo`, 2026-10-16).
+- **An application's publishing task starts the project's data source run** (Stage 19 decision 3), and
+  the blueprint's `SageMakerStudioProjectRoleMachineLearningPolicy` (v47) grants `datazone:Get*`,
+  `List*`, `Search*`, `CreateAsset*` and `CreateListingChangeSet` and no `StartDataSourceRun`;
+  `SageMakerStudioProjectUserRolePolicy` (v76) names none either (read 2026-11-08, before the first run).
 
 The grant is `terraform-live/sandbox/workflows/`, one policy and one attachment per project role:
 
@@ -200,7 +205,9 @@ without them (2026-10-19, run `7MMhwSySe5SOWd1`).
 The policy allows `DescribeProcessingJob` on a job with no project tag, `AddTags` of the caller's own
 project tag alone, on a job with no project tag or with the caller's, and `glue:GetJob` on a job with no
 project tag whose name ends with the caller's project id, `<app>-<project id>`, the name an application
-gives its job (user, 2026-10-16). Another project's jobs stay out of reach. With the Glue statement applied, `CreateJob` with the project tag passed with nothing more, unlike the
+gives its job (user, 2026-10-16). Another project's jobs stay out of reach. `datazone:StartDataSourceRun`
+is allowed on the projects' domain, DataZone's resource for the call; whether the role may start another
+project's source is Stage 19's verification ii. With the Glue statement applied, `CreateJob` with the project tag passed with nothing more, unlike the
 processing job's `AddTags`: `GetJob` answered `EntityNotFoundException`, then `CreateJob` and `StartJobRun`
 passed (Sandbox, 2026-10-16, 6i's log; Staging, 2026-10-19, Stage 18 4.4).
 
