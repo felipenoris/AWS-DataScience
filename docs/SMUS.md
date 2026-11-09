@@ -311,6 +311,17 @@ blueprint fails as Tooling did, one capability-enable at a time. **Applied 2026-
 slices** — `11 added` each, re-plan `No changes`, all 22 read back with exactly one grant (the stage
 file's owed table is the record).
 
+#### Who may create a metadata form type
+
+A metadata form type is a third authorization of the same shape: `CREATE_FORM_TYPE` on a domain unit,
+its principal a project with a designation. **Measured 2026-11-08 and 2026-11-09:** `list-policy-grants`
+on the root domain unit returned no `CREATE_FORM_TYPE` and no `CREATE_GLOSSARY` grant, and the portal
+showed `eighth-experimentation`'s owner *Create metadata forms* disabled under *Manage → Metadata forms*.
+The field types the portal offers are `String`, `Integer`, `Long`, `Float`, `Double`, `Boolean`, `Date`
+and `Business glossary`, none enumerated (AWS's page, read 2026-11-08). The grant is
+`data-governance/governance/`'s, per project (`form_type_owners`, designation `OWNER`), for Stage 19
+decision 4's form `classification`; planned 2026-11-09, `1 to add`.
+
 ## Blueprints — the object
 
 An **environment blueprint** is a provisioning template owned by AWS. It works in two steps:

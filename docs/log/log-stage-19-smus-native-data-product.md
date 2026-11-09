@@ -384,3 +384,21 @@ Account ids are replaced by the account's name in angle brackets.*
   bullet and the log index. The package `~/tmp/stage19-pass1.tar` already carries the settings
   (`6370da60`), so nothing is rebuilt. Decision 4's form type stays open, its two paths put to the user
   in chat. No AWS write.
+## 2026-11-09 — decision 4's form type: the `CREATE_FORM_TYPE` grant written and planned
+
+- **[user]**, verbatim: *"sobre o formulário, (B)"*: the `CREATE_FORM_TYPE` grant first, then the form
+  with a `String` field, as set out in chat on 2026-11-08.
+- **[user]**, verbatim: *"Acabei de entrar no SMUS com Data Scientist, e no menu Manage -> Metadata Forms
+  o botão "Create metadata forms" aparece mas desabilitado"*.
+- **[Claude] Read** as `awsds-infra-sandbox-1`: `eighth-experimentation`'s members are one
+  `PROJECT_OWNER` user, the portal user whose session created the database's environment, a
+  `PROJECT_CONTRIBUTOR` user and Sandbox's `InfrastructureAccess` group profile (`839bcde8-…`) as
+  `PROJECT_CONTRIBUTOR`, so the grant's designation is `OWNER`. The pinned `awscc` schema takes a
+  project principal (`project_identifier`, `project_designation`) and `detail.create_form_type`.
+- **[Claude] Written**: `data-governance/governance/grants.tf`'s `awscc_datazone_policy_grant.create_form_type`
+  over the new `form_type_owners` (`avhvbqn37ty7m8 = "OWNER"`), on the root domain unit with
+  `include_child_domain_units` false; `terraform validate` passes. **Planned** as `awsds-infra-data`:
+  `1 to add, 0 to change, 0 to destroy`, the grant alone, so no other tree's apply is pending on the slice
+  (Lesson 79). `docs/SMUS.md` gains the authorization beside the project and environment ones; the stage
+  file's pre-window item 1 and decision 4, and the waiting list, follow. The apply waits on the user's
+  word.
