@@ -543,8 +543,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   following the CLI with Production's project role, which takes the lake's write (decision 16 (b), D22
   amended); **every decision taken 2026-10-31, one at a time** (1 (a), 2 (a)+(d), 3 (a) gated by
   `PUBLISH_LISTING`, 4 (a), 5 with `eighth-experimentation` as Production's consumer, 9 (a), 11 rows by class
-  for the governed accounts, 12 outside, 13 (b) with a subscription deny, 14 (a)+(d), 15 (a), 16 (b); 7, 8
-  and 10 moot or amended). **1.1 written 2026-10-31** (PR #281): the Iceberg product table on `glue_catalog` and the task
+  for the governed accounts, 12 outside, 13 (b) with a subscription deny, 14 (a)+(d), 15 (a), 16 (b); 7 and 8
+  moot, 10 taken 2026-11-09). **1.1 written 2026-10-31** (PR #281): the Iceberg product table on `glue_catalog` and the task
   `publish`, gated by `PUBLISH_LISTING`; the mirror to `awsds/app-etl` is the next GitLab sitting's, pass 1 the
   next Sandbox sitting's; the pinned lint refuses `content.catalog.enabled` (3.1 waits on a lint release), the
   CLI 1.0.9 every command while a manifest `${VAR}` is unset (the `staging` and `prod` stages at 4.9). Passes

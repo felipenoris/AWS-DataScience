@@ -374,3 +374,13 @@ Account ids are replaced by the account's name in angle brackets.*
   v76 on the project role carries `datazone:PostLineageEvent`, as v75 did at Stage 18 7.1. The sitting of
   2026-10-31 recorded decision 10 as amended and took the others one at a time; the chat sets out its
   options for the user's verdict. No AWS write.
+
+## 2026-11-09 — decision 10 taken
+
+- **[user]**, verbatim: *"Keep it on"*, to decision 10 as set out in chat on 2026-11-08: the Glue job's
+  OpenLineage settings on in `dev` and `test`, about 24 lineage events from pass 1's two runs that no API
+  deletes, the targets unchanged until 4.11.
+- **[Claude] Recorded**: the stage file's decision 10 and status, the waiting list's row, `CLAUDE.md`'s
+  bullet and the log index. The package `~/tmp/stage19-pass1.tar` already carries the settings
+  (`6370da60`), so nothing is rebuilt. Decision 4's form type stays open, its two paths put to the user
+  in chat. No AWS write.
