@@ -2393,7 +2393,10 @@ entry is still true is the reading.
   `GlueTableAssetType` asset `trades`, external identifier the link `glue_db_blerpkhn9nj7o0/trades`, created
   21:32:12Z, with no listing, beside its own `house-price`. The subscriber thus owns an unpublished asset
   for data it holds only by subscription, and a check that reads listings and not inventories misses it.
-  Seen once. Where: `log-stage-19-smus-native-data-product.md`, 2026-10-28.
+  Seen once. Read again 2026-11-10 with `search --search-scope ASSET`: the asset `cm329mc3bqu39s`'s
+  external identifier is `arn:aws:glue:us-west-2:<Sandbox Account 1>:table/glue_db_blerpkhn9nj7o0/trades.avhvbqn37ty7m8`;
+  the 2026-10-28 text named the link, not the field (`SUP-343`). Where: `log-stage-19-smus-native-data-product.md`,
+  2026-10-28 and 2026-11-10.
 
 - `SUP-198` **A listing's `DataSourceReferenceForm` keeps the data source's configuration as published, and
   disagrees with the source after an update** (read 2026-10-27 in Data Governance, Stage 6f decisions 2 to
@@ -2403,6 +2406,27 @@ entry is still true is the reading.
   returns the forms as a JSON string, beside `SubscriptionTermsForm.approvalRequired` (`YES`). A check of a
   source's settings reads the source, never the listing's copy. Where: `log-stage-06f-data-governance.md`,
   2026-10-26 and 2026-10-27; `docs/SMUS.md`, the listing item.
+
+- `SUP-343` **A Glue table asset's external identifier is the table's ARN with the owning project's id
+  suffixed to its last segment** (read 2026-11-10 with `search --search-scope ASSET` as Sandbox's
+  `InfrastructureAccess`, Stage 19 pass 1). All three assets of `eighth-experimentation` carry the shape
+  `arn:aws:glue:us-west-2:<Sandbox Account 1>:table/<database>/<table>.avhvbqn37ty7m8`, whichever act made
+  them: `house-price`, the user's portal publish of 2026-09-13; `trades`, the subscriber's source import of
+  2026-10-27 (`SUP-197`); `trades_notional`, the project's source started by the workflow's `publish` task
+  on 2026-11-10 (`createdBy` `SYSTEM`). The search's item carries no revision. No page this project read
+  gives the shape. Code that matches an asset on `<database>/<table>` finds none: Stage 19's run 1 failed
+  on it (*"0 asset(s) for app_etl/trades_notional in the project, one expected"*). Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-10; `examples/app-etl/code/app_etl_tasks.py`,
+  `names_table`.
+
+- `SUP-344` **Each save of a metadata form type is a `CreateFormType` that answers a new revision, and
+  `GetFormType`'s `createdAt` is the newest revision's** (read 2026-11-10 in Data Governance's trail and with
+  `get-form-type`, Stage 19 decision 4). The portal's two saves of `classification`, the form and then its
+  field, were two `CreateFormType` calls through `awsds-data-studio-domain-execution` in the person's
+  session, at 00:41:53 and 00:44:24 UTC, answered revisions 1 and 2. `get-form-type` answers revision 2 with
+  `createdAt` 00:44:24 UTC, so the form's first creation is in the trail alone, which redacts the model
+  (`"***"`). `GetFormType` answers Data Governance's `InfrastructureAccess`, no member of the owning project,
+  where `GetAsset` refuses it. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-10.
 
 ### Connections
 

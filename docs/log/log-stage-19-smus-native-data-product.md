@@ -535,3 +535,13 @@ Account ids are replaced by the account's name in angle brackets.*
   sha256 `abfb21321596cbec…`; the first kept as `~/tmp/stage19-pass1-run1.tar` until the sitting ends.
   The rerun's run 1 is the job's second write of the table and the source's second run over an asset
   that exists, and its listing the first; 1.3 stays between the rerun's two runs.
+- **[Claude] Correction** to the entry above on the double: the 2026-10-28 entry and `SUP-197` gave the
+  subscriber's asset's external identifier as *"the resource link `glue_db_blerpkhn9nj7o0/trades`"*, the
+  link and not the field. Read again 2026-11-10, the project's three assets carry the ARN with the
+  project's suffix: `house-price` (the user's publish of 2026-09-13), `trades` (`cm329mc3bqu39s`, the
+  subscriber's import of 2026-10-27) and `trades_notional`. The double's `app_etl/trades_notional`
+  followed that prose, Lesson 38's identifier read out of prose, rather than a shape nobody read.
+  `SUP-197` gains the reading, `SUP-343` the behaviour and `SUP-344` the form type's revisions.
+- **[user]**, verbatim: *"faça rebase em relação à main"*. **[Claude]** `main` held one commit past the
+  branch, `cc61288a` (#286, `docs/AWS_SUPPLEMENT.md`); the branch is pushed, and `CLAUDE.md` says a pushed
+  branch is never rebased, so it took `origin/main` by a merge (`ea8dc1cf`), clean.
