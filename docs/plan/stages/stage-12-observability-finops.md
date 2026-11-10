@@ -208,7 +208,9 @@ that is up so often it may as well be `[D]`.
   0 failures, and GitLab Shell's and Sidekiq's checks pass once both have booted. The host stopped at
   02:49:05 (`make gitlab-down`); the hub stayed up for the Stage 19 session. Item 11's list missed
   `docs/PRICING.md` §2 and §4, `runbooks/promotion.md`'s GitLab address and `runbooks/gitlab.md` §P; the
-  PR carries them.
+  PR carries them. The sitting's reconfigure printed three NGINX deprecations: the template takes GitLab
+  19.2's keys since 2026-11-10 (`runbooks/gitlab.md` §R), planned as the `gitlab.rb` object alone, and
+  the next GitLab session applies it and runs the refresh.
 
   **The path is Stage 7 step 8.2's restore rehearsal with a new value.** EBS never shrinks a volume
   (AWS's page, `docs/REFERENCES.md`), and the plan does not say so: with `-var data_volume_size=20` it

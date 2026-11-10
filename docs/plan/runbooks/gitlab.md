@@ -219,6 +219,12 @@ Once per host: after the stage's first apply, and after a replacement or the res
 
 The host's state is not in the user data, so a stop/start changes nothing and a rebooted host serves its last configuration.
 
+**The NGINX keys** follow GitLab 19.2's layout ([`docs/REFERENCES.md`](../../REFERENCES.md)). The GitLab vhost's settings sit under `gitlab_rails['nginx']`, the Pages vhost's under `gitlab_pages['nginx']`, and the daemon's own settings under `nginx[...]`. An `nginx[...]` setting never reaches a service's vhost. A reconfigure line ending in `has been deprecated. Please use ... instead.` names a key still in the old layout; 19.4.2 printed three on 2026-11-10, and the template uses the new keys since. Which certificate each vhost serves reads on the host:
+
+```bash
+sudo grep -rH 'ssl_certificate' /var/opt/gitlab/nginx/conf/
+```
+
 ## C. The certificates
 
 The leaves live 375 days and Terraform proposes their replacement inside the last 30 (`production/pki/`, `early_renewal_hours`). `./aws/supplychain.py` `SC-8` reads the runway from the published parameters and warns under 45 days. A re-issue is:

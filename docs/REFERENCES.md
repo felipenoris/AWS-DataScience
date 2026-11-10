@@ -2095,6 +2095,20 @@
     `pages.internal`), the wildcard record + wildcard certificate shape, `pages_external_url` +
     `pages_nginx` TLS keys, and access control as a Free-tier feature (Stage 7 step 4):
     <https://docs.gitlab.com/administration/pages/>.
+  - *NGINX settings in Omnibus, GitLab 19.2 and later* — the GitLab vhost's settings under
+    `gitlab_rails['nginx']`, each service's vhost under its own key (`gitlab_pages['nginx']`,
+    `registry['nginx']`, `gitlab_kas['nginx']`), the daemon's settings still under `nginx[...]`, legacy
+    `nginx[...]` vhost keys carried forward with a deprecation warning, and an `nginx[...]` setting never
+    copied to a service's vhost; the SSL page's manual certificate takes
+    `gitlab_rails['nginx']['ssl_certificate']` the same way (the template's keys since 2026-11-10):
+    <https://docs.gitlab.com/omnibus/settings/nginx/>.
+  - *Omnibus's NGINX translation code* — `translate_service_nginx_settings` prints `pages_nginx has been
+    deprecated` and copies every `pages_nginx` key, `enable` included, to `gitlab_pages['nginx']` where
+    the new key is unset; `translate_client_settings` does the same from `nginx[...]` to
+    `gitlab_rails['nginx']`. Read at `master` (19.5.3) on 2026-11-10, while the Pages page above still
+    documents `pages_nginx`:
+    <https://gitlab.com/gitlab-org/omnibus-gitlab/-/raw/master/files/gitlab-cookbooks/nginx/libraries/nginx.rb>,
+    <https://gitlab.com/gitlab-org/omnibus-gitlab/-/raw/master/files/gitlab-cookbooks/gitlab/libraries/gitlab_rails.rb>.
   - *Omnibus supported OSes* — Amazon Linux 2023 is supported since 16.3.0, amd64 and arm64, which is
     what lets the GitLab host keep the project's AL2023/SSM-parameter AMI pattern (Stage 7 step 1.2):
     <https://docs.gitlab.com/administration/package_information/supported_os/>.

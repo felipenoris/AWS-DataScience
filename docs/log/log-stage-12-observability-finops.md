@@ -467,3 +467,30 @@ acts in a Session Manager shell on the host. Times UTC. No account id appears be
 - **[Claude] The texts that state the volume or price it**, in PR #285: item 11's list, and
   `docs/PRICING.md` §2 and §4, `runbooks/promotion.md`'s GitLab address and `runbooks/gitlab.md` §P, which
   item 11 missed; `docs/AWS_SUPPLEMENT.md`'s `SUP-314` takes the 2026-11-09 plan reading.
+
+## 2026-11-10 — the reconfigure's NGINX deprecations: the template on GitLab 19.2's keys, planned
+
+*Claude, the same session, at the user's request, read-only: GitLab's documentation and the omnibus
+source read through web-fetch subagents, and `production/tooling/` planned at 03:08 UTC as the
+infrastructure user (`InfrastructureAccess`, `awsds-infra-prod`), Terraform 1.16.6 and provider
+`hashicorp/aws` 6.68.0, from the worktree. Nothing applied. No account id appears below.*
+
+- **[Claude] GitLab's documentation**: `docs.gitlab.com/omnibus/settings/nginx/` and `.../ssl/`, both
+  stating 19.2, put the GitLab vhost's settings under `gitlab_rails['nginx']` since 19.2, carry legacy
+  `nginx[...]` vhost keys forward with a warning, an explicit new key winning, and give each service's
+  vhost its own key (`gitlab_pages['nginx']`, `registry['nginx']`, `gitlab_kas['nginx']`); neither states
+  a removal version. `docs.gitlab.com/administration/pages/` still documents `pages_nginx[...]`, and
+  `docs.gitlab.com/update/deprecations/` has no entry for either.
+- **[Claude] The omnibus source** at `master` (19.5.3): `nginx/libraries/nginx.rb`'s
+  `translate_service_nginx_settings` prints the `pages_nginx` line and copies every key, `enable`
+  included, to `gitlab_pages['nginx']` where the new key is unset; `gitlab/libraries/gitlab_rails.rb`'s
+  `translate_client_settings` prints the `nginx['<key>']` line and copies to `gitlab_rails['nginx']`.
+  `package/libraries/deprecations.rb`, the list that carries removal versions, holds none of the three.
+- **[Claude] The template**: `gitlab_rails['nginx']['ssl_certificate']` and `['ssl_certificate_key']`,
+  `gitlab_pages['nginx']['enable']`, `['ssl_certificate']` and `['ssl_certificate_key']`, the paths
+  unchanged.
+- **[Claude] `production/tooling/` planned** with `-var-file` naming the project folder's
+  `secrets/saml.auto.tfvars`: `aws_s3_object.gitlab_rb will be updated in-place`, the five lines replaced
+  and nothing else in the file, `Plan: 0 to add, 1 to change, 0 to destroy.` The data volume reads no
+  change at 20 GiB. The apply and `awsds-gitlab-refresh` wait for the next GitLab session
+  (`waiting-on-the-user.md`).
