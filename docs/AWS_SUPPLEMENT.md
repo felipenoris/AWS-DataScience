@@ -2437,7 +2437,13 @@ entry is still true is the reading.
   `get-asset` the listing `ACTIVE`. Code that waits for the answered revision waits forever: Stage 19's
   rerun failed on it (*"listing ct5d0innrgw3v4 revision 1 not ACTIVE after 120 s"*) with the product
   listed. Read the latest revision, one at or past the answered one. A republication of a listed asset is
-  unmeasured. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-10;
+  unmeasured. Read again at a republication, 2026-11-10 03:23 UTC (run `hiErIl5sGJSyRFx`): the change set
+  answered revision 3 through the `datazone` interface endpoint; revision 3 read `UPDATING` by the task,
+  then `ACTIVE` at 03:23:00.426 UTC still carrying the previous asset revision 2, and revision 4 `ACTIVE`
+  0.9 s later carrying asset revision 6, the source run's. `UPDATING` is absent from the API's model
+  (`ListingStatus`: `CREATING`, `ACTIVE`, `INACTIVE`; aws-cli 2.37.12). The publication is the revision
+  past the answered one in both readings, and a wait at or past it takes revision 3's previous content.
+  Where: `log-stage-19-smus-native-data-product.md`, 2026-11-10;
   `examples/app-etl/code/app_etl_tasks.py`, `publish_asset`.
 
 ### Connections

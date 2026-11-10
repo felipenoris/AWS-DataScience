@@ -608,3 +608,60 @@ Account ids are replaced by the account's name in angle brackets.*
   the next GitLab sitting, this pass's mirror.
 - **[user]**, verbatim: *"Sim, uma run"*, to the proposal above: 1.3 written in the portal first, then
   the third package with `SKIP_RUN1=1 NEGATIVE=1`, its one run and verification ii's negative.
+- **[user]**, verbatim: *"Segue o log. Veja se está ok, pois aparentemente terminou com erro. Vou manter o
+  ambiente no ar até você analisar. Estando tudo ok, me avise para derrubar o ambiente, ou para rodar um
+  novo teste."* The third package's `pass1.log`, its lines of record verbatim:
+
+  ```
+  == 2026-11-10T03:07:26Z the identity: this space must be eighth-experimentation's
+  the project role: SageMaker
+  == 2026-11-10T03:07:28Z the house image and the MWAA Serverless endpoint
+  airflow-serverless.us-west-2.api.aws -> 10.20.50.217 (the mwaa group's endpoint)
+  == 2026-11-10T03:07:30Z deploy to dev
+  📊 Total files deployed: 11
+  ✅ Deployment completed successfully!
+  == 2026-11-10T03:09:18Z run1 skipped (SKIP_RUN1=1): the first publication is run wf5GVes1RglmGsM's, and 1.3 was written before this start
+  == 2026-11-10T03:09:18Z run2: start
+  📋 Run ID: hiErIl5sGJSyRFx
+  03:11:53Z run2 RUNNING | transform=RUNNING/-s
+  03:13:54Z run2 RUNNING | process=RUNNING/-s transform=SUCCESS/94s
+  03:21:26Z run2 RUNNING | process=SUCCESS/490s summarize=QUEUED/-s transform=SUCCESS/94s
+  03:23:27Z run2 RUNNING | process=SUCCESS/490s publish=RUNNING/-s summarize=SUCCESS/7s transform=SUCCESS/94s write_result=SUCCESS/12s
+  03:25:27Z run2 FAILED | process=SUCCESS/490s publish=FAILED/18s summarize=SUCCESS/7s transform=SUCCESS/94s write_result=SUCCESS/12s
+  FATAL 2026-11-10T03:25:28Z run2: the run did not end in SUCCESS (exit 3); the session's laptop reads the task logs
+  ```
+
+  The script stops at the `FATAL`, so verification ii's negative did not run.
+- **[Claude] Read** at 03:28 to 03:31 UTC as `awsds-infra-sandbox-1`. `publish`'s task log: *"source run
+  5bzy0z4wh4sr2o: SUCCESS, {"added": 0, "failed": 0, "unchanged": 0, "updated": 1}"*, then
+  *"RuntimeError: listing ct5d0innrgw3v4 revision 3 is UPDATING"*. The listing: revision 4 `ACTIVE`,
+  updated 03:23:01.355 UTC, carrying asset revision 6; revision 3 `ACTIVE`, updated 03:23:00.426 UTC,
+  carrying asset revision 2; revision 2 `ACTIVE` and revision 1 `CREATING` as before; revision 5 absent.
+  Sandbox's trail: `CreateListingChangeSet` at 03:23:00 UTC by the project role's session
+  `AmazonMWAAServerless` from `10.20.40.253` through `vpce-09e2724f4cf1ea60c`, the
+  `com.amazonaws.us-west-2.datazone` interface endpoint with private DNS, answered
+  `{"listingRevision": "3", "listingId": "ct5d0innrgw3v4"}`. `list-asset-revisions`: 1 and 2 by `SYSTEM`
+  (02:12:58 and 02:44:41 UTC), 3 to 5 by the data scientist's profile `28f1b390-…` at 03:04:05, 03:05:51
+  and 03:06:10 UTC (1.3), 6 by `SYSTEM` at 03:22:56 UTC (the source run). Revision 6 keeps 1.3's
+  metadata: the description *"trades_notional description"*, the README in `AssetCommonDetailsForm` and
+  `classification` `{"classification": "internal"}` (form revision 2). Listing revision 4 carries all
+  three, beside `SubscriptionTermsForm` `approvalRequired` `YES`. The CLI's model (aws-cli 2.37.12) lists
+  `ListingStatus` as `CREATING`, `ACTIVE`, `INACTIVE`: no `UPDATING`. So 1.3 is read (the source run's
+  update keeps the business metadata, and the form travels to the listing: verification iv's first
+  half), 1.4 is read (each republication adds two listing revisions, the change set's and the
+  publication), and the change set takes the `datazone` endpoint (verification ii). The product is
+  republished; the task failed on a status it did not know (`SUP-345`).
+- **[Claude] Fixed** (`ee6b8525`): the task waits for a listing revision past the change set's, the one
+  carrying the publication in both readings, with `CREATING` and `UPDATING` pending. The fix of
+  `db22976c` took a revision at or past the change set's, which on this republication would have taken
+  revision 3's previous asset revision for the publication. The double models both readings. 72 passed,
+  1 skipped; ruff clean; the pinned lint `ok: 9 arquivo(s)`.
+- **[user]**, verbatim: *"aproveite para fazer rebase em relação à main"*. **[Claude]** `main` held one
+  commit past the branch, `2d63dacc` (#285, Stage 12 step 5.3); the branch is pushed, so it took
+  `origin/main` by a merge (`1f93e61b`), clean, `examples/app-etl/` unchanged by it.
+- **[Claude] Rebuilt the package** from `ee6b8525`, identical at `1f93e61b`: 26 files, no AppleDouble entry
+  and no extended-attribute header by Python's `tarfile`, 212,480 bytes, sha256 `1a452386c0a4605d…`;
+  `pass1.sh` as the third package's.
+- **[Claude] Proposed** a fourth run with `SKIP_RUN1=1 NEGATIVE=1`: the task's first `SUCCESS`, a second
+  reading of a republication's revisions, which the fix relies on, and verification ii's negative. The
+  choice is the user's.
