@@ -494,3 +494,60 @@ infrastructure user (`InfrastructureAccess`, `awsds-infra-prod`), Terraform 1.16
   and nothing else in the file, `Plan: 0 to add, 1 to change, 0 to destroy.` The data volume reads no
   change at 20 GiB. The apply and `awsds-gitlab-refresh` wait for the next GitLab session
   (`waiting-on-the-user.md`).
+
+## 2026-11-10 — the NGINX keys applied and refreshed, the orphan snapshots deleted
+
+*Claude and the user, the same session after PR #285's merge (`2d63dacc`, 03:29:08 UTC). Claude's AWS
+calls ran as the infrastructure user in Production (`InfrastructureAccess`, `awsds-infra-prod`),
+Terraform 1.16.6 and provider `hashicorp/aws` 6.68.0, from a worktree of `main`'s tree; the apply and
+the deletion on the user's go-ahead in the session. The host's commands were the user's, in a Session
+Manager shell. No account id appears below.*
+
+- **[Claude] `production/tooling/` planned** at 03:42 UTC with `-var-file` naming the project folder's
+  `secrets/saml.auto.tfvars`: `aws_s3_object.gitlab_rb will be updated in-place`, `Plan: 0 to add, 1 to
+  change, 0 to destroy.` **Applied** from the saved plan, 03:42:59 to 03:43:10: `Modifications complete
+  after 2s [id=awsds-prod-gitlab-objects/config/gitlab.rb]`, `Apply complete! Resources: 0 added, 1
+  changed, 0 destroyed.`
+- **[user] `make gitlab-up`**: the host started at 03:47:13 (its `LaunchTime`).
+- **[user] The refresh and the reading**, from the shell:
+
+  ```text
+  sh-5.2$ sudo awsds-gitlab-refresh > /tmp/refresh.log 2>&1; echo "exit: $?"
+  grep -n "deprecated" /tmp/refresh.log
+  tail -3 /tmp/refresh.log
+  sudo grep -rH 'ssl_certificate' /var/opt/gitlab/nginx/conf/
+  exit: 0
+  540:  * ruby_block[check_postgresql_version_is_deprecated] action run (skipped due to not_if)
+  [2026-11-10T03:55:32+00:00] INFO: Report handlers complete
+  Infra Phase complete, 5/782 resources updated in 19 seconds
+  gitlab Reconfigured!
+  /var/opt/gitlab/nginx/conf/service_conf/gitlab-rails.conf:  ssl_certificate /etc/gitlab/ssl/gitlab.awsds.internal.crt;
+  /var/opt/gitlab/nginx/conf/service_conf/gitlab-rails.conf:  ssl_certificate_key /etc/gitlab/ssl/gitlab.awsds.internal.key;
+  /var/opt/gitlab/nginx/conf/service_conf/gitlab-pages.conf:  ssl_certificate /etc/gitlab/ssl/awsds-pages.internal.crt;
+  /var/opt/gitlab/nginx/conf/service_conf/gitlab-pages.conf:  ssl_certificate_key /etc/gitlab/ssl/awsds-pages.internal.key;
+  ```
+
+  **[Claude]** The one line matching `deprecated` names a skipped resource: no `has been deprecated` line
+  printed. Each vhost's file under `service_conf/` names its own certificate.
+- **[Claude] From the laptop, the tunnel up**: at 03:56:16, 44 s after the reconfigure's end, the sign-in
+  page and `app-etl`'s Pages site both answered `502`. At 03:58:34 `openssl s_client` read
+  `subject= /O=AWS-DataScience/CN=gitlab.awsds.internal` (SAN `DNS:gitlab.awsds.internal`) and, from
+  `app-etl-ffa1fa.awsds-pages.internal`, `subject= /O=AWS-DataScience/CN=*.awsds-pages.internal` (SAN
+  `DNS:*.awsds-pages.internal, DNS:awsds-pages.internal`), both `issuer= /O=AWS-DataScience/CN=awsds
+  internal root CA` and `notAfter=Oct 22 06:35:12 2027 GMT`; the sign-in page answered `200` (2.72 s) and
+  the site still `502`. From 03:59:00 the site answered `302` to `https://projects.awsds-pages.internal/auth`,
+  and at 03:59:28, verified against the laptop's trust store, `gitlab sign-in: http=200 ssl_verify=0` and
+  `pages: http=302 ssl_verify=0`.
+- **[Claude] The new volume's first snapshot**: `snap-0fdbe96fbb0cd8be7`, 20 GiB, of
+  `vol-0f6fa0f0ae07f7064` under `policy-029a3e7e9dd6426be`, started 03:59:02 and read `completed` at
+  04:00:43.
+- **[Claude] The fourteen snapshots no policy retires, deleted** (5.3 item 12, the user's decision). Re-read
+  at 04:01:36: seven of `vol-072c3d3dc9883b104` under `policy-0cd541e97bea1d1c4` (2026-10-19 to 10-25)
+  and seven of `vol-0e0fff3694f95fa63` under `policy-0776691c894780872` (2026-11-03 to 11-09), 50 GiB
+  each, neither volume nor policy left; the account owned no AMI and held no Recycle Bin rule for EBS
+  snapshots, so the deletion is final. `ec2 delete-snapshot` from 04:02:07 to 04:02:25, fourteen `rc=0`;
+  the account then owned one snapshot, `snap-0fdbe96fbb0cd8be7`.
+- **[user] `make gitlab-down`**: the host `stopped`, CloudTrail's `StopInstances` at 04:01:26 by the
+  infrastructure user. **[Claude]** At 04:06:10 no interface endpoint was left in the SharedServices VPC,
+  and at 04:06:37 none in Production; the hub's two hosts kept running for the Stage 19 session, told
+  at 04:06.
