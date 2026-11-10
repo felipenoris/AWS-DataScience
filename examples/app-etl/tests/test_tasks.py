@@ -205,19 +205,33 @@ SOURCES = {
     "src-product": ["app_etl"],
     "src-default": ["glue_db_example"],
 }
+# The search's asset items in the shape read on 2026-11-10, the account left out: the external
+# identifier is the table's ARN with the project's id suffixed to its last segment, and no item
+# carries a revision.
 ASSETS = [
     {
         "identifier": "asset-product",
-        "externalIdentifier": "app_etl/trades_notional",
-        "latestRevision": "3",
+        "name": "trades_notional",
+        "typeIdentifier": "amazon.datazone.GlueTableAssetType",
+        "externalIdentifier": (
+            f"arn:aws:glue:us-west-2:ACCOUNT:table/app_etl/trades_notional.{PROJECT}"
+        ),
     },
-    {"identifier": "asset-other", "externalIdentifier": "glue_db_example/trades_notional"},
+    {
+        "identifier": "asset-other",
+        "name": "trades_notional",
+        "typeIdentifier": "amazon.datazone.GlueTableAssetType",
+        "externalIdentifier": (
+            f"arn:aws:glue:us-west-2:ACCOUNT:table/glue_db_example/trades_notional.{PROJECT}"
+        ),
+    },
 ]
 
 
 class FakeDataZone:
     """The DataZone calls `publish` makes, over SOURCES and ASSETS, each run and listing ending as
-    the sequences say; every call recorded."""
+    the sequences say and the first `empty_searches` searches answering nothing; every call
+    recorded."""
 
     def __init__(
         self,
@@ -228,6 +242,7 @@ class FakeDataZone:
     ):
         self.sources, self.assets = sources, assets
         self.run_statuses, self.listing_statuses = list(run), list(listing)
+        self.empty_searches = 0
         self.calls = []
 
     def get_paginator(self, name):
@@ -240,6 +255,9 @@ class FakeDataZone:
             return [{"items": [{"dataSourceId": source} for source in self.sources]}]
         assert name == "search" and kw["searchScope"] == "ASSET"
         assert kw["owningProjectIdentifier"] == PROJECT and kw["searchText"] == "trades_notional"
+        if self.empty_searches:
+            self.empty_searches -= 1
+            return [{"items": []}]
         return [{"items": [{"assetItem": asset} for asset in self.assets]}]
 
     def get_data_source(self, domainIdentifier, identifier):
@@ -297,7 +315,6 @@ def test_publish_runs_the_source_then_lists_the_assets_latest_revision(datazone,
         "data_source": "src-product",
         "source_run": "run-1",
         "asset": "asset-product",
-        "asset_revision": "3",
         "listing": "listing-1",
         "listing_revision": "2",
     }
@@ -360,10 +377,39 @@ def test_publish_fails_when_the_run_outlives_its_timeout(datazone, monkeypatch):
         publish()
 
 
-def test_publish_refuses_a_table_the_run_did_not_import(datazone):
+@pytest.mark.parametrize(
+    ("external", "expected"),
+    [
+        (f"arn:aws:glue:us-west-2:ACCOUNT:table/app_etl/trades_notional.{PROJECT}", True),
+        ("arn:aws:glue:us-west-2:ACCOUNT:table/app_etl/trades_notional", True),
+        ("arn:aws:glue:us-west-2:ACCOUNT:table/app_etl/trades_notional.prj-other", False),
+        ("arn:aws:glue:us-west-2:ACCOUNT:table/glue_db_example/trades_notional", False),
+        ("arn:aws:glue:us-west-2:ACCOUNT:table/app_etl/trades_notional_v2", False),
+        ("", False),
+    ],
+)
+def test_names_table_reads_the_arn_with_or_without_the_projects_suffix(external, expected):
+    assert app_etl_tasks.names_table(external, PROJECT, "app_etl", "trades_notional") is expected
+
+
+def test_publish_asks_the_search_again_until_the_asset_appears(datazone):
+    datazone.empty_searches = 2
+    assert json.loads(publish())["asset"] == "asset-product"
+    assert sum(call[0] == "search" for call in datazone.calls) == 3
+
+
+def test_publish_refuses_a_table_the_run_did_not_import(datazone, monkeypatch):
+    monkeypatch.setattr(app_etl_tasks, "ASSET_TIMEOUT", 0)
     datazone.assets = [ASSETS[1]]
     with pytest.raises(RuntimeError, match=r"0 asset\(s\) for app_etl/trades_notional"):
         publish()
+
+
+def test_publish_refuses_two_assets_for_the_table_at_once(datazone):
+    datazone.assets = [ASSETS[0], {**ASSETS[0], "identifier": "asset-copy"}]
+    with pytest.raises(RuntimeError, match=r"2 asset\(s\) for app_etl/trades_notional"):
+        publish()
+    assert sum(call[0] == "search" for call in datazone.calls) == 1
 
 
 def test_publish_fails_on_a_listing_that_does_not_activate(datazone):

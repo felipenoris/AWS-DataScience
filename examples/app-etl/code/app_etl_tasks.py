@@ -83,10 +83,12 @@ def summarize(outputs: str, **context) -> str:
 
 
 # The publication: the worker's variables read for an identifier the deploy left empty, how long a
-# source run and a listing may take before the task fails, and the seconds between two readings.
+# source run, the asset's search and a listing may take before the task fails, and the seconds
+# between two readings.
 DOMAIN_VARIABLE = "DataZoneDomainId"
 PROJECT_VARIABLE = "DataZoneProjectId"
 SOURCE_RUN_TIMEOUT = 600
+ASSET_TIMEOUT = 120
 LISTING_TIMEOUT = 120
 POLL_SECONDS = 5
 
@@ -143,27 +145,41 @@ def run_source(datazone, domain: str, source: str, timeout: int = SOURCE_RUN_TIM
         time.sleep(POLL_SECONDS)
 
 
-def find_asset(datazone, domain: str, project: str, database: str, table: str) -> dict:
-    """The project's one inventory asset whose external identifier ends in `database/table`."""
-    found = []
-    paginator = datazone.get_paginator("search")
-    pages = paginator.paginate(
-        domainIdentifier=domain,
-        searchScope="ASSET",
-        owningProjectIdentifier=project,
-        searchText=table,
-    )
-    for page in pages:
-        for item in page.get("items", []):
-            asset = item.get("assetItem") or {}
-            external = asset.get("externalIdentifier") or ""
-            if external.split("/")[-2:] == [database, table]:
-                found.append(asset)
-    if len(found) != 1:
-        raise RuntimeError(
-            f"{len(found)} asset(s) for {database}/{table} in the project, one expected"
+def names_table(external: str, project: str, database: str, table: str) -> bool:
+    """Whether a Glue table asset's external identifier, the table's ARN, names `database/table`.
+    A project's data source suffixes the ARN's last segment with `.<project id>`, read 2026-11-10:
+    `arn:aws:glue:<region>:<account>:table/app_etl/trades_notional.<project id>`."""
+    return external.split("/")[-2:] in ([database, table], [database, f"{table}.{project}"])
+
+
+def find_asset(
+    datazone, domain: str, project: str, database: str, table: str, timeout: int | None = None
+) -> dict:
+    """The project's one inventory asset for `database/table`. The search is DataZone's index, and
+    no reading dates when it answers for an asset its source run has just added, so an empty answer
+    is asked again until `timeout` seconds pass; two matches fail at once."""
+    deadline = time.monotonic() + (ASSET_TIMEOUT if timeout is None else timeout)
+    while True:
+        found = []
+        paginator = datazone.get_paginator("search")
+        pages = paginator.paginate(
+            domainIdentifier=domain,
+            searchScope="ASSET",
+            owningProjectIdentifier=project,
+            searchText=table,
         )
-    return found[0]
+        for page in pages:
+            for item in page.get("items", []):
+                asset = item.get("assetItem") or {}
+                if names_table(asset.get("externalIdentifier") or "", project, database, table):
+                    found.append(asset)
+        if len(found) == 1:
+            return found[0]
+        if found or time.monotonic() >= deadline:
+            raise RuntimeError(
+                f"{len(found)} asset(s) for {database}/{table} in the project, one expected"
+            )
+        time.sleep(POLL_SECONDS)
 
 
 def publish_asset(datazone, domain: str, asset: str, timeout: int = LISTING_TIMEOUT) -> dict:
@@ -218,7 +234,6 @@ def publish(
         "data_source": source,
         "source_run": run,
         "asset": asset["identifier"],
-        "asset_revision": asset.get("latestRevision") or asset.get("revision"),
         **publish_asset(datazone, domain, asset["identifier"]),
     }
     print(f"published {database}.{table}: asset {result['asset']}, listing {result['listing']}")
