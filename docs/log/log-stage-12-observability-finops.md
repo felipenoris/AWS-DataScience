@@ -347,3 +347,49 @@ the plan revised from a review of Stages 7 and 8, on the user's request to corre
 - **[Claude] 8.5**: D36 §6 schedules the root's rotation, rehearsed once with its time recorded, at this
   stage, and this file carried nothing for it. The step names the surfaces a new root rebuilds and leaves
   its procedure to be written with it.
+
+## 2026-11-05 — the `EC2 - Other` line by usage type, in every account with a profile
+
+*Claude, read-only, in the session `ec2-other-daily-charge` (branch
+`claude/ec2-other-daily-charge-8b47ca`), as the infrastructure user: `InfrastructureAccess` through the
+`awsds-infra-*` profiles and `AWSAdministratorAccess` through `awsds-policy-canary`. Written 2026-11-09
+from the session's readings. No account id appears below.*
+
+- **[Claude] Cost Explorer**, one `get-cost-and-usage` per account (six requests, 0.06 USD): service
+  `EC2 - Other`, daily, 2026-10-20 to 2026-11-04, by usage type. Production carries the line, 3.58 USD
+  over the window: `USW2-EBS:VolumeUsage.gp3` at 0.2013 USD a day in October and 0.2080 from 2026-11-01
+  (2.5161 and 2.6000 GB-month a day, 78 GiB over a 31-day and a 30-day month), and
+  `USW2-EBS:SnapshotUsage` at 0.0049 to 0.0053 a day. Sandbox read 0.0128 on 2026-10-30 alone; Staging,
+  Data Governance, Identity and `Policy Canary` read nothing.
+- **[Claude] The objects behind it**, `describe-volumes`, `-instances` and `-snapshots` in Production:
+  four `gp3` volumes, 78 GiB: `vol-0e0fff3694f95fa63` (50 GiB, `awsds-prod-gitlab-data`),
+  `vol-0023e899ae8e330b3` (12 GiB, GitLab's root), `vol-0b1309dbd9c3cf347` and `vol-098c1a6c96309bb32`
+  (8 GiB each, the VPN and proxy roots), the three hosts `stopped`; 78 × 0.08 / 30 = 0.208 USD a day, the
+  bill's figure. The other five accounts hold no volume. Fourteen snapshots: seven of
+  `vol-0e0fff3694f95fa63` under `policy-0776691c894780872` (7 kept) and seven of
+  `vol-072c3d3dc9883b104`, 2026-10-19 to 10-25, whose policy `policy-0cd541e97bea1d1c4` answers
+  `ResourceNotFoundException`, so no policy retires them.
+
+## 2026-11-09 — step 5.3 written: GitLab's data volume read from its snapshots, and the plans of a smaller one
+
+*Claude, read-only, the same session, after the user asked for the shrink to be prepared; the plans as the
+infrastructure user (`InfrastructureAccess`, `awsds-infra-prod`), Terraform 1.16.6 and provider
+`hashicorp/aws` 6.68.0, from the worktree. No account id appears below.*
+
+- **[Claude] What measures the volume's use with the host stopped**: no `df` of it is recorded, and
+  Production publishes no `CWAgent` metric.
+- **[Claude] EBS direct API**, `aws ebs list-snapshot-blocks`, one call per snapshot: 2,467 blocks of
+  512 KiB in `snap-00ad2f1f217e591eb` (2026-11-09 03:46 UTC) and in `snap-0e3a3c197eaf4208b` (2026-11-03),
+  1.20 GiB of the 50 GiB, 2.4%. The volume is XFS mounted without `discard` (`user-data.sh.tftpl`), so a
+  freed block still counts. The newest object in `awsds-prod-gitlab-backup` is the archive of 2026-10-26
+  22:15:11 UTC, 14,356,480 bytes.
+- **[Claude] `production/tooling/` planned**, each plan with `-var-file` naming the project folder's
+  `secrets/saml.auto.tfvars`, nothing applied: as deployed, `No changes. Your infrastructure matches the
+  configuration.`; with `-var data_volume_size=20`, `aws_ebs_volume.data will be updated in-place`,
+  `size = 50 -> 20`, `Plan: 0 to add, 1 to change, 0 to destroy.`, a decrease AWS's page rules out;
+  `plan -destroy`, `Plan: 0 to add, 0 to change, 17 to destroy.`, the set of Stage 7 step 8.2's
+  rehearsal.
+- **[Claude] Price List Query API**: EBS direct APIs' `List` at 0.0006 USD per 1,000 requests in
+  `us-west-2` and 0.0011 in `sa-east-1` (`docs/PRICING.md` §8).
+- **[Claude] Step 5.3 written**, with `runbooks/gitlab.md` §B's paragraph on a smaller volume; the sitting
+  waits on the user (`waiting-on-the-user.md`).

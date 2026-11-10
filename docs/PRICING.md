@@ -983,6 +983,7 @@ Paulo that discipline is worth exactly twice as much.
 | EBS `gp3` storage (USD/GB-mo) | 0.152 | 0.08 | 1.90 |
 | EBS `gp3` provisioned IOPS (USD/IOPS-mo) | 0.0095 | — | |
 | EBS snapshot storage (USD/GB-mo) — `us-west-2` **measured 2026-10-12** with the Price List Query API (`USW2-EBS:SnapshotUsage`; the archive tier is 0.0125), for Stage 7 step 1.2's daily DLM snapshots of GitLab's data volume | 0.068 | **0.05** | 1.36 |
+| EBS direct APIs, `ListSnapshotBlocks` (USD per 1,000 requests) — **measured 2026-11-09** with the Price List Query API (`USW2-EBS:directAPI.snapshot.List`; `Get` 0.003 and `Put` 0.006 per 1,000 SnapshotAPIUnits), for Stage 12 step 5.3's count of a snapshot's written blocks, two calls | 0.0011 | **0.0006** | 1.83 |
 | EC2 `t4g.large` is **GitLab's host since 2026-10-12** (Stage 7 step 1.2, `[D]`): 0.0672/h while a session runs it; the two volumes (12 GiB root + 50 GiB data, gp3) bill ~4.96/month stopped or not | | | |
 | SageMaker Studio JupyterLab `ml.t3.medium` | 0.081 | 0.050 | 1.62 |
 | SageMaker Studio JupyterLab / Code Editor `ml.t3.large` (2026-09-07 — the remote-IDE floor) | 0.161 | **0.100** | 1.61 |

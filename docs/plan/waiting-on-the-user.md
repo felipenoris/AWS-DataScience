@@ -13,6 +13,7 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | Stage 19 pass 1's sitting: the hub, the tunnel and GitLab up, the mirror's MR on `awsds/app-etl`, *Create database* `app_etl` in `eighth-experimentation`, the deploy and the runs from a space | [Stage 19](stages/stage-19-smus-native-data-product.md), the list before 1.2 | passes 1 to 3; the application change is written and the project role's grant applied (2026-11-08) |
 | The GitLab password of the local user, printed into a session's transcript by a keychain probe on 2026-11-08, rotated at the next GitLab session | [Stage 19's log](../log/log-stage-19-smus-native-data-product.md), 2026-11-08 | nothing; the exposure lasts until the rotation |
 | The three Claude 5.5 model agreements (Sonnet 4.5 is Legacy since 2026-10-08) | [6e](stages/stage-06e-claude-code-bedrock.md) decision 17, PR #108 | PR #108's applies and the image's model pins; the PR conflicts with main in `CLAUDE.md`, `docs/AWS_STATE.md` and `docs/log/INDEX.md` (read 2026-10-18), for its session to resolve when the agreements arrive |
+| The go-ahead for step 5.3's sitting: `production/tooling/`'s backup, destroy, re-apply with a 20 GiB data volume and restore, at a GitLab session with the hub up and the tunnel on | [Stage 12](stages/stage-12-observability-finops.md) 5.3 | 2.40 USD a month of idle EBS, the data volume's 4.00 becoming 1.60; GitLab is down for about 25 minutes of the sitting |
 
 ## Decisions
 

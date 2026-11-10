@@ -2746,6 +2746,17 @@
   performs in one apply, in either direction, with the `[P]` Elastic IP and every client `.conf`
   untouched: <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/change-instance-type-of-ebs-backed-instance.html>.
 
+- Modify an Amazon EBS volume using Elastic Volumes operations — its limitations: *"You can't decrease
+  the volume size."* The page's route to a smaller volume is a new one and an application-level copy
+  (`rsync`); GitLab's goes through its backup and restore instead, since the Terraform provider plans a
+  decrease as an in-place update (Stage 12 step 5.3, read 2026-11-09):
+  <https://docs.aws.amazon.com/ebs/latest/userguide/ebs-modify-volume.html>.
+
+- Extend the file system after resizing an Amazon EBS volume — a larger volume needs its partition, when
+  it has one, then its filesystem extended on the instance, `xfs_growfs -d <mount point>` for XFS
+  (`runbooks/gitlab.md` §B, read 2026-11-09):
+  <https://docs.aws.amazon.com/ebs/latest/userguide/recognize-expanded-volume-linux.html>.
+
 - AWS: Denies access to AWS based on the source IP — the deny-by-IP example, with the note that "the policy does not deny requests made by AWS services using forward access sessions, as the original requester's IP address is preserved". That scopes Stage 4 step 8.1's `aws:ViaAWSService` carve-out: FAS flows survive the bare `NotIpAddress`, and the carve-out defends the on-behalf calls that are *not* FAS: <https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_examples_aws_deny-ip.html>.
 
 - Quotas and limits in IAM Identity Center — a permission set's inline policy holds at most 32,768 bytes and 10,240 non-whitespace bytes, not increasable — the ceiling Stage 4 verification (vii) watches, because the overflow fails at provisioning rather than in `plan`: <https://docs.aws.amazon.com/singlesignon/latest/userguide/limits.html>.

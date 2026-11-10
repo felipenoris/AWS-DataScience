@@ -339,6 +339,12 @@ The destroy lists 17 resources (2026-10-26): the instance, the data volume with 
 
 A restore proves itself by a pre-backup repository cloning cleanly and the API reading what it read before the backup: the projects, `main`'s commit and the tags, the users and groups, the runners (their records survive and read `online` on their restored `contacted_at` until the timeout; the hosts re-register at the next `make gitlab-up`), and the instance settings, which travel with the database (§I step 6), while a fresh host without a restore carries GitLab's defaults. **Measured 2026-10-26** (Stage 7 step 8.2, the log): the destroy 1 min 17 s, the re-apply 58 s, the first boot 8 min 07 s, the fetch and the restore of a 15 MB archive 58 s (six `ERROR: must be owner of extension` lines, GitLab's documented noise for a restore run as the `gitlab` database user; `unable to reset refs ... Proceeding with a normal restore` per repository on the empty Gitaly), `reconfigure` 14 s, the sign-in page back 24 min 16 s after the destroy began. `gitlab:check` run straight after the restart reports GitLab Shell's internal API and Sidekiq down while they boot; a minute later both are up. The object-storage families (`uploads`, `artifacts`, `pages`, `lfs`, `packages`, ...) each restore in a second: they live in the bucket. A browser session outlives the restore through its remember-me cookie; Redis is not in the archive, so a plain session signs in again.
 
+**A smaller data volume** is the rehearsal with the new `data_volume_size` committed before the re-apply ([Stage 12](../stages/stage-12-observability-finops.md) step 5.3). EBS never shrinks a volume ([`docs/REFERENCES.md`](../../REFERENCES.md)), and the plan does not say so: a smaller value reads `aws_ebs_volume.data will be updated in-place` (provider 6.68.0, 2026-11-09), a change EBS does not make. A larger value is the in-place update EBS accepts, then the filesystem grown in a shell on the host, the volume holding XFS on the whole device:
+
+```bash
+sudo xfs_growfs -d /var/opt/gitlab
+```
+
 ## K. The runners
 
 Each runner is a project runner, never an instance runner (step 6.1), and an `[E]` host of `production/runners/` that registers at its first boot from its token container. Which `make gitlab-up` raises which runner is §U step 3.
