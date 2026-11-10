@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Decision 6 taken 2026-10-31 by the user as (b), the AWS model** ([log](../../log/log-stage-19-smus-native-data-product.md)): *"Decido pelo modelo da AWS, com o uso previsto do SMUS e promoção entre ambientes via ferramenta SMUS CICD CLI"*. Staging and Production each gain a deployment project, the CI/CD CLI deploys every stage, and Production publishes its own product; D41 item 2 is reopened, 6f decision 4 reversed, `DenyDataZoneEntirely`'s revision trigger fired. Passes 3 and 4 rewritten the same day around [Stage 18](stage-18-staging-deployment-project.md)'s recipe, decisions 13 to 16 added, and **every decision taken the same day, one at a time**: 1 (a), 2 (a) with (d), 3 (a) gated by `PUBLISH_LISTING`, 4 (a), 5 as recommended with `eighth-experimentation` as Production's consumer, 9 (a), 11 rows by class for the governed accounts, 12 outside, 13 (b) with a subscription deny, 14 (a) with (d), 15 (a), 16 (b) against the recommendation; 7 and 8 moot by decision 6 (b); **10 taken 2026-11-09** as amended by it, on in `dev` and `test` (*"Keep it on"*). **1.1 written 2026-10-31** in `examples/app-etl/`: the Iceberg write, the publishing task, the two stage variables, the tests, the render's interim rows; 3.1 and 3.3 wait on the inputs the same reading found missing (the lint's rule, the deployment projects' values); nothing changed in AWS that day. **Pass 1 prepared 2026-11-08** ([PR #283](https://github.com/felipenoris/AWS-DataScience/pull/283)): the publishing task takes its identifiers from the deploy's `{domain.id}` and `{proj.id}`, the project role holds `datazone:StartDataSourceRun` from `sandbox/workflows/` (applied 21:50 UTC, `awsds-sandbox-workflows` `v4`, the day's one AWS write), and the sitting's order with this pass's values is the list before 1.2: the window holds the hub, Sandbox's `egress/` and a space running a package unattended, the portal's acts come before it, the readings after it and GitLab's mirror at its next sitting; decision 10's OpenLineage settings are in the template since the same day ([PR #284](https://github.com/felipenoris/AWS-DataScience/pull/284)). **Pass 1's sitting run 2026-11-10** (01:28 to 04:09 UTC): four runs, the first three failing in `publish` on what the catalog answered (`SUP-343`, `SUP-345`) and fixed between them, the fourth `SUCCESS`; the product table is Iceberg and registered with Lake Formation, its asset imported and listed, 1.3's metadata kept across the source's updates and carried to the listing, the job's lineage linked to the asset in the domain; verification ii's negative was admitted (`SUP-346`, `TM-29`), so decision 17 is due, the user's; the mirror waits for the next GitLab sitting. **Written 2026-10-28, nothing run**: the plan, the review of the catalog across the plan and the estate, the user's three questions answered from measurements and dated pages, and every decision due with its recommendation. The readings of 2026-10-28 are read-only, as the infrastructure user; no apply, no AWS write, no portal act. Pass 0 runs with nothing up; passes 1 to 3 are Sandbox sittings; pass 4 runs as promotion sittings once passes 1 to 3 have run; pass 5 inside a Sandbox warehouse sitting after 4.12 |
+| **Status** | **Decision 6 taken 2026-10-31 by the user as (b), the AWS model** ([log](../../log/log-stage-19-smus-native-data-product.md)): *"Decido pelo modelo da AWS, com o uso previsto do SMUS e promoção entre ambientes via ferramenta SMUS CICD CLI"*. Staging and Production each gain a deployment project, the CI/CD CLI deploys every stage, and Production publishes its own product; D41 item 2 is reopened, 6f decision 4 reversed, `DenyDataZoneEntirely`'s revision trigger fired. Passes 3 and 4 rewritten the same day around [Stage 18](stage-18-staging-deployment-project.md)'s recipe, decisions 13 to 16 added, and **every decision taken the same day, one at a time**: 1 (a), 2 (a) with (d), 3 (a) gated by `PUBLISH_LISTING`, 4 (a), 5 as recommended with `eighth-experimentation` as Production's consumer, 9 (a), 11 rows by class for the governed accounts, 12 outside, 13 (b) with a subscription deny, 14 (a) with (d), 15 (a), 16 (b) against the recommendation; 7 and 8 moot by decision 6 (b); **10 taken 2026-11-09** as amended by it, on in `dev` and `test` (*"Keep it on"*). **1.1 written 2026-10-31** in `examples/app-etl/`: the Iceberg write, the publishing task, the two stage variables, the tests, the render's interim rows; 3.1 and 3.3 wait on the inputs the same reading found missing (the lint's rule, the deployment projects' values); nothing changed in AWS that day. **Pass 1 prepared 2026-11-08** ([PR #283](https://github.com/felipenoris/AWS-DataScience/pull/283)): the publishing task takes its identifiers from the deploy's `{domain.id}` and `{proj.id}`, the project role holds `datazone:StartDataSourceRun` from `sandbox/workflows/` (applied 21:50 UTC, `awsds-sandbox-workflows` `v4`, the day's one AWS write), and the sitting's order with this pass's values is the list before 1.2: the window holds the hub, Sandbox's `egress/` and a space running a package unattended, the portal's acts come before it, the readings after it and GitLab's mirror at its next sitting; decision 10's OpenLineage settings are in the template since the same day ([PR #284](https://github.com/felipenoris/AWS-DataScience/pull/284)). **Pass 1's sitting run 2026-11-10** (01:28 to 04:09 UTC): four runs, the first three failing in `publish` on what the catalog answered (`SUP-343`, `SUP-345`) and fixed between them, the fourth `SUCCESS`; the product table is Iceberg and registered with Lake Formation, its asset imported and listed, 1.3's metadata kept across the source's updates and carried to the listing, the job's lineage linked to the asset in the domain; verification ii's negative was admitted (`SUP-346`, `TM-29`), so decision 17 is due, the user's; the mirror waits for the next GitLab sitting. **Prepared after it, 2026-11-10, nothing up**: pass 2's sitting in order (its portal half needs no window), 3.1's code reading (the bundle exports the catalog of its own stage's project, whole), decision 18 due, the user's, and pass 4 read against pass 1. **Written 2026-10-28, nothing run**: the plan, the review of the catalog across the plan and the estate, the user's three questions answered from measurements and dated pages, and every decision due with its recommendation. The readings of 2026-10-28 are read-only, as the infrastructure user; no apply, no AWS write, no portal act. Pass 0 runs with nothing up; passes 1 to 3 are Sandbox sittings; pass 4 runs as promotion sittings once passes 1 to 3 have run; pass 5 inside a Sandbox warehouse sitting after 4.12 |
 | **Prerequisites** | [6f](stage-06f-data-governance.md) step 11, the catalog road live since 2026-10-26: `governed-lake`, its source over `curated`, one subscription fulfilled and read, decisions 1 to 5 taken (2026-10-27). `eighth-experimentation`'s `DataLake` environment (6f 11.7, `blerpkhn9nj7o0`, its database `glue_db_blerpkhn9nj7o0`) and `test-experimentation`'s (6f 2.0): a Glue table's subscription target is a `DataLake` environment's. The application template at `v0.4.6` with `scripts/dev-cli.sh` on the next tag ([Stage 8](stage-08-cicd-pipelines.md) decision 22, the waiting list), the loop from a space run on 2026-10-26 ([Stage 10](stage-10-orchestration-promotion.md) 2.1), `vpc-egress-v0.19.0`'s `mwaa` group and the `datazone` endpoint Sandbox's `egress/` carries in its `extra_services`. The Sandbox warehouse and the project's connection ([5b](stage-05b-redshift-serverless.md), [6h](stage-06h-redshift-connection.md), `EXC-17`) for pass 5. **For pass 4**: [Stage 18](stage-18-staging-deployment-project.md)'s passes 1 to 4 and 7, the recipe for a deployment project in a `Workloads` account, measured 2026-10-17 to 10-22 and unwound; the four deploy roles and the deploy runner ([Stage 8](stage-08-cicd-pipelines.md) pass 1); `staging/egress/` and `production/egress/`, each gaining a `datazone` endpoint; `data-governance/governance/` free of 6d decision 16's apply at the moment of 4.5's (Stage 18 2.7's rule: two stages never share one apply). Nothing blocks pass 0 or pass 1 |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D22](../decisions/D22-data-governance-account.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D40](../decisions/D40-redshift-warehouse.md), [D41](../decisions/D41-sagemaker-application.md); [Stage 18](stage-18-staging-deployment-project.md)'s measurements since decision 6 (b); [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md) and [D35](../decisions/D35-sandbox-cardinality.md) reviewed, none consumed |
 | **Proves** | [INT-26](../integrations.md) (new): a table a workflow creates in a Sandbox project's own database becomes a published asset and a data product, another project reads it through a subscription DataZone fulfils inside one account, and the product reaches the warehouse by the path the tool intends. Since decision 6 (b): the same application promoted by the CLI into a deployment project in Staging and in Production, Production's project publishing the product and a Sandbox project subscribing across accounts, [INT-12](../integrations.md)'s association and [INT-23](../integrations.md)'s cross-account fulfilment as standing states on the `Workloads` accounts |
@@ -501,6 +501,48 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
 
 ### 2. The data product and the subscription
 
+- **The sitting of pass 2, in order**, written 2026-11-10 with nothing up. Most of the pass is portal
+  acts and readings, which need no window; only 2.4's Spark half, xi's negative and decision 17's reads
+  need a space.
+
+  **With nothing up**:
+  1. **[user] The consumer and the approver** (decision 5). As the data scientist, the consumer project
+     from `experimentation` in the portal, its name the user's: the profile creates `Tooling` alone on
+     creation (a SageMaker AI domain, and the daily `Tooling` source, `EXC-11`'s third), `DataLake` being
+     `ON_DEMAND` at order 1 (read 2026-11-10). Then, as `eighth-experimentation`'s owner, the Governance
+     Manager added as `PROJECT_CONTRIBUTOR`: on 2026-11-10 the members are the owner, the project role's
+     profile and Sandbox's `InfrastructureAccess` group (6f 4.3 answered in the act).
+  2. **[Claude⚡ on the user's word] 2.2's environment**, 6f 11.7's `create-environment` from the
+     profile's `DataLake` configuration, as `awsds-infra-sandbox-1` once the owner seats Sandbox's
+     `InfrastructureAccess` group in the consumer, a seat whose keeping is already the user's decision;
+     then its target's `databaseName` and its source.
+  3. **[user] 2.1, 2.3 and 2.4's first half**: the data product `trades-notional` in
+     `eighth-experimentation`, published; the subscription from the consumer; the approval as the
+     Governance Manager; the query editor's read on *Athena (SQL)* with no space. **[Claude]** reads vi,
+     vii and viii's first half after the acts.
+
+  **The window**, the hub and `make up ENV=sandbox ONLY=egress`, no `GROUPS` since nothing deploys:
+  4. **[user]** A JupyterLab space in the consumer on the house image; its Spark session on
+     `project.spark.fineGrained` reads the table (viii) and stays open. In the space's terminal, as the
+     consumer's role, decision 17's reads of `eighth-experimentation`'s source and run, then xi's
+     negative; nothing printed is a value of the data:
+
+     ```bash
+     D=dzd-d8yrvx1ko7im6o; SRC=budryu9mt9y5u8; RUN=6bnfg5dk961bps
+     B=awsds-sandbox-smus-projects; T=dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/catalogs/trades_notional
+     aws sts get-caller-identity --query Arn --output text
+     aws datazone get-data-source --domain-identifier $D --identifier $SRC --query '{name: name, project: projectId}'
+     aws datazone get-data-source-run --domain-identifier $D --identifier $RUN --query '{status: status, stats: runStatisticsForAssets}'
+     aws datazone list-data-source-run-activities --domain-identifier $D --identifier $RUN --query 'items[].{table: technicalName, asset: dataAssetId}'
+     aws s3api list-objects-v2 --bucket $B --prefix $T/ --max-items 1 --query 'Contents[].Key'
+     aws s3api head-object --bucket $B --key $T/metadata/00003-a0aed729-d7b0-4a27-b035-7bda5426406f.metadata.json --query ContentLength
+     ```
+
+  5. **[user] 2.5**: the revoke in `eighth-experimentation`, then the open session's read again (ix).
+  6. **[user]** The space stopped, every portal tab closed, `make down ENV=sandbox`, `make hub-down`,
+     `make status`.
+
+  **After the window**: **[Claude]** ix's pieces read gone, and 2.6 the morning after (x).
 - **2.1 [user] Package the product**: in `eighth-experimentation`, *Data products → Create*, name
   `trades-notional`, the asset `trades_notional` as its item, a description, then *Publish*. **[Claude]
   reads** `CreateDataProduct` and the listing change set, the product's listing and its items.
@@ -540,6 +582,16 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
   `awsds-deploy-sandbox-test`, whose DataZone reads for the export are written first
   (`sandbox/foundation/`'s deploy role). Which project `bundle --targets test` exports, `dev`'s or
   `test`'s, is the code reading that opens the step.
+  **Read 2026-11-10 in the CLI 1.0.9's installed code** (`commands/bundle.py`,
+  `helpers/catalog_export.py`): `bundle --targets <stage>` exports the catalog of that stage's project,
+  every resource it owns, with no filter. The calls are `Search` by `owningProjectIdentifier` over assets,
+  data products, glossaries and terms, `GetAsset` and `GetDataProduct` for each, and `SearchTypes` with
+  `managed` false for the form and asset types the project owns: the reads the deploy role would need.
+  The template's `test-deploy` runs `bundle --targets test` before its deploy, so it exports
+  `test-experimentation`'s catalog, which owns nothing (read 2026-11-10). An export of `dev` would carry
+  everything `eighth-experimentation` owns: `house-price`, the resource link `trades` (0.5),
+  `trades_notional`, `my-data-product` and the form type `classification`. Neither carries the product
+  with 1.3's metadata, which decisions 4 and 14 assumed: decision 18.
 - **3.2 [user] Create the product's database in `test`** (the same name), then **tag the application**;
   the pipeline's `test-deploy` bundles and deploys to `test` (Stage 8 2.5). **[Claude] reads** the
   bundle's `catalog/catalog_export.json`, the import's calls in the trail as `awsds-deploy-sandbox-test`
@@ -575,6 +627,15 @@ state, in Stage 18's order, each step citing the Stage 18 step whose measurement
 §N), coordinated with the session holding Stages 8-10, whose objects 4.9 and 4.11 change. Production is
 touched for the first time at 4.2: every reading Stage 18 made in Staging is made again there, since
 the shape is the templates' and the account's own state is not.
+
+**Read 2026-11-10 against pass 1.** Decision 17 decides 4.4's `StartDataSourceRun` statement in each
+target. Decision 18 decides whether 3.3's stages carry `content.catalog` and 4.13's `catalog.disable` at
+all. 4.10's readings take pass 1's shapes: the table under the product database's `LocationUri` (i), each
+publication the listing revision past the change set's (`SUP-345`), and the lineage nodes found by id
+from Data Governance's trail or by `amazon.datazone.asset/<id>` (`SUP-347`, xxi). A deploy never deletes
+what a release drops (`SUP-348`), and the workflow scan reads the target project's whole shared root
+(`SUP-287`). A file a release drops therefore stays a candidate in Production until a hand deletes it, so
+4.10 reads the shared root after each deploy.
 
 - **4.1 [Claude] The SCP**: `DenyDataZoneEntirely` revised in `awsds-org-scp-ou-workloads.json` in the
   shape decision 13 took, the `ArnNotLike` exceptions for the three identity patterns and the new
@@ -735,7 +796,8 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
   fulfilment and to Production's cross-account one, a check on an inventory asset that is a resource link (0.5) if the 6f follow-up has not
   written it, `CT-5`'s rule for a project's sources as decision 3 reads it; `studio.py` reads each
   project's environments and subscription targets; `datalake.py`'s `DL-14` admits the consumer's
-  registration.
+  registration. Under decision 17 (a), `catalog.py` also reads each `StartDataSourceRun` in Data
+  Governance's trail against the source's owning project (`TM-29`).
 - **6.2 [Claude] The documents**: `SMUS.md` (the product's readings, the targets, the roster of 0.8;
   §A deployment project in a `Workloads` account rewritten as the two projects that exist),
   `GOVERNANCE.md` (§Grants, §The development cycle, §Assigning the LF-Tags, §Publishing and sharing
@@ -754,7 +816,8 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
   decision 15's deny; AWS's managed policies on it (`TM-17`, `TM-28` gain weight: the policies moved to
   v76/v47 on 2026-10-29 with no act of this estate); the two SMUS roles as Production's Lake Formation
   admins; the RAM share of Production's catalog at each fulfilment; `TM-26`'s Production half reopened
-  at 4.6 and closed again at 4.7 if 4.10 and 4.12 read nothing needing the flag.
+  at 4.6 and closed again at 4.7 if 4.10 and 4.12 read nothing needing the flag. `TM-29`, the start of
+  another project's source, was written at pass 1 (2026-11-10) and follows decision 17.
 - **6.4 [Claude] `PRICING.md`** with pass 5's measured `ComputeSeconds` and the source runs' compute
   units; `cost-model.md`'s per-sitting row.
 
@@ -1094,6 +1157,25 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     cross-project start visible. (b) and (c) give up the native path and leave the read half where it is.
     The recommendation moves to (b) if a start collides with the owner's run and fails it, or if any
     source in the domain comes to publish on import.
+18. **How the product's business metadata reaches the targets** (3.1, 3.3, decisions 4 and 14). The CLI
+    1.0.9 exports the catalog of the project of the stage it bundles, whole (3.1, read 2026-11-10). The
+    pipeline's `bundle --targets test` exports `test-experimentation`'s, which owns nothing, and an export
+    of `dev` carries every experiment `eighth-experimentation` owns. Decision 14 (a) assumed the bundle
+    carries `dev`'s product with 1.3's metadata, and decision 4 that its form travels so; neither holds.
+    (a) Decision 14 as taken: the bundle from `test`, whose own source creates the asset at 3.2's run,
+    and the metadata typed again in `test` before each tag, a person in every release. (b) The bundle
+    from `dev`: the deploy role a member of `eighth-experimentation`, and `house-price`, the resource link
+    `trades` and `my-data-product` promoted with the product. (c) Metadata as code: `content.catalog`
+    stays off, and the template carries the product's description, README and classification in a file.
+    `publish` writes them on the asset before the change set, in every stage that publishes:
+    `CreateAssetRevision` with `AssetCommonDetailsForm` and decision 4's form, under the managed policy's
+    `CreateAsset*`. Each stage's own source creates the asset, so xvii's second asset cannot arise, and the
+    lint's refusal of `content.catalog` stays right. **Recommended: (c)**: the tag versions the metadata
+    with the code, one mechanism serves every stage, and no experiment is promoted. Two readings come
+    first, at 3.2: whether `test-experimentation`'s role attaches a form type `eighth-experimentation`
+    owns (decision 4's owner question, which AWS's pages leave open), and whether the source's later runs
+    keep the task's revision as they kept the portal's (1.3, 2026-11-10). (c) amends decisions 4 and 14,
+    both the user's, and 3.1 and 3.3 with them.
 
 ## Cost
 

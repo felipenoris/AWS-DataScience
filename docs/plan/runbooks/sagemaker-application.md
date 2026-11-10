@@ -340,6 +340,11 @@ settles, so the down runs again.
    options. The clone travels the `Sandbox ↔ VPC-SharedServices` peering, never the proxy (INT-09), and
    needs the internal CA's root, which the house image's base installs and AWS's SageMaker Distribution
    cannot carry: a space without it stops at *"server certificate verification failed"*.
+   With GitLab down, the application reaches the space as a tar dropped on its file browser (Stage 19
+   pass 1, 2026-11-10). A tar built on a Mac takes `COPYFILE_DISABLE=1 tar --no-xattrs --no-acls
+   --no-mac-metadata -c -f <file> <folder>`; otherwise macOS's `tar` adds an AppleDouble member (`._*`)
+   per file, its own `tar -t` lists none of them, the space's `tar` extracts them, and the deploy uploads
+   them to the shared root, where they stay (`SUP-348`). Python's `tarfile` lists every member.
 2. **The tests and the lint**, §E's first two rungs, in the space or on the laptop.
 3. **The values the manifest reads** (§M). The CLI refuses to load a manifest whose `${VAR}` is unset or
    empty, the stage the command does not target included. The project's own values come from its Tooling

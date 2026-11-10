@@ -804,3 +804,35 @@ Account ids are replaced by the account's name in angle brackets.*
 - **[user]**, verbatim, during the writing: *"revisite o restante do plano para o estágio 19 e avance no
   que for possível neste momento sem subir o ambiente. adiante a preparação das próximas etapas no que for
   possível. atualize o log com seu avanço e suba o progresso no mesmo PR."*
+- **[Claude] The session's packages deleted from the laptop**: `~/tmp/stage19-pass1.tar` and
+  `~/tmp/stage19-pass1-run1.tar`, whose `pass1.sh` carried the Production registry's account id,
+  `~/tmp/stage19-readings.sh` and the scratchpad's four package copies. The user's saved copies of
+  `pass1.log` carry account ids too, the user's to keep or delete.
+- **[Claude] 3.1's code reading**, in the CLI 1.0.9 `uv tool` installed on the laptop
+  (`aws-smus-cicd-cli`): `commands/bundle.py` takes the first stage `--targets` names, or the stage whose
+  `stage` is `DEV` when none, and `helpers/catalog_export.py` exports every catalog resource that stage's
+  project owns, with no filter from the manifest. Its calls are `Search` with `owningProjectIdentifier`
+  over `ASSET`, `DATA_PRODUCT`, `GLOSSARY` and `GLOSSARY_TERM`, `GetAsset` or `GetDataProduct` per item,
+  and `SearchTypes` with `managed` false, a type kept when its `owningProjectId` is the project's. The
+  same searches as `awsds-infra-sandbox-1` at 04:41 UTC: `test-experimentation` owns no asset, product,
+  glossary or term, and the one custom form type its search answers, `classification`, is
+  `eighth-experimentation`'s; `eighth-experimentation` owns the assets `house-price`, `trades` and
+  `trades_notional`, the product `my-data-product` and `classification`. The template's `test-deploy`
+  bundles the `test` stage, so its export would be empty, while decisions 4 and 14 assumed the product's
+  metadata travels from `dev`: decision 18 written, the user's, (c) recommended, the metadata kept as code
+  in the template and written on the asset by `publish`.
+- **[Claude] Read for pass 2's order** as `awsds-infra-sandbox-1` and `awsds-infra-data`, 04:41 to 04:42
+  UTC: `eighth-experimentation`'s members are the data scientist (`PROJECT_OWNER`), the project role's
+  profile (`PROJECT_CONTRIBUTOR`, the `createdBy` of pass 1's lineage events) and Sandbox's
+  `InfrastructureAccess` group (`PROJECT_CONTRIBUTOR`); the Governance Manager is no member yet. The
+  `experimentation` profile holds 14 configurations: `Tooling` `ON_CREATE` at order 0, the other 13
+  `ON_DEMAND`, `DataLake` at order 1 and `SageMakerAIDomain` at 13. A consumer created in the portal
+  therefore holds `Tooling` alone, and 2.2's `DataLake` environment is an act of its own.
+- **[Claude] Written with nothing up**: pass 2's sitting in order in the stage file, its portal half
+  needing no window and its window the hub with Sandbox's `egress/` and no `GROUPS`, the consumer role's
+  reads for decision 17 and xi's negative in one block; pass 4 read against pass 1, decisions 17 and 18
+  bearing on 4.4, 3.3 and 4.13, and 4.10 reading pass 1's shapes (`SUP-345`, `SUP-347`) and the shared
+  root after each deploy (`SUP-348`, `SUP-287`); 6.1's cross-project start check under decision 17 (a) and
+  6.3's note on `TM-29`; `runbooks/sagemaker-application.md` §D on a tar built on a Mac (`SUP-348`).
+  `waiting-on-the-user.md` gains decision 18 and pass 2's portal acts. No AWS write; the work joins
+  [PR #284](https://github.com/felipenoris/AWS-DataScience/pull/284).
