@@ -468,3 +468,10 @@ Account ids are replaced by the account's name in angle brackets.*
   `production/proxy` and `production/tooling` stopped, one instance each; `sandbox/egress` and every
   other metered slice down but Production's `app/app-etl` (3 resources) and `orchestration` (41), both
   at 0.0000 USD/h; the estimated burn 0.0000 USD/h. The readings' `since` is 00:58 UTC.
+- **[Claude] A message from the peer session** *EC2-Other cobrança diária com ambiente down*, answered at
+  01:33 UTC, information only: the user authorized there Stage 12 step 5.3's GitLab data-volume swap in
+  Production (`make gitlab-up RUNNERS=0`, a backup, `production/tooling/` destroyed and re-applied, the
+  restore), which uses the hub's proxy until the restore ends, and it asks that this window's
+  `make hub-down` wait for its word. Nothing in the window reaches GitLab, and that sitting changes no
+  Sandbox or Data Governance slice. The window's item 7 keeps `make down ENV=sandbox`; `make hub-down`
+  goes to the later of the two sittings, the user's call.
