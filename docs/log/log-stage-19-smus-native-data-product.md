@@ -667,3 +667,10 @@ Account ids are replaced by the account's name in angle brackets.*
   choice is the user's.
 - **[user]**, verbatim: *"Sim, rodar de novo"*, to the fourth run: the fourth package with
   `SKIP_RUN1=1 NEGATIVE=1`, 1.3 not rewritten.
+- **[Claude] A message from the peer session** *EC2-Other cobrança diária com ambiente down*, received
+  during the fourth run: the user authorized `production/tooling/`'s apply, which changes the S3 object
+  `gitlab.rb` alone (GitLab 19.2's NGINX keys), and a short GitLab session (`make gitlab-up RUNNERS=0`,
+  `awsds-gitlab-refresh` on the host, `make gitlab-down`, 10 to 15 minutes up); `make hub-down` waits for
+  its word that GitLab is down, since `make gitlab-up` refuses with the proxy stopped; no Sandbox, Staging
+  or Data Governance slice changes. This window's end becomes `make down ENV=sandbox`, then
+  `make hub-down` on the peer's word.
