@@ -199,7 +199,7 @@ Paid every month even with the lab shut down. Same rows as `docs/plan/cost-model
 | Item | Rate (`sa-east-1`) | Rate (`us-west-2`) | `sa-east-1` /month | `us-west-2` /month |
 |---|---|---|---|---|
 | Organization, accounts, Identity Center, VPC, subnets, IGW, security groups, IAM roles | — | — | **0** | **0** |
-| GitLab EBS volume (50 GB gp3) | 0.152 USD/GB-mo | 0.08 USD/GB-mo | 7.60 | 4.00 |
+| GitLab EBS volume (20 GB gp3 since 2026-11-10, 50 before) | 0.152 USD/GB-mo | 0.08 USD/GB-mo | 3.04 | 1.60 |
 | Elastic IP for WireGuard (idle or in use) | 0.005 USD/h | 0.005 USD/h | 3.65 | 3.65 |
 | KMS customer-managed keys (one tfstate key per Terraform-managed account, plus one data CMK per account that holds data — the lake's `alias/awsds-data-data` and each Interactive account's (D31) — plus D36's second state key `alias/awsds-prod-tfstate-pki`, created by `production/bootstrap/` on 2026-08-15 and encrypting `production/pki/`'s state since that slice's apply on 2026-10-12 (Stage 7 pass 1) — plus the supply-chain key `alias/awsds-prod-registry` (`production/registry/`) and one project key per Interactive account, `alias/awsds-<env>-project` (`terraform-modules/sagemaker-prereqs/`), all three applied 2026-08-21; the encryption rule is `docs/GOVERNANCE.md` §Encryption) — plus, from Stage 6c step 4.11, the proxy access log's key `alias/awsds-prod-proxy-log` in `production/networking/`, the first key in this estate created for a log. Every other log group declined a CMK on the same arithmetic (USD 1/key-month against a debugging log); this one takes it because it records what left the estate. The proxy's key was applied at 6c pass 4 (14 keys); **Stage 7 step 1.1 adds `alias/awsds-prod-gitlab`** (`production/foundation/`, 2026-10-12), the key under GitLab's two buckets and its data volume, its own for D14's option-preservation reason; **Stage 9 passes 3 and 5 add `alias/awsds-prod-data` and `alias/awsds-staging-data`** (`production/data/`, `staging/data/`, 2026-10-22), the deployment targets' data keys; **Stage 6f step 11.2 adds `alias/awsds-data-project`** (`data-governance/publishing/`, 2026-10-26), the lake-publishing pilot's project key, destroyed with the pilot's rollback: 18 keys | 1.00 USD/key-mo | 1.00 USD/key-mo | 18.00 | 18.00 |
 | S3 data + state + backups (~25 GB Standard) | 0.0405 USD/GB-mo | 0.023 USD/GB-mo | ~1.50 | ~1.00 |
@@ -228,7 +228,7 @@ that turns that policy custom (Stage 5a step 13.3); or D12's ceiling revised.
 | ~~EFS (shared filesystem + project storage, IA)~~ | **removed — the NFS requirement was withdrawn 2026-08-17 (D24 with it)** | | **0** | **0** |
 | SageMaker unified domain — DataZone V2 metadata (D26) | 10.00/100k req + 0.40/GiB-mo (global) | idem | ~0.50 | ~0.50 |
 | ~~Staging, Development, Data Governance at rest~~ | **removed — double count** | | **0** | **0** |
-| **Floor** | | | **~USD 32-45** (central ~38) | **~USD 27-36** (central ~32) |
+| **Floor** | | | **~USD 27-40** (central ~33) | **~USD 25-34** (central ~30) |
 
 The São Paulo floor is roughly **1.25-1.4x** the Oregon one — less than the 1.72x of the metered services,
 because so much of the floor is region-flat: KMS, Config, Route 53, Security Hub, the domain and the
@@ -342,7 +342,8 @@ runner among them only with `BUILD=1` (Stage 7 decision 5). Read
 `m8i.xlarge` 0.2117, `t3a.small` 0.0188, endpoint-hour 0.010, gp3 0.08/GB-mo, snapshot 0.05/GB-mo, secret
 0.40/mo, public IPv4 0.005/h, configuration item 0.003. A monthly charge is shown per hour at 730 h, and each
 cell is rounded from the exact rate, so a subtotal can differ from the sum of its rounded cells by 0.0001.
-As built there is no ALB and no NAT, so the full-stack hour above does not describe it.
+As built there is no ALB and no NAT, so the full-stack hour above does not describe it. GitLab's data volume
+is 20 GiB since 2026-11-10 (Stage 12 step 5.3); its 50 GiB before cost every column 0.0033 more.
 
 | Category | Item | Layer | `us-west-2` USD/h |
 |---|---|---|---|
@@ -351,7 +352,7 @@ As built there is no ALB and no NAT, so the full-stack hour above does not descr
 | Compute | GitLab, `t4g.large` | `[D]` | 0.0672 |
 | | the build runner, `m8i.xlarge` | `[E]` | 0.2117 |
 | | the deploy and test runners, `t3a.small` each | `[E]` | 0.0376 |
-| Storage | GitLab's volumes, 12 + 50 GiB gp3, billed stopped or running | `[D]` | 0.0068 |
+| Storage | GitLab's volumes, 12 + 20 GiB gp3, billed stopped or running | `[D]` | 0.0035 |
 | | the runners' root volumes, 64 + 30 + 30 GiB gp3 | `[E]` | 0.0136 |
 | | the DLM snapshots (~1 GB, from 0.025 GB-mo billed on 2026-10-13) and GitLab's two buckets (1.4 MB) | `[D]`, `[P]` | 0.0001 |
 | Other services | Secrets Manager: `gitlab-secrets`, the three runner tokens, the two TLS leaf keys | `[P]` | 0.0033 |
@@ -363,9 +364,9 @@ As built there is no ALB and no NAT, so the full-stack hour above does not descr
 |---|---|---|---|---|
 | VPC endpoints | 0.1200 | 0.1200 | 0.1200 | 0 |
 | Compute | 0.3165 | 0.1048 | 0.0672 | 0 |
-| Storage | 0.0205 | 0.0135 | 0.0069 | 0.0069 |
+| Storage | 0.0172 | 0.0102 | 0.0036 | 0.0036 |
 | Other services | 0.0053 | 0.0053 | 0.0053 | 0.0053 |
-| **Total** | **0.4623** | **0.2436** | **0.1994** | **0.0122** (8.91/month) |
+| **Total** | **0.4590** | **0.2403** | **0.1961** | **0.0089** (6.51/month) |
 
 Billed beside the hour:
 
@@ -385,11 +386,11 @@ billed on 2026-10-11, ~30 GB at 0.10, ~3.00/month).
 
 Readings of the table:
 
-- The build runner and its 64 GiB root are 47% of a `BUILD=1` session; the default leaves both out at
-  0.2436, and `RUNNERS=0` takes the hour to 0.1994.
-- Without the runners the endpoints are 60% of the hour. `athena`, `glue` and `lakeformation` (0.030/h)
+- The build runner and its 64 GiB root are 48% of a `BUILD=1` session; the default leaves both out at
+  0.2403, and `RUNNERS=0` takes the hour to 0.1961.
+- Without the runners the endpoints are 61% of the hour. `athena`, `glue` and `lakeformation` (0.030/h)
   serve no caller in a GitLab session; they are `vpc-egress`'s core list, which no caller overrides.
-- Always on, the session would bill 337.48/month with `BUILD=1`, 177.83 by default and 145.56 without
+- Always on, the session would bill 335.07/month with `BUILD=1`, 175.42 by default and 143.15 without
   runners, all above D12's 50.
 
 ### A Sandbox unit (Stage 14)
@@ -433,7 +434,7 @@ What the row leaves out, and why:
 
 | Option | `sa-east-1` USD/month | `us-west-2` USD/month | Where it appears |
 |---|---|---|---|
-| Always-on GitLab (`t4g.large` + 50 GB gp3 + ALB) | 78.26 + 7.60 + 24.82 = **110.68** | 49.06 + 4.00 + 16.43 = **69.49** | D8, `docs/plan/cost-model.md` |
+| Always-on GitLab (`t4g.large` + 20 GB gp3 + ALB) | 78.26 + 3.04 + 24.82 = **106.12** | 49.06 + 1.60 + 16.43 = **67.09** | D8, `docs/plan/cost-model.md` |
 | AWS Client VPN (1 endpoint association, 730 h) | 0.15/h → **109.50** | 0.10/h → **73.00** | D4 alternative |
 | — plus each connected client | 0.05/h | 0.05/h | |
 | AWS Network Firewall (1 endpoint) | 0.395/h → **288.35** + 0.065/GB | 0.395/h → **288.35** + 0.065/GB | D5 option (c) |
@@ -984,7 +985,7 @@ Paulo that discipline is worth exactly twice as much.
 | EBS `gp3` provisioned IOPS (USD/IOPS-mo) | 0.0095 | — | |
 | EBS snapshot storage (USD/GB-mo) — `us-west-2` **measured 2026-10-12** with the Price List Query API (`USW2-EBS:SnapshotUsage`; the archive tier is 0.0125), for Stage 7 step 1.2's daily DLM snapshots of GitLab's data volume | 0.068 | **0.05** | 1.36 |
 | EBS direct APIs, `ListSnapshotBlocks` (USD per 1,000 requests) — **measured 2026-11-09** with the Price List Query API (`USW2-EBS:directAPI.snapshot.List`; `Get` 0.003 and `Put` 0.006 per 1,000 SnapshotAPIUnits), for Stage 12 step 5.3's count of a snapshot's written blocks, two calls | 0.0011 | **0.0006** | 1.83 |
-| EC2 `t4g.large` is **GitLab's host since 2026-10-12** (Stage 7 step 1.2, `[D]`): 0.0672/h while a session runs it; the two volumes (12 GiB root + 50 GiB data, gp3) bill ~4.96/month stopped or not | | | |
+| EC2 `t4g.large` is **GitLab's host since 2026-10-12** (Stage 7 step 1.2, `[D]`): 0.0672/h while a session runs it; the two volumes (12 GiB root + 20 GiB data since 2026-11-10, gp3) bill ~2.56/month stopped or not | | | |
 | SageMaker Studio JupyterLab `ml.t3.medium` | 0.081 | 0.050 | 1.62 |
 | SageMaker Studio JupyterLab / Code Editor `ml.t3.large` (2026-09-07 — the remote-IDE floor) | 0.161 | **0.100** | 1.61 |
 | SageMaker Studio JupyterLab / Code Editor `ml.m5.large` (2026-09-07) | 0.184 | **0.115** | 1.60 |

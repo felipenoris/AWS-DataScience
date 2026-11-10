@@ -11,7 +11,7 @@
 | Piece | Where | Layer |
 |---|---|---|
 | the host `awsds-prod-gitlab`, a `t4g.large` | `VPC-SharedServices`, private tier, az1 | `[D]` `production/tooling/` |
-| its data volume, 50 GiB at `/var/opt/gitlab`, and the daily DLM snapshot (03:30 UTC, 7 kept) | the same slice | `[D]` |
+| its data volume, 20 GiB at `/var/opt/gitlab`, and the daily DLM snapshot (03:30 UTC, 7 kept) | the same slice | `[D]` |
 | `gitlab.awsds.internal` and `*.awsds-pages.internal`, both A records to the host's private address | the two `[P]` zones of `production/foundation/`, the records in `tooling/` | `[D]` |
 | `config/gitlab.rb`, rendered from `tooling/gitlab.rb.tftpl` | `s3://awsds-prod-gitlab-objects/config/gitlab.rb` | `[D]` object in a `[P]` bucket |
 | the object-storage bucket, the backup bucket, their key `alias/awsds-prod-gitlab` | `production/foundation/` | `[P]` |
@@ -104,7 +104,7 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
    make status
    ```
 
-Stopped, GitLab bills its two volumes and its snapshots; running, `make status` prices the host and the runners (step 3). The whole hour, volumes included, is [`docs/PRICING.md`](../../PRICING.md)'s GitLab session: 0.1994 USD/h with `RUNNERS=0`, 0.2436 by default, 0.4623 with `BUILD=1`. The endpoints are `production/egress/`'s whole set, 12 at 0.010 USD/h each since Stage 7 decision 9 dropped the SageMaker pair; the module's data-plane three (`athena`, `glue`, `lakeformation`) stay, so a GitLab session carries them whether or not anything in the VPC calls them.
+Stopped, GitLab bills its two volumes and its snapshots; running, `make status` prices the host and the runners (step 3). The whole hour, volumes included, is [`docs/PRICING.md`](../../PRICING.md)'s GitLab session: 0.1961 USD/h with `RUNNERS=0`, 0.2403 by default, 0.4590 with `BUILD=1`. The endpoints are `production/egress/`'s whole set, 12 at 0.010 USD/h each since Stage 7 decision 9 dropped the SageMaker pair; the module's data-plane three (`athena`, `glue`, `lakeformation`) stay, so a GitLab session carries them whether or not anything in the VPC calls them.
 
 **The first boot** of a fresh instance took nine minutes to `gitlab Reconfigured!` on 2026-10-12 and fourteen to the end of cloud-init, and 8 min 07 s to the end of cloud-init on 2026-10-26 (the readiness probe answering at once): the Omnibus package through the proxy (1.07 GB from Google's storage behind `packages.gitlab.com`), `gitlab-ctl reconfigure` (5 min), the readiness probe over loopback. Its log is `/var/log/awsds-gitlab-boot.log` on the host, readable with no SSM endpoint through the serial console:
 
@@ -124,7 +124,7 @@ There is no hand installation. A GitLab host is built by Terraform and configure
 
 1. **Prerequisites**, as the infrastructure user with the hub up (§U steps 1-2): `production/foundation/` applied (the two buckets, the key, the two secret containers), `production/pki/` applied (the root and the two leaves, published), `production/egress/` up (`./scripts/slices.py up --env production --only egress`). The bootstrap reaches S3 through the gateway, Secrets Manager and SSM through the endpoints and `packages.gitlab.com` through the proxy; without the endpoints it dies at its first `aws` call.
 
-2. **The apply** ([terraform-changes.md](terraform-changes.md) Recipe A) in `terraform-live/production/tooling/`: `terraform init -backend-config=backend.hcl`, plan, apply. 17 resources on 2026-10-12: the two security groups, the role and its profile, the rendered `gitlab.rb` as the S3 object, the 50 GiB data volume, the instance, the attachment, the two records, the DLM role and policy, the alarm. `slices.py up` does not build: for a `[D]` slice it starts an instance that exists and says so when none does.
+2. **The apply** ([terraform-changes.md](terraform-changes.md) Recipe A) in `terraform-live/production/tooling/`: `terraform init -backend-config=backend.hcl`, plan, apply. 17 resources on 2026-10-12: the two security groups, the role and its profile, the rendered `gitlab.rb` as the S3 object, the data volume (50 GiB then, 20 since 2026-11-10), the instance, the attachment, the two records, the DLM role and policy, the alarm. `slices.py up` does not build: for a `[D]` slice it starts an instance that exists and says so when none does.
 
 3. **The first boot**, cloud-init running `user-data.sh.tftpl` as root, logged to the serial console and to `/var/log/awsds-gitlab-boot.log` (§U gives the console command):
    1. the proxy into `/etc/environment`: the explicit proxy and the generated `NO_PROXY`;

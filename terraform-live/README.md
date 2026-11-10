@@ -170,7 +170,7 @@ forever.
 **GitLab is the third `[D]` row** (Stage 7 step 1.2, 2026-10-12): [`production/tooling/`](production/tooling/)
 (rank 52, above `egress/`'s 50: the host's Session Manager agent registers through the `ssm` endpoint,
 so the host starts after the endpoints exist and stops before they are destroyed) holds the `t4g.large`,
-its 50 GiB data volume and the two internal records, and is applied by hand like the hub hosts. Its
+its 20 GiB data volume and the two internal records, and is applied by hand like the hub hosts. Its
 session is **`make gitlab-up` / `make gitlab-down`** — `--only tooling,egress,runners`, in rank order:
 VPC-SharedServices' endpoints applied, the host started, the runners applied, and the hub left alone;
 `gitlab-down` walks the same order backwards. `make up`/`make down ENV=production` **never touch the
