@@ -475,3 +475,10 @@ Account ids are replaced by the account's name in angle brackets.*
   `make hub-down` wait for its word. Nothing in the window reaches GitLab, and that sitting changes no
   Sandbox or Data Governance slice. The window's item 7 keeps `make down ENV=sandbox`; `make hub-down`
   goes to the later of the two sittings, the user's call.
+- **[user]**, verbatim: *"Ambos no ar"*, after `make hub-up` and `make up ENV=sandbox ONLY=egress
+  GROUPS=mwaa`.
+- **[Claude] Read** at 01:34 to 01:35 UTC: `awsds-prod-vpn` and `awsds-prod-proxy` running since 01:28:07
+  and 01:28:10 UTC, both status checks `ok`, `awsds-prod-gitlab` stopped. Sandbox's `egress/` is `UP`
+  with 28 resources (0.18 USD/h by the static table): 19 interface endpoints created 01:28:49 to
+  01:30:06 UTC, every one `available` with private DNS, `airflow-serverless` (the `mwaa` group) and
+  `datazone` among them, beside the two gateway endpoints of 2026-08-16.
