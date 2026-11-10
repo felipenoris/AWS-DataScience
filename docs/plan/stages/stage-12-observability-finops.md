@@ -209,8 +209,8 @@ that is up so often it may as well be `[D]`.
   02:49:05 (`make gitlab-down`); the hub stayed up for the Stage 19 session. Item 11's list missed
   `docs/PRICING.md` §2 and §4, `runbooks/promotion.md`'s GitLab address and `runbooks/gitlab.md` §P; the
   PR carries them. The sitting's reconfigure printed three NGINX deprecations: the template takes GitLab
-  19.2's keys since 2026-11-10 (`runbooks/gitlab.md` §R), planned as the `gitlab.rb` object alone, and
-  the next GitLab session applies it and runs the refresh.
+  19.2's keys since 2026-11-10 (`runbooks/gitlab.md` §R), the `gitlab.rb` object applied after the merge
+  at 03:43 UTC, and the refresh at 03:55 printed none, each vhost naming its own certificate.
 
   **The path is Stage 7 step 8.2's restore rehearsal with a new value.** EBS never shrinks a volume
   (AWS's page, `docs/REFERENCES.md`), and the plan does not say so: with `-var data_volume_size=20` it
@@ -259,7 +259,9 @@ that is up so often it may as well be `[D]`.
       `vol-0e0fff3694f95fa63`'s seven. No procedure restores from them: deleted once the new volume holds
       its first DLM snapshot, or kept. The fourteen billed 0.0049 USD a day on 2026-11-04. Read
       2026-11-10 after the re-apply: both sevens present, `vol-0f6fa0f0ae07f7064` none yet under
-      `policy-029a3e7e9dd6426be`; the decision is in `waiting-on-the-user.md`.
+      `policy-029a3e7e9dd6426be`. **Done 2026-11-10**, the user's decision: the new volume's first snapshot,
+      `snap-0fdbe96fbb0cd8be7`, read `completed` at 04:00:43 UTC, and the fourteen were deleted from 04:02:07
+      to 04:02:25. No Recycle Bin rule holds EBS snapshots, so the deletion is final.
 
   **Growing it back is in place**: a larger value plans as the update EBS accepts, and the host then
   extends the filesystem with `xfs_growfs` (§B). **The sitting costs under 1 USD** at `docs/PRICING.md`'s

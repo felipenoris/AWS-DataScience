@@ -215,15 +215,17 @@ Once per host: after the stage's first apply, and after a replacement or the res
    sudo awsds-gitlab-refresh
    ```
 
-   The helper re-fetches `gitlab.rb`, the three certificates and the two keys, and runs `gitlab-ctl reconfigure`. Every reconfigure skips Let's Encrypt, since the template says `letsencrypt['enable'] = false`.
+   The helper re-fetches `gitlab.rb`, the three certificates and the two keys, and runs `gitlab-ctl reconfigure`. Every reconfigure skips Let's Encrypt, since the template says `letsencrypt['enable'] = false`. A read in the first minutes after the helper can fail: on 2026-11-10, 44 s after the reconfigure's end, the sign-in page and a Pages site both answered `502`, and by 3 min 28 s after it they answered `200` and `302`.
 
 The host's state is not in the user data, so a stop/start changes nothing and a rebooted host serves its last configuration.
 
-**The NGINX keys** follow GitLab 19.2's layout ([`docs/REFERENCES.md`](../../REFERENCES.md)). The GitLab vhost's settings sit under `gitlab_rails['nginx']`, the Pages vhost's under `gitlab_pages['nginx']`, and the daemon's own settings under `nginx[...]`. An `nginx[...]` setting never reaches a service's vhost. A reconfigure line ending in `has been deprecated. Please use ... instead.` names a key still in the old layout; 19.4.2 printed three on 2026-11-10, and the template uses the new keys since. Which certificate each vhost serves reads on the host:
+**The NGINX keys** follow GitLab 19.2's layout ([`docs/REFERENCES.md`](../../REFERENCES.md)). The GitLab vhost's settings sit under `gitlab_rails['nginx']`, the Pages vhost's under `gitlab_pages['nginx']`, and the daemon's own settings under `nginx[...]`. An `nginx[...]` setting never reaches a service's vhost. A reconfigure line ending in `has been deprecated. Please use ... instead.` names a key still in the old layout; 19.4.2 printed three on 2026-11-10, and the refresh on the template's new keys printed none the same night. Which certificate each vhost serves reads on the host, one file per vhost under `service_conf/`:
 
 ```bash
 sudo grep -rH 'ssl_certificate' /var/opt/gitlab/nginx/conf/
 ```
+
+On 2026-11-10 `gitlab-rails.conf` named `gitlab.awsds.internal.crt` and its key, and `gitlab-pages.conf` `awsds-pages.internal.crt` and its key.
 
 ## C. The certificates
 
