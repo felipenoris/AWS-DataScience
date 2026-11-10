@@ -393,3 +393,77 @@ infrastructure user (`InfrastructureAccess`, `awsds-infra-prod`), Terraform 1.16
   `us-west-2` and 0.0011 in `sa-east-1` (`docs/PRICING.md` §8).
 - **[Claude] Step 5.3 written**, with `runbooks/gitlab.md` §B's paragraph on a smaller volume; the sitting
   waits on the user (`waiting-on-the-user.md`).
+
+## 2026-11-10 — step 5.3's sitting: GitLab's data volume destroyed, re-applied at 20 GiB and restored
+
+*Claude and the user, the same session, the applies on the user's authorization in its chat for this
+sitting: Claude's plans, applies and reads as the infrastructure user (`InfrastructureAccess`,
+`awsds-infra-prod`), Terraform 1.16.6 and provider `hashicorp/aws` 6.68.0, from the worktree; the user's
+acts in a Session Manager shell on the host. Times UTC. No account id appears below.*
+
+- **[Claude] The other sessions told before any write**: the Stage 19 session, which held its
+  `make hub-down` until the sitting's end, and the session that wrote `docs/AWS_SUPPLEMENT.md`.
+- **[user] `make gitlab-up RUNNERS=0`**, the hub already up for the Stage 19 session.
+- **[user] The reading before**: `/dev/nvme1n1     50G  1.1G   49G   3% /var/opt/gitlab`, and through
+  `gitlab-rails runner` `{:projects=>6, :groups=>5, :users=>6, :runners=>3,
+  :main=>"8d50f6851af08f394e18ac17099a4e5db68b3fc4", :tags=>14, :usage_ping=>false, :version_check=>false,
+  :auto_devops=>false}`.
+- **[user] The backup**, `gitlab-backup create STRATEGY=copy`: `2026-11-10 01:51:48 UTC -- Dumping
+  PostgreSQL database gitlabhq_production ...` to `2026-11-10 01:51:58 UTC -- Backup
+  1794275508_2026_11_10_19.4.2 is done.`, then `Deleting old backups ... done. (2 removed)`.
+- **[Claude] The gate**: the archive `1794275508_2026_11_10_19.4.2_gitlab_backup.tar` in
+  `awsds-prod-gitlab-backup`, 14,346,240 bytes, written 01:51:59; `./aws/supplychain.py`'s `SC-13` reading
+  it `made by 19.4.2`, equal to `gitlab_ce_version`.
+- **[Claude] `data_volume_size`'s default to 20** and the slice's three texts that named 50 GiB, committed
+  and pushed before the plans (PR #285).
+- **[Claude] The destroy**: `plan -destroy`, `Plan: 0 to add, 0 to change, 17 to destroy.`; its apply from
+  01:55:28 to 01:56:56, `Apply complete! Resources: 0 added, 0 changed, 17 destroyed.`, the old host
+  `i-0b4cb5f62e65abf70` terminated at 01:55:39.
+- **[Claude] The re-apply**: `Plan: 17 to add, 0 to change, 0 to destroy.` with `aws_ebs_volume.data` at
+  `size = 20`; its apply from 01:57:30 to 01:58:28, `Apply complete! Resources: 17 added, 0 changed, 0
+  destroyed.`: the host `i-010c8217a1b3062dc` at `10.30.6.245`, the volume `vol-0f6fa0f0ae07f7064`, the DLM
+  policy `policy-029a3e7e9dd6426be`.
+- **[Claude] The first boot**, the host launched at 01:57:50: on the serial console, `gitlab Reconfigured!`
+  at 513.86 s of uptime and the readiness probe `200` at 539.97 s; Session Manager `Online` at 02:07:17,
+  `gitlab.awsds.internal` resolving to `10.30.6.245` on the laptop, the sign-in page `200` in 2.94 s.
+- **[user] The boot log**, `/var/log/awsds-gitlab-boot.log`, the console's 64 KB window having scrolled
+  past its markers: `mounted: /dev/nvme1n1 xfs    19.9G`, `gitlab-ce-19.4.2-ce.0.amazon2023.aarch64`,
+  `restored from Secrets Manager`, `=== awsds gitlab first boot done: 2026-11-10T02:06:56+00:00 ===`.
+- **[user] The restore**, `runbooks/gitlab.md` §B steps 1-3: the archive fetched from the bucket;
+  `ok: down: puma: 0s, normally up` and `ok: down: sidekiq: 0s, normally up`; `2026-11-10 02:14:35 UTC --
+  Unpacking backup ... done`, the database from 02:14:46 to `2026-11-10 02:15:33 UTC -- Restoring database
+  ... done`, with six `ERROR:  must be owner of extension` lines (`pg_trgm`, `btree_gist` and `amcheck`,
+  each twice) and `Source backup for the database ci doesn't exist. Skipping the task`; the repositories
+  `done` at 02:15:35; `2026-11-10 02:15:51 UTC -- Restore task is done.`
+- **[user] `gitlab-ctl reconfigure`**: `Infra Phase complete, 1/779 resources updated in 16 seconds`,
+  `Cinc Client Run complete in 15.650629343 seconds` at 02:16:38, `gitlab Reconfigured!`, and three
+  deprecations: `nginx['ssl_certificate'] has been deprecated. Please use
+  gitlab_rails['nginx']['ssl_certificate'] instead.`, `nginx['ssl_certificate_key'] has been deprecated.
+  Please use gitlab_rails['nginx']['ssl_certificate_key'] instead.` and `pages_nginx has been deprecated.
+  Please use gitlab_pages['nginx'] instead.`
+- **[user] `gitlab-ctl restart`** (`ok: run: puma: (pid 8328) 0s`, `ok: run: sidekiq: (pid 8343) 1s`), then
+  `gitlab:check SANITIZE=true` straight after: `Internal API available: FAILED - Internal API unreachable`
+  and `Sidekiq: ... Running? ... no`; the rest `OK` or `yes`, `All migrations up? ... yes`, the six
+  projects with their namespaces, `Active users: ... 5` and `All projects are in hashed storage? ... yes`
+  among them.
+- **[user] `gitlab:doctor:secrets`**, 02:19:16 to 02:19:29: every model `failures: 0`, `Total: 0 row(s)
+  affected`.
+- **[user] The reading after**: `/dev/nvme1n1     20G  925M   20G   5% /var/opt/gitlab`, and the runner line
+  identical to the one before.
+- **[Claude] The sign-in page from the laptop**: `200` at 02:25:51 (2.89 s) and 02:36:37 (1.06 s).
+- **[user] The two checks again**, puma and Sidekiq up 1,817 s: `Internal API available: OK`,
+  `Redis available via internal API: OK`, `gitlab-shell self-check successful`,
+  `Sidekiq: ... Running? ... yes`, `Number of Sidekiq processes (cluster/worker) ... 1/1`.
+- **[Claude] The times** from the destroy's start at 01:55:28: the first boot done at 11 min 28 s, the
+  restore's task at 20 min 23 s, `doctor:secrets` at 24 min 01 s. Stage 7 8.2's 24 min 16 s ran to the
+  restored sign-in page, which this sitting did not time.
+- **[Claude] The snapshots and the backup's expiry**: seven snapshots of `vol-072c3d3dc9883b104`
+  (2026-10-19 to 10-25) and seven of `vol-0e0fff3694f95fa63` (2026-11-03 to 11-09), none yet of
+  `vol-0f6fa0f0ae07f7064`; the bucket's rule `expire-current-versions` at 30 days, so the new archive
+  leaves on 2026-12-11, the bucket holding six archives, 2026-10-13 to 2026-11-10.
+- **[user] `make gitlab-down`**: the host `stopped` at 02:49:05. **[Claude]** At 02:53:49 the last two of
+  SharedServices' interface endpoints read `deleting` and no runner instance exists. The hub stays up for
+  the Stage 19 session.
+- **[Claude] The texts that state the volume or price it**, in PR #285: item 11's list, and
+  `docs/PRICING.md` §2 and §4, `runbooks/promotion.md`'s GitLab address and `runbooks/gitlab.md` §P, which
+  item 11 missed; `docs/AWS_SUPPLEMENT.md`'s `SUP-314` takes the 2026-11-09 plan reading.

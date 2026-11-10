@@ -325,10 +325,14 @@ The destroy lists 17 resources (2026-10-26): the instance, the data volume with 
    sudo gitlab-backup restore BACKUP=<timestamp>_<date>_<release>
    ```
 
-4. Reconfigure, restart, check:
+4. Reconfigure and restart, then check. Run straight after the restart, `gitlab:check` reads GitLab Shell's internal API unreachable and Sidekiq not running while both boot (2026-10-26 and 2026-11-10); a minute later both read `OK`:
 
    ```bash
-   sudo gitlab-ctl reconfigure && sudo gitlab-ctl restart && sudo gitlab-rake gitlab:check SANITIZE=true
+   sudo gitlab-ctl reconfigure && sudo gitlab-ctl restart
+   ```
+
+   ```bash
+   sudo gitlab-rake gitlab:check SANITIZE=true
    ```
 
 5. The secrets file against the database it decrypts (a mismatch leaves every encrypted column unreadable, the CI/CD variables and the runner tokens among them):
@@ -337,9 +341,9 @@ The destroy lists 17 resources (2026-10-26): the instance, the data volume with 
    sudo gitlab-rake gitlab:doctor:secrets
    ```
 
-A restore proves itself by a pre-backup repository cloning cleanly and the API reading what it read before the backup: the projects, `main`'s commit and the tags, the users and groups, the runners (their records survive and read `online` on their restored `contacted_at` until the timeout; the hosts re-register at the next `make gitlab-up`), and the instance settings, which travel with the database (§I step 6), while a fresh host without a restore carries GitLab's defaults. **Measured 2026-10-26** (Stage 7 step 8.2, the log): the destroy 1 min 17 s, the re-apply 58 s, the first boot 8 min 07 s, the fetch and the restore of a 15 MB archive 58 s (six `ERROR: must be owner of extension` lines, GitLab's documented noise for a restore run as the `gitlab` database user; `unable to reset refs ... Proceeding with a normal restore` per repository on the empty Gitaly), `reconfigure` 14 s, the sign-in page back 24 min 16 s after the destroy began. `gitlab:check` run straight after the restart reports GitLab Shell's internal API and Sidekiq down while they boot; a minute later both are up. The object-storage families (`uploads`, `artifacts`, `pages`, `lfs`, `packages`, ...) each restore in a second: they live in the bucket. A browser session outlives the restore through its remember-me cookie; Redis is not in the archive, so a plain session signs in again.
+A restore proves itself by a pre-backup repository cloning cleanly and the API reading what it read before the backup: the projects, `main`'s commit and the tags, the users and groups, the runners (their records survive and read `online` on their restored `contacted_at` until the timeout; the hosts re-register at the next `make gitlab-up`), and the instance settings, which travel with the database (§I step 6), while a fresh host without a restore carries GitLab's defaults. **Measured 2026-10-26** (Stage 7 step 8.2, the log): the destroy 1 min 17 s, the re-apply 58 s, the first boot 8 min 07 s, the fetch and the restore of a 15 MB archive 58 s (six `ERROR: must be owner of extension` lines, GitLab's documented noise for a restore run as the `gitlab` database user; `unable to reset refs ... Proceeding with a normal restore` per repository on the empty Gitaly), `reconfigure` 14 s, the sign-in page back 24 min 16 s after the destroy began. The object-storage families (`uploads`, `artifacts`, `pages`, `lfs`, `packages`, ...) each restore in a second: they live in the bucket. A browser session outlives the restore through its remember-me cookie; Redis is not in the archive, so a plain session signs in again.
 
-**A smaller data volume** is the rehearsal with the new `data_volume_size` committed before the re-apply ([Stage 12](../stages/stage-12-observability-finops.md) step 5.3). EBS never shrinks a volume ([`docs/REFERENCES.md`](../../REFERENCES.md)), and the plan does not say so: a smaller value reads `aws_ebs_volume.data will be updated in-place` (provider 6.68.0, 2026-11-09), a change EBS does not make. A larger value is the in-place update EBS accepts, then the filesystem grown in a shell on the host, the volume holding XFS on the whole device:
+**A smaller data volume** is the rehearsal with the new `data_volume_size` committed before the re-apply ([Stage 12](../stages/stage-12-observability-finops.md) step 5.3). EBS never shrinks a volume ([`docs/REFERENCES.md`](../../REFERENCES.md)), and the plan does not say so: a smaller value reads `aws_ebs_volume.data will be updated in-place` (provider 6.68.0, 2026-11-09), a change EBS does not make. **Done 2026-11-10** (Stage 12's log): the destroy 1 min 28 s, the re-apply 58 s, the first boot 9 min 06 s from the launch with `mounted: /dev/nvme1n1 xfs 19.9G`, the restore of a 14 MB archive done 20 min 23 s after the destroy began; `df` read 925M used of 20G after it and 1.1G of 50G before. A larger value is the in-place update EBS accepts, then the filesystem grown in a shell on the host, the volume holding XFS on the whole device:
 
 ```bash
 sudo xfs_growfs -d /var/opt/gitlab

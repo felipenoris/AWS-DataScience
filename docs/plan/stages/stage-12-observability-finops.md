@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **in progress since 2026-10-18** ([log](../../log/log-stage-12-observability-finops.md)). Step 10's `./aws/observability.py` written 2026-10-17. **Built in Production 2026-10-18**: `production/observability/` (the hub dashboard, the proxy log's two metric filters, the refusal alarm, the VPCs-per-Region quota alarm) and the CloudWatch statement on `awsds-prod-alerts`, both re-planning `No changes`. **`sandbox/observability/` was applied the same day by the orchestrating session** (9 added, `No changes` after), the topic's e-mail subscription confirmed by the user on 2026-10-19, so `OB-3` passes in Sandbox. 4.2 read the bill from the accounts with a profile: **at least USD 53.31 in August and 74.48 in September**, above D12's 50, and the model is rewritten from it. `OB-3` fails since the first wired alarm, by design, until the three `[D]` hosts' alarms are wired (`EXC-19`); Sandbox's two warehouse alarms notify `awsds-sandbox-alerts` since PR #181's apply. Scoped against [D38](../decisions/D38-single-egress-hub.md): no NAT panels, and three lines the hub creates — the proxy's access log and its refusal rate, the DNS Firewall's per-query charge, the peering bytes. 5.2 read the bill's usage types on 2026-10-20: no letter moves (decision due 3, the user's). 5.3 written 2026-11-09: GitLab's data volume holds at most 1.20 GiB of its 50, and its shrink to 20 GiB is a GitLab sitting, the user's |
+| **Status** | **in progress since 2026-10-18** ([log](../../log/log-stage-12-observability-finops.md)). Step 10's `./aws/observability.py` written 2026-10-17. **Built in Production 2026-10-18**: `production/observability/` (the hub dashboard, the proxy log's two metric filters, the refusal alarm, the VPCs-per-Region quota alarm) and the CloudWatch statement on `awsds-prod-alerts`, both re-planning `No changes`. **`sandbox/observability/` was applied the same day by the orchestrating session** (9 added, `No changes` after), the topic's e-mail subscription confirmed by the user on 2026-10-19, so `OB-3` passes in Sandbox. 4.2 read the bill from the accounts with a profile: **at least USD 53.31 in August and 74.48 in September**, above D12's 50, and the model is rewritten from it. `OB-3` fails since the first wired alarm, by design, until the three `[D]` hosts' alarms are wired (`EXC-19`); Sandbox's two warehouse alarms notify `awsds-sandbox-alerts` since PR #181's apply. Scoped against [D38](../decisions/D38-single-egress-hub.md): no NAT panels, and three lines the hub creates — the proxy's access log and its refusal rate, the DNS Firewall's per-query charge, the peering bytes. 5.2 read the bill's usage types on 2026-10-20: no letter moves (decision due 3, the user's). **5.3 done 2026-11-10**: GitLab's data volume is 20 GiB, through `runbooks/gitlab.md` §B's destroy, re-apply and restore, the restored instance reading what it read before |
 | **Prerequisites** | any stage that created resources — and **one real invoice**, met: the August and September bills, read from Cost Explorer in every account with a CLI profile (2026-10-14 for Config, 2026-10-18 in full). Management, Log Archive and Audit hold no profile and are unread |
 | **Consumes** | [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | nothing new crosses an account boundary. What it **retires** is a set of estimates |
@@ -199,6 +199,17 @@ that is up so often it may as well be `[D]`.
   user asked for the step on 2026-11-09. It holds under decision due 3's (a), since (b) destroys the volume
   at every session.
 
+  **Done 2026-11-10** (the log), as the sitting below lists it: the backup
+  `1794275508_2026_11_10_19.4.2`, 14,346,240 bytes; the destroy from 01:55:28 UTC, 1 min 28 s, and the
+  re-apply, 58 s, the host `i-010c8217a1b3062dc` at `10.30.6.245` on `vol-0f6fa0f0ae07f7064`; the first
+  boot done 11 min 28 s after the destroy began, `mounted: /dev/nvme1n1 xfs 19.9G`; the restore's task done
+  at 20 min 23 s. After it, the API reads what it read before (6 projects, 5 groups, 6 users, 3 runners,
+  `main` at `8d50f685`, 14 tags), `df` reads 925M used of 20G against 1.1G of 50G, `gitlab:doctor:secrets`
+  0 failures, and GitLab Shell's and Sidekiq's checks pass once both have booted. The host stopped at
+  02:49:05 (`make gitlab-down`); the hub stayed up for the Stage 19 session. Item 11's list missed
+  `docs/PRICING.md` §2 and §4, `runbooks/promotion.md`'s GitLab address and `runbooks/gitlab.md` §P; the
+  PR carries them.
+
   **The path is Stage 7 step 8.2's restore rehearsal with a new value.** EBS never shrinks a volume
   (AWS's page, `docs/REFERENCES.md`), and the plan does not say so: with `-var data_volume_size=20` it
   reads `aws_ebs_volume.data will be updated in-place`, `size = 50 -> 20`, `Plan: 0 to add, 1 to change,
@@ -244,7 +255,9 @@ that is up so often it may as well be `[D]`.
   12. **[Claude reads, user decides]** The snapshots no policy retires: `vol-072c3d3dc9883b104`'s seven
       (2026-10-19 to 10-25, `policy-0cd541e97bea1d1c4` gone) and, after the destroy,
       `vol-0e0fff3694f95fa63`'s seven. No procedure restores from them: deleted once the new volume holds
-      its first DLM snapshot, or kept. The fourteen billed 0.0049 USD a day on 2026-11-04.
+      its first DLM snapshot, or kept. The fourteen billed 0.0049 USD a day on 2026-11-04. Read
+      2026-11-10 after the re-apply: both sevens present, `vol-0f6fa0f0ae07f7064` none yet under
+      `policy-029a3e7e9dd6426be`; the decision is in `waiting-on-the-user.md`.
 
   **Growing it back is in place**: a larger value plans as the update EBS accepts, and the host then
   extends the filesystem with `xfs_growfs` (§B). **The sitting costs under 1 USD** at `docs/PRICING.md`'s
