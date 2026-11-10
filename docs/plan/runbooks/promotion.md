@@ -795,7 +795,9 @@ cycle charge (0.36 to 0.87 per Sandbox `[E]` cycle, 0.21 to 0.38 per GitLab cycl
   `app_etl_test_experimentation_app_etl` and its `_train` twin, last updated by `v0.4.6`'s `test-deploy`.
 - `ReadTheStatusFromSandbox` on `awsds-prod-model-app-etl` admits `datazone_usr_role_*` of Sandbox.
 - Both VPCs' flow logs are on (`awsds-prod-shared-vpc-flow-logs`, `awsds-sandbox-vpc-flow-logs`), default
-  format, 600 s aggregation; GitLab's host answers at `10.30.39.111`, and Sandbox is `10.20.0.0/16`.
+  format, 600 s aggregation; GitLab's host answers at `10.30.6.245` since 2026-11-10 (`10.30.39.111`
+  before; a rebuild moves it, and `terraform output private_ip` in `production/tooling/` reads it), and
+  Sandbox is `10.20.0.0/16`.
 - The CI/CD CLI 1.0.9, read in its code: it refuses a manifest with any `${VAR}` unset or empty, the
   `test` stage's included (`find_missing_env_vars`), and writes each `{env.VAR}` as `{{ params.VAR }}`
   with no default, so a deploy embeds no value and only a run the CLI starts fills one.
@@ -884,11 +886,11 @@ cycle charge (0.36 to 0.87 per Sandbox `[E]` cycle, 0.21 to 0.38 per GitLab cycl
    the clone (the logs aggregate over 600 s, and an early empty answer is no answer, Lesson 62). **Done
    2026-10-26** (Stage 7 xi): the clone at 05:04 UTC, the branch pushed and deleted, the flows from
    `10.20.56.248` accepted and the proxy log silent on GitLab. The reading's shape: accepted
-   flows from a `10.20.x` address to `10.30.39.111:443` in SharedServices' log, the space's own address
-   and no proxy between, since `NO_PROXY` names `.awsds.internal`:
+   flows from a `10.20.x` address to GitLab's address on 443 (`10.30.39.111` that day) in SharedServices'
+   log, the space's own address and no proxy between, since `NO_PROXY` names `.awsds.internal`:
 
    ```bash
-   aws logs filter-log-events --log-group-name awsds-prod-shared-vpc-flow-logs --start-time <the clone's minute, epoch ms> --filter-pattern '[version, account, eni, srcaddr="10.20.*", dstaddr="10.30.39.111", srcport, dstport="443", protocol, packets, bytes, start, end, action, status]' --profile awsds-infra-prod --region us-west-2
+   aws logs filter-log-events --log-group-name awsds-prod-shared-vpc-flow-logs --start-time <the clone's minute, epoch ms> --filter-pattern '[version, account, eni, srcaddr="10.20.*", dstaddr="<GitLab's address>", srcport, dstport="443", protocol, packets, bytes, start, end, action, status]' --profile awsds-infra-prod --region us-west-2
    ```
 
 6. **[user] Stage 9 3.4's project-role half** (v), in the terminal with no `--profile`, so the project

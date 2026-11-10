@@ -2095,6 +2095,20 @@
     `pages.internal`), the wildcard record + wildcard certificate shape, `pages_external_url` +
     `pages_nginx` TLS keys, and access control as a Free-tier feature (Stage 7 step 4):
     <https://docs.gitlab.com/administration/pages/>.
+  - *NGINX settings in Omnibus, GitLab 19.2 and later* — the GitLab vhost's settings under
+    `gitlab_rails['nginx']`, each service's vhost under its own key (`gitlab_pages['nginx']`,
+    `registry['nginx']`, `gitlab_kas['nginx']`), the daemon's settings still under `nginx[...]`, legacy
+    `nginx[...]` vhost keys carried forward with a deprecation warning, and an `nginx[...]` setting never
+    copied to a service's vhost; the SSL page's manual certificate takes
+    `gitlab_rails['nginx']['ssl_certificate']` the same way (the template's keys since 2026-11-10):
+    <https://docs.gitlab.com/omnibus/settings/nginx/>.
+  - *Omnibus's NGINX translation code* — `translate_service_nginx_settings` prints `pages_nginx has been
+    deprecated` and copies every `pages_nginx` key, `enable` included, to `gitlab_pages['nginx']` where
+    the new key is unset; `translate_client_settings` does the same from `nginx[...]` to
+    `gitlab_rails['nginx']`. Read at `master` (19.5.3) on 2026-11-10, while the Pages page above still
+    documents `pages_nginx`:
+    <https://gitlab.com/gitlab-org/omnibus-gitlab/-/raw/master/files/gitlab-cookbooks/nginx/libraries/nginx.rb>,
+    <https://gitlab.com/gitlab-org/omnibus-gitlab/-/raw/master/files/gitlab-cookbooks/gitlab/libraries/gitlab_rails.rb>.
   - *Omnibus supported OSes* — Amazon Linux 2023 is supported since 16.3.0, amd64 and arm64, which is
     what lets the GitLab host keep the project's AL2023/SSM-parameter AMI pattern (Stage 7 step 1.2):
     <https://docs.gitlab.com/administration/package_information/supported_os/>.
@@ -2745,6 +2759,17 @@
   are not Elastic. Switching the VPN host's size is therefore a stop/start the Terraform provider
   performs in one apply, in either direction, with the `[P]` Elastic IP and every client `.conf`
   untouched: <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/change-instance-type-of-ebs-backed-instance.html>.
+
+- Modify an Amazon EBS volume using Elastic Volumes operations — its limitations: *"You can't decrease
+  the volume size."* The page's route to a smaller volume is a new one and an application-level copy
+  (`rsync`); GitLab's goes through its backup and restore instead, since the Terraform provider plans a
+  decrease as an in-place update (Stage 12 step 5.3, read 2026-11-09):
+  <https://docs.aws.amazon.com/ebs/latest/userguide/ebs-modify-volume.html>.
+
+- Extend the file system after resizing an Amazon EBS volume — a larger volume needs its partition, when
+  it has one, then its filesystem extended on the instance, `xfs_growfs -d <mount point>` for XFS
+  (`runbooks/gitlab.md` §B, read 2026-11-09):
+  <https://docs.aws.amazon.com/ebs/latest/userguide/recognize-expanded-volume-linux.html>.
 
 - AWS: Denies access to AWS based on the source IP — the deny-by-IP example, with the note that "the policy does not deny requests made by AWS services using forward access sessions, as the original requester's IP address is preserved". That scopes Stage 4 step 8.1's `aws:ViaAWSService` carve-out: FAS flows survive the bare `NotIpAddress`, and the carve-out defends the on-behalf calls that are *not* FAS: <https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_examples_aws_deny-ip.html>.
 

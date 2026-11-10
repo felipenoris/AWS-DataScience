@@ -509,7 +509,7 @@ SLICES = [
     ),
     # Stage 7 step 1.2 - GitLab CE, the repository's third [D] row. usd_per_hour is the t4g.large
     # row of docs/PRICING.md 8, measured us-west-2 (Lesson 6), the while-running figure: the two
-    # EBS volumes (12 GiB root, 50 GiB data) and the daily DLM snapshots bill monthly while the
+    # EBS volumes (12 GiB root, 20 GiB data) and the daily DLM snapshots bill monthly while the
     # host is stopped and are floor lines in docs/plan/cost-model.md. Started and stopped by
     # `make gitlab-up` / `make gitlab-down`, which name this slice through `--only`; a plain
     # `make up ENV=production` starts it too, and leaves the hub pair to `make hub-up` (1.6).
@@ -517,7 +517,7 @@ SLICES = [
         "production",
         "tooling",
         DORMANT,
-        "GitLab CE on a t4g.large + its 50 GiB data volume (Stage 7 step 1.2)",
+        "GitLab CE on a t4g.large + its 20 GiB data volume (Stage 7 step 1.2)",
         0.0672,
     ),
     # Stage 7 step 6.1 - the build runner, [E], and the buildbox's successor on the same measured
