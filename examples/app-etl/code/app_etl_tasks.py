@@ -1,13 +1,13 @@
 """The worker's tasks: the run's report, the publication of the product, and the evaluation of a
 training job.
 
-`summarize`, a task of app-etl, reads every `<name>.summary.json` under the prefix its
-``op_kwargs`` name, the processing job's output, and returns the run's report as JSON text: the
-task's XCom, which the workflow's next task writes to S3. `publish`, the last task of app-etl, puts
-the product the Glue job wrote into the SageMaker Catalog the way the tool intends (Stage 19
-decisions 3 and 14): it runs the project's data source over the product's database, finds the asset
-the run imported for the table and publishes its latest revision as a listing, waiting for `ACTIVE`,
-since the listing API answers before the listing exists and fails later on its own. It runs as the
+`summarize`, a task of app-etl, reads every `<name>.summary.json` under the prefix its ``op_kwargs``
+name, the processing job's output, and returns the run's report as JSON text: the task's XCom, which
+the workflow's next task writes to S3. `publish`, the last task of app-etl, puts the product the
+Glue job wrote into the SageMaker Catalog the way the tool intends (Stage 19 decisions 3 and 14): it
+runs the project's data source over the product's database, finds the asset the run imported for the
+table and publishes its latest revision as a listing, waiting for a listing revision `ACTIVE`, since
+the change set answers before the listing is active and fails later on its own. It runs as the
 project role through the `datazone` endpoint, in the domain and project the deploy substituted
 (`{domain.id}` and `{proj.id}`), and returns at once where the stage variable `PUBLISH_LISTING` is
 not `true`, the stages whose product is never listed. `evaluate`, a task of app-etl-train, reads the
@@ -182,26 +182,33 @@ def find_asset(
         time.sleep(POLL_SECONDS)
 
 
-def publish_asset(datazone, domain: str, asset: str, timeout: int = LISTING_TIMEOUT) -> dict:
-    """The asset's latest revision published, and the listing read ACTIVE within `timeout`
-    seconds."""
+def publish_asset(datazone, domain: str, asset: str, timeout: int | None = None) -> dict:
+    """The asset's latest revision published, and a listing revision at or past the change set's
+    read ACTIVE within `timeout` seconds. The change set answers a revision that stays CREATING
+    while the service writes the next one ACTIVE, read 2026-11-10 (revision 1 still CREATING six
+    minutes on, revision 2 ACTIVE 0.8 s after it), so the listing is read at its latest revision;
+    one older than the change set's is the previous publication and is waited past."""
     change = datazone.create_listing_change_set(
         domainIdentifier=domain, entityIdentifier=asset, entityType="ASSET", action="PUBLISH"
     )
-    listing, revision = change["listingId"], change["listingRevision"]
+    listing, asked = change["listingId"], int(change["listingRevision"])
+    timeout = LISTING_TIMEOUT if timeout is None else timeout
     deadline = time.monotonic() + timeout
     while True:
-        status = datazone.get_listing(
-            domainIdentifier=domain, identifier=listing, listingRevision=revision
-        )["status"]
-        if status == "ACTIVE":
-            print(f"listing {listing} revision {revision}: ACTIVE")
-            return {"listing": listing, "listing_revision": revision}
-        if status != "CREATING":
-            raise RuntimeError(f"listing {listing} revision {revision} is {status}")
+        latest = datazone.get_listing(domainIdentifier=domain, identifier=listing)
+        revision, status = latest["listingRevision"], latest["status"]
+        if int(revision) >= asked:
+            if status == "ACTIVE":
+                listed = (latest.get("item") or {}).get("assetListing") or {}
+                carried = listed.get("assetRevision")
+                print(f"listing {listing} revision {revision}: ACTIVE, asset revision {carried}")
+                return {"listing": listing, "listing_revision": revision, "asset_revision": carried}
+            if status != "CREATING":
+                raise RuntimeError(f"listing {listing} revision {revision} is {status}")
         if time.monotonic() >= deadline:
             raise RuntimeError(
-                f"listing {listing} revision {revision} not ACTIVE after {timeout} s"
+                f"listing {listing} not ACTIVE at or past revision {asked} after {timeout} s:"
+                f" its latest is revision {revision}, {status}"
             )
         time.sleep(POLL_SECONDS)
 
