@@ -1,7 +1,7 @@
 # production/tooling/ - GitLab CE (Stage 7 step 1, D8, D14), layer [D]: stopped between sessions by
 # `make gitlab-down`, started by `make gitlab-up`, never destroyed by either.
 #
-# One t4g.large in VPC-SharedServices' private tier, its data on a separate 50 GiB volume mounted
+# One t4g.large in VPC-SharedServices' private tier, its data on a separate 20 GiB volume mounted
 # at /var/opt/gitlab, its bulky state in S3 and its secrets in Secrets Manager (foundation/'s [P]
 # anchors, 1.1), reached by name over the VPN at https://gitlab.awsds.internal and serving Pages at
 # https://*.awsds-pages.internal. TLS terminates on the instance's own nginx with the internal CA's
