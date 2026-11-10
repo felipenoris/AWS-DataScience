@@ -418,3 +418,42 @@ Account ids are replaced by the account's name in angle brackets.*
   `OWNER`, `includeChildDomainUnits` false, created 00:36:00 UTC by the user profile `9e7cfd86-…`.
   `catalog.py` tabulates the domain unit's grants and judges only the two override types (`CT-9`), so no
   check moves. The form `classification` is the user's next act in the portal.
+
+## 2026-11-10 — the form type `classification` created in the portal
+
+- **[user]**, verbatim:
+  > O form de metadata tb tem um campo `owning project`, que escolhi como sendo o `eighth-experimentation`.
+  >
+  > No formulário de campo, os campos disponíveis são:
+  >
+  > * display name (optional)
+  > * technical name
+  > * Description (optional)
+  > * Field type
+  > * minimum / maximum length (both optional)
+  > * Search filters -> Searchable (checkbox)
+  > * Requirement Options -> Required when publishing (checkbox) / Required when subscribing (checkbox)
+  >
+  > Preenchi apenas display e technical name, field type. Deixei os outros desmarcados.
+- **[Claude] Read** at 00:45 UTC as `awsds-infra-sandbox-1` and `awsds-infra-data`, the two answers
+  identical: `get-form-type` `classification` is revision `2`, `ENABLED`, owned by `avhvbqn37ty7m8`,
+  created by the user profile `28f1b390-…` (the project's owner) at 00:44:24 UTC, its description
+  *"The data product’s classification: public, internal, restricted or personal."*, no imports. Its
+  Smithy model is one structure `classification` with one member `classification: String`, both
+  displayed as `Classification`, with no required, length or searchable trait. `search-types` over the
+  domain's non-managed form types returns it alone. Data Governance's `InfrastructureAccess`, no member
+  of the project, reads the form type, where DataZone refuses it the project's assets.
+- **[Claude] Read** Data Governance's trail since the apply: two `CreateFormType` calls from the portal
+  through `awsds-data-studio-domain-execution` in the session `user-28f1b390-…`, answered revision 1 at
+  00:41:53 UTC and revision 2 at 00:44:24 UTC, each with `owningProjectIdentifier` `avhvbqn37ty7m8` and
+  `status` `ENABLED`; the trail redacts the model. `GetFormType`'s `createdAt` is the newest revision's.
+  No other DataZone write since the apply. The list's item 1 is done; the window is next.
+- **[user]**, verbatim: *"não entendi o motivo da vinculação de Owning Project ao metadata form, tendo em
+  vista que o objetivo é compartilhar este mesmo form entre vários assets, entre vários projetos"*.
+- **[Claude] Read** for the question, AWS's pages (the five URLs in `docs/REFERENCES.md`'s entry of
+  2026-11-10): `CreateFormType` requires `owningProjectIdentifier`; only the owning project's members
+  create, edit or delete a form; the portal lists every form in the domain; `DeleteFormType` refuses a
+  form type an asset or asset type uses, and the portal deletes only a disabled form detached from every
+  asset; no page says whether another project may attach a form. The CLI offers `create-`, `get-` and
+  `delete-form-type`, no update. The answer in chat: the owner governs the form's edits, not its use,
+  and decision 4's owner question stays 3.2's (xii), cheapest to change before 1.3 attaches the form.

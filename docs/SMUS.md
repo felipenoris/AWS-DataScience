@@ -321,6 +321,15 @@ The field types the portal offers are `String`, `Integer`, `Long`, `Float`, `Dou
 and `Business glossary`, none enumerated (AWS's page, read 2026-11-08). The grant is
 `data-governance/governance/`'s, per project (`form_type_owners`, designation `OWNER`), for Stage 19
 decision 4's form `classification`; applied 2026-11-10 00:36 UTC, read back as grant `00KsayGIrZ`.
+The portal's form page names an owning project; its field page offers a display name, a technical name,
+a description, the field type, a minimum and maximum length, *Searchable*, *Required when publishing* and
+*Required when subscribing* (the user, 2026-11-10). Each save is a `CreateFormType` through the domain
+execution role in the user's session, one revision per call, and `GetFormType` answers Data Governance's
+`InfrastructureAccess`, outside the owning project (read 2026-11-10). The owning project is required
+and is the one whose members create, edit or delete the form; the *Metadata forms* page lists every form
+in the domain, and no page read says whether another project may attach one (AWS's pages, read
+2026-11-10). No call changes a form type's owner, and `DeleteFormType` refuses a form type an asset uses,
+so moving the owner is a detach, a delete and a re-creation.
 
 ## Blueprints — the object
 

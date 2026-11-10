@@ -393,7 +393,9 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
      no project `CREATE_FORM_TYPE` (read 2026-11-08), and the portal showed the project's owner the button
      disabled (2026-11-09), so `data-governance/governance/` grants it to `eighth-experimentation`'s owners
      first (the user's (B): written 2026-11-09, applied 2026-11-10 00:36 UTC, grant `00KsayGIrZ`); the
-     form's one field is a `String`, since the portal holds no enumerated type. The project holds no
+     form's one field is a `String`, since the portal holds no enumerated type. **Created 2026-11-10
+     00:44 UTC** and read back: revision 2, `ENABLED`, `classification: String`, nothing required, not
+     searchable. The project holds no
      space (both `Tooling` domains read 0 on 2026-11-08), so no page of it starts an app.
   2. **[Claude] reads** the new `DataLake` environment, its database, its source and whether it carries
      a subscription target, 1.2's first half: read 2026-11-08 23:44 UTC (the log), no target.
@@ -834,7 +836,11 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
    so the field is a `String` whose value `CT-12`'s successor reads against the four; the producing
    project creates the form type under a `CREATE_FORM_TYPE` grant to its owners on the root domain unit,
    `data-governance/governance/`'s `form_type_owners`, which the domain did not hold; applied 2026-11-10
-   00:36 UTC.
+   00:36 UTC, the form created by the project's owner at 00:44 UTC (revision 2).
+   **The owner, read 2026-11-10 on AWS's pages**: required, and the project whose members edit or delete
+   the form; the portal lists every form in the domain, and no page ties attaching one to its owner. No
+   call moves a form type to another owner, and `DeleteFormType` refuses one an asset uses, so the owner
+   question 3.2 reads is cheapest to change before 1.3 attaches the form to `trades_notional`.
 5. **The consumer, and who approves.** The consumer: a third project from `experimentation`
    (`test-experimentation` receives the application itself, so a subscription there reads a copy it
    already holds). The approver: the owner project's members, the Data Scientist User, or the Governance

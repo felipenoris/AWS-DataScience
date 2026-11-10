@@ -789,6 +789,18 @@
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>.
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-metadata-form.html>
   answered an empty page that day.
+- A metadata form's owning project (read 2026-11-10, for Stage 19 decision 4's owner question):
+  `CreateFormType` requires `owningProjectIdentifier`, *"the project that owns this metadata form type"*:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateFormType.html>; only a member of
+  the owning project creates, edits or deletes a form:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/create-metadata-form.html>; the *Metadata forms*
+  page lists every form in the domain, a form's display name and description change after creation and
+  its technical name does not, and a form is disabled and detached from every asset before it is deleted:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/standardize-metadata-forms.html>;
+  `DeleteFormType` requires the form type in use by no asset type and no asset:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_DeleteFormType.html>. None of these pages,
+  `update-metadata.html` included, says whether a project other than the owner may attach a form, and the
+  CLI offers `create-`, `get-` and `delete-form-type`, no update.
 - The CI/CD CLI's catalog export and import (read 2026-10-28, for Stage 19 0.9 and pass 3): the
   manifest's `catalog` content, the same-name assumption, the asynchronous listing failure, and the
   stages in different domains, accounts and Regions:
