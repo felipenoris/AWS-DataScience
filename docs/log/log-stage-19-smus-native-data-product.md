@@ -545,3 +545,64 @@ Account ids are replaced by the account's name in angle brackets.*
 - **[user]**, verbatim: *"faça rebase em relação à main"*. **[Claude]** `main` held one commit past the
   branch, `cc61288a` (#286, `docs/AWS_SUPPLEMENT.md`); the branch is pushed, and `CLAUDE.md` says a pushed
   branch is never rebased, so it took `origin/main` by a merge (`ea8dc1cf`), clean.
+- **[user]** The space's `pass1.log` of the rerun, pasted after it stopped; its lines of record verbatim,
+  the account redacted:
+
+  ```
+  == 2026-11-10T02:29:04Z the house image and the MWAA Serverless endpoint
+  airflow-serverless.us-west-2.api.aws -> 10.20.50.217 (the mwaa group's endpoint)
+  == 2026-11-10T02:29:04Z the product's database
+  app_etl s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/catalogs/
+  == 2026-11-10T02:29:06Z deploy to dev
+  📊 Total files deployed: 11
+    📦 Operator code for 'app-etl' -> s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/operatorFiles/app-etl-1794277832078.zip
+  2026-11-10 02:30:45,374 - smus_cicd.airflow_serverless - INFO - Successfully updated workflow: arn:aws:airflow-serverless:us-west-2:<Sandbox Account 1>:workflow/app_etl_eighth_experimentation_app_etl-VgCIaTD1xJ
+  ✅ Deployment completed successfully!
+  == 2026-11-10T02:31:02Z run1: start
+  📋 Run ID: wf5GVes1RglmGsM
+  02:33:39Z run1 RUNNING | transform=RUNNING/-s
+  02:35:40Z run1 RUNNING | process=RUNNING/-s transform=SUCCESS/99s
+  02:43:12Z run1 RUNNING | process=SUCCESS/493s summarize=QUEUED/-s transform=SUCCESS/99s
+  02:45:13Z run1 RUNNING | process=SUCCESS/493s publish=RUNNING/-s summarize=SUCCESS/10s transform=SUCCESS/99s write_result=SUCCESS/7s
+  02:47:13Z run1 FAILED | process=SUCCESS/493s publish=FAILED/138s summarize=SUCCESS/10s transform=SUCCESS/99s write_result=SUCCESS/7s
+  FATAL 2026-11-10T02:47:13Z run1: the run did not end in SUCCESS (exit 3); the session's laptop reads the task logs
+  ```
+
+  The deploy carried 11 files where run 1's carried 21, the ten AppleDouble files gone; the refusals of
+  `GetGroupProfile` and `ListTagsForResource` recur as in run 1.
+- **[Claude] Read** `publish`'s task log at 02:48 UTC as `awsds-infra-sandbox-1`: *"source run
+  dtqdppeykx4ivk: SUCCESS, {"added": 0, "failed": 0, "unchanged": 0, "updated": 1}"*, then *"RuntimeError:
+  listing ct5d0innrgw3v4 revision 1 not ACTIVE after 120 s"* in `publish_asset`: the search found the
+  asset this time. At 02:50 UTC, `get-listing` on `ct5d0innrgw3v4` answers revision 2 `ACTIVE`, created
+  02:44:45.249 and updated 02:44:46.015 UTC, carrying asset revision 2; revision 1 answers `CREATING`, its
+  `updatedAt` its `createdAt` (02:44:45.249 UTC); revision 3 does not exist. `get-asset 4j6p77v7dm2840`:
+  revision 2, created 02:44:41.240 UTC by the source run's update, the first revision 02:12:58.834 UTC,
+  `listing` `ct5d0innrgw3v4` `ACTIVE`, no description. Sandbox's trail holds one `CreateListingChangeSet`,
+  at 02:44:45 UTC, by the project role's session `AmazonMWAAServerless` from `10.20.123.235`, on
+  `4j6p77v7dm2840` with `PUBLISH`, answered `{"listingRevision": "1", "listingId": "ct5d0innrgw3v4"}`. The
+  product is listed; the task waited on the revision the change set answered, which never activates
+  (`SUP-345`).
+- **[Claude] Fixed** (`db22976c`): `publish_asset` reads the listing at its latest revision until one at
+  or past the change set's is `ACTIVE`, waits past an older one (the previous publication, the case of
+  every later run), fails on a status other than `CREATING`, and returns the asset revision the listing
+  carries; the timeout is read at call time. The double answers the measured shape: the change set's
+  revision `CREATING`, the next `ACTIVE`. 71 passed, 1 skipped; ruff clean; the pinned lint `ok: 9
+  arquivo(s)`.
+- **[Claude] Rebuilt the package** from `db22976c` with `COPYFILE_DISABLE=1 tar --no-xattrs --no-acls
+  --no-mac-metadata`: 26 files, no AppleDouble entry and no extended-attribute header by Python's
+  `tarfile`, 211,456 bytes, sha256 `f025601521980f23…`. The previous build, `COPYFILE_DISABLE=1` alone,
+  carried `LIBARCHIVE.xattr.com.apple.provenance` and `SCHILY.xattr.com.apple.provenance` headers on its
+  37 members. `pass1.sh` gains `SKIP_RUN1=1`, which deploys and starts the second run alone.
+- **[Claude] Proposed** one run after 1.3 in place of the two of the sitting's step 5: run
+  `J3chim3kbCEXWZl` created the table and imported the asset (`added: 1`), and run `wf5GVes1RglmGsM`
+  overwrote the table, updated the asset (`updated: 1`) and made the first listing, so 1.2 is run and
+  1.4's source half read; one run after 1.3 answers whether the listing gains a revision (1.4) and whether
+  the form travels to it (1.3, verification iv). The choice is the user's.
+- **[Claude] A message from the peer session** *EC2-Other cobrança diária com ambiente down*, received
+  after 02:55 UTC: its GitLab sitting (Stage 12 step 5.3) has ended, GitLab `stopped` at 02:49:05 UTC by
+  the user's `make gitlab-down` and no interface endpoint in Production at 02:55:18 UTC, the hub's VPN and
+  proxy `running`; `make hub-down` is this window's again at its end. Its host is now
+  `i-010c8217a1b3062dc` (`10.30.6.245`), the data volume 20 GiB, the restore read as before (6 projects,
+  `main` at `8d50f685`, 14 tags); `production/tooling/` was applied from PR #285's branch, so no plan or
+  apply of that slice before its merge (Lesson 79); the GitLab local user's password rotation is left to
+  the next GitLab sitting, this pass's mirror.

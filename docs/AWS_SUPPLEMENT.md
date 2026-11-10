@@ -2428,6 +2428,18 @@ entry is still true is the reading.
   (`"***"`). `GetFormType` answers Data Governance's `InfrastructureAccess`, no member of the owning project,
   where `GetAsset` refuses it. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-10.
 
+- `SUP-345` **`CreateListingChangeSet` answers a listing revision that stays `CREATING` while the service
+  writes the next revision `ACTIVE`** (read 2026-11-10 with `get-listing` and Sandbox's trail, Stage 19
+  pass 1). The project role's `PUBLISH` of asset `4j6p77v7dm2840` at 02:44:45 UTC, its first listing, was
+  answered `{"listingRevision": "1", "listingId": "ct5d0innrgw3v4"}`. Revision 1 still answered `CREATING`
+  six minutes on, its `updatedAt` its `createdAt`; revision 2 answered `ACTIVE`, updated 0.8 s after the
+  creation, carrying the asset's revision; `get-listing` without a revision answers revision 2, and
+  `get-asset` the listing `ACTIVE`. Code that waits for the answered revision waits forever: Stage 19's
+  rerun failed on it (*"listing ct5d0innrgw3v4 revision 1 not ACTIVE after 120 s"*) with the product
+  listed. Read the latest revision, one at or past the answered one. A republication of a listed asset is
+  unmeasured. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-10;
+  `examples/app-etl/code/app_etl_tasks.py`, `publish_asset`.
+
 ### Connections
 
 - `SUP-199` **A portal S3 connection over an already registered Access Grants location needs none of the
