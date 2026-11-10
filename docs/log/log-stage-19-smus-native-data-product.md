@@ -723,3 +723,84 @@ Account ids are replaced by the account's name in angle brackets.*
   whether this session uses GitLab. **[Claude] Answered** at 04:00 UTC: GitLab unused here, the mirror to
   `awsds/app-etl` left to the next GitLab sitting with the local user's password rotation, and
   `make hub-down` waiting for its word that the host is `stopped`.
+- **[Claude] A message from the peer session** *EC2-Other cobrança diária com ambiente down*, received
+  after 04:01 UTC, information only: GitLab `stopped` since 04:01:25 UTC, so `make hub-down` is this
+  window's again.
+- **[user]**, verbatim: *"Sim, prossiga"*, to the readings after the window and the preparation of a
+  decision on `SUP-346`.
+- **[Claude] Read the window's end** as the infrastructure user: Sandbox's trail holds `egress/`'s
+  `DeleteVpcEndpoints` at 04:00:59 UTC, Production's the hub's two `StopInstances` at 04:09:47 and
+  04:09:50 UTC (GitLab's at 04:01:26 UTC, the peer's). `make status` at 04:25 UTC: `production/vpn`,
+  `production/proxy` and `production/tooling` stopped, `sandbox/egress` down, Production's `app/app-etl`
+  (3) and `orchestration` (41) as at 01:01 UTC, the burn 0.0000 USD/h. Sandbox holds no SageMaker app
+  but `Deleted` ones, the space's JupyterLab app `jup8gb` (created 01:40:12 UTC) among them.
+- **[Claude] The readings of 1.2 to 1.4** (step 8): the session's script ran 04:05 to 04:06 UTC as
+  `awsds-infra-sandbox-1` and `awsds-infra-data` with `NO_PROXY='*'`, since 00:58 UTC, 55 calls answered
+  and two refused (verification v below), then single reads to 04:40 UTC:
+  - **Verification i**: the project role's session `GlueJobRunnerSession` created
+    `app_etl.trades_notional` at 02:01:27 UTC, `glue:CreateTable` from `10.20.61.79` through
+    `vpce-08ef07f449aeea464` (`com.amazonaws.us-west-2.glue`, created 01:29:16 UTC). The table:
+    `TableType` `EXTERNAL_TABLE`, `table_type` `ICEBERG`, `IsRegisteredWithLakeFormation` true, six columns
+    (`trade_date`, `desk`, `instrument`, `quantity`, `price`, `notional`), its location the database's
+    `LocationUri`, `…/avhvbqn37ty7m8/dev/data/catalogs/trades_notional`, not the `--conf` warehouse under
+    `tables/`: Iceberg's Glue catalog takes a database's location first. `UpdateTable` at 02:33:16,
+    03:11:22 and 03:44:53 UTC by the same session and endpoint, `skipArchive` true: the table at version
+    3, one version kept, its creation time unchanged. The database's Lake Formation grants are the
+    conditioned `IAMPrincipals` `CREATE_TABLE`, `DESCRIBE` and `DROP`, the provisioning role's and the
+    manage-access role's, so the conditioned `CREATE_TABLE` admitted the job's session; on the table the
+    project role holds `ALL`, `ALTER`, `DELETE`, `DESCRIBE`, `DROP`, `INSERT` and `SELECT`, each grantable,
+    the creator's.
+  - **The rows**: each of the four Glue runs logged *"read 10 row(s)"*, wrote 10 to the Parquet path and
+    10 to `glue_catalog.app_etl.trades_notional` (`datazone-avhvbqn37ty7m8-dev/output`): the sample's ten
+    rows, so `inbox/._trades.csv` was not read.
+  - **Verification ii**: the four `StartDataSourceRun` on `budryu9mt9y5u8` (02:12:55, 02:44:38, 03:22:54
+    and 03:55:58 UTC) and the three `CreateListingChangeSet` (02:44:45, 03:23:00 and 03:56:05 UTC) are the
+    project role's session `AmazonMWAAServerless`, one worker address in `10.20.0.0/16` per run, every
+    call through `vpce-09e2724f4cf1ea60c`, no error, each one shared event in both trails. Of the role's
+    policies read 2026-11-08, `SageMakerStudioProjectRoleMachineLearningPolicy`'s `CreateListingChangeSet`
+    on `*` admits the change set and `awsds-sandbox-workflows` `v4` on the domain's ARN is the one grant of
+    `StartDataSourceRun`. The negative is the entry above's.
+  - **Verification iii**: the source's filter is `app_etl` with `*`; run `bjlb9a7r15lx1s` `added: 1`
+    (`SUCCEEDED_CREATED`), then `dtqdppeykx4ivk`, `5bzy0z4wh4sr2o` and `6bnfg5dk961bps` `updated: 1`
+    (`SUCCEEDED_UPDATED`); the scheduled run `bp4qjoy7ptpwgg` (2026-11-09 23:47:48 UTC, the 23:41 cron)
+    imported nothing. With `publishOnImport` false the asset stayed unlisted from its import at 02:12:58
+    UTC to the task's first change set at 02:44:45 UTC, neither trail holding one between. The asset at
+    revision 7 carries `GlueTableForm` (type revision 13), `DataSourceReferenceForm` (the source and its
+    latest run), `SubscriptionTermsForm`, `AssetCommonDetailsForm` and `classification`, its listing
+    `ACTIVE`.
+  - **Verification v**: 92 `PostLineageEvent`, 23 per Glue run, as `GlueJobRunnerSession` through the
+    `datazone` endpoint, each one shared event in both trails; `list-lineage-events` answers 92 items, each
+    `SUCCESS`, `createdBy` the project role's profile. Data Governance's trail holds 16 `CreateLineageNode`
+    by `datazone.amazonaws.com`, ids and `sourceIdentifier` in `additionalEventData`: nine job nodes and
+    five dataset nodes during the first run (02:00:59 to 02:01:38 UTC), the Glue table's `d0m1zl6r8q3uvk`
+    among them (its `sourceIdentifier` the table's ARN, its name the S3 location); the asset's
+    `aqp9vg9lq7dsb4` (`amazon.datazone.asset/4j6p77v7dm2840`) at the import, 02:13:15 UTC; the listing's
+    `5v236akrsvu74g` at the publication, 02:45:02 UTC. `get-lineage-node` chains them: the `inbox`
+    prefix's node, the job run `arcyltahr9rxn4` (`atomic_replace_table_as_select`, its event 03:44:53 UTC),
+    the table's node, the asset's and the listing's. The domain carries the job's lineage to the asset;
+    whether the portal draws it on the asset's page is the user's look. The script's `get-lineage-node`
+    and `list-lineage-node-history` on the asset's id answered `ResourceNotFoundException`: an asset id is
+    no node identifier, and the table's node refuses its own `sourceIdentifier` (`SUP-347`).
+  - **The AppleDouble objects**: run 1's ten `._*` objects (163 bytes each, uploaded 01:58:03 to 01:58:37
+    UTC) are still under `shared/app-etl/`, two under `glue/`, `inbox/._trades.csv`, four under `src/` and
+    three under `workflows/`; the three later deploys, 11 files each, removed none (`SUP-348`). Deleting
+    them is an S3 write, the user's call.
+  - **`./aws/catalog.py`**: all checks passed. Against 2026-11-08's reading (9 listings, 7 sources): 10
+    listings, the tenth `trades_notional` at revision 6; 9 sources, each `publishOnImport` false (`CT-4`),
+    the two new ones `app_etl`'s (created 2026-11-08 23:41:28 UTC, 5 runs `SUCCESS`) and
+    `test-experimentation`'s `test_project_database` source, from the `DataLake` environment the data
+    scientist's portal session created there on 2026-11-09 at 19:53:02 UTC; the same session's second,
+    `mydatabase`, 19:53:53 UTC, reads `VALIDATION_FAILED`. `eighth-experimentation` holds six environments,
+    2026-11-08's five and `app_etl`'s.
+- **[Claude] Read for `SUP-346`'s decision**: the Service Reference's DataZone JSON (`v1.5`, 278 actions,
+  read 2026-11-10) gives `StartDataSourceRun` no resource type and no condition key, as it gives
+  `CreateListingChangeSet`, `PostLineageEvent`, `GetLineageNode`, `CreateDataSource` and
+  `UpdateDataSource`; its one resource type is `domain`, and it maps `datazone:domainId`,
+  `datazone:projectId` and `datazone:userId` to no action, as on 2026-10-18 (`SUP-191`). Run 1's refusals
+  of `GetGroupProfile` name the domain's ARN as the resource, and `v4`'s statement on that ARN is the role's
+  one grant of `StartDataSourceRun`: DataZone authorizes against the domain whatever the reference lists,
+  and IAM narrows the call to the domain and no further. `StartDataSourceRun`'s API page says nothing on who
+  may call it. The HTML Service Authorization Reference answered its title alone to the fetch.
+- **[user]**, verbatim, during the writing: *"revisite o restante do plano para o estágio 19 e avance no
+  que for possível neste momento sem subir o ambiente. adiante a preparação das próximas etapas no que for
+  possível. atualize o log com seu avanço e suba o progresso no mesmo PR."*

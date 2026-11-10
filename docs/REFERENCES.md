@@ -801,6 +801,16 @@
   <https://docs.aws.amazon.com/datazone/latest/APIReference/API_DeleteFormType.html>. None of these pages,
   `update-metadata.html` included, says whether a project other than the owner may attach a form, and the
   CLI offers `create-`, `get-` and `delete-form-type`, no update.
+- DataZone's IAM reach and its lineage lookup (read 2026-11-10, for Stage 19 verification ii's negative,
+  decision 17 and verification v): the Service Reference's DataZone JSON, `v1.5`, 278 actions, gives
+  `StartDataSourceRun` no resource type and no condition key and maps `datazone:projectId` to no action:
+  <https://servicereference.us-east-1.amazonaws.com/v1/datazone/datazone.json>; the HTML Service
+  Authorization Reference answered its title alone to the fetch:
+  <https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazondatazone.html>;
+  `StartDataSourceRun`'s page says nothing on who may call it:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_StartDataSourceRun.html>; `GetLineageNode`
+  takes a node's generated id or its `sourceIdentifier` (`SUP-347`):
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_GetLineageNode.html>.
 - The CI/CD CLI's catalog export and import (read 2026-10-28, for Stage 19 0.9 and pass 3): the
   manifest's `catalog` content, the same-name assumption, the asynchronous listing failure, and the
   stages in different domains, accounts and Regions:

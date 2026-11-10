@@ -2443,6 +2443,9 @@ entry is still true is the reading.
   0.9 s later carrying asset revision 6, the source run's. `UPDATING` is absent from the API's model
   (`ListingStatus`: `CREATING`, `ACTIVE`, `INACTIVE`; aws-cli 2.37.12). The publication is the revision
   past the answered one in both readings, and a wait at or past it takes revision 3's previous content.
+  Read a third time at 03:56 UTC (run `MmFs38SsxUFQ2xM`): answered revision 5, revision 5 `ACTIVE` at
+  03:56:05.061 UTC carrying asset revision 6 and revision 6 `ACTIVE` at 03:56:06.592 UTC carrying asset
+  revision 7, which the task, waiting past the answered revision, took for the publication.
   Where: `log-stage-19-smus-native-data-product.md`, 2026-11-10;
   `examples/app-etl/code/app_etl_tasks.py`, `publish_asset`.
 
@@ -2453,7 +2456,25 @@ entry is still true is the reading.
   from a space at 03:56:35 UTC: no error, answered `REQUESTED`, the run `SUCCESS` with every statistic 0.
   The role's IAM grant is `datazone:StartDataSourceRun` on the domain's ARN. A design that relies on
   DataZone's project membership to keep one project from running another's source has no such control:
-  the IAM statement is the one boundary. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-10.
+  the IAM statement is the one boundary. Read again the same day, the boundary's reach: the Service
+  Reference's DataZone JSON (`v1.5`) gives `StartDataSourceRun` no resource type and no condition key and
+  maps `datazone:domainId`, `datazone:projectId` and `datazone:userId` to no action, while DataZone
+  authorizes against the domain's ARN (run 1's `GetGroupProfile` refusals name it as the resource, and
+  `awsds-sandbox-workflows` `v4`'s statement on it is the role's one grant of the action). IAM narrows the
+  start to the domain, every project in every associated account. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-10.
+
+- `SUP-347` **`GetLineageNode` answers `ResourceNotFoundException` to a Glue table node's
+  `sourceIdentifier`, which its API page says the identifier accepts** (read 2026-11-10 in the domain,
+  Stage 19 verification v). The node `d0m1zl6r8q3uvk`, created by `datazone.amazonaws.com` from the Glue
+  job's OpenLineage events, has the table's ARN, `arn:aws:glue:us-west-2:<Sandbox>:table/app_etl/trades_notional`,
+  as its `sourceIdentifier`. It answered to its id and refused that ARN, character for character the
+  value `CreateLineageNode`'s `additionalEventData` recorded, from both accounts' infrastructure sessions.
+  The asset's node answered to `amazon.datazone.asset/4j6p77v7dm2840` and a job's node to
+  `default.app_etl_avhvbqn37ty7m8`, so the lookup by `sourceIdentifier` works for those forms. An asset's
+  own id is no node identifier either. The ids are in Data Governance's trail, each `CreateLineageNode`
+  carrying a node's id and `sourceIdentifier` in `additionalEventData`. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-10.
 
 ### Connections
 
@@ -3386,6 +3407,16 @@ entry is still true is the reading.
   workflow reused `app-etl`'s name and DAG id read and rewrote `app-etl`'s YAML, was created from
   `app-etl`'s definition, and its `destroy` plan then held `app-etl`'s Glue job, since `destroy` reads the
   Glue jobs from the workflow's definition as the service holds it. Where: `log-stage-18`'s pass 5 entry.
+
+- `SUP-348` **`deploy` uploads an application's files to the project's shared root and deletes none the
+  new bundle lacks** (measured 2026-11-10 in Sandbox, Stage 19 pass 1, the same version). Run 1's
+  package carried ten AppleDouble files (`._*`, 163 bytes each), which macOS's `tar` wrote and its `tar -t`
+  does not list; the deploy at 01:57 UTC uploaded them with the 11 real files (*"Total files deployed:
+  21"*). Three later deploys, at 02:29, 03:07 and 03:40 UTC, carried 11 files each, and after them the ten
+  objects were still under `shared/app-etl/`, in `glue/`, `inbox/`, `src/` and `workflows/`. Since the
+  workflow scan reads the whole shared root (`SUP-287`), a file an application drops stays in the scan
+  until it is deleted by hand. Spark's listing skipped `inbox/._trades.csv`: each Glue run read the
+  sample's 10 rows. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-10.
 
 ## Bedrock
 
