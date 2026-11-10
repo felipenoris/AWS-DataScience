@@ -20,6 +20,7 @@ are now officially just the acronym.
 | **Data Governance** | The account that owns the *state* of data: the governed lake, its catalog, Lake Formation and the classification scheme. No compute, no interactive sign-in; every environment reaches it through Lake Formation cross-account shares. |
 | `INT-nn` | Numbered cross-account integrations that must be proven, each with a fallback: `docs/plan/integrations.md`. |
 | `TM-nn` | Numbered entries of the data-leakage threat model's ledger: a residual with its state (controlled, accepted, open or pending), its evidence and its revision trigger. `docs/plan/threat-model.md`, which Stage 11 step 3 builds. |
+| `SUP-nnn` | Numbered entries of the AWS supplement: a behaviour of an AWS service, of Terraform or of a tool run against the estate that its documentation does not state, with the measurement that showed it. `docs/AWS_SUPPLEMENT.md`. |
 | `§` | A section of the plan as it was when it lived in one file. The numbers are kept **inside** the `docs/plan/` files as historical anchors (e.g. `docs/plan/architecture.md` §4.2 is the data perimeter), but the address of anything is its file plus its stable ID — `D26`, `INT-11`, `Stage 1c step 7`. |
 
 ---

@@ -181,7 +181,7 @@ retyped. **Explanation:** all read-only.
   > and reads its identifier back, and the reason decision 2's fallback is a **purpose-made** Secrets Manager
   > secret rather than a typed password — a secret is at least one object, rotatable, revocable and nameable
   > in a policy. If IAM credentials turn out not to work same-account, that is verification (iii)'s answer and
-  > a finding worth its own line in `lessons.md`'s platform list, with its date.
+  > a finding worth its own entry in `docs/AWS_SUPPLEMENT.md`, with its date.
 - **0.4 — the API half answered 2026-10-18: nothing at the domain level governs it.** DataZone's 14
   authorization policy types (`list-policy-grants`' `--policy-type`) name no connection, and `CreateDomain`,
   `UpdateDomain` and `CreateProjectProfile` carry no connection setting; `CreateConnection` takes a `scope`
