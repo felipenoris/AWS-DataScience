@@ -804,6 +804,14 @@ one module tag.
   its measurements carried (Stage 18's 8.9). D41's item 2 and revision trigger, `SMUS.md`'s section on a
   deployment project, `POLICIES.md`'s trigger on `DenyDataZoneEntirely` and Stage 10's status carry it.
 
+- **2026-11-09 — The platform list becomes `docs/AWS_SUPPLEMENT.md`.** The list of what AWS does that its
+  documentation does not say, kept at the end of `lessons.md` since 2026-09-06, moved to a file of its
+  own on the user's request: supplementary AWS documentation, by service, one `SUP-nnn` entry per
+  behaviour. Its entries were regrouped under the service whose behaviour each is, and the stage logs,
+  runbooks, documents and code comments were swept for the behaviours that had never reached the list,
+  Terraform's and its providers' among them. `CLAUDE.md` routes to it and indexes its sections, and
+  `./scripts/check-aws-supplement.py` joined `make check`. Nothing in AWS changed.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*

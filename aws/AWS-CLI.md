@@ -111,8 +111,8 @@ aws iam simulate-principal-policy --policy-source-arn "arn:aws:iam::${ACC}:role/
 
 With several resources, read `ResourceSpecificResults`: the top-level `EvalDecision` is the action's over all
 of them. A decision with `AllowedByOrganizations: false` and no matched statement is the organization's, and
-the identity layer under it is read by giving the context the SCP's carve-out. The measurements are in
-`docs/plan/lessons.md`, "What AWS does that its documentation does not say".
+the identity layer under it is read by giving the context the SCP's carve-out. The measurements are `SUP-008` in
+`docs/AWS_SUPPLEMENT.md`.
 
 ## Identity Center change alerts
 

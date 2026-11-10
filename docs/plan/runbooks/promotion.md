@@ -167,7 +167,7 @@ policy simulator as each deploy role on `sagemaker:CreateModel`, `CreateTransfor
 `allowed`. **Done 2026-10-24, 17:51 to 17:55 UTC** (Stage 9's and Stage 10's logs): each slice applied
 from a fresh plan of the counts above and re-planned `No changes`, `deploytargets.py` all checks passed
 before and after, the simulator reading every new call `allowed` but `CreateTransformJob` against a job's
-ARN, where it drops the volume key (`lessons.md`); the first real transform is `staging-model`'s.
+ARN, where it drops the volume key (`SUP-009`); the first real transform is `staging-model`'s.
 
 Beside them, the user's two acts that need nothing up: the merge of `awsds-workflows` PR (the branch
 `treino-e-repositorio-de-algoritmo`, `d60e1ad`, the rule `treino`); the template pins `d60e1ad`, which
