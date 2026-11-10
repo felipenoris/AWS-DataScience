@@ -42,6 +42,10 @@ Blueprint for using AWS as a Data Science infrastructure provider.
 - `docs/PRICING.md` — per-unit AWS rates for `sa-east-1` and `us-west-2`, read from the AWS Price List bulk
   API. The cost figures in `docs/plan/cost-model.md` are order-of-magnitude estimates; these are measured.
   The cost model says what is consumed, `docs/PRICING.md` says what a unit of it costs.
+- `docs/AWS_SUPPLEMENT.md` — supplementary AWS documentation: what the services, Terraform and its providers
+  do that their documentation does not state, one `SUP-nnn` entry per behaviour, by service, each with the
+  measurement that showed it and the log that holds it. `./scripts/check-aws-supplement.py` checks its ids
+  and its index in `CLAUDE.md`.
 - `docs/log/` — record of every step performed manually through the console, one file per stage, mirroring
   `docs/plan/stages/` (`docs/log/log-stage-NN-*.md` ↔ `docs/plan/stages/stage-NN-*.md` — the same slug, with
   a `log-` prefix, so the two files never share a name). `docs/log/INDEX.md` says what each file records, so

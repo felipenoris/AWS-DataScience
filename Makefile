@@ -35,8 +35,10 @@
 # relative links, stable IDs and the two size budgets),
 # check-identifiers (no account id or e-mail in a tracked file), check-provider-locks (6.3: three
 # platforms in every committed lock file), check-gitlab-ci (no job named after a GitLab CI global
-# keyword, no `needs:` naming a job its pipeline lacks, no script item `bash -n` refuses) and
-# check-sg-descriptions (no security group or rule description EC2 refuses at apply).
+# keyword, no `needs:` naming a job its pipeline lacks, no script item `bash -n` refuses),
+# check-sg-descriptions (no security group or rule description EC2 refuses at apply) and
+# check-aws-supplement (docs/AWS_SUPPLEMENT.md's ids are unique, every SUP-nnn cited elsewhere
+# exists, and CLAUDE.md indexes its sections).
 
 SHELL := /bin/bash
 
@@ -208,6 +210,7 @@ check:
 	         "./scripts/check-index.py" \
 	         "./scripts/check-network-doc.py" \
 	         "./scripts/check-plan-refs.py" \
+	         "./scripts/check-aws-supplement.py" \
 	         "./scripts/check-identifiers.py" \
 	         "./scripts/check-provider-locks.py" \
 	         "./scripts/check-gitlab-ci.py" \

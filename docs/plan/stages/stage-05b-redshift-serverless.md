@@ -54,7 +54,7 @@ same slice for that reason, and a plan that adds one without the other is not ap
 > field. If the host does **not** survive a delete and re-create, then every `make down` silently breaks every
 > connection and the layer has to change: the workgroup becomes something kept up and the cost guard becomes
 > the usage limit alone. **This estate has been bitten by exactly this shape before** — the Elastic IP whose
-> *allocation id* did not survive a transfer while its address did (`lessons.md`, the platform list) — so the
+> *allocation id* did not survive a transfer while its address did (`AWS_SUPPLEMENT.md`, `SUP-062`) — so the
 > host is read back rather than assumed, before 6h depends on it.
 
 ## Why the cost guards are part of the build

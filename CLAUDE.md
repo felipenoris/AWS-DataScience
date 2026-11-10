@@ -141,6 +141,7 @@ are never cut; the words around them are.
 | [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md) and [`terraform-modules/consumer-data/README.md`](terraform-modules/consumer-data/README.md) | The same discipline for the lake, producer and consumer side: one row per bucket/key-policy `Sid`, per LF-Tag assignment, per grant, per settings attribute; the module README is what its calling slice (`sandbox/data/`) points at. Reviewed in the same sitting as a change to the `.tf` files. No mechanical check exists; the `.tf` comments carry the reasoning, these files the index |
 | [`docs/NETWORK.md`](docs/NETWORK.md) | The network as built: addresses, routes, both egress paths, VPN, DNS, security groups, the two reach questions. Reviewed in the same sitting as any change to a network-bearing slice or module (its §2.1 names them). `./scripts/check-network-doc.py` is the mechanical half; whether a sentence is still true is the reading, and a moved `[P]` fact is re-measured with the `aws/` instruments |
 | [`docs/PRICING.md`](docs/PRICING.md) | A row for every new AWS service referenced |
+| [`docs/AWS_SUPPLEMENT.md`](docs/AWS_SUPPLEMENT.md) | What AWS, Terraform and its providers do that their documentation does not state, one `SUP-nnn` entry per behaviour with its measurement and its log. An entry is written in the sitting that measures a behaviour, and a later reading is appended to the entry it changes. `./scripts/check-aws-supplement.py` is the mechanical half |
 | [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md) | Every item only the user can take, across stages, with what it holds up. A row is added when a session stops on one and removed in the sitting that takes it |
 
 # Claude memory
@@ -215,7 +216,7 @@ per laptop, never one per session.
 - Work is set aside with a WIP commit, never a bare `git stash`: the stack is shared and a peer may
   pop it.
 - The upkeep files every stage touches (`CLAUDE.md`'s Current position, `docs/AWS_STATE.md`,
-  `docs/plan/lessons.md`, `docs/REFERENCES.md`, `docs/PRICING.md`, `docs/log/INDEX.md`) are edited
+  `docs/AWS_SUPPLEMENT.md`, `docs/plan/lessons.md`, `docs/REFERENCES.md`, `docs/PRICING.md`, `docs/log/INDEX.md`) are edited
   in the smallest hunk that carries the fact, and the branch is synced with `origin/main` before the
   PR opens and again before the user merges, so the session that caused a conflict resolves it.
 - A module tag is repository-global and never moves (`terraform-changes.md`, Recipe B). The next
@@ -274,6 +275,7 @@ This table is the only routing map; every other file points here rather than rep
 | Whether something a snapshot shows is expected, before reporting it as a finding | [`docs/AWS_STATE.md`](docs/AWS_STATE.md): invariants (`INV-nn`), known exceptions (`EXC-nn`), what a later stage changes. Read it whenever a snapshot is read |
 | A data-leakage channel, its control or its accepted residual (`TM-nn`), before a proxy plane is edited | [`docs/plan/threat-model.md`](docs/plan/threat-model.md) |
 | Plan, review, or settle a decision | add [`docs/plan/lessons.md`](docs/plan/lessons.md) and [`docs/plan/open-questions.md`](docs/plan/open-questions.md) |
+| A behaviour of AWS, Terraform or a provider that its documentation does not state: before designing around one, or when an error names the wrong cause | [`docs/AWS_SUPPLEMENT.md`](docs/AWS_SUPPLEMENT.md), grepped by API name, resource type or error text. Sections: IAM and STS; IAM Identity Center; Organizations and Control Tower; Security Hub and Config; CloudTrail; CloudWatch and Service Quotas; EventBridge; EC2; Systems Manager; VPC and Route 53 Resolver; ECR; S3; Glue; Lake Formation; Athena; Redshift Serverless; DataZone and SageMaker Unified Studio; SageMaker AI spaces and images; SageMaker AI jobs and models; MWAA; The SMUS CI/CD CLI; Bedrock; Terraform; The AWS CLI; Clients and the egress proxy |
 | What waits on the user's decision or act, across stages | [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md) |
 | Look up a decision | [`docs/plan/decisions/INDEX.md`](docs/plan/decisions/INDEX.md); open a decision file only for its reasoning |
 | Cost of a new service | [`docs/PRICING.md`](docs/PRICING.md), measured, never estimated (Lesson 6). The projection is [`docs/plan/cost-model.md`](docs/plan/cost-model.md) |
@@ -336,9 +338,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (`production/sagemaker/`) ran both modes in the Production sitting: the `producer` write committed and the
   `pickup` consumed the drop, `curated.trades` at 20 rows, after decision 13's two halves: the
   `AllowFullTableExternalDataAccess` flag on in Production (the user's console, 19:49 UTC) was not enough,
-  the vend refused *"Verify the data lake settings for account"*, and the lake's `lakeformation.tf` carries it
+  the vend refused (`SUP-111`), and the lake's `lakeformation.tf` carries it
   since 22:03 UTC (`TM-26`); the flag is on in Sandbox and the lake, unset in Staging and, since the user turned it off on 2026-10-25,
-  in Production, whose flag the third run showed unnecessary (2026-10-24, xxviii). 9.1's
+  in Production. 9.1's
   `production/warehouse/` applied 22:07 UTC (the namespace; `EXC-13`'s Production sentence), refusal 9
   lifted, `warehouse-compute/` raised per warehouse sitting, 9.3 run 2026-10-24 (the schema `trades` at 1 TB, the roles, the `IAMR:` users, the default privileges, every `PUBLIC`
   `CREATE` revoked), **9.4 to 9.7 done 2026-10-25**: the DDL job and the load (decision 15's Production-only workflow, its schedule `DISABLED` through the slice) after the deploy role's `FollowItsOwnStatements` and the job group's 5439 egress; 9.5's datashare across Production, Data Governance (decision 14) and Sandbox; 9.7 read from `eighth-experimentation` through the access role's catalog read, its Lake Formation grant and `TEMP` (`redshift-connection.md` §G), and with Production's workgroup gone;
@@ -370,10 +372,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   fixed) and `SUCCEEDED`; 0.5, decision 19, decision 2's context and verification xvi's worker clauses read; the
   failure rules mailed; ii's deploy-role half read 2026-10-24 and 3.2 closed 2026-10-25 by (b). Read
   2026-10-26 with nothing up: both outputs buckets publish to EventBridge (3.6); `GetWorkflowRun` decrypts
-  through the service and `GetWorkflow` does not (decision 11's `kms:ViaService` narrowing applied
+  through the service (`SUP-264`; decision 11's `kms:ViaService` narrowing applied
   2026-10-26, the Deployment Manager's `GetWorkflowRun` answering `SUCCESS` under it);
-  the training operator's `print_log` read answers, its six `Decrypt` refusals per run CloudWatch Logs'
-  attempt with the reader's identity before its own (read the same day). **2.1 ran from a space on 2026-10-26**: the house CLI by its path, the CLI 1.0.9's
+  the training operator's `print_log` read answers, its six `Decrypt` refusals per run being `SUP-059`. **2.1 ran from a space on 2026-10-26**: the house CLI by its path, the CLI 1.0.9's
   `ListDomains` (refused to a project's role) answered by the domain's id, and Sandbox's `mwaa` group's
   `airflow-serverless` endpoint (`GROUPS=mwaa`, the name in the session's `NO_PROXY` until the next image);
   xxix's portal run fails at the DAG's template. The template's `scripts/dev-cli.sh` carries both answers
@@ -386,11 +387,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `test-experimentation`. The connection (`EXC-17`) carries **`lineageSync` on, daily 03:43 UTC, every run
   failing** (decision 3, the user's). **Cost**: 1.44 USD per query-hour at 4 RPU and 0.00 idle, with no
   pause, so `make down` is the guarantee; the ratchet past 4 never returns; the free trial, 300 USD per
-  account for 90 days, absorbs the bill to 2026-12-19 in Sandbox and to 2027-01-21 in Production (299.50 USD left in Production on 2026-10-30 and 287.51 in Sandbox on 2026-10-26; the window opens with the namespace). **`EXC-13`**: the admin secret's first rotation succeeded on 2026-10-20 with no workgroup,
-  against AWS's page, and the database took the password (the Data API as `dbadmin` through the secret, 2026-10-25). SQL from a notebook is `redshift-connection.md` §J. AWS's `SageMakerStudioProjectUserRolePolicy` v75 grants
-  every project role `GetCredentials` and the Data API on a workgroup tagged with its project, `GetCredentials` on
-  any workgroup through `sqlworkbench`, and the secrets tagged with its project or
-  `for-use-with-all-datazone-projects`: the admin secret stays closed by its tags alone (`INV-20`, PR #187).
+  account for 90 days, absorbs the bill to 2026-12-19 in Sandbox and to 2027-01-21 in Production (299.50 USD left in Production on 2026-10-30 and 287.51 in Sandbox on 2026-10-26; the window opens with the namespace). **`EXC-13`**: the admin secret rotates with no workgroup,
+  against AWS's page, and the database takes the password (`SUP-129`). SQL from a notebook is `redshift-connection.md` §J. AWS's project-role policy reaches
+  workgroups and secrets by their tags (`SUP-179`): the admin secret stays closed by its tags alone (`INV-20`, PR #187).
 - **Stage 6d in progress**: steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half (a reconciliation that
   writes the domain). The house image is `awsds-sandbox-dev-env` version 11, `default-v0.10.0-c8bac16e`
   (2026-10-26, alias `0.10.0`), its `NO_PROXY` literal the 73 names of `vpc-egress-v0.19.0`, `DE-5`
@@ -405,9 +404,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   event of its own; the decision beside 6d decision 9 is the user's). **Decision 15 taken 2026-10-30 as (b)**:
   `sagemaker-prereqs-v0.9.0`, `experimentation`'s element at order 13 with the image pinned at
   `var.sandbox_dev_env_version` (11), both applied 2026-10-30 (`US-3` at 14). **2.6 items 1, 3 and most of 4
-  done 2026-10-30**: two environments ended `VALIDATION_FAILED` with `[]` because the profile wrote the image
-  lists as the template's `name;config;version` where the service takes JSON and translates (the lessons' AWS
-  list); `test-experimentation` holds `lab-sagemaker-ai-domain` (`d-odhynkcev3yw`, environment
+  done 2026-10-30**: two environments ended `VALIDATION_FAILED` with `[]` on the image lists' format
+  (`SUP-175`); `test-experimentation` holds `lab-sagemaker-ai-domain` (`d-odhynkcev3yw`, environment
   `c9ge4welc308pc`) with the house image pinned at 11, idle 60/60/120 and RStudio off (`enableRStudio`
   `false` until the Posit licence; the portal's RStudio card refuses), `US-5`/`US-7` passing on it; item 4
   closed with `pilot-jupyterlab` on the pinned image (`InService` 22:46 UTC, the pull from the Production
@@ -495,8 +493,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   mirror at `main`, `gates-v0.6.0` with decision 1's zlib pair, `default-v0.10.0` as Sandbox's version 11,
   xxviii's active half (a global-endpoint `AssumeRole` lands in `us-east-1`, past 4.6's rules). **Decision
   29 taken 2026-10-27 as (b)**: the root baseline's `DenyDeployRoleAssumptionOutsideTheRegion` applied the
-  same day (14 statements), not reachable by the battery's wording (a role that does not exist hides the deny; an existing one's global refusal
-  names it only through an authorization id, which the battery's `root` row reads when AWS issues one), so
+  same day (14 statements), not reachable by the battery's wording (`SUP-010`, `SUP-011`), so
   `sts-global-probe` measures it; the next release's sitting is
   `runbooks/promotion.md` §N.8.2 (its step 12 the exercises of Stage 10 xx's second half and of xv on the
   template's proxy checks, fixed for `v0.4.7` on 2026-10-28), the warehouse and backup sitting §N.8.3
@@ -529,7 +526,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `create-environment` (`ML-2` read, no CMK). 7.0a and 7.0b applied 2026-10-19 (`AmazonBedrockKnowledgeBase` at `sagemaker-prereqs-v0.7.0`): the Generative AI menu opens and lists no model until one is enabled for the account. Decision 13 taken as (b): a governance project in `data-governance/governance/` and the two model roles in `sandbox/model-access/` (rank 52), applied by the user 2026-10-19, and the five models enabled in Sandbox's console the same evening (Opus, Sonnet and Haiku 4.5 and Titan V2 in projects, Haiku 4.5 and Nova Lite in the playground); decision 11's amendment, Titan V2 and `application-inference-profile/*` in the Bedrock SCP, was applied by the user the same evening: the playground answers with Haiku 4.5 and refuses Nova Lite on its foundation model (7.3). Main pins `vpc-egress-v0.18.0` (`mlflow`), unapplied (1.4). Pass 2's training job waited on a battery run of the instance-preference rows, written in PR #216 and run 2026-10-22 (Stage 9 3.5); the three quota requests still read `CASE_OPENED` on 2026-10-20.
   **Stage 18 DONE 2026-10-22: D41 item 2 kept** (the user's verdict): a deployment-only project measured in
   Staging and removed, the estate back to its reading before the stage, `EXC-20` and `EXC-21` closed, the
-  measurements in `SMUS.md`'s deployment-project section and `lessons.md`. Left: the domain's two `IAM`
+  measurements in `SMUS.md`'s deployment-project section and `AWS_SUPPLEMENT.md`. Left: the domain's two `IAM`
   profiles, a group profile and 44 lineage events (no delete API), and the project key until 2026-11-21
   (the protected refs read free of its branch on 2026-10-26).
 - **Stage 19: decision 6 taken 2026-10-31 by the user as (b), the AWS model** (`stage-19-smus-native-data-product.md`;
@@ -724,8 +721,3 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     from the path that already works, never from what the first caller tolerates.**
 79. **A slice applied from an unmerged branch is a revert in every other tree — plan it from the tree that
     applied it, or after its merge.**
-
-**[`lessons.md`](docs/plan/lessons.md) also carries a second list — "What AWS does that its
-documentation does not say"** — platform behaviours that cost a measurement to learn, each with its
-date and its reading. Consult it before designing around an AWS behaviour nobody here has measured;
-add to it when a vendor page turns out not to say the thing that mattered.

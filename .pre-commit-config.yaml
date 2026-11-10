@@ -248,6 +248,16 @@ repos:
         pass_filenames: false
         files: ^(terraform-live/production/(tooling|runners)/variables\.tf|scripts/check-gitlab-pins\.py|scripts/tfhygiene/hcl\.py)$
 
+      # docs/AWS_SUPPLEMENT.md is cited by id from prose and code, and indexed by CLAUDE.md's routing
+      # row. The hook fires on any text that may cite an entry, since a SUP-nnn that names nothing
+      # arrives through the citing file.
+      - id: check-aws-supplement
+        name: docs/AWS_SUPPLEMENT.md's ids resolve and CLAUDE.md indexes its sections
+        entry: ./scripts/check-aws-supplement.py
+        language: system
+        pass_filenames: false
+        files: (\.(md|tf|tftpl|py|sh)|^Makefile)$
+
       - id: checkov
         name: checkov (terraform)
         entry: checkov
