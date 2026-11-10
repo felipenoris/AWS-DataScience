@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **in progress since 2026-10-18** ([log](../../log/log-stage-12-observability-finops.md)). Step 10's `./aws/observability.py` written 2026-10-17. **Built in Production 2026-10-18**: `production/observability/` (the hub dashboard, the proxy log's two metric filters, the refusal alarm, the VPCs-per-Region quota alarm) and the CloudWatch statement on `awsds-prod-alerts`, both re-planning `No changes`. **`sandbox/observability/` was applied the same day by the orchestrating session** (9 added, `No changes` after), the topic's e-mail subscription confirmed by the user on 2026-10-19, so `OB-3` passes in Sandbox. 4.2 read the bill from the accounts with a profile: **at least USD 53.31 in August and 74.48 in September**, above D12's 50, and the model is rewritten from it. `OB-3` fails since the first wired alarm, by design, until the three `[D]` hosts' alarms are wired (`EXC-19`); Sandbox's two warehouse alarms notify `awsds-sandbox-alerts` since PR #181's apply. Scoped against [D38](../decisions/D38-single-egress-hub.md): no NAT panels, and three lines the hub creates — the proxy's access log and its refusal rate, the DNS Firewall's per-query charge, the peering bytes. 5.2 read the bill's usage types on 2026-10-20: no letter moves (decision due 3, the user's) |
+| **Status** | **in progress since 2026-10-18** ([log](../../log/log-stage-12-observability-finops.md)). Step 10's `./aws/observability.py` written 2026-10-17. **Built in Production 2026-10-18**: `production/observability/` (the hub dashboard, the proxy log's two metric filters, the refusal alarm, the VPCs-per-Region quota alarm) and the CloudWatch statement on `awsds-prod-alerts`, both re-planning `No changes`. **`sandbox/observability/` was applied the same day by the orchestrating session** (9 added, `No changes` after), the topic's e-mail subscription confirmed by the user on 2026-10-19, so `OB-3` passes in Sandbox. 4.2 read the bill from the accounts with a profile: **at least USD 53.31 in August and 74.48 in September**, above D12's 50, and the model is rewritten from it. `OB-3` fails since the first wired alarm, by design, until the three `[D]` hosts' alarms are wired (`EXC-19`); Sandbox's two warehouse alarms notify `awsds-sandbox-alerts` since PR #181's apply. Scoped against [D38](../decisions/D38-single-egress-hub.md): no NAT panels, and three lines the hub creates — the proxy's access log and its refusal rate, the DNS Firewall's per-query charge, the peering bytes. 5.2 read the bill's usage types on 2026-10-20: no letter moves (decision due 3, the user's). **5.3 done 2026-11-10**: GitLab's data volume is 20 GiB, through `runbooks/gitlab.md` §B's destroy, re-apply and restore, the restored instance reading what it read before |
 | **Prerequisites** | any stage that created resources — and **one real invoice**, met: the August and September bills, read from Cost Explorer in every account with a CLI profile (2026-10-14 for Config, 2026-10-18 in full). Management, Log Archive and Audit hold no profile and are unread |
 | **Consumes** | [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | nothing new crosses an account boundary. What it **retires** is a set of estimates |
@@ -190,6 +190,80 @@ that is up so often it may as well be `[D]`.
   `[P]` by `conventions.md` §5.1 rule 5, since every client `.conf` names it. GitLab's is the data
   volume's size: its daily snapshot holds about 1 GB of the 50 GiB (`docs/PRICING.md` §3), and EBS does
   not shrink a volume (`production/tooling/variables.tf`), so a smaller one is a migration.
+- **5.3 — [Claude⚡] Shrink GitLab's data volume to 20 GiB.** **Read 2026-11-09** (the log): the data
+  volume `vol-0e0fff3694f95fa63` holds at most 1.20 GiB of its 50, 2,467 written blocks of 512 KiB in its
+  newest DLM snapshot and the same count in the oldest one kept, six days earlier, the host stopped
+  between them. The volume is XFS mounted without `discard`, so the count bounds the filesystem's use from
+  above; the newest backup archive is 14 MB. 20 GiB, the floor of `data_volume_size`'s validation, bills
+  1.60 a month against 4.00, and takes the `[D]` volumes from 78 GiB to 48, 6.24 a month to 3.84. The
+  user asked for the step on 2026-11-09. It holds under decision due 3's (a), since (b) destroys the volume
+  at every session.
+
+  **Done 2026-11-10** (the log), as the sitting below lists it: the backup
+  `1794275508_2026_11_10_19.4.2`, 14,346,240 bytes; the destroy from 01:55:28 UTC, 1 min 28 s, and the
+  re-apply, 58 s, the host `i-010c8217a1b3062dc` at `10.30.6.245` on `vol-0f6fa0f0ae07f7064`; the first
+  boot done 11 min 28 s after the destroy began, `mounted: /dev/nvme1n1 xfs 19.9G`; the restore's task done
+  at 20 min 23 s. After it, the API reads what it read before (6 projects, 5 groups, 6 users, 3 runners,
+  `main` at `8d50f685`, 14 tags), `df` reads 925M used of 20G against 1.1G of 50G, `gitlab:doctor:secrets`
+  0 failures, and GitLab Shell's and Sidekiq's checks pass once both have booted. The host stopped at
+  02:49:05 (`make gitlab-down`); the hub stayed up for the Stage 19 session. Item 11's list missed
+  `docs/PRICING.md` §2 and §4, `runbooks/promotion.md`'s GitLab address and `runbooks/gitlab.md` §P; the
+  PR carries them. The sitting's reconfigure printed three NGINX deprecations: the template takes GitLab
+  19.2's keys since 2026-11-10 (`runbooks/gitlab.md` §R), planned as the `gitlab.rb` object alone, and
+  the next GitLab session applies it and runs the refresh.
+
+  **The path is Stage 7 step 8.2's restore rehearsal with a new value.** EBS never shrinks a volume
+  (AWS's page, `docs/REFERENCES.md`), and the plan does not say so: with `-var data_volume_size=20` it
+  reads `aws_ebs_volume.data will be updated in-place`, `size = 50 -> 20`, `Plan: 0 to add, 1 to change,
+  0 to destroy` (provider 6.68.0, 2026-11-09), a change EBS does not make. A `-replace` of the volume
+  alone leaves the host's `fstab` naming the old UUID with `nofail` and the user data that formats a new
+  volume unrun, so the host would come up with `/var/opt/gitlab` on its root disk. The smaller volume
+  lands through [`runbooks/gitlab.md`](../runbooks/gitlab.md) §B's destroy and re-apply, whose first boot
+  formats it, then §B's restore. `plan -destroy` read 17 resources on 2026-11-09, the rehearsal's set.
+  The default changes only in the sitting, before its plans: on `main` ahead of the apply, any
+  `production/tooling/` plan would carry the volume change (Lesson 69).
+
+  **The sitting**, at a GitLab session, in order:
+
+  1. **[Claude]** The other sessions told before any write: GitLab is down from the destroy to the
+     restore's end, 24 min 16 s on 2026-10-26, and a pipeline or a clone in flight fails.
+  2. **[Claude⚡]** `make hub-up` unless `make status` reads both hosts running (the first boot installs
+     GitLab through the proxy), then `make gitlab-up RUNNERS=0` (§U): the runners' security group is this
+     slice's. **[user]** The tunnel, for the sign-in page.
+  3. **[Claude⚡]** The backup by hand and its gate, the object read in the bucket by name, size and time
+     (§B). The old volume's DLM snapshots outlive the destroy and are the fallback past it.
+  4. **[Claude]** `./aws/supplychain.py`'s `SC-13`: the release of the archive item 3 wrote against
+     `gitlab_ce_version`, 19.4.2 on 2026-11-09.
+  5. **[Claude]** The reading before, in the same Session Manager shell: `df -h /var/opt/gitlab`, the
+     first direct reading of the volume's use, and §B's proof list through the API (the projects,
+     `main`'s commit and the tags, the users and groups, the runners, the instance settings).
+  6. **[Claude]** On the sitting's branch, committed before the plans: `data_volume_size`'s default to
+     20, and the three texts in the slice that name 50 GiB (`variables.tf`'s description, `main.tf`'s
+     header, `outputs.tf`'s `data_volume_id` description).
+  7. **[Claude⚡]** §B's four commands, as the infrastructure user in Production (`InfrastructureAccess`,
+     `awsds-infra-prod`): `plan -destroy` (17 to destroy) and its apply, then the plan (17 to add,
+     `aws_ebs_volume.data` at `size = 20`) and its apply, each plan with
+     `-var-file=<project folder>/secrets/saml.auto.tfvars`.
+  8. **[Claude]** The first boot on the serial console (§U): `mounted:` naming a 20 GiB XFS, then
+     `=== awsds gitlab first boot done`.
+  9. **[Claude⚡]** §B's restore, its steps 1-5, and its proof against item 5's reading; `df -h
+     /var/opt/gitlab` again.
+  10. **[Claude⚡]** `make gitlab-down`, then `make hub-down` unless another session is on the hub.
+  11. **[Claude]** The PR merged straight after the sitting, since the slice was applied from its branch
+      (Lesson 79), carrying the files that state 50 GiB or price it: `docs/PRICING.md` §3's GitLab
+      session and §8's `t4g.large` row, `cost-model.md`'s EBS row, `AWS_STATE.md`'s Production `[D]` row,
+      `runbooks/gitlab.md` §S and §U, `terraform-live/README.md`, `scripts/tfhygiene/layers.py`, and
+      `CLAUDE.md`'s host id.
+  12. **[Claude reads, user decides]** The snapshots no policy retires: `vol-072c3d3dc9883b104`'s seven
+      (2026-10-19 to 10-25, `policy-0cd541e97bea1d1c4` gone) and, after the destroy,
+      `vol-0e0fff3694f95fa63`'s seven. No procedure restores from them: deleted once the new volume holds
+      its first DLM snapshot, or kept. The fourteen billed 0.0049 USD a day on 2026-11-04. Read
+      2026-11-10 after the re-apply: both sevens present, `vol-0f6fa0f0ae07f7064` none yet under
+      `policy-029a3e7e9dd6426be`; the decision is in `waiting-on-the-user.md`.
+
+  **Growing it back is in place**: a larger value plans as the update EBS accepts, and the host then
+  extends the filesystem with `xfs_growfs` (§B). **The sitting costs under 1 USD** at `docs/PRICING.md`'s
+  rates, an hour of GitLab session with `RUNNERS=0` being 0.1994, against 2.40 a month saved.
 
 ### 6. Review the Config recorder scope against what it actually cost
 
@@ -368,6 +442,7 @@ and this one is not. **Explanation:** the checks are cheap because the facts are
    (6e decision 6) are D12's to choose, the user's.
 3. **The layer letters** (5.2, open question 4). The bill moves none. (a) Keep every letter; (b) demote
    `production/tooling/` to `[E]`, saving 4.96 a month, once Stage 7 step 8.2 has timed a restore.
+   8.2 timed one on 2026-10-26, 24 min 16 s from the destroy to the sign-in page; after 5.3, (b) saves 2.56.
    **Recommended: (a)**, with (b) re-read against 8.2's time. The lever the bill names is the session
    hours, decision due 2's.
 

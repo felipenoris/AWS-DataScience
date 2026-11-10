@@ -42,7 +42,7 @@ output "gitlab_rb_object" {
 }
 
 output "data_volume_id" {
-  description = "The 50 GiB data volume at /var/opt/gitlab - the object the DLM policy snapshots and a replacement re-attaches."
+  description = "The data volume at /var/opt/gitlab, var.data_volume_size GiB - the object the DLM policy snapshots and a replacement re-attaches."
   value       = aws_ebs_volume.data.id
 }
 

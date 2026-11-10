@@ -4,8 +4,8 @@ package['systemd_after'] = 'network-online.target'
 package['systemd_wanted_by'] = 'multi-user.target'
 
 letsencrypt['enable'] = false
-nginx['ssl_certificate'] = "/etc/gitlab/ssl/${gitlab_host}.crt"
-nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/${gitlab_host}.key"
+gitlab_rails['nginx']['ssl_certificate'] = "/etc/gitlab/ssl/${gitlab_host}.crt"
+gitlab_rails['nginx']['ssl_certificate_key'] = "/etc/gitlab/ssl/${gitlab_host}.key"
 
 gitlab_rails['env'] = {
   "http_proxy" => "${proxy_url}",
@@ -73,9 +73,9 @@ gitlab_rails['dependency_proxy_enabled'] = false
 
 pages_external_url "https://${pages_host}"
 gitlab_pages['enable'] = true
-pages_nginx['enable'] = true
-pages_nginx['ssl_certificate'] = "/etc/gitlab/ssl/${pages_host}.crt"
-pages_nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/${pages_host}.key"
+gitlab_pages['nginx']['enable'] = true
+gitlab_pages['nginx']['ssl_certificate'] = "/etc/gitlab/ssl/${pages_host}.crt"
+gitlab_pages['nginx']['ssl_certificate_key'] = "/etc/gitlab/ssl/${pages_host}.key"
 gitlab_pages['access_control'] = true
 
 puma['worker_processes'] = 2

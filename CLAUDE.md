@@ -448,11 +448,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   Functions machine per chain with a Scheduler schedule starts the workflows. The tooling is
   `awsds-workflows` (runbook §T).
 - **Stage 7 DONE 2026-10-27** (the user's decision): pass 4 closed 2026-10-26 (8.2's restore rehearsal 24 min
-  16 s, the host `i-0b4cb5f62e65abf70` since, on a new data volume). Production holds `pki/`, `tooling/` (GitLab CE
+  16 s; the host `i-010c8217a1b3062dc` since Stage 12 5.3's 20 GiB rebuild, 2026-11-10). Production holds `pki/`, `tooling/` (GitLab CE
   v19.4.2, `[D]`), `runners/` (`[E]`), `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners
   out, the build runner rises only with `BUILD=1`, and `make gitlab-up` applies `egress/` before it starts the
-  host. What recurs: a backup before the newest leaves the bucket (those of 2026-10-13, 10-15, 10-25 and 10-26,
-  the newest 22:15 UTC, leave on 2026-11-13, 11-15, 11-25 and 11-26) and the leaves' re-issue by 2027-09-22.
+  host. What recurs: a backup before the newest leaves the bucket (2026-11-10's, 01:51 UTC, leaves on
+  2026-12-11) and the leaves' re-issue by 2027-09-22.
   **`saml.auto.tfvars` lives in the project folder's `secrets/`**: a `tooling/` plan passes
   `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block.
 - **Stage 8 in progress**: passes 0-3 done (`awsds/ci-gates`, the test runner, the house image on Python
@@ -514,7 +514,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   alarms are wired at a hub session.
   **The bill passes D12**: 53.31 USD in August and 74.48 in September from the accounts with a profile, and
   D12's budget notifies nobody. 5.2 read 2026-10-20: the bill moves no layer letter (decision due 3, the
-  user's).
+  user's). 5.3 put GitLab's data volume at 20 GiB on 2026-11-10.
 - **Stage 14**: the pre-vend half done 2026-10-18, steps 2 and 7 still blocked on the account quota.
   `./aws/vending.py` (`VN-1`..`VN-6`) reads the hand-built unit as nine passes and one note; a unit costs
   3.50 USD/month at rest and 0.180/h working (`docs/PRICING.md` §3). Terminating the Account Factory product

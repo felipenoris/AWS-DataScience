@@ -3669,8 +3669,8 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   existence, location and format, and schema evolution goes through the engine. Where:
   `log-stage-05a-data-foundation.md`, 2026-08-20; `terraform-live/data-governance/data/catalog.tf`.
 
-- `SUP-314` **`aws_instance` plans a decrease of `root_block_device.volume_size` as an in-place change that
-  EBS refuses at apply** (measured 2026-08-21, the WireGuard host). An apply taking the host from
+- `SUP-314` **`aws_instance` plans a decrease of `root_block_device.volume_size`, and `aws_ebs_volume` one of
+  `size`, as an in-place change that EBS refuses at apply** (measured 2026-08-21, the WireGuard host). An apply taking the host from
   `t3.medium` on 64 GiB back to `t3.nano` on 8 GiB changed the type by a stop, a modify and a start, and its
   disk half failed at `ModifyVolume` with *"InvalidParameterValue: New size cannot be smaller than existing
   size"*, leaving `~ volume_size 64 -> 8` in the slice's plan. No flag, re-run or `force` completes it. The
@@ -3679,6 +3679,11 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   without a stop, and the filesystem takes the extra GiB only when `growpart` runs at boot (read in the
   slice's variable description, not measured). Where: `docs/AWS_STATE.md`, the WireGuard host row;
   `terraform-live/production/vpn/variables.tf`, `root_volume_size`; `runbooks/vpn.md` §S6.
+  Read 2026-11-09 on GitLab's data volume, a standalone `aws_ebs_volume`: with `-var data_volume_size=20`
+  the plan reads `aws_ebs_volume.data will be updated in-place`, `size = 50 -> 20`, `Plan: 0 to add, 1 to
+  change, 0 to destroy.` (provider `hashicorp/aws` 6.68.0), never applied. The smaller volume landed on
+  2026-11-10 through the slice's destroy, re-apply and a GitLab restore. Where:
+  `log-stage-12-observability-finops.md`, 2026-11-09 and 2026-11-10; `runbooks/gitlab.md` §B.
 
 - `SUP-315` **Route 53 Resolver returns every firewall domain-list entry with a trailing dot, so an
   `aws_route53_resolver_firewall_domain_list` written with bare names plans a change after every apply**

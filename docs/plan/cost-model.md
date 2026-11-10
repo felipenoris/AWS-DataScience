@@ -42,7 +42,7 @@ exists on 2026-10-18 at the measured rates, so it is arithmetic over readings ra
 | Item | Invoice line | Aug | Sep | Oct 1-17 | A month, today's set | Note |
 |---|---|---|---|---|---|---|
 | KMS customer-managed keys | `us-west-2-KMS-Keys` | 5.34 | 11.13 | 6.12 | ~11 | 1.00 per key version-month; September by account: Production 3.80, Sandbox 2.99, Data Governance 1.99, Staging 1.34, Identity 1.00. Each yearly rotation adds a version (`docs/PRICING.md` §2) |
-| EBS, the `[D]` hosts | `USW2-EBS:VolumeUsage.gp3` | 1.15 | 1.38 | 1.98 | 6.24 | 0.08/GB-month over GitLab's 62 GiB and the hub's 16 GiB, billed stopped or running. October holds GitLab from 2026-10-12; August, the buildbox and the Sandbox VPN host |
+| EBS, the `[D]` hosts | `USW2-EBS:VolumeUsage.gp3` | 1.15 | 1.38 | 1.98 | 6.24 | 0.08/GB-month over GitLab's 62 GiB and the hub's 16 GiB, billed stopped or running. October holds GitLab from 2026-10-12; August, the buildbox and the Sandbox VPN host. GitLab holds 32 GiB since 2026-11-10 (Stage 12 step 5.3), the set's month 3.84 |
 | SageMaker space volumes | `USW2-Studio:VolumeUsage.gp3` | 0.56 | 5.37 | 3.62 | 3.58 | 0.112/GB-month with every app stopped: 32 GB on 2026-10-18 and 368 GB on 2026-10-15 (`AWS/Usage` `studio/total_volume_size_in_gb`), so the row is whatever spaces exist |
 | Public IPv4, idle | `USW2-PublicIPv4:IdleAddress` | 0.76 | 3.79 | 1.72 | ~3.1 | the WireGuard Elastic IP while its host is stopped, 0.005/h; September also paid the proxy's address until 6g decision 1 released it |
 | ECR storage | `USW2-TimedStorage-ByteHrs` (ECR) | 0.28 | 1.59 | 1.55 | ~2.8 | 0.10/GB-month, 15.9 GB-month in September |
