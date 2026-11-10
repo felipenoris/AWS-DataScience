@@ -482,3 +482,56 @@ Account ids are replaced by the account's name in angle brackets.*
   with 28 resources (0.18 USD/h by the static table): 19 interface endpoints created 01:28:49 to
   01:30:06 UTC, every one `available` with private DNS, `airflow-serverless` (the `mwaa` group) and
   `datazone` among them, beside the two gateway endpoints of 2026-08-16.
+- **[user]** The space's `pass1.log`, pasted after run 1; its lines of record verbatim, the accounts
+  redacted:
+
+  ```
+  == 2026-11-10T01:57:18Z the house image and the MWAA Serverless endpoint
+  airflow-serverless.us-west-2.api.aws -> 10.20.50.217 (the mwaa group's endpoint)
+  == 2026-11-10T01:57:18Z the product's database
+  app_etl s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/catalogs/
+  == 2026-11-10T01:57:20Z deploy to dev
+  2026-11-10 01:57:24,867 - smus_cicd.utils - WARNING - Failed to get group profile for 839bcde8-f8b8-4ada-936a-1441352db302: An error occurred (AccessDeniedException) when calling the GetGroupProfile operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform: datazone:GetGroupProfile on resource: arn:aws:datazone:us-west-2:<Data Governance>:domain/dzd-d8yrvx1ko7im6o because no resource-based policy allows the datazone:GetGroupProfile action
+  📊 Total files deployed: 21
+  2026-11-10 01:58:38,326 - smus_cicd.datazone - INFO - No managed Tooling.GA/Tooling.Lightning blueprint found; will try the IAM connection fallback
+  2026-11-10 01:58:51,355 - smus_cicd.airflow_serverless - INFO - Workflow app_etl_eighth_experimentation_app_etl already exists, updating it
+  2026-11-10 01:59:07,241 - smus_cicd.airflow_serverless - INFO - Workflow app_etl_eighth_experimentation_app_etl_train already exists, updating it
+  ✅ Deployment completed successfully!
+  == 2026-11-10T01:59:11Z run1: start
+  2026-11-10 01:59:14,105 - smus_cicd.airflow_serverless - WARNING - Failed to fetch tags for workflow app_etl_test_experimentation_app_etl: An error occurred (AccessDeniedException) when calling the ListTagsForResource operation: [...] because no identity-based policy allows the airflow-serverless:ListTagsForResource action
+  📋 Run ID: J3chim3kbCEXWZl
+  02:01:47Z run1 RUNNING | transform=RUNNING/-s
+  02:03:18Z run1 RUNNING | process=RUNNING/-s transform=SUCCESS/113s
+  02:11:20Z run1 RUNNING | process=SUCCESS/494s summarize=QUEUED/-s transform=SUCCESS/113s
+  02:13:21Z run1 RUNNING | process=SUCCESS/494s publish=RUNNING/-s summarize=SUCCESS/7s transform=SUCCESS/113s write_result=SUCCESS/12s
+  02:15:21Z run1 FAILED | process=SUCCESS/494s publish=FAILED/14s summarize=SUCCESS/7s transform=SUCCESS/113s write_result=SUCCESS/12s
+  FATAL 2026-11-10T02:15:22Z run1: the run did not end in SUCCESS (exit 3); the session's laptop reads the task logs
+  ```
+
+  The same refusal of `GetGroupProfile` recurs at each storage item, and of `ListTagsForResource` on
+  `test-experimentation`'s other two workflows.
+- **[Claude] Read** `publish`'s task log as `awsds-infra-sandbox-1`: *"source run bjlb9a7r15lx1s:
+  SUCCESS, {"added": 1, "failed": 0, "unchanged": 0, "updated": 0}"*, then *"RuntimeError: 0 asset(s)
+  for app_etl/trades_notional in the project, one expected"* in `find_asset`. The source run, as
+  `awsds-infra-data`: `PRIORITIZED`, created 02:12:55, run 02:12:57 to 02:12:59, updated 02:13:14 UTC,
+  `lineageSummary.importStatus` `SUCCESS`, its snapshot the filter `app_etl` with `*`; its one activity
+  `trades_notional` `SUCCEEDED_CREATED`, asset `4j6p77v7dm2840`. The search as
+  `awsds-infra-sandbox-1` at 02:17 UTC answers that asset, `amazon.datazone.GlueTableAssetType`
+  revision 24, created by `SYSTEM` at 02:12:58 UTC, its external identifier
+  `arn:aws:glue:us-west-2:<Sandbox Account 1>:table/app_etl/trades_notional.avhvbqn37ty7m8`: the
+  project's id suffixed to the table, which the match on `database/table` missed. The test double had
+  written the identifier as `app_etl/trades_notional`, a shape nobody read (Lesson 78). No search item
+  carries a revision.
+- **[Claude] Found in the package**: macOS's `tar` wrote 37 AppleDouble entries (`._*`) beside the 26
+  files, and macOS's own `tar -t` lists none of them (Lesson 62); the space's `tar` extracted them, and
+  the deploy carried ten into the project's `shared/app-etl/`: four under `src/`, two under `glue/`,
+  `inbox/._trades.csv` and three under `workflows/`. Spark's file listing skips names starting with
+  `.`; the readings count the rows the job read against the sample's.
+- **[Claude] Fixed** (`a858e376`): `names_table` takes the table with or without the project's suffix;
+  `find_asset` asks the search again for up to 120 s while it answers nothing and fails at once on two
+  matches; the result drops `asset_revision`; the double carries the item's shape as read. 69 passed,
+  1 skipped; ruff clean; the pinned lint `ok: 9 arquivo(s)`. The package rebuilt from it with
+  `COPYFILE_DISABLE=1`: 26 files and no AppleDouble entry by Python's `tarfile`, 246,784 bytes,
+  sha256 `abfb21321596cbec…`; the first kept as `~/tmp/stage19-pass1-run1.tar` until the sitting ends.
+  The rerun's run 1 is the job's second write of the table and the source's second run over an asset
+  that exists, and its listing the first; 1.3 stays between the rerun's two runs.
