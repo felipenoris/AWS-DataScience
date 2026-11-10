@@ -457,3 +457,14 @@ Account ids are replaced by the account's name in angle brackets.*
   asset; no page says whether another project may attach a form. The CLI offers `create-`, `get-` and
   `delete-form-type`, no update. The answer in chat: the owner governs the form's edits, not its use,
   and decision 4's owner question stays 3.2's (xii), cheapest to change before 1.3 attaches the form.
+
+## 2026-11-10 — pass 1's window
+
+- **[user]**, verbatim: *"Abrir agora"*, to opening pass 1's window with the form as it stands, its
+  owner `eighth-experimentation` kept as recommended and decision 4's owner question left to 3.2.
+- **[Claude] Told** the peer session *EC2-Other cobrança diária com ambiente down* at 00:58 UTC: the
+  hub's two hosts and Sandbox's `egress/` up for about an hour, then down.
+- **[Claude] Read** `make status` at 01:01 UTC as the infrastructure user: `production/vpn`,
+  `production/proxy` and `production/tooling` stopped, one instance each; `sandbox/egress` and every
+  other metered slice down but Production's `app/app-etl` (3 resources) and `orchestration` (41), both
+  at 0.0000 USD/h; the estimated burn 0.0000 USD/h. The readings' `since` is 00:58 UTC.
