@@ -231,9 +231,10 @@ ASSETS = [
 class FakeDataZone:
     """The DataZone calls `publish` makes, over SOURCES and ASSETS, each run ending as the sequence
     says, the first `empty_searches` searches answering nothing, and the listing's latest revision
-    read as `listing` says after a change set answering `change_revision`; every call recorded.
-    The default is the first publication read on 2026-11-10: the change set answers revision 1,
-    which stays CREATING, and revision 2 is ACTIVE."""
+    read as `listing` says, (revision, status) or (revision, status, asset revision), after a change
+    set answering `change_revision`; every call recorded. The default is the first publication read
+    on 2026-11-10: the change set answers revision 1, which stays CREATING, and revision 2 is
+    ACTIVE."""
 
     def __init__(
         self,
@@ -286,8 +287,10 @@ class FakeDataZone:
         if listingRevision == self.change_revision:
             return {"listingRevision": listingRevision, "status": "CREATING"}
         states = self.listing_states
-        revision, status = states.pop(0) if len(states) > 1 else states[0]
-        listed = {"assetListing": {"assetId": "asset-product", "assetRevision": "2"}}
+        revision, status, *carried = states.pop(0) if len(states) > 1 else states[0]
+        listed = {
+            "assetListing": {"assetId": "asset-product", "assetRevision": (carried or ["2"])[0]}
+        }
         return {"listingRevision": revision, "status": status, "item": listed}
 
 
@@ -418,11 +421,24 @@ def test_publish_refuses_two_assets_for_the_table_at_once(datazone):
     assert sum(call[0] == "search" for call in datazone.calls) == 1
 
 
-def test_publish_waits_past_the_previous_publications_revision(datazone):
+def test_a_republication_takes_neither_the_previous_revision_nor_the_change_sets(datazone):
+    """The republication read on 2026-11-10: the change set answered revision 3, which went UPDATING
+    and then ACTIVE with the previous asset revision, and revision 4 carried the new one."""
     datazone.change_revision = "3"
-    datazone.listing_states = [("2", "ACTIVE"), ("3", "CREATING"), ("4", "ACTIVE")]
-    assert json.loads(publish())["listing_revision"] == "4"
-    assert sum(call[0] == "get_listing" for call in datazone.calls) == 3
+    datazone.listing_states = [
+        ("2", "ACTIVE", "2"),
+        ("3", "UPDATING", "2"),
+        ("3", "ACTIVE", "2"),
+        ("4", "ACTIVE", "6"),
+    ]
+    result = json.loads(publish())
+    assert (result["listing_revision"], result["asset_revision"]) == ("4", "6")
+    assert sum(call[0] == "get_listing" for call in datazone.calls) == 4
+
+
+def test_a_revision_past_the_change_sets_may_pass_through_updating(datazone):
+    datazone.listing_states = [("2", "UPDATING"), ("2", "ACTIVE")]
+    assert json.loads(publish())["listing_revision"] == "2"
 
 
 def test_publish_fails_on_a_listing_that_does_not_activate(datazone):
@@ -434,6 +450,6 @@ def test_publish_fails_on_a_listing_that_does_not_activate(datazone):
 def test_publish_fails_when_no_revision_activates_within_the_timeout(datazone, monkeypatch):
     monkeypatch.setattr(app_etl_tasks, "LISTING_TIMEOUT", 0)
     datazone.listing_states = [("1", "CREATING")]
-    message = "not ACTIVE at or past revision 1 after 0 s: its latest is revision 1, CREATING"
+    message = "not ACTIVE past revision 1 after 0 s: its latest is revision 1, CREATING"
     with pytest.raises(RuntimeError, match=message):
         publish()

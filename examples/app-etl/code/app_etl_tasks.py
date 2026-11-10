@@ -91,6 +91,9 @@ SOURCE_RUN_TIMEOUT = 600
 ASSET_TIMEOUT = 120
 LISTING_TIMEOUT = 120
 POLL_SECONDS = 5
+# The statuses a listing revision holds before ACTIVE, read 2026-11-10: CREATING on a first
+# publication and UPDATING on a republication, the second absent from the API's model.
+LISTING_PENDING = ("CREATING", "UPDATING")
 
 
 def project_context(domain: str = "", project: str = "") -> tuple[str, str]:
@@ -183,11 +186,13 @@ def find_asset(
 
 
 def publish_asset(datazone, domain: str, asset: str, timeout: int | None = None) -> dict:
-    """The asset's latest revision published, and a listing revision at or past the change set's
-    read ACTIVE within `timeout` seconds. The change set answers a revision that stays CREATING
-    while the service writes the next one ACTIVE, read 2026-11-10 (revision 1 still CREATING six
-    minutes on, revision 2 ACTIVE 0.8 s after it), so the listing is read at its latest revision;
-    one older than the change set's is the previous publication and is waited past."""
+    """The asset's latest revision published, and the listing revision past the change set's read
+    ACTIVE within `timeout` seconds. The change set answers a placeholder revision and the service
+    writes the publication as the next one, read 2026-11-10: on the first publication revision 1
+    stayed CREATING and revision 2 was ACTIVE 0.8 s on; on a republication revision 3 went
+    UPDATING, then ACTIVE still carrying the previous asset revision, and revision 4 was ACTIVE with
+    the new one 0.9 s on. So the listing is read at its latest revision, and neither the change
+    set's revision nor an older one, the previous publication, is taken for it."""
     change = datazone.create_listing_change_set(
         domainIdentifier=domain, entityIdentifier=asset, entityType="ASSET", action="PUBLISH"
     )
@@ -197,17 +202,17 @@ def publish_asset(datazone, domain: str, asset: str, timeout: int | None = None)
     while True:
         latest = datazone.get_listing(domainIdentifier=domain, identifier=listing)
         revision, status = latest["listingRevision"], latest["status"]
-        if int(revision) >= asked:
+        if int(revision) > asked:
             if status == "ACTIVE":
                 listed = (latest.get("item") or {}).get("assetListing") or {}
                 carried = listed.get("assetRevision")
                 print(f"listing {listing} revision {revision}: ACTIVE, asset revision {carried}")
                 return {"listing": listing, "listing_revision": revision, "asset_revision": carried}
-            if status != "CREATING":
+            if status not in LISTING_PENDING:
                 raise RuntimeError(f"listing {listing} revision {revision} is {status}")
         if time.monotonic() >= deadline:
             raise RuntimeError(
-                f"listing {listing} not ACTIVE at or past revision {asked} after {timeout} s:"
+                f"listing {listing} not ACTIVE past revision {asked} after {timeout} s:"
                 f" its latest is revision {revision}, {status}"
             )
         time.sleep(POLL_SECONDS)
