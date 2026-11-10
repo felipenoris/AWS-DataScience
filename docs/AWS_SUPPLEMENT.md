@@ -2446,6 +2446,15 @@ entry is still true is the reading.
   Where: `log-stage-19-smus-native-data-product.md`, 2026-11-10;
   `examples/app-etl/code/app_etl_tasks.py`, `publish_asset`.
 
+- `SUP-346` **DataZone admits `StartDataSourceRun` on a project's data source from a principal that is no
+  member of that project** (read 2026-11-10 in Sandbox's and Data Governance's trails, Stage 19
+  verification ii). `eighth-experimentation`'s project role, whose DataZone profile is a
+  `PROJECT_CONTRIBUTOR` of that project alone, started `test-experimentation`'s source `3zp6fog9jep1qo`
+  from a space at 03:56:35 UTC: no error, answered `REQUESTED`, the run `SUCCESS` with every statistic 0.
+  The role's IAM grant is `datazone:StartDataSourceRun` on the domain's ARN. A design that relies on
+  DataZone's project membership to keep one project from running another's source has no such control:
+  the IAM statement is the one boundary. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-10.
+
 ### Connections
 
 - `SUP-199` **A portal S3 connection over an already registered Access Grants location needs none of the

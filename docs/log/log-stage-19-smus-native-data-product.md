@@ -674,3 +674,52 @@ Account ids are replaced by the account's name in angle brackets.*
   its word that GitLab is down, since `make gitlab-up` refuses with the proxy stopped; no Sandbox, Staging
   or Data Governance slice changes. This window's end becomes `make down ENV=sandbox`, then
   `make hub-down` on the peer's word.
+- **[user]**, verbatim: *"segue o `pass1.log`"*. The fourth package's log, its lines of record verbatim:
+
+  ```
+  == 2026-11-10T03:40:30Z the identity: this space must be eighth-experimentation's
+  == 2026-11-10T03:40:33Z deploy to dev
+  📊 Total files deployed: 11
+  ✅ Deployment completed successfully!
+  == 2026-11-10T03:42:24Z run1 skipped (SKIP_RUN1=1): the first publication is run wf5GVes1RglmGsM's, and 1.3 was written before this start
+  == 2026-11-10T03:42:24Z run2: start
+  📋 Run ID: MmFs38SsxUFQ2xM
+  03:45:00Z run2 RUNNING | transform=RUNNING/-s
+  03:47:01Z run2 RUNNING | process=RUNNING/-s transform=SUCCESS/121s
+  03:54:33Z run2 RUNNING | process=SUCCESS/463s summarize=QUEUED/-s transform=SUCCESS/121s
+  03:56:33Z run2 SUCCESS | process=SUCCESS/463s publish=SUCCESS/20s summarize=SUCCESS/11s transform=SUCCESS/121s write_result=SUCCESS/8s
+  == 2026-11-10T03:56:34Z verification ii's negative: test-experimentation's Glue source, started as this project's role
+  {
+      "id": "dn5hi8qtcminbk",
+      "status": "REQUESTED"
+  }
+  exit 0
+  == 2026-11-10T03:56:36Z DONE. Stop the space (Compute -> Spaces), close every portal tab, then on the laptop: make down ENV=sandbox, make hub-down, make status
+  ```
+- **[Claude] Read** at 03:58 to 04:01 UTC as `awsds-infra-sandbox-1`. `publish`'s task log: *"source run
+  6bnfg5dk961bps: SUCCESS, {"added": 0, "failed": 0, "unchanged": 0, "updated": 1}"*, *"listing
+  ct5d0innrgw3v4 revision 6: ACTIVE, asset revision 7"*, and the XCom `{"asset": "4j6p77v7dm2840",
+  "asset_revision": "7", "listing_revision": "6", "published": true, "source_run": "6bnfg5dk961bps", …}`:
+  the task's first `SUCCESS`. Sandbox's trail: the change set at 03:56:05 UTC from `10.20.117.132`
+  through `vpce-09e2724f4cf1ea60c`, answered revision 5. The listing: revision 5 `ACTIVE` at
+  03:56:05.061 UTC carrying asset revision 6, revision 6 `ACTIVE` at 03:56:06.592 UTC carrying asset
+  revision 7, revision 7 absent; the asset's revision 7 by `SYSTEM` at 03:56:00.659 UTC, its description
+  kept. The third reading of `SUP-345`'s model: the publication is the revision past the answered one.
+- **[Claude] Read the negative**, as `awsds-infra-sandbox-1` and `awsds-infra-data`: run `dn5hi8qtcminbk`
+  of `test-experimentation`'s (`4gqfau9xuo6e4w`) source `3zp6fog9jep1qo` over `glue_db_4zojr4rr6bmnww`,
+  `publishOnImport` false: `PRIORITIZED`, `SUCCESS`, run 03:56:37.5 to 03:56:38.5 UTC, every statistic
+  0, `lineageSummary.importStatus` `SUCCESS`. Sandbox's trail and Data Governance's, one shared event:
+  `StartDataSourceRun` at 03:56:35 UTC by `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`'s session
+  `SageMaker` from `10.20.44.67` through `vpce-09e2724f4cf1ea60c`, no error, answered
+  `{"id": "dn5hi8qtcminbk", "status": "REQUESTED"}`. The caller's DataZone profile, `a06a10c7-…` (`IAM`,
+  that role's ARN), is a `PROJECT_CONTRIBUTOR` of `eighth-experimentation` alone: `test-experimentation`'s
+  members are the data scientist (`PROJECT_OWNER`), its own project role's profile `084a724b-…`, and the
+  group profiles `839bcde8-…` (Sandbox's `InfrastructureAccess`) and `06d426f2-…`. Verification ii's
+  negative half is answered against the plan: DataZone admits a project role's start of a source in a
+  project it is no member of, and the one control left is IAM's `datazone:StartDataSourceRun` on the
+  domain's ARN, `awsds-sandbox-workflows` `v4`'s statement (`SUP-346`). The run imported nothing.
+- **[Claude] Two messages from the peer session** *EC2-Other cobrança diária com ambiente down*: its short
+  GitLab session's refresh ended and was read at 03:59 UTC, and `make gitlab-down` follows; it asked
+  whether this session uses GitLab. **[Claude] Answered** at 04:00 UTC: GitLab unused here, the mirror to
+  `awsds/app-etl` left to the next GitLab sitting with the local user's password rotation, and
+  `make hub-down` waiting for its word that the host is `stopped`.
