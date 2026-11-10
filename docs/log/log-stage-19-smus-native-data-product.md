@@ -665,3 +665,5 @@ Account ids are replaced by the account's name in angle brackets.*
 - **[Claude] Proposed** a fourth run with `SKIP_RUN1=1 NEGATIVE=1`: the task's first `SUCCESS`, a second
   reading of a republication's revisions, which the fix relies on, and verification ii's negative. The
   choice is the user's.
+- **[user]**, verbatim: *"Sim, rodar de novo"*, to the fourth run: the fourth package with
+  `SKIP_RUN1=1 NEGATIVE=1`, 1.3 not rewritten.
