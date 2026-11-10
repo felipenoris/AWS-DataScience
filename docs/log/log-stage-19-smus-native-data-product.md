@@ -606,3 +606,5 @@ Account ids are replaced by the account's name in angle brackets.*
   `main` at `8d50f685`, 14 tags); `production/tooling/` was applied from PR #285's branch, so no plan or
   apply of that slice before its merge (Lesson 79); the GitLab local user's password rotation is left to
   the next GitLab sitting, this pass's mirror.
+- **[user]**, verbatim: *"Sim, uma run"*, to the proposal above: 1.3 written in the portal first, then
+  the third package with `SKIP_RUN1=1 NEGATIVE=1`, its one run and verification ii's negative.
