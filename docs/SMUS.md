@@ -320,7 +320,7 @@ showed `eighth-experimentation`'s owner *Create metadata forms* disabled under *
 The field types the portal offers are `String`, `Integer`, `Long`, `Float`, `Double`, `Boolean`, `Date`
 and `Business glossary`, none enumerated (AWS's page, read 2026-11-08). The grant is
 `data-governance/governance/`'s, per project (`form_type_owners`, designation `OWNER`), for Stage 19
-decision 4's form `classification`; planned 2026-11-09, `1 to add`.
+decision 4's form `classification`; applied 2026-11-10 00:36 UTC, read back as grant `00KsayGIrZ`.
 
 ## Blueprints — the object
 

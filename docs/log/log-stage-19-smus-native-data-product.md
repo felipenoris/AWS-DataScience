@@ -402,3 +402,19 @@ Account ids are replaced by the account's name in angle brackets.*
   (Lesson 79). `docs/SMUS.md` gains the authorization beside the project and environment ones; the stage
   file's pre-window item 1 and decision 4, and the waiting list, follow. The apply waits on the user's
   word.
+
+## 2026-11-10 — the `CREATE_FORM_TYPE` grant applied in Data Governance
+
+- **[user]**, verbatim: *"Sim, aplique"*, to the apply of `data-governance/governance/`'s saved plan.
+- **[Claude] Told** the one peer session on this repository, *EC2-Other cobrança diária com ambiente
+  down*, before the apply; the other sessions on this machine are another repository's.
+- **[Claude⚡] Applied** the saved plan as `awsds-infra-data` (the infrastructure user,
+  `InfrastructureAccess`, Data Governance), 00:35:53 to 00:36:12 UTC:
+  `awscc_datazone_policy_grant.create_form_type["avhvbqn37ty7m8"]` created in 7 s, *"Apply complete!
+  Resources: 1 added, 0 changed, 0 destroyed."* The re-plan answers *"No changes. Your infrastructure
+  matches the configuration."*
+- **[Claude] Read back**: `list-policy-grants` on the root domain unit `bzq0cbh2gd0f4g` for
+  `CREATE_FORM_TYPE` returns one grant, `00KsayGIrZ`: principal project `avhvbqn37ty7m8`, designation
+  `OWNER`, `includeChildDomainUnits` false, created 00:36:00 UTC by the user profile `9e7cfd86-…`.
+  `catalog.py` tabulates the domain unit's grants and judges only the two override types (`CT-9`), so no
+  check moves. The form `classification` is the user's next act in the portal.
