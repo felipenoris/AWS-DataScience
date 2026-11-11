@@ -973,3 +973,28 @@ Account ids are replaced by the account's name in angle brackets.*
   and 14, 1.5 and 6.1 amended, the waiting list's row removed. The record says the gate is the template's
   default, not a control: a member of the `dev` project still lists from the portal or from code, `CT-12`'s
   successor judges that listing's classification, and 6.1's checks note it without failing.
+- **[Claude] Answered**: yes, `PUBLISH_LISTING` false binds the template and no one else. A member of the
+  `dev` project lists from the portal or from code in a space, both as the project role, which AWS's
+  policy (v47) grants `CreateListingChangeSet` on every resource; `CT-12`'s successor and 6.1's note cover
+  such a listing. A deny of `CreateListingChangeSet` on that role would prevent it and is not
+  recommended: one call publishes and unpublishes, the Service Reference giving it no condition key
+  (read 2026-11-10), and the listing code's exercise in `dev` takes both.
+- **[user]**, verbatim: *"Mais tarde"*, to starting pass 2's portal acts; they stay in the waiting list.
+
+## 2026-11-11 — the branch checked against `main` and the log reviewed
+
+- **[user]**, verbatim: *"sincronize a branch com a main. revise o log para garantir que todas as
+  informações estão atualizadas e suba no PR."*
+- **[Claude] The branch**: `origin/main` at `0f20b98c` (#287) is already in it, merged at `78c27358` on
+  2026-11-10 at 04:51 UTC, a merge this log had not recorded; nothing to merge.
+- **[Claude] The review**, this log against the branch's commits from `6370da60` to `3660a6ab`, the stage
+  file, the indexes and the waiting list, with no AWS call:
+  - the entries of decisions 17 to 20 leave out two files each of their commits changed, `CLAUDE.md`'s
+    Current position and this log's index row (`2d705592`, `96972fac`, `2c15ed27`, `3660a6ab`);
+  - `docs/plan/stages/INDEX.md` and `docs/GENERAL_PLAN.md` still read pass 1's sitting as not run: the
+    stage index's row brought to it and to decisions 17 to 20, the plan's to it and to 19 and 20, inside
+    its 40,000-byte cap (39,987 after);
+  - the stage file's decision 20 gains the deny weighed and not written, and pass 2's listing in
+    `eighth-experimentation`, which comes before 1.5 writes the default and which 1.5 retires;
+  - the waiting list's Stage 19 rows read current: the mirror, the GitLab password's rotation, the
+    AppleDouble objects, verification v's look, decision 17 (d)'s report and pass 2's portal acts.

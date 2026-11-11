@@ -1366,7 +1366,11 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     6.1), and that role holds `CreateListingChangeSet` on every resource from AWS's policy (v47), so code
     in a space lists too. `CT-12`'s successor judges such a listing's classification as any other, and
     6.1's checks note it without failing. `sandbox/workflows/`'s `StartDataSourceRun` (decision 17) serves
-    the listing code's exercise in `dev` alone.
+    the listing code's exercise in `dev` alone. A deny of `CreateListingChangeSet` on the `dev` project's
+    role would prevent such a listing and is not written: one call publishes and unpublishes, with no
+    condition key to tell them apart (the Service Reference, read 2026-11-10), and the exercise takes
+    both. Pass 2 lists in `eighth-experimentation` before 1.5 writes the default, and 1.5 retires that
+    product.
 
 ## Cost
 
