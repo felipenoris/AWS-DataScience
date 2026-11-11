@@ -46,3 +46,34 @@ resource "awscc_datazone_policy_grant" "create_project_from_profile" {
     }
   }
 }
+
+# Who may create a metadata form type, and owning which project (Stage 19 decision 4).
+#
+# Measured the way the grant above was: on 2026-11-09 the portal showed the data scientist *Create
+# metadata forms* disabled, and `list-policy-grants` on the root domain unit had returned no
+# CREATE_FORM_TYPE grant the day before. Decision 4 carries a product's classification in a metadata
+# form type `classification` owned by the producing project; each key of var.form_type_owners is such a
+# project. The grain is one project, never every project of the unit: a form type is visible to the
+# whole domain and attachable by any project, so one owner serves them all, and a second owner is decision
+# 4's owner question (Stage 19 3.2), not a default. OWNER admits the project's owners alone.
+resource "awscc_datazone_policy_grant" "create_form_type" {
+  for_each = var.form_type_owners
+
+  domain_identifier = aws_datazone_domain.this.id
+  entity_type       = "DOMAIN_UNIT"
+  entity_identifier = aws_datazone_domain.this.root_domain_unit_id
+  policy_type       = "CREATE_FORM_TYPE"
+
+  principal = {
+    project = {
+      project_identifier  = each.key
+      project_designation = each.value
+    }
+  }
+
+  detail = {
+    create_form_type = {
+      include_child_domain_units = false
+    }
+  }
+}

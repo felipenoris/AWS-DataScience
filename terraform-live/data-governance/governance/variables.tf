@@ -83,6 +83,21 @@ variable "sandbox_dev_env_version" {
   default     = 11
 }
 
+variable "form_type_owners" {
+  description = "The projects that may create metadata form types in the root domain unit (Stage 19 decision 4), keyed by the service's project id, each with the designation the grant admits. The projects are the portal's, not this slice's, so they are named here rather than looked up."
+  type        = map(string)
+  nullable    = false
+  default = {
+    # eighth-experimentation, D41's dev project and Stage 19's producer, read 2026-11-09: one owner.
+    avhvbqn37ty7m8 = "OWNER"
+  }
+
+  validation {
+    condition     = alltrue([for designation in values(var.form_type_owners) : contains(["OWNER", "CONTRIBUTOR"], designation)])
+    error_message = "A designation is OWNER or CONTRIBUTOR."
+  }
+}
+
 variable "enable_trusted_identity_propagation" {
   description = "Stage 6 decision 2, and the recommendation is follow the grain stage 5a chose. Stage 5a decision 6 put the entitlement grain at the assumable role/project (docs/GOVERNANCE.md §'The grain'), and TIP's documented cost is that remote access stops working - so false is the setting that matches the grain already decided. Flipping it to true is a decision that re-opens Stage 5a decision 6, not a tuning knob."
   type        = bool

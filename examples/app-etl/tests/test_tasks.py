@@ -205,29 +205,48 @@ SOURCES = {
     "src-product": ["app_etl"],
     "src-default": ["glue_db_example"],
 }
+# The search's asset items in the shape read on 2026-11-10, the account left out: the external
+# identifier is the table's ARN with the project's id suffixed to its last segment, and no item
+# carries a revision.
 ASSETS = [
     {
         "identifier": "asset-product",
-        "externalIdentifier": "app_etl/trades_notional",
-        "latestRevision": "3",
+        "name": "trades_notional",
+        "typeIdentifier": "amazon.datazone.GlueTableAssetType",
+        "externalIdentifier": (
+            f"arn:aws:glue:us-west-2:ACCOUNT:table/app_etl/trades_notional.{PROJECT}"
+        ),
     },
-    {"identifier": "asset-other", "externalIdentifier": "glue_db_example/trades_notional"},
+    {
+        "identifier": "asset-other",
+        "name": "trades_notional",
+        "typeIdentifier": "amazon.datazone.GlueTableAssetType",
+        "externalIdentifier": (
+            f"arn:aws:glue:us-west-2:ACCOUNT:table/glue_db_example/trades_notional.{PROJECT}"
+        ),
+    },
 ]
 
 
 class FakeDataZone:
-    """The DataZone calls `publish` makes, over SOURCES and ASSETS, each run and listing ending as
-    the sequences say; every call recorded."""
+    """The DataZone calls `publish` makes, over SOURCES and ASSETS, each run ending as the sequence
+    says, the first `empty_searches` searches answering nothing, and the listing's latest revision
+    read as `listing` says, (revision, status) or (revision, status, asset revision), after a change
+    set answering `change_revision`; every call recorded. The default is the first publication read
+    on 2026-11-10: the change set answers revision 1, which stays CREATING, and revision 2 is
+    ACTIVE."""
 
     def __init__(
         self,
         sources=SOURCES,
         assets=ASSETS,
         run=("RUNNING", "SUCCESS"),
-        listing=("CREATING", "ACTIVE"),
+        listing=(("1", "CREATING"), ("2", "ACTIVE")),
     ):
         self.sources, self.assets = sources, assets
-        self.run_statuses, self.listing_statuses = list(run), list(listing)
+        self.run_statuses, self.listing_states = list(run), list(listing)
+        self.change_revision = "1"
+        self.empty_searches = 0
         self.calls = []
 
     def get_paginator(self, name):
@@ -240,6 +259,9 @@ class FakeDataZone:
             return [{"items": [{"dataSourceId": source} for source in self.sources]}]
         assert name == "search" and kw["searchScope"] == "ASSET"
         assert kw["owningProjectIdentifier"] == PROJECT and kw["searchText"] == "trades_notional"
+        if self.empty_searches:
+            self.empty_searches -= 1
+            return [{"items": []}]
         return [{"items": [{"assetItem": asset} for asset in self.assets]}]
 
     def get_data_source(self, domainIdentifier, identifier):
@@ -258,15 +280,18 @@ class FakeDataZone:
 
     def create_listing_change_set(self, domainIdentifier, entityIdentifier, entityType, action):
         self.calls.append(("create_listing_change_set", entityIdentifier, entityType, action))
-        return {"listingId": "listing-1", "listingRevision": "2", "status": "CREATING"}
+        return {"listingId": "listing-1", "listingRevision": self.change_revision}
 
-    def get_listing(self, domainIdentifier, identifier, listingRevision):
-        status = (
-            self.listing_statuses.pop(0)
-            if len(self.listing_statuses) > 1
-            else self.listing_statuses[0]
-        )
-        return {"status": status}
+    def get_listing(self, domainIdentifier, identifier, listingRevision=None):
+        self.calls.append(("get_listing", identifier, listingRevision))
+        if listingRevision == self.change_revision:
+            return {"listingRevision": listingRevision, "status": "CREATING"}
+        states = self.listing_states
+        revision, status, *carried = states.pop(0) if len(states) > 1 else states[0]
+        listed = {
+            "assetListing": {"assetId": "asset-product", "assetRevision": (carried or ["2"])[0]}
+        }
+        return {"listingRevision": revision, "status": status, "item": listed}
 
 
 @pytest.fixture
@@ -297,15 +322,16 @@ def test_publish_runs_the_source_then_lists_the_assets_latest_revision(datazone,
         "data_source": "src-product",
         "source_run": "run-1",
         "asset": "asset-product",
-        "asset_revision": "3",
         "listing": "listing-1",
         "listing_revision": "2",
+        "asset_revision": "2",
     }
     assert ("start_data_source_run", "src-product") in datazone.calls
     assert ("create_listing_change_set", "asset-product", "ASSET", "PUBLISH") in datazone.calls
+    assert ("get_listing", "listing-1", None) in datazone.calls
     printed = capsys.readouterr().out
     assert "source run run-1: SUCCESS" in printed
-    assert "listing listing-1 revision 2: ACTIVE" in printed
+    assert "listing listing-1 revision 2: ACTIVE, asset revision 2" in printed
     assert printed.endswith(
         "published app_etl.trades_notional: asset asset-product, listing listing-1\n"
     )
@@ -360,13 +386,70 @@ def test_publish_fails_when_the_run_outlives_its_timeout(datazone, monkeypatch):
         publish()
 
 
-def test_publish_refuses_a_table_the_run_did_not_import(datazone):
+@pytest.mark.parametrize(
+    ("external", "expected"),
+    [
+        (f"arn:aws:glue:us-west-2:ACCOUNT:table/app_etl/trades_notional.{PROJECT}", True),
+        ("arn:aws:glue:us-west-2:ACCOUNT:table/app_etl/trades_notional", True),
+        ("arn:aws:glue:us-west-2:ACCOUNT:table/app_etl/trades_notional.prj-other", False),
+        ("arn:aws:glue:us-west-2:ACCOUNT:table/glue_db_example/trades_notional", False),
+        ("arn:aws:glue:us-west-2:ACCOUNT:table/app_etl/trades_notional_v2", False),
+        ("", False),
+    ],
+)
+def test_names_table_reads_the_arn_with_or_without_the_projects_suffix(external, expected):
+    assert app_etl_tasks.names_table(external, PROJECT, "app_etl", "trades_notional") is expected
+
+
+def test_publish_asks_the_search_again_until_the_asset_appears(datazone):
+    datazone.empty_searches = 2
+    assert json.loads(publish())["asset"] == "asset-product"
+    assert sum(call[0] == "search" for call in datazone.calls) == 3
+
+
+def test_publish_refuses_a_table_the_run_did_not_import(datazone, monkeypatch):
+    monkeypatch.setattr(app_etl_tasks, "ASSET_TIMEOUT", 0)
     datazone.assets = [ASSETS[1]]
     with pytest.raises(RuntimeError, match=r"0 asset\(s\) for app_etl/trades_notional"):
         publish()
 
 
+def test_publish_refuses_two_assets_for_the_table_at_once(datazone):
+    datazone.assets = [ASSETS[0], {**ASSETS[0], "identifier": "asset-copy"}]
+    with pytest.raises(RuntimeError, match=r"2 asset\(s\) for app_etl/trades_notional"):
+        publish()
+    assert sum(call[0] == "search" for call in datazone.calls) == 1
+
+
+def test_a_republication_takes_neither_the_previous_revision_nor_the_change_sets(datazone):
+    """The republication read on 2026-11-10: the change set answered revision 3, which went UPDATING
+    and then ACTIVE with the previous asset revision, and revision 4 carried the new one."""
+    datazone.change_revision = "3"
+    datazone.listing_states = [
+        ("2", "ACTIVE", "2"),
+        ("3", "UPDATING", "2"),
+        ("3", "ACTIVE", "2"),
+        ("4", "ACTIVE", "6"),
+    ]
+    result = json.loads(publish())
+    assert (result["listing_revision"], result["asset_revision"]) == ("4", "6")
+    assert sum(call[0] == "get_listing" for call in datazone.calls) == 4
+
+
+def test_a_revision_past_the_change_sets_may_pass_through_updating(datazone):
+    datazone.listing_states = [("2", "UPDATING"), ("2", "ACTIVE")]
+    assert json.loads(publish())["listing_revision"] == "2"
+
+
 def test_publish_fails_on_a_listing_that_does_not_activate(datazone):
-    datazone.listing_statuses = ["CREATING", "INACTIVE"]
+    datazone.listing_states = [("1", "CREATING"), ("2", "INACTIVE")]
     with pytest.raises(RuntimeError, match="listing listing-1 revision 2 is INACTIVE"):
+        publish()
+
+
+def test_publish_fails_when_no_revision_activates_within_the_timeout(datazone, monkeypatch):
+    monkeypatch.setattr(app_etl_tasks, "LISTING_TIMEOUT", 0)
+    datazone.listing_states = [("1", "CREATING")]
+    message = "not ACTIVE past revision 1 after 0 s: its latest is revision 1, CREATING"
+    with pytest.raises(RuntimeError, match=message):
         publish()

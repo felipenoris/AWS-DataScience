@@ -2393,7 +2393,10 @@ entry is still true is the reading.
   `GlueTableAssetType` asset `trades`, external identifier the link `glue_db_blerpkhn9nj7o0/trades`, created
   21:32:12Z, with no listing, beside its own `house-price`. The subscriber thus owns an unpublished asset
   for data it holds only by subscription, and a check that reads listings and not inventories misses it.
-  Seen once. Where: `log-stage-19-smus-native-data-product.md`, 2026-10-28.
+  Seen once. Read again 2026-11-10 with `search --search-scope ASSET`: the asset `cm329mc3bqu39s`'s
+  external identifier is `arn:aws:glue:us-west-2:<Sandbox Account 1>:table/glue_db_blerpkhn9nj7o0/trades.avhvbqn37ty7m8`;
+  the 2026-10-28 text named the link, not the field (`SUP-343`). Where: `log-stage-19-smus-native-data-product.md`,
+  2026-10-28 and 2026-11-10.
 
 - `SUP-198` **A listing's `DataSourceReferenceForm` keeps the data source's configuration as published, and
   disagrees with the source after an update** (read 2026-10-27 in Data Governance, Stage 6f decisions 2 to
@@ -2403,6 +2406,75 @@ entry is still true is the reading.
   returns the forms as a JSON string, beside `SubscriptionTermsForm.approvalRequired` (`YES`). A check of a
   source's settings reads the source, never the listing's copy. Where: `log-stage-06f-data-governance.md`,
   2026-10-26 and 2026-10-27; `docs/SMUS.md`, the listing item.
+
+- `SUP-343` **A Glue table asset's external identifier is the table's ARN with the owning project's id
+  suffixed to its last segment** (read 2026-11-10 with `search --search-scope ASSET` as Sandbox's
+  `InfrastructureAccess`, Stage 19 pass 1). All three assets of `eighth-experimentation` carry the shape
+  `arn:aws:glue:us-west-2:<Sandbox Account 1>:table/<database>/<table>.avhvbqn37ty7m8`, whichever act made
+  them: `house-price`, the user's portal publish of 2026-09-13; `trades`, the subscriber's source import of
+  2026-10-27 (`SUP-197`); `trades_notional`, the project's source started by the workflow's `publish` task
+  on 2026-11-10 (`createdBy` `SYSTEM`). The search's item carries no revision. No page this project read
+  gives the shape. Code that matches an asset on `<database>/<table>` finds none: Stage 19's run 1 failed
+  on it (*"0 asset(s) for app_etl/trades_notional in the project, one expected"*). Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-10; `examples/app-etl/code/app_etl_tasks.py`,
+  `names_table`.
+
+- `SUP-344` **Each save of a metadata form type is a `CreateFormType` that answers a new revision, and
+  `GetFormType`'s `createdAt` is the newest revision's** (read 2026-11-10 in Data Governance's trail and with
+  `get-form-type`, Stage 19 decision 4). The portal's two saves of `classification`, the form and then its
+  field, were two `CreateFormType` calls through `awsds-data-studio-domain-execution` in the person's
+  session, at 00:41:53 and 00:44:24 UTC, answered revisions 1 and 2. `get-form-type` answers revision 2 with
+  `createdAt` 00:44:24 UTC, so the form's first creation is in the trail alone, which redacts the model
+  (`"***"`). `GetFormType` answers Data Governance's `InfrastructureAccess`, no member of the owning project,
+  where `GetAsset` refuses it. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-10.
+
+- `SUP-345` **`CreateListingChangeSet` answers a listing revision that stays `CREATING` while the service
+  writes the next revision `ACTIVE`** (read 2026-11-10 with `get-listing` and Sandbox's trail, Stage 19
+  pass 1). The project role's `PUBLISH` of asset `4j6p77v7dm2840` at 02:44:45 UTC, its first listing, was
+  answered `{"listingRevision": "1", "listingId": "ct5d0innrgw3v4"}`. Revision 1 still answered `CREATING`
+  six minutes on, its `updatedAt` its `createdAt`; revision 2 answered `ACTIVE`, updated 0.8 s after the
+  creation, carrying the asset's revision; `get-listing` without a revision answers revision 2, and
+  `get-asset` the listing `ACTIVE`. Code that waits for the answered revision waits forever: Stage 19's
+  rerun failed on it (*"listing ct5d0innrgw3v4 revision 1 not ACTIVE after 120 s"*) with the product
+  listed. Read the latest revision, one at or past the answered one. A republication of a listed asset is
+  unmeasured. Read again at a republication, 2026-11-10 03:23 UTC (run `hiErIl5sGJSyRFx`): the change set
+  answered revision 3 through the `datazone` interface endpoint; revision 3 read `UPDATING` by the task,
+  then `ACTIVE` at 03:23:00.426 UTC still carrying the previous asset revision 2, and revision 4 `ACTIVE`
+  0.9 s later carrying asset revision 6, the source run's. `UPDATING` is absent from the API's model
+  (`ListingStatus`: `CREATING`, `ACTIVE`, `INACTIVE`; aws-cli 2.37.12). The publication is the revision
+  past the answered one in both readings, and a wait at or past it takes revision 3's previous content.
+  Read a third time at 03:56 UTC (run `MmFs38SsxUFQ2xM`): answered revision 5, revision 5 `ACTIVE` at
+  03:56:05.061 UTC carrying asset revision 6 and revision 6 `ACTIVE` at 03:56:06.592 UTC carrying asset
+  revision 7, which the task, waiting past the answered revision, took for the publication.
+  Where: `log-stage-19-smus-native-data-product.md`, 2026-11-10;
+  `examples/app-etl/code/app_etl_tasks.py`, `publish_asset`.
+
+- `SUP-346` **DataZone admits `StartDataSourceRun` on a project's data source from a principal that is no
+  member of that project** (read 2026-11-10 in Sandbox's and Data Governance's trails, Stage 19
+  verification ii). `eighth-experimentation`'s project role, whose DataZone profile is a
+  `PROJECT_CONTRIBUTOR` of that project alone, started `test-experimentation`'s source `3zp6fog9jep1qo`
+  from a space at 03:56:35 UTC: no error, answered `REQUESTED`, the run `SUCCESS` with every statistic 0.
+  The role's IAM grant is `datazone:StartDataSourceRun` on the domain's ARN. A design that relies on
+  DataZone's project membership to keep one project from running another's source has no such control:
+  the IAM statement is the one boundary. Read again the same day, the boundary's reach: the Service
+  Reference's DataZone JSON (`v1.5`) gives `StartDataSourceRun` no resource type and no condition key and
+  maps `datazone:domainId`, `datazone:projectId` and `datazone:userId` to no action, while DataZone
+  authorizes against the domain's ARN (run 1's `GetGroupProfile` refusals name it as the resource, and
+  `awsds-sandbox-workflows` `v4`'s statement on it is the role's one grant of the action). IAM narrows the
+  start to the domain, every project in every associated account. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-10.
+
+- `SUP-347` **`GetLineageNode` answers `ResourceNotFoundException` to a Glue table node's
+  `sourceIdentifier`, which its API page says the identifier accepts** (read 2026-11-10 in the domain,
+  Stage 19 verification v). The node `d0m1zl6r8q3uvk`, created by `datazone.amazonaws.com` from the Glue
+  job's OpenLineage events, has the table's ARN, `arn:aws:glue:us-west-2:<Sandbox>:table/app_etl/trades_notional`,
+  as its `sourceIdentifier`. It answered to its id and refused that ARN, character for character the
+  value `CreateLineageNode`'s `additionalEventData` recorded, from both accounts' infrastructure sessions.
+  The asset's node answered to `amazon.datazone.asset/4j6p77v7dm2840` and a job's node to
+  `default.app_etl_avhvbqn37ty7m8`, so the lookup by `sourceIdentifier` works for those forms. An asset's
+  own id is no node identifier either. The ids are in Data Governance's trail, each `CreateLineageNode`
+  carrying a node's id and `sourceIdentifier` in `additionalEventData`. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-10.
 
 ### Connections
 
@@ -3335,6 +3407,16 @@ entry is still true is the reading.
   workflow reused `app-etl`'s name and DAG id read and rewrote `app-etl`'s YAML, was created from
   `app-etl`'s definition, and its `destroy` plan then held `app-etl`'s Glue job, since `destroy` reads the
   Glue jobs from the workflow's definition as the service holds it. Where: `log-stage-18`'s pass 5 entry.
+
+- `SUP-348` **`deploy` uploads an application's files to the project's shared root and deletes none the
+  new bundle lacks** (measured 2026-11-10 in Sandbox, Stage 19 pass 1, the same version). Run 1's
+  package carried ten AppleDouble files (`._*`, 163 bytes each), which macOS's `tar` wrote and its `tar -t`
+  does not list; the deploy at 01:57 UTC uploaded them with the 11 real files (*"Total files deployed:
+  21"*). Three later deploys, at 02:29, 03:07 and 03:40 UTC, carried 11 files each, and after them the ten
+  objects were still under `shared/app-etl/`, in `glue/`, `inbox/`, `src/` and `workflows/`. Since the
+  workflow scan reads the whole shared root (`SUP-287`), a file an application drops stays in the scan
+  until it is deleted by hand. Spark's listing skipped `inbox/._trades.csv`: each Glue run read the
+  sample's 10 rows. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-10.
 
 ## Bedrock
 

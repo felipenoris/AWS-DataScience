@@ -71,7 +71,10 @@ its data and keeps the table, so the listing `publish` makes and the grants a su
 survive the runs. The source's run needs `datazone:StartDataSourceRun`, which the blueprint's policies
 do not grant the project role and the house grant `terraform-live/sandbox/workflows/` does (Stage 19
 1.1). The database is created in each project before the first deploy, the same name in every project,
-never by the application.
+never by the application. The same `--conf` turns on the OpenLineage listener Stage 18 step 7.1 measured
+(Stage 19 decision 10): the job posts its lineage to the domain as the project role through the
+`datazone` endpoint, naming the domain by `{domain.id}` and the account by the stage variable
+`ACCOUNT_ID`; a post that fails leaves the job's result alone.
 
 `app-etl-train` runs two tasks after `app-etl`: `train`, a SageMaker training job on AWS's XGBoost 3.0-5
 by digest (`{env.TRAINING_IMAGE_URI}`), `ml.m5.large`, network-isolated in the job subnets, its volume
@@ -96,7 +99,8 @@ key (`kmsKeyArn` in its Tooling environment, whose id `awsds-workflows values` p
 `VolumeKmsKeyId`, which Sandbox's D13 boundary requires of every job
 (`DenySageMakerJobsWithoutVolumeEncryption`); `PRODUCT_DATABASE`, the product's database, and
 `PUBLISH_LISTING`, whether the run lists its product, both literals the same in every stage that
-lists it (`app_etl`, `true`). The CLI fills them on a run it starts, as the run's
+lists it (`app_etl`, `true`); `ACCOUNT_ID`, the account the job's lineage names, read from STS by whoever
+deploys. The CLI fills them on a run it starts, as the run's
 `OverrideParameters`; a run started in the portal has no value for them, so such a run writes no
 product table and lists nothing.
 
@@ -178,7 +182,7 @@ CI/CD variables `DOMAIN_ID`, `DOMAIN_REGION`, `DEV_PROJECT_NAME`, `TEST_PROJECT_
 `SUBNET_AZ2`, `DEV_PROJECT_SG`, `TEST_PROJECT_SG`, `DEV_PROJECT_KEY_ARN`, `TEST_PROJECT_KEY_ARN` and
 `TEST_PROJECT_S3_URI`, the `test` project's `s3Uri` of `default.s3_shared`, and `TRAINING_IMAGE_URI`,
 the XGBoost image by digest, `terraform output -raw training_image_uri` on `staging/sagemaker/` in the
-infrastructure repository. Its run needs Sandbox's
+infrastructure repository; `ACCOUNT_ID` is the job's own, read from STS. Its run needs Sandbox's
 egress up (`make up ENV=sandbox ONLY=egress`, as the infrastructure user), which the job reads before it
 deploys. The deploy creates both workflows and runs `app-etl`, and the job follows the run of the workflow
 the CLI's *"Workflow triggered: <name>"* line names, by the *"ARN:"* line carrying that name; the bundle's SHA256 and the image go down the pipeline as a dotenv report, and the release's

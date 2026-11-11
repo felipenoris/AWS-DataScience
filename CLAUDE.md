@@ -501,7 +501,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
-- **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-27`): `TM-17`, the project role's managed policy
+- **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-29`): `TM-17`, the project role's managed policy
   reaching other accounts' `airflow-celery-*` queues and Bedrock functions, is the user's to decide;
   `TM-21` applied 2026-10-19 with Stage 17's 1.3, its finding `RESOLVED` (read 2026-10-21); the data cells filters
   create nothing until decision 12, which since 2026-10-20 also weighs Lake Formation's RLS policies (an
@@ -540,16 +540,16 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   following the CLI with Production's project role, which takes the lake's write (decision 16 (b), D22
   amended); **every decision taken 2026-10-31, one at a time** (1 (a), 2 (a)+(d), 3 (a) gated by
   `PUBLISH_LISTING`, 4 (a), 5 with `eighth-experimentation` as Production's consumer, 9 (a), 11 rows by class
-  for the governed accounts, 12 outside, 13 (b) with a subscription deny, 14 (a)+(d), 15 (a), 16 (b); 7, 8
-  and 10 moot or amended). **1.1 written 2026-10-31** (PR #281): the Iceberg product table on `glue_catalog` and the task
+  for the governed accounts, 12 outside, 13 (b) with a subscription deny, 14 (a)+(d), 15 (a), 16 (b); 7 and 8
+  moot, 10 taken 2026-11-09). **1.1 written 2026-10-31** (PR #281): the Iceberg product table on `glue_catalog` and the task
   `publish`, gated by `PUBLISH_LISTING`; the mirror to `awsds/app-etl` is the next GitLab sitting's, pass 1 the
   next Sandbox sitting's; the pinned lint refuses `content.catalog.enabled` (3.1 waits on a lint release), the
   CLI 1.0.9 every command while a manifest `${VAR}` is unset (the `staging` and `prod` stages at 4.9). Passes
   1 to 3 Sandbox sittings, pass 4 promotion sittings with the Stages 8-10 session, whose Stage 10 1.1, 2.4,
-  4.2 and decision 9 it rewrites. **Pass 1 prepared 2026-11-08** (PR #283), its sitting not run: `publish`
-  takes `{domain.id}` and `{proj.id}` from the deploy, the project role holds `datazone:StartDataSourceRun`
-  from `sandbox/workflows/` (applied, `v4`), and the sitting's order, commands and values are the stage
-  file's list before 1.2; the next session starts after #283's merge.
+  4.2 and decision 9 it rewrites. **Pass 1 run 2026-11-10** (PR #284): four runs, the fourth `SUCCESS`
+  after three fixes to `publish` (`SUP-343`, `SUP-345`), its objects and lineage read; the negative
+  admitted (`SUP-346`, `TM-29`); decisions 17 (`CT-13`) to 20 taken, 19 (c) dropping the `test`
+  stage (promotion across accounts), 20 (b) listing in Production alone; the mirror at the next GitLab sitting.
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes

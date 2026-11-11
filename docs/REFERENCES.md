@@ -778,6 +778,39 @@
   <https://docs.aws.amazon.com/datazone/latest/userguide/configure-subscription-target-in-custom-environment.html>,
   <https://docs.aws.amazon.com/datazone/latest/userguide/datazone-concepts.html>,
   <https://docs.aws.amazon.com/datazone/latest/userguide/working-with-blueprints.html>.
+- Metadata forms in SageMaker Unified Studio (read 2026-11-08, for Stage 19 decision 4 and 1.3): a form
+  created from *Manage → Catalog management → Metadata forms*, enabled by default, its field types
+  `String`, `Integer`, `Long`, `Float`, `Double`, `Boolean`, `Date` and `Business glossary`, none
+  enumerated, each field optionally `Required`; a form made required on publishing by a domain unit's
+  metadata rule, the portal adding or prompting for it:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/standardize-metadata-forms.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/metadata-rules-publishing.html>;
+  the catalog's items moved under *Manage* on 2026-09-17, 2026-10-08 and 2026-10-20:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>.
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-metadata-form.html>
+  answered an empty page that day.
+- A metadata form's owning project (read 2026-11-10, for Stage 19 decision 4's owner question):
+  `CreateFormType` requires `owningProjectIdentifier`, *"the project that owns this metadata form type"*:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateFormType.html>; only a member of
+  the owning project creates, edits or deletes a form:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/create-metadata-form.html>; the *Metadata forms*
+  page lists every form in the domain, a form's display name and description change after creation and
+  its technical name does not, and a form is disabled and detached from every asset before it is deleted:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/standardize-metadata-forms.html>;
+  `DeleteFormType` requires the form type in use by no asset type and no asset:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_DeleteFormType.html>. None of these pages,
+  `update-metadata.html` included, says whether a project other than the owner may attach a form, and the
+  CLI offers `create-`, `get-` and `delete-form-type`, no update.
+- DataZone's IAM reach and its lineage lookup (read 2026-11-10, for Stage 19 verification ii's negative,
+  decision 17 and verification v): the Service Reference's DataZone JSON, `v1.5`, 278 actions, gives
+  `StartDataSourceRun` no resource type and no condition key and maps `datazone:projectId` to no action:
+  <https://servicereference.us-east-1.amazonaws.com/v1/datazone/datazone.json>; the HTML Service
+  Authorization Reference answered its title alone to the fetch:
+  <https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazondatazone.html>;
+  `StartDataSourceRun`'s page says nothing on who may call it:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_StartDataSourceRun.html>; `GetLineageNode`
+  takes a node's generated id or its `sourceIdentifier` (`SUP-347`):
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_GetLineageNode.html>.
 - The CI/CD CLI's catalog export and import (read 2026-10-28, for Stage 19 0.9 and pass 3): the
   manifest's `catalog` content, the same-name assumption, the asynchronous listing failure, and the
   stages in different domains, accounts and Regions:
@@ -787,7 +820,9 @@
   <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/catalog-import-export-guide.md>;
   the stages, each its own project, and the application resources the page names:
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd.html>; 1.0.9 still the
-  latest on PyPI: <https://pypi.org/project/aws-smus-cicd-cli/>.
+  latest on PyPI: <https://pypi.org/project/aws-smus-cicd-cli/>. Read again 2026-11-11 for Stage 19
+  decision 18: the guide, the manifest's page and the user guide's page, on where the business catalog
+  is authored, what the export takes, how the import matches and publishes, and stages sharing a domain.
 - The lakehouse in SageMaker Unified Studio (read 2026-10-28, for Stage 19 question 3): catalogs mounted
   as databases in Redshift, RMS and federated catalogs, the project profiles the lakehouse needs, *Query
   with Amazon Redshift*, *Publish to catalog*:

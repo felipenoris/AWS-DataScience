@@ -311,6 +311,26 @@ blueprint fails as Tooling did, one capability-enable at a time. **Applied 2026-
 slices** — `11 added` each, re-plan `No changes`, all 22 read back with exactly one grant (the stage
 file's owed table is the record).
 
+#### Who may create a metadata form type
+
+A metadata form type is a third authorization of the same shape: `CREATE_FORM_TYPE` on a domain unit,
+its principal a project with a designation. **Measured 2026-11-08 and 2026-11-09:** `list-policy-grants`
+on the root domain unit returned no `CREATE_FORM_TYPE` and no `CREATE_GLOSSARY` grant, and the portal
+showed `eighth-experimentation`'s owner *Create metadata forms* disabled under *Manage → Metadata forms*.
+The field types the portal offers are `String`, `Integer`, `Long`, `Float`, `Double`, `Boolean`, `Date`
+and `Business glossary`, none enumerated (AWS's page, read 2026-11-08). The grant is
+`data-governance/governance/`'s, per project (`form_type_owners`, designation `OWNER`), for Stage 19
+decision 4's form `classification`; applied 2026-11-10 00:36 UTC, read back as grant `00KsayGIrZ`.
+The portal's form page names an owning project; its field page offers a display name, a technical name,
+a description, the field type, a minimum and maximum length, *Searchable*, *Required when publishing* and
+*Required when subscribing* (the user, 2026-11-10). Each save is a `CreateFormType` through the domain
+execution role in the user's session, one revision per call, and `GetFormType` answers Data Governance's
+`InfrastructureAccess`, outside the owning project (read 2026-11-10). The owning project is required
+and is the one whose members create, edit or delete the form; the *Metadata forms* page lists every form
+in the domain, and no page read says whether another project may attach one (AWS's pages, read
+2026-11-10). No call changes a form type's owner, and `DeleteFormType` refuses a form type an asset uses,
+so moving the owner is a detach, a delete and a re-creation.
+
 ## Blueprints — the object
 
 An **environment blueprint** is a provisioning template owned by AWS. It works in two steps:
