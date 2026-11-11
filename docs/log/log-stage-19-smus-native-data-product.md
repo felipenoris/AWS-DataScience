@@ -1164,3 +1164,8 @@ The same sitting, nothing up, no AWS write but the reads below.
   outlived that stage's unwinding). Production's `InfrastructureAccess` and `awsds-deploy-prod` have
   none: neither has called the domain. `test-experimentation`'s members: its owner, one contributor
   user, Sandbox's `InfrastructureAccess` group and the bundle role's group, a `PROJECT_CONTRIBUTOR`.
+- **[Claude] The gates and the pull request**: `make check` and `make check-ou` `OK`, the commit hooks
+  passing on both commits; the branch at `main`'s tip plus two commits, pushed, and
+  [PR #288](https://github.com/felipenoris/AWS-DataScience/pull/288) opened. The three saved plans
+  (`stage19-scp-41`, `stage19-studio-staging-1`, `stage19-studio-production-1`) wait for the user's
+  apply, and the bundle role's for release T's sitting.
