@@ -17,9 +17,9 @@ amended 2026-11-11** by Stage 19 decision 19 (c), the user's: no `test` project 
 pipeline bundling from `dev` and deploying into Staging, then Production, so every promotion crosses
 an account; the note after item 2's says what changes.
 
-**In one line:** the application is the unit, the CI/CD CLI carries it between the Sandbox projects
-and bundles it, the pipeline deploys the bundle, and design B is built as the layer that schedules and
-chains the workflows, not as a replacement for them.
+**In one line:** the application is the unit, the CI/CD CLI carries it into the Sandbox `dev` project
+and bundles it, the pipeline deploys the bundle to Staging and to Production, and design B is built as
+the layer that schedules and chains the workflows, not as a replacement for them.
 
 **Related decisions:** [D7](D07-orchestration.md), [D17](D17-interactive-vs-runtime.md),
 [D20](D20-staging-account.md), [D21](D21-development-account.md), [D26](D26-unified-studio.md),
@@ -282,8 +282,15 @@ administrators and lake with the experiments, so one database name cannot exist 
 (read 2026-11-11). What changes: the CLI deploys from the repository into `dev` while the application
 is engineered; the pipeline's bundle job makes the bundle from `dev`, and the legs deploy it to Staging,
 then Production; `test-deploy` retires, and `test-experimentation` stays a Sandbox project outside the
-chain. Everything else stands as item 2's note leaves it; Stage 8's 2.5 and 3.3 and the runbooks follow
-Stage 19's pass 4.
+chain. Everything else stands as item 2's note leaves it.
+
+The retirement does not wait for item 2's reopening to be built. It was written on 2026-11-11 as
+Stage 19's release T, on the legs that exist: the manifest holds the stage `dev` alone, the job
+`bundle` stands where `test-deploy` stood, and `awsds-deploy-sandbox-test` keeps its name and holds
+DataZone reads alone. Items 4, 7 and 9, which speak of `dev` and `test`, read as `dev` since that day.
+The body above states what was decided on 2026-10-15; Stage 8's 2.5, 3.3 and decision 19, Stage 10's
+2.2 and the runbooks carry the amendment in their own text. The legs by the CLI are that stage's
+release F (its steps 4.9 to 4.11).
 
 ## The chain layer, against `terraform-reference/`
 
@@ -307,8 +314,8 @@ reference carries two items, inferred from its code: `airflow-serverless:ListWor
 `UpdateWorkflow`, `GetWorkflow` and `ListWorkflows`, the `iam:PassRole` of the workflow's execution
 role and the write on the application's prefix on the GitLab CI/CD role. The bridge between chains
 adds the project bucket's notification to EventBridge and a role trusted by `events.amazonaws.com`.
-`dev` and `test` are SMUS projects at both ends: the two Sandbox projects here, the domain's projects
-there. Sandbox gets no machine and no schedule: `sandbox/workflows/` (rank 56) stays as it is.
+`dev` and `test` are SMUS projects at both ends: the two Sandbox projects here until 2026-11-11, when
+the `test` stage was retired, the domain's projects there. Sandbox gets no machine and no schedule: `sandbox/workflows/` (rank 56) stays as it is.
 
 ## Consequences for the plan
 

@@ -233,10 +233,11 @@ terraform-live/
 │   │                     #     AddTags of the caller's own project tag, which creating the job
 │   │                     #     needs - and one attachment per SMUS project role, hand-written
 │   │                     #     like bedrock/'s. Since Stage 8 decision 19 (applied 2026-10-16)
-│   │                     #     also awsds-deploy-sandbox-test, the role the deploy
-│   │                     #     runner assumes for the CI/CD CLI's test deploy (INT-25), on the
-│   │                     #     deploy-role module with its own ceiling: the supply chain's
-│   │                     #     second write path into Sandbox, after dev-env/'s
+│   │                     #     also awsds-deploy-sandbox-test, the role the deploy runner
+│   │                     #     assumes for the pipeline's bundle job (INT-25; Stage 19
+│   │                     #     decision 19 (c)), on the deploy-role module with its own
+│   │                     #     ceiling: it reads the dev project and writes nothing, so
+│   │                     #     dev-env/'s is the supply chain's one write path into Sandbox
 │   ├── observability/    # [P] Stage 12 steps 1, 2 and 9 (rank 70): the account dashboard
 │   │                     #     awsds-sandbox-environment, the account's alerts topic
 │   │                     #     awsds-sandbox-alerts (Stage 8 decision 5 gave one to each
@@ -310,10 +311,11 @@ terraform-live/
 │                         #     and the CREATE_PROJECT_FROM_PROJECT_PROFILE grants on the
 │                         #     root unit (grants.tf, applied 2026-08-22 - layer 1 of the
 │                         #     create authorization) through `awscc`, the only provider with
-│                         #     awscc_datazone_project_profile. Account associations to
-│                         #     sandbox and development (INT-12) are console-only - no public
-│                         #     API - and the blueprint configurations are applied from the
-│                         #     member account (see */sagemaker/ below).
+│                         #     awscc_datazone_project_profile. An account association
+│                         #     (INT-12) is a principal on the domain's RAM share, added in the
+│                         #     console or by `ram associate-resource-share` (SUP-349), never
+│                         #     by Terraform, and the blueprint configurations are applied
+│                         #     from the member account (see */sagemaker/ and */studio/ below).
 │                         #     A registry: blueprints provision compute into those
 │                         #     accounts, never into this one; the lake-publishing pilot's
 │                         #     Tooling, with spaces off, is the one environment it
@@ -352,6 +354,13 @@ terraform-live/
 │   │                     #     created at Stage 9, never the dev-named one 6b destroyed
 │   ├── sagemaker/        # [P] awsds-staging-job-exec, its job log groups, and the jobs'
 │   │                     #     security group and Glue connection (Stage 9 4.3, decision 12)
+│   ├── studio/           # [P] the blueprint prerequisites of this account's deployment
+│   │                     #     project (Stage 19 step 4.4, rank 46), through
+│   │                     #     sagemaker-prereqs: the provisioning and manage-access roles,
+│   │                     #     the D13 boundary, the project key, the projects bucket and
+│   │                     #     the log group; the Tooling and DataLake configurations; the
+│   │                     #     workflows grant and the person-session deny on the project's
+│   │                     #     role. sagemaker/ above keeps Stage 9's job roles
 │   ├── orchestration/    # [E] MWAA Serverless workflows for the staging leg (D7 amended:
 │   │                     #     a serverless workflow bills nothing at rest, so the reason
 │   │                     #     orchestration was Production-only is gone), with the chain
@@ -461,6 +470,13 @@ terraform-live/
     │                     #     model package's state change (Stage 10 step 5.3), and the jobs'
     │                     #     security group and Glue connection (decision 12). No domain, no
     │                     #     user profiles (D17)
+    ├── studio/           # [P] the blueprint prerequisites of this account's deployment
+    │                     #     project (Stage 19 step 4.4, rank 46), through
+    │                     #     sagemaker-prereqs: the provisioning and manage-access roles,
+    │                     #     the D13 boundary, the project key, the projects bucket and
+    │                     #     the log group; the Tooling and DataLake configurations; the
+    │                     #     workflows grant and the person-session deny on the project's
+    │                     #     role. sagemaker/ above keeps Stage 9's job roles
     ├── egress/           # [E] VPC-SharedServices' interface endpoints (12 since Stage 7: 6c
     │                     #     5.5's 13 plus secretsmanager, step 1.7, minus the SageMaker pair,
     │                     #     decision 9) - no NAT anywhere (D38; the NAT
@@ -710,7 +726,7 @@ application's Terraform is not in its repository: each environment's slice is
 `terraform-live/<env>/app/app-etl/` above, `[E]` everywhere and written from `terraform-modules/`
 (Sandbox's retired by Stage 8 decision 21, 2026-10-16, the `dev` project being D41's engineering loop),
 and the release it runs is a variable whose default is a tracked line (Stage 8 decision 12). `workflows/` holds
-the definition in the CI/CD CLI's notation, which the CLI deploys to the `dev` and `test` projects and
+the definition in the CI/CD CLI's notation, which the CLI deploys to the `dev` project and
 bundles (Stage 10 steps 2.1-2.2); the release job renders it per environment from the release's bundle
 and copies it to the definitions home with the code package the tag pipeline built from `code/` when
 there is one, which the `orchestration/` slices pin, and `src/` beside them as the processing job's input
@@ -788,7 +804,7 @@ plan, so the layer of the other two is written here rather than inferred from a 
 | the model provisioning and consumption roles | `[P]` | `sandbox/model-access/`, rank 52 | nothing | never |
 | a model's catalog asset and environment in the governance project; a project's application inference profile of a model | `[P]` in shape | the console's *Manage*; DataZone, at a subscription's grant | nothing | never: the console's disable revokes the listing's subscriptions and unpublishes and deletes the asset (its code, read 2026-10-19); whether it deletes the environment is unread |
 | the workflows grant | `[P]` | `sandbox/workflows/`, rank 56 | nothing | never |
-| the CI/CD CLI's `test` deploy role, `awsds-deploy-sandbox-test`, and its ceiling | `[P]` | `sandbox/workflows/`, rank 56 (Stage 8 decision 19; applied 2026-10-16) | nothing | never |
+| the pipeline's `bundle` role, `awsds-deploy-sandbox-test`, and its ceiling | `[P]` | `sandbox/workflows/`, rank 56 (Stage 8 decision 19, applied 2026-10-16; Stage 19 decision 19 (c) narrows it to the `dev` project's reads) | nothing | never |
 | **a space** | **`[D]` in shape**: kept between sessions, its app stopped, its volume billing — though no `make` target starts one | the portal, by hand | **USD 0.112 per GB-month** of its volume (`UnifiedStudio:VolumeUsage.gp3`); 56 GB and USD 6.27 a month across the three spaces of 2026-09-12 | **not by default**: `scripts/down-studio-apps.py --spaces` deletes them, and the home directories with them |
 | an app (JupyterLab, Code Editor) | `[E]` | the portal | instance-hours while it runs, nothing after | deleted by `scripts/down-studio-apps.py` |
 | a processing or training job, a MWAA Serverless run | `[E]` | Stage 10 | nothing | nothing to delete |

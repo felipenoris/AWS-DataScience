@@ -236,8 +236,11 @@ per laptop, never one per session.
   Apply*), refused one session's apply of a new slice carrying an e-mail subscription, and refused one
   session's `git push` (*Out-of-Place Publication*); the orchestrating session ran each itself on the
   user's authorization in its own chat. It also refused the orchestrating session's own apply of a
-  saved plan in Production (*Production Deploy*, 2026-10-18) until the user authorized it in that chat. Sessions told not to edit
-  `CLAUDE.md`, `docs/GENERAL_PLAN.md`, `docs/plan/stages/INDEX.md` and `docs/log/INDEX.md` leave
+  saved plan in Production (*Production Deploy*, 2026-10-18) until the user authorized it in that chat. On
+  2026-11-11 it refused an SCP apply and a Staging `[P]` apply under a blanket authorization in chat, and let
+  through reads, a RAM association and a candidate SCP's create, attach and delete on `Policy Test`.
+  Sessions told not to edit `CLAUDE.md`, `docs/GENERAL_PLAN.md`, `docs/plan/stages/INDEX.md` and
+  `docs/log/INDEX.md` leave
   their text in their reports, and the orchestrator rewrites those rows once, so a dozen PRs do not
   conflict on adjacent lines. Their notes land in
   `~/Library/Application Support/Claude/side-session-notes/<orchestrator session id>/`.
@@ -529,27 +532,24 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   measurements in `SMUS.md`'s deployment-project section and `AWS_SUPPLEMENT.md`. Left: the domain's two `IAM`
   profiles, a group profile and 44 lineage events (no delete API), and the project key until 2026-11-21
   (the protected refs read free of its branch on 2026-10-26).
-- **Stage 19: decision 6 taken 2026-10-31 by the user as (b), the AWS model** (`stage-19-smus-native-data-product.md`;
-  written 2026-10-28, nothing run in AWS): a data product produced and published by a SageMaker application
-  on SMUS's native path. Under (b)
-  Staging and Production each hold a deployment project (Stage 18's recipe as a standing state), the CI/CD
-  CLI deploys every stage from the bundle, Production publishes its own product and a Sandbox project
-  subscribes across accounts; D41 item 2 reopened, 6f decision 4 reversed (its note the 6f session's), D26
-  amended at the association, `DenyDataZoneEntirely` revised at 4.1 (decision 13), the application slices,
-  the render and the orchestration module's workflow resource retire (4.11), the warehouse workflow
-  following the CLI with Production's project role, which takes the lake's write (decision 16 (b), D22
-  amended); **every decision taken 2026-10-31, one at a time** (1 (a), 2 (a)+(d), 3 (a) gated by
-  `PUBLISH_LISTING`, 4 (a), 5 with `eighth-experimentation` as Production's consumer, 9 (a), 11 rows by class
-  for the governed accounts, 12 outside, 13 (b) with a subscription deny, 14 (a)+(d), 15 (a), 16 (b); 7 and 8
-  moot, 10 taken 2026-11-09). **1.1 written 2026-10-31** (PR #281): the Iceberg product table on `glue_catalog` and the task
-  `publish`, gated by `PUBLISH_LISTING`; the mirror to `awsds/app-etl` is the next GitLab sitting's, pass 1 the
-  next Sandbox sitting's; the pinned lint refuses `content.catalog.enabled` (3.1 waits on a lint release), the
-  CLI 1.0.9 every command while a manifest `${VAR}` is unset (the `staging` and `prod` stages at 4.9). Passes
-  1 to 3 Sandbox sittings, pass 4 promotion sittings with the Stages 8-10 session, whose Stage 10 1.1, 2.4,
-  4.2 and decision 9 it rewrites. **Pass 1 run 2026-11-10** (PR #284): four runs, the fourth `SUCCESS`
-  after three fixes to `publish` (`SUP-343`, `SUP-345`), its objects and lineage read; the negative
-  admitted (`SUP-346`, `TM-29`); decisions 17 (`CT-13`) to 20 taken, 19 (c) dropping the `test`
-  stage (promotion across accounts), 20 (b) listing in Production alone; the mirror at the next GitLab sitting.
+- **Stage 19: decision 6 (b), the AWS model** (`stage-19-smus-native-data-product.md`; the user's,
+  2026-10-31): a data product produced and published by a SageMaker application on SMUS's native path. Staging
+  and Production each hold a deployment project, the CI/CD CLI deploys every stage from the bundle, Production
+  publishes its own product and a Sandbox project subscribes across accounts; D41 item 2 reopened, 6f decision
+  4 reversed, D22 and D26 amended. Decisions 1 to 20 taken (7, 8 moot): 13 (b) the SCP's three exceptions and
+  a subscription deny, 14 the task the one publisher, 15 the Governance Manager approving in
+  `deploy-production`, 16 (b) the warehouse workflow in Production's project, 17 (a) (`CT-13`), 18 (d) a `dev`
+  project for app-etl alone, 19 (c) no `test` stage, 20 (b) Production alone lists. **Pass 1 run 2026-11-10**
+  (PR #284) in `eighth-experimentation`: the Iceberg table, its asset, listing and lineage (`SUP-343`,
+  `SUP-345`, `SUP-346`, `TM-29`). **Pass 4 opened 2026-11-11, nothing up**: both targets associated by `ram
+  associate-resource-share` (`SUP-349`); the `Workloads` SCP's amendment measured on a candidate and planned,
+  `<env>/studio/` planned (16 to add each), the applies the user's (the classifier refused Claude each one);
+  `governance/`'s `deployment-staging` and `deployment-production` behind `deployment_profiles_enabled`, the
+  CLI import's grants (`SUP-351`) and `<env>/foundation/deploy-project.tf` written, gated on the projects.
+  **The pipeline changes in two releases**: T retires the `test` stage on today's legs (the job `bundle` as
+  `awsds-deploy-sandbox-test`, which reads `dev` and writes nothing; in `examples/app-etl/`, its sitting
+  `runbooks/promotion.md` §N.8.2), F is the CLI's legs (4.9 to 4.11). The order of what is left is the stage
+  file's §The estate against decisions 17 to 20.
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes

@@ -3461,15 +3461,22 @@ entry is still true is the reading.
   three per deployment project. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11;
   `terraform-live/data-governance/governance/grants.tf`.
 
-- `SUP-352` **`bundle` reports a failed catalog export on standard error and still writes the bundle,
-  without `catalog/catalog_export.json`** (read 2026-11-11 in the CLI 1.0.9's `commands/bundle.py`; no
-  call made). The export runs inside a `try` whose handler prints *"Error exporting catalog resources:
-  <error>"* and continues, and a domain or project id it cannot resolve prints a warning the same way;
-  the command's exit status does not change. A bundle made by an identity that lacks a catalog read, or
-  that is no member of the source project, therefore carries the files and no catalog, and the target's
-  import then finds nothing to import. A pipeline that depends on the export checks the archive for the
-  file and for its content. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11;
-  `examples/app-etl/.gitlab-ci.yml`, the job `bundle`.
+- `SUP-352` **`bundle` exits 0 and writes the bundle when its caller cannot read the stage's project,
+  and when the catalog export fails** (the first measured 2026-11-11, the second read the same day in
+  the CLI 1.0.9's `commands/bundle.py` and `helpers/utils.py`, no call made). Run on the laptop as
+  Sandbox's InfrastructureAccess with the `dev` stage naming `governed-lake`, a project that identity
+  is no member of: `ListConnections` was refused *"User is not permitted to perform operation:
+  ListConnections"*, the CLI logged *"ERROR - Failed to get project connections for governed-lake"*,
+  and the archive was written with the same 11 files as the run that named a project the caller
+  belongs to, whose log carries no such line. `get_datazone_project_info` catches every exception and
+  returns an error record the command never reads. The catalog export runs inside a `try` whose handler
+  prints *"Error exporting catalog resources: <error>"* and continues, and a domain or project id it
+  cannot resolve prints a warning the same way; neither changes the exit status. A bundle made by an
+  identity that lacks a catalog read, or that is no member of the source project, therefore carries
+  the files and no `catalog/catalog_export.json`, and the target's import finds nothing to import. A
+  pipeline that depends on the project's read or on the export checks the log and the archive. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-11; `examples/app-etl/.gitlab-ci.yml`, the job
+  `bundle`.
 
 ## Bedrock
 

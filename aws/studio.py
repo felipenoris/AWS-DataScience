@@ -70,10 +70,20 @@ INTERACTIVE_PROFILES = ("awsds-infra-sandbox-1",)
 # below. The state is not hypothetical - any member retired this way passes through it.
 RETIRED_MEMBER_PROFILES: tuple[str, ...] = ()
 IDENTITY_PROFILE = "awsds-infra-identity"
-# Accounts where nothing DataZone- or Studio-shaped may ever appear (D28: deployment targets
-# stay headless). `awsds-infra-staging` resolves since Stage 6b step 5.0; the account behind it
-# is the renamed `Development`.
+# The deployment targets: no person works there and no SageMaker AI domain may appear (D17). Since
+# Stage 19 decision 6 (b) each is associated to the domain and holds one deployment project, born
+# of its own profile, with two blueprint configurations (DEPLOYMENT_BLUEPRINTS); the Workloads SCP
+# admits this script's InfrastructureAccess session to DataZone there once that stage's step 4.1 is
+# applied, and before it the refusal reads as that step pending. `awsds-infra-staging` resolves
+# since Stage 6b step 5.0; the account behind it is the renamed `Development`.
 HEADLESS_PROFILES = ("awsds-infra-prod", "awsds-infra-staging")
+# What <env>/studio/ configures in a deployment target (Stage 19 step 4.4): Tooling, with spaces off
+# in the deployment profile, and DataLake, the home of an application's product database.
+DEPLOYMENT_BLUEPRINTS = ("Tooling", "DataLake")
+# The deployment profiles, one per target (Stage 19 step 4.5): rows of
+# data-governance/governance/'s locals.tf behind `deployment_profiles_enabled`. Admitted when
+# present, and their absence is no failure: the stage creates them after each target's blueprints.
+DEPLOYMENT_PROFILE_NAMES = ("deployment-staging", "deployment-production")
 
 # The contracts (see header).
 # Decision 5's category 1 (2026-08-19; docs/SMUS.md carries the reference table): the only
@@ -162,9 +172,9 @@ def main(argv: list) -> int:
     # the owning account separates "a domain was created here" (the violation) from "this
     # account can see the one domain" (step 1.3 working). The id alone cannot tell those apart
     # (Lesson 31).
-    # In the headless accounts the Workloads OU denies datazone:* in full (1c, D26), so an SCP
-    # denial there is the D28 control holding, not a failed call - measured on this script's
-    # first run, 2026-08-16.
+    # In the deployment targets the Workloads OU denied datazone:* in full until Stage 19 step 4.1
+    # excepted InfrastructureAccess, so an SCP denial there is that step not applied yet, not a
+    # failed call.
     SCP_DENIED = "SCP_DENIED"
     dz_domains: dict = {}  # profile -> [(id, name, version, status, owner)] | None | SCP_DENIED
     for p in live:
@@ -261,7 +271,7 @@ def main(argv: list) -> int:
         # console account association the call legitimately fails, so `tolerate` keeps that
         # window from flipping this script's exit code (the seam list-project-profiles uses
         # below).
-        for member in INTERACTIVE_PROFILES:
+        for member in INTERACTIVE_PROFILES + HEADLESS_PROFILES:
             if member not in live:
                 continue
             mcli = cli_for(member)
@@ -584,10 +594,11 @@ def main(argv: list) -> int:
         if p == DATA_PROFILE or dz_domains.get(p) is None:
             continue
         if dz_domains[p] == SCP_DENIED:
-            checks.ok(
-                "US-6",
+            checks.note(
+                "US-2",
                 f"datazone reads denied in {p}",
-                "the Workloads OU denying datazone:* - D28's headless control holding",
+                "the Workloads SCP still refuses InfrastructureAccess: Stage 19 step 4.1's "
+                "amendment is not applied. After it this session reads the shared domain here.",
             )
             continue
         here = account_of.get(p)
@@ -614,10 +625,23 @@ def main(argv: list) -> int:
                 checks.ok(
                     "US-2",
                     f"{p} sees the shared domain and owns none",
-                    f"{shared_in[0][0]} owned by Data Governance - step 1.3's association, "
-                    "measured rather than read off a console label",
+                    f"{shared_in[0][0]} owned by Data Governance - "
+                    + (
+                        "the deployment target's association (Stage 19 step 4.2)"
+                        if p in HEADLESS_PROFILES
+                        else "step 1.3's association"
+                    )
+                    + ", measured rather than read off a console label",
                 )
-        if not owned and not shared_in:
+        if not owned and not shared_in and p in HEADLESS_PROFILES:
+            checks.fail(
+                "US-2",
+                f"no DataZone domain visible in {p}",
+                "a deployment target is associated to the domain since Stage 19 step 4.2 "
+                "(2026-11-11) and holds a deployment project: an empty answer means the "
+                "association is gone, and the project with it.",
+            )
+        elif not owned and not shared_in:
             checks.note(
                 "US-2",
                 f"no DataZone domain visible in {p}",
@@ -626,10 +650,7 @@ def main(argv: list) -> int:
                 "pending one. Its OU has not changed yet, so datazone: is not denied: the "
                 "call succeeds and returns nothing."
                 if p in RETIRED_MEMBER_PROFILES
-                else "correct before this account's association (Stage 6 step 1.3)."
-                if p in INTERACTIVE_PROFILES
-                else "and none is ever expected - only the Interactive accounts are "
-                "associated (D28), so this is the resting state rather than a pending one.",
+                else "correct before this account's association (Stage 6 step 1.3).",
             )
     if data_live and sm_domains.get(DATA_PROFILE) is not None:
         if sm_domains[DATA_PROFILE]:
@@ -738,6 +759,34 @@ def main(argv: list) -> int:
                     "all inside decision 5's category 1",
                 )
 
+        # A deployment target's configurations: the two <env>/studio/ declares, and no other.
+        for target in HEADLESS_PROFILES:
+            if target not in live or dz_domains.get(target) in (None, SCP_DENIED):
+                continue
+            names = [n for n, _r, _p, _m in bp_configs.get(target) or []]
+            extra = [n for n in names if n not in DEPLOYMENT_BLUEPRINTS]
+            if extra:
+                checks.fail(
+                    "US-3",
+                    f"blueprint outside the deployment project's in {target}",
+                    f"{', '.join(extra)} - a deployment target configures "
+                    f"{' and '.join(DEPLOYMENT_BLUEPRINTS)} alone (Stage 19 step 4.4): no "
+                    "capability a person would use, and nothing Redshift-backed.",
+                )
+            elif names:
+                checks.ok(
+                    "US-3",
+                    f"{len(names)} blueprint configuration(s) in {target}",
+                    f"{', '.join(sorted(names))} - the deployment project's",
+                )
+            else:
+                checks.note(
+                    "US-3",
+                    f"blueprint configurations in {target}",
+                    "none - the account is associated and <env>/studio/'s second apply has "
+                    "not run (Stage 19 step 4.4).",
+                )
+
     # US-4: the project profiles, by their contracted names - and the retired one by its.
     if data_live and domain_id:
         have = {n for n, _i, _s in project_profiles}
@@ -748,6 +797,7 @@ def main(argv: list) -> int:
             | set(WINDOW_PROFILE_NAMES)
             | set(MODEL_GOVERNANCE_PROFILE_NAMES)
             | set(PILOT_PROFILE_NAMES)
+            | set(DEPLOYMENT_PROFILE_NAMES)
         )
         unknown = sorted(have - contracted - set(RETIRED_PROFILE_NAMES))
         window = sorted(have & set(WINDOW_PROFILE_NAMES))
@@ -798,6 +848,13 @@ def main(argv: list) -> int:
                     ", lake-publishing Stage 6f step 11's pilot"
                     if have & set(PILOT_PROFILE_NAMES)
                     else ""
+                )
+                + (
+                    ", "
+                    + " and ".join(sorted(have & set(DEPLOYMENT_PROFILE_NAMES)))
+                    + " Stage 19 step 4.5's"
+                    if have & set(DEPLOYMENT_PROFILE_NAMES)
+                    else ""
                 ),
             )
 
@@ -815,14 +872,18 @@ def main(argv: list) -> int:
                     "puts every app outside the endpoint policies and the flow logs.",
                 )
 
-    # US-6: no SageMaker domain in the headless accounts (D28).
+    # US-6: no SageMaker AI domain in the deployment targets (D17): a deployment project's Tooling
+    # has spaces off and creates none (Stage 18 question i).
     for p in HEADLESS_PROFILES:
         if p in live and sm_domains.get(p):
             checks.fail(
                 "US-6",
                 f"SageMaker domain in {p}",
-                "deployment targets are never associated and never carry a domain (D28).",
+                "a deployment target carries no SageMaker AI domain (D17): its project's "
+                "Tooling has spaces off, and the Workloads SCP denies sagemaker:CreateDomain.",
             )
+        elif p in live and sm_domains.get(p) is not None:
+            checks.ok("US-6", f"no SageMaker domain in {p}", "no interactive surface (D17)")
 
     # US-7: idle shutdown configured on every Interactive domain (step 8), and the admin
     # ceiling beside it, since either half alone is a suggestion.
@@ -977,7 +1038,7 @@ never a compliant one.
             if doms is None:
                 rows.append(f"{p}\t(call failed)\t-\t-\t-\t-")
             elif doms == SCP_DENIED:
-                rows.append(f"{p}\t(denied by SCP - Workloads datazone:* ceiling, D28)\t-\t-\t-\t-")
+                rows.append(f"{p}\t(denied by SCP - Stage 19 step 4.1 not applied)\t-\t-\t-\t-")
             elif not doms:
                 rows.append(f"{p}\t(none)\t-\t-\t-\t-")
             else:
@@ -1057,7 +1118,7 @@ pilot's Tooling (Stage 6f step 11, D22 amended 2026-10-26).""")
         rep.text("""
 Domains belong ONLY in the Interactive columns (the blueprint targets). One in
 Data Governance breaks the registry premise (US-2); one in Production or Staging
-breaks D28 (US-6). VpcOnly and an ENABLED idle setting are steps 1 and 8.
+breaks D17 (US-6). VpcOnly and an ENABLED idle setting are steps 1 and 8.
 
 IDLE SETTINGS carries TWO numbers and step 8.1 rests on the second: the timeout
 is the default a project member may change, `ceiling` is the most they may raise
@@ -1142,16 +1203,18 @@ What the checks are, and where each comes from:
          (step 0's second preflight; the registry/runtime split)
   US-3   blueprint configurations, read PER ACCOUNT and judged in opposite
          directions: in the domain account none but the lake-publishing pilot's
-         Tooling (D22 amended; Stage 6f step 11), and in each member account none
+         Tooling (D22 amended; Stage 6f step 11), in each Interactive account none
          Redshift-backed and none outside decision 5's category 1 (step 1.4;
-         D12/D26, docs/SMUS.md)
+         D12/D26, docs/SMUS.md), and in each deployment target Tooling and
+         DataLake alone (Stage 19 step 4.4)
   US-4   the `experimentation` project profile exists and no uncontracted one does -
          a stage's window profile is admitted while WINDOW_PROFILE_NAMES names it,
-         the lake-publishing pilot's while PILOT_PROFILE_NAMES does,
+         the lake-publishing pilot's while PILOT_PROFILE_NAMES does, the deployment
+         profiles of Stage 19 step 4.5 once they exist,
          `engineering` was retired by Stage 6b step 1.1 and its return is a failure
   US-5   every Interactive SageMaker AI domain is VpcOnly (step 1)
-  US-6   the deployment targets stay headless (D28): no SageMaker domain there,
-         and datazone reads denied by the Workloads ceiling read as the control
+  US-6   the deployment targets hold no SageMaker AI domain (D17). They are
+         associated to the domain since Stage 19 step 4.2, which US-2 reads
   US-7   idle shutdown ENABLED on every Interactive domain, WITH the admin
          ceiling that bounds what a member may raise the timeout to (step 8.1)
   US-8   every blueprint-provisioned project role carries the D13 boundary

@@ -285,7 +285,7 @@ not *passed*.
 
 | Document | Probe | Denied | Allowed |
 |---|---|---|---|
-| workloads | `aws datazone list-domains --region us-west-2` | `AccessDenied` naming an SCP | a list, empty or not — the namespace deny is not reaching reads |
+| workloads | `aws datazone list-domains --region us-west-2` | `AccessDenied` naming an SCP: the answer every principal but the three excepted ones reads, and the infrastructure user's too until Stage 19 step 4.1 is applied | a list, empty or not: the infrastructure user's answer since that step (the amendment below) |
 | workloads | `aws sagemaker create-space --domain-id d-0000000000000 --space-name awsds-canary-probe --region us-west-2` | `AccessDenied` | `ValidationException` / `ResourceNotFound` = SageMaker validated first, so **untested** |
 | workloads | `aws sagemaker start-session --resource-identifier arn:aws:sagemaker:us-west-2:<ACCT>:space/d-0000000000000/none` | `AccessDenied` | any validation error = untested |
 | data, identity | `aws ec2 run-instances --dry-run --image-id <REAL AMI> --instance-type t3.micro --subnet-id <REAL SUBNET>` | `UnauthorizedOperation`, naming the policy | `DryRunOperation` = allowed |
@@ -470,6 +470,55 @@ what the contrast row answers while the control reads `AccessDenied`. A `Validat
 the list itself may precede authorization, and records the row untested. The key's population is a
 property of the request, so the answer carries to the D13 boundary, which composes the same statement
 ([Stage 17](../stages/stage-17-sandbox-machine-learning.md) pass 2's training job).
+
+**The Stage 19 step 4.1 amendment — `DenyDataZoneEntirely` excepts three principals and
+`DenyDataZoneSubscriptionRequests` is new** (decision 13 (b), written 2026-11-11). The two halves are
+measured in two places, because the battery's own identity in the `Workloads` accounts, the
+infrastructure user, is one of the excepted principals (Lesson 22).
+
+The allow half and the subscription deny are rows of `probes.py`, run with `--phase ou` a minute or
+more after the apply (`SUP-350`):
+
+| Probe (from `awsds-infra-prod` and `awsds-infra-staging`) | Expected | Statement it answers |
+|---|---|---|
+| `aws datazone list-domains` | answers | `DenyDataZoneEntirely`'s `ArnNotLike`: the SSO `InfrastructureAccess` role is excepted |
+| `aws datazone create-subscription-request` on a domain, a listing and a project that do not exist | `AccessDenied` naming the `Workloads` document | `DenyDataZoneSubscriptionRequests`, which binds the excepted principals too. `blocked`: with the deny lifted DataZone's own layer answers *"User is not permitted to perform operation: CreateSubscriptionRequest"*, the wording that proves authorization was reached (the canary's answer with nothing parked, 2026-11-11) |
+| `aws sagemaker create-space` on a domain that does not exist | `AccessDenied` | none new: `DenyInteractiveSageMakerSurface` still binds both accounts |
+
+The deny half has no principal the battery can produce in those accounts, so it is read once, at the
+amendment, as the canary under a candidate parked on `Policy Test`: a throwaway policy holding the
+document's two DataZone statements, created, attached, probed, detached and deleted in one sitting as
+`awsds-infra-identity`, never left attached (`attachments.json`, `Policy Test`). The candidate is cut
+from the rendered document, so it cannot differ from what the apply will carry:
+
+```bash
+./terraform-live/identity/org-policies/render.py > /dev/null && jq '{Version, Statement: [.Statement[] | select(.Sid | startswith("DenyDataZone"))]}' aws/output/rendered-policies/awsds-org-scp-ou-workloads.json > aws/output/rendered-policies/candidate-workloads-datazone.json
+```
+
+```bash
+aws organizations create-policy --name awsds-canary-scp-workloads-datazone --type SERVICE_CONTROL_POLICY --description "candidate of DenyDataZoneEntirely's revision, parked on Policy Test for one battery" --content file://aws/output/rendered-policies/candidate-workloads-datazone.json --query Policy.PolicySummary.Id --output text --profile awsds-infra-identity
+```
+
+```bash
+aws organizations attach-policy --policy-id <the id> --target-id <Policy Test's id> --profile awsds-infra-identity
+```
+
+| Probe (from `awsds-policy-canary`) | With nothing parked | Under the candidate |
+|---|---|---|
+| `aws datazone list-domains` | an empty list | `AccessDenied` *"with an explicit deny in a service control policy"* naming the candidate: an SSO role that is not `InfrastructureAccess` is not excepted |
+| `aws datazone list-environment-blueprints --domain-identifier dzd_canaryprobe0000` | not run | the same refusal: the whole namespace, not one action |
+| `aws datazone create-subscription-request` on names that do not exist | DataZone's *"User is not permitted to perform operation"* | the same refusal |
+| `aws sts get-caller-identity`, `aws ec2 describe-vpcs` | answer | answer: the floor |
+
+```bash
+aws organizations detach-policy --policy-id <the id> --target-id <Policy Test's id> --profile awsds-infra-identity && aws organizations delete-policy --policy-id <the id> --profile awsds-infra-identity
+```
+
+**Measured 2026-11-11** ([the Stage 19 log](../../log/log-stage-19-smus-native-data-product.md)): the
+candidate `p-oktjrbxv` bound within ten seconds of its attach, every row read as the table says, and
+`list-domains` kept reading the refusal for 68 s after the detach (`SUP-350`), so the canary is read
+again before the sitting is called done. What the candidate cannot show is the exception itself, since
+`Policy Canary` holds none of the three roles: that is the allow half above, in the real accounts.
 
 **The Stage 6e decision 15 amendment — `awsds-org-scp-ou-interactive` gains
 `DenyBedrockInvocationOutsideTheScopedModels` and `DenyBedrockReadsOutsideTheRoutedRegions`.** Run as

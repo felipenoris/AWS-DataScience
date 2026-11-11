@@ -106,6 +106,7 @@ module's arithmetic:
 | `production/runners/` | `[E]` | the build, deploy and test runners, in the group `tooling/` declares - and no route at all, like the buildbox the build runner replaced at Stage 7 step 6.5 |
 | `data-governance/publishing/` | `[P]` | **applied 2026-10-26** (Stage 6f step 11.2): Data Governance's VPC 3×2 through the `vpc` module with `public_internet_route = false`, its two gateway endpoints and its flow log, and no peering (a `check` block holds `peerings` empty). Its tenants are the publishing project's `Tooling` stack, a security group and two Glue network connections, which no launch in the Data OU ever uses |
 | `sandbox/sagemaker/` | `[P]` | **no network object of its own** — it hands the blueprint the VPC, the private subnets and their zone ids, which is what makes every project app land where §5 describes |
+| `staging/studio/` · `production/studio/` | `[P]` | **no network object of its own**, written 2026-11-11 and not yet applied ([Stage 19](plan/stages/stage-19-smus-native-data-product.md) step 4.4): each hands the deployment project's blueprints the account's compute VPC and its private subnets, Staging's `foundation/` VPC and Production's VPC-Workloads. A project environment there creates a security group of its own and a Glue network connection per subnet, which a workflow's worker, its Glue job and its processing job use |
 | `production/sagemaker/` · `staging/sagemaker/` | `[P]` | the job security group `awsds-<env>-jobs` and the Glue network connection on the first zone's private subnet, in VPC-Workloads and Staging's VPC (Stage 9 decision 12 (a), applied 2026-10-22): every pipeline-submitted Glue and SageMaker job runs in it |
 | `sandbox/warehouse/` | `[P]` | the warehouse's **security group** and one ingress rule per admitted SMUS project. The group is here rather than in the compute slice because it is free and is referenced by the workgroup rather than the reverse, so it survives a `make down` unattached |
 | `sandbox/warehouse-compute/` | `[E]` | the **workgroup**, which is what puts ENIs in the two private subnets. Destroyed by `make down ENV=sandbox`: Redshift Serverless has no pause, so *off* means *absent* |
@@ -353,11 +354,15 @@ filtering the internet, which the proxy does. Sandbox's allow-list is **fourteen
 namespaces and this estate's private zones. VPC-Workloads' and Staging's are **four**, AWS's namespaces
 only, so `gitlab`, `proxy` and every `prod.awsds.internal` or `staging.awsds.internal` name answer
 NXDOMAIN there: GitLab is in a VPC neither peers with, and the proxy refuses both planes everything.
-The two carry the same seven interface endpoints, the jobs' set: `sts`, `logs`, `kms`, `glue`,
+The two carry the same interface endpoints, the jobs' set: `sts`, `logs`, `kms`, `glue`,
 `lakeformation`, `sagemaker.api` and `secretsmanager`, Staging's since 4.3a's re-cut (written
 2026-10-22, the seven read `available` by the pipeline's `staging-check` on 2026-10-25) against the four
 a worker called there on 2026-10-19 (Stage 18 4.4), and `lakeformation` in both for decision 12 (a)'s
-jobs, which vend Lake Formation credentials from inside the VPC. The workers ran on them from both AZs'
+jobs, which vend Lake Formation credentials from inside the VPC. Both slices also name `datazone` since
+2026-11-11 (Stage 19 step 4.4), an eighth endpoint at each one's next `make up`: a deployment project's
+publishing task and its Glue job's lineage posts call the domain from inside the VPC, and without the
+endpoint a post read *"Network is unreachable"* (Stage 18 7.1, 2026-10-19). It shadows nothing a
+client needs, since no client resolves in either VPC. The workers ran on them from both AZs'
 subnets, with no `ecr.*` and no `monitoring` endpoint, in every Production app-etl and train run read on
 2026-10-25 (Stage 10 verification xvi). VPC-Workloads' slice also takes an optional group per apply
 since 2026-10-23, `make up ENV=production GROUPS=redshift` adding the `redshift-serverless` endpoint for

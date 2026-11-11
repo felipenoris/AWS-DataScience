@@ -811,6 +811,15 @@ one module tag.
   runbooks, documents and code comments were swept for the behaviours that had never reached the list,
   Terraform's and its providers' among them. `CLAUDE.md` routes to it and indexes its sections, and
   `./scripts/check-aws-supplement.py` joined `make check`. Nothing in AWS changed.
+- **2026-11-11 — Staging and Production associated to the domain; the `test` stage's retirement written.**
+  [Stage 19](stages/stage-19-smus-native-data-product.md)'s decisions 6 (b), of 2026-10-31, and 17 to 20, of
+  2026-11-11, reached the estate: D26's "a deployment target is never associated" ended at that stage's
+  step 4.2, by `ram associate-resource-share` on the domain's share, the call the console makes
+  (`SUP-349`), and each target is to hold one deployment project. Decision 19 (c) retired the Sandbox
+  `test` stage that D41 item 3 had put between `dev` and Staging: the template's pipeline was written
+  with a `bundle` job in `test-deploy`'s place, which deploys nothing in Sandbox, and D21's one exception,
+  a pipeline writing into Sandbox's `test` project, ends when that release lands in GitLab. The `Workloads`
+  SCP's amendment (decision 13 (b)) and the two `studio/` slices were planned and not applied that day.
 
 ---
 

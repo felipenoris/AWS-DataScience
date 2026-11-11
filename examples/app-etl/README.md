@@ -19,7 +19,7 @@ Production, hand by hand, is `docs/plan/runbooks/sagemaker-application.md` in th
 | `glue/load_warehouse.py` | Production's warehouse load: the application's table into `trades.trades_notional` of the database `governed`, over JDBC as the job role (class 2c) |
 | `warehouse/trades.sql` | the warehouse table's DDL, run by the pipeline's manual job `production-warehouse-ddl` through the Data API as the deploy role, its owner (Stage 9 decision 6) |
 | `workflows/` | the three workflow definitions, in the CI/CD CLI's notation |
-| `manifest.yaml` | the application: its content, the folders the CLI copies, and its stages `dev` and `test` |
+| `manifest.yaml` | the application: its content, the folders the CLI copies, and its stage `dev`, the Sandbox project it is developed in; Staging's and Production's stages join it when the CLI deploys them (the infrastructure repository's Stage 19 step 4.9) |
 | `scripts/dev-cli.sh` | the CI/CD CLI for the `dev` stage in a space: the house image's CLI by its path, its domain lookup answered by `DOMAIN_ID`; no storage item names `scripts/`, so the bundle never carries it |
 | `tests/` | pytest, offline, against `samples/`; the Glue script, the worker's tasks and `scripts/dev-cli.sh` run over doubles |
 | `samples/` | synthetic trades: the input of the image's smoke test, of a Sandbox job and of the workflow's `inbox/` |
@@ -27,9 +27,9 @@ Production, hand by hand, is `docs/plan/runbooks/sagemaker-application.md` in th
 | `.gitlab-ci.yml` | the pipeline, with the shared gates from `awsds/ci-gates` |
 | `pyproject.toml`, `uv.lock` | the project and its lock; the resolver ignores anything published after `exclude-newer` |
 
-The Terraform that runs the application is not here: each environment's slice is
+The Terraform that runs the application is not here: each deployment target's slice is
 `terraform-live/<env>/app/app-etl/` in the infrastructure repository (Stage 8 decision 12), applied by the
-pipeline; Sandbox's retired with decision 21, the `dev` and `test` projects being where the CLI deploys it.
+pipeline; Sandbox's retired with decision 21, the `dev` project being where the CLI deploys it.
 
 ## The workflow
 
@@ -42,12 +42,12 @@ Five tasks, in order, every path under the project's shared prefix,
 | `process` | `SageMakerProcessingOperator`: a processing job on the application image, network-isolated, its volume under the project key, `src/` as its input `code`, the command `cd /opt/ml/processing/code && python -m app_etl` | `work/glue/` | `work/job/`: `trades.parquet` and `trades.summary.json`, which carries the governed read's record as `source` |
 | `summarize` | `PythonOperator` on the worker: `app_etl_tasks.summarize`, from `code/app-etl.zip` | `work/job/*.summary.json` | its XCom, the run's report as JSON, each table's `source` with it |
 | `write_result` | `S3CreateObjectOperator`: the XCom of `summarize`, pulled in its template | | `outbox/report.json` |
-| `publish` | `PythonOperator` on the worker: `app_etl_tasks.publish`, as the project role through the `datazone` endpoint, in the domain and project the deploy substitutes (`{domain.id}`, `{proj.id}`), where the stage variable `PUBLISH_LISTING` is `true` | the project's data source over `{env.PRODUCT_DATABASE}`, run and followed to `SUCCESS`; the inventory asset of `trades_notional` | the asset's latest revision as a listing, read `ACTIVE`; its XCom, the identifiers as JSON |
+| `publish` | `PythonOperator` on the worker: `app_etl_tasks.publish`, as the project role through the `datazone` endpoint, in the domain and project the deploy substitutes (`{domain.id}`, `{proj.id}`), where the stage variable `PUBLISH_LISTING` is `true`: Production alone, once the CLI deploys it; in `dev` the task returns at once (Stage 19 decision 20 (b)) | the project's data source over `{env.PRODUCT_DATABASE}`, run and followed to `SUCCESS`; the inventory asset of `trades_notional` | the asset's latest revision as a listing, read `ACTIVE`; its XCom, the identifiers as JSON |
 
 Every run overwrites the same keys: the Glue job keeps one file under `work/glue/` (Spark names the
 file it writes, so the script copies it to `trades.csv` and deletes the rest), the processing job names
 its outputs after that file, and the report replaces the previous one. The sample reaches `inbox/` by
-the manifest's `samples` item, so a `test` run needs no input of its own.
+the manifest's `samples` item, so a run in `dev` needs no input of its own.
 
 The Glue job also writes `tables/trades_notional/`, the application's table as Parquet, read back and
 counted against the rows it read, and `work/train/`, the training sets in XGBoost's CSV layout (the
@@ -82,7 +82,7 @@ and its model under the project's key, the model under `models/`; and `evaluate`
 `models/<job>/evaluation.json`, SageMaker's model-quality statistics with the validation RMSE and the
 batch's row count. The training job's name comes to `evaluate` through `train`'s XCom, since
 `{{ ts_nodash }}` is midnight in a manual run and two runs of one day would collide on it. The CLI
-creates the workflow in `dev` and `test` and runs it in neither.
+creates the workflow in `dev` and does not run it.
 
 `app-etl-warehouse` is one Glue task, `load`, whose job exists only in Production's application slice
 with the warehouse's names as its arguments. The manifest does not list it, so `deploy` never creates
@@ -93,14 +93,14 @@ The project's values are the CLI's variables (`{proj.id}`, `{proj.iam_role_arn}`
 variable, `{env.VAR}` in the workflow and `${VAR}` in the manifest, read from the shell:
 `JOB_IMAGE_URI`, the image by digest; `SUBNET_AZ1` and `SUBNET_AZ2`, the domain's subnets, which name
 the Glue connections and the job's network; `PROJECT_SG`, the project's own security group,
-`DEV_PROJECT_SG` or `TEST_PROJECT_SG` in the shell; `PROJECT_KEY_ARN`, the ARN of the project's own KMS
+`DEV_PROJECT_SG` in the shell; `PROJECT_KEY_ARN`, the ARN of the project's own KMS
 key (`kmsKeyArn` in its Tooling environment, whose id `awsds-workflows values` prints as
-`PROJECT_KEY_ID`), `DEV_PROJECT_KEY_ARN` or `TEST_PROJECT_KEY_ARN` in the shell, the processing job's
+`PROJECT_KEY_ID`), `DEV_PROJECT_KEY_ARN` in the shell, the processing job's
 `VolumeKmsKeyId`, which Sandbox's D13 boundary requires of every job
 (`DenySageMakerJobsWithoutVolumeEncryption`); `PRODUCT_DATABASE`, the product's database, and
-`PUBLISH_LISTING`, whether the run lists its product, both literals the same in every stage that
-lists it (`app_etl`, `true`); `ACCOUNT_ID`, the account the job's lineage names, read from STS by whoever
-deploys. The CLI fills them on a run it starts, as the run's
+`PUBLISH_LISTING`, whether the run lists its product, both literals: `app_etl`, the same name in every
+account's catalog, and `false` in `dev`, since Production alone lists the product; `ACCOUNT_ID`, the
+account the job's lineage names, read from STS by whoever deploys. The CLI fills them on a run it starts, as the run's
 `OverrideParameters`; a run started in the portal has no value for them, so such a run writes no
 product table and lists nothing.
 
@@ -170,47 +170,41 @@ repository's `docs/plan/runbooks/sagemaker-application.md` §D.
 |---|---|---|
 | any branch | `test` (`uv sync --locked`, ruff, pytest, the workflow lint), `secret_detection` and its gate, `pip-audit` | the test runner, no AWS identity |
 | `main` | the same, and `pages` | the test runner |
-| a tag `v<semver>` | `test`, `pip-audit`, `build-image` (smoke, then the push as `v<semver>-<short sha>`), `scan-gate`, informative: it may fail and the pipeline goes on; `build-task-code` (the workers' zips); `test-deploy` (the bundle, the `test` project's prefix emptied, the deploy and the run); `store-bundle` (the bundle to `awsds-prod-releases`); `release` (the tag's GitLab release); the promotion: `staging-gate` (manual), `staging-check` (Staging's `egress/` read, the user's to raise), `staging-deploy`, `staging-test` (both chains), `staging-model` (the batch transform of Staging's model), `production-plan`, `production-gate` (manual), `production-deploy`; then Production's manual jobs `production-warehouse-ddl`, `production-register` and `production-approve`, and `production-transform` after the approval | the test runner, the build runner, and the deploy runner for `test-deploy` and the promotion |
+| a tag `v<semver>` | `test`, `pip-audit`, `build-image` (smoke, then the push as `v<semver>-<short sha>`), `scan-gate`, informative: it may fail and the pipeline goes on; `build-task-code` (the workers' zips); `bundle` (the release's bundle, made from the tag's files with the `dev` project named; nothing is deployed in Sandbox); `store-bundle` (the bundle to `awsds-prod-releases`); `release` (the tag's GitLab release); the promotion: `staging-gate` (manual), `staging-check` (Staging's `egress/` read, the user's to raise), `staging-deploy`, `staging-test` (both chains), `staging-model` (the batch transform of Staging's model), `production-plan`, `production-gate` (manual), `production-deploy`; then Production's manual jobs `production-warehouse-ddl`, `production-register` and `production-approve`, and `production-transform` after the approval | the test runner, the build runner, and the deploy runner for `bundle` and the promotion |
 
 A release is a tag `v<major>.<minor>.<patch>` on `main`, which only a Maintainer can create: the tag is
 protected, and that protection is the release gate. ECR's tags are immutable, so a second pipeline for
 the same tag is refused at the push; the short sha keeps two builds of one release apart. A tag whose
-`test` run fails gets no release.
+bundle fails gets no release, and the release's first run is Staging's leg: every promotion crosses an
+account, and the pipeline deploys nothing in Sandbox (Stage 19 decision 19 (c)).
 
-`test-deploy` runs as `awsds-deploy-sandbox-test` (Stage 8 decision 19) and reads the GitLab project's
-CI/CD variables `DOMAIN_ID`, `DOMAIN_REGION`, `DEV_PROJECT_NAME`, `TEST_PROJECT_NAME`, `SUBNET_AZ1`,
-`SUBNET_AZ2`, `DEV_PROJECT_SG`, `TEST_PROJECT_SG`, `DEV_PROJECT_KEY_ARN`, `TEST_PROJECT_KEY_ARN` and
-`TEST_PROJECT_S3_URI`, the `test` project's `s3Uri` of `default.s3_shared`, and `TRAINING_IMAGE_URI`,
-the XGBoost image by digest, `terraform output -raw training_image_uri` on `staging/sagemaker/` in the
-infrastructure repository; `ACCOUNT_ID` is the job's own, read from STS. Its run needs Sandbox's
-egress up (`make up ENV=sandbox ONLY=egress`, as the infrastructure user), which the job reads before it
-deploys. The deploy creates both workflows and runs `app-etl`, and the job follows the run of the workflow
-the CLI's *"Workflow triggered: <name>"* line names, by the *"ARN:"* line carrying that name; the bundle's SHA256 and the image go down the pipeline as a dotenv report, and the release's
-notes name them. `bundle` resolves an `include` as a file or a directory and not as a glob (`code/*.zip`
-is "Pattern not found" with the zip present, while `deploy` expands it; read in 1.0.9's code and run
-offline on 2026-10-16), so the manifest names the zip by its name.
+`bundle` runs as `awsds-deploy-sandbox-test`, a role that reads the `dev` project and writes nothing,
+and reads the GitLab project's CI/CD variables `DOMAIN_ID`, `DOMAIN_REGION` and `DEV_PROJECT_NAME`. The
+CLI refuses a manifest with an unset `${VAR}`, so the job gives the stage variables only a deploy
+substitutes a placeholder. The role is a member of the `dev` project: `bundle` resolves the project its
+stage names, and for a project its caller cannot read it logs *"Failed to get project connections"*
+and still writes the bundle, so the job fails on that line. The bundle's SHA256 and the image go down
+the pipeline as a dotenv report, and the release's notes name them. `bundle` resolves an `include` as a
+file or a directory and not as a glob (`code/*.zip` is "Pattern not found" with the zip present, while
+`deploy` expands it; read in 1.0.9's code and run offline on 2026-10-16), so the manifest names the zip
+by its name. The job needs the hub and the deploy runner, and no Sandbox endpoint.
 
 The promotion (Stage 8 step 3) runs on the deploy runner, each job cloning `awsds/infrastructure` with the
 job token (Stage 8 decision 2), where the slices and the scripts it calls live. Staging's egress is
-raised; the bundle is read as the runner's own role and checked against the SHA256 `test-deploy` passed;
+read; the bundle is read as the runner's own role and checked against the SHA256 `bundle` passed;
 `scripts/release-application.py` writes its tree into the account's outputs bucket with the workflow
 rendered by `scripts/render-workflow.py` and passed by the lint's promoted mode; the application slice
 applies the plan it saved once `scripts/lint-plan.py` has passed its Glue job through `awsds-workflows
 lint-plan`, the script under the release's `glue/` folder, then the orchestration slice applies; the leg
 starts each chain's machine and follows it, `scripts/model-chain.py` serves Staging's own model by a
-batch transform and counts the predictions, and Staging is torn down whatever the outcome. Production
+batch transform and counts the predictions, and nothing is torn down: Staging's `make down` is the
+user's. Production
 gets a plan, linted the same way before the manual gate, and the same bundle and image. After
 `production-deploy`, three jobs wait for a person: the warehouse's DDL once the compute is up; the
 registration of the newest completed `app-etl-train` job as `PendingManualApproval`, once Production's
 train chain has run; and its approval, the deployment manager's pause, which the batch transform of the
 approved version follows. The jobs need the hub and the deploy runner, and a Production run
-`production/workloads-egress/` (`make up ENV=production ONLY=workloads-egress`). Written 2026-10-22, the
-plan lint 2026-10-24, the model chain and the warehouse 2026-10-24, not yet run.
-
-Read on 2026-10-16 and not yet run: the first tag's pipeline, which shows whether the `test` run reaches
-`outbox/report.json`, the XCom of `summarize` pulled in `write_result`'s template, the project role's
-pull of the image and its copy in the Glue script, and the release's notes on the lab's GitLab
-(Stage 8 verifications xix, xx, xxiii, xxiv and xxvi).
+`production/workloads-egress/` (`make up ENV=production ONLY=workloads-egress`).
 
 ## The job contract
 

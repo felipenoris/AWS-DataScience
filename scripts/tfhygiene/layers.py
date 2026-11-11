@@ -795,10 +795,11 @@ def pipeline_refusal(account: str, slice_name: str, profile: str) -> str | None:
 
     A pipeline profile is a deploy role's (backend.DEPLOY_ROLES and DEPLOY_ROLES_BY_SLICE; the deploy
     runner names each profile after its role). Refusal 8 (Stage 8 step 2.4): in an Interactive account
-    it applies no slice. CI never applies into Sandbox (D21's surviving objection), and the two flows
-    that write where people work create their objects through the API - the dev-env release its image
-    versions (step 1.6, decision 18), the test deploy its workflow (decision 19). Neither deploy role
-    holds state access, which refuses the same writes in IAM; this says so before anything runs.
+    it applies no slice. CI never applies into Sandbox (D21's surviving objection): the one flow that
+    writes where people work creates its objects through the API, the dev-env release its image
+    versions (step 1.6, decision 18), and the bundle role reads a project and writes nothing (Stage 19
+    decision 19 (c)). Neither deploy role holds state access, which refuses the same writes in IAM;
+    this says so before anything runs.
 
     Refusal 10 (Stage 8 decision 27, 2026-10-24): in a deployment target it acts on an application
     slice and the orchestration slice alone. Every shared slice, the egress slices first, is the user's

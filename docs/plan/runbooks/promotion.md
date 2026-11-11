@@ -1104,7 +1104,10 @@ on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its pla
 - **A `monitoring` endpoint** as the positive control: Stage 10 xvi's metrics clause.
 - **S3 data events** (Stage 11): Stage 8 xx's writing identity.
 - **A release that removes a file**: Stage 8 xxvi. **A workflow's 50th version**: Stage 8 xxiii, read
-  2026-10-26 at 12 for the `test` project's `app-etl` and 6 for its `_train` twin.
+  2026-10-26 at 12 for the `test` project's `app-etl` and 6 for its `_train` twin. No release deploys
+  to that project since Stage 19 decision 19 (c), so its count stands; the question passes to the `dev`
+  project's workflows, a version per deploy from a space, and from release F to each deployment
+  project's, a version per release.
 - **A blueprint reconciliation**: Stage 8 vii's third half, read in Sandbox's trail (`UpdateDomain`,
   `UpdateStack`) at any sitting; read again 2026-10-26 with nothing up, none since 2026-10-11.
 - **A date**: `EXC-13`'s Production half, after the secret's first rotation, due by 2026-11-22, read at the
@@ -1475,16 +1478,56 @@ export; a GitLab backup; and, each on the user's word, Stage 8 xv, Stage 10 xx's
 xxvii's plan half. While everything is up, at [`cost-model.md`](../cost-model.md)'s rates: the hub about
 0.026 USD/h, GitLab and SharedServices' twelve endpoints 0.187, the build runner 0.2117, the test and deploy
 runners 0.0376 and their volumes 0.0136, Sandbox's nineteen endpoints with the `mwaa` group 0.19, Staging's
-seven 0.07, Production's `workloads-egress/` seven 0.07 and the space 0.050, about 0.86 USD/h, plus the runs
-(cents) and AWS Config's cycle charges.
+eight 0.08, Production's `workloads-egress/` eight 0.08 (each gained `datazone` at Stage 19 step 4.4) and
+the space 0.050, about 0.88 USD/h, plus the runs (cents) and AWS Config's cycle charges.
+
+**This release is release T** ([Stage 19](../stages/stage-19-smus-native-data-product.md) decision 19 (c),
+§The estate against decisions 17 to 20): the manifest holds the stage `dev` alone and the job `bundle`
+stands where `test-deploy` stood, so the pipeline deploys nothing and runs nothing in Sandbox, and the
+release's first run is Staging's leg. The legs are today's. Sandbox's `egress/` is raised for step 13's
+space alone: a sitting without step 13 leaves Sandbox down.
+
+0. **Release T's preparation, with nothing up**, each once:
+   - **[user] The project for app-etl alone**, created from `experimentation` in the portal as the data
+     scientist (Stage 19 1.5; its database waits on that step's order). **[Claude]** reads its id, its
+     role's name and its `Tooling` environment.
+   - **[user] The bundle role's membership**: `awsds-deploy-sandbox-test`'s group added to that project as
+     a contributor, as an owner of the project (the infrastructure user once seated, or the data
+     scientist in the portal), and removed from `test-experimentation`, where it is a
+     `PROJECT_CONTRIBUTOR` since Stage 8 2.5 (read 2026-11-11). The group is the role's
+     `IAM_ROLE_SESSION_GROUP` profile, `06d426f2-84d6-38ae-a991-6806981d9520`: such a profile has no
+     name, so `search-group-profiles` lists it by id alone and `get-group-profile` names its role:
+
+     ```bash
+     aws datazone get-group-profile --domain-identifier dzd-d8yrvx1ko7im6o --group-identifier 06d426f2-84d6-38ae-a991-6806981d9520 --profile awsds-infra-data --region us-west-2 --query rolePrincipalArn --output text
+     ```
+
+     ```bash
+     aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier <the project's id> --designation PROJECT_CONTRIBUTOR --member groupIdentifier=06d426f2-84d6-38ae-a991-6806981d9520 --profile awsds-infra-sandbox-1 --region us-west-2
+     ```
+
+     ```bash
+     aws datazone delete-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier 4gqfau9xuo6e4w --member groupIdentifier=06d426f2-84d6-38ae-a991-6806981d9520 --profile awsds-infra-sandbox-1 --region us-west-2
+     ```
+
+   - **[Claude]** `sandbox/workflows/variables.tf`'s `project_roles` gains the project's role, then the
+     plan, expected the role narrowed (0 to add, 3 to change, 2 to destroy on 2026-11-11) and one
+     attachment added; **[user]** applies as the infrastructure user, account **Sandbox Account 1**,
+     permission set `InfrastructureAccess` (`awsds-infra-sandbox-1`). After it GitLab's `main`, which
+     still runs `test-deploy`, cannot deploy: no tag is pushed before step 4's merge.
+   - **[user] GitLab's CI/CD variables** on `awsds/app-etl`, in step 4's sitting: `DEV_PROJECT_NAME` the
+     project's name; `TEST_PROJECT_NAME`, `TEST_PROJECT_SG`, `TEST_PROJECT_KEY_ARN` and
+     `TEST_PROJECT_S3_URI` removed. `SUBNET_AZ1`, `SUBNET_AZ2`, `DEV_PROJECT_SG`, `DEV_PROJECT_KEY_ARN` and
+     `TRAINING_IMAGE_URI` are read by no job since this release and may stay or go.
 
 1. **[Claude] The day of the tag, before the raises** (Lesson 77): the template's gates on the laptop,
    `pip-audit` over its runtime set as the gate runs it (`pyarrow` 25.0.1 and no finding on 2026-10-27), its
    tests, ruff and the lint at `d856982c` (45 passed and *"ok: 9 arquivo(s)"* on 2026-10-27),
    `./scripts/check-gitlab-ci.py`; and the Amazon Linux parameter (N.1 step 3), `ami-0829b74b2a8c619b7` on
    2026-10-27.
-2. **[user] The raises**, after this change's merge: `make hub-up`, `make gitlab-up BUILD=1`, the tunnel, and
-   Sandbox's endpoints with the MWAA Serverless group, which `test-deploy` and step 13's space both read:
+2. **[user] The raises**, after this change's merge: `make hub-up`, `make gitlab-up BUILD=1`, the tunnel, and,
+   for step 13's space alone, Sandbox's endpoints with the MWAA Serverless group, which no job of the
+   pipeline reads since release T:
 
    ```bash
    make up ENV=sandbox ONLY=egress GROUPS=mwaa
@@ -1504,8 +1547,10 @@ seven 0.07, Production's `workloads-egress/` seven 0.07 and the space 0.050, abo
    `scripts/dev-cli.sh` and its test (Stage 8 decision 22), the Glue job's snapshot record (3.3, option A:
    `glue/transform.py`, `src/app_etl/pipeline.py`, `code/app_etl_tasks.py` and their tests), the README,
    the gates' `include:` at `gates-v0.6.0` (`d0b895c8`), whose gates file is `gates-v0.4.0`'s and whose
-   baseline adds decision 1's zlib pair to the scan that informs, and the two proxy checks of
-   `.gitlab-ci.yml` fixed for Stage 8 xv (step 12b). **[Claude]** beforehand, GitLab's `main`
+   baseline adds decision 1's zlib pair to the scan that informs, the two proxy checks of
+   `.gitlab-ci.yml` fixed for Stage 8 xv (step 12b), Stage 19 1.1's product table and publishing task
+   (pass 1's mirror), and release T: the manifest with the stage `dev` alone and `PUBLISH_LISTING`
+   false, and `.gitlab-ci.yml`'s job `bundle` in place of `test-deploy`. **[Claude]** beforehand, GitLab's `main`
    against the archive: the difference is `examples/app-etl/` from `2d3160f1`, the tree `8d50f685` merged,
    to `main`. The branch pipeline's `test`, `secret_detection` and `pip-audit` green before the merge.
 5. **[user] `awsds/dev-env`'s merge request** from the copy under `gitlab/awsds/dev-env/` ([`gitlab.md`](gitlab.md)
@@ -1519,10 +1564,11 @@ seven 0.07, Production's `workloads-egress/` seven 0.07 and the space 0.050, abo
    `DenyDeployRoleAssumptionOutsideTheRegion`'s: the statement's one measurement, which the battery could not
    take (N.8.1 step 2); its wording says whether STS names the policy.
 6. **[user] The tag** `v0.4.7` on the template's merge, once `git ls-remote --tags` on `awsds/app-etl` reads it
-   free; Sandbox's `egress/` is up, so `test-deploy` runs on its first try. **[pipeline]** `test`,
-   `pip-audit`, `build-image`, `scan-gate`, `build-task-code`, `test-deploy`, `store-bundle`, `release`.
-   **[Claude]** after `test-deploy`, the `test` project's workflows, their versions and `Code` objects (N.1
-   step 7's commands; Stage 8 xxiii's count, 12 and 6 before the tag).
+   free. **[pipeline]** `test`, `pip-audit`, `build-image`, `scan-gate`, `build-task-code`, `bundle`,
+   `store-bundle`, `release`. **[Claude]** after `bundle`, its log: the caller `awsds-deploy-sandbox-test`,
+   the 11 files, no *"Failed to get project connections"* and no *"Pattern not found"*; and in Sandbox's
+   trail no write by that role over the job's minutes. The `test` project's workflows are no longer
+   touched: Stage 8 xxiii's count stands at 12 and 6.
 7. **[user] `make up ENV=staging ONLY=egress`**, then `staging-gate`. **[pipeline]** `staging-check`,
    `staging-deploy`, `staging-test`, `staging-model`.
 8. **[Claude] Staging's readings**, with the slices up: `./aws/orchestration.py` (`OR-1` to `OR-9`); Stage 8
@@ -1616,12 +1662,9 @@ seven 0.07, Production's `workloads-egress/` seven 0.07 and the space 0.050, abo
        git -C "$HOME/tmp/app-etl" tag v0.4.8 && git -C "$HOME/tmp/app-etl" push origin v0.4.8
        ```
 
-    2. **[pipeline]** `test` to `release`, as in step 6. `test-deploy` is expected green: in the `test`
-       project the operator reads `app-etl-undeclared-<the test project's id>` under
-       `GetAGlueJobNoProjectHolds` (`sandbox/workflows/`), finds it absent and creates it with the project's
-       tag, the way `app-etl-<id>` was created on 2026-10-16. That job is the exercise's residue in
-       Sandbox, and the `test` project's `app-etl` workflow keeps the branch's definition until the next
-       tag's `test-deploy`.
+    2. **[pipeline]** `test` to `release`, as in step 6. `bundle` is expected green: since release T
+       nothing of the tag is deployed in Sandbox, so the exercise leaves no residue there, and the
+       undeclared name first meets a run in Staging.
     3. **[user]** `staging-gate`. **[pipeline]** `staging-check`; `staging-deploy`, the promoted lint `ok`
        on each copy and `lint-plan` *"ok: 1 job(s) do Glue: aws_glue_job.this[0]"*, both applies;
        `staging-test` expected to fail with *"FATAL: the chain app-etl ended FAILED"*; `staging-model` and
@@ -1742,9 +1785,9 @@ seven 0.07, Production's `workloads-egress/` seven 0.07 and the space 0.050, abo
        answers (<code>)"*, the clone's commit and the job green. **[Claude]** both runs' times and lines,
        from the job logs.
 13. **The Sandbox half** (N.7.3), Sandbox's `egress/` up since step 2:
-    - **[user]** the persona's GitLab token (N.3 step 2); the space, `eighth-experimentation`'s JupyterLab
-      space set to `awsds-sandbox-dev-env` version 11 (alias `0.10.0`) on `ml.t3.medium` in its settings
-      before *Start*, then a terminal;
+    - **[user]** the persona's GitLab token (N.3 step 2); the space, a JupyterLab space of the `dev`
+      project, the one for app-etl alone since Stage 19 decision 18 (d), set to `awsds-sandbox-dev-env`
+      version 11 (alias `0.10.0`) on `ml.t3.medium` in its settings before *Start*, then a terminal;
     - **[user]** the activation hook's reading, which no build can take, and the endpoint's name:
 
       ```bash
@@ -1769,10 +1812,19 @@ seven 0.07, Production's `workloads-egress/` seven 0.07 and the space 0.050, abo
 15. **[user] A GitLab backup** by hand in a Session Manager shell ([`gitlab.md`](gitlab.md) §B), or the timer's
     at 03:00 UTC with the host up; **[Claude]** read in the bucket.
 16. **The downs**: **[user]** the token revoked and `git credential-cache exit` in the terminal, every portal
-    tab closed, then `make down ENV=sandbox`, `make down ENV=staging`, `make down ENV=production
-    ONLY=workloads-egress`, `make gitlab-down`, the tunnel down, `make hub-down`; **[Claude]** §R on the three
-    profiles, `./aws/cicd.py`, `./aws/orchestration.py`, `make status`, and each step's entry in its stage's
-    log.
+    tab closed, then `make down ENV=sandbox` if step 13 raised it, `make down ENV=staging`, `make down
+    ENV=production ONLY=workloads-egress`, `make gitlab-down`, the tunnel down, `make hub-down`; **[Claude]**
+    §R on the three profiles, `./aws/cicd.py`, `./aws/orchestration.py`, `make status`, and each step's
+    entry in its stage's log.
+17. **[Claude⚡] The application removed from `test-experimentation`**, on the user's word, once the
+    pipeline has reached Production: the two workflows the `test` deploys created, the Glue job
+    `app-etl-4gqfau9xuo6e4w` and the objects under the project's `shared/app-etl/`, each read before its
+    delete; their log groups stay under `EXC-10`'s rule. With nothing up, as the infrastructure user in
+    **Sandbox Account 1**:
+
+    ```bash
+    aws mwaa-serverless list-workflows --profile awsds-infra-sandbox-1 --region us-west-2 --query "Workflows[?contains(Name,'test_experimentation')].[Name,WorkflowArn]" --output text
+    ```
 
 #### N.8.3 The warehouse and backup sitting, between 2026-11-22 and 2026-11-25
 

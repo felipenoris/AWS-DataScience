@@ -31,7 +31,8 @@
 #   - the deploy runner's Name tag and role name contain awsds-prod-runner-deploy (step 4.3)
 #   - the test runner's Name tag and role name are awsds-prod-runner-test (decision 11)
 #   - the deploy roles are awsds-deploy-staging, awsds-deploy-prod (step 4.1, INT-08),
-#     awsds-deploy-devenv-sandbox (step 4.2, INT-18) and awsds-deploy-sandbox-test (decision 19)
+#     awsds-deploy-devenv-sandbox (step 4.2, INT-18) and awsds-deploy-sandbox-test (decision 19;
+#     the bundle role since Stage 19 decision 19 (c))
 #   - the misuse-alarm rules carry "deploy-misuse" in their name, the state
 #     ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS, and a pattern exempting the runner role's unique
 #     id through userIdentity.principalId (step 4.6, deploy-role-v0.2.0)
@@ -65,7 +66,8 @@ ROLES_BY_PROFILE = {
     "awsds-infra-sandbox-1": ["awsds-deploy-devenv-sandbox", "awsds-deploy-sandbox-test"],
 }
 # Interactive compute exists in Sandbox only, so the map holds one dev-env registration home, and
-# Sandbox holds the one `test` project of D41, so its second role is the test deploy's (decision 19).
+# Sandbox holds the `dev` project of D41, so its second role is the one a release's bundle is made as
+# (decision 19; Stage 19 decision 19 (c)).
 # Staging is a deploy target and stays headless (D28); it appears one row up as
 # `awsds-deploy-staging`, a different role for a different job.
 # The accounts the application repository's grant admits (step 2.4, INT-07).

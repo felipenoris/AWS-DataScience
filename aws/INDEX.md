@@ -930,7 +930,14 @@ blueprint reconciliation (INT-15's behavioural half is a diff of two runs), and 
 cannot exercise the SCP carve-out (step 0's probe is a write, and it is the user's). Its first run measured
 two things: Data Governance holds nothing SageMaker-shaped (`US-2` pass, step 0.4's premise), and
 `datazone:ListDomains` from Production is denied naming the Workloads document — D28's headless ceiling
-holding, which the script reads as a pass, not a failed call.
+holding, which the script read as a pass, not a failed call.
+
+Since 2026-11-11 the deployment targets are read as [Stage 19](../docs/plan/stages/stage-19-smus-native-data-product.md)
+decision 6 (b) builds them: associated to the domain, each with a deployment project and no SageMaker AI
+domain. The same refusal from Production or Staging is a `US-2` note, that stage's step 4.1 not applied;
+after it an empty answer there is a `US-2` failure, a blueprint configuration beyond `Tooling` and
+`DataLake` a `US-3` one, the profiles `deployment-staging` and `deployment-production` are admitted by
+`US-4`, and `US-6` passes on no SageMaker AI domain in either account.
 
 ## The scripts written for Stage 2
 

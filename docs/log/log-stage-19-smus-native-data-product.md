@@ -1109,3 +1109,58 @@ pass 1 answered that it leaves the stage and holds nothing open.
   characters of 6,144.
 - **[Claude] `staging/egress/` and `production/workloads-egress/`** name `datazone` in their
   `extra_services`, 8 endpoints each at the next `make up`.
+
+## 2026-11-11 — release T written: the `test` stage retired in the template, the bundle role narrowed
+
+The same sitting, nothing up, no AWS write but the reads below.
+
+- **[Claude] The pipeline's change cut in two releases**, the stage file's §The estate against
+  decisions 17 to 20: T, decision 19 (c) on today's Terraform legs, and F, the CLI's legs (4.9 to
+  4.11). T needs nothing of pass 4.
+- **[Claude] The template, `examples/app-etl/`**: the manifest holds the stage `dev` alone, with
+  `PUBLISH_LISTING` false (decision 20 (b)); `.gitlab-ci.yml`'s job `bundle` stands where `test-deploy`
+  stood, in a stage `bundle`, and the six `needs` that named `test-deploy` name it; the README. The
+  job needs `DOMAIN_ID`, `DOMAIN_REGION` and `DEV_PROJECT_NAME` and gives the other stage variables a
+  placeholder. Read after it: 72 tests passed and 1 skipped, ruff clean, the pinned lint `d856982c`
+  *"ok: 9 arquivo(s)"*, `render-workflow.py --check` and `check-gitlab-ci.py` `OK`.
+- **[Claude] The CLI 1.0.9's `bundle` on the one-stage manifest**, on the laptop in a scratch copy with
+  the two zips built, as `awsds-infra-sandbox-1` (a contributor of `eighth-experimentation`) at 05:01:52
+  UTC, `DEV_PROJECT_NAME` that project: exit 0, *"Bundle created: ./artifacts/app-etl.zip (24076 bytes)"*,
+  11 files, the tree a `test-deploy` bundle carried. Its only refusal is the `GetGroupProfile` warning
+  every caller reads.
+- **[Claude] The same command on a project the caller is no member of**, `governed-lake`, at 05:02:30
+  UTC: exit 0 and the archive written again, after *"ERROR - Failed to get project connections for
+  governed-lake: AWS Permission Error: ... ListConnections operation: User is not permitted to perform
+  operation: ListConnections"*. The job's guard was first written from the code, on the string *"Error
+  getting DataZone project info"*, which this run does not print; it greps the line the run printed,
+  absent from the member's log (`SUP-352`).
+- **[Claude] `sandbox/workflows/deploy-role.tf`**: the role keeps its name and its project reads, gains
+  the export's `Search`, `SearchTypes`, `GetAsset` and `GetDataProduct`, loses the workflow, log-group,
+  S3 and key statements and the `PassRole`, and its ceiling denies every role change and every
+  `PassRole`; `test_project_role` and the key alias read leave the slice. Planned as
+  `awsds-infra-sandbox-1` at 05:00:41 UTC: *"0 to add, 3 to change, 2 to destroy"*, the boundary, the
+  role's description and `project-reads` changed, the inline policies `storage` and `workflows`
+  destroyed; saved as `$HOME/tmp/stage19-sandbox-workflows-bundle-role.tfplan`. Not applied: it goes with
+  the template's merge request, since GitLab's `main` still runs `test-deploy`.
+- **[Claude] `./aws/studio.py`** with the deployment targets' rules, on the five infrastructure
+  profiles at 05:05 UTC: all checks passed. `US-2` notes the SCP's refusal in Staging and in Production
+  as 4.1 pending, `US-6` passes on no SageMaker AI domain in either, `US-3` reads Sandbox's 14
+  configurations and `US-4` the three profiles the domain holds.
+- **[Claude] The documents**: the stage file's map of what each decision changes, with the order of the
+  applies; Stage 8's 2.5, 3.3, decision 19 and its standing rows; D41's item 3 note; the application
+  runbook's §O, §L, §M, §P, §T and §S; `promotion.md` §N.8.2 as release T's sitting; `AWS_STATE.md`'s
+  row on the association; `NETWORK.md`, `PRICING.md` and `cost-model.md` for the `datazone` endpoint
+  and the `studio` slices; `SUP-349` to `SUP-352`; the waiting list's two rows. The phrase-level
+  amendments in Stage 10, the decisions and the smaller documents were made by a subagent of this
+  session from the same facts.
+- **[Claude] The `bundle` job's script run as written**, on the laptop with the same identity: with the
+  project the caller belongs to it exits 0 and prints the bundle's SHA256; with `governed-lake` it
+  stops at *"FATAL: the role could not read the project governed-lake: is it a member of it?"*, exit 1.
+- **[Claude] The role-session groups read** in the domain, for the memberships release T and 4.8 move
+  (`search-group-profiles --group-type IAM_ROLE_SESSION_GROUP`, then `get-group-profile` on each: such a
+  profile carries no name, its `rolePrincipalArn` names the role). Five exist: Sandbox's, Data
+  Governance's and Staging's `InfrastructureAccess`, `awsds-deploy-sandbox-test`
+  (`06d426f2-84d6-38ae-a991-6806981d9520`) and `awsds-deploy-staging` (`9bead345-…`, Stage 18's, which
+  outlived that stage's unwinding). Production's `InfrastructureAccess` and `awsds-deploy-prod` have
+  none: neither has called the domain. `test-experimentation`'s members: its owner, one contributor
+  user, Sandbox's `InfrastructureAccess` group and the bundle role's group, a `PROJECT_CONTRIBUTOR`.

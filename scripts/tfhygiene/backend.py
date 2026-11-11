@@ -533,7 +533,9 @@ DEPLOY_ROLES = {
 }
 
 # Stage 8 decision 19 - a deploy role outside its account's foundation/, keyed by the (account,
-# slice) that builds it: the role that deploys an application's release to D41's `test` project. The
+# slice) that builds it: the role the pipeline's `bundle` job makes a release's bundle as, reading
+# the `dev` project (Stage 19 decision 19 (c); until then it deployed the release to D41's `test`
+# project, which its name records). The
 # slice gets its name and the home's profile, as a foundation/ does, and the home lists it in that
 # account's `other_roles`, so the runner's AssumeRole list and its profiles carry it. The account
 # holds a DEPLOY_ROLES row and is not the home: the home lists only the targets.
