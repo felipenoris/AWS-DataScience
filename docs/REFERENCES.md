@@ -820,7 +820,9 @@
   <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/catalog-import-export-guide.md>;
   the stages, each its own project, and the application resources the page names:
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd.html>; 1.0.9 still the
-  latest on PyPI: <https://pypi.org/project/aws-smus-cicd-cli/>.
+  latest on PyPI: <https://pypi.org/project/aws-smus-cicd-cli/>. Read again 2026-11-11 for Stage 19
+  decision 18: the guide, the manifest's page and the user guide's page, on where the business catalog
+  is authored, what the export takes, how the import matches and publishes, and stages sharing a domain.
 - The lakehouse in SageMaker Unified Studio (read 2026-10-28, for Stage 19 question 3): catalogs mounted
   as databases in Redshift, RMS and federated catalogs, the project profiles the lakehouse needs, *Query
   with Amazon Redshift*, *Publish to catalog*:

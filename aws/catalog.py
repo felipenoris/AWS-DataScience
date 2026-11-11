@@ -10,11 +10,11 @@
 #   writes:   aws/output/catalog.txt   (untracked - see .gitignore)
 #   reads:    in Data Governance - datazone:ListDomains, GetDomain, ListProjects,
 #             ListProjectMemberships, GetUserProfile, GetGroupProfile, SearchListings, GetListing,
-#             ListDataSources, GetDataSource, ListSubscriptions, ListSubscriptionRequests,
-#             ListSubscriptionGrants, ListPolicyGrants, ListLineageEvents,
+#             ListDataSources, GetDataSource, ListDataSourceRuns, ListSubscriptions,
+#             ListSubscriptionRequests, ListSubscriptionGrants, ListPolicyGrants, ListLineageEvents,
 #             lakeformation:ListPermissions, GetResourceLFTags, ListLFTags, glue:GetDatabases; in
-#             Sandbox - lakeformation:ListPermissions, ListLFTags, glue:GetDatabases; and
-#             sts:GetCallerIdentity. Every one is a read.
+#             Sandbox - lakeformation:ListPermissions, ListLFTags, glue:GetDatabases; in both,
+#             cloudtrail:LookupEvents; and sts:GetCallerIdentity. Every one is a read.
 #   exits:    0 every check passed | 1 a call failed | 2 a check FAILED
 #
 # THE TWO ROADS AN ACCESS ACT CAN TAKE, which is what this script exists to keep apart. On the
@@ -80,6 +80,10 @@
 #         fulfils by name and reads no LF-Tag, so a restricted column on a published table would
 #         reach every subscriber whole; restricted and personal tables travel on TBAC grants
 #         alone.
+#   CT-13 every start of a data source is its own project's. DataZone admits a project role's
+#         StartDataSourceRun on another project's source, and IAM reaches the action at the
+#         domain alone (SUP-346); Stage 19 decision 17 (2026-11-10) keeps the grant the
+#         publishing task needs and judges each start CloudTrail holds, in both accounts.
 #
 # CT-7 and CT-8 read every page of ListPermissions in both accounts: the CLI has no paginator for
 # that operation, so one call answers the first page and a NextToken. A listing not read to its
@@ -180,6 +184,16 @@ FAILING_BY_EXCEPTION = {
     "Tooling-default-sagemaker-modelpackagegroup-datasource": (
         "EXC-11: the Tooling blueprint's own source, one per project, tracking an asset type this "
         "estate has never produced; it bills nothing and creates nothing"
+    ),
+}
+
+# Starts of another project's source made on purpose, by the event's request id. CT-13 reports these
+# as a note and fails on any other cross-project start (Lesson 50). CloudTrail's event history keeps
+# 90 days: remove an entry once lookup-events no longer returns its event.
+MEASURED_CROSS_PROJECT_STARTS = {
+    "01d1d646-13a9-434c-848c-13df03911521": (
+        "Stage 19 verification ii's negative, eighth-experimentation's role starting "
+        "test-experimentation's source on 2026-11-10 (SUP-346)"
     ),
 }
 
@@ -422,6 +436,38 @@ def touches_lake(kind: str, name: str) -> bool:
     )
 
 
+def judge_start(body: dict, source_project: dict) -> tuple:
+    """One StartDataSourceRun event for CT-13, as (verdict, caller, source id, source's project id).
+
+    `source_project` maps a data source id to its project id. The verdict is `own`, `cross`,
+    `measured` (a cross-project start MEASURED_CROSS_PROJECT_STARTS names), `unknown source` (no
+    source of that id is listed), `other` (a caller that is no project role: an administrator, a
+    portal session, the service) or `unresolved` (a call from another account, which the domain's
+    account records with that account and the role's id alone). A principal id's session part is
+    dropped: an Identity Center session is named by the person's e-mail address."""
+    identity = body.get("userIdentity") or {}
+    source = (body.get("requestParameters") or {}).get("dataSourceIdentifier", "-")
+    owner = source_project.get(source, "")
+    if identity.get("type") == "AWSAccount":
+        role_id = (identity.get("principalId") or "-").split(":", 1)[0]
+        return ("unresolved", f"role id {role_id}", source, owner)
+    issuer = ((identity.get("sessionContext") or {}).get("sessionIssuer") or {}).get("userName", "")
+    if not issuer.startswith(PROJECT_ROLE_MARKER):
+        if identity.get("onBehalfOf"):
+            who = "an Identity Center session"
+        else:
+            who = issuer or identity.get("invokedBy") or identity.get("type", "-")
+        return ("other", who, source, owner)
+    caller = issuer[len(PROJECT_ROLE_MARKER) :].split("_", 1)[0]
+    if not owner:
+        return ("unknown source", caller, source, owner)
+    if caller == owner:
+        return ("own", caller, source, owner)
+    if body.get("requestID") in MEASURED_CROSS_PROJECT_STARTS:
+        return ("measured", caller, source, owner)
+    return ("cross", caller, source, owner)
+
+
 def main(argv: list) -> int:
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
@@ -600,6 +646,7 @@ def main(argv: list) -> int:
     # ---------------------------------------------------------------- the data sources
     sources: list = []
     source_dbs: dict = {}  # data source id -> the databases its Glue filter names (CT-5)
+    source_project: dict = {}  # data source id -> its project id (CT-13)
     for pid, pname in projects.items():
         res = dat.run(
             "datazone",
@@ -625,6 +672,7 @@ def main(argv: list) -> int:
                 "json",
             )
             body = json_or_none(res.stdout) or {}
+            source_project[dsid] = pid
             glue_run = (body.get("configuration") or {}).get("glueRunConfiguration") or {}
             source_dbs[dsid] = [
                 f.get("databaseName", "-")
@@ -773,6 +821,84 @@ def main(argv: list) -> int:
                 for p, n, s, d in scheduled
             )
             + " - a blueprint-created source arrives with a cron nobody wrote (Lesson 17)",
+        )
+
+    # ---------------------------------------------------------------- CT-13 the starts
+    # The caller's account records the role's name; the domain's account records a call from another
+    # account with that account and the role's id alone. Sandbox's copy is read first, and the
+    # registry's copy of the same request is skipped. A refused start started nothing.
+    starts: list = []  # (time, verdict, caller, source id, source's project id, request id)
+    seen_requests: set = set()
+    trails_read = 0
+    for cli, profile in ((sbx, SANDBOX_PROFILE), (dat, DATA_PROFILE)):
+        if not live[profile].live:
+            continue
+        res = cli.run(
+            "cloudtrail",
+            "lookup-events",
+            "--lookup-attributes",
+            "AttributeKey=EventName,AttributeValue=StartDataSourceRun",
+            "--output",
+            "json",
+        )
+        if not res.ok:
+            continue
+        trails_read += 1
+        for event in (json_or_none(res.stdout) or {}).get("Events", []):
+            body = json_or_none(event.get("CloudTrailEvent", "")) or {}
+            request = body.get("requestID", "")
+            if body.get("errorCode") or (request and request in seen_requests):
+                continue
+            seen_requests.add(request)
+            starts.append(
+                (body.get("eventTime", "-"),) + judge_start(body, source_project) + (request,)
+            )
+    starts.sort()
+    by_verdict: dict = {}
+    for row in starts:
+        by_verdict.setdefault(row[1], []).append(row)
+
+    def started(row: tuple) -> str:
+        time, _, caller, source, owner, _ = row
+        return f"{time} {projects.get(caller, caller)} started {source} of {projects.get(owner, owner or '-')}"
+
+    ct13 = "every start of a data source is its own project's"
+    if by_verdict.get("cross"):
+        checks.fail(
+            "CT-13",
+            ct13,
+            "; ".join(started(r) for r in by_verdict["cross"])
+            + " - a project role starting another project's source (SUP-346, TM-29)",
+        )
+    elif trails_read < 2:
+        checks.note("CT-13", ct13, f"{2 - trails_read} of the two trails not read")
+    elif any(by_verdict.get(v) for v in ("measured", "unresolved", "unknown source")):
+        checks.note(
+            "CT-13",
+            ct13,
+            "; ".join(
+                [
+                    f"{started(r)}: {MEASURED_CROSS_PROJECT_STARTS[r[5]]}"
+                    for r in by_verdict.get("measured", [])
+                ]
+                + [
+                    f"{r[0]} {r[2]} from another account started {r[3]}, unresolved"
+                    for r in by_verdict.get("unresolved", [])
+                ]
+                + [
+                    f"{r[0]} {projects.get(r[2], r[2])} started {r[3]}, no such source listed"
+                    for r in by_verdict.get("unknown source", [])
+                ]
+            )
+            + f"; {len(by_verdict.get('own', []))} start(s) by the source's own project role",
+        )
+    else:
+        others = sorted({r[2] for r in by_verdict.get("other", [])})
+        checks.ok(
+            "CT-13",
+            ct13,
+            f"{len(by_verdict.get('own', []))} start(s) in CloudTrail's 90 days, each by the source's own project role"
+            + (f"; callers that are no project role: {', '.join(others)}" if others else ""),
         )
 
     # ---------------------------------------------------------------- the grants, both accounts
@@ -1303,6 +1429,20 @@ def main(argv: list) -> int:
                     for p, n, t, poi, ai, s, st, a, d in sources
                 ]
             )
+        rep.line()
+        if not starts:
+            rep.text("No StartDataSourceRun in either trail's 90 days (CT-13).")
+        else:
+            rep.text(
+                "The starts CloudTrail holds, each judged against the source's project (CT-13):"
+            )
+            rep.tabulate(
+                ["STARTED (UTC)\tCALLER\tSOURCE\tSOURCE'S PROJECT\tVERDICT"]
+                + [
+                    f"{t}\t{projects.get(c, c)}\t{d}\t{projects.get(o, o or '-')}\t{v}"
+                    for t, v, c, d, o, _ in starts
+                ]
+            )
 
         rep.h1("4. The domain's authorization policies")
         rep.tabulate(["POLICY TYPE\tPRINCIPALS"] + [f"{pt}\t{v}" for pt, v in policy_grants])
@@ -1431,6 +1571,13 @@ def main(argv: list) -> int:
             'Configuration not configured for requested catalog". CT-7, CT-8 and CT-10 judge the\n'
             "role and IAMPrincipals grants of section 5 alone; a subscription to a user or a group,\n"
             "which would be fulfilled for an Identity Center principal, fails CT-11 instead."
+        )
+        rep.line()
+        rep.text(
+            "CT-13 reads CloudTrail's last 90 days. The domain's account records a start from another\n"
+            "account with that account and the role's id alone: Sandbox's own copy names the role,\n"
+            "and a start from any other account reads unresolved until that account's trail is read\n"
+            "(Stage 19 pass 4)."
         )
 
         rep.h1("10. Calls that failed")

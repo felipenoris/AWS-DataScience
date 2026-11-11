@@ -836,3 +836,66 @@ Account ids are replaced by the account's name in angle brackets.*
   6.3's note on `TM-29`; `runbooks/sagemaker-application.md` §D on a tar built on a Mac (`SUP-348`).
   `waiting-on-the-user.md` gains decision 18 and pass 2's portal acts. No AWS write; the work joins
   [PR #284](https://github.com/felipenoris/AWS-DataScience/pull/284).
+
+## 2026-11-11 — decision 17 taken and `CT-13` written; SMUS's own path read for decision 18
+
+- **[user]**, verbatim: *"Ok em relação à recomendação na Decisão 17. Já na Decisão 18, qual é o caminho
+  natural de uso do SMUS ?"*
+- **[Claude] Decision 17 recorded as (a) with (d)**: the stage file, `TM-29` accepted, and the waiting
+  list, which drops decision 17's row and gains (d)'s report as an act of the user's.
+- **[Claude] `CT-13` written in `aws/catalog.py`**: `lookup-events` for `StartDataSourceRun` in
+  Sandbox's and Data Governance's trails. Sandbox's copy is read first: the domain's copy of a
+  cross-account call carries the caller's account and the role's id alone (`userIdentity.type`
+  `AWSAccount`, read on verification ii's event). The registry's copy of the same request and every
+  refused call are skipped. A project role's start is judged against the source's project from
+  `ListDataSources`, and verification ii's request id (`01d1d646-…`) is a note through
+  `MEASURED_CROSS_PROJECT_STARTS`. The classifier was exercised on eight fabricated events (own,
+  cross, measured, an administrator, the service, unresolved, an Identity Center session, an unknown
+  source), each answered as expected and no e-mail address reaching a caller label. Run from 02:04 UTC
+  as `awsds-infra-sandbox-1` and `awsds-infra-data`: all checks passed, `CT-13` a note. It read six
+  starts in CloudTrail's 90 days:
+  - four by `eighth-experimentation`'s role on its own source `budryu9mt9y5u8`, pass 1's;
+  - verification ii's start of `3zp6fog9jep1qo`, the measured note;
+  - one on 2026-10-22 at 00:34:06 UTC by an Identity Center session in Data Governance, on
+    `aqm5tebc42cufk`, a source no longer listed. Its event carries no session issuer and an
+    `onBehalfOf` user, and its principal id carries the person's e-mail address, which the check drops.
+- **[Claude] SMUS's own path read for decision 18**: AWS's catalog import and export guide, the
+  manifest's page and the user guide's CI/CD page, through a fetching agent, and the CLI 1.0.9's
+  `helpers/catalog_import.py` and `commands/deploy.py`:
+  - the guide exports from the source project, its example the `dev` environment, every resource that
+    project owns with no filter, shared-in resources and managed types excluded; no page asks for a
+    project dedicated to one application;
+  - the import matches an asset by its `externalIdentifier` without account and Region, or by name, and
+    writes a revision on a match or creates the asset; it creates a custom form type the target project
+    does not own, deletes nothing, and publishes what was `ACTIVE` in the source unless `skipPublish`;
+  - the guide lists a name another project owns as a partial failure, and `deploy` fails only when every
+    catalog import fails; the user guide maps each stage to an independent project;
+  - the guide presents the export as the catalog versioned with the code, assumes the same Glue names in
+    every stage, and never addresses stages that share one domain.
+  Decision 18 now carries SMUS's path and option (d), a `dev` project for the application alone, and the
+  recommendation moves from (c) to (d) under decision 6 (b)'s criterion; the waiting list's row follows.
+- **[Claude] (d)'s report drafted** for the user to send to AWS, through a support case or the console's
+  feedback:
+
+  ```text
+  Subject: Amazon DataZone (SageMaker Unified Studio) admits StartDataSourceRun from a non-member
+
+  In a SageMaker Unified Studio domain in us-west-2 (dzd-d8yrvx1ko7im6o), the IAM role of project A
+  started a data source owned by project B, of which the role's DataZone user profile is not a member.
+
+  - Caller: project A's role, datazone_usr_role_<project A>_<environment>, from a SageMaker space;
+    its user profile is a PROJECT_CONTRIBUTOR of project A only.
+  - Call: StartDataSourceRun on project B's data source 3zp6fog9jep1qo, 2026-11-10 03:56:35 UTC,
+    request id 01d1d646-13a9-434c-848c-13df03911521.
+  - Result: no error, the response REQUESTED, the run SUCCESS (it imported nothing new).
+  - The role's one grant of the action is datazone:StartDataSourceRun on the domain's ARN, which a
+    workflow needs to start its own project's data source before it publishes.
+  - The Service Authorization Reference lists no resource type and no condition key for
+    StartDataSourceRun, and maps datazone:projectId to no action, so IAM cannot scope the grant to
+    the caller's own project.
+
+  Questions:
+  1. Is DataZone expected to check project membership for StartDataSourceRun, as it does for
+     GetAsset?
+  2. If not, can a resource type or a condition key such as datazone:projectId be added for it?
+  ```
