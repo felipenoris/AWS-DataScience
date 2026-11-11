@@ -2013,7 +2013,9 @@ entry is still true is the reading.
   version the first grant had just moved (inferred), so the grants of one type on one unit behave as one
   record. Two grants on two different entities, each target's two blueprint grants in the same sitting,
   were created in parallel with no refusal. An apply that adds several grants to one unit runs with
-  `-parallelism=1`, or is applied twice. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11.
+  `-parallelism=1`, or is applied twice: run that way the same day, six grants of three types on the
+  same unit were created in 72 s with no refusal. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-11.
 
 ### Environments and projects
 

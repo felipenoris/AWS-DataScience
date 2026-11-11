@@ -545,9 +545,9 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `SUP-345`, `SUP-346`, `TM-29`). **Pass 4, 2026-11-11, nothing up**: both targets associated (`SUP-349`);
   the `Workloads` SCP's amendment (4.1), `<env>/studio/` (4.4) and `governance/`'s two deployment profiles
   (4.5) applied on the user's word; **`deploy-staging` (`5ido8bej1zoeq8`) and `deploy-production`
-  (`d7qcazihvr3s7k`) created, each with the database `app_etl`** (4.6, `INV-21`); the flag (4.7) and the
-  deploy roles' membership are the user's; five applies planned and owed: the project roles' grants, the
-  deploy roles' policy, the CLI import's grants (`-parallelism=1`, `SUP-353`).
+  (`d7qcazihvr3s7k`) created, each with the database `app_etl`** (4.6, `INV-21`), then the project roles'
+  grants, the deploy roles' policy and the CLI import's grants applied (`SUP-353`); the flag (4.7) and
+  the deploy roles' membership are the user's.
   **The pipeline changes in two releases**: T retires the `test` stage on today's legs (the job `bundle` as
   `awsds-deploy-sandbox-test`, which reads `dev` and writes nothing; in `examples/app-etl/`, its sitting
   `runbooks/promotion.md` §N.8.2), F is the CLI's legs (4.9 to 4.11). The order of what is left is the stage

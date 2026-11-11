@@ -1378,3 +1378,41 @@ The same day, nothing up. No write reached AWS in this entry.
 - **[Claude] Read after them**, 16:10 UTC: the flag `true` and three administrators in both targets,
   `deploy-staging`'s two members, the project role's three managed policies. Nothing changed. The two
   acts stay the user's, and the five applies wait for the user's word naming them or the user's hand.
+
+## 2026-11-11 — the next applies run: the project roles' grants, the deploy roles' policy, the CLI import's grants
+
+The same day, nothing up. The user, verbatim: *"Autorizo os 5 applies"*. The app's classifier let each
+through.
+
+- **[Claude] Before the writes**, 16:15 UTC: the three profiles as `InfrastructureAccess`; the one other
+  session on the laptop, told of these applies at 16:08 UTC, idle.
+- **[Claude⚡] `staging/studio/` and `production/studio/`**, from the saved plans, 16:15:49 to 16:16:02
+  UTC and 16:16:11 to 16:16:22 UTC: each *"2 added, 0 changed, 0 destroyed"*, `awsds-<env>-workflows` and
+  `awsds-<env>-person-session-deny` attached to the project role.
+- **[Claude⚡] `staging/foundation/` and `production/foundation/`**, 16:16:33 to 16:16:45 UTC and
+  16:16:55 to 16:17:09 UTC: each *"2 added, 0 changed, 0 destroyed"*, `awsds-<env>-deploy-project` and its
+  attachment to the deploy role.
+- **[Claude⚡] `governance/`**, with `-parallelism=1`, 16:17:19 to 16:18:31 UTC: *"6 added, 0 changed, 0
+  destroyed"*, the three grants of each project, each created in 6 to 13 s with no conflict (`SUP-353`).
+- **[Claude] Read after them**: the five slices re-plan `No changes`, 16:18 to 16:20 UTC, the
+  foundations with the alerts var-file. Each project role carries its three AWS policies and the two of
+  `studio/`. Each deploy role carries three managed policies; `awsds-<env>-deploy-project` is at `v1`
+  with 13 statements, 3,828 characters in Staging and 3,816 in Production, its `PassRole` naming the
+  project role and its workflow statements the project's id. The root unit reads `CREATE_GLOSSARY` and
+  `CREATE_ASSET_TYPE` for both deployment projects as `OWNER`, and `CREATE_FORM_TYPE` for them and
+  `eighth-experimentation`.
+- **[Claude] The deploy roles' grants simulated**, `iam simulate-principal-policy` as each account's
+  `InfrastructureAccess` at 16:28 UTC, the context naming `aws:RequestedRegion` (`SUP-008`):
+  `datazone:GetProject`, `ListConnections`, `CreateAsset`, `CreateGlossary` and `ListPolicyGrants`,
+  `airflow-serverless:ListWorkflows` and, with the project's tag, `CreateWorkflow` read `allowed` under
+  the boundary and the organization; `datazone:AddPolicyGrant` `implicitDeny`;
+  `datazone:CreateSubscriptionRequest` `explicitDeny`, the organization's; `iam:PassRole` of the project
+  role to `airflow-serverless.amazonaws.com` and `kms:GenerateDataKey` on the project key `allowed`; with
+  `aws:ResourceOrgID` in the context, `s3:PutObject` and `GetObject` `allowed` under the project's
+  `shared/` prefix and `implicitDeny` under `dev/`. The deploy boundary's document, read beside it, is
+  `Allow *` with four denies on role and boundary changes. A simulation, not an exercise: the roles'
+  first calls are release F's.
+- **[Claude] The instruments**, 16:21 to 16:25 UTC: `./aws/studio.py`, `./aws/deploytargets.py` and
+  `./aws/cicd.py`, 0 checks failed each; `CI-2` reads both deploy roles under their boundary.
+- **[Claude] What pass 4 still owes with nothing up**: the flag (4.7) and `awsds-deploy-staging`'s
+  membership of `deploy-staging`, both the user's.
