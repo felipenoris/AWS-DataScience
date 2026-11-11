@@ -198,7 +198,12 @@ entry is still true is the reading.
   (`log-stage-09`, 2026-10-25). On 2026-10-26 the debug role's `kms:Decrypt` read `implicitDeny` through
   `logs` and through S3 alike, the S3 condition false for want of `kms:ResourceAliases` in the simulated
   context, while the same role's read of a job log stream under that key succeeded the same day
-  (`log-stage-09`, 2026-10-26).
+  (`log-stage-09`, 2026-10-26). A role's own tags are not read as `aws:PrincipalTag/*` either (measured
+  2026-11-11 on Production's project role, Stage 19): `s3:GetObject` and `PutObject` on the project's own
+  prefix read `implicitDeny` until the context carried each tag of the role as `aws:PrincipalTag/<key>`,
+  and `MissingContextValues` named none of them among the keys it listed. A policy written on principal
+  tags, as AWS's project-role policies are, is simulated with the tags supplied or reads closed
+  (`log-stage-19-smus-native-data-product.md`, 2026-11-11).
 
 - `SUP-009` **`iam simulate-custom-policy` ignores `sagemaker:VolumeKmsKey` and `sagemaker:OutputKmsKey`
   when the resource is a job's ARN** (measured 2026-10-18, 6d step 1.3). A `Deny` on `Null` of either key
@@ -1917,8 +1922,9 @@ entry is still true is the reading.
   Production's `InfrastructureAccess`, a member of no project, read `ListProjects`, every project of the
   domain, and on `governed-lake`, a project of another account, `GetProject`, `ListProjectMemberships` and
   `ListEnvironments`, and was refused `ListConnections`; Data Governance's read the member lists of all six
-  projects the same day. Membership confines a project's connections and catalog, not its name, its
-  members or its environments. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-10-30;
+  projects the same day, and `ListDataSources` and `GetDataSource` of the two deployment projects it is no
+  member of. Membership confines a project's connections and catalog, not its name, its members, its
+  environments or its data sources. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-10-30;
   `log-stage-06f-data-governance.md`, 2026-09-18, 2026-10-18 and 2026-10-26;
   `log-stage-19-smus-native-data-product.md`, 2026-11-11; `aws/catalog.py`.
 
@@ -2246,6 +2252,34 @@ entry is still true is the reading.
   the wide tag. `SQLWorkBench` grants thirteen query-editor actions on `*` with no condition. A tag on a
   workgroup or a secret is therefore the grant, and leaving `redshift-data:` out of one's own policies
   removes nothing. Where: `log-stage-06h-redshift-connection.md`, 2026-10-18; `AWS_STATE.md` `INV-20`.
+
+- `SUP-358` **AWS's policies allow a project role `sts:AssumeRole` on every role, `kms` through S3 on every
+  key and `glue` database writes on the whole catalog: what confines the role to its project is, for these,
+  each resource's own policy** (read 2026-11-11 in `SageMakerStudioProjectUserRolePolicy` v76 and
+  `SageMakerStudioProjectRoleMachineLearningPolicy` v47, and simulated the same day as Production's project
+  role, Stage 19 step 4.6). With `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy` v9 the role carries
+  265 statements; of the 179 that allow a write, 98 name the project through `${aws:PrincipalTag/...}` and
+  81 do not. Among the 81: `AllowAssumeAccessRole`, `sts:AssumeRole` on `*` on the one condition that the
+  role's project tag is not empty, so a role is closed to a project by its trust policy alone;
+  `S3AGKMSPermissions`, `kms:Decrypt` and `GenerateDataKey` on `*` when called through S3 with an
+  `aws:s3:arn` encryption context, in any account, so a key whose policy delegates to its account's IAM
+  gives the role nothing only while S3 refuses the object; `GlueCatalogDb`, `glue:CreateDatabase` and
+  `DeleteDatabase` on every database with no condition, and `GlueDatalakePermissions`, the table writes on
+  `*` where `glue:LakeFormationPermissions` is `Enabled`, so Lake Formation alone decides, and a catalog on
+  which `IAM_ALLOWED_PRINCIPALS` holds `CREATE_DATABASE`, AWS's default, takes a database from the role;
+  `LFResourceSharingPermissions`, `lakeformation:BatchGrantPermissions` and the data cells filter writes
+  on `*`; `SageMakerECRPermissions`, the pull actions on every repository; `RssCreds`,
+  `redshift-serverless:GetCredentials` on every workgroup when called through `sqlworkbench` or the Data
+  API. The S3 Access Grants statements allow object reads and writes on `*` in the role's account for a
+  request carrying the `default` instance's credentials, while a location and a grant can be created for
+  the project's own prefix alone, so that reach is the instance's locations. Simulated with the Region and
+  the role's tags in the context (`SUP-008`): the assumption of the deploy role, the runner's role and the
+  job role `allowed`, `kms:Decrypt` through S3 on the keys of GitLab and of the Terraform state `allowed`,
+  `glue:DeleteDatabase` on `curated` `allowed`; a secret, a host, a bucket read directly, a chain, a
+  schedule and an IAM write `implicitDeny`. In Production no role trusts the account's root, no bucket
+  policy allows the account broadly and no Lake Formation grant names every IAM principal on the lake's
+  databases, which is what the three allows meet. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-11; `threat-model.md` `TM-30`; `./aws/studio.py` `US-12`, `./aws/deploytargets.py` `DT-14`.
 
 ### The portal
 

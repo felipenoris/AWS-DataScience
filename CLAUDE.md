@@ -505,7 +505,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
-- **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-29`): `TM-17`, the project role's managed policy
+- **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-30`): `TM-17`, the project role's managed policy
   reaching other accounts' `airflow-celery-*` queues and Bedrock functions, is the user's to decide;
   `TM-21` applied 2026-10-19 with Stage 17's 1.3, its finding `RESOLVED` (read 2026-10-21); the data cells filters
   create nothing until decision 12, which since 2026-10-20 also weighs Lake Formation's RLS policies (an
@@ -546,8 +546,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the `Workloads` SCP's amendment (4.1), `<env>/studio/` (4.4) and `governance/`'s two deployment profiles
   (4.5) applied on the user's word; **`deploy-staging` (`5ido8bej1zoeq8`) and `deploy-production`
   (`d7qcazihvr3s7k`) created, each with the database `app_etl`** (4.6, `INV-21`), then the project roles'
-  grants, the deploy roles' policy and the CLI import's grants applied (`SUP-353`); the flag (4.7) and
-  the deploy roles' membership are the user's.
+  grants, the deploy roles' policy and the CLI import's grants (`SUP-353`). The user's: the flag (4.7,
+  `DT-13` red, `EXC-23`), the deploy roles' membership, decision 21 (`TM-30`).
   **The pipeline changes in two releases**: T retires the `test` stage on today's legs (the job `bundle` as
   `awsds-deploy-sandbox-test`, which reads `dev` and writes nothing; in `examples/app-etl/`, its sitting
   `runbooks/promotion.md` §N.8.2), F is the CLI's legs (4.9 to 4.11). The order of what is left is the stage

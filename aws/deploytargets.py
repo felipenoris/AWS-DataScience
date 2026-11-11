@@ -5,7 +5,9 @@
 # in every account that has any (DT-5), the write share with its links and invitations
 # (INT-03), the drop-box contract from both sides (INT-10), Staging's read-only share and the
 # absence of any copy (decision 3), the escape hatch with its alarm, the persona sets' owed
-# allows read back through the delegated admin, and the job settings on the Workloads OU (DT-11).
+# allows read back through the delegated admin, the job settings on the Workloads OU (DT-11), and,
+# since Stage 19 gave each target a SageMaker Unified Studio project, Lake Formation's full-table
+# flag there (DT-13) and what stands between that project's role and the rest of the account (DT-14).
 #
 #   needs:    a live SSO session, and nothing else:
 #
@@ -22,6 +24,8 @@
 #             get-role-policy, lakeformation get-data-lake-settings/list-permissions,
 #             glue get-databases/get-tables, ram get-resource-share-invitations,
 #             events list-rules, cloudtrail lookup-events, sso-admin (reads only),
+#             resourcegroupstaggingapi get-resources, secretsmanager list-secrets (names and
+#             tag keys, never a value), s3control list-access-grants-locations,
 #             organizations list-roots/list-organizational-units-for-parent/
 #             list-policies-for-target/describe-policy, sts get-caller-identity. It never
 #             creates, updates or deletes anything.
@@ -46,6 +50,8 @@
 #   - Staging's job role is awsds-staging-job-exec (step 4.3)
 #   - the Workloads OU carries awsds-org-scp-ou-workloads, holding sagemaker-denies' five Sids
 #     and DenySageMakerServerlessInference (steps 3.5, 3.7)
+#   - a deployment project's bucket is awsds-<env>-smus-projects (Stage 19 step 4.4), the one
+#     bucket its account's S3 Access Grants locations may name
 #
 # What it cannot see, since an empty listing and a missing account look alike:
 #   - The behavioural proofs - the LF write landing, the direct PutObject dying, the
@@ -136,6 +142,24 @@ PROD_PERSONA_POLICY = "awsds-prod-data-scientist"
 # The branches the outputs bucket's network deny carries (Stage 9 step 1.1, D39): the endpoint
 # and service branches, and a principal branch for DataScientistProdAccess's read of the named
 # prefixes. An address branch is refused: a person reaches AWS by identity from any network.
+# Stage 19: each target holds a SageMaker Unified Studio project whose role runs on AWS's managed
+# policies (TM-30). Those policies select resources by the tags below, allow kms through S3 on every
+# key and glue on the whole catalog, so what keeps the role inside its project is what these names
+# do not reach: no hub resource wears a selector tag, the Access Grants instance names the projects
+# bucket alone, and Lake Formation grants the lake's databases to named principals only.
+FULL_TABLE_ACCESS_OFF = (
+    PROD_PROFILE,
+    STAGING_PROFILE,
+)  # step 4.7; the lake's flag is on by decision 13
+PROJECTS_BUCKET = {
+    PROD_PROFILE: "awsds-prod-smus-projects",
+    STAGING_PROFILE: "awsds-staging-smus-projects",
+}
+SELECTOR_TAG_ALL = "for-use-with-all-datazone-projects"
+SELECTOR_TAGS = ("AmazonDataZoneProject", "AmazonDataZoneDomain", SELECTOR_TAG_ALL)
+HUB_SECRET_PREFIXES = ("awsds-", "redshift!")  # the estate's own secrets, never a project's
+FENCED_DBS = (*LAKE_DBS, "app_outputs")  # the databases a project's role holds nothing on
+
 POLICY_BRANCHES = (
     ("vpce", "aws:SourceVpce"),
     ("via", "aws:ViaAWSService"),
@@ -446,8 +470,9 @@ def main(argv: list) -> int:
                 log_rows.append((p, group, f"{days}d" if days else "(none)", key or "(AWS-owned)"))
 
     # -------------------- 4. the Lake Formation settings, every account that has any
-    lf_rows: list = []  # (profile, parameters, create defaults, admins)
+    lf_rows: list = []  # (profile, parameters, create defaults, full-table flag, admins)
     lf_params: dict = {}  # profile -> DataLakeSettings.Parameters
+    lf_flag: dict = {}  # profile -> AllowFullTableExternalDataAccess, absent read as False
     for p in (DATA_PROFILE, PROD_PROFILE, STAGING_PROFILE):
         if p not in live:
             continue
@@ -457,20 +482,100 @@ def main(argv: list) -> int:
             "get-data-lake-settings",
             "--query",
             "DataLakeSettings.[Parameters,CreateDatabaseDefaultPermissions,"
-            "CreateTableDefaultPermissions,DataLakeAdmins[].DataLakePrincipalIdentifier]",
+            "CreateTableDefaultPermissions,DataLakeAdmins[].DataLakePrincipalIdentifier,"
+            "AllowFullTableExternalDataAccess]",
             "--output",
             "json",
             log=False,
         )
         if not (res.ok and res.stdout):
-            lf_rows.append((p, "(read failed)", "-", "-"))
+            lf_rows.append((p, "(read failed)", "-", "-", "-"))
             continue
-        params, db_defaults, tb_defaults, admins = json.loads(res.stdout)
+        params, db_defaults, tb_defaults, admins, full_table = json.loads(res.stdout)
         lf_params[p] = params or {}
+        lf_flag[p] = bool(full_table)
         param_txt = ",".join(f"{k}={v}" for k, v in sorted((params or {}).items())) or "(empty)"
         defaults_txt = f"db:{len(db_defaults or [])} tbl:{len(tb_defaults or [])}"
         admin_txt = " ".join(str(a).rsplit("/", 1)[-1] for a in (admins or [])) or "(none)"
-        lf_rows.append((p, param_txt, defaults_txt, admin_txt))
+        lf_rows.append((p, param_txt, defaults_txt, "on" if full_table else "off", admin_txt))
+
+    # --------- 11. what stands between a deployment project's role and its account (TM-30)
+    fence: dict = {}  # profile -> the readings below; a key is absent when its call failed
+    for p in (PROD_PROFILE, STAGING_PROFILE):
+        if p not in live:
+            continue
+        cli = cli_for(p)
+        got: dict = {}
+        res = cli.run(
+            "resourcegroupstaggingapi",
+            "get-resources",
+            "--tag-filters",
+            f"Key={SELECTOR_TAG_ALL}",
+            "--query",
+            "ResourceTagMappingList[].ResourceARN",
+            "--output",
+            "json",
+        )
+        if res.ok:
+            got["tagged"] = json.loads(res.stdout or "[]")
+        res = cli.run(
+            "secretsmanager",
+            "list-secrets",
+            "--query",
+            "SecretList[].[Name,Tags[].Key]",
+            "--output",
+            "json",
+        )
+        if res.ok:
+            hub = [
+                (name, keys or [])
+                for name, keys in json.loads(res.stdout or "[]")
+                if name.startswith(HUB_SECRET_PREFIXES)
+            ]
+            got["secrets"] = len(hub)
+            got["secrets_tagged"] = sorted(n for n, keys in hub if set(keys) & set(SELECTOR_TAGS))
+        res = cli.run(
+            "s3control",
+            "list-access-grants-locations",
+            "--account-id",
+            account_of.get(p, ""),
+            "--query",
+            "AccessGrantsLocationsList[].LocationScope",
+            "--output",
+            "json",
+            tolerate="AccessGrantsInstanceNotExists|NoSuchAccessGrantsInstance",
+        )
+        if res.tolerated:
+            got["locations"] = None  # no instance: no project was ever provisioned here
+        elif res.ok:
+            got["locations"] = json.loads(res.stdout or "[]")
+        open_grants: list = []
+        listed = True
+        for db in FENCED_DBS:
+            for resource in (
+                {"Database": {"Name": db}},
+                {"Table": {"DatabaseName": db, "TableWildcard": {}}},
+            ):
+                listing = cli.pages(
+                    "lakeformation",
+                    "list-permissions",
+                    "--resource",
+                    json.dumps(resource),
+                    tolerate="EntityNotFoundException|InvalidInputException",
+                )
+                if not listing.complete and not listing.last.tolerated:
+                    listed = False
+                for grant in listing.items("PrincipalResourcePermissions"):
+                    who = grant.get("Principal", {}).get("DataLakePrincipalIdentifier", "")
+                    if who == "IAM_ALLOWED_PRINCIPALS" or who.endswith(":IAMPrincipals"):
+                        kind = "database" if "Database" in resource else "tables"
+                        open_grants.append(
+                            f"{db} {kind}: {who.rsplit(':', 1)[-1]} "
+                            f"{','.join(grant.get('Permissions', []))}"
+                        )
+        if listed:
+            got["open_grants"] = sorted(set(open_grants))
+        fence[p] = got
 
     # ------------------------- 5. the write share, the links, the invitations (INT-03)
     share_perm_rows: list = []  # (principal tail, resource, permissions)
@@ -994,7 +1099,7 @@ def main(argv: list) -> int:
         bool(staging_links_to_data) or staging_wg_row is not None or staging_cmk_present
     )
     lf_seated = {
-        p: admins != "(none)" for p, _params, _defaults, admins in lf_rows if admins != "-"
+        p: admins != "(none)" for p, _params, _defaults, _flag, admins in lf_rows if admins != "-"
     }
 
     # -------------------------------------------------------------------------- the checks
@@ -1164,7 +1269,7 @@ def main(argv: list) -> int:
     # omits `parameters` empties them, which reads as SET_CONTEXT gone. The grantor and Production,
     # the share's two ends, read CROSS_ACCOUNT_VERSION 4 (Production's own reading, 2026-10-22, the
     # value 1.5 copies); Staging reads 1, takes no share, and is held to SET_CONTEXT alone.
-    for p, param_txt, defaults_txt, admin_txt in lf_rows:
+    for p, param_txt, defaults_txt, _flag_txt, admin_txt in lf_rows:
         if param_txt == "(read failed)":
             continue
         params = lf_params.get(p, {})
@@ -1204,7 +1309,7 @@ def main(argv: list) -> int:
                 "DT-6",
                 "the write share",
                 "no INSERT grant to Production in what was read - the grantor's listing was not "
-                "read to its last page (section 13).",
+                "read to its last page (section 14).",
             )
         elif lf_seated.get(PROD_PROFILE):
             checks.fail(
@@ -1457,6 +1562,89 @@ def main(argv: list) -> int:
                     "a job created first.",
                 )
 
+    # DT-13: Lake Formation's full-table external access in the targets (Stage 19 step 4.7, TM-26).
+    # SageMaker Unified Studio's provisioning turns it on in an account that gains a project, and
+    # may again at a later one; with it on, a principal holding full-table permissions vends a
+    # table's objects outside an integrated engine.
+    for p in FULL_TABLE_ACCESS_OFF:
+        if p not in lf_flag:
+            continue
+        if lf_flag[p]:
+            checks.fail(
+                "DT-13",
+                f"{p} full-table external access",
+                "AllowFullTableExternalDataAccess is on - TM-26 is open in this account. Stage 19 "
+                "step 4.7 turns it off in the console after a project's provisioning.",
+            )
+        else:
+            checks.ok("DT-13", f"{p} full-table external access", "off")
+
+    # DT-14: what AWS's managed policies on a project's role do not reach (TM-30). Each rule is
+    # one layer the role's containment rests on; a failure means the role now reaches it by IAM.
+    for p, got in fence.items():
+        if "tagged" in got:
+            if got["tagged"]:
+                checks.fail(
+                    "DT-14",
+                    f"{p} resources tagged for every project",
+                    f"{len(got['tagged'])} resource(s) wear {SELECTOR_TAG_ALL}: every project role "
+                    "in the account reads and writes them by AWS's policy.",
+                )
+            else:
+                checks.ok("DT-14", f"{p} resources tagged for every project", "none")
+        if "secrets" in got:
+            if got["secrets_tagged"]:
+                checks.fail(
+                    "DT-14",
+                    f"{p} the estate's secrets",
+                    f"{', '.join(got['secrets_tagged'])} carry a DataZone selector tag: a project "
+                    "role reads and overwrites a secret by its tags alone (INV-20's rule).",
+                )
+            else:
+                checks.ok(
+                    "DT-14",
+                    f"{p} the estate's secrets",
+                    f"{got['secrets']} secret(s), none with a DataZone selector tag",
+                )
+        if "locations" in got:
+            locations = got["locations"]
+            bucket = PROJECTS_BUCKET[p]
+            if locations is None:
+                checks.note(
+                    "DT-14",
+                    f"{p} Access Grants locations",
+                    "no Access Grants instance - no project was provisioned in this account.",
+                )
+            else:
+                foreign = [s for s in locations if not s.startswith(f"s3://{bucket}/")]
+                if foreign:
+                    checks.fail(
+                        "DT-14",
+                        f"{p} Access Grants locations",
+                        f"{', '.join(foreign)} outside {bucket}: a grant on it gives a project "
+                        "role the objects, and AWS's policy the key through S3.",
+                    )
+                else:
+                    checks.ok(
+                        "DT-14",
+                        f"{p} Access Grants locations",
+                        f"{len(locations)} location(s), all under {bucket}",
+                    )
+        if "open_grants" in got:
+            if got["open_grants"]:
+                checks.fail(
+                    "DT-14",
+                    f"{p} Lake Formation on the lake's databases",
+                    f"{'; '.join(got['open_grants'])} - a grant to every IAM principal, which a "
+                    "project role's unscoped glue allows then meet.",
+                )
+            else:
+                checks.ok(
+                    "DT-14",
+                    f"{p} Lake Formation on the lake's databases",
+                    f"{', '.join(FENCED_DBS)}: named principals only",
+                )
+
     # ---------------------------------------------------------------------- the report
     with open(out_path, "w", encoding="utf-8") as stream:
         rep = Report(stream)
@@ -1480,9 +1668,10 @@ SECTIONS
   8. The escape hatch: role, alarm, assumptions (step 6)
   9. The persona sets' owed allows (step 5)
  10. The job settings on the Workloads OU (step 3.5)
- 11. CHECKS
- 12. The accounts nothing here is measuring
- 13. Calls that failed
+ 11. A deployment project's role and the rest of its account (DT-13, DT-14)
+ 12. CHECKS
+ 13. The accounts nothing here is measuring
+ 14. Calls that failed
 
 HOW TO READ THIS FILE
   - An object absent before the pass that creates it is a note, and the same absence
@@ -1571,7 +1760,8 @@ carries: the account data key once data/ stands.""")
         rep.h1("4. The Lake Formation settings, every account that has any (DT-5)")
         if lf_rows:
             rep.tabulate(
-                ["PROFILE\tPARAMETERS\tCREATE-DEFAULTS\tADMINS"] + ["\t".join(r) for r in lf_rows]
+                ["PROFILE\tPARAMETERS\tCREATE-DEFAULTS\tFULL-TABLE\tADMINS"]
+                + ["\t".join(r) for r in lf_rows]
             )
         else:
             rep.line("No account with an LF read was measured.")
@@ -1591,7 +1781,7 @@ of data-governance/data/, production/data/ or staging/data/.""")
         elif data_live and share_listed:
             rep.line("No grantor-side permission names the Production account yet (pre-2.2).")
         elif data_live:
-            rep.line("The grantor's listing was not read to its last page - section 13.")
+            rep.line("The grantor's listing was not read to its last page - section 14.")
         if link_rows:
             rep.line()
             rep.tabulate(
@@ -1683,7 +1873,7 @@ tests and the application; DataScientistStagingAccess holds no Athena (Stage 2).
             elif not debug_arn:
                 rep.line("The AssumeRole history was not read: it is looked up by the role's ARN.")
             elif not debug_read:
-                rep.line("The AssumeRole history was not read: the lookup failed (section 13).")
+                rep.line("The AssumeRole history was not read: the lookup failed (section 14).")
             else:
                 rep.line("No AssumeRole event names the debug role in the last 90 days.")
             rep.text("""
@@ -1730,7 +1920,40 @@ identity/org-policies compares the document with sagemaker-denies on every plan,
 and the SCP battery's Stage 9 rows measure each deny (scp-battery.md).""")
 
         # ==============================================================================
-        rep.h1("11. CHECKS")
+        rep.h1("11. A deployment project's role and the rest of its account (DT-13, DT-14)")
+        if fence:
+            rows = ["PROFILE\tREADING\tVALUE"]
+            for p, got in fence.items():
+                rows.append(f"{p}\tfull-table external access\t{'on' if lf_flag.get(p) else 'off'}")
+                if "tagged" in got:
+                    rows.append(f"{p}\tresources tagged {SELECTOR_TAG_ALL}\t{len(got['tagged'])}")
+                if "secrets" in got:
+                    tagged = ", ".join(got["secrets_tagged"]) or "none"
+                    rows.append(
+                        f"{p}\tthe estate's secrets, {got['secrets']}, with a selector tag\t{tagged}"
+                    )
+                if "locations" in got:
+                    scopes = got["locations"]
+                    value = "(no instance)" if scopes is None else (", ".join(scopes) or "(none)")
+                    rows.append(f"{p}\tAccess Grants locations\t{value}")
+                if "open_grants" in got:
+                    value = "; ".join(got["open_grants"]) or "none"
+                    rows.append(
+                        f"{p}\tgrants to every IAM principal on {', '.join(FENCED_DBS)}\t{value}"
+                    )
+            rep.tabulate(rows)
+        else:
+            rep.line("No deployment target was measured.")
+        rep.text("""
+Since Stage 19 each target holds one SageMaker Unified Studio project, and its
+role runs on AWS's managed policies, which AWS moves. Those policies allow
+sts:AssumeRole on every role, kms through S3 on every key and glue on the whole
+catalog, and select the rest by tag (TM-30). The rows above are what the role's
+containment rests on in this account, read from the resources' side; the trust
+policies are studio.py's US-12, in every account that holds a project role.""")
+
+        # ==============================================================================
+        rep.h1("12. CHECKS")
         rep.checks_table(checks)
         n_fail = checks.n_fail()
         rep.line()
@@ -1757,11 +1980,17 @@ What the checks are, and where each comes from:
          serverless-inference deny (3.5-3.7, decision 9, verification xv)
   DT-12  the six job log groups declared with a retention wherever the job role stands,
          each under the account data key once data/ stands, and a group a job created
-         before the slice named for import (3.1, 4.3, EXC-10)""")
+         before the slice named for import (3.1, 4.3, EXC-10)
+  DT-13  Lake Formation's full-table external access off in both targets (Stage 19
+         step 4.7, TM-26); the lake's own flag is on by Stage 9 decision 13
+  DT-14  what a deployment project's role does not reach: no resource tagged for every
+         project, no estate secret with a DataZone selector tag, no Access Grants
+         location outside the projects bucket, no Lake Formation grant to every IAM
+         principal on raw, curated or app_outputs (Stage 19, TM-30)""")
 
         # ==============================================================================
-        rep.h1("12. The accounts nothing here is measuring")
-        rep.text("""Read this BEFORE reading section 11 as a pass.
+        rep.h1("13. The accounts nothing here is measuring")
+        rep.text("""Read this BEFORE reading section 12 as a pass.
 
   - `Staging` has a profile since 2026-09-06: Stage 6b made the account by
     renaming `Development`, so sections 5 and 7, DT-8 and INT-07's registry
@@ -1773,7 +2002,7 @@ What the checks are, and where each comes from:
     lives there.""")
 
         # ==============================================================================
-        rep.h1("13. Calls that failed")
+        rep.h1("14. Calls that failed")
         failed_calls_epilogue(rep, errors)
         rep.line()
         rep.line("Regenerate with:  ./aws/deploytargets.py")
@@ -1782,10 +2011,10 @@ What the checks are, and where each comes from:
     n_fail = checks.n_fail()
     note("")
     if errors:
-        note(f"wrote {out_label} (some calls FAILED - see section 13)")
+        note(f"wrote {out_label} (some calls FAILED - see section 14)")
         return 1
     if n_fail > 0:
-        note(f"wrote {out_label} ({n_fail} CHECK(S) FAILED - see section 11)")
+        note(f"wrote {out_label} ({n_fail} CHECK(S) FAILED - see section 12)")
         return 2
     note(f"wrote {out_label} (all checks passed)")
     return 0

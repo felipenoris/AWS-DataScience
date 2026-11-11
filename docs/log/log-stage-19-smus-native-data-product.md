@@ -1416,3 +1416,74 @@ through.
   `./aws/cicd.py`, 0 checks failed each; `CI-2` reads both deploy roles under their boundary.
 - **[Claude] What pass 4 still owes with nothing up**: the flag (4.7) and `awsds-deploy-staging`'s
   membership of `deploy-staging`, both the user's.
+
+## 2026-11-11 — the project role's reach in Production read; the instruments extended to the two projects
+
+The same day, nothing up, reads alone. Asked what could be advanced with nothing up, Claude named this
+review and the instruments; the user, verbatim: *"Sim, faça os dois"*.
+
+- **[Claude] The role's policies**, `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow`, read at 17:24 UTC
+  as `awsds-infra-prod`: `SageMakerStudioProjectUserRolePolicy` v76 (162 statements, 55,309 characters),
+  `SageMakerStudioProjectRoleMachineLearningPolicy` v47 (90, 32,586),
+  `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy` v9 (13, 4,720), `awsds-prod-workflows` and
+  `awsds-prod-person-session-deny` (4 each), no inline policy; the boundary `awsds-prod-project-boundary`,
+  9 statements, `Allow *` with denies on the lake's prefixes, the lake's data key and five job settings;
+  17 tags, `EnableAmazonBedrockPermissions` `true` among them.
+- **[Claude] The statements classified**: 269 allow statements, 179 with a write action, 98 of them
+  naming the project through `${aws:PrincipalTag/...}` and 81 not (`SUP-358`).
+- **[Claude] What the unbound allows meet, read from the resources' side.** Trust policies, in the
+  five accounts with a profile (53, 34, 45, 31 and 19 roles): `AWSControlTowerExecution` alone trusts a
+  root, the management account's; none trusts its own account's root or any principal. Tags in
+  Production: no resource wears `for-use-with-all-datazone-projects`; the project's tag is on ten
+  resources, all its own; the eight secrets carry no DataZone tag. Lake Formation: `IAM_ALLOWED_PRINCIPALS`
+  holds `ALTER`, `CREATE_CATALOG` and `CREATE_DATABASE` on the catalog; `curated`, `raw` and
+  `app_outputs` are granted to named principals, every page read. The Access Grants instance: one
+  location, the project's prefix under the project role, no grant, no resource policy. Key policies:
+  the keys of GitLab, the state, the PKI state, the registry, the proxy log and the projects delegate
+  `kms:*` to the account's IAM; the data key names its principals. Bucket policies: no hub bucket
+  allows the account's root or any principal.
+- **[Claude] The simulator calibrated**: `s3:GetObject` on the project's own prefix read `implicitDeny`
+  until the context carried the role's tags as `aws:PrincipalTag/<key>`; `MissingContextValues` named
+  none of them (`SUP-008`).
+- **[Claude] Simulated as the role**, the Region, the organization id and the role's tags in the
+  context. `implicitDeny`: `GetSecretValue` and `PutSecretValue` on GitLab's secrets, the deploy runner's
+  token and the warehouse admin secret; `ssm:StartSession` and `SendCommand`, `ec2:StartInstances`,
+  `StopInstances` and `ModifyInstanceAttribute`; `GetObject`, `PutObject` and `ListBucket` on each hub
+  bucket called directly; a location on a hub bucket; `kms:Decrypt` on GitLab's key called directly; a
+  pass of the job role; five IAM writes; the pipeline's Glue job; `PutImage` on the deploy image's
+  repository; the chain, a schedule, a workflow with no project tag, the model registry, the alerts
+  topic, a hub log group, `lambda:` and `cloudformation:` writes; `redshift-serverless:GetCredentials`
+  called directly and the Data API on an untagged workgroup; `ec2:CreateVpcEndpoint` on a subnet and a
+  security group, and the security-group and route writes. `allowed`: `secretsmanager:ListSecrets`;
+  `sts:AssumeRole` on the deploy role, the runner's role and the job role; `kms:Decrypt` and
+  `GenerateDataKey` through S3 on the keys of GitLab, the state, the data and the projects; the object
+  reads and writes on a hub bucket for a request carrying Access Grants credentials;
+  `s3:PutAccessGrantsInstanceResourcePolicy`; `glue:DeleteDatabase` and `CreateDatabase` on `curated`
+  and the catalog, and the table reads and writes there under `glue:LakeFormationPermissions`
+  `Enabled`; `lakeformation:BatchGrantPermissions`, `GetDataAccess` and `CreateDataCellsFilter`; the
+  pull of the deploy image; `bedrock:InvokeModel` on a foundation model; AgentCore's
+  `StartBrowserSession`, `StartCodeInterpreterSession` and `InvokeCodeInterpreter`; `q:SendMessage`,
+  `codewhisperer:GenerateRecommendations`, `bedrock:GenerateQuery`, `datazone:GenerateCode`;
+  `GetCredentials` on any workgroup through `sqlworkbench` or the Data API, with
+  `sqlworkbench:CreateConnection` and `DriverExecute`; `datazone:CreateAsset` and
+  `CreateListingChangeSet`. `explicitDeny`, the organization's: `datazone:CreateSubscriptionRequest`.
+  Not read: the SageMaker job calls, whose organization statements need the request's settings.
+- **[Claude] The routes of the projects' subnets**, both targets: the VPC, the S3 and DynamoDB
+  gateways, and a peering to VPC-Networking's four ranges; `NETWORK.md`'s proxy planes
+  `production-workloads` and `staging-foundation` hold no entry. No organization policy names a Glue
+  job's network.
+- **[Claude] `./aws/deploytargets.py`**, 17:39 UTC: `DT-13`, the full-table flag, fails in both targets
+  (`EXC-23`), the script's only two failures; `DT-14` passes its four rows in each, Production's on
+  eight secrets and one location.
+- **[Claude] `./aws/studio.py`**, 17:43 UTC, 0 checks failed: `US-8` reads the domain account's three
+  blueprint roles under `awsds-data-project-boundary` beside the others; `US-11` reads `deploy-staging`
+  and `deploy-production` alone in their targets, two environments `ACTIVE` each, with their
+  subscription targets; `US-12` reads 22, 28, 13 and 15 roles in Sandbox, Production, Staging and Data
+  Governance, none trusting its account's root or any principal.
+- **[Claude] `./aws/catalog.py`**, 17:46 and 17:48 UTC, all checks passed. Before the change it already
+  read the two projects' sources as Data Governance's `InfrastructureAccess`, a member of neither
+  (`SUP-157`): one Glue source each over `app_etl`, no publish on import, no generated names, no run
+  yet. After it `CT-13` reads four trails and `CT-14` passes on both projects.
+- **[Claude] Written**: `TM-30`; decision 21, due and the user's; `INV-22` and `EXC-23`; `SUP-358` and
+  the readings on `SUP-008` and `SUP-157`; `NETWORK.md`'s row on the projects' groups, from the routes
+  read; `aws/INDEX.md`.

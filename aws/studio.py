@@ -17,7 +17,8 @@
 #             python3 aws/studio.py -              # CloudShell, ambient credentials
 #   writes:   aws/output/studio.txt   (untracked - see .gitignore)
 #   reads:    datazone:ListDomains, ListEnvironmentBlueprintConfigurations,
-#             GetEnvironmentBlueprint, ListProjectProfiles, ListProjects,
+#             GetEnvironmentBlueprint, ListProjectProfiles, ListProjects, GetProject,
+#             ListEnvironments, GetEnvironment, ListSubscriptionTargets,
 #             sagemaker:ListDomains, DescribeDomain, ListApps, ListImages,
 #             iam:ListRoles, GetRole,
 #             sso-admin:ListInstances, ListPermissionSets, DescribePermissionSet,
@@ -84,6 +85,12 @@ DEPLOYMENT_BLUEPRINTS = ("Tooling", "DataLake")
 # data-governance/governance/'s locals.tf behind `deployment_profiles_enabled`. Admitted when
 # present, and their absence is no failure: the stage creates them after each target's blueprints.
 DEPLOYMENT_PROFILE_NAMES = ("deployment-staging", "deployment-production")
+# Which target each deployment profile provisions in, whose InfrastructureAccess owns the one
+# project born of it (Stage 19 step 4.6, INV-21).
+DEPLOYMENT_TARGET_OF = {
+    "deployment-staging": "awsds-infra-staging",
+    "deployment-production": "awsds-infra-prod",
+}
 
 # The contracts (see header).
 # Decision 5's category 1 (2026-08-19; docs/SMUS.md carries the reference table): the only
@@ -448,11 +455,21 @@ def main(argv: list) -> int:
     #
     # The deployment targets are read too: a deployment project's Tooling environment creates the
     # same three roles there (Stage 19 step 4.6), under that account's D13 boundary.
+    #
+    # The domain account is read as well: the lake-publishing project's role lives there (Stage 6f
+    # step 11). The same GetRole answers each role's trust policy. AWS's policy on a project role
+    # allows sts:AssumeRole on every role, so a trust that names the account's root or any
+    # principal is a role the project's code may assume (US-12, TM-30).
     role_rows: dict = {}  # profile -> [(role name, boundary name or '-', how it was found)]
-    for p in INTERACTIVE_PROFILES + HEADLESS_PROFILES:
+    open_trust: dict = {}  # profile -> [(role name, whom its trust names)]
+    roles_read: dict = {}  # profile -> how many roles' trust was read
+    for p in INTERACTIVE_PROFILES + HEADLESS_PROFILES + (DATA_PROFILE,):
         if p not in live:
             continue
         cli = cli_for(p)
+        own = next((c.account for c in callers if c.profile == p), None) or ""
+        loose: list = []
+        n_read = 0
         res = cli.run(
             "iam",
             "list-roles",
@@ -481,6 +498,18 @@ def main(argv: list) -> int:
                 logerr(p, f"iam get-role {name}", rr.stderr)
                 continue
             role = json.loads(rr.stdout or "{}").get("Role", {})
+            n_read += 1
+            statements = (role.get("AssumeRolePolicyDocument") or {}).get("Statement") or []
+            for st in statements if isinstance(statements, list) else [statements]:
+                if st.get("Effect") != "Allow":
+                    continue
+                principal = st.get("Principal") or {}
+                named = principal.get("AWS") or [] if isinstance(principal, dict) else principal
+                for who in [named] if isinstance(named, str) else named:
+                    if who == "*":
+                        loose.append((name, "any principal"))
+                    elif own and who in (own, f"arn:aws:iam::{own}:root"):
+                        loose.append((name, "the account's root"))
             tags = {t["Key"]: t.get("Value", "") for t in role.get("Tags", [])}
             by_tag = "AmazonDataZoneDomain" in tags
             by_name = "datazone" in name.lower()
@@ -490,6 +519,92 @@ def main(argv: list) -> int:
             found = "tag" if by_tag else "name"
             rows.append((name, barn.split("/")[-1], found))
         role_rows[p] = rows
+        open_trust[p] = loose
+        roles_read[p] = n_read
+
+    # ------------- the deployment projects: one per target, with its environments (INV-21)
+    deploy_projects: dict = {}  # deployment profile name -> [(project name, id)]
+    deploy_rows: list = []  # (target, project, environment, status, glue database, targets)
+    if DATA_PROFILE in live and domain_id:
+        cli = cli_for(DATA_PROFILE)
+        profile_of: dict = {}  # project id -> its project profile's id
+        for _name, pid, _status in projects:
+            r = cli.run(
+                "datazone",
+                "get-project",
+                "--domain-identifier",
+                domain_id,
+                "--identifier",
+                pid,
+                "--query",
+                "projectProfileId",
+                "--output",
+                "text",
+                log=False,
+            )
+            if r.ok and r.stdout.strip() not in ("", "None"):
+                profile_of[pid] = r.stdout.strip()
+        profile_id = {n: i for n, i, _s in project_profiles}
+        for dname, target in DEPLOYMENT_TARGET_OF.items():
+            if dname not in profile_id:
+                continue
+            mine = [(n, i) for n, i, _s in projects if profile_of.get(i) == profile_id[dname]]
+            deploy_projects[dname] = mine
+            if target not in live:
+                continue
+            tcli = cli_for(target)
+            for pname, pid in mine:
+                res = tcli.run(
+                    "datazone",
+                    "list-environments",
+                    "--domain-identifier",
+                    domain_id,
+                    "--project-identifier",
+                    pid,
+                    "--query",
+                    "items[].[name,id,status]",
+                    "--output",
+                    "json",
+                )
+                if not res.ok:
+                    continue
+                for ename, eid, estatus in json.loads(res.stdout or "[]"):
+                    g = tcli.run(
+                        "datazone",
+                        "get-environment",
+                        "--domain-identifier",
+                        domain_id,
+                        "--identifier",
+                        eid,
+                        "--query",
+                        "provisionedResources[?name=='glueDBName'].value | [0]",
+                        "--output",
+                        "text",
+                    )
+                    glue_db = g.stdout.strip() if g.ok else ""
+                    s = tcli.run(
+                        "datazone",
+                        "list-subscription-targets",
+                        "--domain-identifier",
+                        domain_id,
+                        "--environment-identifier",
+                        eid,
+                        "--query",
+                        "items[].name",
+                        "--output",
+                        "json",
+                    )
+                    targets = ", ".join(json.loads(s.stdout or "[]")) if s.ok else "(not read)"
+                    deploy_rows.append(
+                        (
+                            target,
+                            pname,
+                            ename,
+                            estatus,
+                            glue_db if glue_db not in ("", "None") else "-",
+                            targets or "(none)",
+                        )
+                    )
 
     # ------------------- the step 3 deny, read back from Identity Center (like vpn.py)
     identity_live = IDENTITY_PROFILE in live
@@ -951,6 +1066,59 @@ def main(argv: list) -> int:
                 f"all {len(rows)} blueprint-provisioned role(s) bounded ({by_tag} found by tag)",
             )
 
+    # US-11: each deployment target holds one project, born of its own profile, with every
+    # environment ACTIVE (INV-21). The subscription targets are printed and not judged: a
+    # deployment project subscribes to nothing (Stage 19 decision 14).
+    for dname, target in DEPLOYMENT_TARGET_OF.items():
+        if dname not in deploy_projects:
+            continue
+        mine = deploy_projects[dname]
+        what = f"projects of {dname}"
+        if not mine:
+            checks.note("US-11", what, "none yet - Stage 19 step 4.6 creates the one.")
+            continue
+        if len(mine) > 1:
+            checks.fail(
+                "US-11",
+                what,
+                f"{len(mine)}: {', '.join(n for n, _i in mine)} - a target holds one deployment "
+                "project (INV-21).",
+            )
+            continue
+        envs = [r for r in deploy_rows if r[0] == target and r[1] == mine[0][0]]
+        down = [f"{r[2]} {r[3]}" for r in envs if r[3] != "ACTIVE"]
+        if down:
+            checks.fail(
+                "US-11",
+                what,
+                f"{mine[0][0]}: {', '.join(down)} - an environment that is not ACTIVE pins its "
+                "blueprint configuration (Lesson 39).",
+            )
+        elif envs:
+            checks.ok("US-11", what, f"{mine[0][0]} alone, {len(envs)} environment(s) ACTIVE")
+        else:
+            checks.note("US-11", what, f"{mine[0][0]} alone; its environments were not read.")
+
+    # US-12: where a project role exists, no role's trust names the account's root or any
+    # principal. The trust policy is the one layer between a project role and another role.
+    for p, loose in open_trust.items():
+        if not role_rows.get(p):
+            continue
+        if loose:
+            named = "; ".join(f"{n} trusts {w}" for n, w in loose[:4])
+            checks.fail(
+                "US-12",
+                f"role trust in {p}",
+                f"{named} - AWS's policy allows a project role sts:AssumeRole on every role, so "
+                "this trust is the project's to use (TM-30).",
+            )
+        else:
+            checks.ok(
+                "US-12",
+                f"role trust in {p}",
+                f"{roles_read.get(p, 0)} role(s) read, none trusts the account's root or any principal",
+            )
+
     # US-9: the step 3 deny Sids in the persona sets - together or not at all
     # (Lesson 14; the same one-fragment rule as Stage 4 step 8.2).
     if identity_live and set_rows:
@@ -1103,6 +1271,18 @@ pilot's Tooling (Stage 6f step 11, D22 amended 2026-10-26).""")
                 rep.tabulate(["PROJECT\tID\tSTATUS"] + [f"{n}\t{i}\t{s}" for n, i, s in projects])
             else:
                 rep.line("No project.")
+            if deploy_rows:
+                rep.line()
+                rep.tabulate(
+                    [
+                        "TARGET\tDEPLOYMENT PROJECT\tENVIRONMENT\tSTATUS\tGLUE DATABASE\tSUBSCRIPTION TARGETS"
+                    ]
+                    + ["\t".join(r) for r in deploy_rows]
+                )
+                rep.text("""
+One project per deployment target, born of that target's profile (US-11, INV-21).
+The subscription targets are a reading: a deployment project subscribes to
+nothing (Stage 19 decision 14), and the organization denies it the request.""")
 
         # ==============================================================================
         rep.h1("4. SageMaker AI domains per account (the runtimes - and the negative reading)")
@@ -1174,6 +1354,18 @@ decides to call a role: the Tooling stack creates AmazonBedrock*Role-<project>-
 <env> beside datazone_usr_role_*, and its two conditional EMR roles - which AWS's
 template leaves with NO boundary - would be named after neither. `name` is the
 legacy datazone* match, kept so an untagged role is reported rather than dropped.""")
+        if open_trust:
+            rep.line()
+            rows = ["PROFILE\tROLES READ\tTRUST NAMING THE ACCOUNT'S ROOT OR ANY PRINCIPAL"]
+            for p, loose in open_trust.items():
+                named = "; ".join(f"{n} ({w})" for n, w in loose) or "none"
+                rows.append(f"{p}\t{roles_read.get(p, 0)}\t{named}")
+            rep.tabulate(rows)
+            rep.text("""
+AWS's SageMakerStudioProjectUserRolePolicy allows a project role sts:AssumeRole
+on every role, so a role's trust policy is what keeps a project's code out of it
+(US-12, TM-30). Service-linked and Identity Center roles are not read: neither
+path's trust names an account.""")
 
         # ==============================================================================
         rep.h1("7. The step 3 deny, per permission set")
@@ -1223,7 +1415,11 @@ What the checks are, and where each comes from:
   US-8   every blueprint-provisioned project role carries the D13 boundary
          (step 2, INT-15 - presence half only)
   US-9   the step 3 deny Sids reach all six persona sets together (Lesson 14)
-  US-10  running apps reported as the burn they are (conventions 6)""")
+  US-10  running apps reported as the burn they are (conventions 6)
+  US-11  each deployment target holds one project, born of its own profile, with every
+         environment ACTIVE (Stage 19 step 4.6, INV-21)
+  US-12  where a project role exists, no role's trust names the account's root or any
+         principal: the one layer under AWS's sts:AssumeRole on every role (TM-30)""")
 
         # ==============================================================================
         rep.h1("9. The accounts nothing here is measuring")
