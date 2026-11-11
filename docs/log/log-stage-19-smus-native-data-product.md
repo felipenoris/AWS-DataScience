@@ -1322,3 +1322,39 @@ The app's classifier let every call through.
   `stage19-studio-production-3.tfplan`, `stage19-foundation-staging-deploy-project.tfplan`,
   `stage19-foundation-production-deploy-project.tfplan` and `stage19-governance-catalog-import.tfplan`.
   Not applied: a round the user has not named.
+
+## 2026-11-11 — the supplement reviewed against the sitting's findings
+
+The same day, nothing up, reads alone, at the user's request: *"Veja oportunidades de atualizar o
+AWS_SUPPLEMENT.md com base nas descobertas desta sessão."* Every finding of the four entries above was
+read against the supplement; the readings below are the ones the review added.
+
+- **[Claude] The domain's IAM user profiles**, `search-user-profiles --user-type DATAZONE_IAM_USER` as
+  `awsds-infra-data` at 15:59 UTC: 50. Thirty are `awsds-deploy-sandbox-test`'s and six
+  `awsds-deploy-staging`'s, each with its own `sessionName` of the form `botocore-session-<digits>`; four
+  are the accounts' `InfrastructureAccess` roles', one each, named for the person; ten are project
+  roles', with no session name, five of them of projects no longer listed. Each detail carries
+  `groupProfileId` (`SUP-158`).
+- **[Claude] The six projects' member lists**, `list-project-memberships` as `awsds-infra-data`, a member
+  of two of them: every project that holds a `Tooling` environment lists its own project role's user
+  profile as `PROJECT_CONTRIBUTOR`, the two deployment projects included; the model governance project,
+  which holds none, lists two groups (`SUP-157`, `SUP-158`).
+- **[Claude] AWS Config and the Glue databases**: in the trails already read, `AWSServiceRoleForConfig`'s
+  `glue:GetDatabase` answered `AccessDenied`, *"An unknown error occurred"*, on Staging's `app_etl` at
+  15:29:52 UTC and on Production's `default` at 15:32:22 and `app_etl` at 15:34:32, each within three
+  minutes of the database's creation. `AWSConfigServiceRolePolicy` is at v97 and allows the action.
+  `configservice list-discovered-resources --resource-type AWS::Glue::Database` at 16:01 UTC returned
+  nothing in Sandbox (nine Glue databases), Data Governance (five), Staging and Production (five each)
+  and Identity (none); the recorder in both targets is Control Tower's, every supported type,
+  continuous (`SUP-355`).
+- **[Claude] Each target's `default` database**: the provisioning role's `ALL` and `IAMPrincipals`'
+  `DESCRIBE` under the project's condition; Staging's existed before the project, Production's was
+  created by the provisioning at 15:30:49 UTC (`SUP-170`).
+- **[Claude] The CLI 1.0.9's `commands/deploy.py`, read again**: the catalog import opens the archive
+  `--bundle-archive-path` names and reads `catalog/catalog_export.json` in it, returning success with no
+  archive, with no such member or with the stage's catalog disabled (`SUP-286`); it returns failure only
+  when every attempted item failed (`SUP-357`).
+- **[Claude] Written in the supplement**: `SUP-354` (a subscription request naming nothing is refused,
+  from the readings of 04:30 and 14:27 UTC), `SUP-355`, `SUP-356` (the `studio/` plans' two changes and
+  their applies' one) and `SUP-357`; readings appended to `SUP-157`, `SUP-158`, `SUP-170`, `SUP-184` and
+  `SUP-286`; `SUP-353` named among the Terraform section's pointers.

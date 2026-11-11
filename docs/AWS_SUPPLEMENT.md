@@ -571,6 +571,22 @@ entry is still true is the reading.
   `log-stage-05a-data-foundation.md`, 2026-10-09; `docs/AWS_STATE.md` `EXC-14`; `runbooks/security-hub.md`
   §V and §F.
 
+- `SUP-355` **AWS Config records no Glue database in an account whose Lake Formation create-defaults are
+  empty: the recorder's `glue:GetDatabase` is refused** (read 2026-11-11 in Staging's and Production's
+  trails and measured the same day in four accounts, Stage 19 step 4.6). Within three minutes of each
+  database's creation by a deployment project's provisioning, `AWSServiceRoleForConfig`, invoked by
+  `config.amazonaws.com`, called Cloud Control's `GetResource` for `AWS::Glue::Database` and
+  `glue:GetDatabase` and was answered `AccessDenied`, *"An unknown error occurred"*: `app_etl` in both
+  accounts, and Production's new `default`. `AWSConfigServiceRolePolicy` v97 allows `glue:GetDatabase`, so
+  the refusal is not IAM's; the databases carry no `IAM_ALLOWED_PRINCIPALS` grant, both create-default
+  lists being empty, and no Lake Formation grant names the role (inferred from the grants read: the
+  trail's text names no layer). `configservice list-discovered-resources --resource-type
+  AWS::Glue::Database` returned nothing in Sandbox, with nine databases, in Data Governance, with five,
+  and in Staging and Production, with five each, under Control Tower's recorder, every supported type,
+  continuous. Config's inventory and any rule over the type are blind to the catalog here, and each new
+  database leaves a service role's `AccessDenied` in the trail that is no finding. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-11.
+
 ## CloudTrail
 
 - `SUP-041` **Control Tower's organization trail carries the organization id as its `S3KeyPrefix`, so the id
@@ -1896,16 +1912,32 @@ entry is still true is the reading.
   `PROJECT_CONTRIBUTOR` through a group profile in the portal on 2026-10-15 at 06:15Z, is answered
   `ListConnections` and `GetAsset`, while Data Governance's session stays refused (read 2026-10-18). A
   member account's `GetProjectProfile` and `GetGroupProfile` fail differently, on the domain's resource
-  policy: *"no resource-based policy allows the datazone:GetProjectProfile action"*. Where:
-  `log-stage-06d-unified-studio-remainder.md`, 2026-10-30; `log-stage-06f-data-governance.md`, 2026-09-18,
-  2026-10-18 and 2026-10-26; `aws/catalog.py`.
+  policy: *"no resource-based policy allows the datazone:GetProjectProfile action"*. What the layer
+  answers to a non-member is a project's existence and shape (measured 2026-11-11, Stage 19 step 4.5):
+  Production's `InfrastructureAccess`, a member of no project, read `ListProjects`, every project of the
+  domain, and on `governed-lake`, a project of another account, `GetProject`, `ListProjectMemberships` and
+  `ListEnvironments`, and was refused `ListConnections`; Data Governance's read the member lists of all six
+  projects the same day. Membership confines a project's connections and catalog, not its name, its
+  members or its environments. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-10-30;
+  `log-stage-06f-data-governance.md`, 2026-09-18, 2026-10-18 and 2026-10-26;
+  `log-stage-19-smus-native-data-product.md`, 2026-11-11; `aws/catalog.py`.
 
-- `SUP-158` **An IAM role in a DataZone domain is two principals, and a policy grant takes the group.** Its
-  ARN resolves as a user identifier to one session's user profile, and as a group identifier to the role's
-  `IAM_ROLE_SESSION_GROUP` profile, which every session belongs to. `CreatePolicyGrant` with the ARN as a
-  user is refused, *"Group profile already exists for the given User profile"*, though the service model's
-  pattern admits it; the grant goes to the group by its profile id, which Cloud Control's `GetResource` for
-  `AWS::DataZone::GroupProfile` resolves from `<domain>|<role ARN>` (Stage 18 2.7, 2026-10-19).
+- `SUP-158` **An IAM role in a DataZone domain is a group and one user profile per session name, and a
+  policy grant takes the group.** Its ARN resolves as a user identifier to one session's user profile, and
+  as a group identifier to the role's `IAM_ROLE_SESSION_GROUP` profile, which every session belongs to.
+  `CreatePolicyGrant` with the ARN as a user is refused, *"Group profile already exists for the given User
+  profile"*, though the service model's pattern admits it; the grant goes to the group by its profile id,
+  which Cloud Control's `GetResource` for `AWS::DataZone::GroupProfile` resolves from `<domain>|<role ARN>`
+  (Stage 18 2.7, 2026-10-19). The domain keeps a user profile for every session name a role has called
+  under (read 2026-11-11, `search-user-profiles --user-type DATAZONE_IAM_USER`, Stage 19): of 50 such
+  profiles, 30 were `awsds-deploy-sandbox-test`'s and 6 `awsds-deploy-staging`'s, each with its own
+  `sessionName` of the form `botocore-session-<digits>`, the SDK's name for a role assumed through a
+  profile that sets no `role_session_name`, so every pipeline job adds one; the four accounts'
+  `InfrastructureAccess` roles held one each, named for the person; ten were project roles', with no
+  session name, five of them of projects deleted since (`SUP-165`). Each carries `groupProfileId`, the
+  role's group. A project role's profile is a member of its own project: `list-project-memberships` reads
+  it as `PROJECT_CONTRIBUTOR` in each of the five projects that hold a `Tooling` environment, the two
+  created that day included. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11.
 
 - `SUP-159` **A role's `IAM_ROLE_SESSION_GROUP` profile exists only after the role's first DataZone call,
   and until a person makes it a project member the CI/CD CLI's deploy stops on `ListConnections`** (measured
@@ -2083,9 +2115,10 @@ entry is still true is the reading.
   and in Production, Stage 19 step 4.6): each account held `InfrastructureAccess` alone,
   `CROSS_ACCOUNT_VERSION` 4 and `SET_CONTEXT` `TRUE`, and after the provisioning role's three
   `PutDataLakeSettings` it held the two SMUS roles beside it, the same parameters, both create-default
-  lists still empty and the flag `true`; `<env>/data/` planned `No changes` after it. Production, which
-  had no `default` Glue database, holds one since. Where: `log-stage-19-smus-native-data-product.md`,
-  2026-11-11.
+  lists still empty and the flag `true`; `<env>/data/` planned `No changes` after it. The same
+  provisioning leaves a `default` Glue database carrying its own `ALL` and a `DESCRIBE` for
+  `IAMPrincipals` conditioned on the project: Production had none and holds one since, and Staging's,
+  which existed, gained the two grants. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11.
 
 - `SUP-171` **An `MLflowApp` environment's stack holds only a `WaitConditionHandle`: DataZone's deployer
   creates the MLflow App beside the stack, and the environment reads `ACTIVE` minutes before the app is
@@ -2279,7 +2312,8 @@ entry is still true is the reading.
   portal's environment carries one user parameter, `glueDbName`, and no subscription target; the same
   environment created through the API, `create-environment` with the profile's `DataLake` configuration,
   the blueprint and `--user-parameters name=glueDbName,value=<name>`, creates the same database, grants
-  and daily source and carries a target, `<environment name>-default-target`, for `GlueTableAssetType`
+  and daily source, its stack holding the database alone, and carries a target,
+  `<environment name>-default-target`, for `GlueTableAssetType`
   and `GlueViewAssetType` over that database (measured 2026-11-11 in Staging and in Production, Stage 19
   step 4.6; the portal's `app_etl` environment in Sandbox read with none the same day). Where:
   `log-stage-06f-data-governance.md`, 2026-09-12/13; `log-stage-19-smus-native-data-product.md`, 2026-10-28,
@@ -2533,6 +2567,23 @@ entry is still true is the reading.
   own id is no node identifier either. The ids are in Data Governance's trail, each `CreateLineageNode`
   carrying a node's id and `sourceIdentifier` in `additionalEventData`. Where:
   `log-stage-19-smus-native-data-product.md`, 2026-11-10.
+
+- `SUP-354` **`CreateSubscriptionRequest` naming a domain, a listing and a project that do not exist is
+  refused, never answered not-found** (measured 2026-11-11, Stage 19 step 4.1). `aws datazone
+  create-subscription-request --domain-identifier dzd_canaryprobe0000 --subscribed-listings
+  identifier=canaryprobe0000 --subscribed-principals project={identifier=canaryprobe0000}`, ids that pass
+  the model's patterns and name nothing: as `Policy Canary`'s administrator with no deny in the way,
+  DataZone's own layer answered `AccessDeniedException`, *"User is not permitted to perform operation:
+  CreateSubscriptionRequest"*; under a service control policy denying the action the same call read
+  *"with an explicit deny in a service control policy"* naming the policy, on the canary under a candidate
+  and as `InfrastructureAccess` in Staging and in Production under `awsds-org-scp-ou-workloads`. IAM and
+  the organization's policies answer before DataZone looks the identifiers up, and DataZone's own answer
+  for ids that name nothing is a refusal; whether it authorizes first or masks a not-found was not
+  separated. A deny on the action is therefore probed with made-up ids, the probe creating nothing
+  whatever the answer, and the two wordings separate the layers (Lesson 21).
+  `ListEnvironmentBlueprints` on the same made-up domain read the policy's deny under the candidate; its
+  answer with nothing denying it was not read. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-11; `aws/probes/probes.py`; `runbooks/scp-battery.md`.
 
 ### Connections
 
@@ -3452,11 +3503,17 @@ entry is still true is the reading.
   2026-10-21.
 
 - `SUP-286` **`deploy` reads a manifest's local content from the manifest's folder, whatever
-  `--bundle-archive-path` names** (measured 2026-10-19, Stage 18 4.2, `aws-smus-cicd-cli` 1.0.9). A
-  `content.storage` item that names no connection is copied from the folder the manifest sits in; run from a
-  checkout with a release's bundle, the deploy wrote the checkout's files and none of the bundle's. A
-  promotion that deploys a stored bundle extracts it and puts the stage's manifest beside it. Where:
-  `log-stage-18`'s 4.2 entries.
+  `--bundle-archive-path` names, and the catalog from that archive alone** (the first measured 2026-10-19,
+  Stage 18 4.2, `aws-smus-cicd-cli` 1.0.9; the second read 2026-11-11 in its `commands/deploy.py`, no call
+  made). A `content.storage` item that names no connection is copied from the folder the manifest sits in;
+  run from a checkout with a release's bundle, the deploy wrote the checkout's files and none of the
+  bundle's. A promotion that deploys a stored bundle extracts it and puts the stage's manifest beside it.
+  The catalog import takes the other road: `_import_catalog_from_bundle` opens the zip the option names, or
+  the one found under `./artifacts` when the manifest has bundle items, and reads
+  `catalog/catalog_export.json` inside it. With no archive, with no such member, or with the stage's
+  `deployment_configuration.catalog.disable` true, it imports nothing and returns success. A leg that
+  promotes files and catalog gives the CLI both: the extracted files beside the manifest and the archive's
+  path. Where: `log-stage-18`'s 4.2 entries; `log-stage-19-smus-native-data-product.md`, 2026-11-11.
 
 - `SUP-287` **`workflow.create` and the operator-code lookup scan the project's whole shared root, whatever
   `targetDirectory` says** (measured 2026-10-19, Stage 18 5.2, the same version). The scan's prefixes come
@@ -3508,6 +3565,15 @@ entry is still true is the reading.
   pipeline that depends on the project's read or on the export checks the log and the archive. Where:
   `log-stage-19-smus-native-data-product.md`, 2026-11-11; `examples/app-etl/.gitlab-ci.yml`, the job
   `bundle`.
+
+- `SUP-357` **`deploy` reports a catalog import as failed only when every item it attempted failed**
+  (read 2026-11-11 in the CLI 1.0.9's `commands/deploy.py`, `_import_catalog_from_bundle`; no call made).
+  After the import it prints *"Catalog import completed"* with five counts, `Created`, `Updated`,
+  `Skipped (extra in target)`, `Failed` and `Published`, and returns failure only if the sum of created,
+  updated and failed is above zero and equals the failed count, printing *"All catalog imports failed"*.
+  Any other mix returns success and the deploy's exit status with it: one asset created and the rest
+  failed is a successful deploy. A leg that promotes a catalog reads the `Failed:` count from the log, or
+  the target project's assets afterwards. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11.
 
 ## Bedrock
 
@@ -3673,7 +3739,8 @@ entry is still true is the reading.
 A Terraform behaviour that is one service's quirk is recorded under that service: `SUP-124` (a Redshift
 Serverless workgroup's `config_parameter`), `SUP-120` (an Athena workgroup's `force_destroy`), `SUP-106` and
 `SUP-101` (`aws_lakeformation_data_lake_settings` and the settings it replaces), `SUP-150` and `SUP-153`
-(DataZone blueprint configurations through `awscc`), `SUP-064` (security group descriptions at `validate`),
+(DataZone blueprint configurations through `awscc`), `SUP-353` (DataZone policy grants created at once, and
+`-parallelism=1`), `SUP-064` (security group descriptions at `validate`),
 `SUP-065` (a Data Lifecycle Manager description at plan time), `SUP-060` (`jsonencode` and an EventBridge
 Scheduler placeholder), `SUP-061` (`instance_type` and user data), `SUP-213` (`aws_sagemaker_image_version`
 and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation id after a transfer).
@@ -3733,6 +3800,17 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   Terraform; a profile carrying no credential setting reaches the instance metadata through both tools'
   default chain. Where: `log-stage-08-cicd-pipelines.md`, 2026-10-15;
   `terraform-live/production/runners/deploy-runner.tf`.
+
+- `SUP-356` **A resource planned as an in-place update because one argument is known after apply is not
+  counted by the apply when the value comes out the same** (measured 2026-11-11 in `staging/studio/` and
+  `production/studio/`, Stage 19 step 4.4, Terraform 1.16.6). Each plan read *"5 to add, 2 to change, 0 to
+  destroy"* and each apply *"5 added, 1 changed, 0 destroyed"*. The second planned change was an
+  `aws_iam_policy` whose document reads a data source carrying `depends_on` on a module with pending
+  changes: Terraform defers such a read to the apply, which its page on data sources states, so the
+  document was planned as `(known after apply)` and the policy as updated in place; at apply the document
+  rendered identical and no update was made. A plan and an apply whose counts differ by such a resource
+  are both right, and the re-plan reads `No changes`. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-11; `terraform-live/staging/studio/person-session.tf`.
 
 ### The `aws` provider
 

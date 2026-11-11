@@ -482,7 +482,7 @@ more after the apply (`SUP-350`):
 | Probe (from `awsds-infra-prod` and `awsds-infra-staging`) | Expected | Statement it answers |
 |---|---|---|
 | `aws datazone list-domains` | answers | `DenyDataZoneEntirely`'s `ArnNotLike`: the SSO `InfrastructureAccess` role is excepted |
-| `aws datazone create-subscription-request` on a domain, a listing and a project that do not exist | `AccessDenied` naming the `Workloads` document | `DenyDataZoneSubscriptionRequests`, which binds the excepted principals too. `blocked`: with the deny lifted DataZone's own layer answers *"User is not permitted to perform operation: CreateSubscriptionRequest"*, the wording that proves authorization was reached (the canary's answer with nothing parked, 2026-11-11) |
+| `aws datazone create-subscription-request` on a domain, a listing and a project that do not exist | `AccessDenied` naming the `Workloads` document | `DenyDataZoneSubscriptionRequests`, which binds the excepted principals too. `blocked`: with the deny lifted DataZone's own layer answers *"User is not permitted to perform operation: CreateSubscriptionRequest"*, the wording that proves authorization was reached (the canary's answer with nothing parked, 2026-11-11; `SUP-354`) |
 | `aws sagemaker create-space` on a domain that does not exist | `AccessDenied` | none new: `DenyInteractiveSageMakerSurface` still binds both accounts |
 
 The deny half has no principal the battery can produce in those accounts, so it is read once, at the

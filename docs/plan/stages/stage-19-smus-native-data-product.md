@@ -1003,7 +1003,8 @@ what a release drops (`SUP-348`), and the workflow scan reads the target project
   are release F, written once 4.6 and 4.8 are applied: `deploy` reads the storage items from the
   manifest's folder and the catalog from the archive, so a leg extracts the stored bundle beside the
   tag's manifest and passes the archive as `--bundle-archive-path` (`commands/deploy.py`, read
-  2026-11-11).
+  2026-11-11; `SUP-286`). The import returns failure only when every item it attempted failed, so the
+  leg reads the summary's `Failed:` count (`SUP-357`).
 - **4.10 [user] The release**, `runbooks/promotion.md`'s order: the tag, `test-deploy`, `store-bundle`,
   `staging-gate`, `staging-deploy`, `staging-test`, `production-gate`, `production-deploy`, then the
   first Production run of `app-etl` by the bootstrap's `workflow.run` (decision 14). **[Claude] reads**
