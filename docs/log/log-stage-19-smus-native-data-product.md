@@ -930,3 +930,30 @@ Account ids are replaced by the account's name in angle brackets.*
   house's. (b) keeps AWS's own trigger, the schedule, so decision 17's sentence that (b) gives up the
   native path was imprecise: (b) gives up decision 3 (a)'s order. Under decision 18 (d) the task's start
   is what returns a target's table to its asset after the import.
+
+## 2026-11-11 — decision 19 taken: every promotion across accounts
+
+- **[user]**, verbatim: *"Esse é um bom ponto: o glue catalog é único para a conta toda. Logo o que está
+  em desenvolvimento no sandbox compartilha o mesmo namespace do estágio test. Neste caso, considerando a
+  necessidade de haver isolamento entre ambientes, entendo que o ideal seria promover sempre entre contas
+  diferentes. Ou seja, não haveria estágio test. A esteira de promoção seria sandbox -> staging ->
+  production. O q vc acha?"*
+- **[user]**, verbatim, during the answer: *"Outra coisa: em sandbox, o data scientist deveria poder ver o
+  catálogo de produção como read-only. Neste caso, ele verá dois catálogos (um do sandbox e outro do
+  production), com potencialmente nomes de bases de dados repetidas?"*
+- **[Claude] Read for the answer**, with nothing up: D41 item 3 and its consequences (the `test` project
+  as the CLI's one stage beyond `dev` while the targets held no project), the manifest's `test` stage
+  (`workflow.create` and `workflow.run` with `trailLogs`), and `runbooks/promotion.md`'s release sitting,
+  which raises Sandbox's `egress/` for `test-deploy`'s run. As `awsds-infra-sandbox-1`
+  (`InfrastructureAccess`), `glue get-database` on `curated` and `raw`: both are resource links to
+  databases of the same names in another account's catalog.
+- **[Claude] Answered**: retiring `test` agreed with, with the reasons and what it changes. Sandbox's
+  engines see one Glue catalog, a Production table entering it as a resource link with a local name; the
+  domain's business catalog is one for every account and would show `dev`'s and Production's product
+  under one name, so Production alone listing was recommended.
+- **[user]**, verbatim: *"Sim, registre"*
+- **[Claude] Decision 19 recorded as (c)**, with (a)'s Staging half: decisions 2, 3, 10 and 14 amended,
+  steps 3.1, 3.2, 3.3 and 4.13, verifications xii, xvii and xxv, the decisions and stages tables, 6.2 and
+  the other sessions' list; pass 3's heading names the bundle and the manifest's stages. D41 item 3
+  amended in its file and its index row. Decision 20 written, the user's, (b) recommended: Production
+  alone lists. The waiting list's decision 19 row becomes decision 20's.

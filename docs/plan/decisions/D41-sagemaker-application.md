@@ -12,7 +12,10 @@ each with a dated line. The first CLI deploy into a project ran in the lab the s
 alternative. **Item 2 reopened 2026-10-31** by
 [Stage 19](../stages/stage-19-smus-native-data-product.md) decision 6 (b), the user's: the alternative,
 a deployment project in each target and the CLI deploying every stage, is built by that stage's pass
-4; the note at the end of "Where production runs" says what changes and what stands.
+4; the note at the end of "Where production runs" says what changes and what stands. **Item 3
+amended 2026-11-11** by Stage 19 decision 19 (c), the user's: no `test` project in the chain, the
+pipeline bundling from `dev` and deploying into Staging, then Production, so every promotion crosses
+an account; the note after item 2's says what changes.
 
 **In one line:** the application is the unit, the CI/CD CLI carries it between the Sandbox projects
 and bundles it, the pipeline deploys the bundle, and design B is built as the layer that schedules and
@@ -267,6 +270,20 @@ the same day, against the recommendation), so the lake's governed write leaves t
 amendment. The
 comparison and Stage 18's readings are the record of the price; `SMUS.md`, `POLICIES.md`, Stage 8's
 legs and Stage 10's 1.1, 2.4 and 4.2 follow Stage 19's pass 4.
+
+### Item 3 amended 2026-11-11
+
+[Stage 19](../stages/stage-19-smus-native-data-product.md) decision 19 (c), the user's: *"considerando
+a necessidade de haver isolamento entre ambientes, entendo que o ideal seria promover sempre entre
+contas diferentes. Ou seja, não haveria estágio test. A esteira de promoção seria sandbox -> staging ->
+production"*. The `test` project answered item 2's targets with no project, and since item 2's
+reopening each target holds one. The `test` project shares Sandbox's Glue catalog, Lake Formation
+administrators and lake with the experiments, so one database name cannot exist in `dev` and `test`
+(read 2026-11-11). What changes: the CLI deploys from the repository into `dev` while the application
+is engineered; the pipeline's bundle job makes the bundle from `dev`, and the legs deploy it to Staging,
+then Production; `test-deploy` retires, and `test-experimentation` stays a Sandbox project outside the
+chain. Everything else stands as item 2's note leaves it; Stage 8's 2.5 and 3.3 and the runbooks follow
+Stage 19's pass 4.
 
 ## The chain layer, against `terraform-reference/`
 
