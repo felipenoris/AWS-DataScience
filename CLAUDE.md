@@ -237,9 +237,9 @@ per laptop, never one per session.
   session's `git push` (*Out-of-Place Publication*); the orchestrating session ran each itself on the
   user's authorization in its own chat. It also refused the orchestrating session's own apply of a
   saved plan in Production (*Production Deploy*, 2026-10-18) until the user authorized it in that chat. On
-  2026-11-11 it refused an SCP apply and a Staging `[P]` apply under a blanket authorization in chat, and let
-  through reads, a RAM association and a candidate SCP's create, attach and delete on `Policy Test`; the
-  same day every apply and `create-project` the user named passed, and an unnamed apply did not.
+  2026-11-11 it refused applies under a blanket authorization and under a question (*"você pode
+  executar?"*), a Lake Formation settings write and a project membership, and let through reads, a RAM
+  association, a candidate SCP's life on `Policy Test` and every apply and `create-project` the user named.
   Sessions told not to edit `CLAUDE.md`, `docs/GENERAL_PLAN.md`, `docs/plan/stages/INDEX.md` and
   `docs/log/INDEX.md` leave
   their text in their reports, and the orchestrator rewrites those rows once, so a dozen PRs do not

@@ -1358,3 +1358,23 @@ read against the supplement; the readings below are the ones the review added.
   from the readings of 04:30 and 14:27 UTC), `SUP-355`, `SUP-356` (the `studio/` plans' two changes and
   their applies' one) and `SUP-357`; readings appended to `SUP-157`, `SUP-158`, `SUP-170`, `SUP-184` and
   `SUP-286`; `SUP-353` named among the Terraform section's pointers.
+
+## 2026-11-11 — the user's acts and the next applies asked of Claude, each refused by the app's classifier
+
+The same day, nothing up. No write reached AWS in this entry.
+
+- **[user]**, verbatim: *"Sobre "atos seus" e "os 5 applies seguintes", você pode executar todos esses
+  passos?"*, on the flag (4.7), the deploy role's membership (item 12) and the five saved plans.
+- **[Claude] Before the attempts**, 16:08 UTC: the three profiles as `InfrastructureAccess`; the one
+  other session on the laptop told. Production's trail of 2026-10-25 read for the console's own write
+  of the flag: one `PutDataLakeSettings` at 17:44:31 UTC carrying the whole structure with
+  `allowFullTableExternalDataAccess` `false`, after which the key reads absent (`SUP-112`).
+- **[Claude] Three calls refused by the app's auto-mode classifier, none retried**:
+  `lakeformation put-data-lake-settings` in Production, the settings as read with the flag `false`
+  (*Modify Shared Resources*); `datazone create-project-membership` of `awsds-deploy-staging`'s group as
+  `PROJECT_OWNER` of `deploy-staging` (*Permission Grant*, as at Stage 18); and the first of the five
+  applies, `stage19-studio-staging-3.tfplan` (*Protected-Scope IaC Apply*), the user's sentence being a
+  question where the applies of 14:23 and 15:18 UTC followed *"Autorizo"*.
+- **[Claude] Read after them**, 16:10 UTC: the flag `true` and three administrators in both targets,
+  `deploy-staging`'s two members, the project role's three managed policies. Nothing changed. The two
+  acts stay the user's, and the five applies wait for the user's word naming them or the user's hand.
