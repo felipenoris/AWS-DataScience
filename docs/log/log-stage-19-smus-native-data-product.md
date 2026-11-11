@@ -1231,3 +1231,94 @@ os 3 applies"*. The app's classifier let each through on that sentence.
 - **[Claude] `./aws/studio.py`** at 14:40 UTC on the five infrastructure profiles and the canary: 0
   checks failed. `US-2` passes on both targets seeing the shared domain and owning none, `US-3` notes
   no configuration in either until the second apply, `US-6` passes on no SageMaker AI domain.
+
+## 2026-11-11 — the configurations and the profiles applied; `deploy-staging` and `deploy-production` created with their database
+
+The same day, nothing up. The user authorized the five steps listed in chat, the two second `studio/`
+applies, `governance/`'s profiles and each target's project with its database: *"Autorizo os 5 passos"*.
+The app's classifier let every call through.
+
+- **[Claude] Before the writes**, 15:17 UTC: the three profiles answered as `InfrastructureAccess`; the
+  one other session on the laptop, idle, was told of the writes and of the slices applied from this
+  branch.
+- **[Claude⚡] The configurations (4.4's second apply)**, from the saved plans: `staging/studio/` 15:18:06
+  to 15:18:41 UTC and `production/studio/` 15:18:55 to 15:19:28 UTC, each *"5 added, 1 changed, 0
+  destroyed"*, the person-session policy's document unchanged once known. Both re-plan `No changes`.
+  From each target `list-environment-blueprint-configurations` reads `Tooling` (`4k186sfh08eqxc`) and
+  `DataLake` (`d8w7c3fmbsz5cg`), each with the account's provisioning role, manage-access role, D13
+  boundary, VPC and two private subnets, `Tooling` with the projects bucket as its S3 location.
+- **[Claude⚡] The profiles (4.5)**, `deployment_profiles_enabled` true, planned as `awsds-infra-data` at
+  15:20:35 UTC: *"4 to add, 0 to change, 0 to destroy"*, the grants naming Staging's group
+  `65b0f127-…` and Production's `ca2735c9-…`. The apply, 15:21:15 to 15:21:42 UTC, created
+  `deployment-staging` (`cpkm68sz0l185s`), `deployment-production` (`3o9zp0asbh2gi8`) and Production's
+  grant, and failed on Staging's: *"failed conditions: VERSION EQ [S] (Service: DataZone, Status Code:
+  409 ...). ErrorCode: ResourceConflict"*, the two grants of one type on one unit created at once
+  (`SUP-353`). `list-policy-grants` read that grant absent; the re-plan read 1 to add, and its apply,
+  15:22:50 to 15:23:10 UTC, created it. The re-plan after it reads `No changes`; the switch is
+  committed (`7792da20`).
+- **[Claude] Before the projects**, 15:25 UTC, both targets: Lake Formation with one administrator, the
+  flag unset, `CROSS_ACCOUNT_VERSION` 4, `SET_CONTEXT` `TRUE`, no registered location; no
+  `datazone_usr_role_*` role, no `DataZone-Env-*` stack, no Access Grants instance; the Glue databases
+  `app_outputs`, `curated` and `raw`, and `default` in Staging alone.
+- **[Claude⚡] `deploy-staging` (4.6)**, `create-project` from `deployment-staging` as
+  `awsds-infra-staging` at 15:25:59 UTC: `5ido8bej1zoeq8`. Its `Tooling` environment (`d6nu5aphq1e974`)
+  read `ACTIVE` and the project `SUCCESSFUL` at 15:27:41 UTC, the stack created at 15:26:13. Then the
+  database: `create-environment` with the profile's `DataLake` configuration (`d8f802ad-…`), the
+  blueprint and `--user-parameters name=glueDbName,value=app_etl`, named `deploy-staging-app-etl`, at
+  15:28:27 UTC: `54jhe9989w0tcg`, `ACTIVE` at 15:29:07.
+- **[Claude⚡] `deploy-production` (4.6)**, the same two calls as `awsds-infra-prod`: the project
+  `d7qcazihvr3s7k` at 15:29:29 UTC, its `Tooling` (`59niwej9axztow`) `ACTIVE` at 15:31:00 and the
+  project `SUCCESSFUL` at 15:31:18; the environment `deploy-production-app-etl` (`azkybvkz7iea34`, the
+  configuration `f403ecfc-…`) at 15:31:41 UTC, `ACTIVE` at 15:32:24.
+- **[Claude] What provisioning created (3.2 and 3.3's readings), the same in both accounts**: the
+  `Tooling` stack's thirteen resources, Stage 18's list, with `enableSpaces` `false`, the account's D13
+  boundary as `permissionsBoundaryArn`, and no SageMaker AI domain; the project role
+  `datazone_usr_role_<project>_<environment>` and the two Bedrock roles, all three under the boundary;
+  the security group `datazone-<project>-dev` in the account's compute VPC, all traffic in from itself
+  and out to `0.0.0.0/0`; two Glue network connections; the log group `datazone-<project>-dev` at 731
+  days under the project key; nine connections; five objects under the project's prefix; the Access
+  Grants instance `default` and `AWSServiceRoleForAmazonAthena`. Each project has two members: the
+  account's `InfrastructureAccess` session group as `PROJECT_OWNER`, and the project role's own IAM
+  user profile as `PROJECT_CONTRIBUTOR`.
+- **[Claude] Lake Formation after it**: the provisioning role's three `PutDataLakeSettings` (15:26:05
+  UTC in Staging, 15:29:35 in Production) added `awsds-<env>-smus-provisioning` and
+  `awsds-<env>-smus-manage-access` beside `InfrastructureAccess`, kept the parameters and both empty
+  create-default lists, and set `AllowFullTableExternalDataAccess` `true` in both accounts (`SUP-170`).
+  The project's `dev` prefix is registered under the project role, hybrid access off. `staging/data/`
+  and `production/data/` plan `No changes`, and `DT-5` passes. Production holds a `default` Glue
+  database it did not have. **The flag is 4.7, the user's**: `TM-26`'s Production half is open again
+  since 15:29 UTC.
+- **[Claude] The database (verification xix)**: `app_etl` in each account, *"Created by DataZone for
+  project deploy-<env>"*, its location the project's `dev/data/catalogs/`, no create-table default, no
+  table. On it the account's `IAMPrincipals` hold `CREATE_TABLE`, `DESCRIBE` and `DROP` under
+  `context.datazone.projectId=="<project>"`, and `SELECT`, `INSERT`, `DELETE`, `ALTER`, `DROP` and
+  `DESCRIBE` on its tables; the provisioning role `ALL`, grantable; the manage-access role
+  `CREATE_TABLE` and grantable `DESCRIBE`, with grantable `DESCRIBE` and `SELECT` on the tables, its
+  `CreateLakeFormationOptIn` passing. The source `<account>-AwsDataCatalog-app_etl-default-datasource`
+  is `READY`, enabled, `publishOnImport` false, daily at the minute of its creation (`cron(28 15 * * ?
+  *)` in Staging, `cron(32 15 * * ? *)` in Production), its filter `app_etl` `INCLUDE *`. **The
+  environment carries a subscription target**, `deploy-<env>-app-etl-default-target`, for
+  `GlueTableAssetType` and `GlueViewAssetType`, its `databaseName` `app_etl`, its manage-access role the
+  project role, its principal `abac:CURRENT_PROJECT`; the portal's own environment for `app_etl` in
+  `eighth-experimentation` read with none at 15:48 UTC (`SUP-184`).
+- **[Claude] The trails of the two windows**, 233 events in Staging and 245 in Production: the
+  provisioning role made 119 and 120 of them, the DataZone service 39 in each, and
+  `InfrastructureAccess` was the one principal calling `datazone:`. No refusal named an SCP or the
+  boundary: the provisioning role's `athena:GetWorkGroup` and `ListTagsForResource`,
+  `logs:DescribeIndexPolicies` and `DescribeResourcePolicies`, `ec2:DescribeSecurityGroupRules`,
+  `servicequotas:GetServiceQuota` and a first `ec2:CreateSecurityGroup`, and the project role's
+  `s3:CreateAccessGrantsLocation`, Stage 18's list. The manage-access role's `RevokePermissions` from
+  `IAM_ALLOWED_PRINCIPALS` answered `InvalidInputException`, nothing to revoke.
+- **[Claude] The instruments**: `./aws/studio.py` reads the deployment targets' project roles since this
+  sitting, `US-8` passing on three bounded roles in each; at 15:44 UTC 0 checks failed, `US-3` passing
+  on each target's two configurations and `US-4` on the five profiles. `./aws/deploytargets.py` at
+  15:41 UTC: 0 checks failed.
+- **[Claude] The next applies written and planned**, the projects' names in three slices:
+  `project-roles.tf` in each `studio/` (2 to add each, the workflows grant and the person-session deny
+  on the project role); `deployment_project_role` in each `foundation/` (2 to add each, the deploy
+  role's policy and its attachment, the alerts var-file read from the project folder's `secrets/`);
+  `catalog_import_projects` in `governance/` (6 to add, three grants per project as `OWNER`, applied
+  with `-parallelism=1`). Saved under `$HOME/tmp/` as `stage19-studio-staging-3.tfplan`,
+  `stage19-studio-production-3.tfplan`, `stage19-foundation-staging-deploy-project.tfplan`,
+  `stage19-foundation-production-deploy-project.tfplan` and `stage19-governance-catalog-import.tfplan`.
+  Not applied: a round the user has not named.

@@ -445,8 +445,11 @@ def main(argv: list) -> int:
     # holds service-linked roles, which a service creates for itself and a blueprint cannot
     # provision, and /aws-reserved/ holds Identity Center's. Everything a blueprint could
     # have made is at '/', so this costs ~14 GetRole calls per account rather than ~33.
+    #
+    # The deployment targets are read too: a deployment project's Tooling environment creates the
+    # same three roles there (Stage 19 step 4.6), under that account's D13 boundary.
     role_rows: dict = {}  # profile -> [(role name, boundary name or '-', how it was found)]
-    for p in INTERACTIVE_PROFILES:
+    for p in INTERACTIVE_PROFILES + HEADLESS_PROFILES:
         if p not in live:
             continue
         cli = cli_for(p)
@@ -1149,7 +1152,7 @@ equivalent) shows up here - and Stage 8 step 1's pipeline is written against it.
         # ==============================================================================
         rep.h1("6. The project roles and their permissions boundary (INT-15)")
         if not role_rows:
-            rep.line("No blueprint-provisioned role in any Interactive account (or not measured).")
+            rep.line("No blueprint-provisioned role in any member account (or not measured).")
         else:
             for p, rows_ in role_rows.items():
                 rep.h2(p)

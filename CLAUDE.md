@@ -239,7 +239,7 @@ per laptop, never one per session.
   saved plan in Production (*Production Deploy*, 2026-10-18) until the user authorized it in that chat. On
   2026-11-11 it refused an SCP apply and a Staging `[P]` apply under a blanket authorization in chat, and let
   through reads, a RAM association and a candidate SCP's create, attach and delete on `Policy Test`; the
-  same day it let through the three applies the user's message named, and refused a fourth.
+  same day every apply and `create-project` the user named passed, and an unnamed apply did not.
   Sessions told not to edit `CLAUDE.md`, `docs/GENERAL_PLAN.md`, `docs/plan/stages/INDEX.md` and
   `docs/log/INDEX.md` leave
   their text in their reports, and the orchestrator rewrites those rows once, so a dozen PRs do not
@@ -343,8 +343,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `pickup` consumed the drop, `curated.trades` at 20 rows, after decision 13's two halves: the
   `AllowFullTableExternalDataAccess` flag on in Production (the user's console, 19:49 UTC) was not enough,
   the vend refused (`SUP-111`), and the lake's `lakeformation.tf` carries it
-  since 22:03 UTC (`TM-26`); the flag is on in Sandbox and the lake, unset in Staging and, since the user turned it off on 2026-10-25,
-  in Production. 9.1's
+  since 22:03 UTC (`TM-26`); the flag is on in Sandbox, the lake and, since Stage 19 4.6 (2026-11-11), Staging and Production (4.7, the
+  user's). 9.1's
   `production/warehouse/` applied 22:07 UTC (the namespace; `EXC-13`'s Production sentence), refusal 9
   lifted, `warehouse-compute/` raised per warehouse sitting, 9.3 run 2026-10-24 (the schema `trades` at 1 TB, the roles, the `IAMR:` users, the default privileges, every `PUBLIC`
   `CREATE` revoked), **9.4 to 9.7 done 2026-10-25**: the DDL job and the load (decision 15's Production-only workflow, its schedule `DISABLED` through the slice) after the deploy role's `FollowItsOwnStatements` and the job group's 5439 egress; 9.5's datashare across Production, Data Governance (decision 14) and Sandbox; 9.7 read from `eighth-experimentation` through the access role's catalog read, its Lake Formation grant and `TEMP` (`redshift-connection.md` §G), and with Production's workgroup gone;
@@ -542,12 +542,12 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `deploy-production`, 16 (b) the warehouse workflow in Production's project, 17 (a) (`CT-13`), 18 (d) a `dev`
   project for app-etl alone, 19 (c) no `test` stage, 20 (b) Production alone lists. **Pass 1 run 2026-11-10**
   (PR #284) in `eighth-experimentation`: the Iceberg table, its asset, listing and lineage (`SUP-343`,
-  `SUP-345`, `SUP-346`, `TM-29`). **Pass 4 opened 2026-11-11, nothing up**: both targets associated by `ram
-  associate-resource-share` (`SUP-349`); the `Workloads` SCP's amendment (4.1) and `<env>/studio/`'s
-  prerequisites (16 added each) applied on the user's word; each `studio/`'s configurations planned (5 to
-  add, 2 to change) and owed, then `governance/`'s `deployment-staging` and `deployment-production`
-  (rehearsed, 4 to add, behind `deployment_profiles_enabled`); the CLI import's grants (`SUP-351`) and
-  `<env>/foundation/deploy-project.tf` written, gated on the projects.
+  `SUP-345`, `SUP-346`, `TM-29`). **Pass 4, 2026-11-11, nothing up**: both targets associated (`SUP-349`);
+  the `Workloads` SCP's amendment (4.1), `<env>/studio/` (4.4) and `governance/`'s two deployment profiles
+  (4.5) applied on the user's word; **`deploy-staging` (`5ido8bej1zoeq8`) and `deploy-production`
+  (`d7qcazihvr3s7k`) created, each with the database `app_etl`** (4.6, `INV-21`); the flag (4.7) and the
+  deploy roles' membership are the user's; five applies planned and owed: the project roles' grants, the
+  deploy roles' policy, the CLI import's grants (`-parallelism=1`, `SUP-353`).
   **The pipeline changes in two releases**: T retires the `test` stage on today's legs (the job `bundle` as
   `awsds-deploy-sandbox-test`, which reads `dev` and writes nothing; in `examples/app-etl/`, its sitting
   `runbooks/promotion.md` §N.8.2), F is the CLI's legs (4.9 to 4.11). The order of what is left is the stage

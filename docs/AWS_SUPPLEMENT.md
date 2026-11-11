@@ -1970,6 +1970,19 @@ entry is still true is the reading.
   2026-08-21. The caller needs `datazone:PutDomainSharingPolicy` beside the RAM action. Where:
   `log-stage-19-smus-native-data-product.md`, 2026-11-11.
 
+- `SUP-353` **Two policy grants of one type on one domain unit, created at once, leave one of them
+  refused with `ResourceConflict`** (measured 2026-11-11 in Data Governance, Stage 19 step 4.5). One
+  apply created two `CREATE_PROJECT_FROM_PROJECT_PROFILE` grants on the root domain unit in parallel,
+  through `awscc_datazone_policy_grant`: one was created in 6 s and the other failed, *"Waiting for Cloud
+  Control API service CreateResource operation completion returned: waiter state transitioned to FAILED.
+  StatusMessage: failed conditions: VERSION EQ [S] (Service: DataZone, Status Code: 409 ...). ErrorCode:
+  ResourceConflict"*. `list-policy-grants` read three grants of the type, the refused one absent; the
+  re-plan read 1 to add and its apply created it in 8 s. The wording reads as a conditional write on a
+  version the first grant had just moved (inferred), so the grants of one type on one unit behave as one
+  record. Two grants on two different entities, each target's two blueprint grants in the same sitting,
+  were created in parallel with no refusal. An apply that adds several grants to one unit runs with
+  `-parallelism=1`, or is applied twice. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11.
+
 ### Environments and projects
 
 - `SUP-163` **The `Workflows` blueprint has three states and the bill starts at the third.** Enabling it
@@ -2066,6 +2079,13 @@ entry is still true is the reading.
   names any of them, and `delete-project` leaves every one. Where:
   `log-stage-18-staging-deployment-project.md`, 2026-10-19 (3.2 and 3.3) and 2026-10-20; `docs/SMUS.md`, the
   deployment project. The Access Grants instance is `SUP-090` and the Lake Formation seats `SUP-106`.
+  With an administrator already seated the three writes add to the list (measured 2026-11-11 in Staging
+  and in Production, Stage 19 step 4.6): each account held `InfrastructureAccess` alone,
+  `CROSS_ACCOUNT_VERSION` 4 and `SET_CONTEXT` `TRUE`, and after the provisioning role's three
+  `PutDataLakeSettings` it held the two SMUS roles beside it, the same parameters, both create-default
+  lists still empty and the flag `true`; `<env>/data/` planned `No changes` after it. Production, which
+  had no `default` Glue database, holds one since. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-11.
 
 - `SUP-171` **An `MLflowApp` environment's stack holds only a `WaitConditionHandle`: DataZone's deployer
   creates the MLflow App beside the stack, and the environment reads `ACTIVE` minutes before the app is
@@ -2255,9 +2275,15 @@ entry is still true is the reading.
   principals and to the manage-access role followed within eight seconds. The environment is named
   `create-datalake-database-env-<name>-<epoch ms>`; the one of 2026-10-28, for `new_database`, reached
   `ACTIVE` with its own Glue data source on `cron(22 6 * * ? *)`, the minute of its creation, which had 11
-  `SUCCESS` runs by 2026-11-08. Every database created this way shares the same location prefix. Where:
-  `log-stage-06f-data-governance.md`, 2026-09-12/13; `log-stage-19-smus-native-data-product.md`, 2026-10-28
-  and 2026-11-08; `docs/SMUS.md`, the *Create database* item.
+  `SUCCESS` runs by 2026-11-08. Every database created this way shares the same location prefix. The
+  portal's environment carries one user parameter, `glueDbName`, and no subscription target; the same
+  environment created through the API, `create-environment` with the profile's `DataLake` configuration,
+  the blueprint and `--user-parameters name=glueDbName,value=<name>`, creates the same database, grants
+  and daily source and carries a target, `<environment name>-default-target`, for `GlueTableAssetType`
+  and `GlueViewAssetType` over that database (measured 2026-11-11 in Staging and in Production, Stage 19
+  step 4.6; the portal's `app_etl` environment in Sandbox read with none the same day). Where:
+  `log-stage-06f-data-governance.md`, 2026-09-12/13; `log-stage-19-smus-native-data-product.md`, 2026-10-28,
+  2026-11-08 and 2026-11-11; `docs/SMUS.md`, the *Create database* item.
 
 - `SUP-185` **The portal's MLflow entries look their blueprint up in the domain account, so a domain whose
   configurations live in associated accounts greys them out whatever the profile carries** (read 2026-10-19,

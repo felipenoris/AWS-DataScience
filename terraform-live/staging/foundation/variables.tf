@@ -127,7 +127,8 @@ variable "alert_email" {
 variable "deployment_project_role" {
   description = "The project role of this account's deployment project, by NAME: the role the deploy role passes to the workflow service, and whose project's shared/ prefix, workflows and log groups it reaches. Empty creates no grant."
   type        = string
-  default     = ""
+  # deploy-staging's role, created 2026-11-11 (Stage 19 step 4.6); read from `iam list-roles`.
+  default = "datazone_usr_role_5ido8bej1zoeq8_d6nu5aphq1e974"
 
   validation {
     condition     = var.deployment_project_role == "" || can(regex("^datazone_usr_role_[a-z0-9]+_[a-z0-9]+$", var.deployment_project_role))

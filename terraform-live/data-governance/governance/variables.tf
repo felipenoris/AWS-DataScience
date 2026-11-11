@@ -103,7 +103,13 @@ variable "form_type_owners" {
 variable "catalog_import_projects" {
   description = "The deployment projects whose owners hold the three grants the CI/CD CLI's catalog import checks on the root domain unit, by project id, with the designation that holds them."
   type        = map(string)
-  default     = {}
+
+  # deploy-staging and deploy-production, created 2026-11-11 (Stage 19 step 4.6). OWNER is the
+  # designation the CLI names when it adds a missing grant itself, and the one the deploy role holds.
+  default = {
+    "5ido8bej1zoeq8" = "OWNER"
+    "d7qcazihvr3s7k" = "OWNER"
+  }
 
   validation {
     condition     = alltrue([for id in keys(var.catalog_import_projects) : can(regex("^[a-z0-9]{14}$", id))])

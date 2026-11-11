@@ -6,7 +6,9 @@
 variable "project_roles" {
   description = "The deployment project's roles, by role NAME (not ARN): each gets the workflows grant and the deny on a person's session. Empty is legal and attaches nothing; the rollback empties it before the project is deleted, so the environment's stack deletes a role that carries only the policies it attached."
   type        = list(string)
-  default     = []
+
+  # deploy-staging, created 2026-11-11 at 15:26 UTC (Stage 19 step 4.6); read from `iam list-roles`.
+  default = ["datazone_usr_role_5ido8bej1zoeq8_d6nu5aphq1e974"]
 
   validation {
     condition     = alltrue([for r in var.project_roles : can(regex("^datazone_usr_role_[a-z0-9]+_[a-z0-9]+$", r))])

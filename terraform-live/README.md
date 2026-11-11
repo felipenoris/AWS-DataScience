@@ -347,8 +347,8 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   2026-11-11, planned 0 to add, 3 to change, 2 to destroy and applied with the template's merge request
   (Stage 19's release T); until then the role in AWS still holds the `test` deploy's grants.
 - **`staging/studio/` and `production/studio/` `[P]` — the deployment project's blueprint prerequisites**
-  ([Stage 19](../docs/plan/stages/stage-19-smus-native-data-product.md) step 4.4), their first apply
-  done 2026-11-11 and the second, the two blueprint configurations, planned:
+  ([Stage 19](../docs/plan/stages/stage-19-smus-native-data-product.md) step 4.4), applied 2026-11-11 in
+  two applies, the second adding the two blueprint configurations:
   `terraform-modules/sagemaker-prereqs/` with `Tooling` and `DataLake` alone, the workflows grant and
   the deny on a person's session on the project's role. The two are one slice copied
   but `project-roles.tf` (`check-copies.py`), and `sagemaker/` beside each keeps Stage 9's job roles.

@@ -43,7 +43,7 @@ Properties this design leans on:
   2026-11-11). Sandbox is associated since 2026-08-21; the second Interactive association was removed
   from the member side at Stage 6b step 1.4. **Staging and Production are associated since
   2026-11-11** ([Stage 19](plan/stages/stage-19-smus-native-data-product.md) step 4.2, decision 6
-  (b)), each to hold one deployment project; Staging was associated once before, for Stage 18's
+  (b)), each holding one deployment project since the same day; Staging was associated once before, for Stage 18's
   measurement, from 2026-10-19 to that stage's pass 8. Measured 2026-08-21 and again 2026-11-11: under
   Stage 1d's org-wide RAM enablement the share is organization-scoped and **auto-accepts**, zero
   invitations either side, so *"invitations expiring in 7 days"* names a clock that never starts.
@@ -643,7 +643,7 @@ it deploys only into projects that already exist; its 1.0.9 code also creates on
 A deployment target held no project and no domain
 association until 2026-11-11, so the tool could not reach one (Stage 18 gave Staging both for its
 window, below, and its verdict kept the rule). Stage 19 decision 6 (b) reverses it: both targets are
-associated since that day, each gains a deployment project (its steps 4.4 to 4.6), and the CLI deploys
+associated since that day, each holds a deployment project (its steps 4.4 to 4.6), and the CLI deploys
 into them from its step 4.9. Until that release it deploys an application from its repository into the Sandbox `dev` project
 and makes the bundle (no `test` stage since Stage 19 decision 19 (c)), and the GitLab pipeline stays the
 deployer in Staging and Production (D28, D41). Measured in the lab on 2026-10-15: `deploy` syncs the
