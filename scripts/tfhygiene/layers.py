@@ -133,6 +133,10 @@ RANKS = {
     # inversion the two-pass split exists to make safe - the same shape Stage 3 pass 2 has for
     # the peerings, covered by the cross-account exception note above.
     "sagemaker": 46,
+    # Stage 19 step 4.4 - the same prerequisites in a deployment target, under a name of its own
+    # because <env>/sagemaker/ is Stage 9's job-role slice there. The same rank as sagemaker for
+    # the same reason: [P], and nothing in up/down ever acts on the number.
+    "studio": 46,
     # Stage 6f step 11 - the same prerequisites in the lake account, with the VPC the `Tooling`
     # blueprint needs, under a name of its own because the slice exists for the pilot of shape (b)
     # and its rollback destroys it whole. The same rank as sagemaker for the same reason: [P],
@@ -342,13 +346,14 @@ SLICES = [
     # them, and a static rate that assumed them would over-report every session that does not.
     # `make status` quotes this column; the flag's cost is in `make help`.
     Slice("sandbox", "egress", EPHEMERAL, "18 interface endpoints (5.2) - no NAT", 0.180),
-    # Stage 9 step 4.3a re-cut it to VPC-Workloads' set (3.3a), the endpoints a job and a worker call.
+    # Stage 9 step 4.3a re-cut it to VPC-Workloads' set (3.3a), the endpoints a job and a worker call;
+    # Stage 19 step 4.4 adds `datazone` for the deployment project.
     Slice(
         "staging",
         "egress",
         EPHEMERAL,
-        "7 interface endpoints (St.9 4.3a, decision 12) + DNS Firewall - no NAT",
-        0.070,
+        "8 interface endpoints (St.9 4.3a, St.19 4.4) + DNS Firewall - no NAT",
+        0.080,
     ),
     # 12 since Stage 7 (2026-10-12): 6c 5.5's 13 plus `secretsmanager` (step 1.7), which the GitLab
     # host's bootstrap reads its leaf keys and gitlab-secrets.json through and the runner its
@@ -361,15 +366,16 @@ SLICES = [
         0.120,
     ),
     # Stage 6c step 1.3a - VPC-Workloads' endpoint slice, zero NAT (D38). Stage 9 step 3.3a names
-    # its seven endpoints: sts, logs, kms, glue and lakeformation of the core (decision 12),
-    # sagemaker.api and secretsmanager. The DNS Firewall bills per query and per domain list, never by
-    # the hour, so it adds nothing to this column.
+    # seven of its endpoints: sts, logs, kms, glue and lakeformation of the core (decision 12),
+    # sagemaker.api and secretsmanager; Stage 19 step 4.4 adds datazone for the deployment project.
+    # The DNS Firewall bills per query and per domain list, never by the hour, so it adds nothing to
+    # this column.
     Slice(
         "production",
         "workloads-egress",
         EPHEMERAL,
-        "7 interface endpoints (St.9 3.3a, decision 12) + DNS Firewall - no NAT",
-        0.070,
+        "8 interface endpoints (St.9 3.3a, St.19 4.4) + DNS Firewall - no NAT",
+        0.080,
     ),
     # Stage 8 steps 3.2 and 3.6 - the application's Glue job, applied by the pipeline with the release it
     # promotes (refusal 7) and destroyed by Staging's `make down`. A job bills per run, nothing at rest.
@@ -553,6 +559,12 @@ SLICES = [
     # the running apps are the [E] half, deleted by scripts/down-studio-apps.py rather than
     # by terraform destroy (conventions 6; Stage 6 step 8.3).
     Slice("sandbox", "sagemaker", PERSISTENT, "blueprint prereqs: 2 roles, D13 boundary, CMK"),
+    # Stage 19 step 4.4 - the deployment project's prerequisites in each target, the same module:
+    # free at rest but the project key (1.00 USD a month) and the log group's storage.
+    Slice("staging", "studio", PERSISTENT, "deployment project: blueprint prereqs, D13 boundary"),
+    Slice(
+        "production", "studio", PERSISTENT, "deployment project: blueprint prereqs, D13 boundary"
+    ),
     # Stage 6f step 11 - the lake-publishing pilot's objects in the lake account: the VPC the
     # Tooling blueprint takes (3x2, no internet route, no peering) and the same prerequisites as
     # the row above, plus the projects bucket, which the Data OU's s3:DeleteBucket deny makes

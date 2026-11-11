@@ -98,6 +98,24 @@ variable "form_type_owners" {
   }
 }
 
+# Stage 19 step 4.5 - the projects the CI/CD CLI imports a bundle's catalog into, each a deployment
+# project (grants.tf). Written by hand once a project exists, as form_type_owners is.
+variable "catalog_import_projects" {
+  description = "The deployment projects whose owners hold the three grants the CI/CD CLI's catalog import checks on the root domain unit, by project id, with the designation that holds them."
+  type        = map(string)
+  default     = {}
+
+  validation {
+    condition     = alltrue([for id in keys(var.catalog_import_projects) : can(regex("^[a-z0-9]{14}$", id))])
+    error_message = "A key is a DataZone project id, 14 lowercase alphanumerics, as `datazone list-projects` prints it."
+  }
+
+  validation {
+    condition     = alltrue([for designation in values(var.catalog_import_projects) : contains(["OWNER", "CONTRIBUTOR"], designation)])
+    error_message = "A designation is OWNER or CONTRIBUTOR."
+  }
+}
+
 variable "enable_trusted_identity_propagation" {
   description = "Stage 6 decision 2, and the recommendation is follow the grain stage 5a chose. Stage 5a decision 6 put the entitlement grain at the assumable role/project (docs/GOVERNANCE.md §'The grain'), and TIP's documented cost is that remote access stops working - so false is the setting that matches the grain already decided. Flipping it to true is a decision that re-opens Stage 5a decision 6, not a tuning knob."
   type        = bool

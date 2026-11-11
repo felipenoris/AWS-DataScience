@@ -487,6 +487,16 @@ entry is still true is the reading.
   being the `AWS-GR_*` name. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-09-12; `docs/AWS_STATE.md`
   `INV-12`.
 
+- `SUP-350` **An SCP's attach bound a DataZone read within ten seconds, and its detach kept refusing the
+  same read for about a minute** (measured 2026-11-11 on `Policy Test`, Stage 19 step 4.1). A candidate
+  document was attached at 04:31:41 UTC; the canary's `datazone list-domains`, which had answered an empty
+  list a minute earlier, was refused at 04:31:51 *"with an explicit deny in a service control policy"*
+  naming the candidate. The document was detached at 04:33:14 and deleted at 04:33:15; the same call was
+  still refused, naming the deleted policy's id, at 04:33:33, 04:33:40 and 04:34:01, and answered at
+  04:34:22, 68 s after the detach. One reading, on one service: a probe run right after a detach or an
+  amendment can read the previous document, so the battery's rows for a changed statement are read a
+  minute or more after the apply. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11.
+
 ## Security Hub and Config
 
 - `SUP-035` **AWS Config's continuous recorder records 120 to 290 configuration items for an
@@ -1937,6 +1947,23 @@ entry is still true is the reading.
   domain id unused, so a deploy from a space stops there; reported upstream as [issue
   413](https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413). Where:
   `log-stage-10-orchestration-promotion.md`, 2026-10-26.
+
+- `SUP-349` **The console's account association is one public RAM call, `AssociateResourceShare` on the
+  domain's share, after which RAM writes the domain's sharing policy in the caller's session** (read
+  2026-11-11 in Data Governance's trail of the console act of 2026-10-19, then measured the same day,
+  Stage 19 step 4.2). The console called `ram:GetResourceShares` filtered by the permission
+  `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`, then `ram:AssociateResourceShare` with the
+  account id as the one principal, on the share `DataZone-EXTENDED_ACCESS-<domain id>-ORG-ONLY`; one second
+  later `datazone:PutDomainSharingPolicy` followed, `invokedBy` and user agent `ram.amazonaws.com`, under
+  the same session, its policy naming every associated account. No other write appears between the page's
+  load and its refresh. `aws ram associate-resource-share --resource-share-arn <the share> --principals
+  <account> <account>` as the domain account's InfrastructureAccess associated Staging and Production at
+  04:37:18 UTC: both read `ASSOCIATED` at 04:37:19, `PutDomainSharingPolicy` followed twice (04:37:20 and
+  04:37:21, three principals in each policy), no invitation was raised under organization-wide sharing,
+  and each account read the share `ACTIVE` as `OTHER-ACCOUNTS`. AWS documents the association as a console
+  act and the DataZone API carries no call for it, which this project recorded as "no public API" from
+  2026-08-21. The caller needs `datazone:PutDomainSharingPolicy` beside the RAM action. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-11.
 
 ### Environments and projects
 
@@ -3417,6 +3444,32 @@ entry is still true is the reading.
   workflow scan reads the whole shared root (`SUP-287`), a file an application drops stays in the scan
   until it is deleted by hand. Spark's listing skipped `inbox/._trades.csv`: each Glue run read the
   sample's 10 rows. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-10.
+
+- `SUP-351` **`deploy`'s catalog import first checks the target project's domain unit for a
+  `CREATE_GLOSSARY`, a `CREATE_FORM_TYPE` and a `CREATE_ASSET_TYPE` grant, adds the missing ones as the
+  identity that deploys, and aborts the import when it cannot** (read 2026-11-11 in the CLI 1.0.9's
+  `helpers/catalog_import.py`, `_ensure_import_permissions`; no call made). For each of the three types it
+  calls `ListPolicyGrants` on the unit and takes a non-empty `grantList` as granted, whoever the grant
+  names; an `AccessDeniedException` on the listing reads as not granted. For a missing type it calls
+  `AddPolicyGrant` with the target project's `OWNER` designation as principal, and a failure there raises
+  *"Catalog import aborted — could not add required policy grants"* before any asset is read. The bundle's
+  content does not enter the check: a bundle with one asset and no glossary takes the same path. On
+  2026-11-11 this domain's root unit held one `CREATE_FORM_TYPE` grant and none of the other two
+  (`list-policy-grants`, measured), so a first import by a deploy role, which holds no `AddPolicyGrant`
+  and owns no domain unit, would abort. The catalog guide says the import creates what the target lacks
+  and does not name the grants. `data-governance/governance/`'s `catalog_import_projects` declares the
+  three per deployment project. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11;
+  `terraform-live/data-governance/governance/grants.tf`.
+
+- `SUP-352` **`bundle` reports a failed catalog export on standard error and still writes the bundle,
+  without `catalog/catalog_export.json`** (read 2026-11-11 in the CLI 1.0.9's `commands/bundle.py`; no
+  call made). The export runs inside a `try` whose handler prints *"Error exporting catalog resources:
+  <error>"* and continues, and a domain or project id it cannot resolve prints a warning the same way;
+  the command's exit status does not change. A bundle made by an identity that lacks a catalog read, or
+  that is no member of the source project, therefore carries the files and no catalog, and the target's
+  import then finds nothing to import. A pipeline that depends on the export checks the archive for the
+  file and for its content. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11;
+  `examples/app-etl/.gitlab-ci.yml`, the job `bundle`.
 
 ## Bedrock
 

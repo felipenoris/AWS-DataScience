@@ -36,13 +36,17 @@ Properties this design leans on:
   step 11, D22 amended 2026-10-26; configured 2026-10-26, 11.3). The domain lives in `Data Governance`, where
   `sagemaker:Create*` is denied (1c step 7.6) — a denial that stays free because of this split (Stage 6
   step 0.4), and because the pilot's profile locks `enableSpaces` to `false`.
-- **Member accounts join by *account association*** — console-only (**no public API**, read
-  2026-08-16): a RAM share DataZone initiates. Sandbox alone is associated since 2026-09-06 — the
-  second association was removed from the member side at Stage 6b step 1.4; **Staging and Production
-  never are** (D28), Staging's association for Stage 18's measurement aside: since 2026-10-19, with
-  `Tooling` its one blueprint configuration (`EXC-20`), until that stage's pass 8. Measured 2026-08-21: under Stage 1d's org-wide RAM enablement the share is created
-  organization-scoped and **auto-accepts**, zero invitations either side, so *"invitations expiring in
-  7 days"* names a clock that never starts.
+- **Member accounts join by *account association***: a principal added to the domain's RAM share,
+  `DataZone-EXTENDED_ACCESS-<domain id>-ORG-ONLY`. The DataZone API carries no call for it and AWS
+  documents it as a console act; the console's act is `ram:AssociateResourceShare`, after which RAM
+  writes the domain's sharing policy in the caller's session (`SUP-349`, read and measured
+  2026-11-11). Sandbox is associated since 2026-08-21; the second Interactive association was removed
+  from the member side at Stage 6b step 1.4. **Staging and Production are associated since
+  2026-11-11** ([Stage 19](plan/stages/stage-19-smus-native-data-product.md) step 4.2, decision 6
+  (b)), each to hold one deployment project; Staging was associated once before, for Stage 18's
+  measurement, from 2026-10-19 to that stage's pass 8. Measured 2026-08-21 and again 2026-11-11: under
+  Stage 1d's org-wide RAM enablement the share is organization-scoped and **auto-accepts**, zero
+  invitations either side, so *"invitations expiring in 7 days"* names a clock that never starts.
 - **The domain and IdC must share a Region** (Stage 6 step 1.1) — `us-west-2` twice, and neither can
   move afterwards.
 

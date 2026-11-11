@@ -120,3 +120,29 @@ variable "alert_email" {
   type        = string
   default     = null
 }
+
+# Stage 19 step 4.8 - the deployment project this account's deploy role deploys into, by its role's
+# name, and its domain (deploy-project.tf). Both are written by hand, as sandbox/workflows/'s are, and
+# neither is looked up. Empty until the project exists: the grant is created with it.
+variable "deployment_project_role" {
+  description = "The project role of this account's deployment project, by NAME: the role the deploy role passes to the workflow service, and whose project's shared/ prefix, workflows and log groups it reaches. Empty creates no grant."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.deployment_project_role == "" || can(regex("^datazone_usr_role_[a-z0-9]+_[a-z0-9]+$", var.deployment_project_role))
+    error_message = "empty, or a SMUS project role name, `datazone_usr_role_<project>_<environment>`."
+  }
+}
+
+variable "datazone_domain_id" {
+  description = "The SMUS domain the deployment project belongs to; the deploy role's S3 and log-group scopes use it."
+  type        = string
+  # `awsds-studio`, as `datazone list-domains` prints it in Data Governance.
+  default = "dzd-d8yrvx1ko7im6o"
+
+  validation {
+    condition     = can(regex("^dzd-[a-z0-9]+$", var.datazone_domain_id))
+    error_message = "a SMUS domain id is `dzd-` followed by lowercase alphanumerics, as `datazone list-domains` prints it."
+  }
+}

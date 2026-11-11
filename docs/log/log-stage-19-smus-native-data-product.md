@@ -998,3 +998,114 @@ Account ids are replaced by the account's name in angle brackets.*
     `eighth-experimentation`, which comes before 1.5 writes the default and which 1.5 retires;
   - the waiting list's Stage 19 rows read current: the mirror, the GitLab password's rotation, the
     AppleDouble objects, verification v's look, decision 17 (d)'s report and pass 2's portal acts.
+
+## 2026-11-11 — the estate reviewed against decisions 17 to 20; pass 4 opened with nothing up
+
+A new session, on the branch `claude/pr-284-smus-pipeline-d233a3`, cut from `main` at `d423543c`
+([PR #284](https://github.com/felipenoris/AWS-DataScience/pull/284)'s squash). The session that ran
+pass 1 answered that it leaves the stage and holds nothing open.
+
+- **[user]**, verbatim: *"O PR #284 envolveu algumas decisões importantes para o projeto, o que implicou
+  em mudanças relevantes. Em especial, a esteira de promoção de aplicação SMUS deixou de ter o stage
+  "test", publicando sandbox -> staging -> production. Entendo que isso tem efeitos colaterais na esteira
+  implementada via gitlab CI/CD. Peço que faça uma revisão ampla do plano, considerando as decisões
+  tomadas no PR #284, no sentido de mapear todas as alterações necessárias no ambiente para adequá-lo às
+  decisões tomadas. Revise os planos, as etapas necessárias para implementação das mudanças, e os
+  artefatos de documentação, considerand o que foi feito no PR #284. Considerando o ambiente fora do ar
+  (ou seja, sem rodar make up), o usuário sso infra atualmente logado, faça toda a preparação e
+  implantação do que for possível de ser implantado neste momento, além de planejamento das etapas que
+  envolvem a implementação das alterações necessárias bem como o restante to stage 19. Autorizo todas as
+  escritas e applies necessárias no ambiente considerando este pedido."*
+- **[Claude] The sessions told** before the first write: the two peers on this laptop, the session of
+  pass 1 and its fork, each with the list of slices this sitting writes.
+- **[Claude] The identity**: `sts get-caller-identity` on `awsds-infra-identity`, `-data`, `-sandbox-1`,
+  `-staging` and `-prod` answers `InfrastructureAccess`, and on `awsds-policy-canary`
+  `AWSAdministratorAccess`, all as the infrastructure user.
+
+**4.1, the `Workloads` SCP (decision 13 (b)).**
+
+- **[Claude] Written**: `DenyDataZoneEntirely` gains `ArnNotLike` on `aws:PrincipalArn` for the SSO
+  `InfrastructureAccess` role (the baseline's pattern), `awsds-deploy-*` and `datazone_usr_role_*`, and
+  `DenyDataZoneSubscriptionRequests` is new beside it; `POLICIES.md`'s two rows, the document's
+  description (403 characters of 512), the battery's rows (the two `ListDomains` rows turned to `allow`,
+  a `CreateSubscriptionRequest` row and Staging's `CreateSpace` row added) and the wildcard check's
+  whitelist entry with its reason.
+- **[Claude] The battery before**, `./aws/probes/scp-battery.py --phase ou` at 04:29:14 UTC, with the
+  rows as `main` holds them: *"49 as expected, 0 unexpected, 5 not measured"*, both `ListDomains` rows
+  `DENY-SCP p-83t232f4`.
+- **[Claude] The deny half, on a candidate parked on `Policy Test`.** The infrastructure user is one of
+  the three excepted principals, so no profile in a `Workloads` account reads the deny. The candidate is
+  the document's two DataZone statements alone, created as `awsds-infra-identity` under the delegation's
+  `DelegatePolicyLifecycleToIdentity`:
+  - 04:30:47, the canary with nothing parked: `datazone list-domains` answers `{"items": []}`, and
+    `create-subscription-request` on a domain, a listing and a project that do not exist answers
+    DataZone's own *"User is not permitted to perform operation: CreateSubscriptionRequest"*, the wording
+    that proves authorization was reached;
+  - 04:31:17, `create-policy` answers `p-oktjrbxv`; 04:31:41, attached to `Policy Test`
+    (`ou-zhj6-ebwso7wp`), which carried `FullAWSAccess` and Control Tower's two guardrail documents;
+  - 04:31:51, the canary's `list-domains` is refused; at 04:32:59 `list-domains`,
+    `list-environment-blueprints` and `create-subscription-request` each read *"with an explicit deny in
+    a service control policy"* naming `p-oktjrbxv`, while `sts get-caller-identity` and `ec2
+    describe-vpcs` answer;
+  - 04:33:14 detached, 04:33:15 deleted; `Policy Test` carries its three documents again and no
+    `awsds-canary*` policy is listed. `list-domains` is still refused at 04:33:33, 04:33:40 and 04:34:01
+    and answers at 04:34:22, 68 s after the detach (`SUP-350`).
+- **[Claude] Planned** as `awsds-infra-identity` at 04:35:31 UTC, `-input=false`:
+  `aws_organizations_policy.this["awsds-org-scp-ou-workloads"]` updated in place and nothing else, the
+  condition, the new statement and the description, 2,499 to 2,840 bytes; saved as
+  `$HOME/tmp/stage19-scp-41.tfplan`. **The apply was refused to Claude** by the app's auto-mode
+  classifier (*Protected-Scope IaC Apply*), the user's authorization in chat notwithstanding, as at
+  Stage 18 1.3: it is the user's, from the saved plan.
+
+**4.2, the association.**
+
+- **[Claude] The console's act read in the trail.** Data Governance's CloudTrail for 2026-10-19 04:00 to
+  04:06 UTC, the user's association of Staging at Stage 18 2.1: `ram:GetResourceShares` by the
+  permission `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`, `ram:AssociateResourceShare`
+  with one principal at 04:03:13, and `datazone:PutDomainSharingPolicy` at 04:03:14, invoked by
+  `ram.amazonaws.com` in the same session. No other write (`SUP-349`).
+- **[Claude⚡] Associated by that call**, as `awsds-infra-data`, at 04:37:18 UTC: `ram
+  associate-resource-share` on `DataZone-EXTENDED_ACCESS-dzd-d8yrvx1ko7im6o-ORG-ONLY` with Staging's and
+  Production's account ids, read from STS. Both answer `ASSOCIATING`, then `ASSOCIATED` at 04:37:19; the
+  trail holds the call and two `PutDomainSharingPolicy` (04:37:20, 04:37:21), each policy naming three
+  principals. The share's principals are Sandbox (2026-08-21), Staging and Production; no invitation
+  exists in either account, and each reads the share `ACTIVE` as `OTHER-ACCOUNTS`. The DataZone
+  read-back, `list-environment-blueprint-configurations`, is refused to both by the SCP, which still
+  stands whole: it follows 4.1's apply.
+
+**4.3 to 4.5 and 4.8, written and planned.**
+
+- **[Claude] The lists**: `SMUS_ASSOCIATED` and `SMUS_DEPLOYMENT_MEMBERS` gain `staging` and
+  `production`, and `backend.py` emits for the slice name `studio`, with `vpc_slice` (`foundation` in
+  Staging, `workloads` in Production). Over every declared slice, laptop and pipeline, the generated
+  tfvars differ from `main`'s in `governance/`'s `members` alone; the two `studio` slices are new.
+- **[Claude] `staging/studio/` and `production/studio/`** from Stage 18's slice: `sagemaker-prereqs-v0.9.0`
+  with `Tooling` and `DataLake`, the workflows grant with decision 17's `StartDataSourceRun`, the deny
+  on a person's session; copies of each other but for `project-roles.tf` (`check-copies.py`). Both
+  accounts read clean of the names first: no `awsds-<env>-smus-projects` bucket, no project key alias,
+  no `smus` or `datazone_usr_role_*` role, no boundary, no log group. Their Lake Formation settings, the
+  before of 4.6: one administrator, `InfrastructureAccess`, `AllowFullTableExternalDataAccess` unset,
+  `CROSS_ACCOUNT_VERSION` 4, `SET_CONTEXT` `TRUE`, both create-default lists empty. Planned with
+  `-var blueprints_enabled=false` at 04:43:21 (Staging) and 04:43:38 UTC (Production): *"16 to add, 0 to
+  change, 0 to destroy"* each, the two roles and their three managed-policy attachments, the boundary,
+  the key and its alias, the bucket with its five settings, the log group and the person-session
+  policy; saved as `$HOME/tmp/stage19-studio-staging-1.tfplan` and `-production-1.tfplan`. **Staging's
+  apply was refused to Claude** by the classifier, with no reason given; Production's was not tried.
+  Both are the user's.
+- **[Claude] `governance/`**: provider aliases for the two targets, the profiles `deployment-staging`
+  and `deployment-production` (an environment configuration names one account, so one profile per
+  target) behind `deployment_profiles_enabled`, false, their grant to each account's
+  `InfrastructureAccess` session group, and `catalog_import_projects`, empty. Planned at 04:41:40 and
+  04:49:33 UTC as `awsds-infra-data`: `No changes`.
+- **[Claude] The CLI's import read for 4.8**, in the CLI 1.0.9's `helpers/catalog_import.py`,
+  `helpers/catalog_export.py` and `commands/bundle.py`: the import's pre-flight on the domain unit's
+  policy grants (`SUP-351`), and the bundle's silent export failure (`SUP-352`). `list-policy-grants`
+  on the root unit, as `awsds-infra-data`: `CREATE_GLOSSARY` 0, `CREATE_FORM_TYPE` 1, `CREATE_ASSET_TYPE`
+  0, `CREATE_PROJECT_FROM_PROJECT_PROFILE` 2, `ADD_TO_PROJECT_MEMBER_POOL` 1.
+- **[Claude] `<env>/foundation/deploy-project.tf`**, the same file in both targets: one managed policy
+  on the deploy role, created once `deployment_project_role` names the project's role. Both slices plan
+  `No changes` with it empty (04:50 UTC, the alerts var-file from the project folder's `secrets/`);
+  with a placeholder role name the plan reads 2 to add and the policy 13 statements in 3,828
+  characters of 6,144.
+- **[Claude] `staging/egress/` and `production/workloads-egress/`** name `datazone` in their
+  `extra_services`, 8 endpoints each at the next `make up`.

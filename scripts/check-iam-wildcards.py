@@ -12,11 +12,12 @@
 # per-function carve-outs of D26 and D27. It is invisible in a terraform plan and free to catch
 # in a script.
 #
-# The one exception is whitelisted by Sid, and the whitelist is part of the check.
-# `DenyAccountBpaChangeExceptInfrastructure` in awsds-org-scp-baseline.json must carry a
+# The exceptions are whitelisted by Sid, and the whitelist is part of the check. The first,
+# `DenyAccountBpaChangeExceptInfrastructure` in awsds-org-scp-baseline.json, must carry a
 # wildcard account: it carves the InfrastructureAccess Identity Center role out of the
 # account-level BPA deny, and it has to reach accounts that do not exist yet, where the role's
-# ARN suffix is minted per account (1c decision 7). Everything else fails.
+# ARN suffix is minted per account (1c decision 7). Each later entry states its own reason.
+# Everything else fails.
 #
 # The exception is bound to the statement rather than to a line or a file, and it is verified in
 # both directions: an unauthorised wildcard fails, and so does a whitelist entry whose Sid is no
@@ -66,6 +67,17 @@ WHITELIST = {
     ): "Stage 8 decision 29 - the wildcard is a deny's resource, not a carve-out: the four deploy "
     "roles live in three accounts, and a role of the prefix minted anywhere is refused the same way, "
     "so the wildcard widens what the deny refuses and admits nobody",
+    (
+        "awsds-org-scp-ou-workloads.json",
+        "DenyDataZoneEntirely",
+    ): "Stage 19 decision 13 (b) - three patterns excepted from the DataZone deny by "
+    "aws:PrincipalArn. An SCP binds the principals of the accounts under its OU alone, so the "
+    "key is always a role of the evaluated account and the wildcard account admits no other "
+    "account's role; the SSO role's suffix and a project role's ids are minted per account, so "
+    "no ARN can be named. What a pattern admits inside an account is a role of that name: the "
+    "SMUS provisioning role mints datazone_usr_role_* under the D13 boundary, an administrator "
+    "of the account can create any, and the deploy roles create roles under the application "
+    "boundary and by other names (apply-orchestration.tf)",
 }
 
 PATTERN = re.compile(r"arn:aws:iam::\*:")

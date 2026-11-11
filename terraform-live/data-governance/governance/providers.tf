@@ -46,6 +46,20 @@ provider "aws" {
   profile = var.members["sandbox"].profile
 }
 
+# The deployment members (SMUS_DEPLOYMENT_MEMBERS, Stage 19 decision 6 (b)): each holds one
+# deployment project, born of that account's own profile.
+provider "aws" {
+  alias   = "staging"
+  region  = var.region
+  profile = var.members["staging"].profile
+}
+
+provider "aws" {
+  alias   = "production"
+  region  = var.region
+  profile = var.members["production"].profile
+}
+
 
 # ------------------------------------------------------- the read-only directory provider
 #
