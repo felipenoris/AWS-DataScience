@@ -351,7 +351,9 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   two applies, the second adding the two blueprint configurations:
   `terraform-modules/sagemaker-prereqs/` with `Tooling` and `DataLake` alone, the workflows grant and
   the deny on a person's session on the project's role. The two are one slice copied
-  but `project-roles.tf` (`check-copies.py`), and `sagemaker/` beside each keeps Stage 9's job roles.
+  but `project-roles.tf` and `fence.tf` (`check-copies.py`), and `sagemaker/` beside each keeps Stage 9's
+  job roles. `fence.tf` names the account's own buckets and repositories the project's role never
+  touches, which the module denies in the D13 boundary (Stage 19 decision 21 (b), `TM-30`).
 
 **`warehouse/` (rank 53, `[P]`) and `warehouse-compute/` (rank 54, `[E]`) exist in `sandbox/` since 2026-09-20** ([D40](../docs/plan/decisions/D40-redshift-warehouse.md), [Stage 5b](../docs/plan/stages/stage-05b-redshift-serverless.md) pass 1); the `production/` namespace exists since 2026-10-23 ([Stage 9](../docs/plan/stages/stage-09-deployment-targets.md) 9.1) and `production/warehouse-compute/` was raised for 9.3's SQL on 2026-10-24 and destroyed by the same sitting's `make down`. **It is the tree's only slice that splits one store across two layers**, and the reason is that Redshift Serverless has `create-workgroup` and `delete-workgroup` and nothing in between — no pause, no stop, no zero-capacity setting — so *powered off* means *does not exist*, which is `[E]`. The namespace stays `[P]` because it holds the schemas, the database users, the roles and every `GRANT`, none of which Terraform wrote and none of which a plan can see (§5.1 rule 2). `make up ENV=sandbox` raises the compute only with `GROUPS=redshift` (`slices.py` refusal 11), and `make down ENV=sandbox` removes it and **not** the Redshift Managed Storage, which is the irreducible price of keeping the data. The slice's own README is [`sandbox/warehouse/README.md`](sandbox/warehouse/README.md).
 

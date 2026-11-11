@@ -159,6 +159,20 @@ SELECTOR_TAG_ALL = "for-use-with-all-datazone-projects"
 SELECTOR_TAGS = ("AmazonDataZoneProject", "AmazonDataZoneDomain", SELECTOR_TAG_ALL)
 HUB_SECRET_PREFIXES = ("awsds-", "redshift!")  # the estate's own secrets, never a project's
 FENCED_DBS = (*LAKE_DBS, "app_outputs")  # the databases a project's role holds nothing on
+# Stage 19 decision 21 (b): the same reach denied in the D13 boundary of each target, so that it
+# binds whatever version of AWS's policies the role carries. The statements are
+# terraform-modules/sagemaker-prereqs/boundary.tf's; the buckets are <env>/studio/fence.tf's list.
+BOUNDARY_NAME = {
+    PROD_PROFILE: "awsds-prod-project-boundary",
+    STAGING_PROFILE: "awsds-staging-project-boundary",
+}
+FENCE_SIDS = (
+    "DenyTheAccountsOwnBuckets",
+    "DenyCustomerKeysButTheProjectKey",
+    "DenyTheAccountsOwnSecrets",
+    "DenyServicesNoProjectUsesHere",
+)
+FENCE_ASSUME_SIDS = ("DenyAssumingAnyRole", "DenyAssumingAnyRoleButTheNamedOnes")  # one of the two
 
 POLICY_BRANCHES = (
     ("vpce", "aws:SourceVpce"),
@@ -575,6 +589,46 @@ def main(argv: list) -> int:
                         )
         if listed:
             got["open_grants"] = sorted(set(open_grants))
+        res = cli.run(
+            "iam",
+            "list-policies",
+            "--scope",
+            "Local",
+            "--query",
+            f"Policies[?PolicyName=='{BOUNDARY_NAME[p]}'].[Arn,DefaultVersionId] | [0]",
+            "--output",
+            "json",
+        )
+        found = json.loads(res.stdout or "null") if res.ok else None
+        if found:
+            res = cli.run(
+                "iam",
+                "get-policy-version",
+                "--policy-arn",
+                found[0],
+                "--version-id",
+                found[1],
+                "--query",
+                "PolicyVersion.Document.Statement",
+                "--output",
+                "json",
+            )
+            if res.ok:
+                statements = json.loads(res.stdout or "[]")
+                got["boundary_sids"] = [s.get("Sid", "") for s in statements]
+                got["boundary_buckets"] = sorted(
+                    {
+                        arn.split(":::", 1)[1].split("/", 1)[0]
+                        for s in statements
+                        if s.get("Sid") == "DenyTheAccountsOwnBuckets"
+                        for arn in _as_list(s.get("Resource"))
+                    }
+                )
+        elif res.ok:
+            got["boundary_sids"] = None  # no boundary: the slice is not applied here
+        res = cli.run("s3api", "list-buckets", "--query", "Buckets[].Name", "--output", "json")
+        if res.ok:
+            got["buckets"] = json.loads(res.stdout or "[]")
         fence[p] = got
 
     # ------------------------- 5. the write share, the links, the invitations (INT-03)
@@ -1644,6 +1698,43 @@ def main(argv: list) -> int:
                     f"{p} Lake Formation on the lake's databases",
                     f"{', '.join(FENCED_DBS)}: named principals only",
                 )
+        if "boundary_sids" in got:
+            sids = got["boundary_sids"]
+            what = f"{p} the fence in the project roles' boundary"
+            if sids is None:
+                checks.note("DT-14", what, f"no {BOUNDARY_NAME[p]}: no project can exist here yet.")
+            else:
+                missing = [s for s in FENCE_SIDS if s not in sids]
+                if not any(s in sids for s in FENCE_ASSUME_SIDS):
+                    missing.append(FENCE_ASSUME_SIDS[0])
+                if missing:
+                    checks.fail(
+                        "DT-14",
+                        what,
+                        f"{BOUNDARY_NAME[p]} lacks {', '.join(missing)} - Stage 19 decision 21 (b)'s "
+                        "deny, whose apply is owed or was undone: what the rows above read is then "
+                        "all that holds a project role (TM-30).",
+                    )
+                else:
+                    checks.ok("DT-14", what, f"{len(FENCE_SIDS) + 1} statements present")
+                    if "buckets" in got:
+                        bare = sorted(
+                            set(got["buckets"])
+                            - set(got["boundary_buckets"])
+                            - {PROJECTS_BUCKET[p]}
+                        )
+                        every = f"{p} every bucket fenced but the projects bucket"
+                        if bare:
+                            checks.fail(
+                                "DT-14",
+                                every,
+                                f"{', '.join(bare)} in no statement of the boundary - a bucket joins "
+                                "<env>/studio/fence.tf in the commit that creates it.",
+                            )
+                        else:
+                            checks.ok(
+                                "DT-14", every, f"{len(got['boundary_buckets'])} bucket(s) named"
+                            )
 
     # ---------------------------------------------------------------------- the report
     with open(out_path, "w", encoding="utf-8") as stream:
@@ -1936,6 +2027,13 @@ and the SCP battery's Stage 9 rows measure each deny (scp-battery.md).""")
                     scopes = got["locations"]
                     value = "(no instance)" if scopes is None else (", ".join(scopes) or "(none)")
                     rows.append(f"{p}\tAccess Grants locations\t{value}")
+                if got.get("boundary_sids") is not None and "boundary_sids" in got:
+                    present = [
+                        s for s in (*FENCE_SIDS, *FENCE_ASSUME_SIDS) if s in got["boundary_sids"]
+                    ]
+                    rows.append(
+                        f"{p}\tthe fence in {BOUNDARY_NAME[p]}\t{', '.join(present) or '(none)'}"
+                    )
                 if "open_grants" in got:
                     value = "; ".join(got["open_grants"]) or "none"
                     rows.append(
@@ -1950,7 +2048,10 @@ role runs on AWS's managed policies, which AWS moves. Those policies allow
 sts:AssumeRole on every role, kms through S3 on every key and glue on the whole
 catalog, and select the rest by tag (TM-30). The rows above are what the role's
 containment rests on in this account, read from the resources' side; the trust
-policies are studio.py's US-12, in every account that holds a project role.""")
+policies are studio.py's US-12, in every account that holds a project role.
+Stage 19 decision 21 (b) denies the same reach in the roles' D13 boundary, which
+binds whatever version of AWS's policies they carry: the last row is its
+statements, and the account's buckets are read against the one that names them.""")
 
         # ==============================================================================
         rep.h1("12. CHECKS")
@@ -1986,7 +2087,9 @@ What the checks are, and where each comes from:
   DT-14  what a deployment project's role does not reach: no resource tagged for every
          project, no estate secret with a DataZone selector tag, no Access Grants
          location outside the projects bucket, no Lake Formation grant to every IAM
-         principal on raw, curated or app_outputs (Stage 19, TM-30)""")
+         principal on raw, curated or app_outputs (Stage 19, TM-30); and the D13
+         boundary's fence, with every bucket of the account named in it but the
+         projects bucket (decision 21 (b))""")
 
         # ==============================================================================
         rep.h1("13. The accounts nothing here is measuring")

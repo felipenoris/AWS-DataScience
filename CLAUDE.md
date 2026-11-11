@@ -546,12 +546,12 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   the `Workloads` SCP's amendment (4.1), `<env>/studio/` (4.4) and `governance/`'s two deployment profiles
   (4.5) applied on the user's word; **`deploy-staging` (`5ido8bej1zoeq8`) and `deploy-production`
   (`d7qcazihvr3s7k`) created, each with the database `app_etl`** (4.6, `INV-21`), then the project roles'
-  grants, the deploy roles' policy and the CLI import's grants (`SUP-353`). The user's: the flag (4.7,
-  `DT-13` red, `EXC-23`), the deploy roles' membership, decision 21 (`TM-30`).
-  **The pipeline changes in two releases**: T retires the `test` stage on today's legs (the job `bundle` as
-  `awsds-deploy-sandbox-test`, which reads `dev` and writes nothing; in `examples/app-etl/`, its sitting
-  `runbooks/promotion.md` §N.8.2), F is the CLI's legs (4.9 to 4.11). The order of what is left is the stage
-  file's §The estate against decisions 17 to 20.
+  grants, the deploy roles' policy and the CLI import's grants (`SUP-353`). Decision 21 (b) (`TM-30`): a fence
+  in the targets' D13 boundary, planned, two applies owed (`DT-14` red). The user's: the flag (4.7, `DT-13`
+  red, `EXC-23`) and the deploy roles' membership.
+  **Two releases**: T retires the `test` stage (the job `bundle` as `awsds-deploy-sandbox-test`;
+  `examples/app-etl/`, sitting `runbooks/promotion.md` §N.8.2), F is the CLI's legs (4.9 to 4.11). What is
+  left: the stage file's §The estate against decisions 17 to 20.
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
@@ -559,7 +559,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Module tags**: `orchestration-v0.2.1` (both callers pinned 2026-10-25, the schedule's input carrying the
   Scheduler's placeholder literally; `production/orchestration` applied on it 2026-10-25, its three schedules
   `DISABLED` between sittings), `vpc-egress-v0.19.0` (`sandbox/egress`, the `mwaa` group's `airflow-serverless`, applied 2026-10-26 with
-  `GROUPS=mwaa`; the other callers `v0.17.0`), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
+  `GROUPS=mwaa`; the other callers `v0.17.0`), `sagemaker-prereqs-v0.10.0` (both `studio/`; Sandbox `v0.9.0`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); the laptop's Terraform never moves ahead of

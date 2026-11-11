@@ -1487,3 +1487,45 @@ review and the instruments; the user, verbatim: *"Sim, faça os dois"*.
 - **[Claude] Written**: `TM-30`; decision 21, due and the user's; `INV-22` and `EXC-23`; `SUP-358` and
   the readings on `SUP-008` and `SUP-157`; `NETWORK.md`'s row on the projects' groups, from the routes
   read; `aws/INDEX.md`.
+
+## 2026-11-11 — decision 21 taken as (b): the fence written in the boundary module, tagged and planned
+
+The same day, nothing up, no AWS write. The user, verbatim: *"(b) deny no boundary"*.
+
+- **[Claude] The module**, `terraform-modules/sagemaker-prereqs/`: seven inputs, each off by default
+  (`fenced_bucket_names`, `fence_customer_keys`, `fenced_secret_names`, `fence_role_assumption` with
+  `assumable_role_arns`, `fenced_repository_names`, `fenced_services`), and in the boundary one deny
+  per input that names something. The key statement denies `kms:*` on the account's keys whose
+  aliases are neither the project key's nor `alias/aws/*`, by `ForAllValues:StringNotLike` on
+  `kms:ResourceAliases`. Validated alone.
+- **[Claude] The callers**, `production/studio/` and `staging/studio/`: `main.tf`, a copy in both, sets
+  the same fence, and `fence.tf`, the account's own beside `project-roles.tf`, lists the buckets and
+  repositories: six buckets and `awsds-prod-ecr-deploy` in Production, three buckets in Staging, each
+  list every bucket of the account but the projects bucket (`s3api list-buckets`, read that hour).
+- **[Claude] Rehearsed against the local module** before the tag (18:03 and 18:04 UTC): *"0 to add, 2 to
+  change, 0 to destroy"* in each, the boundary and the person-session policy, whose document is known
+  after apply (`SUP-356`). The boundary goes from 9 statements and 2,425 characters to 15 and 3,766 in
+  Production and to 14 and 3,402 in Staging, of 6,144.
+- **[Claude] Simulated as Production's project role under the planned document**
+  (`--permissions-boundary-policy-input-list`, the Region and the role's tags in the context).
+  `explicitDeny`, the boundary's: `sts:AssumeRole` on the deploy role; `kms:Decrypt` through S3 on the
+  keys of GitLab and of the state; `GetObject` and `PutObject` on `awsds-prod-gitlab-backup` and
+  `GetObject` on `awsds-prod-tfstate` with Access Grants credentials; `GetSecretValue` on GitLab's
+  secrets and on the warehouse admin secret; the pull of the deploy image; `bedrock:InvokeModel`;
+  AgentCore's `StartBrowserSession`; `q:SendMessage`, `codewhisperer:GenerateRecommendations`,
+  `bedrock:GenerateQuery`. `allowed`: the project's own prefix, read and written; the project key and
+  an `alias/aws/s3` key through S3; the pull of the application's image; the pass of itself to Glue;
+  `datazone:CreateAsset` and `CreateListingChangeSet`, `lakeformation:GetDataAccess`,
+  `secretsmanager:ListSecrets`; the table writes of `app_etl`; a Glue job's log group; the
+  warehouse's credentials through the Data API, left for 4.11.
+- **[Claude] The tag**: the module's commit `4c6bb4f2`, then `sagemaker-prereqs-v0.10.0` on it, the
+  latest on origin being `v0.9.0`; `git ls-remote --tags origin` answers the tag at that commit.
+- **[Claude] Planned against the tag**, 18:08 and 18:09 UTC, both slices re-initialised: the same two
+  changes in each, the boundary's new statements `DenyTheAccountsOwnBuckets`,
+  `DenyCustomerKeysButTheProjectKey`, `DenyTheAccountsOwnSecrets`, `DenyAssumingAnyRole`,
+  `DenyServicesNoProjectUsesHere` and, in Production, `DenyTheAccountsOwnRepositories`. Saved as
+  `$HOME/tmp/stage19-studio-production-fence.tfplan` and `stage19-studio-staging-fence.tfplan`. Not
+  applied.
+- **[Claude] `./aws/deploytargets.py`** reads the boundary's fence and every bucket of the account
+  against it (`DT-14`): run after the change, 4 checks failed, `DT-13` and the fence's row in each
+  target, the second until the applies.

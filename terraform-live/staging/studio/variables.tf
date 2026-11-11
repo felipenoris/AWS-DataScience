@@ -1,5 +1,5 @@
-# Inputs. All but project_roles (project-roles.tf) arrive from the generated, untracked
-# terraform.auto.tfvars (./scripts/gen-tfvars.py <account> studio).
+# Inputs. All but project_roles (project-roles.tf) and the fence's lists (fence.tf) arrive from the
+# generated, untracked terraform.auto.tfvars (./scripts/gen-tfvars.py <account> studio).
 
 variable "region" {
   description = "AWS region for this slice. No region literal ever appears in a .tf file (docs/plan/architecture.md 4.1)."

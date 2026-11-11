@@ -42,7 +42,7 @@ locals {
 
 module "sagemaker_prereqs" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/sagemaker-prereqs?ref=sagemaker-prereqs-v0.9.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/sagemaker-prereqs?ref=sagemaker-prereqs-v0.10.0"
 
   env    = var.env
   region = var.region
@@ -55,6 +55,18 @@ module "sagemaker_prereqs" {
   lake_data_key_arn           = data.terraform_remote_state.lake.outputs.data_key_arn
 
   allowed_instance_types = var.allowed_instance_types
+
+  # The fence around the deployment project's role (Stage 19 decision 21 (b), TM-30): what the role
+  # never touches in this account, denied in the boundary so that AWS's next policy version cannot
+  # reach it. The two lists are the account's own (fence.tf); the rest is the same in both targets.
+  # No role is assumable and Redshift is not fenced: step 4.11 writes what the warehouse workflow
+  # needs (decision 16 (b)).
+  fenced_bucket_names     = var.fenced_bucket_names
+  fenced_repository_names = var.fenced_repository_names
+  fence_customer_keys     = true
+  fenced_secret_names     = ["awsds-*", "redshift!*"]
+  fence_role_assumption   = true
+  fenced_services         = ["bedrock", "bedrock-agentcore", "q", "codewhisperer"]
 
   blueprint_names = var.blueprint_names
 

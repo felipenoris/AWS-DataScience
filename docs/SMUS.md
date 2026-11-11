@@ -707,6 +707,13 @@ and its log); D41 item 2 kept the rule above.
   role `AWSServiceRoleForAmazonAthena`. `DataLake` on demand adds a Glue database, its
   project-conditioned Lake Formation grants and a daily data source, its manage-access role needing
   `AmazonDataZoneGlueManageAccessRolePolicy`.
+- **What fences the project role there.** The role runs on AWS's managed policies, which allow
+  `sts:AssumeRole` on every role, `kms` through S3 on every key and `glue` on the whole catalog
+  (`SUP-358`, `TM-30`). In a deployment target the D13 boundary names what the role never touches in
+  the account, its other buckets, customer managed keys, secrets and repositories, every
+  `sts:AssumeRole`, and Bedrock, AgentCore, Amazon Q and CodeWhisperer whole (Stage 19 decision 21
+  (b); `<env>/studio/fence.tf`, `sagemaker-prereqs-v0.10.0`), and `./aws/deploytargets.py` `DT-14`
+  reads it.
 - **What the CLI needs there.** The deploying role is a member through its `IAM_ROLE_SESSION_GROUP`
   profile, which DataZone creates at the role's first read of a project (`SUP-159`); as a non-member
   it lists the project and every storage item stops on `ListConnections`. It holds the DataZone

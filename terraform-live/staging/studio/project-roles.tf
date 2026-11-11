@@ -1,7 +1,7 @@
 # This account's deployment project roles. SageMaker Unified Studio mints a role when a project is
 # created, `datazone_usr_role_<project>_<environment>`, so the list is written by hand after the
-# project exists, as sandbox/workflows/'s is. This file is the account's own: the other files of the
-# slice are copies of production/studio/'s (scripts/check-copies.py).
+# project exists, as sandbox/workflows/'s is. This file and fence.tf are the account's own: the other
+# files of the slice are copies of production/studio/'s (scripts/check-copies.py).
 
 variable "project_roles" {
   description = "The deployment project's roles, by role NAME (not ARN): each gets the workflows grant and the deny on a person's session. Empty is legal and attaches nothing; the rollback empties it before the project is deleted, so the environment's stack deletes a role that carries only the policies it attached."
