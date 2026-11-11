@@ -899,3 +899,34 @@ Account ids are replaced by the account's name in angle brackets.*
      GetAsset?
   2. If not, can a resource type or a condition key such as datazone:projectId be added for it?
   ```
+
+## 2026-11-11 — decision 18 taken; the import's forms and Sandbox's one catalog read
+
+- **[user]**, verbatim: *"A decisão 18 pela recomendação nativa (d) está ok. Vc entende que a decisão 17
+  tb está indo na recomendação nativa do SMUS?"*
+- **[Claude] Decision 18 recorded as (d)**: the stage file's record, decisions 4 and 14 and steps 3.1 and
+  3.3 amended, and step 1.5 written, pass 1 again in a project for app-etl alone after pass 2.
+- **[Claude] The CLI 1.0.9's import read again** for the question on decision 17, in
+  `helpers/catalog_export.py`, `helpers/catalog_import.py`, `commands/deploy.py` and
+  `bootstrap/handlers/`:
+  - the export keeps each asset's forms as `GetAsset` answers them; the import remaps the
+    `DataSourceReferenceForm` to the target project's source over the same database name, or strips it,
+    and each form type's revision, and writes every other form unchanged, the exported forms replacing
+    the target asset's on a revision;
+  - on pass 1's asset as read on 2026-11-10, `GlueTableForm`'s `catalogId` and `tableArn` and
+    `AssetCommonDetailsForm`'s `sourceIdentifier` carry the account, and so does the
+    `externalIdentifier`, which the import's `create_asset` passes unchanged;
+  - `deploy` runs the bundle's deployment, its catalog import included, then the bootstrap actions;
+  - no bootstrap handler starts a data source: they cover workflows, MWAA Serverless runs, connections,
+    QuickSight datasets, printing and waiting.
+- **[Claude] Sandbox's Glue databases read** as `awsds-infra-sandbox-1` (`InfrastructureAccess`):
+  `get-databases` lists both projects' databases in one catalog, `app_etl` among
+  `eighth-experimentation`'s, so decision 2 (d)'s name cannot be created in a second Sandbox project.
+- **[Claude] Decision 19 written**, the user's: where the import is first read and the product database
+  in `test`, (a) recommended, Staging importing unlisted and `test` on a database of its own. The waiting
+  list's decision 18 row becomes decision 19's.
+- **[Claude] Decision 17 read against SMUS's own path**, the user's question, as a note in the stage
+  file: the import, the listing and DataZone's authorization are SMUS's own, the start from the task the
+  house's. (b) keeps AWS's own trigger, the schedule, so decision 17's sentence that (b) gives up the
+  native path was imprecise: (b) gives up decision 3 (a)'s order. Under decision 18 (d) the task's start
+  is what returns a target's table to its asset after the import.
