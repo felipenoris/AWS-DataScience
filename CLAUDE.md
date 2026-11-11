@@ -548,8 +548,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   1 to 3 Sandbox sittings, pass 4 promotion sittings with the Stages 8-10 session, whose Stage 10 1.1, 2.4,
   4.2 and decision 9 it rewrites. **Pass 1 run 2026-11-10** (PR #284): four runs, the fourth `SUCCESS`
   after three fixes to `publish` (`SUP-343`, `SUP-345`), its objects and lineage read; the negative
-  admitted (`SUP-346`, `TM-29`); decisions 17 (`CT-13`), 18 and 19 taken, 19 (c) dropping the `test`
-  stage (every promotion crosses an account), 20 the user's; the mirror at the next GitLab sitting.
+  admitted (`SUP-346`, `TM-29`); decisions 17 (`CT-13`) to 20 taken, 19 (c) dropping the `test`
+  stage (promotion across accounts), 20 (b) listing in Production alone; the mirror at the next GitLab sitting.
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes

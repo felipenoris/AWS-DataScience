@@ -957,3 +957,19 @@ Account ids are replaced by the account's name in angle brackets.*
   the other sessions' list; pass 3's heading names the bundle and the manifest's stages. D41 item 3
   amended in its file and its index row. Decision 20 written, the user's, (b) recommended: Production
   alone lists. The waiting list's decision 19 row becomes decision 20's.
+
+## 2026-11-11 — decision 20 taken: Production alone lists a chain application's product
+
+- **[user]**, verbatim: *"(b) Só Production"*
+- **[user]**, verbatim, during the record: *"No contexto da decisão 20, entendo que isso se refere aos
+  aplicativos que fazem parte da esteira de promoção entre ambientes. Mas, mesmo seguindo com a publicação
+  da listagem só em production, um usuário poderia publicar em dev se quisesse?"*
+- **[Claude] Read for the answer**, with nothing up: `docs/SMUS.md`'s deployment-project section and Stage
+  18's verification iv, where a member of any designation acts as the project role in the portal, the V2
+  domain refusing the catalog designations; and `sandbox/workflows/main.tf`'s note that AWS's
+  `SageMakerStudioProjectRoleMachineLearningPolicy` (v47) grants the project role `CreateListingChangeSet`
+  on every resource.
+- **[Claude] Decision 20 recorded as (b)**, scoped to the applications in the promotion chain: decisions 3
+  and 14, 1.5 and 6.1 amended, the waiting list's row removed. The record says the gate is the template's
+  default, not a control: a member of the `dev` project still lists from the portal or from code, `CT-12`'s
+  successor judges that listing's classification, and 6.1's checks note it without failing.

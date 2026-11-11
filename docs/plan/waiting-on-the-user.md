@@ -39,7 +39,6 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | Stage 17's decisions 5 (keep or delete at close), 6 (the endpoint's lifetime), 7 (the grants the measurements name), 10 (the Function entry) and 12 (the vector store), each recommended and none taken | [Stage 17](stages/stage-17-sandbox-machine-learning.md) |
 | Stage 11's decisions 1 (Macie's mechanism), 2 (its results repository), 5 (Malware Protection on the drop-box) and 9 (ECR enhanced scanning), each recommended; then Macie's acts 1.1 to 1.4 in Management and Audit | [Stage 11](stages/stage-11-dlp.md) |
 | At 6f 11.12's rollback: the `dev/` registration the Data OU keeps, accepted as a residue or the deny amended for that sitting (battery phase 4b) | [6f](stages/stage-06f-data-governance.md) step 11.12 | the rollback's last object |
-| Stage 19 decision 20, which stage lists the product (the domain is one business catalog for every account, and under decision 18 (d) Production's asset takes `dev`'s name and metadata): Production alone ((b), recommended, amending decision 3) or `dev` and Production as decision 3 took ((a)) | [Stage 19](stages/stage-19-smus-native-data-product.md) | `dev`'s `PUBLISH_LISTING` at 1.5, and what a Sandbox search finds after pass 4 |
 | Delete the ten AppleDouble objects (`._*`, 163 bytes each) under `eighth-experimentation`'s `shared/app-etl/`, an S3 write on the user's word | Stage 19's log, 2026-11-10; `SUP-348` | the deploy never removes them, and the CLI's workflow scan reads the whole shared root (`SUP-287`) |
 
 ## Acts only the user can perform
