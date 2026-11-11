@@ -83,9 +83,9 @@ locals {
 
   # The deployment profiles exist while this is true (Stage 19 step 4.5). It turns true in the
   # change that applies them, after each target's <env>/studio/ has configured Tooling and DataLake
-  # there and each target's InfrastructureAccess has called the domain once, which is what creates
-  # the group profile the grant names. While it is false this slice plans as it did before the
-  # deployment members joined.
+  # there and each target's InfrastructureAccess has read a project of the domain once (get-project),
+  # which is what creates the group profile the grant names. While it is false this slice plans as
+  # it did before the deployment members joined.
   deployment_profiles_enabled = false
 
   # The DataZone group a profile with no `group` grants project creation to: the IAM role session

@@ -520,6 +520,10 @@ candidate `p-oktjrbxv` bound within ten seconds of its attach, every row read as
 again before the sitting is called done. What the candidate cannot show is the exception itself, since
 `Policy Canary` holds none of the three roles: that is the allow half above, in the real accounts.
 
+**The allow half measured 2026-11-11 at 14:27 UTC**, 3 min 36 s after the apply: `--phase ou` read 52 as
+expected, 0 unexpected, 5 not measured, both `list-domains` rows `ALLOWED` and both
+`create-subscription-request` rows `DENY-SCP` naming `p-83t232f4`.
+
 **The Stage 6e decision 15 amendment — `awsds-org-scp-ou-interactive` gains
 `DenyBedrockInvocationOutsideTheScopedModels` and `DenyBedrockReadsOutsideTheRoutedRegions`.** Run as
 `awsds-infra-sandbox-1` with `--phase ou`; the battery ran these rows on 2026-10-17, every one as

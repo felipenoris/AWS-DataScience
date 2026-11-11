@@ -1917,8 +1917,13 @@ entry is still true is the reading.
   perform operation: ListConnections"*, then *"No S3 URI found for connection unknown"* for each storage
   item. A membership by `userIdentifier` with the role's ARN is refused, *"Group profile already exists for
   the given User profile"*; `create-project-membership` with `groupIdentifier=<profile id>` works, and the
-  retried job succeeded. No IAM grant replaces the membership. Where: `log-stage-08-cicd-pipelines.md`,
-  2026-10-19; `log-stage-18-staging-deployment-project.md`, 2026-10-20 and 2026-10-21.
+  retried job succeeded. No IAM grant replaces the membership. The call that creates the profile is a
+  read of a project, not any call (measured 2026-11-11 on Production's `InfrastructureAccess`, Stage 19
+  step 4.5): `ListDomains`, `ListEnvironmentBlueprintConfigurations`, `ListProjects` and `GetDomain` were
+  each answered and left the role's group profile `NotFound`; four seconds after the role's first
+  `GetProject` it read `ASSIGNED`. A role that has only listed cannot be named in a policy grant. Where:
+  `log-stage-08-cicd-pipelines.md`, 2026-10-19; `log-stage-18-staging-deployment-project.md`, 2026-10-20
+  and 2026-10-21; `log-stage-19-smus-native-data-product.md`, 2026-11-11.
 
 - `SUP-160` **A project profile's override of a blueprint parameter marked `isEditable` false reaches the
   deploy, and `Tooling` creates a SageMaker AI domain only when `enableSpaces` is `"true"`** (read

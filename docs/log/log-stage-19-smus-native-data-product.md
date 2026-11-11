@@ -1169,3 +1169,65 @@ The same sitting, nothing up, no AWS write but the reads below.
   [PR #288](https://github.com/felipenoris/AWS-DataScience/pull/288) opened. The three saved plans
   (`stage19-scp-41`, `stage19-studio-staging-1`, `stage19-studio-production-1`) wait for the user's
   apply, and the bundle role's for release T's sitting.
+
+## 2026-11-11 — the `Workloads` SCP and both `studio/` slices applied; the allow half read; the next plans
+
+The same day, a later sitting, nothing up. The user authorized the three saved plans in chat: *"Autorizo
+os 3 applies"*. The app's classifier let each through on that sentence.
+
+- **[Claude] Before the writes**: every `awsds-infra-*` profile answered as `InfrastructureAccess` and
+  the canary's as `AWSAdministratorAccess`; no other session was running on the laptop.
+- **[Claude⚡] The SCP (4.1)**, account Identity, `awsds-infra-identity`, the saved plan
+  `stage19-scp-41.tfplan`: 14:23:31 to 14:23:46 UTC, *"0 added, 1 changed, 0 destroyed"*, `p-83t232f4`
+  at 2,840 bytes. The re-plan reads `No changes` and `./aws/org-policies.py` passes every check.
+- **[Claude⚡] The prerequisites (4.4)**, the saved plans: `staging/studio/` as `awsds-infra-staging`,
+  14:23:58 to 14:25:18 UTC, and `production/studio/` as `awsds-infra-prod`, 14:25:29 to 14:26:49 UTC,
+  each *"16 added, 0 changed, 0 destroyed"*.
+- **[Claude] DataZone from the targets (xviii)**, at 14:27 UTC as each account's `InfrastructureAccess`:
+  `list-domains`, which the SCP refused at 05:05 UTC, answers `dzd-d8yrvx1ko7im6o awsds-studio
+  AVAILABLE`, and `list-environment-blueprint-configurations` answers an empty list.
+- **[Claude] The battery's phase `ou`** at 14:27:22 UTC, 3 min 36 s after the SCP's apply: **52 as
+  expected, 0 unexpected, 5 not measured**. Both `datazone:ListDomains` rows read `ALLOWED`, and both
+  `datazone:CreateSubscriptionRequest` rows `DENY-SCP` naming `p-83t232f4`: the allow half and the
+  subscription deny, measured in the accounts themselves. Report `scp-battery-20261111T112722.txt`.
+- **[Claude] What the first applies created, read back** in both accounts, `<env>` being `staging` and
+  `prod`: the roles `awsds-<env>-smus-provisioning` (created 14:24:08 UTC in Staging, 14:25:38 in
+  Production; trusted by `cloudformation` and `datazone`; `SageMakerStudioProjectProvisioningRolePolicy`)
+  and `awsds-<env>-smus-manage-access` (`AmazonDataZoneGlueManageAccessRolePolicy` and
+  `AmazonDataZoneSageMakerManageAccessRolePolicy`); the policies `awsds-<env>-project-boundary` and
+  `awsds-<env>-person-session-deny`, attached to nothing; the project key behind
+  `alias/awsds-<env>-project`, `Enabled`, customer-managed; the bucket `awsds-<env>-smus-projects`,
+  versioned, its four public-access blocks on, `aws:kms`; the log group `/awsds/<env>/studio` at 30
+  days. Lake Formation in each still reads one administrator and the flag unset.
+- **[Claude] The configurations planned (4.4's second apply)**, with no `-var`: Staging at 14:30:12 UTC,
+  Production at 14:30:33 UTC, each *"5 to add, 2 to change, 0 to destroy"*. To add: the `Tooling` and
+  `DataLake` configurations, their two `create_environment_from_blueprint` grants and
+  `awsds-<env>-workflows`. To change: the project key's policy, which gains
+  `GrantKMSPermissionsForAllProjectRoles` and `AllowCreateGrantForProjectRoles`, and the
+  person-session policy, whose document is known after apply and whose content does not change.
+  Staging's configurations point at `vpc-0a2dadcbab22702e7`, Production's at VPC-Workloads,
+  `vpc-06e421bd113984822`. Saved as `$HOME/tmp/stage19-studio-staging-2.tfplan` and
+  `stage19-studio-production-2.tfplan`.
+- **[Claude] Staging's second apply refused by the classifier** at about 14:31 UTC, *Protected-Scope
+  IaC Apply*: the user's sentence named three applies and this is a fourth. Not retried; it and
+  Production's wait for the user's word or hand.
+- **[Claude] Production's `InfrastructureAccess` had no profile in the domain** after the reads of
+  14:27 UTC: `search-user-profiles --user-type DATAZONE_IAM_USER` listed the same role of Sandbox, Data
+  Governance and Staging and not Production's, and Cloud Control's `<domain>|<role ARN>` read answered
+  `NotFound`, where `governance/`'s plan with the profiles on would have stopped. Read call by call
+  from `awsds-infra-prod`: `list-projects` (14:36:52 UTC, four projects) and `get-domain` (14:37:21)
+  left it `NotFound`; four seconds after `get-project` on `governed-lake` (14:37:28) the group profile
+  read `ASSIGNED`, `ca2735c9-66e3-3eea-9434-c8de08536d0b`. As a non-member the role was answered
+  `GetProject`, `ListProjectMemberships` (three members) and `ListEnvironments` (`Tooling`), and
+  refused `ListConnections` (`SUP-157`). `SUP-159` carries the reading.
+- **[Claude] `governance/`'s profiles planned as a rehearsal (4.5)**, `deployment_profiles_enabled`
+  true in the working tree alone and put back, as `awsds-infra-data` from 14:39:04 to 14:39:36 UTC:
+  *"4 to add, 0 to change, 0 to destroy"*, `deployment-staging` and `deployment-production` (each
+  `Tooling` `ON_CREATE` at order 0 with its seven overrides and `DataLake` `ON_DEMAND` at order 1,
+  `ENABLED`) and their `CREATE_PROJECT_FROM_PROJECT_PROFILE` grants on the root unit; nothing on
+  `experimentation` or `lake-publishing`. The data sources read both targets' session groups,
+  Staging's `65b0f127-7cf5-4201-89ee-73b420b5f958`. The plan of record is taken after the second
+  `studio/` applies, the switch committed with it.
+- **[Claude] `./aws/studio.py`** at 14:40 UTC on the five infrastructure profiles and the canary: 0
+  checks failed. `US-2` passes on both targets seeing the shared domain and owning none, `US-3` notes
+  no configuration in either until the second apply, `US-6` passes on no SageMaker AI domain.

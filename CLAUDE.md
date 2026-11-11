@@ -238,7 +238,8 @@ per laptop, never one per session.
   user's authorization in its own chat. It also refused the orchestrating session's own apply of a
   saved plan in Production (*Production Deploy*, 2026-10-18) until the user authorized it in that chat. On
   2026-11-11 it refused an SCP apply and a Staging `[P]` apply under a blanket authorization in chat, and let
-  through reads, a RAM association and a candidate SCP's create, attach and delete on `Policy Test`.
+  through reads, a RAM association and a candidate SCP's create, attach and delete on `Policy Test`; the
+  same day it let through the three applies the user's message named, and refused a fourth.
   Sessions told not to edit `CLAUDE.md`, `docs/GENERAL_PLAN.md`, `docs/plan/stages/INDEX.md` and
   `docs/log/INDEX.md` leave
   their text in their reports, and the orchestrator rewrites those rows once, so a dozen PRs do not
@@ -318,8 +319,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   is Sandbox only. All 41 decisions are closed; D41 item 2 is reopened since 2026-10-31 (Stage 19 decision 6 (b)). Gates: `make check`, `make check-ou`. **What waits on the
   user is [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md)**: read it before asking
   the user anything, and remove a row in the sitting that takes it.
-- **The SCP battery** read `ou` 47 as expected / 0 unexpected / 7 not measured on 2026-10-22 (Stage 18's
-  carve-out removed, Stage 9 3.5's instance-preference rows run for the first time) and `root` 25 / 0 / 1 on 2026-10-30 (decision 29's row a note: its refusal carried no authorization id). **SageMaker job quotas are above zero in
+- **The SCP battery** read `ou` 52 as expected / 0 unexpected / 5 not measured on 2026-11-11 (Stage 19
+  4.1's amendment applied) and `root` 25 / 0 / 1 on 2026-10-30 (decision 29's row a note: its refusal carried no authorization id). **SageMaker job quotas are above zero in
   Production and Staging since 2026-10-24** (read 03:47 UTC, Sandbox's values: training 20 and transform 8
   for `ml.m5.large`, processing 8, `ml.t3.medium` 10), the four requests of 2026-10-23 still
   `CASE_OPENED`. The probes read `ResourceLimitExceeded` as authorized; the `ou`
@@ -542,10 +543,11 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   project for app-etl alone, 19 (c) no `test` stage, 20 (b) Production alone lists. **Pass 1 run 2026-11-10**
   (PR #284) in `eighth-experimentation`: the Iceberg table, its asset, listing and lineage (`SUP-343`,
   `SUP-345`, `SUP-346`, `TM-29`). **Pass 4 opened 2026-11-11, nothing up**: both targets associated by `ram
-  associate-resource-share` (`SUP-349`); the `Workloads` SCP's amendment measured on a candidate and planned,
-  `<env>/studio/` planned (16 to add each), the applies the user's (the classifier refused Claude each one);
-  `governance/`'s `deployment-staging` and `deployment-production` behind `deployment_profiles_enabled`, the
-  CLI import's grants (`SUP-351`) and `<env>/foundation/deploy-project.tf` written, gated on the projects.
+  associate-resource-share` (`SUP-349`); the `Workloads` SCP's amendment (4.1) and `<env>/studio/`'s
+  prerequisites (16 added each) applied on the user's word; each `studio/`'s configurations planned (5 to
+  add, 2 to change) and owed, then `governance/`'s `deployment-staging` and `deployment-production`
+  (rehearsed, 4 to add, behind `deployment_profiles_enabled`); the CLI import's grants (`SUP-351`) and
+  `<env>/foundation/deploy-project.tf` written, gated on the projects.
   **The pipeline changes in two releases**: T retires the `test` stage on today's legs (the job `bundle` as
   `awsds-deploy-sandbox-test`, which reads `dev` and writes nothing; in `examples/app-etl/`, its sitting
   `runbooks/promotion.md` §N.8.2), F is the CLI's legs (4.9 to 4.11). The order of what is left is the stage

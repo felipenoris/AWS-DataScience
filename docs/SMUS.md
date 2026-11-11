@@ -708,11 +708,11 @@ and its log); D41 item 2 kept the rule above.
   project-conditioned Lake Formation grants and a daily data source, its manage-access role needing
   `AmazonDataZoneGlueManageAccessRolePolicy`.
 - **What the CLI needs there.** The deploying role is a member through its `IAM_ROLE_SESSION_GROUP`
-  profile, which DataZone creates at the role's first call; as a non-member it lists the project and
-  every storage item stops on `ListConnections`. It holds the DataZone reads, the workflow calls on
-  workflows tagged with the project, `iam:PassRole` of the project role to the service, the project's
-  `shared/` prefix and the project key. `run` starts the workflow and returns; a pipeline follows the
-  run with `get-workflow-run`.
+  profile, which DataZone creates at the role's first read of a project (`SUP-159`); as a non-member
+  it lists the project and every storage item stops on `ListConnections`. It holds the DataZone
+  reads, the workflow calls on workflows tagged with the project, `iam:PassRole` of the project role
+  to the service, the project's `shared/` prefix and the project key. `run` starts the workflow and
+  returns; a pipeline follows the run with `get-workflow-run`.
 - **A person in it.** The V2 domain admits `PROJECT_OWNER`, `PROJECT_CONTRIBUTOR` and, since 2026-10-29, a
   `USER_CREATED_DESIGNATION` of the domain's own (none here, read 2026-10-30); a member of any designation
   acts as the project role, and with spaces off the portal offers no Workflows tool.

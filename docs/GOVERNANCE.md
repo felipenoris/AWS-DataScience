@@ -163,7 +163,8 @@ The `tfstate` keys (Stage 2), the PKI key (D36)
 and each Interactive account's project CMK (`alias/awsds-<env>-project`, Stage 6 — the SMUS projects
 bucket `awsds-<env>-smus-projects` and the blueprint-provisioned volumes sit under it since 2026-08-22;
 its key policy carries the documented SMUS statement set and is
-`terraform-modules/sagemaker-prereqs/kms.tf`'s) are separate objects: "the account's data CMK" is one
+`terraform-modules/sagemaker-prereqs/kms.tf`'s; Staging and Production hold one each since 2026-11-11,
+for their deployment project, Stage 19 step 4.4) are separate objects: "the account's data CMK" is one
 key per account for *data*, not a merger of every key in the account. A key that also served Terraform
 state and every other job in the account could not express "who may read derived data" (D31). The
 lake's own `logs` bucket *is* data and sits under the data key.

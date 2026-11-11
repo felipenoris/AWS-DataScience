@@ -34,10 +34,11 @@ data "aws_iam_roles" "production_infrastructure_access" {
 }
 
 # The DataZone group each of those roles is: an IAM_ROLE_SESSION_GROUP profile, which every session
-# of the role belongs to and which DataZone creates at the role's first call to the domain. Cloud
+# of the role belongs to and which DataZone creates at the role's first read of a project of the
+# domain: get-project does, ListDomains, ListProjects and GetDomain do not (read 2026-11-11). Cloud
 # Control resolves `<domain>|<role ARN>` to it (read 2026-10-19), so the group profile's id stays out
-# of tracked files like the role's. Read only while the deployment profiles are enabled: before an
-# account's first call the profile does not exist and the read fails the plan.
+# of tracked files like the role's. Read only while the deployment profiles are enabled: before that
+# read the profile does not exist and this one fails the plan.
 data "awscc_datazone_group_profile" "staging_infrastructure_access" {
   count = local.deployment_profiles_enabled ? 1 : 0
 
