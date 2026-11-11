@@ -203,7 +203,14 @@ entry is still true is the reading.
   prefix read `implicitDeny` until the context carried each tag of the role as `aws:PrincipalTag/<key>`,
   and `MissingContextValues` named none of them among the keys it listed. A policy written on principal
   tags, as AWS's project-role policies are, is simulated with the tags supplied or reads closed
-  (`log-stage-19-smus-native-data-product.md`, 2026-11-11).
+  (`log-stage-19-smus-native-data-product.md`, 2026-11-11). The same day a boundary's next version was
+  rehearsed before its apply by passing the planned document as
+  `--permissions-boundary-policy-input-list`: 40 decisions as that role read the same under the planned
+  document and, after the apply, under the attached boundary, the matched statement's
+  `SourcePolicyId` being `PermissionsBoundaryPolicyInputList.1` in the first and the policy's name in
+  the second. The simulator supplies no `kms:ResourceAliases`: that boundary's deny on every key whose
+  aliases are not the excepted one, a `ForAllValues:StringNotLike`, read `explicitDeny` on the excepted
+  key itself until the context carried the key's alias, the operator being true over an absent key.
 
 - `SUP-009` **`iam simulate-custom-policy` ignores `sagemaker:VolumeKmsKey` and `sagemaker:OutputKmsKey`
   when the resource is a job's ARN** (measured 2026-10-18, 6d step 1.3). A `Deny` on `Null` of either key
@@ -3847,6 +3854,8 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   rendered identical and no update was made. A plan and an apply whose counts differ by such a resource
   are both right, and the re-plan reads `No changes`. Where:
   `log-stage-19-smus-native-data-product.md`, 2026-11-11; `terraform-live/staging/studio/person-session.tf`.
+  Read again the same day on the same policy, at the module's next tag: each plan *"0 to add, 2 to
+  change"*, each apply *"0 added, 1 changed"*, each re-plan `No changes`.
 
 ### The `aws` provider
 

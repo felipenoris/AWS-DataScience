@@ -547,8 +547,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   (4.5) applied on the user's word; **`deploy-staging` (`5ido8bej1zoeq8`) and `deploy-production`
   (`d7qcazihvr3s7k`) created, each with the database `app_etl`** (4.6, `INV-21`), then the project roles'
   grants, the deploy roles' policy and the CLI import's grants (`SUP-353`). Decision 21 (b) (`TM-30`): a fence
-  in the targets' D13 boundary, planned, two applies owed (`DT-14` red). The user's: the flag (4.7, `DT-13`
-  red, `EXC-23`) and the deploy roles' membership.
+  in the targets' D13 boundary, applied 2026-11-11 (`DT-14`). The user's: the flag (4.7, `DT-13` red,
+  `EXC-23`) and the deploy roles' membership.
   **Two releases**: T retires the `test` stage (the job `bundle` as `awsds-deploy-sandbox-test`;
   `examples/app-etl/`, sitting `runbooks/promotion.md` §N.8.2), F is the CLI's legs (4.9 to 4.11). What is
   left: the stage file's §The estate against decisions 17 to 20.

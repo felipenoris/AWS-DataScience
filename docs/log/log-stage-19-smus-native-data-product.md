@@ -1529,3 +1529,66 @@ The same day, nothing up, no AWS write. The user, verbatim: *"(b) deny no bounda
 - **[Claude] `./aws/deploytargets.py`** reads the boundary's fence and every bucket of the account
   against it (`DT-14`): run after the change, 4 checks failed, `DT-13` and the fence's row in each
   target, the second until the applies.
+
+## 2026-11-11 — the fence applied in both targets; the boundary, `DT-14` and each role read under it
+
+The same day, nothing up. The user, verbatim: *"Autorizo os 2 applies"*. The app's classifier let each
+through.
+
+- **[Claude] Before the writes**, 18:24 UTC: both profiles as `InfrastructureAccess`; the one other
+  session on the laptop, idle, told of the two applies at 18:25 UTC.
+- **[Claude⚡] `production/studio/`**, from the saved plan, 18:25:13 to 18:25:31 UTC: *"0 added, 1
+  changed, 0 destroyed"*, `awsds-prod-project-boundary`. The person-session policy, planned as a
+  change, was not updated (`SUP-356`).
+- **[Claude⚡] `staging/studio/`**, from the saved plan, 18:25:44 to 18:25:58 UTC: the same on
+  `awsds-staging-project-boundary`.
+- **[Claude] Read after them**: both slices re-plan `No changes` (18:26 UTC). Production's boundary is at
+  `v2`, the default since 18:25:25 UTC, 15 statements and 3,766 characters, the boundary of 3 roles;
+  Staging's at `v2` since 18:25:53 UTC, 14 statements and 3,402 characters, 3 roles; `v1` stays in each
+  as a non-default version. The new statements: `DenyTheAccountsOwnBuckets`,
+  `DenyCustomerKeysButTheProjectKey`, `DenyTheAccountsOwnSecrets`, `DenyAssumingAnyRole`,
+  `DenyServicesNoProjectUsesHere` and, in Production, `DenyTheAccountsOwnRepositories`.
+- **[Claude] `./aws/deploytargets.py`**, 18:29 UTC: `DT-14` passes every row in both targets, the fence's
+  statements present and every bucket of the account named but the projects bucket, 6 in Production and
+  3 in Staging. 2 checks failed, `DT-13` in each target (`EXC-23`), the flag being the user's.
+- **[Claude] Simulated as Production's project role under the attached boundary**, 18:29 and 18:33 UTC,
+  the Region, the organization id and the role's tags in the context: 40 decisions, the same row for row
+  as under the planned document, run again beside it. 16 `explicitDeny`, each matched in
+  `awsds-prod-project-boundary`: `sts:AssumeRole` on the deploy role; `kms:Decrypt` through S3 on the
+  keys of GitLab and of the state; `GetObject` and `PutObject` on `awsds-prod-gitlab-backup` and
+  `GetObject` on `awsds-prod-tfstate` with Access Grants credentials; `GetSecretValue` on GitLab's
+  secrets and on the warehouse admin secret; the pull of the deploy image; `bedrock:InvokeModel`;
+  AgentCore's `StartBrowserSession` and, on the code interpreter's own resource,
+  `StartCodeInterpreterSession` and `InvokeCodeInterpreter`; `q:SendMessage`,
+  `codewhisperer:GenerateRecommendations`, `bedrock:GenerateQuery`. 23 `allowed`: the project's own
+  prefix, read and written; the project key and an `alias/aws/s3` key through S3; the pull of the
+  application's image; the pass of itself to Glue; `datazone:CreateAsset` and `CreateListingChangeSet`,
+  `lakeformation:GetDataAccess`, `secretsmanager:ListSecrets`; the table writes of `app_etl`; a Glue
+  job's log group; the warehouse's credentials through the Data API. `glue:CreateDatabase` asked with
+  no resource read `implicitDeny` under both documents.
+- **[Claude] What the fence leaves, as the same role**, 18:38 UTC, each `allowed` under the attached
+  boundary: `glue:CreateDatabase` and `DeleteDatabase` on the catalog and on `curated`;
+  `lakeformation:BatchGrantPermissions` and `CreateDataCellsFilter`;
+  `redshift-serverless:GetCredentials` through `sqlworkbench`, with `sqlworkbench:CreateConnection`
+  and `DriverExecute`; the pull of `awsds-prod-ecr-app-etl` and of `awsds-prod-ecr-dev-env`;
+  `datazone:GenerateCode`; `secretsmanager:ListSecrets`; `s3:PutAccessGrantsInstanceResourcePolicy`.
+- **[Claude] Simulated as Staging's project role under its attached boundary**, 18:35 UTC, 39 decisions.
+  16 `explicitDeny`, each matched in `awsds-staging-project-boundary`: `sts:AssumeRole` on
+  `awsds-deploy-staging`; `kms:Decrypt` through S3 on the data key and on the state's key; `GetObject`
+  and `PutObject` on `awsds-staging-outputs`, `GetObject` on `awsds-staging-derived` and on
+  `awsds-staging-tfstate` with Access Grants credentials; `GetSecretValue` on a secret named
+  `awsds-staging-*` and on one named `redshift!*`, the account holding none; Bedrock, AgentCore and the
+  assistants as in Production. 22 `allowed`: the project's own prefix, the project key and an
+  `alias/aws/s3` key through S3, the pull of the application's image from Production's registry (the
+  identity side), the pass of itself to Glue, the domain's calls, the table writes of `app_etl`, a
+  Glue job's log group.
+- **[Claude] The simulator and the key statement**, 18:41 UTC: with no `kms:ResourceAliases` in the
+  context, `kms:Decrypt` on the project key through S3 read `explicitDeny`, the fence's; with the key's
+  alias in the context, `allowed`. GitLab's key read `explicitDeny` both ways (`SUP-008`).
+- **[Claude] A simulation, not an exercise**: neither role has made a call but the provisioning's, and
+  the application first runs as them at release F.
+- **[Claude] Written**: decision 21's note, item 25 and step 7 of the ordered applies; `TM-30`, fenced,
+  with what the fence leaves; `INV-22` and `AWS_STATE.md`'s row on the targets; the fence's row removed
+  from `waiting-on-the-user.md`; the readings on `SUP-008` and `SUP-356`.
+- **[Claude] What pass 4 still owes with nothing up**: the flag (4.7) and `awsds-deploy-staging`'s
+  membership of `deploy-staging`, both the user's.

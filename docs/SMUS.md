@@ -712,8 +712,10 @@ and its log); D41 item 2 kept the rule above.
   (`SUP-358`, `TM-30`). In a deployment target the D13 boundary names what the role never touches in
   the account, its other buckets, customer managed keys, secrets and repositories, every
   `sts:AssumeRole`, and Bedrock, AgentCore, Amazon Q and CodeWhisperer whole (Stage 19 decision 21
-  (b); `<env>/studio/fence.tf`, `sagemaker-prereqs-v0.10.0`), and `./aws/deploytargets.py` `DT-14`
-  reads it.
+  (b); `<env>/studio/fence.tf`, `sagemaker-prereqs-v0.10.0`, applied 2026-11-11), and
+  `./aws/deploytargets.py` `DT-14` reads it. Under it each role still holds a warehouse session
+  through `sqlworkbench`, the pull of the registry's images but the deploy image, and the `glue`
+  writes on the catalog, which Lake Formation holds.
 - **What the CLI needs there.** The deploying role is a member through its `IAM_ROLE_SESSION_GROUP`
   profile, which DataZone creates at the role's first read of a project (`SUP-159`); as a non-member
   it lists the project and every storage item stops on `ListConnections`. It holds the DataZone
