@@ -86,7 +86,7 @@ locals {
   # there and each target's InfrastructureAccess has read a project of the domain once (get-project),
   # which is what creates the group profile the grant names. While it is false this slice plans as
   # it did before the deployment members joined.
-  deployment_profiles_enabled = false
+  deployment_profiles_enabled = true
 
   # The DataZone group a profile with no `group` grants project creation to: the IAM role session
   # group of the InfrastructureAccess role in the profile's own account. Keyed by account folder; a
