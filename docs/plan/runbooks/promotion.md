@@ -1542,7 +1542,9 @@ space alone: a sitting without step 13 leaves Sandbox down.
    git push gitlab main
    ```
 
-4. **[user] The template's merge request on `awsds/app-etl`**, from `examples/app-etl/` at `main`
+4. **[user] The template's merge request on `awsds/app-etl`**, from `examples/app-etl/` at commit
+   `36bcf916`, release T's tree: `main` holds release F's since 2026-11-12 (§N.8.4), so the folder is
+   taken from that commit, `git archive 36bcf916 examples/app-etl | tar -x -C <a scratch folder>`
    ([`gitlab.md`](gitlab.md) "The application template", steps 1 to 4, a branch named for the change):
    `scripts/dev-cli.sh` and its test (Stage 8 decision 22), the Glue job's snapshot record (3.3, option A:
    `glue/transform.py`, `src/app_etl/pipeline.py`, `code/app_etl_tasks.py` and their tests), the README,
@@ -1853,6 +1855,97 @@ same hub start, each after its decision.
    backup by hand ([`gitlab.md`](gitlab.md) §B), `make gitlab-down`; the tunnel down and `make hub-down`.
    **[Claude]** the backup in the bucket and §R. **[user]** the balance after the last half-hour interval
    has closed and again the next day.
+
+#### N.8.4 Release F: the CI/CD CLI's legs (Stage 19 steps 4.9 to 4.11)
+
+What it closes: the pipeline's legs deploying `app-etl` with the CI/CD CLI into `deploy-staging`
+and `deploy-production`, the chains starting the workflows the CLI creates, and the Terraform path's
+retirement. What is written and why is the stage file's
+[§Release F as written](../stages/stage-19-smus-native-data-product.md); this section is its order
+with the commands. Every apply is the infrastructure user's (`InfrastructureAccess`), on the
+user's word naming it, from a checkout that holds PR #291, with `NO_PROXY='*'`, `-input=false` and
+`TF_PLUGIN_CACHE_DIR` set ([`terraform-changes.md`](terraform-changes.md) §1). A plan saved on
+2026-11-12 is re-made if its slice was applied since.
+
+**With nothing up**, before or after release T (they change nothing its legs use):
+
+1. **Both `studio/` slices**, accounts **Staging Account** and **Production**: the fence's warehouse
+   half, the person-session deny's growth, Staging's `DESCRIBE` for the integration test,
+   Production's `awsds-prod-warehouse-load`. 2 to add, 2 to change in each.
+
+   ```bash
+   AWS_PROFILE=awsds-infra-staging terraform -chdir=terraform-live/staging/studio apply -input=false "$HOME/tmp/stage19-f-staging-studio.tfplan"
+   ```
+
+   ```bash
+   AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/studio apply -input=false "$HOME/tmp/stage19-f-production-studio.tfplan"
+   ```
+
+2. **Both `foundation/` slices**: the deploy role's three statements. 1 to change in each; a re-plan
+   takes `-var-file=<project folder>/secrets/alerts.auto.tfvars`.
+
+   ```bash
+   AWS_PROFILE=awsds-infra-staging terraform -chdir=terraform-live/staging/foundation apply -input=false "$HOME/tmp/stage19-f-staging-foundation.tfplan"
+   ```
+
+   ```bash
+   AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/foundation apply -input=false "$HOME/tmp/stage19-f-production-foundation.tfplan"
+   ```
+
+3. **`production/warehouse/`**: 5439 from `deploy-production`'s security group. 1 to add.
+
+   ```bash
+   AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/warehouse apply -input=false "$HOME/tmp/stage19-f-production-warehouse.tfplan"
+   ```
+
+   **[Claude] reads** after the three: each re-plan `No changes`, `./aws/deploytargets.py`, and each
+   project role simulated on `redshift-data:ExecuteStatement`, `sqlworkbench:CreateConnection` and
+   `redshift-serverless:GetCredentials`, with a person's session beside the worker's.
+4. **The lint**: the pull request in `awsds-workflows` from the patch of 2026-11-12, the user's
+   merge, and `AWSDS_WORKFLOWS` in `examples/app-etl/.gitlab-ci.yml` moved to that commit.
+
+**After release T's sitting and the Sandbox sitting** (§N.8.2; the stage file's items 16 to 20 and
+its 1.5): `product.json` brought to what the `dev` project for app-etl alone owns.
+
+**The promotion sitting**, the hub and GitLab up and `make up ENV=staging`:
+
+5. **`staging/chains/`**, account **Staging Account**. Staging's `orchestration/` and
+   `app/app-etl/` are down since its last `make down`; a plan that reads anything to destroy there
+   stops the step. 18 to add.
+
+   ```bash
+   AWS_PROFILE=awsds-infra-staging terraform -chdir=terraform-live/staging/chains apply -input=false "$HOME/tmp/stage19-chains-staging.tfplan"
+   ```
+
+6. **[user] The mirror and the template's merge request** from `examples/app-etl/` at `main`, then
+   the tag. `bundle` fails a bundle whose catalog is not `product.json`'s; `staging-gate` is the
+   user's; `staging-check` reads the egress and the project; `staging-deploy` runs the CLI;
+   `staging-test` starts both chains and reads the report and the table; `staging-model` serves the
+   model as the project's role. **[Claude] reads** the stage file's xxix to xxxi from the jobs' logs
+   and Staging's trail.
+7. **`production-check` fails once**, on the membership: the call creates `awsds-deploy-prod`'s
+   group profile, whose id **[Claude] reads** from the domain's account (`datazone
+   search-group-profiles --group-type IAM_ROLE_SESSION_GROUP` as `awsds-infra-data`, the profile whose
+   `rolePrincipalArn` is the role). **[user]**, account **Production**:
+
+   ```bash
+   NO_PROXY='*' aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d7qcazihvr3s7k --designation PROJECT_OWNER --member groupIdentifier=<the group's id> --profile awsds-infra-prod --region us-west-2
+   ```
+
+   Then the job again, `production-gate`, and, with `make up ENV=production ONLY=workloads-egress`,
+   `production-deploy`: the bootstrap creates the three workflows and runs `app-etl` to its end
+   (xxviii), and the product is listed.
+8. **Production's cut-over, once that deploy is green.** The chain layer's names are the same in the
+   old slice and the new, so the old goes first; the CLI's workflows are untouched by it. As
+   `awsds-infra-prod`: a destroy plan of `production/orchestration/` (41 read on 2026-11-12) and of
+   `production/app/app-etl/` (3), each read and applied; then `production/chains/` re-planned (24)
+   and applied. **[Claude] reads** a chain started by hand against xxix.
+9. **A warehouse sitting** (`make up ENV=production ONLY=workloads-egress,warehouse-compute
+   GROUPS=redshift`): as the admin, in `governed`, `CREATE USER "IAMR:<the project role's name>"
+   PASSWORD DISABLE NOCREATEDB NOCREATEUSER;` and `GRANT ROLE gov_trades_rw TO "IAMR:<the same>";`
+   (Stage 9 9.3's shape); `production-warehouse-ddl`; the chain `app-etl-warehouse` started by hand
+   and read against xxxii; `make down` after.
+10. **The retirement**, a pull request after both targets ran release F: the stage file's item 31.
 
 ## Q. After the quotas: Stage 10's pass 3
 

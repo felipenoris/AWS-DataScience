@@ -540,24 +540,23 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   a subscription deny, 14 the task the one publisher, 15 the Governance Manager approving in
   `deploy-production`, 16 (b) the warehouse workflow in Production's project, 17 (a) (`CT-13`), 18 (d) a `dev`
   project for app-etl alone, 19 (c) no `test` stage, 20 (b) Production alone lists. **Pass 1 run 2026-11-10**
-  in `eighth-experimentation`: the Iceberg table, its asset, listing and lineage (`SUP-343`,
-  `SUP-345`, `SUP-346`, `TM-29`). **Pass 4, 2026-11-11**: both targets associated (`SUP-349`);
+  in `eighth-experimentation`: the Iceberg table, its asset, listing and lineage (`TM-29`). **Pass 4, 2026-11-11**: both targets associated (`SUP-349`);
   the `Workloads` SCP's amendment (4.1), `<env>/studio/` (4.4) and `governance/`'s two deployment profiles
   (4.5) applied; **`deploy-staging` (`5ido8bej1zoeq8`) and `deploy-production`
   (`d7qcazihvr3s7k`) created, each with the database `app_etl`** (4.6, `INV-21`), then the project roles'
   grants, the deploy roles' policy and the CLI import's grants (`SUP-353`). Decision 21 (b) (`TM-30`): a fence
   in the targets' D13 boundary, applied 2026-11-11 (`DT-14`). 2026-11-12, the user's: the flag off in both (4.7,
   `DT-13`) and `awsds-deploy-staging` owning `deploy-staging`; `awsds-deploy-prod`'s membership at its first call.
-  **Two releases**: T retires the `test` stage (the job `bundle` as `awsds-deploy-sandbox-test`;
-  `examples/app-etl/`, sitting `runbooks/promotion.md` §N.8.2), F is the CLI's legs (4.9 to 4.11). What is
-  left: the stage file's §The estate against decisions 17 to 20.
+  **Two releases**: T retires the `test` stage (its template is `examples/app-etl/` at `36bcf916`;
+  `runbooks/promotion.md` §N.8.2). **F, the CLI's legs, written 2026-11-12 and nothing applied** (PR
+  #291): `scripts/deploy-application.py`, `<env>/chains/`, the plans in `$HOME/tmp/`, the order in
+  §N.8.4, decisions 22 to 24 due (the stage file's §Release F as written).
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
   `--no-browser`.
-- **Module tags**: `orchestration-v0.2.1` (both callers pinned 2026-10-25, the schedule's input carrying the
-  Scheduler's placeholder literally; `production/orchestration` applied on it 2026-10-25, its three schedules
-  `DISABLED` between sittings), `vpc-egress-v0.19.0` (`sandbox/egress`, the `mwaa` group's `airflow-serverless`, applied 2026-10-26 with
+- **Module tags**: `orchestration-v0.3.0` (both `chains/`, unapplied), `orchestration-v0.2.1` (both
+  `orchestration/`; Production's three schedules `DISABLED` between sittings), `vpc-egress-v0.19.0` (`sandbox/egress`, the `mwaa` group's `airflow-serverless`, applied 2026-10-26 with
   `GROUPS=mwaa`; the other callers `v0.17.0`), `sagemaker-prereqs-v0.10.0` (both `studio/`; Sandbox `v0.9.0`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.

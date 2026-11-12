@@ -1656,3 +1656,68 @@ then *"Fiz o merge."* The paste carries the commands and no output.
 - **[Claude] What pass 4 owes with nothing up**: nothing. `awsds-deploy-prod`'s membership of
   `deploy-production` waits for the role's first call, and verification xx for 4.10 and 4.12, both
   release F's.
+
+## 2026-11-12 — release F written with nothing up: the chain layer, the grants around a deploy, the template's stages and the legs
+
+Nothing up. The user, verbatim: *"Faça esta tarefa aqui: “Stage 19: release F, os legs da CLI de CI/CD”"*,
+then, while the work ran, *"fiz o merge do #289"*. Every AWS call of this entry is a read; nothing was
+applied and nothing reached GitLab. One module tag was pushed to GitHub.
+
+- **[user] PR #289 merged**, 02:22:37 UTC, squashed into `36bcf916`. This entry's work is on
+  `claude/stage-19-release-f`, cut from that commit in the same worktree, and is PR #291.
+- **[Claude] Read in the CLI 1.0.9's installed code** before any design: `helpers/context_resolver.py`
+  writes each `{env.VAR}` of a workflow as `{{ params.VAR }}` and resolves `{proj.*}`, `{domain.*}` and
+  `{stage.name}` at the deploy; `workflows/operations.py` and `commands/run.py` pass the stage's
+  `environment_variables` as `OverrideParameters` (`SUP-282`); `helpers/airflow_serverless.py` names a
+  workflow `<application>_<project>_<workflow>` and, on `ConflictException`, updates it in place; the
+  manifest's schema takes `content.catalog` (`enabled`, `skipPublish`, `connectionName`,
+  `assets.access`) and a stage's `bootstrap` actions `workflow.create` and `workflow.run` (`wait`,
+  `trailLogs`). In the service's model `ListWorkflows` answers `Workflows[]` with `Name` and
+  `WorkflowArn`, 100 a page at most, and `StartWorkflowRun` takes `OverrideParameters`.
+- **[Claude] Read in AWS as `InfrastructureAccess`**: at 02:55 UTC each project's security group,
+  `datazone-<project>-dev`, admits itself inbound and every destination outbound, in Staging and in
+  Production; at 03:01 UTC `deploy-staging` holds the environments `Tooling` (`d6nu5aphq1e974`) and
+  `deploy-staging-app-etl`, and the first answers its `provisionedResources` by name, the subnets,
+  the security group, the key and the shared prefix among them (`SUP-359`).
+- **[Claude] The chain layer**: `terraform-modules/orchestration` rewritten without the workflow
+  resource. Planned from a local copy against both targets, and the three definitions it rendered
+  for Production answered *"result": "OK"*, no diagnostic, to `stepfunctions
+  validate-state-machine-definition` at 02:45 UTC. Committed as `b335ca31` and tagged
+  `orchestration-v0.3.0`, origin's newest being `v0.2.1`; the tag and the branch pushed. The slices
+  `staging/chains/` and `production/chains/` initialised on the tag, the provider locked at 6.73.0 on
+  three platforms, and planned at 02:52 UTC: *"Plan: 24 to add, 0 to change, 0 to destroy."* in
+  Production, *"Plan: 18 to add"* in Staging, saved as `$HOME/tmp/stage19-chains-<account>.tfplan`.
+- **[Claude] The grants around a deploy**, planned 02:57 to 03:00 UTC and saved as
+  `$HOME/tmp/stage19-f-<account>-<slice>.tfplan`: both `studio/` slices *"Plan: 2 to add, 2 to
+  change, 0 to destroy."*, the boundary and the person-session policy changed in each, Production
+  adding `awsds-prod-warehouse-load` and its attachment, Staging the deploy role's two `DESCRIBE`
+  grants on `app_etl`; both `foundation/` slices *"Plan: 0 to add, 1 to change, 0 to destroy."* with the
+  alerts var-file, `awsds-<env>-deploy-project` at 16 statements and 4,564 characters of 6,144;
+  `production/warehouse/` *"Plan: 1 to add"*, the ingress from `deploy-production`'s security group.
+- **[Claude] The slices release F retires, previewed** with `plan -destroy` at 03:15 UTC: 41 to
+  destroy in `production/orchestration/`, 3 in `production/app/app-etl/`; Staging's two answer *"No
+  objects need to be destroyed"*. Nothing destroyed.
+- **[Claude] The template**, `examples/app-etl/`: the manifest's stages `dev`, `staging` and `prod`
+  with `content.catalog` and `app-etl-warehouse`; that workflow's task creating its job; the load
+  reading the product table; the legs; `product.json` and its guard; `scripts/dev-cli.sh`'s
+  placeholders. 84 tests passed, 1 skipped. The CLI's `describe` lists the three targets and the
+  `prod` stage's four bootstrap actions. `scripts/deploy-application.py --check` at 03:07 UTC read
+  both projects, the caller a member of each; `--self-check` passes and joins `make check`.
+- **[Claude] The lint**: the rule `manifest` rewritten over a copy of `awsds-workflows` at
+  `d856982c`, in the session's scratch folder: the catalog item passes with `skipPublish` true and no
+  `assets.access`. That copy's suite reads 373 passed and 7 failed, the pinned commit's own 367 and
+  7; the patched lint answers the template *"ok: 9 arquivo(s)"*, and the pinned one *"manifest.yaml:
+  manifest: content.catalog.enabled: o bundle levaria o que o projeto tem, e não a tag"*. Nothing was
+  written in that repository. One `git fetch origin` ran in the user's checkout of it, which moved its
+  remote-tracking refs and nothing else.
+- **[Claude] Three choices the plan did not hold, written as decisions 22 to 24, the user's**: every
+  stage reads the inbox, the governed read and the project role's lake grant unwritten (22); a chain's
+  run takes the stage's variables from an SSM parameter the leg records (23); the Staging test reads
+  the product table's metadata under `DESCRIBE`, the Athena read unwritten (24).
+- **[Claude] Written**: the stage file's §Release F as written, items 13, 23 and 26 to 32, steps 3.1,
+  3.3, 4.9 and 4.11, verifications xxviii to xxxii and decisions 22 to 24; `SUP-359`;
+  `runbooks/promotion.md` §N.8.4; `TM-30`; the waiting list; conventions §6 and
+  `terraform-live/README.md` for the two slices.
+- **[Claude] Left for the user**: the three applies that need nothing up, each on a word naming it;
+  the word to open the lint's pull request; decisions 22 to 24. No workflow of release F has run:
+  every reading of the CLI in a target is 4.10's.

@@ -2205,6 +2205,23 @@ entry is still true is the reading.
   `datazone.amazonaws.com` into the domain execution role, and no call to another service. Where:
   `log-stage-06d-unified-studio-remainder.md`, 2026-10-30.
 
+- `SUP-359` **A project's `Tooling` environment answers, as `provisionedResources`, the values a stage of
+  a CI/CD manifest reads: its subnets, its security group, its key and its shared prefix** (read
+  2026-11-12 in `deploy-staging` and `deploy-production`, Stage 19 step 4.9). `GetEnvironment` on the
+  environment whose `isDefaultToolingEnvironment` is `true` lists them by name, each a string:
+  `privateSubnets` (the two subnet ids, comma-separated), `securityGroup`, `kmsKeyArn`, `userRoleArn`,
+  `vpcId`, `nonGitProjectRepositoryLocation` (`s3://<projects bucket>/<domain>/<project>/shared`, the
+  `default.s3_shared` connection's prefix without its slash), `glueNetworkConnection0` and `1`
+  (`datazone-glue-network-connection-<subnet id>-<project>-dev`, one per subnet in the order of
+  `privateSubnets`), `athenaWorkGroupName` and `logGroupName`. The names are the blueprint's, read from
+  the answer; no page of AWS's was read for them, and the CLI 1.0.9 reads the same environment for a
+  workflow's network and key (its *"Resolved Tooling config"* line). A member of the project reads
+  them, so a deploy leg fills a stage's variables from the project itself and no pipeline variable or
+  Terraform state holds them. The project's
+  security group, `datazone-<project>-dev`, admits itself inbound and every destination outbound in
+  both targets. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-12;
+  `scripts/tfhygiene/projects.py`.
+
 ### The managed policies of a project role
 
 - `SUP-176` **`SageMakerStudioProjectRoleMachineLearningPolicy` grants every SMUS project role `datazone:`
