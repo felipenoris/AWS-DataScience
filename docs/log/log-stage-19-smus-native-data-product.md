@@ -1817,3 +1817,46 @@ read.
 - **[Claude] What release F owes with nothing up**: the lint's pull request, on the user's word, and
   decisions 22 to 24. Both `chains/` slices stay unapplied: they are the promotion sitting's
   (`runbooks/promotion.md` §N.8.4).
+
+## 2026-11-12 — the lint's pull request opened in `awsds-workflows`
+
+Nothing up, no AWS call. The user, verbatim: *"Sim, abrir"*, to the question whether to open the
+lint's pull request in that repository. Claude's hand; the writes are to GitHub, one branch and one
+pull request in `awsds-workflows`.
+
+- **[Claude] The repository as found**, 04:16 UTC: `origin/main` at `d856982`, the template's pin,
+  with no commit after it and no open pull request; the user's checkout on `main` at `ff25eae`, one
+  commit behind since this session's fetch, clean and not touched. The work ran in a clone of its
+  own, in the session's scratch folder.
+- **[Claude] Read again in the CLI 1.0.9's code** before the rule's wording went out:
+  `helpers/catalog_import.py` publishes each imported asset and data product unless
+  `skip_publish`, its docstring saying *"published only if they were published (listingStatus ==
+  "ACTIVE") in the source project"*; `commands/deploy.py` hands each `assets.access` entry to
+  `helpers/datazone.py`, which creates a subscription request for the target project unless one
+  exists, waits for its approval and reads its grants; `application-manifest-schema.yaml` states
+  that `enabled` exports every catalog resource the project owns and what `skipPublish` false
+  publishes; `connectionName` under `content.catalog` is kept in the manifest's model and read by
+  no command.
+- **[Claude] The branch** `claude/lint-catalogo-skip-publish`, cut from `d856982`: item 23's patch,
+  which applied clean, with three docstrings reworded and the refusal's last clause now *"com
+  true, quem publica é uma task do workflow"*; that repository's guide (the rule's row and a
+  warning that an enabled catalog carries what the stage's project owns), its lab notes and its
+  memory. Two commits, `1b41a70` and `ea8f86f`.
+- **[Claude] Checked there**: the six new cases fail on `d856982`'s `lint.py` and pass on the
+  branch; the suite reads 373 passed, 7 failed and 2 skipped on the laptop, the seven being that
+  repository's `prepare-offline` tests, which refuse a Mac (*"esta máquina é Darwin arm64, e a
+  pasta só serve ao job preparada em Linux x86_64"*); `ruff check` and `ruff format --check`
+  clean; the `pdoc` site builds. The branch's lint on `examples/app-etl/` with the pipeline's
+  options, 04:22 UTC: *"ok: 9 arquivo(s)"*; `d856982`'s: *"manifest.yaml: manifest:
+  content.catalog.enabled: o bundle levaria o que o projeto tem, e não a tag"*, exit 1. By the
+  command on copies of that repository's `probe-worker`: the catalog on with no `skipPublish`,
+  exit 1; with an `assets.access` entry, exit 1; in the admitted form, `ok`.
+- **[Claude] The pull request**, 04:24:15 UTC:
+  [`awsds-workflows` PR #25](https://github.com/felipenoris/awsds-workflows/pull/25), 8 files. Its three
+  test jobs, Python 3.12, 3.13 and 3.14 on Ubuntu, ended `SUCCESS` by 04:25:00 UTC. The merge is
+  the user's.
+- **[Claude] Written here**: item 23, act 2, the status row and sitting 5 of the stage file;
+  `runbooks/promotion.md` §N.8.4 step 4; the waiting list's row, now the merge; `REFERENCES.md`;
+  `CLAUDE.md`'s row.
+- **[Claude] What follows the merge**: the template's `AWSDS_WORKFLOWS` takes the merge commit, in
+  this repository and then in release F's merge request.

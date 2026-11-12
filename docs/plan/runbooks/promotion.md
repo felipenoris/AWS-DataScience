@@ -1911,7 +1911,8 @@ their commands are the record of what ran:
    and `explicitDeny` as a person, `explicitDeny` on the other two either way; Staging's role
    `explicitDeny` on the three (Stage 19's log).
 4. **The lint**: the pull request in `awsds-workflows` from the patch of 2026-11-12, the user's
-   merge, and `AWSDS_WORKFLOWS` in `examples/app-etl/.gitlab-ci.yml` moved to that commit.
+   merge, and `AWSDS_WORKFLOWS` in `examples/app-etl/.gitlab-ci.yml` moved to that commit. **Opened
+   2026-11-12** as [PR #25](https://github.com/felipenoris/awsds-workflows/pull/25); the merge is the user's, and the pin moves after it.
 
 **After release T's sitting and the Sandbox sitting** (§N.8.2; the stage file's items 16 to 20 and
 its 1.5): `product.json` brought to what the `dev` project for app-etl alone owns.
