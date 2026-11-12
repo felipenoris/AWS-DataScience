@@ -4,7 +4,11 @@ These are findings from the planning period that re-reading the plan will not gi
 list only what would otherwise be relearned the hard way.
 
 Read it before planning, reviewing, or settling a decision. `CLAUDE.md` carries the titles so a lesson
-can be recognised without opening this file; the reasoning that makes each one usable is here.
+can be recognised without opening this file, with a table of them by situation; the reasoning that makes
+each one usable is here.
+
+Lessons 1 to 60 are numbered list items and the later ones are `## Lesson N` headings, so one lesson is
+found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read from that line.
 
 ---
 
