@@ -38,10 +38,9 @@ variables:
   GATES_UV_PROJECTS: "."
   IMAGE_REPO: awsds-prod-ecr-app-etl
   # The workflow tooling, by commit: its lint reads manifest.yaml and workflows/ against the rules of
-  # a SageMaker application (D28), offline. The manifest's catalog item passes the rule `manifest`
-  # of the release that follows this commit, which admits one that publishes nothing: the pin moves
-  # to it in the merge request that brings this file to GitLab.
-  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/d856982c0482de79916ce114662a37799936a6ee.zip"
+  # a SageMaker application (D28), offline. From this commit its rule `manifest` admits the
+  # manifest's catalog item, which publishes nothing (skipPublish) and asks for no access.
+  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/196aceec092649551ed6451796b1c3c7983cfafb.zip"
   # The instance types a processing job may ask for: the ceiling DenySageMakerInstanceCeiling carries
   # in the Workloads SCP and in Sandbox's project boundary, the list terraform-modules/sagemaker-denies
   # holds (allowed_instance_types) in the infrastructure repository. A copy, since the application's
