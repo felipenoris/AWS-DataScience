@@ -48,8 +48,8 @@
   Portuguese, read 2026-10-12 at `937a66a` and `3499530`: <https://felipenoris.github.io/awsds-workflows/>;
   its section *O plano do Terraform* read 2026-10-24 at `ff25eae`. Its PR #23, merged 2026-10-24 as
   `ff25eae`, writes Stage 10 2.3's rules (2c), `lint-plan`, and (6), and the `manifest` rule's refusal of
-  a glob include: <https://github.com/felipenoris/awsds-workflows/pull/23>. Its PR #25, opened
-  2026-11-12, makes the `manifest` rule admit `content.catalog` with `skipPublish` true and no
+  a glob include: <https://github.com/felipenoris/awsds-workflows/pull/23>. Its PR #25, merged
+  2026-11-12 as `196acee`, makes the `manifest` rule admit `content.catalog` with `skipPublish` true and no
   `assets.access` (Stage 19 item 23): <https://github.com/felipenoris/awsds-workflows/pull/25>.
 
 ## Organization and identity

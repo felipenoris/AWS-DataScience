@@ -1877,3 +1877,29 @@ user answered, verbatim: *"Sim, como recomendado"*. Claude's hand for the record
   README; the row removed from the waiting list; `CLAUDE.md`'s row. No code changed: the
   template, the scripts and the slices were written under (a), and the applies of 03:40 to 03:42
   UTC carry 23's and 24's grants.
+
+## 2026-11-12 — both pull requests merged by the user; the template's pin on the lint's merge commit
+
+Nothing up, no AWS call. The user, verbatim: *"Fiz o merge do #25 e do #291"*. Claude's hand for
+the pin and the records.
+
+- **[user] `awsds-workflows` PR #25 merged**, 13:04:13 UTC, squashed into `196acee` on that
+  repository's `main`; its tree is the branch head's (`ea8f86f`, an empty diff).
+- **[user] PR #291 merged**, 13:04:29 UTC, squashed into `51bb0bc6` on `main`; the tree is the
+  branch head's (`82248a17`, an empty diff) and the remote branch is deleted, so the five slices
+  applied from the branch at 03:40 to 03:42 UTC are on `main`. This entry is on
+  `claude/stage-19-lint-pin`, cut from that commit in the same worktree.
+- **[Claude] The pin**: `AWSDS_WORKFLOWS` in `examples/app-etl/.gitlab-ci.yml` from `d856982c` to
+  `196aceec092649551ed6451796b1c3c7983cfafb`. Run as the `test` job runs it, `uvx --from` the
+  variable's value with the file's `--image-repository`, seven `--instance-type` and one
+  `--algorithm-repository`, 13:06 UTC: the new pin answers *"ok: 9 arquivo(s)"*, exit 0; the old
+  one *"manifest.yaml: manifest: content.catalog.enabled: o bundle levaria o que o projeto tem, e
+  não a tag"*, exit 1. The template's tests read 84 passed and 1 skipped, and
+  `scripts/check-gitlab-ci.py` passes.
+- **[Claude] Release T's template is unchanged**: the tree of `36bcf916`, whose pin is `d856982c`
+  and whose one-stage manifest that lint passes.
+- **[Claude] Written**: item 23, act 2, the releases table, the status row and sitting 5 of the
+  stage file; `runbooks/promotion.md` §N.8.4 step 4; the merge's row removed from the waiting
+  list; `REFERENCES.md`; `CLAUDE.md`'s row.
+- **[Claude] Not touched**: the user's checkout of `awsds-workflows`, on `main` at `ff25eae`, two
+  commits behind its origin.
