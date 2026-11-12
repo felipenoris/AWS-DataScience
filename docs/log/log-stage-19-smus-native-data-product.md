@@ -1721,3 +1721,16 @@ applied and nothing reached GitLab. One module tag was pushed to GitHub.
 - **[Claude] Left for the user**: the three applies that need nothing up, each on a word naming it;
   the word to open the lint's pull request; decisions 22 to 24. No workflow of release F has run:
   every reading of the CLI in a target is 4.10's.
+
+## 2026-11-12 — release F: the leg's deploy exercised over stubs
+
+The same sitting, no AWS call. Claude's hand.
+
+- **[Claude] `scripts/deploy-application.py`'s deploy path**, run with the project's values, the
+  membership, the state read, the workflow listing and the SSM record replaced by stubs and a stand-in
+  for the CLI: the bundle is extracted beside the tag's manifest, the stand-in runs there with
+  `--bundle-archive-path` and reads the target stage's variables from the project and a placeholder
+  for the other stages'; a clean run exits 0 with the nine stage variables recorded and the dotenv
+  written; an import reporting `Failed: 2`, a CLI exiting 1 and a bundle whose SHA256 differs each
+  exit 1 with nothing recorded. The CLI's output now reaches the job's log as it comes, since
+  Production's deploy follows a run. What the real CLI prints in a target is verification xxx's.

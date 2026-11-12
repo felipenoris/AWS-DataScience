@@ -341,14 +341,26 @@ def deploy(args: argparse.Namespace) -> int:
             "--no-events",
         ]
         print(f"== {' '.join(command[1:])}", flush=True)
-        res = subprocess.run(command, cwd=tree, env=env, capture_output=True, text=True)
-    log = res.stdout + res.stderr
+        # The CLI's output goes to the job's log as it comes: Production's deploy follows a run.
+        lines = []
+        with subprocess.Popen(
+            command,
+            cwd=tree,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        ) as process:
+            for line in process.stdout:
+                sys.stdout.write(line)
+                sys.stdout.flush()
+                lines.append(line)
+        status = process.returncode
+    log = "".join(lines)
     if args.log:
         args.log.write_text(log, encoding="utf-8")
-    sys.stdout.write(log)
-    sys.stdout.flush()
-    if res.returncode != 0:
-        raise DeployError(f"the CLI's deploy exited {res.returncode}")
+    if status != 0:
+        raise DeployError(f"the CLI's deploy exited {status}")
     problems = read_log(log, carries_catalog)
 
     deployed = list_workflows(region)
