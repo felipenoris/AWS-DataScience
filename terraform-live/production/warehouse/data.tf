@@ -57,8 +57,34 @@ data "terraform_remote_state" "sagemaker" {
   }
 }
 
+# The deployment project's roles, by name (Stage 19 step 4.6): each project's id is the second
+# segment of its role's name, and its security group is datazone-<project id>-dev, which the
+# project's Tooling environment created in VPC-Workloads. The warehouse workflow's Glue job runs on
+# the project's Glue connections, which carry that group (Stage 19 decision 16 (b)).
+data "terraform_remote_state" "studio" {
+  backend = "s3"
+
+  config = {
+    bucket = "awsds-${var.env}-tfstate"
+    key    = "${var.account_folder}/studio/terraform.tfstate"
+    region = var.region
+  }
+}
+
+data "aws_security_group" "project" {
+  for_each = toset(local.deployment_project_ids)
+
+  name   = "datazone-${each.value}-dev"
+  vpc_id = local.vpc_id
+}
+
 locals {
   name = "awsds-${var.env}-warehouse"
+
+  deployment_project_ids = [
+    for r in data.terraform_remote_state.studio.outputs.project_roles :
+    regex("^datazone_usr_role_([a-z0-9]+)_", r)[0]
+  ]
 
   data_key_arn          = data.terraform_remote_state.data.outputs.data_key_arn
   vpc_id                = data.terraform_remote_state.workloads.outputs.vpc_id

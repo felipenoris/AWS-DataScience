@@ -707,15 +707,27 @@ and its log); D41 item 2 kept the rule above.
   role `AWSServiceRoleForAmazonAthena`. `DataLake` on demand adds a Glue database, its
   project-conditioned Lake Formation grants and a daily data source, its manage-access role needing
   `AmazonDataZoneGlueManageAccessRolePolicy`.
+- **What a deploy into it reads and leaves** (release F, written 2026-11-12 and not yet run in a
+  target; Stage 19 step 4.9). The project's `Tooling` environment answers the values a stage of a
+  manifest needs, its subnets, its security group, its key and its shared prefix (`SUP-359`), so the
+  pipeline's leg reads them from the project. The CLI writes each `{env.VAR}` of a workflow into the
+  deployed definition as `{{ params.VAR }}` and fills it only on a run it starts (`SUP-282`), so a
+  chain's state machine passes the same values, which the leg records in an SSM parameter after
+  each deploy; it finds the workflow by its name, `<application>_<project>_<workflow>`, since the
+  ARN ends in a suffix the service generates.
 - **What fences the project role there.** The role runs on AWS's managed policies, which allow
   `sts:AssumeRole` on every role, `kms` through S3 on every key and `glue` on the whole catalog
   (`SUP-358`, `TM-30`). In a deployment target the D13 boundary names what the role never touches in
   the account, its other buckets, customer managed keys, secrets and repositories, every
   `sts:AssumeRole`, and Bedrock, AgentCore, Amazon Q and CodeWhisperer whole (Stage 19 decision 21
   (b); `<env>/studio/fence.tf`, `sagemaker-prereqs-v0.10.0`, applied 2026-11-11), and
-  `./aws/deploytargets.py` `DT-14` reads it. Under it each role still holds a warehouse session
-  through `sqlworkbench`, the pull of the registry's images but the deploy image, and the `glue`
-  writes on the catalog, which Lake Formation holds.
+  `./aws/deploytargets.py` `DT-14` reads it. Since 2026-11-12 the same statement denies the query
+  editor (`sqlworkbench`) and the Redshift Data API in both targets and every Redshift service in
+  Staging, and a person's session of the role is denied a warehouse session by the person-session
+  policy. Under it Production's role still holds `redshift-serverless:GetCredentials` as a
+  workflow's worker, the door the warehouse load takes (decision 16 (b)), and each role the pull
+  of the registry's images but the deploy image and the `glue` writes on the catalog, which Lake
+  Formation holds.
 - **What the CLI needs there.** The deploying role is a member through its `IAM_ROLE_SESSION_GROUP`
   profile, which DataZone creates at the role's first read of a project (`SUP-159`); as a non-member
   it lists the project and every storage item stops on `ListConnections`. It holds the DataZone

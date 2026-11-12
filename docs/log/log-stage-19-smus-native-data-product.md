@@ -1656,3 +1656,224 @@ then *"Fiz o merge."* The paste carries the commands and no output.
 - **[Claude] What pass 4 owes with nothing up**: nothing. `awsds-deploy-prod`'s membership of
   `deploy-production` waits for the role's first call, and verification xx for 4.10 and 4.12, both
   release F's.
+
+## 2026-11-12 — release F written with nothing up: the chain layer, the grants around a deploy, the template's stages and the legs
+
+Nothing up. The user, verbatim: *"Faça esta tarefa aqui: “Stage 19: release F, os legs da CLI de CI/CD”"*,
+then, while the work ran, *"fiz o merge do #289"*. Every AWS call of this entry is a read; nothing was
+applied and nothing reached GitLab. One module tag was pushed to GitHub.
+
+- **[user] PR #289 merged**, 02:22:37 UTC, squashed into `36bcf916`. This entry's work is on
+  `claude/stage-19-release-f`, cut from that commit in the same worktree, and is PR #291.
+- **[Claude] Read in the CLI 1.0.9's installed code** before any design: `helpers/context_resolver.py`
+  writes each `{env.VAR}` of a workflow as `{{ params.VAR }}` and resolves `{proj.*}`, `{domain.*}` and
+  `{stage.name}` at the deploy; `workflows/operations.py` and `commands/run.py` pass the stage's
+  `environment_variables` as `OverrideParameters` (`SUP-282`); `helpers/airflow_serverless.py` names a
+  workflow `<application>_<project>_<workflow>` and, on `ConflictException`, updates it in place; the
+  manifest's schema takes `content.catalog` (`enabled`, `skipPublish`, `connectionName`,
+  `assets.access`) and a stage's `bootstrap` actions `workflow.create` and `workflow.run` (`wait`,
+  `trailLogs`). In the service's model `ListWorkflows` answers `Workflows[]` with `Name` and
+  `WorkflowArn`, 100 a page at most, and `StartWorkflowRun` takes `OverrideParameters`.
+- **[Claude] Read in AWS as `InfrastructureAccess`**: at 02:55 UTC each project's security group,
+  `datazone-<project>-dev`, admits itself inbound and every destination outbound, in Staging and in
+  Production; at 03:01 UTC `deploy-staging` holds the environments `Tooling` (`d6nu5aphq1e974`) and
+  `deploy-staging-app-etl`, and the first answers its `provisionedResources` by name, the subnets,
+  the security group, the key and the shared prefix among them (`SUP-359`).
+- **[Claude] The chain layer**: `terraform-modules/orchestration` rewritten without the workflow
+  resource. Planned from a local copy against both targets, and the three definitions it rendered
+  for Production answered *"result": "OK"*, no diagnostic, to `stepfunctions
+  validate-state-machine-definition` at 02:45 UTC. Committed as `b335ca31` and tagged
+  `orchestration-v0.3.0`, origin's newest being `v0.2.1`; the tag and the branch pushed. The slices
+  `staging/chains/` and `production/chains/` initialised on the tag, the provider locked at 6.73.0 on
+  three platforms, and planned at 02:52 UTC: *"Plan: 24 to add, 0 to change, 0 to destroy."* in
+  Production, *"Plan: 18 to add"* in Staging, saved as `$HOME/tmp/stage19-chains-<account>.tfplan`.
+- **[Claude] The grants around a deploy**, planned 02:57 to 03:00 UTC and saved as
+  `$HOME/tmp/stage19-f-<account>-<slice>.tfplan`: both `studio/` slices *"Plan: 2 to add, 2 to
+  change, 0 to destroy."*, the boundary and the person-session policy changed in each, Production
+  adding `awsds-prod-warehouse-load` and its attachment, Staging the deploy role's two `DESCRIBE`
+  grants on `app_etl`; both `foundation/` slices *"Plan: 0 to add, 1 to change, 0 to destroy."* with the
+  alerts var-file, `awsds-<env>-deploy-project` at 16 statements and 4,564 characters of 6,144;
+  `production/warehouse/` *"Plan: 1 to add"*, the ingress from `deploy-production`'s security group.
+- **[Claude] The slices release F retires, previewed** with `plan -destroy` at 03:15 UTC: 41 to
+  destroy in `production/orchestration/`, 3 in `production/app/app-etl/`; Staging's two answer *"No
+  objects need to be destroyed"*. Nothing destroyed.
+- **[Claude] The template**, `examples/app-etl/`: the manifest's stages `dev`, `staging` and `prod`
+  with `content.catalog` and `app-etl-warehouse`; that workflow's task creating its job; the load
+  reading the product table; the legs; `product.json` and its guard; `scripts/dev-cli.sh`'s
+  placeholders. 84 tests passed, 1 skipped. The CLI's `describe` lists the three targets and the
+  `prod` stage's four bootstrap actions. `scripts/deploy-application.py --check` at 03:07 UTC read
+  both projects, the caller a member of each; `--self-check` passes and joins `make check`.
+- **[Claude] The lint**: the rule `manifest` rewritten over a copy of `awsds-workflows` at
+  `d856982c`, in the session's scratch folder: the catalog item passes with `skipPublish` true and no
+  `assets.access`. That copy's suite reads 373 passed and 7 failed, the pinned commit's own 367 and
+  7; the patched lint answers the template *"ok: 9 arquivo(s)"*, and the pinned one *"manifest.yaml:
+  manifest: content.catalog.enabled: o bundle levaria o que o projeto tem, e não a tag"*. Nothing was
+  written in that repository. One `git fetch origin` ran in the user's checkout of it, which moved its
+  remote-tracking refs and nothing else.
+- **[Claude] Three choices the plan did not hold, written as decisions 22 to 24, the user's**: every
+  stage reads the inbox, the governed read and the project role's lake grant unwritten (22); a chain's
+  run takes the stage's variables from an SSM parameter the leg records (23); the Staging test reads
+  the product table's metadata under `DESCRIBE`, the Athena read unwritten (24).
+- **[Claude] Written**: the stage file's §Release F as written, items 13, 23 and 26 to 32, steps 3.1,
+  3.3, 4.9 and 4.11, verifications xxviii to xxxii and decisions 22 to 24; `SUP-359`;
+  `runbooks/promotion.md` §N.8.4; `TM-30`; the waiting list; conventions §6 and
+  `terraform-live/README.md` for the two slices.
+- **[Claude] Left for the user**: the three applies that need nothing up, each on a word naming it;
+  the word to open the lint's pull request; decisions 22 to 24. No workflow of release F has run:
+  every reading of the CLI in a target is 4.10's.
+
+## 2026-11-12 — release F: the leg's deploy exercised over stubs
+
+The same sitting, no AWS call. Claude's hand.
+
+- **[Claude] `scripts/deploy-application.py`'s deploy path**, run with the project's values, the
+  membership, the state read, the workflow listing and the SSM record replaced by stubs and a stand-in
+  for the CLI: the bundle is extracted beside the tag's manifest, the stand-in runs there with
+  `--bundle-archive-path` and reads the target stage's variables from the project and a placeholder
+  for the other stages'; a clean run exits 0 with the nine stage variables recorded and the dotenv
+  written; an import reporting `Failed: 2`, a CLI exiting 1 and a bundle whose SHA256 differs each
+  exit 1 with nothing recorded. The CLI's output now reaches the job's log as it comes, since
+  Production's deploy follows a run. What the real CLI prints in a target is verification xxx's.
+
+## 2026-11-12 — release F's applies that need nothing up: both `studio/` slices, both `foundation/` slices, `production/warehouse/`
+
+Nothing up. The user, verbatim: *"Autorizo os 5 applies"*, then, while they ran, *"Fiz o merge do
+#290. Peço sincronizar."* The five applies are Claude's, as `InfrastructureAccess` in Staging and in
+Production, each from the plan saved at 02:57 to 03:00 UTC; every other AWS call of this entry is a
+read.
+
+- **[Claude] Before the applies**, 03:37 to 03:40 UTC: both target profiles as `InfrastructureAccess`;
+  the branch clean at `6a8b22a7`; the two other sessions on this machine told, *"Otimização de arquivos
+  de memória"* and *"Worktrees para apagar"*.
+- **[Claude] The applies**, one command each, each exit 0:
+
+  | Slice | Profile | UTC | Terraform's count | What it wrote |
+  |---|---|---|---|---|
+  | `staging/studio/` | `awsds-infra-staging` | 03:40:12 to 03:40:27 | *"2 added, 2 changed, 0 destroyed"* | the boundary, the person-session policy, the deploy role's two Lake Formation grants |
+  | `production/studio/` | `awsds-infra-prod` | 03:40:40 to 03:40:54 | *"2 added, 2 changed, 0 destroyed"* | the boundary, the person-session policy, `awsds-prod-warehouse-load` and its attachment |
+  | `staging/foundation/` | `awsds-infra-staging` | 03:41:07 to 03:41:19 | *"0 added, 1 changed, 0 destroyed"* | `awsds-staging-deploy-project` |
+  | `production/foundation/` | `awsds-infra-prod` | 03:41:39 to 03:41:51 | *"0 added, 1 changed, 0 destroyed"* | `awsds-prod-deploy-project` |
+  | `production/warehouse/` | `awsds-infra-prod` | 03:42:03 to 03:42:13 | *"1 added, 0 changed, 0 destroyed"* | the ingress rule `sgr-021fb49c3c05b5697` |
+
+  Each apply's count is its plan's: the person-session policy's document changed, so the difference
+  `SUP-356` records does not appear.
+- **[user] PR #290 merged**, 03:40:47 UTC, as `f878d781`, while the applies ran.
+- **[Claude] `origin/main` merged into the branch**, commit `5d98178a` at 03:43:48 UTC, pushed:
+  `CLAUDE.md`, `docs/GENERAL_PLAN.md`, `docs/log/INDEX.md` and `docs/plan/stages/INDEX.md` conflicted
+  on Stage 19's status text and each takes `main`'s version. `main`'s commit changes nothing under
+  `terraform-live/` or `terraform-modules/`.
+- **[Claude] The re-plans**, 03:44:15 to 03:45:51 UTC from the merged tree, `-detailed-exitcode` 0 on
+  each of the five: *"No changes. Your infrastructure matches the configuration."* The two
+  `foundation/` plans took the alerts var-file.
+- **[Claude] `./aws/deploytargets.py`**, 03:45:57 to 03:47:59 UTC: 42 rows `pass`, none failing and
+  none a note; `DT-13` reads the flag off in both targets and `DT-14`'s six rows pass in each, the
+  fence *"5 statements present"*. Exit 1 on its section 14, the ten profiles whose users are not
+  signed in.
+- **[Claude] What the applies left**, read 03:50 to 03:52 UTC:
+  - `awsds-staging-project-boundary` at `v3` (03:40:23), 14 statements, 3,474 characters; its
+    `DenyServicesNoProjectUsesHere` names `sqlworkbench:*`, `redshift:*`, `redshift-serverless:*`,
+    `redshift-data:*`, `q:*`, `codewhisperer:*`, `bedrock:*` and `bedrock-agentcore:*`.
+    `awsds-prod-project-boundary` at `v3` (03:40:49), 15 statements, 3,801 characters; the same
+    statement without `redshift:*` and `redshift-serverless:*`. Each is the boundary of three roles.
+  - `awsds-<env>-person-session-deny` at `v2` in both (Staging 03:40:25, Production 03:40:51), five
+    statements: `DenyAPersonOpeningAWarehouseSession` denies `redshift-data:*`,
+    `redshift-serverless:GetCredentials` and `sqlworkbench:*` where `aws:SourceIdentity` is present.
+  - `awsds-prod-warehouse-load` at `v1` (03:40:49), one statement, `redshift-serverless:GetCredentials`
+    and `GetWorkgroup` on the account's workgroups, attached to `deploy-production`'s role alone. That
+    role carries six managed policies and `deploy-staging`'s five.
+  - `awsds-<env>-deploy-project` at `v2` in both (Staging 03:41:17, Production 03:41:49), 16
+    statements, 4,579 characters in Staging and 4,564 in Production:
+    `RecordTheStageVariablesOfADeploy` on `/awsds/<env>/applications/*/stage-variables`,
+    `PassTheProjectRoleToSageMaker` on the project's role, `ReadTheProductTablesMetadata` on `app_etl`.
+  - Lake Formation in Staging: `awsds-deploy-staging` holds `DESCRIBE` on the database `app_etl` and
+    `DESCRIBE` on its tables' wildcard, neither grantable. The database's other rows are the
+    provisioning role's, the manage-access role's and the conditioned `IAMPrincipals` ones.
+  - The governed warehouse's security group `sg-0f018ef6c4848a9a3` holds two ingress rules, both TCP
+    5439: the job security group's (Stage 9 step 9.1) and `sgr-021fb49c3c05b5697`, from
+    `sg-096dbe4cec76019dd`, which is `datazone-d7qcazihvr3s7k-dev`.
+- **[Claude] Each project role simulated**, 03:49 UTC, `iam simulate-principal-policy` with the Region,
+  the organization, the account and the role's own tags as context. A worker's session carries no
+  `aws:SourceIdentity` and a person's does:
+
+  | Call | Production, a worker | Production, a person | Staging, either |
+  |---|---|---|---|
+  | `redshift-serverless:GetCredentials` | `allowed`, by `awsds-prod-warehouse-load` | `explicitDeny`, the person-session policy | `explicitDeny`, the boundary; a person by the person-session policy too |
+  | `redshift-serverless:GetWorkgroup` | `allowed` | `allowed` | `explicitDeny`, the boundary |
+  | `redshift-data:ExecuteStatement`, `GetStatementResult` | `explicitDeny`, the boundary | `explicitDeny`, both policies | `explicitDeny` |
+  | `sqlworkbench:CreateConnection` | `explicitDeny`, the boundary | `explicitDeny`, both policies | `explicitDeny` |
+  | `redshift:GetClusterCredentials` | `implicitDeny`, context keys missing | the same | `explicitDeny`, the boundary |
+
+  The simulator reads the policies and opens no session: the load's session is verification xxxii's.
+- **[Claude] `DT-14` reads the fenced services**: a row added to `aws/deploytargets.py`, the
+  services each account's `fence.tf` names against the boundary's
+  `DenyServicesNoProjectUsesHere`. Run 03:58:09 to 04:00:08 UTC: 44 rows `pass`, none failing; the
+  new row reads `bedrock`, `bedrock-agentcore`, `codewhisperer`, `q`, `redshift-data` and
+  `sqlworkbench` in Production and the same with `redshift` and `redshift-serverless` in Staging.
+- **[Claude] Written**: items 13, 24 and 27 to 29, §Release F as written's act 1 and the status row;
+  `runbooks/promotion.md` §N.8.4 steps 1 to 3; `TM-30`; `AWS_STATE.md`'s targets row and the
+  boundary's invariant; `SUP-356`'s complementary reading; the applies' row removed from the waiting
+  list; `terraform-live/README.md`, `SMUS.md` and `aws/INDEX.md` for the fence; `NETWORK.md` for the
+  warehouse's rule; `CLAUDE.md`'s row for Stage 19 in the form PR #290 gave it.
+- **[Claude] What release F owes with nothing up**: the lint's pull request, on the user's word, and
+  decisions 22 to 24. Both `chains/` slices stay unapplied: they are the promotion sitting's
+  (`runbooks/promotion.md` §N.8.4).
+
+## 2026-11-12 — the lint's pull request opened in `awsds-workflows`
+
+Nothing up, no AWS call. The user, verbatim: *"Sim, abrir"*, to the question whether to open the
+lint's pull request in that repository. Claude's hand; the writes are to GitHub, one branch and one
+pull request in `awsds-workflows`.
+
+- **[Claude] The repository as found**, 04:16 UTC: `origin/main` at `d856982`, the template's pin,
+  with no commit after it and no open pull request; the user's checkout on `main` at `ff25eae`, one
+  commit behind since this session's fetch, clean and not touched. The work ran in a clone of its
+  own, in the session's scratch folder.
+- **[Claude] Read again in the CLI 1.0.9's code** before the rule's wording went out:
+  `helpers/catalog_import.py` publishes each imported asset and data product unless
+  `skip_publish`, its docstring saying *"published only if they were published (listingStatus ==
+  "ACTIVE") in the source project"*; `commands/deploy.py` hands each `assets.access` entry to
+  `helpers/datazone.py`, which creates a subscription request for the target project unless one
+  exists, waits for its approval and reads its grants; `application-manifest-schema.yaml` states
+  that `enabled` exports every catalog resource the project owns and what `skipPublish` false
+  publishes; `connectionName` under `content.catalog` is kept in the manifest's model and read by
+  no command.
+- **[Claude] The branch** `claude/lint-catalogo-skip-publish`, cut from `d856982`: item 23's patch,
+  which applied clean, with three docstrings reworded and the refusal's last clause now *"com
+  true, quem publica é uma task do workflow"*; that repository's guide (the rule's row and a
+  warning that an enabled catalog carries what the stage's project owns), its lab notes and its
+  memory. Two commits, `1b41a70` and `ea8f86f`.
+- **[Claude] Checked there**: the six new cases fail on `d856982`'s `lint.py` and pass on the
+  branch; the suite reads 373 passed, 7 failed and 2 skipped on the laptop, the seven being that
+  repository's `prepare-offline` tests, which refuse a Mac (*"esta máquina é Darwin arm64, e a
+  pasta só serve ao job preparada em Linux x86_64"*); `ruff check` and `ruff format --check`
+  clean; the `pdoc` site builds. The branch's lint on `examples/app-etl/` with the pipeline's
+  options, 04:22 UTC: *"ok: 9 arquivo(s)"*; `d856982`'s: *"manifest.yaml: manifest:
+  content.catalog.enabled: o bundle levaria o que o projeto tem, e não a tag"*, exit 1. By the
+  command on copies of that repository's `probe-worker`: the catalog on with no `skipPublish`,
+  exit 1; with an `assets.access` entry, exit 1; in the admitted form, `ok`.
+- **[Claude] The pull request**, 04:24:15 UTC:
+  [`awsds-workflows` PR #25](https://github.com/felipenoris/awsds-workflows/pull/25), 8 files. Its three
+  test jobs, Python 3.12, 3.13 and 3.14 on Ubuntu, ended `SUCCESS` by 04:25:00 UTC. The merge is
+  the user's.
+- **[Claude] Written here**: item 23, act 2, the status row and sitting 5 of the stage file;
+  `runbooks/promotion.md` §N.8.4 step 4; the waiting list's row, now the merge; `REFERENCES.md`;
+  `CLAUDE.md`'s row.
+- **[Claude] What follows the merge**: the template's `AWSDS_WORKFLOWS` takes the merge commit, in
+  this repository and then in release F's merge request.
+
+## 2026-11-12 — decisions 22 to 24 taken by the user, each as (a)
+
+Nothing up, no AWS call. Claude asked *"As decisões 22 a 24 ficam como recomendado?"* and the
+user answered, verbatim: *"Sim, como recomendado"*. Claude's hand for the records.
+
+- **[user] Decision 22 (a)**: release F reads the inbox in every stage; the governed read, with
+  the project role's lake grant and the deny's growth to the lake, is a later release's (item 32).
+- **[user] Decision 23 (a)**: a run a chain starts takes the stage's variables from the SSM
+  parameter the leg records.
+- **[user] Decision 24 (a)**: Staging's integration test reads the product table's metadata under
+  `DESCRIBE`; the Athena read is not written, which amends decision 14 (d).
+- **[Claude] Written**: the three decisions and decision 14's amendment in the stage file, with
+  its status row, items 13 and 32, step 4.11's note and verification xxvii; the template's
+  README; the row removed from the waiting list; `CLAUDE.md`'s row. No code changed: the
+  template, the scripts and the slices were written under (a), and the applies of 03:40 to 03:42
+  UTC carry 23's and 24's grants.

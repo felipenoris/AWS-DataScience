@@ -141,7 +141,17 @@ repos:
         entry: ./scripts/model-chain.py --check
         language: system
         pass_filenames: false
-        files: ^scripts/(model-chain\.py|tfhygiene/targets\.py)$
+        files: ^scripts/(model-chain\.py|tfhygiene/(targets|projects)\.py)$
+
+      # Stage 19 step 4.9 - the leg's deploy against the template's manifest, offline: a target stage
+      # reading a variable the script does not fill, or a workflow naming one a stage does not
+      # declare, fails here and not at the CLI's first line in a pipeline job.
+      - id: deploy-application-check
+        name: the leg's deploy fills every variable the template's stages read
+        entry: ./scripts/deploy-application.py --self-check
+        language: system
+        pass_filenames: false
+        files: ^(examples/app-etl/(workflows/.*|manifest\.yaml)|scripts/deploy-application\.py|scripts/tfhygiene/projects\.py)$
 
       # 8.1 - every slice on disk declares its D11 layer in scripts/tfhygiene/layers.py. The
       # direction that costs money is a slice with no row: `make down` skips it in silence,

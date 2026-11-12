@@ -1,20 +1,25 @@
-# orchestration - Stage 10's [E] slice body, one design in the two deployment targets (D7 amended,
-# D28, D41): the MWAA Serverless workflows with their execution roles, log groups and failure rules
-# (steps 1.1-1.3, 3.1), the workers' security group (1.2), and the chain layer above the workflows -
-# per account the schedule group, the state machines' log group and the three chain roles, per chain
-# a Step Functions state machine, its EventBridge Scheduler schedule and its failure rule, per bridge
-# an EventBridge rule on the account's inbox (3.4-3.7). Two callers: staging/orchestration/ and
-# production/orchestration/, applied by the pipeline as awsds-deploy-staging and awsds-deploy-prod
-# (step 1.5, INT-14).
+# orchestration - the chain layer above a deployment project's workflows (D41 item 5; Stage 19 step
+# 4.11, decisions 6 (b) and 16 (b)). The SMUS CI/CD CLI creates the workflows in the account's
+# deployment project, each named <application>_<project>_<workflow> and run as the project's role.
+# This module creates what starts them on a schedule: per account the schedule group, the state
+# machines' log group and two roles; per chain a Step Functions state machine, its EventBridge
+# Scheduler schedule and its failure rule; per workflow a failure rule on the service's own events.
+# Two callers: staging/chains/ and production/chains/, applied by the infrastructure user.
 #
-# Every role carries the application ceiling awsds-<env>-app-boundary: the deploy role's own ceiling
-# refuses CreateRole and the five role-policy writes on a role without it (Stage 8 step 3.0). No role
-# here holds a lake permission: the execution roles start and observe jobs and reach the outputs
-# bucket's result and inbox prefixes, the chain roles start and read workflows (D13 one level up).
+# A machine finds its workflow by name at each execution (ListWorkflows), since the ARN carries a
+# suffix the service generates and a workflow deleted and created again takes a new one. It passes
+# the run the application's stage variables: the CLI writes each `{env.VAR}` of a workflow into the
+# deployed definition as an Airflow parameter and fills it only on a run it starts itself, so a run
+# another caller starts names every one as OverrideParameters or fails before its first task. The
+# deploy leg records them in an SSM parameter after each deploy, and the machine reads it.
 #
-# The names are contracts ./aws/orchestration.py reads (OR-1 to OR-5, OR-9): awsds-<env>-wf-<key>,
-# /awsds/<env>/wf/<key>, awsds-<env>-chain-<key>, awsds-<env>-chains, awsds-<env>-chain-exec,
-# -chain-scheduler and -chain-events, awsds-<env>-inbox-<app>.
+# No role here touches data, and none is a workflow's execution role. The roles carry no application
+# ceiling: awsds-<env>-app-boundary caps what the pipeline creates (Stage 8 step 3.0), and the
+# pipeline creates nothing here.
+#
+# The names are contracts: awsds-<env>-chain-<key>, awsds-<env>-chains, awsds-<env>-chain-exec and
+# -chain-scheduler, awsds-<env>-wf-<workflow>-failed, and the parameter
+# /awsds/<env>/applications/<application>/stage-variables, which scripts/deploy-application.py writes.
 
 data "aws_partition" "current" {}
 
@@ -28,42 +33,24 @@ locals {
   region         = data.aws_region.current.region
   region_account = "${local.region}:${local.account_id}"
 
-  outputs_bucket_arn = "arn:${local.partition}:s3:::${var.outputs_bucket}"
-
-  # A workflow's ARN is its name plus a dash and ten characters the service appends, so a grant on
-  # every workflow of this account is a pattern on the name.
-  workflow_arn_pattern      = "arn:${local.partition}:airflow-serverless:${local.region_account}:workflow/awsds-${var.env}-wf-*"
-  state_machine_arn_pattern = "arn:${local.partition}:states:${local.region_account}:stateMachine:awsds-${var.env}-chain-*"
-}
-
-# ------------------------------------------------------------------- the workers' network (1.2)
-#
-# The private-routing shape: a security group whose inbound rule references itself and whose
-# outbound rule admits all traffic. The subnets carry no route to a NAT device or an internet
-# gateway, so the outbound rule reaches the VPC's interface endpoints and the S3 gateway endpoint
-# and nothing else.
-resource "aws_security_group" "workers" {
-  # checkov:skip=CKV2_AWS_5:attached by awscc_mwaaserverless_workflow's network_configuration, which checkov does not read as an attachment
-  name        = "awsds-${var.env}-wf-workers"
-  description = "MWAA Serverless workers in the private-routing shape: inbound from itself, outbound to the VPC (Stage 10 step 1.2)"
-  vpc_id      = var.vpc_id
-
-  tags = {
-    Name = "awsds-${var.env}-wf-workers"
+  # The CLI's own rule (commands/deploy.py, 1.0.9): each part with every character outside
+  # [A-Za-z0-9_] replaced by an underscore, joined by underscores.
+  workflow_names = {
+    for pair in flatten([
+      for app, a in var.applications : [for w in a.workflows : { application = app, workflow = w }]
+    ]) :
+    "${pair.application}/${pair.workflow}" => join("_", [
+      replace(pair.application, "/[^A-Za-z0-9_]/", "_"),
+      replace(var.project.name, "/[^A-Za-z0-9_]/", "_"),
+      replace(pair.workflow, "/[^A-Za-z0-9_]/", "_"),
+    ])
   }
-}
 
-resource "aws_vpc_security_group_ingress_rule" "workers_self" {
-  security_group_id            = aws_security_group.workers.id
-  description                  = "All traffic between the workers, the documented self-referencing rule"
-  ip_protocol                  = "-1"
-  referenced_security_group_id = aws_security_group.workers.id
-}
+  # A workflow's ARN is its name, a dash and the ten characters the service appends.
+  workflow_arn_prefixes = { for k, n in local.workflow_names : k => "arn:${local.partition}:airflow-serverless:${local.region_account}:workflow/${n}-" }
+  workflow_arn_patterns = [for k, p in local.workflow_arn_prefixes : "${p}??????????"]
 
-resource "aws_vpc_security_group_egress_rule" "workers_all" {
-  # checkov:skip=CKV_AWS_382:the documented private-routing shape; with no NAT and no internet gateway route the rule reaches the VPC endpoints alone
-  security_group_id = aws_security_group.workers.id
-  description       = "All traffic out; the subnets route to no NAT device or internet gateway"
-  ip_protocol       = "-1"
-  cidr_ipv4         = "0.0.0.0/0"
+  stage_variables_parameters = { for app, a in var.applications : app => "/awsds/${var.env}/applications/${app}/stage-variables" }
+
+  state_machine_arn_pattern = "arn:${local.partition}:states:${local.region_account}:stateMachine:awsds-${var.env}-chain-*"
 }

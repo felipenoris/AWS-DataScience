@@ -1103,4 +1103,7 @@ Athena TB scanned, inter-AZ traffic driven by the AZ-mapping question in
 replaces the estimated rows in §2 and §3 with figures from the real bill; the per-unit rates in this file
 do not change at that point — only the quantities they are multiplied by. Posit Workbench's licence, which an
 RStudio space needs (read 2026-10-30): sold by Posit or on AWS Marketplace as `Posit Team`, granted through
-License Manager, with no rate in any AWS offer.
+License Manager, with no rate in any AWS offer. Systems Manager Parameter Store, which Stage 19's release
+F uses for one standard parameter per application and target, written at a deploy and read at each
+chain's execution (written 2026-11-12, not applied): its rate was not read for this file, and the first
+bill after a release runs on it is the reading.

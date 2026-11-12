@@ -12,7 +12,8 @@ from pathlib import Path
 import pytest
 
 SCRIPT = Path(__file__).resolve().parents[1] / "glue" / "load_warehouse.py"
-TABLE_PATH = "s3://bucket/app-etl/tables/trades_notional/"
+PRODUCT = "glue_catalog.app_etl.trades_notional"
+DB_USER = "IAMR:datazone_usr_role_project_environment"
 TARGET = "trades.trades_notional"
 ROWS = [
     {
@@ -68,7 +69,7 @@ class FakeStatement:
         return types.SimpleNamespace(
             next=lambda: True,
             getLong=lambda index: counted,
-            getString=lambda index: "IAMR:awsds-prod-job-exec",
+            getString=lambda index: DB_USER,
         )
 
 
@@ -107,7 +108,7 @@ def modules(log, counted):
 
         def get_credentials(self, workgroupName, dbName, durationSeconds):
             log.append(("get_credentials", workgroupName, dbName, durationSeconds))
-            return {"dbUser": "IAMR:awsds-prod-job-exec", "dbPassword": "temporary"}
+            return {"dbUser": DB_USER, "dbPassword": "temporary"}
 
     properties = {}
     jvm = types.SimpleNamespace(
@@ -133,7 +134,7 @@ def modules(log, counted):
         collect=lambda: [types.SimpleNamespace(asDict=lambda row=row: dict(row)) for row in ROWS],
     )
     session = types.SimpleNamespace(
-        read=types.SimpleNamespace(parquet=lambda path: log.append(("read", path)) or frame),
+        table=lambda name: log.append(("read", name)) or frame,
         sparkContext=types.SimpleNamespace(_gateway=types.SimpleNamespace(jvm=jvm)),
     )
     sql = types.ModuleType("pyspark.sql")
@@ -159,8 +160,10 @@ def run_script(monkeypatch, counted=2):
         monkeypatch.setitem(sys.modules, name, module)
     argv = [
         "load_warehouse.py",
-        "--TABLE_PATH",
-        TABLE_PATH,
+        "--TABLE_DATABASE",
+        "app_etl",
+        "--TABLE_NAME",
+        "trades_notional",
         "--WORKGROUP",
         "awsds-prod-warehouse",
         "--DATABASE",
@@ -176,7 +179,7 @@ def run_script(monkeypatch, counted=2):
 def test_the_load_deletes_and_inserts_in_one_transaction_then_counts(monkeypatch, capsys):
     log = run_script(monkeypatch)
     assert log[:4] == [
-        ("read", TABLE_PATH),
+        ("read", PRODUCT),
         ("get_workgroup", "awsds-prod-warehouse"),
         ("get_credentials", "awsds-prod-warehouse", "governed", 900),
         ("driver", "com.amazon.redshift.jdbc42.Driver"),
@@ -184,7 +187,7 @@ def test_the_load_deletes_and_inserts_in_one_transaction_then_counts(monkeypatch
     assert log[4] == (
         "connect",
         "jdbc:redshift://wg.example:5439/governed",
-        {"user": "IAMR:awsds-prod-job-exec", "password": "temporary", "ssl": "true"},
+        {"user": DB_USER, "password": "temporary", "ssl": "true"},
     )
     assert log[5] == ("autocommit", False)
     kind, sql, values = log[6]

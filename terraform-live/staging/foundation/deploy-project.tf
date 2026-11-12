@@ -2,7 +2,9 @@
 # runs the CI/CD CLI's `deploy` into the account's deployment project and follows the run it starts
 # (decision 6 (b)). The statements are Stage 18 step 4.3's, read from the calls the CLI 1.0.9 made as
 # awsds-deploy-staging on 2026-10-21, plus the catalog import's (its helpers/catalog_import.py, read
-# 2026-11-11), which that deploy did not run.
+# 2026-11-11), which that deploy did not run, and what the leg does around the deploy (step 4.9):
+# the stage variables recorded for the chains, the model chain's pass of the project role and the
+# integration test's read of the product table.
 #
 # One customer-managed policy the infrastructure user attaches, as apply-orchestration.tf's are: the
 # role's inline documents share 10,240 characters. It exists once the project does, since every scope
@@ -27,6 +29,11 @@ locals {
   deployment_workflows           = "arn:${local.partition}:airflow-serverless:${local.region_account}:workflow/*"
   deployment_log_groups          = "arn:${local.partition}:logs:${local.region_account}:log-group:/aws/mwaa-serverless/${var.datazone_domain_id}-${local.deployment_project_id}/*"
   deployment_keys                = "arn:${local.partition}:kms:${local.region_account}:key/*"
+  # The applications' product databases, the same name in every account's catalog (Stage 19 decision
+  # 2 (d)), and the parameter each application's stage variables are recorded in
+  # (terraform-modules/orchestration).
+  deployment_product_databases = ["app_etl"]
+  deployment_stage_variables   = "arn:${local.partition}:ssm:${local.region_account}:parameter/awsds/${var.env}/applications/*/stage-variables"
 }
 
 # IAM has no call that changes a managed policy's description: a change plans its replacement.
@@ -250,5 +257,44 @@ data "aws_iam_policy_document" "deploy_project" {
       variable = "kms:GrantIsForAWSResource"
       values   = ["true"]
     }
+  }
+
+  # The stage variables as a deploy filled them. The CLI passes them to a run it starts; a chain's
+  # machine reads them here and passes them to a run it starts (scripts/deploy-application.py writes
+  # the parameter after the deploy and reads it back).
+  statement {
+    sid       = "RecordTheStageVariablesOfADeploy"
+    effect    = "Allow"
+    actions   = ["ssm:GetParameter", "ssm:PutParameter"]
+    resources = [local.deployment_stage_variables]
+  }
+
+  # The model chain's batch transform runs as the project role, whose shared prefix and key hold
+  # the model and its batch input (scripts/model-chain.py; Stage 10 steps 5.2 and 5.4). The model
+  # and transform-job actions are apply-application.tf's.
+  statement {
+    sid       = "PassTheProjectRoleToSageMaker"
+    effect    = "Allow"
+    actions   = ["iam:PassRole"]
+    resources = [local.deployment_project_role_arn]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["sagemaker.amazonaws.com"]
+    }
+  }
+
+  # The integration test reads the product table's metadata. Lake Formation decides whether the
+  # catalog answers: the grant is the account's studio/ slice's, in Staging alone.
+  statement {
+    sid     = "ReadTheProductTablesMetadata"
+    effect  = "Allow"
+    actions = ["glue:GetDatabase", "glue:GetTable", "glue:GetTables"]
+    resources = concat(
+      ["arn:${local.partition}:glue:${local.region_account}:catalog"],
+      [for d in local.deployment_product_databases : "arn:${local.partition}:glue:${local.region_account}:database/${d}"],
+      [for d in local.deployment_product_databases : "arn:${local.partition}:glue:${local.region_account}:table/${d}/*"],
+    )
   }
 }

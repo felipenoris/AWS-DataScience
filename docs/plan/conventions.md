@@ -365,6 +365,12 @@ terraform-live/
 │   │                     #     a serverless workflow bills nothing at rest, so the reason
 │   │                     #     orchestration was Production-only is gone), with the chain
 │   │                     #     layer above them (D41), as in production/orchestration/
+│   ├── chains/           # [P] the chain layer above the workflows the CI/CD CLI creates in
+│   │                     #     deploy-staging (Stage 19 step 4.11, rank 61), through
+│   │                     #     orchestration-v0.3.0: per chain a state machine that finds its
+│   │                     #     workflow by name, a schedule and a failure rule. Written
+│   │                     #     2026-11-12, not applied: it takes orchestration/'s place, whose
+│   │                     #     names it carries, once the CLI deploys the application
 │   ├── egress/           # [E] interface endpoints only (7, VPC-Workloads' set since Stage 9
 │   │                     #     step 4.3a and decision 12) and the DNS Firewall - NO NAT, no default route
 │   │                     #     (D38). Measured empty at the migration; D11 leaves it torn
@@ -505,6 +511,12 @@ terraform-live/
     │                     #     quota alarm. The alarms notify foundation/'s awsds-prod-alerts.
     │                     #     Reads foundation/, networking/ and workloads/; names the [D] hosts'
     │                     #     alarms by name and never reads a [D] state (Lesson 4)
+    ├── chains/           # [P] the chain layer above the workflows the CI/CD CLI creates in
+    │                     #     deploy-production (Stage 19 step 4.11, rank 61), through
+    │                     #     orchestration-v0.3.0, the warehouse load's chain among them.
+    │                     #     Written 2026-11-12, not applied: it takes orchestration/'s
+    │                     #     place, whose names it carries, once the CLI deploys the
+    │                     #     application
     ├── orchestration/    # [E] MWAA Serverless only (D7 amended 2026-09-05):
     │                     #     awscc_mwaaserverless_workflow per app, YAML in S3, a
     │                     #     per-workflow role and log group (D28), NetworkConfiguration

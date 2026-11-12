@@ -1,0 +1,8 @@
+{
+  "required": {
+    "assets": ["trades_notional"]
+  },
+  "allowed": {
+    "formTypes": ["classification"]
+  }
+}

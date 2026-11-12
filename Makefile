@@ -31,7 +31,8 @@
 # copied), check-copies (Stage 8 3.0 and 4.1: files copied across slices), render-workflow.py --check
 # (Stage 10 decision 6: the render's table knows every value of the template's workflows),
 # model-chain.py --check (Stage 10 steps 5.2 and 5.4: the model chain's requests carry the settings the
-# Workloads OU's document demands), slices.py check (8.1), check-tfvars-shape, check-index (9.4), check-network-doc, check-plan-refs (the plan's
+# Workloads OU's document demands), deploy-application.py --self-check (Stage 19 step 4.9: the leg's
+# deploy fills every variable a target stage of the template's manifest reads), slices.py check (8.1), check-tfvars-shape, check-index (9.4), check-network-doc, check-plan-refs (the plan's
 # relative links, stable IDs and the two size budgets),
 # check-identifiers (no account id or e-mail in a tracked file), check-provider-locks (6.3: three
 # platforms in every committed lock file), check-gitlab-ci (no job named after a GitLab CI global
@@ -205,6 +206,7 @@ check:
 	         "./scripts/check-copies.py" \
 	         "./scripts/render-workflow.py --check" \
 	         "./scripts/model-chain.py --check" \
+	         "./scripts/deploy-application.py --self-check" \
 	         "./scripts/slices.py check" \
 	         "./scripts/check-tfvars-shape.py" \
 	         "./scripts/check-index.py" \

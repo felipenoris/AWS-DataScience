@@ -48,6 +48,21 @@ resource "aws_vpc_security_group_egress_rule" "jobs_to_warehouse_5439" {
   description                  = "The job security group to Redshift 5439 (Stage 9 step 9.4)"
 }
 
+# The deployment project's security group, group to group (Stage 19 decision 16 (b), step 4.11): the
+# warehouse workflow runs in deploy-production, and its Glue job's JDBC connection leaves from the
+# project's group, whose own egress admits every destination, so the path needs this half alone. The
+# group above keeps the description it was created with, which EC2 does not let change.
+resource "aws_vpc_security_group_ingress_rule" "projects_5439" {
+  for_each = data.aws_security_group.project
+
+  security_group_id            = aws_security_group.warehouse.id
+  referenced_security_group_id = each.value.id
+  from_port                    = 5439
+  to_port                      = 5439
+  ip_protocol                  = "tcp"
+  description                  = "The deployment project ${each.key} to Redshift 5439 (Stage 19 step 4.11)"
+}
+
 # No egress rule, and the absence is deliberate. A Redshift Serverless workgroup's ENIs answer
 # queries; nothing in this design has the warehouse originate a connection. COPY and UNLOAD would,
 # and step 9.2 gives the namespace role no lake reach, so the day one is granted is the day an egress

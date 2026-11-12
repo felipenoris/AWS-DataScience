@@ -960,6 +960,11 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         values["account_folder"] = account
         values["zone_ids"] = ZONE_IDS[account]
 
+    # Stage 19 step 4.11 - a chains slice reads its account's foundation/ for the alerts topic and
+    # studio/ for the project key, by the account folder.
+    if slice_name == "chains":
+        values["account_folder"] = account
+
     # Stage 9 step 3 - a deployment target's sagemaker/ slice, the runtime half of D17: the job
     # role, the Model Registry and the debug role. It reads its own foundation/ and registry/
     # states by the account folder (the deploy roles, the alerts topic, the application

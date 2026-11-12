@@ -6,23 +6,26 @@
 #   a tag v<semver>       and the image: FROM base by digest, smoke-tested with networking off, pushed
 #                         to awsds-prod-ecr-app-etl as v<semver>-<short sha>, then the scan gate; then
 #                         the application: the worker's package built, the bundle made from the tag's
-#                         files with the `dev` project named, stored in awsds-prod-releases, and the
-#                         tag's GitLab release, which names it (D41, decision 20; no `test` stage since
-#                         Stage 19 decision 19 (c)); then the promotion (Stage 8 step 3), every step of it
-#                         in another account: a manual gate into Staging (decision 28), Staging's egress
-#                         read (the user raises it, decision 27), the application deployed from the
-#                         bundle and run, the release's first run anywhere (nothing torn down: the user's
-#                         `make down`), a manual gate, and Production, its egress read the same way;
-#                         then three manual jobs of Production: the warehouse's DDL (Stage 9 9.4), and
-#                         the model's registration and approval, which the batch transform follows
-#                         (Stage 10 steps 5.2 and 5.4)
+#                         files and the `dev` project's catalog, checked against product.json, stored
+#                         in awsds-prod-releases, and the tag's GitLab release, which names it (D41,
+#                         decision 20; no `test` stage since Stage 19 decision 19 (c)); then the
+#                         promotion (Stage 8 step 3; Stage 19 step 4.9), every step of it in another
+#                         account: a manual gate into Staging (decision 28), Staging's egress and its
+#                         deployment project read (the user raises the egress, decision 27), the CI/CD
+#                         CLI deploying the bundle into the project, each chain run, the release's first
+#                         run anywhere (nothing torn down: the user's `make down`), a manual gate, and
+#                         Production, where the deploy's bootstrap runs app-etl and its product is
+#                         listed; then three manual jobs of Production: the warehouse's DDL (Stage 9
+#                         9.4), and the model's registration and approval, which the batch transform
+#                         follows (Stage 10 steps 5.2 and 5.4)
 #
 # Which runner takes which job (decision 11): every job extending .gates-uv carries tag awsds-test, the
 # test runner, whose jobs hold no AWS identity. build-image, the scan gate, store-bundle and release are
 # untagged, so only the build runner takes them, a protected runner that serves protected refs alone;
 # bundle carries tag awsds-deploy, the deploy runner, which holds the CI/CD CLI, and runs as
-# awsds-deploy-sandbox-test, a role that reads the `dev` project and writes nothing. The tag v* is
-# protected, created by Maintainers only (step 2.1), which in CE is the whole of the release gate.
+# awsds-deploy-sandbox-test, a role that reads the `dev` project and its catalog and writes nothing.
+# The tag v* is protected, created by Maintainers only (step 2.1), which in CE is the whole of the
+# release gate.
 
 include:
   - project: awsds/ci-gates
@@ -35,7 +38,9 @@ variables:
   GATES_UV_PROJECTS: "."
   IMAGE_REPO: awsds-prod-ecr-app-etl
   # The workflow tooling, by commit: its lint reads manifest.yaml and workflows/ against the rules of
-  # a SageMaker application (D28), offline; the promotion legs run its promoted lint and its lint-plan.
+  # a SageMaker application (D28), offline. The manifest's catalog item passes the rule `manifest`
+  # of the release that follows this commit, which admits one that publishes nothing: the pin moves
+  # to it in the merge request that brings this file to GitLab.
   AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/d856982c0482de79916ce114662a37799936a6ee.zip"
   # The instance types a processing job may ask for: the ceiling DenySageMakerInstanceCeiling carries
   # in the Workloads SCP and in Sandbox's project boundary, the list terraform-modules/sagemaker-denies
@@ -150,20 +155,25 @@ build-task-code:
   artifacts:
     paths: [code/app-etl.zip, code/app-etl-train.zip]
 
-# The release's bundle (step 2.5; Stage 19 decision 19 (c)): `bundle` zips the folders the manifest
-# includes, the tag's own files, failing on the warning it prints for a missing include. Nothing is
-# deployed and nothing runs in Sandbox: the release's first run is Staging's leg. The job runs on the
-# deploy runner, which holds the CLI, as awsds-deploy-sandbox-test, the profile the runner's AWS config
-# carries: `bundle` resolves the project its stage names, and the role is a member of that project
-# and of no other. A project the role cannot read does not stop the CLI, which logs "Failed to get
-# project connections" and zips the files (read 2026-11-11 on a project the caller was no member of),
-# so the job fails on that line: the role's membership is a precondition of the catalog export this
-# job gains with the CLI's legs (Stage 19 step 4.9).
+# The release's bundle (step 2.5; Stage 19 decisions 18 (d) and 19 (c)): `bundle` zips the folders
+# the manifest includes, the tag's own files, failing on the warning it prints for a missing include,
+# and exports the `dev` project's catalog beside them, the product's asset as the scientist curated
+# it. Nothing is deployed and nothing runs in Sandbox: the release's first run is Staging's leg. The
+# job runs on the deploy runner, which holds the CLI, as awsds-deploy-sandbox-test, the profile the
+# runner's AWS config carries: `bundle` resolves the project its stage names, and the role is a
+# member of that project and of no other. A project the role cannot read does not stop the CLI, which
+# logs "Failed to get project connections" and zips the files (read 2026-11-11 on a project the
+# caller was no member of), so the job fails on that line.
+#
+# The CLI exports whatever the project owns, with no filter, and an export that failed leaves the
+# bundle whole and the exit status 0. So the guard reads the archive: it fails a bundle with no
+# catalog/catalog_export.json, one that carries a resource product.json does not declare, and one
+# without the product's asset (scripts/check-catalog-export.py).
 #
 # DOMAIN_ID, DOMAIN_REGION and DEV_PROJECT_NAME are CI/CD variables of the GitLab project. The CLI
-# refuses a manifest with an unset `${VAR}`, whatever the command, so the stage variables only a deploy
-# substitutes carry a placeholder here; JOB_IMAGE_URI is the image build-image pushed, by digest, which
-# passes to the legs with the bundle's SHA256.
+# refuses a manifest with an unset `${VAR}`, whatever the command and the stage, so every name the
+# manifest reads and this job has no value for carries a placeholder; JOB_IMAGE_URI is the image
+# build-image pushed, by digest, which passes to the legs with the bundle's SHA256.
 bundle:
   stage: bundle
   needs: [build-image, build-task-code]
@@ -182,8 +192,9 @@ bundle:
       done
       if [ -z "${JOB_IMAGE_URI:-}" ]; then echo "FATAL: build-image's dotenv carries no JOB_IMAGE_URI"; exit 1; fi
       export JOB_IMAGE_URI
-      for name in SUBNET_AZ1 SUBNET_AZ2 DEV_PROJECT_SG DEV_PROJECT_KEY_ARN TRAINING_IMAGE_URI ACCOUNT_ID; do
-        export "$name=unused-by-bundle"
+      for name in $(grep -o '\${[A-Za-z0-9_]*' manifest.yaml | tr -d '${' | sort -u); do
+        eval "value=\${$name:-}"
+        if [ -z "$value" ]; then export "$name=unused-by-bundle"; fi
       done
       echo "== who bundles"
       aws sts get-caller-identity --query Arn --output text
@@ -195,6 +206,8 @@ bundle:
       if grep -q "Pattern not found" bundle.log; then echo "FATAL: an include of the manifest is missing"; exit 1; fi
       if grep -q "Failed to get project connections" bundle.log; then echo "FATAL: the role could not read the project $DEV_PROJECT_NAME: is it a member of it?"; exit 1; fi
       test -s artifacts/app-etl.zip
+      echo "== the catalog the bundle carries, against product.json"
+      python3 scripts/check-catalog-export.py artifacts/app-etl.zip product.json
       sha256sum artifacts/app-etl.zip > artifacts/app-etl.zip.sha256
       cat artifacts/app-etl.zip.sha256
       echo "BUNDLE_SHA256=$(cut -d' ' -f1 artifacts/app-etl.zip.sha256)" > bundle.env
@@ -277,9 +290,12 @@ gate-without-proxy:
 # ------------------------------------------------------------------ the promotion (Stage 8 step 3)
 #
 # The legs run on the deploy runner, in its deploy image, each job cloning the infrastructure repository
-# at its default branch with the job token and printing the commit it runs (decision 2): the slices, the
-# render and the release job live there, never here. The job's AWS identity is the profile it names, one
-# per deploy role on the runner; every account value is read at run time from the slice that owns it.
+# at its default branch with the job token and printing the commit it runs (decision 2): the deploy job,
+# the egress reading and the model chain live there, never here. The job's AWS identity is the profile it
+# names, one per deploy role on the runner; every account value is read at run time from the project or
+# the slice that owns it. A leg applies no Terraform: the CI/CD CLI deploys the bundle into the account's
+# deployment project (Stage 19 decision 6 (b)), and the chains above its workflows are the infrastructure
+# user's (terraform-live/<env>/chains/).
 # The deploy runner reaches every AWS service VPC-SharedServices holds no endpoint for through the proxy,
 # and STS and the other services of that VPC's endpoints directly, its NO_PROXY naming them. So each job
 # checks the proxy first on the SageMaker API, which that VPC holds no endpoint for (step 3.1, Stage 7
@@ -322,7 +338,9 @@ staging-gate:
 # never raised: every shared slice is the user's `make up` / `make down` (decision 27). check-egress.py
 # reads the slice's state and asks EC2 and Route 53 Resolver whether every endpoint it holds is
 # available and its DNS Firewall association complete; a slice that is down fails the job with the
-# command and the identity that raise it.
+# command and the identity that raise it. Then the deployment project: its Tooling environment's
+# values, and the deploy role's membership of it, without which the CLI's deploy stops at the
+# project's connections.
 staging-check:
   extends: .promotion
   stage: staging
@@ -332,19 +350,21 @@ staging-check:
     - |
       set -eu
       cd "$INFRA_DIR"
-      AWS_PROFILE=awsds-deploy-staging ./scripts/check-egress.py staging egress
+      export AWS_PROFILE=awsds-deploy-staging
+      ./scripts/check-egress.py staging egress
+      ./scripts/deploy-application.py staging --check
 
-# 3.2: the bundle read as the runner's own role (decision 20) and checked before a file of it is read;
-# the release job lints each rendered workflow in the promoted mode (Stage 10 step 2.3, with the
-# pipeline's AWSDS_WORKFLOWS, IMAGE_REPO and LINT_INSTANCE_TYPES) and writes the bundle's tree into
-# Staging's outputs bucket (Stage 10 step 2.4); then the application slice and the orchestration slice,
-# each with the release this pipeline promotes. The application slice applies the plan it saved once
-# lint-plan has read its Glue job under the release's glue/ folder (Stage 10 step 2.3, rule (2c)); the
-# plan and its JSON carry state, so they stay in the job's temporary folder and are never an artifact.
-# The orchestration slice's release file is kept as an artifact: its VersionIds are what step 3.7
-# records as Staging's release.tf defaults. The artifact sits beside the clone, never inside it: a job
-# that downloads it before cloning the mirror into infrastructure/ finds that folder not empty (refused
-# 2026-10-24, v0.3.2's job 325).
+# 3.2: the bundle read as the runner's own role (decision 20) and checked before a file of it is read,
+# then deployed into Staging's deployment project by the CI/CD CLI, as the deploy role
+# (scripts/deploy-application.py of the infrastructure repository): the bundle extracted beside this
+# tag's manifest, the stage's variables read from the project's Tooling environment, the bundle's
+# files under the project's shared prefix, its catalog imported and listed nowhere (PUBLISH_LISTING
+# is false here), the stage's workflows created or updated. The job fails on the CLI's exit status,
+# on a workflow with no network of the project's, on a catalog import that failed an item and on a
+# workflow it cannot find afterwards; then it records the stage's variables, which the chains pass to
+# each run. The bundle sits beside the clone, never inside it: a job that downloads a file before
+# cloning the mirror into infrastructure/ finds that folder not empty (refused 2026-10-24, v0.3.2's
+# job 325).
 staging-deploy:
   extends: .promotion
   stage: staging
@@ -354,35 +374,25 @@ staging-deploy:
     - |
       set -eu
       cd "$INFRA_DIR"
-      AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" bundle.zip --only-show-errors
-      echo "$BUNDLE_SHA256  bundle.zip" | sha256sum -c -
-      export AWS_PROFILE=awsds-deploy-staging
-      ./scripts/release-application.py staging --bundle bundle.zip --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --image-uri "$JOB_IMAGE_URI" --lint --release-vars terraform-live/staging/orchestration/release.auto.tfvars.json
-      printf '{"release": {"tag": "%s", "digest": "%s", "bundle_sha256": "%s"}}\n' "$CI_COMMIT_TAG" "${JOB_IMAGE_URI##*@}" "$BUNDLE_SHA256" > terraform-live/staging/app/app-etl/release.auto.tfvars.json
-      for slice in app/app-etl orchestration; do
-        ./scripts/gen-backend-hcl.py staging "$slice"
-        ./scripts/gen-tfvars.py --pipeline staging "$slice"
-        terraform -chdir="terraform-live/staging/$slice" init -backend-config=backend.hcl -input=false
-      done
-      plans="$(mktemp -d)"
-      terraform -chdir=terraform-live/staging/app/app-etl plan -input=false -out="$plans/app-etl.tfplan"
-      terraform -chdir=terraform-live/staging/app/app-etl show -json "$plans/app-etl.tfplan" > "$plans/app-etl.json"
-      ./scripts/lint-plan.py staging "$plans/app-etl.json" --tag "$CI_COMMIT_TAG"
-      terraform -chdir=terraform-live/staging/app/app-etl apply -input=false "$plans/app-etl.tfplan"
-      terraform -chdir=terraform-live/staging/orchestration apply -input=false -auto-approve
-      cp terraform-live/staging/orchestration/release.auto.tfvars.json "$CI_PROJECT_DIR/staging-release.auto.tfvars.json"
-      cat "$CI_PROJECT_DIR/staging-release.auto.tfvars.json"
+      AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" "$CI_PROJECT_DIR/bundle.zip" --only-show-errors
+      echo "$BUNDLE_SHA256  $CI_PROJECT_DIR/bundle.zip" | sha256sum -c -
+      AWS_PROFILE=awsds-deploy-staging ./scripts/deploy-application.py staging --manifest "$CI_PROJECT_DIR/manifest.yaml" --bundle "$CI_PROJECT_DIR/bundle.zip" --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --image-uri "$JOB_IMAGE_URI" --log "$CI_PROJECT_DIR/staging-deploy.log" --dotenv "$CI_PROJECT_DIR/staging.env"
   artifacts:
-    paths: [staging-release.auto.tfvars.json]
+    when: always
+    paths: [staging-deploy.log]
+    reports:
+      dotenv: staging.env
     expire_in: 1 year
 
 # 3.3: the deployed artifact run in the account, the release's first run anywhere since Stage 19
 # decision 19 (c), each chain's machine started by the leg and followed to its end (Stage 10 decision
-# 19), the schedules being DISABLED in Staging: app-etl first, whose Glue job
-# reads the governed table through Staging's share and writes the application's table, read back (Stage
-# 9 8.5), and the training sets; then app-etl-train, which trains on those sets (Stage 10 step 5.1, the
-# retraining Stage 9 decision 1 leaves Staging, decision 22). The application's table is read back by the
-# deploy role too, which holds DESCRIBE on app_outputs' tables.
+# 19), the schedules being DISABLED in Staging: app-etl first, whose Glue job writes the product table
+# in the project's database, read back and counted by the job itself, and the training sets; then
+# app-etl-train, which trains on those sets (Stage 10 step 5.1, the retraining Stage 9 decision 1
+# leaves Staging, decision 22). A machine finds its workflow by name and passes the run the variables
+# staging-deploy recorded. The leg then reads what the run left as another principal: the report under
+# the project's shared prefix, and the product table's metadata, on which the deploy role holds
+# DESCRIBE (Stage 19 decision 14 (d)).
 staging-test:
   extends: .promotion
   stage: staging
@@ -409,15 +419,22 @@ staging-test:
           echo "FATAL: the chain $chain ended $status"; cat "history-$chain.json"; exit 1
         fi
       done
-      aws glue get-table --database-name app_outputs --name trades_notional --query 'Table.[Name,StorageDescriptor.Location]' --output text
+      echo "== the run's report, under the project's shared prefix"
+      aws s3 cp "${STAGING_SHARED_URI}app-etl/outbox/report.json" - --only-show-errors
+      echo
+      echo "== the product table, as the catalog answers the deploy role"
+      aws glue get-table --database-name app_etl --name trades_notional --query 'Table.{name:Name,type:Parameters.table_type,metadata:Parameters.metadata_location,registered:IsRegisteredWithLakeFormation}' --output json > product-table.json
+      cat product-table.json
+      grep -q '"type": "ICEBERG"' product-table.json || { echo "FATAL: app_etl.trades_notional is not an Iceberg table"; exit 1; }
   artifacts:
     when: always
-    paths: [execution-*.json, history-*.json]
+    paths: [execution-*.json, history-*.json, product-table.json]
     expire_in: 1 year
 
 # 5.4's Staging half: the model app-etl-train trained in this account served by a batch transform on the
 # batch input the Glue job wrote, the predictions counted against the rows the evaluation recorded, the
-# model deleted after (scripts/model-chain.py, which reads every account value from its slice's state).
+# model deleted after (scripts/model-chain.py, which with --project reads the model under the project's
+# shared prefix and serves it as the project's role, in its subnets and under its key).
 staging-model:
   extends: .promotion
   stage: staging
@@ -427,15 +444,17 @@ staging-model:
     - |
       set -eu
       cd "$INFRA_DIR"
-      AWS_PROFILE=awsds-deploy-staging ./scripts/model-chain.py transform staging --tag "$CI_COMMIT_TAG"
+      AWS_PROFILE=awsds-deploy-staging ./scripts/model-chain.py transform staging --tag "$CI_COMMIT_TAG" --project
 
-# 3.4 is retired (decision 27): the pipeline destroys nothing in Staging, as in Production. The
-# application and orchestration slices hold the last release at rest, billing nothing, and the user's
-# `make down ENV=staging` takes them down with egress/.
+# 3.4 is retired (decision 27): the pipeline destroys nothing in Staging, as in Production. The project,
+# its workflows and its product table stay at rest, billing nothing but the table's storage, and the
+# user's `make down ENV=staging` takes egress/ down.
 
-# 3.5: Production's plan of the application slice, read beside Staging's results before the gate, and
-# lint-plan on it, so a refusal stops the pipeline before the gate asks anyone to approve.
-production-plan:
+# 3.5: Production's deployment project read beside Staging's results before the gate: its Tooling
+# environment's values, and the deploy role's membership of it. A deploy role that is no member fails
+# the job here, naming the grant an owner of the project makes, so the gate is asked of nobody while
+# the deploy behind it would stop at its first call.
+production-check:
   extends: .promotion
   stage: gate
   needs: [staging-test, staging-model, bundle]
@@ -444,25 +463,13 @@ production-plan:
     - |
       set -eu
       cd "$INFRA_DIR"
-      export AWS_PROFILE=awsds-deploy-prod
-      printf '{"release": {"tag": "%s", "digest": "%s", "bundle_sha256": "%s"}}\n' "$CI_COMMIT_TAG" "${JOB_IMAGE_URI##*@}" "$BUNDLE_SHA256" > terraform-live/production/app/app-etl/release.auto.tfvars.json
-      ./scripts/gen-backend-hcl.py production app/app-etl
-      ./scripts/gen-tfvars.py --pipeline production app/app-etl
-      terraform -chdir=terraform-live/production/app/app-etl init -backend-config=backend.hcl -input=false
-      plans="$(mktemp -d)"
-      terraform -chdir=terraform-live/production/app/app-etl plan -input=false -no-color -out="$plans/app-etl.tfplan" > "$CI_PROJECT_DIR/production-plan.txt"
-      cat "$CI_PROJECT_DIR/production-plan.txt"
-      terraform -chdir=terraform-live/production/app/app-etl show -json "$plans/app-etl.tfplan" > "$plans/app-etl.json"
-      ./scripts/lint-plan.py production "$plans/app-etl.json" --tag "$CI_COMMIT_TAG"
-  artifacts:
-    paths: [production-plan.txt]
-    expire_in: 1 year
+      AWS_PROFILE=awsds-deploy-prod ./scripts/deploy-application.py production --check
 
 # 3.5: the gate, a blocking manual job whose needs name the Staging leg's jobs, never `needs: []`,
 # which would let it start past a failed leg. Who may start a release is the protected tag (step 2.1).
 production-gate:
   stage: gate
-  needs: [staging-test, staging-model, production-plan]
+  needs: [staging-test, staging-model, production-check]
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
       when: manual
@@ -471,40 +478,31 @@ production-gate:
   script:
     - echo "$CI_COMMIT_TAG promoted by $GITLAB_USER_LOGIN"
 
-# 3.6: the same bundle and image by digest, nothing rebuilt; named slices only, never `make up` or
-# `make down ENV=production`. A Production run needs production/workloads-egress/ raised by the user,
-# which the job reads first, as staging-check reads Staging's (decision 27), and never raises.
-# The application slice applies a plan of its own, linted as Staging's: 3.5's plan is read, never applied.
+# 3.6: the same bundle and image by digest, nothing rebuilt, deployed into Production's deployment
+# project as Staging's was. A Production run needs production/workloads-egress/ raised by the user,
+# which the job reads first, as staging-check reads Staging's (decision 27), and never raises. The
+# `prod` stage's bootstrap creates the warehouse workflow too and then runs app-etl, following its log
+# to the run's end (Stage 19 decision 14): the deploy fails with the run, and a release that passes
+# leaves the product table written and its listing ACTIVE.
 production-deploy:
   extends: .promotion
   stage: production
   needs: [production-gate, bundle, store-bundle]
   resource_group: production
+  timeout: 90m
   script:
     - |
       set -eu
       cd "$INFRA_DIR"
       AWS_PROFILE=awsds-deploy-prod ./scripts/check-egress.py production workloads-egress
-      AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" bundle.zip --only-show-errors
-      echo "$BUNDLE_SHA256  bundle.zip" | sha256sum -c -
-      export AWS_PROFILE=awsds-deploy-prod
-      ./scripts/release-application.py production --bundle bundle.zip --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --image-uri "$JOB_IMAGE_URI" --lint --release-vars terraform-live/production/orchestration/release.auto.tfvars.json
-      printf '{"release": {"tag": "%s", "digest": "%s", "bundle_sha256": "%s"}}\n' "$CI_COMMIT_TAG" "${JOB_IMAGE_URI##*@}" "$BUNDLE_SHA256" > terraform-live/production/app/app-etl/release.auto.tfvars.json
-      for slice in app/app-etl orchestration; do
-        ./scripts/gen-backend-hcl.py production "$slice"
-        ./scripts/gen-tfvars.py --pipeline production "$slice"
-        terraform -chdir="terraform-live/production/$slice" init -backend-config=backend.hcl -input=false
-      done
-      plans="$(mktemp -d)"
-      terraform -chdir=terraform-live/production/app/app-etl plan -input=false -out="$plans/app-etl.tfplan"
-      terraform -chdir=terraform-live/production/app/app-etl show -json "$plans/app-etl.tfplan" > "$plans/app-etl.json"
-      ./scripts/lint-plan.py production "$plans/app-etl.json" --tag "$CI_COMMIT_TAG"
-      terraform -chdir=terraform-live/production/app/app-etl apply -input=false "$plans/app-etl.tfplan"
-      terraform -chdir=terraform-live/production/orchestration apply -input=false -auto-approve
-      cp terraform-live/production/orchestration/release.auto.tfvars.json "$CI_PROJECT_DIR/production-release.auto.tfvars.json"
-      cat "$CI_PROJECT_DIR/production-release.auto.tfvars.json"
+      AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" "$CI_PROJECT_DIR/bundle.zip" --only-show-errors
+      echo "$BUNDLE_SHA256  $CI_PROJECT_DIR/bundle.zip" | sha256sum -c -
+      AWS_PROFILE=awsds-deploy-prod ./scripts/deploy-application.py production --manifest "$CI_PROJECT_DIR/manifest.yaml" --bundle "$CI_PROJECT_DIR/bundle.zip" --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --image-uri "$JOB_IMAGE_URI" --log "$CI_PROJECT_DIR/production-deploy.log" --dotenv "$CI_PROJECT_DIR/production.env"
   artifacts:
-    paths: [production-release.auto.tfvars.json]
+    when: always
+    paths: [production-deploy.log]
+    reports:
+      dotenv: production.env
     expire_in: 1 year
 
 # Stage 9 step 9.4: the warehouse's DDL, warehouse/trades.sql, through the Data API as awsds-deploy-prod,
@@ -567,7 +565,7 @@ production-register:
     - |
       set -eu
       cd "$INFRA_DIR"
-      AWS_PROFILE=awsds-deploy-prod ./scripts/model-chain.py register --tag "$CI_COMMIT_TAG" --dotenv "$CI_PROJECT_DIR/model.env"
+      AWS_PROFILE=awsds-deploy-prod ./scripts/model-chain.py register --tag "$CI_COMMIT_TAG" --dotenv "$CI_PROJECT_DIR/model.env" --project
   artifacts:
     reports:
       dotenv: model.env
@@ -598,4 +596,4 @@ production-transform:
     - |
       set -eu
       cd "$INFRA_DIR"
-      AWS_PROFILE=awsds-deploy-prod ./scripts/model-chain.py transform production --tag "$CI_COMMIT_TAG" --package-arn "$MODEL_PACKAGE_ARN"
+      AWS_PROFILE=awsds-deploy-prod ./scripts/model-chain.py transform production --tag "$CI_COMMIT_TAG" --package-arn "$MODEL_PACKAGE_ARN" --project

@@ -4,8 +4,9 @@
 # its own listings; the workers' sessions (MWAA Serverless, Glue, SageMaker) carry none (read
 # 2026-10-21). A deny conditioned on aws:SourceIdentity being present binds every session DataZone
 # opens and no worker's: the objects in the projects bucket, the workflows, the jobs and the
-# catalog's tables, and DataZone's notebooks. DataZone's sessions for an IAM principal and for
-# SYSTEM were read making reads alone, so a deploy and a data source run pass under it.
+# catalog's tables, a warehouse session, and DataZone's notebooks. DataZone's sessions for an IAM
+# principal and for SYSTEM were read making reads alone, so a deploy and a data source run pass
+# under it.
 #
 # A member of the project, the approver of decision 15 included, acts as this role in the portal:
 # the deny is what leaves that person the approval and the reads, and no write.
@@ -80,6 +81,26 @@ data "aws_iam_policy_document" "person_session" {
       "sagemaker:Start*",
       "sagemaker:Stop*",
       "sagemaker:AddTags",
+    ]
+    resources = ["*"]
+
+    condition {
+      test     = "Null"
+      variable = "aws:SourceIdentity"
+      values   = ["false"]
+    }
+  }
+
+  # A database session on a warehouse of this account, by any of its three doors (Stage 19 decision
+  # 16 (b)): Production's project role opens one as a workflow's worker to load the governed
+  # warehouse, and a person acting as the role opens none.
+  statement {
+    sid    = "DenyAPersonOpeningAWarehouseSession"
+    effect = "Deny"
+    actions = [
+      "redshift-data:*",
+      "redshift-serverless:GetCredentials",
+      "sqlworkbench:*",
     ]
     resources = ["*"]
 

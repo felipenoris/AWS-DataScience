@@ -1,22 +1,25 @@
-"""The warehouse load: the application's table written into the governed warehouse (Stage 9 9.4).
+"""The warehouse load: the application's product written into the governed warehouse (Stage 9 9.4).
 
-Production alone runs it, as the Glue job awsds-prod-app-etl-load under awsds-prod-job-exec, the
-one task of the workflow awsds-prod-wf-app-etl-warehouse, which its own chain starts (Stage 9
-decision 15). Staging has no warehouse, so nothing rehearses it there.
+Production alone runs it, as the Glue job app-etl-load-<project id> the workflow app-etl-warehouse
+creates in the deployment project and runs as the project's role (Stage 19 decision 16 (b)); its
+own chain starts the workflow (Stage 9 decision 15). Staging has no warehouse, so nothing rehearses
+it there.
 
-The job reads the table app-etl wrote under --TABLE_PATH, asks Redshift Serverless for temporary
-credentials on --DATABASE (GetCredentials, through VPC-Workloads' redshift-serverless endpoint), and
-connects to the workgroup --WORKGROUP on its endpoint's port from the job's security group, which
-the warehouse's group admits (9.1), with the Amazon Redshift JDBC driver Glue provides to its Spark
-jobs. The session is the job role's database user, `IAMR:awsds-prod-job-exec`, which 9.3 created
-with the role that writes the schema. In one transaction it deletes the rows of the trade dates it
-carries and inserts its own, so a second run of the same table leaves the same rows; then it counts
-those dates' rows, and a count other than its rows fails the run.
+The job reads the product table app-etl wrote, --TABLE_NAME of --TABLE_DATABASE on the Spark catalog
+PRODUCT_CATALOG the job's --conf declares over the account's Glue Data Catalog, asks Redshift
+Serverless for temporary credentials on --DATABASE (GetCredentials, through VPC-Workloads'
+redshift-serverless endpoint), and connects to the workgroup --WORKGROUP on its endpoint's port from
+the project's security group, which the warehouse's group admits, with the Amazon Redshift JDBC
+driver Glue provides to its Spark jobs. The session is the project role's database user,
+`IAMR:<the role's name>`, which holds the role that writes the schema. In one transaction it deletes
+the rows of the trade dates it carries and inserts its own, so a second run of the same table leaves
+the same rows; then it counts those dates' rows, and a count other than its rows fails the run.
 
-The table is the deployer's, created by the pipeline's DDL (warehouse/trades.sql); this role writes
-it through the default privileges 9.3 gave the deployer's tables. A workgroup that does not exist
-fails the run at GetWorkgroup: the compute is raised by hand, and its usage limit refuses queries
-once it is breached (9.4). What the job prints are counts and names, never a value of the data.
+The warehouse table is the deployer's, created by the pipeline's DDL (warehouse/trades.sql); this
+role writes it through the default privileges the deployer's tables carry. A workgroup that does
+not exist fails the run at GetWorkgroup: the compute is raised by hand, and its usage limit refuses
+queries once it is breached (9.4). What the job prints are counts and names, never a value of the
+data.
 """
 
 from __future__ import annotations
@@ -28,6 +31,8 @@ from awsglue.utils import getResolvedOptions
 from pyspark.sql import SparkSession
 
 COLUMNS = ("trade_date", "desk", "instrument", "quantity", "price", "notional")
+# The Spark catalog over the account's Glue Data Catalog, as glue/transform.py names it.
+PRODUCT_CATALOG = "glue_catalog"
 DRIVER = "com.amazon.redshift.jdbc42.Driver"
 CREDENTIAL_SECONDS = 900
 
@@ -91,14 +96,15 @@ def load(connection, table: str, rows: list[dict]) -> tuple[int, int, int, str]:
 
 def main() -> None:
     arguments = getResolvedOptions(
-        sys.argv, ["TABLE_PATH", "WORKGROUP", "DATABASE", "TARGET_TABLE"]
+        sys.argv, ["TABLE_DATABASE", "TABLE_NAME", "WORKGROUP", "DATABASE", "TARGET_TABLE"]
     )
+    source = f"{PRODUCT_CATALOG}.{arguments['TABLE_DATABASE']}.{arguments['TABLE_NAME']}"
     spark = SparkSession.builder.getOrCreate()
-    frame = spark.read.parquet(arguments["TABLE_PATH"]).select(*COLUMNS)
+    frame = spark.table(source).select(*COLUMNS)
     rows = [row.asDict() for row in frame.collect()]
     if not rows:
-        raise RuntimeError(f"no row under {arguments['TABLE_PATH']}: app-etl's run comes first")
-    print(f"read {len(rows)} row(s) from {arguments['TABLE_PATH']}")
+        raise RuntimeError(f"no row in {source}: app-etl's run comes first")
+    print(f"read {len(rows)} row(s) from {source}")
 
     serverless = boto3.client("redshift-serverless")
     endpoint = serverless.get_workgroup(workgroupName=arguments["WORKGROUP"])["workgroup"][
