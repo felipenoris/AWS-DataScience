@@ -244,6 +244,10 @@ RANKS = {
     # workflows it starts before the application slice's Glue job they run; `up` refuses it (refusal 7).
     "orchestration": 59,
     "probes": 60,
+    # Stage 19 step 4.11 - the chain layer above a deployment project's workflows, [P] in Staging
+    # and Production. It reads studio/, data/ and foundation/, and takes orchestration/'s place
+    # once the CI/CD CLI deploys the application; [P], so nothing in up/down acts on the number.
+    "chains": 61,
     # Stage 12 step 1 - the dashboards and the alarms no other slice owns, one [P] slice per account
     # with something to watch. It reads the [P] states of the slices it watches and names the [D]
     # hosts' alarms by name, never by state (Lesson 4), so it ranks after every one of them; up/down
@@ -398,6 +402,10 @@ SLICES = [
         EPHEMERAL,
         "workflows + the chain layer (St.10), pipeline-applied",
     ),
+    # Stage 19 step 4.11 - the chain layer above the workflows the CI/CD CLI creates in each
+    # deployment project: state machines, schedules and failure rules, which bill nothing at rest.
+    Slice("staging", "chains", PERSISTENT, "the chain layer over deploy-staging's workflows"),
+    Slice("production", "chains", PERSISTENT, "the chain layer over deploy-production's workflows"),
     # Stage 3's Deliverables, as slices rather than as a script. These are instruments: created,
     # read from the serial console, destroyed in the same sitting - `make down` is why they are
     # here and not in aws/probes/, whose declared safety class is that nothing is created. Three

@@ -1,0 +1,130 @@
+{
+  "Comment": "awsds-${env}-chain-app-etl (Stage 10 step 3.5, decisions 13 and 14; Stage 19 step 4.11): reads the application's stage variables, finds ${workflow_name["app-etl"]} by its name, starts it with them and polls its run every 60 s until the run ends.",
+  "QueryLanguage": "JSONata",
+  "TimeoutSeconds": 14400,
+  "StartAt": "Read the stage variables",
+  "States": {
+    "Read the stage variables": {
+      "Type": "Task",
+      "Resource": "arn:${partition}:states:::aws-sdk:ssm:getParameter",
+      "Arguments": {
+        "Name": "${stage_variables_parameter}"
+      },
+      "Assign": {
+        "stageVariables": "{% $parse($states.result.Parameter.Value) %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 10,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Find app-etl"
+    },
+    "Find app-etl": {
+      "Type": "Task",
+      "Resource": "arn:${partition}:states:::aws-sdk:mwaaserverless:listWorkflows",
+      "Arguments": {
+        "MaxResults": 100
+      },
+      "Assign": {
+        "workflowArn": "{% $count($states.result.Workflows[Name = '${workflow_name["app-etl"]}']) = 1 ? $states.result.Workflows[Name = '${workflow_name["app-etl"]}'].WorkflowArn : 'none' %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 10,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Is app-etl deployed"
+    },
+    "Is app-etl deployed": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $workflowArn = 'none' %}",
+          "Next": "app-etl is not deployed"
+        }
+      ],
+      "Default": "Start app-etl"
+    },
+    "app-etl is not deployed": {
+      "Type": "Fail",
+      "Error": "WorkflowNotDeployed",
+      "Cause": "No workflow, or more than one, is named ${workflow_name["app-etl"]} among the first 100 of this account: the CI/CD CLI creates it at a deploy (Stage 19 step 4.9)."
+    },
+    "Start app-etl": {
+      "Type": "Task",
+      "Resource": "arn:${partition}:states:::aws-sdk:mwaaserverless:startWorkflowRun",
+      "Arguments": {
+        "WorkflowArn": "{% $workflowArn %}",
+        "ClientToken": "{% $states.context.Execution.Name & '-app-etl' %}",
+        "OverrideParameters": "{% $stageVariables %}"
+      },
+      "Assign": {
+        "runId": "{% $states.result.RunId %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 10,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Wait for app-etl"
+    },
+    "Wait for app-etl": {
+      "Type": "Wait",
+      "Seconds": 60,
+      "Next": "Read app-etl"
+    },
+    "Read app-etl": {
+      "Type": "Task",
+      "Resource": "arn:${partition}:states:::aws-sdk:mwaaserverless:getWorkflowRun",
+      "Arguments": {
+        "WorkflowArn": "{% $workflowArn %}",
+        "RunId": "{% $runId %}"
+      },
+      "Output": {
+        "runId": "{% $runId %}",
+        "runState": "{% $states.result.RunDetail.RunState %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 10,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Has app-etl ended"
+    },
+    "Has app-etl ended": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $states.input.runState = 'SUCCESS' %}",
+          "Next": "The chain succeeded"
+        },
+        {
+          "Condition": "{% $states.input.runState in ['FAILED', 'TIMEOUT', 'STOPPED'] %}",
+          "Next": "app-etl did not succeed"
+        }
+      ],
+      "Default": "Wait for app-etl"
+    },
+    "app-etl did not succeed": {
+      "Type": "Fail",
+      "Error": "WorkflowRunNotSucceeded",
+      "Cause": "The run of ${workflow_name["app-etl"]} ended FAILED, TIMEOUT or STOPPED: its task instances name the task (Stage 10 step 3.2)."
+    },
+    "The chain succeeded": {
+      "Type": "Succeed"
+    }
+  }
+}
