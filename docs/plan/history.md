@@ -821,6 +821,17 @@ one module tag.
   with a `bundle` job in `test-deploy`'s place, which deploys nothing in Sandbox, and D21's one exception,
   a pipeline writing into Sandbox's `test` project, ends when that release lands in GitLab. The `Workloads`
   SCP's amendment (decision 13 (b)) and the two `studio/` slices were planned and not applied that day.
+- **2026-11-11 — A stage's status gets one home per level of detail.** On the user's request to optimise
+  the memory files, four texts were measured as derived: the status cells of `docs/plan/stages/INDEX.md`
+  and of `docs/GENERAL_PLAN.md`, the `Records` cells of `docs/log/INDEX.md`, and the per-stage bullets of
+  `CLAUDE.md`'s Current position. Every identifier, date and measurement in them was in the stage's own
+  file or log but thirteen, which moved into the stage headers, and the copies disagreed where one had
+  been updated and another not. The cells were cut. A stage's state is one row in `CLAUDE.md`, its full
+  status is the `Status` row in the stage file's header, and its chronology is the stage log under its
+  dated headings; the stage index keeps one word of state, and the plan and the log index carry none.
+  A text written before this date that names the stage index's status cell or a `Records` cell means the
+  stage file's `Status` row or the log's headings. `scripts/check-plan-refs.py` gained a ceiling for
+  Current position and for the two indexes. Nothing in AWS changed.
 
 ---
 
