@@ -1336,14 +1336,22 @@ entry is still true is the reading.
   pairs, the driver's and Glue's, through the `lakeformation` endpoint. Where:
   `log-stage-09-deployment-targets.md`, 2026-10-23 (the second run) and 2026-10-24 (the third run).
 
-- `SUP-112` **The Lake Formation console turns `AllowFullTableExternalDataAccess` off by removing the key,
-  and turning it on writes `AuthorizedSessionTagValueList` as an empty list** (measured 2026-10-23,
+- `SUP-112` **`GetDataLakeSettings` returns `AllowFullTableExternalDataAccess` `false` as an absent key,
+  and the console's switch-on writes `AuthorizedSessionTagValueList` as an empty list** (measured 2026-10-23,
   2026-10-24 and 2026-10-25 in Production, Stage 9 decision 13). Switching on *Allow external engines to
   access data in Amazon S3 locations with full table access* left `get-data-lake-settings` with the flag
   `true` and `AuthorizedSessionTagValueList` an empty list, where the API had returned it absent. Switching
   it off, twice, left the key absent rather than `false`. A comparison of settings by shape sees the
   console's writes as changes. Where: `log-stage-09-deployment-targets.md`, 2026-10-23 (decision 13's act),
-  2026-10-24 (the third run) and 2026-10-25.
+  2026-10-24 (the third run) and 2026-10-25. The absence is the API's reading of `false`, not the
+  console's removal of a key (read 2026-11-11 and measured 2026-11-12, Stage 19 step 4.7). Production's
+  trail holds the console's switch-off of 2026-10-25 as one `PutDataLakeSettings` at 17:44:31 UTC
+  carrying the whole structure with `allowFullTableExternalDataAccess` `false`. On 2026-11-12 the CLI's
+  `put-data-lake-settings` wrote the settings `get-data-lake-settings` had returned with the flag `false`,
+  in Production at 01:50:08 UTC and in Staging at 01:50:16, and three minutes later each account's
+  settings held no such key, the administrators, the parameters and the create-default lists as before.
+  A reader takes an absent key as `false`, and cannot tell a flag turned off from one never set. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-11 (the classifier's refusals) and 2026-11-12.
 
 - `SUP-113` **A Lake Formation refusal reaches CloudTrail without the permission it lacked** (measured
   2026-10-25, Staging's `make down`). The client read *"Insufficient Lake Formation permission(s): Required
