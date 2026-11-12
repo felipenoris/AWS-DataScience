@@ -1867,11 +1867,14 @@ user's word naming it, from a checkout that holds PR #291, with `NO_PROXY='*'`, 
 `TF_PLUGIN_CACHE_DIR` set ([`terraform-changes.md`](terraform-changes.md) §1). A plan saved on
 2026-11-12 is re-made if its slice was applied since.
 
-**With nothing up**, before or after release T (they change nothing its legs use):
+**With nothing up**, before or after release T (they change nothing its legs use). Steps 1 to 3
+were applied on 2026-11-12, 03:40 to 03:42 UTC, on the user's word; a saved plan applies once, so
+their commands are the record of what ran:
 
 1. **Both `studio/` slices**, accounts **Staging Account** and **Production**: the fence's warehouse
    half, the person-session deny's growth, Staging's `DESCRIBE` for the integration test,
-   Production's `awsds-prod-warehouse-load`. 2 to add, 2 to change in each.
+   Production's `awsds-prod-warehouse-load`. 2 to add, 2 to change in each. **Applied 2026-11-12**,
+   2 added and 2 changed in each.
 
    ```bash
    AWS_PROFILE=awsds-infra-staging terraform -chdir=terraform-live/staging/studio apply -input=false "$HOME/tmp/stage19-f-staging-studio.tfplan"
@@ -1882,7 +1885,8 @@ user's word naming it, from a checkout that holds PR #291, with `NO_PROXY='*'`, 
    ```
 
 2. **Both `foundation/` slices**: the deploy role's three statements. 1 to change in each; a re-plan
-   takes `-var-file=<project folder>/secrets/alerts.auto.tfvars`.
+   takes `-var-file=<project folder>/secrets/alerts.auto.tfvars`. **Applied 2026-11-12**, 1 changed
+   in each.
 
    ```bash
    AWS_PROFILE=awsds-infra-staging terraform -chdir=terraform-live/staging/foundation apply -input=false "$HOME/tmp/stage19-f-staging-foundation.tfplan"
@@ -1892,7 +1896,8 @@ user's word naming it, from a checkout that holds PR #291, with `NO_PROXY='*'`, 
    AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/foundation apply -input=false "$HOME/tmp/stage19-f-production-foundation.tfplan"
    ```
 
-3. **`production/warehouse/`**: 5439 from `deploy-production`'s security group. 1 to add.
+3. **`production/warehouse/`**: 5439 from `deploy-production`'s security group. 1 to add. **Applied
+   2026-11-12**, the rule `sgr-021fb49c3c05b5697`.
 
    ```bash
    AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/warehouse apply -input=false "$HOME/tmp/stage19-f-production-warehouse.tfplan"
@@ -1900,7 +1905,11 @@ user's word naming it, from a checkout that holds PR #291, with `NO_PROXY='*'`, 
 
    **[Claude] reads** after the three: each re-plan `No changes`, `./aws/deploytargets.py`, and each
    project role simulated on `redshift-data:ExecuteStatement`, `sqlworkbench:CreateConnection` and
-   `redshift-serverless:GetCredentials`, with a person's session beside the worker's.
+   `redshift-serverless:GetCredentials`, with a person's session beside the worker's. **Read
+   2026-11-12**, 03:44 to 03:52 UTC: the five re-plans `No changes`; the instrument's 42 rows
+   `pass`, `DT-13` and `DT-14` among them; Production's role `allowed` on `GetCredentials` as a worker
+   and `explicitDeny` as a person, `explicitDeny` on the other two either way; Staging's role
+   `explicitDeny` on the three (Stage 19's log).
 4. **The lint**: the pull request in `awsds-workflows` from the patch of 2026-11-12, the user's
    merge, and `AWSDS_WORKFLOWS` in `examples/app-etl/.gitlab-ci.yml` moved to that commit.
 

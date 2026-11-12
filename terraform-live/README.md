@@ -354,10 +354,10 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   but `project-roles.tf` and `fence.tf` (`check-copies.py`), and `sagemaker/` beside each keeps Stage 9's
   job roles. `fence.tf` names the account's own buckets and repositories the project's role never
   touches, which the module denies in the D13 boundary (Stage 19 decision 21 (b), `TM-30`), applied
-  2026-11-11 at `sagemaker-prereqs-v0.10.0`. Written 2026-11-12 and not applied: the fence's
-  warehouse half, the deny's growth to a warehouse session, and the file one account adds,
-  Production's `warehouse.tf` (the load's session as the project's role) and Staging's
-  `staging-test.tf` (the deploy role's `DESCRIBE` on the product database).
+  2026-11-11 at `sagemaker-prereqs-v0.10.0`. Applied 2026-11-12: the fence's warehouse half, the
+  deny's growth to a warehouse session, and the file one account adds, Production's `warehouse.tf`
+  (the load's session as the project's role) and Staging's `staging-test.tf` (the deploy role's
+  `DESCRIBE` on the product database and on its tables, the slice's two Lake Formation grants).
 - **`staging/chains/` and `production/chains/` `[P]` — the chain layer above a deployment project's
   workflows** ([Stage 19](../docs/plan/stages/stage-19-smus-native-data-product.md) step 4.11), written
   2026-11-12 and not applied: `terraform-modules/orchestration/` at `orchestration-v0.3.0`, per chain a

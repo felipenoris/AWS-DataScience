@@ -3881,6 +3881,9 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   `log-stage-19-smus-native-data-product.md`, 2026-11-11; `terraform-live/staging/studio/person-session.tf`.
   Read again the same day on the same policy, at the module's next tag: each plan *"0 to add, 2 to
   change"*, each apply *"0 added, 1 changed"*, each re-plan `No changes`.
+  The complement, 2026-11-12, release F's applies in the same two slices: the same policy planned the
+  same way with a document that did change, each plan *"2 to add, 2 to change"* and each apply *"2
+  added, 2 changed"*.
 
 ### The `aws` provider
 

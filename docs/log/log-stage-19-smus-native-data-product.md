@@ -1734,3 +1734,86 @@ The same sitting, no AWS call. Claude's hand.
   written; an import reporting `Failed: 2`, a CLI exiting 1 and a bundle whose SHA256 differs each
   exit 1 with nothing recorded. The CLI's output now reaches the job's log as it comes, since
   Production's deploy follows a run. What the real CLI prints in a target is verification xxx's.
+
+## 2026-11-12 — release F's applies that need nothing up: both `studio/` slices, both `foundation/` slices, `production/warehouse/`
+
+Nothing up. The user, verbatim: *"Autorizo os 5 applies"*, then, while they ran, *"Fiz o merge do
+#290. Peço sincronizar."* The five applies are Claude's, as `InfrastructureAccess` in Staging and in
+Production, each from the plan saved at 02:57 to 03:00 UTC; every other AWS call of this entry is a
+read.
+
+- **[Claude] Before the applies**, 03:37 to 03:40 UTC: both target profiles as `InfrastructureAccess`;
+  the branch clean at `6a8b22a7`; the two other sessions on this machine told, *"Otimização de arquivos
+  de memória"* and *"Worktrees para apagar"*.
+- **[Claude] The applies**, one command each, each exit 0:
+
+  | Slice | Profile | UTC | Terraform's count | What it wrote |
+  |---|---|---|---|---|
+  | `staging/studio/` | `awsds-infra-staging` | 03:40:12 to 03:40:27 | *"2 added, 2 changed, 0 destroyed"* | the boundary, the person-session policy, the deploy role's two Lake Formation grants |
+  | `production/studio/` | `awsds-infra-prod` | 03:40:40 to 03:40:54 | *"2 added, 2 changed, 0 destroyed"* | the boundary, the person-session policy, `awsds-prod-warehouse-load` and its attachment |
+  | `staging/foundation/` | `awsds-infra-staging` | 03:41:07 to 03:41:19 | *"0 added, 1 changed, 0 destroyed"* | `awsds-staging-deploy-project` |
+  | `production/foundation/` | `awsds-infra-prod` | 03:41:39 to 03:41:51 | *"0 added, 1 changed, 0 destroyed"* | `awsds-prod-deploy-project` |
+  | `production/warehouse/` | `awsds-infra-prod` | 03:42:03 to 03:42:13 | *"1 added, 0 changed, 0 destroyed"* | the ingress rule `sgr-021fb49c3c05b5697` |
+
+  Each apply's count is its plan's: the person-session policy's document changed, so the difference
+  `SUP-356` records does not appear.
+- **[user] PR #290 merged**, 03:40:47 UTC, as `f878d781`, while the applies ran.
+- **[Claude] `origin/main` merged into the branch**, commit `5d98178a` at 03:43:48 UTC, pushed:
+  `CLAUDE.md`, `docs/GENERAL_PLAN.md`, `docs/log/INDEX.md` and `docs/plan/stages/INDEX.md` conflicted
+  on Stage 19's status text and each takes `main`'s version. `main`'s commit changes nothing under
+  `terraform-live/` or `terraform-modules/`.
+- **[Claude] The re-plans**, 03:44:15 to 03:45:51 UTC from the merged tree, `-detailed-exitcode` 0 on
+  each of the five: *"No changes. Your infrastructure matches the configuration."* The two
+  `foundation/` plans took the alerts var-file.
+- **[Claude] `./aws/deploytargets.py`**, 03:45:57 to 03:47:59 UTC: 42 rows `pass`, none failing and
+  none a note; `DT-13` reads the flag off in both targets and `DT-14`'s six rows pass in each, the
+  fence *"5 statements present"*. Exit 1 on its section 14, the ten profiles whose users are not
+  signed in.
+- **[Claude] What the applies left**, read 03:50 to 03:52 UTC:
+  - `awsds-staging-project-boundary` at `v3` (03:40:23), 14 statements, 3,474 characters; its
+    `DenyServicesNoProjectUsesHere` names `sqlworkbench:*`, `redshift:*`, `redshift-serverless:*`,
+    `redshift-data:*`, `q:*`, `codewhisperer:*`, `bedrock:*` and `bedrock-agentcore:*`.
+    `awsds-prod-project-boundary` at `v3` (03:40:49), 15 statements, 3,801 characters; the same
+    statement without `redshift:*` and `redshift-serverless:*`. Each is the boundary of three roles.
+  - `awsds-<env>-person-session-deny` at `v2` in both (Staging 03:40:25, Production 03:40:51), five
+    statements: `DenyAPersonOpeningAWarehouseSession` denies `redshift-data:*`,
+    `redshift-serverless:GetCredentials` and `sqlworkbench:*` where `aws:SourceIdentity` is present.
+  - `awsds-prod-warehouse-load` at `v1` (03:40:49), one statement, `redshift-serverless:GetCredentials`
+    and `GetWorkgroup` on the account's workgroups, attached to `deploy-production`'s role alone. That
+    role carries six managed policies and `deploy-staging`'s five.
+  - `awsds-<env>-deploy-project` at `v2` in both (Staging 03:41:17, Production 03:41:49), 16
+    statements, 4,579 characters in Staging and 4,564 in Production:
+    `RecordTheStageVariablesOfADeploy` on `/awsds/<env>/applications/*/stage-variables`,
+    `PassTheProjectRoleToSageMaker` on the project's role, `ReadTheProductTablesMetadata` on `app_etl`.
+  - Lake Formation in Staging: `awsds-deploy-staging` holds `DESCRIBE` on the database `app_etl` and
+    `DESCRIBE` on its tables' wildcard, neither grantable. The database's other rows are the
+    provisioning role's, the manage-access role's and the conditioned `IAMPrincipals` ones.
+  - The governed warehouse's security group `sg-0f018ef6c4848a9a3` holds two ingress rules, both TCP
+    5439: the job security group's (Stage 9 step 9.1) and `sgr-021fb49c3c05b5697`, from
+    `sg-096dbe4cec76019dd`, which is `datazone-d7qcazihvr3s7k-dev`.
+- **[Claude] Each project role simulated**, 03:49 UTC, `iam simulate-principal-policy` with the Region,
+  the organization, the account and the role's own tags as context. A worker's session carries no
+  `aws:SourceIdentity` and a person's does:
+
+  | Call | Production, a worker | Production, a person | Staging, either |
+  |---|---|---|---|
+  | `redshift-serverless:GetCredentials` | `allowed`, by `awsds-prod-warehouse-load` | `explicitDeny`, the person-session policy | `explicitDeny`, the boundary; a person by the person-session policy too |
+  | `redshift-serverless:GetWorkgroup` | `allowed` | `allowed` | `explicitDeny`, the boundary |
+  | `redshift-data:ExecuteStatement`, `GetStatementResult` | `explicitDeny`, the boundary | `explicitDeny`, both policies | `explicitDeny` |
+  | `sqlworkbench:CreateConnection` | `explicitDeny`, the boundary | `explicitDeny`, both policies | `explicitDeny` |
+  | `redshift:GetClusterCredentials` | `implicitDeny`, context keys missing | the same | `explicitDeny`, the boundary |
+
+  The simulator reads the policies and opens no session: the load's session is verification xxxii's.
+- **[Claude] `DT-14` reads the fenced services**: a row added to `aws/deploytargets.py`, the
+  services each account's `fence.tf` names against the boundary's
+  `DenyServicesNoProjectUsesHere`. Run 03:58:09 to 04:00:08 UTC: 44 rows `pass`, none failing; the
+  new row reads `bedrock`, `bedrock-agentcore`, `codewhisperer`, `q`, `redshift-data` and
+  `sqlworkbench` in Production and the same with `redshift` and `redshift-serverless` in Staging.
+- **[Claude] Written**: items 13, 24 and 27 to 29, §Release F as written's act 1 and the status row;
+  `runbooks/promotion.md` §N.8.4 steps 1 to 3; `TM-30`; `AWS_STATE.md`'s targets row and the
+  boundary's invariant; `SUP-356`'s complementary reading; the applies' row removed from the waiting
+  list; `terraform-live/README.md`, `SMUS.md` and `aws/INDEX.md` for the fence; `NETWORK.md` for the
+  warehouse's rule; `CLAUDE.md`'s row for Stage 19 in the form PR #290 gave it.
+- **[Claude] What release F owes with nothing up**: the lint's pull request, on the user's word, and
+  decisions 22 to 24. Both `chains/` slices stay unapplied: they are the promotion sitting's
+  (`runbooks/promotion.md` §N.8.4).

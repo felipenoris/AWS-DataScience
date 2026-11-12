@@ -721,9 +721,13 @@ and its log); D41 item 2 kept the rule above.
   the account, its other buckets, customer managed keys, secrets and repositories, every
   `sts:AssumeRole`, and Bedrock, AgentCore, Amazon Q and CodeWhisperer whole (Stage 19 decision 21
   (b); `<env>/studio/fence.tf`, `sagemaker-prereqs-v0.10.0`, applied 2026-11-11), and
-  `./aws/deploytargets.py` `DT-14` reads it. Under it each role still holds a warehouse session
-  through `sqlworkbench`, the pull of the registry's images but the deploy image, and the `glue`
-  writes on the catalog, which Lake Formation holds.
+  `./aws/deploytargets.py` `DT-14` reads it. Since 2026-11-12 the same statement denies the query
+  editor (`sqlworkbench`) and the Redshift Data API in both targets and every Redshift service in
+  Staging, and a person's session of the role is denied a warehouse session by the person-session
+  policy. Under it Production's role still holds `redshift-serverless:GetCredentials` as a
+  workflow's worker, the door the warehouse load takes (decision 16 (b)), and each role the pull
+  of the registry's images but the deploy image and the `glue` writes on the catalog, which Lake
+  Formation holds.
 - **What the CLI needs there.** The deploying role is a member through its `IAM_ROLE_SESSION_GROUP`
   profile, which DataZone creates at the role's first read of a project (`SUP-159`); as a non-member
   it lists the project and every storage item stops on `ListConnections`. It holds the DataZone

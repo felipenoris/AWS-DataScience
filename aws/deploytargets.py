@@ -173,6 +173,21 @@ FENCE_SIDS = (
     "DenyServicesNoProjectUsesHere",
 )
 FENCE_ASSUME_SIDS = ("DenyAssumingAnyRole", "DenyAssumingAnyRoleButTheNamedOnes")  # one of the two
+# The services DenyServicesNoProjectUsesHere names, <env>/studio/fence.tf's fenced_services: the
+# generative ones in both targets; the warehouse's doors but redshift-serverless in Production,
+# which the load takes (Stage 19 decision 16 (b)); every Redshift service in Staging, which holds
+# no warehouse.
+FENCED_GENERATIVE = ("bedrock", "bedrock-agentcore", "codewhisperer", "q")
+FENCED_SERVICES = {
+    PROD_PROFILE: (*FENCED_GENERATIVE, "redshift-data", "sqlworkbench"),
+    STAGING_PROFILE: (
+        *FENCED_GENERATIVE,
+        "redshift",
+        "redshift-data",
+        "redshift-serverless",
+        "sqlworkbench",
+    ),
+}
 
 POLICY_BRANCHES = (
     ("vpce", "aws:SourceVpce"),
@@ -622,6 +637,14 @@ def main(argv: list) -> int:
                         for s in statements
                         if s.get("Sid") == "DenyTheAccountsOwnBuckets"
                         for arn in _as_list(s.get("Resource"))
+                    }
+                )
+                got["boundary_services"] = sorted(
+                    {
+                        action.split(":", 1)[0]
+                        for s in statements
+                        if s.get("Sid") == "DenyServicesNoProjectUsesHere"
+                        for action in _as_list(s.get("Action"))
                     }
                 )
         elif res.ok:
@@ -1735,6 +1758,19 @@ def main(argv: list) -> int:
                             checks.ok(
                                 "DT-14", every, f"{len(got['boundary_buckets'])} bucket(s) named"
                             )
+                    services = f"{p} the services the fence denies"
+                    lacking = sorted(set(FENCED_SERVICES[p]) - set(got["boundary_services"]))
+                    if lacking:
+                        checks.fail(
+                            "DT-14",
+                            services,
+                            f"{', '.join(lacking)} not in DenyServicesNoProjectUsesHere - "
+                            "<env>/studio/fence.tf's fenced_services, whose apply is owed or was "
+                            "undone: the project role then holds that service by AWS's policies "
+                            "(TM-30).",
+                        )
+                    else:
+                        checks.ok("DT-14", services, ", ".join(got["boundary_services"]))
 
     # ---------------------------------------------------------------------- the report
     with open(out_path, "w", encoding="utf-8") as stream:
@@ -2034,6 +2070,8 @@ and the SCP battery's Stage 9 rows measure each deny (scp-battery.md).""")
                     rows.append(
                         f"{p}\tthe fence in {BOUNDARY_NAME[p]}\t{', '.join(present) or '(none)'}"
                     )
+                    denied = ", ".join(got.get("boundary_services", [])) or "(none)"
+                    rows.append(f"{p}\tthe services the fence denies\t{denied}")
                 if "open_grants" in got:
                     value = "; ".join(got["open_grants"]) or "none"
                     rows.append(
@@ -2089,7 +2127,8 @@ What the checks are, and where each comes from:
          location outside the projects bucket, no Lake Formation grant to every IAM
          principal on raw, curated or app_outputs (Stage 19, TM-30); and the D13
          boundary's fence, with every bucket of the account named in it but the
-         projects bucket (decision 21 (b))""")
+         projects bucket and the services the account's fence.tf names, the
+         warehouse's doors among them (decisions 21 (b) and 16 (b))""")
 
         # ==============================================================================
         rep.h1("13. The accounts nothing here is measuring")
