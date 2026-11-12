@@ -26,3 +26,12 @@ variable "fenced_repository_names" {
   type        = list(string)
   default     = ["awsds-prod-ecr-deploy"]
 }
+
+# The warehouse workflow's job opens its session on the governed workgroup with
+# redshift-serverless:GetCredentials, over JDBC (decision 16 (b), warehouse.tf), so that service is
+# not on the list: the Data API and the query editor, the other doors to a database session, are.
+variable "fenced_services" {
+  description = "The services the deployment project's role never calls in this account: the generative ones, and the warehouse's doors but the one the load takes."
+  type        = list(string)
+  default     = ["bedrock", "bedrock-agentcore", "q", "codewhisperer", "redshift-data", "sqlworkbench"]
+}

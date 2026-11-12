@@ -17,6 +17,13 @@ variable "fenced_bucket_names" {
   ]
 }
 
+# Staging holds no warehouse (D40), so every door to one is on the list.
+variable "fenced_services" {
+  description = "The services the deployment project's role never calls in this account: the generative ones and Redshift's."
+  type        = list(string)
+  default     = ["bedrock", "bedrock-agentcore", "q", "codewhisperer", "redshift", "redshift-data", "redshift-serverless", "sqlworkbench"]
+}
+
 variable "fenced_repository_names" {
   description = "This account's ECR repositories the deployment project's role never reads."
   type        = list(string)
