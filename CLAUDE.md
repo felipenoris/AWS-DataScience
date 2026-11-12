@@ -343,8 +343,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `pickup` consumed the drop, `curated.trades` at 20 rows, after decision 13's two halves: the
   `AllowFullTableExternalDataAccess` flag on in Production (the user's console, 19:49 UTC) was not enough,
   the vend refused (`SUP-111`), and the lake's `lakeformation.tf` carries it
-  since 22:03 UTC (`TM-26`); the flag is on in Sandbox, the lake and, since Stage 19 4.6 (2026-11-11), Staging and Production (4.7, the
-  user's). 9.1's
+  since 22:03 UTC (`TM-26`); the flag is on in Sandbox and the lake, off in the targets (Stage 19 4.7, 2026-11-12). 9.1's
   `production/warehouse/` applied 22:07 UTC (the namespace; `EXC-13`'s Production sentence), refusal 9
   lifted, `warehouse-compute/` raised per warehouse sitting, 9.3 run 2026-10-24 (the schema `trades` at 1 TB, the roles, the `IAMR:` users, the default privileges, every `PUBLIC`
   `CREATE` revoked), **9.4 to 9.7 done 2026-10-25**: the DDL job and the load (decision 15's Production-only workflow, its schedule `DISABLED` through the slice) after the deploy role's `FollowItsOwnStatements` and the job group's 5439 egress; 9.5's datashare across Production, Data Governance (decision 14) and Sandbox; 9.7 read from `eighth-experimentation` through the access role's catalog read, its Lake Formation grant and `TEMP` (`redshift-connection.md` §G), and with Production's workgroup gone;
@@ -541,14 +540,14 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   a subscription deny, 14 the task the one publisher, 15 the Governance Manager approving in
   `deploy-production`, 16 (b) the warehouse workflow in Production's project, 17 (a) (`CT-13`), 18 (d) a `dev`
   project for app-etl alone, 19 (c) no `test` stage, 20 (b) Production alone lists. **Pass 1 run 2026-11-10**
-  (PR #284) in `eighth-experimentation`: the Iceberg table, its asset, listing and lineage (`SUP-343`,
-  `SUP-345`, `SUP-346`, `TM-29`). **Pass 4, 2026-11-11, nothing up**: both targets associated (`SUP-349`);
+  in `eighth-experimentation`: the Iceberg table, its asset, listing and lineage (`SUP-343`,
+  `SUP-345`, `SUP-346`, `TM-29`). **Pass 4, 2026-11-11**: both targets associated (`SUP-349`);
   the `Workloads` SCP's amendment (4.1), `<env>/studio/` (4.4) and `governance/`'s two deployment profiles
-  (4.5) applied on the user's word; **`deploy-staging` (`5ido8bej1zoeq8`) and `deploy-production`
+  (4.5) applied; **`deploy-staging` (`5ido8bej1zoeq8`) and `deploy-production`
   (`d7qcazihvr3s7k`) created, each with the database `app_etl`** (4.6, `INV-21`), then the project roles'
   grants, the deploy roles' policy and the CLI import's grants (`SUP-353`). Decision 21 (b) (`TM-30`): a fence
-  in the targets' D13 boundary, applied 2026-11-11 (`DT-14`). The user's: the flag (4.7, `DT-13` red,
-  `EXC-23`) and the deploy roles' membership.
+  in the targets' D13 boundary, applied 2026-11-11 (`DT-14`). 2026-11-12, the user's: the flag off in both (4.7,
+  `DT-13`) and `awsds-deploy-staging` owning `deploy-staging`; `awsds-deploy-prod`'s membership at its first call.
   **Two releases**: T retires the `test` stage (the job `bundle` as `awsds-deploy-sandbox-test`;
   `examples/app-etl/`, sitting `runbooks/promotion.md` §N.8.2), F is the CLI's legs (4.9 to 4.11). What is
   left: the stage file's §The estate against decisions 17 to 20.

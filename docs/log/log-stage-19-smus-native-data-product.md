@@ -1592,3 +1592,67 @@ through.
   from `waiting-on-the-user.md`; the readings on `SUP-008` and `SUP-356`.
 - **[Claude] What pass 4 still owes with nothing up**: the flag (4.7) and `awsds-deploy-staging`'s
   membership of `deploy-staging`, both the user's.
+
+## 2026-11-12 — the user's acts: the flag off in both targets, `awsds-deploy-staging` an owner of `deploy-staging`; the readings after them
+
+Nothing up. The three acts are the user's, as the infrastructure user from the project folder; every
+call of Claude's in this entry is a read. The user, verbatim: *"Rodei os comandos:"*, the paste below,
+then *"Fiz o merge."* The paste carries the commands and no output.
+
+```text
+➜  AWS-DataScience git:(main) NO_PROXY='*' aws lakeformation put-data-lake-settings --profile awsds-infra-prod --region us-west-2 --data-lake-settings "$(NO_PROXY='*' aws lakeformation get-data-lake-settings --profile awsds-infra-prod --region us-west-2 --query DataLakeSettings --output json | jq '.AllowFullTableExternalDataAccess = false')"
+➜  AWS-DataScience git:(main) NO_PROXY='*' aws lakeformation put-data-lake-settings --profile awsds-infra-staging --region us-west-2 --data-lake-settings "$(NO_PROXY='*' aws lakeformation get-data-lake-settings --profile awsds-infra-staging --region us-west-2 --query DataLakeSettings --output json | jq '.AllowFullTableExternalDataAccess = false')"
+➜  AWS-DataScience git:(main) NO_PROXY='*' aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier 5ido8bej1zoeq8 --designation PROJECT_OWNER --member groupIdentifier=9bead345-cd5a-3881-abb8-e68cc17e2e9b --profile awsds-infra-staging --region us-west-2
+```
+
+- **[user] The three calls as the trails hold them** (read by Claude at 01:54 UTC):
+  `PutDataLakeSettings` in Production at 01:50:08 UTC and in Staging at 01:50:16, each from the CLI as
+  the account's `InfrastructureAccess` role, the whole structure with
+  `allowFullTableExternalDataAccess` `false`; `CreateProjectMembership` in Staging's trail at
+  01:50:26, `PROJECT_OWNER`, the group `9bead345-…` on `5ido8bej1zoeq8`. No event carries an error.
+  This is step 4.7 in both targets and item 12's Staging half.
+- **[Claude] Before the reads**, 01:53 UTC: both target profiles as `InfrastructureAccess`; Data
+  Governance's and Sandbox's the same before their own reads.
+- **[Claude] The settings after**, 01:53:33 UTC in Production and 01:53:34 in Staging: the three
+  administrators (`InfrastructureAccess`, the provisioning role, the manage-access role),
+  `CROSS_ACCOUNT_VERSION` 4 and `SET_CONTEXT` `TRUE`, both create-default lists empty, and no
+  `AllowFullTableExternalDataAccess` key. A `false` written by the CLI reads back as an absent key, as
+  the console's of 2026-10-25 did (`SUP-112`). Each trail holds four `PutDataLakeSettings` since
+  2026-11-11 12:00 UTC, the provisioning's three and the user's: the database's environment, created
+  after the project, and the fence's applies wrote none.
+- **[Claude] The provisioning's three writes, read again in the same listing**: in each account one
+  names `InfrastructureAccess` and the manage-access role, one the three administrators, and one the
+  three administrators with `allowFullTableExternalDataAccess` `true`, the only one carrying the key.
+  Staging's three are of 15:26:05 UTC. Production's first, the two administrators, is of 15:29:35 and
+  the other two of 15:29:36, so the write that set Production's flag is of 15:29:36, a second after
+  the time this log's entry on 4.6 gives the three. The flag stood 10 h 24 min in Staging and 10 h 20
+  min in Production.
+- **[Claude] No vend while it stood**, 02:01 UTC: `cloudtrail lookup-events` for `GetDataAccess` since
+  2026-10-20 holds 48 events in Production, the last on 2026-10-26 (`awsds-prod-job-exec`), and 20 in
+  Staging, the last on 2026-10-25 (`awsds-staging-job-exec`); neither holds one of 2026-11-11 or
+  2026-11-12.
+- **[Claude] `./aws/deploytargets.py`**, 01:55 to 01:57 UTC: `DT-13` passes in both targets, *"0
+  check(s) FAILED"* where 18:29 UTC read 2. Against that snapshot the report differs in the flag's two
+  rows, `DT-13`'s two and the order of the administrators (`SUP-108`), and in nothing else. The script
+  exits 1 on its section 14, the liveness probes of the ten profiles whose users are not signed in.
+- **[Claude] The flag in the four accounts**, 02:01:53 UTC: `true` in Sandbox and in Data Governance,
+  absent in Staging and in Production.
+- **[Claude] `deploy-staging`'s members**, 01:54:47 UTC, `list-project-memberships` as
+  `awsds-infra-staging`: the group `65b0f127-…`, `PROJECT_OWNER`; the user `081362b4-…`,
+  `PROJECT_CONTRIBUTOR`, which `get-user-profile` gives as the project role's own profile; the group
+  `9bead345-…`, `PROJECT_OWNER`. `get-group-profile` from the domain's account at 01:59 UTC gives
+  `9bead345-…` as `awsds-deploy-staging`'s and `65b0f127-…` as Staging's `InfrastructureAccess`
+  role's, both `ASSIGNED`; from Staging the same call is refused to `InfrastructureAccess`, *"no
+  resource-based policy allows the datazone:GetGroupProfile action"* (`SUP-157`). The deploy role has
+  made no call as a member: its first is release F's.
+- **[user] PR #288 merged**, 01:44:55 UTC, squashed into `37de14cc` on `main`; the tree is the branch
+  head's (`4bf88079`, an empty diff) and the remote branch is deleted, so the six slices applied from
+  the branch are on `main`. This entry and its documents are on `claude/stage-19-pass-4-flag-off`, cut
+  from that commit in the same worktree.
+- **[Claude] Written**: 4.7 done, items 8 and 12 and the ordered applies' fifth step; `EXC-23` closed,
+  the flag's row and the targets' row in `AWS_STATE.md`; `TM-26`, both targets' halves closed; the
+  flag's row removed from `waiting-on-the-user.md` and the membership's cut to Production's half;
+  `SUP-112` retitled, with the two readings of how the flag is turned off.
+- **[Claude] What pass 4 owes with nothing up**: nothing. `awsds-deploy-prod`'s membership of
+  `deploy-production` waits for the role's first call, and verification xx for 4.10 and 4.12, both
+  release F's.
