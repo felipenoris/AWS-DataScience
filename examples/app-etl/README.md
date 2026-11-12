@@ -63,8 +63,8 @@ names no governed table. The script also reads one, with `--SOURCE_TABLE`: the c
 account's, at one snapshot, the one `--SOURCE_SNAPSHOT` names or else the table's current one, which
 the job records beside the CSV and the summary and the report carry as `source`. The Terraform path
 gave the argument to the job it declared in Staging and Production (Stage 9 step 8.5); under the CLI
-the read waits for a workflow that passes it and a project role that holds the table (the
-infrastructure repository's Stage 19, decision due 22). The unit tests mock the governed table with
+the read waits for a workflow that passes it and a project role that holds the table, in a later
+release (the infrastructure repository's Stage 19, decision 22). The unit tests mock the governed table with
 the list's columns and compare the query it builds, so a change to `GOVERNED_COLUMNS` changes `SCHEMA`
 and the expected queries in `tests/test_glue_script.py` with it.
 

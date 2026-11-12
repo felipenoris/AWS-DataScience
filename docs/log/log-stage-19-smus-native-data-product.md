@@ -1860,3 +1860,20 @@ pull request in `awsds-workflows`.
   `CLAUDE.md`'s row.
 - **[Claude] What follows the merge**: the template's `AWSDS_WORKFLOWS` takes the merge commit, in
   this repository and then in release F's merge request.
+
+## 2026-11-12 — decisions 22 to 24 taken by the user, each as (a)
+
+Nothing up, no AWS call. Claude asked *"As decisões 22 a 24 ficam como recomendado?"* and the
+user answered, verbatim: *"Sim, como recomendado"*. Claude's hand for the records.
+
+- **[user] Decision 22 (a)**: release F reads the inbox in every stage; the governed read, with
+  the project role's lake grant and the deny's growth to the lake, is a later release's (item 32).
+- **[user] Decision 23 (a)**: a run a chain starts takes the stage's variables from the SSM
+  parameter the leg records.
+- **[user] Decision 24 (a)**: Staging's integration test reads the product table's metadata under
+  `DESCRIBE`; the Athena read is not written, which amends decision 14 (d).
+- **[Claude] Written**: the three decisions and decision 14's amendment in the stage file, with
+  its status row, items 13 and 32, step 4.11's note and verification xxvii; the template's
+  README; the row removed from the waiting list; `CLAUDE.md`'s row. No code changed: the
+  template, the scripts and the slices were written under (a), and the applies of 03:40 to 03:42
+  UTC carry 23's and 24's grants.
