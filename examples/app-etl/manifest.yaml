@@ -1,24 +1,34 @@
-# app-etl's manifest (Stage 8 step 2.5, D41): what the CI/CD CLI copies to a project, in the notation
-# the CLI resolves. The storage items are folders of this tree: `deploy` syncs each to its stage's
-# `targetDirectory` under the project's shared prefix, a directory include keeping the paths inside the
-# folder. An include names a file or a folder: `deploy` expands a glob, flattened to the file's name, but
-# `bundle` (CLI 1.0.9) does not, and the lint refuses one. A stage reads `${VAR}` from the shell, and
-# each `{env.VAR}` a workflow names is a stage variable of every stage, filled on a run the CLI
-# starts. A workflow's `code` is the worker's package, which the pipeline builds before the bundle.
+# app-etl's manifest (Stage 8 step 2.5, D41; Stage 19 step 4.9): what the CI/CD CLI copies to a
+# project, in the notation the CLI resolves. The storage items are folders of this tree: `deploy`
+# syncs each to its stage's `targetDirectory` under the project's shared prefix, a directory include
+# keeping the paths inside the folder. An include names a file or a folder: `deploy` expands a glob,
+# flattened to the file's name, but `bundle` (CLI 1.0.9) does not, and the lint refuses one. A
+# workflow's `code` is the worker's package, which the pipeline builds before the bundle.
 #
-# One stage, `dev`, the Sandbox project the application is developed in (Stage 19 decision 18 (d)):
-# the developer deploys to it from a space, and the pipeline's `bundle` job names it to make a
-# release's bundle. Every promotion crosses an account (Stage 19 decision 19 (c)): Staging and
-# Production receive the bundle through the infrastructure repository's release job, and their
-# stages join this manifest when the CLI deploys them (that stage's step 4.9).
+# Three stages, one account each, every promotion crossing an account (Stage 19 decisions 6 (b), 18
+# (d) and 19 (c)): `dev`, the Sandbox project the application is developed in, which the developer
+# deploys to from a space and the pipeline's `bundle` job names to make a release's bundle;
+# `staging` and `prod`, each account's deployment project, which the pipeline's legs deploy the
+# bundle into.
 #
-# workflows/app-etl-warehouse.yaml is not a workflow of this list: the CLI never creates it in a
-# project, the bundle carries it, and Production's orchestration slice alone deploys it (Stage 9
-# decision 15). PRODUCT_DATABASE is a literal, the same name in every account's catalog; the database
-# is created in the project before the first deploy, never by the application. PUBLISH_LISTING is
-# false here: Production alone lists the product (Stage 19 decision 20 (b)), and the task that lists
-# returns at once in `dev`. ACCOUNT_ID, the account the Glue job's lineage names (Stage 19 decision
-# 10), is read from STS by whoever deploys.
+# The catalog (decisions 14 and 18): `bundle` exports what the `dev` project owns, the product's
+# asset with its description, README and classification, its data product and any glossary term, and
+# a deploy imports it into the stage's project. skipPublish: the import lists nothing, and the
+# workflow's `publish` task is the one publisher, where PUBLISH_LISTING is true, Production alone
+# (decision 20 (b)).
+#
+# A stage reads `${VAR}` from the shell, every stage's whatever the target, so a caller exports each
+# name: the pipeline's legs fill a target's from its project's Tooling environment
+# (scripts/deploy-application.py of the infrastructure repository) and give the other stages' a
+# placeholder. Each `{env.VAR}` a workflow names is a stage variable of every stage: the CLI writes
+# it into the deployed definition as a parameter and fills it on a run it starts, and a chain's
+# machine fills it from the record the leg keeps of the last deploy. PRODUCT_DATABASE is a literal,
+# the same name in every account's catalog; the database is created in the project before the first
+# deploy, never by the application. ACCOUNT_ID is the account the Glue job's lineage names.
+#
+# app-etl-warehouse loads Production's governed warehouse, so the `prod` stage alone creates it; its
+# bootstrap then runs app-etl and follows the run, so a release ends with the product table written
+# and listed.
 applicationName: app-etl
 
 content:
@@ -45,6 +55,10 @@ content:
     - name: workflows
       include:
         - "workflows/"
+  catalog:
+    enabled: true
+    connectionName: project.default_lakehouse
+    skipPublish: true
   workflows:
     - workflowName: app-etl
       connectionName: default.workflow_serverless
@@ -52,6 +66,8 @@ content:
     - workflowName: app-etl-train
       connectionName: default.workflow_serverless
       code: code/app-etl-train.zip
+    - workflowName: app-etl-warehouse
+      connectionName: default.workflow_serverless
 
 stages:
   dev:
@@ -77,6 +93,93 @@ stages:
           workflowName: app-etl
         - type: workflow.create
           workflowName: app-etl-train
+    deployment_configuration:
+      storage:
+        - name: code
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/code
+        - name: src
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/src
+        - name: glue
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/glue
+        - name: samples
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/inbox
+        - name: workflows
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/workflows
+
+  staging:
+    stage: STAGING
+    domain:
+      id: ${DOMAIN_ID}
+      region: ${DOMAIN_REGION}
+    project:
+      name: deploy-staging
+    environment_variables:
+      JOB_IMAGE_URI: ${JOB_IMAGE_URI}
+      SUBNET_AZ1: ${STAGING_SUBNET_AZ1}
+      SUBNET_AZ2: ${STAGING_SUBNET_AZ2}
+      PROJECT_SG: ${STAGING_PROJECT_SG}
+      PROJECT_KEY_ARN: ${STAGING_PROJECT_KEY_ARN}
+      TRAINING_IMAGE_URI: ${TRAINING_IMAGE_URI}
+      PRODUCT_DATABASE: app_etl
+      PUBLISH_LISTING: "false"
+      ACCOUNT_ID: ${STAGING_ACCOUNT_ID}
+    bootstrap:
+      actions:
+        - type: workflow.create
+          workflowName: app-etl
+        - type: workflow.create
+          workflowName: app-etl-train
+    deployment_configuration:
+      storage:
+        - name: code
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/code
+        - name: src
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/src
+        - name: glue
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/glue
+        - name: samples
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/inbox
+        - name: workflows
+          connectionName: default.s3_shared
+          targetDirectory: app-etl/workflows
+
+  prod:
+    stage: PROD
+    domain:
+      id: ${DOMAIN_ID}
+      region: ${DOMAIN_REGION}
+    project:
+      name: deploy-production
+    environment_variables:
+      JOB_IMAGE_URI: ${JOB_IMAGE_URI}
+      SUBNET_AZ1: ${PROD_SUBNET_AZ1}
+      SUBNET_AZ2: ${PROD_SUBNET_AZ2}
+      PROJECT_SG: ${PROD_PROJECT_SG}
+      PROJECT_KEY_ARN: ${PROD_PROJECT_KEY_ARN}
+      TRAINING_IMAGE_URI: ${TRAINING_IMAGE_URI}
+      PRODUCT_DATABASE: app_etl
+      PUBLISH_LISTING: "true"
+      ACCOUNT_ID: ${PROD_ACCOUNT_ID}
+    bootstrap:
+      actions:
+        - type: workflow.create
+          workflowName: app-etl
+        - type: workflow.create
+          workflowName: app-etl-train
+        - type: workflow.create
+          workflowName: app-etl-warehouse
+        - type: workflow.run
+          workflowName: app-etl
+          trailLogs: true
     deployment_configuration:
       storage:
         - name: code

@@ -1,6 +1,7 @@
 """scripts/dev-cli.sh over a double of the CI/CD CLI: the domain lookup answered by DOMAIN_ID for
-both kinds of caller, the arguments passed through unchanged, the CLI's exit code kept, and the
-refusals when the house environment, the domain's id or the lookup is missing."""
+both kinds of caller, the arguments passed through unchanged, the CLI's exit code kept, the other
+stages' variables given a placeholder, and the refusals when the house environment, the domain's id
+or the lookup is missing."""
 
 from __future__ import annotations
 
@@ -29,6 +30,7 @@ def get_project_user_role_arn(project_name, domain_name, region):
 
 CLI = """
 import json
+import os
 import sys
 
 from smus_cicd.helpers import datazone
@@ -37,6 +39,7 @@ from smus_cicd.helpers import datazone
 def app():
     print(json.dumps({
         "argv": sys.argv,
+        "stages": {k: v for k, v in os.environ.items() if k.startswith(("STAGING_", "PROD_"))},
         "through the module": datazone.get_domain_id_by_name("awsds-studio", "us-west-2"),
         "inside the module": datazone.get_project_user_role_arn("p", "awsds-studio", "us-west-2"),
     }))
@@ -88,6 +91,39 @@ def test_the_lookup_is_answered_by_domain_id_for_both_callers(root):
     assert seen["argv"] == ["aws-smus-cicd-cli", *args, "--no-events"]
     assert "aws-smus-cicd-cli 1.0.9-double on" in done.stderr
     assert done.returncode == 3
+
+
+def test_the_other_stages_variables_take_a_placeholder_and_a_set_one_is_kept(root):
+    manifest = root / "application.yaml"
+    manifest.write_text(
+        "stages:\n"
+        "  dev: {key: ${DEV_PROJECT_KEY_ARN}}\n"
+        "  staging: {key: ${STAGING_PROJECT_KEY_ARN}, sg: ${STAGING_PROJECT_SG}}\n"
+        "  prod: {account: ${PROD_ACCOUNT_ID}}\n"
+    )
+    done = run(
+        root,
+        "deploy",
+        "--manifest",
+        str(manifest),
+        "--targets",
+        "dev",
+        AWSDS_PYTHON_ENV=str(root / "env"),
+        DOMAIN_ID=DOMAIN_ID,
+        STAGING_PROJECT_SG="sg-set-by-the-caller",
+    )
+    assert json.loads(done.stdout)["stages"] == {
+        "PROD_ACCOUNT_ID": "unused-by-dev",
+        "STAGING_PROJECT_KEY_ARN": "unused-by-dev",
+        "STAGING_PROJECT_SG": "sg-set-by-the-caller",
+    }
+    assert "a placeholder for 2 variable(s) of the other stages" in done.stderr
+
+
+def test_no_manifest_at_the_named_path_changes_nothing(root):
+    done = run(root, "deploy", AWSDS_PYTHON_ENV=str(root / "env"), DOMAIN_ID=DOMAIN_ID)
+    assert json.loads(done.stdout)["stages"] == {}
+    assert "placeholder" not in done.stderr
 
 
 def test_the_arguments_pass_through_unchanged(root):

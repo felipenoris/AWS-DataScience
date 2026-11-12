@@ -13,6 +13,9 @@
 # (aws/CICD-for-SageMakerUnifiedStudio issue 413). The answer is the same for every caller of the lookup,
 # the id the deploy roles' own call returns in the pipeline, which runs the CLI by its name and not this
 # script.
+#
+# The CLI refuses a manifest with an unset `${VAR}`, whatever the target: the names of the `staging` and
+# `prod` stages, which the pipeline's legs alone fill, take a placeholder here when the shell has none.
 set -eu
 
 if [ -z "${AWSDS_PYTHON_ENV:-}" ]; then
@@ -33,6 +36,7 @@ fi
 # answer too. A CLI without the function exits before any call: the replacement would answer no caller.
 program='
 import os
+import re
 import sys
 
 import smus_cicd
@@ -47,6 +51,21 @@ domain_id = os.environ["DOMAIN_ID"]
 datazone.get_domain_id_by_name = lambda domain_name, region: domain_id
 cli = getattr(smus_cicd, "__version__", "unknown")
 print(f"dev-cli.sh: aws-smus-cicd-cli {cli} on {sys.executable}, the domain lookup answered by DOMAIN_ID", file=sys.stderr)
+
+manifest = "manifest.yaml"
+for index, argument in enumerate(sys.argv):
+    if argument in ("--manifest", "-m") and index + 1 < len(sys.argv):
+        manifest = sys.argv[index + 1]
+    elif argument.startswith("--manifest="):
+        manifest = argument.split("=", 1)[1]
+if os.path.isfile(manifest):
+    with open(manifest, encoding="utf-8") as handle:
+        names = set(re.findall(r"\$\{((?:STAGING|PROD)_[A-Za-z0-9_]+)(?::[^${}]*)?\}", handle.read()))
+    given = [name for name in sorted(names) if not os.environ.get(name)]
+    for name in given:
+        os.environ[name] = "unused-by-dev"
+    if given:
+        print(f"dev-cli.sh: a placeholder for {len(given)} variable(s) of the other stages: {given[0]} ...", file=sys.stderr)
 
 from smus_cicd.cli import app
 

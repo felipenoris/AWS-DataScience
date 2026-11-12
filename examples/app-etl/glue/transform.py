@@ -7,8 +7,7 @@ The job reads the trades, applies `transform` and writes what the next steps rea
   the job writes into the target's prefix, which the overwrite empties first, then copies the part
   file to the target's key and deletes what Spark wrote, with the boto3 the Glue worker carries;
 - with --TABLE_PATH, the application's table as Parquet under that prefix, read back and counted
-  against the rows read: the table the application slice declares in app_outputs, and the
-  integration test of a deployment target (Stage 9 step 8.5);
+  against the rows read;
 - with --TRAIN_PATH, the training sets in XGBoost's CSV layout, the label first and no header:
   `train/train.csv`, every fifth row in `validation/validation.csv`, and the features alone in
   `batch/batch.csv`, the batch transform's input (Stage 10 steps 5.1 and 5.4);
@@ -22,8 +21,8 @@ The job reads the trades, applies `transform` and writes what the next steps rea
 Where the trades come from: with --SOURCE_TABLE, the governed table on the job's Iceberg catalog,
 the columns GOVERNED_COLUMNS name and nothing else, so a governed table that lacks one of them fails
 the run naming the column; without it, every CSV under --SOURCE_PATH, the inbox the samples seed.
-The Sandbox projects run the inbox path; the application slice of a deployment target gives the job
---SOURCE_TABLE and the catalog.
+The workflow passes --SOURCE_PATH alone, so every project runs the inbox path; a job that reads the
+governed table takes --SOURCE_TABLE and a --conf declaring its catalog.
 
 A governed read is read at one snapshot, the one --SOURCE_SNAPSHOT names or else the table's current
 one, and the job writes which beside the CSV: `<stem>.source.json` under --TARGET_PATH's prefix, the
