@@ -36,13 +36,17 @@ Properties this design leans on:
   step 11, D22 amended 2026-10-26; configured 2026-10-26, 11.3). The domain lives in `Data Governance`, where
   `sagemaker:Create*` is denied (1c step 7.6) — a denial that stays free because of this split (Stage 6
   step 0.4), and because the pilot's profile locks `enableSpaces` to `false`.
-- **Member accounts join by *account association*** — console-only (**no public API**, read
-  2026-08-16): a RAM share DataZone initiates. Sandbox alone is associated since 2026-09-06 — the
-  second association was removed from the member side at Stage 6b step 1.4; **Staging and Production
-  never are** (D28), Staging's association for Stage 18's measurement aside: since 2026-10-19, with
-  `Tooling` its one blueprint configuration (`EXC-20`), until that stage's pass 8. Measured 2026-08-21: under Stage 1d's org-wide RAM enablement the share is created
-  organization-scoped and **auto-accepts**, zero invitations either side, so *"invitations expiring in
-  7 days"* names a clock that never starts.
+- **Member accounts join by *account association***: a principal added to the domain's RAM share,
+  `DataZone-EXTENDED_ACCESS-<domain id>-ORG-ONLY`. The DataZone API carries no call for it and AWS
+  documents it as a console act; the console's act is `ram:AssociateResourceShare`, after which RAM
+  writes the domain's sharing policy in the caller's session (`SUP-349`, read and measured
+  2026-11-11). Sandbox is associated since 2026-08-21; the second Interactive association was removed
+  from the member side at Stage 6b step 1.4. **Staging and Production are associated since
+  2026-11-11** ([Stage 19](plan/stages/stage-19-smus-native-data-product.md) step 4.2, decision 6
+  (b)), each holding one deployment project since the same day; Staging was associated once before, for Stage 18's
+  measurement, from 2026-10-19 to that stage's pass 8. Measured 2026-08-21 and again 2026-11-11: under
+  Stage 1d's org-wide RAM enablement the share is organization-scoped and **auto-accepts**, zero
+  invitations either side, so *"invitations expiring in 7 days"* names a clock that never starts.
 - **The domain and IdC must share a Region** (Stage 6 step 1.1) — `us-west-2` twice, and neither can
   move afterwards.
 
@@ -61,8 +65,9 @@ domain.
 RAM is AWS **Resource Access Manager** — the cross-account sharing service, never memory
 ([`GLOSSARY.md`](GLOSSARY.md) owns the definition). It is the machinery under two SMUS seams:
 
-- **Account association *is* a RAM share** the domain initiates on your behalf, which is why there is
-  no public API for it. Measured 2026-08-21: the permission is
+- **Account association *is* a RAM share** the domain initiates on your behalf: the DataZone API
+  carries no call for it, and the console's act is `ram:AssociateResourceShare` on that share
+  (`SUP-349`). Measured 2026-08-21: the permission is
   **`AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`**, and
   `AWSRAMPermissionDataZoneDefault` **does not exist in RAM at all** — a name copied out of the V1 user
   guide's prose, while `ram list-permissions --resource-type datazone:Domain` publishes six, none of
@@ -635,12 +640,14 @@ shape. The procedures are [`serverless-workflows.md`](plan/runbooks/serverless-w
 The SageMaker Unified Studio CI/CD feature is the open-source `aws-smus-cicd-cli`, and AWS's guide says
 it deploys only into projects that already exist; its 1.0.9 code also creates one when a stage says
 `project.create: true`, and its `destroy` then deletes it (read 2026-10-17, Stage 18 step 0.1).
-A deployment target under D26 has no project and no domain
-association, so the tool cannot reach one (Stage 18 gave Staging both for its window, below, and its
-verdict kept the rule): it deploys an application from its repository into the
-Sandbox projects, `dev` and `test`, and makes the bundle, and the GitLab pipeline stays the deployer in
-Staging and Production (D28, D41). Measured in the lab on 2026-10-15: `deploy` syncs the manifest's
-`storage` content into the project's S3 and the workflow is born by the bootstrap action
+A deployment target held no project and no domain
+association until 2026-11-11, so the tool could not reach one (Stage 18 gave Staging both for its
+window, below, and its verdict kept the rule). Stage 19 decision 6 (b) reverses it: both targets are
+associated since that day, each holds a deployment project (its steps 4.4 to 4.6), and the CLI deploys
+into them from its step 4.9. Until that release it deploys an application from its repository into the Sandbox `dev` project
+and makes the bundle (no `test` stage since Stage 19 decision 19 (c)), and the GitLab pipeline stays the
+deployer in Staging and Production (D28, D41). Measured in the lab on 2026-10-15: `deploy` syncs the
+manifest's `storage` content into the project's S3 and the workflow is born by the bootstrap action
 `workflow.create`, which resolves the YAML's variables, rewrites it at the same key and calls
 `CreateWorkflow` with the project role, the Tooling subnets, security group and key, no `TriggerMode`
 (so `manual_only`), the log group `/aws/mwaa-serverless/<domain>-<project>/<name>` and six tags
@@ -700,12 +707,21 @@ and its log); D41 item 2 kept the rule above.
   role `AWSServiceRoleForAmazonAthena`. `DataLake` on demand adds a Glue database, its
   project-conditioned Lake Formation grants and a daily data source, its manage-access role needing
   `AmazonDataZoneGlueManageAccessRolePolicy`.
+- **What fences the project role there.** The role runs on AWS's managed policies, which allow
+  `sts:AssumeRole` on every role, `kms` through S3 on every key and `glue` on the whole catalog
+  (`SUP-358`, `TM-30`). In a deployment target the D13 boundary names what the role never touches in
+  the account, its other buckets, customer managed keys, secrets and repositories, every
+  `sts:AssumeRole`, and Bedrock, AgentCore, Amazon Q and CodeWhisperer whole (Stage 19 decision 21
+  (b); `<env>/studio/fence.tf`, `sagemaker-prereqs-v0.10.0`, applied 2026-11-11), and
+  `./aws/deploytargets.py` `DT-14` reads it. Under it each role still holds a warehouse session
+  through `sqlworkbench`, the pull of the registry's images but the deploy image, and the `glue`
+  writes on the catalog, which Lake Formation holds.
 - **What the CLI needs there.** The deploying role is a member through its `IAM_ROLE_SESSION_GROUP`
-  profile, which DataZone creates at the role's first call; as a non-member it lists the project and
-  every storage item stops on `ListConnections`. It holds the DataZone reads, the workflow calls on
-  workflows tagged with the project, `iam:PassRole` of the project role to the service, the project's
-  `shared/` prefix and the project key. `run` starts the workflow and returns; a pipeline follows the
-  run with `get-workflow-run`.
+  profile, which DataZone creates at the role's first read of a project (`SUP-159`); as a non-member
+  it lists the project and every storage item stops on `ListConnections`. It holds the DataZone
+  reads, the workflow calls on workflows tagged with the project, `iam:PassRole` of the project role
+  to the service, the project's `shared/` prefix and the project key. `run` starts the workflow and
+  returns; a pipeline follows the run with `get-workflow-run`.
 - **A person in it.** The V2 domain admits `PROJECT_OWNER`, `PROJECT_CONTRIBUTOR` and, since 2026-10-29, a
   `USER_CREATED_DESIGNATION` of the domain's own (none here, read 2026-10-30); a member of any designation
   acts as the project role, and with spaces off the portal offers no Workflows tool.

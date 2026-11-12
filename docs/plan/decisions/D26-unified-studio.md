@@ -31,9 +31,19 @@ domain is still a registry: a deployment project runs no space and no SageMaker 
 question i). "Staging and Production are never associated" in the rationale is the record of
 2026-08-08; [D41](D41-sagemaker-application.md)'s "Where production runs" carries the reopening.
 
+**Amended 2026-11-11 ([Stage 19](../stages/stage-19-smus-native-data-product.md) decision 19 (c), the
+user's):** the `test` stage is retired. The CI/CD CLI deploys to the `dev` project and, from Stage 19
+step 4.9, to a deployment project in Staging and in Production; the pipeline's `bundle` job makes the
+bundle from `dev` with nothing deployed in Sandbox.
+
+**Amended 2026-11-11 (Stage 19 step 4.2):** Staging and Production are associated to the domain, the
+standing state decision 6 (b) of that stage took on 2026-10-31. The act is `ram:AssociateResourceShare`
+on the domain's share, the call the console makes (`SUP-349`). Each account will hold one deployment
+project, with no space and no SageMaker AI domain, so the domain stays a registry.
+
 **Applied 2026-09-06.** The `engineering` profile is destroyed, the second member's **22** objects (11 blueprint configurations and their 11 grants) are gone, and the association was removed from the member side — `studio.py` reads one associated account and one project profile. `US-4` fails if the retired name ever returns.
 
-**In one line:** One SageMaker unified domain (DataZone V2) in Data Governance, associated to the Sandboxes alone since 6b; a registry, never a runtime.
+**In one line:** One SageMaker unified domain (DataZone V2) in Data Governance, associated to the Sandboxes and, since 2026-11-11, to Staging and Production for a deployment project each; a registry, never a runtime.
 
 **Related decisions:** [D12](D12-budget-ceiling.md), [D17](D17-interactive-vs-runtime.md), [D20](D20-staging-account.md), [D21](D21-development-account.md), [D27](D27-catalog-maintenance.md), [D28](D28-workflow-contract.md), [D41](D41-sagemaker-application.md)
 

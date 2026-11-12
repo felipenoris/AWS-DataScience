@@ -198,7 +198,19 @@ entry is still true is the reading.
   (`log-stage-09`, 2026-10-25). On 2026-10-26 the debug role's `kms:Decrypt` read `implicitDeny` through
   `logs` and through S3 alike, the S3 condition false for want of `kms:ResourceAliases` in the simulated
   context, while the same role's read of a job log stream under that key succeeded the same day
-  (`log-stage-09`, 2026-10-26).
+  (`log-stage-09`, 2026-10-26). A role's own tags are not read as `aws:PrincipalTag/*` either (measured
+  2026-11-11 on Production's project role, Stage 19): `s3:GetObject` and `PutObject` on the project's own
+  prefix read `implicitDeny` until the context carried each tag of the role as `aws:PrincipalTag/<key>`,
+  and `MissingContextValues` named none of them among the keys it listed. A policy written on principal
+  tags, as AWS's project-role policies are, is simulated with the tags supplied or reads closed
+  (`log-stage-19-smus-native-data-product.md`, 2026-11-11). The same day a boundary's next version was
+  rehearsed before its apply by passing the planned document as
+  `--permissions-boundary-policy-input-list`: 40 decisions as that role read the same under the planned
+  document and, after the apply, under the attached boundary, the matched statement's
+  `SourcePolicyId` being `PermissionsBoundaryPolicyInputList.1` in the first and the policy's name in
+  the second. The simulator supplies no `kms:ResourceAliases`: that boundary's deny on every key whose
+  aliases are not the excepted one, a `ForAllValues:StringNotLike`, read `explicitDeny` on the excepted
+  key itself until the context carried the key's alias, the operator being true over an absent key.
 
 - `SUP-009` **`iam simulate-custom-policy` ignores `sagemaker:VolumeKmsKey` and `sagemaker:OutputKmsKey`
   when the resource is a job's ARN** (measured 2026-10-18, 6d step 1.3). A `Deny` on `Null` of either key
@@ -487,6 +499,16 @@ entry is still true is the reading.
   being the `AWS-GR_*` name. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-09-12; `docs/AWS_STATE.md`
   `INV-12`.
 
+- `SUP-350` **An SCP's attach bound a DataZone read within ten seconds, and its detach kept refusing the
+  same read for about a minute** (measured 2026-11-11 on `Policy Test`, Stage 19 step 4.1). A candidate
+  document was attached at 04:31:41 UTC; the canary's `datazone list-domains`, which had answered an empty
+  list a minute earlier, was refused at 04:31:51 *"with an explicit deny in a service control policy"*
+  naming the candidate. The document was detached at 04:33:14 and deleted at 04:33:15; the same call was
+  still refused, naming the deleted policy's id, at 04:33:33, 04:33:40 and 04:34:01, and answered at
+  04:34:22, 68 s after the detach. One reading, on one service: a probe run right after a detach or an
+  amendment can read the previous document, so the battery's rows for a changed statement are read a
+  minute or more after the apply. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11.
+
 ## Security Hub and Config
 
 - `SUP-035` **AWS Config's continuous recorder records 120 to 290 configuration items for an
@@ -560,6 +582,22 @@ entry is still true is the reading.
   orphans that AWS Support removes, and re-enabling the standard adopts them. Where:
   `log-stage-05a-data-foundation.md`, 2026-10-09; `docs/AWS_STATE.md` `EXC-14`; `runbooks/security-hub.md`
   §V and §F.
+
+- `SUP-355` **AWS Config records no Glue database in an account whose Lake Formation create-defaults are
+  empty: the recorder's `glue:GetDatabase` is refused** (read 2026-11-11 in Staging's and Production's
+  trails and measured the same day in four accounts, Stage 19 step 4.6). Within three minutes of each
+  database's creation by a deployment project's provisioning, `AWSServiceRoleForConfig`, invoked by
+  `config.amazonaws.com`, called Cloud Control's `GetResource` for `AWS::Glue::Database` and
+  `glue:GetDatabase` and was answered `AccessDenied`, *"An unknown error occurred"*: `app_etl` in both
+  accounts, and Production's new `default`. `AWSConfigServiceRolePolicy` v97 allows `glue:GetDatabase`, so
+  the refusal is not IAM's; the databases carry no `IAM_ALLOWED_PRINCIPALS` grant, both create-default
+  lists being empty, and no Lake Formation grant names the role (inferred from the grants read: the
+  trail's text names no layer). `configservice list-discovered-resources --resource-type
+  AWS::Glue::Database` returned nothing in Sandbox, with nine databases, in Data Governance, with five,
+  and in Staging and Production, with five each, under Control Tower's recorder, every supported type,
+  continuous. Config's inventory and any rule over the type are blind to the catalog here, and each new
+  database leaves a service role's `AccessDenied` in the trail that is no finding. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-11.
 
 ## CloudTrail
 
@@ -1886,16 +1924,33 @@ entry is still true is the reading.
   `PROJECT_CONTRIBUTOR` through a group profile in the portal on 2026-10-15 at 06:15Z, is answered
   `ListConnections` and `GetAsset`, while Data Governance's session stays refused (read 2026-10-18). A
   member account's `GetProjectProfile` and `GetGroupProfile` fail differently, on the domain's resource
-  policy: *"no resource-based policy allows the datazone:GetProjectProfile action"*. Where:
-  `log-stage-06d-unified-studio-remainder.md`, 2026-10-30; `log-stage-06f-data-governance.md`, 2026-09-18,
-  2026-10-18 and 2026-10-26; `aws/catalog.py`.
+  policy: *"no resource-based policy allows the datazone:GetProjectProfile action"*. What the layer
+  answers to a non-member is a project's existence and shape (measured 2026-11-11, Stage 19 step 4.5):
+  Production's `InfrastructureAccess`, a member of no project, read `ListProjects`, every project of the
+  domain, and on `governed-lake`, a project of another account, `GetProject`, `ListProjectMemberships` and
+  `ListEnvironments`, and was refused `ListConnections`; Data Governance's read the member lists of all six
+  projects the same day, and `ListDataSources` and `GetDataSource` of the two deployment projects it is no
+  member of. Membership confines a project's connections and catalog, not its name, its members, its
+  environments or its data sources. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-10-30;
+  `log-stage-06f-data-governance.md`, 2026-09-18, 2026-10-18 and 2026-10-26;
+  `log-stage-19-smus-native-data-product.md`, 2026-11-11; `aws/catalog.py`.
 
-- `SUP-158` **An IAM role in a DataZone domain is two principals, and a policy grant takes the group.** Its
-  ARN resolves as a user identifier to one session's user profile, and as a group identifier to the role's
-  `IAM_ROLE_SESSION_GROUP` profile, which every session belongs to. `CreatePolicyGrant` with the ARN as a
-  user is refused, *"Group profile already exists for the given User profile"*, though the service model's
-  pattern admits it; the grant goes to the group by its profile id, which Cloud Control's `GetResource` for
-  `AWS::DataZone::GroupProfile` resolves from `<domain>|<role ARN>` (Stage 18 2.7, 2026-10-19).
+- `SUP-158` **An IAM role in a DataZone domain is a group and one user profile per session name, and a
+  policy grant takes the group.** Its ARN resolves as a user identifier to one session's user profile, and
+  as a group identifier to the role's `IAM_ROLE_SESSION_GROUP` profile, which every session belongs to.
+  `CreatePolicyGrant` with the ARN as a user is refused, *"Group profile already exists for the given User
+  profile"*, though the service model's pattern admits it; the grant goes to the group by its profile id,
+  which Cloud Control's `GetResource` for `AWS::DataZone::GroupProfile` resolves from `<domain>|<role ARN>`
+  (Stage 18 2.7, 2026-10-19). The domain keeps a user profile for every session name a role has called
+  under (read 2026-11-11, `search-user-profiles --user-type DATAZONE_IAM_USER`, Stage 19): of 50 such
+  profiles, 30 were `awsds-deploy-sandbox-test`'s and 6 `awsds-deploy-staging`'s, each with its own
+  `sessionName` of the form `botocore-session-<digits>`, the SDK's name for a role assumed through a
+  profile that sets no `role_session_name`, so every pipeline job adds one; the four accounts'
+  `InfrastructureAccess` roles held one each, named for the person; ten were project roles', with no
+  session name, five of them of projects deleted since (`SUP-165`). Each carries `groupProfileId`, the
+  role's group. A project role's profile is a member of its own project: `list-project-memberships` reads
+  it as `PROJECT_CONTRIBUTOR` in each of the five projects that hold a `Tooling` environment, the two
+  created that day included. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11.
 
 - `SUP-159` **A role's `IAM_ROLE_SESSION_GROUP` profile exists only after the role's first DataZone call,
   and until a person makes it a project member the CI/CD CLI's deploy stops on `ListConnections`** (measured
@@ -1907,8 +1962,13 @@ entry is still true is the reading.
   perform operation: ListConnections"*, then *"No S3 URI found for connection unknown"* for each storage
   item. A membership by `userIdentifier` with the role's ARN is refused, *"Group profile already exists for
   the given User profile"*; `create-project-membership` with `groupIdentifier=<profile id>` works, and the
-  retried job succeeded. No IAM grant replaces the membership. Where: `log-stage-08-cicd-pipelines.md`,
-  2026-10-19; `log-stage-18-staging-deployment-project.md`, 2026-10-20 and 2026-10-21.
+  retried job succeeded. No IAM grant replaces the membership. The call that creates the profile is a
+  read of a project, not any call (measured 2026-11-11 on Production's `InfrastructureAccess`, Stage 19
+  step 4.5): `ListDomains`, `ListEnvironmentBlueprintConfigurations`, `ListProjects` and `GetDomain` were
+  each answered and left the role's group profile `NotFound`; four seconds after the role's first
+  `GetProject` it read `ASSIGNED`. A role that has only listed cannot be named in a policy grant. Where:
+  `log-stage-08-cicd-pipelines.md`, 2026-10-19; `log-stage-18-staging-deployment-project.md`, 2026-10-20
+  and 2026-10-21; `log-stage-19-smus-native-data-product.md`, 2026-11-11.
 
 - `SUP-160` **A project profile's override of a blueprint parameter marked `isEditable` false reaches the
   deploy, and `Tooling` creates a SageMaker AI domain only when `enableSpaces` is `"true"`** (read
@@ -1937,6 +1997,38 @@ entry is still true is the reading.
   domain id unused, so a deploy from a space stops there; reported upstream as [issue
   413](https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413). Where:
   `log-stage-10-orchestration-promotion.md`, 2026-10-26.
+
+- `SUP-349` **The console's account association is one public RAM call, `AssociateResourceShare` on the
+  domain's share, after which RAM writes the domain's sharing policy in the caller's session** (read
+  2026-11-11 in Data Governance's trail of the console act of 2026-10-19, then measured the same day,
+  Stage 19 step 4.2). The console called `ram:GetResourceShares` filtered by the permission
+  `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`, then `ram:AssociateResourceShare` with the
+  account id as the one principal, on the share `DataZone-EXTENDED_ACCESS-<domain id>-ORG-ONLY`; one second
+  later `datazone:PutDomainSharingPolicy` followed, `invokedBy` and user agent `ram.amazonaws.com`, under
+  the same session, its policy naming every associated account. No other write appears between the page's
+  load and its refresh. `aws ram associate-resource-share --resource-share-arn <the share> --principals
+  <account> <account>` as the domain account's InfrastructureAccess associated Staging and Production at
+  04:37:18 UTC: both read `ASSOCIATED` at 04:37:19, `PutDomainSharingPolicy` followed twice (04:37:20 and
+  04:37:21, three principals in each policy), no invitation was raised under organization-wide sharing,
+  and each account read the share `ACTIVE` as `OTHER-ACCOUNTS`. AWS documents the association as a console
+  act and the DataZone API carries no call for it, which this project recorded as "no public API" from
+  2026-08-21. The caller needs `datazone:PutDomainSharingPolicy` beside the RAM action. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-11.
+
+- `SUP-353` **Two policy grants of one type on one domain unit, created at once, leave one of them
+  refused with `ResourceConflict`** (measured 2026-11-11 in Data Governance, Stage 19 step 4.5). One
+  apply created two `CREATE_PROJECT_FROM_PROJECT_PROFILE` grants on the root domain unit in parallel,
+  through `awscc_datazone_policy_grant`: one was created in 6 s and the other failed, *"Waiting for Cloud
+  Control API service CreateResource operation completion returned: waiter state transitioned to FAILED.
+  StatusMessage: failed conditions: VERSION EQ [S] (Service: DataZone, Status Code: 409 ...). ErrorCode:
+  ResourceConflict"*. `list-policy-grants` read three grants of the type, the refused one absent; the
+  re-plan read 1 to add and its apply created it in 8 s. The wording reads as a conditional write on a
+  version the first grant had just moved (inferred), so the grants of one type on one unit behave as one
+  record. Two grants on two different entities, each target's two blueprint grants in the same sitting,
+  were created in parallel with no refusal. An apply that adds several grants to one unit runs with
+  `-parallelism=1`, or is applied twice: run that way the same day, six grants of three types on the
+  same unit were created in 72 s with no refusal. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-11.
 
 ### Environments and projects
 
@@ -2034,6 +2126,14 @@ entry is still true is the reading.
   names any of them, and `delete-project` leaves every one. Where:
   `log-stage-18-staging-deployment-project.md`, 2026-10-19 (3.2 and 3.3) and 2026-10-20; `docs/SMUS.md`, the
   deployment project. The Access Grants instance is `SUP-090` and the Lake Formation seats `SUP-106`.
+  With an administrator already seated the three writes add to the list (measured 2026-11-11 in Staging
+  and in Production, Stage 19 step 4.6): each account held `InfrastructureAccess` alone,
+  `CROSS_ACCOUNT_VERSION` 4 and `SET_CONTEXT` `TRUE`, and after the provisioning role's three
+  `PutDataLakeSettings` it held the two SMUS roles beside it, the same parameters, both create-default
+  lists still empty and the flag `true`; `<env>/data/` planned `No changes` after it. The same
+  provisioning leaves a `default` Glue database carrying its own `ALL` and a `DESCRIBE` for
+  `IAMPrincipals` conditioned on the project: Production had none and holds one since, and Staging's,
+  which existed, gained the two grants. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11.
 
 - `SUP-171` **An `MLflowApp` environment's stack holds only a `WaitConditionHandle`: DataZone's deployer
   creates the MLflow App beside the stack, and the environment reads `ACTIVE` minutes before the app is
@@ -2160,6 +2260,34 @@ entry is still true is the reading.
   workgroup or a secret is therefore the grant, and leaving `redshift-data:` out of one's own policies
   removes nothing. Where: `log-stage-06h-redshift-connection.md`, 2026-10-18; `AWS_STATE.md` `INV-20`.
 
+- `SUP-358` **AWS's policies allow a project role `sts:AssumeRole` on every role, `kms` through S3 on every
+  key and `glue` database writes on the whole catalog: what confines the role to its project is, for these,
+  each resource's own policy** (read 2026-11-11 in `SageMakerStudioProjectUserRolePolicy` v76 and
+  `SageMakerStudioProjectRoleMachineLearningPolicy` v47, and simulated the same day as Production's project
+  role, Stage 19 step 4.6). With `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy` v9 the role carries
+  265 statements; of the 179 that allow a write, 98 name the project through `${aws:PrincipalTag/...}` and
+  81 do not. Among the 81: `AllowAssumeAccessRole`, `sts:AssumeRole` on `*` on the one condition that the
+  role's project tag is not empty, so a role is closed to a project by its trust policy alone;
+  `S3AGKMSPermissions`, `kms:Decrypt` and `GenerateDataKey` on `*` when called through S3 with an
+  `aws:s3:arn` encryption context, in any account, so a key whose policy delegates to its account's IAM
+  gives the role nothing only while S3 refuses the object; `GlueCatalogDb`, `glue:CreateDatabase` and
+  `DeleteDatabase` on every database with no condition, and `GlueDatalakePermissions`, the table writes on
+  `*` where `glue:LakeFormationPermissions` is `Enabled`, so Lake Formation alone decides, and a catalog on
+  which `IAM_ALLOWED_PRINCIPALS` holds `CREATE_DATABASE`, AWS's default, takes a database from the role;
+  `LFResourceSharingPermissions`, `lakeformation:BatchGrantPermissions` and the data cells filter writes
+  on `*`; `SageMakerECRPermissions`, the pull actions on every repository; `RssCreds`,
+  `redshift-serverless:GetCredentials` on every workgroup when called through `sqlworkbench` or the Data
+  API. The S3 Access Grants statements allow object reads and writes on `*` in the role's account for a
+  request carrying the `default` instance's credentials, while a location and a grant can be created for
+  the project's own prefix alone, so that reach is the instance's locations. Simulated with the Region and
+  the role's tags in the context (`SUP-008`): the assumption of the deploy role, the runner's role and the
+  job role `allowed`, `kms:Decrypt` through S3 on the keys of GitLab and of the Terraform state `allowed`,
+  `glue:DeleteDatabase` on `curated` `allowed`; a secret, a host, a bucket read directly, a chain, a
+  schedule and an IAM write `implicitDeny`. In Production no role trusts the account's root, no bucket
+  policy allows the account broadly and no Lake Formation grant names every IAM principal on the lake's
+  databases, which is what the three allows meet. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-11; `threat-model.md` `TM-30`; `./aws/studio.py` `US-12`, `./aws/deploytargets.py` `DT-14`.
+
 ### The portal
 
 - `SUP-180` **An `aws:SourceIp` deny on a permission set does not reach the SageMaker Unified Studio portal,
@@ -2223,9 +2351,16 @@ entry is still true is the reading.
   principals and to the manage-access role followed within eight seconds. The environment is named
   `create-datalake-database-env-<name>-<epoch ms>`; the one of 2026-10-28, for `new_database`, reached
   `ACTIVE` with its own Glue data source on `cron(22 6 * * ? *)`, the minute of its creation, which had 11
-  `SUCCESS` runs by 2026-11-08. Every database created this way shares the same location prefix. Where:
-  `log-stage-06f-data-governance.md`, 2026-09-12/13; `log-stage-19-smus-native-data-product.md`, 2026-10-28
-  and 2026-11-08; `docs/SMUS.md`, the *Create database* item.
+  `SUCCESS` runs by 2026-11-08. Every database created this way shares the same location prefix. The
+  portal's environment carries one user parameter, `glueDbName`, and no subscription target; the same
+  environment created through the API, `create-environment` with the profile's `DataLake` configuration,
+  the blueprint and `--user-parameters name=glueDbName,value=<name>`, creates the same database, grants
+  and daily source, its stack holding the database alone, and carries a target,
+  `<environment name>-default-target`, for `GlueTableAssetType`
+  and `GlueViewAssetType` over that database (measured 2026-11-11 in Staging and in Production, Stage 19
+  step 4.6; the portal's `app_etl` environment in Sandbox read with none the same day). Where:
+  `log-stage-06f-data-governance.md`, 2026-09-12/13; `log-stage-19-smus-native-data-product.md`, 2026-10-28,
+  2026-11-08 and 2026-11-11; `docs/SMUS.md`, the *Create database* item.
 
 - `SUP-185` **The portal's MLflow entries look their blueprint up in the domain account, so a domain whose
   configurations live in associated accounts greys them out whatever the profile carries** (read 2026-10-19,
@@ -2475,6 +2610,23 @@ entry is still true is the reading.
   own id is no node identifier either. The ids are in Data Governance's trail, each `CreateLineageNode`
   carrying a node's id and `sourceIdentifier` in `additionalEventData`. Where:
   `log-stage-19-smus-native-data-product.md`, 2026-11-10.
+
+- `SUP-354` **`CreateSubscriptionRequest` naming a domain, a listing and a project that do not exist is
+  refused, never answered not-found** (measured 2026-11-11, Stage 19 step 4.1). `aws datazone
+  create-subscription-request --domain-identifier dzd_canaryprobe0000 --subscribed-listings
+  identifier=canaryprobe0000 --subscribed-principals project={identifier=canaryprobe0000}`, ids that pass
+  the model's patterns and name nothing: as `Policy Canary`'s administrator with no deny in the way,
+  DataZone's own layer answered `AccessDeniedException`, *"User is not permitted to perform operation:
+  CreateSubscriptionRequest"*; under a service control policy denying the action the same call read
+  *"with an explicit deny in a service control policy"* naming the policy, on the canary under a candidate
+  and as `InfrastructureAccess` in Staging and in Production under `awsds-org-scp-ou-workloads`. IAM and
+  the organization's policies answer before DataZone looks the identifiers up, and DataZone's own answer
+  for ids that name nothing is a refusal; whether it authorizes first or masks a not-found was not
+  separated. A deny on the action is therefore probed with made-up ids, the probe creating nothing
+  whatever the answer, and the two wordings separate the layers (Lesson 21).
+  `ListEnvironmentBlueprints` on the same made-up domain read the policy's deny under the candidate; its
+  answer with nothing denying it was not read. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-11; `aws/probes/probes.py`; `runbooks/scp-battery.md`.
 
 ### Connections
 
@@ -3394,11 +3546,17 @@ entry is still true is the reading.
   2026-10-21.
 
 - `SUP-286` **`deploy` reads a manifest's local content from the manifest's folder, whatever
-  `--bundle-archive-path` names** (measured 2026-10-19, Stage 18 4.2, `aws-smus-cicd-cli` 1.0.9). A
-  `content.storage` item that names no connection is copied from the folder the manifest sits in; run from a
-  checkout with a release's bundle, the deploy wrote the checkout's files and none of the bundle's. A
-  promotion that deploys a stored bundle extracts it and puts the stage's manifest beside it. Where:
-  `log-stage-18`'s 4.2 entries.
+  `--bundle-archive-path` names, and the catalog from that archive alone** (the first measured 2026-10-19,
+  Stage 18 4.2, `aws-smus-cicd-cli` 1.0.9; the second read 2026-11-11 in its `commands/deploy.py`, no call
+  made). A `content.storage` item that names no connection is copied from the folder the manifest sits in;
+  run from a checkout with a release's bundle, the deploy wrote the checkout's files and none of the
+  bundle's. A promotion that deploys a stored bundle extracts it and puts the stage's manifest beside it.
+  The catalog import takes the other road: `_import_catalog_from_bundle` opens the zip the option names, or
+  the one found under `./artifacts` when the manifest has bundle items, and reads
+  `catalog/catalog_export.json` inside it. With no archive, with no such member, or with the stage's
+  `deployment_configuration.catalog.disable` true, it imports nothing and returns success. A leg that
+  promotes files and catalog gives the CLI both: the extracted files beside the manifest and the archive's
+  path. Where: `log-stage-18`'s 4.2 entries; `log-stage-19-smus-native-data-product.md`, 2026-11-11.
 
 - `SUP-287` **`workflow.create` and the operator-code lookup scan the project's whole shared root, whatever
   `targetDirectory` says** (measured 2026-10-19, Stage 18 5.2, the same version). The scan's prefixes come
@@ -3417,6 +3575,48 @@ entry is still true is the reading.
   workflow scan reads the whole shared root (`SUP-287`), a file an application drops stays in the scan
   until it is deleted by hand. Spark's listing skipped `inbox/._trades.csv`: each Glue run read the
   sample's 10 rows. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-10.
+
+- `SUP-351` **`deploy`'s catalog import first checks the target project's domain unit for a
+  `CREATE_GLOSSARY`, a `CREATE_FORM_TYPE` and a `CREATE_ASSET_TYPE` grant, adds the missing ones as the
+  identity that deploys, and aborts the import when it cannot** (read 2026-11-11 in the CLI 1.0.9's
+  `helpers/catalog_import.py`, `_ensure_import_permissions`; no call made). For each of the three types it
+  calls `ListPolicyGrants` on the unit and takes a non-empty `grantList` as granted, whoever the grant
+  names; an `AccessDeniedException` on the listing reads as not granted. For a missing type it calls
+  `AddPolicyGrant` with the target project's `OWNER` designation as principal, and a failure there raises
+  *"Catalog import aborted — could not add required policy grants"* before any asset is read. The bundle's
+  content does not enter the check: a bundle with one asset and no glossary takes the same path. On
+  2026-11-11 this domain's root unit held one `CREATE_FORM_TYPE` grant and none of the other two
+  (`list-policy-grants`, measured), so a first import by a deploy role, which holds no `AddPolicyGrant`
+  and owns no domain unit, would abort. The catalog guide says the import creates what the target lacks
+  and does not name the grants. `data-governance/governance/`'s `catalog_import_projects` declares the
+  three per deployment project. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11;
+  `terraform-live/data-governance/governance/grants.tf`.
+
+- `SUP-352` **`bundle` exits 0 and writes the bundle when its caller cannot read the stage's project,
+  and when the catalog export fails** (the first measured 2026-11-11, the second read the same day in
+  the CLI 1.0.9's `commands/bundle.py` and `helpers/utils.py`, no call made). Run on the laptop as
+  Sandbox's InfrastructureAccess with the `dev` stage naming `governed-lake`, a project that identity
+  is no member of: `ListConnections` was refused *"User is not permitted to perform operation:
+  ListConnections"*, the CLI logged *"ERROR - Failed to get project connections for governed-lake"*,
+  and the archive was written with the same 11 files as the run that named a project the caller
+  belongs to, whose log carries no such line. `get_datazone_project_info` catches every exception and
+  returns an error record the command never reads. The catalog export runs inside a `try` whose handler
+  prints *"Error exporting catalog resources: <error>"* and continues, and a domain or project id it
+  cannot resolve prints a warning the same way; neither changes the exit status. A bundle made by an
+  identity that lacks a catalog read, or that is no member of the source project, therefore carries
+  the files and no `catalog/catalog_export.json`, and the target's import finds nothing to import. A
+  pipeline that depends on the project's read or on the export checks the log and the archive. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-11; `examples/app-etl/.gitlab-ci.yml`, the job
+  `bundle`.
+
+- `SUP-357` **`deploy` reports a catalog import as failed only when every item it attempted failed**
+  (read 2026-11-11 in the CLI 1.0.9's `commands/deploy.py`, `_import_catalog_from_bundle`; no call made).
+  After the import it prints *"Catalog import completed"* with five counts, `Created`, `Updated`,
+  `Skipped (extra in target)`, `Failed` and `Published`, and returns failure only if the sum of created,
+  updated and failed is above zero and equals the failed count, printing *"All catalog imports failed"*.
+  Any other mix returns success and the deploy's exit status with it: one asset created and the rest
+  failed is a successful deploy. A leg that promotes a catalog reads the `Failed:` count from the log, or
+  the target project's assets afterwards. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11.
 
 ## Bedrock
 
@@ -3582,7 +3782,8 @@ entry is still true is the reading.
 A Terraform behaviour that is one service's quirk is recorded under that service: `SUP-124` (a Redshift
 Serverless workgroup's `config_parameter`), `SUP-120` (an Athena workgroup's `force_destroy`), `SUP-106` and
 `SUP-101` (`aws_lakeformation_data_lake_settings` and the settings it replaces), `SUP-150` and `SUP-153`
-(DataZone blueprint configurations through `awscc`), `SUP-064` (security group descriptions at `validate`),
+(DataZone blueprint configurations through `awscc`), `SUP-353` (DataZone policy grants created at once, and
+`-parallelism=1`), `SUP-064` (security group descriptions at `validate`),
 `SUP-065` (a Data Lifecycle Manager description at plan time), `SUP-060` (`jsonencode` and an EventBridge
 Scheduler placeholder), `SUP-061` (`instance_type` and user data), `SUP-213` (`aws_sagemaker_image_version`
 and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation id after a transfer).
@@ -3642,6 +3843,19 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   Terraform; a profile carrying no credential setting reaches the instance metadata through both tools'
   default chain. Where: `log-stage-08-cicd-pipelines.md`, 2026-10-15;
   `terraform-live/production/runners/deploy-runner.tf`.
+
+- `SUP-356` **A resource planned as an in-place update because one argument is known after apply is not
+  counted by the apply when the value comes out the same** (measured 2026-11-11 in `staging/studio/` and
+  `production/studio/`, Stage 19 step 4.4, Terraform 1.16.6). Each plan read *"5 to add, 2 to change, 0 to
+  destroy"* and each apply *"5 added, 1 changed, 0 destroyed"*. The second planned change was an
+  `aws_iam_policy` whose document reads a data source carrying `depends_on` on a module with pending
+  changes: Terraform defers such a read to the apply, which its page on data sources states, so the
+  document was planned as `(known after apply)` and the policy as updated in place; at apply the document
+  rendered identical and no update was made. A plan and an apply whose counts differ by such a resource
+  are both right, and the re-plan reads `No changes`. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-11; `terraform-live/staging/studio/person-session.tf`.
+  Read again the same day on the same policy, at the module's next tag: each plan *"0 to add, 2 to
+  change"*, each apply *"0 added, 1 changed"*, each re-plan `No changes`.
 
 ### The `aws` provider
 

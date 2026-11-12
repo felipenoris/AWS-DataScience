@@ -313,9 +313,25 @@ probe("root", "canary", "allow", None, "ro", "floor: iam:ListRoles (global, us-e
 # what makes it safe to re-run at any time.
 # ==========================================================================
 
-# --- Workloads: no interactive surface, no DataZone at all
-probe("ou", "prod", "deny", None, "ro", "workloads: datazone:ListDomains",
+# --- Workloads: no interactive surface, and DataZone for three principals alone (Stage 19 step
+#     4.1, decision 13 (b)): DenyDataZoneEntirely excepts the SSO InfrastructureAccess role, the
+#     deploy roles and the project roles, so the infrastructure user's read answers here. The deny
+#     half has no principal in this account that the battery can produce (Lesson 22): it was read
+#     once as the canary, under the candidate parked on Policy Test (2026-11-11, the stage log).
+#     DenyDataZoneSubscriptionRequests binds the excepted three too, so the infrastructure user
+#     measures it: `blocked`, since the domain, the listing and the project named do not exist, and
+#     DataZone's own refusal, which names no policy, is the wording that proves authorization was
+#     reached (the canary's answer with nothing parked, 2026-11-11).
+probe("ou", "prod", "allow", None, "ro",
+      "workloads: datazone:ListDomains answers the infrastructure user (Stage 19 4.1)",
       ["datazone", "list-domains", "--region", "us-west-2"])
+probe("ou", "prod", "deny", "User is not permitted to perform operation", "blocked",
+      "workloads: datazone:CreateSubscriptionRequest (DenyDataZoneSubscriptionRequests)",
+      ["datazone", "create-subscription-request", "--domain-identifier", "dzd_canaryprobe0000",
+       "--request-reason", "scp battery probe",
+       "--subscribed-listings", "identifier=canaryprobe0000",
+       "--subscribed-principals", "project={identifier=canaryprobe0000}",
+       "--region", "us-west-2"])
 probe("ou", "prod", "deny", "ValidationException|ResourceNotFound|does not exist", "blocked",
       "workloads: sagemaker:CreateSpace (no such domain)",
       ["sagemaker", "create-space", "--domain-id", "d-0000000000000",
@@ -333,9 +349,20 @@ probe("ou", "prod", "deny", "ValidationException|does not exist", "blocked",
 # acquired it - a membership question rather than a policy one, kept permanently because this
 # account will hold deploy credentials. `datazone:ListDomains` is the decisive row: it is `ro`,
 # it costs nothing, and DataZone is the surface Stage 6b pass 1 removed from the account by hand.
-probe("ou", "staging", "deny", None, "ro",
-      "workloads: datazone:ListDomains in the account Stage 6b moved",
+probe("ou", "staging", "allow", None, "ro",
+      "workloads: datazone:ListDomains answers the infrastructure user in the account Stage 6b moved",
       ["datazone", "list-domains", "--region", "us-west-2"])
+probe("ou", "staging", "deny", "User is not permitted to perform operation", "blocked",
+      "workloads: datazone:CreateSubscriptionRequest in the account Stage 6b moved",
+      ["datazone", "create-subscription-request", "--domain-identifier", "dzd_canaryprobe0000",
+       "--request-reason", "scp battery probe",
+       "--subscribed-listings", "identifier=canaryprobe0000",
+       "--subscribed-principals", "project={identifier=canaryprobe0000}",
+       "--region", "us-west-2"])
+probe("ou", "staging", "deny", "ValidationException|ResourceNotFound|does not exist", "blocked",
+      "workloads: sagemaker:CreateSpace in the account Stage 6b moved (no such domain)",
+      ["sagemaker", "create-space", "--domain-id", "d-0000000000000",
+       "--space-name", "awsds-canary-probe", "--region", "us-west-2"])
 
 # --- The Stage 9 step 3.5 and 3.7 amendment - sagemaker-denies' five statements and
 #     DenySageMakerServerlessInference in the Workloads document. Each deny row breaks one

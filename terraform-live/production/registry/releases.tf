@@ -1,5 +1,5 @@
 # releases.tf - the release store (Stage 8 decision 20, D41): awsds-<env>-releases, where a tag's
-# pipeline puts the bundle the `test` project ran, under <application>/<tag>/, and where a promotion
+# pipeline puts the release's bundle, under <application>/<tag>/, and where a promotion
 # leg reads it (Stage 10). It is this slice's because the bundle is a supply-chain artifact beside the
 # images (D14), encrypted under the same key.
 #

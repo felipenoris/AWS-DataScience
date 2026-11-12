@@ -40,9 +40,12 @@ variable "project_roles" {
   type        = list(string)
 
   # One entry per project, each read from `iam list-roles`:
-  # - eighth-experimentation, created 2026-08-22 (Stage 6a pass 3), D41's `dev` project; read 2026-10-10.
-  # - test-experimentation, created 2026-10-15, D41's `test` project, where the CI/CD CLI's deploy of a
-  #   release runs its processing task as this role (Stage 8 step 2.5); read 2026-10-16.
+  # - eighth-experimentation, created 2026-08-22 (Stage 6a pass 3), where Stage 19 pass 1 ran; read
+  #   2026-10-10.
+  # - test-experimentation, created 2026-10-15, D41's `test` stage until Stage 19 decision 19 (c)
+  #   retired that stage (2026-11-11); read 2026-10-16.
+  # The project for app-etl alone, the manifest's `dev` stage since Stage 19 decision 18 (d), joins
+  # when it exists (that stage's 1.5).
   default = [
     "datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c",
     "datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw",
@@ -59,26 +62,11 @@ variable "project_roles" {
   }
 }
 
-# D41's `test` project, which the test deploy role reaches and nobody else's (Stage 8 decision 19):
-# written by hand as project_roles is, and read from it.
-variable "test_project_role" {
-  description = "The project role of D41's `test` project, one of project_roles, by NAME: the role awsds-deploy-sandbox-test passes to the workflow service, and whose project's shared/ prefix, workflows and log groups it reaches."
-  type        = string
-
-  # test-experimentation, created 2026-10-15; read 2026-10-16.
-  default = "datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw"
-
-  validation {
-    condition     = contains(var.project_roles, var.test_project_role)
-    error_message = "test_project_role must be one of project_roles: the test project's role holds the workflows grant like every other project's."
-  }
-}
-
 # There is no Terraform data source for a DataZone domain, so the id is written by hand after the
-# domain exists, as sandbox/warehouse/'s is: it names the projects' prefix in the projects bucket and
-# the workflows' log groups.
+# domain exists, as sandbox/warehouse/'s is: the workflows grant and the bundle role name the domain
+# by it.
 variable "datazone_domain_id" {
-  description = "The SMUS domain the projects belong to. Read from `datazone list-domains`; the test deploy role's S3 and log-group scopes use it."
+  description = "The SMUS domain the projects belong to. Read from `datazone list-domains`; the grant's StartDataSourceRun and the bundle role's GetDomain name it."
   type        = string
 
   # `awsds-studio`, AVAILABLE, read from `datazone list-domains` on 2026-09-21.
@@ -90,8 +78,9 @@ variable "datazone_domain_id" {
   }
 }
 
-# Stage 8 decision 19 - the deploy credential layer's second role in this account, generated from
-# DEPLOY_ROLES_BY_SLICE in scripts/tfhygiene/backend.py (the tfvars of this slice).
+# The deploy credential layer's second role in this account (Stage 8 decision 19; the bundle role
+# since Stage 19 decision 19 (c)), generated from DEPLOY_ROLES_BY_SLICE in scripts/tfhygiene/backend.py
+# (the tfvars of this slice).
 variable "deploy_role_name" {
   description = "The deploy role this slice builds, awsds-deploy-sandbox-test - a contract with ./aws/cicd.py."
   type        = string

@@ -20,6 +20,21 @@
       "Sid": "DenyDataZoneEntirely",
       "Effect": "Deny",
       "Action": "datazone:*",
+      "Resource": "*",
+      "Condition": {
+        "ArnNotLike": {
+          "aws:PrincipalArn": [
+            "arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*AWSReservedSSO_InfrastructureAccess_*",
+            "arn:aws:iam::*:role/awsds-deploy-*",
+            "arn:aws:iam::*:role/datazone_usr_role_*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "DenyDataZoneSubscriptionRequests",
+      "Effect": "Deny",
+      "Action": "datazone:CreateSubscriptionRequest",
       "Resource": "*"
     },
     {

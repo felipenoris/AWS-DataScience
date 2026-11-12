@@ -74,10 +74,32 @@ locals {
   ]
 
   member_account_ids = {
-    sandbox = data.aws_caller_identity.sandbox.account_id
+    sandbox    = data.aws_caller_identity.sandbox.account_id
+    staging    = data.aws_caller_identity.staging.account_id
+    production = data.aws_caller_identity.production.account_id
     # The domain's own account, a profile's target since Stage 6f step 11 (no association).
     data-governance = data.aws_caller_identity.current.account_id
   }
+
+  # The deployment profiles exist while this is true (Stage 19 step 4.5). It turns true in the
+  # change that applies them, after each target's <env>/studio/ has configured Tooling and DataLake
+  # there and each target's InfrastructureAccess has read a project of the domain once (get-project),
+  # which is what creates the group profile the grant names. While it is false this slice plans as
+  # it did before the deployment members joined.
+  deployment_profiles_enabled = true
+
+  # The DataZone group a profile with no `group` grants project creation to: the IAM role session
+  # group of the InfrastructureAccess role in the profile's own account. Keyed by account folder; a
+  # profile pinned to an account absent here fails at plan.
+  infrastructure_access_group_ids = local.deployment_profiles_enabled ? {
+    staging    = data.awscc_datazone_group_profile.staging_infrastructure_access[0].group_profile_id
+    production = data.awscc_datazone_group_profile.production_infrastructure_access[0].group_profile_id
+  } : {}
+
+  # A deployment project's blueprints (Stage 19 decision 6 (b); Stage 18's measured shape): Tooling
+  # with spaces off, and DataLake on demand, the home of the database an application's product table
+  # is created in. One profile per target, since an environment configuration names one account.
+  deployment_blueprints = ["Tooling", "DataLake"]
 
   # The profiles, where each provisions, and who may create from it (D21/D26). The names are a
   # contract with ./aws/studio.py (US-4), and the account pinning turns D21's boundary from
@@ -121,6 +143,23 @@ locals {
         blueprints  = ["Tooling"]
         group       = "sso-group-governance-managers"
         description = "Lake publishing (Stage 6f step 11): publishes the governed lake's tables to the catalog from the lake's own account. Tooling with spaces off; no compute."
+      }
+    } : {},
+    # Stage 19 step 4.5 (decision 6 (b)): the profile a target's one deployment project is born of,
+    # a project the CI/CD CLI deploys applications into and no person works in. A null `group`:
+    # grants.tf grants the account's own InfrastructureAccess role instead, never a persona group.
+    local.deployment_profiles_enabled ? {
+      deployment-staging = {
+        account     = "staging"
+        blueprints  = local.deployment_blueprints
+        group       = null
+        description = "Deployment (Stage 19): Staging's project, which the CI/CD CLI deploys applications into and no person works in. Tooling with spaces off, DataLake on demand."
+      }
+      deployment-production = {
+        account     = "production"
+        blueprints  = local.deployment_blueprints
+        group       = null
+        description = "Deployment (Stage 19): Production's project, which the CI/CD CLI deploys applications into and no person works in. Tooling with spaces off, DataLake on demand."
       }
     } : {},
   )
@@ -249,16 +288,21 @@ locals {
     local.sagemaker_ai_domain_defaults_only ? {} : { SageMakerAIDomain = local.sagemaker_ai_domain_parameters },
   )
 
-  # The overrides each profile passes, by profile name. `lake-publishing` takes experimentation's
-  # Tooling rows plus `enableSpaces` false and locked: the template creates the project's SageMaker
-  # AI domain only when it is true (read 2026-10-19), the Data OU denies sagemaker:Create*, and the
-  # value is the one Stage 18 measured deploying with no CreateDomain (its step 3.2).
+  # The overrides each profile passes, by profile name. `lake-publishing` and the deployment
+  # profiles take experimentation's Tooling rows plus `enableSpaces` false and locked: the template
+  # creates the project's SageMaker AI domain only when it is true (read 2026-10-19), the Data OU
+  # denies sagemaker:Create*, the Workloads OU sagemaker:CreateDomain, and the value is the one
+  # Stage 18 measured deploying with no CreateDomain (its step 3.2).
+  tooling_with_spaces_off = {
+    Tooling = concat(local.tooling_parameters, [
+      { name = "enableSpaces", value = "false", is_editable = false },
+    ])
+  }
+
   profile_parameters = {
-    experimentation = local.blueprint_parameters
-    lake-publishing = {
-      Tooling = concat(local.tooling_parameters, [
-        { name = "enableSpaces", value = "false", is_editable = false },
-      ])
-    }
+    experimentation       = local.blueprint_parameters
+    lake-publishing       = local.tooling_with_spaces_off
+    deployment-staging    = local.tooling_with_spaces_off
+    deployment-production = local.tooling_with_spaces_off
   }
 }

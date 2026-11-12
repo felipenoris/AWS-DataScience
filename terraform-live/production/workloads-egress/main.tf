@@ -48,10 +48,13 @@ module "egress" {
   # the job's `vpcEndpointId` reading confirms it at step 2.4 (Stage 10 step 0.5). Stage 10 keeps its
   # `mwaa` group empty, and no optional group is wired until a workload here names one.
   #
+  # `datazone` is here for the deployment project (Stage 19 step 4.4), as in staging/egress/: the
+  # publishing task's worker and the Glue job's lineage posts call the domain from inside this VPC.
+  #
   # Session Manager's three stay out: 6c step 5.5 asks for them in an instance-bearing spoke, and
   # this VPC holds no instance.
   core_services  = ["sts", "logs", "kms", "glue", "lakeformation"]
-  extra_services = ["sagemaker.api", "secretsmanager"]
+  extra_services = ["sagemaker.api", "secretsmanager", "datazone"]
 
   # Per apply, from `make up ENV=production GROUPS=…` (variables.tf): `redshift` for a job that calls
   # the governed warehouse's API from inside this VPC (Stage 9 step 9.1), nothing otherwise.

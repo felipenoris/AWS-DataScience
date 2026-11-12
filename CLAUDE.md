@@ -236,8 +236,12 @@ per laptop, never one per session.
   Apply*), refused one session's apply of a new slice carrying an e-mail subscription, and refused one
   session's `git push` (*Out-of-Place Publication*); the orchestrating session ran each itself on the
   user's authorization in its own chat. It also refused the orchestrating session's own apply of a
-  saved plan in Production (*Production Deploy*, 2026-10-18) until the user authorized it in that chat. Sessions told not to edit
-  `CLAUDE.md`, `docs/GENERAL_PLAN.md`, `docs/plan/stages/INDEX.md` and `docs/log/INDEX.md` leave
+  saved plan in Production (*Production Deploy*, 2026-10-18) until the user authorized it in that chat. On
+  2026-11-11 it refused applies under a blanket authorization and under a question (*"você pode
+  executar?"*), a Lake Formation settings write and a project membership, and let through reads, a RAM
+  association, a candidate SCP's life on `Policy Test` and every apply and `create-project` the user named.
+  Sessions told not to edit `CLAUDE.md`, `docs/GENERAL_PLAN.md`, `docs/plan/stages/INDEX.md` and
+  `docs/log/INDEX.md` leave
   their text in their reports, and the orchestrator rewrites those rows once, so a dozen PRs do not
   conflict on adjacent lines. Their notes land in
   `~/Library/Application Support/Claude/side-session-notes/<orchestrator session id>/`.
@@ -315,8 +319,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   is Sandbox only. All 41 decisions are closed; D41 item 2 is reopened since 2026-10-31 (Stage 19 decision 6 (b)). Gates: `make check`, `make check-ou`. **What waits on the
   user is [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md)**: read it before asking
   the user anything, and remove a row in the sitting that takes it.
-- **The SCP battery** read `ou` 47 as expected / 0 unexpected / 7 not measured on 2026-10-22 (Stage 18's
-  carve-out removed, Stage 9 3.5's instance-preference rows run for the first time) and `root` 25 / 0 / 1 on 2026-10-30 (decision 29's row a note: its refusal carried no authorization id). **SageMaker job quotas are above zero in
+- **The SCP battery** read `ou` 52 as expected / 0 unexpected / 5 not measured on 2026-11-11 (Stage 19
+  4.1's amendment applied) and `root` 25 / 0 / 1 on 2026-10-30 (decision 29's row a note: its refusal carried no authorization id). **SageMaker job quotas are above zero in
   Production and Staging since 2026-10-24** (read 03:47 UTC, Sandbox's values: training 20 and transform 8
   for `ml.m5.large`, processing 8, `ml.t3.medium` 10), the four requests of 2026-10-23 still
   `CASE_OPENED`. The probes read `ResourceLimitExceeded` as authorized; the `ou`
@@ -339,8 +343,8 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   `pickup` consumed the drop, `curated.trades` at 20 rows, after decision 13's two halves: the
   `AllowFullTableExternalDataAccess` flag on in Production (the user's console, 19:49 UTC) was not enough,
   the vend refused (`SUP-111`), and the lake's `lakeformation.tf` carries it
-  since 22:03 UTC (`TM-26`); the flag is on in Sandbox and the lake, unset in Staging and, since the user turned it off on 2026-10-25,
-  in Production. 9.1's
+  since 22:03 UTC (`TM-26`); the flag is on in Sandbox, the lake and, since Stage 19 4.6 (2026-11-11), Staging and Production (4.7, the
+  user's). 9.1's
   `production/warehouse/` applied 22:07 UTC (the namespace; `EXC-13`'s Production sentence), refusal 9
   lifted, `warehouse-compute/` raised per warehouse sitting, 9.3 run 2026-10-24 (the schema `trades` at 1 TB, the roles, the `IAMR:` users, the default privileges, every `PUBLIC`
   `CREATE` revoked), **9.4 to 9.7 done 2026-10-25**: the DDL job and the load (decision 15's Production-only workflow, its schedule `DISABLED` through the slice) after the deploy role's `FollowItsOwnStatements` and the job group's 5439 egress; 9.5's datashare across Production, Data Governance (decision 14) and Sandbox; 9.7 read from `eighth-experimentation` through the access role's catalog read, its Lake Formation grant and `TEMP` (`redshift-connection.md` §G), and with Production's workgroup gone;
@@ -501,7 +505,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
   `staging/foundation` and `sandbox/observability` plans pass
   `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
-- **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-29`): `TM-17`, the project role's managed policy
+- **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-30`): `TM-17`, the project role's managed policy
   reaching other accounts' `airflow-celery-*` queues and Bedrock functions, is the user's to decide;
   `TM-21` applied 2026-10-19 with Stage 17's 1.3, its finding `RESOLVED` (read 2026-10-21); the data cells filters
   create nothing until decision 12, which since 2026-10-20 also weighs Lake Formation's RLS policies (an
@@ -529,27 +533,25 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
   measurements in `SMUS.md`'s deployment-project section and `AWS_SUPPLEMENT.md`. Left: the domain's two `IAM`
   profiles, a group profile and 44 lineage events (no delete API), and the project key until 2026-11-21
   (the protected refs read free of its branch on 2026-10-26).
-- **Stage 19: decision 6 taken 2026-10-31 by the user as (b), the AWS model** (`stage-19-smus-native-data-product.md`;
-  written 2026-10-28, nothing run in AWS): a data product produced and published by a SageMaker application
-  on SMUS's native path. Under (b)
-  Staging and Production each hold a deployment project (Stage 18's recipe as a standing state), the CI/CD
-  CLI deploys every stage from the bundle, Production publishes its own product and a Sandbox project
-  subscribes across accounts; D41 item 2 reopened, 6f decision 4 reversed (its note the 6f session's), D26
-  amended at the association, `DenyDataZoneEntirely` revised at 4.1 (decision 13), the application slices,
-  the render and the orchestration module's workflow resource retire (4.11), the warehouse workflow
-  following the CLI with Production's project role, which takes the lake's write (decision 16 (b), D22
-  amended); **every decision taken 2026-10-31, one at a time** (1 (a), 2 (a)+(d), 3 (a) gated by
-  `PUBLISH_LISTING`, 4 (a), 5 with `eighth-experimentation` as Production's consumer, 9 (a), 11 rows by class
-  for the governed accounts, 12 outside, 13 (b) with a subscription deny, 14 (a)+(d), 15 (a), 16 (b); 7 and 8
-  moot, 10 taken 2026-11-09). **1.1 written 2026-10-31** (PR #281): the Iceberg product table on `glue_catalog` and the task
-  `publish`, gated by `PUBLISH_LISTING`; the mirror to `awsds/app-etl` is the next GitLab sitting's, pass 1 the
-  next Sandbox sitting's; the pinned lint refuses `content.catalog.enabled` (3.1 waits on a lint release), the
-  CLI 1.0.9 every command while a manifest `${VAR}` is unset (the `staging` and `prod` stages at 4.9). Passes
-  1 to 3 Sandbox sittings, pass 4 promotion sittings with the Stages 8-10 session, whose Stage 10 1.1, 2.4,
-  4.2 and decision 9 it rewrites. **Pass 1 run 2026-11-10** (PR #284): four runs, the fourth `SUCCESS`
-  after three fixes to `publish` (`SUP-343`, `SUP-345`), its objects and lineage read; the negative
-  admitted (`SUP-346`, `TM-29`); decisions 17 (`CT-13`) to 20 taken, 19 (c) dropping the `test`
-  stage (promotion across accounts), 20 (b) listing in Production alone; the mirror at the next GitLab sitting.
+- **Stage 19: decision 6 (b), the AWS model** (`stage-19-smus-native-data-product.md`; the user's,
+  2026-10-31): a data product produced and published by a SageMaker application on SMUS's native path. Staging
+  and Production each hold a deployment project, the CI/CD CLI deploys every stage from the bundle, Production
+  publishes its own product and a Sandbox project subscribes across accounts; D41 item 2 reopened, 6f decision
+  4 reversed, D22 and D26 amended. Decisions 1 to 20 taken (7, 8 moot): 13 (b) the SCP's three exceptions and
+  a subscription deny, 14 the task the one publisher, 15 the Governance Manager approving in
+  `deploy-production`, 16 (b) the warehouse workflow in Production's project, 17 (a) (`CT-13`), 18 (d) a `dev`
+  project for app-etl alone, 19 (c) no `test` stage, 20 (b) Production alone lists. **Pass 1 run 2026-11-10**
+  (PR #284) in `eighth-experimentation`: the Iceberg table, its asset, listing and lineage (`SUP-343`,
+  `SUP-345`, `SUP-346`, `TM-29`). **Pass 4, 2026-11-11, nothing up**: both targets associated (`SUP-349`);
+  the `Workloads` SCP's amendment (4.1), `<env>/studio/` (4.4) and `governance/`'s two deployment profiles
+  (4.5) applied on the user's word; **`deploy-staging` (`5ido8bej1zoeq8`) and `deploy-production`
+  (`d7qcazihvr3s7k`) created, each with the database `app_etl`** (4.6, `INV-21`), then the project roles'
+  grants, the deploy roles' policy and the CLI import's grants (`SUP-353`). Decision 21 (b) (`TM-30`): a fence
+  in the targets' D13 boundary, applied 2026-11-11 (`DT-14`). The user's: the flag (4.7, `DT-13` red,
+  `EXC-23`) and the deploy roles' membership.
+  **Two releases**: T retires the `test` stage (the job `bundle` as `awsds-deploy-sandbox-test`;
+  `examples/app-etl/`, sitting `runbooks/promotion.md` §N.8.2), F is the CLI's legs (4.9 to 4.11). What is
+  left: the stage file's §The estate against decisions 17 to 20.
 - **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
   macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
   browser holding a portal session as another user ends that session, so `aws/login.py` passes
@@ -557,7 +559,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 - **Module tags**: `orchestration-v0.2.1` (both callers pinned 2026-10-25, the schedule's input carrying the
   Scheduler's placeholder literally; `production/orchestration` applied on it 2026-10-25, its three schedules
   `DISABLED` between sittings), `vpc-egress-v0.19.0` (`sandbox/egress`, the `mwaa` group's `airflow-serverless`, applied 2026-10-26 with
-  `GROUPS=mwaa`; the other callers `v0.17.0`), `sagemaker-prereqs-v0.8.0` (`sandbox/sagemaker`), `wireguard-v0.6.0`,
+  `GROUPS=mwaa`; the other callers `v0.17.0`), `sagemaker-prereqs-v0.10.0` (both `studio/`; Sandbox `v0.9.0`), `wireguard-v0.6.0`,
   `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
   Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
 - **Standing rules**: `-input=false` on every plan and apply (Lesson 47); the laptop's Terraform never moves ahead of

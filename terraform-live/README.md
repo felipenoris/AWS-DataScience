@@ -308,10 +308,10 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   deploy permission. It reads `egress/`'s generated `no_proxy`, which is the dependency the rank records.
   Since Stage 8 pass 1 (2026-10-13) the slice also holds the **deploy runner** `awsds-prod-runner-deploy`,
   protected and project-locked, whose role assumes only the deploy roles (`awsds-deploy-sandbox-test` the
-  fourth, Stage 8 decision 19, written 2026-10-16) and whose AWS config carries one profile per role,
-  rendered from `production/foundation/`'s `deploy_role_arns_by_name`; since pass 2 the **test runner**,
-  with no AWS identity reachable from its jobs; and since decision 20 the build runner's role also writes
-  `awsds-prod-releases`.
+  fourth, Stage 8 decision 19, written 2026-10-16, the bundle role since Stage 19 decision 19 (c)) and
+  whose AWS config carries one profile per role, rendered from `production/foundation/`'s
+  `deploy_role_arns_by_name`; since pass 2 the **test runner**, with no AWS identity reachable from its
+  jobs; and since decision 20 the build runner's role also writes `awsds-prod-releases`.
 - **`sandbox/dev-env/` `[P]` — the house image, registered** (Stage 6d step 2, 2026-09-10): the SageMaker
   AI image, one immutable version pointing at `awsds-prod-ecr-dev-env:<tag>`, an app image configuration
   per app type, and the role SageMaker assumes to read that repository across the account boundary. It is
@@ -340,15 +340,28 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   and the blueprint's policy lets a project role describe only jobs tagged with its project, so without
   this grant the operator fails before any job exists. Like `sandbox/bedrock/`, its role list is
   written by hand after a project exists. Since Stage 8 decision 19 (applied 2026-10-16) the
-  slice also holds `awsds-deploy-sandbox-test`, the CI/CD CLI's `test` deploy role (INT-25), on the
-  `deploy-role` module with its own ceiling `awsds-sandbox-deploy-test-boundary`, trusted by the deploy
-  runner's role alone and confined to the `test` project's storage prefix, key, log groups and workflows.
+  slice also holds `awsds-deploy-sandbox-test`, the role the pipeline's `bundle` job runs as, reading the
+  `dev` project (INT-25; Stage 19 decision 19 (c)), on the `deploy-role` module with its own ceiling
+  `awsds-sandbox-deploy-test-boundary`, trusted by the deploy runner's role alone and holding the DataZone
+  reads of that project and of the catalog it owns, with no write. That shape is the code's since
+  2026-11-11, planned 0 to add, 3 to change, 2 to destroy and applied with the template's merge request
+  (Stage 19's release T); until then the role in AWS still holds the `test` deploy's grants.
+- **`staging/studio/` and `production/studio/` `[P]` — the deployment project's blueprint prerequisites**
+  ([Stage 19](../docs/plan/stages/stage-19-smus-native-data-product.md) step 4.4), applied 2026-11-11 in
+  two applies, the second adding the two blueprint configurations:
+  `terraform-modules/sagemaker-prereqs/` with `Tooling` and `DataLake` alone, the workflows grant and
+  the deny on a person's session on the project's role. The two are one slice copied
+  but `project-roles.tf` and `fence.tf` (`check-copies.py`), and `sagemaker/` beside each keeps Stage 9's
+  job roles. `fence.tf` names the account's own buckets and repositories the project's role never
+  touches, which the module denies in the D13 boundary (Stage 19 decision 21 (b), `TM-30`), applied
+  2026-11-11 at `sagemaker-prereqs-v0.10.0`.
 
 **`warehouse/` (rank 53, `[P]`) and `warehouse-compute/` (rank 54, `[E]`) exist in `sandbox/` since 2026-09-20** ([D40](../docs/plan/decisions/D40-redshift-warehouse.md), [Stage 5b](../docs/plan/stages/stage-05b-redshift-serverless.md) pass 1); the `production/` namespace exists since 2026-10-23 ([Stage 9](../docs/plan/stages/stage-09-deployment-targets.md) 9.1) and `production/warehouse-compute/` was raised for 9.3's SQL on 2026-10-24 and destroyed by the same sitting's `make down`. **It is the tree's only slice that splits one store across two layers**, and the reason is that Redshift Serverless has `create-workgroup` and `delete-workgroup` and nothing in between — no pause, no stop, no zero-capacity setting — so *powered off* means *does not exist*, which is `[E]`. The namespace stays `[P]` because it holds the schemas, the database users, the roles and every `GRANT`, none of which Terraform wrote and none of which a plan can see (§5.1 rule 2). `make up ENV=sandbox` raises the compute only with `GROUPS=redshift` (`slices.py` refusal 11), and `make down ENV=sandbox` removes it and **not** the Redshift Managed Storage, which is the irreducible price of keeping the data. The slice's own README is [`sandbox/warehouse/README.md`](sandbox/warehouse/README.md).
 
 **Two of them apply twice, and the second apply is a different sitting rather than a continuation.** The
-SMUS account association is **console-only — there is no public API** — so the blueprint configurations
-(in each member's `sagemaker/`) and the project profiles (in `governance/`) cannot exist until the
+SMUS account association is an act outside Terraform, the console's or `ram associate-resource-share` on
+the domain's share (`SUP-349`), so the blueprint configurations (in each member's `sagemaker/`, and in
+a deployment target's `studio/`) and the project profiles (in `governance/`) cannot exist until the
 account association exists (it auto-accepts — org-scoped RAM share, no invitation is ever issued;
 measured 2026-08-21). Both halves ride on `SMUS_ASSOCIATED` in `scripts/tfhygiene/backend.py`, a
 list whose rows are **measurements, not intentions**.

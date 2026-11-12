@@ -2,16 +2,23 @@
 # the CLI resolves. The storage items are folders of this tree: `deploy` syncs each to its stage's
 # `targetDirectory` under the project's shared prefix, a directory include keeping the paths inside the
 # folder. An include names a file or a folder: `deploy` expands a glob, flattened to the file's name, but
-# `bundle` (CLI 1.0.9) does not, and the lint refuses one. The stages read `${VAR}` from the shell, and
-# each `{env.VAR}` a workflow names is a stage variable of both stages, filled on a run the CLI
-# starts. A workflow's `code` is the worker's package, which the pipeline builds before any deploy.
+# `bundle` (CLI 1.0.9) does not, and the lint refuses one. A stage reads `${VAR}` from the shell, and
+# each `{env.VAR}` a workflow names is a stage variable of every stage, filled on a run the CLI
+# starts. A workflow's `code` is the worker's package, which the pipeline builds before the bundle.
+#
+# One stage, `dev`, the Sandbox project the application is developed in (Stage 19 decision 18 (d)):
+# the developer deploys to it from a space, and the pipeline's `bundle` job names it to make a
+# release's bundle. Every promotion crosses an account (Stage 19 decision 19 (c)): Staging and
+# Production receive the bundle through the infrastructure repository's release job, and their
+# stages join this manifest when the CLI deploys them (that stage's step 4.9).
+#
 # workflows/app-etl-warehouse.yaml is not a workflow of this list: the CLI never creates it in a
 # project, the bundle carries it, and Production's orchestration slice alone deploys it (Stage 9
-# decision 15). PRODUCT_DATABASE and PUBLISH_LISTING are literals, the same name in every project and
-# the stages that list the product (Stage 19 decisions 2 and 3); the database is created in each
-# project before the first deploy, never by the application.
-# ACCOUNT_ID, the account the Glue job's lineage names (Stage 19 decision 10), is read from STS by
-# whoever deploys: the space's project role in `dev`, the deploy role in `test-deploy`.
+# decision 15). PRODUCT_DATABASE is a literal, the same name in every account's catalog; the database
+# is created in the project before the first deploy, never by the application. PUBLISH_LISTING is
+# false here: Production alone lists the product (Stage 19 decision 20 (b)), and the task that lists
+# returns at once in `dev`. ACCOUNT_ID, the account the Glue job's lineage names (Stage 19 decision
+# 10), is read from STS by whoever deploys.
 applicationName: app-etl
 
 content:
@@ -62,7 +69,7 @@ stages:
       PROJECT_KEY_ARN: ${DEV_PROJECT_KEY_ARN}
       TRAINING_IMAGE_URI: ${TRAINING_IMAGE_URI}
       PRODUCT_DATABASE: app_etl
-      PUBLISH_LISTING: "true"
+      PUBLISH_LISTING: "false"
       ACCOUNT_ID: ${ACCOUNT_ID}
     bootstrap:
       actions:
@@ -70,50 +77,6 @@ stages:
           workflowName: app-etl
         - type: workflow.create
           workflowName: app-etl-train
-    deployment_configuration:
-      storage:
-        - name: code
-          connectionName: default.s3_shared
-          targetDirectory: app-etl/code
-        - name: src
-          connectionName: default.s3_shared
-          targetDirectory: app-etl/src
-        - name: glue
-          connectionName: default.s3_shared
-          targetDirectory: app-etl/glue
-        - name: samples
-          connectionName: default.s3_shared
-          targetDirectory: app-etl/inbox
-        - name: workflows
-          connectionName: default.s3_shared
-          targetDirectory: app-etl/workflows
-
-  test:
-    stage: TEST
-    domain:
-      id: ${DOMAIN_ID}
-      region: ${DOMAIN_REGION}
-    project:
-      name: ${TEST_PROJECT_NAME}
-    environment_variables:
-      JOB_IMAGE_URI: ${JOB_IMAGE_URI}
-      SUBNET_AZ1: ${SUBNET_AZ1}
-      SUBNET_AZ2: ${SUBNET_AZ2}
-      PROJECT_SG: ${TEST_PROJECT_SG}
-      PROJECT_KEY_ARN: ${TEST_PROJECT_KEY_ARN}
-      TRAINING_IMAGE_URI: ${TRAINING_IMAGE_URI}
-      PRODUCT_DATABASE: app_etl
-      PUBLISH_LISTING: "true"
-      ACCOUNT_ID: ${ACCOUNT_ID}
-    bootstrap:
-      actions:
-        - type: workflow.create
-          workflowName: app-etl
-        - type: workflow.create
-          workflowName: app-etl-train
-        - type: workflow.run
-          workflowName: app-etl
-          trailLogs: true
     deployment_configuration:
       storage:
         - name: code

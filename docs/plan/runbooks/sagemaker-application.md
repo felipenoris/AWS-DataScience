@@ -17,7 +17,7 @@
 | [§L](#l-the-gitlab-project) | infrastructure | the GitLab project: protection, members, runners, the CI/CD variables, the mirror's allowlist |
 | [§D](#d-the-development-cycle-in-sandbox) | the data scientist | the development cycle: a space, the deploy to `dev`, a run, the loop |
 | [§E](#e-the-tests) | the data scientist | the tests: the ladder from the unit tests to Staging's leg, what each rung proves, how each kind of code is tested |
-| [§M](#m-the-manifest-and-the-clis-stages) | the data scientist | the manifest and the CI/CD CLI: content, workflows, the `dev` and `test` stages, the variables, what the CLI does and does not do |
+| [§M](#m-the-manifest-and-the-clis-stages) | the data scientist | the manifest and the CI/CD CLI: content, workflows, the `dev` stage, the variables, what the CLI does and does not do |
 | [§I](#i-the-image) | the data scientist | the image: `FROM` base by digest, the lock, the smoke target, when it is built |
 | [§C](#c-the-code-a-job-and-a-worker-run) | the data scientist | the code: `src/` for the processing job, `code/` for the worker's tasks, the two contracts |
 | [§G](#g-the-glue-jobs) | both | the Glue jobs: the script, the operator in a project, the application slice in a target, the governed read |
@@ -77,7 +77,7 @@ estate gives it, with the section that develops it.
 | **a project** | a SageMaker Unified Studio project in the Sandbox account: a workspace with its own S3 prefix, its own IAM role, its own KMS key and its own network settings, where a data scientist opens a notebook or a code editor (a *space*). §D |
 | **the project role** | `datazone_usr_role_<project>_<env>`, the IAM role every call from a project runs as: a notebook's, a workflow's, a job's. §D |
 | **the persona** | a person's AWS identity, an Identity Center permission set such as `DataScientistAccess` (Sandbox) or `DataScientistProdAccess` (Production), used from a laptop or the console. §Q |
-| **the deploy roles** | the IAM roles the pipeline's jobs assume, one per account and purpose: `awsds-deploy-sandbox-test`, `awsds-deploy-staging`, `awsds-deploy-prod`. Only the deploy runner can assume them. §L, §P |
+| **the deploy roles** | the IAM roles the pipeline's jobs assume, one per account and purpose: `awsds-deploy-sandbox-test`, which makes the bundle and writes nothing, `awsds-deploy-staging`, `awsds-deploy-prod`. Only the deploy runner can assume them. §L, §P |
 | **the job role** | `awsds-<env>-job-exec`, the one role every Glue and SageMaker job runs as in Staging and Production; it holds the Lake Formation grants. §G |
 | **the execution role** | `awsds-<env>-wf-<key>`, one IAM role per workflow in Staging and Production: it starts the workflow's jobs and reaches the workflow's own prefixes, and nothing of the lake. §W, §X |
 | **a permissions boundary** | an IAM ceiling attached to a role: whatever the role's policies allow, nothing beyond the boundary is granted. `awsds-<env>-app-boundary` caps every role an application's pipeline creates. §S |
@@ -100,16 +100,21 @@ estate gives it, with the section that develops it.
 ## O. The pieces
 
 An application is a GitLab repository on the `app-etl` template: `manifest.yaml`, one YAML per workflow
-in the CI/CD CLI's notation, and the code the workflows' tasks run. It is deployed four times on the
-way to Production, and the first table below is the map of those deployments along the three axes of
-§A: where, by what, as whom. The `dev` and `test` projects are both in the Sandbox account, where
-people work; Staging and Production are accounts with no project and no portal, where only the
-pipeline writes and only workflows run.
+in the CI/CD CLI's notation, and the code the workflows' tasks run. It is deployed three times on the
+way to Production, once per account, and the first table below is the map of those deployments along
+the three axes of §A: where, by what, as whom. The `dev` project is in the Sandbox account, where
+people work; Staging and Production are accounts where only the pipeline writes and only workflows
+run. Every promotion crosses an account: the Sandbox `test` stage that stood between `dev` and Staging
+until 2026-11-11 is retired ([Stage 19](../stages/stage-19-smus-native-data-product.md) decision 19
+(c)), and the release's first run is Staging's leg.
+
+Each of the two accounts is gaining a deployment project, which the CI/CD CLI will deploy into as it
+does into `dev` (Stage 19 decision 6 (b), step 4.9). Until that release the Staging and Production rows
+and columns below hold: the pipeline deploys there through Terraform.
 
 | Stage | Where it runs | Deployed by | Identity of the tasks | Data |
 |---|---|---|---|---|
-| `dev` | the Sandbox project `eighth-experimentation` | the CI/CD CLI (`aws-smus-cicd-cli` 1.0.9, the house image's, through `scripts/dev-cli.sh`), from a space, while the application is engineered (§D) | the project role, `datazone_usr_role_<project>_<env>` | the project's `shared/<app>/` prefix under the project key |
-| `test` | the Sandbox project `test-experimentation` | the CLI, in the tag pipeline's `test-deploy` job, as `awsds-deploy-sandbox-test` (Stage 8 decision 19) | the project role | the project's `shared/<app>/`, emptied before each deploy |
+| `dev` | a Sandbox project for the application alone (Stage 19 decision 18 (d); `eighth-experimentation` until that stage's 1.5 creates it) | the CI/CD CLI (`aws-smus-cicd-cli` 1.0.9, the house image's, through `scripts/dev-cli.sh`), from a space, while the application is engineered (§D). The tag pipeline's `bundle` job names this project and deploys nothing | the project role, `datazone_usr_role_<project>_<env>` | the project's `shared/<app>/` prefix under the project key |
 | Staging | the Staging account, no project and no portal | the pipeline's `staging-deploy` as `awsds-deploy-staging`, from the release's bundle | `awsds-staging-wf-<workflow>` on the worker, `awsds-staging-job-exec` in every job | `awsds-staging-outputs` under `alias/awsds-staging-data`; the lake read-only through Staging's share |
 | Production | the Production account, `VPC-Workloads` | the pipeline's `production-deploy` as `awsds-deploy-prod`, after two manual gates | `awsds-prod-wf-<workflow>`, `awsds-prod-job-exec` | `awsds-prod-outputs` under `alias/awsds-prod-data`; the lake read and, for the declared tables, written; the governed warehouse |
 
@@ -117,7 +122,7 @@ The second table says what each stage holds for one application, and the names e
 Read it as a dictionary: when a later section names `awsds-prod-wf-app-etl`, this is where the name's
 pattern is.
 
-| Piece | In `dev` and `test` | In Staging and Production |
+| Piece | In `dev` | In Staging and Production |
 |---|---|---|
 | the workflow | `<app>_<project>_<workflow>`, every character outside `[A-Za-z0-9_]` turned into `_`, created by the CLI's `workflow.create` with the project role, the Tooling subnets, the project's group and key, tagged `CreatedBy=SMUS-CICD` and `Pipeline=<app>` | `awsds-<env>-wf-<key>`, an `awscc_mwaaserverless_workflow` of `<env>/orchestration/`, pinned to the S3 `VersionId` of its rendered definition and of its code package, `trigger_mode` `manual_only` |
 | the execution role | the project role | `awsds-<env>-wf-<key>`, under `awsds-<env>-app-boundary`, holding the job starts, its prefixes of the outputs bucket and nothing of the lake |
@@ -126,7 +131,7 @@ pattern is.
 | a SageMaker job | the project role, the project's subnets, group and key, the application image by digest from Production's registry | the job role, the job subnets and group of `<env>/sagemaker/`, the data key, the same image by digest |
 | the definitions and the code | `shared/<app>/{workflows,src,glue,code}/`, written by the CLI's `deploy` | `applications/<app>/<tag>/` in the outputs bucket, written by the release job with each workflow rendered for the account |
 | the inbox and the results | `shared/<app>/inbox/`, `work/`, `outbox/`, `tables/`, `models/` | `inbox/<app>/`, `<app>/work/`, `<app>/outbox/`, `<app>/tables/`, `models/<app>/` in the outputs bucket (§W, the render table) |
-| what starts a run | the CLI's `run`, or the manifest's `workflow.run` at the `test` deploy; never the portal, whose run carries no stage variable and fails at the template (§D) | a chain: the Step Functions machine `awsds-<env>-chain-<key>`, started by its EventBridge Scheduler schedule, by the Staging leg or by a person (§X) |
+| what starts a run | the CLI's `run`; never the portal, whose run carries no stage variable and fails at the template (§D) | a chain: the Step Functions machine `awsds-<env>-chain-<key>`, started by its EventBridge Scheduler schedule, by the Staging leg or by a person (§X) |
 | the alert on a failure | none | the rules `awsds-<env>-wf-<key>-failed` and `awsds-<env>-chain-<key>-failed`, mailing `awsds-<env>-alerts` |
 
 **What a release is made of.** D28 names the artifact classes that may cross into a deployment account,
@@ -192,7 +197,7 @@ zipped or not rendered, and the failure shows at the first deploy. The layout is
 ├── scripts/dev-cli.sh # the CI/CD CLI for the dev stage in a space (§D); no storage item names it, so it is never bundled
 ├── Dockerfile         # the application image and the job image: the lock's dependencies, no code
 ├── tests/             # pytest, offline (§E)
-├── samples/           # synthetic input: the smoke build, the tests, the `test` run and the inbox seed read it
+├── samples/           # synthetic input: the smoke build, the tests, a `dev` run and the inbox seed read it
 ├── warehouse/<table>.sql       # a warehouse table's DDL, when the application loads the governed warehouse
 ├── .gitlab-ci.yml     # the pipeline, with the shared gates of awsds/ci-gates
 ├── pyproject.toml, uv.lock, .python-version, .gitignore, README.md
@@ -261,24 +266,26 @@ is a control (the runners' half is [`gitlab.md`](gitlab.md) §K, the gates' §G,
    serves any branch, so it holds no AWS identity at all: whoever can push a branch can run code on it.
    The build runner (untagged, protected) holds the role that pushes images, and takes `build-image`,
    `scan-gate`, `store-bundle`, `release` and the two gates. The deploy runner (tag `awsds-deploy`,
-   protected) is the only machine that can assume the deploy roles, and takes `test-deploy` and the
+   protected) is the only machine that can assume the deploy roles, and takes `bundle` and the
    promotion legs. The three are project runners of `awsds/app-etl`, linked to the other projects they
    serve and locked (`gitlab.md` §K); a new project is linked to each from the runner's edit page,
    **Other available project runners → Link**, after an administrator unlocks it for the link and locks
    it again.
-5. **The CI/CD variables**, **Settings → CI/CD → Variables**, each protected, each read by `test-deploy`,
-   which fails naming any that is empty. They describe the two Sandbox projects to the CLI, values the
-   repository must not carry because they are an account's:
+5. **The CI/CD variables**, **Settings → CI/CD → Variables**, each protected, each read by `bundle`,
+   which fails naming any that is empty. They name the domain and the `dev` project to the CLI, values
+   the repository must not carry because they are an account's:
 
    | Variable | Value, and where it is read |
    |---|---|
-   | `DOMAIN_ID`, `DOMAIN_REGION` | the SageMaker Unified Studio domain's id and Region: `awsds-workflows values` prints the id (`serverless-workflows.md` §T) |
-   | `DEV_PROJECT_NAME`, `TEST_PROJECT_NAME` | the two Sandbox projects' names, `eighth-experimentation` and `test-experimentation` |
-   | `SUBNET_AZ1`, `SUBNET_AZ2` | Sandbox's two private subnets, in zone order: `values` with `--subnet-name 'awsds-sandbox-private-*'` |
-   | `DEV_PROJECT_SG`, `TEST_PROJECT_SG` | each project's own security group, `PROJECT_SG` of `values --project <id>` |
-   | `DEV_PROJECT_KEY_ARN`, `TEST_PROJECT_KEY_ARN` | the ARN of each project's KMS key, whose id `values` prints as `PROJECT_KEY_ID` (`kmsKeyArn` of the project's Tooling environment) |
-   | `TEST_PROJECT_S3_URI` | the `test` project's `s3Uri` of `default.s3_shared`, which `aws-smus-cicd-cli describe --connect` lists |
-   | `TRAINING_IMAGE_URI` | AWS's XGBoost image by digest, `terraform -chdir=terraform-live/staging/sagemaker output -raw training_image_uri`; an application whose workflows name no `{env.TRAINING_IMAGE_URI}` still sets it, since the job checks every name |
+   | `DOMAIN_ID`, `DOMAIN_REGION` | the SageMaker Unified Studio domain's id and Region: `awsds-workflows values` prints the id (`serverless-workflows.md` §T). The promotion legs read `DOMAIN_REGION` too |
+   | `DEV_PROJECT_NAME` | the `dev` project's name, of which `awsds-deploy-sandbox-test` is a member |
+
+   The CLI refuses a manifest with any `${VAR}` unset, so `bundle` gives the stage variables only a
+   deploy substitutes (`SUBNET_AZ1`, `SUBNET_AZ2`, `DEV_PROJECT_SG`, `DEV_PROJECT_KEY_ARN`,
+   `TRAINING_IMAGE_URI`, `ACCOUNT_ID`) a placeholder: they are a space's exports (§D step 3), no longer
+   GitLab's. Until 2026-11-11 the project held twelve variables, the `test` project's four among them
+   (`TEST_PROJECT_NAME`, `TEST_PROJECT_SG`, `TEST_PROJECT_KEY_ARN`, `TEST_PROJECT_S3_URI`), which leave
+   with the `test` stage.
 
    The rest of what a job reads arrives otherwise: `IMAGE_REPO`, `AWSDS_WORKFLOWS`, `LINT_INSTANCE_TYPES`
    and `LINT_ALGORITHM_REPOSITORIES` are the file's own; `JOB_IMAGE_URI`, `SCAN_DIGEST`, `BUNDLE_SHA256`,
@@ -357,7 +364,7 @@ settles, so the down runs again.
    git clone --depth 1 https://github.com/felipenoris/awsds-workflows /tmp/awsds-workflows
    /opt/conda/bin/python /tmp/awsds-workflows/scripts/space_values.py > /tmp/space_values.json
    eval "$(/opt/conda/bin/python -c 'import json; v = json.load(open("/tmp/space_values.json")); k = "arn:aws:kms:%s:%s:key/%s" % (v["REGION"], v["ACCOUNT_ID"], v["PROJECT_KEY_ID"]); print("\n".join("export %s=%s" % p for p in (("DOMAIN_ID", v["DOMAIN_ID"]), ("DOMAIN_REGION", v["REGION"]), ("SUBNET_AZ1", v["SUBNET_AZ1"]), ("SUBNET_AZ2", v["SUBNET_AZ2"]), ("DEV_PROJECT_SG", v["PROJECT_SG"]), ("DEV_PROJECT_KEY_ARN", k))))')"
-   export DEV_PROJECT_NAME=<dev project> TEST_PROJECT_NAME=<test project> TEST_PROJECT_SG=unused-by-dev TEST_PROJECT_KEY_ARN=unused-by-dev
+   export DEV_PROJECT_NAME=<dev project>
    export JOB_IMAGE_URI="<the release's image by digest>" TRAINING_IMAGE_URI="<the XGBoost image by digest, or unused-by-<app> when no run reads it>"
    export ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
    ```
@@ -387,8 +394,8 @@ settles, so the down runs again.
    not allowed ('code' was unexpected)"*). And the CLI 1.0.9 looks the domain up by name with
    `ListDomains` on every deploy with bootstrap actions, the manifest's id notwithstanding, which DataZone
    refuses to a project's role (*"User is not permitted to perform operation: ListDomains"*) though its
-   IAM policy allows `datazone:List*`. The deploy roles' call returns the domain, since the pipeline's
-   `test-deploy` creates its workflows through the same lookup, so the script answers the lookup with the
+   IAM policy allows `datazone:List*`. The deploy roles' call returned the domain, since the pipeline's
+   `test-deploy` created its workflows through the same lookup until 2026-11-11, so the script answers the lookup with the
    manifest's `DOMAIN_ID` for each of its callers, and every other call is the CLI's own:
 
    ```bash
@@ -431,7 +438,7 @@ settles, so the down runs again.
    since the job reads the code as its input and the operator updates the Glue job from the definition
    (`update_config: true`); the image does not change, which is the point of keeping the code out of it
    (§I). `deploy` syncs without deleting, so a file a change removed stays in the prefix until it is
-   emptied by hand (`aws s3 rm --recursive` on `shared/<app>/`, as `test-deploy` does). A change to a
+   emptied by hand (`aws s3 rm --recursive` on `shared/<app>/`). A change to a
    dependency is a new lock and a new release: the image is built by the tag pipeline alone, so a
    processing task has no image to run on until the first tag has pushed one. A workflow with Glue and
    worker tasks alone needs no image.
@@ -448,7 +455,7 @@ operator's first describe of a job name needs the grant `sandbox/workflows/` hol
 once per project (§G of `serverless-workflows.md`). The project holds no Lake Formation grant on the
 governed lake yet (6f decision 1), so a Glue task that reads a governed table runs in Staging first,
 never in `dev`: in a project the application reads its inbox (§K). Each deploy spends one of the
-workflow's 50 versions (read 2026-10-26: the `test` project's `app-etl` at 12, the `dev` project's at 1).
+workflow's 50 versions (read 2026-10-26: `eighth-experimentation`'s `app-etl` at 1, and the retired `test` stage's at 12).
 
 **Cost of the loop**: a worker task bills 0.088 USD per task-hour with a one-minute minimum, a processing
 task holds its worker for its whole job, and a Glue job bills its workers per DPU-hour; `app-etl`'s run of
@@ -473,7 +480,7 @@ test cannot tell whether the job role may read a table, and Staging's leg is the
 | the image's smoke, `Dockerfile` target `smoke` | `build-image` on every tag, before the push | yes, `samples/` baked in | the job's command on the image with its dependencies, networking off, the output mount owned by root | the job's inputs and outputs in S3, the platform's staging |
 | the worker's package | `build-task-code` on every tag | | every callable imports from the zip on the runner's Python 3.12 | the worker's own environment, which pre-installs what wins over the zip |
 | a run in `dev` | the data scientist, §D | yes, the inbox the manifest seeds, or what the developer drops there | the workflow's shape: the operators, the templates, the project's permissions, the job on the image, the tasks' XComs | the governed read, the per-workflow role, the account's grants: "what a Sandbox run can test is the workflow's shape, not its jobs" (Stage 10 2.1) |
-| the `test` project's run | `test-deploy` on every tag, after the image | yes | the bundle is complete (a missing include fails), the deploy creates every workflow, the one the manifest runs ends `SUCCESS` in a project emptied of earlier releases | the same as `dev`'s |
+| the bundle | `bundle` on every tag, after the image | | the bundle is complete (a missing include fails) and the role that makes it reads the `dev` project | every run: nothing of the tag runs in Sandbox since Stage 19 decision 19 (c), so a release that breaks a workflow is first seen in Staging |
 | Staging's leg | `staging-test` and `staging-model`, after the gate | no: the governed lake through Staging's share, `public` and `internal` rows | the rendered workflows under the per-workflow roles, the job role's grants, the network, the image pull, the governed read and the schema it expects (`GOVERNED_COLUMNS`), the table read back and counted, the model served and its predictions counted | nothing of Production's outputs, by design (`TM-25`); the warehouse load, which Staging has no warehouse for |
 | Production's first run | a person, after `production-deploy`, followed to its end (§X) | no | the release in the account it was written for | a test it is not: a run read, with its evidence kept |
 
@@ -537,13 +544,13 @@ manifest:
 | `applicationName` | `<app>`; the first half of every workflow's name in a project, and the `Pipeline` tag by which two applications in one project differ |
 | `content.storage[]` | the folders the CLI copies, each a `name` with `include` and `exclude` lists: `code` (the zips, named one by one), `src`, `glue`, `samples`, `workflows`. An include names a file or a folder, never a glob: `deploy` expands one, `bundle` in 1.0.9 does not, and the lint refuses one. No item names a connection, no `git`, `catalog` or `notebooks` content: the lint refuses content taken from outside the tag, since a release must be reproducible from the tag alone |
 | `content.workflows[]` | each workflow the CLI creates in a project: its `workflowName`, the file `workflows/<name>.yaml`; `connectionName: default.workflow_serverless`; `code: code/<name>.zip` when the workflow has a Python or Bash task. A workflow left out of this list is still bundled and rendered for a deployment target, and never created in a project: `app-etl-warehouse`, Production's alone |
-| `stages.dev`, `stages.test` | one SMUS project each, `stage: DEV` and `TEST`, the domain by `${DOMAIN_ID}` and `${DOMAIN_REGION}`, the project by name; `project.create` never true |
-| `stages.<s>.environment_variables` | `JOB_IMAGE_URI`, `SUBNET_AZ1`, `SUBNET_AZ2`, `PROJECT_SG`, `PROJECT_KEY_ARN`, `TRAINING_IMAGE_URI`, each `${VAR}` from the shell, and since Stage 19 1.1 `PRODUCT_DATABASE` and `PUBLISH_LISTING`, literals the same in both stages (`app_etl`, `"true"`), the one case a stage variable is not read from the shell, and since Stage 19 decision 10 `ACCOUNT_ID`, the account the Glue job's lineage names, read from STS by whoever deploys; a workflow's `{env.VAR}` is one of these names, declared in both stages, filled on a run the CLI starts. Every `${VAR}` of the file must be set and non-empty for any command, the other stage's included (1.0.9's `find_missing_env_vars`, read in its code 2026-10-26) |
-| `stages.<s>.bootstrap.actions` | `workflow.create` per workflow, which resolves the YAML's `{proj.*}` and `{domain.*}`, writes the resolved copy at the same key and calls `CreateWorkflow`; `workflow.run` with `trailLogs: true` in `test` alone, the run `test-deploy` follows (`wait` crashes 1.0.9) |
+| `stages.dev` | the one stage, a SMUS project in Sandbox: `stage: DEV`, the domain by `${DOMAIN_ID}` and `${DOMAIN_REGION}`, the project by `${DEV_PROJECT_NAME}`; `project.create` never true. The Sandbox stage `test` left the manifest on 2026-11-11 (Stage 19 decision 19 (c)); `staging` and `prod`, a deployment project each, join it when the CLI deploys them (Stage 19 step 4.9) |
+| `stages.<s>.environment_variables` | `JOB_IMAGE_URI`, `SUBNET_AZ1`, `SUBNET_AZ2`, `PROJECT_SG`, `PROJECT_KEY_ARN`, `TRAINING_IMAGE_URI`, each `${VAR}` from the shell, and since Stage 19 1.1 `PRODUCT_DATABASE` and `PUBLISH_LISTING`, literals, the one case a stage variable is not read from the shell: `app_etl`, the same name in every account's catalog, and `"false"` in `dev`, since Production alone lists a chain application's product (Stage 19 decision 20 (b)); and since Stage 19 decision 10 `ACCOUNT_ID`, the account the Glue job's lineage names, read from STS by whoever deploys; a workflow's `{env.VAR}` is one of these names, declared in every stage, filled on a run the CLI starts. Every `${VAR}` of the file must be set and non-empty for any command, another stage's included (1.0.9's `find_missing_env_vars`, read in its code 2026-10-26) |
+| `stages.<s>.bootstrap.actions` | `workflow.create` per workflow, which resolves the YAML's `{proj.*}` and `{domain.*}`, writes the resolved copy at the same key and calls `CreateWorkflow`; no `workflow.run` in `dev`: the developer starts a run with the CLI's `run` (`wait` crashes 1.0.9). The `prod` stage will carry one, with `trailLogs: true`, so a release ends with the product's table in place (Stage 19 decision 14) |
 | `stages.<s>.deployment_configuration.storage[]` | where each content item lands: `connectionName: default.s3_shared`, `targetDirectory: <app>/<class>`; `samples` lands in `<app>/inbox`, the run's input. Every target directory sits under `<app>/`, since the project's root is shared between applications |
 
 **Three kinds of placeholder.** A workflow written for a project cannot carry the project's id, role or
-bucket, since the same file serves `dev`, `test` and, rendered, the accounts. `{proj.*}` and
+bucket, since the same file serves `dev` and, rendered, the accounts. `{proj.*}` and
 `{domain.*}` are the CLI's variables, resolved per project by `workflow.create` (`{proj.id}`,
 `{proj.iam_role_arn}`, `{proj.connection.default.s3_shared.s3Uri}`, `{domain.region}`). `{env.VAR}` is a
 stage variable for a value no project holds (the image by digest, the subnets, the group, the key): the
@@ -552,13 +559,14 @@ it starts. `${VAR}` in the manifest is read from the shell at deploy time; insid
 leaves it as written, so it is never used there.
 
 **What the CLI does with the manifest**, measured in the lab (2026-10-15 and 2026-10-16, D41) and by every
-tag pipeline since: `deploy` syncs each storage item to its target directory with no `--delete` (which is
-why `test-deploy` empties the prefix first); `workflow.create` makes the workflow with the project role,
+tag pipeline until the `test` stage's retirement: `deploy` syncs each storage item to its target directory with no `--delete` (a file
+a release drops stays until a hand removes it, `SUP-348`); `workflow.create` makes the workflow with the project role,
 the Tooling environment's subnets, group and key, the log group
 `/aws/mwaa-serverless/<domain>-<project>/<name>` and six tags, under the name
 `<app>_<project>_<workflow>`, copying a Python task's zip to `shared/operatorFiles/<workflow>-<ms>.zip`,
 one object per deploy that nothing prunes; `run` starts one workflow and returns; `bundle` zips the
-storage items' files as they are, the YAML with its variables unresolved, and builds nothing; `destroy`
+storage items' files as they are, the YAML with its variables unresolved, and builds nothing, exiting 0 even
+for a project its caller cannot read (`SUP-352`); `destroy`
 removes the workflows the manifest names and the prefix, reading the Glue jobs from the definition the
 service holds. `describe --connect` lists a project's connections; `monitor` and `logs` filter workflows
 by the tags the CLI wrote, and neither has run here. On every `deploy` with bootstrap actions the project
@@ -567,9 +575,9 @@ same way: the deploy roles hold the call and DataZone answers it with the associ
 refuses the call to a project's role, which `scripts/dev-cli.sh` answers (§D; read in 1.0.9's
 `project_manager.py` and measured 2026-10-26; reported upstream as [issue 413](https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413)).
 
-The stages' names, `dev` and `test`, their `environment_variables` names and the connection names are
-fixed by the pipeline and the render: an application adds no stage, since Staging and Production are
-the pipeline's.
+The stage's name, `dev`, its `environment_variables` names and the connection names are fixed by the
+pipeline and the render: an application adds no stage, since Staging and Production are the
+pipeline's.
 
 ---
 
@@ -598,7 +606,7 @@ the dependencies change. The application image is therefore the lock's packages 
 - **Built on a tag alone**, by `build-image` on the build runner with BuildKit rootless, pushed as
   `awsds-prod-ecr-<app>:v<semver>-<short sha>`. The repository's tags are immutable, so a second pipeline
   of one tag is refused at the push; the short sha keeps two builds of one release apart. The digest
-  goes down the pipeline as `JOB_IMAGE_URI`, to the `test` run, to the release's notes and into each
+  goes down the pipeline as `JOB_IMAGE_URI`, to the bundle job, to the release's notes and into each
   account's `release.tf`. The repository keeps the 30 newest tagged images and expires an untagged one
   after 14 days.
 - **The scan gate** compares the push's CRITICAL and HIGH findings with the lineage's baseline in
@@ -770,7 +778,7 @@ variables (below).
 placeholders: the CLI fills them for a project, and the render fills them for an account, reading each
 value from the Terraform state of the slice that owns it:
 
-| In the YAML | In `dev` and `test` | In Staging and Production |
+| In the YAML | In `dev` | In Staging and Production |
 |---|---|---|
 | `{proj.connection.default.s3_shared.s3Uri}<app>/glue/`, `.../src/` | the project's shared prefix | `s3://awsds-<env>-outputs/applications/<app>/<tag>/glue/`, `.../src/`: the release's tree, written once per release and never overwritten |
 | `...<app>/inbox/` | the same, seeded from `samples/` | `s3://awsds-<env>-outputs/inbox/<app>/`, seeded from `samples/` when absent or different |
@@ -843,8 +851,8 @@ reason beside it:
 **Which workflows exist.** The manifest's `content.workflows` lists what a project receives; the bundle
 carries every file of `workflows/`; the orchestration slice's `applications` map says which keys a
 target creates, and a key the release's `release.tf` does not carry creates neither its workflow nor its
-chain. The template's three: `<app>`, run in `test` and in every target; `<app>-train`, created in the
-projects and run in the targets; `<app>-warehouse`, Production's alone, outside the manifest's list.
+chain. The template's three: `<app>`, run in every target; `<app>-train`, created in the
+`dev` project and run in the targets; `<app>-warehouse`, Production's alone, outside the manifest's list.
 
 ---
 
@@ -856,8 +864,8 @@ chosen by its *tags*, under *rules* that say on which branch or tag it exists, a
 a dotenv report, and a *resource group* lets one job of a kind run at a time, so two pipelines never
 write Staging together. `.gitlab-ci.yml` includes `awsds/ci-gates` at a commit (`gates-v<semver>` beside
 it), the shared security jobs every pipeline of the estate runs, and declares nine stages: `test`,
-`build`, `verify`, `deploy`, `release`, `staging-gate`, `staging`, `gate`, `production`. Which runner
-takes a job is its tag: `.gates-uv` jobs carry `awsds-test`, the promotion jobs and `test-deploy` carry
+`build`, `verify`, `bundle`, `release`, `staging-gate`, `staging`, `gate`, `production`. Which runner
+takes a job is its tag: `.gates-uv` jobs carry `awsds-test`, the promotion jobs and `bundle` carry
 `awsds-deploy`, and the rest are untagged, the build runner's. The promotion jobs extend `.promotion`:
 the deploy image, a proxy check, and a clone of `awsds/infrastructure` at its default branch with the
 job token into `$INFRA_DIR`, printing the commit, since the slices and the scripts live there (Stage 8
@@ -871,9 +879,9 @@ decision 2).
 | `build-image` | `build`, build runner, a tag `v<semver>` | BuildKit rootless: the `smoke` target, then `app` pushed as `$IMAGE_REPO:$CI_COMMIT_TAG-$CI_COMMIT_SHORT_SHA`; `SCAN_DIGEST` and `JOB_IMAGE_URI` as a dotenv report | nothing |
 | `scan-gate` | `verify`, build runner, a tag | `.gates-ecr-scan` on `SCAN_REPOSITORY`, informative | `SCAN_REPOSITORY` |
 | `build-task-code` | `build`, test runner, a tag | `code/<workflow>.zip` per workflow, the module imported from each zip | the workflows with worker tasks |
-| `test-deploy` | `deploy`, deploy runner, a tag; `resource_group: <app>-test`, 45 min; `AWS_PROFILE=awsds-deploy-sandbox-test` | checks the twelve CI/CD variables and the hub, reads Sandbox's `sagemaker.api`, `glue` and `logs` endpoints, empties the `test` project's `<app>/` prefix, `bundle --targets test` (a missing include fails it), the SHA256 of `artifacts/<app>.zip` as `BUNDLE_SHA256`, `deploy --targets test`, the run read back by `get-workflow-run` until `SUCCESS` | the prefix emptied, the bundle's name, which workflow the manifest runs |
+| `bundle` | `bundle`, deploy runner, a tag; 15 min; `AWS_PROFILE=awsds-deploy-sandbox-test` | checks the three CI/CD variables, gives the stage variables only a deploy substitutes a placeholder, prints the caller, runs `bundle --targets dev` (a missing include fails it, and so does *"Failed to get project connections"*, the line the CLI logs for a project the role cannot read while still exiting 0), and passes the SHA256 of `artifacts/<app>.zip` as `BUNDLE_SHA256` with `JOB_IMAGE_URI`. It deploys nothing and runs nothing: until 2026-11-11 this was `test-deploy`, which deployed the bundle to a Sandbox `test` project and ran it (Stage 19 decision 19 (c)) | the bundle's name |
 | `store-bundle` | `release`, build runner, a tag | the SHA256 checked, the bundle copied to `s3://awsds-prod-releases/<app>/<tag>/<app>.zip` as the runner's role, `BUNDLE_OBJECT` | the key |
-| `release` | `release`, build runner, a tag | the tag's GitLab release with glab, its notes naming the bundle, its SHA256 and the image, no backtick in them; a tag whose `test` failed gets none | the release's name |
+| `release` | `release`, build runner, a tag | the tag's GitLab release with glab, its notes naming the bundle, its SHA256 and the image, no backtick in them; a tag whose `bundle` failed gets none | the release's name |
 | `gate-without-proxy` | `verify`, manual on a branch | the pip-audit gate with the proxy removed, expected to fail (verification xiii) | nothing |
 | `staging-gate` | `staging-gate`, build runner, manual, blocking; `resource_group: staging` | admits the tag into Staging; its `needs` name the release's jobs, so nothing starts past a failed one | nothing |
 | `staging-check` | `staging`, deploy runner | `scripts/check-egress.py staging egress` as `awsds-deploy-staging`: every endpoint available and the DNS Firewall association complete; a slice that is down fails the job naming the command that raises it | nothing |
@@ -888,7 +896,8 @@ decision 2).
 
 What the pipeline never does: raise or destroy a shared slice (`egress/`, `workloads-egress/`, the
 warehouse compute), which the infrastructure user's `make up` and `make down` own (Stage 8 decision 27);
-rebuild anything past `build-image` (Production receives the bytes `test` and Staging ran); apply a
+rebuild anything past `build-image` (Production receives the bytes Staging ran); deploy or run anything
+in Sandbox; apply a
 Production plan it did not lint; write under `applications/` as anything but the deploy role. A job
 named `image` is refused by GitLab, and a manual gate never carries `needs: []`, which would let it
 start past a failed leg (`scripts/check-gitlab-ci.py` reads both).
@@ -898,35 +907,35 @@ start past a failed leg (`scripts/check-gitlab-ci.py` reads both).
 ## T. The release and the promotion
 
 A release is a tag `v<major>.<minor>.<patch>` on `main`, created by a Maintainer, and *promotion* is
-the tag's pipeline carrying one set of bytes through the `test` project, Staging and Production, with a
-person's approval before each account. Before the tag, the infrastructure user raises what the
+the tag's pipeline carrying one set of bytes through Staging and Production, with a
+person's approval before each account. No stage of it is in Sandbox: the bundle is made from the tag's
+files, and its first run is Staging's. Before the tag, the infrastructure user raises what the
 pipeline reads: the shared pieces are `[E]` and bill nothing while down, so a sitting opens by raising
 them, in [`gitlab.md`](gitlab.md) §U's order, and the mirror must carry `main`:
 
 1. `make hub-up`, `make gitlab-up BUILD=1`, the tunnel: the build runner takes the image and the
-   untagged jobs, the deploy runner the `test` deploy and the legs, the test runner the tests.
-2. `make up ENV=sandbox ONLY=egress`: the `test` run's endpoints; `test-deploy` reads them and fails in
-   seconds while they are down.
-3. `git push gitlab main` from the project folder, once `main` carries every slice and script the legs
+   untagged jobs, the deploy runner the bundle and the legs, the test runner the tests. Sandbox's
+   `egress/` stays down: no job reads it since the `test` stage's retirement.
+2. `git push gitlab main` from the project folder, once `main` carries every slice and script the legs
    clone (the application and orchestration slices on the release the legs will record, the schedules'
    states as the sitting wants them): a stale mirror deploys yesterday's slice.
-4. The tag, from a checkout of `awsds/<app>`'s `main`: `git tag v<semver> && git push origin v<semver>`.
+3. The tag, from a checkout of `awsds/<app>`'s `main`: `git tag v<semver> && git push origin v<semver>`.
 
 Then, in order, with the readings each leaves (`promotion.md` §T and §V record the first runs):
 
 | Step | Hand | What happens |
 |---|---|---|
-| `test`, `build-image`, `build-task-code`, `test-deploy`, `store-bundle`, `release` | the pipeline | the image, the zips, the `test` project's run to `SUCCESS`, the bundle stored, the release's notes |
+| `test`, `build-image`, `build-task-code`, `bundle`, `store-bundle`, `release` | the pipeline | the image, the zips, the bundle made and stored, the release's notes |
 | `make up ENV=staging ONLY=egress` | infrastructure user | Staging's endpoints, before the gate |
 | `staging-gate` | deployment manager | the tag admitted |
-| `staging-check`, `staging-deploy`, `staging-test`, `staging-model` | the pipeline | the release written under `awsds-staging-outputs/applications/<app>/<tag>/`, the slices applied, each chain run to `SUCCEEDED`, the governed read through Staging's share, the table read back, the model served; nothing torn down |
+| `staging-check`, `staging-deploy`, `staging-test`, `staging-model` | the pipeline | the release's first run anywhere: the release written under `awsds-staging-outputs/applications/<app>/<tag>/`, the slices applied, each chain run to `SUCCEEDED`, the governed read through Staging's share, the table read back, the model served; nothing torn down |
 | `make up ENV=production ONLY=workloads-egress` | infrastructure user | Production's endpoints, before the gate; `ONLY=` always, since the command without it applies `runners/` without `BUILD=1` and destroys the build runner the gate runs on |
 | `production-plan`, then `production-gate` | the pipeline; deployment manager | the plan read beside Staging's artifacts; the tag admitted |
 | `production-deploy` | the pipeline | the same bundle and image into Production: the application slice, then the orchestration slice with the schedules as the slice declares them |
 | a Production run | infrastructure user, or the schedule | each chain started and followed (§X); the first run of a new workflow read before the sitting ends |
 | `production-warehouse-ddl`, `production-register`, `production-approve` | deployment manager, with the compute up for the DDL | the warehouse table, the model version registered and approved, the transform following |
 | 3.7, the record | infrastructure user | the four `release.tf`s: the application slices' tag, digest and bundle SHA256, the orchestration slices' tag and each workflow's definition and code `VersionId`s, from the legs' `*-release.auto.tfvars.json` artifacts; the mirror pushed after the merge. An orchestration slice applied by hand on a stale default rolls its workflows back to the recorded release (read 2026-10-26) |
-| the downs | infrastructure user | `make down ENV=staging` (the application and orchestration slices with `egress/`), `make down ENV=production ONLY=workloads-egress`, `make down ENV=sandbox`, `make gitlab-down`, `make hub-down`; `./aws/egress.py` reading zero burn |
+| the downs | infrastructure user | `make down ENV=staging` (the application and orchestration slices with `egress/`), `make down ENV=production ONLY=workloads-egress`, `make gitlab-down`, `make hub-down`; `./aws/egress.py` reading zero burn |
 
 A tag whose pipeline stops is spent: ECR refuses a second push of the tag, so the fix is a new patch
 version. A release that must not reach Production stops at the gate, and Staging keeps it until the
@@ -949,7 +958,7 @@ a procedure. The order is the dependency order.
 
 | Where | What changes for `<app>` | Applied as |
 |---|---|---|
-| GitLab, `awsds/<app>` | §L whole: the project, its protection, members, the three runners linked, the twelve variables, the mirror's allowlist | the local administrator; the infrastructure user for the values |
+| GitLab, `awsds/<app>` | §L whole: the project, its protection, members, the three runners linked, the three variables, the mirror's allowlist | the local administrator; the infrastructure user for the values |
 | `production/registry/` (`[P]`) | `module "ecr_<app>"` on `ecr-repo`, `awsds-prod-ecr-<app>`, `pull_principal_arns = local.app_consumer_account_arns` (Sandbox and Staging); the outputs `ecr_<app>_repository_url` and the key `<app>` in `ecr_repository_arns`, which the job roles and the application slice read by name; the build runner's push statement reads the whole map, so it follows | `awsds-infra-prod` |
 | `identity/sso/` (`[P]`) | the repository's name in `locals.tf`'s `ecr_repository_arns` and in `ReadAndPullTheApplicationImages` of `policies-data-scientists.tf`: the persona's read of the image and its scan | `awsds-infra-identity` |
 | `staging/sagemaker/` and `production/sagemaker/` (`[P]`) | the job role's `PullTheApplicationImage` names `ecr_repository_arns["app-etl"]` alone (`locals.tf`, `job-role.tf`): a second repository joins the statement's resources; `registry.tf`'s `model_families` gains `<app>` for an application with a model (the package group and its policy); `training-image.tf` stays unless the model trains on another algorithm image | `awsds-infra-staging`, `awsds-infra-prod` |
@@ -958,12 +967,12 @@ a procedure. The order is the dependency order.
 | `staging/app/<app>/` and `production/app/<app>/` (`[E]`, the pipeline's) | a copy of `app/app-etl/`: `main.tf` with the application's Glue jobs and its tables in `app_outputs` (the columns of each, since the deploy role declares the table and the job writes its rows), `data.tf` reading `ecr_<app>_repository_url`, `release.tf` with a null default until the first promotion records one; `backend.tf`; the slice's rows in `scripts/tfhygiene/layers.py` (`Slice(...)` for both accounts, rank 58 beside `app/app-etl`) and a pair in `scripts/check-copies.py` | the pipeline; by hand, the infrastructure user |
 | `staging/orchestration/` and `production/orchestration/` (`[E]`, the pipeline's) | an entry per workflow in `applications` (the Glue jobs, the job-name prefixes, the `reads`, `writes` and `deletes` prefixes, each ending in `/` and never under `applications/`), an entry per chain in `chain_specs` with its cron and `schedule_enabled`, `chains/<key>.asl.json` per chain, a `bridges` entry for a chain an inbox write starts; `release.tf`'s default gains the workflows at the first record. One slice and one `release` tag hold every application's workflows today; its split per application is an open item (Stage 8 decision 27, `promotion.md` §N.5) | the pipeline; by hand, the infrastructure user |
 | the scripts | `render-workflow.py`, `release-application.py` and `lint-plan.py` take `--app`, and the template's legs call the last two without it; `model-chain.py` names `app-etl` in a constant (`APP`), so a second application with a model needs the script parameterised; `aws/cicd.py`'s `APP_REPO` reads one repository; `.pre-commit-config.yaml`'s `render-workflow-check` names `examples/app-etl/` | a pull request on the infrastructure repository |
-| `sandbox/workflows/` (`[P]`) | nothing per application: the grant is per project role, and both Sandbox projects hold it; `awsds-deploy-sandbox-test` reaches the `test` project's whole `shared/` prefix | |
+| `sandbox/workflows/` (`[P]`) | the application's `dev` project's role in `project_roles`, which gives it the workflows grant; `awsds-deploy-sandbox-test`, the bundle role, holds DataZone reads alone and is made a member of that project by hand | `awsds-infra-sandbox-1` |
 | the mirror | `git push gitlab main` after the merge, before the first tag | the infrastructure user |
 | the register, `data-governance/data/` (`[P]`) | only for an application that writes a governed table: §B | `awsds-infra-data`, inside `DL-5`'s bracket |
 
 What the first tag reads for a new application, in order: `build-image` pushes into a repository that
-must exist and admit the runner; `test-deploy` needs the project grant and the variables; the Staging
+must exist and admit the runner; `bundle` needs the role's membership of the `dev` project and the variables; the Staging
 leg needs the deploy role's grants on the new job names and the application slice; Production's leg the
 same, and the record. A step missing shows as a refusal in that job's log, naming the action and the
 resource, which is the reading to keep.
@@ -1078,7 +1087,7 @@ topic. Start from the question, and the table names the place:
 |---|---|
 | did the chain run, when, how did it end | `aws stepfunctions list-executions --state-machine-arn <machine>`; `describe-execution`; the execution's input (`scheduledTime` for a scheduled start); the machine's log group `/aws/vendedlogs/states/awsds-<env>-chains` |
 | which workflow run did it start, and how did each task end | `get-execution-history` names the run id; `aws mwaa-serverless list-task-instances --workflow-arn <arn> --run-id <id>` and `get-task-instance`: read a task's `DurationInSeconds` and state, never the run's `RunState`, which lags its tasks |
-| why did a task fail | its stream `workflow_id=<workflow>/run_id=<id>/task_id=<task>/attempt=<n>.log` in `/awsds/<env>/wf/<key>` ([`log-debugging.md`](log-debugging.md) §W); in `dev` and `test`, in `/aws/mwaa-serverless/<domain>-<project>/<name>` |
+| why did a task fail | its stream `workflow_id=<workflow>/run_id=<id>/task_id=<task>/attempt=<n>.log` in `/awsds/<env>/wf/<key>` ([`log-debugging.md`](log-debugging.md) §W); in `dev`, in `/aws/mwaa-serverless/<domain>-<project>/<name>` |
 | a run in `dev`, from the space | the same `mwaa-serverless` reads as the project role, which need the `mwaa` group and the API's name in `NO_PROXY` (§D); from a laptop, as the infrastructure user with `awsds-infra-sandbox-1` |
 | what did the Glue job do | `aws glue get-job-runs --job-name awsds-<env>-<app>`; the run's stream in `/aws-glue/jobs/logs-v2` (continuous logging), every line the script prints |
 | which snapshot of the governed table did a run read | `source` in `<app>/outbox/report.json` and in `<app>/work/job/<stem>.summary.json`; the Glue run's line *"reading SELECT … VERSION AS OF <id>"* |
@@ -1160,7 +1169,10 @@ lake's bucket. Production's local outputs, the model artifacts among them, stay 
 template writes no governed table: its Glue job writes the application's own table in `app_outputs`
 (Stage 9 2.4, Stage 10 6.1). Stage 19 decision 6 (b) adds a second road for an application's own
 product: the template's `publish` task lists it in the project's catalog where `PUBLISH_LISTING` is
-`true`, and Production's deployment project publishes it in Production (Stage 19 pass 4).
+`true`, which is Production's deployment project alone (Stage 19 decision 20 (b), pass 4). In `dev`
+the task returns at once, and the product stays in the project's inventory, where the scientist
+curates the description, the README and the classification the bundle carries to the targets
+(decision 18 (d)).
 
 **The warehouse.** A product that must also be queried in Redshift is loaded by a Production-only Glue
 job into a schema of the database `governed` on `awsds-prod-warehouse` (§G); the schema and its 1 TB
@@ -1178,7 +1190,7 @@ Reach is an intersection (Lesson 28): a task reads something only when a network
 IAM role allows the call, and, for governed data, Lake Formation grants it. The matrix names the three
 for each kind of task in each stage; where one term is missing, the reach is absent by design.
 
-| From | In `dev` and `test` (Sandbox) | In Staging and Production |
+| From | In `dev` (Sandbox) | In Staging and Production |
 |---|---|---|
 | a Glue task | the project role on the project's two Glue network connections, under the project key; reads and writes the project's `shared/<app>/`; the lake's tables a subscription fulfilled for the project, through their resource links in the project's `DataLake` database (`curated.trades` in `eighth-experimentation` since 6f 11.9, 2026-10-26) | the job role on `glue_connection_name` of `<env>/sagemaker/`, in the job security group `awsds-<env>-jobs`; reads the lake through Lake Formation's vended credentials (the share's `SELECT`), writes the outputs bucket and `app_outputs`; in Production, writes `curated`'s declared tables and connects to the warehouse over JDBC through the `redshift-serverless` endpoint |
 | a processing or training job | the project role, the project's subnets and group, network isolation; the image pulled by SageMaker's side from Production's registry by digest; inputs and outputs staged by the platform from the project prefix | the job role, the job subnets and group, network isolation, the data key; inputs and outputs staged from the outputs bucket; no lake bucket, ever (D13) |
@@ -1213,8 +1225,8 @@ product lives in the lake, not in Production, and every account reads that one l
   (`DenyThePersonaReadsOutsideTheNamedPrefixes`). A result copied into a project or the sandbox lake is
   the data scientist's own copy of something the persona may read, under the Sandbox perimeter, and its
   classification follows it; nothing in the design moves it for them.
-- **The application develops on synthetic data.** `samples/` drives the tests, the smoke build, the
-  `test` run and the inbox seed in every account; the Glue script's governed read is tested as the
+- **The application develops on synthetic data.** `samples/` drives the tests, the smoke build, a
+  `dev` run and the inbox seed in every account; the Glue script's governed read is tested as the
   query it builds, over a mocked column list. A real governed input enters the loop as a column list
   the application reads (`GOVERNED_COLUMNS`), checked against the table at Staging's leg, and as the
   rows every consumer reads. A real file of the data scientist's own reaches Production's lake through
@@ -1240,9 +1252,9 @@ the divergence shows at a deploy, a render or a lint, never at the edit.
 
 | Standard, unchanged | Specific, set per application |
 |---|---|
-| the layout of §R; the `include:` of `awsds/ci-gates` and its commit; the stages, the runner tags, the `.promotion` template, the `rules` on a tag, the `resource_group`s, the manual gates and their `needs`, the dotenv reports and their names | `applicationName`, `IMAGE_REPO`, `SCAN_REPOSITORY`, `GATES_UV_PROJECTS`, the release's name, the `resource_group` of `test-deploy`, `LINT_ALGORITHM_REPOSITORIES` (empty without a training task), the `--app` and the slice paths on the promotion jobs |
+| the layout of §R; the `include:` of `awsds/ci-gates` and its commit; the stages, the runner tags, the `.promotion` template, the `rules` on a tag, the `resource_group`s, the manual gates and their `needs`, the dotenv reports and their names | `applicationName`, `IMAGE_REPO`, `SCAN_REPOSITORY`, `GATES_UV_PROJECTS`, the release's name, `LINT_ALGORITHM_REPOSITORIES` (empty without a training task), the `--app` and the slice paths on the promotion jobs |
 | the Dockerfile's shape: `FROM` base by digest, the lock into a virtual environment, no code, the `app` and `smoke` targets, the job's command | the base digest (the developer's pin), a system package, the sample the smoke runs, the files the smoke checks |
-| the manifest's stages `dev` and `test`, their `environment_variables` names, `default.s3_shared` and `default.workflow_serverless`, `workflow.create` and the `test` stage's `workflow.run` | the content items and their includes, the workflows and their zips, the target directories under `<app>/`, which workflow `test` runs |
+| the manifest's stage `dev`, its `environment_variables` names, `default.s3_shared` and `default.workflow_serverless`, `workflow.create` | the content items and their includes, the workflows and their zips, the target directories under `<app>/` |
 | the CLI's variables and the render table's classes; the D13 settings on every job; `retries: 0`; the result file by an S3 operator; the lint's rules and the ceiling's instance types | each workflow's tasks, operators, arguments and prefixes; the Glue jobs' names and arguments; `GOVERNED_COLUMNS` and the tables' columns; the chains, their order and their cron |
 | the processing job's contract (`/opt/ml/processing/`, `sudo chown`, `python -m`); the worker's package shape (one module, one zip per workflow, the worker's boto3) | the package, the command's arguments, the callables and their `op_kwargs` |
 | the tests' shape: pytest offline, doubles for `awsglue`, `pyspark` and `boto3`, `samples/` as the fixture, the lint in `test` | the cases: the transformation's expected output, the column list, the statements |

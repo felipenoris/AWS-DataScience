@@ -551,7 +551,10 @@ A mental model, not a status. Every old habit contradicts some part of it.
   admits is **one namespace per account, written by Terraform**, reached through a *connection to an existing
   compute resource*, and no blueprint provisions one. So the domain remains a registry that provisions
   nothing into itself and no project can create a warehouse of its own.
-  Staging and Production are never associated. What crosses the gate is
+  Staging and Production were never associated until 2026-11-11, when
+  [Stage 19](stages/stage-19-smus-native-data-product.md) decision 6 (b) gave each a deployment project:
+  a project no person works in and no space runs in, which the CI/CD CLI deploys into from that stage's
+  step 4.9. Until that release, what crosses the gate is
   the D28 artifact set — image, workflow YAML in S3, the code its tasks read from S3, per-workflow role,
   orchestration resource with a chain's state machine and schedule, log group, model package group —
   carried by the application's git repository, which the CI/CD CLI deploys between the Sandbox projects

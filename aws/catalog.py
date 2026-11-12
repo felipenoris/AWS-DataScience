@@ -83,7 +83,12 @@
 #   CT-13 every start of a data source is its own project's. DataZone admits a project role's
 #         StartDataSourceRun on another project's source, and IAM reaches the action at the
 #         domain alone (SUP-346); Stage 19 decision 17 (2026-11-10) keeps the grant the
-#         publishing task needs and judges each start CloudTrail holds, in both accounts.
+#         publishing task needs and judges each start CloudTrail holds, in the registry, the
+#         Interactive account and, since their projects exist, both deployment targets.
+#   CT-14 a deployment project's sources are Glue sources, one per database, publishing nothing
+#         on import and generating no names (Stage 19 step 4.6). CT-5 leaves the generation over a
+#         project's own database to the project; a deployment project has no person to choose,
+#         and the generation is a model call over the target's metadata.
 #
 # CT-7 and CT-8 read every page of ListPermissions in both accounts: the CLI has no paginator for
 # that operation, so one call answers the first page and a NextToken. A listing not read to its
@@ -121,6 +126,11 @@ OUT_NAME = "catalog.txt"
 # compute and the Lake Formation grants SMUS writes for them.
 DATA_PROFILE = "awsds-infra-data"
 SANDBOX_PROFILE = "awsds-infra-sandbox-1"
+# The deployment targets, each holding one project since Stage 19 step 4.6. Their trails are read
+# for CT-13: a start made there is recorded with the role's name in that account alone.
+STAGING_PROFILE = "awsds-infra-staging"
+PROD_PROFILE = "awsds-infra-prod"
+DEPLOYMENT_PROJECTS = ("deploy-staging", "deploy-production")
 
 # The governed lake's databases, in the registry account. A SMUS principal reaching one of these is
 # CT-7's finding; a project's own database is not.
@@ -474,10 +484,14 @@ def main(argv: list) -> int:
     out_label = ctx.out_label(OUT_NAME)
 
     errors = ErrorLog()
-    callers = profiles.preflight([DATA_PROFILE, SANDBOX_PROFILE], errors, out_label=out_label)
+    callers = profiles.preflight(
+        [DATA_PROFILE, SANDBOX_PROFILE, STAGING_PROFILE, PROD_PROFILE], errors, out_label=out_label
+    )
     live = {c.profile: c for c in callers}
     dat = AwsCli(profile=DATA_PROFILE, region=context.REGION, errors=errors, echo_profile=True)
     sbx = AwsCli(profile=SANDBOX_PROFILE, region=context.REGION, errors=errors, echo_profile=True)
+    stg = AwsCli(profile=STAGING_PROFILE, region=context.REGION, errors=errors, echo_profile=True)
+    prd = AwsCli(profile=PROD_PROFILE, region=context.REGION, errors=errors, echo_profile=True)
     checks = Checks()
 
     # ---------------------------------------------------------------- CT-1 the domain
@@ -647,6 +661,7 @@ def main(argv: list) -> int:
     sources: list = []
     source_dbs: dict = {}  # data source id -> the databases its Glue filter names (CT-5)
     source_project: dict = {}  # data source id -> its project id (CT-13)
+    sources_listed: set = set()  # the projects whose listing answered (CT-14)
     for pid, pname in projects.items():
         res = dat.run(
             "datazone",
@@ -660,6 +675,8 @@ def main(argv: list) -> int:
             "--output",
             "json",
         )
+        if res.ok:
+            sources_listed.add(pname)
         for dsid in json_or_none(res.stdout) or []:
             res = dat.run(
                 "datazone",
@@ -765,6 +782,48 @@ def main(argv: list) -> int:
             + elsewhere,
         )
 
+    # ---------------------------------------------------------------- CT-14 a deployment project
+    for name in DEPLOYMENT_PROJECTS:
+        ct14 = f"{name}'s sources: Glue, one per database, nothing published or generated"
+        if name not in projects.values():
+            checks.note("CT-14", ct14, "no such project - Stage 19 step 4.6 creates it")
+            continue
+        if name not in sources_listed:
+            checks.note("CT-14", ct14, "its data sources were not read")
+            continue
+        mine = [s for s in sources if s[0] == name]
+        problems = []
+        seen_dbs: list = []
+        for _, sname, stype, poi, ai, _, _, _, dsid in mine:
+            dbs = source_dbs.get(dsid, [])
+            if stype != "GLUE":
+                problems.append(f"{sname} is a {stype} source")
+            if len(dbs) != 1:
+                problems.append(f"{sname} names {len(dbs)} databases")
+            if poi:
+                problems.append(f"{sname} publishes on import")
+            if ai:
+                problems.append(f"{sname} generates business names")
+            seen_dbs += dbs
+        repeated = sorted({d for d in seen_dbs if seen_dbs.count(d) > 1})
+        if repeated:
+            problems.append(f"more than one source over {', '.join(repeated)}")
+        if problems:
+            checks.fail(
+                "CT-14",
+                ct14,
+                "; ".join(problems) + " - the publishing task is the one publisher (Stage 19 "
+                "decision 14), and nobody chooses a setting in a deployment project",
+            )
+        elif not mine:
+            checks.note("CT-14", ct14, "no data source: no database was created in it yet")
+        else:
+            checks.ok(
+                "CT-14",
+                ct14,
+                f"{len(mine)} source(s), over {', '.join(sorted(set(seen_dbs)))}",
+            )
+
     # ---------------------------------------------------------------- CT-6 the schedules
     # The first draft of this check read the schedule and stopped there, and passed over 26 days of
     # daily failures because the data source's own `status` read RUNNING (EXC-11). What decides the
@@ -825,12 +884,19 @@ def main(argv: list) -> int:
 
     # ---------------------------------------------------------------- CT-13 the starts
     # The caller's account records the role's name; the domain's account records a call from another
-    # account with that account and the role's id alone. Sandbox's copy is read first, and the
-    # registry's copy of the same request is skipped. A refused start started nothing.
+    # account with that account and the role's id alone. The callers' copies are read first, the
+    # Interactive account's and each deployment target's, and the registry's copy of the same request
+    # is skipped. A refused start started nothing.
     starts: list = []  # (time, verdict, caller, source id, source's project id, request id)
     seen_requests: set = set()
     trails_read = 0
-    for cli, profile in ((sbx, SANDBOX_PROFILE), (dat, DATA_PROFILE)):
+    trail_clis = (
+        (sbx, SANDBOX_PROFILE),
+        (stg, STAGING_PROFILE),
+        (prd, PROD_PROFILE),
+        (dat, DATA_PROFILE),
+    )
+    for cli, profile in trail_clis:
         if not live[profile].live:
             continue
         res = cli.run(
@@ -870,8 +936,12 @@ def main(argv: list) -> int:
             "; ".join(started(r) for r in by_verdict["cross"])
             + " - a project role starting another project's source (SUP-346, TM-29)",
         )
-    elif trails_read < 2:
-        checks.note("CT-13", ct13, f"{2 - trails_read} of the two trails not read")
+    elif trails_read < len(trail_clis):
+        checks.note(
+            "CT-13",
+            ct13,
+            f"{len(trail_clis) - trails_read} of the {len(trail_clis)} trails not read",
+        )
     elif any(by_verdict.get(v) for v in ("measured", "unresolved", "unknown source")):
         checks.note(
             "CT-13",
@@ -1431,7 +1501,7 @@ def main(argv: list) -> int:
             )
         rep.line()
         if not starts:
-            rep.text("No StartDataSourceRun in either trail's 90 days (CT-13).")
+            rep.text("No StartDataSourceRun in any trail's 90 days (CT-13).")
         else:
             rep.text(
                 "The starts CloudTrail holds, each judged against the source's project (CT-13):"
@@ -1575,9 +1645,9 @@ def main(argv: list) -> int:
         rep.line()
         rep.text(
             "CT-13 reads CloudTrail's last 90 days. The domain's account records a start from another\n"
-            "account with that account and the role's id alone: Sandbox's own copy names the role,\n"
-            "and a start from any other account reads unresolved until that account's trail is read\n"
-            "(Stage 19 pass 4)."
+            "account with that account and the role's id alone: the caller's own copy names the role,\n"
+            "so the Interactive account's and both deployment targets' trails are read beside the\n"
+            "registry's (Stage 19 pass 4)."
         )
 
         rep.h1("10. Calls that failed")

@@ -12,6 +12,6 @@ output "attached_project_roles" {
 }
 
 output "deploy_role_test_arn" {
-  description = "The test deploy role (Stage 8 decision 19) - what production/foundation/'s AssumeRole list names, built there from this account's id, never read from here."
+  description = "The bundle role, awsds-deploy-sandbox-test (Stage 19 decision 19 (c)) - what production/foundation/'s AssumeRole list names, built there from this account's id, never read from here."
   value       = module.deploy_role_test.role_arn
 }

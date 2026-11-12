@@ -23,9 +23,11 @@ step 9.1; the decision behind the warehouse is
 ## What Sandbox's slice has and this one does not
 
 The `projects` map, the per-project layer-2 policies, the access roles and the per-project `5439`
-rules: a deployment target is never associated with the domain (D26, `DenyDataZoneEntirely`), so the
-governed class has no project tag, no connection and no access role, and `./aws/warehouse.py` `WH-7`
-reads the absence of the tag as the pass. The alerts topic is `production/foundation/`'s, where Stage
+rules: no project of the domain is admitted to this warehouse, so the governed class has no project
+tag, no connection and no access role, and `./aws/warehouse.py` `WH-7` reads the absence of the tag as
+the pass. Production is associated with the domain since 2026-11-11 and gains a deployment project
+(Stage 19 decision 6 (b)); that project's role reaches the warehouse only if that stage's step 4.11
+writes its grants (decision 16 (b)). The alerts topic is `production/foundation/`'s, where Stage
 8 decision 5 created it, not an `observability/` slice's.
 
 ## The `REVOKE` this slice cannot express

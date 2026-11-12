@@ -116,7 +116,7 @@ variable "deploy_role_name" {
 }
 
 variable "deploy_targets" {
-  description = "The deploy roles outside this account, keyed by the account folder each lives in, with the profile an aliased provider resolves that account's id from: the account's own role, in its foundation/, and in other_roles the roles its other slices hold (Stage 8 decision 19: sandbox/workflows/'s awsds-deploy-sandbox-test)."
+  description = "The deploy roles outside this account, keyed by the account folder each lives in, with the profile an aliased provider resolves that account's id from: the account's own role, in its foundation/, and in other_roles the roles its other slices hold (sandbox/workflows/'s awsds-deploy-sandbox-test, the bundle role)."
   type        = map(object({ profile = string, env = string, role = string, other_roles = list(string) }))
   nullable    = false
 
@@ -132,4 +132,31 @@ variable "alert_email" {
   description = "The address awsds-<env>-alerts sends to. Unset, the topic exists with no subscriber, which a check block reports on every plan."
   type        = string
   default     = null
+}
+
+# Stage 19 step 4.8 - the deployment project this account's deploy role deploys into, by its role's
+# name, and its domain (deploy-project.tf). Both are written by hand, as sandbox/workflows/'s are, and
+# neither is looked up. Empty until the project exists: the grant is created with it.
+variable "deployment_project_role" {
+  description = "The project role of this account's deployment project, by NAME: the role the deploy role passes to the workflow service, and whose project's shared/ prefix, workflows and log groups it reaches. Empty creates no grant."
+  type        = string
+  # deploy-production's role, created 2026-11-11 (Stage 19 step 4.6); read from `iam list-roles`.
+  default = "datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow"
+
+  validation {
+    condition     = var.deployment_project_role == "" || can(regex("^datazone_usr_role_[a-z0-9]+_[a-z0-9]+$", var.deployment_project_role))
+    error_message = "empty, or a SMUS project role name, `datazone_usr_role_<project>_<environment>`."
+  }
+}
+
+variable "datazone_domain_id" {
+  description = "The SMUS domain the deployment project belongs to; the deploy role's S3 and log-group scopes use it."
+  type        = string
+  # `awsds-studio`, as `datazone list-domains` prints it in Data Governance.
+  default = "dzd-d8yrvx1ko7im6o"
+
+  validation {
+    condition     = can(regex("^dzd-[a-z0-9]+$", var.datazone_domain_id))
+    error_message = "a SMUS domain id is `dzd-` followed by lowercase alphanumerics, as `datazone list-domains` prints it."
+  }
 }

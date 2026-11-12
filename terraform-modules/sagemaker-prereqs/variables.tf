@@ -61,6 +61,73 @@ variable "lake_data_key_arn" {
   nullable    = false
 }
 
+# ------------------------------------------------- the fence around a project role (TM-30)
+#
+# AWS's managed policies on a project role allow sts:AssumeRole on every role, kms through S3 on
+# every key and S3 through Access Grants on every bucket of the role's account, and AWS moves those
+# policies. In an account that holds more than its projects, the boundary names what a project role
+# never touches there, so the denies bind whatever version the role carries (Stage 19 decision 21).
+# Each is off by default: an account whose only tenants are its projects needs none.
+
+variable "fenced_bucket_names" {
+  description = "This account's buckets no project role touches, by name: s3:* is denied on each and on its objects. A new bucket of the account joins the list in the commit that creates it (./aws/deploytargets.py DT-14 reads the account's buckets against it)."
+  type        = list(string)
+  default     = []
+  nullable    = false
+
+  validation {
+    condition     = !contains(var.fenced_bucket_names, "awsds-${var.env}-smus-projects")
+    error_message = "The projects bucket is the project roles' own: fencing it stops every project."
+  }
+}
+
+variable "fence_customer_keys" {
+  description = "Deny every KMS action on this account's customer managed keys but the project key, told apart by alias. AWS managed keys (alias/aws/*) stay usable, and a key of another account is outside the statement."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
+variable "fenced_secret_names" {
+  description = "Name patterns of this account's secrets no project role reads or writes: secretsmanager:* is denied on each. A project's own connection secrets carry other names."
+  type        = list(string)
+  default     = []
+  nullable    = false
+}
+
+variable "fence_role_assumption" {
+  description = "Deny sts:AssumeRole to the project roles on every role but var.assumable_role_arns. A trust policy is otherwise the one layer between a project role and another role."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
+variable "assumable_role_arns" {
+  description = "The roles a project role may still assume while var.fence_role_assumption is on: a connection's access role, added by the decision that creates it."
+  type        = list(string)
+  default     = []
+  nullable    = false
+}
+
+variable "fenced_repository_names" {
+  description = "This account's ECR repositories no project role reads: ecr:* is denied on each."
+  type        = list(string)
+  default     = []
+  nullable    = false
+}
+
+variable "fenced_services" {
+  description = "IAM service prefixes denied whole to the project roles, for services the account's projects have no use for (bedrock, for example)."
+  type        = list(string)
+  default     = []
+  nullable    = false
+
+  validation {
+    condition     = alltrue([for s in var.fenced_services : can(regex("^[a-z0-9-]+$", s))])
+    error_message = "Each entry is an IAM service prefix: lowercase letters, digits and hyphens, with no colon and no action."
+  }
+}
+
 # ------------------------------------------------------------------------ the cost ceiling
 variable "allowed_instance_types" {
   description = "Pass-through to terraform-modules/sagemaker-denies, which owns the list (Lesson 33 - structure and values are both one copy). null, the default, means \"whatever the shared module says\" - which is what every caller should want: identity/sso/ composes the same fragment for the six persona sets, and a second list here is the divergence the shared module exists to prevent."

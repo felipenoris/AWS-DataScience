@@ -998,3 +998,597 @@ Account ids are replaced by the account's name in angle brackets.*
     `eighth-experimentation`, which comes before 1.5 writes the default and which 1.5 retires;
   - the waiting list's Stage 19 rows read current: the mirror, the GitLab password's rotation, the
     AppleDouble objects, verification v's look, decision 17 (d)'s report and pass 2's portal acts.
+
+## 2026-11-11 — the estate reviewed against decisions 17 to 20; pass 4 opened with nothing up
+
+A new session, on the branch `claude/pr-284-smus-pipeline-d233a3`, cut from `main` at `d423543c`
+([PR #284](https://github.com/felipenoris/AWS-DataScience/pull/284)'s squash). The session that ran
+pass 1 answered that it leaves the stage and holds nothing open.
+
+- **[user]**, verbatim: *"O PR #284 envolveu algumas decisões importantes para o projeto, o que implicou
+  em mudanças relevantes. Em especial, a esteira de promoção de aplicação SMUS deixou de ter o stage
+  "test", publicando sandbox -> staging -> production. Entendo que isso tem efeitos colaterais na esteira
+  implementada via gitlab CI/CD. Peço que faça uma revisão ampla do plano, considerando as decisões
+  tomadas no PR #284, no sentido de mapear todas as alterações necessárias no ambiente para adequá-lo às
+  decisões tomadas. Revise os planos, as etapas necessárias para implementação das mudanças, e os
+  artefatos de documentação, considerand o que foi feito no PR #284. Considerando o ambiente fora do ar
+  (ou seja, sem rodar make up), o usuário sso infra atualmente logado, faça toda a preparação e
+  implantação do que for possível de ser implantado neste momento, além de planejamento das etapas que
+  envolvem a implementação das alterações necessárias bem como o restante to stage 19. Autorizo todas as
+  escritas e applies necessárias no ambiente considerando este pedido."*
+- **[Claude] The sessions told** before the first write: the two peers on this laptop, the session of
+  pass 1 and its fork, each with the list of slices this sitting writes.
+- **[Claude] The identity**: `sts get-caller-identity` on `awsds-infra-identity`, `-data`, `-sandbox-1`,
+  `-staging` and `-prod` answers `InfrastructureAccess`, and on `awsds-policy-canary`
+  `AWSAdministratorAccess`, all as the infrastructure user.
+
+**4.1, the `Workloads` SCP (decision 13 (b)).**
+
+- **[Claude] Written**: `DenyDataZoneEntirely` gains `ArnNotLike` on `aws:PrincipalArn` for the SSO
+  `InfrastructureAccess` role (the baseline's pattern), `awsds-deploy-*` and `datazone_usr_role_*`, and
+  `DenyDataZoneSubscriptionRequests` is new beside it; `POLICIES.md`'s two rows, the document's
+  description (403 characters of 512), the battery's rows (the two `ListDomains` rows turned to `allow`,
+  a `CreateSubscriptionRequest` row and Staging's `CreateSpace` row added) and the wildcard check's
+  whitelist entry with its reason.
+- **[Claude] The battery before**, `./aws/probes/scp-battery.py --phase ou` at 04:29:14 UTC, with the
+  rows as `main` holds them: *"49 as expected, 0 unexpected, 5 not measured"*, both `ListDomains` rows
+  `DENY-SCP p-83t232f4`.
+- **[Claude] The deny half, on a candidate parked on `Policy Test`.** The infrastructure user is one of
+  the three excepted principals, so no profile in a `Workloads` account reads the deny. The candidate is
+  the document's two DataZone statements alone, created as `awsds-infra-identity` under the delegation's
+  `DelegatePolicyLifecycleToIdentity`:
+  - 04:30:47, the canary with nothing parked: `datazone list-domains` answers `{"items": []}`, and
+    `create-subscription-request` on a domain, a listing and a project that do not exist answers
+    DataZone's own *"User is not permitted to perform operation: CreateSubscriptionRequest"*, the wording
+    that proves authorization was reached;
+  - 04:31:17, `create-policy` answers `p-oktjrbxv`; 04:31:41, attached to `Policy Test`
+    (`ou-zhj6-ebwso7wp`), which carried `FullAWSAccess` and Control Tower's two guardrail documents;
+  - 04:31:51, the canary's `list-domains` is refused; at 04:32:59 `list-domains`,
+    `list-environment-blueprints` and `create-subscription-request` each read *"with an explicit deny in
+    a service control policy"* naming `p-oktjrbxv`, while `sts get-caller-identity` and `ec2
+    describe-vpcs` answer;
+  - 04:33:14 detached, 04:33:15 deleted; `Policy Test` carries its three documents again and no
+    `awsds-canary*` policy is listed. `list-domains` is still refused at 04:33:33, 04:33:40 and 04:34:01
+    and answers at 04:34:22, 68 s after the detach (`SUP-350`).
+- **[Claude] Planned** as `awsds-infra-identity` at 04:35:31 UTC, `-input=false`:
+  `aws_organizations_policy.this["awsds-org-scp-ou-workloads"]` updated in place and nothing else, the
+  condition, the new statement and the description, 2,499 to 2,840 bytes; saved as
+  `$HOME/tmp/stage19-scp-41.tfplan`. **The apply was refused to Claude** by the app's auto-mode
+  classifier (*Protected-Scope IaC Apply*), the user's authorization in chat notwithstanding, as at
+  Stage 18 1.3: it is the user's, from the saved plan.
+
+**4.2, the association.**
+
+- **[Claude] The console's act read in the trail.** Data Governance's CloudTrail for 2026-10-19 04:00 to
+  04:06 UTC, the user's association of Staging at Stage 18 2.1: `ram:GetResourceShares` by the
+  permission `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`, `ram:AssociateResourceShare`
+  with one principal at 04:03:13, and `datazone:PutDomainSharingPolicy` at 04:03:14, invoked by
+  `ram.amazonaws.com` in the same session. No other write (`SUP-349`).
+- **[Claude⚡] Associated by that call**, as `awsds-infra-data`, at 04:37:18 UTC: `ram
+  associate-resource-share` on `DataZone-EXTENDED_ACCESS-dzd-d8yrvx1ko7im6o-ORG-ONLY` with Staging's and
+  Production's account ids, read from STS. Both answer `ASSOCIATING`, then `ASSOCIATED` at 04:37:19; the
+  trail holds the call and two `PutDomainSharingPolicy` (04:37:20, 04:37:21), each policy naming three
+  principals. The share's principals are Sandbox (2026-08-21), Staging and Production; no invitation
+  exists in either account, and each reads the share `ACTIVE` as `OTHER-ACCOUNTS`. The DataZone
+  read-back, `list-environment-blueprint-configurations`, is refused to both by the SCP, which still
+  stands whole: it follows 4.1's apply.
+
+**4.3 to 4.5 and 4.8, written and planned.**
+
+- **[Claude] The lists**: `SMUS_ASSOCIATED` and `SMUS_DEPLOYMENT_MEMBERS` gain `staging` and
+  `production`, and `backend.py` emits for the slice name `studio`, with `vpc_slice` (`foundation` in
+  Staging, `workloads` in Production). Over every declared slice, laptop and pipeline, the generated
+  tfvars differ from `main`'s in `governance/`'s `members` alone; the two `studio` slices are new.
+- **[Claude] `staging/studio/` and `production/studio/`** from Stage 18's slice: `sagemaker-prereqs-v0.9.0`
+  with `Tooling` and `DataLake`, the workflows grant with decision 17's `StartDataSourceRun`, the deny
+  on a person's session; copies of each other but for `project-roles.tf` (`check-copies.py`). Both
+  accounts read clean of the names first: no `awsds-<env>-smus-projects` bucket, no project key alias,
+  no `smus` or `datazone_usr_role_*` role, no boundary, no log group. Their Lake Formation settings, the
+  before of 4.6: one administrator, `InfrastructureAccess`, `AllowFullTableExternalDataAccess` unset,
+  `CROSS_ACCOUNT_VERSION` 4, `SET_CONTEXT` `TRUE`, both create-default lists empty. Planned with
+  `-var blueprints_enabled=false` at 04:43:21 (Staging) and 04:43:38 UTC (Production): *"16 to add, 0 to
+  change, 0 to destroy"* each, the two roles and their three managed-policy attachments, the boundary,
+  the key and its alias, the bucket with its five settings, the log group and the person-session
+  policy; saved as `$HOME/tmp/stage19-studio-staging-1.tfplan` and `-production-1.tfplan`. **Staging's
+  apply was refused to Claude** by the classifier, with no reason given; Production's was not tried.
+  Both are the user's.
+- **[Claude] `governance/`**: provider aliases for the two targets, the profiles `deployment-staging`
+  and `deployment-production` (an environment configuration names one account, so one profile per
+  target) behind `deployment_profiles_enabled`, false, their grant to each account's
+  `InfrastructureAccess` session group, and `catalog_import_projects`, empty. Planned at 04:41:40 and
+  04:49:33 UTC as `awsds-infra-data`: `No changes`.
+- **[Claude] The CLI's import read for 4.8**, in the CLI 1.0.9's `helpers/catalog_import.py`,
+  `helpers/catalog_export.py` and `commands/bundle.py`: the import's pre-flight on the domain unit's
+  policy grants (`SUP-351`), and the bundle's silent export failure (`SUP-352`). `list-policy-grants`
+  on the root unit, as `awsds-infra-data`: `CREATE_GLOSSARY` 0, `CREATE_FORM_TYPE` 1, `CREATE_ASSET_TYPE`
+  0, `CREATE_PROJECT_FROM_PROJECT_PROFILE` 2, `ADD_TO_PROJECT_MEMBER_POOL` 1.
+- **[Claude] `<env>/foundation/deploy-project.tf`**, the same file in both targets: one managed policy
+  on the deploy role, created once `deployment_project_role` names the project's role. Both slices plan
+  `No changes` with it empty (04:50 UTC, the alerts var-file from the project folder's `secrets/`);
+  with a placeholder role name the plan reads 2 to add and the policy 13 statements in 3,828
+  characters of 6,144.
+- **[Claude] `staging/egress/` and `production/workloads-egress/`** name `datazone` in their
+  `extra_services`, 8 endpoints each at the next `make up`.
+
+## 2026-11-11 — release T written: the `test` stage retired in the template, the bundle role narrowed
+
+The same sitting, nothing up, no AWS write but the reads below.
+
+- **[Claude] The pipeline's change cut in two releases**, the stage file's §The estate against
+  decisions 17 to 20: T, decision 19 (c) on today's Terraform legs, and F, the CLI's legs (4.9 to
+  4.11). T needs nothing of pass 4.
+- **[Claude] The template, `examples/app-etl/`**: the manifest holds the stage `dev` alone, with
+  `PUBLISH_LISTING` false (decision 20 (b)); `.gitlab-ci.yml`'s job `bundle` stands where `test-deploy`
+  stood, in a stage `bundle`, and the six `needs` that named `test-deploy` name it; the README. The
+  job needs `DOMAIN_ID`, `DOMAIN_REGION` and `DEV_PROJECT_NAME` and gives the other stage variables a
+  placeholder. Read after it: 72 tests passed and 1 skipped, ruff clean, the pinned lint `d856982c`
+  *"ok: 9 arquivo(s)"*, `render-workflow.py --check` and `check-gitlab-ci.py` `OK`.
+- **[Claude] The CLI 1.0.9's `bundle` on the one-stage manifest**, on the laptop in a scratch copy with
+  the two zips built, as `awsds-infra-sandbox-1` (a contributor of `eighth-experimentation`) at 05:01:52
+  UTC, `DEV_PROJECT_NAME` that project: exit 0, *"Bundle created: ./artifacts/app-etl.zip (24076 bytes)"*,
+  11 files, the tree a `test-deploy` bundle carried. Its only refusal is the `GetGroupProfile` warning
+  every caller reads.
+- **[Claude] The same command on a project the caller is no member of**, `governed-lake`, at 05:02:30
+  UTC: exit 0 and the archive written again, after *"ERROR - Failed to get project connections for
+  governed-lake: AWS Permission Error: ... ListConnections operation: User is not permitted to perform
+  operation: ListConnections"*. The job's guard was first written from the code, on the string *"Error
+  getting DataZone project info"*, which this run does not print; it greps the line the run printed,
+  absent from the member's log (`SUP-352`).
+- **[Claude] `sandbox/workflows/deploy-role.tf`**: the role keeps its name and its project reads, gains
+  the export's `Search`, `SearchTypes`, `GetAsset` and `GetDataProduct`, loses the workflow, log-group,
+  S3 and key statements and the `PassRole`, and its ceiling denies every role change and every
+  `PassRole`; `test_project_role` and the key alias read leave the slice. Planned as
+  `awsds-infra-sandbox-1` at 05:00:41 UTC: *"0 to add, 3 to change, 2 to destroy"*, the boundary, the
+  role's description and `project-reads` changed, the inline policies `storage` and `workflows`
+  destroyed; saved as `$HOME/tmp/stage19-sandbox-workflows-bundle-role.tfplan`. Not applied: it goes with
+  the template's merge request, since GitLab's `main` still runs `test-deploy`.
+- **[Claude] `./aws/studio.py`** with the deployment targets' rules, on the five infrastructure
+  profiles at 05:05 UTC: all checks passed. `US-2` notes the SCP's refusal in Staging and in Production
+  as 4.1 pending, `US-6` passes on no SageMaker AI domain in either, `US-3` reads Sandbox's 14
+  configurations and `US-4` the three profiles the domain holds.
+- **[Claude] The documents**: the stage file's map of what each decision changes, with the order of the
+  applies; Stage 8's 2.5, 3.3, decision 19 and its standing rows; D41's item 3 note; the application
+  runbook's §O, §L, §M, §P, §T and §S; `promotion.md` §N.8.2 as release T's sitting; `AWS_STATE.md`'s
+  row on the association; `NETWORK.md`, `PRICING.md` and `cost-model.md` for the `datazone` endpoint
+  and the `studio` slices; `SUP-349` to `SUP-352`; the waiting list's two rows. The phrase-level
+  amendments in Stage 10, the decisions and the smaller documents were made by a subagent of this
+  session from the same facts.
+- **[Claude] The `bundle` job's script run as written**, on the laptop with the same identity: with the
+  project the caller belongs to it exits 0 and prints the bundle's SHA256; with `governed-lake` it
+  stops at *"FATAL: the role could not read the project governed-lake: is it a member of it?"*, exit 1.
+- **[Claude] The role-session groups read** in the domain, for the memberships release T and 4.8 move
+  (`search-group-profiles --group-type IAM_ROLE_SESSION_GROUP`, then `get-group-profile` on each: such a
+  profile carries no name, its `rolePrincipalArn` names the role). Five exist: Sandbox's, Data
+  Governance's and Staging's `InfrastructureAccess`, `awsds-deploy-sandbox-test`
+  (`06d426f2-84d6-38ae-a991-6806981d9520`) and `awsds-deploy-staging` (`9bead345-…`, Stage 18's, which
+  outlived that stage's unwinding). Production's `InfrastructureAccess` and `awsds-deploy-prod` have
+  none: neither has called the domain. `test-experimentation`'s members: its owner, one contributor
+  user, Sandbox's `InfrastructureAccess` group and the bundle role's group, a `PROJECT_CONTRIBUTOR`.
+- **[Claude] The gates and the pull request**: `make check` and `make check-ou` `OK`, the commit hooks
+  passing on both commits; the branch at `main`'s tip plus two commits, pushed, and
+  [PR #288](https://github.com/felipenoris/AWS-DataScience/pull/288) opened. The three saved plans
+  (`stage19-scp-41`, `stage19-studio-staging-1`, `stage19-studio-production-1`) wait for the user's
+  apply, and the bundle role's for release T's sitting.
+
+## 2026-11-11 — the `Workloads` SCP and both `studio/` slices applied; the allow half read; the next plans
+
+The same day, a later sitting, nothing up. The user authorized the three saved plans in chat: *"Autorizo
+os 3 applies"*. The app's classifier let each through on that sentence.
+
+- **[Claude] Before the writes**: every `awsds-infra-*` profile answered as `InfrastructureAccess` and
+  the canary's as `AWSAdministratorAccess`; no other session was running on the laptop.
+- **[Claude⚡] The SCP (4.1)**, account Identity, `awsds-infra-identity`, the saved plan
+  `stage19-scp-41.tfplan`: 14:23:31 to 14:23:46 UTC, *"0 added, 1 changed, 0 destroyed"*, `p-83t232f4`
+  at 2,840 bytes. The re-plan reads `No changes` and `./aws/org-policies.py` passes every check.
+- **[Claude⚡] The prerequisites (4.4)**, the saved plans: `staging/studio/` as `awsds-infra-staging`,
+  14:23:58 to 14:25:18 UTC, and `production/studio/` as `awsds-infra-prod`, 14:25:29 to 14:26:49 UTC,
+  each *"16 added, 0 changed, 0 destroyed"*.
+- **[Claude] DataZone from the targets (xviii)**, at 14:27 UTC as each account's `InfrastructureAccess`:
+  `list-domains`, which the SCP refused at 05:05 UTC, answers `dzd-d8yrvx1ko7im6o awsds-studio
+  AVAILABLE`, and `list-environment-blueprint-configurations` answers an empty list.
+- **[Claude] The battery's phase `ou`** at 14:27:22 UTC, 3 min 36 s after the SCP's apply: **52 as
+  expected, 0 unexpected, 5 not measured**. Both `datazone:ListDomains` rows read `ALLOWED`, and both
+  `datazone:CreateSubscriptionRequest` rows `DENY-SCP` naming `p-83t232f4`: the allow half and the
+  subscription deny, measured in the accounts themselves. Report `scp-battery-20261111T112722.txt`.
+- **[Claude] What the first applies created, read back** in both accounts, `<env>` being `staging` and
+  `prod`: the roles `awsds-<env>-smus-provisioning` (created 14:24:08 UTC in Staging, 14:25:38 in
+  Production; trusted by `cloudformation` and `datazone`; `SageMakerStudioProjectProvisioningRolePolicy`)
+  and `awsds-<env>-smus-manage-access` (`AmazonDataZoneGlueManageAccessRolePolicy` and
+  `AmazonDataZoneSageMakerManageAccessRolePolicy`); the policies `awsds-<env>-project-boundary` and
+  `awsds-<env>-person-session-deny`, attached to nothing; the project key behind
+  `alias/awsds-<env>-project`, `Enabled`, customer-managed; the bucket `awsds-<env>-smus-projects`,
+  versioned, its four public-access blocks on, `aws:kms`; the log group `/awsds/<env>/studio` at 30
+  days. Lake Formation in each still reads one administrator and the flag unset.
+- **[Claude] The configurations planned (4.4's second apply)**, with no `-var`: Staging at 14:30:12 UTC,
+  Production at 14:30:33 UTC, each *"5 to add, 2 to change, 0 to destroy"*. To add: the `Tooling` and
+  `DataLake` configurations, their two `create_environment_from_blueprint` grants and
+  `awsds-<env>-workflows`. To change: the project key's policy, which gains
+  `GrantKMSPermissionsForAllProjectRoles` and `AllowCreateGrantForProjectRoles`, and the
+  person-session policy, whose document is known after apply and whose content does not change.
+  Staging's configurations point at `vpc-0a2dadcbab22702e7`, Production's at VPC-Workloads,
+  `vpc-06e421bd113984822`. Saved as `$HOME/tmp/stage19-studio-staging-2.tfplan` and
+  `stage19-studio-production-2.tfplan`.
+- **[Claude] Staging's second apply refused by the classifier** at about 14:31 UTC, *Protected-Scope
+  IaC Apply*: the user's sentence named three applies and this is a fourth. Not retried; it and
+  Production's wait for the user's word or hand.
+- **[Claude] Production's `InfrastructureAccess` had no profile in the domain** after the reads of
+  14:27 UTC: `search-user-profiles --user-type DATAZONE_IAM_USER` listed the same role of Sandbox, Data
+  Governance and Staging and not Production's, and Cloud Control's `<domain>|<role ARN>` read answered
+  `NotFound`, where `governance/`'s plan with the profiles on would have stopped. Read call by call
+  from `awsds-infra-prod`: `list-projects` (14:36:52 UTC, four projects) and `get-domain` (14:37:21)
+  left it `NotFound`; four seconds after `get-project` on `governed-lake` (14:37:28) the group profile
+  read `ASSIGNED`, `ca2735c9-66e3-3eea-9434-c8de08536d0b`. As a non-member the role was answered
+  `GetProject`, `ListProjectMemberships` (three members) and `ListEnvironments` (`Tooling`), and
+  refused `ListConnections` (`SUP-157`). `SUP-159` carries the reading.
+- **[Claude] `governance/`'s profiles planned as a rehearsal (4.5)**, `deployment_profiles_enabled`
+  true in the working tree alone and put back, as `awsds-infra-data` from 14:39:04 to 14:39:36 UTC:
+  *"4 to add, 0 to change, 0 to destroy"*, `deployment-staging` and `deployment-production` (each
+  `Tooling` `ON_CREATE` at order 0 with its seven overrides and `DataLake` `ON_DEMAND` at order 1,
+  `ENABLED`) and their `CREATE_PROJECT_FROM_PROJECT_PROFILE` grants on the root unit; nothing on
+  `experimentation` or `lake-publishing`. The data sources read both targets' session groups,
+  Staging's `65b0f127-7cf5-4201-89ee-73b420b5f958`. The plan of record is taken after the second
+  `studio/` applies, the switch committed with it.
+- **[Claude] `./aws/studio.py`** at 14:40 UTC on the five infrastructure profiles and the canary: 0
+  checks failed. `US-2` passes on both targets seeing the shared domain and owning none, `US-3` notes
+  no configuration in either until the second apply, `US-6` passes on no SageMaker AI domain.
+
+## 2026-11-11 — the configurations and the profiles applied; `deploy-staging` and `deploy-production` created with their database
+
+The same day, nothing up. The user authorized the five steps listed in chat, the two second `studio/`
+applies, `governance/`'s profiles and each target's project with its database: *"Autorizo os 5 passos"*.
+The app's classifier let every call through.
+
+- **[Claude] Before the writes**, 15:17 UTC: the three profiles answered as `InfrastructureAccess`; the
+  one other session on the laptop, idle, was told of the writes and of the slices applied from this
+  branch.
+- **[Claude⚡] The configurations (4.4's second apply)**, from the saved plans: `staging/studio/` 15:18:06
+  to 15:18:41 UTC and `production/studio/` 15:18:55 to 15:19:28 UTC, each *"5 added, 1 changed, 0
+  destroyed"*, the person-session policy's document unchanged once known. Both re-plan `No changes`.
+  From each target `list-environment-blueprint-configurations` reads `Tooling` (`4k186sfh08eqxc`) and
+  `DataLake` (`d8w7c3fmbsz5cg`), each with the account's provisioning role, manage-access role, D13
+  boundary, VPC and two private subnets, `Tooling` with the projects bucket as its S3 location.
+- **[Claude⚡] The profiles (4.5)**, `deployment_profiles_enabled` true, planned as `awsds-infra-data` at
+  15:20:35 UTC: *"4 to add, 0 to change, 0 to destroy"*, the grants naming Staging's group
+  `65b0f127-…` and Production's `ca2735c9-…`. The apply, 15:21:15 to 15:21:42 UTC, created
+  `deployment-staging` (`cpkm68sz0l185s`), `deployment-production` (`3o9zp0asbh2gi8`) and Production's
+  grant, and failed on Staging's: *"failed conditions: VERSION EQ [S] (Service: DataZone, Status Code:
+  409 ...). ErrorCode: ResourceConflict"*, the two grants of one type on one unit created at once
+  (`SUP-353`). `list-policy-grants` read that grant absent; the re-plan read 1 to add, and its apply,
+  15:22:50 to 15:23:10 UTC, created it. The re-plan after it reads `No changes`; the switch is
+  committed (`7792da20`).
+- **[Claude] Before the projects**, 15:25 UTC, both targets: Lake Formation with one administrator, the
+  flag unset, `CROSS_ACCOUNT_VERSION` 4, `SET_CONTEXT` `TRUE`, no registered location; no
+  `datazone_usr_role_*` role, no `DataZone-Env-*` stack, no Access Grants instance; the Glue databases
+  `app_outputs`, `curated` and `raw`, and `default` in Staging alone.
+- **[Claude⚡] `deploy-staging` (4.6)**, `create-project` from `deployment-staging` as
+  `awsds-infra-staging` at 15:25:59 UTC: `5ido8bej1zoeq8`. Its `Tooling` environment (`d6nu5aphq1e974`)
+  read `ACTIVE` and the project `SUCCESSFUL` at 15:27:41 UTC, the stack created at 15:26:13. Then the
+  database: `create-environment` with the profile's `DataLake` configuration (`d8f802ad-…`), the
+  blueprint and `--user-parameters name=glueDbName,value=app_etl`, named `deploy-staging-app-etl`, at
+  15:28:27 UTC: `54jhe9989w0tcg`, `ACTIVE` at 15:29:07.
+- **[Claude⚡] `deploy-production` (4.6)**, the same two calls as `awsds-infra-prod`: the project
+  `d7qcazihvr3s7k` at 15:29:29 UTC, its `Tooling` (`59niwej9axztow`) `ACTIVE` at 15:31:00 and the
+  project `SUCCESSFUL` at 15:31:18; the environment `deploy-production-app-etl` (`azkybvkz7iea34`, the
+  configuration `f403ecfc-…`) at 15:31:41 UTC, `ACTIVE` at 15:32:24.
+- **[Claude] What provisioning created (3.2 and 3.3's readings), the same in both accounts**: the
+  `Tooling` stack's thirteen resources, Stage 18's list, with `enableSpaces` `false`, the account's D13
+  boundary as `permissionsBoundaryArn`, and no SageMaker AI domain; the project role
+  `datazone_usr_role_<project>_<environment>` and the two Bedrock roles, all three under the boundary;
+  the security group `datazone-<project>-dev` in the account's compute VPC, all traffic in from itself
+  and out to `0.0.0.0/0`; two Glue network connections; the log group `datazone-<project>-dev` at 731
+  days under the project key; nine connections; five objects under the project's prefix; the Access
+  Grants instance `default` and `AWSServiceRoleForAmazonAthena`. Each project has two members: the
+  account's `InfrastructureAccess` session group as `PROJECT_OWNER`, and the project role's own IAM
+  user profile as `PROJECT_CONTRIBUTOR`.
+- **[Claude] Lake Formation after it**: the provisioning role's three `PutDataLakeSettings` (15:26:05
+  UTC in Staging, 15:29:35 in Production) added `awsds-<env>-smus-provisioning` and
+  `awsds-<env>-smus-manage-access` beside `InfrastructureAccess`, kept the parameters and both empty
+  create-default lists, and set `AllowFullTableExternalDataAccess` `true` in both accounts (`SUP-170`).
+  The project's `dev` prefix is registered under the project role, hybrid access off. `staging/data/`
+  and `production/data/` plan `No changes`, and `DT-5` passes. Production holds a `default` Glue
+  database it did not have. **The flag is 4.7, the user's**: `TM-26`'s Production half is open again
+  since 15:29 UTC.
+- **[Claude] The database (verification xix)**: `app_etl` in each account, *"Created by DataZone for
+  project deploy-<env>"*, its location the project's `dev/data/catalogs/`, no create-table default, no
+  table. On it the account's `IAMPrincipals` hold `CREATE_TABLE`, `DESCRIBE` and `DROP` under
+  `context.datazone.projectId=="<project>"`, and `SELECT`, `INSERT`, `DELETE`, `ALTER`, `DROP` and
+  `DESCRIBE` on its tables; the provisioning role `ALL`, grantable; the manage-access role
+  `CREATE_TABLE` and grantable `DESCRIBE`, with grantable `DESCRIBE` and `SELECT` on the tables, its
+  `CreateLakeFormationOptIn` passing. The source `<account>-AwsDataCatalog-app_etl-default-datasource`
+  is `READY`, enabled, `publishOnImport` false, daily at the minute of its creation (`cron(28 15 * * ?
+  *)` in Staging, `cron(32 15 * * ? *)` in Production), its filter `app_etl` `INCLUDE *`. **The
+  environment carries a subscription target**, `deploy-<env>-app-etl-default-target`, for
+  `GlueTableAssetType` and `GlueViewAssetType`, its `databaseName` `app_etl`, its manage-access role the
+  project role, its principal `abac:CURRENT_PROJECT`; the portal's own environment for `app_etl` in
+  `eighth-experimentation` read with none at 15:48 UTC (`SUP-184`).
+- **[Claude] The trails of the two windows**, 233 events in Staging and 245 in Production: the
+  provisioning role made 119 and 120 of them, the DataZone service 39 in each, and
+  `InfrastructureAccess` was the one principal calling `datazone:`. No refusal named an SCP or the
+  boundary: the provisioning role's `athena:GetWorkGroup` and `ListTagsForResource`,
+  `logs:DescribeIndexPolicies` and `DescribeResourcePolicies`, `ec2:DescribeSecurityGroupRules`,
+  `servicequotas:GetServiceQuota` and a first `ec2:CreateSecurityGroup`, and the project role's
+  `s3:CreateAccessGrantsLocation`, Stage 18's list. The manage-access role's `RevokePermissions` from
+  `IAM_ALLOWED_PRINCIPALS` answered `InvalidInputException`, nothing to revoke.
+- **[Claude] The instruments**: `./aws/studio.py` reads the deployment targets' project roles since this
+  sitting, `US-8` passing on three bounded roles in each; at 15:44 UTC 0 checks failed, `US-3` passing
+  on each target's two configurations and `US-4` on the five profiles. `./aws/deploytargets.py` at
+  15:41 UTC: 0 checks failed.
+- **[Claude] The next applies written and planned**, the projects' names in three slices:
+  `project-roles.tf` in each `studio/` (2 to add each, the workflows grant and the person-session deny
+  on the project role); `deployment_project_role` in each `foundation/` (2 to add each, the deploy
+  role's policy and its attachment, the alerts var-file read from the project folder's `secrets/`);
+  `catalog_import_projects` in `governance/` (6 to add, three grants per project as `OWNER`, applied
+  with `-parallelism=1`). Saved under `$HOME/tmp/` as `stage19-studio-staging-3.tfplan`,
+  `stage19-studio-production-3.tfplan`, `stage19-foundation-staging-deploy-project.tfplan`,
+  `stage19-foundation-production-deploy-project.tfplan` and `stage19-governance-catalog-import.tfplan`.
+  Not applied: a round the user has not named.
+
+## 2026-11-11 — the supplement reviewed against the sitting's findings
+
+The same day, nothing up, reads alone, at the user's request: *"Veja oportunidades de atualizar o
+AWS_SUPPLEMENT.md com base nas descobertas desta sessão."* Every finding of the four entries above was
+read against the supplement; the readings below are the ones the review added.
+
+- **[Claude] The domain's IAM user profiles**, `search-user-profiles --user-type DATAZONE_IAM_USER` as
+  `awsds-infra-data` at 15:59 UTC: 50. Thirty are `awsds-deploy-sandbox-test`'s and six
+  `awsds-deploy-staging`'s, each with its own `sessionName` of the form `botocore-session-<digits>`; four
+  are the accounts' `InfrastructureAccess` roles', one each, named for the person; ten are project
+  roles', with no session name, five of them of projects no longer listed. Each detail carries
+  `groupProfileId` (`SUP-158`).
+- **[Claude] The six projects' member lists**, `list-project-memberships` as `awsds-infra-data`, a member
+  of two of them: every project that holds a `Tooling` environment lists its own project role's user
+  profile as `PROJECT_CONTRIBUTOR`, the two deployment projects included; the model governance project,
+  which holds none, lists two groups (`SUP-157`, `SUP-158`).
+- **[Claude] AWS Config and the Glue databases**: in the trails already read, `AWSServiceRoleForConfig`'s
+  `glue:GetDatabase` answered `AccessDenied`, *"An unknown error occurred"*, on Staging's `app_etl` at
+  15:29:52 UTC and on Production's `default` at 15:32:22 and `app_etl` at 15:34:32, each within three
+  minutes of the database's creation. `AWSConfigServiceRolePolicy` is at v97 and allows the action.
+  `configservice list-discovered-resources --resource-type AWS::Glue::Database` at 16:01 UTC returned
+  nothing in Sandbox (nine Glue databases), Data Governance (five), Staging and Production (five each)
+  and Identity (none); the recorder in both targets is Control Tower's, every supported type,
+  continuous (`SUP-355`).
+- **[Claude] Each target's `default` database**: the provisioning role's `ALL` and `IAMPrincipals`'
+  `DESCRIBE` under the project's condition; Staging's existed before the project, Production's was
+  created by the provisioning at 15:30:49 UTC (`SUP-170`).
+- **[Claude] The CLI 1.0.9's `commands/deploy.py`, read again**: the catalog import opens the archive
+  `--bundle-archive-path` names and reads `catalog/catalog_export.json` in it, returning success with no
+  archive, with no such member or with the stage's catalog disabled (`SUP-286`); it returns failure only
+  when every attempted item failed (`SUP-357`).
+- **[Claude] Written in the supplement**: `SUP-354` (a subscription request naming nothing is refused,
+  from the readings of 04:30 and 14:27 UTC), `SUP-355`, `SUP-356` (the `studio/` plans' two changes and
+  their applies' one) and `SUP-357`; readings appended to `SUP-157`, `SUP-158`, `SUP-170`, `SUP-184` and
+  `SUP-286`; `SUP-353` named among the Terraform section's pointers.
+
+## 2026-11-11 — the user's acts and the next applies asked of Claude, each refused by the app's classifier
+
+The same day, nothing up. No write reached AWS in this entry.
+
+- **[user]**, verbatim: *"Sobre "atos seus" e "os 5 applies seguintes", você pode executar todos esses
+  passos?"*, on the flag (4.7), the deploy role's membership (item 12) and the five saved plans.
+- **[Claude] Before the attempts**, 16:08 UTC: the three profiles as `InfrastructureAccess`; the one
+  other session on the laptop told. Production's trail of 2026-10-25 read for the console's own write
+  of the flag: one `PutDataLakeSettings` at 17:44:31 UTC carrying the whole structure with
+  `allowFullTableExternalDataAccess` `false`, after which the key reads absent (`SUP-112`).
+- **[Claude] Three calls refused by the app's auto-mode classifier, none retried**:
+  `lakeformation put-data-lake-settings` in Production, the settings as read with the flag `false`
+  (*Modify Shared Resources*); `datazone create-project-membership` of `awsds-deploy-staging`'s group as
+  `PROJECT_OWNER` of `deploy-staging` (*Permission Grant*, as at Stage 18); and the first of the five
+  applies, `stage19-studio-staging-3.tfplan` (*Protected-Scope IaC Apply*), the user's sentence being a
+  question where the applies of 14:23 and 15:18 UTC followed *"Autorizo"*.
+- **[Claude] Read after them**, 16:10 UTC: the flag `true` and three administrators in both targets,
+  `deploy-staging`'s two members, the project role's three managed policies. Nothing changed. The two
+  acts stay the user's, and the five applies wait for the user's word naming them or the user's hand.
+
+## 2026-11-11 — the next applies run: the project roles' grants, the deploy roles' policy, the CLI import's grants
+
+The same day, nothing up. The user, verbatim: *"Autorizo os 5 applies"*. The app's classifier let each
+through.
+
+- **[Claude] Before the writes**, 16:15 UTC: the three profiles as `InfrastructureAccess`; the one other
+  session on the laptop, told of these applies at 16:08 UTC, idle.
+- **[Claude⚡] `staging/studio/` and `production/studio/`**, from the saved plans, 16:15:49 to 16:16:02
+  UTC and 16:16:11 to 16:16:22 UTC: each *"2 added, 0 changed, 0 destroyed"*, `awsds-<env>-workflows` and
+  `awsds-<env>-person-session-deny` attached to the project role.
+- **[Claude⚡] `staging/foundation/` and `production/foundation/`**, 16:16:33 to 16:16:45 UTC and
+  16:16:55 to 16:17:09 UTC: each *"2 added, 0 changed, 0 destroyed"*, `awsds-<env>-deploy-project` and its
+  attachment to the deploy role.
+- **[Claude⚡] `governance/`**, with `-parallelism=1`, 16:17:19 to 16:18:31 UTC: *"6 added, 0 changed, 0
+  destroyed"*, the three grants of each project, each created in 6 to 13 s with no conflict (`SUP-353`).
+- **[Claude] Read after them**: the five slices re-plan `No changes`, 16:18 to 16:20 UTC, the
+  foundations with the alerts var-file. Each project role carries its three AWS policies and the two of
+  `studio/`. Each deploy role carries three managed policies; `awsds-<env>-deploy-project` is at `v1`
+  with 13 statements, 3,828 characters in Staging and 3,816 in Production, its `PassRole` naming the
+  project role and its workflow statements the project's id. The root unit reads `CREATE_GLOSSARY` and
+  `CREATE_ASSET_TYPE` for both deployment projects as `OWNER`, and `CREATE_FORM_TYPE` for them and
+  `eighth-experimentation`.
+- **[Claude] The deploy roles' grants simulated**, `iam simulate-principal-policy` as each account's
+  `InfrastructureAccess` at 16:28 UTC, the context naming `aws:RequestedRegion` (`SUP-008`):
+  `datazone:GetProject`, `ListConnections`, `CreateAsset`, `CreateGlossary` and `ListPolicyGrants`,
+  `airflow-serverless:ListWorkflows` and, with the project's tag, `CreateWorkflow` read `allowed` under
+  the boundary and the organization; `datazone:AddPolicyGrant` `implicitDeny`;
+  `datazone:CreateSubscriptionRequest` `explicitDeny`, the organization's; `iam:PassRole` of the project
+  role to `airflow-serverless.amazonaws.com` and `kms:GenerateDataKey` on the project key `allowed`; with
+  `aws:ResourceOrgID` in the context, `s3:PutObject` and `GetObject` `allowed` under the project's
+  `shared/` prefix and `implicitDeny` under `dev/`. The deploy boundary's document, read beside it, is
+  `Allow *` with four denies on role and boundary changes. A simulation, not an exercise: the roles'
+  first calls are release F's.
+- **[Claude] The instruments**, 16:21 to 16:25 UTC: `./aws/studio.py`, `./aws/deploytargets.py` and
+  `./aws/cicd.py`, 0 checks failed each; `CI-2` reads both deploy roles under their boundary.
+- **[Claude] What pass 4 still owes with nothing up**: the flag (4.7) and `awsds-deploy-staging`'s
+  membership of `deploy-staging`, both the user's.
+
+## 2026-11-11 — the project role's reach in Production read; the instruments extended to the two projects
+
+The same day, nothing up, reads alone. Asked what could be advanced with nothing up, Claude named this
+review and the instruments; the user, verbatim: *"Sim, faça os dois"*.
+
+- **[Claude] The role's policies**, `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow`, read at 17:24 UTC
+  as `awsds-infra-prod`: `SageMakerStudioProjectUserRolePolicy` v76 (162 statements, 55,309 characters),
+  `SageMakerStudioProjectRoleMachineLearningPolicy` v47 (90, 32,586),
+  `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy` v9 (13, 4,720), `awsds-prod-workflows` and
+  `awsds-prod-person-session-deny` (4 each), no inline policy; the boundary `awsds-prod-project-boundary`,
+  9 statements, `Allow *` with denies on the lake's prefixes, the lake's data key and five job settings;
+  17 tags, `EnableAmazonBedrockPermissions` `true` among them.
+- **[Claude] The statements classified**: 269 allow statements, 179 with a write action, 98 of them
+  naming the project through `${aws:PrincipalTag/...}` and 81 not (`SUP-358`).
+- **[Claude] What the unbound allows meet, read from the resources' side.** Trust policies, in the
+  five accounts with a profile (53, 34, 45, 31 and 19 roles): `AWSControlTowerExecution` alone trusts a
+  root, the management account's; none trusts its own account's root or any principal. Tags in
+  Production: no resource wears `for-use-with-all-datazone-projects`; the project's tag is on ten
+  resources, all its own; the eight secrets carry no DataZone tag. Lake Formation: `IAM_ALLOWED_PRINCIPALS`
+  holds `ALTER`, `CREATE_CATALOG` and `CREATE_DATABASE` on the catalog; `curated`, `raw` and
+  `app_outputs` are granted to named principals, every page read. The Access Grants instance: one
+  location, the project's prefix under the project role, no grant, no resource policy. Key policies:
+  the keys of GitLab, the state, the PKI state, the registry, the proxy log and the projects delegate
+  `kms:*` to the account's IAM; the data key names its principals. Bucket policies: no hub bucket
+  allows the account's root or any principal.
+- **[Claude] The simulator calibrated**: `s3:GetObject` on the project's own prefix read `implicitDeny`
+  until the context carried the role's tags as `aws:PrincipalTag/<key>`; `MissingContextValues` named
+  none of them (`SUP-008`).
+- **[Claude] Simulated as the role**, the Region, the organization id and the role's tags in the
+  context. `implicitDeny`: `GetSecretValue` and `PutSecretValue` on GitLab's secrets, the deploy runner's
+  token and the warehouse admin secret; `ssm:StartSession` and `SendCommand`, `ec2:StartInstances`,
+  `StopInstances` and `ModifyInstanceAttribute`; `GetObject`, `PutObject` and `ListBucket` on each hub
+  bucket called directly; a location on a hub bucket; `kms:Decrypt` on GitLab's key called directly; a
+  pass of the job role; five IAM writes; the pipeline's Glue job; `PutImage` on the deploy image's
+  repository; the chain, a schedule, a workflow with no project tag, the model registry, the alerts
+  topic, a hub log group, `lambda:` and `cloudformation:` writes; `redshift-serverless:GetCredentials`
+  called directly and the Data API on an untagged workgroup; `ec2:CreateVpcEndpoint` on a subnet and a
+  security group, and the security-group and route writes. `allowed`: `secretsmanager:ListSecrets`;
+  `sts:AssumeRole` on the deploy role, the runner's role and the job role; `kms:Decrypt` and
+  `GenerateDataKey` through S3 on the keys of GitLab, the state, the data and the projects; the object
+  reads and writes on a hub bucket for a request carrying Access Grants credentials;
+  `s3:PutAccessGrantsInstanceResourcePolicy`; `glue:DeleteDatabase` and `CreateDatabase` on `curated`
+  and the catalog, and the table reads and writes there under `glue:LakeFormationPermissions`
+  `Enabled`; `lakeformation:BatchGrantPermissions`, `GetDataAccess` and `CreateDataCellsFilter`; the
+  pull of the deploy image; `bedrock:InvokeModel` on a foundation model; AgentCore's
+  `StartBrowserSession`, `StartCodeInterpreterSession` and `InvokeCodeInterpreter`; `q:SendMessage`,
+  `codewhisperer:GenerateRecommendations`, `bedrock:GenerateQuery`, `datazone:GenerateCode`;
+  `GetCredentials` on any workgroup through `sqlworkbench` or the Data API, with
+  `sqlworkbench:CreateConnection` and `DriverExecute`; `datazone:CreateAsset` and
+  `CreateListingChangeSet`. `explicitDeny`, the organization's: `datazone:CreateSubscriptionRequest`.
+  Not read: the SageMaker job calls, whose organization statements need the request's settings.
+- **[Claude] The routes of the projects' subnets**, both targets: the VPC, the S3 and DynamoDB
+  gateways, and a peering to VPC-Networking's four ranges; `NETWORK.md`'s proxy planes
+  `production-workloads` and `staging-foundation` hold no entry. No organization policy names a Glue
+  job's network.
+- **[Claude] `./aws/deploytargets.py`**, 17:39 UTC: `DT-13`, the full-table flag, fails in both targets
+  (`EXC-23`), the script's only two failures; `DT-14` passes its four rows in each, Production's on
+  eight secrets and one location.
+- **[Claude] `./aws/studio.py`**, 17:43 UTC, 0 checks failed: `US-8` reads the domain account's three
+  blueprint roles under `awsds-data-project-boundary` beside the others; `US-11` reads `deploy-staging`
+  and `deploy-production` alone in their targets, two environments `ACTIVE` each, with their
+  subscription targets; `US-12` reads 22, 28, 13 and 15 roles in Sandbox, Production, Staging and Data
+  Governance, none trusting its account's root or any principal.
+- **[Claude] `./aws/catalog.py`**, 17:46 and 17:48 UTC, all checks passed. Before the change it already
+  read the two projects' sources as Data Governance's `InfrastructureAccess`, a member of neither
+  (`SUP-157`): one Glue source each over `app_etl`, no publish on import, no generated names, no run
+  yet. After it `CT-13` reads four trails and `CT-14` passes on both projects.
+- **[Claude] Written**: `TM-30`; decision 21, due and the user's; `INV-22` and `EXC-23`; `SUP-358` and
+  the readings on `SUP-008` and `SUP-157`; `NETWORK.md`'s row on the projects' groups, from the routes
+  read; `aws/INDEX.md`.
+
+## 2026-11-11 — decision 21 taken as (b): the fence written in the boundary module, tagged and planned
+
+The same day, nothing up, no AWS write. The user, verbatim: *"(b) deny no boundary"*.
+
+- **[Claude] The module**, `terraform-modules/sagemaker-prereqs/`: seven inputs, each off by default
+  (`fenced_bucket_names`, `fence_customer_keys`, `fenced_secret_names`, `fence_role_assumption` with
+  `assumable_role_arns`, `fenced_repository_names`, `fenced_services`), and in the boundary one deny
+  per input that names something. The key statement denies `kms:*` on the account's keys whose
+  aliases are neither the project key's nor `alias/aws/*`, by `ForAllValues:StringNotLike` on
+  `kms:ResourceAliases`. Validated alone.
+- **[Claude] The callers**, `production/studio/` and `staging/studio/`: `main.tf`, a copy in both, sets
+  the same fence, and `fence.tf`, the account's own beside `project-roles.tf`, lists the buckets and
+  repositories: six buckets and `awsds-prod-ecr-deploy` in Production, three buckets in Staging, each
+  list every bucket of the account but the projects bucket (`s3api list-buckets`, read that hour).
+- **[Claude] Rehearsed against the local module** before the tag (18:03 and 18:04 UTC): *"0 to add, 2 to
+  change, 0 to destroy"* in each, the boundary and the person-session policy, whose document is known
+  after apply (`SUP-356`). The boundary goes from 9 statements and 2,425 characters to 15 and 3,766 in
+  Production and to 14 and 3,402 in Staging, of 6,144.
+- **[Claude] Simulated as Production's project role under the planned document**
+  (`--permissions-boundary-policy-input-list`, the Region and the role's tags in the context).
+  `explicitDeny`, the boundary's: `sts:AssumeRole` on the deploy role; `kms:Decrypt` through S3 on the
+  keys of GitLab and of the state; `GetObject` and `PutObject` on `awsds-prod-gitlab-backup` and
+  `GetObject` on `awsds-prod-tfstate` with Access Grants credentials; `GetSecretValue` on GitLab's
+  secrets and on the warehouse admin secret; the pull of the deploy image; `bedrock:InvokeModel`;
+  AgentCore's `StartBrowserSession`; `q:SendMessage`, `codewhisperer:GenerateRecommendations`,
+  `bedrock:GenerateQuery`. `allowed`: the project's own prefix, read and written; the project key and
+  an `alias/aws/s3` key through S3; the pull of the application's image; the pass of itself to Glue;
+  `datazone:CreateAsset` and `CreateListingChangeSet`, `lakeformation:GetDataAccess`,
+  `secretsmanager:ListSecrets`; the table writes of `app_etl`; a Glue job's log group; the
+  warehouse's credentials through the Data API, left for 4.11.
+- **[Claude] The tag**: the module's commit `4c6bb4f2`, then `sagemaker-prereqs-v0.10.0` on it, the
+  latest on origin being `v0.9.0`; `git ls-remote --tags origin` answers the tag at that commit.
+- **[Claude] Planned against the tag**, 18:08 and 18:09 UTC, both slices re-initialised: the same two
+  changes in each, the boundary's new statements `DenyTheAccountsOwnBuckets`,
+  `DenyCustomerKeysButTheProjectKey`, `DenyTheAccountsOwnSecrets`, `DenyAssumingAnyRole`,
+  `DenyServicesNoProjectUsesHere` and, in Production, `DenyTheAccountsOwnRepositories`. Saved as
+  `$HOME/tmp/stage19-studio-production-fence.tfplan` and `stage19-studio-staging-fence.tfplan`. Not
+  applied.
+- **[Claude] `./aws/deploytargets.py`** reads the boundary's fence and every bucket of the account
+  against it (`DT-14`): run after the change, 4 checks failed, `DT-13` and the fence's row in each
+  target, the second until the applies.
+
+## 2026-11-11 — the fence applied in both targets; the boundary, `DT-14` and each role read under it
+
+The same day, nothing up. The user, verbatim: *"Autorizo os 2 applies"*. The app's classifier let each
+through.
+
+- **[Claude] Before the writes**, 18:24 UTC: both profiles as `InfrastructureAccess`; the one other
+  session on the laptop, idle, told of the two applies at 18:25 UTC.
+- **[Claude⚡] `production/studio/`**, from the saved plan, 18:25:13 to 18:25:31 UTC: *"0 added, 1
+  changed, 0 destroyed"*, `awsds-prod-project-boundary`. The person-session policy, planned as a
+  change, was not updated (`SUP-356`).
+- **[Claude⚡] `staging/studio/`**, from the saved plan, 18:25:44 to 18:25:58 UTC: the same on
+  `awsds-staging-project-boundary`.
+- **[Claude] Read after them**: both slices re-plan `No changes` (18:26 UTC). Production's boundary is at
+  `v2`, the default since 18:25:25 UTC, 15 statements and 3,766 characters, the boundary of 3 roles;
+  Staging's at `v2` since 18:25:53 UTC, 14 statements and 3,402 characters, 3 roles; `v1` stays in each
+  as a non-default version. The new statements: `DenyTheAccountsOwnBuckets`,
+  `DenyCustomerKeysButTheProjectKey`, `DenyTheAccountsOwnSecrets`, `DenyAssumingAnyRole`,
+  `DenyServicesNoProjectUsesHere` and, in Production, `DenyTheAccountsOwnRepositories`.
+- **[Claude] `./aws/deploytargets.py`**, 18:29 UTC: `DT-14` passes every row in both targets, the fence's
+  statements present and every bucket of the account named but the projects bucket, 6 in Production and
+  3 in Staging. 2 checks failed, `DT-13` in each target (`EXC-23`), the flag being the user's.
+- **[Claude] Simulated as Production's project role under the attached boundary**, 18:29 and 18:33 UTC,
+  the Region, the organization id and the role's tags in the context: 40 decisions, the same row for row
+  as under the planned document, run again beside it. 16 `explicitDeny`, each matched in
+  `awsds-prod-project-boundary`: `sts:AssumeRole` on the deploy role; `kms:Decrypt` through S3 on the
+  keys of GitLab and of the state; `GetObject` and `PutObject` on `awsds-prod-gitlab-backup` and
+  `GetObject` on `awsds-prod-tfstate` with Access Grants credentials; `GetSecretValue` on GitLab's
+  secrets and on the warehouse admin secret; the pull of the deploy image; `bedrock:InvokeModel`;
+  AgentCore's `StartBrowserSession` and, on the code interpreter's own resource,
+  `StartCodeInterpreterSession` and `InvokeCodeInterpreter`; `q:SendMessage`,
+  `codewhisperer:GenerateRecommendations`, `bedrock:GenerateQuery`. 23 `allowed`: the project's own
+  prefix, read and written; the project key and an `alias/aws/s3` key through S3; the pull of the
+  application's image; the pass of itself to Glue; `datazone:CreateAsset` and `CreateListingChangeSet`,
+  `lakeformation:GetDataAccess`, `secretsmanager:ListSecrets`; the table writes of `app_etl`; a Glue
+  job's log group; the warehouse's credentials through the Data API. `glue:CreateDatabase` asked with
+  no resource read `implicitDeny` under both documents.
+- **[Claude] What the fence leaves, as the same role**, 18:38 UTC, each `allowed` under the attached
+  boundary: `glue:CreateDatabase` and `DeleteDatabase` on the catalog and on `curated`;
+  `lakeformation:BatchGrantPermissions` and `CreateDataCellsFilter`;
+  `redshift-serverless:GetCredentials` through `sqlworkbench`, with `sqlworkbench:CreateConnection`
+  and `DriverExecute`; the pull of `awsds-prod-ecr-app-etl` and of `awsds-prod-ecr-dev-env`;
+  `datazone:GenerateCode`; `secretsmanager:ListSecrets`; `s3:PutAccessGrantsInstanceResourcePolicy`.
+- **[Claude] Simulated as Staging's project role under its attached boundary**, 18:35 UTC, 39 decisions.
+  16 `explicitDeny`, each matched in `awsds-staging-project-boundary`: `sts:AssumeRole` on
+  `awsds-deploy-staging`; `kms:Decrypt` through S3 on the data key and on the state's key; `GetObject`
+  and `PutObject` on `awsds-staging-outputs`, `GetObject` on `awsds-staging-derived` and on
+  `awsds-staging-tfstate` with Access Grants credentials; `GetSecretValue` on a secret named
+  `awsds-staging-*` and on one named `redshift!*`, the account holding none; Bedrock, AgentCore and the
+  assistants as in Production. 22 `allowed`: the project's own prefix, the project key and an
+  `alias/aws/s3` key through S3, the pull of the application's image from Production's registry (the
+  identity side), the pass of itself to Glue, the domain's calls, the table writes of `app_etl`, a
+  Glue job's log group.
+- **[Claude] The simulator and the key statement**, 18:41 UTC: with no `kms:ResourceAliases` in the
+  context, `kms:Decrypt` on the project key through S3 read `explicitDeny`, the fence's; with the key's
+  alias in the context, `allowed`. GitLab's key read `explicitDeny` both ways (`SUP-008`).
+- **[Claude] A simulation, not an exercise**: neither role has made a call but the provisioning's, and
+  the application first runs as them at release F.
+- **[Claude] Written**: decision 21's note, item 25 and step 7 of the ordered applies; `TM-30`, fenced,
+  with what the fence leaves; `INV-22` and `AWS_STATE.md`'s row on the targets; the fence's row removed
+  from `waiting-on-the-user.md`; the readings on `SUP-008` and `SUP-356`.
+- **[Claude] What pass 4 still owes with nothing up**: the flag (4.7) and `awsds-deploy-staging`'s
+  membership of `deploy-staging`, both the user's.

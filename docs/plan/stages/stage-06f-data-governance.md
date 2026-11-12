@@ -176,8 +176,9 @@ The same-account half of INT-23, and the reading open question 24 still owes.
   session tag, passing `GetDatabase` and `GetTables` (the conditioned grants admitting it, inferred). A
   completed run is ingestion, billed in compute units (Cost); if the runs fail or bill, switching the
   source's schedule off is the user's call, the source then running on demand.
-- **2.1 [user] Name the consumer project**: `test-experimentation` (D41's `test`, which exists), or a
-  new one from the `experimentation` profile. Start no space. **The requester must not be a member of
+- **2.1 [user] Name the consumer project**: `test-experimentation`, which exists (D41's `test` stage
+  until [Stage 19](stage-19-smus-native-data-product.md) decision 19 (c), 2026-11-11; the project stays),
+  or a new one from the `experimentation` profile. Start no space. **The requester must not be a member of
   `eighth-experimentation`.** AWS's approval page (read 2026-10-18) approves a request at creation
   when the requester is an owner or contributor of both projects, and the two live projects share
   their owner (the data scientist user) and a contributor (the Sandbox `InfrastructureAccess` role,

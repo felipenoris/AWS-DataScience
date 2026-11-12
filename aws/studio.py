@@ -17,7 +17,8 @@
 #             python3 aws/studio.py -              # CloudShell, ambient credentials
 #   writes:   aws/output/studio.txt   (untracked - see .gitignore)
 #   reads:    datazone:ListDomains, ListEnvironmentBlueprintConfigurations,
-#             GetEnvironmentBlueprint, ListProjectProfiles, ListProjects,
+#             GetEnvironmentBlueprint, ListProjectProfiles, ListProjects, GetProject,
+#             ListEnvironments, GetEnvironment, ListSubscriptionTargets,
 #             sagemaker:ListDomains, DescribeDomain, ListApps, ListImages,
 #             iam:ListRoles, GetRole,
 #             sso-admin:ListInstances, ListPermissionSets, DescribePermissionSet,
@@ -70,10 +71,26 @@ INTERACTIVE_PROFILES = ("awsds-infra-sandbox-1",)
 # below. The state is not hypothetical - any member retired this way passes through it.
 RETIRED_MEMBER_PROFILES: tuple[str, ...] = ()
 IDENTITY_PROFILE = "awsds-infra-identity"
-# Accounts where nothing DataZone- or Studio-shaped may ever appear (D28: deployment targets
-# stay headless). `awsds-infra-staging` resolves since Stage 6b step 5.0; the account behind it
-# is the renamed `Development`.
+# The deployment targets: no person works there and no SageMaker AI domain may appear (D17). Since
+# Stage 19 decision 6 (b) each is associated to the domain and holds one deployment project, born
+# of its own profile, with two blueprint configurations (DEPLOYMENT_BLUEPRINTS); the Workloads SCP
+# admits this script's InfrastructureAccess session to DataZone there once that stage's step 4.1 is
+# applied, and before it the refusal reads as that step pending. `awsds-infra-staging` resolves
+# since Stage 6b step 5.0; the account behind it is the renamed `Development`.
 HEADLESS_PROFILES = ("awsds-infra-prod", "awsds-infra-staging")
+# What <env>/studio/ configures in a deployment target (Stage 19 step 4.4): Tooling, with spaces off
+# in the deployment profile, and DataLake, the home of an application's product database.
+DEPLOYMENT_BLUEPRINTS = ("Tooling", "DataLake")
+# The deployment profiles, one per target (Stage 19 step 4.5): rows of
+# data-governance/governance/'s locals.tf behind `deployment_profiles_enabled`. Admitted when
+# present, and their absence is no failure: the stage creates them after each target's blueprints.
+DEPLOYMENT_PROFILE_NAMES = ("deployment-staging", "deployment-production")
+# Which target each deployment profile provisions in, whose InfrastructureAccess owns the one
+# project born of it (Stage 19 step 4.6, INV-21).
+DEPLOYMENT_TARGET_OF = {
+    "deployment-staging": "awsds-infra-staging",
+    "deployment-production": "awsds-infra-prod",
+}
 
 # The contracts (see header).
 # Decision 5's category 1 (2026-08-19; docs/SMUS.md carries the reference table): the only
@@ -162,9 +179,9 @@ def main(argv: list) -> int:
     # the owning account separates "a domain was created here" (the violation) from "this
     # account can see the one domain" (step 1.3 working). The id alone cannot tell those apart
     # (Lesson 31).
-    # In the headless accounts the Workloads OU denies datazone:* in full (1c, D26), so an SCP
-    # denial there is the D28 control holding, not a failed call - measured on this script's
-    # first run, 2026-08-16.
+    # In the deployment targets the Workloads OU denied datazone:* in full until Stage 19 step 4.1
+    # excepted InfrastructureAccess, so an SCP denial there is that step not applied yet, not a
+    # failed call.
     SCP_DENIED = "SCP_DENIED"
     dz_domains: dict = {}  # profile -> [(id, name, version, status, owner)] | None | SCP_DENIED
     for p in live:
@@ -261,7 +278,7 @@ def main(argv: list) -> int:
         # console account association the call legitimately fails, so `tolerate` keeps that
         # window from flipping this script's exit code (the seam list-project-profiles uses
         # below).
-        for member in INTERACTIVE_PROFILES:
+        for member in INTERACTIVE_PROFILES + HEADLESS_PROFILES:
             if member not in live:
                 continue
             mcli = cli_for(member)
@@ -435,11 +452,24 @@ def main(argv: list) -> int:
     # holds service-linked roles, which a service creates for itself and a blueprint cannot
     # provision, and /aws-reserved/ holds Identity Center's. Everything a blueprint could
     # have made is at '/', so this costs ~14 GetRole calls per account rather than ~33.
+    #
+    # The deployment targets are read too: a deployment project's Tooling environment creates the
+    # same three roles there (Stage 19 step 4.6), under that account's D13 boundary.
+    #
+    # The domain account is read as well: the lake-publishing project's role lives there (Stage 6f
+    # step 11). The same GetRole answers each role's trust policy. AWS's policy on a project role
+    # allows sts:AssumeRole on every role, so a trust that names the account's root or any
+    # principal is a role the project's code may assume (US-12, TM-30).
     role_rows: dict = {}  # profile -> [(role name, boundary name or '-', how it was found)]
-    for p in INTERACTIVE_PROFILES:
+    open_trust: dict = {}  # profile -> [(role name, whom its trust names)]
+    roles_read: dict = {}  # profile -> how many roles' trust was read
+    for p in INTERACTIVE_PROFILES + HEADLESS_PROFILES + (DATA_PROFILE,):
         if p not in live:
             continue
         cli = cli_for(p)
+        own = next((c.account for c in callers if c.profile == p), None) or ""
+        loose: list = []
+        n_read = 0
         res = cli.run(
             "iam",
             "list-roles",
@@ -468,6 +498,18 @@ def main(argv: list) -> int:
                 logerr(p, f"iam get-role {name}", rr.stderr)
                 continue
             role = json.loads(rr.stdout or "{}").get("Role", {})
+            n_read += 1
+            statements = (role.get("AssumeRolePolicyDocument") or {}).get("Statement") or []
+            for st in statements if isinstance(statements, list) else [statements]:
+                if st.get("Effect") != "Allow":
+                    continue
+                principal = st.get("Principal") or {}
+                named = principal.get("AWS") or [] if isinstance(principal, dict) else principal
+                for who in [named] if isinstance(named, str) else named:
+                    if who == "*":
+                        loose.append((name, "any principal"))
+                    elif own and who in (own, f"arn:aws:iam::{own}:root"):
+                        loose.append((name, "the account's root"))
             tags = {t["Key"]: t.get("Value", "") for t in role.get("Tags", [])}
             by_tag = "AmazonDataZoneDomain" in tags
             by_name = "datazone" in name.lower()
@@ -477,6 +519,92 @@ def main(argv: list) -> int:
             found = "tag" if by_tag else "name"
             rows.append((name, barn.split("/")[-1], found))
         role_rows[p] = rows
+        open_trust[p] = loose
+        roles_read[p] = n_read
+
+    # ------------- the deployment projects: one per target, with its environments (INV-21)
+    deploy_projects: dict = {}  # deployment profile name -> [(project name, id)]
+    deploy_rows: list = []  # (target, project, environment, status, glue database, targets)
+    if DATA_PROFILE in live and domain_id:
+        cli = cli_for(DATA_PROFILE)
+        profile_of: dict = {}  # project id -> its project profile's id
+        for _name, pid, _status in projects:
+            r = cli.run(
+                "datazone",
+                "get-project",
+                "--domain-identifier",
+                domain_id,
+                "--identifier",
+                pid,
+                "--query",
+                "projectProfileId",
+                "--output",
+                "text",
+                log=False,
+            )
+            if r.ok and r.stdout.strip() not in ("", "None"):
+                profile_of[pid] = r.stdout.strip()
+        profile_id = {n: i for n, i, _s in project_profiles}
+        for dname, target in DEPLOYMENT_TARGET_OF.items():
+            if dname not in profile_id:
+                continue
+            mine = [(n, i) for n, i, _s in projects if profile_of.get(i) == profile_id[dname]]
+            deploy_projects[dname] = mine
+            if target not in live:
+                continue
+            tcli = cli_for(target)
+            for pname, pid in mine:
+                res = tcli.run(
+                    "datazone",
+                    "list-environments",
+                    "--domain-identifier",
+                    domain_id,
+                    "--project-identifier",
+                    pid,
+                    "--query",
+                    "items[].[name,id,status]",
+                    "--output",
+                    "json",
+                )
+                if not res.ok:
+                    continue
+                for ename, eid, estatus in json.loads(res.stdout or "[]"):
+                    g = tcli.run(
+                        "datazone",
+                        "get-environment",
+                        "--domain-identifier",
+                        domain_id,
+                        "--identifier",
+                        eid,
+                        "--query",
+                        "provisionedResources[?name=='glueDBName'].value | [0]",
+                        "--output",
+                        "text",
+                    )
+                    glue_db = g.stdout.strip() if g.ok else ""
+                    s = tcli.run(
+                        "datazone",
+                        "list-subscription-targets",
+                        "--domain-identifier",
+                        domain_id,
+                        "--environment-identifier",
+                        eid,
+                        "--query",
+                        "items[].name",
+                        "--output",
+                        "json",
+                    )
+                    targets = ", ".join(json.loads(s.stdout or "[]")) if s.ok else "(not read)"
+                    deploy_rows.append(
+                        (
+                            target,
+                            pname,
+                            ename,
+                            estatus,
+                            glue_db if glue_db not in ("", "None") else "-",
+                            targets or "(none)",
+                        )
+                    )
 
     # ------------------- the step 3 deny, read back from Identity Center (like vpn.py)
     identity_live = IDENTITY_PROFILE in live
@@ -584,10 +712,11 @@ def main(argv: list) -> int:
         if p == DATA_PROFILE or dz_domains.get(p) is None:
             continue
         if dz_domains[p] == SCP_DENIED:
-            checks.ok(
-                "US-6",
+            checks.note(
+                "US-2",
                 f"datazone reads denied in {p}",
-                "the Workloads OU denying datazone:* - D28's headless control holding",
+                "the Workloads SCP still refuses InfrastructureAccess: Stage 19 step 4.1's "
+                "amendment is not applied. After it this session reads the shared domain here.",
             )
             continue
         here = account_of.get(p)
@@ -614,10 +743,23 @@ def main(argv: list) -> int:
                 checks.ok(
                     "US-2",
                     f"{p} sees the shared domain and owns none",
-                    f"{shared_in[0][0]} owned by Data Governance - step 1.3's association, "
-                    "measured rather than read off a console label",
+                    f"{shared_in[0][0]} owned by Data Governance - "
+                    + (
+                        "the deployment target's association (Stage 19 step 4.2)"
+                        if p in HEADLESS_PROFILES
+                        else "step 1.3's association"
+                    )
+                    + ", measured rather than read off a console label",
                 )
-        if not owned and not shared_in:
+        if not owned and not shared_in and p in HEADLESS_PROFILES:
+            checks.fail(
+                "US-2",
+                f"no DataZone domain visible in {p}",
+                "a deployment target is associated to the domain since Stage 19 step 4.2 "
+                "(2026-11-11) and holds a deployment project: an empty answer means the "
+                "association is gone, and the project with it.",
+            )
+        elif not owned and not shared_in:
             checks.note(
                 "US-2",
                 f"no DataZone domain visible in {p}",
@@ -626,10 +768,7 @@ def main(argv: list) -> int:
                 "pending one. Its OU has not changed yet, so datazone: is not denied: the "
                 "call succeeds and returns nothing."
                 if p in RETIRED_MEMBER_PROFILES
-                else "correct before this account's association (Stage 6 step 1.3)."
-                if p in INTERACTIVE_PROFILES
-                else "and none is ever expected - only the Interactive accounts are "
-                "associated (D28), so this is the resting state rather than a pending one.",
+                else "correct before this account's association (Stage 6 step 1.3).",
             )
     if data_live and sm_domains.get(DATA_PROFILE) is not None:
         if sm_domains[DATA_PROFILE]:
@@ -738,6 +877,34 @@ def main(argv: list) -> int:
                     "all inside decision 5's category 1",
                 )
 
+        # A deployment target's configurations: the two <env>/studio/ declares, and no other.
+        for target in HEADLESS_PROFILES:
+            if target not in live or dz_domains.get(target) in (None, SCP_DENIED):
+                continue
+            names = [n for n, _r, _p, _m in bp_configs.get(target) or []]
+            extra = [n for n in names if n not in DEPLOYMENT_BLUEPRINTS]
+            if extra:
+                checks.fail(
+                    "US-3",
+                    f"blueprint outside the deployment project's in {target}",
+                    f"{', '.join(extra)} - a deployment target configures "
+                    f"{' and '.join(DEPLOYMENT_BLUEPRINTS)} alone (Stage 19 step 4.4): no "
+                    "capability a person would use, and nothing Redshift-backed.",
+                )
+            elif names:
+                checks.ok(
+                    "US-3",
+                    f"{len(names)} blueprint configuration(s) in {target}",
+                    f"{', '.join(sorted(names))} - the deployment project's",
+                )
+            else:
+                checks.note(
+                    "US-3",
+                    f"blueprint configurations in {target}",
+                    "none - the account is associated and <env>/studio/'s second apply has "
+                    "not run (Stage 19 step 4.4).",
+                )
+
     # US-4: the project profiles, by their contracted names - and the retired one by its.
     if data_live and domain_id:
         have = {n for n, _i, _s in project_profiles}
@@ -748,6 +915,7 @@ def main(argv: list) -> int:
             | set(WINDOW_PROFILE_NAMES)
             | set(MODEL_GOVERNANCE_PROFILE_NAMES)
             | set(PILOT_PROFILE_NAMES)
+            | set(DEPLOYMENT_PROFILE_NAMES)
         )
         unknown = sorted(have - contracted - set(RETIRED_PROFILE_NAMES))
         window = sorted(have & set(WINDOW_PROFILE_NAMES))
@@ -798,6 +966,13 @@ def main(argv: list) -> int:
                     ", lake-publishing Stage 6f step 11's pilot"
                     if have & set(PILOT_PROFILE_NAMES)
                     else ""
+                )
+                + (
+                    ", "
+                    + " and ".join(sorted(have & set(DEPLOYMENT_PROFILE_NAMES)))
+                    + " Stage 19 step 4.5's"
+                    if have & set(DEPLOYMENT_PROFILE_NAMES)
+                    else ""
                 ),
             )
 
@@ -815,14 +990,18 @@ def main(argv: list) -> int:
                     "puts every app outside the endpoint policies and the flow logs.",
                 )
 
-    # US-6: no SageMaker domain in the headless accounts (D28).
+    # US-6: no SageMaker AI domain in the deployment targets (D17): a deployment project's Tooling
+    # has spaces off and creates none (Stage 18 question i).
     for p in HEADLESS_PROFILES:
         if p in live and sm_domains.get(p):
             checks.fail(
                 "US-6",
                 f"SageMaker domain in {p}",
-                "deployment targets are never associated and never carry a domain (D28).",
+                "a deployment target carries no SageMaker AI domain (D17): its project's "
+                "Tooling has spaces off, and the Workloads SCP denies sagemaker:CreateDomain.",
             )
+        elif p in live and sm_domains.get(p) is not None:
+            checks.ok("US-6", f"no SageMaker domain in {p}", "no interactive surface (D17)")
 
     # US-7: idle shutdown configured on every Interactive domain (step 8), and the admin
     # ceiling beside it, since either half alone is a suggestion.
@@ -885,6 +1064,59 @@ def main(argv: list) -> int:
                 "US-8",
                 f"project-role boundary in {p}",
                 f"all {len(rows)} blueprint-provisioned role(s) bounded ({by_tag} found by tag)",
+            )
+
+    # US-11: each deployment target holds one project, born of its own profile, with every
+    # environment ACTIVE (INV-21). The subscription targets are printed and not judged: a
+    # deployment project subscribes to nothing (Stage 19 decision 14).
+    for dname, target in DEPLOYMENT_TARGET_OF.items():
+        if dname not in deploy_projects:
+            continue
+        mine = deploy_projects[dname]
+        what = f"projects of {dname}"
+        if not mine:
+            checks.note("US-11", what, "none yet - Stage 19 step 4.6 creates the one.")
+            continue
+        if len(mine) > 1:
+            checks.fail(
+                "US-11",
+                what,
+                f"{len(mine)}: {', '.join(n for n, _i in mine)} - a target holds one deployment "
+                "project (INV-21).",
+            )
+            continue
+        envs = [r for r in deploy_rows if r[0] == target and r[1] == mine[0][0]]
+        down = [f"{r[2]} {r[3]}" for r in envs if r[3] != "ACTIVE"]
+        if down:
+            checks.fail(
+                "US-11",
+                what,
+                f"{mine[0][0]}: {', '.join(down)} - an environment that is not ACTIVE pins its "
+                "blueprint configuration (Lesson 39).",
+            )
+        elif envs:
+            checks.ok("US-11", what, f"{mine[0][0]} alone, {len(envs)} environment(s) ACTIVE")
+        else:
+            checks.note("US-11", what, f"{mine[0][0]} alone; its environments were not read.")
+
+    # US-12: where a project role exists, no role's trust names the account's root or any
+    # principal. The trust policy is the one layer between a project role and another role.
+    for p, loose in open_trust.items():
+        if not role_rows.get(p):
+            continue
+        if loose:
+            named = "; ".join(f"{n} trusts {w}" for n, w in loose[:4])
+            checks.fail(
+                "US-12",
+                f"role trust in {p}",
+                f"{named} - AWS's policy allows a project role sts:AssumeRole on every role, so "
+                "this trust is the project's to use (TM-30).",
+            )
+        else:
+            checks.ok(
+                "US-12",
+                f"role trust in {p}",
+                f"{roles_read.get(p, 0)} role(s) read, none trusts the account's root or any principal",
             )
 
     # US-9: the step 3 deny Sids in the persona sets - together or not at all
@@ -977,7 +1209,7 @@ never a compliant one.
             if doms is None:
                 rows.append(f"{p}\t(call failed)\t-\t-\t-\t-")
             elif doms == SCP_DENIED:
-                rows.append(f"{p}\t(denied by SCP - Workloads datazone:* ceiling, D28)\t-\t-\t-\t-")
+                rows.append(f"{p}\t(denied by SCP - Stage 19 step 4.1 not applied)\t-\t-\t-\t-")
             elif not doms:
                 rows.append(f"{p}\t(none)\t-\t-\t-\t-")
             else:
@@ -1039,6 +1271,18 @@ pilot's Tooling (Stage 6f step 11, D22 amended 2026-10-26).""")
                 rep.tabulate(["PROJECT\tID\tSTATUS"] + [f"{n}\t{i}\t{s}" for n, i, s in projects])
             else:
                 rep.line("No project.")
+            if deploy_rows:
+                rep.line()
+                rep.tabulate(
+                    [
+                        "TARGET\tDEPLOYMENT PROJECT\tENVIRONMENT\tSTATUS\tGLUE DATABASE\tSUBSCRIPTION TARGETS"
+                    ]
+                    + ["\t".join(r) for r in deploy_rows]
+                )
+                rep.text("""
+One project per deployment target, born of that target's profile (US-11, INV-21).
+The subscription targets are a reading: a deployment project subscribes to
+nothing (Stage 19 decision 14), and the organization denies it the request.""")
 
         # ==============================================================================
         rep.h1("4. SageMaker AI domains per account (the runtimes - and the negative reading)")
@@ -1057,7 +1301,7 @@ pilot's Tooling (Stage 6f step 11, D22 amended 2026-10-26).""")
         rep.text("""
 Domains belong ONLY in the Interactive columns (the blueprint targets). One in
 Data Governance breaks the registry premise (US-2); one in Production or Staging
-breaks D28 (US-6). VpcOnly and an ENABLED idle setting are steps 1 and 8.
+breaks D17 (US-6). VpcOnly and an ENABLED idle setting are steps 1 and 8.
 
 IDLE SETTINGS carries TWO numbers and step 8.1 rests on the second: the timeout
 is the default a project member may change, `ceiling` is the most they may raise
@@ -1088,7 +1332,7 @@ equivalent) shows up here - and Stage 8 step 1's pipeline is written against it.
         # ==============================================================================
         rep.h1("6. The project roles and their permissions boundary (INT-15)")
         if not role_rows:
-            rep.line("No blueprint-provisioned role in any Interactive account (or not measured).")
+            rep.line("No blueprint-provisioned role in any member account (or not measured).")
         else:
             for p, rows_ in role_rows.items():
                 rep.h2(p)
@@ -1110,6 +1354,18 @@ decides to call a role: the Tooling stack creates AmazonBedrock*Role-<project>-
 <env> beside datazone_usr_role_*, and its two conditional EMR roles - which AWS's
 template leaves with NO boundary - would be named after neither. `name` is the
 legacy datazone* match, kept so an untagged role is reported rather than dropped.""")
+        if open_trust:
+            rep.line()
+            rows = ["PROFILE\tROLES READ\tTRUST NAMING THE ACCOUNT'S ROOT OR ANY PRINCIPAL"]
+            for p, loose in open_trust.items():
+                named = "; ".join(f"{n} ({w})" for n, w in loose) or "none"
+                rows.append(f"{p}\t{roles_read.get(p, 0)}\t{named}")
+            rep.tabulate(rows)
+            rep.text("""
+AWS's SageMakerStudioProjectUserRolePolicy allows a project role sts:AssumeRole
+on every role, so a role's trust policy is what keeps a project's code out of it
+(US-12, TM-30). Service-linked and Identity Center roles are not read: neither
+path's trust names an account.""")
 
         # ==============================================================================
         rep.h1("7. The step 3 deny, per permission set")
@@ -1142,22 +1398,28 @@ What the checks are, and where each comes from:
          (step 0's second preflight; the registry/runtime split)
   US-3   blueprint configurations, read PER ACCOUNT and judged in opposite
          directions: in the domain account none but the lake-publishing pilot's
-         Tooling (D22 amended; Stage 6f step 11), and in each member account none
+         Tooling (D22 amended; Stage 6f step 11), in each Interactive account none
          Redshift-backed and none outside decision 5's category 1 (step 1.4;
-         D12/D26, docs/SMUS.md)
+         D12/D26, docs/SMUS.md), and in each deployment target Tooling and
+         DataLake alone (Stage 19 step 4.4)
   US-4   the `experimentation` project profile exists and no uncontracted one does -
          a stage's window profile is admitted while WINDOW_PROFILE_NAMES names it,
-         the lake-publishing pilot's while PILOT_PROFILE_NAMES does,
+         the lake-publishing pilot's while PILOT_PROFILE_NAMES does, the deployment
+         profiles of Stage 19 step 4.5 once they exist,
          `engineering` was retired by Stage 6b step 1.1 and its return is a failure
   US-5   every Interactive SageMaker AI domain is VpcOnly (step 1)
-  US-6   the deployment targets stay headless (D28): no SageMaker domain there,
-         and datazone reads denied by the Workloads ceiling read as the control
+  US-6   the deployment targets hold no SageMaker AI domain (D17). They are
+         associated to the domain since Stage 19 step 4.2, which US-2 reads
   US-7   idle shutdown ENABLED on every Interactive domain, WITH the admin
          ceiling that bounds what a member may raise the timeout to (step 8.1)
   US-8   every blueprint-provisioned project role carries the D13 boundary
          (step 2, INT-15 - presence half only)
   US-9   the step 3 deny Sids reach all six persona sets together (Lesson 14)
-  US-10  running apps reported as the burn they are (conventions 6)""")
+  US-10  running apps reported as the burn they are (conventions 6)
+  US-11  each deployment target holds one project, born of its own profile, with every
+         environment ACTIVE (Stage 19 step 4.6, INV-21)
+  US-12  where a project role exists, no role's trust names the account's root or any
+         principal: the one layer under AWS's sts:AssumeRole on every role (TM-30)""")
 
         # ==============================================================================
         rep.h1("9. The accounts nothing here is measuring")

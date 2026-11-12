@@ -844,7 +844,8 @@ policy set lives in code, which is Stage 2 step 5's mandate.
 26. **How does work produced in the derived zone reach Production, and what in SMUS carries it?**
     **The mechanism half is answered (2026-09-05, revised 2026-10-15 by
     [D41](decisions/D41-sagemaker-application.md)):** the repository holds the application, the SageMaker
-    Unified Studio CI/CD CLI deploys it from the repository into the `dev` and `test` projects and makes
+    Unified Studio CI/CD CLI deploys it from the repository into the `dev` project (no `test` stage
+    since 2026-11-11, [Stage 19](stages/stage-19-smus-native-data-product.md) decision 19 (c)) and makes
     the bundle the pipeline promotes; what a space produces reaches the repository by `git` from the space
     (INT-13's accepted path). The CLI deploys only into existing SMUS projects and a deployment target
     has none, so the pipeline stays the deployer there (D26/D28 amended). The

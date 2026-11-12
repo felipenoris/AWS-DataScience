@@ -15,6 +15,10 @@
 # The application slice, <env>/app/app-etl/ (Stage 8 steps 3.2 and 3.6), is one slice in both
 # targets but for release.tf, which records each account's own promoted release (step 3.7).
 #
+# The deployment project's prerequisites, <env>/studio/ (Stage 19 step 4.4), are one slice in both
+# targets but for project-roles.tf, which names each account's own project role, and fence.tf,
+# which names the account's own buckets and repositories that role never touches.
+#
 # check-bootstrap-parity.py holds the same rule for the bootstrap slices, which are copies whole.
 
 from __future__ import annotations
@@ -27,6 +31,7 @@ from pathlib import Path
 DEPLOY_TARGETS = ("terraform-live/staging/foundation", "terraform-live/production/foundation")
 APPLICATION = ("terraform-live/staging/app/app-etl", "terraform-live/production/app/app-etl")
 JOB_RUNTIME = ("terraform-live/staging/sagemaker", "terraform-live/production/sagemaker")
+STUDIO = ("terraform-live/staging/studio", "terraform-live/production/studio")
 
 # (file name, the slices holding it). The first slice is the reference a divergence is reported
 # against.
@@ -34,6 +39,7 @@ COPIES = (
     ("app-boundary.tf", DEPLOY_TARGETS),
     ("apply-application.tf", DEPLOY_TARGETS),
     ("apply-orchestration.tf", DEPLOY_TARGETS),
+    ("deploy-project.tf", DEPLOY_TARGETS),
     ("training-image.tf", JOB_RUNTIME),
     *(
         (name, APPLICATION)
@@ -45,6 +51,20 @@ COPIES = (
             "providers.tf",
             "variables.tf",
             "versions.tf",
+        )
+    ),
+    *(
+        (name, STUDIO)
+        for name in (
+            "backend.tf",
+            "data.tf",
+            "main.tf",
+            "outputs.tf",
+            "person-session.tf",
+            "providers.tf",
+            "variables.tf",
+            "versions.tf",
+            "workflows.tf",
         )
     ),
 )

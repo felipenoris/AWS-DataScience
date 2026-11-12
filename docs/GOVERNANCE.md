@@ -163,7 +163,8 @@ The `tfstate` keys (Stage 2), the PKI key (D36)
 and each Interactive account's project CMK (`alias/awsds-<env>-project`, Stage 6 — the SMUS projects
 bucket `awsds-<env>-smus-projects` and the blueprint-provisioned volumes sit under it since 2026-08-22;
 its key policy carries the documented SMUS statement set and is
-`terraform-modules/sagemaker-prereqs/kms.tf`'s) are separate objects: "the account's data CMK" is one
+`terraform-modules/sagemaker-prereqs/kms.tf`'s; Staging and Production hold one each since 2026-11-11,
+for their deployment project, Stage 19 step 4.4) are separate objects: "the account's data CMK" is one
 key per account for *data*, not a merger of every key in the account. A key that also served Terraform
 state and every other job in the account could not express "who may read derived data" (D31). The
 lake's own `logs` bucket *is* data and sits under the data key.
@@ -274,8 +275,9 @@ Consequences this file has to carry rather than leave to a stage:
   project reads it only through a default privilege written for that creator: `SELECT`, never `INSERT` or
   `DROP`, and widening it is [6h](plan/stages/stage-06h-redshift-connection.md) decision 8's. Measured
   2026-10-10 on the first tables a project wrote; no second project is admitted to exercise it (6h 5.2b).
-  The account's second project, `test-experimentation` (2026-10-15), is D41's `test` project, not admitted
-  to the warehouse.
+  The account's second project, `test-experimentation` (2026-10-15), was D41's `test` stage until
+  2026-11-11 ([Stage 19](plan/stages/stage-19-smus-native-data-product.md) decision 19 (c)) and stays a
+  project, not admitted to the warehouse.
 - **A sandbox schema's grantee is a project, by convention.** The Data page, and a notebook that first
   assumes the project's access role, reach the database as one per-project user; a notebook that connects
   directly reaches it as a per-person user SMUS creates, holding nothing (6h decision 8a, measured
@@ -742,8 +744,12 @@ flowchart LR
   project's own tables this is the designed mechanism, since the register does not reach them, and since
   Stage 6f decision 1 (2026-10-26) it is also how a published lake table is read (§Grants, the catalog road). The Governance Manager approves as a member of the owner
   project or through `GovernanceManagerAccess`'s domain ownership; which policy decides is Stage 6f 4.3. A member acts as the project role in the portal, whose query editor reads the project's tables (Stage 18 6.1, 7.2), so that route reaches rows D31 keeps from the persona.
-- **The domain is the boundary.** Publish, subscribe and Share work inside one domain; Staging and
-  Production are never associated (D26), so a deployment target neither publishes nor subscribes.
+- **The domain is the boundary.** Publish, subscribe and Share work inside one domain. Staging and
+  Production are associated to it since 2026-11-11 and hold no project yet
+  ([Stage 19](plan/stages/stage-19-smus-native-data-product.md) decision 6 (b), steps 4.2 and 4.6), so
+  a deployment target neither publishes nor subscribes today. Once each holds its deployment project,
+  Production publishes the product its runs create and approves what Sandbox subscribes to, and
+  neither target subscribes to anything: the `Workloads` SCP denies the request (decision 13 (b)).
 
 ### Promotion — Sandbox → Staging → Production
 
@@ -756,15 +762,15 @@ flowchart LR
   [`plan/runbooks/sagemaker-application.md`](plan/runbooks/sagemaker-application.md).
 - **The pipelines** (Stage 8): the `dev-env` pipeline releases the runtime image behind the Dev Env
   Steward's gate; the application pipeline tests, lints and builds the image and the application's code
-  package on a release tag, then bundles the application, has the CI/CD CLI deploy the same files to
-  the Sandbox `test` project and run it there, and stores the bundle in Production's releases bucket,
-  which the tag's GitLab release names, before Staging (Stage 8 step 2.5, decisions 19 and 20); the
-  promotion pipeline waits at a manual gate (decision 28), applies the tag and that bundle into Staging and
-  runs the integration tests, leaving the release there for the user's `make down` (decision 27), pauses
-  at the Deployment Manager's manual gate with the test results and the Production plan in front of them,
-  and applies into Production as `awsds-deploy-prod`.
+  package on a release tag, then has the CI/CD CLI make the bundle from the tag's files, deploying and
+  running nothing in Sandbox (Stage 19 decision 19 (c)), and stores the bundle in Production's releases
+  bucket, which the tag's GitLab release names, before Staging (Stage 8 step 2.5, decisions 19 and 20);
+  the promotion pipeline waits at a manual gate (decision 28), applies the tag and that bundle into
+  Staging, the release's first run, and runs the integration tests, leaving the release there for the
+  user's `make down` (decision 27), pauses at the Deployment Manager's manual gate with the test results
+  and the Production plan in front of them, and applies into Production as `awsds-deploy-prod`.
 - **A workflow is authored in the application repository** (Stage 10 steps 2.1-2.2, D41): the CI/CD CLI
-  deploys it into the Sandbox `dev` and `test` projects and bundles it, the D28 lint refuses anything
+  deploys it into the Sandbox `dev` project and bundles it, the D28 lint refuses anything
   portal-scoped in the copy rendered per account, and in Production the definition is deployed to
   `awsds-prod-outputs/applications/<app>/<tag>/` and run by MWAA Serverless as the per-workflow role, started
   by its chain's state machine.

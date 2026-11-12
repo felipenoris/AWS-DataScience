@@ -6,13 +6,15 @@
 
 **Related decisions:** —
 
-**Referenced by stages:** [Stage 5a](../stages/stage-05a-data-foundation.md), [Stage 6](../stages/stage-06a-unified-studio.md), [Stage 11](../stages/stage-11-dlp.md)
+**Referenced by stages:** [Stage 5a](../stages/stage-05a-data-foundation.md), [Stage 6](../stages/stage-06a-unified-studio.md), [Stage 11](../stages/stage-11-dlp.md), [Stage 19](../stages/stage-19-smus-native-data-product.md)
 
 ---
 
 ## Rationale and consequences
 
 Lake Formation only constrains engines that ask it. A role holding `s3:GetObject` on a registered bucket can read the raw Parquet from a notebook and every column and row filter becomes decoration. So the fine-grained access control objective in [`docs/plan/objectives.md`](../objectives.md) is only real if the SageMaker execution role's S3 permissions **exclude** the Lake Formation-registered prefixes, and tabular access goes exclusively through an LF-aware engine: Athena, Glue interactive sessions, or EMR with runtime roles. Non-registered prefixes (scratch, artifacts, model outputs) keep ordinary IAM access. Lake Formation's **hybrid access mode** is the documented migration path if a workload turns out to need both, and is a deliberate exception rather than the default. This is decided in Stage 5a, before Stage 6 can bake the bypass into the execution role.
+
+**Amended 2026-11-11** ([Stage 19](../stages/stage-19-smus-native-data-product.md) decision 21 (b), the user's): in a deployment target the boundary that carries this exclusion also carries a fence around the project role, the account's own buckets, customer managed keys, secrets, repositories, every `sts:AssumeRole` and the services a target has no use for, since AWS's managed policies on that role reach each by IAM (`TM-30`). The lake's prefixes stay this decision's; the fence is the same mechanism pointed at the account the project lives in.
 
 ---
 
