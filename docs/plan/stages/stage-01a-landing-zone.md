@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **done on 2026-08-09, except the deferred `Staging` vend** (step 4). Step 2's budget alerts + Cost Anomaly Detection are **skipped by decision**, not outstanding — [`docs/log/log-stage-01a-landing-zone.md`](../../log/log-stage-01a-landing-zone.md) is authoritative |
+| **Status** | **done on 2026-08-09, except the deferred `Staging` vend** (step 4). Step 2's budget alerts + Cost Anomaly Detection are **skipped by decision**, not outstanding — [`docs/log/log-stage-01a-landing-zone.md`](../../log/log-stage-01a-landing-zone.md) is authoritative. No vend is owed since 2026-09-05: `Staging` is made by renaming `Development` ([6b](stage-06b-development-becomes-staging.md)). |
 | **Prerequisites** | none outstanding (D1 decided, an e-mail registered for every account this stage creates) |
 | **Consumes** | [D1](../decisions/D01-region.md), [D12](../decisions/D12-budget-ceiling.md), [D14](../decisions/D14-supply-chain-account.md), [D16](../decisions/D16-break-glass.md), [D20](../decisions/D20-staging-account.md), [D21](../decisions/D21-development-account.md), [D22](../decisions/D22-data-governance-account.md), [D23](../decisions/D23-ou-structure.md), [D25](../decisions/D25-drop-box-consumer.md), [D26](../decisions/D26-unified-studio.md), [D27](../decisions/D27-catalog-maintenance.md), [D29](../decisions/D29-policy-canary.md), [D32](../decisions/D32-account-factory-sso-user.md), [D33](../decisions/D33-control-tower-admin-user.md), [D34](../decisions/D34-account-vending.md) |
 | **Proves** | — |
