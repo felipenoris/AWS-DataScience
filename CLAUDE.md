@@ -129,10 +129,15 @@ are never cut; the words around them are.
 
 ## Upkeep — the files this project maintains
 
+Where a new piece of content goes, by kind, is the write map in
+[`docs/GENERAL_PLAN.md`](docs/GENERAL_PLAN.md). Where a stage's state is written is in the Claude LOG
+section below.
+
 | File | What it holds, and the rule |
 |---|---|
 | [`docs/log/`](docs/log/INDEX.md)`log-stage-NN-*.md` | Every step performed by hand, in AWS or in a sitting with no AWS call, one file per stage, mirroring `docs/plan/stages/`: the stage file's slug with a `log-` prefix, and an entry goes to the log of the stage whose plan holds the step. Written cooperatively: Claude records each step of the plan it executes, in that sitting, and the user writes whenever they want. Claude adds entries and never rewrites one already there. Every entry names whose hand wrote it, and a measurement the user pasted stays verbatim. English, Markdown, no account ids, concise. The rules: [`docs/log/INDEX.md`](docs/log/INDEX.md), "How an entry gets written" |
-| [`docs/log/INDEX.md`](docs/log/INDEX.md) | After writing or reading a stage log, bring its `Records` cell to what the file contains: one line saying what is inside, never a restated step |
+| [`docs/log/INDEX.md`](docs/log/INDEX.md) | One row per stage log: one line saying what the file holds, never a restated step, since a log's dated headings are its outline. A row changes when its log gains a kind of content the line does not name, or an entry that belongs to another stage's subject |
+| [`docs/plan/stages/INDEX.md`](docs/plan/stages/INDEX.md) | One row per stage: what it builds, one word of state, what it depends on. A row changes when a stage is added, opens, closes or is re-scoped; what a sitting did is written in the stage file's `Status` row |
 | [`docs/ORGANIZATION.md`](docs/ORGANIZATION.md) | The AWS OUs, accounts and users |
 | [`docs/REFERENCES.md`](docs/REFERENCES.md) | Every internet link used as a reference, added on the interaction that used it |
 | [`README.md`](README.md) | How the AWS resources are structured, and the project layout |
@@ -183,10 +188,7 @@ the session starts.
   origin main:main` is refused while the project folder has it checked out (measured 2026-10-10).
 - A merge rewrites the branch's commits (PR #98 was rebased, PR #99 squashed into one commit, and
   neither branch's hashes are on `main`), so a merged branch is retired with its worktree: the next
-  task is a new session. The worktree is kept or removed when the user says so. The app's classifier
-  refused a push to the branch of a merged PR on 2026-10-19 (*Out-of-Place Publication*), after
-  letting one through the same day, and let it through once the user authorized it in chat; the
-  merge had deleted the remote branch, so the push recreated it.
+  task is a new session. The worktree is kept or removed when the user says so.
 - An uncommitted edit in the project folder is the user's. When a PR touches the same file, Claude
   says so: the user's next pull will refuse it.
 
@@ -215,10 +217,11 @@ per laptop, never one per session.
   session in its own chat, and a session never asks a peer for what its own permissions refuse.
 - Work is set aside with a WIP commit, never a bare `git stash`: the stack is shared and a peer may
   pop it.
-- The upkeep files every stage touches (`CLAUDE.md`'s Current position, `docs/AWS_STATE.md`,
-  `docs/AWS_SUPPLEMENT.md`, `docs/plan/lessons.md`, `docs/REFERENCES.md`, `docs/PRICING.md`, `docs/log/INDEX.md`) are edited
-  in the smallest hunk that carries the fact, and the branch is synced with `origin/main` before the
-  PR opens and again before the user merges, so the session that caused a conflict resolves it.
+- The files every stage touches (`CLAUDE.md`'s Current position, `docs/plan/waiting-on-the-user.md`,
+  `docs/AWS_STATE.md`, `docs/AWS_SUPPLEMENT.md`, `docs/plan/lessons.md`, `docs/REFERENCES.md`,
+  `docs/PRICING.md`, `docs/log/INDEX.md`) are edited in the smallest hunk that carries the fact; in
+  Current position a session edits its own stage's row. The branch is synced with `origin/main` before
+  the PR opens and again before the user merges, so the session that caused a conflict resolves it.
 - A module tag is repository-global and never moves (`terraform-changes.md`, Recipe B). The next
   version is read from `git ls-remote --tags origin` at the moment of tagging, never from memory: a
   peer may have taken it.
@@ -228,23 +231,38 @@ per laptop, never one per session.
   every pipeline job that reads it (Lesson 76), and the slices the pipeline reads are the application and
   orchestration slices, `staging/egress`, `production/workloads-egress`, and both targets' `data/`,
   `sagemaker/`, `foundation/` and `workloads/`.
-- **Parallel sessions, measured 2026-10-18.** The app starts a session only on a turn the user's own
-  message began: a turn begun right after `/compact` is refused, and so are a request the user sends
-  mid-turn and one sent over Remote Control, where a proposed card does not show either. In that case
-  the tasks run as subagents in worktrees of their own, at the user's choice, and open their own PRs.
-  Its auto-mode classifier refused to hand an SCP apply to a started session (*Protected-Scope IaC
-  Apply*), refused one session's apply of a new slice carrying an e-mail subscription, and refused one
-  session's `git push` (*Out-of-Place Publication*); the orchestrating session ran each itself on the
-  user's authorization in its own chat. It also refused the orchestrating session's own apply of a
-  saved plan in Production (*Production Deploy*, 2026-10-18) until the user authorized it in that chat. On
-  2026-11-11 it refused applies under a blanket authorization and under a question (*"você pode
-  executar?"*), a Lake Formation settings write and a project membership, and let through reads, a RAM
-  association, a candidate SCP's life on `Policy Test` and every apply and `create-project` the user named.
-  Sessions told not to edit `CLAUDE.md`, `docs/GENERAL_PLAN.md`, `docs/plan/stages/INDEX.md` and
-  `docs/log/INDEX.md` leave
-  their text in their reports, and the orchestrator rewrites those rows once, so a dozen PRs do not
-  conflict on adjacent lines. Their notes land in
-  `~/Library/Application Support/Claude/side-session-notes/<orchestrator session id>/`.
+
+### What the app refuses
+
+The desktop app decides which sessions start and which writes Claude runs. Each row is a measurement,
+and the stage logs hold the refusals.
+
+- **Starting a session.** The app starts one only on a turn the user's own message began (measured
+  2026-10-18). A turn begun right after `/compact` is refused, and so are a request the user sends
+  mid-turn and one sent over Remote Control, where a proposed card does not show either. The tasks then
+  run as subagents in worktrees of their own, at the user's choice, and open their own PRs.
+- **A refused write.** The session the user authorizes in its own chat runs it, and the authorization
+  names the act: a blanket authorization and a question (*"você pode executar?"*) were both refused.
+
+| What the auto-mode classifier refused | Its label | Date |
+|---|---|---|
+| Handing an SCP apply to a started session | *Protected-Scope IaC Apply* | 2026-10-18 |
+| A session's apply of a new slice carrying an e-mail subscription | | 2026-10-18 |
+| A session's `git push` | *Out-of-Place Publication* | 2026-10-18 |
+| The orchestrating session's own apply of a saved plan in Production, until the user authorized it in that chat | *Production Deploy* | 2026-10-18 |
+| A push to the branch of a merged PR, after one was let through the same day; let through once the user authorized it in chat. The merge had deleted the remote branch, so the push recreated it | *Out-of-Place Publication* | 2026-10-19 |
+| Applies under a blanket authorization and under a question | | 2026-11-11 |
+| A Lake Formation settings write | *Modify Shared Resources* | 2026-11-11 |
+| A project membership, as in Stage 18 | *Permission Grant* | 2026-11-11 |
+
+The orchestrating session ran each of the first three itself, on the user's authorization in its own
+chat. Let through on 2026-11-11: reads, a RAM association, a candidate SCP's life on `Policy Test`, and
+every apply and `create-project` the user named.
+
+Sessions run in parallel under one orchestrator are told not to edit `CLAUDE.md`,
+`docs/GENERAL_PLAN.md`, `docs/plan/stages/INDEX.md` and `docs/log/INDEX.md`: each leaves its text in its
+report and the orchestrator writes those rows once, so a dozen PRs do not conflict on adjacent lines.
+Their notes land in `~/Library/Application Support/Claude/side-session-notes/<orchestrator session id>/`.
 
 ## Claude LOG
 
@@ -252,336 +270,271 @@ For every project step, review this section and add your own LOG, so that you ca
 stage of this project.
 
 Stage numbers refer to `docs/plan/stages/`. Always read `docs/GENERAL_PLAN.md` before planning or executing
-a step; it is the plan core and carries both indexes. Then read only the stage file and the decisions its
-`Consumes` row lists.
+a step: it holds the principles, the route by subject and the map of where new content goes. Then read only
+the stage file and the decisions its `Consumes` row lists.
+
+### Where a stage's state is written
+
+A stage's state has one home per level of detail, and a sitting writes each level once:
+
+| Level | Home | What it holds |
+|---|---|---|
+| One line | [Current position](#current-position) below, the stage's row | The state and what comes next |
+| Full | The stage file's header, row `Status` | What is done and what is owed, each with its date |
+| Chronology | The stage log, an entry under a dated `## ` heading | What ran, in order, with its measurements |
+| The user's part | [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md) | Each decision or act that is the user's, and what it holds up |
+
+[`docs/plan/stages/INDEX.md`](docs/plan/stages/INDEX.md) carries one word of state per stage, changed when
+a stage opens or closes. `docs/GENERAL_PLAN.md` and [`docs/log/INDEX.md`](docs/log/INDEX.md) carry no
+status. A fact written at two levels is written twice on purpose; a fact written twice at one level is a
+copy that goes stale.
+
+### Reading a large file
+
+A stage file runs to 250 KB and a stage log to 370 KB. Neither is read whole: locate the part with
+`grep -n`, then read from that line.
+
+```bash
+F=docs/plan/stages/stage-08-cicd-pipelines.md
+L=docs/log/log-stage-08-cicd-pipelines.md
+
+grep -n -E '^\| \*\*(Status|Prerequisites|Consumes|Proves)\*\*' "$F"  # the header: status, prerequisites, reading list
+grep -n -E '^#{2,3} ' "$F"                # the stage file's outline
+grep -n -E '^ *- \*\*3\.8\b' "$F"         # step 3.8
+grep -n -E '^27\. \*\*' "$F"             # decision 27, under the heading "Decisions due"
+grep -n -E '^\| xi \|' "$F"              # verification xi
+grep -n -E '^#{2,3} ' "$L"                # the log's outline: every entry's date and subject
+grep -n '^## 2026-10-23' "$L"             # one day's entries
+grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md   # Lesson 47, in either of the file's two forms
+grep -n 'EXC-13' docs/AWS_STATE.md        # an invariant or an exception by id
+grep -n -i 'SUP-129' docs/AWS_SUPPLEMENT.md               # a platform behaviour by id, API name or error text
+grep -rn --include='*.md' 'TM-26' docs/   # every file that records an identifier
+```
+
+The patterns for a step, a decision and a verification hold in the stage files that number them that
+way; the outline is the fallback where one finds nothing.
 
 ### What to read, and when
 
-This table is the only routing map; every other file points here rather than repeating it.
-
-| Task | Read |
-|---|---|
-| Anything | this file + [`docs/GENERAL_PLAN.md`](docs/GENERAL_PLAN.md): principles and the route |
-| What the project must achieve, before planning or reviewing a stage | [`docs/plan/objectives.md`](docs/plan/objectives.md), the requirements brief in the user's words |
-| Execute a stage | [`docs/plan/stages/`](docs/plan/stages/INDEX.md)`stage-NN-*.md`, the decisions in its **Consumes** row, and [`docs/plan/conventions.md`](docs/plan/conventions.md) |
-| Design, or where something belongs | [`docs/plan/architecture.md`](docs/plan/architecture.md): target architecture, region portability, the data perimeter, the two egress designs |
-| A naming, layout, Terraform or IAM rule | [`docs/plan/conventions.md`](docs/plan/conventions.md): also the `[P]`/`[D]`/`[E]` layers, the identity seam and the `app-etl` template |
-| The data-governance model: what each account holds, the three catalogs (Glue Data Catalog, Lake Formation, SageMaker Catalog), the LF-Tag ontology (`layer`, `businessunit`, `classification`), the per-account encryption rule (§Encryption), the grant rules and default expressions (TBAC on the data, the catalog's ABAC on the session), the drop-box and derived-zone contracts, and the development cycle of a data product with the moment the LF-Tags are assigned | [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md); applied grants are `docs/AWS_STATE.md`'s grant register |
-| Anything on the SMUS surface: a blueprint, the network mode, a Stage 6 cost, a domain/project/profile concept, the custom-image tag convention `<flavour>-v<semver>` | [`docs/SMUS.md`](docs/SMUS.md). Review it whenever SageMaker changes |
-| What SMUS, the CI/CD CLI, Terraform and its providers released since the plan read them, and which step, decision or pin each release moves | [`docs/plan/upstream-releases.md`](docs/plan/upstream-releases.md); re-read every two weeks while a dependent stage is in progress |
-| Anything Databricks: how it deploys on AWS, its notebook and terminal, Lakeflow Jobs and pipelines, Unity Catalog, its AI stack, bundles and the promotion model, read against the requirements for the comparison with SMUS | [`docs/DATABRICKS.md`](docs/DATABRICKS.md), opening with the names that changed in 2025 and 2026 |
-| Anything Redshift: the warehouse, its 4-RPU floor, the cost ceiling, the two classes of database, or how a SageMaker project gets write on one | [`redshift-connection.md`](docs/plan/runbooks/redshift-connection.md) for the recurring procedure — adding a schema, wiring and unwiring a project, which layer a failure came from, **§J running SQL from a notebook** (the connection recipe, the cost per query, the readings that mislead), **§G reading a governed share from a project** (the access role's catalog read and Lake Formation grant, the consumer database's `USAGE`, `TEMP`), and the one command that gets a database session; [`D40`](docs/plan/decisions/D40-redshift-warehouse.md) for what is and is not built, [`stage-05b`](docs/plan/stages/stage-05b-redshift-serverless.md) for the warehouse, [`stage-06h`](docs/plan/stages/stage-06h-redshift-connection.md) for the connection's three layers, `docs/SMUS.md` §Connections for the mechanism |
-| How the deployed tree is organised, and what is in it today | [`terraform-live/README.md`](terraform-live/README.md); the slice layout itself is `docs/plan/conventions.md` §6, the authority when the two disagree |
-| What a policy statement denies, and why it exists | [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md), one row per `Sid`. Policy ids and attachment dates are in the stage log |
-| What governs the lake: a bucket-policy branch, a key-policy statement, a tag assignment, an LF grant | Producer side [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md); consumer side [`terraform-modules/consumer-data/README.md`](terraform-modules/consumer-data/README.md). They say what the code declares; applied triples are `docs/AWS_STATE.md`'s grant register. Read the producer README's "A permission here is the intersection of two systems" before claiming what a principal can do (Lesson 28) |
-| What was done by hand in a stage | [`docs/log/INDEX.md`](docs/log/INDEX.md) first, then the one `log-stage-NN-*.md` |
-| What is deployed right now: accounts, OUs, SSO groups, users, permission sets, assignments | [`aws/INDEX.md`](aws/INDEX.md): read-only scripts and their snapshots in `aws/output/` (untracked). Regenerate rather than trust a stale file; never copy an account id or email out of one |
-| Whether something a snapshot shows is expected, before reporting it as a finding | [`docs/AWS_STATE.md`](docs/AWS_STATE.md): invariants (`INV-nn`), known exceptions (`EXC-nn`), what a later stage changes. Read it whenever a snapshot is read |
-| A data-leakage channel, its control or its accepted residual (`TM-nn`), before a proxy plane is edited | [`docs/plan/threat-model.md`](docs/plan/threat-model.md) |
-| Plan, review, or settle a decision | add [`docs/plan/lessons.md`](docs/plan/lessons.md) and [`docs/plan/open-questions.md`](docs/plan/open-questions.md) |
-| A behaviour of AWS, Terraform or a provider that its documentation does not state: before designing around one, or when an error names the wrong cause | [`docs/AWS_SUPPLEMENT.md`](docs/AWS_SUPPLEMENT.md), grepped by API name, resource type or error text. Sections: IAM and STS; IAM Identity Center; Organizations and Control Tower; Security Hub and Config; CloudTrail; CloudWatch and Service Quotas; EventBridge; EC2; Systems Manager; VPC and Route 53 Resolver; ECR; S3; Glue; Lake Formation; Athena; Redshift Serverless; DataZone and SageMaker Unified Studio; SageMaker AI spaces and images; SageMaker AI jobs and models; MWAA; The SMUS CI/CD CLI; Bedrock; Terraform; The AWS CLI; Clients and the egress proxy |
-| What waits on the user's decision or act, across stages | [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md) |
-| Look up a decision | [`docs/plan/decisions/INDEX.md`](docs/plan/decisions/INDEX.md); open a decision file only for its reasoning |
-| Cost of a new service | [`docs/PRICING.md`](docs/PRICING.md), measured, never estimated (Lesson 6). The projection is [`docs/plan/cost-model.md`](docs/plan/cost-model.md) |
-| Cross-account wiring | [`docs/plan/integrations.md`](docs/plan/integrations.md), the `INT-nn` rows |
-| An unfamiliar acronym, or the notation | [`docs/GLOSSARY.md`](docs/GLOSSARY.md) |
-| Running an `aws` command by hand, or signing in | [`aws/AWS-CLI.md`](aws/AWS-CLI.md): the recipes, and which identity runs them |
-| A Terraform change by hand: the two-commit tag order, blocked commits, the staged apply (Recipe D, the only sanctioned `-target`) | [`docs/plan/runbooks/terraform-changes.md`](docs/plan/runbooks/terraform-changes.md) |
-| "What would an institution do?" | [`docs/plan/institutional-delta.md`](docs/plan/institutional-delta.md) |
-| Root is needed, or its alarm chain is being changed | [`docs/plan/runbooks/break-glass.md`](docs/plan/runbooks/break-glass.md) |
-| Anything VPN: the pieces, starting and stopping the hub, a tunnel that will not come up, a key event, a shell on the VPN host | [`docs/plan/runbooks/vpn.md`](docs/plan/runbooks/vpn.md): §S the system, §C the client, §K the keys, §K0a the SSM session. The hub is started and stopped with `make hub-up` / `make hub-down`, never `make up ENV=…` |
-| Connecting a laptop: the session's up/down order, the `.conf` and its checks, the proxy on macOS and Linux, the two client profiles | [`docs/plan/runbooks/client-vpn-proxy-configuration.md`](docs/plan/runbooks/client-vpn-proxy-configuration.md) |
-| The proxy inside a SageMaker space: the `NO_PROXY` value, `apt`, R and CRAN, the Code Editor's extension gallery | [`docs/plan/runbooks/sg-proxy.md`](docs/plan/runbooks/sg-proxy.md). `NO_PROXY` is generated (`terraform output -raw no_proxy` on `sandbox/egress`); the house image carries a dated copy of `no_proxy_all_groups`, the same list with every optional endpoint group on (6d decision 8), and every other consumer reads `no_proxy` |
-| Anything egress, proxy or the hub topology: where the internet is reached, which VPC a thing belongs in, why there is no NAT gateway | [`docs/plan/decisions/D38-single-egress-hub.md`](docs/plan/decisions/D38-single-egress-hub.md) and [`docs/plan/stages/stage-06c-networking-hub.md`](docs/plan/stages/stage-06c-networking-hub.md) |
-| The network as built: VPCs, subnets, routes, peerings, egress, VPN, DNS, security groups, addresses; how a SageMaker app sees the internet and what can reach one | [`docs/NETWORK.md`](docs/NETWORK.md), code plus measurement |
-| Building the images: the pipeline on the build runner, what to check before a build, every tag spent and its digests (the buildbox, retired at Stage 7 step 6.5, built the first six) | [`gitlab/awsds/dev-env/README.md`](gitlab/awsds/dev-env/README.md), a copy of GitLab's ([`gitlab/README.md`](gitlab/README.md)) |
-| The first promotion: the sittings that close Stages 8, 9 and 10, in order and command by command, from the proofs that need nothing up to the governed warehouse | [`docs/plan/runbooks/promotion.md`](docs/plan/runbooks/promotion.md): §0 with the environment down, §H the hub and GitLab, §P Production (Stage 9's proof job), §T the tag, §W the warehouse, §Q after the quotas |
-| Anything GitLab: the host and its session (`make gitlab-up`/`gitlab-down`, the order with the hub and the tunnel), how a host is built from nothing (the applies, what the first boot does, a rebuild), a fresh host's initial setup (trusting the root, the first sign-in, the instance settings), a `gitlab.rb` change reaching the host, the leaves and their re-issue, trusting the root on a laptop, the backup and the restore, the runner's token, SAML's inputs | [`docs/plan/runbooks/gitlab.md`](docs/plan/runbooks/gitlab.md): §S the pieces, §U up and down, §P the installation, §I the initial setup, §R the refresh, §C the certificates, §B backup and restore, §K the runners, §G the gates project, §M the image projects and the mirror, §A SAML, §V the instruments |
-| Making a custom image selectable in SageMaker: the slice that registers it, the attach to the blueprint's domain, a release and its retirement, a hand cleanup of old versions and their ECR images, why the proxy variables are not on the app image configuration | [`docs/plan/runbooks/dev-env.md`](docs/plan/runbooks/dev-env.md) |
-| Anything remote IDE: attaching a laptop's VS Code to a space, the Windows client and its pin, where an extension installs and which gallery serves it, which calls the plane refuses, how a file or a repository gets in | [`docs/plan/runbooks/remote-ide.md`](docs/plan/runbooks/remote-ide.md): §O the pieces, §I the identity, §W the pinned client, §E extensions, §N the egress readings, §C moving files, §V the instruments |
-| Anything Claude Code on Bedrock: the retention mode, the use-case form, the grant and endpoints it needs, what a user cannot change | [`docs/plan/runbooks/claude-code-sagemaker.md`](docs/plan/runbooks/claude-code-sagemaker.md): §M enabling the model, §I the infrastructure half, §U the scientist's, §V the instruments |
-| Anything Sandbox lake: `awsds-sandbox-lake`, a per-group prefix, wiring or unwiring a project's S3 connection, the tests, code that lists, reads or writes it | [`docs/plan/runbooks/sandbox-lake.md`](docs/plan/runbooks/sandbox-lake.md) |
-| Anything serverless workflow in a SageMaker project: the editor and its import, a processing task under the D13 boundary, packaging code and dependencies for a Python or Bash task, the grant a project needs, reading a run back | [`docs/plan/runbooks/serverless-workflows.md`](docs/plan/runbooks/serverless-workflows.md): §O the pieces, §T the `awsds-workflows` tool, §G the grant, §A the authoring rules, §J the processing task, §C the code archive, §V the readings |
-| Anything about an application on the `app-etl` template, for a data scientist or the infrastructure user: the repository and its GitLab project, the manifest and the CI/CD CLI, the image, the code a job and a worker run, the Glue jobs, the workflows and the lint's rules, the tests, the pipeline job by job, the release and the promotion, what a second application needs in this repository, operating and monitoring it in Production, its data in each stage and the lake, what Sandbox may read of Production | [`docs/plan/runbooks/sagemaker-application.md`](docs/plan/runbooks/sagemaker-application.md): §A how to read it, the running example and the vocabulary, §O the pieces, §Q who does what, §R the repository, §L the GitLab project, §D the loop in Sandbox, §E the tests, §M the manifest, §I the image, §C the code, §G the Glue jobs, §W the workflows, §P the pipeline, §T the release, §S the infrastructure, §X operating, §V the readings, §B the data, §N the reach, §K Production data in Sandbox, §Z standard and specific |
-| A log has to be read: a refusal to attribute, a call whose door is in question, a name that never resolved, who deleted something | [`docs/plan/runbooks/log-debugging.md`](docs/plan/runbooks/log-debugging.md) |
-| A policy is about to be attached, or was amended | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md). Running it is `./aws/probes/scp-battery.py` ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
-| Anything Security Hub: the policy in Audit, pausing or restoring the FSBP standard, disabling the service, the readings, the bill | [`docs/plan/runbooks/security-hub.md`](docs/plan/runbooks/security-hub.md): §S the pieces, §P the pause, §R the revert, §D the disable, §V the readings |
-| Explaining the design to someone | [`README.md`](README.md): the argument for the account split and the three distinctions |
-| How the plan got here | [`docs/plan/history.md`](docs/plan/history.md), almost never |
+These tables are the only routing map; every other file points here rather than repeating it. Where new
+content goes is the write map in `docs/GENERAL_PLAN.md`, and the rule each maintained file obeys is the
+Upkeep table above.
 
 Reference things by stable ID (`D26`, `INT-11`, `Stage 1c step 7`), never by section or row number.
 The `§` numbers inside `docs/plan/` files are historical anchors, not addresses.
 
+#### The plan and its state
+
+| Task | Read |
+|---|---|
+| Anything | This file and [`docs/GENERAL_PLAN.md`](docs/GENERAL_PLAN.md): the principles and the route |
+| What the project must achieve, before planning or reviewing a stage | [`docs/plan/objectives.md`](docs/plan/objectives.md), the requirements brief in the user's words |
+| Which stage builds a thing, and what a stage depends on | [`docs/plan/stages/INDEX.md`](docs/plan/stages/INDEX.md) |
+| Execute a stage | [`docs/plan/stages/`](docs/plan/stages/INDEX.md)`stage-NN-*.md`, the decisions in its **Consumes** row, and [`docs/plan/conventions.md`](docs/plan/conventions.md) |
+| What waits on the user's decision or act, across stages; the sittings that need the environment up; the dated deadlines | [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md) |
+| What was done by hand in a stage | The stage's own log, `docs/log/log-stage-NN-*.md`, by its headings. [`docs/log/INDEX.md`](docs/log/INDEX.md) says what each log holds beyond its own stage, and carries the rules for writing an entry |
+| Look up a decision | [`docs/plan/decisions/INDEX.md`](docs/plan/decisions/INDEX.md), one line per decision; open a decision file only for its reasoning |
+| Plan, review, or settle a decision | Add [`docs/plan/lessons.md`](docs/plan/lessons.md) and [`docs/plan/open-questions.md`](docs/plan/open-questions.md) |
+| Cross-account wiring | [`docs/plan/integrations.md`](docs/plan/integrations.md), the `INT-nn` rows |
+| Cost of a new service | [`docs/PRICING.md`](docs/PRICING.md), measured, never estimated (Lesson 6). The projection is [`docs/plan/cost-model.md`](docs/plan/cost-model.md) |
+| "What would an institution do?" | [`docs/plan/institutional-delta.md`](docs/plan/institutional-delta.md) |
+| An unfamiliar acronym, or the notation | [`docs/GLOSSARY.md`](docs/GLOSSARY.md) |
+| Explaining the design to someone; which directory of the repository holds what | [`README.md`](README.md): the argument for the account split, the three distinctions, the project layout |
+| A vendor page already read for this project | [`docs/REFERENCES.md`](docs/REFERENCES.md), by `grep` on the URL or the subject |
+| How the plan got here | [`docs/plan/history.md`](docs/plan/history.md), almost never |
+
+#### Design and conventions
+
+| Task | Read |
+|---|---|
+| Design, or where something belongs | [`docs/plan/architecture.md`](docs/plan/architecture.md): target architecture, region portability, the data perimeter, the two egress designs |
+| A naming, layout, Terraform or IAM rule | [`docs/plan/conventions.md`](docs/plan/conventions.md): also the `[P]`/`[D]`/`[E]` layers, the identity seam and the `app-etl` template |
+| How the deployed tree is organised, and what is in it today | [`terraform-live/README.md`](terraform-live/README.md); the slice layout itself is `docs/plan/conventions.md` §6, the authority when the two disagree |
+| A Terraform change by hand: the two-commit tag order, blocked commits, the staged apply (Recipe D, the only sanctioned `-target`) | [`docs/plan/runbooks/terraform-changes.md`](docs/plan/runbooks/terraform-changes.md) |
+| Running an `aws` command by hand, or signing in | [`aws/AWS-CLI.md`](aws/AWS-CLI.md): the recipes, and which identity runs them |
+
+#### What is deployed, and whether a reading is expected
+
+| Task | Read |
+|---|---|
+| The OUs, the accounts and the users | [`docs/ORGANIZATION.md`](docs/ORGANIZATION.md) |
+| What is deployed right now: accounts, OUs, SSO groups, users, permission sets, assignments | [`aws/INDEX.md`](aws/INDEX.md): read-only scripts and their snapshots in `aws/output/` (untracked). Regenerate rather than trust a stale file; never copy an account id or email out of one |
+| Whether something a snapshot shows is expected, before reporting it as a finding | [`docs/AWS_STATE.md`](docs/AWS_STATE.md): invariants (`INV-nn`), known exceptions (`EXC-nn`), what a later stage changes, and the applied grant registers. Read it whenever a snapshot is read |
+| A behaviour of AWS, Terraform or a provider that its documentation does not state: before designing around one, or when an error names the wrong cause | [`docs/AWS_SUPPLEMENT.md`](docs/AWS_SUPPLEMENT.md), grepped by API name, resource type or error text. Sections: IAM and STS; IAM Identity Center; Organizations and Control Tower; Security Hub and Config; CloudTrail; CloudWatch and Service Quotas; EventBridge; EC2; Systems Manager; VPC and Route 53 Resolver; ECR; S3; Glue; Lake Formation; Athena; Redshift Serverless; DataZone and SageMaker Unified Studio; SageMaker AI spaces and images; SageMaker AI jobs and models; MWAA; The SMUS CI/CD CLI; Bedrock; Terraform; The AWS CLI; Clients and the egress proxy |
+| What SMUS, the CI/CD CLI, Terraform and its providers released since the plan read them, and which step, decision or pin each release moves | [`docs/plan/upstream-releases.md`](docs/plan/upstream-releases.md); re-read every two weeks while a dependent stage is in progress |
+
+#### Policies, data protection and logs
+
+| Task | Read |
+|---|---|
+| What a policy statement denies, and why it exists | [`terraform-live/identity/org-policies/POLICIES.md`](terraform-live/identity/org-policies/POLICIES.md), one row per `Sid`. Policy ids and attachment dates are in the stage log |
+| A policy is about to be attached, or was amended | [`docs/plan/runbooks/scp-battery.md`](docs/plan/runbooks/scp-battery.md). Running it is `./aws/probes/scp-battery.py` ([`aws/probes/README.md`](aws/probes/README.md)); amending the ceiling means editing `probes.py` |
+| A data-leakage channel, its control or its accepted residual (`TM-nn`), before a proxy plane is edited | [`docs/plan/threat-model.md`](docs/plan/threat-model.md) |
+| Anything Security Hub: the policy in Audit, pausing or restoring the FSBP standard, disabling the service, the readings, the bill | [`docs/plan/runbooks/security-hub.md`](docs/plan/runbooks/security-hub.md): §S the pieces, §P the pause, §R the revert, §D the disable, §V the readings |
+| Root is needed, or its alarm chain is being changed | [`docs/plan/runbooks/break-glass.md`](docs/plan/runbooks/break-glass.md) |
+| A log has to be read: a refusal to attribute, a call whose door is in question, a name that never resolved, who deleted something | [`docs/plan/runbooks/log-debugging.md`](docs/plan/runbooks/log-debugging.md) |
+
+#### Data: the lake, its governance, the warehouse
+
+| Task | Read |
+|---|---|
+| The data-governance model: what each account holds, the three catalogs (Glue Data Catalog, Lake Formation, SageMaker Catalog), the LF-Tag ontology (`layer`, `businessunit`, `classification`), the per-account encryption rule (§Encryption), the grant rules and default expressions (TBAC on the data, the catalog's ABAC on the session), the drop-box and derived-zone contracts, and the development cycle of a data product with the moment the LF-Tags are assigned | [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md); applied grants are `docs/AWS_STATE.md`'s grant register |
+| What governs the lake: a bucket-policy branch, a key-policy statement, a tag assignment, an LF grant | Producer side [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md); consumer side [`terraform-modules/consumer-data/README.md`](terraform-modules/consumer-data/README.md). They say what the code declares; applied triples are `docs/AWS_STATE.md`'s grant register. Read the producer README's "A permission here is the intersection of two systems" before claiming what a principal can do (Lesson 28) |
+| Anything Sandbox lake: `awsds-sandbox-lake`, a per-group prefix, wiring or unwiring a project's S3 connection, the tests, code that lists, reads or writes it | [`docs/plan/runbooks/sandbox-lake.md`](docs/plan/runbooks/sandbox-lake.md) |
+| Anything Redshift: the warehouse, its 4-RPU floor, the cost ceiling, the two classes of database, or how a SageMaker project gets write on one | [`redshift-connection.md`](docs/plan/runbooks/redshift-connection.md) for the recurring procedure: §S adding a schema, §P and §U wiring and unwiring a project, §F which layer a failure came from, §J running SQL from a notebook, §G reading a governed share from a project, §V the instruments. [`D40`](docs/plan/decisions/D40-redshift-warehouse.md) for what is and is not built, [`stage-05b`](docs/plan/stages/stage-05b-redshift-serverless.md) for the warehouse, [`stage-06h`](docs/plan/stages/stage-06h-redshift-connection.md) for the connection's three layers, `docs/SMUS.md` §Connections for the mechanism |
+
+#### The network, the VPN and the proxy
+
+| Task | Read |
+|---|---|
+| The network as built: VPCs, subnets, routes, peerings, egress, VPN, DNS, security groups, addresses; how a SageMaker app sees the internet and what can reach one | [`docs/NETWORK.md`](docs/NETWORK.md), code plus measurement |
+| Anything egress, proxy or the hub topology: where the internet is reached, which VPC a thing belongs in, why there is no NAT gateway | [`docs/plan/decisions/D38-single-egress-hub.md`](docs/plan/decisions/D38-single-egress-hub.md) and [`docs/plan/stages/stage-06c-networking-hub.md`](docs/plan/stages/stage-06c-networking-hub.md) |
+| Anything VPN: the pieces, starting and stopping the hub, a tunnel that will not come up, a key event, a shell on the VPN host | [`docs/plan/runbooks/vpn.md`](docs/plan/runbooks/vpn.md): §S the system, §C the client, §K the keys, §K0a the SSM session. The hub is started and stopped with `make hub-up` / `make hub-down`, never `make up ENV=…` |
+| Connecting a laptop: the session's up/down order, the `.conf` and its checks, the proxy on macOS and Linux, the two client profiles | [`docs/plan/runbooks/client-vpn-proxy-configuration.md`](docs/plan/runbooks/client-vpn-proxy-configuration.md) |
+| The proxy inside a SageMaker space: the `NO_PROXY` value, `apt`, R and CRAN, the Code Editor's extension gallery | [`docs/plan/runbooks/sg-proxy.md`](docs/plan/runbooks/sg-proxy.md). `NO_PROXY` is generated (`terraform output -raw no_proxy` on `sandbox/egress`); the house image carries a dated copy of `no_proxy_all_groups`, the same list with every optional endpoint group on (6d decision 8), and every other consumer reads `no_proxy` |
+
+#### SageMaker Unified Studio and what runs in it
+
+| Task | Read |
+|---|---|
+| Anything on the SMUS surface: a blueprint, the network mode, a Stage 6 cost, a domain/project/profile concept, the custom-image tag convention `<flavour>-v<semver>` | [`docs/SMUS.md`](docs/SMUS.md). Review it whenever SageMaker changes |
+| Making a custom image selectable in SageMaker: the slice that registers it, the attach to the blueprint's domain, a release and its retirement, a hand cleanup of old versions and their ECR images, why the proxy variables are not on the app image configuration | [`docs/plan/runbooks/dev-env.md`](docs/plan/runbooks/dev-env.md) |
+| Building the images: the pipeline on the build runner, what to check before a build, every tag spent and its digests (the buildbox, retired at Stage 7 step 6.5, built the first six) | [`gitlab/awsds/dev-env/README.md`](gitlab/awsds/dev-env/README.md), a copy of GitLab's ([`gitlab/README.md`](gitlab/README.md)) |
+| Anything remote IDE: attaching a laptop's VS Code to a space, the Windows client and its pin, where an extension installs and which gallery serves it, which calls the plane refuses, how a file or a repository gets in | [`docs/plan/runbooks/remote-ide.md`](docs/plan/runbooks/remote-ide.md): §O the pieces, §I the identity, §W the pinned client, §E extensions, §N the egress readings, §C moving files, §V the instruments |
+| Anything Claude Code on Bedrock: the retention mode, the use-case form, the grant and endpoints it needs, what a user cannot change | [`docs/plan/runbooks/claude-code-sagemaker.md`](docs/plan/runbooks/claude-code-sagemaker.md): §M enabling the model, §I the infrastructure half, §U the scientist's, §V the instruments |
+| Anything serverless workflow in a SageMaker project: the editor and its import, a processing task under the D13 boundary, packaging code and dependencies for a Python or Bash task, the grant a project needs, reading a run back | [`docs/plan/runbooks/serverless-workflows.md`](docs/plan/runbooks/serverless-workflows.md): §O the pieces, §T the `awsds-workflows` tool, §G the grant, §A the authoring rules, §J the processing task, §C the code archive, §V the readings |
+| Anything Databricks: how it deploys on AWS, its notebook and terminal, Lakeflow Jobs and pipelines, Unity Catalog, its AI stack, bundles and the promotion model, read against the requirements for the comparison with SMUS | [`docs/DATABRICKS.md`](docs/DATABRICKS.md), opening with the names that changed in 2025 and 2026 |
+
+#### GitLab, applications and the promotion
+
+| Task | Read |
+|---|---|
+| Anything GitLab: the host and its session (`make gitlab-up`/`gitlab-down`, the order with the hub and the tunnel), how a host is built from nothing, a fresh host's initial setup, a `gitlab.rb` change reaching the host, the leaves and their re-issue, trusting the root on a laptop, the backup and the restore, the runner's token, SAML's inputs | [`docs/plan/runbooks/gitlab.md`](docs/plan/runbooks/gitlab.md): §S the pieces, §U up and down, §P the installation, §I the initial setup, §R the refresh, §C the certificates, §B backup and restore, §K the runners, §G the gates project, §M the image projects and the mirror, §A SAML, §V the instruments |
+| Anything about an application on the `app-etl` template, for a data scientist or the infrastructure user | [`docs/plan/runbooks/sagemaker-application.md`](docs/plan/runbooks/sagemaker-application.md): §A how to read it, the running example and the vocabulary, §O the pieces, §Q who does what, §R the repository, §L the GitLab project, §D the loop in Sandbox, §E the tests, §M the manifest and the CI/CD CLI, §I the image, §C the code a job and a worker run, §G the Glue jobs, §W the workflows and the lint's rules, §P the pipeline job by job, §T the release and the promotion, §S the infrastructure a second application needs in this repository, §X operating and monitoring it in Production, §V the readings, §B its data in each stage and the lake, §N the reach, §K Production data in Sandbox, §Z standard and specific |
+| The first promotion: the sittings that close Stages 8, 9 and 10, in order and command by command, from the proofs that need nothing up to the governed warehouse | [`docs/plan/runbooks/promotion.md`](docs/plan/runbooks/promotion.md): §0 with the environment down, §H the hub and GitLab, §P Production (Stage 9's proof job), §T the tag, §W the warehouse, §V the data release, §N the next release and the order of what is left (§N.6), §Q after the quotas, §R the readings that end every sitting |
+
 ### Current position
 
-- **Done**: Stages 0-1d, 2, 3, 4, 5a, 6a, 6b, 6c, 6i, 7, 16 and 18; 5b's passes are applied, its owed readings
-  dated. The chain is Sandbox → Staging → Production: no Development account, ever; interactive compute
-  is Sandbox only. All 41 decisions are closed; D41 item 2 is reopened since 2026-10-31 (Stage 19 decision 6 (b)). Gates: `make check`, `make check-ou`. **What waits on the
-  user is [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md)**: read it before asking
-  the user anything, and remove a row in the sitting that takes it.
-- **The SCP battery** read `ou` 52 as expected / 0 unexpected / 5 not measured on 2026-11-11 (Stage 19
-  4.1's amendment applied) and `root` 25 / 0 / 1 on 2026-10-30 (decision 29's row a note: its refusal carried no authorization id). **SageMaker job quotas are above zero in
-  Production and Staging since 2026-10-24** (read 03:47 UTC, Sandbox's values: training 20 and transform 8
-  for `ml.m5.large`, processing 8, `ml.t3.medium` 10), the four requests of 2026-10-23 still
-  `CASE_OPENED`. The probes read `ResourceLimitExceeded` as authorized; the `ou`
-  phase's seven instance-preference rows (Stage 9 3.5, PR #216) ran 2026-10-22, each as expected.
-- **Stage 9**: pass 1 applied 2026-10-18 (`awsds-org-scp-ou-workloads`, nine statements; `production/sagemaker/`,
-  rank 46). Every decision taken 2026-10-22: no mirror, Staging reading the governed lake through a
-  read-only share and nothing of Production's outputs (3, 1, D20 amended, `TM-25`), the Glue job in each
-  target's VPC on a `[P]` connection and group (12). Passes 2, 3 and 5 applied the same day (PR #245): the
-  read shares and Production's write on `curated` with `curated.trades`, `production/data/` and
-  `staging/data/` (data keys, outputs and derived buckets, workgroups, `app_outputs`), the job network,
-  `staging/sagemaker/`, `production/workloads/` on `vpc-v0.4.0`; `deploytargets.py` and `datalake.py` 0
-  failed. Both egress slices carry seven endpoints with `lakeformation` (first raised 2026-10-23). The
-  `s3-bucket` module turns Bucket Keys on for every bucket it creates, so D31's zero-cost variant is
-  unavailable (PR #225). **Pass 4 prepared 2026-10-22**: 5.1 is the managed policy `awsds-prod-data-scientist`
-  in `production/data/` (1 to add, 1 to change) attached in `identity/sso/` (1 to add, 1 to change; the
-  inline form read 10,550 of 10,240), `GetDataAccess` added, both applied 2026-10-22; step 9.1's two
-  slices written; 6.3's window opened, exercised and closed
-  2026-10-22, the refusal read 2026-10-23. **2026-10-23**: 2.4's proof job `awsds-prod-producer-proof`
-  (`production/sagemaker/`) ran both modes in the Production sitting: the `producer` write committed and the
-  `pickup` consumed the drop, `curated.trades` at 20 rows, after decision 13's two halves: the
-  `AllowFullTableExternalDataAccess` flag on in Production (the user's console, 19:49 UTC) was not enough,
-  the vend refused (`SUP-111`), and the lake's `lakeformation.tf` carries it
-  since 22:03 UTC (`TM-26`); the flag is on in Sandbox and the lake, off in the targets (Stage 19 4.7, 2026-11-12). 9.1's
-  `production/warehouse/` applied 22:07 UTC (the namespace; `EXC-13`'s Production sentence), refusal 9
-  lifted, `warehouse-compute/` raised per warehouse sitting, 9.3 run 2026-10-24 (the schema `trades` at 1 TB, the roles, the `IAMR:` users, the default privileges, every `PUBLIC`
-  `CREATE` revoked), **9.4 to 9.7 done 2026-10-25**: the DDL job and the load (decision 15's Production-only workflow, its schedule `DISABLED` through the slice) after the deploy role's `FollowItsOwnStatements` and the job group's 5439 egress; 9.5's datashare across Production, Data Governance (decision 14) and Sandbox; 9.7 read from `eighth-experimentation` through the access role's catalog read, its Lake Formation grant and `TEMP` (`redshift-connection.md` §G), and with Production's workgroup gone;
-  `workloads-egress/` taking `GROUPS=redshift`; the `ml.m5.large` pair requested 2026-10-23 (`CASE_OPENED`); the
-  persona proofs of 3.4, 5.4, 8.1-8.4 and Stage 10 6.2 run (8.1's space half 2026-10-30 from the portal's query editor; 3.4's from a space 2026-10-26; INT-06 answered, open
-  question 8 closed; the Data API negative 2026-10-26); the sittings in `runbooks/promotion.md`. 2026-10-25, nothing up: 9.5's
-  Terraform adoption applied (the registration and the LF-Tags by hand, no importer), xii's registry read in
-  `model-chain.py transform staging` with `staging/foundation/`'s output, applied. **§N.2 run 2026-10-26**: xviii and
-  vii closed, 9.4's DDL job idempotent from pipeline #102, 9.7 read with the project role's grant revoked and
-  Production's workgroup gone, `EXC-13`'s Sandbox half twice; both computes down. **xxiv run 2026-10-26 on
-  §N.4a**: the revoke takes the share and leaves the Lake Formation rows, which only `WH-16` notices
-  (written after it), and `data-governance/data/` cannot plan until the re-grant's SQL and two applies. 3.1 read 2026-10-26, the debug role's
-  job-log read in a window included; the quota cases still `CASE_OPENED`.
-  **Stage 10**: pass 0 read and 4.3's `DenyProvisionedMwaa` applied 2026-10-18; 5.3's
-  `awsds-prod-model-approval` applied the same day, first fired 2026-10-25 (version 1 registered and approved by `awsds-deploy-prod`; pass 3 done, both transforms, 5.5). Prepared
-  2026-10-22 (PR #246): `terraform-modules/orchestration/` and `staging/`, `production/orchestration/`
-  (rank 59, `[E]`) written and planned, `OR-9` written, both slices on the module's tag; every Stage 10
-  decision was taken 2026-10-22; 2.3's lint runs in the legs' release job, and since 2026-10-24 (2c)'s
-  `lint-plan` (`awsds-workflows` `ff25eae`) on the application slice's saved plan; **3.8's calls replayed as both deploy roles (2026-10-24) found `states:ValidateStateMachineDefinition` granted to neither, which stops both legs' orchestration apply: written in `*/foundation/` and applied the same night, both roles reading `allowed`**; pass 3
-  written 2026-10-24 in the template's v0.4.0 (decisions 21, AWS's XGBoost 3.0-5 by digest, and 22,
-  Staging retrains), the lint's rule `treino` at `awsds-workflows` `d856982c`, PR #24's merge (`d60e1ad`'s tree). Passes 1-2 run with Stage 8's pass 4 (decision 23); the objects they stopped at,
-  Stage 8's application ceilings and Stage 9's data keys, outputs buckets and Staging's job role, exist
-  since 2026-10-22.
-  The MWAA Serverless service-linked role exists in both accounts, Production's created 2026-10-24 in
-  `awsds-deploy-prod`'s session at pipeline #71's first `CreateWorkflow`, INT-14 answered in both; Production's
-  first run `SUCCEEDED` by hand (15 min); **6.1 read 2026-10-25**: the schedules started the app-etl and train chains unattended, both `SUCCEEDED`, each run `ON_DEMAND`, the `DISABLED` warehouse schedule silent at 07:30 (xxiv), and the `scheduledTime` placeholder never substituted until `orchestration-v0.2.1`, whose literal form the Scheduler filled at a firing on 2026-10-26 (3.5 read); 1.2's network negative read the same night (an unconfigured worker at `10.1.11.134` through `airflow-serverless.amazonaws.com`), xi's CI half and ix's Staging half on `v0.4.6`. **The Staging half of passes 1-2 ran by hand on 2026-10-23** (Stage 8
-  3.8): the workflow created by `awscc` under `InfrastructureAccess`, the chain's machine started, diagnosed two
-  failures (the worker's XCom encryption needs `kms:GenerateDataKey` in the key policy and in the role's, both
-  fixed) and `SUCCEEDED`; 0.5, decision 19, decision 2's context and verification xvi's worker clauses read; the
-  failure rules mailed; ii's deploy-role half read 2026-10-24 and 3.2 closed 2026-10-25 by (b). Read
-  2026-10-26 with nothing up: both outputs buckets publish to EventBridge (3.6); `GetWorkflowRun` decrypts
-  through the service (`SUP-264`; decision 11's `kms:ViaService` narrowing applied
-  2026-10-26, the Deployment Manager's `GetWorkflowRun` answering `SUCCESS` under it);
-  the training operator's `print_log` read answers, its six `Decrypt` refusals per run being `SUP-059`. **2.1 ran from a space on 2026-10-26**: the house CLI by its path, the CLI 1.0.9's
-  `ListDomains` (refused to a project's role) answered by the domain's id, and Sandbox's `mwaa` group's
-  `airflow-serverless` endpoint (`GROUPS=mwaa`, the name in the session's `NO_PROXY` until the next image);
-  xxix's portal run fails at the DAG's template. The template's `scripts/dev-cli.sh` carries both answers
-  (PR #269), the lookup is reported upstream as issue 413, and `default-v0.10.0`, Sandbox's version 11 since
-  2026-10-26, makes the CLI's name the house's through the base environment's activation hook.
-- **The Sandbox warehouse (5b, 6h)**: `sandbox/warehouse/` rank 53 `[P]` and `sandbox/warehouse-compute/`
-  rank 54 `[E]` (base 4 / max 8 RPU, usage limit 10 RPU-h monthly `deactivate`; raised only by `make up
-  ENV=sandbox GROUPS=redshift` or an `ONLY=` naming it, refusal 11), database `sandbox`, schema
-  `lab`. One project per tag key is admitted (`avhvbqn37ty7m8`); decision 8 owns the second,
-  `test-experimentation`. The connection (`EXC-17`) carries **`lineageSync` on, daily 03:43 UTC, every run
-  failing** (decision 3, the user's). **Cost**: 1.44 USD per query-hour at 4 RPU and 0.00 idle, with no
-  pause, so `make down` is the guarantee; the ratchet past 4 never returns; the free trial, 300 USD per
-  account for 90 days, absorbs the bill to 2026-12-19 in Sandbox and to 2027-01-21 in Production (299.50 USD left in Production on 2026-10-30 and 287.51 in Sandbox on 2026-10-26; the window opens with the namespace). **`EXC-13`**: the admin secret rotates with no workgroup,
-  against AWS's page, and the database takes the password (`SUP-129`). SQL from a notebook is `redshift-connection.md` §J. AWS's project-role policy reaches
-  workgroups and secrets by their tags (`SUP-179`): the admin secret stays closed by its tags alone (`INV-20`, PR #187).
-- **Stage 6d in progress**: steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half (a reconciliation that
-  writes the domain). The house image is `awsds-sandbox-dev-env` version 11, `default-v0.10.0-c8bac16e`
-  (2026-10-26, alias `0.10.0`), its `NO_PROXY` literal the 73 names of `vpc-egress-v0.19.0`, `DE-5`
-  passing; the CI/CD CLI by its name is the house's through the activation hook, read by the smoke.
-  Stage 17 1.4's apply of the module on `sandbox/egress` is no longer held by the
-  image (decision 4). The remote IDE works (6d step 7, 2026-09-11). **SMUS's October releases read 2026-10-30**
-  (`upstream-releases.md`): the `SageMakerAIDomain` blueprint (24 managed names) carries the image attachment as
-  profile parameters and RStudio behind a Posit licence, decision due 15 the user's; the portal deleted
-  `eighth-experimentation`'s default space (the trail, 03:49 UTC); custom designations are API-only; the project
-  role's managed policies moved to v76/v47 on 2026-10-29 (`TM-28`); the assistant the user saw is the Data Agent in
-  the Query Editor (`TM-23`, exercised 2026-10-30: the calls in Sandbox's trail as the project role, no Bedrock
-  event of its own; the decision beside 6d decision 9 is the user's). **Decision 15 taken 2026-10-30 as (b)**:
-  `sagemaker-prereqs-v0.9.0`, `experimentation`'s element at order 13 with the image pinned at
-  `var.sandbox_dev_env_version` (11), both applied 2026-10-30 (`US-3` at 14). **2.6 items 1, 3 and most of 4
-  done 2026-10-30**: two environments ended `VALIDATION_FAILED` with `[]` on the image lists' format
-  (`SUP-175`); `test-experimentation` holds `lab-sagemaker-ai-domain` (`d-odhynkcev3yw`, environment
-  `c9ge4welc308pc`) with the house image pinned at 11, idle 60/60/120 and RStudio off (`enableRStudio`
-  `false` until the Posit licence; the portal's RStudio card refuses), `US-5`/`US-7` passing on it; item 4
-  closed with `pilot-jupyterlab` on the pinned image (`InService` 22:46 UTC, the pull from the Production
-  registry), item 5 not taken (RStudio given up by the user on 2026-10-30 on the Posit licence's price, `enableRStudio` `false` locked); **decision due 16 written 2026-10-30, the user's**: the blueprint as the
-  standard for every Sandbox project ((a) recommended, `Tooling` with `enableSpaces` false and the blueprint
-  `ON_CREATE`; 2.7 its sitting; both `Tooling` domains hold zero spaces). Kiro CLI
-  is step 10's door (decision 9); the hub is down since 2026-10-26.
-- **Stage 6e** is held by PR #108 (decision 17, the user's 5.5 agreements; Sonnet 4.5 is Legacy since
-  2026-10-08). A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint);
-  retention mode `none` is declared in all 17 Regions and frozen by 7.5; `claude-opus-5` and
-  `claude-sonnet-5` are refused for this account (`EXC-08`).
-- **Stage 6f in progress**: decision 1 taken 2026-10-26 by the user as (b), a pilot of SMUS's native
-  flow even without LF-Tags (D22 and D26 amended; `GOVERNANCE.md` §Grants' catalog road; `TM-27`). Step
-  11 written (PR #270), 11.2 to 11.5 applied 2026-10-26: `data-governance/publishing/` (the VPC
-  `10.70.0.0/16` the managed `Tooling` takes, the prerequisites, the `Tooling` configuration),
-  `LAKE_PUBLISHERS` set, `governance/`'s `lake-publishing` profile, `data/`'s two SMUS seats and the publisher's grant on `curated.trades`; the
-  Governance Manager created `governed-lake`, whose environment wrote no Lake Formation setting, and
-  approved `eighth-experimentation`'s subscription in the portal; 11.6 to 11.9 done (`trades` published,
-  the target, the subscription, the fulfilment read), 11.10 the read from the query editor, the source's
-  generation off; **decisions 2 to 5 taken 2026-10-27 as recommended, 11.11 done**: a fulfilment is
-  registered by reading (the subscription its record, `catalog.py` `CT-10`), `restricted` and `personal`
-  stay off the road on table and column (`publishing.tf`'s precondition, `CT-12`), generation off on lake
-  sources (`CT-5`), no standing association, no direct Share (`CT-11`); a rollback leaves the projects
-  bucket and one registration (the Data OU's deny). Each project's `Tooling` data source fails daily (`EXC-11`); `sagemaker-prereqs-v0.8.0` gives the manage-access
-  role the Glue policy every `DataLake` environment failed without, applied 2026-10-20; decision 6 taken:
-  `test-experimentation` holds an `ACTIVE` `DataLake` environment, `eighth-experimentation`'s failed record
-  waits for 2.7. **6g** owes 2.4's Athena
-  read, refused as written and unlocked by 6f step 11's subscription, and decision 1's proxy-host replacement at the next `production/proxy/` apply.
-- **Security Hub paused 2026-10-09** (`EXC-14`): `awsds-fsbp-only` keeps the service with no standard;
-  the revert is `runbooks/security-hub.md` §R.
-- **The hub (D38, 6c)**: five VPCs, five peerings, zero NAT, no spoke default route, one explicit Squid
-  proxy. `make hub-up` / `hub-down` start and stop the two hosts, and a spoke `make up` refuses while the
-  proxy is stopped. `10.40.0.0/16` stays unallocated. The planes and their lists are `docs/NETWORK.md`'s;
-  the compute plane's four Anthropic direct-API names (`TM-04`) and GitLab's usage events to
-  `events.gitlab.net` are the user's to decide.
-- **Orchestration is MWAA Serverless only**, provisioned MWAA denied at the root. Stage 6i (done
-  2026-10-12) runs a processing job in the house image under the D13 boundary, then `PythonOperator` and
-  `BashOperator`. **D41 (2026-10-15)**: the SageMaker application is the deployable unit; the CLI deploys
-  it between the two Sandbox projects and bundles it, the pipeline deploys the bundle, and a Step
-  Functions machine per chain with a Scheduler schedule starts the workflows. The tooling is
-  `awsds-workflows` (runbook §T).
-- **Stage 7 DONE 2026-10-27** (the user's decision): pass 4 closed 2026-10-26 (8.2's restore rehearsal 24 min
-  16 s; the host `i-010c8217a1b3062dc` since Stage 12 5.3's 20 GiB rebuild, 2026-11-10). Production holds `pki/`, `tooling/` (GitLab CE
-  v19.4.2, `[D]`), `runners/` (`[E]`), `egress/` and `registry/`; `make gitlab-up RUNNERS=0` leaves the runners
-  out, the build runner rises only with `BUILD=1`, and `make gitlab-up` applies `egress/` before it starts the
-  host. What recurs: a backup before the newest leaves the bucket (2026-11-10's, 01:51 UTC, leaves on
-  2026-12-11) and the leaves' re-issue by 2027-09-22.
-  **`saml.auto.tfvars` lives in the project folder's `secrets/`**: a `tooling/` plan passes
-  `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block.
-- **Stage 8 in progress**: passes 0-3 done (`awsds/ci-gates`, the test runner, the house image on Python
-  3.12 with its recipe in GitLab, copied under `gitlab/`), four deploy roles, and `examples/app-etl/` an
-  application since 2.5, on GitLab's `main` since 2026-10-19 with its eleven CI/CD variables;
-  `v0.2.1`'s pipeline passed `test-deploy` and stored the bundle, and its GitLab release failed on the
-  notes' backticks, fixed in MR !4. Pass 4 ran after Stage 9 with Stage 10's passes 1-2
-  (decision 23). Taken by the user 2026-10-22, as recommended: decision 2 keeps `awsds/infrastructure` for
-  pass 4, 2.5 makes Stage 9's `awsds-<env>-job-exec` the Staging and Production job role, 3.9 writes no S3
-  grant, decision 20's `If-None-Match` deny is not written; decision 26 leaves an application's base pin
-  to its developer, who works in a space on an equivalent version. `staging/probes/` is retired, so `make up ENV=staging` raises `egress/` alone, and the template's
-  lint passes `--image-repository` and the ceiling's seven instance types (PR #186), in GitLab since MR !2.
-  Pass 4, read item by item on 2026-10-22 (PR #244), has no item writable whole before Stage 9's platforms,
-  every Stage 9 and Stage 10 decision now taken, and `slices.py`'s `prepare()` passes `--pipeline` for a
-  deploy role's profile. 3.0's ceiling and 4.1's application halves are applied (2026-10-22, PR #244),
-  with Stage 10 decision 11's decrypt carve-out on `DeploymentManagerAccess`: the orchestration grant is two managed policies, since inline it took Staging's
-  role past IAM's 10,240 characters, and `check-copies.py` keeps the two `foundation/` copies identical.
-  Pass 4's code written 2026-10-22 (PR #244), its Glue job grant applied: `<env>/app/app-etl/` (planned), the
-  render and release scripts, and the template's promotion legs, which reach GitLab by an MR; the legs lint
-  each rendered copy in Stage 10 2.3's promoted mode (`release-application.py --lint`, read offline on
-  `v0.2.1`) and keep Staging's release file as an artifact; 3.8 carries the by-hand sequence. **3.8 ran by hand on 2026-10-23, before the pipeline's leg** (Stage 8's
-  log): `v0.2.1` released into Staging, both slices applied, the chain `SUCCEEDED` at its third execution after
-  two policy fixes, the data keys' and the execution role's `kms:GenerateDataKey` for the XCom encryption
-  (`orchestration-v0.2.0`). **v0.4.0 written 2026-10-24** (`examples/app-etl/` at `main`; v0.3.0 is the template
-  at `0236a99d`): 8.5's governed read, 9.4, Stage 10's pass 3; its six `[P]` applies done 2026-10-24
-  (`runbooks/promotion.md` §0.6), the sittings §T then §V. **The first promotion ran 2026-10-24**: `v0.3.3`'s
-  pipeline #71 took Staging's leg to `SUCCEEDED` and deployed Production, once the lab's CA, the workflow's
-  tag-on-create, the Studio hook under a deploy profile and the release file inside the clone's folder were
-  fixed; **Staging's `egress/` is the user's up and down (decision 27, 2026-10-24: the pipeline raises and destroys no shared slice; `staging-check` reads it, no teardown job, `staging-gate` before the leg (decision 28, 2026-10-25), refusal 10, the deploy roles' egress grant narrowed to the read, applied 2026-10-25)**; 3.7 recorded `v0.3.3`. **§V, 2026-10-24**: the mirror at `c714c47d` (`staging-down` skips the hook
-  as a deploy role); `v0.4.0`'s pipeline #74 stopped at `test-deploy`, which read app-etl-train's ARN for
-  app-etl's run (MR !9), and `v0.4.1`'s #77 at `evaluate`, whose template met the XCom as JSON text
-  (MR !10), so the data release is `v0.4.2` and ix's drift `v0.4.3`. **`v0.4.6` promoted 2026-10-25/26**
-  (pipeline #102, `EXC-22`'s `KmsKeyId`): both legs green, `EXC-22` closed in both accounts, xii's call read
-  in Production's trail, the four `release.tf`s at `v0.4.6` (the orchestration slices' defaults too: a by-hand
-  apply on a stale default rolls the workflows back), Staging's first post-release `make down` clean. With nothing up on 2026-10-26: xxiv answered, vii's third
-  half still open (no reconciliation), 3.3's pin read (the script takes `--SOURCE_SNAPSHOT`; the leg's source
-  of the id is a decision). **The GitLab sitting of 2026-10-26** (`runbooks/promotion.md` §N.7.1): the
-  mirror at `main`, `gates-v0.6.0` with decision 1's zlib pair, `default-v0.10.0` as Sandbox's version 11,
-  xxviii's active half (a global-endpoint `AssumeRole` lands in `us-east-1`, past 4.6's rules). **Decision
-  29 taken 2026-10-27 as (b)**: the root baseline's `DenyDeployRoleAssumptionOutsideTheRegion` applied the
-  same day (14 statements), not reachable by the battery's wording (`SUP-010`, `SUP-011`), so
-  `sts-global-probe` measures it; the next release's sitting is
-  `runbooks/promotion.md` §N.8.2 (its step 12 the exercises of Stage 10 xx's second half and of xv on the
-  template's proxy checks, fixed for `v0.4.7` on 2026-10-28), the warehouse and backup sitting §N.8.3
-  (2026-11-22 to 11-25).
-  **`alerts.auto.tfvars` lives in the project folder's `secrets/`**: `production/foundation`,
-  `staging/foundation` and `sandbox/observability` plans pass
-  `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or destroy the e-mail subscription.
-- **Stage 11 in progress** (`threat-model.md`, `TM-01`..`TM-30`): `TM-17`, the project role's managed policy
-  reaching other accounts' `airflow-celery-*` queues and Bedrock functions, is the user's to decide;
-  `TM-21` applied 2026-10-19 with Stage 17's 1.3, its finding `RESOLVED` (read 2026-10-21); the data cells filters
-  create nothing until decision 12, which since 2026-10-20 also weighs Lake Formation's RLS policies (an
-  attachment narrows an all-rows `SELECT`); `TM-22`..`TM-24`'s mechanisms are read from AWS's pages, their
-  measurements owed. The internal-access analyzer bills on each 1st: run it after
-  2026-11-01.
-- **Stage 12 in progress**: `production/observability/` and `sandbox/observability/` (rank 70, `[P]`)
-  applied 2026-10-18. Every Sandbox alarm notifies `awsds-sandbox-alerts`, its e-mail subscription confirmed
-  2026-10-19, so `OB-3` passes there; it fails in Production by design (`EXC-19`) until the three `[D]` hosts'
-  alarms are wired at a hub session.
-  **The bill passes D12**: 53.31 USD in August and 74.48 in September from the accounts with a profile, and
-  D12's budget notifies nobody. 5.2 read 2026-10-20: the bill moves no layer letter (decision due 3, the
-  user's). 5.3 put GitLab's data volume at 20 GiB on 2026-11-10.
-- **Stage 14**: the pre-vend half done 2026-10-18, steps 2 and 7 still blocked on the account quota.
-  `./aws/vending.py` (`VN-1`..`VN-6`) reads the hand-built unit as nine passes and one note; a unit costs
-  3.50 USD/month at rest and 0.180/h working (`docs/PRICING.md` §3). Terminating the Account Factory product
-  unenrolls an account without closing it, and a closed account's address is spent (2026-10-20); D34's rung,
-  auto-enrollment recommended, is the user's.
-- **Stage 17**: pass 0 in progress; 1.1 read and 1.3 applied 2026-10-19 (`MLflowApp` configured and in
-  `experimentation`, `TM-21` with it), and 1.5 read why the portal greys out *Create MLflow App* (it resolves the blueprint from Data
-  Governance's configurations, which D22 keeps empty): the user created `ml-demo-mlflow` through
-  `create-environment` (`ML-2` read, no CMK). 7.0a and 7.0b applied 2026-10-19 (`AmazonBedrockKnowledgeBase` at `sagemaker-prereqs-v0.7.0`): the Generative AI menu opens and lists no model until one is enabled for the account. Decision 13 taken as (b): a governance project in `data-governance/governance/` and the two model roles in `sandbox/model-access/` (rank 52), applied by the user 2026-10-19, and the five models enabled in Sandbox's console the same evening (Opus, Sonnet and Haiku 4.5 and Titan V2 in projects, Haiku 4.5 and Nova Lite in the playground); decision 11's amendment, Titan V2 and `application-inference-profile/*` in the Bedrock SCP, was applied by the user the same evening: the playground answers with Haiku 4.5 and refuses Nova Lite on its foundation model (7.3). Main pins `vpc-egress-v0.18.0` (`mlflow`), unapplied (1.4). Pass 2's training job waited on a battery run of the instance-preference rows, written in PR #216 and run 2026-10-22 (Stage 9 3.5); the three quota requests still read `CASE_OPENED` on 2026-10-20.
-  **Stage 18 DONE 2026-10-22: D41 item 2 kept** (the user's verdict): a deployment-only project measured in
-  Staging and removed, the estate back to its reading before the stage, `EXC-20` and `EXC-21` closed, the
-  measurements in `SMUS.md`'s deployment-project section and `AWS_SUPPLEMENT.md`. Left: the domain's two `IAM`
-  profiles, a group profile and 44 lineage events (no delete API), and the project key until 2026-11-21
-  (the protected refs read free of its branch on 2026-10-26).
-- **Stage 19: decision 6 (b), the AWS model** (`stage-19-smus-native-data-product.md`; the user's,
-  2026-10-31): a data product produced and published by a SageMaker application on SMUS's native path. Staging
-  and Production each hold a deployment project, the CI/CD CLI deploys every stage from the bundle, Production
-  publishes its own product and a Sandbox project subscribes across accounts; D41 item 2 reopened, 6f decision
-  4 reversed, D22 and D26 amended. Decisions 1 to 20 taken (7, 8 moot): 13 (b) the SCP's three exceptions and
-  a subscription deny, 14 the task the one publisher, 15 the Governance Manager approving in
-  `deploy-production`, 16 (b) the warehouse workflow in Production's project, 17 (a) (`CT-13`), 18 (d) a `dev`
-  project for app-etl alone, 19 (c) no `test` stage, 20 (b) Production alone lists. **Pass 1 run 2026-11-10**
-  in `eighth-experimentation`: the Iceberg table, its asset, listing and lineage (`TM-29`). **Pass 4, 2026-11-11**: both targets associated (`SUP-349`);
-  the `Workloads` SCP's amendment (4.1), `<env>/studio/` (4.4) and `governance/`'s two deployment profiles
-  (4.5) applied; **`deploy-staging` (`5ido8bej1zoeq8`) and `deploy-production`
-  (`d7qcazihvr3s7k`) created, each with the database `app_etl`** (4.6, `INV-21`), then the project roles'
-  grants, the deploy roles' policy and the CLI import's grants (`SUP-353`). Decision 21 (b) (`TM-30`): a fence
-  in the targets' D13 boundary, applied 2026-11-11 (`DT-14`). 2026-11-12, the user's: the flag off in both (4.7,
-  `DT-13`) and `awsds-deploy-staging` owning `deploy-staging`; `awsds-deploy-prod`'s membership at its first call.
-  **Two releases**: T retires the `test` stage (its template is `examples/app-etl/` at `36bcf916`;
-  `runbooks/promotion.md` §N.8.2). **F, the CLI's legs, written 2026-11-12 and nothing applied** (PR
-  #291): `scripts/deploy-application.py`, `<env>/chains/`, the plans in `$HOME/tmp/`, the order in
-  §N.8.4, decisions 22 to 24 due (the stage file's §Release F as written).
-- **VPN**: two client profiles, monitored and split-tunnel, one key (vpn.md §C7). With the tunnel down,
-  macOS's system proxy breaks the `aws` CLI: `NO_PROXY='*'` is the override. A CLI login answered in a
-  browser holding a portal session as another user ends that session, so `aws/login.py` passes
-  `--no-browser`.
-- **Module tags**: `orchestration-v0.3.0` (both `chains/`, unapplied), `orchestration-v0.2.1` (both
-  `orchestration/`; Production's three schedules `DISABLED` between sittings), `vpc-egress-v0.19.0` (`sandbox/egress`, the `mwaa` group's `airflow-serverless`, applied 2026-10-26 with
-  `GROUPS=mwaa`; the other callers `v0.17.0`), `sagemaker-prereqs-v0.10.0` (both `studio/`; Sandbox `v0.9.0`), `wireguard-v0.6.0`,
-  `vpc-v0.4.0` (`sandbox/foundation` and `staging/foundation`; the other callers `vpc-v0.3.1`), `sagemaker-denies-v0.2.0`.
-  Abandoned on origin (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0-v0.14.0, `vpc-v0.3.0`.
-- **Standing rules**: `-input=false` on every plan and apply (Lesson 47); the laptop's Terraform never moves ahead of
-  the deploy image's (Lesson 76); a deploy from a space takes `GROUPS=mwaa`, and every portal tab is closed
-  before `make down ENV=sandbox` (`sagemaker-application.md` §D); never pipe a command whose exit
-  code matters (Lesson 46); a module change is exercised by planning a caller, never by `validate`;
-  `-refresh=false` is forbidden on `sandbox/data/`, where SMUS is a Lake Formation admin (OQ 24); never add
-  an `sts:` action to the RCP without reading `CT.STS.PV.1`'s exclusion note; resolve an account by exact
-  vended name; subnets anchor on AZ `zone_id`; read the denial wording, never the exit code; account-level
-  BPA and the Bedrock retention mode are hand-managed; Log Archive and Audit hold no CLI profile;
-  Control Tower's auto-enrollment is on; `INV-09` is ten principals. Before reporting a gap, read the file
-  that owns it: unexercised denies → `POLICIES.md`; expected readings → `AWS_STATE.md`; SMUS findings →
-  `docs/SMUS.md` and OQ 12-15, 20, 21. No principal can start the crawlers (OQ 19); no Athena in Data
-  Governance. Deferred by decision, do not offer to close: OQ 10 waits for N=2; the Config recorder is
-  left alone (Stage 12 step 6 revisits).
+The chain is Sandbox → Staging → Production: no Development account, ever, and interactive compute is
+Sandbox only. D1-D41 are closed; D41 item 2 is reopened since 2026-10-31 (Stage 19 decision 6 (b)). Gates:
+`make check`, `make check-ou`. Whether anything is up is read with `make status`, never from this file:
+every sitting ends at zero burn, and Stage 19's pass 4 found nothing up on 2026-11-11.
 
-Budget: about 8 KB, state only. A bullet here that explains why, or that a stage file should carry, is a
-stale copy of something that lives elsewhere. Re-trim whenever a stage closes.
+Before asking the user anything, read
+[`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md), and remove a row in the sitting
+that takes it. It holds every decision and act that is the user's, the sittings that need the environment
+up with what each closes, and the dated deadlines.
+
+#### Stages
+
+Done: 0, 1a, 1b, 1c, 1d, 2, 3, 4, 5a, 6a, 6b, 6c, 6i, 7, 16 and 18. Not started: 13, which waits on the
+domain name from the user, and 15, which nothing blocks and whose decisions 1-4 are the user's.
+
+| Stage | State | What comes next |
+|---|---|---|
+| 5b, the Sandbox warehouse | Passes 0-3 applied 2026-09-20 | A warehouse sitting: the `max_query_execution_time` test and the `enable_large_strings_opt_in` re-plan. The bill's half of verification x after the free trial ends on 2026-12-19. The user's: decision 9, when to spend the trial |
+| 6d, Unified Studio's remainder | Steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half. Decision 15 (b) applied 2026-10-30: `test-experimentation` holds the `SageMakerAIDomain` pilot, the house image pinned | The user's: decision due 16 (the blueprint as every Sandbox project's standard, then step 2.7), decision 9 (step 10, the Kiro CLI door), the 1.1 and 1.2 attempts. A Sandbox sitting: 5.1, 6.1 (viii), 7.5's monitored half, 7.6, 7.7, 8.8's tail |
+| 6e, Claude Code on Bedrock | A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint). Held by PR #108 | The user's: the three Claude 5.5 model agreements (decision 17), decisions 11 and 13. Then 6.4's token volume and 8.3's budget notification |
+| 6f, the catalog over the lake | Decision 1 (b), a pilot of SMUS's native flow: step 11 done to 11.11 (2026-10-27), `curated.trades` published by `governed-lake` and subscribed by `eighth-experimentation`. Decisions 2 to 6 taken | The user's: step 2's portal acts, 11.12's rollback residue |
+| 6g, access by identity | Applied 2026-09-17, 1.4 closed on both profiles | 2.4's Athena read, which the user re-specifies. Decision 1's proxy-host replacement at the next `production/proxy/` apply, in a hub sitting |
+| 6h, the Redshift connection | Passes 0-2 done: one project writes and reads the schema `lab` through the Data page and through JupyterLab | The user's: decision 3 (`lineageSync`) and decision 8 (how a second project is admitted). Then a warehouse sitting: the negatives 5.1 and 5.2b, 0.4's portal half, 6.4 |
+| 8, the pipelines | Passes 0-3 done; pass 4 ran with Stage 10's passes: the first promotion on 2026-10-24 (`v0.3.3`), `v0.4.6` in Production since 2026-10-26. Every decision taken | Release T, the next tag (`v0.4.7`), once the user's GitLab acts land: `runbooks/promotion.md` §N.8.2. What is left, in order: §N.6 |
+| 9, the deployment targets | Passes 1, 2, 3 and 5 applied; the producer path (2.4), the governed warehouse and its datashare (9.1 to 9.7) run and read to 2026-10-30. Every decision taken | The warehouse and backup sitting, 2026-11-22 to 2026-11-25 (`promotion.md` §N.8.3): `EXC-13`'s Production half. The quota cases, still `CASE_OPENED`. What is left, in order: §N.6 |
+| 10, orchestration | Passes 1-3 done in Staging and Production; the schedules read starting both chains unattended (6.1, 2026-10-25). Every decision taken | At the release sitting (`promotion.md` §N.8.2, step 12): xx's second half and decision 11's Staging half. What is left, in order: §N.6 |
+| 11, data protection | Pass 0 read; pass 1's data cells filters written, creating nothing. The threat model holds `TM-01`..`TM-30` | The user's: decision 12 (the filtered principal), `TM-17`, decisions 1, 2, 5 and 9. The internal-access analyzer, created after a 1st and deleted before the next: it bills on each 1st |
+| 12, observability and FinOps | Both observability slices applied 2026-10-18; `OB-3` passes in Sandbox and fails in Production by design (`EXC-19`). The bill reads above D12's ceiling: 53.31 USD in August and 74.48 in September | A hub sitting: the three `[D]` hosts' alarm actions. The user's: decisions due 1 and 3, D12's fired revision trigger and its budget notification |
+| 14, Sandbox vending | The pre-vend half done 2026-10-18 (`./aws/vending.py`, `VN-1`..`VN-6`); the rest blocked on the account quota | The user's: the account quota and D34's rung |
+| 17, machine learning in Sandbox | Pass 0 in progress; `MLflowApp` and `AmazonBedrockKnowledgeBase` enabled, `ml-demo-mlflow` created, five models enabled, the playground answering (7.3) | A Sandbox sitting with `GROUPS=mlflow`: 1.4 and 1.6, then passes 2-5. The user's: decisions 5, 6, 7, 10 and 12 |
+| 19, a data product on SMUS's native path | Decision 6 (b), the AWS model: a deployment project per target. Pass 1 run 2026-11-10. Pass 4 owes nothing more with nothing up: `deploy-staging` and `deploy-production` created, the full-table flag off in both targets and `awsds-deploy-staging` an owner of `deploy-staging` since 2026-11-12 (4.7, `DT-13` passing). Decisions 1 to 21 taken, 7 and 8 moot | The user's: pass 2's portal acts, and `awsds-deploy-prod`'s membership once its first pipeline run has created its group. Then release T (the `test` stage retired) and release F (the CLI's legs, 4.9 to 4.11) |
+
+#### The estate between sittings
+
+- **The hub (D38)**: five VPCs, five peerings, zero NAT, no default route in any spoke, one explicit
+  Squid proxy. `make hub-up` and `make hub-down` start and stop the two hosts, and a spoke `make up`
+  refuses while the proxy is stopped. `10.40.0.0/16` stays unallocated.
+- **GitLab (Stage 7)**: Production holds `pki/`, `tooling/` (GitLab CE v19.4.2, `[D]`), `runners/` (`[E]`),
+  `egress/` and `registry/`. `make gitlab-up` applies `egress/` before it starts the host, `RUNNERS=0`
+  leaves the runners out, and the build runner rises only with `BUILD=1`.
+- **The tfvars a worktree lacks** live in the project folder's `secrets/`, and a plan without them
+  destroys what they declare. A `tooling/` plan passes
+  `-var-file=<project folder>/secrets/saml.auto.tfvars`, or it drops the SAML block.
+  `production/foundation`, `staging/foundation` and `sandbox/observability` plans pass
+  `-var-file=<project folder>/secrets/alerts.auto.tfvars`, or they destroy the e-mail subscription.
+- **A promotion's Staging leg** (Stage 8 decision 27): the user raises `staging/egress` before the tag
+  (`make up ENV=staging ONLY=egress`) and destroys it after (`make down ENV=staging`); the pipeline raises
+  and destroys no shared slice.
+- **The release in Production is `v0.4.6`**: the four `release.tf` and the orchestration slices' defaults
+  name it, and a by-hand apply on a stale default rolls the workflows back. `production/orchestration`'s
+  three schedules stay `DISABLED` between sittings.
+- **The house image** is `awsds-sandbox-dev-env` version 11, `default-v0.10.0` (2026-10-26); its `NO_PROXY`
+  literal is the 73 names of `vpc-egress-v0.19.0`.
+- **Orchestration is MWAA Serverless only**, provisioned MWAA denied at the root. The SageMaker
+  application is the deployable unit (D41): the CI/CD CLI deploys it in Sandbox and bundles it, the pipeline
+  deploys the bundle, and a Step Functions machine per chain with a Scheduler schedule starts the workflows.
+  The tooling is `awsds-workflows` (`serverless-workflows.md` §T). A deploy from a Sandbox space needs
+  `sandbox/egress` raised with `GROUPS=mwaa`.
+- **The warehouses** bill 1.44 USD per query-hour at 4 RPU and nothing idle, with no pause, so `make down`
+  is the guarantee, and the ratchet past 4 RPU never returns. Sandbox's compute rises only with
+  `make up ENV=sandbox GROUPS=redshift` or an `ONLY=` naming it. The free trial absorbs the bill to
+  2026-12-19 in Sandbox and to 2027-01-21 in Production. The connection's `lineageSync` runs daily at
+  03:43 UTC and fails (`EXC-17`). The procedures are `redshift-connection.md`.
+- **Security Hub is paused since 2026-10-09** (`EXC-14`): `awsds-fsbp-only` keeps the service with no
+  standard, and the revert is `security-hub.md` §R.
+- **The SCP battery** read `ou` 52 as expected, 0 unexpected, 5 not measured on 2026-11-11, and `root`
+  25, 0, 1 on 2026-10-30. The probes read `ResourceLimitExceeded` as authorized. SageMaker job quotas are
+  above zero in Staging and Production since 2026-10-24.
+- **Bedrock**: the retention mode `none` is declared in all 17 Regions and frozen by Stage 6e's 7.5;
+  `claude-opus-5` and `claude-sonnet-5` are refused for this account (`EXC-08`).
+- **Module pins** are read from the callers (`grep -rn '?ref=' terraform-live`). Abandoned on origin and
+  never pinned (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0 to v0.14.0, and `vpc-v0.3.0`.
+- **The VPN** has two client profiles, monitored and split-tunnel, on one key (`vpn.md` §C7). With the
+  tunnel down, macOS's system proxy breaks the `aws` CLI, and `NO_PROXY='*'` is the override. A CLI login
+  answered in a browser that holds a portal session as another user ends that session, so `aws/login.py`
+  passes `--no-browser`.
+
+A row of the table holds a state and what comes next; a bullet holds a fact that changes how a session
+acts. What ran, with its pipeline numbers and its dates, belongs in the stage file's `Status` row and in
+the log. `./scripts/check-plan-refs.py` fails this section past 12 KB.
+
+### Standing rules
+
+- `-input=false` on every plan and apply (Lesson 47).
+- Never pipe a command whose exit code matters (Lesson 46).
+- A module change is exercised by planning a caller, never by `validate`.
+- `-refresh=false` is forbidden on `sandbox/data/`, where SMUS is a Lake Formation admin (OQ 24).
+- Never add an `sts:` action to the RCP without reading `CT.STS.PV.1`'s exclusion note.
+- Resolve an account by exact vended name. Subnets anchor on AZ `zone_id`.
+- Read the denial wording, never the exit code.
+- Every portal tab is closed before `make down ENV=sandbox` (`sagemaker-application.md` §D).
+- Account-level BPA and the Bedrock retention mode are hand-managed.
+- Before reporting a gap, read the file that owns it: unexercised denies in `POLICIES.md`, expected
+  readings in `AWS_STATE.md`, SMUS findings in `docs/SMUS.md` and OQ 12-15, 20 and 21.
+
+Readings that are expected, not findings: Log Archive and Audit hold no CLI profile; Control Tower's
+auto-enrollment is on; `INV-09` is ten principals; no principal can start the crawlers (OQ 19); there is
+no Athena in Data Governance.
+
+Deferred by decision, not to be offered again: OQ 10 waits for N=2; the Config recorder is left alone
+(Stage 12 step 6 revisits); RStudio is given up on the Posit licence's price (2026-10-30).
 
 ### Lessons carried forward
 
 Read [`docs/plan/lessons.md`](docs/plan/lessons.md) before planning, reviewing, or settling a decision.
 These are recognition keys, not the lessons: each is a title trimmed to what makes it identifiable, and
 the reasoning that makes it usable is in the file. Recognising one is the signal to open it.
+
+The table is a first look by situation; the numbered list below it is complete.
+
+| When about to | Lessons |
+|---|---|
+| Write or read a check, a probe or a proof | 2, 13, 20, 21, 22, 24, 26, 30, 31, 50, 54, 62, 71, 77, 78 |
+| Write a policy, a grant or a role, or say what a principal can do | 5, 11, 14, 17, 18, 28, 29, 66, 67, 70, 72, 75 |
+| Move, rename or share something across accounts, or borrow a session | 3, 9, 10, 25, 48 |
+| Change Terraform, a module, a host or the toolchain | 4, 8, 27, 33, 35, 47, 49, 51, 58, 59, 64, 65, 68, 69, 73, 76, 79 |
+| Call an AWS API, a console wizard or a managed service | 16, 23, 36, 39, 60, 61, 63, 74 |
+| Touch the network, the proxy or a client | 40, 42, 43, 44, 45, 53, 55, 56 |
+| Run a command or write a script | 46, 47, 52 |
+| Write the plan, a record or a decision, or read a vendor page | 1, 6, 7, 12, 15, 19, 32, 34, 37, 38, 41, 57 |
 
 1. **A copy of governed data somewhere less governed is not a hole to be closed.**
 2. **A stand-in sharing an account with what it de-risks proves nothing about permissions.**
@@ -607,8 +560,8 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
 22. **A control whose principal the harness cannot produce is verified by reading, not by attempting.**
 23. **A managed service owns its artifacts' packing — bind to contents, never to an id or a name.**
 24. **A harness authenticates through the mechanism it measures — and the defence against the benign
-    failure hides the serious one; a result that cannot be attributed from its own text — ambiguous OR
-    silent — is separated by a different *channel*, never by a better reading.**
+    failure hides the serious one; a result that cannot be attributed from its own text, ambiguous or
+    silent, is separated by a different *channel*, never by a better reading.**
 25. **A borrowed session outlives the command that needed it, and every later error names the wrong
     account.**
 26. **An "already exists" error is a free authorization probe — and proves nothing without a negative
@@ -641,7 +594,7 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
 38. **An identifier read out of prose is a claim, not a reading — and a name travels further than the
     sentence that carried it, ending up load-bearing where nobody re-checks it.**
 39. **What a console wizard fills and the authoring API does not require is still required — the validator
-    is the deploy AND the teardown, so an incomplete object pins its dependents in both directions; and
+    is the deploy and the teardown, so an incomplete object pins its dependents in both directions; and
     the strict validator arrives one act late.**
 40. **The door a call takes is decided by resolution and routing, never by the endpoint roster — and a
     private zone answers for its whole subtree.**
@@ -662,11 +615,11 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
     move.**
 49. **A comment saying a knob is never turned is a claim about the callers that existed when it was
     written.**
-50. **A check written to a stage's FINAL expectation is red for every pass until that stage ends — give
+50. **A check written to a stage's final expectation is red for every pass until that stage ends — give
     it a discriminator, write it at the pass that makes it true, or name the gap as a dated exception.**
 51. **Two intents sharing one list stay identical until they must differ — then a change made for one
     silently makes it for the other. Lesson 33's mirror, and the more dangerous half.**
-52. **A wait whose only exit is SUCCESS waits forever once its subject is gone — silence is
+52. **A wait whose only exit is success waits forever once its subject is gone — silence is
     indistinguishable from patience.**
 53. **Two systems expressing one intent in the same-looking syntax are not translatable by
     transcription — and they agree on the easy cases.**
@@ -675,13 +628,13 @@ the reasoning that makes it usable is in the file. Recognising one is the signal
 55. **A refusal the sender cannot see is indistinguishable from silence — and the refusal is real;
     the evidence lives in the counter on the refusing side.**
 56. **A configuration line naming a capability the surrounding configuration does not have is
-    INERT, and reads exactly like a working control — verify a routing directive from the
-    ROUTING TABLE.**
+    inert, and reads exactly like a working control — verify a routing directive from the
+    routing table.**
 57. **A paraphrase in a plan becomes the specification; an explanation of a requirement is a fork
     of it. Open the requirement before implementing the step that restates it.**
 58. **Data and code can share a delivery path and have different costs — and the one that reports
-    SUCCESS is the cheap one.**
-59. **Changing WHERE a value is read from can change WHEN it is knowable — and every guard that
+    success is the cheap one.**
+59. **Changing where a value is read from can change when it is knowable — and every guard that
     reads it moves with it, silently.**
 60. **A full-replace update API turns every field you did not pass into a deletion — and the
     object's creator may have injected state no field of that API can restore.**
