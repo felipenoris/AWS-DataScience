@@ -2,19 +2,23 @@
 
 Blueprint for using AWS as a Data Science infrastructure provider.
 
-- `CLAUDE.md` — the working rules and the current position. Size-budgeted (75 KB, enforced by
-  `scripts/check-plan-refs.py`), so narrative that grows lives in `docs/plan/`.
+- `CLAUDE.md` — the working rules, the routing map and the current position. Size-budgeted (75 KB for the
+  file and 12 KB for its Current position, enforced by `scripts/check-plan-refs.py`), so narrative that
+  grows lives in `docs/plan/`.
 - `docs/` — the documentation tree, and the only place documentation lives: the plan core, `docs/plan/`,
   `docs/log/`, and the reference files named below. Everything outside it is code, configuration, or the
   working rules themselves.
-- `docs/GENERAL_PLAN.md` — the **plan core**: guiding principles, the account map, the two indexes
-  (stages and decisions), and the **write** map that says where new content goes. Read this first. The
+- `docs/GENERAL_PLAN.md` — the **plan core**: guiding principles, the route through the stages by
+  subject, the decisions that carry the design, and the **write** map that says where new content goes.
+  It carries no status. Read this first. The
   **read** map — which file answers which question — is kept only in `CLAUDE.md`, "What to read, and when".
 - `docs/plan/` — the plan itself, split so that a task reads only what it needs:
   - `docs/plan/objectives.md` — what the project must achieve, in the user's own words. The specification
     every stage is measured against, copied nowhere.
-  - `docs/plan/stages/` — one file per stage, each declaring the decisions it **consumes**.
-  - `docs/plan/decisions/` — one file per decision `D1`…`D38`, plus a one-line-per-decision `INDEX.md`. All
+  - `docs/plan/stages/` — one file per stage, each declaring the decisions it **consumes**; its header's
+    `Status` row is where the stage's status is written. `INDEX.md` lists the stages in dependency order,
+    with one word of state each.
+  - `docs/plan/decisions/` — one file per decision, `D1` onwards, plus a one-line-per-decision `INDEX.md`. All
     are settled; `D30` was settled as a *revert* and keeps its file, so the record shows what was tried.
   - `docs/plan/runbooks/` — a procedure followed in full and in order, rather than remembered:
     `break-glass.md`, when the Management account root may be used, what to do with it, and what watches
@@ -48,8 +52,8 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   and its index in `CLAUDE.md`.
 - `docs/log/` — record of every step performed manually through the console, one file per stage, mirroring
   `docs/plan/stages/` (`docs/log/log-stage-NN-*.md` ↔ `docs/plan/stages/stage-NN-*.md` — the same slug, with
-  a `log-` prefix, so the two files never share a name). `docs/log/INDEX.md` says what each file records, so
-  finding a step never means reading every log.
+  a `log-` prefix, so the two files never share a name). `docs/log/INDEX.md` says in one line what each file
+  holds, and a log's dated headings are its outline, so finding a step never means reading a log whole.
 - `terraform-live/` — the deployed tree: one folder per controlled account, sliced into independently
   applied units, each slice carrying a `[P]`/`[D]`/`[E]` layer. `terraform-live/README.md` explains how it
   is organised and what is in it today; the authoritative slice-by-slice layout is
