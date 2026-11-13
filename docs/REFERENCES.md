@@ -2433,6 +2433,46 @@
   The report of the lookup, opened by the user from PR #269's draft the same day (open at 18:25:19 UTC):
   <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413>.
 
+- The CI/CD CLI's stages and AWS accounts (read 2026-11-13, for the user's question whether the tool
+  presupposes an account per stage; `main` at `cdb8e3c18f`, 82 commits after `v1.0.9`, still the latest
+  release). A stage maps to a project, and stage projects may sit in different domains, accounts and
+  Regions: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/README.md>. The topologies
+  named are independent projects in one domain and in different domains, with dev and test in one
+  account and prod in another as a use case:
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/architecture.md>. The reference
+  manifest holds `test` and `prod` as projects of one domain in one Region, and the prerequisite is an
+  AWS account with admin access:
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/getting-started/admin-quickstart.md>.
+  The pipeline templates take a role per stage, their environments named `dev-aws-account`,
+  `test-aws-account` and `prod-aws-account`:
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/github-actions-integration.md>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/git-templates/README.md>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/.github/workflows/smus-multi-env-reusable.yml>.
+  The end-to-end example runs its stages in one account under one domain tag, with the stage in each
+  physical name (`bank_mktg_<stage>`), and moves a stage to its own account by the environment and role
+  its job assumes, the manifest and the commands unchanged:
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/examples/end-to-end-data-ml-pipeline/README.md>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/examples/end-to-end-data-ml-pipeline/examples/mlops-pipeline/manifest.yaml>.
+  The catalog example's stages differ by domain tag and Region variable under one `${AWS_ACCOUNT_ID}`:
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/examples/catalog-import-export/manifest.yaml>.
+  One account and Region hold one Glue Data Catalog, so there the catalog guide's premise, the same
+  physical names in every stage (the entry of 2026-10-28), leaves the stages one table between them, and
+  the example's stage-named databases, which keep them apart, are names the import does not match. The
+  code reads no account from the manifest: `create_client` gives boto3 no credentials
+  (`helpers/boto3_client.py`), `resolve_domain_id` lists the caller's domains (`helpers/datazone.py`),
+  `${AWS_ACCOUNT_ID}` is the caller's from STS (`helpers/utils.py`), and GitHub's code search finds
+  `assume_role` in no file of `src`. The same search
+  finds `"associated account"`, `"account association"` and `"domain account"` in no file of the
+  repository, and `"cross-account"` in four. AWS's pages: a stage maps to a separate project and domain,
+  stages can be in different accounts and Regions, and each target's credentials are provided at deploy
+  time through IAM roles, OIDC federation or environment variables; the overview names an independent
+  project per stage, and the prerequisites and the limitations name no account:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-key-concepts.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-cross-region-cross-account.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-prerequisites.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-current-limitations.html>.
+
 - **The aws provider's state machine validation (read 2026-10-24, for [Stage 10](plan/stages/stage-10-orchestration-promotion.md)
   step 1.5 and Stage 8's deploy roles).** `aws_sfn_state_machine` registers `stateMachineDefinitionValidate`
   in its `CustomizeDiff`; when the definition is new or changed it calls `ValidateStateMachineDefinition`
