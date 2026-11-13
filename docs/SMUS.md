@@ -691,6 +691,38 @@ network under a service-managed key (its `helpers/datazone.py`; [`upstream-relea
 run started from the portal on a workflow the CLI made carries none of the stage's variables and fails at
 the DAG's template before any task (Stage 10 xxix).
 
+### The account of a stage
+
+A stage of a manifest names a domain, by id, name or tags with a Region, and a project, and no
+account. The CLI calls AWS with its caller's credentials and assumes no role (Stage 18 0.1 for 1.0.9;
+read again 2026-11-13 on `main` at `cdb8e3c18f`), so a stage's account is the account of the session
+that deploys it and of the project it names. AWS's CI/CD pages and the CLI's README present an account
+per stage as an option: a stage maps to a separate project and domain, stages can be in different
+accounts and Regions, and each target's credentials are provided at deploy time. The CLI's documents
+show both layouts: the admin quickstart's reference manifest holds `test` and `prod` as projects of
+one domain, the end-to-end example runs its stages in one account, and the architecture page adds a
+domain per stage, with prod in another account as a use case.
+
+The Glue Data Catalog is what the layouts differ on: an account and Region hold one, which the
+account's projects share, and a database is addressed by its name. The end-to-end example keeps its
+stages apart there by the stage in each physical name (`bank_mktg_<stage>`). The catalog import
+assumes the same physical names in every stage and matches an asset on its `externalIdentifier`
+without account and Region: in one account the same names are one table for every stage, and
+stage-named tables are names the guide says the import does not match, creating the asset again. An
+application that promotes its catalog therefore needs a Glue catalog per stage, an account or a Region
+of its own. Read in Sandbox on 2026-11-11: `app_etl` cannot exist in `dev` and in `test`, and Stage 19
+decision 19 (c) retired the `test` stage, so every promotion crosses an account. The account is also
+what isolates Production, since a project is no strong boundary (§Project, `SUP-358`).
+
+Here every stage is a project of the one domain (D22), each in its own associated account: `dev` in
+Sandbox, `deploy-staging` in Staging, `deploy-production` in Production. Neither the user guide's
+CI/CD pages nor the CLI's documents describe that layout, and GitHub's code search finds no account
+association in the CLI's repository (2026-11-13). The CLI reaches such a project because it sees a
+domain and a project alone: each leg runs as its account's deploy role, whose `ListDomains` answers
+the associated domain, and Stage 18 measured the deploy in Staging (below). The costs are the shared
+domain's: a form type's name is the domain's (Stage 19 decision 18), and a search lists `dev`'s
+product beside Production's (decision 20).
+
 ### A deployment project in a `Workloads` account
 
 Measured in `Staging` from 2026-10-19 to 2026-10-22 and removed ([Stage 18](plan/stages/stage-18-staging-deployment-project.md)
