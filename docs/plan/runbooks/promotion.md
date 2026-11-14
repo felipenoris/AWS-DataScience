@@ -1495,8 +1495,8 @@ space alone: a sitting without step 13 leaves Sandbox down.
    - **[user] The bundle role's membership**: `awsds-deploy-sandbox-test`'s group added to that project as
      a contributor, as an owner of the project (the infrastructure user once seated, or the data
      scientist in the portal; **done 2026-11-14** in the portal, whose dialog lists the group by the
-     role's name), and removed from `test-experimentation`, where it is a
-     `PROJECT_CONTRIBUTOR` since Stage 8 2.5 (read 2026-11-11). The group is the role's
+     role's name), and removed from `test-experimentation`, where it was a
+     `PROJECT_CONTRIBUTOR` from Stage 8 2.5 to 2026-11-14, the day the user removed it in the portal. The group is the role's
      `IAM_ROLE_SESSION_GROUP` profile, `06d426f2-84d6-38ae-a991-6806981d9520`: such a profile has no
      name, so `search-group-profiles` lists it by id alone and `get-group-profile` names its role:
 
