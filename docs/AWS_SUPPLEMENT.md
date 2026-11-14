@@ -1815,8 +1815,16 @@ entry is still true is the reading.
   152 actions against the default `AWSRAMDefaultPermissionAmazonDataZoneDomain`'s 111, a strict superset
   whose 41 extras are the V2 workbench surface (notebooks, cells, `StartCompute`/`StopCompute`, connections,
   `GetDomainExecutionRoleCredentials`, `StartAccountBootstrapAction`). `--permission-type CUSTOMER_MANAGED`
-  returns empty, so nothing narrower can be had. The association had no public API (read 2026-08-16). Where:
-  `log-stage-06a-unified-studio.md`, 2026-08-21; `open-questions.md` 21.
+  returns empty, so nothing narrower can be had. The association had no public API (read 2026-08-16). The
+  designations guide, read 2026-11-13, gives minimum versions of the domain's RAM permissions for enabling or
+  authorizing a blueprint from an associated account, v11 for this one. Measured 2026-11-14 in Data
+  Governance: the share, last updated 2026-08-21, still carries version 10; version 11 (2026-10-26) adds
+  `datazone:GetDesignation` and `ListDesignations`, and version 12 (2026-11-03), the default, adds
+  `GetGroupProfile`, `ListDeployableEnvironmentBlueprints`, `UpdateAssetOwner` and six Data App actions. From
+  Sandbox the same day `ListDesignations` on the domain was refused, *"because no resource-based policy
+  allows the datazone:ListDesignations action"*, while `GetDomain` answered. Where:
+  `log-stage-06a-unified-studio.md`, 2026-08-21; `open-questions.md` 21; `upstream-releases.md`, the
+  designations row.
 
 - `SUP-148` **`CreateProjectProfile` refuses `ToolingLite` as an on-demand element of a project profile**
   (measured 2026-08-21, Stage 6 1.5). Both profile creates failed with DataZone 400, *"ToolingLite
@@ -3196,8 +3204,12 @@ entry is still true is the reading.
   binding gone. The `AmazonDataZoneProject` tag survived and nothing carried the domain; `domain_id`,
   `project_id` and `domain_region` written into the definition repaired it. The registry's
   `AWS::MWAAServerless::Workflow` marks `Name` and `EncryptionConfiguration` create-only (read 2026-10-18
-  and 2026-10-22), so a new key is a new workflow. Where: `log-stage-06d-unified-studio-remainder.md`,
-  2026-09-10; `log-stage-10-orchestration-promotion.md`, 2026-10-22; `docs/SMUS.md`.
+  and 2026-10-22), so a new key is a new workflow. `Environment`, a workflow's environment variables (API of
+  2026-11-04), is one more field an update drops: the API reference says an `UpdateWorkflow` that omits it
+  leaves the workflow with none (read 2026-11-13 in botocore 1.44.2's model and the user guide, not
+  measured). Where: `log-stage-06d-unified-studio-remainder.md`,
+  2026-09-10; `log-stage-10-orchestration-promotion.md`, 2026-10-22; `docs/SMUS.md`; `upstream-releases.md`,
+  the MWAA Serverless table.
 
 - `SUP-251` **`list-workflow-runs` returns `RunType` null for every run, and `get-workflow-run` carries it**
   (measured 2026-10-10, on Sandbox's two portal-authored workflows). The service model declares `RunType`
@@ -3397,10 +3409,15 @@ entry is still true is the reading.
   with `print_log` true reads `/aws/sagemaker/TrainingJobs`. `GlueJobOperator` calls `glue:GetJob` and
   counts only `EntityNotFoundException` as absent; its log reads *"Checking if job already exists"*, then
   *"Creating job"*, and a refused `GetJob` ends the task with no `CreateJob`. A grant on the create alone is
-  never reached; each read needs its own. Where: `log-stage-06i-sandbox-orchestration.md`, 2026-10-10 and
+  never reached; each read needs its own. The guide's custom code page lists the provider at 9.38.0 on the
+  worker on 2026-11-13, where it listed 9.32.0 on 2026-10-10. Read the same day between the provider's two
+  tags, not measured on a worker: `hooks/glue.py` and `hooks/sagemaker.py` are byte-identical and
+  `_get_unique_job_name` is untouched, so the reads above hold at 9.38.0, and `GlueJobOperator` there raises
+  `GlueJobRunStoppedError` when a run ends in any state but `SUCCEEDED`, where 9.32.0 returned on `STOPPED`.
+  Where: `log-stage-06i-sandbox-orchestration.md`, 2026-10-10 and
   2026-10-16; `log-stage-10-orchestration-promotion.md`, 2026-10-20;
-  `terraform-live/sandbox/workflows/main.tf`. What the blueprint's project-role policies refuse on a first
-  run is `SUP-267`.
+  `terraform-live/sandbox/workflows/main.tf`; `upstream-releases.md`, the MWAA Serverless table. What the
+  blueprint's project-role policies refuse on a first run is `SUP-267`.
 
 - `SUP-269` **MWAA Serverless renders a workflow's Jinja templates when it creates a run, in a short context
   and a sandbox stricter than Jinja's, and a render failure ends the run before any task** (measured
@@ -3413,8 +3430,13 @@ entry is still true is the reading.
   macros.time.gmtime()) }}` passed. A referenced parameter the run does not pass fails the render, *"'dict
   object' has no attribute 'GLUE_UPDATE_CONFIG'"*, rather than rendering empty, and a portal run, whose
   `OverrideParameters` hold only `mwaa_serverless_workflow_id`, failed so on `SUBNET_AZ1`. A manual run's
-  `{{ ts_nodash }}` is the day's midnight. Where: `log-stage-06i-sandbox-orchestration.md`, 2026-10-10 and
-  2026-10-16; `log-stage-10-orchestration-promotion.md`, 2026-10-26.
+  `{{ ts_nodash }}` is the day's midnight. The guide's connections page, read 2026-11-13, says a
+  definition's templates also read `{{ conn.<id> }}`, `{{ var.value.<key> }}` and `{{ var.json.<key> }}`, an
+  Airflow variable being definable as the workflow environment variable `AIRFLOW_VAR_<KEY>` (`SUP-250`);
+  whether the render at run creation resolves them is not measured. Where:
+  `log-stage-06i-sandbox-orchestration.md`, 2026-10-10 and
+  2026-10-16; `log-stage-10-orchestration-promotion.md`, 2026-10-26; `upstream-releases.md`, the MWAA
+  Serverless table.
 
 - `SUP-270` **A worker fetches its `Code` snapshot as the service principal, through the customer's S3
   gateway endpoint** (measured 2026-10-11, Stage 6i decision 7). At each save the service copies the code
@@ -3453,9 +3475,13 @@ entry is still true is the reading.
   `/opt/mwaa-serverless-venv/lib64/python3.12/site-packages`. A Bash task's `PYTHONPATH` starts with
   `/usr/local/airflow/dags`, so its `python3` imported the archive's `six` 1.16.0 over the one Airflow
   requires. A version pinned in the archive is replaced without notice in a Python task whenever the worker
-  carries the package (Python 3.12.14, boto3 1.43.1, Amazon provider 9.32.0). Where:
+  carries the package (Python 3.12.14, boto3 1.43.1, Amazon provider 9.32.0). The guide's custom code page,
+  read 2026-11-13, lists the pre-installed set as `apache-airflow` 3.0.6, `apache-airflow-providers-amazon`
+  9.38.0, `apache-airflow-providers-duckdb` 0.2.1, `duckdb` 2.0.0, `boto3` and `botocore` 1.43.1,
+  `dag-factory` 1.0.0 and `lz4` 4.4.4, where it listed the Amazon provider at 9.32.0 on 2026-10-10; not
+  measured on a worker since 2026-10-11. Where:
   `log-stage-06i-sandbox-orchestration.md`, 2026-10-11 (4.3's re-run); `runbooks/serverless-workflows.md`
-  §C1.
+  §C1; `upstream-releases.md`, the MWAA Serverless table.
 
 - `SUP-275` **A sensor that soft-fails ends an MWAA Serverless run `SUCCESS`, and the API reports its status
   as `NONE` with no task instance for the tasks after it** (measured 2026-10-11, Stage 6i 3.4). Run
@@ -3576,6 +3602,12 @@ entry is still true is the reading.
   creation, and MWAA Serverless's IAM carries only tag condition keys, so no SCP can require a network on
   `CreateWorkflow`. A deploy role that was not a project member, measured in Staging on 2026-10-21, never
   reached the fallback: each storage item stopped on a refused `ListConnections`, before `workflow.create`.
+  Read 2026-11-13 on the repository's `main` (`cdb8e3c18f`), whose `src/` tree is 1.0.9's, nothing executed:
+  unchanged. The handler prints a line for each half, *"No custom VPC config on Tooling blueprint; using
+  default worker VPC"* and *"No custom CMK on Tooling blueprint; using default encryption key"*, and
+  *"Workflows will use Tooling VPC config"* only when it read both the subnets and a security group. It seeks
+  the Tooling environment through the managed blueprints named `Tooling.GA` and `Tooling.Lightning`, then
+  through the project's IAM connection (`ListConnections`, type `IAM`).
   Where: `upstream-releases.md`, the CI/CD CLI table; `log-stage-18-staging-deployment-project.md`,
   2026-10-21.
 
@@ -3598,7 +3630,11 @@ entry is still true is the reading.
   root, and the first file in S3's listing order wins each workflow name or DAG id. An application whose
   workflow reused `app-etl`'s name and DAG id read and rewrote `app-etl`'s YAML, was created from
   `app-etl`'s definition, and its `destroy` plan then held `app-etl`'s Glue job, since `destroy` reads the
-  Glue jobs from the workflow's definition as the service holds it. Where: `log-stage-18`'s pass 5 entry.
+  Glue jobs from the workflow's definition as the service holds it. The open upstream PR #369, read
+  2026-11-13 at `ac3ba5556d`, rewrites `_derive_workflow_search_prefixes` to read `targetDirectory` on the
+  stage's storage and git items: the scans would read each of those directories in the stage's order and the
+  shared root last. Unmerged, and `main`'s code is 1.0.9's. Where: `log-stage-18`'s pass 5 entry;
+  `upstream-releases.md`, the CI/CD CLI table.
 
 - `SUP-348` **`deploy` uploads an application's files to the project's shared root and deletes none the
   new bundle lacks** (measured 2026-11-10 in Sandbox, Stage 19 pass 1, the same version). Run 1's
