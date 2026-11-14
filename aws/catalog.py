@@ -1628,9 +1628,10 @@ def main(argv: list) -> int:
             "listing is read through GetListing or not at all, and a DENIED cell in section 4 is the\n"
             "permission ceiling rather than an empty policy. The Sandbox session is answered, as a\n"
             "contributor of both projects. A fulfilment lands where CT-7 and CT-10 look (measured\n"
-            "2026-10-26, Stage 6f 11.9). A direct Share has never run here (6f 2.5): CT-11 fails on\n"
-            "a subscription with no accepted request and on one requested by a member of the owning\n"
-            "project, so either record a Share leaves is a failure."
+            "2026-10-26, Stage 6f 11.9). A direct Share ran once, on a Sandbox project's product and\n"
+            "no lake listing (Stage 19 pass 2, 2026-11-14): it left a request made by a member of the\n"
+            "owning project, accepted at creation with no reviewer. CT-11 fails on that record and\n"
+            "on a subscription with no accepted request, on a lake listing."
         )
         rep.line()
         rep.text(

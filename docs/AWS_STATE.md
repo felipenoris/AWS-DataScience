@@ -354,7 +354,7 @@ Formation grants the creator of a catalog object and no code here asked for it; 
 the data lake administrator by decision 5. It is not an applied triple and nothing revokes it. The
 grants SMUS-managed principals hold in Sandbox are not rows either: each is on a project-owned object
 (`mydatabase`, `default`, `mydatabase.house-price`, `glue_db_4zojr4rr6bmnww` and its tables since
-2026-10-20, `glue_db_blerpkhn9nj7o0` since 2026-10-26, a project's `dev/` location), and `./aws/catalog.py` `CT-7` and `CT-8` read them, 14 on
+2026-10-20, `glue_db_blerpkhn9nj7o0` since 2026-10-26, `app_etl.trades_notional` since 2026-11-10 with a subscription's `SELECT` to `IAMPrincipals` under `test-experimentation`'s context since 2026-11-14, a project's `dev/` location), and `./aws/catalog.py` `CT-7` and `CT-8` read them, 14 on
 2026-10-18 and 21 on 2026-10-20.
 
 Stage 11's data cells filters and their grants (`data-governance/data/filters.tf`, `consumer-data`'s
