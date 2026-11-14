@@ -2437,3 +2437,27 @@ necessário para avançarmos na conclusão do estágio 19."*
   word in this chat. `CLAUDE.md`'s table of refusals gains the row.
 - **[Claude] The push and the PR**, on the user's word in this chat, *"Autorizo push e PR"*: the branch
   pushed at 19:47:31 UTC, PR #301 opened at 19:47:55 UTC.
+
+## 2026-11-14 — item 33: the house image attached to `app-etl-dev`'s domain
+
+One AWS write, on the user's word in this chat: *"Autorizo o attach"*. Claude's hand, as the
+infrastructure user through `awsds-infra-sandbox-1` (`InfrastructureAccess`, read at 20:04 UTC).
+
+- **[Claude] The domain read**, 20:04 UTC: `d-spi9kgo6x5b4` is
+  `SageMakerUnifiedStudio-ceweti7jbiu1hs-…-dev`, `app-etl-dev`'s, `InService` with no `FailureReason`.
+- **[Claude] The peer told** before the write: the one other session on the laptop, *Worktrees para
+  apagar*, idle.
+- **[Claude] `dev-env.md` §C6's two commands**, their three files in the session's scratch folder rather
+  than `$HOME/tmp`: the live `DefaultUserSettings`, ten keys and no `CustomImages`; `sandbox/dev-env/`'s
+  `custom_images` output, `awsds-sandbox-dev-env-jupyterlab` and `awsds-sandbox-dev-env-codeeditor` on
+  `awsds-sandbox-dev-env` with no version number; the edited block, whose diff against the live one
+  carried the two entries alone.
+- **[Claude] `update-domain`**, 20:05:22 UTC, exit 0, the domain's ARN answered.
+- **[Claude] Read back**, 20:05:36 UTC: `InService`, no `FailureReason`, `LastModifiedTime` 20:05:24 UTC;
+  the whole block's diff against the one read before carries the two `CustomImages` entries alone, and
+  the block equals the one sent once keys are sorted; no space in the domain.
+- **[Claude] Written**: item 33's row, §The Sandbox sitting's step 2 and the status row; the waiting
+  list's row removed and the Sandbox row's first column; `promotion.md` §N.8.2 step 13's space;
+  `dev-env.md` §C6's measured writes; `CLAUDE.md`'s row.
+- **Not read**: the portal's picker (`dev-env.md` §C7), which the Sandbox sitting's space reads at its
+  step 13.

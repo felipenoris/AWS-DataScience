@@ -186,8 +186,8 @@ aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sand
 ```
 
 The only differences must be the entries you added. **Measured** on the attach of 2026-09-10, the
-re-attaches on versions 2, 5, 6 and 7 (2026-09-11 to 2026-10-15), and the four writes of the probe
-image on 2026-10-15: each time the diff carried nothing but `CustomImages`, and the domain came back
+re-attaches on versions 2, 5, 6 and 7 (2026-09-11 to 2026-10-15), the four writes of the probe
+image on 2026-10-15 and the attach to `app-etl-dev`'s domain on 2026-11-14: each time the diff carried nothing but `CustomImages`, and the domain came back
 `InService` with no `FailureReason`.
 
 **No `ImageVersionNumber`, by Stage 8 decision 7 (taken 2026-10-15).** The slice's `custom_images`
