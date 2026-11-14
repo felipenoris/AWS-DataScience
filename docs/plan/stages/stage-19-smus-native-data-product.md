@@ -1327,7 +1327,7 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
   **Run 2026-11-14, 05:23 to 05:26 UTC, all checks passed**: `CT-17` explains 13 grants on
   `app_etl.trades_notional` and `mydatabase.house-price`, one of them pass 2's same-account
   fulfilment; `CT-16` notes the owner's Share (`SUP-362`); `CT-18` notes `house-price`, listed
-  with no form since 2026-09-13 (`EXC-24`, the owner's act in the waiting list); `CT-19` notes
+  with no form since 2026-09-13 (`EXC-24`, kept as a note by the user that day; the owner's act in the waiting list); `CT-19` notes
   0.5's link, `trades` in `eighth-experimentation`'s inventory, unlisted. Production's half has
   no listing to read before 4.12: `./aws/catalog.py --self-check` holds those rules on sample
   records, in `make check` and in pre-commit, and three runs with a constant replaced read the

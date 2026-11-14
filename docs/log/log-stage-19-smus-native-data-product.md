@@ -2291,3 +2291,13 @@ catalog.py?"*.
 - **[Claude] Written**: `EXC-24` in `AWS_STATE.md`; `SUP-363`; `aws/INDEX.md`; `POLICIES.md`'s row
   on the subscription deny; the stage file's 6.1, 2.6 and item 24; the owner's act on
   `house-price` in the waiting list; `--self-check` in `make check` and in pre-commit.
+
+## 2026-11-14 — `EXC-24` kept by the user: `house-price` stays a note in `CT-18`
+
+No AWS call. The user's decision, recorded by Claude's hand.
+
+- **[user] *"Manter como nota"***, to *"Mantenho o house-price sem classificação como nota
+  (EXC-24)?"*, the other answer offered being to let `CT-18` fail on the listing.
+- **[Claude] Written**: the decision in `EXC-24`'s row, in step 6.1's note and in the waiting
+  list. `UNCLASSIFIED_BY_EXCEPTION` keeps the asset's row; the owner's act that closes the
+  exception stays the user's, on no date, and nothing waits on it.
