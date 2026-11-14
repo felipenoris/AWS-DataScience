@@ -1400,10 +1400,11 @@
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designation-permissions.html>,
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/example-designations.html>; the
   migration tool's page: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/job-migration.html>;
-  the admin guide's document history, with the domain execution policy's entries of 2026-11-05 and 2026-11-12:
+  the admin guide's document history, with the domain execution policy's entries of 2026-11-05 and 2026-11-12
+  and, read again at 02:48 UTC on 2026-11-14, the two project policies' entries of 2026-11-13:
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html>; AWS's managed
-  policy reference, which gives each policy's version and edit time (v76, v47, v84 and v9 unmoved, v27 for the
-  domain execution policy):
+  policy reference, which gives each policy's version and edit time (v76, v47, v84 and v9 on the pages, v27 for
+  the domain execution policy; IAM listed v77, v48 and v85 that evening, `SUP-005`):
   <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectUserRolePolicy.html>,
   <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectRoleMachineLearningPolicy.html>,
   <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectProvisioningRolePolicy.html>,

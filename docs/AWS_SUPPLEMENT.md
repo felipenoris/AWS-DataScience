@@ -146,9 +146,16 @@ entry is still true is the reading.
   2026-08-26 and 2026-10-17 removed no permission. On 2026-10-17 IAM served v45 while AWS's reference page
   still showed v44 (edited 2026-09-14) and the admin guide's update table named no change after 2026-06-25.
   The project records no CloudTrail event for a revision (stated, not measured), so the instrument is
-  pulling `DefaultVersionId` and `UpdateDate` and diffing `get-policy-version`. Where: `open-questions.md`
+  pulling `DefaultVersionId` and `UpdateDate` and diffing `get-policy-version`. Read again 2026-11-14 in
+  Sandbox with `iam list-policy-versions`: the user role policy v77 and the machine learning policy v48, both
+  of 2026-11-13 20:47 UTC, the provisioning policy v85, of 20:07 UTC, and
+  `SageMakerStudioDomainExecutionRolePolicy` v24 to v27, between 2026-11-04 and 2026-11-12; no action was
+  dropped from any of them. AWS's reference pages, read at 20:02 UTC on 2026-11-13, showed v76, v47 and v84,
+  and still did at 02:48 UTC on 2026-11-14, six hours after IAM listed the new versions. The admin guide's
+  document history carried entries for v77 and v48 by then, dated 2026-11-13, and none for v85 nor for the
+  domain execution policy's v24 and v26. Where: `open-questions.md`
   question 22; `log-stage-06a-unified-studio.md`, 2026-08-23; `log-stage-17-sandbox-machine-learning.md`,
-  2026-10-17.
+  2026-10-17; `upstream-releases.md`, the SageMaker Unified Studio table.
 
 - `SUP-006` **`iam simulate-custom-policy` refuses any input policy longer than 2,000 characters** (measured
   2026-09-11, Stage 6e step 3.1). Called with two SageMaker Unified Studio policy documents, 4,720 and
@@ -1817,12 +1824,8 @@ entry is still true is the reading.
   `GetDomainExecutionRoleCredentials`, `StartAccountBootstrapAction`). `--permission-type CUSTOMER_MANAGED`
   returns empty, so nothing narrower can be had. The association had no public API (read 2026-08-16). The
   designations guide, read 2026-11-13, gives minimum versions of the domain's RAM permissions for enabling or
-  authorizing a blueprint from an associated account, v11 for this one. Measured 2026-11-14 in Data
-  Governance: the share, last updated 2026-08-21, still carries version 10; version 11 (2026-10-26) adds
-  `datazone:GetDesignation` and `ListDesignations`, and version 12 (2026-11-03), the default, adds
-  `GetGroupProfile`, `ListDeployableEnvironmentBlueprints`, `UpdateAssetOwner` and six Data App actions. From
-  Sandbox the same day `ListDesignations` on the domain was refused, *"because no resource-based policy
-  allows the datazone:ListDesignations action"*, while `GetDomain` answered. Where:
+  authorizing a blueprint from an associated account, v11 for this one. Measured 2026-11-14: the share still
+  carries version 10, and what that withholds from an associated account is `SUP-360`. Where:
   `log-stage-06a-unified-studio.md`, 2026-08-21; `open-questions.md` 21; `upstream-releases.md`, the
   designations row.
 
@@ -1956,7 +1959,10 @@ entry is still true is the reading.
   2026-11-14, Stage 19): Sandbox's `InfrastructureAccess`, a `PROJECT_CONTRIBUTOR` of
   `test-experimentation`, was refused `DeleteProjectMembership` there, *"User is not permitted to perform
   operation: DeleteProjectMembership DesignationPolicy does not allow access."*; member management is
-  `PROJECT_OWNER`'s by that designation's own description (`upstream-releases.md`, read 2026-10-30). Where: `log-stage-06d-unified-studio-remainder.md`, 2026-10-30;
+  `PROJECT_OWNER`'s by that designation's own description (`upstream-releases.md`, read 2026-10-30). A member
+  account's resource-policy refusals follow the version of the permission on the domain's RAM share
+  (`SUP-360`, measured 2026-11-14): version 12 names `GetGroupProfile`, and no version names
+  `GetProjectProfile`. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-10-30;
   `log-stage-06f-data-governance.md`, 2026-09-18, 2026-10-18 and 2026-10-26;
   `log-stage-19-smus-native-data-product.md`, 2026-11-11; `aws/catalog.py`.
 
@@ -2054,6 +2060,36 @@ entry is still true is the reading.
   `-parallelism=1`, or is applied twice: run that way the same day, six grants of three types on the
   same unit were created in 72 s with no refusal. Where: `log-stage-19-smus-native-data-product.md`,
   2026-11-11.
+
+- `SUP-360` **A DataZone domain's RAM share keeps the version of its managed permission it was created
+  with, so an action AWS adds to the permission later does not reach an associated account** (measured
+  2026-11-14 in Data Governance and Sandbox, `upstream-releases.md`'s re-read). `ram
+  list-resource-share-permissions` on `DataZone-EXTENDED_ACCESS-<domain id>-ORG-ONLY`, created 2026-08-21 with a
+  `lastUpdatedTime` of that same second, read `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`
+  at version 10, `defaultVersion` false; `ram list-permission-versions` read version 11, of 2026-10-26, and
+  version 12, of 2026-11-03, the default. Read with `ram get-permission`: version 11 adds
+  `datazone:GetDesignation` and `ListDesignations` to version 10's 152 actions, and version 12 adds
+  `GetGroupProfile`, `ListDeployableEnvironmentBlueprints`, `UpdateAssetOwner` and six `DataApp` actions, 163
+  in all. From Sandbox, as InfrastructureAccess, `ListDesignations` on the domain answered *"is not
+  authorized to perform: datazone:ListDesignations on resource:
+  arn:aws:datazone:us-west-2:<account>:domain/<domain id> because no resource-based policy allows the
+  datazone:ListDesignations action"*, while `GetDomain` from the same session answered and `ListDesignations`
+  from Data Governance returned the two managed designations. The designations guide gives minimum versions
+  of the permission, v11 for this one, and does not say that a share stays at the version it was created
+  with. Version 10 names `GetUserProfile` alone of the profile reads, which accounts for the
+  `GetGroupProfile` refusal the CLI's deploys from a member account have logged since 2026-10-19, in the same
+  wording (`SUP-157`); the share has not been moved to confirm it. Moving it to the default version is a RAM
+  write in the domain's account. Where: `upstream-releases.md`, the designations row;
+  `waiting-on-the-user.md`.
+
+- `SUP-361` **`list-environment-blueprints` and `get-environment-blueprint` date one managed blueprint
+  differently** (measured 2026-11-14 on `awsds-studio`, `upstream-releases.md`'s re-read). `datazone
+  list-environment-blueprints --managed` read `SageMakerAIDomain` with `createdAt` and `updatedAt` both
+  2026-08-19T22:44:32Z, from Data Governance and from Sandbox alike. `get-environment-blueprint` on the same
+  identifier read `createdAt` 2026-08-21T00:49:55Z and `updatedAt` 2026-10-22T22:46:51Z, the dates the reading
+  of 2026-10-30 recorded, with the template `DataZone-SageMakerAIDomain-prod-20260905` and its 17 user
+  parameters. A roster listing does not show that a blueprint's template moved; the get does. Where:
+  `upstream-releases.md`, the `SageMakerAIDomain` row.
 
 ### Environments and projects
 
