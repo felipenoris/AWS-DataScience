@@ -2614,3 +2614,99 @@ project folder.
   one instance each, 0.0052 and 0.0154 USD/h; `sandbox/egress` `UP`, 28 resources, 0.1800 USD/h;
   `production/tooling` stopped; the estimated burn 0.2006 USD/h. A first run at 22:26 UTC was stopped
   at its sixth slice: without `TF_PLUGIN_CACHE_DIR` each slice was downloading its own providers.
+
+## 2026-11-14 — the Sandbox sitting, steps 5 to 12: pass 2's window, the revoke, item 20, `app-etl-dev`'s database
+
+The user's acts in the portal and in the space; Claude's reads as `awsds-infra-sandbox-1` and
+`awsds-infra-data`.
+
+- **[user] The space** `jup-std` in `test-experimentation`, JupyterLab on the house image, its app
+  `InService` from 22:34:48 UTC on `d-lfgbdrjncmsu`.
+- **[user] viii, the Spark read**: `%%pyspark project.spark.fineGrained`, `SELECT count(*) AS n FROM
+  glue_db_4zojr4rr6bmnww.trades_notional`, `n` 10; started 22:47:18, 3 min 05.6 s with the session's
+  creation. The connection is a Glue interactive session (`SPARK_GLUE`),
+  `4gqfau9xuo6e4w-93939e2b-07b3-4c1b-b18a-e875438bd870`: Glue 5.0, 10 `G.1X` workers, an idle timeout of
+  60 min, the consumer's project role (`get-session`, 23:05 UTC).
+- **[user] Decision 17's reads** from the space's terminal, as
+  `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw/SageMaker`: `get-data-source` on `budryu9mt9y5u8`
+  answered `…-AwsDataCatalog-app_etl-default-datasource` and the project `avhvbqn37ty7m8`;
+  `get-data-source-run` on `6bnfg5dk961bps` `SUCCESS`, `updated` 1; `list-data-source-run-activities`
+  `trades_notional` and `4j6p77v7dm2840`. A non-member project's role reads another project's source, its
+  run and its activities.
+- **[user] xi's negative**: `head-object` on the table's `00003-a0aed729-…metadata.json` refused, `403
+  Forbidden`; `list-objects-v2` on the table's folder answered one key,
+  `…/trades_notional/data/00000-9-41aaf172-…-00001.parquet`.
+- **[Claude] Found**: the listing is granted by the managed `SageMakerStudioProjectUserRolePolicy` v77,
+  statement `AirflowListDomainS3Permissions`: `s3:ListBucket` on `${aws:PrincipalTag/DomainBucketName}`
+  under the resource account's condition, with no `s3:prefix` condition. The statement beside it,
+  `ListDomainS3BucketPermissions`, conditions the same action to the project's own prefix. The bucket's
+  policy holds `DenyInsecureTransport` alone. Every project role of the domain lists every project's keys
+  in `awsds-sandbox-smus-projects`, and a partitioned table's keys carry its partition values. No file of
+  this repository records it.
+- **[user] The revoke** in `eighth-experimentation` from the portal. The same cell run right after it
+  read 10; run again at 23:01:21, `TABLE_OR_VIEW_NOT_FOUND`, 6.9 s. The same `list-objects-v2` answered
+  the same key after the revoke.
+- **[Claude] ix's pieces**, 23:03:15 UTC: the subscription `REVOKED`; the grant `cm2l6qv25dsy6o`
+  `ResourceNotFoundException`; on `app_etl.trades_notional` the owning project role's
+  `ALL,ALTER,DELETE,DESCRIBE,DROP,INSERT` and `SELECT` alone, the subscription's conditioned `SELECT`
+  gone; the link `EntityNotFoundException`; `test-experimentation`'s asset `b5r73n41qe7jf4` still in its
+  inventory.
+- **[Claude] The trails**: Data Governance's `RevokeSubscription` on `d21t6zwyzrcas0` at 23:00:00 by
+  `awsds-data-studio-domain-execution`, session `user-28f1b390-0041-7068-8cc7-9ccef94277d1`, no error,
+  no `retainPermissions` in the request. Sandbox's `BatchRevokePermissions` at 23:00:52 by
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/AWSDataZone-Subscriptions`, one entry, and
+  `DeleteTable` `trades_notional` at 23:01:02 by
+  `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw/AWSDataZone-Subscriptions`, no errors.
+- **[Claude] ix read**: the open session read through the link until the link's delete, 62 s after the
+  revoke, and resolved no table after it. Whether a session reading by the target's name keeps reading
+  past `BatchRevokePermissions` is not measured.
+- **[user] The kernel closed**. **[Claude]** the session `STOPPING` at 23:07:29 and `STOPPED` at
+  23:07:37 UTC, `ExecutionTime` 1151.9 s, `DPUSeconds` reported 0.0: about 1.4 USD at 10 DPU and 0.44
+  USD/DPU-h, `docs/PRICING.md`'s Glue rate before 6.0, written for ETL.
+- **[user] The space deleted** from the portal. **[Claude]** no space and no app on `d-lfgbdrjncmsu` at
+  23:12:58 UTC.
+- **[user] Steps 7 to 9** in the portal: the data product `trades-notional`, the asset `trades_notional`
+  and the source `…-AwsDataCatalog-app_etl-default-datasource` deleted.
+- **[Claude] Read** 23:12:58 UTC: the data product `bvs7m8z4h6w70w` and its listing `dpx3r3w5msguc0`
+  `ResourceNotFoundException`; the asset `4j6p77v7dm2840` `ResourceNotFoundException`, its listing
+  `ct5d0innrgw3v4` `INACTIVE`; the source `budryu9mt9y5u8` `ResourceNotFoundException`, ahead of its
+  23:41 run; `my-data-product` (`cqrp6eqjjpvvgw`) `CREATED`. `eighth-experimentation` keeps the assets
+  `house-price` and `trades`, and the sources over `new_database`, `glue_db_blerpkhn9nj7o0` and
+  `mydatabase` beside the Tooling one.
+- **[user] Step 10's drops** in the query editor, `DROP TABLE app_etl.trades_notional;` and `DROP
+  DATABASE app_etl;`, then **step 11's** `delete-environment` on `chz5jdb80ohocw`, run by the user from
+  the laptop as Sandbox's `InfrastructureAccess`, the step having it by Claude's hand on the user's word.
+- **[Claude] Read** 23:18:38 UTC: `app_etl` `EntityNotFoundException`; the environment
+  `ResourceNotFoundException`, its stack `DataZone-Env-chz5jdb80ohocw` `DELETE_COMPLETE` at 23:18:11.98;
+  no grant on the database. The table's folder holds no current object: 16 versions noncurrent behind 31
+  delete markers, the latest at 23:17:27, so the drop removed the files and the bucket's 90-day
+  noncurrent expiration keeps them. `eighth-experimentation`'s environments: `Tooling`,
+  `eighth-experimentation-lakehouse`, `create-datalake-database-env-new_database-…`, `ml-demo-mlflow` and
+  the `CREATE_FAILED` `create-datalake-database-env-mydatabase-…`. The drops' `DeleteTable` and
+  `DeleteDatabase` were not yet in Sandbox's trail at 23:19 (Lesson 62).
+- **[Claude] The retirement's writes**, both trails read at 23:50 UTC, every portal call by
+  `awsds-data-studio-domain-execution` for the data scientist's session `user-28f1b390-…`:
+  - Sandbox: `DeleteApp` and `DeleteSpace` on `jup-std` (`d-lfgbdrjncmsu`) at 23:09:28 and 23:09:32, by
+    `test-experimentation`'s project role in the user's session; `DeleteTable` `trades_notional` at
+    23:17:26 and `DeleteDatabase` `app_etl` at 23:17:36, by `eighth-experimentation`'s project role
+    (`datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, session `28f1b390-…@5hkjdsy3umpi1c`), no errors.
+  - Data Governance: `CreateListingChangeSet` `UNPUBLISH` on `bvs7m8z4h6w70w` at 23:09:55 and
+    `DeleteDataProduct` at 23:10:01; `DeleteDataSource` on `budryu9mt9y5u8` at 23:11:14 refused,
+    `ValidationException` with no message; `UNPUBLISH` on `4j6p77v7dm2840` and `DeleteAsset` at 23:11:38;
+    `DeleteDataSource` on `budryu9mt9y5u8` accepted at 23:11:51. The source's delete was refused while
+    its imported asset stood and accepted 13 s after the asset's delete; the cause is inferred from the
+    order, the refusal carrying no text. `DeleteEnvironment` on `chz5jdb80ohocw` at 23:18:00, by Sandbox's
+    `AWSReservedSSO_InfrastructureAccess_…` from `aws-cli/2.37.12`.
+- **[user] Step 12**: `app_etl` created in `app-etl-dev` from the portal.
+- **[Claude] Read** 23:25 UTC: the environment `b9304qgv01an0w`,
+  `create-datalake-database-env-app_etl-1794698623506`, `ACTIVE`, created 23:23:44; the database
+  `app_etl`, *"Created by DataZone for project app-etl-dev"*, at
+  `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/ceweti7jbiu1hs/dev/data/catalogs/`, created
+  23:24:00. Lake Formation's grants under `context.datazone.projectId=="ceweti7jbiu1hs"` to the
+  account's `IAMPrincipals`: `CREATE_TABLE,DESCRIBE,DROP` on the database, `ALTER,DELETE,DESCRIBE,DROP,
+  INSERT` and `SELECT` on its tables; `awsds-sandbox-smus-provisioning` grantable `ALL` on the database;
+  `awsds-sandbox-smus-manage-access` `CREATE_TABLE,DESCRIBE` with grantable `DESCRIBE`, and grantable
+  `DESCRIBE` and `SELECT` on the tables. The source `5xkhlb1ubnrf9s`,
+  `…-AwsDataCatalog-app_etl-default-datasource`, created 23:24:11.87, `cron(24 23 * * ? *)`, the minute of
+  its creation as `SUP-184` read; `publishOnImport` false, business names off, the filter `app_etl`
+  `INCLUDE *`, on the connection `d4r792pkc5soeo`; no run.
