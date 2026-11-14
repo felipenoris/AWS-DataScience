@@ -2301,3 +2301,64 @@ No AWS call. The user's decision, recorded by Claude's hand.
 - **[Claude] Written**: the decision in `EXC-24`'s row, in step 6.1's note and in the waiting
   list. `UNCLASSIFIED_BY_EXCEPTION` keeps the asset's row; the owner's act that closes the
   exception stays the user's, on no date, and nothing waits on it.
+
+## 2026-11-14 — PR #299 merged; this log reviewed against the session's transcript
+
+No AWS call answered. Claude's hand, on the user's word: *"Fiz todos os merges. Antes de fecharmos
+esta thread, confira se o log está devidamente atualizado com o andamento desta thread."*
+
+- **[user] PR #299 merged**, 17:22:15 UTC, squashed into `c6065e4b`; the tree is the branch's. This
+  entry is on `claude/stage-19-log-review`, cut from that commit in the same worktree.
+- **[Claude] The review**, this log against the session's transcript, from its first message on
+  2026-11-11 at 04:15 UTC to this one:
+  - Every `terraform apply` the session ran is in an entry with its result, from
+    `identity/org-policies` on 2026-11-11 at 14:23 UTC to `sandbox/workflows/` on 2026-11-14 at
+    02:42, the `data-governance/governance` apply that ended in the provider's error at 15:21 UTC
+    on 2026-11-11 among them. So are the four the app's classifier refused, all on 2026-11-11:
+    the SCP's at 04:35 UTC and `staging/studio`'s after it, under the opening message's blanket
+    authorization; `staging/studio`'s at 14:31, past the three applies named; and the one asked by
+    a question, after 16:08.
+  - Every AWS write outside Terraform is in an entry: the candidate SCP's life on `Policy Test`
+    and the RAM association (2026-11-11, 04:31 to 04:37 UTC), both `create-project` and both
+    `create-environment` calls (15:25 to 15:31), and the two refused the same day,
+    `put-data-lake-settings` and `create-project-membership`. So are both module tags,
+    `sagemaker-prereqs-v0.10.0` and `orchestration-v0.3.0`.
+  - Every message of the user's that carried an authorization, a decision or an act is quoted.
+    The ones not quoted are two questions on what could be advanced with nothing up, each
+    answered in chat and followed by a quoted choice, and the note of #292's merge, which an
+    entry records with its time.
+  - Every pull request of the session carries its merge's time and commit: #288, #289, #291, #292
+    and #295 to #298. #299's is this entry's.
+  - Of the session's subagents, the one that edited files is named in its entry, release T's;
+    the other three read the repository alone.
+  - The session ran no `make up`, `make hub-up` or `make gitlab-up`.
+- **[Claude] Found, and written**:
+  - The stage file's `Status` row left 2.6's reading out of what pass 2 owes: verification x, one
+    run of `./aws/catalog.py` after the consumer's source runs at 02:51 UTC on 2026-11-15, with
+    nothing up, while the subscription stands.
+  - `CLAUDE.md`'s row for this stage carried neither 6.1's product road nor that reading.
+- **[Claude] Not read**: what is up. `make status` at 17:30 UTC read nothing, the SSO token having
+  expired (*"Token has expired and refresh failed"*): 16 slices `UNREADABLE`, its USD 0.0000/h a
+  floor and no measurement. The reading waits for the user's sign-in as the infrastructure user.
+
+## 2026-11-14 — what is up, read at the session's close: nothing billing by the hour
+
+Read-only, as the infrastructure user, signed in by the user: *"usuario sso infra logado. pode
+prosseguir com as leituras."* Claude's hand.
+
+- **[Claude] The identity**, 17:34 UTC: `InfrastructureAccess` on `awsds-infra-data`,
+  `awsds-infra-sandbox-1`, `awsds-infra-staging` and `awsds-infra-prod`.
+- **[Claude] `make status`**, 17:35:23 to 17:37:36 UTC, exit 0, no slice unreadable: the burn
+  0.0000 USD/h. Stopped, one instance each: `production/vpn`, `production/proxy` and
+  `production/tooling`. Down, with no resource: Production's `egress`, `workloads-egress`,
+  `warehouse-compute`, `runners` and `probes`; Sandbox's `egress`, `warehouse-compute` and
+  `probes`; Staging's `egress`, `app/app-etl` and `orchestration`. Production's `app/app-etl` (3)
+  and `orchestration` (41) are up at no hourly rate, as on 2026-11-10.
+- **[Claude] The schedules**, 17:38 UTC: Production's three in `awsds-prod-chains`,
+  `awsds-prod-chain-app-etl`, `awsds-prod-chain-app-etl-train` and
+  `awsds-prod-chain-app-etl-warehouse`, each `DISABLED`; Staging lists none.
+- **[Claude] 2.6 is not due**: the consumer's source over `glue_db_4zojr4rr6bmnww`,
+  `3zp6fog9jep1qo`, last ran on 2026-11-14 at 02:51:09 UTC, `SUCCESS`, 50 minutes before the link
+  was created, and runs next at 02:51 UTC on 2026-11-15. `test-experimentation`'s inventory holds
+  no asset, and its subscription `d21t6zwyzrcas0` reads `APPROVED`.
+- **[Claude] Written**: `CLAUDE.md`'s sentence on the last reading of what is up.
