@@ -1955,3 +1955,50 @@ InfrastructureAccess alvo."*
   `terraform-live/README.md`; `CLAUDE.md`'s row.
 - **[Claude] Owed**: the user's confirmation of the member dialog, then the members read again;
   the apply, on the user's word; the bundle role's removal from `test-experimentation`.
+
+## 2026-11-14 — `sandbox/workflows/` applied: the bundle role narrowed, the workflows policy on `app-etl-dev`'s role; the project's members
+
+Nothing up. The user, verbatim: *"Autorizo o apply"*, the answer to *"Autoriza o apply de
+sandbox/workflows/ no Sandbox Account 1?"*, then, while the turn ran, *"Adicionei o membro
+`AWSReservedSSO_InfrastructureAccess_59e5b26af457128d`no projeto novo"*. The apply is Claude's, as
+`InfrastructureAccess` in Sandbox; every other AWS call of this entry is a read.
+
+- **[user] The members written**, in the portal: at 02:41:49 UTC `app-etl-dev` lists its owner,
+  its own role and two groups, each `PROJECT_CONTRIBUTOR`: `06d426f2-…`, the bundle role
+  `awsds-deploy-sandbox-test`'s, and `839bcde8-…`, Sandbox's `InfrastructureAccess`. Item 17's
+  membership half.
+- **[Claude] Before the apply**, 02:41 UTC: the Sandbox and Production profiles as
+  `InfrastructureAccess`, the slice's second provider reading the runner's account; the branch
+  clean at `4bd414d5`; the four other sessions of this repository told, *"SMUS CI/CD
+  multi-account deployment"*, *"Releitura quinzenal de upstream-releases.md"*, *"Otimização de
+  arquivos de memória"* and *"Worktrees para apagar"*.
+- **[Claude] The apply**, 02:42:20 to 02:42:32 UTC, from the plan saved at 02:25: *"Apply
+  complete! Resources: 1 added, 3 changed, 2 destroyed."* The re-plan at 02:42:47 UTC: *"No
+  changes. Your infrastructure matches the configuration."*
+- **[Claude] What it left**, read 02:42:59 UTC: `awsds-deploy-sandbox-test` holds one inline
+  policy, `project-reads`, of three statements (`ReadTheProjectItsMembersAndItsConnections`,
+  `ReadTheDomain`, `ExportTheCatalogTheProjectOwns`), and no managed policy; its ceiling
+  `awsds-sandbox-deploy-test-boundary` is at `v2` of 02:42:29, four statements,
+  `DenyEveryRoleChangeAndEveryPassRole` the first. `app-etl-dev`'s role carries AWS's three managed
+  policies and `awsds-sandbox-workflows`.
+- **[Claude] The bundle role simulated**, 02:44 to 02:45 UTC, the Region in the context:
+  `iam:PassRole` of `app-etl-dev`'s role and of `test-experimentation`'s reads `explicitDeny`, the
+  ceiling's; the MWAA Serverless writes, `glue:CreateJob`, `datazone:CreateAsset`,
+  `CreateListingChangeSet`, `StartDataSourceRun` and `CreateProjectMembership` read
+  `implicitDeny`; `s3:PutObject`, `GetObject` and `DeleteObject` on both projects' `shared/`
+  prefixes read `implicitDeny` with the organization's id in the context (`SUP-008`); the
+  project's reads and the catalog export's four read `allowed`. Simulated with the domain's ARN as
+  the resource, those reads but `GetDomain` read `implicitDeny` under an allow on `*`, a reading
+  appended to `SUP-008`.
+- **[Claude] `./aws/cicd.py`**, 02:43:25 to 02:44:19 UTC: 12 rows `pass`, none failing, the four
+  notes the runners' absence between sittings, the parity at one image and the excused
+  assumptions of 2026-10-13; `CI-2` reads the role under its ceiling. Exit 1 on its section 10, the
+  profiles whose users are not signed in.
+- **[Claude] What changes for a release**: no job can deploy as `awsds-deploy-sandbox-test`, so
+  GitLab's `main`, which still runs `test-deploy`, fails there until release T's merge request;
+  no tag before it.
+- **[Claude] Written**: items 15, 17 and 18, step 1.5 and the status row of the stage file;
+  `runbooks/promotion.md` §N.8.2 step 0; the waiting list's row; `INT-25`; `SUP-008`;
+  `terraform-live/README.md`; `CLAUDE.md`'s row.
+- **[Claude] Owed**: the bundle role's group removed from `test-experimentation`, the user's;
+  then release T's GitLab sitting.
