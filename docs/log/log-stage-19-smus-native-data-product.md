@@ -2432,3 +2432,6 @@ necessário para avançarmos na conclusão do estágio 19."*
   the waiting list's rows on the password, the attach, the AppleDouble objects, the Sandbox sitting and
   release T; `SUP-184`'s reading and `SUP-364`; the four Glue pages in `docs/REFERENCES.md`;
   `docs/SMUS.md`'s *Create database* item; `CLAUDE.md`'s row.
+- **[Claude] The branch's first push refused**, 18:15 UTC, by the app's auto-mode classifier as
+  *Unsanctioned Communication*, after the commit `8bfc245d`; the push and the PR wait on the user's
+  word in this chat. `CLAUDE.md`'s table of refusals gains the row.

@@ -258,6 +258,7 @@ and the stage logs hold the refusals.
 | Applies under a blanket authorization and under a question | | 2026-11-11 |
 | A Lake Formation settings write | *Modify Shared Resources* | 2026-11-11 |
 | A project membership, as in Stage 18 | *Permission Grant* | 2026-11-11 |
+| A session's first push of its own branch, before its PR | *Unsanctioned Communication* | 2026-11-14 |
 
 The orchestrating session ran each of the first three itself, on the user's authorization in its own
 chat. Let through on 2026-11-11: reads, a RAM association, a candidate SCP's life on `Policy Test`, and
