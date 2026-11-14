@@ -2572,3 +2572,45 @@ No AWS call. The user's decision, recorded by Claude's hand.
   default was not read.
 - **[Claude] Written**: 6f steps 2.2 and 4.3's notes, a request to `house-price` being accepted at
   creation whoever makes it; the waiting list's row on 6f step 2's portal acts; 6f's log.
+
+## 2026-11-14 — the Sandbox sitting, steps 1 and 4: 2.6 read on a member's run, the raises
+
+Reads as `awsds-infra-sandbox-1` and `awsds-infra-data`; the user's acts in the portal and from the
+project folder.
+
+- **[user] *"Antecipar a 2.6"***, to whether step 1 waits for the consumer source's scheduled run at
+  02:51 UTC on 2026-11-15 or reads a run started by hand, so the window runs today.
+- **[Claude] The baseline**, 21:57:42 UTC: the source `3zp6fog9jep1qo`'s last run `3vvwx8yf4ntuds`,
+  `SCHEDULED`, `SUCCESS` at 02:51:09; `test-experimentation`'s inventory held 0 assets; the link
+  `glue_db_4zojr4rr6bmnww.trades_notional` targeted `app_etl.trades_notional`; the subscription
+  `d21t6zwyzrcas0` read `APPROVED`. The session *Worktrees para apagar* was told of the raises the same
+  minute.
+- **[user] The source run by hand** as the data scientist, in `test-experimentation`'s data sources:
+  *"Rodei a fonte"*.
+- **[Claude] The run**, read 22:06 UTC: `6gti1ji6rmgiog`, type `PRIORITIZED`, `SUCCESS`, created
+  22:01:21.050, started 22:01:22.672, stopped 22:01:25.010; statistics `added` 1, `updated` 0,
+  `unchanged` 0, `failed` 0; one activity, `trades_notional` `SUCCEEDED_CREATED`, asset
+  `b5r73n41qe7jf4`. The inventory: `b5r73n41qe7jf4` `trades_notional`,
+  `amazon.datazone.GlueTableAssetType`, created 22:01:24.615 UTC, unlisted. The link's `TargetTable`
+  unchanged, `app_etl.trades_notional` in Sandbox.
+- **[Claude] The trail**: Sandbox's holds no `StartDataSourceRun` since 21:55 UTC. Data Governance's
+  holds one at 22:01:21, `AssumedRole` `awsds-data-studio-domain-execution`, session
+  `user-28f1b390-0041-7068-8cc7-9ccef94277d1`, the portal user who requested `d21t6zwyzrcas0`, no
+  error, on `3zp6fog9jep1qo`.
+- **[Claude] `./aws/catalog.py`**, ending 22:09 UTC: all checks passed. `CT-19` notes two unlisted
+  links, `trades_notional` in `test-experimentation` (`glue_db_4zojr4rr6bmnww.trades_notional ->
+  consumer:app_etl.trades_notional`) and `trades` in `eighth-experimentation` (`->
+  registry:curated.trades`). `CT-13` lists the start at 22:01:21 by
+  `awsds-data-studio-domain-execution`, verdict `other`. The consumer's source: 1 asset, 27 runs,
+  `SUCCESS`.
+- **[Claude] Verification x read**: the consumer's source imports the resource link its subscription
+  created, as an unlisted inventory asset, 0.5's shape. `CT-19` reads it as a note; no other
+  instrument was read for a notice. The run was a member's start, not the schedule's: the scheduled
+  run at 02:51 UTC on 2026-11-15 follows step 5's revoke and reads what the source does with an asset
+  whose link is gone.
+- **[user] The raises** from the project folder, on `main` at `018fa717`, `origin/main`'s: `make
+  hub-up`, then `make up ENV=sandbox ONLY=egress GROUPS=mwaa`: *"Subi os dois"*.
+- **[Claude] `make status`**, 22:31:42 to 22:34:58 UTC: `production/vpn` and `production/proxy` `UP`,
+  one instance each, 0.0052 and 0.0154 USD/h; `sandbox/egress` `UP`, 28 resources, 0.1800 USD/h;
+  `production/tooling` stopped; the estimated burn 0.2006 USD/h. A first run at 22:26 UTC was stopped
+  at its sixth slice: without `TF_PLUGIN_CACHE_DIR` each slice was downloading its own providers.

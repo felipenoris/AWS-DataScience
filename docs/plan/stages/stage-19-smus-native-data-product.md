@@ -556,7 +556,8 @@ the `mwaa` group 0.19 and each space 0.050, plus the run (pass 1's took 816 to 9
 
 1. **[Claude] 2.6's reading** (x): `./aws/catalog.py` once the consumer's source over
    `glue_db_4zojr4rr6bmnww` has run at 02:51 UTC on 2026-11-15, its first run after the link. Step 5's
-   revoke removes the link `CT-19` reads.
+   revoke removes the link `CT-19` reads. **Done 2026-11-14** on a run the data scientist started from
+   the portal at 22:01 UTC, the user's choice (2.6).
 2. **[Claude⚡] Item 33**, on the user's word: [`dev-env.md`](../runbooks/dev-env.md) §C6's two commands and
    its diff on `d-spi9kgo6x5b4`, as `awsds-infra-sandbox-1`, from a checkout where `sandbox/dev-env/` is
    initialised (`./scripts/gen-backend-hcl.py sandbox dev-env`, `./scripts/gen-tfvars.py sandbox dev-env`,
@@ -1045,6 +1046,11 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
   Glue's `TargetTable`, so this reading is one run of the script after the consumer's source over
   `glue_db_4zojr4rr6bmnww` runs, daily at 02:51 UTC. `test-experimentation`'s inventory held no
   asset at 05:26 UTC on 2026-11-14, the link having been created after that day's run.
+  **Read 2026-11-14 (x)**, on a run the data scientist started from the portal, `6gti1ji6rmgiog` at
+  22:01 UTC, type `PRIORITIZED`: `added` 1, the link imported as the unlisted asset `b5r73n41qe7jf4`,
+  0.5's shape; `catalog.py` at 22:09 UTC passed every check, `CT-19` noting the link and `CT-13`
+  reading the start `other`. The scheduled run at 02:51 UTC on 2026-11-15 follows the revoke, and
+  reads what the source does with an asset whose link is gone.
 
 ### 3. The bundle and the manifest's stages
 
