@@ -2,20 +2,24 @@
 # catalog.py - the SageMaker Catalog over the governed lake: what the business catalog holds, what
 #              it has granted, and which Lake Formation grants a SMUS-managed principal carries.
 #
-#   needs:    a live SSO session for the infrastructure user; one login covers both profiles:
+#   needs:    a live SSO session for the infrastructure user; one login covers every profile:
 #
 #                 aws sso login --sso-session awsds
 #
 #   run:      ./aws/catalog.py
+#             ./aws/catalog.py --self-check   # the product road's rules on samples, no AWS call
 #   writes:   aws/output/catalog.txt   (untracked - see .gitignore)
 #   reads:    in Data Governance - datazone:ListDomains, GetDomain, ListProjects,
-#             ListProjectMemberships, GetUserProfile, GetGroupProfile, SearchListings, GetListing,
-#             ListDataSources, GetDataSource, ListDataSourceRuns, ListSubscriptions,
-#             ListSubscriptionRequests, ListSubscriptionGrants, ListPolicyGrants, ListLineageEvents,
-#             lakeformation:ListPermissions, GetResourceLFTags, ListLFTags, glue:GetDatabases; in
-#             Sandbox - lakeformation:ListPermissions, ListLFTags, glue:GetDatabases; in both,
-#             cloudtrail:LookupEvents; and sts:GetCallerIdentity. Every one is a read.
-#   exits:    0 every check passed | 1 a call failed | 2 a check FAILED
+#             ListProjectMemberships, ListEnvironments, GetUserProfile, GetGroupProfile,
+#             SearchListings, GetListing, ListDataSources, GetDataSource, ListDataSourceRuns,
+#             ListSubscriptions, ListSubscriptionRequests, ListSubscriptionGrants,
+#             ListPolicyGrants, lakeformation:GetResourceLFTags, ListLFTags; in Sandbox -
+#             lakeformation:ListLFTags; in each account read - lakeformation:ListPermissions and
+#             cloudtrail:LookupEvents; in the account a project's environments live in -
+#             datazone:Search over that project's assets and glue:GetTable; and
+#             sts:GetCallerIdentity. Every one is a read.
+#   exits:    0 every check passed | 1 a call failed | 2 a check FAILED, or a --self-check case
+#             read otherwise
 #
 # THE TWO ROADS AN ACCESS ACT CAN TAKE, which is what this script exists to keep apart. On the
 # catalog road a subscription or a direct Share is approved in the portal and DataZone writes a Lake
@@ -25,6 +29,12 @@
 # subscription is each grant's record, and CT-10 is the join that fails on a grant no subscription
 # explains. Section 5 reads Lake Formation, section 6 the road's records, and CT-7 and CT-10 are the
 # comparison.
+#
+# The catalog road has a second end since Stage 19, the product's: a project lists a table of its
+# own database, in the account its environments live in, and DataZone fulfils a subscription there
+# as the owning project's role (SUP-195). Stage 19 decision 11 keeps a Sandbox project's fulfilments
+# outside the register, DataZone's subscription their record, and gives Production's one register
+# row by class. Section 7 reads that end, and CT-15 to CT-19 are its checks.
 #
 # The checks:
 #   CT-1  one domain, AVAILABLE, in the registry account - and no domain in the consumer account
@@ -89,10 +99,46 @@
 #         on import and generating no names (Stage 19 step 4.6). CT-5 leaves the generation over a
 #         project's own database to the project; a deployment project has no person to choose,
 #         and the generation is a model call over the target's metadata.
+#   CT-15 Staging's project lists nothing, and a chain application's `dev` project lists by
+#         exception. The domain is one catalog for every account, so a listing offers its table
+#         to every project's search: Stage 19 decisions 14 and 19 (c) keep Staging's sample data
+#         unlisted, and decision 20 (b) lists a chain application's product in Production alone.
+#         That gate is the template's default and no control, since a member's portal publish
+#         lists, so a listing a project in CHAIN_DEV_PROJECTS owns is a note. Every listing type
+#         counts.
+#   CT-16 the access acts on a project's product, judged by the stage that owns it. A deployment
+#         project subscribes to nothing (decisions 13 and 14): the Workloads SCP denies a
+#         target's own request, and an owner's Share made for one is the owner's call, which
+#         this reading alone sees. On a listing a deployment project owns, CT-11's rules hold
+#         with decision 15's approver: each APPROVED subscription is a project's, from an
+#         ACCEPTED request whose requester is no member of the owning project and whose
+#         reviewer is a person among its members or its InfrastructureAccess session group. A
+#         Sandbox project shares its product as SMUS lets it (decision 20 (b)): those acts are a
+#         note naming each one's shape, the owner's Share among them (SUP-362).
+#   CT-17 every grant on a project's listed table is explained: the owning project's role; the
+#         blueprint's grants on the project's database, to its members under the project's own
+#         context and to SMUS's two roles; or a fulfilment - SELECT or DESCRIBE on the table by
+#         name, no grant option, to the IAMPrincipals of the account a project lives in, under
+#         the context of that project, which holds an APPROVED subscription with a COMPLETED
+#         grant to the table's listing or to a data product that carries it. This is CT-10's
+#         join made in the account that holds the table: the same account for two Sandbox
+#         projects, Production's for its product read from Sandbox (decision 11).
+#   CT-18 every product listing carries the classification form, public or internal (decision
+#         4). This is CT-12's rule read from the catalog, since a project's table carries no
+#         LF-Tag and DataZone fulfils by name. A listing with no form fails, but one named in
+#         UNCLASSIFIED_BY_EXCEPTION, which is a note.
+#   CT-19 no listing publishes a resource link. A consumer's source imports the link its
+#         subscription created as an inventory asset (Stage 19 0.5); published, it would list
+#         another owner's table under the consumer's name. CT-4 keeps every source from
+#         publishing on import, and this check reads what a person published: a listed link
+#         fails, and an inventory link is a note, a member's publish being one act away.
 #
-# CT-7 and CT-8 read every page of ListPermissions in both accounts: the CLI has no paginator for
-# that operation, so one call answers the first page and a NextToken. A listing not read to its
-# last page leaves both checks a note, never a pass; a grant it did read still fails them.
+# CT-7 and CT-8 read every page of ListPermissions in the registry, in the Interactive account
+# and, since their projects exist, in both deployment targets: the CLI has no paginator for that
+# operation, so one call answers the first page and a NextToken. A listing not read to its last
+# page leaves both checks a note, never a pass; a grant it did read still fails them. In a target
+# the lake is the resource links `raw` and `curated`, and a SMUS grant on one is CT-7's finding
+# there too; the catalog road CT-7 admits is the registry's and the Interactive account's alone.
 #
 # What it cannot see (0.6, measured 2026-09-13 and again 2026-10-18): DataZone refuses GetAsset and
 # GetDataProduct to InfrastructureAccess in Data Governance, the session this script reads the
@@ -109,12 +155,21 @@
 # IAMPrincipals grants alone; a grant to an Identity Center user is read in CloudTrail or not at
 # all. A subscription that would be fulfilled for one is a user's or a group's, which CT-11 fails
 # from DataZone's own record.
+#
+# On the product road (read 2026-11-14): datazone:Search over a project's assets answers the
+# session of the account the project's environments live in, for each of the seven projects, so
+# an inventory is read with that session and a project with no environment is not read, which
+# CT-19 says. ListSubscriptions and ListSubscriptionRequests return a data product's subscription
+# under each asset listing the product carries, and ListSubscriptionGrants answers under the asset
+# listing alone (SUP-363); both ids are asked. A listing of another asset type, a Bedrock model or
+# a Redshift table, is on neither road: CT-15 counts it by owner and no check judges its grants.
 
 from __future__ import annotations
 
 import json
 import re
 import sys
+from typing import NamedTuple
 
 from awslib import context, profiles
 from awslib.awscli import AwsCli, ErrorLog
@@ -130,7 +185,14 @@ SANDBOX_PROFILE = "awsds-infra-sandbox-1"
 # for CT-13: a start made there is recorded with the role's name in that account alone.
 STAGING_PROFILE = "awsds-infra-staging"
 PROD_PROFILE = "awsds-infra-prod"
-DEPLOYMENT_PROJECTS = ("deploy-staging", "deploy-production")
+STAGING_PROJECT = "deploy-staging"
+PRODUCTION_PROJECT = "deploy-production"
+DEPLOYMENT_PROJECTS = (STAGING_PROJECT, PRODUCTION_PROJECT)
+
+# The projects a chain application's `dev` stage deploys from, by id (Stage 19 decision 18 (d),
+# step 1.5). Decision 20 (b) lists such an application's product in Production alone, by the
+# template's default: CT-15 reports a listing one of these owns as a note.
+CHAIN_DEV_PROJECTS = {"ceweti7jbiu1hs": "app-etl-dev"}
 
 # The governed lake's databases, in the registry account. A SMUS principal reaching one of these is
 # CT-7's finding; a project's own database is not.
@@ -143,8 +205,23 @@ LAKE_DATABASES = ("raw", "curated", "dropbox")
 PUBLISHED_LAKE_TABLES = ("curated.trades",)
 
 # The classifications the catalog road admits on a published table and on each of its columns
-# (Stage 6f decision 2, CT-12): data/publishing.tf refuses the same at plan.
+# (Stage 6f decision 2, CT-12): data/publishing.tf refuses the same at plan. CT-18 admits the same
+# on a product's form.
 CATALOG_ROAD_CLASSIFICATIONS = ("public", "internal")
+
+# The metadata form that carries a product's classification, and the name of its one field (Stage
+# 19 decision 4). The field is a String: the portal offers no enumerated type.
+CLASSIFICATION_FORM = "classification"
+
+# A product listing with no classification form, by asset id, with the exception that records it.
+# CT-18 reports these as a note and fails on any other listing without the form (Lesson 50).
+# Remove a row here when its exception is closed, and CT-18 turns red the same day.
+UNCLASSIFIED_BY_EXCEPTION = {
+    "dbund4fvvvt05s": (
+        "EXC-24: house-price, published from the portal on 2026-09-13, before the form type "
+        "existed (2026-11-10)"
+    ),
+}
 
 # What each kind of principal may hold on a published table (CT-10). The publisher holds the read
 # with the grant option, which DataZone's terms for a Glue table require; a fulfilment is read-only
@@ -163,13 +240,18 @@ ACCOUNT_ID = re.compile(r"\b\d{12}\b")
 # account-wide entry as `<account>:IAMPrincipals`, which is a grant to everyone in the account
 # unless a Condition narrows it (CT-8).
 PROJECT_ROLE_MARKER = "datazone_usr_role_"
+# The two roles SMUS acts as in each account, which a blueprint grants on every database it creates.
+BLUEPRINT_ROLE_SUFFIXES = ("-smus-provisioning", "-smus-manage-access")
 SMUS_ROLE_MARKERS = (
     PROJECT_ROLE_MARKER,
-    "-smus-provisioning",
-    "-smus-manage-access",
+    *BLUEPRINT_ROLE_SUFFIXES,
     "AmazonDataZone",
 )
 IAM_PRINCIPALS_SUFFIX = ":IAMPrincipals"
+
+# The shape of a DataZone user profile id. A request's requester or reviewer of another shape, an
+# absent reviewer among them, is not looked up.
+PROFILE_ID = re.compile(r"[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}")
 
 # The policy types ListPolicyGrants accepts on a domain unit. The four it rejects for that entity
 # type are not asked for: a ValidationException is a fact about the API, not about this domain.
@@ -394,6 +476,168 @@ def road_problems(
     return problems
 
 
+class Product(NamedTuple):
+    """A listing of a project's own Glue table: the product end of the catalog road."""
+
+    listing: str  # the asset listing's id
+    name: str
+    where: str  # the label of the account whose catalog holds the table; "elsewhere" when unread
+    account: str  # that account's id
+    table: str  # "<database>.<table>"
+    owner: str  # the owning project's id
+    approval: str  # SubscriptionTermsForm's approvalRequired
+    classification: str | None  # the classification form's value; None with no form
+    asset: str  # the asset's id
+
+
+def classification_value(forms: dict) -> str | None:
+    """What a listing's classification form reads: None with no form, empty with no value."""
+    form = forms.get(CLASSIFICATION_FORM)
+    if not isinstance(form, dict):
+        return None
+    return str(form.get(CLASSIFICATION_FORM) or "")
+
+
+def classification_findings(products: list) -> tuple:
+    """CT-18's readings, as (problems, excepted): one sentence per listing that breaks the rule,
+    and the Product rows UNCLASSIFIED_BY_EXCEPTION covers."""
+    problems = []
+    excepted = []
+    for p in products:
+        if p.classification is None:
+            if p.asset in UNCLASSIFIED_BY_EXCEPTION:
+                excepted.append(p)
+            else:
+                problems.append(f"{p.name} ({p.table}) carries no classification form")
+        elif p.classification not in CATALOG_ROAD_CLASSIFICATIONS:
+            problems.append(
+                f"{p.name} ({p.table}) is classified {p.classification or 'with an empty value'}"
+            )
+    return problems, excepted
+
+
+def link_target(target: dict | None, where_of: dict) -> str:
+    """Where a Glue resource link points, as `<account label>:<database>.<table>`, from GetTable's
+    TargetTable; empty for a table that is no link. `where_of` maps an account id to its label."""
+    if not target:
+        return ""
+    where = where_of.get(target.get("CatalogId", ""), "another account")
+    return f"{where}:{target.get('DatabaseName', '-')}.{target.get('Name', '-')}"
+
+
+def stage_listings(listings: list, projects: dict) -> tuple:
+    """CT-15's readings, as (staging, dev): the listings Staging's project owns and the ones a
+    chain application's `dev` project owns, each as (listing name, project name). `listings`
+    holds section 2's rows and `projects` maps a project id to its name."""
+    staging = [
+        (name, projects[owner])
+        for _, name, _, owner, _ in listings
+        if projects.get(owner) == STAGING_PROJECT
+    ]
+    dev = [
+        (name, CHAIN_DEV_PROJECTS[owner])
+        for _, name, _, owner, _ in listings
+        if owner in CHAIN_DEV_PROJECTS
+    ]
+    return staging, dev
+
+
+def product_acts(
+    products: list,
+    subscriptions: list,
+    requests: dict,
+    members: dict,
+    profiles_by_id: dict,
+    projects: dict,
+    target_subscriptions: list,
+) -> tuple:
+    """CT-16's readings, as (problems, acts).
+
+    `products` holds Product rows; `subscriptions`, `requests`, `members` and `profiles_by_id`
+    are `road_problems`'s, over the product listings; `projects` maps a project id to its name;
+    `target_subscriptions` holds (deployment project, subscription id, status, listing name).
+    `problems` is one sentence per finding. `acts` holds one (subscription id, table, owner,
+    subscriber, shape) per APPROVED subscription to a listing no deployment project owns."""
+    problems = []
+    acts = []
+    for name, sid, status, listing in target_subscriptions:
+        if status == "APPROVED":
+            problems.append(
+                f"{name} holds subscription {sid} to {listing}: a deployment project subscribes "
+                "to nothing"
+            )
+    by_listing = {p.listing: p for p in products}
+    for p in products:
+        if projects.get(p.owner) in DEPLOYMENT_PROJECTS and p.approval != "YES":
+            problems.append(
+                f"{p.table} of {projects[p.owner]} reads approvalRequired {p.approval}: every "
+                "request is approved at creation"
+            )
+    for lid, table, sid, status, kind, project, rid in subscriptions:
+        if status != "APPROVED" or lid not in by_listing:
+            continue
+        owner = by_listing[lid].owner
+        owner_name = projects.get(owner, owner)
+        rows = members.get(owner, [])
+        member_ids = {mid for k, mid, _, _ in rows if k == "user"}
+        member_roles = {arn for k, _, _, arn in rows if k == "group" and arn != "-"}
+        requester, reviewer = requests.get(rid, ("-", "-"))
+        requester_arn = profiles_by_id.get(requester, ("-", "-"))[1]
+        reviewer_type, reviewer_arn = profiles_by_id.get(reviewer, ("-", "-"))
+        designed = False
+        if kind != "project":
+            shape = f"a {kind}'s subscription, whose grant Lake Formation does not list"
+        elif rid not in requests:
+            shape = "a subscription with no accepted request"
+        elif requester in member_ids or requester_arn in member_roles:
+            shape = "the owner's Share, a request made by a member of the owning project"
+        elif (reviewer_type == "SSO" and reviewer in member_ids) or (
+            ADMIN_ROLE_MARKER in reviewer_arn and reviewer_arn in member_roles
+        ):
+            shape = "a request approved by a person among the owning project's members"
+            designed = True
+        else:
+            who = short_principal(reviewer_arn) if reviewer_arn != "-" else reviewer
+            shape = f"a request approved by {'nobody' if who == '-' else who}"
+        if projects.get(owner) in DEPLOYMENT_PROJECTS:
+            if not designed:
+                problems.append(f"subscription {sid} to {table} of {owner_name} is {shape}")
+            continue
+        subscriber = projects.get(project, project) if kind == "project" else f"a {kind}"
+        acts.append((sid, table, owner_name, subscriber, shape))
+    return problems, acts
+
+
+def explain_product_grant(row: tuple, account: str, owner: str, fulfilled: dict) -> str:
+    """Why a grant on a project's listed table exists, or empty when nothing explains it (CT-17).
+
+    `row` is a section-5 grant row on the table or on its database's ALL_TABLES; `account` the
+    account whose catalog holds the table; `owner` the project that owns the table's listing.
+    `fulfilled` maps each project holding an APPROVED subscription with a COMPLETED grant, to
+    that listing or to a data product that carries it, to the accounts its environments live in,
+    None when they were not read."""
+    _, ident, _, name, perms, grantable, cond = row
+    held = set(perms.split("+")) if perms != "-" else set()
+    regrant = set(grantable.split("+")) if grantable != "-" else set()
+    wildcard = name.endswith(".ALL_TABLES")
+    role = ident.split(":role/", 1)[1].rsplit("/", 1)[-1] if ":role/" in ident else ""
+    local = f":{account}:" in ident
+    if local and role.startswith(f"{PROJECT_ROLE_MARKER}{owner}_"):
+        return "the owning project's role"
+    if local and wildcard and role.endswith(BLUEPRINT_ROLE_SUFFIXES):
+        return "SMUS's own role, the blueprint's grant on the project's database"
+    if ident.endswith(IAM_PRINCIPALS_SUFFIX):
+        holder = ident[: -len(IAM_PRINCIPALS_SUFFIX)]
+        project = condition_project(cond)
+        if holder == account and project == owner:
+            return "the owning project's members, under its own context"
+        if not wildcard and project in fulfilled and held <= FULFILMENT_PERMISSIONS and not regrant:
+            accounts = fulfilled[project]
+            if accounts is None or holder in accounts:
+                return f"the fulfilment of {project}'s approved subscription"
+    return ""
+
+
 def classes(entries: list) -> list:
     """The classification values in a list of LF-Tag entries."""
     return [
@@ -478,7 +722,189 @@ def judge_start(body: dict, source_project: dict) -> tuple:
     return ("cross", caller, source, owner)
 
 
+def self_check() -> int:
+    """The product road's rules on sample records: the cases the estate cannot show before
+    Production lists a product (Stage 19 step 4.12), and the ones it must never show."""
+    sbx, prd = "sandbox-account", "production-account"
+    own, con, lab = "ownerproject", "consumerproject", "labproject"
+    owner_role = f"arn:aws:iam::{prd}:role/{PROJECT_ROLE_MARKER}{own}_env"
+    admin_role = f"arn:aws:iam::{prd}:role/aws-reserved/sso/{ADMIN_ROLE_MARKER}0"
+    smus_role = f"arn:aws:iam::{prd}:role/awsds-prod{BLUEPRINT_ROLE_SUFFIXES[1]}"
+    there, here = f"{sbx}{IAM_PRINCIPALS_SUFFIX}", f"{prd}{IAM_PRINCIPALS_SUFFIX}"
+    one, every = "app_etl.t", "app_etl.ALL_TABLES"
+    fulfilment = f"the fulfilment of {con}'s approved subscription"
+
+    def why(principal, name, perms, regrant="-", project="", account=prd, subscribed=None):
+        """explain_product_grant on one sample grant on the owner's table."""
+        cond = f'context.datazone.projectId=="{project}"' if project else ""
+        row = ("production", principal, "Table", name, perms, regrant, cond)
+        fulfilled = {con: {sbx}} if subscribed is None else subscribed
+        return explain_product_grant(row, account, own, fulfilled)
+
+    # CT-17: what explains a grant on Production's product, and what does not.
+    members_grant = "the owning project's members, under its own context"
+    blueprint_grant = "SMUS's own role, the blueprint's grant on the project's database"
+    cases = [
+        ("a cross-account fulfilment", why(there, one, "SELECT", project=con), fulfilment),
+        ("a same-account one", why(there, one, "SELECT", project=con, account=sbx), fulfilment),
+        (
+            "a fulfilment whose subscriber's account was not read",
+            why(there, one, "SELECT", project=con, subscribed={con: None}),
+            fulfilment,
+        ),
+        ("no subscription", why(there, one, "SELECT", project=con, subscribed={}), ""),
+        (
+            "a fulfilment to another account than the subscriber's",
+            why(there, one, "SELECT", project=con, subscribed={con: {"another-account"}}),
+            "",
+        ),
+        ("a fulfilment with the grant option", why(there, one, "SELECT", "SELECT", con), ""),
+        ("a fulfilment that writes", why(there, one, "INSERT", project=con), ""),
+        ("a subscriber on every table", why(there, every, "SELECT", project=con), ""),
+        ("IAMPrincipals with no context", why(here, one, "SELECT"), ""),
+        ("the owner's members", why(here, every, "SELECT", project=own), members_grant),
+        ("the owner's role", why(owner_role, one, "ALL", "ALL"), "the owning project's role"),
+        ("another project's role", why(owner_role.replace(own, con), one, "SELECT"), ""),
+        ("the role's name elsewhere", why(owner_role.replace(prd, sbx), one, "SELECT"), ""),
+        ("SMUS's role on every table", why(smus_role, every, "SELECT", "SELECT"), blueprint_grant),
+        ("SMUS's role on one table", why(smus_role, one, "SELECT"), ""),
+    ]
+
+    # CT-16: Production's listing, its owner session group and the Governance Manager among its
+    # members, and a Sandbox project's listing beside it.
+    products = [
+        Product("lp", "t", "production", prd, one, own, "YES", "internal", "a1"),
+        Product("ls", "u", "consumer", sbx, "lab.u", lab, "YES", "internal", "a2"),
+    ]
+    dev_id, dev_name = next(iter(CHAIN_DEV_PROJECTS.items()))
+    projects = {
+        own: PRODUCTION_PROJECT,
+        con: "consumer",
+        lab: "lab",
+        "stagingproject": STAGING_PROJECT,
+        dev_id: dev_name,
+    }
+    members = {
+        own: [
+            ("group", "g1", "PROJECT_OWNER", admin_role),
+            ("user", "role", "PROJECT_CONTRIBUTOR", "-"),
+            ("user", "gm", "PROJECT_CONTRIBUTOR", "-"),
+        ],
+        lab: [("user", "scientist", "PROJECT_OWNER", "-")],
+    }
+    profiles_by_id = {
+        "gm": ("SSO", "-"),
+        "scientist": ("SSO", "-"),
+        "outsider": ("SSO", "-"),
+        "role": ("IAM", owner_role),
+        "admin": ("IAM", admin_role),
+    }
+
+    def acts_on(product, requester, reviewer, kind="project", targets=()):
+        """product_acts on one APPROVED subscription to a sample listing."""
+        subs = [(product.listing, product.table, "s1", "APPROVED", kind, con, "r1")]
+        accepted = {"r1": (requester, reviewer)}
+        return product_acts(
+            [product], subs, accepted, members, profiles_by_id, projects, list(targets)
+        )
+
+    ours, theirs = products
+    share = "the owner's Share, a request made by a member of the owning project"
+    refused = f"subscription s1 to {one} of {PRODUCTION_PROJECT} is "
+    by_user = "a user's subscription, whose grant Lake Formation does not list"
+    by_role = f"a request approved by role/{PROJECT_ROLE_MARKER}{own}_env"
+    open_listing = ours._replace(approval="NO")
+    subscriber = [(STAGING_PROJECT, "s9", "APPROVED", "t"), (STAGING_PROJECT, "s8", "REVOKED", "t")]
+    cases += [
+        ("approved by the Governance Manager", acts_on(ours, "outsider", "gm"), ([], [])),
+        ("approved by the owner session group", acts_on(ours, "outsider", "admin"), ([], [])),
+        ("a Share on Production's listing", acts_on(ours, "admin", "-")[0], [refused + share]),
+        ("requested and approved by one person", acts_on(ours, "gm", "gm")[0], [refused + share]),
+        (
+            "approved by the project's role",
+            acts_on(ours, "outsider", "role")[0],
+            [refused + by_role],
+        ),
+        (
+            "approved by nobody",
+            acts_on(ours, "outsider", "-")[0],
+            [refused + "a request approved by nobody"],
+        ),
+        (
+            "approved by a person outside the project",
+            acts_on(ours, "outsider", "scientist")[0],
+            [refused + "a request approved by scientist"],
+        ),
+        ("a user's subscription", acts_on(ours, "outsider", "gm", "user")[0], [refused + by_user]),
+        (
+            "a Share on a Sandbox project's listing",
+            acts_on(theirs, "scientist", "-"),
+            ([], [("s1", "lab.u", "lab", "consumer", share)]),
+        ),
+        (
+            "Production's listing with no approval required",
+            acts_on(open_listing, "outsider", "gm")[0],
+            [
+                f"{one} of {PRODUCTION_PROJECT} reads approvalRequired NO: every request is "
+                "approved at creation"
+            ],
+        ),
+        (
+            "a deployment project that subscribes",
+            acts_on(ours, "outsider", "gm", targets=subscriber)[0],
+            [
+                f"{STAGING_PROJECT} holds subscription s9 to t: a deployment project subscribes "
+                "to nothing"
+            ],
+        ),
+    ]
+
+    # CT-15, CT-18 and CT-19.
+    listed = [
+        ("l1", "t", "GlueTableAssetType", own, "1"),
+        ("l2", "sample", "GlueTableAssetType", "stagingproject", "1"),
+        ("l3", "bundle", "DataProduct", dev_id, "1"),
+    ]
+    form = {CLASSIFICATION_FORM: {CLASSIFICATION_FORM: "internal"}}
+    restricted = ours._replace(name="r", classification="restricted")
+    unfilled = ours._replace(name="e", classification="")
+    bare = ours._replace(name="n", classification=None)
+    known = bare._replace(name="x", asset=next(iter(UNCLASSIFIED_BY_EXCEPTION)))
+    unclassified = [
+        "r (app_etl.t) is classified restricted",
+        "e (app_etl.t) is classified with an empty value",
+        "n (app_etl.t) carries no classification form",
+    ]
+    link = {"CatalogId": prd, "DatabaseName": "app_etl", "Name": "t"}
+    cases += [
+        (
+            "Staging's listing and a dev project's",
+            stage_listings(listed, projects),
+            ([("sample", STAGING_PROJECT)], [("bundle", dev_name)]),
+        ),
+        ("Production's listing alone", stage_listings(listed[:1], projects), ([], [])),
+        ("a form's value", classification_value(form), "internal"),
+        ("a listing with no form", classification_value({"GlueTableForm": {}}), None),
+        ("a form with no value", classification_value({CLASSIFICATION_FORM: {}}), ""),
+        (
+            "the classifications that fail, and the one excepted",
+            classification_findings([ours, restricted, unfilled, bare, known]),
+            (unclassified, [known]),
+        ),
+        ("a link's target", link_target(link, {prd: "production"}), "production:app_etl.t"),
+        ("a table that is no link", link_target(None, {}), ""),
+    ]
+
+    wrong = [(what, got, want) for what, got, want in cases if got != want]
+    for what, got, want in wrong:
+        print(f"  FAIL  {what}: read {got!r}, expected {want!r}")
+    print(f"catalog.py --self-check: {len(cases) - len(wrong)} of {len(cases)} cases as expected")
+    return 2 if wrong else 0
+
+
 def main(argv: list) -> int:
+    if "--self-check" in argv:
+        return self_check()
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)
@@ -538,6 +964,15 @@ def main(argv: list) -> int:
         sandbox_domains = json_or_none(res.stdout) or []
     registry_account = live[DATA_PROFILE].account
     consumer_account = live[SANDBOX_PROFILE].account
+    # The accounts read, each by the label its grant rows carry.
+    estate = (
+        ("registry", dat, DATA_PROFILE),
+        ("consumer", sbx, SANDBOX_PROFILE),
+        ("staging", stg, STAGING_PROFILE),
+        ("production", prd, PROD_PROFILE),
+    )
+    where_of = {live[p].account: label for label, _, p in estate if live[p].live}
+    cli_of = {label: cli for label, cli, _ in estate}
     owned_elsewhere = [d for d in domains if d[3] != registry_account]
     owned_by_consumer = [d for d in sandbox_domains if d[3] == consumer_account]
     if not domains:
@@ -578,6 +1013,7 @@ def main(argv: list) -> int:
 
     # ---------------------------------------------------------------- CT-2 the listings
     listings: list = []
+    listed_assets: set = set()  # the ids of the assets and data products that carry a listing
     if domain_id:
         res = dat.run(
             "datazone",
@@ -589,6 +1025,7 @@ def main(argv: list) -> int:
         )
         for item in (json_or_none(res.stdout) or {}).get("items", []):
             body = item.get("assetListing") or item.get("dataProductListing") or {}
+            listed_assets.add(body.get("entityId", "-"))
             listings.append(
                 (
                     body.get("listingId", "-"),
@@ -971,13 +1408,10 @@ def main(argv: list) -> int:
             + (f"; callers that are no project role: {', '.join(others)}" if others else ""),
         )
 
-    # ---------------------------------------------------------------- the grants, both accounts
+    # ---------------------------------------------------------------- the grants, every account read
     grant_rows: list = []
     lf_read: dict = {}  # where -> (grants, pages, read to the last page)
-    for label, cli, profile in (
-        ("registry", dat, DATA_PROFILE),
-        ("consumer", sbx, SANDBOX_PROFILE),
-    ):
+    for label, cli, profile in estate:
         if not live[profile].live:
             lf_read[label] = (0, 0, False)
             continue
@@ -1007,7 +1441,13 @@ def main(argv: list) -> int:
 
     # ---------------------------------------------------------------- CT-7 SMUS reaching the lake
     lake_grants = [g for g in smus_grants if touches_lake(g[2], g[3])]
-    catalog_road = [g for g in lake_grants if on_catalog_road(g[1], g[2], g[3], g[4])]
+    # The road is the registry's, with the Interactive account its one consumer: a deployment
+    # project subscribes to nothing (CT-16), so no grant in a target is on it.
+    catalog_road = [
+        g
+        for g in lake_grants
+        if g[0] in ("registry", "consumer") and on_catalog_road(g[1], g[2], g[3], g[4])
+    ]
     reaching = [g for g in lake_grants if g not in catalog_road]
     if not grant_rows:
         checks.note("CT-7", "no SMUS principal reaches the governed lake", "no grant read")
@@ -1132,11 +1572,16 @@ def main(argv: list) -> int:
 
     # ---------------------------------------------------------------- the catalog road's records
     # A listing is the lake's when its Glue table form names a lake database in the registry
-    # account's catalog. SearchListings carries no form, so each Glue table listing is read whole.
+    # account's catalog, and a project's product when it names any other table. SearchListings
+    # carries no form, so each Glue table listing is read whole, and each data product listing for
+    # the asset listings it carries.
     road_unread: list = []  # the reads CT-10 and CT-11 could not make; an absence there proves nothing
+    product_unread: list = []  # the same for CT-16 to CT-19
     lake_listings: list = []  # (listing id, "<db>.<table>", owning project, approvalRequired)
-    for lid, _, etype, owner, _ in listings:
-        if etype != "GlueTableAssetType":
+    products: list = []  # Product rows
+    bundles: dict = {}  # asset listing id -> the data product listings that carry it
+    for lid, lname, etype, owner, _ in listings:
+        if etype not in ("GlueTableAssetType", "DataProduct"):
             continue
         res = dat.run(
             "datazone",
@@ -1149,54 +1594,69 @@ def main(argv: list) -> int:
             "json",
             tolerate="AccessDeniedException",
         )
-        if not res.ok:
+        if res.tolerated or not res.ok:
             road_unread.append(f"GetListing {lid}")
+            product_unread.append(f"GetListing {lid}")
             continue
-        forms = listing_forms(json_or_none(res.stdout) or {})
+        body = json_or_none(res.stdout) or {}
+        item = body.get("item") or {}
+        if etype == "DataProduct":
+            for entry in (item.get("dataProductListing") or {}).get("items") or []:
+                bundles.setdefault(entry.get("listingId", "-"), []).append(lid)
+            continue
+        forms = listing_forms(body)
         glue = forms.get("GlueTableForm") or {}
-        if (
-            glue.get("catalogId") != registry_account
-            or glue.get("databaseName") not in LAKE_DATABASES
-        ):
+        table = f"{glue.get('databaseName', '-')}.{glue.get('tableName', '-')}"
+        approval = (forms.get("SubscriptionTermsForm") or {}).get("approvalRequired", "-")
+        catalog = glue.get("catalogId") or "-"
+        if catalog == registry_account and glue.get("databaseName") in LAKE_DATABASES:
+            lake_listings.append((lid, table, owner, approval))
             continue
-        lake_listings.append(
-            (
-                lid,
-                f"{glue.get('databaseName')}.{glue.get('tableName', '-')}",
-                owner,
-                (forms.get("SubscriptionTermsForm") or {}).get("approvalRequired", "-"),
+        products.append(
+            Product(
+                listing=lid,
+                name=lname,
+                where=where_of.get(catalog, "elsewhere"),
+                account=catalog,
+                table=table,
+                owner=owner,
+                approval=approval,
+                classification=classification_value(forms),
+                asset=(item.get("assetListing") or {}).get("assetId", "-"),
             )
         )
 
-    road_subs: list = []  # (listing id, table, subscription id, status, principal kind, project, request)
-    road_requests: dict = {}  # ACCEPTED request id -> (requester, reviewer)
-    completed: dict = {}  # listing id -> subscription ids whose grant is COMPLETED
-    for lid, table, _, _ in lake_listings:
-        for verb, extra in (
-            ("list-subscriptions", ()),
-            ("list-subscription-requests", ("--status", "ACCEPTED")),
-            ("list-subscription-grants", ()),
-        ):
-            res = dat.run(
-                "datazone",
-                verb,
-                "--domain-identifier",
-                domain_id,
-                "--subscribed-listing-id",
-                lid,
-                *extra,
-                "--output",
-                "json",
-            )
-            if not res.ok:
-                road_unread.append(f"{verb} {lid}")
-                continue
-            for item in (json_or_none(res.stdout) or {}).get("items", []):
-                if verb == "list-subscriptions":
-                    principal = item.get("subscribedPrincipal") or {}
-                    road_subs.append(
-                        (
-                            lid,
+    def acts(asset_listing: str, table: str, unread: list) -> tuple:
+        """One asset listing's subscriptions, ACCEPTED requests and COMPLETED grants, asked under
+        its own id and under each data product listing that carries it (SUP-363)."""
+        subs: dict = {}  # subscription id -> (listing, table, id, status, principal kind, project, request)
+        accepted: dict = {}  # ACCEPTED request id -> (requester, reviewer)
+        done: set = set()  # the subscriptions whose grant is COMPLETED
+        for lid in [asset_listing, *bundles.get(asset_listing, [])]:
+            for verb, extra in (
+                ("list-subscriptions", ()),
+                ("list-subscription-requests", ("--status", "ACCEPTED")),
+                ("list-subscription-grants", ()),
+            ):
+                res = dat.run(
+                    "datazone",
+                    verb,
+                    "--domain-identifier",
+                    domain_id,
+                    "--subscribed-listing-id",
+                    lid,
+                    *extra,
+                    "--output",
+                    "json",
+                )
+                if not res.ok:
+                    unread.append(f"{verb} {lid}")
+                    continue
+                for item in (json_or_none(res.stdout) or {}).get("items", []):
+                    if verb == "list-subscriptions":
+                        principal = item.get("subscribedPrincipal") or {}
+                        subs[item.get("id", "-")] = (
+                            asset_listing,
                             table,
                             item.get("id", "-"),
                             item.get("status", "-"),
@@ -1204,21 +1664,30 @@ def main(argv: list) -> int:
                             (principal.get("project") or {}).get("id", "-"),
                             item.get("subscriptionRequestId") or "-",
                         )
-                    )
-                elif verb == "list-subscription-requests":
-                    road_requests[item.get("id", "-")] = (
-                        item.get("createdBy", "-"),
-                        item.get("reviewerId", "-"),
-                    )
-                elif item.get("status") == "COMPLETED":
-                    completed.setdefault(lid, set()).add(item.get("subscriptionId", "-"))
+                    elif verb == "list-subscription-requests":
+                        accepted[item.get("id", "-")] = (
+                            item.get("createdBy", "-"),
+                            item.get("reviewerId") or "-",
+                        )
+                    elif item.get("status") == "COMPLETED":
+                        done.add(item.get("subscriptionId", "-"))
+        return list(subs.values()), accepted, done
+
+    road_subs: list = []  # (listing id, table, subscription id, status, principal kind, project, request)
+    road_requests: dict = {}  # ACCEPTED request id -> (requester, reviewer)
+    completed: dict = {}  # listing id -> subscription ids whose grant is COMPLETED
+    for lid, table, _, _ in lake_listings:
+        subs, accepted, done = acts(lid, table, road_unread)
+        road_subs += subs
+        road_requests.update(accepted)
+        completed[lid] = done
 
     # The publishing projects' members, each resolved to what it is: an approver holds the project
     # role's sessions too, so the membership is the boundary of who can regrant a published table.
     road_members: dict = {}  # project id -> [(kind, member id, designation, role ARN or "-")]
     profiles_by_id: dict = {}  # user profile id -> (type, IAM ARN or "-")
 
-    def profile(user_id: str) -> tuple:
+    def profile(user_id: str, unread: list) -> tuple:
         if user_id not in profiles_by_id:
             res = dat.run(
                 "datazone",
@@ -1232,14 +1701,16 @@ def main(argv: list) -> int:
             )
             body = json_or_none(res.stdout) or {}
             if not res.ok:
-                road_unread.append(f"GetUserProfile {user_id}")
+                unread.append(f"GetUserProfile {user_id}")
             profiles_by_id[user_id] = (
                 body.get("type", "-"),
                 ((body.get("details") or {}).get("iam") or {}).get("arn", "-"),
             )
         return profiles_by_id[user_id]
 
-    for project in sorted({owner for _, _, owner, _ in lake_listings}):
+    def members_of(project: str, unread: list) -> list | None:
+        """A project's members as (kind, member id, designation, role ARN or "-"); None when the
+        membership was not read."""
         res = dat.run(
             "datazone",
             "list-project-memberships",
@@ -1251,14 +1722,14 @@ def main(argv: list) -> int:
             "json",
         )
         if not res.ok:
-            road_unread.append(f"ListProjectMemberships {project}")
-            continue
+            unread.append(f"ListProjectMemberships {project}")
+            return None
         rows = []
         for m in (json_or_none(res.stdout) or {}).get("members", []):
             details = m.get("memberDetails") or {}
             if "user" in details:
                 uid = (details.get("user") or {}).get("userId", "-")
-                profile(uid)
+                profile(uid, unread)
                 rows.append(("user", uid, m.get("designation", "-"), "-"))
             else:
                 gid = (details.get("group") or {}).get("groupId", "-")
@@ -1273,14 +1744,19 @@ def main(argv: list) -> int:
                     "json",
                 )
                 if not res.ok:
-                    road_unread.append(f"GetGroupProfile {gid}")
+                    unread.append(f"GetGroupProfile {gid}")
                 body = json_or_none(res.stdout) or {}
                 rows.append(
                     ("group", gid, m.get("designation", "-"), body.get("rolePrincipalArn") or "-")
                 )
-        road_members[project] = rows
+        return rows
+
+    for project in sorted({owner for _, _, owner, _ in lake_listings}):
+        rows = members_of(project, road_unread)
+        if rows is not None:
+            road_members[project] = rows
     for requester, _ in road_requests.values():
-        profile(requester)
+        profile(requester, road_unread)
 
     # The classification of every table the road covers, table and columns, read live.
     road_tables = sorted(set(PUBLISHED_LAKE_TABLES) | {t for _, t, _, _ in lake_listings})
@@ -1433,6 +1909,395 @@ def main(argv: list) -> int:
             + f", no column outside {' or '.join(CATALOG_ROAD_CLASSIFICATIONS)}",
         )
 
+    # ---------------------------------------------------------------- the product end's records
+    # The acts on each listed project table and its owner's members, as the lake's end holds them.
+    product_subs: list = []  # road_subs's rows, over the product listings
+    product_requests: dict = {}  # ACCEPTED request id -> (requester, reviewer)
+    product_completed: dict = {}  # listing id -> subscription ids whose grant is COMPLETED
+    for p in products:
+        subs, accepted, done = acts(p.listing, p.table, product_unread)
+        product_subs += subs
+        product_requests.update(accepted)
+        product_completed[p.listing] = done
+
+    product_members: dict = {}  # owning project id -> its members, in road_members's rows
+    for project in sorted({p.owner for p in products}):
+        rows = road_members.get(project) or members_of(project, product_unread)
+        if rows is not None:
+            product_members[project] = rows
+    for pair in product_requests.values():
+        for uid in pair:
+            if PROFILE_ID.fullmatch(uid):
+                profile(uid, product_unread)
+
+    # The accounts each project's environments live in: a fulfilment names the IAMPrincipals of
+    # the subscriber's account, and a project's inventory answers that account's session.
+    project_accounts: dict = {}  # project id -> account ids; absent when the read failed
+    for pid, pname in projects.items():
+        res = dat.run(
+            "datazone",
+            "list-environments",
+            "--domain-identifier",
+            domain_id,
+            "--project-identifier",
+            pid,
+            "--query",
+            "items[].awsAccountId",
+            "--output",
+            "json",
+        )
+        if res.ok:
+            project_accounts[pid] = set(json_or_none(res.stdout) or [])
+        else:
+            product_unread.append(f"ListEnvironments {pname}")
+
+    # What each deployment project subscribes to, asked by subscriber: no listing has to be known.
+    target_subs: list = []  # (deployment project, subscription id, status, listing name)
+    for pid, pname in projects.items():
+        if pname not in DEPLOYMENT_PROJECTS:
+            continue
+        res = dat.run(
+            "datazone",
+            "list-subscriptions",
+            "--domain-identifier",
+            domain_id,
+            "--owning-project-id",
+            pid,
+            "--output",
+            "json",
+        )
+        if not res.ok:
+            product_unread.append(f"list-subscriptions of {pname}")
+            continue
+        for item in (json_or_none(res.stdout) or {}).get("items", []):
+            target_subs.append(
+                (
+                    pname,
+                    item.get("id", "-"),
+                    item.get("status", "-"),
+                    (item.get("subscribedListing") or {}).get("name", "-"),
+                )
+            )
+
+    # Whether a Glue table is a resource link, read in the account whose catalog holds it. A table
+    # Glue no longer holds is no link: its asset outlived it.
+    links_read: dict = {}  # (where, "<db>.<table>") -> (read, where the link points or "")
+    tables_gone: set = set()
+
+    def link_of(where: str, table: str) -> tuple:
+        key = (where, table)
+        if key not in links_read:
+            read, target = False, ""
+            if where in where_of.values():
+                database, name = table.split(".", 1)
+                res = cli_of[where].run(
+                    "glue",
+                    "get-table",
+                    "--database-name",
+                    database,
+                    "--name",
+                    name,
+                    "--query",
+                    "Table.TargetTable",
+                    "--output",
+                    "json",
+                    tolerate="EntityNotFoundException",
+                )
+                if res.tolerated:
+                    read = True
+                    tables_gone.add(key)
+                elif res.ok:
+                    read, target = True, link_target(json_or_none(res.stdout), where_of)
+            links_read[key] = (read, target)
+        return links_read[key]
+
+    tables_unread: list = []  # the tables Glue was not read for, as "<where>:<db>.<table>"
+    link_listings: list = []  # (Product, where its link points)
+    for p in products:
+        read, target = link_of(p.where, p.table)
+        if not read:
+            tables_unread.append(f"{p.where}:{p.table}")
+        elif target:
+            link_listings.append((p, target))
+
+    # Each project's inventory, read as the session of the account the project lives in. A Glue
+    # table asset is judged; an asset of another type is counted.
+    inventory: list = []  # (project, asset, "<db>.<table>", where, listed, link target or "")
+    inventory_unread: list = []  # the projects whose inventory was not read whole
+    inventory_assets = 0
+    for pid, pname in projects.items():
+        homes = sorted(where_of[a] for a in project_accounts.get(pid, ()) if a in where_of)
+        if not homes:
+            inventory_unread.append(pname)
+            continue
+        found = cli_of[homes[0]].pages(
+            "datazone",
+            "search",
+            "--domain-identifier",
+            domain_id,
+            "--search-scope",
+            "ASSET",
+            "--owning-project-identifier",
+            pid,
+            "--additional-attributes",
+            "FORMS",
+            token="nextToken",
+        )
+        if not found.complete:
+            inventory_unread.append(pname)
+        for entry in found.items("items"):
+            asset = entry.get("assetItem") or {}
+            inventory_assets += 1
+            if not asset.get("typeIdentifier", "").endswith("GlueTableAssetType"):
+                continue
+            forms = {
+                f.get("formName"): json_or_none(f.get("content")) or {}
+                for f in (asset.get("additionalAttributes") or {}).get("formsOutput") or []
+            }
+            glue = forms.get("GlueTableForm") or {}
+            where = where_of.get(glue.get("catalogId") or "-", "elsewhere")
+            table = f"{glue.get('databaseName', '-')}.{glue.get('tableName', '-')}"
+            read, target = link_of(where, table)
+            if not read:
+                tables_unread.append(f"{where}:{table}")
+            inventory.append(
+                (
+                    pname,
+                    asset.get("name", "-"),
+                    table,
+                    where,
+                    asset.get("identifier") in listed_assets,
+                    target,
+                )
+            )
+    tables_unread = sorted(set(tables_unread))
+
+    # ---------------------------------------------------------------- CT-15 the stages that list
+    ct15 = "Staging's project lists nothing, a chain's dev project by exception"
+    staging_listed, dev_listed = stage_listings(listings, projects)
+    production_listed = [n for _, n, _, p, _ in listings if projects.get(p) == PRODUCTION_PROJECT]
+    if staging_listed:
+        checks.fail(
+            "CT-15",
+            ct15,
+            "; ".join(f"{project} lists {lname}" for lname, project in staging_listed)
+            + " - Staging's sample data offered to every project's search (Stage 19 decisions 14 "
+            "and 19 (c))",
+        )
+    elif not listings:
+        checks.note("CT-15", ct15, "no listing published")
+    elif dev_listed:
+        checks.note(
+            "CT-15",
+            ct15,
+            "; ".join(f"{project} lists {lname}" for lname, project in dev_listed)
+            + " - a chain application's product is listed in Production alone (Stage 19 decision "
+            "20 (b)); the gate is the template's default, and a member's portal publish lists",
+        )
+    else:
+        checks.ok(
+            "CT-15",
+            ct15,
+            f"{len(listings)} listings: {len(production_listed)} of {PRODUCTION_PROJECT}, none of "
+            f"{STAGING_PROJECT} or of a chain application's dev project "
+            f"({', '.join(CHAIN_DEV_PROJECTS.values())})",
+        )
+
+    # ---------------------------------------------------------------- CT-16 the product's access acts
+    ct16 = "the access acts on a project's product, by the stage that owns it"
+    act_problems, sandbox_acts = product_acts(
+        products,
+        product_subs,
+        product_requests,
+        product_members,
+        profiles_by_id,
+        projects,
+        target_subs,
+    )
+    product_owner = {p.listing: p.owner for p in products}
+    governed_acts = [
+        s
+        for s in product_subs
+        if s[3] == "APPROVED" and projects.get(product_owner.get(s[0], "")) in DEPLOYMENT_PROJECTS
+    ]
+    governed = "no deployment project subscribes; " + (
+        f"{len(governed_acts)} approved subscription(s) to a deployment project's listing, each a "
+        "project's request a person among its members approved"
+        if governed_acts
+        else "no subscription to a deployment project's listing"
+    )
+    if act_problems:
+        checks.fail("CT-16", ct16, "; ".join(act_problems) + " - Stage 19 decisions 13 and 15")
+    elif product_unread:
+        checks.note("CT-16", ct16, f"not read: {', '.join(product_unread)}")
+    elif sandbox_acts:
+        checks.note(
+            "CT-16",
+            ct16,
+            "; ".join(
+                f"{subscriber} reads {table} of {owner} by {shape} ({sid})"
+                for sid, table, owner, subscriber, shape in sandbox_acts
+            )
+            + " - a Sandbox project shares its product as SMUS lets it, DataZone's subscription "
+            f"the record (Stage 19 decisions 11 and 20 (b)); {governed}",
+        )
+    else:
+        checks.ok("CT-16", ct16, f"{governed}; no access act on another project's product")
+
+    # ---------------------------------------------------------------- CT-17 every product grant explained
+    ct17 = "every grant on a project's listed table is explained"
+    product_rows: dict = {}  # grant row -> why it exists, empty when nothing explains it
+    for p in products:
+        fulfilled = {
+            s[5]: project_accounts.get(s[5])
+            for s in product_subs
+            if s[0] == p.listing
+            and s[3] == "APPROVED"
+            and s[4] == "project"
+            and s[2] in product_completed.get(p.listing, set())
+        }
+        every_table = f"{p.table.split('.', 1)[0]}.ALL_TABLES"
+        for g in grant_rows:
+            if g[0] != p.where or g[2] not in TABLE_KINDS or g[3] not in (p.table, every_table):
+                continue
+            why = explain_product_grant(g, p.account, p.owner, fulfilled)
+            if why or g not in product_rows:
+                product_rows[g] = why
+    product_fulfilments = [g for g, why in product_rows.items() if why.startswith("the fulfilment")]
+    product_unexplained = [g for g, why in product_rows.items() if not why]
+    # The accounts whose grants were not read whole: an absence there proves nothing (Lesson 62).
+    unjudged = sorted({p.where for p in products if p.where == "elsewhere" or p.where in unlisted})
+    product_where = {p.listing: p.where for p in products}
+    product_unfulfilled = [
+        s
+        for s in product_subs
+        if s[3] == "APPROVED"
+        and product_where.get(s[0]) not in unjudged
+        and not any(condition_project(g[6]) == s[5] and g[3] == s[1] for g in product_fulfilments)
+    ]
+    product_gap = (
+        f"; {len(product_unfulfilled)} APPROVED subscription(s) with no grant on the table: "
+        + ", ".join(s[2] for s in product_unfulfilled)
+        if product_unfulfilled
+        else ""
+    )
+    if product_unexplained:
+        checks.fail(
+            "CT-17",
+            ct17,
+            "; ".join(
+                f"{g[0]}: {short_principal(g[1])} on {g[2]} {g[3]}: {g[4]}"
+                + (f" (grantable {g[5]})" if g[5] != "-" else "")
+                + (
+                    f" [{projects.get(condition_project(g[6]), condition_project(g[6]))}]"
+                    if condition_project(g[6])
+                    else ""
+                )
+                for g in product_unexplained
+            )
+            + " - neither the owning project nor an approved subscription explains it",
+        )
+    elif not products:
+        checks.note("CT-17", ct17, "no project table is listed")
+    elif unjudged or product_unread:
+        checks.note(
+            "CT-17",
+            ct17,
+            f"{len(product_rows) - len(product_unexplained)} explained; not read: "
+            + ", ".join(
+                [
+                    "the grants of an account no live session reads"
+                    if w == "elsewhere"
+                    else f"{w} grants"
+                    for w in unjudged
+                ]
+                + product_unread
+            )
+            + product_gap,
+        )
+    else:
+        checks.ok(
+            "CT-17",
+            ct17,
+            f"{len(product_rows)} grants on {', '.join(sorted({p.table for p in products}))}: "
+            f"{len(product_fulfilments)} fulfilment(s), each an approved subscription's, and "
+            f"{len(product_rows) - len(product_fulfilments)} the owning project's or the blueprint's"
+            + product_gap,
+        )
+
+    # ---------------------------------------------------------------- CT-18 the product's classification
+    ct18 = "every product listing carries a classification, public or internal"
+    class_problems, class_excepted = classification_findings(products)
+    listings_unread = [u for u in product_unread if u.startswith("GetListing")]
+    if class_problems:
+        checks.fail(
+            "CT-18",
+            ct18,
+            "; ".join(class_problems)
+            + " - the form is a product's only classification, and a subscriber reads the table "
+            "whole (Stage 19 decision 4)",
+        )
+    elif listings_unread:
+        checks.note("CT-18", ct18, f"not read: {', '.join(listings_unread)}")
+    elif not products:
+        checks.note("CT-18", ct18, "no project table is listed")
+    elif class_excepted:
+        checks.note(
+            "CT-18",
+            ct18,
+            "; ".join(
+                f"{p.name} carries no form - {UNCLASSIFIED_BY_EXCEPTION[p.asset]}"
+                for p in class_excepted
+            )
+            + f"; {len(products) - len(class_excepted)} other listing(s) read public or internal",
+        )
+    else:
+        checks.ok("CT-18", ct18, "; ".join(f"{p.name} {p.classification}" for p in products))
+
+    # ---------------------------------------------------------------- CT-19 the resource links
+    ct19 = "no listing publishes a resource link"
+    inventory_links = [row for row in inventory if row[5] and not row[4]]
+    held_links = "; ".join(
+        f"{asset} in {project} ({table} -> {target})"
+        for project, asset, table, _, _, target in inventory_links
+    )
+    if link_listings:
+        checks.fail(
+            "CT-19",
+            ct19,
+            "; ".join(
+                f"{p.name} of {projects.get(p.owner, p.owner)} lists {p.table}, a link to {target}"
+                for p, target in link_listings
+            )
+            + " - another owner's table listed under the consumer's name (Stage 19 0.5)",
+        )
+    elif tables_unread or inventory_unread:
+        checks.note(
+            "CT-19",
+            ct19,
+            "not read: "
+            + ", ".join(
+                [f"table {t}" for t in tables_unread]
+                + [f"the inventory of {n}" for n in inventory_unread]
+            )
+            + (f"; unlisted links in an inventory: {held_links}" if held_links else ""),
+        )
+    elif inventory_links:
+        checks.note(
+            "CT-19",
+            ct19,
+            f"{held_links} - unlisted: a source's import of the link its project's subscription "
+            "created (Stage 19 0.5). CT-4 keeps a source from publishing it on import, and a "
+            "member's publish would list it",
+        )
+    else:
+        checks.ok(
+            "CT-19",
+            ct19,
+            f"{len(products)} listed project table(s) and {len(inventory)} Glue table asset(s) "
+            f"in {len(projects)} inventories, none a resource link",
+        )
+
     # ---------------------------------------------------------------- the LF-Tag ontology
     tag_rows: list = []
     for label, cli, profile in (
@@ -1454,8 +2319,9 @@ def main(argv: list) -> int:
         rep.text(
             "The catalog road and the register road are different systems. This report reads both:\n"
             "sections 1 to 4 are the catalog (DataZone), section 5 is Lake Formation, section 6\n"
-            "joins them on the lake's published tables, and CT-7 and CT-10 are the question of\n"
-            "whether one has reached into the other."
+            "joins them on the lake's published tables and section 7 on a project's own listed\n"
+            "table, and CT-7, CT-10 and CT-17 are the question of whether one has reached into\n"
+            "the other."
         )
 
         rep.h1("1. The domain")
@@ -1538,7 +2404,7 @@ def main(argv: list) -> int:
             ["WHERE\tGRANTS\tPAGES\tLISTING"]
             + [
                 f"{w}\t{g}\t{p}\t"
-                + ("read to its last page" if whole else "NOT read to its last page - section 10")
+                + ("read to its last page" if whole else "NOT read to its last page - section 11")
                 for w, (g, p, whole) in lf_read.items()
             ]
         )
@@ -1612,16 +2478,97 @@ def main(argv: list) -> int:
             ]
         )
 
-        rep.h1("7. The LF-Tag ontology, by account")
+        rep.h1("7. The catalog road for a project's own table")
+
+        def link_cell(where: str, table: str) -> str:
+            read, target = link_of(where, table)
+            if not read:
+                return "NOT READ"
+            if (where, table) in tables_gone:
+                return "no such table"
+            return target or "-"
+
+        if not products:
+            rep.text("No project table is listed.")
+        else:
+            listing_name = {lid: n for lid, n, _, _, _ in listings}
+            rep.tabulate(
+                [
+                    "LISTING\tNAME\tTABLE\tWHERE\tOWNER PROJECT\tAPPROVAL REQUIRED\tCLASSIFICATION"
+                    "\tDATA PRODUCT\tRESOURCE LINK TO"
+                ]
+                + [
+                    f"{p.listing}\t{p.name}\t{p.table}\t{p.where}\t{projects.get(p.owner, p.owner)}"
+                    f"\t{p.approval}\t"
+                    + ("NO FORM" if p.classification is None else p.classification or "EMPTY")
+                    + "\t"
+                    + (", ".join(listing_name.get(b, b) for b in bundles.get(p.listing, [])) or "-")
+                    + f"\t{link_cell(p.where, p.table)}"
+                    for p in products
+                ]
+            )
+            rep.line()
+            if not product_subs:
+                rep.text("No subscription to a project's table.")
+            else:
+                rep.tabulate(
+                    ["TABLE\tSUBSCRIPTION\tSTATUS\tPRINCIPAL\tREQUEST\tREQUESTER\tREVIEWER\tGRANT"]
+                    + [
+                        f"{t}\t{sid}\t{st}\t{kind} {projects.get(pr, pr)}\t{rid}\t"
+                        + "\t".join(product_requests.get(rid, ("-", "-")))
+                        + f"\t{'COMPLETED' if sid in product_completed.get(lid, set()) else '-'}"
+                        for lid, t, sid, st, kind, pr, rid in product_subs
+                    ]
+                )
+            rep.line()
+            rep.text(
+                "Each grant on a listed project table or on every table of its database, and why it\n"
+                "exists (CT-17):"
+            )
+            rep.tabulate(
+                ["WHERE\tPRINCIPAL\tKIND\tTABLE\tPERMISSIONS\tWITH GRANT\tCONTEXT\tWHY"]
+                + [
+                    f"{g[0]}\t{short_principal(g[1])}\t{g[2]}\t{g[3]}\t{g[4]}\t{g[5]}\t"
+                    + (projects.get(condition_project(g[6]), condition_project(g[6])) or "-")
+                    + f"\t{why or 'UNEXPLAINED'}"
+                    for g, why in product_rows.items()
+                ]
+            )
+        rep.line()
+        if not target_subs:
+            rep.text("No deployment project holds a subscription (CT-16).")
+        else:
+            rep.text("What each deployment project subscribes to (CT-16):")
+            rep.tabulate(
+                ["PROJECT\tSUBSCRIPTION\tSTATUS\tLISTING"]
+                + [f"{p}\t{sid}\t{st}\t{n}" for p, sid, st, n in target_subs]
+            )
+        rep.line()
+        rep.text(
+            f"The inventories: {inventory_assets} assets in {len(projects)} projects, "
+            f"{len(inventory)} of them Glue tables (CT-19)."
+            + (f" Not read whole: {', '.join(inventory_unread)}." if inventory_unread else "")
+        )
+        if inventory:
+            rep.tabulate(
+                ["PROJECT\tASSET\tTABLE\tWHERE\tLISTED\tRESOURCE LINK TO"]
+                + [
+                    f"{project}\t{asset}\t{table}\t{where}\t{'yes' if listed else 'no'}"
+                    f"\t{link_cell(where, table)}"
+                    for project, asset, table, where, listed, _ in inventory
+                ]
+            )
+
+        rep.h1("8. The LF-Tag ontology, by account")
         if not tag_rows:
             rep.text("No LF-Tag is defined in either account.")
         else:
             rep.tabulate(["WHERE\tKEY\tVALUES"] + [f"{w}\t{k}\t{v}" for w, k, v in tag_rows])
 
-        rep.h1("8. Checks")
+        rep.h1("9. Checks")
         rep.checks_table(checks)
 
-        rep.h1("9. What this report cannot see")
+        rep.h1("10. What this report cannot see")
         rep.text(
             "DataZone refuses GetAsset and GetDataProduct to InfrastructureAccess in Data Governance\n"
             "(Stage 6f 0.6), the session this report reads the domain with, so the asset behind a\n"
@@ -1631,7 +2578,17 @@ def main(argv: list) -> int:
             "2026-10-26, Stage 6f 11.9). A direct Share ran once, on a Sandbox project's product and\n"
             "no lake listing (Stage 19 pass 2, 2026-11-14): it left a request made by a member of the\n"
             "owning project, accepted at creation with no reviewer. CT-11 fails on that record and\n"
-            "on a subscription with no accepted request, on a lake listing."
+            "on a subscription with no accepted request, on a lake listing; CT-16 fails on it on a\n"
+            "deployment project's listing and names it in a note on a Sandbox project's."
+        )
+        rep.line()
+        rep.text(
+            "On the product road, a project's inventory is read with datazone:Search as the session\n"
+            "of the account the project's environments live in, so a project with no environment is\n"
+            "not read (CT-19). A subscription to a data product is listed under each asset listing\n"
+            "the product carries, and its grant under the asset listing alone (SUP-363); both ids\n"
+            "are asked. A listing of another asset type, a Bedrock model or a Redshift table, is on\n"
+            "neither road: CT-15 counts it by owner and no check judges its grants."
         )
         rep.line()
         rep.text(
@@ -1651,7 +2608,7 @@ def main(argv: list) -> int:
             "registry's (Stage 19 pass 4)."
         )
 
-        rep.h1("10. Calls that failed")
+        rep.h1("11. Calls that failed")
         failed_calls_epilogue(rep, errors)
 
     n_fail = checks.n_fail()

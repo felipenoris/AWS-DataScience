@@ -153,6 +153,16 @@ repos:
         pass_filenames: false
         files: ^(examples/app-etl/(workflows/.*|manifest\.yaml)|scripts/deploy-application\.py|scripts/tfhygiene/projects\.py)$
 
+      # Stage 19 step 6.1 - the product road's rules in aws/catalog.py, on sample records and
+      # with no AWS call. Production lists no product before step 4.12, so a rule that stopped
+      # failing on a Share, or on a grant no subscription explains, fails here.
+      - id: catalog-self-check
+        name: the catalog's product road judges its sample records as written
+        entry: ./aws/catalog.py --self-check
+        language: system
+        pass_filenames: false
+        files: ^aws/(catalog\.py|awslib/.*\.py)$
+
       # 8.1 - every slice on disk declares its D11 layer in scripts/tfhygiene/layers.py. The
       # direction that costs money is a slice with no row: `make down` skips it in silence,
       # and for an [E] slice that is a bill nobody is told about. It fires on any .tf under
