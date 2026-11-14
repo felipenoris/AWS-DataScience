@@ -2508,3 +2508,57 @@ step says nothing in steps 5 to 17 reads these objects, so it ran before the sit
   `cm2l6qv25dsy6o` reads `COMPLETED`, its asset `GRANTED`.
 - **[Claude] Written**: step 18's note and the status row; the waiting list's row on the AppleDouble
   objects removed; `CLAUDE.md`'s row.
+
+## 2026-11-14 — `EXC-24` closed by the owner's act; decision 17 (d)'s report deferred
+
+Every AWS call of Claude's a read, as the infrastructure user through `awsds-infra-sandbox-1` and
+`awsds-infra-data`; the act on `house-price` is the user's, in the portal as the data scientist. Claude's
+hand. The user, verbatim: *"Sobre estes pontos, me oriente como fazer agora."*, on (d)'s report and
+`EXC-24`; then *"Classifiquei o house-price como public e republiquei"* and *"sobre o relato à AWS, não
+vou fazer neste momento. Guarde nas pendências do projeto."*
+
+- **[Claude] The push and the PR**, on the user's word in this chat, *"Autorizo push e PR"*: the branch
+  pushed at 20:55:51 UTC, PR #302 opened as a draft at 20:56:40 UTC, `make check` OK before it.
+- **[Claude] (d)'s channel**: `aws support describe-severity-levels` in `us-east-1` answered
+  `SubscriptionRequiredException` (*"Amazon Web Services Premium Support Subscription is required to use
+  this service."*) on both profiles, so no technical case. AWS's vulnerability reporting page, read
+  through a fetching agent: its Vulnerability Disclosure Program on HackerOne, or
+  AWS Security's e-mail address, which the page names; a human acknowledgement within 24 hours; no support plan named; nothing
+  disclosed publicly before a fix. The draft of 2026-11-11 went to the user with two lines added:
+
+  ```text
+  - Accounts: the domain's <domain account id>; the caller's <caller account id>, an associated account.
+  - Impact: the caller cannot read project B's data or change its source, but it can start that
+    source's import, with the source's own configuration, whenever it wants.
+  ```
+
+- **[user] The report deferred**, kept in the waiting list.
+- **[Claude] `house-price` before the act**: the asset `dbund4fvvvt05s` at revision 1, its forms
+  `GlueTableForm`, `DataSourceReferenceForm`, `SubscriptionTermsForm` and `CommonDetails`, no
+  `classification`; its listing `cetyru4cvy1bio` `ACTIVE` at revision 2.
+- **[user] The act**: the form `classification` added with `public`, and the asset republished.
+- **[Claude] Read after it**, from 21:27 UTC:
+  - asset revisions 2 to 4 by the owner's profile `28f1b390-…`: revision 2 at 21:25:20 UTC with
+    `classification` `internal`, revision 3 at 21:25:41 with `public`, revision 4 at 21:26:09 with
+    `public` and `SubscriptionTermsForm` `approvalRequired` `NO`, where revisions 1 to 3 read `YES`;
+  - the listing at revision 4, `ACTIVE`, 21:26:11.734 UTC, carrying asset revision 4, `classification`
+    `public` and `approvalRequired` `NO`; revision 3, 21:26:11.068, carrying asset revision 1, the
+    change set's revision before the publication's, as `SUP-345` read;
+  - Data Governance's trail at 21:28 UTC: `CreateAssetRevision` at 21:26:09 and `CreateListingChangeSet`
+    `PUBLISH` on entity revision 4 at 21:26:11, each by the domain execution role in the portal;
+    revisions 2 and 3's writes not yet listed (Lesson 62).
+- **[Claude] Found**: the republication turned `house-price`'s subscription terms from approval required
+  to none, in the revision the portal wrote two seconds before the publication. A request to the
+  listing is now accepted at creation, so 6f step 2's approval act has nothing to approve. No check
+  fails on it: `CT-11` reads the lake's listing alone, and `house-price` is a project's. Whether the
+  publish dialog or the user chose it is the user's account to give.
+- **[Claude] `EXC-24` closed in `aws/catalog.py`**: `UNCLASSIFIED_BY_EXCEPTION` emptied;
+  `classification_findings` takes the exceptions as an argument, so the `--self-check` case on an
+  excepted listing, which took the map's first entry, is built on a sample exception. 34 of 34 cases
+  as expected, ruff clean. `./aws/catalog.py` from 21:29:20 to 21:32:00 UTC: all checks passed, `CT-18`
+  *"house-price public; trades_notional internal"*; notes `CT-3`, `CT-6`, `CT-7`, `CT-13`, `CT-16`
+  and `CT-19`.
+- **[Claude] Written**: `EXC-24` closed in `docs/AWS_STATE.md`; `aws/INDEX.md`'s `catalog.py` row;
+  step 6.1's note, decision 17's channel and the status row; the waiting list's row on `house-price`
+  removed and (d)'s row brought to the reading; the vulnerability reporting page in
+  `docs/REFERENCES.md`.

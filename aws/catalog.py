@@ -216,12 +216,7 @@ CLASSIFICATION_FORM = "classification"
 # A product listing with no classification form, by asset id, with the exception that records it.
 # CT-18 reports these as a note and fails on any other listing without the form (Lesson 50).
 # Remove a row here when its exception is closed, and CT-18 turns red the same day.
-UNCLASSIFIED_BY_EXCEPTION = {
-    "dbund4fvvvt05s": (
-        "EXC-24: house-price, published from the portal on 2026-09-13, before the form type "
-        "existed (2026-11-10)"
-    ),
-}
+UNCLASSIFIED_BY_EXCEPTION: dict = {}
 
 # What each kind of principal may hold on a published table (CT-10). The publisher holds the read
 # with the grant option, which DataZone's terms for a Glue table require; a fulfilment is read-only
@@ -498,14 +493,15 @@ def classification_value(forms: dict) -> str | None:
     return str(form.get(CLASSIFICATION_FORM) or "")
 
 
-def classification_findings(products: list) -> tuple:
+def classification_findings(products: list, exceptions: dict | None = None) -> tuple:
     """CT-18's readings, as (problems, excepted): one sentence per listing that breaks the rule,
-    and the Product rows UNCLASSIFIED_BY_EXCEPTION covers."""
+    and the Product rows the exceptions cover, UNCLASSIFIED_BY_EXCEPTION unless given."""
+    exceptions = UNCLASSIFIED_BY_EXCEPTION if exceptions is None else exceptions
     problems = []
     excepted = []
     for p in products:
         if p.classification is None:
-            if p.asset in UNCLASSIFIED_BY_EXCEPTION:
+            if p.asset in exceptions:
                 excepted.append(p)
             else:
                 problems.append(f"{p.name} ({p.table}) carries no classification form")
@@ -869,7 +865,8 @@ def self_check() -> int:
     restricted = ours._replace(name="r", classification="restricted")
     unfilled = ours._replace(name="e", classification="")
     bare = ours._replace(name="n", classification=None)
-    known = bare._replace(name="x", asset=next(iter(UNCLASSIFIED_BY_EXCEPTION)))
+    sample_exceptions = {"sampleasset": "EXC-00: a sample exception"}
+    known = bare._replace(name="x", asset="sampleasset")
     unclassified = [
         "r (app_etl.t) is classified restricted",
         "e (app_etl.t) is classified with an empty value",
@@ -888,7 +885,7 @@ def self_check() -> int:
         ("a form with no value", classification_value({CLASSIFICATION_FORM: {}}), ""),
         (
             "the classifications that fail, and the one excepted",
-            classification_findings([ours, restricted, unfilled, bare, known]),
+            classification_findings([ours, restricted, unfilled, bare, known], sample_exceptions),
             (unclassified, [known]),
         ),
         ("a link's target", link_target(link, {prd: "production"}), "production:app_etl.t"),
