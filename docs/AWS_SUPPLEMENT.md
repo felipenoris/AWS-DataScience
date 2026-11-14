@@ -1219,6 +1219,17 @@ entry is still true is the reading.
   `database/curated` and `table/curated/*`. A check that reads the catalog policy with `get-resource-policy`
   sees none of them. Where: `log-stage-06f-data-governance.md`, 2026-10-26 (11.8 and 11.9); `docs/SMUS.md`.
 
+- `SUP-364` **`glue get-tables` and `glue get-table-versions` answer `IsRegisteredWithLakeFormation` false
+  for a table `glue get-table` answers true** (measured 2026-11-14 in Sandbox, Stage 19, on
+  `app_etl.trades_notional`, an Iceberg table at version 3 under a location registered with Lake
+  Formation). The three reads, between 17:50 and 18:07 UTC, of one unchanged table: `get-tables
+  --database-name app_etl` `False`, `get-table` `true`, `get-table-versions` `False` for version 3. Pass
+  1's `get-table` of 2026-11-10 read `true` as well. The Glue API reference's `Table` page, read the same
+  day, describes the field as whether the table is registered with Lake Formation; neither it nor the
+  pages of `GetTable`, `GetTables` and `GetTableVersions` says which call fills it. A check that judges
+  registration from a list call reads every table as unregistered; no instrument here reads the field. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-14.
+
 ## Lake Formation
 
 - `SUP-100` **`ram enable-sharing-with-aws-organization` both enables trusted access for `ram.amazonaws.com`
@@ -2436,9 +2447,14 @@ entry is still true is the reading.
   and daily source, its stack holding the database alone, and carries a target,
   `<environment name>-default-target`, for `GlueTableAssetType`
   and `GlueViewAssetType` over that database (measured 2026-11-11 in Staging and in Production, Stage 19
-  step 4.6; the portal's `app_etl` environment in Sandbox read with none the same day). Where:
+  step 4.6; the portal's `app_etl` environment in Sandbox read with none the same day). Read 2026-11-14 on
+  that environment, `chz5jdb80ohocw`, no write: its daily source names no environment (`environmentId`
+  null) and hangs from the project's `project.default_lakehouse` connection, the `Tooling` environment's,
+  its filter naming the database; the stack's template gives `GlueDatabase`, and an Athena workgroup the
+  stack did not create, `DeletionPolicy` and `UpdateReplacePolicy` `Retain`, so the stack's deletion leaves
+  the database. What the environment's delete does to the source is unread. Where:
   `log-stage-06f-data-governance.md`, 2026-09-12/13; `log-stage-19-smus-native-data-product.md`, 2026-10-28,
-  2026-11-08 and 2026-11-11; `docs/SMUS.md`, the *Create database* item.
+  2026-11-08, 2026-11-11 and 2026-11-14; `docs/SMUS.md`, the *Create database* item.
 
 - `SUP-185` **The portal's MLflow entries look their blueprint up in the domain account, so a domain whose
   configurations live in associated accounts greys them out whatever the profile carries** (read 2026-10-19,
