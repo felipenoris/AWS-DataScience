@@ -688,6 +688,22 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     `SageMakerStudioProjectRoleMachineLearningPolicy` **v47** (both 2026-10-29), the diff in
     [`upstream-releases.md`](upstream-releases.md); nothing the claims above rest on moved, and the reading was
     that file's fortnightly sweep, not an instrument.
+    **Read again 2026-11-13 and 2026-11-14: four policies had moved, three of them on the day of the reading.**
+    `SageMakerStudioDomainExecutionRolePolicy` is **v27** (v23 on 2026-10-30), each revision one addition to
+    `DataZonePermissions`: v24 (2026-11-04) `datazone:GetEffectiveUICustomization`, v25 (2026-11-05)
+    `ListDeployableEnvironmentBlueprints`, v26 (2026-11-12) three notification-preference actions, v27
+    (2026-11-12 19:47 UTC) `UpdateAssetOwner`. The admin guide's document history names v25 and v27 alone.
+    AWS's managed policy reference, read at 20:02 UTC on 2026-11-13, showed the project policies unmoved;
+    pulled in Sandbox at 01:46 UTC on 2026-11-14 they were `SageMakerStudioProjectUserRolePolicy` **v77** and
+    `SageMakerStudioProjectRoleMachineLearningPolicy` **v48** (both 2026-11-13 20:47 UTC) and
+    `SageMakerStudioProjectProvisioningRolePolicy` **v85** (20:07 UTC), and the reference page still showed
+    v76 five hours after IAM served v77. The diffs are in [`upstream-releases.md`](upstream-releases.md): v77
+    adds Bedrock knowledge bases and data sources, v48 `bedrock-agentcore:InvokeWebSearch` and
+    `datazone:UpdateAssetOwner`, v85 RAM shares of Glue resources named `DataZone*`. The knowledge-base
+    policy is still v9. `GetS3GenAI` is byte-identical in v85, and so are `DomainS3BucketPermissions` and
+    `DomainS3BucketKmsPermissions` in v77 and the `S3AG*` and `ConsumerS3AGPermission` statements in v48, so
+    the claims above stand again. It was a hand's pull once more, and the page that stood in for it was out of
+    date within five minutes.
 
 ### Raised by the 2026-08-25 objectives clarification
 

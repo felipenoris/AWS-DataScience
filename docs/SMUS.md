@@ -721,7 +721,10 @@ association in the CLI's repository (2026-11-13). The CLI reaches such a project
 domain and a project alone: each leg runs as its account's deploy role, whose `ListDomains` answers
 the associated domain, and Stage 18 measured the deploy in Staging (below). The costs are the shared
 domain's: a form type's name is the domain's (Stage 19 decision 18), and a search lists `dev`'s
-product beside Production's (decision 20).
+product beside Production's (decision 20). An associated account also calls the domain only with the
+actions that the version of the managed permission on the domain's RAM share names, and the share
+keeps the version it was created with, 10 here where the default is 12 (`SUP-360`, measured
+2026-11-14).
 
 ### A deployment project in a `Workloads` account
 

@@ -369,6 +369,27 @@
   <https://github.com/hashicorp/terraform-provider-aws/pull/49929>; the `aws-ia` SMUS module at `v0.2.1`
   (2026-08-17), which D26 does not consume: <https://github.com/aws-ia/terraform-aws-sagemaker-unified-studio/releases>.
 
+- Terraform and its providers, read 2026-11-13 for `docs/plan/upstream-releases.md`: Terraform's releases
+  `v1.16.7` and `v1.17.0` to `v1.17.2`, with the entries 1.17.0's notes cite for `-minimal-refresh` and for
+  variables in provider requirements: <https://github.com/hashicorp/terraform/releases>,
+  <https://github.com/hashicorp/terraform/issues/35290>, <https://github.com/hashicorp/terraform/issues/39153>;
+  the `aws` provider's releases `v6.70.0` to `v6.73.0`, with the entries their notes cite for 6.73.0's fix of
+  the TLS handshake timeouts of 6.71.0 and 6.72.0 and for the two fixes in resources the tree declares:
+  <https://github.com/hashicorp/terraform-provider-aws/releases>,
+  <https://github.com/hashicorp/terraform-provider-aws/issues/50816>,
+  <https://github.com/hashicorp/terraform-provider-aws/issues/50626>,
+  <https://github.com/hashicorp/terraform-provider-aws/issues/47190>; its MWAA Serverless PRs of the entry
+  above, #49929 closed unmerged on 2026-11-09; the `awscc` provider's releases `v1.107.0` to `v1.110.0` and its
+  generated documentation at `v1.110.0` for the workflow, the MLflow App, the project membership and the
+  connection: <https://github.com/hashicorp/terraform-provider-awscc/releases>,
+  <https://github.com/hashicorp/terraform-provider-awscc/blob/v1.110.0/docs/resources/mwaaserverless_workflow.md>,
+  <https://github.com/hashicorp/terraform-provider-awscc/blob/v1.110.0/docs/resources/sagemaker_mlflow_app.md>,
+  <https://github.com/hashicorp/terraform-provider-awscc/blob/v1.110.0/docs/resources/datazone_project_membership.md>,
+  <https://github.com/hashicorp/terraform-provider-awscc/blob/v1.110.0/docs/resources/datazone_connection.md>;
+  CloudFormation's template reference for the workflow and the MLflow App, with no `Environment` and no key:
+  <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-mwaaserverless-workflow.html>,
+  <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-sagemaker-mlflowapp.html>.
+
 ## Networking and access
 
 - WireGuard: <https://www.wireguard.com/>.
@@ -1368,6 +1389,30 @@
   <https://aws.amazon.com/about-aws/whats-new/2026/10/smus-light-mode>,
   <https://aws.amazon.com/about-aws/whats-new/2026/10/glue-catalog-oauth-iceberg-rest/>,
   <https://aws.amazon.com/about-aws/whats-new/2026/10/mflow-version-3-16/>.
+- **SageMaker Unified Studio's releases to 2026-11-12** — read 2026-11-13 for
+  [`upstream-releases.md`](plan/upstream-releases.md). The release notes' November entries, layout customization
+  for designations, the Glue Studio job migration tool, notifications for scheduled runs and the two Workday
+  connections: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>; the
+  designations pages, which now answer: a custom designation as a selection from a fixed permission set in six
+  categories, the DataAgent actions required in each, data sources left to IAM, and the RAM permission versions
+  an associated account needs:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designations.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designation-permissions.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/example-designations.html>; the
+  migration tool's page: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/job-migration.html>;
+  the admin guide's document history, with the domain execution policy's entries of 2026-11-05 and 2026-11-12
+  and, read again at 02:48 UTC on 2026-11-14, the two project policies' entries of 2026-11-13:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html>; AWS's managed
+  policy reference, which gives each policy's version and edit time (v76, v47, v84 and v9 on the pages, v27 for
+  the domain execution policy; IAM listed v77, v48 and v85 that evening, `SUP-005`):
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectUserRolePolicy.html>,
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectRoleMachineLearningPolicy.html>,
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectProvisioningRolePolicy.html>,
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy.html>,
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioDomainExecutionRolePolicy.html>;
+  What's New, the Workday integration and the console assistant's new name:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/aws-analytics-workday-data-cloud/>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/q-developer-renamed-aws-assistant/>.
 - Code spaces, and an environment's deployment record — the user-guide page that routes IAM and Identity Center domains to their own code-spaces pages, and the DataZone API's `GetEnvironment` and `EnvironmentDeploymentDetails`, which define `VALIDATION_FAILED`, `FAILED_VALIDATION` and the `failureReason` an environment carries (6d 2.6 item 3, the `[]` read 2026-10-30): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/ide-spaces.html>, <https://docs.aws.amazon.com/datazone/latest/APIReference/API_GetEnvironment.html> and <https://docs.aws.amazon.com/datazone/latest/APIReference/API_EnvironmentDeploymentDetails.html>.
 - **RStudio on SageMaker AI, the pages 6d 2.6 item 5 rests on** — read 2026-10-31 before the user's licence and
   policy acts. The licence, granted in `us-east-1` and accepted in the domain's Region after the console's
@@ -1834,6 +1879,22 @@
   <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/sa-east-1/index.json>;
   Lake Formation's row-level security operations in botocore's model:
   <https://github.com/boto/botocore/blob/develop/botocore/data/lakeformation/2017-03-31/service-2.json>.
+
+- Read 2026-11-13 for `docs/plan/upstream-releases.md`: Lake Formation's user-defined function and
+  `AnyResource` shapes in botocore's model at `1.44.2`, against `1.43.122`:
+  <https://github.com/boto/botocore/blob/1.44.2/botocore/data/lakeformation/2017-03-31/service-2.json>;
+  Athena's system tables, the announcement and the guide:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/athena-system-tables/>,
+  <https://docs.aws.amazon.com/athena/latest/ug/athena-system-tables.html>; Glue Data Catalog federation with an
+  external catalog's vended credentials, and Glue's 100 SaaS connectors:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/glue-catalog-vended-credentials-iceberg/>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/aws-glue-adds-100-new-native-connectors/>; AWS Sign-In's
+  OAuth token exchange, the announcement and the guide's overview, which names the IAM identity provider and
+  the role trust policy an exchange is validated against:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/aws-signin-token-exchange/>,
+  <https://docs.aws.amazon.com/signin/latest/userguide/oauth-sign-in-overview.html>; Redshift's SUPER strings of
+  up to 16 million bytes:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-redshift-expands-super-to-16-million-bytes/>.
 
 - **Lake Formation-managed datashares, the step pages (read 2026-10-24, for [Stage 9](plan/stages/stage-09-deployment-targets.md)
   step 9.5 and its decision 14).** The producer creates the share, adds the schema, sets `INCLUDENEW` and
@@ -2339,7 +2400,7 @@
   - *MWAA Serverless supported operators* — Amazon-provider operators only, no `PythonOperator`/`BashOperator`; ECS/EKS/Batch/Lambda/Glue/SageMaker are the code paths: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators.html>. **Re-read 2026-10-10**: the page now lists `PythonOperator` and `BashOperator` beside the Amazon-provider operators, billed as managed tasks. The guide's document history dates the addition 2026-08-17, the day after the first reading: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/doc-history.html>. **Re-read 2026-10-13**: `SageMakerNotebookOperator` "provides artifact execution functionality" for Unified Studio workflows, and `GlueJobOperator` "creates an AWS Glue job".
   - *The Amazon provider at 9.32.0, the version the worker pre-installs* (read 2026-10-13): `GlueJobOperator` runs `GlueJobHook.initialize_job`, which calls `get_job` on the named job before `start_job_run`, and `create_job` when the job is absent (`update_config` defaults to false); `has_job` treats only `EntityNotFoundException` as absent: <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/glue.py>. `SageMakerNotebookOperator` describes itself as Jupyter notebook artifact execution for Unified Studio workflows, and its hook calls the `sagemaker_studio` SDK's `execution_client.start_execution`: <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/operators/sagemaker_unified_studio.py> and <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/sagemaker_unified_studio.py>.
   - *The Amazon provider at 9.32.0, `SageMakerTrainingOperator`* (read 2026-10-20, for Stage 10 step 1.3): `execute` hands `describe_training_job` to `_get_unique_job_name` while `check_if_job_exists` is true, its default, and `_check_if_resource_exists` counts only a `ValidationException` as absent; `action_if_job_exists` takes `timestamp`, the default, or `fail`; before the create, the hook's `check_training_config` heads each `S3DataSource` channel's bucket and key through the S3 hook, whose `check_for_bucket` returns false on a 403; `print_log` tails `/aws/sagemaker/TrainingJobs`; no code in the operators or the hook stops a training or processing job: <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/operators/sagemaker.py>, <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/sagemaker.py>, <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/s3.py>. The API reference names `ResourceNotFound` as the error of `DescribeTrainingJob` and of `DescribeProcessingJob`: <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeTrainingJob.html>, <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeProcessingJob.html>. `HeadBucket` needs `s3:ListBucket`: <https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html>.
-  - *Using Python and Bash operators* (read 2026-10-10) — the code travels apart from the YAML, in the `Code` parameter (one `.py`, one `.sh` or a `.zip`; 250 MB per file and unzipped, 75 GB per account), versioned with the definition and readable back as `Code` and `CodeSnapshottedAt`; dependencies vendored at the archive root for Linux x86_64 and Python 3.12; a pre-installed set (Airflow 3.0.6, Amazon provider 9.32.0, boto3 1.43.1, dag-factory 1.0.0) that wins over any bundled version; no internet by default; a 1 vCPU / 3 GiB worker; the execution role's credentials available to the task: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators-python-bash-detail.html>. **Re-read 2026-10-11**: `python_callable` takes `<module>.<function>`, and the code is extracted to `/usr/local/airflow/dags`, which is also a `BashOperator` script's working directory. Read again the same day for 6i's probe: the example's `bash_task` is an inline `bash_command` (`echo 'Hello from bash' && date`), and the operator's two accepted paths are `airflow.providers.standard.operators.bash.BashOperator` and `airflow.operators.bash.BashOperator`.
+  - *Using Python and Bash operators* (read 2026-10-10) — the code travels apart from the YAML, in the `Code` parameter (one `.py`, one `.sh` or a `.zip`; 250 MB per file and unzipped, 75 GB per account), versioned with the definition and readable back as `Code` and `CodeSnapshottedAt`; dependencies vendored at the archive root for Linux x86_64 and Python 3.12; a pre-installed set (Airflow 3.0.6, Amazon provider 9.32.0, boto3 1.43.1, dag-factory 1.0.0) that wins over any bundled version; no internet by default; a 1 vCPU / 3 GiB worker; the execution role's credentials available to the task: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators-python-bash-detail.html>. **Re-read 2026-11-13**: the address answers with `custom-code-operators.html`, and the pre-installed set reads Amazon provider 9.38.0, with `apache-airflow-providers-duckdb` 0.2.1, `duckdb` 2.0.0 and `lz4` 4.4.4. **Re-read 2026-10-11**: `python_callable` takes `<module>.<function>`, and the code is extracted to `/usr/local/airflow/dags`, which is also a `BashOperator` script's working directory. Read again the same day for 6i's probe: the example's `bash_task` is an inline `bash_command` (`echo 'Hello from bash' && date`), and the operator's two accepted paths are `airflow.providers.standard.operators.bash.BashOperator` and `airflow.operators.bash.BashOperator`.
   - *`awscc_mwaaserverless_workflow`'s `code` attribute* — absent from the provider docs at `v1.98.0` (released 2026-08-19), present from `v1.99.0` (2026-08-28) (read at the release tags and the provider's changelog, 2026-10-10): <https://github.com/hashicorp/terraform-provider-awscc/blob/v1.99.0/docs/resources/mwaaserverless_workflow.md>.
   - *MWAA Serverless supported Airflow parameters* — the schedule lives in the YAML (`schedule`, cron); `retries` ≤ 3, `retry_delay` ≤ 300 s, `execution_timeout` ≤ 3 600 s; `catchup`, callbacks and `trigger_rule` are ignored: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/supported-airflow-parameters.html>. **Re-read 2026-10-10**: `retries` defaults to 1, and the ignored lists also carry `deferrable`, `do_xcom_push` and `render_template_as_native_obj`, so a sensor holds its worker for the whole wait and a templated list arrives as a string.
   - *MWAA Serverless quotas* — 50 KB YAML, 60-minute task timeout, 100 workflows, 50 versions per workflow, 20 concurrent runs per workflow: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/mwaa-serverless-quotas.html>.
@@ -2401,6 +2462,39 @@
   Serverless's model in botocore and the `AmazonMWAA` offer of 2026-09-11:
   <https://github.com/boto/botocore/blob/develop/botocore/data/mwaa-serverless/2024-07-26/service-2.json>,
   <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonMWAA/current/us-west-2/index.json>.
+
+- The CI/CD CLI and the workflow service, read 2026-11-13 for `docs/plan/upstream-releases.md`. The CLI: PyPI,
+  where 1.0.9 is the latest; the comparison of `v1.0.9` with `main` (`cdb8e3c18f`), 82 commits in one example's
+  `requirements.txt`; and the `src/` tree, `27dafefa86` at both, read at `main` for the domain lookup, the
+  network and key fallback, the catalog import, the manifest's schema and `deploy`'s catalog summary:
+  <https://pypi.org/pypi/aws-smus-cicd-cli/json>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/compare/v1.0.9...main>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/tree/cdb8e3c18f37ea8c147bf3b92ac7957ac54568f1/src/smus_cicd>;
+  its open PR for deploys from `content.git`, whose diff rewrites the workflow scan's prefixes, and the issues
+  and the specification PR beside it: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/pull/369>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/355>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/318>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/pull/289>. MWAA Serverless: the guide's document
+  history and its pages on environment variables, on connections and variables, on custom code and operators
+  and on the Airflow UI:
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/doc-history.html>,
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/workflows-environment-variables.html>,
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/connections.html>,
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/custom-code-operators.html>,
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/workflows-airflow-ui.html>; its
+  announcements of connections and variables, of custom and provider operators and of DuckDB operators:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/mwaa-serverless-connections-variables/>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/mwaa-serverless-custom-operators/>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-mwaa-serverless-duckdb-operators/>; its model in
+  botocore at `1.44.2`, with `Environment` and `CreateAirflowUiUrl`:
+  <https://github.com/boto/botocore/blob/1.44.2/botocore/data/mwaa-serverless/2024-07-26/service-2.json>. The
+  Amazon provider at 9.38.0, the version the guide lists on the worker, against 9.32.0: the Glue and SageMaker
+  hooks identical, `GlueJobOperator` raising on a run that ends `STOPPED`:
+  <https://github.com/apache/airflow/blob/providers-amazon/9.38.0/providers/amazon/src/airflow/providers/amazon/aws/operators/glue.py>,
+  <https://github.com/apache/airflow/blob/providers-amazon/9.38.0/providers/amazon/src/airflow/providers/amazon/aws/operators/sagemaker.py>,
+  <https://github.com/apache/airflow/blob/providers-amazon/9.38.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/glue.py>,
+  <https://github.com/apache/airflow/blob/providers-amazon/9.38.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/sagemaker.py>.
 
 - The CI/CD CLI's domain lookup and a space's `PATH` (read 2026-10-26, for [Stage 8](plan/stages/stage-08-cicd-pipelines.md)
   decision 22's remedy and `examples/app-etl/scripts/dev-cli.sh`). The 1.0.9 wheel, its sha256 the house
@@ -3332,6 +3426,26 @@
   through Organizations policies: <https://aws.amazon.com/about-aws/whats-new/2026/10/guardduty-org-enablement-policies/>.
   Network access controls for the Identity Store:
   <https://aws.amazon.com/about-aws/whats-new/2026/10/aws-identity-store-network-controls/>.
+
+- The sources of `docs/plan/upstream-releases.md`'s reading of 2026-11-13: What's New through the directory API
+  of the entry above; botocore's changelog from 1.43.123 to 1.44.2, its PyPI upload dates, and its models
+  compared between the tags `1.43.122` and `1.44.2`: <https://github.com/boto/botocore/blob/develop/CHANGELOG.rst>,
+  <https://pypi.org/pypi/botocore/json>,
+  <https://github.com/boto/botocore/blob/1.44.2/botocore/data/datazone/2018-05-10/service-2.json>,
+  <https://github.com/boto/botocore/blob/1.44.2/botocore/data/sso-admin/2020-07-20/service-2.json>; the AWS CLI
+  v2 changelog to 2.40.2: <https://github.com/aws/aws-cli/blob/v2/CHANGELOG.rst>. IAM Identity Center's network
+  controls, on the guide's PrivateLink page: `VpceAccessRequired`, the endpoints a workforce sign-in uses, the
+  lockout check and the SCP key `sso:VpceAccessRequired`:
+  <https://docs.aws.amazon.com/singlesignon/latest/userguide/vpc-interface-endpoints.html>; the guide's document
+  history, which does not name them: <https://docs.aws.amazon.com/singlesignon/latest/userguide/doc-history.html>.
+  Security Hub CSPM through Organizations declarative policies:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/security-hub-cspm-org-policies/>. CloudWatch Logs'
+  account-level retention policies:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-cloudwatch-log-retention/>. Claude Fable 5.2 on
+  Bedrock, and AgentCore's Web Search API and Web Answer:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/claude-fable-5-2-aws/>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-bedrock-agentcore-web-search-api/>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/web-answer-amazon-bedrock/>.
 
 - IAM's Access Troubleshooter (preview): the authorization id an access denied error carries,
   `GetRequestAuthorizationDetails` in the Region of the denial, the 24 hours the details are kept, and the cases
