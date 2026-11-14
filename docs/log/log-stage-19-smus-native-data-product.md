@@ -2475,3 +2475,36 @@ order; the infrastructure user's identity read on `awsds-infra-sandbox-1` and `a
   and no `._` member, as measured on the same tree earlier that day. It is deleted after the sitting.
 - **[Claude] Step 1 not due**: the consumer's source over `glue_db_4zojr4rr6bmnww` runs next at 02:51 UTC
   on 2026-11-15, and step 5's revoke waits for the reading.
+
+## 2026-11-14 — step 18: `eighth-experimentation`'s application deleted, ahead of the Sandbox sitting
+
+Three kinds of AWS write in Sandbox, on the user's word in this chat, *"Autorizo os deletes"*, given to the
+question whether to delete step 18's objects in `eighth-experimentation`. Claude's hand, as the
+infrastructure user through `awsds-infra-sandbox-1` (`InfrastructureAccess`, read at 20:50:27 UTC). The
+step says nothing in steps 5 to 17 reads these objects, so it ran before the sitting rather than after it.
+
+- **[Claude] Read before the deletes**:
+  - the workflow `app_etl_eighth_experimentation_app_etl`, `READY`, `manual_only`, no schedule, five runs:
+    `SUCCESS` on 2026-10-26, and pass 1's four on 2026-11-10, three `FAILED` and one `SUCCESS`;
+    `app_etl_eighth_experimentation_app_etl_train`, `READY`, `manual_only`, no run;
+  - the Glue job `app-etl-avhvbqn37ty7m8`, Glue 6.0 on two G.1X workers as the project role, five runs
+    `SUCCEEDED` (2026-10-26 and 2026-11-10), no trigger;
+  - 30 objects under `shared/app-etl/`, 50,942 bytes, ten of them AppleDouble (`._*`, 163 bytes each). One
+    of the rest is `tables/trades_notional/part-00000-…-c000.snappy.parquet`, the job's `--TABLE_PATH`
+    output; the product table's own files are its Glue location's, 4 data and 12 metadata objects under
+    `dev/data/catalogs/trades_notional/`;
+  - the bucket versioned, its lifecycle expiring noncurrent versions after 90 days, its policy one deny on
+    insecure transport. No instrument under `aws/` or `scripts/` names these objects.
+- **[Claude] The peer told** before the writes: *Worktrees para apagar*, idle, the one other session on
+  the laptop.
+- **[Claude] The deletes**, each exit 0: `mwaa-serverless delete-workflow` on both workflows at 20:50:40
+  and 20:50:41 UTC; `glue delete-job` at 20:50:51; `aws s3 rm --recursive` on the prefix from 20:51:03 to
+  20:51:05, 30 `delete:` lines.
+- **[Claude] Read back**, 20:51:18 UTC: no workflow named `app_etl_eighth_experimentation_*`; `GetJob`
+  answers *"Job not found"* (`EntityNotFoundException`); no current object under the prefix, the 30 kept
+  as noncurrent versions until the lifecycle expires them. The workflows' log groups stay under `EXC-10`'s
+  rule: `…/app_etl_eighth_experimentation_app_etl` at 80,569 bytes and `…_train` empty, neither with a
+  retention. The product table's metadata is still `00003-a0aed729-…`, and the subscription's grant
+  `cm2l6qv25dsy6o` reads `COMPLETED`, its asset `GRANTED`.
+- **[Claude] Written**: step 18's note and the status row; the waiting list's row on the AppleDouble
+  objects removed; `CLAUDE.md`'s row.
