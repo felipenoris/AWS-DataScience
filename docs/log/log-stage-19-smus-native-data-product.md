@@ -2562,3 +2562,13 @@ vou fazer neste momento. Guarde nas pendências do projeto."*
   step 6.1's note, decision 17's channel and the status row; the waiting list's row on `house-price`
   removed and (d)'s row brought to the reading; the vulnerability reporting page in
   `docs/REFERENCES.md`.
+
+## 2026-11-14 — `house-price`'s listing kept without approval
+
+No AWS call. The user's decision, recorded by Claude's hand.
+
+- **[user] *"Manter sem aprovação"***, to whether `house-price`'s listing should require approval again,
+  the other answer offered being to republish it with the approval required. The publish dialog's
+  default was not read.
+- **[Claude] Written**: 6f steps 2.2 and 4.3's notes, a request to `house-price` being accepted at
+  creation whoever makes it; the waiting list's row on 6f step 2's portal acts; 6f's log.

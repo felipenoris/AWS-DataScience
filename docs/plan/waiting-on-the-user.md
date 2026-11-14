@@ -52,7 +52,7 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | Read Cost Explorer for August and September in Management, Log Archive and Audit, the accounts no CLI profile reaches | Stage 12 4.2 |
 | The persona's refused job and its implicit-deny attempt | 6d 1.1, 1.2 |
 | 6h 5.3 and 5.4's real attempts, for the refusals' wording, with the compute up (the simulator read both as designed on 2026-10-18) | [6h](stages/stage-06h-redshift-connection.md) |
-| Step 2's portal acts: a consumer project, a subscription, an approval as the Governance Manager, whose project membership hands that user the project role (Stage 18 6.1) | 6f step 2, 4.3 |
+| Step 2's portal acts: a consumer project and a subscription to `house-price`, accepted at creation since its listing takes no approval (the user's decision, 2026-11-14); an approval as the Governance Manager, whose project membership hands that user the project role (Stage 18 6.1), on a listing that requires one | 6f step 2, 4.3 |
 | 0.4's portal half; 6.4, keep or drop `lab` | 6h |
 | The domain name | [Stage 13](stages/stage-13-public-web-tier.md) |
 | The account quota, D34's rung (recommended: the auto-enrollment rung), and the Account Factory product's reading in Management | [Stage 14](stages/stage-14-sandbox-vending.md) |

@@ -1416,3 +1416,18 @@ Times UTC.*
   `AWS_STATE.md`'s grant register (the fulfilment as a class, the share and the catalog policies as
   DataZone's rows); `GOVERNANCE.md` §Grants' catalog road; `TM-27`; the producer README; `SMUS.md`'s
   catalog section; Stage 11 decision 12's input; the waiting list; `aws/INDEX.md`; `REFERENCES.md`.
+
+## 2026-11-14 — `house-price`'s listing kept without approval; step 2's approval moot
+
+No AWS write of Claude's. Claude's hand, in Stage 19's session, where the act and its readings are
+logged ([`log-stage-19-smus-native-data-product.md`](log-stage-19-smus-native-data-product.md),
+2026-11-14, `EXC-24`).
+
+- **[user] The republication**: the owner added the form `classification` (`public`) to `house-price`
+  and republished it, which turned its subscription terms from `approvalRequired` `YES` to `NO`, in the
+  asset revision the portal wrote before the publication (listing `cetyru4cvy1bio`, revision 4).
+- **[user] Kept so**, verbatim: *"Manter sem aprovação"*, the other answer offered being to republish with
+  the approval required.
+- **[Claude] Written**: steps 2.2 and 4.3's notes (a request to `house-price` is accepted at creation
+  whoever makes it; an approval is read on a listing that requires one), and the waiting list's row on
+  step 2's portal acts.
