@@ -2031,3 +2031,31 @@ aws: [ERROR]: An error occurred (AccessDeniedException) when calling the DeleteP
   reading appended to `SUP-157`.
 - **[Claude] Owed**: the removal in the portal, as the data scientist, then the members read
   again.
+
+## 2026-11-14 — the bundle role's group removed from `test-experimentation` by the user; release T prepared with nothing up
+
+Nothing up. The user's act in the portal, as the data scientist; Claude's calls are reads. The
+user, verbatim: *"Removi o membro pelo portal e fiz o merge do #296"*.
+
+- **[user] PR #296 merged**, 03:19:16 UTC, squashed into `f29b8fdc`. This entry is on
+  `claude/stage-19-release-t-prepared`, cut from that commit in the same worktree.
+- **[user] The removal**: `DeleteProjectMembership` on `test-experimentation` for the group
+  `06d426f2-…` at 03:18:53 UTC, with no error, by the domain's execution role in the data
+  scientist's session, in the domain account's trail.
+- **[Claude] The same trail, read to 03:18:53 UTC, holds the day's other membership writes**:
+  two `CreateProjectMembership` on `app-etl-dev`, the bundle role's group at 02:41:09 and
+  Sandbox's `InfrastructureAccess` group at 02:41:10, each `PROJECT_CONTRIBUTOR`, the portal's;
+  and two `DeleteProjectMembership` on `test-experimentation` refused `AccessDenied`, at 02:51:35
+  and 02:52:18, each by a session of Sandbox's `InfrastructureAccess` role, whose role id is the
+  event's `principalId` and whose ARN the cross-account record leaves null; the user pasted one.
+- **[Claude] The members after**, 03:19:58 UTC, as `awsds-infra-sandbox-1`:
+  `test-experimentation` lists its owner, its own role and Sandbox's `InfrastructureAccess`
+  group; `app-etl-dev` its owner, its own role, the bundle role's group and Sandbox's
+  `InfrastructureAccess` group.
+- **[Claude] Release T's preparation with nothing up is done** (`runbooks/promotion.md` §N.8.2
+  step 0, items 15 to 18): the project, the bundle role's membership of it and of no other, the
+  role narrowed, the project's role in `project_roles`. Left for the GitLab sitting: the
+  template's merge request from `36bcf916`, `DEV_PROJECT_NAME` as `app-etl-dev`, the four
+  `TEST_PROJECT_*` variables removed, the tag.
+- **[Claude] Written**: item 17; the waiting list's row; `INT-25`; the runbook's step; the
+  Sandbox row of `AWS_STATE.md`.
