@@ -2002,3 +2002,32 @@ sandbox/workflows/ no Sandbox Account 1?"*, then, while the turn ran, *"Adicione
   `terraform-live/README.md`; `CLAUDE.md`'s row.
 - **[Claude] Owed**: the bundle role's group removed from `test-experimentation`, the user's;
   then release T's GitLab sitting.
+
+## 2026-11-14 — the bundle role's removal from `test-experimentation` refused to a contributor
+
+Nothing up. The user's hand for the attempt, from the project folder; Claude's calls are reads. The
+user, verbatim: *"Fiz o merge do #295."*, then *"Tentei rodar o comando para remover o papel do
+test-experimentation, mas falhou:"* and the paste below.
+
+```text
+AWS-DataScience git:(main) NO_PROXY='*' aws datazone delete-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier 4gqfau9xuo6e4w --member groupIdentifier=06d426f2-84d6-38ae-a991-6806981d9520 --profile awsds-infra-sandbox-1 --region us-west-2
+
+aws: [ERROR]: An error occurred (AccessDeniedException) when calling the DeleteProjectMembership operation: User is not permitted to perform operation: DeleteProjectMembership DesignationPolicy does not allow access.
+```
+
+- **[user] PR #295 merged**, 02:51:10 UTC, squashed into `52a8e718`, so `sandbox/workflows/` as
+  applied is on `main`. This entry is on `claude/stage-19-release-t-membership`, cut from that
+  commit in the same worktree.
+- **[Claude] The command was Claude's**, handed over from `runbooks/promotion.md` §N.8.2 step 0 as
+  written on 2026-11-11, with the caveat that a contributor might be refused. The refusal is
+  DataZone's own layer, not IAM's (`SUP-157`).
+- **[Claude] `test-experimentation`'s members**, 02:53 UTC: the owner, the data scientist's SSO
+  profile; the project's own role; and two groups, Sandbox's `InfrastructureAccess` (`839bcde8-…`)
+  and the bundle role's (`06d426f2-…`), each `PROJECT_CONTRIBUTOR`. The caller holds the
+  contributor designation, whose description of 2026-10-30 leaves member management to
+  `PROJECT_OWNER`.
+- **[Claude] Written**: the runbook's step with both membership writes as the owner's portal
+  acts, its two commands for the infrastructure role removed; item 17; the waiting list's row; a
+  reading appended to `SUP-157`.
+- **[Claude] Owed**: the removal in the portal, as the data scientist, then the members read
+  again.

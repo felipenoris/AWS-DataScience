@@ -1944,7 +1944,11 @@ entry is still true is the reading.
   `ListEnvironments`, and was refused `ListConnections`; Data Governance's read the member lists of all six
   projects the same day, and `ListDataSources` and `GetDataSource` of the two deployment projects it is no
   member of. Membership confines a project's connections and catalog, not its name, its members, its
-  environments or its data sources. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-10-30;
+  environments or its data sources. A member's designation bounds its writes in the same layer (measured
+  2026-11-14, Stage 19): Sandbox's `InfrastructureAccess`, a `PROJECT_CONTRIBUTOR` of
+  `test-experimentation`, was refused `DeleteProjectMembership` there, *"User is not permitted to perform
+  operation: DeleteProjectMembership DesignationPolicy does not allow access."*; member management is
+  `PROJECT_OWNER`'s by that designation's own description (`upstream-releases.md`, read 2026-10-30). Where: `log-stage-06d-unified-studio-remainder.md`, 2026-10-30;
   `log-stage-06f-data-governance.md`, 2026-09-18, 2026-10-18 and 2026-10-26;
   `log-stage-19-smus-native-data-product.md`, 2026-11-11; `aws/catalog.py`.
 

@@ -1504,13 +1504,11 @@ space alone: a sitting without step 13 leaves Sandbox down.
      aws datazone get-group-profile --domain-identifier dzd-d8yrvx1ko7im6o --group-identifier 06d426f2-84d6-38ae-a991-6806981d9520 --profile awsds-infra-data --region us-west-2 --query rolePrincipalArn --output text
      ```
 
-     ```bash
-     aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier ceweti7jbiu1hs --designation PROJECT_CONTRIBUTOR --member groupIdentifier=06d426f2-84d6-38ae-a991-6806981d9520 --profile awsds-infra-sandbox-1 --region us-west-2
-     ```
-
-     ```bash
-     aws datazone delete-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier 4gqfau9xuo6e4w --member groupIdentifier=06d426f2-84d6-38ae-a991-6806981d9520 --profile awsds-infra-sandbox-1 --region us-west-2
-     ```
+     Both membership writes are an owner's, made in the portal as the data scientist, on the
+     project's members page, where the group shows under the role's name. The infrastructure
+     role is a `PROJECT_CONTRIBUTOR` of the Sandbox projects, and DataZone refused it
+     `delete-project-membership` on `test-experimentation` on 2026-11-14: *"User is not permitted
+     to perform operation: DeleteProjectMembership DesignationPolicy does not allow access."*
 
    - **[Claude]** `sandbox/workflows/variables.tf`'s `project_roles` gains the project's role, then the
      plan, expected the role narrowed (0 to add, 3 to change, 2 to destroy on 2026-11-11) and one
