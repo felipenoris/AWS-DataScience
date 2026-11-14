@@ -2161,3 +2161,39 @@ Alguns comentários:
 - **[Claude] Owed**: the window, a space in `test-experimentation` (viii's Spark half, decision
   17's reads, xi), the revoke (ix) and the consumer's inventory the morning after (x); the
   portal's look at the lineage on the asset's page (v).
+
+## 2026-11-14 — verification v's portal half: the lineage the asset's page draws
+
+Nothing up, no AWS call of Claude's but one read of the domain's portal address. The user,
+verbatim: *"Abri uma sessão no chrome do claude, e está aberto na página do lineage do
+trades_notional."* Claude read the page through the Claude in Chrome extension, in a tab of its own
+in the user's browser, the user's tab being outside the session's group; the portal answered
+signed in as the Data Scientist User. Navigation and reading alone, no write in the portal; the
+tab was closed after.
+
+- **[Claude] The path**, 04:07 to 04:08 UTC: `eighth-experimentation`, *Manage → Assets*, the asset
+  `trades_notional`, the tab *Lineage*. *Manage*'s *Catalog management* group lists *Assets*,
+  *Subscription requests*, *Data sources*, *Metadata forms*, *Business glossaries* and *Custom
+  asset types*, as far as the window showed; the asset's page is `/projects/<project>/catalog/assets/asset/<asset id>`, its
+  tabs *Overview*, *Schema*, *Asset filter*, *Preview data*, *Lineage*, *Data profile*, *Data
+  quality* and *Subscriptions*, the asset marked *Published*.
+- **[Claude] What the tab draws**, *Graph depth* 5, left to right, the times as the portal shows
+  them, UTC-03:00:
+  - a node *Table / Amazon S3*, named by the domain's and the project's ids, 5 columns, *November
+    10, 2026, 00:44*;
+  - two nodes *Job Run / Apache Spark*, `app_etl_avhvbqn37ty7m8.atomic_re…` and
+    `app_etl_avhvbqn37ty7m8.overwrite…`, each *Status: COMPLETE*, *November 10, 2026, 00:44*;
+  - a node *Table / AWS Glue*, 6 columns, *November 10, 2026, 00:44*;
+  - an edge *Cataloged* to `trades_notional`, *Asset / Inventory*, labelled *Base*, 6 columns,
+    *November 10, 2026, 00:56*;
+  - an edge *Published* to `trades_notional`, *Asset / Published*, 6 columns, *November 14,
+    2026, 00:41*;
+  - an edge *Access Requested* to `test-experimentation-lakehouse-def…`, *Subscription target /
+    AWS Glue*, *Grant status: Granted*, 6 columns.
+- **[Claude] Read against the domain's half** (2026-11-10): the portal draws the chain the domain
+  held, the `inbox` prefix, the job's runs, the table, the asset and its listing, where Stage 18
+  7.1 drew nothing. The last edge and the published node's time are pass 2's: the domain
+  account's trail holds four lineage-node writes at 03:41:39 UTC, six seconds after the
+  subscription's grant completed.
+- **[Claude] Written**: verification v's row; item 20, which waited on this look; the row out of
+  the waiting list.
