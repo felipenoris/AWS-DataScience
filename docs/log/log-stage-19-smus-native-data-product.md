@@ -2362,3 +2362,73 @@ prosseguir com as leituras."* Claude's hand.
   was created, and runs next at 02:51 UTC on 2026-11-15. `test-experimentation`'s inventory holds
   no asset, and its subscription `d21t6zwyzrcas0` reads `APPROVED`.
 - **[Claude] Written**: `CLAUDE.md`'s sentence on the last reading of what is up.
+
+## 2026-11-14 — the next sittings prepared with nothing up: the Sandbox sitting in order, release T's step 13 after it
+
+Read-only, as the infrastructure user through `awsds-infra-sandbox-1` and `awsds-infra-data`; no apply,
+no AWS write, no portal act. Claude's hand, on the user's message, verbatim: *"Prepare o que for
+necessário para avançarmos na conclusão do estágio 19."*
+
+- **[user] PR #300 merged**, 17:40:12 UTC, squashed into `234e0bde`. This entry is on
+  `claude/preparacao-estagio-19-990c77`, cut from that commit in a worktree of its own.
+- **[Claude] `eighth-experimentation`'s objects for item 20**, read from 17:45 UTC:
+  - Six environments, among them `chz5jdb80ohocw`, `create-datalake-database-env-app_etl-…`, `ACTIVE`
+    since 2026-11-08 23:41 UTC. Its stack `DataZone-Env-chz5jdb80ohocw` holds one resource, the
+    `GlueDatabase` `app_etl`, and its template gives that resource and an Athena workgroup
+    `DeletionPolicy` and `UpdateReplacePolicy` `Retain` (`SUP-184`).
+  - The source `budryu9mt9y5u8` over `app_etl` (filter `app_etl`, `*`; `publishOnImport` false), daily at
+    `cron(41 23 * * ? *)`, `ENABLED`, its last run `SUCCESS` at 23:47 UTC on 2026-11-13. It names no
+    environment: its connection is `5pf7uc0ugllsb4`, `project.default_lakehouse`, the `Tooling`
+    environment's.
+  - The data products `my-data-product` and `trades-notional`; the assets `house-price`, `trades` and
+    `trades_notional` (`4j6p77v7dm2840`).
+  - The database `app_etl`, *"Created by DataZone for project eighth-experimentation"*, and its one table,
+    `trades_notional`, Iceberg at version 3, created by the project role's `GlueJobRunnerSession`. Lake
+    Formation on the database: the project's conditioned `IAMPrincipals` `CREATE_TABLE`, `DESCRIBE` and
+    `DROP`, the provisioning role `ALL`, the manage-access role `CREATE_TABLE` and `DESCRIBE`; on the
+    table, the subscription's conditioned `SELECT` and the project role's `ALL` and `SELECT`. Sandbox's
+    Lake Formation administrators are the manage-access role, the provisioning role and
+    `InfrastructureAccess`; the registered locations are the three projects' `dev` prefixes,
+    `app-etl-dev`'s among them.
+  - The application the space deployed on 2026-10-26 and again on 2026-11-10: the workflows
+    `app_etl_eighth_experimentation_app_etl` and `app_etl_eighth_experimentation_app_etl_train`, the Glue
+    job `app-etl-avhvbqn37ty7m8`, and 30 objects under `shared/app-etl/`, ten of them AppleDouble.
+- **[Claude] Pass 2's window values read again**: the table's metadata `00003-a0aed729-…`; the run
+  `6bnfg5dk961bps` `SUCCESS`, `updated: 1`, created 2026-11-10 03:55 UTC; the subscription
+  `d21t6zwyzrcas0` `APPROVED`; its grant `cm2l6qv25dsy6o` `COMPLETED`, the asset `GRANTED`.
+- **[Claude] `app-etl-dev`**: one environment, `Tooling`; nine connections, the manifest's
+  `default.s3_shared` and `default.workflow_serverless` among them; one source, the `Tooling`
+  model-package source, daily at 02:07 UTC.
+- **[Claude] Item 33's attach checked**: `d-spi9kgo6x5b4`'s `DefaultUserSettings` holds the fields
+  `dev-env.md` §C6 sends back and no `CustomImages`; `sandbox/dev-env/` initialised in this worktree
+  (`gen-backend-hcl.py`, `gen-tfvars.py`, `init`), its `custom_images` output naming the two app image
+  configurations the other two domains carry; no space in any of the three domains; the image at
+  version 11, alias `0.10.0`.
+- **[Claude] Item 22 read in the CLI 1.0.9's code**, no call: the export keeps a form type whose
+  `owningProjectId` is the `dev` project, and the import resolves an asset's form by name with
+  `get_form_type`. `classification` is `eighth-experimentation`'s, revision 2, `ENABLED`, so it travels on
+  the asset's forms and never in `formTypes`. Once 1.5 creates the data product, the export carries it
+  and the guard fails until `product.json` names it.
+- **[Claude] Found**: release T's step 13 deploys into `app-etl-dev` from a space, and the run's Glue job
+  writes `app_etl.trades_notional`, a database `eighth-experimentation` holds until item 20, so the step
+  waits for the Sandbox sitting's database. The source `budryu9mt9y5u8` names `app_etl` and hangs from no
+  environment, so the retirement deletes it by itself, before the asset.
+- **[Claude] Release T's gates previewed** on `36bcf916`'s tree, extracted in the session's scratch
+  folder: `uv sync --locked`; `ruff check` and `ruff format --check` clean; `pytest` 72 passed, 1 skipped;
+  the lint at `d856982c` with the job's options *"ok: 9 arquivo(s)"*; `pip-audit` 2.10.1 (OSV) over the
+  runtime set, `pyarrow` 25.0.1 alone, *"No known vulnerabilities found"* at 17:58 UTC. A preview: the
+  gate's reading is the tag day's (Lesson 77).
+- **[Claude] The tar of release T's tree**, built in the scratch folder from `git archive 36bcf916` with
+  `COPYFILE_DISABLE=1` and `--no-xattrs --no-acls --no-mac-metadata`: 35 members, 25 files, no `._`
+  name. A plain `tar -c` of the same folder wrote 70 members, 35 of them `._`.
+- **[Claude] `SUP-364`**: `glue get-tables` at 17:50 UTC and `glue get-table-versions` at 18:07 answered
+  `IsRegisteredWithLakeFormation` false for `app_etl.trades_notional` at version 3, and `glue get-table`
+  true at 18:07, as pass 1's did on 2026-11-10. The Glue API reference's pages for `Table`, `GetTable`,
+  `GetTables` and `GetTableVersions`, read by a subagent the same day, say nothing of which call fills
+  the field.
+- **[Claude] Written**: the stage file's §The Sandbox sitting, in order (steps 1 to 18), the sittings
+  list, items 20, 22 and 33, 1.5's note, pass 2's step 6 and the status row; `promotion.md` §N.8.2 step 3
+  (the local user's password before the first push) and step 13, and §N.8.4's `product.json` paragraph;
+  the waiting list's rows on the password, the attach, the AppleDouble objects, the Sandbox sitting and
+  release T; `SUP-184`'s reading and `SUP-364`; the four Glue pages in `docs/REFERENCES.md`;
+  `docs/SMUS.md`'s *Create database* item; `CLAUDE.md`'s row.

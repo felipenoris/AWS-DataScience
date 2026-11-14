@@ -1924,6 +1924,14 @@
 
 - AWS Glue's JDBC connections (read 2026-10-24, for Stage 9 step 9.4's warehouse load): Glue provides the JDBC libraries to its Spark jobs, and the Amazon Redshift driver it supports is `redshift-jdbc42-2.1.0.29` for Glue 5.0 and 5.1 and `2.1.0.16` for 4.0; Glue 6.0 has no row: <https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-connect-jdbc-home.html>.
 
+- The Glue `Table` type's `IsRegisteredWithLakeFormation` (read 2026-11-14, for `SUP-364`): an optional
+  Boolean, whether the table is registered with Lake Formation; none of the four pages says which call
+  fills it, and no request parameter of `GetTables` or `GetTableVersions` is described as computing it:
+  <https://docs.aws.amazon.com/glue/latest/webapi/API_Table.html>,
+  <https://docs.aws.amazon.com/glue/latest/webapi/API_GetTable.html>,
+  <https://docs.aws.amazon.com/glue/latest/webapi/API_GetTables.html> and
+  <https://docs.aws.amazon.com/glue/latest/webapi/API_GetTableVersions.html>.
+
 ## Containers, CI/CD and orchestration
 
 - Amazon ECR: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/what-is-ecr.html>.

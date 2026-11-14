@@ -1086,7 +1086,10 @@ creates (measured 2026-09-12: CloudTrail since 2026-08-20, and the objects read 
   2026-10-20). With both on the role, Staging's environment reached `ACTIVE` (Stage 18 7.2);
   `sagemaker-prereqs-v0.8.0` attaches both in Sandbox, applied by the user 2026-10-20 (6f step 2.0). The failed
   environment's stack was deleted and the database stayed, the template's `GlueDatabase` being
-  `DeletionPolicy: Retain`, so `mydatabase` exists outside any environment.
+  `DeletionPolicy: Retain`, so `mydatabase` exists outside any environment. The environment's daily
+  source names no environment: `app_etl`'s, read 2026-11-14, hangs from the project's
+  `project.default_lakehouse` connection with the database in its filter, and what the environment's
+  delete does to it is unread (`SUP-184`).
 - **A table created by uploading a file points at a folder the upload flow chose, not at the database
   location.** The Parquet landed at `…/dev/local-uploads/<epoch-ms>/<name>.parquet`. `glue:CreateTable`,
   called by the project role from the browser, set that folder as the table's location: `EXTERNAL_TABLE`,

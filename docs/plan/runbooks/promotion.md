@@ -1542,7 +1542,15 @@ space alone: a sitting without step 13 leaves Sandbox down.
    **[Claude]** the other sessions told before the first raise; `./aws/cicd.py`, `./aws/egress.py
    awsds-infra-prod awsds-infra-sandbox-1` and `make status`; Stage 8 xxvii's plan half (N.1 step 3) if the
    parameter has moved.
-3. **[user] The mirror at `main`**, from the project folder; **[Claude]** read at `origin/main`'s commit:
+3. **[user] The local user's password rotated** before the first push, in GitLab's *Edit profile →
+   Password*: a keychain probe printed it into a session's transcript on 2026-11-08 (Stage 19's log). The
+   keychain's entry for `gitlab.awsds.internal` goes with it, and the next push asks for the new one:
+
+   ```bash
+   printf 'protocol=https\nhost=gitlab.awsds.internal\n\n' | git credential-osxkeychain erase
+   ```
+
+   **[user] The mirror at `main`**, from the project folder; **[Claude]** read at `origin/main`'s commit:
 
    ```bash
    git push gitlab main
@@ -1792,7 +1800,10 @@ space alone: a sitting without step 13 leaves Sandbox down.
     4. **[user] The positive**, a minute after `running`: *Retry* on the same job, expected *"the proxy
        answers (<code>)"*, the clone's commit and the job green. **[Claude]** both runs' times and lines,
        from the job logs.
-13. **The Sandbox half** (N.7.3), Sandbox's `egress/` up since step 2:
+13. **The Sandbox half** (N.7.3), Sandbox's `egress/` up since step 2. It runs once Stage 19's Sandbox
+    sitting has created `app-etl-dev`'s database (the stage file's §The Sandbox sitting, in order, step
+    12), and a sitting before it skips this step: the run's Glue job writes `app_etl.trades_notional`, and
+    `app_etl` is `eighth-experimentation`'s until that sitting's step 10 (read 2026-11-14).
     - **[user]** the persona's GitLab token (N.3 step 2); the space, a JupyterLab space of the `dev`
       project, the one for app-etl alone since Stage 19 decision 18 (d), whose domain takes the house
       image first ([`dev-env.md`](dev-env.md) §C6; none attached on 2026-11-14), set to `awsds-sandbox-dev-env`
@@ -1922,7 +1933,9 @@ their commands are the record of what ran:
    2026-11-12**: [PR #25](https://github.com/felipenoris/awsds-workflows/pull/25) merged as `196acee` and the pin moved; the lint taken from the pin answers `ok: 9 arquivo(s)` on the template.
 
 **After release T's sitting and the Sandbox sitting** (§N.8.2; the stage file's items 16 to 20 and
-its 1.5): `product.json` brought to what the `dev` project for app-etl alone owns.
+its 1.5): `product.json` brought to what the `dev` project for app-etl alone owns, the stage file's §The
+Sandbox sitting, in order, step 17: expected `trades-notional` in `dataProducts` beside the asset, and no
+form type, since the export carries those the project owns (item 22).
 
 **The promotion sitting**, the hub and GitLab up and `make up ENV=staging`:
 
