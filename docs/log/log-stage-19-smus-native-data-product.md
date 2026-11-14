@@ -2059,3 +2059,34 @@ user, verbatim: *"Removi o membro pelo portal e fiz o merge do #296"*.
   `TEST_PROJECT_*` variables removed, the tag.
 - **[Claude] Written**: item 17; the waiting list's row; `INT-25`; the runbook's step; the
   Sandbox row of `AWS_STATE.md`.
+
+## 2026-11-14 — pass 2 read against the estate before its portal acts
+
+Nothing up; every AWS call a read, as `InfrastructureAccess` in Sandbox and in Data Governance.
+The user, verbatim: *"Fiz o merge do #297. Me oriente em relação ao pass 2 no portal."*
+
+- **[user] PR #297 merged**, 03:22:39 UTC, squashed into `53e66180`. This entry is on
+  `claude/stage-19-pass-2-readings`, cut from that commit in the same worktree.
+- **[Claude] `eighth-experimentation`**, 03:25 to 03:26 UTC: its members are the owner, the project
+  role's profile and Sandbox's `InfrastructureAccess` group, the Governance Manager no member
+  yet; it owns the assets `house-price`, `trades` and `trades_notional` and the data product
+  `my-data-product`, and no `trades-notional`; `trades_notional` is at revision 7, its listing
+  `ct5d0innrgw3v4` `ACTIVE`, the form `classification` on it; no subscription or request names
+  the project as approver. The Governance Manager's SSO profile in the domain is `ACTIVATED`.
+- **[Claude] The approval the plan names may not happen.** Pass 2's step 3 has the Governance
+  Manager approve. The data scientist owns the producer and whatever consumer that user
+  creates, and AWS's approval page, read 2026-10-18 for 6f 2.1, approves at creation a request
+  whose requester is a member of the owning project. Unmeasured in this estate: 6f 11.8's
+  request waited, its requester a member of one project alone.
+- **[Claude] `test-experimentation` as the consumer**, 03:26 to 03:28 UTC: its environment
+  `test-experimentation-lakehouse` holds the target
+  `test-experimentation-lakehouse-default-target` for Glue tables and views; its connections
+  include `project.spark.fineGrained`, `project.athena` and `project.default_lakehouse`; its
+  domain carries the house image. Decision 5 set it aside as the project that received the
+  application, which ended with decision 19 (c).
+- **[Claude] The house image on the three Sandbox domains**, 03:28:38 UTC: `eighth-experimentation`'s
+  and `test-experimentation`'s carry `awsds-sandbox-dev-env`, version-less, on JupyterLab and the
+  Code Editor; `app-etl-dev`'s, `d-spi9kgo6x5b4`, carries none. No domain holds a space.
+- **[Claude] Written**: the reading under pass 2's sitting; item 33, the attach owed to
+  `app-etl-dev`'s domain; the runbook's step 13; two rows of the waiting list, the attach's word
+  and the consumer's choice.
