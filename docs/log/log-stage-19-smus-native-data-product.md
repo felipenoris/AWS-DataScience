@@ -2340,3 +2340,25 @@ esta thread, confira se o log está devidamente atualizado com o andamento desta
 - **[Claude] Not read**: what is up. `make status` at 17:30 UTC read nothing, the SSO token having
   expired (*"Token has expired and refresh failed"*): 16 slices `UNREADABLE`, its USD 0.0000/h a
   floor and no measurement. The reading waits for the user's sign-in as the infrastructure user.
+
+## 2026-11-14 — what is up, read at the session's close: nothing billing by the hour
+
+Read-only, as the infrastructure user, signed in by the user: *"usuario sso infra logado. pode
+prosseguir com as leituras."* Claude's hand.
+
+- **[Claude] The identity**, 17:34 UTC: `InfrastructureAccess` on `awsds-infra-data`,
+  `awsds-infra-sandbox-1`, `awsds-infra-staging` and `awsds-infra-prod`.
+- **[Claude] `make status`**, 17:35:23 to 17:37:36 UTC, exit 0, no slice unreadable: the burn
+  0.0000 USD/h. Stopped, one instance each: `production/vpn`, `production/proxy` and
+  `production/tooling`. Down, with no resource: Production's `egress`, `workloads-egress`,
+  `warehouse-compute`, `runners` and `probes`; Sandbox's `egress`, `warehouse-compute` and
+  `probes`; Staging's `egress`, `app/app-etl` and `orchestration`. Production's `app/app-etl` (3)
+  and `orchestration` (41) are up at no hourly rate, as on 2026-11-10.
+- **[Claude] The schedules**, 17:38 UTC: Production's three in `awsds-prod-chains`,
+  `awsds-prod-chain-app-etl`, `awsds-prod-chain-app-etl-train` and
+  `awsds-prod-chain-app-etl-warehouse`, each `DISABLED`; Staging lists none.
+- **[Claude] 2.6 is not due**: the consumer's source over `glue_db_4zojr4rr6bmnww`,
+  `3zp6fog9jep1qo`, last ran on 2026-11-14 at 02:51:09 UTC, `SUCCESS`, 50 minutes before the link
+  was created, and runs next at 02:51 UTC on 2026-11-15. `test-experimentation`'s inventory holds
+  no asset, and its subscription `d21t6zwyzrcas0` reads `APPROVED`.
+- **[Claude] Written**: `CLAUDE.md`'s sentence on the last reading of what is up.

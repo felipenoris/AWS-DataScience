@@ -422,7 +422,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 The chain is Sandbox → Staging → Production: no Development account, ever, and interactive compute is
 Sandbox only. D1-D41 are closed; D41 item 2 is reopened since 2026-10-31 (Stage 19 decision 6 (b)). Gates:
 `make check`, `make check-ou`. Whether anything is up is read with `make status`, never from this file:
-every sitting ends at zero burn, and Stage 19's pass 4 found nothing up on 2026-11-11.
+every sitting ends at zero burn, and Stage 19's session read a burn of 0.0000 USD/h on 2026-11-14.
 
 Before asking the user anything, read
 [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md), and remove a row in the sitting
