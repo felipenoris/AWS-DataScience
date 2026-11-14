@@ -835,7 +835,7 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
   listing's menu, *Share*, the dialog *Create subscription* with the consumer project chosen (the
   user's reading). One `CreateSubscriptionRequest` in the owner's session and no
   `AcceptSubscriptionRequest`; the request `ACCEPTED` at creation, no reviewer, an empty reason
-  (`SUP-360`). A consumer's own request was not made.
+  (`SUP-362`). A consumer's own request was not made.
 - **2.4 [user] Read from the consumer**: the query editor on *Athena (SQL)* with no space, then a space's
   Spark session on the `project.spark.fineGrained` connection. **[Claude] reads** `GetDataAccess` and
   the bytes scanned (viii), and attempts, as the consumer's role from the space, a `GetObject` on the

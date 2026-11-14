@@ -2713,7 +2713,7 @@ entry is still true is the reading.
   `ListEnvironmentBlueprints` on the same made-up domain read the policy's deny under the candidate; its
   answer with nothing denying it was not read. Where: `log-stage-19-smus-native-data-product.md`,
   2026-11-11; `aws/probes/probes.py`; `runbooks/scp-battery.md`.
-- `SUP-360` **The portal's *Share* on a listing is a `CreateSubscriptionRequest` the owner makes for
+- `SUP-362` **The portal's *Share* on a listing is a `CreateSubscriptionRequest` the owner makes for
   the consumer project, accepted at creation** (measured 2026-11-14, Stage 19 pass 2). As the owner of
   the producing project, on the catalog's page, *Share* in the menu of a data product's listing, the
   dialog *Create subscription* with a project chosen: the domain account's trail holds one
@@ -2726,7 +2726,8 @@ entry is still true is the reading.
   request by its creator, a member of the owning project, and by the absent reviewer, the record
   `catalog.py` `CT-11` fails on for a lake listing. A consumer's own request by a member of the
   owning project, which AWS's approval page approves at creation, was not made, so whether it leaves
-  the same record is unread. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-14.
+  the same record is unread. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-14, whose
+  entries on pass 2 cite it as `SUP-360`.
 
 ### Connections
 

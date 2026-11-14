@@ -2197,3 +2197,25 @@ tab was closed after.
   subscription's grant completed.
 - **[Claude] Written**: verification v's row; item 20, which waited on this look; the row out of
   the waiting list.
+
+## 2026-11-14 — `SUP-360` taken twice on `main`: the Share's entry is `SUP-362`
+
+No AWS call. Claude's hand, on a peer session's information: the session *"Releitura quinzenal de
+upstream-releases.md"* wrote at 04:41 UTC that `main` failed `./scripts/check-aws-supplement.py`.
+
+- **[user] PR #298 merged**, 04:39:14 UTC, squashed into `850c5a37`. PR #294, the peer's, had
+  merged at 04:12 UTC as `aa72e16b`. This entry is on `claude/stage-19-ahead`, cut from
+  `850c5a37` in the same worktree.
+- **[Claude] The failure, read on `850c5a37`** at 04:44 UTC: exit 1, *"FAIL  line 2716: SUP-360
+  already names the entry at line 2064"*. PR #294 wrote `SUP-360`, a DataZone domain's RAM share
+  and its managed permission's version, and `SUP-361`; this stage's branch wrote `SUP-360` for the
+  portal's *Share* in `9eb8d166`, reading `SUP-359` as the highest id, and its last push,
+  `e7aee8fe`, preceded PR #294's merge, so each branch's check passed. No text conflicted, the entries sitting in
+  different sections, and the merge went in.
+- **[Claude] The second entry renumbered `SUP-362`**, `main`'s highest being `SUP-361` and no
+  other branch on origin holding the supplement: the entry, `GOVERNANCE.md`'s Share row, 6f's
+  verification ii and step 2.3's note here. In this log the two entries above on pass 2 keep
+  `SUP-360` as written; the entry they mean is `SUP-362`. Every other use of `SUP-360` in the tree
+  is PR #294's.
+- **[Claude] Written**: a rule beside the module tags' in `CLAUDE.md`: an id is read from
+  `origin/main` at the commit and at every sync, and the check run on the synced tree.
