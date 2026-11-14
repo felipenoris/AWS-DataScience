@@ -2728,6 +2728,20 @@ entry is still true is the reading.
   owning project, which AWS's approval page approves at creation, was not made, so whether it leaves
   the same record is unread. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-14, whose
   entries on pass 2 cite it as `SUP-360`.
+- `SUP-363` **A subscription to a data product is listed under each asset listing the product
+  carries, and its grant under the asset listing alone** (measured 2026-11-14, Stage 19 step
+  6.1). The data product `trades-notional` carries one asset listing, `trades_notional`, and holds
+  one subscription. `list-subscriptions` and `list-subscription-requests` with
+  `--subscribed-listing-id` return that subscription and its request under the product listing's
+  id and under the asset listing's alike, each naming the product listing as its subscribed
+  listing with the asset listings it carries. `list-subscription-grants` returns the grant under
+  the asset listing's id, which its `grantedEntity` names, and nothing under the product
+  listing's. A join of Lake Formation's grants to subscriptions therefore asks under both ids and
+  keys the grant by the asset listing, as `catalog.py` `CT-17` does. `list-subscriptions
+  --owning-project-id` selects by the subscribing project and answers a session that is no member
+  of it: Data Governance's `InfrastructureAccess`, a member of none of the four, read
+  `test-experimentation`'s one subscription, `eighth-experimentation`'s two and each deployment
+  project's none. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-14; `aws/catalog.py`.
 
 ### Connections
 
