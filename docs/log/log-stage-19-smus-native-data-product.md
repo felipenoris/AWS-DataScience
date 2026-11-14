@@ -2059,3 +2059,141 @@ user, verbatim: *"Removi o membro pelo portal e fiz o merge do #296"*.
   `TEST_PROJECT_*` variables removed, the tag.
 - **[Claude] Written**: item 17; the waiting list's row; `INT-25`; the runbook's step; the
   Sandbox row of `AWS_STATE.md`.
+
+## 2026-11-14 — pass 2 read against the estate before its portal acts
+
+Nothing up; every AWS call a read, as `InfrastructureAccess` in Sandbox and in Data Governance.
+The user, verbatim: *"Fiz o merge do #297. Me oriente em relação ao pass 2 no portal."*
+
+- **[user] PR #297 merged**, 03:22:39 UTC, squashed into `53e66180`. This entry is on
+  `claude/stage-19-pass-2-readings`, cut from that commit in the same worktree.
+- **[Claude] `eighth-experimentation`**, 03:25 to 03:26 UTC: its members are the owner, the project
+  role's profile and Sandbox's `InfrastructureAccess` group, the Governance Manager no member
+  yet; it owns the assets `house-price`, `trades` and `trades_notional` and the data product
+  `my-data-product`, and no `trades-notional`; `trades_notional` is at revision 7, its listing
+  `ct5d0innrgw3v4` `ACTIVE`, the form `classification` on it; no subscription or request names
+  the project as approver. The Governance Manager's SSO profile in the domain is `ACTIVATED`.
+- **[Claude] The approval the plan names may not happen.** Pass 2's step 3 has the Governance
+  Manager approve. The data scientist owns the producer and whatever consumer that user
+  creates, and AWS's approval page, read 2026-10-18 for 6f 2.1, approves at creation a request
+  whose requester is a member of the owning project. Unmeasured in this estate: 6f 11.8's
+  request waited, its requester a member of one project alone.
+- **[Claude] `test-experimentation` as the consumer**, 03:26 to 03:28 UTC: its environment
+  `test-experimentation-lakehouse` holds the target
+  `test-experimentation-lakehouse-default-target` for Glue tables and views; its connections
+  include `project.spark.fineGrained`, `project.athena` and `project.default_lakehouse`; its
+  domain carries the house image. Decision 5 set it aside as the project that received the
+  application, which ended with decision 19 (c).
+- **[Claude] The house image on the three Sandbox domains**, 03:28:38 UTC: `eighth-experimentation`'s
+  and `test-experimentation`'s carry `awsds-sandbox-dev-env`, version-less, on JupyterLab and the
+  Code Editor; `app-etl-dev`'s, `d-spi9kgo6x5b4`, carries none. No domain holds a space.
+- **[Claude] Written**: the reading under pass 2's sitting; item 33, the attach owed to
+  `app-etl-dev`'s domain; the runbook's step 13; two rows of the waiting list, the attach's word
+  and the consumer's choice.
+
+## 2026-11-14 — pass 2's portal half done by the user: the product shared to `test-experimentation` and read
+
+Nothing up. The acts are the user's in the portal, as the data scientist; every AWS call of
+Claude's is a read, as `InfrastructureAccess` in Sandbox and in Data Governance. The user, verbatim:
+
+```text
+Fiz o pass 2.
+Utilizei o `test-experimentation` como projeto consumidor.
+
+Alguns comentários:
+
+* para criar o produto de dados, o menu foi Manage -> Assets -> Create -> Create Data Product.
+* Para o passo da assinatura, foi na mesma página de Assets (esta é a página de busca do catálogo, pelo que consegui entender). Clicando nos "..." do "trades_notional" -> share. Este botão navegou para o diálogo de "Create subscription for trades_notional", onde selecionei o projeto consumidor.
+* No `test-experimentation`, a tabela apareceu na base glue do projeto, e consegui executar consulta pelo select: `SELECT * FROM "glue_db_4zojr4rr6bmnww"."trades_notional" LIMIT 10;`.
+```
+
+- **[user] The consumer is `test-experimentation`**, decision 5's amendment; no project was
+  created and no environment.
+- **[user] The acts as the domain account's trail holds them**, each by the domain's execution
+  role in the data scientist's session (read to 03:46:14 UTC): `CreateProjectMembership` at
+  03:35:22, the Governance Manager's SSO profile a `PROJECT_CONTRIBUTOR` of
+  `eighth-experimentation`; `CreateDataProduct` at 03:38:11; `CreateListingChangeSet`, `PUBLISH`,
+  on it at 03:38:28; `CreateSubscriptionRequest` at 03:40:28, the listing `dpx3r3w5msguc0` for the
+  project `test-experimentation`. No `AcceptSubscriptionRequest`.
+- **[Claude] The data product**, 03:47 UTC: `trades-notional`, `bvs7m8z4h6w70w`, revision 1, one
+  item, the asset `trades_notional`, no description; its listing a `productListing` at revision 1
+  carrying the asset's listing `ct5d0innrgw3v4` at revision 6.
+- **[Claude] The access act is the owner's *Share***, by the user's account of the portal and by
+  its record: the request `arjy3a2439emts` reads `ACCEPTED`, created and updated at 03:40:28.050,
+  by the data scientist, with no reviewer and an empty reason; the subscription `d21t6zwyzrcas0`
+  reads `APPROVED` with that request's id. `list-subscription-requests` by approver project, no
+  status given, listed nothing. The first direct Share in this estate, on a Sandbox project's
+  product and no lake listing (6f decision 5 bounds the lake's). The Governance Manager approved
+  nothing, and a consumer's own request was not made (`SUP-360`).
+- **[Claude] The fulfilment, in Sandbox's trail** (verification vi): 03:41:13,
+  `BatchGrantPermissions` by `eighth-experimentation`'s project role, session
+  `AWSDataZone-Subscriptions`, `SELECT` on `app_etl.trades_notional` to the account's
+  `IAMPrincipals` under `context.datazone.projectId=="4gqfau9xuo6e4w"`, no grant option; 03:41:23,
+  `glue:CreateTable` by `test-experimentation`'s project role, the same session name, the link
+  `trades_notional` in `glue_db_4zojr4rr6bmnww` to `app_etl.trades_notional`; 03:41:24,
+  `BatchGrantPermissions` by that role, `DESCRIBE` on the link to `IAMPrincipals` and to
+  `arn:aws:identitystore:::user/*` under the same condition. No failure in either batch. No
+  RAM write and no `glue:PutResourcePolicy` in those minutes. The subscription's grant
+  `cm2l6qv25dsy6o`, target `test-experimentation-lakehouse-default-target`, reads `COMPLETED`
+  at 03:41:33, the asset `GRANTED`: 65 s after the request (`SUP-195`).
+- **[Claude] `list-permissions` after it**, 03:48 UTC: on the table, the conditioned `SELECT` of
+  `IAMPrincipals` beside the owner role's creator grants; on the link, the conditioned `DESCRIBE`
+  of `IAMPrincipals` and the consumer role's `ALL`, `DESCRIBE`, `DROP`; the `identitystore` grant
+  is not listed, as `catalog.py` says of such grants. `glue get-table` on the link answers the
+  target's creation time and creator.
+- **[user] The read** (viii's first half): the query above, `c2b1fcc5-…`, in the workgroup
+  `workgroup-4gqfau9xuo6e4w-bi356s1sacz0cw`, as `test-experimentation`'s project role in the
+  user's session: `SUCCEEDED`, 03:42:13.070 to 03:42:14.960 UTC, 623 bytes scanned, Athena
+  engine version 3; one `GetDataAccess`, `SELECT` on the link, at 03:42:14.
+- **[Claude] vii** is read for a product of one item: the one request fulfilled the one asset.
+- **[Claude] `./aws/catalog.py`**, 03:49:31 to 03:51:16 UTC: *"all checks passed"*, 11 rows
+  `pass` and four notes, `CT-3`, `CT-6` (`EXC-11`), `CT-7` and `CT-13`'s measured negative; `CT-11`
+  reads the lake's listing alone. Its
+  section on what it cannot see said a direct Share had never run here: rewritten to this
+  measurement.
+- **[Claude] 6f's questions this touches**: verification ii, a direct Share's grant and approver,
+  is read on this product and noted in that stage's row; 4.3's membership half is done, its
+  approval as the Governance Manager not exercised.
+- **[Claude] Written**: pass 2's steps, verifications vi to viii, decision 5's amendment and the
+  status row; the waiting list (the consumer's row and the portal acts' row out, the window in
+  the Sandbox sitting's row); `SUP-360`, a reading on `SUP-195`; `GOVERNANCE.md`'s Share row;
+  `AWS_STATE.md`'s paragraph on project-owned objects; `aws/catalog.py`'s text; `CLAUDE.md`'s row.
+- **[Claude] Owed**: the window, a space in `test-experimentation` (viii's Spark half, decision
+  17's reads, xi), the revoke (ix) and the consumer's inventory the morning after (x); the
+  portal's look at the lineage on the asset's page (v).
+
+## 2026-11-14 — verification v's portal half: the lineage the asset's page draws
+
+Nothing up, no AWS call of Claude's but one read of the domain's portal address. The user,
+verbatim: *"Abri uma sessão no chrome do claude, e está aberto na página do lineage do
+trades_notional."* Claude read the page through the Claude in Chrome extension, in a tab of its own
+in the user's browser, the user's tab being outside the session's group; the portal answered
+signed in as the Data Scientist User. Navigation and reading alone, no write in the portal; the
+tab was closed after.
+
+- **[Claude] The path**, 04:07 to 04:08 UTC: `eighth-experimentation`, *Manage → Assets*, the asset
+  `trades_notional`, the tab *Lineage*. *Manage*'s *Catalog management* group lists *Assets*,
+  *Subscription requests*, *Data sources*, *Metadata forms*, *Business glossaries* and *Custom
+  asset types*, as far as the window showed; the asset's page is `/projects/<project>/catalog/assets/asset/<asset id>`, its
+  tabs *Overview*, *Schema*, *Asset filter*, *Preview data*, *Lineage*, *Data profile*, *Data
+  quality* and *Subscriptions*, the asset marked *Published*.
+- **[Claude] What the tab draws**, *Graph depth* 5, left to right, the times as the portal shows
+  them, UTC-03:00:
+  - a node *Table / Amazon S3*, named by the domain's and the project's ids, 5 columns, *November
+    10, 2026, 00:44*;
+  - two nodes *Job Run / Apache Spark*, `app_etl_avhvbqn37ty7m8.atomic_re…` and
+    `app_etl_avhvbqn37ty7m8.overwrite…`, each *Status: COMPLETE*, *November 10, 2026, 00:44*;
+  - a node *Table / AWS Glue*, 6 columns, *November 10, 2026, 00:44*;
+  - an edge *Cataloged* to `trades_notional`, *Asset / Inventory*, labelled *Base*, 6 columns,
+    *November 10, 2026, 00:56*;
+  - an edge *Published* to `trades_notional`, *Asset / Published*, 6 columns, *November 14,
+    2026, 00:41*;
+  - an edge *Access Requested* to `test-experimentation-lakehouse-def…`, *Subscription target /
+    AWS Glue*, *Grant status: Granted*, 6 columns.
+- **[Claude] Read against the domain's half** (2026-11-10): the portal draws the chain the domain
+  held, the `inbox` prefix, the job's runs, the table, the asset and its listing, where Stage 18
+  7.1 drew nothing. The last edge and the published node's time are pass 2's: the domain
+  account's trail holds four lineage-node writes at 03:41:39 UTC, six seconds after the
+  subscription's grant completed.
+- **[Claude] Written**: verification v's row; item 20, which waited on this look; the row out of
+  the waiting list.

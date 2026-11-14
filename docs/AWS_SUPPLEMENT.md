@@ -2587,7 +2587,15 @@ entry is still true is the reading.
   `glue get-resource-policies` listed them. In Sandbox the subscribing project's role created the resource
   link in its `DataLake` database and granted `DESCRIBE` on it under the project's condition; Glue reports
   the link's `CreateTime` as the target table's. Where: `log-stage-06f-data-governance.md`, 2026-10-26;
-  `docs/AWS_STATE.md`'s grant register.
+  `docs/AWS_STATE.md`'s grant register. Inside one account (measured 2026-11-14, Stage 19 pass 2, a
+  Sandbox project's product shared to another Sandbox project) the fulfilment writes no RAM share and
+  no catalog policy: the producer's project role granted `SELECT` on the table to the account's
+  `IAMPrincipals` under the consumer's project condition 45 s after the request, the consumer's
+  project role created the link 10 s later and granted `DESCRIBE` on it to `IAMPrincipals` and to
+  `arn:aws:identitystore:::user/*` under the same condition, each in an `AWSDataZone-Subscriptions`
+  session, and the grant read `COMPLETED` 65 s after the request. `glue get-table` on the link
+  answered the target's `CreateTime` and `CreatedBy` again, the link's own creation being the
+  trail's `CreateTable` (`log-stage-19-smus-native-data-product.md`, 2026-11-14).
 
 - `SUP-196` **`UpdateDataSource` refuses the `dataAccessRole` that `GetDataSource` reports for a Glue source
   on a connection** (measured 2026-10-26 in Data Governance, Stage 6f 11.6). A configuration built from the
@@ -2705,6 +2713,20 @@ entry is still true is the reading.
   `ListEnvironmentBlueprints` on the same made-up domain read the policy's deny under the candidate; its
   answer with nothing denying it was not read. Where: `log-stage-19-smus-native-data-product.md`,
   2026-11-11; `aws/probes/probes.py`; `runbooks/scp-battery.md`.
+- `SUP-360` **The portal's *Share* on a listing is a `CreateSubscriptionRequest` the owner makes for
+  the consumer project, accepted at creation** (measured 2026-11-14, Stage 19 pass 2). As the owner of
+  the producing project, on the catalog's page, *Share* in the menu of a data product's listing, the
+  dialog *Create subscription* with a project chosen: the domain account's trail holds one
+  `CreateSubscriptionRequest` in that user's portal session, naming the listing and the consumer
+  project, and no `AcceptSubscriptionRequest`. The request reads `ACCEPTED`, its `createdAt` equal to
+  its `updatedAt`, with no `reviewerId` and an empty `requestReason`; the subscription reads
+  `APPROVED` and carries that request's id. `list-subscription-requests` with the approver's project
+  and no status answers none of it: the request is read by its id. The fulfilment is a
+  subscription's (`SUP-195`). A Share on a Glue-table listing is therefore told from a consumer's
+  request by its creator, a member of the owning project, and by the absent reviewer, the record
+  `catalog.py` `CT-11` fails on for a lake listing. A consumer's own request by a member of the
+  owning project, which AWS's approval page approves at creation, was not made, so whether it leaves
+  the same record is unread. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-14.
 
 ### Connections
 

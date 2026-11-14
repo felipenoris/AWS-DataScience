@@ -1794,7 +1794,8 @@ space alone: a sitting without step 13 leaves Sandbox down.
        from the job logs.
 13. **The Sandbox half** (N.7.3), Sandbox's `egress/` up since step 2:
     - **[user]** the persona's GitLab token (N.3 step 2); the space, a JupyterLab space of the `dev`
-      project, the one for app-etl alone since Stage 19 decision 18 (d), set to `awsds-sandbox-dev-env`
+      project, the one for app-etl alone since Stage 19 decision 18 (d), whose domain takes the house
+      image first ([`dev-env.md`](dev-env.md) §C6; none attached on 2026-11-14), set to `awsds-sandbox-dev-env`
       version 11 (alias `0.10.0`) on `ml.t3.medium` in its settings before *Start*, then a terminal;
     - **[user]** the activation hook's reading, which no build can take, and the endpoint's name:
 
