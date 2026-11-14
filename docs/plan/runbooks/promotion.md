@@ -1490,10 +1490,12 @@ space alone: a sitting without step 13 leaves Sandbox down.
 0. **Release T's preparation, with nothing up**, each once:
    - **[user] The project for app-etl alone**, created from `experimentation` in the portal as the data
      scientist (Stage 19 1.5; its database waits on that step's order). **[Claude]** reads its id, its
-     role's name and its `Tooling` environment.
+     role's name and its `Tooling` environment. **Done 2026-11-14**: `app-etl-dev`, `ceweti7jbiu1hs`, its
+     role `datazone_usr_role_ceweti7jbiu1hs_6kvndq6t2757rk`, its `Tooling` environment `ACTIVE`.
    - **[user] The bundle role's membership**: `awsds-deploy-sandbox-test`'s group added to that project as
      a contributor, as an owner of the project (the infrastructure user once seated, or the data
-     scientist in the portal), and removed from `test-experimentation`, where it is a
+     scientist in the portal; **done 2026-11-14** in the portal, whose dialog lists the group by the
+     role's name), and removed from `test-experimentation`, where it is a
      `PROJECT_CONTRIBUTOR` since Stage 8 2.5 (read 2026-11-11). The group is the role's
      `IAM_ROLE_SESSION_GROUP` profile, `06d426f2-84d6-38ae-a991-6806981d9520`: such a profile has no
      name, so `search-group-profiles` lists it by id alone and `get-group-profile` names its role:
@@ -1503,7 +1505,7 @@ space alone: a sitting without step 13 leaves Sandbox down.
      ```
 
      ```bash
-     aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier <the project's id> --designation PROJECT_CONTRIBUTOR --member groupIdentifier=06d426f2-84d6-38ae-a991-6806981d9520 --profile awsds-infra-sandbox-1 --region us-west-2
+     aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier ceweti7jbiu1hs --designation PROJECT_CONTRIBUTOR --member groupIdentifier=06d426f2-84d6-38ae-a991-6806981d9520 --profile awsds-infra-sandbox-1 --region us-west-2
      ```
 
      ```bash
@@ -1514,7 +1516,13 @@ space alone: a sitting without step 13 leaves Sandbox down.
      plan, expected the role narrowed (0 to add, 3 to change, 2 to destroy on 2026-11-11) and one
      attachment added; **[user]** applies as the infrastructure user, account **Sandbox Account 1**,
      permission set `InfrastructureAccess` (`awsds-infra-sandbox-1`). After it GitLab's `main`, which
-     still runs `test-deploy`, cannot deploy: no tag is pushed before step 4's merge.
+     still runs `test-deploy`, cannot deploy: no tag is pushed before step 4's merge. **Applied
+     2026-11-14**, 1 added, 3 changed, 2 destroyed, from the plan saved that day:
+
+     ```bash
+     AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/workflows apply -input=false "$HOME/tmp/stage19-t-sandbox-workflows.tfplan"
+     ```
+
    - **[user] GitLab's CI/CD variables** on `awsds/app-etl`, in step 4's sitting: `DEV_PROJECT_NAME` the
      project's name; `TEST_PROJECT_NAME`, `TEST_PROJECT_SG`, `TEST_PROJECT_KEY_ARN` and
      `TEST_PROJECT_S3_URI` removed. `SUBNET_AZ1`, `SUBNET_AZ2`, `DEV_PROJECT_SG`, `DEV_PROJECT_KEY_ARN` and

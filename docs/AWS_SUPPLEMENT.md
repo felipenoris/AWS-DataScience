@@ -211,6 +211,11 @@ entry is still true is the reading.
   the second. The simulator supplies no `kms:ResourceAliases`: that boundary's deny on every key whose
   aliases are not the excepted one, a `ForAllValues:StringNotLike`, read `explicitDeny` on the excepted
   key itself until the context carried the key's alias, the operator being true over an absent key.
+  A resource named for an action can close a statement whose `Resource` is `*` (measured 2026-11-14 on
+  Sandbox's bundle role, Stage 19): with `--resource-arns` naming the domain's ARN, `datazone:GetProject`,
+  `ListConnections`, `Search` and `GetAsset` read `implicitDeny` under an allow on `*`, while
+  `GetDomain`, whose statement names the domain, read `allowed`; with no resource named the same four
+  read `allowed` by that statement (`log-stage-19-smus-native-data-product.md`, 2026-11-14).
 
 - `SUP-009` **`iam simulate-custom-policy` ignores `sagemaker:VolumeKmsKey` and `sagemaker:OutputKmsKey`
   when the resource is a job's ARN** (measured 2026-10-18, 6d step 1.3). A `Deny` on `Null` of either key

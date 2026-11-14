@@ -344,8 +344,8 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   `dev` project (INT-25; Stage 19 decision 19 (c)), on the `deploy-role` module with its own ceiling
   `awsds-sandbox-deploy-test-boundary`, trusted by the deploy runner's role alone and holding the DataZone
   reads of that project and of the catalog it owns, with no write. That shape is the code's since
-  2026-11-11, planned 0 to add, 3 to change, 2 to destroy and applied with the template's merge request
-  (Stage 19's release T); until then the role in AWS still holds the `test` deploy's grants.
+  2026-11-11 and AWS's since the apply of 2026-11-14, which also put the workflows policy on
+  `app-etl-dev`'s role (Stage 19's release T).
 - **`staging/studio/` and `production/studio/` `[P]` — the deployment project's blueprint prerequisites**
   ([Stage 19](../docs/plan/stages/stage-19-smus-native-data-product.md) step 4.4), applied 2026-11-11 in
   two applies, the second adding the two blueprint configurations:
