@@ -2461,3 +2461,17 @@ infrastructure user through `awsds-infra-sandbox-1` (`InfrastructureAccess`, rea
   `dev-env.md` §C6's measured writes; `CLAUDE.md`'s row.
 - **Not read**: the portal's picker (`dev-env.md` §C7), which the Sandbox sitting's space reads at its
   step 13.
+
+## 2026-11-14 — PR #301 merged; release T's tar built for the Sandbox sitting
+
+No AWS write. Claude's hand, in a session started from another session to run §The Sandbox sitting, in
+order; the infrastructure user's identity read on `awsds-infra-sandbox-1` and `awsds-infra-data`
+(`InfrastructureAccess`) at 20:19 UTC.
+
+- **[user] PR #301 merged**, 20:10:12 UTC, squashed into `018fa717`. This entry is on
+  `claude/amazing-gates-020988`, cut from that commit in a worktree of its own.
+- **[Claude] Step 3, the tar**, 20:20 UTC, by the step's three commands:
+  `$HOME/tmp/stage19-1.5/app-etl.tar` from `git archive 36bcf916`, 201,216 bytes, 35 members, 25 files
+  and no `._` member, as measured on the same tree earlier that day. It is deleted after the sitting.
+- **[Claude] Step 1 not due**: the consumer's source over `glue_db_4zojr4rr6bmnww` runs next at 02:51 UTC
+  on 2026-11-15, and step 5's revoke waits for the reading.
