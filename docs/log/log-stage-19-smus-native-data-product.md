@@ -1903,3 +1903,55 @@ the pin and the records.
   list; `REFERENCES.md`; `CLAUDE.md`'s row.
 - **[Claude] Not touched**: the user's checkout of `awsds-workflows`, on `main` at `ff25eae`, two
   commits behind its origin.
+
+## 2026-11-14 — the project for app-etl alone created by the user; its role planned in `sandbox/workflows/`
+
+Nothing up. Every AWS call of Claude's in this entry is a read; the project and its member dialog
+are the user's acts in the portal, as the data scientist. The user, verbatim, over the sitting:
+*"Me oriente em relação aos próximos passos que tenho que executar."*, the choice *"Projeto do
+app-etl"*, then *"Criei o projeto app-etl-dev e adicionei o primeiro membro. Sobre
+InfrastructureAccess, esse nome não aparece na lista.. Mas aparecem alguns nomes com prefixo
+"AWSReservedSSO_InfrastructureAccess_", mas não consigo distinguir qual deles é o
+InfrastructureAccess alvo."*
+
+- **[user] Since the last entry**: PR #292 merged on 2026-11-12 at 13:16:02 UTC, squashed into
+  `1c25ac52`, the tree the branch head's; the user's checkout of `awsds-workflows` fast-forwarded
+  to `196acee` the same day. This entry is on `claude/stage-19-release-t-dev-project`, cut from
+  `1c25ac52` in the same worktree.
+- **[Claude] Read before the act**, from 01:49 UTC on 2026-11-14, as `InfrastructureAccess` in
+  Sandbox and in Data Governance: the domain holds six projects; Sandbox holds two SageMaker AI
+  domains, the two `Tooling` ones, under a quota *Total domains* of 500.
+- **[user] The project**, `app-etl-dev`, from the profile `experimentation`: `CreateProject` in the
+  domain account's trail at 02:06:28 UTC, by the domain's execution role in the data scientist's
+  session. Read at 02:23 UTC: id `ceweti7jbiu1hs`, `ACTIVE`; one environment, `Tooling`
+  (`6kvndq6t2757rk`), `ACTIVE`; in Sandbox the role
+  `datazone_usr_role_ceweti7jbiu1hs_6kvndq6t2757rk`, created 02:07:04 under
+  `awsds-sandbox-project-boundary` (`get-role`; `list-roles` carries no boundary field), and
+  the two Bedrock roles the blueprint makes; a third SageMaker AI domain, `d-spi9kgo6x5b4`,
+  `InService`; and the data source `Tooling-default-sagemaker-modelpackagegroup-datasource`,
+  `READY` on `cron(7 2 * * ? *)`, the one `EXC-11` covers by name.
+- **[Claude] The members, read twice**, 02:23:51 and 02:26:49 UTC, as `awsds-infra-sandbox-1`, no
+  member of the project: the owner, an SSO user profile, and a `PROJECT_CONTRIBUTOR` whose `IAM`
+  profile is the project's own role; no group. The domain account's trail, read to 02:22:01 UTC,
+  holds the project's `CreateProject` and no `CreateProjectMembership`; its reads of those minutes
+  are the portal's dialog, `SearchUserProfiles` 16 times and `SearchGroupProfiles` 10. The bundle
+  role's membership was therefore not written when this was read.
+- **[Claude] The name the portal lists for a role's group** is the role's own:
+  `get-group-profile` from the domain's account answers each `IAM_ROLE_SESSION_GROUP` profile's
+  `rolePrincipalArn`. Sandbox's `InfrastructureAccess` is
+  `AWSReservedSSO_InfrastructureAccess_59e5b26af457128d` (the group `839bcde8-…`), read in Sandbox's
+  IAM and as `awsds-infra-sandbox-1`'s caller; the same prefix with `ba1899ccb658ab35` is Data
+  Governance's, `7edd72025c361e9b` Staging's, `c2bcabf74c885115` Production's and
+  `a6d31eda0e5de20c` Identity's. The bundle role's group is `06d426f2-…`.
+- **[Claude] `sandbox/workflows/`**: the project's role added to `project_roles` and the slice
+  planned at 02:25:51 UTC as `awsds-infra-sandbox-1`: *"Plan: 1 to add, 3 to change, 2 to
+  destroy."* The addition is the workflows policy on the new role. The rest is the bundle role's
+  narrowing, written on 2026-11-11: the ceiling denies every `iam:PassRole` and loses the
+  `DeleteWorkflow` deny, `project-reads` trades `ec2:DescribeVpcEndpoints` for the catalog export's
+  four DataZone reads, and the inline policies `storage` and `workflows` go. Saved as
+  `$HOME/tmp/stage19-t-sandbox-workflows.tfplan`; not applied.
+- **[Claude] Written**: items 16 to 18, step 1.5 and the status row of the stage file;
+  `runbooks/promotion.md` §N.8.2 step 0 with the project's id; the waiting list's row; `EXC-11`;
+  `terraform-live/README.md`; `CLAUDE.md`'s row.
+- **[Claude] Owed**: the user's confirmation of the member dialog, then the members read again;
+  the apply, on the user's word; the bundle role's removal from `test-experimentation`.

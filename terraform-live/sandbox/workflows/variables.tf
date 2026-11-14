@@ -44,11 +44,12 @@ variable "project_roles" {
   #   2026-10-10.
   # - test-experimentation, created 2026-10-15, D41's `test` stage until Stage 19 decision 19 (c)
   #   retired that stage (2026-11-11); read 2026-10-16.
-  # The project for app-etl alone, the manifest's `dev` stage since Stage 19 decision 18 (d), joins
-  # when it exists (that stage's 1.5).
+  # - app-etl-dev, created 2026-11-14, the project for app-etl alone and the manifest's `dev` stage
+  #   (Stage 19 decision 18 (d), step 1.5); read 2026-11-14.
   default = [
     "datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c",
     "datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw",
+    "datazone_usr_role_ceweti7jbiu1hs_6kvndq6t2757rk",
   ]
 
   validation {
