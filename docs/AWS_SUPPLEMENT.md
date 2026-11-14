@@ -2713,7 +2713,7 @@ entry is still true is the reading.
   `ListEnvironmentBlueprints` on the same made-up domain read the policy's deny under the candidate; its
   answer with nothing denying it was not read. Where: `log-stage-19-smus-native-data-product.md`,
   2026-11-11; `aws/probes/probes.py`; `runbooks/scp-battery.md`.
-- `SUP-360` **The portal's *Share* on a listing is a `CreateSubscriptionRequest` the owner makes for
+- `SUP-362` **The portal's *Share* on a listing is a `CreateSubscriptionRequest` the owner makes for
   the consumer project, accepted at creation** (measured 2026-11-14, Stage 19 pass 2). As the owner of
   the producing project, on the catalog's page, *Share* in the menu of a data product's listing, the
   dialog *Create subscription* with a project chosen: the domain account's trail holds one
@@ -2726,7 +2726,22 @@ entry is still true is the reading.
   request by its creator, a member of the owning project, and by the absent reviewer, the record
   `catalog.py` `CT-11` fails on for a lake listing. A consumer's own request by a member of the
   owning project, which AWS's approval page approves at creation, was not made, so whether it leaves
-  the same record is unread. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-14.
+  the same record is unread. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-14, whose
+  entries on pass 2 cite it as `SUP-360`.
+- `SUP-363` **A subscription to a data product is listed under each asset listing the product
+  carries, and its grant under the asset listing alone** (measured 2026-11-14, Stage 19 step
+  6.1). The data product `trades-notional` carries one asset listing, `trades_notional`, and holds
+  one subscription. `list-subscriptions` and `list-subscription-requests` with
+  `--subscribed-listing-id` return that subscription and its request under the product listing's
+  id and under the asset listing's alike, each naming the product listing as its subscribed
+  listing with the asset listings it carries. `list-subscription-grants` returns the grant under
+  the asset listing's id, which its `grantedEntity` names, and nothing under the product
+  listing's. A join of Lake Formation's grants to subscriptions therefore asks under both ids and
+  keys the grant by the asset listing, as `catalog.py` `CT-17` does. `list-subscriptions
+  --owning-project-id` selects by the subscribing project and answers a session that is no member
+  of it: Data Governance's `InfrastructureAccess`, a member of none of the four, read
+  `test-experimentation`'s one subscription, `eighth-experimentation`'s two and each deployment
+  project's none. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-14; `aws/catalog.py`.
 
 ### Connections
 

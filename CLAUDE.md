@@ -225,6 +225,10 @@ per laptop, never one per session.
 - A module tag is repository-global and never moves (`terraform-changes.md`, Recipe B). The next
   version is read from `git ls-remote --tags origin` at the moment of tagging, never from memory: a
   peer may have taken it.
+- A `SUP-nnn` id is repository-global too. The next one is read from `origin/main` at the commit
+  that writes the entry and again at every sync, and `./scripts/check-aws-supplement.py` is run on
+  the synced tree: PRs #294 and #298 each took `SUP-360` on 2026-11-14, each green on its own
+  branch, and `main` failed the check until the second became `SUP-362`.
 - **The Terraform binary is one per laptop, and every session's.** The laptop and the deploy image both run
   1.16.6 since 2026-10-25 (`v0.3.0`, the deploy runner replaced 20:40 UTC). A laptop upgrade comes after the
   image's rebuild, never before: a state written by a newer Terraform is refused by the image's older one in

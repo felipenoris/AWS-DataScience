@@ -686,7 +686,7 @@ Staging (its 3.3 and 7.2); the lake account's own readings are 11.4 and 11.9.
 | # | Question | Step |
 |---|---|---|
 | i | Does a fulfilled subscription grant the subscriber project role, a conditioned `IAMPrincipals` entry, or both, and which role writes it? | 2.2 |
-| ii | Does a direct Share write the same grant, and does the trail show any approver? Read on another product by [Stage 19](stage-19-smus-native-data-product.md) pass 2 on 2026-11-14: the same grant as a subscription's, and no approver, the request the owner's and accepted at creation (`SUP-360`). 2.5's own Share is not made | 2.5 |
+| ii | Does a direct Share write the same grant, and does the trail show any approver? Read on another product by [Stage 19](stage-19-smus-native-data-product.md) pass 2 on 2026-11-14: the same grant as a subscription's, and no approver, the request the owner's and accepted at creation (`SUP-362`). 2.5's own Share is not made | 2.5 |
 | iii | Does revocation remove the grant, and does a credential issued before it survive? | 2.4 |
 | iv | Does one approval of a data product fulfil every item? | 2.6 |
 | v | Does a Glue data source accept a resource link, can a Glue table be published unmanaged, and what would a subscription need in `Data Governance`? | 3.1, 3.3 |

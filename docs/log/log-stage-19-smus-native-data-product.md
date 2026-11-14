@@ -2197,3 +2197,97 @@ tab was closed after.
   subscription's grant completed.
 - **[Claude] Written**: verification v's row; item 20, which waited on this look; the row out of
   the waiting list.
+
+## 2026-11-14 — `SUP-360` taken twice on `main`: the Share's entry is `SUP-362`
+
+No AWS call. Claude's hand, on a peer session's information: the session *"Releitura quinzenal de
+upstream-releases.md"* wrote at 04:41 UTC that `main` failed `./scripts/check-aws-supplement.py`.
+
+- **[user] PR #298 merged**, 04:39:14 UTC, squashed into `850c5a37`. PR #294, the peer's, had
+  merged at 04:12 UTC as `aa72e16b`. This entry is on `claude/stage-19-ahead`, cut from
+  `850c5a37` in the same worktree.
+- **[Claude] The failure, read on `850c5a37`** at 04:44 UTC: exit 1, *"FAIL  line 2716: SUP-360
+  already names the entry at line 2064"*. PR #294 wrote `SUP-360`, a DataZone domain's RAM share
+  and its managed permission's version, and `SUP-361`; this stage's branch wrote `SUP-360` for the
+  portal's *Share* in `9eb8d166`, reading `SUP-359` as the highest id, and its last push,
+  `e7aee8fe`, preceded PR #294's merge, so each branch's check passed. No text conflicted, the entries sitting in
+  different sections, and the merge went in.
+- **[Claude] The second entry renumbered `SUP-362`**, `main`'s highest being `SUP-361` and no
+  other branch on origin holding the supplement: the entry, `GOVERNANCE.md`'s Share row, 6f's
+  verification ii and step 2.3's note here. In this log the two entries above on pass 2 keep
+  `SUP-360` as written; the entry they mean is `SUP-362`. Every other use of `SUP-360` in the tree
+  is PR #294's.
+- **[Claude] Written**: a rule beside the module tags' in `CLAUDE.md`: an id is read from
+  `origin/main` at the commit and at every sync, and the check run on the synced tree.
+
+## 2026-11-14 — step 6.1: `catalog.py`'s product road written and run with nothing up
+
+Read-only, as the infrastructure user through `awsds-infra-data`, `awsds-infra-sandbox-1`,
+`awsds-infra-staging` and `awsds-infra-prod`; no apply, no AWS write, no portal act. Claude's hand,
+on the user's *"Sim, escrever"* to *"Escrevo agora os checks da estrada do produto no
+catalog.py?"*.
+
+- **[Claude] Read before the code**, each a shape the checks depend on, before the first run at
+  05:17 UTC:
+  - `list-subscriptions` and `list-subscription-requests --status ACCEPTED` return
+    `trades-notional`'s subscription `d21t6zwyzrcas0` and its request `arjy3a2439emts` under the
+    data product listing `dpx3r3w5msguc0` and under its asset listing `ct5d0innrgw3v4` alike;
+    `list-subscription-grants` returns the grant `cm2l6qv25dsy6o` under the asset listing alone
+    (`SUP-363`).
+  - `list-subscriptions --owning-project-id` selects by subscriber and answers Data Governance's
+    session, a member of none of the four projects asked: `test-experimentation` 1,
+    `eighth-experimentation` 2 (`trades` of `governed-lake` and a Bedrock model's listing),
+    `deploy-staging` 0, `deploy-production` 0.
+  - Lake Formation's `list-permissions` answers whole in both targets: Staging 36 rows in 5
+    pages, Production 39 in 5. Each target's `app_etl` carries the blueprint's grants under its
+    deployment project's context and no table by name; `raw` and `curated` there are resource
+    links (`glue get-database`, `TargetDatabase`), with no SMUS principal on either.
+  - Sandbox's rows on `app_etl.trades_notional`: the owner role's creator grants and the
+    fulfilment's `SELECT` to the account's `IAMPrincipals` under `test-experimentation`'s context;
+    on `app_etl.ALL_TABLES`, the blueprint's to `IAMPrincipals` under `eighth-experimentation`'s
+    context and to `awsds-sandbox-smus-manage-access`.
+  - `glue get-table` shows a resource link by `TargetTable`: absent on `app_etl.trades_notional`
+    and `mydatabase.house-price`, present on `glue_db_4zojr4rr6bmnww.trades_notional`.
+  - `datazone search --search-scope ASSET --owning-project-identifier` answers the session of the
+    account each project's environments live in, for the seven projects: 10 assets, 4 of them
+    Glue tables, with `test-experimentation`, `app-etl-dev` and both deployment projects holding
+    none.
+  - A role session's user profile carries the role's ARN, equal to its session group's
+    `rolePrincipalArn`, and that group's id (`deploy-production`'s creator, read by its profile).
+  - The listing `house-price` carries no `classification` form; `trades_notional` reads
+    `internal`.
+- **[Claude] Written in `aws/catalog.py`**: `CT-15` to `CT-19`, section 7 of the report, the
+  grants read in both targets beside the registry's and Sandbox's (which widens `CT-7` and `CT-8`
+  to the targets, the catalog road they admit staying the registry's and Sandbox's), and
+  `--self-check`, 34 cases on sample records. A refused `GetListing` counts as unread on both roads; before, the lake road passed
+  over it as no lake listing.
+- **[Claude] Run** 05:23:54 to 05:26:36 UTC, exit 0, *"all checks passed"*: 13 `pass`, 7 `note`,
+  no failed call. 189 grants read, 85 SMUS-managed: registry 45, consumer 69, staging 36,
+  production 39, each to its last page.
+  - `CT-15` pass: 11 listings, none of `deploy-staging`, `deploy-production` or `app-etl-dev`.
+  - `CT-16` note: `test-experimentation` reads `app_etl.trades_notional` by the owner's Share
+    (`d21t6zwyzrcas0`); no deployment project subscribes.
+  - `CT-17` pass: 13 grants on `app_etl.trades_notional` and `mydatabase.house-price`, 1
+    fulfilment and 12 the owning project's or the blueprint's.
+  - `CT-18` note: `house-price` with no form, by `EXC-24`; `trades_notional` `internal`.
+  - `CT-19` note: `trades` in `eighth-experimentation`'s inventory, `glue_db_blerpkhn9nj7o0.trades`,
+    a link to the registry's `curated.trades`, unlisted: 0.5's shape, read by an instrument.
+  - `CT-8` pass on 40 `IAMPrincipals` grants; `CT-7` a note as before, 4 grants on the catalog
+    road.
+- **[Claude] The rules read failing**, in three runs of `main()` with a constant replaced, each
+  writing a report of its own, deleted after:
+  - No exception for `house-price`, `eighth-experimentation` as a chain's `dev` project, a
+    fulfilment admitted `DESCRIBE` alone, every Glue table a link: `CT-17`, `CT-18` and `CT-19`
+    failed, each on the expected object; `CT-10` failed on the lake's fulfilment; `CT-15` read a
+    note naming the project's four listings.
+  - `eighth-experimentation` as Staging's project and `test-experimentation` as Production's:
+    `CT-15` failed on the four listings, `CT-16` on three subscriptions a deployment project
+    holds and on the Share, `CT-14` on both projects' sources.
+  - The Sandbox profile unsigned: `CT-17` and `CT-19` read notes naming what was not read, and
+    none of `CT-15` to `CT-19` failed. `CT-10` failed there, on the lake's fulfilment with the
+    consumer account unknown: a reading of that degraded run, the check left as it is.
+
+  `--self-check` with a fulfilment admitted `INSERT` read 33 of 34 cases and exit 2.
+- **[Claude] Written**: `EXC-24` in `AWS_STATE.md`; `SUP-363`; `aws/INDEX.md`; `POLICIES.md`'s row
+  on the subscription deny; the stage file's 6.1, 2.6 and item 24; the owner's act on
+  `house-price` in the waiting list; `--self-check` in `make check` and in pre-commit.
