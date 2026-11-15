@@ -2313,6 +2313,37 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     metadata under the deploy role's `DESCRIBE` on `app_etl` and its tables, applied that day in
     `staging/studio/`; the Athena read, a `SELECT` grant and `staging/data/`'s policies are not
     written. Decision 14 carries the amendment.
+25. **How a target's first import gets its asset** (4.9, 4.10, xii, xvii; `SUP-369`). On 2026-11-15
+    the import created no asset in `deploy-staging`: `CreateAsset` with `app-etl-dev`'s
+    `externalIdentifier` is a `ConflictException`, which the CLI 1.0.9 counts as an update, and the
+    data product over the source's asset fails. A target's asset comes only from its own source, over
+    the table the application writes at its first run, and that run comes after the deploy: the chain
+    `staging-test` starts in Staging, the bootstrap's in Production. A later import maps the source's
+    asset to the target's by name (read in the code). A target's first deploy therefore fails
+    `deploy-application.py`'s `Failed: 0` before the stage's variables are recorded, so Staging's
+    chains cannot start the run that would write the table, and Staging's project role no longer
+    starts its source (`TM-31`). In Production the bootstrap's run writes the table and its `publish`
+    task starts the source, before the import has written `dev`'s description, README and
+    classification on the target's asset.
+    (a) Each target seeded once by hand: in Staging the infrastructure user records the stage's
+    variables and starts the chain, the source runs on its daily schedule, and `staging-deploy` is
+    retried the next day; in Production `production-deploy` is retried after its bootstrap's run. The
+    check stays as written, and the case is recorded in `promotion.md` as a first release's.
+    (b) `deploy-application.py` admits `SUP-369`'s case alone, a failed data product while the target
+    holds no asset of its name, records the stage's variables and names the case in the job's log; a
+    job after the leg's first run starts the target's source as the deploy role, an owner, waits for
+    its end and deploys again, failing on any `Failed:`. A release `v0.5.1` with the template's job;
+    in Production the second deploy runs the bootstrap's `app-etl` again.
+    (c) The data product leaves the promotion: `app-etl-dev` keeps the asset alone, `product.json`
+    requires the asset alone, and the import revises a target's asset from its second release on.
+    **Recommended: (b)**: the pipeline makes every target's first release whole, a second
+    application's included, and the admitted case is one the job can identify from the target's
+    assets. (a) spans two days in Staging and repeats by hand the variables `SUP-282` made a
+    record, and (c) gives up the data product decision 18 (d) carries. Its costs: the deploy role's
+    `datazone:StartDataSourceRun`, read first in `<env>/foundation/`; a second run in Production's
+    first release; and that run's listing, which carries no classification until the second
+    deploy's run lists the revision, since `publish` checks no form (`code/app_etl_tasks.py`, read
+    2026-11-15). It amends decision 19 (a)'s xvii.
 
 ## Cost
 

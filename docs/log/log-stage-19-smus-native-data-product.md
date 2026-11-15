@@ -3278,3 +3278,31 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   log: *"Bundle creation complete for target: dev"*, 12 files, then the guard *"the catalog the bundle carries,
   against product.json"*: glossaries 0, glossary terms 0, form types 0, asset types 0, *"assets: 1
   (trades_notional)"*, *"dataProducts: 1 (trades-notional)"*, *"OK"*; the bundle's SHA256 `1148ff0c…2b46`.
+- **[user] `staging-gate`** of #123 (job 750, 23:18:55 to 23:19:00). **[pipeline]** `staging-check` (751) green,
+  23:19:01 to 23:19:22; `staging-deploy` (752) failed, 23:19:25 to 23:21:20; `staging-test` and every later job
+  skipped. `scan-gate` (746) failed at 23:23:56, allowed to (Stage 8 decision 1): *"Number of vulnerabilities for
+  this image exceeds the maximum supported with Basic Scanning"*, the ending of #117's and #120's too.
+- **[Claude] `staging-deploy` read** in its log: the CLI deployed into `deploy-staging` (`5ido8bej1zoeq8`), five
+  storage items with 11 files under the project's shared prefix, the workflows `app_etl_deploy_staging_app_etl`
+  (23:21:02) and `app_etl_deploy_staging_app_etl_train` (23:21:15) created `READY`, *"Deployment completed
+  successfully!"*, exit 0. The catalog import: *"Remapped DataSourceReferenceForm to target data source
+  52f18khk7kdi4w (db app_etl)"*, *"Resource trades_notional already exists (ConflictException), treating as
+  update"*, then *"Failed to import dataProducts trades-notional: An error occurred (ValidationException) when
+  calling the CreateDataProduct operation: Resource asset provided is not from same project"*; the summary
+  *"0 created, 1 updated, 0 skipped (extra in target), 1 failed, 0 published"*. `deploy-application.py` stopped
+  on *"the catalog import failed 1 item(s)"* (`SUP-357`'s check), before the stage's variables: no
+  `/awsds/staging/applications/app-etl/stage-variables`, no `staging.env`.
+- **[Claude] The cause read** in the Data Governance account's trail as `awsds-infra-data`: `CreateAsset` at
+  23:20:49 into `deploy-staging` with `app-etl-dev`'s `externalIdentifier`, the Sandbox account's table ARN with
+  `app-etl-dev`'s project id as suffix, answered `ConflictException` with no message; `CreateDataProduct` at
+  23:20:50 with the item `c6z3pbg3drrs0g`, `app-etl-dev`'s asset (1.5), answered `ValidationException`. That
+  `CreateAsset` is the only one into `deploy-staging` since 2026-11-09. Its source `52f18khk7kdi4w`, over Staging's
+  `app_etl`, has run daily since 2026-11-12 adding 0, and Staging's `app_etl` holds no table. `Search` and
+  `GetAsset` in the deploy projects are refused to the infrastructure user, not a member. The CLI's
+  `_import_resource` records no target id on a conflict: `SUP-369`. xvii's premise does not hold: the import
+  creates no asset in a target, whose asset can only come from its own source after a run writes the table.
+- **[Claude] Staging after the job**, read 23:33: the two workflows `READY`, no stage-variables record, the chains'
+  schedules `DISABLED`; `staging/orchestration` and `staging/app/app-etl` empty by `state list`, exit 0. Production
+  untouched, on release T's `v0.4.7`. A retry of `staging-deploy` meets the same conflict while `deploy-staging`
+  holds no asset of its own.
+- **[Claude] Decision 25 written**, the user's: how a target's first import gets its asset.
