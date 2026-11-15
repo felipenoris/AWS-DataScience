@@ -121,6 +121,18 @@ data "aws_iam_policy_document" "deploy_project" {
     resources = ["*"]
   }
 
+  # A target's second import (Stage 19 decision 25): the import creates no asset in the project
+  # (SUP-369), so the leg's catalog job starts the project's source over the product database and
+  # follows its run before it deploys again. DataZone admits a non-member's start and IAM reaches the
+  # action at the domain alone (SUP-346, TM-29); ./aws/catalog.py's CT-13 judges each start by this
+  # role against its deployment project.
+  statement {
+    sid       = "StartTheProjectsSourceBeforeTheSecondImport"
+    effect    = "Allow"
+    actions   = ["datazone:GetDataSourceRun", "datazone:StartDataSourceRun"]
+    resources = ["*"]
+  }
+
   # The workflow calls, on a workflow tagged with the project: the CLI tags the workflow at its
   # creation, and the tag scopes every later call. ListWorkflows takes no resource type.
   statement {

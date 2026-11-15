@@ -361,7 +361,8 @@ staging-check:
 # is false here), the stage's workflows created or updated. The job fails on the CLI's exit status,
 # on a workflow with no network of the project's, on a catalog import that failed an item and on a
 # workflow it cannot find afterwards; then it records the stage's variables, which the chains pass to
-# each run. The bundle sits beside the clone, never inside it: a job that downloads a file before
+# each run. A target's first import is admitted and left to staging-catalog (Stage 19 decision 25):
+# the data product it failed waits for the project's own asset, and STAGING_CATALOG_PENDING says so. The bundle sits beside the clone, never inside it: a job that downloads a file before
 # cloning the mirror into infrastructure/ finds that folder not empty (refused 2026-10-24, v0.3.2's
 # job 325).
 staging-deploy:
@@ -430,6 +431,29 @@ staging-test:
     paths: [execution-*.json, history-*.json, product-table.json]
     expire_in: 1 year
 
+# Stage 19 decision 25: a target's second import. The import creates no asset in a second project of the
+# domain (SUP-369), so the project's asset comes from its own source, once staging-test's run has written
+# the product table. Where staging-deploy admitted the first import, the job starts the project's source
+# as the deploy role, waits for the bundle's asset in the project and deploys the same bundle again,
+# failing on any failed item; otherwise it ends at once.
+staging-catalog:
+  extends: .promotion
+  stage: staging
+  needs: [staging-deploy, staging-test, bundle, store-bundle]
+  resource_group: staging
+  script:
+    - |
+      set -eu
+      if [ "${STAGING_CATALOG_PENDING:-false}" != "true" ]; then echo "staging-deploy's import was whole: no second import"; exit 0; fi
+      cd "$INFRA_DIR"
+      AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" "$CI_PROJECT_DIR/bundle.zip" --only-show-errors
+      echo "$BUNDLE_SHA256  $CI_PROJECT_DIR/bundle.zip" | sha256sum -c -
+      AWS_PROFILE=awsds-deploy-staging ./scripts/deploy-application.py staging --catalog-follow-up --manifest "$CI_PROJECT_DIR/manifest.yaml" --bundle "$CI_PROJECT_DIR/bundle.zip" --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --image-uri "$JOB_IMAGE_URI" --log "$CI_PROJECT_DIR/staging-catalog.log"
+  artifacts:
+    when: always
+    paths: [staging-catalog.log]
+    expire_in: 1 year
+
 # 5.4's Staging half: the model app-etl-train trained in this account served by a batch transform on the
 # batch input the Glue job wrote, the predictions counted against the rows the evaluation recorded, the
 # model deleted after (scripts/model-chain.py, which with --project reads the model under the project's
@@ -456,7 +480,7 @@ staging-model:
 production-check:
   extends: .promotion
   stage: gate
-  needs: [staging-test, staging-model, bundle]
+  needs: [staging-test, staging-catalog, staging-model, bundle]
   resource_group: production
   script:
     - |
@@ -468,7 +492,7 @@ production-check:
 # which would let it start past a failed leg. Who may start a release is the protected tag (step 2.1).
 production-gate:
   stage: gate
-  needs: [staging-test, staging-model, production-check]
+  needs: [staging-test, staging-catalog, staging-model, production-check]
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
       when: manual
@@ -502,6 +526,31 @@ production-deploy:
     paths: [production-deploy.log]
     reports:
       dotenv: production.env
+    expire_in: 1 year
+
+# Stage 19 decision 25, Production's half: production-deploy's bootstrap run wrote the product table and
+# its publish task started the project's source, so where the deploy admitted the first import the job
+# deploys the same bundle again after the source's run, as staging-catalog does. The bootstrap runs app-etl
+# a second time, whose publish lists the asset's revision with the description, README and classification
+# the second import wrote.
+production-catalog:
+  extends: .promotion
+  stage: production
+  needs: [production-deploy, bundle, store-bundle]
+  resource_group: production
+  timeout: 90m
+  script:
+    - |
+      set -eu
+      if [ "${PROD_CATALOG_PENDING:-false}" != "true" ]; then echo "production-deploy's import was whole: no second import"; exit 0; fi
+      cd "$INFRA_DIR"
+      AWS_PROFILE=awsds-deploy-prod ./scripts/check-egress.py production workloads-egress
+      AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" "$CI_PROJECT_DIR/bundle.zip" --only-show-errors
+      echo "$BUNDLE_SHA256  $CI_PROJECT_DIR/bundle.zip" | sha256sum -c -
+      AWS_PROFILE=awsds-deploy-prod ./scripts/deploy-application.py production --catalog-follow-up --manifest "$CI_PROJECT_DIR/manifest.yaml" --bundle "$CI_PROJECT_DIR/bundle.zip" --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --image-uri "$JOB_IMAGE_URI" --log "$CI_PROJECT_DIR/production-catalog.log"
+  artifacts:
+    when: always
+    paths: [production-catalog.log]
     expire_in: 1 year
 
 # Stage 9 step 9.4: the warehouse's DDL, warehouse/trades.sql, through the Data API as awsds-deploy-prod,

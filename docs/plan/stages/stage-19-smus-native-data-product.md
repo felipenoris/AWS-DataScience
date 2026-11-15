@@ -467,6 +467,12 @@ a log with no *"Tooling VPC config"* line (`SUP-285`), on a catalog import whose
 anything but `Failed: 0` (`SUP-357`) and on a workflow of the stage's bootstrap it cannot find by
 name. Then it writes the stage's variables to `/awsds/<env>/applications/<app>/stage-variables`,
 which a chain's machine reads and passes to the run it starts (decision 23).
+Since decision 25 (b), written 2026-11-15, it admits a target's first import (`SUP-369`) and writes
+`<PREFIX>_CATALOG_PENDING=true`; `--catalog-follow-up`, run by the template's `staging-catalog` and
+`production-catalog`, starts the project's source, waits for the bundle's assets in the project and
+deploys again, admitting nothing. Read: `--self-check`'s ten log samples and the admission on job
+752's lines; both `foundation/` slices planned into `stage19-d25-<env>-foundation.tfplan`, 1 to
+change in each, the policy 4,734 and 4,719 characters.
 
 The order of the acts:
 
@@ -2322,7 +2328,7 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     asset to the target's by name (read in the code). A target's first deploy therefore fails
     `deploy-application.py`'s `Failed: 0` before the stage's variables are recorded, so Staging's
     chains cannot start the run that would write the table, and Staging's project role no longer
-    starts its source (`TM-31`). In Production the bootstrap's run writes the table and its `publish`
+    starts its source (`TM-29`'s trigger, 2026-11-15). In Production the bootstrap's run writes the table and its `publish`
     task starts the source, before the import has written `dev`'s description, README and
     classification on the target's asset.
     (a) Each target seeded once by hand: in Staging the infrastructure user records the stage's
@@ -2343,7 +2349,13 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     `datazone:StartDataSourceRun`, read first in `<env>/foundation/`; a second run in Production's
     first release; and that run's listing, which carries no classification until the second
     deploy's run lists the revision, since `publish` checks no form (`code/app_etl_tasks.py`, read
-    2026-11-15). It amends decision 19 (a)'s xvii.
+    2026-11-15). The grant widens `TM-29` to the two deploy roles, which `CT-13` then judges as it
+    judges a project role. It amends decision 19 (a)'s xvii.
+    **Taken 2026-11-15 by the user as (b)** (*"Sobre a Decisão 25, sigo a recomendação (b)."*):
+    `deploy-application.py` admits the case and `--catalog-follow-up` deploys again after the
+    target's source, the template's `staging-catalog` and `production-catalog` run it, both
+    `foundation/` slices grant the source's start, and `CT-13` judges a deploy role's start against
+    its deployment project; the release is `v0.5.1`, `promotion.md` §N.8.4.
 
 ## Cost
 

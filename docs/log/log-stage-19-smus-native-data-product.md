@@ -3306,3 +3306,24 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   untouched, on release T's `v0.4.7`. A retry of `staging-deploy` meets the same conflict while `deploy-staging`
   holds no asset of its own.
 - **[Claude] Decision 25 written**, the user's: how a target's first import gets its asset.
+- **[user] Decision 25**, verbatim: *"Sobre a Decisão 25, sigo a recomendação (b)."* **[Claude]** recorded in the
+  stage file, with what (b) writes: the admitted case and the follow-up in `deploy-application.py`, the
+  template's `staging-catalog` and `production-catalog`, the source's start in both `foundation/` slices, and
+  `CT-13` judging a deploy role's start; the release `v0.5.1`.
+- **[Claude] Decision 25 (b) written**, every call a read:
+  - `scripts/deploy-application.py`: `read_log` admits a target's first import alone, every failed item a data
+    product refused *"Resource asset provided is not from same project"* beside the asset's
+    `ConflictException` line, and the dotenv carries `<PREFIX>_CATALOG_PENDING`; `--catalog-follow-up` starts
+    the project's Glue source over `PRODUCT_DATABASE` (bound 900 s), waits for the bundle's assets in the
+    project's search (bound 300 s) and deploys again, admitting nothing. `--self-check` passes ten log samples;
+    job 752's lines, rebuilt, read admitted with `admit` and failed without.
+  - `examples/app-etl/.gitlab-ci.yml`: `staging-catalog` after `staging-test`, needed by `production-check` and
+    `production-gate`; `production-catalog` after `production-deploy`, 90 min. Each ends at once when its
+    variable is not `true`.
+  - Both `foundation/` slices: the deploy role's `StartTheProjectsSourceBeforeTheSecondImport`
+    (`datazone:StartDataSourceRun`, `datazone:GetDataSourceRun`). Planned as the infrastructure user into
+    `$HOME/tmp/stage19-d25-<env>-foundation.tfplan`: *"0 to add, 1 to change, 0 to destroy"* in each, the
+    statement alone, the rendered policy 4,734 characters in Staging and 4,719 in Production. The roles read
+    `awsds-deploy-staging` and `awsds-deploy-prod` in IAM.
+  - `aws/catalog.py`: `CT-13` judges a deploy role's start as its deployment project's; `--self-check` 39 of 39.
+  - `promotion.md` §N.8.4 step 6 carries `v0.5.1`'s order, `threat-model.md`'s `TM-29` the deploy roles.

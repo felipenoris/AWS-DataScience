@@ -2023,7 +2023,30 @@ requires both.
    user's; `staging-check` reads the egress and the project; `staging-deploy` runs the CLI;
    `staging-test` starts both chains and reads the report and the table; `staging-model` serves the
    model as the project's role. **[Claude] reads** the stage file's xxix to xxxi from the jobs' logs
-   and Staging's trail.
+   and Staging's trail. **Ran 2026-11-15 as `v0.5.0`** (pipeline #123): `staging-deploy` failed on the
+   data product, a target's first import (`SUP-369`), after creating the two workflows in
+   `deploy-staging`. Decision 25 (b) adds `staging-catalog` and `production-catalog`, and the next tag is
+   `v0.5.1`, in this order:
+   1. **Both `foundation/` slices**, accounts **Staging Account** and **Production**: the deploy role's
+      `StartTheProjectsSourceBeforeTheSecondImport`, 1 to change in each, planned 2026-11-15; a re-plan
+      takes `-var-file=<project folder>/secrets/alerts.auto.tfvars`.
+
+      ```bash
+      AWS_PROFILE=awsds-infra-staging terraform -chdir=terraform-live/staging/foundation apply -input=false "$HOME/tmp/stage19-d25-staging-foundation.tfplan"
+      ```
+
+      ```bash
+      AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/foundation apply -input=false "$HOME/tmp/stage19-d25-production-foundation.tfplan"
+      ```
+
+   2. **[user] This repository's pull request merged and the mirror pushed**: the legs clone
+      `awsds/infrastructure` at its default branch, so `deploy-application.py --catalog-follow-up`
+      reaches them through the mirror alone.
+   3. **[user] The template's merge request** from `examples/app-etl/` at the merged `main`, then the
+      tag `v0.5.1`. `staging-deploy` admits the first import and writes `STAGING_CATALOG_PENDING=true`;
+      `staging-test` runs both chains, the first writing the product table; `staging-catalog` starts
+      `deploy-staging`'s source, waits for `trades_notional` in the project and deploys again, failing
+      on any failed item. `v0.5.0`'s two workflows are updated in place.
 7. **`production-check` fails once**, on the membership: the call creates `awsds-deploy-prod`'s
    group profile, whose id **[Claude] reads** from the domain's account (`datazone
    search-group-profiles --group-type IAM_ROLE_SESSION_GROUP` as `awsds-infra-data`, the profile whose
@@ -2036,7 +2059,9 @@ requires both.
 
    Then the job again, `production-gate`, and, with `make up ENV=production ONLY=workloads-egress`,
    `production-deploy`: the bootstrap creates the three workflows and runs `app-etl` to its end
-   (xxviii), and the product is listed.
+   (xxviii), and the product is listed. The deploy admits the first import, and `production-catalog`
+   deploys again after the project's source: the bootstrap runs `app-etl` a second time, whose
+   `publish` lists the asset's revision with `dev`'s description, README and classification.
 8. **Production's cut-over, once that deploy is green.** The chain layer's names are the same in the
    old slice and the new, so the old goes first; the CLI's workflows are untouched by it. As
    `awsds-infra-prod`: a destroy plan of `production/orchestration/` (41 read on 2026-11-12) and of
