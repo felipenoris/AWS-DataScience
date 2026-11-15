@@ -3220,3 +3220,10 @@ user's browser session.
   19 delete markers at 22:37 beside 17 older ones, `houseprice_etl_test_experimentation_houseprice_etl` the only
   workflow named after the project, the Glue job *"Job not found"*. The two workflows' log groups under
   `/aws/mwaa-serverless/` stay, under `EXC-10`'s rule.
+- **[user] §N.8.2 step 15, a GitLab backup by hand** in a Session Manager shell on `awsds-prod-gitlab`: `sudo
+  gitlab-backup create STRATEGY=copy`, 22:38:00 to 22:38:10 UTC, the eight projects' repositories and wikis
+  dumped, *"Uploading backup archive to remote storage awsds-prod-gitlab-backup ... done (encrypted with
+  aws:kms)"*, *"Backup 1794782280_2026_11_15_19.4.2 is done."* **[Claude]** read in the bucket as
+  `awsds-infra-prod`: `1794782280_2026_11_15_19.4.2_gitlab_backup.tar`, 15,585,280 bytes, 22:38:11, `aws:kms`,
+  expiring 2026-12-16 (`expire-current-versions`); release 19.4.2, the pinned one. The two older archives
+  (2026-10-26 and 2026-11-10) stay until their own expiry.
