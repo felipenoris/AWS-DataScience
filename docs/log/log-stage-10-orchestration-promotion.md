@@ -1881,3 +1881,6 @@ UTC.*
 - **Left by 12a**: the branch `xx-undeclared-glue-job` to delete in GitLab (the user's). The tag `v0.4.8` stays
   spent. Staging's two slices now hold `v0.4.8` until `make down ENV=staging`. 3.7's record is `v0.4.7`'s, taken
   at 21:51.
+- **[user] 12a.5**: the branch `xx-undeclared-glue-job` deleted from GitLab (*"- [deleted]
+  xx-undeclared-glue-job"*), the local branch deleted (*"was 90f5cc1"*), and `git ls-remote --heads` printing
+  nothing. No Sandbox residue to delete.
