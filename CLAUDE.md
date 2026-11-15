@@ -450,7 +450,7 @@ domain name from the user, and 15, which nothing blocks and whose decisions 1-4 
 | 12, observability and FinOps | Both observability slices applied 2026-10-18; `OB-3` passes in Sandbox and fails in Production by design (`EXC-19`). The bill reads above D12's ceiling: 53.31 USD in August and 74.48 in September | A hub sitting: the three `[D]` hosts' alarm actions. The user's: decisions due 1 and 3, D12's fired revision trigger and its budget notification |
 | 14, Sandbox vending | The pre-vend half done 2026-10-18 (`./aws/vending.py`, `VN-1`..`VN-6`); the rest blocked on the account quota | The user's: the account quota and D34's rung |
 | 17, machine learning in Sandbox | Pass 0 in progress; `MLflowApp` and `AmazonBedrockKnowledgeBase` enabled, `ml-demo-mlflow` created, five models enabled, the playground answering (7.3) | A Sandbox sitting with `GROUPS=mlflow`: 1.4 and 1.6, then passes 2-5. The user's: decisions 5, 6, 7, 10 and 12 |
-| 19, a data product on SMUS's native path | Decision 6 (b), the AWS model: a deployment project per target. Pass 1 run 2026-11-10. Pass 4 owes nothing more with nothing up: `deploy-staging` and `deploy-production` created, the full-table flag off in both targets and `awsds-deploy-staging` an owner of `deploy-staging` since 2026-11-12 (4.7, `DT-13` passing). Release F, the CLI's legs (4.9 to 4.11), written 2026-11-12 and its grants that need nothing up applied the same day; both `chains/` slices unapplied. Release T's `dev` project, `app-etl-dev`, created 2026-11-14, the bundle role its member and narrowed to reads (`sandbox/workflows/` applied) and the house image attached to its domain the same day. 6.1's product road written 2026-11-14 (`catalog.py` `CT-15` to `CT-19`). Decisions 1 to 24 taken, 7 and 8 moot | With nothing up: 2.6's reading, one run of `./aws/catalog.py` after 02:51 UTC on 2026-11-15 while pass 2's subscription stands. The Sandbox sitting, written in order 2026-11-14 (the stage file's §The Sandbox sitting): pass 2's window and revoke, item 20's retirement, 1.5 in `app-etl-dev` from a tar, no GitLab. The user's: `awsds-deploy-prod`'s membership once its first pipeline run has created its group. Then release T (the `test` stage retired, its template the tree of `36bcf916`: `promotion.md` §N.8.2, its step 13 after the Sandbox sitting's database) and release F's promotion sitting (§N.8.4) |
+| 19, a data product on SMUS's native path | Decision 6 (b), the AWS model: a deployment project per target. Pass 1 run 2026-11-10. Pass 4 owes nothing more with nothing up: `deploy-staging` and `deploy-production` created, the full-table flag off in both targets and `awsds-deploy-staging` an owner of `deploy-staging` since 2026-11-12 (4.7, `DT-13` passing). Release F, the CLI's legs (4.9 to 4.11), written 2026-11-12 and its grants that need nothing up applied the same day; both `chains/` slices unapplied. Release T's `dev` project, `app-etl-dev`, created 2026-11-14, the bundle role its member and narrowed to reads. The Sandbox sitting run 2026-11-14 to 00:16 UTC: 2.6 read on a member's run, pass 2's window (viii to xi) and its revoke, item 20 retired, `app-etl-dev`'s database created and 1.5 run to `SUCCESS`; it opened `TM-31` and fired `TM-29`'s trigger. Steps 15 and 17 done 2026-11-15: the product curated in `app-etl-dev`, unpublished, and `product.json` requiring its data product. `TM-29`'s trigger read and `TM-31` accepted the same day, on SMUS's intended use: the start grant applied out of Sandbox and Staging, kept in Production alone. Decisions 1 to 24 taken, 7 and 8 moot | With nothing up: the Glue session's line in the bill (`SUP-368`). The user's: `awsds-deploy-prod`'s membership once its first pipeline run has created its group. Then release T (the `test` stage retired, its template the tree of `36bcf916`: `promotion.md` §N.8.2, its step 13 unblocked) and release F's promotion sitting (§N.8.4) |
 
 #### The estate between sittings
 
@@ -532,11 +532,11 @@ The table is a first look by situation; the numbered list below it is complete.
 
 | When about to | Lessons |
 |---|---|
-| Write or read a check, a probe or a proof | 2, 13, 20, 21, 22, 24, 26, 30, 31, 50, 54, 62, 71, 77, 78 |
-| Write a policy, a grant or a role, or say what a principal can do | 5, 11, 14, 17, 18, 28, 29, 66, 67, 70, 72, 75 |
+| Write or read a check, a probe or a proof | 2, 13, 20, 21, 22, 24, 26, 30, 31, 50, 54, 62, 71, 77, 78, 80 |
+| Write a policy, a grant or a role, or say what a principal can do | 5, 11, 14, 17, 18, 28, 29, 66, 67, 70, 72, 75, 80 |
 | Move, rename or share something across accounts, or borrow a session | 3, 9, 10, 25, 48 |
 | Change Terraform, a module, a host or the toolchain | 4, 8, 27, 33, 35, 47, 49, 51, 58, 59, 64, 65, 68, 69, 73, 76, 79 |
-| Call an AWS API, a console wizard or a managed service | 16, 23, 36, 39, 60, 61, 63, 74 |
+| Call an AWS API, a console wizard or a managed service | 16, 23, 36, 39, 60, 61, 63, 74, 81 |
 | Touch the network, the proxy or a client | 40, 42, 43, 44, 45, 53, 55, 56 |
 | Run a command or write a script | 46, 47, 52 |
 | Write the plan, a record or a decision, or read a vendor page | 1, 6, 7, 12, 15, 19, 32, 34, 37, 38, 41, 57 |
@@ -679,3 +679,7 @@ The table is a first look by situation; the numbered list below it is complete.
     from the path that already works, never from what the first caller tolerates.**
 79. **A slice applied from an unmerged branch is a revert in every other tree — plan it from the tree that
     applied it, or after its merge.**
+80. **A revocation that removes a name reads as "not found", never as "denied" — and it lands with its last
+    asynchronous write, not with the call.**
+81. **A notebook's engine is a bill of its own, sized by its connection and kept by its idle timeout — the
+    space's price is not the session's.**

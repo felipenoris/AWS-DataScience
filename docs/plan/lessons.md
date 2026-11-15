@@ -1801,6 +1801,57 @@ asked, before anything is applied.
 **What makes it expensive.** An apply from the older tree removes another session's applied work without an
 error, and that session learns it from its next reading.
 
+## Lesson 80 — a revocation that removes a name reads as "not found", never as "denied", and it lands with the last of its asynchronous writes, not with the call
+
+**What happened.** On 2026-11-14 Stage 19's Sandbox sitting revoked `test-experimentation`'s subscription
+from the portal at 23:00:00 UTC while a Glue interactive session in that project held the table open
+through its resource link. The session's next count, right after the revocation, still answered 10. The
+one after it, at 23:01:21, failed with *"[TABLE_OR_VIEW_NOT_FOUND] The table or view
+`glue_db_4zojr4rr6bmnww.trades_notional` cannot be found"*. The trails held the fulfilment's removal as two
+writes by two other principals: `BatchRevokePermissions` by the producer's project role at 23:00:52 and the
+link's `DeleteTable` by the consumer's at 23:01:02 (`SUP-365`).
+
+**Why it is a class rather than a slip.** A grant that reaches a reader through a name, such as a resource
+link, a view or a shortcut, is revoked by deleting the name, and every engine that resolves names reports
+the name's absence. The API that revokes answers before its writes run, and the writes are another
+principal's, so neither the call's answer nor the caller's own trail dates the moment the access ended.
+A proof read at the call's answer reports a control that does not work, and an error read later sends its
+reader after a dropped table.
+
+**The rule.** Date a revocation from its last write in the trail, read after the trail's delay (Lesson 62),
+never from the call's answer. Read a "not found" after a revocation as the revocation until the trail
+says otherwise. Where a session could hold the target by its own name, test that path too, since the
+deleted name proves nothing about it.
+
+**What makes it expensive.** The negative that passes too early is written down as a broken control, and
+the "not found" that follows it is fixed by recreating the name, which a later reader takes for the
+access coming back.
+
+## Lesson 81 — a notebook's engine is a bill of its own, sized by its connection and kept by its idle timeout, and the space's price is not the session's
+
+**What happened.** Stage 19's Sandbox sitting priced its window at the hub's and the endpoints' 0.2 USD/h
+and 0.050 USD/h per space. Its Spark read, one `%%pyspark project.spark.fineGrained` cell, opened a Glue 5.0
+interactive session of up to 10 `G.1X` workers with a 60-minute idle timeout: up to 4.40 USD/h at
+0.44 USD/DPU-h, twenty-two times the rest of the estate. The connection carried that size in its
+`sparkGlueProperties`, which no step had read. The session was read at 23:05 UTC and stopped with the
+notebook's kernel at 23:07:37, after 1152 s; it would otherwise have run to 00:01. Its `DPUSeconds` read
+0.0 at the stop and 3248.6 an hour later, an average of 2.8 DPU under the auto scaling its arguments
+carried, about 0.40 USD if the bill counts that field (`SUP-368`).
+
+**Why it is a class rather than a slip.** A cell runs on an engine its connection names, beside the space
+that runs the notebook, and the vendor sizes that engine. The idle timeout ends the session an hour after the
+last cell, not at it. A cost line written from the space's instance type and the slices `make status` reads
+leaves out every engine a cell starts, because neither the instance nor the slices hold it.
+
+**The rule.** Before a cell runs on a project connection, read the connection's size (`get-connection`,
+the engine's properties) and put the engine in the sitting's cost line. When the reading is done, close the
+kernel and read the engine's session `STOPPED` (`glue get-session`), before the space is stopped. Read its
+consumption from `DPUSeconds` once the field is filled, never at the stop.
+
+**What makes it expensive.** The engine bills while the person reads the result. At the connection's
+ceiling one forgotten hour costs what 22 hours of the sitting's hub and endpoints cost, 4.40 against
+0.2006 USD/h; at the measured session's average, 1.24 USD/h, it costs six.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits. The facts about the platform that cost a measurement to learn are in

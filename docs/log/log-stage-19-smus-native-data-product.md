@@ -2461,3 +2461,519 @@ infrastructure user through `awsds-infra-sandbox-1` (`InfrastructureAccess`, rea
   `dev-env.md` §C6's measured writes; `CLAUDE.md`'s row.
 - **Not read**: the portal's picker (`dev-env.md` §C7), which the Sandbox sitting's space reads at its
   step 13.
+
+## 2026-11-14 — PR #301 merged; release T's tar built for the Sandbox sitting
+
+No AWS write. Claude's hand, in a session started from another session to run §The Sandbox sitting, in
+order; the infrastructure user's identity read on `awsds-infra-sandbox-1` and `awsds-infra-data`
+(`InfrastructureAccess`) at 20:19 UTC.
+
+- **[user] PR #301 merged**, 20:10:12 UTC, squashed into `018fa717`. This entry is on
+  `claude/amazing-gates-020988`, cut from that commit in a worktree of its own.
+- **[Claude] Step 3, the tar**, 20:20 UTC, by the step's three commands:
+  `$HOME/tmp/stage19-1.5/app-etl.tar` from `git archive 36bcf916`, 201,216 bytes, 35 members, 25 files
+  and no `._` member, as measured on the same tree earlier that day. It is deleted after the sitting.
+- **[Claude] Step 1 not due**: the consumer's source over `glue_db_4zojr4rr6bmnww` runs next at 02:51 UTC
+  on 2026-11-15, and step 5's revoke waits for the reading.
+
+## 2026-11-14 — step 18: `eighth-experimentation`'s application deleted, ahead of the Sandbox sitting
+
+Three kinds of AWS write in Sandbox, on the user's word in this chat, *"Autorizo os deletes"*, given to the
+question whether to delete step 18's objects in `eighth-experimentation`. Claude's hand, as the
+infrastructure user through `awsds-infra-sandbox-1` (`InfrastructureAccess`, read at 20:50:27 UTC). The
+step says nothing in steps 5 to 17 reads these objects, so it ran before the sitting rather than after it.
+
+- **[Claude] Read before the deletes**:
+  - the workflow `app_etl_eighth_experimentation_app_etl`, `READY`, `manual_only`, no schedule, five runs:
+    `SUCCESS` on 2026-10-26, and pass 1's four on 2026-11-10, three `FAILED` and one `SUCCESS`;
+    `app_etl_eighth_experimentation_app_etl_train`, `READY`, `manual_only`, no run;
+  - the Glue job `app-etl-avhvbqn37ty7m8`, Glue 6.0 on two G.1X workers as the project role, five runs
+    `SUCCEEDED` (2026-10-26 and 2026-11-10), no trigger;
+  - 30 objects under `shared/app-etl/`, 50,942 bytes, ten of them AppleDouble (`._*`, 163 bytes each). One
+    of the rest is `tables/trades_notional/part-00000-…-c000.snappy.parquet`, the job's `--TABLE_PATH`
+    output; the product table's own files are its Glue location's, 4 data and 12 metadata objects under
+    `dev/data/catalogs/trades_notional/`;
+  - the bucket versioned, its lifecycle expiring noncurrent versions after 90 days, its policy one deny on
+    insecure transport. No instrument under `aws/` or `scripts/` names these objects.
+- **[Claude] The peer told** before the writes: *Worktrees para apagar*, idle, the one other session on
+  the laptop.
+- **[Claude] The deletes**, each exit 0: `mwaa-serverless delete-workflow` on both workflows at 20:50:40
+  and 20:50:41 UTC; `glue delete-job` at 20:50:51; `aws s3 rm --recursive` on the prefix from 20:51:03 to
+  20:51:05, 30 `delete:` lines.
+- **[Claude] Read back**, 20:51:18 UTC: no workflow named `app_etl_eighth_experimentation_*`; `GetJob`
+  answers *"Job not found"* (`EntityNotFoundException`); no current object under the prefix, the 30 kept
+  as noncurrent versions until the lifecycle expires them. The workflows' log groups stay under `EXC-10`'s
+  rule: `…/app_etl_eighth_experimentation_app_etl` at 80,569 bytes and `…_train` empty, neither with a
+  retention. The product table's metadata is still `00003-a0aed729-…`, and the subscription's grant
+  `cm2l6qv25dsy6o` reads `COMPLETED`, its asset `GRANTED`.
+- **[Claude] Written**: step 18's note and the status row; the waiting list's row on the AppleDouble
+  objects removed; `CLAUDE.md`'s row.
+
+## 2026-11-14 — `EXC-24` closed by the owner's act; decision 17 (d)'s report deferred
+
+Every AWS call of Claude's a read, as the infrastructure user through `awsds-infra-sandbox-1` and
+`awsds-infra-data`; the act on `house-price` is the user's, in the portal as the data scientist. Claude's
+hand. The user, verbatim: *"Sobre estes pontos, me oriente como fazer agora."*, on (d)'s report and
+`EXC-24`; then *"Classifiquei o house-price como public e republiquei"* and *"sobre o relato à AWS, não
+vou fazer neste momento. Guarde nas pendências do projeto."*
+
+- **[Claude] The push and the PR**, on the user's word in this chat, *"Autorizo push e PR"*: the branch
+  pushed at 20:55:51 UTC, PR #302 opened as a draft at 20:56:40 UTC, `make check` OK before it.
+- **[Claude] (d)'s channel**: `aws support describe-severity-levels` in `us-east-1` answered
+  `SubscriptionRequiredException` (*"Amazon Web Services Premium Support Subscription is required to use
+  this service."*) on both profiles, so no technical case. AWS's vulnerability reporting page, read
+  through a fetching agent: its Vulnerability Disclosure Program on HackerOne, or
+  AWS Security's e-mail address, which the page names; a human acknowledgement within 24 hours; no support plan named; nothing
+  disclosed publicly before a fix. The draft of 2026-11-11 went to the user with two lines added:
+
+  ```text
+  - Accounts: the domain's <domain account id>; the caller's <caller account id>, an associated account.
+  - Impact: the caller cannot read project B's data or change its source, but it can start that
+    source's import, with the source's own configuration, whenever it wants.
+  ```
+
+- **[user] The report deferred**, kept in the waiting list.
+- **[Claude] `house-price` before the act**: the asset `dbund4fvvvt05s` at revision 1, its forms
+  `GlueTableForm`, `DataSourceReferenceForm`, `SubscriptionTermsForm` and `CommonDetails`, no
+  `classification`; its listing `cetyru4cvy1bio` `ACTIVE` at revision 2.
+- **[user] The act**: the form `classification` added with `public`, and the asset republished.
+- **[Claude] Read after it**, from 21:27 UTC:
+  - asset revisions 2 to 4 by the owner's profile `28f1b390-…`: revision 2 at 21:25:20 UTC with
+    `classification` `internal`, revision 3 at 21:25:41 with `public`, revision 4 at 21:26:09 with
+    `public` and `SubscriptionTermsForm` `approvalRequired` `NO`, where revisions 1 to 3 read `YES`;
+  - the listing at revision 4, `ACTIVE`, 21:26:11.734 UTC, carrying asset revision 4, `classification`
+    `public` and `approvalRequired` `NO`; revision 3, 21:26:11.068, carrying asset revision 1, the
+    change set's revision before the publication's, as `SUP-345` read;
+  - Data Governance's trail at 21:28 UTC: `CreateAssetRevision` at 21:26:09 and `CreateListingChangeSet`
+    `PUBLISH` on entity revision 4 at 21:26:11, each by the domain execution role in the portal;
+    revisions 2 and 3's writes not yet listed (Lesson 62).
+- **[Claude] Found**: the republication turned `house-price`'s subscription terms from approval required
+  to none, in the revision the portal wrote two seconds before the publication. A request to the
+  listing is now accepted at creation, so 6f step 2's approval act has nothing to approve. No check
+  fails on it: `CT-11` reads the lake's listing alone, and `house-price` is a project's. Whether the
+  publish dialog or the user chose it is the user's account to give.
+- **[Claude] `EXC-24` closed in `aws/catalog.py`**: `UNCLASSIFIED_BY_EXCEPTION` emptied;
+  `classification_findings` takes the exceptions as an argument, so the `--self-check` case on an
+  excepted listing, which took the map's first entry, is built on a sample exception. 34 of 34 cases
+  as expected, ruff clean. `./aws/catalog.py` from 21:29:20 to 21:32:00 UTC: all checks passed, `CT-18`
+  *"house-price public; trades_notional internal"*; notes `CT-3`, `CT-6`, `CT-7`, `CT-13`, `CT-16`
+  and `CT-19`.
+- **[Claude] Written**: `EXC-24` closed in `docs/AWS_STATE.md`; `aws/INDEX.md`'s `catalog.py` row;
+  step 6.1's note, decision 17's channel and the status row; the waiting list's row on `house-price`
+  removed and (d)'s row brought to the reading; the vulnerability reporting page in
+  `docs/REFERENCES.md`.
+
+## 2026-11-14 — `house-price`'s listing kept without approval
+
+No AWS call. The user's decision, recorded by Claude's hand.
+
+- **[user] *"Manter sem aprovação"***, to whether `house-price`'s listing should require approval again,
+  the other answer offered being to republish it with the approval required. The publish dialog's
+  default was not read.
+- **[Claude] Written**: 6f steps 2.2 and 4.3's notes, a request to `house-price` being accepted at
+  creation whoever makes it; the waiting list's row on 6f step 2's portal acts; 6f's log.
+
+## 2026-11-14 — the Sandbox sitting, steps 1 and 4: 2.6 read on a member's run, the raises
+
+Reads as `awsds-infra-sandbox-1` and `awsds-infra-data`; the user's acts in the portal and from the
+project folder.
+
+- **[user] *"Antecipar a 2.6"***, to whether step 1 waits for the consumer source's scheduled run at
+  02:51 UTC on 2026-11-15 or reads a run started by hand, so the window runs today.
+- **[Claude] The baseline**, 21:57:42 UTC: the source `3zp6fog9jep1qo`'s last run `3vvwx8yf4ntuds`,
+  `SCHEDULED`, `SUCCESS` at 02:51:09; `test-experimentation`'s inventory held 0 assets; the link
+  `glue_db_4zojr4rr6bmnww.trades_notional` targeted `app_etl.trades_notional`; the subscription
+  `d21t6zwyzrcas0` read `APPROVED`. The session *Worktrees para apagar* was told of the raises the same
+  minute.
+- **[user] The source run by hand** as the data scientist, in `test-experimentation`'s data sources:
+  *"Rodei a fonte"*.
+- **[Claude] The run**, read 22:06 UTC: `6gti1ji6rmgiog`, type `PRIORITIZED`, `SUCCESS`, created
+  22:01:21.050, started 22:01:22.672, stopped 22:01:25.010; statistics `added` 1, `updated` 0,
+  `unchanged` 0, `failed` 0; one activity, `trades_notional` `SUCCEEDED_CREATED`, asset
+  `b5r73n41qe7jf4`. The inventory: `b5r73n41qe7jf4` `trades_notional`,
+  `amazon.datazone.GlueTableAssetType`, created 22:01:24.615 UTC, unlisted. The link's `TargetTable`
+  unchanged, `app_etl.trades_notional` in Sandbox.
+- **[Claude] The trail**: Sandbox's holds no `StartDataSourceRun` since 21:55 UTC. Data Governance's
+  holds one at 22:01:21, `AssumedRole` `awsds-data-studio-domain-execution`, session
+  `user-28f1b390-0041-7068-8cc7-9ccef94277d1`, the portal user who requested `d21t6zwyzrcas0`, no
+  error, on `3zp6fog9jep1qo`.
+- **[Claude] `./aws/catalog.py`**, ending 22:09 UTC: all checks passed. `CT-19` notes two unlisted
+  links, `trades_notional` in `test-experimentation` (`glue_db_4zojr4rr6bmnww.trades_notional ->
+  consumer:app_etl.trades_notional`) and `trades` in `eighth-experimentation` (`->
+  registry:curated.trades`). `CT-13` lists the start at 22:01:21 by
+  `awsds-data-studio-domain-execution`, verdict `other`. The consumer's source: 1 asset, 27 runs,
+  `SUCCESS`.
+- **[Claude] Verification x read**: the consumer's source imports the resource link its subscription
+  created, as an unlisted inventory asset, 0.5's shape. `CT-19` reads it as a note; no other
+  instrument was read for a notice. The run was a member's start, not the schedule's: the scheduled
+  run at 02:51 UTC on 2026-11-15 follows step 5's revoke and reads what the source does with an asset
+  whose link is gone.
+- **[user] The raises** from the project folder, on `main` at `018fa717`, `origin/main`'s: `make
+  hub-up`, then `make up ENV=sandbox ONLY=egress GROUPS=mwaa`: *"Subi os dois"*.
+- **[Claude] `make status`**, 22:31:42 to 22:34:58 UTC: `production/vpn` and `production/proxy` `UP`,
+  one instance each, 0.0052 and 0.0154 USD/h; `sandbox/egress` `UP`, 28 resources, 0.1800 USD/h;
+  `production/tooling` stopped; the estimated burn 0.2006 USD/h. A first run at 22:26 UTC was stopped
+  at its sixth slice: without `TF_PLUGIN_CACHE_DIR` each slice was downloading its own providers.
+
+## 2026-11-14 — the Sandbox sitting, steps 5 to 12: pass 2's window, the revoke, item 20, `app-etl-dev`'s database
+
+The user's acts in the portal and in the space; Claude's reads as `awsds-infra-sandbox-1` and
+`awsds-infra-data`.
+
+- **[user] The space** `jup-std` in `test-experimentation`, JupyterLab on the house image, its app
+  `InService` from 22:34:48 UTC on `d-lfgbdrjncmsu`.
+- **[user] viii, the Spark read**: `%%pyspark project.spark.fineGrained`, `SELECT count(*) AS n FROM
+  glue_db_4zojr4rr6bmnww.trades_notional`, `n` 10; started 22:47:18, 3 min 05.6 s with the session's
+  creation. The connection is a Glue interactive session (`SPARK_GLUE`),
+  `4gqfau9xuo6e4w-93939e2b-07b3-4c1b-b18a-e875438bd870`: Glue 5.0, 10 `G.1X` workers, an idle timeout of
+  60 min, the consumer's project role (`get-session`, 23:05 UTC).
+- **[user] Decision 17's reads** from the space's terminal, as
+  `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw/SageMaker`: `get-data-source` on `budryu9mt9y5u8`
+  answered `…-AwsDataCatalog-app_etl-default-datasource` and the project `avhvbqn37ty7m8`;
+  `get-data-source-run` on `6bnfg5dk961bps` `SUCCESS`, `updated` 1; `list-data-source-run-activities`
+  `trades_notional` and `4j6p77v7dm2840`. A non-member project's role reads another project's source, its
+  run and its activities.
+- **[user] xi's negative**: `head-object` on the table's `00003-a0aed729-…metadata.json` refused, `403
+  Forbidden`; `list-objects-v2` on the table's folder answered one key,
+  `…/trades_notional/data/00000-9-41aaf172-…-00001.parquet`.
+- **[Claude] Found**: the listing is granted by the managed `SageMakerStudioProjectUserRolePolicy` v77,
+  statement `AirflowListDomainS3Permissions`: `s3:ListBucket` on `${aws:PrincipalTag/DomainBucketName}`
+  under the resource account's condition, with no `s3:prefix` condition. The statement beside it,
+  `ListDomainS3BucketPermissions`, conditions the same action to the project's own prefix. The bucket's
+  policy holds `DenyInsecureTransport` alone. Every project role of the domain lists every project's keys
+  in `awsds-sandbox-smus-projects`, and a partitioned table's keys carry its partition values. No file of
+  this repository records it.
+- **[user] The revoke** in `eighth-experimentation` from the portal. The same cell run right after it
+  read 10; run again at 23:01:21, `TABLE_OR_VIEW_NOT_FOUND`, 6.9 s. The same `list-objects-v2` answered
+  the same key after the revoke.
+- **[Claude] ix's pieces**, 23:03:15 UTC: the subscription `REVOKED`; the grant `cm2l6qv25dsy6o`
+  `ResourceNotFoundException`; on `app_etl.trades_notional` the owning project role's
+  `ALL,ALTER,DELETE,DESCRIBE,DROP,INSERT` and `SELECT` alone, the subscription's conditioned `SELECT`
+  gone; the link `EntityNotFoundException`; `test-experimentation`'s asset `b5r73n41qe7jf4` still in its
+  inventory.
+- **[Claude] The trails**: Data Governance's `RevokeSubscription` on `d21t6zwyzrcas0` at 23:00:00 by
+  `awsds-data-studio-domain-execution`, session `user-28f1b390-0041-7068-8cc7-9ccef94277d1`, no error,
+  no `retainPermissions` in the request. Sandbox's `BatchRevokePermissions` at 23:00:52 by
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/AWSDataZone-Subscriptions`, one entry, and
+  `DeleteTable` `trades_notional` at 23:01:02 by
+  `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw/AWSDataZone-Subscriptions`, no errors.
+- **[Claude] ix read**: the open session read through the link until the link's delete, 62 s after the
+  revoke, and resolved no table after it. Whether a session reading by the target's name keeps reading
+  past `BatchRevokePermissions` is not measured.
+- **[user] The kernel closed**. **[Claude]** the session `STOPPING` at 23:07:29 and `STOPPED` at
+  23:07:37 UTC, `ExecutionTime` 1151.9 s, `DPUSeconds` reported 0.0: about 1.4 USD at 10 DPU and 0.44
+  USD/DPU-h, `docs/PRICING.md`'s Glue rate before 6.0, written for ETL.
+- **[user] The space deleted** from the portal. **[Claude]** no space and no app on `d-lfgbdrjncmsu` at
+  23:12:58 UTC.
+- **[user] Steps 7 to 9** in the portal: the data product `trades-notional`, the asset `trades_notional`
+  and the source `…-AwsDataCatalog-app_etl-default-datasource` deleted.
+- **[Claude] Read** 23:12:58 UTC: the data product `bvs7m8z4h6w70w` and its listing `dpx3r3w5msguc0`
+  `ResourceNotFoundException`; the asset `4j6p77v7dm2840` `ResourceNotFoundException`, its listing
+  `ct5d0innrgw3v4` `INACTIVE`; the source `budryu9mt9y5u8` `ResourceNotFoundException`, ahead of its
+  23:41 run; `my-data-product` (`cqrp6eqjjpvvgw`) `CREATED`. `eighth-experimentation` keeps the assets
+  `house-price` and `trades`, and the sources over `new_database`, `glue_db_blerpkhn9nj7o0` and
+  `mydatabase` beside the Tooling one.
+- **[user] Step 10's drops** in the query editor, `DROP TABLE app_etl.trades_notional;` and `DROP
+  DATABASE app_etl;`, then **step 11's** `delete-environment` on `chz5jdb80ohocw`, run by the user from
+  the laptop as Sandbox's `InfrastructureAccess`, the step having it by Claude's hand on the user's word.
+- **[Claude] Read** 23:18:38 UTC: `app_etl` `EntityNotFoundException`; the environment
+  `ResourceNotFoundException`, its stack `DataZone-Env-chz5jdb80ohocw` `DELETE_COMPLETE` at 23:18:11.98;
+  no grant on the database. The table's folder holds no current object: 16 versions noncurrent behind 31
+  delete markers, the latest at 23:17:27, so the drop removed the files and the bucket's 90-day
+  noncurrent expiration keeps them. `eighth-experimentation`'s environments: `Tooling`,
+  `eighth-experimentation-lakehouse`, `create-datalake-database-env-new_database-…`, `ml-demo-mlflow` and
+  the `CREATE_FAILED` `create-datalake-database-env-mydatabase-…`. The drops' `DeleteTable` and
+  `DeleteDatabase` were not yet in Sandbox's trail at 23:19 (Lesson 62).
+- **[Claude] The retirement's writes**, both trails read at 23:50 UTC, every portal call by
+  `awsds-data-studio-domain-execution` for the data scientist's session `user-28f1b390-…`:
+  - Sandbox: `DeleteApp` and `DeleteSpace` on `jup-std` (`d-lfgbdrjncmsu`) at 23:09:28 and 23:09:32, by
+    `test-experimentation`'s project role in the user's session; `DeleteTable` `trades_notional` at
+    23:17:26 and `DeleteDatabase` `app_etl` at 23:17:36, by `eighth-experimentation`'s project role
+    (`datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, session `28f1b390-…@5hkjdsy3umpi1c`), no errors.
+  - Data Governance: `CreateListingChangeSet` `UNPUBLISH` on `bvs7m8z4h6w70w` at 23:09:55 and
+    `DeleteDataProduct` at 23:10:01; `DeleteDataSource` on `budryu9mt9y5u8` at 23:11:14 refused,
+    `ValidationException` with no message; `UNPUBLISH` on `4j6p77v7dm2840` and `DeleteAsset` at 23:11:38;
+    `DeleteDataSource` on `budryu9mt9y5u8` accepted at 23:11:51. The source's delete was refused while
+    its imported asset stood and accepted 13 s after the asset's delete; the cause is inferred from the
+    order, the refusal carrying no text. `DeleteEnvironment` on `chz5jdb80ohocw` at 23:18:00, by Sandbox's
+    `AWSReservedSSO_InfrastructureAccess_…` from `aws-cli/2.37.12`.
+- **[user] Step 12**: `app_etl` created in `app-etl-dev` from the portal.
+- **[Claude] Read** 23:25 UTC: the environment `b9304qgv01an0w`,
+  `create-datalake-database-env-app_etl-1794698623506`, `ACTIVE`, created 23:23:44; the database
+  `app_etl`, *"Created by DataZone for project app-etl-dev"*, at
+  `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/ceweti7jbiu1hs/dev/data/catalogs/`, created
+  23:24:00. Lake Formation's grants under `context.datazone.projectId=="ceweti7jbiu1hs"` to the
+  account's `IAMPrincipals`: `CREATE_TABLE,DESCRIBE,DROP` on the database, `ALTER,DELETE,DESCRIBE,DROP,
+  INSERT` and `SELECT` on its tables; `awsds-sandbox-smus-provisioning` grantable `ALL` on the database;
+  `awsds-sandbox-smus-manage-access` `CREATE_TABLE,DESCRIBE` with grantable `DESCRIBE`, and grantable
+  `DESCRIBE` and `SELECT` on the tables. The source `5xkhlb1ubnrf9s`,
+  `…-AwsDataCatalog-app_etl-default-datasource`, created 23:24:11.87, `cron(24 23 * * ? *)`, the minute of
+  its creation as `SUP-184` read; `publishOnImport` false, business names off, the filter `app_etl`
+  `INCLUDE *`, on the connection `d4r792pkc5soeo`; no run.
+
+## 2026-11-14 — the Sandbox sitting, steps 13, 14 and 16: the deploy and run in `app-etl-dev`, the downs
+
+The user's acts in the space and from the project folder; Claude's reads as `awsds-infra-sandbox-1` and
+`awsds-infra-data`. The day's last entries ran past midnight UTC, on 2026-11-15.
+
+- **[user] Step 13**: the space `jup-medium` in `app-etl-dev`, JupyterLab on `awsds-sandbox-dev-env`
+  version 11, `ml.t3.medium` (`InService`, read 23:39 UTC); the tar extracted; §D step 3's values with
+  `DEV_PROJECT_NAME` `app-etl-dev`, `TRAINING_IMAGE_URI` a placeholder and `JOB_IMAGE_URI` `v0.4.6`'s
+  digest typed in the space; the two zips; `scripts/dev-cli.sh deploy --manifest manifest.yaml --targets
+  dev --skip-validation --no-events`.
+- **[user] The deploy's output**, 23:41:22 to 23:42:40 UTC: *"aws-smus-cicd-cli 1.0.9 on
+  /opt/awsds/venv/bin/python, the domain lookup answered by DOMAIN_ID"*; 11 files under the project's
+  `shared/app-etl/`; *"No managed Tooling.GA/Tooling.Lightning blueprint found; will try the IAM connection
+  fallback"*, then the Tooling environment's two subnets, its security group and its key resolved; the
+  workflows `app_etl_app_etl_dev_app_etl` and `app_etl_app_etl_dev_app_etl_train` created `READY` at
+  23:42:28 and 23:42:40 with the project role. No *"No custom VPC config"*. `GetGroupProfile` refused at
+  each storage item by the domain's resource policy, as §D says.
+- **[Claude] The workflow**, 23:47 UTC: `READY`, the role `datazone_usr_role_ceweti7jbiu1hs_6kvndq6t2757rk`,
+  `NetworkConfiguration` the project's security group and two subnets, `CUSTOMER_MANAGED_KEY` the project's
+  key.
+- **[user] The run**, `scripts/dev-cli.sh run … --workflow app-etl`: `huQUoGZvttPwAMs` started at
+  23:48:48, after `ListTagsForResource` refused on eight other workflows, as §D says.
+- **[Claude] The run followed**: `QUEUED` to 23:51:18, then the tasks `transform` 178 s, `process` 493 s,
+  `summarize` 9 s, `write_result` 10 s and `publish` 6 s, each `SUCCESS`; the run `SUCCESS`, started
+  23:48:54, completed 00:03:47 UTC, 893 s, within pass 1's 816 to 936 s. `publish` returned at once,
+  `PUBLISH_LISTING` being false.
+- **[Claude] Step 14's reads**:
+  - the table, 00:05:35 UTC: `app_etl.trades_notional`, `EXTERNAL_TABLE`, `table_type` `ICEBERG`, 6
+    columns, version 0, created 23:52:11 UTC by `datazone_usr_role_ceweti7jbiu1hs_6kvndq6t2757rk/
+    GlueJobRunnerSession`, at
+    `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/ceweti7jbiu1hs/dev/data/catalogs/trades_notional`,
+    metadata `00000-2e5ee239-f867-4616-ab53-ee36e32084e0.metadata.json` (verification i on the project's
+    objects);
+  - Sandbox's trail: `CreateTable` on `app_etl.trades_notional` at 23:52:11 by that session from
+    `10.20.37.25` through `vpce-0dc0ad9337ef70d9b`, `lakeFormationPrincipal` the project role,
+    `insufficientLakeFormationPermissions` empty: the conditioned `CREATE_TABLE` of step 12's grant admitted
+    it;
+  - Data Governance's trail: 23 `PostLineageEvent` from 23:51:14 to 23:52:13 UTC, no error, the caller
+    `AWSAccount` with the principal `…:GlueJobRunnerSession`, from `10.20.37.25` through
+    `vpce-0959660994e34ad71` (v's domain half);
+  - `./aws/catalog.py`, ending 00:19 UTC: all checks passed; `CT-13`'s latest start is 22:01:21's, so the
+    task started no source; `app-etl-dev`'s source `5xkhlb1ubnrf9s` has no run and no asset. 9 listings,
+    11 before item 20; `CT-16` passes with no subscription, `CT-17` reads `mydatabase.house-price` and
+    `CT-18` `house-price` alone. `CT-19`'s inventory reads `test-experimentation`'s asset
+    `trades_notional` against *"no such table"*, the link gone, the asset kept.
+- **[user] Step 16**: the space `jup-medium` deleted, the portal's tabs closed, `make down ENV=sandbox` and
+  `make hub-down`: *"Desci tudo"*.
+- **[Claude] The readings that end a sitting**: `make status` from 00:13:57 to 00:16:07 UTC,
+  `production/vpn`, `production/proxy` and `production/tooling` stopped, the estimated burn 0.0000 USD/h;
+  `./aws/egress.py awsds-infra-prod awsds-infra-staging awsds-infra-sandbox-1` at 00:14 UTC, all checks
+  passed, no interface endpoint and no NAT gateway in the three accounts; no space and no app on
+  `d-p6gthxc82ckg`, `d-lfgbdrjncmsu` and `d-spi9kgo6x5b4`.
+- **[Claude] Owed**: step 15, the user's portal acts in `app-etl-dev` (the source's run, the asset's
+  metadata, the data product left unpublished), then step 17; the consumer source's scheduled run at
+  02:51 UTC, the first after the revoke, read for what it does with the asset whose link is gone.
+
+## 2026-11-15 — the Glue session's DPU-seconds and the interactive-session rate, with nothing up
+
+Claude's reads as `awsds-infra-sandbox-1`, Sandbox's `InfrastructureAccess`.
+
+- **[Claude] The Glue session re-read**: `glue get-session` at 00:31:20 UTC on
+  `4gqfau9xuo6e4w-93939e2b-07b3-4c1b-b18a-e875438bd870`: `STOPPED`, `ExecutionTime` 1151.921 s,
+  `DPUSeconds` 3248.638, `MaxCapacity` 10.0, `NumberOfWorkers` 10, and `DefaultArguments` carrying
+  `--enable-auto-scaling` `true` and `--enable-lakeformation-fine-grained-access` `true`. The same call
+  read `DPUSeconds` 0.0 at 23:07:41, 4 s after the stop; `list-sessions` at 00:30:15 read 3248.638 with
+  `DefaultArguments` null. The field is below the service model's `ExecutionTime * MaxCapacity`, 11519.2,
+  an average of 2.8 DPU (`SUP-368`). The 2026-11-14 entry's 1.4 USD assumed 10 DPU for the whole run.
+- **[Claude] The rate**, the Price List's `AWSGlue` offer of 2026-11-08: `USW2-GlueInteractiveSession-DPU-Hour`
+  0.44 USD per DPU-hour, `SAE1-GlueInteractiveSession-DPU-Hour` 0.69, and the `-Gen2` type for Glue 6.0
+  and later 0.308 (`PRICING.md` §5). At 0.44 the field's DPU-seconds are 0.40 USD and the formula's 1.41.
+- **[Claude] A correction**: `docs/SMUS.md` named `project.spark.fineGrained` as the EMR Serverless
+  engine's connection. The 2026-11-14 connection read shows it a `SPARK` connection on Glue interactive
+  sessions, and the row now says so.
+- **[Claude] Owed**: Sandbox's `USW2-GlueInteractiveSession-DPU-Hour` line for 2026-11-14 once Cost
+  Explorer holds the day (`runbooks/security-hub.md` V3's command with that usage type): 0.90 DPU-h if the
+  bill counts `DPUSeconds`, 3.20 if it counts the formula.
+
+## 2026-11-15 — step 17's commands, step 15's schedule and §R's third domain, with nothing up
+
+Claude's reading of the CI/CD CLI's installed code and of the records. No AWS call: the infrastructure
+user's SSO token had expired by 02:00 UTC.
+
+- **[Claude] The sitting's cost, estimated in chat** from the trails' times and the recorded rates: about
+  1.5 USD, 1.25 to 1.9, the largest lines the Glue session (0.40 at its `DPUSeconds`), AWS Config's cycle
+  (0.36 to 0.87, `cost-model.md`'s range) and Sandbox's 19 endpoints for about 1.77 h (0.34 to 0.57); about
+  3.1 if the bill counts the session's formula and each endpoint's clock hours. The standing floor is out
+  of it. **[user]**, to whether the bill is recorded once Cost Explorer holds both days: *"Não precisa"*.
+  `SUP-368`'s one line stays owed.
+- **[Claude] Step 17 prepared**: the CLI 1.0.9's `bundle` read in the laptop's `uv tool` install. Its
+  configuration carries the target's region alone (`commands/bundle.py`), so the manifest's domain id is
+  unused: `helpers/utils.py` tries `DescribeStacks` on `cicd-test-domain-stack`, then calls `ListDomains`
+  and takes the one domain listed, failing on two (`SUP-162`'s call, not measured on `bundle`). It reads the
+  project, its members and its connections, then the catalog by `Search`, `SearchTypes`, `GetAsset` and
+  `GetDataProduct` (`helpers/catalog_export.py`), and writes the archive under `./artifacts`; no call
+  writes in AWS. The stage file's step 17 now carries the commands: the two code zips `build-task-code`
+  builds, the placeholders the `bundle` job sets, the bundle, the guard.
+- **[Claude] Step 15's source**: `5xkhlb1ubnrf9s`, on `cron(24 23 * * ? *)` since 23:24 UTC on 2026-11-14,
+  had no run at 00:19 UTC and carries `publishOnImport` false (`CT-4`, that run). Its first scheduled run,
+  at 23:24 UTC on 2026-11-15, imports the table unlisted, so the portal's run is needed only before that
+  minute. Written in step 15 and in the waiting list's row.
+- **[Claude] `runbooks/promotion.md` §R**: the loop over the Studio domains gains `app-etl-dev`'s
+  `d-spi9kgo6x5b4`, which the readings at 00:16 UTC covered by hand.
+- **[Claude] Owed**: the consumer source's scheduled run at 02:51 UTC, read once the infrastructure user
+  signs in again.
+
+## 2026-11-15 — the consumer source's scheduled run after the revoke, and step 17 rehearsed
+
+Claude's reads as the infrastructure user: `awsds-infra-data` for the sources and their runs,
+`awsds-infra-sandbox-1` for the consumer's inventory, the bundle and the trail. As `awsds-infra-data`,
+`GetAsset` on the consumer's inventory asset was refused, *"User is not permitted to perform operation:
+GetAsset"*: Data Governance's role is no member of `test-experimentation`.
+
+- **[user] The sign-in** as the infrastructure user, by 02:41 UTC: *"Já fiz o login"*.
+- **[Claude] Step 15's source**, 02:42 UTC: `5xkhlb1ubnrf9s` `READY`, `ENABLED`, `publishOnImport` false,
+  `cron(24 23 * * ? *)`, created 23:24:11 UTC on 2026-11-14, no run. Step 15's note holds.
+- **[Claude] The baseline**, 02:42 UTC: the consumer's source `3zp6fog9jep1qo`, on `cron(51 2 * * ? *)`, last
+  ran at 22:01:22 on 2026-11-14 (`PRIORITIZED`, `lastRunAssetCount` 1); the asset `b5r73n41qe7jf4`
+  `trades_notional` at revision 1, no listing, the forms `GlueTableForm`, `DataSourceReferenceForm`,
+  `SubscriptionTermsForm` and `AssetCommonDetailsForm`, the inventory's one asset.
+- **[Claude] Step 17 rehearsed** before step 15, from the worktree's `examples/app-etl/` with the stage
+  file's commands, as `awsds-infra-sandbox-1`: `bundle` from 02:42:53 to 02:43:18 UTC, exit 0, 12 files in
+  `artifacts/app-etl.zip` (25,093 bytes), the export's six sections empty (*"No catalog resources found for
+  project ceweti7jbiu1hs"*); the guard *"FAIL  assets: trades_notional is in the export 0 time(s), once
+  expected"*, exit 1. The CLI printed two `GetGroupProfile` refusals, *"no resource-based policy allows the
+  datazone:GetGroupProfile action"*, for the group profiles `06d426f2-84d6-38ae-a991-6806981d9520` (the
+  bundle role's) and `839bcde8-f8b8-4ada-936a-1441352db302`.
+- **[Claude] The rehearsal's trail**, Sandbox, 02:42:50 to 02:43:30 UTC: 28 calls by the session, every one a
+  read. `cloudformation:DescribeStacks` at 02:42:55, `ValidationException` *"Stack with id
+  cicd-test-domain-stack does not exist"*; `datazone:ListDomains` at 02:42:56, answered; then
+  `ListProjects`, `GetProject`, `GetUserProfile` (2), `ListProjectMemberships`, `GetGroupProfile` (2,
+  `AccessDenied`), `ListConnections` (3), `GetConnection` (9), `ListEnvironments`, `Search` (4) and
+  `SearchTypes` (2). `ListDomains` on `bundle` is measured, and `SUP-162` gains the reading.
+- **[Claude] The scheduled run**, read 02:53 UTC: `4etghy8jms5o5s`, `SCHEDULED`, `SUCCESS`, 02:51:09.214 to
+  02:51:10.521 UTC; `added`, `updated`, `unchanged` and `failed` 0, no activity, no error; the source's
+  `lastRunAssetCount` 0. `glue_db_4zojr4rr6bmnww` holds no table. The asset `b5r73n41qe7jf4` unchanged:
+  revision 1, no listing, the same four forms, still the inventory's one asset (verification x,
+  `SUP-197`).
+- **[Claude] `./aws/catalog.py`**, 02:54:36 to 02:57:13 UTC: all checks passed. `CT-19` reads
+  `test-experimentation`'s `trades_notional` against *"no such table"*; the consumer's source 28 runs,
+  `SUCCESS`; `CT-4` all 12 sources `publishOnImport` false; `CT-15` 9 listings, none of `app-etl-dev`;
+  `CT-13`'s latest start still 22:01:21's. `app-etl-dev`'s `Tooling-default-sagemaker-modelpackagegroup-datasource`,
+  on `cron(7 2 * * ? *)`, read `RUNNING` on its first run, a third source of `EXC-11`'s kind.
+- **[Claude] Owed**: Sandbox's `USW2-GlueInteractiveSession-DPU-Hour` line for 2026-11-14 (`SUP-368`).
+
+## 2026-11-15 — steps 15 and 17: the product curated in `app-etl-dev`, `product.json` requiring its data product
+
+The user's acts in the portal as the Data Scientist User, with nothing up; Claude's reads as
+`awsds-infra-data` (the source's runs) and `awsds-infra-sandbox-1` (the inventory, the data product, the
+bundle), and the template's change.
+
+- **[Claude] The instructions** for step 15 at 03:08 UTC, before the source's first scheduled run at 23:24
+  UTC, so the run is the portal's: the description and README texts proposed, the form `classification`
+  `internal`, the data product left unpublished, no JupyterLab or Code Editor opened.
+- **[user] Step 15** in `app-etl-dev`: *"Fiz o passo 15"*.
+- **[Claude] The source's run**: `577dc5ia9du07k`, `PRIORITIZED`, `SUCCESS`, created 03:11:22.274 and
+  stopped 03:11:25.710 UTC; `added` 1, `updated`, `unchanged` and `failed` 0; one activity, `app_etl`
+  `SUCCEEDED_CREATED`, the asset `c6z3pbg3drrs0g` `trades_notional`. `CT-13` reads its start at 03:11:22 by
+  `awsds-data-studio-domain-execution`, verdict `other`, the portal's.
+- **[Claude] The asset**: revision 1 by `SYSTEM` at 03:11:25.220, revisions 2 to 4 by the data scientist's
+  profile `28f1b390-…` at 03:12:56, 03:13:18 and 03:13:45 UTC. Revision 4 carries the description, the README
+  in `AssetCommonDetailsForm` and the form `classification` `{"classification":"internal"}` of type
+  `classification` revision 2, which `get-form-type` names as `eighth-experimentation`'s (`avhvbqn37ty7m8`,
+  `ENABLED`); no listing. A project attaches a form type another project owns: item 22's measurement,
+  decision 4's first branch.
+- **[Claude] The data product**: `5070mjwdvjwp3k` `trades-notional`, revision 1, `CREATED`, created
+  03:14:56.022 UTC by the same profile, no description, one item, `ASSET` `c6z3pbg3drrs0g`.
+- **[Claude] `./aws/catalog.py`**, 03:16:30 to 03:18:56 UTC: all checks passed. `CT-15`: 9 listings, none of
+  `app-etl-dev`; `CT-19`'s inventory reads `app-etl-dev`'s `trades_notional` over `app_etl.trades_notional`,
+  not a link; the source 1 run, `SUCCESS`, `lastRunAssetCount` 1. No app and no space on `d-p6gthxc82ckg`,
+  `d-lfgbdrjncmsu` and `d-spi9kgo6x5b4`.
+- **[Claude] Step 17**: the bundle from the template's folder with the stage file's commands, 03:19:45 to
+  03:20:09 UTC, exit 0, `artifacts/app-etl.zip` 25,910 bytes, SHA256 `4b852993…21aacfe`. The export holds
+  `assets` `trades_notional` (its forms `GlueTableForm` 13, `DataSourceReferenceForm` 5,
+  `SubscriptionTermsForm` 2, `AssetCommonDetailsForm` 8 and `classification` 2, each by name and revision)
+  and `dataProducts` `trades-notional`, its item the `dev` asset's id; `formTypes`, `glossaries`,
+  `glossaryTerms` and `assetTypes` empty (xii's bundle half). The guard: *"FAIL  dataProducts:
+  trades-notional is in the export and not in product.json"*, exit 1.
+- **[Claude] The change**: `examples/app-etl/product.json` requires `dataProducts` `trades-notional` beside
+  the asset, and the guard on the same archive answers *"OK"*. The test sample in
+  `tests/test_catalog_export.py` carries the data product, and a new case fails a release without it. The
+  template's gates: `uv sync --locked`, ruff check and format clean, `pytest` 85 passed and 1 skipped. The
+  build outputs and the template's `.venv` were removed after.
+- **[Claude] Owed**: Sandbox's `USW2-GlueInteractiveSession-DPU-Hour` line for 2026-11-14 (`SUP-368`).
+
+## 2026-11-15 — `TM-29`'s trigger read and `TM-31` decided: the start grant kept in Production alone
+
+The user's decision in the session's chat; Claude's reads with nothing up, as `awsds-infra-sandbox-1`,
+`awsds-infra-staging` and `awsds-infra-prod`, and the edits.
+
+- **[Claude] The options**, each with a recommendation: decision 17's (a) with (d) kept and `CT-13`
+  widened to the reads; `TM-31` accepted.
+- **[Claude] The readings behind them.** `SageMakerStudioProjectUserRolePolicy` at `v77` holds
+  `ListDomainS3BucketPermissions`, `s3:ListBucket` and `s3:ListBucketVersions` on the domain bucket under
+  `s3:prefix` `<domain>/<project>` and `<domain>/<project>/*`, beside `AirflowListDomainS3Permissions`,
+  `s3:ListBucket` on the same bucket with no prefix condition, and its companions `AirflowS3BucketActions`
+  (`GetEncryptionConfiguration`, `GetBucketPublicAccessBlock`) and `AirflowS3GetAccountPublicAccessBlock`.
+  Sandbox's trail holds the reads of 2026-11-14 by `test-experimentation`'s role
+  `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw`, each answered: `GetDataSource` on `budryu9mt9y5u8` at
+  22:52:16, `GetDataSourceRun` on `6bnfg5dk961bps` at 22:52:18 and `ListDataSourceRunActivities` at
+  22:52:19 UTC. Decision 20 (b) gives Sandbox's `StartDataSourceRun` the listing code's exercise in `dev`
+  alone, and Staging's `PUBLISH_LISTING` is false, so its task returns before the start.
+- **[user] The lens**: *"Revise as recomendações sobre essas duas decisões, considerando que estamos
+  querendo seguir o uso pretendido padrão do SMUS, conforme recomendado pela AWS."*
+- **[Claude] The revised recommendations**: decision 17 (b) in Sandbox and Staging and (a) in Production,
+  read again at 4.13; the reads accepted as the platform's, with no new check; `TM-31` accepted, the
+  bucket-policy deny left as the control a trigger reopens.
+- **[user] The decision**: *"Sim, revisadas"*.
+- **[Claude] The code**: `sandbox/workflows/main.tf` loses the statement
+  `StartADataSourceRunInTheProjectsDomain`. `<env>/studio/workflows.tf` is one copy in both targets
+  (`scripts/check-copies.py`, which failed on a first edit that removed the statement from Staging's copy
+  alone), so the statement and the description's data-source clause stand behind a new variable in each
+  account's `project-roles.tf`, `publishing_starts_the_source`, true in Production and false in Staging;
+  the copy's comment carries the reasoning Sandbox's file held.
+- **[Claude] The plans**, each slice's tfvars regenerated in this worktree: `sandbox/workflows/` `0 to add,
+  1 to change, 0 to destroy`, `awsds-sandbox-workflows` in place, the statement removed;
+  `staging/studio/` `2 to add, 0 to change, 2 to destroy`, `awsds-staging-workflows` replaced for its
+  description and its attachment to `datazone_usr_role_5ido8bej1zoeq8_d6nu5aphq1e974` with it;
+  `production/studio/` `No changes`, as `awsds-infra-prod`. The two plans that change something are saved
+  outside the repository; the applies wait for the user's authorization.
+- **[Claude] The report's lines** for decision 17 (d), beside the text of 2026-11-11:
+
+  > A principal that is no member of a project reads that project's data source, its runs and each run's
+  > activities (`GetDataSource`, `GetDataSourceRun`, `ListDataSourceRunActivities`), which name the tables
+  > the project catalogues and their asset ids.
+  >
+  > `SageMakerStudioProjectUserRolePolicy`'s statement `AirflowListDomainS3Permissions` grants
+  > `s3:ListBucket` on the domain bucket with no `s3:prefix` condition, so every project role lists the
+  > object keys of every other project sharing the bucket, while its statement
+  > `ListDomainS3BucketPermissions` grants the same listing under the project's own prefix.
+
+## 2026-11-15 — decision 17's revision applied: the start grant out of Sandbox and Staging
+
+The same day, nothing up. The user, verbatim: *"Autorizo os 2 applies"*. The app's classifier let each
+through.
+
+- **[Claude] Before the writes**: the two other sessions on the laptop, idle, told of the applies and of
+  Lesson 79 until PR #302 merges, and a note left in the orchestrator's notes folder. The three profiles
+  answered as the infrastructure user, `InfrastructureAccess` in Sandbox, Staging and Production.
+- **[Claude] The plans, made again from `6d0b8238`** so that each apply reads the state of the moment:
+  `sandbox/workflows/` `0 to add, 1 to change, 0 to destroy` and `staging/studio/` `2 to add, 0 to change,
+  2 to destroy`, the diff in each the statement `StartADataSourceRunInTheProjectsDomain` alone and, in
+  Staging, the description that forces the policy's replacement with its attachment.
+- **[Claude⚡] `sandbox/workflows/`**, 04:31:44 to 04:31:54 UTC: *"0 added, 1 changed, 0 destroyed"*,
+  `awsds-sandbox-workflows` modified in 2 s.
+- **[Claude⚡] `staging/studio/`**, 04:32:02 to 04:32:17 UTC: *"2 added, 0 changed, 2 destroyed"*. In
+  order: the attachment to `datazone_usr_role_5ido8bej1zoeq8_d6nu5aphq1e974` destroyed, the policy
+  destroyed and created, the attachment created. The role went about two seconds without the policy, with
+  nothing running in Staging.
+- **[Claude] Read after them**: the three slices re-plan `No changes`, `production/studio/` as
+  `awsds-infra-prod`. `awsds-sandbox-workflows` is at `v5`, updated 04:31:53 UTC, with
+  `DescribeAProcessingJobNoProjectHolds`, `TagAProcessingJobWithTheCallersProject` and
+  `GetAGlueJobNoProjectHolds`, attached to the three Sandbox project roles
+  (`datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw`, `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`,
+  `datazone_usr_role_ceweti7jbiu1hs_6kvndq6t2757rk`). `awsds-staging-workflows` is a `v1` created
+  04:32:13 UTC with the same three statements, its description without the data-source clause, attached to
+  `deploy-staging`'s role alone. `awsds-prod-workflows` is unchanged, `v1` since 2026-11-11 15:19:04 UTC,
+  its four statements `StartADataSourceRunInTheProjectsDomain` among them, attached to
+  `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow`.
+- **[Claude] AWS's managed policies at the applies**: `SageMakerStudioProjectRoleMachineLearningPolicy`
+  `v48` and `SageMakerStudioProjectUserRolePolicy` `v77`, both the default since 2026-11-13 20:47:08 UTC
+  (open question 22's reading of 2026-11-14). Neither names `StartDataSourceRun` nor holds an `Allow` with
+  `NotAction`; v48's DataZone actions are v47's with `datazone:UpdateAssetOwner` added to
+  `DataZoneUserPermissions`, on `*`. The comment of `<env>/studio/workflows.tf` cited v47, read
+  2026-11-08, and names v48 since; the plan reads no comment.
+- **[Claude] Until PR #302 merges**, a plan of either slice from a tree without its commits restores the
+  statement (Lesson 79).

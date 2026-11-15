@@ -681,9 +681,10 @@ account read, so each prints versions, counts, names and paths, never a value of
   nothing else: a task that lists, reads or writes a new prefix needs its entry there (§S). The
   template's `publish` calls DataZone as the project role through the `datazone` endpoint: `Get*`,
   `List*`, `Search*` and `CreateListingChangeSet` are the blueprint's
-  `SageMakerStudioProjectRoleMachineLearningPolicy`'s, `StartDataSourceRun` the house grant
-  `sandbox/workflows/` attaches (Stage 19 1.1), and a target's deployment project role carries the same
-  statement (Stage 19 4.4).
+  `SageMakerStudioProjectRoleMachineLearningPolicy`'s, and `StartDataSourceRun` the house grant on
+  Production's deployment project role alone (`<env>/studio/workflows.tf` under `project-roles.tf`'s
+  `publishing_starts_the_source`, Stage 19 decision 17),
+  the one stage whose `PUBLISH_LISTING` is true; elsewhere the task returns before it.
 
 ---
 

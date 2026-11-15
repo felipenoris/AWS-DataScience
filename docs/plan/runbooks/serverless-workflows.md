@@ -192,8 +192,12 @@ and read in the policies on 2026-11-08):
   the blueprint's `SageMakerStudioProjectRoleMachineLearningPolicy` (v47) grants `datazone:Get*`,
   `List*`, `Search*`, `CreateAsset*` and `CreateListingChangeSet` and no `StartDataSourceRun`;
   `SageMakerStudioProjectUserRolePolicy` (v76) names none either (read 2026-11-08, before the first run).
+  Production's deployment project role alone holds that statement (`<env>/studio/workflows.tf`, on where
+  `project-roles.tf` sets `publishing_starts_the_source`); a
+  Sandbox project's source imports on its schedule or on a member's run in the portal (Stage 19
+  decision 17).
 
-The grant is `terraform-live/sandbox/workflows/`, one policy and one attachment per project role:
+The grant for the jobs is `terraform-live/sandbox/workflows/`, one policy and one attachment per project role:
 
 1. Add the project role's name to `project_roles` in `variables.tf`. The role is
    `datazone_usr_role_<project id>_<environment id>`, read with `aws iam list-roles`.
@@ -207,9 +211,8 @@ without them (2026-10-19, run `7MMhwSySe5SOWd1`).
 The policy allows `DescribeProcessingJob` on a job with no project tag, `AddTags` of the caller's own
 project tag alone, on a job with no project tag or with the caller's, and `glue:GetJob` on a job with no
 project tag whose name ends with the caller's project id, `<app>-<project id>`, the name an application
-gives its job (user, 2026-10-16). Another project's jobs stay out of reach. `datazone:StartDataSourceRun`
-is allowed on the projects' domain, DataZone's resource for the call; whether the role may start another
-project's source is Stage 19's verification ii. With the Glue statement applied, `CreateJob` with the project tag passed with nothing more, unlike the
+gives its job (user, 2026-10-16). Another project's jobs stay out of reach.
+With the Glue statement applied, `CreateJob` with the project tag passed with nothing more, unlike the
 processing job's `AddTags`: `GetJob` answered `EntityNotFoundException`, then `CreateJob` and `StartJobRun`
 passed (Sandbox, 2026-10-16, 6i's log; Staging, 2026-10-19, Stage 18 4.4).
 

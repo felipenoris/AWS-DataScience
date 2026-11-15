@@ -1230,6 +1230,22 @@ entry is still true is the reading.
   registration from a list call reads every table as unregistered; no instrument here reads the field. Where: `log-stage-19-smus-native-data-product.md`,
   2026-11-14.
 
+- `SUP-368` **A Glue interactive session's `DPUSeconds` reads 0.0 when the session stops and is filled
+  later, below the `ExecutionTime * MaxCapacity` its documentation gives as the formula** (measured
+  2026-11-14 and 2026-11-15 in Sandbox, Stage 19, on the session its Spark read opened through
+  `project.spark.fineGrained` in `test-experimentation`: Glue 5.0, 10 `G.1X` workers, `MaxCapacity` 10.0,
+  idle timeout 60). `get-session` at 23:07:41 UTC, 4 s after `STOPPED`: `ExecutionTime` 1151.921,
+  `DPUSeconds` 0.0. `get-session` at 00:31:20 UTC on 2026-11-15: the same `ExecutionTime`, `DPUSeconds`
+  3248.638 against the 11519.2 the formula gives, an average of 2.8 DPU, and `DefaultArguments` carrying
+  `--enable-auto-scaling` `true` and `--enable-lakeformation-fine-grained-access` `true`. `list-sessions`
+  a minute earlier answered the same `DPUSeconds` with `DefaultArguments` null, so the auto-scaling flag
+  reads only from `get-session`. The formula is the service model's text for `GetSession` (`aws glue
+  get-session help`, aws-cli 2.37.12). Which quantity the bill charges is not measured; the reading is
+  Sandbox's `USW2-GlueInteractiveSession-DPU-Hour` line for 2026-11-14 once Cost Explorer holds the day:
+  0.90 DPU-h if it counts `DPUSeconds`, 3.20 if it counts the formula. A session's consumption read at
+  its stop reads nothing, and one priced from its size and its run reads three and a half times the
+  field. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
+
 ## Lake Formation
 
 - `SUP-100` **`ram enable-sharing-with-aws-organization` both enables trusted access for `ram.amazonaws.com`
@@ -2039,6 +2055,11 @@ entry is still true is the reading.
   domain id unused, so a deploy from a space stops there; reported upstream as [issue
   413](https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413). Where:
   `log-stage-10-orchestration-promotion.md`, 2026-10-26.
+  Read 2026-11-15 on `bundle --targets dev` from the laptop as Sandbox's `InfrastructureAccess` (Stage 19
+  step 17's rehearsal): `bundle` makes the call too, one second after `DescribeStacks` refused *"Stack with
+  id cicd-test-domain-stack does not exist"*, its configuration carrying the target's region alone
+  (`commands/bundle.py`). The call answered, and the bundle took the one domain listed; the code
+  (`helpers/datazone.py`) raises on two. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 - `SUP-349` **The console's account association is one public RAM call, `AssociateResourceShare` on the
   domain's share, after which RAM writes the domain's sharing policy in the caller's session** (read
@@ -2377,6 +2398,23 @@ entry is still true is the reading.
   databases, which is what the three allows meet. Where: `log-stage-19-smus-native-data-product.md`,
   2026-11-11; `threat-model.md` `TM-30`; `./aws/studio.py` `US-12`, `./aws/deploytargets.py` `DT-14`.
 
+- `SUP-367` **`SageMakerStudioProjectUserRolePolicy` lets every project role list the whole domain bucket,
+  every other project's keys included** (measured 2026-11-14 in Sandbox, Stage 19 verification xi; the
+  policy read the same day at v77). From a space in `test-experimentation`, its project role's `s3api
+  list-objects-v2` on `awsds-sandbox-smus-projects` with the prefix of `eighth-experimentation`'s table,
+  `dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/catalogs/trades_notional/`, answered a key,
+  `…/data/00000-9-41aaf172-…-00001.parquet`, before and after the subscription's revocation, while
+  `head-object` on the table's metadata file answered `403 Forbidden`. The statement
+  `ListDomainS3BucketPermissions` grants `s3:ListBucket` and `s3:ListBucketVersions` on
+  `${aws:PrincipalTag/DomainBucketName}` under `s3:prefix` values naming
+  `${aws:PrincipalTag/AmazonDataZoneDomain}/${aws:PrincipalTag/AmazonDataZoneProject}`; the statement
+  `AirflowListDomainS3Permissions` grants `s3:ListBucket` on the same bucket under the resource account's
+  condition alone, with no `s3:prefix` condition. The bucket's policy holds `DenyInsecureTransport` alone.
+  The reach follows from the policy's text, and no page this project has read states it. A key carries a
+  partitioned table's partition values, so the listing is a metadata channel between the projects that
+  share a domain bucket (`threat-model.md` `TM-31`). Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-14.
+
 ### The portal
 
 - `SUP-180` **An `aws:SourceIp` deny on a permission set does not reach the SageMaker Unified Studio portal,
@@ -2630,10 +2668,18 @@ entry is still true is the reading.
   `GlueTableAssetType` asset `trades`, external identifier the link `glue_db_blerpkhn9nj7o0/trades`, created
   21:32:12Z, with no listing, beside its own `house-price`. The subscriber thus owns an unpublished asset
   for data it holds only by subscription, and a check that reads listings and not inventories misses it.
-  Seen once. Read again 2026-11-10 with `search --search-scope ASSET`: the asset `cm329mc3bqu39s`'s
+  Seen once by 2026-10-28. Read again 2026-11-10 with `search --search-scope ASSET`: the asset `cm329mc3bqu39s`'s
   external identifier is `arn:aws:glue:us-west-2:<Sandbox Account 1>:table/glue_db_blerpkhn9nj7o0/trades.avhvbqn37ty7m8`;
   the 2026-10-28 text named the link, not the field (`SUP-343`). Where: `log-stage-19-smus-native-data-product.md`,
   2026-10-28 and 2026-11-10.
+  Seen again 2026-11-14 in `test-experimentation` (Stage 19 verification x): a run started from the portal,
+  type `PRIORITIZED`, `added: 1`, imported the link `glue_db_4zojr4rr6bmnww.trades_notional` as the
+  unlisted asset `b5r73n41qe7jf4`; after the revocation deleted the link (`SUP-365`) the asset stayed in the
+  inventory with no table behind it. Where: the same log, 2026-11-14.
+  Read again 2026-11-15 on the source's scheduled run at 02:51 UTC, the first after the revocation:
+  `4etghy8jms5o5s`, `SUCCESS` in 1.3 s, `added`, `updated`, `unchanged` and `failed` all 0, no activity, the
+  source's `lastRunAssetCount` 0, and the asset at revision 1, unlisted. A run over a database whose table is
+  gone neither removes, nor reports, nor counts the asset it imported. Where: the same log, 2026-11-15.
 
 - `SUP-198` **A listing's `DataSourceReferenceForm` keeps the data source's configuration as published, and
   disagrees with the source after an update** (read 2026-10-27 in Data Governance, Stage 6f decisions 2 to
@@ -2758,6 +2804,30 @@ entry is still true is the reading.
   of it: Data Governance's `InfrastructureAccess`, a member of none of the four, read
   `test-experimentation`'s one subscription, `eighth-experimentation`'s two and each deployment
   project's none. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-14; `aws/catalog.py`.
+
+- `SUP-365` **A subscription's revocation removes the fulfilment asynchronously, and a session reading
+  through the resource link reads until the link's delete, then answers that the table does not exist**
+  (measured 2026-11-14 in Sandbox, Stage 19 verification ix, inside one account). `RevokeSubscription` on
+  `d21t6zwyzrcas0` from the portal at 23:00:00 UTC, no `retainPermissions` in the request (Data
+  Governance's trail); `BatchRevokePermissions`, one entry, by the producer's project role at 23:00:52 and
+  `DeleteTable` on the consumer's link by the consumer's project role at 23:01:02, each in an
+  `AWSDataZone-Subscriptions` session (Sandbox's trail). A Glue interactive session on
+  `project.spark.fineGrained`, opened at 22:47 UTC, counted the table through the link once after the
+  revocation and failed at 23:01:21 with *"[TABLE_OR_VIEW_NOT_FOUND] The table or view
+  `glue_db_4zojr4rr6bmnww.trades_notional` cannot be found"*. The subscription then read `REVOKED`,
+  `get-subscription-grant` `ResourceNotFoundException`, the link `EntityNotFoundException`, and the asset
+  the consumer's source had imported from the link stayed in its inventory (`SUP-197`). The refusal names a
+  missing object, not a revoked access. Whether a session reading by the target's name keeps reading past
+  `BatchRevokePermissions` was not measured. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-14.
+
+- `SUP-366` **`DeleteDataSource` is refused with an empty `ValidationException` while an asset the source
+  imported exists** (read 2026-11-14 from Data Governance's trail, Stage 19 item 20; the cause inferred from
+  the order). `DeleteDataSource` on `budryu9mt9y5u8`, by the domain execution role in the data scientist's
+  portal session at 23:11:14 UTC, carried `errorCode` `ValidationException` and no `errorMessage`;
+  `CreateListingChangeSet` `UNPUBLISH` and `DeleteAsset` on the source's asset `4j6p77v7dm2840` followed at
+  23:11:38, and `DeleteDataSource` on the same source was accepted at 23:11:51. A retirement deletes the
+  asset first and the source right after, before the source's next scheduled run imports the table again.
+  Where: `log-stage-19-smus-native-data-product.md`, 2026-11-14; Stage 19's sitting step 8.
 
 ### Connections
 

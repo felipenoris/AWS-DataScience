@@ -20,3 +20,13 @@ variable "project_roles" {
     error_message = "a role appears twice. The attachment is keyed by role name, so a duplicate would collide rather than be ignored."
   }
 }
+
+# Whether the workflows grant lets the project role start a data source of the domain (workflows.tf),
+# the publishing task's step before it lists the asset (Stage 19 decisions 3 and 17).
+variable "publishing_starts_the_source" {
+  description = "Whether the project role may start a data source of the domain: true in the one stage whose PUBLISH_LISTING is true."
+  type        = bool
+
+  # Production is the one stage that lists the product (Stage 19 decision 20 (b)).
+  default = true
+}

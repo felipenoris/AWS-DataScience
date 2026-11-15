@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Decision 6 taken 2026-10-31 by the user as (b), the AWS model** ([log](../../log/log-stage-19-smus-native-data-product.md)): *"Decido pelo modelo da AWS, com o uso previsto do SMUS e promoção entre ambientes via ferramenta SMUS CICD CLI"*. Staging and Production each gain a deployment project, the CI/CD CLI deploys every stage, and Production publishes its own product; D41 item 2 is reopened, 6f decision 4 reversed, `DenyDataZoneEntirely`'s revision trigger fired. Passes 3 and 4 rewritten the same day around [Stage 18](stage-18-staging-deployment-project.md)'s recipe, decisions 13 to 16 added, and **every decision taken the same day, one at a time**: 1 (a), 2 (a) with (d), 3 (a) gated by `PUBLISH_LISTING`, 4 (a), 5 as recommended with `eighth-experimentation` as Production's consumer, 9 (a), 11 rows by class for the governed accounts, 12 outside, 13 (b) with a subscription deny, 14 (a) with (d), 15 (a), 16 (b) against the recommendation; 7 and 8 moot by decision 6 (b); **10 taken 2026-11-09** as amended by it, on in `dev` and `test` (*"Keep it on"*). **1.1 written 2026-10-31** in `examples/app-etl/`: the Iceberg write, the publishing task, the two stage variables, the tests, the render's interim rows; 3.1 and 3.3 wait on the inputs the same reading found missing (the lint's rule, the deployment projects' values); nothing changed in AWS that day. **Pass 1 prepared 2026-11-08** ([PR #283](https://github.com/felipenoris/AWS-DataScience/pull/283)): the publishing task takes its identifiers from the deploy's `{domain.id}` and `{proj.id}`, the project role holds `datazone:StartDataSourceRun` from `sandbox/workflows/` (applied 21:50 UTC, `awsds-sandbox-workflows` `v4`, the day's one AWS write), and the sitting's order with this pass's values is the list before 1.2: the window holds the hub, Sandbox's `egress/` and a space running a package unattended, the portal's acts come before it, the readings after it and GitLab's mirror at its next sitting; decision 10's OpenLineage settings are in the template since the same day ([PR #284](https://github.com/felipenoris/AWS-DataScience/pull/284)). **Pass 1's sitting run 2026-11-10** (01:28 to 04:09 UTC): four runs, the first three failing in `publish` on what the catalog answered (`SUP-343`, `SUP-345`) and fixed between them, the fourth `SUCCESS`; the product table is Iceberg and registered with Lake Formation, its asset imported and listed, 1.3's metadata kept across the source's updates and carried to the listing, the job's lineage linked to the asset in the domain; verification ii's negative was admitted (`SUP-346`, `TM-29`), and decision 17, taken 2026-11-11 as (a) with (d), keeps the grant with `CT-13` as its check; the mirror waits for the next GitLab sitting. **Prepared after it, 2026-11-10, nothing up**: pass 2's sitting in order (its portal half needs no window), 3.1's code reading (the bundle exports the catalog of its own stage's project, whole), decision 18 read against SMUS's own path and taken 2026-11-11 as (d), a project for the application alone as `dev` (1.5), and pass 4 read against pass 1. On two readings of the same day (the CLI's import writes `dev`'s account into a target's asset, and Sandbox's one Glue catalog holds `app_etl` once), **decision 19 taken 2026-11-11 as (c)**: no `test` stage, every promotion crossing an account, Sandbox → Staging → Production, with Staging importing the catalog unlisted; decision 20 taken the same day as (b): Production alone lists a chain application's product. **The estate reviewed against decisions 17 to 20 on 2026-11-11, and pass 4 opened with nothing up** (§The estate against decisions 17 to 20; [PR #288](https://github.com/felipenoris/AWS-DataScience/pull/288)): 4.2 done, Staging and Production associated by the RAM call the console makes (`SUP-349`); 4.1 written, its deny half measured on a candidate parked on `Policy Test`, **applied at 14:23 UTC** on the user's word, its allow half and the subscription deny read from both accounts (the battery 52 as expected, 0 unexpected, 5 not measured); 4.4 applied in `staging/studio/` and `production/studio/`, 16 added each and then the `Tooling` and `DataLake` configurations; 4.5's profiles `deployment-staging` and `deployment-production` applied; **4.6 done**: `deploy-staging` (`5ido8bej1zoeq8`) and `deploy-production` (`d7qcazihvr3s7k`) created, each with its `Tooling` environment and the database `app_etl`, whose environment carries a subscription target (xix); `AllowFullTableExternalDataAccess` `true` in both accounts from the provisioning until **4.7, the user's act of 2026-11-12** (01:50 UTC; `DT-13` passing, `EXC-23` closed, no vend in either trail while it stood); the project roles' grants, the deploy roles' policy and the CLI import's grants applied at 16:16 to 16:18 UTC, the five slices re-planning `No changes`; `awsds-deploy-staging` an owner of `deploy-staging` since the user's call of 2026-11-12, `awsds-deploy-prod`'s membership waiting for the role's first call; the role's reach in Production read the same day (`TM-30`) and the instruments reading the two projects (`US-11`, `US-12`, `DT-13`, `DT-14`, `CT-14`); **decision 21 taken the same day as (b)**, a fence in the targets' D13 boundary, written in `sagemaker-prereqs-v0.10.0` and **applied in both `studio/` slices at 18:25 UTC** on the user's word, the boundary at 15 statements in Production and 14 in Staging, `DT-14` passing and each role simulated under it; 4.3 written; the pipeline's change cut in two releases, T (the `test` stage retired on today's legs, written in the template the same day) and F (the CLI's legs, 4.9 to 4.11). **Release F written 2026-11-12 with nothing up** ([PR #291](https://github.com/felipenoris/AWS-DataScience/pull/291); §Release F as written): the template's three stages with the catalog and the warehouse workflow, the legs on `scripts/deploy-application.py`, the chain layer as `orchestration-v0.3.0` in `<env>/chains/`, and the grants around the deploy; every slice planned. **The grants that need nothing up applied the same day**, 03:40 to 03:42 UTC on the user's word: both `studio/` slices (2 added and 2 changed each), both `foundation/` slices (1 changed each) and `production/warehouse/` (1 added), the five re-planning `No changes`, `DT-13` and `DT-14` passing and each project role simulated as a worker and as a person. Both `chains/` slices are unapplied and nothing is in GitLab; the lint's rule is [`awsds-workflows` PR #25](https://github.com/felipenoris/awsds-workflows/pull/25), opened the same day on the user's word and merged by the user as `196acee`, the template's pin since; decisions 22 to 24 taken the same day, each as (a), the code standing as written. **Release T's `dev` project created by the user on 2026-11-14**: `app-etl-dev` (`ceweti7jbiu1hs`), from `experimentation`, its `Tooling` environment `ACTIVE`; the bundle role and Sandbox's `InfrastructureAccess` are its contributors since the same day; `sandbox/workflows/` applied the same day on the user's word, 1 added, 3 changed and 2 destroyed, the bundle role narrowed to reads and the workflows policy on the project's role. **Pass 2 read against the estate on 2026-11-14**, before its portal acts: a request by the data scientist is expected approved at creation, and the consumer, `test-experimentation` or a new project, is the user's choice. **Pass 2's portal half done the same day** by the user, the consumer `test-experimentation`: the Governance Manager a contributor of `eighth-experimentation`, the data product `trades-notional` created and published, and the owner's *Share* of it to the consumer, a request accepted at creation with no reviewer and fulfilled in 65 s; the query editor read the table through the link (vi and viii's first half answered, vii for a product of one item). Owed: 2.6's reading with nothing up (x: one run of `./aws/catalog.py` after the consumer's source runs at 02:51 UTC on 2026-11-15, while the subscription stands), the window, viii's Spark half, xi, decision 17's reads and the revoke. **6.1's product road written 2026-11-14, with nothing up**: `catalog.py`'s `CT-15` to `CT-19`, run that day with all checks passed; the Share, `house-price`'s missing form (`EXC-24`) and 0.5's inventory link read as notes, and Production's half, which has no listing before 4.12, held by `--self-check`. **The next sittings prepared 2026-11-14, with nothing up** (§The Sandbox sitting, in order): pass 2's window, the revoke, item 20's retirement with every object read that day, and 1.5 in `app-etl-dev` from a tar of release T's tree, needing neither GitLab nor release T's tag; release T's step 13 waits for that sitting's database, since the space's deploy writes `app_etl.trades_notional` and `eighth-experimentation` holds `app_etl` until item 20; item 22 answered by the CLI's code, item 33's attach, owed before a space in `app-etl-dev`, checked against the domain and the slice's output and applied at 20:05 UTC on the user's word, release T's gates previewed clean on `36bcf916`'s tree. **Written 2026-10-28, nothing run**: the plan, the review of the catalog across the plan and the estate, the user's three questions answered from measurements and dated pages, and every decision due with its recommendation. The readings of 2026-10-28 are read-only, as the infrastructure user; no apply, no AWS write, no portal act. Pass 0 runs with nothing up; passes 1 to 3 are Sandbox sittings; pass 4 runs as promotion sittings once passes 1 to 3 have run; pass 5 inside a Sandbox warehouse sitting after 4.12 |
+| **Status** | **Decision 6 taken 2026-10-31 by the user as (b), the AWS model** ([log](../../log/log-stage-19-smus-native-data-product.md)): *"Decido pelo modelo da AWS, com o uso previsto do SMUS e promoção entre ambientes via ferramenta SMUS CICD CLI"*. Staging and Production each gain a deployment project, the CI/CD CLI deploys every stage, and Production publishes its own product; D41 item 2 is reopened, 6f decision 4 reversed, `DenyDataZoneEntirely`'s revision trigger fired. Passes 3 and 4 rewritten the same day around [Stage 18](stage-18-staging-deployment-project.md)'s recipe, decisions 13 to 16 added, and **every decision taken the same day, one at a time**: 1 (a), 2 (a) with (d), 3 (a) gated by `PUBLISH_LISTING`, 4 (a), 5 as recommended with `eighth-experimentation` as Production's consumer, 9 (a), 11 rows by class for the governed accounts, 12 outside, 13 (b) with a subscription deny, 14 (a) with (d), 15 (a), 16 (b) against the recommendation; 7 and 8 moot by decision 6 (b); **10 taken 2026-11-09** as amended by it, on in `dev` and `test` (*"Keep it on"*). **1.1 written 2026-10-31** in `examples/app-etl/`: the Iceberg write, the publishing task, the two stage variables, the tests, the render's interim rows; 3.1 and 3.3 wait on the inputs the same reading found missing (the lint's rule, the deployment projects' values); nothing changed in AWS that day. **Pass 1 prepared 2026-11-08** ([PR #283](https://github.com/felipenoris/AWS-DataScience/pull/283)): the publishing task takes its identifiers from the deploy's `{domain.id}` and `{proj.id}`, the project role holds `datazone:StartDataSourceRun` from `sandbox/workflows/` (applied 21:50 UTC, `awsds-sandbox-workflows` `v4`, the day's one AWS write), and the sitting's order with this pass's values is the list before 1.2: the window holds the hub, Sandbox's `egress/` and a space running a package unattended, the portal's acts come before it, the readings after it and GitLab's mirror at its next sitting; decision 10's OpenLineage settings are in the template since the same day ([PR #284](https://github.com/felipenoris/AWS-DataScience/pull/284)). **Pass 1's sitting run 2026-11-10** (01:28 to 04:09 UTC): four runs, the first three failing in `publish` on what the catalog answered (`SUP-343`, `SUP-345`) and fixed between them, the fourth `SUCCESS`; the product table is Iceberg and registered with Lake Formation, its asset imported and listed, 1.3's metadata kept across the source's updates and carried to the listing, the job's lineage linked to the asset in the domain; verification ii's negative was admitted (`SUP-346`, `TM-29`), and decision 17, taken 2026-11-11 as (a) with (d), keeps the grant with `CT-13` as its check; the mirror waits for the next GitLab sitting. **Prepared after it, 2026-11-10, nothing up**: pass 2's sitting in order (its portal half needs no window), 3.1's code reading (the bundle exports the catalog of its own stage's project, whole), decision 18 read against SMUS's own path and taken 2026-11-11 as (d), a project for the application alone as `dev` (1.5), and pass 4 read against pass 1. On two readings of the same day (the CLI's import writes `dev`'s account into a target's asset, and Sandbox's one Glue catalog holds `app_etl` once), **decision 19 taken 2026-11-11 as (c)**: no `test` stage, every promotion crossing an account, Sandbox → Staging → Production, with Staging importing the catalog unlisted; decision 20 taken the same day as (b): Production alone lists a chain application's product. **The estate reviewed against decisions 17 to 20 on 2026-11-11, and pass 4 opened with nothing up** (§The estate against decisions 17 to 20; [PR #288](https://github.com/felipenoris/AWS-DataScience/pull/288)): 4.2 done, Staging and Production associated by the RAM call the console makes (`SUP-349`); 4.1 written, its deny half measured on a candidate parked on `Policy Test`, **applied at 14:23 UTC** on the user's word, its allow half and the subscription deny read from both accounts (the battery 52 as expected, 0 unexpected, 5 not measured); 4.4 applied in `staging/studio/` and `production/studio/`, 16 added each and then the `Tooling` and `DataLake` configurations; 4.5's profiles `deployment-staging` and `deployment-production` applied; **4.6 done**: `deploy-staging` (`5ido8bej1zoeq8`) and `deploy-production` (`d7qcazihvr3s7k`) created, each with its `Tooling` environment and the database `app_etl`, whose environment carries a subscription target (xix); `AllowFullTableExternalDataAccess` `true` in both accounts from the provisioning until **4.7, the user's act of 2026-11-12** (01:50 UTC; `DT-13` passing, `EXC-23` closed, no vend in either trail while it stood); the project roles' grants, the deploy roles' policy and the CLI import's grants applied at 16:16 to 16:18 UTC, the five slices re-planning `No changes`; `awsds-deploy-staging` an owner of `deploy-staging` since the user's call of 2026-11-12, `awsds-deploy-prod`'s membership waiting for the role's first call; the role's reach in Production read the same day (`TM-30`) and the instruments reading the two projects (`US-11`, `US-12`, `DT-13`, `DT-14`, `CT-14`); **decision 21 taken the same day as (b)**, a fence in the targets' D13 boundary, written in `sagemaker-prereqs-v0.10.0` and **applied in both `studio/` slices at 18:25 UTC** on the user's word, the boundary at 15 statements in Production and 14 in Staging, `DT-14` passing and each role simulated under it; 4.3 written; the pipeline's change cut in two releases, T (the `test` stage retired on today's legs, written in the template the same day) and F (the CLI's legs, 4.9 to 4.11). **Release F written 2026-11-12 with nothing up** ([PR #291](https://github.com/felipenoris/AWS-DataScience/pull/291); §Release F as written): the template's three stages with the catalog and the warehouse workflow, the legs on `scripts/deploy-application.py`, the chain layer as `orchestration-v0.3.0` in `<env>/chains/`, and the grants around the deploy; every slice planned. **The grants that need nothing up applied the same day**, 03:40 to 03:42 UTC on the user's word: both `studio/` slices (2 added and 2 changed each), both `foundation/` slices (1 changed each) and `production/warehouse/` (1 added), the five re-planning `No changes`, `DT-13` and `DT-14` passing and each project role simulated as a worker and as a person. Both `chains/` slices are unapplied and nothing is in GitLab; the lint's rule is [`awsds-workflows` PR #25](https://github.com/felipenoris/awsds-workflows/pull/25), opened the same day on the user's word and merged by the user as `196acee`, the template's pin since; decisions 22 to 24 taken the same day, each as (a), the code standing as written. **Release T's `dev` project created by the user on 2026-11-14**: `app-etl-dev` (`ceweti7jbiu1hs`), from `experimentation`, its `Tooling` environment `ACTIVE`; the bundle role and Sandbox's `InfrastructureAccess` are its contributors since the same day; `sandbox/workflows/` applied the same day on the user's word, 1 added, 3 changed and 2 destroyed, the bundle role narrowed to reads and the workflows policy on the project's role. **Pass 2 read against the estate on 2026-11-14**, before its portal acts: a request by the data scientist is expected approved at creation, and the consumer, `test-experimentation` or a new project, is the user's choice. **Pass 2's portal half done the same day** by the user, the consumer `test-experimentation`: the Governance Manager a contributor of `eighth-experimentation`, the data product `trades-notional` created and published, and the owner's *Share* of it to the consumer, a request accepted at creation with no reviewer and fulfilled in 65 s; the query editor read the table through the link (vi and viii's first half answered, vii for a product of one item). **6.1's product road written 2026-11-14, with nothing up**: `catalog.py`'s `CT-15` to `CT-19`, run that day with all checks passed; the Share, `house-price`'s missing form (`EXC-24`) and 0.5's inventory link read as notes, and Production's half, which has no listing before 4.12, held by `--self-check`. **The next sittings prepared 2026-11-14, with nothing up** (§The Sandbox sitting, in order): pass 2's window, the revoke, item 20's retirement with every object read that day, and 1.5 in `app-etl-dev` from a tar of release T's tree, needing neither GitLab nor release T's tag; release T's step 13 ordered after that sitting's database, since the space's deploy writes `app_etl.trades_notional` and `eighth-experimentation` held `app_etl` until item 20; item 22 answered by the CLI's code, item 33's attach, owed before a space in `app-etl-dev`, checked against the domain and the slice's output and applied at 20:05 UTC on the user's word, release T's gates previewed clean on `36bcf916`'s tree. **The sitting's step 18 done 2026-11-14 ahead of it**, on the user's word: `eighth-experimentation`'s two workflows, its Glue job and the 30 objects under its `shared/app-etl/` deleted from 20:50 to 20:51 UTC and read gone after, the product table and the subscription's grant untouched. **`EXC-24` closed the same day** by the owner's act: `house-price` classified `public` and republished, `CT-18` passing with no note. **The Sandbox sitting run 2026-11-14**, from 21:57 UTC to 00:16 UTC on 2026-11-15, its steps 1 and 4 to 14 and 16: 2.6 read on a member's run of the consumer's source, the link imported as an unlisted asset (x); the Spark read through `project.spark.fineGrained`, a Glue 5.0 interactive session, `n` 10 (viii); decision 17's reads answered to the consumer's role (`TM-29`); xi split, `HeadObject` refused and the producer's table folder listed through AWS's managed policy (`SUP-367`, `TM-31`); the revoke at 23:00:00, its grant and link removed 52 and 62 s after, the open session reading until the link's delete (ix, `SUP-365`); item 20 retired, the source's delete refused while its asset stood (`SUP-366`) and the drop removing the table's files; `app-etl-dev`'s database, the deploy and the run `huQUoGZvttPwAMs` (`SUCCESS`, 893 s), the table created by the job's session under the conditioned `CREATE_TABLE`, 23 lineage events through the endpoint; every slice down, 0.0000 USD/h at 00:16 UTC. **Owed after it**: the Glue session's line in Sandbox's bill for 2026-11-14, which says whether it billed its `DPUSeconds` (`SUP-368`). **Read 2026-11-15, with nothing up**: the consumer source's scheduled run at 02:51 UTC, the first after the revoke, `SUCCESS` with nothing added, updated or failed and no activity, the asset left in the inventory at its first revision (x, `SUP-197`); step 17 rehearsed before step 15, `bundle` from the laptop answering exit 0 with an empty export and the guard failing on the asset alone, its 28 calls in Sandbox's trail all reads, `ListDomains` among them (`SUP-162`). **Steps 15 and 17 done 2026-11-15**, with nothing up: the user's portal acts in `app-etl-dev` from 03:11 to 03:15 UTC, the source's run importing `trades_notional`, its metadata carrying `eighth-experimentation`'s form (item 22, decision 4's first branch) and the data product `trades-notional` left unpublished; then the bundle exporting the asset and the data product with no form type (xii's bundle half), and `product.json` requiring the data product, the guard passing. **`TM-29`'s fired trigger read and `TM-31` decided 2026-11-15 by the user**, on SMUS's intended use (*"Sim, revisadas"*): decision 17 revised, the start grant out of `sandbox/workflows/` and `staging/studio/` and kept in `production/studio/` alone, the non-member's reads accepted as the platform's; `TM-31` accepted. Both slices applied the same day on the user's word (*"Autorizo os 2 applies"*), 04:31:44 to 04:32:17 UTC: Sandbox's policy changed in place and Staging's replaced with its attachment, its description changing; each re-planned `No changes`, and so did `production/studio/`. **Written 2026-10-28, nothing run**: the plan, the review of the catalog across the plan and the estate, the user's three questions answered from measurements and dated pages, and every decision due with its recommendation. The readings of 2026-10-28 are read-only, as the infrastructure user; no apply, no AWS write, no portal act. Pass 0 runs with nothing up; passes 1 to 3 are Sandbox sittings; pass 4 runs as promotion sittings once passes 1 to 3 have run; pass 5 inside a Sandbox warehouse sitting after 4.12 |
 | **Prerequisites** | [6f](stage-06f-data-governance.md) step 11, the catalog road live since 2026-10-26: `governed-lake`, its source over `curated`, one subscription fulfilled and read, decisions 1 to 5 taken (2026-10-27). `eighth-experimentation`'s `DataLake` environment (6f 11.7, `blerpkhn9nj7o0`, its database `glue_db_blerpkhn9nj7o0`) and `test-experimentation`'s (6f 2.0): a Glue table's subscription target is a `DataLake` environment's. The application template at `v0.4.6` with `scripts/dev-cli.sh` on the next tag ([Stage 8](stage-08-cicd-pipelines.md) decision 22, the waiting list), the loop from a space run on 2026-10-26 ([Stage 10](stage-10-orchestration-promotion.md) 2.1), `vpc-egress-v0.19.0`'s `mwaa` group and the `datazone` endpoint Sandbox's `egress/` carries in its `extra_services`. The Sandbox warehouse and the project's connection ([5b](stage-05b-redshift-serverless.md), [6h](stage-06h-redshift-connection.md), `EXC-17`) for pass 5. **For pass 4**: [Stage 18](stage-18-staging-deployment-project.md)'s passes 1 to 4 and 7, the recipe for a deployment project in a `Workloads` account, measured 2026-10-17 to 10-22 and unwound; the four deploy roles and the deploy runner ([Stage 8](stage-08-cicd-pipelines.md) pass 1); `staging/egress/` and `production/egress/`, each gaining a `datazone` endpoint; `data-governance/governance/` free of 6d decision 16's apply at the moment of 4.5's (Stage 18 2.7's rule: two stages never share one apply). Nothing blocks pass 0 or pass 1 |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D19](../decisions/D19-derived-zone.md), [D20](../decisions/D20-staging-account.md), [D22](../decisions/D22-data-governance-account.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D40](../decisions/D40-redshift-warehouse.md), [D41](../decisions/D41-sagemaker-application.md); [Stage 18](stage-18-staging-deployment-project.md)'s measurements since decision 6 (b); [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md) and [D35](../decisions/D35-sandbox-cardinality.md) reviewed, none consumed |
 | **Proves** | [INT-26](../integrations.md) (new): a table a workflow creates in a Sandbox project's own database becomes a published asset and a data product, another project reads it through a subscription DataZone fulfils inside one account, and the product reaches the warehouse by the path the tool intends. Since decision 6 (b): the same application promoted by the CLI into a deployment project in Staging and in Production, Production's project publishing the product and a Sandbox project subscribing across accounts, [INT-12](../integrations.md)'s association and [INT-23](../integrations.md)'s cross-account fulfilment as standing states on the `Workloads` accounts |
@@ -317,8 +317,8 @@ change is written, whose hand it is and what it waits on. The Stages 8-10 sessio
 "What concerns the other sessions" is no longer running, so this review also carries those stages'
 side: the dated amendments in the Stage 8 and Stage 10 files are this sitting's.
 
-The decisions, in one line each: **17 (a)** keeps the publishing task's `StartDataSourceRun`, in every
-project role that runs the task, with `CT-13` as its check; **18 (d)** makes a Sandbox project for
+The decisions, in one line each: **17** keeps the publishing task's `StartDataSourceRun` on Production's deployment
+project role alone, the one stage that lists, with `CT-13` as its check; **18 (d)** makes a Sandbox project for
 app-etl alone the manifest's `dev` stage, whose catalog the bundle carries; **19 (c)** retires the
 `test` stage, so every promotion crosses an account; **20 (b)** lists the product in Production alone.
 
@@ -383,7 +383,7 @@ were not refused.
 | 19 | The application removed from `test-experimentation`: its two workflows, the Glue job `app-etl-<project id>`, the `shared/app-etl/` prefix | 19 (c) | the MWAA Serverless, Glue and S3 APIs | **[Claude⚡]** on the user's word | release T's first pipeline | not started |
 | 20 | `eighth-experimentation`'s product retired, in the rollback's order, so the name `app_etl` is free | 2 (d), 19 (c) | the portal and the query editor | **[user]** | pass 2's window, the revoke with it; verification v's look is read (2026-11-14) | not started (1.5). **Read 2026-11-14**, with nothing up: the data product `trades-notional` (`bvs7m8z4h6w70w`); the asset `trades_notional` (`4j6p77v7dm2840`) and its listing `ct5d0innrgw3v4`; the source `budryu9mt9y5u8` over `app_etl`, daily at 23:41 UTC, hanging from the `Tooling` environment's `project.default_lakehouse` connection with no environment of its own; the table, the project role its creator with `ALL`; the database, where the project's conditioned principals hold `DROP`; the environment `chz5jdb80ohocw`, whose stack keeps the database by `Retain` (`SUP-184`). The source names `app_etl` by name, so left standing it would scan the database `app-etl-dev` creates under that name (inferred). The order is §The Sandbox sitting's steps 7 to 11 |
 | 21 | GitLab's CI/CD variables: the four `TEST_PROJECT_*` removed; `SUBNET_AZ1`, `SUBNET_AZ2`, `DEV_PROJECT_SG`, `DEV_PROJECT_KEY_ARN` and `TRAINING_IMAGE_URI` no longer read by any job | 19 (c) | `awsds/app-etl`'s settings | **[user]** | release T's merge request | not started |
-| 22 | The form type `classification`'s owner | 4, 18 (d) | `governance/`'s `form_type_owners` | reading first | 1.5 | **read 2026-11-14 in the CLI 1.0.9's code**, no call: the export carries the form types the `dev` project owns (`helpers/catalog_export.py` keeps an item whose `owningProjectId` is the project), and the import resolves an asset's form by its name in the target domain (`helpers/catalog_import.py`, `get_form_type`). `classification` is `eighth-experimentation`'s (`get-form-type`: revision 2, `ENABLED`), so it travels on `trades_notional`'s forms from `app-etl-dev` and never in `formTypes`; `form_type_owners` stays as it is, and `product.json`'s `allowed` entry matches nothing |
+| 22 | The form type `classification`'s owner | 4, 18 (d) | `governance/`'s `form_type_owners` | reading first | 1.5 | **read 2026-11-14 in the CLI 1.0.9's code**, no call: the export carries the form types the `dev` project owns (`helpers/catalog_export.py` keeps an item whose `owningProjectId` is the project), and the import resolves an asset's form by its name in the target domain (`helpers/catalog_import.py`, `get_form_type`). `classification` is `eighth-experimentation`'s (`get-form-type`: revision 2, `ENABLED`), so it travels on `trades_notional`'s forms from `app-etl-dev` and never in `formTypes`; `form_type_owners` stays as it is, and `product.json`'s `allowed` entry matches nothing. **Measured 2026-11-15**: the portal attached `eighth-experimentation`'s form to `app-etl-dev`'s asset (step 15), and step 17's export carries it among the asset's forms by name and revision with `formTypes` empty: decision 4's first branch, one owner serving every stage |
 | 23 | The lint's rule `manifest` admits `content.catalog` | 18 (d) | `awsds-workflows`, then the template's pin | [Claude], **[user]** merges | release F | **written 2026-11-12 as a patch** over `d856982c`: `content.catalog` passes with `skipPublish` true and no `assets.access`; its 6 new tests pass, and the suite's 7 failures are the pinned commit's own. The patch is `$HOME/tmp/stage19-awsds-workflows-catalog-rule.patch`, beside the saved plans. **Opened 2026-11-12** on the user's word as [`awsds-workflows` PR #25](https://github.com/felipenoris/awsds-workflows/pull/25), with that repository's guide, lab notes and memory: the new cases fail at `d856982` and pass on the branch, its three test jobs pass, and its lint answers the template `ok: 9 arquivo(s)`. **Merged by the user 2026-11-12**, 13:04 UTC, as `196acee`, the branch's tree; the template's `AWSDS_WORKFLOWS` names it since the same day, and the lint taken from the pin answers `ok: 9 arquivo(s)` where `d856982c`'s refuses the catalog item |
 | 24 | The instruments: `studio.py` reads the targets associated, their two configurations and the deployment profiles; the battery's rows; `catalog.py`'s product road | 6 (b), 11, 13 | `aws/` | [Claude] | nothing: `catalog.py`'s product road written 2026-11-14 | `studio.py` (`US-8`, `US-11`, `US-12`), `deploytargets.py` (`DT-13`, `DT-14`), `catalog.py` (`CT-13`'s trails, `CT-14`) and the battery written; `DT-14`'s row on the services each target's fence denies written 2026-11-12, after act 1's applies, and passing in both; the product road's checks written 2026-11-14 (`CT-15` to `CT-19`, 6.1) and run with all checks passed |
 | 25 | The fence in each target's D13 boundary: the account's buckets, customer managed keys, secrets and repositories, every `sts:AssumeRole`, and the services a target has no use for | 21 (b) | `terraform-modules/sagemaker-prereqs/` `v0.10.0`; `<env>/studio/main.tf` and `fence.tf` | **[Claude⚡]** on the user's word | nothing | **applied** 18:25 UTC, 1 changed each, the boundary at `v2`; `DT-14` passes in both, each role simulated under the attached boundary |
@@ -452,7 +452,7 @@ user's word naming it and re-planned first if `main` moved.
 |---|---|---|
 | The manifest's stages `dev`, `staging` and `prod`; `content.catalog` with `skipPublish`; `app-etl-warehouse` in `content.workflows` | `examples/app-etl/manifest.yaml` | the CLI 1.0.9's `describe` lists the three targets and their bootstrap actions; the lint from the pin `196acee` passes (item 23), and refused the catalog item at `d856982c` |
 | The warehouse workflow in the project: the task creates its Glue job, which reads the product table | `workflows/app-etl-warehouse.yaml`, `glue/load_warehouse.py` | the template's tests |
-| The catalog's guard | `scripts/check-catalog-export.py`, `product.json` (the asset `trades_notional` required, the form type `classification` allowed) | its tests: an export with more, with less or absent fails |
+| The catalog's guard | `scripts/check-catalog-export.py`, `product.json` (the asset `trades_notional` and, since 2026-11-15, the data product `trades-notional` required, the form type `classification` allowed) | its tests: an export with more, with less or absent fails |
 | The legs | `.gitlab-ci.yml`: `staging-check`, `staging-deploy`, `staging-test`, `staging-model`, `production-check`, `production-deploy`, the model chain's jobs with `--project` | `scripts/check-gitlab-ci.py` |
 | The leg's deploy | `scripts/deploy-application.py`, `scripts/tfhygiene/projects.py` | `--self-check` (in `make check`); `--check` as `InfrastructureAccess`: `deploy-staging` and `deploy-production` answer their subnets, security group, key and shared prefix, the caller a member of each |
 | The chain layer | `terraform-modules/orchestration` at `orchestration-v0.3.0`, `<env>/chains/` | `stage19-chains-production.tfplan`, 24 to add; `stage19-chains-staging.tfplan`, 18 to add; the three definitions `OK` at 02:45 UTC |
@@ -556,7 +556,8 @@ the `mwaa` group 0.19 and each space 0.050, plus the run (pass 1's took 816 to 9
 
 1. **[Claude] 2.6's reading** (x): `./aws/catalog.py` once the consumer's source over
    `glue_db_4zojr4rr6bmnww` has run at 02:51 UTC on 2026-11-15, its first run after the link. Step 5's
-   revoke removes the link `CT-19` reads.
+   revoke removes the link `CT-19` reads. **Done 2026-11-14** on a run the data scientist started from
+   the portal at 22:01 UTC, the user's choice (2.6).
 2. **[Claude⚡] Item 33**, on the user's word: [`dev-env.md`](../runbooks/dev-env.md) §C6's two commands and
    its diff on `d-spi9kgo6x5b4`, as `awsds-infra-sandbox-1`, from a checkout where `sandbox/dev-env/` is
    initialised (`./scripts/gen-backend-hcl.py sandbox dev-env`, `./scripts/gen-tfvars.py sandbox dev-env`,
@@ -589,13 +590,17 @@ the `mwaa` group 0.19 and each space 0.050, plus the run (pass 1's took 816 to 9
    ```
 
    **[Claude]** the other sessions told before the first raise, then `make status`. Until step 8 the
-   window keeps clear of 23:41 UTC, the daily run of the source that step deletes.
+   window keeps clear of 23:41 UTC, the daily run of the source that step deletes. **Done 2026-11-14**: both
+   raises by 22:31 UTC, `make status` reading 0.2006 USD/h at 22:34.
 5. **Pass 2's window**: §2's steps 4 and 5 as written, the space in `test-experimentation`, its Spark read
    (viii), decision 17's reads and xi's negative from its terminal, then **[user]** the revoke in
    `eighth-experimentation` and the open session's read again (ix). Their values, read again on
    2026-11-14: the table's metadata is `00003-a0aed729-…`; the source `budryu9mt9y5u8` and its run
    `6bnfg5dk961bps` (`SUCCESS`, `updated: 1`) answer; the subscription `d21t6zwyzrcas0` reads `APPROVED`
-   and its grant `cm2l6qv25dsy6o` `COMPLETED`. The space is stopped after.
+   and its grant `cm2l6qv25dsy6o` `COMPLETED`. The space is stopped after. **Done 2026-11-14** from 22:34 to
+   23:12 UTC: viii `n` 10 through a Glue interactive session, decision 17's reads answered, xi split
+   (`SUP-367`), the revoke at 23:00:00 and ix read; the Glue session stopped with the kernel at 23:07:37 and
+   the space deleted.
 6. **[Claude] ix's pieces**, from the laptop:
 
    ```bash
@@ -611,6 +616,10 @@ the `mwaa` group 0.19 and each space 0.050, plus the run (pass 1's took 816 to 9
    ```bash
    for e in BatchRevokePermissions DeleteTable; do aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=$e --start-time <the revoke's minute> --profile awsds-infra-sandbox-1 --region us-west-2 --query 'Events[].CloudTrailEvent' --output json | jq -r '.[] | fromjson | [.eventTime, .eventName, .userIdentity.arn, (.errorCode // "-")] | @tsv'; done
    ```
+
+   **Done 2026-11-14** at 23:03 UTC, and in the trails at 23:19: the subscription `REVOKED`, the grant and
+   the link not found, the conditioned `SELECT` gone; `BatchRevokePermissions` at 23:00:52 and the link's
+   `DeleteTable` at 23:01:02 (`SUP-365`).
 
 **Item 20, in the rollback's order**, each step by the owner in the portal, as the data scientist, unless
 it names another hand:
@@ -628,8 +637,13 @@ it names another hand:
    aws datazone delete-data-source --domain-identifier dzd-d8yrvx1ko7im6o --identifier budryu9mt9y5u8 --profile awsds-infra-sandbox-1 --region us-west-2
    ```
 
+   **Read 2026-11-14**: DataZone refused the source's delete with an empty `ValidationException` while its
+   asset stood and accepted it 13 s after the asset's delete (`SUP-366`), so step 9 comes first and the source
+   right after it, both before the source's next run.
+
 9. **[user] The asset** `trades_notional` (`4j6p77v7dm2840`): its listing `ct5d0innrgw3v4` unpublished, then
-   the asset deleted.
+   the asset deleted. Steps 7 to 9 **done 2026-11-14** from 23:09:55 to 23:11:51 UTC by the user in the
+   portal, the asset before the source (step 8's reading).
 10. **[user] The table, then the database**, in `eighth-experimentation`'s query editor on *Athena (SQL)*,
     as the project role, the table's creator (`ALL`), whose project's conditioned grant holds `DROP` on the
     database:
@@ -666,12 +680,19 @@ it names another hand:
     Expected: `EntityNotFoundException`; `house-price` and `trades` left, `my-data-product` alone; Sandbox's
     trail holding the `DeleteTable` and `DeleteDatabase` with their sessions.
 
+    **Done 2026-11-14**: the drops at 23:17:26 and 23:17:36 UTC by `eighth-experimentation`'s project role in
+    the user's session; step 11's `delete-environment` run by the user as Sandbox's `InfrastructureAccess` at
+    23:18:00, its stack `DELETE_COMPLETE` at 23:18:11; read at 23:18:38 as expected, the table's folder
+    holding no current object, its 16 versions noncurrent behind delete markers.
+
 **1.5 in `app-etl-dev`**:
 
 12. **[user] The database**: in `app-etl-dev`, *Data → Create database*, the name `app_etl`. **[Claude]
     reads** the new environment, the database (its description and its location, expected
     `…/ceweti7jbiu1hs/dev/data/catalogs/`), Lake Formation's grants on it under the project's context, and
-    its daily source at the minute of its creation, as `SUP-184` read the portal's databases.
+    its daily source at the minute of its creation, as `SUP-184` read the portal's databases. **Done
+    2026-11-14** at 23:24 UTC: the environment `b9304qgv01an0w`, the database at the expected location, the
+    project's conditioned grants, and the source `5xkhlb1ubnrf9s` on `cron(24 23 * * ? *)`.
 13. **[user] The space and the deploy**: a JupyterLab space in `app-etl-dev` on `awsds-sandbox-dev-env`
     version 11 (alias `0.10.0`), `ml.t3.medium`; the tar dropped on its file browser; in its terminal `tar
     -x -f app-etl.tar && cd app-etl`, then [`sagemaker-application.md`](../runbooks/sagemaker-application.md)
@@ -679,18 +700,31 @@ it names another hand:
     `production/app/app-etl/release.tf` records, `v0.4.6`'s (release T's, once its tag has run), typed in
     the space and never written down; `TRAINING_IMAGE_URI` a placeholder, no training run. A deploy that
     prints *"No custom VPC config"* stops the step (§D step 6); `app-etl`'s run is followed to its end, and
-    its task `publish` returns at once, `PUBLISH_LISTING` being false in `dev`.
+    its task `publish` returns at once, `PUBLISH_LISTING` being false in `dev`. **Done 2026-11-14**: the deploy
+    from 23:41 to 23:42 UTC, both workflows in the project's network with its key; the run `huQUoGZvttPwAMs`
+    `SUCCESS` at 00:03:47 UTC on 2026-11-15, 893 s, `publish` 6 s.
 14. **[Claude] reads** the run (`sagemaker-application.md` §V), the job's `CreateTable` on
     `app_etl.trades_notional` in Sandbox's trail with its session and the grant that admitted it, the
     table's format and location (verification i on the project's objects), its lineage events (v's domain
-    half), and `CT-13`, where the task starts no source.
+    half), and `CT-13`, where the task starts no source. **Read 2026-11-15**, the asset's half waiting for step
+    15: the table Iceberg at the project's `dev/data/catalogs/` (i), its `CreateTable` by
+    `GlueJobRunnerSession` under the conditioned `CREATE_TABLE`, 23 `PostLineageEvent` through the endpoint
+    (v's domain half), `CT-13` with no start by the task.
 15. **[user] The asset and the data product**: the source's run from the portal; 1.3's metadata on the
     asset (a description, `classification` `internal`, the README); the data product `trades-notional`
     with the asset as its item, left unpublished (decision 20 (b)). **[Claude] reads** the run's
-    statistics, the asset's forms (iv), and nothing listed (`CT-15`).
+    statistics, the asset's forms (iv), and nothing listed (`CT-15`). The source's schedule,
+    `cron(24 23 * * ? *)`, runs it first at 23:24 UTC on 2026-11-15, its `publishOnImport` false (`CT-4` at
+    00:19 UTC that day, no run yet), so after that minute the asset is in the inventory with no portal run.
+    **Done 2026-11-15** by the user from 03:11 to 03:15 UTC, before that minute: the run `577dc5ia9du07k`
+    (`PRIORITIZED`, `SUCCESS`, `added` 1) imported `trades_notional` as `c6z3pbg3drrs0g`; its revisions 2 to
+    4, the data scientist's, carry the description, the README and `classification` `internal`, with no
+    listing (iv); the data product `trades-notional` (`5070mjwdvjwp3k`, `CREATED`), the asset its one item,
+    unpublished. `CT-15` read no listing of `app-etl-dev`, and the three domains no app and no space.
 16. **[user] The downs**: every space stopped, every portal tab closed, then `make down ENV=sandbox` and
     `make hub-down`. **[Claude]** `make status` and the readings that end a sitting
-    ([`runbooks/promotion.md`](../runbooks/promotion.md) §R).
+    ([`runbooks/promotion.md`](../runbooks/promotion.md) §R). **Done 2026-11-15** at 00:16 UTC: 0.0000 USD/h, no
+    interface endpoint and no NAT gateway, no app in the three domains.
 
 **After it, with nothing up**:
 
@@ -699,7 +733,38 @@ it names another hand:
     project, with placeholders for the stages it does not target (§D step 3), then
     `scripts/check-catalog-export.py` on the archive. Expected: `assets` `trades_notional`
     and `dataProducts` `trades-notional`, no form type (item 22). The guard fails on the data product until
-    `product.json` names it, and naming it is the change.
+    `product.json` names it, and naming it is the change. The CLI is the laptop's `uv tool`, 1.0.9, the
+    pipeline's version. `bundle` leaves the manifest's domain id unused: its configuration carries the
+    region alone, so it tries CloudFormation's `cicd-test-domain-stack`, then calls `ListDomains` and takes
+    the one domain the caller lists, failing on two (`SUP-162`'s call). It reads the catalog by `search`,
+    `search_types`, `get_asset` and `get_data_product` and writes the archive locally, nothing in AWS (its
+    `commands/bundle.py`, `helpers/utils.py` and `helpers/catalog_export.py`, read 2026-11-15). The code zips and `artifacts/` are
+    the template's gitignored paths. From the template's folder, the zips `build-task-code` builds:
+
+    ```bash
+    for w in app-etl app-etl-train; do python3 -m zipfile -c "code/$w.zip" code/app_etl_tasks.py; done
+    ```
+
+    ```bash
+    export AWS_PROFILE=awsds-infra-sandbox-1 NO_PROXY='*' DOMAIN_ID=dzd-d8yrvx1ko7im6o DOMAIN_REGION=us-west-2 DEV_PROJECT_NAME=app-etl-dev
+    for name in $(grep -o '\${[A-Za-z0-9_]*' manifest.yaml | tr -d '${' | sort -u); do eval "value=\${$name:-}"; [ -n "$value" ] || export "$name=unused-by-bundle"; done
+    aws-smus-cicd-cli bundle --manifest manifest.yaml --targets dev
+    ```
+
+    ```bash
+    python3 scripts/check-catalog-export.py artifacts/app-etl.zip product.json
+    ```
+
+    **Rehearsed 2026-11-15** at 02:42 UTC, before step 15: exit 0 in 25 s, 12 files, the export empty
+    (*"No catalog resources found for project ceweti7jbiu1hs"*) and the guard failing on `assets` alone.
+    Sandbox's trail holds 28 calls by the session, every one a read: `DescribeStacks` refused, then
+    `ListDomains`, the project's reads, `Search` and `SearchTypes`; `GetGroupProfile` refused twice by the
+    domain's resource policy, as in every run from a member account.
+    **Done 2026-11-15** at 03:19 UTC, after step 15: exit 0, 25,910 bytes; the export as expected, the asset
+    and the data product, no form type (xii's bundle half); the guard *"FAIL  dataProducts: trades-notional
+    is in the export and not in product.json"*, then *"OK"* once `product.json` required it. The template's
+    test sample carries the data product, and a release without it fails: 85 passed and 1 skipped, ruff
+    clean.
 18. **[Claude⚡] The application in `eighth-experimentation`**, on the user's word, item 19's form for the
     project that was `dev` until decision 18 (d): the workflows `app_etl_eighth_experimentation_app_etl`
     and `app_etl_eighth_experimentation_app_etl_train`, the Glue job `app-etl-avhvbqn37ty7m8` and the 30
@@ -722,6 +787,12 @@ it names another hand:
     ```bash
     aws s3 rm s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/app-etl/ --recursive --profile awsds-infra-sandbox-1 --region us-west-2
     ```
+
+    **Done 2026-11-14**, ahead of the sitting, on the user's word (*"Autorizo os deletes"*): both workflows
+    deleted at 20:50:40 and 20:50:41 UTC, the job at 20:50:51 and the 30 objects from 20:51:03 to 20:51:05,
+    each read first and read gone after. The bucket's versioning keeps the objects as noncurrent versions
+    for its lifecycle's 90 days; the two log groups stay; the product table and the subscription's grant
+    were read untouched.
 
 ## To execute
 
@@ -784,7 +855,7 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
   30). `sandbox/workflows/`'s policy gains `StartADataSourceRunInTheProjectsDomain`, the one action on
   the domain's ARN, planned `1 to change` and applied 2026-11-08 21:50 UTC (the policy at `v4`, both
   project roles attached, the plan after it `No changes`); 4.4's `workflows.tf` carries the same statement
-  for each target's project role. The render's table gains `{domain.id}` and `{proj.id}`, `none` for a target.
+  for each target's project role, Production's alone since decision 17's revision (2026-11-15). The render's table gains `{domain.id}` and `{proj.id}`, `none` for a target.
   The tests: 61 passed.
   **Decision 10's settings, written 2026-11-08 before the sitting**: the Glue task's `--conf` carries
   Stage 18 7.1's OpenLineage listener after the Iceberg catalog (`transport.type` `amazon_datazone_api`
@@ -922,6 +993,8 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
   first reading leaves the form type to it, each applied on the user's word; `DEV_PROJECT_NAME` changes
   in the space and in the pipeline. Then 1.2's run, 1.3's metadata and 2.1's data product happen there.
   **[Claude] reads** i to v on its objects and `CT-13` over its source.
+  **Run 2026-11-14 to the run** by the Sandbox sitting (its steps 12 to 14): the database, the deploy and
+  `huQUoGZvttPwAMs`; 1.2's source run, 1.3's metadata and 2.1's data product are its step 15's.
   **Amended 2026-11-11 by decision 20 (b)**: the manifest's `dev` stage carries `PUBLISH_LISTING`
   false, so the source runs from the portal after the run, the data product is created and left
   unpublished, and the readings are i, iv and v.
@@ -936,7 +1009,8 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
   **Written in order 2026-11-14**, with nothing up: §The Sandbox sitting's steps 12 to 17. The space
   receives release T's tree as a tar, as pass 1's did, so this step needs neither GitLab nor release T's
   tag. `product.json` gains `dataProducts` after it: the guard fails a name the export carries and the
-  file does not declare, and the data product of this step is one.
+  file does not declare, and the data product of this step is one. **Done 2026-11-15**, the sitting's
+  step 17.
 
 ### 2. The data product and the subscription
 
@@ -1030,15 +1104,22 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
   Spark session on the `project.spark.fineGrained` connection. **[Claude] reads** `GetDataAccess` and
   the bytes scanned (viii), and attempts, as the consumer's role from the space, a `GetObject` on the
   table's folder, D13's negative (xi).
-  **The query editor's half done 2026-11-14**; the space's Spark read and xi are the window's.
+  **The query editor's half done 2026-11-14**; the space's Spark read and xi are the window's. **Both read
+  2026-11-14** in the window (viii, xi).
 - **2.5 [user] Revoke the subscription** in the owner project. **[Claude] reads** every piece gone, and
-  whether a session opened before the revoke still reads (ix).
+  whether a session opened before the revoke still reads (ix). **Read 2026-11-14** (ix): every piece gone 62 s
+  after the revoke; the open session read until the link's delete and resolved no table after it (`SUP-365`).
 - **2.6 [Claude] The consumer's inventory the morning after**: whether its daily source imported the
   resource link (0.5's shape, x).
   **The instrument since 2026-11-14**: `catalog.py` `CT-19` reads every project's inventory and
   Glue's `TargetTable`, so this reading is one run of the script after the consumer's source over
   `glue_db_4zojr4rr6bmnww` runs, daily at 02:51 UTC. `test-experimentation`'s inventory held no
   asset at 05:26 UTC on 2026-11-14, the link having been created after that day's run.
+  **Read 2026-11-14 (x)**, on a run the data scientist started from the portal, `6gti1ji6rmgiog` at
+  22:01 UTC, type `PRIORITIZED`: `added` 1, the link imported as the unlisted asset `b5r73n41qe7jf4`,
+  0.5's shape; `catalog.py` at 22:09 UTC passed every check, `CT-19` noting the link and `CT-13`
+  reading the start `other`. The scheduled run at 02:51 UTC on 2026-11-15 follows the revoke, and
+  reads what the source does with an asset whose link is gone.
 
 ### 3. The bundle and the manifest's stages
 
@@ -1087,7 +1168,9 @@ ONLY=egress GROUPS=mwaa`, the deploy from a space through `scripts/dev-cli.sh`
   `bundle` runs `scripts/check-catalog-export.py` over the archive against `product.json`, which
   declares the asset `trades_notional` as required, once, and the form type `classification` as
   allowed, the type's owner being unread (item 22). A data product or a glossary term the scientist
-  adds at 1.5 joins the file in the same merge request. The lint's rule is item 23's patch.
+  adds at 1.5 joins the file in the same merge request. The lint's rule is item 23's patch. Since
+  2026-11-15 (the sitting's step 17) the file requires the data product `trades-notional` beside the
+  asset, and the form type's entry matches nothing the export carries (item 22).
 - **3.2 [user] Create the product's database in `test`** (the same name), then **tag the application**;
   the pipeline's `test-deploy` bundles and deploys to `test` (Stage 8 2.5). **[Claude] reads** the
   bundle's `catalog/catalog_export.json`, the import's calls in the trail as `awsds-deploy-sandbox-test`
@@ -1152,7 +1235,7 @@ touched for the first time at 4.2: every reading Stage 18 made in Staging is mad
 the shape is the templates' and the account's own state is not.
 
 **Read 2026-11-10 against pass 1.** Decision 17 (a), taken 2026-11-11, keeps 4.4's `StartDataSourceRun` statement in each
-target. Decision 18 decides whether 3.3's stages carry `content.catalog` and 4.13's `catalog.disable` at
+target, and its revision of 2026-11-15 Production's alone. Decision 18 decides whether 3.3's stages carry `content.catalog` and 4.13's `catalog.disable` at
 all. 4.10's readings take pass 1's shapes: the table under the product database's `LocationUri` (i), each
 publication the listing revision past the change set's (`SUP-345`), and the lineage nodes found by id
 from Data Governance's trail or by `amazon.datazone.asset/<id>` (`SUP-347`, xxi). A deploy never deletes
@@ -1222,7 +1305,7 @@ what a release drops (`SUP-348`), and the workflow scan reads the target project
   module carries since `v0.8.0` (7.2's first environment failed without it), `workflows.tf` granting the
   project roles what `sandbox/workflows/` grants: the job actions (4.4's first run was refused
   `glue:GetJob` without them) and `datazone:StartDataSourceRun` on the domain (1.1, 2026-11-08),
-  `person-session.tf` under decision 15, `cost_center` `stage-19`; in Staging, `InfrastructureAccess`
+  Production's alone since decision 17's revision (2026-11-15), `person-session.tf` under decision 15, `cost_center` `stage-19`; in Staging, `InfrastructureAccess`
   seated as a third Lake Formation administrator and the deploy role granted `DESCRIBE` and `SELECT` on
   the product database's tables, `staging-test`'s door (decision 14 (d)); the `studio` rank and
   `[P]` row in `layers.py`, `backend.py`'s `studio` emission, conventions §6 and `NETWORK.md` §2.1. Each
@@ -1522,6 +1605,10 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
   no listing to read before 4.12: `./aws/catalog.py --self-check` holds those rules on sample
   records, in `make check` and in pre-commit, and three runs with a constant replaced read the
   live estate as a case it does not hold, each failing on the expected object (the log).
+  **`EXC-24` closed 2026-11-14** by the owner's act: `house-price` classified `public` and
+  republished at 21:26 UTC, its row out of `UNCLASSIFIED_BY_EXCEPTION`, and the `--self-check` case
+  on an excepted listing now built on a sample exception. The run from 21:29 to 21:32 UTC passed every
+  check, `CT-18` reading *"house-price public; trades_notional internal"*.
 - **6.2 [Claude] The documents**: `SMUS.md` (the product's readings, the targets, the roster of 0.8; §A
   deployment project in a `Workloads` account rewritten as the two projects that exist), `GOVERNANCE.md`
   (§Grants, §The development cycle, §Assigning the LF-Tags, §Publishing and sharing under decision 6 (b),
@@ -1563,15 +1650,15 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
 | i | Does the Glue job's session create an Iceberg table in the project database under the conditioned `CREATE_TABLE`, registered with Lake Formation, and where? **Measured 2026-11-10: yes.** `GlueJobRunnerSession` created `app_etl.trades_notional` through Sandbox's `glue` endpoint, `table_type` `ICEBERG`, registered, under the database's location `…/avhvbqn37ty7m8/dev/data/catalogs/` rather than the `--conf` warehouse; the conditioned `IAMPrincipals` `CREATE_TABLE` is the database's one grant the role meets | 1.2 |
 | ii | Does the worker's session of the project role start the source's run and publish the listing, through the `datazone` endpoint, and which policy admits each call (`StartDataSourceRun` is `awsds-sandbox-workflows` `v4`'s statement, on the domain's ARN)? And is the role refused `start-data-source-run` on another project's source, DataZone's own authorization the only control left, read from the space on the user's word, since a success starts `test-experimentation`'s import? **Measured 2026-11-10: the first half yes, the second no.** Both calls came from the worker's session through `vpce-09e2724f4cf1ea60c`, the run admitted by `v4`'s statement and the change set by the managed policy's `CreateListingChangeSet` on `*`; the negative was admitted and its run `SUCCESS` imported nothing (`SUP-346`, decision 17) | 1.2 |
 | iii | What does a run filtered to one table import, and does `publishOnImport` false leave it unpublished until the task publishes? **Measured 2026-11-10: yes.** The run over `app_etl` with `*` imported the database's one table (`added: 1`) and the later runs `updated: 1`; the asset stayed unlisted 32 minutes, until the task's first change set | 1.2 |
-| iv | Does the published asset carry a classification anywhere, and does the form of decision 4 travel to the listing and the data product? **The first half measured 2026-11-10 (1.3)**: no LF-Tag; the form `classification` (`internal`) travels to the listing with the description and the README, and survives the source's updates. The data product is 2.1's | 1.3, 2.1 |
+| iv | Does the published asset carry a classification anywhere, and does the form of decision 4 travel to the listing and the data product? **The first half measured 2026-11-10 (1.3)**: no LF-Tag; the form `classification` (`internal`) travels to the listing with the description and the README, and survives the source's updates. The data product is 2.1's. **Read again 2026-11-15 in `app-etl-dev`** (step 15): the description, the README and `classification` `internal` on the asset at revision 4, the form type `eighth-experimentation`'s | 1.3, 2.1 |
 | v | Does the job post lineage to the domain from Sandbox, and does the portal draw it on the asset's page now that the table is an asset (Stage 18 7.1 drew nothing)? **The domain half measured 2026-11-10: yes.** 92 events were posted through the endpoint, all `SUCCESS`, and the domain chains the `inbox` prefix, the job run, the table's node, the asset's and the listing's. **The portal half read 2026-11-14: yes.** The asset's *Lineage* tab, as the data scientist, draws at depth 5: a node *Table / Amazon S3*, 5 columns; two *Job Run / Apache Spark* nodes of the application, each `COMPLETE`; a node *Table / AWS Glue*, 6 columns; an edge *Cataloged* to `trades_notional`, *Asset / Inventory*; an edge *Published* to `trades_notional`, *Asset / Published*; and, since pass 2's Share, an edge *Access Requested* to `test-experimentation`'s subscription target, *Grant status: Granted* | 1.2 |
 | vi | In one account, which principal writes the fulfilment, in what form (a grant to `IAMPrincipals` under the consumer's context, or to its role), and does a resource link appear in the consumer's database? 6f verification i's same-account half. **Measured 2026-11-14.** The owner's project role, in a session `AWSDataZone-Subscriptions`, granted `SELECT` on `app_etl.trades_notional` to the account's `IAMPrincipals` under the consumer's `context.datazone.projectId`, 45 s after the request, with no grant option. The consumer's project role, in a session of the same name, created the resource link `trades_notional` in `glue_db_4zojr4rr6bmnww` 10 s later and granted `DESCRIBE` on it to `IAMPrincipals` and to `identitystore:::user/*` under the same condition. No RAM share and no catalog policy was written. The subscription's grant read `COMPLETED` 65 s after the request | 2.3 |
 | vii | Does one approval of a data product fulfil every item? 6f iv. **Read 2026-11-14 for a product of one item**: one request, accepted at creation with no approval, fulfilled the asset `trades_notional`, `GRANTED`. A product of several items is not read | 2.3 |
-| viii | Does the consumer read through the query editor with no space and from a space's Spark session? **The query editor: yes, 2026-11-14.** `SELECT * … LIMIT 10` on the link, as the consumer's project role in the user's session, workgroup `workgroup-4gqfau9xuo6e4w-bi356s1sacz0cw`: `SUCCEEDED` in 1.9 s, 623 bytes scanned, one `GetDataAccess` for `SELECT` on the link, 40 s after the grant completed. The Spark half is the window's | 2.4 |
-| ix | Does revocation remove every piece, and does a session opened before it still read? 6f iii | 2.5 |
-| x | Does the consumer's daily source import the resource link, and does anything notice? | 2.6 |
-| xi | Can the consumer's role vend the table's objects directly, under Sandbox's `AllowFullTableExternalDataAccess` (`TM-26`, Stage 17 7.4c)? | 2.4 |
-| xii | What does the bundle carry of the catalog, in what order does `deploy` import against the run, which policy grants does the import add to the domain unit, and what does Staging hold after? | 3.2, 4.10 |
+| viii | Does the consumer read through the query editor with no space and from a space's Spark session? **The query editor: yes, 2026-11-14.** `SELECT * … LIMIT 10` on the link, as the consumer's project role in the user's session, workgroup `workgroup-4gqfau9xuo6e4w-bi356s1sacz0cw`: `SUCCEEDED` in 1.9 s, 623 bytes scanned, one `GetDataAccess` for `SELECT` on the link, 40 s after the grant completed. The Spark half is the window's. **The space's Spark session: yes, 2026-11-14.** `project.spark.fineGrained`, a Glue 5.0 interactive session of 10 `G.1X` workers, counted 10 rows through the link at 22:47 UTC | 2.4 |
+| ix | Does revocation remove every piece, and does a session opened before it still read? 6f iii. **Read 2026-11-14: every piece, within 62 s of the call; the open session read until the link's delete.** `RevokeSubscription` at 23:00:00 UTC, `BatchRevokePermissions` by the producer's role at 23:00:52, the link's `DeleteTable` by the consumer's at 23:01:02; the session's next read failed `TABLE_OR_VIEW_NOT_FOUND` (`SUP-365`) | 2.5 |
+| x | Does the consumer's daily source import the resource link, and does anything notice? **Read 2026-11-14: yes, and `catalog.py` notices.** A member's run imported the link as the unlisted asset `b5r73n41qe7jf4` (`SUP-197`), `CT-19` noting it; after the revoke `CT-19` reads the asset against *"no such table"*. The source's scheduled run at 02:51 UTC on 2026-11-15, its first after the revoke, left the asset untouched: `SUCCESS`, `added`, `updated`, `unchanged` and `failed` 0, no activity | 2.6 |
+| xi | Can the consumer's role vend the table's objects directly, under Sandbox's `AllowFullTableExternalDataAccess` (`TM-26`, Stage 17 7.4c)? **Read 2026-11-14: not the objects; their keys, yes.** `HeadObject` on the table's metadata refused `403`; `ListObjectsV2` on the producer's table folder answered a key, through `SageMakerStudioProjectUserRolePolicy`'s `AirflowListDomainS3Permissions` (`SUP-367`, `TM-31`); `GetDataAccess` not attempted. `TM-31` accepted by the user on 2026-11-15, the listing being SMUS's design | 2.4 |
+| xii | What does the bundle carry of the catalog, in what order does `deploy` import against the run, which policy grants does the import add to the domain unit, and what does Staging hold after? **The bundle's half read 2026-11-15** (step 17, from `app-etl-dev`): the asset `trades_notional` with its five forms by name and revision, `classification` among them, and the data product `trades-notional` naming its item by the `dev` asset's id; no form type, glossary or asset type | 3.2, 4.10 |
 | xiii | From the warehouse, which identity reads `awsdatacatalog`, does it carry the project's context, and which Lake Formation grant admits it? | 5.2 |
 | xiv | What does an Iceberg materialized view register in the Glue Data Catalog, and what does its refresh cost? | 5.2 |
 | xv | Does a Redshift asset published from the connection find a subscription target in any project? | 5.3 |
@@ -1928,6 +2015,11 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     own project role, one by an Identity Center session on 2026-10-22 on a source no longer listed,
     and verification ii's, a note by its request id. Pass 2's sitting reads the non-member's half, and
     (d) is the user's report, its text in the stage log of 2026-11-11.
+    **(d)'s channel read 2026-11-14**: Sandbox and Data Governance hold no Premium Support subscription,
+    so no technical case; the report goes to AWS Security, by the e-mail address or the
+    Vulnerability Disclosure Program on HackerOne its vulnerability reporting page names
+    (`docs/REFERENCES.md`), or to the console's feedback. Deferred by the user
+    the same day; the waiting list keeps it.
     **Read against SMUS's own path, 2026-11-11** (decision 18 (d)): the source's import, the listing's
     change set and DataZone's authorization are SMUS's own. The start from the task is the house's, on a
     grant AWS's managed policies leave out (`sandbox/workflows/main.tf`), and no bootstrap action of the
@@ -1937,6 +2029,28 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     target's asset (decision 19), and the stage's own source, run by the task after it, returns the
     stage's table to the asset before the listing; under (b) the asset would carry Sandbox's table until
     the next scheduled run.
+    **Revised 2026-11-15 by the user**, after `TM-29`'s first trigger fired on 2026-11-14, on SMUS's
+    intended use as AWS recommends it (*"Sim, revisadas"*): (b) in Sandbox and Staging, (a) in
+    Production. Sandbox's statement served the listing code's exercise in `dev` alone (decision 20 (b))
+    and Staging's nothing, its `PUBLISH_LISTING` false. Both leave, so the Sandbox project roles lose the
+    start, the deployment projects' sources included, and a change to the listing code runs first in
+    Production, under 4.10's rollback. Production's stays, the one step of the publication off SMUS's
+    own path: the start returns the stage's table to the asset the import wrote with `dev`'s forms
+    (decision 19), and the role is a deployment project's, which no person acts as. It is read again at
+    4.13, the morning after release F's promotion: if the scheduled run keeps the forms the import wrote
+    (xii, xvii), `publishOnImport` on the deployment project's source, on its own schedule, replaces the
+    start, amending decision 3, `CT-4` and `CT-14`. The non-member's reads are accepted as the
+    platform's, AWS's managed policy granting `datazone:Get*` and `List*` and DataZone admitting them,
+    with no check of this estate's; (d)'s report carries them and `TM-31`'s statement. Planned the same
+    day: `sandbox/workflows/` 1 to change, the statement removed in place; `staging/studio/` 2 to add
+    and 2 to destroy, the policy replaced because its description changes, with its attachment;
+    `production/studio/` `No changes`. `workflows.tf` is one copy in both targets
+    (`scripts/check-copies.py`), so the statement stands behind `project-roles.tf`'s
+    `publishing_starts_the_source`, true in Production and false in Staging. Applied the same day on the
+    user's word (*"Autorizo os 2 applies"*), 04:31 to 04:32 UTC: `awsds-sandbox-workflows` at `v5` and a
+    new `awsds-staging-workflows` `v1` hold three statements, `awsds-prod-workflows` four, the start among
+    them. AWS's `SageMakerStudioProjectRoleMachineLearningPolicy` `v48` and
+    `SageMakerStudioProjectUserRolePolicy` `v77`, read at the applies, grant no `StartDataSourceRun`.
 18. **How the product's business metadata reaches the targets** (3.1, 3.3, decisions 4 and 14). The CLI
     1.0.9 exports the catalog of the project of the stage it bundles, whole (3.1, read 2026-11-10). The
     pipeline's `bundle --targets test` exports `test-experimentation`'s, which owns nothing, and an export
@@ -2071,8 +2185,9 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     from the portal, since a member of any designation acts as the project role (`SMUS.md`, Stage 18
     6.1), and that role holds `CreateListingChangeSet` on every resource from AWS's policy (v47), so code
     in a space lists too. `CT-12`'s successor judges such a listing's classification as any other, and
-    6.1's checks note it without failing. `sandbox/workflows/`'s `StartDataSourceRun` (decision 17) serves
-    the listing code's exercise in `dev` alone. A deny of `CreateListingChangeSet` on the `dev` project's
+    6.1's checks note it without failing. `sandbox/workflows/`'s `StartDataSourceRun` (decision 17) served
+    the listing code's exercise in `dev` alone and leaves with that decision's revision of 2026-11-15, so a
+    change to the listing code runs first in Production. A deny of `CreateListingChangeSet` on the `dev` project's
     role would prevent such a listing and is not written: one call publishes and unpublishes, with no
     condition key to tell them apart (the Service Reference, read 2026-11-10), and the exercise takes
     both. Pass 2 lists in `eighth-experimentation` before 1.5 writes the default, and 1.5 retires that
@@ -2233,8 +2348,8 @@ In this order, each write on the user's word: the subscription revoked
 listing and the asset's unpublished and both deleted by the owner in the portal; the table dropped by its
 creator, the project role, from the query editor; the consumer project deleted
 (`delete-project --skip-deletion-check`), its database kept by `Retain`; the application's branch left
-unmerged or its publishing task gated; the project role's `datazone:StartDataSourceRun` removed by
-reverting `sandbox/workflows/main.tf`'s statement and applying the slice. What stays: the lineage events and nodes, the source runs'
+unmerged or its publishing task gated; the project role's `datazone:StartDataSourceRun` gone from
+`sandbox/workflows/main.tf` since decision 17's revision. What stays: the lineage events and nodes, the source runs'
 records and the listing's revisions, which no delete API reaches (`docs/SMUS.md`); the warehouse's copy
 and view, dropped at 5.4.
 

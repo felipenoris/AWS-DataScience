@@ -3461,6 +3461,12 @@
   <https://docs.aws.amazon.com/IAM/latest/UserGuide/troubleshoot_access-denied-authorization-id.html>; the API:
   <https://docs.aws.amazon.com/iam-toolbox/latest/APIReference/API_GetRequestAuthorizationDetails.html>.
 
+- AWS's vulnerability reporting (read 2026-11-14, for Stage 19 decision 17 (d), the accounts having no
+  Premium Support subscription): the Vulnerability Disclosure Program on HackerOne, or
+  AWS Security's e-mail address, which the page names, for a submission outside it; a human acknowledgement within 24 hours; no
+  support plan named; nothing disclosed publicly before AWS addresses the report:
+  <https://aws.amazon.com/security/vulnerability-reporting/>.
+
 ## Databricks
 
 The pages behind [`DATABRICKS.md`](DATABRICKS.md), grouped by the section of the Databricks on AWS docs they come from.

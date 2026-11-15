@@ -196,6 +196,12 @@ The same-account half of INT-23, and the reading open question 24 still owes.
   grant actions since 2026-10-20, and the target's `manageAccessRole`, the consumer's project role; the
   approval itself runs as the domain execution role (0.5). Whether the subscribed table appears
   in the target's database, `glue_db_4zojr4rr6bmnww`, is read with it.
+  **`house-price`'s listing takes no approval since 2026-11-14**, kept so by the user (*"Manter sem
+  aprovação"*) after the republication that closed `EXC-24` turned its `approvalRequired` from `YES` to
+  `NO` (listing revision 4; [Stage 19's log](../../log/log-stage-19-smus-native-data-product.md)). A
+  request is accepted at creation whoever makes it, so 2.1's requester rule no longer separates two
+  paths, and 2.2 reads the no-approval path, the time running from the request to the grant. An
+  approval is read on a listing that requires one: 4.3's, and Stage 19 4.12's in `deploy-production`.
 - **2.3 [user] Query `house-price` from the consumer project.** [Claude] reads the principal on
   `GetDataAccess`, then tests the other door: whether the consumer project role can `GetObject` the upload
   folder directly, which the managed policy's per-project path shape should refuse; and Lake Formation's own, since SMUS's
@@ -298,7 +304,8 @@ The same-account half of INT-23, and the reading open question 24 still owes.
   [Claude] reads which policy the approval was evaluated against: `GovernanceManagerAccess`, or the domain
   execution role of 0.5. A V2 domain admits the user as an owner or a contributor alone, either acting as
   the project role in the portal (Stage 18 6.1), whose query editor reads the project's tables with no
-  compute (Stage 18 7.2), past `DenyReadingTheRows` (open question 20).
+  compute (Stage 18 7.2), past `DenyReadingTheRows` (open question 20). `house-price` takes no
+  approval since 2026-11-14 (2.2), so the request 4.3 approves is on a listing that requires one.
 - **4.4 Decision due 2.** Taken 2026-10-27: registered by reading, `restricted` and `personal` off the
   catalog road (Decisions due).
 

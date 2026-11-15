@@ -1489,7 +1489,7 @@ space alone: a sitting without step 13 leaves Sandbox down.
 
 0. **Release T's preparation, with nothing up**, each once:
    - **[user] The project for app-etl alone**, created from `experimentation` in the portal as the data
-     scientist (Stage 19 1.5; its database waits on that step's order). **[Claude]** reads its id, its
+     scientist (Stage 19 1.5; its database created 2026-11-14, the Sandbox sitting's step 12). **[Claude]** reads its id, its
      role's name and its `Tooling` environment. **Done 2026-11-14**: `app-etl-dev`, `ceweti7jbiu1hs`, its
      role `datazone_usr_role_ceweti7jbiu1hs_6kvndq6t2757rk`, its `Tooling` environment `ACTIVE`.
    - **[user] The bundle role's membership**: `awsds-deploy-sandbox-test`'s group added to that project as
@@ -1800,10 +1800,12 @@ space alone: a sitting without step 13 leaves Sandbox down.
     4. **[user] The positive**, a minute after `running`: *Retry* on the same job, expected *"the proxy
        answers (<code>)"*, the clone's commit and the job green. **[Claude]** both runs' times and lines,
        from the job logs.
-13. **The Sandbox half** (N.7.3), Sandbox's `egress/` up since step 2. It runs once Stage 19's Sandbox
-    sitting has created `app-etl-dev`'s database (the stage file's §The Sandbox sitting, in order, step
-    12), and a sitting before it skips this step: the run's Glue job writes `app_etl.trades_notional`, and
-    `app_etl` is `eighth-experimentation`'s until that sitting's step 10 (read 2026-11-14).
+13. **The Sandbox half** (N.7.3), Sandbox's `egress/` up since step 2. Stage 19's Sandbox sitting created
+    `app-etl-dev`'s database `app_etl` on 2026-11-14 (its step 12) and ran this deploy from a tar with
+    `v0.4.6`'s image (its step 13): the workflows `app_etl_app_etl_dev_app_etl` and
+    `app_etl_app_etl_dev_app_etl_train`, the run `huQUoGZvttPwAMs` `SUCCESS` in 893 s, and the table
+    `app_etl.trades_notional` created. This step redeploys them from the clone with `v0.4.7`'s image, and
+    the run writes the table that run created.
     - **[user]** the persona's GitLab token (N.3 step 2); the space, a JupyterLab space of the `dev`
       project, the one for app-etl alone since Stage 19 decision 18 (d), whose domain takes the house
       image first ([`dev-env.md`](dev-env.md) §C6; attached 2026-11-14, Stage 19 item 33), set to `awsds-sandbox-dev-env`
@@ -1935,7 +1937,9 @@ their commands are the record of what ran:
 **After release T's sitting and the Sandbox sitting** (§N.8.2; the stage file's items 16 to 20 and
 its 1.5): `product.json` brought to what the `dev` project for app-etl alone owns, the stage file's §The
 Sandbox sitting, in order, step 17: expected `trades-notional` in `dataProducts` beside the asset, and no
-form type, since the export carries those the project owns (item 22).
+form type, since the export carries those the project owns (item 22). **Done 2026-11-15**, before release
+T's sitting: the export carries the asset and the data product with no form type, and `product.json`
+requires both.
 
 **The promotion sitting**, the hub and GitLab up and `make up ENV=staging`:
 
@@ -1990,9 +1994,10 @@ The quotas are above zero since 2026-10-24 (§0.2), and pass 3 is the data relea
 Zero burn in every account the sitting raised, no interface endpoint left, no NAT gateway anywhere;
 then the stage's own instrument (`cicd.py`, `deploytargets.py`, `orchestration.py`, `datalake.py`,
 `warehouse.py` after §W), `make status`, and the log entry of each step, in the sitting it ran. After a
-Sandbox sitting, no Studio app in either project's domain, since an open portal page starts one again
-after the down's hook (N.3 step 10):
+Sandbox sitting, no Studio app in any project's domain (`eighth-experimentation`'s, `test-experimentation`'s
+and, since 2026-11-14, `app-etl-dev`'s), since an open portal page starts one again after the down's hook
+(N.3 step 10):
 
 ```bash
-for d in d-p6gthxc82ckg d-lfgbdrjncmsu; do aws sagemaker list-apps --domain-id-equals "$d" --query 'Apps[?Status!=`Deleted`].[SpaceName,AppType,Status]' --output text --profile awsds-infra-sandbox-1 --region us-west-2; done
+for d in d-p6gthxc82ckg d-lfgbdrjncmsu d-spi9kgo6x5b4; do aws sagemaker list-apps --domain-id-equals "$d" --query 'Apps[?Status!=`Deleted`].[SpaceName,AppType,Status]' --output text --profile awsds-infra-sandbox-1 --region us-west-2; done
 ```

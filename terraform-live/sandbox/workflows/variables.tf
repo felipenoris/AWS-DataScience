@@ -67,7 +67,7 @@ variable "project_roles" {
 # domain exists, as sandbox/warehouse/'s is: the workflows grant and the bundle role name the domain
 # by it.
 variable "datazone_domain_id" {
-  description = "The SMUS domain the projects belong to. Read from `datazone list-domains`; the grant's StartDataSourceRun and the bundle role's GetDomain name it."
+  description = "The SMUS domain the projects belong to. Read from `datazone list-domains`; the bundle role's GetDomain names it."
   type        = string
 
   # `awsds-studio`, AVAILABLE, read from `datazone list-domains` on 2026-09-21.
