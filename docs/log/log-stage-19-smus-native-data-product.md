@@ -3199,3 +3199,12 @@ user's browser session.
   xx's second half): `staging-test` failed at 22:24:11 on *"FATAL: the chain app-etl ended FAILED"*, `transform`
   refused at `GetJob` on `awsds-staging-app-etl-undeclared`, `CreateJob` 0, both failure rules and two
   notifications fired, Production untouched, no Sandbox residue. The branch's deletion is the user's.
+- **[user] §N.8.2 step 13's deploy and run**, from the clone at `355ab8c` with §D step 3's values,
+  `JOB_IMAGE_URI` `v0.4.7`'s digest, the two zips, `scripts/dev-cli.sh deploy` and `run --workflow app-etl`.
+  **[Claude]** `app_etl_app_etl_dev_app_etl` `READY`, modified 22:24:24 UTC, version `a9387b9d…`, the project
+  role, its security group and two subnets, `CUSTOMER_MANAGED_KEY`; the run `bzJIxFT4Hn64Go8` `QUEUED` at
+  22:26:37. The proxy's log `/awsds/prod/proxy` from 22:10 UTC: no line naming `airflow-serverless`, while the
+  space's own traffic is logged (10.20.41.98: the `awsds-workflows` clone's `CONNECT github.com:443 200` at
+  22:22:43, `cloudformation.us-west-2` 7 times, and the `cognito-identity` and `client-telemetry` calls 6d's log
+  records, about 300 each in 20 minutes). The deploy's calls to the MWAA Serverless API took the `mwaa` group's
+  endpoint.
