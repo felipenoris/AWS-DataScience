@@ -3140,3 +3140,10 @@ user's browser session.
   `v0.4.7`'s definitions (`OR-5`), version 1 of 50 each; Production's three still on `v0.4.6`'s; every chain's
   schedule `DISABLED`, its failure rule `ENABLED`. The failed calls are the persona profiles nobody had signed
   in.
+- **[user] Stage 10 decision 11's Staging half** (§N.8.2 step 9): the profile `awsds-deploy-staging` added
+  by step 9's four `aws configure set`, `aws sso login --sso-session awsds-deploy --no-browser` as the
+  Deployment Manager User (its token cached at 21:28:23 UTC), and the three reads: `get-workflow-run` on
+  `awsds-staging-wf-app-etl`'s last run, `ukdqPTEi5Tav4PL`, answered `SUCCESS`. **[Claude]** at 21:29:36 the
+  infrastructure user's token no longer loaded, *"Error loading SSO Token: Token for awsds does not exist"*,
+  its cache file gone and the Deployment Manager's the only one with a start URL (`SUP-016`'s shape);
+  Staging's trail waits for the infrastructure user's next sign-in.
