@@ -3091,3 +3091,22 @@ steps 2 to 4).
   `SUBNET_AZ2`, `DEV_PROJECT_SG`, `DEV_PROJECT_KEY_ARN`, `ECR_REGISTRY`, `TRAINING_IMAGE_URI`. The four
   `TEST_PROJECT_*` are gone.
 - **[Claude] `awsds/dev-env`**: `main` still at `6eff905`, step 5's merge request not yet opened.
+
+## 2026-11-15 — release T's sitting: `awsds/dev-env`'s merge request and the tag `v0.4.7`
+
+The user's acts by §N.8.2 steps 5 and 6; Claude's reads through `ls-remote` and through the API in the
+user's browser session.
+
+- **[user] `awsds/dev-env`'s merge request**, by step 5's commands: branch `sts-global-probe-goes-on`,
+  commit `b6ae110` on `6eff905`, `1 file changed, 5 insertions(+), 3 deletions(-)`; its pipeline #115
+  (20:19:59 to 20:21:26 UTC) failed at `pip-audit`, as step 5 expects; the user merged past it as `717d80b`
+  (20:21:45 UTC), and `main`'s pipeline #116 failed the same way. **[Claude] read**: `main`'s
+  `.gitlab-ci.yml` identical to `gitlab/awsds/dev-env/.gitlab-ci.yml`; #116's `pip-audit` (job 676) 454
+  pinned packages against OSV, 76 findings accepted, 29 `BLOCK` in `langgraph`, `langgraph-sdk`, `msgpack`,
+  `nltk`, `oauthlib`, `opentelemetry-api`, `pillow`, `pyasn1`, `soupsieve` and `tornado`, the laptop's
+  count of the same day; `recipe-checks`, `secret-detection-gate` and `secret_detection` green. The merge
+  copied back with `./scripts/gitlab-mirror.py awsds/dev-env`: *"the copy already holds this commit's 14
+  file(s)"*, `gitlab/mirror.json` moved to `717d80b`.
+- **[user] The tag `v0.4.7`** on `awsds/app-etl`'s `main`; `ls-remote` reads it at `355ab8c`, the merge of
+  !13. Its pipeline #117 started 20:22:09 UTC: `pip-audit` and `test` green on the test runner,
+  `build-task-code` green, `build-image` running on the build runner from 20:22:44 UTC.
