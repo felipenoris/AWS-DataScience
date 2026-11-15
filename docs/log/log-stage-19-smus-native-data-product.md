@@ -3183,3 +3183,9 @@ user's browser session.
   history events). The Glue run of 21:44:30 read `lake.curated.trades` at snapshot `8185032439141629913`, the
   same as Staging's leg, and `trades.summary.json` sits under the data key at 21:52:45 (Stage 8's log, 3.3 in
   Production).
+- **[Claude] §N.8.2 step 12a.1, on the user's word in chat** (*"você pode avançar em paralelo com o passo
+  12a"*), while the user ran step 13. In the laptop's clone, from `awsds/app-etl`'s `main` at `355ab8c`, the
+  branch `xx-undeclared-glue-job` with the one line `job_name: app-etl-undeclared-{proj.id}`, commit
+  `90f5cc1`, pushed at 22:11. The branch pipeline #119: `test` green at 22:11:56 (*"72 passed, 1 skipped"*,
+  the lint *"ok: 9 arquivo(s)"*). `git ls-remote` read `v0.4.8` free, and the tag `v0.4.8` was pushed on
+  `90f5cc1` at 22:12:31: pipeline #120.
