@@ -3235,3 +3235,27 @@ user's browser session.
   digest `v0.4.7`'s `build-image` pushed. The report `shared/app-etl/outbox/report.json`, 332 bytes, at
   22:39:22. `app_etl.trades_notional`'s metadata moved to `00001-8dfc9699-….metadata.json` at 22:28:31: the run
   wrote the table the run of 2026-11-14 created. Step 13 done.
+- **[user] Sandbox down** (§N.8.2 step 16's Sandbox half, taken early): `git credential-cache exit` in the space,
+  the persona's token revoked, the space deleted, the portal's tabs closed, `make down ENV=sandbox`. **[Claude]**
+  read at 22:55 UTC: no app and no space in Sandbox, its two gateway endpoints (S3, DynamoDB) alone,
+  `sandbox/egress` down.
+- **[user] §N.8.2 step 12b** (Stage 8's log, xv): the proxy stopped at 22:48:05 and started at 22:50:14, *Retry*
+  on `staging-check` of #120 failing in 25 s on the FATAL line, then green.
+- **[user] `make down ENV=staging`, then `make up ENV=staging`**, for release F's sitting (§N.8.4), which needs
+  Staging's `orchestration/` and `app/app-etl/` destroyed. **[Claude]** `make status` at 22:55: `staging/egress`
+  up with 17 resources, both slices down, each `state list` empty; Production's `workloads-egress/` kept up for
+  release F, the burn 0.6171 USD/h.
+
+## 2026-11-15 — release F's promotion sitting: step 5's re-plan
+
+*The same evening, right after release T's sitting, which ended with steps 11 to 15 and 17 done and Production's
+`workloads-egress/` kept up. Claude's hand as the infrastructure user with `InfrastructureAccess` in the
+Staging Account (`awsds-infra-staging`). Times UTC.*
+
+- **[Claude] §N.8.4 step 5, `staging/chains/` re-planned** at 22:57 into
+  `$HOME/tmp/stage19-chains-staging-1115.tfplan`: *"18 to add, 0 to change, 0 to destroy"*, the module at
+  `orchestration-v0.3.0`; the two chains `awsds-staging-chain-app-etl` (`cron(30 6 * * ? *)`) and
+  `awsds-staging-chain-app-etl-train` (`cron(0 7 * * ? *)`), both schedules `DISABLED`, their failure rules and
+  the workflows' failure rules `ENABLED`, the schedule group `awsds-staging-chains`, the log group
+  `/aws/vendedlogs/states/awsds-staging-chains`, the exec and scheduler roles. The apply waits for the user's
+  word naming it.

@@ -4526,3 +4526,19 @@ Times UTC.*
   `app-etl/work/job/trades.summary.json`'s `source` (modified 21:52:45) is the same object. Both are `aws:kms`
   under `alias/awsds-prod-data`'s key. The snapshot id equals Staging's of 20:49 (option A's parity, observed:
   the producer wrote nothing between the two legs). 3.3's record is read in both targets.
+
+## 2026-11-15 — xv read on `v0.4.8`: the proxy stopped alone fails `staging-check` in seconds
+
+*Release T's sitting, `promotion.md` §N.8.2 step 12b. The user's acts from the project folder as the
+infrastructure user with `InfrastructureAccess` in Production (`awsds-infra-prod`), the laptop on the
+split-tunnel profile; Claude's reads through GitLab's API and Production's trail. Times UTC.*
+
+- **[user] The stop**: `./scripts/slices.py down --env production --only proxy`, `StopInstances` on
+  `awsds-prod-proxy` at 22:48:05.
+- **[user] The negative**: *Retry* on `staging-check` of #120 (job 728), 22:48:35 to 22:49:00, 25 s: *"FATAL: no
+  answer through the proxy: is the hub up (make hub-up)?"*, *"ERROR: Job failed: exit code 1"*.
+- **[user] The start**: `./scripts/slices.py up --env production --only proxy`, `StartInstances` at 22:50:14;
+  **[Claude]** the host read `running`.
+- **[user] The positive**: *Retry* on the same job (job 729), 22:51:24 to 22:51:38, 14 s, 70 s after the start:
+  *"the proxy answers (404)"*, *"Job succeeded"*, as job 717 read at 22:17. xv answered: the check the template
+  carries since 2026-10-28 fails the job in seconds against a stopped proxy.
