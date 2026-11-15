@@ -2940,3 +2940,40 @@ The user's decision in the session's chat; Claude's reads with nothing up, as `a
   > `s3:ListBucket` on the domain bucket with no `s3:prefix` condition, so every project role lists the
   > object keys of every other project sharing the bucket, while its statement
   > `ListDomainS3BucketPermissions` grants the same listing under the project's own prefix.
+
+## 2026-11-15 — decision 17's revision applied: the start grant out of Sandbox and Staging
+
+The same day, nothing up. The user, verbatim: *"Autorizo os 2 applies"*. The app's classifier let each
+through.
+
+- **[Claude] Before the writes**: the two other sessions on the laptop, idle, told of the applies and of
+  Lesson 79 until PR #302 merges, and a note left in the orchestrator's notes folder. The three profiles
+  answered as the infrastructure user, `InfrastructureAccess` in Sandbox, Staging and Production.
+- **[Claude] The plans, made again from `6d0b8238`** so that each apply reads the state of the moment:
+  `sandbox/workflows/` `0 to add, 1 to change, 0 to destroy` and `staging/studio/` `2 to add, 0 to change,
+  2 to destroy`, the diff in each the statement `StartADataSourceRunInTheProjectsDomain` alone and, in
+  Staging, the description that forces the policy's replacement with its attachment.
+- **[Claude⚡] `sandbox/workflows/`**, 04:31:44 to 04:31:54 UTC: *"0 added, 1 changed, 0 destroyed"*,
+  `awsds-sandbox-workflows` modified in 2 s.
+- **[Claude⚡] `staging/studio/`**, 04:32:02 to 04:32:17 UTC: *"2 added, 0 changed, 2 destroyed"*. In
+  order: the attachment to `datazone_usr_role_5ido8bej1zoeq8_d6nu5aphq1e974` destroyed, the policy
+  destroyed and created, the attachment created. The role went about two seconds without the policy, with
+  nothing running in Staging.
+- **[Claude] Read after them**: the three slices re-plan `No changes`, `production/studio/` as
+  `awsds-infra-prod`. `awsds-sandbox-workflows` is at `v5`, updated 04:31:53 UTC, with
+  `DescribeAProcessingJobNoProjectHolds`, `TagAProcessingJobWithTheCallersProject` and
+  `GetAGlueJobNoProjectHolds`, attached to the three Sandbox project roles
+  (`datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw`, `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`,
+  `datazone_usr_role_ceweti7jbiu1hs_6kvndq6t2757rk`). `awsds-staging-workflows` is a `v1` created
+  04:32:13 UTC with the same three statements, its description without the data-source clause, attached to
+  `deploy-staging`'s role alone. `awsds-prod-workflows` is unchanged, `v1` since 2026-11-11 15:19:04 UTC,
+  its four statements `StartADataSourceRunInTheProjectsDomain` among them, attached to
+  `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow`.
+- **[Claude] AWS's managed policies at the applies**: `SageMakerStudioProjectRoleMachineLearningPolicy`
+  `v48` and `SageMakerStudioProjectUserRolePolicy` `v77`, both the default since 2026-11-13 20:47:08 UTC
+  (open question 22's reading of 2026-11-14). Neither names `StartDataSourceRun` nor holds an `Allow` with
+  `NotAction`; v48's DataZone actions are v47's with `datazone:UpdateAssetOwner` added to
+  `DataZoneUserPermissions`, on `*`. The comment of `<env>/studio/workflows.tf` cited v47, read
+  2026-11-08, and names v48 since; the plan reads no comment.
+- **[Claude] Until PR #302 merges**, a plan of either slice from a tree without its commits restores the
+  statement (Lesson 79).

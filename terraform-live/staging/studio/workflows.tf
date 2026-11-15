@@ -94,7 +94,7 @@ data "aws_iam_policy_document" "workflows" {
   # 19 decisions 3 and 17), in the one stage that lists: the catalog import writes dev's technical
   # forms on the stage's asset, and the run returns the stage's table to it before the listing
   # (decision 19). AWS's managed policies grant the project role no StartDataSourceRun
-  # (SageMakerStudioProjectRoleMachineLearningPolicy v47, SageMakerStudioProjectUserRolePolicy v77),
+  # (SageMakerStudioProjectRoleMachineLearningPolicy v48, SageMakerStudioProjectUserRolePolicy v77),
   # so this statement is the one step of the publication off SMUS's own path. The action takes no
   # resource type below the domain and no condition key, so the grant reaches every data source of
   # the domain (TM-29); ./aws/catalog.py CT-13 judges each start against the source's project.
