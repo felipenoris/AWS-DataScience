@@ -3110,3 +3110,12 @@ user's browser session.
 - **[user] The tag `v0.4.7`** on `awsds/app-etl`'s `main`; `ls-remote` reads it at `355ab8c`, the merge of
   !13. Its pipeline #117 started 20:22:09 UTC: `pip-audit` and `test` green on the test runner,
   `build-task-code` green, `build-image` running on the build runner from 20:22:44 UTC.
+- **[pipeline] #117 to `release`**: `build-image` 20:22:44 to 20:25:32 UTC on the build runner, `bundle`
+  20:25:35 to 20:25:59, `store-bundle` to 20:26:09, `release` to 20:26:20; `scan-gate` (allowed to fail)
+  still running at 20:27 UTC; `staging-gate` `manual`. **[Claude] read `bundle`'s log** (job 683, the
+  deploy runner): the caller `assumed-role/awsds-deploy-sandbox-test`, *"Project: app-etl-dev"*, *"Total
+  files: 11"* (`code/` 2, `src/` 3, `glue/` 2, `samples/` 1, `workflows/` 3, `app-etl-warehouse.yaml` among
+  them), `artifacts/app-etl.zip` 24,076 bytes, SHA256 `001eafbb4d90514802f14f97c75043b5d1d0241295e3b11d944f96c730c65826`;
+  no *"Failed to get project connections"* and no *"Pattern not found"*. The CLI's two warnings, `GetGroupProfile`
+  refused on `06d426f2-…` and `839bcde8-…`, are the ones of 2026-11-10. Sandbox's event history over 20:25:00
+  to 20:27:30 UTC read empty at 20:27:32, inside the trail's delay (Lesson 62); the reading is made again.
