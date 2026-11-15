@@ -3163,3 +3163,8 @@ user's browser session.
 - **[Claude] `./aws/orchestration.py` after `production-deploy`**: 45 checks pass; Production's three
   workflows on `v0.4.7`'s definitions (`OR-5`), versions 4, 3 and 3 of 50; the three chains' schedules
   `DISABLED`, their failure rules `ENABLED` (`OR-9`).
+- **[user] The cause of the infrastructure token's loss**, asked by Claude: the user ran `aws sso logout`
+  before the Deployment Manager's sign-in, answered in Safari, and again before the infrastructure user's new
+  sign-in. **[Claude]** The loss read at 21:29:36 UTC is `SUP-015`'s logout, which removes every cached token,
+  not `SUP-016`'s shape named above; no `SUP` entry gains a reading. §N.8.2 step 9 now says the two
+  `sso-session`s' tokens coexist without a logout.

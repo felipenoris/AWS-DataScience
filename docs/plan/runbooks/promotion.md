@@ -1679,7 +1679,8 @@ space alone: a sitting without step 13 leaves Sandbox down.
    ```
 
    Then `aws sso login --sso-session awsds-deploy --no-browser`, answered in a private window as the
-   Deployment Manager User, and:
+   Deployment Manager User, with no `aws sso logout` before or after: the logout removes every cached token,
+   the infrastructure user's included (`SUP-015`), and the two `sso-session`s' tokens coexist. Then:
 
    ```bash
    W=$(aws mwaa-serverless list-workflows --profile awsds-deploy-staging --region us-west-2 --query "Workflows[?Name=='awsds-staging-wf-app-etl'].WorkflowArn | [0]" --output text)
