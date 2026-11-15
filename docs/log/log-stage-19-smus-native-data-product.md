@@ -3272,3 +3272,9 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   `secret_detection`, `secret-detection-gate`), merged at 23:12:33 UTC as `fc79a4d`. **[Claude] read**: the
   branch's tree and `main`'s are `22a98d0e…`, the tree of `3a15f2f6:examples/app-etl`. The mirror
   `awsds/infrastructure` was already at `3a15f2f6`. `git ls-remote` reads `v0.4.9` and `v0.5.*` free.
+- **[user] The tag `v0.5.0`** on `fc79a4d`, pushed at 23:14:45 UTC: pipeline #123. **[pipeline]** `test` and
+  `pip-audit` green at 23:15:03, `build-task-code` at 23:15:16, `build-image` at 23:17:51, `bundle` at 23:18:16,
+  `store-bundle` at 23:18:25, `release` at 23:18:34; `staging-gate` `manual`. **[Claude] read** in `bundle`'s
+  log: *"Bundle creation complete for target: dev"*, 12 files, then the guard *"the catalog the bundle carries,
+  against product.json"*: glossaries 0, glossary terms 0, form types 0, asset types 0, *"assets: 1
+  (trades_notional)"*, *"dataProducts: 1 (trades-notional)"*, *"OK"*; the bundle's SHA256 `1148ff0c…2b46`.
