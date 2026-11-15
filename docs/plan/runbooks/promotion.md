@@ -1535,7 +1535,10 @@ space alone: a sitting without step 13 leaves Sandbox down.
    `uv sync --locked`, ruff check and format clean, 72 passed and 1 skipped, the lint at `d856982c` with
    the job's options *"ok: 9 arquivo(s)"*, and `pip-audit` 2.10.1 over the one pinned package, `pyarrow`
    25.0.1, with no finding. `main`'s `./scripts/check-gitlab-ci.py` read `36bcf916`'s tree and `main`'s,
-   *"OK"* on both. A tag on another day runs them again.
+   *"OK"* on both. A tag on another day runs them again. The Amazon Linux parameter read
+   `ami-0dac6cd09676c9fb1`, version 201, modified 2026-11-12 at 19:49 UTC: the runners `make gitlab-up`
+   creates boot on a release no runner has booted on, and a boot it breaks is read in the boot log (Stage 8
+   decision 25 (b)).
 2. **[user] The raises**, after this change's merge: `make hub-up`, `make gitlab-up BUILD=1`, the tunnel, and,
    for step 13's space alone, Sandbox's endpoints with the MWAA Serverless group, which no job of the
    pipeline reads since release T:
@@ -1546,7 +1549,8 @@ space alone: a sitting without step 13 leaves Sandbox down.
 
    **[Claude]** the other sessions told before the first raise; `./aws/cicd.py`, `./aws/egress.py
    awsds-infra-prod awsds-infra-sandbox-1` and `make status`; Stage 8 xxvii's plan half (N.1 step 3) if the
-   parameter has moved.
+   parameter moves after the runners' creation: runners created on the current image plan `No changes`
+   with or without `ignore_changes`.
 3. **[user] The local user's password rotated** before the first push, in GitLab's *Edit profile →
    Password*: a keychain probe printed it into a session's transcript on 2026-11-08 (Stage 19's log). The
    keychain's entry for `gitlab.awsds.internal` goes with it, and the next push asks for the new one:
@@ -2004,7 +2008,8 @@ requires both.
 
 5. **`staging/chains/`**, account **Staging Account**. Staging's `orchestration/` and
    `app/app-etl/` are down since its last `make down`; a plan that reads anything to destroy there
-   stops the step. 18 to add.
+   stops the step. 18 to add. **Re-planned 2026-11-15** at 19:32 UTC with 2026-11-12's actions, that plan
+   kept as `stage19-chains-staging-1112.tfplan`; both slices read empty by `state list` the same day.
 
    ```bash
    AWS_PROFILE=awsds-infra-staging terraform -chdir=terraform-live/staging/chains apply -input=false "$HOME/tmp/stage19-chains-staging.tfplan"
@@ -2019,7 +2024,8 @@ requires both.
 7. **`production-check` fails once**, on the membership: the call creates `awsds-deploy-prod`'s
    group profile, whose id **[Claude] reads** from the domain's account (`datazone
    search-group-profiles --group-type IAM_ROLE_SESSION_GROUP` as `awsds-infra-data`, the profile whose
-   `rolePrincipalArn` is the role). **[user]**, account **Production**:
+   `rolePrincipalArn` is the role). No profile names the role on 2026-11-15. **[user]**, account
+   **Production**:
 
    ```bash
    NO_PROXY='*' aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d7qcazihvr3s7k --designation PROJECT_OWNER --member groupIdentifier=<the group's id> --profile awsds-infra-prod --region us-west-2

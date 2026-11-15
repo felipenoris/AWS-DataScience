@@ -3024,3 +3024,33 @@ tree was extracted with `git archive` into the session's scratch folder, outside
   commit past `main` and no change.
 - **[Claude] Owed with a sign-in**: the Amazon Linux parameter (§N.8.2 step 1), `make status`, and the
   re-plans of `staging/chains/` and `production/chains/` against the plans of 2026-11-12.
+
+## 2026-11-15 — the readings owed with a sign-in: the burn, the Amazon Linux parameter, the chains re-plans, the role groups
+
+Claude's reads as the infrastructure user (`InfrastructureAccess`) after the user's sign-in; no AWS write.
+They close the previous entry's list owed with a sign-in.
+
+- **[Claude] `make status`**, finished 19:34 UTC: a burn of 0.0000 USD/h. The hub's two hosts and GitLab's
+  `stopped`; the runners, both warehouses' compute and every egress slice `down`; Production's
+  `app/app-etl/` (3 resources) and `orchestration/` (41) `UP`.
+- **[Claude] The Amazon Linux parameter** (`runbooks/promotion.md` §N.8.2 step 1), as `awsds-infra-prod`:
+  `ami-0dac6cd09676c9fb1`, version 201, modified 2026-11-12 at 19:49:40 UTC; 2026-10-27 read
+  `ami-0829b74b2a8c619b7`. The runners the next `make gitlab-up` creates boot on it. Stage 8 xxvii's plan
+  half still waits: runners created on the current image plan `No changes` with or without
+  `ignore_changes`.
+- **[Claude] The chains re-plans**, from this branch's tree, which holds `729a06da` (Lesson 79):
+  `staging/chains/` 18 to add at 19:32:15 UTC, `production/chains/` 24 to add at 19:32:28 UTC. The text from
+  *"Terraform will perform the following actions"* on hashes the same as the plans of 2026-11-12, 02:52
+  UTC; above it only the order of the data-source reads differs. The new plans replace the old at §N.8.4
+  step 5's paths, the old kept as `stage19-chains-{staging,production}-1112.*` in `$HOME/tmp/`.
+- **[Claude] Staging's retired slices**: `staging/orchestration/` and `staging/app/app-etl/` each read 0
+  resources by `state list`, as §N.8.4 step 5 requires. The first `init` of `staging/orchestration/`, run
+  while `make status` was initialising the slices it reads on the same tree, stopped on *"Module not
+  installed"* for `orchestration-v0.2.1`; a second `init` succeeded.
+- **[Claude] The domain's role groups** (`search-group-profiles --group-type IAM_ROLE_SESSION_GROUP` as
+  `awsds-infra-data`, then `get-group-profile` on each): nine profiles. Three are SSO groups
+  (`sso-group-deployment-managers`, `sso-group-data-scientists`, `sso-group-governance-managers`). Six are
+  roles' sessions: the `InfrastructureAccess` of Sandbox Account 1 (`839bcde8-…`), Production
+  (`ca2735c9-…`), Data Governance (`7ee243ab-…`) and Staging (`65b0f127-…`), `awsds-deploy-sandbox-test`
+  (`06d426f2-…`) and `awsds-deploy-staging` (`9bead345-…`). `awsds-deploy-prod` has none, as §N.8.4 step 7
+  expects.
