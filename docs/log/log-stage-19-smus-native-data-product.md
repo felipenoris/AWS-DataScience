@@ -3259,3 +3259,5 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   the workflows' failure rules `ENABLED`, the schedule group `awsds-staging-chains`, the log group
   `/aws/vendedlogs/states/awsds-staging-chains`, the exec and scheduler roles. The apply waits for the user's
   word naming it.
+- **[Claude] The times of the two bullets above, corrected**: `make status` ended at 23:07:19 UTC (not 22:55),
+  and the plan was saved at 23:08:34 (not 22:57), read from the files' modification times.
