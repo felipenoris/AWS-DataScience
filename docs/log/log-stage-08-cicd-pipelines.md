@@ -4473,3 +4473,19 @@ UTC.*
   `sts.us-west-2.amazonaws.com`. Staging's `us-west-2`: the regional answer of `awsds-deploy-staging` at
   20:40:44; Staging's `us-east-1`: nothing. Verification xxviii's second reading: each global call refused and
   recorded in `us-east-1` in the caller's account alone, each regional call answered in `us-west-2`.
+
+## 2026-11-15 — 3.3's snapshot record in Staging, on `v0.4.7`
+
+*Claude's reads as the infrastructure user with `InfrastructureAccess` in the Staging Account
+(`awsds-infra-staging`), in Stage 19's release T sitting (`promotion.md` §N.8.2 step 8). Times UTC.*
+
+- **[Claude] The Glue run**: `awsds-staging-app-etl`, `jr_2b35e300ad0970bb7fb1310926718363c4d182449eb09cb5bee9f70e48c6bce1`,
+  `SUCCEEDED`, 20:47:49 to 20:49:29, 81 s, started by pipeline #117's `staging-test`. Its output log:
+  *"reading SELECT trade_date, desk, instrument, quantity, price FROM lake.curated.trades VERSION AS OF
+  8185032439141629913"*, then *"wrote s3://awsds-staging-outputs/app-etl/work/glue/trades.source.json, snapshot
+  8185032439141629913"* and *"wrote 30 row(s) to the table at
+  s3://awsds-staging-outputs/app-etl/tables/trades_notional/"*.
+- **[Claude] The objects**: `app-etl/work/glue/trades.source.json` (modified 20:49:13) reads
+  `{"pinned": false, "snapshot_id": 8185032439141629913, "table": "lake.curated.trades"}`, an integer id;
+  `app-etl/work/job/trades.summary.json`'s `source` is the same object, key for key. 3.3's record read in
+  Staging; Production's half follows that leg's run.

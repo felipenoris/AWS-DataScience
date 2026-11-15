@@ -3127,3 +3127,16 @@ user's browser session.
 - **[user] `make up ENV=staging ONLY=egress`, then `staging-gate`** (job 686, 20:42:50 to 20:42:55).
   `staging-check` green 20:42:59 to 20:43:12, `staging-deploy` green 20:43:15 to 20:46:50, `staging-test`
   started.
+- **[pipeline] #117's Staging leg green** (logs read through the API in the user's session): `staging-test`
+  (job 689, 20:46:53 to 21:09:41 UTC) started `awsds-staging-chain-app-etl`'s execution
+  `v0-4-7-117-app-etl`, `SUCCEEDED` at 21:02:24, then `v0-4-7-117-app-etl-train`, `SUCCEEDED` at 21:09:35, and
+  read the table `trades_notional` at `s3://awsds-staging-outputs/app-etl/tables/trades_notional/`;
+  `staging-model` (job 690, 21:09:44 to 21:16:03) ran `app-etl-v0-4-7-20261115T211007` on the model of
+  `app-etl-train-20261115T210324`, 30 predictions for 30 batch rows, and deleted the model; Production's
+  registry read version 1 `Approved`. `production-plan` (job 691, 21:16:06 to 21:16:50): the application
+  slice `0 to add, 2 to change, 0 to destroy`, the two Glue jobs' `script_location` from `v0.4.6/` to
+  `v0.4.7/`. `production-gate` `manual`.
+- **[Claude] `./aws/orchestration.py`** (step 8): `OR-1` to `OR-9` pass. Staging's two workflows `READY` on
+  `v0.4.7`'s definitions (`OR-5`), version 1 of 50 each; Production's three still on `v0.4.6`'s; every chain's
+  schedule `DISABLED`, its failure rule `ENABLED`. The failed calls are the persona profiles nobody had signed
+  in.
