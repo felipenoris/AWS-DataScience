@@ -242,8 +242,8 @@ entry is still true is the reading.
   built on a role that does not exist, the shape that measures most other denies here, cannot measure one on
   `sts:AssumeRole`; a caller the role trusts can. Where: `log-stage-08-cicd-pipelines.md`, 2026-10-27.
 
-- `SUP-011` **STS's refusal text never names the SCP behind an `sts:AssumeRole` deny; an authorization id
-  can** (measured 2026-10-30, Stage 8 decision 29, in Production). An `AssumeRole` of `awsds-deploy-prod`,
+- `SUP-011` **STS's refusal text does not always name the SCP behind an `sts:AssumeRole` deny; an
+  authorization id can** (measured 2026-10-30, Stage 8 decision 29, in Production). An `AssumeRole` of `awsds-deploy-prod`,
   which exists and trusts the runner alone, through `sts.amazonaws.com` answered the plain *"not authorized
   to perform: sts:AssumeRole on resource"* and an authorization id, where AWS's page shows a denial naming
   the policy type and ARN in its text. `aws iam-toolbox get-request-authorization-details --region
@@ -253,6 +253,13 @@ entry is still true is the reading.
   the deny's kind or the preview's rollout withholds the id, these readings do not separate. The details are
   kept 24 hours and read in the Region of the denial. Nor does every refusal carry one: the battery's same
   call 15 minutes later, at 06:25:03, carried none. Where: `log-stage-08-cicd-pipelines.md`, 2026-10-30.
+  Read again 2026-11-15 with the runner's role as the caller, which both deploy roles trust (`awsds/dev-env`
+  pipeline #118): both global refusals read *"with an explicit deny in a service control policy:
+  arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-1fp032g8"*,
+  then a console link in `us-west-2` and an authorization id, in the job's output and in the `us-east-1`
+  record's `errorMessage`, whose `requestParameters` is null. The text names the policy, never its
+  statement; the two readings differ in caller and date, so they do not separate a trust that also refuses
+  from a change in STS. Where: `log-stage-08-cicd-pipelines.md`, 2026-11-15.
 
 ## IAM Identity Center
 

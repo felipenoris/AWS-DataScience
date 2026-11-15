@@ -1639,7 +1639,9 @@ space alone: a sitting without step 13 leaves Sandbox down.
    with `STS_GLOBAL_PROBE` set to `1`, and *Run* on the manual job. **[Claude]** the job's log and, after the
    trail's delay (Lesson 62), N.7.1 step 8's command: each global call refused, recorded in the caller's
    account in `us-east-1` with its `errorCode`, and each regional call answered in `us-west-2`
-   (verification xxviii's second reading). The deploy roles trust the runner, so a global refusal can only be
+   (verification xxviii's second reading). A refused call's record carries no `requestParameters`, so that
+   command's session-name filter misses it: the job's minute is read by `errorCode`. **Run 2026-11-15**,
+   pipeline #118 (Stage 8's log). The deploy roles trust the runner, so a global refusal can only be
    `DenyDeployRoleAssumptionOutsideTheRegion`'s: the statement's one measurement, which the battery could not
    take (N.8.1 step 2); its wording says whether STS names the policy.
 6. **[user] The tag** `v0.4.7` on the template's merge, once `git ls-remote --tags` on `awsds/app-etl` reads it

@@ -3119,3 +3119,11 @@ user's browser session.
   no *"Failed to get project connections"* and no *"Pattern not found"*. The CLI's two warnings, `GetGroupProfile`
   refused on `06d426f2-…` and `839bcde8-…`, are the ones of 2026-11-10. Sandbox's event history over 20:25:00
   to 20:27:30 UTC read empty at 20:27:32, inside the trail's delay (Lesson 62); the reading is made again.
+- **[Claude] Sandbox's event history over `bundle`'s minutes**, read again at 20:45: 27 events from
+  20:25:45, every one of `awsds-deploy-sandbox-test` read-only: `GetCallerIdentity`, `ListDomains`,
+  `ListProjects`, `GetProject`, `ListProjectMemberships`, `GetUserProfile` twice, `ListConnections` three
+  times, `GetConnection` ten times, `ListEnvironments`; refused `DescribeStacks` (CloudFormation) and
+  `GetGroupProfile` twice. No write by that role.
+- **[user] `make up ENV=staging ONLY=egress`, then `staging-gate`** (job 686, 20:42:50 to 20:42:55).
+  `staging-check` green 20:42:59 to 20:43:12, `staging-deploy` green 20:43:15 to 20:46:50, `staging-test`
+  started.

@@ -4442,3 +4442,34 @@ infrastructure user (`awsds-policy-canary`, `awsds-infra-prod`), reads otherwise
 - **Verdict**: the house image has one version. The pipeline's retention is unchanged (`retire --keep 10`, the
   lifecycle policy's 30 tags), so the history grows again from the next release. `app-etl`, `deploy` and the
   pull-through caches were not touched.
+
+## 2026-11-15 — xxviii's second reading: the global `AssumeRole` refused by decision 29's deny, recorded in `us-east-1` alone
+
+*The user's hand in GitLab, in Stage 19's release T sitting (`promotion.md` §N.8.2 step 5); Claude read the job
+through the API in the user's browser session and the trails as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`), reads alone. Account ids replaced. Times
+UTC.*
+
+- **[user]** On `awsds/dev-env`'s `main` (`717d80b`), *Run pipeline* with `STS_GLOBAL_PROBE=1`: pipeline #118
+  (20:40:12), its `pip-audit` failed as #116's; *Run* on `sts-global-probe`, job 702 on the deploy runner,
+  20:40:32 to 20:40:46, green.
+- **[Claude] The job's log**: the caller
+  `arn:aws:sts::<Production>:assumed-role/awsds-prod-runner-deploy/i-0448fc1faa4bc5537`. Through
+  `sts.us-west-2.amazonaws.com` both roles answered, `assumed-role/awsds-deploy-prod/xxviii-118` and
+  `assumed-role/awsds-deploy-staging/xxviii-118`. Through `sts.amazonaws.com` both were refused: *"An error
+  occurred (AccessDenied) when calling the AssumeRole operation: User:
+  arn:aws:sts::<Production>:assumed-role/awsds-prod-runner-deploy/i-0448fc1faa4bc5537 is not authorized to
+  perform: sts:AssumeRole on resource: arn:aws:iam::<Production>:role/awsds-deploy-prod with an explicit deny in
+  a service control policy:
+  arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-1fp032g8. Go to
+  https://us-west-2.console.aws.amazon.com/iam/home?region=us-west-2#/authorization-details/1616tkgm263zccxafchaqolrb
+  for complete details, or call the GetRequestAuthorizationDetails API with the following authorization id:
+  1616tkgm263zccxafchaqolrb"*, and the same for `arn:aws:iam::<Staging Account>:role/awsds-deploy-staging`
+  with the id `3v5k1fj4i1ix640x1vwn543xj`. STS names the policy, not the statement (`SUP-011`'s later reading).
+- **[Claude] The trails**, read at 20:46:26 over 20:40 to 20:42. Production's `us-east-1`: the two refusals,
+  `AccessDenied` at 20:40:41 (`awsds-deploy-prod`) and 20:40:45 (`awsds-deploy-staging`), host
+  `sts.amazonaws.com`, `errorMessage` the job's text, `requestParameters` null: §N.7.1 step 8's filter on the
+  session name misses them. Production's `us-west-2`: the two regional answers at 20:40:40 and 20:40:44, host
+  `sts.us-west-2.amazonaws.com`. Staging's `us-west-2`: the regional answer of `awsds-deploy-staging` at
+  20:40:44; Staging's `us-east-1`: nothing. Verification xxviii's second reading: each global call refused and
+  recorded in `us-east-1` in the caller's account alone, each regional call answered in `us-west-2`.
