@@ -3227,3 +3227,11 @@ user's browser session.
   `awsds-infra-prod`: `1794782280_2026_11_15_19.4.2_gitlab_backup.tar`, 15,585,280 bytes, 22:38:11, `aws:kms`,
   expiring 2026-12-16 (`expire-current-versions`); release 19.4.2, the pinned one. The two older archives
   (2026-10-26 and 2026-11-10) stay until their own expiry.
+- **[Claude] §N.8.2 step 13's run to its end**, as `awsds-infra-sandbox-1`: `bzJIxFT4Hn64Go8` `SUCCESS`, 22:26:25
+  to 22:40:03 UTC, 817 s, within pass 1's 816 to 936 s. Its tasks `transform` 111 s, `process` 492 s,
+  `summarize` 7 s, `write_result` 23 s and `publish` 6 s, each `SUCCESS`. The Glue run on `app-etl-ceweti7jbiu1hs`
+  `SUCCEEDED` from 22:27:04, 85 s, 2 G.1X workers. The processing job `app-etl-20261115T222936` `Completed`,
+  22:30:22 to 22:34:52, `ml.t3.medium`, network-isolated, on `awsds-prod-ecr-app-etl@sha256:14ae4d03…6126`, the
+  digest `v0.4.7`'s `build-image` pushed. The report `shared/app-etl/outbox/report.json`, 332 bytes, at
+  22:39:22. `app_etl.trades_notional`'s metadata moved to `00001-8dfc9699-….metadata.json` at 22:28:31: the run
+  wrote the table the run of 2026-11-14 created. Step 13 done.
