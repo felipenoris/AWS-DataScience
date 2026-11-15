@@ -1992,9 +1992,10 @@ The quotas are above zero since 2026-10-24 (§0.2), and pass 3 is the data relea
 Zero burn in every account the sitting raised, no interface endpoint left, no NAT gateway anywhere;
 then the stage's own instrument (`cicd.py`, `deploytargets.py`, `orchestration.py`, `datalake.py`,
 `warehouse.py` after §W), `make status`, and the log entry of each step, in the sitting it ran. After a
-Sandbox sitting, no Studio app in either project's domain, since an open portal page starts one again
-after the down's hook (N.3 step 10):
+Sandbox sitting, no Studio app in any project's domain (`eighth-experimentation`'s, `test-experimentation`'s
+and, since 2026-11-14, `app-etl-dev`'s), since an open portal page starts one again after the down's hook
+(N.3 step 10):
 
 ```bash
-for d in d-p6gthxc82ckg d-lfgbdrjncmsu; do aws sagemaker list-apps --domain-id-equals "$d" --query 'Apps[?Status!=`Deleted`].[SpaceName,AppType,Status]' --output text --profile awsds-infra-sandbox-1 --region us-west-2; done
+for d in d-p6gthxc82ckg d-lfgbdrjncmsu d-spi9kgo6x5b4; do aws sagemaker list-apps --domain-id-equals "$d" --query 'Apps[?Status!=`Deleted`].[SpaceName,AppType,Status]' --output text --profile awsds-infra-sandbox-1 --region us-west-2; done
 ```

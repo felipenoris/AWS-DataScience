@@ -2787,3 +2787,31 @@ Claude's reads as `awsds-infra-sandbox-1`, Sandbox's `InfrastructureAccess`.
 - **[Claude] Owed**: Sandbox's `USW2-GlueInteractiveSession-DPU-Hour` line for 2026-11-14 once Cost
   Explorer holds the day (`runbooks/security-hub.md` V3's command with that usage type): 0.90 DPU-h if the
   bill counts `DPUSeconds`, 3.20 if it counts the formula.
+
+## 2026-11-15 — step 17's commands, step 15's schedule and §R's third domain, with nothing up
+
+Claude's reading of the CI/CD CLI's installed code and of the records. No AWS call: the infrastructure
+user's SSO token had expired by 02:00 UTC.
+
+- **[Claude] The sitting's cost, estimated in chat** from the trails' times and the recorded rates: about
+  1.5 USD, 1.25 to 1.9, the largest lines the Glue session (0.40 at its `DPUSeconds`), AWS Config's cycle
+  (0.36 to 0.87, `cost-model.md`'s range) and Sandbox's 19 endpoints for about 1.77 h (0.34 to 0.57); about
+  3.1 if the bill counts the session's formula and each endpoint's clock hours. The standing floor is out
+  of it. **[user]**, to whether the bill is recorded once Cost Explorer holds both days: *"Não precisa"*.
+  `SUP-368`'s one line stays owed.
+- **[Claude] Step 17 prepared**: the CLI 1.0.9's `bundle` read in the laptop's `uv tool` install. Its
+  configuration carries the target's region alone (`commands/bundle.py`), so the manifest's domain id is
+  unused: `helpers/utils.py` tries `DescribeStacks` on `cicd-test-domain-stack`, then calls `ListDomains`
+  and takes the one domain listed, failing on two (`SUP-162`'s call, not measured on `bundle`). It reads the
+  project, its members and its connections, then the catalog by `Search`, `SearchTypes`, `GetAsset` and
+  `GetDataProduct` (`helpers/catalog_export.py`), and writes the archive under `./artifacts`; no call
+  writes in AWS. The stage file's step 17 now carries the commands: the two code zips `build-task-code`
+  builds, the placeholders the `bundle` job sets, the bundle, the guard.
+- **[Claude] Step 15's source**: `5xkhlb1ubnrf9s`, on `cron(24 23 * * ? *)` since 23:24 UTC on 2026-11-14,
+  had no run at 00:19 UTC and carries `publishOnImport` false (`CT-4`, that run). Its first scheduled run,
+  at 23:24 UTC on 2026-11-15, imports the table unlisted, so the portal's run is needed only before that
+  minute. Written in step 15 and in the waiting list's row.
+- **[Claude] `runbooks/promotion.md` §R**: the loop over the Studio domains gains `app-etl-dev`'s
+  `d-spi9kgo6x5b4`, which the readings at 00:16 UTC covered by hand.
+- **[Claude] Owed**: the consumer source's scheduled run at 02:51 UTC, read once the infrastructure user
+  signs in again.
