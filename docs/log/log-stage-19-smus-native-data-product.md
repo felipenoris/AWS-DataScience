@@ -3054,3 +3054,40 @@ They close the previous entry's list owed with a sign-in.
   (`ca2735c9-…`), Data Governance (`7ee243ab-…`) and Staging (`65b0f127-…`), `awsds-deploy-sandbox-test`
   (`06d426f2-…`) and `awsds-deploy-staging` (`9bead345-…`). `awsds-deploy-prod` has none, as §N.8.4 step 7
   expects.
+
+## 2026-11-15 — release T's sitting: the raises, the mirror, the template's merge request and its variables
+
+The user's acts, as the user reported them in the chat, and Claude's reads as the infrastructure user
+(`InfrastructureAccess`) and, for GitLab, through the user's browser session (`runbooks/promotion.md` §N.8.2
+steps 2 to 4).
+
+- **[user] PR #303 merged** at 19:43:28 UTC (`3a15f2f6`). The session went on in the same conversation, on
+  the user's word, on a new branch cut from that commit.
+- **[Claude] The other sessions told** before the first raise: `Stage 19: SUP-368's Glue line in the bill`
+  and `Worktrees para apagar`, both idle.
+- **[user] `make hub-up`, `make gitlab-up BUILD=1` and the tunnel.** EC2's launch times: the VPN host
+  19:43:57 UTC, the proxy 19:44:00, GitLab 19:46:05, the deploy runner 19:46:28, the build and test runners
+  19:46:37. The three runners run `ami-0dac6cd09676c9fb1`, the parameter's value since 2026-11-12, their
+  first boot on it; GitLab lists the three `online` (runners 1, 3 and 4 of `awsds/app-etl`).
+- **[user] The mirror**, `git push gitlab main` from the project folder. **[Claude]** `ls-remote` read
+  `awsds/infrastructure`'s `main` at `3a15f2f6`, `origin/main`.
+- **[Claude] Step 2's readings.** `./aws/cicd.py` (19:56:44 UTC): `CI-1` to `CI-9` pass, the failed calls
+  those of the persona profiles nobody had signed in. `./aws/egress.py awsds-infra-prod
+  awsds-infra-sandbox-1`: every check passes, Production's 12 interface endpoints (`EG-5`, about 0.120
+  USD/h), Sandbox's `egress/` down. `make status` (finished 19:59:47 UTC): 0.4571 USD/h, the hub's two hosts,
+  `egress/` (12), `tooling/` and `runners/` (13, the build runner with them) up; Staging, Sandbox,
+  `workloads-egress/` and both warehouses' compute down.
+- **[Claude] GitLab's `main` before step 4**: `awsds/app-etl` at `8d50f68`, the clone's commit, so the
+  merge request is the diff read offline; tags `v0.4.0` to `v0.4.6`, `v0.4.7` free.
+- **[user] The template's merge request**, by step 4's commands: branch `release-t`, commit `cf2d1a5` on
+  `8d50f68`, `12 files changed, 1040 insertions(+), 214 deletions(-)`; merge request !13, its pipeline #113
+  (20:07:21 to 20:08:01 UTC) green, the merge `355ab8c` (parents `8d50f68` and `cf2d1a5`) and its pipeline
+  #114 (20:09:15 to 20:09:59 UTC) green. **[Claude] read**: `release-t`'s tree and `main`'s are
+  `416a897c…`, the tree of `36bcf916:examples/app-etl`. Pipeline #113 ran `test`, `pip-audit`,
+  `secret-detection-gate` and `secret_detection`, #114 those and `pages`, each on the test runner;
+  `gate-without-proxy` stays `manual` in both.
+- **[user] The CI/CD variables.** **[Claude] read** through the API in the user's session: nine, each
+  protected and unmasked: `DOMAIN_ID`, `DOMAIN_REGION`, `DEV_PROJECT_NAME` (`app-etl-dev`), `SUBNET_AZ1`,
+  `SUBNET_AZ2`, `DEV_PROJECT_SG`, `DEV_PROJECT_KEY_ARN`, `ECR_REGISTRY`, `TRAINING_IMAGE_URI`. The four
+  `TEST_PROJECT_*` are gone.
+- **[Claude] `awsds/dev-env`**: `main` still at `6eff905`, step 5's merge request not yet opened.
