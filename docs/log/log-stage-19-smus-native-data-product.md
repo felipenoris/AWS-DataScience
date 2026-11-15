@@ -2977,3 +2977,38 @@ through.
   2026-11-08, and names v48 since; the plan reads no comment.
 - **[Claude] Until PR #302 merges**, a plan of either slice from a tree without its commits restores the
   statement (Lesson 79).
+
+## 2026-11-15 — release T's sitting prepared with nothing up: the gates, the two merge requests
+
+Claude's reads on the laptop, with no AWS call: the infrastructure user's SSO token had expired. Each
+tree was extracted with `git archive` into the session's scratch folder, outside the repository.
+
+- **[Claude] Release T's gates** (`runbooks/promotion.md` §N.8.2 step 1), on `36bcf916:examples/app-etl`:
+  `uv sync --locked`; `ruff check` *"All checks passed!"* and `ruff format --check` *"12 files already
+  formatted"*; `pytest` 72 passed and 1 skipped; the lint at `d856982c` with the job's instance types and
+  algorithm repository, *"ok: 9 arquivo(s)"*; `uv export` as the gate runs it, one pinned package,
+  `pyarrow` 25.0.1, and `pip-audit` 2.10.1 against OSV, *"No known vulnerabilities found"*.
+- **[Claude] `./scripts/check-gitlab-ci.py`**, `main`'s copy run over `36bcf916`'s tree and over `main`'s:
+  *"OK"* on both, the one unread include GitLab's `Jobs/Secret-Detection.gitlab-ci.yml`.
+- **[Claude] Release F's gates**, on `main`'s `examples/app-etl/` (`729a06da`): ruff clean, 85 passed and 1
+  skipped, the lint at `196acee` *"ok: 9 arquivo(s)"*, `pip-audit` on `pyarrow` 25.0.1 with no finding.
+- **[Claude] The template's merge request**: the clone `$HOME/tmp/app-etl` is on `main` at `8d50f68`, the
+  merge of `kms-key-id`, clean, with tree `5a5970a2…`, the tree of `2d3160f1:examples/app-etl`. The merge
+  request is `git diff 2d3160f1 36bcf916 -- examples/app-etl`: 12 files, 1,040 insertions and 214
+  deletions, `scripts/dev-cli.sh` and `tests/test_dev_cli.py` new. GitLab's `main` is read at the sitting.
+- **[Claude] `awsds/dev-env`'s merge request**: the copy under `gitlab/awsds/dev-env/` differs from
+  `gitlab/mirror.json`'s `6eff905` in `.gitlab-ci.yml` alone, 5 insertions and 3 deletions (`b9e8601e`,
+  PR #273). The clone `$HOME/tmp/dev-env-v0.10.0`, on its branch `the-releases-v0.10.0` at `fb5722b`, holds
+  the copy's file as of the last mirror.
+- **[Claude] That merge request's `pip-audit`**: the copy's `dev-env/python` lock exported as the gate does,
+  454 pinned packages, each line marked `platform_machine == 'x86_64' and sys_platform == 'linux'`. On the
+  laptop `pip-audit` audited 0 of 454, every marker false, and still printed *"No known vulnerabilities
+  found"*; the gate's own count fails such a run. With the markers removed and Python 3.12, 454 of 454
+  audited: 105 findings, 76 matched by id or alias in `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV`, 29 blocking with a
+  fixed version (`langgraph` 1.2.11, `langgraph-sdk` 0.4.4, `msgpack` 1.2.2, `nltk` 3.10.3, `oauthlib`
+  4.0.0, `opentelemetry-api` 1.45.1, `pillow` 12.3.0, `pyasn1` 0.6.4, `soupsieve` 2.9.2, `tornado`
+  6.5.10), none without one, no accepted entry gone.
+- **[Claude] The other sessions**: `Stage 19: SUP-368's Glue line in the bill` idle, its worktree with no
+  commit past `main` and no change.
+- **[Claude] Owed with a sign-in**: the Amazon Linux parameter (§N.8.2 step 1), `make status`, and the
+  re-plans of `staging/chains/` and `production/chains/` against the plans of 2026-11-12.
