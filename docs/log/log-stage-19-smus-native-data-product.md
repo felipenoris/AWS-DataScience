@@ -3171,3 +3171,9 @@ user's browser session.
 - **[Claude] §N.8.2 step 14, 3.7**: the four `release.tf`s on `v0.4.7`'s values, each slice planning *"No
   changes"* at 21:51 UTC with both legs up (Stage 8's log). Taken while the chain of step 11 ran, before
   `make down ENV=staging` destroys the Staging slices it plans.
+- **[Claude] §N.8.2 step 17's reads**, before any delete, as `awsds-infra-sandbox-1`: in `test-experimentation`
+  the workflows `app_etl_test_experimentation_app_etl` and `app_etl_test_experimentation_app_etl_train`, the
+  Glue job `app-etl-4gqfau9xuo6e4w` (created 2026-10-19 18:55 UTC, its script under the project's
+  `shared/app-etl/glue/`), and 19 objects, 37,310 bytes, under the project's `shared/app-etl/`, written
+  2026-10-25 22:59:05 to 23:12:50 UTC. `houseprice_etl_test_experimentation_houseprice_etl` is the third
+  workflow named after the project, not the application's. The deletes wait for the user's word.
