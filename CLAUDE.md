@@ -468,7 +468,7 @@ domain name from the user, and 15, which nothing blocks and whose decisions 1-4 
 - **A promotion's Staging leg** (Stage 8 decision 27): the user raises `staging/egress` before the tag
   (`make up ENV=staging ONLY=egress`) and destroys it after (`make down ENV=staging`); the pipeline raises
   and destroys no shared slice.
-- **The release in Production is `v0.4.6`**: the four `release.tf` and the orchestration slices' defaults
+- **The release in Production is `v0.4.7`**: the four `release.tf` and the orchestration slices' defaults
   name it, and a by-hand apply on a stale default rolls the workflows back. `production/orchestration`'s
   three schedules stay `DISABLED` between sittings.
 - **The house image** is `awsds-sandbox-dev-env` version 11, `default-v0.10.0` (2026-10-26); its `NO_PROXY`
