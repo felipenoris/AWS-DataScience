@@ -1884,3 +1884,15 @@ UTC.*
 - **[user] 12a.5**: the branch `xx-undeclared-glue-job` deleted from GitLab (*"- [deleted]
   xx-undeclared-glue-job"*), the local branch deleted (*"was 90f5cc1"*), and `git ls-remote --heads` printing
   nothing. No Sandbox residue to delete.
+
+## 2026-11-15 — decision 11's Staging half: the Deployment Manager's read of a run on `v0.4.7`
+
+*Release T's sitting, `promotion.md` §N.8.2 step 9; the user's acts and Claude's trail reads, recorded in full in
+Stage 19's log. Times UTC.*
+
+- **[user]** As the Deployment Manager User (`awsds-deploy-staging`, `DeploymentManagerAccess`, the Staging
+  Account), `get-workflow-run` on `awsds-staging-wf-app-etl`'s run `ukdqPTEi5Tav4PL` answered `SUCCESS`.
+- **[Claude]** Staging's trail, read at 21:31:52: `ListWorkflows`, `ListWorkflowRuns` and `GetWorkflowRun`
+  (21:28:46 to 21:28:55) in the session `AWSReservedSSO_DeploymentManagerAccess_…`, and at 21:28:55 the paired
+  `Decrypt` in the same session, `invokedBy airflow-serverless.amazonaws.com`, its encryption context the
+  workflow's ARN, no error. Decision 11's Staging half read.
