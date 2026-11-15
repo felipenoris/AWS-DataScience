@@ -1937,7 +1937,9 @@ their commands are the record of what ran:
 **After release T's sitting and the Sandbox sitting** (§N.8.2; the stage file's items 16 to 20 and
 its 1.5): `product.json` brought to what the `dev` project for app-etl alone owns, the stage file's §The
 Sandbox sitting, in order, step 17: expected `trades-notional` in `dataProducts` beside the asset, and no
-form type, since the export carries those the project owns (item 22).
+form type, since the export carries those the project owns (item 22). **Done 2026-11-15**, before release
+T's sitting: the export carries the asset and the data product with no form type, and `product.json`
+requires both.
 
 **The promotion sitting**, the hub and GitLab up and `make up ENV=staging`:
 

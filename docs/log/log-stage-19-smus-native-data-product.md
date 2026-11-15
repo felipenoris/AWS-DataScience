@@ -2854,3 +2854,43 @@ GetAsset"*: Data Governance's role is no member of `test-experimentation`.
   `CT-13`'s latest start still 22:01:21's. `app-etl-dev`'s `Tooling-default-sagemaker-modelpackagegroup-datasource`,
   on `cron(7 2 * * ? *)`, read `RUNNING` on its first run, a third source of `EXC-11`'s kind.
 - **[Claude] Owed**: Sandbox's `USW2-GlueInteractiveSession-DPU-Hour` line for 2026-11-14 (`SUP-368`).
+
+## 2026-11-15 — steps 15 and 17: the product curated in `app-etl-dev`, `product.json` requiring its data product
+
+The user's acts in the portal as the Data Scientist User, with nothing up; Claude's reads as
+`awsds-infra-data` (the source's runs) and `awsds-infra-sandbox-1` (the inventory, the data product, the
+bundle), and the template's change.
+
+- **[Claude] The instructions** for step 15 at 03:08 UTC, before the source's first scheduled run at 23:24
+  UTC, so the run is the portal's: the description and README texts proposed, the form `classification`
+  `internal`, the data product left unpublished, no JupyterLab or Code Editor opened.
+- **[user] Step 15** in `app-etl-dev`: *"Fiz o passo 15"*.
+- **[Claude] The source's run**: `577dc5ia9du07k`, `PRIORITIZED`, `SUCCESS`, created 03:11:22.274 and
+  stopped 03:11:25.710 UTC; `added` 1, `updated`, `unchanged` and `failed` 0; one activity, `app_etl`
+  `SUCCEEDED_CREATED`, the asset `c6z3pbg3drrs0g` `trades_notional`. `CT-13` reads its start at 03:11:22 by
+  `awsds-data-studio-domain-execution`, verdict `other`, the portal's.
+- **[Claude] The asset**: revision 1 by `SYSTEM` at 03:11:25.220, revisions 2 to 4 by the data scientist's
+  profile `28f1b390-…` at 03:12:56, 03:13:18 and 03:13:45 UTC. Revision 4 carries the description, the README
+  in `AssetCommonDetailsForm` and the form `classification` `{"classification":"internal"}` of type
+  `classification` revision 2, which `get-form-type` names as `eighth-experimentation`'s (`avhvbqn37ty7m8`,
+  `ENABLED`); no listing. A project attaches a form type another project owns: item 22's measurement,
+  decision 4's first branch.
+- **[Claude] The data product**: `5070mjwdvjwp3k` `trades-notional`, revision 1, `CREATED`, created
+  03:14:56.022 UTC by the same profile, no description, one item, `ASSET` `c6z3pbg3drrs0g`.
+- **[Claude] `./aws/catalog.py`**, 03:16:30 to 03:18:56 UTC: all checks passed. `CT-15`: 9 listings, none of
+  `app-etl-dev`; `CT-19`'s inventory reads `app-etl-dev`'s `trades_notional` over `app_etl.trades_notional`,
+  not a link; the source 1 run, `SUCCESS`, `lastRunAssetCount` 1. No app and no space on `d-p6gthxc82ckg`,
+  `d-lfgbdrjncmsu` and `d-spi9kgo6x5b4`.
+- **[Claude] Step 17**: the bundle from the template's folder with the stage file's commands, 03:19:45 to
+  03:20:09 UTC, exit 0, `artifacts/app-etl.zip` 25,910 bytes, SHA256 `4b852993…21aacfe`. The export holds
+  `assets` `trades_notional` (its forms `GlueTableForm` 13, `DataSourceReferenceForm` 5,
+  `SubscriptionTermsForm` 2, `AssetCommonDetailsForm` 8 and `classification` 2, each by name and revision)
+  and `dataProducts` `trades-notional`, its item the `dev` asset's id; `formTypes`, `glossaries`,
+  `glossaryTerms` and `assetTypes` empty (xii's bundle half). The guard: *"FAIL  dataProducts:
+  trades-notional is in the export and not in product.json"*, exit 1.
+- **[Claude] The change**: `examples/app-etl/product.json` requires `dataProducts` `trades-notional` beside
+  the asset, and the guard on the same archive answers *"OK"*. The test sample in
+  `tests/test_catalog_export.py` carries the data product, and a new case fails a release without it. The
+  template's gates: `uv sync --locked`, ruff check and format clean, `pytest` 85 passed and 1 skipped. The
+  build outputs and the template's `.venv` were removed after.
+- **[Claude] Owed**: Sandbox's `USW2-GlueInteractiveSession-DPU-Hour` line for 2026-11-14 (`SUP-368`).

@@ -21,7 +21,9 @@ PRODUCT = {
     "formTypes": [{"name": "classification"}],
     "assetTypes": [],
     "assets": [{"name": "trades_notional", "typeIdentifier": "amazon.datazone.GlueTableAssetType"}],
-    "dataProducts": [],
+    "dataProducts": [
+        {"name": "trades-notional", "items": [{"itemType": "ASSET", "identifier": "a1"}]}
+    ],
 }
 
 
@@ -60,9 +62,13 @@ def test_an_allowed_resource_may_be_absent(guard, tmp_path):
     ("change", "named"),
     [
         ({"assets": PRODUCT["assets"] + [{"name": "house-price"}]}, "assets: house-price is in"),
-        ({"dataProducts": [{"name": "my-data-product"}]}, "dataProducts: my-data-product is in"),
+        (
+            {"dataProducts": PRODUCT["dataProducts"] + [{"name": "my-data-product"}]},
+            "dataProducts: my-data-product is in",
+        ),
         ({"glossaries": [{"name": "trading"}]}, "glossaries: trading is in"),
         ({"assets": []}, "assets: trades_notional is in the export 0 time(s)"),
+        ({"dataProducts": []}, "dataProducts: trades-notional is in the export 0 time(s)"),
         ({"assets": PRODUCT["assets"] * 2}, "assets: trades_notional is in the export 2 time(s)"),
     ],
 )
