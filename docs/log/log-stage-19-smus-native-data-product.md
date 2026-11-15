@@ -3209,3 +3209,14 @@ user's browser session.
   records, about 300 each in 20 minutes). The deploy's calls to the MWAA Serverless API took the `mwaa` group's
   endpoint.
 - **[user] 12a's branch deleted** in GitLab and in the laptop's clone (Stage 10's log).
+- **[Claude⚡] §N.8.2 step 17, on the user's word in chat** (*"Sim, remova"*), the other sessions told first, as
+  `awsds-infra-sandbox-1`, each object read before its delete: `delete-workflow` of
+  `app_etl_test_experimentation_app_etl` (`READY`, last run `FAILED`, no run in progress) at 22:36:46 and of
+  `app_etl_test_experimentation_app_etl_train` (`READY`, no run) at 22:36:48; `delete-job` of
+  `app-etl-4gqfau9xuo6e4w` (last run `SUCCEEDED` on 2026-10-25) at 22:36:59; `aws s3 rm --recursive` of the
+  project's `shared/app-etl/` at 22:37:23, the 19 objects listed before it (the two code zips, the two Glue
+  scripts, `src/`, the three workflow files, the inbox, outbox, table and `work/` objects). The bucket is
+  versioned, so each key ends in a delete marker and its versions stay. Read back: the prefix lists no object,
+  19 delete markers at 22:37 beside 17 older ones, `houseprice_etl_test_experimentation_houseprice_etl` the only
+  workflow named after the project, the Glue job *"Job not found"*. The two workflows' log groups under
+  `/aws/mwaa-serverless/` stay, under `EXC-10`'s rule.
