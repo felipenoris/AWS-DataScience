@@ -3261,3 +3261,9 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   word naming it.
 - **[Claude] The times of the two bullets above, corrected**: `make status` ended at 23:07:19 UTC (not 22:55),
   and the plan was saved at 23:08:34 (not 22:57), read from the files' modification times.
+- **[Claude⚡] §N.8.4 step 5, `staging/chains/` applied** on the user's word in chat (*"Sim, aplique o chains"*),
+  the other sessions told first, as `awsds-infra-staging`: the saved plan of 23:08:34, 23:11:18 to 23:11:44 UTC,
+  *"18 added, 0 changed, 0 destroyed"*. The re-plan *"No changes"*, exit 0 under `-detailed-exitcode`. Read
+  back: `awsds-staging-chain-app-etl` and `awsds-staging-chain-app-etl-train` created at 23:11:39, both
+  schedules in `awsds-staging-chains` `DISABLED`, the two chain failure rules and the two workflow failure rules
+  `ENABLED`.
