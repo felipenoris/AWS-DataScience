@@ -2894,3 +2894,49 @@ bundle), and the template's change.
   template's gates: `uv sync --locked`, ruff check and format clean, `pytest` 85 passed and 1 skipped. The
   build outputs and the template's `.venv` were removed after.
 - **[Claude] Owed**: Sandbox's `USW2-GlueInteractiveSession-DPU-Hour` line for 2026-11-14 (`SUP-368`).
+
+## 2026-11-15 — `TM-29`'s trigger read and `TM-31` decided: the start grant kept in Production alone
+
+The user's decision in the session's chat; Claude's reads with nothing up, as `awsds-infra-sandbox-1`,
+`awsds-infra-staging` and `awsds-infra-prod`, and the edits.
+
+- **[Claude] The options**, each with a recommendation: decision 17's (a) with (d) kept and `CT-13`
+  widened to the reads; `TM-31` accepted.
+- **[Claude] The readings behind them.** `SageMakerStudioProjectUserRolePolicy` at `v77` holds
+  `ListDomainS3BucketPermissions`, `s3:ListBucket` and `s3:ListBucketVersions` on the domain bucket under
+  `s3:prefix` `<domain>/<project>` and `<domain>/<project>/*`, beside `AirflowListDomainS3Permissions`,
+  `s3:ListBucket` on the same bucket with no prefix condition, and its companions `AirflowS3BucketActions`
+  (`GetEncryptionConfiguration`, `GetBucketPublicAccessBlock`) and `AirflowS3GetAccountPublicAccessBlock`.
+  Sandbox's trail holds the reads of 2026-11-14 by `test-experimentation`'s role
+  `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw`, each answered: `GetDataSource` on `budryu9mt9y5u8` at
+  22:52:16, `GetDataSourceRun` on `6bnfg5dk961bps` at 22:52:18 and `ListDataSourceRunActivities` at
+  22:52:19 UTC. Decision 20 (b) gives Sandbox's `StartDataSourceRun` the listing code's exercise in `dev`
+  alone, and Staging's `PUBLISH_LISTING` is false, so its task returns before the start.
+- **[user] The lens**: *"Revise as recomendações sobre essas duas decisões, considerando que estamos
+  querendo seguir o uso pretendido padrão do SMUS, conforme recomendado pela AWS."*
+- **[Claude] The revised recommendations**: decision 17 (b) in Sandbox and Staging and (a) in Production,
+  read again at 4.13; the reads accepted as the platform's, with no new check; `TM-31` accepted, the
+  bucket-policy deny left as the control a trigger reopens.
+- **[user] The decision**: *"Sim, revisadas"*.
+- **[Claude] The code**: `sandbox/workflows/main.tf` loses the statement
+  `StartADataSourceRunInTheProjectsDomain`. `<env>/studio/workflows.tf` is one copy in both targets
+  (`scripts/check-copies.py`, which failed on a first edit that removed the statement from Staging's copy
+  alone), so the statement and the description's data-source clause stand behind a new variable in each
+  account's `project-roles.tf`, `publishing_starts_the_source`, true in Production and false in Staging;
+  the copy's comment carries the reasoning Sandbox's file held.
+- **[Claude] The plans**, each slice's tfvars regenerated in this worktree: `sandbox/workflows/` `0 to add,
+  1 to change, 0 to destroy`, `awsds-sandbox-workflows` in place, the statement removed;
+  `staging/studio/` `2 to add, 0 to change, 2 to destroy`, `awsds-staging-workflows` replaced for its
+  description and its attachment to `datazone_usr_role_5ido8bej1zoeq8_d6nu5aphq1e974` with it;
+  `production/studio/` `No changes`, as `awsds-infra-prod`. The two plans that change something are saved
+  outside the repository; the applies wait for the user's authorization.
+- **[Claude] The report's lines** for decision 17 (d), beside the text of 2026-11-11:
+
+  > A principal that is no member of a project reads that project's data source, its runs and each run's
+  > activities (`GetDataSource`, `GetDataSourceRun`, `ListDataSourceRunActivities`), which name the tables
+  > the project catalogues and their asset ids.
+  >
+  > `SageMakerStudioProjectUserRolePolicy`'s statement `AirflowListDomainS3Permissions` grants
+  > `s3:ListBucket` on the domain bucket with no `s3:prefix` condition, so every project role lists the
+  > object keys of every other project sharing the bucket, while its statement
+  > `ListDomainS3BucketPermissions` grants the same listing under the project's own prefix.

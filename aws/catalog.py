@@ -92,9 +92,10 @@
 #         alone.
 #   CT-13 every start of a data source is its own project's. DataZone admits a project role's
 #         StartDataSourceRun on another project's source, and IAM reaches the action at the
-#         domain alone (SUP-346); Stage 19 decision 17 (2026-11-10) keeps the grant the
-#         publishing task needs and judges each start CloudTrail holds, in the registry, the
-#         Interactive account and, since their projects exist, both deployment targets.
+#         domain alone (SUP-346); Stage 19 decision 17 keeps the grant the publishing task
+#         needs on Production's deployment project role alone, and the check judges each start
+#         CloudTrail holds, in the registry, the Interactive account and, since their projects
+#         exist, both deployment targets.
 #   CT-14 a deployment project's sources are Glue sources, one per database, publishing nothing
 #         on import and generating no names (Stage 19 step 4.6). CT-5 leaves the generation over a
 #         project's own database to the project; a deployment project has no person to choose,

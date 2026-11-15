@@ -1,11 +1,12 @@
 # The workflows grant on the deployment project's role (Stage 19 step 4.4): the statements
 # sandbox/workflows/ attaches to every Sandbox project role, whose reasoning and measurements are
-# that slice's main.tf. In a deployment project the role is every workflow's execution role and the
-# role of the Glue and processing jobs its operators create (Stage 18 step 4.4: without the grant
-# the first run was refused glue:GetJob).
+# that slice's main.tf, and, where project-roles.tf sets publishing_starts_the_source, the publishing
+# task's start of the project's data source. In a deployment project the role is every workflow's
+# execution role and the role of the Glue and processing jobs its operators create (Stage 18 step
+# 4.4: without the grant the first run was refused glue:GetJob).
 #
-# The policy exists once the blueprints are enabled, since its last statement names the domain. It
-# is attached to the roles project-roles.tf names.
+# The policy exists once the blueprints are enabled, since its last statement can name the domain.
+# It is attached to the roles project-roles.tf names.
 
 locals {
   processing_jobs = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:processing-job/*"
@@ -13,13 +14,19 @@ locals {
   # A Glue job named for the caller's project, <app>-<project id> (D41): $${ keeps the policy
   # variable out of Terraform's interpolation.
   glue_jobs_named_for_the_caller = "arn:${data.aws_partition.current.partition}:glue:${var.region}:${data.aws_caller_identity.current.account_id}:job/*-$${aws:PrincipalTag/AmazonDataZoneProject}"
+
+  # A description change replaces the policy, so the clause follows the statement it names.
+  workflows_description = join("", [
+    "sandbox/workflows/'s grant on a deployment project's role: a workflow's operators check a Glue or processing job name before creating the job",
+    var.publishing_starts_the_source ? ", and the publishing task starts the project's data source." : ".",
+  ])
 }
 
 resource "aws_iam_policy" "workflows" {
   count = var.blueprints_enabled ? 1 : 0
 
   name        = "awsds-${var.env}-workflows"
-  description = "sandbox/workflows/'s grant on a deployment project's role: a workflow's operators check a Glue or processing job name before creating the job, and the publishing task starts the project's data source."
+  description = local.workflows_description
   policy      = data.aws_iam_policy_document.workflows[0].json
 }
 
@@ -84,14 +91,22 @@ data "aws_iam_policy_document" "workflows" {
   }
 
   # The publishing task starts the run of the project's data source before it lists the asset (Stage
-  # 19 decisions 3 and 17). The action takes no resource type below the domain and no condition key,
-  # so the grant reaches every data source of the domain (TM-29); ./aws/catalog.py CT-13 judges each
-  # start against the source's project.
-  statement {
-    sid       = "StartADataSourceRunInTheProjectsDomain"
-    effect    = "Allow"
-    actions   = ["datazone:StartDataSourceRun"]
-    resources = ["arn:${data.aws_partition.current.partition}:datazone:${var.region}:*:domain/${data.terraform_remote_state.governance[0].outputs.domain_id}"]
+  # 19 decisions 3 and 17), in the one stage that lists: the catalog import writes dev's technical
+  # forms on the stage's asset, and the run returns the stage's table to it before the listing
+  # (decision 19). AWS's managed policies grant the project role no StartDataSourceRun
+  # (SageMakerStudioProjectRoleMachineLearningPolicy v47, SageMakerStudioProjectUserRolePolicy v77),
+  # so this statement is the one step of the publication off SMUS's own path. The action takes no
+  # resource type below the domain and no condition key, so the grant reaches every data source of
+  # the domain (TM-29); ./aws/catalog.py CT-13 judges each start against the source's project.
+  dynamic "statement" {
+    for_each = var.publishing_starts_the_source ? ["start"] : []
+
+    content {
+      sid       = "StartADataSourceRunInTheProjectsDomain"
+      effect    = "Allow"
+      actions   = ["datazone:StartDataSourceRun"]
+      resources = ["arn:${data.aws_partition.current.partition}:datazone:${var.region}:*:domain/${data.terraform_remote_state.governance[0].outputs.domain_id}"]
+    }
   }
 }
 

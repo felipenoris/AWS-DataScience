@@ -332,11 +332,10 @@ set: one design split by *which account is allowed to hold what*, D26's argument
 - **`sandbox/workflows/` `[P]` — the workflows grant** (Stage 6i decision 6): one `awsds-<env>-workflows`
   policy allowing `sagemaker:DescribeProcessingJob` on a processing job that carries no
   `AmazonDataZoneProject` tag, which every name not yet taken satisfies, and `sagemaker:AddTags` of that
-  tag with the caller's own value, which creating a tagged job needs; `glue:GetJob` on an untagged job
+  tag with the caller's own value, which creating a tagged job needs; and `glue:GetJob` on an untagged job
   named for the caller's project, which `GlueJobOperator` reads before creating it (Stage 10 decision
-  12, 2026-10-16); and `datazone:StartDataSourceRun` on the projects' domain, which an application's
-  publishing task calls (Stage 19 decision 3, 2026-11-08); one attachment per SMUS project
-  role. `SageMakerProcessingOperator` describes the name it proposes before creating the job,
+  12, 2026-10-16); one attachment per SMUS project role. The publishing task's
+  `datazone:StartDataSourceRun` is Production's `studio/` slice's alone (Stage 19 decision 17). `SageMakerProcessingOperator` describes the name it proposes before creating the job,
   and the blueprint's policy lets a project role describe only jobs tagged with its project, so without
   this grant the operator fails before any job exists. Like `sandbox/bedrock/`, its role list is
   written by hand after a project exists. Since Stage 8 decision 19 (applied 2026-10-16) the

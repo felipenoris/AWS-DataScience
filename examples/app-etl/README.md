@@ -75,8 +75,9 @@ over the account's Glue Data Catalog (`--datalake-formats iceberg`), read back a
 the job's own `CreateTable` under the database's conditioned `CREATE_TABLE`, and a second run replaces
 its data and keeps the table, so the listing `publish` makes and the grants a subscription writes
 survive the runs. The source's run needs `datazone:StartDataSourceRun`, which the blueprint's policies
-do not grant the project role and the house grant `terraform-live/sandbox/workflows/` does (Stage 19
-1.1). The database is created in each project before the first deploy, the same name in every project,
+do not grant the project role and the house grant in `terraform-live/<env>/studio/workflows.tf` gives
+Production's deployment project role alone, the one stage whose `PUBLISH_LISTING` is true (Stage 19
+decision 17, `publishing_starts_the_source`). The database is created in each project before the first deploy, the same name in every project,
 never by the application. The same `--conf` turns on the OpenLineage listener Stage 18 step 7.1 measured
 (Stage 19 decision 10): the job posts its lineage to the domain as the project role through the
 `datazone` endpoint, naming the domain by `{domain.id}` and the account by the stage variable
