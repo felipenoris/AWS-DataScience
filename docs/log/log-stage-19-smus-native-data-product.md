@@ -3147,3 +3147,11 @@ user's browser session.
   infrastructure user's token no longer loaded, *"Error loading SSO Token: Token for awsds does not exist"*,
   its cache file gone and the Deployment Manager's the only one with a start URL (`SUP-016`'s shape);
   Staging's trail waits for the infrastructure user's next sign-in.
+- **[user] `make up ENV=production ONLY=workloads-egress`, then `production-gate`** (job 692, 21:22:31 to
+  21:22:36 UTC). **[pipeline] `production-deploy`** (job 693, 21:22:38 to 21:25:37): `workloads-egress/` read
+  up, 8 interface endpoints and 1 DNS Firewall association `COMPLETE`; the bundle `001eafbb…` copied under
+  `s3://awsds-prod-outputs/applications/app-etl/v0.4.7/`; the application slice *"0 added, 2 changed, 0
+  destroyed"* (the two Glue jobs' scripts) and the orchestration slice planned `0 to add, 3 to change, 0 to
+  destroy`, the three workflows, and applied. `production-warehouse-ddl` and `production-register` stay
+  `manual`: neither belongs to release T's sitting (the warehouse is §N.8.3's and §N.8.4's, with its compute
+  up; the model's registration is not on §N.8.2's list).
