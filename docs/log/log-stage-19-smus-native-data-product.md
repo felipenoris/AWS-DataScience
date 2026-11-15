@@ -3155,3 +3155,11 @@ user's browser session.
   destroy`, the three workflows, and applied. `production-warehouse-ddl` and `production-register` stay
   `manual`: neither belongs to release T's sitting (the warehouse is §N.8.3's and §N.8.4's, with its compute
   up; the model's registration is not on §N.8.2's list).
+- **[user] The infrastructure user signed in again.** **[Claude] Staging's trail for step 9**, read at
+  21:31:52 UTC: `ListWorkflows` (21:28:46), `ListWorkflowRuns` (21:28:50) and `GetWorkflowRun` on
+  `ukdqPTEi5Tav4PL` (21:28:55) in the session `AWSReservedSSO_DeploymentManagerAccess_284ceedc4ee6111b`, and at
+  21:28:55 the paired `Decrypt` in the same session, `invokedBy airflow-serverless.amazonaws.com`, its
+  encryption context the workflow's ARN, no error. Stage 10 decision 11's Staging half read.
+- **[Claude] `./aws/orchestration.py` after `production-deploy`**: 45 checks pass; Production's three
+  workflows on `v0.4.7`'s definitions (`OR-5`), versions 4, 3 and 3 of 50; the three chains' schedules
+  `DISABLED`, their failure rules `ENABLED` (`OR-9`).
