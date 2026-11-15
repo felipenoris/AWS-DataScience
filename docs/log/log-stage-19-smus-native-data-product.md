@@ -3177,3 +3177,9 @@ user's browser session.
   `shared/app-etl/glue/`), and 19 objects, 37,310 bytes, under the project's `shared/app-etl/`, written
   2026-10-25 22:59:05 to 23:12:50 UTC. `houseprice_etl_test_experimentation_houseprice_etl` is the third
   workflow named after the project, not the application's. The deletes wait for the user's word.
+- **[Claude⚡] §N.8.2 step 11, on the user's word in chat** (*"Sim, inicie a chain"*), the other sessions told
+  first: `start-execution` of `awsds-prod-chain-app-etl` as `awsds-infra-prod`, the execution
+  `v0-4-7-by-hand-2026-11-15-app-etl`, started 21:43:28 and `SUCCEEDED` at 22:00:33 UTC (17 min 05 s, 62
+  history events). The Glue run of 21:44:30 read `lake.curated.trades` at snapshot `8185032439141629913`, the
+  same as Staging's leg, and `trades.summary.json` sits under the data key at 21:52:45 (Stage 8's log, 3.3 in
+  Production).

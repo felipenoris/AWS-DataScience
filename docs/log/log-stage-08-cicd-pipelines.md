@@ -4508,3 +4508,21 @@ UTC.*
   `ROwY_irN…aVaf`. At 21:51, each of the four slices planned *"No changes"* with no `-var`, exit 0 under
   `-detailed-exitcode`. The discriminator is `production-deploy`'s own plan, *"0 to add, 3 to change"*
   from `v0.4.6`'s VersionIds. The mirror's push is the user's, after the merge.
+
+## 2026-11-15 — 3.3's snapshot record in Production, on `v0.4.7`
+
+*Claude's reads as the infrastructure user with `InfrastructureAccess` in Production (`awsds-infra-prod`),
+after Stage 19's release T sitting started the app-etl chain by hand (`promotion.md` §N.8.2 step 11).
+Times UTC.*
+
+- **[Claude] The Glue run**: `awsds-prod-app-etl`,
+  `jr_515a905817b1ef61bd90400601530333c365510efccea43fa3116448e3a53484`, `SUCCEEDED`, 21:44:30 to 21:46:40,
+  115 s. Its output log: *"reading SELECT trade_date, desk, instrument, quantity, price FROM
+  lake.curated.trades VERSION AS OF 8185032439141629913"*, *"wrote
+  s3://awsds-prod-outputs/app-etl/work/glue/trades.source.json, snapshot 8185032439141629913"* and *"wrote 30
+  row(s) to the table at s3://awsds-prod-outputs/app-etl/tables/trades_notional/"*.
+- **[Claude] The objects**: `app-etl/work/glue/trades.source.json` (modified 21:46:24) reads
+  `{"pinned": false, "snapshot_id": 8185032439141629913, "table": "lake.curated.trades"}`;
+  `app-etl/work/job/trades.summary.json`'s `source` (modified 21:52:45) is the same object. Both are `aws:kms`
+  under `alias/awsds-prod-data`'s key. The snapshot id equals Staging's of 20:49 (option A's parity, observed:
+  the producer wrote nothing between the two legs). 3.3's record is read in both targets.
