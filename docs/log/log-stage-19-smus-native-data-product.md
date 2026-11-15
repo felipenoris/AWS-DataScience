@@ -3189,3 +3189,13 @@ user's browser session.
   `90f5cc1`, pushed at 22:11. The branch pipeline #119: `test` green at 22:11:56 (*"72 passed, 1 skipped"*,
   the lint *"ok: 9 arquivo(s)"*). `git ls-remote` read `v0.4.8` free, and the tag `v0.4.8` was pushed on
   `90f5cc1` at 22:12:31: pipeline #120.
+- **[user] §N.8.2 step 13, the space's readings** (pasted verbatim from the space `default`'s terminal, a
+  JupyterLab space of `app-etl-dev`): `type -a aws-smus-cicd-cli` lists `/opt/awsds/bin/aws-smus-cicd-cli`
+  first, then `/opt/conda/bin/aws-smus-cicd-cli` and `/opt/awsds/bin/aws-smus-cicd-cli` again;
+  `aws-smus-cicd-cli 1.0.9`; `10.20.38.251    airflow-serverless.us-west-2.api.aws`; `73`. Each is the
+  expected reading. The clone of `awsds/app-etl` as the Data Scientist User, with the persona's token at git's
+  prompt: *"Receiving objects: 100% (154/154)"*.
+- **[user] `staging-gate` of #120** at 22:17:15. **[Claude] §N.8.2 step 12a read** (Stage 10's log, verification
+  xx's second half): `staging-test` failed at 22:24:11 on *"FATAL: the chain app-etl ended FAILED"*, `transform`
+  refused at `GetJob` on `awsds-staging-app-etl-undeclared`, `CreateJob` 0, both failure rules and two
+  notifications fired, Production untouched, no Sandbox residue. The branch's deletion is the user's.
