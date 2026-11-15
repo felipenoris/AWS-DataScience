@@ -4489,3 +4489,22 @@ UTC.*
   `{"pinned": false, "snapshot_id": 8185032439141629913, "table": "lake.curated.trades"}`, an integer id;
   `app-etl/work/job/trades.summary.json`'s `source` is the same object, key for key. 3.3's record read in
   Staging; Production's half follows that leg's run.
+
+## 2026-11-15 — 3.7's record of `v0.4.7`
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` in the Staging Account
+(`awsds-infra-staging`) and in Production (`awsds-infra-prod`), in Stage 19's release T sitting
+(`promotion.md` §N.8.2 step 14), both legs' slices up. Times UTC.*
+
+- **[Claude] The values**, read from pipeline #117 through GitLab's API: the legs' artifacts
+  `staging-release.auto.tfvars.json` (job 688) and `production-release.auto.tfvars.json` (job 693), and
+  from job 693's log the image digest `sha256:14ae4d03…6126` and the bundle's SHA256 `001eafbb…5826`, the
+  same in job 688's. ECR holds the digest as `v0.4.7-355ab8c7`, pushed 20:25:26. Release T's template keeps
+  each leg's release file as an artifact; Release F's (`deploy-application.py`) keeps only the deploy log.
+- **[Claude] The four `release.tf`s** default to `v0.4.7`: both application slices the digest and the
+  bundle's SHA256; Staging's orchestration slice `app-etl` `6FAHInLc…kRQz` and `mhNTaJW2…qLWD`, `app-etl-train`
+  `SBtjDXFa…NmPuuHKQ` and `q5cF9Dxk…g.QQ`, `app-etl-warehouse` `OM3x9014…LIrd`; Production's `app-etl`
+  `kxEa15Ak…RCR`, `rT8YZcyC…jmKi`, `app-etl-train` `8hPcuPjf…J5S9`, `wXKC2OCZ…dUx`, `app-etl-warehouse`
+  `ROwY_irN…aVaf`. At 21:51, each of the four slices planned *"No changes"* with no `-var`, exit 0 under
+  `-detailed-exitcode`. The discriminator is `production-deploy`'s own plan, *"0 to add, 3 to change"*
+  from `v0.4.6`'s VersionIds. The mirror's push is the user's, after the merge.

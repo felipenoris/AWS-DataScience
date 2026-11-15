@@ -3168,3 +3168,6 @@ user's browser session.
   sign-in. **[Claude]** The loss read at 21:29:36 UTC is `SUP-015`'s logout, which removes every cached token,
   not `SUP-016`'s shape named above; no `SUP` entry gains a reading. §N.8.2 step 9 now says the two
   `sso-session`s' tokens coexist without a logout.
+- **[Claude] §N.8.2 step 14, 3.7**: the four `release.tf`s on `v0.4.7`'s values, each slice planning *"No
+  changes"* at 21:51 UTC with both legs up (Stage 8's log). Taken while the chain of step 11 ran, before
+  `make down ENV=staging` destroys the Staging slices it plans.

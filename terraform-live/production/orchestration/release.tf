@@ -5,7 +5,7 @@
 # recorded as this variable's default, so a by-hand apply after `make down ENV=production` creates the
 # same workflows from the same object versions (Lesson 4).
 #
-# The default is v0.4.6 (pipeline #102, 2026-10-25), its VersionIds read from the leg's record
+# The default is v0.4.7 (pipeline #117, 2026-11-15), its VersionIds read from the leg's record
 # production-release.auto.tfvars.json; Staging creates no workflow for app-etl-warehouse, Production's alone (Stage 9
 # decision 15). Null creates nothing: no workflow can exist before its definition does, and a chain
 # names its workflows.
@@ -20,18 +20,18 @@ variable "release" {
     }))
   })
   default = {
-    tag = "v0.4.6"
+    tag = "v0.4.7"
     workflows = {
       "app-etl" = {
-        definition_version_id = "4NS.8XnUqg.opodG.h6A65pBT1vrFIwE"
-        code_version_id       = "l1L3_a6GpJ0T8wyF4z5gMWEIiMtxIfpR"
+        definition_version_id = "kxEa15AkDczni815_xG8ETprAcrnVRCR"
+        code_version_id       = "rT8YZcyCp7ub_5xgobuSD1wJW0_.jmKi"
       }
       "app-etl-train" = {
-        definition_version_id = "HGgrM4QbDKsgTm2MMy9KEZzWjoaT8_0E"
-        code_version_id       = "KkRVOadtFSijd3Sdgtjyy1lhsUQTi9KD"
+        definition_version_id = "8hPcuPjfnbgILzge6rwZugMu8yJ6J5S9"
+        code_version_id       = "wXKC2OCZ8Ct8G3adCts8i6fGPDbk2dUx"
       }
       "app-etl-warehouse" = {
-        definition_version_id = "IXw8uLnPshTnOzZVZWayWcHVfabzSgBG"
+        definition_version_id = "ROwY_irNQR0wxjMwdXzz.9I96yagZVaf"
       }
     }
   }
