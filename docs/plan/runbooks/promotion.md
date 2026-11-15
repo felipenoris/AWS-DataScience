@@ -1531,6 +1531,14 @@ space alone: a sitting without step 13 leaves Sandbox down.
    tests, ruff and the lint at `d856982c` (45 passed and *"ok: 9 arquivo(s)"* on 2026-10-27),
    `./scripts/check-gitlab-ci.py`; and the Amazon Linux parameter (N.1 step 3), `ami-0829b74b2a8c619b7` on
    2026-10-27.
+   **Read 2026-11-15** on release T's tree, `36bcf916:examples/app-etl` extracted outside the repository:
+   `uv sync --locked`, ruff check and format clean, 72 passed and 1 skipped, the lint at `d856982c` with
+   the job's options *"ok: 9 arquivo(s)"*, and `pip-audit` 2.10.1 over the one pinned package, `pyarrow`
+   25.0.1, with no finding. `main`'s `./scripts/check-gitlab-ci.py` read `36bcf916`'s tree and `main`'s,
+   *"OK"* on both. A tag on another day runs them again. The Amazon Linux parameter read
+   `ami-0dac6cd09676c9fb1`, version 201, modified 2026-11-12 at 19:49 UTC: the runners `make gitlab-up`
+   creates boot on a release no runner has booted on, and a boot it breaks is read in the boot log (Stage 8
+   decision 25 (b)).
 2. **[user] The raises**, after this change's merge: `make hub-up`, `make gitlab-up BUILD=1`, the tunnel, and,
    for step 13's space alone, Sandbox's endpoints with the MWAA Serverless group, which no job of the
    pipeline reads since release T:
@@ -1541,7 +1549,8 @@ space alone: a sitting without step 13 leaves Sandbox down.
 
    **[Claude]** the other sessions told before the first raise; `./aws/cicd.py`, `./aws/egress.py
    awsds-infra-prod awsds-infra-sandbox-1` and `make status`; Stage 8 xxvii's plan half (N.1 step 3) if the
-   parameter has moved.
+   parameter moves after the runners' creation: runners created on the current image plan `No changes`
+   with or without `ignore_changes`.
 3. **[user] The local user's password rotated** before the first push, in GitLab's *Edit profile →
    Password*: a keychain probe printed it into a session's transcript on 2026-11-08 (Stage 19's log). The
    keychain's entry for `gitlab.awsds.internal` goes with it, and the next push asks for the new one:
@@ -1567,12 +1576,66 @@ space alone: a sitting without step 13 leaves Sandbox down.
    `.gitlab-ci.yml` fixed for Stage 8 xv (step 12b), Stage 19 1.1's product table and publishing task
    (pass 1's mirror), and release T: the manifest with the stage `dev` alone and `PUBLISH_LISTING`
    false, and `.gitlab-ci.yml`'s job `bundle` in place of `test-deploy`. **[Claude]** beforehand, GitLab's `main`
-   against the archive: the difference is `examples/app-etl/` from `2d3160f1`, the tree `8d50f685` merged,
-   to `main`. The branch pipeline's `test`, `secret_detection` and `pip-audit` green before the merge.
+   against the archive. **Read 2026-11-15, offline**: the clone `$HOME/tmp/app-etl` is on `main` at
+   `8d50f68`, its tree `2d3160f1:examples/app-etl`'s (`5a5970a2…`), so the merge request is `git diff
+   2d3160f1 36bcf916 -- examples/app-etl`: 12 files, 1,040 insertions and 214 deletions,
+   `scripts/dev-cli.sh` and `tests/test_dev_cli.py` new. From the project folder, the clone brought to
+   GitLab's `main` first, whose commit **[Claude]** reads against `8d50f68`:
+
+   ```bash
+   git -C "$HOME/tmp/app-etl" switch main && git -C "$HOME/tmp/app-etl" pull && git -C "$HOME/tmp/app-etl" switch -c release-t
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/app-etl" rm -q -r .
+   ```
+
+   ```bash
+   git archive --format=tar -o "$HOME/tmp/app-etl-release-t.tar" 36bcf916:examples/app-etl
+   ```
+
+   ```bash
+   tar -x -f "$HOME/tmp/app-etl-release-t.tar" -C "$HOME/tmp/app-etl" && git -C "$HOME/tmp/app-etl" add -A && git -C "$HOME/tmp/app-etl" diff --cached --stat
+   ```
+
+   The stat lists the 12 files; then the commit and the push:
+
+   ```bash
+   git -C "$HOME/tmp/app-etl" commit -m "Release T: the stage dev alone and the bundle job in place of test-deploy (Stage 19 decision 19 (c)); the deploy script, the snapshot record, the proxy checks, the product table and the publishing task" && git -C "$HOME/tmp/app-etl" push -u origin release-t
+   ```
+
+   The branch pipeline's `test`, `secret_detection` and `pip-audit` green before the merge. Then the
+   CI/CD variables of step 0, before step 6's tag: `DEV_PROJECT_NAME` `app-etl-dev`, the four
+   `TEST_PROJECT_*` removed.
 5. **[user] `awsds/dev-env`'s merge request** from the copy under `gitlab/awsds/dev-env/` ([`gitlab.md`](gitlab.md)
    §M): `sts-global-probe` prints each call's answer or refusal and goes on, so decision 29's refusal of the
    first global call does not stop it before Staging's role; `./scripts/gitlab-mirror.py awsds/dev-env`
-   copies the merge back. Then, once N.8.1 step 1 has applied, *Build → Pipelines → Run pipeline* on `main`
+   copies the merge back. **Read 2026-11-15, offline**: the copy differs from GitLab's `main` at `6eff905`
+   (`gitlab/mirror.json`) in `.gitlab-ci.yml` alone, 5 insertions and 3 deletions (PR #273), and the clone
+   `$HOME/tmp/dev-env-v0.10.0` holds `6eff905`'s file on its branch `the-releases-v0.10.0`. From the project
+   folder:
+
+   ```bash
+   git -C "$HOME/tmp/dev-env-v0.10.0" switch main && git -C "$HOME/tmp/dev-env-v0.10.0" pull && git -C "$HOME/tmp/dev-env-v0.10.0" switch -c sts-global-probe-goes-on
+   ```
+
+   ```bash
+   cp gitlab/awsds/dev-env/.gitlab-ci.yml "$HOME/tmp/dev-env-v0.10.0/.gitlab-ci.yml" && git -C "$HOME/tmp/dev-env-v0.10.0" diff --stat
+   ```
+
+   The stat reads `1 file changed, 5 insertions(+), 3 deletions(-)`; then:
+
+   ```bash
+   git -C "$HOME/tmp/dev-env-v0.10.0" commit -am "sts-global-probe prints each call's answer or refusal and goes on (Stage 8 decision 29)" && git -C "$HOME/tmp/dev-env-v0.10.0" push -u origin sts-global-probe-goes-on
+   ```
+
+   The branch pipeline's `pip-audit` is expected red. The lock of `default-v0.10.0`, audited on 2026-11-15
+   as the gate does with the lock's `x86_64` and `linux` markers removed (the laptop matches neither),
+   reads 454 of 454 packages, 76 findings accepted and 29 blocking with a fixed version, in `langgraph`,
+   `langgraph-sdk`, `msgpack`, `nltk`, `oauthlib`, `opentelemetry-api`, `pillow`, `pyasn1`, `soupsieve` and
+   `tornado`. The job changes no image, so the merge is the user's call on that pipeline; a merge GitLab
+   refuses for it leaves this step to the house image's next release, whose merge request moves the lock.
+   Then, once N.8.1 step 1 has applied, *Build → Pipelines → Run pipeline* on `main`
    with `STS_GLOBAL_PROBE` set to `1`, and *Run* on the manual job. **[Claude]** the job's log and, after the
    trail's delay (Lesson 62), N.7.1 step 8's command: each global call refused, recorded in the caller's
    account in `us-east-1` with its `errorCode`, and each regional call answered in `us-west-2`
@@ -1945,7 +2008,8 @@ requires both.
 
 5. **`staging/chains/`**, account **Staging Account**. Staging's `orchestration/` and
    `app/app-etl/` are down since its last `make down`; a plan that reads anything to destroy there
-   stops the step. 18 to add.
+   stops the step. 18 to add. **Re-planned 2026-11-15** at 19:32 UTC with 2026-11-12's actions, that plan
+   kept as `stage19-chains-staging-1112.tfplan`; both slices read empty by `state list` the same day.
 
    ```bash
    AWS_PROFILE=awsds-infra-staging terraform -chdir=terraform-live/staging/chains apply -input=false "$HOME/tmp/stage19-chains-staging.tfplan"
@@ -1960,7 +2024,8 @@ requires both.
 7. **`production-check` fails once**, on the membership: the call creates `awsds-deploy-prod`'s
    group profile, whose id **[Claude] reads** from the domain's account (`datazone
    search-group-profiles --group-type IAM_ROLE_SESSION_GROUP` as `awsds-infra-data`, the profile whose
-   `rolePrincipalArn` is the role). **[user]**, account **Production**:
+   `rolePrincipalArn` is the role). No profile names the role on 2026-11-15. **[user]**, account
+   **Production**:
 
    ```bash
    NO_PROXY='*' aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d7qcazihvr3s7k --designation PROJECT_OWNER --member groupIdentifier=<the group's id> --profile awsds-infra-prod --region us-west-2
@@ -1978,7 +2043,9 @@ requires both.
    GROUPS=redshift`): as the admin, in `governed`, `CREATE USER "IAMR:<the project role's name>"
    PASSWORD DISABLE NOCREATEDB NOCREATEUSER;` and `GRANT ROLE gov_trades_rw TO "IAMR:<the same>";`
    (Stage 9 9.3's shape); `production-warehouse-ddl`; the chain `app-etl-warehouse` started by hand
-   and read against xxxii; `make down` after.
+   and read against xxxii; `make down` after. `production-warehouse-ddl` is a manual job of the tag's
+   pipeline on the deploy runner, so this step runs in the promotion sitting, GitLab up, after step 8;
+   from 2026-11-22 the same raise carries N.8.3's `EXC-13` reading.
 10. **The retirement**, a pull request after both targets ran release F: the stage file's item 31.
 
 ## Q. After the quotas: Stage 10's pass 3

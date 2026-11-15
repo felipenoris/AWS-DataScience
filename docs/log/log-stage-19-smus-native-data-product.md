@@ -2977,3 +2977,80 @@ through.
   2026-11-08, and names v48 since; the plan reads no comment.
 - **[Claude] Until PR #302 merges**, a plan of either slice from a tree without its commits restores the
   statement (Lesson 79).
+
+## 2026-11-15 — PR #302 merged; the Lesson 79 window closed
+
+Claude's reads of GitHub and git, no AWS call. The session `Stage 19: SUP-368's Glue line in the bill`
+relayed the merge; each fact below was read here.
+
+- **[user] PR #302 merged** at 04:52:26 UTC, squashed into `729a06da`, its head `dd488b0c` (`gh pr view
+  302`).
+- **[Claude] The three slices on `main`**: `sandbox/workflows/`, `staging/studio/` and `production/studio/`
+  at `729a06da` are `dd488b0c`'s, `git diff` empty. The applies' plans were made from `6d0b8238`, which
+  differs from it in one comment line of each `<env>/studio/workflows.tf` (v47 to v48). A plan from any
+  tree holding `729a06da` keeps decision 17's revision, so the previous entry's window is closed.
+
+## 2026-11-15 — release T's sitting prepared with nothing up: the gates, the two merge requests
+
+Claude's reads on the laptop, with no AWS call: the infrastructure user's SSO token had expired. Each
+tree was extracted with `git archive` into the session's scratch folder, outside the repository.
+
+- **[Claude] Release T's gates** (`runbooks/promotion.md` §N.8.2 step 1), on `36bcf916:examples/app-etl`:
+  `uv sync --locked`; `ruff check` *"All checks passed!"* and `ruff format --check` *"12 files already
+  formatted"*; `pytest` 72 passed and 1 skipped; the lint at `d856982c` with the job's instance types and
+  algorithm repository, *"ok: 9 arquivo(s)"*; `uv export` as the gate runs it, one pinned package,
+  `pyarrow` 25.0.1, and `pip-audit` 2.10.1 against OSV, *"No known vulnerabilities found"*.
+- **[Claude] `./scripts/check-gitlab-ci.py`**, `main`'s copy run over `36bcf916`'s tree and over `main`'s:
+  *"OK"* on both, the one unread include GitLab's `Jobs/Secret-Detection.gitlab-ci.yml`.
+- **[Claude] Release F's gates**, on `main`'s `examples/app-etl/` (`729a06da`): ruff clean, 85 passed and 1
+  skipped, the lint at `196acee` *"ok: 9 arquivo(s)"*, `pip-audit` on `pyarrow` 25.0.1 with no finding.
+- **[Claude] The template's merge request**: the clone `$HOME/tmp/app-etl` is on `main` at `8d50f68`, the
+  merge of `kms-key-id`, clean, with tree `5a5970a2…`, the tree of `2d3160f1:examples/app-etl`. The merge
+  request is `git diff 2d3160f1 36bcf916 -- examples/app-etl`: 12 files, 1,040 insertions and 214
+  deletions, `scripts/dev-cli.sh` and `tests/test_dev_cli.py` new. GitLab's `main` is read at the sitting.
+- **[Claude] `awsds/dev-env`'s merge request**: the copy under `gitlab/awsds/dev-env/` differs from
+  `gitlab/mirror.json`'s `6eff905` in `.gitlab-ci.yml` alone, 5 insertions and 3 deletions (`b9e8601e`,
+  PR #273). The clone `$HOME/tmp/dev-env-v0.10.0`, on its branch `the-releases-v0.10.0` at `fb5722b`, holds
+  the copy's file as of the last mirror.
+- **[Claude] That merge request's `pip-audit`**: the copy's `dev-env/python` lock exported as the gate does,
+  454 pinned packages, each line marked `platform_machine == 'x86_64' and sys_platform == 'linux'`. On the
+  laptop `pip-audit` audited 0 of 454, every marker false, and still printed *"No known vulnerabilities
+  found"*; the gate's own count fails such a run. With the markers removed and Python 3.12, 454 of 454
+  audited: 105 findings, 76 matched by id or alias in `GATES_PIP_AUDIT_ACCEPTED_DEV_ENV`, 29 blocking with a
+  fixed version (`langgraph` 1.2.11, `langgraph-sdk` 0.4.4, `msgpack` 1.2.2, `nltk` 3.10.3, `oauthlib`
+  4.0.0, `opentelemetry-api` 1.45.1, `pillow` 12.3.0, `pyasn1` 0.6.4, `soupsieve` 2.9.2, `tornado`
+  6.5.10), none without one, no accepted entry gone.
+- **[Claude] The other sessions**: `Stage 19: SUP-368's Glue line in the bill` idle, its worktree with no
+  commit past `main` and no change.
+- **[Claude] Owed with a sign-in**: the Amazon Linux parameter (§N.8.2 step 1), `make status`, and the
+  re-plans of `staging/chains/` and `production/chains/` against the plans of 2026-11-12.
+
+## 2026-11-15 — the readings owed with a sign-in: the burn, the Amazon Linux parameter, the chains re-plans, the role groups
+
+Claude's reads as the infrastructure user (`InfrastructureAccess`) after the user's sign-in; no AWS write.
+They close the previous entry's list owed with a sign-in.
+
+- **[Claude] `make status`**, finished 19:34 UTC: a burn of 0.0000 USD/h. The hub's two hosts and GitLab's
+  `stopped`; the runners, both warehouses' compute and every egress slice `down`; Production's
+  `app/app-etl/` (3 resources) and `orchestration/` (41) `UP`.
+- **[Claude] The Amazon Linux parameter** (`runbooks/promotion.md` §N.8.2 step 1), as `awsds-infra-prod`:
+  `ami-0dac6cd09676c9fb1`, version 201, modified 2026-11-12 at 19:49:40 UTC; 2026-10-27 read
+  `ami-0829b74b2a8c619b7`. The runners the next `make gitlab-up` creates boot on it. Stage 8 xxvii's plan
+  half still waits: runners created on the current image plan `No changes` with or without
+  `ignore_changes`.
+- **[Claude] The chains re-plans**, from this branch's tree, which holds `729a06da` (Lesson 79):
+  `staging/chains/` 18 to add at 19:32:15 UTC, `production/chains/` 24 to add at 19:32:28 UTC. The text from
+  *"Terraform will perform the following actions"* on hashes the same as the plans of 2026-11-12, 02:52
+  UTC; above it only the order of the data-source reads differs. The new plans replace the old at §N.8.4
+  step 5's paths, the old kept as `stage19-chains-{staging,production}-1112.*` in `$HOME/tmp/`.
+- **[Claude] Staging's retired slices**: `staging/orchestration/` and `staging/app/app-etl/` each read 0
+  resources by `state list`, as §N.8.4 step 5 requires. The first `init` of `staging/orchestration/`, run
+  while `make status` was initialising the slices it reads on the same tree, stopped on *"Module not
+  installed"* for `orchestration-v0.2.1`; a second `init` succeeded.
+- **[Claude] The domain's role groups** (`search-group-profiles --group-type IAM_ROLE_SESSION_GROUP` as
+  `awsds-infra-data`, then `get-group-profile` on each): nine profiles. Three are SSO groups
+  (`sso-group-deployment-managers`, `sso-group-data-scientists`, `sso-group-governance-managers`). Six are
+  roles' sessions: the `InfrastructureAccess` of Sandbox Account 1 (`839bcde8-…`), Production
+  (`ca2735c9-…`), Data Governance (`7ee243ab-…`) and Staging (`65b0f127-…`), `awsds-deploy-sandbox-test`
+  (`06d426f2-…`) and `awsds-deploy-staging` (`9bead345-…`). `awsds-deploy-prod` has none, as §N.8.4 step 7
+  expects.
