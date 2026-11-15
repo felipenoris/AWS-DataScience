@@ -3267,3 +3267,8 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   back: `awsds-staging-chain-app-etl` and `awsds-staging-chain-app-etl-train` created at 23:11:39, both
   schedules in `awsds-staging-chains` `DISABLED`, the two chain failure rules and the two workflow failure rules
   `ENABLED`.
+- **[user] §N.8.4 step 6, the template's merge request**: branch `release-f`, commit `cdf9078` on `355ab8c`, from
+  `3a15f2f6:examples/app-etl`; merge request !14, its branch pipeline #121 green (`test`, `pip-audit`,
+  `secret_detection`, `secret-detection-gate`), merged at 23:12:33 UTC as `fc79a4d`. **[Claude] read**: the
+  branch's tree and `main`'s are `22a98d0e…`, the tree of `3a15f2f6:examples/app-etl`. The mirror
+  `awsds/infrastructure` was already at `3a15f2f6`. `git ls-remote` reads `v0.4.9` and `v0.5.*` free.
