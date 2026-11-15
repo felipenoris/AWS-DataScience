@@ -2978,6 +2978,18 @@ through.
 - **[Claude] Until PR #302 merges**, a plan of either slice from a tree without its commits restores the
   statement (Lesson 79).
 
+## 2026-11-15 — PR #302 merged; the Lesson 79 window closed
+
+Claude's reads of GitHub and git, no AWS call. The session `Stage 19: SUP-368's Glue line in the bill`
+relayed the merge; each fact below was read here.
+
+- **[user] PR #302 merged** at 04:52:26 UTC, squashed into `729a06da`, its head `dd488b0c` (`gh pr view
+  302`).
+- **[Claude] The three slices on `main`**: `sandbox/workflows/`, `staging/studio/` and `production/studio/`
+  at `729a06da` are `dd488b0c`'s, `git diff` empty. The applies' plans were made from `6d0b8238`, which
+  differs from it in one comment line of each `<env>/studio/workflows.tf` (v47 to v48). A plan from any
+  tree holding `729a06da` keeps decision 17's revision, so the previous entry's window is closed.
+
 ## 2026-11-15 — release T's sitting prepared with nothing up: the gates, the two merge requests
 
 Claude's reads on the laptop, with no AWS call: the infrastructure user's SSO token had expired. Each
