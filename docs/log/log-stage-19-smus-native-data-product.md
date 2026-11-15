@@ -2815,3 +2815,42 @@ user's SSO token had expired by 02:00 UTC.
   `d-spi9kgo6x5b4`, which the readings at 00:16 UTC covered by hand.
 - **[Claude] Owed**: the consumer source's scheduled run at 02:51 UTC, read once the infrastructure user
   signs in again.
+
+## 2026-11-15 — the consumer source's scheduled run after the revoke, and step 17 rehearsed
+
+Claude's reads as the infrastructure user: `awsds-infra-data` for the sources and their runs,
+`awsds-infra-sandbox-1` for the consumer's inventory, the bundle and the trail. As `awsds-infra-data`,
+`GetAsset` on the consumer's inventory asset was refused, *"User is not permitted to perform operation:
+GetAsset"*: Data Governance's role is no member of `test-experimentation`.
+
+- **[user] The sign-in** as the infrastructure user, by 02:41 UTC: *"Já fiz o login"*.
+- **[Claude] Step 15's source**, 02:42 UTC: `5xkhlb1ubnrf9s` `READY`, `ENABLED`, `publishOnImport` false,
+  `cron(24 23 * * ? *)`, created 23:24:11 UTC on 2026-11-14, no run. Step 15's note holds.
+- **[Claude] The baseline**, 02:42 UTC: the consumer's source `3zp6fog9jep1qo`, on `cron(51 2 * * ? *)`, last
+  ran at 22:01:22 on 2026-11-14 (`PRIORITIZED`, `lastRunAssetCount` 1); the asset `b5r73n41qe7jf4`
+  `trades_notional` at revision 1, no listing, the forms `GlueTableForm`, `DataSourceReferenceForm`,
+  `SubscriptionTermsForm` and `AssetCommonDetailsForm`, the inventory's one asset.
+- **[Claude] Step 17 rehearsed** before step 15, from the worktree's `examples/app-etl/` with the stage
+  file's commands, as `awsds-infra-sandbox-1`: `bundle` from 02:42:53 to 02:43:18 UTC, exit 0, 12 files in
+  `artifacts/app-etl.zip` (25,093 bytes), the export's six sections empty (*"No catalog resources found for
+  project ceweti7jbiu1hs"*); the guard *"FAIL  assets: trades_notional is in the export 0 time(s), once
+  expected"*, exit 1. The CLI printed two `GetGroupProfile` refusals, *"no resource-based policy allows the
+  datazone:GetGroupProfile action"*, for the group profiles `06d426f2-84d6-38ae-a991-6806981d9520` (the
+  bundle role's) and `839bcde8-f8b8-4ada-936a-1441352db302`.
+- **[Claude] The rehearsal's trail**, Sandbox, 02:42:50 to 02:43:30 UTC: 28 calls by the session, every one a
+  read. `cloudformation:DescribeStacks` at 02:42:55, `ValidationException` *"Stack with id
+  cicd-test-domain-stack does not exist"*; `datazone:ListDomains` at 02:42:56, answered; then
+  `ListProjects`, `GetProject`, `GetUserProfile` (2), `ListProjectMemberships`, `GetGroupProfile` (2,
+  `AccessDenied`), `ListConnections` (3), `GetConnection` (9), `ListEnvironments`, `Search` (4) and
+  `SearchTypes` (2). `ListDomains` on `bundle` is measured, and `SUP-162` gains the reading.
+- **[Claude] The scheduled run**, read 02:53 UTC: `4etghy8jms5o5s`, `SCHEDULED`, `SUCCESS`, 02:51:09.214 to
+  02:51:10.521 UTC; `added`, `updated`, `unchanged` and `failed` 0, no activity, no error; the source's
+  `lastRunAssetCount` 0. `glue_db_4zojr4rr6bmnww` holds no table. The asset `b5r73n41qe7jf4` unchanged:
+  revision 1, no listing, the same four forms, still the inventory's one asset (verification x,
+  `SUP-197`).
+- **[Claude] `./aws/catalog.py`**, 02:54:36 to 02:57:13 UTC: all checks passed. `CT-19` reads
+  `test-experimentation`'s `trades_notional` against *"no such table"*; the consumer's source 28 runs,
+  `SUCCESS`; `CT-4` all 12 sources `publishOnImport` false; `CT-15` 9 listings, none of `app-etl-dev`;
+  `CT-13`'s latest start still 22:01:21's. `app-etl-dev`'s `Tooling-default-sagemaker-modelpackagegroup-datasource`,
+  on `cron(7 2 * * ? *)`, read `RUNNING` on its first run, a third source of `EXC-11`'s kind.
+- **[Claude] Owed**: Sandbox's `USW2-GlueInteractiveSession-DPU-Hour` line for 2026-11-14 (`SUP-368`).

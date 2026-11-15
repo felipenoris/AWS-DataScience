@@ -2055,6 +2055,11 @@ entry is still true is the reading.
   domain id unused, so a deploy from a space stops there; reported upstream as [issue
   413](https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413). Where:
   `log-stage-10-orchestration-promotion.md`, 2026-10-26.
+  Read 2026-11-15 on `bundle --targets dev` from the laptop as Sandbox's `InfrastructureAccess` (Stage 19
+  step 17's rehearsal): `bundle` makes the call too, one second after `DescribeStacks` refused *"Stack with
+  id cicd-test-domain-stack does not exist"*, its configuration carrying the target's region alone
+  (`commands/bundle.py`). The call answered, and the bundle took the one domain listed; the code
+  (`helpers/datazone.py`) raises on two. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 - `SUP-349` **The console's account association is one public RAM call, `AssociateResourceShare` on the
   domain's share, after which RAM writes the domain's sharing policy in the caller's session** (read
@@ -2671,6 +2676,10 @@ entry is still true is the reading.
   type `PRIORITIZED`, `added: 1`, imported the link `glue_db_4zojr4rr6bmnww.trades_notional` as the
   unlisted asset `b5r73n41qe7jf4`; after the revocation deleted the link (`SUP-365`) the asset stayed in the
   inventory with no table behind it. Where: the same log, 2026-11-14.
+  Read again 2026-11-15 on the source's scheduled run at 02:51 UTC, the first after the revocation:
+  `4etghy8jms5o5s`, `SUCCESS` in 1.3 s, `added`, `updated`, `unchanged` and `failed` all 0, no activity, the
+  source's `lastRunAssetCount` 0, and the asset at revision 1, unlisted. A run over a database whose table is
+  gone neither removes, nor reports, nor counts the asset it imported. Where: the same log, 2026-11-15.
 
 - `SUP-198` **A listing's `DataSourceReferenceForm` keeps the data source's configuration as published, and
   disagrees with the source after an update** (read 2026-10-27 in Data Governance, Stage 6f decisions 2 to
