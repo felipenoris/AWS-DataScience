@@ -2710,3 +2710,80 @@ The user's acts in the portal and in the space; Claude's reads as `awsds-infra-s
   `…-AwsDataCatalog-app_etl-default-datasource`, created 23:24:11.87, `cron(24 23 * * ? *)`, the minute of
   its creation as `SUP-184` read; `publishOnImport` false, business names off, the filter `app_etl`
   `INCLUDE *`, on the connection `d4r792pkc5soeo`; no run.
+
+## 2026-11-14 — the Sandbox sitting, steps 13, 14 and 16: the deploy and run in `app-etl-dev`, the downs
+
+The user's acts in the space and from the project folder; Claude's reads as `awsds-infra-sandbox-1` and
+`awsds-infra-data`. The day's last entries ran past midnight UTC, on 2026-11-15.
+
+- **[user] Step 13**: the space `jup-medium` in `app-etl-dev`, JupyterLab on `awsds-sandbox-dev-env`
+  version 11, `ml.t3.medium` (`InService`, read 23:39 UTC); the tar extracted; §D step 3's values with
+  `DEV_PROJECT_NAME` `app-etl-dev`, `TRAINING_IMAGE_URI` a placeholder and `JOB_IMAGE_URI` `v0.4.6`'s
+  digest typed in the space; the two zips; `scripts/dev-cli.sh deploy --manifest manifest.yaml --targets
+  dev --skip-validation --no-events`.
+- **[user] The deploy's output**, 23:41:22 to 23:42:40 UTC: *"aws-smus-cicd-cli 1.0.9 on
+  /opt/awsds/venv/bin/python, the domain lookup answered by DOMAIN_ID"*; 11 files under the project's
+  `shared/app-etl/`; *"No managed Tooling.GA/Tooling.Lightning blueprint found; will try the IAM connection
+  fallback"*, then the Tooling environment's two subnets, its security group and its key resolved; the
+  workflows `app_etl_app_etl_dev_app_etl` and `app_etl_app_etl_dev_app_etl_train` created `READY` at
+  23:42:28 and 23:42:40 with the project role. No *"No custom VPC config"*. `GetGroupProfile` refused at
+  each storage item by the domain's resource policy, as §D says.
+- **[Claude] The workflow**, 23:47 UTC: `READY`, the role `datazone_usr_role_ceweti7jbiu1hs_6kvndq6t2757rk`,
+  `NetworkConfiguration` the project's security group and two subnets, `CUSTOMER_MANAGED_KEY` the project's
+  key.
+- **[user] The run**, `scripts/dev-cli.sh run … --workflow app-etl`: `huQUoGZvttPwAMs` started at
+  23:48:48, after `ListTagsForResource` refused on eight other workflows, as §D says.
+- **[Claude] The run followed**: `QUEUED` to 23:51:18, then the tasks `transform` 178 s, `process` 493 s,
+  `summarize` 9 s, `write_result` 10 s and `publish` 6 s, each `SUCCESS`; the run `SUCCESS`, started
+  23:48:54, completed 00:03:47 UTC, 893 s, within pass 1's 816 to 936 s. `publish` returned at once,
+  `PUBLISH_LISTING` being false.
+- **[Claude] Step 14's reads**:
+  - the table, 00:05:35 UTC: `app_etl.trades_notional`, `EXTERNAL_TABLE`, `table_type` `ICEBERG`, 6
+    columns, version 0, created 23:52:11 UTC by `datazone_usr_role_ceweti7jbiu1hs_6kvndq6t2757rk/
+    GlueJobRunnerSession`, at
+    `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/ceweti7jbiu1hs/dev/data/catalogs/trades_notional`,
+    metadata `00000-2e5ee239-f867-4616-ab53-ee36e32084e0.metadata.json` (verification i on the project's
+    objects);
+  - Sandbox's trail: `CreateTable` on `app_etl.trades_notional` at 23:52:11 by that session from
+    `10.20.37.25` through `vpce-0dc0ad9337ef70d9b`, `lakeFormationPrincipal` the project role,
+    `insufficientLakeFormationPermissions` empty: the conditioned `CREATE_TABLE` of step 12's grant admitted
+    it;
+  - Data Governance's trail: 23 `PostLineageEvent` from 23:51:14 to 23:52:13 UTC, no error, the caller
+    `AWSAccount` with the principal `…:GlueJobRunnerSession`, from `10.20.37.25` through
+    `vpce-0959660994e34ad71` (v's domain half);
+  - `./aws/catalog.py`, ending 00:19 UTC: all checks passed; `CT-13`'s latest start is 22:01:21's, so the
+    task started no source; `app-etl-dev`'s source `5xkhlb1ubnrf9s` has no run and no asset. 9 listings,
+    11 before item 20; `CT-16` passes with no subscription, `CT-17` reads `mydatabase.house-price` and
+    `CT-18` `house-price` alone. `CT-19`'s inventory reads `test-experimentation`'s asset
+    `trades_notional` against *"no such table"*, the link gone, the asset kept.
+- **[user] Step 16**: the space `jup-medium` deleted, the portal's tabs closed, `make down ENV=sandbox` and
+  `make hub-down`: *"Desci tudo"*.
+- **[Claude] The readings that end a sitting**: `make status` from 00:13:57 to 00:16:07 UTC,
+  `production/vpn`, `production/proxy` and `production/tooling` stopped, the estimated burn 0.0000 USD/h;
+  `./aws/egress.py awsds-infra-prod awsds-infra-staging awsds-infra-sandbox-1` at 00:14 UTC, all checks
+  passed, no interface endpoint and no NAT gateway in the three accounts; no space and no app on
+  `d-p6gthxc82ckg`, `d-lfgbdrjncmsu` and `d-spi9kgo6x5b4`.
+- **[Claude] Owed**: step 15, the user's portal acts in `app-etl-dev` (the source's run, the asset's
+  metadata, the data product left unpublished), then step 17; the consumer source's scheduled run at
+  02:51 UTC, the first after the revoke, read for what it does with the asset whose link is gone.
+
+## 2026-11-15 — the Glue session's DPU-seconds and the interactive-session rate, with nothing up
+
+Claude's reads as `awsds-infra-sandbox-1`, Sandbox's `InfrastructureAccess`.
+
+- **[Claude] The Glue session re-read**: `glue get-session` at 00:31:20 UTC on
+  `4gqfau9xuo6e4w-93939e2b-07b3-4c1b-b18a-e875438bd870`: `STOPPED`, `ExecutionTime` 1151.921 s,
+  `DPUSeconds` 3248.638, `MaxCapacity` 10.0, `NumberOfWorkers` 10, and `DefaultArguments` carrying
+  `--enable-auto-scaling` `true` and `--enable-lakeformation-fine-grained-access` `true`. The same call
+  read `DPUSeconds` 0.0 at 23:07:41, 4 s after the stop; `list-sessions` at 00:30:15 read 3248.638 with
+  `DefaultArguments` null. The field is below the service model's `ExecutionTime * MaxCapacity`, 11519.2,
+  an average of 2.8 DPU (`SUP-368`). The 2026-11-14 entry's 1.4 USD assumed 10 DPU for the whole run.
+- **[Claude] The rate**, the Price List's `AWSGlue` offer of 2026-11-08: `USW2-GlueInteractiveSession-DPU-Hour`
+  0.44 USD per DPU-hour, `SAE1-GlueInteractiveSession-DPU-Hour` 0.69, and the `-Gen2` type for Glue 6.0
+  and later 0.308 (`PRICING.md` §5). At 0.44 the field's DPU-seconds are 0.40 USD and the formula's 1.41.
+- **[Claude] A correction**: `docs/SMUS.md` named `project.spark.fineGrained` as the EMR Serverless
+  engine's connection. The 2026-11-14 connection read shows it a `SPARK` connection on Glue interactive
+  sessions, and the row now says so.
+- **[Claude] Owed**: Sandbox's `USW2-GlueInteractiveSession-DPU-Hour` line for 2026-11-14 once Cost
+  Explorer holds the day (`runbooks/security-hub.md` V3's command with that usage type): 0.90 DPU-h if the
+  bill counts `DPUSeconds`, 3.20 if it counts the formula.

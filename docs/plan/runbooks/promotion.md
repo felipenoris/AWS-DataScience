@@ -1489,7 +1489,7 @@ space alone: a sitting without step 13 leaves Sandbox down.
 
 0. **Release T's preparation, with nothing up**, each once:
    - **[user] The project for app-etl alone**, created from `experimentation` in the portal as the data
-     scientist (Stage 19 1.5; its database waits on that step's order). **[Claude]** reads its id, its
+     scientist (Stage 19 1.5; its database created 2026-11-14, the Sandbox sitting's step 12). **[Claude]** reads its id, its
      role's name and its `Tooling` environment. **Done 2026-11-14**: `app-etl-dev`, `ceweti7jbiu1hs`, its
      role `datazone_usr_role_ceweti7jbiu1hs_6kvndq6t2757rk`, its `Tooling` environment `ACTIVE`.
    - **[user] The bundle role's membership**: `awsds-deploy-sandbox-test`'s group added to that project as
@@ -1800,10 +1800,12 @@ space alone: a sitting without step 13 leaves Sandbox down.
     4. **[user] The positive**, a minute after `running`: *Retry* on the same job, expected *"the proxy
        answers (<code>)"*, the clone's commit and the job green. **[Claude]** both runs' times and lines,
        from the job logs.
-13. **The Sandbox half** (N.7.3), Sandbox's `egress/` up since step 2. It runs once Stage 19's Sandbox
-    sitting has created `app-etl-dev`'s database (the stage file's §The Sandbox sitting, in order, step
-    12), and a sitting before it skips this step: the run's Glue job writes `app_etl.trades_notional`, and
-    `app_etl` is `eighth-experimentation`'s until that sitting's step 10 (read 2026-11-14).
+13. **The Sandbox half** (N.7.3), Sandbox's `egress/` up since step 2. Stage 19's Sandbox sitting created
+    `app-etl-dev`'s database `app_etl` on 2026-11-14 (its step 12) and ran this deploy from a tar with
+    `v0.4.6`'s image (its step 13): the workflows `app_etl_app_etl_dev_app_etl` and
+    `app_etl_app_etl_dev_app_etl_train`, the run `huQUoGZvttPwAMs` `SUCCESS` in 893 s, and the table
+    `app_etl.trades_notional` created. This step redeploys them from the clone with `v0.4.7`'s image, and
+    the run writes the table that run created.
     - **[user]** the persona's GitLab token (N.3 step 2); the space, a JupyterLab space of the `dev`
       project, the one for app-etl alone since Stage 19 decision 18 (d), whose domain takes the house
       image first ([`dev-env.md`](dev-env.md) §C6; attached 2026-11-14, Stage 19 item 33), set to `awsds-sandbox-dev-env`
