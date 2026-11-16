@@ -3334,3 +3334,14 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   exit 0 under `-detailed-exitcode`; IAM reads `awsds-staging-deploy-project` and `awsds-prod-deploy-project` at
   `v3`, each with `StartTheProjectsSourceBeforeTheSecondImport` granting `datazone:StartDataSourceRun` and
   `datazone:GetDataSourceRun`.
+- **[user] §N.8.4 step 6.2**: PR #304 merged at 00:06:17 UTC on 2026-11-16 as `f9c3ab49`, then the mirror pushed.
+  **[Claude] read**: GitLab's `awsds/infrastructure` `main` at `f9c3ab49`; `awsds/app-etl`'s `main` at `fc79a4d`, no
+  merge request open, the tags to `v0.5.0`. `git diff 3a15f2f6 f9c3ab49 -- examples/app-etl` is one file,
+  `.gitlab-ci.yml`, 52 insertions and 3 deletions. The rest of the sitting is recorded from the branch
+  `claude/release-f-v051`, cut from `f9c3ab49`.
+- **[user] §N.8.4 step 6.3, the template's merge request**: branch `release-f-catalog`, commit `0dd51d7e` on
+  `fc79a4db`, from `f9c3ab49:examples/app-etl`; merge request !15, its branch pipeline #124 green (`test`,
+  `pip-audit`, `secret_detection`, `secret-detection-gate`), merged at 00:10:25 UTC as `451d0ae2`, `main`'s
+  pipeline #125 green. **[Claude] read**: the branch's root tree and `main`'s entry for entry those of
+  `f9c3ab49:examples/app-etl`; `fc79a4db` to `451d0ae2` changes `.gitlab-ci.yml` alone; the tags to `v0.5.0`.
+  `staging/egress` and `production/workloads-egress` up by `state list`, the hub's two hosts and GitLab running.
