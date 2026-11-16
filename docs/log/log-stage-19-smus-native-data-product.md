@@ -3755,3 +3755,22 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   and 0.000 USD/h in each; `make status`: `vpn`, `proxy` and `tooling` stopped, every `[E]` slice down,
   the estimated burn 0.0000 USD/h. Production holds no workgroup and no running instance, and the three
   schedules of `awsds-prod-chains` read `DISABLED`.
+
+## 2026-11-16 — release G's sitting: step 1, `app-etl-dev`'s data product deleted
+
+- **[user] Release G's step 1** (*"Sim, passo 1"*). **[Claude]** read first as `awsds-infra-sandbox-1`:
+  `trades-notional` (`5070mjwdvjwp3k`) owned by `app-etl-dev`, revision 1, `CREATED`, created 2026-11-15,
+  one item, the asset `c6z3pbg3drrs0g`; no data product listing in the domain, the one listing named
+  `trades_notional` being Production's asset (`5hpftif3nnoj2o`, owned by `deploy-production`). Per project,
+  each read as the profile whose session belongs to it: `deploy-production` and `deploy-staging` hold no
+  data product, `eighth-experimentation` holds `my-data-product`. The runbook's read-back,
+  `search --search-scope DATA_PRODUCT --search-text trades-notional`, answered `ValidationException`,
+  *"OwningProjectId is mandatory for SearchScope - DATA_PRODUCT"*, and a search in a project the session
+  is not a member of answered `AccessDeniedException` (`SUP-371`).
+- **[user] The delete** (*"Apaguei"*), the runbook's command. **[Claude]** the trail: `DeleteDataProduct`
+  on `5070mjwdvjwp3k` at 06:03:08 UTC, a shared event in Data Governance's trail whose caller is an assumed
+  role of Sandbox Account 1, the infrastructure user's `InfrastructureAccess` session, CLI 2.37.12, no
+  error. That session is a `PROJECT_CONTRIBUTOR` of `app-etl-dev` through its group profile `839bcde8-…`,
+  so DataZone admits a contributor's delete. Read at 06:03:35: `get-data-product` `ResourceNotFoundException`,
+  *"Requested dataProduct cannot be found in domain"*; `app-etl-dev`'s data product search empty; the asset
+  `c6z3pbg3drrs0g` at revision 5; the listings unchanged.

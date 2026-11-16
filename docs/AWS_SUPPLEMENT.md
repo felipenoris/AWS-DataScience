@@ -2844,6 +2844,17 @@ entry is still true is the reading.
   asset first and the source right after, before the source's next scheduled run imports the table again.
   Where: `log-stage-19-smus-native-data-product.md`, 2026-11-14; Stage 19's sitting step 8.
 
+- `SUP-371` **`Search` refuses the `DATA_PRODUCT` scope without an owning project, so no identity reads a
+  data product's name across a domain** (measured 2026-11-16, Stage 19 release G step 1). `aws datazone
+  search --search-scope DATA_PRODUCT --search-text trades-notional` answered `ValidationException`,
+  *"OwningProjectId is mandatory for SearchScope - DATA_PRODUCT"*, while the service model the CLI 2.37.12
+  carries marks `--owning-project-identifier` optional. With a project, a non-member's search is
+  `AccessDeniedException`: the infrastructure profiles of Sandbox, Staging and Production each read only the
+  projects their sessions belong to. A data product's name is the domain's (`SUP-369`), so the
+  domain-wide answer to "is this name free" is the create's conflict, and a reading per project covers only
+  the projects the reader is a member of. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-16;
+  `runbooks/promotion.md` §N.8.5 step 1.
+
 ### Connections
 
 - `SUP-199` **A portal S3 connection over an already registered Access Grants location needs none of the

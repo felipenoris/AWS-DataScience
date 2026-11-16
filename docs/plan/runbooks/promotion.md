@@ -2113,8 +2113,8 @@ step 8, with the hub and GitLab up for its tag, and each act below names its ide
 
 1. **[user] `app-etl-dev`'s data product deleted**, `trades-notional` (`5070mjwdvjwp3k`), which was
    never published: in the portal as the project's owner (the project's data products, *Delete*), or
-   as Sandbox's `InfrastructureAccess`, a contributor of the project, if DataZone admits a
-   contributor's delete (unmeasured). The SSO user is the infrastructure user, account
+   as Sandbox's `InfrastructureAccess`, a contributor of the project, whose delete DataZone admits
+   (measured 2026-11-16). The SSO user is the infrastructure user, account
    **Sandbox Account 1**, permission set `InfrastructureAccess` through `awsds-infra-sandbox-1`:
 
    ```bash
@@ -2122,8 +2122,9 @@ step 8, with the hub and GitLab up for its tag, and each act below names its ide
    ```
 
    **[Claude] reads** the name free: `get-data-product` on the id answers `ResourceNotFoundException`,
-   and `search --search-scope DATA_PRODUCT --search-text trades-notional` names no item. The tag's
-   `bundle` job then exports the asset alone, which `product.json` requires.
+   and `search --search-scope DATA_PRODUCT --owning-project-identifier ceweti7jbiu1hs` names no item
+   (`Search` refuses that scope without a project, `SUP-371`). The tag's `bundle` job then exports the
+   asset alone, which `product.json` requires. **Done 2026-11-16**, 06:03 UTC, through the CLI.
 2. **[user] This repository's pull request merged and the mirror pushed.** The leg's
    `deploy-application.py` reads a first import on the asset's conflict from then on, release F's
    logs read as before.
