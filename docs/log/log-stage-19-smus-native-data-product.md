@@ -3365,3 +3365,9 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   `staging/foundation` and `production/foundation` *"0 to add, 1 to change"*, the `ssm` statement's resource alone;
   `staging/chains` *"0 to add, 3 to change"*, both machines' parameter name and the chain role's `ssm` resource;
   `production/chains` *"24 to add"* with the new name, for step 8. `SUP-067` carries the reading.
+- **[Claude⚡] The parameter's three applies** on the user's word in chat (*"Sim, aplique os três"*, answering the
+  question naming `staging/foundation`, `production/foundation` and `staging/chains`), the three other sessions
+  told first, as the infrastructure user (`InfrastructureAccess`): `staging/foundation` 00:36:22 to 00:36:35 UTC and
+  `production/foundation` 00:36:35 to 00:36:47, *"0 added, 1 changed, 0 destroyed"* each; `staging/chains`
+  00:36:47 to 00:36:59, *"0 added, 3 changed, 0 destroyed"*. The three re-plans *"No changes"*, exit 0 under
+  `-detailed-exitcode`; both Staging machines' definitions read `/datascience/staging/applications/app-etl/stage-variables`.
