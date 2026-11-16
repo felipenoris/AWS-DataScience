@@ -1838,3 +1838,61 @@ them; the template's gates on the laptop, offline. Times UTC.*
   `v0.4.8` if free, the leg to `staging-test`'s failure, the diagnosis from the APIs, the trail and the two
   rules before any `make down ENV=staging`, Production read untouched, the branch and the Sandbox residue
   deleted after, and the module's comment brought to the reading at its next tag.
+
+## 2026-11-15 — verification xx's second half: an undeclared Glue job refused at `GetJob`
+
+*Release T's sitting, `promotion.md` §N.8.2 step 12a, on the user's word in chat. Claude's hand: the branch and
+the tag pushed from the laptop's clone, GitLab read through the user's browser session, AWS read as the
+infrastructure user with `InfrastructureAccess` in the Staging Account (`awsds-infra-staging`), Production
+(`awsds-infra-prod`) and Sandbox Account 1 (`awsds-infra-sandbox-1`). The user released `staging-gate`. Times
+UTC.*
+
+- **[Claude] The branch and the tag**: `xx-undeclared-glue-job` from `awsds/app-etl`'s `main` at `355ab8c`, the
+  one line `job_name: app-etl-undeclared-{proj.id}`, commit `90f5cc1`. The branch pipeline #119's `test` green
+  (*"72 passed, 1 skipped"*, *"ok: 9 arquivo(s)"*). The tag `v0.4.8`, read free by `git ls-remote`, pushed at
+  22:12:31.
+- **[pipeline] #120**: `test` to `release` green, 22:12:35 to 22:16:18, `scan-gate` failed and allowed to.
+  **[user]** `staging-gate` at 22:17:15. `staging-check` green. `staging-deploy`, 22:17:39 to 22:20:47: the
+  promoted lint *"ok: 1 arquivo(s)"* on each of the three rendered copies, `lint-plan` *"ok: 1 job(s) do Glue:
+  aws_glue_job.this[0]"*, the application slice *"0 added, 1 changed"*, the orchestration slice *"0 added, 2
+  changed"*. `staging-test`, 22:20:51 to 22:24:11, started `v0-4-8-120-app-etl` and failed with *"FATAL: the
+  chain app-etl ended FAILED"*. `staging-model` and every Production job `skipped`.
+- **[Claude] The diagnosis**, before any `make down ENV=staging`:
+  - the execution `FAILED`, 22:21:01 to 22:24:02, error `WorkflowRunNotSucceeded`, cause *"The run of
+    awsds-staging-wf-app-etl ended FAILED, TIMEOUT or STOPPED: its task instances name the task (Stage 10 step
+    3.2)."*;
+  - the run `eqF0j1GMHSruLrm` `FAILED` in 55 s; `transform` `FAILED` in 14 s (22:21:46 to 22:22:00), its four
+    successors `UPSTREAM_FAILED`;
+  - `transform`'s stream in `/awsds/staging/wf/app-etl`: *"Checking if job already exists:
+    awsds-staging-app-etl-undeclared"* at 22:21:53, then at 22:21:55 an `AccessDeniedException` on `GetJob`
+    for `awsds-staging-wf-app-etl/AmazonMWAAServerless` on `job/awsds-staging-app-etl-undeclared`, *"because no
+    identity-based policy allows the glue:GetJob action"*. No *"Creating job"* line;
+  - Staging's trail, read at 22:28: the role's `GetJob` at 22:21:55 `AccessDenied` from `10.50.67.142`, its
+    `requestParameters` null, the positive control; `CreateJob` since 22:20:51: 0;
+  - `awsds-staging-wf-app-etl-failed` `Sum` 1 at 22:22, `awsds-staging-chain-app-etl-failed` `Sum` 1 at 22:23,
+    `awsds-staging-alerts` 1 notification delivered at 22:23 and 1 at 22:24;
+  - Production untouched: `awsds-prod-app-etl` on `applications/app-etl/v0.4.7/glue/transform.py`, and
+    `awsds-prod-app-etl-undeclared` *"Job not found"*;
+  - Sandbox: no Glue job named `app-etl-undeclared-*`, as release T deploys nothing of the tag there.
+- **[Claude] The module's comment**: `orchestration-v0.2.1`, the pin of both orchestration slices, says that on an
+  absent job the operator calls `CreateJob`. The reading is that the call stops at `GetJob`, since the role reads
+  no undeclared name. `main`'s module, since release F (#291), holds no Glue statement, so its next tag carries
+  no comment to correct.
+- **Left by 12a**: the branch `xx-undeclared-glue-job` to delete in GitLab (the user's). The tag `v0.4.8` stays
+  spent. Staging's two slices now hold `v0.4.8` until `make down ENV=staging`. 3.7's record is `v0.4.7`'s, taken
+  at 21:51.
+- **[user] 12a.5**: the branch `xx-undeclared-glue-job` deleted from GitLab (*"- [deleted]
+  xx-undeclared-glue-job"*), the local branch deleted (*"was 90f5cc1"*), and `git ls-remote --heads` printing
+  nothing. No Sandbox residue to delete.
+
+## 2026-11-15 — decision 11's Staging half: the Deployment Manager's read of a run on `v0.4.7`
+
+*Release T's sitting, `promotion.md` §N.8.2 step 9; the user's acts and Claude's trail reads, recorded in full in
+Stage 19's log. Times UTC.*
+
+- **[user]** As the Deployment Manager User (`awsds-deploy-staging`, `DeploymentManagerAccess`, the Staging
+  Account), `get-workflow-run` on `awsds-staging-wf-app-etl`'s run `ukdqPTEi5Tav4PL` answered `SUCCESS`.
+- **[Claude]** Staging's trail, read at 21:31:52: `ListWorkflows`, `ListWorkflowRuns` and `GetWorkflowRun`
+  (21:28:46 to 21:28:55) in the session `AWSReservedSSO_DeploymentManagerAccess_…`, and at 21:28:55 the paired
+  `Decrypt` in the same session, `invokedBy airflow-serverless.amazonaws.com`, its encryption context the
+  workflow's ARN, no error. Decision 11's Staging half read.

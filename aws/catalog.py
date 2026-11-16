@@ -95,7 +95,8 @@
 #         domain alone (SUP-346); Stage 19 decision 17 keeps the grant the publishing task
 #         needs on Production's deployment project role alone, and the check judges each start
 #         CloudTrail holds, in the registry, the Interactive account and, since their projects
-#         exist, both deployment targets.
+#         exist, both deployment targets. A deploy role holds the start for a target's second
+#         import (decision 25) and is judged against its deployment project.
 #   CT-14 a deployment project's sources are Glue sources, one per database, publishing nothing
 #         on import and generating no names (Stage 19 step 4.6). CT-5 leaves the generation over a
 #         project's own database to the project; a deployment project has no person to choose,
@@ -189,6 +190,8 @@ PROD_PROFILE = "awsds-infra-prod"
 STAGING_PROJECT = "deploy-staging"
 PRODUCTION_PROJECT = "deploy-production"
 DEPLOYMENT_PROJECTS = (STAGING_PROJECT, PRODUCTION_PROJECT)
+# Each target's deploy role, by name, and the deployment project whose source it starts (CT-13).
+DEPLOY_ROLES = {"awsds-deploy-staging": STAGING_PROJECT, "awsds-deploy-prod": PRODUCTION_PROJECT}
 
 # The projects a chain application's `dev` stage deploys from, by id (Stage 19 decision 18 (d),
 # step 1.5). Decision 20 (b) lists such an application's product in Production alone, by the
@@ -687,10 +690,11 @@ def touches_lake(kind: str, name: str) -> bool:
     )
 
 
-def judge_start(body: dict, source_project: dict) -> tuple:
+def judge_start(body: dict, source_project: dict, deploy_projects: dict) -> tuple:
     """One StartDataSourceRun event for CT-13, as (verdict, caller, source id, source's project id).
 
-    `source_project` maps a data source id to its project id. The verdict is `own`, `cross`,
+    `source_project` maps a data source id to its project id, `deploy_projects` a deploy role's name
+    to its deployment project's id: a deploy role is judged as that project's. The verdict is `own`, `cross`,
     `measured` (a cross-project start MEASURED_CROSS_PROJECT_STARTS names), `unknown source` (no
     source of that id is listed), `other` (a caller that is no project role: an administrator, a
     portal session, the service) or `unresolved` (a call from another account, which the domain's
@@ -703,6 +707,8 @@ def judge_start(body: dict, source_project: dict) -> tuple:
         role_id = (identity.get("principalId") or "-").split(":", 1)[0]
         return ("unresolved", f"role id {role_id}", source, owner)
     issuer = ((identity.get("sessionContext") or {}).get("sessionIssuer") or {}).get("userName", "")
+    if issuer in deploy_projects:
+        issuer = f"{PROJECT_ROLE_MARKER}{deploy_projects[issuer]}_deploy-role"
     if not issuer.startswith(PROJECT_ROLE_MARKER):
         if identity.get("onBehalfOf"):
             who = "an Identity Center session"
@@ -893,6 +899,45 @@ def self_check() -> int:
         ("a table that is no link", link_target(None, {}), ""),
     ]
 
+    # CT-13: a start judged by its caller, a deploy role as its deployment project's.
+    def start_by(issuer: str, source: str) -> dict:
+        context = {"sessionIssuer": {"userName": issuer}}
+        return {
+            "userIdentity": {"type": "AssumedRole", "sessionContext": context},
+            "requestParameters": {"dataSourceIdentifier": source},
+            "requestID": "r",
+        }
+
+    owners = {"s-own": own, "s-con": con}
+    deploying = {"awsds-deploy-prod": own}
+    cases += [
+        (
+            "a project role's start of its own source",
+            judge_start(start_by(f"{PROJECT_ROLE_MARKER}{own}_env", "s-own"), owners, deploying)[0],
+            "own",
+        ),
+        (
+            "a project role's start of another's",
+            judge_start(start_by(f"{PROJECT_ROLE_MARKER}{own}_env", "s-con"), owners, deploying)[0],
+            "cross",
+        ),
+        (
+            "a deploy role's start of its project's source",
+            judge_start(start_by("awsds-deploy-prod", "s-own"), owners, deploying)[:2],
+            ("own", own),
+        ),
+        (
+            "a deploy role's start of another project's",
+            judge_start(start_by("awsds-deploy-prod", "s-con"), owners, deploying)[0],
+            "cross",
+        ),
+        (
+            "a deploy role whose project is not listed",
+            judge_start(start_by("awsds-deploy-staging", "s-own"), owners, deploying)[0],
+            "other",
+        ),
+    ]
+
     wrong = [(what, got, want) for what, got, want in cases if got != want]
     for what, got, want in wrong:
         print(f"  FAIL  {what}: read {got!r}, expected {want!r}")
@@ -1008,6 +1053,9 @@ def main(argv: list) -> int:
             "json",
         )
         projects = {i: n for i, n in json_or_none(res.stdout) or []}
+    deploy_projects = {
+        role: pid for role, name in DEPLOY_ROLES.items() for pid, n in projects.items() if n == name
+    }
 
     # ---------------------------------------------------------------- CT-2 the listings
     listings: list = []
@@ -1352,7 +1400,9 @@ def main(argv: list) -> int:
                 continue
             seen_requests.add(request)
             starts.append(
-                (body.get("eventTime", "-"),) + judge_start(body, source_project) + (request,)
+                (body.get("eventTime", "-"),)
+                + judge_start(body, source_project, deploy_projects)
+                + (request,)
             )
     starts.sort()
     by_verdict: dict = {}
@@ -1402,7 +1452,7 @@ def main(argv: list) -> int:
         checks.ok(
             "CT-13",
             ct13,
-            f"{len(by_verdict.get('own', []))} start(s) in CloudTrail's 90 days, each by the source's own project role"
+            f"{len(by_verdict.get('own', []))} start(s) in CloudTrail's 90 days, each by the source's own project's role or deploy role"
             + (f"; callers that are no project role: {', '.join(others)}" if others else ""),
         )
 

@@ -4442,3 +4442,103 @@ infrastructure user (`awsds-policy-canary`, `awsds-infra-prod`), reads otherwise
 - **Verdict**: the house image has one version. The pipeline's retention is unchanged (`retire --keep 10`, the
   lifecycle policy's 30 tags), so the history grows again from the next release. `app-etl`, `deploy` and the
   pull-through caches were not touched.
+
+## 2026-11-15 — xxviii's second reading: the global `AssumeRole` refused by decision 29's deny, recorded in `us-east-1` alone
+
+*The user's hand in GitLab, in Stage 19's release T sitting (`promotion.md` §N.8.2 step 5); Claude read the job
+through the API in the user's browser session and the trails as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`), reads alone. Account ids replaced. Times
+UTC.*
+
+- **[user]** On `awsds/dev-env`'s `main` (`717d80b`), *Run pipeline* with `STS_GLOBAL_PROBE=1`: pipeline #118
+  (20:40:12), its `pip-audit` failed as #116's; *Run* on `sts-global-probe`, job 702 on the deploy runner,
+  20:40:32 to 20:40:46, green.
+- **[Claude] The job's log**: the caller
+  `arn:aws:sts::<Production>:assumed-role/awsds-prod-runner-deploy/i-0448fc1faa4bc5537`. Through
+  `sts.us-west-2.amazonaws.com` both roles answered, `assumed-role/awsds-deploy-prod/xxviii-118` and
+  `assumed-role/awsds-deploy-staging/xxviii-118`. Through `sts.amazonaws.com` both were refused: *"An error
+  occurred (AccessDenied) when calling the AssumeRole operation: User:
+  arn:aws:sts::<Production>:assumed-role/awsds-prod-runner-deploy/i-0448fc1faa4bc5537 is not authorized to
+  perform: sts:AssumeRole on resource: arn:aws:iam::<Production>:role/awsds-deploy-prod with an explicit deny in
+  a service control policy:
+  arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-1fp032g8. Go to
+  https://us-west-2.console.aws.amazon.com/iam/home?region=us-west-2#/authorization-details/1616tkgm263zccxafchaqolrb
+  for complete details, or call the GetRequestAuthorizationDetails API with the following authorization id:
+  1616tkgm263zccxafchaqolrb"*, and the same for `arn:aws:iam::<Staging Account>:role/awsds-deploy-staging`
+  with the id `3v5k1fj4i1ix640x1vwn543xj`. STS names the policy, not the statement (`SUP-011`'s later reading).
+- **[Claude] The trails**, read at 20:46:26 over 20:40 to 20:42. Production's `us-east-1`: the two refusals,
+  `AccessDenied` at 20:40:41 (`awsds-deploy-prod`) and 20:40:45 (`awsds-deploy-staging`), host
+  `sts.amazonaws.com`, `errorMessage` the job's text, `requestParameters` null: §N.7.1 step 8's filter on the
+  session name misses them. Production's `us-west-2`: the two regional answers at 20:40:40 and 20:40:44, host
+  `sts.us-west-2.amazonaws.com`. Staging's `us-west-2`: the regional answer of `awsds-deploy-staging` at
+  20:40:44; Staging's `us-east-1`: nothing. Verification xxviii's second reading: each global call refused and
+  recorded in `us-east-1` in the caller's account alone, each regional call answered in `us-west-2`.
+
+## 2026-11-15 — 3.3's snapshot record in Staging, on `v0.4.7`
+
+*Claude's reads as the infrastructure user with `InfrastructureAccess` in the Staging Account
+(`awsds-infra-staging`), in Stage 19's release T sitting (`promotion.md` §N.8.2 step 8). Times UTC.*
+
+- **[Claude] The Glue run**: `awsds-staging-app-etl`, `jr_2b35e300ad0970bb7fb1310926718363c4d182449eb09cb5bee9f70e48c6bce1`,
+  `SUCCEEDED`, 20:47:49 to 20:49:29, 81 s, started by pipeline #117's `staging-test`. Its output log:
+  *"reading SELECT trade_date, desk, instrument, quantity, price FROM lake.curated.trades VERSION AS OF
+  8185032439141629913"*, then *"wrote s3://awsds-staging-outputs/app-etl/work/glue/trades.source.json, snapshot
+  8185032439141629913"* and *"wrote 30 row(s) to the table at
+  s3://awsds-staging-outputs/app-etl/tables/trades_notional/"*.
+- **[Claude] The objects**: `app-etl/work/glue/trades.source.json` (modified 20:49:13) reads
+  `{"pinned": false, "snapshot_id": 8185032439141629913, "table": "lake.curated.trades"}`, an integer id;
+  `app-etl/work/job/trades.summary.json`'s `source` is the same object, key for key. 3.3's record read in
+  Staging; Production's half follows that leg's run.
+
+## 2026-11-15 — 3.7's record of `v0.4.7`
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` in the Staging Account
+(`awsds-infra-staging`) and in Production (`awsds-infra-prod`), in Stage 19's release T sitting
+(`promotion.md` §N.8.2 step 14), both legs' slices up. Times UTC.*
+
+- **[Claude] The values**, read from pipeline #117 through GitLab's API: the legs' artifacts
+  `staging-release.auto.tfvars.json` (job 688) and `production-release.auto.tfvars.json` (job 693), and
+  from job 693's log the image digest `sha256:14ae4d03…6126` and the bundle's SHA256 `001eafbb…5826`, the
+  same in job 688's. ECR holds the digest as `v0.4.7-355ab8c7`, pushed 20:25:26. Release T's template keeps
+  each leg's release file as an artifact; Release F's (`deploy-application.py`) keeps only the deploy log.
+- **[Claude] The four `release.tf`s** default to `v0.4.7`: both application slices the digest and the
+  bundle's SHA256; Staging's orchestration slice `app-etl` `6FAHInLc…kRQz` and `mhNTaJW2…qLWD`, `app-etl-train`
+  `SBtjDXFa…NmPuuHKQ` and `q5cF9Dxk…g.QQ`, `app-etl-warehouse` `OM3x9014…LIrd`; Production's `app-etl`
+  `kxEa15Ak…RCR`, `rT8YZcyC…jmKi`, `app-etl-train` `8hPcuPjf…J5S9`, `wXKC2OCZ…dUx`, `app-etl-warehouse`
+  `ROwY_irN…aVaf`. At 21:51, each of the four slices planned *"No changes"* with no `-var`, exit 0 under
+  `-detailed-exitcode`. The discriminator is `production-deploy`'s own plan, *"0 to add, 3 to change"*
+  from `v0.4.6`'s VersionIds. The mirror's push is the user's, after the merge.
+
+## 2026-11-15 — 3.3's snapshot record in Production, on `v0.4.7`
+
+*Claude's reads as the infrastructure user with `InfrastructureAccess` in Production (`awsds-infra-prod`),
+after Stage 19's release T sitting started the app-etl chain by hand (`promotion.md` §N.8.2 step 11).
+Times UTC.*
+
+- **[Claude] The Glue run**: `awsds-prod-app-etl`,
+  `jr_515a905817b1ef61bd90400601530333c365510efccea43fa3116448e3a53484`, `SUCCEEDED`, 21:44:30 to 21:46:40,
+  115 s. Its output log: *"reading SELECT trade_date, desk, instrument, quantity, price FROM
+  lake.curated.trades VERSION AS OF 8185032439141629913"*, *"wrote
+  s3://awsds-prod-outputs/app-etl/work/glue/trades.source.json, snapshot 8185032439141629913"* and *"wrote 30
+  row(s) to the table at s3://awsds-prod-outputs/app-etl/tables/trades_notional/"*.
+- **[Claude] The objects**: `app-etl/work/glue/trades.source.json` (modified 21:46:24) reads
+  `{"pinned": false, "snapshot_id": 8185032439141629913, "table": "lake.curated.trades"}`;
+  `app-etl/work/job/trades.summary.json`'s `source` (modified 21:52:45) is the same object. Both are `aws:kms`
+  under `alias/awsds-prod-data`'s key. The snapshot id equals Staging's of 20:49 (option A's parity, observed:
+  the producer wrote nothing between the two legs). 3.3's record is read in both targets.
+
+## 2026-11-15 — xv read on `v0.4.8`: the proxy stopped alone fails `staging-check` in seconds
+
+*Release T's sitting, `promotion.md` §N.8.2 step 12b. The user's acts from the project folder as the
+infrastructure user with `InfrastructureAccess` in Production (`awsds-infra-prod`), the laptop on the
+split-tunnel profile; Claude's reads through GitLab's API and Production's trail. Times UTC.*
+
+- **[user] The stop**: `./scripts/slices.py down --env production --only proxy`, `StopInstances` on
+  `awsds-prod-proxy` at 22:48:05.
+- **[user] The negative**: *Retry* on `staging-check` of #120 (job 728), 22:48:35 to 22:49:00, 25 s: *"FATAL: no
+  answer through the proxy: is the hub up (make hub-up)?"*, *"ERROR: Job failed: exit code 1"*.
+- **[user] The start**: `./scripts/slices.py up --env production --only proxy`, `StartInstances` at 22:50:14;
+  **[Claude]** the host read `running`.
+- **[user] The positive**: *Retry* on the same job (job 729), 22:51:24 to 22:51:38, 14 s, 70 s after the start:
+  *"the proxy answers (404)"*, *"Job succeeded"*, as job 717 read at 22:17. xv answered: the check the template
+  carries since 2026-10-28 fails the job in seconds against a stopped proxy.

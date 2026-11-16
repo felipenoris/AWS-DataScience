@@ -7,8 +7,8 @@
   },
   "awsds/dev-env": {
     "branch": "main",
-    "commit": "6eff90568ed5324137fca49385b4ff87468e98a0",
-    "committed": "2026-10-26T22:14:02Z",
-    "subject": "Merge branch 'the-releases-v0.10.0' into 'main'"
+    "commit": "717d80b57541898ee3ba15e4fe5b3a8d8a55387e",
+    "committed": "2026-11-15T20:21:45Z",
+    "subject": "Merge branch 'sts-global-probe-goes-on' into 'main'"
   }
 }

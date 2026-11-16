@@ -3054,3 +3054,283 @@ They close the previous entry's list owed with a sign-in.
   (`ca2735c9-…`), Data Governance (`7ee243ab-…`) and Staging (`65b0f127-…`), `awsds-deploy-sandbox-test`
   (`06d426f2-…`) and `awsds-deploy-staging` (`9bead345-…`). `awsds-deploy-prod` has none, as §N.8.4 step 7
   expects.
+
+## 2026-11-15 — release T's sitting: the raises, the mirror, the template's merge request and its variables
+
+The user's acts, as the user reported them in the chat, and Claude's reads as the infrastructure user
+(`InfrastructureAccess`) and, for GitLab, through the user's browser session (`runbooks/promotion.md` §N.8.2
+steps 2 to 4).
+
+- **[user] PR #303 merged** at 19:43:28 UTC (`3a15f2f6`). The session went on in the same conversation, on
+  the user's word, on a new branch cut from that commit.
+- **[Claude] The other sessions told** before the first raise: `Stage 19: SUP-368's Glue line in the bill`
+  and `Worktrees para apagar`, both idle.
+- **[user] `make hub-up`, `make gitlab-up BUILD=1` and the tunnel.** EC2's launch times: the VPN host
+  19:43:57 UTC, the proxy 19:44:00, GitLab 19:46:05, the deploy runner 19:46:28, the build and test runners
+  19:46:37. The three runners run `ami-0dac6cd09676c9fb1`, the parameter's value since 2026-11-12, their
+  first boot on it; GitLab lists the three `online` (runners 1, 3 and 4 of `awsds/app-etl`).
+- **[user] The mirror**, `git push gitlab main` from the project folder. **[Claude]** `ls-remote` read
+  `awsds/infrastructure`'s `main` at `3a15f2f6`, `origin/main`.
+- **[Claude] Step 2's readings.** `./aws/cicd.py` (19:56:44 UTC): `CI-1` to `CI-9` pass, the failed calls
+  those of the persona profiles nobody had signed in. `./aws/egress.py awsds-infra-prod
+  awsds-infra-sandbox-1`: every check passes, Production's 12 interface endpoints (`EG-5`, about 0.120
+  USD/h), Sandbox's `egress/` down. `make status` (finished 19:59:47 UTC): 0.4571 USD/h, the hub's two hosts,
+  `egress/` (12), `tooling/` and `runners/` (13, the build runner with them) up; Staging, Sandbox,
+  `workloads-egress/` and both warehouses' compute down.
+- **[Claude] GitLab's `main` before step 4**: `awsds/app-etl` at `8d50f68`, the clone's commit, so the
+  merge request is the diff read offline; tags `v0.4.0` to `v0.4.6`, `v0.4.7` free.
+- **[user] The template's merge request**, by step 4's commands: branch `release-t`, commit `cf2d1a5` on
+  `8d50f68`, `12 files changed, 1040 insertions(+), 214 deletions(-)`; merge request !13, its pipeline #113
+  (20:07:21 to 20:08:01 UTC) green, the merge `355ab8c` (parents `8d50f68` and `cf2d1a5`) and its pipeline
+  #114 (20:09:15 to 20:09:59 UTC) green. **[Claude] read**: `release-t`'s tree and `main`'s are
+  `416a897c…`, the tree of `36bcf916:examples/app-etl`. Pipeline #113 ran `test`, `pip-audit`,
+  `secret-detection-gate` and `secret_detection`, #114 those and `pages`, each on the test runner;
+  `gate-without-proxy` stays `manual` in both.
+- **[user] The CI/CD variables.** **[Claude] read** through the API in the user's session: nine, each
+  protected and unmasked: `DOMAIN_ID`, `DOMAIN_REGION`, `DEV_PROJECT_NAME` (`app-etl-dev`), `SUBNET_AZ1`,
+  `SUBNET_AZ2`, `DEV_PROJECT_SG`, `DEV_PROJECT_KEY_ARN`, `ECR_REGISTRY`, `TRAINING_IMAGE_URI`. The four
+  `TEST_PROJECT_*` are gone.
+- **[Claude] `awsds/dev-env`**: `main` still at `6eff905`, step 5's merge request not yet opened.
+
+## 2026-11-15 — release T's sitting: `awsds/dev-env`'s merge request and the tag `v0.4.7`
+
+The user's acts by §N.8.2 steps 5 and 6; Claude's reads through `ls-remote` and through the API in the
+user's browser session.
+
+- **[user] `awsds/dev-env`'s merge request**, by step 5's commands: branch `sts-global-probe-goes-on`,
+  commit `b6ae110` on `6eff905`, `1 file changed, 5 insertions(+), 3 deletions(-)`; its pipeline #115
+  (20:19:59 to 20:21:26 UTC) failed at `pip-audit`, as step 5 expects; the user merged past it as `717d80b`
+  (20:21:45 UTC), and `main`'s pipeline #116 failed the same way. **[Claude] read**: `main`'s
+  `.gitlab-ci.yml` identical to `gitlab/awsds/dev-env/.gitlab-ci.yml`; #116's `pip-audit` (job 676) 454
+  pinned packages against OSV, 76 findings accepted, 29 `BLOCK` in `langgraph`, `langgraph-sdk`, `msgpack`,
+  `nltk`, `oauthlib`, `opentelemetry-api`, `pillow`, `pyasn1`, `soupsieve` and `tornado`, the laptop's
+  count of the same day; `recipe-checks`, `secret-detection-gate` and `secret_detection` green. The merge
+  copied back with `./scripts/gitlab-mirror.py awsds/dev-env`: *"the copy already holds this commit's 14
+  file(s)"*, `gitlab/mirror.json` moved to `717d80b`.
+- **[user] The tag `v0.4.7`** on `awsds/app-etl`'s `main`; `ls-remote` reads it at `355ab8c`, the merge of
+  !13. Its pipeline #117 started 20:22:09 UTC: `pip-audit` and `test` green on the test runner,
+  `build-task-code` green, `build-image` running on the build runner from 20:22:44 UTC.
+- **[pipeline] #117 to `release`**: `build-image` 20:22:44 to 20:25:32 UTC on the build runner, `bundle`
+  20:25:35 to 20:25:59, `store-bundle` to 20:26:09, `release` to 20:26:20; `scan-gate` (allowed to fail)
+  still running at 20:27 UTC; `staging-gate` `manual`. **[Claude] read `bundle`'s log** (job 683, the
+  deploy runner): the caller `assumed-role/awsds-deploy-sandbox-test`, *"Project: app-etl-dev"*, *"Total
+  files: 11"* (`code/` 2, `src/` 3, `glue/` 2, `samples/` 1, `workflows/` 3, `app-etl-warehouse.yaml` among
+  them), `artifacts/app-etl.zip` 24,076 bytes, SHA256 `001eafbb4d90514802f14f97c75043b5d1d0241295e3b11d944f96c730c65826`;
+  no *"Failed to get project connections"* and no *"Pattern not found"*. The CLI's two warnings, `GetGroupProfile`
+  refused on `06d426f2-…` and `839bcde8-…`, are the ones of 2026-11-10. Sandbox's event history over 20:25:00
+  to 20:27:30 UTC read empty at 20:27:32, inside the trail's delay (Lesson 62); the reading is made again.
+- **[Claude] Sandbox's event history over `bundle`'s minutes**, read again at 20:45: 27 events from
+  20:25:45, every one of `awsds-deploy-sandbox-test` read-only: `GetCallerIdentity`, `ListDomains`,
+  `ListProjects`, `GetProject`, `ListProjectMemberships`, `GetUserProfile` twice, `ListConnections` three
+  times, `GetConnection` ten times, `ListEnvironments`; refused `DescribeStacks` (CloudFormation) and
+  `GetGroupProfile` twice. No write by that role.
+- **[user] `make up ENV=staging ONLY=egress`, then `staging-gate`** (job 686, 20:42:50 to 20:42:55).
+  `staging-check` green 20:42:59 to 20:43:12, `staging-deploy` green 20:43:15 to 20:46:50, `staging-test`
+  started.
+- **[pipeline] #117's Staging leg green** (logs read through the API in the user's session): `staging-test`
+  (job 689, 20:46:53 to 21:09:41 UTC) started `awsds-staging-chain-app-etl`'s execution
+  `v0-4-7-117-app-etl`, `SUCCEEDED` at 21:02:24, then `v0-4-7-117-app-etl-train`, `SUCCEEDED` at 21:09:35, and
+  read the table `trades_notional` at `s3://awsds-staging-outputs/app-etl/tables/trades_notional/`;
+  `staging-model` (job 690, 21:09:44 to 21:16:03) ran `app-etl-v0-4-7-20261115T211007` on the model of
+  `app-etl-train-20261115T210324`, 30 predictions for 30 batch rows, and deleted the model; Production's
+  registry read version 1 `Approved`. `production-plan` (job 691, 21:16:06 to 21:16:50): the application
+  slice `0 to add, 2 to change, 0 to destroy`, the two Glue jobs' `script_location` from `v0.4.6/` to
+  `v0.4.7/`. `production-gate` `manual`.
+- **[Claude] `./aws/orchestration.py`** (step 8): `OR-1` to `OR-9` pass. Staging's two workflows `READY` on
+  `v0.4.7`'s definitions (`OR-5`), version 1 of 50 each; Production's three still on `v0.4.6`'s; every chain's
+  schedule `DISABLED`, its failure rule `ENABLED`. The failed calls are the persona profiles nobody had signed
+  in.
+- **[user] Stage 10 decision 11's Staging half** (§N.8.2 step 9): the profile `awsds-deploy-staging` added
+  by step 9's four `aws configure set`, `aws sso login --sso-session awsds-deploy --no-browser` as the
+  Deployment Manager User (its token cached at 21:28:23 UTC), and the three reads: `get-workflow-run` on
+  `awsds-staging-wf-app-etl`'s last run, `ukdqPTEi5Tav4PL`, answered `SUCCESS`. **[Claude]** at 21:29:36 the
+  infrastructure user's token no longer loaded, *"Error loading SSO Token: Token for awsds does not exist"*,
+  its cache file gone and the Deployment Manager's the only one with a start URL (`SUP-016`'s shape);
+  Staging's trail waits for the infrastructure user's next sign-in.
+- **[user] `make up ENV=production ONLY=workloads-egress`, then `production-gate`** (job 692, 21:22:31 to
+  21:22:36 UTC). **[pipeline] `production-deploy`** (job 693, 21:22:38 to 21:25:37): `workloads-egress/` read
+  up, 8 interface endpoints and 1 DNS Firewall association `COMPLETE`; the bundle `001eafbb…` copied under
+  `s3://awsds-prod-outputs/applications/app-etl/v0.4.7/`; the application slice *"0 added, 2 changed, 0
+  destroyed"* (the two Glue jobs' scripts) and the orchestration slice planned `0 to add, 3 to change, 0 to
+  destroy`, the three workflows, and applied. `production-warehouse-ddl` and `production-register` stay
+  `manual`: neither belongs to release T's sitting (the warehouse is §N.8.3's and §N.8.4's, with its compute
+  up; the model's registration is not on §N.8.2's list).
+- **[user] The infrastructure user signed in again.** **[Claude] Staging's trail for step 9**, read at
+  21:31:52 UTC: `ListWorkflows` (21:28:46), `ListWorkflowRuns` (21:28:50) and `GetWorkflowRun` on
+  `ukdqPTEi5Tav4PL` (21:28:55) in the session `AWSReservedSSO_DeploymentManagerAccess_284ceedc4ee6111b`, and at
+  21:28:55 the paired `Decrypt` in the same session, `invokedBy airflow-serverless.amazonaws.com`, its
+  encryption context the workflow's ARN, no error. Stage 10 decision 11's Staging half read.
+- **[Claude] `./aws/orchestration.py` after `production-deploy`**: 45 checks pass; Production's three
+  workflows on `v0.4.7`'s definitions (`OR-5`), versions 4, 3 and 3 of 50; the three chains' schedules
+  `DISABLED`, their failure rules `ENABLED` (`OR-9`).
+- **[user] The cause of the infrastructure token's loss**, asked by Claude: the user ran `aws sso logout`
+  before the Deployment Manager's sign-in, answered in Safari, and again before the infrastructure user's new
+  sign-in. **[Claude]** The loss read at 21:29:36 UTC is `SUP-015`'s logout, which removes every cached token,
+  not `SUP-016`'s shape named above; no `SUP` entry gains a reading. §N.8.2 step 9 now says the two
+  `sso-session`s' tokens coexist without a logout.
+- **[Claude] §N.8.2 step 14, 3.7**: the four `release.tf`s on `v0.4.7`'s values, each slice planning *"No
+  changes"* at 21:51 UTC with both legs up (Stage 8's log). Taken while the chain of step 11 ran, before
+  `make down ENV=staging` destroys the Staging slices it plans.
+- **[Claude] §N.8.2 step 17's reads**, before any delete, as `awsds-infra-sandbox-1`: in `test-experimentation`
+  the workflows `app_etl_test_experimentation_app_etl` and `app_etl_test_experimentation_app_etl_train`, the
+  Glue job `app-etl-4gqfau9xuo6e4w` (created 2026-10-19 18:55 UTC, its script under the project's
+  `shared/app-etl/glue/`), and 19 objects, 37,310 bytes, under the project's `shared/app-etl/`, written
+  2026-10-25 22:59:05 to 23:12:50 UTC. `houseprice_etl_test_experimentation_houseprice_etl` is the third
+  workflow named after the project, not the application's. The deletes wait for the user's word.
+- **[Claude⚡] §N.8.2 step 11, on the user's word in chat** (*"Sim, inicie a chain"*), the other sessions told
+  first: `start-execution` of `awsds-prod-chain-app-etl` as `awsds-infra-prod`, the execution
+  `v0-4-7-by-hand-2026-11-15-app-etl`, started 21:43:28 and `SUCCEEDED` at 22:00:33 UTC (17 min 05 s, 62
+  history events). The Glue run of 21:44:30 read `lake.curated.trades` at snapshot `8185032439141629913`, the
+  same as Staging's leg, and `trades.summary.json` sits under the data key at 21:52:45 (Stage 8's log, 3.3 in
+  Production).
+- **[Claude] §N.8.2 step 12a.1, on the user's word in chat** (*"você pode avançar em paralelo com o passo
+  12a"*), while the user ran step 13. In the laptop's clone, from `awsds/app-etl`'s `main` at `355ab8c`, the
+  branch `xx-undeclared-glue-job` with the one line `job_name: app-etl-undeclared-{proj.id}`, commit
+  `90f5cc1`, pushed at 22:11. The branch pipeline #119: `test` green at 22:11:56 (*"72 passed, 1 skipped"*,
+  the lint *"ok: 9 arquivo(s)"*). `git ls-remote` read `v0.4.8` free, and the tag `v0.4.8` was pushed on
+  `90f5cc1` at 22:12:31: pipeline #120.
+- **[user] §N.8.2 step 13, the space's readings** (pasted verbatim from the space `default`'s terminal, a
+  JupyterLab space of `app-etl-dev`): `type -a aws-smus-cicd-cli` lists `/opt/awsds/bin/aws-smus-cicd-cli`
+  first, then `/opt/conda/bin/aws-smus-cicd-cli` and `/opt/awsds/bin/aws-smus-cicd-cli` again;
+  `aws-smus-cicd-cli 1.0.9`; `10.20.38.251    airflow-serverless.us-west-2.api.aws`; `73`. Each is the
+  expected reading. The clone of `awsds/app-etl` as the Data Scientist User, with the persona's token at git's
+  prompt: *"Receiving objects: 100% (154/154)"*.
+- **[user] `staging-gate` of #120** at 22:17:15. **[Claude] §N.8.2 step 12a read** (Stage 10's log, verification
+  xx's second half): `staging-test` failed at 22:24:11 on *"FATAL: the chain app-etl ended FAILED"*, `transform`
+  refused at `GetJob` on `awsds-staging-app-etl-undeclared`, `CreateJob` 0, both failure rules and two
+  notifications fired, Production untouched, no Sandbox residue. The branch's deletion is the user's.
+- **[user] §N.8.2 step 13's deploy and run**, from the clone at `355ab8c` with §D step 3's values,
+  `JOB_IMAGE_URI` `v0.4.7`'s digest, the two zips, `scripts/dev-cli.sh deploy` and `run --workflow app-etl`.
+  **[Claude]** `app_etl_app_etl_dev_app_etl` `READY`, modified 22:24:24 UTC, version `a9387b9d…`, the project
+  role, its security group and two subnets, `CUSTOMER_MANAGED_KEY`; the run `bzJIxFT4Hn64Go8` `QUEUED` at
+  22:26:37. The proxy's log `/awsds/prod/proxy` from 22:10 UTC: no line naming `airflow-serverless`, while the
+  space's own traffic is logged (10.20.41.98: the `awsds-workflows` clone's `CONNECT github.com:443 200` at
+  22:22:43, `cloudformation.us-west-2` 7 times, and the `cognito-identity` and `client-telemetry` calls 6d's log
+  records, about 300 each in 20 minutes). The deploy's calls to the MWAA Serverless API took the `mwaa` group's
+  endpoint.
+- **[user] 12a's branch deleted** in GitLab and in the laptop's clone (Stage 10's log).
+- **[Claude⚡] §N.8.2 step 17, on the user's word in chat** (*"Sim, remova"*), the other sessions told first, as
+  `awsds-infra-sandbox-1`, each object read before its delete: `delete-workflow` of
+  `app_etl_test_experimentation_app_etl` (`READY`, last run `FAILED`, no run in progress) at 22:36:46 and of
+  `app_etl_test_experimentation_app_etl_train` (`READY`, no run) at 22:36:48; `delete-job` of
+  `app-etl-4gqfau9xuo6e4w` (last run `SUCCEEDED` on 2026-10-25) at 22:36:59; `aws s3 rm --recursive` of the
+  project's `shared/app-etl/` at 22:37:23, the 19 objects listed before it (the two code zips, the two Glue
+  scripts, `src/`, the three workflow files, the inbox, outbox, table and `work/` objects). The bucket is
+  versioned, so each key ends in a delete marker and its versions stay. Read back: the prefix lists no object,
+  19 delete markers at 22:37 beside 17 older ones, `houseprice_etl_test_experimentation_houseprice_etl` the only
+  workflow named after the project, the Glue job *"Job not found"*. The two workflows' log groups under
+  `/aws/mwaa-serverless/` stay, under `EXC-10`'s rule.
+- **[user] §N.8.2 step 15, a GitLab backup by hand** in a Session Manager shell on `awsds-prod-gitlab`: `sudo
+  gitlab-backup create STRATEGY=copy`, 22:38:00 to 22:38:10 UTC, the eight projects' repositories and wikis
+  dumped, *"Uploading backup archive to remote storage awsds-prod-gitlab-backup ... done (encrypted with
+  aws:kms)"*, *"Backup 1794782280_2026_11_15_19.4.2 is done."* **[Claude]** read in the bucket as
+  `awsds-infra-prod`: `1794782280_2026_11_15_19.4.2_gitlab_backup.tar`, 15,585,280 bytes, 22:38:11, `aws:kms`,
+  expiring 2026-12-16 (`expire-current-versions`); release 19.4.2, the pinned one. The two older archives
+  (2026-10-26 and 2026-11-10) stay until their own expiry.
+- **[Claude] §N.8.2 step 13's run to its end**, as `awsds-infra-sandbox-1`: `bzJIxFT4Hn64Go8` `SUCCESS`, 22:26:25
+  to 22:40:03 UTC, 817 s, within pass 1's 816 to 936 s. Its tasks `transform` 111 s, `process` 492 s,
+  `summarize` 7 s, `write_result` 23 s and `publish` 6 s, each `SUCCESS`. The Glue run on `app-etl-ceweti7jbiu1hs`
+  `SUCCEEDED` from 22:27:04, 85 s, 2 G.1X workers. The processing job `app-etl-20261115T222936` `Completed`,
+  22:30:22 to 22:34:52, `ml.t3.medium`, network-isolated, on `awsds-prod-ecr-app-etl@sha256:14ae4d03…6126`, the
+  digest `v0.4.7`'s `build-image` pushed. The report `shared/app-etl/outbox/report.json`, 332 bytes, at
+  22:39:22. `app_etl.trades_notional`'s metadata moved to `00001-8dfc9699-….metadata.json` at 22:28:31: the run
+  wrote the table the run of 2026-11-14 created. Step 13 done.
+- **[user] Sandbox down** (§N.8.2 step 16's Sandbox half, taken early): `git credential-cache exit` in the space,
+  the persona's token revoked, the space deleted, the portal's tabs closed, `make down ENV=sandbox`. **[Claude]**
+  read at 22:55 UTC: no app and no space in Sandbox, its two gateway endpoints (S3, DynamoDB) alone,
+  `sandbox/egress` down.
+- **[user] §N.8.2 step 12b** (Stage 8's log, xv): the proxy stopped at 22:48:05 and started at 22:50:14, *Retry*
+  on `staging-check` of #120 failing in 25 s on the FATAL line, then green.
+- **[user] `make down ENV=staging`, then `make up ENV=staging`**, for release F's sitting (§N.8.4), which needs
+  Staging's `orchestration/` and `app/app-etl/` destroyed. **[Claude]** `make status` at 22:55: `staging/egress`
+  up with 17 resources, both slices down, each `state list` empty; Production's `workloads-egress/` kept up for
+  release F, the burn 0.6171 USD/h.
+
+## 2026-11-15 — release F's promotion sitting: step 5's re-plan
+
+*The same evening, right after release T's sitting, which ended with steps 11 to 15 and 17 done and Production's
+`workloads-egress/` kept up. Claude's hand as the infrastructure user with `InfrastructureAccess` in the
+Staging Account (`awsds-infra-staging`). Times UTC.*
+
+- **[Claude] §N.8.4 step 5, `staging/chains/` re-planned** at 22:57 into
+  `$HOME/tmp/stage19-chains-staging-1115.tfplan`: *"18 to add, 0 to change, 0 to destroy"*, the module at
+  `orchestration-v0.3.0`; the two chains `awsds-staging-chain-app-etl` (`cron(30 6 * * ? *)`) and
+  `awsds-staging-chain-app-etl-train` (`cron(0 7 * * ? *)`), both schedules `DISABLED`, their failure rules and
+  the workflows' failure rules `ENABLED`, the schedule group `awsds-staging-chains`, the log group
+  `/aws/vendedlogs/states/awsds-staging-chains`, the exec and scheduler roles. The apply waits for the user's
+  word naming it.
+- **[Claude] The times of the two bullets above, corrected**: `make status` ended at 23:07:19 UTC (not 22:55),
+  and the plan was saved at 23:08:34 (not 22:57), read from the files' modification times.
+- **[Claude⚡] §N.8.4 step 5, `staging/chains/` applied** on the user's word in chat (*"Sim, aplique o chains"*),
+  the other sessions told first, as `awsds-infra-staging`: the saved plan of 23:08:34, 23:11:18 to 23:11:44 UTC,
+  *"18 added, 0 changed, 0 destroyed"*. The re-plan *"No changes"*, exit 0 under `-detailed-exitcode`. Read
+  back: `awsds-staging-chain-app-etl` and `awsds-staging-chain-app-etl-train` created at 23:11:39, both
+  schedules in `awsds-staging-chains` `DISABLED`, the two chain failure rules and the two workflow failure rules
+  `ENABLED`.
+- **[user] §N.8.4 step 6, the template's merge request**: branch `release-f`, commit `cdf9078` on `355ab8c`, from
+  `3a15f2f6:examples/app-etl`; merge request !14, its branch pipeline #121 green (`test`, `pip-audit`,
+  `secret_detection`, `secret-detection-gate`), merged at 23:12:33 UTC as `fc79a4d`. **[Claude] read**: the
+  branch's tree and `main`'s are `22a98d0e…`, the tree of `3a15f2f6:examples/app-etl`. The mirror
+  `awsds/infrastructure` was already at `3a15f2f6`. `git ls-remote` reads `v0.4.9` and `v0.5.*` free.
+- **[user] The tag `v0.5.0`** on `fc79a4d`, pushed at 23:14:45 UTC: pipeline #123. **[pipeline]** `test` and
+  `pip-audit` green at 23:15:03, `build-task-code` at 23:15:16, `build-image` at 23:17:51, `bundle` at 23:18:16,
+  `store-bundle` at 23:18:25, `release` at 23:18:34; `staging-gate` `manual`. **[Claude] read** in `bundle`'s
+  log: *"Bundle creation complete for target: dev"*, 12 files, then the guard *"the catalog the bundle carries,
+  against product.json"*: glossaries 0, glossary terms 0, form types 0, asset types 0, *"assets: 1
+  (trades_notional)"*, *"dataProducts: 1 (trades-notional)"*, *"OK"*; the bundle's SHA256 `1148ff0c…2b46`.
+- **[user] `staging-gate`** of #123 (job 750, 23:18:55 to 23:19:00). **[pipeline]** `staging-check` (751) green,
+  23:19:01 to 23:19:22; `staging-deploy` (752) failed, 23:19:25 to 23:21:20; `staging-test` and every later job
+  skipped. `scan-gate` (746) failed at 23:23:56, allowed to (Stage 8 decision 1): *"Number of vulnerabilities for
+  this image exceeds the maximum supported with Basic Scanning"*, the ending of #117's and #120's too.
+- **[Claude] `staging-deploy` read** in its log: the CLI deployed into `deploy-staging` (`5ido8bej1zoeq8`), five
+  storage items with 11 files under the project's shared prefix, the workflows `app_etl_deploy_staging_app_etl`
+  (23:21:02) and `app_etl_deploy_staging_app_etl_train` (23:21:15) created `READY`, *"Deployment completed
+  successfully!"*, exit 0. The catalog import: *"Remapped DataSourceReferenceForm to target data source
+  52f18khk7kdi4w (db app_etl)"*, *"Resource trades_notional already exists (ConflictException), treating as
+  update"*, then *"Failed to import dataProducts trades-notional: An error occurred (ValidationException) when
+  calling the CreateDataProduct operation: Resource asset provided is not from same project"*; the summary
+  *"0 created, 1 updated, 0 skipped (extra in target), 1 failed, 0 published"*. `deploy-application.py` stopped
+  on *"the catalog import failed 1 item(s)"* (`SUP-357`'s check), before the stage's variables: no
+  `/awsds/staging/applications/app-etl/stage-variables`, no `staging.env`.
+- **[Claude] The cause read** in the Data Governance account's trail as `awsds-infra-data`: `CreateAsset` at
+  23:20:49 into `deploy-staging` with `app-etl-dev`'s `externalIdentifier`, the Sandbox account's table ARN with
+  `app-etl-dev`'s project id as suffix, answered `ConflictException` with no message; `CreateDataProduct` at
+  23:20:50 with the item `c6z3pbg3drrs0g`, `app-etl-dev`'s asset (1.5), answered `ValidationException`. That
+  `CreateAsset` is the only one into `deploy-staging` since 2026-11-09. Its source `52f18khk7kdi4w`, over Staging's
+  `app_etl`, has run daily since 2026-11-12 adding 0, and Staging's `app_etl` holds no table. `Search` and
+  `GetAsset` in the deploy projects are refused to the infrastructure user, not a member. The CLI's
+  `_import_resource` records no target id on a conflict: `SUP-369`. xvii's premise does not hold: the import
+  creates no asset in a target, whose asset can only come from its own source after a run writes the table.
+- **[Claude] Staging after the job**, read 23:33: the two workflows `READY`, no stage-variables record, the chains'
+  schedules `DISABLED`; `staging/orchestration` and `staging/app/app-etl` empty by `state list`, exit 0. Production
+  untouched, on release T's `v0.4.7`. A retry of `staging-deploy` meets the same conflict while `deploy-staging`
+  holds no asset of its own.
+- **[Claude] Decision 25 written**, the user's: how a target's first import gets its asset.
+- **[user] Decision 25**, verbatim: *"Sobre a Decisão 25, sigo a recomendação (b)."* **[Claude]** recorded in the
+  stage file, with what (b) writes: the admitted case and the follow-up in `deploy-application.py`, the
+  template's `staging-catalog` and `production-catalog`, the source's start in both `foundation/` slices, and
+  `CT-13` judging a deploy role's start; the release `v0.5.1`.
+- **[Claude] Decision 25 (b) written**, every call a read:
+  - `scripts/deploy-application.py`: `read_log` admits a target's first import alone, every failed item a data
+    product refused *"Resource asset provided is not from same project"* beside the asset's
+    `ConflictException` line, and the dotenv carries `<PREFIX>_CATALOG_PENDING`; `--catalog-follow-up` starts
+    the project's Glue source over `PRODUCT_DATABASE` (bound 900 s), waits for the bundle's assets in the
+    project's search (bound 300 s) and deploys again, admitting nothing. `--self-check` passes ten log samples;
+    job 752's lines, rebuilt, read admitted with `admit` and failed without.
+  - `examples/app-etl/.gitlab-ci.yml`: `staging-catalog` after `staging-test`, needed by `production-check` and
+    `production-gate`; `production-catalog` after `production-deploy`, 90 min. Each ends at once when its
+    variable is not `true`.
+  - Both `foundation/` slices: the deploy role's `StartTheProjectsSourceBeforeTheSecondImport`
+    (`datazone:StartDataSourceRun`, `datazone:GetDataSourceRun`). Planned as the infrastructure user into
+    `$HOME/tmp/stage19-d25-<env>-foundation.tfplan`: *"0 to add, 1 to change, 0 to destroy"* in each, the
+    statement alone, the rendered policy 4,734 characters in Staging and 4,719 in Production. The roles read
+    `awsds-deploy-staging` and `awsds-deploy-prod` in IAM.
+  - `aws/catalog.py`: `CT-13` judges a deploy role's start as its deployment project's; `--self-check` 39 of 39.
+  - `promotion.md` §N.8.4 step 6 carries `v0.5.1`'s order, `threat-model.md`'s `TM-29` the deploy roles.
+- **[Claude⚡] Decision 25's grants, both `foundation/` slices applied** on the user's word in chat (*"Sim, aplique
+  os foundation"*), the three other sessions told first, as the infrastructure user (`InfrastructureAccess`), on
+  2026-11-16: Staging Account (`awsds-infra-staging`) 00:00:09 to 00:00:22 UTC, Production (`awsds-infra-prod`)
+  00:00:29 to 00:00:41, each the saved plan, *"0 added, 1 changed, 0 destroyed"*. The re-plans *"No changes"*,
+  exit 0 under `-detailed-exitcode`; IAM reads `awsds-staging-deploy-project` and `awsds-prod-deploy-project` at
+  `v3`, each with `StartTheProjectsSourceBeforeTheSecondImport` granting `datazone:StartDataSourceRun` and
+  `datazone:GetDataSourceRun`.

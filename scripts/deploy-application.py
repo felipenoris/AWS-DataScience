@@ -6,6 +6,10 @@
 #                 --sha256 <hex> --tag vX.Y.Z --image-uri <uri> [--log <file>] [--dotenv <file>]
 #             ./scripts/deploy-application.py <account> --check     # the project, its values and the
 #                                                                   # caller's membership; no deploy
+#             ./scripts/deploy-application.py <account> --catalog-follow-up --manifest ... --bundle ...
+#                 --sha256 <hex> --tag vX.Y.Z --image-uri <uri> [--log <file>]
+#                                                                   # the project's source run, then
+#                                                                   # the same deploy again
 #             ./scripts/deploy-application.py --self-check          # examples/app-etl's manifest
 #                                                                   # against this script, offline:
 #                                                                   # what `make check` runs
@@ -16,8 +20,9 @@
 #   writes:   what the CLI's `deploy` writes: the bundle's files under the project's shared prefix,
 #             the bundle's catalog into the project, the stage's workflows, and the run its bootstrap
 #             starts; then the SSM parameter /awsds/<env>/applications/<app>/stage-variables, the
-#             stage's variables as the deploy filled them. With --dotenv, the project's id and shared
-#             prefix for the leg's later jobs.
+#             stage's variables as the deploy filled them. With --dotenv, the project's id, its shared
+#             prefix and whether the catalog waits for a second import, for the leg's later jobs. With
+#             --catalog-follow-up, a run of the project's source over the product database first.
 #   exit:     0 deployed and read back | 1 a check failed | 2 usage
 #
 # Run as the account's deploy role, an owner of the project (by hand, its infrastructure profile).
@@ -32,6 +37,14 @@
 # named from the Tooling environment (without the line they run in the service's own, SUP-285); the
 # catalog import's `Failed:` count at zero, since the import fails only when every item fails
 # (SUP-357); and each workflow the stage's bootstrap creates found by its name.
+#
+# A target's first import is the one exception (Stage 19 decision 25). The import creates no asset in
+# a second project of the domain, so the data product over the source's asset fails (SUP-369), and the
+# target's asset comes only from its own source, once a run has written the table. The deploy admits
+# that failure alone: every failed item a data product refused as "not from same project", beside the
+# asset's conflict. It records the stage's variables and writes <PREFIX>_CATALOG_PENDING=true, and the
+# leg's catalog job runs --catalog-follow-up after the run: the project's source started and followed,
+# the bundle's assets found in the project, then the same deploy, which admits nothing.
 #
 # The stage's variables are recorded last. The CLI writes each `{env.VAR}` of a workflow into the
 # deployed definition as a parameter and fills it on a run it starts; a chain's machine fills it from
@@ -48,6 +61,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import zipfile
 from pathlib import Path
 
@@ -78,6 +92,18 @@ WORKFLOW_VARIABLE = re.compile(r"\{env\.([A-Za-z0-9_]+)\}")
 NETWORK_LINE = "Tooling VPC config"
 IMPORT_HEADER = "Catalog import completed"
 IMPORT_FAILED = re.compile(r"^\s*Failed:\s*(\d+)\s*$", re.MULTILINE)
+# A target's first import (SUP-369): the CLI's line for each item it failed, its line for the asset
+# whose creation DataZone refused, and DataZone's answer to the data product over the source's asset.
+FAILED_ITEM = re.compile(r"Failed to import (\w+) (.+?): (.+)$", re.MULTILINE)
+ASSET_CONFLICT = re.compile(
+    r"Resource (\S+) already exists \(ConflictException\), treating as update"
+)
+NOT_SAME_PROJECT = "Resource asset provided is not from same project"
+
+# The bound on the project's source run and on its assets appearing in the project's search.
+SOURCE_RUN_BOUND = 900
+ASSETS_BOUND = 300
+POLL = 15
 
 PLACEHOLDER = "unused-by-this-stage"
 
@@ -190,9 +216,12 @@ def created_workflows(manifest: dict, stage: str) -> list:
     return names
 
 
-def read_log(log: str, carries_catalog: bool) -> list:
-    """What the deploy's log says beyond the exit status: the problems, none when it reads clean."""
-    problems = []
+def read_log(log: str, carries_catalog: bool, admit: bool) -> tuple:
+    """What the deploy's log says beyond the exit status: the problems, none when it reads clean,
+    and whether the catalog waits for a second import. With `admit`, a target's first import
+    (SUP-369) is no problem: every failed item a data product refused as not from the project,
+    beside the conflict on the asset's creation."""
+    problems, pending = [], False
     if NETWORK_LINE not in log:
         problems.append(
             f'no "{NETWORK_LINE}" line: the workflows carry no network from the Tooling environment'
@@ -205,8 +234,18 @@ def read_log(log: str, carries_catalog: bool) -> list:
             if not counts:
                 problems.append("the catalog import's summary carries no Failed: count")
             elif int(counts[0]) != 0:
-                problems.append(f"the catalog import failed {counts[0]} item(s)")
-    return problems
+                failed = FAILED_ITEM.findall(log)
+                first_import = (
+                    admit
+                    and len(failed) == int(counts[0])
+                    and all(k == "dataProducts" and NOT_SAME_PROJECT in w for k, _, w in failed)
+                    and ASSET_CONFLICT.search(log) is not None
+                )
+                if first_import:
+                    pending = True
+                else:
+                    problems.append(f"the catalog import failed {counts[0]} item(s)")
+    return problems, pending
 
 
 def list_workflows(region: str) -> dict:
@@ -245,6 +284,152 @@ def record_stage_variables(env_token: str, app: str, region: str, variables: dic
     if json.loads(back["Parameter"]["Value"]) != variables:
         raise DeployError(f"{name} reads back differently from what was written")
     return name
+
+
+def product_source(domain: str, region: str, project_id: str, database: str) -> str:
+    """The project's Glue source over the product database, the one CT-14 expects."""
+    page = aws_json(
+        "datazone",
+        "list-data-sources",
+        "--domain-identifier",
+        domain,
+        "--project-identifier",
+        project_id,
+        "--max-results",
+        "50",
+        "--region",
+        region,
+    )
+    found = []
+    for item in page.get("items", []):
+        if item.get("type") != "GLUE":
+            continue
+        detail = aws_json(
+            "datazone",
+            "get-data-source",
+            "--domain-identifier",
+            domain,
+            "--identifier",
+            item["dataSourceId"],
+            "--region",
+            region,
+        )
+        glue = (detail.get("configuration") or {}).get("glueRunConfiguration") or {}
+        filters = glue.get("relationalFilterConfigurations") or []
+        if any(f.get("databaseName") == database for f in filters):
+            found.append(item["dataSourceId"])
+    if len(found) != 1:
+        raise DeployError(
+            f"the project holds {len(found)} Glue source(s) over {database}, where one is expected"
+        )
+    return found[0]
+
+
+def run_source(domain: str, region: str, source: str) -> None:
+    """The source started and followed to its end, within SOURCE_RUN_BOUND."""
+    run = aws_json(
+        "datazone",
+        "start-data-source-run",
+        "--domain-identifier",
+        domain,
+        "--data-source-identifier",
+        source,
+        "--region",
+        region,
+    )["id"]
+    print(f"== the project's source {source} started: run {run}", flush=True)
+    deadline = time.monotonic() + SOURCE_RUN_BOUND
+    while True:
+        state = aws_json(
+            "datazone",
+            "get-data-source-run",
+            "--domain-identifier",
+            domain,
+            "--identifier",
+            run,
+            "--region",
+            region,
+        )
+        status = state.get("status")
+        if status == "SUCCESS":
+            counts = json.dumps(state.get("runStatisticsForAssets") or {}, sort_keys=True)
+            print(f"   {status}: {counts}", flush=True)
+            return
+        if status in ("FAILED", "PARTIALLY_SUCCEEDED"):
+            detail = (state.get("errorMessage") or {}).get("errorDetail", "-")
+            raise DeployError(f"the source's run {run} ended {status}: {detail}")
+        if time.monotonic() > deadline:
+            raise DeployError(f"the source's run {run} is {status} after {SOURCE_RUN_BOUND} s")
+        time.sleep(POLL)
+
+
+def project_assets(domain: str, region: str, project_id: str) -> set:
+    """The names of the assets the project owns, as the catalog's search answers."""
+    names, token = set(), None
+    while True:
+        args = [
+            "datazone",
+            "search",
+            "--domain-identifier",
+            domain,
+            "--search-scope",
+            "ASSET",
+            "--owning-project-identifier",
+            project_id,
+            "--region",
+            region,
+        ]
+        if token:
+            args += ["--next-token", token]
+        page = aws_json(*args)
+        names |= {(i.get("assetItem") or {}).get("name") for i in page.get("items", [])}
+        token = page.get("nextToken")
+        if not token:
+            return names
+
+
+def wait_for_assets(domain: str, region: str, project_id: str, assets: list) -> None:
+    """Each asset of the bundle found in the project, within ASSETS_BOUND: the search answers from
+    an index a source's run reaches after its end."""
+    deadline = time.monotonic() + ASSETS_BOUND
+    while True:
+        missing = sorted(set(assets) - project_assets(domain, region, project_id))
+        if not missing:
+            print(f"== the project holds {', '.join(sorted(assets))}", flush=True)
+            return
+        if time.monotonic() > deadline:
+            raise DeployError(
+                f"the project holds no asset named {', '.join(missing)} after its source's run: "
+                "the product table is written by the leg's first run, which comes first"
+            )
+        time.sleep(POLL)
+
+
+def follow_up(args: argparse.Namespace) -> int:
+    """A target's second import (Stage 19 decision 25): the project's source over the product
+    database run, the bundle's assets found in the project, then the same deploy, admitting
+    nothing."""
+    if sha256_hex(args.bundle) != args.sha256:
+        raise DeployError(f"{args.bundle}: its SHA256 is not the one the release recorded")
+    domain, region = domain_from_environment()
+    manifest = yaml.safe_load(args.manifest.read_text(encoding="utf-8"))
+    stage = STAGE[args.account]
+    project = project_values(args.account, domain, region)
+    if not is_member(domain, region, project["project_id"]):
+        raise membership_error(args.account, project)
+    declared = manifest["stages"][stage].get("environment_variables") or {}
+    if "PRODUCT_DATABASE" not in declared:
+        raise DeployError(f"the manifest's stage {stage} names no PRODUCT_DATABASE")
+    database = substitute(str(declared["PRODUCT_DATABASE"]), {})
+    with zipfile.ZipFile(args.bundle) as z:
+        if CATALOG_EXPORT not in z.namelist():
+            raise DeployError("the bundle carries no catalog: there is no second import to make")
+        export = json.loads(z.read(CATALOG_EXPORT))
+    assets = sorted(a["name"] for a in export.get("assets", []) if a.get("name"))
+    print(f"== the second import of {args.tag} into {project['project_name']}: {', '.join(assets)}")
+    run_source(domain, region, product_source(domain, region, project["project_id"], database))
+    wait_for_assets(domain, region, project["project_id"], assets)
+    return deploy(args, admit=False)
 
 
 def domain_from_environment() -> tuple:
@@ -288,7 +473,7 @@ def check(account: str) -> int:
     return 0
 
 
-def deploy(args: argparse.Namespace) -> int:
+def deploy(args: argparse.Namespace, admit: bool) -> int:
     if sha256_hex(args.bundle) != args.sha256:
         raise DeployError(f"{args.bundle}: its SHA256 is not the one the release recorded")
     domain, region = domain_from_environment()
@@ -361,7 +546,7 @@ def deploy(args: argparse.Namespace) -> int:
         args.log.write_text(log, encoding="utf-8")
     if status != 0:
         raise DeployError(f"the CLI's deploy exited {status}")
-    problems = read_log(log, carries_catalog)
+    problems, pending = read_log(log, carries_catalog, admit)
 
     deployed = list_workflows(region)
     for name in expected:
@@ -372,13 +557,19 @@ def deploy(args: argparse.Namespace) -> int:
     if problems:
         raise DeployError("; ".join(problems))
     print(f"== the workflows: {', '.join(expected)}")
+    if pending:
+        print(
+            "== the catalog's first import in this project (SUP-369): the data product waits for "
+            "the project's own asset, and the leg's catalog job imports it again after the run"
+        )
 
     parameter = record_stage_variables(env_token, app, region, variables)
     print(f"== the stage's variables recorded in {parameter}: {', '.join(sorted(variables))}")
     if args.dotenv:
         prefix = STAGE_PREFIX[args.account]
         args.dotenv.write_text(
-            f"{prefix}_PROJECT_ID={project['project_id']}\n{prefix}_SHARED_URI={project['shared_uri']}\n",
+            f"{prefix}_PROJECT_ID={project['project_id']}\n{prefix}_SHARED_URI={project['shared_uri']}\n"
+            f"{prefix}_CATALOG_PENDING={'true' if pending else 'false'}\n",
             encoding="utf-8",
         )
     return 0
@@ -432,22 +623,68 @@ def self_check() -> int:
         else:
             names = ", ".join(workflow_name(app, DEPLOYMENT_PROJECT[account], w) for w in created)
             print(f"  ok    {stage}: {len(variables)} variable(s); {names}")
+    conflict = "INFO - Resource t already exists (ConflictException), treating as update\n"
+    refused = (
+        "ERROR - Failed to import dataProducts t-p: An error occurred (ValidationException) when "
+        f"calling the CreateDataProduct operation: {NOT_SAME_PROJECT}\n"
+    )
+    other = "ERROR - Failed to import assets t: An error occurred (AccessDeniedException)\n"
+    first = f"{NETWORK_LINE}\n{conflict}{refused}{IMPORT_HEADER}:\n   Failed: 1\n"
+    # (label, log, the bundle carries a catalog, admit, problems expected, pending expected)
     samples = [
         (
             "a clean log",
             f"x {NETWORK_LINE} y\n{IMPORT_HEADER}:\n   Created: 1\n   Failed: 0\n",
             True,
+            True,
             0,
+            False,
         ),
-        ("a failed import", f"{NETWORK_LINE}\n{IMPORT_HEADER}:\n   Failed: 2\n", True, 1),
-        ("no import of a catalog the bundle carries", f"{NETWORK_LINE}\n", True, 1),
-        ("no network line", f"{IMPORT_HEADER}:\n   Failed: 0\n", True, 1),
-        ("no catalog in the bundle", f"{NETWORK_LINE}\n", False, 0),
+        (
+            "a failed import",
+            f"{NETWORK_LINE}\n{IMPORT_HEADER}:\n   Failed: 2\n",
+            True,
+            True,
+            1,
+            False,
+        ),
+        ("no import of a catalog the bundle carries", f"{NETWORK_LINE}\n", True, True, 1, False),
+        ("no network line", f"{IMPORT_HEADER}:\n   Failed: 0\n", True, True, 1, False),
+        ("no catalog in the bundle", f"{NETWORK_LINE}\n", False, True, 0, False),
+        ("a first import, admitted", first, True, True, 0, True),
+        ("a first import at the second deploy", first, True, False, 1, False),
+        (
+            "a first import without the asset's conflict",
+            f"{NETWORK_LINE}\n{refused}{IMPORT_HEADER}:\n   Failed: 1\n",
+            True,
+            True,
+            1,
+            False,
+        ),
+        (
+            "a first import beside another failure",
+            f"{NETWORK_LINE}\n{conflict}{refused}{other}{IMPORT_HEADER}:\n   Failed: 2\n",
+            True,
+            True,
+            1,
+            False,
+        ),
+        (
+            "a failed count above the failed lines",
+            f"{NETWORK_LINE}\n{conflict}{refused}{IMPORT_HEADER}:\n   Failed: 2\n",
+            True,
+            True,
+            1,
+            False,
+        ),
     ]
-    for label, log, carries, expected in samples:
-        got = len(read_log(log, carries))
-        if got != expected:
-            print(f"  FAIL  the log's reading of {label}: {got} problem(s), {expected} expected")
+    for label, log, carries, admit, expected, expected_pending in samples:
+        problems, pending = read_log(log, carries, admit)
+        if len(problems) != expected or pending != expected_pending:
+            print(
+                f"  FAIL  the log's reading of {label}: {len(problems)} problem(s) and pending "
+                f"{pending}, {expected} and {expected_pending} expected"
+            )
             fail = 1
     if (
         workflow_name("app-etl", "deploy-staging", "app-etl-train")
@@ -471,6 +708,7 @@ def main(argv: list) -> int:
     ap.add_argument("--log", type=Path)
     ap.add_argument("--dotenv", type=Path)
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--catalog-follow-up", action="store_true")
     ap.add_argument("--self-check", action="store_true")
     args = ap.parse_args(argv)
 
@@ -487,7 +725,9 @@ def main(argv: list) -> int:
             ap.error("--tag is the release tag, vMAJOR.MINOR.PATCH")
         if not re.fullmatch(r"[0-9a-f]{64}", args.sha256):
             ap.error("--sha256 is 64 lowercase hex characters")
-        return deploy(args)
+        if args.catalog_follow_up:
+            return follow_up(args)
+        return deploy(args, admit=True)
     except (
         OSError,
         DeployError,

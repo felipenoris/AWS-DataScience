@@ -242,8 +242,8 @@ entry is still true is the reading.
   built on a role that does not exist, the shape that measures most other denies here, cannot measure one on
   `sts:AssumeRole`; a caller the role trusts can. Where: `log-stage-08-cicd-pipelines.md`, 2026-10-27.
 
-- `SUP-011` **STS's refusal text never names the SCP behind an `sts:AssumeRole` deny; an authorization id
-  can** (measured 2026-10-30, Stage 8 decision 29, in Production). An `AssumeRole` of `awsds-deploy-prod`,
+- `SUP-011` **STS's refusal text does not always name the SCP behind an `sts:AssumeRole` deny; an
+  authorization id can** (measured 2026-10-30, Stage 8 decision 29, in Production). An `AssumeRole` of `awsds-deploy-prod`,
   which exists and trusts the runner alone, through `sts.amazonaws.com` answered the plain *"not authorized
   to perform: sts:AssumeRole on resource"* and an authorization id, where AWS's page shows a denial naming
   the policy type and ARN in its text. `aws iam-toolbox get-request-authorization-details --region
@@ -253,6 +253,13 @@ entry is still true is the reading.
   the deny's kind or the preview's rollout withholds the id, these readings do not separate. The details are
   kept 24 hours and read in the Region of the denial. Nor does every refusal carry one: the battery's same
   call 15 minutes later, at 06:25:03, carried none. Where: `log-stage-08-cicd-pipelines.md`, 2026-10-30.
+  Read again 2026-11-15 with the runner's role as the caller, which both deploy roles trust (`awsds/dev-env`
+  pipeline #118): both global refusals read *"with an explicit deny in a service control policy:
+  arn:aws:organizations::<Management Account>:policy/o-4z1leiit0c/service_control_policy/p-1fp032g8"*,
+  then a console link in `us-west-2` and an authorization id, in the job's output and in the `us-east-1`
+  record's `errorMessage`, whose `requestParameters` is null. The text names the policy, never its
+  statement; the two readings differ in caller and date, so they do not separate a trust that also refuses
+  from a change in STS. Where: `log-stage-08-cicd-pipelines.md`, 2026-11-15.
 
 ## IAM Identity Center
 
@@ -3846,6 +3853,23 @@ entry is still true is the reading.
   Any other mix returns success and the deploy's exit status with it: one asset created and the rest
   failed is a successful deploy. A leg that promotes a catalog reads the `Failed:` count from the log, or
   the target project's assets afterwards. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11.
+
+- `SUP-369` **A catalog import creates no asset in a second project of the domain: `CreateAsset` with the
+  source's `externalIdentifier` is a `ConflictException`, which the CLI 1.0.9 counts as an update, so the
+  data product over it fails** (measured 2026-11-15, Stage 19 release F, pipeline #123's `staging-deploy`).
+  The import of `app-etl-dev`'s `trades_notional` into `deploy-staging` called `CreateAsset` with the
+  source's `externalIdentifier` unchanged, `arn:aws:glue:us-west-2:<Sandbox>:table/app_etl/trades_notional.<app-etl-dev's
+  project id>`, and DataZone answered `ConflictException`, CloudTrail carrying no `errorMessage`.
+  `deploy-staging` held no asset: that call is the only `CreateAsset` into it in CloudTrail since
+  2026-11-09, and its source's runs had added 0. Two projects already held an asset named
+  `trades_notional`, so the conflict is the identifier, not the name. `_import_resource` logs *"Resource
+  trades_notional already exists (ConflictException), treating as update"* and returns success with no
+  target id recorded, so the data product's item keeps the source asset's id and `CreateDataProduct`
+  answers *"ValidationException: Resource asset provided is not from same project"*. The summary reads
+  *"0 created, 1 updated, 0 skipped (extra in target), 1 failed, 0 published"* and the CLI exits 0
+  (`SUP-357`). A target's asset can therefore come only from its own source; a later import maps the
+  source's asset to it by name, `_build_identifier_map`'s fallback (read in the code, not measured).
+  Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 ## Bedrock
 
