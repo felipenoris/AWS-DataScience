@@ -3345,3 +3345,5 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   pipeline #125 green. **[Claude] read**: the branch's root tree and `main`'s entry for entry those of
   `f9c3ab49:examples/app-etl`; `fc79a4db` to `451d0ae2` changes `.gitlab-ci.yml` alone; the tags to `v0.5.0`.
   `staging/egress` and `production/workloads-egress` up by `state list`, the hub's two hosts and GitLab running.
+- **[user] §N.8.4 step 6.4, the tag `v0.5.1`** on `451d0ae2`: pipeline #126, created 00:13:41 UTC, `staging-catalog`
+  (786) and `production-catalog` (791) among its jobs. **[pipeline]** `test` and `pip-audit` green at 00:13:58.
