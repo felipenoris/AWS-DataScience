@@ -3347,3 +3347,21 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   `staging/egress` and `production/workloads-egress` up by `state list`, the hub's two hosts and GitLab running.
 - **[user] §N.8.4 step 6.4, the tag `v0.5.1`** on `451d0ae2`: pipeline #126, created 00:13:41 UTC, `staging-catalog`
   (786) and `production-catalog` (791) among its jobs. **[pipeline]** `test` and `pip-audit` green at 00:13:58.
+- **[user] `staging-gate`** of #126 (job 782, 00:20:00 to 00:20:05). **[pipeline]** `build-image` 00:13:59 to 00:16:44;
+  `bundle` green at 00:17:11, the guard *"assets: 1 (trades_notional)"*, *"dataProducts: 1 (trades-notional)"*, *"OK"*;
+  `release` at 00:17:27; `staging-check` (783) green, 00:20:11 to 00:20:33; `staging-deploy` (784) failed, 00:20:36
+  to 00:22:39.
+- **[Claude] `staging-deploy` read**: the CLI deployed, the import read as on 2026-11-15 (*"0 created, 1 updated, 0
+  skipped (extra in target), 1 failed, 0 published"*), the two workflows found, and the script admitted it: *"the
+  catalog's first import in this project (SUP-369): the data product waits for the project's own asset"*. Then
+  *"deploy-application: aws ssm put-parameter: … AccessDeniedException … No access to reserved parameter name:
+  awsds/staging/applications/app-etl/stage-variables"*: Parameter Store reserves every name beginning with `aws`
+  (`SUP-067`, `conventions.md`'s `/datascience/<env>/…`), and release F's parameter, written 2026-11-12, began with
+  `/awsds/`. No `staging.env`; `staging-test` and later skipped.
+- **[Claude] The parameter moved to `/datascience/<env>/applications/<app>/stage-variables`** (Recipe B):
+  `terraform-modules/orchestration` in `5765f562`, tagged `orchestration-v0.3.1` and read on origin at that
+  commit; both `chains/` slices pinned to it; both `foundation/` slices' `ssm` resource; `tfhygiene/projects.py`'s
+  `stage_variables_parameter`. `deploy-application.py --self-check` OK. Planned as the infrastructure user:
+  `staging/foundation` and `production/foundation` *"0 to add, 1 to change"*, the `ssm` statement's resource alone;
+  `staging/chains` *"0 to add, 3 to change"*, both machines' parameter name and the chain role's `ssm` resource;
+  `production/chains` *"24 to add"* with the new name, for step 8. `SUP-067` carries the reading.

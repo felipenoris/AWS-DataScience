@@ -19,7 +19,7 @@
 #             for the training image. Nothing with --self-check.
 #   writes:   what the CLI's `deploy` writes: the bundle's files under the project's shared prefix,
 #             the bundle's catalog into the project, the stage's workflows, and the run its bootstrap
-#             starts; then the SSM parameter /awsds/<env>/applications/<app>/stage-variables, the
+#             starts; then the SSM parameter /datascience/<env>/applications/<app>/stage-variables, the
 #             stage's variables as the deploy filled them. With --dotenv, the project's id, its shared
 #             prefix and whether the catalog waits for a second import, for the leg's later jobs. With
 #             --catalog-follow-up, a run of the project's source over the product database first.

@@ -44,7 +44,7 @@ def workflow_name(application: str, project: str, workflow: str) -> str:
 def stage_variables_parameter(env: str, application: str) -> str:
     """The SSM parameter a deploy records the stage's variables in and a chain's machine reads
     (terraform-modules/orchestration)."""
-    return f"/awsds/{env}/applications/{application}/stage-variables"
+    return f"/datascience/{env}/applications/{application}/stage-variables"
 
 
 def find_project(domain: str, region: str, name: str) -> str:
