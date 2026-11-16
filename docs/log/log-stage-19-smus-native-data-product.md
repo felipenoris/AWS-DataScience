@@ -3426,3 +3426,13 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   - planned as the infrastructure user: `staging/studio` and `production/studio` *"2 to add, 0 to change, 2
     to destroy"* each, the policy and its one attachment replaced, each policy at `AttachmentCount` 1;
     saved as `$HOME/tmp/stage19-training-<env>-studio.tfplan`.
+- **[Claude⚡] Both `studio/` slices applied** on the user's word in chat (*"Sim, aplique os studio"*, answering
+  the question naming `staging/studio` and `production/studio`), the three other sessions told first, as the
+  infrastructure user (`InfrastructureAccess`), from the saved plans: `staging/studio` 01:20:29 to 01:20:43 UTC
+  and `production/studio` 01:20:51 to 01:21:09, *"2 added, 0 changed, 2 destroyed"* each, the attachment and
+  the policy destroyed and created in that order. Both re-plans *"No changes"*, exit 0 under
+  `-detailed-exitcode`. `awsds-staging-workflows` v1, created 01:20:40, five statements;
+  `awsds-prod-workflows` v1, created 01:21:06, six; each at `AttachmentCount` 1, on its deployment project's
+  role. Simulated again against the applied policy, with the context above: `DescribeTrainingJob` on a free
+  name and `AddTags` of the own project tag `allowed` by `awsds-staging-workflows`; another project's job and
+  tag `implicitDeny`.
