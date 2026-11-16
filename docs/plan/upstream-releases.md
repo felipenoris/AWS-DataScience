@@ -201,6 +201,7 @@ unmerged on 2026-11-09.
 | 6.71.0 and 6.72.0 were built with Go 1.27.3, whose TLS 1.3 `ClientHello` advertises the ML-DSA signature algorithms, and *"middleboxes such as AWS Network Firewall, corporate proxies and firewalls"* drop it silently: `net/http: TLS handshake timeout` on AWS calls, fixed in 6.73.0 ([#50816](https://github.com/hashicorp/terraform-provider-aws/issues/50816)) | No lock in the tree names 6.71.0 or 6.72.0 (read 2026-11-13), and a slice initialised today locks 6.73.0; no lock is moved to either. Whether the hub's Squid, an explicit proxy that matches the `CONNECT` host, would drop such a handshake is unmeasured; the symptom would be a timeout and not a refusal (Lessons 42 and 55) | holds | note |
 | Fixes in resources the tree declares: `aws_lakeformation_resource_lf_tag` no longer crashes on refresh when an assignment was removed outside Terraform (6.71.0, [#50626](https://github.com/hashicorp/terraform-provider-aws/issues/50626)); `aws_organizations_policy` no longer drifts on `content` when AWS returns a statement's elements in another order (6.73.0, [#47190](https://github.com/hashicorp/terraform-provider-aws/issues/47190)) | `data-governance/data/`'s LF-Tag assignments and `identity/org-policies/`'s documents, both locked at 6.60.0. Neither symptom is on record here; each is that slice's reason for a bump the day it appears | holds | note |
 | Still absent at 6.69.1 by the schema, and from the release notes of 6.70.0 to 6.73.0: an MWAA Serverless resource, a Lake Formation RLS resource, a key on `aws_sagemaker_mlflow_app`, the S3 Tables logging of `aws_redshiftserverless_namespace`, a cascade on `aws_datazone_domain` | The rows above that rest on an API object | holds | schema, note |
+| `aws_cloudwatch_log_account_policy` accepting `RETENTION_POLICY`, which the CloudWatch Logs API in us-west-2 lists (read 2026-11-16) | [Stage 19](stages/stage-19-smus-native-data-product.md) decision 27 (d): the account-level retention policy in both `foundation/` slices, `EXC-25` until it is applied. 6.73.0 refuses the type at `terraform validate` with the five types it knows, as it refuses an invented one; CloudFormation's `AWS::Logs::AccountPolicy` lists the same five, so `awscc` cannot carry it either | watch | read, registry |
 
 ## The `hashicorp/awscc` provider
 
@@ -267,6 +268,9 @@ The next reading is due 2026-11-27.
   generated documentation answered this reading's questions.
 - **The `aws` provider's PR #49927**, open and unmoved since 2026-09-10, before `orchestration/` leaves
   `awscc`; #49929 is closed.
+- **`RETENTION_POLICY` in the `aws` provider**, for Stage 19 decision 27 (d): `terraform validate` of an
+  `aws_cloudwatch_log_account_policy` naming it, on the newest release, with an invented type as the control;
+  then the retention policy's selection criteria in the provider's documentation.
 - **The CLI** on PyPI and GitHub (1.0.9 on 2026-11-13, `main`'s code the same, issue 413 unanswered). PR #369
   at its merge: `_derive_workflow_search_prefixes`, then `SUP-287`. At a new release: the domain lookup, the
   fallback in `helpers/datazone.py` and `workflow_create_handler.py`, the catalog import, and the log lines

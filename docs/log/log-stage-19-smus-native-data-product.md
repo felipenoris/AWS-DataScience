@@ -3673,3 +3673,7 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   account-level retention policy, and the recommendation moved from (b) to (d) once the provider accepts
   the type, with (c) until then. `waiting-on-the-user.md`'s row and `EXC-25` follow. Nothing changed in
   AWS.
+- **[user] Decision 27 taken as (d)** (*"Vamos conforme sua recomendação"*). **[Claude]** recorded in the
+  stage file and its `Status` row, in `EXC-25` and a pointer in `EXC-10`, in `upstream-releases.md` (a
+  `watch` row on the `aws` provider and an item of the next reading) and in `CLAUDE.md`'s row;
+  `waiting-on-the-user.md`'s row removed. Nothing changed in AWS.
