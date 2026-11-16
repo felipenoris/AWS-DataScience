@@ -2029,7 +2029,8 @@ requires both.
    `v0.5.1`, in this order:
    1. **Both `foundation/` slices**, accounts **Staging Account** and **Production**: the deploy role's
       `StartTheProjectsSourceBeforeTheSecondImport`, 1 to change in each, planned 2026-11-15; a re-plan
-      takes `-var-file=<project folder>/secrets/alerts.auto.tfvars`.
+      takes `-var-file=<project folder>/secrets/alerts.auto.tfvars`. **Applied 2026-11-16**, 00:00 to
+      00:01 UTC, 1 changed in each, both re-plans `No changes`.
 
       ```bash
       AWS_PROFILE=awsds-infra-staging terraform -chdir=terraform-live/staging/foundation apply -input=false "$HOME/tmp/stage19-d25-staging-foundation.tfplan"

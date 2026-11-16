@@ -3327,3 +3327,10 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
     `awsds-deploy-staging` and `awsds-deploy-prod` in IAM.
   - `aws/catalog.py`: `CT-13` judges a deploy role's start as its deployment project's; `--self-check` 39 of 39.
   - `promotion.md` §N.8.4 step 6 carries `v0.5.1`'s order, `threat-model.md`'s `TM-29` the deploy roles.
+- **[Claude⚡] Decision 25's grants, both `foundation/` slices applied** on the user's word in chat (*"Sim, aplique
+  os foundation"*), the three other sessions told first, as the infrastructure user (`InfrastructureAccess`), on
+  2026-11-16: Staging Account (`awsds-infra-staging`) 00:00:09 to 00:00:22 UTC, Production (`awsds-infra-prod`)
+  00:00:29 to 00:00:41, each the saved plan, *"0 added, 1 changed, 0 destroyed"*. The re-plans *"No changes"*,
+  exit 0 under `-detailed-exitcode`; IAM reads `awsds-staging-deploy-project` and `awsds-prod-deploy-project` at
+  `v3`, each with `StartTheProjectsSourceBeforeTheSecondImport` granting `datazone:StartDataSourceRun` and
+  `datazone:GetDataSourceRun`.
