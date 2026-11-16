@@ -3452,3 +3452,10 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   project refused to the same identity, a non-member (*"User is not permitted to perform operation:
   Search"*). The product table `app_etl.trades_notional` read as `awsds-infra-staging`: `ICEBERG`, registered
   with Lake Formation, created 00:45:42 UTC by `v0.5.1`'s `app-etl` run.
+- **[user] `staging-gate`** of #129 (job 817, 01:39:54 to 01:39:58). **[pipeline]** `staging-check` (818) green,
+  01:40:02 to 01:40:24; `staging-deploy` (819) green, 01:40:27 to 01:42:31. **[Claude] read** in its log:
+  *"awsds/infrastructure at ced09fe41d6c97600d889488e0c8d9fa101c11aa"*, *"the bundle of v0.5.2: 12 file(s), a
+  catalog export"*, *"0 created, 1 updated, 0 skipped (extra in target), 1 failed, 0 published"*, the
+  *"Tooling VPC config"* line, both workflows *"already exists, updating it"* with the project role,
+  *"Deployment completed successfully!"*, the first import's admission (`SUP-369`) and the nine variables
+  recorded; the parameter at version 2, modified 01:42:27 UTC.
