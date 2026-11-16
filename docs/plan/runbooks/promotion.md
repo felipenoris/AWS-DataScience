@@ -2048,6 +2048,29 @@ requires both.
       `staging-test` runs both chains, the first writing the product table; `staging-catalog` starts
       `deploy-staging`'s source, waits for `trades_notional` in the project and deploys again, failing
       on any failed item. `v0.5.0`'s two workflows are updated in place.
+
+   **Ran 2026-11-16 as `v0.5.1`** (pipeline #126): `staging-deploy` failed on the stage-variables
+   parameter's name (`SUP-067`), moved to `/datascience/<env>/…` and retried green; in `staging-test` the
+   `app-etl` chain passed and `app-etl-train` failed on `DescribeTrainingJob` (`SUP-267`). A retry of
+   `staging-test` reuses the pipeline's execution names, which Step Functions refuses once an execution
+   has ended, so the next tag is `v0.5.2`:
+   4. **Both `studio/` slices**, accounts **Staging Account** and **Production**: the workflows grant's
+      training pair; the description changes, so the policy and its attachment are replaced, 2 to add
+      and 2 to destroy in each, planned 2026-11-16.
+
+      ```bash
+      AWS_PROFILE=awsds-infra-staging terraform -chdir=terraform-live/staging/studio apply -input=false "$HOME/tmp/stage19-training-staging-studio.tfplan"
+      ```
+
+      ```bash
+      AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/studio apply -input=false "$HOME/tmp/stage19-training-production-studio.tfplan"
+      ```
+
+   5. **[user] This repository's pull request merged and the mirror pushed.**
+   6. **[user] The template's merge request** from `examples/app-etl/` at the merged `main`, where
+      `staging-test` names its executions `$CI_COMMIT_TAG-$CI_JOB_ID-<chain>`, then the tag `v0.5.2`. The
+      jobs run as in sub-step 3; `staging-deploy` writes `STAGING_CATALOG_PENDING=true` only if the import
+      still fails on the data product alone.
 7. **`production-check` fails once**, on the membership: the call creates `awsds-deploy-prod`'s
    group profile, whose id **[Claude] reads** from the domain's account (`datazone
    search-group-profiles --group-type IAM_ROLE_SESSION_GROUP` as `awsds-infra-data`, the profile whose

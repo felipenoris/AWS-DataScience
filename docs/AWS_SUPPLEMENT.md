@@ -3552,9 +3552,10 @@ entry is still true is the reading.
   and 3,600 s per task are not measured here. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-09-10
   and 2026-10-10; `log-stage-18-staging-deployment-project.md`, 2026-10-19; Stage 8's verification xxiii.
 
-- `SUP-267` **The blueprint's project-role policies refuse a workflow's first SageMaker processing job and
-  its first Glue job, because the read before each create is scoped to a project tag that a free name cannot
-  carry** (measured 2026-10-10 and 2026-10-16 in Sandbox, Stage 6i; 2026-10-19 in Staging, Stage 18 4.4).
+- `SUP-267` **The blueprint's project-role policies refuse a workflow's first SageMaker processing or
+  training job and its first Glue job, because the read before each create is scoped to a project tag that a
+  free name cannot carry** (measured 2026-10-10 and 2026-10-16 in Sandbox, Stage 6i; 2026-10-19 in Staging,
+  Stage 18 4.4; the training job 2026-11-16 in Staging, Stage 19).
   `SageMakerStudioProjectRoleMachineLearningPolicy` grants `DescribeProcessingJob` only when
   `aws:ResourceTag/AmazonDataZoneProject` equals the caller's tag, so run `Pzs3TlvfHhqOK6M` failed on
   `DescribeProcessingJob`, *"no identity-based policy allows"*, before any job existed. With that read
@@ -3566,6 +3567,13 @@ entry is still true is the reading.
   `CreateJob` with the tag passed under `GlueCreateAndTagPermissions` alone. Where:
   `log-stage-06i-sandbox-orchestration.md`, 2026-10-10 and 2026-10-16; `runbooks/serverless-workflows.md`
   §G; `terraform-live/sandbox/workflows/main.tf`. What the operators call, and in which order, is `SUP-268`.
+  Read again 2026-11-16 in Staging (Stage 19 release F, pipeline #126's `staging-test`): the first run of
+  `app-etl-train` under a project role, `W373uHP9ZB5EvsW` in `deploy-staging`, failed on
+  `DescribeTrainingJob` of a free name, *"no identity-based policy allows"*; v48 scopes
+  `DescribeTrainingJob` to the caller's project tag as it scopes `DescribeProcessingJob`. The deployment
+  projects' grant holds the same pair for training jobs (`<env>/studio/workflows.tf`); whether
+  `CreateTrainingJob` with its tag is authorized as `AddTags`, as the processing job's create is, is read
+  in the run after that grant. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 - `SUP-268` **The Amazon provider 9.32.0's SageMaker and Glue operators read the job name before they create
   the job, and count only one error code as absent** (read in the provider's code at
