@@ -3609,3 +3609,34 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   two subnets, and no `{env.`, `{proj.`, `{domain.` or `params.` left in its arguments; the processing
   job `app-etl-20261116T032302` `Completed` on `awsds-prod-ecr-app-etl@sha256:e16283e0…`, in the two
   subnets, its volume under the project's key.
+- **[user] The rules' rewrite and decision 27 authorized** (*"Sim, faça aqui"*), answering whether
+  Claude rewrites `orchestration.py`'s rules and writes a decision on the log groups' retention.
+- **[Claude] What the CLI's workflows carry**, read as `awsds-infra-prod` and `awsds-infra-staging`:
+  three workflows in Production and two in Staging, each `<application>_<project>_<workflow>`,
+  `READY`, `manual_only`, no cron. `get-workflow` on `app_etl_deploy_production_app_etl` and
+  `app_etl_deploy_staging_app_etl`: the role `datazone_usr_role_<project id>_<environment id>`, the log
+  group `/aws/mwaa-serverless/dzd-d8yrvx1ko7im6o-<project id>/<workflow>`, two subnets and one
+  security group, the definition in `awsds-<env>-smus-projects` under
+  `dzd-d8yrvx1ko7im6o/<project id>/shared/app-etl/workflows/` with no `VersionId`, and
+  `CUSTOMER_MANAGED_KEY`. The project role: under `awsds-<env>-project-boundary`, tagged
+  `AmazonDataZoneProject` and `AmazonDataZoneDomain`, its trust naming `airflow-serverless.amazonaws.com`
+  among eighteen service principals and the role `awsds-prod-smus-provisioning`, carrying `awsds-<env>-workflows`,
+  `awsds-<env>-person-session-deny`, in Production `awsds-prod-warehouse-load`, and three AWS managed
+  policies.
+- **[Claude] The groups with no retention in the targets**, `describe-log-groups`: in Production the
+  three workflow groups (02:31:49 to 02:32:13) and `datazone-d7qcazihvr3s7k-dev/error` and `/output`
+  (02:33:20, 02:33:49); in Staging the two workflow groups (2026-11-15, 23:21:03 and 23:21:15) and
+  `datazone-5ido8bej1zoeq8-dev/error` and `/output` (00:44:12, 00:44:50).
+- **[Claude] `aws/orchestration.py` rewritten to the CLI's contracts**: `OR-1` reads every workflow of a
+  target and fails one the CLI does not compose for the deployment project; `OR-2` the service's group
+  for each workflow and a retention on every `/aws/mwaa-serverless/` group; `OR-3` the project role, its
+  boundary, its trust and `<env>/studio/`'s policies, and fails a role named `awsds-<env>-wf-*`; `OR-4` a
+  failure rule matching each workflow's ARN; `OR-5` the definition under the project's `shared/` prefix;
+  `OR-9` the two chain roles with no managed policy (Lesson 72), the events role and the bridges gone.
+- **[Claude] `./aws/orchestration.py awsds-infra-prod awsds-infra-staging`** at 03:57:54Z on the new
+  rules: exit 2, *"5 CHECK(S) FAILED"*, each `OR-2`'s retention on one of the five workflow groups, every
+  other check passing. `get-workflow`'s `CodeSnapshottedAt` reads null on
+  `app_etl_deploy_production_app_etl_warehouse` alone.
+- **[Claude] Decision 27 written** (who sets the retention; recommended (b), the deploy, after a
+  `logs:PutRetentionPolicy` grant in both `foundation/` slices), `EXC-25` in `docs/AWS_STATE.md` naming
+  the five groups, and its row in `waiting-on-the-user.md`. Nothing changed in AWS.

@@ -1,11 +1,12 @@
 #!/usr/bin/env -S uv run --quiet
 # orchestration.py - Stage 10's evidence: the MWAA Serverless workflows in Staging and
-# Production (D7 amended: one orchestrator; D41's chain layer above them, OR-9),
-# with their per-workflow roles (boundary, trust, the D13 absences), their NetworkConfiguration
-# (present, two AZs, no default route), the named log groups with retention (D28 item 5), the
-# failure rules and the model-approval rule, recent runs with their type, the absence of any
-# provisioned MWAA environment, the definitions home, and the registry's register/approve
-# record (INT-07's registry half, consumed).
+# Production, which the SMUS CI/CD CLI creates in each account's deployment project (Stage 19
+# decision 6 (b)), and D41's chain layer above them (OR-9): each workflow's execution role, the
+# project's (boundary, trust, the policies <env>/studio/ attaches), its NetworkConfiguration
+# (present, two AZs, no default route), its log group and retention (D28 item 5), its failure
+# rule, the model-approval rule, recent runs with their type, the absence of any provisioned MWAA
+# environment, the definitions, and the registry's register/approve record (INT-07's registry
+# half, consumed).
 #
 #   needs:    a live SSO session, and nothing else:
 #
@@ -18,47 +19,51 @@
 #   reads:    mwaa-serverless:ListWorkflows, GetWorkflow, ListWorkflowVersions,
 #             ListWorkflowRuns, GetWorkflowRun; mwaa:ListEnvironments; ec2:DescribeSubnets,
 #             DescribeRouteTables; logs:DescribeLogGroups; events:ListRules; iam:GetRole,
-#             ListRoles, ListRolePolicies, GetRolePolicy; s3:ListObjectsV2;
+#             ListRoles, ListRolePolicies, GetRolePolicy, ListAttachedRolePolicies;
 #             scheduler:GetScheduleGroup, GetSchedule; states:ListStateMachines;
-#             events:ListTargetsByRule;
 #             datazone:ListDomains, ListEnvironmentBlueprintConfigurations,
 #             GetEnvironmentBlueprint (from each Sandbox); cloudtrail:LookupEvents;
 #             sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
-# The subject spans accounts, so this script is multi-profile: the workflow is authored in a
-# Sandbox project and runs in Staging, then Production (one module, two slices, Staging applied
-# first), and the provisioned-MWAA reading (OR-6) is only meaningful measured in every account,
-# since the OnDemand Workflows blueprint would create a fee-bearing environment in a member
-# account. Section 1 prints the caller ARN of every profile.
+# The subject spans accounts, so this script is multi-profile: an application is developed in a
+# Sandbox project and the CLI deploys it into Staging's deployment project, then Production's, and
+# the provisioned-MWAA reading (OR-6) is only meaningful measured in every account, since the
+# OnDemand Workflows blueprint would create a fee-bearing environment in a member account.
+# Section 1 prints the caller ARN of every profile.
 #
-# The contracts it reads, each named in the stage file so a rename fails loudly:
-#   - workflows, their roles and their failure rules carry awsds-<env>-wf- (steps 1.1, 1.3, 3.1)
-#   - log groups: /awsds/<env>/wf/ (step 1.1)
-#   - each account's definitions home is applications/ in its own outputs bucket,
-#     awsds-prod-outputs or awsds-staging-outputs, with the object's S3 VersionId pinned
-#     (steps 1.1, 2.4, decisions 1, 6 and 17)
-#   - the approval rule is awsds-prod-model-approval (step 5.3)
-#   - no workflow carries a cron of its own: a chain's Scheduler schedule starts every
-#     production workflow (decision 13), so OR-1 fails on one
-#   - the chain layer carries awsds-<env>-chain- and the group awsds-<env>-chains (steps
-#     3.4-3.7; OR-9), and every role here the ceiling awsds-<env>-app-boundary (Stage 8 3.0)
-#   - a workflow's failure rule names the service's detail types, which carry the "MWAA
-#     Serverless " prefix (step 3.1; OR-4)
-#   - the lake buckets carry awsds-data- (Stage 5a), so OR-3 can read D13's absence
+# The contracts it reads, each named in the stage files so a rename fails loudly:
+#   - every workflow in a deployment target is the CLI's, <application>_<project>_<workflow> with
+#     each character outside [A-Za-z0-9_] an underscore, the project deploy-staging or
+#     deploy-production (Stage 19 step 4.6); OR-1 fails on any other, release T's included
+#   - no workflow carries a cron of its own: a chain's Scheduler schedule starts every production
+#     workflow (Stage 10 decision 13), so OR-1 fails on one
+#   - a workflow runs as its project's role, datazone_usr_role_<project id>_<environment id>, under
+#     awsds-<env>-project-boundary and carrying the policies <env>/studio/ attaches (OR-3)
+#   - its log group is the service's, /aws/mwaa-serverless/<domain id>-<project id>/<workflow>,
+#     which needs a retention set (D28 item 5, SUP-254; OR-2)
+#   - its definition is the CLI's upload under <domain id>/<project id>/shared/ in the account's
+#     projects bucket, awsds-<env>-smus-projects (OR-5)
+#   - its failure rule is awsds-<env>-wf-<application>-<workflow>-failed, matching its ARN up to the
+#     service's suffix and naming the service's detail types, which carry the "MWAA Serverless "
+#     prefix (Stage 10 step 3.1, terraform-modules/orchestration; OR-4)
+#   - the approval rule is awsds-prod-model-approval (Stage 10 step 5.3)
+#   - the chain layer carries awsds-<env>-chain-, the group awsds-<env>-chains and the roles
+#     awsds-<env>-chain-exec and -chain-scheduler, which the module creates with no boundary and
+#     no managed policy (OR-9)
+#   - release T named its per-workflow roles awsds-<env>-wf-<application>-<workflow>; OR-3 fails on
+#     one, since release T's orchestration/ slice holds nothing in either target
 #
 # What it cannot see, since an empty listing and a missing account look alike:
-#   - Sandbox's portal-authored workflows. The Studio surface has no switch to read (6d step
-#     4.1), and what it creates bills task-hours in Sandbox, outside these contracts.
-#   - The behavioural proofs (a chain's schedule firing unattended, the failure rules firing,
-#     the lint rejecting a bad artifact) are the stage's own (Lesson 20).
-#   - Whether the awscc apply lands under the deploy role's boundary (INT-14) is pass 2's
-#     pipeline run; this file only shows what exists afterwards.
+#   - Sandbox's workflows, which ./aws/sandbox-orchestration.py reads.
+#   - The behavioural proofs (a chain's schedule firing unattended, the failure rules firing) are
+#     the stage's own (Lesson 20).
 
 from __future__ import annotations
 
 import json
+import re
 import sys
 
 from awslib import context, profiles
@@ -77,10 +82,17 @@ SANDBOX_PREFIX = "awsds-infra-sandbox-"
 # The contracts (see header).
 AUTO_LOG_PREFIX = "/aws/mwaa-serverless/"
 APPROVAL_RULE = "awsds-prod-model-approval"
-# Each account holds its own rendered copy in its own outputs bucket (decisions 6 and 17).
-DEF_BUCKETS = {"staging": "awsds-staging-outputs", "prod": "awsds-prod-outputs"}
-DEF_PREFIX = "applications/"
-LAKE_FRAG = "awsds-data-"
+# Each account's deployment project (Stage 19 step 4.6), whose name the CLI writes into each
+# workflow's name, and the projects bucket the CLI uploads the definitions to (sagemaker-prereqs).
+DEPLOY_PROJECTS = {"staging": "deploy-staging", "prod": "deploy-production"}
+PROJECT_BUCKETS = {"staging": "awsds-staging-smus-projects", "prod": "awsds-prod-smus-projects"}
+PROJECT_ROLE_PREFIX = "datazone_usr_role_"
+# The policies <env>/studio/ attaches to the deployment project's role (workflows.tf,
+# person-session.tf, warehouse.tf). A workflow runs as that role.
+PROJECT_ROLE_POLICIES = {
+    "staging": ("awsds-staging-workflows", "awsds-staging-person-session-deny"),
+    "prod": ("awsds-prod-workflows", "awsds-prod-person-session-deny", "awsds-prod-warehouse-load"),
+}
 WF_PRINCIPAL = "airflow-serverless.amazonaws.com"
 # The service's events carry the "MWAA Serverless " prefix (the EventBridge reference page and an
 # example event, read 2026-10-22); a failure rule must name both run-level failures (step 3.1).
@@ -89,11 +101,10 @@ FAILURE_DETAIL_TYPES = (
     "MWAA Serverless Workflow Run Failed",
     "MWAA Serverless Workflow Run Timeout",
 )
-# The chain layer's three roles and the service each one trusts alone (steps 3.4, 3.6).
+# The chain layer's roles and the service each one trusts alone (terraform-modules/orchestration).
 CHAIN_ROLES = {
     "chain-exec": "states.amazonaws.com",
     "chain-scheduler": "scheduler.amazonaws.com",
-    "chain-events": "events.amazonaws.com",
 }
 # What a chain role never holds: the chains start and read workflows, and touch no job and no data.
 CHAIN_FORBIDDEN = ("s3:", "glue:", "sagemaker:", "lakeformation:", "iam:passrole")
@@ -120,19 +131,35 @@ ROUTE_TARGETS = (
 
 
 def wf_frag(env: str) -> str:
+    """The prefix of a workflow's failure rule, and of release T's per-workflow roles."""
     return f"awsds-{env}-wf-"
+
+
+def cli_frag(env: str) -> str:
+    """The deployment project's part of a workflow name the CLI composes."""
+    return "_" + re.sub(r"[^A-Za-z0-9_]", "_", DEPLOY_PROJECTS[env]) + "_"
 
 
 def chain_frag(env: str) -> str:
     return f"awsds-{env}-chain-"
 
 
-def app_boundary(env: str) -> str:
-    return f"awsds-{env}-app-boundary"
+def project_boundary(env: str) -> str:
+    return f"awsds-{env}-project-boundary"
 
 
-def log_prefix(env: str) -> str:
-    return f"/awsds/{env}/wf/"
+def rule_prefixes(pattern: dict) -> list:
+    """The workflowArn prefixes a failure rule's pattern matches: "" when it names none."""
+    matchers = _as_list((pattern.get("detail") or {}).get("workflowArn"))
+    if not matchers:
+        return [""]
+    found = []
+    for m in matchers:
+        if isinstance(m, dict) and m.get("prefix"):
+            found.append(str(m["prefix"]))
+        elif isinstance(m, str):
+            found.append(m)
+    return found
 
 
 def _stmts(doc: dict) -> list:
@@ -222,11 +249,12 @@ def read_network(cli: AwsCli, subnet_ids: list) -> dict:
     return out
 
 
-def read_workflows(cli: AwsCli, frag: str, logerr) -> dict:
-    """Every workflow whose name carries ``frag``: name -> what Stage 10 reads of it.
+def read_workflows(cli: AwsCli, env: str, logerr) -> dict:
+    """Every workflow of the account: name -> what Stage 10 reads of it.
 
-    ``logerr(what, err)`` records a failed read, so a field missing because its call failed
-    is never reported as a field the workflow lacks.
+    ``cli`` marks a name the CLI composes for the account's deployment project, and ``read``
+    whether get-workflow answered. ``logerr(what, err)`` records a failed read, so a field
+    missing because its call failed is never reported as a field the workflow lacks.
     """
     res = cli.run(
         "mwaa-serverless",
@@ -243,10 +271,10 @@ def read_workflows(cli: AwsCli, frag: str, logerr) -> dict:
         return {}
     found: dict = {}
     for name, arn, status, tmode in _json(res, []):
-        if frag not in str(name):
-            continue
         d = {
             "arn": str(arn),
+            "cli": cli_frag(env) in str(name),
+            "read": False,
             "status": str(status),
             "trigger": str(tmode),
             "cron": "-",
@@ -256,7 +284,7 @@ def read_workflows(cli: AwsCli, frag: str, logerr) -> dict:
             "sgs": [],
             "def_bucket": "",
             "def_key": "",
-            "def_version": "",
+            "snapshot": "-",
             "encryption": "-",
             "versions": "?",
             "runs": [],
@@ -270,22 +298,23 @@ def read_workflows(cli: AwsCli, frag: str, logerr) -> dict:
             "[RoleArn,LoggingConfiguration.LogGroupName,"
             "NetworkConfiguration.SubnetIds,NetworkConfiguration.SecurityGroupIds,"
             "DefinitionS3Location.Bucket,DefinitionS3Location.ObjectKey,"
-            "DefinitionS3Location.VersionId,ScheduleConfiguration.CronExpression,"
+            "CodeSnapshottedAt,ScheduleConfiguration.CronExpression,"
             "EncryptionConfiguration.Type]",
             "--output",
             "json",
             log=False,
         )
         if r.ok and r.stdout:
-            role, log_group, subnets, sgs, bucket, key, version, cron, enc = json.loads(r.stdout)
+            role, log_group, subnets, sgs, bucket, key, snapshot, cron, enc = json.loads(r.stdout)
             d.update(
+                read=True,
                 role=str(role or ""),
                 log_group=str(log_group or ""),
                 subnets=_as_list(subnets),
                 sgs=_as_list(sgs),
                 def_bucket=str(bucket or ""),
                 def_key=str(key or ""),
-                def_version=str(version or ""),
+                snapshot=str(snapshot or "-")[:19],
                 cron=str(cron or "-"),
                 encryption=str(enc or "-"),
             )
@@ -341,17 +370,16 @@ def read_chain_layer(cli: AwsCli, env: str, rules: dict) -> dict:
 
     Returns ``group`` (the schedule group exists), ``log_retention`` (the machines' log group's
     retention, "" when absent, "(never expires)" when unset), ``roles`` (name -> (boundary tail,
-    trusted services, forbidden actions found) or None when absent), ``machines`` (name ->
-    (schedule state or "(none)", failure rule state or "(none)")), ``bridges`` (rule -> (state,
-    targets)) and ``unread`` (calls that did not answer, so an absence is never inferred from one).
-    ``rules`` is the account's list-rules answer, name -> state.
+    trusted services, forbidden actions found, attached managed policies) or None when absent),
+    ``machines`` (name -> (schedule state or "(none)", failure rule state or "(none)")) and
+    ``unread`` (calls that did not answer, so an absence is never inferred from one). ``rules``
+    is the account's list-rules answer, name -> state.
     """
     out = {
         "group": False,
         "log_retention": "",
         "roles": {},
         "machines": {},
-        "bridges": {},
         "unread": [],
     }
     group = f"awsds-{env}-chains"
@@ -444,8 +472,26 @@ def read_chain_layer(cli: AwsCli, env: str, rules: dict) -> dict:
                 for action in _as_list(st.get("Action")):
                     if str(action).lower().startswith(CHAIN_FORBIDDEN) or str(action) == "*":
                         forbidden.append(str(action))
+        att = cli.run(
+            "iam",
+            "list-attached-role-policies",
+            "--role-name",
+            role,
+            "--query",
+            "AttachedPolicies[].PolicyName",
+            "--output",
+            "json",
+            log=False,
+        )
+        if not att.ok:
+            out["unread"].append(f"iam list-attached-role-policies {role}")
         btail = str(boundary).rsplit("/", 1)[-1] if boundary else "(none)"
-        out["roles"][role] = (btail, sorted(set(services)), sorted(set(forbidden)))
+        out["roles"][role] = (
+            btail,
+            sorted(set(services)),
+            sorted(set(forbidden)),
+            sorted(map(str, _json(att, []))),
+        )
 
     res = cli.run(
         "stepfunctions",
@@ -475,110 +521,70 @@ def read_chain_layer(cli: AwsCli, env: str, rules: dict) -> dict:
         )
         schedule = s.stdout.strip() if s.ok and not s.tolerated else "(none)"
         out["machines"][str(name)] = (schedule, rules.get(f"{name}-failed", "(none)"))
-
-    for rname, state in rules.items():
-        if not rname.startswith(f"awsds-{env}-inbox-"):
-            continue
-        t = cli.run(
-            "events",
-            "list-targets-by-rule",
-            "--rule",
-            rname,
-            "--query",
-            "Targets[].Arn",
-            "--output",
-            "json",
-            log=False,
-        )
-        out["bridges"][rname] = (state, [str(a) for a in _json(t, [])])
     return out
 
 
-def read_roles(cli: AwsCli, frag: str, boundary_name: str) -> tuple:
-    """The execution roles whose names carry ``frag``: ``(rows, bad)``.
+def read_project_role(cli: AwsCli, role: str) -> dict | None:
+    """A workflow's execution role as OR-3 reads it, or None when get-role did not answer.
 
-    A row is (role, boundary tail, trusted services); a bad entry is (role, what is wrong).
-    The contract (step 1.3): trust in the service principal alone, a permissions boundary, and
-    no data reach - the orchestrator starts jobs, awsds-<env>-job-exec touches data (D13 one
-    level up).
+    Returns ``boundary`` (the boundary's name, "(none)" without one), ``services`` (every
+    service its trust names), ``tags`` (Key -> Value: DataZone tags its project role with
+    AmazonDataZoneProject and AmazonDataZoneDomain) and ``attached`` (the managed policies'
+    names, None when the listing did not answer).
     """
-    rows: list = []
-    bad: list = []
+    r = cli.run(
+        "iam",
+        "get-role",
+        "--role-name",
+        role,
+        "--query",
+        "Role.[PermissionsBoundary.PermissionsBoundaryArn,AssumeRolePolicyDocument,Tags]",
+        "--output",
+        "json",
+    )
+    if not (r.ok and r.stdout):
+        return None
+    boundary, trust, tags = json.loads(r.stdout)
+    services: list = []
+    for st in _stmts(trust):
+        services += _as_list((st.get("Principal", {}) or {}).get("Service"))
+    att = cli.run(
+        "iam",
+        "list-attached-role-policies",
+        "--role-name",
+        role,
+        "--query",
+        "AttachedPolicies[].PolicyName",
+        "--output",
+        "json",
+    )
+    return {
+        "boundary": str(boundary).rsplit("/", 1)[-1] if boundary else "(none)",
+        "services": sorted(set(map(str, services))),
+        "tags": {str(t.get("Key")): str(t.get("Value")) for t in tags or []},
+        "attached": sorted(map(str, _json(att, []))) if att.ok else None,
+    }
+
+
+def read_release_t_roles(cli: AwsCli, env: str) -> list | None:
+    """The roles named awsds-<env>-wf-*, release T's per-workflow roles; None when unread."""
     res = cli.run(
         "iam",
         "list-roles",
         "--query",
-        f"Roles[?contains(RoleName, '{frag}')].RoleName",
+        f"Roles[?starts_with(RoleName, '{wf_frag(env)}')].RoleName",
         "--output",
         "json",
-        log=False,
     )
-    for role in _json(res, []):
-        role = str(role)
-        r = cli.run(
-            "iam",
-            "get-role",
-            "--role-name",
-            role,
-            "--query",
-            "Role.[PermissionsBoundary.PermissionsBoundaryArn,AssumeRolePolicyDocument]",
-            "--output",
-            "json",
-            log=False,
-        )
-        if not (r.ok and r.stdout):
-            rows.append((role, "(read failed)", "-"))
-            continue
-        boundary, trust = json.loads(r.stdout)
-        services: list = []
-        for st in _stmts(trust):
-            services += _as_list((st.get("Principal", {}) or {}).get("Service"))
-            if (st.get("Principal", {}) or {}).get("AWS"):
-                bad.append((role, "an AWS principal in a service-role trust policy"))
-        if set(services) != {WF_PRINCIPAL}:
-            named = " ".join(sorted(set(services))) or "no service"
-            bad.append((role, f"trust names {named}, not {WF_PRINCIPAL} alone (step 1.3)"))
-        if not boundary:
-            bad.append((role, "no permissions boundary (Stage 8 4.1's condition)"))
-        elif str(boundary).rsplit("/", 1)[-1] != boundary_name:
-            bad.append((role, f"boundary {boundary}, not {boundary_name} (Stage 8 step 3.0)"))
-        pol = cli.run(
-            "iam",
-            "list-role-policies",
-            "--role-name",
-            role,
-            "--query",
-            "PolicyNames",
-            "--output",
-            "json",
-            log=False,
-        )
-        for pname in _json(pol, []):
-            pr = cli.run(
-                "iam",
-                "get-role-policy",
-                "--role-name",
-                role,
-                "--policy-name",
-                pname,
-                "--query",
-                "PolicyDocument",
-                "--output",
-                "json",
-                log=False,
-            )
-            for st in _stmts(_json(pr, {})):
-                if str(st.get("Effect", "")) != "Allow":
-                    continue
-                actions = " ".join(_as_list(st.get("Action"))).lower()
-                resources = " ".join(map(str, _as_list(st.get("Resource"))))
-                if "lakeformation:getdataaccess" in actions:
-                    bad.append((role, f"lakeformation:GetDataAccess in {pname}"))
-                if "s3:" in actions and LAKE_FRAG in resources:
-                    bad.append((role, f"an s3 allow naming {LAKE_FRAG}* in {pname}"))
-        btail = str(boundary).rsplit("/", 1)[-1] if boundary else "(none)"
-        rows.append((role, btail, " ".join(sorted(set(services))) or "(none)"))
-    return rows, bad
+    if not res.ok:
+        return None
+    return sorted(map(str, _json(res, [])))
+
+
+def project_home(info: dict | None) -> tuple:
+    """(domain id, project id) from a project role's DataZone tags; ("", "") when unknown."""
+    tags = (info or {}).get("tags") or {}
+    return tags.get("AmazonDataZoneDomain", ""), tags.get("AmazonDataZoneProject", "")
 
 
 def main(argv: list) -> int:
@@ -607,35 +613,36 @@ def main(argv: list) -> int:
     for env, p in measured:
         note(f"measuring {p} (serverless workflows) ...")
         workflows[env] = read_workflows(
-            cli_for(p), wf_frag(env), lambda what, err, p=p: logerr(p, what, err)
+            cli_for(p), env, lambda what, err, p=p: logerr(p, what, err)
         )
 
-    # -------------------- the per-workflow roles: boundary, trust, the D13 absences
-    role_rows: list = []  # (env, role, boundary tail, trusted services)
-    role_bad: list = []  # (env, role, what)
+    # ------------------- the execution roles: each workflow's project role, release T's roles
+    proj_roles: dict = {}  # env -> {role name -> read_project_role() or None}
+    release_t_roles: dict = {}  # env -> [role] or None when unread
     for env, p in measured:
-        rows, bad = read_roles(cli_for(p), wf_frag(env), app_boundary(env))
-        role_rows += [(env, *r) for r in rows]
-        role_bad += [(env, *b) for b in bad]
+        cli = cli_for(p)
+        proj_roles[env] = {}
+        for d in workflows[env].values():
+            role = d["role"].rsplit("/", 1)[-1]
+            if role and role not in proj_roles[env]:
+                proj_roles[env][role] = read_project_role(cli, role)
+        release_t_roles[env] = read_release_t_roles(cli, env)
 
     # ------------------------------------------ log groups and retention (D28 item 5)
     lg_rows: list = []  # (env, log group, retention)
     for env, p in measured:
-        cli = cli_for(p)
-        for prefix in (log_prefix(env), AUTO_LOG_PREFIX):
-            res = cli.run(
-                "logs",
-                "describe-log-groups",
-                "--log-group-name-prefix",
-                prefix,
-                "--query",
-                "logGroups[].[logGroupName,retentionInDays]",
-                "--output",
-                "json",
-                log=False,
-            )
-            for gname, days in _json(res, []):
-                lg_rows.append((env, str(gname), str(days) if days else "(never expires)"))
+        res = cli_for(p).run(
+            "logs",
+            "describe-log-groups",
+            "--log-group-name-prefix",
+            AUTO_LOG_PREFIX,
+            "--query",
+            "logGroups[].[logGroupName,retentionInDays]",
+            "--output",
+            "json",
+        )
+        for gname, days in _json(res, []):
+            lg_rows.append((env, str(gname), str(days) if days else "(never expires)"))
 
     # ------------------------------ the EventBridge rules: failures + model approval
     rule_rows: list = []  # (env, rule, state)
@@ -713,27 +720,6 @@ def main(argv: list) -> int:
             state = "(read failed)"
         slr_rows.append((env, state))
 
-    # ------------------------ each account's definitions home (step 2.4, decisions 1, 6, 17)
-    def_rows: list = []  # (env, bucket, key, size)
-    for env, p in measured:
-        res = cli_for(p).run(
-            "s3api",
-            "list-objects-v2",
-            "--bucket",
-            DEF_BUCKETS[env],
-            "--prefix",
-            DEF_PREFIX,
-            "--max-keys",
-            "10",
-            "--query",
-            "Contents[].[Key,Size]",
-            "--output",
-            "json",
-            log=False,
-            tolerate="NoSuchBucket|AccessDenied",
-        )
-        def_rows += [(env, DEF_BUCKETS[env], str(k), str(s)) for k, s in _json(res, [])]
-
     # -------------- the registry record: who registered, who approved (INT-07's registry half)
     reg_rows: list = []  # (time, event, caller tail)
     reg_bad: list = []  # (event, caller)
@@ -808,18 +794,28 @@ def main(argv: list) -> int:
 
     # -------------------------------------------------------------------------- the checks
 
-    # OR-1: each account's workflows exist and rest READY; an absence is a note before pass 2.
+    # OR-1: every workflow of a deployment target is the CLI's in the account's deployment project,
+    # and rests READY with no cron. Release F's deploys created them in both targets on 2026-11-16,
+    # and they stay between sittings, so an absence is a deletion.
     for env, _p in measured:
         if not workflows[env]:
-            checks.note(
+            checks.fail(
                 "OR-1",
                 f"{env}: the workflows",
-                f"nothing {wf_frag(env)}* exists - expected before pass 2; [E] between "
-                "sessions is D11 working.",
+                f"none - the CLI creates them at a deploy into {DEPLOY_PROJECTS[env]}, and "
+                "release F's created them in both targets on 2026-11-16 (Stage 19).",
             )
             continue
         for name, d in workflows[env].items():
-            if d["status"] != "READY":
+            if not d["cli"]:
+                checks.fail(
+                    "OR-1",
+                    f"{env}: {name}",
+                    f"not a workflow the CLI composes for {DEPLOY_PROJECTS[env]} (no "
+                    f"{cli_frag(env)} in its name): release T's orchestration/ slice creates "
+                    f"{wf_frag(env)}* workflows, and holds nothing in either target.",
+                )
+            elif d["status"] != "READY":
                 checks.note(
                     "OR-1",
                     f"{env}: {name}",
@@ -830,7 +826,7 @@ def main(argv: list) -> int:
                     "OR-1",
                     f"{env}: {name}",
                     f"cron {d['cron']} - a chain's schedule starts every production "
-                    "workflow, and the rendered copy carries no schedule (decision 13).",
+                    "workflow (Stage 10 decision 13).",
                 )
             else:
                 checks.ok(
@@ -839,49 +835,104 @@ def main(argv: list) -> int:
                     f"READY, trigger {d['trigger']}, cron {d['cron']}",
                 )
 
-    # OR-2: every workflow logs to a named group with retention (D28 item 5); the
-    # auto-created /aws/mwaa-serverless/ group is what the item forbids.
+    def home_of(env: str, d: dict) -> tuple:
+        return project_home(proj_roles[env].get(d["role"].rsplit("/", 1)[-1]))
+
+    # OR-2: every workflow logs to the group the service names for it, and every group under
+    # /aws/mwaa-serverless/ carries a retention (D28 item 5). The CLI passes no LogGroupName, and
+    # the service creates the group with none (SUP-254): EXC-25 until Stage 19 decision 27.
     for env, ws in workflows.items():
         for name, d in ws.items():
+            if not (d["cli"] and d["read"]):
+                continue
+            domain, project = home_of(env, d)
+            expected = f"{AUTO_LOG_PREFIX}{domain}-{project}/{name}" if project else ""
             lg = d["log_group"]
             what = f"logging on {env}: {name}"
             if not lg:
+                checks.fail("OR-2", what, "no LogGroupName.")
+            elif expected and lg != expected:
                 checks.fail(
-                    "OR-2",
-                    what,
-                    f"no LogGroupName - the service auto-creates {AUTO_LOG_PREFIX}<id>/ "
-                    "with no expiry (step 1.1).",
+                    "OR-2", what, f"{lg} - not {expected}, the service's group for the workflow."
                 )
-            elif not lg.startswith(log_prefix(env)):
-                checks.fail("OR-2", what, f"{lg} - outside the {log_prefix(env)} contract.")
+            elif not expected:
+                checks.note("OR-2", what, f"{lg} - its role's project was not read (section 4).")
             else:
                 checks.ok("OR-2", what, lg)
     for env, gname, days in lg_rows:
+        what = f"retention on {env}: {gname}"
         if days == "(never expires)":
-            checks.fail("OR-2", f"retention on {env}: {gname}", "none set - D28 item 5 sets one.")
-    for env in workflows:
-        auto = [g for e, g, _ in lg_rows if e == env and g.startswith(AUTO_LOG_PREFIX)]
-        if auto:
             checks.fail(
                 "OR-2",
-                f"{env}: auto-created MWAA groups",
-                f"{len(auto)} group(s) under {AUTO_LOG_PREFIX} - a workflow ran without "
-                "step 1.1's named group.",
+                what,
+                "none set - D28 item 5 sets one; EXC-25 until Stage 19 decision 27 is applied.",
             )
+        else:
+            checks.ok("OR-2", what, f"{days} days")
 
-    # OR-3: the per-workflow roles (boundary, service trust, no data reach) and the
-    # NetworkConfiguration - present, in two AZs, with no default route (step 1.2).
-    if role_bad:
-        for env, role, what in sorted(set(role_bad)):
-            checks.fail("OR-3", f"{env}: role {role}", f"{what}.")
-    elif role_rows:
-        checks.ok(
-            "OR-3",
-            "the per-workflow roles",
-            f"{len(role_rows)} role(s): bounded, {WF_PRINCIPAL} trust only, no lake reach",
-        )
+    # OR-3: each workflow runs as its project's role, under the project boundary, trusted by the
+    # service and carrying what <env>/studio/ attaches; its NetworkConfiguration is present, in two
+    # AZs, with no default route (Stage 10 step 1.2). Release T's per-workflow roles are gone.
     for env, ws in workflows.items():
         for name, d in ws.items():
+            if not (d["cli"] and d["read"]):
+                continue
+            role = d["role"].rsplit("/", 1)[-1]
+            info = proj_roles[env].get(role)
+            what = f"role of {env}: {name}"
+            _domain, project = project_home(info)
+            if not role:
+                checks.fail("OR-3", what, "no RoleArn.")
+            elif info is None:
+                checks.note("OR-3", what, f"{role} - get-role did not answer (section 14).")
+            elif not (project and role.startswith(f"{PROJECT_ROLE_PREFIX}{project}_")):
+                checks.fail(
+                    "OR-3",
+                    what,
+                    f"{role} - not a project role: {PROJECT_ROLE_PREFIX}<project id>_<environment "
+                    "id>, tagged AmazonDataZoneProject with that project id.",
+                )
+            elif info["boundary"] != project_boundary(env):
+                checks.fail(
+                    "OR-3",
+                    what,
+                    f"{role}: boundary {info['boundary']}, not {project_boundary(env)}.",
+                )
+            elif WF_PRINCIPAL not in info["services"]:
+                checks.fail("OR-3", what, f"{role}: its trust does not name {WF_PRINCIPAL}.")
+            elif info["attached"] is None:
+                checks.note(
+                    "OR-3", what, f"{role}: its managed policies were not listed (section 14)."
+                )
+            elif missing := [x for x in PROJECT_ROLE_POLICIES[env] if x not in info["attached"]]:
+                checks.fail(
+                    "OR-3",
+                    what,
+                    f"{role} lacks {', '.join(missing)}, which <env>/studio/ attaches: the runs "
+                    "go without that grant or deny.",
+                )
+            else:
+                checks.ok(
+                    "OR-3",
+                    what,
+                    f"{role}: {info['boundary']}, {' '.join(PROJECT_ROLE_POLICIES[env])}",
+                )
+    for env, roles in release_t_roles.items():
+        if roles is None:
+            checks.note(
+                "OR-3", f"{env}: release T's roles", "list-roles did not answer (section 14)."
+            )
+        for role in roles or []:
+            checks.fail(
+                "OR-3",
+                f"{env}: role {role}",
+                "release T's per-workflow role: its orchestration/ slice holds nothing in either "
+                "target, and an apply of it recreates the role.",
+            )
+    for env, ws in workflows.items():
+        for name, d in ws.items():
+            if not (d["cli"] and d["read"]):
+                continue
             what = f"NetworkConfiguration on {env}: {name}"
             net = d["net"]
             if not d["subnets"] or not d["sgs"]:
@@ -920,15 +971,30 @@ def main(argv: list) -> int:
                     f"route, {len(d['sgs'])} SG(s)",
                 )
 
-    # OR-4: each account with workflows has its failure rule; every rule read is ENABLED;
-    # the approval rule is Production's [P] amendment (step 5.3).
+    # OR-4: every workflow has a failure rule matching its ARN, every rule read is ENABLED and
+    # names the service's source and both run-failure detail types (Stage 10 step 3.1); the
+    # approval rule is Production's (step 5.3).
     for env, ws in workflows.items():
-        if ws and not any(
-            e == env and r.endswith("-failed") and wf_frag(env) in r for e, r, _ in rule_rows
-        ):
-            checks.fail(
-                "OR-4", f"{env}: the failure rules", f"no {wf_frag(env)}*-failed rule (step 3.1)."
+        wf_rules = {
+            r: rule_prefixes(rule_patterns.get((env, r), {}))
+            for e, r, _ in rule_rows
+            if e == env and r.endswith("-failed") and wf_frag(env) in r
+        }
+        for name, d in ws.items():
+            if not d["cli"]:
+                continue
+            heard = sorted(
+                r for r, ps in wf_rules.items() if any(d["arn"].startswith(x) for x in ps)
             )
+            if heard:
+                checks.ok("OR-4", f"{env}: failure rule of {name}", " ".join(heard))
+            else:
+                checks.fail(
+                    "OR-4",
+                    f"{env}: failure rule of {name}",
+                    f"no {wf_frag(env)}*-failed rule matches its ARN: a failed run notifies "
+                    "nobody (step 3.1).",
+                )
     for env, rname, state in rule_rows:
         missing = []
         if rname.endswith("-failed") and wf_frag(env) in rname:
@@ -952,29 +1018,25 @@ def main(argv: list) -> int:
     if prod_live and not any(r == APPROVAL_RULE for _, r, _ in rule_rows):
         checks.note("OR-4", f"prod: rule {APPROVAL_RULE}", "absent - expected before step 5.3.")
 
-    # OR-5: each definition sits in its own account's definitions home with its S3 version pinned.
+    # OR-5: each definition is the CLI's upload, under its project's shared/ prefix in the
+    # account's projects bucket.
     for env, ws in workflows.items():
-        home = DEF_BUCKETS[env]
         for name, d in ws.items():
-            if not d["def_bucket"]:
+            if not (d["cli"] and d["read"]):
                 continue
+            domain, project = home_of(env, d)
+            home = f"{domain}/{project}/shared/" if project else ""
             what = f"definition of {env}: {name}"
             loc = f"s3://{d['def_bucket']}/{d['def_key']}"
-            if d["def_bucket"] != home or not d["def_key"].startswith(DEF_PREFIX):
-                checks.fail(
-                    "OR-5",
-                    what,
-                    f"{loc} - outside s3://{home}/{DEF_PREFIX} (decisions 1, 6 and 17).",
-                )
-            elif not d["def_version"]:
-                checks.fail(
-                    "OR-5",
-                    what,
-                    f"{loc} with no VersionId - step 1.1 pins the object version, so a "
-                    "definition edit without a deploy cannot reach the workflow.",
-                )
+            if not d["def_bucket"]:
+                checks.fail("OR-5", what, "no DefinitionS3Location.")
+            elif d["def_bucket"] != PROJECT_BUCKETS[env] or not (
+                home and d["def_key"].startswith(home)
+            ):
+                place = home or "<domain id>/<project id>/shared/"
+                checks.fail("OR-5", what, f"{loc} - outside s3://{PROJECT_BUCKETS[env]}/{place}.")
             else:
-                checks.ok("OR-5", what, f"{loc} at version {d['def_version'][:12]}")
+                checks.ok("OR-5", what, loc)
 
     # OR-6: no provisioned MWAA environment in any account read - 0.29 USD/h each. The
     # preventive half is DenyProvisionedMwaa on the root SCP (step 4.3); this is the reading.
@@ -1036,32 +1098,17 @@ def main(argv: list) -> int:
             f"{len(reg_rows)} event(s), every caller is awsds-deploy-prod",
         )
 
-    # OR-9: the chain layer (steps 3.4-3.7). Before pass 2 none of it exists, which is a note;
-    # once any piece exists, every base piece, each machine's schedule and failure rule, and each
-    # bridge's target are required.
+    # OR-9: the chain layer (steps 3.4-3.7), <env>/chains/'s since 2026-11-16, whose machines start
+    # the CLI's workflows. Every base piece, each machine's schedule and failure rule, and each
+    # role's one service, no managed policy and no job or data action are required: the module
+    # gives the roles no boundary, so what their inline policies allow is all they allow.
     for env, layer in chains.items():
-        built = (
-            layer["group"]
-            or layer["log_retention"]
-            or any(v is not None for v in layer["roles"].values())
-            or layer["machines"]
-            or layer["bridges"]
-        )
         if layer["unread"]:
             checks.note(
                 "OR-9",
                 f"{env}: the chain layer",
                 f"{', '.join(layer['unread'])} did not answer - an unread piece is not an absent one.",
             )
-        if not built:
-            if not layer["unread"]:
-                checks.note(
-                    "OR-9",
-                    f"{env}: the chain layer",
-                    f"nothing awsds-{env}-chain* exists - expected before pass 2; [E] between "
-                    "sessions is D11 working.",
-                )
-            continue
         if not layer["group"]:
             checks.fail(
                 "OR-9", f"{env}: schedule group", f"awsds-{env}-chains is absent (step 3.4)."
@@ -1079,18 +1126,21 @@ def main(argv: list) -> int:
         for role, found in layer["roles"].items():
             service = CHAIN_ROLES[role.split(f"awsds-{env}-", 1)[1]]
             if found is None:
-                checks.fail("OR-9", f"{env}: role {role}", "absent (steps 3.4, 3.6).")
+                checks.fail("OR-9", f"{env}: role {role}", "absent (step 3.4).")
                 continue
-            btail, services, forbidden = found
-            if btail != app_boundary(env):
-                checks.fail(
-                    "OR-9", f"{env}: role {role}", f"boundary {btail}, not {app_boundary(env)}."
-                )
-            elif services != [service]:
+            btail, services, forbidden, attached = found
+            if services != [service]:
                 checks.fail(
                     "OR-9",
                     f"{env}: role {role}",
                     f"trust names {' '.join(services) or 'no service'}, not {service} alone.",
+                )
+            elif attached:
+                checks.fail(
+                    "OR-9",
+                    f"{env}: role {role}",
+                    f"carries {' '.join(attached)}: the module attaches no managed policy, and "
+                    "this reading covers the inline ones alone (Lesson 72).",
                 )
             elif forbidden:
                 checks.fail(
@@ -1099,7 +1149,17 @@ def main(argv: list) -> int:
                     f"allows {' '.join(forbidden)} - a chain role touches no job and no data.",
                 )
             else:
-                checks.ok("OR-9", f"{env}: role {role}", f"{service} trust, {btail}")
+                checks.ok(
+                    "OR-9",
+                    f"{env}: role {role}",
+                    f"{service} trust, inline policies only, boundary {btail}",
+                )
+        if not layer["machines"] and not layer["unread"]:
+            checks.fail(
+                "OR-9",
+                f"{env}: the chains",
+                f"no {chain_frag(env)}* state machine: nothing starts the workflows (step 3.5).",
+            )
         for machine, (schedule, rule) in layer["machines"].items():
             if schedule == "(none)":
                 checks.fail(
@@ -1116,19 +1176,6 @@ def main(argv: list) -> int:
             else:
                 checks.ok(
                     "OR-9", f"{env}: chain {machine}", f"schedule {schedule}, failure rule ENABLED"
-                )
-        for rname, (state, targets) in layer["bridges"].items():
-            if state != "ENABLED":
-                checks.fail("OR-9", f"{env}: bridge {rname}", f"state {state} - not watching.")
-            elif not targets or not all(f":stateMachine:{chain_frag(env)}" in t for t in targets):
-                checks.fail(
-                    "OR-9",
-                    f"{env}: bridge {rname}",
-                    f"targets {' '.join(targets) or 'nothing'} - a bridge starts a chain's machine (step 3.6).",
-                )
-            else:
-                checks.ok(
-                    "OR-9", f"{env}: bridge {rname}", f"ENABLED -> {targets[0].rsplit(':', 1)[-1]}"
                 )
 
     # ---------------------------------------------------------------------- the report
@@ -1149,6 +1196,27 @@ def main(argv: list) -> int:
         for name, d in ws.items()
         for run in d["runs"]
     ]
+    role_table = []  # (env, workflow, role, boundary, project, managed policies of this estate)
+    def_table = []  # (env, workflow, definition, snapshot)
+    for env, ws in workflows.items():
+        for name, d in ws.items():
+            role = d["role"].rsplit("/", 1)[-1]
+            info = proj_roles.get(env, {}).get(role)
+            mine = [x for x in (info or {}).get("attached") or [] if x.startswith("awsds-")]
+            role_table.append(
+                (
+                    env,
+                    name,
+                    role or "-",
+                    info["boundary"] if info else "(unread)",
+                    project_home(info)[1] or "-",
+                    " ".join(mine) or "-",
+                )
+            )
+            if d["def_bucket"]:
+                def_table.append(
+                    (env, name, f"s3://{d['def_bucket']}/{d['def_key']}", d["snapshot"])
+                )
     with open(out_path, "w", encoding="utf-8") as stream:
         rep = Report(stream)
 
@@ -1162,12 +1230,12 @@ SECTIONS
   1. Which accounts were measured, and as whom
   2. The serverless workflows (Staging, Production)
   3. The workflows' network: subnets, AZs, route tables
-  4. The per-workflow roles: boundary, trust, the D13 absences
+  4. The workflows' execution roles: the project's role, its boundary and policies
   5. Log groups and retention (D28 item 5)
   6. The EventBridge rules: failures and the approval rule
   7. Recent runs
   8. Provisioned MWAA environments - the absence reading
-  9. The service-linked role, and the definitions home
+  9. The service-linked role, and the definitions
  10. The registry record: who registered, who approved (INT-07)
  11. The blueprint configurations in each Sandbox
  12. CHECKS
@@ -1175,15 +1243,13 @@ SECTIONS
  14. Calls that failed
 
 HOW TO READ THIS FILE
-  - "NOT BUILT YET" IS THE EXPECTED ANSWER UNTIL STAGE 10 RUNS - each such reading
-    is a note, not a failure; it becomes a regression the moment the stage closes.
-  - AN ABSENT slice is [E] working between sessions, not an outage. What must NOT
-    appear at rest is a provisioned MWAA environment (OR-6) or an auto-created
-    /aws/mwaa-serverless/ log group in Staging or Production (OR-2).
-  - THIS IS A CONTROL-PLANE READING. Whether a chain's schedule fires unattended,
-    a failure rule pages, or the lint rejects a bad artifact is behavioural -
-    the stage's own proofs (Lesson 20). INT-14's apply-under-boundary proof is
-    pass 2's pipeline run, not this file's.
+  - The workflows are the CI/CD CLI's, created in each account's deployment project
+    at a deploy, and they stay between sittings: an absent workflow is a deleted one.
+    A workflow outside that contract is release T's or a hand's (OR-1).
+  - A provisioned MWAA environment must not appear at rest (OR-6). A group under
+    /aws/mwaa-serverless/ with no retention fails OR-2, expected while EXC-25 stands.
+  - This is a control-plane reading. Whether a chain's schedule fires unattended or
+    a failure rule notifies is behavioural, the stage's own proofs (Lesson 20).
 
 THIS FILE IS NOT VERSIONED (aws/output/ is in .gitignore) AND CONTAINS ACCOUNT IDS.
 Do not copy one into a tracked file.""")
@@ -1206,9 +1272,7 @@ never a compliant one.
             if p not in live:
                 rep.line(f"{env}: {p} was not measured.")
             elif not workflows.get(env):
-                rep.line(
-                    f"{env}: no {wf_frag(env)}* workflow. Pre-pass-2, or [E] down between sessions."
-                )
+                rep.line(f"{env}: no workflow (OR-1).")
         if wf_table:
             rep.line()
             rep.tabulate(
@@ -1216,11 +1280,13 @@ never a compliant one.
                 + ["\t".join(r) for r in wf_table]
             )
         rep.text("""
-The cron column reads "-" for every workflow here: a chain's Scheduler schedule
-starts each one, the pause is that schedule's state (decision 13, OR-9), and a
-workflow with no schedule carries TriggerMode manual_only.
-Staging is applied first (pass 2), so a Production workflow with no Staging twin
-is worth a second look, not a failure - the [E] slices come and go by session.""")
+The CLI creates or updates each workflow at a deploy into the account's deployment
+project, Staging's leg first, and names it <application>_<project>_<workflow>; its
+ARN carries a suffix the service generates. The cron column reads "-" for every
+workflow here: a chain's Scheduler schedule starts each one, the pause is that
+schedule's state (Stage 10 decision 13, OR-9), and a workflow with no schedule
+carries TriggerMode manual_only. Production's warehouse workflow has no Staging
+twin: Staging has no warehouse (Stage 19 decision 16 (b)).""")
 
         # ==============================================================================
         rep.h1("3. The workflows' network: subnets, AZs, route tables")
@@ -1238,26 +1304,37 @@ fails on any 0.0.0.0/0 or ::/0 route in these tables; a subnet with no explicit
 association is read against its VPC's main table.""")
 
         # ==============================================================================
-        rep.h1("4. The per-workflow roles: boundary, trust, the D13 absences")
-        if role_rows:
+        rep.h1("4. The workflows' execution roles: the project's role, its boundary and policies")
+        if role_table:
             rep.tabulate(
-                ["ENV\tROLE\tBOUNDARY\tTRUSTED SERVICE(S)"] + ["\t".join(r) for r in role_rows]
+                ["ENV\tWORKFLOW\tROLE\tBOUNDARY\tPROJECT\tAWSDS POLICIES"]
+                + ["\t".join(r) for r in role_table]
             )
         else:
-            rep.line("No awsds-<env>-wf-* role.")
+            rep.line("No workflow, so no execution role.")
+        for env, roles in release_t_roles.items():
+            for role in roles or []:
+                rep.line(f"{env}: release T's role {role} exists (OR-3).")
         rep.text(f"""
-The contract (step 1.3): trust in {WF_PRINCIPAL} alone, a permissions
-boundary (the pipeline creates these under Stage 8 4.1's condition), and no lake
-reach - no s3 allow naming a lake bucket, no lakeformation:GetDataAccess; its S3
-is its application's result and inbox prefixes (D41 item 10). The orchestrator
-starts jobs; awsds-<env>-job-exec touches data (D13 one level up).""")
+A workflow the CLI creates runs as its project's role, the Tooling environment's,
+tagged AmazonDataZoneProject and AmazonDataZoneDomain. The contract: a role named
+for that project, under awsds-<env>-project-boundary, whose trust names
+{WF_PRINCIPAL}, carrying what <env>/studio/ attaches (the
+workflows' grant, the person-session deny and, in Production, the warehouse load).
+The AWS managed policies on the role are not listed. Release T ran each workflow as
+a role of its own, awsds-<env>-wf-*; OR-3 fails on one.""")
 
         # ==============================================================================
         rep.h1("5. Log groups and retention (D28 item 5)")
         if lg_rows:
             rep.tabulate(["ENV\tLOG GROUP\tRETENTION (DAYS)"] + ["\t".join(r) for r in lg_rows])
         else:
-            rep.line("No workflow log group yet.")
+            rep.line(f"No group under {AUTO_LOG_PREFIX}.")
+        rep.text("""
+The CLI passes no LogGroupName, so the service names each workflow's group
+/aws/mwaa-serverless/<domain id>-<project id>/<workflow> and creates it with no
+retention, and the group outlives its workflow (SUP-254). OR-2 fails on every group
+here with no retention; EXC-25 expects it until Stage 19 decision 27 is applied.""")
 
         # ==============================================================================
         rep.h1("6. The EventBridge rules, and the chain layer above the workflows")
@@ -1280,22 +1357,22 @@ starts jobs; awsds-<env>-job-exec touches data (D13 one level up).""")
                 )
             )
             for role, found in layer["roles"].items():
-                chain_table.append((env, role, "role", found[0] if found else "absent"))
+                reading = f"boundary {found[0]}, {len(found[3])} managed" if found else "absent"
+                chain_table.append((env, role, "role", reading))
             for machine, (schedule, rule) in layer["machines"].items():
                 chain_table.append((env, machine, "chain", f"schedule {schedule}, rule {rule}"))
-            for rname, (state, targets) in layer["bridges"].items():
-                chain_table.append((env, rname, "bridge", f"{state} -> {len(targets)} target(s)"))
         if chain_table:
             rep.tabulate(["ENV\tNAME\tPIECE\tREADING"] + ["\t".join(r) for r in chain_table])
         rep.text("""
-A chain's state machine starts its workflows and polls each run; its Scheduler
-schedule starts the machine, and the schedule's state is the pause lever (steps
-3.4-3.7, D41). Staging's schedule is DISABLED by design (decision 19): the leg
-starts the machine itself. Production's are DISABLED between sittings since
-2026-10-25, since a run needs workloads-egress/'s [E] endpoints; a sitting that
-wants the scheduled runs turns them on by a commit (step 6.1). A failure rule
-passes OR-4 only when its pattern names both MWAA Serverless run-failure detail
-types the service emits.""")
+A chain's state machine finds each workflow by name, starts it with the
+application's stage variables, which it reads from
+/datascience/<env>/applications/<application>/stage-variables, and waits for the
+run; its Scheduler schedule starts the machine, and the schedule's state is the
+pause lever (steps 3.4-3.7, D41). Staging's schedules are DISABLED by design
+(Stage 10 decision 19), and Production's between sittings since 2026-10-25, since a
+run needs workloads-egress/'s [E] endpoints; a sitting that wants the scheduled
+runs turns them on by a commit (step 6.1). A failure rule passes OR-4 only when its
+pattern names both MWAA Serverless run-failure detail types the service emits.""")
 
         # ==============================================================================
         rep.h1("7. Recent runs")
@@ -1313,9 +1390,9 @@ A run a chain's machine starts reads ON_DEMAND, the type of a StartWorkflowRun
 call, scheduled runs included (verification xxiv, read 2026-10-25); the unattended
 proof is CloudTrail's StartExecution by the Scheduler's role. The type
 is read per run with get-workflow-run: list-workflow-runs returns RunType null for
-every run (measured 2026-10-10). Runs and their history
-die with the [E] slice (Lesson 4) - 6.3 writes the disposition into the log
-before the first make down.""")
+every run (measured 2026-10-10). Runs and their history die with the workflow: one
+deleted and created again takes a new suffix and an empty history, and its log
+group keeps the runs' logs (SUP-253, SUP-254).""")
 
         # ==============================================================================
         rep.h1("8. Provisioned MWAA environments - the absence reading")
@@ -1330,22 +1407,27 @@ DenyProvisionedMwaa (step 4.3) refuses airflow:CreateEnvironment on the root SCP
 once applied. This section is the reading behind that control.""")
 
         # ==============================================================================
-        rep.h1("9. The service-linked role, and the definitions home")
+        rep.h1("9. The service-linked role, and the definitions")
         if slr_rows:
             rep.tabulate(["ENV\t" + SLR_NAME] + ["\t".join(r) for r in slr_rows])
         else:
             rep.line(f"{SLR_NAME}: not measured.")
         rep.line()
-        if def_rows:
-            rep.tabulate(["ENV\tBUCKET\tKEY\tSIZE"] + ["\t".join(r) for r in def_rows])
+        if def_table:
+            rep.tabulate(
+                ["ENV\tWORKFLOW\tDEFINITION\tCODE SNAPSHOTTED AT"]
+                + ["\t".join(r) for r in def_table]
+            )
         else:
-            rep.line(f"No object under {DEF_PREFIX} in any definitions home read (pre-2.4).")
+            rep.line("No workflow definition read.")
         rep.text("""
 The SLR appears at the first CreateWorkflow in each account (Lesson 17), Staging
 before Production - 0.3 records the absent baseline, 1.6 the enumerated arrival.
-Each account's definitions home is its own outputs bucket (decisions 6 and 17):
-Production's, decision 1's, is versioned, CMK-protected and perimeter-branched since
-Stage 9 1.1, and Staging's, awsds-staging-outputs, is built by the same module call.""")
+The CLI uploads each definition under its project's shared/ prefix in the account's
+projects bucket, awsds-<env>-smus-projects, and names no S3 version. The last
+column is get-workflow's CodeSnapshottedAt as read, "-" where it is null. Release T's
+rendered copies under applications/ in each account's outputs bucket are not read
+here.""")
 
         # ==============================================================================
         rep.h1("10. The registry record: who registered, who approved (INT-07)")
@@ -1386,30 +1468,32 @@ any account.""")
         rep.line(f"{n_fail} check(s) FAILED.")
         rep.text("""
 What the checks are, and where each comes from:
-  OR-1  each account's workflows exist, rest READY and carry no cron (step 1.1,
-        decision 13)
-  OR-2  named log groups with retention; no /aws/mwaa-serverless/ orphan (D28 item 5)
-  OR-3  per-workflow roles bounded, airflow-serverless trust only, no lake reach;
-        NetworkConfiguration set, two AZs, no default route (steps 1.2, 1.3)
-  OR-4  the *-failed rules and awsds-prod-model-approval ENABLED, each workflow
-        rule's pattern naming the service's two run-failure detail types (3.1, 5.3)
-  OR-5  definitions under applications/ in each account's own outputs bucket,
-        VersionId pinned (steps 1.1, 2.4, decisions 1, 6 and 17)
+  OR-1  each account's workflows exist, each the CLI's in the deployment project,
+        READY with no cron (Stage 19 step 4.6, Stage 10 decision 13)
+  OR-2  each workflow logs to the service's group for it, and every group under
+        /aws/mwaa-serverless/ carries a retention (D28 item 5, SUP-254; EXC-25)
+  OR-3  each workflow runs as its project's role, under the project boundary, its
+        trust naming airflow-serverless, carrying <env>/studio/'s policies; no
+        release T role; NetworkConfiguration set, two AZs, no default route (1.2)
+  OR-4  each workflow heard by a failure rule matching its ARN; the *-failed rules
+        and awsds-prod-model-approval ENABLED, each workflow rule's pattern naming
+        the service's two run-failure detail types (Stage 10 3.1, 5.3)
+  OR-5  definitions under the project's shared/ prefix in the account's projects
+        bucket (Stage 19 step 4.6)
   OR-6  no provisioned MWAA environment in any account read (step 4.3)
   OR-7  workflow versions vs the 50-version quota (risk 4)
   OR-8  every registry write was awsds-deploy-prod (INT-07, Stage 9 3.2)
   OR-9  the chain layer: the group, the machines' log group with retention, the
-        three chain roles (one service each, the application ceiling, no job or
-        data action), each machine's schedule and failure rule, each bridge's
-        target (steps 3.4-3.7)""")
+        chain roles (one service each, no managed policy, no job or data
+        action), one machine at least, each machine's schedule and failure rule
+        (steps 3.4-3.7)""")
 
         # ==============================================================================
         rep.h1("13. The accounts nothing here is measuring")
         rep.text("""Read this BEFORE reading section 12 as a pass.
 
-  - Sandbox's portal-authored workflows bill task-hours there and are not read
-    here (6d step 4); `aws mwaa-serverless list-workflows` as
-    awsds-infra-sandbox-1 lists them. OR-6 still reads Sandbox.
+  - Sandbox's workflows bill task-hours there and are not read here;
+    ./aws/sandbox-orchestration.py reads them. OR-6 still reads Sandbox.
   - Every Sandbox beyond unit 1 has no profile until Stage 14 (D35).
   - GitLab's objects (the lint job, the approval manual job) live behind
     gitlab.awsds.internal - the stage log records them.""")
