@@ -3443,3 +3443,12 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   same 28 blobs (the SHA-256 of their sorted path and blob lists equal), `.gitlab-ci.yml` at `f8ddc5fe`. The
   rest of the sitting is recorded from the branch `claude/release-f-v052`, cut from `ced09fe4`.
   **[pipeline]** `pip-audit` and `test` green at 01:28:05, `build-task-code` at 01:28:15.
+  `build-image` 01:28:08 to 01:30:51; `bundle` green at 01:31:17, the guard *"assets: 1 (trades_notional)"*,
+  *"dataProducts: 1 (trades-notional)"*, *"OK"*; `store-bundle` at 01:31:26, `release` at 01:31:36;
+  `staging-gate` (817) manual.
+- **[Claude] Staging before the gate**: `deploy-staging`'s source `52f18khk7kdi4w` (`cron(28 15 * * ? *)`,
+  `ENABLED`) read as `awsds-infra-data`, its four last runs `SCHEDULED`, `SUCCESS`, each *"added":0*, the
+  latest at 15:37:23 on 2026-11-15, so the project holds no asset of its own; `datazone search` in the
+  project refused to the same identity, a non-member (*"User is not permitted to perform operation:
+  Search"*). The product table `app_etl.trades_notional` read as `awsds-infra-staging`: `ICEBERG`, registered
+  with Lake Formation, created 00:45:42 UTC by `v0.5.1`'s `app-etl` run.
