@@ -3436,3 +3436,10 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   role. Simulated again against the applied policy, with the context above: `DescribeTrainingJob` on a free
   name and `AddTags` of the own project tag `allowed` by `awsds-staging-workflows`; another project's job and
   tag `implicitDeny`.
+- **[user] §N.8.4 steps 6.5 and 6.6**: PR #306 merged at 01:25:26 UTC as `ced09fe4`, then the mirror pushed; the
+  template's merge request !16, branch `release-f-execution-names`, its branch pipeline #127 green, merged at
+  01:27:00 as `07348ffa`; the tag `v0.5.2` on `07348ffa`, pipeline #129, created 01:27:47. **[Claude] read**:
+  GitLab's `awsds/infrastructure` `main` at `ced09fe4`; the tag's tree and `ced09fe4:examples/app-etl` the
+  same 28 blobs (the SHA-256 of their sorted path and blob lists equal), `.gitlab-ci.yml` at `f8ddc5fe`. The
+  rest of the sitting is recorded from the branch `claude/release-f-v052`, cut from `ced09fe4`.
+  **[pipeline]** `pip-audit` and `test` green at 01:28:05, `build-task-code` at 01:28:15.
