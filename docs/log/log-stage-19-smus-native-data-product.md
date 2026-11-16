@@ -3740,3 +3740,11 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   9's 30 rows on the same dates, and the datashare serves the 10. `./aws/warehouse.py awsds-infra-prod
   --sql` at 05:26: every check passing, `WH-12` *"4 user-role grant(s)"*. **xxxii reads yes**, the
   refused doors by the simulation of 05:01.
+- **[user] Whether `production-register` of pipeline #129 runs.** **[Claude]** no, read at 05:35 UTC as
+  `awsds-infra-prod`: the job is Stage 10 step 5.2's registration of the newest completed
+  `app-etl-train-*` job, on no step of §N.8.4. Production's newest is `app-etl-train-20261025T070126`,
+  trained under `v0.4.2`, and `awsds-prod-chain-app-etl-train`, recreated at step 8, holds no execution;
+  `awsds-prod-model-app-etl` holds version 1, `Approved`, *"app-etl v0.4.2, trained by
+  app-etl-train-20261025T011858"*. With `--project` the job reads that training job's evaluation under
+  `deploy-production`'s shared prefix, where it never wrote, so it would fail. `production-register`,
+  `production-approve` and `production-transform` stay `manual`, as in release T's pipeline.
