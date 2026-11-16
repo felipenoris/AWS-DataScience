@@ -3540,6 +3540,24 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   exists (ConflictException), treating as update"*, *"0 created, 2 updated, 0 skipped (extra in
   target), 0 failed, 0 published"*; the bootstrap's second run of `app-etl`, `RvUWg0Ij7xMyCT4`. The
   CLI's 14 warnings *"Failed to get group profile … AccessDeniedException"* match `staging-catalog`'s 14.
+  The second run, `RvUWg0Ij7xMyCT4`, `SUCCESS` from 02:51:33 to about 03:07:40: `transform` 114 s,
+  `process` 490 s, `summarize` 9 s, `write_result` 11 s, then `publish`. The job ended green at
+  03:07:46 with the three workflows found and the stage's variables recorded again; its log carries
+  none of the run's task lines, which `production-deploy`'s did. **[Claude] read** as `awsds-infra-prod`
+  at 03:10 UTC: the listing `5hpftif3nnoj2o` `ACTIVE` at revision 4, updated 03:05:21, carrying the asset
+  `da1fycta6l71n4` at revision 3 with `classification` among its forms; the asset owned by
+  `deploy-production`, its description `dev`'s (*"Notional of each trade, quantity times price rounded to
+  cents, written by app-et…"*). `make status` at 03:06: a burn of 0.6171 USD/h, `staging/egress/` still
+  up (17), Production's hub, GitLab, the runners and `workloads-egress/` up, release T's
+  `orchestration/` (41) and `app/app-etl/` (3) up.
+- **[Claude] step 8's plans**, as `awsds-infra-prod`, saved under `$HOME/tmp/`:
+  `production/orchestration/` destroy *"0 to add, 0 to change, 41 to destroy"*
+  (`stage19-f-production-orchestration-destroy.tfplan`); `production/app/app-etl/` destroy *"0 to add,
+  0 to change, 3 to destroy"* (`stage19-f-production-app-destroy.tfplan`): the Glue jobs
+  `awsds-prod-app-etl` and `awsds-prod-app-etl-load` and the table `app_outputs.trades_notional` on
+  `awsds-prod-outputs`, not the project's `app_etl.trades_notional`; `production/chains/` *"24 to add, 0
+  to change, 0 to destroy"* (`stage19-f-production-chains.tfplan`), the machines
+  `awsds-prod-chain-<chain>` and the three schedules `DISABLED`.
 - **[Claude] Release G written** (decision 26 (b)), with every call a read and nothing applied: the
   `publish` task's data product, the workflow's `data_product` arguments, `product.json` requiring the
   asset alone, the grant `CreateTheProductsDataProductInTheProjectsDomain` in both `studio/` slices
