@@ -2093,12 +2093,15 @@ requires both.
    `production/app/app-etl/` (3), each read and applied; then `production/chains/` re-planned (24)
    and applied. **[Claude] reads** a chain started by hand against xxix.
 9. **A warehouse sitting** (`make up ENV=production ONLY=workloads-egress,warehouse-compute
-   GROUPS=redshift`): as the admin, in `governed`, `CREATE USER "IAMR:<the project role's name>"
-   PASSWORD DISABLE NOCREATEDB NOCREATEUSER;` and `GRANT ROLE gov_trades_rw TO "IAMR:<the same>";`
-   (Stage 9 9.3's shape); `production-warehouse-ddl`; the chain `app-etl-warehouse` started by hand
-   and read against xxxii; `make down` after. `production-warehouse-ddl` is a manual job of the tag's
+   GROUPS=redshift`): as the admin, in `governed`, `GRANT ROLE gov_trades_rw TO
+   "IAMR:user-project@<project id>";`, the user the project role's `RedshiftDbUser` tag names for the
+   Glue job's session (`SUP-205`), preceded by `CREATE USER "IAMR:user-project@<project id>" PASSWORD
+   DISABLE NOCREATEDB NOCREATEUSER;` when the job has never connected; `production-warehouse-ddl`; the
+   chain `app-etl-warehouse` started by hand and read against xxxii; `make down` after. `production-warehouse-ddl` is a manual job of the tag's
    pipeline on the deploy runner, so this step runs in the promotion sitting, GitLab up, after step 8;
-   from 2026-11-22 the same raise carries N.8.3's `EXC-13` reading.
+   from 2026-11-22 the same raise carries N.8.3's `EXC-13` reading. **Ran 2026-11-16** in release F's
+   sitting: xxxii read yes on the chain's second run, the first refused at the schema before the grant
+   reached the job's user.
 10. **The retirement**, a pull request after both targets ran release F: the stage file's item 31.
 
 #### N.8.5 Release G: the data product in Production (Stage 19 decision 26 (b))

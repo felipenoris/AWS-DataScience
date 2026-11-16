@@ -2914,8 +2914,8 @@ entry is still true is the reading.
   key, so the role's value can be live and irrelevant at once. Where: `log-stage-06h` (2026-10-10), 6h
   decision 8a.
 
-- `SUP-205` **Two doors into one database resolve to two different database users, one per project and one
-  per person** (measured 2026-10-10). The same warehouse, the same schema, the same project: through the
+- `SUP-205` **The door into one database decides the database user, one per project or one per person**
+  (measured 2026-10-10). The same warehouse, the same schema, the same project: through the
   portal's Data page the grantee is `IAMR:<the project role's name>`, set by the access role's
   `RedshiftDbUser` tag; through JupyterLab, where the project role reaches `5439` directly, Redshift
   auto-creates `IAMR:user-<Identity Center user id>@<project id>` holding nothing. So a `GRANT` written for
@@ -2933,7 +2933,15 @@ entry is still true is the reading.
   per person with no role and failed *"permission denied for schema lab"*. `transitiveTagKeys` read `None`
   on both assumes, so the space's per-person `RedshiftDbUser` session tag does not follow the chain and the
   access role's own tag decides the user. Where: `log-stage-06h-redshift-connection.md`, 2026-10-11 entries;
-  `AWS_STATE.md`'s Redshift register.
+  `AWS_STATE.md`'s Redshift register. A third door, read 2026-11-16 in Production (Stage 19 step 9): a Glue
+  job running as a deployment project's role, whose `GlueJobRunnerSession` carries no session tag,
+  connected as `IAMR:user-project@<project id>`, the value of the `RedshiftDbUser` tag DataZone writes on
+  the project role. Redshift auto-created that user holding nothing, and the job's `DELETE` failed
+  *"permission denied for schema trades"*, while the user granted under the role's name,
+  `IAMR:datazone_usr_role_<project>_<environment>`, saw no session; with `gov_trades_rw` granted to the
+  auto-created user the next run deleted 30 rows and inserted 10. That name is per project and known
+  before the first connection, so it can be created ahead. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-16.
 
 - `SUP-206` **`RedshiftDbUser` decides the database user, and Redshift prefixes its value with `IAMR:`**
   (measured 2026-10-10). The tag on the access role carried the project role's *name*, and the session ran

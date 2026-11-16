@@ -3677,3 +3677,66 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   stage file and its `Status` row, in `EXC-25` and a pointer in `EXC-10`, in `upstream-releases.md` (a
   `watch` row on the `aws` provider and an item of the next reading) and in `CLAUDE.md`'s row;
   `waiting-on-the-user.md`'s row removed. Nothing changed in AWS.
+- **[user] Step 9** (*"Seguir para o passo 9"*), the answer to the session's next step. **[Claude]** the
+  preconditions, read at 04:51 UTC as `awsds-infra-prod`: the workgroup `awsds-prod-warehouse`
+  `AVAILABLE`, base 4 and max 8 RPU, private; the `redshift-serverless` endpoint `available` with private
+  DNS; the machines `awsds-prod-chain-app-etl`, `-train` and `-warehouse`; one project role,
+  `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow`. `./aws/warehouse.py awsds-infra-prod --sql`: every
+  check passing, `WH-12` *"3 user-role grant(s)"*, no user for the project role. The three peer sessions
+  on the laptop were told first.
+- **[Claude] The admin's statements**, through `redshift-data` with the namespace's admin secret, in
+  `governed`: `CREATE USER "IAMR:datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow" PASSWORD DISABLE
+  NOCREATEDB NOCREATEUSER` `FINISHED` at 04:55:10 (20.97 s) and `GRANT ROLE gov_trades_rw TO` the same
+  user at 04:55:13 (0.59 s). Read back at 04:56 by `./aws/warehouse.py --sql`: the user in `pg_user`,
+  `usesuper` false, holding `gov_trades_rw`; `WH-12` *"4 user-role grant(s)"*. The register row is in
+  `docs/AWS_STATE.md`.
+- **[user] `production-warehouse-ddl`** of pipeline #129, green: the deploy image
+  `awsds-prod-ecr-deploy@sha256:9965f1b2…`, the infrastructure mirror at `ced09fe4`, the
+  `CREATE TABLE IF NOT EXISTS` `FINISHED` (`39abcaab-…`) and the count `FINISHED` (`898cdea1-…`),
+  *"IAMR:awsds-deploy-prod … 30"*.
+- **[Claude] xxxii's chain started by hand** at 05:00:10: `awsds-prod-chain-app-etl-warehouse`,
+  execution `step9-xxxii-20261116T050008-app-etl-warehouse`. **[Claude] The project role simulated** at
+  05:01 UTC, the worker's case of 2026-11-12 (the Region, the organization, the account and the role's
+  tags as context): `redshift-serverless:GetCredentials` and `GetWorkgroup` `allowed` by
+  `awsds-prod-warehouse-load`; `redshift-data:ExecuteStatement`, `GetStatementResult` and
+  `sqlworkbench:CreateConnection` `explicitDeny` by `awsds-prod-project-boundary`, row for row as then.
+- **[Claude] xxxii's chain failed** at 05:05:12 UTC, `WorkflowRunNotSucceeded`: the workflow run
+  `hsG55GRjw5rXgzc` `FAILED`, its task `load` failed at 05:03:02 on the Glue job run `jr_028b3ec7a139…`
+  (`FAILED`, 05:01:00 to 05:03:01). The job's output log: *"read 10 row(s) from
+  glue_catalog.app_etl.trades_notional"*, *"connecting to
+  jdbc:redshift://awsds-prod-warehouse.<account>.us-west-2.redshift-serverless.amazonaws.com:5439/governed
+  as IAMR:user-project@d7qcazihvr3s7k"*, then *"ERROR: permission denied for schema trades"*. The trail:
+  the job created at 05:00:59 by the task's session `AmazonMWAAServerless`; `GetCredentials` and
+  `GetWorkgroup` at 05:02:48 by the project role's `GlueJobRunnerSession`, through
+  `vpce-0b4195f2018bfbdf1`, no error. The database, read as the admin from 05:06: the user
+  `IAMR:user-project@d7qcazihvr3s7k` auto-created, holding no role; its one session, at 05:02:50, ran
+  `BEGIN`, a `DELETE FROM trades.trades_notional` refused *"permission denied for schema trades"*, and
+  `ROLLBACK`; the table still 30 rows, 2026-10-01 to 2026-10-05.
+- **[Claude] The cause**: the project role carries the tag `RedshiftDbUser = user-project@d7qcazihvr3s7k`,
+  the tag Stage 18 read on Staging's project role, and the Glue job's session carries no session tag, so
+  `GetCredentials` names the database user from the role's own tag. Act 7's `IAMR:<the project role's
+  name>` is the name 6h measured through the Data page, where the connection's access role carries that
+  value (`SUP-205`, `SUP-206`); Stage 9's log of 2026-10-25 records it as the access role's. The user
+  created at 04:55:10 holds `gov_trades_rw` and no session reaches it: Production's project has no
+  Redshift connection, so no access role. `gov_trades_rw` holds `USAGE` on `trades` and `SELECT`,
+  `INSERT`, `DELETE` on `trades.trades_notional`, owned by `IAMR:awsds-deploy-prod`, so the grant of that
+  role to the auto-created user is the fix.
+- **[user] The fix's three acts** (*"Autorizo os três atos"*). **[Claude]** the three peer sessions told
+  first; as the admin in `governed`: `GRANT ROLE gov_trades_rw TO "IAMR:user-project@d7qcazihvr3s7k"`
+  `FINISHED` at 05:18:35 (0.39 s), `REVOKE ROLE gov_trades_rw FROM
+  "IAMR:datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow"` at 05:18:37 (0.32 s) and `DROP USER` of the same
+  at 05:18:39 (0.20 s). Read back: the dropped user gone from `pg_user`, and `svv_user_grants`
+  `IAMR:user-project@d7qcazihvr3s7k` holding `gov_trades_rw`, `admin_option` false.
+- **[Claude] xxxii's chain again** at 05:19:12, execution `step9-xxxii-20261116T051910-app-etl-warehouse`
+  with the first run's input `{}`: `SUCCEEDED` at 05:24:14, the workflow run `3FYaeVb4I3M12N4` `SUCCESS`.
+  The Glue job run `jr_b9dad624951…` `SUCCEEDED`, 05:20:08 to 05:22:39 (126 s), on the job the first run's
+  task created; its output log: *"read 10 row(s) from glue_catalog.app_etl.trades_notional"*,
+  *"connecting to … as IAMR:user-project@d7qcazihvr3s7k"* and *"trades.trades_notional: 30 row(s)
+  deleted, 10 inserted, 10 counted for the load's dates, as IAMR:user-project@d7qcazihvr3s7k"*. The
+  trail: `GetWorkgroup` at 05:22:23 and `GetCredentials` at 05:22:24 by the project role's
+  `GlueJobRunnerSession`, through `vpce-0b4195f2018bfbdf1`, no error, `durationSeconds` 900. The
+  database: one session at 05:22:25 in `governed`, `BEGIN`, the `DELETE`, ten `INSERT`s, `COMMIT` and the
+  count. The table holds 10 rows, 2026-10-01 to 2026-10-05, two a day: release F's batch replaced Stage
+  9's 30 rows on the same dates, and the datashare serves the 10. `./aws/warehouse.py awsds-infra-prod
+  --sql` at 05:26: every check passing, `WH-12` *"4 user-role grant(s)"*. **xxxii reads yes**, the
+  refused doors by the simulation of 05:01.

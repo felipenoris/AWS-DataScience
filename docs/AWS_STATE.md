@@ -187,6 +187,7 @@ A Redshift `GRANT` is a **fourth permission system** and cannot share the Lake F
 | `Production` | `governed` | `trades` | role `gov_trades_ddl` | `USAGE, CREATE ON SCHEMA trades` | 2026-10-24 |
 | `Production` | `governed` | — | user `IAMR:awsds-prod-job-exec` | created `PASSWORD DISABLE NOCREATEDB NOCREATEUSER`; `GRANT ROLE gov_trades_rw` (the name assumes a session with no `RedshiftDbUser` tag, verification xxv) | 2026-10-24 |
 | `Production` | `governed` | — | user `IAMR:awsds-deploy-prod` | created the same way; `GRANT ROLE gov_trades_ddl` | 2026-10-24 |
+| `Production` | `governed` | — | user `IAMR:user-project@d7qcazihvr3s7k` | **auto-created** at the Glue job's first `GetCredentials`, the name `deploy-production`'s project role's own `RedshiftDbUser` tag gives a session with no session tag (`SUP-205`); `GRANT ROLE gov_trades_rw`: the job loads `trades.trades_notional` (Stage 19 step 9, decision 16 (b), verification xxxii) | 2026-11-16 |
 | `Production` | `governed` | `trades` | role `gov_trades_rw` | **default privilege**: `SELECT, INSERT, DELETE ON TABLES` for every relation `IAMR:awsds-deploy-prod` creates (`svv_default_privileges`, three rows) | 2026-10-24 |
 | `Production` | — | — | user `IAMR:AWSReservedSSO_InfrastructureAccess_c2bcabf74c885115` | **created by the platform, not by this register**, at `InfrastructureAccess`'s first IAM-authenticated session, `usesuper` and `usecreatedb` true (9.8's user nobody created); `rdsdb` is the service's | read 2026-10-24 |
 | `Production` | `governed` | — | user `ds:trades_lf_acc_DC_<Data Governance>`, role `ds:trades_lf` | **created by the platform, not by this register**, for the datashare's Lake Formation consumer (`DC:<Data Governance>`, 9.5 step 1's `GRANT USAGE ON DATASHARE trades_lf … VIA DATA CATALOG`): the user holds the role, `WH-12` reads the pair as the third user-role grant, and neither is in `pg_user` (Stage 9's log, 2026-10-26); the pair leaves with a revoke of the share and returns with its re-grant (xxiv, 2026-10-26) | read 2026-10-26 |
@@ -247,7 +248,9 @@ this platform.
 `RedshiftDbUser` tag. **JupyterLab resolves to `IAMR:user-<Identity Center user id>@<project id>`** —
 one database user **per person**, auto-created at their first connection, holding nothing. So a grant
 made for one door does not serve the other, and this one's grantee cannot be pre-made because it does
-not exist until somebody connects.
+not exist until somebody connects. **A job running as the project role resolves to
+`IAMR:user-project@<project id>`** (measured 2026-11-16 in Production): the role's own `RedshiftDbUser`
+tag, which DataZone writes, names the user of a session that carries no session tag, a Glue job's.
 
 **The per-person `GRANT` was a stopgap and is revoked** (2026-10-10). It is not needed: a notebook
 that assumes the **access role** before connecting lands on the per-project user, because no session

@@ -924,6 +924,14 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
    security group instead. When a vendor page offers two topologies, the requirements list you hit
    first belongs to whichever one it is under; the tell is a "required" whose premise names a
    network shape nobody checked against ours.
+   Third instance, 2026-11-16 (Stage 19 step 9), with the premise in this repository's own register.
+   Act 7 granted the load's database role to `IAMR:<the project role's name>`, *"Stage 9 9.3's
+   shape"*; `AWS_STATE.md`'s row for that shape reads *"the name assumes a session with no
+   `RedshiftDbUser` tag"*, and a SageMaker project role carries one, `user-project@<project id>`,
+   written by DataZone. The job connected as `IAMR:user-project@<project id>`, auto-created and
+   holding nothing, and failed *"permission denied for schema trades"*, while the granted user waited
+   for a session no door opens. A recipe copied to another principal carries the conditions of the one
+   it was measured on: read the target role's tags before naming its database user (`SUP-205`).
 
 42. **A permission failure is a response; a network failure is the absence of one — and CloudTrail
    separates "denied" from "never arrived".** The on-VPN portal break arrived with a plausible
