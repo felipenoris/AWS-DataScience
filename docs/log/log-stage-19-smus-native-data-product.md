@@ -3371,3 +3371,15 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   `production/foundation` 00:36:35 to 00:36:47, *"0 added, 1 changed, 0 destroyed"* each; `staging/chains`
   00:36:47 to 00:36:59, *"0 added, 3 changed, 0 destroyed"*. The three re-plans *"No changes"*, exit 0 under
   `-detailed-exitcode`; both Staging machines' definitions read `/datascience/staging/applications/app-etl/stage-variables`.
+- **[user] PR #305 merged** at 00:40:01 UTC as `a45e3703`, then the mirror pushed. **[Claude] read**: GitLab's
+  `awsds/infrastructure` `main` at `a45e3703`. The rest of the sitting is recorded from the branch
+  `claude/release-f-staging-leg`, cut from `a45e3703`.
+- **[user] `staging-deploy` retried** in #126: job 796, 00:40:39 to 00:42:39, green. **[Claude] read** in its log:
+  *"awsds/infrastructure at a45e370374864b9fab4fa0babed41ddcda5833e9"*, *"bundle.zip: OK"*, *"the bundle of v0.5.1:
+  12 file(s), a catalog export"*; the import as in job 784 (the reference remapped to the source `52f18khk7kdi4w`,
+  *"Resource trades_notional already exists (ConflictException), treating as update"*, *"0 created, 1 updated, 0
+  skipped (extra in target), 1 failed, 0 published"*) and the script's admission; then *"the stage's variables
+  recorded in /datascience/staging/applications/app-etl/stage-variables: ACCOUNT_ID, JOB_IMAGE_URI,
+  PRODUCT_DATABASE, PROJECT_KEY_ARN, PROJECT_SG, PUBLISH_LISTING, SUBNET_AZ1, SUBNET_AZ2, TRAINING_IMAGE_URI"*. The
+  job's artifacts: `staging-deploy.log` and the dotenv report. The parameter read as `awsds-infra-staging`:
+  `String`, version 1, modified 00:42:34 UTC. `staging-test` (785) started at 00:42:42.
