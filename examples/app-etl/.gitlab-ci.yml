@@ -392,7 +392,8 @@ staging-deploy:
 # leaves Staging, decision 22). A machine finds its workflow by name and passes the run the variables
 # staging-deploy recorded. The leg then reads what the run left as another principal: the report under
 # the project's shared prefix, and the product table's metadata, on which the deploy role holds
-# DESCRIBE (Stage 19 decision 14 (d)).
+# DESCRIBE (Stage 19 decision 14 (d)). An execution's name carries the job's id: Step Functions refuses a
+# name an ended execution of the machine holds, so a retry names its executions anew.
 staging-test:
   extends: .promotion
   stage: staging
@@ -405,7 +406,7 @@ staging-test:
       account="$(aws sts get-caller-identity --query Account --output text)"
       for chain in app-etl app-etl-train; do
         machine="arn:aws:states:$DOMAIN_REGION:$account:stateMachine:awsds-staging-chain-$chain"
-        execution="$(aws stepfunctions start-execution --state-machine-arn "$machine" --name "$(echo "$CI_COMMIT_TAG-$CI_PIPELINE_ID-$chain" | tr . -)" --query executionArn --output text)"
+        execution="$(aws stepfunctions start-execution --state-machine-arn "$machine" --name "$(echo "$CI_COMMIT_TAG-$CI_JOB_ID-$chain" | tr . -)" --query executionArn --output text)"
         echo "started $execution"
         status=RUNNING
         while [ "$status" = "RUNNING" ]; do

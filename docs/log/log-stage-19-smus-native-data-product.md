@@ -3371,3 +3371,68 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   `production/foundation` 00:36:35 to 00:36:47, *"0 added, 1 changed, 0 destroyed"* each; `staging/chains`
   00:36:47 to 00:36:59, *"0 added, 3 changed, 0 destroyed"*. The three re-plans *"No changes"*, exit 0 under
   `-detailed-exitcode`; both Staging machines' definitions read `/datascience/staging/applications/app-etl/stage-variables`.
+- **[user] PR #305 merged** at 00:40:01 UTC as `a45e3703`, then the mirror pushed. **[Claude] read**: GitLab's
+  `awsds/infrastructure` `main` at `a45e3703`. The rest of the sitting is recorded from the branch
+  `claude/release-f-staging-leg`, cut from `a45e3703`.
+- **[user] `staging-deploy` retried** in #126: job 796, 00:40:39 to 00:42:39, green. **[Claude] read** in its log:
+  *"awsds/infrastructure at a45e370374864b9fab4fa0babed41ddcda5833e9"*, *"bundle.zip: OK"*, *"the bundle of v0.5.1:
+  12 file(s), a catalog export"*; the import as in job 784 (the reference remapped to the source `52f18khk7kdi4w`,
+  *"Resource trades_notional already exists (ConflictException), treating as update"*, *"0 created, 1 updated, 0
+  skipped (extra in target), 1 failed, 0 published"*) and the script's admission; then *"the stage's variables
+  recorded in /datascience/staging/applications/app-etl/stage-variables: ACCOUNT_ID, JOB_IMAGE_URI,
+  PRODUCT_DATABASE, PROJECT_KEY_ARN, PROJECT_SG, PUBLISH_LISTING, SUBNET_AZ1, SUBNET_AZ2, TRAINING_IMAGE_URI"*. The
+  job's artifacts: `staging-deploy.log` and the dotenv report. The parameter read as `awsds-infra-staging`:
+  `String`, version 1, modified 00:42:34 UTC. `staging-test` (785) started at 00:42:42.
+- **[pipeline] `staging-test`** (785), 00:42:42 to 01:01:24 UTC, failed: *"00:58:12 app-etl SUCCEEDED"*,
+  *"01:01:18 app-etl-train FAILED"*, *"FATAL: the chain app-etl-train ended FAILED"*. `staging-catalog` (786)
+  and `staging-model` (787) skipped; the job's reads of the report and the product table did not run.
+- **[Claude] The `app-etl` chain read** as `awsds-infra-staging`: execution `v0-5-1-126-app-etl`, 00:42:51 to
+  00:57:55 UTC, `SUCCEEDED`; one `listWorkflows`, one `getParameter` of
+  `/datascience/staging/applications/app-etl/stage-variables`, one `startWorkflowRun` on
+  `app_etl_deploy_staging_app_etl` with the nine variables as `OverrideParameters`, fifteen `getWorkflowRun`.
+  xxix reads yes for this chain in Staging.
+- **[Claude] The `app-etl-train` chain's cause read**: execution `v0-5-1-126-app-etl-train`, 00:58:14 to
+  01:01:16 UTC, *"WorkflowRunNotSucceeded"*; run `W373uHP9ZB5EvsW` of `app_etl_deploy_staging_app_etl_train`,
+  00:58:24 to 00:59:22, `FAILED`: task `train` (`SageMakerTrainingOperator`) `FAILED` after 15 s, `evaluate`
+  `UPSTREAM_FAILED`. The task's log, in
+  `/aws/mwaa-serverless/dzd-d8yrvx1ko7im6o-5ido8bej1zoeq8/app_etl_deploy_staging_app_etl_train`: the config
+  rendered with the stage's variables, then *"AccessDeniedException … User: …:assumed-role/
+  datazone_usr_role_5ido8bej1zoeq8_d6nu5aphq1e974/AmazonMWAAServerless is not authorized to perform:
+  sagemaker:DescribeTrainingJob on resource: …:training-job/app-etl-train-20261116T005914 because no
+  identity-based policy allows the sagemaker:DescribeTrainingJob action"*.
+  `SageMakerStudioProjectRoleMachineLearningPolicy` v48 grants `DescribeTrainingJob`
+  (`SageMakerDescribeUpdateDeletePermissions`) only when `aws:ResourceTag/AmazonDataZoneProject` equals the
+  caller's, and a free name carries no tag: `SUP-267`'s processing case, for training. The role carries
+  `awsds-staging-workflows` v1 with the processing and Glue statements alone; the project boundary allows the
+  create under the conditions the workflow sets; the role is tagged `EnableSageMakerMLWorkloadsPermissions`
+  `true`. The train workflow had never run under a project role: release T trained under the application
+  role, and `app-etl-dev`, `eighth-experimentation` and `test-experimentation` created it with no run.
+- **[Claude] A retry of `staging-test` cannot pass**: the job names each execution
+  `$CI_COMMIT_TAG-$CI_PIPELINE_ID-<chain>`, and `StartExecution` answers `400 ExecutionAlreadyExists` for a
+  closed execution's name, reusable 90 days after the close (the API reference, read the same night);
+  `v0-5-1-126-app-etl` is closed. A tag never moves, so the template's change takes the tag `v0.5.2`.
+- **[Claude] The fix written**:
+  - both `studio/workflows.tf` copies gain `DescribeATrainingJobNoProjectHolds` and
+    `TagATrainingJobWithTheCallersProject`, the processing pair's conditions on `training-job/*`; the
+    description names training, so the policy is replaced;
+  - the template's `staging-test` names its executions `$CI_COMMIT_TAG-$CI_JOB_ID-<chain>`;
+  - simulated as the project role with `simulate-principal-policy`, the context `aws:RequestedRegion`,
+    `aws:PrincipalArn` and the two principal tags (without `aws:RequestedRegion` the simulator answered
+    `explicitDeny`, `AllowedByOrganizations` false): `DescribeTrainingJob` on a free name `implicitDeny`,
+    `allowed` with the two statements, on another project's job `implicitDeny` with them; `AddTags` of the
+    own project tag `implicitDeny`, `allowed` with them, of another project's `implicitDeny`.
+    `CreateTrainingJob`, `PassRole` and the S3 calls are undecided by the simulator without the SMUS
+    principal tags; the `app-etl` run passed the same role to its processing jobs under the same prefix;
+  - planned as the infrastructure user: `staging/studio` and `production/studio` *"2 to add, 0 to change, 2
+    to destroy"* each, the policy and its one attachment replaced, each policy at `AttachmentCount` 1;
+    saved as `$HOME/tmp/stage19-training-<env>-studio.tfplan`.
+- **[Claude⚡] Both `studio/` slices applied** on the user's word in chat (*"Sim, aplique os studio"*, answering
+  the question naming `staging/studio` and `production/studio`), the three other sessions told first, as the
+  infrastructure user (`InfrastructureAccess`), from the saved plans: `staging/studio` 01:20:29 to 01:20:43 UTC
+  and `production/studio` 01:20:51 to 01:21:09, *"2 added, 0 changed, 2 destroyed"* each, the attachment and
+  the policy destroyed and created in that order. Both re-plans *"No changes"*, exit 0 under
+  `-detailed-exitcode`. `awsds-staging-workflows` v1, created 01:20:40, five statements;
+  `awsds-prod-workflows` v1, created 01:21:06, six; each at `AttachmentCount` 1, on its deployment project's
+  role. Simulated again against the applied policy, with the context above: `DescribeTrainingJob` on a free
+  name and `AddTags` of the own project tag `allowed` by `awsds-staging-workflows`; another project's job and
+  tag `implicitDeny`.

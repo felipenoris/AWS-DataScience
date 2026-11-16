@@ -174,13 +174,14 @@ that hour, against the scripts at `c0baddd`, with the same results at both commi
 
 ## §G — The grant a project needs, once per project
 
-A project role cannot run `SageMakerProcessingOperator`, create a Glue job from `GlueJobOperator` or
-start its own data source's run with the blueprint's policies alone (measured 2026-10-10 and 2026-10-16,
-and read in the policies on 2026-11-08):
+A project role cannot run `SageMakerProcessingOperator` or `SageMakerTrainingOperator`, create a Glue job
+from `GlueJobOperator` or start its own data source's run with the blueprint's policies alone (measured
+2026-10-10, 2026-10-16 and 2026-11-16, and read in the policies on 2026-11-08):
 
 - **The operator describes the job name before creating it**, and the blueprint lets a project role
   describe only a job tagged with its own project. A name not yet taken carries no tag, so the first run
-  fails with `AccessDeniedException` on `DescribeProcessingJob` before any job exists.
+  fails with `AccessDeniedException` on `DescribeProcessingJob` or `DescribeTrainingJob` before any job
+  exists.
 - **A create that carries tags is also authorized as `sagemaker:AddTags`**, and the blueprint excludes
   every `AmazonDataZone*` key from `AddTags` while requiring the job to carry `AmazonDataZoneProject`. The
   second run fails with `AccessDeniedException` on `sagemaker:AddTags`.
@@ -206,7 +207,10 @@ The grant for the jobs is `terraform-live/sandbox/workflows/`, one policy and on
 
 Stage 18's deployment project in Staging held, until its removal on 2026-10-22, the same three statements from
 `terraform-live/staging/studio/workflows.tf`, for the stage's life: its first run stopped on `glue:GetJob`
-without them (2026-10-19, run `7MMhwSySe5SOWd1`).
+without them (2026-10-19, run `7MMhwSySe5SOWd1`). Stage 19's deployment projects hold the same statements
+in `<env>/studio/workflows.tf`, with the pair for training jobs beside the processing pair: `app-etl-train`'s
+first run in `deploy-staging` stopped on `DescribeTrainingJob` without it (2026-11-16, run
+`W373uHP9ZB5EvsW`). Sandbox's grant carries no training pair.
 
 The policy allows `DescribeProcessingJob` on a job with no project tag, `AddTags` of the caller's own
 project tag alone, on a job with no project tag or with the caller's, and `glue:GetJob` on a job with no

@@ -1,15 +1,17 @@
 # The workflows grant on the deployment project's role (Stage 19 step 4.4): the statements
 # sandbox/workflows/ attaches to every Sandbox project role, whose reasoning and measurements are
-# that slice's main.tf, and, where project-roles.tf sets publishing_starts_the_source, the publishing
-# task's start of the project's data source. In a deployment project the role is every workflow's
-# execution role and the role of the Glue and processing jobs its operators create (Stage 18 step
-# 4.4: without the grant the first run was refused glue:GetJob).
+# that slice's main.tf; the same pair for the training job app-etl-train creates; and, where
+# project-roles.tf sets publishing_starts_the_source, the publishing task's start of the project's
+# data source. In a deployment project the role is every workflow's execution role and the role of
+# the Glue, processing and training jobs its operators create (Stage 18 step 4.4: without the grant
+# the first run was refused glue:GetJob; SUP-267).
 #
 # The policy exists once the blueprints are enabled, since its last statement can name the domain.
 # It is attached to the roles project-roles.tf names.
 
 locals {
   processing_jobs = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:processing-job/*"
+  training_jobs   = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:training-job/*"
 
   # A Glue job named for the caller's project, <app>-<project id> (D41): $${ keeps the policy
   # variable out of Terraform's interpolation.
@@ -17,7 +19,7 @@ locals {
 
   # A description change replaces the policy, so the clause follows the statement it names.
   workflows_description = join("", [
-    "sandbox/workflows/'s grant on a deployment project's role: a workflow's operators check a Glue or processing job name before creating the job",
+    "sandbox/workflows/'s grant on a deployment project's role: a workflow's operators check a Glue, processing or training job name before creating the job",
     var.publishing_starts_the_source ? ", and the publishing task starts the project's data source." : ".",
   ])
 }
@@ -55,6 +57,48 @@ data "aws_iam_policy_document" "workflows" {
     effect    = "Allow"
     actions   = ["sagemaker:AddTags"]
     resources = [local.processing_jobs]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/AmazonDataZoneProject"
+      values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
+    }
+
+    condition {
+      test     = "StringEqualsIfExists"
+      variable = "aws:ResourceTag/AmazonDataZoneProject"
+      values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
+    }
+
+    condition {
+      test     = "ForAllValues:StringEquals"
+      variable = "aws:TagKeys"
+      values   = ["AmazonDataZoneProject"]
+    }
+  }
+
+  # SageMakerTrainingOperator describes the job name before CreateTrainingJob (SUP-268), and the
+  # blueprint's DescribeTrainingJob, like its DescribeProcessingJob, requires the caller's project tag.
+  statement {
+    sid       = "DescribeATrainingJobNoProjectHolds"
+    effect    = "Allow"
+    actions   = ["sagemaker:DescribeTrainingJob"]
+    resources = [local.training_jobs]
+
+    condition {
+      test     = "Null"
+      variable = "aws:ResourceTag/AmazonDataZoneProject"
+      values   = ["true"]
+    }
+  }
+
+  # The training job's tags, authorized as sagemaker:AddTags under the same conditions as the
+  # processing job's.
+  statement {
+    sid       = "TagATrainingJobWithTheCallersProject"
+    effect    = "Allow"
+    actions   = ["sagemaker:AddTags"]
+    resources = [local.training_jobs]
 
     condition {
       test     = "StringEquals"

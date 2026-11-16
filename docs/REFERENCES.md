@@ -2583,6 +2583,13 @@
   changes a machine:
   <https://raw.githubusercontent.com/hashicorp/terraform-provider-aws/v6.70.0/internal/service/sfn/state_machine.go>.
 
+- **Step Functions' `StartExecution` and an execution's name (read 2026-11-16, for
+  [Stage 19](plan/stages/stage-19-smus-native-data-product.md) release F's `staging-test`).** On a Standard
+  machine a name and input equal to a running execution's return that execution; a closed execution's name
+  returns `400 ExecutionAlreadyExists`, reusable 90 days after the close, so a retried job that names its
+  executions after the pipeline is refused:
+  <https://docs.aws.amazon.com/step-functions/latest/apireference/API_StartExecution.html>.
+
 ## Security, monitoring and cost
 
 - Amazon Macie: <https://docs.aws.amazon.com/macie/latest/user/what-is-macie.html>.
