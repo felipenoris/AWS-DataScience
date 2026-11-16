@@ -450,7 +450,7 @@ domain name from the user, and 15, which nothing blocks and whose decisions 1-4 
 | 12, observability and FinOps | Both observability slices applied 2026-10-18; `OB-3` passes in Sandbox and fails in Production by design (`EXC-19`). The bill reads above D12's ceiling: 53.31 USD in August and 74.48 in September | A hub sitting: the three `[D]` hosts' alarm actions. The user's: decisions due 1 and 3, D12's fired revision trigger and its budget notification |
 | 14, Sandbox vending | The pre-vend half done 2026-10-18 (`./aws/vending.py`, `VN-1`..`VN-6`); the rest blocked on the account quota | The user's: the account quota and D34's rung |
 | 17, machine learning in Sandbox | Pass 0 in progress; `MLflowApp` and `AmazonBedrockKnowledgeBase` enabled, `ml-demo-mlflow` created, five models enabled, the playground answering (7.3) | A Sandbox sitting with `GROUPS=mlflow`: 1.4 and 1.6, then passes 2-5. The user's: decisions 5, 6, 7, 10 and 12 |
-| 19, a data product on SMUS's native path | Decision 6 (b), the AWS model: a deployment project per target. Passes 1 and 2 run (2026-11-10, 2026-11-14), the product curated in `app-etl-dev` (steps 15 and 17), `TM-31` accepted and the start grant kept in Production alone (2026-11-15). Release T run 2026-11-15. Release F's `v0.5.2` through both targets 2026-11-16 (pipeline #129): the CLI deploying and importing the catalog in `deploy-staging` and `deploy-production`, Production's asset listed with `dev`'s metadata, and step 8's cut-over done, release T's Production slices destroyed and `production/chains/` applied. A data product's name is the domain's (`SUP-369`): decision 26 (b) gives it to Production's `publish` task, release G written 2026-11-16 (PR #307), nothing applied. Decisions 1 to 27 taken, 7 and 8 moot; 27's (d), an account-level log retention policy, waits on the AWS provider (`EXC-25`). Step 9's warehouse sitting run 2026-11-16, xxxii yes | Release G's sitting (§N.8.5), its step 1 done 2026-11-16: PR #307 merged, `production/studio/` applied, the tag `v0.6.0`. Then the retirement (step 10) |
+| 19, a data product on SMUS's native path | Decision 6 (b), the AWS model: a deployment project per target. Passes 1 and 2 run (2026-11-10, 2026-11-14), the product curated in `app-etl-dev` (steps 15 and 17), `TM-31` accepted and the start grant kept in Production alone (2026-11-15). Release T run 2026-11-15. Release F's `v0.5.2` through both targets 2026-11-16 (pipeline #129): the CLI deploying and importing the catalog in `deploy-staging` and `deploy-production`, Production's asset listed with `dev`'s metadata, and step 8's cut-over done, release T's Production slices destroyed and `production/chains/` applied. A data product's name is the domain's (`SUP-369`): decision 26 (b) gives it to Production's `publish` task, release G written 2026-11-16 (PR #307), nothing applied. Decisions 1 to 27 taken, 7 and 8 moot; 27's (d), an account-level log retention policy, waits on the AWS provider (`EXC-25`). Step 9's warehouse sitting run 2026-11-16, xxxii yes; xvii, xxi's domain half, xxii, xxiii and xxx read the same day with nothing up | Release G's sitting (§N.8.5): step 1 done and PR #307 merged on 2026-11-16, then the mirror, `production/studio/` from its saved plan and the tag `v0.6.0`. Then 4.12, the Governance Manager's membership first; the retirement (step 10, inventoried); pass 5 before 2026-12-19. With nothing up: the first scheduled source runs after the imports (xvii, xxv) |
 
 #### The estate between sittings
 
@@ -471,7 +471,9 @@ domain name from the user, and 15, which nothing blocks and whose decisions 1-4 
 - **The release in Production is `v0.5.2`**, deployed by the CI/CD CLI into `deploy-production` on
   2026-11-16. Release T's `orchestration/` and `app/app-etl/` slices hold nothing in either target, and
   their code stays until the retirement (Stage 19 item 31): an apply of either recreates release T's
-  objects. `production/chains/`'s three schedules stay `DISABLED` between sittings.
+  objects. `production/chains/`'s three schedules stay `DISABLED` between sittings. The model jobs
+  (`production-register` and after) read release T's training job until `awsds-prod-chain-app-etl-train`
+  runs one in `deploy-production`, so they stay `manual`.
 - **The house image** is `awsds-sandbox-dev-env` version 11, `default-v0.10.0` (2026-10-26); its `NO_PROXY`
   literal is the 73 names of `vpc-egress-v0.19.0`.
 - **Orchestration is MWAA Serverless only**, provisioned MWAA denied at the root. The SageMaker
@@ -534,13 +536,13 @@ The table is a first look by situation; the numbered list below it is complete.
 | When about to | Lessons |
 |---|---|
 | Write or read a check, a probe or a proof | 2, 13, 20, 21, 22, 24, 26, 30, 31, 50, 54, 62, 71, 77, 78, 80 |
-| Write a policy, a grant or a role, or say what a principal can do | 5, 11, 14, 17, 18, 28, 29, 66, 67, 70, 72, 75, 80, 82 |
+| Write a policy, a grant or a role, or say what a principal can do | 5, 11, 14, 17, 18, 28, 29, 66, 67, 70, 72, 75, 80, 82, 85 |
 | Move, rename or share something across accounts, or borrow a session | 3, 9, 10, 25, 48 |
 | Change Terraform, a module, a host or the toolchain | 4, 8, 27, 33, 35, 47, 49, 51, 58, 59, 64, 65, 68, 69, 73, 76, 79 |
 | Call an AWS API, a console wizard or a managed service | 16, 23, 36, 39, 60, 61, 63, 74, 81 |
 | Touch the network, the proxy or a client | 40, 42, 43, 44, 45, 53, 55, 56 |
 | Run a command or write a script | 46, 47, 52, 83, 84 |
-| Write the plan, a record or a decision, or read a vendor page | 1, 6, 7, 12, 15, 19, 32, 34, 37, 38, 41, 57 |
+| Write the plan, a record or a decision, or read a vendor page | 1, 6, 7, 12, 15, 19, 32, 34, 37, 38, 41, 57, 85 |
 
 1. **A copy of governed data somewhere less governed is not a hole to be closed.**
 2. **A stand-in sharing an account with what it de-risks proves nothing about permissions.**
@@ -690,3 +692,4 @@ The table is a first look by situation; the numbered list below it is complete.
     pipeline has no retry.**
 84. **The laptop's shell is zsh, and a command written as bash expands to another string before it
     runs.**
+85. **A name has a composer, and a record that infers it from the name's shape credits the default.**

@@ -3775,6 +3775,86 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   *"Requested dataProduct cannot be found in domain"*; `app-etl-dev`'s data product search empty; the asset
   `c6z3pbg3drrs0g` at revision 5; the listings unchanged.
 
+## 2026-11-16 — the session reviewed; the readings with nothing up; the rest of the stage prepared
+
+*After PR #307's merge. Claude's hand as the infrastructure user with `InfrastructureAccess`, every call a
+read, from the branch `claude/stage-19-review-prep` cut from `c5e1718e`. Times UTC.*
+
+- **[user] The request**, *"Revise os logs e as lições aprendidas, e o AWS_SUPPLEMENT, com relação ao
+  andamento desta sessão"*, then the readings that need nothing up, the preparation of what is left and a
+  new pull request.
+- **[Claude] The lessons**: Lesson 84 gains the Bash tool's `grep`, ugrep 7.8.4, refusing
+  `(verification |\b)xxvi\b` with *"empty (sub)expression"* and exit 2, silent behind `2>/dev/null`.
+  Lesson 85 written: a name has a composer, from `SUP-254`'s log group, which the CLI names, and act 7's
+  database user, which the project role's tag names. The supplement gains no entry: `get-tables` read
+  `IsRegisteredWithLakeFormation` false on Staging's `app_etl.trades_notional` and `get-table` true in
+  both targets, `SUP-364`'s behaviour.
+- **[Claude] The instruments**, 06:26 to 06:35: `studio.py` 0 checks failed, `catalog.py` all checks
+  passed, `orchestration.py` 5 failed, each `OR-2`'s retention on a CLI-named log group (`EXC-25`),
+  `deploytargets.py` 0, `warehouse.py` 0 with notes for the absent workgroups, `datalake.py` 0. Each run's
+  failed calls are `get-caller-identity` on the profiles with no session (the persona, deploy and
+  `ctadmin` ones).
+- **[Claude] xxiii**, at 06:27: the five machines' tasks are `ssm:getParameter`, `listWorkflows`,
+  `startWorkflowRun` and `getWorkflowRun`; Production's `step8-xxix-20261116T031909-app-etl` polled
+  `getWorkflowRun` 17 times in 174 events, `SUCCEEDED`, and Staging's `v0-5-2-820-app-etl` the same.
+  `awsds-prod-chain-exec` and `awsds-staging-chain-exec` each hold `kms:GenerateDataKey` and `Decrypt`
+  on one key, `alias/awsds-prod-project` and `alias/awsds-staging-project`. The five schedules read
+  `DISABLED`.
+- **[Claude] xxi's domain half**, at 06:28: Production's trail holds 69 `PostLineageEvent` from 02:33:49
+  to 03:22:07, each by `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow`'s `GlueJobRunnerSession`
+  through `vpce-0bb36cd25fa694b27`, no error, with a `sharedEventID`; Data Governance's holds the same 69,
+  Staging's 46 through `vpce-0a908a1c053380d9c`, and 23 of Sandbox Account 1 through
+  `vpce-0138fb056dc217988` on 2026-11-15 from 22:27:54. Data Governance's
+  `CreateLineageNode` events name Production's asset node `b2eaaney9hlus0` (02:46:29) and listing node
+  `chg3sfn08jn9xs` (02:46:36); `get-lineage-node` as `awsds-infra-data` chains the table's node
+  `6i4aaj4f895ixc`, whose upstream holds two job-run nodes, to the asset's and the listing's.
+- **[Claude] xxii**, at 06:28: `deploy-staging` `ACTIVE`, `Tooling` (`d6nu5aphq1e974`) and
+  `deploy-staging-app-etl` (`54jhe9989w0tcg`) `ACTIVE` with their subscription targets; the database
+  `app_etl` with `trades_notional`; `app_etl_deploy_staging_app_etl` and `…_train` `READY`; the parameter
+  `/datascience/staging/applications/app-etl/stage-variables`; two gateway endpoints and no interface
+  endpoint in the account.
+- **[Claude] The sources and assets**, at 06:30. Staging's `52f18khk7kdi4w`, `cron(28 15 * * ? *)`,
+  `publishOnImport` false: scheduled runs from 2026-11-12 to 2026-11-15 at 15:37:23, each adding nothing,
+  and the prioritized run `cntcrgrt3c22og` at 02:07:53, `added: 1`; the asset `as6m73yp8shr80` at
+  revision 2, unlisted. Production's `5zggi2lr2ezy4w`, `cron(32 15 * * ? *)`: scheduled runs at 15:44:02,
+  then four prioritized runs on 2026-11-16, `anhgrpgqahg9e8` at 02:46:17 (`added: 1`), `dk1lm51c3amxw0`
+  at 02:49:02 (`unchanged: 1`), `6r028y6qqief4g` at 03:05:14 and `d0b69cl22rdx5c` at 03:33:33 (`updated:
+  1` each); the asset `da1fycta6l71n4` at revision 4, its listing `5hpftif3nnoj2o` `ACTIVE`. Neither
+  project holds a data product. xvii reads yes for an update in Production; the scheduled runs after the
+  imports start today, after 15:28 and 15:32.
+- **[Claude] xxx**, from this log's readings of #129 and `./scripts/deploy-application.py --self-check`
+  on `c5e1718e`'s tree: `OK`, both projects' nine variables and workflows read.
+- **[Claude] The model chain's layout**, at 06:30: Staging's newest training job,
+  `app-etl-train-20261116T020100`, ran as the project role and wrote its model and `evaluation.json`
+  under `deploy-staging`'s `shared/app-etl/models/`, beside `staging-model`'s transform output.
+  Production's newest is release T's `app-etl-train-20261025T070126`, as `awsds-prod-job-exec` under the
+  outputs bucket, and `deploy-production`'s `shared/app-etl/models/` holds no object; the registry group
+  holds version 1, `Approved`.
+- **[Claude] Release G's step 3 re-planned** from `c5e1718e`'s tree into
+  `$HOME/tmp/stage19-g-production-studio.tfplan` at 06:33:33: *"Plan: 2 to add, 0 to change, 2 to
+  destroy"*, `awsds-prod-workflows` and its attachment replaced on the description's change, the new
+  statement `CreateTheProductsDataProductInTheProjectsDomain` carrying `datazone:CreateDataProduct` and
+  `CreateDataProductRevision`. `staging/studio/` at 06:34: *"No changes"*.
+- **[Claude] Release G's merge request read**: GitLab's `main` holds `ced09fe4:examples/app-etl`, so it
+  carries `git diff ced09fe4 c5e1718e -- examples/app-etl`, eight files and 490 lines added, the tree
+  `3b43b395…`.
+- **[Claude] 4.12's state**: no subscription to `5hpftif3nnoj2o` (revision 6); Production's Lake
+  Formation parameters `CROSS_ACCOUNT_VERSION` `4` and `SET_CONTEXT` `TRUE`, three administrators, no
+  full-table flag; no Data Catalog resource policy; three RAM shares Production owns, from 2026-10-18.
+  `deploy-production`'s members: the owner groups `ca2735c9-…` and `c332eee6-…` and the project role's
+  profile `40991e26-…` as contributor. The Governance Manager's user profile `e8a1f320-…` is no member,
+  so decision 15 (a)'s membership comes before the approval. `eighth-experimentation`'s
+  `blerpkhn9nj7o0` is `ACTIVE`.
+- **[Claude] The retirement inventoried** (item 31): each of release T's four states pulled with exit 0,
+  no resource and no output, `staging/orchestration/` at serial 33, `staging/app/app-etl/` 22,
+  `production/orchestration/` 12 and `production/app/app-etl/` 6; `app_outputs` holds no table in either
+  target. The admin secret of Production's warehouse reads `NextRotationDate` 2026-11-22 01:59:59, never
+  rotated.
+- **[Claude] Written**: the stage file's verifications xvii, xxi to xxiii, xxv and xxx, items 12, 19, 21
+  and 31, the sittings in order and the retirement's inventory, 4.12's state and 5.1's reading rule;
+  `runbooks/promotion.md` §N.6, §N.8.3 and §N.8.5; the waiting list's release rows, 4.12's new row, the
+  GitLab backup's date and the Promotion row; `CLAUDE.md`'s row and Lesson 85.
+
 ## 2026-11-17 — `SUP-368`'s line in Sandbox's bill: the Glue session billed at its `DPUSeconds`
 
 Claude's reads as `awsds-infra-sandbox-1`, Sandbox's `InfrastructureAccess`; no AWS write. Each Cost

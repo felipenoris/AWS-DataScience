@@ -1148,7 +1148,8 @@ below. Each sitting starts on the user's word, since it is metered.
 3. **The warehouse and backup sitting** (N.8.3), between 2026-11-22 and 2026-11-25: `EXC-13`'s Production
    half after the admin secret's first rotation, scheduled 2026-11-22 01:59:59 UTC, the free trial's pair,
    and a GitLab backup before the newest, of 2026-10-26 22:15 UTC, leaves the bucket on 2026-11-26. A release
-   sitting inside that window carries the backup instead.
+   sitting inside that window carries the backup instead. Release T's sitting took one on 2026-11-15, which
+   expires 2026-12-16 (N.8.3).
 4. **The stages' close**: after 2 and 3, Stages 8, 9 and 10 hold only what N.5 lists, and each can close
    as Stage 4 did, what waits moved to the trigger or the stage that provides its subject. The user's
    decision, read then.
@@ -1920,7 +1921,9 @@ What it closes: `EXC-13`'s Production half, whether the database took the passwo
 rotation wrote; the free trial's pair of readings around a warehouse sitting; and a GitLab backup before
 the newest, of 2026-10-26 22:15 UTC, leaves the bucket on 2026-11-26. A release sitting inside the window
 carries the backup, and the Sandbox warehouse's owed items (the waiting list's Warehouse row) can ride the
-same hub start, each after its decision.
+same hub start, each after its decision. **Read 2026-11-16**: the newest backup is release T's sitting's, of
+2026-11-15 22:38 UTC, expiring 2026-12-16, so step 4's backup moves to any GitLab sitting before that date;
+the secret's `NextRotationDate` reads 2026-11-22 01:59:59 UTC, never rotated.
 
 1. **[Claude] The rotation**, with nothing up, expected `LastRotatedDate` on 2026-11-22:
 
@@ -2127,7 +2130,7 @@ step 8, with the hub and GitLab up for its tag, and each act below names its ide
    asset alone, which `product.json` requires. **Done 2026-11-16**, 06:03 UTC, through the CLI.
 2. **[user] This repository's pull request merged and the mirror pushed.** The leg's
    `deploy-application.py` reads a first import on the asset's conflict from then on, release F's
-   logs read as before.
+   logs read as before. **PR #307 merged 2026-11-16** as `c5e1718e`; the mirror waits for GitLab.
 3. **`production/studio/` re-planned and applied**, by Claude on the user's word naming it, from a
    checkout of the merged `main` (Lesson 79): account **Production**, the infrastructure user,
    `InfrastructureAccess` through `awsds-infra-prod`. No run of Production's workflows may be in
@@ -2145,17 +2148,26 @@ step 8, with the hub and GitLab up for its tag, and each act below names its ide
 
    **[Claude] reads** the role's policy at its new version: seven statements, the last
    `CreateTheProductsDataProductInTheProjectsDomain`, and the slice re-planning `No changes`.
+   **Re-planned 2026-11-16** at 06:33 UTC from `c5e1718e`'s tree into the file above: *"Plan: 2 to add,
+   0 to change, 2 to destroy"*, the new statement among the policy's; `staging/studio/` `No changes`. The
+   saved plan goes stale with any apply of the slice before it.
 4. **[user] The template's merge request** from `examples/app-etl/` at the merged `main`, then the tag
    `v0.6.0`. `staging/egress/` raised before the tag and destroyed after the Staging leg (Stage 8
    decision 27); `production/workloads-egress/` raised before `production-gate`. Both targets hold
    their assets since `v0.5.2`, so each import revises the asset by name and admits nothing, and
-   `staging-catalog` and `production-catalog` end at once.
+   `staging-catalog` and `production-catalog` end at once. **The merge request read 2026-11-16**:
+   GitLab's `main` holds `ced09fe4:examples/app-etl` (`07348ffa`, the tag `v0.5.2`), so it carries
+   `git diff ced09fe4 c5e1718e -- examples/app-etl`, eight files: `.gitlab-ci.yml`'s and
+   `manifest.yaml`'s comments, `README.md`, `code/app_etl_tasks.py`, `product.json` requiring the asset
+   alone, both test files and the two arguments in `workflows/app-etl.yaml`; the tree `3b43b395…`, 28
+   blobs.
 5. **[Claude] reads** Production's leg: the bootstrap run's `publish` creating `trades-notional` in
    `deploy-production`, its one item Production's asset `da1fycta6l71n4`, the data product's listing
    `ACTIVE` at its revision (the task's XCom), and the trail's `CreateDataProduct` and
    `CreateListingChangeSet` as the project role with no error, which settles the resource DataZone
    authorizes them against. From Sandbox, the listing found by a search of the catalog; 4.12's
-   subscription requests it.
+   subscription requests it. `production-register`, `-approve` and `-transform` stay `manual`: the
+   newest training job in Production is release T's (the stage file, §The sittings that follow).
 
 ## Q. After the quotas: Stage 10's pass 3
 
