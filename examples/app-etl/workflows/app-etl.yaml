@@ -118,4 +118,6 @@ app-etl:
         publish_listing: "{env.PUBLISH_LISTING}"
         domain: "{domain.id}"
         project: "{proj.id}"
+        data_product: trades-notional
+        data_product_description: Each trade with its notional, written by the application app-etl in Production.
       retries: 0

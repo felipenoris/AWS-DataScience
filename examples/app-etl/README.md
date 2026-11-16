@@ -15,7 +15,7 @@ repository.
 | Path | What it is |
 |---|---|
 | `src/app_etl/` | the code of the processing job: `pipeline.py` the transformation, `__main__.py` the command; the job reads it as its input, never from the image (D28 class 2d) |
-| `code/app_etl_tasks.py` | the worker's tasks: `summarize`, the run's report from the job's summaries; `publish`, the product listed in the SageMaker Catalog; and `evaluate`, a training job's metrics written beside its model; the pipeline zips the file once per workflow, `code/app-etl.zip` and `code/app-etl-train.zip`, each workflow's `code` (class 2b) |
+| `code/app_etl_tasks.py` | the worker's tasks: `summarize`, the run's report from the job's summaries; `publish`, the product and its data product listed in the SageMaker Catalog; and `evaluate`, a training job's metrics written beside its model; the pipeline zips the file once per workflow, `code/app-etl.zip` and `code/app-etl-train.zip`, each workflow's `code` (class 2b) |
 | `glue/transform.py` | the Glue job's script, the Spark transform over the trades: the CSV the processing job reads, the application's table and the training sets (class 2c) |
 | `glue/load_warehouse.py` | Production's warehouse load: the product table into `trades.trades_notional` of the database `governed`, over JDBC as the project's role (class 2c) |
 | `warehouse/trades.sql` | the warehouse table's DDL, run by the pipeline's manual job `production-warehouse-ddl` through the Data API as the deploy role, its owner (Stage 9 decision 6) |
@@ -47,7 +47,7 @@ Five tasks, in order, every path under the project's shared prefix,
 | `process` | `SageMakerProcessingOperator`: a processing job on the application image, network-isolated, its volume under the project key, `src/` as its input `code`, the command `cd /opt/ml/processing/code && python -m app_etl` | `work/glue/` | `work/job/`: `trades.parquet` and `trades.summary.json`, which carries the governed read's record as `source` |
 | `summarize` | `PythonOperator` on the worker: `app_etl_tasks.summarize`, from `code/app-etl.zip` | `work/job/*.summary.json` | its XCom, the run's report as JSON, each table's `source` with it |
 | `write_result` | `S3CreateObjectOperator`: the XCom of `summarize`, pulled in its template | | `outbox/report.json` |
-| `publish` | `PythonOperator` on the worker: `app_etl_tasks.publish`, as the project role through the `datazone` endpoint, in the domain and project the deploy substitutes (`{domain.id}`, `{proj.id}`), where the stage variable `PUBLISH_LISTING` is `true`: Production alone, once the CLI deploys it; in `dev` the task returns at once (Stage 19 decision 20 (b)) | the project's data source over `{env.PRODUCT_DATABASE}`, run and followed to `SUCCESS`; the inventory asset of `trades_notional` | the asset's latest revision as a listing, read `ACTIVE`; its XCom, the identifiers as JSON |
+| `publish` | `PythonOperator` on the worker: `app_etl_tasks.publish`, as the project role through the `datazone` endpoint, in the domain and project the deploy substitutes (`{domain.id}`, `{proj.id}`), where the stage variable `PUBLISH_LISTING` is `true`: Production alone, once the CLI deploys it; in `dev` the task returns at once (Stage 19 decision 20 (b)) | the project's data source over `{env.PRODUCT_DATABASE}`, run and followed to `SUCCESS`; the inventory asset of `trades_notional` | the asset's latest revision as a listing, read `ACTIVE`; the data product the argument `data_product` names, created over the asset or revised where its items or description differ, listed and read `ACTIVE` (Stage 19 decision 26 (b)); its XCom, the identifiers as JSON |
 
 Every run overwrites the same keys: the Glue job keeps one file under `work/glue/` (Spark names the
 file it writes, so the script copies it to `trades.csv` and deletes the rest), the processing job names
@@ -77,8 +77,11 @@ its data and keeps the table, so the listing `publish` makes and the grants a su
 survive the runs. The source's run needs `datazone:StartDataSourceRun`, which the blueprint's policies
 do not grant the project role and the house grant in `terraform-live/<env>/studio/workflows.tf` gives
 Production's deployment project role alone, the one stage whose `PUBLISH_LISTING` is true (Stage 19
-decision 17, `publishing_starts_the_source`). The database is created in each project before the first deploy, the same name in every project,
-never by the application. The same `--conf` turns on the OpenLineage listener Stage 18 step 7.1 measured
+decision 17, `publishing_starts_the_source`). The data product needs `datazone:CreateDataProduct` and
+`CreateDataProductRevision`, which the same grant gives the same role (decision 26 (b),
+`publishing_creates_the_data_product`): a data product's name is the domain's, so the stage that lists
+the product owns it, and the `dev` project holds none. The database is created in each project before
+the first deploy, the same name in every project, never by the application. The same `--conf` turns on the OpenLineage listener Stage 18 step 7.1 measured
 (Stage 19 decision 10): the job posts its lineage to the domain as the project role through the
 `datazone` endpoint, naming the domain by `{domain.id}` and the account by the stage variable
 `ACCOUNT_ID`; a post that fails leaves the job's result alone.
@@ -201,7 +204,9 @@ connections"* and still writes the bundle, so the job fails on that line. The bu
 project's catalog as `catalog/catalog_export.json`, whatever the project owns: `product.json` declares
 what a release carries, and `scripts/check-catalog-export.py` fails a bundle with a resource outside it,
 without the product's asset or with no export at all. A resource the scientist adds to the product in
-the `dev` project, a data product or a glossary term, joins `product.json` in the same merge request.
+the `dev` project, a glossary term for one, joins `product.json` in the same merge request. A data
+product does not: Production's `publish` task creates it from the workflow's `data_product` argument,
+and one in the `dev` project's export fails the release (Stage 19 decision 26 (b)).
 The bundle's SHA256 and the image go down
 the pipeline as a dotenv report, and the release's notes name them. `bundle` resolves an `include` as a
 file or a directory and not as a glob (`code/*.zip` is "Pattern not found" with the zip present, while

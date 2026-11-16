@@ -2093,13 +2093,69 @@ requires both.
    `production/app/app-etl/` (3), each read and applied; then `production/chains/` re-planned (24)
    and applied. **[Claude] reads** a chain started by hand against xxix.
 9. **A warehouse sitting** (`make up ENV=production ONLY=workloads-egress,warehouse-compute
-   GROUPS=redshift`): as the admin, in `governed`, `CREATE USER "IAMR:<the project role's name>"
-   PASSWORD DISABLE NOCREATEDB NOCREATEUSER;` and `GRANT ROLE gov_trades_rw TO "IAMR:<the same>";`
-   (Stage 9 9.3's shape); `production-warehouse-ddl`; the chain `app-etl-warehouse` started by hand
-   and read against xxxii; `make down` after. `production-warehouse-ddl` is a manual job of the tag's
+   GROUPS=redshift`): as the admin, in `governed`, `GRANT ROLE gov_trades_rw TO
+   "IAMR:user-project@<project id>";`, the user the project role's `RedshiftDbUser` tag names for the
+   Glue job's session (`SUP-205`), preceded by `CREATE USER "IAMR:user-project@<project id>" PASSWORD
+   DISABLE NOCREATEDB NOCREATEUSER;` when the job has never connected; `production-warehouse-ddl`; the
+   chain `app-etl-warehouse` started by hand and read against xxxii; `make down` after. `production-warehouse-ddl` is a manual job of the tag's
    pipeline on the deploy runner, so this step runs in the promotion sitting, GitLab up, after step 8;
-   from 2026-11-22 the same raise carries N.8.3's `EXC-13` reading.
+   from 2026-11-22 the same raise carries N.8.3's `EXC-13` reading. **Ran 2026-11-16** in release F's
+   sitting: xxxii read yes on the chain's second run, the first refused at the schema before the grant
+   reached the job's user.
 10. **The retirement**, a pull request after both targets ran release F: the stage file's item 31.
+
+#### N.8.5 Release G: the data product in Production (Stage 19 decision 26 (b))
+
+What it closes: Production's `publish` task owning the product's data product, the domain's one
+`trades-notional`, created over Production's asset and listed. What is written and why is the stage
+file's [§Release G as written](../stages/stage-19-smus-native-data-product.md). It runs after N.8.4's
+step 8, with the hub and GitLab up for its tag, and each act below names its identity.
+
+1. **[user] `app-etl-dev`'s data product deleted**, `trades-notional` (`5070mjwdvjwp3k`), which was
+   never published: in the portal as the project's owner (the project's data products, *Delete*), or
+   as Sandbox's `InfrastructureAccess`, a contributor of the project, whose delete DataZone admits
+   (measured 2026-11-16). The SSO user is the infrastructure user, account
+   **Sandbox Account 1**, permission set `InfrastructureAccess` through `awsds-infra-sandbox-1`:
+
+   ```bash
+   NO_PROXY='*' aws datazone delete-data-product --domain-identifier dzd-d8yrvx1ko7im6o --identifier 5070mjwdvjwp3k --profile awsds-infra-sandbox-1 --region us-west-2
+   ```
+
+   **[Claude] reads** the name free: `get-data-product` on the id answers `ResourceNotFoundException`,
+   and `search --search-scope DATA_PRODUCT --owning-project-identifier ceweti7jbiu1hs` names no item
+   (`Search` refuses that scope without a project, `SUP-371`). The tag's `bundle` job then exports the
+   asset alone, which `product.json` requires. **Done 2026-11-16**, 06:03 UTC, through the CLI.
+2. **[user] This repository's pull request merged and the mirror pushed.** The leg's
+   `deploy-application.py` reads a first import on the asset's conflict from then on, release F's
+   logs read as before.
+3. **`production/studio/` re-planned and applied**, by Claude on the user's word naming it, from a
+   checkout of the merged `main` (Lesson 79): account **Production**, the infrastructure user,
+   `InfrastructureAccess` through `awsds-infra-prod`. No run of Production's workflows may be in
+   progress: the description's change replaces `awsds-prod-workflows` and its attachment, so for
+   seconds the project role holds no workflows grant. Planned 2026-11-16: 2 to add, 2 to destroy;
+   `staging/studio/` re-plans `No changes`.
+
+   ```bash
+   AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/studio plan -input=false -out="$HOME/tmp/stage19-g-production-studio.tfplan"
+   ```
+
+   ```bash
+   AWS_PROFILE=awsds-infra-prod terraform -chdir=terraform-live/production/studio apply -input=false "$HOME/tmp/stage19-g-production-studio.tfplan"
+   ```
+
+   **[Claude] reads** the role's policy at its new version: seven statements, the last
+   `CreateTheProductsDataProductInTheProjectsDomain`, and the slice re-planning `No changes`.
+4. **[user] The template's merge request** from `examples/app-etl/` at the merged `main`, then the tag
+   `v0.6.0`. `staging/egress/` raised before the tag and destroyed after the Staging leg (Stage 8
+   decision 27); `production/workloads-egress/` raised before `production-gate`. Both targets hold
+   their assets since `v0.5.2`, so each import revises the asset by name and admits nothing, and
+   `staging-catalog` and `production-catalog` end at once.
+5. **[Claude] reads** Production's leg: the bootstrap run's `publish` creating `trades-notional` in
+   `deploy-production`, its one item Production's asset `da1fycta6l71n4`, the data product's listing
+   `ACTIVE` at its revision (the task's XCom), and the trail's `CreateDataProduct` and
+   `CreateListingChangeSet` as the project role with no error, which settles the resource DataZone
+   authorizes them against. From Sandbox, the listing found by a search of the catalog; 4.12's
+   subscription requests it.
 
 ## Q. After the quotas: Stage 10's pass 3
 

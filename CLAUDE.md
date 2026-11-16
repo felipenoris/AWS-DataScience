@@ -423,7 +423,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 The chain is Sandbox → Staging → Production: no Development account, ever, and interactive compute is
 Sandbox only. D1-D41 are closed; D41 item 2 is reopened since 2026-10-31 (Stage 19 decision 6 (b)). Gates:
 `make check`, `make check-ou`. Whether anything is up is read with `make status`, never from this file:
-every sitting ends at zero burn, and Stage 19's session read a burn of 0.0000 USD/h on 2026-11-14.
+every sitting ends at zero burn, and Stage 19's session read a burn of 0.0000 USD/h on 2026-11-16.
 
 Before asking the user anything, read
 [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md), and remove a row in the sitting
@@ -443,14 +443,14 @@ domain name from the user, and 15, which nothing blocks and whose decisions 1-4 
 | 6f, the catalog over the lake | Decision 1 (b), a pilot of SMUS's native flow: step 11 done to 11.11 (2026-10-27), `curated.trades` published by `governed-lake` and subscribed by `eighth-experimentation`. Decisions 2 to 6 taken | The user's: step 2's portal acts, 11.12's rollback residue |
 | 6g, access by identity | Applied 2026-09-17, 1.4 closed on both profiles | 2.4's Athena read, which the user re-specifies. Decision 1's proxy-host replacement at the next `production/proxy/` apply, in a hub sitting |
 | 6h, the Redshift connection | Passes 0-2 done: one project writes and reads the schema `lab` through the Data page and through JupyterLab | The user's: decision 3 (`lineageSync`) and decision 8 (how a second project is admitted). Then a warehouse sitting: the negatives 5.1 and 5.2b, 0.4's portal half, 6.4 |
-| 8, the pipelines | Passes 0-3 done; pass 4 ran with Stage 10's passes: the first promotion on 2026-10-24 (`v0.3.3`), release T's `v0.4.7` in Production since 2026-11-15, xv read yes. Every decision taken | Release F's `v0.5.2` (Stage 19 decision 25): `runbooks/promotion.md` §N.8.4. What is left, in order: §N.6 |
+| 8, the pipelines | Passes 0-3 done; pass 4 ran with Stage 10's passes: the first promotion on 2026-10-24 (`v0.3.3`), release T's `v0.4.7` on 2026-11-15, release F's `v0.5.2` on 2026-11-16, the CI/CD CLI deploying each leg (Stage 19 4.10); xv read yes. Every decision taken | Release G's `v0.6.0` (Stage 19 decision 26 (b)): `runbooks/promotion.md` §N.8.5. What is left, in order: §N.6 |
 | 9, the deployment targets | Passes 1, 2, 3 and 5 applied; the producer path (2.4), the governed warehouse and its datashare (9.1 to 9.7) run and read to 2026-10-30. Every decision taken | The warehouse and backup sitting, 2026-11-22 to 2026-11-25 (`promotion.md` §N.8.3): `EXC-13`'s Production half. The quota cases, still `CASE_OPENED`. What is left, in order: §N.6 |
-| 10, orchestration | Passes 1-3 done in Staging and Production; the schedules read starting both chains unattended (6.1, 2026-10-25); xx and decision 11's Staging half read 2026-11-15. Every decision taken | What is left, in order: `promotion.md` §N.6 |
+| 10, orchestration | Passes 1-3 done in Staging and Production; the schedules read starting both chains unattended (6.1, 2026-10-25); xx and decision 11's Staging half read 2026-11-15; since 2026-11-16 the chains of `<env>/chains/` start the CLI's workflows in both targets (Stage 19 4.11). Every decision taken | What is left, in order: `promotion.md` §N.6 |
 | 11, data protection | Pass 0 read; pass 1's data cells filters written, creating nothing. The threat model holds `TM-01`..`TM-30` | The user's: decision 12 (the filtered principal), `TM-17`, decisions 1, 2, 5 and 9. The internal-access analyzer, created after a 1st and deleted before the next: it bills on each 1st |
 | 12, observability and FinOps | Both observability slices applied 2026-10-18; `OB-3` passes in Sandbox and fails in Production by design (`EXC-19`). The bill reads above D12's ceiling: 53.31 USD in August and 74.48 in September | A hub sitting: the three `[D]` hosts' alarm actions. The user's: decisions due 1 and 3, D12's fired revision trigger and its budget notification |
 | 14, Sandbox vending | The pre-vend half done 2026-10-18 (`./aws/vending.py`, `VN-1`..`VN-6`); the rest blocked on the account quota | The user's: the account quota and D34's rung |
 | 17, machine learning in Sandbox | Pass 0 in progress; `MLflowApp` and `AmazonBedrockKnowledgeBase` enabled, `ml-demo-mlflow` created, five models enabled, the playground answering (7.3) | A Sandbox sitting with `GROUPS=mlflow`: 1.4 and 1.6, then passes 2-5. The user's: decisions 5, 6, 7, 10 and 12 |
-| 19, a data product on SMUS's native path | Decision 6 (b), the AWS model: a deployment project per target. Pass 1 run 2026-11-10. Pass 4 owes nothing more with nothing up: `deploy-staging` and `deploy-production` created, the full-table flag off in both targets and `awsds-deploy-staging` an owner of `deploy-staging` since 2026-11-12 (4.7, `DT-13` passing). Release F, the CLI's legs (4.9 to 4.11), written 2026-11-12 and its grants that need nothing up applied the same day. Release T's `dev` project, `app-etl-dev`, created 2026-11-14, the bundle role its member and narrowed to reads. The Sandbox sitting run 2026-11-14 to 00:16 UTC: 2.6 read on a member's run, pass 2's window (viii to xi) and its revoke, item 20 retired, `app-etl-dev`'s database created and 1.5 run to `SUCCESS`; it opened `TM-31` and fired `TM-29`'s trigger. Steps 15 and 17 done 2026-11-15: the product curated in `app-etl-dev`, unpublished, and `product.json` requiring its data product. `TM-29`'s trigger read and `TM-31` accepted the same day, on SMUS's intended use: the start grant applied out of Sandbox and Staging, kept in Production alone. Release T run 2026-11-15; release F's `v0.5.0` stopped at `staging-deploy` the same evening, the import creating no asset in a target (`SUP-369`). Decisions 1 to 25 taken, 7 and 8 moot | Release F's `v0.5.2` (decision 25 (b), its grants applied 2026-11-16; `v0.5.1`'s `staging-test` failed on the training job's read, `SUP-267`; the training pair applied in both `studio/` slices): the merge and the mirror, the template's merge request and the tag (`promotion.md` §N.8.4 step 6.5 and 6.6); `awsds-deploy-prod`'s membership at step 7. With nothing up: the Glue session's line in the bill (`SUP-368`) |
+| 19, a data product on SMUS's native path | Decision 6 (b), the AWS model: a deployment project per target. Passes 1 and 2 run (2026-11-10, 2026-11-14), the product curated in `app-etl-dev` (steps 15 and 17), `TM-31` accepted and the start grant kept in Production alone (2026-11-15). Release T run 2026-11-15. Release F's `v0.5.2` through both targets 2026-11-16 (pipeline #129): the CLI deploying and importing the catalog in `deploy-staging` and `deploy-production`, Production's asset listed with `dev`'s metadata, and step 8's cut-over done, release T's Production slices destroyed and `production/chains/` applied. A data product's name is the domain's (`SUP-369`): decision 26 (b) gives it to Production's `publish` task, release G written 2026-11-16 (PR #307), nothing applied. Decisions 1 to 27 taken, 7 and 8 moot; 27's (d), an account-level log retention policy, waits on the AWS provider (`EXC-25`). Step 9's warehouse sitting run 2026-11-16, xxxii yes | Release G's sitting (§N.8.5), its step 1 done 2026-11-16: PR #307 merged, `production/studio/` applied, the tag `v0.6.0`. Then the retirement (step 10). With nothing up: the Glue session's line in the bill (`SUP-368`) |
 
 #### The estate between sittings
 
@@ -468,9 +468,10 @@ domain name from the user, and 15, which nothing blocks and whose decisions 1-4 
 - **A promotion's Staging leg** (Stage 8 decision 27): the user raises `staging/egress` before the tag
   (`make up ENV=staging ONLY=egress`) and destroys it after (`make down ENV=staging`); the pipeline raises
   and destroys no shared slice.
-- **The release in Production is `v0.4.7`**: the four `release.tf` and the orchestration slices' defaults
-  name it, and a by-hand apply on a stale default rolls the workflows back. `production/orchestration`'s
-  three schedules stay `DISABLED` between sittings.
+- **The release in Production is `v0.5.2`**, deployed by the CI/CD CLI into `deploy-production` on
+  2026-11-16. Release T's `orchestration/` and `app/app-etl/` slices hold nothing in either target, and
+  their code stays until the retirement (Stage 19 item 31): an apply of either recreates release T's
+  objects. `production/chains/`'s three schedules stay `DISABLED` between sittings.
 - **The house image** is `awsds-sandbox-dev-env` version 11, `default-v0.10.0` (2026-10-26); its `NO_PROXY`
   literal is the 73 names of `vpc-egress-v0.19.0`.
 - **Orchestration is MWAA Serverless only**, provisioned MWAA denied at the root. The SageMaker
@@ -533,12 +534,12 @@ The table is a first look by situation; the numbered list below it is complete.
 | When about to | Lessons |
 |---|---|
 | Write or read a check, a probe or a proof | 2, 13, 20, 21, 22, 24, 26, 30, 31, 50, 54, 62, 71, 77, 78, 80 |
-| Write a policy, a grant or a role, or say what a principal can do | 5, 11, 14, 17, 18, 28, 29, 66, 67, 70, 72, 75, 80 |
+| Write a policy, a grant or a role, or say what a principal can do | 5, 11, 14, 17, 18, 28, 29, 66, 67, 70, 72, 75, 80, 82 |
 | Move, rename or share something across accounts, or borrow a session | 3, 9, 10, 25, 48 |
 | Change Terraform, a module, a host or the toolchain | 4, 8, 27, 33, 35, 47, 49, 51, 58, 59, 64, 65, 68, 69, 73, 76, 79 |
 | Call an AWS API, a console wizard or a managed service | 16, 23, 36, 39, 60, 61, 63, 74, 81 |
 | Touch the network, the proxy or a client | 40, 42, 43, 44, 45, 53, 55, 56 |
-| Run a command or write a script | 46, 47, 52 |
+| Run a command or write a script | 46, 47, 52, 83, 84 |
 | Write the plan, a record or a decision, or read a vendor page | 1, 6, 7, 12, 15, 19, 32, 34, 37, 38, 41, 57 |
 
 1. **A copy of governed data somewhere less governed is not a hole to be closed.**
@@ -683,3 +684,9 @@ The table is a first look by situation; the numbered list below it is complete.
     asynchronous write, not with the call.**
 81. **A notebook's engine is a bill of its own, sized by its connection and kept by its idle timeout — the
     space's price is not the session's.**
+82. **A refusal diagnosed as a shape and granted as a list stays open for every member the list left
+    out.**
+83. **A retry reuses every name the first attempt spent — a job whose objects are named after the
+    pipeline has no retry.**
+84. **The laptop's shell is zsh, and a command written as bash expands to another string before it
+    runs.**

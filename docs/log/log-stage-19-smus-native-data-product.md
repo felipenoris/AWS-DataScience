@@ -3436,3 +3436,341 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   role. Simulated again against the applied policy, with the context above: `DescribeTrainingJob` on a free
   name and `AddTags` of the own project tag `allowed` by `awsds-staging-workflows`; another project's job and
   tag `implicitDeny`.
+- **[user] §N.8.4 steps 6.5 and 6.6**: PR #306 merged at 01:25:26 UTC as `ced09fe4`, then the mirror pushed; the
+  template's merge request !16, branch `release-f-execution-names`, its branch pipeline #127 green, merged at
+  01:27:00 as `07348ffa`; the tag `v0.5.2` on `07348ffa`, pipeline #129, created 01:27:47. **[Claude] read**:
+  GitLab's `awsds/infrastructure` `main` at `ced09fe4`; the tag's tree and `ced09fe4:examples/app-etl` the
+  same 28 blobs (the SHA-256 of their sorted path and blob lists equal), `.gitlab-ci.yml` at `f8ddc5fe`. The
+  rest of the sitting is recorded from the branch `claude/release-f-v052`, cut from `ced09fe4`.
+  **[pipeline]** `pip-audit` and `test` green at 01:28:05, `build-task-code` at 01:28:15.
+  `build-image` 01:28:08 to 01:30:51; `bundle` green at 01:31:17, the guard *"assets: 1 (trades_notional)"*,
+  *"dataProducts: 1 (trades-notional)"*, *"OK"*; `store-bundle` at 01:31:26, `release` at 01:31:36;
+  `staging-gate` (817) manual.
+- **[Claude] Staging before the gate**: `deploy-staging`'s source `52f18khk7kdi4w` (`cron(28 15 * * ? *)`,
+  `ENABLED`) read as `awsds-infra-data`, its four last runs `SCHEDULED`, `SUCCESS`, each *"added":0*, the
+  latest at 15:37:23 on 2026-11-15, so the project holds no asset of its own; `datazone search` in the
+  project refused to the same identity, a non-member (*"User is not permitted to perform operation:
+  Search"*). The product table `app_etl.trades_notional` read as `awsds-infra-staging`: `ICEBERG`, registered
+  with Lake Formation, created 00:45:42 UTC by `v0.5.1`'s `app-etl` run.
+- **[user] `staging-gate`** of #129 (job 817, 01:39:54 to 01:39:58). **[pipeline]** `staging-check` (818) green,
+  01:40:02 to 01:40:24; `staging-deploy` (819) green, 01:40:27 to 01:42:31. **[Claude] read** in its log:
+  *"awsds/infrastructure at ced09fe41d6c97600d889488e0c8d9fa101c11aa"*, *"the bundle of v0.5.2: 12 file(s), a
+  catalog export"*, *"0 created, 1 updated, 0 skipped (extra in target), 1 failed, 0 published"*, the
+  *"Tooling VPC config"* line, both workflows *"already exists, updating it"* with the project role,
+  *"Deployment completed successfully!"*, the first import's admission (`SUP-369`) and the nine variables
+  recorded; the parameter at version 2, modified 01:42:27 UTC.
+- **[Claude] The sitting's readings of the platform and its lessons**, written while `staging-test` ran, at
+  the user's request (*"revise as lições aprendidas com esta sessão, e ao AWS_SUPPLEMENT"*):
+  - the AWS CLI 2.37.12 passed a `file://` document to `--policy-input-list` one member per character,
+    *"Value '[{, ", V, e, r, s, i, …]' at 'policyInputList' failed to satisfy constraint: Member must have
+    length less than or equal to 10"*, on one line or several, and read the same document passed as the
+    argument's text, `PolicyInputList.1` (`SUP-370`);
+  - the chain machines' `getWorkflowRun` polls of `v0.5.1`'s runs, read from the two executions' histories,
+    lagged the runs: `app-etl`'s `StartedOn` of 00:43:14 first appeared at 00:45:53, and `app-etl-train`'s
+    run, 00:58:24 to 00:59:22, never read `RUNNING` (`SUP-273`'s later reading);
+  - a non-member's reads of `deploy-staging`, above, joined `SUP-157`;
+  - Lessons 82 (a refusal diagnosed as a shape and granted as a list), 83 (a retry reuses the names the first
+    attempt spent) and 84 (the laptop's shell is zsh) written, and the parameter's name added to Lesson 5 as
+    a naming rule nothing checked. Already recorded and not repeated: the simulator's Region and principal
+    tags (`SUP-008`), the run state's lag (`SUP-273`), a non-member's catalog (`SUP-157`).
+- **[pipeline] `staging-test`** of #129 (job 820) green, 01:42:35 to 02:07:27. **[Claude] read** in its log
+  and in Staging: the chain execution `v0-5-2-820-app-etl` `SUCCEEDED`, 01:42:44 to 01:59:49 UTC, then
+  `v0-5-2-820-app-etl-train`, 02:00:10 to 02:07:12; the run's report, *"rows": 10*, from `trades.csv`; the
+  product table `trades_notional`, `ICEBERG`, registered, its metadata at `00001-…`. The training job
+  `app-etl-train-20261116T020100` `Completed`, created 02:01:02, ended 02:03:46: the training pair's first
+  pass, which does not separate whether the create needs `AddTags` (`SUP-267`).
+- **[pipeline] `staging-catalog`** (821) green, 02:07:30 to 02:10:06, the first `--catalog-follow-up`.
+  **[Claude] read** in its log: *"the project's source 52f18khk7kdi4w started: run cntcrgrt3c22og"*,
+  *"SUCCESS: {"added": 1, "failed": 0, "unchanged": 0, "updated": 0}"*, *"the project holds
+  trades_notional"*; the second deploy's import, *"Remapped DataSourceReferenceForm to target data source
+  52f18khk7kdi4w (db_app_etl)"*, *"Resource trades-notional already exists (ConflictException), treating
+  as update"*, *"0 created, 2 updated, 0 skipped (extra in target), 0 failed, 0 published"*; both workflows
+  created, *"Deployment completed successfully!"*, and the stage's variables recorded. In the domain's
+  CloudTrail, as `awsds-infra-data`: `StartDataSourceRun` at 02:07:53 UTC; a `CreateAsset` at 02:07:56,
+  during the source's run; `CreateAssetRevision` on `as6m73yp8shr80` at 02:09:30, revision 2, and no
+  `CreateAsset` from the import; `CreateDataProduct` in `deploy-staging` at 02:09:30 over
+  `as6m73yp8shr80`, `ConflictException`, *"Conflict with dataProduct 5070mjwdvjwp3k"*. That product is
+  `app-etl-dev`'s (`ceweti7jbiu1hs`), created 2026-11-15 03:14:56 UTC over `c6z3pbg3drrs0g`.
+  `deploy-staging`'s four earlier `CreateDataProduct`, 23:20:50 to 01:41:54, each read *"Resource asset
+  provided is not from same project"*, and the domain's other `trades-notional`, `bvs7m8z4h6w70w`, was
+  deleted 2026-11-14 23:10:01. `GetDataProduct` refused to the same identity, a non-member. The API
+  reference's and boto3's `CreateDataProduct` pages state a data product's name unique within the domain.
+  The import mapped the asset by name (`SUP-369`'s later reading) and creates the data product in no
+  target while `app-etl-dev` holds it, so decision 20's two data products cannot exist; decision 26
+  written, due.
+- **[pipeline] `staging-model`** (822) green, 02:10:09 to 02:16:33. **[Claude] read** xxxi: the batch
+  transform `app-etl-v0-5-2-20261116T021037` `Completed` at 02:16:28 on the model of
+  `app-etl-train-20261116T020100`, 10 predictions for 10 rows, the model deleted after. In Staging's
+  CloudTrail: `CreateModel` at 02:10:39 by `awsds-deploy-staging`, the project role its execution role,
+  in the project's two subnets and security group with network isolation, the model data under the
+  project's `shared/` prefix; `CreateTransformJob` at 02:10:41 by the same role, input and output under
+  that prefix, the output with the project's key `c6556c49-…`.
+- **[pipeline] `production-check`** (823) failed, 02:16:36 to 02:16:54, on the membership, as step 7
+  expects: *"the caller is no member of deploy-production: DataZone refuses it the project's
+  connections"*. **[Claude] read** the group profile as `awsds-infra-data`:
+  `c332eee6-eabe-33d0-b329-e6b85b4fcacd`, `ASSIGNED`, its `rolePrincipalArn` Production's
+  `awsds-deploy-prod`. `make status ENV=production`: `workloads-egress` UP, 17 resources; release T's
+  `orchestration/` (41) and `app/app-etl/` (3) UP.
+- **[user] Decision 26 taken as (b)** (*"Sigo a (b)"*).
+- **[user] `awsds-deploy-prod`'s membership**, account Production, as `awsds-infra-prod`, its output empty:
+
+  ```
+  NO_PROXY='*' aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d7qcazihvr3s7k --designation PROJECT_OWNER --member groupIdentifier=c332eee6-eabe-33d0-b329-e6b85b4fcacd --profile awsds-infra-prod --region us-west-2
+  ```
+
+  **[Claude] read** `deploy-production`'s memberships at 02:29:32 UTC: `PROJECT_OWNER` `c332eee6-…` beside
+  the `PROJECT_OWNER` and the `PROJECT_CONTRIBUTOR` it held before.
+- **[user] `production-check`'s retry** (job 831) green, 02:28:54 to 02:29:12: *"the caller is a member of
+  the project"*. **[user] `production-gate`** (824) released at 02:29:55.
+- **[pipeline] `production-deploy`** (825) green, 02:30:03 to 02:48:31 UTC: `production/workloads-egress/`
+  read; *"the bundle of v0.5.2: 12 file(s), a catalog export"*; the import *"Resource trades_notional
+  already exists (ConflictException), treating as update"* and *"Failed to import dataProducts
+  trades-notional: … Resource asset provided is not from same project"*, `Created: 0`, `Updated: 1`,
+  `Failed: 1`, admitted as the first import (*"the catalog's first import in this project
+  (SUP-369)"*); the three workflows created; the stage's variables recorded in
+  `/datascience/prod/applications/app-etl/stage-variables`. The bootstrap ran `app-etl`, run
+  `dgLMl16T1snuRmT`, `SUCCESS` from 02:32:18 to 02:46:30: `transform` 130 s, `process` 493 s,
+  `summarize` 10 s (10 rows, notional 49850.5), `write_result` 7 s, `publish` 21 s. `publish` ran the
+  source `5zggi2lr2ezy4w` (run `anhgrpgqahg9e8`) and listed the asset `da1fycta6l71n4` at revision 1:
+  *"listing 5hpftif3nnoj2o revision 2: ACTIVE, asset revision 1"*. The job followed the run to its end
+  and ended 2 min after it (xxviii's follow half).
+- **[pipeline] `production-catalog`** (826) started 02:48:34: *"the second import of v0.5.2 into
+  deploy-production: trades_notional"*, the source's run `dk1lm51c3amxw0` started at 02:49:03, *"the
+  project holds trades_notional"* at 02:49:22; the deploy's import *"Resource trades-notional already
+  exists (ConflictException), treating as update"*, *"0 created, 2 updated, 0 skipped (extra in
+  target), 0 failed, 0 published"*; the bootstrap's second run of `app-etl`, `RvUWg0Ij7xMyCT4`. The
+  CLI's 14 warnings *"Failed to get group profile … AccessDeniedException"* match `staging-catalog`'s 14.
+  The second run, `RvUWg0Ij7xMyCT4`, `SUCCESS` from 02:51:33 to about 03:07:40: `transform` 114 s,
+  `process` 490 s, `summarize` 9 s, `write_result` 11 s, then `publish`. The job ended green at
+  03:07:46 with the three workflows found and the stage's variables recorded again; its log carries
+  none of the run's task lines, which `production-deploy`'s did. **[Claude] read** as `awsds-infra-prod`
+  at 03:10 UTC: the listing `5hpftif3nnoj2o` `ACTIVE` at revision 4, updated 03:05:21, carrying the asset
+  `da1fycta6l71n4` at revision 3 with `classification` among its forms; the asset owned by
+  `deploy-production`, its description `dev`'s (*"Notional of each trade, quantity times price rounded to
+  cents, written by app-et…"*). `make status` at 03:06: a burn of 0.6171 USD/h, `staging/egress/` still
+  up (17), Production's hub, GitLab, the runners and `workloads-egress/` up, release T's
+  `orchestration/` (41) and `app/app-etl/` (3) up.
+- **[Claude] step 8's plans**, as `awsds-infra-prod`, saved under `$HOME/tmp/`:
+  `production/orchestration/` destroy *"0 to add, 0 to change, 41 to destroy"*
+  (`stage19-f-production-orchestration-destroy.tfplan`); `production/app/app-etl/` destroy *"0 to add,
+  0 to change, 3 to destroy"* (`stage19-f-production-app-destroy.tfplan`): the Glue jobs
+  `awsds-prod-app-etl` and `awsds-prod-app-etl-load` and the table `app_outputs.trades_notional` on
+  `awsds-prod-outputs`, not the project's `app_etl.trades_notional`; `production/chains/` *"24 to add, 0
+  to change, 0 to destroy"* (`stage19-f-production-chains.tfplan`), the machines
+  `awsds-prod-chain-<chain>` and the three schedules `DISABLED`.
+- **[Claude] Release G written** (decision 26 (b)), with every call a read and nothing applied: the
+  `publish` task's data product, the workflow's `data_product` arguments, `product.json` requiring the
+  asset alone, the grant `CreateTheProductsDataProductInTheProjectsDomain` in both `studio/` slices
+  under `publishing_creates_the_data_product`, and `deploy-application.py` reading a first import on the
+  conflict over an asset of the bundle's. Read: `SageMakerStudioProjectRoleMachineLearningPolicy` v48
+  grants `datazone:Get*`, `Search*`, `CreateAsset*` and `CreateListingChangeSet`, and
+  `SageMakerStudioProjectUserRolePolicy` v77 `*Compute*` alone, neither a data product's creation; the
+  role's boundary `awsds-prod-project-boundary` v3 and the `Workloads` SCPs deny neither action; the
+  Service Reference `v1.5` gives `CreateDataProduct`, `CreateDataProductRevision` and
+  `StartDataSourceRun` no resource type and no condition key. Planned as `awsds-infra-prod`:
+  `production/studio/` *"2 to add, 0 to change, 2 to destroy"*, `awsds-prod-workflows` and its
+  attachment replaced on the description, the six statements unchanged and the seventh added;
+  `staging/studio/` as `awsds-infra-staging`, *"No changes"*. `--self-check` passes with four samples
+  more, and pipeline #129's `staging-deploy` and `staging-catalog` lines read as before: a first import
+  admitted, a second with nothing pending.
+- **[user] Step 8 authorized** (*"Autorizo o passo 8"*): the two destroys, `production/chains/`'s apply
+  and the `app-etl` chain started by hand. The three peer sessions on the laptop were told first.
+- **[Claude] Step 8's applies**, as the infrastructure user with `InfrastructureAccess` in Production
+  (`awsds-infra-prod`), each from its saved plan: `production/orchestration/` 03:15:01 to 03:17:22 UTC,
+  *"0 added, 0 changed, 41 destroyed"*: release T's three workflows `awsds-prod-wf-*`, their roles and
+  security group `awsds-prod-wf-workers` (no network interface held it, and no other group referenced
+  it), the machines, schedules and roles `awsds-prod-chain-*`; `production/app/app-etl/` 03:17:31 to
+  03:17:41, *"0 added, 0 changed, 3 destroyed"*; `production/chains/` 03:17:55 to 03:18:20, *"24 added,
+  0 changed, 0 destroyed"*, re-planning `No changes`.
+- **[Claude] xxix's chain started by hand** at 03:19:10: `awsds-prod-chain-app-etl`, execution
+  `step8-xxix-20261116T031909-app-etl`, the machine's first. A first attempt was refused `InvalidArn`
+  before any execution existed: zsh read `$account:stateMachine` as a `:s` modifier (Lesson 84), and
+  `${account}` fixed it. The history: `ssm:getParameter` of the stage variables, `listWorkflows`
+  finding `app_etl_deploy_production_app_etl-6Hz8jUvCQb`, `startWorkflowRun` with the nine variables as
+  `OverrideParameters` (`PUBLISH_LISTING` `true`, `PRODUCT_DATABASE` `app_etl`) answering the run
+  `wITFYNHoLyyEsev`, `STARTING`, within 1 s of the start.
+- **[user] `make down ENV=staging`**, reported during the chain's run (*"o ambiente staging foi
+  derrubado"*). **[Claude] read** at 03:24:28 as `awsds-infra-staging`: the gateway endpoints for S3
+  and DynamoDB alone, no interface endpoint, no NAT gateway.
+- **[Claude] `./aws/orchestration.py awsds-infra-prod awsds-infra-staging`** after step 8: exit 2, *"13
+  CHECK(S) FAILED"*, each a rule written to release T's contracts, which §Release F as written leaves
+  to step 8. OR-9, three rows per account: `awsds-<env>-chain-exec` and `-chain-scheduler` with no
+  boundary and `awsds-<env>-chain-events` absent, which `terraform-modules/orchestration` writes so by
+  design (no role there touches data, and the pipeline creates none). OR-2, five rows and one count
+  per account: the groups `/aws/mwaa-serverless/<domain>-<project>/<workflow>`, created with each
+  CLI-made workflow (Staging's two at 2026-11-15 23:21, Production's three at 2026-11-16 02:31 to
+  02:32) and holding no retention, so D28 item 5's is unmet. The chains, the schedules `DISABLED` and
+  the failure rules pass.
+- **[Claude] xxix read in Production**: the run `wITFYNHoLyyEsev` `SUCCESS` from 03:19:16 to 03:33:45
+  (`transform` 149 s, `process` 490 s, `summarize` 6 s, `write_result` 11 s, `publish` 22 s), and the
+  execution `SUCCEEDED` at 03:36:15. Every parameter rendered: the Glue run `jr_d486b7fd3…`
+  `SUCCEEDED` with `--TABLE_DATABASE app_etl`, the job's `--conf` carrying a 12-digit
+  `spark.glue.accountId` and `transport.domainId=dzd-d8yrvx1ko7im6o`, its connections named after the
+  two subnets, and no `{env.`, `{proj.`, `{domain.` or `params.` left in its arguments; the processing
+  job `app-etl-20261116T032302` `Completed` on `awsds-prod-ecr-app-etl@sha256:e16283e0…`, in the two
+  subnets, its volume under the project's key.
+- **[user] The rules' rewrite and decision 27 authorized** (*"Sim, faça aqui"*), answering whether
+  Claude rewrites `orchestration.py`'s rules and writes a decision on the log groups' retention.
+- **[Claude] What the CLI's workflows carry**, read as `awsds-infra-prod` and `awsds-infra-staging`:
+  three workflows in Production and two in Staging, each `<application>_<project>_<workflow>`,
+  `READY`, `manual_only`, no cron. `get-workflow` on `app_etl_deploy_production_app_etl` and
+  `app_etl_deploy_staging_app_etl`: the role `datazone_usr_role_<project id>_<environment id>`, the log
+  group `/aws/mwaa-serverless/dzd-d8yrvx1ko7im6o-<project id>/<workflow>`, two subnets and one
+  security group, the definition in `awsds-<env>-smus-projects` under
+  `dzd-d8yrvx1ko7im6o/<project id>/shared/app-etl/workflows/` with no `VersionId`, and
+  `CUSTOMER_MANAGED_KEY`. The project role: under `awsds-<env>-project-boundary`, tagged
+  `AmazonDataZoneProject` and `AmazonDataZoneDomain`, its trust naming `airflow-serverless.amazonaws.com`
+  among eighteen service principals and the role `awsds-prod-smus-provisioning`, carrying `awsds-<env>-workflows`,
+  `awsds-<env>-person-session-deny`, in Production `awsds-prod-warehouse-load`, and three AWS managed
+  policies.
+- **[Claude] The groups with no retention in the targets**, `describe-log-groups`: in Production the
+  three workflow groups (02:31:49 to 02:32:13) and `datazone-d7qcazihvr3s7k-dev/error` and `/output`
+  (02:33:20, 02:33:49); in Staging the two workflow groups (2026-11-15, 23:21:03 and 23:21:15) and
+  `datazone-5ido8bej1zoeq8-dev/error` and `/output` (00:44:12, 00:44:50).
+- **[Claude] `aws/orchestration.py` rewritten to the CLI's contracts**: `OR-1` reads every workflow of a
+  target and fails one the CLI does not compose for the deployment project; `OR-2` the service's group
+  for each workflow and a retention on every `/aws/mwaa-serverless/` group; `OR-3` the project role, its
+  boundary, its trust and `<env>/studio/`'s policies, and fails a role named `awsds-<env>-wf-*`; `OR-4` a
+  failure rule matching each workflow's ARN; `OR-5` the definition under the project's `shared/` prefix;
+  `OR-9` the two chain roles with no managed policy (Lesson 72), the events role and the bridges gone.
+- **[Claude] `./aws/orchestration.py awsds-infra-prod awsds-infra-staging`** at 03:57:54Z on the new
+  rules: exit 2, *"5 CHECK(S) FAILED"*, each `OR-2`'s retention on one of the five workflow groups, every
+  other check passing. `get-workflow`'s `CodeSnapshottedAt` reads null on
+  `app_etl_deploy_production_app_etl_warehouse` alone.
+- **[Claude] Decision 27 written** (who sets the retention; recommended (b), the deploy, after a
+  `logs:PutRetentionPolicy` grant in both `foundation/` slices), `EXC-25` in `docs/AWS_STATE.md` naming
+  the five groups, and its row in `waiting-on-the-user.md`. Nothing changed in AWS.
+- **[Claude] `make status`** after the commit: `production/warehouse-compute` up, its workgroup
+  `awsds-prod-warehouse` `AVAILABLE`, created at 03:45:46 UTC by the infrastructure user's Terraform
+  1.16.6 (`CreateWorkgroup` in Production's trail), an apply this session did not run; the hub, GitLab
+  with its runners, `egress/` and `workloads-egress/` up; Staging's slices down. Estimated burn 1.9771
+  USD/h, 1.44 of it the warehouse's per-query-hour figure.
+- **[Claude] The user's question, whether decision 27's recommendation (b) follows what AWS intends.**
+  The pages read are in `docs/REFERENCES.md` under decision 27. Production's trail, read at 04:14 UTC:
+  `CreateLogGroup` on the three workflow groups at 02:31:49, 02:32:01 and 02:32:13 in the session of
+  `awsds-deploy-prod`, `invokedBy airflow-serverless.amazonaws.com`, each with a KMS key and no retention;
+  on `datazone-d7qcazihvr3s7k-dev/error` and `/output` at 02:33:20 and 02:33:49 by the project role, with
+  no key; the `UpdateWorkflow` calls from 02:50:53 to 02:51:20 naming each existing group in
+  `loggingConfiguration.logGroupName`. The CLI 1.0.9's code composes that name for an IAM Identity Center
+  domain (`build_idc_log_group_name`) and passes it in both calls: `SUP-254`'s *"passes no LogGroupName"*,
+  repeated by `EXC-21`, `EXC-25`, decision 27 and `aws/orchestration.py`, took the group's name for the
+  service's default. Corrected in each.
+- **[Claude] CloudWatch Logs' account-level retention policy**, read in both targets before 04:28:05 UTC:
+  `describe-account-policies --policy-type BOGUS_POLICY` refused with *"Member must satisfy enum value
+  set: [DATA_PROTECTION_POLICY, FIELD_INDEX_POLICY, VPC_FLOW_LOGS_POLICY, RETENTION_POLICY,
+  SUBSCRIPTION_FILTER_POLICY, TRANSFORMER_POLICY, METRIC_EXTRACTION_POLICY]"*, and `--policy-type
+  RETENTION_POLICY` answering `{"accountPolicies": []}` in Production and in Staging. The AWS provider
+  6.73.0, in a scratch configuration with no backend: `terraform validate` passes `METRIC_EXTRACTION_POLICY`
+  and refuses `RETENTION_POLICY` and `BOGUS_POLICY` alike, *"expected policy_type to be one of
+  ["DATA_PROTECTION_POLICY" "SUBSCRIPTION_FILTER_POLICY" "FIELD_INDEX_POLICY" "TRANSFORMER_POLICY"
+  "METRIC_EXTRACTION_POLICY"]"*. CloudFormation's `AWS::Logs::AccountPolicy` schema in us-west-2 lists the
+  same five types, and so does the AWS CLI 2.37.12's help.
+- **[Claude] The targets' groups**, `describe-log-groups` after it: `storedBytes` 0 on the five workflow
+  groups and the four DataZone groups, none with a retention; each target's `datazone-<project id>-dev`
+  carries 731 days.
+- **[Claude] Decision 27 revised**: the premise corrected, (a)'s two unmeasured behaviours answered
+  (`SUP-253`, the `UpdateWorkflow` calls, the key policy read in `kms.tf`), option (d) added, the
+  account-level retention policy, and the recommendation moved from (b) to (d) once the provider accepts
+  the type, with (c) until then. `waiting-on-the-user.md`'s row and `EXC-25` follow. Nothing changed in
+  AWS.
+- **[user] Decision 27 taken as (d)** (*"Vamos conforme sua recomendação"*). **[Claude]** recorded in the
+  stage file and its `Status` row, in `EXC-25` and a pointer in `EXC-10`, in `upstream-releases.md` (a
+  `watch` row on the `aws` provider and an item of the next reading) and in `CLAUDE.md`'s row;
+  `waiting-on-the-user.md`'s row removed. Nothing changed in AWS.
+- **[user] Step 9** (*"Seguir para o passo 9"*), the answer to the session's next step. **[Claude]** the
+  preconditions, read at 04:51 UTC as `awsds-infra-prod`: the workgroup `awsds-prod-warehouse`
+  `AVAILABLE`, base 4 and max 8 RPU, private; the `redshift-serverless` endpoint `available` with private
+  DNS; the machines `awsds-prod-chain-app-etl`, `-train` and `-warehouse`; one project role,
+  `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow`. `./aws/warehouse.py awsds-infra-prod --sql`: every
+  check passing, `WH-12` *"3 user-role grant(s)"*, no user for the project role. The three peer sessions
+  on the laptop were told first.
+- **[Claude] The admin's statements**, through `redshift-data` with the namespace's admin secret, in
+  `governed`: `CREATE USER "IAMR:datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow" PASSWORD DISABLE
+  NOCREATEDB NOCREATEUSER` `FINISHED` at 04:55:10 (20.97 s) and `GRANT ROLE gov_trades_rw TO` the same
+  user at 04:55:13 (0.59 s). Read back at 04:56 by `./aws/warehouse.py --sql`: the user in `pg_user`,
+  `usesuper` false, holding `gov_trades_rw`; `WH-12` *"4 user-role grant(s)"*. The register row is in
+  `docs/AWS_STATE.md`.
+- **[user] `production-warehouse-ddl`** of pipeline #129, green: the deploy image
+  `awsds-prod-ecr-deploy@sha256:9965f1b2…`, the infrastructure mirror at `ced09fe4`, the
+  `CREATE TABLE IF NOT EXISTS` `FINISHED` (`39abcaab-…`) and the count `FINISHED` (`898cdea1-…`),
+  *"IAMR:awsds-deploy-prod … 30"*.
+- **[Claude] xxxii's chain started by hand** at 05:00:10: `awsds-prod-chain-app-etl-warehouse`,
+  execution `step9-xxxii-20261116T050008-app-etl-warehouse`. **[Claude] The project role simulated** at
+  05:01 UTC, the worker's case of 2026-11-12 (the Region, the organization, the account and the role's
+  tags as context): `redshift-serverless:GetCredentials` and `GetWorkgroup` `allowed` by
+  `awsds-prod-warehouse-load`; `redshift-data:ExecuteStatement`, `GetStatementResult` and
+  `sqlworkbench:CreateConnection` `explicitDeny` by `awsds-prod-project-boundary`, row for row as then.
+- **[Claude] xxxii's chain failed** at 05:05:12 UTC, `WorkflowRunNotSucceeded`: the workflow run
+  `hsG55GRjw5rXgzc` `FAILED`, its task `load` failed at 05:03:02 on the Glue job run `jr_028b3ec7a139…`
+  (`FAILED`, 05:01:00 to 05:03:01). The job's output log: *"read 10 row(s) from
+  glue_catalog.app_etl.trades_notional"*, *"connecting to
+  jdbc:redshift://awsds-prod-warehouse.<account>.us-west-2.redshift-serverless.amazonaws.com:5439/governed
+  as IAMR:user-project@d7qcazihvr3s7k"*, then *"ERROR: permission denied for schema trades"*. The trail:
+  the job created at 05:00:59 by the task's session `AmazonMWAAServerless`; `GetCredentials` and
+  `GetWorkgroup` at 05:02:48 by the project role's `GlueJobRunnerSession`, through
+  `vpce-0b4195f2018bfbdf1`, no error. The database, read as the admin from 05:06: the user
+  `IAMR:user-project@d7qcazihvr3s7k` auto-created, holding no role; its one session, at 05:02:50, ran
+  `BEGIN`, a `DELETE FROM trades.trades_notional` refused *"permission denied for schema trades"*, and
+  `ROLLBACK`; the table still 30 rows, 2026-10-01 to 2026-10-05.
+- **[Claude] The cause**: the project role carries the tag `RedshiftDbUser = user-project@d7qcazihvr3s7k`,
+  the tag Stage 18 read on Staging's project role, and the Glue job's session carries no session tag, so
+  `GetCredentials` names the database user from the role's own tag. Act 7's `IAMR:<the project role's
+  name>` is the name 6h measured through the Data page, where the connection's access role carries that
+  value (`SUP-205`, `SUP-206`); Stage 9's log of 2026-10-25 records it as the access role's. The user
+  created at 04:55:10 holds `gov_trades_rw` and no session reaches it: Production's project has no
+  Redshift connection, so no access role. `gov_trades_rw` holds `USAGE` on `trades` and `SELECT`,
+  `INSERT`, `DELETE` on `trades.trades_notional`, owned by `IAMR:awsds-deploy-prod`, so the grant of that
+  role to the auto-created user is the fix.
+- **[user] The fix's three acts** (*"Autorizo os três atos"*). **[Claude]** the three peer sessions told
+  first; as the admin in `governed`: `GRANT ROLE gov_trades_rw TO "IAMR:user-project@d7qcazihvr3s7k"`
+  `FINISHED` at 05:18:35 (0.39 s), `REVOKE ROLE gov_trades_rw FROM
+  "IAMR:datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow"` at 05:18:37 (0.32 s) and `DROP USER` of the same
+  at 05:18:39 (0.20 s). Read back: the dropped user gone from `pg_user`, and `svv_user_grants`
+  `IAMR:user-project@d7qcazihvr3s7k` holding `gov_trades_rw`, `admin_option` false.
+- **[Claude] xxxii's chain again** at 05:19:12, execution `step9-xxxii-20261116T051910-app-etl-warehouse`
+  with the first run's input `{}`: `SUCCEEDED` at 05:24:14, the workflow run `3FYaeVb4I3M12N4` `SUCCESS`.
+  The Glue job run `jr_b9dad624951…` `SUCCEEDED`, 05:20:08 to 05:22:39 (126 s), on the job the first run's
+  task created; its output log: *"read 10 row(s) from glue_catalog.app_etl.trades_notional"*,
+  *"connecting to … as IAMR:user-project@d7qcazihvr3s7k"* and *"trades.trades_notional: 30 row(s)
+  deleted, 10 inserted, 10 counted for the load's dates, as IAMR:user-project@d7qcazihvr3s7k"*. The
+  trail: `GetWorkgroup` at 05:22:23 and `GetCredentials` at 05:22:24 by the project role's
+  `GlueJobRunnerSession`, through `vpce-0b4195f2018bfbdf1`, no error, `durationSeconds` 900. The
+  database: one session at 05:22:25 in `governed`, `BEGIN`, the `DELETE`, ten `INSERT`s, `COMMIT` and the
+  count. The table holds 10 rows, 2026-10-01 to 2026-10-05, two a day: release F's batch replaced Stage
+  9's 30 rows on the same dates, and the datashare serves the 10. `./aws/warehouse.py awsds-infra-prod
+  --sql` at 05:26: every check passing, `WH-12` *"4 user-role grant(s)"*. **xxxii reads yes**, the
+  refused doors by the simulation of 05:01.
+- **[user] Whether `production-register` of pipeline #129 runs.** **[Claude]** no, read at 05:35 UTC as
+  `awsds-infra-prod`: the job is Stage 10 step 5.2's registration of the newest completed
+  `app-etl-train-*` job, on no step of §N.8.4. Production's newest is `app-etl-train-20261025T070126`,
+  trained under `v0.4.2`, and `awsds-prod-chain-app-etl-train`, recreated at step 8, holds no execution;
+  `awsds-prod-model-app-etl` holds version 1, `Approved`, *"app-etl v0.4.2, trained by
+  app-etl-train-20261025T011858"*. With `--project` the job reads that training job's evaluation under
+  `deploy-production`'s shared prefix, where it never wrote, so it would fail. `production-register`,
+  `production-approve` and `production-transform` stay `manual`, as in release T's pipeline.
+- **[user] The sitting's downs** (*"Downs concluídos"*), as handed: `make down ENV=production
+  ONLY=workloads-egress,warehouse-compute`, `make gitlab-down`, the tunnel and `make hub-down`.
+  **[Claude] §R's readings** at 05:50 UTC as the infrastructure user: `./aws/egress.py` on Production,
+  Staging and Sandbox Account 1, every check passing, the burn meter 0 interface endpoints, 0 NAT gateways
+  and 0.000 USD/h in each; `make status`: `vpn`, `proxy` and `tooling` stopped, every `[E]` slice down,
+  the estimated burn 0.0000 USD/h. Production holds no workgroup and no running instance, and the three
+  schedules of `awsds-prod-chains` read `DISABLED`.
+
+## 2026-11-16 — release G's sitting: step 1, `app-etl-dev`'s data product deleted
+
+- **[user] Release G's step 1** (*"Sim, passo 1"*). **[Claude]** read first as `awsds-infra-sandbox-1`:
+  `trades-notional` (`5070mjwdvjwp3k`) owned by `app-etl-dev`, revision 1, `CREATED`, created 2026-11-15,
+  one item, the asset `c6z3pbg3drrs0g`; no data product listing in the domain, the one listing named
+  `trades_notional` being Production's asset (`5hpftif3nnoj2o`, owned by `deploy-production`). Per project,
+  each read as the profile whose session belongs to it: `deploy-production` and `deploy-staging` hold no
+  data product, `eighth-experimentation` holds `my-data-product`. The runbook's read-back,
+  `search --search-scope DATA_PRODUCT --search-text trades-notional`, answered `ValidationException`,
+  *"OwningProjectId is mandatory for SearchScope - DATA_PRODUCT"*, and a search in a project the session
+  is not a member of answered `AccessDeniedException` (`SUP-371`).
+- **[user] The delete** (*"Apaguei"*), the runbook's command. **[Claude]** the trail: `DeleteDataProduct`
+  on `5070mjwdvjwp3k` at 06:03:08 UTC, a shared event in Data Governance's trail whose caller is an assumed
+  role of Sandbox Account 1, the infrastructure user's `InfrastructureAccess` session, CLI 2.37.12, no
+  error. That session is a `PROJECT_CONTRIBUTOR` of `app-etl-dev` through its group profile `839bcde8-…`,
+  so DataZone admits a contributor's delete. Read at 06:03:35: `get-data-product` `ResourceNotFoundException`,
+  *"Requested dataProduct cannot be found in domain"*; `app-etl-dev`'s data product search empty; the asset
+  `c6z3pbg3drrs0g` at revision 5; the listings unchanged.

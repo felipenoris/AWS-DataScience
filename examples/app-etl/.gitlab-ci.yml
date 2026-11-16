@@ -362,7 +362,8 @@ staging-check:
 # on a workflow with no network of the project's, on a catalog import that failed an item and on a
 # workflow it cannot find afterwards; then it records the stage's variables, which the chains pass to
 # each run. A target's first import is admitted and left to staging-catalog (Stage 19 decision 25):
-# the data product it failed waits for the project's own asset, and STAGING_CATALOG_PENDING says so. The bundle sits beside the clone, never inside it: a job that downloads a file before
+# the import creates no asset in the project, whose own source creates it, and STAGING_CATALOG_PENDING
+# says so. The bundle sits beside the clone, never inside it: a job that downloads a file before
 # cloning the mirror into infrastructure/ finds that folder not empty (refused 2026-10-24, v0.3.2's
 # job 325).
 staging-deploy:
@@ -436,7 +437,8 @@ staging-test:
 # domain (SUP-369), so the project's asset comes from its own source, once staging-test's run has written
 # the product table. Where staging-deploy admitted the first import, the job starts the project's source
 # as the deploy role, waits for the bundle's asset in the project and deploys the same bundle again,
-# failing on any failed item; otherwise it ends at once.
+# failing on any failed item and on an asset whose creation is still a conflict; otherwise it ends at
+# once.
 staging-catalog:
   extends: .promotion
   stage: staging
@@ -507,7 +509,7 @@ production-gate:
 # which the job reads first, as staging-check reads Staging's (decision 27), and never raises. The
 # `prod` stage's bootstrap creates the warehouse workflow too and then runs app-etl, following its log
 # to the run's end (Stage 19 decision 14): the deploy fails with the run, and a release that passes
-# leaves the product table written and its listing ACTIVE.
+# leaves the product table written, its listing ACTIVE and its data product listed (decision 26 (b)).
 production-deploy:
   extends: .promotion
   stage: production

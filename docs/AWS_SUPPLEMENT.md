@@ -75,7 +75,7 @@ entry is still true is the reading.
 | [The SMUS CI/CD CLI](#the-smus-cicd-cli) | `aws-smus-cicd-cli` 1.0.9: manifests and their variables, bundles, workflow names, the pre-deployment validation, what `deploy` reads and creates |
 | [Bedrock](#bedrock) | Inference profiles and their authorization; retention modes; agreements and the use-case form; CloudTrail and CloudWatch for invocations |
 | [Terraform](#terraform) | `validate`, `init`, locks and credentials; the `aws` provider's read-backs, drift and replacements; `awscc` and Cloud Control; checkov |
-| [The AWS CLI](#the-aws-cli) | `--query` under pagination; a global flag that shadows a parameter |
+| [The AWS CLI](#the-aws-cli) | `--query` under pagination; a global flag that shadows a parameter; a `file://` document in a list parameter |
 | [Clients and the egress proxy](#clients-and-the-egress-proxy) | WireGuard on macOS and Linux; Chrome's Local Network Access; Squid's matching and refusals; VS Code and Open VSX behind a proxy |
 
 ## IAM and STS
@@ -2001,7 +2001,12 @@ entry is still true is the reading.
   (`SUP-360`, measured 2026-11-14): version 12 names `GetGroupProfile`, and no version names
   `GetProjectProfile`. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-10-30;
   `log-stage-06f-data-governance.md`, 2026-09-18, 2026-10-18 and 2026-10-26;
-  `log-stage-19-smus-native-data-product.md`, 2026-11-11; `aws/catalog.py`.
+  `log-stage-19-smus-native-data-product.md`, 2026-11-11; `aws/catalog.py`. Read again 2026-11-16 (Stage
+  19 release F): Data Governance's `InfrastructureAccess`, no member of `deploy-staging`, read its source's
+  runs and their activities (`ListDataSourceRuns`, `ListDataSourceRunActivities`), each run's `added` count
+  among them, and was refused a `Search` of the assets the project owns, *"User is not permitted to perform
+  operation: Search"*. A non-member reads whether a project's source has added an asset, never the asset.
+  Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 - `SUP-158` **An IAM role in a DataZone domain is a group and one user profile per session name, and a
   policy grant takes the group.** Its ARN resolves as a user identifier to one session's user profile, and
@@ -2839,6 +2844,17 @@ entry is still true is the reading.
   asset first and the source right after, before the source's next scheduled run imports the table again.
   Where: `log-stage-19-smus-native-data-product.md`, 2026-11-14; Stage 19's sitting step 8.
 
+- `SUP-371` **`Search` refuses the `DATA_PRODUCT` scope without an owning project, so no identity reads a
+  data product's name across a domain** (measured 2026-11-16, Stage 19 release G step 1). `aws datazone
+  search --search-scope DATA_PRODUCT --search-text trades-notional` answered `ValidationException`,
+  *"OwningProjectId is mandatory for SearchScope - DATA_PRODUCT"*, while the service model the CLI 2.37.12
+  carries marks `--owning-project-identifier` optional. With a project, a non-member's search is
+  `AccessDeniedException`: the infrastructure profiles of Sandbox, Staging and Production each read only the
+  projects their sessions belong to. A data product's name is the domain's (`SUP-369`), so the
+  domain-wide answer to "is this name free" is the create's conflict, and a reading per project covers only
+  the projects the reader is a member of. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-16;
+  `runbooks/promotion.md` §N.8.5 step 1.
+
 ### Connections
 
 - `SUP-199` **A portal S3 connection over an already registered Access Grants location needs none of the
@@ -2909,8 +2925,8 @@ entry is still true is the reading.
   key, so the role's value can be live and irrelevant at once. Where: `log-stage-06h` (2026-10-10), 6h
   decision 8a.
 
-- `SUP-205` **Two doors into one database resolve to two different database users, one per project and one
-  per person** (measured 2026-10-10). The same warehouse, the same schema, the same project: through the
+- `SUP-205` **The door into one database decides the database user, one per project or one per person**
+  (measured 2026-10-10). The same warehouse, the same schema, the same project: through the
   portal's Data page the grantee is `IAMR:<the project role's name>`, set by the access role's
   `RedshiftDbUser` tag; through JupyterLab, where the project role reaches `5439` directly, Redshift
   auto-creates `IAMR:user-<Identity Center user id>@<project id>` holding nothing. So a `GRANT` written for
@@ -2928,7 +2944,15 @@ entry is still true is the reading.
   per person with no role and failed *"permission denied for schema lab"*. `transitiveTagKeys` read `None`
   on both assumes, so the space's per-person `RedshiftDbUser` session tag does not follow the chain and the
   access role's own tag decides the user. Where: `log-stage-06h-redshift-connection.md`, 2026-10-11 entries;
-  `AWS_STATE.md`'s Redshift register.
+  `AWS_STATE.md`'s Redshift register. A third door, read 2026-11-16 in Production (Stage 19 step 9): a Glue
+  job running as a deployment project's role, whose `GlueJobRunnerSession` carries no session tag,
+  connected as `IAMR:user-project@<project id>`, the value of the `RedshiftDbUser` tag DataZone writes on
+  the project role. Redshift auto-created that user holding nothing, and the job's `DELETE` failed
+  *"permission denied for schema trades"*, while the user granted under the role's name,
+  `IAMR:datazone_usr_role_<project>_<environment>`, saw no session; with `gov_trades_rw` granted to the
+  auto-created user the next run deleted 30 rows and inserted 10. That name is per project and known
+  before the first connection, so it can be created ahead. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-16.
 
 - `SUP-206` **`RedshiftDbUser` decides the database user, and Redshift prefixes its value with `IAMR:`**
   (measured 2026-10-10). The tag on the access role carried the project role's *name*, and the session ran
@@ -3405,17 +3429,25 @@ entry is still true is the reading.
   one, the newest by `CreatedAt` here. Where: `log-stage-06i-sandbox-orchestration.md`, 2026-10-10;
   `aws/sandbox-orchestration.py`.
 
-- `SUP-254` **A workflow created without `LogGroupName` gets
-  `/aws/mwaa-serverless/<domain>-<project>/<workflow>` with no retention, and the group outlives the
-  workflow** (measured 2026-10-10 in Sandbox, Stage 6i, and 2026-10-20 in Staging, Stage 18). The CI/CD CLI
-  1.0.9 passes no `LogGroupName`, and each workflow it deployed in Staging got such a group with no
-  retention: `app_etl_deploy_staging_app_etl`, `dagid_copy_deploy_staging_app_etl` and
+- `SUP-254` **MWAA Serverless creates a workflow's log group,
+  `/aws/mwaa-serverless/<domain>-<project>/<workflow>`, at `CreateWorkflow` with no retention, and the
+  group outlives the workflow** (measured 2026-10-10 in Sandbox, Stage 6i, 2026-10-20 in Staging, Stage 18,
+  and 2026-11-16 in Production, Stage 19). Each workflow the CI/CD CLI 1.0.9 deployed in Staging got such a
+  group with no retention: `app_etl_deploy_staging_app_etl`, `dagid_copy_deploy_staging_app_etl` and
   `orchestration_demo_deploy_staging_demo_python_operator`, read by `describe-log-groups` at 22:19:18Z, the
-  last two after their workflows were deleted. In Sandbox, deleting four portal workflows on 2026-10-10 took
-  their run history with them and left their log groups, `MyWorkflow`'s holding 21,448 bytes. A deleted
-  workflow's run evidence lives only in its group, and a retention rule has to be set on the group itself.
-  Where: `log-stage-06i-sandbox-orchestration.md`, 2026-10-10; `log-stage-18-staging-deployment-project.md`,
-  2026-10-20; `docs/AWS_STATE.md` `EXC-21`.
+  last two after their workflows were deleted. That reading took the name for the service's default and
+  recorded that the CLI passes no `LogGroupName`; the CLI passes it (below). In Sandbox, deleting four
+  portal workflows on 2026-10-10 took their run history with them and left their log groups, `MyWorkflow`'s
+  holding 21,448 bytes. A deleted workflow's run evidence lives only in its group, and a retention rule has
+  to reach the group itself. Read again 2026-11-16 in Production: for an IAM Identity Center domain the CLI
+  composes the name (`build_idc_log_group_name`) and passes it in `CreateWorkflow` and `UpdateWorkflow`.
+  The trail shows `CreateLogGroup` on each group in the deploy role's session, `invokedBy
+  airflow-serverless.amazonaws.com`, with the project key and no retention (02:31:49 to 02:32:13 UTC), and
+  the `UpdateWorkflow` calls of 02:50:53 to 02:51:20 naming the existing groups succeeded. The project's
+  `datazone-<project>-dev/error` and `/output` groups are created by the project role itself, with no key
+  and no retention. Where: `log-stage-06i-sandbox-orchestration.md`, 2026-10-10;
+  `log-stage-18-staging-deployment-project.md`, 2026-10-20; `log-stage-19-smus-native-data-product.md`,
+  2026-11-15; `docs/AWS_STATE.md` `EXC-21`, `EXC-25`.
 
 - `SUP-255` **The portal's workflow editor demands `ContainerArguments` on a SageMaker Processing task,
   which `CreateProcessingJob` does not, and its form has no field for the job's network, keys or tags**
@@ -3571,9 +3603,11 @@ entry is still true is the reading.
   `app-etl-train` under a project role, `W373uHP9ZB5EvsW` in `deploy-staging`, failed on
   `DescribeTrainingJob` of a free name, *"no identity-based policy allows"*; v48 scopes
   `DescribeTrainingJob` to the caller's project tag as it scopes `DescribeProcessingJob`. The deployment
-  projects' grant holds the same pair for training jobs (`<env>/studio/workflows.tf`); whether
-  `CreateTrainingJob` with its tag is authorized as `AddTags`, as the processing job's create is, is read
-  in the run after that grant. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
+  projects' grant holds the same pair for training jobs (`<env>/studio/workflows.tf`). With it applied,
+  `v0.5.2`'s run created `app-etl-train-20261116T020100`, `Completed` (pipeline #129's `staging-test`);
+  the pair grants `AddTags` too, so the pass does not separate whether `CreateTrainingJob` with its tag
+  is authorized as `AddTags`, as the processing job's create is. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 - `SUP-268` **The Amazon provider 9.32.0's SageMaker and Glue operators read the job name before they create
   the job, and count only one error code as absent** (read in the provider's code at
@@ -3643,6 +3677,13 @@ entry is still true is the reading.
   save** (measured 2026-10-11, Stage 6i step 3.8). `get-workflow-run` read `QUEUED` until 23:06:16Z while
   the sensor had finished at 23:05:23Z, and `/aws/mwaa-serverless/<domain>-<project>/<workflow>` existed,
   empty and with no retention, before any run. Where: `runbooks/serverless-workflows.md` §V and §O.
+  Read again 2026-11-16 in Staging through the chain machines' `getWorkflowRun`, one poll a minute (Stage
+  19 release F). `app-etl`'s run read `QUEUED` with no `StartedOn` at 00:43:52 and 00:44:52, then
+  `RUNNING` with a `StartedOn` of 00:43:14; it still read `RUNNING` at 00:56:55, after a `CompletedOn` of
+  00:56:49, and `SUCCESS` at 00:57:55. `app-etl-train`'s run, started 00:58:24 and completed 00:59:22, read
+  `QUEUED` at 00:59:15 and 01:00:15 and `FAILED` at 01:01:16, with a `ModifiedAt` of 01:00:23; it never read
+  `RUNNING`. A run shorter than the lag goes from `QUEUED` to its end, and the end is written about a
+  minute after `CompletedOn`. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 - `SUP-274` **On an MWAA Serverless worker a Python task imports a pre-installed package before the code
   archive's copy, while a Bash task's `python3` imports the archive's copy first** (measured 2026-10-11,
@@ -3865,9 +3906,11 @@ entry is still true is the reading.
   failed is a successful deploy. A leg that promotes a catalog reads the `Failed:` count from the log, or
   the target project's assets afterwards. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11.
 
-- `SUP-369` **A catalog import creates no asset in a second project of the domain: `CreateAsset` with the
-  source's `externalIdentifier` is a `ConflictException`, which the CLI 1.0.9 counts as an update, so the
-  data product over it fails** (measured 2026-11-15, Stage 19 release F, pipeline #123's `staging-deploy`).
+- `SUP-369` **A catalog import creates neither the asset nor the data product in a second project of the
+  domain: `CreateAsset` with the source's `externalIdentifier` and `CreateDataProduct` with the source's
+  name are each a `ConflictException`, which the CLI 1.0.9 counts as an update** (measured 2026-11-15,
+  Stage 19 release F, pipeline #123's `staging-deploy`; the data product 2026-11-16, pipeline #129's
+  `staging-catalog`).
   The import of `app-etl-dev`'s `trades_notional` into `deploy-staging` called `CreateAsset` with the
   source's `externalIdentifier` unchanged, `arn:aws:glue:us-west-2:<Sandbox>:table/app_etl/trades_notional.<app-etl-dev's
   project id>`, and DataZone answered `ConflictException`, CloudTrail carrying no `errorMessage`.
@@ -3881,6 +3924,18 @@ entry is still true is the reading.
   (`SUP-357`). A target's asset can therefore come only from its own source; a later import maps the
   source's asset to it by name, `_build_identifier_map`'s fallback (read in the code, not measured).
   Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
+  Read again 2026-11-16 (pipeline #129's `staging-catalog`, `v0.5.2`'s `--catalog-follow-up`): the
+  target's source, started by the deploy role at 02:07:53 UTC, imported `trades_notional` (run
+  `cntcrgrt3c22og`, `added: 1`), and the second import remapped the `DataSourceReferenceForm` to that
+  source and revised the target's asset `as6m73yp8shr80` by name, `CreateAssetRevision` to revision 2,
+  with no `CreateAsset`. The data product failed on its name: `CreateDataProduct` in `deploy-staging` over
+  `as6m73yp8shr80` answered `ConflictException`, *"Conflict with dataProduct 5070mjwdvjwp3k"*,
+  `app-etl-dev`'s product of the same name; `CreateDataProduct`'s prerequisites state a data product's
+  name unique within the domain. The CLI logged *"Resource trades-notional already exists
+  (ConflictException), treating as update"*, the summary read *"0 created, 2 updated, 0 skipped (extra in
+  target), 0 failed, 0 published"*, and `deploy-application.py` passed. A data product the CLI promotes
+  between projects of one domain reaches no target while the source holds it, and the summary counts the
+  miss as an update. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15; Stage 19 decision 26.
 
 ## Bedrock
 
@@ -4361,6 +4416,15 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   `--version-number`; `--version` behaves as the CLI's global flag. A script that passes it receives a
   version string and a success code, and no image version, so a check built on it can neither pass nor fail
   on the image. Where: `log-stage-08-cicd-pipelines.md`, 2026-10-12.
+
+- `SUP-370` **The AWS CLI passes a `file://` document to `--policy-input-list` as one member per character**
+  (measured 2026-11-16 with aws-cli 2.37.12, Stage 19). `iam simulate-principal-policy --policy-input-list
+  file://<document>` was refused *"1 validation error detected: Value '[{, ", V, e, r, s, i, …]' at
+  'policyInputList' failed to satisfy constraint: Member must have length less than or equal to 10"*,
+  whether the document held one line or several. The same document passed as the argument's text,
+  `"$(cat <document>)"`, was read as one policy, the matched statement's `SourcePolicyId` being
+  `PolicyInputList.1`. The parameter is a list of strings, and the file's content reaches it as one string
+  the CLI iterates (inferred from the error). Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 ## Clients and the egress proxy
 

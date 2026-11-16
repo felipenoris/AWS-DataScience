@@ -1,7 +1,6 @@
 {
   "required": {
-    "assets": ["trades_notional"],
-    "dataProducts": ["trades-notional"]
+    "assets": ["trades_notional"]
   },
   "allowed": {
     "formTypes": ["classification"]

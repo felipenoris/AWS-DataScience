@@ -733,6 +733,10 @@ flowchart LR
 
 - **Publish is a catalog act.** *Publish to Catalog* creates an asset and a listing; a data product
   groups assets under one listing. Neither touches Glue, Lake Formation or S3 (measured 2026-09-13).
+- **A data product's name is the domain's.** `CreateDataProduct` refuses a name another project holds,
+  as its API reference states, and every stage shares the one domain: a promoted product's data product
+  belongs to one project, Production's for Stage 19's (decision 26 (b); measured 2026-11-16,
+  `SUP-369`).
 - **Business metadata is the owner project's.** Business names and descriptions, glossary terms,
   metadata forms and the README are edited on the asset by the project that owns it; a glossary is owned
   by the project that creates it and visible to the domain (Stage 6f 4.2). A published asset showed no

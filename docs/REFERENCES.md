@@ -801,6 +801,11 @@
   <https://docs.aws.amazon.com/datazone/latest/userguide/configure-subscription-target-in-custom-environment.html>,
   <https://docs.aws.amazon.com/datazone/latest/userguide/datazone-concepts.html>,
   <https://docs.aws.amazon.com/datazone/latest/userguide/working-with-blueprints.html>.
+- `CreateDataProduct`'s prerequisites (re-read 2026-11-16, for Stage 19 decision 26 and `SUP-369`): a data
+  product's name unique within the domain, no existing data product of the same name; the reference's
+  duplicate example answers `ConflictException`, *"Conflict with dataProduct <id>"*:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateDataProduct.html>,
+  <https://docs.aws.amazon.com/boto3/latest/reference/services/datazone/client/create_data_product.html>.
 - Metadata forms in SageMaker Unified Studio (read 2026-11-08, for Stage 19 decision 4 and 1.3): a form
   created from *Manage → Catalog management → Metadata forms*, enabled by default, its field types
   `String`, `Integer`, `Long`, `Float`, `Double`, `Boolean`, `Date` and `Business glossary`, none
@@ -3473,6 +3478,26 @@
   AWS Security's e-mail address, which the page names, for a submission outside it; a human acknowledgement within 24 hours; no
   support plan named; nothing disclosed publicly before AWS addresses the report:
   <https://aws.amazon.com/security/vulnerability-reporting/>.
+
+- **The retention of the log groups MWAA Serverless creates, and CloudWatch Logs' controls for it (read
+  2026-11-16, for [Stage 19](plan/stages/stage-19-smus-native-data-product.md) decision 27).** A
+  workflow's execution role sends task logs to a log group the customer provides:
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/get-started-execution-role.html>;
+  `CreateWorkflow`'s `LoggingConfiguration` is optional, and `LogGroupName` is required within it:
+  <https://docs.aws.amazon.com/mwaa-serverless/latest/APIReference/API_CreateWorkflow.html>,
+  <https://docs.aws.amazon.com/mwaa-serverless/latest/APIReference/API_LoggingConfiguration.html>. A log
+  group keeps its events indefinitely by default, and an account-level retention policy
+  (`PutAccountPolicy` with `RETENTION_POLICY`: the whole account or log group name prefixes, up to 20 per
+  Region, 30 to 3653 days or `NEVER_EXPIRE`, `RETROACTIVE` or `NEW_ONLY`, in effect 24 hours after it is
+  put) replaces a group's own retention in both directions:
+  <https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/Working-with-log-groups-and-streams.html>,
+  <https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutAccountPolicy.html>.
+  AWS's baseline control asks 365 days by default and passes a group that never expires:
+  <https://docs.aws.amazon.com/config/latest/developerguide/cw-loggroup-retention-period-check.html>,
+  <https://docs.aws.amazon.com/securityhub/latest/userguide/cloudwatch-controls.html> (`CloudWatch.16`).
+  The older remediation, an EventBridge rule on `CreateLogGroup` starting a Lambda function that sets the
+  retention, existing groups included (AWS blog, 2022):
+  <https://aws.amazon.com/blogs/infrastructure-and-automation/reduce-log-storage-costs-by-automating-retention-settings-in-amazon-cloudwatch>.
 
 ## Databricks
 
