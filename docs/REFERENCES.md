@@ -2786,6 +2786,48 @@
   `protobuf>=6.0` and `sqlparse>=0.5.5` and `dbt-athena` 1.11.1's `mmh3<4.2.0`:
   <https://raw.githubusercontent.com/apache/airflow/constraints-3.0.6/constraints-3.12.txt>.
 
+- **The task cap, a job past it, and a job's network (read 2026-11-16, for
+  [Stage 20](plan/stages/stage-20-dbt-lineage.md) steps 0.10, 0.12 and 0.14 and decisions 1, 2 and
+  13).** MWAA Serverless's pages, re-read in their Markdown form: the quotas table has two columns,
+  Resource and Default, a row *Maximum task execution timeout* of 60 minutes and no word on which quota
+  is adjustable beyond *"You can request increases for some quotas, but other quotas can't be
+  increased."*; the parameters page caps `execution_timeout` at 3,600 seconds, `retries` at 3 and
+  `retry_delay` at 300 seconds and names neither `wait_for_completion` nor a sensor's `mode`,
+  `poke_interval` or `timeout`; the operators page lists `GlueJobSensor` and
+  `SageMakerProcessingSensor`:
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/mwaa-serverless-quotas.html>,
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/supported-airflow-parameters.html>,
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators.html>.
+  Airflow's released wheels, read in their code: `apache-airflow-task-sdk` 1.0.6 (2025-08-29), whose
+  task runner fails a task for good on `AirflowSensorTimeout` and retries one ended by
+  `AirflowTaskTimeout`, and `apache-airflow-providers-amazon` 9.38.0 (2026-10-17), whose
+  `SageMakerProcessingOperator` has no `on_kill` and whose `GlueJobOperator` takes
+  `resume_glue_job_on_retry`:
+  <https://pypi.org/pypi/apache-airflow-task-sdk/1.0.6/json>,
+  <https://pypi.org/pypi/apache-airflow-providers-amazon/9.38.0/json>.
+  `dbt-glue`, with no release for dbt Core 1.11 (1.10.19 of 2026-02-18, then 1.12.3 and 1.12.4), and
+  `dbt-spark` 1.11.0 (2026-07-16), whose `session` extra asks `pyspark`:
+  <https://pypi.org/pypi/dbt-glue/json>, <https://pypi.org/pypi/dbt-spark/json>.
+  A processing job in a VPC, *"This allows the processing job to connect to resources that exist in
+  your VPC."*, on a page that names network isolation nowhere:
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/process-vpc.html>. Network isolation, re-read: the
+  page names `CreateTrainingJob`, `CreateHyperParameterTuningJob` and `CreateModel` and no processing
+  job, *"No AWS credentials are made available to the container runtime environment."* and *"Network
+  isolation can be used in conjunction with a VPC."*:
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/mkt-algo-model-internet-free.html>.
+
+- **What the Tooling blueprint lets an administrator add to a project role (read 2026-11-16, for the
+  user's question on a workflows grant for every project,
+  [Stage 20's log](log/log-stage-20-dbt-lineage.md)).** The managed blueprint's page lists ten
+  parameters, `enableNetworkIsolation` among them (*"Enables network isolation for training and
+  deployed inference containers."*), none adding a policy to a role it creates, and the regional
+  parameter `PermissionsBoundaryArn`, whose boundary the service attaches *"to all IAM roles
+  provisioned by the Tooling blueprint during project creation"*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/manage-tooling-blueprint.html>.
+  A custom Tooling blueprint's template creates the project role in an Identity Center domain
+  (*"your template creates the project role itself"*), and *"You can create a project with a project
+  profile that uses a custom Tooling blueprint only by using the API."*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/tooling-custom-blueprints.html>.
 - **A third party's test of lineage in an IAM-based domain (Classmethod, 2026-07-12, read 2026-11-08, for
   [Stage 20](plan/stages/stage-20-dbt-lineage.md) decision 3).** An event posted by hand showed in the
   portal only after a dataset took the namespace `arn:aws:glue:<region>:<account>:table` and the name
