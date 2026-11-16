@@ -39,12 +39,15 @@
 # (SUP-357); and each workflow the stage's bootstrap creates found by its name.
 #
 # A target's first import is the one exception (Stage 19 decision 25). The import creates no asset in
-# a second project of the domain, so the data product over the source's asset fails (SUP-369), and the
-# target's asset comes only from its own source, once a run has written the table. The deploy admits
-# that failure alone: every failed item a data product refused as "not from same project", beside the
-# asset's conflict. It records the stage's variables and writes <PREFIX>_CATALOG_PENDING=true, and the
-# leg's catalog job runs --catalog-follow-up after the run: the project's source started and followed,
-# the bundle's assets found in the project, then the same deploy, which admits nothing.
+# a second project of the domain: DataZone refuses the creation as a conflict, which the CLI counts as
+# an update (SUP-369), and the target's asset comes only from its own source, once a run has written
+# the table. The deploy admits that import alone: an asset of the bundle's catalog named in a
+# conflict, and every failed item a data product refused as "not from same project", which only a
+# bundle whose export carries a data product has (release F's; decision 26 leaves it out). It records
+# the stage's variables and writes <PREFIX>_CATALOG_PENDING=true, and the leg's catalog job runs
+# --catalog-follow-up after the run: the project's source started and followed, the bundle's assets
+# found in the project, then the same deploy, which admits nothing. A data product's conflict names
+# no asset of the bundle's and is no first import.
 #
 # The stage's variables are recorded last. The CLI writes each `{env.VAR}` of a workflow into the
 # deployed definition as a parameter and fills it on a run it starts; a chain's machine fills it from
@@ -92,8 +95,9 @@ WORKFLOW_VARIABLE = re.compile(r"\{env\.([A-Za-z0-9_]+)\}")
 NETWORK_LINE = "Tooling VPC config"
 IMPORT_HEADER = "Catalog import completed"
 IMPORT_FAILED = re.compile(r"^\s*Failed:\s*(\d+)\s*$", re.MULTILINE)
-# A target's first import (SUP-369): the CLI's line for each item it failed, its line for the asset
-# whose creation DataZone refused, and DataZone's answer to the data product over the source's asset.
+# A target's first import (SUP-369): the CLI's line for each item it failed, its line for each
+# resource whose creation DataZone refused as a conflict (an asset or a data product, told apart by
+# the bundle's asset names), and DataZone's answer to a data product over the source's asset.
 FAILED_ITEM = re.compile(r"Failed to import (\w+) (.+?): (.+)$", re.MULTILINE)
 ASSET_CONFLICT = re.compile(
     r"Resource (\S+) already exists \(ConflictException\), treating as update"
@@ -216,36 +220,50 @@ def created_workflows(manifest: dict, stage: str) -> list:
     return names
 
 
-def read_log(log: str, carries_catalog: bool, admit: bool) -> tuple:
+def read_log(log: str, assets: list | None, admit: bool) -> tuple:
     """What the deploy's log says beyond the exit status: the problems, none when it reads clean,
-    and whether the catalog waits for a second import. With `admit`, a target's first import
-    (SUP-369) is no problem: every failed item a data product refused as not from the project,
-    beside the conflict on the asset's creation."""
+    and whether the catalog waits for a second import. `assets` is the bundle's catalog's asset
+    names, None when it carries no catalog. With `admit`, a target's first import (SUP-369) is no
+    problem: an asset of the bundle's named in a conflict on its creation, and every failed item a
+    data product refused as not from the project. Without it, that conflict is a problem: the
+    import revised no asset of that name."""
     problems, pending = [], False
     if NETWORK_LINE not in log:
         problems.append(
             f'no "{NETWORK_LINE}" line: the workflows carry no network from the Tooling environment'
         )
-    if carries_catalog:
+    if assets is not None:
         if IMPORT_HEADER not in log:
             problems.append("the bundle carries a catalog and the log reports no import of it")
         else:
             counts = IMPORT_FAILED.findall(log[log.index(IMPORT_HEADER) :])
             if not counts:
                 problems.append("the catalog import's summary carries no Failed: count")
-            elif int(counts[0]) != 0:
+            else:
+                failed_count = int(counts[0])
                 failed = FAILED_ITEM.findall(log)
+                conflicted = sorted(set(ASSET_CONFLICT.findall(log)) & set(assets))
                 first_import = (
                     admit
-                    and len(failed) == int(counts[0])
+                    and bool(conflicted)
+                    and len(failed) == failed_count
                     and all(k == "dataProducts" and NOT_SAME_PROJECT in w for k, _, w in failed)
-                    and ASSET_CONFLICT.search(log) is not None
                 )
                 if first_import:
                     pending = True
-                else:
-                    problems.append(f"the catalog import failed {counts[0]} item(s)")
+                elif failed_count != 0:
+                    problems.append(f"the catalog import failed {failed_count} item(s)")
+                elif conflicted:
+                    problems.append(
+                        f"the catalog import revised no asset {', '.join(conflicted)}: DataZone "
+                        "refused its creation as a conflict, and the project holds none of that name"
+                    )
     return problems, pending
+
+
+def export_assets(export: dict) -> list:
+    """The asset names of a bundle's catalog export."""
+    return sorted(a["name"] for a in export.get("assets", []) if a.get("name"))
 
 
 def list_workflows(region: str) -> dict:
@@ -425,7 +443,7 @@ def follow_up(args: argparse.Namespace) -> int:
         if CATALOG_EXPORT not in z.namelist():
             raise DeployError("the bundle carries no catalog: there is no second import to make")
         export = json.loads(z.read(CATALOG_EXPORT))
-    assets = sorted(a["name"] for a in export.get("assets", []) if a.get("name"))
+    assets = export_assets(export)
     print(f"== the second import of {args.tag} into {project['project_name']}: {', '.join(assets)}")
     run_source(domain, region, product_source(domain, region, project["project_id"], database))
     wait_for_assets(domain, region, project["project_id"], assets)
@@ -510,8 +528,10 @@ def deploy(args: argparse.Namespace, admit: bool) -> int:
         tree = Path(tmp)
         names = unpack(args.bundle, tree)
         (tree / "manifest.yaml").write_text(manifest_text, encoding="utf-8")
-        carries_catalog = CATALOG_EXPORT in names
-        catalog = "a catalog export" if carries_catalog else "no catalog export"
+        assets = None
+        if CATALOG_EXPORT in names:
+            assets = export_assets(json.loads((tree / CATALOG_EXPORT).read_text(encoding="utf-8")))
+        catalog = "no catalog export" if assets is None else "a catalog export"
         print(f"== the bundle of {args.tag}: {len(names)} file(s), {catalog}")
         command = [
             cli,
@@ -546,7 +566,7 @@ def deploy(args: argparse.Namespace, admit: bool) -> int:
         args.log.write_text(log, encoding="utf-8")
     if status != 0:
         raise DeployError(f"the CLI's deploy exited {status}")
-    problems, pending = read_log(log, carries_catalog, admit)
+    problems, pending = read_log(log, assets, admit)
 
     deployed = list_workflows(region)
     for name in expected:
@@ -559,8 +579,9 @@ def deploy(args: argparse.Namespace, admit: bool) -> int:
     print(f"== the workflows: {', '.join(expected)}")
     if pending:
         print(
-            "== the catalog's first import in this project (SUP-369): the data product waits for "
-            "the project's own asset, and the leg's catalog job imports it again after the run"
+            "== the catalog's first import in this project (SUP-369): the import created no "
+            "asset, which the project's own source creates, and the leg's catalog job imports "
+            "the catalog again after the run"
         )
 
     parameter = record_stage_variables(env_token, app, region, variables)
@@ -624,18 +645,21 @@ def self_check() -> int:
             names = ", ".join(workflow_name(app, DEPLOYMENT_PROJECT[account], w) for w in created)
             print(f"  ok    {stage}: {len(variables)} variable(s); {names}")
     conflict = "INFO - Resource t already exists (ConflictException), treating as update\n"
+    product = "INFO - Resource t-p already exists (ConflictException), treating as update\n"
     refused = (
         "ERROR - Failed to import dataProducts t-p: An error occurred (ValidationException) when "
         f"calling the CreateDataProduct operation: {NOT_SAME_PROJECT}\n"
     )
     other = "ERROR - Failed to import assets t: An error occurred (AccessDeniedException)\n"
     first = f"{NETWORK_LINE}\n{conflict}{refused}{IMPORT_HEADER}:\n   Failed: 1\n"
-    # (label, log, the bundle carries a catalog, admit, problems expected, pending expected)
+    whole = f"{NETWORK_LINE}\n{conflict}{IMPORT_HEADER}:\n   Failed: 0\n"
+    renamed = f"{NETWORK_LINE}\n{product}{IMPORT_HEADER}:\n   Failed: 0\n"
+    # (label, log, the bundle's asset names or None, admit, problems expected, pending expected)
     samples = [
         (
             "a clean log",
             f"x {NETWORK_LINE} y\n{IMPORT_HEADER}:\n   Created: 1\n   Failed: 0\n",
-            True,
+            ["t"],
             True,
             0,
             False,
@@ -643,20 +667,20 @@ def self_check() -> int:
         (
             "a failed import",
             f"{NETWORK_LINE}\n{IMPORT_HEADER}:\n   Failed: 2\n",
-            True,
+            ["t"],
             True,
             1,
             False,
         ),
-        ("no import of a catalog the bundle carries", f"{NETWORK_LINE}\n", True, True, 1, False),
-        ("no network line", f"{IMPORT_HEADER}:\n   Failed: 0\n", True, True, 1, False),
-        ("no catalog in the bundle", f"{NETWORK_LINE}\n", False, True, 0, False),
-        ("a first import, admitted", first, True, True, 0, True),
-        ("a first import at the second deploy", first, True, False, 1, False),
+        ("no import of a catalog the bundle carries", f"{NETWORK_LINE}\n", ["t"], True, 1, False),
+        ("no network line", f"{IMPORT_HEADER}:\n   Failed: 0\n", ["t"], True, 1, False),
+        ("no catalog in the bundle", f"{NETWORK_LINE}\n", None, True, 0, False),
+        ("a first import, admitted", first, ["t"], True, 0, True),
+        ("a first import at the second deploy", first, ["t"], False, 1, False),
         (
             "a first import without the asset's conflict",
             f"{NETWORK_LINE}\n{refused}{IMPORT_HEADER}:\n   Failed: 1\n",
-            True,
+            ["t"],
             True,
             1,
             False,
@@ -664,7 +688,7 @@ def self_check() -> int:
         (
             "a first import beside another failure",
             f"{NETWORK_LINE}\n{conflict}{refused}{other}{IMPORT_HEADER}:\n   Failed: 2\n",
-            True,
+            ["t"],
             True,
             1,
             False,
@@ -672,14 +696,18 @@ def self_check() -> int:
         (
             "a failed count above the failed lines",
             f"{NETWORK_LINE}\n{conflict}{refused}{IMPORT_HEADER}:\n   Failed: 2\n",
-            True,
+            ["t"],
             True,
             1,
             False,
         ),
+        ("a first import of a bundle with no data product, admitted", whole, ["t"], True, 0, True),
+        ("the asset's conflict at the second deploy", whole, ["t"], False, 1, False),
+        ("a data product's conflict at the second deploy", renamed, ["t"], False, 0, False),
+        ("a data product's conflict, admitted", renamed, ["t"], True, 0, False),
     ]
-    for label, log, carries, admit, expected, expected_pending in samples:
-        problems, pending = read_log(log, carries, admit)
+    for label, log, assets, admit, expected, expected_pending in samples:
+        problems, pending = read_log(log, assets, admit)
         if len(problems) != expected or pending != expected_pending:
             print(
                 f"  FAIL  the log's reading of {label}: {len(problems)} problem(s) and pending "

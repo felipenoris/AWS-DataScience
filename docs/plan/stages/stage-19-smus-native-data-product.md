@@ -523,6 +523,37 @@ Stage 10's 1.1, 2.4 and 4.2 and its decision 9, D22 and D28, and
 [`runbooks/sagemaker-application.md`](../runbooks/sagemaker-application.md) §M, §P, §S, §T and §W,
 which describe the legs GitLab runs until the merge request of act 4 lands (6.2).
 
+### Release G as written
+
+Written 2026-11-16 by decision 26 (b), while release F's Production leg ran
+([PR #307](https://github.com/felipenoris/AWS-DataScience/pull/307), the log). Every call of the
+writing was a read, and nothing is applied: the deletion and the apply are acts of release G's
+sitting, after release F's, in the order of [`runbooks/promotion.md`](../runbooks/promotion.md)
+§N.8.5.
+
+| Piece | Where | Read or planned on 2026-11-16 |
+|---|---|---|
+| The `publish` task, after the asset's listing: the data product the workflow names created over the asset where the project holds none of that name, revised where its items or description differ, then listed and followed to `ACTIVE` at its revision. A name another project holds fails the task with the owner's id, and so does one the project cannot read | `examples/app-etl/code/app_etl_tasks.py`; the arguments `data_product` and `data_product_description` in `workflows/app-etl.yaml` | 14 tests in `tests/test_tasks.py` |
+| The catalog's guard: `product.json` requires the asset alone, so an export carrying a data product fails the release | `product.json`, `tests/test_catalog_export.py` | its tests |
+| `datazone:CreateDataProduct` and `CreateDataProductRevision` on the project role, on the domain's ARN, under `publishing_creates_the_data_product`: `true` in Production, `false` in Staging | `<env>/studio/workflows.tf`, `project-roles.tf` | `production/studio/`: 2 to add and 2 to destroy, the policy and its attachment replaced on the description's change, its six statements unchanged; `staging/studio/`: `No changes` |
+| A target's first import read on the conflict over an asset of the bundle's, since the export carries no data product | `scripts/deploy-application.py` | `--self-check`, four samples more; pipeline #129's `staging-deploy` and `staging-catalog` lines read as before |
+
+The managed policies on the project role, `SageMakerStudioProjectRoleMachineLearningPolicy` v48 and
+`SageMakerStudioProjectUserRolePolicy` v77, grant `datazone:Get*`, `Search*` and
+`CreateListingChangeSet` and neither creation action; the role's boundary,
+`awsds-prod-project-boundary` v3, and the `Workloads` SCPs refuse neither (read 2026-11-16). The
+Service Reference (`v1.5`) gives both actions no resource type and no condition key, as it gives
+`StartDataSourceRun`, which DataZone authorizes against the domain's ARN (`SUP-346`). Unmeasured until
+release G's first Production run: that DataZone authorizes the two actions against the same ARN, and
+the listing's revision for a data product (an asset's listing first answers a placeholder revision,
+read 2026-11-10). Unmeasured with no instrument yet: whether DataZone holds `CreateDataProductRevision`
+to the owning project's members, which `SUP-346` found it does not do for `StartDataSourceRun`; the
+close's threat-model entries (6.3) read it.
+
+Without the deploy's change, a second application's first import would read `Failed: 0`, its leg's
+catalog job would end at once and its targets' assets would never carry `dev`'s metadata. `app-etl`'s
+targets hold their assets since `v0.5.2`, so its imports revise them by name and admit nothing.
+
 ### The sittings that follow, in order
 
 1. **Nothing up, the user's applies**: the list above, each followed by Claude's reads. It ends with
@@ -549,7 +580,8 @@ which describe the legs GitLab runs until the merge request of act 4 lands (6.2)
    to 4 (§Release F as written), act 1's applies and the lint's release (act 2) with it.
 6. **Promotion sittings, release F**: `awsds-deploy-prod`'s membership at its first call (item 12), 4.10's
    release through both targets, 4.11's applies, 4.12's subscription from Sandbox, 4.13 the morning
-   after.
+   after. Release G's sitting follows (§Release G as written): `app-etl-dev`'s data product deleted,
+   `production/studio/` applied, its tag through both targets.
 7. **A Sandbox warehouse sitting**: pass 5, before 2026-12-19 if the trial is to absorb it.
 8. **The close**: 6.1's `catalog.py`, 6.2's documents, 6.3's threat-model entries, 6.4, 7.
 
@@ -1685,7 +1717,7 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
 | xxv | With the import and no listing in Staging, what does Staging's daily source make of the imported asset, and does `CT-4` or `CT-5` notice an unpublished asset in a project with no person? | 4.13 |
 | xxvi | Does a domain-defined designation (API-only since 2026-10-29) narrow what the Governance Manager may do in `deploy-production`'s portal, beside decision 15's deny on the person's session? | 4.12 |
 | xxvii | Does decision 15's deny, grown to the lake's catalog, Lake Formation's data access and the warehouse's credential calls, refuse a person's session those writes while the warehouse workflow's worker session still loads `governed` from `curated`? As written on 2026-11-12 the deny covers a warehouse session alone and the load reads the product table: the lake's half follows the governed read's release (decision 22 (a)) | 4.11, 4.12 |
-| xxviii | Does `workflow.run` with `trailLogs` in the `prod` stage's bootstrap follow the run to its end, and does the deploy fail with it? The CLI 1.0.9's `wait` crashes (`sagemaker-application.md` §M), and `trailLogs` is read in its code alone | 4.10 |
+| xxviii | Does `workflow.run` with `trailLogs` in the `prod` stage's bootstrap follow the run to its end, and does the deploy fail with it? The CLI 1.0.9's `wait` crashes (`sagemaker-application.md` §M), and `trailLogs` is read in its code alone. **The follow half read 2026-11-16: yes** (`v0.5.2`'s `production-deploy`, the run `dgLMl16T1snuRmT` `SUCCESS` at 02:46:30, the job's end at 02:48:31); a failed run's deploy is unexercised | 4.10 |
 | xxix | Does a chain's machine find the CLI-made workflow by name with `ListWorkflows`, read the stage's variables from SSM and start the run with them as `OverrideParameters`, the run rendering every `{{ params.VAR }}`? The definitions answer `OK` to `ValidateStateMachineDefinition` (2026-11-12), which reads no run | 4.10 (`staging-test`), 4.11 |
 | xxx | Does `scripts/deploy-application.py` read the deploy's log as the CLI 1.0.9 prints it in a target: the *"Tooling VPC config"* line, the import's `Failed:` count at zero in a first import, each workflow found by name? | 4.10 |
 | xxxi | Does the batch transform run as the project's role under the fence, the model and its batch input under the project's shared prefix and key, the deploy role passing that role to SageMaker? **Read 2026-11-16: yes** (`v0.5.2`'s `staging-model`): `awsds-deploy-staging` created the model with the project role as its execution role, in the project's subnets and security group with network isolation; the model data, the batch input and the transform's 10 predictions under the project's `shared/` prefix, the output with the project's key | 4.10 (`staging-model`) |
@@ -2203,6 +2235,8 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     condition key to tell them apart (the Service Reference, read 2026-11-10), and the exercise takes
     both. Pass 2 lists in `eighth-experimentation` before 1.5 writes the default, and 1.5 retires that
     product.
+    **Amended 2026-11-16 by decision 26 (b)**: a data product's name is the domain's, so the domain holds
+    one `trades-notional`, which Production's `publish` task creates and lists.
 21. **Whether this estate fences a deployment project's role off from the rest of its account, and
     where** (4.6, `TM-30`). The role runs the application's tasks in Production, the hub account, on
     three AWS managed policies under a boundary that names nothing of the hub. Read 2026-11-11 by
@@ -2379,6 +2413,10 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     INT-26), and a name the domain holds once belongs to the project that publishes it. (a) leaves an
     unlisted working copy as the domain's only data product, and (c) gives up what the stage is named
     for.
+    **Taken 2026-11-16 by the user as (b)** (*"Sigo a (b)"*): release G, after release F's sitting,
+    gives Production's `publish` task the data product, `product.json` requires the asset alone, and
+    `app-etl-dev`'s data product is deleted before release G's bundle. **Written 2026-11-16**
+    (§Release G as written), nothing applied.
 
 ## Cost
 

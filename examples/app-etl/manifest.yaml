@@ -12,10 +12,11 @@
 # bundle into.
 #
 # The catalog (decisions 14 and 18): `bundle` exports what the `dev` project owns, the product's
-# asset with its description, README and classification, its data product and any glossary term, and
-# a deploy imports it into the stage's project. skipPublish: the import lists nothing, and the
-# workflow's `publish` task is the one publisher, where PUBLISH_LISTING is true, Production alone
-# (decision 20 (b)).
+# asset with its description, README and classification and any glossary term, and a deploy imports
+# it into the stage's project. skipPublish: the import lists nothing, and the workflow's `publish`
+# task is the one publisher, where PUBLISH_LISTING is true, Production alone (decision 20 (b)). The
+# task also creates and lists the product's data product, whose name is the domain's, so the `dev`
+# project holds none (decision 26 (b)).
 #
 # A stage reads `${VAR}` from the shell, every stage's whatever the target, so a caller exports each
 # name: the pipeline's legs fill a target's from its project's Tooling environment

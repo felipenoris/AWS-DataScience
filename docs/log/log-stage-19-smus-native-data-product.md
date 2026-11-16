@@ -3511,3 +3511,47 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   `c332eee6-eabe-33d0-b329-e6b85b4fcacd`, `ASSIGNED`, its `rolePrincipalArn` Production's
   `awsds-deploy-prod`. `make status ENV=production`: `workloads-egress` UP, 17 resources; release T's
   `orchestration/` (41) and `app/app-etl/` (3) UP.
+- **[user] Decision 26 taken as (b)** (*"Sigo a (b)"*).
+- **[user] `awsds-deploy-prod`'s membership**, account Production, as `awsds-infra-prod`, its output empty:
+
+  ```
+  NO_PROXY='*' aws datazone create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d7qcazihvr3s7k --designation PROJECT_OWNER --member groupIdentifier=c332eee6-eabe-33d0-b329-e6b85b4fcacd --profile awsds-infra-prod --region us-west-2
+  ```
+
+  **[Claude] read** `deploy-production`'s memberships at 02:29:32 UTC: `PROJECT_OWNER` `c332eee6-…` beside
+  the `PROJECT_OWNER` and the `PROJECT_CONTRIBUTOR` it held before.
+- **[user] `production-check`'s retry** (job 831) green, 02:28:54 to 02:29:12: *"the caller is a member of
+  the project"*. **[user] `production-gate`** (824) released at 02:29:55.
+- **[pipeline] `production-deploy`** (825) green, 02:30:03 to 02:48:31 UTC: `production/workloads-egress/`
+  read; *"the bundle of v0.5.2: 12 file(s), a catalog export"*; the import *"Resource trades_notional
+  already exists (ConflictException), treating as update"* and *"Failed to import dataProducts
+  trades-notional: … Resource asset provided is not from same project"*, `Created: 0`, `Updated: 1`,
+  `Failed: 1`, admitted as the first import (*"the catalog's first import in this project
+  (SUP-369)"*); the three workflows created; the stage's variables recorded in
+  `/datascience/prod/applications/app-etl/stage-variables`. The bootstrap ran `app-etl`, run
+  `dgLMl16T1snuRmT`, `SUCCESS` from 02:32:18 to 02:46:30: `transform` 130 s, `process` 493 s,
+  `summarize` 10 s (10 rows, notional 49850.5), `write_result` 7 s, `publish` 21 s. `publish` ran the
+  source `5zggi2lr2ezy4w` (run `anhgrpgqahg9e8`) and listed the asset `da1fycta6l71n4` at revision 1:
+  *"listing 5hpftif3nnoj2o revision 2: ACTIVE, asset revision 1"*. The job followed the run to its end
+  and ended 2 min after it (xxviii's follow half).
+- **[pipeline] `production-catalog`** (826) started 02:48:34: *"the second import of v0.5.2 into
+  deploy-production: trades_notional"*, the source's run `dk1lm51c3amxw0` started at 02:49:03, *"the
+  project holds trades_notional"* at 02:49:22; the deploy's import *"Resource trades-notional already
+  exists (ConflictException), treating as update"*, *"0 created, 2 updated, 0 skipped (extra in
+  target), 0 failed, 0 published"*; the bootstrap's second run of `app-etl`, `RvUWg0Ij7xMyCT4`. The
+  CLI's 14 warnings *"Failed to get group profile … AccessDeniedException"* match `staging-catalog`'s 14.
+- **[Claude] Release G written** (decision 26 (b)), with every call a read and nothing applied: the
+  `publish` task's data product, the workflow's `data_product` arguments, `product.json` requiring the
+  asset alone, the grant `CreateTheProductsDataProductInTheProjectsDomain` in both `studio/` slices
+  under `publishing_creates_the_data_product`, and `deploy-application.py` reading a first import on the
+  conflict over an asset of the bundle's. Read: `SageMakerStudioProjectRoleMachineLearningPolicy` v48
+  grants `datazone:Get*`, `Search*`, `CreateAsset*` and `CreateListingChangeSet`, and
+  `SageMakerStudioProjectUserRolePolicy` v77 `*Compute*` alone, neither a data product's creation; the
+  role's boundary `awsds-prod-project-boundary` v3 and the `Workloads` SCPs deny neither action; the
+  Service Reference `v1.5` gives `CreateDataProduct`, `CreateDataProductRevision` and
+  `StartDataSourceRun` no resource type and no condition key. Planned as `awsds-infra-prod`:
+  `production/studio/` *"2 to add, 0 to change, 2 to destroy"*, `awsds-prod-workflows` and its
+  attachment replaced on the description, the six statements unchanged and the seventh added;
+  `staging/studio/` as `awsds-infra-staging`, *"No changes"*. `--self-check` passes with four samples
+  more, and pipeline #129's `staging-deploy` and `staging-catalog` lines read as before: a first import
+  admitted, a second with nothing pending.

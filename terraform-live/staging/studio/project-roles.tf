@@ -30,3 +30,13 @@ variable "publishing_starts_the_source" {
   # Staging lists nothing: its PUBLISH_LISTING is false, so its task starts no source.
   default = false
 }
+
+# Whether the workflows grant lets the project role create and revise a data product of the domain
+# (workflows.tf), the publishing task's step after it lists the asset (Stage 19 decision 26).
+variable "publishing_creates_the_data_product" {
+  description = "Whether the project role may create and revise a data product of the domain: true in the one stage whose PUBLISH_LISTING is true."
+  type        = bool
+
+  # Staging lists nothing, so its task creates no data product.
+  default = false
+}

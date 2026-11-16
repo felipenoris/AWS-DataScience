@@ -1,10 +1,11 @@
 # The workflows grant on the deployment project's role (Stage 19 step 4.4): the statements
 # sandbox/workflows/ attaches to every Sandbox project role, whose reasoning and measurements are
-# that slice's main.tf; the same pair for the training job app-etl-train creates; and, where
+# that slice's main.tf; the same pair for the training job app-etl-train creates; where
 # project-roles.tf sets publishing_starts_the_source, the publishing task's start of the project's
-# data source. In a deployment project the role is every workflow's execution role and the role of
-# the Glue, processing and training jobs its operators create (Stage 18 step 4.4: without the grant
-# the first run was refused glue:GetJob; SUP-267).
+# data source; and where it sets publishing_creates_the_data_product, the task's creation and
+# revision of the product's data product. In a deployment project the role is every workflow's
+# execution role and the role of the Glue, processing and training jobs its operators create (Stage
+# 18 step 4.4: without the grant the first run was refused glue:GetJob; SUP-267).
 #
 # The policy exists once the blueprints are enabled, since its last statement can name the domain.
 # It is attached to the roles project-roles.tf names.
@@ -17,10 +18,15 @@ locals {
   # variable out of Terraform's interpolation.
   glue_jobs_named_for_the_caller = "arn:${data.aws_partition.current.partition}:glue:${var.region}:${data.aws_caller_identity.current.account_id}:job/*-$${aws:PrincipalTag/AmazonDataZoneProject}"
 
-  # A description change replaces the policy, so the clause follows the statement it names.
+  # A description change replaces the policy, so each clause follows the statement it names.
+  publishing_steps = compact([
+    var.publishing_starts_the_source ? "starts the project's data source" : "",
+    var.publishing_creates_the_data_product ? "creates or revises the product's data product" : "",
+  ])
   workflows_description = join("", [
     "sandbox/workflows/'s grant on a deployment project's role: a workflow's operators check a Glue, processing or training job name before creating the job",
-    var.publishing_starts_the_source ? ", and the publishing task starts the project's data source." : ".",
+    length(local.publishing_steps) > 0 ? ", and the publishing task ${join(" and ", local.publishing_steps)}" : "",
+    ".",
   ])
 }
 
@@ -149,6 +155,23 @@ data "aws_iam_policy_document" "workflows" {
       sid       = "StartADataSourceRunInTheProjectsDomain"
       effect    = "Allow"
       actions   = ["datazone:StartDataSourceRun"]
+      resources = ["arn:${data.aws_partition.current.partition}:datazone:${var.region}:*:domain/${data.terraform_remote_state.governance[0].outputs.domain_id}"]
+    }
+  }
+
+  # The publishing task creates the product's data product over the listed asset, revises it when
+  # its items or description differ, and lists it (Stage 19 decision 26 (b)): a data product's name
+  # is the domain's, so one stage owns it. AWS's managed policies grant the project role
+  # CreateListingChangeSet, Get* and Search* and neither of these actions. Both take no resource
+  # type below the domain and no condition key (Service Reference v1.5), so the statement names the
+  # domain, as the start's does; DataZone's own check of the owning project is the bound below it.
+  dynamic "statement" {
+    for_each = var.publishing_creates_the_data_product ? ["product"] : []
+
+    content {
+      sid       = "CreateTheProductsDataProductInTheProjectsDomain"
+      effect    = "Allow"
+      actions   = ["datazone:CreateDataProduct", "datazone:CreateDataProductRevision"]
       resources = ["arn:${data.aws_partition.current.partition}:datazone:${var.region}:*:domain/${data.terraform_remote_state.governance[0].outputs.domain_id}"]
     }
   }

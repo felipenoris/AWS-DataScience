@@ -194,9 +194,12 @@ from `GlueJobOperator` or start its own data source's run with the blueprint's p
   `List*`, `Search*`, `CreateAsset*` and `CreateListingChangeSet` and no `StartDataSourceRun`;
   `SageMakerStudioProjectUserRolePolicy` (v76) names none either (read 2026-11-08, before the first run).
   Production's deployment project role alone holds that statement (`<env>/studio/workflows.tf`, on where
-  `project-roles.tf` sets `publishing_starts_the_source`); a
-  Sandbox project's source imports on its schedule or on a member's run in the portal (Stage 19
-  decision 17).
+  `project-roles.tf` sets `publishing_starts_the_source`); a Sandbox project's source imports on its
+  schedule or on a member's run in the portal (Stage 19 decision 17).
+- **The same task creates, revises and lists the product's data product** (Stage 19 decision 26 (b)):
+  a data product's name is the domain's, so the stage that lists the product owns it. Neither managed
+  policy grants `datazone:CreateDataProduct` or `CreateDataProductRevision` (v48 and v77, read
+  2026-11-16), and the same role alone holds them, beside the start (`publishing_creates_the_data_product`).
 
 The grant for the jobs is `terraform-live/sandbox/workflows/`, one policy and one attachment per project role:
 

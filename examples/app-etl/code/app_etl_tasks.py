@@ -7,13 +7,17 @@ the workflow's next task writes to S3. `publish`, the last task of app-etl, puts
 Glue job wrote into the SageMaker Catalog the way the tool intends (Stage 19 decisions 3 and 14): it
 runs the project's data source over the product's database, finds the asset the run imported for the
 table and publishes its latest revision as a listing, waiting for a listing revision `ACTIVE`, since
-the change set answers before the listing is active and fails later on its own. It runs as the
-project role through the `datazone` endpoint, in the domain and project the deploy substituted
-(`{domain.id}` and `{proj.id}`), and returns at once where the stage variable `PUBLISH_LISTING` is
-not `true`, the stages whose product is never listed. `evaluate`, a task of app-etl-train, reads the
-training job's final metrics and writes them beside its model as SageMaker's model-quality
-statistics, the file the pipeline's registration names as the version's `ModelMetrics` (Stage 10
-step 5.2), with the rows of the batch transform's input, which the transform's check counts against.
+the change set answers before the listing is active and fails later on its own. Where the workflow
+names a data product, the task then creates it over that asset, or revises it when its item or
+description changed, and lists it the same way: a data product's name is the domain's, so the one
+stage that lists the product owns its data product and no import carries one (decision 26). It
+runs as the project role through the `datazone` endpoint, in the domain and project the deploy
+substituted (`{domain.id}` and `{proj.id}`), and returns at once where the stage variable
+`PUBLISH_LISTING` is not `true`, the stages whose product is never listed. `evaluate`, a task of
+app-etl-train, reads the training job's final metrics and writes them beside its model as
+SageMaker's model-quality statistics, the file the pipeline's registration names as the version's
+`ModelMetrics` (Stage 10 step 5.2), with the rows of the batch transform's input, which the
+transform's check counts against.
 
 They run on the MWAA Serverless worker with the boto3 the worker carries, so a workflow's code
 package is this file alone, zipped under the workflow's name. What they print lands in the
@@ -26,6 +30,7 @@ from __future__ import annotations
 import ast
 import json
 import os
+import re
 import time
 from operator import itemgetter
 from urllib.parse import urlparse
@@ -218,17 +223,172 @@ def publish_asset(datazone, domain: str, asset: str, timeout: int | None = None)
         time.sleep(POLL_SECONDS)
 
 
+# The data product (Stage 19 decision 26): a data product's name is unique within the domain, so the
+# one project that lists the product creates its data product, and a create whose name another
+# product holds answers ConflictException naming that product, read 2026-11-16: "Conflict with
+# dataProduct 5070mjwdvjwp3k". An identifier is letters, digits, `_` and `-` (the API's pattern).
+PRODUCT_CONFLICT = re.compile(r"Conflict with dataProduct ([\w-]+)")
+
+
+def error_code(error: Exception) -> str:
+    """The service's error code on an exception a boto3 call raised; empty on any other."""
+    response = getattr(error, "response", None) or {}
+    return str((response.get("Error") or {}).get("Code") or "")
+
+
+def find_data_product(datazone, domain: str, project: str, name: str) -> str:
+    """The id of the project's data product named `name`, empty when the project holds none; two of
+    that name fail."""
+    found = []
+    paginator = datazone.get_paginator("search")
+    pages = paginator.paginate(
+        domainIdentifier=domain,
+        searchScope="DATA_PRODUCT",
+        owningProjectIdentifier=project,
+        searchText=name,
+    )
+    for page in pages:
+        for item in page.get("items", []):
+            product = item.get("dataProductItem") or {}
+            if product.get("name") == name:
+                found.append(product["id"])
+    if len(found) > 1:
+        raise RuntimeError(f"{len(found)} data products named {name} in the project, one expected")
+    return found[0] if found else ""
+
+
+def conflicting_product(datazone, domain: str, project: str, name: str, error: Exception) -> str:
+    """The id of the data product a create of `name` conflicted with, where the project holds it and
+    the search has not indexed it yet. A product another project holds, or one this project cannot
+    read, fails: the name is the domain's, so this project cannot hold its own."""
+    match = PRODUCT_CONFLICT.search(str(error))
+    if not match:
+        raise RuntimeError(f"data product {name}: {error}") from error
+    product = match.group(1)
+    try:
+        held = datazone.get_data_product(domainIdentifier=domain, identifier=product)
+    except Exception as e:
+        raise RuntimeError(
+            f"data product {name} is {product}, which this project cannot read ({error_code(e)}):"
+            " a data product's name is the domain's, so that product is deleted or this one renamed"
+        ) from e
+    owner = held.get("owningProjectId")
+    if owner != project:
+        raise RuntimeError(
+            f"data product {name} is {product} of project {owner}: a data product's name is the"
+            " domain's, so that product is deleted or this one renamed"
+        )
+    return product
+
+
+def ensure_data_product(
+    datazone, domain: str, project: str, name: str, description: str, asset: str
+) -> dict:
+    """The project's data product `name`, `asset` its one item and `description` its description:
+    created when the project holds none, revised when its item or description differs, else left as
+    it is."""
+    items = [{"itemType": "ASSET", "identifier": asset}]
+    described = {"description": description} if description else {}
+    product = find_data_product(datazone, domain, project, name)
+    if not product:
+        try:
+            made = datazone.create_data_product(
+                domainIdentifier=domain,
+                owningProjectIdentifier=project,
+                name=name,
+                items=items,
+                **described,
+            )
+        except Exception as e:
+            if error_code(e) != "ConflictException":
+                raise
+            product = conflicting_product(datazone, domain, project, name, e)
+        else:
+            print(f"data product {name}: created {made['id']}, revision {made['revision']}")
+            return {
+                "data_product": made["id"],
+                "data_product_revision": made["revision"],
+                "data_product_change": "created",
+            }
+    held = datazone.get_data_product(domainIdentifier=domain, identifier=product)
+    holds = sorted(
+        str(item.get("identifier"))
+        for item in held.get("items") or []
+        if item.get("itemType") == "ASSET"
+    )
+    if holds == [asset] and (held.get("description") or "") == description:
+        print(f"data product {name}: {product}, revision {held['revision']}, unchanged")
+        return {
+            "data_product": product,
+            "data_product_revision": held["revision"],
+            "data_product_change": "unchanged",
+        }
+    revised = datazone.create_data_product_revision(
+        domainIdentifier=domain, identifier=product, name=name, items=items, **described
+    )
+    print(f"data product {name}: {product}, revised to revision {revised['revision']}")
+    return {
+        "data_product": product,
+        "data_product_revision": revised["revision"],
+        "data_product_change": "revised",
+    }
+
+
+def publish_data_product(
+    datazone, domain: str, product: str, revision: str, timeout: int | None = None
+) -> dict:
+    """The data product published, and its listing ACTIVE within `timeout` seconds. How a data
+    product's listing revisions follow the change set is unmeasured, and an asset's take the change
+    set's answer as a placeholder (publish_asset). So a revision past the change set's is taken once
+    ACTIVE, the change set's own once ACTIVE with the product's `revision`, and an older one never:
+    it is the previous publication."""
+    change = datazone.create_listing_change_set(
+        domainIdentifier=domain,
+        entityIdentifier=product,
+        entityType="DATA_PRODUCT",
+        action="PUBLISH",
+    )
+    listing, asked = change["listingId"], int(change["listingRevision"])
+    timeout = LISTING_TIMEOUT if timeout is None else timeout
+    deadline = time.monotonic() + timeout
+    while True:
+        latest = datazone.get_listing(domainIdentifier=domain, identifier=listing)
+        current, status = latest["listingRevision"], latest["status"]
+        listed = (latest.get("item") or {}).get("dataProductListing") or {}
+        carried = listed.get("dataProductRevision")
+        later, same = int(current) > asked, int(current) == asked
+        if status == "ACTIVE" and (later or (same and str(carried) == str(revision))):
+            print(f"listing {listing} revision {current}: ACTIVE, data product revision {carried}")
+            return {
+                "data_product_listing": listing,
+                "data_product_listing_revision": current,
+                "data_product_listed_revision": carried,
+            }
+        if (later or same) and status not in (*LISTING_PENDING, "ACTIVE"):
+            raise RuntimeError(f"listing {listing} revision {current} is {status}")
+        if time.monotonic() >= deadline:
+            raise RuntimeError(
+                f"listing {listing} not ACTIVE with data product revision {revision} from revision"
+                f" {asked} after {timeout} s: its latest is revision {current}, {status},"
+                f" carrying {carried}"
+            )
+        time.sleep(POLL_SECONDS)
+
+
 def publish(
     database: str,
     table: str,
     publish_listing: str,
     domain: str = "",
     project: str = "",
+    data_product: str = "",
+    data_product_description: str = "",
     **context,
 ) -> str:
     """The product `database.table` imported and listed in the catalog of `domain` by `project`, the
-    deploy's `{domain.id}` and `{proj.id}`; its identifiers as JSON text, the task's XCom. Nothing
-    when `publish_listing`, the stage variable, is not `true`."""
+    deploy's `{domain.id}` and `{proj.id}`, and, where `data_product` names one, its data product
+    over the asset, created or revised and listed; the identifiers as JSON text, the task's XCom.
+    Nothing when `publish_listing`, the stage variable, is not `true`."""
     if str(publish_listing).strip().lower() != "true":
         print(f"publishing off in this stage (PUBLISH_LISTING={publish_listing!r}); nothing listed")
         return json.dumps({"published": False}) + "\n"
@@ -248,7 +408,18 @@ def publish(
         "asset": asset["identifier"],
         **publish_asset(datazone, domain, asset["identifier"]),
     }
-    print(f"published {database}.{table}: asset {result['asset']}, listing {result['listing']}")
+    done = f"published {database}.{table}: asset {result['asset']}, listing {result['listing']}"
+    name = str(data_product or "").strip()
+    if name:
+        description = str(data_product_description or "").strip()
+        result |= ensure_data_product(
+            datazone, domain, project, name, description, asset["identifier"]
+        )
+        result |= publish_data_product(
+            datazone, domain, result["data_product"], result["data_product_revision"]
+        )
+        done += f"; data product {result['data_product']}, listing {result['data_product_listing']}"
+    print(done)
     return json.dumps(result, indent=2, sort_keys=True) + "\n"
 
 

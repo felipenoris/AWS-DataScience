@@ -16,9 +16,9 @@
 # targets but for release.tf, which records each account's own promoted release (step 3.7).
 #
 # The deployment project's prerequisites, <env>/studio/ (Stage 19 step 4.4), are one slice in both
-# targets but for project-roles.tf, which names each account's own project role and whether it
-# starts the project's data source, and fence.tf, which names the account's own buckets and
-# repositories that role never touches.
+# targets but for project-roles.tf, which names each account's own project role, whether it
+# starts the project's data source and whether it creates the product's data product, and fence.tf,
+# which names the account's own buckets and repositories that role never touches.
 #
 # check-bootstrap-parity.py holds the same rule for the bootstrap slices, which are copies whole.
 

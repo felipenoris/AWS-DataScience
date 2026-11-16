@@ -30,3 +30,14 @@ variable "publishing_starts_the_source" {
   # Production is the one stage that lists the product (Stage 19 decision 20 (b)).
   default = true
 }
+
+# Whether the workflows grant lets the project role create and revise a data product of the domain
+# (workflows.tf), the publishing task's step after it lists the asset (Stage 19 decision 26).
+variable "publishing_creates_the_data_product" {
+  description = "Whether the project role may create and revise a data product of the domain: true in the one stage whose PUBLISH_LISTING is true."
+  type        = bool
+
+  # A data product's name is the domain's, so the one stage that lists the product owns it (Stage
+  # 19 decision 26 (b)).
+  default = true
+}
