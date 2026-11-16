@@ -19,7 +19,8 @@
 #
 # The names are contracts: awsds-<env>-chain-<key>, awsds-<env>-chains, awsds-<env>-chain-exec and
 # -chain-scheduler, awsds-<env>-wf-<workflow>-failed, and the parameter
-# /awsds/<env>/applications/<application>/stage-variables, which scripts/deploy-application.py writes.
+# /datascience/<env>/applications/<application>/stage-variables, which scripts/deploy-application.py writes.
+# Parameter Store reserves every name beginning with aws, so the path spells the project out (SUP-067).
 
 data "aws_partition" "current" {}
 
@@ -50,7 +51,7 @@ locals {
   workflow_arn_prefixes = { for k, n in local.workflow_names : k => "arn:${local.partition}:airflow-serverless:${local.region_account}:workflow/${n}-" }
   workflow_arn_patterns = [for k, p in local.workflow_arn_prefixes : "${p}??????????"]
 
-  stage_variables_parameters = { for app, a in var.applications : app => "/awsds/${var.env}/applications/${app}/stage-variables" }
+  stage_variables_parameters = { for app, a in var.applications : app => "/datascience/${var.env}/applications/${app}/stage-variables" }
 
   state_machine_arn_pattern = "arn:${local.partition}:states:${local.region_account}:stateMachine:awsds-${var.env}-chain-*"
 }
