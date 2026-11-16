@@ -533,12 +533,12 @@ The table is a first look by situation; the numbered list below it is complete.
 | When about to | Lessons |
 |---|---|
 | Write or read a check, a probe or a proof | 2, 13, 20, 21, 22, 24, 26, 30, 31, 50, 54, 62, 71, 77, 78, 80 |
-| Write a policy, a grant or a role, or say what a principal can do | 5, 11, 14, 17, 18, 28, 29, 66, 67, 70, 72, 75, 80 |
+| Write a policy, a grant or a role, or say what a principal can do | 5, 11, 14, 17, 18, 28, 29, 66, 67, 70, 72, 75, 80, 82 |
 | Move, rename or share something across accounts, or borrow a session | 3, 9, 10, 25, 48 |
 | Change Terraform, a module, a host or the toolchain | 4, 8, 27, 33, 35, 47, 49, 51, 58, 59, 64, 65, 68, 69, 73, 76, 79 |
 | Call an AWS API, a console wizard or a managed service | 16, 23, 36, 39, 60, 61, 63, 74, 81 |
 | Touch the network, the proxy or a client | 40, 42, 43, 44, 45, 53, 55, 56 |
-| Run a command or write a script | 46, 47, 52 |
+| Run a command or write a script | 46, 47, 52, 83, 84 |
 | Write the plan, a record or a decision, or read a vendor page | 1, 6, 7, 12, 15, 19, 32, 34, 37, 38, 41, 57 |
 
 1. **A copy of governed data somewhere less governed is not a hole to be closed.**
@@ -683,3 +683,9 @@ The table is a first look by situation; the numbered list below it is complete.
     asynchronous write, not with the call.**
 81. **A notebook's engine is a bill of its own, sized by its connection and kept by its idle timeout — the
     space's price is not the session's.**
+82. **A refusal diagnosed as a shape and granted as a list stays open for every member the list left
+    out.**
+83. **A retry reuses every name the first attempt spent — a job whose objects are named after the
+    pipeline has no retry.**
+84. **The laptop's shell is zsh, and a command written as bash expands to another string before it
+    runs.**

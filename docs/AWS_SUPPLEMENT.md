@@ -75,7 +75,7 @@ entry is still true is the reading.
 | [The SMUS CI/CD CLI](#the-smus-cicd-cli) | `aws-smus-cicd-cli` 1.0.9: manifests and their variables, bundles, workflow names, the pre-deployment validation, what `deploy` reads and creates |
 | [Bedrock](#bedrock) | Inference profiles and their authorization; retention modes; agreements and the use-case form; CloudTrail and CloudWatch for invocations |
 | [Terraform](#terraform) | `validate`, `init`, locks and credentials; the `aws` provider's read-backs, drift and replacements; `awscc` and Cloud Control; checkov |
-| [The AWS CLI](#the-aws-cli) | `--query` under pagination; a global flag that shadows a parameter |
+| [The AWS CLI](#the-aws-cli) | `--query` under pagination; a global flag that shadows a parameter; a `file://` document in a list parameter |
 | [Clients and the egress proxy](#clients-and-the-egress-proxy) | WireGuard on macOS and Linux; Chrome's Local Network Access; Squid's matching and refusals; VS Code and Open VSX behind a proxy |
 
 ## IAM and STS
@@ -2001,7 +2001,12 @@ entry is still true is the reading.
   (`SUP-360`, measured 2026-11-14): version 12 names `GetGroupProfile`, and no version names
   `GetProjectProfile`. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-10-30;
   `log-stage-06f-data-governance.md`, 2026-09-18, 2026-10-18 and 2026-10-26;
-  `log-stage-19-smus-native-data-product.md`, 2026-11-11; `aws/catalog.py`.
+  `log-stage-19-smus-native-data-product.md`, 2026-11-11; `aws/catalog.py`. Read again 2026-11-16 (Stage
+  19 release F): Data Governance's `InfrastructureAccess`, no member of `deploy-staging`, read its source's
+  runs and their activities (`ListDataSourceRuns`, `ListDataSourceRunActivities`), each run's `added` count
+  among them, and was refused a `Search` of the assets the project owns, *"User is not permitted to perform
+  operation: Search"*. A non-member reads whether a project's source has added an asset, never the asset.
+  Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 - `SUP-158` **An IAM role in a DataZone domain is a group and one user profile per session name, and a
   policy grant takes the group.** Its ARN resolves as a user identifier to one session's user profile, and
@@ -3643,6 +3648,13 @@ entry is still true is the reading.
   save** (measured 2026-10-11, Stage 6i step 3.8). `get-workflow-run` read `QUEUED` until 23:06:16Z while
   the sensor had finished at 23:05:23Z, and `/aws/mwaa-serverless/<domain>-<project>/<workflow>` existed,
   empty and with no retention, before any run. Where: `runbooks/serverless-workflows.md` §V and §O.
+  Read again 2026-11-16 in Staging through the chain machines' `getWorkflowRun`, one poll a minute (Stage
+  19 release F). `app-etl`'s run read `QUEUED` with no `StartedOn` at 00:43:52 and 00:44:52, then
+  `RUNNING` with a `StartedOn` of 00:43:14; it still read `RUNNING` at 00:56:55, after a `CompletedOn` of
+  00:56:49, and `SUCCESS` at 00:57:55. `app-etl-train`'s run, started 00:58:24 and completed 00:59:22, read
+  `QUEUED` at 00:59:15 and 01:00:15 and `FAILED` at 01:01:16, with a `ModifiedAt` of 01:00:23; it never read
+  `RUNNING`. A run shorter than the lag goes from `QUEUED` to its end, and the end is written about a
+  minute after `CompletedOn`. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 - `SUP-274` **On an MWAA Serverless worker a Python task imports a pre-installed package before the code
   archive's copy, while a Bash task's `python3` imports the archive's copy first** (measured 2026-10-11,
@@ -4361,6 +4373,15 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   `--version-number`; `--version` behaves as the CLI's global flag. A script that passes it receives a
   version string and a success code, and no image version, so a check built on it can neither pass nor fail
   on the image. Where: `log-stage-08-cicd-pipelines.md`, 2026-10-12.
+
+- `SUP-370` **The AWS CLI passes a `file://` document to `--policy-input-list` as one member per character**
+  (measured 2026-11-16 with aws-cli 2.37.12, Stage 19). `iam simulate-principal-policy --policy-input-list
+  file://<document>` was refused *"1 validation error detected: Value '[{, ", V, e, r, s, i, …]' at
+  'policyInputList' failed to satisfy constraint: Member must have length less than or equal to 10"*,
+  whether the document held one line or several. The same document passed as the argument's text,
+  `"$(cat <document>)"`, was read as one policy, the matched statement's `SourcePolicyId` being
+  `PolicyInputList.1`. The parameter is a list of strings, and the file's content reaches it as one string
+  the CLI iterates (inferred from the error). Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 ## Clients and the egress proxy
 

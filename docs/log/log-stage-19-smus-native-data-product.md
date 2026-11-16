@@ -3459,3 +3459,17 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   *"Tooling VPC config"* line, both workflows *"already exists, updating it"* with the project role,
   *"Deployment completed successfully!"*, the first import's admission (`SUP-369`) and the nine variables
   recorded; the parameter at version 2, modified 01:42:27 UTC.
+- **[Claude] The sitting's readings of the platform and its lessons**, written while `staging-test` ran, at
+  the user's request (*"revise as lições aprendidas com esta sessão, e ao AWS_SUPPLEMENT"*):
+  - the AWS CLI 2.37.12 passed a `file://` document to `--policy-input-list` one member per character,
+    *"Value '[{, ", V, e, r, s, i, …]' at 'policyInputList' failed to satisfy constraint: Member must have
+    length less than or equal to 10"*, on one line or several, and read the same document passed as the
+    argument's text, `PolicyInputList.1` (`SUP-370`);
+  - the chain machines' `getWorkflowRun` polls of `v0.5.1`'s runs, read from the two executions' histories,
+    lagged the runs: `app-etl`'s `StartedOn` of 00:43:14 first appeared at 00:45:53, and `app-etl-train`'s
+    run, 00:58:24 to 00:59:22, never read `RUNNING` (`SUP-273`'s later reading);
+  - a non-member's reads of `deploy-staging`, above, joined `SUP-157`;
+  - Lessons 82 (a refusal diagnosed as a shape and granted as a list), 83 (a retry reuses the names the first
+    attempt spent) and 84 (the laptop's shell is zsh) written, and the parameter's name added to Lesson 5 as
+    a naming rule nothing checked. Already recorded and not repeated: the simulator's Region and principal
+    tags (`SUP-008`), the run state's lag (`SUP-273`), a non-member's catalog (`SUP-157`).

@@ -42,7 +42,13 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
    revision before anyone noticed the `Data` OU SCP never denied Glue jobs (D25). Likewise the three Lake
    Formation shares assumed organization-wide RAM sharing and cross-account version 3+ that no stage
    enabled — and their absence makes a share fail *silently*, the grant succeeding while the resource
-   never appears. For every stated property, name the policy line that enforces it.
+   never appears. For every stated property, name the policy line that enforces it. A naming rule is a
+   stated property too: `conventions.md` has recorded since 2026-08-16 that Parameter Store refuses
+   `/awsds/…` and that a project parameter takes `/datascience/<env>/…`. Stage 19's release F named its
+   stage-variables parameter `/awsds/<env>/applications/<app>/stage-variables` after the `awsds-` resource
+   names (2026-11-12), every plan and lint passed, and the first write, `v0.5.1`'s `staging-deploy` on
+   2026-11-16, was refused past the gate (`SUP-067`). The rename cost a module tag, three applies and a
+   merge. A convention nothing checks is an intention; a lint over the names the code writes is its control.
 6. **Prices are measured, not reasoned.** The AWS Price List bulk API
    (`pricing.us-east-1.amazonaws.com/offers/v1.0/aws/<service>/current/<region>/index.json`) is public,
    needs no credentials, and answers in seconds what the pricing pages answer in paragraphs. It is also
@@ -1851,6 +1857,87 @@ consumption from `DPUSeconds` once the field is filled, never at the stop.
 **What makes it expensive.** The engine bills while the person reads the result. At the connection's
 ceiling one forgotten hour costs what 22 hours of the sitting's hub and endpoints cost, 4.40 against
 0.2006 USD/h; at the measured session's average, 1.24 USD/h, it costs six.
+
+## Lesson 82 — a refusal diagnosed as a shape and granted as a list stays open for every member the list left out
+
+**What happened.** `SUP-267` diagnosed the blueprint's refusal of a workflow's first job by its mechanism:
+the operator reads the job name before it creates the job, and AWS's project-role policy scopes that read
+to the caller's project tag, which a free name cannot carry. The grant written from it (`sandbox/workflows/`,
+2026-10-16, and `<env>/studio/workflows.tf` from Stage 18) named the members that had failed,
+`DescribeProcessingJob` and `glue:GetJob`. `SUP-268` recorded on 2026-10-20 that `SageMakerTrainingOperator`
+calls `DescribeTrainingJob` the same way, while training still ran under the application role. Stage 19's
+decision 6 (b) moved every workflow onto the deployment project's role, and `app-etl-train` first ran under
+a project role in `v0.5.1`'s `staging-test` (2026-11-16), where `DescribeTrainingJob` was refused past the
+gate. The fix was the same pair on `training-job/*`, two applies and a new tag.
+
+**Why it is a class rather than a slip.** A diagnosis names a mechanism and a grant names actions. The run
+that fails supplies the actions, so the members that have not run yet are missing from the list while the
+mechanism still covers them. Each fails at its own first run under the identity, and the last to run is
+the task the promotion runs, often the least frequent one. The mechanism is written in the supplement and
+the grant in a slice, so a decision that moves a task is read against neither. Lesson 75 is the sibling
+for what a creator holds without a grant.
+
+**The rule.** When a grant answers a diagnosed mechanism, list the mechanism's members across what the
+estate runs (the operators the templates and the workflows name) and grant each one, scoped as the measured
+one. When a decision moves workloads onto an identity, run each of their tasks once under it before the
+tag, in the dev project, where a refusal costs nothing.
+
+**What makes it expensive.** The refusal arrives in the tag's pipeline, past the gate, where neither the
+grant nor the template of the running tag can change; here it cost an hour, two applies and `v0.5.2`.
+Sandbox's grant carries no training pair, so by the same reading a training task in a Sandbox project
+would be refused the same way; none has run there.
+
+## Lesson 83 — a retry reuses every name the first attempt spent, and a job whose objects are named after the pipeline has no retry
+
+**What happened.** `app-etl`'s `staging-test` named each chain's execution
+`$CI_COMMIT_TAG-$CI_PIPELINE_ID-<chain>`. In `v0.5.1`'s pipeline #126 the `app-etl` execution succeeded and
+`app-etl-train` failed on a grant (Lesson 82). The grant was fixed outside the template, so the same YAML
+would have run correctly on a retry, and the retry would still have been refused at its first call: GitLab's
+retry keeps `CI_PIPELINE_ID` and changes `CI_JOB_ID`, and Step Functions answers a closed execution's name
+with `400 ExecutionAlreadyExists` for 90 days (the `StartExecution` reference, read 2026-11-16). Naming the
+executions after the job was a template change, and a tag never moves, so a failure fixed outside the
+template still cost `v0.5.2` and a full pipeline. The same night `staging-deploy`'s retry passed (job 796),
+because the CI/CD CLI updates its workflows in place.
+
+**Why it is a class rather than a slip.** A retry is a pipeline's recovery path for a job past its gate, and
+every name a job derives from the pipeline or the tag is the same on the retry. A service that keeps a name
+after its object ends refuses the second attempt, whatever the first one's outcome. The author runs the job
+once, and a first run never exercises its retry.
+
+**The rule.** A job that creates a named object outside GitLab names it after the attempt (`$CI_JOB_ID`, or
+a time stamp, as the training job's name does), or adopts the object its name already holds. Before a tag,
+read each job's external names with the question "what does the second attempt send?".
+
+**What makes it expensive.** A failure fixed outside the template (a grant, a quota, a transient refusal)
+costs one click on a job that can be retried. On a job that cannot, it costs a new tag, a merge request, a
+build and the gates again.
+
+## Lesson 84 — the laptop's shell is zsh, and a command written as bash expands to another string before it runs
+
+**What happened.** The commands of this project run in zsh: the Bash tool's shell and the user's terminal.
+Four bash habits read differently there, each met in Stage 19's sittings:
+
+- `"$M:examples/app-etl"` applied zsh's `:e` modifier, and `git ls-tree` received `xamples/app-etl`
+  (2026-11-16);
+- an unquoted `$s` was not split into words, so `set -- $s` set one argument (2026-11-15);
+- `echo ======` failed with *"===== not found"*, since `=word` expands to the path of the command `word`
+  (2026-11-16);
+- a glob that matched nothing refused the whole line: `terraform-modules/sagemaker-app*` (2026-11-16), and
+  on 2026-11-08 behind `2>/dev/null`, where the refusal read as an empty result and a false absence went
+  into three files (Lesson 62's third instance).
+
+**Why it is a class rather than a slip.** The differences are in expansion, which happens before the
+command runs, so the command receives another string and nothing reports the substitution. A modifier such
+as `:h` or `:t` yields a valid path, and a destructive command runs on it. The runbooks' fenced `bash`
+blocks and the habits that write them are bash; the shell is not.
+
+**The rule.** In a command for this laptop: brace every parameter a colon follows (`${M}:path`), quote a
+glob a tool expands itself (`--include='*.md'`), split a list explicitly (`${=s}` or an array), and quote a
+word that begins with `=`. A script carries its interpreter in its shebang and is never pasted into the
+shell.
+
+**What makes it expensive.** The failure is silent wherever an error is redirected, and a wrong string that
+is still a valid argument makes the command succeed on something else.
 
 ## What AWS does that its documentation does not say
 
