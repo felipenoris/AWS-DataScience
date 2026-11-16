@@ -3573,3 +3573,39 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   `staging/studio/` as `awsds-infra-staging`, *"No changes"*. `--self-check` passes with four samples
   more, and pipeline #129's `staging-deploy` and `staging-catalog` lines read as before: a first import
   admitted, a second with nothing pending.
+- **[user] Step 8 authorized** (*"Autorizo o passo 8"*): the two destroys, `production/chains/`'s apply
+  and the `app-etl` chain started by hand. The three peer sessions on the laptop were told first.
+- **[Claude] Step 8's applies**, as the infrastructure user with `InfrastructureAccess` in Production
+  (`awsds-infra-prod`), each from its saved plan: `production/orchestration/` 03:15:01 to 03:17:22 UTC,
+  *"0 added, 0 changed, 41 destroyed"*: release T's three workflows `awsds-prod-wf-*`, their roles and
+  security group `awsds-prod-wf-workers` (no network interface held it, and no other group referenced
+  it), the machines, schedules and roles `awsds-prod-chain-*`; `production/app/app-etl/` 03:17:31 to
+  03:17:41, *"0 added, 0 changed, 3 destroyed"*; `production/chains/` 03:17:55 to 03:18:20, *"24 added,
+  0 changed, 0 destroyed"*, re-planning `No changes`.
+- **[Claude] xxix's chain started by hand** at 03:19:10: `awsds-prod-chain-app-etl`, execution
+  `step8-xxix-20261116T031909-app-etl`, the machine's first. A first attempt was refused `InvalidArn`
+  before any execution existed: zsh read `$account:stateMachine` as a `:s` modifier (Lesson 84), and
+  `${account}` fixed it. The history: `ssm:getParameter` of the stage variables, `listWorkflows`
+  finding `app_etl_deploy_production_app_etl-6Hz8jUvCQb`, `startWorkflowRun` with the nine variables as
+  `OverrideParameters` (`PUBLISH_LISTING` `true`, `PRODUCT_DATABASE` `app_etl`) answering the run
+  `wITFYNHoLyyEsev`, `STARTING`, within 1 s of the start.
+- **[user] `make down ENV=staging`**, reported during the chain's run (*"o ambiente staging foi
+  derrubado"*). **[Claude] read** at 03:24:28 as `awsds-infra-staging`: the gateway endpoints for S3
+  and DynamoDB alone, no interface endpoint, no NAT gateway.
+- **[Claude] `./aws/orchestration.py awsds-infra-prod awsds-infra-staging`** after step 8: exit 2, *"13
+  CHECK(S) FAILED"*, each a rule written to release T's contracts, which §Release F as written leaves
+  to step 8. OR-9, three rows per account: `awsds-<env>-chain-exec` and `-chain-scheduler` with no
+  boundary and `awsds-<env>-chain-events` absent, which `terraform-modules/orchestration` writes so by
+  design (no role there touches data, and the pipeline creates none). OR-2, five rows and one count
+  per account: the groups `/aws/mwaa-serverless/<domain>-<project>/<workflow>`, created with each
+  CLI-made workflow (Staging's two at 2026-11-15 23:21, Production's three at 2026-11-16 02:31 to
+  02:32) and holding no retention, so D28 item 5's is unmet. The chains, the schedules `DISABLED` and
+  the failure rules pass.
+- **[Claude] xxix read in Production**: the run `wITFYNHoLyyEsev` `SUCCESS` from 03:19:16 to 03:33:45
+  (`transform` 149 s, `process` 490 s, `summarize` 6 s, `write_result` 11 s, `publish` 22 s), and the
+  execution `SUCCEEDED` at 03:36:15. Every parameter rendered: the Glue run `jr_d486b7fd3…`
+  `SUCCEEDED` with `--TABLE_DATABASE app_etl`, the job's `--conf` carrying a 12-digit
+  `spark.glue.accountId` and `transport.domainId=dzd-d8yrvx1ko7im6o`, its connections named after the
+  two subnets, and no `{env.`, `{proj.`, `{domain.` or `params.` left in its arguments; the processing
+  job `app-etl-20261116T032302` `Completed` on `awsds-prod-ecr-app-etl@sha256:e16283e0…`, in the two
+  subnets, its volume under the project's key.
