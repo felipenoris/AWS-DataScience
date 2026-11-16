@@ -2428,7 +2428,7 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     question open for Sandbox's groups.
     (a) Terraform declares the groups: `terraform-modules/orchestration` creates each workflow's group
     from the names it composes, 90 days under the project key, `<env>/studio/` the two DataZone
-    groups, and the seven are imported. Unmeasured: whether the service logs into a group that exists
+    groups, and the nine are imported. Unmeasured: whether the service logs into a group that exists
     before `CreateWorkflow`, and whether the project key's policy admits CloudWatch Logs for a group
     Terraform creates. The module needs the project id as an input, and a workflow added to a manifest
     has its group only once the slice names it.
