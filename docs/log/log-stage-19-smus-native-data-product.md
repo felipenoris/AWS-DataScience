@@ -3640,3 +3640,8 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
 - **[Claude] Decision 27 written** (who sets the retention; recommended (b), the deploy, after a
   `logs:PutRetentionPolicy` grant in both `foundation/` slices), `EXC-25` in `docs/AWS_STATE.md` naming
   the five groups, and its row in `waiting-on-the-user.md`. Nothing changed in AWS.
+- **[Claude] `make status`** after the commit: `production/warehouse-compute` up, its workgroup
+  `awsds-prod-warehouse` `AVAILABLE`, created at 03:45:46 UTC by the infrastructure user's Terraform
+  1.16.6 (`CreateWorkgroup` in Production's trail), an apply this session did not run; the hub, GitLab
+  with its runners, `egress/` and `workloads-egress/` up; Staging's slices down. Estimated burn 1.9771
+  USD/h, 1.44 of it the warehouse's per-query-hour figure.
