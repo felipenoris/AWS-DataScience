@@ -3748,3 +3748,10 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   app-etl-train-20261025T011858"*. With `--project` the job reads that training job's evaluation under
   `deploy-production`'s shared prefix, where it never wrote, so it would fail. `production-register`,
   `production-approve` and `production-transform` stay `manual`, as in release T's pipeline.
+- **[user] The sitting's downs** (*"Downs concluídos"*), as handed: `make down ENV=production
+  ONLY=workloads-egress,warehouse-compute`, `make gitlab-down`, the tunnel and `make hub-down`.
+  **[Claude] §R's readings** at 05:50 UTC as the infrastructure user: `./aws/egress.py` on Production,
+  Staging and Sandbox Account 1, every check passing, the burn meter 0 interface endpoints, 0 NAT gateways
+  and 0.000 USD/h in each; `make status`: `vpn`, `proxy` and `tooling` stopped, every `[E]` slice down,
+  the estimated burn 0.0000 USD/h. Production holds no workgroup and no running instance, and the three
+  schedules of `awsds-prod-chains` read `DISABLED`.
