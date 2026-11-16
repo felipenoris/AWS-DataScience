@@ -2056,7 +2056,8 @@ requires both.
    has ended, so the next tag is `v0.5.2`:
    4. **Both `studio/` slices**, accounts **Staging Account** and **Production**: the workflows grant's
       training pair; the description changes, so the policy and its attachment are replaced, 2 to add
-      and 2 to destroy in each, planned 2026-11-16.
+      and 2 to destroy in each, planned 2026-11-16. **Applied 2026-11-16**, 01:20 to 01:21 UTC, both
+      re-plans `No changes`.
 
       ```bash
       AWS_PROFILE=awsds-infra-staging terraform -chdir=terraform-live/staging/studio apply -input=false "$HOME/tmp/stage19-training-staging-studio.tfplan"
