@@ -465,7 +465,7 @@ project's Tooling environment for the stage's variables, extracts the bundle bes
 manifest and runs the CLI's `deploy` with `--bundle-archive-path`. It fails on the exit status, on
 a log with no *"Tooling VPC config"* line (`SUP-285`), on a catalog import whose summary reads
 anything but `Failed: 0` (`SUP-357`) and on a workflow of the stage's bootstrap it cannot find by
-name. Then it writes the stage's variables to `/awsds/<env>/applications/<app>/stage-variables`,
+name. Then it writes the stage's variables to `/datascience/<env>/applications/<app>/stage-variables`,
 which a chain's machine reads and passes to the run it starts (decision 23).
 Since decision 25 (b), written 2026-11-15, it admits a target's first import (`SUP-369`) and writes
 `<PREFIX>_CATALOG_PENDING=true`; `--catalog-follow-up`, run by the template's `staging-catalog` and
@@ -2289,7 +2289,7 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     `SUP-282`): a run started without them fails before its first task, and a chain's machine
     starts the run.
     (a) The leg records the stage's variables, as the deploy filled them, in an SSM parameter,
-    `/awsds/<env>/applications/<app>/stage-variables`; the machine reads it and passes it as
+    `/datascience/<env>/applications/<app>/stage-variables`; the machine reads it and passes it as
     `OverrideParameters`. The chains stay `[P]` and no pipeline job applies Terraform. (b) The
     pipeline applies the chains slice at each release with the release's values, the image's digest
     among them, as it applied `orchestration/`. (c) The leg writes each `{env.VAR}`'s value into the

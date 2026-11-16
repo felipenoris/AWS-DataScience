@@ -899,6 +899,9 @@ entry is still true is the reading.
   `PutParameter` answers `AccessDeniedException: No access to reserved parameter name`, a message that reads
   like a policy problem and is a naming one. Measured at Stage 2's Validation, 2026-08-16; the rule and this
   project's `/datascience/<env>/…` names live in `conventions.md`. The undocumented half is the error text.
+  Read again 2026-11-16 (Stage 19 release F, pipeline #126's `staging-deploy`): `PutParameter` on
+  `/awsds/staging/applications/app-etl/stage-variables` as `awsds-deploy-staging` answered the same text, the
+  name quoted without its leading slash; release F's parameter moved to `/datascience/<env>/applications/`.
 
 - `SUP-068` **`ApplyOnlyAtCronInterval` is rejected on `rate()` schedules**: `InvalidSchedule:
   ApplyOnlyAtCronInterval is not supported for Rate Schedule associations` (measured 2026-09-06, 6c step

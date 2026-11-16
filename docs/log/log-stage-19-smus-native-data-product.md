@@ -3334,3 +3334,40 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   exit 0 under `-detailed-exitcode`; IAM reads `awsds-staging-deploy-project` and `awsds-prod-deploy-project` at
   `v3`, each with `StartTheProjectsSourceBeforeTheSecondImport` granting `datazone:StartDataSourceRun` and
   `datazone:GetDataSourceRun`.
+- **[user] §N.8.4 step 6.2**: PR #304 merged at 00:06:17 UTC on 2026-11-16 as `f9c3ab49`, then the mirror pushed.
+  **[Claude] read**: GitLab's `awsds/infrastructure` `main` at `f9c3ab49`; `awsds/app-etl`'s `main` at `fc79a4d`, no
+  merge request open, the tags to `v0.5.0`. `git diff 3a15f2f6 f9c3ab49 -- examples/app-etl` is one file,
+  `.gitlab-ci.yml`, 52 insertions and 3 deletions. The rest of the sitting is recorded from the branch
+  `claude/release-f-v051`, cut from `f9c3ab49`.
+- **[user] §N.8.4 step 6.3, the template's merge request**: branch `release-f-catalog`, commit `0dd51d7e` on
+  `fc79a4db`, from `f9c3ab49:examples/app-etl`; merge request !15, its branch pipeline #124 green (`test`,
+  `pip-audit`, `secret_detection`, `secret-detection-gate`), merged at 00:10:25 UTC as `451d0ae2`, `main`'s
+  pipeline #125 green. **[Claude] read**: the branch's root tree and `main`'s entry for entry those of
+  `f9c3ab49:examples/app-etl`; `fc79a4db` to `451d0ae2` changes `.gitlab-ci.yml` alone; the tags to `v0.5.0`.
+  `staging/egress` and `production/workloads-egress` up by `state list`, the hub's two hosts and GitLab running.
+- **[user] §N.8.4 step 6.4, the tag `v0.5.1`** on `451d0ae2`: pipeline #126, created 00:13:41 UTC, `staging-catalog`
+  (786) and `production-catalog` (791) among its jobs. **[pipeline]** `test` and `pip-audit` green at 00:13:58.
+- **[user] `staging-gate`** of #126 (job 782, 00:20:00 to 00:20:05). **[pipeline]** `build-image` 00:13:59 to 00:16:44;
+  `bundle` green at 00:17:11, the guard *"assets: 1 (trades_notional)"*, *"dataProducts: 1 (trades-notional)"*, *"OK"*;
+  `release` at 00:17:27; `staging-check` (783) green, 00:20:11 to 00:20:33; `staging-deploy` (784) failed, 00:20:36
+  to 00:22:39.
+- **[Claude] `staging-deploy` read**: the CLI deployed, the import read as on 2026-11-15 (*"0 created, 1 updated, 0
+  skipped (extra in target), 1 failed, 0 published"*), the two workflows found, and the script admitted it: *"the
+  catalog's first import in this project (SUP-369): the data product waits for the project's own asset"*. Then
+  *"deploy-application: aws ssm put-parameter: … AccessDeniedException … No access to reserved parameter name:
+  awsds/staging/applications/app-etl/stage-variables"*: Parameter Store reserves every name beginning with `aws`
+  (`SUP-067`, `conventions.md`'s `/datascience/<env>/…`), and release F's parameter, written 2026-11-12, began with
+  `/awsds/`. No `staging.env`; `staging-test` and later skipped.
+- **[Claude] The parameter moved to `/datascience/<env>/applications/<app>/stage-variables`** (Recipe B):
+  `terraform-modules/orchestration` in `5765f562`, tagged `orchestration-v0.3.1` and read on origin at that
+  commit; both `chains/` slices pinned to it; both `foundation/` slices' `ssm` resource; `tfhygiene/projects.py`'s
+  `stage_variables_parameter`. `deploy-application.py --self-check` OK. Planned as the infrastructure user:
+  `staging/foundation` and `production/foundation` *"0 to add, 1 to change"*, the `ssm` statement's resource alone;
+  `staging/chains` *"0 to add, 3 to change"*, both machines' parameter name and the chain role's `ssm` resource;
+  `production/chains` *"24 to add"* with the new name, for step 8. `SUP-067` carries the reading.
+- **[Claude⚡] The parameter's three applies** on the user's word in chat (*"Sim, aplique os três"*, answering the
+  question naming `staging/foundation`, `production/foundation` and `staging/chains`), the three other sessions
+  told first, as the infrastructure user (`InfrastructureAccess`): `staging/foundation` 00:36:22 to 00:36:35 UTC and
+  `production/foundation` 00:36:35 to 00:36:47, *"0 added, 1 changed, 0 destroyed"* each; `staging/chains`
+  00:36:47 to 00:36:59, *"0 added, 3 changed, 0 destroyed"*. The three re-plans *"No changes"*, exit 0 under
+  `-detailed-exitcode`; both Staging machines' definitions read `/datascience/staging/applications/app-etl/stage-variables`.

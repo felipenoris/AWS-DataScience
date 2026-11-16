@@ -33,7 +33,7 @@ locals {
   # 2 (d)), and the parameter each application's stage variables are recorded in
   # (terraform-modules/orchestration).
   deployment_product_databases = ["app_etl"]
-  deployment_stage_variables   = "arn:${local.partition}:ssm:${local.region_account}:parameter/awsds/${var.env}/applications/*/stage-variables"
+  deployment_stage_variables   = "arn:${local.partition}:ssm:${local.region_account}:parameter/datascience/${var.env}/applications/*/stage-variables"
 }
 
 # IAM has no call that changes a managed policy's description: a change plans its replacement.
