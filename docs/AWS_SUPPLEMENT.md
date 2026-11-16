@@ -3410,17 +3410,25 @@ entry is still true is the reading.
   one, the newest by `CreatedAt` here. Where: `log-stage-06i-sandbox-orchestration.md`, 2026-10-10;
   `aws/sandbox-orchestration.py`.
 
-- `SUP-254` **A workflow created without `LogGroupName` gets
-  `/aws/mwaa-serverless/<domain>-<project>/<workflow>` with no retention, and the group outlives the
-  workflow** (measured 2026-10-10 in Sandbox, Stage 6i, and 2026-10-20 in Staging, Stage 18). The CI/CD CLI
-  1.0.9 passes no `LogGroupName`, and each workflow it deployed in Staging got such a group with no
-  retention: `app_etl_deploy_staging_app_etl`, `dagid_copy_deploy_staging_app_etl` and
+- `SUP-254` **MWAA Serverless creates a workflow's log group,
+  `/aws/mwaa-serverless/<domain>-<project>/<workflow>`, at `CreateWorkflow` with no retention, and the
+  group outlives the workflow** (measured 2026-10-10 in Sandbox, Stage 6i, 2026-10-20 in Staging, Stage 18,
+  and 2026-11-16 in Production, Stage 19). Each workflow the CI/CD CLI 1.0.9 deployed in Staging got such a
+  group with no retention: `app_etl_deploy_staging_app_etl`, `dagid_copy_deploy_staging_app_etl` and
   `orchestration_demo_deploy_staging_demo_python_operator`, read by `describe-log-groups` at 22:19:18Z, the
-  last two after their workflows were deleted. In Sandbox, deleting four portal workflows on 2026-10-10 took
-  their run history with them and left their log groups, `MyWorkflow`'s holding 21,448 bytes. A deleted
-  workflow's run evidence lives only in its group, and a retention rule has to be set on the group itself.
-  Where: `log-stage-06i-sandbox-orchestration.md`, 2026-10-10; `log-stage-18-staging-deployment-project.md`,
-  2026-10-20; `docs/AWS_STATE.md` `EXC-21`.
+  last two after their workflows were deleted. That reading took the name for the service's default and
+  recorded that the CLI passes no `LogGroupName`; the CLI passes it (below). In Sandbox, deleting four
+  portal workflows on 2026-10-10 took their run history with them and left their log groups, `MyWorkflow`'s
+  holding 21,448 bytes. A deleted workflow's run evidence lives only in its group, and a retention rule has
+  to reach the group itself. Read again 2026-11-16 in Production: for an IAM Identity Center domain the CLI
+  composes the name (`build_idc_log_group_name`) and passes it in `CreateWorkflow` and `UpdateWorkflow`.
+  The trail shows `CreateLogGroup` on each group in the deploy role's session, `invokedBy
+  airflow-serverless.amazonaws.com`, with the project key and no retention (02:31:49 to 02:32:13 UTC), and
+  the `UpdateWorkflow` calls of 02:50:53 to 02:51:20 naming the existing groups succeeded. The project's
+  `datazone-<project>-dev/error` and `/output` groups are created by the project role itself, with no key
+  and no retention. Where: `log-stage-06i-sandbox-orchestration.md`, 2026-10-10;
+  `log-stage-18-staging-deployment-project.md`, 2026-10-20; `log-stage-19-smus-native-data-product.md`,
+  2026-11-15; `docs/AWS_STATE.md` `EXC-21`, `EXC-25`.
 
 - `SUP-255` **The portal's workflow editor demands `ContainerArguments` on a SageMaker Processing task,
   which `CreateProcessingJob` does not, and its form has no field for the job's network, keys or tags**

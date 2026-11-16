@@ -41,8 +41,8 @@
 #     workflow (Stage 10 decision 13), so OR-1 fails on one
 #   - a workflow runs as its project's role, datazone_usr_role_<project id>_<environment id>, under
 #     awsds-<env>-project-boundary and carrying the policies <env>/studio/ attaches (OR-3)
-#   - its log group is the service's, /aws/mwaa-serverless/<domain id>-<project id>/<workflow>,
-#     which needs a retention set (D28 item 5, SUP-254; OR-2)
+#   - its log group is the CLI's, /aws/mwaa-serverless/<domain id>-<project id>/<workflow>,
+#     which the service creates with no retention; D28 item 5 asks one (SUP-254; OR-2)
 #   - its definition is the CLI's upload under <domain id>/<project id>/shared/ in the account's
 #     projects bucket, awsds-<env>-smus-projects (OR-5)
 #   - its failure rule is awsds-<env>-wf-<application>-<workflow>-failed, matching its ARN up to the
@@ -838,9 +838,9 @@ def main(argv: list) -> int:
     def home_of(env: str, d: dict) -> tuple:
         return project_home(proj_roles[env].get(d["role"].rsplit("/", 1)[-1]))
 
-    # OR-2: every workflow logs to the group the service names for it, and every group under
-    # /aws/mwaa-serverless/ carries a retention (D28 item 5). The CLI passes no LogGroupName, and
-    # the service creates the group with none (SUP-254): EXC-25 until Stage 19 decision 27.
+    # OR-2: every workflow logs to the group the CLI names for it, and every group under
+    # /aws/mwaa-serverless/ carries a retention (D28 item 5). The service creates the group with
+    # none (SUP-254): EXC-25 until Stage 19 decision 27.
     for env, ws in workflows.items():
         for name, d in ws.items():
             if not (d["cli"] and d["read"]):
@@ -853,7 +853,7 @@ def main(argv: list) -> int:
                 checks.fail("OR-2", what, "no LogGroupName.")
             elif expected and lg != expected:
                 checks.fail(
-                    "OR-2", what, f"{lg} - not {expected}, the service's group for the workflow."
+                    "OR-2", what, f"{lg} - not {expected}, the CLI's group for the workflow."
                 )
             elif not expected:
                 checks.note("OR-2", what, f"{lg} - its role's project was not read (section 4).")
@@ -1331,10 +1331,10 @@ a role of its own, awsds-<env>-wf-*; OR-3 fails on one.""")
         else:
             rep.line(f"No group under {AUTO_LOG_PREFIX}.")
         rep.text("""
-The CLI passes no LogGroupName, so the service names each workflow's group
-/aws/mwaa-serverless/<domain id>-<project id>/<workflow> and creates it with no
-retention, and the group outlives its workflow (SUP-254). OR-2 fails on every group
-here with no retention; EXC-25 expects it until Stage 19 decision 27 is applied.""")
+The CLI names each workflow's group /aws/mwaa-serverless/<domain id>-<project id>/<workflow>
+in CreateWorkflow, the service creates it with no retention, and the group outlives
+its workflow (SUP-254). OR-2 fails on every group here with no retention; EXC-25
+expects it until Stage 19 decision 27 is applied.""")
 
         # ==============================================================================
         rep.h1("6. The EventBridge rules, and the chain layer above the workflows")
@@ -1470,7 +1470,7 @@ any account.""")
 What the checks are, and where each comes from:
   OR-1  each account's workflows exist, each the CLI's in the deployment project,
         READY with no cron (Stage 19 step 4.6, Stage 10 decision 13)
-  OR-2  each workflow logs to the service's group for it, and every group under
+  OR-2  each workflow logs to the CLI's group for it, and every group under
         /aws/mwaa-serverless/ carries a retention (D28 item 5, SUP-254; EXC-25)
   OR-3  each workflow runs as its project's role, under the project boundary, its
         trust naming airflow-serverless, carrying <env>/studio/'s policies; no

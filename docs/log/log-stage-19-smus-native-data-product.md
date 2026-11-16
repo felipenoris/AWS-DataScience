@@ -3645,3 +3645,31 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   1.16.6 (`CreateWorkgroup` in Production's trail), an apply this session did not run; the hub, GitLab
   with its runners, `egress/` and `workloads-egress/` up; Staging's slices down. Estimated burn 1.9771
   USD/h, 1.44 of it the warehouse's per-query-hour figure.
+- **[Claude] The user's question, whether decision 27's recommendation (b) follows what AWS intends.**
+  The pages read are in `docs/REFERENCES.md` under decision 27. Production's trail, read at 04:14 UTC:
+  `CreateLogGroup` on the three workflow groups at 02:31:49, 02:32:01 and 02:32:13 in the session of
+  `awsds-deploy-prod`, `invokedBy airflow-serverless.amazonaws.com`, each with a KMS key and no retention;
+  on `datazone-d7qcazihvr3s7k-dev/error` and `/output` at 02:33:20 and 02:33:49 by the project role, with
+  no key; the `UpdateWorkflow` calls from 02:50:53 to 02:51:20 naming each existing group in
+  `loggingConfiguration.logGroupName`. The CLI 1.0.9's code composes that name for an IAM Identity Center
+  domain (`build_idc_log_group_name`) and passes it in both calls: `SUP-254`'s *"passes no LogGroupName"*,
+  repeated by `EXC-21`, `EXC-25`, decision 27 and `aws/orchestration.py`, took the group's name for the
+  service's default. Corrected in each.
+- **[Claude] CloudWatch Logs' account-level retention policy**, read in both targets before 04:28:05 UTC:
+  `describe-account-policies --policy-type BOGUS_POLICY` refused with *"Member must satisfy enum value
+  set: [DATA_PROTECTION_POLICY, FIELD_INDEX_POLICY, VPC_FLOW_LOGS_POLICY, RETENTION_POLICY,
+  SUBSCRIPTION_FILTER_POLICY, TRANSFORMER_POLICY, METRIC_EXTRACTION_POLICY]"*, and `--policy-type
+  RETENTION_POLICY` answering `{"accountPolicies": []}` in Production and in Staging. The AWS provider
+  6.73.0, in a scratch configuration with no backend: `terraform validate` passes `METRIC_EXTRACTION_POLICY`
+  and refuses `RETENTION_POLICY` and `BOGUS_POLICY` alike, *"expected policy_type to be one of
+  ["DATA_PROTECTION_POLICY" "SUBSCRIPTION_FILTER_POLICY" "FIELD_INDEX_POLICY" "TRANSFORMER_POLICY"
+  "METRIC_EXTRACTION_POLICY"]"*. CloudFormation's `AWS::Logs::AccountPolicy` schema in us-west-2 lists the
+  same five types, and so does the AWS CLI 2.37.12's help.
+- **[Claude] The targets' groups**, `describe-log-groups` after it: `storedBytes` 0 on the five workflow
+  groups and the four DataZone groups, none with a retention; each target's `datazone-<project id>-dev`
+  carries 731 days.
+- **[Claude] Decision 27 revised**: the premise corrected, (a)'s two unmeasured behaviours answered
+  (`SUP-253`, the `UpdateWorkflow` calls, the key policy read in `kms.tf`), option (d) added, the
+  account-level retention policy, and the recommendation moved from (b) to (d) once the provider accepts
+  the type, with (c) until then. `waiting-on-the-user.md`'s row and `EXC-25` follow. Nothing changed in
+  AWS.

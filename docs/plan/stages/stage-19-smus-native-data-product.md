@@ -2416,22 +2416,31 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     `app-etl-dev`'s data product is deleted before release G's bundle. **Written 2026-11-16**
     (§Release G as written), nothing applied.
 27. **Who sets the retention of the deployment projects' service-created log groups** (D28 item 5,
-    `SUP-254`, `EXC-25`). The CLI 1.0.9 creates each workflow with no `LogGroupName`, and the service
-    creates `/aws/mwaa-serverless/<domain id>-<project id>/<workflow>` with no retention; the group
-    outlives its workflow and holds the only record of a deleted workflow's runs (`SUP-254`). Release T's
-    slices declared each workflow's group with a retention, as D28 item 5 asks. Read 2026-11-16: two
-    such groups in Staging, created 2026-11-15 at 23:21 UTC, and three in Production, 2026-11-16 from
-    02:31:49 to 02:32:13 UTC, none with a retention; each deployment project's `datazone-<project
-    id>-dev/error` and `/output`, created in Production at 02:33:20 and 02:33:49 and in Staging at
-    00:44:12 and 00:44:50, have none either. `./aws/orchestration.py` `OR-2` fails on the five since its
-    rules read the CLI's contracts (03:57:54Z), every other check passing. `EXC-10` leaves the same
-    question open for Sandbox's groups.
+    `SUP-254`, `EXC-25`). The CLI 1.0.9 names each workflow's group in `CreateWorkflow`,
+    `/aws/mwaa-serverless/<domain id>-<project id>/<workflow>`, and the service creates it in the deploy
+    role's session, under the project key, with no retention; the group outlives its workflow and holds
+    the only record of a deleted workflow's runs (`SUP-254`). Each deployment project's `datazone-<project
+    id>-dev/error` and `/output` are created by the project role (Production's trail), with no key and
+    no retention; their
+    parent `datazone-<project id>-dev` carries 731 days. Release T's slices declared each workflow's group
+    with a retention, as D28 item 5 asks. Read 2026-11-16: two workflow groups in Staging, created
+    2026-11-15 at 23:21 UTC, and three in Production, 2026-11-16 from 02:31:49 to 02:32:13 UTC, none with a
+    retention; the DataZone pairs, created in Production at 02:33:20 and 02:33:49 and in Staging at
+    00:44:12 and 00:44:50, have none either, and `storedBytes` reads 0 on all nine.
+    `./aws/orchestration.py` `OR-2` fails on the five since its rules read the CLI's contracts
+    (03:57:54Z), every other check passing. `EXC-10` leaves the same question open for Sandbox's groups.
+    AWS's baseline, the Config rule `cw-loggroup-retention-period-check` behind Security Hub's
+    `CloudWatch.16`, asks 365 days by default and passes a group that never expires; D28's 90 days is the
+    project's choice, as on the chains' group.
     (a) Terraform declares the groups: `terraform-modules/orchestration` creates each workflow's group
     from the names it composes, 90 days under the project key, `<env>/studio/` the two DataZone
-    groups, and the nine are imported. Unmeasured: whether the service logs into a group that exists
-    before `CreateWorkflow`, and whether the project key's policy admits CloudWatch Logs for a group
-    Terraform creates. The module needs the project id as an input, and a workflow added to a manifest
-    has its group only once the slice names it.
+    groups, and the nine are imported. The service logs into a group that exists before `CreateWorkflow`
+    (`SUP-253`) and accepted the existing groups in `UpdateWorkflow` (02:50:53 to 02:51:20 UTC), and the
+    project key's policy admits CloudWatch Logs on `/aws/mwaa-serverless*` and `datazone-*`
+    (`terraform-modules/sagemaker-prereqs/kms.tf`, read, not applied). Unmeasured: whether the code that
+    creates the DataZone pair as the project role tolerates a group that exists. The module needs the
+    project id as an input, a new workflow's group has to exist before its first deploy or be imported
+    after it, and the names follow the CLI's `build_idc_log_group_name`, which a CLI release can change.
     (b) The deploy sets them: `scripts/deploy-application.py`, after each deploy, sets 90 days on every
     group under `/aws/mwaa-serverless/<domain id>-<project id>/` and `datazone-<project id>-dev/` that
     has none, and fails the job on a refusal; each `foundation/` slice grants its deploy role
@@ -2439,12 +2448,30 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     gets its retention at the next deploy, and a group that outlives its workflow keeps it.
     (c) Accepted: `EXC-25` stays, `OR-2` fails on every such group, and D28 item 5 is unmet in the
     targets as it is in Sandbox.
-    **Recommended: (b)**: the service names each group at the CLI's `CreateWorkflow`, and the deploy
-    that calls it runs whenever a group can appear, for every application, with no slice change per
-    workflow. (a) declares names another system chooses and rests on two unmeasured behaviours, and
-    (c) lets the targets' only run records accumulate. Its costs: two `foundation/` applies, the grant
-    applied before the script reaches the mirror, since every job clones the infrastructure repository
-    at its head and would fail on the refusal; and `OR-2` extended to the DataZone groups.
+    (d) An account-level retention policy: CloudWatch Logs' `PutAccountPolicy` with `RETENTION_POLICY`
+    sets 90 days on every group under `/aws/mwaa-serverless/` and `datazone-<project id>-dev/` in each
+    target, existing groups included (`RETROACTIVE`), whoever creates them. It replaces a group's own
+    retention in both directions, so the DataZone prefix stops at the project's `-dev/`: a bare
+    `datazone-` would cut the parent's 731 days to 90. It takes effect 24 hours after it is put, and a
+    Region holds up to 20. Read 2026-11-16: the API in us-west-2 has the type, its refusal of an unknown
+    type listing `RETENTION_POLICY`, and answers an empty list for it in both targets; the AWS provider
+    6.73.0 refuses it at `validate`, and CloudFormation's `AWS::Logs::AccountPolicy` and the AWS CLI
+    2.37.12 list five types without it. Until a provider release accepts it, it is a hand-managed
+    account setting, as account-level BPA and the Bedrock retention mode are. Unmeasured: what
+    `DescribeLogGroups` reports for a group the policy governs, which decides what `OR-2` reads, and
+    that `RETROACTIVE` also governs the groups created after it, which the page implies. The same
+    mechanism, with Sandbox's prefixes, answers `EXC-10`.
+    **Recommended: (d), declared in both `foundation/` slices once the AWS provider accepts
+    `RETENTION_POLICY`, and (c) until then**: it is CloudWatch Logs' own control for groups another
+    system creates; it needs no slice change, no ordering per workflow and no grant to the deploy role;
+    it covers the DataZone pairs and the groups a deleted workflow leaves; and, by the page, a group's
+    own setting cannot shorten it. The nine groups read 0 bytes, so the wait costs nothing measured. (b)
+    is the remediation AWS's 2022 blog describes, a write after the fact, and its grant lets the deploy
+    role shorten its own runs' logs; (a) is the documented shape, a group the customer provides, at a
+    slice change and an order per workflow. Its costs: a watch on the provider's releases
+    (`upstream-releases.md`), `OR-2` taught to read the policy if `DescribeLogGroups` does not show it,
+    and two `foundation/` applies. If the wait must end with Stage 19, (d) by hand is the fallback,
+    imported once the provider accepts the type.
 
 ## Cost
 
