@@ -684,6 +684,11 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
    check is Lesson 32's citation test in reverse, follow the promise to its addressee). And before
    scheduling anything "before the door closes", try the door: both options of the sample-row
    decision described a door that was not there.
+   Stage 19's decision 20 counted on *"two data products, told apart by the owning project alone"* in
+   one domain, while `CreateDataProduct`'s prerequisites, read for the stage on 2026-10-28, state a data
+   product's name unique within the domain; release F's second import measured it on 2026-11-16, a
+   conflict the CLI counts as an update (`SUP-369`, decision 26). A decision that relies on a platform
+   behaviour reads the API reference's prerequisites for it before it is taken.
 
 35. **Adopting an object into infrastructure-as-code silently invalidates every *procedure* written
    about it — and the adoption touches none of the files that carry those procedures.** Stage 2 step

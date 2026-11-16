@@ -3576,9 +3576,11 @@ entry is still true is the reading.
   `app-etl-train` under a project role, `W373uHP9ZB5EvsW` in `deploy-staging`, failed on
   `DescribeTrainingJob` of a free name, *"no identity-based policy allows"*; v48 scopes
   `DescribeTrainingJob` to the caller's project tag as it scopes `DescribeProcessingJob`. The deployment
-  projects' grant holds the same pair for training jobs (`<env>/studio/workflows.tf`); whether
-  `CreateTrainingJob` with its tag is authorized as `AddTags`, as the processing job's create is, is read
-  in the run after that grant. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
+  projects' grant holds the same pair for training jobs (`<env>/studio/workflows.tf`). With it applied,
+  `v0.5.2`'s run created `app-etl-train-20261116T020100`, `Completed` (pipeline #129's `staging-test`);
+  the pair grants `AddTags` too, so the pass does not separate whether `CreateTrainingJob` with its tag
+  is authorized as `AddTags`, as the processing job's create is. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 - `SUP-268` **The Amazon provider 9.32.0's SageMaker and Glue operators read the job name before they create
   the job, and count only one error code as absent** (read in the provider's code at
@@ -3877,9 +3879,11 @@ entry is still true is the reading.
   failed is a successful deploy. A leg that promotes a catalog reads the `Failed:` count from the log, or
   the target project's assets afterwards. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-11.
 
-- `SUP-369` **A catalog import creates no asset in a second project of the domain: `CreateAsset` with the
-  source's `externalIdentifier` is a `ConflictException`, which the CLI 1.0.9 counts as an update, so the
-  data product over it fails** (measured 2026-11-15, Stage 19 release F, pipeline #123's `staging-deploy`).
+- `SUP-369` **A catalog import creates neither the asset nor the data product in a second project of the
+  domain: `CreateAsset` with the source's `externalIdentifier` and `CreateDataProduct` with the source's
+  name are each a `ConflictException`, which the CLI 1.0.9 counts as an update** (measured 2026-11-15,
+  Stage 19 release F, pipeline #123's `staging-deploy`; the data product 2026-11-16, pipeline #129's
+  `staging-catalog`).
   The import of `app-etl-dev`'s `trades_notional` into `deploy-staging` called `CreateAsset` with the
   source's `externalIdentifier` unchanged, `arn:aws:glue:us-west-2:<Sandbox>:table/app_etl/trades_notional.<app-etl-dev's
   project id>`, and DataZone answered `ConflictException`, CloudTrail carrying no `errorMessage`.
@@ -3893,6 +3897,18 @@ entry is still true is the reading.
   (`SUP-357`). A target's asset can therefore come only from its own source; a later import maps the
   source's asset to it by name, `_build_identifier_map`'s fallback (read in the code, not measured).
   Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
+  Read again 2026-11-16 (pipeline #129's `staging-catalog`, `v0.5.2`'s `--catalog-follow-up`): the
+  target's source, started by the deploy role at 02:07:53 UTC, imported `trades_notional` (run
+  `cntcrgrt3c22og`, `added: 1`), and the second import remapped the `DataSourceReferenceForm` to that
+  source and revised the target's asset `as6m73yp8shr80` by name, `CreateAssetRevision` to revision 2,
+  with no `CreateAsset`. The data product failed on its name: `CreateDataProduct` in `deploy-staging` over
+  `as6m73yp8shr80` answered `ConflictException`, *"Conflict with dataProduct 5070mjwdvjwp3k"*,
+  `app-etl-dev`'s product of the same name; `CreateDataProduct`'s prerequisites state a data product's
+  name unique within the domain. The CLI logged *"Resource trades-notional already exists
+  (ConflictException), treating as update"*, the summary read *"0 created, 2 updated, 0 skipped (extra in
+  target), 0 failed, 0 published"*, and `deploy-application.py` passed. A data product the CLI promotes
+  between projects of one domain reaches no target while the source holds it, and the summary counts the
+  miss as an update. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15; Stage 19 decision 26.
 
 ## Bedrock
 

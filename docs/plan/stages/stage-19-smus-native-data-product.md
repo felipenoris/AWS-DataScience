@@ -1669,7 +1669,7 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
 | ix | Does revocation remove every piece, and does a session opened before it still read? 6f iii. **Read 2026-11-14: every piece, within 62 s of the call; the open session read until the link's delete.** `RevokeSubscription` at 23:00:00 UTC, `BatchRevokePermissions` by the producer's role at 23:00:52, the link's `DeleteTable` by the consumer's at 23:01:02; the session's next read failed `TABLE_OR_VIEW_NOT_FOUND` (`SUP-365`) | 2.5 |
 | x | Does the consumer's daily source import the resource link, and does anything notice? **Read 2026-11-14: yes, and `catalog.py` notices.** A member's run imported the link as the unlisted asset `b5r73n41qe7jf4` (`SUP-197`), `CT-19` noting it; after the revoke `CT-19` reads the asset against *"no such table"*. The source's scheduled run at 02:51 UTC on 2026-11-15, its first after the revoke, left the asset untouched: `SUCCESS`, `added`, `updated`, `unchanged` and `failed` 0, no activity | 2.6 |
 | xi | Can the consumer's role vend the table's objects directly, under Sandbox's `AllowFullTableExternalDataAccess` (`TM-26`, Stage 17 7.4c)? **Read 2026-11-14: not the objects; their keys, yes.** `HeadObject` on the table's metadata refused `403`; `ListObjectsV2` on the producer's table folder answered a key, through `SageMakerStudioProjectUserRolePolicy`'s `AirflowListDomainS3Permissions` (`SUP-367`, `TM-31`); `GetDataAccess` not attempted. `TM-31` accepted by the user on 2026-11-15, the listing being SMUS's design | 2.4 |
-| xii | What does the bundle carry of the catalog, in what order does `deploy` import against the run, which policy grants does the import add to the domain unit, and what does Staging hold after? **The bundle's half read 2026-11-15** (step 17, from `app-etl-dev`): the asset `trades_notional` with its five forms by name and revision, `classification` among them, and the data product `trades-notional` naming its item by the `dev` asset's id; no form type, glossary or asset type | 3.2, 4.10 |
+| xii | What does the bundle carry of the catalog, in what order does `deploy` import against the run, which policy grants does the import add to the domain unit, and what does Staging hold after? **The bundle's half read 2026-11-15** (step 17, from `app-etl-dev`): the asset `trades_notional` with its five forms by name and revision, `classification` among them, and the data product `trades-notional` naming its item by the `dev` asset's id; no form type, glossary or asset type. **Staging's half read 2026-11-16** (`v0.5.2`'s `staging-catalog`): the asset from the project's own source, revised by the second import to revision 2; no data product, its name the domain's (`SUP-369`, decision 26) | 3.2, 4.10 |
 | xiii | From the warehouse, which identity reads `awsdatacatalog`, does it carry the project's context, and which Lake Formation grant admits it? | 5.2 |
 | xiv | What does an Iceberg materialized view register in the Glue Data Catalog, and what does its refresh cost? | 5.2 |
 | xv | Does a Redshift asset published from the connection find a subscription target in any project? | 5.3 |
@@ -1688,7 +1688,7 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
 | xxviii | Does `workflow.run` with `trailLogs` in the `prod` stage's bootstrap follow the run to its end, and does the deploy fail with it? The CLI 1.0.9's `wait` crashes (`sagemaker-application.md` §M), and `trailLogs` is read in its code alone | 4.10 |
 | xxix | Does a chain's machine find the CLI-made workflow by name with `ListWorkflows`, read the stage's variables from SSM and start the run with them as `OverrideParameters`, the run rendering every `{{ params.VAR }}`? The definitions answer `OK` to `ValidateStateMachineDefinition` (2026-11-12), which reads no run | 4.10 (`staging-test`), 4.11 |
 | xxx | Does `scripts/deploy-application.py` read the deploy's log as the CLI 1.0.9 prints it in a target: the *"Tooling VPC config"* line, the import's `Failed:` count at zero in a first import, each workflow found by name? | 4.10 |
-| xxxi | Does the batch transform run as the project's role under the fence, the model and its batch input under the project's shared prefix and key, the deploy role passing that role to SageMaker? | 4.10 (`staging-model`) |
+| xxxi | Does the batch transform run as the project's role under the fence, the model and its batch input under the project's shared prefix and key, the deploy role passing that role to SageMaker? **Read 2026-11-16: yes** (`v0.5.2`'s `staging-model`): `awsds-deploy-staging` created the model with the project role as its execution role, in the project's subnets and security group with network isolation; the model data, the batch input and the transform's 10 predictions under the project's `shared/` prefix, the output with the project's key | 4.10 (`staging-model`) |
 | xxxii | Does the load's Glue job, created by the task in `deploy-production`, open its session as `IAMR:<project role>` through `GetCredentials` under the fence, the Data API and the query editor refused to the same role? The policies read so by simulation on 2026-11-12, which opens no session | the warehouse sitting |
 
 ## Decisions due
@@ -2356,6 +2356,29 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     target's source, the template's `staging-catalog` and `production-catalog` run it, both
     `foundation/` slices grant the source's start, and `CT-13` judges a deploy role's start against
     its deployment project; the release is `v0.5.1`, `promotion.md` §N.8.4.
+26. **Where the product's data product lives** (decisions 18 (d), 20 and 25, xii; `SUP-369`). A data
+    product's name is unique within the domain, as `CreateDataProduct`'s prerequisites state, and every
+    stage shares one domain (D22). On 2026-11-16 `staging-catalog`'s second import revised Staging's
+    asset by name and answered *"Conflict with dataProduct 5070mjwdvjwp3k"*, `app-etl-dev`'s
+    `trades-notional`, on the data product. The CLI 1.0.9 counts that as an update, so the summary read
+    `Failed: 0` and `deploy-application.py` passed. While `dev` holds the product no import creates it in
+    a target, Production's included: decision 20's *"two data products, told apart by the owning project
+    alone"* cannot exist, and the Proves row's Production publishing the product has no data product to
+    publish. `v0.5.2` is unaffected: Production's import answers the same, and its `publish` task lists
+    the asset.
+    (a) The data product stays in `dev`: each target holds the asset, revised by every import with
+    `dev`'s metadata, and Production lists the asset alone, read as the product the Proves row names.
+    Records only.
+    (b) Production owns the data product: `app-etl-dev`'s is deleted, `product.json` requires the asset
+    alone, and Production's `publish` task creates the data product over Production's asset where the
+    project holds none, then publishes it; its name and description move into the repository. A release
+    G with the task and its tests; the project role's `CreateDataProduct` is unmeasured.
+    (c) No data product anywhere: `app-etl-dev`'s is deleted and the asset is the product, decision 25
+    (c)'s shape.
+    **Recommended: (b)**: the stage's product is a data product Production publishes (the Proves row,
+    INT-26), and a name the domain holds once belongs to the project that publishes it. (a) leaves an
+    unlisted working copy as the domain's only data product, and (c) gives up what the stage is named
+    for.
 
 ## Cost
 

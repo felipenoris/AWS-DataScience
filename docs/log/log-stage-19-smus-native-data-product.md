@@ -3473,3 +3473,41 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
     attempt spent) and 84 (the laptop's shell is zsh) written, and the parameter's name added to Lesson 5 as
     a naming rule nothing checked. Already recorded and not repeated: the simulator's Region and principal
     tags (`SUP-008`), the run state's lag (`SUP-273`), a non-member's catalog (`SUP-157`).
+- **[pipeline] `staging-test`** of #129 (job 820) green, 01:42:35 to 02:07:27. **[Claude] read** in its log
+  and in Staging: the chain execution `v0-5-2-820-app-etl` `SUCCEEDED`, 01:42:44 to 01:59:49 UTC, then
+  `v0-5-2-820-app-etl-train`, 02:00:10 to 02:07:12; the run's report, *"rows": 10*, from `trades.csv`; the
+  product table `trades_notional`, `ICEBERG`, registered, its metadata at `00001-…`. The training job
+  `app-etl-train-20261116T020100` `Completed`, created 02:01:02, ended 02:03:46: the training pair's first
+  pass, which does not separate whether the create needs `AddTags` (`SUP-267`).
+- **[pipeline] `staging-catalog`** (821) green, 02:07:30 to 02:10:06, the first `--catalog-follow-up`.
+  **[Claude] read** in its log: *"the project's source 52f18khk7kdi4w started: run cntcrgrt3c22og"*,
+  *"SUCCESS: {"added": 1, "failed": 0, "unchanged": 0, "updated": 0}"*, *"the project holds
+  trades_notional"*; the second deploy's import, *"Remapped DataSourceReferenceForm to target data source
+  52f18khk7kdi4w (db_app_etl)"*, *"Resource trades-notional already exists (ConflictException), treating
+  as update"*, *"0 created, 2 updated, 0 skipped (extra in target), 0 failed, 0 published"*; both workflows
+  created, *"Deployment completed successfully!"*, and the stage's variables recorded. In the domain's
+  CloudTrail, as `awsds-infra-data`: `StartDataSourceRun` at 02:07:53 UTC; a `CreateAsset` at 02:07:56,
+  during the source's run; `CreateAssetRevision` on `as6m73yp8shr80` at 02:09:30, revision 2, and no
+  `CreateAsset` from the import; `CreateDataProduct` in `deploy-staging` at 02:09:30 over
+  `as6m73yp8shr80`, `ConflictException`, *"Conflict with dataProduct 5070mjwdvjwp3k"*. That product is
+  `app-etl-dev`'s (`ceweti7jbiu1hs`), created 2026-11-15 03:14:56 UTC over `c6z3pbg3drrs0g`.
+  `deploy-staging`'s four earlier `CreateDataProduct`, 23:20:50 to 01:41:54, each read *"Resource asset
+  provided is not from same project"*, and the domain's other `trades-notional`, `bvs7m8z4h6w70w`, was
+  deleted 2026-11-14 23:10:01. `GetDataProduct` refused to the same identity, a non-member. The API
+  reference's and boto3's `CreateDataProduct` pages state a data product's name unique within the domain.
+  The import mapped the asset by name (`SUP-369`'s later reading) and creates the data product in no
+  target while `app-etl-dev` holds it, so decision 20's two data products cannot exist; decision 26
+  written, due.
+- **[pipeline] `staging-model`** (822) green, 02:10:09 to 02:16:33. **[Claude] read** xxxi: the batch
+  transform `app-etl-v0-5-2-20261116T021037` `Completed` at 02:16:28 on the model of
+  `app-etl-train-20261116T020100`, 10 predictions for 10 rows, the model deleted after. In Staging's
+  CloudTrail: `CreateModel` at 02:10:39 by `awsds-deploy-staging`, the project role its execution role,
+  in the project's two subnets and security group with network isolation, the model data under the
+  project's `shared/` prefix; `CreateTransformJob` at 02:10:41 by the same role, input and output under
+  that prefix, the output with the project's key `c6556c49-…`.
+- **[pipeline] `production-check`** (823) failed, 02:16:36 to 02:16:54, on the membership, as step 7
+  expects: *"the caller is no member of deploy-production: DataZone refuses it the project's
+  connections"*. **[Claude] read** the group profile as `awsds-infra-data`:
+  `c332eee6-eabe-33d0-b329-e6b85b4fcacd`, `ASSIGNED`, its `rolePrincipalArn` Production's
+  `awsds-deploy-prod`. `make status ENV=production`: `workloads-egress` UP, 17 resources; release T's
+  `orchestration/` (41) and `app/app-etl/` (3) UP.

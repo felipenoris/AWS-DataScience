@@ -801,6 +801,11 @@
   <https://docs.aws.amazon.com/datazone/latest/userguide/configure-subscription-target-in-custom-environment.html>,
   <https://docs.aws.amazon.com/datazone/latest/userguide/datazone-concepts.html>,
   <https://docs.aws.amazon.com/datazone/latest/userguide/working-with-blueprints.html>.
+- `CreateDataProduct`'s prerequisites (re-read 2026-11-16, for Stage 19 decision 26 and `SUP-369`): a data
+  product's name unique within the domain, no existing data product of the same name; the reference's
+  duplicate example answers `ConflictException`, *"Conflict with dataProduct <id>"*:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateDataProduct.html>,
+  <https://docs.aws.amazon.com/boto3/latest/reference/services/datazone/client/create_data_product.html>.
 - Metadata forms in SageMaker Unified Studio (read 2026-11-08, for Stage 19 decision 4 and 1.3): a form
   created from *Manage → Catalog management → Metadata forms*, enabled by default, its field types
   `String`, `Integer`, `Long`, `Float`, `Double`, `Boolean`, `Date` and `Business glossary`, none
