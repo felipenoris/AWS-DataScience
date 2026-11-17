@@ -93,7 +93,6 @@
       "Effect": "Deny",
       "Action": [
         "sagemaker:CreateTrainingJob",
-        "sagemaker:CreateProcessingJob",
         "sagemaker:CreateHyperParameterTuningJob",
         "sagemaker:CreateAutoMLJob",
         "sagemaker:CreateAutoMLJobV2",
