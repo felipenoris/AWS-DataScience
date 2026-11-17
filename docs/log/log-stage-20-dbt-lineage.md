@@ -425,3 +425,222 @@ Account ids are replaced by the account's name in angle brackets.*
   `docs/log/INDEX.md`; `CLAUDE.md`'s Current position; `docs/REFERENCES.md`. No module, slice,
   policy document or script was edited: pass 4 names each of them for the laptop session that takes
   it.
+
+## 2026-11-17 — the plan reviewed for execution: the draft built and run against simulated services
+
+- **[user] The request**, in the cloud session's thread at 23:39 UTC on 2026-11-16: *"Revise o plano do
+  estágio novo, refinando o q for necessário, detalhando o passo a passo, e verificando se é exequível.
+  Suba as correções necessárias no mesmo PR."* **[Claude]** answered at 23:40 that the stage would be
+  read again step by step and each step checked against the repository and the packages. Claude read
+  *"exequível"* as three checks: every step of "To execute" names its commands, who runs them, what is
+  read, when it passes and when it stops; every command and every name is read against the repository,
+  the runbooks, `awsds-workflows` and the released packages; and what runs with no AWS credential is run.
+  The session made no AWS call, no apply and no portal act.
+- **[Claude] The host and the trees.** The cloud session's host, outside this estate: Ubuntu 24.04.5 with
+  glibc 2.39, uv 0.11.32, CPython 3.12.3 and jq 1.7, reaching PyPI and GitHub, with no AWS credential.
+  This repository at `f3ac422`, the branch's head over `main` `c5e1718`, until the merge recorded below.
+  `awsds-workflows` at `196acee`, the commit `examples/app-etl/.gitlab-ci.yml` pins. Each time below is
+  UTC, from a file's modification time, a log's own line or the session's record of the command. The
+  draft, the simulation and each run's files stay outside git, the pull request carrying the plan alone:
+  they are kept among the cloud session's project files as `stage-20/app-dbt-review-2026-11-17.tar.gz`,
+  which the laptop does not hold.
+- **[Claude] The draft**, the application as "The application, task by task" lays it out, written in a
+  scratch folder at 23:50 on 2026-11-16: `pyproject.toml`, `manifest.yaml` with its one stage, the
+  workflows `app-dbt` and `app-dbt-probe`, `code/run-dbt.sh`, the package `src/app_dbt/` with the dbt
+  project (the model `notional_by_desk`, `schema.yml`, `sources.yml` and the profile), the transformer
+  `lineage.py` and the console script `bin/dbt`, a sample, and a stub where the Glue script goes. It
+  holds no test, no README and no `scripts/dev-cli.sh`, and `ruff format --check` would rewrite one line
+  of `lineage.py`: pass 1 writes the application from it and owes each of them.
+- **[Claude] The lock and the archive** (the stage file's 0.15), `package-task` run from
+  `awsds-workflows` `196acee` with `--platform x86_64-manylinux_2_28`:
+  - At 23:50 on 2026-11-16, the three packages pinned as the plan named them (dbt-core 1.11.17,
+    `dbt-athena` 1.11.1, `openlineage-dbt` 1.55.0) and no `exclude-newer`: `uv lock` resolved 86
+    packages. With `--include code/run-dbt.sh --include code/dbt`, the shim the plan placed at the
+    archive's root, `package-task` answered *"dbt já está na raiz do .zip: renomeie"* and the file's
+    path. With `--include code/run-dbt.sh` alone it took 4.4 s to build 26,152,032 bytes, 82,944,996
+    unzipped.
+  - That archive, read: 5,104 entries, `run-dbt.sh` and `app_dbt/bin/dbt` stored with mode 755, and ten
+    compiled modules, of which `openlineage_sql` asks for `GLIBC_2.28` and the nine others for 2.16 at
+    most (`objdump -T`). `python3 -m zipfile -e` extracted every file at mode 644.
+  - At 00:08, with the template's `exclude-newer` at `2026-11-03T00:00:00Z`, two weeks before the day,
+    `uv lock` refused the pin: *"`dbt-core` was filtered by `exclude-newer` to only include packages
+    uploaded before 2026-11-03T00:00:00Z. The requested version, v1.11.17, was published at
+    2026-11-06T07:08:30.809Z."* With the packages named by range (`dbt-core>=1.11,<1.12`,
+    `dbt-athena>=1.11,<1.12`, `openlineage-dbt>=1.55,<2`), the lock cut at 00:10 holds dbt-core 1.11.16
+    of 2026-10-14, `dbt-athena` 1.11.1 and OpenLineage 1.55.0, 86 packages in 118,218 bytes. PyPI's
+    metadata gives 1.11.16 the floors of 1.11.17, `click>=8.3.0`, `protobuf>=6.0` and `sqlparse>=0.5.5`
+    (read 00:31).
+  - At 01:05, the archive of the draft as the runs below used it: 26,119,606 bytes, 82,819,034 unzipped,
+    5,102 entries, the two scripts at mode 755, the same ten compiled modules with the same glibc
+    readings, and no boto3 or botocore at its root. A second build of the same tree, at 01:22, held
+    26,119,608 bytes and the same root.
+  - `awsds-workflows lint .` in the authoring mode read *"ok: 4 arquivo(s)"* at 01:20, and again at 01:23
+    with the tool installed from its archive's URL at `196acee`, the form pass 1's `TOOL` takes.
+- **[Claude] The simulation** (the stage file's 0.16). The worker is a CPython 3.12 environment holding
+  `apache-airflow` 3.0.6 under its constraint file and boto3 1.43.1, the archive extracted beside it and
+  first on `PYTHONPATH`. AWS is moto 5.2.5's Athena, Glue, S3 and STS behind a proxy that records each
+  call and gives an Athena statement its effect in Glue, a create, a rename or a drop, and a listener
+  that stands for the domain's endpoint through `endpointOverride`, answering 200, answering 403 or
+  closed. Each case runs the task's command as the service renders it,
+  `bash -c "bash <folder>/run-dbt.sh …"`, in a temporary folder under an empty environment. The cases ran
+  four times, from 00:11, 00:45, 00:50 and 01:06. The first ran eleven of them on a harness that left two
+  cases' calls in one trail file; the three others ran thirteen and agree case by case on the exit code,
+  the calls and the events. The last, 01:06 to 01:08:
+
+  | Case | Exit code | Seconds | AWS calls | Events the listener received | Task log, bytes and lines | Peak memory, kB |
+  |---|---|---|---|---|---|---|
+  | A first `dbt build`, the names as built | 0 | 7.9 | 17 | 6 | 3,453 and 34 | 213,096 |
+  | A second build, `--names glue-arn` | 0 | 6.4 | 28 | 6 | 3,443 and 34 | 195,096 |
+  | A database Glue does not hold | 1 | 0.3 | 1 | 0 | 1,008 and 12 | dbt not started |
+  | The probe workflow's command, rendered | 0 | 0.8 | 10 | 0 | 7,321 and 254 | not read |
+  | The `transform` task's command, rendered | 0 | 5.7 | 17 | 6 | 3,453 and 34 | 194,800 |
+  | By hand, `-- debug` | 0 | 2.8 | 4 | 0 | 2,828 and 52 | 137,104 |
+  | By hand, `-- run` | 0 | 6.1 | 25 | 4 | 2,900 and 30 | 189,184 |
+  | Every file of the archive at mode 644 | 0 | 7.9 | 17 | 6 | 3,380 and 34 | 212,924 |
+  | The profile with `skip_workgroup_check: true` | 0 | 8.3 | 27 | 6 | 3,458 and 34 | 222,188 |
+  | The endpoint's port closed, `--attempts 1` | 0 | 5.9 | 17 | 0 | 124,912 and 772 | 194,664 |
+  | The endpoint's port closed, botocore's default attempts | 0 | 51.5 | 28 | 0 | 125,442 and 772 | 194,972 |
+  | The endpoint answering 403 | 0 | 5.8 | 17 | 6, each refused | 77,463 and 178 | 194,592 |
+  | A test that fails | 1 | 5.9 | 17 | 6 | 3,781 and 39 | 194,828 |
+
+  A case that follows another in the same simulated account meets the model's table and swaps it, the 25
+  to 28 calls against 17. Over the four runs the default attempts against a closed port took 47.4, 45.0,
+  57.5 and 51.5 s. Each of the ten cases that built or ran the model carries the transport's warning
+  *"AmazonDataZoneTransport does not support timeout"*. The three cases whose posts failed read *"Emitted
+  0 OpenLineage events"* and ended 0. What each case printed, its statements and its events are in 0.16.
+- **[Claude] The account in the fixtures**, at 02:08: the runs above carried moto's default account,
+  twelve digits the identifier check refuses in a tracked file. Under `MOTO_ACCOUNT_ID=000000000000`, the
+  twelve digits the check admits, the two builds and the failing test read the same exit codes and six
+  events each, the events and the trail naming that account alone. Pass 1's fixtures take that account
+  (1.3).
+- **[Claude] Every `aws` command of the stage file, read by the AWS CLI**: 59 commands and none refused,
+  at 02:38 over the stage file as this entry's commit holds it, after 58 at 02:14 and 59 at 02:21 over
+  its earlier text. A script takes each `aws` command out of the file's code blocks, gives each
+  placeholder and shell variable a value, and runs it with aws-cli 1.46.3 (2026-11-05, the newest PyPI
+  carries, reporting botocore 1.43.62), invented credentials and an endpoint on a closed local port. A
+  command the CLI parses and validates against the service's model reaches *"Could not connect to the
+  endpoint URL"*, and one it refuses stops before that. By service: `datazone` 19, `mwaa-serverless` 10,
+  `glue` 8, `s3` 5, `athena` 5, `lakeformation` 4, `s3api` 3, `sagemaker` 2, `cloudtrail` 2 and `logs` 1.
+  Each `--query` was then evaluated on the output shape botocore's model gives the operation: every path
+  resolves but `Parameters.table_type` of `glue get-table`, a key of a free map. Eight operations have no
+  earlier use in this repository: `datazone delete-lineage-event`, `get-asset`, `get-connection`,
+  `get-lineage-event`, `get-lineage-node`, `list-data-source-runs` and `post-lineage-event`, and
+  `s3api list-object-versions`. The check reads the CLI's parsing and the answer's shape, and no
+  authorization and no behaviour of a service. The laptop runs the CLI's version 2, 2.37.12 on 2026-11-16
+  (`SUP-370`), whose changelog (read 02:32, newest 2.40.4) names the delete from 2.35.5, *"Adds support
+  for deleting lineage events in Amazon DataZone."*, `mwaa-serverless` from 2.31.38 and DataZone's
+  lineage from 2.17.4. A space's CLI version is unread, and 3.4 reads it before the command runs there.
+- **[Claude] The CLI's pagination in a command substitution** (`SUP-327`, read again). The plan's
+  substitutions took the ids of a list call with `--max-items N` under `--output text`. Against a local
+  stand-in for Athena that holds ten ids and honours `MaxResults` and `NextToken`, with aws-cli 1.46.3,
+  at 02:09 and again at 02:31:
+  `athena list-query-executions --max-items 4 --query QueryExecutionIds --output text` sent one request
+  with no `MaxResults` and printed the four ids and a line `None`, and the substitution handed
+  `batch-get-query-execution` five ids, `None` the fifth; `--max-results 4 --no-paginate` sent
+  `MaxResults` 4 and printed the four ids alone, and `--max-results 4` by itself did the same. The stage
+  file's substitutions take `--max-results N --no-paginate`.
+- **[Claude] The shell and Python lines of the plan**, each run as written, at 02:14 and 02:15: the `jq`
+  filter of pass 2's trail loop, over two invented events, one with every field and one with no optional
+  field, printed two tab-separated lines with `-` and `{}` where a field was absent (jq 1.7);
+  `git archive --output` and `tar -x`, on a scratch repository, extracted the application's folder alone
+  with `run-dbt.sh` executable; the tar's member check printed `4 2 []`; 3.4's line printed a RunEvent
+  that parses as JSON; and 2.2's line printed one `export` for each of the five names from a
+  `space_values.json`.
+- **[Claude] What the repository says of each pass**, read at `f3ac422` and again on the merged tree:
+  - Pass 1 needs no AWS session, and its commands ran on the draft: `uv lock`, the lint and
+    `package-task`. The rules it takes from the template are `examples/app-etl/pyproject.toml`'s
+    `exclude-newer` and the hooks' `ruff` at 100 columns.
+  - Pass 2's deploy and runs are §D's steps of
+    [`sagemaker-application.md`](../plan/runbooks/sagemaker-application.md), through the template's
+    `scripts/dev-cli.sh`. `make up ENV=sandbox ONLY=egress GROUPS=mwaa` raises what a deploy from a space
+    needs: `athena`, `glue`, `lakeformation` and `sts` are in the endpoint module's core set, `datazone`
+    is among `sandbox/egress/`'s extra services, and `mwaa` is an optional group of the slice. *Create
+    database* and what it leaves are `SUP-184`'s, and the tar's flags `SUP-348`'s. No file answers the
+    worker's side: its glibc, whether a script runs from its folders, and whether the project role's
+    session on a worker passes Athena, Glue and Lake Formation. The probe reads the first two, and the
+    editor's baseline and the first run the third, each with its stop.
+  - Pass 3 turns each switch by an `export` and a run, with no deploy. What the domain does with either
+    form of the names is its reading.
+  - Pass 4 changes `sagemaker-denies`, whose newest tag is `v0.2.0`, and tags `sagemaker-prereqs` after
+    `v0.10.0`, its boundary sourcing the denies by path. The callers are `identity/sso/`,
+    `identity/org-policies/` with the OU's document, `sandbox/sagemaker/`, `staging/studio/` and
+    `production/studio/`, by Recipes A and B of
+    [`terraform-changes.md`](../plan/runbooks/terraform-changes.md). The battery's row is *"workloads:
+    CreateProcessingJob not isolated (DenySageMakerJobsWithoutNetworkIsolation)"*
+    (`aws/probes/probes.py`).
+  - Pass 5 waits on [Stage 19](../plan/stages/stage-19-smus-native-data-product.md) step 4.12 and on
+    decision due 11.
+  - Rollback follows what Stage 19 did to retire `app-etl`'s application from `eighth-experimentation` on
+    2026-11-14.
+- **[Claude] What the review changed in the plan**, each written where the stage file uses it:
+  - **The console script.** The plan carried a shim `code/dbt` to the archive's root through `--include`,
+    a name `package-task` refuses. dbt Core's own console script travels as package data,
+    `src/app_dbt/bin/dbt`, a Python file: with a shell script in its place the wrapper ran
+    `dbt --version`, 1.9 s and a request to PyPI, and it takes 0.07 s to read the version from a Python
+    file. `run-dbt.sh` uses a copy it marks executable where the extraction dropped the file's mode.
+  - **The lock.** The plan pinned dbt-core 1.11.17, which the template's two-week `exclude-newer` keeps
+    out of a lock cut that day. The three packages are named by range and the lock holds what the rule
+    admits, and question 4 and decision 2 name the floors 1.11.16 and 1.11.17 share.
+  - **The profile.** `s3_staging_dir` left `profiles.yml`. The adapter does not require it, and without
+    it no statement carried a `ResultConfiguration`, so the workgroup's enforced output places the
+    results.
+  - **The task's command** starts `bash` on the script and passes each value in single quotes: the mode
+    the worker's extraction leaves on `run-dbt.sh` plays no part, and the command does not end in `.sh`.
+  - **The archive** is one build. The second archive, dbt alone for `manylinux2014`, left the application
+    and stays as a way on if the probe reads a glibc below 2.28.
+  - **The probe workflow** reads more: the tools on `PATH`, the task's folder and whether a script runs
+    from it and from a `mktemp` folder, `sys.path`, the workgroup's enforced output, the database as Glue
+    returns it and a count of `trades`. Each call is tried once and prints its answer or one `REFUSED`
+    line.
+  - **Pass 2** gained the identities and their profiles, the values each block starts from, a run's
+    reading and the trail's loop as commands; step 2.0, the starting state, the archive and the tar, with
+    nothing up; the editor's baseline in 2.1, the model's statement run from the query editor before a
+    worker runs it; each step's expected readings, its pass and its stop; and step 2.7, the downs.
+  - **Pass 3** gained the switches as `export` lines, one attempt on the runs whose endpoint does not
+    answer, 3.4's commands and the CLI version that carries the delete.
+  - **Pass 4** gained the modules' validation and the plan of a caller before the commit, the tags'
+    commands, the table of applies with each account and profile, Recipe A's commands, the battery's
+    command and 4.5's reads.
+  - **Pass 5** gained the read of the link, and **Rollback** its commands, their order, their identities
+    and what stays.
+  - **Section 0**: 0.1, 0.2 and 0.7 carry more of what was already read, and 0.15 and 0.16 are new.
+  - **The header, the tables and the lists**: the Status and Prerequisites rows, verifications i and iii,
+    7.1's list of what a delete covers, and the `awsds-workflows` item of "What concerns the other
+    sessions".
+  - **Text**: no placeholder in angle brackets inside a quotation in italics, `git archive --output`
+    where a pipe hid an exit code (Lesson 46), and the fixtures' account.
+- **[user] `main` into the open branches**, in the project's chat at 02:21 and relayed to this session:
+  *"Avise as sessões em andamento para fazer rebase em relação à main"*. **[Claude]** brought `main`
+  `bcda72a`, pull requests #310 and #308, into the branch at 02:23 by a merge, commit `47be64d`, and
+  pushed it: a pushed branch is never rebased here (`CLAUDE.md`, "The branch and its PR"). Claude told
+  the user so in the thread and offered the rebase, with a forced push, on the user's word. The one
+  conflict was `docs/log/INDEX.md`, where `main` rewrote Stage 19's row beside this stage's; the
+  repository's six checks passed on the merged tree.
+- **[Claude] The plan against what the merge brought**: Stage 19's item 31, release T's Terraform path
+  retired and applied 2026-11-17, and its new order.
+  - Unchanged: the modules, their callers and their pins (`identity/org-policies/` and `identity/sso/` at
+    `sagemaker-denies-v0.2.0`, `sandbox/sagemaker/` at `sagemaker-prereqs-v0.9.0`, `staging/studio/` and
+    `production/studio/` at `v0.10.0`, `data-governance/publishing/` at `v0.8.0`), origin's newest tags,
+    `DT-11`, the runbooks' sections this stage names, and Stage 19 step 4.12 with the revocation it ends
+    with. This stage's files name nothing of the retired path.
+  - A job a release carries in a target takes the deployment project's subnets and group,
+    `datazone-<project>-dev`, which `scripts/deploy-application.py` reads from the project itself. 4.5's
+    sentence named `<env>/sagemaker/`'s job group, release T's network, and now names the project's.
+  - `production/studio/` holds release G's unapplied change since 2026-11-16, so pass 4's apply of that
+    slice follows release G's (Lesson 69). `staging/studio/main.tf` and `production/studio/main.tf` are
+    one file under `./scripts/check-copies.py`, so 4.2 moves their pins together.
+  - Stage 19's release guard is `examples/app-etl/scripts/check-catalog-export.py`, the path the review
+    table now carries.
+  - Stage 19 step 6.2 rewrites [`sagemaker-application.md`](../plan/runbooks/sagemaker-application.md) §N
+    and §W, which 4.6 edits for a processing job: "What concerns the other sessions" says that the step
+    that lands second starts from the other's text.
+- **[Claude] What the simulation does not read**: Athena's, Glue's and Lake Formation's authorization of
+  the worker's session; the engine's own effects, moto answering a statement without running it; what the
+  domain does with an event, a symlink or a renamed dataset; and the worker itself, its glibc, its
+  folders and its pre-installed packages. Passes 2 and 3 read each of them.
+- **[Claude] Written**, in the commit that carries this entry: the stage file, as listed above;
+  `docs/plan/waiting-on-the-user.md`, decision 13's row with release G's apply before
+  `production/studio/`'s, and the Sandbox sitting's row with this stage's passes 2 and 3;
+  `docs/log/INDEX.md`; `docs/AWS_SUPPLEMENT.md`, `SUP-327`'s reading of 2026-11-17; `docs/REFERENCES.md`.
+  The pull request takes no new `SUP`, `TM`, `EXC` or `INT` id, and no module, slice, policy document or
+  script was edited.

@@ -2833,6 +2833,19 @@
   portal only after a dataset took the namespace `arn:aws:glue:<region>:<account>:table` and the name
   `<database>/<table>`, the ARN of a table that was an asset:
   <https://dev.classmethod.jp/en/articles/20260712-amazon-sagemaker-data-lineage-iam-domain/>.
+- **The review of Stage 20's plan for execution (read 2026-11-17, for
+  [Stage 20](plan/stages/stage-20-dbt-lineage.md) steps 0.15, 0.16 and 3.4).** PyPI's metadata:
+  dbt-core 1.11.16 (2026-10-14) carries the floors of 1.11.17 (2026-11-06), `click>=8.3.0`,
+  `protobuf>=6.0` and `sqlparse>=0.5.5`; moto 5.2.5 (2026-10-27), whose server stood for Athena, Glue,
+  S3 and STS in the simulation; awscli 1.46.3 (2026-11-05), the newest PyPI carries, which read each
+  `aws` command of the plan:
+  <https://pypi.org/pypi/dbt-core/1.11.16/json>, <https://pypi.org/pypi/dbt-core/1.11.17/json>,
+  <https://pypi.org/pypi/moto/5.2.5/json>, <https://pypi.org/pypi/awscli/1.46.3/json>.
+  `awsds-workflows` at the commit the template's pipeline pins, installed from its archive:
+  <https://github.com/felipenoris/awsds-workflows/archive/196aceec092649551ed6451796b1c3c7983cfafb.zip>.
+  The AWS CLI v2 changelog to 2.40.4: *"Adds support for deleting lineage events in Amazon DataZone."*
+  under 2.35.5, `mwaa-serverless` first named under 2.31.38 and DataZone's lineage under 2.17.4:
+  <https://raw.githubusercontent.com/aws/aws-cli/v2/CHANGELOG.rst>.
 
 ## Security, monitoring and cost
 

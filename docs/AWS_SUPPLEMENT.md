@@ -4422,9 +4422,14 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   for the output to equal `COMPLETE` never exited; `jq` over the merged JSON was not affected. With
   `--max-items 1`, `mwaa-serverless list-workflow-runs` printed the CLI's `None` pagination token after the
   run id, and `get-workflow-run` refused the result as a run id (2026-10-26); `--max-results 1
-  --no-paginate` returns the id alone. Where: `log-stage-05a-data-foundation.md`, 2026-10-09;
+  --no-paginate` returns the id alone. Against a local stand-in for Athena holding ten ids, with no AWS
+  call (2026-11-17, aws-cli 1.46.3, Stage 20's review),
+  `athena list-query-executions --max-items 4 --query QueryExecutionIds --output text` sent one request
+  with no `MaxResults` and printed four ids and a line `None`, which a command substitution handed to
+  `batch-get-query-execution` as a fifth id; `--max-results 4 --no-paginate` sent `MaxResults` 4 and
+  printed the four ids alone. Where: `log-stage-05a-data-foundation.md`, 2026-10-09;
   `log-stage-08-cicd-pipelines.md`, 2026-10-14; `log-stage-10-orchestration-promotion.md`, 2026-10-26;
-  `runbooks/security-hub.md`.
+  `log-stage-20-dbt-lineage.md`, 2026-11-17; `runbooks/security-hub.md`.
 
 - `SUP-328` **`aws sagemaker describe-image-version --version 6` prints the CLI's own version and exits 0
   without calling SageMaker** (measured 2026-10-12, Stage 8 pass 0). The operation's parameter is

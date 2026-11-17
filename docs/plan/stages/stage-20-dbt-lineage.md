@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | **Written 2026-11-16; step 1.1's facts and decisions 1 to 7, 10 and 13 taken the same day; nothing run** ([log](../../log/log-stage-20-dbt-lineage.md)): the plan, the user's questions answered from dated vendor pages, OpenLineage's released code and this estate's measurements, and each decision in the user's words. dbt runs on Athena, in a Bash task on the worker, on dbt Core 1.11, in a new application `app-dbt` in `eighth-experimentation`; Redshift and Glue with Spark are a later revision's, and a run past the worker's hour is compared in the runbook, measured by no pass. Decision 13 takes a processing job out of the network-isolation statement in Sandbox, Staging and Production. No sitting made an AWS call. Pass 1 runs with nothing up; passes 2 and 3 are Sandbox sittings; pass 4 is decision 13's change, a laptop session's tags and applies on the user's word, with the SCP battery; pass 5 waits on [Stage 19](stage-19-smus-native-data-product.md) step 4.12 and on decision due 11 |
-| **Prerequisites** | [6i](stage-06i-sandbox-orchestration.md) steps 4 and 5, a Python and a Bash task run from a code archive on the worker (2026-10-11), and `awsds-workflows package-task`, which builds that archive ([`serverless-workflows.md`](../runbooks/serverless-workflows.md) §C). [Stage 19](stage-19-smus-native-data-product.md) pass 1's recipe: a workflow's Glue job writing an Iceberg table into a project database and posting OpenLineage events through Sandbox's `datazone` endpoint (2026-11-10), the graph drawn on the asset's page (2026-11-14). `eighth-experimentation`: the workflows grant (`sandbox/workflows/`), spaces on the house image's version 11 with the CI/CD CLI 1.0.9. `sandbox/egress/`'s `athena`, `glue`, `lakeformation`, `sts` and `datazone` endpoints, and its `mwaa` group for a deploy from a space. For pass 4, a laptop session as the infrastructure user and the SCP battery ([`scp-battery.md`](../runbooks/scp-battery.md)). Nothing blocks pass 1 |
+| **Status** | **Written 2026-11-16; step 1.1's facts and decisions 1 to 7, 10 and 13 taken the same day; the application's draft run against simulated services on 2026-11-17 (0.15, 0.16); nothing run in AWS** ([log](../../log/log-stage-20-dbt-lineage.md)): the plan, the user's questions answered from dated vendor pages, OpenLineage's released code and this estate's measurements, and each decision in the user's words. dbt runs on Athena, in a Bash task on the worker, on dbt Core 1.11, in a new application `app-dbt` in `eighth-experimentation`; Redshift and Glue with Spark are a later revision's, and a run past the worker's hour is compared in the runbook, measured by no pass. Decision 13 takes a processing job out of the network-isolation statement in Sandbox, Staging and Production. No sitting made an AWS call. Pass 1 runs with nothing up; passes 2 and 3 are Sandbox sittings; pass 4 is decision 13's change, a laptop session's tags and applies on the user's word, with the SCP battery; pass 5 waits on [Stage 19](stage-19-smus-native-data-product.md) step 4.12 and on decision due 11 |
+| **Prerequisites** | [6i](stage-06i-sandbox-orchestration.md) steps 4 and 5, a Python and a Bash task run from a code archive on the worker (2026-10-11), and `awsds-workflows package-task`, which builds that archive ([`serverless-workflows.md`](../runbooks/serverless-workflows.md) §C). [Stage 19](stage-19-smus-native-data-product.md) pass 1's recipe: a workflow's Glue job writing an Iceberg table into a project database and posting OpenLineage events through Sandbox's `datazone` endpoint (2026-11-10), the graph drawn on the asset's page (2026-11-14). `eighth-experimentation`: the workflows grant (`sandbox/workflows/`), spaces on the house image's version 11 with the CI/CD CLI 1.0.9. `sandbox/egress/`'s `athena`, `glue`, `lakeformation`, `sts` and `datazone` endpoints, the first four in the endpoint module's core set and the fifth among the slice's extra services, and its `mwaa` group for a deploy from a space. For pass 4, a laptop session as the infrastructure user and the SCP battery ([`scp-battery.md`](../runbooks/scp-battery.md)). Nothing blocks pass 1 |
 | **Consumes** | [D7](../decisions/D07-orchestration.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D41](../decisions/D41-sagemaker-application.md); [D12](../decisions/D12-budget-ceiling.md) for the cost |
 | **Proves** | — (no `INT-nn` row: the worker's post reaches the domain in Data Governance through the `datazone` endpoint a Glue job's lineage already crosses, and no new wiring between accounts is built). What it does prove: whether a dbt project run as a task of a SageMaker application's workflow reads and writes the project's tables through an engine SageMaker Unified Studio itself uses, and whether the OpenLineage events dbt's wrapper posts land on the graph the portal draws for the assets, beside a Glue job's |
 
@@ -133,7 +133,7 @@ on 2026-11-16.
 | Stage 19 decision 10, verification v | the template's Glue task posts lineage in Sandbox, and the portal draws the S3 input, the job runs, the table and the catalog's edges on the asset's tab (2026-11-14) | **keep**: the graph this stage adds a dbt job to |
 | Stage 19 verification ii | a worker's session of the project role called the domain through Sandbox's `datazone` endpoint: the template's `publish` task started a source's run and published a listing (2026-11-10) | **keep**: the door the wrapper's post takes, with `datazone:PostLineageEvent`, which the project role holds through `SageMakerStudioProjectUserRolePolicy` (Stage 18 7.1) and no worker has used |
 | Stage 19 decision 17 | a Sandbox project role holds no `datazone:StartDataSourceRun` (revised 2026-11-15); a source imports on its daily schedule or on a member's run in the portal | **keep**: the import of this stage's tables is the schedule's or the user's act (step 2.4) |
-| Stage 19's release guard | `scripts/check-catalog-export.py` fails a release whose bundle export holds an asset `product.json` does not name, and the CLI's `bundle` exports whatever the `dev` project owns | **keep**: this stage creates nothing in `app-etl-dev` (decision 7) |
+| Stage 19's release guard | `examples/app-etl/scripts/check-catalog-export.py` fails a release whose bundle export holds an asset `product.json` does not name, and the CLI's `bundle` exports whatever the `dev` project owns | **keep**: this stage creates nothing in `app-etl-dev` (decision 7) |
 
 ### Documents, runbooks and code
 
@@ -237,9 +237,10 @@ only as a provider a code package may carry. The ways, compared at decision 2:
 - **A Python task** calling dbt's `dbtRunner`. There the worker's pre-installed packages win over the
   archive's copies (measured 2026-10-11), so dbt runs on Airflow's versions of every package both need.
   Airflow 3.0.6's constraint file for Python 3.12 pins `click` 8.2.1, `protobuf` 4.25.8 and `sqlparse`
-  0.5.3, each below dbt-core 1.11.17's floor (8.3.0, 6.0 and 0.5.5), and `mmh3` 5.2.0, above `dbt-athena`
-  1.11.1's ceiling of 4.2.0; a worker read outside this lab on 2026-10-13 carried that file's SQLAlchemy,
-  redshift-connector and PyAthena. The probe's list of the installed distributions reads the rest (2.2).
+  0.5.3, each below the floor dbt-core 1.11.16 and 1.11.17 share (8.3.0, 6.0 and 0.5.5), and `mmh3`
+  5.2.0, above `dbt-athena` 1.11.1's ceiling of 4.2.0; a worker read outside this lab on 2026-10-13
+  carried that file's SQLAlchemy, redshift-connector and PyAthena. The probe's list of the installed
+  distributions reads the rest (2.2).
 - **A SageMaker processing job.** Until pass 4 every job here is network-isolated, so its container
   reaches no engine and holds no credentials. With decision 13 applied, a processing job runs in its
   project's subnets and security group as the project role, and the same wrapper runs there, at an ML
@@ -296,12 +297,16 @@ deployed by the CI/CD CLI from a space into `eighth-experimentation`, with one s
 | `transform` | `BashOperator` on the worker, from the archive; `dependencies: [load]`, `retries: 0` | runs `dbt build` through the wrapper: the model `notional_by_desk`, an Iceberg table Athena makes from `trades`, and one `not_null` test | the wrapper's events, through `amazon_datazone_api` |
 
 A second workflow, `app-dbt-probe`, holds one inline Bash task and no archive. It prints what the plan
-assumes and nobody read, through `ldd --version` and a `python3` script over the worker's own boto3, since
-a worker read outside this lab on 2026-10-13 carried no `aws` client: the worker's glibc and distribution,
-the CPUs and the memory the task sees, the installed distributions with their versions, the names (never
-the values) of its environment variables, the caller's identity, the project's Athena workgroup with its
-engine version, a `SELECT 1` through Athena as the worker's session, and `ListLineageEvents` on the
-domain, answered or refused.
+assumes and nobody read, through shell commands and a `python3` script over the worker's own boto3, since
+a worker read outside this lab on 2026-10-13 carried no `aws` client: the worker's glibc and
+distribution; which of the tools `run-dbt.sh` calls its `PATH` holds; the task's folder and its mounts,
+and whether a script written in that folder and in a `mktemp` folder runs; the CPUs and the memory the
+task sees; `sys.path`; the installed distributions with their versions; the names (never the values) of
+its environment variables; the caller's identity; the project's Athena workgroup with its engine version
+and enforced output; the product database as Glue returns it; a `SELECT 1` and a count of `trades`
+through Athena as the worker's session; and `ListLineageEvents` on the domain. Each call is tried once,
+with a 10-second connect timeout, and prints its answer or one line `REFUSED` with the error's type and
+text, so a door with no path costs seconds and the task ends `SUCCESS` whatever a call answered.
 
 ```text
 examples/app-dbt/
@@ -312,54 +317,103 @@ examples/app-dbt/
 ├── samples/trades.csv
 ├── src/app_dbt/              the application's pure-Python package
 │   ├── lineage.py            the transformer of decision 3 (b)
+│   ├── bin/dbt               dbt Core's console script, stored executable
 │   └── project/              the dbt project, as package data: dbt_project.yml, profiles.yml, models/
-├── code/run-dbt.sh           what the Bash task calls
-├── code/dbt                  a shim that starts dbt's own entry point, dbt.cli.main
+├── code/run-dbt.sh           what the Bash task calls, stored executable
 ├── code/app-dbt.zip          built by package-task, out of git
-├── pyproject.toml, uv.lock   dbt-core, dbt-athena and openlineage-dbt, pinned
+├── pyproject.toml, uv.lock   dbt-core, dbt-athena and openlineage-dbt, by range and by lock
 ├── scripts/dev-cli.sh        the template's copy
 ├── tests/
 └── README.md
 ```
 
+- **The manifest** names the storage items `code` (the archive alone), `glue`, `samples` and `workflows`,
+  each `include` a file or a folder and never a glob; the workflows `app-dbt`, with
+  `code: code/app-dbt.zip`, and `app-dbt-probe`, with none, both on `default.workflow_serverless`; and
+  one stage, `dev`, whose bootstrap creates both. The stage's `environment_variables` are what the
+  workflows read as `{env.NAME}`: `SUBNET_AZ1` and `SUBNET_AZ2` for the Glue job's connections,
+  `ACCOUNT_ID`, `PRODUCT_DATABASE` (the literal `app_dbt`), `ATHENA_WORKGROUP`, and the switches the
+  readings turn, `LINEAGE_DOMAIN`, `LINEAGE_NAMES`, `LINEAGE_ENDPOINT` and `LINEAGE_ATTEMPTS`. Every one
+  but the literal comes from the shell as `${NAME}`, and the CLI refuses a manifest whose variable is
+  unset or empty ([`sagemaker-application.md`](../runbooks/sagemaker-application.md) §D), so a switch at
+  rest holds a word: `default` for the endpoint and for the attempts.
 - **The dbt project** declares `app_dbt.trades` as a source and one model, `notional_by_desk`
-  (`materialized='table'`, `table_type='iceberg'`, `native_drop=true`), with descriptions,
-  `persist_docs` and the test. Its `profiles.yml` holds no value of the account: `type: athena`,
-  `database: awsdatacatalog` and `threads: 1` are written in it, and the Region, the schema,
-  `work_group`, `s3_staging_dir` and `s3_data_dir` come from `env_var()`. For an Iceberg table the
-  adapter writes the table's `location` itself, under `s3_data_dir`, whatever the workgroup enforces
-  for query results (0.13). `s3_data_dir` is the product database's own location, which the script
-  reads from Glue before it starts dbt, so the model's table sits under the location the portal gave
-  the database (2.1); whether Athena writes it there as the worker's session is a reading (iii).
-  `native_drop` keeps the worker off the data (D28): with it the adapter drops an Iceberg table by an
-  Athena statement and skips its own S3 deletion before a create, where its default deletes the files
-  with the client's S3 calls and the table through Glue's API (0.13). If Athena refuses an Iceberg
-  table there, the stage stops for the user with the refusal: the adapter's default, a Hive table in
-  Parquet whose files the enforced workgroup places, has no drop by statement, and each later run
-  would delete the old files from the worker.
+  (`materialized='table'`, `table_type='iceberg'`, `native_drop=true`), with descriptions, `persist_docs`
+  and the test. Its `profiles.yml` holds no value of the account: `type: athena`,
+  `database: awsdatacatalog` and `threads: 1` are written in it, and the Region, the schema, `work_group`
+  and `s3_data_dir` come from `env_var()`. It names no `s3_staging_dir`, which the adapter does not
+  require: no statement then carries a `ResultConfiguration`, and the workgroup's enforced output places
+  the query results (0.16). For an Iceberg table the adapter writes the table's `location` itself,
+  `<s3_data_dir><schema>/<table>/<uuid>`, whatever the workgroup enforces for query results (0.13).
+  `s3_data_dir` is the product database's own location, which the script reads from Glue before it starts
+  dbt. The portal gives every database of a project one location, the project's catalogs folder,
+  `s3://awsds-sandbox-smus-projects/<domain id>/<project id>/dev/data/catalogs/` (0.7), so the model's
+  files land under `dev/data/catalogs/app_dbt/notional_by_desk/<uuid>/` and, by Stage 19's reading of a
+  Glue job's table, the Glue job's under `dev/data/catalogs/trades/`, a folder named by the table alone.
+  Both sit inside the `dev/` that project creation registers with Lake Formation; whether Athena writes
+  there as the worker's session is a reading (iii). `native_drop` keeps the worker off the data (D28):
+  with it the adapter drops an Iceberg table by an Athena statement and skips its own S3 deletion before
+  a create, where its default deletes the files with the client's S3 calls and the table through Glue's
+  API (0.13). If Athena refuses an Iceberg table there, the stage stops for the user with the refusal:
+  the adapter's default, a Hive table in Parquet whose files the enforced workgroup places, has no drop
+  by statement, and each later run would delete the old files from the worker.
 - **The task's values travel on the command line**, the way the template's `publish` task takes its
-  domain and project: `bash_command` calls `/usr/local/airflow/dags/run-dbt.sh` by its full path with the
-  Region (`{domain.region}`) and one option per stage variable: `ACCOUNT_ID`, `PRODUCT_DATABASE`,
-  `ATHENA_WORKGROUP`, and the switches the readings turn, `LINEAGE_DOMAIN` (the domain's id),
-  `LINEAGE_NAMES` (`as-built` or `glue-arn`), `LINEAGE_ENDPOINT` and `LINEAGE_ATTEMPTS` (exported as
-  botocore's `AWS_MAX_ATTEMPTS`). The CLI fills each `{env.VAR}` on every run it starts,
-  from the stage's `environment_variables`
-  ([`sagemaker-application.md`](../runbooks/sagemaker-application.md) §D), so a reading that turns a
-  switch is a run, not a deploy, and spends none of the workflow's 50 versions. Whether a workflow the CLI
-  creates carries the variables the portal injects is unmeasured, and so is a Bash task's `env`. A
-  workflow's own `Environment.Variables` exist since 2026-11-04, set at create or update and never by a
-  run, and the CLI 1.0.9 sets none and passes none on its update
-  ([`upstream-releases.md`](../upstream-releases.md), MWAA Serverless): the command line is the path.
-- **`run-dbt.sh`** copies the project to a temporary folder, since dbt writes `target/` and `logs/`
-  beside it; exports the Region as `AWS_DEFAULT_REGION`, the only one the transport's client has once
-  `endpointOverride` takes its `region`'s place (0.9); reads the product database's location from Glue
-  (`GetDatabase`) and exports it for the profile's `s3_data_dir`; writes `openlineage.yml` there and
-  names it in `OPENLINEAGE_CONFIG`, the first place the client looks; sets
-  `OPENLINEAGE_NAMESPACE=app-dbt` and `DO_NOT_TRACK=1`; puts the archive's folder on `PATH`, because the
-  wrapper starts `dbt` as a subprocess and `package-task` removes console scripts, so the shim `dbt`,
-  which `--include` stores executable at the archive's root, runs `python3 -m dbt.cli.main`; calls the
-  wrapper as `python3 -c 'import sys; from openlineage.dbt import main; sys.exit(main())'`, the package
-  having no `__main__`; and prints the peak memory of the run. The script holds no double brace.
+  domain and project:
+
+  ```yaml
+  bash_command: "bash /usr/local/airflow/dags/run-dbt.sh --region '{domain.region}' --account '{env.ACCOUNT_ID}' --database '{env.PRODUCT_DATABASE}' --workgroup '{env.ATHENA_WORKGROUP}' --domain '{env.LINEAGE_DOMAIN}' --names '{env.LINEAGE_NAMES}' --endpoint '{env.LINEAGE_ENDPOINT}' --attempts '{env.LINEAGE_ATTEMPTS}'"
+  ```
+
+  The command starts `bash` on the script by its full path, so the mode the worker's extraction leaves on
+  the file plays no part, and the options follow, each value in single quotes: the command never ends in
+  `.sh`, which the operator reads as the name of a template file (0.1). `LINEAGE_DOMAIN` is the domain's
+  id, `LINEAGE_NAMES` is `as-built` or `glue-arn`, `LINEAGE_ENDPOINT` a URL or `default`, and
+  `LINEAGE_ATTEMPTS` a number, exported as botocore's `AWS_MAX_ATTEMPTS`, or `default`. The CLI fills
+  each `{env.VAR}` on every run it starts, from the stage's `environment_variables` as the shell holds
+  them at that run ([`sagemaker-application.md`](../runbooks/sagemaker-application.md) §D), so a reading
+  that turns a switch is an `export` and a run, not a deploy, and spends none of the workflow's 50
+  versions. In a workflow made in the portal, a Bash task read the seven variables the portal injects
+  unset or empty in its environment (6i's log, 2026-10-11); whether a workflow the CLI creates carries
+  them is unmeasured, and so is a Bash task's `env`. A workflow's own `Environment.Variables` exist since
+  2026-11-04, set at create or update and never by a run, and the CLI 1.0.9 sets none and passes none on
+  its update ([`upstream-releases.md`](../upstream-releases.md), MWAA Serverless): the command line is
+  the path.
+- **`run-dbt.sh`** takes those options and, after `--`, the dbt command, `build` when none is given, and
+  stops with exit 2 on an option it does not know or a value left out. It copies the project to a
+  temporary folder, since dbt writes `target/` and `logs/` beside it; puts the folder of the `dbt`
+  console script first on `PATH` (the next item); exports the Region as `AWS_DEFAULT_REGION`, the only
+  one the transport's client has once `endpointOverride` takes its `region`'s place (0.9),
+  `DO_NOT_TRACK=1`, `AWS_MAX_ATTEMPTS` when `--attempts` names a number, and `OPENLINEAGE_NAMESPACE`,
+  `app-dbt` unless the caller's `APP_DBT_NAMESPACE` names another (2.6); reads the product database's
+  location from Glue (`GetDatabase`), exits 3 when it has none, and exports it for the profile's
+  `s3_data_dir`; writes `openlineage.yml` in the temporary folder and names it in `OPENLINEAGE_CONFIG`,
+  the first place the client looks; and calls the wrapper as
+  `python3 -c 'import sys; from openlineage.dbt import main; sys.exit(main())'`, the package having no
+  `__main__`. It prints the values it ran with, where `dbt` ran from, whether its own mode came through
+  the extraction, the interpreter, the peak memory of the wrapper and of the dbt it started, and the
+  wrapper's exit code, which is dbt's and becomes the task's. The script is never rendered as a template
+  and holds no double brace.
+- **The `dbt` the wrapper starts** is a file of the application. The wrapper runs `dbt` by name as a
+  subprocess, and `package-task` removes console scripts, so the package carries dbt Core's own,
+  `src/app_dbt/bin/dbt`, stored executable:
+
+  ```python
+  #!/usr/bin/env python3
+  import sys
+
+  from dbt.cli.main import cli
+
+  if __name__ == "__main__":
+      sys.exit(cli())
+  ```
+
+  It travels as package data because dbt-core installs a folder `dbt/` at the archive's root, where
+  `--include` would put a file of that name, and `package-task` refuses the pair (0.15). Its first line
+  matters: the wrapper reads the engine from a Python script without starting it, and runs
+  `dbt --version` on a shell script, which asks PyPI for the newest release (0.16). `run-dbt.sh` uses the
+  file where it sits when its mode came through the worker's extraction, as a script at an archive's root
+  did outside this lab (0.1), and otherwise a copy it marks executable in the temporary folder; its first
+  line of output says which.
 - **The lineage configuration** is one file, in one of two forms, which `LINEAGE_NAMES` picks (decision
   3):
 
@@ -385,15 +439,25 @@ examples/app-dbt/
       region: us-west-2
   ```
 
-- **The archive** comes in two builds, because the wrapper imports OpenLineage's SQL parser at module
-  level and that parser's only Linux x86_64 wheel is tagged `manylinux_2_28`: **A**, dbt and OpenLineage,
-  built with `--platform x86_64-manylinux_2_28`; **B**, dbt alone for `x86_64-manylinux2014`, the fallback
-  when the probe reads a glibc below 2.28. On such a worker the wrapper imports in no task, and the stage
+  Either form's `amazon_datazone_api` block gains `endpointOverride` when `LINEAGE_ENDPOINT` is not
+  `default`.
+- **The archive** is one build, `package-task` with `--platform x86_64-manylinux_2_28` and
+  `--include code/run-dbt.sh`: 26 MB, 83 MB unzipped, 5,102 entries (0.15), against the service's 250 MB
+  for each size. The wrapper imports OpenLineage's SQL parser at module level, and that parser's only
+  Linux x86_64 wheel is tagged `manylinux_2_28`: of the archive's ten compiled modules it alone asks for
+  glibc 2.28, the others for 2.16 at most. The guide lists `duckdb` 2.0.0 as pre-installed, whose Linux
+  wheel for Python 3.12 is tagged `manylinux_2_27` and `manylinux_2_28`: a worker that carries the
+  guide's set has glibc 2.27 at least, the one read on 2026-10-13 carried no `duckdb`, and the probe
+  reads the glibc itself (2.2). On a worker below 2.28 the wrapper imports in no task, and the stage
   stops for the user with the reading and the ways on: a wheel of the parser built from OpenLineage's
-  source for the worker's glibc, or the events relayed with `dbt-ol send-events` from the artifacts B's
-  run saves, by a Glue job or by hand from a space. The guide lists `duckdb` 2.0.0 as pre-installed,
-  whose Linux wheel for Python 3.12 is tagged `manylinux_2_27` and `manylinux_2_28`: the worker's glibc is
-  then 2.27 at least, A needs 2.28, and the probe reads which it is.
+  source for the worker's glibc; or dbt alone on the worker, from a `manylinux2014` build (22.5 MB, 0.8),
+  with the events relayed by `dbt-ol send-events` from the artifacts that run saves, by a Glue job or by
+  hand from a space. `pyproject.toml` names the three packages by range (`dbt-core>=1.11,<1.12`,
+  `dbt-athena>=1.11,<1.12`, `openlineage-dbt>=1.55,<2`) and carries the template's `exclude-newer`, an
+  instant two weeks before the lock is cut, so `uv.lock` holds the newest releases older than that: under
+  an instant of 2026-11-03, dbt-core 1.11.16, since 1.11.17 is of 2026-11-06 (0.15). The archive leaves
+  out what the worker pre-installs, boto3 and botocore among them, so the adapter and the transport call
+  AWS with the worker's boto3 1.43.1.
 - **What it leaves out**: an image (a workflow of a Glue task and a worker task needs none), a
   `content.catalog` block, a publication, and every stage but `dev`. An inventory asset is enough for a
   graph.
@@ -429,21 +493,29 @@ already measured, and step 6.2 completes §L with this stage's readings.
 
 - **0.1 A Python and a Bash task run code from an archive on the worker** (6i steps 4 and 5, 2026-10-11;
   [`serverless-workflows.md`](../runbooks/serverless-workflows.md) §C). The worker extracts one `.zip` of
-  at most 250 MB to `/usr/local/airflow/dags`. In a Python task the worker's pre-installed package wins
-  over the archive's copy (PyYAML 6.0.1 lost to 6.0.2). A Bash task's `python3` imports the archive's
-  copy first, and a script stored executable runs by its full path (both outside this lab, 2026-10-12).
-  `awsds-workflows package-task` builds the archive from a uv project and its lock, and removes console
-  scripts.
+  at most 250 MB, unzipped too, to `/usr/local/airflow/dags`. In a Python task the worker's pre-installed
+  package wins over the archive's copy (PyYAML 6.0.1 lost to 6.0.2). A Bash task's `python3` imports the
+  archive's copy first, and a script stored executable runs by its full path (both outside this lab,
+  2026-10-12). In this lab a Bash task started in a folder of its own, `/var/tmp/airflowtmp…`, with
+  `PYTHONPATH` naming `/usr/local/airflow/dags` ahead of the worker's own packages and `AWS_REGION` and
+  `AWS_DEFAULT_REGION` set, its `python3` the worker's 3.12.14; and the operator read a command that was
+  a script's name as a template file, which it rendered into a temporary file and ran with `bash` (6i's
+  log, 2026-10-11). `awsds-workflows package-task` builds the archive from a uv project and its lock, and
+  removes console scripts.
 - **0.2 The worker** (§O of the same runbook, 2026-10-11): 1 vCPU and 3 GiB, Python 3.12.14, Airflow
   3.0.6, boto3 1.43.1, no internet and no proxy; the project role in a session named
   `AmazonMWAAServerless`, in the project's private subnets and security group; 0.088 USD per task-hour
   with a one-minute minimum. A task's `execution_timeout` is at most 3,600 s
   ([`sagemaker-application.md`](../runbooks/sagemaker-application.md) §W), whatever the task, the one
-  that waits on a job included (0.12). Its session reaches the domain
-  through Sandbox's `datazone` endpoint: the template's `publish` task, a Python task, started a source's
-  run and published a listing from it (Stage 19 verification ii, 2026-11-10). The project role holds
-  `datazone:PostLineageEvent` through `SageMakerStudioProjectUserRolePolicy` (Stage 18 7.1, 2026-10-19),
-  and no worker has posted an event.
+  that waits on a job included (0.12). Its session reaches the domain through Sandbox's `datazone`
+  endpoint: the template's `publish` task, a Python task, started a source's run and published a listing
+  from it (Stage 19 verification ii, 2026-11-10). The project role holds `datazone:PostLineageEvent`
+  through `SageMakerStudioProjectUserRolePolicy` (Stage 18 7.1, 2026-10-19), and no worker has posted an
+  event. No reading exists of a worker's glibc or distribution. A worker read outside this lab on
+  2026-10-13 showed its task two CPUs and 4.9 GB of memory with no cgroup limit below them, a `/tmp` of
+  9.7 GB on a device of its own, no `aws`, `tar` or `unzip`, and 164 distributions, PyAthena 3.17.1 among
+  them and no `duckdb`, which is why the probe reads the CPUs the task may use and the memory limit
+  beside the totals.
 - **0.3 A workflow's Glue job writes an Iceberg table into a project database, and its lineage is
   drawn** (Stage 19 pass 1, 2026-11-10 and 2026-11-14). In `eighth-experimentation`, `app-etl`'s Glue 6.0
   job wrote `app_etl.trades_notional` under the `DataLake` environment's conditioned grants and posted its
@@ -461,15 +533,30 @@ already measured, and step 6.2 completes §L with this stage's readings.
 - **0.6 MWAA Serverless emits nothing of its own** (Stage 10 verification xix, 2026-10-25): 44 events in
   the domain, every one from a Glue job that carried the settings, none from nine workflow runs.
 - **0.7 The project's doors a dbt client needs exist, and none was read from a worker.** The project's
-  Athena workgroup is `workgroup-<project id>-<Tooling environment id>`, its configuration enforced and
-  its output under the project's `dev/sys/athena/`. Project creation registers the project's `dev/` with
-  Lake Formation and grants `DATA_LOCATION_ACCESS` on it; the portal's *Create database* grants
-  `CREATE_TABLE`, `DESCRIBE` and `DROP` on the database and `ALTER`, `DELETE`, `DESCRIBE`, `DROP`,
-  `INSERT` and `SELECT` on its tables. Each grant goes to the account's `IAMPrincipals` under a condition
-  on the session's `context.datazone.projectId` ([`SMUS.md`](../../SMUS.md) §S3). A Glue job's session
-  carries that attribute (0.3) and so does the query editor's (Stage 19 verification viii, 2026-11-14);
-  whether a worker's does is verification ii here. No reading exists of the worker's session through
-  Athena, of a table created through Athena as a project role, or of the workgroup's engine version.
+  Athena workgroup is `workgroup-<project id>-<Tooling environment id>`,
+  `workgroup-avhvbqn37ty7m8-5hkjdsy3umpi1c` in `eighth-experimentation`, its configuration enforced and
+  its output under the project's `dev/sys/athena/`; a query from the portal's editor ran in it on Athena
+  engine version 3 on 2026-10-26 (6f step 11.10). Project creation registers the project's `dev/` with
+  Lake Formation and grants `DATA_LOCATION_ACCESS` on it. The portal's *Create database* deploys a
+  `DataLake` environment with a daily source; gives the database the project's catalogs folder as its
+  location, `s3://awsds-sandbox-smus-projects/<domain id>/<project id>/dev/data/catalogs/`, the one
+  location every database of the project shares (Stage 19's log, 2026-10-28); and grants `CREATE_TABLE`,
+  `DESCRIBE` and `DROP` on the database and `ALTER`, `DELETE`, `DESCRIBE`, `DROP`, `INSERT` and `SELECT`
+  on its tables. Each grant goes to the account's `IAMPrincipals` under a condition on the session's
+  `context.datazone.projectId` ([`SMUS.md`](../../SMUS.md) §S3). A Glue job's session carries that
+  attribute (0.3) and so does the query editor's (Stage 19 verification viii, 2026-11-14); whether a
+  worker's does is verification ii here. A Glue job's Iceberg table landed at the database's location
+  followed by the table's name, whatever warehouse its settings named (Stage 19's log, 2026-11-10), and a
+  `DROP TABLE` of that table through Athena, from the editor as the project role, left its folder with no
+  current object, its versions noncurrent behind delete markers (2026-11-14). The network path exists:
+  `athena`, `glue`, `lakeformation` and `sts` are in the endpoint module's core set and `datazone` among
+  `sandbox/egress/`'s extra services, and the dbt client makes no S3 call (0.16). `sandbox/workflows/`'s
+  statement `GetAGlueJobNoProjectHolds` covers the job `app-dbt-<project id>` before it exists. The
+  project's inventory already holds an asset named `trades`, its source's import of the resource link a
+  subscription wrote in `glue_db_blerpkhn9nj7o0` (`SUP-197`), so this stage's assets are told from it by
+  their external identifier, the table's ARN with the project's id suffixed (`SUP-343`). No reading
+  exists of the worker's session through Athena, or of an Iceberg table created through Athena as a
+  project role.
 - **0.8 dbt and the wrapper against a simulated DataZone** (2026-11-08, a build host outside this estate,
   no AWS call; this stage's log carries the readings). `package-task` (awsds-workflows `d856982`) built
   an archive of dbt-core 1.11.17 and `dbt-athena` 1.11.1 for `manylinux2014`: 22,489,562 bytes,
@@ -566,13 +653,99 @@ already measured, and step 6.2 completes §L with this stage's readings.
   container runtime environment."* The Tooling blueprint's `enableNetworkIsolation` *"Enables network
   isolation for training and deployed inference containers."*, and reads `true` in both Tooling stacks
   here ([Stage 17](stage-17-sandbox-machine-learning.md) step 0.8).
+- **0.15 The archive and the lock, built from the application's draft** (2026-11-17, a build host outside
+  this estate, Ubuntu 24.04 with glibc 2.39 and uv 0.11.32, no AWS call; this stage's log carries the
+  readings). The draft is the application as "The application, task by task" lays it out, written outside
+  the repository. Under `exclude-newer = "2026-11-03T00:00:00Z"` uv refused dbt-core pinned at 1.11.17, a
+  release of 2026-11-06; with the three packages named by range the lock took dbt-core 1.11.16,
+  `dbt-athena` 1.11.1 and OpenLineage 1.55.0, 86 packages, PyAthena 3.34.0, `click` 8.5.0, `protobuf`
+  6.33.6, `sqlparse` 0.6.1 and `mmh3` 4.1.0 among them. `package-task` (awsds-workflows `196acee`)
+  refused `--include code/dbt`, a file named as the folder dbt-core installs at the archive's root (*"dbt
+  já está na raiz do .zip"*), which is why the console script travels inside the application's package.
+  With `--platform x86_64-manylinux_2_28` and `--include code/run-dbt.sh` it built the archive in about
+  five seconds: 26,119,606 bytes, 82,819,034 unzipped, 5,102 entries, `run-dbt.sh` and `app_dbt/bin/dbt`
+  stored with mode 755, and no boto3 or botocore at its root; a second build of the same tree differed by
+  two bytes, in the project's own metadata. Of its ten compiled modules `openlineage_sql` alone asks for
+  `GLIBC_2.28`, and the others for 2.16 at most. `unzip` keeps the stored modes, and
+  `python3 -m zipfile -e` extracts every file at mode 644. `awsds-workflows lint` in the authoring mode
+  read the draft *"ok: 4 arquivo(s)"*, and `dbt parse` over the project ended 0 with placeholder values,
+  no credential and a closed proxy.
+- **0.16 The draft run as the task runs it, against simulated services** (2026-11-17, the same host, no
+  AWS call; the last of four runs of the cases, 01:06 to 01:08 UTC, is the one quoted). The worker is a
+  CPython 3.12 environment holding `apache-airflow` 3.0.6 under its constraint file and boto3 1.43.1,
+  with the archive extracted beside it and first on `PYTHONPATH`. Each case runs the task's command as
+  the service renders it, `bash -c "bash <folder>/run-dbt.sh …"`, in a temporary folder with an empty
+  environment. AWS is moto 5.2.5's Athena, Glue, S3 and STS behind a proxy that records every call and
+  gives each Athena statement its Glue side effect, and a listener that stands for the domain through
+  `endpointOverride`. The simulation reads the client's side alone: Athena's, Glue's and Lake Formation's
+  authorization, the engine's own effects, the domain's processing of an event and the worker itself are
+  passes 2 and 3's.
+  - **A first `dbt build`, the names as built**: exit 0 in 7.9 s, the wrapper and dbt peaking at 213,096
+    kB of resident memory (189,184 to 222,188 kB over the cases that ran a model), a log of 3.5 kB in 34
+    lines. It made 17 calls: `glue:GetDatabase` (the script's), `glue:GetDatabases`, `glue:GetTables`,
+    `sts:GetCallerIdentity` twice, `athena:GetWorkGroup`, three `athena:StartQueryExecution` (the create,
+    a constant `SELECT` that carries its result, and the test), each naming the workgroup and no
+    `ResultConfiguration`, with their `GetQueryExecution` and `GetQueryResults`, `glue:GetTable` twice
+    and one `glue:UpdateTable` (`persist_docs`); and no S3 call. dbt printed *"Done. PASS=2 WARN=0
+    ERROR=0 SKIP=0 NO-OP=0 TOTAL=2"*. After dbt ended the wrapper posted 6 signed events of 1.9 to 7.6
+    kB, a `START` and a `COMPLETE` for each of three jobs under the namespace `app-dbt`:
+    `dbt-run-app_dbt`, `awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run` and `….build.test`.
+    Each post left a line with the event's id (*"Successfully posted a LineageEvent: … in Domain: …"*),
+    then *"Emitted 6 OpenLineage events"* and *"Underlying dbt execution returned 0"*. The datasets were
+    `awsdatacatalog.app_dbt.trades` and `awsdatacatalog.app_dbt.notional_by_desk` under
+    `awsathena://athena.us-west-2.amazonaws.com`, each with a `symlinks` facet naming
+    `table/app_dbt/<table>` under `arn:aws:glue:us-west-2:<account>`, the account `sts:GetCallerIdentity`
+    answered. The model's output carried `schema`, `documentation` and `columnLineage` (`desk` from
+    `trades.desk`, `notional` from `trades.price` and `trades.quantity`), and the test's input a
+    `dataQualityAssertions` facet, the `not_null` on `desk` holding.
+  - **A second build, the names renamed**: exit 0 in 6.4 s, 28 calls. The statements were the swap of
+    0.13: the create of `notional_by_desk__ha`, two `ALTER TABLE … RENAME TO`, a `DROP TABLE IF EXISTS`
+    of `notional_by_desk__bkp`, the constant `SELECT` and the test. With `--names glue-arn` every dataset
+    of the six events, and every input field of a `columnLineage` facet, carried the namespace
+    `arn:aws:glue:us-west-2:<account>:table` and the name `app_dbt/<table>`, the symlinks unchanged.
+  - **The engine's detection**: with dbt Core's own console script the wrapper read dbt's version from
+    the file in 0.07 s; with a shell script in its place it ran `dbt --version`, 1.9 s and a request to
+    PyPI.
+  - **A post that fails**: with the endpoint's port closed and `--attempts 1`, exit 0 in 5.9 s and
+    *"Emitted 0 OpenLineage events"*; with botocore's default attempts, exit 0 in 51.5 s (45 to 58 s over
+    the runs). With the listener answering 403 `AccessDeniedException`, exit 0 in 5.8 s, six posts
+    received and none emitted. Each warning (*"OpenLineage client failed to emit event"*) prints the
+    whole event, the compiled SQL included: the logs were 125 kB and 77 kB against 3.5 kB.
+  - **A test that fails**: dbt's exit code 1 was the wrapper's, the script's and the task's, in 5.9 s,
+    with *"Done. PASS=1 WARN=0 ERROR=1"* and 6 events, three `START`, one `COMPLETE` and two `FAIL`.
+  - **A database Glue does not hold**: exit 1 in 0.3 s on the script's own `GetDatabase`
+    (`EntityNotFoundException`), before dbt started.
+  - **Both workflows' commands**, translated as the CLI translates them and rendered by Jinja2 3.1.6 with
+    every stage variable: the probe ended 0 in 0.8 s, its ten calls each on one line, a call the
+    simulation answers with an error among them as one `REFUSED` line; `transform` ended 0 in 5.7 s with
+    the first build's calls and events.
+  - **By hand**, with `APP_DBT_NAMESPACE=app-dbt-by-hand`: `-- debug` ended 0 in 2.8 s with four calls
+    and no event; `-- run` ended 0 in 6.1 s with 4 events under that namespace, the model's job named
+    `awsdatacatalog.app_dbt.app_dbt.notional_by_desk`.
+  - **Every file at mode 644**, the archive extracted by `python3 -m zipfile -e`: exit 0 in 7.9 s, the
+    first line ending *"dbt from /tmp/tmp.…/bin, this script not executable"*, the same calls and events.
+  - **The profile with `skip_workgroup_check: true`**: exit 0, no `athena:GetWorkGroup` among its calls
+    and no `ResultConfiguration` in a statement: the way on if that one read is refused to a worker, at
+    the cost of a new archive.
+  - **The account a tracked file may name**: the runs above carried moto's default account, twelve digits
+    the repository's identifier check refuses. Under `MOTO_ACCOUNT_ID=000000000000`, the twelve digits
+    the check admits, both builds and the failing test read the same exit codes and six events each, the
+    events and the trail naming that account alone (02:08 UTC).
 
 ## To execute
 
 ### 1. With nothing up: the application, the lineage configuration, the runbook's first version
 
-No AWS session: the laptop or a cloud session, wherever `uv` reaches PyPI. Step 1.1's facts and
-decisions 1 to 7 and 10 are taken, so nothing of the user's holds this pass.
+No AWS session: a cloud session or the laptop, wherever `uv` reaches PyPI. Step 1.1's facts and decisions
+1 to 7 and 10 are taken, so nothing of the user's holds this pass. A draft of the application went
+through steps 1.2 to 1.4 outside the repository on 2026-11-17, against simulated services (0.15, 0.16);
+this pass writes it under `examples/app-dbt/` and repeats each command on the tree it commits. The
+commands run from `examples/app-dbt/`, and `awsds-workflows` runs from the commit the template's pipeline
+pins, whatever the machine has installed:
+
+```bash
+TOOL="awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/196aceec092649551ed6451796b1c3c7983cfafb.zip"
+```
 
 - **1.1 [user] The institution's dbt, answered 2026-11-16** (the log carries the words). The engines
   are AWS's own: the sources are tables of the Glue Data Catalog or of Redshift, and the processing is
@@ -582,19 +755,57 @@ decisions 1 to 7 and 10 are taken, so nothing of the user's holds this pass.
   project holds tens of models, and a typical run can pass one hour. A processing job should run in
   the project's VPC (decision 13); whether one in the institution already does was not said.
 - **1.2 [Claude] The application** `examples/app-dbt/` (decision 7), as "The application, task by task"
-  lays it out: the manifest, the two workflows, the Glue script, the sample, the package with the dbt
-  project, the script and the shim, the lock. Its tests are green: `dbt parse` over the project with
-  placeholder values, the Glue script over doubles as the template's, and `awsds-workflows lint` in the
-  authoring mode. What the lint refuses in an application of one stage goes to 6.4's list.
+  lays it out: the manifest, the two workflows, the Glue script after the template's, the sample, the
+  package with the dbt project, the transformer and the console script, `run-dbt.sh`,
+  `scripts/dev-cli.sh` as the template's copy, and the README. The two scripts are committed with the
+  executable bit (`git update-index --chmod=+x <file>` where the file system keeps none), and `uv lock`
+  cuts the lock under an `exclude-newer` two weeks before the day of the cut, the template's rule. The
+  tests: `dbt parse` over the project with placeholder values, no credential and no network; each
+  workflow's `bash_command` translated as the CLI translates it, rendered by Jinja under
+  `StrictUndefined` with every stage variable and parsed by `bash -n`; the manifest's stage declaring
+  every `{env.NAME}` a workflow reads; `run-dbt.sh`'s refusals, exit 2 on an option it does not know and
+  on a value left out; the stored modes of the two scripts; and the Glue script over doubles, as the
+  template's.
+
+  ```bash
+  uv lock
+  uv run pytest
+  uvx --from "$TOOL" awsds-workflows lint .
+  ```
+
+  The step passes when the tests are green and the lint prints `ok` with the files it read, *"ok: 4
+  arquivo(s)"* on the draft (0.15). The repository's hooks read the folder at the commit: `ruff check`
+  and `ruff format --check` at 100 columns, the identifier check and the 500 KB limit of a file, the
+  draft's lock being 118 KB. No pipeline runs the tests, the application having no GitLab project
+  (decision 9): these commands are the gate, and the log carries their output. What the lint refuses in
+  an application of one stage goes to 6.4's list.
 - **1.3 [Claude] The lineage configuration and the transformer**: `run-dbt.sh` writes either form of
   `openlineage.yml`; `app_dbt/lineage.py` rewrites each Athena dataset of an event, the inputs, the
   outputs and every `columnLineage` input field, to the namespace `arn:aws:glue:<region>:<account>:table`
-  and the name `<database>/<table>`. The tests feed the transformer events shaped as the wrapper builds
-  them for `athena` and assert the names of both forms; they also run the wrapper over a local engine
-  against a simulated DataZone through `endpointOverride`, and assert that the file named by
-  `OPENLINEAGE_CONFIG` is the one read and the wrapper's exit code with the endpoint closed.
-- **1.4 [Claude] The archives** A and B built with `package-task`, their sizes and unzipped sizes against
-  250 MB (iv), every refusal read.
+  and the name `<database>/<table>`. The tests feed the transformer the events the wrapper built for
+  `athena` in 0.16's runs, kept as fixtures, and assert the names of both forms. The fixtures and the
+  simulation name the account `000000000000`, which moto takes from `MOTO_ACCOUNT_ID` and the identifier
+  check admits (0.16). The simulation of 0.16 is kept in `tests/simulation/`, outside `pytest`'s
+  collection, since it builds a worker's environment and starts moto: it runs by hand in this pass and at
+  each change of the lock. The step passes when a build posts six signed events and ends 0 in either form
+  of the names; ends 0 with no event emitted when the listener's port is closed and `--attempts` is 1;
+  and ends with dbt's exit code, 1, when the model's test fails.
+- **1.4 [Claude] The archive**, one build, the options after the archive's path as
+  [`serverless-workflows.md`](../runbooks/serverless-workflows.md) §C2 asks, then the stored sizes and
+  modes:
+
+  ```bash
+  uvx --from "$TOOL" awsds-workflows package-task . code/app-dbt.zip --platform x86_64-manylinux_2_28 --include code/run-dbt.sh
+  ```
+
+  ```bash
+  python3 -c 'import sys, zipfile; z = zipfile.ZipFile(sys.argv[1]); print(len(z.infolist()), sum(i.file_size for i in z.infolist()), [oct(z.getinfo(n).external_attr >> 16) for n in ("run-dbt.sh", "app_dbt/bin/dbt")])' code/app-dbt.zip
+  ```
+
+  The step passes when `package-task` refuses nothing, the archive and its unzipped size are each under
+  250 MB (iv) and the check prints `['0o100755', '0o100755']`: the draft read 26,119,606 bytes and
+  `5102 82819034 ['0o100755', '0o100755']` (0.15). The archive stays out of git, and 2.0 builds it again
+  from the merged tree.
 - **1.5 [Claude] The runbook's first version**, `docs/plan/runbooks/catalog.md` (decision 10), as "The
   catalog's runbook, section by section" lays it out: every section, §L without the dbt case's readings,
   from what Stages 6f, 18 and 19 measured and from AWS's pages, the catalog's that `REFERENCES.md` holds
@@ -607,142 +818,540 @@ decisions 1 to 7 and 10 are taken, so nothing of the user's holds this pass.
   here measured (0.12, 0.14); and, in one paragraph, the names the wrapper gives the other adapters'
   datasets (0.9), Redshift and Glue with Spark being a later revision's (decision 1).
 - **1.7 [Claude] [`upstream-releases.md`](../upstream-releases.md)** gains dbt Core, `dbt-athena` and
-  OpenLineage, with the pins this stage takes and the dates that move them: dbt Core 1.11's critical
-  support ends 2026-12-18.
+  OpenLineage, with the ranges this stage takes, the versions its lock holds and the dates that move
+  them: dbt Core 1.11's critical support ends 2026-12-18.
 
 ### 2. The Sandbox sitting: dbt on a worker, and its events
 
-A Sandbox sitting: `make hub-up`; `make up ENV=sandbox ONLY=egress GROUPS=mwaa`; the application reaches
-a space of `eighth-experimentation` as a tar, the archive of 1.4 inside it; the deploy and the runs go
-through `scripts/dev-cli.sh` ([`sagemaker-application.md`](../runbooks/sagemaker-application.md) §D).
-Every portal tab is closed before `make down ENV=sandbox`.
+A Sandbox sitting under [`sagemaker-application.md`](../runbooks/sagemaker-application.md) §D's rules.
+The user raises the hub and `sandbox/egress/` with its `mwaa` group, which a deploy from a space needs;
+the application reaches a space of `eighth-experimentation` as a tar with the archive inside, so GitLab
+and the tunnel stay out of it; the deploy and the runs go through `scripts/dev-cli.sh`. Steps 2.0 and 2.1
+need nothing up, as the same acts needed nothing in [Stage 19](stage-19-smus-native-data-product.md),
+*Create database* on 2026-11-08 and the query editor on 2026-11-14. The window opens at 2.2 and closes at
+2.7, and Cost carries what it bills.
 
-- **2.1 [user] Create the database `app_dbt`** in `eighth-experimentation` (*Data → Create database*).
-  **[Claude] reads** the new `DataLake` environment, its database and location, its daily source
-  (`publishOnImport`, its connection's lineage setting), the grants on the database, and the project's
-  Athena workgroup with its engine version and enforced output.
-- **2.2 [user] Deploy to `dev` from a space and run `app-dbt-probe`.** **[Claude] reads** the task's log:
-  the worker's glibc and distribution, which pick archive A or B (i); the pre-installed packages against
-  the guide's table, the reading [`upstream-releases.md`](../upstream-releases.md) owes for the Amazon
-  provider; the names of the variables a workflow the CLI made carries; the identity; the
-  workgroup's read and the `SELECT 1` as the worker's session, with their entries in Sandbox's trail (ii's
-  first half); the `list-lineage-events` read through the endpoint.
-- **2.3 [user] Run `app-dbt`.** **[Claude] reads** the Glue job's table and events, the baseline; the
-  `transform` task's Athena and Glue calls in the trail and `GetDataAccess` with the session's identity
-  (ii); the model's table: the call that created it and the grant that admitted it, its `TableType` and
-  `table_type`, whether its files landed under the database's location, as the profile asks (0.13), and
-  whether that location is registered with Lake Formation (iii); dbt's own lines: the start, the compile,
-  the run and the test times, the peak memory the script prints, the task's duration (iv); the wrapper's
-  lines and `PostLineageEvent` in the trail, the events' count and `processingStatus` from
-  `list-lineage-events`, each event read back with `get-lineage-event` (v).
-- **2.4 [user] Run the database's source in the portal, then open each table's *Lineage* tab.** **[Claude]
-  reads** the assets and their `sourceIdentifier`, then `get-lineage-node` on each identifier form, the
-  node ids taken from Data Governance's trail (`SUP-347`): whether the model's output node took the
-  table's ARN or the Athena name, whether dbt's input is the node the Spark job wrote, what the job and
-  the job-run nodes are called, whether the portal draws column lineage, and what the test's assertions
-  left (vi, vii); what the assets show of dbt's descriptions (xvi).
-- **2.5 [user] Run `app-dbt` again.** **[Claude] reads** what a second `dbt build` does: the adapter
-  builds `notional_by_desk__ha`, renames the table aside, renames the new one into place and drops the
-  old by an Athena statement (0.13), so the reading is the statements in the trail, which grant admits
-  each rename and the drop, what the drop leaves under the old table's location, what the swap does to
-  the table's Glue identity, to its grants and to the asset at the source's next run; and what the
-  graph shows for a second run: new job runs under the same job, and the nodes' versions (x).
+**The identities.** The laptop's commands are [Claude]'s reads as the infrastructure user in
+`Sandbox Account 1`, permission set `InfrastructureAccess`, profile `awsds-infra-sandbox-1`. A lineage
+node's id is read from `Data Governance`'s trail, the same user and set, profile `awsds-infra-data`. One
+login covers both profiles and is the user's act. The portal, the space and the query editor are the
+user's, as a member of `eighth-experimentation`, and every command of the space runs as the project role.
+With the tunnel down, each `aws` command of the laptop takes `NO_PROXY='*'` before it. The laptop's shell
+is zsh (Lesson 84): the blocks below quote every `--query` and split no variable.
+
+**The values** each laptop block starts from, and **a run's reading**, which each step repeats with its
+own workflow's name ([`sagemaker-application.md`](../runbooks/sagemaker-application.md) §V): a task's
+`Status` and `DurationInSeconds` are read, since the run's `RunState` lags its tasks, and a task's text
+is the stream its `LogStream` names.
+
+```bash
+D=dzd-d8yrvx1ko7im6o; E=avhvbqn37ty7m8; P=awsds-infra-sandbox-1; B=awsds-sandbox-smus-projects; WG=workgroup-$E-5hkjdsy3umpi1c
+```
+
+```bash
+N=app_dbt_eighth_experimentation_app_dbt_probe
+W=$(aws mwaa-serverless list-workflows --profile $P --region us-west-2 --query "Workflows[?Name=='$N'].WorkflowArn | [0]" --output text)
+R=$(aws mwaa-serverless list-workflow-runs --workflow-arn "$W" --profile $P --region us-west-2 --max-results 1 --no-paginate --query 'WorkflowRuns[0].RunId' --output text)
+aws mwaa-serverless get-workflow-run --workflow-arn "$W" --run-id "$R" --profile $P --region us-west-2 --query '[RunDetail.RunState, OverrideParameters]'
+aws mwaa-serverless list-task-instances --workflow-arn "$W" --run-id "$R" --profile $P --region us-west-2 --query 'TaskInstances[].[TaskInstanceId, OperatorName, Status, DurationInSeconds]' --output text
+aws mwaa-serverless get-task-instance --workflow-arn "$W" --run-id "$R" --task-instance-id <a task instance's id> --profile $P --region us-west-2 --query '[TaskId, Status, DurationInSeconds, LogStream, ErrorMessage]'
+aws logs get-log-events --log-group-name "/aws/mwaa-serverless/$D-$E/$N" --log-stream-name '<the LogStream>' --start-from-head --profile $P --region us-west-2 --query 'events[].message' --output json | jq -r '.[]'
+```
+
+Sandbox's trail is read after its delay (Lesson 62), by event name, the worker's calls being the ones of
+the project role's session `AmazonMWAAServerless`:
+
+```bash
+for e in <event names>; do aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=$e --start-time <the run's first minute> --profile $P --region us-west-2 --query 'Events[].CloudTrailEvent' --output json | jq -r '.[] | fromjson | [.eventTime, .eventName, (.userIdentity.arn // "-" | split("/") | last), (.userIdentity.invokedBy // "-"), .sourceIPAddress, (.vpcEndpointId // "-"), (.errorCode // "-"), (.additionalEventData // {} | tostring)] | @tsv'; done
+```
+
+- **2.0 [Claude] Before the sitting, with nothing up**: the starting state, then the archive and the tar.
+
+  ```bash
+  aws athena get-work-group --work-group $WG --profile $P --region us-west-2 --query 'WorkGroup.[State, Configuration.EnforceWorkGroupConfiguration, Configuration.EngineVersion.EffectiveEngineVersion, Configuration.ResultConfiguration.OutputLocation]' --output text
+  aws glue get-database --name app_dbt --profile $P --region us-west-2
+  aws glue get-job --job-name app-dbt-$E --profile $P --region us-west-2 --query Job.Name
+  aws mwaa-serverless list-workflows --profile $P --region us-west-2 --query "Workflows[?starts_with(Name, 'app_dbt_')].Name" --output text
+  for k in dev/data/catalogs/trades/ dev/data/catalogs/app_dbt/ shared/app-dbt/; do aws s3api list-objects-v2 --bucket $B --prefix $D/$E/$k --profile $P --region us-west-2 --query 'length(Contents || `[]`)'; done
+  aws datazone search --domain-identifier $D --search-scope ASSET --owning-project-identifier $E --profile $P --region us-west-2 --query 'items[].assetItem.[identifier,name,externalIdentifier]' --output text
+  ```
+
+  Expected: the workgroup `ENABLED` and enforced, on Athena engine version 3, its output under
+  `dev/sys/athena/` (0.7); `EntityNotFoundException` for the database and for the job; no workflow; `0`
+  three times; and the project's assets, the older `trades` (`cm329mc3bqu39s`) among them. Objects under
+  `dev/data/catalogs/trades/`, where the Glue job's table lands (0.7), are an older table's and go to the
+  user before the sitting.
+
+  The archive is built on the laptop from the merged tree, outside the repository, with pass 1's `TOOL`,
+  and travels inside the tar, whose flags keep macOS's AppleDouble members out (`SUP-348`):
+
+  ```bash
+  rm -rf "$HOME/tmp/stage20" && mkdir -p "$HOME/tmp/stage20" && git archive --output="$HOME/tmp/stage20/source.tar" <the merged commit> examples/app-dbt && tar -x -f "$HOME/tmp/stage20/source.tar" -C "$HOME/tmp/stage20"
+  ```
+
+  ```bash
+  cd "$HOME/tmp/stage20/examples/app-dbt" && uvx --from "$TOOL" awsds-workflows package-task . code/app-dbt.zip --platform x86_64-manylinux_2_28 --include code/run-dbt.sh
+  ```
+
+  ```bash
+  cd "$HOME/tmp/stage20/examples" && COPYFILE_DISABLE=1 tar --no-xattrs --no-acls --no-mac-metadata -c -f "$HOME/tmp/stage20/app-dbt.tar" app-dbt
+  ```
+
+  ```bash
+  python3 -c 'import sys, tarfile; t = tarfile.open(sys.argv[1]); print(len(t.getnames()), sum(m.isfile() for m in t.getmembers()), [n for n in t.getnames() if n.split("/")[-1].startswith("._")])' "$HOME/tmp/stage20/app-dbt.tar"
+  ```
+
+  The step passes when 1.4's check on the new archive prints the two modes `0o100755` and the tar lists
+  no `._` member. `package-task` has built for the worker on this laptop (2026-10-12) and never this
+  project: if the build or the check fails there, the archive is built in the space before the deploy,
+  which no sitting has done ([`serverless-workflows.md`](../runbooks/serverless-workflows.md) §C2).
+- **2.1 [user] Create the database `app_dbt`**, still with nothing up, in `eighth-experimentation` (*Data
+  → Create database*), then the editor's baseline: in the project's query editor on *Athena (SQL)*, as
+  the project role, the statement 2.3's model repeats from a worker, an Iceberg table created under the
+  database's location, and its drop.
+
+  ```sql
+  CREATE TABLE app_dbt.editor_probe WITH (table_type='iceberg', is_external=false, location='s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/catalogs/app_dbt/editor_probe', format='parquet') AS SELECT 1 AS n;
+  ```
+
+  ```sql
+  DROP TABLE app_dbt.editor_probe;
+  ```
+
+  **[Claude] reads** the new `DataLake` environment, the database, its grants, its daily source and the
+  source's connection, then the editor's statements and what the drop left:
+
+  ```bash
+  aws datazone list-environments --domain-identifier $D --project-identifier $E --profile $P --region us-west-2 --query 'items[].[id,name,status]' --output text
+  aws glue get-database --name app_dbt --profile $P --region us-west-2 --query 'Database.[Name, Description, LocationUri, CreateTableDefaultPermissions]'
+  aws lakeformation list-permissions --resource '{"Database":{"Name":"app_dbt"}}' --profile $P --region us-west-2 --query 'PrincipalResourcePermissions[].[Principal.DataLakePrincipalIdentifier, join(`,`, Permissions), Condition.Expression]' --output text
+  aws lakeformation list-permissions --resource '{"Table":{"DatabaseName":"app_dbt","TableWildcard":{}}}' --profile $P --region us-west-2 --query 'PrincipalResourcePermissions[].[Principal.DataLakePrincipalIdentifier, join(`,`, Permissions), Condition.Expression]' --output text
+  aws datazone list-data-sources --domain-identifier $D --project-identifier $E --profile $P --region us-west-2 --query 'items[].[dataSourceId,name,status,connectionId,environmentId,schedule.schedule]' --output text
+  aws datazone get-data-source --domain-identifier $D --identifier <the source's id> --profile $P --region us-west-2 --query '[name, status, publishOnImport, schedule.schedule, connectionId, configuration.glueRunConfiguration.relationalFilterConfigurations[].databaseName]'
+  aws datazone get-connection --domain-identifier $D --identifier <the source's connectionId> --profile $P --region us-west-2 --query '[name, type, props.lakehouseProperties.glueLineageSyncEnabled]'
+  aws athena batch-get-query-execution --query-execution-ids $(aws athena list-query-executions --work-group $WG --max-results 4 --no-paginate --profile $P --region us-west-2 --query 'QueryExecutionIds' --output text) --profile $P --region us-west-2 --query 'QueryExecutions[].[Status.SubmissionDateTime, Status.State, StatementType, Status.StateChangeReason, Query]'
+  aws s3api list-object-versions --bucket $B --prefix $D/$E/dev/data/catalogs/app_dbt/editor_probe/ --profile $P --region us-west-2 --query '[length(Versions[?IsLatest] || `[]`), length(DeleteMarkers || `[]`)]'
+  ```
+
+  Expected, by `SUP-184` and 0.7: an environment `create-datalake-database-env-app_dbt-<epoch ms>`,
+  `ACTIVE`; the database described *"Created by DataZone for project eighth-experimentation"*, at
+  `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/catalogs/`, with no
+  default table permission; `IAMPrincipals` under the project's condition holding `CREATE_TABLE`,
+  `DESCRIBE` and `DROP` on the database and `ALTER`, `DELETE`, `DESCRIBE`, `DROP`, `INSERT` and `SELECT`
+  on its tables; a source on a daily cron at the minute of its creation, `publishOnImport` false, its
+  filter naming `app_dbt`, hanging from the project's `project.default_lakehouse` connection, whose
+  `glueLineageSyncEnabled` read `true` on 2026-10-18 ([`SMUS.md`](../../SMUS.md) §The catalog surface);
+  both statements `SUCCEEDED`, and no current object under the dropped table's folder. The trail's
+  `CreateTable` and `DeleteTable` (the loop above) give the session and the grant that admitted each
+  (iii's baseline). A later sitting keeps its runs clear of the source's minute. If the editor's create
+  is refused, the stage stops for the user with the refusal: 2.3 asks the same of a worker.
+- **2.2 [user] The raises, the space, the deploy and the probe.** From the project folder, `make hub-up`,
+  then
+
+  ```bash
+  make up ENV=sandbox ONLY=egress GROUPS=mwaa
+  ```
+
+  **[Claude]** tells the laptop's other sessions before the first raise and reads `make status` after the
+  second. Then a JupyterLab space in `eighth-experimentation` on `awsds-sandbox-dev-env` version 11
+  (alias `0.10.0`), `ml.t3.medium`, the tar dropped on its file browser, and in its terminal:
+
+  ```bash
+  tar -x -f app-dbt.tar && cd app-dbt
+  ```
+
+  The values the manifest reads, §D step 3 without an image or a key; the workgroup's name is typed,
+  since the Tooling environment's values do not carry it:
+
+  ```bash
+  git clone --depth 1 https://github.com/felipenoris/awsds-workflows /tmp/awsds-workflows
+  /opt/conda/bin/python /tmp/awsds-workflows/scripts/space_values.py > /tmp/space_values.json
+  eval "$(/opt/conda/bin/python -c 'import json; v = json.load(open("/tmp/space_values.json")); print("\n".join("export %s=%s" % p for p in (("DOMAIN_ID", v["DOMAIN_ID"]), ("DOMAIN_REGION", v["REGION"]), ("SUBNET_AZ1", v["SUBNET_AZ1"]), ("SUBNET_AZ2", v["SUBNET_AZ2"]), ("ACCOUNT_ID", v["ACCOUNT_ID"]))))')"
+  export DEV_PROJECT_NAME=eighth-experimentation ATHENA_WORKGROUP=workgroup-avhvbqn37ty7m8-5hkjdsy3umpi1c
+  export LINEAGE_DOMAIN="$DOMAIN_ID" LINEAGE_NAMES=as-built LINEAGE_ENDPOINT=default LINEAGE_ATTEMPTS=default
+  ```
+
+  The deploy (§D step 6), which a line *"No custom VPC config"* stops, and the probe's run (§D step 7):
+
+  ```bash
+  scripts/dev-cli.sh deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
+  ```
+
+  ```bash
+  scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-dbt-probe
+  ```
+
+  **[Claude] reads** the copies and both workflows, then the probe's run and its log by the blocks above,
+  and the trail's `GetCallerIdentity`, `GetWorkGroup`, `StartQueryExecution`, `GetDatabase` and
+  `ListLineageEvents`:
+
+  ```bash
+  aws s3 ls s3://$B/$D/$E/shared/app-dbt/ --recursive --profile $P --region us-west-2
+  aws s3 ls s3://$B/$D/$E/shared/operatorFiles/ --profile $P --region us-west-2
+  for N in app_dbt_eighth_experimentation_app_dbt app_dbt_eighth_experimentation_app_dbt_probe; do W=$(aws mwaa-serverless list-workflows --profile $P --region us-west-2 --query "Workflows[?Name=='$N'].WorkflowArn | [0]" --output text); aws mwaa-serverless get-workflow --workflow-arn "$W" --profile $P --region us-west-2 --query '[Name, WorkflowVersion, WorkflowStatus, NetworkConfiguration.SubnetIds, NetworkConfiguration.SecurityGroupIds, EncryptionConfiguration.Type, LoggingConfiguration.LogGroupName]'; done
+  ```
+
+  Expected: five objects under `shared/app-dbt/`, `code/app-dbt.zip`, `glue/load.py`, `inbox/trades.csv`
+  and the two definitions under `workflows/`, and under `shared/operatorFiles/` one copy of the archive
+  for each deploy, of the size the laptop built
+  ([`serverless-workflows.md`](../runbooks/serverless-workflows.md) §C5); each workflow in the project's
+  two subnets and security group, under the project key; the probe's task `SUCCESS`. The step passes when
+  the probe's log reads glibc 2.28 or later (i); `python3`, `bash`, `mktemp`, `cp`, `chmod` and `dirname`
+  on `PATH`; a script written in the `mktemp` folder running; the identity the project role's session
+  `AmazonMWAAServerless`; the workgroup as 2.0 read it; the database's location; and `SELECT 1`
+  `SUCCEEDED` (ii's first half). The count of `trades` reads a failed query that names the missing table,
+  which is expected here. The log's other lines are readings: the distribution and the pre-installed
+  packages against the guide's table, which [`upstream-releases.md`](../upstream-releases.md) owes for
+  the Amazon provider; the CPUs and the memory; the names of the variables a workflow the CLI made
+  carries; `PYTHONPATH` in a workflow with no archive. The step stops for the user on glibc below 2.28,
+  with the ways on "The archive" names; on `GetDatabase` or `SELECT 1` refused or unanswered, with the
+  refusal and before any grant is written (Cost); and on a connection error from `ListLineageEvents`, the
+  endpoint's reading (Lesson 42), a refusal by the service being a reading for v. If a script runs in the
+  task's folder alone, `run-dbt.sh` takes `mktemp -d -p "$PWD"`, a new archive and a deploy, before 2.3.
+- **2.3 [user] Run `app-dbt`**, from the space:
+
+  ```bash
+  scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-dbt
+  ```
+
+  **[Claude] reads** the run with `N=app_dbt_eighth_experimentation_app_dbt`, both tasks and
+  `transform`'s log; the Glue job and the two tables; the model's files and Lake Formation's
+  registrations; the statements; the events, each read back into a file; and the trail's
+  `StartQueryExecution`, `GetWorkGroup`, `CreateTable`, `UpdateTable`, `GetDataAccess` and
+  `PostLineageEvent`:
+
+  ```bash
+  aws glue get-job-runs --job-name app-dbt-$E --max-results 3 --profile $P --region us-west-2 --query 'JobRuns[].[Id,JobRunState,StartedOn,CompletedOn,ErrorMessage]' --output table
+  for t in trades notional_by_desk; do aws glue get-table --database-name app_dbt --name $t --profile $P --region us-west-2 --query 'Table.[Name, TableType, Parameters.table_type, IsRegisteredWithLakeFormation, StorageDescriptor.Location, CreatedBy, Description, CreateTime, VersionId]' --output text; done
+  aws s3 ls s3://$B/$D/$E/dev/data/catalogs/app_dbt/notional_by_desk/ --recursive --profile $P --region us-west-2
+  aws lakeformation list-resources --profile $P --region us-west-2 --query 'ResourceInfoList[].[ResourceArn, RoleArn]' --output text
+  aws athena batch-get-query-execution --query-execution-ids $(aws athena list-query-executions --work-group $WG --max-results 12 --no-paginate --profile $P --region us-west-2 --query 'QueryExecutionIds' --output text) --profile $P --region us-west-2 --query 'QueryExecutions[].[Status.SubmissionDateTime, Status.State, StatementType, ResultConfiguration.OutputLocation, Statistics.DataScannedInBytes, Status.StateChangeReason, Query]'
+  aws datazone list-lineage-events --domain-identifier $D --timestamp-after <the run's first minute> --profile $P --region us-west-2 --query 'items[].[id, processingStatus, eventTime, eventSummary.openLineageRunEventSummary.eventType, eventSummary.openLineageRunEventSummary.job.namespace, eventSummary.openLineageRunEventSummary.job.name, createdBy]' --output text
+  aws datazone get-lineage-event --domain-identifier $D --identifier <an event's id> --profile $P --region us-west-2 "$HOME/tmp/stage20/event-<n>.json"
+  ```
+
+  The step passes when both tasks read `SUCCESS` and `transform`'s log holds, as 0.16's did: *"Running
+  with dbt="* and the lock's version, and *"Registered adapter: athena=1.11.1"*; *"Done. PASS=2 WARN=0
+  ERROR=0 SKIP=0 NO-OP=0 TOTAL=2"*; six lines *"Successfully posted a LineageEvent: … in Domain: …"*,
+  then *"Emitted 6 OpenLineage events"* and *"Underlying dbt execution returned 0"*; and the script's
+  *"peak memory … kB, exit code 0"*. The transport's warning *"does not support timeout"* is a good run's
+  too. The readings: the Glue job's table and events, the baseline; the model's table, `TableType` and
+  `table_type`, its location under `dev/data/catalogs/app_dbt/notional_by_desk/<uuid>`, the session that
+  created it and the grant that admitted it, and whether Lake Formation's registration of `dev/` covers
+  the location (ii, iii); the statements, the create, the constant `SELECT` and the test, each placed by
+  the workgroup's enforced output; dbt's times, the script's first line (where `dbt` ran from, the
+  script's own mode), the peak memory and the task's duration (iv); six events `SUCCESS` under the job
+  namespace `app-dbt`, posted through the endpoint by the worker's session, beside the Glue job's (v);
+  the description `persist_docs` wrote on the table.
+
+  The step stops for the user when the model's statement or an Iceberg table is refused, with the refusal
+  and never a Hive table in its place ("The dbt project"). The other refusals have a way on:
+  `GetWorkGroup` alone refused, the profile takes `skip_workgroup_check: true` (0.16); `glue:UpdateTable`
+  refused, `persist_docs` leaves the project and xvi reads no; each is a new archive, a deploy and this
+  step again. Posts refused or unanswered leave the task green and are v's reading and decision 5's
+  input. If `transform` cannot read `trades`, the probe runs once more: its count reads whether the
+  worker's session reads the Glue job's table.
+- **2.4 [user] Run the database's source in the portal** (the project's data sources, the one 2.1 read,
+  *Run*), then open each table's asset and its *Lineage* tab. **[Claude] reads** the run, the assets and
+  the nodes:
+
+  ```bash
+  aws datazone list-data-source-runs --domain-identifier $D --data-source-identifier <the source's id> --profile $P --region us-west-2 --query 'items[].[id, type, status, runStatisticsForAssets, lineageSummary.importStatus]'
+  aws datazone list-data-source-run-activities --domain-identifier $D --identifier <the run's id> --profile $P --region us-west-2 --query 'items[].[technicalName, dataAssetStatus, dataAssetId, technicalDescription, lineageSummary.eventStatus]' --output text
+  aws datazone search --domain-identifier $D --search-scope ASSET --owning-project-identifier $E --profile $P --region us-west-2 --query 'items[].assetItem.[identifier,name,externalIdentifier]' --output text
+  aws datazone get-asset --domain-identifier $D --identifier <an asset's id> --profile $P --region us-west-2 --query "formsOutput[?formName=='GlueTableForm'].content | [0]" --output text
+  aws datazone get-lineage-node --domain-identifier $D --identifier amazon.datazone.asset/<an asset's id> --profile $P --region us-west-2 --query '[id, typeName, sourceIdentifier, upstreamNodes[].id, downstreamNodes[].id]'
+  aws datazone get-lineage-node --domain-identifier $D --identifier 'app-dbt.awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run' --profile $P --region us-west-2 --query '[id, typeName, sourceIdentifier, formsOutput[].formName, upstreamNodes[].id, downstreamNodes[].id]'
+  aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=CreateLineageNode --start-time <2.3's first minute> --profile awsds-infra-data --region us-west-2 --query 'Events[].CloudTrailEvent' --output json | jq -r '.[] | fromjson | [.eventTime, (.additionalEventData | tostring)] | @tsv'
+  ```
+
+  This stage's assets are the two whose external identifier ends `table/app_dbt/trades.avhvbqn37ty7m8`
+  and `table/app_dbt/notional_by_desk.avhvbqn37ty7m8` (`SUP-343`); the older `trades` names
+  `glue_db_blerpkhn9nj7o0`. An asset's node answers to `amazon.datazone.asset/<asset id>`, a job's to
+  `<namespace>.<name>`, and every other node to its id alone, which `Data Governance`'s trail gives with
+  its `sourceIdentifier` (`SUP-347`); `get-lineage-node` on each id chains them. The graph is one when
+  `notional_by_desk`'s asset has the dbt job's run upstream and that run has, upstream, the node the Glue
+  job wrote, the one `trades`' asset hangs from: the model's output node then carries the table's ARN,
+  the symlink honoured (vi). It is split when dbt's datasets are nodes of their own under
+  `awsathena://athena.us-west-2.amazonaws.com/awsdatacatalog.app_dbt.<table>`, and pass 3 opens with 3.1.
+  The other readings: what the job and the job-run nodes are called and which facets they keep, the
+  compiled SQL among them; what the portal draws, the user's look, from the S3 input through the Glue
+  job, `trades` and the dbt job to `notional_by_desk`, with or without column lineage, and what the
+  test's assertions left (vii); and the model's and the columns' descriptions on the asset (xvi).
+- **2.5 [user] Run `app-dbt` again**, by 2.3's command, then the source, as in 2.4. **[Claude] reads**,
+  by 2.3's and 2.4's blocks, what a second `dbt build` does (x): the statements, expected the swap of
+  0.13 as 0.16 ran it, the create of `notional_by_desk__ha`, two `ALTER TABLE … RENAME TO`, a
+  `DROP TABLE IF EXISTS` of `notional_by_desk__bkp`, the constant `SELECT` and the test, with the session
+  and the grant that admitted each rename and the drop (the trail's `CreateTable`, `UpdateTable` and
+  `DeleteTable`); the table's `CreateTime`, `VersionId` and location against the first run's; what the
+  drop left under the first location and what the grants on the table read:
+
+  ```bash
+  aws s3api list-object-versions --bucket $B --prefix $D/$E/dev/data/catalogs/app_dbt/notional_by_desk/ --profile $P --region us-west-2 --query '[length(Versions[?IsLatest] || `[]`), length(DeleteMarkers || `[]`)]'
+  aws lakeformation list-permissions --resource '{"Table":{"DatabaseName":"app_dbt","Name":"notional_by_desk"}}' --profile $P --region us-west-2 --query 'PrincipalResourcePermissions[].[Principal.DataLakePrincipalIdentifier, join(`,`, Permissions), Condition.Expression]' --output text
+  ```
+
+  and, after the source's run, the asset (the same id or a new one, by 2.4's `search` and activities) and
+  the graph: new job runs under the same job, and the dataset nodes' versions. A rename or the drop
+  refused stops the step for the user with the statement's `StateChangeReason`: every later run of the
+  model needs the swap.
 - **2.6 [user] The same project by hand, from the space's terminal**, if the sitting has room: the
-  archive unpacked into a folder on `PYTHONPATH`, `dbt debug` and one `dbt run` through the wrapper with
-  another `OPENLINEAGE_NAMESPACE`. **[Claude] reads** the session in the trail and how the graph tells a
-  person's run from the workflow's: the scientist's development loop.
+  archive unpacked beside the space's own Python and run through the script, under another job namespace.
+
+  ```bash
+  mkdir -p /tmp/app-dbt-hand && python3 -m zipfile -e code/app-dbt.zip /tmp/app-dbt-hand
+  PYTHONPATH=/tmp/app-dbt-hand APP_DBT_NAMESPACE=app-dbt-by-hand bash /tmp/app-dbt-hand/run-dbt.sh --region us-west-2 --account "$ACCOUNT_ID" --database app_dbt --workgroup "$ATHENA_WORKGROUP" --domain "$LINEAGE_DOMAIN" --names "$LINEAGE_NAMES" -- debug
+  ```
+
+  Then the same line ending `-- run`. The archive leaves out boto3, botocore and PyYAML, which the
+  space's Python holds as the worker's does. The script's second line names the interpreter: the
+  archive's compiled modules are the worker's, so anything but Python 3.12 on Linux x86_64 stops the
+  step. In 0.16, `debug` ended 0 with no event and `run` posted four under the namespace, the model's job
+  named `awsdatacatalog.app_dbt.app_dbt.notional_by_desk`. **[Claude] reads** the space's session against
+  the worker's in the trail, and how the graph tells a person's run from the workflow's, a second job on
+  the same nodes: the scientist's development loop.
+- **2.7 [user] The downs**: the space stopped, every portal tab closed, then `make down ENV=sandbox` and
+  `make hub-down`. **[Claude]** `make status`, [`promotion.md`](../runbooks/promotion.md) §R's readings,
+  and `$HOME/tmp/stage20` deleted once the log holds what the event files read.
 
 ### 3. The names made to meet, and what a failed post leaves
 
-The same sitting or the next Sandbox one. Steps 3.1 and 3.2 run only if 2.4 reads a split graph.
+The same sitting or the next Sandbox one, under pass 2's raises, values and reads. A switch is an
+`export` in the space and a run, with no deploy, and each run's `OverrideParameters` is read back before
+its result is. Steps 3.1 and 3.2 run only if 2.4 reads a split graph.
 
-- **3.1 [user] A run with `LINEAGE_NAMES` set to `glue-arn`** (decision 3 (b)): the same archive, no
-  deploy. **[Claude] reads** 2.4's identifiers again (viii), and what became of the first run's nodes.
+- **3.1 [user] A run with the names renamed** (decision 3 (b)), from the space, then the source's run and
+  the *Lineage* tabs, as in 2.4:
+
+  ```bash
+  export LINEAGE_NAMES=glue-arn
+  scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-dbt
+  ```
+
+  **[Claude] reads**, by 2.3's and 2.4's blocks (viii): the events' datasets, each under the namespace
+  `arn:aws:glue:us-west-2:<Sandbox>:table` with the name `app_dbt/<table>` (`get-lineage-event`); the
+  nodes the run created; whether `notional_by_desk`'s asset now has the dbt job's run upstream, and the
+  Glue job's node upstream of that; and what became of the first runs' nodes under the Athena name. If
+  the graph is one, `LINEAGE_NAMES` stays `glue-arn` for the rest of the stage.
 - **3.2 [Claude] If the renamed form does not link either**, the stage stops for the user with the
-  readings. A Glue `environment-properties` facet the application makes up is never the remedy: it
-  tells the catalog a Glue job ran.
-- **3.3 [user] Runs that fail to post**, each a different failure and a switch of the task: a wrong
-  `LINEAGE_DOMAIN` (the service answers with an error); a `LINEAGE_ENDPOINT` naming a closed port (a
-  refused connection); one naming the `datazone` endpoint's own name on a port its security group does
-  not admit (no answer), with `LINEAGE_ATTEMPTS` at 1, since the transport takes no timeout and
-  botocore's defaults, a 60-second connect timeout and five attempts, would hold each event about five
-  minutes. **[Claude] reads** the wrapper's log lines, its exit code, the task's state and the time each
-  failure added (ix): decision 5's input.
-- **3.4 [user] Who may write and read a graph**, from a space of `test-experimentation`, with commands
-  Claude hands over: one `post-lineage-event` whose job names `app_dbt.notional_by_desk` as its output,
-  and one `get-lineage-node` on `app-dbt`'s job node. **[Claude] reads** whether the domain accepts an
-  event about another project's table and draws it on that table's tab, and whether a role outside the
-  project reads the job's facets, the compiled SQL among them (xi; `TM-29`'s shape, on lineage); then
-  what `delete-lineage-event` removes of the foreign event (xv).
+  readings. A Glue `environment-properties` facet the application makes up is never the remedy: it tells
+  the catalog a Glue job ran.
+- **3.3 [user] Runs that fail to post**, each a different failure and a switch of the task, 2.3's run
+  after each `export`. A domain id the service does not hold, which the service answers with an error:
+
+  ```bash
+  export LINEAGE_DOMAIN=dzd_canaryprobe0000
+  ```
+
+  A closed port on the worker itself, a refused connection:
+
+  ```bash
+  export LINEAGE_DOMAIN="$DOMAIN_ID" LINEAGE_ENDPOINT=http://127.0.0.1:9 LINEAGE_ATTEMPTS=1
+  ```
+
+  The `datazone` endpoint's own name on a port its security group does not admit, no answer:
+
+  ```bash
+  export LINEAGE_ENDPOINT=https://datazone.us-west-2.api.aws:8443 LINEAGE_ATTEMPTS=1
+  ```
+
+  And the switches back at rest:
+
+  ```bash
+  export LINEAGE_ENDPOINT=default LINEAGE_ATTEMPTS=default
+  ```
+
+  `LINEAGE_ATTEMPTS` is 1 in the last two, since the transport takes no timeout: botocore's defaults, a
+  60-second connect timeout and five attempts, would hold each unanswered event about five minutes, and
+  one attempt holds the six about six minutes in all. **[Claude] reads**, for each run, the wrapper's
+  lines, its exit code, the task's state and the time the failure added over 2.3's (ix), decision 5's
+  input; and the log's size, since each failed post prints its whole event, the compiled SQL included
+  (125 kB against 3.5 kB in 0.16). In 0.16 a refused post and a closed port each ended the task 0 in
+  about 6 s with *"Emitted 0 OpenLineage events"*.
+- **3.4 [user] Who may write and read a graph**, from the terminal of a space of `test-experimentation`,
+  as that project's role. The event's output is the pair of names under which 2.4 or 3.1 read the model's
+  node, the namespace's account id typed in the space and never written down:
+
+  ```bash
+  python3 -c 'import datetime, json, sys, uuid; print(json.dumps({"eventType": "COMPLETE", "eventTime": datetime.datetime.now(datetime.timezone.utc).isoformat(), "run": {"runId": str(uuid.uuid4())}, "job": {"namespace": "stage-20-foreign", "name": "foreign-writer"}, "inputs": [], "outputs": [{"namespace": sys.argv[1], "name": sys.argv[2]}], "producer": "https://example.com/stage-20-foreign", "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent"}))' '<the namespace>' '<the name>' > /tmp/foreign-event.json
+  ```
+
+  ```bash
+  aws datazone post-lineage-event --domain-identifier dzd-d8yrvx1ko7im6o --event fileb:///tmp/foreign-event.json --region us-west-2
+  ```
+
+  ```bash
+  aws datazone get-lineage-node --domain-identifier dzd-d8yrvx1ko7im6o --identifier 'app-dbt.awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run' --region us-west-2 --query '[id, typeName, formsOutput[].formName]'
+  ```
+
+  **[Claude] reads** whether the domain accepts an event about another project's table (the post's answer
+  and the event's `processingStatus`), whether the portal draws the foreign job on that table's tab, and
+  whether a role outside the project reads the job's facets, the compiled SQL among them (xi; `TM-29`'s
+  shape, on lineage). Then **[Claude⚡]**, on the user's word, the foreign event's delete, and what it
+  removed of the event, its nodes and the edge the portal drew (xv). The AWS CLI carries the operation
+  from 2.35.5, by its changelog, and the laptop's read 2.37.12 on 2026-11-16 (`SUP-370`); if DataZone
+  refuses the laptop's identity, the same command runs from the space that posted, whose `aws --version`
+  is read first:
+
+  ```bash
+  aws datazone delete-lineage-event --domain-identifier $D --identifier <the foreign event's id> --profile $P --region us-west-2
+  ```
 
 ### 4. A processing job in its project's network
 
 Decision 13's change, which no other pass waits on: `sagemaker:CreateProcessingJob` leaves the action
-list of `DenySageMakerJobsWithoutNetworkIsolation` (0.14). A laptop session makes it, on the user's
-word, the other sessions on the laptop told first; 4.5 is a Sandbox sitting's.
+list of `DenySageMakerJobsWithoutNetworkIsolation` (0.14). A laptop session makes it, on the user's word,
+the other sessions on the laptop told first; 4.5 is a Sandbox sitting's. Every command is the
+infrastructure user's, permission set `InfrastructureAccess`, and one login, the user's act, covers the
+four profiles 4.4 names.
 
-- **4.1 [Claude] The module**: in `terraform-modules/sagemaker-denies/`, `network_isolation_actions`
-  becomes a list of its own, the five actions that stay, where it is `local.vpc_config_actions` today
-  (Lesson 51). The change is tagged by Recipe B of
-  [`terraform-changes.md`](../runbooks/terraform-changes.md), each next version read from
-  `git ls-remote --tags origin` at the tagging: `sagemaker-denies` after `v0.2.0`, then
-  `sagemaker-prereqs` after `v0.10.0`, whose boundary sources the module by path.
-- **4.2 [Claude] The callers**: `identity/sso/policies-sagemaker.tf` and
+- **4.1 [Claude] The module**, by Recipe B of [`terraform-changes.md`](../runbooks/terraform-changes.md).
+  In `terraform-modules/sagemaker-denies/main.tf`, `network_isolation_actions` becomes a list of its own,
+  the five actions that stay (`CreateTrainingJob`, `CreateHyperParameterTuningJob`, `CreateAutoMLJob`,
+  `CreateAutoMLJobV2` and `CreateModel`), where it is `local.vpc_config_actions` today (Lesson 51).
+  `sagemaker-prereqs` changes in nothing: its boundary sources the denies by path (`boundary.tf`), so a
+  tag of its own is what carries them to its callers.
+
+  ```bash
+  terraform -chdir=terraform-modules/sagemaker-denies init -backend=false && terraform -chdir=terraform-modules/sagemaker-denies validate
+  terraform -chdir=terraform-modules/sagemaker-prereqs init -backend=false && terraform -chdir=terraform-modules/sagemaker-prereqs validate
+  ```
+
+  A module change is exercised by planning a caller, never by `validate`: before the commit
+  `staging/studio/`'s `source` points at `../../../terraform-modules/sagemaker-prereqs`, the slice is
+  initialised and planned as 4.4 does, the plan read, the `source` returned to its `?ref=` and `init` run
+  again. Commit 1 holds the module alone. Then, one command each, each output read:
+
+  ```bash
+  git log --oneline -1
+  git ls-remote --tags origin 'sagemaker-denies-v*' 'sagemaker-prereqs-v*'
+  git tag sagemaker-denies-v0.3.0
+  git tag sagemaker-prereqs-v0.11.0
+  git push -u origin <branch> --tags
+  git ls-remote --tags origin sagemaker-denies-v0.3.0 sagemaker-prereqs-v0.11.0
+  ```
+
+  The two versions are the next after `v0.2.0` and `v0.10.0`, the newest origin held on 2026-11-17; the
+  second command reads them again at the tagging, a peer may have taken one. The last command passes on
+  two lines, each the hash of commit 1, a tab and the tag's ref.
+- **4.2 [Claude] The callers**, commit 2: `identity/sso/policies-sagemaker.tf` and
   `identity/org-policies/job-denies.tf` take the new `sagemaker-denies` tag, and
   `policies/awsds-org-scp-ou-workloads.json` takes the statement's new list in the same commit, which
   `policies.tf`'s precondition compares on every plan; `sandbox/sagemaker/`, `staging/studio/` and
-  `production/studio/` take the new `sagemaker-prereqs` tag, each plan read for what the tags between
-  its pin and the new one carry beside the statement (`sandbox/sagemaker/` pins `v0.9.0`).
-  `data-governance/publishing/` keeps its pin: the scope is Sandbox, Staging and Production. The
-  persona sets compose one fragment, so every account a set is assigned in follows, and a set assigned
-  outside those accounts is named to the user before the apply.
+  `production/studio/` take the new `sagemaker-prereqs` tag, each plan read for what the tags between its
+  pin and the new one carry beside the statement (`sandbox/sagemaker/` pins `v0.9.0`). The two `studio/`
+  slices hold one `main.tf`, which `./scripts/check-copies.py` compares, so their pins move together.
+  `data-governance/publishing/` keeps its pin: the scope is Sandbox, Staging and Production. The persona
+  sets compose one fragment, so every account a set is assigned in follows, and a set assigned outside
+  those accounts is named to the user before the apply.
   [`POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md)'s row is rewritten in the
-  same sitting.
-- **4.3 [Claude] The battery's rows** (`aws/probes/probes.py`): the `ou` row *CreateProcessingJob not
-  isolated* becomes a contrast that has to stay authorized, and a training job without isolation
-  becomes the row that exercises the statement; [`scp-battery.md`](../runbooks/scp-battery.md)'s table
-  follows.
-- **4.4 [Claude⚡] The applies**, each from a plan read first and each on the user's word naming it:
-  `identity/sso/`; `identity/org-policies/`, by the runbook's Phase 4b, the battery's `ou` phase run
-  again in Production once the amended document is applied; `sandbox/sagemaker/`, `staging/studio/` and
-  `production/studio/`. Every one removes an action from a deny, so no order of them locks a caller
-  out. **[Claude] reads** the battery's verdicts and `./aws/deploytargets.py` `DT-11`, which reads the
-  document's Sids and stays as it is (xii).
-- **4.5 [user] A processing job without isolation, in Sandbox**: a workflow of one
-  `SageMakerProcessingOperator` task in `app-dbt`, on the house image, in the project's subnets and
-  security group, with `EnableNetworkIsolation: false` and the statement's other settings as the
-  template sends them. Its script prints the caller's identity, a `SELECT 1` through the project's
-  Athena workgroup, the product database as Glue returns it, `ListLineageEvents` on the domain, and
-  what the proxy answers a request for a name on Sandbox's allow-list and for one off it. **[Claude]
-  reads** the job's description and its calls in Sandbox's trail (xii, xiii). A target's half of xiii
-  is a reading of [`NETWORK.md`](../../NETWORK.md) until a release carries such a job: the job subnets
-  and group of `<env>/sagemaker/` reach the interface endpoints and meet an empty allow-list.
+  same sitting, and `./scripts/check-index.py` run.
+- **4.3 [Claude] The battery's rows** (`aws/probes/probes.py`): the `ou` row *"workloads:
+  CreateProcessingJob not isolated"* becomes an `allow` row, a contrast that has to stay authorized;
+  `_training_job` takes the isolation as an argument, where it sends `--enable-network-isolation` always,
+  and a row *CreateTrainingJob not isolated* becomes the one that exercises the statement, beside the
+  compliant training row that is its contrast. [`scp-battery.md`](../runbooks/scp-battery.md)'s table
+  follows, in its Phase 4b.
+- **4.4 [Claude⚡] The applies**, each from a plan read first and each on the user's word naming it. Every
+  one removes an action from a deny, so no order of them locks a caller out; the order below puts the OU
+  document and its battery before the targets' roles.
+
+  | Order | Slice | Account | Profile |
+  |---|---|---|---|
+  | 1 | `identity/sso/` | `Identity` | `awsds-infra-identity` |
+  | 2 | `identity/org-policies/` | `Identity` | `awsds-infra-identity` |
+  | 3 | `sandbox/sagemaker/` | `Sandbox Account 1` | `awsds-infra-sandbox-1` |
+  | 4 | `staging/studio/` | `Staging` | `awsds-infra-staging` |
+  | 5 | `production/studio/` | `Production` | `awsds-infra-prod` |
+
+  Each row is Recipe A's steps 3 to 7, from the branch that holds commit 2 (Lesson 79), the plan kept
+  outside the repository:
+
+  ```bash
+  export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
+  ./scripts/gen-backend-hcl.py <account> <slice> && ./scripts/gen-tfvars.py <account> <slice>
+  AWS_PROFILE=<profile> terraform -chdir=terraform-live/<account>/<slice> init -backend-config=backend.hcl -input=false
+  AWS_PROFILE=<profile> terraform -chdir=terraform-live/<account>/<slice> plan -input=false -out="$HOME/tmp/<account>-<slice>.tfplan"
+  ```
+
+  ```bash
+  AWS_PROFILE=<profile> terraform -chdir=terraform-live/<account>/<slice> apply -input=false "$HOME/tmp/<account>-<slice>.tfplan"
+  AWS_PROFILE=<profile> terraform -chdir=terraform-live/<account>/<slice> plan -input=false
+  ```
+
+  A plan passes when it changes the statement's action list and nothing else, or what 4.2 read of the
+  tags between; the second plan reads `No changes`. A plan that carries another stage's unapplied change
+  stops its row until that stage applies it (Lesson 69): `production/studio/` holds release G's since
+  2026-11-16, 2 to add and 2 to destroy ([`promotion.md`](../runbooks/promotion.md) §N.8.5 step 3), so
+  that slice's apply here follows release G's. A minute or more after `identity/org-policies/`'s apply
+  (`SUP-350`), Phase 4b's battery, whose workloads rows run in Production as `awsds-infra-prod`, then
+  `make check`:
+
+  ```bash
+  ./aws/probes/scp-battery.py --phase ou
+  ```
+
+  **[Claude] reads** the battery's verdicts, the processing row authorized and the training row refused
+  with the others as they were, and `./aws/deploytargets.py` `DT-11`, which reads the document's Sids and
+  stays as it is (xii).
+- **4.5 [user] A processing job without isolation, in Sandbox**, in a sitting raised as 2.2's: a third
+  workflow of `app-dbt`, one `SageMakerProcessingOperator` task on the house image, in the project's
+  subnets and security group, with `EnableNetworkIsolation: false` and the statement's other settings as
+  the template sends them. The manifest's stage gains the template's `DEV_PROJECT_SG` and
+  `DEV_PROJECT_KEY_ARN` (§D step 3's line) and the image's URI, typed in the space and never written
+  down. The workflow is written at this pass, and `awsds-workflows lint` refuses it by its `job` rule,
+  which is expected until 6.4's item is taken. Its script prints the caller's identity, a `SELECT 1`
+  through the project's Athena workgroup, the product database as Glue returns it, `ListLineageEvents` on
+  the domain, and what the proxy answers a request for a name on Sandbox's allow-list and for one off it.
+  The deploy and the run are 2.2's commands with the workflow's name. **[Claude] reads** the run by pass
+  2's blocks, the job's description and its calls in Sandbox's trail, by the session `SageMaker` (xii,
+  xiii):
+
+  ```bash
+  aws sagemaker list-processing-jobs --name-contains app-dbt --max-results 3 --profile $P --region us-west-2 --query 'ProcessingJobSummaries[].[ProcessingJobName, ProcessingJobStatus, CreationTime]' --output text
+  aws sagemaker describe-processing-job --processing-job-name <the job's name> --profile $P --region us-west-2 --query '[ProcessingJobStatus, FailureReason, NetworkConfig, ProcessingResources.ClusterConfig, RoleArn]'
+  ```
+
+  The step passes when the job is created, which the statement refused before 4.4, and ends `Completed`
+  with each call answered. A target's half of xiii is a reading of [`NETWORK.md`](../../NETWORK.md) until
+  a release carries such a job: there a job takes the deployment project's subnets and group,
+  `datazone-<project>-dev`, which the leg reads from the project itself
+  (`scripts/deploy-application.py`), and they reach the VPC's interface endpoints and gateways and a
+  proxy that refuses the `Workloads` ranges every name (read 2026-11-11).
 - **4.6 [Claude] The documents and the checks that state the rule**:
   [`serverless-workflows.md`](../runbooks/serverless-workflows.md) §J;
   [`sagemaker-application.md`](../runbooks/sagemaker-application.md) §D, §W and §N's matrix, where a
-  processing job leaves the training job's row; [Stage 9](stage-09-deployment-targets.md) step 3.1's
-  *"A SageMaker job reads no governed data"*, which stays true of a training job and becomes, for a
-  processing job, what its role is granted; `./aws/sandbox-orchestration.py` `SO-5`, which reads a
-  processing job without isolation as outside the boundary; and a
-  [`threat-model.md`](../threat-model.md) entry: a processing job's container holds its role's
-  credentials and a path to the VPC's endpoints and, in Sandbox, to the proxy's allow-list, the
-  application choosing isolation job by job (`app-etl`'s tasks keep `EnableNetworkIsolation: true`).
+  processing job leaves the training job's row; [Stage 9](stage-09-deployment-targets.md) step 3.1's *"A
+  SageMaker job reads no governed data"*, which stays true of a training job and becomes, for a
+  processing job, what its role is granted; `./aws/sandbox-orchestration.py` `SO-5` and
+  `./aws/sandbox-ml.py`'s reading of a pipeline's Processing step, each of which counts a processing job
+  without isolation as outside the boundary; and a [`threat-model.md`](../threat-model.md) entry: a
+  processing job's container holds its role's credentials and a path to the VPC's endpoints and, in
+  Sandbox, to the proxy's allow-list, the application choosing isolation job by job (`app-etl`'s tasks
+  keep `EnableNetworkIsolation: true`).
 
 ### 5. Across projects
 
 Waits on Stage 19 step 4.12, `eighth-experimentation`'s subscription to Production's listing, and on
 decision due 11. It runs while that subscription is live, before the revocation step 4.12 ends with, the
-two sessions agreeing on the order.
+two sessions agreeing on the order. It is a Sandbox sitting raised as 2.2's and read by pass 2's blocks.
 
 - **5.1 [Claude] A model over the subscribed table**: a second source, `trades_notional` through the
   resource link the subscription writes, in `glue_db_blerpkhn9nj7o0` by 6f step 11's reading, and a model
-  `notional_by_desk_prod` in `app_dbt`.
-- **5.2 [user] Deploy and run.** **[Claude] reads** the worker's read under the subscription's grant,
-  with `GetDataAccess` in the trail of the account that vends; the event's input name, which is the
-  link's in Sandbox's catalog while the listing's asset carries Production's table ARN; and whether the
-  graph joins Production's job, its table, the listing, the subscription and the dbt job. If it does not,
-  the transformer resolves a link to its target (`glue:GetTable`'s `TargetTable`) and the run repeats
-  (xiv).
+  `notional_by_desk_prod` in `app_dbt`. The link and its target are read first, with the subscription
+  live:
+
+  ```bash
+  aws glue get-tables --database-name glue_db_blerpkhn9nj7o0 --profile $P --region us-west-2 --query 'TableList[].[Name, TargetTable.DatabaseName, TargetTable.Name, IsRegisteredWithLakeFormation]' --output text
+  ```
+
+  The change goes through pass 1's tests and lint, then a new archive and a tar (2.0).
+- **5.2 [user] Deploy and run**, by 2.2's and 2.3's commands. **[Claude] reads** the worker's read under
+  the subscription's grant, with `GetDataAccess` in the trail of the account that vends; the event's
+  input name, which is the link's in Sandbox's catalog while the listing's asset carries Production's
+  table ARN; and whether the graph joins Production's job, its table, the listing, the subscription and
+  the dbt job. If it does not, the transformer resolves a link to its target (`glue:GetTable`'s
+  `TargetTable`) and the run repeats (xiv).
 - **5.3 [user] As a member of another project**, open the listing's *Lineage* tab. **[Claude] reads**
   what a consumer sees of the producer's jobs and of the dbt job downstream (xiv).
 
@@ -770,17 +1379,18 @@ two sessions agreeing on the order.
 
 ### 7. Close
 
-- **7.1 [user] Keep or delete**: the workflows and the Glue job, the database `app_dbt` with its assets
-  and source, and the lineage events, by what xv read of `DeleteLineageEvent` (Rollback).
+- **7.1 [user] Keep or delete**: the workflows and the Glue job, the files under `shared/app-dbt/`, the
+  database `app_dbt` with its assets and source, and the lineage events, by what xv read of
+  `DeleteLineageEvent`. A delete follows Rollback's order and commands.
 - **7.2 [Claude]** This file's Status, the index rows, the log, the waiting list.
 
 ## Verifications
 
 | # | Question | Step |
 |---|---|---|
-| i | Which glibc, distribution and pre-installed packages does the worker carry, and does archive A (`manylinux_2_28`) import on it? | 2.2 |
+| i | Which glibc, distribution and pre-installed packages does the worker carry; does the archive (`manylinux_2_28`) import on it; does a script written in the task's folder or in a `mktemp` folder run there, and what mode does the extraction leave on the archive's scripts? | 2.2, 2.3 |
 | ii | Does Athena admit the worker's session of the project role in the project's workgroup, and does Lake Formation vend to it under the project's context? | 2.2, 2.3 |
-| iii | Does a dbt model become an Iceberg table through Athena as the project role: which grant admits it, do its files land under the database's location, where the adapter writes them (0.13), and does Lake Formation's registration cover that location? | 2.3 |
+| iii | Does a dbt model become an Iceberg table through Athena as the project role, from the query editor and from a worker: which grant admits it, do its files land under the database's location, where the adapter writes them (0.13), and does Lake Formation's registration cover that location? | 2.1, 2.3 |
 | iv | What does dbt cost on a worker: the archive's size, the start, the run's time and its peak memory, against 250 MB, 1 vCPU, 3 GiB and 3,600 s? | 1.4, 2.3 |
 | v | Does the worker's session post through the `datazone` endpoint: how many events, and with which `processingStatus`? | 2.3 |
 | vi | With the events as the wrapper builds them, does the model's node take the Glue table's ARN, the symlink honoured, and is dbt's input the node the Spark job wrote? | 2.4 |
@@ -821,8 +1431,8 @@ recommendation that holds until then: 9 and 11.
    project's network with a waiting task (decision 13 and 0.12), which Claude recommended as a second
    measurement; (c) several Bash tasks by `--select`; (d) a Glue job as dbt's runtime. Not offered: a
    Python task calling `dbtRunner`, which runs dbt on Airflow's versions of every package they share,
-   three of which Airflow 3.0.6's constraint file pins below dbt-core 1.11.17's floor (`click`,
-   `protobuf`, `sqlparse`); a provider's operator in the code package.
+   three of which Airflow 3.0.6's constraint file pins below the floor dbt-core 1.11.16 and 1.11.17 share
+   (`click`, `protobuf`, `sqlparse`); a provider's operator in the code package.
 3. **How dbt's dataset names meet the assets.** **Taken 2026-11-16: (a) first, and (b) if the graph
    splits.** (a) the events as the wrapper builds them: one run tells what the domain does with a
    symlink no Glue job sent, which is what any dbt project posts unchanged. (b) OpenLineage's
@@ -856,12 +1466,12 @@ recommendation that holds until then: 9 and 11.
    until 2027-07-15: its parser dependency is published as a source distribution whose build downloads a
    `manylinux_2_28` wheel from dbt's GitHub release for the building machine, which `package-task`
    refuses (0.10); the archive would take that wheel fetched by hand and checked against the hashes the
-   source distribution carries, and it asks the worker for glibc 2.28, as archive A does. (c) dbt v2: its
-   supported-features page names no Athena, the wrapper reads it through OpenTelemetry instead of the
-   artifacts, and its runtime is under dbt's own licence agreement (*"If your organization has a strict
-   requirement for an Apache 2.0 licensed runtime, install dbt OSS instead"*). The move to (b) stays
-   6.4's first item, 1.11's support ending inside the stage's own calendar: Claude told the user so,
-   and no objection came.
+   source distribution carries, and it asks the worker for glibc 2.28, as this stage's archive does. (c)
+   dbt v2: its supported-features page names no Athena, the wrapper reads it through OpenTelemetry
+   instead of the artifacts, and its runtime is under dbt's own licence agreement (*"If your organization
+   has a strict requirement for an Apache 2.0 licensed runtime, install dbt OSS instead"*). The move to
+   (b) stays 6.4's first item, 1.11's support ending inside the stage's own calendar: Claude told the
+   user so, and no objection came.
 7. **The application, its project and its input.** **Taken 2026-11-16: (a)**, a new application,
    `app-dbt`, Sandbox only, in `eighth-experimentation`, with a Glue task of its own loading the input.
    The project's role is one of `sandbox/workflows/`'s `project_roles`, so the Glue task's `glue:GetJob`
@@ -935,21 +1545,79 @@ Measured rates, `us-west-2`, from [`docs/PRICING.md`](../../PRICING.md):
   per hour, and the worker's task-hours while it waits.
 - At rest: nothing new. A database, its `DataLake` environment, an asset, a lineage event and a workflow
   are metadata, and the Glue job bills only while it runs. The stage creates no `[E]` resource and, under
-  decision 7 (a), applies no Terraform but pass 4's policy documents: a refusal read at 2.2 or 2.3 is
-  brought to the user before any grant is written.
+  decision 7 (a), applies no Terraform but pass 4's policy documents: a refusal read at 2.1, 2.2 or 2.3
+  is brought to the user before any grant is written.
 
 ## Rollback
 
-In this order, each write on the user's word: the two workflows deleted from the *Workflows* page and the
-Glue job `app-dbt-<project id>` deleted; the files under the project's `shared/app-dbt/` removed, the
-operator archives staying as the versioned bucket keeps them
-([`serverless-workflows.md`](../runbooks/serverless-workflows.md) §X); the assets, the source and the
-database in the order `SUP-366` forces: each asset deleted, the source deleted, the tables and then the
-database dropped from the query editor as the project role, the `DataLake` environment deleted; the
-lineage events deleted with `DeleteLineageEvent`, if xv reads that it removes what the graph shows. What
-stays: the trails' records, the runs' log groups, and whatever xv reads that a deleted event leaves. Pass
-4 is rolled back on its own: each caller's pin returned to the tag it held and applied, the OU document's
-copy with it, and the battery's `ou` phase run again. A tag never moves.
+Each write is on the user's word, in this order. The laptop's commands run as `awsds-infra-sandbox-1`
+with pass 2's values, in the forms that retired `app-etl` from this project on 2026-11-14 (Stage 19's
+sitting), each object read before its delete.
+
+1. **[Claude⚡] The workflows and the Glue job**:
+
+   ```bash
+   aws mwaa-serverless list-workflows --profile $P --region us-west-2 --query "Workflows[?starts_with(Name, 'app_dbt_')].[Name, WorkflowArn]" --output text
+   aws mwaa-serverless delete-workflow --workflow-arn <each ARN> --profile $P --region us-west-2
+   aws glue delete-job --job-name app-dbt-$E --profile $P --region us-west-2
+   ```
+
+2. **[Claude⚡] The files under the project's `shared/app-dbt/`**:
+
+   ```bash
+   aws s3 ls s3://$B/$D/$E/shared/app-dbt/ --recursive --profile $P --region us-west-2
+   aws s3 rm s3://$B/$D/$E/shared/app-dbt/ --recursive --profile $P --region us-west-2
+   ```
+
+3. **[user] The assets, then the source**, in the portal, as a member of the project. Each of this
+   stage's two assets is deleted, told from the older `trades` by its external identifier (2.4). The
+   source is deleted right after them and before its next daily run, which would import the tables again:
+   DataZone refuses the delete while an asset the source imported stands (`SUP-366`). The same delete
+   from the laptop is a contributor's and unread:
+
+   ```bash
+   aws datazone delete-data-source --domain-identifier $D --identifier <the source's id> --profile $P --region us-west-2
+   ```
+
+4. **[user] The tables, then the database**, in the project's query editor on *Athena (SQL)*, as the
+   project role, one statement a run: a `DROP TABLE` for each table **[Claude]** lists first, pass 5's
+   `notional_by_desk_prod` and what a failed swap left among them, then the database.
+
+   ```bash
+   aws glue get-tables --database-name app_dbt --profile $P --region us-west-2 --query 'TableList[].[Name, TableType, StorageDescriptor.Location]' --output text
+   ```
+
+   ```sql
+   DROP TABLE app_dbt.notional_by_desk;
+   DROP TABLE app_dbt.trades;
+   DROP DATABASE app_dbt;
+   ```
+
+5. **[Claude⚡] The `DataLake` environment**, after the database is gone, since its stack keeps the
+   database by `Retain` (`SUP-184`):
+
+   ```bash
+   aws datazone delete-environment --domain-identifier $D --identifier <the environment's id> --profile $P --region us-west-2
+   ```
+
+6. **[Claude⚡] The lineage events**, if xv reads that `DeleteLineageEvent` removes what the graph shows,
+   each by its id from 2.3's list:
+
+   ```bash
+   aws datazone delete-lineage-event --domain-identifier $D --identifier <an event's id> --profile $P --region us-west-2
+   ```
+
+**[Claude] reads** the end by 2.0's block and 2.1's lists: no workflow, no job and no database; `0` under
+`shared/app-dbt/`; the project's assets without this stage's two; its environments and sources without
+the database's; and the tables' folders with no current object.
+
+What stays: the trails' records; the runs' log groups, which carry no retention
+([`serverless-workflows.md`](../runbooks/serverless-workflows.md) §X); the CLI's copies of the archive
+under `shared/operatorFiles/`, one for each deploy; the noncurrent versions of the removed objects and of
+the dropped tables' files, for the 90 days of the bucket's lifecycle; and whatever xv reads that a
+deleted event leaves. Pass 4 is rolled back on its own: each caller's pin returned to the tag it held and
+applied by 4.4's commands, the OU document's copy with it, and the battery's `ou` phase run again. A tag
+never moves.
 
 ## What this stage does not do
 
@@ -972,7 +1640,10 @@ copy with it, and the battery's `ou` phase run again. A tag never moves.
 
 - **Stage 19**: this stage adds a database, a source, assets, two workflows and a Glue job to
   `eighth-experimentation`, the consumer of its step 4.12 and the project its instruments read. Pass 5
-  here waits on that step and runs before the revocation it ends with.
+  here waits on that step and runs before the revocation it ends with. Its step 6.2 rewrites
+  [`sagemaker-application.md`](../runbooks/sagemaker-application.md) §N and §W, which 4.6 here edits for
+  a processing job: the step that lands second starts from the other's text. Its release G applies
+  `production/studio/` before pass 4 does (4.4).
 - **Every stage whose jobs or checks carry the isolation statement** (pass 4):
   [9](stage-09-deployment-targets.md) step 3.1's design note and 3.5's document,
   [10](stage-10-orchestration-promotion.md)'s rules for a processing task,
@@ -985,12 +1656,14 @@ copy with it, and the battery's `ou` phase run again. A tag never moves.
 - **Stages 6d and 17**: a Sandbox sitting of theirs can carry pass 2 with the `mwaa` group added.
 - **The `awsds-workflows` project** (6.4): a way to hand `package-task` a wheel fetched by hand, for a
   dependency published as a download-at-install source distribution, which it refuses today
-  (`dbt-core-experimental-parser`, decision 6 (b)); an `--include` that takes a folder, since the dbt
-  project travels as package data until then; `WORKER_PROVIDED` against the guide's table of 2026-11-16,
-  which lists `duckdb` 2.0.0 and a DuckDB provider and the Amazon provider at 9.38.0 where 9.32.0 was
-  measured; a Bash task's `env` and `append_env`, still unmeasured; and, after pass 4, the lint's `job`
-  rule, which refuses a processing task without `EnableNetworkIsolation: true`, with the pages and the
-  example that state it.
+  (`dbt-core-experimental-parser`, decision 6 (b)); an `--include` that takes a folder and a destination
+  inside the archive, since the dbt project and the `dbt` console script travel as package data until
+  then, and a way to keep a console script, which it removes (0.15); `WORKER_PROVIDED` against the
+  guide's table of 2026-11-16, which lists `duckdb` 2.0.0 and a DuckDB provider and the Amazon provider
+  at 9.38.0 where 9.32.0 was measured; a Bash task's `env` and `append_env`, still unmeasured; and, after
+  pass 4, the lint's `job` rule, which refuses a processing task without `EnableNetworkIsolation: true`,
+  with the pages and the example that state it. The lint in the authoring mode refused nothing of a
+  one-stage application (0.15).
 
 ---
 
