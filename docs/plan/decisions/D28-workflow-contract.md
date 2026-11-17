@@ -14,7 +14,19 @@ result and inbox prefixes (D41 item 10).
 `test` stage is retired. The CI/CD CLI deploys the application to the `dev` project alone, and the
 pipeline's `bundle` job makes the bundle with nothing deployed in Sandbox.
 
-**In one line:** What crosses the gate into a headless deployment target: a closed list of artifact classes, carried by the repository; a workflow starts whatever runs there.
+**Amended 2026-11-17 (user, [Stage 17](../stages/stage-17-sandbox-machine-learning.md) decisions 16 (b)
+and 21 (b), [Stage 10](../stages/stage-10-orchestration-promotion.md) decision 22 as revised):** a
+trained model joins the classes as **(7)**, the one class the repository does not carry. The pipeline's
+`bundle` job reads the archive and its `model.json` from one prefix of the application's `dev` project,
+a guard of the pipeline compares the mark `model.json` holds with the same value computed over the tag's
+training code and sample, and the archive's SHA-256 names it in every stage. Class (6) changes with it
+for such an application: each target holds a group, a task of the workflow proposes the release's
+version there and the account's deploy role approves it, and Staging reads nothing of Production's
+registry. Its training code runs in a workflow of the `dev` project alone, so the sentence below on a
+model's training in Production describes `app-etl`, whose model keeps that shape until Stage 17 decision
+28 is answered. Planned by Stage 17 pass 9, nothing applied.
+
+**In one line:** What crosses the gate into a headless deployment target: a closed list of artifact classes, carried by the repository; a workflow starts whatever runs there. A trained model is the one class the repository does not carry (amended 2026-11-17, planned).
 
 **Related decisions:** [D7](D07-orchestration.md), [D14](D14-supply-chain-account.md), [D17](D17-interactive-vs-runtime.md), [D22](D22-data-governance-account.md), [D25](D25-drop-box-consumer.md), [D26](D26-unified-studio.md), [D41](D41-sagemaker-application.md)
 
