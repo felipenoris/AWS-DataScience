@@ -3712,9 +3712,15 @@ entry is still true is the reading.
   read 2026-11-13, lists the pre-installed set as `apache-airflow` 3.0.6, `apache-airflow-providers-amazon`
   9.38.0, `apache-airflow-providers-duckdb` 0.2.1, `duckdb` 2.0.0, `boto3` and `botocore` 1.43.1,
   `dag-factory` 1.0.0 and `lz4` 4.4.4, where it listed the Amazon provider at 9.32.0 on 2026-10-10; not
-  measured on a worker since 2026-10-11. Where:
+  measured on a worker since 2026-10-11. Read 2026-11-16: the page's address is now
+  `custom-code-operators.html`, titled "Running custom code with Python, Bash, and custom operators", and
+  the old address, `operators-python-bash-detail.html`, serves it; the old address's `.md` rendition
+  serves a page titled "Using Python and Bash operators", with the provider at 9.32.0, the version the
+  page listed on 2026-10-10, no DuckDB row and five AWS encryption packages. Neither rendition carries a
+  date, so a `.md` rendition of a page that moved is read against its `.html`. Where:
   `log-stage-06i-sandbox-orchestration.md`, 2026-10-11 (4.3's re-run); `runbooks/serverless-workflows.md`
-  §C1; `upstream-releases.md`, the MWAA Serverless table.
+  §C1; `upstream-releases.md`, the MWAA Serverless table; `log-stage-17-sandbox-machine-learning.md`,
+  2026-11-16.
 
 - `SUP-275` **A sensor that soft-fails ends an MWAA Serverless run `SUCCESS`, and the API reports its status
   as `NONE` with no task instance for the tasks after it** (measured 2026-10-11, Stage 6i 3.4). Run
@@ -3756,6 +3762,71 @@ entry is still true is the reading.
   `kms:EncryptionContext:aws:airflow-serverless:workflow-arn`, and the task log said only *"Execution
   environment preparation failed due to an internal server error."*; the trail carried the `AccessDenied`.
   Where: `log-stage-10-orchestration-promotion.md`, 2026-10-26.
+
+- `SUP-372` **The Amazon provider's `SageMakerTransformOperator` reads the transform job's name before it
+  creates the job and calls the model APIs only when its `config` carries a `Model` key, and
+  `SageMakerRegisterModelVersionOperator` creates the model package group before the package** (read in
+  the provider's code at `providers-amazon/9.32.0` and `9.38.0` on 2026-11-16, Stage 17 pass 9; not
+  measured on a worker). `SageMakerTransformOperator.execute()`, with `check_if_job_exists` true, the
+  default: `DescribeTransformJob` on the proposed name, a `ValidationException` the only absence and
+  anything else re-raised; `action_if_job_exists` takes `timestamp` or `fail`, and `fail` raises *"A
+  SageMaker job with name … already exists."*. With a `Model` key in the `config` it calls `DescribeModel`
+  on the model's name and then `CreateModel`; with none it makes no model call before the job. The hook
+  then checks the input (`HeadBucket`, then `HeadObject` on the key or a list of the prefix), calls
+  `CreateTransformJob` and polls, and the operator returns `DescribeTransformJob` and `DescribeModel`.
+  Its OpenLineage method, where a listener calls it, reads `DescribeModelPackage` for a model whose
+  `PrimaryContainer` names a package. `SageMakerModelOperator` calls `CreateModel` and `DescribeModel`
+  with no check of the name, and `SageMakerDeleteModelOperator` calls `DeleteModel` alone.
+  `SageMakerEndpointOperator` calls `CreateModel` and `CreateEndpointConfig` when its `config` carries
+  them, with no check, then `CreateEndpoint`; when the error's message starts *"Cannot create already
+  existing endpoint"* it calls `UpdateEndpoint`, dropping the tags; then it waits for `InService`.
+  `SageMakerRegisterModelVersionOperator` calls `CreateModelPackageGroup` first, with the package's
+  description as the group's, and counts as "already there" only a `ValidationException` whose message
+  starts *"Model Package Group already exists"*; it then calls `CreateModelPackage`, and deletes a group
+  it created when the package fails. `SageMakerStartPipelineOperator` calls `StartPipelineExecution` and
+  polls, and `BedrockInvokeModelOperator` calls `InvokeModel`. Between the two tags
+  `operators/sagemaker.py` differs in the triggers' arguments, in where the `output_files_to_xcom` check
+  sits and in a notebook instance's tags, and in none of these calls. Not read:
+  `SageMakerEndpointConfigOperator` and the tuning and AutoML operators. The consequences: a role that
+  runs a transform task needs the read of a free transform-job name, the read `SUP-267` names for
+  processing and training jobs; a transform task with no `Model` key needs no model call of its own
+  before the job; and the register operator, on a group Terraform declares, needs
+  `sagemaker:CreateModelPackageGroup` allowed to reach the "already exists" answer, since a refusal ends
+  the task before `CreateModelPackage`. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-16;
+  Stage 17 step 9 and decision 16; `runbooks/sagemaker-ai-ml.md` §W.
+
+- `SUP-373` **The Amazon provider's `BedrockInvokeModelOperator` sends `InvokeModel` with no guardrail and
+  writes the prompt and the response to the task log, and its retrieval operators log their text too**
+  (read in the provider's code at `providers-amazon/9.32.0` and `9.38.0` on 2026-11-16, Stage 17 pass
+  10; not measured on a worker). `BedrockInvokeModelOperator.execute()` calls `invoke_model` with
+  `body`, the JSON of `input_data`, with `modelId` and, when set, with `contentType` and `accept`. The
+  operator has no parameter for `guardrailIdentifier`, `guardrailVersion` or `trace`, and it never calls
+  `Converse`. It then logs *"Bedrock %s prompt: %s"* with the model and the input, logs *"Bedrock model
+  response: %s"* with the decoded body, and returns that body, which becomes the task's XCom. The class
+  is identical at the two tags. `BedrockRaGOperator` calls `retrieve_and_generate` and logs *"Prompt:
+  %s"*, *"Response: %s"* and *"Citations: %s"*; `BedrockRetrieveOperator` calls `retrieve` and logs
+  *"Query: %s"* and *"Retrieved: %s"*; each returns the service's whole answer.
+  `BedrockIngestDataOperator` calls `start_ingestion_job`, repeats it after a `ValidationException`
+  whose message it knows as an index not ready, and waits on the job with the hook's
+  `ingestion_job_complete` waiter. `BedrockCreateGuardrailOperator` calls `create_guardrail` with the
+  name, the two blocked messages, the description, the five policy configurations, `kmsKeyId` and
+  `tags`; with `if_exists` `skip`, the default, a `ConflictException` is answered by the hook's
+  `get_guardrail_id_by_name`, and the task returns the id it found.
+  `BedrockCreateGuardrailVersionOperator` calls `create_guardrail_version`,
+  `BedrockDeleteGuardrailOperator` `delete_guardrail` and `BedrockUpdateGuardrailOperator`
+  `update_guardrail`, and the four guardrail classes are identical at the two tags.
+  `operators/bedrock.py` holds seventeen operator classes at both tags. The service's operators page
+  (read 2026-11-16) lists eleven of them with four sensors, and does not list
+  `BedrockBatchInferenceOperator`, `BedrockUpdateGuardrailOperator`,
+  `BedrockCreateEvaluationJobOperator` and the three AgentCore runtime operators. Not read: the hook's
+  methods, and the knowledge base, data source, customization, provisioned throughput, batch
+  inference, evaluation and AgentCore operators past their first call. The consequences: a call that
+  must name a guardrail is a Python task's, with boto3; a deny over an absent
+  `bedrock:GuardrailIdentifier` refuses the invoke operator whatever its input; a workflow on the
+  invoke or the retrieval operators leaves what it sent and what came back in the task's log group and
+  in XCom, for whoever reads either; and a guardrail an account's Terraform declares needs none of the
+  guardrail operators. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-16; Stage 17 step
+  10 and decisions 24 to 26; `runbooks/sagemaker-ai-ml.md` §W and §G.
 
 ### Provisioned MWAA
 
