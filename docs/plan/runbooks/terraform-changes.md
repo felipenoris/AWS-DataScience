@@ -33,7 +33,8 @@
 export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
 ```
 
-The laptop and the deploy image both run Terraform 1.16.6 since 2026-10-25 (`v0.3.0`). While a pipeline
+The laptop moves to Terraform 1.16.7 by the user's install (the bump taken 2026-11-17), and the deploy
+image runs 1.16.6 since 2026-10-25 (`v0.3.0`). While a pipeline
 job ran Terraform on the states it read, a laptop upgrade had to follow the image's rebuild (Lesson 76).
 Since release F's template (`v0.5.2`, 2026-11-16) a leg applies no Terraform, and since Stage 19 item 31 (2026-11-17) the deploy
 roles write no state: a leg reads the states its role's `state_read_keys` name (Staging's `foundation`,

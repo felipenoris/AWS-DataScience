@@ -24,7 +24,7 @@ All infrastructure will be deployed in the `us-west-2` Region.
 
 ## Tools installed in the current environment
 
-`terraform` **1.16.6**, the `aws` client, `uv` **v0.12.13**, `jq`,
+`terraform` **1.16.7**, the `aws` client, `uv` **v0.12.13**, `jq`,
 `pre-commit` **4.6.2**, `checkov` **3.3.11** (`uv tool install`), `tflint` **v0.64.0**. Python **3.14**
 pinned by `uv` (`pyproject.toml`/`uv.lock`), `WireGuard` **v1.0.16** (App Store), `wireguard-tools` **v1.0.20260223** (homebrew) which provides the `wg` utility, `session-manager-plugin` **1.2.835.0** (homebrew cask); `ruff` lints/formats.
 
@@ -229,8 +229,9 @@ per laptop, never one per session.
   that writes the entry and again at every sync, and `./scripts/check-aws-supplement.py` is run on
   the synced tree: PRs #294 and #298 each took `SUP-360` on 2026-11-14, each green on its own
   branch, and `main` failed the check until the second became `SUP-362`.
-- **The Terraform binary is one per laptop, and every session's.** The laptop and the deploy image both run
-  1.16.6 since 2026-10-25 (`v0.3.0`, the deploy runner replaced 20:40 UTC). No pipeline job runs Terraform
+- **The Terraform binary is one per laptop, and every session's.** The laptop moves to 1.16.7 by the user's
+  install (the bump taken 2026-11-17; `terraform version` reads which), and the deploy image runs 1.16.6
+  since 2026-10-25 (`v0.3.0`, the deploy runner replaced 20:40 UTC). No pipeline job runs Terraform
   since release F: a leg reads its role's `state_read_keys` as JSON (`scripts/tfhygiene/states.py`, read
   2026-11-17), so the image's binary reads no state. A laptop upgrade moves every session at once, with the
   offline gates' pin (`.github/workflows/offline-gates.yml`); the image's pins move at its next release.
