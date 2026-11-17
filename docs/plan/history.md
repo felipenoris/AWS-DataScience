@@ -849,8 +849,8 @@ one module tag.
   CI/CD CLI's `ml/deployment` example does, and each target registers, approves and serves it. D17, D20
   and D28 are amended in place: the trained model is an artifact class the repository does not carry, and
   Staging holds a registry group for such an application. Stage 17 pass 9 plans it for a new application,
-  `app-ml`; `app-etl`'s model chain, built on the earlier decision, waits on Stage 17 decision 28.
-  Nothing in AWS changed.
+  `app-ml`; `app-etl`'s model chain, built on the earlier decision, retires after `app-ml`'s first
+  release (Stage 17 decision 28 (a), taken the same day). Nothing in AWS changed.
 
 ---
 
