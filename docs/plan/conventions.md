@@ -424,8 +424,9 @@ terraform-live/
     │                     #     serves VPC-SharedServices and cannot also serve this one.
     │                     #     Rank 51, just above egress (50). Created at 6c step 1.3a;
     │                     #     Stage 9 step 3.3a names the jobs' seven endpoints and turns the
-    │                     #     DNS Firewall on, AWS namespaces only; Stage 10 step 1.2 adds
-    │                     #     the workers'; Stage 19 step 4.4 adds datazone, eight in all
+    │                     #     DNS Firewall on, AWS namespaces only; Stage 10 step 1.2's
+    │                     #     workers need logs and kms, already there, so the mwaa group
+    │                     #     stays empty; Stage 19 step 4.4 adds datazone, eight in all
     ├── pki/              # [P] the internal root CA (D36). Own state file and own KMS key,
     │                     #     not foundation/'s: foundation is opened to change a CIDR or
     │                     #     accept a peering, and every such edit would otherwise decrypt

@@ -239,7 +239,12 @@ entry is still true is the reading.
   reads the key: 6i's four jobs carried `VolumeKmsKeyId` past the boundary's copy of the same deny. A
   simulation of a job's settings runs with the default resource `*`. Where: 6d step 1.3. Read again
   2026-10-24 for `CreateTransformJob` against `transform-job/…`, in `simulate-principal-policy` through the
-  live `Workloads` document too (`log-stage-10`, 2026-10-24).
+  live `Workloads` document too (`log-stage-10`, 2026-10-24). Read again 2026-11-17 in Staging, an allow-all
+  and one `Null` deny against `processing-job/…`, `training-job/…` and `transform-job/…`: a deny on
+  `sagemaker:VolumeKmsKey` read `explicitDeny` whichever of the two keys the context carried, and one on
+  `sagemaker:VolumeKmsKeyArn` read `allowed` with that key passed, so against a job's ARN the simulator
+  honours the reference's name alone, while the service fills `VolumeKmsKey` (`SUP-239`;
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-17).
 
 - `SUP-010` **An SCP's deny on `sts:AssumeRole` does not show behind the refusal of a role that does not
   exist** (measured 2026-10-27, Stage 8 decision 29, in `Policy Canary`). With
@@ -4749,3 +4754,12 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   `~/.vscode-server/cli/servers/Stable-<commit>/`, not `~/.vscode-server/bin`. A `403` on either name during
   a working session is expected. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-09-11;
   `runbooks/remote-ide.md` §N.
+
+- `SUP-376` **botocore's request validation, which `Stubber` runs, refuses a missing required member and
+  leaves a shape's maximum length, pattern and enum unchecked** (measured 2026-11-17 with botocore 1.43.1 on
+  the laptop, Stage 17 10.2, no call made). On `CreateGuardrail` under `Stubber`, a 60-character name, where
+  the model's maximum is 50, a name off the model's pattern and the enum value `NOT_A_TYPE` were each
+  admitted, and a request missing a required member was refused. boto3's pages do not say which of a shape's
+  constraints the client checks. A test over `Stubber` therefore passes a request the service refuses, so
+  `examples/app-genai/tests/test_definition.py` walks the model's constraints itself. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-17.

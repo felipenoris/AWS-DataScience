@@ -1618,7 +1618,7 @@ what a release drops (`SUP-348`), and the workflow scan reads the target project
   `check-copies.py` loses the application slices' pair, `lint-plan.py`'s `aws_glue_job` rule retires,
   `render-workflow.py --check` and the `.pre-commit-config.yaml` hook with it. Under decision 16 (b)
   `deploy-production`'s project role takes what the job role held for the load: the lake's write share on
-  `curated` (`data-governance/data/shares.tf` and its README, D22 amended), 9.3's warehouse grants for an
+  `curated` (`data-governance/data/shares.tf` and its README, D22 amended; decision 22 narrows it to a read, item 32's), 9.3's warehouse grants for an
   `IAMR:` user of that role with the default privileges, `GetCredentials` through the workgroup's project
   tag or a named grant, and a 5439 ingress on the warehouse's security group from the project's
   (`production/warehouse/`); decision 15's deny grows to the lake's catalog, `lakeformation:GetDataAccess`
@@ -2127,7 +2127,7 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     identity model for every workflow, the warehouse workflow included. What it carries, written into
     passes 3 and 4 the same day: `app-etl-warehouse` joins the manifest's `content.workflows` and the
     `prod` stage's bootstrap alone creates it (3.3); `deploy-production`'s project role takes what the job
-    role held for the load, the lake's write share on `curated` (D22 amended), 9.3's warehouse grants for
+    role held for the load, the lake's write share on `curated` (D22 amended; decision 22 narrows it to a read, item 32's), 9.3's warehouse grants for
     its own `IAMR:` user, `GetCredentials` and a 5439 ingress from the project's security group (4.11);
     decision 15's deny grows to the lake's catalog, Lake Formation's data access and the warehouse's
     credential and Data API calls (xxvii); the render, the promoted lint mode, `release-application.py`,

@@ -146,10 +146,11 @@ variable "storage_alarm_usd" {
   default     = 10
 }
 
-# No `projects` map and no `datazone_domain_id` (Stage 9 steps 9.1 and 9.3): D26 keeps a deployment
-# target out of the domain, so no SMUS project is admitted to this warehouse, no `AmazonDataZoneProject`
-# tag goes on the namespace or the workgroup, no access role exists, and the only ingress rule names
-# the job security group. ./aws/warehouse.py WH-7 reads the absence of the tag here as the pass.
+# No `projects` map and no `datazone_domain_id` (Stage 9 steps 9.1 and 9.3): no SMUS project is admitted
+# to this warehouse through the domain, no `AmazonDataZoneProject` tag goes on the namespace or the
+# workgroup, and no access role exists. The deployment project's role reaches it by a named grant
+# (production/studio/warehouse.tf) and its security group by projects_5439 (Stage 19 decision 16 (b)).
+# ./aws/warehouse.py WH-7 reads the absence of the tag here as the pass.
 
 variable "project" {
   description = "Project tag. Fixed by docs/plan/conventions.md and by 1c's tag policy."

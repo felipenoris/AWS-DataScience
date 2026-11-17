@@ -1139,16 +1139,19 @@ bound items 3, 5, 6 and 9.
    classifier had refused it the same day (*Production Deploy*). The five slices item 31 applied re-plan
    `No changes` from the same tree, so the Lesson 79 window is closed, and Stage 19's step 8 read the same
    day (xvii, xxv). The day's pull request writes Stage 17's 9.1 to 9.4 and 10.1 to 10.3 (the preflights,
-   `examples/app-ml/` and `examples/app-genai/`, and the lint's rules in a local branch of
-   `awsds-workflows`), 9.5's target slices with their plans and `TM-33`, and Stage 20's pass 1
-   (`examples/app-dbt/` and [`catalog.md`](catalog.md)) and its 4.1 to 4.3 (the modules' tags, the
-   callers' pins, the battery's rows).
-2. **With nothing up, the user's acts**, each a waiting-list row: that pull request merged; the lint's
-   rules published in `awsds-workflows` and the new applications' pins moved to the merge; the decisions
+   `examples/app-ml/` and `examples/app-genai/`; the lint's rules are
+   [`awsds-workflows` pull request #26](https://github.com/felipenoris/awsds-workflows/pull/26)), 9.5's
+   target slices with `TM-33`, and Stage 20's pass 1 (`examples/app-dbt/` and [`catalog.md`](catalog.md))
+   and its 4.1 to 4.3 (the modules' tags, the callers' pins, the battery's rows); its plans came from
+   worktrees and are taken again from `main` (Lesson 79).
+2. **With nothing up, the user's acts**, each a waiting-list row: that pull request merged;
+   `awsds-workflows` pull request #26 merged, after which Claude moves the new applications' pins to the
+   merge; the decisions
    a sitting reads (Stage 19 decisions 28 and 15 before 4.12, Stage 20 decisions 9 and 11, 6h decisions
    3 and 8, 6d decision 16 before Stage 17's projects); `TM-33` accepted; each apply by name, from a
-   `main` that holds the merge: Stage 20 4.4's five slices with the battery's Phase 4b, then 9.5's target
-   slices, both `studio/` slices taking the two changes in one apply (Lesson 69); the projects
+   `main` that holds the merge: `production/registry` first, since `identity/sso` names its repository,
+   then Stage 20 4.4's five slices with the battery's Phase 4b, then the rest of 9.5's target slices, both
+   `studio/` slices taking the two changes in one apply (Lesson 69); the projects
    `app-ml-dev` and `app-genai-dev` created with their contributors and Nova Lite enabled (9.6, 10.4),
    after which Claude plans the Sandbox slices that read the projects' roles and the user applies them.
 3. **Release G's sitting** (N.8.5 steps 2, 4 and 5): the hub, GitLab with `BUILD=1`, `staging/egress/`
@@ -1179,13 +1182,15 @@ bound items 3, 5, 6 and 9.
    trial is to absorb them.
 10. **With nothing up, before `app-ml`'s first tag**: `scripts/deploy-application.py`,
     `scripts/model-chain.py` and their hooks taught a second application, kept out of the day's pull
-    request so that release G's leg runs the script it was read with; then the template's pins read
-    against the lint's release.
+    request so that release G's leg runs the script it was read with; the subagents' patches of
+    2026-11-17 are in `$HOME/tmp/stage17-proposals/` with a README, the two `deploy-application.py`
+    proposals merged by hand; then the template's pins read against the lint's release.
 11. **`app-ml`'s first release** (Stage 17 9.7), a promotion sitting after items 7 and 10.
 12. **With nothing up, after item 8**: Stage 17's 10.5, the exception and the names in the targets, once
     10.4 read a first answer from Nova Lite through Sandbox's in-Region profile; its threat-model entry
     accepted before its applies.
-13. **`app-genai`'s first release** (Stage 17 10.6), a promotion sitting after item 12.
+13. **`app-genai`'s first release** (Stage 17 10.6), a promotion sitting after item 12 and a gates tag
+    whose pip-audit step passes an application with no runtime package.
 14. **`app-etl`'s model half retired** (Stage 17 9.11), a release of `app-etl` after items 3 and 11, then
     the estate's pull request, planned from a `main` that holds it (Lesson 79).
 15. **The stages' close**: after items 3 and 5, Stages 8, 9 and 10 hold only what N.5 lists, and each can

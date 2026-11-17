@@ -2691,3 +2691,91 @@ no que for necessário."*
 - **[Claude] What waits**: the user's merge; then `AWSDS_WORKFLOWS` in `examples/app-ml/.gitlab-ci.yml` and
   `examples/app-genai/.gitlab-ci.yml` moves to the merge commit, and `app-ml`'s lint step gains
   `--model-item model`.
+
+## 2026-11-17 — 9.1, 9.2, 9.4, 9.5, 10.1 and 10.2: the subagents' results, and the model-version denies
+
+*Subagents' hands where marked, then Claude's, in the laptop session of the user's request of 13:42 UTC.
+Every AWS call was a read, as the infrastructure user (`InfrastructureAccess`) through
+`awsds-infra-sandbox-1`, `awsds-infra-staging` and `awsds-infra-prod`.*
+
+- **[Claude, a subagent] 9.1**, 13:58 to 14:52 UTC.
+  - Quotas, 14:13:40Z to 14:13:53Z, the same in the three accounts: `ml.t3.medium for processing job usage
+    10.0`, `ml.m5.large for training job usage 20.0`, `ml.m5.large for transform job usage 8.0`,
+    `ml.m5.large for endpoint usage 30.0`, against AWS's defaults 4.0, 0.0, 0.0 and 0.0; no request
+    `CASE_OPENED` or `PENDING` in any account.
+  - Sizes, 14:02:15Z, non-whitespace characters: `awsds-<env>-workflows` 1,681 (Staging), 2,074 (Production,
+    since release G's apply of 13:11:54Z) and 986 (Sandbox) of 6,144; `awsds-<env>-deploy-project` 5,060 and
+    5,045; the boundaries 3,474, 3,801 and 2,425; the deploy roles' inline policies 2,554 and 2,929 of
+    10,240; the `Interactive` SCP 1,483 and the `Workloads` SCP 2,840 of 5,120.
+  - Simulations as each target's project role (ML `SageMakerStudioProjectRoleMachineLearningPolicy` v48, UR
+    `SageMakerStudioProjectUserRolePolicy` v77), 14:23:29Z and 14:23:54Z: the `AddTags` that comes with
+    `CreateModel`, `CreateTransformJob` and `CreateModelPackageGroup` `implicitDeny`; `UpdateModelPackage` to
+    `Approved` on a tagged version `allowed` by ML `SageMakerInferencePermissions`; `CreateTransformJob`
+    `explicitDeny` from the simulator alone (`SUP-009`, appended). The bundle role holds none of the three
+    reads on the stand-in's prefix (`app-etl-dev`'s). The deploy roles before 9.5: `ListModelPackages` on `*`
+    `allowed` in Staging (`ListTheModelVersions`) and `implicitDeny` in Production, whose grant names
+    `model-package/awsds-prod-model-app-etl/*`; the Service Reference v1.5 gives that action the type
+    `model-package`, against `staging/foundation/deploy-role.tf`'s skip reason.
+  - The CLI 1.0.9's wheel, SHA-256 `bd7258c0…4903`: verifications xxviii and lxii, read in the code; the
+    scans' prefix is `SUP-287`'s.
+- **[Claude, a subagent] 10.1**, the same session.
+  - 49 on-demand text models, one list in the three accounts, `amazon.nova-lite-v1:0 ON_DEMAND,INFERENCE_PROFILE
+    ACTIVE` among them. Nova Lite: *"ValidationException … Agreement not supported for this model"* and
+    `AUTHORIZED` in each account; the form held in Sandbox, *"You have not filled out the request form."* in
+    Staging and Production, Anthropic's prerequisite alone; the retention mode `none` in Sandbox and
+    `inherit` in Staging and Production.
+  - Quotas, the same in the three: `L-89F8391A` 4000.0, `L-7C42E72A` 8000000.0, `L-45E0AD92` 5760000000.0,
+    `L-0E5A840C` 100.0 and `L-D471AEAB` 20.0, ApplyGuardrail 100 a second; no on-demand quota for Nova Lite.
+  - `list-guardrails` `[]` and `list-enforced-guardrails-configuration` `{"guardrailsConfig": []}` in the
+    three; three application inference profiles in Sandbox, the portal's, none in the targets.
+  - Under today's boundary all 29 Bedrock cases read `explicitDeny` by `DenyServicesNoProjectUsesHere`; AWS's
+    policies alone admit the invoke on any profile tagged with the project (UR `BRInvokeAppProfile`) and no
+    guardrail action but `ApplyGuardrail`. `InfrastructureAccess` holds the three enforced-configuration calls,
+    neither deploy role does.
+  - Providers at `staging/studio`'s lock: `aws` 6.69.1 holds `aws_bedrock_guardrail`, its version and
+    `aws_bedrock_inference_profile` and no enforced configuration; `awscc` 1.106.0 holds
+    `awscc_bedrock_enforced_guardrail_configuration`, CloudFormation's type `PUBLIC` and `LIVE` since
+    2026-04-07 and not taggable. 10.5's table row and decision 27's reading follow.
+  - `vpc-egress-v0.17.0`'s `bedrock-base` group and its exclusions (`bedrock-mantle` among them); some models
+    answer in-Region only through `bedrock-mantle`, Claude Haiku 4.5 among them. `staging/egress` passes no
+    `optional_service_groups`, as pass 10's table already provides for.
+- **[Claude, a subagent] 9.2 and 9.4**, to 14:57 UTC: `examples/app-ml/`, 35 files; `uv run pytest` *"100
+  passed in 3.14s"*; ruff clean; the identifier rule 0 findings. The lint at `196acee` exits 1 on the model
+  item alone (*"manifest.yaml: manifest: content.storage model: com connectionName, o bundle lê o projeto, e
+  não a pasta ao lado do manifest"*); at `052521e` with `--model-item model`, *"ok: 6 arquivo(s)"*. The
+  train archive: 15,910,630 bytes, 58,159,460 unzipped, 42 distributions; the register and score archives
+  12,030 bytes each; the host build's import of `mlflow` 3.16.0 and `sagemaker_mlflow` 0.5.0 exits 0, and
+  `set_tracking_uri` on an app's ARN resolves `MlflowSageMakerStore`. The house image's lock reads `mlflow`
+  3.17.2, not 9.4's 3.16.0 (corrected); `code/uv.lock` resolves boto3 1.43.123, which `package-task` leaves
+  out. Its patches to `scripts/model-chain.py`, `deploy-application.py`, `.pre-commit-config.yaml` and
+  `aws/cicd.py` are kept in `$HOME/tmp/stage17-proposals/` for `promotion.md` §N.6 item 10.
+- **[Claude, a subagent] 10.2**, to 14:55 UTC: `examples/app-genai/`, 32 files; *"95 passed"*; ruff and the
+  lint at the template's pin clean (*"ok: 3 arquivo(s)"*); at `052521e`, `lint probes/operator.yaml` refuses
+  `BedrockInvokeModelOperator` by name, the probe outside the manifest on purpose. The archive: 8 files,
+  15,715 bytes, built twice to the same bytes. The gates' pip-audit step fails on its empty runtime export
+  (`set -eu; pinned="$(grep -c == req)"` rc 1), so 10.6 needs a gates tag. botocore 1.43.1's `Stubber` on
+  `CreateGuardrail` admitted a 60-character name, a name off the pattern and the enum value `NOT_A_TYPE`,
+  and refused a missing required member, so the tests walk the model themselves (`SUP-376`). Its `deploy-application.py`
+  proposal is kept beside the others.
+- **[Claude, a subagent in a worktree of its own] 9.5**, commit `c1ceff56`: `production/registry` (the
+  repository, its lifecycle and its pull policy), `production/sagemaker` and `staging/sagemaker` (the
+  groups), both foundations (`ApproveTheModelATaskRegisters`), both `chains/` (two machines, two `DISABLED`
+  schedules), both `studio/` (the transform, model and registry statements) and `identity/sso`'s
+  `ReadAndPullTheApplicationImages`. Twelve read-only plans, among them *"Plan: 12 to add, 1 to change, 0 to
+  destroy."* for each `chains/` and *"3 to add"* for `production/registry`. After: `awsds-staging-workflows`
+  3,364, `awsds-prod-workflows` 3,748, the deploy roles' inline `apply-application` 2,031 and 2,257. Its
+  findings: `production/registry` applies before `identity/sso`; the project role's `CreateModelPackage` with
+  `ModelApprovalStatus=Approved` read `allowed` in both targets; the `UpdateModelPackage` deny named
+  `app-ml`'s versions alone; `production/runners` gives the build runner push on the new repository at the
+  next `make gitlab-up`; 10.4's `(C)` not written, `probes.py`'s interactive deny row sampling Nova Lite.
+- **[Claude] Folded in**, 15:08 to 15:25 UTC: the examples committed (`f444d146`, `c1efca61`) and the branch
+  merged (`9dc27110`). `<env>/studio/workflows.tf` gains `DenyRegisteringAVersionNotPending`, a deny of
+  `CreateModelPackage` on `model-package/*` under `StringNotEquals` `sagemaker:ModelApprovalStatus`
+  `PendingManualApproval`, and `DenyApprovingAModelVersion` names `model-package/*` (Lesson 82). Both
+  `studio/` slices planned from the merged tree, 15:14 and 15:15 UTC: *"Plan: 2 to add, 2 to change, 2 to
+  destroy."* each, the workflows policy at 3,597 and 3,984 non-whitespace characters. `simulate-custom-policy`
+  on the planned policy beside an allow of both actions on `*`, in each target: `CreateModelPackage` on
+  `app-ml`'s group `explicitDeny` with `Approved` and with no status, `allowed` with `PendingManualApproval`;
+  on another group with `Approved` `explicitDeny`; `UpdateModelPackage` on `app-ml`'s and on `app-etl`'s group
+  `explicitDeny`. `staging/foundation`'s skip reason now says which ARN the service evaluates is unread. The
+  copies in `$HOME/tmp/stage17-lint/` are superseded by pull request #26.

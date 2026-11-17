@@ -13,8 +13,10 @@
 # holds: 0.024 USD/GB-month, with or without a workgroup in the account.
 #
 # This is the first governed store outside Data Governance (D22, D40): its schemas reach readers only
-# through Lake Formation (step 9.5), it is written by awsds-prod-job-exec alone (9.4, 9.6), and no SMUS
-# project is admitted to it (9.3): no project tag, no connection, no access role.
+# through Lake Formation (step 9.5). One role writes it: deploy-production's project role since
+# 2026-11-16, by production/studio/warehouse.tf's named grant (Stage 19 decision 16 (b), xxxii), and
+# awsds-prod-job-exec before (9.4, 9.6). No project is admitted to it through the domain (9.3): no
+# project tag, no connection, no access role.
 
 # ------------------------------------------------------------------- the three audit log groups
 #
@@ -85,8 +87,10 @@ resource "aws_redshiftserverless_namespace" "this" {
   iam_roles            = [aws_iam_role.namespace_exec.arn]
   default_iam_role_arn = aws_iam_role.namespace_exec.arn
 
-  # No `AmazonDataZoneProject` tag (step 9.3): D26 keeps a deployment target out of the domain, and
-  # objectives.md makes the absence a requirement. WH-7 reads no project tag on this namespace.
+  # No `AmazonDataZoneProject` tag (step 9.3): no project is admitted through the domain's connection,
+  # and objectives.md lets only production workloads write a governed database. deploy-production's
+  # role reaches the workgroup by a named grant (production/studio/warehouse.tf). WH-7 reads no
+  # project tag on this namespace.
 
   depends_on = [aws_cloudwatch_log_group.audit]
 }

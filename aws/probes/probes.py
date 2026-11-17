@@ -382,8 +382,9 @@ probe("ou", "staging", "deny", "ValidationException|ResourceNotFound|does not ex
 #     so a VPC check that runs before authorization cannot be mistaken for the deny.
 #
 #     A processing-job row also reads `ResourceLimitExceeded` as authorized: the service checks
-#     the instance quota after authorization and before the role, and Production's processing
-#     quotas for both types read 0 (CloudTrail, the six replies of 2026-10-17).
+#     the instance quota after authorization and before the role. Production's processing quotas
+#     for both types read 0 on 2026-10-17 (CloudTrail, the six replies), and 8 for ml.m5.large and
+#     4 for ml.m5.2xlarge since 2026-10-24 (the Stage 9 log).
 _JOB_AUTHORIZED = "ValidationException|ResourceLimitExceeded"
 _JOB_ROLE = "arn:aws:iam::@ACCT@:role/awsds-canary-nonexistent"
 # The registry host is joined to the placeholder rather than written beside it, which
@@ -446,11 +447,11 @@ probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
 #     actions (Lesson 21). Every row carries the other four settings.
 #
 #     Every row is `blocked` for the processing rows' reason. SageMaker checks the quota of every
-#     listed type, so an authorized processing row reads ResourceLimitExceeded, Production's
-#     processing quotas being 0, and the quota check follows authorization (the ceiling row above,
-#     2026-10-18). Production's training quotas for the three ml.m5 types read 0 as well
-#     (2026-10-20), and that order for CreateTrainingJob is unread, so the training rows carry
-#     the processing ceiling row's twin, ml.m5.2xlarge as InstanceType: its deny places
+#     listed type, so an authorized processing row read ResourceLimitExceeded while Production's
+#     processing quotas were 0, and the quota check follows authorization (the ceiling row above,
+#     2026-10-18). Production's training quotas for the three ml.m5 types read 0 (2026-10-20) and
+#     20 each since 2026-10-24, and that order for CreateTrainingJob is unread, so the training
+#     rows carry the processing ceiling row's twin, ml.m5.2xlarge as InstanceType: its deny places
 #     authorization before the role and quota checks of this action, so a list row answering the
 #     contrast row's role or quota refusal is a hole. A refusal that names the list itself may
 #     precede authorization, and leaves the row untested.

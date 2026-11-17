@@ -6,8 +6,9 @@ mapped onto the steps, decisions and open questions it moves. Read on 2026-10-18
 the SageMaker Unified Studio section and each tool's latest version re-read 2026-10-30, with nothing up.
 Every section re-read 2026-11-13 from the vendors' pages and sources, with nothing up. The estate's reads
 followed once the infrastructure user had signed in, between 01:46 and 02:05 UTC on 2026-11-14, the evening of
-2026-11-13 in the lab's time zone, and the rows date them 2026-11-14. Only changes that move something in the
-plan are listed.
+2026-11-13 in the lab's time zone, and the rows date them 2026-11-14. dbt and OpenLineage, Stage 20's tools,
+were read on 2026-11-17 from PyPI's JSON and dbt's changelogs. Only changes that move something in the plan
+are listed.
 
 ## How to read this file
 
@@ -141,6 +142,18 @@ nothing was called.
 | An `aws` provider resource is still unmerged: issue [#45254](https://github.com/hashicorp/terraform-provider-aws/issues/45254) open; PR [#49927](https://github.com/hashicorp/terraform-provider-aws/pull/49927) (`aws_mwaaserverless_workflow`) open and unmoved since 2026-09-10; PR [#49929](https://github.com/hashicorp/terraform-provider-aws/pull/49929) (its `code`) closed unmerged on 2026-11-09, by the repository's bot after 60 days as an inactive draft | D28 class (4) stays `awscc_mwaaserverless_workflow`. A merge of #49927 would add a second spelling of the object (Lesson 32), without the `code` a Python or Bash task needs | watch | read |
 | The price, USD 0.088 per task-hour, in the `AmazonMWAA` offer of 2026-09-11 | D7 | holds | price list |
 
+## dbt and OpenLineage
+
+**Written against**: `examples/app-dbt/uv.lock`, cut 2026-11-17 under `exclude-newer = "2026-11-03T00:00:00Z"` from the ranges `dbt-core>=1.11,<1.12`, `dbt-athena>=1.11,<1.12` and `openlineage-dbt>=1.55,<2` ([Stage 20](stages/stage-20-dbt-lineage.md) step 1.2): dbt-core 1.11.16 (2026-10-14), `dbt-athena` 1.11.1 (2026-09-07), `dbt-adapters` 1.24.5, PyAthena 3.34.0 (2026-07-06), and `openlineage-dbt`, `-python`, `-sql` and `-integration-common` 1.55.0 (2026-10-29). **Read 2026-11-16** on PyPI (Stage 20 step 0.10): dbt-core 1.11.17 (2026-11-06) and 1.12.7 (2026-11-12). **Read 2026-11-17** from PyPI's JSON, 14:54 to 14:57 UTC: `dbt-athena` 1.11.2 and `dbt-adapters` 1.24.6, both uploaded that day; dbt-core 1.13.0b1 (2026-10-14), 1.13.0rc1 (2026-11-04, yanked) and 2.0.0rc10 (2026-11-03, a source distribution); OpenLineage's latest is still 1.55.0.
+
+| Change | Plan items it moves | Verdict | Confirmed by |
+|---|---|---|---|
+| dbt Core's support windows ([versions](https://docs.getdbt.com/docs/dbt-versions/core), updated 2026-10-23, re-read 2026-11-17): v1.11 in critical support until 2026-12-18, its patches *"limited to critical security and installation fixes"*; v1.12 in active support until 2027-07-15; v1.13 in beta | Stage 20 decision 6 (a): past 2026-12-18 the lock's 1.11 line takes no fix, and the move to (b) is step 6.4's first item | holds | note |
+| dbt-core 1.11.17 (2026-11-06, changes <https://raw.githubusercontent.com/dbt-labs/dbt-core/v1.11.17/.changes/1.11.17.md>): `dbt deps` passes git credentials through a credential helper, and JSON schema validation accepts State configurations on snapshots and data tests | Stage 20 step 1.2's lock holds 1.11.16; the template's rule admits 1.11.17 at a cut from 2026-11-21. The project has no `packages.yml` and runs no `dbt deps` | holds | code |
+| `dbt-athena` 1.11.2 (2026-11-17, changelog <https://raw.githubusercontent.com/dbt-labs/dbt-adapters/stable/dbt-athena/CHANGELOG.md>): Athena identifiers with embedded quote characters quoted during schema changes, with `dbt-adapters>=1.24.6`. It keeps `pyathena<3.35,>=2.25` and `mmh3<4.2.0`; PyAthena's latest is 4.3.0 (2026-11-16) | The application's names carry no quote character, and its model is a table rebuilt by the swap step 1.3 recorded. PyAthena stays at 3.34.0 until an adapter release widens the range | holds | code |
+| dbt Core's parser package: dbt-core 1.12.7 requires `dbt-core-experimental-parser>=2.0.11,<3` and 1.13.0b1 `>=2.0.0b1`; every parser release from 2.0.0b1 (2026-08-10) to 2.0.11 (2026-11-03) is a source distribution alone | Stage 20 decision 6 (b) and step 6.4: `package-task` installs wheels alone and refuses it (step 0.10), and 1.13 inherits the requirement. A parser wheel moves both | watch | code |
+| OpenLineage 1.55.0 (2026-10-29): `openlineage-sql`'s Linux wheels are tagged `manylinux_2_28` alone, as in 1.53.0 (2026-09-01) and 1.54.0 (2026-10-12); `openlineage-dbt` pins `openlineage-integration-common==1.55.0` | Stage 20's archive platform `x86_64-manylinux_2_28` and verification i, the worker's glibc read at step 2.2. The `transform` transport, whose `TransformConfig` requires `transport` and `transformer_class`, and the wrapper's exit code ran on 1.55.0 in step 1.3's simulation | holds | code |
+
 ## Services under the SMUS surface
 
 | Change | Plan items it moves | Verdict | Confirmed by |
@@ -252,6 +265,8 @@ None is applied here; each is a change of its own, with the plan read first.
 | `aws` on `identity/org-policies/` | 6.60.0 → 6.68.0 or later, only if Stage 15 decision 4 authors the GuardDuty policy there | the `GUARDDUTY_POLICY` type | the slice's `.terraform.lock.hcl`; the `~> 6.60` constraint admits it | the ten documents re-plan `No changes` before the policy joins them (`type` is ForceNew) |
 | AWS CLI in the deploy image | 2.37.12 → 2.40.2 or later, only with a reason | Lake Formation RLS, DataZone designations, a workflow's environment variables and the Airflow UI by API | `gitlab/awsds/deploy-image/Dockerfile` (`AWSCLI_VERSION`) | the CRT client behind the proxy, and the retry mode 2.40.0 makes the default |
 | `aws-smus-cicd-cli` | none | 1.0.9 is the latest, and `main` carries no other code (2026-11-13) | — | PR #369's merge, which changes `deploy`'s workflow scan (`SUP-287`) |
+| `examples/app-dbt/uv.lock` | none | dbt-core 1.11.17's and `dbt-athena` 1.11.2's fixes reach no command or name the application uses (2026-11-17) | — | at a re-cut, `uv run pytest` and the simulation with `--fixtures`; dbt Core 1.12 at Stage 20 step 6.4, once the parser ships wheels |
+| `examples/app-ml/code/uv.lock` | none | `mlflow-skinny` 3.16.0 and `sagemaker-mlflow` 0.5.0 match `ml-demo-mlflow`'s server, MLflow 3.16.0 since its maintenance of 2026-11-15, where the house image's lock carries 3.17.2 (2026-11-17) | — | the app's version from `describe-mlflow-app` after its next maintenance, then the archive re-measured (Stage 17 9.4) |
 
 ## Next reading
 
@@ -271,6 +286,9 @@ The next reading is due 2026-11-27.
 - **`RETENTION_POLICY` in the `aws` provider**, for Stage 19 decision 27 (d): `terraform validate` of an
   `aws_cloudwatch_log_account_policy` naming it, on the newest release, with an invented type as the control;
   then the retention policy's selection criteria in the provider's documentation.
+- **dbt and OpenLineage** on PyPI's JSON: a wheel of `dbt-core-experimental-parser`, which dbt Core 1.12 and
+  1.13 require; a `dbt-athena` release past `pyathena<3.35`; OpenLineage after 1.55.0 and `openlineage-sql`'s
+  platform tags. dbt Core 1.11's critical support ends 2026-12-18.
 - **The CLI** on PyPI and GitHub (1.0.9 on 2026-11-13, `main`'s code the same, issue 413 unanswered). PR #369
   at its merge: `_derive_workflow_search_prefixes`, then `SUP-287`. At a new release: the domain lookup, the
   fallback in `helpers/datazone.py` and `workflow_create_handler.py`, the catalog import, and the log lines

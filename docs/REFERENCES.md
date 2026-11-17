@@ -1714,6 +1714,45 @@
     form and a client error in the Markdown form:
     <https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonbedrock.html>.
 
+- **Stage 17's preflights and the guardrail's API (read 2026-11-17, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) steps 9.1, 10.1 and 10.2).**
+  - The Service Reference v1.5, the machine form of the authorization reference: `Converse` is authorized
+    as `bedrock:InvokeModel` and `ConverseStream` as `InvokeModelWithResponseStream`, each also listing
+    `ApplyGuardrail`, `InvokeTool` and `CallWithBearerToken`; `bedrock:GuardrailIdentifier` is carried by
+    the two invokes alone; `ApplyGuardrail` has no action-level condition key; `CreateGuardrail` takes
+    `aws:RequestTag/${TagKey}` and `aws:TagKeys` and has no `guardrail` resource; the three
+    enforced-configuration calls are authorized as themselves, with no resource type and no condition
+    key. For SageMaker, `ListModelPackages` has the resource type `model-package`, `CreateModelPackage`
+    and `UpdateModelPackage` take `sagemaker:ModelApprovalStatus`, and the job creates list
+    `sagemaker:VolumeKmsKeyArn`:
+    <https://servicereference.us-east-1.amazonaws.com/v1/bedrock/bedrock.json>,
+    <https://servicereference.us-east-1.amazonaws.com/v1/sagemaker/sagemaker.json>. The HTML form of
+    Bedrock's page, its first 100,000 characters, has a body now:
+    <https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonbedrock.html>.
+  - The models by Region, the whole page: the `us-west-2` In-Region rows match `ListFoundationModels`;
+    some models are In-Region only through `bedrock-mantle`, which `vpc-egress` excludes, Claude Haiku
+    4.5, three Gemma 4, GPT-6 Astra, GPT-5.6 Terra and Luna, GPT-5.4, Grok 4.6 and Grok 4.3 among them:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/models-region-compatibility.html>.
+  - The guardrail's API: `GetGuardrail`'s `description` is the guardrail's, and `ListGuardrails` and
+    `GuardrailSummary` document none per version, so `app-genai` keeps its definition's hash in a tag too;
+    a Converse guard block is `{"guardContent":{"text":{"text":…}}}`, and once a request holds one only
+    those blocks are assessed; a masking ends with the stop reason `guardrail_intervened`; the Standard tier
+    requires cross-Region inference, so a guardrail with no guardrail profile is Classic; prompt attack's
+    output strength is `NONE`:
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_GetGuardrail.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_ListGuardrails.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_GuardrailSummary.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_GuardrailConverseContentBlock.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_GuardrailConverseTextBlock.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_GuardrailConfiguration.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-use-converse-api.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-tiers.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-sensitive-filters.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-cross-region.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-prompt-attack.html>.
+  - boto3 1.43.1, the worker's, and its neighbours 1.43.0 and 1.44.4, for `app-genai`'s lock:
+    <https://pypi.org/pypi/boto3/1.43.1/json>.
+
 - **Amazon Bedrock AgentCore (read 2026-11-16, its rates 2026-11-17, for
   [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decision 26 (a) and step 10.11).** The
   developer guide and the API references in their Markdown form.
@@ -3050,6 +3089,21 @@
   `apache-airflow-providers-dbt-cloud==4.4.2`, against dbt-core 1.11.17's floors `click>=8.3.0`,
   `protobuf>=6.0` and `sqlparse>=0.5.5` and `dbt-athena` 1.11.1's `mmh3<4.2.0`:
   <https://raw.githubusercontent.com/apache/airflow/constraints-3.0.6/constraints-3.12.txt>.
+
+- **dbt and OpenLineage after the lock (PyPI's JSON, dbt's changelogs and its versions page, read 2026-11-17,
+  for [Stage 20](plan/stages/stage-20-dbt-lineage.md) step 1.7).** `dbt-athena` 1.11.2 and `dbt-adapters`
+  1.24.6, uploaded 2026-11-17, the adapter requiring `dbt-adapters>=1.24.6` and keeping `pyathena<3.35`;
+  PyAthena 4.3.0 (2026-11-16); dbt-core 1.12.7 and 1.13.0b1 requiring `dbt-core-experimental-parser`, a
+  source distribution alone to 2.0.11; OpenLineage 1.55.0 the latest; dbt-core 1.11.17's changes and
+  `dbt-athena` 1.11.2's; the versions page, updated 2026-10-23:
+  <https://pypi.org/pypi/dbt-athena/json>, <https://pypi.org/pypi/dbt-athena/1.11.2/json>,
+  <https://pypi.org/pypi/dbt-adapters/json>, <https://pypi.org/pypi/dbt-adapters/1.24.6/json>,
+  <https://pypi.org/pypi/pyathena/json>, <https://pypi.org/pypi/dbt-core/1.11.17/json>,
+  <https://pypi.org/pypi/dbt-core/1.12.7/json>, <https://pypi.org/pypi/dbt-core/1.13.0b1/json>,
+  <https://pypi.org/pypi/openlineage-dbt/json>, <https://pypi.org/pypi/openlineage-sql/json>,
+  <https://raw.githubusercontent.com/dbt-labs/dbt-core/v1.11.17/.changes/1.11.17.md>,
+  <https://raw.githubusercontent.com/dbt-labs/dbt-adapters/stable/dbt-athena/CHANGELOG.md>,
+  <https://docs.getdbt.com/docs/dbt-versions/core>.
 
 - **The task cap, a job past it, and a job's network (read 2026-11-16, for
   [Stage 20](plan/stages/stage-20-dbt-lineage.md) steps 0.10, 0.12 and 0.14 and decisions 1, 2 and

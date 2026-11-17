@@ -71,7 +71,7 @@ module "deploy_role" {
 # the approval of a version in this account's own registry, and the chain's machine it starts in
 # staging-test and follows to its end (Stage 10 decision 19).
 data "aws_iam_policy_document" "apply_application_in_this_account" {
-  # checkov:skip=CKV_AWS_356:sagemaker:ListModelPackages has no resource type, so only "*" matches it; the registry's resource policy names this role
+  # checkov:skip=CKV_AWS_356:ListModelPackages on "*": the Service Reference gives it the type model-package, and which ARN the service evaluates is unread (Stage 17 9.1); the registry's resource policy names this role
 
   # Step 3.2: the approved version, read in production/sagemaker/registry.tf's groups, whose resource
   # policy admits this role to the same two actions (Stage 9 step 3.2).

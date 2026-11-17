@@ -18,9 +18,11 @@ locals {
   transform_jobs  = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:transform-job/*"
   models          = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:model/*"
 
-  # app-ml's package group in this account's registry (<env>/sagemaker/registry.tf) and its versions.
+  # app-ml's package group in this account's registry (<env>/sagemaker/registry.tf) and its versions,
+  # and every version of the account's registry.
   app_ml_model_group    = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:model-package-group/awsds-${var.env}-model-app-ml"
   app_ml_model_versions = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:model-package/awsds-${var.env}-model-app-ml/*"
+  model_versions        = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:model-package/*"
 
   # A Glue job named for the caller's project, <app>-<project id> (D41): $${ keeps the policy
   # variable out of Terraform's interpolation.
@@ -216,13 +218,28 @@ data "aws_iam_policy_document" "workflows" {
   }
 
   # The approval is the deploy role's. AWS's SageMakerStudioProjectRoleMachineLearningPolicy allows
-  # UpdateModelPackage on a version that carries the role's AmazonDataZoneProject tag (read by
-  # simulation 2026-11-17 as Production's project role), so the refusal is a Deny (Lesson 72).
+  # UpdateModelPackage, and CreateModelPackage with any status, on a version that carries the role's
+  # AmazonDataZoneProject tag in any group (read by simulation 2026-11-17 in both targets), so each
+  # refusal is a Deny (Lesson 72) over every version of the account (Lesson 82). StringNotEquals also
+  # refuses a create that names no status; the register task names PendingManualApproval.
   statement {
     sid       = "DenyApprovingAModelVersion"
     effect    = "Deny"
     actions   = ["sagemaker:UpdateModelPackage"]
-    resources = [local.app_ml_model_versions]
+    resources = [local.model_versions]
+  }
+
+  statement {
+    sid       = "DenyRegisteringAVersionNotPending"
+    effect    = "Deny"
+    actions   = ["sagemaker:CreateModelPackage"]
+    resources = [local.model_versions]
+
+    condition {
+      test     = "StringNotEquals"
+      variable = "sagemaker:ModelApprovalStatus"
+      values   = ["PendingManualApproval"]
+    }
   }
 
   # GetJob on a Glue job that carries no project tag and whose name ends with the caller's project id.

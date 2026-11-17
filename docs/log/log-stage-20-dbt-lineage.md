@@ -702,3 +702,46 @@ AWS call for these steps.*
   `GROUPS=mwaa` and no GitLab, before 2026-12-18, and 4.5 once 4.4's applies ran; item 2 places 4.4's five
   applies, with the battery's Phase 4b, before Stage 17 9.5's, both `studio/` slices taking the two changes
   in one apply (Lesson 69).
+
+## 2026-11-17 — pass 1's 1.2 to 1.4 and 1.7, and pass 4's 4.1 to 4.3: the subagents' results
+
+*Two subagents' hands where marked, then Claude's, in the laptop session of the user's request of 13:42 UTC.
+No AWS write; the tags are the only push.*
+
+- **[Claude, a subagent] 1.2 to 1.4**, 14:02 to 14:50 UTC, all from `examples/app-dbt/` with no pipe: 31
+  files written from the stage's prose, the cloud draft's tarball not being on the laptop.
+  - `uv lock`: *"Resolved 86 packages in 1.82s"*, dbt-core 1.11.16, dbt-athena 1.11.1, openlineage-* 1.55.0
+    and PyAthena 3.34.0 under `exclude-newer = "2026-11-03T00:00:00Z"`.
+  - The lint at the template's pin: *"ok: 4 arquivo(s)"*. `package-task . code/app-dbt.zip --platform
+    x86_64-manylinux_2_28 --include code/run-dbt.sh`: *"code/app-dbt.zip: 26126295 bytes, 82835578
+    descompactados, para o CPython 3.12 em x86_64-manylinux_2_28"*; ten `.so` modules, `openlineage_sql`
+    asking for GLIBC_2.28 and the others 2.16 at most; boto3, botocore and PyYAML absent.
+  - The simulation, `tests/simulation/simulate.py --fixtures`, on the host archive (`aarch64-apple-darwin`,
+    28,621,986 bytes, 88,429,087 unzipped), since the laptop has no container runtime: every case's exit,
+    calls and events equal the draft's table. The first build posted six signed events, *"Done. PASS=2
+    WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=2"*, three `StartQueryExecution` naming the workgroup with no
+    `ResultConfiguration` and no S3 call; the second, `--names glue-arn`, swapped the table and renamed
+    every dataset to the Glue table's ARN; with the port closed and `--attempts 1` it ended 0 with no
+    event; a failing test ended 1 (*"Done. PASS=1 WARN=0 ERROR=1"*). Step 1.3's three criteria are met.
+  - `uv run pytest`: *"51 passed, 3 skipped in 5.24s"*, the skips being the three files' stored modes while
+    untracked; ruff, the identifier rule (*"31 files scanned, 0 finding(s)"*), `check-plan-refs.py` and
+    `check-aws-supplement.py` clean.
+  - Not read on the laptop: the probe's glibc line (absent on macOS) and its count before `load` runs,
+    both 2.2's on the worker.
+- **[Claude, a subagent in a worktree of its own] 4.1 to 4.3**, to 14:58 UTC: commit `5f121541` gives
+  `sagemaker-denies` a `network_isolation_actions` list of five actions; `a808764a` pins
+  `sagemaker-denies-v0.3.0` in `identity/sso` and `identity/org-policies` and `sagemaker-prereqs-v0.11.0` in
+  `sandbox/sagemaker` (from v0.9.0) and both `studio/` slices (from v0.10.0), drops the action from the
+  `Workloads` document and rewrites `POLICIES.md`'s row; `dca3427c` turns the processing row into an
+  authorized contrast and adds *"workloads: CreateTrainingJob not isolated"*, `--list --phase ou` showing 58
+  rows. Each tag pushed alone, both at `5f121541cf16a7f70c5d7993db7340204edd3cd6`, re-read at the end.
+  Read-only plans: `identity/org-policies` *"Plan: 0 to add, 1 to change, 0 to destroy."*, the document
+  2,840 → 2,808 bytes; `identity/sso` *"0 to add, 6 to change"*, every persona set losing the action;
+  `sandbox/sagemaker` *"0 to add, 1 to change"*, the boundary alone; each `studio/` *"2 to add, 2 to change,
+  2 to destroy"*, carrying Stage 17 9.5's change too. Its notes: 4.1's `git push … --tags` was not run, the
+  tags going one at a time; `scripts/slices.py` has no plan, so Recipe A ran.
+- **[Claude] Folded in**, 15:08 to 15:25 UTC: the examples committed (`4ecaa95b` for `app-dbt`, its three
+  scripts recorded executable), the subagent's branch merged (`9dc27110`, one conflict in
+  `scp-battery.md`'s training row, both sides' facts kept), and both `studio/` slices planned again from the
+  merged tree, *"Plan: 2 to add, 2 to change, 2 to destroy."* each; 4.4's order gains `production/registry/`
+  first (Stage 17 9.5), and 1.7's section is written in `upstream-releases.md`.

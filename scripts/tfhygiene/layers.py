@@ -301,7 +301,7 @@ SLICES = [
     Slice("data-governance", "bootstrap", PERSISTENT, "state bucket + its KMS key (step 3)"),
     Slice("production", "bootstrap", PERSISTENT, "state bucket + TWO keys - D36's is 2nd (3.4)"),
     Slice("identity", "bootstrap", PERSISTENT, "state bucket + its KMS key (step 3)"),
-    Slice("identity", "sso", PERSISTENT, "7 permission sets, their policies, 10 assignments"),
+    Slice("identity", "sso", PERSISTENT, "7 permission sets, their policies, 14 assignments"),
     Slice("identity", "org-policies", PERSISTENT, "the 10 SCP/RCP/tag/declarative docs + 10 att."),
     # Stage 3 pass 1. Free at rest, [P]: VPC, subnets, IGW, route tables, SGs, gateway
     # endpoints + their policies, flow log - plus zones where the account owns one.
@@ -560,11 +560,11 @@ SLICES = [
     # production/registry/'s state for the application repository, a cross-account read no rank orders.
     Slice("staging", "sagemaker", PERSISTENT, "job role + the job log groups (St.9 4.3)"),
     # Stage 6 pass 2 - the registry, and it is a registry (D26): the DataZone V2 domain, its
-    # two IAM roles and the two project profiles. [P] and metadata-priced (~USD 0.50/month,
+    # two IAM roles and its project profiles. [P] and metadata-priced (~USD 0.50/month,
     # docs/PRICING.md 5). No compute lives here and none may: US-2 measures that, and Stage 6
     # step 0.4 reads the plan for it before the first apply.
     Slice(
-        "data-governance", "governance", PERSISTENT, "the DataZone V2 domain + 2 project profiles"
+        "data-governance", "governance", PERSISTENT, "the DataZone V2 domain + 5 project profiles"
     ),
     # Stage 16 - the sandbox lake. [P] and free at rest in the only sense this column measures:
     # nothing in it is metered by the hour. Storage is metered by the GB-month and grows without
