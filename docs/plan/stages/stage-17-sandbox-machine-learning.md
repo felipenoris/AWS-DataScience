@@ -1108,8 +1108,8 @@ that trains it. And the developer's loop gains a `bundle` before each `deploy` (
   before 9.2 writes the pin. The same read gives `ModelRegistrationMode` `AutoModelRegistrationDisabled`,
   which verification lx depends on.
 - **9.5 — [Claude writes and plans; the user applies] The application's names in the estate**, the table
-  "What pass 9 builds" above, in the table's dependency order (§S of `sagemaker-application.md` held
-  release T's checklist): the GitLab project and its runners, the repository, the persona's read, the registry's family in Production and
+  "What pass 9 builds" above, in the table's dependency order, which `sagemaker-application.md` §S
+  points at for release F: the GitLab project and its runners, the repository, the persona's read, the registry's family in Production and
   the group in Staging, the deploy roles' statements, the project roles' pairs and their register, the
   chains, the Sandbox grants, the bundle role's read of the model's prefix among them. Each `[P]` slice
   is planned from a fresh `main` and applied by the user from the saved plan, re-planned `No changes`.

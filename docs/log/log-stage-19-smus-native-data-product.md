@@ -3997,6 +3997,14 @@ the user's hand.
   `waiting-on-the-user.md`, `CLAUDE.md`, and the comments of the slices, modules and scripts that still
   named release T's path; Stage 17's and Stage 20's readings are in their own logs. Nothing in AWS
   changed by this entry.
+- **[Claude] The runbooks rewritten for release F**, by a subagent of the review and read by the session:
+  `sagemaker-application.md` (§A to §Z, §S pointing at Stage 17's tables, `TM-32` where the code is
+  written) and `serverless-workflows.md`, no heading renamed. Left for step 6.2 or the stage that owns
+  each: Production's `persona_read_prefixes` names a prefix release F does not write; the project role's
+  pull of the application image, inferred from the runs and granted by no estate statement; whether every
+  line a Glue script prints reaches `datazone-<id>-dev/output`; and in the template, release G's merge
+  request's scope, the `build-task-code` comment, the README's job table without the catalog jobs and
+  `load_warehouse.py`'s `IAMR:<the role's name>`, which xxxii contradicts.
 - **[Claude] Release G's step 3 not applied**: with no Production run in progress (the three chains'
   state machines holding no `RUNNING` execution, their schedules `DISABLED`, the workflows' latest runs
   ended) and no other session of this project running, the apply of the saved plan was refused by the

@@ -619,7 +619,7 @@ written; the pull request carries every row below, and the applies follow its me
 | The deploy roles' Terraform path | `<env>/foundation/apply-orchestration.tf` and `apply-application.tf`, the same in both accounts; `app-boundary.tf`, the application ceiling; the statements `apply_orchestration_in_this_account` adds, in `staging/foundation/deploy-role.tf` and `production/foundation/deploy-anchors.tf` | `StartTheChainInTheLeg` and `FollowTheChainInTheLeg`, Staging's statements for `staging-test`, move to `deploy-project.tf`; each `foundation/` plan takes the alerts var-file |
 | `app_outputs` | `<env>/data/lakeformation.tf`'s database and its grants; the rows of each `data/README.md` | the database holds no table in either target |
 | `model-chain.py`'s outputs layout | `outputs_layout` and the path without `--project` | Production's model jobs read release T's training job until the train chain runs in `deploy-production` (above) |
-| The runbooks | `runbooks/sagemaker-application.md` §M, §P, §S, §T and §W; `serverless-workflows.md`'s `lint-plan` row | 6.2's |
+| The runbooks | `runbooks/sagemaker-application.md` §M, §P, §S, §T and §W; `serverless-workflows.md`'s `lint-plan` row | both runbooks rewritten for release F on 2026-11-17 by the plan's review (the log); 6.2 reads them again |
 
 ### The retirement as written
 
@@ -2612,7 +2612,10 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
     `studio/` applies. The workers' prefixes (`work/`, `inbox/`, `outbox/`, `tables/`, `models/`) stay
     writable. Unmeasured: that the CLI's deploy writes those objects as the deploy role and never as the
     project role, and which principal the workflow service reads an operator archive as; both are read
-    from CloudTrail data events on the bucket during a deploy, before the statement is written.
+    from CloudTrail data events on the bucket during a deploy, before the statement is written. Also
+    unread: whether a workflow the CLI creates runs its code from `shared/operatorFiles/` or from a
+    snapshot the service takes at each save, as a portal workflow does (`serverless-workflows.md` §O),
+    which decides how far a rewrite reaches.
     (b) One deployment project per application: it separates applications, never a worker from its own
     code, and doubles the projects at each new application.
     (c) Accepted: `TM-32` records the residual, versioning is the recovery, and the bucket's object history

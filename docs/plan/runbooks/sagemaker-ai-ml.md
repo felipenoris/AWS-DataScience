@@ -893,9 +893,9 @@ tag: the GitLab project, the image repository, the registry's family in Producti
 Staging, the deploy roles' statements, the project roles' statements, the chains and the Sandbox grants,
 the bundle role's read of the model's prefix among them. The threat-model entry for a model archive that
 travels from a Sandbox project into Production's serving container is accepted before that tag (9.5).
-The list is Stage 17's "What pass 9 builds", in the order of
-[`sagemaker-application.md`](sagemaker-application.md) §S, which was read from the code and has not been
-run for a second application.
+The list is Stage 17's "What pass 9 builds", in its own order, which
+[`sagemaker-application.md`](sagemaker-application.md) §S points at for release F: the `dev` project before
+the Sandbox slices that read its role. Neither has been run for a second application.
 
 ### `app-genai`'s release
 
