@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | **Written 2026-11-17, nothing run** ([log](../../log/log-stage-21-redshift-s3-data-products.md)): the plan, the user's questions of 2026-11-17 answered from AWS's pages read that day and from this estate's measurements, and decisions 1 to 3 put to the user. Pass 1 needs nothing up. Passes 2 to 4 ride the Sandbox warehouse sitting ([`runbooks/promotion.md`](../runbooks/promotion.md) §N.6 item 9), before 2026-12-19 if the free trial is to absorb them. Pass 5 needs no warehouse and rides any Sandbox sitting with a space in both projects |
-| **Prerequisites** | [5b](stage-05b-redshift-serverless.md) and [6h](stage-06h-redshift-connection.md): the Sandbox warehouse at 4 base RPUs and `eighth-experimentation`'s connection, which writes and reads the schema `lab` in the `sandbox` database (6h passes 0 to 2, 2026-10-10). [Stage 19](stage-19-smus-native-data-product.md)'s Glue road: a table imported by a project's source, published, packaged in a product and subscribed inside one account (verification vi, 2026-11-14); its pass 5, whose 5.3 publishes the estate's first Redshift asset and subscribes nothing. `test-experimentation`'s `DataLake` environment ([6f](stage-06f-data-governance.md) 2.0), the Glue subscription target. The account's S3 Access Grants instance, created by SageMaker Unified Studio with one location per project ([`docs/SMUS.md`](../../SMUS.md), "The vending surface under that same path", 2026-08-23). For pass 2's subscription, decision 1, whose (a) takes 6h decision 8 (a), the wide tag, and adds `test-experimentation` to the map. Nothing blocks pass 1 |
+| **Status** | **Written 2026-11-17, nothing run** ([log](../../log/log-stage-21-redshift-s3-data-products.md)): the plan, the user's questions of 2026-11-17 answered from AWS's pages read that day and from this estate's measurements, and decisions 1 to 3, taken the same day: 1 (b), the consumer's own workgroup by the `RedshiftServerless` blueprint for one sitting; 2 (a), a second connection by secret for lineage; 3 (b), the federated catalog with data lake access for one sitting. Pass 1 needs nothing up, 1.5's code among it. Passes 2 to 4 ride the Sandbox warehouse sitting ([`runbooks/promotion.md`](../runbooks/promotion.md) §N.6 item 9), before 2026-12-19 if the free trial is to absorb them. Pass 5 needs no warehouse and rides any Sandbox sitting with a space in both projects |
+| **Prerequisites** | [5b](stage-05b-redshift-serverless.md) and [6h](stage-06h-redshift-connection.md): the Sandbox warehouse at 4 base RPUs and `eighth-experimentation`'s connection, which writes and reads the schema `lab` in the `sandbox` database (6h passes 0 to 2, 2026-10-10). [Stage 19](stage-19-smus-native-data-product.md)'s Glue road: a table imported by a project's source, published, packaged in a product and subscribed inside one account (verification vi, 2026-11-14); its pass 5, whose 5.3 publishes the estate's first Redshift asset and subscribes nothing. `test-experimentation`'s `DataLake` environment ([6f](stage-06f-data-governance.md) 2.0), the Glue subscription target. The account's S3 Access Grants instance, created by SageMaker Unified Studio with one location per project ([`docs/SMUS.md`](../../SMUS.md), "The vending surface under that same path", 2026-08-23). For pass 2's subscription, 1.5's code merged and tagged, off by default (decision 1 (b)). Nothing blocks pass 1 |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D26](../decisions/D26-unified-studio.md), [D40](../decisions/D40-redshift-warehouse.md); [D12](../decisions/D12-budget-ceiling.md) for the cost; 6h decisions 3 and 8, [Stage 9](stage-09-deployment-targets.md) decision 5 and Stage 19 decision 9, each read against its premises |
 | **Proves** | — (no `INT-nn` row: everything runs in Sandbox, and the domain in Data Governance is reached through the doors Stage 19 measured). What it does prove: whether SageMaker Unified Studio's standard path carries a Redshift table, the namespace seen through the Glue Data Catalog, and an S3 prefix of images through publication, a data product and a subscription as it carries a Glue table; which engine and which compute the consumer needs for each; and what lineage the catalog draws for the warehouse |
 
@@ -87,6 +87,7 @@ promoted, and Production's warehouse and its datashare untouched.
 | an S3 Object Collection | the asset type for an S3 bucket or prefix in a project, its subscription fulfilled through S3 Access Grants |
 | an access grant | an entry of the account's S3 Access Grants instance: a grantee, a location with a scope, and a permission (`READ`, `WRITE` or `READWRITE`). A session gets temporary credentials for the scope with `s3control get-data-access` |
 | the consumer, the producer | `test-experimentation` and `eighth-experimentation`, the two Sandbox projects |
+| the consumer's workgroup | the Redshift Serverless namespace and workgroup the `RedshiftServerless` blueprint creates for `test-experimentation` under decision 1 (b), its base capacity locked at 4 RPU, for pass 2 alone |
 
 ## The user's questions, answered
 
@@ -123,11 +124,12 @@ editor link within the project."* By where the two sides live:
 | two accounts | the same, with the producer authorizing the cross-account datashare and the consumer associating it |
 | two Regions | *"Cross-Region data sharing using Amazon Redshift is not supported."*, while the page on unmanaged assets says *"Cross-region subscriptions support AWS Glue tables, AWS Glue views, Amazon Redshift tables, and Amazon Redshift views across all standard (non-opt-in) AWS Regions."* The two pages disagree; this estate is one Region |
 
-What no page settles, and pass 2 measures: whether a project that added the warehouse through *Connect to
-existing compute resources*, the only way this estate admits a project to a warehouse (D40, 6h), receives a
-Redshift subscription target. None exists here (Stage 19 0.6, 2026-10-28). `CreateSubscriptionTarget`
-takes a `type`, a `manageAccessRole`, `authorizedPrincipals` and a `subscriptionTargetConfig` of forms, and
-its reference names no Redshift type or form.
+What no page settles: whether a project that added the warehouse through *Connect to existing compute
+resources*, the only way this estate admits a project to a warehouse (D40, 6h), receives a Redshift
+subscription target. None exists here (Stage 19 0.6, 2026-10-28). `CreateSubscriptionTarget` takes a
+`type`, a `manageAccessRole`, `authorizedPrincipals` and a `subscriptionTargetConfig` of forms, and its
+reference names no Redshift type or form. Under decision 1 (b), pass 2 measures the target AWS documents,
+on a workgroup the `RedshiftServerless` blueprint creates for the consumer, and leaves that case open.
 
 **3. What does AWS recommend for Redshift in a data product?** No page read states a default form for
 shared data. The concepts page puts the two stores side by side, *"Amazon SageMaker Lakehouse unifies your
@@ -223,17 +225,19 @@ decision for the user, named by its number in Decisions due. Read from `main` `7
 
 | Item | Today | Under the premises |
 |---|---|---|
-| D40 | one warehouse per account by hand; the `RedshiftServerless` and `LakehouseCatalog` blueprints disabled, the first for its default of 128 base RPUs and a workgroup per project | **keep** under decision 1 (a); (b) enables the blueprint for one project for one sitting, AWS's documented target, and amends D40 for it |
+| D40 | one warehouse per account by hand; the `RedshiftServerless` and `LakehouseCatalog` blueprints disabled, the first for its default of 128 base RPUs and a workgroup per project | **amend for one sitting**: decision 1 (b) enables the blueprint for `test-experimentation`, its base capacity locked at 4 RPU, and removes it at 2.9; D40's file records the sitting at 6.2 |
 | D13 | execution roles hold no S3 on the lake's registered prefixes | **keep**: pass 5's prefix is in the producer's project path, which Lake Formation does not register |
 | D26 | one domain, in Data Governance | **keep** |
 | 6h decision 3 | the connection's `lineageSync`, daily at 03:43 UTC, every run failed; off or kept, owed | **keep** as the user's; pass 3 reads a lineage run with the workgroup up and leaves the setting as it found it |
-| 6h decision 8 | how a second project is admitted to the warehouse; (a) the tag `for-use-with-all-datazone-projects=true`, recommended there, not taken | **decision 1** (a) takes it for `test-experimentation`, as the consumer of a Redshift asset |
-| Stage 9 decision 5 | Production's namespace reaches Lake Formation as a Lake Formation-managed datashare mapped to a federated database; data lake access refused for the managed cluster against `DenyRedshiftProvisionedClusters` and D12; 9.5a's reading owed only if the federated catalog comes back | **keep** in Production. **Decision 3**: the federated catalog comes back in Sandbox for one sitting, and under (b) 9.5a's reading is taken there |
+| 6h decision 8 | how a second project is admitted to the warehouse; (a) the tag `for-use-with-all-datazone-projects=true`, recommended there, not taken | **keep** open: decision 1 (b) admits no second project to the warehouse |
+| Stage 9 decision 5 | Production's namespace reaches Lake Formation as a Lake Formation-managed datashare mapped to a federated database; data lake access refused for the managed cluster against `DenyRedshiftProvisionedClusters` and D12; 9.5a's reading owed only if the federated catalog comes back | **keep** in Production. **Decision 3 (b)**: the federated catalog comes back in Sandbox for one sitting, and 9.5a's reading is taken there |
 | Stage 19 decision 9 | (a), taken 2026-10-31: the read in place through `awsdatacatalog`, 5.3's Redshift asset published and never subscribed; (b), the subscription with a target, *"read as a second half once a target's shape is priced"* | **keep** (a) for Stage 19; pass 2 here is (b)'s second half, under decision 1 |
 | [`catalog.md`](../runbooks/catalog.md) | §A: a Redshift source unmeasured; §P: a product of several items unread; §S: no Redshift target, fulfilment from the pages; no S3 Object Collection | **amend**: the 2026-11-17 readings at 1.1, the measurements at 6.1 |
 | [`docs/SMUS.md`](../../SMUS.md), "Existing buckets as catalog assets" | the S3 Object Collection, *"No stage uses it"* | **amend** at 6.2 |
+| [`docs/SMUS.md`](../../SMUS.md), the `RedshiftServerless` row | category 3, *Never*: a 128-RPU workgroup one click from every member (D26, D40) | **amend** at 6.2 with the sitting's readings; the category stays 3 |
 | [`docs/GOVERNANCE.md`](../../GOVERNANCE.md) | a data product, the lake and a warehouse in one paragraph; a Redshift `GRANT` as the fourth permission system | **amend** at 6.2, with what a subscription writes in each system |
-| `./aws/warehouse.py` | `WH-9` fails the day a lineage run completes; `WH-12` and `WH-14` judge the themed schemas' grants | **read** after passes 2 and 3, **amend** at 6.3 for a subscription's grant and a lineage run the stage chose |
+| `./aws/warehouse.py` | `WH-9` fails the day a lineage run completes; `WH-12` and `WH-14` judge the themed schemas' grants | **read** after passes 2 and 3, **amend** at 6.3 for a subscription's datashare and a lineage run the stage chose |
+| `./aws/studio.py` | `US-3` admits decision 5's category 1 and fails on `RedshiftServerless` with its own message | **read**: red while 1.5's variables are on, green after 2.9; no change |
 | `./aws/catalog.py` | `CT-17` explains every grant on a project's listed Glue table; nothing reads S3 Access Grants | **amend** at 6.3: the grants of an S3 Object Collection's subscription, explained by it |
 
 ## Who executes each action
@@ -288,15 +292,20 @@ decision for the user, named by its number in Decisions due. Read from `main` `7
 - **1.1 [Claude] The pages read 2026-11-17**, written the same day into
   [`docs/REFERENCES.md`](../../REFERENCES.md), "The user's questions, answered" and
   [`catalog.md`](../runbooks/catalog.md) §S. Done at writing.
-- **1.2 [user] Decisions 1 to 3.** Each changes which steps of passes 2 and 4 run.
+- **1.2 [user] Decisions 1 to 3.** Taken 2026-11-17: 1 (b), 2 (a), 3 (b).
 - **1.3 [Claude] The shapes the sittings write, read-only from the laptop** as `awsds-infra-sandbox-1`
   (`InfrastructureAccess`, `Sandbox Account 1`), a contributor of both Sandbox projects since 2026-10-15:
   - the managed asset types' forms, `datazone get-asset-type` on the Redshift table, Redshift view and S3
     Object Collection types, and the domain's roster against the 24 types of 2026-10-28;
   - the consumer's environments and their targets, `datazone list-environments` and
     `list-subscription-targets` on `test-experimentation`: the Glue target's `type`,
-    `subscriptionTargetConfig` and `authorizedPrincipals`, the shape a Redshift target is written after
-    under decision 1 (a);
+    `subscriptionTargetConfig` and `authorizedPrincipals`, beside which 2.4 reads the Redshift target;
+  - the `RedshiftServerless` blueprint, `datazone get-environment-blueprint` and its template from
+    `templateUrl`: every parameter with its default and `AllowedValues`, the base and maximum capacity's
+    among them, and the console's enable wizard's fields ([`docs/SMUS.md`](../../SMUS.md)'s checklist for
+    promoting a blueprint, steps 3 and 4); the adminguide's key-permissions page for the Redshift
+    statements the project CMK lacks. If no parameter holds the base capacity at 4 RPU, decision 1 returns
+    to the user before 1.5;
   - the producer's connections, `datazone list-connections` on `eighth-experimentation`, the Redshift one's
     `lineageSync` and its authentication;
   - the Access Grants instance, its locations and its grants, `s3control get-access-grants-instance`,
@@ -334,6 +343,15 @@ decision for the user, named by its number in Decisions due. Read from `main` `7
   print("SELECT * FROM (VALUES\n  " + ",\n  ".join(rows)
         + "\n) AS t (object_key, tom, width, height, size_bytes)")
   ```
+- **1.5 [Claude] The code of decision 1 (b), off by default**, written from 1.3's readings in the order of
+  [`docs/SMUS.md`](../../SMUS.md)'s checklist for promoting a blueprint, steps 1 to 6, each change behind a
+  variable that defaults to off. In `sagemaker-prereqs`, at a new tag read from the remote at tagging:
+  `RedshiftServerless` among the configured blueprints, and the project CMK's Redshift `CreateGrant`
+  statements. In `data-governance/governance/`: an `ON_DEMAND` `RedshiftServerless` configuration in the
+  `experimentation` profile, its base capacity and, if the template has one, its maximum locked at 4 RPU by
+  parameter overrides that are not editable. `sandbox/sagemaker/` moves to the tag. Each slice is planned
+  `No changes` with the variables off. `US-3`'s allow-list stays as it is, so the check reads red, with
+  its own message, while the variables are on.
 
 ### 2. A Redshift table as a data product
 
@@ -353,39 +371,46 @@ pass's end.
   run.
 - **2.3 [user] Publish the table and the view, and a data product of both**, with the `classification` form
   (Stage 19 decision 4). **[Claude] reads** the listings and `CT-18`.
-- **2.4 [Claude⚡] The consumer admitted, under decision 1 (a)**, on the user's word: 6h decision 8 (a)'s
-  tag on the workgroup and the namespace, `test-experimentation`'s access role and security-group rule in
-  `sandbox/warehouse/`'s map, by [`redshift-connection.md`](../runbooks/redshift-connection.md) §P with no
-  themed schema of its own; each slice planned, applied and re-planned `No changes`; `WH-7` read as 6h
-  decision 8 (a) inverts it. **[user]** A member of `test-experimentation` adds the connection
-  (*Connect to existing compute resources*, IAM credentials, the access role). **[Claude] reads** the
-  consumer's environments for a Redshift subscription target. If none appeared, `CreateSubscriptionTarget`
-  on the consumer's environment in the form 1.3 read, on the user's word; if the call refuses a Redshift
-  form, the refusal is verification iii's answer and 2.5 to 2.7 do not run. Under (b), the blueprint's
-  project instead, its base capacity read before any create.
+- **2.4 The consumer's workgroup, under decision 1 (b).** **[Claude⚡]** On the user's word, the other
+  sessions told first: 1.5's variables on, `sandbox/sagemaker/` then `data-governance/governance/` applied
+  and re-planned `No changes`; `datazone get-project-profile` read for the configuration and its locked
+  capacity. **[user]** A member of `test-experimentation` adds the Redshift Serverless compute on demand in
+  the portal. **[Claude] reads** the environment and its stack; the namespace and the workgroup, their base
+  and maximum capacity, key, subnets and security group; the connection the blueprint writes; and the
+  Redshift subscription target the environment carries, its `type`, forms and `authorizedPrincipals`, beside
+  the Glue target 1.3 read. A workgroup above 4 base RPUs is removed at once by 2.9's steps, and decision 1
+  returns to the user; no target, or a refusal at the create, is verification iii's answer, and 2.5 to 2.7
+  do not run.
 - **2.5 [user] The consumer requests the product and the producer's owner approves.** **[Claude] reads**
-  the subscription, a grant per asset and their times, and in the warehouse as the admin: what DataZone
-  wrote, a `GRANT` on `lab.trades_hot` in `sandbox` (one database) or a view in the consumer's connection's
-  database, `dev` by the form's default (two databases), with `SVV_RELATION_PRIVILEGES`,
-  `SVV_DEFAULT_PRIVILEGES` and `SYS_QUERY_HISTORY` for the statements and the user that ran them.
+  the subscription, a grant per asset and their times, and on both workgroups as their admins what DataZone
+  wrote across two namespaces: by the pages, a datashare on the warehouse's namespace carrying the table and
+  the view, the consumer's namespace as its consumer, a database created from it and a view on top in the
+  consumer's workgroup, with `SVV_DATASHARES`, `SVV_DATASHARE_OBJECTS`, `SVV_DATASHARE_CONSUMERS`,
+  `SVV_RELATION_PRIVILEGES` and `SYS_QUERY_HISTORY` for the statements and the users that ran them.
 - **2.6 [user] The consumer reads through the subscription**: `SELECT` on what 2.5 found, from the Query
-  editor and from a notebook through §J's chained session; a `SELECT` on `lab.trades_hot_daily`, never
-  subscribed, refused. **[Claude] reads** the refusal's wording and `ComputeSeconds`.
-- **2.7 [user] Revoke the subscription.** **[Claude] reads** what the revocation removes, the grant or the
-  view, and when, against [`catalog.md`](../runbooks/catalog.md) §S's revocation.
+  editor and from a notebook through the connection the blueprint wrote; `lab.trades_hot_daily`, never
+  subscribed, absent or refused. **[Claude] reads** the refusal's wording and both workgroups'
+  `ComputeSeconds`.
+- **2.7 [user] Revoke the subscription.** **[Claude] reads** what the revocation removes on each workgroup,
+  the view, the datashare's objects or the datashare, and when, against
+  [`catalog.md`](../runbooks/catalog.md) §S's revocation.
 - **2.8 [user] The portal's *Create table → Redshift table*** in `eighth-experimentation`, with a CSV of a
   few rows. **[Claude] reads** the bucket and the prefix the portal uploads to, the `COPY` it runs and its
   refusal: the namespace's default role holds no policy (0.1), so the expected refusal is S3's, not the
   missing default role the institution's environment met. Nothing is granted to the role (5b decision 5).
+- **2.9 The consumer's workgroup removed**, after 2.7. **[user]** The compute removed from
+  `test-experimentation` in the portal. **[Claude] reads** the environment, its stack, the workgroup and the
+  namespace absent. **[Claude⚡]** On the user's word, 1.5's variables off, both slices applied and re-planned
+  `No changes`; `US-3` read green.
 
 ### 3. Lineage from the warehouse
 
 In the same sitting, under decision 2.
 
-- **3.1 [Claude⚡] The credentials**, on the user's word. Under (a): a database user `lineage_reader`, its
-  password in a Sandbox secret, granted `sys:operator` and `SELECT` on `lab`'s tables by the admin; a
-  member adds a second Redshift connection to `eighth-experimentation` with *AWS Secrets Manager*. Under
-  (b): `GRANT ROLE sys:operator` to the project's database user, on the existing connection.
+- **3.1 [Claude⚡] The credentials**, on the user's word, under decision 2 (a): a database user
+  `lineage_reader`, its password in a Sandbox secret, granted `sys:operator` and `SELECT` on `lab`'s tables
+  by the admin; a member adds a second Redshift connection to `eighth-experimentation` with *AWS Secrets
+  Manager*.
 - **3.2 [user] The data source with *Import data lineage***, on the connection 3.1 chose, over `lab`; the
   switch time recorded, the first pull about five minutes after it. **[Claude] reads** the connection's
   `lineageSync` and the run's outcome (*"The job run fails if none of the queries are successfully
@@ -397,7 +422,7 @@ In the same sitting, under decision 2.
 - **3.4 [user] The graph** on the assets' *Lineage* tab. **[Claude] reads** the lineage nodes and their
   `sourceIdentifier` against the Redshift assets', and which statements left edges.
 - **3.5 [Claude⚡] The credentials removed** at the pass's end: the second connection, the user and the
-  secret, or the role revoked; the data source's lineage switched off. 6h decision 3's setting on the
+  secret; the data source's lineage switched off. 6h decision 3's setting on the
   project's connection is left as found.
 
 ### 4. The namespace in the Glue Data Catalog
@@ -425,8 +450,7 @@ object created alone and read back for `IAMAllowedPrincipals` before anything is
 - **4.6 [user] Athena reads the table** through the federated catalog, from the producer's query editor
   and, if 4.4 subscribed it, from the consumer's. **[Claude] reads** the managed compute's usage where the
   account shows it, and the bill by usage type the next day.
-- **4.7 [Claude⚡] An RMS catalog**, under decision 3 (c): created by 1.3's command, a table created in it
-  from Redshift, rows written and read by Athena, read by Redshift; then deleted.
+- **4.7 An RMS catalog**: not run, since decision 3 took (b).
 - **4.8 [Claude⚡] Removed in the sitting**: data lake access off, the catalog deleted, the namespace's
   registration withdrawn, the transfer role's variable off and applied, each read back absent.
 
@@ -459,13 +483,14 @@ Any Sandbox sitting with a space in both projects; the warehouse is not needed.
 - **6.1 [Claude]** [`catalog.md`](../runbooks/catalog.md): §A, a Redshift source and an S3 Object
   Collection as measured; §P, a product of several items and of mixed types; §S, the Redshift target, its
   fulfilment and its revocation, and the S3 Object Collection's; §L, Redshift lineage.
-- **6.2 [Claude]** [`docs/SMUS.md`](../../SMUS.md)'s paragraph on existing buckets as catalog assets;
+- **6.2 [Claude]** [`docs/SMUS.md`](../../SMUS.md)'s paragraph on existing buckets as catalog assets and
+  its `RedshiftServerless` row, with the sitting's readings; D40's file, with decision 1 (b)'s sitting;
   [`docs/GOVERNANCE.md`](../../GOVERNANCE.md)'s paragraph on a data product, the lake and a warehouse,
   with what a subscription writes in Lake Formation, in Redshift and in S3 Access Grants; and
-  [`redshift-connection.md`](../runbooks/redshift-connection.md) for a project admitted to read through
-  subscriptions alone.
+  [`redshift-connection.md`](../runbooks/redshift-connection.md) §G for a project that reads the
+  warehouse's tables through a subscription to its own workgroup.
 - **6.3 [Claude]** `./aws/warehouse.py` (`WH-9` for a lineage run the stage chose, `WH-12` and `WH-14`
-  for a subscription's grant or view) and `./aws/catalog.py` (an S3 Object Collection's grants explained
+  for a subscription's datashare) and `./aws/catalog.py` (an S3 Object Collection's grants explained
   by its subscription), each self-check green.
 - **6.4 [Claude]** A `SUP-nnn` per measured behaviour no page states, the next id read from `origin/main`
   at the commit; [`docs/PRICING.md`](../../PRICING.md) for the managed workgroup if 4.5 ran; the threat
@@ -483,66 +508,65 @@ rows removed.
 |---|---|---|
 | i | Does a Redshift data source import a table and a view, and with which asset types, forms and `sourceIdentifier`? | 2.2 |
 | ii | Does a data product of a Redshift table and a view publish, and what do its listings carry? | 2.3 |
-| iii | Does a project admitted with *Connect to existing compute resources* receive a Redshift subscription target, and if not, does `CreateSubscriptionTarget` accept one for it, in which form? | 2.4 |
-| iv | What does DataZone write in the warehouse for an approved request, a `GRANT` in one database or a view in the consumer's, as which user and in what time? | 2.5 |
+| iii | Does the `RedshiftServerless` blueprint hold the consumer's base capacity at 4 RPU, and does its environment carry a Redshift subscription target, in which form and with which principals? | 1.3, 2.4 |
+| iv | What does DataZone write across the two workgroups for an approved request: the datashare, its consumer, the database from it and the view, as which users and in what time? | 2.5 |
 | v | Does the consumer read the subscribed table from the Query editor and from a notebook, and is an unsubscribed table of the same schema refused, with which wording? | 2.6 |
-| vi | What does the revocation remove in the warehouse, and when? | 2.7 |
+| vi | What does the revocation remove on each workgroup, and when? | 2.7 |
 | vii | Where does the portal's *Create table → Redshift table* upload, which `COPY` does it run, and what refuses it when the default role holds no policy? | 2.8 |
 | viii | Does a lineage run succeed with the workgroup up and decision 2's credentials, and which statements become edges: inside `lab`, `UPDATE` and `MERGE`, and a read through `awsdatacatalog`? | 3.2 to 3.4 |
 | ix | Do the lineage nodes link to the Redshift assets, and does the graph join a Glue job's events? | 3.4 |
 | x | Does the federated catalog arrive carrying `IAMAllowedPrincipals`, and does Redshift read its table under Lake Formation's grant? | 4.1 to 4.3 |
 | xi | Does a Glue data source import a federated catalog's table, as which asset type, and does a subscription to it in one account complete? | 4.4 |
 | xii | What does data lake access create, where, under which key and base capacity; does `DenyRedshiftProvisionedClusters` refuse it; does Athena read through it; and what did it bill? | 4.5, 4.6, 6.5 |
-| xiii | Does an RMS catalog's table take writes from Athena and reads from Redshift? | 4.7 |
+| xiii | Does an RMS catalog's table take writes from Athena and reads from Redshift? Not measured: decision 3 took (b) | — |
 | xiv | Does an S3 prefix publish as an S3 Object Collection with its business metadata, and does a product of it and a Glue table publish? | 5.2, 5.3 |
 | xv | What does an approved request write in S3 Access Grants: which grantee, location, scope and permission, and what does one request give each item of a mixed product? | 5.4 |
 | xvi | Does the consumer read an image from the portal and from a notebook, does a space reach S3 Control, and are a key outside the scope and a write refused? | 5.5 |
 | xvii | Does a read-and-write approval let the consumer write under the scope? | 5.6 |
 | xviii | After a revocation, how long does `GetDataAccess` answer, and how long do credentials vended before it work? | 5.7 |
 | xix | What did the sittings bill, by service? | 6.5 |
+| xx | Does removing the consumer's compute delete its workgroup, namespace and stack, and does `US-3` read green with 1.5's variables off? | 2.9 |
 
 ## Decisions due
 
-Written 2026-11-17 and put to the user the same day; none taken. Each holds its recommendation until the
-user answers, and the waiting list carries them.
+The user took the decisions below on 2026-11-17 in the cloud session's thread, one card at a time at the
+user's request: decision 1 on its card at 21:55 UTC, decisions 2 and 3 in words at 21:55 UTC. At 21:50 UTC
+the user set the rule the recommendations follow: *"Revise as recomendações considerando que iremos
+exercitar o caminho sugerido pela AWS por padrão."* The log carries each question as it was asked and each
+answer in the user's words. Taken: 1 to 3.
 
-1. **The consumer of a Redshift asset, and its subscription target** (2.4). AWS's pages describe a
-   subscription delivered to *"the Amazon Redshift Serverless workgroup created for the project"*; this
-   estate admits a project to its one warehouse by hand (D40, 6h), and no page says whether such a project
-   receives a target. **(a)** `test-experimentation` admitted to the Sandbox warehouse under 6h decision 8
-   (a), the tag `for-use-with-all-datazone-projects=true`, with no themed schema of its own; its connection
-   added in the portal by a member; the target read and, if absent, written with `CreateSubscriptionTarget`
-   in the form 1.3 reads. It keeps D40, costs the warehouse's 4 RPU, and a refusal is itself verification
-   iii's answer. The wide tag lets every project role reach the workgroup from a notebook or the Data API,
-   so the schema `GRANT` becomes the only per-project gate for those doors (6h decision 8, simulated
-   2026-10-18), and it stays after the stage unless rollback item 4 runs. **(b)** The `RedshiftServerless`
-   blueprint enabled for one Sandbox project for one sitting: the target AWS documents, and the
-   datashare-and-view shape between two workgroups; it amends D40 and D12 for the sitting, and runs only
-   if the blueprint's base capacity (128 RPUs by the service default) can be set to the floor before the
-   create. **(c)** No consumer: the asset published and never subscribed,
-   Stage 19 decision 9 (a) as it stands, question 2 answered by the pages alone. **Recommended: (a)**: it
-   measures whether the standard fulfilment reaches compute admitted the way this estate admits it, at the
-   warehouse's cost, and 6h decision 8 stops being a question with no requirement behind it.
-2. **The credentials Redshift lineage runs with** (3.1). AWS: the connection's credentials hold
-   `sys:operator` and `SELECT` on all the tables, and the data source page asks for a connection
-   authenticated by a secret. **(a)** A second connection in `eighth-experimentation`, authenticated by a
-   secret for a database user `lineage_reader` holding `sys:operator` and `SELECT` on `lab`, created for
-   the sitting and removed after. **(b)** The existing IAM connection, its database user granted
-   `sys:operator` for the sitting. **(c)** No Redshift lineage measured. Either (a) or (b) lets every member
-   of the project read the text of every query run on the warehouse while the grant stands, since the
-   project role runs the lineage's statements and reads the connection's credentials. **Recommended: (a)**:
-   it is the form the data source page documents, the project's own identity stays unprivileged, and the
-   whole of it is removed at the pass's end.
-3. **The Iceberg engines' access to the warehouse** (pass 4). **(a)** The federated catalog registered, read
-   by Redshift and imported by a Glue source, data lake access left off: no compute beyond the warehouse,
-   and question 6's managed workgroup answered by the pricing page alone. **(b)** As (a), then data lake
-   access switched on for the sitting: what AWS Glue creates is read, Athena's read through it measured,
-   everything removed in the sitting and the bill read the next day; Stage 9's 9.5a reading, owed since
-   decision 5, taken in Sandbox. **(c)** As (b), and an RMS catalog with one table, created and removed in
-   the same sitting. **(d)** None of pass 4. **Recommended: (b)**: question 6 asks what compute stands
-   behind Redshift data that another engine reads, the pages disagree on its shape and name neither its
-   account nor its size, and only a creation answers; one sitting bounds the cost, and a refusal by
-   `DenyRedshiftProvisionedClusters` is a reading too.
+1. **The consumer of a Redshift asset, and its subscription target** (2.4). **Taken 2026-11-17: (b)**, on
+   the card whose option read *"Caminho documentado pela AWS: o consumidor ganha um workgroup só dele por
+   uma sessão, com a capacidade base no mínimo; o warehouse do Sandbox não muda."* AWS's pages describe a
+   subscription delivered to *"the Amazon Redshift Serverless workgroup created for the project"*. The
+   `RedshiftServerless` blueprint, category 3 in [`docs/SMUS.md`](../../SMUS.md), is enabled for
+   `test-experimentation` for one sitting through 1.5's code, its base capacity locked at 4 RPU before the
+   create, and removed at 2.9; between the warehouse and that workgroup the fulfilment is the
+   datashare-and-view shape. It amends D40 and D12 for the sitting, admits no second project to the
+   warehouse, and leaves 6h decision 8 open. If the blueprint will not hold the floor, decision 1 returns
+   to the user. Not taken: (a) `test-experimentation` admitted to the Sandbox warehouse under 6h decision 8
+   (a), the tag `for-use-with-all-datazone-projects=true`, and a target written with
+   `CreateSubscriptionTarget` if none appeared: the institution's own shape, a project that adds an
+   existing workgroup, which stays unmeasured; (c) no consumer, Stage 19 decision 9 (a) as it stands.
+2. **The credentials Redshift lineage runs with** (3.1). **Taken 2026-11-17: (a)**, in the user's words
+   *"aceito as recomendações das decisões 2 e 3, considerando que é o caminho que a AWS documenta"*: a
+   second connection in `eighth-experimentation`, authenticated by a secret for a database user
+   `lineage_reader` holding `sys:operator` and `SELECT` on `lab`, created for the sitting and removed after.
+   It is the form the data source page documents, the connection's credentials holding `sys:operator` and
+   `SELECT` on all the tables, and the project's own identity stays unprivileged. While the grant stands,
+   every member of the project can read the text of every query run on the warehouse, since the project
+   role runs the lineage's statements and reads the connection's credentials. Not taken: (b) the existing
+   IAM connection, its database user granted `sys:operator` for the sitting; (c) no Redshift lineage
+   measured.
+3. **The Iceberg engines' access to the warehouse** (pass 4). **Taken 2026-11-17: (b)**, in the same
+   words: the federated catalog registered, read by Redshift and imported by a Glue source, then data lake
+   access switched on for the sitting; what AWS Glue creates is read, Athena's read through it measured,
+   everything removed in the sitting and the bill read the next day; Stage 9's 9.5a reading, owed since its
+   decision 5, taken in Sandbox. It is the path AWS's pages give Athena, Amazon EMR and Spark to Redshift
+   data. Question 6 asks what compute stands behind it, the pages disagree on its shape and name neither
+   its account nor its size, and only a creation answers; a refusal by `DenyRedshiftProvisionedClusters` is
+   a reading too. Not taken: (a) data lake access left off; (c) an RMS catalog besides, so 4.7 and
+   verification xiii do not run; (d) none of pass 4.
 
 ## Cost
 
@@ -554,13 +578,13 @@ Measured rates, `us-west-2`, from [`docs/PRICING.md`](../../PRICING.md):
   to 2026-12-19. 6h's sitting of 2026-10-10 burned 2.44 USD by `ComputeSeconds`.
 - The managed workgroup of decision 3 (b): *"standard Amazon Redshift Serverless rates"*, whose base
   capacity no page states; read at 4.5 and removed at 4.8. Whether the free trial covers it is a reading.
-- Decision 1 (b): the blueprint's workgroup at the same rate, at the base capacity it accepts.
-- An RMS catalog: Redshift managed storage at 0.024 per GB-month, kilobytes here.
+- Decision 1 (b): the consumer's workgroup at the same rate, at the 4 base RPUs the profile locks, with
+  the 60-second minimum per query; whether the free trial covers a second workgroup is a reading.
 - S3 Access Grants: 0.03 per 1,000 requests. S3: kilobytes. Athena: 5.00 per TB scanned, kilobytes.
 - The catalog: metadata requests at 10.00 per 100,000 with 4,000 a month free per account; a source's run in
   compute units at 1.776 each with 0.2 a month free.
-- At rest: nothing new. The admission of decision 1 (a) is policy and tags; every object a pass creates is
-  removed at its end but the assets and listings, which are metadata.
+- At rest: nothing new. Every object a pass creates is removed at its end, the consumer's workgroup and
+  namespace at 2.9, but the assets and listings, which are metadata.
 
 ## Rollback
 
@@ -571,10 +595,10 @@ Each write is on the user's word, in this order, each object read before its del
 2. **[Claude⚡] The federated catalog and data lake access** (4.8), if 4.8 did not run: the switch off, the
    catalog deleted, the registration withdrawn, the transfer role's variable off and applied.
 3. **[Claude⚡] The lineage credentials** (3.5), if 3.5 did not run: the second connection by a member, the
-   user dropped, the secret deleted with no recovery window; or the role revoked.
-4. **[Claude⚡] The consumer's admission** (2.4), if the user chooses to undo it:
-   [`redshift-connection.md`](../runbooks/redshift-connection.md) §U, the connection first, then the map
-   and the tag, each slice re-planned `No changes`.
+   user dropped, the secret deleted with no recovery window.
+4. **[user] then [Claude⚡] The consumer's workgroup** (2.9), if 2.9 did not run: the compute removed in
+   the portal and read absent with its stack; 1.5's variables off, `sandbox/sagemaker/` and
+   `data-governance/governance/` applied and re-planned `No changes`.
 5. **[user] The tables and the images**: `DROP` of `lab.trades_hot_daily`, `lab.trades_hot_by_desk` and
    `lab.trades_hot` unless Stage 19 keeps its copy; the files under `shared/stage21-images/` and the table
    `stage21_images`.
@@ -585,10 +609,10 @@ Each write is on the user's word, in this order, each object read before its del
 
 - Promote a product, or touch Production's warehouse, its datashare or its federated database.
 - Build a SageMaker application: the tables come from SQL in the query editor and the files from a space.
-- Keep a federated catalog, data lake access, an RMS catalog or `sys:operator` past its sitting.
+- Keep a federated catalog, data lake access, the consumer's workgroup, the `RedshiftServerless` blueprint
+  or `sys:operator` past its sitting.
 - Grant the namespace's default role a policy (5b decision 5), even for 2.8.
-- Enable the `LakehouseCatalog` or `LakehouseAdmin` blueprints, or the `RedshiftServerless` blueprint
-  beyond decision 1 (b)'s sitting.
+- Enable the `LakehouseCatalog` or `LakehouseAdmin` blueprints, or create an RMS catalog (decision 3 (b)).
 - Build S3 Metadata tables or an S3 table bucket: read, not built.
 - Put unstructured files in the governed lake's buckets.
 
@@ -596,10 +620,12 @@ Each write is on the user's word, in this order, each object read before its del
 
 - **Stage 19**: its pass 5 shares the warehouse sitting. Its 5.3 asset is the one 2.2 reads when it ran
   first, and its 5.4 revocation waits for pass 2's end.
-- **6h**: decision 1 (a) takes its decision 8 (a), the wide tag with `test-experimentation` in the map,
-  which inverts `WH-7` as that decision says. Its 5.2b grants a second project `lab`'s role; on
-  `test-experimentation` it runs after pass 2, since that role would let 2.6's unsubscribed read through.
-  Pass 3 reads a lineage run, and its decision 3 stays the user's.
+- **6h**: decision 1 (b) admits no second project to the warehouse, so its decision 8 stays open and
+  `WH-7` as it is. Pass 3 reads a lineage run, and its decision 3 stays the user's.
+- **6d, 17, 19 and 20**: 1.5's variables ride `sagemaker-prereqs`, `sandbox/sagemaker/` and
+  `data-governance/governance/`, which their applies plan too. Off by default, they plan `No changes` in
+  another stage's tree; the sitting's apply is announced to the other sessions first, and `US-3` reads red
+  until 2.9.
 - **Stage 9**: pass 4 brings the federated catalog back in Sandbox alone, and decision 3 (b) takes 9.5a's
   reading there, the question of its verification xxiii; its decision 5 holds in Production, where nothing
   changes.
@@ -608,4 +634,5 @@ Each write is on the user's word, in this order, each object read before its del
 - **Stage 20**: its pass 5 makes `eighth-experimentation` a consumer of Production's listing; this stage
   makes it the producer of two data products and, if 4.4 imports, a federated catalog's asset, each retired
   at the end.
-- **Stage 12**: the bill of decision 3 (b)'s managed workgroup, read at 6.5 against D12.
+- **Stage 12**: the bills of decision 1 (b)'s workgroup and decision 3 (b)'s managed workgroup, read at
+  6.5 against D12.

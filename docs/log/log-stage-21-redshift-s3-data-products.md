@@ -73,3 +73,25 @@ Account ids are replaced by the account's name in angle brackets.*
 - **[Claude] The stage written**, decisions 1 to 3 put to the user and none taken; the indexes,
   `GENERAL_PLAN.md`'s route, `CLAUDE.md`'s Current position, the waiting list, `catalog.md` §S and
   `promotion.md` §N.6 item 9 amended in the same pull request.
+
+## 2026-11-17 — decisions 1 to 3 taken, and the stage revised for them
+
+*Claude's sitting in the same cloud session, no AWS call.*
+
+- **[user] The order of the decisions**, at 21:47 UTC: *"Me apresente cada decisão necessária, uma de cada
+  vez, com as opções e a recomendação"*. **[Claude]** The card that put the three together was withdrawn,
+  and decision 1 went on a card of its own, recommending (a).
+- **[user] The rule for the recommendations**, at 21:50 UTC: *"Revise as recomendações considerando que
+  iremos exercitar o caminho sugerido pela AWS por padrão"*. **[Claude]** Decision 1's recommendation
+  became (b), the workgroup AWS's pages name as a Redshift subscription's destination, its base capacity
+  at the floor, on a new card; decisions 2 and 3 kept (a) and (b), already the forms AWS's pages document.
+- **[user] Decision 1**, at 21:55 UTC, on the card *"Escolher quem assina a tabela Redshift no teste do
+  Stage 21"*: *"b: workgroup próprio pelo blueprint"*.
+- **[user] Decisions 2 and 3**, at 21:55 UTC: *"aceito as recomendações das decisões 2 e 3, considerando que
+  é o caminho que a AWS documenta"*.
+- **[Claude] The stage revised for the choices**, read against `docs/SMUS.md`'s `RedshiftServerless` row
+  (category 3, *Never*) and its checklist for promoting a blueprint: 1.3 reads the blueprint's parameters
+  and template; 1.5 writes its code behind variables that default to off; 2.4 is the consumer's workgroup
+  by the blueprint, 2.5 to 2.7 the datashare-and-view shape between two namespaces, and 2.9 the
+  workgroup's removal; 3.1 and 3.5 keep decision 2 (a) alone; 4.7 and verification xiii do not run;
+  verification xx is added. The waiting list's decisions row is removed.

@@ -1180,9 +1180,9 @@ bound items 3, 5, 6 and 9.
    token volume sets 6e decision 6's threshold.
 9. **The Sandbox warehouse sitting**, `GROUPS=redshift`: Stage 19's pass 5 after 4.12, 5b's
    `max_query_execution_time` test, and 6h's negatives after 6h decision 8;
-   [Stage 21](../stages/stage-21-redshift-s3-data-products.md)'s passes 2 to 4 after its decisions 1 to 3
-   and its 1.3 readings, its pass 2 before 6h's 5.2b on `test-experimentation`; before 2026-12-19 if the
-   trial is to absorb them. Stage 21's pass 5 needs no warehouse and rides any Sandbox sitting.
+   [Stage 21](../stages/stage-21-redshift-s3-data-products.md)'s passes 2 to 4 after its 1.3 readings and
+   1.5's code, its `RedshiftServerless` blueprint on for the sitting alone; before 2026-12-19 if the trial
+   is to absorb them. Stage 21's pass 5 needs no warehouse and rides any Sandbox sitting.
 10. **With nothing up, before `app-ml`'s first tag**: `scripts/deploy-application.py`,
     `scripts/model-chain.py` and their hooks taught a second application, kept out of the day's pull
     request so that release G's leg runs the script it was read with; the subagents' patches of

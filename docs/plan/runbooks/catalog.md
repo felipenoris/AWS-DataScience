@@ -537,7 +537,9 @@ that added a warehouse through *Connect to existing compute resources* receives 
 `CreateSubscriptionTarget` takes `applicableAssetTypes`, `authorizedPrincipals`, `manageAccessRole`, `name`,
 `type` and a `subscriptionTargetConfig` of forms (`formName`, `content`), with an optional `provider` and
 `subscriptionGrantCreationMode` (`AUTOMATIC` or `MANUAL`); its reference names no Redshift type or form (read
-2026-11-17). [Stage 21](../stages/stage-21-redshift-s3-data-products.md) pass 2 measures it.
+2026-11-17). [Stage 21](../stages/stage-21-redshift-s3-data-products.md) pass 2 measures the target AWS
+documents, on a workgroup the `RedshiftServerless` blueprint creates for the consumer, and leaves the case
+of a project admitted by hand open.
 
 An S3 bucket or prefix published from the portal's S3 browser, *Actions → Publish to Catalog*, becomes an
 asset of type *S3 Object Collection*, which the managed list leaves out (the S3 pages, read 2026-11-17). Its
