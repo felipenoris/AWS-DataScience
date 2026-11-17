@@ -3774,3 +3774,30 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   so DataZone admits a contributor's delete. Read at 06:03:35: `get-data-product` `ResourceNotFoundException`,
   *"Requested dataProduct cannot be found in domain"*; `app-etl-dev`'s data product search empty; the asset
   `c6z3pbg3drrs0g` at revision 5; the listings unchanged.
+
+## 2026-11-17 — `SUP-368`'s line in Sandbox's bill: the Glue session billed at its `DPUSeconds`
+
+Claude's reads as `awsds-infra-sandbox-1`, Sandbox's `InfrastructureAccess`; no AWS write. Each Cost
+Explorer read is one `get-cost-and-usage`, daily, unblended and net, by service and usage type: four
+requests, 0.04 USD.
+
+- **[Claude] Cost Explorer before it held the day**: at 05:05:57 UTC on 2026-11-15, 2026-11-14 and
+  2026-11-15 held no line, and 2026-11-13 held 3 to 6 hours of its whole-day lines (the alarms 0.1000
+  against 0.4000 on 2026-11-10 to 12, the dashboard 0.0083 against 0.0333, the secret 0.0069 against
+  0.0333, Unified Studio's volumes 0.1111 against 0.5333 GB-month). At 00:02:33 UTC on 2026-11-16,
+  2026-11-14 and 2026-11-15 still held none.
+- **[Claude] The sessions**, `glue list-sessions` at 22:37:00 UTC on 2026-11-15, before release T's step 17
+  removed `app-etl` from `test-experimentation`: one session in Sandbox,
+  `4gqfau9xuo6e4w-93939e2b-07b3-4c1b-b18a-e875438bd870`, `STOPPED`, created 22:47:31.313 and completed
+  23:07:37.219 UTC on 2026-11-14, `ExecutionTime` 1151.921, `DPUSeconds` 3248.638, `MaxCapacity` 10.0,
+  Glue 5.0.
+- **[Claude] The day held**, read 01:12:48 UTC on 2026-11-17: 2026-11-14 holds 47 lines, its last hour
+  in. `USW2-VpcEndpoint-Hours` reads 38, Sandbox's 19 interface endpoints over 22:00 and 23:00 UTC;
+  `USW2-ETL-DPU-Hour-Gen2` 0.082222 DPU-h and 0.0253 USD, `app-etl-dev`'s run started at 23:48:48; the
+  whole-day lines at the values of 2026-11-10 to 12. 2026-11-13 is whole; 2026-11-15 holds 44 lines and
+  9 endpoint hours, where the 2026-11-14 sitting's hour after midnight alone bills 19.
+- **[Claude] The line**: `AWS Glue`, `USW2-GlueInteractiveSession-DPU-Hour`, 2026-11-14, 0.9025 DPU-h and
+  0.3971 USD, unblended and net. The field gives 0.9024 DPU-h (3248.638 DPU-s) at 0.44 USD/DPU-h; the
+  formula `ExecutionTime * MaxCapacity` gives 3.1998 DPU-h and 1.41 USD, and 1205.9 s from creation to
+  completion at 10 DPU gives 3.3497 and 1.47. The bill charges `DPUSeconds` (`SUP-368`, Lesson 81,
+  `PRICING.md` §5).

@@ -464,7 +464,7 @@ São Paulo as in Oregon.
 | S3 Tables compaction (USD per 1 000 objects · per GB processed) | 0.0028 · 0.005 | 0.002 · 0.005 | 1.40 · 1.00 |
 | S3 Tables requests (USD per 1 000: PUT, COPY, POST, LIST · GET and others) | 0.007 · 0.00056 | 0.005 · 0.0004 | 1.40 |
 | **Glue** ETL, before Glue 6.0 (USD/DPU-h) | 0.69 | 0.44 | 1.57 |
-| Glue interactive sessions, before Glue 6.0 (USD/DPU-h; usage type `GlueInteractiveSession-DPU-Hour`, `AWSGlue` offer of 2026-11-08, read 2026-11-15). The session Stage 19's Spark read opened through `project.spark.fineGrained` is 5.0, up to 10 DPU, and averaged 2.8 under auto scaling (`SUP-368`) | 0.69 | 0.44 | 1.57 |
+| Glue interactive sessions, before Glue 6.0 (USD/DPU-h; usage type `GlueInteractiveSession-DPU-Hour`, `AWSGlue` offer of 2026-11-08, read 2026-11-15). The session Stage 19's Spark read opened through `project.spark.fineGrained` is 5.0, up to 10 DPU, and averaged 2.8 under auto scaling; the bill charged its `DPUSeconds`, 0.9025 DPU-h and 0.3971 USD for 2026-11-14 (`SUP-368`) | 0.69 | 0.44 | 1.57 |
 | Glue Flex ETL, before Glue 6.0 (USD/DPU-h) | 0.45 | 0.29 | 1.55 |
 | Glue ETL and interactive sessions, **Glue 6.0 and later** (USD/DPU-h; usage types `ETL-DPU-Hour-Gen2` and `GlueInteractiveSession-DPU-Hour-Gen2`, `AWSGlue` offer of 2026-10-12, read 2026-10-18). `app-etl`'s job is 6.0 | 0.483 | **0.308** | 1.57 |
 | Glue Flex ETL, Glue 6.0 and later (USD/DPU-h) | 0.315 | 0.203 | 1.55 |

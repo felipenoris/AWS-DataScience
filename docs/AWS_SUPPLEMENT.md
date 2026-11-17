@@ -1241,7 +1241,8 @@ entry is still true is the reading.
   2026-11-14.
 
 - `SUP-368` **A Glue interactive session's `DPUSeconds` reads 0.0 when the session stops and is filled
-  later, below the `ExecutionTime * MaxCapacity` its documentation gives as the formula** (measured
+  later, below the `ExecutionTime * MaxCapacity` its documentation gives as the formula, and is what the
+  bill charges** (measured
   2026-11-14 and 2026-11-15 in Sandbox, Stage 19, on the session its Spark read opened through
   `project.spark.fineGrained` in `test-experimentation`: Glue 5.0, 10 `G.1X` workers, `MaxCapacity` 10.0,
   idle timeout 60). `get-session` at 23:07:41 UTC, 4 s after `STOPPED`: `ExecutionTime` 1151.921,
@@ -1254,7 +1255,13 @@ entry is still true is the reading.
   Sandbox's `USW2-GlueInteractiveSession-DPU-Hour` line for 2026-11-14 once Cost Explorer holds the day:
   0.90 DPU-h if it counts `DPUSeconds`, 3.20 if it counts the formula. A session's consumption read at
   its stop reads nothing, and one priced from its size and its run reads three and a half times the
-  field. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
+  field. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15. Read again 2026-11-17 at 01:12 UTC
+  in Sandbox's Cost Explorer, the day held through its last hour: `USW2-GlueInteractiveSession-DPU-Hour`
+  for 2026-11-14 reads 0.9025 DPU-h and 0.3971 USD at 0.44 USD/DPU-h, against the field's 0.9024
+  (3248.638 DPU-s). Neither the formula's 3.1998 DPU-h (1.41 USD) nor the 3.3497 that 1205.9 s from
+  `CreatedOn` to `CompletedOn` give at 10 DPU (1.47 USD) is billed. `list-sessions` at 22:37 UTC on
+  2026-11-15 listed this session alone in Sandbox, so the line is its own. Where: the same log,
+  2026-11-17.
 
 ## Lake Formation
 
