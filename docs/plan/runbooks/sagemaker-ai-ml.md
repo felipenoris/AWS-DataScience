@@ -255,9 +255,10 @@ and the endpoint itself. *"Endpoint are locations where you send inference reque
 machine learning models."* It bills each hour it exists, whether or not it answers, and its invocations
 travel through `sagemaker.runtime`. In this estate the model's request carries a `VpcConfig` and network
 isolation, the configuration's instance type is on the ceiling's list, which holds no GPU type, and
-serverless inference is refused (§C). An endpoint in Sandbox stays up between sittings, as AWS's
-`ml/deployment` example leaves its own (decision 6, taken 2026-11-17), at 2.76 USD a day until someone
-deletes it; `make down` does not reach it. No endpoint stands in a target, and
+serverless inference is refused (§C). An endpoint in Sandbox stays up after its sitting, as AWS's
+`ml/deployment` example leaves its own, and its lifetime is the member's, who deletes it and recreates it
+from the model and the configuration as needed (decision 6, taken 2026-11-17). It bills 2.76 USD a day
+while it stands, and `make down` does not reach it. No endpoint stands in a target, and
 `sagemaker.runtime` is in neither target's endpoint set today. `app-ml`'s endpoint increment creates
 one, invokes it and deletes it inside one run, in every stage, with that endpoint raised for its
 sittings (decision 18 (b), §W). None has been created yet in any account (pass 4).
