@@ -80,7 +80,8 @@ it is not worth creating.
   threshold is [Stage 6e](stage-06e-claude-code-bedrock.md) decision 6's (8.3), so this step supplies the
   spend curve and the act is the user's. **The curve, read 2026-10-18 (4.2)**: at least USD 53.31 in August,
   74.48 in September and 56.15 for October 1-17, so D12's revision trigger (*"the first month the real bill
-  exceeds the USD 29-43 projection"*) fired in August and nobody was told.
+  exceeds the USD 29-43 projection"*) fired in August and nobody was told. 6e decision 6 was taken on
+  2026-11-17: an e-mail subscriber at 50, 80 and 100% of the ceiling, and Cost Anomaly Detection beside it.
 - **2.2 — [Claude] Alarm the hub**: either hub host stopped while a spoke session is up, and the proxy's
   403 rate over a threshold. Both point at [`runbooks/vpn.md`](../runbooks/vpn.md) and `./aws/proxy.py`.
   **Read 2026-10-18**: `awsds-prod-proxy-status-check` is in `ALARM` whenever the hub is stopped, its
@@ -446,7 +447,8 @@ and this one is not. **Explanation:** the checks are cheap because the facts are
    whenever the proxy is stopped, changes with it.
 2. **D12's revision trigger fired** (2.1, 4.2): the bill exceeded the projection in August and in
    September. Raising the ceiling, cutting the session hours that dominate the bill, or wiring the budget
-   (6e decision 6) are D12's to choose, the user's.
+   (6e decision 6) are D12's to choose, the user's. The wiring was taken on 2026-11-17 (6e decision 6);
+   the ceiling and the hours stay this decision's.
 3. **The layer letters** (5.2, open question 4). The bill moves none. (a) Keep every letter; (b) demote
    `production/tooling/` to `[E]`, saving 4.96 a month, once Stage 7 step 8.2 has timed a restore.
    8.2 timed one on 2026-10-26, 24 min 16 s from the destroy to the sign-in page; after 5.3, (b) saves 2.56.
