@@ -359,6 +359,25 @@ data "aws_iam_policy_document" "apply_application_in_this_account" {
       "arn:${local.partition}:sagemaker:${local.region_account}:model-package/awsds-${var.env}-model-app-etl/*",
     ]
   }
+
+  # Stage 17 step 9.5: app-ml's versions, which the register task proposes PendingManualApproval as the
+  # deployment project's role and production-approve approves. No CreateModelPackage: a task registers
+  # (Stage 17 decision 16 (b)). The group's resource policy names this role for the approval
+  # (sagemaker/registry.tf).
+  statement {
+    sid    = "ApproveTheModelATaskRegisters"
+    effect = "Allow"
+    actions = [
+      "sagemaker:DescribeModelPackage",
+      "sagemaker:DescribeModelPackageGroup",
+      "sagemaker:ListModelPackages",
+      "sagemaker:UpdateModelPackage",
+    ]
+    resources = [
+      "arn:${local.partition}:sagemaker:${local.region_account}:model-package-group/awsds-${var.env}-model-app-ml",
+      "arn:${local.partition}:sagemaker:${local.region_account}:model-package/awsds-${var.env}-model-app-ml/*",
+    ]
+  }
 }
 
 # --------------------------------------------------------------- the alerts topic (decision 5)

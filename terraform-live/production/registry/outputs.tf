@@ -20,6 +20,11 @@ output "ecr_app_etl_repository_url" {
   value       = module.ecr_app_etl.repository_url
 }
 
+output "ecr_app_ml_repository_url" {
+  description = "The push/pull target for app-ml's image (Stage 17 step 9.5)."
+  value       = module.ecr_app_ml.repository_url
+}
+
 output "ecr_deploy_repository_url" {
   description = "The push/pull target for the deploy image, the deploy runner's job image (Stage 8 steps 3.1 and 4.3)."
   value       = module.ecr_deploy.repository_url
@@ -31,6 +36,7 @@ output "ecr_repository_arns" {
     base    = module.ecr_base.repository_arn
     dev-env = module.ecr_dev_env.repository_arn
     app-etl = module.ecr_app_etl.repository_arn
+    app-ml  = module.ecr_app_ml.repository_arn
     deploy  = module.ecr_deploy.repository_arn
   }
 }

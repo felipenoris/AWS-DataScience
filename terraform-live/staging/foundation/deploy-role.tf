@@ -68,7 +68,8 @@ module "deploy_role" {
 }
 
 # Staging's statements in apply-application.tf's document: the leg's read of the version it deploys,
-# and the chain's machine it starts in staging-test and follows to its end (Stage 10 decision 19).
+# the approval of a version in this account's own registry, and the chain's machine it starts in
+# staging-test and follows to its end (Stage 10 decision 19).
 data "aws_iam_policy_document" "apply_application_in_this_account" {
   # checkov:skip=CKV_AWS_356:sagemaker:ListModelPackages has no resource type, so only "*" matches it; the registry's resource policy names this role
 
@@ -86,6 +87,24 @@ data "aws_iam_policy_document" "apply_application_in_this_account" {
     effect    = "Allow"
     actions   = ["sagemaker:ListModelPackages"]
     resources = ["*"]
+  }
+
+  # Stage 17 step 9.5: app-ml's versions in this account's group (staging/sagemaker/registry.tf), which
+  # the register task proposes PendingManualApproval as the deployment project's role and staging-test
+  # approves. No CreateModelPackage: a task registers (Stage 17 decision 16 (b)).
+  statement {
+    sid    = "ApproveTheModelATaskRegisters"
+    effect = "Allow"
+    actions = [
+      "sagemaker:DescribeModelPackage",
+      "sagemaker:DescribeModelPackageGroup",
+      "sagemaker:ListModelPackages",
+      "sagemaker:UpdateModelPackage",
+    ]
+    resources = [
+      "arn:${local.partition}:sagemaker:${local.region_account}:model-package-group/awsds-${var.env}-model-app-ml",
+      "arn:${local.partition}:sagemaker:${local.region_account}:model-package/awsds-${var.env}-model-app-ml/*",
+    ]
   }
 
   statement {

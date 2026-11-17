@@ -34,12 +34,15 @@ data "aws_kms_alias" "data" {
 }
 
 locals {
-  # The application's workflows, as its manifest's content.workflows names them and the `staging`
+  # The applications' workflows, as each manifest's content.workflows names them and the `staging`
   # stage's bootstrap creates them. The warehouse load is Production's alone: Staging has no
-  # warehouse.
+  # warehouse. app-ml-train runs in its dev project alone (Stage 17 step 9.2).
   applications = {
     "app-etl" = {
       workflows = ["app-etl", "app-etl-train"]
+    }
+    "app-ml" = {
+      workflows = ["app-ml-register", "app-ml-score"]
     }
   }
 
@@ -59,6 +62,20 @@ locals {
       application         = "app-etl"
       workflows           = ["app-etl-train"]
       schedule_expression = "cron(0 7 * * ? *)"
+      schedule_enabled    = false
+    }
+    "app-ml-register" = {
+      definition_template = file("${path.module}/definitions/app-ml-register.asl.json")
+      application         = "app-ml"
+      workflows           = ["app-ml-register"]
+      schedule_expression = "cron(0 8 * * ? *)"
+      schedule_enabled    = false
+    }
+    "app-ml-score" = {
+      definition_template = file("${path.module}/definitions/app-ml-score.asl.json")
+      application         = "app-ml"
+      workflows           = ["app-ml-score"]
+      schedule_expression = "cron(30 8 * * ? *)"
       schedule_enabled    = false
     }
   }
