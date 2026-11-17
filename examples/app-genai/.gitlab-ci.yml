@@ -1,0 +1,416 @@
+# app-genai's pipeline (the infrastructure repository's Stage 17 step 10.2): app-etl's, with no image,
+# no catalog and no model.
+#
+#   every push            the tests, ruff, the workflow lint and Secret Detection on branches
+#   the default branch    and the docs, published to Pages
+#   a tag v<semver>       and the application: the workers' archive built, the bundle made from the tag's
+#                         files and stored in awsds-prod-releases, and the tag's GitLab release, which
+#                         names it; then the promotion, every step of it in another account: a manual gate
+#                         into Staging, Staging's egress with its Bedrock endpoints and its deployment
+#                         project read (the user raises the egress), the CI/CD CLI deploying the bundle
+#                         into the project, the chains app-genai-probe and app-genai-triage run and both
+#                         reports read, a manual gate, and Production, where the deploy's bootstrap
+#                         creates app-genai-triage and runs nothing
+#
+# Which runner takes which job: every job extending .gates-uv carries tag awsds-test, the test runner,
+# whose jobs hold no AWS identity. store-bundle and release are untagged, so only the build runner takes
+# them, a protected runner that serves protected refs alone; bundle carries tag awsds-deploy, the deploy
+# runner, which holds the CI/CD CLI, and runs as awsds-deploy-sandbox-test. The tag v* is protected,
+# created by Maintainers only, which in CE is the whole of the release gate.
+#
+# pip-audit does not run: GATES_UV_PROJECTS is unset. The lock's runtime set is empty, since the tasks
+# import only the boto3 the MWAA Serverless worker carries, and the gate's count of pinned packages ends
+# the job on an empty export (gates-v0.6.0, run on 2026-11-17 against this lock).
+
+include:
+  - project: awsds/ci-gates
+    ref: d0b895c8159e655f6e4af83cc096e37993087c81 # gates-v0.6.0
+    file: [/gates.gitlab-ci.yml, /baselines.gitlab-ci.yml]
+
+stages: [test, build, verify, bundle, release, staging-gate, staging, gate, production]
+
+variables:
+  # The workflow tooling, by commit: its lint reads manifest.yaml and the workflows it names against the
+  # rules of a SageMaker application, offline. The pin moves to the merge of the tooling's branch
+  # claude/lint-transformacao-modelo-bedrock once the user publishes it (Stage 17 step 10.3), whose rule
+  # `operador` refuses by name the Bedrock operators that write what they send and receive to the task
+  # log; the application's tasks call the model with boto3.
+  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/196aceec092649551ed6451796b1c3c7983cfafb.zip"
+  # The instance types a job may ask for: the ceiling DenySageMakerInstanceCeiling carries in the
+  # Workloads SCP and in Sandbox's project boundary, the list terraform-modules/sagemaker-denies holds
+  # (allowed_instance_types) in the infrastructure repository. A copy, since the application's repository
+  # cannot read that module: a change to its list is a change here.
+  LINT_INSTANCE_TYPES: "ml.t3.medium ml.t3.large ml.t3.xlarge ml.m5.large ml.m5.xlarge ml.c5.large ml.c5.xlarge"
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH
+
+test:
+  extends: .gates-uv
+  stage: test
+  script:
+    - uv sync --locked
+    - uv run ruff check
+    - uv run ruff format --check
+    - uv run pytest
+    # The lint of the application: the manifest and its workflows, an InstanceType one of
+    # LINT_INSTANCE_TYPES. The application has no image, so no --image-repository. probes/operator.yaml
+    # is outside the manifest and the lint never reads it: it uses BedrockInvokeModelOperator on purpose,
+    # for Stage 17 step 10.4, and the rule `operador` refuses it from step 10.3's commit.
+    - |
+      set -eu
+      set --
+      for type in $LINT_INSTANCE_TYPES; do set -- "$@" --instance-type "$type"; done
+      uvx --from "$AWSDS_WORKFLOWS" awsds-workflows lint . "$@"
+
+# The package's `__all__` names the four callables alone, and pdoc documents only the submodules a
+# package's `__all__` lists, so each module is named.
+pages:
+  extends: .gates-uv
+  stage: build
+  script:
+    - uv sync --locked
+    - PYTHONPATH=code uv run pdoc app_genai_tasks app_genai_tasks.guardrail app_genai_tasks.triage app_genai_tasks.check app_genai_tasks.probe app_genai_tasks.common --output-directory public
+  pages: true
+  artifacts:
+    paths: [public]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# The workers' archive (D28 class 2b), the one both workflows name: the package of code/ with the
+# prompt and the guardrail's definition beside it, since a callable reads those files from the folder
+# the worker extracts the archive to. It needs only the boto3 the MWAA Serverless worker carries.
+# `bundle` builds nothing, so the archive is built here, into the folder the manifest includes:
+# scripts/build_archive.py writes it with fixed dates and no bytecode, then imports it from an extracted
+# copy on the image's Python, the worker's minor version.
+build-task-code:
+  extends: .gates-uv
+  stage: build
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - python3 scripts/build_archive.py code/app-genai.zip
+  artifacts:
+    paths: [code/app-genai.zip]
+
+# The release's bundle: `bundle` zips the folders the manifest includes, the tag's own files, failing on
+# the warning it prints for a missing include. Nothing is deployed and nothing runs in Sandbox: the
+# release's first run is Staging's leg. The job runs on the deploy runner, which holds the CLI, as
+# awsds-deploy-sandbox-test, the profile the runner's AWS config carries, a member of the `dev` project:
+# `bundle` resolves the project its stage names, and for a project its caller cannot read it logs
+# "Failed to get project connections" and still writes the bundle, so the job fails on that line.
+#
+# The manifest declares no catalog, and a bundle carrying catalog/catalog_export.json would be imported
+# into each target, so the job fails one.
+#
+# DOMAIN_ID, DOMAIN_REGION and DEV_PROJECT_NAME are CI/CD variables of the GitLab project. The CLI
+# refuses a manifest with an unset `${VAR}`, whatever the command and the stage, so every name the
+# manifest reads and this job has no value for carries a placeholder, the stages' MODEL_ID among them.
+bundle:
+  stage: bundle
+  needs: [build-task-code]
+  tags: [awsds-deploy]
+  timeout: 15m
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  variables:
+    AWS_PROFILE: awsds-deploy-sandbox-test
+  script:
+    - |
+      set -eu
+      for name in DOMAIN_ID DOMAIN_REGION DEV_PROJECT_NAME; do
+        eval "value=\${$name:-}"
+        if [ -z "$value" ]; then echo "FATAL: the CI/CD variable $name is not set"; exit 1; fi
+      done
+      for name in $(grep -o '\${[A-Za-z0-9_]*' manifest.yaml | tr -d '${' | sort -u); do
+        eval "value=\${$name:-}"
+        if [ -z "$value" ]; then export "$name=unused-by-bundle"; fi
+      done
+      echo "== who bundles"
+      aws sts get-caller-identity --query Arn --output text
+      echo "== bundle"
+      rc=0
+      aws-smus-cicd-cli bundle --manifest manifest.yaml --targets dev > bundle.log 2>&1 || rc=$?
+      cat bundle.log
+      if [ "$rc" -ne 0 ]; then echo "FATAL: bundle exited $rc"; exit "$rc"; fi
+      if grep -q "Pattern not found" bundle.log; then echo "FATAL: an include of the manifest is missing"; exit 1; fi
+      if grep -q "Failed to get project connections" bundle.log; then echo "FATAL: the role could not read the project $DEV_PROJECT_NAME: is it a member of it?"; exit 1; fi
+      test -s artifacts/app-genai.zip
+      echo "== the bundle's files"
+      python3 -m zipfile -l artifacts/app-genai.zip
+      python3 -c 'import sys, zipfile; extra = [n for n in zipfile.ZipFile(sys.argv[1]).namelist() if n.startswith("catalog/")]; sys.exit(f"FATAL: the bundle carries {extra}, and the manifest declares no catalog" if extra else 0)' artifacts/app-genai.zip
+      sha256sum artifacts/app-genai.zip > artifacts/app-genai.zip.sha256
+      cat artifacts/app-genai.zip.sha256
+      echo "BUNDLE_SHA256=$(cut -d' ' -f1 artifacts/app-genai.zip.sha256)" > bundle.env
+  artifacts:
+    paths: [artifacts/, bundle.log]
+    reports:
+      dotenv: bundle.env
+    expire_in: 1 year
+
+# The release's bundle: the bytes the bundle job made, checked against the SHA256 it computed, copied to
+# awsds-prod-releases with the build runner's own role. The aws CLI image the scan gate uses, by digest.
+store-bundle:
+  stage: release
+  needs: [bundle]
+  image:
+    name: public.ecr.aws/aws-cli/aws-cli:2.37.12@sha256:ce44b800602264c12298bbf3399055a4cefdb9ed4a098abe564afe26e7071bce
+    entrypoint: [""]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - |
+      set -eu
+      echo "$BUNDLE_SHA256  artifacts/app-genai.zip" | sha256sum -c -
+      object="s3://awsds-prod-releases/app-genai/$CI_COMMIT_TAG/app-genai.zip"
+      aws s3 cp artifacts/app-genai.zip "$object"
+      echo "BUNDLE_OBJECT=$object" > release.env
+  artifacts:
+    reports:
+      dotenv: release.env
+
+# The tag's GitLab release, whose notes name the bundle's object and its SHA256: what a leg of the
+# promotion reads. The `release` keyword runs glab, which GitLab's own cli image carries, pinned by digest
+# (v1.120.0, released 2026-09-29); a tag whose bundle failed gets no release. The runner evaluates the
+# description inside double quotes, so the notes hold no backtick, which the shell would run as a command
+# substitution. glab trusts what Go reads from SSL_CERT_DIR beside the image's own bundle: the CA root the
+# runner mounts in every job (runbooks/gitlab.md §K), which the image's store does not hold.
+release:
+  stage: release
+  needs: [store-bundle, bundle]
+  image: registry.gitlab.com/gitlab-org/cli:v1.120.0@sha256:ec2d1cd59b2343fe6270acf67d6ac92b56d9898c5e70cda6395fb617c7373812
+  variables:
+    SSL_CERT_DIR: /etc/gitlab-runner/certs
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - echo "release $CI_COMMIT_TAG, bundle $BUNDLE_OBJECT, sha256 $BUNDLE_SHA256"
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: "app-genai $CI_COMMIT_TAG"
+    description: |
+      Bundle: $BUNDLE_OBJECT
+
+      Bundle SHA256: $BUNDLE_SHA256
+
+# Verification (xiii) of the infrastructure repository's Stage 8, run by hand: the pip-audit tool with
+# the proxy variables removed. No route leaves VPC-SharedServices but the proxy, so the job must fail, and
+# the time it takes says whether it failed or hung until the bound.
+gate-without-proxy:
+  extends: .gates-uv
+  stage: verify
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+  allow_failure: true
+  script:
+    - |
+      set -u
+      start=$(date +%s)
+      rc=0
+      env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy timeout 300 \
+        uvx --from pip-audit==2.10.1 pip-audit --version || rc=$?
+      echo "without the proxy: exit $rc after $(( $(date +%s) - start )) s (124 is the 300 s bound)"
+      [ "$rc" -ne 0 ]
+
+# ------------------------------------------------------------------ the promotion
+#
+# The legs run on the deploy runner, in its deploy image, each job cloning the infrastructure repository
+# at its default branch with the job token and printing the commit it runs: the deploy script and the
+# egress reading live there, never here. The job's AWS identity is the profile it names, one per deploy
+# role on the runner; every account value is read at run time from the project or the slice that owns
+# it. A leg applies no Terraform: the CI/CD CLI deploys the bundle into the account's deployment project,
+# and the chains above its workflows are the infrastructure user's (terraform-live/<env>/chains/).
+# The deploy runner reaches every AWS service VPC-SharedServices holds no endpoint for through the proxy,
+# and STS and the other services of that VPC's endpoints directly, its NO_PROXY naming them. So each job
+# checks the proxy first on the SageMaker API, which that VPC holds no endpoint for, with curl's failure
+# kept inside the substitution: under `set -e` a failed assignment ends the job before the message.
+# The clone trusts the CA root the runner mounts in every job (runbooks/gitlab.md §K), which the deploy
+# image's own store does not hold.
+.promotion:
+  tags: [awsds-deploy]
+  timeout: 45m
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  variables:
+    INFRA_DIR: $CI_PROJECT_DIR/infrastructure
+  before_script:
+    - |
+      set -eu
+      code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://sagemaker.$DOMAIN_REGION.amazonaws.com/" || true)"
+      if [ "$code" = "000" ]; then echo "FATAL: no answer through the proxy: is the hub up (make hub-up)?"; exit 1; fi
+      echo "the proxy answers ($code)"
+      git -c http.sslCAInfo=/etc/gitlab-runner/certs/ca.crt clone --quiet --depth 1 "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/awsds/infrastructure.git" "$INFRA_DIR"
+      echo "awsds/infrastructure at $(git -C "$INFRA_DIR" rev-parse HEAD)"
+
+# The staging gate: a blocking manual job between the release and the Staging leg, the shape of
+# production-gate. Its needs name the release's jobs, never `needs: []`, which would let it start past a
+# failed one; who may start it is whoever may run the protected tag's pipeline. The leg writes into
+# Staging and runs its workflows, so nothing of it starts before the gate.
+staging-gate:
+  stage: staging-gate
+  needs: [release, store-bundle, bundle]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+      when: manual
+  allow_failure: false
+  resource_group: staging
+  script:
+    - echo "$CI_COMMIT_TAG admitted to Staging by $GITLAB_USER_LOGIN"
+
+# Staging's [E] egress/, read before the leg writes and never raised: every shared slice is the user's
+# `make up` / `make down`. check-egress.py reads the slice's state and asks EC2 and Route 53 Resolver
+# whether every endpoint it holds is available and its DNS Firewall association complete. It does not
+# say which groups the slice was raised with, so the job then asks EC2 for the two endpoints of the group
+# bedrock-base, which the workflows call: bedrock-runtime for the model, bedrock for the guardrail task.
+# Then the deployment project: its Tooling environment's values, and the deploy role's membership of it.
+staging-check:
+  extends: .promotion
+  stage: staging
+  needs: [staging-gate]
+  resource_group: staging
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      export AWS_PROFILE=awsds-deploy-staging
+      ./scripts/check-egress.py staging egress
+      for service in bedrock-runtime bedrock; do
+        count="$(aws ec2 describe-vpc-endpoints --filters "Name=service-name,Values=com.amazonaws.$DOMAIN_REGION.$service" Name=vpc-endpoint-state,Values=available --query 'length(VpcEndpoints)' --output text)"
+        if [ "$count" = "0" ]; then echo "FATAL: no available $service endpoint in Staging: the user raises staging/egress with GROUPS=bedrock-base"; exit 1; fi
+        echo "the $service endpoint is available"
+      done
+      ./scripts/deploy-application.py staging --check
+
+# The bundle read as the runner's own role and checked before a file of it is read, then deployed into
+# Staging's deployment project by the CI/CD CLI, as the deploy role (scripts/deploy-application.py of the
+# infrastructure repository): the bundle extracted beside this tag's manifest, the stage's variables read
+# from the project's Tooling environment and MODEL_ID from staging/studio/'s output, the bundle's files
+# under the project's shared prefix, both workflows created or updated. The job fails on the CLI's exit
+# status, on a workflow with no network of the project's and on a workflow it cannot find afterwards;
+# then it records the stage's variables, which the chains pass to each run. The bundle sits beside the
+# clone, never inside it: a job that downloads a file before cloning into infrastructure/ finds that
+# folder not empty.
+staging-deploy:
+  extends: .promotion
+  stage: staging
+  needs: [staging-check, bundle, store-bundle]
+  resource_group: staging
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" "$CI_PROJECT_DIR/bundle.zip" --only-show-errors
+      echo "$BUNDLE_SHA256  $CI_PROJECT_DIR/bundle.zip" | sha256sum -c -
+      AWS_PROFILE=awsds-deploy-staging ./scripts/deploy-application.py staging --manifest "$CI_PROJECT_DIR/manifest.yaml" --bundle "$CI_PROJECT_DIR/bundle.zip" --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --log "$CI_PROJECT_DIR/staging-deploy.log" --dotenv "$CI_PROJECT_DIR/staging.env"
+  artifacts:
+    when: always
+    paths: [staging-deploy.log]
+    reports:
+      dotenv: staging.env
+    expire_in: 1 year
+
+# The deployed artifact run in the account, the release's first run anywhere, each chain's machine
+# started by the leg and followed to its end, the schedules being DISABLED in Staging: app-genai-probe
+# first, one model call without a guardrail, which succeeds when the boundary refuses it
+# (EXPECT_UNGUARDED is `refused`); then app-genai-triage, whose first run creates the application's
+# guardrail in the account and publishes its version. A machine finds its workflow by name and passes
+# the run the variables staging-deploy recorded. The leg then reads both reports under the project's
+# shared prefix as another principal: the probe's outcome and the triage's verdict. An execution's name
+# carries the job's id: Step Functions refuses a name an ended execution of the machine holds, so a
+# retry names its executions anew.
+staging-test:
+  extends: .promotion
+  stage: staging
+  needs: [staging-deploy]
+  resource_group: staging
+  script:
+    - |
+      set -eu
+      export AWS_PROFILE=awsds-deploy-staging
+      account="$(aws sts get-caller-identity --query Account --output text)"
+      for chain in app-genai-probe app-genai-triage; do
+        machine="arn:aws:states:$DOMAIN_REGION:$account:stateMachine:awsds-staging-chain-$chain"
+        execution="$(aws stepfunctions start-execution --state-machine-arn "$machine" --name "$(echo "$CI_COMMIT_TAG-$CI_JOB_ID-$chain" | tr . -)" --query executionArn --output text)"
+        echo "started $execution"
+        status=RUNNING
+        while [ "$status" = "RUNNING" ]; do
+          sleep 60
+          status="$(aws stepfunctions describe-execution --execution-arn "$execution" --query status --output text)"
+          echo "$(date -u +%H:%M:%S) $chain $status"
+        done
+        aws stepfunctions describe-execution --execution-arn "$execution" --output json > "execution-$chain.json"
+        if [ "$status" != "SUCCEEDED" ]; then
+          aws stepfunctions get-execution-history --execution-arn "$execution" --reverse-order --max-items 20 --output json > "history-$chain.json"
+          echo "FATAL: the chain $chain ended $status"; cat "history-$chain.json"; exit 1
+        fi
+      done
+      for report in probe-report triage-report; do
+        echo "== $report.json, under the project's shared prefix"
+        aws s3 cp "${STAGING_SHARED_URI}app-genai/outbox/$report.json" "$report.json" --only-show-errors
+        cat "$report.json"
+      done
+      grep -q '"outcome": "refused"' probe-report.json || { echo "FATAL: the call without a guardrail was not refused"; exit 1; }
+      grep -q '"passed": true' triage-report.json || { echo "FATAL: the triage report does not read passed"; exit 1; }
+  artifacts:
+    when: always
+    paths: [execution-*.json, history-*.json, probe-report.json, triage-report.json]
+    expire_in: 1 year
+
+# The pipeline destroys nothing in Staging, as in Production. The project, its workflows, the guardrail
+# and the reports stay at rest, and the user's `make down ENV=staging` takes egress/ down.
+
+# Production's deployment project read beside Staging's results before the gate: its Tooling
+# environment's values, and the deploy role's membership of it. A deploy role that is no member fails
+# the job here, naming the grant an owner of the project makes, so the gate is asked of nobody while the
+# deploy behind it would stop at its first call.
+production-check:
+  extends: .promotion
+  stage: gate
+  needs: [staging-test, bundle]
+  resource_group: production
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      AWS_PROFILE=awsds-deploy-prod ./scripts/deploy-application.py production --check
+
+# The gate, a blocking manual job whose needs name the Staging leg's jobs, never `needs: []`, which would
+# let it start past a failed leg. Who may start a release is the protected tag.
+production-gate:
+  stage: gate
+  needs: [staging-test, production-check]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+      when: manual
+  allow_failure: false
+  resource_group: production
+  script:
+    - echo "$CI_COMMIT_TAG promoted by $GITLAB_USER_LOGIN"
+
+# The same bundle, nothing rebuilt, deployed into Production's deployment project as Staging's was, with
+# MODEL_ID from production/studio/'s output. The deploy needs production/workloads-egress/ raised by the
+# user, which the job reads first and never raises. The `prod` stage's bootstrap creates
+# app-genai-triage and runs nothing: Production's first run is started from its chain, outside the
+# pipeline, and creates the application's guardrail there.
+production-deploy:
+  extends: .promotion
+  stage: production
+  needs: [production-gate, bundle, store-bundle]
+  resource_group: production
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      AWS_PROFILE=awsds-deploy-prod ./scripts/check-egress.py production workloads-egress
+      AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" "$CI_PROJECT_DIR/bundle.zip" --only-show-errors
+      echo "$BUNDLE_SHA256  $CI_PROJECT_DIR/bundle.zip" | sha256sum -c -
+      AWS_PROFILE=awsds-deploy-prod ./scripts/deploy-application.py production --manifest "$CI_PROJECT_DIR/manifest.yaml" --bundle "$CI_PROJECT_DIR/bundle.zip" --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --log "$CI_PROJECT_DIR/production-deploy.log" --dotenv "$CI_PROJECT_DIR/production.env"
+  artifacts:
+    when: always
+    paths: [production-deploy.log]
+    reports:
+      dotenv: production.env
+    expire_in: 1 year

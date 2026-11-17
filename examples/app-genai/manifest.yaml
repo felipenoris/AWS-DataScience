@@ -1,0 +1,128 @@
+# app-genai's manifest (the infrastructure repository's Stage 17 step 10.2): app-etl's form, with no
+# image, no job, no Glue job and no catalog item. The storage items are folders of this tree, each
+# synced by `deploy` to its stage's `targetDirectory` under the project's shared prefix: the workers'
+# package, which the pipeline builds before the bundle, the sample the triage reads from `inbox/`, and
+# the workflows. An include names a file or a folder, never a glob, which `bundle` (CLI 1.0.9) does not
+# expand.
+#
+# Three stages, one account each: `dev`, the Sandbox project the application is developed in, and
+# `staging` and `prod`, each account's deployment project, which the pipeline's legs deploy the bundle
+# into. Each stage's bootstrap creates app-genai-triage, and `dev` and `staging` create app-genai-probe,
+# whose run reads whether the stage refuses a model call without a guardrail; no bootstrap runs a
+# workflow.
+#
+# A stage reads `${VAR}` from the shell, every stage's whatever the target, so a caller exports each
+# name: the developer `DEV_MODEL_ID`, the ARN of the `dev` project's application inference profile;
+# the pipeline's legs a target's MODEL_ID from the outputs of its `<env>/studio/` slice, with a
+# placeholder for the other stages' names. Each `{env.VAR}` a workflow names is a stage variable of
+# every stage: the CLI writes it into the deployed definition as a parameter and fills it on a run it
+# starts, and a chain's machine fills it from the record the leg keeps of the last deploy.
+# EXPECT_UNGUARDED is the outcome app-genai-probe expects: `answered` in `dev` until the deny of an
+# unguarded call is applied in Sandbox (Stage 17 step 10.4), `refused` in the targets, where the
+# boundary asks every invocation for a published guardrail; no workflow reads it in `prod`.
+applicationName: app-genai
+
+content:
+  storage:
+    - name: code
+      include:
+        - code/app-genai.zip
+    - name: samples
+      include:
+        - "samples/"
+    - name: workflows
+      include:
+        - "workflows/"
+  workflows:
+    - workflowName: app-genai-triage
+      connectionName: default.workflow_serverless
+      code: code/app-genai.zip
+    - workflowName: app-genai-probe
+      connectionName: default.workflow_serverless
+      code: code/app-genai.zip
+
+stages:
+  dev:
+    stage: DEV
+    domain:
+      id: ${DOMAIN_ID}
+      region: ${DOMAIN_REGION}
+    project:
+      name: ${DEV_PROJECT_NAME}
+    environment_variables:
+      MODEL_ID: ${DEV_MODEL_ID}
+      MIN_ACCURACY: "0.80"
+      EXPECT_UNGUARDED: answered
+    bootstrap:
+      actions:
+        - type: workflow.create
+          workflowName: app-genai-triage
+        - type: workflow.create
+          workflowName: app-genai-probe
+    deployment_configuration:
+      storage:
+        - name: code
+          connectionName: default.s3_shared
+          targetDirectory: app-genai/code
+        - name: samples
+          connectionName: default.s3_shared
+          targetDirectory: app-genai/inbox
+        - name: workflows
+          connectionName: default.s3_shared
+          targetDirectory: app-genai/workflows
+
+  staging:
+    stage: STAGING
+    domain:
+      id: ${DOMAIN_ID}
+      region: ${DOMAIN_REGION}
+    project:
+      name: deploy-staging
+    environment_variables:
+      MODEL_ID: ${STAGING_MODEL_ID}
+      MIN_ACCURACY: "0.80"
+      EXPECT_UNGUARDED: refused
+    bootstrap:
+      actions:
+        - type: workflow.create
+          workflowName: app-genai-triage
+        - type: workflow.create
+          workflowName: app-genai-probe
+    deployment_configuration:
+      storage:
+        - name: code
+          connectionName: default.s3_shared
+          targetDirectory: app-genai/code
+        - name: samples
+          connectionName: default.s3_shared
+          targetDirectory: app-genai/inbox
+        - name: workflows
+          connectionName: default.s3_shared
+          targetDirectory: app-genai/workflows
+
+  prod:
+    stage: PROD
+    domain:
+      id: ${DOMAIN_ID}
+      region: ${DOMAIN_REGION}
+    project:
+      name: deploy-production
+    environment_variables:
+      MODEL_ID: ${PROD_MODEL_ID}
+      MIN_ACCURACY: "0.80"
+      EXPECT_UNGUARDED: refused
+    bootstrap:
+      actions:
+        - type: workflow.create
+          workflowName: app-genai-triage
+    deployment_configuration:
+      storage:
+        - name: code
+          connectionName: default.s3_shared
+          targetDirectory: app-genai/code
+        - name: samples
+          connectionName: default.s3_shared
+          targetDirectory: app-genai/inbox
+        - name: workflows
+          connectionName: default.s3_shared
+          targetDirectory: app-genai/workflows

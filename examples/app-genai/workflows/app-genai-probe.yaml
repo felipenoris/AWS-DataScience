@@ -1,0 +1,13 @@
+# {"unguarded":{"x":120,"y":200}}
+app-genai-probe:
+  dag_id: app-genai-probe
+  tasks:
+    unguarded:
+      operator: airflow.providers.standard.operators.python.PythonOperator
+      python_callable: app_genai_tasks.probe_unguarded
+      op_kwargs:
+        model: "{env.MODEL_ID}"
+        expect: "{env.EXPECT_UNGUARDED}"
+        report: "{proj.connection.default.s3_shared.s3Uri}app-genai/outbox/probe-report.json"
+        region: "{domain.region}"
+      retries: 0
