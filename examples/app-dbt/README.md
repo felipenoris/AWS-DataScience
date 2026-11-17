@@ -106,11 +106,12 @@ over the recorded events; the Glue script over doubles; and the stored mode of e
 is committed with the executable bit, `git update-index --chmod=+x <file>` where the file system keeps
 none: `package-task` copies the mode into the archive.
 
-The lint and the archive run from this folder with `awsds-workflows` at the commit the template's
-pipeline pins:
+The lint and the archive run from this folder with `awsds-workflows` at `1a50ceb`, the merge of its
+pull request #27, whose rule `job` leaves a processing task's isolation to the task (Stage 20 step
+6.4):
 
 ```bash
-TOOL="awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/37cb5a6260c8348cc208988e42090caf42a3a207.zip"
+TOOL="awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/1a50ceb15efe76abd0415758975467f89a11548b.zip"
 uvx --from "$TOOL" awsds-workflows lint .
 uvx --from "$TOOL" awsds-workflows package-task . code/app-dbt.zip --platform x86_64-manylinux_2_28 --include code/run-dbt.sh
 python3 -c 'import sys, zipfile; z = zipfile.ZipFile(sys.argv[1]); print(len(z.infolist()), sum(i.file_size for i in z.infolist()), [oct(z.getinfo(n).external_attr >> 16) for n in ("run-dbt.sh", "app_dbt/bin/dbt")])' code/app-dbt.zip

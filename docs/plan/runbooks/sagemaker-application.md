@@ -839,8 +839,9 @@ reason beside it:
   its own.
 - A SageMaker job's `config` is written whole, with the D13 settings the portal's forms cannot express:
   `NetworkConfig` with `{env.SUBNET_AZ1}`, `{env.SUBNET_AZ2}` and `{env.PROJECT_SG}`,
-  `EnableNetworkIsolation: true` (the boundary asks it of every job but a processing job, and the lint's
-  `job` rule of a processing task too, until `awsds-workflows` takes Stage 20 step 6.4's item),
+  `EnableNetworkIsolation: true` (the boundary asks it of every job but a processing job; the lint's `job`
+  rule at the template's pin `196acee` asks it of a processing task too, and from `1a50ceb`, Stage 20
+  step 6.4, leaves it to the task),
   `EnableInterContainerTrafficEncryption: true`, `VolumeKmsKeyId` and the output's `KmsKeyId`
   `{env.PROJECT_KEY_ARN}` (an output without it lands under the S3-managed key, `EXC-22`), an `InstanceType` of the ceiling the lint receives (`ml.t3.medium` to `ml.c5.xlarge`
   today), `ImageUri` `{env.JOB_IMAGE_URI}` or a `TrainingImage` of an algorithm repository the lint
