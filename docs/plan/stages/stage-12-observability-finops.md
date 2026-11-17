@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **in progress since 2026-10-18** ([log](../../log/log-stage-12-observability-finops.md)). Step 10's `./aws/observability.py` written 2026-10-17. **Built in Production 2026-10-18**: `production/observability/` (the hub dashboard, the proxy log's two metric filters, the refusal alarm, the VPCs-per-Region quota alarm) and the CloudWatch statement on `awsds-prod-alerts`, both re-planning `No changes`. **`sandbox/observability/` was applied the same day by the orchestrating session** (9 added, `No changes` after), the topic's e-mail subscription confirmed by the user on 2026-10-19, so `OB-3` passes in Sandbox. 4.2 read the bill from the accounts with a profile: **at least USD 53.31 in August and 74.48 in September**, above D12's 50, and the model is rewritten from it. `OB-3` fails since the first wired alarm, by design, until the three `[D]` hosts' alarms are wired (`EXC-19`); Sandbox's two warehouse alarms notify `awsds-sandbox-alerts` since PR #181's apply. Scoped against [D38](../decisions/D38-single-egress-hub.md): no NAT panels, and three lines the hub creates — the proxy's access log and its refusal rate, the DNS Firewall's per-query charge, the peering bytes. 5.2 read the bill's usage types on 2026-10-20: no letter moves (decision due 3, the user's). **5.3 done 2026-11-10**: GitLab's data volume is 20 GiB, through `runbooks/gitlab.md` §B's destroy, re-apply and restore, the restored instance reading what it read before |
+| **Status** | **in progress since 2026-10-18** ([log](../../log/log-stage-12-observability-finops.md)). Step 10's `./aws/observability.py` written 2026-10-17. **Built in Production 2026-10-18**: `production/observability/` (the hub dashboard, the proxy log's two metric filters, the refusal alarm, the VPCs-per-Region quota alarm) and the CloudWatch statement on `awsds-prod-alerts`, both re-planning `No changes`. **`sandbox/observability/` was applied the same day by the orchestrating session** (9 added, `No changes` after), the topic's e-mail subscription confirmed by the user on 2026-10-19, so `OB-3` passes in Sandbox. 4.2 read the bill from the accounts with a profile: **at least USD 53.31 in August and 74.48 in September**, above D12's 50, and the model is rewritten from it. `OB-3` fails since the first wired alarm, by design, until the three `[D]` hosts' alarms are wired (`EXC-19`); Sandbox's two warehouse alarms notify `awsds-sandbox-alerts` since PR #181's apply. Scoped against [D38](../decisions/D38-single-egress-hub.md): no NAT panels, and three lines the hub creates — the proxy's access log and its refusal rate, the DNS Firewall's per-query charge, the peering bytes. 5.2 read the bill's usage types on 2026-10-20: no letter moves (decision due 3, the user's). **5.3 done 2026-11-10**: GitLab's data volume is 20 GiB, through `runbooks/gitlab.md` §B's destroy, re-apply and restore, the restored instance reading what it read before **Decision due 1 taken 2026-11-17 as (b)**, on a card in the review of the plan's open decisions: the proxy status-check alarm's missing data `notBreaching`, written with 2.2's `[D]` half. |
 | **Prerequisites** | any stage that created resources — and **one real invoice**, met: the August and September bills, read from Cost Explorer in every account with a CLI profile (2026-10-14 for Config, 2026-10-18 in full). Management, Log Archive and Audit hold no profile and are unread |
 | **Consumes** | [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | nothing new crosses an account boundary. What it **retires** is a set of estimates |
@@ -94,7 +94,8 @@ it is not worth creating.
   **The `[D]` half is owed at the next hub session**: an SNS action on `awsds-prod-vpn-health`,
   `awsds-prod-proxy-status-check` and `awsds-prod-gitlab-status-check`, applied in `production/vpn/`,
   `production/proxy/` and `production/tooling/` with the hosts started, since a `[D]` apply re-plans the
-  SSM-resolved AMI and may replace the host; the proxy's alarm waits on decision due 1 first. Sandbox's
+  SSM-resolved AMI and may replace the host; the proxy's alarm takes `notBreaching` in the same apply
+  (decision due 1 (b), taken 2026-11-17). Sandbox's
   two warehouse alarms take `awsds-sandbox-alerts` since 2026-10-18 (PR #181, `sandbox/warehouse/`
   reading this stage's `alerts_topic_arn`), applied by the orchestrating session. **The
   composite is not built**: no account holds both halves. The hub's state is Production's and a spoke
@@ -439,6 +440,10 @@ and this one is not. **Explanation:** the checks are cheap because the facts are
    than a failure, and the failure the `breaching` setting guarded against, a session that needs a
    stopped proxy, is already an error: a spoke's `make up` refuses while the proxy is stopped
    (`scripts/slices.py`, 6c step 7.2 as 6g decision 2 left it).
+   **Taken 2026-11-17 by the user as (b)**, the option *"Dados ausentes como OK"* on a card at 22:52 UTC:
+   `production/proxy/main.tf`'s `treat_missing_data` becomes `notBreaching` in 2.2's `[D]` apply, with the
+   alarm's action, and `production/observability/`'s dashboard text, which says the alarm reads `ALARM`
+   whenever the proxy is stopped, changes with it.
 2. **D12's revision trigger fired** (2.1, 4.2): the bill exceeded the projection in August and in
    September. Raising the ceiling, cutting the session hours that dominate the bill, or wiring the budget
    (6e decision 6) are D12's to choose, the user's.
