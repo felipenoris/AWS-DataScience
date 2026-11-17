@@ -1,11 +1,13 @@
 # The workflows grant on the deployment project's role (Stage 19 step 4.4): the statements
 # sandbox/workflows/ attaches to every Sandbox project role, whose reasoning and measurements are
-# that slice's main.tf; the same pair for the training job app-etl-train creates; where
-# project-roles.tf sets publishing_starts_the_source, the publishing task's start of the project's
-# data source; and where it sets publishing_creates_the_data_product, the task's creation and
-# revision of the product's data product. In a deployment project the role is every workflow's
-# execution role and the role of the Glue, processing and training jobs its operators create (Stage
-# 18 step 4.4: without the grant the first run was refused glue:GetJob; SUP-267).
+# that slice's main.tf; the same pair for the training job app-etl-train creates; the pair for the
+# transform job and the tag of the model app-ml's tasks create, with the registration of app-ml's
+# model versions, which the role cannot approve (Stage 17 step 9.5); where project-roles.tf sets
+# publishing_starts_the_source, the publishing task's start of the project's data source; and where
+# it sets publishing_creates_the_data_product, the task's creation and revision of the product's data
+# product. In a deployment project the role is every workflow's execution role and the role of the
+# Glue, processing, training and transform jobs its operators create (Stage 18 step 4.4: without the
+# grant the first run was refused glue:GetJob; SUP-267).
 #
 # The policy exists once the blueprints are enabled, since its last statement can name the domain.
 # It is attached to the roles project-roles.tf names.
@@ -13,6 +15,12 @@
 locals {
   processing_jobs = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:processing-job/*"
   training_jobs   = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:training-job/*"
+  transform_jobs  = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:transform-job/*"
+  models          = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:model/*"
+
+  # app-ml's package group in this account's registry (<env>/sagemaker/registry.tf) and its versions.
+  app_ml_model_group    = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:model-package-group/awsds-${var.env}-model-app-ml"
+  app_ml_model_versions = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:model-package/awsds-${var.env}-model-app-ml/*"
 
   # A Glue job named for the caller's project, <app>-<project id> (D41): $${ keeps the policy
   # variable out of Terraform's interpolation.
@@ -24,7 +32,7 @@ locals {
     var.publishing_creates_the_data_product ? "creates or revises the product's data product" : "",
   ])
   workflows_description = join("", [
-    "sandbox/workflows/'s grant on a deployment project's role: a workflow's operators check a Glue, processing or training job name before creating the job",
+    "sandbox/workflows/'s grant on a deployment project's role: a workflow's operators check a Glue, processing, training or transform job name before creating the job, a task tags a model with the caller's project and registers app-ml's model versions, which the role cannot approve",
     length(local.publishing_steps) > 0 ? ", and the publishing task ${join(" and ", local.publishing_steps)}" : "",
     ".",
   ])
@@ -123,6 +131,98 @@ data "aws_iam_policy_document" "workflows" {
       variable = "aws:TagKeys"
       values   = ["AmazonDataZoneProject"]
     }
+  }
+
+  # SageMakerTransformOperator describes the job name before CreateTransformJob (SUP-372), and the
+  # blueprint's DescribeTransformJob, like its DescribeTrainingJob, requires the caller's project tag.
+  statement {
+    sid       = "DescribeATransformJobNoProjectHolds"
+    effect    = "Allow"
+    actions   = ["sagemaker:DescribeTransformJob"]
+    resources = [local.transform_jobs]
+
+    condition {
+      test     = "Null"
+      variable = "aws:ResourceTag/AmazonDataZoneProject"
+      values   = ["true"]
+    }
+  }
+
+  # The transform job's tags, authorized as sagemaker:AddTags under the same conditions as the
+  # processing job's.
+  statement {
+    sid       = "TagATransformJobWithTheCallersProject"
+    effect    = "Allow"
+    actions   = ["sagemaker:AddTags"]
+    resources = [local.transform_jobs]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/AmazonDataZoneProject"
+      values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
+    }
+
+    condition {
+      test     = "StringEqualsIfExists"
+      variable = "aws:ResourceTag/AmazonDataZoneProject"
+      values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
+    }
+
+    condition {
+      test     = "ForAllValues:StringEquals"
+      variable = "aws:TagKeys"
+      values   = ["AmazonDataZoneProject"]
+    }
+  }
+
+  # The model a task creates with the caller's project tag (app-ml's resolve), whose tags are
+  # authorized as sagemaker:AddTags under the same conditions.
+  statement {
+    sid       = "TagAModelWithTheCallersProject"
+    effect    = "Allow"
+    actions   = ["sagemaker:AddTags"]
+    resources = [local.models]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/AmazonDataZoneProject"
+      values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
+    }
+
+    condition {
+      test     = "StringEqualsIfExists"
+      variable = "aws:ResourceTag/AmazonDataZoneProject"
+      values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
+    }
+
+    condition {
+      test     = "ForAllValues:StringEquals"
+      variable = "aws:TagKeys"
+      values   = ["AmazonDataZoneProject"]
+    }
+  }
+
+  # app-ml's register task proposes a version PendingManualApproval in this account's group, and its
+  # register and resolve tasks read the group's versions (Stage 17 decision 16 (b)).
+  statement {
+    sid    = "RegisterAndReadTheModelVersions"
+    effect = "Allow"
+    actions = [
+      "sagemaker:CreateModelPackage",
+      "sagemaker:DescribeModelPackage",
+      "sagemaker:ListModelPackages",
+    ]
+    resources = [local.app_ml_model_group, local.app_ml_model_versions]
+  }
+
+  # The approval is the deploy role's. AWS's SageMakerStudioProjectRoleMachineLearningPolicy allows
+  # UpdateModelPackage on a version that carries the role's AmazonDataZoneProject tag (read by
+  # simulation 2026-11-17 as Production's project role), so the refusal is a Deny (Lesson 72).
+  statement {
+    sid       = "DenyApprovingAModelVersion"
+    effect    = "Deny"
+    actions   = ["sagemaker:UpdateModelPackage"]
+    resources = [local.app_ml_model_versions]
   }
 
   # GetJob on a Glue job that carries no project tag and whose name ends with the caller's project id.

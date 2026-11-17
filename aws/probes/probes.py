@@ -367,9 +367,12 @@ probe("ou", "staging", "deny", "ValidationException|ResourceNotFound|does not ex
 # --- The Stage 9 step 3.5 and 3.7 amendment - sagemaker-denies' five statements and
 #     DenySageMakerServerlessInference in the Workloads document. Each deny row breaks one
 #     statement and keeps the other four, so a refusal names the statement it was written for
-#     (AWS names the policy, never the Sid - Lesson 20); the two allow rows are the same calls
-#     with nothing broken, which is what proves the document leaves a compliant job and an
-#     instance-backed endpoint configuration alone. The compliant job is also the reading of
+#     (AWS names the policy, never the Sid - Lesson 20); the allow rows are the same calls with
+#     nothing broken, which is what proves the document leaves a compliant job and an
+#     instance-backed endpoint configuration alone. The processing job without isolation is an
+#     allow row: DenySageMakerJobsWithoutNetworkIsolation leaves CreateProcessingJob out (Stage 20
+#     decision 13), and the training job without isolation below is the row that exercises the
+#     statement. The compliant job is also the reading of
 #     sagemaker:VolumeKmsKey, the key's name in the module, where AWS's reference lists
 #     sagemaker:VolumeKmsKeyArn (read 2026-10-16): a name that stopped populating would turn that
 #     row into a deny.
@@ -422,8 +425,8 @@ probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
 probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
       "workloads: CreateProcessingJob on ml.m5.2xlarge (DenySageMakerInstanceCeiling)",
       _processing_job("ml.m5.2xlarge", True, "true", "true", True))
-probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
-      "workloads: CreateProcessingJob not isolated (DenySageMakerJobsWithoutNetworkIsolation)",
+probe("ou", "prod", "allow", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateProcessingJob not isolated still authorized (Stage 20 decision 13 contrast)",
       _processing_job("ml.m5.large", True, "false", "true", True))
 probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
       "workloads: CreateProcessingJob unencrypted between containers (DenySageMakerJobsWithoutInterContainerEncryption)",
@@ -453,8 +456,9 @@ probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
 #     precede authorization, and leaves the row untested.
 
 
-def _training_job(instances):
-    """create-training-job argv with the four settings beside the ceiling met."""
+def _training_job(instances, isolation=True):
+    """create-training-job argv with the VPC, the encryption between containers and the volume key
+    met, and EnableNetworkIsolation sent as the caller chooses."""
     resources = ('{"InstanceCount":1,' + _instances(instances)
                  + ',"VolumeSizeInGB":1,"VolumeKmsKeyId":"' + _JOB_KEY + '"}')
     return ["sagemaker", "create-training-job", "--training-job-name", "awsds-canary-probe",
@@ -466,7 +470,8 @@ def _training_job(instances):
             "--resource-config", resources,
             "--stopping-condition", '{"MaxRuntimeInSeconds":3600}',
             "--vpc-config", _JOB_VPC_CONFIG,
-            "--enable-network-isolation", "--enable-inter-container-traffic-encryption",
+            "--enable-network-isolation" if isolation else "--no-enable-network-isolation",
+            "--enable-inter-container-traffic-encryption",
             "--region", "us-west-2"]
 
 
@@ -482,6 +487,9 @@ probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
 probe("ou", "prod", "allow", _JOB_AUTHORIZED, "blocked",
       "workloads: compliant sagemaker:CreateTrainingJob listing ml.m5.large still authorized (3.5 contrast)",
       _training_job(["ml.m5.large"]))
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateTrainingJob not isolated (DenySageMakerJobsWithoutNetworkIsolation)",
+      _training_job(["ml.m5.large"], isolation=False))
 probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
       "workloads: CreateTrainingJob on ml.m5.2xlarge (DenySageMakerInstanceCeiling, the training control)",
       _training_job("ml.m5.2xlarge"))
