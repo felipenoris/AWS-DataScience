@@ -974,7 +974,11 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     create has to carry. A revision of those policies that closes it ends the question for that
     grant ([`upstream-releases.md`](upstream-releases.md) reads them). Sandbox holds no Premium
     Support subscription (read 2026-11-14, Stage 19 decision 17 (d)), so no support case reports it
-    from here.
+    from here. One candidate is unmeasured: a role the customer provides at the project's creation, which
+    the CI/CD CLI's manifest carries as `project.role.arn` and `CreateProject` takes as
+    `--project-execution-role` (the laptop's AWS CLI, read 2026-11-17), while AWS's page on IAM-based
+    domains says an Identity Center domain uses the project role. A create is the only probe, so it is read once in the sitting that creates
+    `app-ml-dev` (Stage 17 step 9.6), never by a project made for it.
 
 ---
 
