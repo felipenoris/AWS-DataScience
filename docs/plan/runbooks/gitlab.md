@@ -564,7 +564,7 @@ Stage 8 step 2.2 replaced everything on `awsds/app-etl`'s `main` with [`examples
    git -C "$HOME/tmp/app-etl" tag v0.1.0 && git -C "$HOME/tmp/app-etl" push origin v0.1.0
    ```
 
-   The `build-image` job's last line, `== pushed <reference>@sha256:…`, carries the digest that `terraform-live/<env>/app/app-etl/release.tf` records (Stage 8 step 2.4).
+   The `build-image` job's last line, `== pushed <reference>@sha256:…`, carries the digest, which the job hands to the scan gate and to the bundle job as a dotenv report (`examples/app-etl/.gitlab-ci.yml`).
 
 ### The deploy runner
 

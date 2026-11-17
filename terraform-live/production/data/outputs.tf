@@ -42,11 +42,6 @@ output "workgroup_name" {
   value       = aws_athena_workgroup.this.name
 }
 
-output "app_outputs_database" {
-  description = "The local Glue database applications write their tables to (step 1.3)."
-  value       = aws_glue_catalog_database.app_outputs.name
-}
-
 # The governed source an application's Glue job reads through Lake Formation's full-table-access mode,
 # on an Iceberg catalog over the lake account's Glue catalog (Stage 9 2.4's recipe): the catalog's id,
 # the curated database and table, and the curated bucket its warehouse setting names. The application

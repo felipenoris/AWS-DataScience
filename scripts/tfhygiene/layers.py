@@ -234,19 +234,10 @@ RANKS = {
     # retired at 6.5). Above `egress` (50): it needs the SSM endpoints for its only door and reads
     # `egress/`'s `no_proxy` output at apply time, which a destroyed slice fails by name.
     "runners": 57,
-    # Stage 8 step 2.4 - an application slice, one folder further down (conventions 6:
-    # terraform-live/<env>/app/<app>/), [E] in every account. Above `egress` (50), so `down` destroys
-    # the application before the endpoints its jobs log through; Stage 10's `orchestration` ranks
-    # above it, so `down` removes a workflow before the application the workflow starts.
-    "app/app-etl": 58,
-    # Stage 10 step 1.4 - the orchestration/ slices, [E] in Staging and Production: the workflows and
-    # the chain layer that starts them. Above `app/app-etl` (58), so `down` removes a schedule and the
-    # workflows it starts before the application slice's Glue job they run; `up` refuses it (refusal 7).
-    "orchestration": 59,
     "probes": 60,
     # Stage 19 step 4.11 - the chain layer above a deployment project's workflows, [P] in Staging
-    # and Production. It reads studio/, data/ and foundation/, and takes orchestration/'s place
-    # once the CI/CD CLI deploys the application; [P], so nothing in up/down acts on the number.
+    # and Production. It reads studio/, data/ and foundation/; [P], so nothing in up/down acts on the
+    # number.
     "chains": 61,
     # Stage 12 step 1 - the dashboards and the alarms no other slice owns, one [P] slice per account
     # with something to watch. It reads the [P] states of the slices it watches and names the [D]
@@ -380,27 +371,6 @@ SLICES = [
         EPHEMERAL,
         "8 interface endpoints (St.9 3.3a, St.19 4.4) + DNS Firewall - no NAT",
         0.080,
-    ),
-    # Stage 8 steps 3.2 and 3.6 - the application's Glue job, applied by the pipeline with the release it
-    # promotes (refusal 7) and destroyed by Staging's `make down`. A job bills per run, nothing at rest.
-    Slice("staging", "app/app-etl", EPHEMERAL, "app-etl's Glue job (St.8 3.2), pipeline-applied"),
-    Slice(
-        "production", "app/app-etl", EPHEMERAL, "app-etl's Glue job (St.8 3.6), pipeline-applied"
-    ),
-    # Stage 10 step 1.4 - the MWAA Serverless workflows with their roles and log groups, and the chain
-    # layer above them, applied by the pipeline. Nothing here meters by the hour: a run bills
-    # task-hours and a chain's execution its state transitions (the stage's Cost section).
-    Slice(
-        "staging",
-        "orchestration",
-        EPHEMERAL,
-        "workflows + the chain layer (St.10), pipeline-applied",
-    ),
-    Slice(
-        "production",
-        "orchestration",
-        EPHEMERAL,
-        "workflows + the chain layer (St.10), pipeline-applied",
     ),
     # Stage 19 step 4.11 - the chain layer above the workflows the CI/CD CLI creates in each
     # deployment project: state machines, schedules and failure rules, which bill nothing at rest.
@@ -758,12 +728,8 @@ NEVER_ANY_TARGET_SLICE_NAMES = {"bootstrap"}
 # Refusal 6 is the hub's and lives in slices.py (Stage 7 step 1.6): ENV=production leaves the hub
 # pair to hub-up and hub-down.
 #
-# Refusal 7 - Stage 8 step 2.4. `up` never applies an application or orchestration slice: its applier
-# is the pipeline, which passes the release it promotes. A `make up` for an unrelated session would
-# deploy the recorded release outside it, and an orchestration slice's schedule would start firing.
-# `down` destroys both normally (Stage 10 step 1.4 relies on it).
-APPLIED_BY_THEIR_OWN_HAND = {"orchestration"}
-APPLICATION_PARENT = "app"
+# Refusal 7 held the application and orchestration slices from `up`, the pipeline's to apply. No
+# account holds one since Stage 19 item 31: the CI/CD CLI deploys an application through the API.
 #
 # Refusal 9 - an [E] slice held from `up` while the [P] state it reads does not exist, keyed by
 # (account, slice) like NEVER_DESTROY, with the reason printed: a `make up` would otherwise stop at
@@ -809,12 +775,14 @@ def pipeline_refusal(account: str, slice_name: str, profile: str) -> str | None:
     decision 19 (c)). Neither deploy role holds state access, which refuses the same writes in IAM;
     this says so before anything runs.
 
-    Refusal 10 (Stage 8 decision 27, 2026-10-24): in a deployment target it acts on an application
-    slice and the orchestration slice alone. Every shared slice, the egress slices first, is the user's
-    `make up`/`make down` in every account: a leg's `make up ENV=staging ONLY=egress` recorded about
-    200 AWS Config items per cycle, about 0.60 USD on every pipeline run, and its `make down
-    ENV=staging` destroyed what the user or another application had raised in the one state they
-    share. The leg reads the egress slice instead (scripts/check-egress.py).
+    Refusal 10: in a deployment target it applies no slice either. The leg deploys through the CI/CD
+    CLI, which calls the API (Stage 19 item 31), and every shared slice, the egress slices first, is
+    the user's `make up`/`make down` in every account (Stage 8 decision 27, 2026-10-24): a leg's `make
+    up ENV=staging ONLY=egress` recorded about 200 AWS Config items per cycle, about 0.60 USD on every
+    pipeline run, and its `make down ENV=staging` destroyed what the user or another application had
+    raised in the one state they share. The leg reads the egress slice instead
+    (scripts/check-egress.py). Both targets' deploy roles read states and write none, which refuses
+    the same writes in IAM.
     """
     if profile not in deploy_profiles():
         return None
@@ -824,15 +792,11 @@ def pipeline_refusal(account: str, slice_name: str, profile: str) -> str | None:
             "into the account people work in; the dev-env release creates image versions and the test "
             "deploy its workflow through the API (Stage 8 step 2.4, decisions 18 and 19)"
         )
-    if not (
-        slice_name.startswith(f"{APPLICATION_PARENT}/") or slice_name in APPLIED_BY_THEIR_OWN_HAND
-    ):
-        return (
-            f"refusal 10: the pipeline profile {profile} raises and destroys no shared slice - "
-            f"{account}/{slice_name}/ is the user's `make up`/`make down`, and a deploy profile acts on "
-            "an application slice and the orchestration slice alone (Stage 8 decision 27, 2026-10-24)"
-        )
-    return None
+    return (
+        f"refusal 10: the pipeline profile {profile} applies no {account}/ slice - "
+        f"{account}/{slice_name}/ is the user's `make up`/`make down`, and the leg deploys through the "
+        "CI/CD CLI (Stage 8 decision 27, Stage 19 item 31)"
+    )
 
 
 def opt_in_refusal(slice_name: str, groups: list) -> str | None:
@@ -849,7 +813,7 @@ def opt_in_refusal(slice_name: str, groups: list) -> str | None:
 # A slice folder sits under its account folder, or one level further down under one of these parents
 # (conventions 6). Every reader of the tree discovers slices here, so `make check`, the lock check and
 # the network-doc check see a nested slice alike.
-NESTED_SLICE_PARENTS = (APPLICATION_PARENT,)
+NESTED_SLICE_PARENTS = ("app",)
 
 
 def slice_dirs_on_disk(live: Path) -> dict:
@@ -884,13 +848,6 @@ def is_refused(sl: Slice, action: str) -> str | None:
         return f"refusal 4: {sl.name}/ is unreachable from up and down - it holds its own state"
     if action == "down" and (sl.account, sl.name) in NEVER_DESTROY:
         return "refusal 3: D36 - production/pki/ is excluded from every down path"
-    if action == "up" and (
-        sl.name.startswith(f"{APPLICATION_PARENT}/") or sl.name in APPLIED_BY_THEIR_OWN_HAND
-    ):
-        return (
-            "refusal 7: up never applies an application or orchestration slice - the pipeline "
-            "applies it with the release it runs (Stage 8 step 2.4)"
-        )
     if action == "up" and (sl.account, sl.name) in HELD_FROM_UP:
         return f"refusal 9: held from up - {HELD_FROM_UP[(sl.account, sl.name)]}"
     if sl.layer == PERSISTENT:

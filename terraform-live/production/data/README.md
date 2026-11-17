@@ -36,6 +36,10 @@ Every role is the account root narrowed by `aws:PrincipalArn`, which KMS does no
 | `AllowCloudWatchLogsForTheJobAndWorkflowGroups` | `logs.<region>.amazonaws.com` | the key's use for the job groups (`/aws/sagemaker/*`, `/aws-glue/*`) and Stage 10's (`/awsds/prod/wf/*`, the chains' group), by `kms:EncryptionContext:aws:logs:arn` |
 | `AllowRedshiftServerlessViaServiceInThisAccount` | this account, through Redshift Serverless | the governed warehouse's namespace (9.1); without it `CreateNamespace` fails and leaves an orphan secret (`EXC-12`) |
 
+The account root is the principal of every statement, so a role also needs an identity grant. The deploy
+role holds none on this key since Stage 19 item 31: the statements naming `awsds-deploy-prod` admit it
+to nothing, and `InfrastructureAccess` keeps the release roles' four.
+
 ## The production persona's managed policy (`persona.tf`)
 
 `awsds-prod-data-scientist`, the customer-managed policy `identity/sso/` attaches to `DataScientistProdAccess`
@@ -68,7 +72,9 @@ Beside the module's TLS-only and presigned-age denies.
 | `DenyTheReleaseRoleListingsOutsideItsPrefixes` | the deploy role's listings outside the same prefixes |
 | `DenyWritesToApplicationsButTheReleaseRoles` | `PutObject`, `DeleteObject` under `applications/` to all but the deploy role and `InfrastructureAccess` (Stage 10 decision 12) |
 
-`aws_s3_bucket_notification` sends the bucket's events to EventBridge (Stage 10 decision 16).
+The deploy role holds no identity grant on the bucket since Stage 19 item 31, so its three denies fence
+nothing it can reach. `aws_s3_bucket_notification` sends the bucket's events to EventBridge (Stage 10
+decision 16).
 `awsds-prod-derived` carries the module's policy alone and expires after 30 days (decision 11).
 
 ## Lake Formation grants (`lakeformation.tf`)
@@ -79,11 +85,6 @@ Beside the module's TLS-only and presigned-age denies.
 | `job_shared_databases` | idem | the lake's databases, `layer ∈ {raw, curated}` | `DESCRIBE` |
 | `job_shared_tables` | idem | the lake's tables, `layer ∈ {raw, curated}` and `classification ∈ {public, internal}` | `SELECT`, `DESCRIBE` |
 | `job_curated_write` | idem | every table of the lake's `curated`, by name | `SELECT`, `INSERT`, `DELETE`, `ALTER`, `DESCRIBE`: the governed write (2.3) |
-| `release_app_outputs_database` | `awsds-deploy-prod` | database `app_outputs` | `CREATE_TABLE`, `DESCRIBE` |
-| `release_app_outputs_tables` | idem | every table of `app_outputs` | `ALTER`, `DROP`, `DESCRIBE` |
-| `infrastructure_app_outputs_tables` | `InfrastructureAccess` | idem | `ALTER`, `DROP`, `DESCRIBE`: an application slice the deploy role applied, applied or destroyed by the infrastructure user, since Lake Formation gives a table's creator alone its permissions (Stage 8 decision 27) |
-| `job_app_outputs_database` · `_tables` | `awsds-prod-job-exec` | `app_outputs` and its tables | `DESCRIBE`; `SELECT`, `INSERT`, `DELETE`, `ALTER`, `DESCRIBE` |
-| `persona_app_outputs_database` · `_tables` | `DataScientistProdAccess` | idem | `DESCRIBE`; `SELECT`, `DESCRIBE` |
 
 The workgroup `awsds-prod-athena` (`athena.tf`) is enforced: its results land under
 `awsds-prod-derived/results/` under the data key, and a query past 10 GB is cancelled (decisions 2, 11).

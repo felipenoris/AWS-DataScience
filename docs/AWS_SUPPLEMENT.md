@@ -3520,7 +3520,15 @@ entry is still true is the reading.
   before IAM reads whether the role exists, and how the service takes that refusal is unmeasured, so a grant
   written "until the role exists" is written for both accounts. Where:
   `log-stage-10-orchestration-promotion.md`, 2026-10-24; Staging's `deploy-role.tf` and Production's
-  `deploy-anchors.tf`, `CreateTheWorkflowServiceLinkedRole`.
+  `deploy-anchors.tf`, `CreateTheWorkflowServiceLinkedRole`. Read again 2026-11-17 in both deployment
+  targets' trails (Stage 19): the call is not Cloud Control's. In Staging it came at 20:46:18 UTC on
+  2026-11-15 in `awsds-deploy-staging`'s Cloud Control session, a second before release T's first
+  `CreateWorkflow`, and at 23:21:03 in the CLI's boto3 session, a second before release F's first, both
+  invoked by `airflow-serverless.amazonaws.com` and answered `InvalidInputException`; each session's second
+  creation (20:46:27, 23:21:16) drew none. In Production the CLI's three creations by `awsds-deploy-prod`,
+  at 02:31:50, 02:32:02 and 02:32:14 UTC on 2026-11-16, drew none. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-17; both targets' `deploy-project.tf`,
+  `CreateTheWorkflowServiceLinkedRole`, since Stage 19 item 31.
 
 - `SUP-261` **MWAA Serverless authorizes the tags a `CreateWorkflow` carries as
   `airflow-serverless:TagResource` on `workflow/*`, and no trail shows that check** (measured 2026-10-24,

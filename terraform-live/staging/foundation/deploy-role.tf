@@ -1,12 +1,12 @@
 # deploy-role.tf - Stage 8 step 4.1 in Staging: awsds-deploy-staging, the promotion chain's role for
 # steps 3.1-3.4 (INT-08), and the misuse alarm with the alerts topic it reaches (4.6, decision 5).
 #
-# What it applies from the deploy runner: staging/app/* (step 3.2) and staging/orchestration/ (Stage
-# 10), and no other slice: staging/egress/ is the user's `make up` / `make down` since decision 27
-# (2026-10-24), and the leg reads it before it writes (scripts/check-egress.py). Its grant is the inline
-# document apply-application (apply-application.tf), which carries that read, and the orchestration
-# grant's two managed policies (apply-orchestration.tf). Every role those slices create carries
-# awsds-staging-app-boundary (app-boundary.tf, step 3.0).
+# What it does from the deploy runner: the CI/CD CLI's deploy into deploy-staging and the leg around it
+# (Stage 19 steps 4.8 and 4.9), the start of the chains in staging-test, and the model chain's jobs. It
+# applies no slice and writes no state: staging/egress/ is the user's `make up` / `make down` since
+# decision 27 (2026-10-24), and the leg reads it before it writes (scripts/check-egress.py). Its grants
+# are the inline document apply-application (apply-application.tf) and the managed policy
+# deploy-project.tf attaches.
 #
 # The trust names the runner's role in the runner's home, built from the runner's name and the home's
 # account id, which the alias below resolves (aws/INDEX.md rule 1). Production/foundation/ must exist
@@ -36,7 +36,7 @@ locals {
     CostCenter = "stage-08"
   }
 
-  # The names app-boundary.tf and apply-orchestration.tf read, the same in production/foundation/.
+  # The names apply-application.tf and deploy-project.tf read, the same in production/foundation/.
   partition      = data.aws_partition.current.partition
   account_id     = data.aws_caller_identity.current.account_id
   region_account = "${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}"
@@ -49,27 +49,26 @@ locals {
 
 module "deploy_role" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.3.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.5.0"
 
   name            = var.deploy_role_name
-  description     = "Stage 8's Staging leg (INT-08, steps 3.1-3.4) - assumed only by the deploy runner's role; applies staging/app/* and staging/orchestration/, reads staging/egress/"
+  description     = "Stage 8's Staging leg (INT-08, steps 3.1-3.4) - assumed only by the deploy runner's role; deploys into deploy-staging through the CI/CD CLI, reads staging/egress/"
   env             = var.env
   runner_role_arn = local.deploy_runner_role_arn
   runner_role_id  = data.aws_iam_role.deploy_runner.unique_id
-  state_prefixes  = ["staging/app/", "staging/orchestration/"]
+  state_prefixes  = []
   state_read_keys = [for s in ["foundation", "sagemaker", "data", "egress"] : "staging/${s}/terraform.tfstate"]
 
   inline_policies = {
     "apply-application" = data.aws_iam_policy_document.apply_application.json
   }
 
-  application_boundary_name = local.application_boundary_name
-
   misuse_alarm     = true
   alerts_topic_arn = aws_sns_topic.alerts.arn
 }
 
-# Staging's statements in apply-application.tf's document: the leg's read of the version it deploys.
+# Staging's statements in apply-application.tf's document: the leg's read of the version it deploys,
+# and the chain's machine it starts in staging-test and follows to its end (Stage 10 decision 19).
 data "aws_iam_policy_document" "apply_application_in_this_account" {
   # checkov:skip=CKV_AWS_356:sagemaker:ListModelPackages has no resource type, so only "*" matches it; the registry's resource policy names this role
 
@@ -88,15 +87,7 @@ data "aws_iam_policy_document" "apply_application_in_this_account" {
     actions   = ["sagemaker:ListModelPackages"]
     resources = ["*"]
   }
-}
 
-# Staging's statements in apply-orchestration.tf's resources policy: the leg starts the chain's
-# machine and follows it to its end (Stage 10 decision 19). The workflow service calls
-# iam:CreateServiceLinkedRole in the saver's session on a creation through Cloud Control although
-# AWSServiceRoleForAmazonMWAAServerless exists here (InvalidInputException in Stage 8 3.8's trail,
-# 2026-10-23), so Staging carries Production's statement: a refusal there would be the service's to
-# handle, and nothing measured how it does.
-data "aws_iam_policy_document" "apply_orchestration_in_this_account" {
   statement {
     sid       = "StartTheChainInTheLeg"
     effect    = "Allow"
@@ -109,19 +100,6 @@ data "aws_iam_policy_document" "apply_orchestration_in_this_account" {
     effect    = "Allow"
     actions   = ["states:DescribeExecution", "states:GetExecutionHistory"]
     resources = ["arn:${local.partition}:states:${local.region_account}:execution:awsds-${var.env}-chain-*:*"]
-  }
-
-  statement {
-    sid       = "CreateTheWorkflowServiceLinkedRole"
-    effect    = "Allow"
-    actions   = ["iam:CreateServiceLinkedRole"]
-    resources = ["arn:${local.partition}:iam::${local.account_id}:role/aws-service-role/airflow-serverless.amazonaws.com/AWSServiceRoleForAmazonMWAAServerless"]
-
-    condition {
-      test     = "StringEquals"
-      variable = "iam:AWSServiceName"
-      values   = ["airflow-serverless.amazonaws.com"]
-    }
   }
 }
 
