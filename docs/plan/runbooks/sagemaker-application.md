@@ -452,8 +452,9 @@ settles, so the down runs again.
 
 **What the project gives, and what it does not.** The project role runs every task, inside the project's
 network and under the project key, with the D13 boundary on every job: `NetworkConfig` with the two
-private subnets and the project's group, `EnableNetworkIsolation`, inter-container encryption, the
-project key on the volume and the output, an instance type inside the ceiling. These are the same
+private subnets and the project's group, `EnableNetworkIsolation` on every job but a processing job
+(Stage 20 decision 13, applied 2026-11-17), inter-container encryption, the project key on the volume
+and the output, an instance type inside the ceiling. These are the same
 settings a job needs in Production, which is why a workflow written here runs there unchanged. The
 operator's first describe of a job name needs the grant `sandbox/workflows/` holds for the project role,
 once per project and planned after the project exists, since the slice reads its role (§S; §G of
@@ -665,9 +666,12 @@ account read, so each prints versions, counts, names and paths, never a value of
   sudo -n chown "$(id -u)" /opt/ml/processing/output && cd /opt/ml/processing/code && exec python -m <package> --input /opt/ml/processing/input --output /opt/ml/processing/output
   ```
 
-- The container has no network and no AWS credentials: SageMaker stages each `ProcessingInput` before
-  the command starts and uploads each `ProcessingOutput` after it exits, as the job's role. The code
-  reads files and writes files; nothing in it calls an AWS API.
+- The template's job sets `EnableNetworkIsolation: true`, so the container has no network and no AWS
+  credentials: SageMaker stages each `ProcessingInput` before the command starts and uploads each
+  `ProcessingOutput` after it exits, as the job's role. The code reads files and writes files; nothing
+  in it calls an AWS API. A processing job may drop the setting since 2026-11-17 (Stage 20 decision
+  13); its container then holds the job role's credentials and reaches what a worker task reaches
+  (`TM-35`).
 - The interpreter is the image's: `PATH` opens with the application's virtual environment, so `python`
   is base's CPython 3.12 with the lock's packages. An extension module is admitted, since it comes from a
   wheel the lock resolved for the image's platform. `pytest` runs the same package on the laptop and in
@@ -835,9 +839,10 @@ reason beside it:
   its own.
 - A SageMaker job's `config` is written whole, with the D13 settings the portal's forms cannot express:
   `NetworkConfig` with `{env.SUBNET_AZ1}`, `{env.SUBNET_AZ2}` and `{env.PROJECT_SG}`,
-  `EnableNetworkIsolation: true`, `EnableInterContainerTrafficEncryption: true`, `VolumeKmsKeyId` and
-  the output's `KmsKeyId` `{env.PROJECT_KEY_ARN}` (an output without it lands under the S3-managed key,
-  `EXC-22`), an `InstanceType` of the ceiling the lint receives (`ml.t3.medium` to `ml.c5.xlarge`
+  `EnableNetworkIsolation: true` (the boundary asks it of every job but a processing job, and the lint's
+  `job` rule of a processing task too, until `awsds-workflows` takes Stage 20 step 6.4's item),
+  `EnableInterContainerTrafficEncryption: true`, `VolumeKmsKeyId` and the output's `KmsKeyId`
+  `{env.PROJECT_KEY_ARN}` (an output without it lands under the S3-managed key, `EXC-22`), an `InstanceType` of the ceiling the lint receives (`ml.t3.medium` to `ml.c5.xlarge`
   today), `ImageUri` `{env.JOB_IMAGE_URI}` or a `TrainingImage` of an algorithm repository the lint
   receives, by digest and never by tag; a job name with a per-run stamp,
   `{{ macros.time.strftime('%Y%m%dT%H%M%S', macros.time.gmtime()) }}`, since `{{ ts_nodash }}` is
@@ -1243,7 +1248,8 @@ for each kind of task in each stage; where one term is missing, the reach is abs
 | From | In `dev` (Sandbox) | In Staging and Production |
 |---|---|---|
 | a Glue task | the project role on the project's two Glue network connections, under the project key; reads and writes the project's `shared/<app>/` and the product table in its database; the lake's tables only through a subscription fulfilled for the project, through their resource links in the project's `DataLake` database (`curated.trades` in `eighth-experimentation` since 6f 11.9, 2026-10-26), and `app-etl-dev` holds none | the project role on the project's two Glue network connections, under the project key, every other bucket of the account fenced off; reads and writes the project's `shared/<app>/` and `app_etl`; no lake grant until item 32 (Stage 19 decision 22 (a)); in Production, `app-etl-load-<project id>` connects to the warehouse over JDBC through the `redshift-serverless` endpoint as `IAMR:user-project@d7qcazihvr3s7k` |
-| a processing or training job | the project role, the project's subnets and group, network isolation; the image pulled by SageMaker's side from Production's registry by digest; inputs and outputs staged by the platform from the project prefix | the project role, the project's subnets and group (`SUBNET_AZ1`, `SUBNET_AZ2`, `PROJECT_SG`), network isolation, the project key; the image by the release's digest; inputs and outputs staged from the project prefix; no lake bucket, ever (D13) |
+| a training job or a model | the project role, the project's subnets and group, network isolation; the image pulled by SageMaker's side from Production's registry by digest; inputs and outputs staged by the platform from the project prefix | the project role, the project's subnets and group (`SUBNET_AZ1`, `SUBNET_AZ2`, `PROJECT_SG`), network isolation, the project key; the image by the release's digest; inputs and outputs staged from the project prefix; no lake bucket, ever (D13) |
+| a processing job | as a training job when it sets `EnableNetworkIsolation: true`, as the template's jobs do; without it (Stage 20 decision 13, applied 2026-11-17) the container holds the project role's credentials and reaches what a worker task reaches: the VPC's endpoints and the proxy's allow-list (`TM-35`) | as a training job when isolated; without it, the project role's credentials, the VPC's interface endpoints and gateways, and a proxy that refuses the `Workloads` ranges every name (read 2026-11-11); no lake bucket, ever (D13) |
 | a Python or Bash task on the worker | the project role in the project's network: AWS through the VPC endpoints (DataZone among them, the template's `publish`), S3 through the gateway endpoint, no internet, no proxy | the project role in the project's network, the subnets, group and key `workflow.create` reads from the project (`SUP-285`): the interface endpoints of `workloads-egress/` (`egress/` in Staging), `datazone` among them, the S3 gateway; no internet, no proxy |
 | Athena | a person in the project's query editor, as the project role on the project's enforced workgroup: the project's tables; the lake's tables the project subscribed to, through their resource links (6f 11.10, 2026-10-26) | the persona through `awsds-prod-athena` on the lake's `public` and `internal` tables, from any network; Staging's persona set holds no Athena action; the product table's Athena read is unwritten (Stage 19 decision 24 (a)); no task in the template calls Athena |
 | Redshift | the sandbox warehouse through the project's connection, the Data page as the access role and a notebook through it (`redshift-connection.md` §J); the governed warehouse through the datashare alone, since Sandbox does not peer with `VPC-Workloads` | Production's project role over JDBC as `IAMR:user-project@d7qcazihvr3s7k`, the load's, its other doors fenced (`redshift-data`, `sqlworkbench`); the deploy role through the Data API for the DDL; the persona refused a session (`DenyMintingARedshiftDatabaseSession`); Staging's project role fenced off every Redshift service |

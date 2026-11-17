@@ -31,11 +31,10 @@ stages: [test, build, verify, bundle, release, staging-gate, staging, gate, prod
 
 variables:
   # The workflow tooling, by commit: its lint reads manifest.yaml and the workflows it names against the
-  # rules of a SageMaker application, offline. The pin moves to the merge of the tooling's branch
-  # claude/lint-transformacao-modelo-bedrock once the user publishes it (Stage 17 step 10.3), whose rule
-  # `operador` refuses by name the Bedrock operators that write what they send and receive to the task
-  # log; the application's tasks call the model with boto3.
-  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/196aceec092649551ed6451796b1c3c7983cfafb.zip"
+  # rules of a SageMaker application, offline. The commit is the merge of awsds-workflows pull request
+  # #26 (Stage 17 step 10.3), whose rule `operador` refuses by name the Bedrock operators that write
+  # what they send and receive to the task log; the application's tasks call the model with boto3.
+  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/37cb5a6260c8348cc208988e42090caf42a3a207.zip"
   # The instance types a job may ask for: the ceiling DenySageMakerInstanceCeiling carries in the
   # Workloads SCP and in Sandbox's project boundary, the list terraform-modules/sagemaker-denies holds
   # (allowed_instance_types) in the infrastructure repository. A copy, since the application's repository
@@ -58,7 +57,7 @@ test:
     # The lint of the application: the manifest and its workflows, an InstanceType one of
     # LINT_INSTANCE_TYPES. The application has no image, so no --image-repository. probes/operator.yaml
     # is outside the manifest and the lint never reads it: it uses BedrockInvokeModelOperator on purpose,
-    # for Stage 17 step 10.4, and the rule `operador` refuses it from step 10.3's commit.
+    # for Stage 17 step 10.4, and the rule `operador` of the pinned commit refuses it.
     - |
       set -eu
       set --

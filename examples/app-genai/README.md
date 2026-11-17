@@ -146,14 +146,13 @@ repository, since the application has none:
 awsds-workflows lint . --instance-type ml.t3.medium --instance-type ml.t3.large --instance-type ml.t3.xlarge --instance-type ml.m5.large --instance-type ml.m5.xlarge --instance-type ml.c5.large --instance-type ml.c5.xlarge
 ```
 
-The pipeline pins the tooling at `196acee`, app-etl's pin. The pin moves to the merge of the branch
-`claude/lint-transformacao-modelo-bedrock` once the user publishes it (Stage 17 step 10.3), where the rule
-`operador` refuses by name `BedrockInvokeModelOperator`, `BedrockRaGOperator` and
-`BedrockRetrieveOperator`: they write what they send and receive to the task log, and their calls name
-no guardrail. The application calls the model with boto3 and passes the lint at both commits (read
-2026-11-17). `probes/operator.yaml` uses `BedrockInvokeModelOperator` on purpose and is outside the
-manifest, so `lint .` never reads it; `awsds-workflows lint probes/operator.yaml` passes at `196acee` and
-is refused at the branch's commit.
+The pipeline pins the tooling at `37cb5a6`, the merge of `awsds-workflows` pull request #26 (Stage 17
+step 10.3), where the rule `operador` refuses by name `BedrockInvokeModelOperator`, `BedrockRaGOperator`
+and `BedrockRetrieveOperator`: they write what they send and receive to the task log, and their calls
+name no guardrail. The application calls the model with boto3 and passes the lint there and at
+`196acee`, app-etl's pin (read 2026-11-17). `probes/operator.yaml` uses `BedrockInvokeModelOperator` on
+purpose and is outside the manifest, so `lint .` never reads it; `awsds-workflows lint
+probes/operator.yaml` passes at `196acee` and is refused at `37cb5a6`.
 
 The deploy to the `dev` project runs the CI/CD CLI (`aws-smus-cicd-cli` 1.0.9) from a space on the house
 image, as the project's role, with `sandbox/egress` raised with the groups `mwaa` and `bedrock-base`.

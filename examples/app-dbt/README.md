@@ -110,7 +110,7 @@ The lint and the archive run from this folder with `awsds-workflows` at the comm
 pipeline pins:
 
 ```bash
-TOOL="awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/196aceec092649551ed6451796b1c3c7983cfafb.zip"
+TOOL="awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/37cb5a6260c8348cc208988e42090caf42a3a207.zip"
 uvx --from "$TOOL" awsds-workflows lint .
 uvx --from "$TOOL" awsds-workflows package-task . code/app-dbt.zip --platform x86_64-manylinux_2_28 --include code/run-dbt.sh
 python3 -c 'import sys, zipfile; z = zipfile.ZipFile(sys.argv[1]); print(len(z.infolist()), sum(i.file_size for i in z.infolist()), [oct(z.getinfo(n).external_attr >> 16) for n in ("run-dbt.sh", "app_dbt/bin/dbt")])' code/app-dbt.zip

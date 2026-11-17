@@ -339,7 +339,9 @@ run, plus the `[E]` endpoint set while tasks are in the VPC.
     not carry (the shape of Stage 8 2.4's `AllowApplicationJobRolesViaS3`, retired by its decision 21).
 
   **This role is the caller of every `Create*Job` the workflow makes, so the job settings bind it** (Stage
-  9 3.5, Lesson 66): each job carries `VpcConfig` with the job subnets, `EnableNetworkIsolation: true`,
+  9 3.5, Lesson 66): each job carries `VpcConfig` with the job subnets, `EnableNetworkIsolation: true`
+  (which the boundary leaves to a processing job since [Stage 20](stage-20-dbt-lineage.md) decision 13,
+  the template and the lint keeping it),
   `EnableInterContainerTrafficEncryption: true` and a `VolumeKmsKeyId`, on an instance type inside the
   ceiling, and the lint checks each on a processing job (Stage 8 5.6: the volume key only in the promoted
   mode, the instance type only under `--instance-type`, and no other operator, 5.1), because a run-time

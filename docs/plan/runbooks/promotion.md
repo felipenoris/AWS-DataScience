@@ -1144,14 +1144,14 @@ bound items 3, 5, 6 and 9.
    target slices with `TM-33`, and Stage 20's pass 1 (`examples/app-dbt/` and [`catalog.md`](catalog.md))
    and its 4.1 to 4.3 (the modules' tags, the callers' pins, the battery's rows); its plans came from
    worktrees and are taken again from `main` (Lesson 79).
-2. **With nothing up, the user's acts**, each a waiting-list row: that pull request merged;
-   `awsds-workflows` pull request #26 merged, after which Claude moves the new applications' pins to the
-   merge; the decisions
-   a sitting reads (Stage 19 decisions 28 and 15 before 4.12, Stage 20 decisions 9 and 11, 6h decisions
-   3 and 8, 6d decision 16 before Stage 17's projects); `TM-33` accepted; each apply by name, from a
-   `main` that holds the merge: `production/registry` first, since `identity/sso` names its repository,
-   then Stage 20 4.4's five slices with the battery's Phase 4b, then the rest of 9.5's target slices, both
-   `studio/` slices taking the two changes in one apply (Lesson 69); the projects
+2. **With nothing up, the user's acts**, each a waiting-list row. Done 2026-11-17: that pull request
+   (#313) and `awsds-workflows` pull request #26 merged at 15:48 UTC, the new applications' pins moved to
+   the merge, `37cb5a6`; and each apply by name, from `main` at `13581cd0`, from 16:00 to 16:12 UTC:
+   `production/registry` first, since `identity/sso` names its repository, then Stage 20 4.4's five slices
+   with the battery's Phase 4b (53 as expected), then the rest of 9.5's target slices, both `studio/`
+   slices taking the two changes in one apply (Lesson 69), each re-planned `No changes`. Left: the
+   decisions a sitting reads (Stage 19 decisions 28 and 15 before 4.12, Stage 20 decisions 9 and 11, 6h
+   decisions 3 and 8, 6d decision 16 before Stage 17's projects); `TM-33` accepted; the projects
    `app-ml-dev` and `app-genai-dev` created with their contributors and Nova Lite enabled (9.6, 10.4),
    after which Claude plans the Sandbox slices that read the projects' roles and the user applies them.
 3. **Release G's sitting** (N.8.5 steps 2, 4 and 5): the hub, GitLab with `BUILD=1`, `staging/egress/`

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Written 2026-11-16; step 1.1's facts and decisions 1 to 7, 10 and 13 taken the same day; the application's draft run against simulated services on 2026-11-17 (0.15, 0.16), and pass 1 and 4.1 to 4.3 done the same day with nothing up; nothing run in AWS** ([log](../../log/log-stage-20-dbt-lineage.md)): the plan, the user's questions answered from dated vendor pages, OpenLineage's released code and this estate's measurements, and each decision in the user's words. dbt runs on Athena, in a Bash task on the worker, on dbt Core 1.11, in a new application `app-dbt` in `eighth-experimentation`; Redshift and Glue with Spark are a later revision's, and a run past the worker's hour is compared in the runbook, measured by no pass. Decision 13 takes a processing job out of the network-isolation statement in Sandbox, Staging and Production. No sitting made an AWS call. Pass 1 runs with nothing up; passes 2 and 3 are Sandbox sittings; pass 4 is decision 13's change, a laptop session's tags and applies on the user's word, with the SCP battery; pass 5 waits on [Stage 19](stage-19-smus-native-data-product.md) step 4.12 and on decision due 11. On 2026-11-17: `examples/app-dbt/` written from the stage's prose, step 1.3's three criteria met by the simulation on the laptop's host archive (`aarch64-apple-darwin`, 28,621,986 bytes, 88,429,087 unzipped), 51 tests passing (1.2 to 1.4); `catalog.md`'s first version with 1.6's desk readings (1.5, 1.6); `upstream-releases.md`'s dbt and OpenLineage section (1.7); `sagemaker-denies-v0.3.0` and `sagemaker-prereqs-v0.11.0` tagged at `5f121541`, the callers pinned and the battery's rows written (4.1 to 4.3), each slice planned and none applied (4.4) |
+| **Status** | **Written 2026-11-16; step 1.1's facts and decisions 1 to 7, 10 and 13 taken the same day; the application's draft run against simulated services on 2026-11-17 (0.15, 0.16), pass 1 and 4.1 to 4.3 done the same day with nothing up, 4.4's applies run and 4.6 written after them; no Sandbox sitting yet** ([log](../../log/log-stage-20-dbt-lineage.md)): the plan, the user's questions answered from dated vendor pages, OpenLineage's released code and this estate's measurements, and each decision in the user's words. dbt runs on Athena, in a Bash task on the worker, on dbt Core 1.11, in a new application `app-dbt` in `eighth-experimentation`; Redshift and Glue with Spark are a later revision's, and a run past the worker's hour is compared in the runbook, measured by no pass. Decision 13 takes a processing job out of the network-isolation statement in Sandbox, Staging and Production, applied 2026-11-17. Pass 1 runs with nothing up; passes 2 and 3 are Sandbox sittings; pass 4 is decision 13's change, a laptop session's tags and applies on the user's word, with the SCP battery; pass 5 waits on [Stage 19](stage-19-smus-native-data-product.md) step 4.12 and on decision due 11. On 2026-11-17: `examples/app-dbt/` written from the stage's prose, step 1.3's three criteria met by the simulation on the laptop's host archive (`aarch64-apple-darwin`, 28,621,986 bytes, 88,429,087 unzipped), 51 tests passing (1.2 to 1.4); `catalog.md`'s first version with 1.6's desk readings (1.5, 1.6); `upstream-releases.md`'s dbt and OpenLineage section (1.7); `sagemaker-denies-v0.3.0` and `sagemaker-prereqs-v0.11.0` tagged at `5f121541`, the callers pinned and the battery's rows written (4.1 to 4.3), each slice planned, then applied on the user's word from 16:01 to 16:09 UTC with `production/registry` first, every re-plan `No changes`, and the battery's processing row authorized and its training row refused, 53 as expected (4.4); the documents and checks that state the rule rewritten and `TM-35` written (4.6). Left: 4.5 in sitting A, and 6.4's item for the lint's `job` rule |
 | **Prerequisites** | [6i](stage-06i-sandbox-orchestration.md) steps 4 and 5, a Python and a Bash task run from a code archive on the worker (2026-10-11), and `awsds-workflows package-task`, which builds that archive ([`serverless-workflows.md`](../runbooks/serverless-workflows.md) §C). [Stage 19](stage-19-smus-native-data-product.md) pass 1's recipe: a workflow's Glue job writing an Iceberg table into a project database and posting OpenLineage events through Sandbox's `datazone` endpoint (2026-11-10), the graph drawn on the asset's page (2026-11-14). `eighth-experimentation`: the workflows grant (`sandbox/workflows/`), spaces on the house image's version 11 with the CI/CD CLI 1.0.9. `sandbox/egress/`'s `athena`, `glue`, `lakeformation`, `sts` and `datazone` endpoints, the first four in the endpoint module's core set and the fifth among the slice's extra services, and its `mwaa` group for a deploy from a space. For pass 4, a laptop session as the infrastructure user and the SCP battery ([`scp-battery.md`](../runbooks/scp-battery.md)). Nothing blocks pass 1 |
 | **Consumes** | [D7](../decisions/D07-orchestration.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D41](../decisions/D41-sagemaker-application.md); [D12](../decisions/D12-budget-ceiling.md) for the cost |
 | **Proves** | — (no `INT-nn` row: the worker's post reaches the domain in Data Governance through the `datazone` endpoint a Glue job's lineage already crosses, and no new wiring between accounts is built). What it does prove: whether a dbt project run as a task of a SageMaker application's workflow reads and writes the project's tables through an engine SageMaker Unified Studio itself uses, and whether the OpenLineage events dbt's wrapper posts land on the graph the portal draws for the assets, beside a Glue job's |
@@ -752,7 +752,7 @@ commands run from `examples/app-dbt/`, and `awsds-workflows` runs from the commi
 pins, whatever the machine has installed:
 
 ```bash
-TOOL="awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/196aceec092649551ed6451796b1c3c7983cfafb.zip"
+TOOL="awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/37cb5a6260c8348cc208988e42090caf42a3a207.zip"
 ```
 
 - **1.1 [user] The institution's dbt, answered 2026-11-16** (the log carries the words). The engines
@@ -1311,7 +1311,10 @@ four profiles 4.4 names.
 
   **[Claude] reads** the battery's verdicts, the processing row authorized and the training row refused
   with the others as they were, and `./aws/deploytargets.py` `DT-11`, which reads the document's Sids and
-  stays as it is (xii).
+  stays as it is (xii). **Done 2026-11-17**: `production/registry/` at 16:00:08 UTC, then the five rows
+  at 16:01:26, 16:02:03, 16:07:18, 16:08:13 and 16:09:05 UTC, each re-plan *"No changes."*; the battery
+  from 16:03:10 UTC, *"53 as expected, 0 unexpected, 5 not measured"*, the processing row `ALLOWED` and
+  the training row `DENY-SCP`; `DT-11` passing with the six job Sids; `make check` OK (the log).
 - **4.5 [user] A processing job without isolation, in Sandbox**, in a sitting raised as 2.2's: a third
   workflow of `app-dbt`, one `SageMakerProcessingOperator` task on the house image, in the project's
   subnets and security group, with `EnableNetworkIsolation: false` and the statement's other settings as
@@ -1350,7 +1353,10 @@ four profiles 4.4 names.
   [`sagemaker-application.md`](../runbooks/sagemaker-application.md) §C's *"no network and no AWS
   credentials"*, [`sagemaker-ai-ml.md`](../runbooks/sagemaker-ai-ml.md)'s statement that a pipeline's
   steps take *"the same actions"* and its paragraph on a pipeline's processing step, and
-  `awsds_demo_job/__main__.py`'s docstring, *"runs every job isolated"*.
+  `awsds_demo_job/__main__.py`'s docstring, *"runs every job isolated"*. **Done 2026-11-17**, after
+  4.4: each text above, Stage 9's 3.5 and Stage 10's rule for the caller of a job; `SO-5` reports a job
+  without isolation as a note and `ML-6` no longer reads a Processing step's; `TM-35` accepted with
+  decision 13, in the ledger and the network matrix.
 
 ### 5. Across projects
 

@@ -704,6 +704,8 @@ def main(argv: list) -> int:
     # SO-5: each demo-devenv- job against the boundary's settings, its project and the image.
     # A setting outside the boundary fails on any job. A failed outcome fails on the newest job
     # only: a processing job cannot be deleted, so an earlier probe's failure stays listed.
+    # Network isolation is the template's setting, not the boundary's, on a processing job since
+    # Stage 20 decision 13 (TM-35): a job without it is a note.
     for j in jobs:
         jname = j.get("ProcessingJobName", "-")
         net = j.get("NetworkConfig") or {}
@@ -711,8 +713,7 @@ def main(argv: list) -> int:
         cluster = (j.get("ProcessingResources") or {}).get("ClusterConfig") or {}
         p = by_arn.get(j.get("RoleArn", ""))
         problems = []
-        if net.get("EnableNetworkIsolation") is not True:
-            problems.append("network isolation off")
+        isolated = net.get("EnableNetworkIsolation") is True
         if net.get("EnableInterContainerTrafficEncryption") is not True:
             problems.append("inter-container encryption off")
         bad = [
@@ -769,6 +770,14 @@ def main(argv: list) -> int:
             )
         elif status in ("InProgress", "Stopping"):
             checks.note("SO-5", jname, f"{summary} - read again when it ends.")
+        elif not isolated:
+            checks.note(
+                "SO-5",
+                jname,
+                f"{summary}; network isolation off, which the template sets and the boundary "
+                "admits since Stage 20 decision 13 (TM-35); encrypted, project role, key and tag, "
+                "house image",
+            )
         else:
             checks.ok(
                 "SO-5",

@@ -339,7 +339,10 @@ import it. The template is `examples/sandbox-orchestration/devenv-job/demo-deven
 **What the boundary requires** (`awsds-<env>-project-boundary`), on every job:
 
 - `NetworkConfig.VpcConfig`: the project's two private subnets and its security group;
-- `EnableNetworkIsolation: true`: the container has no network and no AWS credentials;
+- `EnableNetworkIsolation: true` in the template: the container has no network and no AWS credentials.
+  The boundary leaves it to a processing job since 2026-11-17 ([Stage 20](../stages/stage-20-dbt-lineage.md)
+  decision 13); without it the container holds the project role's credentials and reaches the VPC's
+  endpoints and the proxy's allow-list (`TM-35`);
 - `EnableInterContainerTrafficEncryption: true`, even for one instance;
 - `ProcessingResources.ClusterConfig.VolumeKmsKeyId`: the project key;
 - an instance type inside the boundary's ceiling; `ml.t3.medium` is the smallest it admits.
