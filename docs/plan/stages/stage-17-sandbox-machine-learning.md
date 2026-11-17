@@ -543,9 +543,9 @@ page (7.3, 7.4). It shares 9.1's reading of several applications in one deployme
   `cron(32 17 * * ? *)`, `test-experimentation`'s about 06:16 UTC on `cron(6 6 * * ? *)`): whether
   `EXC-11`'s data source still fails on the RAM share with an asset to ingest, or ingests the group into
   the catalog as an asset nobody chose (Lesson 17; verification v). Either reading changes `EXC-11`'s row.
-  The share AWS's page documents for the data source (`EXC-11`'s row, read 2026-11-17) is the user's
-  decision before 3.2 and 9.6: created first, 3.3 reads verification v against a share that exists rather
-  than the failure the page predicts.
+  The share AWS's page documents for the data source (`EXC-11`'s row, read 2026-11-17) is created before
+  3.2 and 9.6, the user's choice of 2026-11-17, so 3.3 reads verification v against a share that exists
+  rather than the failure the page predicts.
 
 ### 4. Deployed and served
 
@@ -1972,6 +1972,9 @@ the criterion deciding nothing there. No decision of passes 9 and 10 is open.
    endpoints, model package groups, pipelines and MLflow apps. `sandbox/workflows/`'s policy reaches the
    role of the project pass 2 runs in, so 2.2's (a) and (b) are read before the training pair is applied
    there, and (c) is then read after that apply, with no `sandbox/ml/` statement for training jobs.
+   **Taken 2026-11-17 by the user as (a) in that form**, the option *"Workflows em workflows/, resto em
+   ml/"* on a card at 22:33 UTC: a workflow's operators' statements in `sandbox/workflows/`, what only a
+   notebook creates in a new `sandbox/ml/`.
 8. **Serverless inference's outcome** (4.4). **Taken by Stage 9, not here: 3.7 (b) on 2026-10-16**, before
    this reading, as `DenySageMakerServerlessInference` in the `Workloads` OU document. It denies
    `CreateEndpointConfig` when `sagemaker:ServerlessMemorySize` is present, because a configuration

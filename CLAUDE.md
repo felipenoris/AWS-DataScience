@@ -442,7 +442,7 @@ whose decisions 1-3 were taken 2026-11-17, its passes 2-4 in the warehouse sitti
 
 | Stage | State | What comes next |
 |---|---|---|
-| 5b, the Sandbox warehouse | Passes 0-3 applied 2026-09-20 | A warehouse sitting: the `max_query_execution_time` test and the `enable_large_strings_opt_in` re-plan. The bill's half of verification x after the free trial ends on 2026-12-19. The user's: decision 9, when to spend the trial |
+| 5b, the Sandbox warehouse | Passes 0-3 applied 2026-09-20 | A warehouse sitting before 2026-12-19 (decision 9): the `max_query_execution_time` test and the `enable_large_strings_opt_in` re-plan. The bill's half of verification x after the free trial ends |
 | 6d, Unified Studio's remainder | Steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half. Decision 15 (b) applied 2026-10-30: `test-experimentation` holds the `SageMakerAIDomain` pilot, the house image pinned | The user's: decision due 16 (the blueprint as every Sandbox project's standard, then step 2.7), decision 9 (step 10, the Kiro CLI door), the 1.1 and 1.2 attempts. A Sandbox sitting: 5.1, 6.1 (viii), 7.5's monitored half, 7.6, 7.7, 8.8's tail |
 | 6e, Claude Code on Bedrock | A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint). Held by PR #108 | The user's: the three Claude 5.5 model agreements (decision 17), decisions 11 and 13. Then 6.4's token volume and 8.3's budget notification |
 | 6f, the catalog over the lake | Decision 1 (b), a pilot of SMUS's native flow: step 11 done to 11.11 (2026-10-27), `curated.trades` published by `governed-lake` and subscribed by `eighth-experimentation`. Decisions 2 to 6 taken | The user's: step 2's portal acts, 11.12's rollback residue |
