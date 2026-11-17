@@ -2003,6 +2003,8 @@ the criterion deciding nothing there. No decision of passes 9 and 10 is open.
     the blueprint's template creates them for an OpenSearch Serverless store alone (read 2026-10-19,
     7.0a), so the recommended S3 Vectors gets none from the template. `ML-8` reads any Lambda 7.4a leaves
     and where it runs; Stage 11 §3's ledger gets them in the same row.
+    **Taken 2026-11-17 by the user as (a)**, the option *"Não criar até o controle existir"* on a card at
+    22:36 UTC: the entry waits for Stage 11's deny on `lambda:CreateFunction` without `lambda:VpcIds`.
 11. **The embeddings model at the SCP** (7.4a). **Taken by the user 2026-10-19: (a), grown by
     `application-inference-profile/*`** as the 2026-10-19 reading below says. Recommended: **(a) the
     `foundation-model` ARN of
@@ -2065,6 +2067,7 @@ the criterion deciding nothing there. No decision of passes 9 and 10 is open.
     Terraform does not, so (b) would also meet a collection no encryption policy covers (inferred). For
     (a) the stack creates nothing, so who creates the S3 Vectors store and the knowledge base, and as
     which role, is 7.4a's reading.
+    **Taken 2026-11-17 by the user as (a)**, the option *"S3 Vectors"* on a card at 22:34 UTC.
 13. **How a model reaches the projects** (7.3, 7.4a, 7.4b). **Taken by the user 2026-10-19, as
     recommended: (b) the two model roles written in a `[P]` slice**, in the order below; its first two
     steps applied by the user the same evening (20:25 and 20:27 UTC), both re-planned `No changes`,
