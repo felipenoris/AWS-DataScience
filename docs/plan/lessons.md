@@ -1855,7 +1855,7 @@ interactive session of up to 10 `G.1X` workers with a 60-minute idle timeout: up
 `sparkGlueProperties`, which no step had read. The session was read at 23:05 UTC and stopped with the
 notebook's kernel at 23:07:37, after 1152 s; it would otherwise have run to 00:01. Its `DPUSeconds` read
 0.0 at the stop and 3248.6 an hour later, an average of 2.8 DPU under the auto scaling its arguments
-carried, about 0.40 USD if the bill counts that field (`SUP-368`).
+carried, and the bill charged that field: 0.9025 DPU-h, 0.3971 USD (`SUP-368`).
 
 **Why it is a class rather than a slip.** A cell runs on an engine its connection names, beside the space
 that runs the notebook, and the vendor sizes that engine. The idle timeout ends the session an hour after the
