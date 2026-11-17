@@ -470,7 +470,7 @@ content of a release that no tag holds (decision 21 (b)), and step 9.3 gives the
 exception for that item alone.
 
 **What the CLI does with that item**, read in the released wheel of 1.0.9 on 2026-11-17 and not run here
-(verification lxii):
+(`SUP-374`, verification lxii):
 
 - **`bundle` reads the item as its caller.** It resolves the stage's connection and runs `aws s3 sync`
   from the connection's location into the bundle's folder of the item's name, `model/`, with the

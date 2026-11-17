@@ -997,7 +997,7 @@ The manifest holds five storage items. `code`, `src`, `samples` and `workflows` 
 `model` names the project's storage connection, `default.s3_shared`, and the prefix
 `app-ml/models/latest`, as the `model-artifacts` item of AWS's `ml/deployment` example names
 `ml/output/model-artifacts`. What the CLI 1.0.9 does with such an item was read in its released wheel on
-2026-11-17 (the log), and nothing of it has run here (verification lxii):
+2026-11-17 (the log, `SUP-374`), and nothing of it has run here (verification lxii):
 
 - **`bundle` reads the item from the project of the stage it targets, as its caller.** It resolves the
   stage's connection and runs `aws s3 sync` from the connection's location and the include into the
@@ -1633,12 +1633,12 @@ each run (decision 24 (b)).
 - **10.10 — [Claude] The records.** The log, with each refusal's wording and each run's token counts;
   [`sagemaker-ai-ml.md`](../runbooks/sagemaker-ai-ml.md)'s designed readings replaced by the measured
   ones; `claude-code-sagemaker.md` §M for what enabling a model in a target took;
-  `sagemaker-application.md` §S for an application with no image; `POLICIES.md` if an organization
-  policy moved; `docs/AWS_SUPPLEMENT.md` for each behaviour the calls showed, `SUP-373` first, and
-  the account-level enforcement once it is measured; `docs/PRICING.md` with the first run's tokens
-  and text units against the bill, and AgentCore's rates read from the offer before 10.11;
-  `AWS_STATE.md` for `INV-18`, the boundary's version and the account-level configuration, which
-  is hand-managed where no resource carries it.
+  `sagemaker-application.md` §S for an application with no image; `POLICIES.md` if an organization policy
+  moved; `docs/AWS_SUPPLEMENT.md` for each behaviour the calls showed, `SUP-373` first, and the
+  account-level enforcement once it is measured; `docs/PRICING.md` with the first run's tokens and text
+  units against the bill, and, after 10.11, which of the offer's two pairs of runtime rates a session
+  metered (the offer was read on 2026-11-17); `AWS_STATE.md` for `INV-18`, the boundary's version and the
+  account-level configuration, which is hand-managed where no resource carries it.
 - **10.11 — The agent, one release after 10.7's (decision 26 (a)).** Agents Classic takes no new
   customers (7.4b), and AWS's migration table sends its users to Amazon Bedrock AgentCore, which
   runs in `us-west-2`. Of AgentCore's two shapes the one that promotes is a **runtime**, the
@@ -1801,7 +1801,7 @@ offers):
 | Pass 9's ML pipeline increment (9.8) | each step of an execution is a SageMaker job at its own rate, a processing job on `ml.t3.medium` and a training job on `ml.m5.large`, a few minutes each: **cents a run**, in the `dev` project alone (decision 19). What SageMaker Pipelines bills beside its steps' jobs is read in the offer into `docs/PRICING.md` before the increment (Lesson 6) |
 | Pass 10, one run of `app-genai-triage` in one account | about forty messages, some 24,000 input and 5,000 output tokens: **under 0.01** at Nova Lite's rate (decision 23 (a)). The guardrail's content, topic and sensitive-information policies over some 80 text units, at 0.40 per 1,000 for the three: **about 0.03**, and about as much again under an account-level guardrail, since AWS's page says charges apply to each enforced guardrail by its configured safeguards (decision 27). The first run's `usage` and the day's bill are the measurement (Lesson 6). A guardrail, an inference profile and a chain are expected to bill nothing at rest, which the same bill reads |
 | Pass 10's knowledge base (10.7) | the embeddings of the bundle's documents, a few thousand tokens at Titan Text Embeddings V2's 0.00002 per 1,000: **under 0.01** a sync; S3 Vectors' storage and requests as decision 12's row has them, **cents a month**; `bedrock-agent` and `bedrock-agent-runtime`, 0.010/hour each while raised |
-| Pass 10's agent (10.11) | AgentCore Runtime bills what a session consumes, by the second: 0.0895 per vCPU-hour, with no CPU charge while a session waits on I/O, and 0.00945 per GB-hour (AWS's pricing page, read 2026-11-16; the offer is read into `docs/PRICING.md` before the step, Lesson 6). A run of a few questions is **cents**, with its tokens and text units as the triage's. What a runtime bills with no session is 10.11's reading. The `bedrock-agentcore` endpoints, 0.010/hour each while raised |
+| Pass 10's agent (10.11) | AgentCore Runtime bills what a session consumes, by the second: 0.0895 per vCPU-hour, with no CPU charge while a session waits on I/O, and 0.00945 per GB-hour (AWS's pricing page, read 2026-11-16, and the `us-west-2` offer, read 2026-11-17 into `docs/PRICING.md`, which also holds a pair of usage types ending in `-v2` at 0.1276 and 0.0169; which pair a session meters is 10.11's reading). A run of a few questions is **cents**, with its tokens and text units as the triage's. What a runtime bills with no session is 10.11's reading. The `bedrock-agentcore` endpoints, 0.010/hour each while raised |
 | Pass 10's doors and sittings | `bedrock` and `bedrock-runtime`, 0.010/hour each in each account while `bedrock-base` is raised; the hub, GitLab and the egress slices of a promotion sitting; `GROUPS=mwaa,bedrock-base` in Sandbox for 10.4 |
 
 The stage spends **under 2 USD** in ML compute if every endpoint dies in its sitting, pass 9's runs
