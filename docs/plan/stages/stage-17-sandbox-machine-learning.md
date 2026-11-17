@@ -2651,8 +2651,8 @@ the criterion deciding nothing there. No decision of passes 9 and 10 is open.
   the earlier shape's measurements. A slice applied before the release that drops the workflow fails the
   chain's next run on a missing grant, the order 9.11 fixes.
 - **Stage 19 edits the slices passes 9 and 10 edit.** Its retirement of release T's path changed both
-  `foundation/` slices on 2026-11-17 (item 31, PR #308), and release G's sitting applies
-  `production/studio/` from its saved plan. Each pass's plans are cut from a `main` that holds both, and
+  `foundation/` slices on 2026-11-17 (item 31, PR #308), and release G's step 3 applied
+  `production/studio/` the same day. Each pass's plans are cut from a `main` that holds both, and
   each apply follows that stage's (Lessons 69 and 79).
 - **Stage 20's pass 4 edits the boundary pass 10 edits.** Its decision 13 changes `sagemaker-denies`,
   which a tag of `sagemaker-prereqs` carries to the project boundary, and its applies are

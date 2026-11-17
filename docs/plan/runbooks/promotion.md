@@ -14,8 +14,8 @@ chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs
 **Where it stands, 2026-11-17**: §0, §H, §P, §T, §W and §V done; of §N, N.0 to N.3 ran 2026-10-25/26,
 release T's sitting (N.8.2, `v0.4.7`, pipeline #117) on 2026-11-15 and release F's (N.8.4, `v0.5.2`,
 pipeline #129) on 2026-11-16, its step 10, Stage 19 item 31, applied on 2026-11-17. What is left is N.8.5
-(release G, `v0.6.0`) and N.8.3 (2026-11-22 to 2026-11-25); §N.6 orders it by sitting, the steps that need
-nothing up first.
+(release G, `v0.6.0`), its step 3 applied on 2026-11-17, and N.8.3 (2026-11-22 to 2026-11-25); §N.6 orders
+it by sitting, the steps that need nothing up first.
 
 | § | Holds |
 |---|---|
@@ -1123,14 +1123,14 @@ on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its pla
 Read on 2026-11-17 against the stage files and their logs, with nothing up, after release F's sitting and
 item 31's applies. Each sitting starts on the user's word, since it is metered.
 
-1. **With nothing up**: release G's step 3, `production/studio/`, re-planned on 2026-11-17 from `main` at
-   `80e996f5` (2 to add, 2 to destroy, the six statements unchanged and the seventh added) and saved as
-   `$HOME/tmp/review-production-studio.tfplan`, applied on the user's word naming it, with no Production
-   run in progress (N.8.5 step 3): the apply under a blanket authorization was refused by the app's
-   classifier on 2026-11-17 (*Production Deploy*). The five slices item 31 applied re-plan `No changes`
-   from the same tree, so the Lesson 79 window is closed. Stage 19's step 8, each deployment
-   project's first scheduled source run after the imports, read the same day (xvii, xxv). Stage 20's
-   pass 4 changes `production/studio/` after release G's step 3 (Lesson 69).
+1. **With nothing up**: release G's step 3, `production/studio/`, **applied 2026-11-17** at 13:11 UTC on
+   the user's word naming it, from the plan saved at 05:06 UTC from `main` at `80e996f5`
+   (`$HOME/tmp/review-production-studio.tfplan`, 2 added, 2 destroyed), with no Production run in
+   progress, and re-planned `No changes` (N.8.5 step 3). The apply under a blanket authorization had been
+   refused by the app's classifier the same day (*Production Deploy*). The five slices item 31 applied
+   re-plan `No changes` from the same tree, so the Lesson 79 window is closed. Stage 19's step 8, each
+   deployment project's first scheduled source run after the imports, read the same day (xvii, xxv).
+   Stage 20's pass 4 finds `production/studio/` with release G's change applied (Lesson 69).
 2. **Release G's sitting** (N.8.5 steps 2, 4 and 5): the hub, GitLab with `BUILD=1`, `staging/egress/`
    raised before the tag and destroyed after the Staging leg, `production/workloads-egress/` before
    `production-gate`; the local user's password rotated before the first push (N.8.2 step 3), the mirror
@@ -2145,7 +2145,13 @@ step 8, with the hub and GitLab up for its tag, and each act below names its ide
    `CreateTheProductsDataProductInTheProjectsDomain`, and the slice re-planning `No changes`.
    **Re-planned 2026-11-16** at 06:33 UTC from `c5e1718e`'s tree into the file above: *"Plan: 2 to add,
    0 to change, 2 to destroy"*, the new statement among the policy's; `staging/studio/` `No changes`. The
-   saved plan goes stale with any apply of the slice before it.
+   saved plan goes stale with any apply of the slice before it. **Applied 2026-11-17**, 13:11:44 to
+   13:11:57 UTC, from the plan re-saved at 05:06 UTC from `main` at `80e996f5`
+   (`$HOME/tmp/review-production-studio.tfplan`), with no Production run in progress: *"Apply complete!
+   Resources: 2 added, 0 changed, 2 destroyed."* The re-plan at 13:12:44 UTC reads *"No changes"*, and the
+   policy is at `v1`, seven statements, the last `CreateTheProductsDataProductInTheProjectsDomain`. The IAM
+   simulator answers nothing on the new pair, as on `StartDataSourceRun` (`SUP-008`): step 5's trail is the
+   measurement.
 4. **[user] The template's merge request** from `examples/app-etl/` at the merged `main`, then the tag
    `v0.6.0`. `staging/egress/` raised before the tag and destroyed after the Staging leg (Stage 8
    decision 27); `production/workloads-egress/` raised before `production-gate`. Both targets hold

@@ -202,8 +202,8 @@ from `GlueJobOperator` or start its own data source's run with the blueprint's p
   26 (b)), on `main` and tagged `v0.6.0` at its sitting: a data product's name is the domain's, so the
   stage that lists the product owns it. Neither managed policy grants `datazone:CreateDataProduct` or
   `CreateDataProductRevision` (v48 and v77, read 2026-11-16). The statement that gives them to the same
-  role, beside the start (`publishing_creates_the_data_product`), was written 2026-11-16 and is applied
-  with `production/studio/` at release G's step 3 ([`promotion.md`](promotion.md) §N.8.5).
+  role, beside the start (`publishing_creates_the_data_product`), was written 2026-11-16 and applied
+  with `production/studio/` on 2026-11-17, release G's step 3 ([`promotion.md`](promotion.md) §N.8.5).
 
 The grant for the jobs is `terraform-live/sandbox/workflows/`, one policy and one attachment per project role:
 

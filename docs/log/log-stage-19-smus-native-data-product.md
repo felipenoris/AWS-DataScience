@@ -4010,3 +4010,40 @@ the user's hand.
   ended) and no other session of this project running, the apply of the saved plan was refused by the
   app's classifier, *Production Deploy*, under the user's authorization of the session's writes. The plan
   stays saved for the user's word naming it.
+
+## 2026-11-17 — release G's step 3: `production/studio/` applied from its saved plan
+
+On the user's word naming the apply, *"Autorizo o apply"*, the answer to *"Autoriza o apply de
+`production/studio/` a partir do plano salvo do release G?"*, Claude applied the plan saved at 05:06 UTC
+from `main` at `80e996f5`. Every call as `awsds-infra-prod`, `InfrastructureAccess`, in Production.
+
+- **[Claude] Before the apply**, 13:09 to 13:11 UTC: `origin/main` still at `80e996f5`, no commit since
+  touching `production/studio/` or a module, and this branch changing neither. The three chains' state
+  machines hold no `RUNNING` execution and their schedules read `DISABLED`; the three MWAA Serverless
+  workflows of `deploy-production` hold no run in progress, the latest ended 2026-11-16 05:22:41 UTC; no
+  SageMaker processing or training job is `InProgress` and no Glue job run is running. The peer session of
+  this project on the laptop, *Worktrees para apagar*, idle, was told first; the other works in another
+  repository.
+- **[Claude⚡] The apply**, `terraform apply -input=false <plan>` with Terraform 1.16.6, 13:11:44 to
+  13:11:57 UTC: *"Apply complete! Resources: 2 added, 0 changed, 2 destroyed."* The project role held no
+  workflows grant between the attachment's destruction and its re-creation, the apply's lines reading 1 s,
+  0 s, 1 s and 0 s. The app's classifier let the apply through.
+- **[Claude] Read back**: the re-plan from the same tree at 13:12:44 UTC, *"No changes. Your
+  infrastructure matches the configuration."*; `awsds-prod-workflows` at `v1` of 13:11:54 UTC, one
+  attachment, seven statements, the last `CreateTheProductsDataProductInTheProjectsDomain` granting
+  `datazone:CreateDataProduct` and `CreateDataProductRevision` on the domain's ARN. `deploy-production`'s
+  project role holds it beside AWS's three managed policies, `awsds-prod-warehouse-load` and
+  `awsds-prod-person-session-deny`.
+- **[Claude] The simulator answers nothing on the new pair**, 13:13 to 13:20 UTC, `iam
+  simulate-principal-policy` as the project role with the Region, the organization, both accounts, the
+  role's ARN and its 17 tags in the context. With the domain's ARN, in the Data Governance account, and
+  with the same ARN rewritten to Production's account, `CreateDataProduct`, `CreateDataProductRevision`,
+  `DeleteDataProduct` and `StartDataSourceRun` read `implicitDeny` naming no statement and carrying no
+  organization or boundary detail; `GetDomain` read `allowed` by the managed policies. With no resource
+  named, the organization and the boundary read `true` and the four `implicitDeny`. `StartDataSourceRun`
+  runs under the same form of statement (`SUP-346`), so step 5's trail is the measurement; appended to
+  `SUP-008`.
+- **[Claude] Written**: `promotion.md` §N.6 item 1, §N.8.5 step 3 and its status line; the stage file's
+  status row, §Release G as written, item 7 and decision 26; Stage 17's and Stage 20's notes on the
+  slice; `serverless-workflows.md`; `waiting-on-the-user.md`'s release G and Stage 20 decision 13 rows;
+  `CLAUDE.md`'s Stage 19 row and its classifier row; `SUP-008`.

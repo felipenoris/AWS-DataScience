@@ -1294,9 +1294,9 @@ four profiles 4.4 names.
 
   A plan passes when it changes the statement's action list and nothing else, or what 4.2 read of the
   tags between; the second plan reads `No changes`. A plan that carries another stage's unapplied change
-  stops its row until that stage applies it (Lesson 69): `production/studio/` holds release G's since
-  2026-11-16, 2 to add and 2 to destroy ([`promotion.md`](../runbooks/promotion.md) §N.8.5 step 3), so
-  that slice's apply here follows release G's. A minute or more after `identity/org-policies/`'s apply
+  stops its row until that stage applies it (Lesson 69): `production/studio/` held release G's from
+  2026-11-16 to its apply on 2026-11-17 ([`promotion.md`](../runbooks/promotion.md) §N.8.5 step 3), so
+  that slice's plan here carries pass 4's change alone. A minute or more after `identity/org-policies/`'s apply
   (`SUP-350`), Phase 4b's battery, whose workloads rows run in Production as `awsds-infra-prod`, then
   `make check`:
 
@@ -1660,8 +1660,8 @@ never moves.
   `eighth-experimentation`, the consumer of its step 4.12 and the project its instruments read. Pass 5
   here waits on that step and runs before the revocation it ends with. Its step 6.2 rewrites
   [`sagemaker-application.md`](../runbooks/sagemaker-application.md) §N and §W, which 4.6 here edits for
-  a processing job: the step that lands second starts from the other's text. Its release G applies
-  `production/studio/` before pass 4 does (4.4).
+  a processing job: the step that lands second starts from the other's text. Its release G applied
+  `production/studio/` on 2026-11-17, before pass 4 (4.4).
 - **Every stage whose jobs or checks carry the isolation statement** (pass 4):
   [9](stage-09-deployment-targets.md) step 3.1's design note and 3.5's document,
   [10](stage-10-orchestration-promotion.md)'s rules for a processing task,
