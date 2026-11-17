@@ -3763,32 +3763,33 @@ entry is still true is the reading.
   environment preparation failed due to an internal server error."*; the trail carried the `AccessDenied`.
   Where: `log-stage-10-orchestration-promotion.md`, 2026-10-26.
 
-- `SUP-372` **The Amazon provider's `SageMakerTransformOperator` reads the transform job's name before it
-  creates the job and calls the model APIs only when its `config` carries a `Model` key, and
+- `SUP-372` **The Amazon provider's `SageMakerTransformOperator` reads the transform job's name before
+  it creates the job and calls the model APIs only when its `config` carries a `Model` key, and
   `SageMakerRegisterModelVersionOperator` creates the model package group before the package** (read in
   the provider's code at `providers-amazon/9.32.0` and `9.38.0` on 2026-11-16, Stage 17 pass 9; not
   measured on a worker). `SageMakerTransformOperator.execute()`, with `check_if_job_exists` true, the
   default: `DescribeTransformJob` on the proposed name, a `ValidationException` the only absence and
   anything else re-raised; `action_if_job_exists` takes `timestamp` or `fail`, and `fail` raises *"A
-  SageMaker job with name … already exists."*. With a `Model` key in the `config` it calls `DescribeModel`
-  on the model's name and then `CreateModel`; with none it makes no model call before the job. The hook
-  then checks the input (`HeadBucket`, then `HeadObject` on the key or a list of the prefix), calls
-  `CreateTransformJob` and polls, and the operator returns `DescribeTransformJob` and `DescribeModel`.
-  Its OpenLineage method, where a listener calls it, reads `DescribeModelPackage` for a model whose
-  `PrimaryContainer` names a package. `SageMakerModelOperator` calls `CreateModel` and `DescribeModel`
-  with no check of the name, and `SageMakerDeleteModelOperator` calls `DeleteModel` alone.
-  `SageMakerEndpointOperator` calls `CreateModel` and `CreateEndpointConfig` when its `config` carries
-  them, with no check, then `CreateEndpoint`; when the error's message starts *"Cannot create already
-  existing endpoint"* it calls `UpdateEndpoint`, dropping the tags; then it waits for `InService`.
-  `SageMakerRegisterModelVersionOperator` calls `CreateModelPackageGroup` first, with the package's
-  description as the group's, and counts as "already there" only a `ValidationException` whose message
-  starts *"Model Package Group already exists"*; it then calls `CreateModelPackage`, and deletes a group
-  it created when the package fails. `SageMakerStartPipelineOperator` calls `StartPipelineExecution` and
-  polls, and `BedrockInvokeModelOperator` calls `InvokeModel`. Between the two tags
-  `operators/sagemaker.py` differs in the triggers' arguments, in where the `output_files_to_xcom` check
-  sits and in a notebook instance's tags, and in none of these calls. Not read:
-  `SageMakerEndpointConfigOperator` and the tuning and AutoML operators. The consequences: a role that
-  runs a transform task needs the read of a free transform-job name, the read `SUP-267` names for
+  SageMaker job with name … already exists."*. With a `Model` key in the `config` it calls
+  `DescribeModel` on the model's name and then `CreateModel`; with none it makes no model call before
+  the job. The hook then checks the input (`HeadBucket`, then `HeadObject` on the key or a list of the
+  prefix), calls `CreateTransformJob` and polls, and the operator returns `DescribeTransformJob` and
+  `DescribeModel`. Its OpenLineage method, where a listener calls it, reads `DescribeModelPackage` for a
+  model whose `PrimaryContainer` names a package. `SageMakerModelOperator` calls `CreateModel` and
+  `DescribeModel` with no check of the name, and `SageMakerDeleteModelOperator` calls `DeleteModel`
+  alone. `SageMakerEndpointOperator` calls `CreateModel` and `CreateEndpointConfig` when its `config`
+  carries them, with no check, then `CreateEndpoint`; when the error's message starts *"Cannot create
+  already existing endpoint"* it calls `UpdateEndpoint`, dropping the tags; then it waits for
+  `InService`. `SageMakerRegisterModelVersionOperator` calls `CreateModelPackageGroup` first, with the
+  package's description as the group's, and counts as "already there" only a `ValidationException` whose
+  message starts *"Model Package Group already exists"*; it then calls `CreateModelPackage`, and deletes
+  a group it created when the package fails. `SageMakerStartPipelineOperator` calls
+  `StartPipelineExecution` and returns the execution's ARN; it polls the execution only with
+  `wait_for_completion`, false by default. `BedrockInvokeModelOperator` calls `InvokeModel`. Between the
+  two tags `operators/sagemaker.py` differs in the triggers' arguments, in where the
+  `output_files_to_xcom` check sits and in a notebook instance's tags, and in none of these calls. Not
+  read: `SageMakerEndpointConfigOperator` and the tuning and AutoML operators. The consequences: a role
+  that runs a transform task needs the read of a free transform-job name, the read `SUP-267` names for
   processing and training jobs; a transform task with no `Model` key needs no model call of its own
   before the job; and the register operator, on a group Terraform declares, needs
   `sagemaker:CreateModelPackageGroup` allowed to reach the "already exists" answer, since a refusal ends

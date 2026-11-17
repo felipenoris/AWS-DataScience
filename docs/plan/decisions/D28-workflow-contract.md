@@ -23,8 +23,9 @@ training code and sample, and the archive's SHA-256 names it in every stage. Cla
 for such an application: each target holds a group, a task of the workflow proposes the release's
 version there and the account's deploy role approves it, and Staging reads nothing of Production's
 registry. Its training code runs in a workflow of the `dev` project alone, so the sentence below on a
-model's training in Production describes `app-etl`, whose model keeps that shape until Stage 17 decision
-28 is answered. Planned by Stage 17 pass 9, nothing applied.
+model's training in Production describes `app-etl`, whose model keeps that shape until it retires in a
+release of its own after `app-ml`'s first release (Stage 17 decision 28, taken by the user as (a) on
+2026-11-17; Stage 17 step 9.11). Planned by Stage 17 pass 9, nothing applied.
 
 **In one line:** What crosses the gate into a headless deployment target: a closed list of artifact classes, carried by the repository; a workflow starts whatever runs there. A trained model is the one class the repository does not carry (amended 2026-11-17, planned).
 
