@@ -8,8 +8,8 @@
 # (Stage 19 decision 18 (d)): the reads below. It writes nothing in this account: the bundle's files
 # are the tag's own, read beside the manifest, and the role deploys nothing and runs nothing. No action
 # below takes a resource type but GetDomain, so DataZone's own membership layer is what confines the
-# reads to one project: the role is made a member of the `dev` project in the portal, by hand, and of
-# no other (EXC-17).
+# reads: the role is made a member of each application's `dev` project in the portal, by hand, and of
+# no other project (INT-25).
 #
 # The ceiling adds, to the module's denies, every role change and every PassRole. No state, since the
 # role applies no slice (refusal 8), and no application ceiling.

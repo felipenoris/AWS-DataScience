@@ -8,6 +8,12 @@
 
 **Amended 2026-11-17 (user, [Stage 17](../stages/stage-17-sandbox-machine-learning.md) decisions 16 (b) and 21 (b), [Stage 10](../stages/stage-10-orchestration-promotion.md) decision 22 as revised):** a model is trained once, in the application's `dev` project in Sandbox, and the trained model is promoted in the release's bundle; [`objectives.md`](../objectives.md) names ML models among the artifacts a data scientist promotes. A target's runtime registers, tests and serves the promoted model and trains none. Each target, Staging among them, holds a model package group for such an application, where a task of the workflow proposes the release's version and the account's deploy role approves it, in Production on a deployment manager's job. **Planned by Stage 17 pass 9, nothing applied.** `app-etl`'s model keeps the shape the rationale below describes, each target training its own and the registry in Production alone, until it retires in a release of its own after `app-ml`'s first release (Stage 17 decision 28, taken by the user as (a) on 2026-11-17; Stage 17 step 9.11).
 
+**Amended 2026-11-17 ([Stage 19](../stages/stage-19-smus-native-data-product.md) step 4.1, decision 6
+(b)):** the `Workloads` OU's deny of `datazone:*` was lifted on 2026-11-11 at 14:23 UTC, when each target
+gained a deployment project of the domain. *Only pipelines submit* holds through `<env>/studio/`'s
+person-session deny, which refuses a person's session the writes to objects, workflows, jobs, tables and
+notebooks there, rather than through the absence of a domain.
+
 **In one line:** Interactive compute exists only in the Interactive OU; deployment targets carry the runtime, and only pipelines submit to it.
 
 **Related decisions:** [D14](D14-supply-chain-account.md), [D20](D20-staging-account.md), [D21](D21-development-account.md)

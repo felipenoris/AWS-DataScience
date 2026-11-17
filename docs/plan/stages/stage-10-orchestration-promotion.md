@@ -61,7 +61,11 @@ workflows are the CI/CD CLI's, `<application>_<project>_<workflow>` in each acco
 run as the project's role, logging to the service's `/aws/mwaa-serverless/` group, their definitions in
 the account's projects bucket; the chain layer is `terraform-modules/orchestration`'s, with no events
 role and no bridge rule. `./aws/orchestration.py` reads those contracts ([`aws/INDEX.md`](../../../aws/INDEX.md)),
-and the names above that they replace are release T's.
+and the names above that they replace are release T's. Release T's Terraform path is retired (Stage 19
+item 31, applied 2026-11-17), so decisions 6, 12, 13, 15, 16 and 20 and steps 1.1, 2.4 and 4.2 describe
+what ran until then: the definitions and the code now live in each project's `shared/<app>/`, which the
+project role can rewrite (Stage 19 decision 28, `TM-32`), the chains are `<env>/chains/`, `[P]` slices the
+user applies, and every chain starts one workflow.
 
 ```mermaid
 flowchart LR

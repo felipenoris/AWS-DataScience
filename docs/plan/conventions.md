@@ -363,7 +363,7 @@ terraform-live/
 │   │                     #     role. sagemaker/ above keeps Stage 9's job roles
 │   ├── chains/           # [P] the chain layer above the workflows the CI/CD CLI creates in
 │   │                     #     deploy-staging (Stage 19 step 4.11, rank 61), through
-│   │                     #     orchestration-v0.3.0: per chain a state machine that finds its
+│   │                     #     orchestration-v0.3.1: per chain a state machine that finds its
 │   │                     #     workflow by name, a schedule and a failure rule. Applied
 │   │                     #     2026-11-15
 │   └── egress/           # [E] interface endpoints only (7, VPC-Workloads' set since Stage 9
@@ -506,7 +506,7 @@ terraform-live/
     │                     #     alarms by name and never reads a [D] state (Lesson 4)
     └── chains/           # [P] the chain layer above the workflows the CI/CD CLI creates in
                           #     deploy-production (Stage 19 step 4.11, rank 61), through
-                          #     orchestration-v0.3.0, the warehouse load's chain among them.
+                          #     orchestration-v0.3.1, the warehouse load's chain among them.
                           #     Applied 2026-11-16
 
 terraform-modules/        # reusable modules (the roster and its tags: terraform-modules/README.md)

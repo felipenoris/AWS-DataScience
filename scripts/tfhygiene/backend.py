@@ -534,11 +534,11 @@ DEPLOY_ROLES = {
 
 # Stage 8 decision 19 - a deploy role outside its account's foundation/, keyed by the (account,
 # slice) that builds it: the role the pipeline's `bundle` job makes a release's bundle as, reading
-# the `dev` project (Stage 19 decision 19 (c); until then it deployed the release to D41's `test`
-# project, which its name records). The
-# slice gets its name and the home's profile, as a foundation/ does, and the home lists it in that
-# account's `other_roles`, so the runner's AssumeRole list and its profiles carry it. The account
-# holds a DEPLOY_ROLES row and is not the home: the home lists only the targets.
+# the `dev` project (Stage 19 decision 19 (c)). Its name records D41's `test` project, which it
+# deployed the release to until then. The slice gets its name and the home's profile, as a
+# foundation/ does, and the home lists it in that account's `other_roles`, so the runner's AssumeRole
+# list and its profiles carry it. The account holds a DEPLOY_ROLES row and is not the home: the home
+# lists only the targets.
 DEPLOY_ROLES_BY_SLICE = {
     ("sandbox", "workflows"): "awsds-deploy-sandbox-test",
 }
@@ -967,8 +967,8 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
     # Stage 9 step 4.3 - a read-only target's sagemaker/ slice: the job role and the job log groups,
     # without the registry and the escape hatch, which stay Production's. No `lake` map: the role
     # reaches the lake through Lake Formation alone. It pulls the application image from the registry
-    # account, whose state is read cross-account, so the slice takes the registry map as an
-    # application slice does.
+    # account, whose state is read cross-account, so the slice takes the registry map as a dev-env/
+    # slice does.
     elif slice_name == "sagemaker" and account in READ_ONLY_TARGETS:
         values["account_folder"] = account
         values["zone_ids"] = ZONE_IDS[account]

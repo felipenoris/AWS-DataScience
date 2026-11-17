@@ -1,8 +1,8 @@
 """A slice's state, read from its state object - the deploy jobs' way to every account value.
 
 The state is read as the caller's AWS profile through the aws CLI, the repository's one dependency
-(pyproject.toml): on the deploy runner the deploy role, whose state_read_keys name the slices an
-application reads (Stage 8 step 4.1); by hand the account's infrastructure profile.
+(pyproject.toml): on the deploy runner the deploy role, whose state_read_keys name the slices the
+pipeline's jobs read (Stage 8 step 4.1); by hand the account's infrastructure profile.
 """
 
 from __future__ import annotations

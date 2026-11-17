@@ -3,11 +3,10 @@
 # that rehearses it (D20), so a permission a job lacks fails here before the gate.
 #
 # The name is a contract: Stage 8 step 2.5 makes Stage 9's awsds-<env>-job-exec the job role in
-# Staging and Production (the user's decision of 2026-10-22), Stage 10 decision 6's render table maps
-# it per account, and ./aws/deploytargets.py DT-4 reads its trust and its S3 grants. The trust admits
-# the two job services and nothing else, so no person assumes it (D27's shape). iam:PassRole to it is
-# granted in the passers' own slices (awsds-deploy-staging, Stage 10's execution roles), scoped by
-# iam:PassedToService.
+# Staging and Production (the user's decision of 2026-10-22), and ./aws/deploytargets.py DT-4 reads
+# its trust and its S3 grants. The trust admits the two job services and nothing else, so no person
+# assumes it (D27's shape). No slice grants iam:PassRole to it: release F's jobs run as the deployment
+# project's role (Stage 19 item 31).
 #
 # What Production's role holds and this one does not: the drop-box pickup, and through the share any
 # write: this account reads the governed lake through a read-only Lake Formation share (decision 3)

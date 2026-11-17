@@ -2560,3 +2560,46 @@ the user's word, before any pull request existed; nothing was merged.*
   is, Stage 19's subject: `sagemaker-application.md` §M says a manifest holds no `catalog` content, and
   `examples/app-etl/manifest.yaml` has held `content.catalog` since that stage's releases. Nothing in AWS
   changed.
+
+## 2026-11-17 — passes 9 and 10 read against the estate, with nothing up
+
+Read by a subagent of the plan's review session as the infrastructure user, read-only, and checked by
+that session where marked. Nothing was applied.
+
+- **[Claude, a subagent] Two blockers**: the deploy roles' `state` policies name no `studio` key (Staging:
+  `foundation`, `sagemaker`, `data`, `egress`; Production: `workloads`, `foundation`, `sagemaker`, `data`,
+  `workloads-egress`; `get-role-policy`), so pass 10's `MODEL_ID` read from `<env>/studio/` stops; and
+  `sandbox/workflows/` and `sandbox/bedrock/` read each listed role with `data "aws_iam_role"`, while
+  Sandbox holds three `datazone_usr_role_*` roles, all of existing projects, so 9.5 and 10.4 plan after
+  the projects are created.
+- **[Claude, a subagent] MLflow**: `describe-mlflow-app` on `ml-demo-mlflow` reads version 3.16.0,
+  `LastModified` 2026-11-15T13:53Z, `MaintenanceStatus` `MAINTENANCE_COMPLETE`, `ModelRegistrationMode`
+  `AutoModelRegistrationDisabled`.
+- **[Claude] The registry as `deploy-production`'s project role**, simulated with the role's tags and
+  the Region: `UpdateModelPackage` and `DescribeModelPackage` on a version `implicitDeny` without the
+  `AmazonDataZoneProject` tag and `allowed` with it, by `SageMakerStudioProjectRoleMachineLearningPolicy`;
+  `ListModelPackages`, `ListModelPackageGroups` and `DescribeModelPackageGroup` on the untagged group
+  `allowed`. The subagent read the same in Staging, with `CreateModel` `allowed` under the project tag,
+  a VPC and isolation, `DescribeTransformJob` on a free name `implicitDeny` and `bedrock:InvokeModel` on
+  Nova Lite `explicitDeny` by `awsds-<env>-project-boundary`.
+- **[Claude, a subagent] Policy sizes**, `get-policy-version` and `get-role-policy`: the deploy roles'
+  inline `apply-application` 1,642 characters in Staging and 1,874 in Production, against 10,240 inline;
+  `awsds-<env>-workflows` 1,681 and 1,854 of 6,144; the deploy roles' managed policy 5,060 and 5,045.
+- **[Claude, a subagent] Quotas**, identical in the three accounts: `ml.t3.medium` processing 10;
+  `ml.m5.large` training 20, transform 8, endpoint 30, processing 8 (Staging's processing value lost to
+  a 408). Bedrock: Nova Lite holds cross-Region quotas alone (L-89F8391A 4,000 requests a minute,
+  L-7C42E72A 8,000,000 tokens a minute) and no `us-west-2` on-demand one; Titan Text Embeddings V2 holds
+  L-26C560CE (6,000); guardrails 100 per account (L-0E5A840C), 20 versions each (L-D471AEAB).
+- **[Claude, a subagent] Bedrock**: Nova Lite `ACTIVE`, its availability `AVAILABLE`/`AUTHORIZED` in the
+  three accounts; the retention mode `none` in Sandbox and `inherit` in both targets; the use-case form
+  filled in Sandbox and `ResourceNotFoundException` in both targets; no guardrail and no enforced
+  configuration; no application inference profile in the targets, Sandbox's Nova Lite profile serving
+  `us-west-2` alone. Sandbox's `us-west-2` retention reads `updatedAt` 2026-09-12T15:32:02Z, read again
+  by the review session, so `INV-18` gains that reading.
+- **[Claude, a subagent] The registry and the start**: `awsds-prod-model-app-etl` alone exists, version 1
+  `Approved` (2026-10-24), so 9.11's delete meets a version; `production/foundation/deploy-project.tf`
+  grants `StartWorkflowRun` on every workflow tagged with the deployment project, so pass 9's start of
+  `app-ml-register` needs nothing added.
+- **[Claude] Written**: the stage file's tables and steps 9.1, 9.4 to 9.6, 10.2, 10.4 and 10.5 corrected
+  with these readings, `sagemaker-ai-ml.md`'s MLflow version, `TM-30`, `INT-07` and `INT-25`. Nothing in
+  AWS changed.

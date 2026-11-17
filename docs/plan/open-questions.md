@@ -17,8 +17,9 @@ follows is still unanswered:
 2. **D7/D28 - two verifications, not decisions.** The orchestration decision is closed (Stage 10 builds
    alternative A alone since D7's 2026-09-05 amendment: MWAA Serverless via
    `awscc_mwaaserverless_workflow`, verified to exist 2026-08-08, re-verified 2026-08-16). What is open:
-   (i) whether the awscc resource *applies* cleanly under the CI deploy role (INT-14 — fallback chain
-   recorded there); (ii) whether **no-UI** observability is livable for a data scientist debugging a
+   (i) whether the awscc resource *applies* cleanly under the CI deploy role, answered yes by pipeline #71
+   (2026-10-24, INT-14), the path retired on 2026-11-17 with the CI/CD CLI creating the workflows (Stage 19
+   item 31); (ii) whether **no-UI** observability is livable for a data scientist debugging a
    failed run — Serverless has run/task APIs, a console page, per-task log streams and (since 2026-06)
    EventBridge events, but no Airflow web interface (read 2026-08-16). Stage 10 measures it in step 3.2's
    diagnosis session and answers it in its decision 11. Keep application entry points as plain containers
@@ -973,7 +974,11 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     create has to carry. A revision of those policies that closes it ends the question for that
     grant ([`upstream-releases.md`](upstream-releases.md) reads them). Sandbox holds no Premium
     Support subscription (read 2026-11-14, Stage 19 decision 17 (d)), so no support case reports it
-    from here.
+    from here. One candidate is unmeasured: a role the customer provides at the project's creation, which
+    the CI/CD CLI's manifest carries as `project.role.arn` and `CreateProject` takes as
+    `--project-execution-role` (the laptop's AWS CLI, read 2026-11-17), while AWS's page on IAM-based
+    domains says an Identity Center domain uses the project role. A create is the only probe, so it is read once in the sitting that creates
+    `app-ml-dev` (Stage 17 step 9.6), never by a project made for it.
 
 ---
 

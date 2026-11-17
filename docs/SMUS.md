@@ -643,10 +643,11 @@ it deploys only into projects that already exist; its 1.0.9 code also creates on
 A deployment target held no project and no domain
 association until 2026-11-11, so the tool could not reach one (Stage 18 gave Staging both for its
 window, below, and its verdict kept the rule). Stage 19 decision 6 (b) reverses it: both targets are
-associated since that day, each holds a deployment project (its steps 4.4 to 4.6), and the CLI deploys
-into them from its step 4.9. Until that release it deploys an application from its repository into the Sandbox `dev` project
-and makes the bundle (no `test` stage since Stage 19 decision 19 (c)), and the GitLab pipeline stays the
-deployer in Staging and Production (D28, D41). Measured in the lab on 2026-10-15: `deploy` syncs the
+associated since that day, each holds a deployment project (its steps 4.4 to 4.6), and since release F
+(`v0.5.2`, pipeline #129, 2026-11-16) the CLI deploys the bundle into `deploy-staging` and
+`deploy-production` from the pipeline's legs. In Sandbox it deploys an application from its repository
+into the `dev` project and makes the bundle (no `test` stage since Stage 19 decision 19 (c)). Measured in
+the lab on 2026-10-15: `deploy` syncs the
 manifest's `storage` content into the project's S3 and the workflow is born by the bootstrap action
 `workflow.create`, which resolves the YAML's variables, rewrites it at the same key and calls
 `CreateWorkflow` with the project role, the Tooling subnets, security group and key, no `TriggerMode`
@@ -656,8 +657,8 @@ the name is `<application>_<project>_<workflow>`, every other character turned i
 pre-deployment validation simulates the role's policies with no context keys, so every SCP conditioned
 on `aws:RequestedRegion` or `aws:ResourceOrgID` reads denied and the deploy runs with
 `--skip-validation`; `--no-events` keeps its `PutEvents` off the default bus; its boto3 ignores the
-`aws` CLI's SSO cache. Stage 8 step 5.6 writes the lint that enforces the difference, on the rendered
-file. 1.0.9 is still the latest release on 2026-10-18. When its identity cannot read a domain-scoped VPC
+`aws` CLI's SSO cache. `awsds-workflows lint` checks a workflow's YAML against the difference before the
+deploy ([`serverless-workflows.md`](plan/runbooks/serverless-workflows.md) §T). 1.0.9 is still the latest release on 2026-10-18. When its identity cannot read a domain-scoped VPC
 connection or the Tooling environment's `privateSubnets`, `securityGroup` and `kmsKeyArn`, `workflow.create`
 omits the network and the key, prints one line and creates the workflow in the service's default worker
 network under a service-managed key (its `helpers/datazone.py`; [`upstream-releases.md`](plan/upstream-releases.md)).
@@ -742,8 +743,8 @@ and its log); D41 item 2 kept the rule above.
   role `AWSServiceRoleForAmazonAthena`. `DataLake` on demand adds a Glue database, its
   project-conditioned Lake Formation grants and a daily data source, its manage-access role needing
   `AmazonDataZoneGlueManageAccessRolePolicy`.
-- **What a deploy into it reads and leaves** (release F, written 2026-11-12 and not yet run in a
-  target; Stage 19 step 4.9). The project's `Tooling` environment answers the values a stage of a
+- **What a deploy into it reads and leaves** (release F, run through both targets on 2026-11-16,
+  pipeline #129; Stage 19 step 4.9). The project's `Tooling` environment answers the values a stage of a
   manifest needs, its subnets, its security group, its key and its shared prefix (`SUP-359`), so the
   pipeline's leg reads them from the project. The CLI writes each `{env.VAR}` of a workflow into the
   deployed definition as `{{ params.VAR }}` and fills it only on a run it starts (`SUP-282`), so a

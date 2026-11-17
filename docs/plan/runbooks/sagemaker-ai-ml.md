@@ -238,8 +238,10 @@ The lab, read 2026-10-19:
   administrator to enable it."*: the entry reads the domain account's blueprint configurations, which
   D22 keeps empty.
 - The app `ml-demo-mlflow` was created through `datazone create-environment` on the profile's
-  `MLflowApp` configuration: MLflow 3.10.1, its role the project role, its artifacts under the
-  project's prefix. *Open* mints its URL with `CreatePresignedMlflowAppUrl`.
+  `MLflowApp` configuration: MLflow 3.10.1 at its creation and 3.16.0 since its maintenance of 2026-11-15
+  (read 2026-11-17), its role the project role, its artifacts under the project's prefix, its
+  `ModelRegistrationMode` `AutoModelRegistrationDisabled`. *Open* mints its URL with
+  `CreatePresignedMlflowAppUrl`.
 
 A space's client reaches the app through the interface endpoint `aws.sagemaker.<region>.mlflow`, the
 optional group `mlflow` of `sandbox/egress` (§C), with the app's ARN as the tracking URI. No run has
@@ -720,7 +722,9 @@ admitted and unused.
 package-task` over `mlflow-skinny==3.10.1` and `sagemaker-mlflow==0.5.0` wrote a `.zip` of 15,288,232
 bytes, 55,772,613 uncompressed, with 42 distributions, against the service's 250 MB, and CPython 3.12
 imported both packages from it. The import on a worker and a tracking call from one are unmeasured
-(verification xxxii). The archive is `app-ml-train`'s, so it runs in `dev` alone.
+(verification xxxii). The archive is `app-ml-train`'s, so it runs in `dev` alone. The app runs MLflow
+3.16.0 since 2026-11-15 and the house image's lock carries the same, so Stage 17 step 9.4 re-pins the
+archive and measures it again before 9.2.
 
 ## D. The development flow in Sandbox
 
@@ -889,9 +893,9 @@ tag: the GitLab project, the image repository, the registry's family in Producti
 Staging, the deploy roles' statements, the project roles' statements, the chains and the Sandbox grants,
 the bundle role's read of the model's prefix among them. The threat-model entry for a model archive that
 travels from a Sandbox project into Production's serving container is accepted before that tag (9.5).
-The list is Stage 17's "What pass 9 builds", in the order of
-[`sagemaker-application.md`](sagemaker-application.md) §S, which was read from the code and has not been
-run for a second application.
+The list is Stage 17's "What pass 9 builds", in its own order, which
+[`sagemaker-application.md`](sagemaker-application.md) §S points at for release F: the `dev` project before
+the Sandbox slices that read its role. Neither has been run for a second application.
 
 ### `app-genai`'s release
 

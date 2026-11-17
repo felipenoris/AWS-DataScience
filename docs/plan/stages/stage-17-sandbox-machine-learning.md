@@ -217,12 +217,12 @@ and the objects the workflows create.
 | GitLab, `awsds/app-ml` | the project with its protection, members, runners and variables, and the mirror's allowlist ([`sagemaker-application.md`](../runbooks/sagemaker-application.md) §L); `examples/app-ml/` pushed to it after the merge | — |
 | `terraform-live/production/registry/` | `awsds-prod-ecr-app-ml` on `ecr-repo`, pulled by Sandbox's and Staging's accounts as `app-etl`'s repository is, with its outputs | `[P]` |
 | `terraform-live/identity/sso/` | the repository in the data scientists' `ReadAndPullTheApplicationImages` | `[P]` |
-| `terraform-live/production/sagemaker/` | `registry.tf`'s `model_families` gains `app-ml`: the group `awsds-prod-model-app-ml` and its resource policy, which for this family names the deploy role for the approval alone, since a task registers (decision 16 (b)), and no reader in Staging, since the model reaches each account in the release's bundle; the Sandbox readers of a version's status stay | `[P]` |
+| `terraform-live/production/sagemaker/` | `registry.tf`'s `model_families` gains `app-ml`, with a resource-policy shape of its own, since `registry.tf` builds one shape for every family today: the group `awsds-prod-model-app-ml` and its resource policy, which for this family names the deploy role for the approval alone, since a task registers (decision 16 (b)), and no reader in Staging, since the model reaches each account in the release's bundle; the Sandbox readers of a version's status stay | `[P]` |
 | `terraform-live/staging/sagemaker/` | a `registry.tf` of its own, with the group `awsds-staging-model-app-ml`: the versions Staging's `register` proposes and `staging-test` approves, read by no other account | `[P]` |
-| `terraform-live/staging/foundation/` and `production/foundation/` | each deploy role gains, on its own account's `app-ml` group and its versions, the reads and `UpdateModelPackage`, and no `CreateModelPackage`: a statement of its own in Staging, whose role holds today the reads of Production's registry alone, and in Production beside `RegisterAndApproveTheModel`, whose register stays `app-etl`'s. `ReadTheTrainingJobs` and `ServeTheModels` stay as they are: no target trains this model and no pipeline job serves it. Production's deploy role gains the start of `app-ml-register`'s run, which its bootstrap makes, where 9.1 reads that it lacks it | `[P]` |
-| `terraform-live/staging/studio/` and `production/studio/` | `workflows.tf`, the deployment project's role: `DescribeATransformJobNoProjectHolds` and `TagATransformJobWithTheCallersProject`, and `TagAModelWithTheCallersProject`, in the shape of the processing and training pairs; and on the stage's group and its versions `CreateModelPackage`, `ListModelPackages` and `DescribeModelPackage`, and never `UpdateModelPackage` (decision 16 (b)). No blueprint joins `blueprint_names`: no target holds an MLflow App | `[P]` |
-| `terraform-live/staging/chains/` and `production/chains/` | `applications` gains `app-ml` with its two workflows; the chains `app-ml-register` and `app-ml-score`, each a chain of one with its definition under `definitions/`, `schedule_enabled = false` | `[P]` |
-| `terraform-live/sandbox/workflows/` | `app-ml-dev`'s role in `project_roles`; the training pair the targets hold since 2026-11-16, the transform pair and the model statement (decision 7); what the role lacks for a `CreateModelPackage` in its own group, where 9.1 reads a gap. In `deploy-role.tf`, the bundle role `awsds-deploy-sandbox-test` gains its first actions outside DataZone: `s3:ListBucket` on the projects' bucket for `app-ml-dev`'s `app-ml/models/latest/` prefix alone, `s3:GetObject` under that prefix and `kms:Decrypt` on the project key. The role becomes a member of `app-ml-dev` as it is of `app-etl-dev`, by hand in the portal, so one role reads each application's `dev` project | `[P]` |
+| `terraform-live/staging/foundation/` and `production/foundation/` | each deploy role gains, on its own account's `app-ml` group and its versions, the reads and `UpdateModelPackage`, and no `CreateModelPackage`: a statement of its own in Staging, whose role holds today the reads of Production's registry alone, and in Production beside `RegisterAndApproveTheModel`, whose register stays `app-etl`'s. `ReadTheTrainingJobs` and `ServeTheModels` stay as they are: no target trains this model and no pipeline job serves it. Production's deploy role starts `app-ml-register`'s run with what it holds: `deploy-project.tf` grants `airflow-serverless:StartWorkflowRun` on every workflow tagged with the deployment project (read 2026-11-17) | `[P]` |
+| `terraform-live/staging/studio/` and `production/studio/` | `workflows.tf`, the deployment project's role: `DescribeATransformJobNoProjectHolds` and `TagATransformJobWithTheCallersProject`, and `TagAModelWithTheCallersProject`, in the shape of the processing and training pairs; and on the stage's group and its versions `CreateModelPackage`, `ListModelPackages` and `DescribeModelPackage`, and a `Deny` of `UpdateModelPackage` there: AWS's `SageMakerStudioProjectRoleMachineLearningPolicy` allows it on a version that carries the role's `AmazonDataZoneProject` tag (read by simulation 2026-11-17 as Production's project role; Lesson 72), so leaving it out does not keep decision 16 (b). No blueprint joins `blueprint_names`: no target holds an MLflow App | `[P]` |
+| `terraform-live/staging/chains/` and `production/chains/` | `applications` gains `app-ml` with its two workflows; the chains `app-ml-register` and `app-ml-score`, each a chain of one with its definition under `definitions/`, `schedule_enabled = false` and a `schedule_expression`, which `orchestration-v0.3.1` requires of a disabled chain too | `[P]` |
+| `terraform-live/sandbox/workflows/` | `app-ml-dev`'s role in `project_roles`; the training pair the targets hold since 2026-11-16, the transform pair and the model statement (decision 7); what the role lacks for a `CreateModelPackage` in its own group, where 9.1 reads a gap. In `deploy-role.tf`, the bundle role `awsds-deploy-sandbox-test` gains its first actions outside DataZone: `s3:ListBucket` on the projects' bucket for `app-ml-dev`'s `app-ml/models/latest/` prefix alone, `s3:GetObject` under that prefix and `kms:Decrypt` on the project key. The role becomes a member of `app-ml-dev` as it is of `app-etl-dev`, by hand in the portal, so one role reads each application's `dev` project. Planned after 9.6 creates `app-ml-dev`: the slice reads each listed role with `data "aws_iam_role"`, which fails at plan for a role that does not exist, and the role's name carries ids the project's creation mints (Stage 19 1.5's order) | `[P]` |
 | `scripts/`, `aws/cicd.py`, `.pre-commit-config.yaml` | `model-chain.py`'s `approve` takes the application's name, the account and the release's hash, where it names `app-etl` and takes a version's ARN: it finds the `PendingManualApproval` version whose description carries the hash, prints its training job and its metrics, and approves that one. Its `register` and `transform` stay `app-etl`'s. The self-check of `deploy-application.py`, the hook that names `examples/app-etl/` and `aws/cicd.py`'s `APP_REPO` learn a second application | — |
 | `examples/app-ml/` (new) | the application: manifest, workflows, sample, code, image, pipeline and the guard on a release's model (9.2) | — |
 | `awsds-workflows`, a repository of its own | the lint's rules for the transform, model and endpoint operators, and the `manifest` rule's exception for the item that carries the model (9.3) | — |
@@ -248,13 +248,13 @@ calls (decision 22 (a)); the application's own guardrail is created by a task of
 | GitLab, `awsds/app-genai` | the project with its protection, members, runners and variables, and the mirror's allowlist ([`sagemaker-application.md`](../runbooks/sagemaker-application.md) §L); `examples/app-genai/` pushed to it after the merge | — |
 | `terraform-modules/sagemaker-prereqs` (a new tag, read from `git ls-remote --tags origin` at tagging; both targets pin `v0.10.0`) | the boundary's Bedrock exception, behind an input that is null by default. Where it is set, the ceiling's allow leaves `bedrock:*` out and three statements take its place: `bedrock:InvokeModel` on the named inference profile and the model behind it, where `bedrock:GuardrailIdentifier` is a numbered version of a guardrail of the account (`ArnLike` on `guardrail/*:*`, AWS's example for any numbered version of one guardrail with the guardrail's id left open, since a task creates the guardrail: decision 24 (b)); `bedrock:ApplyGuardrail` on the account's guardrails; and the `guardrail` task's calls, `ListGuardrails`, `GetGuardrail`, `CreateGuardrail`, `UpdateGuardrail`, `CreateGuardrailVersion` and the tagging of a guardrail. One deny keeps the three writes off the account's own guardrail (decision 27). Every other Bedrock action, one AWS adds later and the account-level configuration's included, is then outside the ceiling. `bedrock` leaves the deny `DenyServicesNoProjectUsesHere`, where an explicit deny would win over the allows | — |
 | `terraform-live/staging/studio/` and `production/studio/` | `fence.tf`: `bedrock` leaves `fenced_services`; `bedrock-agentcore` stays until 10.11, and `q` and `codewhisperer` stay. A new `genai.tf`, a copy in both slices: the application inference profile `awsds-<env>-app-genai` over the foundation model `amazon.nova-lite-v1:0` (decision 23 (a)), tagged with the deployment project; the project role's statements for the boundary's three sets of calls; under decision 27 (a), the account's guardrail `awsds-<env>-account-guardrail` with its published version and the configuration that enforces it on every invocation of the account, the last by hand where no Terraform resource carries it (10.1); the module's input; and one output, the profile's ARN, which a deploy reads. The application's guardrail is no resource of either slice | `[P]` |
-| `terraform-live/staging/egress/` and `production/workloads-egress/` | the `bedrock-base` group for the sittings that run the application: `bedrock-runtime` for the model calls and `bedrock` for the `guardrail` task's, with `endpoint_action_scopes` narrowing each to what the tasks call, as `sandbox/egress` narrows the first. Production's slice threads `optional_service_groups` already, and Staging's gains the variable | `[E]` |
-| `terraform-live/staging/foundation/` and `production/foundation/` | nothing expected: a deploy role deploys the bundle, starts a chain and reads a report, and calls no Bedrock. 10.1 reads its statements against the new application's names | `[P]` |
+| `terraform-live/staging/egress/` and `production/workloads-egress/` | the `bedrock-base` group for the sittings that run the application: `bedrock-runtime` for the model calls and `bedrock` for the `guardrail` task's, with `endpoint_action_scopes` narrowing each to what the tasks call, as `sandbox/egress` narrows the first. The `bedrock` list carries every call the `guardrail` task makes, since a scoped list refuses every call it leaves out (`sandbox/egress/main.tf`). Production's slice threads `optional_service_groups` already, and Staging's gains the variable | `[E]` |
+| `terraform-live/staging/foundation/` and `production/foundation/` | each deploy role's `state_read_keys` gain `<env>/studio/`, whose output `deploy-application.py` reads for `MODEL_ID` as the deploy role (`tfhygiene/states.py`): read 2026-11-17, Staging's keys are `foundation`, `sagemaker`, `data` and `egress`, and Production's `workloads`, `foundation`, `sagemaker`, `data` and `workloads-egress`. Nothing else: a deploy role deploys the bundle, starts a chain and reads a report, and calls no Bedrock. 10.1 reads its statements against the new application's names | `[P]` |
 | `terraform-live/staging/chains/` and `production/chains/` | `applications` gains `app-genai`; the chain `app-genai-triage` in both targets and `app-genai-probe` in Staging alone, each a chain of one with its definition under `definitions/`, `schedule_enabled = false` | `[P]` |
-| `terraform-live/sandbox/workflows/` | `app-genai-dev`'s role in `project_roles`; the bundle role a member of the project, by hand in the portal, as for `app-ml-dev` | `[P]` |
-| `terraform-live/sandbox/bedrock/` | for `app-genai-dev`'s role alone: the invoke of the project's inference profile and the `guardrail` task's calls, each where 10.1 reads the role lacks it, and, behind a variable that starts `false`, the deny of an invocation that names no numbered version of a guardrail of the account (10.4). For 10.4's last step, a guardrail of the account's own with its version, behind a second variable. The application's guardrail is no resource of the slice | `[P]` |
+| `terraform-live/sandbox/workflows/` | `app-genai-dev`'s role in `project_roles`, planned after 10.4 creates the project, as pass 9's row says; the bundle role a member of the project, by hand in the portal, as for `app-ml-dev` | `[P]` |
+| `terraform-live/sandbox/bedrock/` | for `app-genai-dev`'s role alone: the invoke of the project's inference profile and the `guardrail` task's calls, each where 10.1 reads the role lacks it, and, behind a variable that starts `false`, the deny of an invocation that names no numbered version of a guardrail of the account (10.4). For 10.4's last step, a guardrail of the account's own with its version, behind a second variable. The application's guardrail is no resource of the slice. Planned after 10.4 creates `app-genai-dev`, whose role the slice reads | `[P]` |
 | `terraform-live/sandbox/model-access/` and `identity/org-policies/` | decision 23 (a)'s model, which is outside the scoped set: `amazon.nova-lite-v1:0` in `project_models` with no profile beside it, and its `us-west-2` foundation-model ARN in the interactive OU's `NotResource`, with the battery (decision 11's shape). The `Workloads` document gains nothing | `[P]` |
-| `scripts/`, `aws/cicd.py`, `.pre-commit-config.yaml` | `deploy-application.py` learns an application with no image, where `--image-uri` is required today and `TRAINING_IMAGE_URI` is read from the account's state, and fills `MODEL_ID` from `<env>/studio/`'s output; the hooks and `APP_REPO` learn a third application | — |
+| `scripts/`, `aws/cicd.py`, `.pre-commit-config.yaml` | `deploy-application.py` learns an application with no image, where `--image-uri` is required today and `TRAINING_IMAGE_URI` is read from the account's state, and fills `MODEL_ID` from `<env>/studio/`'s output, which the deploy role reads once the foundation row's key is added; the hooks and `APP_REPO` learn a third application | — |
 | `examples/app-genai/` (new) | the application: manifest, workflows, sample, prompt, code, pipeline (10.2) | — |
 | `awsds-workflows`, a repository of its own | the lint's rules for the Bedrock operators (10.3) | — |
 | `aws/sandbox-ml.py`, `aws/orchestration.py`, `aws/deploytargets.py` | `ML-11` and `OR-11`; `DT-14` reads the exception's statements where it reads the fence's services today (10.9) | — |
@@ -935,9 +935,10 @@ what a model that crosses accounts asks:
   the copy's ETag in the container's `ModelDataETag`; what the service does with that field at
   `CreateModel` is unread (verification lix).
 - **A registration proposes and never approves.** `register` sends `PendingManualApproval` and holds no
-  path to another status, which the application's test asserts. The project role holds
-  `CreateModelPackage` on its stage's group and no `UpdateModelPackage`, so a version's status moves by
-  the account's deploy role alone: in Staging `staging-test` approves the release's version, which tests
+  path to another status, which the application's test asserts. The estate's statements give the project
+  role `CreateModelPackage` on its stage's group, and a `Deny` of `UpdateModelPackage` there, since AWS's
+  managed policy allows it on a version carrying the role's project tag (read 2026-11-17); a version's
+  status moves by the account's deploy role alone: in Staging `staging-test` approves the release's version, which tests
   the path Production runs, and in Production `production-approve` does, a deployment manager's job. In
   `dev` no gate reads the status: `resolve` serves the candidate, and the version is a record. A
   versioned package takes no tag argument and uses its group's tags (the SDK's documentation of
@@ -1034,11 +1035,14 @@ that trains it. And the developer's loop gains a `bundle` before each `deploy` (
   MLflow client's on the project's app. As the bundle role: `s3:ListBucket` on the `dev` project's bucket
   for the model's prefix, `s3:GetObject` under it and `kms:Decrypt` on the project key, with the role's
   ceiling, the bucket's policy and the key's read beside its policy (verification lxii). As each deploy
-  role: the approval of a version of its account's group, and in Production the start of
-  `app-ml-register`'s run that the bootstrap makes. Each policy that gains a statement is measured
-  against IAM's size limit before its plan: the deploy roles' managed policy read 5,060 characters of
-  6,144 in Staging and 5,045 in Production after the retirement of 2026-11-17
-  ([Stage 19](stage-19-smus-native-data-product.md) item 31). The `Workloads` OU's statements read
+  role: the approval of a version of its account's group; Production's start of `app-ml-register`'s run
+  is held already (the table). As each target's project role: `UpdateModelPackage` on a version carrying
+  the project's tag, which AWS's policy allows and the `Deny` refuses. Each policy that gains a statement
+  is measured against IAM's size limit before its plan, read 2026-11-17 after the retirement of that day
+  ([Stage 19](stage-19-smus-native-data-product.md) item 31): the model statements join the deploy
+  roles' inline `apply-application`, 1,642 characters in Staging and 1,874 in Production against the
+  role's 10,240 inline aggregate, and the project roles' join `awsds-<env>-workflows`, 1,681 and 1,854 of
+  6,144; the deploy roles' managed policy reads 5,060 and 5,045 of 6,144. The `Workloads` OU's statements read
   against the requests. The CI/CD CLI 1.0.9's code read for a second application in one project: what
   `deploy` does to the first application's workflows and prefixes when it deploys the second
   (verification xxviii). A simulation is a reading of the policies and not of the service, so each result
@@ -1098,15 +1102,23 @@ that trains it. And the developer's loop gains a `bundle` before each `deploy` (
   `sagemaker_mlflow` from it beside `boto3==1.43.1`, the worker's. Not measured: the import inside a Bash
   task on a worker, and a tracking call from a worker to an `mlflow-app` ARN, which leaves through the
   `mlflow` endpoint group as 1.6's does from a space (verification xxxii). The archive is
-  `app-ml-train`'s, so it runs in `dev` alone.
+  `app-ml-train`'s, so it runs in `dev` alone. Read 2026-11-17: `ml-demo-mlflow` runs MLflow 3.16.0
+  since its maintenance of 2026-11-15 (`describe-mlflow-app`, `MAINTENANCE_COMPLETE`), and the house
+  image's lock carries `mlflow` 3.16.0, so the archive is re-pinned to the app's version and re-measured
+  before 9.2 writes the pin. The same read gives `ModelRegistrationMode` `AutoModelRegistrationDisabled`,
+  which verification lx depends on.
 - **9.5 — [Claude writes and plans; the user applies] The application's names in the estate**, the table
-  "What pass 9 builds" above, in the dependency order of `sagemaker-application.md` §S: the GitLab
-  project and its runners, the repository, the persona's read, the registry's family in Production and
+  "What pass 9 builds" above, in the table's dependency order, which `sagemaker-application.md` §S
+  points at for release F: the GitLab project and its runners, the repository, the persona's read, the registry's family in Production and
   the group in Staging, the deploy roles' statements, the project roles' pairs and their register, the
   chains, the Sandbox grants, the bundle role's read of the model's prefix among them. Each `[P]` slice
   is planned from a fresh `main` and applied by the user from the saved plan, re-planned `No changes`.
   `sandbox/workflows/`'s policy reaches every project role it lists, the role of the project pass 2 runs
-  in among them, so 2.2's readings (a) and (b) come before its training pair is applied.
+  in among them, so 2.2's readings (a) and (b) come before its training pair is applied, and it is
+  planned after 9.6 creates `app-ml-dev`, whose role it reads. `TM-30` is amended before the `studio/`
+  applies, as 10.5 does: AWS's policy already gives the project role `ListModelPackages`,
+  `DescribeModelPackageGroup` on a group with no project tag and `UpdateModelPackage` on a tagged version
+  (read 2026-11-17), where the entry counts the model registry among what AWS's policies close.
 
   **The threat-model entry**, before the first tag: [Claude] writes in
   [`threat-model.md`](../threat-model.md) the entry for a model archive that travels from a Sandbox
@@ -1117,7 +1129,9 @@ that trains it. And the developer's loop gains a `bundle` before each `deploy` (
   `experimentation` profile, as `app-etl-dev` was created (Stage 19 1.5); the bundle role
   `awsds-deploy-sandbox-test` and Sandbox's `InfrastructureAccess` its contributors, which makes that
   role a member of each application's `dev` project; its MLflow App through `datazone create-environment`
-  with the profile's `MLflowApp` configuration (1.5's path, since the portal greys the entry out); and
+  with the profile's `MLflowApp` configuration (1.5's path, since the portal greys the entry out), the
+  registration mode verification lx needs stated; the house image attached by `dev-env.md` §C6, unless
+  6d decision 16 is taken as (a) before; and
   its model package group `app-ml-dev`, created once from the space with 3.2's call. [Claude⚡]
   `make hub-up`, then `make up ENV=sandbox GROUPS=mwaa,mlflow`. From a space on the house image: the
   tests, the lint, then `scripts/dev-cli.sh bundle` and `scripts/dev-cli.sh deploy`, each with
@@ -1443,7 +1457,9 @@ each run (decision 24 (b)).
   (7.3) and committed. `guardrail/definition.json`: the members of a `CreateGuardrail` request but
   its name and its tags, drafted on the guardrail page (7.4) and committed: the content filters, the
   prompt-attack filter, one denied topic, the sensitive-information entities to mask and the two
-  blocked messages. It names no guardrail profile, so the guardrail's own inference stays in
+  blocked messages. Both drafts wait on steps that have not run: 7.4 created no guardrail, and the
+  playground refuses Nova Lite until 10.4's amendment of the interactive OU's document; written from the
+  API reference otherwise. It names no guardrail profile, so the guardrail's own inference stays in
   `us-west-2`, and which policy tiers that leaves it is read on AWS's page in this step.
 
   `code/app_genai_tasks/`: `guardrail`, `triage`, `check` and `probe`, with tests over
@@ -1476,8 +1492,10 @@ each run (decision 24 (b)).
   or a data source stay admitted and unused: the application's tasks make those calls with boto3
   (decisions 24 (b) and 25 (b)), for the reasons "The workflows, task by task" gives. `app-genai`'s
   pin moves to that commit before its first tag.
-- **10.4 — [user; Claude] The loop in Sandbox, and the enforcement measured.** [Claude writes and plans;
-  the user applies] `sandbox/workflows/` and `sandbox/bedrock/` as "What pass 10 builds" has them,
+- **10.4 — [user; Claude] The loop in Sandbox, and the enforcement measured.** The user's project below
+  comes first: both Sandbox slices read `app-genai-dev`'s role with `data "aws_iam_role"`, and its name
+  carries the ids the project's creation mints. [Claude writes and plans; the user applies]
+  `sandbox/workflows/` and `sandbox/bedrock/` as "What pass 10 builds" has them,
   both of the second slice's variables `false`; and, for decision 23 (a)'s model,
   `sandbox/model-access/` with Nova Lite in `project_models` and, from `Identity`, the interactive
   OU's document with the model's `us-west-2` ARN in its `NotResource`, the battery's row written
@@ -1543,7 +1561,12 @@ each run (decision 24 (b)).
   statement is then bound by `bedrock:InferenceProfileArn`, the guardrail's condition stays on the
   profile's pass, and the module is written to that shape before any apply in a target.
 - **10.5 — [Claude writes and plans; the user applies] The exception and the application's names in the
-  targets**, after 10.4. First the threat model: `docs/plan/threat-model.md` gains the channel, a model
+  targets**, after 10.4, and `genai.tf` after 10.4 reads a first answer from Nova Lite through Sandbox's
+  in-Region profile: read 2026-11-17 in the three accounts, the Bedrock quotas list Nova Lite's
+  cross-Region quotas alone (L-89F8391A, 4,000 requests a minute; L-7C42E72A, 8,000,000 tokens a minute)
+  and no `us-west-2` on-demand one, where Titan Text Embeddings V2, which answers in-Region, holds
+  L-26C560CE, so decision 23 (a)'s in-Region premise is read before it is declared. First the threat
+  model: `docs/plan/threat-model.md` gains the channel, a model
   call by a role that reads the data product, under the next free `TM` id, read at the commit that
   writes it, and `TM-30`'s entry and its `DT-14` trigger are amended. The entry states decision 24
   (b)'s half in its own sentence: a project role creates and publishes guardrails, so the boundary
@@ -2628,8 +2651,8 @@ the criterion deciding nothing there. No decision of passes 9 and 10 is open.
   the earlier shape's measurements. A slice applied before the release that drops the workflow fails the
   chain's next run on a missing grant, the order 9.11 fixes.
 - **Stage 19 edits the slices passes 9 and 10 edit.** Its retirement of release T's path changed both
-  `foundation/` slices on 2026-11-17 (item 31, PR #308), and release G's sitting applies
-  `production/studio/` from its saved plan. Each pass's plans are cut from a `main` that holds both, and
+  `foundation/` slices on 2026-11-17 (item 31, PR #308), and release G's step 3 applied
+  `production/studio/` the same day. Each pass's plans are cut from a `main` that holds both, and
   each apply follows that stage's (Lessons 69 and 79).
 - **Stage 20's pass 4 edits the boundary pass 10 edits.** Its decision 13 changes `sagemaker-denies`,
   which a tag of `sagemaker-prereqs` carries to the project boundary, and its applies are

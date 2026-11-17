@@ -568,6 +568,10 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
    scheduled query on the estate's most expensive meter. **Owed to the user**: switch it off, an
    `UpdateConnection` by a project member, or keep it with the cost named. `WH-9` fails the day a run
    completes. Revisit the sync itself only if [6f](stage-06f-data-governance.md)'s lineage step asks for it.
+   **Recommended on 2026-11-17**, by the plan's review: keep it, read at Stage 19's pass 5 before
+   2026-12-19. The connection's sync is SMUS's own lineage capture for Redshift, the intended path, and a
+   run bills only while the workgroup is up at 03:43 UTC, at 0.36 USD per RPU-hour (`PRICING.md`); `WH-9`
+   and `EXC-17` change with it.
 4. **Whether a persona ever queries the warehouse directly** (step 4). **Taken 2026-09-20: no**, as 5b 2.3
    applied it: the persona keeps the read side and is denied `GetCredentials` and the `redshift-data:`
    family. Every query arrives through a project, which keeps the `GRANT` register complete and the shared

@@ -11,12 +11,11 @@ record. What a step reads is recorded in that stage's log, in the sitting it ran
 Written 2026-10-23 with the environment down. Every `[Claude⚡]` apply waits for the user's word in
 chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs.
 
-**Where it stands, 2026-10-26**: §0, §H, §P, §T, §W and §V done, and of §N its N.0, N.1 and N.2: `v0.3.3`
-was the first promotion, the data release `v0.4.2` reached Production, `v0.4.6` (pipeline #102) ran both
-legs green on 2026-10-25/26 with the house image at version 10 and the deploy image on Terraform 1.16.6,
-the warehouse sitting of 2026-10-26 closed Stage 9's xviii and vii, and §R read zero burn after every
-down. What is left is §N.3 (a Sandbox space), §N.4 (the exercises, each the user's decision) and §N.5
-(what waits on something else); §N.6 orders it by sitting, the steps that need nothing up first.
+**Where it stands, 2026-11-17**: §0, §H, §P, §T, §W and §V done; of §N, N.0 to N.3 ran 2026-10-25/26,
+release T's sitting (N.8.2, `v0.4.7`, pipeline #117) on 2026-11-15 and release F's (N.8.4, `v0.5.2`,
+pipeline #129) on 2026-11-16, its step 10, Stage 19 item 31, applied on 2026-11-17. What is left is N.8.5
+(release G, `v0.6.0`), its step 3 applied on 2026-11-17, and N.8.3 (2026-11-22 to 2026-11-25); §N.6 orders
+it by sitting, the steps that need nothing up first.
 
 | § | Holds |
 |---|---|
@@ -26,7 +25,7 @@ down. What is left is §N.3 (a Sandbox space), §N.4 (the exercises, each the us
 | [§T](#t-the-tag-stage-8s-pass-4-with-stage-10s-passes-1-and-2) | the tag: Stage 8's pass 4 with Stage 10's passes 1 and 2, and Stage 9's 8.5 |
 | [§W](#w-the-governed-warehouse-stage-9s-pass-6) | the governed warehouse, Stage 9's pass 6: steps 1 to 4 done, step 5 run within §V |
 | [§V](#v-the-data-release-v040) | the data release, the tag `v0.4.2` since `v0.4.0` and `v0.4.1` stopped in their legs: Stage 9's 8.5 and 9.4 to 9.7, Stage 10's pass 3 and 6.1, Stage 8's ix |
-| [§N](#n-the-next-release-what-stages-8-9-and-10-leave) | what Stages 8, 9 and 10 leave, by sitting: the steps that need nothing up, the next release through Staging and Production (`EXC-22`, Stage 8 xxiv, Stage 9 xii, the Scheduler's placeholder), the warehouses, a Sandbox space, the deliberate exercises (xxiv on the adopted datashare in N.4a), what waits on something else, and N.6, the order of what is left on 2026-10-26 |
+| [§N](#n-the-next-release-what-stages-8-9-and-10-leave) | what Stages 8, 9 and 10 leave, by sitting: the steps that need nothing up, the next release through Staging and Production (`EXC-22`, Stage 8 xxiv, Stage 9 xii, the Scheduler's placeholder), the warehouses, a Sandbox space, the deliberate exercises (xxiv on the adopted datashare in N.4a), what waits on something else, and N.6, the order of what is left on 2026-11-17 |
 | [§Q](#q-after-the-quotas-stage-10s-pass-3) | after the quotas: Stage 10's pass 3, now within §V |
 | [§R](#r-the-readings-at-the-end-of-every-sitting) | the readings at the end of every sitting |
 
@@ -1101,7 +1100,8 @@ on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its pla
 
 - **A second application**: Stage 10's chain order and xxv (decision 18). `<env>/chains/` takes it as an
   entry of its `applications` and `chains` maps; the split of `staging/orchestration/` per application
-  (Stage 8 decision 27) retired with that slice (Stage 19 item 31).
+  (Stage 8 decision 27) retired with that slice (Stage 19 item 31). The first candidates are Stage 17's
+  `app-ml` and `app-genai` (passes 9 and 10) and Stage 20's `app-dbt`, none built on 2026-11-17.
 - **A `monitoring` endpoint** as the positive control: Stage 10 xvi's metrics clause.
 - **S3 data events** (Stage 11): Stage 8 xx's writing identity.
 - **A release that removes a file**: Stage 8 xxvi. **A workflow's 50th version**: Stage 8 xxiii, read
@@ -1117,48 +1117,39 @@ on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its pla
   together); Stage 9 vi's cancel (no table past 10 GB), ix's `VPC-Workloads` branch and off-endpoint
   refusal, xv's deploy- and execution-role halves and xxvii's cancel (no statement past 300 s); Stage 10
   xviii and xxviii's inbox marker (no task writes one).
-- **The template's next merge request**: Stage 8 3.3's read pinned to an Iceberg snapshot (Stage 9 4.4),
-  option A taken by the user on 2026-10-26: the Glue job records in its summary the snapshot of
-  `curated.trades` it read and keeps taking `--SOURCE_SNAPSHOT` when one is given, which it does since
-  v0.4.0 with `VERSION AS OF`; the leg, the chain and the workflow do not change, and the parity of Staging
-  and Production by id waits until it is a requirement. It rides the merge request of the session that
-  writes the CLI remedy's script, then the next tag's Staging leg.
-- **Taken 2026-10-26, option B**: Stage 8 xxviii's active half by the manual job `sts-global-probe` on the
-  deploy runner at N.7.1, with no trust widening.
-- **Taken 2026-10-25**: Production's full-table flag turned off by the user in the console, bracketed by
-  `DT-5` (Stage 9 decision 13; `TM-26`'s Production half closed, the lake's flag sufficing).
 
-### N.6 The order of what is left, read 2026-10-27
+### N.6 The order of what is left, read 2026-11-17
 
-Read on 2026-10-27 against the four stage files and their logs, with nothing up, after the GitLab and
-warehouse sittings of 2026-10-26. Stage 7 closed the same day, the user's decision; what recurs of it, a
-GitLab backup before the newest leaves the bucket and the leaves' re-issue by 2027-09-22, rides the sittings
-below. Each sitting starts on the user's word, since it is metered.
+Read on 2026-11-17 against the stage files and their logs, with nothing up, after release F's sitting and
+item 31's applies. Each sitting starts on the user's word, since it is metered.
 
-1. **With nothing up** (N.8.1), **done**: Stage 8 decision 29's apply and the battery's `root` phase on 2026-10-27;
-   on 2026-10-30 Stage 9 8.1's read-but-not-write from the portal's query editor on Athena, Production's
-   free-trial balance, and decision 29's optional reading, whose authorization id the battery's `root` row reads
-   when AWS issues one (Stage 8's and Stage 9's logs). N.8.2 step 5's job stays the statement's measurement for a
-   caller the trust admits.
-2. **The release sitting** (N.8.2), `v0.4.7`: the template's merge request (the deploy script, the snapshot
-   record, `gates-v0.6.0`), the mirror at `main`, the tag and both legs, Stage 8 3.3's record read in
-   Staging and Production, Stage 10 decision 11's Staging half, 3.7; `awsds/dev-env`'s merge request and
-   `sts-global-probe` after decision 29's apply; N.7.3's `dev` deploy from a space on version 11; a GitLab
-   backup; and the exercises the user takes with it: Stage 8 xv, Stage 10 xx's second half, and Stage 8
-   xxvii's plan half once the Amazon Linux parameter moves.
-3. **The warehouse and backup sitting** (N.8.3), between 2026-11-22 and 2026-11-25: `EXC-13`'s Production
-   half after the admin secret's first rotation, scheduled 2026-11-22 01:59:59 UTC, the free trial's pair,
-   and a GitLab backup before the newest, of 2026-10-26 22:15 UTC, leaves the bucket on 2026-11-26. A release
-   sitting inside that window carries the backup instead. Release T's sitting took one on 2026-11-15, which
-   expires 2026-12-16 (N.8.3).
-4. **The stages' close**: after 2 and 3, Stages 8, 9 and 10 hold only what N.5 lists, and each can close
+1. **With nothing up**: release G's step 3, `production/studio/`, **applied 2026-11-17** at 13:11 UTC on
+   the user's word naming it, from the plan saved at 05:06 UTC from `main` at `80e996f5`
+   (`$HOME/tmp/review-production-studio.tfplan`, 2 added, 2 destroyed), with no Production run in
+   progress, and re-planned `No changes` (N.8.5 step 3). The apply under a blanket authorization had been
+   refused by the app's classifier the same day (*Production Deploy*). The five slices item 31 applied
+   re-plan `No changes` from the same tree, so the Lesson 79 window is closed. Stage 19's step 8, each
+   deployment project's first scheduled source run after the imports, read the same day (xvii, xxv).
+   Stage 20's pass 4 finds `production/studio/` with release G's change applied (Lesson 69).
+2. **Release G's sitting** (N.8.5 steps 2, 4 and 5): the hub, GitLab with `BUILD=1`, `staging/egress/`
+   raised before the tag and destroyed after the Staging leg, `production/workloads-egress/` before
+   `production-gate`; the local user's password rotated before the first push (N.8.2 step 3), the mirror
+   at `main`, the template's merge request of eight files, the tag `v0.6.0` and Production's leg read; a
+   GitLab backup, since the newest, of 2026-11-16 03:01 UTC, leaves the bucket on 2026-12-17.
+3. **Nothing up, after release G**: Stage 19 4.12, the Governance Manager made a contributor of
+   `deploy-production` by its owner, then `eighth-experimentation`'s request and the approval in the
+   portal (the user's acts), the fulfilment read on both sides.
+4. **The warehouse and backup sitting** (N.8.3), between 2026-11-22 and 2026-11-25: `EXC-13`'s Production
+   half after the admin secret's first rotation, scheduled 2026-11-22 01:59:59 UTC, and the free trial's
+   pair. A release G sitting inside that window carries it on the same hub start.
+5. **Stage 19's pass 5**, a Sandbox warehouse sitting after 4.12, before 2026-12-19 if the trial is to
+   absorb it.
+6. **The stages' close**: after 2 and 4, Stages 8, 9 and 10 hold only what N.5 lists, and each can close
    as Stage 4 did, what waits moved to the trigger or the stage that provides its subject. The user's
    decision, read then.
-5. **What waits on something else** (N.5): a second application (Stage 10 xxv, the chain's order,
-   xxviii's inbox marker), Stage 11's S3 data events (Stage 8 xx; Stage 9 ix's `VPC-Workloads` branch,
-   which a management-event trail cannot show), a workflow's 50th version, a release that removes a
-   file, a blueprint reconciliation, and the halves no step provokes (Stage 9 xv's role halves, xxvii's
-   cancel, vi's 10 GB table, xxviii's `glue:UpdateTable` run; Stage 10 xvi's metrics clause and xviii).
+7. **What waits on something else** (N.5): a second application, a `monitoring` endpoint, Stage 11's S3
+   data events, a release that removes a file, a workflow's 50th version, a blueprint reconciliation, and
+   the halves no step provokes.
 
 ### N.7 The sittings prepared 2026-10-26
 
@@ -1922,9 +1913,10 @@ What it closes: `EXC-13`'s Production half, whether the database took the passwo
 rotation wrote; the free trial's pair of readings around a warehouse sitting; and a GitLab backup before
 the newest, of 2026-10-26 22:15 UTC, leaves the bucket on 2026-11-26. A release sitting inside the window
 carries the backup, and the Sandbox warehouse's owed items (the waiting list's Warehouse row) can ride the
-same hub start, each after its decision. **Read 2026-11-16**: the newest backup is release T's sitting's, of
-2026-11-15 22:38 UTC, expiring 2026-12-16, so step 4's backup moves to any GitLab sitting before that date;
-the secret's `NextRotationDate` reads 2026-11-22 01:59:59 UTC, never rotated.
+same hub start, each after its decision. **Read 2026-11-17**: the newest backup is the timer's of
+2026-11-16 03:01 UTC, taken during release F's sitting, expiring 2026-12-17 (the bucket's rule expires a
+current version after 30 days), so step 4's backup moves to any GitLab sitting before that date; the
+secret's `NextRotationDate` read 2026-11-22 01:59:59 UTC on 2026-11-16, never rotated.
 
 1. **[Claude] The rotation**, with nothing up, expected `LastRotatedDate` on 2026-11-22:
 
@@ -2107,6 +2099,8 @@ requires both.
    sitting: xxxii read yes on the chain's second run, the first refused at the schema before the grant
    reached the job's user.
 10. **The retirement**, a pull request after both targets ran release F: the stage file's item 31.
+    **Done 2026-11-17**: PR #308's five saved plans applied from its branch, the pull request merged at
+    02:13 UTC.
 
 #### N.8.5 Release G: the data product in Production (Stage 19 decision 26 (b))
 
@@ -2151,7 +2145,13 @@ step 8, with the hub and GitLab up for its tag, and each act below names its ide
    `CreateTheProductsDataProductInTheProjectsDomain`, and the slice re-planning `No changes`.
    **Re-planned 2026-11-16** at 06:33 UTC from `c5e1718e`'s tree into the file above: *"Plan: 2 to add,
    0 to change, 2 to destroy"*, the new statement among the policy's; `staging/studio/` `No changes`. The
-   saved plan goes stale with any apply of the slice before it.
+   saved plan goes stale with any apply of the slice before it. **Applied 2026-11-17**, 13:11:44 to
+   13:11:57 UTC, from the plan re-saved at 05:06 UTC from `main` at `80e996f5`
+   (`$HOME/tmp/review-production-studio.tfplan`), with no Production run in progress: *"Apply complete!
+   Resources: 2 added, 0 changed, 2 destroyed."* The re-plan at 13:12:44 UTC reads *"No changes"*, and the
+   policy is at `v1`, seven statements, the last `CreateTheProductsDataProductInTheProjectsDomain`. The IAM
+   simulator answers nothing on the new pair, as on `StartDataSourceRun` (`SUP-008`): step 5's trail is the
+   measurement.
 4. **[user] The template's merge request** from `examples/app-etl/` at the merged `main`, then the tag
    `v0.6.0`. `staging/egress/` raised before the tag and destroyed after the Staging leg (Stage 8
    decision 27); `production/workloads-egress/` raised before `production-gate`. Both targets hold

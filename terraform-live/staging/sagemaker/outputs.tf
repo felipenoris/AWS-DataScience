@@ -1,5 +1,4 @@
-# Read by staging/data/ (the key and bucket policies name the job role, step 4.1), by Stage 10's
-# render table and staging/orchestration/ (iam:PassRole to the job role) and by
+# Read by staging/data/ (the key and bucket policies name the job role, step 4.1) and by
 # ./aws/deploytargets.py by name.
 
 output "job_role_arn" {
@@ -8,7 +7,7 @@ output "job_role_arn" {
 }
 
 output "job_role_name" {
-  description = "The job role's name, the contract DT-4 reads and Stage 10 decision 6's render table maps."
+  description = "The job role's name, the contract DT-4 reads."
   value       = module.job_role.role_name
 }
 

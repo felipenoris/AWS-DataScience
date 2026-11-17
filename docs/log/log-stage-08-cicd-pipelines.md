@@ -4542,3 +4542,13 @@ split-tunnel profile; Claude's reads through GitLab's API and Production's trail
 - **[user] The positive**: *Retry* on the same job (job 729), 22:51:24 to 22:51:38, 14 s, 70 s after the start:
   *"the proxy answers (404)"*, *"Job succeeded"*, as job 717 read at 22:17. xv answered: the check the template
   carries since 2026-10-28 fails the job in seconds against a stopped proxy.
+
+## 2026-11-17 — `CI-5` reads Staging's pull as owed on every run
+
+- **[Claude] `aws/cicd.py`**, in the plan's review session: `CI-5` decided whether Staging's refused pull
+  of the application image was expected by listing `staging/app/`'s state objects, a prefix Stage 19
+  item 31 emptied on 2026-11-17. Every promotion leg since pipeline #71 (2026-10-24) pulls the image in
+  Staging, so a missing repository policy or a refused Staging read is now a failure on every run, and
+  the report's text no longer says Staging's read is refused until step 3.0 or that no promotion has run.
+  Run at 05:25:43 UTC: `CI-5` passes on the policy, on the Sandbox read and on the Staging read; the exit
+  code 1 comes from the persona profiles that hold no SSO token, section 10's only entries.

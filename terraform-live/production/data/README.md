@@ -38,7 +38,12 @@ Every role is the account root narrowed by `aws:PrincipalArn`, which KMS does no
 
 The account root is the principal of every statement, so a role also needs an identity grant. The deploy
 role holds none on this key since Stage 19 item 31: the statements naming `awsds-deploy-prod` admit it
-to nothing, and `InfrastructureAccess` keeps the release roles' four.
+to nothing, and `InfrastructureAccess` keeps the release roles' four. The statements naming
+`awsds-prod-wf-*` or a workflow ARN under `workflow/awsds-prod-wf-*` match no role and no workflow since
+the same item (read 2026-11-17): the CI/CD CLI's workflows are named `<application>_<project>_<workflow>`,
+run as the deployment project's role and are encrypted under `alias/awsds-prod-project`, whose policy
+delegates to IAM, so `DeploymentManagerAccess`'s `DecryptWhatTheWorkflowServiceEncrypts` is what admits
+its `GetWorkflowRun` (unmeasured on a CLI workflow).
 
 ## The production persona's managed policy (`persona.tf`)
 

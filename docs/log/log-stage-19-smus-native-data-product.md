@@ -3948,3 +3948,102 @@ Every read as `awsds-infra-staging` or `awsds-infra-prod`, `InfrastructureAccess
 - **[Claude] Written**: `AWS_STATE.md`'s rows on the retired path (`INV-22`, the deploy credential layer,
   the chain schedules, the deployment projects' changes, Lake Formation's governing row, the grant
   register) and `TM-30`'s list.
+
+## 2026-11-17 — the plan reviewed against the estate, with nothing up
+
+The user asked for a review of the plan after Stages 17, 19 and 20 moved, against the estate and SMUS's
+intended path, with the readings, the corrections and the writes that need neither the environment up nor
+the user's hand.
+
+- **[Claude] Before the readings**: `aws sts get-caller-identity` answered as `InfrastructureAccess` on
+  the profiles used; no other session of this project was running on the laptop.
+- **[Claude] Plans from `main` at `80e996f5`**, 05:04:55 to 05:13:28 UTC, each saved and none applied:
+  `staging/foundation/`, `production/foundation/`, `staging/data/`, `production/data/` and
+  `production/sagemaker/` read `No changes`, so PR #308's merge at 02:13 UTC closed Lesson 79's window
+  of item 31; `staging/studio/`, both `chains/`, `sandbox/sagemaker/` and `sandbox/workflows/` read `No
+  changes`; `production/studio/` reads release G's step 3, *"Plan: 2 to add, 0 to change, 2 to destroy"*:
+  `aws_iam_policy.workflows[0]` replaced on its description, gaining
+  `CreateTheProductsDataProductInTheProjectsDomain`, and the project's attachment replaced with it.
+- **[Claude] xvii's scheduled half and xxv's daily half**, `list-data-source-runs` and
+  `list-data-source-run-activities` as `awsds-infra-data`: Staging's scheduled run `d2dkxz7n5oa7io`,
+  2026-11-16 15:37:23 UTC, `{"added":0,"updated":1,"unchanged":0,"failed":0}`, its activity
+  `SUCCEEDED_UPDATED` on `as6m73yp8shr80`; Production's `csxogqh8c7lzio`, 15:44:02 UTC, `unchanged: 1`
+  on `da1fycta6l71n4`. `./aws/catalog.py` at 05:45 UTC: every check passes, `CT-15` among them, 10
+  listings and none of `deploy-staging`. `get-asset` is refused to this principal, so whether Staging's
+  update kept `dev`'s business metadata is unread.
+- **[Claude] The GitLab backups' record**: the newest backup is the timer's of 2026-11-16 03:01 UTC,
+  taken during release F's sitting, not release T's of 2026-11-15 22:38 UTC; under the bucket's 30-day
+  rule it leaves on 2026-12-17. `promotion.md` §N.8.3 and the waiting list corrected.
+- **[Claude] The code in a deployment project** (decision 28), `iam simulate-principal-policy` as
+  `deploy-production`'s project role with the Region, the organization, the account and the role's
+  tags in the context (`SUP-008`): `s3:PutObject` and `s3:DeleteObject` `allowed`, by
+  `SageMakerStudioProjectUserRolePolicy`, on `shared/app-etl/glue/`, `src/` and `workflows/`, on
+  `shared/operatorFiles/` and on an `app-ml` prefix. `awsds-prod-smus-projects`' policy holds
+  `DenyInsecureTransport` alone, and its versioning reads `Enabled`.
+- **[Claude] The registry, as the same role**: `UpdateModelPackage` and `DescribeModelPackage` on
+  `awsds-prod-model-app-etl/1` read `implicitDeny` without the resource's `AmazonDataZoneProject` tag
+  and `allowed` with it, by `SageMakerStudioProjectRoleMachineLearningPolicy`; `ListModelPackages` and
+  `ListModelPackageGroups` on `*` and `DescribeModelPackageGroup` on the untagged group `allowed`.
+  `TM-30`'s sentence on the registry corrected, and Stage 17 step 9.5 given a `Deny` of
+  `UpdateModelPackage` (Lesson 72).
+- **[Claude] Decisions put to the user**: decision 28, who can rewrite an application's code in a
+  deployment project, with `TM-32`; decision 15 again before 4.12, a custom designation for the approver,
+  since the premise that the V2 domain admits no viewer is contradicted by the designations read on
+  2026-11-13. D07, D17, D20, D28 and D41 amended in place with dated lines (step 6.2's first lines), D41
+  with a revision trigger: a CLI release that writes `{env.*}` into a workflow's `Environment` or exposes
+  a project's network values retires a chain of one.
+- **[Claude] Written**: the corrections the review found in the runbooks, the decisions, Stages 6h, 10,
+  11, 17 and 20, `threat-model.md`, `integrations.md` (`INT-07`, `INT-25`), `AWS_STATE.md` (`INV-18`),
+  `waiting-on-the-user.md`, `CLAUDE.md`, and the comments of the slices, modules and scripts that still
+  named release T's path; Stage 17's and Stage 20's readings are in their own logs. Nothing in AWS
+  changed by this entry.
+- **[Claude] The runbooks rewritten for release F**, by a subagent of the review and read by the session:
+  `sagemaker-application.md` (§A to §Z, §S pointing at Stage 17's tables, `TM-32` where the code is
+  written) and `serverless-workflows.md`, no heading renamed. Left for step 6.2 or the stage that owns
+  each: Production's `persona_read_prefixes` names a prefix release F does not write; the project role's
+  pull of the application image, inferred from the runs and granted by no estate statement; whether every
+  line a Glue script prints reaches `datazone-<id>-dev/output`; and in the template, release G's merge
+  request's scope, the `build-task-code` comment, the README's job table without the catalog jobs and
+  `load_warehouse.py`'s `IAMR:<the role's name>`, which xxxii contradicts.
+- **[Claude] Release G's step 3 not applied**: with no Production run in progress (the three chains'
+  state machines holding no `RUNNING` execution, their schedules `DISABLED`, the workflows' latest runs
+  ended) and no other session of this project running, the apply of the saved plan was refused by the
+  app's classifier, *Production Deploy*, under the user's authorization of the session's writes. The plan
+  stays saved for the user's word naming it.
+
+## 2026-11-17 — release G's step 3: `production/studio/` applied from its saved plan
+
+On the user's word naming the apply, *"Autorizo o apply"*, the answer to *"Autoriza o apply de
+`production/studio/` a partir do plano salvo do release G?"*, Claude applied the plan saved at 05:06 UTC
+from `main` at `80e996f5`. Every call as `awsds-infra-prod`, `InfrastructureAccess`, in Production.
+
+- **[Claude] Before the apply**, 13:09 to 13:11 UTC: `origin/main` still at `80e996f5`, no commit since
+  touching `production/studio/` or a module, and this branch changing neither. The three chains' state
+  machines hold no `RUNNING` execution and their schedules read `DISABLED`; the three MWAA Serverless
+  workflows of `deploy-production` hold no run in progress, the latest ended 2026-11-16 05:22:41 UTC; no
+  SageMaker processing or training job is `InProgress` and no Glue job run is running. The peer session of
+  this project on the laptop, *Worktrees para apagar*, idle, was told first; the other works in another
+  repository.
+- **[Claude⚡] The apply**, `terraform apply -input=false <plan>` with Terraform 1.16.6, 13:11:44 to
+  13:11:57 UTC: *"Apply complete! Resources: 2 added, 0 changed, 2 destroyed."* The project role held no
+  workflows grant between the attachment's destruction and its re-creation, the apply's lines reading 1 s,
+  0 s, 1 s and 0 s. The app's classifier let the apply through.
+- **[Claude] Read back**: the re-plan from the same tree at 13:12:44 UTC, *"No changes. Your
+  infrastructure matches the configuration."*; `awsds-prod-workflows` at `v1` of 13:11:54 UTC, one
+  attachment, seven statements, the last `CreateTheProductsDataProductInTheProjectsDomain` granting
+  `datazone:CreateDataProduct` and `CreateDataProductRevision` on the domain's ARN. `deploy-production`'s
+  project role holds it beside AWS's three managed policies, `awsds-prod-warehouse-load` and
+  `awsds-prod-person-session-deny`.
+- **[Claude] The simulator answers nothing on the new pair**, 13:13 to 13:20 UTC, `iam
+  simulate-principal-policy` as the project role with the Region, the organization, both accounts, the
+  role's ARN and its 17 tags in the context. With the domain's ARN, in the Data Governance account, and
+  with the same ARN rewritten to Production's account, `CreateDataProduct`, `CreateDataProductRevision`,
+  `DeleteDataProduct` and `StartDataSourceRun` read `implicitDeny` naming no statement and carrying no
+  organization or boundary detail; `GetDomain` read `allowed` by the managed policies. With no resource
+  named, the organization and the boundary read `true` and the four `implicitDeny`. `StartDataSourceRun`
+  runs under the same form of statement (`SUP-346`), so step 5's trail is the measurement; appended to
+  `SUP-008`.
+- **[Claude] Written**: `promotion.md` §N.6 item 1, §N.8.5 step 3 and its status line; the stage file's
+  status row, §Release G as written, item 7 and decision 26; Stage 17's and Stage 20's notes on the
+  slice; `serverless-workflows.md`; `waiting-on-the-user.md`'s release G and Stage 20 decision 13 rows;
+  `CLAUDE.md`'s Stage 19 row and its classifier row; `SUP-008`.

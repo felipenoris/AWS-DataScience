@@ -3,9 +3,6 @@
 # project and the application the CI/CD CLI deploys into it. [P]: a state machine, a schedule and a
 # rule bill nothing at rest, and no pipeline job applies the slice.
 #
-# It takes the place of production/orchestration/, whose machines, schedules, roles and log group
-# carry the same names: that slice is destroyed before this one is applied (runbooks/promotion.md).
-#
 # A machine starts a workflow the CLI created, so a chain fails with WorkflowNotDeployed until the
 # application's first deploy into the project, and reads the parameter that deploy's leg wrote.
 

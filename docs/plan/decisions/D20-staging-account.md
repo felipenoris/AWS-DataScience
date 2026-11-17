@@ -10,7 +10,14 @@
 
 **Amended 2026-11-17 (user, [Stage 17](../stages/stage-17-sandbox-machine-learning.md) decision 16 (b), whose card said the registry would be exercised in Staging too):** *no registry of its own* ends for an application whose trained model is promoted. Staging holds a model package group for it, `awsds-staging-model-app-ml` the first: a task of the deployment project's workflow proposes the release's model there, the pipeline's `staging-test` approves it as `awsds-deploy-staging`, and no other account reads the group. Staging tests by it the path Production runs, and for such an application it reads nothing of Production's registry. **Planned by Stage 17 pass 9, nothing applied.** Staging's read of Production's registry for `app-etl` (`INT-07`) stands until `app-etl`'s model half retires, after `app-ml`'s first release (Stage 17 decision 28, taken by the user as (a) on 2026-11-17; Stage 17 step 9.11).
 
-**In one line:** A Staging account in a `Workloads` OU: a deployment target that reads the governed lake in place and copies nothing, no domain, no registry of its own but a group for an application whose trained model is promoted (amended 2026-11-17, planned).
+**Amended 2026-11-17 ([Stage 19](../stages/stage-19-smus-native-data-product.md) decision 6 (b), item
+31):** *no domain* ends. Staging is associated with the domain since 2026-11-11 and holds the deployment
+project `deploy-staging`, into which the CI/CD CLI deploys each release. Its catalog holds what the
+application's runs create: the database and grants Terraform made from the repository's schemas were
+deleted with `app_outputs`, and the application slices the pipeline deployed and tore down are retired
+(item 31, applied 2026-11-17).
+
+**In one line:** A Staging account in a `Workloads` OU: a deployment target that reads the governed lake in place and copies nothing, a deployment project of the domain (amended 2026-11-17), no registry of its own but a group for an application whose trained model is promoted (amended 2026-11-17, planned).
 
 **Related decisions:** [D12](D12-budget-ceiling.md), [D14](D14-supply-chain-account.md), [D17](D17-interactive-vs-runtime.md), [D18](D18-data-scientist-access.md), [D21](D21-development-account.md), [D22](D22-data-governance-account.md)
 

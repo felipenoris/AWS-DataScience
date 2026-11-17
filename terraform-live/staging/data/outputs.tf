@@ -1,5 +1,5 @@
-# Read by Stage 8's application slices and Stage 10's render through the deploy role's
-# state_read_keys, and by ./aws/deploytargets.py by name: production/data/'s names.
+# Read through terraform_remote_state by staging/sagemaker/, and by ./aws/deploytargets.py by name:
+# production/data/'s names.
 
 output "data_key_arn" {
   description = "The account data CMK, alias/awsds-<env>-data: both buckets, the workgroup's results and the job log groups."
@@ -43,8 +43,8 @@ output "workgroup_name" {
 
 # The governed source an application's Glue job reads through Lake Formation's full-table-access mode,
 # on an Iceberg catalog over the lake account's Glue catalog (Stage 9 2.4's recipe): the catalog's id,
-# the curated database and table, and the curated bucket its warehouse setting names. The application
-# slice reads them here, since the deploy role reads no other account's state.
+# the curated database and table, and the curated bucket its warehouse setting names. No slice reads
+# them since Stage 19 item 31 retired the application slices.
 output "lake_catalog_id" {
   description = "The lake account's Glue catalog id, the Iceberg catalog's glue.id."
   value       = data.aws_caller_identity.lake.account_id

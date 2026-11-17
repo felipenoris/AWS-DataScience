@@ -1,7 +1,8 @@
 # deploy-role - one deploy role of Stage 8 step 4 (INT-08, INT-18): the role, the ceiling it carries,
 # its state access, and the alarm on anyone else assuming it. Four callers: production/, staging/ and
 # sandbox/ foundation/, one deploy role per account the deploy runner reaches, and sandbox/workflows/,
-# the role that deploys an application's release to the `test` project (Stage 8 decision 19). One
+# the role the pipeline's `bundle` job makes a release's bundle as, reading the `dev` project (Stage 19
+# decision 19 (c), INT-25). One
 # module because the contract ./aws/cicd.py reads across the accounts - the runner's role as the only
 # principal, sts:AssumeRole as the only action, a boundary on every role - must be one document, not
 # four copies (Lesson 33).
@@ -80,11 +81,9 @@ data "aws_iam_policy_document" "boundary" {
     ]
   }
 
-  # A deployment target's roles are the application's, and each carries the application ceiling:
-  # a deploy role may create a role, or change a role's policies, only where that ceiling is on
-  # it, and may remove no ceiling at all. The ceiling's own policy lands with the first
-  # application slice (Stage 8 steps 2.4 and 3.0); until it exists no role can carry it, so the
-  # deploy role can create none.
+  # With application_boundary_name set, a deploy role may create a role, or change a role's policies,
+  # only where that ceiling is on it, and may remove no ceiling at all. Every caller passes null since
+  # Stage 19 item 31 removed the ceiling with release T's application slices.
   dynamic "statement" {
     for_each = var.application_boundary_name == null ? [] : [1]
 

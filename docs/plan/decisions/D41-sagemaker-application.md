@@ -17,6 +17,15 @@ amended 2026-11-11** by Stage 19 decision 19 (c), the user's: no `test` project 
 pipeline bundling from `dev` and deploying into Staging, then Production, so every promotion crosses
 an account; the note after item 2's says what changes.
 
+**Item 2's alternative run, and items 5 and 7 amended, 2026-11-17** (Stage 19 release F and item 31):
+the CLI deploys the bundle into `deploy-staging` and `deploy-production` (`v0.5.2` in Production since
+2026-11-16, pipeline #129), and release T's Terraform path is retired (item 31, applied 2026-11-17). Item
+5: the chains are `<env>/chains/`, `[P]` slices the user applies (Stage 19 decision 23 (a)), each chain
+starting one workflow and the schedules' minutes ordering them, with no inbox rule and no slice the
+pipeline applies. Item 7: the CLI copies the code into each project's `shared/<app>/` in every stage,
+where the project role can rewrite it (Stage 19 decision 28, `TM-32`). The consequence that a deployment
+target is never associated is contradicted since 2026-11-11 ([D26](D26-unified-studio.md)).
+
 **In one line:** the application is the unit, the CI/CD CLI carries it into the Sandbox `dev` project
 and bundles it, the pipeline deploys the bundle to Staging and to Production, and design B is built as
 the layer that schedules and chains the workflows, not as a replacement for them.
@@ -362,7 +371,11 @@ would make the CLI the deployer of every stage: Stage 18 measured its price (202
 and what reopens it is `DenyDataZoneEntirely`'s trigger, Production publishing a data product of its own, which fired on 2026-10-31 (Stage 19 decision 6 (b), the note above); a Step Functions integration with MWAA Serverless
 that the console does not list, or a `GetWorkflowRun` loop the service's quotas refuse at the chains'
 cadence (Stage 10 verification xxii); or the service gaining a dependency between workflows of its
-own, which would retire the inbox and leave the machine as the scheduler alone.
+own, which would retire the inbox and leave the machine as the scheduler alone. A CLI release that writes
+`{env.*}` into the workflow's `Environment`, or exposes a project's subnets and security groups as
+`{proj.*}`, retires a chain of one for the workflow's own `schedule`: 1.0.9 writes each `{env.VAR}` as
+`{{ params.VAR }}`, filled only on a run the CLI starts (`SUP-282`), and every `app-etl` workflow needs
+the network values the CLI does not resolve.
 
 ---
 

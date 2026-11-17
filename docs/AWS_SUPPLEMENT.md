@@ -222,7 +222,15 @@ entry is still true is the reading.
   Sandbox's bundle role, Stage 19): with `--resource-arns` naming the domain's ARN, `datazone:GetProject`,
   `ListConnections`, `Search` and `GetAsset` read `implicitDeny` under an allow on `*`, while
   `GetDomain`, whose statement names the domain, read `allowed`; with no resource named the same four
-  read `allowed` by that statement (`log-stage-19-smus-native-data-product.md`, 2026-11-14).
+  read `allowed` by that statement (`log-stage-19-smus-native-data-product.md`, 2026-11-14). A statement
+  naming a resource is never applied to an action the Service Reference gives no resource type (measured
+  2026-11-17 on Production's deployment project role, Stage 19): with the domain's ARN, in the Data
+  Governance account or rewritten to the caller's, `datazone:StartDataSourceRun`, `CreateDataProduct`,
+  `CreateDataProductRevision` and `DeleteDataProduct` read `implicitDeny` naming no statement and carrying
+  no organization or boundary detail, while `GetDomain` read `allowed`; with no resource named, the
+  organization and the boundary read `true` and the four `implicitDeny`, a statement on the domain matching
+  no `*`. `StartDataSourceRun` runs under the same form of statement (`SUP-346`), so a grant of such an
+  action on the domain is read from its call (`log-stage-19-smus-native-data-product.md`, 2026-11-17).
 
 - `SUP-009` **`iam simulate-custom-policy` ignores `sagemaker:VolumeKmsKey` and `sagemaker:OutputKmsKey`
   when the resource is a job's ARN** (measured 2026-10-18, 6d step 1.3). A `Deny` on `Null` of either key

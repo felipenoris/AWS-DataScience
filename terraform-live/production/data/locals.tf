@@ -11,7 +11,10 @@ locals {
   data_scientist_role_arn        = one(data.aws_iam_roles.data_scientist.arns)
 
   # The contracts, by name: the job role and the debug role (production/sagemaker/), the deploy role
-  # (production/foundation/), and Stage 10's chain role and per-workflow execution roles.
+  # (production/foundation/), and Stage 10's chain role (production/chains/). workflow_role_pattern and
+  # workflow_arn_pattern name release T's per-workflow roles and workflows, retired by Stage 19 item 31:
+  # no role or workflow matches them, so the statements that use them admit nothing. The CI/CD CLI's
+  # workflows run as the deployment project's role, encrypted under alias/awsds-<env>-project.
   job_role_arn          = "${local.role_prefix}/awsds-${var.env}-job-exec"
   debug_role_arn        = "${local.role_prefix}/awsds-${var.env}-debug"
   deploy_role_arn       = "${local.role_prefix}/${var.deploy_role_name}"

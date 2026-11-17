@@ -11,7 +11,9 @@ A serverless workflow is a MWAA Serverless workflow that the project's *Workflow
 definition (Airflow 3.0.6 through dag-factory), run by workers the service starts per task, as the
 project role, inside the project's network. Since [D41](../decisions/D41-sagemaker-application.md)
 (2026-10-15) an application's workflow is created instead from its repository by the CI/CD CLI, which
-deploys it to the `dev` project (Stage 10 step 2.1; the deploy measured in the lab that day). This
+deploys it to the `dev` project (Stage 10 step 2.1; the deploy measured in the lab that day) and, since
+release F (Stage 19 decision 6 (b), `v0.5.2` in Production since 2026-11-16), to each target's
+deployment project from the pipeline ([`sagemaker-application.md`](sagemaker-application.md) §T). This
 runbook covers the three task kinds Stage 6i exercised: a SageMaker processing job in the house image, a
 `PythonOperator` and a `BashOperator`.
 
@@ -93,7 +95,7 @@ reference for every option and every message; this section says how this lab use
 | `job-constraints` | prints the image environment's versions as requirements (§J1) | `package-uv-job.py --constraints` |
 | `package-task` | builds a Python or Bash task's archive for the worker (§C2) | `operators/package-uv.sh` |
 | `prepare-offline <project> <archive>` | writes the `.tar.gz` of a project folder prepared with its own interpreter, a processing job's code input that the job extracts on its volume; in the package since 2026-10-13 (`6bdbcad`) | — |
-| `lint <path>` | checks an application folder, or one definition, against the rules of MWAA Serverless and of the pipeline, offline: each refusal is a line `file: rule: reason` with exit 1, otherwise `ok`; `--promoted --prefix` reads one rendered copy, `--image-repository` and `--instance-type` restrict a processing job. Since `ff25eae` (2026-10-24) the promoted mode refuses a Glue task that keeps `create_job_kwargs`, `script_location`, `iam_role_arn`, `update_config` or `job_desc` (Stage 10 2.3's rule (6)), and the manifest rule an `include` holding `*`, `?` or `[`, a glob the CLI 1.0.9's `bundle` does not expand. The rules are [Stage 8](../stages/stage-08-cicd-pipelines.md) 5.6's, and `app-etl`'s template (`examples/app-etl/.gitlab-ci.yml`) runs `lint .` with both, the application's repository and the ceiling's instance types | — |
+| `lint <path>` | checks an application folder, or one definition, against the rules of MWAA Serverless and of the pipeline, offline: each refusal is a line `file: rule: reason` with exit 1, otherwise `ok`; `--image-repository` and `--algorithm-repository` hold a job's literal `ImageUri` or `TrainingImage` to the application's repository or a built-in algorithm's, and `--instance-type` its `InstanceType`. Since `ff25eae` (2026-10-24) the manifest rule refuses an `include` holding `*`, `?` or `[`, a glob the CLI 1.0.9's `bundle` does not expand, and since `196acee` (2026-11-12, PR #25) it admits `content.catalog` with `skipPublish` true and no `assets.access`. The promoted mode, `--promoted --prefix`, read release T's rendered copy and, from `ff25eae`, refused a Glue task that kept `create_job_kwargs`, `script_location`, `iam_role_arn`, `update_config` or `job_desc` (Stage 10 2.3's rule (6)); it has no caller since Stage 19 item 31 (decision 16 (b)). The rules are [Stage 8](../stages/stage-08-cicd-pipelines.md) 5.6's, and `app-etl`'s template (`examples/app-etl/.gitlab-ci.yml`) runs `lint .` in its `test` job with the three, the application's repository, `sagemaker-xgboost` and the ceiling's instance types | — |
 | `lint-plan <plan.json> --prefix <s3-prefix>` | checks the Glue jobs of a saved Terraform plan, the JSON of `terraform show -json`, before the apply: in each `aws_glue_job` the apply leaves, the script and every file or module its arguments name lie under a `--prefix` (repeatable), and no module is named by its PyPI name; `ok: N job(s) do Glue: …` with exit 0, otherwise one `file: glue: address: reason` line per refusal with exit 1. Stage 10 2.3's rule (2c), since `ff25eae`. No leg runs it since Stage 19 item 31 retired the application slices and `scripts/lint-plan.py` | — |
 
 **Install it by URL, from its `main`**, never by name: the name is free on PyPI, and a package someone
@@ -193,20 +195,24 @@ from `GlueJobOperator` or start its own data source's run with the blueprint's p
   the blueprint's `SageMakerStudioProjectRoleMachineLearningPolicy` (v47) grants `datazone:Get*`,
   `List*`, `Search*`, `CreateAsset*` and `CreateListingChangeSet` and no `StartDataSourceRun`;
   `SageMakerStudioProjectUserRolePolicy` (v76) names none either (read 2026-11-08, before the first run).
-  Production's deployment project role alone holds that statement (`<env>/studio/workflows.tf`, on where
+  Production's deployment project role alone holds that statement (`<env>/studio/workflows.tf`, where
   `project-roles.tf` sets `publishing_starts_the_source`); a Sandbox project's source imports on its
   schedule or on a member's run in the portal (Stage 19 decision 17).
-- **The same task creates, revises and lists the product's data product** (Stage 19 decision 26 (b)):
-  a data product's name is the domain's, so the stage that lists the product owns it. Neither managed
-  policy grants `datazone:CreateDataProduct` or `CreateDataProductRevision` (v48 and v77, read
-  2026-11-16), and the same role alone holds them, beside the start (`publishing_creates_the_data_product`).
+- **Release G's task also creates, revises and lists the product's data product** (Stage 19 decision
+  26 (b)), on `main` and tagged `v0.6.0` at its sitting: a data product's name is the domain's, so the
+  stage that lists the product owns it. Neither managed policy grants `datazone:CreateDataProduct` or
+  `CreateDataProductRevision` (v48 and v77, read 2026-11-16). The statement that gives them to the same
+  role, beside the start (`publishing_creates_the_data_product`), was written 2026-11-16 and applied
+  with `production/studio/` on 2026-11-17, release G's step 3 ([`promotion.md`](promotion.md) §N.8.5).
 
 The grant for the jobs is `terraform-live/sandbox/workflows/`, one policy and one attachment per project role:
 
 1. Add the project role's name to `project_roles` in `variables.tf`. The role is
    `datazone_usr_role_<project id>_<environment id>`, read with `aws iam list-roles`.
 2. Plan and apply the slice as the infrastructure user, `InfrastructureAccess`, in the account the project
-   lives in. A precondition refuses a role without the D13 boundary.
+   lives in, after the project exists: the slice reads each listed role with `data "aws_iam_role"`, so a
+   role not yet minted fails the plan, naming it (Stage 17 9.5). A precondition refuses a role without
+   the D13 boundary.
 
 Stage 18's deployment project in Staging held, until its removal on 2026-10-22, the same three statements from
 `terraform-live/staging/studio/workflows.tf`, for the stage's life: its first run stopped on `glue:GetJob`
@@ -275,7 +281,8 @@ the application's repository and deploy again with the CLI.
   before any task: *"User template error: DAG template rendering failed: 'dict object' has no attribute
   'SUBNET_AZ1'"* ([Stage 10](../stages/stage-10-orchestration-promotion.md) verification xxix, read
   2026-10-26). Start the run from the CLI, or with `start-workflow-run` carrying the parameters as
-  `OverrideParameters`: DataZone does not gate a start, which takes the IAM action and, in the starter's
+  `OverrideParameters`, as a target's chain does from the stage's recorded variables (Stage 19 decision
+  23 (a), [`sagemaker-application.md`](sagemaker-application.md) §X): DataZone does not gate a start, which takes the IAM action and, in the starter's
   session, `kms:GenerateDataKey` and `kms:Decrypt` on the project key (Stage 18 0.4, 2026-10-19). The
   CLI's `run` returns once the service accepts the start; `get-workflow-run` follows the run to its end.
 
@@ -514,11 +521,13 @@ after `ProcessingEndTime` before the job reads `Completed`, which is what the op
 
 **Status in Sandbox: runs since 2026-10-11.** The worker fetches the service's copy of the code (§O)
 through the S3 gateway endpoint. Where the endpoint's policy does not admit
-`mwaa-serverless-code-files-*-<region>-prod` (any VPC on `vpc-v0.3.1`, Staging and Production today), a
-workflow with a code archive fails before its first task with `Execution environment preparation failed
-due to an internal server error`, and only a CloudTrail network activity event names the refusal. C6's
-recipe built the archive that ran here. Archives of C2's `package-task` ran on a worker on 2026-10-12,
-in a Python task and a Bash task outside this lab
+`mwaa-serverless-code-files-*-<region>-prod` (a VPC on `vpc-v0.3.1`: Production's `foundation/` and
+`networking/`), a workflow with a code archive fails before its first task with `Execution environment
+preparation failed due to an internal server error`, and only a CloudTrail network activity event names
+the refusal. The deployment projects' VPCs, Staging's in `staging/foundation/` and Production's in
+`production/workloads/`, are on `vpc-v0.4.0`, which admits it, and release F's Python tasks ran there on
+2026-11-16 (pipeline #129). C6's recipe built the archive that ran here. Archives of C2's
+`package-task` ran on a worker on 2026-10-12, in a Python task and a Bash task outside this lab
 ([the package's documentation](https://felipenoris.github.io/awsds-workflows/awsds_workflows.html#o-codigo-de-uma-task-python-ou-bash)).
 
 ### C1 — What the worker expects
