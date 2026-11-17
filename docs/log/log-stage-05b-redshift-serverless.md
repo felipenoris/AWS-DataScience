@@ -1325,3 +1325,13 @@ recorded in [the 6h log](log-stage-06h-redshift-connection.md), the entry of the
   `variables.tf`'s `projects` variable say the same.
 - **[Claude] [`docs/SMUS.md`](../SMUS.md)'s `RedshiftServerless` row**, 6.4's document: the usage limit
   reads 10 RPU-hours, lowered on 2026-09-20, where it read 40.
+
+## 2026-11-17 — decision 9 taken on a card, with no AWS call
+
+*Claude's sitting in a cloud session of the user's Claude project, no AWS call: the review of the plan's
+open decisions the user asked for at 22:01 UTC, one card per decision under the user's default of
+21:50 UTC (the path AWS suggests), recorded by pull request #317. Times are UTC.*
+
+- **[user] Decision 9**, at 22:32, on the card *"Gerir o crédito gratuito do Redshift do Sandbox, que acaba
+  em 19/12?"*: *"Antecipar as sessões de warehouse"*, against the card's recommendation: the sittings that
+  raise Sandbox's warehouse run before 2026-12-19 (`runbooks/promotion.md` §N.6 item 9).

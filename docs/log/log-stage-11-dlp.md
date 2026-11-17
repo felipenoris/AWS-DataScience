@@ -335,3 +335,15 @@ the plan revised from a review of Stages 7 and 8, on the user's request to corre
   carried either, and both wait on `production/data/` with the rest of Production's trail.
 - **[Claude] 5.2 gains `awsds-prod-pki-key-use`**, D36 §5's second control: `kms:Decrypt` on the key behind
   `alias/awsds-prod-tfstate-pki` by anyone but the infrastructure role, and `kms:ScheduleKeyDeletion` on it.
+
+## 2026-11-17 — `TM-01`'s order taken on a card, with no AWS call
+
+*Claude's sitting in a cloud session of the user's Claude project, no AWS call: the review of the plan's
+open decisions the user asked for at 22:01 UTC, one card per decision under the user's default of
+21:50 UTC (the path AWS suggests), recorded by pull request #317. Times are UTC.*
+
+- **[user] `TM-01`**, at 22:55, on the card *"Pôr -n nas listas de permissão do proxy, para um IP cru não
+  casar com nome?"*: *"Medir antes com uma sonda"*, against the flag recommended. **[Claude]** The probe
+  runs in a Sandbox sitting with a space up: a `CONNECT` to an address whose reverse record, read with
+  `dig -x` first, ends in an allowed suffix, beside one whose record names no allowed host as the
+  negative control, read in `/awsds/prod/proxy`; the flag is decided on its reading.

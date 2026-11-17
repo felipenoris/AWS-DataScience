@@ -815,3 +815,19 @@ after `awsds-workflows` pull request #27 merged, "há algo que precisa ser ajust
   rule relaxed" fired and leaves the list; `sagemaker-application.md`'s template job; and
   `sagemaker-ai-ml.md`'s processing-job paragraph, with its lint paragraph and operator table, which
   still described the lint before `37cb5a6`.
+
+## 2026-11-17 — decisions 9 and 11 taken on cards in the review of the plan's open decisions
+
+*Claude's sitting in a cloud session of the user's Claude project, no AWS call: the review of the plan's
+open decisions the user asked for at 22:01 UTC, one card per decision under the user's default of
+21:50 UTC (the path AWS suggests), recorded by pull request #317. Times are UTC.*
+
+- **[user] The order of the review**, at 22:18, on the card *"Em que ordem quer ver as 64 decisões?"*:
+  *"Por urgência"*.
+- **[user] Decision 9**, at 22:19, on the card *"Promover o app-dbt para Staging e Produção pela CLI, ou
+  mantê-lo só no Sandbox?"*: *"Promover pela CLI (caminho AWS)"*, against the card's recommendation.
+  **[Claude]** Decision 7 moved to (b), a Sandbox project for `app-dbt` alone, the user's act on the
+  waiting list; pass 1's one-stage `examples/app-dbt/` is extended to the three stages by passes written
+  before the sitting that runs them.
+- **[user] Decision 11**, at 22:21, on the card *"Quando ler a linhagem do dbt entre projetos e entre
+  contas?"*: *"Depois da 4.12 do Stage 19"*, (a).

@@ -2364,3 +2364,18 @@ entry of 2026-10-20.*
   `sts:AssumeRole`. The `projects` comment in `variables.tf` names the access role; only the comment
   changed. PR #224's body reports the role's policies read in AWS, the slice's two policies with no inline
   policy and no boundary, without the time, the identity or the commands; no log holds that reading.
+
+## 2026-11-17 — decisions 8 and 3 and the connection's database taken on cards, with no AWS call
+
+*Claude's sitting in a cloud session of the user's Claude project, no AWS call: the review of the plan's
+open decisions the user asked for at 22:01 UTC, one card per decision under the user's default of
+21:50 UTC (the path AWS suggests), recorded by pull request #317. Times are UTC.*
+
+- **[user] Decision 8**, at 22:27, on the card *"Como admitir um segundo projeto no warehouse do
+  Sandbox?"*: *"Tag ampla (caminho da AWS)"*, (a).
+- **[user] Decision 3**, at 22:28, on the card *"Manter o lineageSync diário da conexão Redshift do
+  Sandbox?"*: *"Desligar"*, against the keep recommended.
+- **[user] The connection's database**, at 22:30, on the card *"Trocar o banco dev da conexão Redshift do
+  Sandbox por sandbox?"*: *"Mudar para sandbox na mesma chamada"*. **[Claude]** One `UpdateConnection` by
+  a project member carries both, every field passed (Lesson 60); the waiting list holds it as the user's
+  act, and `WH-9` and `EXC-17` change with it.

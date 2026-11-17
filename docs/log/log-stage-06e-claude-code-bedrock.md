@@ -1651,3 +1651,17 @@ session's scratchpad and is not tracked. Times are UTC.*
 - **[Claude] The call refused** by the shim, stamped 01:12:17, exit 1: `BS-2` reads `note`,
   *"the profile list did not read"*, section 5 names the call, and `BS-1` and `BS-3` to `BS-7`
   pass as before.
+
+## 2026-11-17 — decision 6 taken on a card, and the review stopped, with no AWS call
+
+*Claude's sitting in a cloud session of the user's Claude project, no AWS call: the review of the plan's
+open decisions the user asked for at 22:01 UTC, one card per decision under the user's default of
+21:50 UTC (the path AWS suggests), recorded by pull request #317. Times are UTC.*
+
+- **[user] Decision 6**, at 23:45, on the card *"Ligar o aviso do orçamento de 50 USD, que hoje não avisa
+  ninguém?"*: *"Ligar aviso e detecção de anomalia"*. **[Claude]** The user's acts in Management's console
+  join the waiting list: an e-mail subscriber on the budget at 50, 80 and 100% of its ceiling, and Cost
+  Anomaly Detection beside it. D12 and Stage 12's 2.1 and decision due 2 read the notification half as
+  taken; the ceiling's number stays Stage 12's.
+- **[user] The review stops here**, at 23:46: *"Suba as decisões aqui no PR e vamos deixar as demais para
+  depois. Vamos finalizar esta sessão."* The decisions not yet put stay on the waiting list as they were.

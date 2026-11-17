@@ -3697,3 +3697,35 @@ the user's request of 13:42 UTC, whether the plan should change to exercise the 
 - **[Claude, a subagent] Kept as written, by the same reading**: the Git connection's option A, the chain
   layer, the Terraform role lists (open question 27), the subscription deny in `Workloads` beside Stage 17
   decision 22's inference profile, and decision 16 (a), recommended.
+
+## 2026-11-17 — decisions 2, 3, 4, 6, 9, 12, 13, 16 and 17 taken on cards, with no AWS call
+
+*Claude's sitting in a cloud session of the user's Claude project, no AWS call: the review of the plan's
+open decisions the user asked for at 22:01 UTC, one card per decision under the user's default of
+21:50 UTC (the path AWS suggests), recorded by pull request #317. Times are UTC.*
+
+- **[user] Decision 2**, at 23:08, on the card *"Fechar a decisão 2 do 6d: nenhuma superfície opcional do
+  portal precisa de endpoint?"*: *"Fechar: nenhum endpoint a mais"*.
+- **[user] Decision 3**, at 23:11, on the card *"Ligar o acesso remoto (VS Code do laptop) por padrão nos
+  espaços do Sandbox?"*: *"Por espaço, padrão desligado"*.
+- **[user] Decision 4**, at 23:14, on the card *"Qual método de conexão do VS Code do laptop a um espaço o
+  laboratório adota?"*: *"Os dois, como a AWS oferece"*. **[Claude]** `remote-ide.md` §W gained the
+  portal's deep link beside the Toolkit.
+- **[user] Decision 6**, at 23:17, on the card *"Liberar no proxy do Sandbox o endereço do próprio domínio
+  do SMUS?"*: *"Liberar o nome exato"*. **[Claude]** The name joins `proxy_allow_sandbox` at the next
+  `production/networking` apply, in a hub sitting (the waiting list's Hub row, `docs/NETWORK.md`).
+- **[user] Decision 9**, at 23:21, on the card *"Abrir o Amazon Q Developer gratuito nos espaços do
+  Sandbox?"*: *"Manter fechado"*. **[Claude]** Decision 10 is moot, and `TM-11` reads closed by the
+  Region ceiling.
+- **[user] Decision 12**, at 23:23, on the card *"Como dar prazo aos grupos de log do Sandbox que nunca
+  expiram?"*: *"Política de retenção da conta"*. **[Claude]** `EXC-10` stands until the AWS provider
+  accepts `RETENTION_POLICY` (`upstream-releases.md`).
+- **[user] Decision 13**, at 23:24, on the card *"Permitir que um espaço suba na imagem da AWS, além da
+  imagem da casa?"*: *"Casa e distribuição da AWS"*. **[Claude]** `TM-10` reads accepted.
+- **[user] Decision 16**, at 23:28, on the card *"Tornar o blueprint SageMakerAIDomain o padrão de todo
+  projeto do Sandbox?"*: *"Sim, o padrão"*, (a). **[Claude]** Step 2.7's acts join the waiting list;
+  `docs/SMUS.md`, `upstream-releases.md`, `runbooks/promotion.md` §N.6 and Stage 17's 9.6 read the
+  decision as taken.
+- **[user] Decision 17**, at 23:34, on the card *"Oferecer no Sandbox as execuções nativas de notebook (em
+  segundo plano, agendadas)?"*: *"Medir e oferecer em VPC_ONLY"*, (a). **[Claude]** The control comes
+  first, then the quota requests (the waiting list's act), then step 4.7's runs in a Sandbox sitting.

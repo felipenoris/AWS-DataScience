@@ -4116,3 +4116,18 @@ call made.*
 - **[Claude] The resolver**: `proj` holds `id`, `name`, `domain_id`, `iam_role`, `iam_role_arn`,
   `iam_role_name`, `kms_key_arn` and the connections, as the CLI's substitutions guide lists, and no subnet
   or security group: a documented contract, so no supplement entry.
+
+## 2026-11-17 — decisions 28 and 15 and the RAM share's version taken on cards, with no AWS call
+
+*Claude's sitting in a cloud session of the user's Claude project, no AWS call: the review of the plan's
+open decisions the user asked for at 22:01 UTC, one card per decision under the user's default of
+21:50 UTC (the path AWS suggests), recorded by pull request #317. Times are UTC.*
+
+- **[user] Decision 28**, at 22:23, on the card *"Quem pode reescrever o código de uma aplicação num
+  projeto de implantação?"*: *"Aceitar (padrão da CLI)"*, (c), against the card's recommendation (a).
+  `TM-32` reads accepted.
+- **[user] The domain's RAM share**, at 22:24, on the card *"Mover o compartilhamento RAM do domínio da
+  versão 10 para a 12, a padrão da AWS?"*: *"Mover para a v12 (padrão)"*. **[Claude]** The user's RAM
+  write in Data Governance, before xxvi and decision 15's membership, joins the waiting list.
+- **[user] Decision 15**, at 22:26, on the card *"Quem aprova as assinaturas da listagem de Produção, na
+  4.12 do Stage 19?"*: *"Designação própria do SMUS"*, (d), with (a) kept if xxvi reads no narrowing.

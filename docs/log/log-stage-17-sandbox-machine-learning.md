@@ -2859,3 +2859,37 @@ the user's request of 13:42 UTC. No AWS call.*
 - **[Claude] Recorded**: `TM-33` accepted, its condition a revision trigger; 9.5's threat-model paragraph
   and the Status row; the waiting list's row; `promotion.md` §N.6 item 2; `CLAUDE.md`'s row; the pages in
   `REFERENCES.md`.
+
+## 2026-11-17 — `EXC-11`'s share and decisions 7, 12, 10, 6 and 5 taken on cards, with no AWS call
+
+*Claude's sitting in a cloud session of the user's Claude project, no AWS call: the review of the plan's
+open decisions the user asked for at 22:01 UTC, one card per decision under the user's default of
+21:50 UTC (the path AWS suggests), recorded by pull request #317. Times are UTC.*
+
+- **[user] `EXC-11`'s share**, at 22:32, on the card *"Criar o compartilhamento RAM do domínio com o
+  SageMaker que a AWS documenta?"*: *"Criar o share (caminho da AWS)"*. **[Claude]** The user's RAM
+  write in Data Governance, before 3.2 and 9.6, joins the waiting list.
+- **[user] Decision 7**, at 22:33, on the card *"Onde escrever as permissões que as medições do Stage 17
+  pedirem?"*: *"Workflows em workflows/, resto em ml/"*, (a).
+- **[user] Decision 12**, at 22:34, on the card *"Qual banco de vetores usar na base de conhecimento do
+  Stage 17?"*: *"S3 Vectors"*, (a).
+- **[user] Decision 10**, at 22:36, on the card *"Criar a entrada Function do portal, uma Lambda, no
+  Sandbox?"*: *"Não criar até o controle existir"*, against the card's recommendation: the entry waits
+  for Stage 11's deny on `lambda:CreateFunction` without `lambda:VpcIds`.
+- **[user] Decision 6**, the endpoint's lifetime. At 22:39, on the first card: *"Pq esse endpoint não pode
+  seguir o padrão dos outros (subir no make up e descer no make down)?"* **[Claude]** The create cannot
+  ride `make up`: the scientist creates the endpoint in the notebook as the project role, and one created
+  by Terraform would bill 0.115 USD an hour in every Sandbox session. The delete can ride `make down`, as
+  `scripts/down-studio-apps.py` deletes the Studio apps people create; the card was withdrawn at 22:41
+  and put again with that hook recommended. **[user]** At 22:42: *"Como no exemplo da AWS (fica)"*,
+  against the recommendation. At 22:48: *"O usuário não consegue subir e descer o endpoint pelo SMUS
+  conforme a necessidade?"* **[Claude]** Yes, by the SDK in the notebook (4.1's path) or by the portal's
+  *Inference endpoints* page, unread (4.2); deleting is the only stop, and the model and the
+  configuration bill nothing. **[user]** At 22:49: *"O próprio usuário pode apagar e refazer conforme a
+  necessidade."* **[Claude]** Recorded with the user's words: 4.1's endpoint stays up after its sitting,
+  its lifetime the member's, 2.76 USD a day while it stands, outside `make down` and `make status`.
+  Owed before 4.1: `examples/sandbox-ml/serve.py endpoint` keeps what it creates instead of deleting it
+  in its `finally`, and `aws/sandbox-ml.py`'s `ML-5` prints an endpoint with its price instead of
+  failing on it.
+- **[user] Decision 5**, at 22:51, on the card *"O que fica e o que é apagado ao fechar o Stage 17?"*:
+  *"Manter tudo, endpoint incluso"*, against the card's recommendation: the close deletes nothing.

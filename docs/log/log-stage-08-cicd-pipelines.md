@@ -4552,3 +4552,16 @@ split-tunnel profile; Claude's reads through GitLab's API and Production's trail
   the report's text no longer says Staging's read is refused until step 3.0 or that no promotion has run.
   Run at 05:25:43 UTC: `CI-5` passes on the policy, on the Sandbox read and on the Staging read; the exit
   code 1 comes from the persona profiles that hold no SSO token, section 10's only entries.
+
+## 2026-11-17 — Terraform 1.16.7 taken on a card, with no AWS call
+
+*Claude's sitting in a cloud session of the user's Claude project, no AWS call: the review of the plan's
+open decisions the user asked for at 22:01 UTC, one card per decision under the user's default of
+21:50 UTC (the path AWS suggests), recorded by pull request #317. Times are UTC.*
+
+- **[user] The bump**, at 23:01, on the card *"Atualizar o Terraform de 1.16.6 para 1.16.7, pela correção
+  de certificados?"*: *"Atualizar agora"* (CVE-2026-111943, Go 1.26.10's distrust of the compromised
+  eMudhra intermediate CAs). **[Claude]** `.github/workflows/offline-gates.yml`'s pin and `CLAUDE.md`'s
+  lines moved to 1.16.7 in pull request #317. The laptop's install is the user's, the `darwin_arm64` zip
+  checked against the published sums, on the waiting list; the deploy image's two pins wait on its next
+  release, its binary reading no state since release F.
