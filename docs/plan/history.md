@@ -832,6 +832,14 @@ one module tag.
   A text written before this date that names the stage index's status cell or a `Records` cell means the
   stage file's `Status` row or the log's headings. `scripts/check-plan-refs.py` gained a ceiling for
   Current position and for the two indexes. Nothing in AWS changed.
+- **2026-11-16 — A processing job's network isolation reopened.**
+  [Stage 20](stages/stage-20-dbt-lineage.md)'s decision 13, the user's: `sagemaker:CreateProcessingJob`
+  leaves `DenySageMakerJobsWithoutNetworkIsolation`, Stage 6a step 3's statement of 2026-08-16, in
+  Sandbox, Staging and Production, so a processing job runs in its project's subnets as the project
+  role and reaches what a workflow's Glue job and worker tasks reach. Training, tuning and AutoML jobs
+  and models stay isolated. The stage's pass 4 holds the module change, its tags, the callers' pins, the
+  battery's rows and the documents that state the rule. The change was planned and not applied that
+  day. Nothing in AWS changed.
 
 ---
 

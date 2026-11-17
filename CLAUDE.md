@@ -433,7 +433,11 @@ up with what each closes, and the dated deadlines.
 #### Stages
 
 Done: 0, 1a, 1b, 1c, 1d, 2, 3, 4, 5a, 6a, 6b, 6c, 6i, 7, 16 and 18. Not started: 13, which waits on the
-domain name from the user, and 15, which nothing blocks and whose decisions 1-4 are the user's.
+domain name from the user, 15, which nothing blocks and whose decisions 1-4 are the user's, and 20 (a
+dbt task and its lineage in the catalog), written 2026-11-16, its step 1.1 facts and decisions 1 to 7,
+10 and 13 taken that day: pass 1 needs nothing up, and pass 4, a processing job taken out of the
+network-isolation statement in Sandbox, Staging and Production (decision 13), is a laptop session's on
+the user's word.
 
 | Stage | State | What comes next |
 |---|---|---|

@@ -929,6 +929,52 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     D21, [`docs/SMUS.md`](../SMUS.md) §S3 item 2 (rewritten from this reading), open question 25 (what
     expires in that same path) and open question 13 (the identity that folder cannot propagate).
 
+### Raised by the user, 2026-11-16 — a grant every project role holds
+
+27. **How does a project role get a grant the blueprint's policies lack, without one apply for each
+    project?** The workflows grant is the case: a project whose workflow creates a processing or a Glue
+    job needs three statements the blueprint's managed policies do not hold
+    ([`serverless-workflows.md`](runbooks/serverless-workflows.md) §G), and `sandbox/workflows/`
+    attaches them to each role named in `project_roles`, a list written by hand after the project
+    exists (Stage 6i decision 6). `sandbox/bedrock/` keeps a list of the same kind, each deployment
+    project's `studio/` slice one of its own, and `sandbox/warehouse/` a map of the projects it
+    admits. The user asked for a form that serves every project, a new project needing no apply
+    ([Stage 20's log](../log/log-stage-20-dbt-lineage.md), 2026-11-16), kept the list for now on
+    Claude's recommendation, and had the question recorded here.
+
+    IAM attaches a managed policy to one role at a time, and SageMaker Unified Studio mints a role for
+    each project. AWS's pages, read 2026-11-16: the managed Tooling blueprint has no parameter that
+    adds a policy to a role it creates, its one setting for every role being the permissions
+    boundary, which grants nothing; a custom Tooling blueprint's template creates the project role in
+    an Identity Center domain, and a project of such a profile is created through the API alone.
+
+    **What has to be decided, the user's, each option unmeasured here:**
+
+    - **The slice discovers the roles by name**, `datazone_usr_role_*` under the D13 boundary, in
+      place of the list. The hand-written line and its pull request end; one apply for each new
+      project stays, since Terraform attaches only to a role that exists at plan.
+    - **A function attaches the policy when a project role is created**: an EventBridge rule and a
+      Lambda holding `iam:AttachRolePolicy` for the named policies, on roles under the boundary. No
+      apply for a project, and the portal keeps creating projects. To find out: which event carries
+      a project role's creation in the estate's Region (whether IAM's `CreateRole` reaches a bus
+      outside `us-east-1` is unread here, and the Tooling stack's CloudFormation events are
+      regional); what the function's role adds to the threat model (Lesson 67); and the window
+      between a project's creation and the attachment.
+    - **A custom Tooling blueprint**, whose template names the policies on the role it creates, so a
+      project is born with them. To find out: the template this domain needs, the boundary on a
+      role the template creates (INT-15), what keeping a template of this repository's beside AWS's
+      managed one costs (open questions 21 and 22), and whether projects created through the API
+      alone are acceptable.
+    - **The lists kept**: one line and one apply for each project and each grant.
+
+    The form chosen serves every list of the kind but the warehouse's map, an admission being a
+    choice made for one project. The gap behind the workflows grant is AWS's: its managed policies
+    refuse the read an operator makes before it creates a job and, for a processing job, the tag the
+    create has to carry. A revision of those policies that closes it ends the question for that
+    grant ([`upstream-releases.md`](upstream-releases.md) reads them). Sandbox holds no Premium
+    Support subscription (read 2026-11-14, Stage 19 decision 17 (d)), so no support case reports it
+    from here.
+
 ---
 
 *Plan core: [GENERAL_PLAN.md](../GENERAL_PLAN.md) · Decisions: [docs/plan/decisions/INDEX.md](decisions/INDEX.md) · Stages: [docs/plan/stages/INDEX.md](stages/INDEX.md)*
