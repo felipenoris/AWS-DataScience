@@ -1,0 +1,20 @@
+version: 2
+
+sources:
+  - name: app_dbt
+    description: The product database of the project, where the workflow's Glue task writes.
+    schema: "{{ target.schema }}"
+    tables:
+      - name: trades
+        description: The trades of samples/trades.csv, the Iceberg table the Glue task load writes on each run.
+        columns:
+          - name: trade_date
+            description: The day the trade was made.
+          - name: desk
+            description: The desk that made the trade.
+          - name: instrument
+            description: The instrument traded.
+          - name: quantity
+            description: The quantity traded.
+          - name: price
+            description: The price of one unit.

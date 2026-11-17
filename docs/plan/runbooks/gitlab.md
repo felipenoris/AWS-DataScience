@@ -47,7 +47,7 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
    |---|---|---|---|
    | `make gitlab-up RUNNERS=0` | none | 0 | runs no pipeline, or comes before the runners' tokens are in their containers (§K): a runner that cannot register bills until `make gitlab-down` |
    | `make gitlab-up` | the deploy and test runners | 0.0376 | runs branch, merge-request and `main` pipelines, whose jobs all carry the test runner's tag, `pages` among them |
-   | `make gitlab-up BUILD=1` | the build runner too | 0.2493 | runs a tag pipeline or builds an image: an `awsds/app-etl` tag `v<semver>`, an `awsds/dev-env` release `<flavour>-v<semver>`, `awsds/deploy-image`'s pipeline. Their untagged jobs (`build-image`, `build-images`, the scans, `store-bundle`, `release`, `production-gate`, `build-deploy-image`) run on the build runner alone, and wait as *stuck* without it |
+   | `make gitlab-up BUILD=1` | the build runner too | 0.2493 | runs a tag pipeline or builds an image: an `awsds/app-etl` tag `v<semver>`, an `awsds/dev-env` release `<flavour>-v<semver>`, `awsds/deploy-image`'s pipeline. Their untagged jobs (`build-image`, `build-images`, the scans, `store-bundle`, `release`, `staging-gate`, `production-gate`, `build-deploy-image`) run on the build runner alone, and wait as *stuck* without it |
 
    The default raises the deploy and test runners:
 
@@ -586,7 +586,7 @@ A runner created twice leaves the first one in GitLab with no manager; it is del
 **What a deploy job can rely on**:
 
 - the deploy image, `awsds-prod-ecr-deploy@<deploy_image_digest>`, as the default image; an `image:` keyword naming anything outside `awsds-prod-ecr-deploy` is refused by the runner's `allowed_images`, and the runner pulls through the ECR credential helper as the instance role;
-- `AWS_CONFIG_FILE=/etc/awsds/aws-config`, mounted read-only: one profile per deploy role (`awsds-deploy-prod`, `awsds-deploy-staging`, `awsds-deploy-devenv-sandbox`), each a `role_arn` with `credential_source = Ec2InstanceMetadata`. A job names the role it acts as with `--profile` or `AWS_PROFILE`, and no credential is exported into its shell;
+- `AWS_CONFIG_FILE=/etc/awsds/aws-config`, mounted read-only: one profile per deploy role (`awsds-deploy-prod`, `awsds-deploy-staging`, `awsds-deploy-devenv-sandbox`, and `awsds-deploy-sandbox-test`, the bundle role of Stage 8 decision 19 that `bundle` runs as), each a `role_arn` with `credential_source = Ec2InstanceMetadata`. A job names the role it acts as with `--profile` or `AWS_PROFILE`, and no credential is exported into its shell;
 - `AWS_REGION`, the proxy variables in both cases, and the CA root at `/etc/gitlab-runner/certs/ca.crt`.
 
 **The probe** (Stage 8 verifications ii and iii, answered 2026-10-13) was `deploy-runner-probe`, a job of the first pipeline's `.gitlab-ci.yml`, tag `awsds-deploy`, created only in a pipeline that set `DEPLOY_RUNNER_PROBE` (**Build → Pipelines → Run pipeline**, variable `DEPLOY_RUNNER_PROBE=1`); the first pipeline's five jobs each opened their rules with `- if: $DEPLOY_RUNNER_PROBE` and `when: never`, so the probe ran alone. On `main` it printed the instance role, read through the metadata service, and the role each profile assumes; on an unprotected branch it stayed `pending` under GitLab's stuck notice, which is the protection working, and was cancelled by hand. It leaves `main` with the first pipeline's files (the application template above), and `awsds/app-etl`'s history keeps it.
@@ -692,8 +692,8 @@ Two copies, in opposite directions. The image recipes live in GitLab since Stage
 ### The infrastructure mirror
 
 1. **Create it**, as the local administrator: group `awsds` → **New project → Create blank project**: name `infrastructure`, visibility **Private**, no README. **Protected branches**: `main`, push and merge **Maintainers**.
-2. **Members**: `awsds/dev-env-stewards` as **Reporter**: the registration job cloned with its job token, which carries the permissions of whoever ran the release gate (`register` and `retire` clone nothing since Stage 8 decision 18). `awsds/deployment-managers` joins at pass 4, and the stewards' seat leaves then: Stage 8 decision 2 keeps the mirror as the promotion jobs' reader.
-3. **The job token**: **Settings → CI/CD → Job token permissions → Authorized groups and projects**: add `awsds/dev-env`. At pass 4's first sitting `awsds/app-etl` is added and `awsds/dev-env` removed, before the first promotion clones the mirror.
+2. **Members**: `awsds/deployment-managers` as **Reporter**, since pass 4's first sitting (2026-10-24, the Stage 7 log): Stage 8 decision 2 keeps the mirror as the promotion jobs' reader. `awsds/dev-env-stewards` held that seat until the same day, for the registration job's clone with its job token (`register` and `retire` clone nothing since Stage 8 decision 18).
+3. **The job token**: **Settings → CI/CD → Job token permissions → Authorized groups and projects**: `awsds/app-etl`, which replaced `awsds/dev-env` at pass 4's first sitting (2026-10-24), before the first promotion cloned the mirror.
 4. **The remote**, once, in the project folder: a second remote, never a second push URL on `origin`, through which every session's push would also go to GitLab and fail while it is stopped:
 
    ```bash

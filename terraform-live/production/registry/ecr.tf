@@ -45,6 +45,17 @@ module "ecr_app_etl" {
   pull_principal_arns = local.app_consumer_account_arns
 }
 
+# The second application's repository (Stage 17 step 9.5): app-ml's image, with app-etl's settings
+# and its cross-account pullers.
+module "ecr_app_ml" {
+  # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/ecr-repo?ref=ecr-repo-v0.1.0"
+
+  name                = "awsds-${var.env}-ecr-app-ml"
+  kms_key_arn         = module.registry_key.key_arn
+  pull_principal_arns = local.app_consumer_account_arns
+}
+
 # The deploy image (Stage 8 steps 3.1 and 4.3): the toolbox the deploy runner's jobs run in, built by the
 # GitLab project awsds/deploy-image on the build runner. No cross-account pull principal: only the
 # deploy runner in this account pulls it, by its identity policy (production/foundation/'s anchors), and

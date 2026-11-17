@@ -54,8 +54,8 @@ paths, region portability, the data perimeter and the two egress designs are in
 | Policy Canary | Policy Test | Platform | **Deliberately empty, and disposable** — the account a candidate SCP or RCP is exercised against before it reaches anything real (D29). An SCP is evaluated only when a principal makes a call, so a policy-staging OU with no account inside it tests nothing. Holds an administrator principal and nothing else: a deny exercised by a principal that lacked the permission anyway proves nothing about a ceiling | **None of this project's** — the OU holds *candidate* policies under test (D29). It carries the Control Tower controls every governed OU has (the `us-west-2` ceiling and the two root-user controls, 1c step 7.7), so a candidate is measured against the same floor as everything else |
 | Sandbox | Interactive → **Sandboxes** | Lifecycle (before the chain: its origin, not its first link) | **Experimentation** — the unit of work is a notebook, and this is the **only** account where a human runs code (D17). Target of the unified domain's `experimentation` project blueprints (D26): interactive compute running unreviewed code against real, shared data, which makes it **the highest-risk account rather than the lowest** (`README.md` §3). Nothing here survives; nothing promotes from here. **One account per business unit (D35)** — the only non-structural row — grouped in a nested OU that carries no policy set of its own (D37). The VPN terminated here until [Stage 6c](plan/stages/stage-06c-networking-hub.md) moved it to Production's `VPC-Networking` | Interactive compute allowed, because nothing denies it save one statement. `Sandboxes` carries no set of its own; `Interactive` carries exactly one deny (classic notebook instances, Stage 1c step 7.6, 2026-08-13), so what reaches this account is the organization-root set plus that. Infrastructure change is held off the data scientist by `DataScientistAccess`, an *identity* policy |
 | Data Governance | Data | **Ownership** | The **state and governance of data**: the governed lake (S3 + Iceberg), the Glue catalog, Lake Formation, classification, the ingestion drop-box, the Glue Crawlers on raw and drop-box (D27), and the **SageMaker Unified Studio domain** with its catalog, project profiles, blueprints and account associations (D22, D26). **A registry, not a runtime** — no user compute, no interactive sign-in, and no VPC but the lake-publishing pilot's, which peers with nothing ([Stage 6f](plan/stages/stage-06f-data-governance.md) step 11, D22 amended 2026-10-26); every environment reaches it through cross-account shares, and the portal it hosts is used by people who can never administer the account. Renamed from `Data Management` on 2026-08-08 | No user compute; catalog maintenance excepted by name; deletion denied |
-| Staging | Workloads | Lifecycle | **Deployment target**, written only by the pipeline: receives the built artifact, runs the integration tests against the governed lake, read in place and read-only (D20 as amended 2026-10-22), and is torn down again. No Studio domain, no Model Registry of its own, no GitLab, no copy of the lake. Data scientists: read-only. **The renamed `Development` account since [Stage 6b](plan/stages/stage-06b-development-becomes-staging.md)** (2026-09-06): the quota refused a vend, and the interactive environment it used to be was found unnecessary (D21 superseded by its own larger branch) | No interactive compute; no human control plane |
-| Production | Workloads | Lifecycle (end of the chain) | Deployment target **plus** the **software supply chain** (GitLab, runners, ECR, CodeArtifact — D14), the production SageMaker runtime including the **Model Registry**, the **orchestration** layer ([D7](plan/decisions/D07-orchestration.md)), and the lake's **producer** — its job execution role holds the governed write, the only path by which governed data is ever written. **Since [Stage 6c](plan/stages/stage-06c-networking-hub.md) also the network platform**: three VPCs, the estate's only internet gateway, the proxy and the VPN endpoint (D38, a quota-forced compromise with a trigger to move it out) | Same as Staging |
+| Staging | Workloads | Lifecycle | **Deployment target**, written only by the pipeline: receives the built artifact in its deployment project `deploy-staging`, where no space runs (since 2026-11-11, D20 as amended 2026-11-17), and runs the integration tests; it reads the governed lake in place, read-only (D20 as amended 2026-10-22), and its egress is raised and destroyed around each promotion (Stage 8 decision 27). No Model Registry of its own, no GitLab, no copy of the lake. Data scientists: read-only. **The renamed `Development` account since [Stage 6b](plan/stages/stage-06b-development-becomes-staging.md)** (2026-09-06): the quota refused a vend, and the interactive environment it used to be was found unnecessary (D21 superseded by its own larger branch) | No interactive compute; no human control plane |
+| Production | Workloads | Lifecycle (end of the chain) | Deployment target **plus** the **software supply chain** (GitLab, runners, ECR, CodeArtifact — D14), the production SageMaker runtime including the **Model Registry**, the **orchestration** layer ([D7](plan/decisions/D07-orchestration.md)), the deployment project `deploy-production` (since 2026-11-11), and the lake's **producer** — its job execution role holds the lake's governed write, the only path by which a lake table is written; the project role loads the governed warehouse since 2026-11-16 (Stage 19 decision 16 (b)). **Since [Stage 6c](plan/stages/stage-06c-networking-hub.md) also the network platform**: three VPCs, the estate's only internet gateway, the proxy and the VPN endpoint (D38, a quota-forced compromise with a trigger to move it out) | Same as Staging |
 
 ### The policy set each OU carries
 
@@ -146,8 +146,10 @@ regenerated by `./aws/list-identities.py`. A name is an editable field nobody gu
 ## Staging Account
 
 - **Deployment target, not a staging area someone works in** ([D20](plan/decisions/D20-staging-account.md)).
-  It receives the artifact the pipeline builds, runs the integration tests against it, and is torn down
-  again. No Studio domain, no Model Registry of its own, no GitLab. Only the pipeline writes here, which its
+  It receives the release the pipeline promotes, deployed by the CI/CD CLI into its deployment project
+  `deploy-staging` (associated since 2026-11-11, no space, D20 as amended 2026-11-17), and runs the
+  integration tests against it; its egress is raised before the tag and destroyed after (Stage 8 decision
+  27). No Model Registry of its own, no GitLab. Only the pipeline writes here, which its
   `Workloads` policy set enforces: no interactive compute, no human control plane.
 
 - **The renamed `Development` account since 2026-09-06**
@@ -190,9 +192,11 @@ regenerated by `./aws/list-identities.py`. A name is an editable field nobody gu
   between what builds and what runs, so a compromise of GitLab is a compromise of Production.
 
 - **The one deployment target that reaches the lake as a writer.** Its job execution role holds the Lake
-  Formation share's **governed write** — the only path by which governed data is ever written
+  Formation share's **governed write** — the only path by which a lake table is written
   ([D22](plan/decisions/D22-data-governance-account.md)) — and it is the consumer of the ingestion drop-box
-  ([D25](plan/decisions/D25-drop-box-consumer.md)).
+  ([D25](plan/decisions/D25-drop-box-consumer.md)). The application's product lives in the deployment
+  project `deploy-production`, written by its project role, which holds no lake grant (Stage 19 decisions
+  6 (b) and 22 (a)).
 
 ## Data Governance Account
 
@@ -555,7 +559,7 @@ validation. If one of those three is missing, this user is unobserved as well as
 - the access matrix this expands into, per account ([D18](plan/decisions/D18-data-scientist-access.md)):
 
   - **Sandbox**: read-write and interactive — the **only** account where the person works interactively.
-    `Development`, the other half of this row, became the headless `Staging` on 2026-09-06 and carries a
+    `Development`, the other half of this row, became `Staging` on 2026-09-06 and carries a
     **read-only** persona instead (`DataScientistStagingAccess`, D18). **The group question survives the
     account (D35):** a `Sandbox` exists per business unit, so its assignment is to a
     **`sso-group-data-scientists-<bu>`** group covering that unit's Sandbox and nothing else; otherwise

@@ -40,7 +40,7 @@ forever versus what is powered off between sessions (D11). All of it is in Produ
 | Piece | Where · layer | What it is |
 |---|---|---|
 | The **Elastic IP** allocation | `production/networking/` · `[P]` | `52.89.212.1`, the one stable address. It was transferred between accounts, not reallocated, so no client config moved with the host. Every client pins it (`Endpoint =`). It survives every host stop, start and replacement; only its *association* follows the instance. No policy names it (§S4) |
-| The **security group** `awsds-prod-vpn` | `production/networking/` · `[P]` | carries the only world-open rule this account has, UDP/51820 (`VP-3`). The private ingress rule the isolated tier needed is gone with the buildbox's move (§S3). Dated exception: the estate has two such groups, one per account, because Sandbox's `[P]` VPN anchors outlive the host until step 4.13's second half. The Sandbox one guards no listener, and `VP-3` reads `pass` because the instrument reads Production (Lesson 31). Until that cleanup, *one per account* is the true claim |
+| The **security group** `awsds-prod-vpn` | `production/networking/` · `[P]` | carries the only world-open rule this account has, UDP/51820 (`VP-3`). The private ingress rule the isolated tier needed is gone with the buildbox's move (§S3). Sandbox's `[P]` VPN anchors, which carried a second world-open group, were destroyed at Stage 6c step 6.5 on 2026-09-08 (4.13's second half), and `VP-3` reads every account's security groups since: one world-open rule in the estate |
 | The **host-key secret** `awsds-prod-vpn-host-key` | `production/networking/` · `[P]` | the container for the host's private key. The value was copied by hand from the Sandbox secret at step 4.3, which is why every client's `PublicKey` line still matches. Read by the instance at boot; resource-policy deny on every other reader (§K0) |
 | The **WireGuard host** | `production/vpn/` · `[D]` | one **x86_64** burstable instance in `VPC-Networking`'s public subnet, `usw2-az1`. `t3.nano` by default, the size a slice parameter (§S6), tag `Name=awsds-prod-vpn` — the tag is what everything looks the host up by (§K0a). `wg0` at `10.90.0.1/24`, MTU 1280, IMDSv2 required, no port 22, no key pair; the shell is SSM (§K0a) |
 | Its **name** `vpn.awsds.internal` | `production/vpn/` · `[D]` | an A record at the host's private address, in the `[P]` apex zone. It did not exist until 2026-09-06: step 2.1 said pass 4 would write it and pass 4 did not (§S2) |
@@ -119,11 +119,11 @@ is topological:
 | Serves | devices **outside** AWS, over the tunnel | resources **inside** a private subnet, with no public address |
 | Exit | none for tunnel traffic: the client's internet is the **proxy**, a separate `[D]` host | none. There are zero NAT gateways in this estate (D38); an `egress/` slice is interface endpoints and, in the two compute VPCs, a DNS firewall |
 | Endpoints | the `[P]` **gateway** endpoints of the hub (free, always there) | the `[E]` **interface** endpoints, billed hourly, new ids every `make up` |
-| Who needs it | a laptop reaching a private address or name, and the monitored profile's internet (§S4) | Stage 6's notebooks, Stage 7's runners, the build host — anything that lives in a private subnet, whose only management path is the `ssm` trio |
-| At-rest burn | USD 0.0052/h running, plus the proxy's 0.0104 and its public IPv4's 0.005 | 0.180 (Sandbox) · 0.110 (Staging) · 0.130 (`VPC-SharedServices`) · 0 (`VPC-Workloads`) |
+| Who needs it | a laptop reaching a private address or name, and the monitored profile's internet (§S4) | Stage 6's notebooks, Stage 7's GitLab host and runners — anything that lives in a private subnet, whose only management path is the `ssm` trio |
+| At-rest burn | USD 0.0052/h running, plus the proxy's 0.0104 and its public IPv4's 0.005 | 0.180 (Sandbox) · 0.080 (Staging) · 0.120 (`VPC-SharedServices`) · 0.080 (`VPC-Workloads`), the endpoints alone (`scripts/tfhygiene/layers.py`, read 2026-11-17) |
 
 A session that needs only the tunnel starts only the hub (§S5): `make hub-up`, 0.0206/h against the
-0.19+/h an account's `make up` would raise.
+0.08 to 0.18/h an account's `egress/` slice would raise.
 
 The host's second job is gone. From 2026-08-21 to 2026-09-06 it was also a NAT instance for the Sandbox
 isolated tier — `vpc_nat_cidrs`, `source_dest_check` off, a masquerade for those ranges, and a
@@ -598,8 +598,8 @@ the word *monitored* names.
 | plane | source | mode | list | an entry means |
 |---|---|---|---|---|
 | **`tunnel`** — this runbook's subject | `10.90.0.0/24` | **`open`** | **empty** | a name the estate's people may **not** reach |
-| `sandbox-foundation` — **SageMaker's** | `10.20.0.0/16` | `allowlist` | 21 † | the only kind of name that plane **may** reach |
-| `production-foundation` — the build hosts | `10.30.0.0/16` | **`open`** † | **empty** | a name a build may **not** fetch |
+| `sandbox-foundation` — **SageMaker's** | `10.20.0.0/16` | `allowlist` | 41 † | the only kind of name that plane **may** reach |
+| `production-foundation` — GitLab and its runners | `10.30.0.0/16` | **`open`** † | **empty** | a name a build may **not** fetch |
 | `production-workloads` | `10.32.0.0/16` | `allowlist` | 0 | nothing may be reached — empty by decision |
 | `staging-foundation` | `10.50.0.0/16` | `allowlist` | 0 | as above |
 
@@ -613,8 +613,11 @@ allow-list deleted outright — D38 §6 amended, because a build host's control 
 rather than a hostname list. `DN-3` (code → parameter) passes; the running `squid.conf` follows on the
 State Manager half-hour, and `PX-3` is what speaks for it.
 
-**SageMaker's list, in full** — the twenty-one names a notebook may reach, which is D5's *"short list"*
-under [D38](../decisions/D38-single-egress-hub.md):
+**SageMaker's list, in full** — the names a notebook may reach, which is D5's *"short list"* under
+[D38](../decisions/D38-single-egress-hub.md), read from `proxy_allow_sandbox` on 2026-11-17. The IDE
+names beside `open-vsx.org` joined on 2026-09-09 (6d step 8.5, [`sg-proxy.md`](sg-proxy.md)); R
+(2026-09-11), the four Anthropic names and the GitHub family (2026-09-19) carry their dates in
+[`NETWORK.md`](../../NETWORK.md)'s footnotes ‡, ¶ and ‖ to the plane table:
 
 | what | names |
 |---|---|
@@ -625,12 +628,14 @@ under [D38](../decisions/D38-single-egress-hub.md):
 | DuckDB | `blobs.duckdb.org` · `extensions.duckdb.org` |
 | Julia | `install.julialang.org` · `julialang-s3.julialang.org` · `pkg.julialang.org` · `storage.julialang.net` · `us-west.pkg.julialang.org` |
 | Rust | `sh.rustup.rs` · `index.crates.io` · `static.crates.io` · `static.rust-lang.org` |
-| source | `github.com` |
-| IDE extensions | `open-vsx.org` † |
+| R | `cloud.r-project.org` |
+| source | `github.com` · `api.github.com` · `raw.githubusercontent.com` · `release-assets.githubusercontent.com` · `cli.github.com` · `gist.github.com` · `objects.githubusercontent.com` · `codeload.github.com` · `uploads.github.com` · `github-cloud.githubusercontent.com` · `pipelines.actions.githubusercontent.com` · `ghcr.io` |
+| IDE | `idetoolkits.amazonwebservices.com` · `ide-toolkits.app-composer.aws.dev` · `sagemaker-unified-studio-mcp.<region>.api.aws` · `open-vsx.org` † · `openvsx.eclipsecontent.org` |
+| Anthropic | `api.anthropic.com` · `platform.claude.com` · `claude.ai` · `claude.com` |
 
 `production-foundation` **has no list at all since 2026-09-08**: the plane is `open`, so it reaches any
-public name and every one is logged. Its earlier allow-list was the table above minus `.amazonaws.com`,
-plus the CloudFront distribution `public.ecr.aws` redirects blob downloads to, which Squid needed by
+public name and every one is logged. Its earlier allow-list was the Sandbox plane's list of that date
+minus `.amazonaws.com`, plus the CloudFront distribution `public.ecr.aws` redirects blob downloads to, which Squid needed by
 name because it matches the hostname the client *requested*. The three global denies below still apply
 to it.
 

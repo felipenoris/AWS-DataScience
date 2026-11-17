@@ -813,6 +813,12 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     `CROSS_ACCOUNT_VERSION` 1 and `AllowFullTableExternalDataAccess` `false` (01:46:47Z), and its verdict
     left no deployment project, so Stage 9 pass 5's `staging/data/` meets no seat.
 
+    **The seats are back in both targets since 2026-11-11.** [Stage 19](stages/stage-19-smus-native-data-product.md)
+    step 4.6's `create-project` seated the two SMUS roles as Lake Formation administrators of Staging and
+    Production by a full replace of each account's settings, and set `AllowFullTableExternalDataAccess`
+    `true` (15:26:05 and 15:29:36 UTC, the provisioning role's `PutDataLakeSettings`). The narrower-permission
+    half of this question covers both targets again.
+
 ### Raised by Stage 6 step 2.4's reading, 2026-08-26
 
 25. **What expires in `awsds-<env>-smus-projects`, and who removes the storage of a project that no
@@ -864,8 +870,10 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     Unified Studio CI/CD CLI deploys it from the repository into the `dev` project (no `test` stage
     since 2026-11-11, [Stage 19](stages/stage-19-smus-native-data-product.md) decision 19 (c)) and makes
     the bundle the pipeline promotes; what a space produces reaches the repository by `git` from the space
-    (INT-13's accepted path). The CLI deploys only into existing SMUS projects and a deployment target
-    has none, so the pipeline stays the deployer there (D26/D28 amended). The
+    (INT-13's accepted path). The CLI deploys only into existing SMUS projects. Each deployment target
+    holds one since 2026-11-11 ([Stage 19](stages/stage-19-smus-native-data-product.md) decision 6 (b)),
+    and since release F (2026-11-16, pipeline #129) the pipeline runs the CLI to deploy the bundle into
+    each (D26/D28 amended). The
     `gitConnectionArn`-is-createOnly half stays open at the service: the CloudFormation schema of
     `AWS::DataZone::ProjectProfile` (read 2026-10-17) is `FULLY_MUTABLE` with only `DomainIdentifier` and
     `UseDefaultConfigurations` create-only, and names no git property, so `gitConnectionArn` can only be a

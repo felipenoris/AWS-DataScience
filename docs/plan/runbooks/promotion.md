@@ -13,9 +13,10 @@ chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs
 
 **Where it stands, 2026-11-17**: §0, §H, §P, §T, §W and §V done; of §N, N.0 to N.3 ran 2026-10-25/26,
 release T's sitting (N.8.2, `v0.4.7`, pipeline #117) on 2026-11-15 and release F's (N.8.4, `v0.5.2`,
-pipeline #129) on 2026-11-16, its step 10, Stage 19 item 31, applied on 2026-11-17. What is left is N.8.5
-(release G, `v0.6.0`), its step 3 applied on 2026-11-17, and N.8.3 (2026-11-22 to 2026-11-25); §N.6 orders
-it by sitting, the steps that need nothing up first.
+pipeline #129) on 2026-11-16, its step 10, Stage 19 item 31, applied on 2026-11-17. What is left is §N.6's
+order: N.8.5 (release G, `v0.6.0`), its step 3 applied on 2026-11-17, and N.8.3 (2026-11-22 to
+2026-11-25), then Stage 20's and Stage 17's sittings and releases (N.6 items 6 to 14), the steps that need
+nothing up first.
 
 | § | Holds |
 |---|---|
@@ -208,16 +209,16 @@ rows.
 4. **[user] The deploy image on Terraform 1.16.6**, the laptop running it since 2026-10-25 and the two pins moved in
    `gitlab/awsds/deploy-image/Dockerfile` (`upstream-releases.md`): the merge request,
    the tag, its digest into `production/runners/variables.tf`, and the slice applied by `make gitlab-up
-   BUILD=1`, which keeps the build runner; the flag left out destroys it. Until then the deploy image runs 1.15.8, which every
-   slice's `versions.tf` admits and which refuses a state the laptop's 1.16.6 has written: this step comes
-   before any laptop apply or `make up` of a slice the pipeline reads or applies (N.1 step 2).
+   BUILD=1`, which keeps the build runner; the flag left out destroys it. **Done 2026-10-25** as `v0.3.0`
+   (N.1 step 2), the deploy runner replaced at 20:40:08 UTC; before it the image ran 1.15.8, which refuses a
+   state 1.16.6 has written.
 5. **[Claude]** `./aws/cicd.py` after the runners' boot (`CI-1`, `CI-9`), and `GM-1` to `GM-8` on the copies.
 
 **Done 2026-10-24** (Stage 8's log): the environment raised by the user at 18:10 UTC, `cicd.py` 0
 failed; steps 1, 2 and 6 by the user, read back at 18:47: the mirror at `0236a99d`, MR !4 merged and the
 legs' MR !5 merged, `awsds/app-etl`'s `main` at `5a7d009a` identical to `examples/app-etl/` at
-`0236a99d`. Steps 3 and 4 are left: the house image does not hold Stages 8 to 10, and the deploy image is rebuilt
-now that the laptop runs Terraform 1.16.6 (since 2026-10-25).
+`0236a99d`. Steps 3 and 4 ran on 2026-10-25 as N.1 steps 1 and 2: version 10 by pipeline #96, the deploy
+image `v0.3.0` on Terraform 1.16.6.
 6. **[user] The CI/CD variable `TRAINING_IMAGE_URI`** on `awsds/app-etl`, protected, for v0.4.0's
    `test-deploy`: the value `terraform -chdir=terraform-live/staging/sagemaker output -raw
    training_image_uri` after §0.6, AWS's XGBoost image by digest. v0.3.0 reads no such variable.
@@ -603,7 +604,8 @@ carries `ONLY=`, or the build runner is destroyed.
    and orchestration slices, `staging/egress`, `production/workloads-egress`, and the `data/`, `sagemaker/`,
    `foundation/` and `workloads/` states their `terraform_remote_state` reads), since the image's 1.15.8 refuses
    a state written by 1.16.6. **Done 2026-10-25**: the deploy runner replaced at 20:40:08 UTC by the user's
-   `make gitlab-up BUILD=1` on the pinned digest (Stage 8's log).
+   `make gitlab-up BUILD=1` on the pinned digest (Stage 8's log). No pipeline job runs Terraform since
+   release F: a leg reads its role's `state_read_keys` as JSON (`terraform-changes.md` §1).
 3. **[Claude] Readings with GitLab up**: `./aws/cicd.py` (`CI-1`, `CI-9`); `awsds/app-etl`'s branch list,
    verification ix's branches deleted on 2026-10-25 by the user's word; and Stage 8 xxvii's plan half, a
    read-only plan of `production/runners/` once the Amazon Linux parameter has moved past the runners'
@@ -1100,11 +1102,14 @@ on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its pla
 
 - **A second application**: Stage 10's chain order and xxv (decision 18). `<env>/chains/` takes it as an
   entry of its `applications` and `chains` maps; the split of `staging/orchestration/` per application
-  (Stage 8 decision 27) retired with that slice (Stage 19 item 31). The first candidates are Stage 17's
-  `app-ml` and `app-genai` (passes 9 and 10) and Stage 20's `app-dbt`, none built on 2026-11-17.
+  (Stage 8 decision 27) retired with that slice (Stage 19 item 31). The first in the targets is Stage 17's
+  `app-ml` (9.7), then `app-genai` (10.6); Stage 20's `app-dbt` stays in Sandbox under its decision 9 (a),
+  recommended. The three are written in `examples/` since 2026-11-17 and none is deployed. Neither of
+  Stage 17's consumes another application's marker as written, so xxv stays open on them.
 - **A `monitoring` endpoint** as the positive control: Stage 10 xvi's metrics clause.
 - **S3 data events** (Stage 11): Stage 8 xx's writing identity.
-- **A release that removes a file**: Stage 8 xxvi. **A workflow's 50th version**: Stage 8 xxiii, read
+- **A release that removes a file**: Stage 8 xxvi, which Stage 17 9.11's release of `app-etl` provokes in
+  both deployment projects, `app-etl-train` leaving `workflows/`. **A workflow's 50th version**: Stage 8 xxiii, read
   2026-10-26 at 12 for the `test` project's `app-etl` and 6 for its `_train` twin. No release deploys
   to that project since Stage 19 decision 19 (c), so its count stands; the question passes to the `dev`
   project's workflows, a version per deploy from a space, and from release F to each deployment
@@ -1120,36 +1125,80 @@ on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its pla
 
 ### N.6 The order of what is left, read 2026-11-17
 
-Read on 2026-11-17 against the stage files and their logs, with nothing up, after release F's sitting and
-item 31's applies. Each sitting starts on the user's word, since it is metered.
+Read on 2026-11-17 against the stage files and their logs, with nothing up, after release F's sitting,
+item 31's applies and release G's step 3. Each sitting starts on the user's word, since it is metered, and
+holds one goal: what needs nothing up runs before it, a sitting that needs no GitLab raises none, and an
+application reaches a Sandbox space as a tar built on the laptop (Stage 20 step 2.0), never through
+GitLab. Sittings that need the hub may share one hub start. The order is the dependencies', not a
+calendar; the waiting list's "Sittings with the environment up" says what each closes, and its Dates
+bound items 3, 5, 6 and 9.
 
-1. **With nothing up**: release G's step 3, `production/studio/`, **applied 2026-11-17** at 13:11 UTC on
-   the user's word naming it, from the plan saved at 05:06 UTC from `main` at `80e996f5`
-   (`$HOME/tmp/review-production-studio.tfplan`, 2 added, 2 destroyed), with no Production run in
-   progress, and re-planned `No changes` (N.8.5 step 3). The apply under a blanket authorization had been
-   refused by the app's classifier the same day (*Production Deploy*). The five slices item 31 applied
-   re-plan `No changes` from the same tree, so the Lesson 79 window is closed. Stage 19's step 8, each
-   deployment project's first scheduled source run after the imports, read the same day (xvii, xxv).
-   Stage 20's pass 4 finds `production/studio/` with release G's change applied (Lesson 69).
-2. **Release G's sitting** (N.8.5 steps 2, 4 and 5): the hub, GitLab with `BUILD=1`, `staging/egress/`
+1. **With nothing up, done 2026-11-17.** Release G's step 3, `production/studio/`, applied at 13:11 UTC on
+   the user's word naming it, from the plan saved at 05:06 UTC from `main` at `80e996f5` (2 added, 2
+   destroyed), and re-planned `No changes` (N.8.5 step 3); under a blanket authorization the app's
+   classifier had refused it the same day (*Production Deploy*). The five slices item 31 applied re-plan
+   `No changes` from the same tree, so the Lesson 79 window is closed, and Stage 19's step 8 read the same
+   day (xvii, xxv). The day's pull request writes Stage 17's 9.1 to 9.4 and 10.1 to 10.3 (the preflights,
+   `examples/app-ml/` and `examples/app-genai/`; the lint's rules are
+   [`awsds-workflows` pull request #26](https://github.com/felipenoris/awsds-workflows/pull/26)), 9.5's
+   target slices with `TM-33`, and Stage 20's pass 1 (`examples/app-dbt/` and [`catalog.md`](catalog.md))
+   and its 4.1 to 4.3 (the modules' tags, the callers' pins, the battery's rows); its plans came from
+   worktrees and are taken again from `main` (Lesson 79).
+2. **With nothing up, the user's acts**, each a waiting-list row: that pull request merged;
+   `awsds-workflows` pull request #26 merged, after which Claude moves the new applications' pins to the
+   merge; the decisions
+   a sitting reads (Stage 19 decisions 28 and 15 before 4.12, Stage 20 decisions 9 and 11, 6h decisions
+   3 and 8, 6d decision 16 before Stage 17's projects); `TM-33` accepted; each apply by name, from a
+   `main` that holds the merge: `production/registry` first, since `identity/sso` names its repository,
+   then Stage 20 4.4's five slices with the battery's Phase 4b, then the rest of 9.5's target slices, both
+   `studio/` slices taking the two changes in one apply (Lesson 69); the projects
+   `app-ml-dev` and `app-genai-dev` created with their contributors and Nova Lite enabled (9.6, 10.4),
+   after which Claude plans the Sandbox slices that read the projects' roles and the user applies them.
+3. **Release G's sitting** (N.8.5 steps 2, 4 and 5): the hub, GitLab with `BUILD=1`, `staging/egress/`
    raised before the tag and destroyed after the Staging leg, `production/workloads-egress/` before
    `production-gate`; the local user's password rotated before the first push (N.8.2 step 3), the mirror
-   at `main`, the template's merge request of eight files, the tag `v0.6.0` and Production's leg read; a
-   GitLab backup, since the newest, of 2026-11-16 03:01 UTC, leaves the bucket on 2026-12-17.
-3. **Nothing up, after release G**: Stage 19 4.12, the Governance Manager made a contributor of
+   at `main`, the template's merge request of eight files, the tag `v0.6.0` and Production's leg read.
+   With GitLab up, the same sitting creates `awsds/app-ml` and `awsds/app-genai`
+   ([`sagemaker-application.md`](sagemaker-application.md) §L) and takes a backup: the newest, of
+   2026-11-16 03:01 UTC, leaves the bucket on 2026-12-17. Between 2026-11-22 and 2026-11-25 it carries
+   N.8.3 on the same hub start.
+4. **Nothing up, after release G**: Stage 19 4.12, the Governance Manager made a contributor of
    `deploy-production` by its owner, then `eighth-experimentation`'s request and the approval in the
    portal (the user's acts), the fulfilment read on both sides.
-4. **The warehouse and backup sitting** (N.8.3), between 2026-11-22 and 2026-11-25: `EXC-13`'s Production
-   half after the admin secret's first rotation, scheduled 2026-11-22 01:59:59 UTC, and the free trial's
-   pair. A release G sitting inside that window carries it on the same hub start.
-5. **Stage 19's pass 5**, a Sandbox warehouse sitting after 4.12, before 2026-12-19 if the trial is to
-   absorb it.
-6. **The stages' close**: after 2 and 4, Stages 8, 9 and 10 hold only what N.5 lists, and each can close
-   as Stage 4 did, what waits moved to the trigger or the stage that provides its subject. The user's
-   decision, read then.
-7. **What waits on something else** (N.5): a second application, a `monitoring` endpoint, Stage 11's S3
-   data events, a release that removes a file, a workflow's 50th version, a blueprint reconciliation, and
-   the halves no step provokes.
+5. **The warehouse and backup sitting** (N.8.3), between 2026-11-22 and 2026-11-25, unless item 3 carried
+   it: `EXC-13`'s Production half after the admin secret's first rotation, scheduled 2026-11-22 01:59:59
+   UTC, and the free trial's pair.
+6. **Sandbox sitting A**, `make hub-up` then `make up ENV=sandbox GROUPS=mwaa`, no GitLab: Stage 20's
+   passes 2 and 3, dbt on a worker and its lineage events, and 4.5 once item 2's applies ran; before
+   2026-12-18, when dbt Core 1.11's critical support ends.
+7. **Sandbox sitting B**, `GROUPS=mwaa,mlflow`, no GitLab: Stage 17's 1.4 and 1.6, the first tracking
+   call, then 9.6, `app-ml` trained, registered and scored in `app-ml-dev`. Stage 17's passes 2 to 5 are
+   sittings of their own after it.
+8. **Sandbox sitting C**, `GROUPS=mwaa,bedrock-base`, no GitLab: Stage 17's 10.4, `app-genai`'s loop
+   with the boundary's deny and the account's guardrail measured, and 6e 6.4's assistant session, whose
+   token volume sets 6e decision 6's threshold.
+9. **The Sandbox warehouse sitting**, `GROUPS=redshift`: Stage 19's pass 5 after 4.12, 5b's
+   `max_query_execution_time` test, and 6h's negatives after 6h decision 8; before 2026-12-19 if the
+   trial is to absorb them.
+10. **With nothing up, before `app-ml`'s first tag**: `scripts/deploy-application.py`,
+    `scripts/model-chain.py` and their hooks taught a second application, kept out of the day's pull
+    request so that release G's leg runs the script it was read with; the subagents' patches of
+    2026-11-17 are in `$HOME/tmp/stage17-proposals/` with a README, the two `deploy-application.py`
+    proposals merged by hand; then the template's pins read against the lint's release.
+11. **`app-ml`'s first release** (Stage 17 9.7), a promotion sitting after items 7 and 10.
+12. **With nothing up, after item 8**: Stage 17's 10.5, the exception and the names in the targets, once
+    10.4 read a first answer from Nova Lite through Sandbox's in-Region profile; its threat-model entry
+    accepted before its applies.
+13. **`app-genai`'s first release** (Stage 17 10.6), a promotion sitting after item 12 and a gates tag
+    whose pip-audit step passes an application with no runtime package.
+14. **`app-etl`'s model half retired** (Stage 17 9.11), a release of `app-etl` after items 3 and 11, then
+    the estate's pull request, planned from a `main` that holds it (Lesson 79).
+15. **The stages' close**: after items 3 and 5, Stages 8, 9 and 10 hold only what N.5 lists, and each can
+    close as Stage 4 did, what waits moved to the trigger or the stage that provides its subject. The
+    user's decision, read then.
+16. **What waits on something else** (N.5): a second application in a chain that consumes another's
+    marker, a `monitoring` endpoint, Stage 11's S3 data events, a release that removes a file (item 14),
+    a workflow's 50th version, a blueprint reconciliation, and the halves no step provokes.
 
 ### N.7 The sittings prepared 2026-10-26
 

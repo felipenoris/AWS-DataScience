@@ -63,7 +63,7 @@ locals {
   # production/registry/, where the registry lives (D14). A name, never a pattern: a repository joins
   # here once it exists (README, "What is complete").
   ecr_repository_arns = {
-    for name in ["awsds-prod-ecr-app-etl", "awsds-prod-ecr-base", "awsds-prod-ecr-dev-env"] :
+    for name in ["awsds-prod-ecr-app-etl", "awsds-prod-ecr-app-ml", "awsds-prod-ecr-base", "awsds-prod-ecr-dev-env"] :
     name => "arn:${data.aws_partition.current.partition}:ecr:${var.region}:${local.account_ids["production"]}:repository/${name}"
   }
 

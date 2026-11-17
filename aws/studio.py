@@ -33,7 +33,8 @@
 # ARN of every profile.
 #
 # The contracts it reads, each named in the stage file so a rename fails loudly:
-#   - the project profiles are named `experimentation` and `engineering` (Stage 6 step 1)
+#   - the project profiles' names: `experimentation`, `lake-publishing`, `deployment-staging`,
+#     `deployment-production` and `Generative AI model governance`; `engineering` is retired
 #   - the step 3 deny Sids are DenySageMakerJobsOffVpc and DenySageMakerInstanceCeiling
 #   - the D13 boundary on project roles is named awsds-<env>-project-boundary (step 2)
 #

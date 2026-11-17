@@ -166,9 +166,10 @@ terraform-live/
 │   │                     #     6.5 (2026-09-08): the Elastic IP forgotten (it is
 │   │                     #     production/networking/'s [P] allocation), the group, the
 │   │                     #     secret and the zone destroyed
-│   ├── data/             # [P] the lake's consumer side (consumer-data - the only caller
-│   │                     #     since 2026-09-06; development/data/ was destroyed at Stage 6b
-│   │                     #     step 2.4): this account's DataLakeSettings, the LF
+│   ├── data/             # [P] the lake's consumer side (consumer-data, which staging/data/
+│   │                     #     and production/data/ also call since 2026-10-22;
+│   │                     #     development/data/ was destroyed at Stage 6b step 2.4): this
+│   │                     #     account's DataLakeSettings, the LF
 │   │                     #     resource links + local re-grants to the Data Governance
 │   │                     #     share (D22), and the alias/awsds-<env>-data CMK - since
 │   │                     #     2026-08-26 the sandbox lake's key, not a derived zone's
@@ -185,10 +186,11 @@ terraform-live/
 │   │                     #     bucket, the access role awsds-sandbox-lake-access and (its
 │   │                     #     decision 3) the Access Grants location + per-group grants;
 │   │                     #     per-project grants are hand-made: runbooks/sandbox-lake.md
-│   ├── egress/           # [E] interface VPC endpoints (20 since 6e step 4, single AZ) and the
-│   │                     #     DNS Firewall - no NAT, no default route (D38; the NAT code left
-│   │                     #     vpc-egress at v0.6.0). The optional families (bedrock, emr,
-│   │                     #     mwaa) exist only when `make up ENV=sandbox GROUPS=...` names one
+│   ├── egress/           # [E] interface VPC endpoints (18 always on at vpc-egress-v0.19.0,
+│   │                     #     single AZ) and the DNS Firewall - no NAT, no default route (D38;
+│   │                     #     the NAT code left vpc-egress at v0.6.0). The optional groups
+│   │                     #     (bedrock-base, bedrock-agent, emr, mlflow, mwaa, redshift) exist
+│   │                     #     only when `make up ENV=sandbox GROUPS=...` names one
 │   ├── probes/           # [E] Stage 3's measurement instruments (perimeter + peering),
 │   │                     #     created and destroyed by make up/make down, ranked after
 │   │                     #     egress/ so down tears them first
@@ -267,8 +269,9 @@ terraform-live/
 │                         #     domain comes from `Tooling`, and docs/SMUS.md carries the
 │                         #     enabled list - Tooling alone adds S3Location/KmsKeyArn, the
 │                         #     wizard-field set of 2026-08-22), the KMS key, the projects
-│                         #     bucket awsds-<env>-smus-projects, the 11
-│                         #     CREATE_ENVIRONMENT_FROM_BLUEPRINT grants (layer 2 of the
+│                         #     bucket awsds-<env>-smus-projects, one
+│                         #     CREATE_ENVIRONMENT_FROM_BLUEPRINT grant per enabled blueprint
+│                         #     (12 at sagemaker-prereqs-v0.9.0; layer 2 of the
 │                         #     create authorization; layer 1 sits in governance/), and the
 │                         #     D13 boundary policy attached to the project roles (INT-15).
 │                         #     It does not declare the project environments themselves:
@@ -286,8 +289,9 @@ terraform-live/
 │   ├── bootstrap/        # [P] state bucket for the Data Governance account
 │   ├── data/             # [P] raw/curated S3 (Iceberg), Glue Data Catalog, Lake Formation
 │   │                     #     registrations + LF-Tags (D13), ingestion drop-box (D18),
-│   │                     #     cross-account shares to sandbox (+ production at Stage 9;
-│   │                     #     development's was revoked 2026-09-06, Stage 6b step 2.3),
+│   │                     #     cross-account shares to sandbox, staging (read-only, since
+│   │                     #     2026-10-22) and production (Stage 9); development's was
+│   │                     #     revoked 2026-09-06, Stage 6b step 2.3,
 │   │                     #     Glue Crawlers on raw + drop-box under the D27 exception
 │   │                     #     (config is free at rest; runs are metered, event-driven);
 │   │                     #     behind LAKE_PUBLISHERS, the two SMUS administrator seats and
@@ -329,8 +333,10 @@ terraform-live/
 │                         #     as its contributor (model-governance.tf)
 ├── staging/              # Deployment target (D20, D17): the Development account renamed at
 │   │                     # Stage 6b (2026-09-06) - not a vend, the quota refused that.
-│   │                     # SageMaker runtime only - no domain, no space, no blueprint, no
-│   │                     # Model Registry of its own, no GitLab, no lake share (revoked at
+│   │                     # SageMaker runtime and, since 2026-11-11, one deployment project
+│   │                     # of the shared domain (Stage 19 decision 6 (b)) - no space, no
+│   │                     # Model Registry of its own, no GitLab. The lake is read through a
+│   │                     # read-only share since 2026-10-22 (the first share was revoked at
 │   │                     # 6b 2.3). CIDR stays 10.50.0.0/16: a CIDR is immutable and a
 │   │                     # rebuild would replace every subnet, endpoint and the peering.
 │   │                     # There is no development/ entry: its sagemaker/ and data/ were
@@ -366,8 +372,9 @@ terraform-live/
 │   │                     #     orchestration-v0.3.1: per chain a state machine that finds its
 │   │                     #     workflow by name, a schedule and a failure rule. Applied
 │   │                     #     2026-11-15
-│   └── egress/           # [E] interface endpoints only (7, VPC-Workloads' set since Stage 9
-│                         #     step 4.3a and decision 12) and the DNS Firewall - NO NAT, no default route
+│   └── egress/           # [E] interface endpoints only (8: VPC-Workloads' set since Stage 9
+│                         #     step 4.3a and decision 12, and datazone since Stage 19 step 4.4)
+│                         #     and the DNS Firewall - no NAT, no default route
 │                         #     (D38). Measured empty at the migration; D11 leaves it torn
 │                         #     down between sittings
 └── production/
@@ -402,10 +409,10 @@ terraform-live/
     │                     #     The instance only - same rule as proxy/ below. Forwards tunnel
     │                     #     packets to RFC1918 destinations only
     ├── proxy/            # [D] the Squid host - the estate's single egress. The instance only:
-    │                     #     its Elastic IP, security group and allow-list parameter are
-    │                     #     networking/'s [P] anchors, so a `make down` cannot release the
-    │                     #     address (6g decision due 1 re-reads that, D39). Its access log
-    │                     #     is Stage 11's egress evidence
+    │                     #     its security group and allow-list parameter are networking/'s
+    │                     #     [P] anchors, and its public address is the instance's own,
+    │                     #     released at every stop, since 6g decision 1 (2026-09-17, D39).
+    │                     #     Its access log is Stage 11's egress evidence
     ├── workloads/        # [P] VPC-Workloads (10.32.0.0/16, created at 6c): the production
     │                     #     SageMaker runtime, MWAA Serverless workers, production jobs.
     │                     #     No IGW route in any table. Two private subnets in two AZs -
@@ -417,8 +424,9 @@ terraform-live/
     │                     #     serves VPC-SharedServices and cannot also serve this one.
     │                     #     Rank 51, just above egress (50). Created at 6c step 1.3a;
     │                     #     Stage 9 step 3.3a names the jobs' seven endpoints and turns the
-    │                     #     DNS Firewall on, AWS namespaces only; Stage 10 step 1.2 adds
-    │                     #     the workers'
+    │                     #     DNS Firewall on, AWS namespaces only; Stage 10 step 1.2's
+    │                     #     workers need logs and kms, already there, so the mwaa group
+    │                     #     stays empty; Stage 19 step 4.4 adds datazone, eight in all
     ├── pki/              # [P] the internal root CA (D36). Own state file and own KMS key,
     │                     #     not foundation/'s: foundation is opened to change a CIDR or
     │                     #     accept a peering, and every such edit would otherwise decrypt
@@ -456,12 +464,14 @@ terraform-live/
     │                     #     the namespace awsds-prod-warehouse; its workgroup is
     │                     #     warehouse-compute/'s, in VPC-Workloads' two private subnets, so
     │                     #     this account needs no new network work. Holds the `governed`
-    │                     #     database, whose rows awsds-prod-job-exec writes, and reaches readers
+    │                     #     database, whose rows deploy-production's project role loads
+    │                     #     since 2026-11-16 (Stage 19 decision 16 (b), verification xxxii;
+    │                     #     awsds-prod-job-exec before), and reaches readers
     │                     #     only through Lake Formation, by Stage 9 decision 5's shape: a
     │                     #     Lake Formation-managed datashare Data Governance registers
     │                     #     (decision 14), read from Sandbox on 2026-10-25. No project
-    │                     #     tag, no connection: D26 keeps deployment targets out of the domain,
-    │                     #     so 6h's three layers collapse to the GRANT alone
+    │                     #     tag, no connection (step 9.3), so 6h's three layers collapse to
+    │                     #     the GRANT alone
     ├── sagemaker/        # [P] Model Registry (model package groups) + the execution role
     │                     #     pipeline-submitted jobs assume, its job log groups, and the
     │                     #     escape hatch awsds-prod-debug with its alarm (Stage 9 steps 3
@@ -492,11 +502,15 @@ terraform-live/
     │                     #     into the objects bucket and fetched by the host (decision 8);
     │                     #     the user data and the AMI are held. Also both security groups,
     │                     #     the two records and the daily DLM snapshot policy
-    ├── runners/          # [E] the build runner (D14), rank 57 - amd64 on the buildbox's
-    │                     #     measured m8i.xlarge, registered at boot with the token in
-    │                     #     foundation/'s container, pushing with its instance profile and
-    │                     #     holding no deploy permission; the buildbox (rank 55) retired
-    │                     #     into it at Stage 7 step 6.5
+    ├── runners/          # [E] the runners, rank 57. The build runner (D14): amd64 on the
+    │                     #     buildbox's measured m8i.xlarge, raised only by `make gitlab-up
+    │                     #     BUILD=1`, registered at boot with the token in foundation/'s
+    │                     #     container, pushing with its instance profile and holding no
+    │                     #     deploy permission; the buildbox (rank 55) retired into it at
+    │                     #     Stage 7 step 6.5. The deploy runner (Stage 8 step 4.3), whose
+    │                     #     role, instance profile and token container are foundation/'s
+    │                     #     anchors. The test runner (Stage 8 decision 11), unprotected,
+    │                     #     whose jobs read no AWS identity
     ├── observability/    # [P] Stage 12 steps 1, 2 and 9 (rank 70): the hub dashboard
     │                     #     awsds-prod-hub, which carries Production's own panels too (the free
     │                     #     tier holds three dashboards, counted once per bill); the proxy access
@@ -752,9 +766,11 @@ Stage 6c (2026-09-06) — and, since Stage 7 (2026-10-12), the GitLab host and i
 (`production/tooling/`, started and stopped by `make gitlab-up`/`gitlab-down`). `make down` stops
 them, `make up` starts them, and **the hub pair has its own `make hub-up` / `make hub-down`** (D11 amended
 2026-09-05): every other account's session depends on those two, so a spoke's `make up` refuses while either
-is stopped. Idle cost is their EBS volumes (~USD 4.65/month) plus the Elastic IPs, which stay associated
-across a stop/start (and bill while stopped) — the addresses, the host-key secret and the security groups
-live in `[P]` (`production/networking/`), so they survive even if the instance is replaced. This is what
+is stopped. Idle cost is their EBS volumes (~USD 3.84/month since 2026-11-10, 0.08/GB-month over GitLab's
+32 GiB and the hub's 16 GiB, [`cost-model.md`](cost-model.md)) plus the WireGuard host's Elastic IP, which
+stays associated across a stop/start (and bills while stopped); the proxy wears its instance's own address
+since 6g decision 1 (2026-09-17). The WireGuard address, the host-key secret and the security groups live in
+`[P]` (`production/networking/`), so they survive even if the instance is replaced. This is what
 makes the Stage 7 backup/restore cycle a disaster-recovery procedure rather than a daily dependency.
 
 **[E] Ephemeral — destroyed at the end of a session.** Everything metered by the hour and rebuildable in

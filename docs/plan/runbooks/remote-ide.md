@@ -71,7 +71,9 @@ file channel in both directions (§N) is acceptable.
 **client's** commit, so the client's version is what the marketplace resolves extension builds against.
 Matching the version AWS pins in the image (`1.119.1`, read from
 `/opt/conda/share/sagemaker-code-editor/product.json` on 2026-09-11) is what keeps one extension set
-usable in both surfaces. A pinned client receives no fixes — stable was `1.137.0` on the day this was
+usable in both surfaces. That reading predates the house image's move to SageMaker Distribution
+`4.5.2-cpu` (`default-v0.5.0`, 2026-10-10), and this repository records none since, so read
+`product.json` in a space on version 11 before pinning a client. A pinned client receives no fixes — stable was `1.137.0` on the day this was
 written — so keep a current install for everything else and use the pinned one for this session. **The
 pin is a choice and not a prerequisite** — §E carries what it buys, what it costs, and the per-extension
 route that needs no pin at all. **What holds the pin differs by platform**: the Windows archive does not
@@ -390,8 +392,8 @@ git clone project.bundle project
 
 `verify` is the instrument: it lists the refs the bundle holds and says whether the bundle is
 self-contained, which separates a file that did not arrive whole from a clone that is wrong. After the
-clone, `origin` is the bundle's path on disk. **The space holds no GitLab credential and a `push` reaches
-nothing**, which is a property of this path rather than a gap to repair.
+clone, `origin` is the bundle's path on disk, so **a `push` reaches nothing**: a property of this path
+rather than a gap to repair, since a push goes to GitLab by the route above.
 
 **Later commits travel as a second bundle**, cut from the point the space is already at:
 

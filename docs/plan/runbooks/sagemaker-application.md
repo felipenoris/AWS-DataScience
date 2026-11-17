@@ -309,13 +309,14 @@ is a control (the runners' half is [`gitlab.md`](gitlab.md) §K, the gates' §G,
 ## D. The development cycle in Sandbox
 
 A data scientist works in a *space*, a JupyterLab or Code Editor instance inside the Sandbox project
-that is the manifest's `dev` stage, on the house image (`awsds-sandbox-dev-env`, version 10 or later).
+that is the manifest's `dev` stage, on the house image (`awsds-sandbox-dev-env` version 11, `default-v0.10.0`,
+the only version since 2026-11-03).
 The space's `~/shared/` folder is the project's `shared/` S3 prefix, its house environment carries the
 CI/CD CLI (Stage 8 decision 22), and every command it runs holds the project role's credentials. The
 loop below ran end to end from a space on 2026-10-26 ([`promotion.md`](promotion.md) §N.3, Stage 10
-2.1). Steps 1, 4 and 6 carry what the image and the CLI do not yet do for the developer: git's credential
-helpers, the MWAA Serverless API's name in `NO_PROXY`, and the CLI's domain lookup, which the template's
-`scripts/dev-cli.sh` answers.
+2.1). Steps 1 and 6 carry what the image and the CLI do not yet do for the developer: git's credential
+helpers, and the CLI's domain lookup, which the template's `scripts/dev-cli.sh` answers. Step 4, the MWAA
+Serverless API's name in `NO_PROXY`, is what version 11 carries.
 
 **The session is the infrastructure user's.** `make hub-up`; `make gitlab-up RUNNERS=0` while the
 checkout is cloned or pushed; and Sandbox's endpoints with the MWAA Serverless group:
@@ -371,10 +372,11 @@ settles, so the down runs again.
    export ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
    ```
 
-4. **The API's name in `NO_PROXY`**, in a space on version 10 or older: version 11, `default-v0.10.0`
-   (2026-10-26), carries it, and a space on it needs no export, read from a space at
-   [`promotion.md`](promotion.md) §N.7.3. Without it boto3 sends the call to the proxy, which refuses it,
-   even with the endpoint up. `getent hosts` answers the endpoint's `10.20.x` address:
+4. **The API's name in `NO_PROXY`**: version 11, `default-v0.10.0` (2026-10-26), carries it, and a space
+   on it needs no export, read from a space at [`promotion.md`](promotion.md) §N.7.3. Versions 7 to 10
+   lacked it and were deleted on 2026-11-03 ([`dev-env.md`](dev-env.md) §B); the export below is for a
+   space on another image. Without the name boto3 sends the call to the proxy, which refuses it, even with
+   the endpoint up. `getent hosts` answers the endpoint's `10.20.x` address:
 
    ```bash
    export NO_PROXY="$NO_PROXY,airflow-serverless.us-west-2.api.aws" no_proxy="$no_proxy,airflow-serverless.us-west-2.api.aws"

@@ -33,11 +33,12 @@
 export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
 ```
 
-The laptop and the deploy image both run Terraform 1.16.6 since 2026-10-25 (`v0.3.0`). A laptop upgrade
-comes after the image's rebuild: a state a newer Terraform writes is refused by the image's older one in every
-pipeline job that reads it (the application and orchestration slices, `staging/egress`,
-`production/workloads-egress`, and both targets' `data/`, `sagemaker/`, `foundation/` and `workloads/`;
-Lesson 76).
+The laptop and the deploy image both run Terraform 1.16.6 since 2026-10-25 (`v0.3.0`). While a pipeline
+job ran Terraform on the states it read, a laptop upgrade had to follow the image's rebuild (Lesson 76).
+Since release F's template (`v0.5.2`, 2026-11-16) a leg applies no Terraform, and since Stage 19 item 31 (2026-11-17) the deploy
+roles write no state: a leg reads the states its role's `state_read_keys` name (Staging's `foundation`,
+`sagemaker`, `data` and `egress`; Production's `workloads`, `foundation`, `sagemaker`, `data` and
+`workloads-egress`) as JSON, through `scripts/tfhygiene/states.py`.
 
 ```bash
 aws sso login --sso-session awsds
@@ -58,7 +59,7 @@ The last one confirms *who you are* before anything acts. One login covers every
 | `identity` | `awsds-infra-identity` |
 
 (The table lives in `scripts/tfhygiene/backend.py` `PROFILES` — that copy wins if they ever differ.
-`staging` has no profile until it is vended; Log Archive and Audit never get one.)
+Log Archive and Audit never get one.)
 
 ## 2. Recipe A — change inside a slice (no module touched)
 

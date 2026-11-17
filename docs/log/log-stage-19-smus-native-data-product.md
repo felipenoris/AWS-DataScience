@@ -4047,3 +4047,72 @@ from `main` at `80e996f5`. Every call as `awsds-infra-prod`, `InfrastructureAcce
   status row, §Release G as written, item 7 and decision 26; Stage 17's and Stage 20's notes on the
   slice; `serverless-workflows.md`; `waiting-on-the-user.md`'s release G and Stage 20 decision 13 rows;
   `CLAUDE.md`'s Stage 19 row and its classifier row; `SUP-008`.
+
+## 2026-11-17 — decision 15's order, and the sittings that are left reordered, with nothing up
+
+*Claude's hand, in a laptop session at the user's request of 13:42 UTC; no AWS call.*
+
+- **[Claude] `promotion.md` §N.6 rewritten**, 14:08 UTC: each sitting holds one goal, what needs nothing up
+  runs before it, and a Sandbox sitting raises no GitLab, the application reaching the space as a tar.
+  Release G's sitting also creates `awsds/app-ml` and `awsds/app-genai` and takes the backup due before
+  2026-12-17, and carries N.8.3 between 2026-11-22 and 2026-11-25; 4.12 follows it with nothing up; pass 5
+  goes to the Sandbox warehouse sitting, before 2026-12-19. §N.5's second-application line names Stage 17's
+  and Stage 20's applications, written in `examples/` and undeployed.
+- **[Claude] Decision 15's order**, 14:22 UTC: the review against the tool's standard path (6d's log, the
+  same day) reads (d) as AWS's own mechanism narrowed, and a designation is read across accounts only once
+  the domain's RAM share moves to version 12. The waiting list's two rows say the order: the share, then
+  xxvi, then (d).
+
+## 2026-11-17 — the runbooks read for statements the estate has outgrown, with nothing up
+
+*A subagent of a laptop session read the runbooks against the repository and the logs, read-only, with no
+AWS call, and edited them in place; Claude applied its findings on `promotion.md` and checked one claim.*
+
+- **[Claude, a subagent] Edited**, 13:54 to about 14:34 UTC: `sandbox-lake.md` (§T's second project exists:
+  `wired_projects` names `eighth-experimentation` alone); `break-glass.md` (no member account holds root
+  credentials since Stage 1a step 6); `sg-proxy.md` and `dev-env.md` (versions 7 to 10 deleted on
+  2026-11-03, version 11 alone; the gallery's setting on the plane since 2026-09-09; the house image installs
+  from the gallery); `log-debugging.md` (the workflows' log group is `EXC-25`'s
+  `/aws/mwaa-serverless/<domain id>-<project id>/<workflow>`, release T's group gone with
+  `<env>/orchestration/`); `terraform-changes.md` §1 (a leg applies no Terraform since release F, and the
+  deploy roles write no state since item 31); `remote-ide.md` (§W's pin reading predates SageMaker
+  Distribution `4.5.2-cpu`; §C's push); `gitlab.md` (`staging-gate` on the build runner, the bundle role in
+  the deploy runner's profiles, the mirror's membership done 2026-10-24); `vpn.md` (one world-open rule, the
+  burn rates from `layers.py`, the Sandbox plane's 41 names); `sagemaker-application.md` §D, version 11;
+  `serverless-workflows.md` (`EXC-25`); `claude-code-sagemaker.md` (the model set alone open, M5's six
+  actions attached and exercised, `vpc-egress-v0.19.0`); `scp-battery.md` (the quotas read 2026-10-24, the
+  contrast row's expected answers). Its checks: `check-plan-refs.py` (3,680 links), `check-identifiers.py` and
+  `check-copies.py` pass.
+- **[Claude] `promotion.md`**, from its findings: the head names §N.6's order; §H step 4 and the record after
+  it mark the deploy image's rebuild done on 2026-10-25 as `v0.3.0`; N.1 step 2 says no pipeline job runs
+  Terraform since release F.
+- **[Claude] Checked**, the subagent's note on Lesson 76: no pipeline definition runs Terraform
+  (`examples/app-etl/.gitlab-ci.yml`, `gitlab/awsds/*/.gitlab-ci.yml`), both targets' deploy roles carry
+  `state_prefixes = []`, and `scripts/tfhygiene/states.py` reads a state with `aws s3 cp` as JSON. `CLAUDE.md`'s
+  line on the Terraform binary, the 1.16.7 rows of `upstream-releases.md` and the waiting list follow: the
+  laptop's binary and the offline gates' pin move together, the image's pins at its next release.
+- **[Claude, a subagent] Left open**: `aws/probes/probes.py`'s comments still read Production's processing
+  quotas at 0, which ended on 2026-10-24, so `ResourceLimitExceeded` on a processing row no longer proves the
+  ceiling where a quota is above zero; `sagemaker-ai-ml.md`, written the day before, was not reviewed in depth.
+
+## 2026-11-17 — the CLI's project handling read: memberships and the project role, with nothing up
+
+*Written by Claude, in the session that reviewed `docs/AWS_SUPPLEMENT.md` against the day's findings. No
+call made.*
+
+- **[Claude] What was read**: the released wheel `aws_smus_cicd_cli-1.0.9-py3-none-any.whl`, SHA-256
+  `bd7258c0…4903`, the one `gitlab/awsds/deploy-image/requirements-cli.txt` pins. Its
+  `helpers/project_manager.py` and `helpers/context_resolver.py` are byte-identical to `main` at
+  `cdb8e3c18f`, the copy the standard-path reading of the same day cited (6d's log).
+- **[Claude] What `deploy` does to an existing project**: `ensure_project_exists` runs
+  `_update_existing_project`, which adds each manifest `owners` or `contributors` entry the project lacks
+  with `CreateProjectMembership`, removes no member and lets the deploy go on after a refusal. Only under
+  `project.create: true`, false by default, does it touch IAM: `role.policies` attached and the inline
+  `SelfPassRolePolicy` written on `role.arn`, or `smus-<project>-role` created. `SUP-375`.
+- **[Claude] What it means here**: `app-etl`'s manifest names no `owners`, `contributors`, `role` or
+  `create`, so by this reading release F's deploys made no membership or IAM call, and decision 15's
+  membership stays the owner's act by hand. An `owners` list in the manifest would have the deploy role add
+  the member again at every deploy, with `datazone:CreateProjectMembership` on that role.
+- **[Claude] The resolver**: `proj` holds `id`, `name`, `domain_id`, `iam_role`, `iam_role_arn`,
+  `iam_role_name`, `kms_key_arn` and the connections, as the CLI's substitutions guide lists, and no subnet
+  or security group: a documented contract, so no supplement entry.

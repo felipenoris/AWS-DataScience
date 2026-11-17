@@ -1,0 +1,137 @@
+# {"prepare":{"x":120,"y":200},"train":{"x":420,"y":200},"evaluate":{"x":720,"y":200},"track":{"x":1020,"y":200},"publish":{"x":1320,"y":200}}
+app-ml-train:
+  dag_id: app-ml-train
+  tasks:
+    prepare:
+      operator: airflow.providers.amazon.aws.operators.sagemaker.SageMakerProcessingOperator
+      retries: 0
+      config:
+        ProcessingJobName: "app-ml-prepare-train-{{ macros.time.strftime('%Y%m%dT%H%M%S', macros.time.gmtime()) }}"
+        RoleArn: "{proj.iam_role_arn}"
+        AppSpecification:
+          ImageUri: "{env.JOB_IMAGE_URI}"
+          ContainerEntrypoint:
+            - /bin/bash
+            - -c
+          ContainerArguments:
+            - 'sudo -n chown "$(id -u)" /opt/ml/processing/output && cd /opt/ml/processing/code && exec python -m app_ml.prepare train --input /opt/ml/processing/input --output /opt/ml/processing/output'
+        ProcessingResources:
+          ClusterConfig:
+            InstanceCount: 1
+            InstanceType: ml.t3.medium
+            VolumeSizeInGB: 10
+            VolumeKmsKeyId: "{env.PROJECT_KEY_ARN}"
+        NetworkConfig:
+          EnableNetworkIsolation: true
+          EnableInterContainerTrafficEncryption: true
+          VpcConfig:
+            Subnets: ["{env.SUBNET_AZ1}", "{env.SUBNET_AZ2}"]
+            SecurityGroupIds: ["{env.PROJECT_SG}"]
+        ProcessingInputs:
+          - InputName: code
+            S3Input:
+              S3Uri: "{proj.connection.default.s3_shared.s3Uri}app-ml/src/"
+              LocalPath: /opt/ml/processing/code
+              S3DataType: S3Prefix
+              S3InputMode: File
+              S3DataDistributionType: FullyReplicated
+          # The churn table alone: the holdout beside it in the inbox never reaches this job.
+          - InputName: input
+            S3Input:
+              S3Uri: "{proj.connection.default.s3_shared.s3Uri}app-ml/inbox/churn.csv"
+              LocalPath: /opt/ml/processing/input
+              S3DataType: S3Prefix
+              S3InputMode: File
+              S3DataDistributionType: FullyReplicated
+        ProcessingOutputConfig:
+          KmsKeyId: "{env.PROJECT_KEY_ARN}"
+          Outputs:
+            - OutputName: output
+              S3Output:
+                S3Uri: "{proj.connection.default.s3_shared.s3Uri}app-ml/work/train/"
+                LocalPath: /opt/ml/processing/output
+                S3UploadMode: EndOfJob
+        StoppingCondition:
+          MaxRuntimeInSeconds: 1800
+        Tags:
+          - Key: AmazonDataZoneProject
+            Value: "{proj.id}"
+    train:
+      operator: airflow.providers.amazon.aws.operators.sagemaker.SageMakerTrainingOperator
+      dependencies: [prepare]
+      action_if_job_exists: fail
+      retries: 0
+      config:
+        TrainingJobName: "app-ml-train-{{ macros.time.strftime('%Y%m%dT%H%M%S', macros.time.gmtime()) }}"
+        RoleArn: "{proj.iam_role_arn}"
+        AlgorithmSpecification:
+          TrainingImage: "{env.TRAINING_IMAGE_URI}"
+          TrainingInputMode: File
+        HyperParameters:
+          objective: "binary:logistic"
+          eval_metric: auc
+          num_round: "50"
+          max_depth: "3"
+          eta: "0.3"
+        InputDataConfig:
+          - ChannelName: train
+            ContentType: text/csv
+            DataSource:
+              S3DataSource:
+                S3DataType: S3Prefix
+                S3Uri: "{proj.connection.default.s3_shared.s3Uri}app-ml/work/train/train/"
+                S3DataDistributionType: FullyReplicated
+          - ChannelName: validation
+            ContentType: text/csv
+            DataSource:
+              S3DataSource:
+                S3DataType: S3Prefix
+                S3Uri: "{proj.connection.default.s3_shared.s3Uri}app-ml/work/train/validation/"
+                S3DataDistributionType: FullyReplicated
+        OutputDataConfig:
+          S3OutputPath: "{proj.connection.default.s3_shared.s3Uri}app-ml/models/"
+          KmsKeyId: "{env.PROJECT_KEY_ARN}"
+        ResourceConfig:
+          InstanceType: ml.m5.large
+          InstanceCount: 1
+          VolumeSizeInGB: 10
+          VolumeKmsKeyId: "{env.PROJECT_KEY_ARN}"
+        VpcConfig:
+          Subnets: ["{env.SUBNET_AZ1}", "{env.SUBNET_AZ2}"]
+          SecurityGroupIds: ["{env.PROJECT_SG}"]
+        EnableNetworkIsolation: true
+        EnableInterContainerTrafficEncryption: true
+        StoppingCondition:
+          MaxRuntimeInSeconds: 1800
+        Tags:
+          - Key: AmazonDataZoneProject
+            Value: "{proj.id}"
+    evaluate:
+      operator: airflow.providers.standard.operators.python.PythonOperator
+      dependencies: [train]
+      python_callable: app_ml_tasks.evaluate
+      op_kwargs:
+        training: "{{ ti.xcom_pull(task_ids='train') }}"
+        models: "{proj.connection.default.s3_shared.s3Uri}app-ml/models/"
+        min_auc: "{env.MIN_AUC}"
+      retries: 0
+    # A Bash task, whose python3 imports the archive's MLflow client before the worker's packages.
+    track:
+      operator: airflow.providers.standard.operators.bash.BashOperator
+      dependencies: [evaluate]
+      bash_command: >-
+        cd /usr/local/airflow/dags && python3 -m app_ml_tasks.track
+        --run "{proj.connection.default.s3_shared.s3Uri}app-ml/models/last-run.json"
+        --tracking-server "{env.MLFLOW_APP_ARN}"
+      retries: 0
+    publish:
+      operator: airflow.providers.standard.operators.python.PythonOperator
+      dependencies: [track]
+      python_callable: app_ml_tasks.publish
+      op_kwargs:
+        training: "{{ ti.xcom_pull(task_ids='train') }}"
+        models: "{proj.connection.default.s3_shared.s3Uri}app-ml/models/"
+        serving_image: "{env.TRAINING_IMAGE_URI}"
+        training_source: "{env.TRAINING_SOURCE}"
+        min_auc: "{env.MIN_AUC}"
+      retries: 0

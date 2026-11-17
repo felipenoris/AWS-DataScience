@@ -1200,7 +1200,7 @@ The reverse of passes 1 to 3, in 6b pass 1's order, each step read back before t
   `AllowFullTableExternalDataAccess` turned on by the provisioning (ii); no read-only member, a
   contributor writing as the project role, and the compensating deny keyed on a source identity
   DataZone also sets on its own sessions (iv, vi); a subscription that opens a RAM share of the
-  producer's whole catalog and a Data Catalog resource policy naming the consumer account (x); and
+  producer's whole catalog and per-resource Glue policies naming the consumer account (x, `SUP-195`); and
   residues a teardown cannot remove (the domain's profiles and lineage events) or that need a hand (the
   stack's log group, the `DataLake` database, the Lake Formation settings). What it gives is reachable
   on D41's path or another: the CLI's network resolution and API rung are calls the release job makes

@@ -367,9 +367,12 @@ probe("ou", "staging", "deny", "ValidationException|ResourceNotFound|does not ex
 # --- The Stage 9 step 3.5 and 3.7 amendment - sagemaker-denies' five statements and
 #     DenySageMakerServerlessInference in the Workloads document. Each deny row breaks one
 #     statement and keeps the other four, so a refusal names the statement it was written for
-#     (AWS names the policy, never the Sid - Lesson 20); the two allow rows are the same calls
-#     with nothing broken, which is what proves the document leaves a compliant job and an
-#     instance-backed endpoint configuration alone. The compliant job is also the reading of
+#     (AWS names the policy, never the Sid - Lesson 20); the allow rows are the same calls with
+#     nothing broken, which is what proves the document leaves a compliant job and an
+#     instance-backed endpoint configuration alone. The processing job without isolation is an
+#     allow row: DenySageMakerJobsWithoutNetworkIsolation leaves CreateProcessingJob out (Stage 20
+#     decision 13), and the training job without isolation below is the row that exercises the
+#     statement. The compliant job is also the reading of
 #     sagemaker:VolumeKmsKey, the key's name in the module, where AWS's reference lists
 #     sagemaker:VolumeKmsKeyArn (read 2026-10-16): a name that stopped populating would turn that
 #     row into a deny.
@@ -379,8 +382,9 @@ probe("ou", "staging", "deny", "ValidationException|ResourceNotFound|does not ex
 #     so a VPC check that runs before authorization cannot be mistaken for the deny.
 #
 #     A processing-job row also reads `ResourceLimitExceeded` as authorized: the service checks
-#     the instance quota after authorization and before the role, and Production's processing
-#     quotas for both types read 0 (CloudTrail, the six replies of 2026-10-17).
+#     the instance quota after authorization and before the role. Production's processing quotas
+#     for both types read 0 on 2026-10-17 (CloudTrail, the six replies), and 8 for ml.m5.large and
+#     4 for ml.m5.2xlarge since 2026-10-24 (the Stage 9 log).
 _JOB_AUTHORIZED = "ValidationException|ResourceLimitExceeded"
 _JOB_ROLE = "arn:aws:iam::@ACCT@:role/awsds-canary-nonexistent"
 # The registry host is joined to the placeholder rather than written beside it, which
@@ -422,8 +426,8 @@ probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
 probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
       "workloads: CreateProcessingJob on ml.m5.2xlarge (DenySageMakerInstanceCeiling)",
       _processing_job("ml.m5.2xlarge", True, "true", "true", True))
-probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
-      "workloads: CreateProcessingJob not isolated (DenySageMakerJobsWithoutNetworkIsolation)",
+probe("ou", "prod", "allow", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateProcessingJob not isolated still authorized (Stage 20 decision 13 contrast)",
       _processing_job("ml.m5.large", True, "false", "true", True))
 probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
       "workloads: CreateProcessingJob unencrypted between containers (DenySageMakerJobsWithoutInterContainerEncryption)",
@@ -443,18 +447,19 @@ probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
 #     actions (Lesson 21). Every row carries the other four settings.
 #
 #     Every row is `blocked` for the processing rows' reason. SageMaker checks the quota of every
-#     listed type, so an authorized processing row reads ResourceLimitExceeded, Production's
-#     processing quotas being 0, and the quota check follows authorization (the ceiling row above,
-#     2026-10-18). Production's training quotas for the three ml.m5 types read 0 as well
-#     (2026-10-20), and that order for CreateTrainingJob is unread, so the training rows carry
-#     the processing ceiling row's twin, ml.m5.2xlarge as InstanceType: its deny places
+#     listed type, so an authorized processing row read ResourceLimitExceeded while Production's
+#     processing quotas were 0, and the quota check follows authorization (the ceiling row above,
+#     2026-10-18). Production's training quotas for the three ml.m5 types read 0 (2026-10-20) and
+#     20 each since 2026-10-24, and that order for CreateTrainingJob is unread, so the training
+#     rows carry the processing ceiling row's twin, ml.m5.2xlarge as InstanceType: its deny places
 #     authorization before the role and quota checks of this action, so a list row answering the
 #     contrast row's role or quota refusal is a hole. A refusal that names the list itself may
 #     precede authorization, and leaves the row untested.
 
 
-def _training_job(instances):
-    """create-training-job argv with the four settings beside the ceiling met."""
+def _training_job(instances, isolation=True):
+    """create-training-job argv with the VPC, the encryption between containers and the volume key
+    met, and EnableNetworkIsolation sent as the caller chooses."""
     resources = ('{"InstanceCount":1,' + _instances(instances)
                  + ',"VolumeSizeInGB":1,"VolumeKmsKeyId":"' + _JOB_KEY + '"}')
     return ["sagemaker", "create-training-job", "--training-job-name", "awsds-canary-probe",
@@ -466,7 +471,8 @@ def _training_job(instances):
             "--resource-config", resources,
             "--stopping-condition", '{"MaxRuntimeInSeconds":3600}',
             "--vpc-config", _JOB_VPC_CONFIG,
-            "--enable-network-isolation", "--enable-inter-container-traffic-encryption",
+            "--enable-network-isolation" if isolation else "--no-enable-network-isolation",
+            "--enable-inter-container-traffic-encryption",
             "--region", "us-west-2"]
 
 
@@ -482,6 +488,9 @@ probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
 probe("ou", "prod", "allow", _JOB_AUTHORIZED, "blocked",
       "workloads: compliant sagemaker:CreateTrainingJob listing ml.m5.large still authorized (3.5 contrast)",
       _training_job(["ml.m5.large"]))
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateTrainingJob not isolated (DenySageMakerJobsWithoutNetworkIsolation)",
+      _training_job(["ml.m5.large"], isolation=False))
 probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
       "workloads: CreateTrainingJob on ml.m5.2xlarge (DenySageMakerInstanceCeiling, the training control)",
       _training_job("ml.m5.2xlarge"))

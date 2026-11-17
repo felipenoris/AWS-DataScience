@@ -1,5 +1,5 @@
-# Read by staging/data/ (the key and bucket policies name the job role, step 4.1) and by
-# ./aws/deploytargets.py by name.
+# Read by staging/data/ (the key and bucket policies name the job role, step 4.1), by
+# ./aws/deploytargets.py by name and by scripts/tfhygiene/targets.py (the account's own registry groups).
 
 output "job_role_arn" {
   description = "awsds-<env>-job-exec, the role every pipeline-submitted Glue and SageMaker job in this account runs as (step 4.3, Stage 8 step 2.5)."
@@ -14,6 +14,11 @@ output "job_role_name" {
 output "job_log_group_names" {
   description = "The job log groups this slice declares with a retention (step 4.3, EXC-10)."
   value       = sort([for group in aws_cloudwatch_log_group.job : group.name])
+}
+
+output "model_package_group_arns" {
+  description = "This account's Model Registry package groups, keyed by family (Stage 17 step 9.5)."
+  value       = { for family, group in aws_sagemaker_model_package_group.this : family => group.arn }
 }
 
 output "job_security_group_id" {

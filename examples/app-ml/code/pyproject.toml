@@ -1,0 +1,28 @@
+# app-ml's worker tasks (Stage 17 step 9.2): the package app_ml_tasks, run by the MWAA Serverless worker,
+# and the MLflow client its track task runs (step 9.4). `awsds-workflows package-task` reads this lock:
+# the closure goes into code/app-ml-train.zip as the worker's wheels, without the packages the worker
+# carries (boto3, botocore, PyYAML and the others its WORKER_PROVIDED names). The archives of
+# app-ml-register and app-ml-score carry the package alone, since their tasks need only the worker's
+# boto3.
+#
+# The pins are the MLflow App's: ml-demo-mlflow runs MLflow 3.16.0 since its maintenance of 2026-11-15.
+# sagemaker-mlflow is the plugin that signs a tracking call to an mlflow-app ARN with the caller's
+# credentials. The tests run in the parent project, which stubs the client.
+
+[project]
+name = "app-ml-tasks"
+version = "0.1.0"
+description = "app-ml's worker tasks: evaluate, track, publish, register, resolve and check"
+requires-python = ">=3.12,<3.13"
+dependencies = ["mlflow-skinny==3.16.0", "sagemaker-mlflow==0.5.0"]
+
+# The parent project's instant, moved with it.
+[tool.uv]
+exclude-newer = "2026-11-03T00:00:00Z"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app_ml_tasks"]

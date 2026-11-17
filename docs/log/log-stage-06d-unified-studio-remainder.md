@@ -3668,3 +3668,32 @@ Governance and Sandbox. Times UTC, from the events' own `eventTime`.*
   `upstream-releases.md`'s RStudio row, `docs/SMUS.md`'s row and `CLAUDE.md`'s 6d bullet carry the verdict in one
   clause each. 6d decision due 16 (PR #279, merged 00:32 UTC) keeps `enableRStudio` `false` under every option;
   its branch was merged into this one before these edits.
+
+## 2026-11-17 — the plan read against SageMaker Unified Studio's standard path: step 4.7 and decision 17
+
+*A subagent of a laptop session read the vendor pages, the CI/CD CLI's repository and the plan, read-only,
+with no AWS call; Claude checked its claims in the repository and wrote the plan's changes. The question is
+the user's request of 13:42 UTC, whether the plan should change to exercise the tool's intended path.*
+
+- **[Claude, a subagent] The verdict**, 13:55 to about 14:18 UTC: the core already takes the intended path,
+  one domain with associated accounts, projects from profiles with `Tooling` and `DataLake`, the CI/CD CLI
+  deploying a bundle into one project per stage with the catalog's export and import, publish and subscribe
+  for the data product, and MWAA Serverless workflows authored in Sandbox. The other deviations are forced by
+  `objectives.md` or by D13, D38, D40 and the VPN-only GitLab, but for three: native notebook runs, never
+  exercised; `EXC-11`'s RAM share, which AWS documents; and Stage 19 decision 15's order behind the domain
+  share's version 12. Read 2026-11-17: the release notes, the page on scheduled notebook runs,
+  `StartNotebookRun`'s API reference, the page on a SageMaker data source, the designations' examples, the
+  Git connection pages and the `SageMakerAIDomain` blueprint's page; the CLI's `main` at `cdb8e3c18f`
+  (2026-11-06), nothing new since the plan's reading of 2026-11-13.
+- **[Claude] Checked**: `datazone:StartNotebookRun` appears in `staging/studio/person-session.tf` and
+  `production/studio/person-session.tf` alone, inside `DenyAPersonWritingNotebooks`; no organization policy
+  names it; the `Workloads` SCP's `DenyDataZoneEntirely` exempts `datazone_usr_role_*`, so a worker's session
+  of a target's project role meets no statement that names it; `L-85C9EC5A` reads 0 against 15 in Sandbox,
+  its request closed on 2026-09-24 ([`docs/SMUS.md`](../SMUS.md), the querybook compute).
+- **[Claude] Written**, 14:21 to 14:23 UTC: step 4.7 and decision 17, recommended (a), measured and then
+  offered in Sandbox under a control that pins `VPC_ONLY`, the quota requested after the control; the
+  verification's sentence; `TM-34` with its channel row in `threat-model.md`, and a pending row for the
+  Airflow UI's session, a surface of `TM-09`'s kind; the waiting list's decision row.
+- **[Claude, a subagent] Kept as written, by the same reading**: the Git connection's option A, the chain
+  layer, the Terraform role lists (open question 27), the subscription deny in `Workloads` beside Stage 17
+  decision 22's inference profile, and decision 16 (a), recommended.

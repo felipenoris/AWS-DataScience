@@ -21,14 +21,16 @@ through the VPC endpoint — which is what every section below was written to pr
 
 **§M is done**: M0, M2, M4 and M5; M1 in all 17 enabled Regions and M3 attached, both 2026-09-12.
 **§I is built**: the grant applied 2026-09-11, the endpoint pair and its policy
-2026-09-12, and `default-v0.4.0` carries the settings file as image version 4, attached to the domain
-the same day. **§U is exercised** for the first time, on settings edited by hand inside the container
-rather than shipped in the image — a measurement, not a configuration.
+2026-09-12, and the settings file shipped in the house image since `default-v0.4.0` (image version 4,
+2026-09-12), unchanged in version 11, `default-v0.10.0`. **§U is exercised**: the first session ran on
+settings edited by hand inside the container, and a session the same evening on the image's own pins
+read the picker as §I declares it.
 
-**Three things are open and none of them is cosmetic.** The scoped models `claude-opus-5` and
-`claude-sonnet-5` are **refused by AWS for this account** and the working set is the 4.5 generation
-(M4); the retention mode is declared in one Region of three (M1); and M5's exemption has no
-compensating deny, so the `Interactive` OU currently has no Region ceiling on Bedrock invocation.
+**The model set is what stays open.** The scoped models `claude-opus-5` and `claude-sonnet-5` are
+**refused by AWS for this account**, and the working set is the 4.5 generation (M4, `EXC-08`), of which
+Sonnet 4.5 reads `LEGACY` since 2026-10-08, its end of life 2027-04-08 (`INV-18`); the 5.5 generation's
+agreements wait on the user (decision 17, PR #108). M5's exemption has its compensating deny since
+2026-09-12 (decision 15), and the mode is declared in all 17 enabled Regions (decision 16).
 
 The readings are in [`log-stage-06e`](../../log/log-stage-06e-claude-code-bedrock.md). Every sentence
 below that describes something unbuilt or unexercised says so.
@@ -151,7 +153,9 @@ already at `none`: all thirteen Anthropic models in `us-west-2` read
 vendor names as retaining every prompt for 30 days with human review; the agreement offer's
 `termDetails` carries pricing, legal and support terms and nothing about retention. So the mode's
 effect is **presumed to land at the invocation and has not been seen**. The only negative control that
-would settle it is invoking a retaining model and reading the refusal — stage step 7.2a, not yet run.
+would settle it is invoking a retaining model and reading the refusal — stage step 7.2a, never run. M3's
+retaining-model deny overtook it on 2026-09-12: the SCP refuses that call before the mode is consulted,
+so the probe needs one principal carved out of that statement (decision 11, open).
 
 **There is no Terraform for this.** `hashicorp/aws` 6.60.0 declares nine `aws_bedrock_*` resources and
 none wraps the retention API; the CloudFormation registry carries 29 `AWS::Bedrock::*` types and none
@@ -486,19 +490,20 @@ identical to the grant's and the endpoint policy's.
 OU; the action lever opens six actions. Both were on the table 2026-09-12 and this is why the action
 lever won.
 
-**What is still open, and it is not small.** The exemption is on the action axis, so those five
-actions are now permitted **in every Region**, including the ones M0 says the profiles never touch,
-and for every principal in the `Interactive` OU. Two compensations, **neither done**:
+**The exemption's reach, and what compensates it.** The exemption is on the action axis, so those six
+actions are permitted **in every Region**, including the ones M0 says the profiles never touch, and for
+every principal in the `Interactive` OU. Two compensations:
 
-- **A model scope in the estate's own SCP.** Step 7.5's document gains a deny on
-  `bedrock:InvokeModel` and `bedrock:InvokeModelWithResponseStream` for any resource but the scoped
-  profiles and their foundation models. This moves the resource ceiling out of IAM — where a
-  blueprint's managed policy can widen it without this repository's say — and into the organization.
-- **A Region scope for the exemption itself.** The five actions should be denied outside the M0 list
+- **A model scope in the estate's own SCP**: a deny on `bedrock:InvokeModel` and
+  `bedrock:InvokeModelWithResponseStream` for any resource but the scoped profiles and their foundation
+  models. This moves the resource ceiling out of IAM — where a blueprint's managed policy can widen it
+  without this repository's say — and into the organization.
+- **A Region scope for the exemption itself.** Four of the six actions are denied outside the M0 list
   by the same document, so the door the Control Tower control stopped guarding is closed again for
-  every Region a profile does not route to.
+  every Region a profile does not route to; the two retention actions stay outside it, for the reason
+  below.
 
-**Both are written** (2026-09-12, decision 15), in
+**Both are attached** (2026-09-12, decision 15), in
 [`awsds-org-scp-ou-interactive.json`](../../../terraform-live/identity/org-policies/policies/awsds-org-scp-ou-interactive.json)
 rather than in the root document: the hole was opened on this OU and the compensation belongs in the
 same scope. The two statements, as they stand in that file — the first two in it are older and
@@ -518,10 +523,17 @@ belong to other stages:
     "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-haiku-4-5-20251001-v1:0",
     "arn:aws:bedrock:*::foundation-model/anthropic.claude-opus-4-5-20251101-v1:0",
     "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-5-20250929-v1:0",
-    "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0"
+    "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
+    "arn:aws:bedrock:*::foundation-model/amazon.titan-embed-text-v2:0",
+    "arn:aws:bedrock:*:*:application-inference-profile/*"
   ]
 }
 ```
+
+The last two entries are Stage 17 decision 11's (2026-10-19): Titan Text Embeddings V2, the knowledge
+base's embeddings model, and `application-inference-profile/*`, the pass every SageMaker Unified Studio
+portal call makes. The model ceiling stays on the call's foundation-model pass
+([`POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md)).
 
 ```json
 {
@@ -562,8 +574,8 @@ own: [`./aws/bedrock-scope.py`](../../../aws/bedrock-scope.py) reads the declara
 and compares it against AWS — `BS-3` when AWS routes somewhere the condition does not name, `BS-7`
 when the repository's copies disagree.
 
-Until both statements are **attached**, the honest statement is that the `Interactive` OU has no
-Region ceiling on Bedrock invocation.
+Both statements are attached since 2026-09-12, exercised the same day by a before/after control on one
+call, and read by the battery on 2026-10-17, every row as expected (the Stage 6e log).
 
 ### M6 — Invoke, and read both channels
 
@@ -728,10 +740,10 @@ change; §U is the other half.
 
 | What | Where it is declared | State |
 |---|---|---|
-| the private path | [`terraform-live/sandbox/egress/`](../../../terraform-live/sandbox/egress), the `bedrock-base` group of `vpc-egress-v0.16.0` | applied as always-on 2026-09-12, step 4.2; an optional group since 2026-10-09 |
+| the private path | [`terraform-live/sandbox/egress/`](../../../terraform-live/sandbox/egress), the `bedrock-base` group of `vpc-egress-v0.19.0` (the pin read 2026-11-17) | applied as always-on 2026-09-12, step 4.2; an optional group since 2026-10-09 |
 | the endpoint policy | `endpoint_action_scopes`, in the same caller | applied with it, step 4.4 |
 | the grant | [`terraform-live/sandbox/bedrock/`](../../../terraform-live/sandbox/bedrock), rank 52, `[P]` | applied 2026-09-11, step 3 |
-| the client's configuration | [`gitlab/awsds/dev-env/dev-env/claude-code/managed-settings.json`](../../../gitlab/awsds/dev-env/dev-env/claude-code/managed-settings.json) | shipped in `default-v0.4.0`, image version 4, 2026-09-12 — `v0.3.0` shipped the same file pinning `claude-opus-5` and `claude-sonnet-5`, which AWS refuses for this account |
+| the client's configuration | [`gitlab/awsds/dev-env/dev-env/claude-code/managed-settings.json`](../../../gitlab/awsds/dev-env/dev-env/claude-code/managed-settings.json) | shipped since `default-v0.4.0`, image version 4, 2026-09-12, and unchanged in version 11, `default-v0.10.0` — `v0.3.0` shipped the same file pinning `claude-opus-5` and `claude-sonnet-5`, which AWS refuses for this account |
 
 ### The private path
 
@@ -752,7 +764,7 @@ perimeter is lost silently. The generated list is `terraform output -raw no_prox
 entries under `GROUPS=redshift`, 2026-10-10); what a process inside a space reads is the dated
 literal in [`gitlab/awsds/dev-env/dev-env/Dockerfile`](../../../gitlab/awsds/dev-env/dev-env/Dockerfile) (6d decision 8), a copy
 of the slice's `no_proxy_all_groups`, which names the pair whatever `GROUPS=` names (70 entries,
-2026-10-10). [`./aws/devenv.py`](../../../aws/devenv.py) compares the literal with that output,
+2026-10-10; 73 in version 11's literal, read 2026-10-26). [`./aws/devenv.py`](../../../aws/devenv.py) compares the literal with that output,
 exactly.
 
 ### The endpoint policy
@@ -965,8 +977,9 @@ CloudTrail row for which `modelId` a call actually used.
 ## §U — What the user configures, and what a user cannot change
 
 **The surface exists since 2026-09-12**, on a space started from image version 3. What is written
-here about the client itself is read from the vendor's documentation and from what §I declares;
-stage step 6 is the first session, and what it measures lands here.
+here about the client itself is read from the vendor's documentation and from what §I declares.
+Stage step 6 ran the first session on 2026-09-12, and a session the same evening on `default-v0.4.0`'s
+own pins read the picker as Opus 4.5 and Sonnet 4.5, with no Haiku, as `availableModels` declares.
 
 - **Install the extension into the remote session**, not into the portal's Code Editor. A space runs
   two IDE servers with separate extension directories and settings ([`remote-ide.md`](remote-ide.md)
@@ -1092,7 +1105,7 @@ All read-only.
 |---|---|
 | Is the account's retention mode declared? | `aws bedrock get-account-data-retention` — `none`, with an `updatedAt`. The response field is **`mode`**; a `--query` naming `dataRetentionMode` returns `None`, which reads exactly like a Region that answered and declared nothing |
 | Is the mode *frozen*, or merely set? | `put-account-data-retention --mode inherit` must be **refused naming the baseline's policy id**, and `--mode none` must still succeed beside it. Reading the document back says what is attached, not what evaluates (Lesson 20); the pair is the instrument, and it needs an account it is safe to write in |
-| Is that mode *enforced*? | **No read answers this.** Availability and the agreement offer are identical for a retaining model and a scoped one. Only an invocation of a retaining model shows it (stage 7.2a) |
+| Is that mode *enforced*? | **No read answers this.** Availability and the agreement offer are identical for a retaining model and a scoped one. Only an invocation of a retaining model shows it (stage 7.2a), and since M3 the SCP refuses that call before the mode is consulted, so it answers only from a principal carved out of `DenyInvokingModelsThatRetain` (decision 11, verification xiii) |
 | Which models retain? | Not `allowed_modes` — it is in no Bedrock API. The vendor's abuse-detection page, dated when read; on 2026-09-11 it named the two Fable models, both present and available in `us-west-2` |
 | Does the form exist? | `aws bedrock get-use-case-for-model-access --region us-west-2` — anything but `ResourceNotFoundException`. **Not** `get-foundation-model-availability` |
 | Which Regions is a prompt processed in? | `get-inference-profile`, `models[].modelArn` — the routing is AWS's and can change under a pinned model id. `us-east-1`, `us-east-2`, `us-west-2` on 2026-09-12 (M0) |

@@ -230,11 +230,10 @@ per laptop, never one per session.
   the synced tree: PRs #294 and #298 each took `SUP-360` on 2026-11-14, each green on its own
   branch, and `main` failed the check until the second became `SUP-362`.
 - **The Terraform binary is one per laptop, and every session's.** The laptop and the deploy image both run
-  1.16.6 since 2026-10-25 (`v0.3.0`, the deploy runner replaced 20:40 UTC). A laptop upgrade comes after the
-  image's rebuild, never before: a state written by a newer Terraform is refused by the image's older one in
-  every pipeline job that reads it (Lesson 76), and the slices the pipeline reads are the application and
-  orchestration slices, `staging/egress`, `production/workloads-egress`, and both targets' `data/`,
-  `sagemaker/`, `foundation/` and `workloads/`.
+  1.16.6 since 2026-10-25 (`v0.3.0`, the deploy runner replaced 20:40 UTC). No pipeline job runs Terraform
+  since release F: a leg reads its role's `state_read_keys` as JSON (`scripts/tfhygiene/states.py`, read
+  2026-11-17), so the image's binary reads no state. A laptop upgrade moves every session at once, with the
+  offline gates' pin (`.github/workflows/offline-gates.yml`); the image's pins move at its next release.
 
 ### What the app refuses
 
@@ -260,10 +259,12 @@ and the stage logs hold the refusals.
 | A project membership, as in Stage 18 | *Permission Grant* | 2026-11-11 |
 | A session's first push of its own branch, before its PR | *Unsanctioned Communication* | 2026-11-14 |
 | A saved plan's apply in Production under the user's blanket authorization of the session; let through once the user named the apply in chat | *Production Deploy* | 2026-11-17 |
+| A subagent's launch whose brief held a push and a merge request in another repository (`awsds-workflows`) | *Unsanctioned Communication* | 2026-11-17 |
 
 The orchestrating session ran each of the first three itself, on the user's authorization in its own
 chat. Let through on 2026-11-11: reads, a RAM association, a candidate SCP's life on `Policy Test`, and
-every apply and `create-project` the user named.
+every apply and `create-project` the user named; on 2026-11-17, the orchestrating session's push and pull
+request in `awsds-workflows`, which the user authorized in its chat.
 
 Sessions run in parallel under one orchestrator are told not to edit `CLAUDE.md`,
 `docs/GENERAL_PLAN.md`, `docs/plan/stages/INDEX.md` and `docs/log/INDEX.md`: each leaves its text in its
@@ -385,6 +386,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 | Task | Read |
 |---|---|
 | The data-governance model: what each account holds, the three catalogs (Glue Data Catalog, Lake Formation, SageMaker Catalog), the LF-Tag ontology (`layer`, `businessunit`, `classification`), the per-account encryption rule (§Encryption), the grant rules and default expressions (TBAC on the data, the catalog's ABAC on the session), the drop-box and derived-zone contracts, and the development cycle of a data product with the moment the LF-Tags are assigned | [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md); applied grants are `docs/AWS_STATE.md`'s grant register |
+| Anything SageMaker Catalog: how an asset comes to exist, its business metadata, a glossary or a metadata form, a data product, a publication or its withdrawal, a subscription or a Share between projects and its revocation, a lineage graph and the events that feed it, a Glue job's and dbt's among them | [`docs/plan/runbooks/catalog.md`](docs/plan/runbooks/catalog.md): §O the pieces, §A assets, §M business metadata, §P data products, §F the publication flow, §S sharing between projects, §L lineage, §V the instruments |
 | What governs the lake: a bucket-policy branch, a key-policy statement, a tag assignment, an LF grant | Producer side [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md); consumer side [`terraform-modules/consumer-data/README.md`](terraform-modules/consumer-data/README.md). They say what the code declares; applied triples are `docs/AWS_STATE.md`'s grant register. Read the producer README's "A permission here is the intersection of two systems" before claiming what a principal can do (Lesson 28) |
 | Anything Sandbox lake: `awsds-sandbox-lake`, a per-group prefix, wiring or unwiring a project's S3 connection, the tests, code that lists, reads or writes it | [`docs/plan/runbooks/sandbox-lake.md`](docs/plan/runbooks/sandbox-lake.md) |
 | Anything Redshift: the warehouse, its 4-RPU floor, the cost ceiling, the two classes of database, or how a SageMaker project gets write on one | [`redshift-connection.md`](docs/plan/runbooks/redshift-connection.md) for the recurring procedure: §S adding a schema, §P and §U wiring and unwiring a project, §F which layer a failure came from, §J running SQL from a notebook, §G reading a governed share from a project, §V the instruments. [`D40`](docs/plan/decisions/D40-redshift-warehouse.md) for what is and is not built, [`stage-05b`](docs/plan/stages/stage-05b-redshift-serverless.md) for the warehouse, [`stage-06h`](docs/plan/stages/stage-06h-redshift-connection.md) for the connection's three layers, `docs/SMUS.md` §Connections for the mechanism |
@@ -435,11 +437,7 @@ up with what each closes, and the dated deadlines.
 #### Stages
 
 Done: 0, 1a, 1b, 1c, 1d, 2, 3, 4, 5a, 6a, 6b, 6c, 6i, 7, 16 and 18. Not started: 13, which waits on the
-domain name from the user, 15, which nothing blocks and whose decisions 1-4 are the user's, and 20 (a
-dbt task and its lineage in the catalog), written 2026-11-16, its step 1.1 facts and decisions 1 to 7,
-10 and 13 taken that day: pass 1 needs nothing up, and pass 4, a processing job taken out of the
-network-isolation statement in Sandbox, Staging and Production (decision 13), is a laptop session's on
-the user's word.
+domain name from the user, and 15, which nothing blocks and whose decisions 1-4 are the user's.
 
 | Stage | State | What comes next |
 |---|---|---|
@@ -455,8 +453,9 @@ the user's word.
 | 11, data protection | Pass 0 read; pass 1's data cells filters written, creating nothing. The threat model holds `TM-01`..`TM-32` | The user's: decision 12 (the filtered principal), `TM-17`, decisions 1, 2, 5 and 9. The internal-access analyzer, created after a 1st and deleted before the next: it bills on each 1st |
 | 12, observability and FinOps | Both observability slices applied 2026-10-18; `OB-3` passes in Sandbox and fails in Production by design (`EXC-19`). The bill reads above D12's ceiling: 53.31 USD in August and 74.48 in September | A hub sitting: the three `[D]` hosts' alarm actions. The user's: decisions due 1 and 3, D12's fired revision trigger and its budget notification |
 | 14, Sandbox vending | The pre-vend half done 2026-10-18 (`./aws/vending.py`, `VN-1`..`VN-6`); the rest blocked on the account quota | The user's: the account quota and D34's rung |
-| 17, machine learning in Sandbox | Pass 0 in progress; `MLflowApp` and `AmazonBedrockKnowledgeBase` enabled, `ml-demo-mlflow` created, five models enabled, the playground answering (7.3). Passes 9 and 10 (`app-ml` and `app-genai`, each promoted to Production by the pipeline) written to 2026-11-17 and not built; decisions 14 to 28 taken; Stage 10 decision 22 revised, a trained model promoted | A Sandbox sitting with `GROUPS=mlflow`: 1.4 and 1.6, then passes 2-5. With nothing up: 9.1 to 9.3 and 10.1 to 10.3. The user's: decisions 5, 6, 7, 10 and 12, and 0.9's portal reading |
+| 17, machine learning in Sandbox | Pass 0 in progress; `MLflowApp` and `AmazonBedrockKnowledgeBase` enabled, `ml-demo-mlflow` created, five models enabled, the playground answering (7.3). Passes 9 and 10 (`app-ml`, `app-genai`) decided (14 to 28); 9.1 to 9.5 and 10.1 to 10.3 done 2026-11-17 with nothing up, nothing applied; Stage 10 decision 22 revised, a trained model promoted | After the merge, 9.5's applies with Stage 20's 4.4. Sandbox sittings B and C (`promotion.md` §N.6 items 7, 8): 1.4, 1.6, 9.6, 10.4. The user's: `awsds-workflows` PR #26, `TM-33`, decisions 5, 6, 7, 10 and 12, and 0.9's portal reading |
 | 19, a data product on SMUS's native path | Decision 6 (b), the AWS model: a deployment project per target. Passes 1 and 2 run (2026-11-10, 2026-11-14), the product curated in `app-etl-dev` (steps 15 and 17), `TM-31` accepted and the start grant kept in Production alone (2026-11-15). Release T run 2026-11-15. Release F's `v0.5.2` through both targets 2026-11-16 (pipeline #129): the CLI deploying and importing the catalog in `deploy-staging` and `deploy-production`, Production's asset listed with `dev`'s metadata, and step 8's cut-over done, release T's Production slices destroyed and `production/chains/` applied. A data product's name is the domain's (`SUP-369`): decision 26 (b) gives it to Production's `publish` task, release G written 2026-11-16 (PR #307), its `production/studio/` applied 2026-11-17. Decisions 1 to 27 taken, 7 and 8 moot; 27's (d), an account-level log retention policy, waits on the AWS provider (`EXC-25`). Step 9's warehouse sitting run 2026-11-16, xxxii yes; xvii, xxi's domain half, xxii, xxiii and xxx read the same day with nothing up | Release G's sitting (§N.8.5): step 1 done and PR #307 merged on 2026-11-16, step 3 (`production/studio/`) applied 2026-11-17; then, with the hub and GitLab up, the mirror, the template's merge request and the tag `v0.6.0`. The user's: decision 28 (the code a project role can rewrite, `TM-32`) and decision 15 again, before 4.12, the Governance Manager's membership first; pass 5 before 2026-12-19 |
+| 20, dbt and its lineage in the catalog | Written 2026-11-16, decisions 1 to 7, 10 and 13 taken; pass 1 and 4.1 to 4.3 done 2026-11-17 (`sagemaker-denies-v0.3.0`, `sagemaker-prereqs-v0.11.0`), nothing applied | After the merge, 4.4's applies on the user's word, `production/registry/` first. Sandbox sitting A (§N.6 item 6): passes 2 and 3, before 2026-12-18. The user's: decisions 9 and 11 |
 
 #### The estate between sittings
 

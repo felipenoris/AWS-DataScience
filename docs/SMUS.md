@@ -8,12 +8,16 @@ Stage 6 decisions 4 and 5, recorded in [the stage log](log/log-stage-06a-unified
 `./aws/studio.py`'s `US-3` measures them.
 
 
-**The domain has one associated account outside Stage 18's window.** `Development` became the headless `Staging` at
-[Stage 6b](plan/stages/stage-06b-development-becomes-staging.md) on 2026-09-06, so its eleven blueprint
-configurations, its eleven authorization grants and the `engineering` project profile are all unwound,
-and the associated-account count is **N Sandboxes** rather than N + 1 (D26 amended). One project profile
-survives, `experimentation`, pinned to Sandbox. Stage 18 associates `Staging` as well, from 2026-10-19 to
-that stage's pass 8, for one deployment project born of a second profile, `deployment`.
+**The domain's associated accounts are the Sandboxes, and Staging and Production since 2026-11-11.**
+`Development` became `Staging` at [Stage 6b](plan/stages/stage-06b-development-becomes-staging.md) on
+2026-09-06, so its eleven blueprint configurations, its eleven authorization grants and the `engineering`
+project profile were unwound (D26 amended). Stage 18 associated `Staging` from 2026-10-19 to that stage's
+pass 8 (2026-10-22), for one deployment project born of a profile `deployment`, destroyed with it. Since
+2026-11-11 ([Stage 19](plan/stages/stage-19-smus-native-data-product.md) decision 6 (b), steps 4.2 and
+4.6) `Staging` and `Production` are associated as a standing state, each holding one deployment project,
+`deploy-staging` and `deploy-production`, from the profiles `deployment-staging` and
+`deployment-production`. `experimentation` stays pinned to Sandbox and `lake-publishing` to Data
+Governance.
 
 ## The object model — domain, project, and the profiles between them
 
@@ -160,7 +164,7 @@ What a profile fixes, per the custom-create console flow (read 2026-08-19):
 | authorization | which users/groups may create projects from it — grantable domain-wide or per domain unit |
 | readiness | a profile can exist disabled, to be customized before anyone can instantiate it |
 
-The two profile names are a contract with `./aws/studio.py` (`US-4`).
+The profile names are a contract with `./aws/studio.py` (`US-4`).
 
 ### Environment configuration
 
@@ -205,10 +209,10 @@ parameters
 
 | Object | Written by | Lives in | In this design |
 |---|---|---|---|
-| blueprint | AWS | the service | the 23 in the table below (custom blueprints are made with `CreateEnvironmentBlueprint`, and since 2026-10-09 one with the `TOOLING` category can be a profile's base, [`upstream-releases.md`](plan/upstream-releases.md); outside decision 5, so outside `US-3`'s allow-list; the domain held none on 2026-10-18) |
-| blueprint configuration | Terraform, per member account (1.4) | domain × account | category 1's **thirteen**, in one account: eleven applied 2026-08-21 in Sandbox and in Development, Development's 22 objects (11 configurations and their 11 grants) destroyed 2026-09-06, and `MLflowApp`'s and `AmazonBedrockKnowledgeBase`'s applied in Sandbox 2026-10-19 (Stage 17 1.3 and 7.0b). `Tooling` in Data Governance, from `data-governance/publishing/`, is Stage 6f step 11's (applied 2026-10-26, 11.3) |
-| project profile + its environment configurations | domain admin (1.5) | the domain | `experimentation`, `engineering` |
-| project | an authorized user, in the portal | the domain (registry) | step 2.4's throwaway first |
+| blueprint | AWS | the service | the 24 in the table below (custom blueprints are made with `CreateEnvironmentBlueprint`, and since 2026-10-09 one with the `TOOLING` category can be a profile's base, [`upstream-releases.md`](plan/upstream-releases.md); outside decision 5, so outside `US-3`'s allow-list; the domain held none on 2026-10-18) |
+| blueprint configuration | Terraform, per member account (1.4) | domain × account | category 1's **thirteen**, in one account: eleven applied 2026-08-21 in Sandbox and in Development, Development's 22 objects (11 configurations and their 11 grants) destroyed 2026-09-06, `MLflowApp`'s and `AmazonBedrockKnowledgeBase`'s applied in Sandbox 2026-10-19 (Stage 17 1.3 and 7.0b), and `SageMakerAIDomain`'s on 2026-10-30 (6d decision 15 (b)). `Tooling` in Data Governance, from `data-governance/publishing/`, is Stage 6f step 11's (applied 2026-10-26, 11.3); `Tooling` and `DataLake` in Staging and Production, from each `studio/` slice, are Stage 19 step 4.4's (applied 2026-11-11) |
+| project profile + its environment configurations | domain admin (1.5) | the domain | `experimentation`, `lake-publishing`, `deployment-staging`, `deployment-production` and the model governance profile (the installed profiles below); `engineering` destroyed 2026-09-06 |
+| project | an authorized user, in the portal | the domain (registry) | step 2.4's throwaway first; a deployment project by `datazone create-project` as its account's `InfrastructureAccess` (Stage 19 4.6) |
 | environment | DataZone, through the provisioning role | the member account | read back by `US-8` / step 2.5 |
 | environment profile | the V1 flow | — | none, by design |
 
@@ -216,15 +220,17 @@ parameters
 
 The project profiles this installation carries, each `ENABLED` and read back by `US-4`: `experimentation`
 created 2026-08-21 by the second apply of `terraform-live/data-governance/governance/` (step 1.5), the
-model governance profile on 2026-10-19 (Stage 17 decision 13):
+model governance profile on 2026-10-19 (Stage 17 decision 13), `lake-publishing` on 2026-10-26 (Stage 6f
+11.3), and `deployment-staging` and `deployment-production` on 2026-11-11 (Stage 19 4.5):
 
 | Profile | Provisions into | The unit of work (D21) | Who may create from it |
 |---|---|---|---|
 | `experimentation` | **Sandbox** | a notebook — experimentation happens where nothing downstream depends on it | `sso-group-data-scientists` |
 | `Generative AI model governance` | nothing: no environment configuration; the console creates one custom environment per enabled model, in the model's account | the project `GenerativeAIModelGovernanceProject`, which owns the Amazon Bedrock model listings the console publishes | Terraform's identity, the root domain unit's owner; Sandbox's InfrastructureAccess is a `PROJECT_CONTRIBUTOR` through its session group |
-| ~~`deployment`~~ | ~~**Staging**~~ | **Destroyed 2026-10-22** (Stage 18 step 8.2), at the end of that stage's window: its verdict kept D41 item 2, so no project provisions into a deployment account | — |
+| ~~`deployment`~~ | ~~**Staging**~~ | **Destroyed 2026-10-22** (Stage 18 step 8.2), at the end of that stage's window, its verdict keeping D41 item 2; replaced on 2026-11-11 by the two profiles below, when Stage 19 decision 6 (b) reopened it | — |
+| `deployment-staging`, `deployment-production` | **Staging**, **Production** | a release the CI/CD CLI deploys, which no person works in: `Tooling` with spaces off and `DataLake` on demand (Stage 19 4.5, applied 2026-11-11); `deploy-staging` and `deploy-production` created the same day (4.6) | each account's `InfrastructureAccess` (a null group in `governance/`'s `project_profiles`), never a persona group |
 | `lake-publishing` | **Data Governance**, the domain's own account | the lake's published tables: `Tooling` alone, `enableSpaces` `false` locked, no compute. Stage 6f decision 1's pilot, behind `LAKE_PUBLISHERS`, applied 2026-10-26 (11.3); its project `governed-lake` created the same evening (11.4) | `sso-group-governance-managers`; its one project, `governed-lake`, is the Governance Manager's |
-| ~~`engineering`~~ | ~~**Development**~~ | **Destroyed 2026-09-06** (Stage 6b step 1.1). The account it targeted became the headless `Staging`, and the chain now starts at a repository rather than an account | — |
+| ~~`engineering`~~ | ~~**Development**~~ | **Destroyed 2026-09-06** (Stage 6b step 1.1). The account it targeted became `Staging`, and the chain now starts at a repository rather than an account | — |
 
 Identical in everything but the target account: **eleven environment configurations** (decision 5's
 category 1; `experimentation` holds **thirteen** since 2026-10-19, `MLflowApp` and `AmazonBedrockKnowledgeBase` `ON_DEMAND` at orders 11 and 12), `Tooling` the only base — `ON_CREATE`, every other blueprint `ON_DEMAND`; a second base
@@ -442,11 +448,12 @@ bump, in this order:
      seven Bedrock types, `AmazonBedrockKnowledgeBase` among them; with six it answers *"This tool is
      not available for this project."* Measured 2026-10-19 (Stage 17 7.2): once the seventh was
      applied, both projects' *AI apps* opened the Bedrock IDE and the Playground opened, with no
-     *Update project* and no environment deployed by the reading. A second gate stands behind it: every
-     model list reads *"No models found. Contact your admin to enable more models."*, since the account
-     enables no model for projects or the playground (the console's **Amazon Bedrock models** tab, whose
-     *Manage* publishes each model through a governance project the domain does not hold; the catalog
-     surface below, Stage 17 decision 13).
+     *Update project* and no environment deployed by the reading. A second gate stood behind it: every
+     model list read *"No models found. Contact your admin to enable more models."*, since the account
+     enabled no model for projects or the playground (the console's **Amazon Bedrock models** tab, whose
+     *Manage* publishes each model through a governance project; the catalog surface below). Stage 17
+     decision 13 (b) wrote that project the same day, and the playground listed models at 21:13 UTC and
+     answered at 22:09 UTC (Stage 17 7.3).
    A promoted blueprint is therefore read in the portal after the applies, and its entry's gate is read
    before a refusal is attributed to the profile.
 
@@ -454,8 +461,8 @@ bump, in this order:
 
 The roster is measured. Read 2026-08-21 from the live domain `awsds-studio`,
 `datazone list-environment-blueprints --managed` returns **23**, and the console's *Blueprints* page
-lists **13**; re-read 2026-10-18, the same 23 names, and **24** on 2026-10-30, `SageMakerAIDomain` the one
-added (its row below; the release note of 2026-10-20 says the console's *Blueprints* tab lists it, unread
+lists **13**; re-read 2026-10-18, the same 23 names, and **24** on 2026-10-28 (Stage 19 0.8) and 2026-10-30,
+`SageMakerAIDomain` the one added (its row below; the release note of 2026-10-20 says the console's *Blueprints* tab lists it, unread
 here). How the two reconcile is why this table is keyed on the **API name**:
 
 - **`AmazonBedrockGenerativeAI` is a console grouping, not an API blueprint.** The console shows one
@@ -502,7 +509,7 @@ can be diffed against this table directly.
 | `RedshiftServerless` | A Redshift Serverless workgroup + namespace | **Per use** with a **60-second minimum charge per query** + storage, at **0.36 USD/RPU-hour** measured (`PRICING.md` §5) — and a blueprint-provisioned workgroup takes the service default of **128 base RPUs**, which is **46.08 USD per query-hour** | **Never** — and the trigger changed on 2026-09-19 without the verdict changing. [D40](plan/decisions/D40-redshift-warehouse.md) **admits a warehouse and keeps this blueprint disabled**: the warehouse is one namespace per account, written by Terraform at `base_capacity = 4` with a usage limit, reached through a **connection to an existing compute resource** (§Connections below, [Stage 6h](plan/stages/stage-06h-redshift-connection.md)). Enabling *this* row would put a 128-RPU workgroup one click from every project member, which is the thing D26 refused and D40 did not un-refuse. `US-3` fails if it appears, with its own message. **The warehouse it was refused in favour of exists since 2026-09-20** and reads back at `base 4 / max 8 RPU` with a 10-RPU-hour monthly limit that `deactivate`s on breach — measured refusing queries, so the comparison in this row is now against something real | **3** |
 | `S3Bucket` | *"Create S3 bucket for SageMaker Unified Studio project."* Not offered by the console — read from `get-environment-blueprint` | Storage + requests. Not measured. **The governing question is not cost**: a bucket born here has an encryption key and a policy nobody in this project chose (`docs/GOVERNANCE.md` §Encryption) | — | **1** |
 | `S3TableCatalog` | *"Create S3 table catalog for SageMaker Unified Studio project."* Not offered by the console. **Possibly what `LakehouseCatalog` expands into when its S3-tables form is picked** — the same one-console-entry-to-many-API-rows shape as the Bedrock grouping. **Hypothesis, not a reading** | S3 Tables storage + maintenance. Not measured | — | **1** |
-| `SageMakerAIDomain` | *"A SageMaker AI domain for managing SageMaker spaces and apps"* (read 2026-10-30 from `get-environment-blueprint`; in the roster since the reading of 2026-10-30, `createdAt` 2026-08-21, `updatedAt` 2026-10-22). A standalone SageMaker AI domain per project beside `Tooling`'s, from the template `DataZone-SageMakerAIDomain-prod-20260905`: one `AWS::SageMaker::Domain`, `VpcOnly` on the Tooling environment's network, the project role as every space's execution role, the Tooling key; the profile's parameters carry the custom images (a JSON list of `ImageName`, `AppImageConfigName` and `ImageVersionNumber`, 30 per app type, which the service translates into the template's `name;config;version`), the default image version, the idle timeouts and their ranges, the hidden instance types and distribution versions, the volume ceiling (100 GB), the domain name and `enableRStudio`, whose `true` cannot be undone and which adds an EFS home, service-managed security groups and Posit's RStudio (§Custom images; [`upstream-releases.md`](plan/upstream-releases.md)) | The domain at rest is free (§10); JupyterLab and Code Editor apps bill as `Tooling`'s; an RStudio session bills the instance rate (`ml.t3.medium` **0.050/h**) and the server app **0.00**, the Posit licence outside AWS's price list (`PRICING.md` §8, §11) | **6d decision 15, taken 2026-10-30 by the user as (b)**: the pilot on `experimentation` (`ON_DEMAND`, order 13; `sagemaker-prereqs-v0.9.0`), the house image pinned at `var.sandbox_dev_env_version`, applied 2026-10-30, the image lists in JSON since the two `[]`s of 2.6 item 3; `test-experimentation` holds `lab-sagemaker-ai-domain` (`d-odhynkcev3yw`) since 2026-10-30 with the house image pinned at 11; RStudio off by the user's decision of 2026-10-30 (the Posit licence's price; 6d 2.6 item 5), `enableRStudio` `false` locked, a VPC-only RStudio domain also needing a `license-manager` interface endpoint (read 2026-10-31); whether it becomes the standard for every Sandbox project (`Tooling` with `enableSpaces` false, the blueprint `ON_CREATE`, the two `Tooling` domains retired) is 6d decision due 16, written 2026-10-30, (a) recommended | **1** |
+| `SageMakerAIDomain` | *"A SageMaker AI domain for managing SageMaker spaces and apps"* (read 2026-10-30 from `get-environment-blueprint`; in the roster since Stage 19's reading of 2026-10-28, `createdAt` 2026-08-21, `updatedAt` 2026-10-22). A standalone SageMaker AI domain per project beside `Tooling`'s, from the template `DataZone-SageMakerAIDomain-prod-20260905`: one `AWS::SageMaker::Domain`, `VpcOnly` on the Tooling environment's network, the project role as every space's execution role, the Tooling key; the profile's parameters carry the custom images (a JSON list of `ImageName`, `AppImageConfigName` and `ImageVersionNumber`, 30 per app type, which the service translates into the template's `name;config;version`), the default image version, the idle timeouts and their ranges, the hidden instance types and distribution versions, the volume ceiling (100 GB), the domain name and `enableRStudio`, whose `true` cannot be undone and which adds an EFS home, service-managed security groups and Posit's RStudio (§Custom images; [`upstream-releases.md`](plan/upstream-releases.md)) | The domain at rest is free (§10); JupyterLab and Code Editor apps bill as `Tooling`'s; an RStudio session bills the instance rate (`ml.t3.medium` **0.050/h**) and the server app **0.00**, the Posit licence outside AWS's price list (`PRICING.md` §8, §11) | **6d decision 15, taken 2026-10-30 by the user as (b)**: the pilot on `experimentation` (`ON_DEMAND`, order 13; `sagemaker-prereqs-v0.9.0`), the house image pinned at `var.sandbox_dev_env_version`, applied 2026-10-30, the image lists in JSON since the two `[]`s of 2.6 item 3; `test-experimentation` holds `lab-sagemaker-ai-domain` (`d-odhynkcev3yw`) since 2026-10-30 with the house image pinned at 11; RStudio off by the user's decision of 2026-10-30 (the Posit licence's price; 6d 2.6 item 5), `enableRStudio` `false` locked, a VPC-only RStudio domain also needing a `license-manager` interface endpoint (read 2026-10-31); whether it becomes the standard for every Sandbox project (`Tooling` with `enableSpaces` false, the blueprint `ON_CREATE`, the two `Tooling` domains retired) is 6d decision due 16, written 2026-10-30, (a) recommended | **1** |
 | `Tooling` | The project's basic environment: the per-project **SageMaker AI domain** (only under the template's `sageMakerDomainRequired`, a default Tooling with `enableSpaces == "true"`, read 2026-10-19 in `ToolingDefault-prod-20260918`: a profile with `enableSpaces` false creates none, Stage 18 decision 1), project roles, security groups, Athena workgroups, the project S3 location — and the parameter surface Stage 6 step 1.5 locks (`sagemakerDomainNetworkType`, idle shutdown, `maxEbsVolumeSize`, TIP). Mandatory — nothing else provisions a working environment | Per **app-hour running** (`ml.t3.medium` JupyterLab/Code Editor at **USD 0.050/h**, `PRICING.md` §8) + EBS. An open app bills whether used or not — the step 8 idle shutdown is what converts "up" into "in use". A notebook cell on `project.spark.fineGrained` starts a bill of its own: a Glue 5.0 interactive session of up to 10 DPU at **USD 0.44/DPU-h** (`PRICING.md` §5), kept 60 minutes after its last statement; the one measured 2026-11-14 averaged 2.8 DPU over 1152 s (`SUP-368`, Lesson 81) | default — mandatory | **1** |
 | `ToolingLite` | *"Create basic resources for SageMaker Unified Studio project."* Not offered by the console. **Its template** (`ToolingLiteDefault-prod-20260723`, read 2026-10-19 for [Stage 18](plan/stages/stage-18-staging-deployment-project.md) decision 1): one user parameter, `s3BucketLocation`; a bucket when none is given, a security group, Glue connections, an Athena workgroup, a schedule group and an `AWS::SageMaker::Domain` with no condition; no project role of its own (`executionRoleArn` is a parameter), no log group, no Lake Formation registration; it exports the VPC, the subnets, the security group and the key the CI/CD CLI reads. **Measured at step 1.5 (2026-08-21): a base variant, not a capability** — bundled in a project profile, the service demands `deployment_mode = ON_CREATE` (*"ToolingLite environment blueprint configuration must have deployment mode ON_CREATE"*, DataZone 400), so it cannot ride a `Tooling` profile as an on-demand extra, and a second base would double-provision every new project | Not documented. Presumably the same app-hour shape as `Tooling` with fewer resources — **unread** | amending the decision | **3** |
 | `Workflows` | A **provisioned MWAA (Airflow) environment** from a CloudFormation template — billed hourly while it exists | **Standing**: MWAA `mw1.micro` **≈ USD 211.70/month** left up (`PRICING.md` §1) — the shape D7 rejected for daily use | **Never** while D7 stands: its amendment of 2026-09-05 took provisioned MWAA off INT-14's ladder, which removed the trigger this row's category-2 placement named, and Stage 10 step 4.3's `DenyProvisionedMwaa` (`airflow:CreateEnvironment` on the root SCP) refuses what this blueprint creates once applied. The *serverless* Workflows surface is **not** this blueprint and needs no configuration of its own: 6d step 4 found it already provided by the eleven category-1 configurations (§The workflow surface) | **3** |
@@ -621,8 +628,8 @@ shape. The procedures are [`serverless-workflows.md`](plan/runbooks/serverless-w
   workflow, a processing-only one included; with no file there the service answers `Code not found in
   specified S3 location`, and emptying the field saves with no `Code`.
 - **Operators run on the private shape**: `S3KeySensor`, `S3DeleteObjectsOperator`,
-  `SageMakerProcessingOperator` (a job in the house image under the D13 boundary's four settings, once
-  `sandbox/workflows/` grants the existence check and the tag), `PythonOperator` and `BashOperator`.
+  `SageMakerProcessingOperator` (a job in the house image under the D13 boundary's four settings, with
+  `sandbox/workflows/` granting the existence check and the tag), `PythonOperator` and `BashOperator`.
 - **A Python or Bash task's code is a `Code` object the service copies at every save** to
   `mwaa-serverless-code-files-<AWS-owned account>-<region>-prod`. Each worker has
   `airflow-serverless.amazonaws.com` fetch that copy through the VPC's S3 gateway endpoint, whose policy
@@ -658,7 +665,7 @@ pre-deployment validation simulates the role's policies with no context keys, so
 on `aws:RequestedRegion` or `aws:ResourceOrgID` reads denied and the deploy runs with
 `--skip-validation`; `--no-events` keeps its `PutEvents` off the default bus; its boto3 ignores the
 `aws` CLI's SSO cache. `awsds-workflows lint` checks a workflow's YAML against the difference before the
-deploy ([`serverless-workflows.md`](plan/runbooks/serverless-workflows.md) §T). 1.0.9 is still the latest release on 2026-10-18. When its identity cannot read a domain-scoped VPC
+deploy ([`serverless-workflows.md`](plan/runbooks/serverless-workflows.md) §T). 1.0.9 is still the latest release on 2026-11-13 ([`upstream-releases.md`](plan/upstream-releases.md)). When its identity cannot read a domain-scoped VPC
 connection or the Tooling environment's `privateSubnets`, `securityGroup` and `kmsKeyArn`, `workflow.create`
 omits the network and the key, prints one line and creates the workflow in the service's default worker
 network under a service-managed key (its `helpers/datazone.py`; [`upstream-releases.md`](plan/upstream-releases.md)).
@@ -730,7 +737,8 @@ keeps the version it was created with, 10 here where the default is 12 (`SUP-360
 ### A deployment project in a `Workloads` account
 
 Measured in `Staging` from 2026-10-19 to 2026-10-22 and removed ([Stage 18](plan/stages/stage-18-staging-deployment-project.md)
-and its log); D41 item 2 kept the rule above.
+and its log). Since 2026-11-11 each deployment target holds one, `deploy-staging` and `deploy-production`
+([Stage 19](plan/stages/stage-19-smus-native-data-product.md) decision 6 (b), steps 4.5 and 4.6).
 
 - **What the blueprint creates.** A `Tooling` environment whose profile locks `enableSpaces` to `"false"`
   creates no SageMaker AI domain, so only `DenyDataZoneEntirely` needs a carve-out. Its stack holds
@@ -779,7 +787,9 @@ and its log); D41 item 2 kept the rule above.
   `AWSDataZone-Subscriptions` sessions. The producer side grants `SELECT` to the consumer account's
   `IAMPrincipals` under the subscribing project's context, with `CROSS_ACCOUNT_VERSION` 5 in the grant
   whatever the account's setting; shares the producer's catalog, databases and tables to the consumer
-  account through RAM; and writes three statements into the producer's Data Catalog resource policy.
+  account through RAM; and puts per-resource policies naming the consumer account on the producer's
+  `catalog`, `database/*` and `table/*/*`, which the account-level read does not list (`SUP-195`,
+  `SUP-099`).
   The consumer side creates a resource link and grants `DESCRIBE` on it to the project's context. The
   consumer's query editor reads the table; a revocation removes every piece on both sides.
 - **What a teardown leaves.** `delete-project --skip-deletion-check` deletes the environments' stacks,
@@ -809,8 +819,10 @@ objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/cat
   2026-11-08, Stage 19 1.1): `SageMakerStudioProjectRoleMachineLearningPolicy` v47 grants
   `datazone:Get*`, `List*`, `Search*`, `CreateAsset*`, `CreateListingChangeSet`,
   `CreateSubscriptionRequest` and `RevokeSubscription` on `*` and no `StartDataSourceRun`;
-  `SageMakerStudioProjectUserRolePolicy` v76 names a list of reads on the domain; the house grant
-  `sandbox/workflows/` adds the one action on the domain for an application's publishing task.
+  `SageMakerStudioProjectUserRolePolicy` v76 names a list of reads on the domain. The house grant adds
+  the one action on the domain for an application's publishing task in Production's `studio/` alone,
+  the one stage that lists, since Stage 19 decision 17's revision of 2026-11-15; `sandbox/workflows/`
+  holds none since.
 - **A subscription's fulfilment writes per-resource catalog policies, not the account's** (read
   2026-10-26, 6f 11.9). The publishing role's four `glue:PutResourcePolicy` calls carry a `resourceArn`
   (`catalog`, `database/*`, `table/*/*`) and `enableHybrid` `TRUE`; `glue get-resource-policies` lists
@@ -845,8 +857,8 @@ objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/cat
   meter below, and it is enabled (`cron(43 3 * * ? *)`, read 2026-10-18): its eight daily runs since
   2026-10-11 all failed, the newest on *"Redshift endpoint doesn't exist in this region"* while the
   workgroup was down, and that run processed no query.
-- **The domain offers 23 managed asset types**, `GlueTableAssetType` among them, all owned by the
-  domain's own project. A custom type is not needed to publish a Glue table.
+- **The domain offers 24 managed asset types** (read 2026-10-28, Stage 19 0.8; 23 on 2026-10-18),
+  `GlueTableAssetType` among them, all owned by the domain's own project. A custom type is not needed to publish a Glue table.
 - **`list-domains` in an associated member account returns the shared domain.** The listing alone
   cannot say where a domain lives; `managedAccountId` can, and it names the registry account on both
   sides of an association. Any check that reads the listing reports the association as a second
@@ -875,16 +887,17 @@ objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/cat
   rather than in an OU document.
 - **A Bedrock model reaches a project as a catalog subscription** (read 2026-10-19 in the console's and
   the portal's code, [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decision 13; the
-  publishing measured the same evening, the subscription not yet). The console's **Amazon Bedrock models** tab publishes each enabled model as an asset,
+  publishing measured the same evening, and the playground's subscriptions, each a person's, at 21:15 UTC
+  (7.3); no project has subscribed to a model, read 2026-10-20). The console's **Amazon Bedrock models** tab publishes each enabled model as an asset,
   `BedrockModelAssetType` for projects and `BedrockInferenceOnlyAssetType` for the playground, owned by a
   project named `GenerativeAIModelGovernanceProject` and listed with `approvalRequired` `NO`; the asset's
   form names a provisioning or consumption role, held by a custom environment of that project in the
   model's account. A project's first use subscribes to the listing, and the grant's target is an
   application inference profile in the project's account, the only door AWS's policies on the project
-  role and on the Bedrock IDE's roles open to a model. The domain holds no governance project, and an
-  associated account's console creates none: only the domain account's setup does, in the run that also
-  configures the Bedrock blueprints and `Tooling` there, which D22 forbids.
-  Here `data-governance/governance/` writes it, and `sandbox/model-access/` the two roles the console
+  role and on the Bedrock IDE's roles open to a model. An associated account's console creates no
+  governance project: only the domain account's setup does, in the run that also configures the Bedrock
+  blueprints and `Tooling` there, which D22 forbids. Here `data-governance/governance/` writes it,
+  applied 2026-10-19 under decision 13 (b), and `sandbox/model-access/` the two roles the console
   adopts. Enabling five models created six custom environments, six assets and listings and the
   playground's two application inference profiles, and no role (2026-10-19).
 
@@ -1040,7 +1053,7 @@ The persona's half is a **customer-managed policy**, `awsds-org-project-storage-
 each member's `foundation/` slice and referenced by name from `DataScientistAccess` (applied
 2026-08-23) — one object per member account, each naming its **own** account's instance, and a policy
 may name a resource that does not exist. The second member's instance never existed and since
-2026-09-06 never will: that account is the headless `Staging`, and its vending policy went at Stage 6b
+2026-09-06 never will: that account became `Staging`, where no space runs, and its vending policy went at Stage 6b
 step 2.2. The consumer is **`s3-read-write/`**, whose README carries the grant recipe and the
 first-run probe sequence. Two properties: grants are **membership-blind** (the grantee grain is the
 persona role — every set holder vends for every granted project), and the vended credentials are
@@ -1358,15 +1371,16 @@ pipeline inherits whatever convention the first push wrote, and both repositorie
 
 **Both repositories live in the Production account, and the `prod` in their names is where the
 *registry* is, not who the image serves.** `terraform-live/production/registry/ecr.tf` builds them as
-`awsds-${var.env}-ecr-*` with `env = prod`, and Sandbox and Staging reach them by
-`AllowConsumerAccountsToPull`. Reading the pair as "one for production, one for development" inverts
+`awsds-${var.env}-ecr-*` with `env = prod`, and Sandbox reaches them by `AllowConsumerAccountsToPull`,
+the one consumer account since Stage 7 decision 7 (2026-10-12): a deployment target pulls an application
+image through Stage 8's deploy grant, never these two. Reading the pair as "one for production, one for development" inverts
 D17: there is **one** ancestor for every environment, and what gets promoted is the code, never a
 per-environment image.
 
 | Repository | What it is | Who pulls it |
 |---|---|---|
-| `awsds-prod-ecr-base` | the **common ancestor** (D17) — every application image is `FROM base`, `dev-env` included | Stage 8's pipeline; the consumer accounts carry the pull grant on purpose, so a project building its own image does not read a missing grant as a network fault |
-| `awsds-prod-ecr-dev-env` | the **SMUS custom image (BYOI)** — the runtime a space actually starts | the member accounts, through `CustomImages` |
+| `awsds-prod-ecr-base` | the **common ancestor** (D17) — every application image is `FROM base`, `dev-env` included | Stage 8's pipeline; the consumer account, Sandbox, carries the pull grant on purpose, so a project building its own image does not read a missing grant as a network fault |
+| `awsds-prod-ecr-dev-env` | the **SMUS custom image (BYOI)** — the runtime a space actually starts | Sandbox, through `CustomImages` |
 
 So the repository already answers *what the image is*. Putting that word back inside the tag —
 `awsds-prod-ecr-dev-env:dev-env-…` — spends it twice in every pipeline line that ever references it.

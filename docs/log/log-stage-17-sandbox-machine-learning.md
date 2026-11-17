@@ -2603,3 +2603,179 @@ that session where marked. Nothing was applied.
 - **[Claude] Written**: the stage file's tables and steps 9.1, 9.4 to 9.6, 10.2, 10.4 and 10.5 corrected
   with these readings, `sagemaker-ai-ml.md`'s MLflow version, `TM-30`, `INT-07` and `INT-25`. Nothing in
   AWS changed.
+
+## 2026-11-17 — passes 9 and 10 advanced with nothing up: the work handed out, `TM-33`, the order of the sittings
+
+*Claude's hand, in a laptop session on the infrastructure user's SSO session, at the user's request of
+13:42 UTC to advance every step that needs neither the environment up nor the user's hands. No AWS write.*
+
+- **[Claude] The work handed out**, 13:52 to 13:55 UTC, to subagents of this session in its worktree, each
+  told to edit only its own paths and to run no git command that changes state: 9.2's `examples/app-ml/`,
+  10.2's `examples/app-genai/`, the preflights 9.1 and 10.1 (read-only), and 9.5's target-side slices with
+  10.4's pre-sitting change for Nova Lite, the last to a subagent in a worktree of its own, which commits
+  there and pushes module tags alone. In progress at this entry; each result is a later entry.
+- **[Claude] A refusal**, 13:55:03 UTC: the launch of the subagent whose brief held 9.3's and 10.3's lint
+  rules with a push and a merge request in `awsds-workflows` was refused, *"Permission for this action was
+  denied by the Claude Code auto mode classifier. Reason: [Unsanctioned Communication]."* It was launched
+  again at 13:55:25 UTC to work in a clone in the session's scratchpad, committing there and writing the
+  merge request's description and a patch series, with no push. Publishing is the user's.
+- **[Claude] Written**, 14:05 to 14:09 UTC: `TM-33` in `threat-model.md`, the entry 9.5 asks for before the
+  first tag, open until the user accepts it; 9.6 and 10.4 deliver the application to the space as a tar
+  built before the sitting, as [Stage 20](../plan/stages/stage-20-dbt-lineage.md) step 2.0 does, so neither
+  sitting raises GitLab; `promotion.md` §N.6 items 7, 8 and 10 to 14 placing 9.6, 10.4, 9.7, 10.5, 10.6 and
+  9.11, and §N.5's line that 9.11's release of `app-etl` provokes Stage 8 xxvi, `app-etl-train` leaving
+  `workflows/`.
+- **[Claude] Kept out of this pull request**: `scripts/deploy-application.py`, `scripts/model-chain.py` and
+  their hooks for a second application. Every job of `app-etl`'s pipeline clones `awsds/infrastructure` at
+  its head (`examples/app-etl/.gitlab-ci.yml`, the `git clone` at line 318), so release G's legs, after the
+  mirror's push at `main`, would run what a merge changes there. The change is §N.6 item 10, with nothing up,
+  before 9.7's tag.
+- **[Claude] 3.3 and `EXC-11`**, 14:22 UTC: from the day's review against SageMaker Unified Studio's standard
+  path (6d's log), AWS's page on a SageMaker data source documents the share `EXC-11`'s error names, a RAM
+  share of the domain to `sagemaker.amazonaws.com` with `AWSRAMSageMakerServicePrincipalPermissionAmazonDataZoneDomain`,
+  never created here. 3.3, `AWS_STATE.md`'s `EXC-11` and the waiting list carry it as the user's decision
+  before 3.2 and 9.6.
+
+## 2026-11-17 — 9.3 and 10.3: the lint's rules written in a local branch of `awsds-workflows`, unpublished
+
+*A subagent of the laptop session wrote the rules in a clone of `awsds-workflows` in the session's
+scratchpad, with no push and no AWS call; Claude copied the result to the laptop.*
+
+- **[Claude, a subagent] The branch**, done at about 14:39 UTC: `claude/lint-transformacao-modelo-bedrock`,
+  cut from `main` at `196acee`, HEAD `052521ea0f574b20e0ac30d3f635c12bc2a0fe0e`, two commits: `a13538a` (the
+  code, the tests, the documentation and its references) and `052521e` (that repository's memory and its
+  `CLAUDE.md`, whose index PR #24 had left behind).
+- **[Claude, a subagent] The rules**: a new option, `--model-item ITEM`, on an application folder alone,
+  under which the named storage item passes with `default.s3_shared` and an `include` naming a prefix,
+  every other item with a connection still refused, so `app-ml`'s pipeline passes `--model-item model`;
+  the rule `transformacao` (`action_if_job_exists` `fail`, the instance type on the list,
+  `TransformResources.VolumeKmsKeyId` and `TransformOutput.KmsKeyId`); the rule `modelo` (`VpcConfig`'s
+  subnets and security groups, `EnableNetworkIsolation` `true`, on a model's `config` or a transform's
+  `Model`); and the rule `operador` refusing by name `SageMakerRegisterModelVersionOperator`,
+  `SageMakerEndpointOperator`, `SageMakerEndpointConfigOperator`, `BedrockInvokeModelOperator`,
+  `BedrockRaGOperator` and `BedrockRetrieveOperator`, each with its reason. Beyond the request: an item with a
+  connection no longer counts as a folder of the tag, so the model's item cannot carry a workflow's code.
+- **[Claude, a subagent] The tests**: 38 new cases, of which 31 fail on `196acee`'s code; the whole suite,
+  with no `AWS_*` variable, 411 passed, 2 skipped and 7 failed, the 7 being `main`'s own (`prepare-offline`
+  does not run on Darwin `arm64`); `ruff check` and `ruff format --check` clean. Copies of `app-etl` shaped
+  as `app-ml` will be read `ok` with the option and refused without it, with a second connected item,
+  without `VolumeKmsKeyId` and with a `BedrockInvokeModelOperator` task. Nothing was run on a worker, in a
+  `bundle` or in a `deploy`.
+- **[Claude] Kept**, 14:39 UTC: the branch as a git bundle (`196acee..` the branch), the patch series and
+  the pull request's description in `$HOME/tmp/stage17-lint/`, since the scratchpad does not outlive the
+  session. The push and the pull request are the user's, or Claude's on the user's word naming them (the
+  waiting list); the new applications' pins stay at `196acee` until the merge.
+
+## 2026-11-17 — 9.3 and 10.3: the lint's branch published, `awsds-workflows` pull request #26
+
+*Written by Claude, on the user's word in chat: "Vc está autorizado a abrir um PR para o `awsds-workflows`
+no que for necessário."*
+
+- **[Claude] Read before publishing**: the branch's two commits (`a13538a`, `052521e`) against `origin/main`
+  at `196acee`, which had not moved: `lint.py`, `cli.py`, their tests, `docs/` and the repository's memory.
+  One defect: with no `--model-item`, the list of items bearing the asked name matched every item with no
+  `name`, so a lone connection item without `name` took the model item's rules in place of the `manifest`
+  refusal. Fixed in `adb5088` with a test, which fails at `052521e` and passes at `196acee` and `adb5088`.
+- **[Claude] The checks at `adb5088`**: `uv run pytest -p no:cacheprovider` 412 passed, 2 skipped, 7 failed,
+  the seven of `test_prepare_offline.py` and `test_examples.py::test_the_prepared_project_runs_extracted_elsewhere`,
+  refused on the laptop (*"esta máquina é Darwin arm64, e a pasta só serve ao job preparada em Linux
+  x86_64"*), the same seven as at `196acee`; `ruff check` and `ruff format --check` clean; `awsds-workflows
+  --help` and the `pdoc` site exit 0.
+- **[Claude] Published**, 15:00 UTC: the clone's HTTPS remote holds no credential helper, and the first push
+  answered *"fatal: could not read Username for 'https://github.com': Device not configured"*; `git -c
+  credential.helper= -c 'credential.helper=!gh auth git-credential' push -u origin
+  claude/lint-transformacao-modelo-bedrock` pushed with the GitHub CLI's login for that command alone, and
+  `gh pr create` opened <https://github.com/felipenoris/awsds-workflows/pull/26>, `MERGEABLE`, three checks
+  pending. The description is the kept one with the fix and the counts at `adb5088`: 39 new cases, 31 of
+  them failing at `196acee`.
+- **[Claude] What waits**: the user's merge; then `AWSDS_WORKFLOWS` in `examples/app-ml/.gitlab-ci.yml` and
+  `examples/app-genai/.gitlab-ci.yml` moves to the merge commit, and `app-ml`'s lint step gains
+  `--model-item model`.
+
+## 2026-11-17 — 9.1, 9.2, 9.4, 9.5, 10.1 and 10.2: the subagents' results, and the model-version denies
+
+*Subagents' hands where marked, then Claude's, in the laptop session of the user's request of 13:42 UTC.
+Every AWS call was a read, as the infrastructure user (`InfrastructureAccess`) through
+`awsds-infra-sandbox-1`, `awsds-infra-staging` and `awsds-infra-prod`.*
+
+- **[Claude, a subagent] 9.1**, 13:58 to 14:52 UTC.
+  - Quotas, 14:13:40Z to 14:13:53Z, the same in the three accounts: `ml.t3.medium for processing job usage
+    10.0`, `ml.m5.large for training job usage 20.0`, `ml.m5.large for transform job usage 8.0`,
+    `ml.m5.large for endpoint usage 30.0`, against AWS's defaults 4.0, 0.0, 0.0 and 0.0; no request
+    `CASE_OPENED` or `PENDING` in any account.
+  - Sizes, 14:02:15Z, non-whitespace characters: `awsds-<env>-workflows` 1,681 (Staging), 2,074 (Production,
+    since release G's apply of 13:11:54Z) and 986 (Sandbox) of 6,144; `awsds-<env>-deploy-project` 5,060 and
+    5,045; the boundaries 3,474, 3,801 and 2,425; the deploy roles' inline policies 2,554 and 2,929 of
+    10,240; the `Interactive` SCP 1,483 and the `Workloads` SCP 2,840 of 5,120.
+  - Simulations as each target's project role (ML `SageMakerStudioProjectRoleMachineLearningPolicy` v48, UR
+    `SageMakerStudioProjectUserRolePolicy` v77), 14:23:29Z and 14:23:54Z: the `AddTags` that comes with
+    `CreateModel`, `CreateTransformJob` and `CreateModelPackageGroup` `implicitDeny`; `UpdateModelPackage` to
+    `Approved` on a tagged version `allowed` by ML `SageMakerInferencePermissions`; `CreateTransformJob`
+    `explicitDeny` from the simulator alone (`SUP-009`, appended). The bundle role holds none of the three
+    reads on the stand-in's prefix (`app-etl-dev`'s). The deploy roles before 9.5: `ListModelPackages` on `*`
+    `allowed` in Staging (`ListTheModelVersions`) and `implicitDeny` in Production, whose grant names
+    `model-package/awsds-prod-model-app-etl/*`; the Service Reference v1.5 gives that action the type
+    `model-package`, against `staging/foundation/deploy-role.tf`'s skip reason.
+  - The CLI 1.0.9's wheel, SHA-256 `bd7258c0…4903`: verifications xxviii and lxii, read in the code; the
+    scans' prefix is `SUP-287`'s.
+- **[Claude, a subagent] 10.1**, the same session.
+  - 49 on-demand text models, one list in the three accounts, `amazon.nova-lite-v1:0 ON_DEMAND,INFERENCE_PROFILE
+    ACTIVE` among them. Nova Lite: *"ValidationException … Agreement not supported for this model"* and
+    `AUTHORIZED` in each account; the form held in Sandbox, *"You have not filled out the request form."* in
+    Staging and Production, Anthropic's prerequisite alone; the retention mode `none` in Sandbox and
+    `inherit` in Staging and Production.
+  - Quotas, the same in the three: `L-89F8391A` 4000.0, `L-7C42E72A` 8000000.0, `L-45E0AD92` 5760000000.0,
+    `L-0E5A840C` 100.0 and `L-D471AEAB` 20.0, ApplyGuardrail 100 a second; no on-demand quota for Nova Lite.
+  - `list-guardrails` `[]` and `list-enforced-guardrails-configuration` `{"guardrailsConfig": []}` in the
+    three; three application inference profiles in Sandbox, the portal's, none in the targets.
+  - Under today's boundary all 29 Bedrock cases read `explicitDeny` by `DenyServicesNoProjectUsesHere`; AWS's
+    policies alone admit the invoke on any profile tagged with the project (UR `BRInvokeAppProfile`) and no
+    guardrail action but `ApplyGuardrail`. `InfrastructureAccess` holds the three enforced-configuration calls,
+    neither deploy role does.
+  - Providers at `staging/studio`'s lock: `aws` 6.69.1 holds `aws_bedrock_guardrail`, its version and
+    `aws_bedrock_inference_profile` and no enforced configuration; `awscc` 1.106.0 holds
+    `awscc_bedrock_enforced_guardrail_configuration`, CloudFormation's type `PUBLIC` and `LIVE` since
+    2026-04-07 and not taggable. 10.5's table row and decision 27's reading follow.
+  - `vpc-egress-v0.17.0`'s `bedrock-base` group and its exclusions (`bedrock-mantle` among them); some models
+    answer in-Region only through `bedrock-mantle`, Claude Haiku 4.5 among them. `staging/egress` passes no
+    `optional_service_groups`, as pass 10's table already provides for.
+- **[Claude, a subagent] 9.2 and 9.4**, to 14:57 UTC: `examples/app-ml/`, 35 files; `uv run pytest` *"100
+  passed in 3.14s"*; ruff clean; the identifier rule 0 findings. The lint at `196acee` exits 1 on the model
+  item alone (*"manifest.yaml: manifest: content.storage model: com connectionName, o bundle lê o projeto, e
+  não a pasta ao lado do manifest"*); at `052521e` with `--model-item model`, *"ok: 6 arquivo(s)"*. The
+  train archive: 15,910,630 bytes, 58,159,460 unzipped, 42 distributions; the register and score archives
+  12,030 bytes each; the host build's import of `mlflow` 3.16.0 and `sagemaker_mlflow` 0.5.0 exits 0, and
+  `set_tracking_uri` on an app's ARN resolves `MlflowSageMakerStore`. The house image's lock reads `mlflow`
+  3.17.2, not 9.4's 3.16.0 (corrected); `code/uv.lock` resolves boto3 1.43.123, which `package-task` leaves
+  out. Its patches to `scripts/model-chain.py`, `deploy-application.py`, `.pre-commit-config.yaml` and
+  `aws/cicd.py` are kept in `$HOME/tmp/stage17-proposals/` for `promotion.md` §N.6 item 10.
+- **[Claude, a subagent] 10.2**, to 14:55 UTC: `examples/app-genai/`, 32 files; *"95 passed"*; ruff and the
+  lint at the template's pin clean (*"ok: 3 arquivo(s)"*); at `052521e`, `lint probes/operator.yaml` refuses
+  `BedrockInvokeModelOperator` by name, the probe outside the manifest on purpose. The archive: 8 files,
+  15,715 bytes, built twice to the same bytes. The gates' pip-audit step fails on its empty runtime export
+  (`set -eu; pinned="$(grep -c == req)"` rc 1), so 10.6 needs a gates tag. botocore 1.43.1's `Stubber` on
+  `CreateGuardrail` admitted a 60-character name, a name off the pattern and the enum value `NOT_A_TYPE`,
+  and refused a missing required member, so the tests walk the model themselves (`SUP-376`). Its `deploy-application.py`
+  proposal is kept beside the others.
+- **[Claude, a subagent in a worktree of its own] 9.5**, commit `c1ceff56`: `production/registry` (the
+  repository, its lifecycle and its pull policy), `production/sagemaker` and `staging/sagemaker` (the
+  groups), both foundations (`ApproveTheModelATaskRegisters`), both `chains/` (two machines, two `DISABLED`
+  schedules), both `studio/` (the transform, model and registry statements) and `identity/sso`'s
+  `ReadAndPullTheApplicationImages`. Twelve read-only plans, among them *"Plan: 12 to add, 1 to change, 0 to
+  destroy."* for each `chains/` and *"3 to add"* for `production/registry`. After: `awsds-staging-workflows`
+  3,364, `awsds-prod-workflows` 3,748, the deploy roles' inline `apply-application` 2,031 and 2,257. Its
+  findings: `production/registry` applies before `identity/sso`; the project role's `CreateModelPackage` with
+  `ModelApprovalStatus=Approved` read `allowed` in both targets; the `UpdateModelPackage` deny named
+  `app-ml`'s versions alone; `production/runners` gives the build runner push on the new repository at the
+  next `make gitlab-up`; 10.4's `(C)` not written, `probes.py`'s interactive deny row sampling Nova Lite.
+- **[Claude] Folded in**, 15:08 to 15:25 UTC: the examples committed (`f444d146`, `c1efca61`) and the branch
+  merged (`9dc27110`). `<env>/studio/workflows.tf` gains `DenyRegisteringAVersionNotPending`, a deny of
+  `CreateModelPackage` on `model-package/*` under `StringNotEquals` `sagemaker:ModelApprovalStatus`
+  `PendingManualApproval`, and `DenyApprovingAModelVersion` names `model-package/*` (Lesson 82). Both
+  `studio/` slices planned from the merged tree, 15:14 and 15:15 UTC: *"Plan: 2 to add, 2 to change, 2 to
+  destroy."* each, the workflows policy at 3,597 and 3,984 non-whitespace characters. `simulate-custom-policy`
+  on the planned policy beside an allow of both actions on `*`, in each target: `CreateModelPackage` on
+  `app-ml`'s group `explicitDeny` with `Approved` and with no status, `allowed` with `PendingManualApproval`;
+  on another group with `Approved` `explicitDeny`; `UpdateModelPackage` on `app-ml`'s and on `app-etl`'s group
+  `explicitDeny`. `staging/foundation`'s skip reason now says which ARN the service evaluates is unread. The
+  copies in `$HOME/tmp/stage17-lint/` are superseded by pull request #26.

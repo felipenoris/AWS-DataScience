@@ -1,0 +1,122 @@
+# {"prepare":{"x":120,"y":200},"resolve":{"x":420,"y":200},"score":{"x":720,"y":200},"check":{"x":1020,"y":200},"cleanup":{"x":1320,"y":200}}
+app-ml-score:
+  dag_id: app-ml-score
+  tasks:
+    prepare:
+      operator: airflow.providers.amazon.aws.operators.sagemaker.SageMakerProcessingOperator
+      retries: 0
+      config:
+        ProcessingJobName: "app-ml-prepare-score-{{ macros.time.strftime('%Y%m%dT%H%M%S', macros.time.gmtime()) }}"
+        RoleArn: "{proj.iam_role_arn}"
+        AppSpecification:
+          ImageUri: "{env.JOB_IMAGE_URI}"
+          ContainerEntrypoint:
+            - /bin/bash
+            - -c
+          ContainerArguments:
+            - 'sudo -n chown "$(id -u)" /opt/ml/processing/output && cd /opt/ml/processing/code && exec python -m app_ml.prepare score --input /opt/ml/processing/input --output /opt/ml/processing/output'
+        ProcessingResources:
+          ClusterConfig:
+            InstanceCount: 1
+            InstanceType: ml.t3.medium
+            VolumeSizeInGB: 10
+            VolumeKmsKeyId: "{env.PROJECT_KEY_ARN}"
+        NetworkConfig:
+          EnableNetworkIsolation: true
+          EnableInterContainerTrafficEncryption: true
+          VpcConfig:
+            Subnets: ["{env.SUBNET_AZ1}", "{env.SUBNET_AZ2}"]
+            SecurityGroupIds: ["{env.PROJECT_SG}"]
+        ProcessingInputs:
+          - InputName: code
+            S3Input:
+              S3Uri: "{proj.connection.default.s3_shared.s3Uri}app-ml/src/"
+              LocalPath: /opt/ml/processing/code
+              S3DataType: S3Prefix
+              S3InputMode: File
+              S3DataDistributionType: FullyReplicated
+          - InputName: input
+            S3Input:
+              S3Uri: "{proj.connection.default.s3_shared.s3Uri}app-ml/inbox/holdout.csv"
+              LocalPath: /opt/ml/processing/input
+              S3DataType: S3Prefix
+              S3InputMode: File
+              S3DataDistributionType: FullyReplicated
+        ProcessingOutputConfig:
+          KmsKeyId: "{env.PROJECT_KEY_ARN}"
+          Outputs:
+            - OutputName: output
+              S3Output:
+                S3Uri: "{proj.connection.default.s3_shared.s3Uri}app-ml/work/score/"
+                LocalPath: /opt/ml/processing/output
+                S3UploadMode: EndOfJob
+        StoppingCondition:
+          MaxRuntimeInSeconds: 1800
+        Tags:
+          - Key: AmazonDataZoneProject
+            Value: "{proj.id}"
+    resolve:
+      operator: airflow.providers.standard.operators.python.PythonOperator
+      dependencies: [prepare]
+      python_callable: app_ml_tasks.resolve
+      op_kwargs:
+        model_prefix: "{proj.connection.default.s3_shared.s3Uri}{env.MODEL_PREFIX}/"
+        source: "{env.MODEL_SOURCE}"
+        group: "{env.MODEL_PACKAGE_GROUP}"
+        serving_image: "{env.TRAINING_IMAGE_URI}"
+        model_name: "app-ml-score-{proj.id}"
+        role: "{proj.iam_role_arn}"
+        subnet_az1: "{env.SUBNET_AZ1}"
+        subnet_az2: "{env.SUBNET_AZ2}"
+        security_group: "{env.PROJECT_SG}"
+        project: "{proj.id}"
+      retries: 0
+    # The model resolve created, by the workflow's constant name: no value of a Python task's XCom
+    # enters this request (SUP-277), and no Model key makes the operator create one (SUP-372).
+    score:
+      operator: airflow.providers.amazon.aws.operators.sagemaker.SageMakerTransformOperator
+      dependencies: [resolve]
+      action_if_job_exists: fail
+      retries: 0
+      config:
+        Transform:
+          TransformJobName: "app-ml-score-{{ macros.time.strftime('%Y%m%dT%H%M%S', macros.time.gmtime()) }}"
+          ModelName: "app-ml-score-{proj.id}"
+          TransformInput:
+            DataSource:
+              S3DataSource:
+                S3DataType: S3Prefix
+                S3Uri: "{proj.connection.default.s3_shared.s3Uri}app-ml/work/score/batch/"
+            ContentType: text/csv
+            SplitType: Line
+          TransformOutput:
+            S3OutputPath: "{proj.connection.default.s3_shared.s3Uri}app-ml/predictions/{{ ds_nodash }}/"
+            AssembleWith: Line
+            KmsKeyId: "{env.PROJECT_KEY_ARN}"
+          TransformResources:
+            InstanceType: ml.m5.large
+            InstanceCount: 1
+            VolumeKmsKeyId: "{env.PROJECT_KEY_ARN}"
+          Tags:
+            - Key: AmazonDataZoneProject
+              Value: "{proj.id}"
+    check:
+      operator: airflow.providers.standard.operators.python.PythonOperator
+      dependencies: [score]
+      python_callable: app_ml_tasks.check
+      op_kwargs:
+        scored: "{{ ti.xcom_pull(task_ids='score') }}"
+        resolved: "{{ ti.xcom_pull(task_ids='resolve') }}"
+        batch: "{proj.connection.default.s3_shared.s3Uri}app-ml/work/score/batch/batch.csv"
+        labels: "{proj.connection.default.s3_shared.s3Uri}app-ml/work/score/labels/labels.csv"
+        report: "{proj.connection.default.s3_shared.s3Uri}app-ml/outbox/score-report.json"
+        min_auc: "{env.MIN_AUC}"
+      retries: 0
+    # Runs after check alone: the service ignores trigger_rule, and a failed run leaves the model,
+    # which bills nothing and the next run's resolve deletes.
+    cleanup:
+      operator: airflow.providers.amazon.aws.operators.sagemaker.SageMakerDeleteModelOperator
+      dependencies: [check]
+      config:
+        ModelName: "app-ml-score-{proj.id}"
+      retries: 0

@@ -607,8 +607,9 @@ allow-list.
 In this project's terms ([D17](plan/decisions/D17-interactive-vs-runtime.md),
 [D28](plan/decisions/D28-workflow-contract.md), [D41](plan/decisions/D41-sagemaker-application.md)):
 the SageMaker application is a repository with `manifest.yaml`, workflows in the CI/CD CLI's
-notation and code; the CLI deploys it between the Sandbox projects and bundles it; the GitLab
-pipeline deploys the bundle into Staging and Production, which hold no project and no portal. The
+notation and code; the CLI deploys it into the Sandbox `dev` project and bundles it; the GitLab
+pipeline has the CLI deploy the bundle into a deployment project in Staging and in Production, where no
+person works and no space runs (since 2026-11-11, `v0.5.2` in Production since 2026-11-16). The
 Databricks shape of the same idea is the bundle, deployed by `databricks bundle deploy -t <target>`
 from the pipeline's service principal into a workspace per environment. There the production
 workspace is a whole workspace, with notebooks and a UI, and its isolation is the catalog binding,
@@ -629,7 +630,7 @@ logs measured.
 | S3 inside the UI, the group's `sandbox-lake` | the project's S3 path and its S3 connections | external locations and volumes, the file browser of Catalog Explorer |
 | Workflows and Visual ETL | MWAA Serverless workflows, Airflow DAGs; Visual ETL on Glue | Lakeflow Jobs, a native DAG scheduler with triggers; Lakeflow Designer on Spark and Photon |
 | AI models inside the workbench | Bedrock's surface and SageMaker AI | Databricks-hosted models, external models, Unity Gateway, Model Serving, AI Runtime |
-| Promotion Sandbox → Staging → Production by GitLab pipelines | the application, the CI/CD CLI, the bundle, headless targets ([D17](plan/decisions/D17-interactive-vs-runtime.md), [D28](plan/decisions/D28-workflow-contract.md), [D41](plan/decisions/D41-sagemaker-application.md)) | bundles deployed by a service principal into a workspace per environment; GitLab is a Git provider, not a documented CI example |
+| Promotion Sandbox → Staging → Production by GitLab pipelines | the application, the CI/CD CLI, the bundle, a deployment project per target with no space ([D17](plan/decisions/D17-interactive-vs-runtime.md), [D28](plan/decisions/D28-workflow-contract.md), [D41](plan/decisions/D41-sagemaker-application.md)) | bundles deployed by a service principal into a workspace per environment; GitLab is a Git provider, not a documented CI example |
 | Iceberg on S3 under the Glue Data Catalog and Lake Formation ([D13](plan/decisions/D13-lake-formation-enforcement.md)) | the lake, read by Athena and Redshift | Unity Catalog over its own S3 external locations; Glue read-only by federation, where Lake Formation's grant to the federation role is the ceiling and a lost grant rewrites the foreign schemas; AWS reads Databricks tables through Glue's Iceberg catalog federation |
 | One internet egress and one proxy for the compute ([D38](plan/decisions/D38-single-egress-hub.md)) | the hub's Squid proxy; spokes without a default route | classic compute egresses through the customer's VPC, a NAT or a proxy of the customer's; serverless egress is a network policy's allow list (Enterprise); the control plane and the serverless plane stay outside the customer's VPC |
 | DLP: discovery, fine-grained access, egress control, exfiltration detection | Macie and Lake Formation (Stage 11), the proxy, GuardDuty | data classification (GA 2026-04-20), ABAC with row filters and column masks, network policies, the audit system tables and the inference tables |

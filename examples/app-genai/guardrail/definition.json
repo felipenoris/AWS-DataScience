@@ -1,0 +1,141 @@
+{
+  "description": "The guardrail of the application app-genai, which triages support messages. A workflow task keeps it as guardrail/definition.json defines it.",
+  "topicPolicyConfig": {
+    "topicsConfig": [
+      {
+        "name": "Investment advice",
+        "definition": "Recommendations or opinions on buying, selling or holding stocks, bonds, funds, currencies or crypto assets, or on where to invest money for a return.",
+        "examples": [
+          "Which stocks should I buy with the money you refunded me?",
+          "Is now a good time to put my savings into bitcoin?",
+          "Should I sell my shares of your company before the earnings report?",
+          "Which fund would give me the best return this year?"
+        ],
+        "type": "DENY",
+        "inputAction": "BLOCK",
+        "outputAction": "BLOCK",
+        "inputEnabled": true,
+        "outputEnabled": true
+      }
+    ],
+    "tierConfig": {
+      "tierName": "CLASSIC"
+    }
+  },
+  "contentPolicyConfig": {
+    "filtersConfig": [
+      {
+        "type": "SEXUAL",
+        "inputStrength": "MEDIUM",
+        "outputStrength": "MEDIUM",
+        "inputModalities": ["TEXT"],
+        "outputModalities": ["TEXT"],
+        "inputAction": "BLOCK",
+        "outputAction": "BLOCK",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "VIOLENCE",
+        "inputStrength": "MEDIUM",
+        "outputStrength": "MEDIUM",
+        "inputModalities": ["TEXT"],
+        "outputModalities": ["TEXT"],
+        "inputAction": "BLOCK",
+        "outputAction": "BLOCK",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "HATE",
+        "inputStrength": "MEDIUM",
+        "outputStrength": "MEDIUM",
+        "inputModalities": ["TEXT"],
+        "outputModalities": ["TEXT"],
+        "inputAction": "BLOCK",
+        "outputAction": "BLOCK",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "INSULTS",
+        "inputStrength": "MEDIUM",
+        "outputStrength": "MEDIUM",
+        "inputModalities": ["TEXT"],
+        "outputModalities": ["TEXT"],
+        "inputAction": "BLOCK",
+        "outputAction": "BLOCK",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "MISCONDUCT",
+        "inputStrength": "MEDIUM",
+        "outputStrength": "MEDIUM",
+        "inputModalities": ["TEXT"],
+        "outputModalities": ["TEXT"],
+        "inputAction": "BLOCK",
+        "outputAction": "BLOCK",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "PROMPT_ATTACK",
+        "inputStrength": "HIGH",
+        "outputStrength": "NONE",
+        "inputModalities": ["TEXT"],
+        "inputAction": "BLOCK",
+        "inputEnabled": true
+      }
+    ],
+    "tierConfig": {
+      "tierName": "CLASSIC"
+    }
+  },
+  "sensitiveInformationPolicyConfig": {
+    "piiEntitiesConfig": [
+      {
+        "type": "EMAIL",
+        "action": "ANONYMIZE",
+        "inputAction": "ANONYMIZE",
+        "outputAction": "ANONYMIZE",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "PHONE",
+        "action": "ANONYMIZE",
+        "inputAction": "ANONYMIZE",
+        "outputAction": "ANONYMIZE",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "NAME",
+        "action": "ANONYMIZE",
+        "inputAction": "ANONYMIZE",
+        "outputAction": "ANONYMIZE",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "ADDRESS",
+        "action": "ANONYMIZE",
+        "inputAction": "ANONYMIZE",
+        "outputAction": "ANONYMIZE",
+        "inputEnabled": true,
+        "outputEnabled": true
+      },
+      {
+        "type": "CREDIT_DEBIT_CARD_NUMBER",
+        "action": "ANONYMIZE",
+        "inputAction": "ANONYMIZE",
+        "outputAction": "ANONYMIZE",
+        "inputEnabled": true,
+        "outputEnabled": true
+      }
+    ]
+  },
+  "blockedInputMessaging": "This message was not triaged: the application's guardrail blocked it.",
+  "blockedOutputsMessaging": "The triage answer was withheld: the application's guardrail blocked it."
+}

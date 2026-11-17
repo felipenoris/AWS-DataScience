@@ -530,7 +530,10 @@ data "aws_iam_policy_document" "data_scientist_prod" {
       "ecr:ListImages",
     ]
 
-    resources = [local.ecr_repository_arns["awsds-prod-ecr-app-etl"]]
+    resources = [
+      local.ecr_repository_arns["awsds-prod-ecr-app-etl"],
+      local.ecr_repository_arns["awsds-prod-ecr-app-ml"],
+    ]
   }
 
   statement {
