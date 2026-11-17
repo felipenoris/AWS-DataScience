@@ -158,7 +158,7 @@ PROJECTS_BUCKET = {
 SELECTOR_TAG_ALL = "for-use-with-all-datazone-projects"
 SELECTOR_TAGS = ("AmazonDataZoneProject", "AmazonDataZoneDomain", SELECTOR_TAG_ALL)
 HUB_SECRET_PREFIXES = ("awsds-", "redshift!")  # the estate's own secrets, never a project's
-FENCED_DBS = (*LAKE_DBS, "app_outputs")  # the databases a project's role holds nothing on
+FENCED_DBS = LAKE_DBS  # the databases a project's role holds nothing on
 # Stage 19 decision 21 (b): the same reach denied in the D13 boundary of each target, so that it
 # binds whatever version of AWS's policies the role carries. The statements are
 # terraform-modules/sagemaker-prereqs/boundary.tf's; the buckets are <env>/studio/fence.tf's list.
@@ -2125,7 +2125,7 @@ What the checks are, and where each comes from:
   DT-14  what a deployment project's role does not reach: no resource tagged for every
          project, no estate secret with a DataZone selector tag, no Access Grants
          location outside the projects bucket, no Lake Formation grant to every IAM
-         principal on raw, curated or app_outputs (Stage 19, TM-30); and the D13
+         principal on raw or curated (Stage 19, TM-30); and the D13
          boundary's fence, with every bucket of the account named in it but the
          projects bucket and the services the account's fence.tf names, the
          warehouse's doors among them (decisions 21 (b) and 16 (b))""")

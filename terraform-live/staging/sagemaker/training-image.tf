@@ -3,9 +3,9 @@
 # provider's table of SageMaker's prebuilt images, so no account id is written here. AWS republishes a
 # tag in place: the digest pins what the lint reads and the model package records, and a new one is a
 # reading of the tag (`aws ecr describe-images --registry-id <the registry> --repository-name
-# sagemaker-xgboost --image-ids imageTag=<tag>`) and a commit. The render writes the output into a
-# promoted workflow's TrainingImage (scripts/render-workflow.py), and the template's lint admits the
-# repository beside the application's own (LINT_ALGORITHM_REPOSITORIES).
+# sagemaker-xgboost --image-ids imageTag=<tag>`) and a commit. The deploy passes the output to the
+# release's stage as TRAINING_IMAGE_URI (scripts/deploy-application.py), and the template's lint admits
+# the repository beside the application's own (LINT_ALGORITHM_REPOSITORIES).
 #
 # The same file in staging/sagemaker/ and production/sagemaker/, byte for byte (./scripts/check-copies.py).
 

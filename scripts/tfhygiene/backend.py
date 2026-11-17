@@ -943,23 +943,6 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
             for acct in APP_REGISTRY_CONSUMERS
         }
 
-    # Stage 8 steps 3.2 and 3.6 - an application slice reads its own account's states and the
-    # registry's (the repository its job pulls), so it takes the folder and the registry map, as
-    # dev-env/ does. On the deploy runner the registry's profile is the runner's own (--pipeline).
-    if slice_name.startswith("app/"):
-        values["account_folder"] = account
-        values["registry"] = {
-            acct: {"profile": registry_profile(acct, pipeline), "env": ENV_TOKENS[acct]}
-            for acct in REGISTRY_HOME
-        }
-
-    # Stage 10 step 1.4 - an orchestration slice reads its account's network slice for the workers'
-    # subnets, foundation/ for the alerts topic and sagemaker/ for the job role, by the account folder;
-    # the subnets arrive keyed by zone id, so the zone ids ride along, as for warehouse-compute/.
-    if slice_name == "orchestration":
-        values["account_folder"] = account
-        values["zone_ids"] = ZONE_IDS[account]
-
     # Stage 19 step 4.11 - a chains slice reads its account's foundation/ for the alerts topic and
     # studio/ for the project key, by the account folder.
     if slice_name == "chains":

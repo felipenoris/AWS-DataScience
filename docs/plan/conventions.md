@@ -361,22 +361,15 @@ terraform-live/
 │   │                     #     the log group; the Tooling and DataLake configurations; the
 │   │                     #     workflows grant and the person-session deny on the project's
 │   │                     #     role. sagemaker/ above keeps Stage 9's job roles
-│   ├── orchestration/    # [E] MWAA Serverless workflows for the staging leg (D7 amended:
-│   │                     #     a serverless workflow bills nothing at rest, so the reason
-│   │                     #     orchestration was Production-only is gone), with the chain
-│   │                     #     layer above them (D41), as in production/orchestration/
 │   ├── chains/           # [P] the chain layer above the workflows the CI/CD CLI creates in
 │   │                     #     deploy-staging (Stage 19 step 4.11, rank 61), through
 │   │                     #     orchestration-v0.3.0: per chain a state machine that finds its
-│   │                     #     workflow by name, a schedule and a failure rule. Written
-│   │                     #     2026-11-12, not applied: it takes orchestration/'s place, whose
-│   │                     #     names it carries, once the CLI deploys the application
-│   ├── egress/           # [E] interface endpoints only (7, VPC-Workloads' set since Stage 9
-│   │                     #     step 4.3a and decision 12) and the DNS Firewall - NO NAT, no default route
-│   │                     #     (D38). Measured empty at the migration; D11 leaves it torn
-│   │                     #     down between sittings
-│   └── app/
-│       └── app-etl/      # [E] deployed by the pipeline, destroyed by the user's make down
+│   │                     #     workflow by name, a schedule and a failure rule. Applied
+│   │                     #     2026-11-15
+│   └── egress/           # [E] interface endpoints only (7, VPC-Workloads' set since Stage 9
+│                         #     step 4.3a and decision 12) and the DNS Firewall - NO NAT, no default route
+│                         #     (D38). Measured empty at the migration; D11 leaves it torn
+│                         #     down between sittings
 └── production/
     ├── bootstrap/        # [P]
     ├── foundation/       # [P] VPC-SharedServices (10.30.0.0/16 - the VPC built at Stage 3,
@@ -511,23 +504,10 @@ terraform-live/
     │                     #     quota alarm. The alarms notify foundation/'s awsds-prod-alerts.
     │                     #     Reads foundation/, networking/ and workloads/; names the [D] hosts'
     │                     #     alarms by name and never reads a [D] state (Lesson 4)
-    ├── chains/           # [P] the chain layer above the workflows the CI/CD CLI creates in
-    │                     #     deploy-production (Stage 19 step 4.11, rank 61), through
-    │                     #     orchestration-v0.3.0, the warehouse load's chain among them.
-    │                     #     Written 2026-11-12, not applied: it takes orchestration/'s
-    │                     #     place, whose names it carries, once the CLI deploys the
-    │                     #     application
-    ├── orchestration/    # [E] MWAA Serverless only (D7 amended 2026-09-05):
-    │                     #     awscc_mwaaserverless_workflow per app, YAML in S3, a
-    │                     #     per-workflow role and log group (D28), NetworkConfiguration
-    │                     #     always set on VPC-Workloads' private subnets. Above the
-    │                     #     workflows, the chain layer (D41): per account a schedule
-    │                     #     group, the machines' log group and the chain roles; per
-    │                     #     chain a Step Functions state machine, its Scheduler schedule
-    │                     #     and its failure rule; per bridge an EventBridge rule; the
-    │                     #     provisioned-MWAA rung is gone
-    └── app/
-        └── app-etl/      # [E]
+    └── chains/           # [P] the chain layer above the workflows the CI/CD CLI creates in
+                          #     deploy-production (Stage 19 step 4.11, rank 61), through
+                          #     orchestration-v0.3.0, the warehouse load's chain among them.
+                          #     Applied 2026-11-16
 
 terraform-modules/        # reusable modules (the roster and its tags: terraform-modules/README.md)
                           # consumed by git tag, never by branch - a module that moves under a
@@ -549,11 +529,8 @@ discovers the domain ID rather than having it pasted in, since the blueprint cho
 
 `ENV=staging` is raised and taken down by the user, as every other environment (Stage 8 decision 27,
 2026-10-24): `make up ENV=staging ONLY=egress` before a promotion's tag and `make down ENV=staging` after
-its leg. The pipeline applies the application's own slices alone, `staging/app/<app>/` and
-`staging/orchestration/`, destroys nothing, as in Production, and `layers.py` refusal 10 keeps its profile
-off every shared slice. The user's destroy of a table the deploy role created rests on
-`InfrastructureAccess`'s `DROP` on `app_outputs` ([`GOVERNANCE.md`](../GOVERNANCE.md) §Grants, Lesson 75).
-Both paths work by hand — a rebuild that only works from CI is the
+its leg. The pipeline applies no slice in either target: the leg deploys through the CI/CD CLI (Stage 19
+item 31), and `layers.py` refusal 10 keeps its profile off every slice. Both paths work by hand — a rebuild that only works from CI is the
 same bug as one that only works by hand.
 
 **Terraform rules:**
@@ -724,7 +701,7 @@ app-etl/
 ├── manifest.yaml     # the SageMaker application: its name, its content and its stages (D41)
 ├── scripts/dev-cli.sh  # the CI/CD CLI for the `dev` stage in a space (Stage 8 decision 22); never bundled
 ├── workflows/
-│   └── app-etl.yaml  # the MWAA Serverless definition in the CI/CD CLI's notation, checked by the D28 lint on its rendered copy
+│   └── app-etl.yaml  # the MWAA Serverless definition in the CI/CD CLI's notation, checked by the D28 lint
 ├── code/             # modules for PythonOperator/BashOperator tasks, zipped by CI (D28 class 2b)
 ├── glue/             # one script per Glue job, a Visual ETL flow's generated script among them (D28 class 2c)
 ├── pyproject.toml    # and uv.lock
@@ -734,24 +711,21 @@ app-etl/
 The template's first content is [`examples/app-etl/`](../../examples/app-etl/README.md), pushed to GitLab's
 `awsds/app-etl` at Stage 8 step 2.2; `manifest.yaml`, `workflows/`, `code/` and `glue/` joined it at
 Stage 8 step 2.5 (2026-10-16), whose four tasks include the Glue job (D41). The development stack is similar to <https://github.com/felipenoris/etl-cookbook-tutorial>: uv, pytest and pdoc. The
-application's Terraform is not in its repository: each environment's slice is
-`terraform-live/<env>/app/app-etl/` above, `[E]` everywhere and written from `terraform-modules/`
-(Sandbox's retired by Stage 8 decision 21, 2026-10-16, the `dev` project being D41's engineering loop),
-and the release it runs is a variable whose default is a tracked line (Stage 8 decision 12). `workflows/` holds
-the definition in the CI/CD CLI's notation, which the CLI deploys to the `dev` project and
-bundles (Stage 10 steps 2.1-2.2); the release job renders it per environment from the release's bundle
-and copies it to the definitions home with the code package the tag pipeline built from `code/` when
-there is one, which the `orchestration/` slices pin, and `src/` beside them as the processing job's input
-(step 2.4). `glue/` holds the scripts the application's Glue jobs run: the release job copies them under
-the release's prefix, and the jobs the application slice declares name them there (Stage 10 decision 12).
+application has no Terraform slice: the CI/CD CLI deploys the manifest's stages into each stage's
+project, `dev` in Sandbox (D41's engineering loop) and the deployment projects `deploy-staging` and
+`deploy-production` (Stage 19 decision 6 (b)), from the bundle the tag pipeline exports, and each target's
+`chains/` slice starts the CLI-made workflows by name (Stage 19 step 4.11). `workflows/` holds the
+definitions in the CLI's notation, `code/` and `glue/` the code their tasks name, and `src/` the processing
+job's input, which the CLI copies under the project's shared prefix. Release T's Terraform path, the
+`<env>/app/app-etl/` and `<env>/orchestration/` slices with the render and the release job, retired at
+Stage 19 item 31.
 
 The directories follow D28's line between content and activation. `src/` is the code a SageMaker job
 runs, read as the job's input on the application image, which carries the lock's dependencies (D41 item
 7), and `glue/` the code of a step that reads or writes governed data. `workflows/` is the activation:
 the definition that starts that code on a schedule or on demand, with `code/` holding the orchestration
 code its Python and Bash tasks run on the worker, never a data path, the line the CLI's manifest draws
-the same way (D41). The application's slice is structure, applied by the pipeline at deploy time with no
-workflow. A notebook's logic graduates as code in `src/` plus a task in `workflows/app-etl.yaml` that
+the same way (D41). A notebook's logic graduates as code in `src/` plus a task in `workflows/app-etl.yaml` that
 calls it; the notebook itself does not graduate (6d decision due 14). What a team does with this layout,
 from a space to Production, hand by hand, is [`runbooks/sagemaker-application.md`](runbooks/sagemaker-application.md).
 
@@ -797,7 +771,7 @@ it bills ~USD 0.023/h for as long as it exists; nothing fronts GitLab itself, wh
 own nginx since D15 was revised). The provisioned MWAA environment (~20-30 minutes to create or delete,
 and a metadata database holding state nothing else persists) is not built: D7 amended 2026-09-05 makes
 **MWAA Serverless the only orchestrator**, and a serverless workflow bills nothing at rest, so the
-`orchestration/` slices stay `[E]` with no idle cost and nothing to lose on a destroy.
+CLI-made workflows and the `chains/` slices above them stay `[P]` (Stage 19 step 4.11).
 
 **Where each SageMaker Unified Studio object sits** (Stage 6d step 5.3, read 2026-09-12). Three owners
 share the surface — Terraform, the `Tooling` blueprint and the portal — and only the first appears in a

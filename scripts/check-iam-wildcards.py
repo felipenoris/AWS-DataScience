@@ -76,8 +76,7 @@ WHITELIST = {
     "account's role; the SSO role's suffix and a project role's ids are minted per account, so "
     "no ARN can be named. What a pattern admits inside an account is a role of that name: the "
     "SMUS provisioning role mints datazone_usr_role_* under the D13 boundary, an administrator "
-    "of the account can create any, and the deploy roles create roles under the application "
-    "boundary and by other names (apply-orchestration.tf)",
+    "of the account can create any, and the deploy roles create none (Stage 19 item 31)",
 }
 
 PATTERN = re.compile(r"arn:aws:iam::\*:")

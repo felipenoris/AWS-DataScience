@@ -151,14 +151,12 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   EC2 otherwise reports at apply, after the resources ahead of it exist. `check-gitlab-pins.py` reads the
   two GitLab release pins, `production/tooling/`'s `gitlab_ce_version` and `production/runners/`'s
   `gitlab_runner_version`, and fails when their major.minor differ: GitLab keeps a runner's major.minor
-  with the server's. `check-copies.py` compares the files one slice keeps as a copy of another's, the
-  application ceiling and the application and orchestration grants in Staging's and Production's
-  `foundation/`, and fails when one has diverged. `render-workflow.py`, `release-application.py` and
-  `lint-plan.py` are the promotion's tools (Stage 10 decision 20 and steps 2.4 and 2.3): the first
-  renders an application's workflow for a deployment target from the slices that own each value, and its
-  `--check` runs in `make check`; the second writes a release's bundle into the target's outputs bucket
-  and reads it back; the third runs `awsds-workflows lint-plan` on an application slice's saved plan
-  before a promotion leg applies it.
+  with the server's. `check-copies.py` compares the files one slice keeps as a copy of another's, the deploy
+  role's grants in Staging's and Production's `foundation/` among them, and fails when one has diverged.
+  `deploy-application.py` and `model-chain.py` are the promotion's tools: the first runs the CI/CD CLI's
+  deploy into a deployment target's project from the release's bundle (Stage 19 step 4.9), the second
+  registers, approves and serves the model the release trains (Stage 10 steps 5.2 and 5.4); each has an
+  offline self-check in `make check`.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree. `make`
   itself is a convenience, not a dependency — every target is a direct call to scripts that also run

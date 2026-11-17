@@ -499,11 +499,11 @@ consumer today (`Development` left the list on 2026-09-06 when the account becam
 `Staging`, which rejoins as a read-only consumer at Stage 9 4.1, decision 3), plus one more per business unit at N>1 (INT-03's N+2) — for
 the cross-account shares; inside accounts, the persona permission-set roles;
 `awsds-data-catalog-maintenance` for catalog work; from Stage 6, the project execution roles; from
-Stage 9, `awsds-prod-job-exec` (read + the governed write), the deploy roles and `InfrastructureAccess` on
-each deployment target's `app_outputs`, and a project's warehouse access role on the governed share it
-reads through Redshift (9.7). Lake Formation gives a table's creator its permissions and nobody else, so
-the user's `make down` of a table the deploy role created needs `InfrastructureAccess`'s `DROP`, granted
-on every `app_outputs` table since 2026-10-25 (Lesson 75). LF-Tags never gate the read/write direction
+Stage 9, `awsds-prod-job-exec` (read + the governed write), and a project's warehouse access role on the
+governed share it reads through Redshift (9.7); from Stage 19, each deployment project's role on its own
+product database. Lake Formation gives a table's creator its permissions and nobody else (Lesson 75):
+`app_outputs`, where the deploy roles created tables and `InfrastructureAccess` held `DROP` on them,
+leaves both targets with release T's path (Stage 19 item 31). LF-Tags never gate the read/write direction
 — the verbs in the permission list do; the tags say what the data *is*.
 
 **The grain.** Entitlement follows the toolset's own practice: grants go to roles and projects, assumed

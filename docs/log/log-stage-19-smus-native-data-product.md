@@ -3881,3 +3881,40 @@ requests, 0.04 USD.
   formula `ExecutionTime * MaxCapacity` gives 3.1998 DPU-h and 1.41 USD, and 1205.9 s from creation to
   completion at 10 DPU gives 3.3497 and 1.47. The bill charges `DPUSeconds` (`SUP-368`, Lesson 81,
   `PRICING.md` §5).
+
+## 2026-11-17 — item 31, the retirement written: PR #308's code and its five saved plans
+
+Claude's work in the worktree, the reads as the infrastructure user's `InfrastructureAccess`
+(`awsds-infra-staging`, `awsds-infra-prod`); no apply, no AWS write.
+
+- **[user] The request**, the answer to the wrap-up's question whether the retirement goes in PR #308:
+  *"Yes, in this PR"*. Mid-turn: *"faça rebase em relação à main"*.
+- **[Claude] The code** (the stage file's §The retirement as written): the four slices' folders,
+  `release-application.py`, `render-workflow.py` and `lint-plan.py`, and both `foundation/` slices'
+  `apply-orchestration.tf` and `app-boundary.tf` removed; `app_outputs` out of both `data/`; `model-chain.py`
+  without the outputs layout, `--project` required; `layers.py` without ranks 58 and 59 and refusal 7; the
+  gates, the Makefile, the hooks and the docs that named them. The corrections to the inventory: the chain
+  statements stay in Staging, `apply-application.tf` keeps its egress, DNS Firewall and model-chain
+  statements, the service-linked role's grant moves to `deploy-project.tf`, and the job role's
+  `CommitTheIcebergWrites` names `app_outputs` too. `deploy-role-v0.3.0` refused an empty `state_prefixes`;
+  `v0.5.0` takes it. `make check` passed.
+- **[Claude] The rebase**, at the user's word, against `CLAUDE.md`'s rule that a pushed branch is never
+  rebased: the work set aside as a local WIP commit, then `git rebase origin/main` onto `1d91d5b4` (PR #310).
+  Three conflicts, both sides kept: `CLAUDE.md`'s Stage 19 row without #310's `SUP-368` clause, the stage
+  file's Status row with #310's reading of 2026-11-17, and this log's two entries in date order. `make check`
+  and the hooks passed on the rebased commit `e1daa970`, pushed alone with `--force-with-lease` against
+  `9e686cd3`; PR #308 0 commits behind `main`.
+- **[Claude] The plans**, each saved in `$HOME/tmp/` and read whole with `terraform show -json`:
+  `staging/foundation/` and `production/foundation/` 0 to add, 5 to change, 5 to destroy each; both `data/`
+  0, 0, 8; `production/sagemaker/` 0, 1, 0; nothing outside the retirement. `deploy_project` grows to 5,060
+  characters in Staging and 5,045 in Production, of IAM's 6,144. The first `data/` plans answered *"No valid
+  credential sources found"*: the backend and the default provider read `AWS_PROFILE`, which those runs had
+  not exported.
+- **[Claude] `SUP-260` read again**, CloudTrail's `lookup-events` in both targets from 2026-11-15 00:00 UTC:
+  in Staging, `iam:CreateServiceLinkedRole` invoked by `airflow-serverless.amazonaws.com` in
+  `awsds-deploy-staging`'s sessions at 20:46:18 UTC on 2026-11-15, a second before release T's first
+  `CreateWorkflow` through Cloud Control, and at 23:21:03, a second before the CLI's first, both answered
+  `InvalidInputException`; each session's second creation (20:46:27, 23:21:16) drew none. In Production,
+  none: the CLI's three creations at 02:31:50, 02:32:02 and 02:32:14 UTC on 2026-11-16 drew none.
+- **Owed**: the user's five applies after the merge; at the apply, `AWS_STATE.md`'s rows naming the
+  retired path and `TM-30`'s list.

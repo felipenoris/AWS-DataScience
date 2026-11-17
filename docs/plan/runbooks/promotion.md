@@ -1099,8 +1099,9 @@ on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its pla
 
 ### N.5 The items that wait on something else
 
-- **A second application**: Stage 10's chain order and xxv (decision 18); the split of
-  `staging/orchestration/` per application (Stage 8 decision 27).
+- **A second application**: Stage 10's chain order and xxv (decision 18). `<env>/chains/` takes it as an
+  entry of its `applications` and `chains` maps; the split of `staging/orchestration/` per application
+  (Stage 8 decision 27) retired with that slice (Stage 19 item 31).
 - **A `monitoring` endpoint** as the positive control: Stage 10 xvi's metrics clause.
 - **S3 data events** (Stage 11): Stage 8 xx's writing identity.
 - **A release that removes a file**: Stage 8 xxvi. **A workflow's 50th version**: Stage 8 xxiii, read

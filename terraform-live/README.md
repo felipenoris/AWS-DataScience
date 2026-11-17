@@ -45,12 +45,9 @@ the comment markers stripped, and any other unshared file a failure. A module wo
 answer, and step 2.3 rules it out: modules are consumed **by git tag**, which cannot exist before
 `terraform-modules/` does.
 
-**`staging/foundation/` and `production/foundation/` share copied files**: `app-boundary.tf`, the
-application ceiling (Stage 8 step 3.0), and `apply-application.tf` and `apply-orchestration.tf`, the
-deploy role's application and orchestration grants (4.1). What one account adds sits in its deploy
-role's own file. `staging/app/app-etl/` and `production/app/app-etl/` are one slice copied but
-`release.tf`, each account's promoted release (3.2, 3.7). **`./scripts/check-copies.py`
-fails on a divergence.** A module would turn each change of a grant that changes at its first applies
+**`staging/foundation/` and `production/foundation/` share copied files**: `apply-application.tf` and
+`deploy-project.tf`, the deploy role's grants (Stage 8 step 4.1, Stage 19 step 4.8). What one account
+adds sits in its deploy role's own file. **`./scripts/check-copies.py` fails on a divergence.** A module would turn each change of a grant that changes at its first applies
 into a tag.
 
 **Two files per slice are generated and untracked**, because a `.tf` file may hold neither of the values they
@@ -358,12 +355,11 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   (the load's session as the project's role) and Staging's `staging-test.tf` (the deploy role's
   `DESCRIBE` on the product database and on its tables, the slice's two Lake Formation grants).
 - **`staging/chains/` and `production/chains/` `[P]` — the chain layer above a deployment project's
-  workflows** ([Stage 19](../docs/plan/stages/stage-19-smus-native-data-product.md) step 4.11), written
-  2026-11-12 and not applied: `terraform-modules/orchestration/` at `orchestration-v0.3.0`, per chain a
-  state machine that finds the workflow the CI/CD CLI created by its name and passes the run the
-  stage's variables, a schedule and a failure rule. Each takes the place of the account's
-  `orchestration/`, whose names it carries: that slice is destroyed first, once the CLI has deployed
-  the application (`docs/plan/runbooks/promotion.md` §N.8.4).
+  workflows** ([Stage 19](../docs/plan/stages/stage-19-smus-native-data-product.md) step 4.11), applied
+  2026-11-15 in Staging and 2026-11-16 in Production: `terraform-modules/orchestration/` at
+  `orchestration-v0.3.0`, per chain a state machine that finds the workflow the CI/CD CLI created by its
+  name and passes the run the stage's variables, a schedule and a failure rule. Release T's
+  `orchestration/` and `app/app-etl/` slices, which they replaced, retired at Stage 19 item 31.
 
 **`warehouse/` (rank 53, `[P]`) and `warehouse-compute/` (rank 54, `[E]`) exist in `sandbox/` since 2026-09-20** ([D40](../docs/plan/decisions/D40-redshift-warehouse.md), [Stage 5b](../docs/plan/stages/stage-05b-redshift-serverless.md) pass 1); the `production/` namespace exists since 2026-10-23 ([Stage 9](../docs/plan/stages/stage-09-deployment-targets.md) 9.1) and `production/warehouse-compute/` was raised for 9.3's SQL on 2026-10-24 and destroyed by the same sitting's `make down`. **It is the tree's only slice that splits one store across two layers**, and the reason is that Redshift Serverless has `create-workgroup` and `delete-workgroup` and nothing in between — no pause, no stop, no zero-capacity setting — so *powered off* means *does not exist*, which is `[E]`. The namespace stays `[P]` because it holds the schemas, the database users, the roles and every `GRANT`, none of which Terraform wrote and none of which a plan can see (§5.1 rule 2). `make up ENV=sandbox` raises the compute only with `GROUPS=redshift` (`slices.py` refusal 11), and `make down ENV=sandbox` removes it and **not** the Redshift Managed Storage, which is the irreducible price of keeping the data. The slice's own README is [`sandbox/warehouse/README.md`](sandbox/warehouse/README.md).
 
@@ -379,10 +375,10 @@ list whose rows are **measurements, not intentions**.
 
 1. **Which account?** → the top-level folder. The account is the only hard boundary AWS offers
    ([`README.md`](../README.md), "Account segregation"), so it is the first cut.
-2. **Which slice?** → the sub-folder, or for an application one folder further down,
-   `<account>/app/<app>/` (Stage 8 decision 12): `layers.slice_dirs_on_disk` is the one reader of that
-   shape, so `make check`, the lock check and the network-doc check see such a slice, and `make up` never
-   applies one (refusal 7). A slice is one Terraform state and one `apply`. The seam between two
+2. **Which slice?** → the sub-folder. `layers.slice_dirs_on_disk` also reads an application's slice one
+   folder further down, `<account>/app/<app>/` (Stage 8 decision 12), a shape no account holds since
+   Stage 19 item 31: an application deploys through the CI/CD CLI. A slice is one Terraform state and one
+   `apply`. The seam between two
    slices is a *reason*, not a size: `identity/` is split into `sso/` and `org-policies/` because the two
    reach their objects through **different delegations**; `production/pki/` is split from `foundation/`
    because foundation is opened to change a CIDR and that edit would otherwise decrypt the root CA; and

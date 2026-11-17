@@ -13,9 +13,7 @@
 # another caller starts names every one as OverrideParameters or fails before its first task. The
 # deploy leg records them in an SSM parameter after each deploy, and the machine reads it.
 #
-# No role here touches data, and none is a workflow's execution role. The roles carry no application
-# ceiling: awsds-<env>-app-boundary caps what the pipeline creates (Stage 8 step 3.0), and the
-# pipeline creates nothing here.
+# No role here touches data, and none is a workflow's execution role.
 #
 # The names are contracts: awsds-<env>-chain-<key>, awsds-<env>-chains, awsds-<env>-chain-exec and
 # -chain-scheduler, awsds-<env>-wf-<workflow>-failed, and the parameter

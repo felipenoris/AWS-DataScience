@@ -115,23 +115,14 @@ repos:
         pass_filenames: false
         files: ^terraform-live/[^/]+/bootstrap/
 
-      # Stage 8 steps 3.0, 3.2 and 4.1 - the application ceiling, the deploy role's grants and the
-      # application slice, each copied between Staging and Production.
+      # Stage 8 step 4.1 and Stage 19 step 4.4 - the deploy role's grants, the job runtime's training
+      # image and the deployment project's prerequisites, each copied between Staging and Production.
       - id: check-copies
         name: the files copied across slices are still identical
         entry: ./scripts/check-copies.py
         language: system
         pass_filenames: false
-        files: ^(terraform-live/(staging|production)/(foundation|app)/.*\.tf|scripts/check-copies\.py)$
-
-      # Stage 10 decision 6 - the render's table knows every value the template's workflows name, so a
-      # placeholder added to a workflow fails here before a deploy job meets it.
-      - id: render-workflow-check
-        name: the template's workflows render for a deployment target
-        entry: ./scripts/render-workflow.py --check
-        language: system
-        pass_filenames: false
-        files: ^(examples/app-etl/(workflows/.*|manifest\.yaml)|scripts/render-workflow\.py|scripts/tfhygiene/targets\.py)$
+        files: ^(terraform-live/(staging|production)/(foundation|sagemaker|studio)/.*\.tf|scripts/check-copies\.py)$
 
       # Stage 10 steps 5.2 and 5.4 - the model chain's requests, built from stand-in values: a model
       # without network isolation or a transform without the data key fails here, not at the
