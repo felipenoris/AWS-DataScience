@@ -376,7 +376,8 @@ Both were NXDOMAIN. `app.aws` and `on.aws` joined the list with their apexes, on
 `sagemaker.aws` there. One consequence: `on.aws` also makes `dzd-<id>.sagemaker.<region>.on.aws` — the
 Unified Studio domain's own URL — resolvable, which is the DNS block 6d step 8.6 could attribute to
 nothing. **Resolving is not reaching**: that name has no endpoint, so it leaves as a proxy request and
-comes back a 403 naming the host.
+comes back a 403 naming the host. The user allowed it by its exact name on 2026-11-17 (6d decision 6); it
+joins the Sandbox plane at the next `production/networking` apply.
 
 **The proxy's filters are the estate's egress policy, and they are two kinds of list:**
 
