@@ -1149,9 +1149,10 @@ bound items 3, 5, 6 and 9.
    the merge, `37cb5a6`; and each apply by name, from `main` at `13581cd0`, from 16:00 to 16:12 UTC:
    `production/registry` first, since `identity/sso` names its repository, then Stage 20 4.4's five slices
    with the battery's Phase 4b (53 as expected), then the rest of 9.5's target slices, both `studio/`
-   slices taking the two changes in one apply (Lesson 69), each re-planned `No changes`. Left: the
+   slices taking the two changes in one apply (Lesson 69), each re-planned `No changes`; and `TM-33`
+   accepted, on the condition that the path is AWS's, read the same day. Left: the
    decisions a sitting reads (Stage 19 decisions 28 and 15 before 4.12, Stage 20 decisions 9 and 11, 6h
-   decisions 3 and 8, 6d decision 16 before Stage 17's projects); `TM-33` accepted; the projects
+   decisions 3 and 8, 6d decision 16 before Stage 17's projects); the projects
    `app-ml-dev` and `app-genai-dev` created with their contributors and Nova Lite enabled (9.6, 10.4),
    after which Claude plans the Sandbox slices that read the projects' roles and the user applies them.
 3. **Release G's sitting** (N.8.5 steps 2, 4 and 5): the hub, GitLab with `BUILD=1`, `staging/egress/`

@@ -2829,3 +2829,33 @@ no `[E]` slice.*
 - **Left for the user**: `TM-33`'s acceptance before `app-ml`'s first tag; the projects `app-ml-dev` and
   `app-genai-dev` (9.6 and 10.4's sittings); `production/runners` gives the build runner push on
   `awsds-prod-ecr-app-ml` at the next `make gitlab-up`.
+
+## 2026-11-17 — `TM-33` accepted by the user, on the condition that the path is AWS's
+
+*The user's words, then Claude's readings by subagents fetching public pages, in the laptop session of
+the user's request of 13:42 UTC. No AWS call.*
+
+- **[the user]**, after Claude described `TM-33`'s context in chat: *"Desde que este caminho seja o
+  sugerido pela AWS, podemos aceitar"*.
+- **[Claude] The condition read**, the same day:
+  - The CI/CD CLI's `ml/deployment` example, at `main`: its manifest declares `dev`, `test` and `prod`;
+    the storage item `model-artifacts` names `default.s3_shared` and includes
+    `ml/output/model-artifacts`, which `test` and `prod` write to `ml/bundle/model-artifacts`; `dev`
+    holds no deployment configuration. Its `inference.py` loads the model with
+    `joblib.load(os.path.join(model_dir, 'model.joblib'))`, and `ml/training`'s script saves it with
+    `joblib.dump`.
+  - joblib's `load` docstring (`numpy_pickle.py` at `main`): it relies on the pickle module and can
+    execute arbitrary Python code. AWS's own example therefore loads, in its `test` and `prod` serving
+    container, an archive the `dev` project wrote, which is `TM-33`'s channel. The persistence page of
+    joblib's documentation answered 404 at `stable` and `latest`.
+  - SageMaker AI's project templates register the models in the Model Registry and hold a manual
+    approval step between the staging and production build steps; the registry's page says
+    `PendingManualApproval` to `Approved` initiates the CI/CD deployment of the approved version. Neither
+    page says in words that one version reaches both stages.
+  - Where this plan departs from the examples: `ml/training` also trains in its `test` stage, which
+    decision 21 lists as *Not built, and the user's to ask*. What it adds: the bundle's hash, Staging's
+    scoring, the approval of the release's hash alone, registration as `PendingManualApproval` only,
+    and a network-isolated model.
+- **[Claude] Recorded**: `TM-33` accepted, its condition a revision trigger; 9.5's threat-model paragraph
+  and the Status row; the waiting list's row; `promotion.md` §N.6 item 2; `CLAUDE.md`'s row; the pages in
+  `REFERENCES.md`.

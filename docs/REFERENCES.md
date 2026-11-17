@@ -3260,6 +3260,26 @@
     item is missing:
     <https://pypi.org/project/aws-smus-cicd-cli/1.0.9/>.
 
+- **AWS's path for a trained model, and what loads it (read 2026-11-17, for `TM-33`'s acceptance on
+  the condition that the path is AWS's, [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md)
+  9.5).**
+  - The CI/CD CLI's ML examples, re-read at `main`: `ml/training`'s script saves the model with
+    `joblib.dump` as `model.joblib`; `ml/deployment`'s `inference.py` loads it with `joblib.load` in
+    `model_fn`; its manifest declares `dev`, `test` and `prod`, the storage item `model-artifacts` on
+    `default.s3_shared` including `ml/output/model-artifacts`, and `test` and `prod` writing it to
+    `ml/bundle/model-artifacts`, `dev` with no deployment configuration. The URLs are the entry above.
+  - joblib's `load`, whose docstring warns that it relies on the pickle module and can execute arbitrary
+    Python code, and should never load files from untrusted sources:
+    <https://raw.githubusercontent.com/joblib/joblib/main/joblib/numpy_pickle.py>. The documentation's
+    persistence page answered 404 at `stable` and at `latest`.
+  - SageMaker AI's project templates: the templates register the models in the Model Registry and deploy
+    them, and the build, train and deploy template has a manual approval step between staging and
+    production; the page does not say that one version reaches both:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-projects-templates-sm.html>.
+  - The registry's approval: setting a version `Approved` can initiate CI/CD deployment, and
+    `PendingManualApproval` to `Approved` initiates it for the projects' templates:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/model-registry-approve.html>.
+
 - **botocore's service models and the MLflow client, from PyPI (read 2026-11-16 and 2026-11-17, for
   [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decisions 18 to 21, 26 and 27 and step
   9.4).** The wheels of botocore 1.43.1, the version of the worker's `boto3`, and of 1.44.4.
