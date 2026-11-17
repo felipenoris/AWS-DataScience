@@ -214,7 +214,7 @@ and the objects the workflows create.
 | `terraform-live/staging/studio/` and `production/studio/` | `workflows.tf`, the deployment project's role: `DescribeATransformJobNoProjectHolds` and `TagATransformJobWithTheCallersProject`, and `TagAModelWithTheCallersProject`, in the shape of the processing and training pairs; and on the stage's group and its versions `CreateModelPackage`, `ListModelPackages` and `DescribeModelPackage`, and never `UpdateModelPackage` (decision 16 (b)). No blueprint joins `blueprint_names`: no target holds an MLflow App | `[P]` |
 | `terraform-live/staging/chains/` and `production/chains/` | `applications` gains `app-ml` with its two workflows; the chains `app-ml-register` and `app-ml-score`, each a chain of one with its definition under `definitions/`, `schedule_enabled = false` | `[P]` |
 | `terraform-live/sandbox/workflows/` | `app-ml-dev`'s role in `project_roles`; the training pair the targets hold since 2026-11-16, the transform pair and the model statement (decision 7); what the role lacks for a `CreateModelPackage` in its own group, where 9.1 reads a gap. In `deploy-role.tf`, the bundle role `awsds-deploy-sandbox-test` gains its first actions outside DataZone: `s3:ListBucket` on the projects' bucket for `app-ml-dev`'s `app-ml/models/latest/` prefix alone, `s3:GetObject` under that prefix and `kms:Decrypt` on the project key. The role becomes a member of `app-ml-dev` as it is of `app-etl-dev`, by hand in the portal, so one role reads each application's `dev` project | `[P]` |
-| `scripts/`, `aws/cicd.py`, `.pre-commit-config.yaml` | `model-chain.py`'s `approve` takes the application's name, the account and the release's hash, where it names `app-etl` and takes a version's ARN: it finds the `PendingManualApproval` version whose description carries the hash, prints its training job and its metrics, and approves that one. Its `register` and `transform` stay `app-etl`'s. The self-check of `deploy-application.py`, the hooks that name `examples/app-etl/` and `aws/cicd.py`'s `APP_REPO` learn a second application | — |
+| `scripts/`, `aws/cicd.py`, `.pre-commit-config.yaml` | `model-chain.py`'s `approve` takes the application's name, the account and the release's hash, where it names `app-etl` and takes a version's ARN: it finds the `PendingManualApproval` version whose description carries the hash, prints its training job and its metrics, and approves that one. Its `register` and `transform` stay `app-etl`'s. The self-check of `deploy-application.py`, the hook that names `examples/app-etl/` and `aws/cicd.py`'s `APP_REPO` learn a second application | — |
 | `examples/app-ml/` (new) | the application: manifest, workflows, sample, code, image, pipeline and the guard on a release's model (9.2) | — |
 | `awsds-workflows`, a repository of its own | the lint's rules for the transform, model and endpoint operators, and the `manifest` rule's exception for the item that carries the model (9.3) | — |
 | `aws/sandbox-ml.py`, `aws/orchestration.py` | `ML-10` and `OR-10` (9.9) | — |
@@ -937,16 +937,17 @@ what a model that crosses accounts asks:
   and the data scientist creates `dev`'s once (9.6).
 - **A model's archive is code.** The XGBoost container's serving code tries Python's `pickle` on the
   model file before the library's own loader (`serve_utils.py` on the repository's `master`, read
-  2026-11-17; the `3.0-5` image's copy is unread), so the archive decides what runs inside the serving
-  container. Whoever writes `app-ml-dev`'s `app-ml/models/latest/` decides what a release carries: the
-  project's members and every task of the project. Four things hold it. The bundle's SHA-256 pins the
-  bytes from `bundle` on. Staging serves and scores the archive before Production holds an approved
-  version of it. Production serves `Approved` versions alone, each approved by a person who is shown its
-  hash, its training job and its metrics. And every model here is network-isolated, where AWS's page says
-  the containers *"can't make any outbound network calls to any service, including Amazon S3"* and *"No
-  AWS credentials are made available to the container runtime environment"* (read 2026-11-17). What is
-  left is a model that answers wrongly on purpose, which `check`'s AUC over a labelled holdout bounds and
-  does not exclude. The threat-model entry is written and accepted before the first tag (9.5).
+  2026-11-17; the `3.0-5` image's copy is unread, verification lxiii), so the archive decides what runs
+  inside the serving container. Whoever writes `app-ml-dev`'s `app-ml/models/latest/` decides what a
+  release carries: the project's members and every task of the project. Four things hold it. The bundle's
+  SHA-256 pins the bytes from `bundle` on. Staging serves and scores the archive before Production holds
+  an approved version of it. Production serves `Approved` versions alone, each approved by a person who
+  is shown its hash, its training job and its metrics. And every model here is network-isolated, where
+  AWS's page says the containers *"can't make any outbound network calls to any service, including Amazon
+  S3"* and *"No AWS credentials are made available to the container runtime environment"* (read
+  2026-11-17). What is left is a model that answers wrongly on purpose, which `check`'s AUC over a
+  labelled holdout bounds and does not exclude. The threat-model entry is written and accepted before the
+  first tag (9.5).
 - **The MLflow App is `dev`'s alone** (decision 17). `track` runs where a run trains. A target's record
   of a model is its registry version, with `dev`'s evaluation as its metrics, and the score report of the
   stage's own run.
@@ -1015,9 +1016,9 @@ that trains it. And the developer's loop gains a `bundle` before each `deploy` (
 - **9.1 — [Claude] The preflight, with nothing up.** The quotas: in Sandbox
   `ml.t3.medium for processing job usage`, `ml.m5.large for training job usage` and
   `ml.m5.large for transform job usage`; in Staging and Production the processing and the transform ones,
-  since no target trains; and `ml.m5.large for endpoint usage` in each account for 9.8's increment.
-  Each call of the first release, simulated with `iam simulate-principal-policy` as each project role,
-  the boundary included: `DescribeTransformJob` on a free name, `ListModels`, `CreateModel` and
+  since no target trains; and `ml.m5.large for endpoint usage` in each account for 9.8's increment. Each
+  call of the first release, simulated with `iam simulate-principal-policy` as each project role, the
+  boundary included: `DescribeTransformJob` on a free name, `ListModels`, `CreateModel` and
   `CreateTransformJob` with `AddTags` of the project tag, `DescribeModel` and `DeleteModel` on a model
   carrying the project's tag, `iam:PassRole` of the role to SageMaker, `ListModelPackages`,
   `DescribeModelPackage` and `CreateModelPackage` on the stage's group and `UpdateModelPackage` there,
@@ -1026,11 +1027,14 @@ that trains it. And the developer's loop gains a `bundle` before each `deploy` (
   for the model's prefix, `s3:GetObject` under it and `kms:Decrypt` on the project key, with the role's
   ceiling, the bucket's policy and the key's read beside its policy (verification lxii). As each deploy
   role: the approval of a version of its account's group, and in Production the start of
-  `app-ml-register`'s run that the bootstrap makes. The `Workloads` OU's statements read against the
-  requests. The CI/CD CLI 1.0.9's code read for a second application in one project: what `deploy` does
-  to the first application's workflows and prefixes when it deploys the second (verification xxviii). A
-  simulation is a reading of the policies and not of the service, so each result is confirmed by 9.6's or
-  9.7's run.
+  `app-ml-register`'s run that the bootstrap makes. Each policy that gains a statement is measured
+  against IAM's size limit before its plan: the deploy roles' managed policy read 5,060 characters of
+  6,144 in Staging and 5,045 in Production after the retirement of 2026-11-17
+  ([Stage 19](stage-19-smus-native-data-product.md) item 31). The `Workloads` OU's statements read
+  against the requests. The CI/CD CLI 1.0.9's code read for a second application in one project: what
+  `deploy` does to the first application's workflows and prefixes when it deploys the second
+  (verification xxviii). A simulation is a reading of the policies and not of the service, so each result
+  is confirmed by 9.6's or 9.7's run.
 - **9.2 — [Claude] The source, `examples/app-ml/`**, a copy of the template with its Glue job, its
   warehouse workflow and its catalog item removed, and the pipeline's catalog and warehouse jobs with
   them. `manifest.yaml`: `applicationName: app-ml`; the five storage items; no `content.catalog`; the
@@ -1781,19 +1785,21 @@ otherwise.
 recommendations kept below: 1 widened to (c) by the user's own ask of the same day, a chatbot over a
 custom knowledge base through the Bedrock features SageMaker exposes; 2 as recommended; 3 against the
 recommendation. The rest are decided during the stage and written into the stage log with the
-recommendation stated (Lesson 16). Decisions 14 to 21 are pass 9's and 22 to 27 pass 10's. **Decisions 14
-and 15 were taken by the user on 2026-11-16**: one card put both at 20:49 UTC, recommending a new
-application with no Bedrock task, and the user answered in the project chat at 22:23 UTC with an
-application for each path, 15 against the recommendation. **Decision 22 was taken the same evening as
-(a)**: its card went out at 22:50 UTC, and the user answered at 22:53 UTC with a criterion in place of an
-option, the path SageMaker Unified Studio intends or AWS recommends, read against the CI/CD CLI. **The
-open decisions of passes 9 and 10 are put to the user one at a time since 23:17 UTC**, at the user's ask,
-each with its context, its options and the recommendation, 23 to 26 before 16 to 21; the log holds each
-card's time and each answer's. Each card names the option the criterion supports, and says so where the
-recommendation without it would differ, as 17's and 19's did. **Taken in that round**, to 2026-11-17
-01:22 UTC: 23 (a), 24 (b) against the recommendation, 25 (b), 26 (a), 16 (b), 17 (a), 18 (b), 19 (b) and
-20 (a). **Open**: 21, on its card since 2026-11-17 01:23 UTC; and 27, found on 2026-11-17 while 24 (b)
-was written.
+recommendation stated (Lesson 16). Decisions 14 to 21 and 28 are pass 9's and 22 to 27 pass 10's.
+**Decisions 14 and 15 were taken by the user on 2026-11-16**: one card put both at 20:49 UTC,
+recommending a new application with no Bedrock task, and the user answered in the project chat at 22:23
+UTC with an application for each path, 15 against the recommendation. **Decision 22 was taken the same
+evening as (a)**: its card went out at 22:50 UTC, and the user answered at 22:53 UTC with a criterion in
+place of an option, the path SageMaker Unified Studio intends or AWS recommends, read against the CI/CD
+CLI. **The open decisions of passes 9 and 10 are put to the user one at a time since 23:17 UTC**, at the
+user's ask, each with its context, its options and the recommendation, 23 to 26 before 16 to 21; the log
+holds each card's time and each answer's. Each card names the option the criterion supports, and says so
+where the recommendation without it would differ, as 17's and 19's did. **Taken in that round**, to
+2026-11-17 01:28 UTC: 23 (a), 24 (b) against the recommendation, 25 (b), 26 (a), 16 (b), 17 (a), 18 (b),
+19 (b), 20 (a) and 21 (b), the last in the user's words and against the card's recommendation.
+**Decisions 16 to 19 were taken while every stage trained**, which 21 (b) ends, and each says below what
+is left of it. **Open**: where 19's pipeline runs, put to the user again; 28, what becomes of `app-etl`'s
+model chain; and 27, found on 2026-11-17 while 24 (b) was written.
 
 1. **The Generative AI menu** (pass 7). **Taken 2026-10-12: (c) in, with a knowledge base and a chat agent
    over it**, the user's ask being whether the Bedrock features SageMaker exposes build a chatbot over a
@@ -2036,20 +2042,23 @@ was written.
     `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>` as an existing role though no
     such role exists in Sandbox, the code's last fallback, which a role of that name would fill.
 14. **Where the example applications live** (9.2, 10.2). **Taken by the user on 2026-11-16: new
-    applications beside `app-etl`, one for each path**, `app-ml` for Amazon SageMaker AI (pass 9) and
-    `app-genai` for Amazon Bedrock (pass 10). The recommendation was **(a) a new application, `app-ml`,
-    beside `app-etl`**. The template stays the measured ETL example, a release of one application
-    never carries another's failure, and a second application is the first measurement of
-    [`sagemaker-application.md`](../runbooks/sagemaker-application.md) §S and of two applications in
-    one deployment project (verification xxviii). Its cost is §S applied once for each: a GitLab
+    applications beside `app-etl`, one for each path**, `app-ml` for Amazon SageMaker AI (pass 9)
+    and `app-genai` for Amazon Bedrock (pass 10). The recommendation was **(a) a new application,
+    `app-ml`, beside `app-etl`**. The template stays the measured ETL example, a release of one
+    application never carries another's failure, and a second application is the first measurement
+    of [`sagemaker-application.md`](../runbooks/sagemaker-application.md) §S and of two applications
+    in one deployment project (verification xxviii). Its cost is §S applied once for each: a GitLab
     project and, for `app-ml`, a repository, a registry family and the statements of "What pass 9
     builds". The CLI's README (read 2026-11-16) says a project *"can host a single application or
-    multiple applications depending on your architecture and CI/CD methodology"*: its ETL, notebooks
-    and generative AI examples deploy into one project, and its two ML examples each name a project
-    of their own. The alternative, **(b)**, extended `app-etl` with the scoring workflow and the
-    tasks around its training job: no new name enters the estate, and every release of the data
-    product then waits on the model's chains, release G's and the retirement's included
-    ([Stage 19](stage-19-smus-native-data-product.md)).
+    multiple applications depending on your architecture and CI/CD methodology"*. Its documents
+    differ on the ML examples: in the examples guide the notebooks, ETL and generative AI examples
+    deploy into one project, `test-marketing`, and the two ML examples each name a project of their
+    own, `test-ml-training` and `test-ml-deployment` (read 2026-11-16), while the two ML manifests
+    in the repository's `examples/` folder name the `dev-marketing`, `test-marketing` and
+    `prod-marketing` projects (read 2026-11-17). The alternative, **(b)**, extended `app-etl` with
+    the scoring workflow and the tasks around its training job: no new name enters the estate, and
+    every release of the data product then waits on the model's chains, release G's and the
+    retirement's included ([Stage 19](stage-19-smus-native-data-product.md)).
 15. **A Bedrock task in a promoted application** (pass 10). **Taken by the user on 2026-11-16, against
     the recommendation: an application of its own on the Bedrock path, `app-genai`**. The
     recommendation was **(a) none**, the Generative AI menu staying pass 7's, in Sandbox. A task that
@@ -2064,39 +2073,47 @@ was written.
     release; **(c)** AWS's `genai` example whole, a workflow that creates an agent and a knowledge
     base in each stage, refused: Agents Classic takes no new customers (7.4b), and a knowledge base's
     store can bill at idle (decision 12).
-16. **Who registers a version** (9.7). **Taken by the user on 2026-11-17 as (b), a task of the
+16. **Who registers a version** (9.2, 9.7). **Taken by the user on 2026-11-17 as (b), a task of the
     workflow**, the card's recommendation on the user's criterion of 2026-11-16, where this file's
-    first recommendation was (a). After `evaluate`, a task of `app-ml-train` calls
-    `CreateModelPackage` in the stage's group with the status `PendingManualApproval`, in every
-    stage, and the approval stays a deployment manager's. It is the shape of AWS's `ml/training`
-    example, where the run itself registers: its code logs the model to MLflow under a registered
-    model's name, and its test asserts the package in the SageMaker Model Registry (read
-    2026-11-16). **What it changes against `app-etl`**, whose version the pipeline's
-    `production-register` proposes as the deploy role, in Production alone: every run of the
-    training chain proposes a version, in `dev` and Staging too; each stage holds a group for the
-    application; and a project role gains `CreateModelPackage` on its stage's group and never
-    `UpdateModelPackage`. **The residual**: the role that trains can propose any model data as a
-    version. What is served in Production is what a person approved, and `resolve` reads `Approved`
-    versions alone there. Not taken: **(a)** the pipeline's job, where the project role gains no
-    write on the registry and a version is proposed only when a deployment manager starts the job;
-    **(c)** the provider's `SageMakerRegisterModelVersionOperator`, which calls
-    `CreateModelPackageGroup` before `CreateModelPackage` and passes the package's description as
-    the group's (`SUP-372`).
-17. **MLflow in the targets** (9.4, 9.5). **Taken by the user on 2026-11-17 as (a), an MLflow App in
-    the three environments**, the card's recommendation on the user's criterion; the card said that
-    without the criterion the recommendation would stay (b). Each deployment project gains an MLflow
-    App, the serverless kind decision 2 chose for Sandbox, and `track` logs every stage's runs to
-    that stage's app: the `MLflowApp` blueprint in both targets' accounts and in the deployment
-    profiles, an app created in each deployment project, and the `mlflow` endpoint group in both
-    targets' endpoint sets (9.5). AWS's `ml/training` example has that shape, tracking in every
-    stage, through an `MLFLOW` connection a bootstrap action creates; its connection names a
-    tracking server by ARN (the CLI's connections guide, read 2026-11-16), the kind decision 2
-    declined on its hourly rate, so here the ARN is an app's and a stage variable carries it.
-    **What it leaves to read**: whether the blueprint deploys in a project whose Tooling has spaces
-    off, and what an app bills in an account where nobody opens its page (verification lix). Not
-    taken: **(b)** `dev` alone, a target's record of a model being the evaluation file beside it
-    and the registry's version with its metrics; **(c)** a tracking server in each account, the
-    example's exact shape, at 0.60 USD per hour while it exists.
+    first recommendation was (a). The card described the task after `evaluate`, in a workflow every
+    stage ran. **Under decision 21 (b)** it is `register`, the one task of `app-ml-register`: in
+    every stage it proposes the model the stage holds, `publish`'s candidate in `dev` and the
+    bundle's model in a target, with the status `PendingManualApproval`, in the stage's group, and
+    it proposes none where the group already holds that archive's hash. The approval stays outside
+    the project: the account's deploy role makes it, in the pipeline's `staging-test` for Staging
+    and in a deployment manager's `production-approve` for Production. AWS's examples register where
+    they train: `ml/training`'s code logs the model to MLflow under a registered model's name and
+    its test asserts the package in the SageMaker Model Registry (read 2026-11-16), and
+    `ml/deployment`'s files name no registry (read 2026-11-17). A version in each target's group is
+    this estate's addition: it is what the approval reads and what `resolve` serves. **What it
+    changes against `app-etl`**, whose version the pipeline's `production-register` proposes as the
+    deploy role, in Production alone: each stage holds a group for the application, and a project
+    role gains `CreateModelPackage` on its stage's group and never `UpdateModelPackage`. A versioned
+    package takes no tag argument (botocore 1.43.1), so the request carries no project tag and the
+    grant names the group. **The residual**: a project role can propose any archive as a version. A
+    target serves the version that carries the release's hash, and only once the account's deploy
+    role approved it. Not taken: **(a)** the pipeline's job, where the project role gains no write
+    on the registry and a version is proposed only when a deployment manager starts the job; **(c)**
+    the provider's `SageMakerRegisterModelVersionOperator`, which calls `CreateModelPackageGroup`
+    before `CreateModelPackage` and passes the package's description as the group's (`SUP-372`).
+17. **MLflow in the targets** (9.4, 9.6). **Taken by the user on 2026-11-17 at 00:12 UTC as (a), an
+    MLflow App in the three environments**, the card's recommendation on the user's criterion; the
+    card said that without the criterion the recommendation would stay (b). It was taken while every
+    stage trained: `track` logged each stage's run to that stage's app. **Decision 21 (b), taken at
+    01:28 UTC, leaves what this card's (b) described**: the app in the `dev` project alone, since a
+    run is tracked where the model is trained and no target trains. No blueprint, app or `mlflow`
+    endpoint group enters a target. A target's record of a model is its registry version, with
+    `dev`'s evaluation as its metrics and the training job's name in its metadata, and the score
+    report of its own run. AWS's examples have that shape: `ml/training` creates its `MLFLOW`
+    connection in the stage that trains, and `ml/deployment`'s files name no MLflow (their manifests
+    and code, read 2026-11-17). The example's connection names a tracking server by ARN (the CLI's
+    connections guide, read 2026-11-16), the kind decision 2 declined on its hourly rate, so here
+    the ARN is an app's and a stage variable carries it. 21's card said that its (b) would leave
+    decisions 16 and 17 without their Production half. An app in a target, for the scoring runs'
+    metrics, is in no option taken and is the user's to ask. Not built: **(a)**'s half in the
+    targets, the `MLflowApp` blueprint in both accounts and their deployment profiles, an app in
+    each deployment project and the `mlflow` group in both endpoint sets; **(c)** a tracking server
+    in each account, the example's exact shape, at 0.60 USD per hour while it exists.
 18. **The inference endpoint in a promoted application** (9.8). **Taken by the user on 2026-11-17 as
     (b), an increment after the first release, in the three environments**, the recommendation: a
     workflow that creates an endpoint, invokes it with the batch set and deletes it inside one run.
@@ -2104,15 +2121,17 @@ was written.
     workflow task in each stage, asks it for one prediction and leaves it standing until its next
     run, which deletes the endpoints it finds before it creates one; its test asserts an endpoint
     `InService`. That standing shape is what [Stage 10](stage-10-orchestration-promotion.md)
-    decision 4 declined for the targets on idle cost, 0.115 USD per hour for an `ml.m5.large`.
-    Under (b) a task creates and calls the endpoint in every stage, as the example does, and
-    deletes it before the run ends. It needs `sagemaker.runtime` back in both targets' endpoint
-    sets, the `ml.m5.large for endpoint usage` quota in each account, the lint's rules (9.3) and a
-    guard for the run that fails between the create and the delete, which `trigger_rule` cannot
-    give: the next run's first task deletes what it finds, and `OR-10` fails on any endpoint. Not
-    taken: **(a)** none, the entry staying pass 4's in Sandbox; **(c)** the increment in `dev`
-    alone; **(d)** a standing endpoint in each stage, the example's exact shape, which would reopen
-    Stage 10 decision 4 and bill about 2.76 USD a day in each account.
+    decision 4 declined for the targets on idle cost, 0.115 USD per hour for an `ml.m5.large`. Under
+    (b) a task creates and calls the endpoint in every stage, as the example does, and deletes it
+    before the run ends. **Decision 21 (b) leaves it whole**: the endpoint serves the promoted
+    model, in a target the release's approved version, which is the example's own subject, a model
+    the bundle carried served in `test` and in `prod`. It needs `sagemaker.runtime` back in both
+    targets' endpoint sets, the `ml.m5.large for endpoint usage` quota in each account, the lint's
+    rules (9.3) and a guard for the run that fails between the create and the delete, which
+    `trigger_rule` cannot give: the next run's first task deletes what it finds, and `OR-10` fails
+    on any endpoint. Not taken: **(a)** none, the entry staying pass 4's in Sandbox; **(c)** the
+    increment in `dev` alone; **(d)** a standing endpoint in each stage, the example's exact shape,
+    which would reopen Stage 10 decision 4 and bill about 2.76 USD a day in each account.
 19. **ML pipelines in a promoted application** (9.8). **Taken by the user on 2026-11-17 as (b), an
     increment after the first release, in the three environments**, the card's recommendation on the
     user's criterion: a workflow creates or updates a pipeline from a definition the bundle carries,
@@ -2130,7 +2149,14 @@ was written.
     definition file merges before the increment's tag (verification lxi). The card said that without
     the criterion the recommendation would stay (a). Not taken: **(a)** none, the entry staying pass
     5's, in Sandbox; **(c)** the increment in `dev` alone. Pass 5 exercises the entry in Sandbox as
-    before.
+    before. **Where it runs is put to the user again** (2026-11-17): the card described a pipeline
+    of a processing and a training step while every stage trained, and under decision 21 (b) a
+    target trains nothing. Recommended: **the `dev` project alone**, the pipeline wrapping `prepare`
+    and `train` where the training runs, which is what the card's (c) described. The alternatives: a
+    pipeline of the scoring steps, a processing and a transform step, in the three environments,
+    which keeps (b)'s reach and adds to each target a second graph over jobs the scoring workflow
+    already orders; or no pipeline in `app-ml`, the entry staying pass 5's. 9.8 is written on the
+    recommendation until the user answers.
 20. **Feature Store** (6.4, 9.8). **Taken by the user on 2026-11-17 as (a), read it in Sandbox and
     exercise nothing**, the card's recommendation, on the user's criterion and without it: no
     application uses a feature group, and 6.4 reads the entry and the APIs in Sandbox. **What the
@@ -2151,39 +2177,52 @@ was written.
     `TargetStores` naming the offline store alone, and `prepare` reads the store's files as its
     input; **(c)** the same in `dev` alone. An online store was in no option: it bills while it
     holds records.
-21. **What crosses the gate for a model** (9.7, 9.8). **Put to the user on 2026-11-17 at 01:23 UTC,
-    with (c) recommended on the user's criterion: the code that trains it in the first release, and
-    the artifact as an increment.** **What the criterion finds** (the examples' files, read
-    2026-11-17): AWS's two ML examples promote the artifact. `ml/training` trains in its `dev` and
-    `test` stages and copies the model to a `latest` location; `ml/deployment` names the prefix
-    above it as a storage item on the project's storage connection, and `bundle`, which the CLI's
-    commands page says *"Creates bundle zip files by downloading from S3"*, packs the model the
-    `dev` project holds; its workflow serves, in `test` and in `prod`, the file the bundle carried.
-    No example trains in a production stage, and the manifest schema's comment on `storage` reads
-    *"Storage content (S3 files, data, models)"*. **What stands here**:
-    [Stage 10](stage-10-orchestration-promotion.md) decision 22, taken by the user on 2026-10-24,
-    has each target train on its own data, and [Stage 9](stage-09-deployment-targets.md) decision 1
-    keeps Production's model archives out of Staging's reach; decisions 16 (b) and 17 (a) were taken
-    on that shape, every stage training, registering and tracking. **(a) The code alone**, the first
-    release as written: the model Production serves was trained there, on data that never left the
-    account, and what Staging tested is the code. **(b) The artifact alone**, the examples' shape:
-    `dev`'s model travels in the bundle and each target serves it without training. The model
-    Staging tested is the one Production serves, trained once, in Sandbox, on whatever Sandbox may
-    read ([`sagemaker-application.md`](../runbooks/sagemaker-application.md) §K); Stage 10 decision
-    22 is reopened, and decisions 16 and 17 lose their Production half. **(c) Both, in that order**:
-    the first release as (a), then 9.8's increment, where the bundle also carries `dev`'s model, a
-    task proposes it in each target's group beside the versions trained there, Staging serves it,
-    and a deployment manager approves in Production a version whose source the registry names. It
-    reopens decision 22's Staging half for `app-ml` alone, and nothing of Stage 9 decision 1: the
-    artifact travels from `dev` upward and never out of Production. **(b) and (c) put into a release
-    a file no tag holds**: the lint's rule `manifest` refuses a storage item that names a
-    connection, so that `bundle` zips the tag's files alone
-    ([`sagemaker-application.md`](../runbooks/sagemaker-application.md) §M; `awsds-workflows` at
-    `196acee`), and either option changes that rule for this one item, the release recording the
-    archive's SHA-256. The user was told so at 01:25 UTC, with the card open. Without the criterion
-    the recommendation stays (a), which the card's context says: a model that must learn from
-    Production's data is trained where that data is, and (b) asks for that data in Sandbox. All
-    three work for `app-ml`'s synthetic sample.
+21. **What crosses the gate for a model** (9.2, 9.6, 9.7). **Taken by the user on 2026-11-17 at
+    01:28 UTC as (b), the trained model, the shape of AWS's examples**, in words and against the
+    card's recommendation, (c): *"Revisite o plano, incluindo a decisão 22 do stage 10, replicando o
+    exemplo da AWS. A decisão 22 do stage 10 foi tomada num contexto em que cada ambiente seria
+    completamente isolado, mas hoje sabemos que todos os ambientes têm acesso aos dados governados,
+    logo faz sentido treinar o modelo e promover para produção o modelo treinado."* The card had
+    gone out at 01:23 UTC with three options: (a) the code alone, each target training its own
+    model; (b) the trained model alone; (c) the code in the first release and the model as an
+    increment. **The premise holds, with limits.** Every consumer account, Sandbox among them, reads
+    the lake's `raw` and `curated` tables of classification `public` and `internal` through one
+    tag-based share ([`docs/GOVERNANCE.md`](../../GOVERNANCE.md), "The default grants").
+    `restricted` and `personal` tables reach a principal by an explicit grant alone. In Sandbox a
+    project role reads a governed table once a subscription is fulfilled for its project, and no
+    application's job has read one there: the first governed read by a job is still Staging's leg
+    ([`sagemaker-application.md`](../runbooks/sagemaker-application.md) §K). `app-ml`'s sample is
+    synthetic, so its releases prove the path a trained model takes and not a training on governed
+    rows. **What the examples do** (their manifests and code, read 2026-11-17): `ml/training` is
+    deployed into its `test` stage's project, trains there and copies the model to a `latest`
+    location; `ml/deployment` names the prefix above it as a storage item on the project's storage
+    connection, `bundle` packs what the `dev` stage's project holds there, and its workflow serves,
+    in `test` and in `prod`, the file the bundle carried. The CLI's examples guide says of that item
+    *"Deploys latest trained model from training pipeline"* (read 2026-11-16). No example trains in
+    a production stage, and the manifest schema's comment on `storage` reads *"Storage content (S3
+    files, data, models)"*. **What is built** (pass 9): `app-ml` trains once, in the `dev` project;
+    `publish` leaves the candidate under one prefix; a release's bundle carries it; a task proposes
+    it in each target's group; Staging serves it under the pipeline's approval and Production under
+    a deployment manager's. [Stage 10](stage-10-orchestration-promotion.md) decision 22, under which
+    each target trained its own model, is revised by the same message, and
+    [Stage 9](stage-09-deployment-targets.md) decision 1 stands: the archive travels from `dev`
+    upward and nothing leaves Production. **What follows for the decisions taken before it**: 16 (b)
+    stands, its task proposing the promoted model; 17 (a) is left as the `dev` project's app alone;
+    18 (b) stands; where 19 (b)'s pipeline runs is put to the user again; and `app-etl`'s model
+    chain, which trains in each target, is decision 28. **What this estate adds to the examples'
+    shape**: the pipeline's guard on the bundle's model, with the mark that ties the candidate to
+    the tag's code (9.2); a copy of the archive under its own hash, which a version names; a target
+    serving the release's version alone, once approved; and the bundle role's read of one prefix of
+    the `dev` project's bucket, which amends `INT-25` (9.5). **What it costs**: a release carries a
+    file no tag holds, so the lint's rule `manifest` gains an exception for this one item (9.3; the
+    user was told at 01:25 UTC, with the card open); the archive is code a Sandbox project wrote and
+    Production's serving container loads, the threat-model entry the user accepts before the first
+    tag (9.5); and the pipeline trains nothing, so no job of it runs the training code beyond the
+    application's unit tests. **Not built, and the user's to ask**: a training run in Staging as a
+    test of the code, as `ml/training` runs in its `test` stage; and a pipeline job that trains in
+    `dev` from the tag, which would make the candidate the tag's own. Not taken: **(a)** the code
+    alone; **(c)** both, in that order, the card's recommendation, which without the criterion was
+    (a).
 22. **How a deployment project's role may call a model** (10.5), the fence of
     [Stage 19](stage-19-smus-native-data-product.md) decision 21 (b) reopened for one call. **Taken
     on 2026-11-16 as (a), on the user's criterion**: the path SageMaker Unified Studio intends or
@@ -2330,6 +2369,23 @@ was written.
     account, which every member role must be allowed to apply. It puts the floor outside both
     accounts, at the price of a guardrail in Management, the AWS Control Tower Admin's act and a
     policy type this estate has never enabled.
+28. **`app-etl`'s model chain** ([Stage 10](stage-10-orchestration-promotion.md) step 5). New on
+    2026-11-17, opened by decision 21 (b): `app-etl-train` trains in each target, the shape Stage 10
+    decision 22 had until the user revised it, and the pipeline's `staging-model`,
+    `production-register`, `production-approve` and `production-transform` serve what each target
+    trained. Recommended: **(a) retire `app-etl`'s model half once `app-ml`'s first release has
+    passed**, in a release of `app-etl` after [Stage 19](stage-19-smus-native-data-product.md)'s
+    release G: the workflow `app-etl-train` and its chain in both targets, the four jobs,
+    `model-chain.py`'s `register` and `transform`, the registry family `awsds-prod-model-app-etl`,
+    the deploy roles' statements for them and `INT-07`'s registry half, Staging's read of
+    Production's versions. `app-etl` stays the data product's template, and the estate keeps one
+    shape for a model, the one the user chose. AWS's examples keep the two apart: the ETL example of
+    the CLI's guide is Glue jobs and a dashboard, and a model is in the two ML examples alone (read
+    2026-11-16). Production's half of the chain has not run under release F: its three jobs stay
+    manual and read release T's training job (Stage 19, read 2026-11-17). **(b) Convert `app-etl`'s
+    model to the new shape**: the template carries both subjects, and each release of the data
+    product waits on a model's bundle and its approval. **(c) Leave it**: two shapes stand, and the
+    template keeps the one the user set aside. Nothing of `app-etl` changes until the user answers.
 
 ## Verifications to answer while executing
 
@@ -2365,8 +2421,8 @@ was written.
 | xxviii | Does the CI/CD CLI deploy a second application into a project without touching the first's workflows, prefixes and stage-variables record? | 9.1, 9.7 |
 | xxix | Do a worker's `CreateModel` and `CreateTransformJob`, as a project role, meet the tag gap 6i measured on a processing job, and which statements close it? | 9.6 |
 | xxx | Does a transform task with no `Model` key run under the D13 boundary and the `Workloads` OU as the project role, and which calls does the operator make, read in the trail against `SUP-372`? | 9.6, 9.7 |
-| xxxi | In Production, does the scoring chain fail before the approval and serve the approved version after it, the project role reading the registry and creating the model from the version's ARN? | 9.7 |
-| xxxii | Does a Bash task on a worker import the archive's MLflow client, and does its tracking call reach the project's app through the `mlflow` endpoint, in `dev` and in each target? | 9.6, 9.7 |
+| xxxi | In a target, does the scoring chain fail while the release's version is `PendingManualApproval` and serve that version once the account's deploy role approved it, the project role finding it by the release's hash and creating the model from its ARN? | 9.7 |
+| xxxii | Does a Bash task on a worker import the archive's MLflow client, and does its tracking call reach the `dev` project's app through the `mlflow` endpoint? | 9.6 |
 | xxxiii | Does an Identity Center domain show *Feature Store*, and what does the project role hold for a feature group? | 0.9, 6.4 |
 | xxxiv | Which service does the chat agent app's create call, Agents Classic's `CreateAgent` or AgentCore, and does Agents Classic refuse an account that never created an agent? | 7.4b |
 | xxxv | Does an endpoint created by a task reach `InService` within the task's 3,600 s, which calls do the endpoint operators make, and what does a run that fails after the create leave standing? | 9.8 |
@@ -2392,11 +2448,12 @@ was written.
 | lv | Does every model call of the agent carry the guardrail, read in the trail as the execution role's events, and does the account's guardrail assess them? | 10.11 |
 | lvi | What does a runtime bill with no session, and which network interfaces does a deleted runtime leave, for how long? | 10.11 |
 | lvii | Who writes a runtime's logs and traces, through which door, and which endpoint services does the Region's catalog hold for `bedrock-agentcore` and `bedrock-agentcore-control`? | 10.11 |
-| lviii | As a project role, is `register`'s `CreateModelPackage` admitted on its stage's group with the project tag and `UpdateModelPackage` refused, and whom do the registry's events name as each version's creator and approver? | 9.1, 9.6, 9.7 |
-| lix | Does the `MLflowApp` blueprint deploy in a deployment project, whose Tooling has spaces off, as which role and with which store and key, and what does the app bill in a target on the release's day? | 9.5, 9.7 |
+| lviii | As a project role, is `register`'s `CreateModelPackage` admitted on its stage's group, a versioned package taking no tag argument, and `UpdateModelPackage` refused; does a second run over the same archive propose no second version; and whom do the registry's events name as each version's creator and approver? | 9.1, 9.6, 9.7 |
+| lix | Does `CreateModel` from a version's `ModelPackageName` run as a project role under the D13 boundary and the `Workloads` OU, with `VpcConfig` and network isolation, and does the service compare the version's `ModelDataETag` with the object it loads? | 9.6, 9.7 |
 | lx | Does a model logged to the MLflow App under a registered model's name reach the SageMaker Model Registry, as AWS's `ml/training` example asserts, and under which group, name and status? | 9.6 |
 | lxi | As which principal and session does a pipeline create each step's job, do the pipeline's tags reach those jobs, does a definition admit a parameter inside `VpcConfig` and `Tags`, and does `UpdatePipeline` over an unchanged definition add a version? | 9.8 |
-| lxii | What does the CI/CD CLI 1.0.9's `bundle` do with a storage item that names a connection: from which project and prefix does it read, as which role, what does the zip hold, and where does `deploy` write it in each stage? | 9.8 |
+| lxii | What does the CI/CD CLI 1.0.9 do with a storage item that names a connection, as its code read on 2026-11-17: does `bundle` read `app-ml-dev`'s prefix as a project role and as the bundle role, what does it print and return where a read is refused, what does the zip hold, does `deploy` stop without a bundle, and as which principal, under which key and to which path does each target's deploy write the model? | 9.1, 9.6, 9.7 |
+| lxiii | Which loader does the `3.0-5` XGBoost image run on a model file, Python's `pickle` before the library's own as the repository's `master` does, and what can a network-isolated serving container reach, read in the image and in the job's network and never probed with a crafted archive? | 9.1, 9.6 |
 
 ## Risks
 
@@ -2470,23 +2527,47 @@ was written.
   changed in one copy and not in the other passes every gate but the boundary. The application's test
   asserts the definition's requests, and the rule that reads a definition file merges before the
   increment's tag. As which principal a pipeline creates each step's job, and whether the pipeline's tags
-  reach those jobs, is read in `dev` before a target holds one (verification lxi).
+  reach those jobs, is read at its first run in `dev` (verification lxi).
 - **The lint passes a request it does not read.** At the template's pin a transform, a model or an
   endpoint operator passes with its request unread (Lesson 71), so the boundary and the OU are the only
   refusal until 9.3's rules merge; `app-ml`'s pin moves to that commit before its first tag.
-- **The MLflow client meets the worker's packages.** `track` runs last in every stage, so a failed
-  import fails the training workflow, and Staging's leg with it, over a model that is good and
-  already proposed. 9.6 reads the import on a worker before any tag (verification xxxii).
-- **Every run of the training chain proposes a version** (decision 16 (b)). A project role holds
-  `CreateModelPackage` on its stage's group, so a task of any application deployed into the project
-  can propose a version of this model, with any model data. A version serves nothing in Production
-  until a deployment manager approves it, and `production-approve` prints the training job and the
-  metrics of the version it is about to approve.
-- **An MLflow App stands in each target** (decision 17 (a)). Nobody opens its page there, its bill
-  has no SKU to predict it and its store grows with each run. The first release reads each
-  account's bill for the day (Lesson 6), and `OR-10` reads the app's state. Whether the `MLflowApp`
-  blueprint deploys in a project whose Tooling has spaces off is read before the profile changes
-  (verification lix).
+- **The MLflow client meets the worker's packages.** `track` precedes `publish`, so a failed import fails
+  `app-ml-train` before a candidate is published, in `dev` alone, where it costs a run and no release.
+  9.6 reads the import on a worker before any tag (verification xxxii).
+- **A project role can propose a version** (decision 16 (b)). It holds `CreateModelPackage` on its
+  stage's group, so a task of any application deployed into the project can propose one, with any
+  archive. A target serves the version that carries the release's hash, once the account's deploy role
+  approved it, and `production-approve` prints the hash, the training job and the metrics of the version
+  it is about to approve, and approves the one that carries the release's hash and no other (9.2).
+- **The model's archive is code a Sandbox project wrote** (decision 21 (b)). The serving container loads
+  what `app-ml-dev`'s members and tasks left under one prefix, and the XGBoost image may unpickle it
+  (verification lxiii). The bundle's hash, Staging's scoring run, the approval of a version whose hash,
+  training job and metrics the approver is shown, and network isolation hold it (9.2). A model that
+  answers wrongly on purpose passes all four unless the holdout shows it. The threat-model entry is
+  accepted before the first tag (9.5).
+- **A bundle can leave the model out and say nothing.** The CLI's `bundle` exits 0 where its read of the
+  project fails, and `deploy` goes on where the bundle lacks the item (verification lxii). The pipeline's
+  guard fails a bundle without the three files, `register` and `resolve` fail on a prefix without
+  `model.json`, and a developer's first bundle in `dev` is expected to hold none (9.6).
+- **No job of the pipeline runs the training code.** The release's model comes from the `dev` project's
+  last published run, and the tag's pipeline runs the unit tests alone over `prepare` and the tasks. The
+  guard's `TRAINING_SOURCE` says the tag's code and sample are the ones that run was deployed with, on
+  the deployer's word (9.2). A training run in Staging, or one the pipeline starts in `dev`, is the
+  user's to ask (decision 21).
+- **The `bundle` job's log holds what the CLI lists.** Before it syncs an item that names a connection
+  the CLI lists the connection's whole location and prints every key, and the job keeps its log a year as
+  an artifact. The bundle role's `s3:ListBucket` is held to the model's prefix (9.5), so the wider
+  listing is expected refused, printed as `Error accessing S3`, and the sync to read the model's three
+  keys alone; 9.6 reads both in the first `bundle` as that role, before a tag (verification lxii).
+- **Versions and copies accumulate.** Each release proposes a version in each target and leaves a copy of
+  its archive under `app-ml/models/sha256/`, and a project role deletes neither. `OR-10` lists the
+  versions with their hashes (9.9), and the infrastructure user removes old ones by hand when a reading
+  asks for it.
+- **A target's scoring chain fails between a deploy and its approval**, by design: `resolve` refuses a
+  version that is not `Approved` (9.2). Both chains are started by hand, `schedule_enabled = false`, so
+  the failure is read and never met unattended. A release nobody approves leaves the chain failing until
+  the previous release's bundle is deployed again, which serves that release's version under the approval
+  it holds.
 - **The worker's provider moves without an act of this estate.** The service's page listed 9.32.0 when
   6i read the processing operator and lists 9.38.0 on 2026-11-16 (`SUP-268`). The transform operator's
   calls are read in the trail against `SUP-372` at the first run, and a call the code read at 9.38.0
@@ -2494,9 +2575,10 @@ was written.
 - **The chat agent app cannot be created.** Agents Classic takes no new customers since 2026-07-30, and
   this account never created an agent (7.4b). A refusal there ends decision 1's chat agent and leaves the
   knowledge base and a flow app.
-- **Stage 19's release G and its retirement edit the slices passes 9 and 10 edit**: both `studio/`,
-  both `foundation/` and both `chains/`. Each pass's plans are cut from a `main` that holds release
-  G's merge, and each apply follows that stage's (Lessons 69 and 79).
+- **Stage 19 edits the slices passes 9 and 10 edit.** Its retirement of release T's path changed both
+  `foundation/` slices on 2026-11-17 (item 31, PR #308), and release G's sitting applies
+  `production/studio/` from its saved plan. Each pass's plans are cut from a `main` that holds both, and
+  each apply follows that stage's (Lessons 69 and 79).
 - **2.2's readings are spoiled by 9.5.** The training pair in `sandbox/workflows/` reaches the role of
   the project pass 2 runs in, and after its apply 2.2 (b) no longer shows the gap. 9.5 holds that apply
   until 2.2's (a) and (b) are read.
