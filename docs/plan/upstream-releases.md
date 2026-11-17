@@ -311,7 +311,7 @@ The next reading is due 2026-11-27.
   Bedrock's abuse detection page, for which accounts use Claude Fable 5.2 at retention mode `none`, before 6e
   decision 17.
 - **The `SageMakerAIDomain` blueprint's console wizard** (Lesson 39) and the portal's *Blueprints* tab, before
-  6d decision due 16 is taken; whether the sample profiles move to it.
+  6d's step 2.7 applies decision 16 (a), taken 2026-11-17; whether the sample profiles move to it.
 - **The default space**: what *Code spaces* starts in `eighth-experimentation` with no default space, at the
   user's next portal sitting.
 - **The project and provisioning policies** after each document-history entry and at every reading: open

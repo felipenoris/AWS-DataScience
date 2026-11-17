@@ -2728,7 +2728,7 @@ orchestration module's workflow resources return from git.
   **On 2026-11-11 no session held Stages 8-10**, and the user asked this one for the review across
   them: the dated amendments of decision 19 (c) in the Stage 8 and Stage 10 files, the runbooks and D41
   are this sitting's, and release F's rewrite of Stage 10's 1.1, 2.4 and 4.2 stays owed with 4.9.
-- **Stage 6d** (the session holding decision due 16): `governance/` is shared between 6d's 2.7 and this
+- **Stage 6d** (the session holding decision 16's step 2.7): `governance/` is shared between 6d's 2.7 and this
   stage's 4.5; the two never share one apply (Stage 18 2.7's rule), and the `deployment` profile's
   `Tooling` configuration carries spaces off, never the `SageMakerAIDomain` blueprint.
 - **"Redshift unload sem S3"**: pass 5 grants the warehouse's database user a Lake Formation read and

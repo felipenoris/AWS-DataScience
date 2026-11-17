@@ -1161,8 +1161,8 @@ that trains it. And the developer's loop gains a `bundle` before each `deploy` (
   role a member of each application's `dev` project; its MLflow App through `datazone create-environment`
   with the profile's `MLflowApp` configuration (1.5's path, since the portal greys the entry out), the
   registration mode verification lx needs stated; the house image attached by `dev-env.md` §C6, unless
-  6d decision 16 is taken as (a) before; and
-  its model package group `app-ml-dev`, created once from the space with 3.2's call. The application
+  6d's step 2.7 has applied decision 16 (a), the user's choice of 2026-11-17, before the project exists;
+  and its model package group `app-ml-dev`, created once from the space with 3.2's call. The application
   reaches the space as a tar, so the sitting raises no GitLab: [Claude] builds it before the sitting,
   with nothing up, as [Stage 20](stage-20-dbt-lineage.md) step 2.0 does (`git archive` of
   `examples/app-ml` at the merged commit, the task archive by `package-task`, the tar without
