@@ -745,3 +745,48 @@ No AWS write; the tags are the only push.*
   `scp-battery.md`'s training row, both sides' facts kept), and both `studio/` slices planned again from the
   merged tree, *"Plan: 2 to add, 2 to change, 2 to destroy."* each; 4.4's order gains `production/registry/`
   first (Stage 17 9.5), and 1.7's section is written in `upstream-releases.md`.
+
+## 2026-11-17 — 4.4 applied with Stage 17's 9.5, the battery read, and 4.6 written
+
+*Claude's hand, in the laptop session of the user's request of 13:42 UTC, on the user's message after
+pull requests #26 and #313 merged: "Autorizo os applies do item 2" (`promotion.md` §N.6 item 2). Every
+AWS call ran as the infrastructure user (`InfrastructureAccess`). Nothing was up.*
+
+- **4.4's applies**, from a branch cut at `origin/main` `13581cd0`, which holds commit 2 (Lesson 79); each
+  plan saved under the session's scratchpad and read statement by statement first, each followed by a
+  re-plan reading *"No changes."*. `production/registry` went first (Stage 17 9.5), at 16:00:08 UTC.
+
+  | Order | Slice | Plan | Applied (UTC) |
+  |---|---|---|---|
+  | 1 | `identity/sso/` | 0 to add, 6 to change | 16:01:26 |
+  | 2 | `identity/org-policies/` | 0 to add, 1 to change | 16:02:03 |
+  | 3 | `sandbox/sagemaker/` | 0 to add, 1 to change | 16:07:18 |
+  | 4 | `staging/studio/` | 2 to add, 2 to change, 2 to destroy | 16:08:13 |
+  | 5 | `production/studio/` | 2 to add, 2 to change, 2 to destroy | 16:09:05 |
+
+  Each persona set and the `Workloads` document lost `sagemaker:CreateProcessingJob` from
+  `DenySageMakerJobsWithoutNetworkIsolation`; the document's description changed with it, and
+  `data_scientist_prod` gained Stage 17 9.5's repository. Each boundary changed the statement's action
+  list alone. The `studio/` plans
+  carried 9.5's workflows policy too; their person-session policy, known only after apply, read identical
+  before and after.
+- **The battery**, Phase 4b, 16:03:10 to 16:04:34 UTC, a minute after the document's apply (`SUP-350`):
+  *"53 as expected, 0 unexpected, 5 not measured"*. In Production: *"workloads: CreateProcessingJob not
+  isolated still authorized (Stage 20 decision 13 contrast)"* `ALLOWED` at `reached-authorization`;
+  *"workloads: CreateTrainingJob not isolated (DenySageMakerJobsWithoutNetworkIsolation)"* `DENY-SCP`;
+  the processing job's off-VPC, ceiling, inter-container and volume-key rows `DENY-SCP` as before. The
+  report is `aws/output/scp-battery-20261117T130310.txt`, stamped in local time.
+- **`DT-11`** (16:06:41 UTC): *"pass  DT-11  awsds-org-scp-ou-workloads on Workloads  attached, the 6
+  job Sids present"*. The run exits 1 on the persona and Control Tower profiles, which were not signed
+  in. `make check`: *"check: OK"*.
+- **4.6**, after the applies. The rule is rewritten in `serverless-workflows.md` §J,
+  `sagemaker-application.md` §C, §D and §W, and §N's matrix, whose processing job leaves the training
+  job's row. Stage 9 step 3.1's design note now holds of a training job and a model, and 3.5's list names
+  the narrowed statement; so does Stage 10's rule for the caller of a job. In `sagemaker-ai-ml.md`, the
+  table's row excludes the action, and the settings bullet and the processing-job paragraph are dated
+  with the applies. The demo job's docstring is rewritten. `./aws/sandbox-orchestration.py` `SO-5` now
+  reports a job without isolation as a note, not a failure. `./aws/sandbox-ml.py` no longer reads a
+  Processing step's isolation in `ML-6`. `aws/INDEX.md`'s rows follow. `threat-model.md` gains `TM-35`,
+  accepted by the user with decision 13 on 2026-11-16, with its row in the network matrix.
+- **Left**: 4.5, the job without isolation in Sandbox (`TM-35`'s measurement), in sitting A. 6.4's item for
+  `awsds-workflows`, the lint's `job` rule, which still refuses such a task.

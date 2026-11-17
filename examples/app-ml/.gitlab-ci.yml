@@ -38,12 +38,10 @@ variables:
   GATES_UV_PROJECTS: "code"
   IMAGE_REPO: awsds-prod-ecr-app-ml
   # The workflow tooling, by commit: its lint reads manifest.yaml and workflows/ against the rules of
-  # a SageMaker application (D28), offline. At this commit its rule `manifest` refuses the storage item
-  # `model`, which names a connection, and the option that admits it, `--model-item model`, is an
-  # unrecognized argument (exit 2). The pin moves to the published merge of the commit that adds the
-  # option and the rules `transformacao` and `modelo` (Stage 17 step 9.3), and the test job's lint
-  # gains `--model-item model` in the same change.
-  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/196aceec092649551ed6451796b1c3c7983cfafb.zip"
+  # a SageMaker application (D28), offline. The commit is the merge of awsds-workflows pull request
+  # #26 (Stage 17 step 9.3), which adds the rules `transformacao` and `modelo` and the option
+  # `--model-item`, the test job's way to admit the one storage item that names a connection.
+  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/37cb5a6260c8348cc208988e42090caf42a3a207.zip"
   # The instance types a job may ask for: the ceiling DenySageMakerInstanceCeiling carries in the
   # Workloads SCP and in Sandbox's project boundary, the list terraform-modules/sagemaker-denies holds
   # (allowed_instance_types) in the infrastructure repository. A copy, since the application's
@@ -70,14 +68,14 @@ test:
     # The lint with a job's two ceilings (Stage 8 step 5.6, clauses (e) and (f)): a literal ImageUri
     # or TrainingImage names IMAGE_REPO or one of LINT_ALGORITHM_REPOSITORIES, never the notebook
     # image, and an InstanceType is one of LINT_INSTANCE_TYPES. Without the options the lint reads
-    # neither. `--model-item model` is not passed: the pinned commit has no such option, and its
-    # rule `manifest` fails this job on the item `model` until AWSDS_WORKFLOWS moves.
+    # neither. `--model-item model` admits the storage item `model`, which names the project's
+    # connection; the rule `manifest` refuses every other item that names one.
     - |
       set -eu
       set --
       for type in $LINT_INSTANCE_TYPES; do set -- "$@" --instance-type "$type"; done
       for repository in $LINT_ALGORITHM_REPOSITORIES; do set -- "$@" --algorithm-repository "$repository"; done
-      uvx --from "$AWSDS_WORKFLOWS" awsds-workflows lint . --image-repository "$IMAGE_REPO" "$@"
+      uvx --from "$AWSDS_WORKFLOWS" awsds-workflows lint . --image-repository "$IMAGE_REPO" --model-item model "$@"
 
 pages:
   extends: .gates-uv

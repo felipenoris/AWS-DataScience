@@ -134,12 +134,12 @@ workflows against the rules of a SageMaker application, offline, with this appli
 XGBoost's as the ones an image may name and the ceiling's instance types:
 
 ```bash
-awsds-workflows lint . --image-repository awsds-prod-ecr-app-ml --algorithm-repository sagemaker-xgboost --instance-type ml.t3.medium --instance-type ml.t3.large --instance-type ml.t3.xlarge --instance-type ml.m5.large --instance-type ml.m5.xlarge --instance-type ml.c5.large --instance-type ml.c5.xlarge
+awsds-workflows lint . --image-repository awsds-prod-ecr-app-ml --model-item model --algorithm-repository sagemaker-xgboost --instance-type ml.t3.medium --instance-type ml.t3.large --instance-type ml.t3.xlarge --instance-type ml.m5.large --instance-type ml.m5.xlarge --instance-type ml.c5.large --instance-type ml.c5.xlarge
 ```
 
-At the commit the pipeline pins, the rule `manifest` refuses the item `model`, which names a connection,
-so the lint fails this application until `AWSDS_WORKFLOWS` moves to the commit that admits it behind
-`--model-item model`, which the invocation then passes.
+The pipeline pins the tooling at `37cb5a6`, the merge of `awsds-workflows` pull request #26 (Stage 17
+step 9.3). Its rule `manifest` refuses a storage item that names a connection, and `--model-item model`
+admits the one that carries the model; the application passes it (read 2026-11-17).
 
 The deploy to the `dev` project runs the CI/CD CLI (`aws-smus-cicd-cli` 1.0.9) from a space on the house
 image, as the project's role, with the shell variables the manifest reads: `DOMAIN_ID`, `DOMAIN_REGION`,

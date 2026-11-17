@@ -2779,3 +2779,83 @@ Every AWS call was a read, as the infrastructure user (`InfrastructureAccess`) t
   on another group with `Approved` `explicitDeny`; `UpdateModelPackage` on `app-ml`'s and on `app-etl`'s group
   `explicitDeny`. `staging/foundation`'s skip reason now says which ARN the service evaluates is unread. The
   copies in `$HOME/tmp/stage17-lint/` are superseded by pull request #26.
+
+## 2026-11-17 — 9.3's and 10.3's pins moved, and 9.5 applied with Stage 20's 4.4
+
+*Claude's hand, in the laptop session of the user's request of 13:42 UTC, on the user's message after
+both merges: "Fiz o merge do #26 e #313. Pode mover os pints. Autorizo os applies do item 2." Every AWS
+call ran as the infrastructure user (`InfrastructureAccess`) through `awsds-infra-identity`,
+`awsds-infra-sandbox-1`, `awsds-infra-staging` and `awsds-infra-prod`. Nothing was up: no hub, no GitLab,
+no `[E]` slice.*
+
+- **The pins**, to 15:54 UTC. `awsds-workflows` pull request #26 merged at 15:48:39 UTC as
+  `37cb5a6`. `app-ml`'s and `app-genai`'s `.gitlab-ci.yml` point `AWSDS_WORKFLOWS` at its archive, and
+  `app-ml`'s lint passes `--model-item model`: *"ok: 6 arquivo(s)"*. `app-genai`'s lint reads *"ok: 3
+  arquivo(s)"*, and `probes/operator.yaml` is refused by the rule `operador` at `37cb5a6` and passes at
+  `196acee`. `app-etl` passes at both commits (*"ok: 9 arquivo(s)"*) and keeps `196acee` until its next
+  release. `app-dbt`'s README, its simulation and Stage 20's URL moved to `37cb5a6` too.
+- **The plans**, 15:54 to 16:00 UTC, Recipe A from a branch cut at `origin/main` `13581cd0` (pull request
+  #313, merged 15:48:49 UTC), `-input=false`, each saved and read statement by statement before its
+  apply. The foundations passed the project folder's `secrets/alerts.auto.tfvars`.
+
+  | Slice | Plan | Applied (UTC) | What changed |
+  |---|---|---|---|
+  | `production/registry` | 3 to add | 16:00:08 | `awsds-prod-ecr-app-ml`, its pull policy (the same principals as `app-etl`'s) and its lifecycle |
+  | `identity/sso` | 6 to change | 16:01:26 | the six persona sets (Stage 20 decision 13); `DataScientistProdAccess`'s `ReadAndPullTheApplicationImages` names the new repository |
+  | `identity/org-policies` | 1 to change | 16:02:03 | the `Workloads` document (Stage 20's 4.4) |
+  | `sandbox/sagemaker` | 1 to change | 16:07:18 | Sandbox's boundary (Stage 20's 4.4) |
+  | `staging/studio` | 2 to add, 2 to change, 2 to destroy | 16:08:13 | `awsds-staging-workflows` replaced with its attachment, gaining 9.5's statements; the boundary |
+  | `production/studio` | 2 to add, 2 to change, 2 to destroy | 16:09:05 | the same for `awsds-prod-workflows` |
+  | `production/sagemaker` | 2 to add | 16:09:56 | the group `app-ml` and its policy `task_registers`: `ApproveAsTheProductionDeployRole` and `ReadTheStatusFromSandbox` |
+  | `staging/sagemaker` | 1 to add | 16:10:22 | the group `app-ml` |
+  | `staging/foundation` | 1 to change | 16:10:54 | `ApproveTheModelATaskRegisters` |
+  | `production/foundation` | 1 to change | 16:11:19 | the same |
+  | `staging/chains` | 12 to add, 1 to change | 16:12:03 | `app-ml-register` and `app-ml-score`: machines, schedules, failure rules and targets; the chain role |
+  | `production/chains` | 12 to add, 1 to change | 16:12:31 | the same |
+
+  Each apply was followed by a re-plan: *"No changes."* on all twelve. Each `studio/` apply reports *"2
+  added, 1 changed, 2 destroyed"*: the plan's second change, the person-session policy, was known only
+  after apply because `data.aws_s3_bucket.projects` depends on the module, and its document read
+  identical before and after in both targets.
+- **The readings after.** The four new schedules read `DISABLED`: `awsds-staging-chain-app-ml-register`
+  and `-app-ml-score`, created 16:11:59 UTC, and `awsds-prod-chain-app-ml-register` and `-app-ml-score`,
+  created 16:12:28 UTC, at `cron(0 8 * * ? *)` and `cron(30 8 * * ? *)` UTC. `make check` reads *"check:
+  OK"* (16:06 UTC). The battery and `DT-11` are Stage 20's log.
+- **`TM-30`'s amendment** was owed before the `studio/` applies and was written after them: its clause on
+  the project role now names `CreateModelPackage` with any status beside `DescribeModelPackage` and
+  `UpdateModelPackage`, each read `allowed` by `SageMakerStudioProjectRoleMachineLearningPolicy` on
+  2026-11-17, and the denies `<env>/studio/workflows.tf` applies since 16:08 UTC in Staging and 16:09 UTC
+  in Production.
+- **Left for the user**: `TM-33`'s acceptance before `app-ml`'s first tag; the projects `app-ml-dev` and
+  `app-genai-dev` (9.6 and 10.4's sittings); `production/runners` gives the build runner push on
+  `awsds-prod-ecr-app-ml` at the next `make gitlab-up`.
+
+## 2026-11-17 — `TM-33` accepted by the user, on the condition that the path is AWS's
+
+*The user's words, then Claude's readings by subagents fetching public pages, in the laptop session of
+the user's request of 13:42 UTC. No AWS call.*
+
+- **[the user]**, after Claude described `TM-33`'s context in chat: *"Desde que este caminho seja o
+  sugerido pela AWS, podemos aceitar"*.
+- **[Claude] The condition read**, the same day:
+  - The CI/CD CLI's `ml/deployment` example, at `main`: its manifest declares `dev`, `test` and `prod`;
+    the storage item `model-artifacts` names `default.s3_shared` and includes
+    `ml/output/model-artifacts`, which `test` and `prod` write to `ml/bundle/model-artifacts`; `dev`
+    holds no deployment configuration. Its `inference.py` loads the model with
+    `joblib.load(os.path.join(model_dir, 'model.joblib'))`, and `ml/training`'s script saves it with
+    `joblib.dump`.
+  - joblib's `load` docstring (`numpy_pickle.py` at `main`): it relies on the pickle module and can
+    execute arbitrary Python code. AWS's own example therefore loads, in its `test` and `prod` serving
+    container, an archive the `dev` project wrote, which is `TM-33`'s channel. The persistence page of
+    joblib's documentation answered 404 at `stable` and `latest`.
+  - SageMaker AI's project templates register the models in the Model Registry and hold a manual
+    approval step between the staging and production build steps; the registry's page says
+    `PendingManualApproval` to `Approved` initiates the CI/CD deployment of the approved version. Neither
+    page says in words that one version reaches both stages.
+  - Where this plan departs from the examples: `ml/training` also trains in its `test` stage, which
+    decision 21 lists as *Not built, and the user's to ask*. What it adds: the bundle's hash, Staging's
+    scoring, the approval of the release's hash alone, registration as `PendingManualApproval` only,
+    and a network-isolated model.
+- **[Claude] Recorded**: `TM-33` accepted, its condition a revision trigger; 9.5's threat-model paragraph
+  and the Status row; the waiting list's row; `promotion.md` §N.6 item 2; `CLAUDE.md`'s row; the pages in
+  `REFERENCES.md`.

@@ -49,7 +49,7 @@ import rendering  # noqa: E402
 
 TOOL = (
     "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/"
-    "196aceec092649551ed6451796b1c3c7983cfafb.zip"
+    "37cb5a6260c8348cc208988e42090caf42a3a207.zip"
 )
 AIRFLOW = "apache-airflow==3.0.6"
 CONSTRAINTS = (

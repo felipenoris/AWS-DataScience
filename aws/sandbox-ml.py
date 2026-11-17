@@ -336,7 +336,8 @@ def all_steps(definition: dict) -> list:
 def step_settings(step: dict) -> tuple:
     """(instance type, problems, parameterized) for one Training, Processing or Transform step of
     a pipeline definition. A value that is a {"Get": ...} reference is reported as parameterized:
-    the execution's own job is what ML-3 reads."""
+    the execution's own job is what ML-3 reads. A Processing step's network isolation is not read:
+    the boundary leaves it to the application since Stage 20 decision 13 (TM-35)."""
     args = step.get("Arguments") or {}
     kind = step.get("Type")
     if kind == "Training":
@@ -356,7 +357,6 @@ def step_settings(step: dict) -> tuple:
         cluster = (args.get("ProcessingResources") or {}).get("ClusterConfig") or {}
         fields = {
             "VpcConfig": net.get("VpcConfig"),
-            "EnableNetworkIsolation": net.get("EnableNetworkIsolation"),
             "EnableInterContainerTrafficEncryption": net.get(
                 "EnableInterContainerTrafficEncryption"
             ),

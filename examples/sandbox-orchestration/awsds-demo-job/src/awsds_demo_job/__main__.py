@@ -1,8 +1,9 @@
 """`python -m awsds_demo_job --input DIR --output DIR`: the processing job's mode.
 
 Every CSV under --input becomes a JSON summary in --output. SageMaker downloads the inputs
-into --input before the command starts and uploads --output after it exits, so the command
-reaches no network and holds no credentials: the D13 boundary runs every job isolated.
+into --input before the command starts and uploads --output after it exits. The template runs
+the job network-isolated, so the command reaches no network and holds no credentials; the D13
+boundary leaves that setting to a processing job since Stage 20 decision 13.
 
 What it prints lands in /aws/sagemaker/ProcessingJobs, which every project role in the
 account can read, so it prints the interpreter, counts and paths, never a cell of data.

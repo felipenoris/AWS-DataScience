@@ -329,7 +329,7 @@ A create passes four layers, and the wording of a refusal names the layer that r
 | Statement | Refuses a request that | On |
 |---|---|---|
 | `DenySageMakerJobsOffVpc` | names no subnets | `CreateTrainingJob`, `CreateProcessingJob`, `CreateHyperParameterTuningJob`, `CreateAutoMLJob`, `CreateAutoMLJobV2`, `CreateModel` |
-| `DenySageMakerJobsWithoutNetworkIsolation` | omits network isolation or sets it false | the same actions |
+| `DenySageMakerJobsWithoutNetworkIsolation` | omits network isolation or sets it false | the same actions but `CreateProcessingJob`, out since 2026-11-17 (Stage 20 decision 13) |
 | `DenySageMakerJobsWithoutInterContainerEncryption` | omits inter-container encryption or sets it false | the job actions, without `CreateModel` |
 | `DenySageMakerJobsWithoutVolumeEncryption` | names no key for the volume | the job actions and `CreateTransformJob` |
 | `DenySageMakerInstanceCeiling` | names an instance type off the list | every action that names one, except a space's `CreateApp`, `CreateSpace` and `UpdateSpace` |
@@ -338,18 +338,19 @@ The list is `ml.t3.medium`, `ml.t3.large`, `ml.t3.xlarge`, `ml.m5.large`, `ml.m5
 `ml.c5.large` and `ml.c5.xlarge`. What follows from the statements:
 
 - **A request states each setting itself**: a `VpcConfig` with the project's private subnets and
-  security group, `EnableNetworkIsolation: true`, `EnableInterContainerTrafficEncryption: true` on a
-  job, the project key on the volume, a listed instance type. An omitted field is refused, since each
+  security group, `EnableNetworkIsolation: true` on every job but a processing job,
+  `EnableInterContainerTrafficEncryption: true` on a job, the project key on the volume, a listed instance type. An omitted field is refused, since each
   deny fires on an absent key.
-- **Code inside a job reaches nothing.** A network-isolated container has no network: it calls no
+- **Code inside an isolated job reaches nothing.** A network-isolated container has no network: it calls no
   MLflow App, no registry, no Bedrock model and no S3 API, and it sees its input and output mounts
   alone. Tracking, registration and any model invocation therefore happen around the job, from the
   notebook in a space or from a worker task in a workflow.
-- **A processing job leaves the isolation statement at Stage 20's pass 4**, which is applied nowhere
-  yet. [Stage 20](../stages/stage-20-dbt-lineage.md) decision 13, taken 2026-11-16, takes
+- **A processing job is out of the isolation statement since Stage 20's pass 4**, applied 2026-11-17
+  (the persona sets 16:01, the `Workloads` SCP 16:02, Sandbox's boundary 16:07, the targets' 16:08 and
+  16:09 UTC). [Stage 20](../stages/stage-20-dbt-lineage.md) decision 13, taken 2026-11-16, takes
   `sagemaker:CreateProcessingJob` out of `DenySageMakerJobsWithoutNetworkIsolation` in Sandbox, Staging
   and Production. A processing job that sets `EnableNetworkIsolation: false` then runs in the project's
-  subnets with the project role's credentials and reaches what a worker task reaches. A training, tuning
+  subnets with the project role's credentials and reaches what a worker task reaches (`TM-35`). A training, tuning
   or AutoML job and a model stay under the statement, and the table's other rows stay as they are.
   Isolation becomes the application's choice, job by job: `app-ml`'s two `prepare` tasks keep
   `EnableNetworkIsolation: true`, since each reads its input mounts alone. The lint's rule `job` refuses
