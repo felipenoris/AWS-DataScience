@@ -43,9 +43,19 @@ locals {
     "sagemaker:CreateModel",
   ]
 
-  # EnableNetworkIsolation-carrying creates - the same set: a job that runs in our subnets and
-  # can still open arbitrary outbound connections from inside the container is half a control.
-  network_isolation_actions = local.vpc_config_actions
+  # The creates that must ask for EnableNetworkIsolation: a training, tuning or AutoML job and a
+  # model, the scope AWS's internet-free mode and the Tooling blueprint's enableNetworkIsolation
+  # give the setting. A processing job is left out (Stage 20 decision 13): it runs in its
+  # project's subnets and security group as its role and reaches what the workflow's Glue job and
+  # worker tasks reach there, and an application still chooses isolation job by job. A list of its
+  # own, since vpc_config_actions keeps CreateProcessingJob (Lesson 51).
+  network_isolation_actions = [
+    "sagemaker:CreateTrainingJob",
+    "sagemaker:CreateHyperParameterTuningJob",
+    "sagemaker:CreateAutoMLJob",
+    "sagemaker:CreateAutoMLJobV2",
+    "sagemaker:CreateModel",
+  ]
 
   # EnableInterContainerTrafficEncryption - distributed training/processing only. A single-
   # instance job has no inter-container traffic but still sends the field as true: the deny
