@@ -6,7 +6,7 @@
 | **Operator** | The **project member**, an Identity Center user who is Owner or Contributor of a project, in the portal: the data scientist in a Sandbox project, the Governance Manager in `governed-lake`. The **infrastructure user** (`InfrastructureAccess`, the `awsds-infra-*` profiles), who reads with `./aws/catalog.py` and the CLI and writes the domain unit's grants and the lake's publishing grant in Terraform. An **application's tasks**, as the project role of the project the CI/CD CLI deployed them into |
 | **The rules** | **A publish writes to the SageMaker Catalog alone**: no Glue, Lake Formation or S3 write, and no LF-Tag (`SUP-191`, `SUP-192`). **A table is reached by one of two roads** (`GOVERNANCE.md`, "The catalog road"): a subscription or a Share that DataZone fulfils, whose record is DataZone's subscription; or a grant Terraform writes, recorded in [`AWS_STATE.md`](../../AWS_STATE.md)'s grant register. **DataZone fulfils by name and reads no LF-Tag**, so the lake lists no table that holds a restricted or personal column (`CT-12`). **No source publishes on import, and no source over the lake generates names** (`CT-4`, `CT-5`). **Lineage is cooperative**: a graph holds what an engine or a client posted and what the catalog's own acts wrote, and the portal draws one only from an asset |
 | **How a fact is marked** | *Measured*, with its date and the record that holds it (a stage's step or verification, a log, a `SUP-nnn`): it ran in this estate. *Read*, with its date: it was read in AWS's pages, in released code or in a policy, and nothing here ran it. *Unmeasured*: no record in this estate holds it. *Simulated*: Stage 20's runs against simulated services on a host outside this estate (its 0.8 and 0.16). A phrase in italics and quotation marks is an API's or a log's own wording, or AWS's |
-| **The picture around it** | [Stage 6f](../stages/stage-06f-data-governance.md), the lake's publication; [Stage 18](../stages/stage-18-staging-deployment-project.md), a subscription across accounts and a Glue job's lineage; [Stage 19](../stages/stage-19-smus-native-data-product.md), a project's table as a data product; [Stage 20](../stages/stage-20-dbt-lineage.md), dbt's lineage. This file cites their steps, decisions and verifications by number, and their logs hold the runs. A platform behaviour by its id: [`AWS_SUPPLEMENT.md`](../../AWS_SUPPLEMENT.md); a data-leakage channel: [`threat-model.md`](../threat-model.md); an acronym: [`GLOSSARY.md`](../../GLOSSARY.md) |
+| **The picture around it** | [Stage 6f](../stages/stage-06f-data-governance.md), the lake's publication; [Stage 18](../stages/stage-18-staging-deployment-project.md), a subscription across accounts and a Glue job's lineage; [Stage 19](../stages/stage-19-smus-native-data-product.md), a project's table as a data product; [Stage 20](../stages/stage-20-dbt-lineage.md), dbt's lineage; [Stage 21](../stages/stage-21-redshift-s3-data-products.md), a Redshift table, the namespace in the Glue Data Catalog and an S3 Object Collection as products. This file cites their steps, decisions and verifications by number, and their logs hold the runs. A platform behaviour by its id: [`AWS_SUPPLEMENT.md`](../../AWS_SUPPLEMENT.md); a data-leakage channel: [`threat-model.md`](../threat-model.md); an acronym: [`GLOSSARY.md`](../../GLOSSARY.md) |
 | **Written** | 2026-11-17, Stage 20 steps 1.5 and 1.6, from those stages' records and from AWS's pages read again that day (the table that closes §O); no AWS call was made for it. The portal was not re-read on 2026-11-17: the paths below are the guide's of that day, beside the portal as read on 2026-11-14, and the re-reading is the user's portal act. §L holds no reading of dbt in this estate: Stage 20's passes 2 and 3 take them, and its step 6.2 writes them here |
 
 | Section | Audience | What it holds |
@@ -153,7 +153,9 @@ the portal, as a member of a Sandbox project, and a difference goes into this fi
 | the subscription page | [Request subscription to assets](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/subscribe-to-data-assets-managed.html) | 2026-11-17 |
 | the approval page | [Approve or reject a subscription request](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/approve-reject-subscription-request.html) | 2026-11-17 |
 | the revocation page | [Revoke an existing subscription](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/revoke-subscription.html) | 2026-11-17 |
-| the fulfilment pages | [a Glue asset](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-glue-asset.html), [a Redshift asset](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-redshift-asset.html), [an unmanaged asset](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-unmanaged-asset.html), [the troubleshooting page](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/troubleshooting-issues.html) | 2026-10-28 |
+| the fulfilment pages | [a Glue asset](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-glue-asset.html), [a Redshift asset](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-redshift-asset.html), [an unmanaged asset](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-unmanaged-asset.html), [the troubleshooting page](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/troubleshooting-issues.html) | 2026-10-28; the first three again 2026-11-17 |
+| the S3 pages | [Amazon S3 data](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-s3.html), [Sharing Amazon S3 data](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-s3-publish.html) | 2026-11-17 |
+| the subscription target's reference | [`CreateSubscriptionTarget`](https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateSubscriptionTarget.html), [`SubscriptionTargetForm`](https://docs.aws.amazon.com/datazone/latest/APIReference/API_SubscriptionTargetForm.html) | 2026-11-17 |
 | the filters page | [Approve with row and column filters](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-with-filters.html) | 2026-10-27 |
 | the lineage pages | [the support matrix](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-support-matrix.html), [lineage support](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-support.html), [OpenLineage](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-what-is-openlineage.html), [capture from tools](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-automate-capture-from-tools.html), [capture from data connections](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-automate-capture-from-data-connections.html), [the `sourceIdentifier` attribute](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-sourceIdentifier-attribute.html), [linking nodes](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-linking-nodes.html), [permissions](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-permissions.html), [authorization](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-authorization.html), [the APIs](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-apis.html), [troubleshooting](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-lineage-troubleshooting.html) | 2026-11-16 |
 | the graph page | [Visualizing data lineage in IdC mode](https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-visualizing-data-lineage-idc-mode.html) | 2026-11-17 |
@@ -515,11 +517,36 @@ Lake Formation's `SELECT` under the subscribing project's context scopes the rea
 
 ### Managed and unmanaged assets
 
-A Glue table and a Redshift table or view are managed: DataZone fulfils them with grants. A Redshift asset
-is fulfilled with grants in one database, or with a datashare and a view across workgroups (the fulfilment
-pages, read 2026-10-28); no Redshift subscription target exists here (Stage 19 0.6), unmeasured. Every
-other type, a custom one among them, is unmanaged: no grant, and an EventBridge event for the producer to
-act on (read 2026-09-13 and 2026-10-28); unmeasured.
+The managed types, by the unmanaged asset's page (read 2026-11-17): *"Lake Formation-managed AWS Glue Data
+Catalog tables, AWS Glue Data Catalog views (Multi Dialect Views), and Amazon Redshift tables and views"*.
+DataZone fulfils them with grants it writes. Every other type, a custom one among them, is unmanaged: no
+grant, and an EventBridge event for the producer to act on (read 2026-09-13 and 2026-10-28); unmeasured.
+
+A Redshift asset is delivered to *"the Amazon Redshift Serverless workgroup created for the project"*, in a
+shape set by where the two sides live (the Redshift asset's page, read 2026-11-17):
+
+| Producer and consumer | What DataZone writes |
+|---|---|
+| one cluster, one database | a grant on the source table |
+| one cluster, two databases | a view in the consumer's database, and the grant on the view |
+| two clusters in one account | a datashare, a view over the shared table, and the grant on the view |
+| two accounts | the same, the producer authorizing the datashare and the consumer associating it |
+
+No Redshift subscription target exists here (Stage 19 0.6, 2026-10-28), and no page says whether a project
+that added a warehouse through *Connect to existing compute resources* receives one.
+`CreateSubscriptionTarget` takes `applicableAssetTypes`, `authorizedPrincipals`, `manageAccessRole`, `name`,
+`type` and a `subscriptionTargetConfig` of forms (`formName`, `content`), with an optional `provider` and
+`subscriptionGrantCreationMode` (`AUTOMATIC` or `MANUAL`); its reference names no Redshift type or form (read
+2026-11-17). [Stage 21](../stages/stage-21-redshift-s3-data-products.md) pass 2 measures the target AWS
+documents, on a workgroup the `RedshiftServerless` blueprint creates for the consumer, and leaves the case
+of a project admitted by hand open.
+
+An S3 bucket or prefix published from the portal's S3 browser, *Actions → Publish to Catalog*, becomes an
+asset of type *S3 Object Collection*, which the managed list leaves out (the S3 pages, read 2026-11-17). Its
+subscription or Share is fulfilled through S3 Access Grants, read-only or read and write at the owner's
+choice; after a revocation *"a project member may still get Amazon S3 Access Grants credentials for up to 5
+minutes, and credentials can be used for 15 minutes"*, up to 20 minutes of access in all. The pages name
+neither the grantee nor how a subscriber reads; Stage 21 pass 5 measures both.
 
 ### Reading through a subscription
 
@@ -562,7 +589,12 @@ Sandbox project's product.
 ### What the catalog does not do
 
 - No grant by LF-Tag: a fulfilment grants by name (the fulfilment pages, read 2026-10-28; `SUP-192`).
-- No share across Regions (the fulfilment pages, read 2026-10-28).
+- No share across Regions, by the Glue and Redshift asset pages (read 2026-10-28 and 2026-11-17): *"Support
+  for cross-Region sharing of assets in AWS Glue Data Catalog is not supported."*, *"Cross-Region data
+  sharing using Amazon Redshift is not supported."* The unmanaged asset's page contradicts both (read
+  2026-11-17): *"Cross-region subscriptions support AWS Glue tables, AWS Glue views, Amazon Redshift tables,
+  and Amazon Redshift views across all standard (non-opt-in) AWS Regions"*, with the data lake or data
+  warehouse blueprint enabled in both Regions. This estate is one Region; unmeasured.
 - No subscription to a resource link (the troubleshooting page, read 2026-10-28).
 
 ### The controls around a subscription

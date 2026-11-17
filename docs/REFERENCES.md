@@ -1840,6 +1840,79 @@
   filters alone), `standardize-metadata-forms.html`, `create-new-data-product.html`,
   `publish-data-product.html`, the subscription and approval pages, and the lineage page's three node types;
   `create-data-asset-manually.html` returned its title alone.
+- **SageMaker Unified Studio's forms of a data product beyond a Glue table (read 2026-11-17, for
+  [Stage 21](plan/stages/stage-21-redshift-s3-data-products.md) questions 2, 3, 5, 7 and 8).** The managed asset
+  types, *"Lake Formation-managed AWS Glue Data Catalog tables, AWS Glue Data Catalog views (Multi Dialect
+  Views), and Amazon Redshift tables and views"*, and a section on cross-Region subscriptions, *"across all
+  standard (non-opt-in) AWS Regions"* with the data lake or data warehouse blueprint enabled in both, which
+  contradicts the Glue and Redshift pages:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-unmanaged-asset.html>.
+  A Redshift asset's fulfilment into *"the Amazon Redshift Serverless workgroup created for the project"*: a
+  grant in one database, a view across databases, a datashare and a view across clusters, the same across
+  accounts, and *"Cross-Region data sharing using Amazon Redshift is not supported."*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-redshift-asset.html>.
+  A Glue asset's, read by *"Amazon Athena, Amazon Redshift, or Spark"*, with no cross-Region sharing and no
+  cross-account sharing of a federated catalog's assets:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-glue-asset.html>. A
+  Redshift data source, which imports *"technical metadata of database tables and views"*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-redshift-data-source.html>. A
+  Glue data source's catalog, picked from the dropdown or typed:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-source-glue.html>. Data
+  products, their creation and their subscription, no asset type named:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-products.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-new-data-product.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/subscribe-data-product.html> and
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/subscribe-to-data-assets-managed.html>.
+  The S3 Object Collection, its curation, and its subscription through S3 Access Grants, read-only or read and
+  write, with up to 20 minutes of access after a revocation:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-s3.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-s3-publish.html> and
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/connecting-amazon-s3.html>. A
+  project's Redshift compute, created or connected, and the lakehouse page:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/compute-redshift.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/compute-add-new-redshift-serverless.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/adding-a-existing-compute-connection.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/compute-prerequisite-redshift.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/gs-admin-setup.html> and
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/lakehouse.html>. Redshift lineage:
+  the support matrix, the capture from a data connection, the connection's credentials holding
+  *"`sys:operator` role"* and `SELECT` on all tables, and what the parser leaves out (external tables, `COPY`
+  and `UNLOAD`, `MERGE` and `UPDATE`, datashares, events over 16 MB):
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-support-matrix.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-automate-capture-from-data-connections.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-permissions.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-lineage-troubleshooting.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage.html> and
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-support.html>.
+  Domains, domain units, and owner and consumer projects:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/concepts.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/domain-units.html> and
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/what-is-sagemaker-unified-studio.html>.
+  `CreateSubscriptionTarget` and its form, which name no Redshift type:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateSubscriptionTarget.html> and
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_SubscriptionTargetForm.html>. What's New's
+  search renders by script and returned nothing to the fetcher; its recent feed and the Big Data Blog's index
+  held no post on how to organize these pieces: <https://aws.amazon.com/about-aws/whats-new/recent/feed/> and
+  <https://aws.amazon.com/blogs/big-data/>.
+- **The portal's *Create table → Redshift table* and a namespace's default IAM role (read 2026-11-17, for
+  [Stage 21](plan/stages/stage-21-redshift-s3-data-products.md) step 2.8).** The portal's page on creating a
+  table is an empty stub in every form read, English and Japanese, and the guide's PDF failed:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-new-catalog-table.html>. The
+  Query editor v2's load from a local file uploads to a bucket and runs a `COPY`, 100 MB at most, and names no
+  role: <https://docs.aws.amazon.com/redshift/latest/mgmt/query-editor-v2-loading.html>,
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/query-editor-v2-loading-data-local.html> and
+  <https://aws.amazon.com/blogs/big-data/data-load-made-easy-and-secure-in-amazon-redshift-using-query-editor-v2/>.
+  `COPY`'s `IAM_ROLE default` uses *"the IAM role that is set as default and associated with the cluster"*,
+  and `DEFAULT_IAM_ROLE` *"returns none if there isn't any default IAM role associated"*:
+  <https://docs.aws.amazon.com/redshift/latest/dg/copy-parameters-authorization.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/r_DEFAULT_IAM_ROLE.html>,
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/default-iam-role.html> and
+  <https://aws.amazon.com/blogs/big-data/use-the-default-iam-role-in-amazon-redshift-to-simplify-accessing-other-aws-services/>.
+  A namespace's `DefaultIamRoleArn` beside its `IamRoles`, and the service's refusal of a default outside the
+  list:
+  <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-redshiftserverless-namespace.html>
+  and <https://github.com/hashicorp/terraform-provider-aws/issues/28980>. `ASSUMEROLE` held by `PUBLIC` until
+  revoked: <https://docs.aws.amazon.com/redshift/latest/dg/r_GRANT-usage-notes.html>.
 
 ## Data platform
 
@@ -2321,6 +2394,54 @@
   <https://docs.aws.amazon.com/glue/latest/webapi/API_GetTable.html>,
   <https://docs.aws.amazon.com/glue/latest/webapi/API_GetTables.html> and
   <https://docs.aws.amazon.com/glue/latest/webapi/API_GetTableVersions.html>.
+
+- **What the Glue Data Catalog holds, and Redshift data read by other engines (read 2026-11-17, for
+  [Stage 21](plan/stages/stage-21-redshift-s3-data-products.md) questions 1, 4 and 6).** Tables over S3 in Avro, CSV,
+  JSON, XML, Parquet and ORC, or in Iceberg (*"Specify creating a standard AWS Glue table, or a table in
+  Apache Iceberg format."*): <https://docs.aws.amazon.com/glue/latest/dg/tables-described.html>. The crawlers'
+  built-in classifiers, no image format among them:
+  <https://docs.aws.amazon.com/glue/latest/dg/add-classifier.html>. Glue for Spark's formats, and Delta Lake,
+  Hudi and Iceberg from Glue 3.0:
+  <https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-datalake-native-frameworks.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-delta-lake.html> and
+  <https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-hudi.html>. Data Catalog views,
+  which *"support multiple SQL query engines"*:
+  <https://docs.aws.amazon.com/glue/latest/dg/catalog-views.html>. The catalogs beside the default one and the
+  connections to external systems:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/bring-your-data-overview.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/federated-catalog-data-connection.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/catalog-federation.html>,
+  <https://docs.aws.amazon.com/athena/latest/ug/gdc-register.html>,
+  <https://docs.aws.amazon.com/athena/latest/ug/gdc-register-s3-table-bucket-cat.html>,
+  <https://docs.aws.amazon.com/athena/latest/ug/gdc-register-rs.html> and
+  <https://docs.aws.amazon.com/athena/latest/ug/register-connection-as-gdc.html>. A namespace registered as a
+  federated catalog, read by Redshift with no switch (*"You don't need to enable data lake access to access
+  the federated catalogs using Amazon Redshift."*) and by other engines through data lake access, *"AWS Glue
+  creates a managed Amazon Redshift cluster"*; its prerequisites, the data transfer role among them; its
+  queries and limits:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/managing-namespaces-datacatalog.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/create-ns-catalog.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/redshift-ns-prereqs.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/query-redshift-fed-catalog.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/notes-ns-catalog.html>,
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless_datasharing-register-namespace.html> and
+  <https://docs.aws.amazon.com/redshift/latest/dg/iceberg-integration-register.html>. An RMS catalog, served
+  by *"an Amazon Redshift managed serverless-workgroup"*, its tables reached only through the Iceberg REST
+  catalog's extension endpoint:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/create-rms-catalog.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/iceberg-rest-apis.html> and
+  <https://docs.aws.amazon.com/glue/latest/dg/connect-glu-iceberg-rest.html>. The datashare's road, read
+  again: <https://docs.aws.amazon.com/lake-formation/latest/dg/data-sharing-redshift.html>. Lake Formation's
+  page on accessing catalogs returned a client error as `.md`, and as `.html` the guide's title alone:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/access-catalogs.html>. AWS Glue's pricing page on the
+  managed workgroup, *"a service-managed Amazon Redshift Serverless workgroup is used for compute resources"*
+  at *"standard Amazon Redshift Serverless rates"*, read beside Redshift's and the lakehouse's:
+  <https://aws.amazon.com/glue/pricing/>, <https://aws.amazon.com/redshift/pricing/> and
+  <https://aws.amazon.com/sagemaker/lakehouse/pricing/>. S3 Metadata's object metadata in *"read-only, fully
+  managed Apache Iceberg tables"*:
+  <https://docs.aws.amazon.com/AmazonS3/latest/userguide/metadata-tables-overview.html>.
 
 ## Containers, CI/CD and orchestration
 
