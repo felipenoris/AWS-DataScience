@@ -3918,3 +3918,33 @@ Claude's work in the worktree, the reads as the infrastructure user's `Infrastru
   none: the CLI's three creations at 02:31:50, 02:32:02 and 02:32:14 UTC on 2026-11-16 drew none.
 - **Owed**: the user's five applies after the merge; at the apply, `AWS_STATE.md`'s rows naming the
   retired path and `TM-30`'s list.
+
+## 2026-11-17 — item 31 applied: PR #308's five saved plans, from its branch, read back
+
+On the user's word, *"Authorize the 5 applies"*, Claude applied the saved plans from the branch before the
+merge, which closes the Lesson 79 window. The two peer sessions on the laptop, both idle, were told first.
+Every read as `awsds-infra-staging` or `awsds-infra-prod`, `InfrastructureAccess`.
+
+- **[Claude⚡] The applies**, each `terraform apply -input=false <plan>` from the slice's folder:
+  `staging/foundation/` 01:55:53 to 01:56:07 UTC, 0 added, 5 changed, 5 destroyed; `production/foundation/`
+  to 01:56:24, the same; `staging/data/` to 01:56:40, 8 destroyed; `production/data/` to 01:56:53, 8
+  destroyed; `production/sagemaker/` to 01:57:03, 1 changed. No warning.
+- **[Claude] Read back**: each slice re-planned from the tree that applied, `No changes`. IAM in both
+  accounts: `awsds-<env>-app-boundary`, `-deploy-orchestration-resources` and `-access` `NoSuchEntity`;
+  each deploy role holds `apply-application` and `state` inline and `awsds-<env>-deploy-project` attached,
+  at `v5` with `CreateTheWorkflowServiceLinkedRole`; its boundary `awsds-<env>-deploy-boundary` at `v2`,
+  `CeilingIsEverythingTheIdentityPolicyGrants`, `DenyChangingTheDeployIdentities` and
+  `DenyChangingTheCeilings`; `state` with `ListTheStatePrefixes`, `ReadTheStateItOnlyReads` and
+  `UseTheStateKey`; Staging's `apply-application` with the two chain statements, Production's without.
+  Glue `get-database` on `app_outputs`: `EntityNotFoundException` in both. `awsds-prod-job-exec`'s
+  `CommitTheIcebergWrites` names the lake's `curated` catalog, database and tables alone. `data/`'s states
+  hold 9 `aws_lakeformation_permissions` in Production and 8 in Staging, four of each in the consumer module.
+- **[Claude] The instruments**: `./aws/deploytargets.py` 44 pass, `DT-14` reading *"raw, curated: named
+  principals only"* in both; `./aws/cicd.py` 12 pass and 4 notes (`CI-1`, `CI-6`, `CI-8`, `CI-9`);
+  `./aws/orchestration.py` only `OR-2`'s five retention failures (`EXC-25`), `OR-9` passing both targets'
+  chains. Production's three schedules read `DISABLED` since their creation at 03:18:16 UTC on 2026-11-16,
+  at 06:30, 07:00 and 07:30 UTC, each input carrying `<aws.scheduler.scheduled-time>` literally. Each
+  script exits 1 on the profiles with no SSO token; the wording is the verdict.
+- **[Claude] Written**: `AWS_STATE.md`'s rows on the retired path (`INV-22`, the deploy credential layer,
+  the chain schedules, the deployment projects' changes, Lake Formation's governing row, the grant
+  register) and `TM-30`'s list.
