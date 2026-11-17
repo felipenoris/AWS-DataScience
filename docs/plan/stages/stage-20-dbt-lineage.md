@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Written 2026-11-16; step 1.1's facts and decisions 1 to 7, 10 and 13 taken the same day; the application's draft run against simulated services on 2026-11-17 (0.15, 0.16), pass 1 and 4.1 to 4.3 done the same day with nothing up, 4.4's applies run and 4.6 written after them; no Sandbox sitting yet** ([log](../../log/log-stage-20-dbt-lineage.md)): the plan, the user's questions answered from dated vendor pages, OpenLineage's released code and this estate's measurements, and each decision in the user's words. dbt runs on Athena, in a Bash task on the worker, on dbt Core 1.11, in a new application `app-dbt` in `eighth-experimentation`; Redshift and Glue with Spark are a later revision's, and a run past the worker's hour is compared in the runbook, measured by no pass. Decision 13 takes a processing job out of the network-isolation statement in Sandbox, Staging and Production, applied 2026-11-17. Pass 1 runs with nothing up; passes 2 and 3 are Sandbox sittings; pass 4 is decision 13's change, a laptop session's tags and applies on the user's word, with the SCP battery; pass 5 waits on [Stage 19](stage-19-smus-native-data-product.md) step 4.12 and on decision due 11. On 2026-11-17: `examples/app-dbt/` written from the stage's prose, step 1.3's three criteria met by the simulation on the laptop's host archive (`aarch64-apple-darwin`, 28,621,986 bytes, 88,429,087 unzipped), 51 tests passing (1.2 to 1.4); `catalog.md`'s first version with 1.6's desk readings (1.5, 1.6); `upstream-releases.md`'s dbt and OpenLineage section (1.7); `sagemaker-denies-v0.3.0` and `sagemaker-prereqs-v0.11.0` tagged at `5f121541`, the callers pinned and the battery's rows written (4.1 to 4.3), each slice planned, then applied on the user's word from 16:01 to 16:09 UTC with `production/registry` first, every re-plan `No changes`, and the battery's processing row authorized and its training row refused, 53 as expected (4.4); the documents and checks that state the rule rewritten and `TM-35` written (4.6). The lint's `job` rule, the item 6.4 hands `awsds-workflows` after pass 4, relaxed the same day by that project's pull request #27, merged as `1a50ceb`, which `app-dbt` pins. Left: 4.5 in sitting A |
+| **Status** | **Written 2026-11-16; step 1.1's facts and decisions 1 to 7, 10 and 13 taken the same day; decisions 9 (b) and 11 (a) taken 2026-11-17, 9 moving 7 to (b); the application's draft run against simulated services on 2026-11-17 (0.15, 0.16), pass 1 and 4.1 to 4.3 done the same day with nothing up, 4.4's applies run and 4.6 written after them; no Sandbox sitting yet** ([log](../../log/log-stage-20-dbt-lineage.md)): the plan, the user's questions answered from dated vendor pages, OpenLineage's released code and this estate's measurements, and each decision in the user's words. dbt runs on Athena, in a Bash task on the worker, on dbt Core 1.11, in a new application `app-dbt` in a Sandbox project of its own, promoted to Staging and Production by the CI/CD CLI (decision 9 (b)), whose passes are written before their sitting; Redshift and Glue with Spark are a later revision's, and a run past the worker's hour is compared in the runbook, measured by no pass. Decision 13 takes a processing job out of the network-isolation statement in Sandbox, Staging and Production, applied 2026-11-17. Pass 1 runs with nothing up; passes 2 and 3 are Sandbox sittings; pass 4 is decision 13's change, a laptop session's tags and applies on the user's word, with the SCP battery; pass 5 waits on [Stage 19](stage-19-smus-native-data-product.md) step 4.12 (decision 11 (a)). On 2026-11-17: `examples/app-dbt/` written from the stage's prose, step 1.3's three criteria met by the simulation on the laptop's host archive (`aarch64-apple-darwin`, 28,621,986 bytes, 88,429,087 unzipped), 51 tests passing (1.2 to 1.4); `catalog.md`'s first version with 1.6's desk readings (1.5, 1.6); `upstream-releases.md`'s dbt and OpenLineage section (1.7); `sagemaker-denies-v0.3.0` and `sagemaker-prereqs-v0.11.0` tagged at `5f121541`, the callers pinned and the battery's rows written (4.1 to 4.3), each slice planned, then applied on the user's word from 16:01 to 16:09 UTC with `production/registry` first, every re-plan `No changes`, and the battery's processing row authorized and its training row refused, 53 as expected (4.4); the documents and checks that state the rule rewritten and `TM-35` written (4.6). The lint's `job` rule, the item 6.4 hands `awsds-workflows` after pass 4, relaxed the same day by that project's pull request #27, merged as `1a50ceb`, which `app-dbt` pins. Left: 4.5 in sitting A |
 | **Prerequisites** | [6i](stage-06i-sandbox-orchestration.md) steps 4 and 5, a Python and a Bash task run from a code archive on the worker (2026-10-11), and `awsds-workflows package-task`, which builds that archive ([`serverless-workflows.md`](../runbooks/serverless-workflows.md) §C). [Stage 19](stage-19-smus-native-data-product.md) pass 1's recipe: a workflow's Glue job writing an Iceberg table into a project database and posting OpenLineage events through Sandbox's `datazone` endpoint (2026-11-10), the graph drawn on the asset's page (2026-11-14). `eighth-experimentation`: the workflows grant (`sandbox/workflows/`), spaces on the house image's version 11 with the CI/CD CLI 1.0.9. `sandbox/egress/`'s `athena`, `glue`, `lakeformation`, `sts` and `datazone` endpoints, the first four in the endpoint module's core set and the fifth among the slice's extra services, and its `mwaa` group for a deploy from a space. For pass 4, a laptop session as the infrastructure user and the SCP battery ([`scp-battery.md`](../runbooks/scp-battery.md)). Nothing blocks pass 1 |
 | **Consumes** | [D7](../decisions/D07-orchestration.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D41](../decisions/D41-sagemaker-application.md); [D12](../decisions/D12-budget-ceiling.md) for the cost |
 | **Proves** | — (no `INT-nn` row: the worker's post reaches the domain in Data Governance through the `datazone` endpoint a Glue job's lineage already crosses, and no new wiring between accounts is built). What it does prove: whether a dbt project run as a task of a SageMaker application's workflow reads and writes the project's tables through an engine SageMaker Unified Studio itself uses, and whether the OpenLineage events dbt's wrapper posts land on the graph the portal draws for the assets, beside a Glue job's |
@@ -288,8 +288,8 @@ AWS's own documented paths for dbt, against this estate (each read 2026-11-16):
 
 `app-dbt` is an application of the template's shape
 ([`examples/app-etl/`](../../../examples/app-etl/README.md)), written under `examples/app-dbt/` and
-deployed by the CI/CD CLI from a space into `eighth-experimentation`, with one stage, `dev` (decision
-7). Its workflow has two tasks, so that the graph has two emitters:
+deployed by the CI/CD CLI from a space into a Sandbox project of its own, the `dev` stage, and promoted
+to Staging and Production (decisions 7 (b) and 9 (b)). Its workflow has two tasks, so that the graph has two emitters:
 
 | Task | Operator | What it does | Its lineage |
 |---|---|---|---|
@@ -734,6 +734,10 @@ already measured, and step 6.2 completes §L with this stage's readings.
     events and the trail naming that account alone (02:08 UTC).
 
 ## To execute
+
+Decisions 7 (b) and 9 (b), taken 2026-11-17, give the application a Sandbox project of its own and promote
+it. Passes 2, 3 and 5 below still name `eighth-experimentation` and one stage: they are rewritten, with
+the promotion's passes, before sitting A.
 
 ### 1. With nothing up: the application, the lineage configuration, the runbook's first version
 
@@ -1361,8 +1365,8 @@ four profiles 4.4 names.
 
 ### 5. Across projects
 
-Waits on Stage 19 step 4.12, `eighth-experimentation`'s subscription to Production's listing, and on
-decision due 11. It runs while that subscription is live, before the revocation step 4.12 ends with, the
+Waits on Stage 19 step 4.12, `eighth-experimentation`'s subscription to Production's listing (decision
+11 (a)); under decision 7 (b) the subscription the model reads is `app-dbt`'s own project's. It runs while that subscription is live, before the revocation step 4.12 ends with, the
 two sessions agreeing on the order. It is a Sandbox sitting raised as 2.2's and read by pass 2's blocks.
 
 - **5.1 [Claude] A model over the subscribed table**: a second source, `trades_notional` through the
@@ -1514,6 +1518,13 @@ recommendation that holds until then: 9 and 11.
    on this option and left outside the stage. (c) `app-etl` extended with a dbt task: its release
    guard fails a bundle whose export holds an asset `product.json` does not name, and its release G is
    in flight, so nothing of this stage lands in `app-etl-dev`.
+   **Reopened 2026-11-17 by decision 9 (b) and moved to (b)**, as the card of 9 (b) stated it, *"Reabre a
+   decisão 7 (projeto dev próprio)"*: a Sandbox project for `app-dbt` alone becomes the manifest's `dev`
+   stage, as Stage 19 decision 18 (d) made `app-etl-dev`, since the CLI 1.0.9 bundles the `dev` project's
+   whole catalog. The user creates it in the portal; its role joins `sandbox/workflows/`'s
+   `project_roles` in one line and one apply (open question 27 keeps the list), and after Stage 19 step
+   4.12 it holds the subscription pass 5 reads (decision 11 (a)). `eighth-experimentation` keeps its
+   experiments.
 8. **The processing-job hypothesis.** **Settled by decisions 2 and 13**: dbt in a processing job is
    compared at the desk and written into the runbook (1.6), in the form decision 13 opens, a job in its
    project's network with the wrapper posting as the project role, and measured by no pass. The form an
@@ -1527,6 +1538,13 @@ recommendation that holds until then: 9 and 11.
    slice), a product database in each deployment project, a `dev` project of the application's own
    (Stage 19 decision 18 (d)), the lint's rules over a Bash task with an archive, the promoted mode having
    retired with release T (Stage 19 item 31), and the lineage's account and domain as stage variables.
+   **Taken 2026-11-17 by the user as (b)**, the option *"Promover pela CLI (caminho AWS)"* on a card at
+   22:19 UTC, in the review of the plan's open decisions under the user's default of 21:50 UTC, AWS's
+   suggested path: `app-dbt` is promoted to Staging and Production by the CI/CD CLI, into the deployment
+   projects, as `app-etl` is. It moves decision 7 to (b), and this stage takes the list above: pass 1's
+   one-stage `examples/app-dbt/` is extended to the three stages, and the passes that bundle, release and
+   read it in each target are written before the sitting that runs them. dbt Core 1.11's critical support
+   ends 2026-12-18 (decision 6), so the release runs before that day or the archive moves to 1.12.
 10. **Where the catalog's runbook lives.** **Taken 2026-11-16: (a)**, a new
     `docs/plan/runbooks/catalog.md`, with `GOVERNANCE.md` keeping the model and `SMUS.md` the
     mechanism. It is a procedure, read by whoever configures the catalog, in the runbooks' lettered
@@ -1539,6 +1557,9 @@ recommendation that holds until then: 9 and 11.
     **Recommended: (a)**: it reads the graph across a subscription and across accounts with the product
     that exists; (b) adds a listing and a subscription this stage otherwise leaves out, on a project
     Stage 19 is still reading.
+    **Taken 2026-11-17 by the user as (a)**, the option *"Depois da 4.12 do Stage 19"* on a card at
+    22:21 UTC: the subscribed `trades_notional` is a model's input after Stage 19 step 4.12, the
+    subscription held by `app-dbt`'s own `dev` project (decision 7 (b)).
 12. **The warehouse connection's own lineage capture.** **Moot since decision 1 (a)**: the stage holds
     no warehouse sitting. The capture AWS automates for Redshift stays 6h decision 3's question.
 13. **The network isolation of a SageMaker job.** **Taken 2026-11-16**: the direction in the user's
