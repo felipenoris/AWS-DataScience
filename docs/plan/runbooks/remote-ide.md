@@ -178,6 +178,11 @@ does.
 connection. That message is the measurement: the server is **copied from the laptop**, because the
 space's own attempt to fetch it was refused (§N).
 
+**Or connect from the portal.** The space's *Open in VS Code* in the portal, the deep link, is the other
+method AWS offers, and the estate supports both (Stage 6d decision 4, taken 2026-11-17). Its caller is the
+same project role from the laptop's own address, with a browser's user agent (§I); it was tried on a
+laptop prepared as above.
+
 ### What the connection runs on the laptop, and what macOS adds to it
 
 Read from the Toolkit's source on 2026-09-11 (`awsService/sagemaker/`, `shared/sshConfig.ts`,
