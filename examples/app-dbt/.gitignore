@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.egg-info/
+dist/
+code/*.zip
+# What dbt writes beside a project it runs; hatchling reads this file, so none of it reaches the
+# wheel package-task builds either.
+target/
+logs/
+dbt_packages/
+.user.yml

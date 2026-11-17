@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: notional_by_desk
+    description: The notional each desk traded, quantity times price summed over the desk's trades.
+    columns:
+      - name: desk
+        description: The desk.
+        data_tests:
+          - not_null
+      - name: notional
+        description: The sum of quantity times price over the desk's trades, rounded to cents.

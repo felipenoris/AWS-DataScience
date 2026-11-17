@@ -1,0 +1,16 @@
+# The connection dbt opens: Athena over the account's Glue Data Catalog, as the caller's session. No
+# value of an account is written here: run-dbt.sh exports the Region, the product database, the
+# workgroup and the database's location before it starts dbt. No s3_staging_dir: no statement then
+# carries a ResultConfiguration, and the workgroup's enforced output places the query results. The
+# location of an Iceberg table is <s3_data_dir><schema>/<table>/<uuid>, written by the adapter.
+app_dbt:
+  target: dev
+  outputs:
+    dev:
+      type: athena
+      database: awsdatacatalog
+      threads: 1
+      region_name: "{{ env_var('AWS_DEFAULT_REGION') }}"
+      schema: "{{ env_var('APP_DBT_DATABASE') }}"
+      work_group: "{{ env_var('APP_DBT_WORKGROUP') }}"
+      s3_data_dir: "{{ env_var('APP_DBT_DATA_DIR') }}"
