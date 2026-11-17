@@ -790,3 +790,28 @@ AWS call ran as the infrastructure user (`InfrastructureAccess`). Nothing was up
   accepted by the user with decision 13 on 2026-11-16, with its row in the network matrix.
 - **Left**: 4.5, the job without isolation in Sandbox (`TM-35`'s measurement), in sitting A. 6.4's item for
   `awsds-workflows`, the lint's `job` rule, which still refuses such a task.
+
+## 2026-11-17 — 6.4's lint item taken by `awsds-workflows`, and `app-dbt` pinned to it
+
+*Claude's hand, in a cloud session of the user's Claude project, on the user's question of 18:55 UTC
+after `awsds-workflows` pull request #27 merged, "há algo que precisa ser ajustado no projeto
+`AWS-DataScience`?", and the user's choice of 19:19 UTC on a card, "Abrir o PR agora". No AWS call.*
+
+- **`awsds-workflows` pull request #27**, opened 17:58 UTC on the user's choice of 17:39 UTC (*"Ok, pode
+  fazer conforme sua recomendação"*, the option "Correções + regra job"), merged 18:55 UTC as `1a50ceb`.
+  The rule `job` no longer reads a processing task's `EnableNetworkIsolation` and keeps the project's
+  network, `EnableInterContainerTrafficEncryption`, the 2,820 s ceiling, a listed instance type and, in
+  the promoted mode, `VolumeKmsKeyId`. The package's guide states the isolation as the job's choice, and
+  its example job keeps it. The same pull request corrects the rule `manifest`'s reason for an
+  `include` `*` on an item that names a connection, which the CLI 1.0.9 turns into a sync of the
+  connection's whole folder.
+- **The applications against `1a50ceb`**, at `7816fbe`, each with its pipeline's options: `app-etl` 9
+  files, `app-ml` with `--model-item model` 6, `app-genai` 3 and `app-dbt` 4, each `ok`.
+- **`app-dbt` pinned to `1a50ceb`** in `README.md` and `tests/simulation/simulate.py`. `package-task` is
+  the same at `37cb5a6` and `1a50ceb`, whose diff touches the lint alone. `app-etl` (`196acee`), `app-ml`
+  and `app-genai` (`37cb5a6`) keep their pins.
+- **The text that said the lint still refuses**: this stage's Status, 4.5 and the item for
+  `awsds-workflows`, whose other asks stay open; `TM-35`'s state, whose revision trigger "the lint's `job`
+  rule relaxed" fired and leaves the list; `sagemaker-application.md`'s template job; and
+  `sagemaker-ai-ml.md`'s processing-job paragraph, with its lint paragraph and operator table, which
+  still described the lint before `37cb5a6`.

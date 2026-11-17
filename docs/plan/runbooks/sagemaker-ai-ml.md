@@ -353,9 +353,9 @@ The list is `ml.t3.medium`, `ml.t3.large`, `ml.t3.xlarge`, `ml.m5.large`, `ml.m5
   subnets with the project role's credentials and reaches what a worker task reaches (`TM-35`). A training, tuning
   or AutoML job and a model stay under the statement, and the table's other rows stay as they are.
   Isolation becomes the application's choice, job by job: `app-ml`'s two `prepare` tasks keep
-  `EnableNetworkIsolation: true`, since each reads its input mounts alone. The lint's rule `job` refuses
-  a processing request without it, a rule that stage hands to `awsds-workflows` after the pass (its step
-  6.4).
+  `EnableNetworkIsolation: true`, since each reads its input mounts alone. The lint's rule `job` leaves
+  it to the task from `awsds-workflows` `1a50ceb` (that stage's step 6.4), which `app-dbt` pins; at
+  `app-ml`'s pin `37cb5a6` it still refuses a processing request without it.
 - **A batch transform has no `VpcConfig` of its own.** It inherits the model's, which is why
   `CreateModel` is on the first two lists.
 - **A workflow's notebook task is refused.** `SageMakerNotebookOperator` runs the notebook as a
@@ -546,11 +546,11 @@ Amazon provider, 9.38.0 on that page. The calls below were read in the provider'
 | `SageMakerModelOperator` | `CreateModel`, `DescribeModel`, with no check of the name | read, not run, and unused: `resolve` creates the model with boto3, since no value passes into an operator's `config` |
 | `SageMakerDeleteModelOperator` | `DeleteModel` | read, not run. `app-ml-score`'s `cleanup` task (designed) |
 | `SageMakerEndpointOperator` | `CreateModel` and `CreateEndpointConfig` when its `config` holds them, then `CreateEndpoint`, or `UpdateEndpoint` when the name exists, which drops the tags; then it waits for `InService` | read, not run. `app-ml-endpoint`'s `create` task, with no `Model` key (decision 18 (b), designed) |
-| `SageMakerRegisterModelVersionOperator` | `CreateModelPackageGroup` first, with the package's description as the group's, then `CreateModelPackage` | read, not run, and refused by name once step 9.3's rule merges: `app-ml`'s `register` is a Python task (decision 16 (b)) |
+| `SageMakerRegisterModelVersionOperator` | `CreateModelPackageGroup` first, with the package's description as the group's, then `CreateModelPackage` | read, not run, and refused by name since step 9.3's rule merged as `37cb5a6`: `app-ml`'s `register` is a Python task (decision 16 (b)) |
 | `SageMakerStartPipelineOperator` | `StartPipelineExecution` with `pipeline_params`, a templated field; with `wait_for_completion` it polls the execution | read, not run. `app-ml-pipeline`'s `start` task, in the `dev` project alone (decision 19 (b), designed) |
 | `SageMakerTuningOperator`, `SageMakerAutoMLOperator`, `SageMakerEndpointConfigOperator` | not read | not run; step 9.3's rule refuses the last by name |
 | `SageMakerNotebookOperator` | a training job named `Notebook-task-…` with no network setting | refused by the boundary (measured) and by the lint |
-| `BedrockInvokeModelOperator` | `InvokeModel` with the model, the body and two content types. It names no guardrail, and it writes the prompt and the response to the task log | never run. Read once in `dev`, from a workflow outside the bundle (10.4), and refused in an application once step 10.3's rule merges |
+| `BedrockInvokeModelOperator` | `InvokeModel` with the model, the body and two content types. It names no guardrail, and it writes the prompt and the response to the task log | never run. Read once in `dev`, from a workflow outside the bundle (10.4), and refused in an application since step 10.3's rule merged as `37cb5a6` |
 | `BedrockRaGOperator`, `BedrockRetrieveOperator` | `RetrieveAndGenerate`; `Retrieve`. The first logs the prompt, the response and the citations, the second the query and what it retrieved | never run, and refused in an application by the same rule. The first is a call AWS's page keeps away from a role bound to a guardrail (§G) |
 | `BedrockIngestDataOperator` | `StartIngestionJob`, repeated after a `ValidationException` that says the index is not ready, then it waits for the job | never run: the knowledge base's ids pass between Python tasks, so `app-genai`'s `sync` starts the ingestion job itself (decision 25 (b), `SUP-277`) |
 | `BedrockCreateGuardrailOperator`, `BedrockCreateGuardrailVersionOperator`, `BedrockDeleteGuardrailOperator` | `CreateGuardrail`, which on a `ConflictException` with `if_exists: skip` reads the guardrail's id by its name and leaves the guardrail as it is; `CreateGuardrailVersion`, at every run; `DeleteGuardrail` | never run: `app-genai`'s `guardrail` task makes the calls with boto3, since the operator that updates a guardrail is not on the service's list (decision 24 (b), `SUP-373`) |
@@ -701,23 +701,27 @@ The rules behind that shape:
 | The knowledge base (10.7) | two Python tasks before `triage`: `knowledge_base` finds the knowledge base and its data source by their names and creates what is missing, and `sync` starts an ingestion job and waits for it. `triage` then calls `Retrieve` for each message and its own `Converse` with what it retrieved, never `RetrieveAndGenerate` | the vector store, an S3 Vectors index, and the knowledge base's service role, in each target's `genai.tf` | 25 (b) |
 | The agent (10.11) | a workflow `app-genai-agent` of Python tasks, `guardrail`, `deploy`, `ask` and `check`: `deploy` creates or updates an AgentCore runtime from the archive the pipeline's `build-agent-code` built, in VPC mode, with the guardrail's ARN and version in its environment, and `ask` sends the sample's questions with `InvokeAgentRuntime` | the runtime's execution role, `awsds-<env>-app-genai-agent`, in each target's `genai.tf` | 26 (a) |
 
-**The lint** (`awsds-workflows`, at the template's pin `196acee`) reads a processing request (rule
-`job`) and a training request (rule `treino`) against the boundary's settings, and refuses
-`SageMakerNotebookOperator` by name. A transform, a model or an endpoint operator passes with its
-request unread (Lesson 71) until step 9.3's rules merge: a rule for the transform operator's request,
-the same two fields for the model operator, and a refusal by name of
-`SageMakerRegisterModelVersionOperator`, `SageMakerEndpointOperator` and
-`SageMakerEndpointConfigOperator`. The endpoint increment replaces the endpoint operator's refusal with
-a rule that reads its request, and a rule that reads a pipeline's definition file is a pull request of
-its own before the pipeline increment's tag (verification lxi). Until those merge, the boundary and the
-OU are the only refusal for such a request. The same pull request gives the rule `manifest` its
-exception: the rule refuses a storage item that names a connection, admits the catalog's export since
-2026-11-12, and would admit, behind an option that names it, the one item that carries the model (§B).
-The rule `operador` likewise admits every Bedrock operator of the provider until step 10.3's rule
-merges, which refuses by name, in an application, the three operators that write what they send and what
-they receive to the task log: `BedrockInvokeModelOperator`, `BedrockRaGOperator` and
-`BedrockRetrieveOperator`. The operators that create a guardrail, a knowledge base or a data source stay
-admitted and unused.
+**The lint** (`awsds-workflows`) reads a processing request (rule `job`) and a training request (rule
+`treino`) against the boundary's settings, and refuses `SageMakerNotebookOperator` by name, at every pin
+in use. Steps 9.3's and 10.3's rules merged on 2026-11-17 as `37cb5a6`, which `app-ml` and `app-genai`
+pin and the template's `196acee` lacks: the rule `transformacao` reads the transform operator's request
+(a listed instance type, the volume's and the output's keys, `action_if_job_exists: fail`); the rule
+`modelo` reads a model's request, the model operator's `config` or the transform operator's `Model`, for
+a `VpcConfig` and `EnableNetworkIsolation: true`; the rule `operador` refuses by name
+`SageMakerRegisterModelVersionOperator`, `SageMakerEndpointOperator`, `SageMakerEndpointConfigOperator`
+and the three Bedrock operators that write what they send and what they receive to the task log,
+`BedrockInvokeModelOperator`, `BedrockRaGOperator` and `BedrockRetrieveOperator`; and the rule
+`manifest`, which refuses a storage item that names a connection and admits the catalog's export since
+2026-11-12, admits the one item that carries the model, named by `--model-item` (§B). Three requests
+still pass unread (Lesson 71): a model's `Image` by tag or from any repository; a transform `config` with
+a `Model` and no `Transform`, on which the operator 9.32.0 fails with a `KeyError` before it creates the
+model while `check_if_model_exists` keeps its default; and `action_if_model_exists` at its default,
+`timestamp`, with which a retry creates a second model. No application writes one. From `1a50ceb`, which
+`app-dbt` pins, the rule `job` leaves a processing task's isolation to the task (Stage 20 step 6.4). The
+endpoint increment replaces the endpoint operator's refusal with a rule that reads its request, and a rule
+that reads a pipeline's definition file is a pull request of its own before the pipeline increment's tag
+(verification lxi); until then, the boundary and the OU are the only refusal for a pipeline's request.
+The operators that create a guardrail, a knowledge base or a data source stay admitted and unused.
 
 **The MLflow client in a worker's archive**, measured 2026-11-16 on a build host: `awsds-workflows
 package-task` over `mlflow-skinny==3.10.1` and `sagemaker-mlflow==0.5.0` wrote a `.zip` of 15,288,232
@@ -1049,7 +1053,7 @@ declared by that account's Terraform.
 | Path | What it is | In this estate |
 |---|---|---|
 | The IDE's export | CloudFormation templates and a script, run by hand in the receiving account | not a release: a person's deploy, `deployApp.sh` under a role that holds `provisioning-inline-policy.json`, with no place in a pipeline whose legs apply no Terraform. The zip is opened in Sandbox and nothing is deployed from it (decision 26 (a), 10.8) |
-| A task that invokes a model | a task's own code, or `BedrockInvokeModelOperator` | `app-genai`'s Python tasks, under the boundary's exception (decisions 15 and 22 (a), designed). The operator can name no guardrail and logs the prompt and the response (`SUP-373`), and the lint refuses it once step 10.3's rule merges |
+| A task that invokes a model | a task's own code, or `BedrockInvokeModelOperator` | `app-genai`'s Python tasks, under the boundary's exception (decisions 15 and 22 (a), designed). The operator can name no guardrail and logs the prompt and the response (`SUP-373`), and the lint refuses it since step 10.3's rule merged as `37cb5a6` |
 | AWS's `genai` example | a notebook task whose code creates a guardrail, a knowledge base and agents in the stage (§B) | its parts as the application's own Python tasks, one release each: the guardrail with the first (decision 24 (b)), then the knowledge base (decision 25 (b)), then an agent on Amazon Bedrock AgentCore (decision 26 (a)) |
 
 **`app-genai` is this path's application**, designed: its tasks are §W's, its loop in `dev` §D's and its
