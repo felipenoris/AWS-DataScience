@@ -343,6 +343,16 @@ The list is `ml.t3.medium`, `ml.t3.large`, `ml.t3.xlarge`, `ml.m5.large`, `ml.m5
   MLflow App, no registry, no Bedrock model and no S3 API, and it sees its input and output mounts
   alone. Tracking, registration and any model invocation therefore happen around the job, from the
   notebook in a space or from a worker task in a workflow.
+- **A processing job leaves the isolation statement at Stage 20's pass 4**, which is applied nowhere
+  yet. [Stage 20](../stages/stage-20-dbt-lineage.md) decision 13, taken 2026-11-16, takes
+  `sagemaker:CreateProcessingJob` out of `DenySageMakerJobsWithoutNetworkIsolation` in Sandbox, Staging
+  and Production. A processing job that sets `EnableNetworkIsolation: false` then runs in the project's
+  subnets with the project role's credentials and reaches what a worker task reaches. A training, tuning
+  or AutoML job and a model stay under the statement, and the table's other rows stay as they are.
+  Isolation becomes the application's choice, job by job: `app-ml`'s two `prepare` tasks keep
+  `EnableNetworkIsolation: true`, since each reads its input mounts alone. The lint's rule `job` refuses
+  a processing request without it, a rule that stage hands to `awsds-workflows` after the pass (its step
+  6.4).
 - **A batch transform has no `VpcConfig` of its own.** It inherits the model's, which is why
   `CreateModel` is on the first two lists.
 - **A workflow's notebook task is refused.** `SageMakerNotebookOperator` runs the notebook as a

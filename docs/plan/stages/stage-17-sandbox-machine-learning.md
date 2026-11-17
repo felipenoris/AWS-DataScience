@@ -114,12 +114,12 @@ space to Production are [`runbooks/sagemaker-ai-ml.md`](../runbooks/sagemaker-ai
 
 ### Why the experiment is logged from the space, and never from the job
 
-The boundary refuses every job without network isolation (`DenySageMakerJobsWithoutNetworkIsolation`), so
-the training container cannot reach the MLflow App, the Model Registry or anything else. The run is
-therefore logged from the notebook: the parameters before `CreateTrainingJob`, the final metrics read back
-from `DescribeTrainingJob` after it, and the model artifact downloaded from the output path and logged as
-an MLflow model. It is the same consequence 6i met when the workflow, not the code, had to delete the
-source: the code inside a job sees only its mounts.
+The boundary refuses a training job without network isolation
+(`DenySageMakerJobsWithoutNetworkIsolation`), so the training container cannot reach the MLflow App, the
+Model Registry or anything else. The run is therefore logged from the notebook: the parameters before
+`CreateTrainingJob`, the final metrics read back from `DescribeTrainingJob` after it, and the model
+artifact downloaded from the output path and logged as an MLflow model. It is the same consequence 6i met
+when the workflow, not the code, had to delete the source: the code inside a job sees only its mounts.
 
 ### What a job needs, and who gives it
 
@@ -135,6 +135,15 @@ separate the hypotheses (2.2); if it does, decision 7's slice carries the statem
 this stage creates. What the space's SDK configuration fills in by itself is read first (0.3): a default the
 space injects is a parameter the notebook does not have to write, and a default it does not inject is one
 the notebook must.
+
+A processing job leaves the isolation statement at [Stage 20](stage-20-dbt-lineage.md)'s pass 4, which is
+applied nowhere yet: its decision 13, taken 2026-11-16, takes `sagemaker:CreateProcessingJob` out of
+`DenySageMakerJobsWithoutNetworkIsolation` in Sandbox, Staging and Production. A processing job without
+isolation then runs in its project's subnets as the project role, and isolation becomes the application's
+choice, job by job. A training, tuning or AutoML job and a model stay under the statement, and the other
+settings stay on every job. The processing jobs this stage writes keep `EnableNetworkIsolation: true`
+before and after that change, since each reads its input mounts alone: 5.1's step, `app-ml`'s two
+`prepare` tasks and the pipeline increment's step (9.8).
 
 ## What this stage builds, and in which accounts
 
@@ -2622,6 +2631,14 @@ the criterion deciding nothing there. No decision of passes 9 and 10 is open.
   `foundation/` slices on 2026-11-17 (item 31, PR #308), and release G's sitting applies
   `production/studio/` from its saved plan. Each pass's plans are cut from a `main` that holds both, and
   each apply follows that stage's (Lessons 69 and 79).
+- **Stage 20's pass 4 edits the boundary pass 10 edits.** Its decision 13 changes `sagemaker-denies`,
+  which a tag of `sagemaker-prereqs` carries to the project boundary, and its applies are
+  `identity/sso/`, `identity/org-policies/`, `sandbox/sagemaker/` and both `studio/` slices. Pass 9 edits
+  `identity/sso/` and both `studio/` slices; pass 10 edits `identity/org-policies/`, both `studio/`
+  slices and `sagemaker-prereqs`, whose tag it reads from origin at tagging. The stage that lands second
+  cuts its plans from a `main` that holds the other's commits and reads the boundary's diff for its own
+  statements alone (Lessons 69 and 79). No job of this stage changes with that decision: its processing
+  jobs keep network isolation by their own request.
 - **2.2's readings are spoiled by 9.5.** The training pair in `sandbox/workflows/` reaches the role of
   the project pass 2 runs in, and after its apply 2.2 (b) no longer shows the gap. 9.5 holds that apply
   until 2.2's (a) and (b) are read.
