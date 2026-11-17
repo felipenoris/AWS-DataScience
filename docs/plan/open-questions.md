@@ -17,8 +17,9 @@ follows is still unanswered:
 2. **D7/D28 - two verifications, not decisions.** The orchestration decision is closed (Stage 10 builds
    alternative A alone since D7's 2026-09-05 amendment: MWAA Serverless via
    `awscc_mwaaserverless_workflow`, verified to exist 2026-08-08, re-verified 2026-08-16). What is open:
-   (i) whether the awscc resource *applies* cleanly under the CI deploy role (INT-14 — fallback chain
-   recorded there); (ii) whether **no-UI** observability is livable for a data scientist debugging a
+   (i) whether the awscc resource *applies* cleanly under the CI deploy role, answered yes by pipeline #71
+   (2026-10-24, INT-14), the path retired on 2026-11-17 with the CI/CD CLI creating the workflows (Stage 19
+   item 31); (ii) whether **no-UI** observability is livable for a data scientist debugging a
    failed run — Serverless has run/task APIs, a console page, per-task log streams and (since 2026-06)
    EventBridge events, but no Airflow web interface (read 2026-08-16). Stage 10 measures it in step 3.2's
    diagnosis session and answers it in its decision 11. Keep application entry points as plain containers

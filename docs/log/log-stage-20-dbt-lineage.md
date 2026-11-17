@@ -644,3 +644,31 @@ Account ids are replaced by the account's name in angle brackets.*
   `docs/log/INDEX.md`; `docs/AWS_SUPPLEMENT.md`, `SUP-327`'s reading of 2026-11-17; `docs/REFERENCES.md`.
   The pull request takes no new `SUP`, `TM`, `EXC` or `INT` id, and no module, slice, policy document or
   script was edited.
+
+## 2026-11-17 — the passes read against the laptop and the estate, with nothing up
+
+Read by a subagent of the plan's review session as Sandbox's `InfrastructureAccess`, read-only. Nothing
+was applied or written in AWS.
+
+- **[Claude, a subagent] Pass 1 on the laptop**: `examples/app-dbt` exists neither in the worktree, nor in
+  the project folder, nor on `origin/main`, where `git grep -l app-dbt` finds the stage file and this log
+  alone; the draft and 0.16's fixtures are in the cloud session's tarball. The laptop is Darwin `arm64`
+  with no container runtime, so 1.3's simulation, whose archive is built for `x86_64-manylinux_2_28`,
+  cannot load its compiled modules here; `openlineage-sql` 1.55.0 publishes a macOS universal2 wheel.
+  uv 0.12.13 and CPython 3.12.13 are installed, the pinned `awsds-workflows` resolves, and `bash` resolves
+  to 3.2.57 before Homebrew's 5.3.15.
+- **[Claude, a subagent] Versions on PyPI**: dbt-core's 1.11 line ends at 1.11.17 (2026-11-06), 1.12.7 the
+  latest; `dbt-athena` 1.11.1 needs dbt-core `>=1.8.0rc1,<2.0` and pyathena `<3.35`; `openlineage-dbt`,
+  `-python` and `-sql` at 1.55.0 (2026-10-29); a lock cut today takes dbt-core 1.11.16, as the draft's.
+- **[Claude, a subagent] Passes 2 and 3's prerequisites hold**: the project role in `project_roles`;
+  `sandbox/egress` on `vpc-egress-v0.19.0` with `datazone`; the house image's `NO_PROXY` naming
+  `datazone.us-west-2.amazonaws.com`; image version 11 `CREATED`; the Athena workgroup `ENABLED`,
+  enforced, engine 3, `SSE_KMS` under `dev/sys/athena/`; no `app_dbt` database, Glue job or workflow, and
+  the three prefixes empty; `dev/` registered with the project role; the managed policy at v77 carrying
+  Athena on tagged workgroups, `PostLineageEvent`, the Glue table writes and `GetDataAccess`.
+- **[Claude, a subagent] Pass 4**: `sagemaker-denies-v0.3.0` and `sagemaker-prereqs-v0.11.0` are the next
+  free tags (`git ls-remote --tags origin`), the second contended by Stage 17 passes 9 and 10; the files
+  the stage did not name, written into 4.2 and 4.6.
+- **[Claude] Written**: pass 1's head, the tree, 2.0, decision 9 (b)'s list, the D13 row, 4.2, 4.6 and
+  "What concerns the other sessions" corrected; the waiting list's rows for the tarball and decisions 9
+  and 11. Nothing in AWS changed.

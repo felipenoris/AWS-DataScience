@@ -27,7 +27,19 @@ model's training in Production describes `app-etl`, whose model keeps that shape
 release of its own after `app-ml`'s first release (Stage 17 decision 28, taken by the user as (a) on
 2026-11-17; Stage 17 step 9.11). Planned by Stage 17 pass 9, nothing applied.
 
-**In one line:** What crosses the gate into a headless deployment target: a closed list of artifact classes, carried by the repository; a workflow starts whatever runs there. A trained model is the one class the repository does not carry (amended 2026-11-17, planned).
+**Amended 2026-11-17 ([Stage 19](../stages/stage-19-smus-native-data-product.md) decision 6 (b) and item
+31, [D26](D26-unified-studio.md)'s association):** the targets are no longer headless. Each is associated
+with the domain since 2026-11-11 and holds a deployment project, and the pipeline's jobs run the CI/CD
+CLI's deploy of the bundle into it (`v0.5.2` in Production since 2026-11-16). Release T's path, the
+per-workflow role and `awscc_mwaaserverless_workflow`, is retired (item 31, applied 2026-11-17): the
+workflows run as the project role under the project key, the chains are `[P]` slices the user applies
+(decision 23 (a)), the lint reads the repository's `manifest.yaml` and `workflows/` and no rendered copy,
+and item 5's retention is decision 27 (d)'s account-level policy (`EXC-25`). Classes (2c) and (2d) lost
+their write-once prefix with release T: the CLI copies the code into the project's `shared/<app>/`, which
+the project role can rewrite (decision 28, `TM-32`). The text below keeps release T's shape where it says
+*the pipeline creates* and *no domain*, until Stage 19 step 6.2 rewrites it.
+
+**In one line:** What crosses the gate into a deployment target, a deployment project of the domain since 2026-11-11: a closed list of artifact classes, carried by the repository; a workflow starts whatever runs there. A trained model is the one class the repository does not carry (amended 2026-11-17, planned).
 
 **Related decisions:** [D7](D07-orchestration.md), [D14](D14-supply-chain-account.md), [D17](D17-interactive-vs-runtime.md), [D22](D22-data-governance-account.md), [D25](D25-drop-box-consumer.md), [D26](D26-unified-studio.md), [D41](D41-sagemaker-application.md)
 

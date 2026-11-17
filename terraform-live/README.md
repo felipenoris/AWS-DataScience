@@ -283,7 +283,7 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   2026-10-12) added `awsds-prod-ecr-app-etl` and the three pull-through cache rules (ECR Public,
   `registry.k8s.io`, Quay) with their creation templates — `MUTABLE` tags, since an immutable tag
   blocks the cache's own update, and AES256 for a public upstream's bytes. **Stage 8 decision 20**
-  (written 2026-10-16, unapplied) adds `awsds-prod-releases`, the bucket each application release's
+  (applied 2026-10-16) adds `awsds-prod-releases`, the bucket each application release's
   bundle is stored in, under the slice's key, versioned, with its deletes and its versioning and
   lifecycle changes denied to every principal but `InfrastructureAccess`.
 - **`production/pki/` `[P]` — the internal CA** (Stage 7 step 2, D36): the root and the two leaves
@@ -317,7 +317,7 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   attachment**: `CustomImages` is a field of the SageMaker AI domain the `Tooling` blueprint provisions,
   so making the image *selectable* is a hand step — [`docs/plan/runbooks/dev-env.md`](../docs/plan/runbooks/dev-env.md).
   Stage 8 step 1's pipeline takes the slice over (INT-18).
-- **`sandbox/bedrock/` `[P]` — the Bedrock grant** (Stage 6e step 3, written 2026-09-11, unapplied): one
+- **`sandbox/bedrock/` `[P]` — the Bedrock grant** (Stage 6e step 3, applied 2026-09-11): one
   `awsds-<env>-bedrock-assistant` policy naming the three scoped Claude models — as inference-profile
   ARNs *and* as region-less foundation-model ARNs, because authorization evaluates both — and one
   attachment per SMUS project role. **It is the slice whose input cannot be derived**: the role is minted
@@ -357,7 +357,7 @@ set: one design split by *which account is allowed to hold what*, D26's argument
 - **`staging/chains/` and `production/chains/` `[P]` — the chain layer above a deployment project's
   workflows** ([Stage 19](../docs/plan/stages/stage-19-smus-native-data-product.md) step 4.11), applied
   2026-11-15 in Staging and 2026-11-16 in Production: `terraform-modules/orchestration/` at
-  `orchestration-v0.3.0`, per chain a state machine that finds the workflow the CI/CD CLI created by its
+  `orchestration-v0.3.1`, per chain a state machine that finds the workflow the CI/CD CLI created by its
   name and passes the run the stage's variables, a schedule and a failure rule. Release T's
   `orchestration/` and `app/app-etl/` slices, which they replaced, retired at Stage 19 item 31.
 

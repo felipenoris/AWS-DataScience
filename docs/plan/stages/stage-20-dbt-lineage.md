@@ -116,7 +116,7 @@ on 2026-11-16.
 | Item | Today | Under the premises |
 |---|---|---|
 | D7 | workflows run on MWAA Serverless alone; provisioned MWAA is denied at the root (`airflow:CreateEnvironment`, amended 2026-09-05) | **keep**. dbt is a task of a serverless workflow. AWS's guide for dbt on Airflow and Airflow's OpenLineage provider are written for provisioned MWAA: they are read, never built (question 4) |
-| D13 | execution roles hold no S3 on the lake's registered prefixes, and a SageMaker job runs network-isolated: `DenySageMakerJobsWithoutNetworkIsolation` in the boundary a project role carries, in the persona sets and on the `Workloads` OU | **decision 13**, taken: a processing job leaves that statement in Sandbox, Staging and Production and runs in its project's subnets and security group as the project role; a training, tuning or AutoML job and a model stay under it, and the roles' lack of S3 on the lake's prefixes does not move. Pass 4 makes the change |
+| D13, and Stage 6a step 3 | execution roles hold no S3 on the lake's registered prefixes (D13), and a SageMaker job runs network-isolated (Stage 6a step 3's statement, which D13 does not name): `DenySageMakerJobsWithoutNetworkIsolation` in the boundary a project role carries, in the persona sets and on the `Workloads` OU | **decision 13**, taken: a processing job leaves that statement in Sandbox, Staging and Production and runs in its project's subnets and security group as the project role; a training, tuning or AutoML job and a model stay under it, and the roles' lack of S3 on the lake's prefixes does not move. Pass 4 makes the change |
 | D17 | people run code in Sandbox alone, in a space; a deployment target has no interactive surface | **keep**. A space is where the application is written and deployed from, never a pipeline's step: no operator starts one, and the portal's notebook task, a training job, is not offered here (6d decision due 14 (b), 2026-10-10) |
 | D26 | one domain, in Data Governance, a registry and never a runtime | **keep**. The wrapper posts to that domain through Sandbox's `datazone` endpoint, the door the Glue job's listener uses (`SUP-097`) |
 | D28 | the workflow starts whatever runs; on the worker runs *"orchestration code"*, class (2b), *"never a data path"*; a step that reads or writes governed data is an engine's | **keep**. dbt on the worker is class (2b): the client compiles SQL and the engine, Athena under Lake Formation's vending, reads and writes. Two of dbt's own paths put the client on the data, and the application takes neither: `dbt seed`, which carries rows through the client, and the Athena adapter's default drop, which deletes a table's files with the client's own S3 calls (0.13) |
@@ -320,9 +320,10 @@ examples/app-dbt/
 │   ├── bin/dbt               dbt Core's console script, stored executable
 │   └── project/              the dbt project, as package data: dbt_project.yml, profiles.yml, models/
 ├── code/run-dbt.sh           what the Bash task calls, stored executable
-├── code/app-dbt.zip          built by package-task, out of git
+├── code/app-dbt.zip          built by package-task, out of git (.gitignore, as the template's)
+├── .gitignore                code/*.zip, as examples/app-etl/.gitignore
 ├── pyproject.toml, uv.lock   dbt-core, dbt-athena and openlineage-dbt, by range and by lock
-├── scripts/dev-cli.sh        the template's copy
+├── scripts/dev-cli.sh        the template's copy, a pair ./scripts/check-copies.py gains
 ├── tests/
 └── README.md
 ```
@@ -737,7 +738,14 @@ already measured, and step 6.2 completes §L with this stage's readings.
 ### 1. With nothing up: the application, the lineage configuration, the runbook's first version
 
 No AWS session: a cloud session or the laptop, wherever `uv` reaches PyPI. Step 1.1's facts and decisions
-1 to 7 and 10 are taken, so nothing of the user's holds this pass. A draft of the application went
+1 to 7 and 10 are taken. What holds this pass on the user, read on the laptop on 2026-11-17: the draft and
+0.16's fixtures are in the cloud session's `stage-20/app-dbt-review-2026-11-17.tar.gz`, which neither the
+laptop nor `origin/main` holds, so the user copies it to the laptop, or the pass writes the application
+from "The application, task by task" and regenerates the fixtures with 1.3's simulation; 1.2 builds the
+one-stage shape of decision 9 (a), which is open; 1.5's reading of the portal's menus is a portal act.
+1.3 runs on Linux x86_64: its archive's compiled modules, built for `x86_64-manylinux_2_28`, load on no
+Darwin arm64 host, and the laptop holds no container runtime; on the laptop the simulation alone takes a
+host archive built with `--platform aarch64-apple-darwin`, recorded in the log. A draft of the application went
 through steps 1.2 to 1.4 outside the repository on 2026-11-17, against simulated services (0.15, 0.16);
 this pass writes it under `examples/app-dbt/` and repeats each command on the tree it commits. The
 commands run from `examples/app-dbt/`, and `awsds-workflows` runs from the commit the template's pipeline
@@ -883,7 +891,9 @@ for e in <event names>; do aws cloudtrail lookup-events --lookup-attributes Attr
   user before the sitting.
 
   The archive is built on the laptop from the merged tree, outside the repository, with pass 1's `TOOL`,
-  and travels inside the tar, whose flags keep macOS's AppleDouble members out (`SUP-348`):
+  and travels inside the tar, whose flags keep macOS's AppleDouble members out (`SUP-348`). An archive
+  rebuilt during a sitting (2.2, 2.3, 5.1) comes from the session branch's commit, since nothing merges
+  during a sitting, and that commit merges after it:
 
   ```bash
   rm -rf "$HOME/tmp/stage20" && mkdir -p "$HOME/tmp/stage20" && git archive --output="$HOME/tmp/stage20/source.tar" <the merged commit> examples/app-dbt && tar -x -f "$HOME/tmp/stage20/source.tar" -C "$HOME/tmp/stage20"
@@ -1243,7 +1253,10 @@ four profiles 4.4 names.
   slices hold one `main.tf`, which `./scripts/check-copies.py` compares, so their pins move together.
   `data-governance/publishing/` keeps its pin: the scope is Sandbox, Staging and Production. The persona
   sets compose one fragment, so every account a set is assigned in follows, and a set assigned outside
-  those accounts is named to the user before the apply.
+  those accounts is named to the user before the apply: the governance managers' set is assigned in
+  `Data Governance` (`identity/sso/locals.tf`), so the change reaches that account. The SCP's description
+  in `identity/org-policies/locals.tf` says *network-isolated* and changes with the statement.
+  `sandbox/model-access/`'s two roles carry Sandbox's boundary and follow it with no apply of their own.
   [`POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md)'s row is rewritten in the
   same sitting, and `./scripts/check-index.py` run.
 - **4.3 [Claude] The battery's rows** (`aws/probes/probes.py`): the `ou` row *"workloads:
@@ -1328,7 +1341,11 @@ four profiles 4.4 names.
   without isolation as outside the boundary; and a [`threat-model.md`](../threat-model.md) entry: a
   processing job's container holds its role's credentials and a path to the VPC's endpoints and, in
   Sandbox, to the proxy's allow-list, the application choosing isolation job by job (`app-etl`'s tasks
-  keep `EnableNetworkIsolation: true`).
+  keep `EnableNetworkIsolation: true`). Three more texts state the rule:
+  [`sagemaker-application.md`](../runbooks/sagemaker-application.md) §C's *"no network and no AWS
+  credentials"*, [`sagemaker-ai-ml.md`](../runbooks/sagemaker-ai-ml.md)'s statement that a pipeline's
+  steps take *"the same actions"* and its paragraph on a pipeline's processing step, and
+  `awsds_demo_job/__main__.py`'s docstring, *"runs every job isolated"*.
 
 ### 5. Across projects
 
@@ -1495,8 +1512,9 @@ recommendation that holds until then: 9 and 11.
    joins the catalog is answered in Sandbox. What (b) would need is listed for the stage that takes it:
    the worker's archive built and pinned by the pipeline (D28 class (2b)), the task's reach from a
    target's VPC (Athena, Glue, Lake Formation, STS and DataZone, read against each target's `egress/`
-   slice), a product database in each deployment project, the lint's promoted mode over a Bash task with
-   an archive, and the lineage's account and domain as stage variables.
+   slice), a product database in each deployment project, a `dev` project of the application's own
+   (Stage 19 decision 18 (d)), the lint's rules over a Bash task with an archive, the promoted mode having
+   retired with release T (Stage 19 item 31), and the lineage's account and domain as stage variables.
 10. **Where the catalog's runbook lives.** **Taken 2026-11-16: (a)**, a new
     `docs/plan/runbooks/catalog.md`, with `GOVERNANCE.md` keeping the model and `SMUS.md` the
     mechanism. It is a procedure, read by whoever configures the catalog, in the runbooks' lettered
@@ -1654,6 +1672,10 @@ never moves.
   6.2.
 - **Stage 11**: 6.3's threat-model entry, with 3.4's readings, and 4.6's.
 - **Stages 6d and 17**: a Sandbox sitting of theirs can carry pass 2 with the `mwaa` group added.
+- **Stage 17 passes 9 and 10**: they edit `identity/sso/`, `identity/org-policies/`, both `studio/` slices
+  and `sagemaker-prereqs`, and read the module's next tag at tagging, so `sagemaker-prereqs-v0.11.0` goes
+  to whichever stage tags first, and the four shared slices carry both stages' changes in one apply once
+  both are on `main` (Lesson 69).
 - **The `awsds-workflows` project** (6.4): a way to hand `package-task` a wheel fetched by hand, for a
   dependency published as a download-at-install source distribution, which it refuses today
   (`dbt-core-experimental-parser`, decision 6 (b)); an `--include` that takes a folder and a destination

@@ -114,7 +114,7 @@ AWS Organization (Management account - console only)                        [P]
         ├── internal ALB for GitLab/Pages (rebuilt per session)             [E]
         ├── GitLab Runners                                    <- D14        [E]
         ├── interface VPC endpoints per VPC - no NAT anywhere (D38)         [E]
-        ├── orchestration: MWAA Serverless, chains above it (D7, D41)       [E]
+        ├── orchestration: MWAA Serverless, chains above it (D7, D41)       [P]
         └── (Stage 13) public web tier -> private backend                   [E]
 ```
 
@@ -553,12 +553,11 @@ A mental model, not a status. Every old habit contradicts some part of it.
   nothing into itself and no project can create a warehouse of its own.
   Staging and Production were never associated until 2026-11-11, when
   [Stage 19](stages/stage-19-smus-native-data-product.md) decision 6 (b) gave each a deployment project:
-  a project no person works in and no space runs in, which the CI/CD CLI deploys into from that stage's
-  step 4.9. Until that release, what crosses the gate is
-  the D28 artifact set — image, workflow YAML in S3, the code its tasks read from S3, per-workflow role,
-  orchestration resource with a chain's state machine and schedule, log group, model package group —
-  carried by the application's git repository, which the CI/CD CLI deploys between the Sandbox projects
-  and bundles ([D41](decisions/D41-sagemaker-application.md)), and linted against domain-scoped references.
+  a project no person works in and no space runs in, which the CI/CD CLI deploys into since release F
+  (`v0.5.2`, 2026-11-16). What crosses the gate is the application's bundle, made by the CI/CD CLI from
+  the tag's files and the `dev` project's catalog ([D41](decisions/D41-sagemaker-application.md)): the
+  image, the workflow YAML, the code its tasks read from S3 and the catalog's export; the CLI creates the
+  workflows in each deployment project, and `<env>/chains/` holds each chain's state machine and schedule.
 - **D18** gives the data scientist read-only permission sets on Staging and Production (data plane, no
   compute); **D19** keeps the derived zone designed rather than left over — since 2026-08-26 it is the
   SMUS project path, per project, the service's hand.

@@ -3,7 +3,7 @@
 #
 # The wrong-account guard is the backend: this slice's state lives in this account's own
 # awsds-<env>-tfstate, which admits no cross-account principal. One read crosses an account boundary:
-# the deploy runner's home identity, for the trust of the test deploy role (deploy-role.tf's alias);
+# the deploy runner's home identity, for the trust of the bundle role (deploy-role.tf's alias);
 # a project role, the policies it gets and the jobs it names are all in this one account.
 
 provider "aws" {

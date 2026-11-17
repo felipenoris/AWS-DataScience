@@ -16,7 +16,7 @@
 # No role here touches data, and none is a workflow's execution role.
 #
 # The names are contracts: awsds-<env>-chain-<key>, awsds-<env>-chains, awsds-<env>-chain-exec and
-# -chain-scheduler, awsds-<env>-wf-<workflow>-failed, and the parameter
+# -chain-scheduler, awsds-<env>-wf-<application>-<workflow>-failed, and the parameter
 # /datascience/<env>/applications/<application>/stage-variables, which scripts/deploy-application.py writes.
 # Parameter Store reserves every name beginning with aws, so the path spells the project out (SUP-067).
 

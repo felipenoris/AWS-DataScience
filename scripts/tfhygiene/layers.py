@@ -789,8 +789,9 @@ def pipeline_refusal(account: str, slice_name: str, profile: str) -> str | None:
     if account in backend.SMUS_MEMBERS:
         return (
             f"refusal 8: the pipeline profile {profile} applies no {account}/ slice - CI never applies "
-            "into the account people work in; the dev-env release creates image versions and the test "
-            "deploy its workflow through the API (Stage 8 step 2.4, decisions 18 and 19)"
+            "into the account people work in; the dev-env release creates image versions through the "
+            "API and the bundle job reads the dev project (Stage 8 step 2.4, decision 18; Stage 19 "
+            "decision 19 (c))"
         )
     return (
         f"refusal 10: the pipeline profile {profile} applies no {account}/ slice - "

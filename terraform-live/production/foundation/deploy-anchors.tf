@@ -136,8 +136,8 @@ module "deploy_runner_role" {
     })
 
     # Decision 14: a deploy job reads production/registry/'s state (the repository URLs and ARNs a
-    # dev-env or application slice names) through the runner's own profile, since no other account's
-    # deploy role can read this account's state bucket. One object, read only.
+    # dev-env/ slice names) through the runner's own profile, since no other account's deploy role can
+    # read this account's state bucket. One object, read only.
     "registry-state" = jsonencode({
       Version = "2012-10-17"
       Statement = [

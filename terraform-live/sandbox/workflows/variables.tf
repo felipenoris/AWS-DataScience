@@ -1,7 +1,6 @@
 # Inputs. region, env, environment_tag, deploy_role_name and deploy_runner arrive from the generated,
-# untracked terraform.auto.tfvars (./scripts/gen-tfvars.py <account> workflows). project_roles,
-# test_project_role and datazone_domain_id are this slice's own, edited by hand once per project or
-# domain.
+# untracked terraform.auto.tfvars (./scripts/gen-tfvars.py <account> workflows). project_roles and
+# datazone_domain_id are this slice's own, edited by hand once per project or domain.
 
 variable "region" {
   description = "AWS region for this slice. No region literal ever appears in a .tf file (docs/plan/architecture.md 4.1)."

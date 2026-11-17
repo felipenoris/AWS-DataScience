@@ -730,6 +730,12 @@ during the stage and written into `docs/log/log-stage-11-dlp.md` (Lesson 16), wi
     table. AWS documents a subscription approved with row and column filters as one data cells filter
     granted `SELECT` in place of the table, so it would narrow the subscription's own grant rather than
     sit beside it; never run here.
+    **A third option put to the user on 2026-11-17**, by the plan's review: (c) the approver's row and
+    column filters at the subscription's approval, SMUS's own form, which [Stage 19](stage-19-smus-native-data-product.md)
+    names as the native one and hands back here; it is first exercisable at that stage's 4.12, on
+    `trades_notional`, an `internal` table. **Recommended: (c)** under the direction to take SMUS's
+    intended path: the filter is the grant DataZone writes, and the decision is moot for `restricted`
+    data while 6f decision 2 keeps it off the catalog.
 13. **The warehouse's query record** (5.1, `TM-16`, `EXC-16`) — the namespace's CloudWatch groups as
     configured, which have held 23 minutes of user activity since 2026-09-20 and nothing while a workgroup
     exists, or Redshift's system-table integration with S3 Tables (2026-08-20): per namespace, a hand

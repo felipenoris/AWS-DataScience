@@ -621,8 +621,8 @@ policy can detect it.
 - roles: when infrastructure changes are deployed through CD tool, this user will be used for approving
   deployment of artifacts.
 
-- Exercises the manual approval step in the promotion pipeline, with the Staging test results and the
-  Terraform plan in front of them ([Stage 8](plan/stages/stage-08-cicd-pipelines.md)). Also the approver
+- Exercises the manual approval step in the promotion pipeline, `production-gate`, with the Staging test
+  results in front of them ([Stage 8](plan/stages/stage-08-cicd-pipelines.md)). Also the approver
   for the **time-boxed elevated role** used to debug a failed production job (Stage 9) — a lifecycle act,
   not a data one.
 

@@ -503,7 +503,7 @@ Stage 9, `awsds-prod-job-exec` (read + the governed write), and a project's ware
 governed share it reads through Redshift (9.7); from Stage 19, each deployment project's role on its own
 product database. Lake Formation gives a table's creator its permissions and nobody else (Lesson 75):
 `app_outputs`, where the deploy roles created tables and `InfrastructureAccess` held `DROP` on them,
-leaves both targets with release T's path (Stage 19 item 31). LF-Tags never gate the read/write direction
+was removed from both targets with release T's Terraform path (Stage 19 item 31, 2026-11-17). LF-Tags never gate the read/write direction
 — the verbs in the permission list do; the tags say what the data *is*.
 
 **The grain.** Entitlement follows the toolset's own practice: grants go to roles and projects, assumed
@@ -749,19 +749,20 @@ flowchart LR
   Stage 6f decision 1 (2026-10-26) it is also how a published lake table is read (§Grants, the catalog road). The Governance Manager approves as a member of the owner
   project or through `GovernanceManagerAccess`'s domain ownership; which policy decides is Stage 6f 4.3. A member acts as the project role in the portal, whose query editor reads the project's tables (Stage 18 6.1, 7.2), so that route reaches rows D31 keeps from the persona.
 - **The domain is the boundary.** Publish, subscribe and Share work inside one domain. Staging and
-  Production are associated to it since 2026-11-11 and hold no project yet
-  ([Stage 19](plan/stages/stage-19-smus-native-data-product.md) decision 6 (b), steps 4.2 and 4.6), so
-  a deployment target neither publishes nor subscribes today. Once each holds its deployment project,
-  Production publishes the product its runs create and approves what Sandbox subscribes to, and
-  neither target subscribes to anything: the `Workloads` SCP denies the request (decision 13 (b)).
+  Production are associated to it and each holds a deployment project since 2026-11-11
+  ([Stage 19](plan/stages/stage-19-smus-native-data-product.md) decision 6 (b), steps 4.2 and 4.6).
+  Production lists the product's asset since `v0.5.2` (2026-11-16), creates its data product from
+  release G, and approves what Sandbox subscribes to; Staging imports the catalog unlisted; neither
+  target subscribes to anything: the `Workloads` SCP denies the request (decision 13 (b)).
 
 ### Promotion — Sandbox → Staging → Production
 
 - **The repository is the promotion vehicle** (D21, D28, D41). The application is a SageMaker application
   on the `app-etl` template in the GitLab group `awsds/` (Stages 7-8), and the deployable set is D28's
-  artifact classes — the image, the workflow definition, the code its tasks read from S3, a per-workflow
-  execution role, the orchestration resource with its chain's state machine and schedule, its log group
-  and, for ML, the model package group — carried by the repository, never by the portal. The
+  artifact classes, carried by the repository and its bundle, never by the portal: the image, the
+  workflow definitions, the code their tasks read from S3 and the catalog's export. In each target the
+  CI/CD CLI creates the workflows in the deployment project, which runs them as its project role, and
+  `<env>/chains/` holds each chain's state machine and schedule (Stage 19 decision 6 (b), release F). The
   application's own cycle, from a space to Production, hand by hand, is
   [`plan/runbooks/sagemaker-application.md`](plan/runbooks/sagemaker-application.md).
 - **The pipelines** (Stage 8): the `dev-env` pipeline releases the runtime image behind the Dev Env
@@ -769,15 +770,17 @@ flowchart LR
   package on a release tag, then has the CI/CD CLI make the bundle from the tag's files, deploying and
   running nothing in Sandbox (Stage 19 decision 19 (c)), and stores the bundle in Production's releases
   bucket, which the tag's GitLab release names, before Staging (Stage 8 step 2.5, decisions 19 and 20);
-  the promotion pipeline waits at a manual gate (decision 28), applies the tag and that bundle into
-  Staging, the release's first run, and runs the integration tests, leaving the release there for the
-  user's `make down` (decision 27), pauses at the Deployment Manager's manual gate with the test results
-  and the Production plan in front of them, and applies into Production as `awsds-deploy-prod`.
+  the promotion pipeline waits at a manual gate (decision 28), has the CI/CD CLI deploy that bundle into
+  `deploy-staging` as `awsds-deploy-staging` (`staging-deploy`), imports its catalog unlisted
+  (`staging-catalog`) and runs the integration tests (`staging-test`), the release's first run, with
+  `staging/egress/` raised and destroyed by the user around the leg (decision 27); it pauses at the
+  Deployment Manager's manual gate (`production-gate`) with the test results in front of them, deploys
+  into `deploy-production` as `awsds-deploy-prod` (`production-deploy`) and lists the asset
+  (`production-catalog`).
 - **A workflow is authored in the application repository** (Stage 10 steps 2.1-2.2, D41): the CI/CD CLI
-  deploys it into the Sandbox `dev` project and bundles it, the D28 lint refuses anything
-  portal-scoped in the copy rendered per account, and in Production the definition is deployed to
-  `awsds-prod-outputs/applications/<app>/<tag>/` and run by MWAA Serverless as the per-workflow role, started
-  by its chain's state machine.
+  deploys it into the Sandbox `dev` project and bundles it, `awsds-workflows lint` checks it against what
+  the targets' boundary refuses before the deploy, and in each target the CLI creates it in the deployment
+  project, where MWAA Serverless runs it as the project role, started by its chain's state machine.
 - **Staging tests against the lake, read in place.** It reads the governed lake read-only through the
   LF-Tag share Sandbox holds and writes only its own catalog, buckets and key, its tables created by each
   deploy from the repository's schemas (Stage 9 decision 3, D20 as amended 2026-10-22). The integration
