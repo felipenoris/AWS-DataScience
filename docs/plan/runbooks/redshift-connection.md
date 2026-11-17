@@ -149,12 +149,13 @@ connect but sees nothing"* as the expected state for a while — which is the am
      `dev` (read 2026-10-18 and 2026-10-26), so the editor opens there, and a session in `dev` reads no
      governed share for want of `TEMP` (§G). The person selects `sandbox`. Whether a member's
      `UpdateConnection` can change the database is unmeasured, and a full-replace update needs every
-     field passed (Lesson 60).
+     field passed (Lesson 60). The user chose on 2026-11-17 to name `sandbox` in the call that switches
+     `lineageSync` off (6h decision 3); until that call, or if it is refused, the person selects `sandbox`.
    - **There is no `lineageSync` toggle** on this path, and the connection it wrote has the sync
      **on**: the object read 2026-10-18 has `lineageSync.enabled: true` on a daily cron, and every run
      so far failed without minting a database session (6h decision 3). A run that succeeds is a
      scheduled query on the 1.44 USD/hour meter, and `WH-9` fails on it. Switching it off is an
-     `UpdateConnection` by a project member.
+     `UpdateConnection` by a project member, the user's choice of 2026-11-17 (6h decision 3).
 5. **Re-run `./aws/warehouse.py --sql`** and add the register row. The database user is
    **`IAMR:<the RedshiftDbUser tag's value>`** — measured 2026-10-10: the tag is honoured and Redshift
    prefixes its value, so with the tag set to the project role's name the user is
