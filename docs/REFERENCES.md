@@ -1537,6 +1537,244 @@
   reading of *dispatch failure* as the HTTP client failing to send, behind a proxy or without a route:
   <https://gist.github.com/Chen188/e7d1023c92efb84fa35f72a33a1d14ed>.
 
+- **The AI/ML and Generative AI menus of SageMaker Unified Studio, read again (2026-11-16, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md)'s passes 9 and 10 and
+  [`runbooks/sagemaker-ai-ml.md`](plan/runbooks/sagemaker-ai-ml.md)).** Each page was read in its
+  Markdown form, the URL below with `.md` in place of `.html`, through a page-reading agent, unless the
+  HTML form is named; the stage log's entries of that day hold each sentence quoted.
+  - The user guide's table of contents: *AI and machine learning* holds *Amazon Bedrock in SageMaker
+    Unified Studio* and *Machine learning*, the second in two chapters, one for Identity Center-based
+    domains (JumpStart models, JupyterLab, training, inference endpoints, pipelines, the model registry,
+    MLflow, HyperPod clusters, Partner AI apps) and one for IAM-based domains (foundation models
+    discovered and deployed, MLflow, custom training jobs, registered models, Feature Store). The
+    chapter's opening page says nothing on which domain type offers which capability:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/toc-contents.json>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-identity-center-based-domains.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-iam-based-domains.html>.
+  - The Identity Center chapter, whose navigation is **AI/ML** and then *JumpStart models*, *Inference
+    endpoints*, *ML pipelines*, *Model registry* and *MLflow*. A pipeline is defined in the visual
+    designer or by a definition JSON, imported from a file and downloaded as one, the page stating
+    nothing on a schedule, a workflow or another account; *"For each run of the ML pipeline, create a
+    model version that you register in the model group you created in the first step."*; *"MLflow Apps
+    are the latest offering with faster startup times and cross-account sharing"*:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-discover-models.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-build-models.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-train-models.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-deploy-models.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-pipelines.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-register-models.xml.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-experiments.xml.html>.
+  - Outside the two chapters: the common use case *Train and deploy an XGBoost model*, which asks for a
+    project of the **All capabilities** profile with an MLflow tracking server, whose endpoint *"runs on
+    a dedicated `ml.m5.large` instance and incurs costs as long as it is in service"* and whose training
+    is followed under **AI/ML**, *Training jobs*; and the tutorial *Train an ML model*, a sample
+    notebook, *Customer Churn Prediction*, that saves `churn_prediction_model.pkl`:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-xgboost-recipe.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/gs-ml.html>.
+  - The IAM chapter, whose navigation is **Models** with the tabs *Foundation Models* and *Registered
+    Models*, **Training Jobs** and **Feature Store**: *"Note that you can't create a new MLflow App in
+    Amazon SageMaker Unified Studio."*; *"The Feature Store interface described on this page is
+    available in Amazon SageMaker Unified Studio domains configured with AWS IAM."*, with the SDK *"in
+    any domain type"*; *"You cannot edit or delete features after the feature group is saved."*:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/discover-foundation-models.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/deploy-foundation-models.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/use-mlflow-experiments.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-monitor-training-jobs.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/manage-registered-models.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/feature-store.html>.
+  - The release notes, entry of October 8, 2026: the chat playground, the image and video playground and
+    the shared apps and prompts are under **Playground**, and chat agent, flow, prompt and my apps under
+    **AI apps**:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>.
+  - Amazon Bedrock in SageMaker Unified Studio: two kinds of app, a chat agent app and a flow app; a
+    playground that *"doesn't support Provisioned throughput, custom models or imported models"*; a chat
+    agent app deployed by an alias and a version, eight aliases at most; a shared app published to the
+    catalog, whose snapshot stops being shared only with the app's deletion; an evaluation with no
+    human-based form, the Bedrock API listing every evaluation job *"in the AWS account that hosts the
+    project"*:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/bedrock.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/bedrock-playgrounds.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/model-catalog.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-chat-app.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-flows-app.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-share.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-deploy.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/evaluation.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/prompt-mgmt.html>.
+  - The export of an app: a zip of CloudFormation templates, `amazon-bedrock-ide-app-export-*.zip`,
+    deployed *"into your AWS account (or another AWS account, if you prefer)"* by a shell script over
+    the AWS CLI, with a role that carries `provisioning-inline-policy.json`, an S3 bucket and,
+    optionally, a KMS key tagged `EnableBedrock` `true`; a knowledge base's data source files and a
+    function's secrets are not exported; an app is saved and run before it is exported. The overview
+    names the script `deploy-app.sh` and the deployment page `deployApp.sh`:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-export.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-export-chat-app.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-deploy-app.html>.
+  - Not read, each a client error in the Markdown form and a page with no body in the HTML form: *Create
+    a chat agent app with Amazon Bedrock* and the user guide's document history:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-chat-agent-app.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/doc-history.html>.
+  - The administrator guide's document history, whose two forms differ. The HTML form holds entries of
+    October 29, 2026: `SageMakerStudioProjectRoleMachineLearningPolicy` gained *"Amazon Bedrock
+    AgentCore permissions, most of which are limited to resources tagged with the user's project"*, and
+    `SageMakerStudioProjectUserRolePolicy` the passing of roles to AgentCore and the logs of its
+    runtimes. The Markdown form stops at June 29, 2026:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html>.
+
+- **SageMaker AI's developer guide on Feature Store, MLflow and a container's network isolation, its
+  pricing page, and the XGBoost container's code (read 2026-11-16 and 2026-11-17, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decisions 17, 20 and 21 and step 6.4).**
+  The guide's pages in their Markdown form.
+  - Feature Store: *"Create feature groups that can be configured to include an online or offline store,
+    or both."*; the offline store is Parquet in S3, and *"When you call `PutRecord`, your data is
+    buffered, batched, and written into Amazon S3 within 15 minutes."*; *"For batch ingestion, you can
+    configure a processing job to batch ingest your data into Feature Store"*; the managed policy
+    `AmazonSageMakerFeatureStoreAccess`; *"After they are created, feature groups are mutable and can
+    evolve their schema after creation."*, beside the portal page's sentence that a saved feature is
+    never edited or deleted:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/feature-store.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/feature-store-concepts.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/feature-store-ingest-data.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/feature-store-adding-policies.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/feature-store-offline.html>.
+  - MLflow: MLflow Apps are available in US West (Oregon), and *"All MLflow REST APIs are represented as
+    IAM actions under the `sagemaker-mlflow` service prefix."*:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow.html>.
+    Not read, a client error: <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-app.html>. The
+    pricing page: *"Customers pay for MLflow Tracking Servers based on compute and storage costs."*, and
+    no sentence on what an MLflow App bills:
+    <https://aws.amazon.com/sagemaker/ai/pricing/>.
+  - Network isolation: *"When you enable network isolation, your training and inference containers can't
+    make any outbound network calls to any service, including Amazon S3."*; *"No AWS credentials are
+    made available to the container runtime environment."*; *"SageMaker AI still handles all necessary
+    Amazon S3 download and upload operations using your SageMaker AI execution role."*:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/mkt-algo-model-internet-free.html>.
+  - The XGBoost container's `serve_utils.py`, at `master`: `get_loaded_booster` tries `pkl.load` on the
+    model file first and `Booster.load_model` after it, so a served archive is unpickled. The copy
+    inside the `3.0-5` image was not read:
+    <https://raw.githubusercontent.com/aws/sagemaker-xgboost-container/master/src/sagemaker_xgboost_container/algorithm_mode/serve_utils.py>.
+
+- **Amazon Bedrock for an application's model call: Agents Classic, a guardrail enforced in IAM and at
+  the account, inference profiles and the models of `us-west-2` (read 2026-11-16 and 2026-11-17, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) pass 10 and its decisions 22 to 27).**
+  The pages in their Markdown form unless the HTML form is named.
+  - Agents Classic's maintenance mode: *"Amazon Bedrock Agents (launched November 2023) is now Amazon
+    Bedrock Agents Classic and will no longer be open to new customers starting on July 30, 2026."*;
+    *"Only CreateAgent and InvokeInlineAgent are restricted for accounts without prior usage."*, which
+    receive an `AccessDeniedException`; *"There is no exception process."*; *"We recommend that you
+    migrate your Amazon Bedrock Agents Classic workloads to Amazon Bedrock AgentCore."*; *"Knowledge
+    Bases continue to work and are not affected by maintenance mode."* The page states nothing on Amazon
+    Bedrock Flows or on prompt management:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/agents-classic-maintenance-mode.html>.
+  - A guardrail enforced in IAM (HTML form): *"You can enforce the use of a specific guardrail for model
+    inference by including the `bedrock:GuardrailIdentifier` condition key in your IAM policy."*, for
+    `Converse`, `ConverseStream`, `InvokeModel` and `InvokeModelWithResponseStream`; the example for any
+    numbered version of one guardrail compares with `ArnLike` and a `:*` suffix; the limits are a role
+    that also calls `RetrieveAndGenerate`, `InvokeAgent` or `InvokeInlineAgent`, and the guardrail input
+    tags, which leave a prompt unassessed while *"the guardrail is always applied on the response"*:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-permissions-id.html>.
+  - Guardrail permissions: `bedrock:ApplyGuardrail` to use one, and `CreateGuardrail`,
+    `CreateGuardrailVersion`, `DeleteGuardrail`, `GetGuardrail`, `ListGuardrails` and `UpdateGuardrail`
+    to manage one. Cross-Region guardrail inference is a guardrail profile's, a system-defined resource,
+    `us.guardrail.v1:0` routing a guardrail of `us-west-2` to `us-east-1`, `us-east-2` and `us-west-2`:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-permissions.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrail-profiles-permissions.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-cross-region.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-cross-region-support.html>.
+  - Enforced guardrails: *"Account-level enforcement – Designate a particular version of a guardrail
+    within an AWS account for all Amazon Bedrock model invocations from that account."*; where a request
+    names a guardrail too, *"The net effect is a union of all guardrails, with the most restrictive
+    control taking precedence."*; *"Charges apply to each enforced guardrail according to its configured
+    safeguards"*; the organization's form is an Organizations policy of the type `BEDROCK_POLICY`. The
+    page names no IAM action for the configuration and no agent, knowledge base, flow or AgentCore, and
+    two other names tried for it returned a client error:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-enforcements.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_PutEnforcedGuardrailConfiguration.html>,
+    <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_bedrock.html>.
+  - Application inference profiles (the first in its HTML form): *"To create an application inference
+    profile for one Region, specify a foundation model. Usage and costs for requests made to that Region
+    with that model will be tracked."*; a profile is created over a foundation model where the model
+    supports on-demand inference in the Region, or over a cross-Region inference profile where the model
+    is served only through one:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-create.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-support.html>.
+  - The models by Region: one table for each model and one row for each Region, with the columns
+    In-Region, Geo and Global, read word for word to the Claude Haiku 5.5 table and no further. In
+    `us-west-2`: Amazon Nova Lite In-Region and Geo, Nova Micro Geo alone, Nova Pro Geo alone, Nova 2
+    Lite Geo and Global, Titan Text Embeddings V2 In-Region alone. The Nova user guide's Regions cell
+    lists no US West (Oregon) for Nova Pro, Nova Lite and Nova Micro but through cross-Region inference,
+    so the two pages disagree on Nova Lite:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/models-regions.html> (a stub that points at
+    the table),
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/models-region-compatibility.html>,
+    <https://docs.aws.amazon.com/nova/latest/userguide/what-is-nova.html>.
+  - Not read: the service authorization reference for Amazon Bedrock, a page with no body in the HTML
+    form and a client error in the Markdown form:
+    <https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonbedrock.html>.
+
+- **Amazon Bedrock AgentCore (read 2026-11-16, its rates 2026-11-17, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decision 26 (a) and step 10.11).** The
+  developer guide and the API references in their Markdown form.
+  - The service and its Regions: Runtime is *"A secure, serverless runtime environment purpose-built for
+    deploying and scaling dynamic AI agents and tools."*, and the harness *"A managed agent loop that
+    lets you define and invoke AI agents with a single API call."* US West (Oregon) reads yes for the
+    harness, Runtime's microVMs and Instances, Memory, Gateway, Identity, the built-in tools,
+    Observability, Policy and Evaluations:
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/what-is-bedrock-agentcore.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-regions.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/harness.html>.
+  - Runtime: *"In AgentCore Runtime, each user session runs in a dedicated microVM with isolated CPU,
+    memory, and filesystem resources."*; *"Sessions run for up to 8 hours on microVMs, or up to 14 days
+    on Instances."*; direct code deployment takes a zip of Linux arm64 dependencies in S3 (*"AgentCore
+    Runtime supports only the **arm64** architecture."*), 250 MB zipped and 750 MB unzipped at most, on
+    `PYTHON_3_10` to `PYTHON_3_14` or `NODE_22`:
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agents-tools-runtime.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-get-started-code-deploy.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-get-started-code-deploy-python.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-code-deploy-supported-runtimes.html>.
+  - The network: a runtime's `networkMode` is `PUBLIC` or `VPC`, and in VPC mode it *"does not have
+    internet access by default"*; US West (Oregon)'s supported zones are `usw2-az1`, `usw2-az2` and
+    `usw2-az3`; the network interfaces are the service-linked role
+    `AWSServiceRoleForBedrockAgentCoreNetwork`'s, and one *"may persist in your VPC for up to 8 hours
+    before it is automatically removed"*; the interface endpoints are `bedrock-agentcore`,
+    `bedrock-agentcore-control` and `bedrock-agentcore.gateway`, and they take endpoint policies:
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-vpc.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/vpc-interface-endpoints.html>.
+  - The permissions: an execution role trusted by `bedrock-agentcore.amazonaws.com` under
+    `aws:SourceAccount` and `aws:SourceArn`; the caller's managed policy `BedrockAgentCoreFullAccess`,
+    which *"grants broad permissions including GetWorkloadAccessTokenForUserId, which allows issuing
+    workload access tokens using caller-supplied user identifier strings without IdP token
+    verification"*; the page states neither `iam:PassRole` nor the permission to invoke:
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-permissions.html>.
+    The service authorization reference (HTML form, read to about 90,000 characters, its condition-key
+    and resource-type tables not received): `CreateAgentRuntime` takes the condition keys
+    `bedrock-agentcore:subnets` and `bedrock-agentcore:securityGroups` and depends on `iam:PassRole`,
+    and no key for the network mode was seen:
+    <https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonbedrockagentcore.html>.
+  - The API: `CreateAgentRuntime` and `UpdateAgentRuntime`, with a runtime's artifact (a container or a
+    code configuration), its network, protocol, lifecycle and authorizer configurations, and
+    `InvokeAgentRuntime`:
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_CreateAgentRuntime.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_UpdateAgentRuntime.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_AgentRuntimeArtifact.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_NetworkConfiguration.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_ProtocolConfiguration.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_LifecycleConfiguration.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_AuthorizerConfiguration.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/APIReference/API_InvokeAgentRuntime.html>.
+  - The rates. The pricing page, its first 39,942 of 62,199 characters: *"Runtime microVMs v1 CPU
+    $0.0895 per vCPU-hour"*, *"v1 Memory $0.00945 per GB-hour"*, *"Billing is calculated per second,
+    using actual CPU and memory consumption, with a 1-second minimum"*; it states neither the Region of
+    its rates nor what a deployed runtime with no invocation bills:
+    <https://aws.amazon.com/bedrock/agentcore/pricing/>.
+    The Region's offer file, version `20261113204112`, published `2026-11-13T20:41:12Z`, 922 products,
+    read with no credential: the same two rates on Runtime's consumption-based rows, 0.1276 and 0.0169
+    USD on the usage types that end in `-v2`, and no row for a runtime that exists with no session
+    ([`PRICING.md`](PRICING.md)):
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrockAgentCore/current/us-west-2/index.json>.
+
 ## Data platform
 
 - AWS Glue Data Catalog: <https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html>.
@@ -2846,6 +3084,118 @@
   The AWS CLI v2 changelog to 2.40.4: *"Adds support for deleting lineage events in Amazon DataZone."*
   under 2.35.5, `mwaa-serverless` first named under 2.31.38 and DataZone's lineage under 2.17.4:
   <https://raw.githubusercontent.com/aws/aws-cli/v2/CHANGELOG.rst>.
+
+- **MWAA Serverless's operators and pre-installed packages, read again (2026-11-16, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) passes 9 and 10).** The operators page,
+  in its Markdown form, lists 25 entries whose name starts with `SageMaker`, `SageMakerNotebookOperator`
+  under *Analytics* and 24 under *Machine learning*, and 15 that start with `Bedrock`, three guardrail
+  operators (create, create version, delete) and four sensors among them. It lists no
+  `BedrockBatchInferenceOperator`, no `BedrockCreateEvaluationJobOperator` and no Feature Store or
+  MLflow operator, and its one version reference is a link to the Amazon provider's documentation at
+  9.38.0:
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators.html>.
+  The page on Python and Bash operators differs between its two forms. The Markdown form's table of
+  pre-installed packages holds `apache-airflow` 3.0.6, `apache-airflow-providers-amazon` 9.32.0, `boto3`
+  and `botocore` 1.43.1, `dag-factory` 1.0.0, `pyyaml` unpinned, `lz4` 4.4.4 and five AWS cryptography
+  packages; the HTML form's holds the Amazon provider at 9.38.0, `apache-airflow-providers-duckdb` 0.2.1
+  and `duckdb` 2.0.0, and no cryptography package. Neither lists `mlflow`, `sagemaker` or
+  `sagemaker-studio`, and both say a pre-installed package takes precedence over the archive's:
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators-python-bash-detail.html>.
+  The document history holds three entries, the latest of August 17, 2026, *"Python and Bash operator
+  support"*:
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/doc-history.html>.
+
+- **The Amazon provider's SageMaker and Bedrock operators, in the released code (read 2026-11-16, for
+  `SUP-372` and `SUP-373`).** `operators/sagemaker.py`, `operators/bedrock.py` and `hooks/sagemaker.py`
+  at the tags `providers-amazon/9.32.0` and `providers-amazon/9.38.0`, the versions the service's page
+  names in its two forms: what the transform, model, endpoint, register and pipeline operators call,
+  `SageMakerStartPipelineOperator`'s `wait_for_completion` false by default, and what the Bedrock
+  invoke, retrieval and guardrail operators call and log. `operators/bedrock.py` holds three AgentCore
+  runtime operators at both tags, which the service's page does not list:
+  <https://raw.githubusercontent.com/apache/airflow/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/operators/sagemaker.py>,
+  <https://raw.githubusercontent.com/apache/airflow/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/operators/bedrock.py>,
+  <https://raw.githubusercontent.com/apache/airflow/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/sagemaker.py>,
+  <https://raw.githubusercontent.com/apache/airflow/providers-amazon/9.38.0/providers/amazon/src/airflow/providers/amazon/aws/operators/sagemaker.py>,
+  <https://raw.githubusercontent.com/apache/airflow/providers-amazon/9.38.0/providers/amazon/src/airflow/providers/amazon/aws/operators/bedrock.py>,
+  <https://raw.githubusercontent.com/apache/airflow/providers-amazon/9.38.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/sagemaker.py>.
+
+- **The CI/CD CLI's documents, its `genai`, `ml/training` and `ml/deployment` examples and its released
+  wheel (read 2026-11-16 and 2026-11-17, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decisions 16, 21, 22, 24 and 26 and
+  `SUP-374`).** The repository's raw files at `main`; GitHub's tree page refused the fetch.
+  - The README and the documents. "Supported AWS Services" lists SageMaker Training, SageMaker
+    Pipelines, Feature Store, Model Registry and Batch Transform under Machine Learning, and Amazon
+    Bedrock, Bedrock Agents, Bedrock Knowledge Bases and Guardrails under Generative AI; "What Can You
+    Deploy?" marks *"Feature Store (future)"* and *"Batch transforms (future)"*; *"A project can host a
+    single application or multiple applications depending on your architecture and CI/CD methodology."*;
+    the schema comments `storage` as *"Storage content (S3 files, data, models)"*. The examples guide
+    deploys the notebooks, ETL and generative AI examples into one project, `test-marketing`, the
+    generative AI one under a *"Project-specific IAM role with Bedrock permissions"* with the model a
+    stage variable, and gives the two ML examples a project each. No document names AgentCore:
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/README.md>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/docs/examples-guide.md>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/docs/manifest.md>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/docs/manifest-schema.md>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/docs/connections.md>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/docs/bootstrap-actions.md>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/docs/cli-commands.md>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/docs/airflow-aws-operators.md>.
+  - The `genai` example, `IntegrationTestGenAIWorkflow`: one stage, `test`, the storage items
+    `agent-code` and `genai-workflows`, and one task, a notebook run by `SageMakerNotebookOperator`. The
+    notebook and its helpers call Amazon Bedrock Agents, create a guardrail, IAM roles, a Lambda
+    function, a knowledge base with its ingestion and an OpenSearch Serverless collection; the larger
+    helper was read to 39,844 of 126,207 characters. No file names AgentCore:
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/genai/manifest.yaml>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/genai/workflows/genai_dev_workflow.yaml>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/genai/workflows/bedrock_agent_notebook.ipynb>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/genai/job-code/utils/bedrock_agent.py>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/genai/job-code/utils/bedrock_agent_helper.py>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/genai/job-code/utils/knowledge_base_helper.py>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/genai/app_tests/test_genai_workflow.py>.
+  - The `ml/training` example: one task, a notebook that trains with the SageMaker SDK's `SKLearn`
+    estimator on `ml.m5.large`, tracks to an MLflow tracking server through the connection
+    `mlflow-server`, registers the model from the run itself through MLflow and copies the archive to
+    `ml/output/model-artifacts/latest/output/model.tar.gz`. The manifest holds the stages `dev` and
+    `test` and no `prod`, gives `dev` no deployment configuration and creates the MLflow connection in
+    `test`:
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/training/manifest.yaml>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/training/workflows/ml_training_workflow.yaml>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/training/workflows/ml_training_notebook.ipynb>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/training/code/sagemaker_training_script.py>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/training/app_tests/test_model_registration.py>.
+  - The `ml/deployment` example: the storage item `model-artifacts` names the connection
+    `default.s3_shared` and includes `ml/output/model-artifacts`, so `bundle` reads the trained model
+    from the `dev` project; `test` and `prod` write it to `ml/bundle/model-artifacts`, and the one task,
+    a notebook with `retries: 1`, deletes the endpoints earlier runs left, deploys an endpoint on
+    `ml.m5.large`, calls it and deletes nothing at its end. No example trains in `prod`:
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/deployment/manifest.yaml>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/deployment/workflows/ml_deployment_workflow.yaml>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/deployment/workflows/ml_deployment_notebook.ipynb>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/deployment/code/inference.py>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/deployment/app_tests/test_endpoint_deployment.py>.
+  - The wheel of 1.0.9 from PyPI (`commands/bundle.py`, `commands/deploy.py`, `helpers/deployment.py`,
+    `helpers/bundle_storage.py`): `bundle` reads a storage item that names a connection from the stage's
+    project, as its caller, through the `aws` CLI, and neither `bundle` nor `deploy` fails where the
+    item is missing:
+    <https://pypi.org/project/aws-smus-cicd-cli/1.0.9/>.
+
+- **botocore's service models and the MLflow client, from PyPI (read 2026-11-16 and 2026-11-17, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decisions 18 to 21, 26 and 27 and step
+  9.4).** The wheels of botocore 1.43.1, the version of the worker's `boto3`, and of 1.44.4.
+  `bedrock-agentcore` holds 54 operations, `InvokeAgentRuntime` and `InvokeHarness` among them, and
+  `bedrock-agentcore-control` 115, where `CreateAgentRuntime` takes a container or a
+  `codeConfiguration`; a harness's Bedrock model configuration holds no guardrail member. Bedrock holds
+  `PutEnforcedGuardrailConfiguration`, `ListEnforcedGuardrailsConfiguration` and
+  `DeleteEnforcedGuardrailConfiguration` at both versions. SageMaker: `CreatePipeline` takes a
+  definition or its S3 location, `CreateFeatureGroup` an offline store's S3 location and
+  `DisableGlueTableCreation`; a model package created in a group takes no tag (*"In this case, you
+  cannot supply a tag argument."*), a container definition carries `ModelDataETag`, and
+  `UpdateModelPackage` takes no description:
+  <https://pypi.org/project/botocore/1.43.1/>, <https://pypi.org/project/botocore/1.44.4/>.
+  The MLflow client for a worker's archive, resolved by `uv` on a build host: `mlflow-skinny` 3.10.1 and
+  `sagemaker-mlflow` 0.5.0, which `awsds-workflows package-task` wrote with their dependencies as
+  15,288,232 bytes, 42 distributions:
+  <https://pypi.org/project/mlflow-skinny/3.10.1/>, <https://pypi.org/project/sagemaker-mlflow/0.5.0/>.
 
 ## Security, monitoring and cost
 

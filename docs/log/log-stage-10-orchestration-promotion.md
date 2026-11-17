@@ -1896,3 +1896,30 @@ Stage 19's log. Times UTC.*
   (21:28:46 to 21:28:55) in the session `AWSReservedSSO_DeploymentManagerAccess_…`, and at 21:28:55 the paired
   `Decrypt` in the same session, `invokedBy airflow-serverless.amazonaws.com`, its encryption context the
   workflow's ARN, no error. Decision 11's Staging half read.
+
+## 2026-11-17 — decision 22 revised by the user: a trained model is promoted, and no target trains it
+
+*A cloud session's sitting with no AWS call, recorded in full in Stage 17's log, 2026-11-16 and 2026-11-17.
+Times UTC.*
+
+- **[user]** At 01:28:21, answering Stage 17 decision 21's card in words: *"Revisite o plano, incluindo a
+  decisão 22 do stage 10, replicando o exemplo da AWS. A decisão 22 do stage 10 foi tomada num contexto em que
+  cada ambiente seria completamente isolado, mas hoje sabemos que todos os ambientes têm acesso aos dados
+  governados, logo faz sentido treinar o modelo e promover para produção o modelo treinado."*
+- **[Claude] Decision 22 rewritten** in the stage file with those words. A model is trained once, in the
+  application's `dev` project in Sandbox; the release's bundle carries the archive, as the CI/CD CLI's
+  `ml/deployment` example does; a task registers it in each target's own group; Staging serves and scores the
+  archive Production will serve, and Production serves it once a deployment manager approved its version.
+  Staging does not retrain and Production does not train.
+- **[Claude] The premise, read in the repository**, holds with limits: every consumer account reads the lake's
+  `public` and `internal` tables through one share (`GOVERNANCE.md`'s grant rules; `sagemaker-application.md`
+  §K; Stage 9 decision 3), and a `restricted` or `personal` table reaches a principal by an explicit grant
+  alone. Stage 9 decision 1 stands: the archive travels from `dev` upward, and Staging reads nothing of
+  Production's outputs.
+- **[Claude] D17, D20 and D28 amended in place**, each planned and with nothing applied: a trained model is an
+  artifact class the repository does not carry, and Staging holds a registry group for an application whose
+  trained model is promoted.
+- **[Claude] What step 5 keeps**: `app-etl-train` in each target and the pipeline's `staging-model`,
+  `production-register`, `production-approve` and `production-transform` keep the shape taken on 2026-10-24
+  until they retire, in a release of `app-etl` after `app-ml`'s first release (Stage 17 decision 28 (a),
+  tapped by the user at 02:47:28; Stage 17 step 9.11). Nothing in AWS changed.

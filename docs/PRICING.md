@@ -768,6 +768,25 @@ are under 0.01 USD a sync and an S3 Vectors store cents a month; an OpenSearch S
 collection would be the standing line, which is why Stage 17 decision 12 recommends S3 Vectors and its
 7.6 deletes a store with a minimum OCU.
 
+**AgentCore, measured 2026-11-17** for [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) step
+10.11, from the `us-west-2` offer file `AmazonBedrockAgentCore` (version `20261113204112`, published
+`2026-11-13T20:41:12Z`), read from a cloud session with no AWS credentials. An agent's runtime bills what
+its sessions consume, and the offer holds no row for a runtime that exists with no session:
+
+| Item | Unit | USD |
+|---|---|---|
+| Runtime, consumption-based (`USW2-Runtime:Consumption-based:vCPU`, `:Memory`) | per vCPU-hour, per GB-hour | **0.0895**, **0.00945** |
+| Runtime, consumption-based, the usage types that end in `-v2` (`:vCPU-v2`, `:Memory-v2`) | per vCPU-hour, per GB-hour | 0.1276, 0.0169 |
+| Runtime, committed baseline (`USW2-Runtime:Committed-baseline:vCPU-v2`, `:Memory-v2`) | per vCPU-hour, per GB-hour | 0.0997, 0.0132 |
+| Runtime, instance-based management (`USW2-Runtime:Instance-based:<type>:Management-Hours`, 889 rows) | per hour | by instance type: `m5.large` 0.01152, `c5.large` 0.0102 |
+| Browser tool and Code Interpreter, consumption-based | per vCPU-hour, per GB-hour | 0.0895, 0.00945 |
+
+The first row's figures are the ones AWS's pricing page gave on 2026-11-16. The offer file does not say
+which runtime the `-v2` usage types price, so which pair a session of 10.11 meters is that step's
+reading, from the first bill. The offer's other families, unused here, are Gateway, Memory, Policy,
+Evaluations and Knowledge-Base. The model's tokens and the guardrails' text units are billed apart, at
+the rates above.
+
 ### Amazon Q Developer — the assistant the IDE offers, and not the one this estate enabled
 
 Read 2026-09-12 from `AmazonQ/current/<region>/index.json`, published `2026-09-11T12:45:01Z`. Q Developer

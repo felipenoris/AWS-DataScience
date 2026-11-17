@@ -840,6 +840,17 @@ one module tag.
   and models stay isolated. The stage's pass 4 holds the module change, its tags, the callers' pins, the
   battery's rows and the documents that state the rule. The change was planned and not applied that
   day. Nothing in AWS changed.
+- **2026-11-17 — A trained model is promoted, and no target trains it.** The user revised
+  [Stage 10](stages/stage-10-orchestration-promotion.md) decision 22, of 2026-10-24, in the message that
+  took [Stage 17](stages/stage-17-sandbox-machine-learning.md) decision 21 as (b). The decision had each
+  target train its own model, because Stage 9 decision 1 keeps Production's archives from Staging; the
+  user's ground for revising it is that every environment reads the governed lake. A model is trained
+  once, in the application's `dev` project in Sandbox, the release's bundle carries the archive as the
+  CI/CD CLI's `ml/deployment` example does, and each target registers, approves and serves it. D17, D20
+  and D28 are amended in place: the trained model is an artifact class the repository does not carry, and
+  Staging holds a registry group for such an application. Stage 17 pass 9 plans it for a new application,
+  `app-ml`; `app-etl`'s model chain, built on the earlier decision, retires after `app-ml`'s first
+  release (Stage 17 decision 28 (a), taken the same day). Nothing in AWS changed.
 
 ---
 
