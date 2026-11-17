@@ -3774,3 +3774,177 @@ Staging Account (`awsds-infra-staging`). Times UTC.*
   so DataZone admits a contributor's delete. Read at 06:03:35: `get-data-product` `ResourceNotFoundException`,
   *"Requested dataProduct cannot be found in domain"*; `app-etl-dev`'s data product search empty; the asset
   `c6z3pbg3drrs0g` at revision 5; the listings unchanged.
+
+## 2026-11-16 — the session reviewed; the readings with nothing up; the rest of the stage prepared
+
+*After PR #307's merge. Claude's hand as the infrastructure user with `InfrastructureAccess`, every call a
+read, from the branch `claude/stage-19-review-prep` cut from `c5e1718e`. Times UTC.*
+
+- **[user] The request**, *"Revise os logs e as lições aprendidas, e o AWS_SUPPLEMENT, com relação ao
+  andamento desta sessão"*, then the readings that need nothing up, the preparation of what is left and a
+  new pull request.
+- **[Claude] The lessons**: Lesson 84 gains the Bash tool's `grep`, ugrep 7.8.4, refusing
+  `(verification |\b)xxvi\b` with *"empty (sub)expression"* and exit 2, silent behind `2>/dev/null`.
+  Lesson 85 written: a name has a composer, from `SUP-254`'s log group, which the CLI names, and act 7's
+  database user, which the project role's tag names. The supplement gains no entry: `get-tables` read
+  `IsRegisteredWithLakeFormation` false on Staging's `app_etl.trades_notional` and `get-table` true in
+  both targets, `SUP-364`'s behaviour.
+- **[Claude] The instruments**, 06:26 to 06:35: `studio.py` 0 checks failed, `catalog.py` all checks
+  passed, `orchestration.py` 5 failed, each `OR-2`'s retention on a CLI-named log group (`EXC-25`),
+  `deploytargets.py` 0, `warehouse.py` 0 with notes for the absent workgroups, `datalake.py` 0. Each run's
+  failed calls are `get-caller-identity` on the profiles with no session (the persona, deploy and
+  `ctadmin` ones).
+- **[Claude] xxiii**, at 06:27: the five machines' tasks are `ssm:getParameter`, `listWorkflows`,
+  `startWorkflowRun` and `getWorkflowRun`; Production's `step8-xxix-20261116T031909-app-etl` polled
+  `getWorkflowRun` 17 times in 174 events, `SUCCEEDED`, and Staging's `v0-5-2-820-app-etl` the same.
+  `awsds-prod-chain-exec` and `awsds-staging-chain-exec` each hold `kms:GenerateDataKey` and `Decrypt`
+  on one key, `alias/awsds-prod-project` and `alias/awsds-staging-project`. The five schedules read
+  `DISABLED`.
+- **[Claude] xxi's domain half**, at 06:28: Production's trail holds 69 `PostLineageEvent` from 02:33:49
+  to 03:22:07, each by `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow`'s `GlueJobRunnerSession`
+  through `vpce-0bb36cd25fa694b27`, no error, with a `sharedEventID`; Data Governance's holds the same 69,
+  Staging's 46 through `vpce-0a908a1c053380d9c`, and 23 of Sandbox Account 1 through
+  `vpce-0138fb056dc217988` on 2026-11-15 from 22:27:54. Data Governance's
+  `CreateLineageNode` events name Production's asset node `b2eaaney9hlus0` (02:46:29) and listing node
+  `chg3sfn08jn9xs` (02:46:36); `get-lineage-node` as `awsds-infra-data` chains the table's node
+  `6i4aaj4f895ixc`, whose upstream holds two job-run nodes, to the asset's and the listing's.
+- **[Claude] xxii**, at 06:28: `deploy-staging` `ACTIVE`, `Tooling` (`d6nu5aphq1e974`) and
+  `deploy-staging-app-etl` (`54jhe9989w0tcg`) `ACTIVE` with their subscription targets; the database
+  `app_etl` with `trades_notional`; `app_etl_deploy_staging_app_etl` and `…_train` `READY`; the parameter
+  `/datascience/staging/applications/app-etl/stage-variables`; two gateway endpoints and no interface
+  endpoint in the account.
+- **[Claude] The sources and assets**, at 06:30. Staging's `52f18khk7kdi4w`, `cron(28 15 * * ? *)`,
+  `publishOnImport` false: scheduled runs from 2026-11-12 to 2026-11-15 at 15:37:23, each adding nothing,
+  and the prioritized run `cntcrgrt3c22og` at 02:07:53, `added: 1`; the asset `as6m73yp8shr80` at
+  revision 2, unlisted. Production's `5zggi2lr2ezy4w`, `cron(32 15 * * ? *)`: scheduled runs at 15:44:02,
+  then four prioritized runs on 2026-11-16, `anhgrpgqahg9e8` at 02:46:17 (`added: 1`), `dk1lm51c3amxw0`
+  at 02:49:02 (`unchanged: 1`), `6r028y6qqief4g` at 03:05:14 and `d0b69cl22rdx5c` at 03:33:33 (`updated:
+  1` each); the asset `da1fycta6l71n4` at revision 4, its listing `5hpftif3nnoj2o` `ACTIVE`. Neither
+  project holds a data product. xvii reads yes for an update in Production; the scheduled runs after the
+  imports start today, after 15:28 and 15:32.
+- **[Claude] xxx**, from this log's readings of #129 and `./scripts/deploy-application.py --self-check`
+  on `c5e1718e`'s tree: `OK`, both projects' nine variables and workflows read.
+- **[Claude] The model chain's layout**, at 06:30: Staging's newest training job,
+  `app-etl-train-20261116T020100`, ran as the project role and wrote its model and `evaluation.json`
+  under `deploy-staging`'s `shared/app-etl/models/`, beside `staging-model`'s transform output.
+  Production's newest is release T's `app-etl-train-20261025T070126`, as `awsds-prod-job-exec` under the
+  outputs bucket, and `deploy-production`'s `shared/app-etl/models/` holds no object; the registry group
+  holds version 1, `Approved`.
+- **[Claude] Release G's step 3 re-planned** from `c5e1718e`'s tree into
+  `$HOME/tmp/stage19-g-production-studio.tfplan` at 06:33:33: *"Plan: 2 to add, 0 to change, 2 to
+  destroy"*, `awsds-prod-workflows` and its attachment replaced on the description's change, the new
+  statement `CreateTheProductsDataProductInTheProjectsDomain` carrying `datazone:CreateDataProduct` and
+  `CreateDataProductRevision`. `staging/studio/` at 06:34: *"No changes"*.
+- **[Claude] Release G's merge request read**: GitLab's `main` holds `ced09fe4:examples/app-etl`, so it
+  carries `git diff ced09fe4 c5e1718e -- examples/app-etl`, eight files and 490 lines added, the tree
+  `3b43b395…`.
+- **[Claude] 4.12's state**: no subscription to `5hpftif3nnoj2o` (revision 6); Production's Lake
+  Formation parameters `CROSS_ACCOUNT_VERSION` `4` and `SET_CONTEXT` `TRUE`, three administrators, no
+  full-table flag; no Data Catalog resource policy; three RAM shares Production owns, from 2026-10-18.
+  `deploy-production`'s members: the owner groups `ca2735c9-…` and `c332eee6-…` and the project role's
+  profile `40991e26-…` as contributor. The Governance Manager's user profile `e8a1f320-…` is no member,
+  so decision 15 (a)'s membership comes before the approval. `eighth-experimentation`'s
+  `blerpkhn9nj7o0` is `ACTIVE`.
+- **[Claude] The retirement inventoried** (item 31): each of release T's four states pulled with exit 0,
+  no resource and no output, `staging/orchestration/` at serial 33, `staging/app/app-etl/` 22,
+  `production/orchestration/` 12 and `production/app/app-etl/` 6; `app_outputs` holds no table in either
+  target. The admin secret of Production's warehouse reads `NextRotationDate` 2026-11-22 01:59:59, never
+  rotated.
+- **[Claude] Written**: the stage file's verifications xvii, xxi to xxiii, xxv and xxx, items 12, 19, 21
+  and 31, the sittings in order and the retirement's inventory, 4.12's state and 5.1's reading rule;
+  `runbooks/promotion.md` §N.6, §N.8.3 and §N.8.5; the waiting list's release rows, 4.12's new row, the
+  GitLab backup's date and the Promotion row; `CLAUDE.md`'s row and Lesson 85.
+
+## 2026-11-17 — `SUP-368`'s line in Sandbox's bill: the Glue session billed at its `DPUSeconds`
+
+Claude's reads as `awsds-infra-sandbox-1`, Sandbox's `InfrastructureAccess`; no AWS write. Each Cost
+Explorer read is one `get-cost-and-usage`, daily, unblended and net, by service and usage type: four
+requests, 0.04 USD.
+
+- **[Claude] Cost Explorer before it held the day**: at 05:05:57 UTC on 2026-11-15, 2026-11-14 and
+  2026-11-15 held no line, and 2026-11-13 held 3 to 6 hours of its whole-day lines (the alarms 0.1000
+  against 0.4000 on 2026-11-10 to 12, the dashboard 0.0083 against 0.0333, the secret 0.0069 against
+  0.0333, Unified Studio's volumes 0.1111 against 0.5333 GB-month). At 00:02:33 UTC on 2026-11-16,
+  2026-11-14 and 2026-11-15 still held none.
+- **[Claude] The sessions**, `glue list-sessions` at 22:37:00 UTC on 2026-11-15, before release T's step 17
+  removed `app-etl` from `test-experimentation`: one session in Sandbox,
+  `4gqfau9xuo6e4w-93939e2b-07b3-4c1b-b18a-e875438bd870`, `STOPPED`, created 22:47:31.313 and completed
+  23:07:37.219 UTC on 2026-11-14, `ExecutionTime` 1151.921, `DPUSeconds` 3248.638, `MaxCapacity` 10.0,
+  Glue 5.0.
+- **[Claude] The day held**, read 01:12:48 UTC on 2026-11-17: 2026-11-14 holds 47 lines, its last hour
+  in. `USW2-VpcEndpoint-Hours` reads 38, Sandbox's 19 interface endpoints over 22:00 and 23:00 UTC;
+  `USW2-ETL-DPU-Hour-Gen2` 0.082222 DPU-h and 0.0253 USD, `app-etl-dev`'s run started at 23:48:48; the
+  whole-day lines at the values of 2026-11-10 to 12. 2026-11-13 is whole; 2026-11-15 holds 44 lines and
+  9 endpoint hours, where the 2026-11-14 sitting's hour after midnight alone bills 19.
+- **[Claude] The line**: `AWS Glue`, `USW2-GlueInteractiveSession-DPU-Hour`, 2026-11-14, 0.9025 DPU-h and
+  0.3971 USD, unblended and net. The field gives 0.9024 DPU-h (3248.638 DPU-s) at 0.44 USD/DPU-h; the
+  formula `ExecutionTime * MaxCapacity` gives 3.1998 DPU-h and 1.41 USD, and 1205.9 s from creation to
+  completion at 10 DPU gives 3.3497 and 1.47. The bill charges `DPUSeconds` (`SUP-368`, Lesson 81,
+  `PRICING.md` §5).
+
+## 2026-11-17 — item 31, the retirement written: PR #308's code and its five saved plans
+
+Claude's work in the worktree, the reads as the infrastructure user's `InfrastructureAccess`
+(`awsds-infra-staging`, `awsds-infra-prod`); no apply, no AWS write.
+
+- **[user] The request**, the answer to the wrap-up's question whether the retirement goes in PR #308:
+  *"Yes, in this PR"*. Mid-turn: *"faça rebase em relação à main"*.
+- **[Claude] The code** (the stage file's §The retirement as written): the four slices' folders,
+  `release-application.py`, `render-workflow.py` and `lint-plan.py`, and both `foundation/` slices'
+  `apply-orchestration.tf` and `app-boundary.tf` removed; `app_outputs` out of both `data/`; `model-chain.py`
+  without the outputs layout, `--project` required; `layers.py` without ranks 58 and 59 and refusal 7; the
+  gates, the Makefile, the hooks and the docs that named them. The corrections to the inventory: the chain
+  statements stay in Staging, `apply-application.tf` keeps its egress, DNS Firewall and model-chain
+  statements, the service-linked role's grant moves to `deploy-project.tf`, and the job role's
+  `CommitTheIcebergWrites` names `app_outputs` too. `deploy-role-v0.3.0` refused an empty `state_prefixes`;
+  `v0.5.0` takes it. `make check` passed.
+- **[Claude] The rebase**, at the user's word, against `CLAUDE.md`'s rule that a pushed branch is never
+  rebased: the work set aside as a local WIP commit, then `git rebase origin/main` onto `1d91d5b4` (PR #310).
+  Three conflicts, both sides kept: `CLAUDE.md`'s Stage 19 row without #310's `SUP-368` clause, the stage
+  file's Status row with #310's reading of 2026-11-17, and this log's two entries in date order. `make check`
+  and the hooks passed on the rebased commit `e1daa970`, pushed alone with `--force-with-lease` against
+  `9e686cd3`; PR #308 0 commits behind `main`.
+- **[Claude] The plans**, each saved in `$HOME/tmp/` and read whole with `terraform show -json`:
+  `staging/foundation/` and `production/foundation/` 0 to add, 5 to change, 5 to destroy each; both `data/`
+  0, 0, 8; `production/sagemaker/` 0, 1, 0; nothing outside the retirement. `deploy_project` grows to 5,060
+  characters in Staging and 5,045 in Production, of IAM's 6,144. The first `data/` plans answered *"No valid
+  credential sources found"*: the backend and the default provider read `AWS_PROFILE`, which those runs had
+  not exported.
+- **[Claude] `SUP-260` read again**, CloudTrail's `lookup-events` in both targets from 2026-11-15 00:00 UTC:
+  in Staging, `iam:CreateServiceLinkedRole` invoked by `airflow-serverless.amazonaws.com` in
+  `awsds-deploy-staging`'s sessions at 20:46:18 UTC on 2026-11-15, a second before release T's first
+  `CreateWorkflow` through Cloud Control, and at 23:21:03, a second before the CLI's first, both answered
+  `InvalidInputException`; each session's second creation (20:46:27, 23:21:16) drew none. In Production,
+  none: the CLI's three creations at 02:31:50, 02:32:02 and 02:32:14 UTC on 2026-11-16 drew none.
+- **Owed**: the user's five applies after the merge; at the apply, `AWS_STATE.md`'s rows naming the
+  retired path and `TM-30`'s list.
+
+## 2026-11-17 — item 31 applied: PR #308's five saved plans, from its branch, read back
+
+On the user's word, *"Authorize the 5 applies"*, Claude applied the saved plans from the branch before the
+merge, which closes the Lesson 79 window. The two peer sessions on the laptop, both idle, were told first.
+Every read as `awsds-infra-staging` or `awsds-infra-prod`, `InfrastructureAccess`.
+
+- **[Claude⚡] The applies**, each `terraform apply -input=false <plan>` from the slice's folder:
+  `staging/foundation/` 01:55:53 to 01:56:07 UTC, 0 added, 5 changed, 5 destroyed; `production/foundation/`
+  to 01:56:24, the same; `staging/data/` to 01:56:40, 8 destroyed; `production/data/` to 01:56:53, 8
+  destroyed; `production/sagemaker/` to 01:57:03, 1 changed. No warning.
+- **[Claude] Read back**: each slice re-planned from the tree that applied, `No changes`. IAM in both
+  accounts: `awsds-<env>-app-boundary`, `-deploy-orchestration-resources` and `-access` `NoSuchEntity`;
+  each deploy role holds `apply-application` and `state` inline and `awsds-<env>-deploy-project` attached,
+  at `v5` with `CreateTheWorkflowServiceLinkedRole`; its boundary `awsds-<env>-deploy-boundary` at `v2`,
+  `CeilingIsEverythingTheIdentityPolicyGrants`, `DenyChangingTheDeployIdentities` and
+  `DenyChangingTheCeilings`; `state` with `ListTheStatePrefixes`, `ReadTheStateItOnlyReads` and
+  `UseTheStateKey`; Staging's `apply-application` with the two chain statements, Production's without.
+  Glue `get-database` on `app_outputs`: `EntityNotFoundException` in both. `awsds-prod-job-exec`'s
+  `CommitTheIcebergWrites` names the lake's `curated` catalog, database and tables alone. `data/`'s states
+  hold 9 `aws_lakeformation_permissions` in Production and 8 in Staging, four of each in the consumer module.
+- **[Claude] The instruments**: `./aws/deploytargets.py` 44 pass, `DT-14` reading *"raw, curated: named
+  principals only"* in both; `./aws/cicd.py` 12 pass and 4 notes (`CI-1`, `CI-6`, `CI-8`, `CI-9`);
+  `./aws/orchestration.py` only `OR-2`'s five retention failures (`EXC-25`), `OR-9` passing both targets'
+  chains. Production's three schedules read `DISABLED` since their creation at 03:18:16 UTC on 2026-11-16,
+  at 06:30, 07:00 and 07:30 UTC, each input carrying `<aws.scheduler.scheduled-time>` literally. Each
+  script exits 1 on the profiles with no SSO token; the wording is the verdict.
+- **[Claude] Written**: `AWS_STATE.md`'s rows on the retired path (`INV-22`, the deploy credential layer,
+  the chain schedules, the deployment projects' changes, Lake Formation's governing row, the grant
+  register) and `TM-30`'s list.

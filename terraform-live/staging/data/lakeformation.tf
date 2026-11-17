@@ -1,6 +1,6 @@
 # Stage 9 step 4.1 - what the account's Lake Formation administrator grants locally: the read the
-# share gives, regranted to the job role, and the applications' database. Staging received
-# DESCRIBE and SELECT alone (decision 3), so it can regrant nothing more.
+# share gives, regranted to the job role. Staging received DESCRIBE and SELECT alone (decision 3), so
+# it can regrant nothing more.
 #
 # The local regrant is a pair (measured at Stage 5a pass 4): DESCRIBE on the resource link, a local
 # database, and the permission on the target, addressed through the lake's catalog id. Without the
@@ -57,91 +57,5 @@ resource "aws_lakeformation_permissions" "job_shared_tables" {
       key    = "classification"
       values = ["public", "internal"]
     }
-  }
-}
-
-# ------------------------------------------------------------ the applications' database
-#
-# What applications write to the outputs bucket, catalogued locally: the release's deploy creates its
-# tables from the repository's schemas after Stage 8's 3.2 and before its 3.3 (4.4), the job role
-# writes their rows, the persona reads them. The data sits under
-# awsds-<env>-outputs, which no Lake Formation registration covers, so these grants govern the catalog
-# and IAM and the bucket policy govern the objects.
-resource "aws_glue_catalog_database" "app_outputs" {
-  name        = "app_outputs"
-  description = "Tables applications write to awsds-${var.env}-outputs (Stage 9 step 4.1)"
-
-  depends_on = [module.consumer_data]
-}
-
-resource "aws_lakeformation_permissions" "release_app_outputs_database" {
-  principal   = local.deploy_role_arn
-  permissions = ["CREATE_TABLE", "DESCRIBE"]
-
-  database {
-    name = aws_glue_catalog_database.app_outputs.name
-  }
-}
-
-resource "aws_lakeformation_permissions" "release_app_outputs_tables" {
-  principal   = local.deploy_role_arn
-  permissions = ["ALTER", "DROP", "DESCRIBE"]
-
-  table {
-    database_name = aws_glue_catalog_database.app_outputs.name
-    wildcard      = true
-  }
-}
-
-# The infrastructure user applies and destroys an application slice the deploy role may have applied
-# (Stage 8 decision 27 and its 3.8 by hand). Lake Formation gives a table's creator its permissions and
-# no one else, and the account's administrator holds DESCRIBE alone without a grant, so the user's
-# destroy of a table the deploy role created is refused "Required Drop". The deploy role's catalog
-# operations, no data permission.
-resource "aws_lakeformation_permissions" "infrastructure_app_outputs_tables" {
-  principal   = local.infrastructure_access_role_arn
-  permissions = ["ALTER", "DROP", "DESCRIBE"]
-
-  table {
-    database_name = aws_glue_catalog_database.app_outputs.name
-    wildcard      = true
-  }
-}
-
-resource "aws_lakeformation_permissions" "job_app_outputs_database" {
-  principal   = local.job_role_arn
-  permissions = ["DESCRIBE"]
-
-  database {
-    name = aws_glue_catalog_database.app_outputs.name
-  }
-}
-
-resource "aws_lakeformation_permissions" "job_app_outputs_tables" {
-  principal   = local.job_role_arn
-  permissions = ["SELECT", "INSERT", "DELETE", "ALTER", "DESCRIBE"]
-
-  table {
-    database_name = aws_glue_catalog_database.app_outputs.name
-    wildcard      = true
-  }
-}
-
-resource "aws_lakeformation_permissions" "persona_app_outputs_database" {
-  principal   = local.data_scientist_role_arn
-  permissions = ["DESCRIBE"]
-
-  database {
-    name = aws_glue_catalog_database.app_outputs.name
-  }
-}
-
-resource "aws_lakeformation_permissions" "persona_app_outputs_tables" {
-  principal   = local.data_scientist_role_arn
-  permissions = ["SELECT", "DESCRIBE"]
-
-  table {
-    database_name = aws_glue_catalog_database.app_outputs.name
-    wildcard      = true
   }
 }

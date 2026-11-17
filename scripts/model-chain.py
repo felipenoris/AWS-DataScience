@@ -2,22 +2,22 @@
 # model-chain.py - Stage 10 steps 5.2 and 5.4: the model app-etl-train trains, registered, approved
 # and served by a batch transform, the jobs of the promotion pipeline (examples/app-etl/.gitlab-ci.yml).
 #
-#   run:      ./scripts/model-chain.py register --tag vX.Y.Z [--dotenv <file>] [--project]
+#   run:      ./scripts/model-chain.py register --tag vX.Y.Z [--dotenv <file>] --project
 #                 # Production: the newest completed app-etl-train job, PendingManualApproval
 #             ./scripts/model-chain.py approve --package-arn <arn> --approver <login>
-#             ./scripts/model-chain.py transform staging --tag vX.Y.Z [--project]
+#             ./scripts/model-chain.py transform staging --tag vX.Y.Z --project
 #                 # Staging's own model, retrained there (Stage 10 decision 22)
-#             ./scripts/model-chain.py transform production --tag vX.Y.Z --package-arn <arn> [--project]
+#             ./scripts/model-chain.py transform production --tag vX.Y.Z --package-arn <arn> --project
 #                 # the approved version, by its package
 #             ./scripts/model-chain.py --check
 #                 # the requests built from stand-in values, offline: what `make check` runs
-#   reads:    the account's data/, sagemaker/ and network slices' state objects (tfhygiene.targets);
-#             with --project, the account's deployment project and its Tooling environment as well
-#             (tfhygiene.projects), DOMAIN_ID and DOMAIN_REGION from the environment; the training jobs
-#             app-etl-train-*; the evaluation the workflow's evaluate task wrote beside the model; the
-#             transform's output; in Staging, Production's newest approved version of the application's
-#             registry group, before Staging's own model is served (Stage 9 4.6, INT-07's registry
-#             half, verification xii). Nothing with --check.
+#   reads:    the account's sagemaker/ state object and, in Staging, foundation/'s (tfhygiene.targets);
+#             the account's deployment project and its Tooling environment (tfhygiene.projects),
+#             DOMAIN_ID and DOMAIN_REGION from the environment; the training jobs app-etl-train-*; the
+#             evaluation the workflow's evaluate task wrote beside the model; the transform's output;
+#             in Staging, Production's newest approved version of the application's registry group,
+#             before Staging's own model is served (Stage 9 4.6, INT-07's registry half, verification
+#             xii). Nothing with --check.
 #   writes:   register, a version of awsds-prod-model-app-etl; approve, its status; transform, a model
 #             it deletes after and a transform job's output under the models' prefix,
 #             transform/<job>/.
@@ -31,11 +31,11 @@
 # document refuses a request without (Stage 9 3.5); it fails unless every input row comes back as one
 # number. The aws CLI is the one dependency, as in the repository's other scripts.
 #
-# Where the model lives is the release's path. A release the infrastructure repository's Terraform
-# deploys trains as the job role and writes under the outputs bucket, models/app-etl/, with the data
-# key. A release the CI/CD CLI deploys (--project, Stage 19 step 4.9) trains as the deployment
-# project's role and writes under the project's shared prefix, app-etl/models/, with the project key,
-# and the transform runs as that role in the project's subnets and security group.
+# The model lives where the CI/CD CLI's release trains it (Stage 19 step 4.9): the deployment
+# project's role writes it under the project's shared prefix, app-etl/models/, with the project key,
+# and the transform runs as that role in the project's subnets and security group. --project names
+# that layout and is required: the outputs bucket's layout retired with release T's path (Stage 19
+# item 31).
 
 from __future__ import annotations
 
@@ -119,19 +119,6 @@ def newest_training_job() -> dict:
     return aws_json("sagemaker", "describe-training-job", "--training-job-name", name)
 
 
-def outputs_layout(values: dict) -> dict:
-    """Where a Terraform-deployed release keeps the model, and what serves it: the outputs bucket,
-    the data key, the job role and its network."""
-    bucket = values["bucket"]
-    return {
-        **values,
-        "models_uri": f"s3://{bucket}/models/{APP}/",
-        "batch_uri": f"s3://{bucket}/{APP}/work/train/batch/",
-        "key_arn": values["data_key_arn"],
-        "role_arn": values["job_role_arn"],
-    }
-
-
 def project_layout(values: dict, project: dict) -> dict:
     """Where a CLI-deployed release keeps the model, and what serves it: the deployment project's
     shared prefix, its key, its role and its network."""
@@ -148,9 +135,11 @@ def project_layout(values: dict, project: dict) -> dict:
 
 
 def target_values(account: str, project: bool) -> dict:
-    values = account_values(account)
     if not project:
-        return outputs_layout(values)
+        raise ChainError(
+            "--project is required: the outputs bucket's layout retired (Stage 19 item 31)"
+        )
+    values = account_values(account)
     domain, region = os.environ.get("DOMAIN_ID"), os.environ.get("DOMAIN_REGION")
     if not domain or not region:
         raise ChainError("--project reads DOMAIN_ID and DOMAIN_REGION from the environment")
@@ -389,11 +378,6 @@ def check() -> int:
     """The requests built from stand-in values, and the invariants the Workloads OU's document and
     the registry need, offline."""
     account = {
-        "bucket": "awsds-staging-outputs",
-        "data_key_arn": "arn:aws:kms:region:account:key/stand-in",
-        "job_role_arn": "arn:aws:iam::account:role/awsds-staging-job-exec",
-        "security_group": "sg-stand-in",
-        "subnets": ["subnet-stand-in-1", "subnet-stand-in-2"],
         "registry_group_arn_prefix": "arn:aws:sagemaker:region:account:model-package-group/awsds-prod-model-",
     }
     project = {
@@ -403,14 +387,12 @@ def check() -> int:
         "security_group": "sg-project-stand-in",
         "subnets": ["subnet-project-1", "subnet-project-2"],
     }
-    values = outputs_layout(account)
-    in_project = project_layout(account, project)
+    values = project_layout(account, project)
+    shared = project["shared_uri"]
     training = {
         "TrainingJobName": "app-etl-train-20261024T120000",
         "AlgorithmSpecification": {"TrainingImage": "registry.example/sagemaker-xgboost@sha256:1"},
-        "ModelArtifacts": {
-            "S3ModelArtifacts": "s3://awsds-staging-outputs/models/app-etl/x/output/model.tar.gz"
-        },
+        "ModelArtifacts": {"S3ModelArtifacts": f"{shared}{APP}/models/x/output/model.tar.gz"},
     }
     evaluation = {"regression_metrics": {"rmse": {"value": 1.5}}, "awsds": {"batch_rows": 3}}
     problems = []
@@ -434,17 +416,11 @@ def check() -> int:
     if not job["TransformResources"].get("VolumeKmsKeyId") or not job["TransformOutput"].get(
         "KmsKeyId"
     ):
-        problems.append("a transform without the data key on its volume and output")
+        problems.append("a transform without a key on its volume and output")
     if job["TransformResources"]["InstanceType"] != INSTANCE_TYPE:
         problems.append("a transform off the instance type its quota covers")
-    if (
-        evaluation_uri(values["models_uri"], "j")
-        != f"s3://{account['bucket']}/models/{APP}/j/evaluation.json"
-    ):
-        problems.append("the outputs layout moved the evaluation")
-    served = model_request(name, in_project, {"Image": "i", "ModelDataUrl": "m"})
-    moved = transform_request(name, in_project)
-    shared = project["shared_uri"]
+    served = model_request(name, values, {"Image": "i", "ModelDataUrl": "m"})
+    moved = transform_request(name, values)
     if served["ExecutionRoleArn"] != project["role_arn"]:
         problems.append("a project's model not served as the project's role")
     if served["VpcConfig"] != {
@@ -463,7 +439,7 @@ def check() -> int:
         project["key_arn"]
     }:
         problems.append("a project's transform off the project key")
-    if evaluation_uri(in_project["models_uri"], "j") != f"{shared}{APP}/models/j/evaluation.json":
+    if evaluation_uri(values["models_uri"], "j") != f"{shared}{APP}/models/j/evaluation.json":
         problems.append("a project's evaluation is not beside the model the workflow wrote")
     group_arn = f"{values['registry_group_arn_prefix']}{APP}"
     if not re.fullmatch(

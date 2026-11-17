@@ -70,7 +70,7 @@ locals {
 
   releases_bucket_arn = "arn:${data.aws_partition.current.partition}:s3:::awsds-${var.env}-releases"
 
-  # The names app-boundary.tf and apply-orchestration.tf read, the same in staging/foundation/.
+  # The names apply-application.tf and deploy-project.tf read, the same in staging/foundation/.
   partition      = data.aws_partition.current.partition
   account_id     = data.aws_caller_identity.current.account_id
   region_account = "${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}"
@@ -277,30 +277,27 @@ resource "aws_secretsmanager_secret_policy" "deploy_runner_token" {
 
 # -------------------------------------------------------------------- the deploy role (4.1)
 #
-# What it applies from the runner: production/app/* (step 3.6) and production/orchestration/ (Stage
-# 10), and no other slice - the pipeline never runs `make up` or `make down ENV=production`, and the
+# What it does from the runner: the CI/CD CLI's deploy into deploy-production and the leg around it
+# (Stage 19 steps 4.8 and 4.9), the governed warehouse's DDL and the model chain's jobs. It applies no
+# slice and writes no state - the pipeline never runs `make up` or `make down ENV=production`, and the
 # leg reads production/workloads-egress/ before it deploys (scripts/check-egress.py, decision 27). Its
-# grant is the inline document apply-application (apply-application.tf), which carries that read, and
-# the orchestration grant's two
-# managed policies (apply-orchestration.tf). Every role those slices create carries
-# awsds-prod-app-boundary (app-boundary.tf, step 3.0).
+# grants are the inline document apply-application (apply-application.tf) and the managed policy
+# deploy-project.tf attaches.
 module "deploy_role" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.3.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.5.0"
 
   name            = var.deploy_role_name
-  description     = "Stage 8's promotion into Production (INT-08, step 3.6) - assumed only by the deploy runner's role; applies production/app/* and production/orchestration/, reads production/workloads-egress/"
+  description     = "Stage 8's promotion into Production (INT-08, step 3.6) - assumed only by the deploy runner's role; deploys into deploy-production through the CI/CD CLI, reads production/workloads-egress/"
   env             = var.env
   runner_role_arn = module.deploy_runner_role.role_arn
   runner_role_id  = data.aws_iam_role.deploy_runner.unique_id
-  state_prefixes  = ["${var.account_folder}/app/", "${var.account_folder}/orchestration/"]
+  state_prefixes  = []
   state_read_keys = [for s in ["workloads", "foundation", "sagemaker", "data", "workloads-egress"] : "${var.account_folder}/${s}/terraform.tfstate"]
 
   inline_policies = {
     "apply-application" = data.aws_iam_policy_document.apply_application.json
   }
-
-  application_boundary_name = local.application_boundary_name
 
   misuse_alarm     = true
   alerts_topic_arn = aws_sns_topic.alerts.arn
@@ -361,26 +358,6 @@ data "aws_iam_policy_document" "apply_application_in_this_account" {
       "arn:${local.partition}:sagemaker:${local.region_account}:model-package-group/awsds-${var.env}-model-app-etl",
       "arn:${local.partition}:sagemaker:${local.region_account}:model-package/awsds-${var.env}-model-app-etl/*",
     ]
-  }
-}
-
-# Production's statement in apply-orchestration.tf's resources policy:
-# AWSServiceRoleForAmazonMWAAServerless exists in Staging and not here (read 2026-10-22), so the first
-# workflow's creation makes it in the deploy role's session (Stage 10 step 1.5). The statement stays
-# once the role exists: the service calls the action on a creation through Cloud Control with the role
-# in place (Stage 8 3.8's trail in Staging, 2026-10-23), and Staging carries the same statement.
-data "aws_iam_policy_document" "apply_orchestration_in_this_account" {
-  statement {
-    sid       = "CreateTheWorkflowServiceLinkedRole"
-    effect    = "Allow"
-    actions   = ["iam:CreateServiceLinkedRole"]
-    resources = ["arn:${local.partition}:iam::${local.account_id}:role/aws-service-role/airflow-serverless.amazonaws.com/AWSServiceRoleForAmazonMWAAServerless"]
-
-    condition {
-      test     = "StringEquals"
-      variable = "iam:AWSServiceName"
-      values   = ["airflow-serverless.amazonaws.com"]
-    }
   }
 }
 

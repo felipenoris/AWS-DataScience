@@ -6,9 +6,9 @@
 # the stage variables recorded for the chains, the model chain's pass of the project role and the
 # integration test's read of the product table.
 #
-# One customer-managed policy the infrastructure user attaches, as apply-orchestration.tf's are: the
-# role's inline documents share 10,240 characters. It exists once the project does, since every scope
-# below is built from the project role's name (variables.tf).
+# One customer-managed policy the infrastructure user attaches: the role's inline documents share
+# 10,240 characters. It exists once the project does, since every scope below is built from the
+# project role's name (variables.tf).
 #
 # DataZone's own layer is not IAM. The role reads and writes a project's catalog as a member of it,
 # an owner of the deployment project alone, added by hand once its first call has created its group
@@ -196,6 +196,23 @@ data "aws_iam_policy_document" "deploy_project" {
     condition {
       test     = "StringEquals"
       variable = "iam:PassedToService"
+      values   = ["airflow-serverless.amazonaws.com"]
+    }
+  }
+
+  # CreateWorkflow calls iam:CreateServiceLinkedRole in the caller's session although
+  # AWSServiceRoleForAmazonMWAAServerless exists in both accounts: InvalidInputException to
+  # awsds-deploy-staging at the CLI's first creation in deploy-staging, 2026-11-15 23:21:03 UTC
+  # (SUP-260). How the service takes a refusal of the call is unmeasured.
+  statement {
+    sid       = "CreateTheWorkflowServiceLinkedRole"
+    effect    = "Allow"
+    actions   = ["iam:CreateServiceLinkedRole"]
+    resources = ["arn:${local.partition}:iam::${local.account_id}:role/aws-service-role/airflow-serverless.amazonaws.com/AWSServiceRoleForAmazonMWAAServerless"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:AWSServiceName"
       values   = ["airflow-serverless.amazonaws.com"]
     }
   }

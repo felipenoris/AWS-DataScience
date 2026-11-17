@@ -1855,7 +1855,7 @@ interactive session of up to 10 `G.1X` workers with a 60-minute idle timeout: up
 `sparkGlueProperties`, which no step had read. The session was read at 23:05 UTC and stopped with the
 notebook's kernel at 23:07:37, after 1152 s; it would otherwise have run to 00:01. Its `DPUSeconds` read
 0.0 at the stop and 3248.6 an hour later, an average of 2.8 DPU under the auto scaling its arguments
-carried, about 0.40 USD if the bill counts that field (`SUP-368`).
+carried, and the bill charged that field: 0.9025 DPU-h, 0.3971 USD (`SUP-368`).
 
 **Why it is a class rather than a slip.** A cell runs on an engine its connection names, beside the space
 that runs the notebook, and the vendor sizes that engine. The idle timeout ends the session an hour after the
@@ -1939,6 +1939,11 @@ Four bash habits read differently there, each met in Stage 19's sittings:
   on 2026-11-08 behind `2>/dev/null`, where the refusal read as an empty result and a false absence went
   into three files (Lesson 62's third instance).
 
+The Bash tool's `grep` is a shell function that runs ugrep 7.8.4. On 2026-11-16 it refused
+`(verification |\b)xxvi\b` with *"empty (sub)expression"* and exit 2, and inside `$(…)` behind
+`2>/dev/null` the count read empty, the same silence from another cause. A search whose absence is evidence
+runs as `grep -F` or in Python, with its exit code read.
+
 **Why it is a class rather than a slip.** The differences are in expansion, which happens before the
 command runs, so the command receives another string and nothing reports the substitution. A modifier such
 as `:h` or `:t` yields a valid path, and a destructive command runs on it. The runbooks' fenced `bash`
@@ -1951,6 +1956,31 @@ shell.
 
 **What makes it expensive.** The failure is silent wherever an error is redirected, and a wrong string that
 is still a valid argument makes the command succeed on something else.
+
+## Lesson 85 — a name has a composer, and a record that infers it from the name's shape credits the default
+
+**What happened.** Two names were credited to the wrong party, and both were found on 2026-11-16.
+
+- `SUP-254`, from a reading of 2026-10-20 in Staging, took the workflow log group
+  `/aws/mwaa-serverless/<domain>-<project>/<workflow>` for MWAA Serverless's default and recorded that the
+  CI/CD CLI passes no `LogGroupName`. The CLI composes the name (`build_idc_log_group_name`) and passes it
+  in `CreateWorkflow` and `UpdateWorkflow`, as its code shows. Stage 19 decision 27 was first drafted on the
+  wrong premise.
+- Stage 19 act 7 granted the load's database role to `IAMR:<the project role's name>`, the spelling Redshift
+  documents for an IAM role. The project role carries `RedshiftDbUser = user-project@<project id>`, which
+  DataZone writes, and the Glue job connected as `IAMR:user-project@<project id>` (`SUP-205`); verification
+  xxxii's first run failed on *"permission denied for schema trades"*.
+
+**Why it is a class.** A name with a recognisable shape looks like the platform's default, and the default
+is the one hypothesis that needs nothing configured to be true. Something else composed both names, a
+client in one and a tag in the other, and neither shows in the object.
+
+**The rule.** Before a record says who names an object, read the request that created it: the trail's
+`requestParameters` or the client's code for a resource, the role's and the session's tags for a database
+user. Where neither can be read, the record says the composer is unread.
+
+**What makes it expensive.** A wrong composer moves the fix to the wrong place: a retention rule aimed at the
+service instead of the client's parameter, a grant to a user no session reaches.
 
 ## What AWS does that its documentation does not say
 
