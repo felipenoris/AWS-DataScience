@@ -206,7 +206,7 @@ settings and `AllowFullTableExternalDataAccess` turned on (3.3, 2026-10-19); one
 AWS's managed policies in place of D28's per-workflow role, which every member acts as (6.1); the
 workflow outside Terraform's state, its log groups never expiring, the Glue job the operator's (4.5); a
 shared root where two applications' names collide (5.1 to 5.3); a subscription that shares the
-producer's whole catalog through RAM and writes its Data Catalog resource policy (7.2); the residues a
+producer's whole catalog through RAM and writes per-resource Glue policies on it (7.2, `SUP-195`); the residues a
 teardown leaves (8.1 to 8.6); USD 1.52 for the window. The design that honours the premises without a
 portal in every environment makes the lake the promoted product's home: Production's job creates the
 table in `curated` (a `CREATE_TABLE` on the database to the job role, one declaration for every future
@@ -759,7 +759,8 @@ it names another hand:
 
 7. **[user] The data product** `trades-notional` (`bvs7m8z4h6w70w`): unpublished, then deleted.
    `my-data-product` (`cqrp6eqjjpvvgw`, 0.4) stays.
-8. **The source** `budryu9mt9y5u8`, before the asset: it runs daily at 23:41 UTC and would import the
+8. **The source** `budryu9mt9y5u8`, right after the asset (step 9, `SUP-366`): it runs daily at 23:41 UTC
+   and would import the
    table again once its asset is gone. It hangs from the `Tooling` environment's `project.default_lakehouse`
    connection (`5pf7uc0ugllsb4`), so step 11's delete leaves it, and its filter names `app_etl`, the name
    step 12 gives `app-etl-dev`'s database. **[user]** in the portal's data sources, or **[Claude⚡]** on the

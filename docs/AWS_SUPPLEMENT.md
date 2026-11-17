@@ -2210,7 +2210,14 @@ entry is still true is the reading.
   source always shows one `RUNNING` run, and only `list-data-source-runs` shows the failures. A Staging
   project whose `Tooling` had `enableSpaces` false held none (2026-10-19, cause not isolated). Where:
   `log-stage-06f-data-governance.md`, 2026-09-19 and 2026-10-18;
-  `log-stage-18-staging-deployment-project.md`, 2026-10-19.
+  `log-stage-18-staging-deployment-project.md`, 2026-10-19. AWS's page on a SageMaker data source (read
+  2026-11-17) documents the share the error asks for: the domain shared through RAM to the service
+  principal `sagemaker.amazonaws.com` with the managed permission
+  `AWSRAMSageMakerServicePrincipalPermissionAmazonDataZoneDomain`, a share never created here. The page
+  describes a source someone creates in the domain's own account; it says nothing of the source a `Tooling`
+  environment creates by itself, and an associated account's case is unread. The cause is documented; the
+  source, its failures and its `status` are not (`EXC-11`; `log-stage-06d-unified-studio-remainder.md`,
+  2026-11-17).
 
 - `SUP-168` **A project update in the portal reconciles the environment's stack, and the stack writes only
   what its template changed** (measured 2026-10-18, 6d step 2.4). An `UpdateProject` with
@@ -2658,10 +2665,11 @@ entry is still true is the reading.
 - `SUP-195` **A subscription's fulfilment shares the producer's whole catalog** (measured 2026-10-22, Stage
   18 7.2). With Staging's `CROSS_ACCOUNT_VERSION` at 1, the grant DataZone wrote carried
   `CROSS_ACCOUNT_VERSION` 5 in its own parameters; the RAM share it created named Staging's `catalog`,
-  `database/*` and `table/*/*` with the three ReadWrite Glue permissions, and three statements went into
-  Staging's Data Catalog resource policy naming the consumer account. Lake Formation's `SELECT` under the
-  subscribing project's context is what scopes the read, and the revocation removed all of it. Where:
-  `log-stage-18`'s 7.2 and C1 entries. A lake table shared to Sandbox (measured 2026-10-26, Stage 6f 11.9)
+  `database/*` and `table/*/*` with the three ReadWrite Glue permissions, and three `glue:PutResourcePolicy`
+  calls put per-resource policies naming the consumer account on the same three resources, which the stage
+  log took for Staging's Data Catalog resource policy. Lake Formation's `SELECT` under the subscribing
+  project's context is what scopes the read, and the revocation removed all of it. Where: `log-stage-18`'s
+  7.2 and C1 entries. A lake table shared to Sandbox (measured 2026-10-26, Stage 6f 11.9)
   reached grant `COMPLETED` and asset `GRANTED` 63 s after the approval (21:36:15Z to 21:37:18Z). The
   producer's project role, in `AWSDataZone-Subscriptions` sessions with no source identity, called
   `BatchGrantPermissions` (`SELECT` on `curated.trades`, no grant option) and `ram:CreateResourceShare`
@@ -2679,7 +2687,15 @@ entry is still true is the reading.
   `arn:aws:identitystore:::user/*` under the same condition, each in an `AWSDataZone-Subscriptions`
   session, and the grant read `COMPLETED` 65 s after the request. `glue get-table` on the link
   answered the target's `CreateTime` and `CreatedBy` again, the link's own creation being the
-  trail's `CreateTable` (`log-stage-19-smus-native-data-product.md`, 2026-11-14).
+  trail's `CreateTable` (`log-stage-19-smus-native-data-product.md`, 2026-11-14). Read again 2026-11-17
+  in Staging's trail (Stage 18 7.2): the three `PutResourcePolicy` at 2026-10-22T00:42:23Z each carried a
+  `resourceArn` (`catalog`, `database/*`, `table/*/*`), one statement and `enableHybrid` `TRUE`, from the
+  producer's project role in an `AWSDataZone-Subscriptions` session through `datazone.amazonaws.com`; the
+  revocation made three `glue:DeleteResourcePolicy` on the same ARNs, from the same role in the same kind of
+  session, at 01:07:09Z, 39 s after `revoke-subscription`. The *"Policy not found"* Stage 18 read after the
+  revocation came from `glue get-resource-policy`, which lists none of these (`SUP-099`): the trail's three
+  deletes are what show them gone, and `glue get-resource-policies` read an empty list on 2026-11-17
+  (`log-stage-18-staging-deployment-project.md`, 2026-11-17).
 
 - `SUP-196` **`UpdateDataSource` refuses the `dataAccessRole` that `GetDataSource` reports for a Glue source
   on a connection** (measured 2026-10-26 in Data Governance, Stage 6f 11.6). A configuration built from the
@@ -4069,6 +4085,36 @@ entry is still true is the reading.
   a target. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-17; Stage 17 pass 9, "The model
   in the bundle, and what the CLI does with it", and verification lxii; `runbooks/sagemaker-ai-ml.md`
   §B.
+
+- `SUP-375` **`aws-smus-cicd-cli` 1.0.9's `deploy` adds a stage's `owners` and `contributors` to an
+  existing project at every run and removes no member, and acts on the project role only under
+  `project.create: true`** (read 2026-11-17 in the released wheel, SHA-256 `bd7258c0…4903`, whose
+  `helpers/project_manager.py` and `helpers/context_resolver.py` are byte-identical to `main` at
+  `cdb8e3c18f`; nothing executed, Stage 19). Every `deploy` calls `ensure_project_exists`
+  (`commands/deploy.py`), and for a project that exists `_update_existing_project` runs. It lists the
+  project's members and calls `CreateProjectMembership` for each `owners` or `contributors` entry absent,
+  as `PROJECT_OWNER` or `PROJECT_CONTRIBUTOR`: an entry starting `arn:aws:iam::` resolves to the role's
+  group and any other to a user by name, a `:*:` account in an ARN becomes the caller's, and a member
+  present with the other designation is left as it is, with *"⚠️ <member> exists with different role:
+  <designation>"*. No call removes a member, and a refused call prints *"❌ Failed to add owner <member>:
+  <error>"* while the deploy goes on. `project.create` is false by default
+  (`application/application_manifest.py`). Under `create: true` the same function then acts on the role:
+  with `role.arn` and at least one `role.policies` ARN it attaches each policy not yet attached and writes
+  the inline policy `SelfPassRolePolicy`, `iam:PassRole` and `iam:GetRole` on the role itself, at every
+  deploy, detaching nothing; with `role.arn` alone it does nothing; with no `role.arn` it creates
+  `role.name`, by default `smus-<project>-role`, with a trust policy for ten service principals under
+  `aws:SourceAccount` and the tag `CreatedBy=SMUS-CICD`, then waits 90 s, or updates a role of that name
+  that carries the tag. That role is not attached to the existing project: the CLI passes `role.arn` only
+  when it creates the project, as `customerProvidedRoleConfigs` with designation `PROJECT_OWNER`. The
+  manifest schema page shows `role.arn` and `role.policies` with no condition on `create`, and the
+  README's examples carry `owners` and `role.arn` on stages that set no `create`. The consequences:
+  `owners` and `contributors` in a manifest are a membership grant the deploying role makes at every
+  deploy, made again after a removal by hand, and that role needs `datazone:CreateProjectMembership` for
+  it; a `role` under a stage whose `create` is false does nothing; and `create: true` makes every deploy an
+  IAM write in the target account. `app-etl`'s manifest names no `owners`, `contributors`, `role` or
+  `create`, so its `deploy` makes no membership or IAM call, and the project roles' policies stay
+  Terraform's (open question 27). Where: `log-stage-19-smus-native-data-product.md`, 2026-11-17; Stage 19
+  decision 15.
 
 ## Bedrock
 

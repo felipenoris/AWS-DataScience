@@ -285,7 +285,7 @@ not *passed*.
 
 | Document | Probe | Denied | Allowed |
 |---|---|---|---|
-| workloads | `aws datazone list-domains --region us-west-2` | `AccessDenied` naming an SCP: the answer every principal but the three excepted ones reads, and the infrastructure user's too until Stage 19 step 4.1 is applied | a list, empty or not: the infrastructure user's answer since that step (the amendment below) |
+| workloads | `aws datazone list-domains --region us-west-2` | `AccessDenied` naming an SCP: the answer every principal but the three excepted ones reads, and the infrastructure user's too until Stage 19 step 4.1's apply on 2026-11-11 | a list, empty or not: the infrastructure user's answer since that step (the amendment below) |
 | workloads | `aws sagemaker create-space --domain-id d-0000000000000 --space-name awsds-canary-probe --region us-west-2` | `AccessDenied` | `ValidationException` / `ResourceNotFound` = SageMaker validated first, so **untested** |
 | workloads | `aws sagemaker start-session --resource-identifier arn:aws:sagemaker:us-west-2:<ACCT>:space/d-0000000000000/none` | `AccessDenied` | any validation error = untested |
 | data, identity | `aws ec2 run-instances --dry-run --image-id <REAL AMI> --instance-type t3.micro --subnet-id <REAL SUBNET>` | `UnauthorizedOperation`, naming the policy | `DryRunOperation` = allowed |
@@ -427,7 +427,7 @@ own, so a VPC check that ran before authorization would read as a validation err
 
 | Probe (`aws sagemaker …`, from `awsds-infra-prod`) | Expected | Statement it answers |
 |---|---|---|
-| `create-processing-job` with `VpcConfig`, isolation, inter-container encryption, `VolumeKmsKeyId` and `ml.m5.large` | `ValidationException` or `ResourceLimitExceeded` (authorized). The service checks the instance quota after authorization and before the role, and Production's processing quotas read 0 (2026-10-18) | none: the contrast, and the reading that `sagemaker:VolumeKmsKey` still populates where AWS's reference now lists `sagemaker:VolumeKmsKeyArn` (read 2026-10-16) |
+| `create-processing-job` with `VpcConfig`, isolation, inter-container encryption, `VolumeKmsKeyId` and `ml.m5.large` | `ValidationException` or `ResourceLimitExceeded` (authorized). The service checks the instance quota after authorization and before the role, and Production's processing quotas read 0 (2026-10-18), 8 for `ml.m5.large` and 4 for `ml.m5.2xlarge` since 2026-10-24 (the Stage 9 log) | none: the contrast, and the reading that `sagemaker:VolumeKmsKey` still populates where AWS's reference now lists `sagemaker:VolumeKmsKeyArn` (read 2026-10-16) |
 | the same, without `VpcConfig` | `AccessDenied` naming the policy | `DenySageMakerJobsOffVpc` |
 | the same, on `ml.m5.2xlarge` | `AccessDenied` | `DenySageMakerInstanceCeiling` |
 | the same, `EnableNetworkIsolation: false` | `AccessDenied` | `DenySageMakerJobsWithoutNetworkIsolation` |
@@ -456,16 +456,18 @@ list: for both actions each list naming `ml.m5.2xlarge` answered `DENY-SCP`, and
 
 | Probe (`aws sagemaker …`, from `awsds-infra-prod`) | Expected | What it answers |
 |---|---|---|
-| `create-processing-job`, the list naming `ml.m5.large` | `ResourceLimitExceeded` (authorized): SageMaker checks the quota of every listed type, and Production's processing quotas read 0 | none: the contrast, which attributes the two rows below to the type rather than to the list's form |
+| `create-processing-job`, the list naming `ml.m5.large` | `ResourceLimitExceeded` or `ValidationException` (authorized; `probes.py` reads either as authorized): SageMaker checks the quota of every listed type, and Production's processing quotas read 0 until 2026-10-24, 8 for `ml.m5.large` since | none: the contrast, which attributes the two rows below to the type rather than to the list's form |
 | the same, the list naming `ml.m5.2xlarge` | `AccessDenied` naming the `Workloads` document | `DenySageMakerInstanceCeiling` reads a list |
 | the same, the list naming `ml.m5.large`, then `ml.m5.2xlarge` | `AccessDenied` | the key carries every entry, not the first alone |
-| `create-training-job` with `VpcConfig`, isolation, inter-container encryption, `VolumeKmsKeyId`, the list naming `ml.m5.large` | `ValidationException` or `ResourceLimitExceeded` (authorized); Production's training quotas for the three `ml.m5` types read 0 (2026-10-20), and whether this action checks them after authorization is unread | none: the contrast, and the battery's first training row |
+| `create-training-job` with `VpcConfig`, isolation, inter-container encryption, `VolumeKmsKeyId`, the list naming `ml.m5.large` | `ValidationException` or `ResourceLimitExceeded` (authorized); Production's training quotas for the three `ml.m5` types read 0 (2026-10-20), 20 each since 2026-10-24, and whether this action checks them after authorization is unread | none: the contrast, and the battery's first training row |
 | the same, `ml.m5.2xlarge` as `InstanceType` | `AccessDenied` | none new: the control, which places authorization before the role and quota checks of this action |
 | the same, the list naming `ml.m5.2xlarge` | `AccessDenied` | the list, for the second action (Lesson 21) |
 | the same, the list naming `ml.m5.large`, then `ml.m5.2xlarge` | `AccessDenied` | every entry, for the second action |
 
 **An authorized deny row is a hole in the ceiling.** A processing row proves it with
-`ResourceLimitExceeded`, which follows authorization (2026-10-18). A training row proves it by answering
+`ResourceLimitExceeded`, which follows authorization (2026-10-18), while the listed type's quota reads 0;
+since the quotas rose on 2026-10-24, `ml.m5.2xlarge`'s to 4, no reading here shows what an authorized
+deny row answers. A training row proves it by answering
 what the contrast row answers while the control reads `AccessDenied`. A `ValidationException` that names
 the list itself may precede authorization, and records the row untested. The key's population is a
 property of the request, so the answer carries to the D13 boundary, which composes the same statement

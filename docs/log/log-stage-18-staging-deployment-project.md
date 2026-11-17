@@ -2000,3 +2000,28 @@ read from this log, and Claude checked each proposal against this log before app
   creator's own permissions.
 - **[Claude] Checks**: `check-plan-refs`, `check-index` and `check-network-doc` clean; `GENERAL_PLAN.md` at
   39,765 bytes of 40,000.
+
+## 2026-11-17 — 7.2's catalog policies read again in Staging's trail, with nothing up
+
+*Written by Claude, in the session that reviewed `docs/AWS_SUPPLEMENT.md` against the day's findings.
+Read-only calls as the infrastructure user, `InfrastructureAccess` in `Staging` (`awsds-infra-staging`).*
+
+- **[Claude] The question**: 7.2's entry took the fulfilment's three `glue:PutResourcePolicy` for Staging's
+  Data Catalog resource policy, and the rollback read it gone with `glue get-resource-policy`, which
+  answers *"Policy not found"* while per-resource policies stand (`SUP-099`, 6f 11.9).
+- **[Claude] The trail** (`cloudtrail lookup-events`, 2026-10-20 to 2026-11-17, event names
+  `PutResourcePolicy` and `DeleteResourcePolicy`): at 2026-10-22T00:42:23Z three `glue:PutResourcePolicy`
+  by `datazone_usr_role_d1veybt5oak4uo_bujd259b8g9zps` in `AWSDataZone-Subscriptions` sessions, source
+  `datazone.amazonaws.com`, each with one statement, `enableHybrid` `TRUE` and a `resourceArn`:
+  `database/*`, `table/*/*`, `catalog`. At 01:07:09Z three `glue:DeleteResourcePolicy` by the same role and
+  session name on `catalog`, `database/*` and `table/*/*`, 39 s after the `revoke-subscription` of
+  01:06:30Z. No other Glue policy call in the window; the other 19 `PutResourcePolicy` events are
+  CloudWatch Logs'.
+- **[Claude] The catalog now**: `glue get-resource-policies` returned
+  `{"GetResourcePoliciesResponseList": []}`; `glue get-resource-policy` returned *"An error occurred
+  (EntityNotFoundException) when calling the GetResourcePolicy operation: Policy not found"*.
+- **[Claude] What follows**: the fulfilment wrote per-resource policies, and the revocation's three deletes
+  are what show them gone. `SUP-195` says what was measured and what it was taken for; this stage's file
+  (x), Stage 19's 7.2 line and `runbooks/catalog.md` name per-resource policies, and the core-documents
+  review carries the same correction into `docs/SMUS.md`, 6f and `INT-23`. 6f 11.12's first step already
+  reads the policies with `glue get-resource-policies`.

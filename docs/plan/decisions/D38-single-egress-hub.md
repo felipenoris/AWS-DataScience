@@ -100,8 +100,9 @@ the runtime VPC, because no peering exists between them.
 
 The WireGuard host parses untrusted UDP from the internet; the proxy parses untrusted responses from the
 internet. They are separate `[D]` instances in the same public tier, with separate security groups and
-separate `[P]` Elastic IPs, so a compromise of one is not a compromise of the other. The cost of the second
-address is USD 3.65/month.
+separate public addresses, so a compromise of one is not a compromise of the other: the WireGuard host's
+a `[P]` Elastic IP, the proxy's its instance's own since Stage 6g decision 1 (2026-09-17), billed only
+while it runs.
 
 **The address budget.** Rates are the measured `us-west-2` ones in `PRICING.md`: a public IPv4 address
 costs **USD 0.005/h ≈ 3.65/month whether it is in use or idle**, and a NAT gateway costs **0.045/h plus its
@@ -140,9 +141,9 @@ A laptop with no proxy configured reaches the intranet and nothing else.
 Three consequences, easy to get backwards:
 
 - **No access condition names the hub** (D39). Until Stage 6g, `DenyControlPlaneOffVpn`'s
-  `aws:SourceIp` is the proxy's EIP and its `aws:SourceVpc` is `VPC-Networking`, and the lake's
-  `aws:SourceVpce` branch carries the hub's S3 gateway endpoint. 6g removes all three, and a laptop's call
-  through the proxy is then admitted or refused by its identity alone.
+  `aws:SourceIp` was the proxy's EIP and its `aws:SourceVpc` was `VPC-Networking`, and the lake's
+  `aws:SourceVpce` branch carried the hub's S3 gateway endpoint. 6g removed all three (applied
+  2026-09-17), and a laptop's call through the proxy is admitted or refused by its identity alone.
 - **AWS's own VPC-only policy for the portal matches every browser-origin call.** The SMUS
   network-isolation guide's `DenyUserAccessFromUnauthorizedVPCs` keys on `StringNotEquals` over
   `aws:SourceVpc`, which **matches whenever the key is absent**, and a portal user's calls carry none.

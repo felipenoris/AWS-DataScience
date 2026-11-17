@@ -40,8 +40,8 @@
 #   CT-1  one domain, AVAILABLE, in the registry account - and no domain in the consumer account
 #         (D26: the registry and the runtimes are different accounts).
 #   CT-2  every listing names an owning project that exists, and its type is reported.
-#   CT-3  the access acts: subscriptions, requests and grants per listing. Zero is the reading
-#         today; when one exists, CT-7 is what says whether it is registered.
+#   CT-3  the access acts: subscriptions, requests and grants per listing. Subscriptions exist
+#         since 2026-10-26 (6f step 11); CT-7 is what says whether each is registered.
 #   CT-4  no data source publishes on import. A publish that happens at import time is a listing
 #         nobody reviewed, and publishOnImport is the only switch that does it.
 #   CT-5  no data source over a lake database generates business names with AI. Stage 6f

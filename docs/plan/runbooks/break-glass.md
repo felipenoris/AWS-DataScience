@@ -233,9 +233,9 @@ If it is ever renamed to match, this file and §6.1 change with it.
 Properties of this chain that are load-bearing:
 
 - **It covers the whole organization, not just Management.** The trail is an organization trail, so member
-  account events reach the same log group. Root use in *any* account fires this alarm — which matters until
-  Stage 1a step 6 (centralized root access management) removes the member roots, and remains a useful
-  backstop afterwards.
+  account events reach the same log group. Root use in *any* account fires this alarm. Since Stage 1a
+  step 6 (centralized root access management, done by 2026-08-09) no member account holds root
+  credentials, so in a member the alarm is a backstop.
 - **Root sign-in events are recorded in `us-east-1`**, because console sign-in is a global service in
   CloudTrail. They still arrive here: the trail is multi-region with global service events included, and the
   log group is a single destination for all regions. **A single-region trail in `us-west-2` would not have

@@ -23,7 +23,7 @@ it bounds every "this has never happened" claim below.
 | `awsds-<env>-vpc-flow-logs` **30 d** | per account · same | the `vpc` module (`[P]` — always on) | ACCEPT/REJECT per flow: **addresses and ports, never names** |
 | `/awsds/prod/vpn` **30 d** | Production · `awsds-infra-prod` | the WireGuard host | the tunnel host's own output |
 | `/awsds/<env>/studio` **30 d** | the compute account · same | `sagemaker-prereqs` | Studio app output |
-| `/awsds/<env>/wf/<workflow>` **90 d** | Staging and Production · `awsds-infra-<env>` | the `orchestration` module (Stage 10), the workflow's `LoggingConfiguration` | a promoted workflow's task output, one stream per task attempt (`task_id=<task>/attempt=<n>`) |
+| `/aws/mwaa-serverless/<domain id>-<project id>/<workflow>` **never expires** | Staging and Production · `awsds-infra-<env>` | the service, under the name the CI/CD CLI passes in `CreateWorkflow`, since release F (`EXC-25`, `SUP-254`). Release T's `/awsds/<env>/wf/<workflow>` (90 d, the `orchestration` module) left with `<env>/orchestration/`, destroyed in Production on 2026-11-16 (Stage 19 step 8) | a promoted workflow's task output, one stream per task attempt (`workflow_id=<workflow>/run_id=<id>/task_id=<task>/attempt=<n>.log`) |
 | `/aws/vendedlogs/states/awsds-<env>-chains` **90 d** | the same | the `orchestration` module's chain layer | every state of a chain's Step Functions execution, with its data: the run it started, its polls, its own error |
 | CloudTrail — no group; the `lookup-events` **API** | every account · any profile that can read it | the organization trail | which **principal** made which API call, and **by which door** |
 
@@ -347,7 +347,8 @@ aws stepfunctions list-executions --state-machine-arn "$(aws stepfunctions list-
 aws stepfunctions get-execution-history --execution-arn "<execution arn>" --reverse-order --max-items 20 --profile awsds-infra-staging --region us-west-2
 ```
 
-Then the run's task instances, as above, and the failed task's stream in `/awsds/<env>/wf/<workflow>`.
+Then the run's task instances, as above, and the failed task's stream in
+`/aws/mwaa-serverless/<domain id>-<project id>/<workflow>` (`EXC-25`).
 A task can fail after the work it started: on 2026-10-23 `transform` failed pushing its Glue run's
 details as an XCom, refused `kms:GenerateDataKey` by the key policy (*"Failed to encrypt XCom value"*),
 while the Glue run it had started `SUCCEEDED`. The job's own run is read apart, with `aws glue

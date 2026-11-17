@@ -543,6 +543,9 @@ page (7.3, 7.4). It shares 9.1's reading of several applications in one deployme
   `cron(32 17 * * ? *)`, `test-experimentation`'s about 06:16 UTC on `cron(6 6 * * ? *)`): whether
   `EXC-11`'s data source still fails on the RAM share with an asset to ingest, or ingests the group into
   the catalog as an asset nobody chose (Lesson 17; verification v). Either reading changes `EXC-11`'s row.
+  The share AWS's page documents for the data source (`EXC-11`'s row, read 2026-11-17) is the user's
+  decision before 3.2 and 9.6: created first, 3.3 reads verification v against a share that exists rather
+  than the failure the page predicts.
 
 ### 4. Deployed and served
 
@@ -1132,7 +1135,11 @@ that trains it. And the developer's loop gains a `bundle` before each `deploy` (
   with the profile's `MLflowApp` configuration (1.5's path, since the portal greys the entry out), the
   registration mode verification lx needs stated; the house image attached by `dev-env.md` §C6, unless
   6d decision 16 is taken as (a) before; and
-  its model package group `app-ml-dev`, created once from the space with 3.2's call. [Claude⚡]
+  its model package group `app-ml-dev`, created once from the space with 3.2's call. The application
+  reaches the space as a tar, so the sitting raises no GitLab: [Claude] builds it before the sitting,
+  with nothing up, as [Stage 20](stage-20-dbt-lineage.md) step 2.0 does (`git archive` of
+  `examples/app-ml` at the merged commit, the task archive by `package-task`, the tar without
+  AppleDouble members, `SUP-348`), and it is uploaded into the space and unpacked there. [Claude⚡]
   `make hub-up`, then `make up ENV=sandbox GROUPS=mwaa,mlflow`. From a space on the house image: the
   tests, the lint, then `scripts/dev-cli.sh bundle` and `scripts/dev-cli.sh deploy`, each with
   `--targets dev` ([`sagemaker-application.md`](../runbooks/sagemaker-application.md) §D, which holds no
@@ -1505,8 +1512,10 @@ each run (decision 24 (b)).
   created (Stage 19 1.5), with the bundle role and Sandbox's `InfrastructureAccess` its
   contributors; the model reaches the project by decision 13's path, and its application inference
   profile is read with `list-inference-profiles`, expected to list the model in `us-west-2` alone.
-  [Claude⚡] `make hub-up`, then `make up ENV=sandbox GROUPS=mwaa,bedrock-base`. From a space on the
-  house image: the tests, the lint, `aws-smus-cicd-cli deploy --targets dev`. Then, in this order:
+  The application reaches the space as a tar built before the sitting, as 9.6's does, so the sitting
+  raises no GitLab. [Claude⚡] `make hub-up`, then `make up ENV=sandbox GROUPS=mwaa,bedrock-base`. From a
+  space on the house image: the tests, the lint, `aws-smus-cicd-cli deploy --targets dev`. Then, in this
+  order:
   1. **Without the deny.** `app-genai-triage` runs once, expected to succeed with the application's
      guardrail created by its first task, and `app-genai-probe` once with `EXPECT_UNGUARDED`
      `answered`. Read: in the trail, the principal, the session and the `vpcEndpointId` of each

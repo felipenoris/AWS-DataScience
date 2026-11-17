@@ -275,8 +275,9 @@ workflows' identity and the operator creates their Glue job, so the application 
 `DenyDataZoneEntirely` is revised (Stage 19 4.1, decision 13). What stands: item 5's chain layer,
 which starts the CLI-made workflow by name (Stage 18 0.4); items 1, 3, 4 and 6 to 8. The warehouse
 workflow follows the CLI too, with Production's project role as its identity (Stage 19 decision 16 (b),
-the same day, against the recommendation), so the lake's governed write leaves the job role: D22's
-amendment. The
+the same day, against the recommendation): the warehouse's load runs as that role since 2026-11-16
+(verification xxxii), and the lake's governed write stays the job role's: the project role takes a read
+of `curated` and never the write (decision 22 (a), 2026-11-12). The
 comparison and Stage 18's readings are the record of the price; `SMUS.md`, `POLICIES.md`, Stage 8's
 legs and Stage 10's 1.1, 2.4 and 4.2 follow Stage 19's pass 4.
 

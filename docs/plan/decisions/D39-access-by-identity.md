@@ -88,7 +88,8 @@ per-principal record of every data call and GuardDuty's findings on credential u
 
 - **D6.** The client plane's leg closes on section 4's identity premise.
 - **D38.** The proxy's Elastic IP stops being an IAM condition value: §3's reason for keeping it `[P]` is
-  re-examined at Stage 6g, §4's anchor and INT-16's fallback (i) shape are retired, §5 keeps its DNS
+  re-examined at Stage 6g, whose decision 1 released it on 2026-09-17 (the proxy wears its instance's own
+  address), §4's anchor and INT-16's fallback (i) shape are retired, §5 keeps its DNS
   reason and loses the persona-condition one, and §6's tunnel-range filter applies to a laptop on the
   monitored profile.
 - **D18 and D20.** The laptop reaches the data plane by identity; D18's drop-box write is section 3's

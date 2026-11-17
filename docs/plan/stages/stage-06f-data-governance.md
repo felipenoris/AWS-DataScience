@@ -716,9 +716,10 @@ Staging (its 3.3 and 7.2); the lake account's own readings are 11.4 and 11.9.
    `Staging` (2026-10-19 to 2026-10-22): the first `Tooling` environment seats two SMUS roles as Lake
    Formation admins by a full replace of the settings, which `data-governance/data/` declares with no
    `ignore_changes`, and turns on `AllowFullTableExternalDataAccess`, unset in `Data Governance` (6g
-   0.1); a subscription across accounts shares the producer's whole catalog through RAM and writes its
-   Data Catalog resource policy, which `shares.tf` keeps absent on purpose, Lake Formation's `SELECT`
-   alone scoping the read. **(d) is not available for a Glue
+   0.1); a subscription across accounts shares the producer's whole catalog through RAM and writes
+   per-resource policies on its `catalog`, `database/*` and `table/*/*`, the account-level policy that
+   `shares.tf` keeps absent on purpose staying absent (`SUP-195`), Lake Formation's `SELECT` alone
+   scoping the read. **(d) is not available for a Glue
    table as written**: *managed* is a property of the asset type, and `GlueTableAssetType` is managed,
    so unmanaged publication needs a **custom asset type** — a type whose schema the catalog does not
    derive and whose meaning no other tooling shares. (c) writes no grant at all and costs only

@@ -650,6 +650,23 @@ verification (i), pulled forward because Stage 10's design now depends on it.
   Note the two-AZ requirement as a **named D9 exception with a price**, and treat the guide's
   "outbound deny-all NACL" line as a claim to verify at build time rather than to copy — a stateless ACL
   denying all egress would break the endpoints it sits in front of.
+- **4.7 — [user; Claude] Measure the native notebook run** (decision 17, `TM-34`). The run is another
+  API than the operator decision 14 refused: `datazone:StartNotebookRun`, with a compute, a network and a
+  timeout (the API reference, read 2026-11-17), behind the portal's *Run in background*, a notebook's
+  schedule, one Scheduler schedule each, and the Workflows *Notebook Operator* and *Notebook Sensor* (the
+  user guide's page on scheduled runs, read 2026-11-17). Its `networkAccessType` takes
+  `PUBLIC_INTERNET_ONLY` or `VPC_ONLY`; in Sandbox no statement names the action, and the quota
+  `L-85C9EC5A` at 0 is what holds it ([`docs/SMUS.md`](../../SMUS.md), the querybook compute). **First,
+  with nothing up**: decision 17 taken and the control it names applied; then [user] `L-85C9EC5A`
+  requested at 15 and the querybook pair `L-F63F402C` and `L-B3401D17` at 5, which brings the querybook
+  back. **In a Sandbox sitting** after the increase: [user] in `eighth-experimentation`, one run of a small
+  notebook in the background, one schedule and one workflow with the *Notebook Operator*; [Claude] reads
+  in the trail what each calls (`StartNotebookRun` or `CreateTrainingJob`), as which role and session,
+  with the `networkConfiguration` the portal sends, then a run the project role starts from a space with
+  `PUBLIC_INTERNET_ONLY`, expected refused by decision 17's control. If the runs land in the VPC, Stage 8
+  5.6's lint learns the native operator's name and Visual ETL's schedule is read again on the same path.
+  What a background run bills is read in the bill (`UnifiedStudio:Notebook-sc.t3.medium`, 0.050 USD/h,
+  [`PRICING.md`](../../PRICING.md) §8).
 
 ### 5. Prove the lifecycle
 
@@ -1942,6 +1959,23 @@ from `us-west-2`. Pro is USD 19.00 per subscribed user per month (`docs/PRICING.
     project, made visible by `US-11` rather than trusted. (b) is the interim while 2.7's readings run, and
     acceptable only as that: two pickers and two procedures per project. (c) spends the pilot's readings and
     returns to a hand write against an object a reconciliation may reset. The waiting list carries it.
+17. **Whether native notebook runs are offered, and what holds their network** (4.7, `TM-34`). Written
+    2026-11-17 from the review of the plan against SageMaker Unified Studio's standard path; the user's.
+    Decision 14 (b) refused the portal's training-job operator, and the native run is the path the user
+    guide gives an unattended notebook: in the background, on a schedule, and as a workflow's task. It is
+    a different API, never measured here, and a run on `PUBLIC_INTERNET_ONLY` would carry the project role
+    outside D38's single egress. In Staging and Production `DenyAPersonWritingNotebooks`
+    (`<env>/studio/person-session.tf`) refuses it to a person's session alone, and the `Workloads` SCP's
+    `DenyDataZoneEntirely` exempts `datazone_usr_role_*`, so a worker's session there meets no statement
+    that names it (read 2026-11-17). **(a) Measure, then offer it in Sandbox under a control that pins
+    `VPC_ONLY`**: a policy condition if DataZone publishes a key for the run's network, otherwise the
+    domain's VPC setting read as the control, `TM-34` then measured; the quota requested after the
+    control. **(b) Deny it**: `datazone:StartNotebookRun` in Sandbox's project boundary, the loss recorded
+    beside decision 14's. Under either, the targets' deny covers every session of the project role, since
+    no released workflow runs a notebook (Stage 8 5.6's lint refuses `SageMakerNotebookOperator`).
+    **Recommended: (a)**: it is the intended path for a notebook that
+    runs unattended, and the quota at 0 keeps the channel shut until the control exists. The waiting list
+    carries it.
 
 ## Verifications to answer while executing
 
@@ -1956,7 +1990,9 @@ exist in no account. From decision 13: does `CreateApp` publish `sagemaker:Image
 and does it for an app that names an image by alias. From decision 16: does `UpdateProjectProfile` accept the
 blueprint `ON_CREATE` at order 13 (2.7 step 3); what the `Tooling` stack does when `enableSpaces` turns `false` on
 a living project whose domain holds a user profile (2.7 step 4); whether the blueprint deploys on a `Tooling` that
-exports no domain (2.7 step 5).
+exports no domain (2.7 step 5). From decision 17: what *Run in background*, a schedule and the *Notebook Operator*
+call, as which role and with which network, and whether a project role's run on `PUBLIC_INTERNET_ONLY` is
+refused (4.7).
 
 ## Risks
 

@@ -18,7 +18,8 @@ is a broken caller.
 
 ## What is here today
 
-**Twenty-eight slices across five account folders: eighteen `[P]`, two `[D]`, eight `[E]`** (2026-09-08).
+**Forty-eight slices across five account folders: thirty-six `[P]`, three `[D]`, nine `[E]`** (`make slices`,
+2026-11-17).
 That is a summary, not an authority — `make slices` prints the live table, and a slice that reaches disk
 without a row in it fails `make check`.
 
@@ -31,7 +32,7 @@ the count never changed. `./scripts/check-bootstrap-parity.py` is what keeps the
 `sagemaker/` and `data/` on the way (destroyed, steps 1.7 and 2.4) and carrying `foundation/`,
 `egress/` and `probes/` across (step 4.3). `production/` grew `networking/`, `workloads/` and
 `workloads-egress/` the same day, and its existing `foundation/` VPC became **VPC-SharedServices**;
-`vpn/` and `proxy/` arrive at 6c pass 4 ([Stage 6c](../docs/plan/stages/stage-06c-networking-hub.md)).
+`vpn/` and `proxy/` arrived at 6c pass 4 ([Stage 6c](../docs/plan/stages/stage-06c-networking-hub.md)).
 
 `sandbox/`, `staging/`, `data-governance/`, `production/` and `identity/` each carry the same
 `main.tf`, `variables.tf`, `outputs.tf`, `providers.tf`, `versions.tf` and `.terraform.lock.hcl` — **the state
@@ -76,9 +77,11 @@ and five byte-variants exist today. What is enforced is the property that matter
 [`scripts/check-provider-locks.py`](../scripts/check-provider-locks.py): the `required_version` and the
 `hashicorp/aws` constraint must equal `sandbox/foundation`'s, **a second provider block is explicitly
 permitted**, and every committed `.terraform.lock.hcl` must carry Stage 2 step 6.3's three platforms.
-`sandbox/sagemaker/` and `data-governance/governance/` add that second provider, `awscc`, and each says so
-in its own file. The `aws` block is unchanged — what the drift rule is about — and the second one is there
-because three resources exist in no other provider at all: the V2 project profile, the blueprint
+Ten slices add that second provider, `awscc`, and each says so in its own file (read 2026-11-17):
+`data-governance/governance/` and `publishing/`, `sandbox/sagemaker/`, `dev-env/`, `bedrock/`, `warehouse/`
+and `warehouse-compute/`, `production/warehouse/`, and both `studio/` slices. The `aws` block is unchanged —
+what the drift rule is about — and the second one is there because some resources exist in no other
+provider at all, the first three of them: the V2 project profile, the blueprint
 configuration's `environment_role_permission_boundary` — which is how the D13 boundary reaches roles
 **DataZone authors** (INT-15) — and the DataZone policy grant (`awscc_datazone_policy_grant`, both layers
 of the create authorization since 2026-08-22). `docs/plan/conventions.md` §6 anticipated that split.
@@ -104,11 +107,13 @@ re-plans `No changes` — that pair is D11's proof.
 account data CMK (`alias/awsds-data-data`), the five `awsds-data-*` buckets under it, the Glue databases
 and the Iceberg sample table, the `awsds-data-catalog-maintenance` role with its two unscheduled crawlers,
 the Lake Formation settings/registrations/LF-Tags, the governance manager's grants, and `shares.tf` — the
-cross-account grants that are how a consumer reaches the lake at all - Sandbox alone since 6b step
-2.4 destroyed `development/data/`.
+cross-account grants that are how a consumer reaches the lake at all: Sandbox's read, Staging's read
+since Stage 9 decision 3 (2026-10-22) and Production's read and governed write (Stage 9 2.1);
+`development/data/`'s left at 6b step 2.4.
 
 **The consumer side is `sandbox/data/` and `development/data/`** (pass 4, 2026-08-19; the second was
-**destroyed** at Stage 6b step 2.4, so `sandbox/data/` is the only caller left). They are the tree's first
+**destroyed** at Stage 6b step 2.4, and `staging/data/` and `production/data/` joined at Stage 9 on
+2026-10-22, so three slices call the module at `consumer-data-v0.6.0`). They are the tree's first
 slices that are **one module applied twice** — `terraform-modules/consumer-data/` — so the design lives
 once and each slice says only which account. Each holds the account's own `DataLakeSettings`, its
 `alias/awsds-<env>-data` CMK (one data CMK per account, the 2026-08-19 revision that withdrew the
@@ -202,8 +207,7 @@ instances that consume them. Each is named from outside the slice (every client 
 WireGuard address as its `Endpoint`; Stage 7's GitLab rule names the group; every instance the `[D]`
 slices ever boot reads the key), and **a reference is only worth writing if what it names outlives the
 thing using it**: a WireGuard address that changed would strand every client config until each was
-edited. No policy names either address (D39, Stage 6g); whether the proxy's stays `[P]` is 6g's decision
-due 1.
+edited. No policy names either address (D39, Stage 6g).
 The **value** in that secret is never Terraform's — it is put there by the user at enrollment and read by
 the host at first boot ([`docs/plan/runbooks/vpn.md`](../docs/plan/runbooks/vpn.md) Part K owns every
 event that touches it). The Sandbox copies went at 6c step 6.5 (2026-09-08), once nothing read them; `sandbox/foundation/vpn-anchors.tf` is now one `removed {}`
@@ -260,9 +264,10 @@ reads.
 set: one design split by *which account is allowed to hold what*, D26's argument made concrete:
 
 - **`data-governance/governance/` `[P]` — the registry, and nothing else.** The DataZone V2 domain, its
-  execution and service roles, the two project profiles, and the two `CREATE_PROJECT_FROM_PROJECT_PROFILE`
-  grants on the root domain unit (`grants.tf`, 2026-08-22 — without them the profiles were templates
-  nobody could instantiate). **No compute lives here and none ever may**:
+  execution and service roles, the project profiles (`experimentation`, `lake-publishing`,
+  `deployment-staging`, `deployment-production`, and the model governance project's), and a
+  `CREATE_PROJECT_FROM_PROJECT_PROFILE` grant per profile on the root domain unit (`grants.tf`, since
+  2026-08-22 — without them the profiles were templates nobody could instantiate). **No compute lives here and none ever may**:
   `sagemaker:Create*` is denied in this account by the `Data` OU document, a deny that stays free because
   no blueprint is enabled here but the lake-publishing pilot's `Tooling`, with spaces off
   (`data-governance/publishing/`, Stage 6f step 11), and Stage 6 step 0.4 reads the slice's own plan for
@@ -270,7 +275,8 @@ set: one design split by *which account is allowed to hold what*, D26's argument
 - **`sandbox/sagemaker/` `[P]` — the runtime's prerequisites**, one module
   (`terraform-modules/sagemaker-prereqs/`). It was applied **twice** until 2026-09-06, in Sandbox and in
   Development, so the two could not drift; **Stage 6b step 1.7 destroyed the Development copy and deleted
-  the slice** — that account is becoming the headless `Staging` and provisions no Studio project. The blueprint
+  the slice** — that account became `Staging`, whose deployment project's prerequisites are
+  `staging/studio/` since Stage 19. The blueprint
   provisioning and manage-access roles, the account's project CMK, the `/awsds/<env>/studio` log group,
   the **D13 permissions boundary** the blueprint imposes on every project role it authors — and, since
   v0.3.x (2026-08-22), the projects bucket `awsds-<env>-smus-projects` (SSE under the project CMK) and the
@@ -310,13 +316,15 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   `deploy_role_arns_by_name`; since pass 2 the **test runner**, with no AWS identity reachable from its
   jobs; and since decision 20 the build runner's role also writes `awsds-prod-releases`.
 - **`sandbox/dev-env/` `[P]` — the house image, registered** (Stage 6d step 2, 2026-09-10): the SageMaker
-  AI image, one immutable version pointing at `awsds-prod-ecr-dev-env:<tag>`, an app image configuration
-  per app type, and the role SageMaker assumes to read that repository across the account boundary. It is
+  AI image, an app image configuration per app type, and the role SageMaker assumes to read that
+  repository across the account boundary. The image's versions, each an immutable pointer at
+  `awsds-prod-ecr-dev-env` by digest, are the release pipeline's since Stage 8 decision 18 (2026-10-15):
+  `awsds/dev-env`'s `register` and `retire` jobs create and delete them through the API and apply no
+  slice (INT-18); version 7, the last Terraform created, left the state. It is
   the one slice here whose only real input lives in another account, so it reads
   `production/registry/`'s state rather than carrying an ECR URI. **What it does not hold is the
   attachment**: `CustomImages` is a field of the SageMaker AI domain the `Tooling` blueprint provisions,
   so making the image *selectable* is a hand step — [`docs/plan/runbooks/dev-env.md`](../docs/plan/runbooks/dev-env.md).
-  Stage 8 step 1's pipeline takes the slice over (INT-18).
 - **`sandbox/bedrock/` `[P]` — the Bedrock grant** (Stage 6e step 3, applied 2026-09-11): one
   `awsds-<env>-bedrock-assistant` policy naming the three scoped Claude models — as inference-profile
   ARNs *and* as region-less foundation-model ARNs, because authorization evaluates both — and one
@@ -438,7 +446,7 @@ created there, the account has stopped being what it is for.
 | What the policy documents are and what each may not become | [`identity/org-policies/README.md`](identity/org-policies/README.md) |
 | **What every policy statement does, and why it exists** — all four types | [`identity/org-policies/POLICIES.md`](identity/org-policies/POLICIES.md) |
 | **What governs the lake** — bucket-policy branches, the key policy, tag assignments, LF grants | [`data-governance/data/README.md`](data-governance/data/README.md) — the same one-row-each discipline, for the lake's own controls |
-| **What governs the lake's CONSUMER side** — the per-account CMK policy, the account's `DataLakeSettings`, the four re-grants (the derived zone and workgroup left 2026-08-26 — D19 revised) | [`terraform-modules/consumer-data/README.md`](../terraform-modules/consumer-data/README.md) — one README for the module both `data/` slices call, because the design lives once and is applied twice; the persona's identity-side half is `identity/sso/`'s |
+| **What governs the lake's CONSUMER side** — the per-account CMK policy, the account's `DataLakeSettings`, the four re-grants (the derived zone and workgroup left 2026-08-26 — D19 revised) | [`terraform-modules/consumer-data/README.md`](../terraform-modules/consumer-data/README.md) — one README for the module the three consumer `data/` slices call, because the design lives once and is applied per account; the persona's identity-side half is `identity/sso/`'s |
 | Which stage builds a given slice | [`docs/plan/stages/INDEX.md`](../docs/plan/stages/INDEX.md) |
 | What is deployed right now | [`aws/INDEX.md`](../aws/INDEX.md) and [`docs/AWS_STATE.md`](../docs/AWS_STATE.md) |
 

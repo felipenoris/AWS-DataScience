@@ -1774,6 +1774,33 @@
     USD on the usage types that end in `-v2`, and no row for a runtime that exists with no session
     ([`PRICING.md`](PRICING.md)):
     <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrockAgentCore/current/us-west-2/index.json>.
+- SageMaker Unified Studio's standard path read against the plan (read 2026-11-17, for 6d step 4.7 and
+  decision 17, `TM-34`, `EXC-11` and Stage 19 decision 15). A notebook run in the background, on a schedule
+  and as a workflow's *Notebook Operator* and *Notebook Sensor*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/notebooks-schedule-runs.html>. The
+  run's API, with its compute, network and timeout:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_StartNotebookRun.html>. The RAM share of the
+  domain to `sagemaker.amazonaws.com` a SageMaker data source needs, under
+  `AWSRAMSageMakerServicePrincipalPermissionAmazonDataZoneDomain`:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-sagemaker-data-source.html>.
+  The CI/CD CLI's repository, its guides and examples, `main` at `cdb8e3c18f` (2026-11-06):
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio>. Read again the same day: the release notes, the
+  designations' examples, the Git connection pages and the `SageMakerAIDomain` blueprint's page, each listed
+  above.
+- The catalog's runbook, `catalog.md` (read 2026-11-17, for Stage 20 steps 1.5 and 1.6). Business
+  glossaries, the path *Manage → Catalog management → Business glossaries*, a term's README up to 4,096
+  characters, *Is A Type of* and *Has Types* at most 10 each, a term on at most 10 assets, and when a
+  glossary or a term can be deleted:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/manage-business-glossaries.html>.
+  A subscription's revocation, *Revoke* under *Subscription requests → Access*, the option that keeps the
+  asset in the targets, and no re-approval after a revoke:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/revoke-subscription.html>. Read again
+  the same day, each listed above: the release notes (newest entry 2026-11-12), `update-metadata.html` (the
+  *Catalog scope* filter, the *History* tab, *Re-publish asset*, *Share* to at most 10 projects),
+  `create-data-source.html` (a database typed or picked from suggestions; a Redshift source takes include
+  filters alone), `standardize-metadata-forms.html`, `create-new-data-product.html`,
+  `publish-data-product.html`, the subscription and approval pages, and the lineage page's three node types;
+  `create-data-asset-manually.html` returned its title alone.
 
 ## Data platform
 

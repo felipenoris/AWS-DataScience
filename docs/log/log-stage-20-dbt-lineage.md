@@ -672,3 +672,33 @@ was applied or written in AWS.
 - **[Claude] Written**: pass 1's head, the tree, 2.0, decision 9 (b)'s list, the D13 row, 4.2, 4.6 and
   "What concerns the other sessions" corrected; the waiting list's rows for the tarball and decisions 9
   and 11. Nothing in AWS changed.
+
+## 2026-11-17 — pass 1 and pass 4's 4.1 to 4.3 handed out, and the catalog's runbook written
+
+*Claude's hand, and a subagent's where marked, in a laptop session at the user's request of 13:42 UTC. No
+AWS call for these steps.*
+
+- **[Claude] The work handed out**, 13:53 to 13:54 UTC: 1.2 to 1.4, `examples/app-dbt/`, to one subagent,
+  written again from the stage's prose, the waiting list's alternative to the cloud session's tarball; 1.5
+  and 1.6, `docs/plan/runbooks/catalog.md`, to another; and 4.1 to 4.3 to a subagent working in a worktree
+  of its own, which pushes the module tags alone. 1.2 to 1.4 and 4.1 to 4.3 are in progress at this entry.
+- **[Claude, a subagent] 1.5 and 1.6**, done at about 14:30 UTC: `catalog.md`, 71,234 bytes, sections O, A,
+  M, P, F, S, L and V, written from the repository and from the guide's pages read 2026-11-17, with the
+  portal not re-read, which is the user's act. §L holds 1.6's desk readings, a processing job with a waiting
+  task, several Bash tasks by `--select` and a Glue job as runtime, each with what carries a run past the
+  worker's hour and what nothing measured, and no dbt reading yet. Its checks: every relative link and
+  anchor resolves, `./scripts/check-plan-refs.py` prints `OK`, the 31 `SUP` ids and the two `EXC` ids it
+  cites exist, and it holds no 12-digit number and no `@`.
+- **[Claude, a subagent] The contradictions it read between sources**, left to the files that own them: the
+  incoming-requests page is *Subscriptions* in the release notes of 2026-10-20 and *Subscription requests*
+  in the guide and the portal; a database outside the environment is typed or picked from suggestions on
+  the page of 2026-11-17, where the stage's layout says typed; what a source created on the *Data sources*
+  page writes is unmeasured against `SUP-191`; every connection read had lineage on from creation, where the
+  page says it is off by default (`SUP-207`); Stage 19's step 8 heading puts the source before the asset,
+  against its own reading of 2026-11-14 and `SUP-366`; two lines of `GOVERNANCE.md` and two of `SMUS.md` are
+  stale; `aws/catalog.py`'s `CT-3` header still reads zero subscriptions; `SUP-195`'s three statements in
+  Staging's catalog policy against 6f 11.9's per-resource policies.
+- **[Claude] Written**, 14:08 UTC: `promotion.md` §N.6 item 6, passes 2 and 3 in a Sandbox sitting with
+  `GROUPS=mwaa` and no GitLab, before 2026-12-18, and 4.5 once 4.4's applies ran; item 2 places 4.4's five
+  applies, with the battery's Phase 4b, before Stage 17 9.5's, both `studio/` slices taking the two changes
+  in one apply (Lesson 69).

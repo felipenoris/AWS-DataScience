@@ -230,11 +230,10 @@ per laptop, never one per session.
   the synced tree: PRs #294 and #298 each took `SUP-360` on 2026-11-14, each green on its own
   branch, and `main` failed the check until the second became `SUP-362`.
 - **The Terraform binary is one per laptop, and every session's.** The laptop and the deploy image both run
-  1.16.6 since 2026-10-25 (`v0.3.0`, the deploy runner replaced 20:40 UTC). A laptop upgrade comes after the
-  image's rebuild, never before: a state written by a newer Terraform is refused by the image's older one in
-  every pipeline job that reads it (Lesson 76), and the slices the pipeline reads are the application and
-  orchestration slices, `staging/egress`, `production/workloads-egress`, and both targets' `data/`,
-  `sagemaker/`, `foundation/` and `workloads/`.
+  1.16.6 since 2026-10-25 (`v0.3.0`, the deploy runner replaced 20:40 UTC). No pipeline job runs Terraform
+  since release F: a leg reads its role's `state_read_keys` as JSON (`scripts/tfhygiene/states.py`, read
+  2026-11-17), so the image's binary reads no state. A laptop upgrade moves every session at once, with the
+  offline gates' pin (`.github/workflows/offline-gates.yml`); the image's pins move at its next release.
 
 ### What the app refuses
 
@@ -260,10 +259,12 @@ and the stage logs hold the refusals.
 | A project membership, as in Stage 18 | *Permission Grant* | 2026-11-11 |
 | A session's first push of its own branch, before its PR | *Unsanctioned Communication* | 2026-11-14 |
 | A saved plan's apply in Production under the user's blanket authorization of the session; let through once the user named the apply in chat | *Production Deploy* | 2026-11-17 |
+| A subagent's launch whose brief held a push and a merge request in another repository (`awsds-workflows`) | *Unsanctioned Communication* | 2026-11-17 |
 
 The orchestrating session ran each of the first three itself, on the user's authorization in its own
 chat. Let through on 2026-11-11: reads, a RAM association, a candidate SCP's life on `Policy Test`, and
-every apply and `create-project` the user named.
+every apply and `create-project` the user named; on 2026-11-17, the orchestrating session's push and pull
+request in `awsds-workflows`, which the user authorized in its chat.
 
 Sessions run in parallel under one orchestrator are told not to edit `CLAUDE.md`,
 `docs/GENERAL_PLAN.md`, `docs/plan/stages/INDEX.md` and `docs/log/INDEX.md`: each leaves its text in its
@@ -385,6 +386,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 | Task | Read |
 |---|---|
 | The data-governance model: what each account holds, the three catalogs (Glue Data Catalog, Lake Formation, SageMaker Catalog), the LF-Tag ontology (`layer`, `businessunit`, `classification`), the per-account encryption rule (§Encryption), the grant rules and default expressions (TBAC on the data, the catalog's ABAC on the session), the drop-box and derived-zone contracts, and the development cycle of a data product with the moment the LF-Tags are assigned | [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md); applied grants are `docs/AWS_STATE.md`'s grant register |
+| Anything SageMaker Catalog: how an asset comes to exist, its business metadata, a glossary or a metadata form, a data product, a publication or its withdrawal, a subscription or a Share between projects and its revocation, a lineage graph and the events that feed it, a Glue job's and dbt's among them | [`docs/plan/runbooks/catalog.md`](docs/plan/runbooks/catalog.md): §O the pieces, §A assets, §M business metadata, §P data products, §F the publication flow, §S sharing between projects, §L lineage, §V the instruments |
 | What governs the lake: a bucket-policy branch, a key-policy statement, a tag assignment, an LF grant | Producer side [`terraform-live/data-governance/data/README.md`](terraform-live/data-governance/data/README.md); consumer side [`terraform-modules/consumer-data/README.md`](terraform-modules/consumer-data/README.md). They say what the code declares; applied triples are `docs/AWS_STATE.md`'s grant register. Read the producer README's "A permission here is the intersection of two systems" before claiming what a principal can do (Lesson 28) |
 | Anything Sandbox lake: `awsds-sandbox-lake`, a per-group prefix, wiring or unwiring a project's S3 connection, the tests, code that lists, reads or writes it | [`docs/plan/runbooks/sandbox-lake.md`](docs/plan/runbooks/sandbox-lake.md) |
 | Anything Redshift: the warehouse, its 4-RPU floor, the cost ceiling, the two classes of database, or how a SageMaker project gets write on one | [`redshift-connection.md`](docs/plan/runbooks/redshift-connection.md) for the recurring procedure: §S adding a schema, §P and §U wiring and unwiring a project, §F which layer a failure came from, §J running SQL from a notebook, §G reading a governed share from a project, §V the instruments. [`D40`](docs/plan/decisions/D40-redshift-warehouse.md) for what is and is not built, [`stage-05b`](docs/plan/stages/stage-05b-redshift-serverless.md) for the warehouse, [`stage-06h`](docs/plan/stages/stage-06h-redshift-connection.md) for the connection's three layers, `docs/SMUS.md` §Connections for the mechanism |
