@@ -44,7 +44,7 @@ locals {
 
 module "sagemaker_prereqs" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/sagemaker-prereqs?ref=sagemaker-prereqs-v0.11.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/sagemaker-prereqs?ref=sagemaker-prereqs-v0.12.0"
 
   env    = var.env
   region = var.region
@@ -58,7 +58,8 @@ module "sagemaker_prereqs" {
 
   allowed_instance_types = var.allowed_instance_types
 
-  blueprints_enabled = var.blueprints_enabled
+  blueprints_enabled          = var.blueprints_enabled
+  redshift_serverless_enabled = var.redshift_serverless_enabled
   # The domain account is read rather than pasted (v0.3.3): the lake and the domain share the Data
   # Governance account, the lake state is read unconditionally (unlike governance/, which is gated),
   # and its data-key ARN carries the account id in field 4 - so the trust correction needs no new
