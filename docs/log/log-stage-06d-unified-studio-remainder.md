@@ -3798,3 +3798,36 @@ advance every stage but 11 to 15 with nothing up. Times are UTC.*
   the fallback, the domain's VPC, is a control only 4.7's negative can show, a project-role run asking for
   `PUBLIC_INTERNET_ONLY`. The negative needs `L-85C9EC5A` above 0, which the decision keeps at 0 until the
   control exists. The order is the user's, on the waiting list.
+
+## 2026-11-18 — 2.7 step 1's reading (iii): `UpdateProject` refused to a contributor
+
+*Claude, the orchestrating session, on the laptop with nothing up, at the user's word in the session's
+chat: "autorizo o `update-project`do 6d, passo 2.7". The infrastructure user, permission set
+`InfrastructureAccess`, through `awsds-infra-sandbox-1`, a `PROJECT_CONTRIBUTOR` of `test-experimentation`
+through a group profile (`SUP-157`), and `awsds-infra-data` for the profile. No other Claude session ran on
+the laptop. Times are UTC.*
+
+- **[Claude] Before the call**: `test-experimentation` (`4gqfau9xuo6e4w`) `ACTIVE`,
+  `overallDeploymentStatus` `SUCCESSFUL`, `lastUpdatedAt` 2026-11-14T03:18:53Z, its `userParameters` the
+  seven `Tooling` values (`idleTimeoutInMinutes` 60, `enableNetworkIsolation` true,
+  `enableS3AccessGrantsForTools` true, `isNewGitRepository` empty, `logGroupRetention` 731, `enableAthena`
+  true, `enableProjectRepositoryAutoSync` false); its members one `PROJECT_OWNER` and two
+  `PROJECT_CONTRIBUTOR`. The profile `experimentation` (`dh60xbal05q64w`), read from Data Governance since
+  Sandbox's session is refused `GetProjectProfile` on the domain's resource policy: `lastUpdatedAt`
+  2026-10-30T22:16:51Z, `Tooling` its one `ON_CREATE` configuration at order 0 and thirteen `ON_DEMAND`
+  after it, `SageMakerAIDomain` last at 13. The project's `Tooling` environment `bi356s1sacz0cw` points at
+  the profile's `Tooling` id, `b9f8af86-7392-42ce-a83c-13e0b92bf9a5`, its 26 parameters equal to the
+  profile's, so an accepted update would create no environment and change no parameter.
+- **[Claude] The call**, 10:47:07: `update-project` on `test-experimentation`, `--project-profile-version
+  latest` and the project's own `userParameters`. Exit 254: *"An error occurred (AccessDeniedException)
+  when calling the UpdateProject operation: User is not permitted to perform operation: UpdateProject
+  DesignationPolicy does not allow access."*
+- **[Claude] After**: the project `ACTIVE`, `lastUpdatedAt` unchanged. Sandbox's and Data Governance's
+  trails each hold the call at 10:47:09, `errorCode` `AccessDenied` with no `errorMessage`, the request's
+  `domainIdentifier`, `projectIdentifier`, `projectProfileVersion` `latest` and `userParameters`: the
+  refusing layer is read from the response alone (`SUP-162`).
+- **[Claude] The verdict for decision 16 (a)'s release**: a contributor's `UpdateProject` is refused, and
+  the project's creator, its owner, was accepted the same update from the portal on 2026-10-11
+  (`SUP-168`). Each *Update project* is pressed by the project's owner, or the operator is made owner of
+  each project, a membership its owner grants; one call per project by the operator as a contributor is
+  refused. `SUP-157` gains the reading; the stage file's 2.7 and the waiting list's row follow.

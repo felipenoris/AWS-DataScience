@@ -900,3 +900,32 @@ AWS write and no apply. Times are UTC.*
   recommendation; Cost, Rollback, "What this stage does not do" and "What concerns the other sessions".
   `scripts/deploy-application.py`, `scripts/model-chain.py`, their hooks, `aws/cicd.py` and
   `sandbox/workflows/` are untouched: 8.1 and 2.0 describe their changes. Nothing in AWS changed.
+
+## 2026-11-18 — 8.4's applies in Staging and Production
+
+*Claude, the orchestrating session, on the laptop after the merge of PR #318 at 10:34:57, at the user's
+word in the session's chat: "Autorizo os applies do estágio 20 8.4". The infrastructure user, permission
+set `InfrastructureAccess`, through `awsds-infra-staging` and `awsds-infra-prod`, on a branch cut from
+`main` at `ce39062d` (Lesson 79). No other Claude session ran on the laptop, read before the first apply.
+Times are UTC.*
+
+- **[Claude] The plans from `main`**, each saved outside the repository: `staging/foundation/` and
+  `production/foundation/`, with the alerts var-file, *"Plan: 0 to add, 1 to change, 0 to destroy."* each,
+  the deploy role's policy gaining `database/app_dbt` and `table/app_dbt/*` and losing nothing;
+  `staging/chains/`, *"Plan: 12 to add, 1 to change, 0 to destroy."*, and `production/chains/`, *"Plan: 6
+  to add, 1 to change, 0 to destroy."*, the chain role's policy gaining the workflows' ARNs, their
+  encryption context and the stage-variables parameter. Each carried 8.2's change alone.
+- **[Claude] The applies** of the saved plans:
+  - `staging/foundation/`, 10:43:19 to 10:43:33: `awsds-staging-deploy-project` modified in 2 s, *"Apply
+    complete! Resources: 0 added, 1 changed, 0 destroyed."*;
+  - `production/foundation/`, 10:43:43 to 10:43:55: `awsds-prod-deploy-project` in 1 s, the same line;
+  - `staging/chains/`, 10:44:03 to 10:44:19: the machines `awsds-staging-chain-app-dbt` and
+    `awsds-staging-chain-app-dbt-probe` with their schedules, failure rules and targets, *"Apply complete!
+    Resources: 12 added, 1 changed, 0 destroyed."*;
+  - `production/chains/`, 10:44:29 to 10:44:44: `awsds-prod-chain-app-dbt` with its schedule, rules and
+    targets, *"Apply complete! Resources: 6 added, 1 changed, 0 destroyed."*.
+- **[Claude] The re-plans**, with `-detailed-exitcode`: exit 0 and *"No changes. Your infrastructure
+  matches the configuration."* on the four slices. `list-schedules`: the six schedules of
+  `awsds-staging-chains` and the six of `awsds-prod-chains` `DISABLED`, the three new ones among them.
+- **[Claude]** Lesson 69's window is closed: a plan of these slices from `main` no longer carries this
+  stage's change. 8.4's last apply, `staging/studio/`, waits on its line, written after 8.3.

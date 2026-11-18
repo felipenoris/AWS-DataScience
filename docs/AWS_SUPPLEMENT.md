@@ -2026,7 +2026,14 @@ entry is still true is the reading.
   runs and their activities (`ListDataSourceRuns`, `ListDataSourceRunActivities`), each run's `added` count
   among them, and was refused a `Search` of the assets the project owns, *"User is not permitted to perform
   operation: Search"*. A non-member reads whether a project's source has added an asset, never the asset.
-  Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
+  Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15. Read again 2026-11-18 (Stage 6d 2.7 step
+  1, reading (iii)): the same contributor of `test-experimentation` was refused `UpdateProject` there, with
+  `projectProfileVersion` `latest` and the project's own user parameters, *"User is not permitted to perform
+  operation: UpdateProject DesignationPolicy does not allow access."*, the project unchanged and both
+  accounts' trails reading `AccessDenied` with no `errorMessage` (`SUP-162`). The project's creator, its
+  owner, was accepted the same update from the portal on 2026-10-11 (`SUP-168`), so a project's update is
+  its owner's, never an operator's call as a contributor. Where:
+  `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
 
 - `SUP-158` **An IAM role in a DataZone domain is a group and one user profile per session name, and a
   policy grant takes the group.** Its ARN resolves as a user identifier to one session's user profile, and
