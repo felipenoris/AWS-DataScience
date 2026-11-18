@@ -3866,3 +3866,16 @@ Plans only, no AWS write. Times are UTC.*
 - **[Claude] The pull request**: [#322](https://github.com/felipenoris/AWS-DataScience/pull/322), a draft,
   merged with the apply after step 2's acts (Lesson 69), and before any other session plans `governance/`
   from `main` after it (Lesson 79).
+
+## 2026-11-18 — the log review's records for this stage: `SUP-379` and `TM-34`
+
+*Claude: a subagent of the orchestrating session wrote the records and read the page; the orchestrating
+session wrote this entry and took the commit into pull request #320. On the laptop, no AWS call.*
+
+- **[Claude] `SUP-379`**, written from 2.6's readings of 2026-10-30 (two entries) and 2.7 step 1's reading
+  (i): a blueprint domain's `ProjectS3Path` is the projects bucket's root `shared/`, which the project role
+  lists and can neither read nor write. The blueprint's admin guide page, read again on 2026-11-18, names no
+  S3 path, prefix or `ProjectS3Path` (`REFERENCES.md`).
+- **[Claude] `TM-34`**, brought to decision 17's control reading of 2026-11-18: no condition key exists for
+  `StartNotebookRun`, so the domain-level VPC is the control left, and 4.7's negative, a project-role run
+  asking for `PUBLIC_INTERNET_ONLY` once `L-85C9EC5A` is above 0, is what shows it binds.
