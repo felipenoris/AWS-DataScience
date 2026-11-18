@@ -44,8 +44,17 @@
 # three AZs and D9 built two - verification (iii): the apply either accepts two or it does not,
 # and that answer is taken here rather than assumed anywhere.
 
+locals {
+  # The configured set: var.blueprint_names, plus RedshiftServerless while Stage 21's switch is on
+  # (variables.tf). The roster guard in data.tf iterates the same set.
+  configured_blueprints = var.blueprints_enabled ? toset(concat(
+    var.blueprint_names,
+    var.redshift_serverless_enabled ? ["RedshiftServerless"] : [],
+  )) : toset([])
+}
+
 resource "awscc_datazone_environment_blueprint_configuration" "enabled" {
-  for_each = var.blueprints_enabled ? toset(var.blueprint_names) : toset([])
+  for_each = local.configured_blueprints
 
   domain_identifier                = var.domain_id
   environment_blueprint_identifier = data.aws_datazone_environment_blueprint.enabled[each.value].name

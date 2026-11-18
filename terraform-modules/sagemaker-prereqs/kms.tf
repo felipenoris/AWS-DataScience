@@ -20,9 +20,9 @@
 # blueprint (adminguide/sagemaker-unified-studio-provisioned-resources-key-permissions.html),
 # adapted: our role names for the doc's console names, this Region for its us-east-1, the
 # category-1 roster for its full menu, and this organization's id on the doc's two statements
-# for every principal. The Redshift and Airflow CreateGrant statements are absent because the
-# blueprints they serve, `RedshiftServerless` and `Workflows`, are category 3; each joins in the
-# same commit that enables its blueprint (Lesson 14).
+# for every principal. The Airflow CreateGrant statement is absent because the blueprint it serves,
+# `Workflows`, is category 3. The Redshift one joins while var.redshift_serverless_enabled configures
+# `RedshiftServerless` (Stage 21 decision 1 (b)), in the same switch as its blueprint (Lesson 14).
 locals {
   # The IAM-delegation root statement the default policy had - kept first, because losing it
   # would orphan the key from its own account's administration.
@@ -197,6 +197,29 @@ locals {
       }
     },
   ] : st if var.domain_id != null]
+
+  # The page's RedshiftCreateGrantKmsPermissions, verbatim but for the principal (read 2026-11-18,
+  # Stage 21 1.3), while var.redshift_serverless_enabled is on. The RedshiftServerless template
+  # encrypts the namespace and its managed admin secret with the key passed as kmsKeyArn, and the
+  # provisioning role's managed policy (v86) allows kms:CreateGrant through airflow, neptune-graph and
+  # s3vectors alone.
+  key_policy_redshift = [for st in [
+    {
+      Sid       = "RedshiftCreateGrantKmsPermissions"
+      Effect    = "Allow"
+      Principal = { AWS = module.provisioning_role.role_arn }
+      Action    = "kms:CreateGrant"
+      Resource  = "*"
+      Condition = {
+        StringEquals = {
+          "aws:ResourceAccount" = "$${aws:PrincipalAccount}"
+        }
+        StringLike = {
+          "kms:ViaService" = ["redshift-serverless.*.amazonaws.com"]
+        }
+      }
+    },
+  ] : st if var.redshift_serverless_enabled]
 }
 
 module "project_key" {
@@ -213,6 +236,7 @@ module "project_key" {
       local.key_policy_iam_delegation,
       local.key_policy_smus_domain,
       local.key_policy_smus_project_roles,
+      local.key_policy_redshift,
     )
   })
 }

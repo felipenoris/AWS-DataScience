@@ -8,13 +8,14 @@ data "aws_organizations_organization" "current" {} # DescribeOrganization answer
 
 # The roster guard (pass 2b only). The awscc configuration resource takes the blueprint name
 # itself (blueprints.tf, measured 2026-08-21), so nothing here needs an id resolved; the lookup
-# stays as the plan-time check that every name in var.blueprint_names still exists as a managed
-# blueprint in the shared domain (Lesson 38). An AWS-side rename fails the plan with a readable
-# "not found" instead of a create-time waiter error. blueprints.tf consumes its .name - the same
-# string that went in - so the guard is a declared dependency of every configuration rather than
-# a dangling declaration tflint would rightly flag.
+# stays as the plan-time check that every configured name (blueprints.tf's
+# local.configured_blueprints) still exists as a managed blueprint in the shared domain (Lesson 38).
+# An AWS-side rename fails the plan with a readable "not found" instead of a create-time waiter
+# error. blueprints.tf consumes its .name - the same string that went in - so the guard is a
+# declared dependency of every configuration rather than a dangling declaration tflint would rightly
+# flag.
 data "aws_datazone_environment_blueprint" "enabled" {
-  for_each = var.blueprints_enabled ? toset(var.blueprint_names) : toset([])
+  for_each = local.configured_blueprints
 
   domain_id = var.domain_id
   name      = each.value
