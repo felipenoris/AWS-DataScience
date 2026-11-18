@@ -46,10 +46,23 @@ output "projects" {
   value       = var.projects
 }
 
+# Null while all_projects_tag_enabled is false, so the state gains nothing; the compute slice's
+# `defaults` reads the absent output as no tag.
+output "all_projects_tag" {
+  description = "The wide tag `for-use-with-all-datazone-projects=true` as a tag map (6h decision 8 (a)), or null while all_projects_tag_enabled is false. The compute slice merges it into the workgroup's tags; the namespace carries it here."
+  value       = local.all_projects_tag
+}
+
 # The value a project member types into the portal's "Access role ARN" field, per project. It is an
 # output rather than a thing somebody reads off the console because the field is mandatory in the
 # form and the run that fills it is the user's, not this repository's (6h 3.2).
 output "project_access_role_arns" {
   description = "The access role ARN per admitted project - the portal's mandatory `Access role ARN` field when the credential type is IAM credentials."
   value       = { for id, r in aws_iam_role.project_access : id => r.arn }
+}
+
+# The value Stage 21 step 4.5's update-catalog call passes as DataLakeAccessProperties.DataTransferRole.
+output "data_transfer_role_arn" {
+  description = "The data transfer role for data lake access on the federated catalog (Stage 21 step 4.5), or null while data_transfer_role_enabled is false."
+  value       = one(aws_iam_role.data_transfer[*].arn)
 }

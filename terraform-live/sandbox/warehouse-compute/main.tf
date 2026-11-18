@@ -40,13 +40,20 @@ data "terraform_remote_state" "warehouse" {
     key    = "${var.account_folder}/warehouse/terraform.tfstate"
     region = var.region
   }
+
+  # sandbox/warehouse/ writes no `all_projects_tag` output while its switch is off, and an output
+  # absent from that state reads as this empty map: no wide tag on the workgroup.
+  defaults = {
+    all_projects_tag = {}
+  }
 }
 
 locals {
-  name      = "awsds-${var.env}-warehouse"
-  namespace = data.terraform_remote_state.warehouse.outputs.namespace_name
-  capacity  = data.terraform_remote_state.warehouse.outputs.capacity
-  projects  = data.terraform_remote_state.warehouse.outputs.projects
+  name             = "awsds-${var.env}-warehouse"
+  namespace        = data.terraform_remote_state.warehouse.outputs.namespace_name
+  capacity         = data.terraform_remote_state.warehouse.outputs.capacity
+  projects         = data.terraform_remote_state.warehouse.outputs.projects
+  all_projects_tag = data.terraform_remote_state.warehouse.outputs.all_projects_tag
 
   # THE TWO PRIVATE SUBNETS, SELECTED BY ZONE ID. AWS's own considerations page: "Two subnets
   # (without EVR) - You must have at least two subnets, and they must span across two Availability
@@ -208,13 +215,16 @@ resource "aws_redshiftserverless_workgroup" "this" {
     parameter_value = "false"
   }
 
-  # LAYER 1'S WORKGROUP HALF, from sandbox/warehouse/'s map rather than from a copy here. AWS's
-  # requirement names both objects - the tag goes on "the Amazon Redshift cluster or workgroup AND
-  # ITS NAMESPACE" - and the namespace's half is written by that slice. Reading the map instead of
-  # declaring it is what makes the two unable to disagree (Lesson 14).
+  # Layer 1's workgroup half, from sandbox/warehouse/'s state rather than from a copy here (Lesson
+  # 14). AWS's requirement names both objects - the tag goes on "the Amazon Redshift cluster or
+  # workgroup and its namespace" - and the namespace's half is written by that slice with the same two
+  # rules: the project tag while the map holds exactly one project, since the key holds one value,
+  # and the wide tag while that slice's `all_projects_tag_enabled` is true (6h decision 8 (a)). A
+  # workgroup raised before that slice's apply keeps its tags until this slice is applied again.
   tags = merge(
     { Name = local.name },
-    { for id in keys(local.projects) : "AmazonDataZoneProject" => id },
+    length(local.projects) == 1 ? { AmazonDataZoneProject = one(keys(local.projects)) } : {},
+    local.all_projects_tag,
   )
 
   lifecycle {

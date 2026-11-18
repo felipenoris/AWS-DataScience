@@ -97,17 +97,24 @@ resource "aws_redshiftserverless_namespace" "this" {
   iam_roles            = [aws_iam_role.namespace_exec.arn]
   default_iam_role_arn = aws_iam_role.namespace_exec.arn
 
-  # LAYER 1'S NAMESPACE HALF, AND THE TAG ADMITS EXACTLY ONE PROJECT. AWS's documented requirement
-  # names both objects - the admin "adds 1 of the following tags to the Amazon Redshift cluster or
-  # workgroup AND ITS NAMESPACE" - and the workgroup half is written by
-  # sandbox/warehouse-compute/ from this same map, read out of this slice's state. One authored
-  # place, two consumers: the two can only disagree through an edit that fails a plan.
-  #
-  # `AmazonDataZoneProject` is a TAG KEY, so it holds one value, and AWS's second option for more
-  # than one project is the wide `for-use-with-all-datazone-projects=true`. variables.tf's
-  # `projects` validation is what turns that into a plan error rather than a connection nobody can
-  # explain - see its comment, and 6h decision 8.
-  tags = { for id in keys(var.projects) : "AmazonDataZoneProject" => id }
+  # Layer 1's namespace half. AWS's documented requirement names both objects - the admin "adds 1 of
+  # the following tags to the Amazon Redshift cluster or workgroup and its namespace" - and the
+  # workgroup half is written by sandbox/warehouse-compute/ from this slice's state, the `projects`
+  # map and the `all_projects_tag` output, at that slice's next apply. One authored place, two
+  # consumers; ./aws/warehouse.py WH-7 reads the two objects against each other.
+  tags = merge(local.project_tag, local.all_projects_tag)
 
   depends_on = [aws_cloudwatch_log_group.audit]
+}
+
+locals {
+  # `AmazonDataZoneProject` is a tag key, so it holds one value: it names the map's project while the
+  # map holds exactly one, and a map of several, which variables.tf admits only beside the wide tag,
+  # carries none (6h decision 8 (a)).
+  project_tag = length(var.projects) == 1 ? { AmazonDataZoneProject = one(keys(var.projects)) } : {}
+
+  # The wide tag, or null while `all_projects_tag_enabled` is false. merge() skips a null, and a plan
+  # counts a null output as no change, so the switch off leaves the namespace and the state as they
+  # were (read 2026-11-18).
+  all_projects_tag = var.all_projects_tag_enabled ? { "for-use-with-all-datazone-projects" = "true" } : null
 }
