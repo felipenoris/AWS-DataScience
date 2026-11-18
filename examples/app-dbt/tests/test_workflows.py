@@ -51,7 +51,8 @@ def test_the_transform_task_passes_each_option_to_run_dbt_in_single_quotes():
     rendered = rendering.render(command, placeholders())
     assert rendered.startswith("bash /usr/local/airflow/dags/run-dbt.sh --region 'us-west-2' ")
     assert not rendered.rstrip().endswith(".sh")
-    for option in ("account", "database", "workgroup", "domain", "names", "endpoint", "attempts"):
+    options = ("account", "database", "workgroup", "domain", "names", "endpoint", "attempts")
+    for option in (*options, "namespace"):
         assert re.search(rf" --{option} '[^']+'", rendered), option
 
 

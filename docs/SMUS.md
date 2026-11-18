@@ -1341,7 +1341,7 @@ into the domain's `CustomImages` with the version number set, and `defaultImageV
 `DefaultResourceSpec`; so on a project born of such a profile the attachment is Terraform's
 (`governance/profiles.tf`), survives a reconciliation by construction, and pins one version per profile: the
 no-version entry the portal reads as every version is not expressible, and a release is a profile change and
-an *Update project* per project. `hiddenSageMakerImageVersionAliases` hides versions of
+an *Update project* per project by its owner, a contributor's being refused (`SUP-157`, 2026-11-18). `hiddenSageMakerImageVersionAliases` hides versions of
 `sagemaker_distribution` from the picker, the case of 2026-09-12 below. 6d decision 15 (b) took it to
 `experimentation` on 2026-10-30: the pilot's parameters are `governance/locals.tf`'s
 `sagemaker_ai_domain_parameters`, the pin `var.sandbox_dev_env_version`.

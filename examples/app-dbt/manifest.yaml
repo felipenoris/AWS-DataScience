@@ -29,7 +29,9 @@
 # lineage names; ATHENA_WORKGROUP the project's workgroup, workgroup-<project id>-<Tooling environment
 # id>; LINEAGE_DOMAIN the domain the transform task posts to; LINEAGE_NAMES `as-built` or `glue-arn`,
 # a target's the form the infrastructure repository's Stage 20 decision 3 holds; LINEAGE_ENDPOINT a
-# URL or `default`; LINEAGE_ATTEMPTS a number of attempts or `default`.
+# URL or `default`; LINEAGE_ATTEMPTS a number of attempts or `default`; LINEAGE_NAMESPACE the job
+# namespace of the dbt run's events, app-dbt-<stage> (Stage 20 decision 16 (c)), so each stage's runs
+# are a job of their own in the domain every account posts to.
 #
 # `staging` creates the probe beside app-dbt, and the Staging leg runs it first; `prod` creates app-dbt
 # alone, then runs it and follows the run, so a release ends with both tables written in Production.
@@ -81,6 +83,7 @@ stages:
       LINEAGE_NAMES: ${LINEAGE_NAMES}
       LINEAGE_ENDPOINT: ${LINEAGE_ENDPOINT}
       LINEAGE_ATTEMPTS: ${LINEAGE_ATTEMPTS}
+      LINEAGE_NAMESPACE: ${LINEAGE_NAMESPACE}
     bootstrap:
       actions:
         - type: workflow.create
@@ -119,6 +122,7 @@ stages:
       LINEAGE_NAMES: as-built
       LINEAGE_ENDPOINT: default
       LINEAGE_ATTEMPTS: default
+      LINEAGE_NAMESPACE: app-dbt-staging
     bootstrap:
       actions:
         - type: workflow.create
@@ -157,6 +161,7 @@ stages:
       LINEAGE_NAMES: as-built
       LINEAGE_ENDPOINT: default
       LINEAGE_ATTEMPTS: default
+      LINEAGE_NAMESPACE: app-dbt-prod
     bootstrap:
       actions:
         - type: workflow.create

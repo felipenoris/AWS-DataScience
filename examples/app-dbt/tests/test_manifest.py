@@ -18,8 +18,9 @@ TARGETS = {"staging": "STAGING", "prod": "PROD"}
 
 # What scripts/deploy-application.py of the infrastructure repository fills for a target stage from
 # the deployment project's Tooling environment, each under the stage's prefix, and the names the
-# pipeline's jobs carry as CI/CD variables of the GitLab project. ATHENA_WORKGROUP is filled from
-# the release that carries the infrastructure repository's Stage 20 change to the leg.
+# pipeline's jobs carry as CI/CD variables of the GitLab project. ATHENA_WORKGROUP leaves with the
+# infrastructure repository's Stage 20 decision 17 (b), the workgroup then read from the project's
+# project.athena connection.
 LEG_FILLS = (
     "SUBNET_AZ1",
     "SUBNET_AZ2",
@@ -94,6 +95,7 @@ def test_each_stage_its_project_its_bootstrap_and_its_storage(stage, project, cr
                 "LINEAGE_NAMES": "${LINEAGE_NAMES}",
                 "LINEAGE_ENDPOINT": "${LINEAGE_ENDPOINT}",
                 "LINEAGE_ATTEMPTS": "${LINEAGE_ATTEMPTS}",
+                "LINEAGE_NAMESPACE": "${LINEAGE_NAMESPACE}",
             },
         ),
         *(
@@ -109,6 +111,7 @@ def test_each_stage_its_project_its_bootstrap_and_its_storage(stage, project, cr
                     "LINEAGE_NAMES": "as-built",
                     "LINEAGE_ENDPOINT": "default",
                     "LINEAGE_ATTEMPTS": "default",
+                    "LINEAGE_NAMESPACE": f"app-dbt-{stage}",
                 },
             )
             for stage, prefix in TARGETS.items()

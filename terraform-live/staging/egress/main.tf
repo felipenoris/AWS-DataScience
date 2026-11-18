@@ -49,13 +49,15 @@ module "egress" {
   # joins, and `lakeformation` stays for decision 12 (a): a Glue job runs on staging/sagemaker/'s
   # connection, inside this VPC, and vends its Lake Formation credentials from it. A change joins both
   # slices or carries its reason here:
-  #   athena         when a job inside the VPC queries through it (an integration test's, Stage 8 3.3)
   #   monitoring     when Stage 10's verification xvi reads the workers' metrics refused
+  #
+  # `athena` is here for app-dbt's transform task (Stage 20 decision 15 (a)): dbt queries Athena from
+  # the deployment project's subnets, which have no route out (D38).
   #
   # `datazone` is here for the deployment project (Stage 19 step 4.4): the publishing task's worker
   # and the Glue job's lineage posts call the domain from inside this VPC, and without the endpoint a
   # post read "Network is unreachable" (Stage 18 7.1, 2026-10-19).
-  core_services  = ["sts", "logs", "kms", "glue", "lakeformation"]
+  core_services  = ["sts", "logs", "kms", "glue", "lakeformation", "athena"]
   extra_services = ["sagemaker.api", "secretsmanager", "datazone"]
 
   # The firewall closes the VPC resolver as an exfiltration channel (6c step 5.7), which exists
@@ -67,7 +69,7 @@ module "egress" {
   # the chain beneath it.
   firewall_domain_redirection_action = "TRUST_REDIRECTION_DOMAIN"
 
-  # AWS namespaces only, VPC-Workloads' list. Each of the seven endpoints answers for
+  # AWS namespaces only, VPC-Workloads' list. Each endpoint answers for
   # `<service>.<region>.amazonaws.com` and its `.api.aws` twin, plus `streaming-logs` for `logs`
   # (measured on Sandbox's endpoints, 2026-09-09), and the S3 gateway's names are under
   # `amazonaws.com` too. The apex sits beside each wildcard because a domain-list wildcard never

@@ -3,13 +3,14 @@
 # starts dbt and posts the run's events to the domain (the infrastructure repository's Stage 20).
 #
 #   bash run-dbt.sh --region R --account A --database D --workgroup W --domain DZ --names as-built|glue-arn \
-#       [--endpoint URL|default] [--attempts N|default] [-- dbt command and options]
+#       [--endpoint URL|default] [--attempts N|default] [--namespace NAME] [-- dbt command and options]
 #
 # The workflow's task passes every option (workflows/app-dbt.yaml); by hand, --endpoint and --attempts
-# may be left out and read `default`. The dbt command is `build` when none follows `--`. An unknown
-# option, a missing one, one without a value, or a --names, --endpoint or --attempts outside its forms
-# exits 2; a product database Glue gives no location exits 3; a refused glue:GetDatabase exits 1; past
-# that, the exit code is the wrapper's, which is dbt's.
+# may be left out and read `default`, and --namespace, the job namespace of the run's events, reads
+# `app-dbt`. The dbt command is `build` when none follows `--`. An unknown option, a missing one, one
+# without a value, or a --names, --endpoint, --attempts or --namespace outside its forms exits 2; a
+# product database Glue gives no location exits 3; a refused glue:GetDatabase exits 1; past that, the
+# exit code is the wrapper's, which is dbt's.
 #
 # The worker extracts the archive to /usr/local/airflow/dags and starts the task in a folder of its own,
 # PYTHONPATH naming the archive's root first: python3 imports the package app_dbt and the wrapper from
@@ -18,7 +19,7 @@
 # task's command, never this file, which holds no template.
 set -euo pipefail
 
-usage="usage: run-dbt.sh --region R --account A --database D --workgroup W --domain DZ --names as-built|glue-arn [--endpoint URL|default] [--attempts N|default] [-- dbt command]"
+usage="usage: run-dbt.sh --region R --account A --database D --workgroup W --domain DZ --names as-built|glue-arn [--endpoint URL|default] [--attempts N|default] [--namespace NAME] [-- dbt command]"
 
 refuse() {
   echo "run-dbt.sh: $1" >&2
@@ -27,13 +28,14 @@ refuse() {
 }
 
 region="" account="" database="" workgroup="" domain="" names="" endpoint=default attempts=default
+namespace=app-dbt
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --)
       shift
       break
       ;;
-    --region | --account | --database | --workgroup | --domain | --names | --endpoint | --attempts)
+    --region | --account | --database | --workgroup | --domain | --names | --endpoint | --attempts | --namespace)
       if [ "$#" -lt 2 ] || [ -z "$2" ] || [ "${2#--}" != "$2" ]; then
         refuse "$1 takes a value"
       fi
@@ -46,6 +48,7 @@ while [ "$#" -gt 0 ]; do
         --names) names=$2 ;;
         --endpoint) endpoint=$2 ;;
         --attempts) attempts=$2 ;;
+        --namespace) namespace=$2 ;;
       esac
       shift 2
       ;;
@@ -68,6 +71,9 @@ esac
 case "$attempts" in
   default) ;;
   *[!0-9]* | 0*) refuse "--attempts is a number from 1 or default, not $attempts" ;;
+esac
+case "$namespace" in
+  *[!A-Za-z0-9._-]*) refuse "--namespace is letters, digits, '.', '_' and '-', not $namespace" ;;
 esac
 if [ "$#" -eq 0 ]; then
   set -- build
@@ -100,7 +106,7 @@ echo "run-dbt.sh: $(python3 -c 'import platform, sys; print(sys.executable, plat
 # region; DO_NOT_TRACK silences dbt's telemetry, each send of which waits up to 5 s; a number of
 # attempts reaches every botocore client, the transport's included, which takes no timeout.
 export PATH="$bin:$PATH" AWS_DEFAULT_REGION="$region" DO_NOT_TRACK=1
-export OPENLINEAGE_NAMESPACE="${APP_DBT_NAMESPACE:-app-dbt}"
+export OPENLINEAGE_NAMESPACE="$namespace"
 export APP_DBT_DATABASE="$database" APP_DBT_WORKGROUP="$workgroup"
 if [ "$attempts" != default ]; then
   export AWS_MAX_ATTEMPTS="$attempts"

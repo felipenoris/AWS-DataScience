@@ -1157,8 +1157,10 @@ bound items 3, 5, 6, 9 and 11.
    Left: the projects `app-ml-dev` and `app-genai-dev` created with their contributors and Nova Lite
    enabled (9.6, 10.4), after which Claude plans the Sandbox slices that read the projects' roles and the
    user applies them; the project `app-dbt-dev` with its contributors (Stage 20 2.0), then its
-   `sandbox/workflows/` line, which Claude writes and the user applies; Stage 20 decisions 14 to 17; and
-   Stage 20 8.4's applies of the four `[P]` slices its pass 8 wrote on 2026-11-18, which close their
+   `sandbox/workflows/` line, which Claude writes and the user applies; and the user's merge of
+   `awsds-workflows`' pull request #28, Stage 20 decision 17 (b)'s lint change, opened on 2026-11-18 when
+   the stage's decisions 14 to 17 were taken.
+   Stage 20 8.4's applies of the four `[P]` slices its pass 8 wrote ran on 2026-11-18, closing their
    Lesson 69 window.
 3. **Release G's sitting** (N.8.5 steps 2, 4 and 5): the hub, GitLab with `BUILD=1`, `staging/egress/`
    raised before the tag and destroyed after the Staging leg, `production/workloads-egress/` before
@@ -1196,13 +1198,13 @@ bound items 3, 5, 6, 9 and 11.
     request so that release G's leg runs the script it was read with; the subagents' patches of
     2026-11-17 are in `$HOME/tmp/stage17-proposals/` with a README, the two `deploy-application.py`
     proposals merged by hand; then the template's pins read against the lint's release; and Stage 20's
-    `app-dbt`: an application with no image whose workgroup comes from the `Tooling` environment (Stage 20
-    8.1).
+    `app-dbt`: an application with no image, whose workgroup the CLI resolves from the project's
+    `project.athena` connection (Stage 20 8.1, decision 17 (b)).
 11. **`app-dbt`'s first release** (Stage 20 pass 8), after items 3, 6 and 10 and Stage 20's 8.3 to 8.7:
     the hub and GitLab; `staging/egress/` raised before the tag `v0.1.0` and destroyed after
     `staging-catalog`, `production/workloads-egress/` raised before `production-gate`, each with its
-    `athena` endpoint (Stage 20 decision 15); before 2026-12-18, or after the archive moves to dbt 1.12. It
-    can share a hub start with `app-ml`'s release.
+    `athena` endpoint (Stage 20 decision 15 (a)); before 2026-12-18, or after the archive moves to dbt
+    1.12. It can share a hub start with `app-ml`'s release.
 12. **`app-ml`'s first release** (Stage 17 9.7), a promotion sitting after items 7 and 10.
 13. **With nothing up, after item 8**: Stage 17's 10.5, the exception and the names in the targets, once
     10.4 read a first answer from Nova Lite through Sandbox's in-Region profile; its threat-model entry
@@ -2221,9 +2223,11 @@ step 8, with the hub and GitLab up for its tag, and each act below names its ide
    measurement.
 4. **[user] The template's merge request** from `examples/app-etl/` at the merged `main`, then the tag
    `v0.6.0`. `staging/egress/` raised before the tag and destroyed after the Staging leg (Stage 8
-   decision 27); `production/workloads-egress/` raised before `production-gate`. Both targets hold
-   their assets since `v0.5.2`, so each import revises the asset by name and admits nothing, and
-   `staging-catalog` and `production-catalog` end at once. **The merge request read 2026-11-16**:
+   decision 27); `production/workloads-egress/` raised before `production-gate`. Each slice also creates
+   its `athena` endpoint, Stage 20 decision 15 (a)'s line, once that line is on `main` (Lesson 69): 18 to
+   add in each plan of 2026-11-18, where 17 was. Both targets hold their assets since `v0.5.2`, so each
+   import revises the asset by name and admits nothing, and `staging-catalog` and `production-catalog`
+   end at once. **The merge request read 2026-11-16**:
    GitLab's `main` holds `ced09fe4:examples/app-etl` (`07348ffa`, the tag `v0.5.2`), so it carries
    `git diff ced09fe4 c5e1718e -- examples/app-etl`, eight files: `.gitlab-ci.yml`'s and
    `manifest.yaml`'s comments, `README.md`, `code/app_etl_tasks.py`, `product.json` requiring the asset

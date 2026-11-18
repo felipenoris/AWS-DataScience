@@ -41,7 +41,10 @@ module "egress" {
   # in staging/egress/, which carries the same set (4.3a): the module's core eight are what a notebook
   # or a runner cannot work without, and neither VPC holds one. `sts`, `logs`, `kms` and `glue` stay. `ecr.api` and
   # `ecr.dkr` leave, because a SageMaker job pulls its image as its role through the service and
-  # never through this VPC (step 3.1). `athena` leaves until a job here queries through it.
+  # never through this VPC (step 3.1).
+  #
+  # `athena` is here for app-dbt's transform task (Stage 20 decision 15 (a)), as in staging/egress/:
+  # dbt queries Athena from the deployment project's subnets, which have no route out (D38).
   #
   # `lakeformation` is here for decision 12 (a), taken 2026-10-22: a Glue job runs on the connection
   # production/sagemaker/ declares, inside this VPC, and vends its Lake Formation credentials from it;
@@ -53,7 +56,7 @@ module "egress" {
   #
   # Session Manager's three stay out: 6c step 5.5 asks for them in an instance-bearing spoke, and
   # this VPC holds no instance.
-  core_services  = ["sts", "logs", "kms", "glue", "lakeformation"]
+  core_services  = ["sts", "logs", "kms", "glue", "lakeformation", "athena"]
   extra_services = ["sagemaker.api", "secretsmanager", "datazone"]
 
   # Per apply, from `make up ENV=production GROUPS=…` (variables.tf): `redshift` for a job that calls
@@ -69,7 +72,7 @@ module "egress" {
   # the chain beneath it.
   firewall_domain_redirection_action = "TRUST_REDIRECTION_DOMAIN"
 
-  # AWS namespaces only (step 3.3a). Each of the seven endpoints answers for
+  # AWS namespaces only (step 3.3a). Each endpoint answers for
   # `<service>.<region>.amazonaws.com` and its `.api.aws` twin, plus `streaming-logs` for `logs`
   # (measured on Sandbox's endpoints, 2026-09-09), and the S3 gateway's names are under
   # `amazonaws.com` too. The apex sits beside each wildcard because a domain-list wildcard never

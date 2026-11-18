@@ -360,13 +360,16 @@ a worker called there on 2026-10-19 (Stage 18 4.4), and `lakeformation` in both 
 jobs, which vend Lake Formation credentials from inside the VPC. Both slices also name `datazone` since
 2026-11-11 (Stage 19 step 4.4), an eighth endpoint at each one's next `make up`: a deployment project's
 publishing task and its Glue job's lineage posts call the domain from inside the VPC, and without the
-endpoint a post read *"Network is unreachable"* (Stage 18 7.1, 2026-10-19). It shadows nothing a
-client needs, since no client resolves in either VPC. The workers ran on them from both AZs'
-subnets, with no `ecr.*` and no `monitoring` endpoint, in every Production app-etl and train run read on
-2026-10-25 (Stage 10 verification xvi). VPC-Workloads' slice also takes an optional group per apply
-since 2026-10-23, `make up ENV=production GROUPS=redshift` adding the `redshift-serverless` endpoint for
-a job that calls the governed warehouse's API from inside the VPC (Stage 9 step 9.1), the way
-`sandbox/egress/` takes its groups; Staging's slice takes none.
+endpoint a post read *"Network is unreachable"* (Stage 18 7.1, 2026-10-19). Both name `athena` since
+2026-11-18 (Stage 20 decision 15 (a)), a ninth endpoint at each one's next `make up`: `app-dbt`'s
+transform task runs dbt, which queries Athena from the deployment project's subnets, each plan of that
+day reading 18 to add where 17 was. The allow-lists stay as they are, since `*.amazonaws.com.` and
+`*.api.aws.` cover its names. Each shadows nothing a client needs, since no client resolves in either
+VPC. The workers ran on them from both AZs' subnets, with no `ecr.*` and no `monitoring` endpoint, in
+every Production app-etl and train run read on 2026-10-25 (Stage 10 verification xvi). VPC-Workloads'
+slice also takes an optional group per apply since 2026-10-23, `make up ENV=production GROUPS=redshift`
+adding the `redshift-serverless` endpoint for a job that calls the governed warehouse's API from inside
+the VPC (Stage 9 step 9.1), the way `sandbox/egress/` takes its groups; Staging's slice takes none.
 `VPC-Networking` carries none: the proxy has to resolve.
 
 **It was ten until 2026-09-09**, when the same reading that repaired `NO_PROXY` was pointed at this
