@@ -1064,3 +1064,23 @@ Pode fazer a mudança." No AWS call. Times are UTC.*
 
 - **[Claude] Left**: the pin moved from `1a50ceb` to #28's merge commit in `.gitlab-ci.yml`, the README,
   `tests/simulation/simulate.py` and the stage's `TOOL`, and the lint read again at that commit.
+
+## 2026-11-18 — `awsds-workflows` #28 merged, and `app-dbt` pinned to it
+
+*Claude, the orchestrating session, on the laptop, at the user's word in the session's chat: "Fiz o merge
+do #28". No AWS call. Times are UTC.*
+
+- **[Claude] The merge read**: [`awsds-workflows` #28](https://github.com/felipenoris/awsds-workflows/pull/28)
+  merged at 15:50:35 as `4613ddce2bfd2bf43cf79aa4d6bc1d07a9dbc362`, its tree `733f9c2` the same as the
+  branch head `2aa32cf`'s. Between `1a50ceb` and `4613ddc` the diff touches `src/awsds_workflows/render.py`,
+  its two test files, `docs/index.md` and `.claude/memory/cicd-cli.md`; `package-task` is the same at both.
+- **[Claude] The pin moved** from `1a50ceb` to `4613ddc` in `examples/app-dbt/.gitlab-ci.yml` (the
+  archive URL and its comment), the README (the `TOOL` line and the sentence naming the pin),
+  `tests/simulation/simulate.py`, the stage file's pass 2 and the two sentences of
+  `runbooks/sagemaker-ai-ml.md` that name `app-dbt`'s pin.
+- **[Claude] The lint at `4613ddc`**, from `examples/app-dbt/` with the pipeline's `--instance-type` list,
+  15:51:40: *"ok: 4 arquivo(s)"*. `uv run pytest` at 15:54:10: *"86 passed in 5.01s"*; `ruff check` *"All
+  checks passed!"*, `ruff format --check` *"16 files already formatted"*.
+- **[Claude] The records**: the waiting list's row for #28 removed; the stage's 8.5, decision 17, `Status`
+  and the note to the other sessions, the Current position row, `promotion.md` §N.6 item 2 and the log
+  index's row say merged. Left for 17 (b): 3.1's verdict in sitting A.

@@ -1157,9 +1157,8 @@ bound items 3, 5, 6, 9 and 11.
    Left: the projects `app-ml-dev` and `app-genai-dev` created with their contributors and Nova Lite
    enabled (9.6, 10.4), after which Claude plans the Sandbox slices that read the projects' roles and the
    user applies them; the project `app-dbt-dev` with its contributors (Stage 20 2.0), then its
-   `sandbox/workflows/` line, which Claude writes and the user applies; and the user's merge of
-   `awsds-workflows`' pull request #28, Stage 20 decision 17 (b)'s lint change, opened on 2026-11-18 when
-   the stage's decisions 14 to 17 were taken.
+   `sandbox/workflows/` line, which Claude writes and the user applies. Stage 20's decisions 14 to 17
+   were taken on 2026-11-18 and their changes written, `app-dbt` pinned to `awsds-workflows` `4613ddc`.
    Stage 20 8.4's applies of the four `[P]` slices its pass 8 wrote ran on 2026-11-18, closing their
    Lesson 69 window.
 3. **Release G's sitting** (N.8.5 steps 2, 4 and 5): the hub, GitLab with `BUILD=1`, `staging/egress/`
