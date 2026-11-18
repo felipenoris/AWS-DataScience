@@ -3983,3 +3983,25 @@ session, ran it from pull request #322's worktree as the infrastructure user, pe
   `Tooling` parameter table, its roster's `SageMakerAIDomain` and `Tooling` rows and the attachment
   paragraph, and `AWS_STATE.md`'s registry row. `terraform-live/README.md`'s `sandbox/dev-env/` paragraph
   waits on steps 4 to 6, and `sagemaker-prereqs`'s roster comment on the module's next tag.
+
+## 2026-11-18 — 2.7 step 3's portal reading: *Workflows* opened after the apply
+
+*The user, in `test-experimentation`'s portal page after 18:50 UTC; Claude, the orchestrating session,
+read the stack, the domains and the trail through `awsds-infra-sandbox-1`. Reads only. Times are UTC.*
+
+- **[user] The reading**, reported as *"Workflows abriu"*: the tool opened in `test-experimentation` after
+  the apply, where Stage 18's `deployment` project had answered *"Spaces are not enabled in this project
+  profile"*.
+- **[Claude] What it settles**: `test-experimentation`'s `Tooling` stack `DataZone-Env-bi356s1sacz0cw` is
+  `CREATE_COMPLETE` and was never updated, so its deployed `enableSpaces` is still `true` and its domain
+  `d-lfgbdrjncmsu` stands. The profile's locked `false` alone did not close the tool, so the tool does not
+  read the profile's override, unlike the Generative AI menu (Stage 17 7.2). Whether it counts the
+  blueprint's domain is read after step 4's *Update project*, which deploys `enableSpaces` `false` into the
+  environment, and on step 5's throwaway project, born under the new profile.
+- **[Claude] What step 4 meets**: each `Tooling` domain holds one user profile, `28f1b390-…`, named by the
+  identity that created the three blueprint environments, created 2026-08-23 (`d-p6gthxc82ckg`), 2026-10-15
+  (`d-lfgbdrjncmsu`) and 2026-11-14 (`d-spi9kgo6x5b4`); the blueprint domains hold none; Sandbox holds no
+  space and no app.
+- **[Claude] The trail**, at 19:07: no `CreateSpace` and no SageMaker call in Sandbox since 18:46 but
+  Claude's `ListSpaces` at 18:50. The visit's calls may still be inside CloudTrail's delivery delay, so
+  step 1's reading (ii) is read again with step 4's.
