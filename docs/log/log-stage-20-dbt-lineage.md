@@ -831,3 +831,72 @@ open decisions the user asked for at 22:01 UTC, one card per decision under the 
   before the sitting that runs them.
 - **[user] Decision 11**, at 22:21, on the card *"Quando ler a linhagem do dbt entre projetos e entre
   contas?"*: *"Depois da 4.12 do Stage 19"*, (a).
+
+## 2026-11-18 — `app-dbt` in three stages and pass 8 written, with nothing up
+
+*Claude, a subagent of the orchestrating session, in a laptop session on the orchestrator's brief that
+carries decisions 7 (b) and 9 (b). Read-only AWS calls as the infrastructure user, permission set
+`InfrastructureAccess`, through `awsds-infra-sandbox-1`, `awsds-infra-staging` and `awsds-infra-prod`; no
+AWS write and no apply. Times are UTC.*
+
+- **[Claude, a subagent] `examples/app-dbt/` in three stages**: the manifest's `dev`
+  (`${DEV_PROJECT_NAME}`), `staging` (`deploy-staging`) and `prod` (`deploy-production`), `ATHENA_WORKGROUP`
+  a stage variable of each, the catalog block with `skipPublish` (Stage 19 decisions 19 (c) and 20 (b)),
+  and the `prod` bootstrap creating `app-dbt` and running it with `trailLogs`; `product.json` and
+  `scripts/check-catalog-export.py`, the release guard; `.gitlab-ci.yml` from `app-etl`'s, on
+  `gates-v0.6.0` and `awsds-workflows` at `1a50ceb`, with no image and each target's `athena` endpoint
+  checked by its tag; `scripts/dev-cli.sh`, the README and the tests.
+- **[Claude, a subagent] The lock** cut for Linux and macOS (`[tool.uv] environments`): *"Resolved 84
+  packages"*, `httpx2-jsfetch` 1.0 and `tzdata` 2026.6 removed, `uv.lock` from 118,358 to 107,302 bytes, the
+  runtime export from 80 pins to 78. pip-audit 2.10.1 skips a pin whose marker its runner does not match,
+  and the gates' job fails when it audits fewer packages than the export pins.
+- **[Claude, a subagent] The simulation** on the new lock, 01:46:49 to 01:48:23: exit 0, each of the
+  thirteen cases' exit code, AWS calls and events as on 2026-11-17; the host archive 28,622,038 bytes,
+  88,429,179 unzipped.
+- **[Claude, a subagent] The targets read**, as `awsds-infra-staging` and `awsds-infra-prod`:
+  - 01:00 to 01:20: each deployment project's Athena workgroup, `workgroup-5ido8bej1zoeq8-d6nu5aphq1e974`
+    and `workgroup-d7qcazihvr3s7k-59niwej9axztow`, `ENABLED`, enforced, engine 3, its output under the
+    project's `dev/sys/athena/` with `SSE_KMS`;
+  - 01:37:37: Staging's `Tooling` environment provisions `athenaWorkGroupName`; 01:42:07: the workgroup's
+    key is the project key;
+  - 01:42:36: DataZone refuses `GetProjectProfile` to each target's `InfrastructureAccess`; the `app_etl`
+    environments and sources, `deploy-staging-app-etl` `54jhe9989w0tcg` with source `52f18khk7kdi4w`, and
+    Production's `azkybvkz7iea34` with source `5zggi2lr2ezy4w`;
+  - 01:42:54: the `DataLake` environment configurations `d8f802ad-c74d-454a-84d1-e14012a434fa` (Staging)
+    and `f403ecfc-2450-4f7c-b31a-182b320d9271` (Production), blueprint `d8w7c3fmbsz5cg`;
+  - 02:10:21: both projects buckets exist; Staging's VPC holds `awsds-staging-s3-gateway` and
+    `awsds-staging-dynamodb-gateway` alone, and VPC-Workloads no `awsds-prod-workloads-*` endpoint, both
+    egress slices down;
+  - 02:24:57: each deployment project's Athena connection, `project.athena`, `53jdm59v7gx0uo` in Staging
+    and `cyrwjkq9blui6o` in Production, naming its workgroup;
+  - 02:25:43: each deployment project's members, two groups as `PROJECT_OWNER` and one user as
+    `PROJECT_CONTRIBUTOR`.
+- **[Claude, a subagent] Sandbox read** as `awsds-infra-sandbox-1`, 02:12:51: `eighth-experimentation`'s
+  Athena connection, `project.athena` (`cb9s1q15id7no0`), naming `workgroup-avhvbqn37ty7m8-5hkjdsy3umpi1c`;
+  its members, one owner and three contributors.
+- **[Claude, a subagent] Pass 8's `[P]` slices** written and planned (8.2), the identities read at
+  01:57:50, each plan saved outside the repository and none applied:
+  - `staging/foundation/`, with the alerts var-file, 01:58:32 to 01:58:48: *"Plan: 0 to add, 1 to change, 0
+    to destroy."*, the deploy role's policy alone;
+  - `production/foundation/`, with the alerts var-file, 01:59:43 to 02:00:02: the same line and the same
+    change;
+  - `staging/chains/`, 02:00:34 to 02:00:48: *"Plan: 12 to add, 1 to change, 0 to destroy."*;
+  - `production/chains/`, 02:01:29 to 02:01:42: *"Plan: 6 to add, 1 to change, 0 to destroy."*.
+
+  None carried another stage's change. `staging/studio/staging-test.tf`'s `product_databases` is
+  described and not written: its apply fails while `app_dbt` does not exist.
+- **[Claude, a subagent] The gates on the final tree**: 02:29:48, `make check` failed on
+  `./scripts/check-plan-refs.py`, two hard-coded account counts in the stage file, rewritten; 02:31:38,
+  `make check` OK. 02:31:49, `uv sync --locked` *"Resolved 84 packages"*, pytest *"84 passed"*, ruff *"All
+  checks passed!"* and *"16 files already formatted"*; 02:32:01, the lint at `1a50ceb` with the pipeline's
+  instance types *"ok: 4 arquivo(s)"*; 02:32:19 to 02:33:28, `package-task` for `x86_64-manylinux_2_28`:
+  5,102 entries, 26,128,940 bytes, 82,843,244 unzipped, `run-dbt.sh` and `app_dbt/bin/dbt` at `0o100755`.
+  `./scripts/check-gitlab-ci.py`, with the untracked pipeline added to its listing: `app-dbt`'s 19 jobs, 29
+  names resolved, 109 script items in 9 files, OK; `check-identifiers.py`'s scan of the 8 untracked files:
+  none.
+- **[Claude, a subagent] Written in the stage file**: the Status, the Prerequisites and the Proves rows;
+  passes 2, 3 and 5 for `app-dbt-dev`, the note under "To execute" removed; pass 8, its targets' table
+  and steps 8.1 to 8.10; verifications xviii to xxii; decisions 14 to 17 due, each with its
+  recommendation; Cost, Rollback, "What this stage does not do" and "What concerns the other sessions".
+  `scripts/deploy-application.py`, `scripts/model-chain.py`, their hooks, `aws/cicd.py` and
+  `sandbox/workflows/` are untouched: 8.1 and 2.0 describe their changes. Nothing in AWS changed.
