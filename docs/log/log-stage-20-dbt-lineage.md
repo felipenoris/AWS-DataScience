@@ -1003,3 +1003,20 @@ written to AWS. Times are UTC.*
 - **[Claude] The plan's files**: the stage file's decisions, Status, 8.1, 8.5, the application's text, 2.0,
   2.3, 2.6, 8.9 and xix; `waiting-on-the-user.md`, `promotion.md` §N.6 item 2, `NETWORK.md`, and
   `CLAUDE.md`'s row.
+
+## 2026-11-18 — `awsds-workflows`' pull request #28 for decision 17 (b)
+
+*Claude, the orchestrating session, on the laptop, at the user's word in the session's chat: "Autorizo
+push e PR", answering "Autoriza o push e o pull request do branch do awsds-workflows para a decisão 17
+(b)?". No AWS call. Times are UTC.*
+
+- **[Claude] Before the push**: `awsds-workflows`' `origin/main` still at `1a50ceb`, the branch's base, so
+  nothing to merge; on the branch, `ruff check` and `ruff format --check` clean, and
+  `tests/test_render.py` with `tests/test_lint.py` *"211 passed"*.
+- **[Claude] The push and the pull request**: `claude/workgroup-athena-cli-variable` at `2aa32cf` pushed
+  by 15:29:44 and [felipenoris/awsds-workflows#28](https://github.com/felipenoris/awsds-workflows/pull/28)
+  opened against `main` by 15:29:56, its description in pt-BR as that repository writes its prose: the
+  change, the CLI 1.0.9's reading, the reason, the verification, and the two `glue` findings that follow
+  a refused translation at `1a50ceb`. The desktop app bound it to the session; its checks had not started
+  at 15:30. Left: its merge, the user's; then 17 (b)'s change in `app-dbt` with the pin at the merge
+  commit (8.5).
