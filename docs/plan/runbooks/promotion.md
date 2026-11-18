@@ -1123,10 +1123,11 @@ on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its pla
   refusal, xv's deploy- and execution-role halves and xxvii's cancel (no statement past 300 s); Stage 10
   xviii and xxviii's inbox marker (no task writes one).
 
-### N.6 The order of what is left, read 2026-11-17
+### N.6 The order of what is left, read 2026-11-18
 
-Read on 2026-11-17 against the stage files and their logs, with nothing up, after release F's sitting,
-item 31's applies and release G's step 3. Each sitting starts on the user's word, since it is metered, and
+Read on 2026-11-18 against the stage files and their logs, with nothing up, after Stage 20's 8.4 applies
+and the day's log review, whose pull requests are #320 (the records), #321 (item 10), #322 (6d 2.7's step
+3) and #323 (the warehouse switches). Each sitting starts on the user's word, since it is metered, and
 holds one goal: what needs nothing up runs before it, a sitting that needs no GitLab raises none, and an
 application reaches a Sandbox space as a tar built on the laptop (Stage 20 step 2.0), never through
 GitLab. Sittings that need the hub may share one hub start. The order is the dependencies', not a
