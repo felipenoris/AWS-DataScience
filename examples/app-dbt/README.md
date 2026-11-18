@@ -75,14 +75,17 @@ result. The model drops a table by an Athena statement (`native_drop`), never by
 | `LINEAGE_NAMES` | `as-built` or `glue-arn`, the form of the datasets' names |
 | `LINEAGE_ENDPOINT` | the DataZone endpoint's URL, or `default` for the Region's |
 | `LINEAGE_ATTEMPTS` | the attempts of every botocore client of the run, the transport's included, or `default` |
+| `LINEAGE_NAMESPACE` | the job namespace of the run's events, `app-dbt-<stage>`: `app-dbt-dev` exported in `dev`, `app-dbt-staging` and `app-dbt-prod` written in the targets |
 
 In `dev` every value but the literal comes from the shell of the space. A target holds `${DOMAIN_ID}` for
-`LINEAGE_DOMAIN` and its switches as literals, `as-built` and `default`; its leg fills the subnets, the
-account and the workgroup from the deployment project (the infrastructure repository's Stage 20 decision
-17). A stage variable is a parameter of the deployed workflow, filled from the shell of each `run`: a
-switch turned between two runs in `dev` is an `export` and a run, never a deploy. The CLI refuses an
-empty value, so a switch at rest holds `default`. Every stage declares every variable a workflow reads,
-since the deploy resolves every workflow the manifest names.
+`LINEAGE_DOMAIN`, and its switches and its namespace as literals, `as-built`, `default` and
+`app-dbt-<stage>`; its leg fills the subnets and the account from the deployment project, and its
+workgroup is the project's `project.athena` connection's once this tree names that connection (the
+infrastructure repository's Stage 20 decision 17 (b), "The pipeline" below). A stage variable is a
+parameter of the deployed workflow, filled from the shell of each `run`: a switch turned between two runs
+in `dev` is an `export` and a run, never a deploy. The CLI refuses an empty value, so a switch at rest
+holds `default`. Every stage declares every variable a workflow reads, since the deploy resolves every
+workflow the manifest names.
 
 ### The lineage
 
@@ -96,14 +99,15 @@ hands each event to `app_dbt.lineage.GlueTableNames` before the post, which rena
 dataset of the inputs, the outputs and each `columnLineage` input field. Either way each dataset keeps
 its `symlinks` facet, which names `table/<database>/<table>` under `arn:aws:glue:<region>:<account>`.
 A build posts six events after dbt ends, a `START` and an end for the dbt run, for the model and for
-its test, under the job namespace `app-dbt` in every stage (`APP_DBT_NAMESPACE` replaces it by hand);
-whether a target's carries the project's id is the infrastructure repository's Stage 20 decision 16.
+its test, under the stage's job namespace, `LINEAGE_NAMESPACE` (the infrastructure repository's Stage 20
+decision 16 (c)): each stage's runs are a job of their own in the domain every account posts to.
+`run-dbt.sh` by hand reads `app-dbt` unless `--namespace` names another.
 
 ### Exit codes of `run-dbt.sh`
 
 | Code | When |
 |---|---|
-| 2 | an option it does not know, one left out or without a value, or a `--names`, `--endpoint` or `--attempts` outside its forms |
+| 2 | an option it does not know, one left out or without a value, or a `--names`, `--endpoint`, `--attempts` or `--namespace` outside its forms |
 | 3 | the product database has no location in Glue |
 | 1 | `glue:GetDatabase` refused or unanswered, before dbt starts |
 | dbt's | past those, the wrapper's code, which is dbt's: 1 when a model or a test fails |
@@ -177,6 +181,7 @@ git clone --depth 1 https://github.com/felipenoris/awsds-workflows /tmp/awsds-wo
 eval "$(/opt/conda/bin/python -c 'import json; v = json.load(open("/tmp/space_values.json")); print("\n".join("export %s=%s" % p for p in (("DOMAIN_ID", v["DOMAIN_ID"]), ("DOMAIN_REGION", v["REGION"]), ("SUBNET_AZ1", v["SUBNET_AZ1"]), ("SUBNET_AZ2", v["SUBNET_AZ2"]), ("ACCOUNT_ID", v["ACCOUNT_ID"]))))')"
 export DEV_PROJECT_NAME=<the dev project> ATHENA_WORKGROUP=<its workgroup>
 export LINEAGE_DOMAIN="$DOMAIN_ID" LINEAGE_NAMES=as-built LINEAGE_ENDPOINT=default LINEAGE_ATTEMPTS=default
+export LINEAGE_NAMESPACE=app-dbt-dev
 scripts/dev-cli.sh deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
 scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-dbt-probe
 scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-dbt
@@ -187,7 +192,7 @@ command follows `--`:
 
 ```bash
 mkdir -p /tmp/app-dbt-hand && python3 -m zipfile -e code/app-dbt.zip /tmp/app-dbt-hand
-PYTHONPATH=/tmp/app-dbt-hand APP_DBT_NAMESPACE=app-dbt-by-hand bash /tmp/app-dbt-hand/run-dbt.sh --region us-west-2 --account "$ACCOUNT_ID" --database app_dbt --workgroup "$ATHENA_WORKGROUP" --domain "$LINEAGE_DOMAIN" --names "$LINEAGE_NAMES" -- debug
+PYTHONPATH=/tmp/app-dbt-hand bash /tmp/app-dbt-hand/run-dbt.sh --region us-west-2 --account "$ACCOUNT_ID" --database app_dbt --workgroup "$ATHENA_WORKGROUP" --domain "$LINEAGE_DOMAIN" --names "$LINEAGE_NAMES" --namespace app-dbt-by-hand -- debug
 ```
 
 The archive's compiled modules are the worker's, so the space must run Python 3.12 on Linux x86_64;
@@ -236,9 +241,11 @@ fills the stage's variables from the deployment project's Tooling environment, r
 and records the stage's variables for the chains. The `transform` task queries Athena from the deployment
 project's subnets, which reach a service through an interface endpoint of the account's egress slice
 alone, so `staging-check` and `production-deploy` ask EC2 for an available endpoint tagged
-`awsds-staging-athena` and `awsds-prod-workloads-athena`, which `check-egress.py` reads only once the
-slice's list holds `athena` (Stage 20 decision 15). The
-legs deploy with no `--image-uri` and read `<PREFIX>_ATHENA_WORKGROUP` from the deploy script: the
+`awsds-staging-athena` and `awsds-prod-workloads-athena`, which each slice's list holds since Stage 20
+decision 15 (a) and `check-egress.py` reads with the rest. The legs deploy with no `--image-uri`: the
 release follows the infrastructure repository's change that teaches the script a second application
-(Stage 20 step 8.1). Nothing is torn down: Staging's `make down` is the user's. The jobs need the hub, the
-deploy runner, Staging's `egress/` and `production/workloads-egress/`, each with its `athena` endpoint.
+(Stage 20 step 8.1). A target's workgroup comes from its project's `project.athena` connection, which
+the CLI resolves at the deploy, once this tree names `{proj.connection.project.athena.workgroupName}`
+with the `awsds-workflows` release that admits it (Stage 20 decision 17 (b)). Nothing is torn down:
+Staging's `make down` is the user's. The jobs need the hub, the deploy runner, Staging's `egress/` and
+`production/workloads-egress/`, each with its `athena` endpoint.

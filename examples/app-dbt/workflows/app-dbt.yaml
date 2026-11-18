@@ -43,5 +43,5 @@ app-dbt:
     transform:
       operator: airflow.providers.standard.operators.bash.BashOperator
       dependencies: [load]
-      bash_command: "bash /usr/local/airflow/dags/run-dbt.sh --region '{domain.region}' --account '{env.ACCOUNT_ID}' --database '{env.PRODUCT_DATABASE}' --workgroup '{env.ATHENA_WORKGROUP}' --domain '{env.LINEAGE_DOMAIN}' --names '{env.LINEAGE_NAMES}' --endpoint '{env.LINEAGE_ENDPOINT}' --attempts '{env.LINEAGE_ATTEMPTS}'"
+      bash_command: "bash /usr/local/airflow/dags/run-dbt.sh --region '{domain.region}' --account '{env.ACCOUNT_ID}' --database '{env.PRODUCT_DATABASE}' --workgroup '{env.ATHENA_WORKGROUP}' --domain '{env.LINEAGE_DOMAIN}' --names '{env.LINEAGE_NAMES}' --endpoint '{env.LINEAGE_ENDPOINT}' --attempts '{env.LINEAGE_ATTEMPTS}' --namespace '{env.LINEAGE_NAMESPACE}'"
       retries: 0

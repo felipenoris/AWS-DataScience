@@ -929,3 +929,77 @@ Times are UTC.*
   `awsds-staging-chains` and the six of `awsds-prod-chains` `DISABLED`, the three new ones among them.
 - **[Claude]** Lesson 69's window is closed: a plan of these slices from `main` no longer carries this
   stage's change. 8.4's last apply, `staging/studio/`, waits on its line, written after 8.3.
+
+## 2026-11-18 — decisions 14 to 17 taken, and what each changes written with nothing up
+
+*Claude, the orchestrating session, on the laptop, in the session's chat: the four decisions presented one
+at a time with their context, options and recommendation, at the user's request of 11:53 UTC ("Sobre as
+recomendações para o Estágio 20, me apresente o contexto, as opções e as recomendações para as decisões
+14 a 17 uma a uma"), and the user's answer at 14:02 UTC. Reads and plans only, as the infrastructure user,
+permission set `InfrastructureAccess`, through `awsds-infra-staging` and `awsds-infra-prod`; nothing
+written to AWS. Times are UTC.*
+
+- **[user] Decisions 14 to 17**, on the question *"Você aceita as recomendações 14 (a), 15 (a), 16 (b) e
+  17 (b), ou prefere responder uma a uma?"*: *"Decisão 16: (c)"*, *"Em relação às demais, aceito as
+  recomendações."*, *"Pode refletir estas escolhas no plano e avançar na preparação do que for possível
+  fazer neste momento sem o ambiente no ar."* Taken: 14 (a), 15 (a), 16 (c) and 17 (b).
+- **[Claude] 14 (a)**: nothing written; the manifest's `skipPublish: true` stands and no task publishes.
+- **[Claude] 15 (a)**: `athena` added to `core_services` in `staging/egress/main.tf` and
+  `production/workloads-egress/main.tf`, each comment giving the reason; the DNS Firewall lists unchanged,
+  `*.amazonaws.com.` and `*.api.aws.` covering the endpoint's names. Each slice planned with nothing up
+  between 14:10 and 14:15, before and after the edit, each plan saved outside the repository: *"Plan: 17
+  to add, 0 to change, 0 to destroy."*, then *"Plan: 18 to add, 0 to change, 0 to destroy."*, the one
+  address the second plan alone holds `module.egress.aws_vpc_endpoint.interface["athena"]`, service
+  `com.amazonaws.us-west-2.athena`, private DNS on, tag `Name` `awsds-staging-athena` and
+  `awsds-prod-workloads-athena`, and every other resource planned the same in both. None applied: the
+  endpoint exists from each slice's next `make up`.
+- **[Claude] 16 (c)** in `examples/app-dbt/`: `LINEAGE_NAMESPACE` in the manifest's three stages,
+  `${LINEAGE_NAMESPACE}` in `dev` and the literals `app-dbt-staging` and `app-dbt-prod` in the targets;
+  the transform task's command ending `--namespace '{env.LINEAGE_NAMESPACE}'`; `run-dbt.sh` taking
+  `--namespace`, letters, digits, `.`, `_` and `-`, `app-dbt` when left out, in place of
+  `APP_DBT_NAMESPACE`; the tests, the simulation's run by hand and `dev` parameters, the README, and the
+  stage's 2.0 block exporting `app-dbt-dev`. `uv run pytest`: *"86 passed in 5.57s"*; ruff clean; the lint
+  at `1a50ceb`: *"ok: 4 arquivo(s)"*. `scripts/deploy-application.py` needs nothing: it gives a
+  placeholder to every name another stage alone reads, and records the stage's declared variables.
+- **[Claude] The simulation run again** on the change to `run-dbt.sh` (8.5), 14:15:32 to 14:17:08, on the
+  host archive `package-task` at `1a50ceb` built (`aarch64-apple-darwin`, 28,624,802 bytes, 88,437,386
+  unzipped): exit 0, each case's exit code, AWS calls and events as on 2026-11-17. The events' job
+  namespace: `app-dbt` in every case that starts `run-dbt.sh` without the option, `app-dbt-dev` in the
+  rendered transform task's six, `app-dbt-by-hand` in the run by hand's four.
+
+  | Case | Exit code | Seconds | AWS calls | Events the listener received | Task log, bytes and lines | Peak memory, kB |
+  |---|---|---|---|---|---|---|
+  | A first `dbt build`, the names as built | 0 | 8.0 | 17 | 6, 6 signed | 3,741 and 37 | 244,352 |
+  | A second build, `--names glue-arn` | 0 | 2.8 | 28 | 6, 6 signed | 3,731 and 37 | 204,624 |
+  | A database Glue does not hold | 1 | 0.2 | 1 | 0 | 649 and 3 | not read |
+  | The probe workflow's command, rendered | 0 | 0.8 | 10 | 0 | 10,232 and 234 | not read |
+  | The `transform` task's command, rendered | 0 | 2.6 | 17 | 6, 6 signed | 3,746 and 37 | 203,760 |
+  | By hand, `-- debug` | 0 | 1.5 | 4 | 0 | 3,489 and 53 | 145,312 |
+  | By hand, `-- run` | 0 | 2.6 | 25 | 4, 4 signed | 3,196 and 33 | 195,280 |
+  | Every file of the archive at mode 644 | 0 | 6.4 | 17 | 6, 6 signed | 3,624 and 37 | 244,320 |
+  | The profile with `skip_workgroup_check: true` | 0 | 6.3 | 27 | 6, 6 signed | 3,746 and 37 | 245,488 |
+  | The endpoint's port closed, `--attempts 1` | 0 | 2.7 | 17 | 0 | 147,696 and 775 | 203,728 |
+  | The endpoint's port closed, botocore's default attempts | 0 | 45.6 | 28 | 0 | 148,225 and 781 | 204,432 |
+  | The endpoint answering 403 | 0 | 2.7 | 17 | 6, each refused | 82,824 and 181 | 203,568 |
+  | A test that fails | 1 | 2.7 | 17 | 6, 6 signed | 4,069 and 42 | 203,440 |
+
+- **[Claude] 17 (b)**: the CLI 1.0.9's code read in the laptop's tool environment: `helpers/connections.py`
+  sets an `ATHENA` connection's `workgroupName` from `athenaProperties.workgroupName`, and
+  `helpers/context_resolver.py` flattens every connection of the project and resolves
+  `{proj.connection.<connection>.<property>}`, matching a connection name with dots before the property.
+  `awsds-workflows` cloned into the session's scratch folder, its branch
+  `claude/workgroup-athena-cli-variable` committed as `2aa32cf` on `1a50ceb`: `CLI_VARIABLES` gains
+  `{proj.connection.project.athena.workgroupName}` as `<ATHENA_WORKGROUP>`, with a test of the
+  translation, a test of the lint's `projeto` rule, the guide's table row and the CLI's reading in
+  `.claude/memory/cicd-cli.md`. Its tests, the network-marked deselected: 407 passed, 2 skipped;
+  `tests/test_prepare_offline.py` fails on this Mac on `main` as on the branch, at the tool's platform
+  guard (*"esta máquina é Darwin arm64, e a pasta só serve ao job preparada em Linux x86_64"*), and runs
+  on Ubuntu in that project's pipeline. A copy of `app-dbt` whose two workflows name the variable: the
+  branch's lint *"ok: 4 arquivo(s)"*; the lint at `1a50ceb` *"projeto: variável da CLI sem tradução:
+  {proj.connection.project.athena.workgroupName}"* on both workflows, plus two `glue` findings on `load`'s
+  script location, a refused translation leaving the text untranslated for the later rules. Not pushed:
+  the push and the pull request wait on the user's word in this chat; `app-dbt`'s side lands after the
+  merge.
+- **[Claude] The plan's files**: the stage file's decisions, Status, 8.1, 8.5, the application's text, 2.0,
+  2.3, 2.6, 8.9 and xix; `waiting-on-the-user.md`, `promotion.md` §N.6 item 2, `NETWORK.md`, and
+  `CLAUDE.md`'s row.

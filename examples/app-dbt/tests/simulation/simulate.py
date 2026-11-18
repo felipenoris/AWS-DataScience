@@ -213,6 +213,7 @@ def stage_parameters(listener: str) -> dict[str, str]:
         "LINEAGE_NAMES": "as-built",
         "LINEAGE_ENDPOINT": listener,
         "LINEAGE_ATTEMPTS": "default",
+        "LINEAGE_NAMESPACE": "app-dbt-dev",
     }
     parameters = {}
     for name, value in rendering.stage_variables().items():
@@ -237,6 +238,7 @@ def script(
     endpoint: str = "listener",
     attempts: str | None = "default",
     database: str = DATABASE,
+    namespace: str | None = None,
     after: tuple[str, ...] = (),
 ) -> Callable[[Context, Path], str]:
     """run-dbt.sh started as the task starts it, each option given."""
@@ -247,6 +249,8 @@ def script(
         words += ["--names", names, "--endpoint", getattr(context, endpoint)]
         if attempts is not None:
             words += ["--attempts", attempts]
+        if namespace is not None:
+            words += ["--namespace", namespace]
         if after:
             words += ["--", *after]
         return shlex.join(words)
@@ -262,15 +266,13 @@ CASES = [
     Case("The `transform` task's command, rendered", rendered("app-dbt", "transform")),
     Case(
         "By hand, `-- debug`",
-        script(attempts=None, after=("debug",)),
+        script(attempts=None, namespace="app-dbt-by-hand", after=("debug",)),
         follows=True,
-        env={"APP_DBT_NAMESPACE": "app-dbt-by-hand"},
     ),
     Case(
         "By hand, `-- run`",
-        script(attempts=None, after=("run",)),
+        script(attempts=None, namespace="app-dbt-by-hand", after=("run",)),
         follows=True,
-        env={"APP_DBT_NAMESPACE": "app-dbt-by-hand"},
     ),
     Case("Every file of the archive at mode 644", script(), tree="644"),
     Case("The profile with `skip_workgroup_check: true`", script(), follows=True, tree="skip"),

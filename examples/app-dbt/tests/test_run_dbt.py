@@ -134,6 +134,11 @@ def report(tmp_path):
         ([*options(), "--endpoint", "localhost:1"], "--endpoint is a URL or default"),
         ([*options(), "--attempts", "0"], "--attempts is a number from 1 or default"),
         ([*options(), "--attempts", "two"], "--attempts is a number from 1 or default"),
+        (
+            options(namespace="app/dbt"),
+            "--namespace is letters, digits, '.', '_' and '-', not app/dbt",
+        ),
+        (options(namespace="--names"), "--namespace takes a value"),
     ],
 )
 def test_it_refuses_before_any_call(tmp_path, doubles, args, named):
@@ -201,12 +206,12 @@ def test_the_glue_names_wrap_the_transport_in_the_transformer(tmp_path, doubles)
 
 
 def test_a_dbt_command_after_the_options_replaces_build(tmp_path, doubles):
-    args = [*options(), "--", "run", "--select", "notional_by_desk"]
-    done = run(tmp_path, doubles, *args, DOUBLE_LOCATION=LOCATION, APP_DBT_NAMESPACE="by-hand")
+    args = [*options(namespace="app-dbt-by-hand"), "--", "run", "--select", "notional_by_desk"]
+    done = run(tmp_path, doubles, *args, DOUBLE_LOCATION=LOCATION)
     assert done.returncode == 0, done.stderr
     seen = report(tmp_path)
     assert seen["argv"][:3] == ["run", "--select", "notional_by_desk"]
-    assert seen["env"]["OPENLINEAGE_NAMESPACE"] == "by-hand"
+    assert seen["env"]["OPENLINEAGE_NAMESPACE"] == "app-dbt-by-hand"
 
 
 def test_a_console_script_without_its_mode_is_copied_and_marked(tmp_path, doubles):
