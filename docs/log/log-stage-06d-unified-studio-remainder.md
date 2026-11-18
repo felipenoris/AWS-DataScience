@@ -4167,3 +4167,36 @@ UTC.*
   down, *"no Studio app billing in sandbox"* and *"estimated burn: USD 0.0000/h"*.
 - **[Claude] What it settles**: step 5 is done. The three application projects follow, `app-dbt-dev`,
   `app-ml-dev` and `app-genai-dev`, created by the user from `experimentation` with their contributors.
+
+## 2026-11-18 — 2.7: the living projects keep both domains, and step 7's texts and `US-13`
+
+*The user's decision in this session's chat. Claude, the orchestrating session, wrote the records and
+step 7 with no AWS write, reading as `awsds-infra-data` and `awsds-infra-sandbox-1`. Times are UTC.*
+
+- **[user] The decision**, on the waiting list's row for the living projects' second domain: *"(A)"*.
+  Both domains stay in `eighth-experimentation`, `test-experimentation` and `app-etl-dev`; a member
+  creates a space in the blueprint's domain by choice in *Create space*, and the portal's default space
+  stays the `Tooling` domain's.
+- **[Claude] The readings step 7 rests on**: `experimentation`'s `SageMakerAIDomain` configuration pins
+  `awsds-sandbox-dev-env` version 11 in `customImagesJupyterLab`, `customImagesCodeEditor` and both
+  `defaultImageVersionArn*`, all locked; the three blueprint domains name version 11 on both app types;
+  the three `Tooling` domains carry the entry with no `ImageVersionNumber`; the image holds one version,
+  11, `CREATED`. Every domain carries the tag `AmazonDataZoneBlueprint`, `SageMakerAIDomain` or
+  `Tooling`, beside `AmazonDataZoneProject`, the project's id. `list-projects` returns no profile id;
+  `get-project` does.
+- **[Claude] The records**: `AWS_STATE.md`'s `INV-23`, a project born of `experimentation` holding the
+  blueprint's domain at the profile's pin, alone since 2026-11-18, and `EXC-26`, the three living
+  projects' `Tooling` domains; the waiting list's decision row removed.
+- **[Claude] `US-13`** in `./aws/studio.py`: the profile's pin against the newest `CREATED` version, each
+  `ACTIVE` project born of `experimentation` against the blueprint domains, and each blueprint domain's
+  `ImageVersionNumber` against the pin, the domains selected by their tag; a `Tooling` domain is a note in
+  `EXC-26`'s projects and a failure in any other. Fifteen synthetic cases gave the expected verdicts. The
+  run of `awsds-infra-data` and `awsds-infra-sandbox-1` ending at 23:40:45 read 5 `pass` and 3 notes,
+  among them *"3 ACTIVE, each holding a SageMakerAIDomain domain: app-etl-dev, eighth-experimentation,
+  test-experimentation"*, and *"all checks passed"*.
+- **[Claude] Step 7's texts**: `dev-env.md` §O, §B (steps 5 to 7: the pin, *Update project*, `US-13`),
+  §C6 as the `Tooling` domains' route and §V; `docs/SMUS.md` §Custom images; `remote-ide.md` §V, the
+  space's domain read from `list-spaces`; `terraform-live/README.md`'s `sandbox/dev-env/` paragraph; and
+  `aws/INDEX.md`'s question row. `release/versions.py`'s header is a copy of GitLab's `awsds/dev-env`
+  (`gitlab/README.md`), so its change waits on a merge request there, in a GitLab sitting (the waiting
+  list).

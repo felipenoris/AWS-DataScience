@@ -1308,15 +1308,17 @@ domain's Region and may infer in another.
 ### Custom images (BYOI) — and how they are named
 
 A project's spaces run the **SageMaker Distribution** unless a custom image is attached to the
-SageMaker AI domain `Tooling` provisions in the member account: an image, an image version and an app
-image config, then the domain's `CustomImages` (Stage 6 step 5.1). INT-01 closed on 2026-09-10 (6d
+project's SageMaker AI domain in the member account: an image, an image version and an app image
+config, then the domain's `CustomImages` (Stage 6 step 5.1). That domain is the `SageMakerAIDomain`
+blueprint's, which writes the attachment from the profile (below; 6d decision 16 (a)); the three
+projects of `AWS_STATE.md` `EXC-26` keep their `Tooling` domain beside it, attached by hand. INT-01 closed on 2026-09-10 (6d
 step 2.5); INT-17's open half is whether the attachment survives a blueprint reconciliation, which is
 verification (vi) and 6d step 2.4.
 
 **Three of the four objects are Terraform's, and the fourth is the blueprint's** (measured 2026-09-10,
 Stage 6d step 2). `sandbox/dev-env/` holds the image, the version and one app image configuration per
-app type; `CustomImages` is a field of the domain's user settings, so making an image *selectable* is a
-hand step against an object `Tooling` owns, and `UpdateDomain` replaces `DefaultUserSettings` whole
+app type; `CustomImages` is a field of the domain's user settings, so on a `Tooling` domain making an
+image *selectable* is a hand step against an object `Tooling` owns, and `UpdateDomain` replaces `DefaultUserSettings` whole
 (Lesson 60). A **space** carries no image *list* — `SpaceSettings.CodeEditorAppSettings`
 has neither `CustomImages` nor `LifecycleConfigArns` — **but it does name one image and one version**,
 in `DefaultResourceSpec`, and that copy **overrides the domain's default for that space** (measured
@@ -1326,8 +1328,8 @@ only, and a deleted version strands the spaces that name it — `AWS_STATE.md` `
 [Lesson 63](plan/lessons.md), and the move is [`dev-env.md`](plan/runbooks/dev-env.md) §B, *Moving a
 space*. **A domain entry with no `ImageVersionNumber` offers every version of the image** in the
 picker, newest first, and the portal's `CreateSpace` pins the chosen one (measured 2026-10-15), which is
-how this estate attaches the house image since Stage 8 decision 7: a release is a new version and no
-domain write. **AWS's own images are named by a mutable alias** (`SageMakerImageVersionAlias`) rather
+how the `Tooling` domains carry the house image since Stage 8 decision 7: a release reaches them as a
+new version, with no domain write. **AWS's own images are named by a mutable alias** (`SageMakerImageVersionAlias`) rather
 than a version ARN; a custom image's alias works the same way in a space's spec, and the portal then
 banners that space as an outdated SageMaker Distribution (2026-10-15). Two principals read the repository and they are not the same one: at `CreateImageVersion` the image's
 `RoleArn` reads it **by tag** and pins the version to a digest; when a space starts, the **project

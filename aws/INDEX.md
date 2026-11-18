@@ -591,6 +591,7 @@ there.
 | Is an app still running — did `make down` leave a burn? | 5, `US-10` — the same reading `scripts/down-studio-apps.py` makes per env |
 | Does each deployment target hold one project, with its environments `ACTIVE`, and which subscription targets do they carry? | 3, decided by `US-11` |
 | Does a role's trust name its account's root or any principal, where a project role could assume it? | 6, decided by `US-12` |
+| Does each blueprint domain pin the house image's version the profile pins, does the profile pin the newest `CREATED` one, and does each project of `experimentation` hold such a domain (6d decision 16 (a), `INV-23`)? | 4, decided by `US-13`; the three `Tooling` domains `EXC-26` keeps are notes |
 | What image registrations exist (INT-17's mechanical half)? | 5 |
 | Which accounts is nobody measuring? | 9 — Staging until the vend; every Sandbox beyond unit 1 until Stage 14 |
 
