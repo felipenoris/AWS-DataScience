@@ -53,6 +53,13 @@ variable "blueprints_enabled" {
   default     = false
 }
 
+variable "redshift_serverless_enabled" {
+  description = "Stage 21 decision 1 (b), for one sitting: true configures the RedshiftServerless blueprint in this account (terraform-modules/sagemaker-prereqs/). Applied before data-governance/governance/'s own switch, and turned off after it. false between sittings."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
 variable "allowed_instance_types" {
   description = "The ml.* ceiling (D12). null - the default - is the right answer: the list lives once, in terraform-modules/sagemaker-denies, and the six persona sets in identity/sso/ compose the same fragment. The variable survives so that a business unit which genuinely needs a different ceiling can say so in its tfvars rather than in the shared module (D35: this slice is one unit's, not *the* Sandbox's)."
   type        = list(string)

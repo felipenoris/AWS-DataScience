@@ -69,7 +69,7 @@ data "awscc_datazone_group_profile" "sandbox_infrastructure_access" {
 # resource takes ids; the decision, the documentation and ./aws/studio.py all speak names, so
 # the lookup happens here rather than opaque identifiers being pasted into a variable.
 data "aws_datazone_environment_blueprint" "enabled" {
-  for_each = var.profiles_enabled ? toset(local.category_one_blueprints) : toset([])
+  for_each = var.profiles_enabled ? toset(local.admitted_blueprints) : toset([])
 
   domain_id = aws_datazone_domain.this.id
   name      = each.value

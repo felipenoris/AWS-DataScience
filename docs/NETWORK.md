@@ -377,7 +377,9 @@ Both were NXDOMAIN. `app.aws` and `on.aws` joined the list with their apexes, on
 Unified Studio domain's own URL — resolvable, which is the DNS block 6d step 8.6 could attribute to
 nothing. **Resolving is not reaching**: that name has no endpoint, so it leaves as a proxy request and
 comes back a 403 naming the host. The user allowed it by its exact name on 2026-11-17 (6d decision 6); it
-joins the Sandbox plane at the next `production/networking` apply.
+is in `hub-anchors.tf` since 2026-11-18, planned that day (0 to add, 1 to change: the parameter at version
+11, the Sandbox plane 41 entries to 42), and joins the plane at the next `production/networking` apply, in
+a hub sitting. Until then `DN-3` reads it *only in code*.
 
 **The proxy's filters are the estate's egress policy, and they are two kinds of list:**
 

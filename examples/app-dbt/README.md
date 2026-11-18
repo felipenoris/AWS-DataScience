@@ -2,23 +2,38 @@
 
 A dbt project run by a Bash task of a SageMaker workflow: Athena builds the model as an Iceberg table of
 the project's database, and OpenLineage's dbt wrapper posts the run's lineage to the domain. The
-application of the infrastructure repository's Stage 20, written after the template `examples/app-etl/`
-and kept in that repository alone: it has no GitLab project and no release (the stage's decision 9). The
-CI/CD CLI deploys it from a space into one Sandbox project, its single stage `dev`.
+application of the infrastructure repository's Stage 20, on the template `examples/app-etl/` with no
+image, no job and no model. Its manifest holds three stages, one account each (the stage's decisions
+7 (b) and 9 (b)): `dev`, the application's own Sandbox project, which the developer deploys to from a
+space and the pipeline's `bundle` reads; and `staging` and `prod`, each account's deployment project,
+`deploy-staging` and `deploy-production`, which the pipeline's legs deploy the release's bundle into. The
+cycle an application on this template follows, from a space to Production, is
+`docs/plan/runbooks/sagemaker-application.md` in the infrastructure repository.
 
 | Path | What it is |
 |---|---|
-| `manifest.yaml` | the application: the folders the CLI copies to the project's shared prefix, the two workflows, and the stage `dev` with the variables the workflows read |
+| `manifest.yaml` | the application: the folders the CLI copies to the project's shared prefix, the two workflows, the catalog block, and the three stages with the variables the workflows read |
 | `workflows/app-dbt.yaml` | the workflow: `load`, a Glue job that writes the source table, then `transform`, dbt on the worker |
 | `workflows/app-dbt-probe.yaml` | one inline Bash task that prints what the plan assumes of the worker and the AWS calls `transform` makes, each answer or refusal on one line |
 | `glue/load.py` | the Glue job's script: the inbox's trades as the Iceberg table `trades` of the product database |
 | `code/run-dbt.sh` | the `transform` task's command: dbt through the wrapper, the lineage configuration written for the run; copied to the archive's root |
 | `src/app_dbt/` | the package the archive carries: the dbt project (`project/`), dbt Core's console script (`bin/dbt`), and the transformer of the datasets' names (`lineage.py`) |
-| `code/app-dbt.zip` | the worker's archive, built by `package-task` and never committed |
-| `scripts/dev-cli.sh` | the CI/CD CLI for the `dev` stage in a space, the template's copy |
+| `code/app-dbt.zip` | the worker's archive, built by `package-task` (the pipeline's `build-task-code`, or by hand before a deploy from a space) and never committed |
+| `product.json` | what a release's bundle carries from the `dev` project's catalog: the assets `trades` and `notional_by_desk`, and the metadata form `classification` |
+| `scripts/check-catalog-export.py` | the release guard over the bundle's catalog, app-etl's script |
+| `scripts/dev-cli.sh` | the CI/CD CLI for the `dev` stage in a space, app-etl's script; it gives the targets' names a placeholder |
 | `samples/trades.csv` | synthetic trades, which the manifest copies to the workflow's inbox |
 | `tests/` | pytest, offline; `tests/fixtures/` holds the events the simulation recorded, and `tests/simulation/` the simulation itself, outside pytest's collection |
-| `pyproject.toml`, `uv.lock` | the project and its lock: dbt Core 1.11, `dbt-athena` 1.11 and `openlineage-dbt` 1.55, resolved under `exclude-newer` |
+| `.gitlab-ci.yml` | the pipeline, with the shared gates from `awsds/ci-gates` |
+| `pyproject.toml`, `uv.lock` | the project and its lock: dbt Core 1.11, `dbt-athena` 1.11 and `openlineage-dbt` 1.55, resolved under `exclude-newer` for Linux and macOS |
+
+No Terraform runs the application: the CI/CD CLI deploys it into a project in every account. What the
+infrastructure repository's Stage 20 pass 8 gives it: in Sandbox, the `dev` project's role in
+`sandbox/workflows/`'s `project_roles`, which grants the Glue task's `glue:GetJob`; in each target, the
+database `app_dbt` in the deployment project, created by its `DataLake` environment before the first
+deploy, the deploy role's read of the two tables' metadata (`deploy-project.tf`, and in Staging the Lake
+Formation `DESCRIBE` of `staging-test.tf`), the chains in `terraform-live/<env>/chains/`, and an `athena`
+interface endpoint in the account's egress slice (the stage's decision 15).
 
 ## The workflow
 
@@ -54,16 +69,20 @@ result. The model drops a table by an Athena statement (`native_drop`), never by
 |---|---|
 | `SUBNET_AZ1`, `SUBNET_AZ2` | the project's subnets, which name the Glue job's network connections |
 | `ACCOUNT_ID` | the account of the Glue job's catalog and of the lineage's Glue names |
-| `PRODUCT_DATABASE` | `app_dbt`, a literal: the database is created in the project before the first deploy, never by the application |
-| `ATHENA_WORKGROUP` | the project's workgroup |
+| `PRODUCT_DATABASE` | `app_dbt`, a literal: the database is created in each project before its first deploy, never by the application |
+| `ATHENA_WORKGROUP` | the project's workgroup, `workgroup-<project id>-<Tooling environment id>`, the one its `project.athena` connection names |
 | `LINEAGE_DOMAIN` | the domain `transform` posts the events to |
 | `LINEAGE_NAMES` | `as-built` or `glue-arn`, the form of the datasets' names |
 | `LINEAGE_ENDPOINT` | the DataZone endpoint's URL, or `default` for the Region's |
 | `LINEAGE_ATTEMPTS` | the attempts of every botocore client of the run, the transport's included, or `default` |
 
-A stage variable is a parameter of the deployed workflow, filled from the shell of each `run`: a switch
-turned between two runs is an `export` and a run, never a deploy. The CLI refuses an empty value, so a
-switch at rest holds `default`.
+In `dev` every value but the literal comes from the shell of the space. A target holds `${DOMAIN_ID}` for
+`LINEAGE_DOMAIN` and its switches as literals, `as-built` and `default`; its leg fills the subnets, the
+account and the workgroup from the deployment project (the infrastructure repository's Stage 20 decision
+17). A stage variable is a parameter of the deployed workflow, filled from the shell of each `run`: a
+switch turned between two runs in `dev` is an `export` and a run, never a deploy. The CLI refuses an
+empty value, so a switch at rest holds `default`. Every stage declares every variable a workflow reads,
+since the deploy resolves every workflow the manifest names.
 
 ### The lineage
 
@@ -77,7 +96,8 @@ hands each event to `app_dbt.lineage.GlueTableNames` before the post, which rena
 dataset of the inputs, the outputs and each `columnLineage` input field. Either way each dataset keeps
 its `symlinks` facet, which names `table/<database>/<table>` under `arn:aws:glue:<region>:<account>`.
 A build posts six events after dbt ends, a `START` and an end for the dbt run, for the model and for
-its test, under the job namespace `app-dbt` (`APP_DBT_NAMESPACE` replaces it by hand).
+its test, under the job namespace `app-dbt` in every stage (`APP_DBT_NAMESPACE` replaces it by hand);
+whether a target's carries the project's id is the infrastructure repository's Stage 20 decision 16.
 
 ### Exit codes of `run-dbt.sh`
 
@@ -91,6 +111,25 @@ its test, under the job namespace `app-dbt` (`APP_DBT_NAMESPACE` replaces it by 
 A post the endpoint refuses, or never answers, leaves the code alone: the wrapper logs the warning with
 the whole event and ends with dbt's code.
 
+## The catalog
+
+`bundle` exports what the `dev` project owns beside the tag's files (`catalog/catalog_export.json`), and
+each deploy imports it into the stage's project, listing nothing (`skipPublish`): no task of this
+application publishes. The `dev` project's assets are the two tables' inventory assets, `trades` and
+`notional_by_desk`, created by the project's source over `app_dbt` and curated there by the developer:
+their descriptions, their README and the form `classification`. `product.json` declares what a release
+carries, and `scripts/check-catalog-export.py` fails a bundle with a resource outside it, without either
+asset, or with no export. A resource the developer adds to an asset in the `dev` project, a glossary term
+for one, joins `product.json` in the same merge request, and anything else the project owns fails the
+release: a model over what only `dev` holds, a subscription's resource link among them, stays on a
+branch no tag carries, and its table's asset leaves the project before a tag.
+
+The import matches an asset by its external identifier, then by its name, so an asset's name is unique
+within a deployment project, where every application's assets sit. A target's first import creates no
+asset (`SUP-369` in the infrastructure repository): the deploy admits it, the leg's run writes the two
+tables, and the leg's catalog job runs the project's source over `app_dbt` and deploys the same bundle
+again, which revises both assets with `dev`'s metadata.
+
 ## Working on it
 
 ```bash
@@ -100,15 +139,20 @@ uv run pytest
 
 The tests run offline: `dbt parse` over the project through `bin/dbt`, with placeholder values and every
 network path closed; each workflow's Bash command translated as the CLI translates it, rendered under
-`StrictUndefined` with the stage's variables, and parsed by `bash -n`; the stage declaring every
-`{env.NAME}` a workflow reads; `run-dbt.sh` over doubles of boto3 and of the wrapper; the transformer
-over the recorded events; the Glue script over doubles; and the stored mode of each script. A script
-is committed with the executable bit, `git update-index --chmod=+x <file>` where the file system keeps
-none: `package-task` copies the mode into the archive.
+`StrictUndefined` with each stage's variables, and parsed by `bash -n`; every stage declaring every
+`{env.NAME}` a workflow reads; the manifest's stages against what the infrastructure repository's legs
+fill; `run-dbt.sh` over doubles of boto3 and of the wrapper; the transformer over the recorded events;
+the Glue script over doubles; the release guard over bundles built in a temporary folder; and the stored
+mode of each script. A script is committed with the executable bit, `git update-index --chmod=+x <file>`
+where the file system keeps none: `package-task` copies the mode into the archive.
+
+The lock resolves for Linux, where the worker and the pipeline run, and macOS, where the tests run on a
+laptop (`[tool.uv] environments`). The gates' `pip-audit` fails when it audits fewer packages than the
+runtime export pins, and pip-audit 2.10.1 skips a pin whose marker its Linux runner does not match.
 
 The lint and the archive run from this folder with `awsds-workflows` at `1a50ceb`, the merge of its
 pull request #27, whose rule `job` leaves a processing task's isolation to the task (Stage 20 step
-6.4):
+6.4); the pipeline pins the same commit:
 
 ```bash
 TOOL="awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/1a50ceb15efe76abd0415758975467f89a11548b.zip"
@@ -123,15 +167,15 @@ MB unzipped. The check prints the entries, the unzipped bytes and `['0o100755', 
 
 ### From a space
 
-In a JupyterLab space of the project, Sandbox's egress raised with `GROUPS=mwaa` and the tree unpacked
-with its archive, the values the manifest reads come from the space, the workgroup's name typed, then
-the deploy and the runs:
+In a JupyterLab space of the application's `dev` project, Sandbox's egress raised with `GROUPS=mwaa` and
+the tree unpacked with its archive, the values the manifest reads come from the space, the project's name
+and workgroup typed, then the deploy and the runs:
 
 ```bash
 git clone --depth 1 https://github.com/felipenoris/awsds-workflows /tmp/awsds-workflows
 /opt/conda/bin/python /tmp/awsds-workflows/scripts/space_values.py > /tmp/space_values.json
 eval "$(/opt/conda/bin/python -c 'import json; v = json.load(open("/tmp/space_values.json")); print("\n".join("export %s=%s" % p for p in (("DOMAIN_ID", v["DOMAIN_ID"]), ("DOMAIN_REGION", v["REGION"]), ("SUBNET_AZ1", v["SUBNET_AZ1"]), ("SUBNET_AZ2", v["SUBNET_AZ2"]), ("ACCOUNT_ID", v["ACCOUNT_ID"]))))')"
-export DEV_PROJECT_NAME=<the project> ATHENA_WORKGROUP=<the project's workgroup>
+export DEV_PROJECT_NAME=<the dev project> ATHENA_WORKGROUP=<its workgroup>
 export LINEAGE_DOMAIN="$DOMAIN_ID" LINEAGE_NAMES=as-built LINEAGE_ENDPOINT=default LINEAGE_ATTEMPTS=default
 scripts/dev-cli.sh deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
 scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-dbt-probe
@@ -167,3 +211,34 @@ endpoint. The account is `000000000000`, which moto takes from `MOTO_ACCOUNT_ID`
 forms of the names, a missing database, both workflows' commands rendered, the runs by hand, the archive
 at mode 644, the profile without the workgroup's read, the endpoint closed or refusing, and a failing
 test; the script prints each one's exit code, seconds, calls, events, log and peak memory.
+
+## The pipeline
+
+| Ref | Jobs | Runner |
+|---|---|---|
+| any branch | `test` (`uv sync --locked`, ruff, pytest, the workflow lint), `secret_detection` and its gate, `pip-audit` | the test runner, no AWS identity |
+| a tag `v<semver>` | `test`, `pip-audit`; `build-task-code` (the worker's archive, its two modes and its sizes checked); `bundle` (the release's bundle, made from the tag's files and the `dev` project's catalog, held to `product.json`; nothing is deployed in Sandbox); `store-bundle` (the bundle to `awsds-prod-releases`); `release` (the tag's GitLab release); the promotion: `staging-gate` (manual), `staging-check` (Staging's `egress/` with its `athena` endpoint, the user's to raise, and its deployment project), `staging-deploy` (the CLI's deploy into the project), `staging-test` (the probe's chain, then `app-dbt`'s, and both tables' metadata), `staging-catalog` (the second import), `production-check` (Production's project and the deploy role's membership), `production-gate` (manual), `production-deploy` (the `athena` endpoint of `production/workloads-egress/`, then the CLI's deploy, whose bootstrap runs `app-dbt`), `production-catalog` (the second import, whose deploy runs `app-dbt` again) | the test runner, the build runner for `store-bundle` and `release`, and the deploy runner for `bundle` and the promotion |
+
+A release is a tag `v<major>.<minor>.<patch>` on `main`, which only a Maintainer can create: the tag is
+protected, and that protection is the release gate. A tag whose bundle fails gets no release, and the
+release's first run is Staging's leg: the pipeline deploys nothing in Sandbox.
+
+`bundle` runs as `awsds-deploy-sandbox-test`, a member of the `dev` project, and reads the GitLab
+project's CI/CD variables `DOMAIN_ID`, `DOMAIN_REGION` and `DEV_PROJECT_NAME`. The CLI refuses a manifest
+with an unset `${VAR}`, so the job gives every name it has no value for a placeholder. It fails on a
+missing include, on the CLI's *"Failed to get project connections"*, and on a bundle the guard refuses.
+The bundle's SHA256 goes down the pipeline as a dotenv report, and the release's notes name it with the
+bundle's object.
+
+The promotion runs on the deploy runner, each job cloning `awsds/infrastructure` with the job token, where
+the scripts it calls live. `scripts/deploy-application.py` extracts the bundle beside the tag's manifest,
+fills the stage's variables from the deployment project's Tooling environment, runs the CLI's `deploy`
+and records the stage's variables for the chains. The `transform` task queries Athena from the deployment
+project's subnets, which reach a service through an interface endpoint of the account's egress slice
+alone, so `staging-check` and `production-deploy` ask EC2 for an available endpoint tagged
+`awsds-staging-athena` and `awsds-prod-workloads-athena`, which `check-egress.py` reads only once the
+slice's list holds `athena` (Stage 20 decision 15). The
+legs deploy with no `--image-uri` and read `<PREFIX>_ATHENA_WORKGROUP` from the deploy script: the
+release follows the infrastructure repository's change that teaches the script a second application
+(Stage 20 step 8.1). Nothing is torn down: Staging's `make down` is the user's. The jobs need the hub, the
+deploy runner, Staging's `egress/` and `production/workloads-egress/`, each with its `athena` endpoint.

@@ -95,3 +95,383 @@ Account ids are replaced by the account's name in angle brackets.*
   by the blueprint, 2.5 to 2.7 the datashare-and-view shape between two namespaces, and 2.9 the
   workgroup's removal; 3.1 and 3.5 keep decision 2 (a) alone; 4.7 and verification xiii do not run;
   verification xx is added. The waiting list's decisions row is removed.
+
+## 2026-11-18 — pass 1 with nothing up: 1.3's readings and 1.5's code
+
+*Claude, a subagent of the orchestrating session, in that session's worktree. Read-only calls from the laptop
+as the infrastructure user with `InfrastructureAccess`, through `awsds-infra-sandbox-1` in `Sandbox Account 1`
+and `awsds-infra-data` in `Data Governance Account`; the plans read the other members through their profiles.
+AWS's pages through a fetcher, AWS's SMUS-IaC sample through `gh api`, the CLI's help and skeletons on the
+laptop. Nothing applied and nothing written in AWS. Account ids are replaced by `<Sandbox Account 1>` and
+`<Data Governance Account>`, the infrastructure user's address by `<infrastructure user>`. Times are UTC.*
+
+- **[Claude] The asset types**, 00:39 to 00:41: `datazone search-types --managed --search-scope ASSET_TYPE`
+  lists 24, the count of 2026-10-28, with every type Stage 19's log names that day. `get-asset-type` refuses
+  Sandbox's caller, which `search-types` answers:
+
+  ```
+  An error occurred (AccessDeniedException) when calling the GetAssetType operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_InfrastructureAccess_59e5b26af457128d/<infrastructure user> is not authorized to perform: datazone:GetAssetType on resource: arn:aws:datazone:us-west-2:<Data Governance Account>:domain/dzd-d8yrvx1ko7im6o because no resource-based policy allows the datazone:GetAssetType action
+  ```
+
+  As `awsds-infra-data`: `RedshiftTableAssetType` revision 18, `RedshiftViewAssetType` 19 and
+  `S3ObjectCollectionAssetType` 17, each requiring one form (`RedshiftTableForm` 7, `RedshiftViewForm` 8,
+  `S3ObjectCollectionForm` 7) beside optional ones. The Redshift forms require `columns`, 1 to 1,600; the S3
+  form requires `bucketArn` and references the S3 connection the asset came from.
+- **[Claude] The consumer's environments and targets**, 00:40 to 00:41: `test-experimentation` holds
+  `Tooling` (`bi356s1sacz0cw`), `test-experimentation-lakehouse` (`4zojr4rr6bmnww`) and two
+  `create-datalake-database-env-…` on the same `DataLake` configuration, one `ACTIVE` and one
+  `VALIDATION_FAILED`. `list-subscription-targets` returns `type: null` for every target; `get-subscription-target`
+  answers it. The lakehouse environment's `ai0iw2p6vlxw5s` is `GlueSubscriptionTargetType`, database
+  `glue_db_4zojr4rr6bmnww`, for the Glue table and view types, authorized to `abac:CURRENT_PROJECT`, its
+  manage-access role the project role `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw`. `Tooling` carries a
+  `BedrockModelSubscriptionTargetType` and a `BaseSubscriptionTargetType` (feature groups and model package
+  groups), each authorized to the project role's ARN. No Redshift target; the other two environments hold none.
+- **[Claude] The blueprint and its template**, 00:41 to 00:45: the domain lists 24 managed blueprints, the
+  count of 2026-10-28.
+  `RedshiftServerless` is `dlyaabb17hano0`, created 2026-05-13. Its template, read with `s3api get-object`
+  through the `templateUrl`'s access point alias (an unsigned `curl` read 400), is
+  `DataZone-Amazon-SageMaker-RedshiftServerlessDefault-prod-20250515.template.json`, 10,532 bytes,
+  `LastModified` 2026-11-13T19:43:40Z:
+  - `redshiftBaseCapacity` and `redshiftMaxCapacity` are `Number`s with no `AllowedValues`, defaults 128 and 0.
+    The workgroup gets `BaseCapacity` only when the base is not 128, `MaxCapacity` only when the maximum is
+    not 0, and `PricePerformanceTarget` `{Level: 50, Status: ENABLED}` only when the base is 128;
+  - the namespace's `DefaultIamRoleArn` and only `IamRoles` entry are `userRoleArn`; its `KmsKeyId` and the
+    managed admin secret's key are `kmsKeyArn` when DataZone passes one; `ManageAdminPassword` follows
+    `provisionManagedSecret`;
+  - the workgroup imports `privateSubnets-<project>-<scope>` and `securityGroup-<project>-<scope>`, which the
+    project's `Tooling` stack exports (`cloudformation list-exports`: two subnets and `sg-05e52373c14288c22`
+    for `test-experimentation`, beside `kmsKeyArn-4gqfau9xuo6e4w-dev`, the key aliased
+    `awsds-sandbox-project`); `PubliclyAccessible` false; `search_path` `project, $user, public`;
+  - `datazoneEnvironmentEnvironmentId`, `datazoneEnvironmentProjectId` and `userRoleArn` have no default and
+    are DataZone's; `createRedshiftResources` defaults to true, `connectToRMSCatalog` to false.
+
+  The blueprint's ten user parameters are optional and not editable, and four defaults differ from the
+  template's: `redshiftMaxCapacity` `"512"` (template 0), `provisionManagedSecret` `"true"` (false), and the
+  names `redshift-serverless-workgroup` and `redshift-serverless-namespace` (`datazone-workgroup`,
+  `datazone-namespace`). `redshiftBaseCapacity` is `"128"` in both; `connectionName` is `project.redshift`.
+  `isUpdateSupported` is true for both capacities.
+- **[Claude] The key and the roles**, 00:45 to 00:53: the adminguide's key-permissions page names one Redshift
+  statement, `RedshiftCreateGrantKmsPermissions`: `kms:CreateGrant` for the provisioning role through
+  `redshift-serverless.*.amazonaws.com`, on a key in the caller's account. The provisioning role's
+  `SageMakerStudioProjectProvisioningRolePolicy` (v86, created 2026-11-17T21:17:09Z) allows `kms:CreateGrant`
+  through `airflow`, `neptune-graph` and `s3vectors` alone; its `RSMng`, `RedshiftCreate` and `RssMng`
+  statements allow a namespace's and a workgroup's create, read, update and delete, `RssMng`'s
+  `UpdateWorkgroup` on resources tagged `AmazonDataZoneProject`, which the root's
+  `DenyRedshiftCostGuardTamperingExceptInfrastructure` denies to every role but `InfrastructureAccess`.
+  `AmazonDataZoneRedshiftManageAccessRolePolicy` (v5, 2026-02-12) allows `AuthorizeDataShare`,
+  `DescribeDataShares` and `AssociateDataShareConsumer` on datashares named `datazone*`, the Data API on
+  workgroups, and a workgroup's or namespace's create and delete only when called via Glue or Lake Formation;
+  the SageMaker (v4) and Glue (v18) manage-access policies carry no `redshift:` action. The consumer's project
+  role trusts `redshift.amazonaws.com` and `redshift-serverless.amazonaws.com` (an `sts:ExternalId` on
+  `dbuser:*/*`), carries `awsds-sandbox-project-boundary` and the tag
+  `RedshiftDbUser=user-project@4gqfau9xuo6e4w`. `SageMakerStudioProjectUserRolePolicy` (v77) reads and writes
+  a secret only when its `AmazonDataZoneProject` tag is the caller's project (`AllowGetSecretForRedShift`).
+- **[Claude] The producer's connection**, 00:46 to 00:48: `eighth-experimentation` holds eleven connections. Its
+  Redshift one, `redshift-serverless.redshift` (`axsiuoykrswosw`), names the workgroup
+  `awsds-sandbox-warehouse`, database `dev`, no secret, the access role
+  `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`, and `lineageSync` enabled on `cron(43 3 * * ? *)`, job
+  `ayya3b95j0zvo0`. The job's five latest runs, 2026-11-13 to 2026-11-17 at 03:44, are all `FAILED`, the
+  newest processing no query: *"Redshift endpoint doesn't exist in this region. (Service: RedshiftData, Status
+  Code: 400, …)"*.
+- **[Claude] S3 Access Grants**, 00:48: the instance `default`, created 2026-08-22, with four locations: the
+  bucket `awsds-sandbox-lake` (2026-08-26, role `awsds-sandbox-lake-access`) and the project prefixes of
+  `eighth-experimentation` (2026-08-23), `test-experimentation` (2026-10-15) and `app-etl-dev` (2026-11-14),
+  each with its project role. Five `READWRITE` grants to IAM principals: four on the lake's per-group prefixes
+  (three persona permission sets and `eighth-experimentation`'s project role) and one to `DataScientistAccess`
+  on `eighth-experimentation`'s `shared/`. None from a subscription.
+- **[Claude] The namespace's road into the Glue Data Catalog**, 00:44 to 00:52, from AWS's pages and the CLI's
+  help: `register-namespace` takes `ServerlessIdentifier={NamespaceIdentifier,WorkgroupIdentifier}` and exactly
+  one consumer account; Redshift's page spells the key `NamespaceIdentifer`, and Lake Formation's grant example
+  passes `--cli-input-cli-json`. Lake Formation's sequence is `describe-data-shares`,
+  `associate-data-share-consumer` to `arn:aws:glue:<region>:<account>:catalog`, `register-resource` on the
+  datashare (*"This is a mandatory step"*), then `glue create-catalog` with `FederatedCatalog`
+  `{Identifier: <datashare ARN>, ConnectionName: "aws:redshift"}` and, for data lake access,
+  `CatalogProperties.DataLakeAccessProperties`. The deletion page names `glue delete-catalog` alone. The data
+  transfer role trusts `glue.amazonaws.com` and `redshift.amazonaws.com`; its documented policy allows
+  `glue:GetCatalog`, `glue:GetDatabase`, `kms:GenerateDataKey` and `kms:Decrypt`, no S3 action, though the page
+  says the role moves data to and from S3.
+- **[Claude] The console's enable wizard**, the checklist's step 4, is unread: this sitting had no console. It
+  is the user's act before 2.4.
+- **[Claude] 1.5's code**, written by 01:12, each half behind `redshift_serverless_enabled`, default false:
+  - `terraform-modules/sagemaker-prereqs/`: the switch (`variables.tf`); `local.configured_blueprints`,
+    `RedshiftServerless` beside `var.blueprint_names`, which the configuration and its grant iterate
+    (`blueprints.tf`) and the roster guard reads (`data.tf`); `RedshiftCreateGrantKmsPermissions` for the
+    provisioning role (`kms.tf`); `AmazonDataZoneRedshiftManageAccessRolePolicy` on the manage-access role
+    (`roles.tf`);
+  - `terraform-live/data-governance/governance/`: the switch (`variables.tf`); `local.admitted_blueprints`,
+    category 1 plus `RedshiftServerless` last, so no other environment's `deployment_order` moves, and its
+    overrides `redshiftBaseCapacity` and `redshiftMaxCapacity` at `"4"`, not editable (`locals.tf`); the
+    blueprint lookup and the profile's precondition read `admitted_blueprints` (`data.tf`, `profiles.tf`);
+  - `terraform fmt`, the module's `validate`, `tflint` on both, `checkov` (36 passed and 0 failed on the module,
+    72 and 0 on the slice), `check-tf-conventions`, `check-identifiers` and `slices.py check` green.
+- **[Claude] The plans**, 01:14 to 01:19, `-input=false`: `sandbox/sagemaker/` as `awsds-infra-sandbox-1`, its
+  `source` pointed at the module's local path (Recipe B), saved: *"No changes. Your infrastructure matches the
+  configuration."*, 43 no-ops. With `redshift_serverless_enabled = true` written into `main.tf`, unsaved:
+  *"Plan: 3 to add, 1 to change, 0 to destroy."*, the `RedshiftServerless` configuration, its
+  `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant, the policy attachment, and the key's policy in place. `main.tf` was
+  put back, compared byte for byte with its copy, and the slice re-initialised at
+  `?ref=sagemaker-prereqs-v0.11.0`, its lock file unchanged. `data-governance/governance/` as
+  `awsds-infra-data`, saved: *"No changes. …"*, 23 no-ops; with `-var redshift_serverless_enabled=true`,
+  unsaved: *"Plan: 0 to add, 1 to change, 0 to destroy."*, `experimentation` gaining `RedshiftServerless`,
+  `ON_DEMAND`, order 14, blueprint `dlyaabb17hano0`, both overrides `"4"` and not editable.
+- **[Claude] The tag**, read at 01:46: `git ls-remote --tags origin 'sagemaker-prereqs-v*'` lists
+  `sagemaker-prereqs-v0.11.0` as the latest, so the next is `sagemaker-prereqs-v0.12.0`. Recipe B's commits,
+  the tag and `sandbox/sagemaker/`'s pin and switch are the orchestrating session's.
+- **[Claude] The commands of passes 2 to 5**, written from these readings. A ⚡ marks a write Claude runs on the
+  user's word alone; every other command of Claude's is a read. The placeholders in angle brackets are the
+  sitting's values; the workgroup's and namespace's names assume the blueprint's defaults reach the stack,
+  whose parameters 2.4 reads.
+
+  ```bash
+  # Every block: the infrastructure user, InfrastructureAccess, Sandbox Account 1 unless G is named.
+  S=awsds-infra-sandbox-1 G=awsds-infra-data D=dzd-d8yrvx1ko7im6o P=avhvbqn37ty7m8 C=4gqfau9xuo6e4w
+  A=$(aws sts get-caller-identity --query Account --output text --profile $S)
+  SECRET=$(aws redshift-serverless get-namespace --namespace-name awsds-sandbox-warehouse \
+    --query namespace.adminPasswordSecretArn --output text --profile $S)
+  q() { aws redshift-data execute-statement --workgroup-name awsds-sandbox-warehouse --database sandbox \
+    --secret-arn "$SECRET" --sql "$1" --query Id --output text --profile $S; }
+  # A statement's rows: describe-statement --id until FINISHED, then get-statement-result --id. No waiter.
+  ```
+
+  Pass 2:
+
+  ```sql
+  -- 2.1 [user], the Query editor on awsds-sandbox-warehouse, database sandbox. The table only where Stage 19's
+  -- 5.2 has not made it, in trades_notional's columns: the stage's CTAS over VALUES, as a create and an insert.
+  CREATE TABLE lab.trades_hot (trade_date DATE, desk VARCHAR(32), instrument VARCHAR(32),
+    quantity DOUBLE PRECISION, price DOUBLE PRECISION, notional DOUBLE PRECISION);
+  INSERT INTO lab.trades_hot VALUES ('2026-11-02', 'rates', 'UST10Y', 10, 98.5, 985),
+    ('2026-11-02', 'fx', 'EURUSD', 1000, 1.08, 1080), ('2026-11-03', 'rates', 'UST2Y', 20, 99.1, 1982);
+  CREATE VIEW lab.trades_hot_by_desk AS
+    SELECT desk, COUNT(*) AS trades, SUM(notional) AS notional FROM lab.trades_hot GROUP BY desk;
+  CREATE TABLE lab.trades_hot_daily AS
+    SELECT trade_date, SUM(notional) AS notional FROM lab.trades_hot GROUP BY trade_date;
+  ```
+
+  ```bash
+  # 2.1 the owners
+  q "select schemaname, tablename, tableowner from pg_tables where schemaname = 'lab'"
+  q "select schemaname, viewname, viewowner from pg_views where schemaname = 'lab'"
+  q "select \"schema\", \"table\", tbl_rows from svv_table_info where \"schema\" = 'lab'"
+  # 2.2 the source, its run, the assets (type, forms, AssetCommonDetailsForm's sourceIdentifier)
+  aws datazone list-data-sources --domain-identifier $D --project-identifier $P --type REDSHIFT --profile $S
+  aws datazone list-data-source-runs --domain-identifier $D --data-source-identifier <source> --profile $S
+  aws datazone list-data-source-run-activities --domain-identifier $D --identifier <run> --profile $S
+  aws datazone search --domain-identifier $D --owning-project-identifier $P --search-scope ASSET \
+    --search-text trades_hot --profile $S
+  aws datazone get-asset --domain-identifier $D --identifier <asset> --profile $S
+  # 2.3 the listings, the product, CT-18
+  aws datazone search-listings --domain-identifier $D --search-text trades_hot --profile $S
+  aws datazone search --domain-identifier $D --owning-project-identifier $P --search-scope DATA_PRODUCT \
+    --profile $S
+  ./aws/catalog.py
+  # 2.4 ⚡ the other sessions told first, sandbox/sagemaker/ at sagemaker-prereqs-v0.12.0; this order on
+  AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/sagemaker plan -input=false \
+    -var redshift_serverless_enabled=true -out="$HOME/tmp/s21-sagemaker-on.tfplan"    # 3 to add, 1 to change
+  AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/sagemaker apply -input=false \
+    "$HOME/tmp/s21-sagemaker-on.tfplan"
+  AWS_PROFILE=$G terraform -chdir=terraform-live/data-governance/governance plan -input=false \
+    -var redshift_serverless_enabled=true -out="$HOME/tmp/s21-governance-on.tfplan"   # 0 to add, 1 to change
+  AWS_PROFILE=$G terraform -chdir=terraform-live/data-governance/governance apply -input=false \
+    "$HOME/tmp/s21-governance-on.tfplan"
+  # each slice re-planned with the same -var: No changes
+  aws datazone get-project-profile --domain-identifier $D --identifier dh60xbal05q64w --profile $G \
+    --query "environmentConfigurations[?name=='RedshiftServerless']"
+  # [user] the Redshift Serverless compute added to test-experimentation in the portal. Where the entry is
+  # greyed (docs/SMUS.md's checklist, step 7), the user runs the call it would send:
+  AWS_PROFILE=awsds-infra-sandbox-1 aws datazone create-environment --domain-identifier dzd-d8yrvx1ko7im6o \
+    --project-identifier 4gqfau9xuo6e4w --environment-configuration-id <get-project-profile's id> \
+    --environment-blueprint-identifier dlyaabb17hano0 --name redshift-serverless --region us-west-2
+  # 2.4 the environment, its stack, the compute, the connection, the target
+  aws datazone list-environments --domain-identifier $D --project-identifier $C --profile $S
+  aws datazone get-environment --domain-identifier $D --identifier <env> --profile $S
+  aws cloudformation describe-stacks --stack-name <the stack get-environment names> --profile $S \
+    --query 'Stacks[0].{status: StackStatus, parameters: Parameters}'
+  aws redshift-serverless get-workgroup --workgroup-name redshift-serverless-workgroup-<env> --profile $S \
+    --query 'workgroup.{base: baseCapacity, max: maxCapacity, target: pricePerformanceTarget,
+      subnets: subnetIds, groups: securityGroupIds}'
+  aws redshift-serverless get-namespace --namespace-name redshift-serverless-namespace-<env> --profile $S \
+    --query 'namespace.{key: kmsKeyId, role: defaultIamRoleArn, roles: iamRoles,
+      secret: adminPasswordSecretArn, db: dbName}'
+  aws datazone list-connections --domain-identifier $D --project-identifier $C --type REDSHIFT --profile $S
+  aws datazone list-subscription-targets --domain-identifier $D --environment-identifier <env> --profile $S
+  aws datazone get-subscription-target --domain-identifier $D --environment-identifier <env> \
+    --identifier <target> --profile $S                      # the type, which the list reads null
+  aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=UpdateWorkgroup \
+    --start-time <the create> --profile $S   # a refusal by DenyRedshiftCostGuardTamperingExceptInfrastructure
+  # 2.5 the subscription, its grants, and what DataZone wrote in each namespace, as each admin
+  aws datazone list-subscriptions --domain-identifier $D --owning-project-id $C --profile $S
+  aws datazone list-subscription-grants --domain-identifier $D --subscription-id <subscription> --profile $S
+  q "select * from svv_datashares"
+  q "select * from svv_datashare_objects"
+  q "select * from svv_datashare_consumers"
+  q "select user_id, query_id, start_time, query_text from sys_query_history
+     where start_time > '<the approval>' order by start_time"
+  SECRET2=$(aws redshift-serverless get-namespace --namespace-name redshift-serverless-namespace-<env> \
+    --query namespace.adminPasswordSecretArn --output text --profile $S)
+  q2() { aws redshift-data execute-statement --workgroup-name redshift-serverless-workgroup-<env> \
+    --database dev --secret-arn "$SECRET2" --sql "$1" --query Id --output text --profile $S; }
+  q2 "select * from svv_redshift_databases"
+  q2 "select * from svv_datashares"
+  q2 "select * from svv_relation_privileges where namespace_name = 'project'"
+  q2 "select user_id, query_id, start_time, query_text from sys_query_history
+      where start_time > '<the approval>' order by start_time"
+  # 2.6 both workgroups' compute; the metric lands per half hour
+  aws cloudwatch get-metric-statistics --namespace AWS/Redshift-Serverless --metric-name ComputeSeconds \
+    --dimensions Name=Workgroup,Value=<awsds-sandbox-warehouse, then the consumer's> \
+    --start-time <the sitting's start> --end-time <now> --period 1800 --statistics Sum --profile $S
+  # 2.7 2.5's reads again after the revocation, each with its time
+  # 2.8 the portal's load: the COPY's text names the bucket and the prefix
+  q "select query_id, status, error_message, start_time, query_text from sys_query_history
+     where query_type = 'COPY' and start_time > '<the create>'"
+  q "select * from sys_load_error_detail where start_time > '<the create>'"
+  # 2.9 [user] the compute removed in the portal; 2.4's reads find the environment, stack and compute absent.
+  # ⚡ The reverse of 2.4's order, each slice re-planned without the -var to No changes; ./aws/studio.py's US-3
+  AWS_PROFILE=$G terraform -chdir=terraform-live/data-governance/governance plan -input=false \
+    -out="$HOME/tmp/s21-governance-off.tfplan"                                        # 0 to add, 1 to change
+  AWS_PROFILE=$G terraform -chdir=terraform-live/data-governance/governance apply -input=false \
+    "$HOME/tmp/s21-governance-off.tfplan"
+  AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/sagemaker plan -input=false \
+    -out="$HOME/tmp/s21-sagemaker-off.tfplan"                         # 0 to add, 1 to change, 3 to destroy
+  AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/sagemaker apply -input=false \
+    "$HOME/tmp/s21-sagemaker-off.tfplan"
+  ```
+
+  Pass 3:
+
+  ```bash
+  # 3.1 ⚡ the password generated and never printed; the user created from its MD5 hash (md5sum on Linux)
+  PW=$(aws secretsmanager get-random-password --password-length 32 --exclude-punctuation \
+    --require-each-included-type --query RandomPassword --output text --profile $S)
+  q "CREATE USER lineage_reader PASSWORD 'md5$(printf '%s%s' "$PW" lineage_reader | md5)'"
+  q "GRANT ROLE \"sys:operator\" TO lineage_reader"
+  q "GRANT USAGE ON SCHEMA lab TO lineage_reader"
+  q "GRANT SELECT ON ALL TABLES IN SCHEMA lab TO lineage_reader"
+  aws secretsmanager create-secret --name awsds-sandbox-stage21-lineage-reader \
+    --secret-string "$(jq -cn --arg p "$PW" '{username: "lineage_reader", password: $p}')" \
+    --tags Key=AmazonDataZoneProject,Value=$P --profile $S     # the tag AllowGetSecretForRedShift reads
+  unset PW
+  # [user] the second Redshift connection with AWS Secrets Manager and that secret; 3.2's source on it
+  # 3.2 the connection's lineage job and its run
+  aws datazone list-connections --domain-identifier $D --project-identifier $P --type REDSHIFT --profile $S
+  aws datazone get-connection --domain-identifier $D --identifier <connection> --profile $S \
+    --query props.redshiftProperties.lineageSync
+  aws datazone list-job-runs --domain-identifier $D --job-identifier <lineageJobId> --profile $S
+  aws datazone get-job-run --domain-identifier $D --identifier <run> --profile $S
+  # 3.4 the nodes: their ids in Data Governance's trail (SUP-191), then each node and its history
+  aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=CreateLineageNode \
+    --start-time <the pull> --profile $G
+  aws datazone get-lineage-node --domain-identifier $D --identifier <node> --profile $S
+  aws datazone list-lineage-node-history --domain-identifier $D --identifier <node> --profile $S
+  # 3.5 ⚡ after the user removes the second connection and switches the source's lineage off
+  q "REVOKE ROLE \"sys:operator\" FROM lineage_reader"
+  q "REVOKE ALL ON ALL TABLES IN SCHEMA lab FROM lineage_reader"
+  q "REVOKE USAGE ON SCHEMA lab FROM lineage_reader"
+  q "DROP USER lineage_reader"
+  aws secretsmanager delete-secret --secret-id awsds-sandbox-stage21-lineage-reader \
+    --recovery-window-in-days 7 --profile $S
+  ```
+
+  ```sql
+  -- 3.3 [user], between the switch and the pull: two statements the page supports, two it leaves out
+  CREATE TABLE lab.trades_hot_by_day AS
+    SELECT trade_date, desk, SUM(notional) AS notional FROM lab.trades_hot GROUP BY trade_date, desk;
+  INSERT INTO lab.trades_hot_daily SELECT trade_date, SUM(notional) FROM lab.trades_hot GROUP BY trade_date;
+  UPDATE lab.trades_hot_daily SET notional = notional WHERE trade_date = '2026-11-02';
+  MERGE INTO lab.trades_hot_daily USING (SELECT trade_date, SUM(notional) AS notional FROM lab.trades_hot
+    GROUP BY trade_date) AS s ON trades_hot_daily.trade_date = s.trade_date
+    WHEN MATCHED THEN UPDATE SET notional = s.notional
+    WHEN NOT MATCHED THEN INSERT VALUES (s.trade_date, s.notional);
+  -- only where Stage 19's 5.2 read in place works
+  CREATE TABLE lab.trades_from_lake AS SELECT * FROM awsdatacatalog.<project database>.trades_notional;
+  ```
+
+  Pass 4:
+
+  ```bash
+  # 4.1 ⚡ Recipe D's order: each object alone, read back for IAMAllowedPrincipals before the next
+  NSID='ServerlessIdentifier={NamespaceIdentifier=awsds-sandbox-warehouse,WorkgroupIdentifier=awsds-sandbox-warehouse}'
+  aws redshift register-namespace --namespace-identifier "$NSID" --consumer-identifiers "$A" --profile $S
+  aws redshift describe-data-shares-for-consumer --consumer-arn "arn:aws:glue:us-west-2:$A:catalog" \
+    --profile $S
+  DS='<the datashare ARN listed, ending /ds_internal_namespace in Lake Formation's example>'
+  aws redshift associate-data-share-consumer --data-share-arn "$DS" \
+    --consumer-arn "arn:aws:glue:us-west-2:$A:catalog" --profile $S
+  aws lakeformation register-resource --resource-arn "$DS" --profile $S
+  aws glue create-catalog --name stage21_warehouse --catalog-input "$(jq -cn --arg ds "$DS" '{
+    Description: "Stage 21: the Sandbox warehouse namespace", CreateDatabaseDefaultPermissions: [],
+    CreateTableDefaultPermissions: [], FederatedCatalog: {Identifier: $ds, ConnectionName: "aws:redshift"}}')" \
+    --profile $S
+  aws glue get-catalogs --parent-catalog-id "$A:stage21_warehouse" --recursive --profile $S
+  aws lakeformation list-permissions --resource "{\"Catalog\": {\"Id\": \"$A:stage21_warehouse\"}}" \
+    --profile $S
+  # 4.2 ⚡ the table's catalog id as 4.1's reads give it
+  aws lakeformation grant-permissions --principal \
+    "DataLakePrincipalIdentifier=arn:aws:iam::$A:role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c" \
+    --resource "{\"Table\": {\"CatalogId\": \"$A:stage21_warehouse/sandbox\", \"DatabaseName\": \"lab\",
+      \"Name\": \"trades_hot\"}}" --permissions DESCRIBE SELECT --profile $S
+  # 4.3 and 4.6 the session's identity, and the compute
+  q "select user_id, query_id, start_time, query_text from sys_query_history
+     where start_time > '<the read>' order by start_time"
+  # 4.5 ⚡ the transfer role in sandbox/warehouse/ behind its variable, applied for the sitting: the page's
+  # trust (glue, redshift) and policy (glue:GetCatalog, glue:GetDatabase, kms:GenerateDataKey, kms:Decrypt).
+  # The update passes the whole input get-catalog returned with DataLakeAccessProperties added: whether
+  # UpdateCatalog drops what it is not passed is unread (Lesson 60).
+  aws glue get-catalog --catalog-id "$A:stage21_warehouse" --profile $S
+  aws glue update-catalog --catalog-id "$A:stage21_warehouse" --catalog-input '<that input, with
+    CatalogProperties.DataLakeAccessProperties = {DataLakeAccess: true, DataTransferRole: <its ARN>}>' \
+    --profile $S
+  aws glue get-catalog --catalog-id "$A:stage21_warehouse" --profile $S    # the managed compute, its status
+  aws redshift-serverless list-workgroups --profile $S
+  aws redshift describe-clusters --profile $S
+  aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=CreateCluster \
+    --start-time <the switch> --profile $S                  # a refusal by DenyRedshiftProvisionedClusters
+  aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=CreateWorkgroup \
+    --start-time <the switch> --profile $S
+  # 4.8 ⚡ in the sitting, each read back absent: data lake access off by the same update, then the catalog.
+  # The deletion page names the catalog's delete alone; the order after it is 4.1's reversed.
+  aws glue delete-catalog --catalog-id "$A:stage21_warehouse" --profile $S
+  aws lakeformation deregister-resource --resource-arn "$DS" --profile $S
+  aws redshift disassociate-data-share-consumer --data-share-arn "$DS" \
+    --consumer-arn "arn:aws:glue:us-west-2:$A:catalog" --profile $S
+  aws redshift deregister-namespace --namespace-identifier "$NSID" --consumer-identifiers "$A" --profile $S
+  # then sandbox/warehouse/'s transfer-role variable off, planned and applied
+  ```
+
+  Pass 5:
+
+  ```bash
+  # 5.1 [user], an eighth-experimentation space, as the project role: 1.4's generator, then
+  aws s3 cp --recursive stage21-images/ \
+    s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/stage21-images/
+  aws glue get-database --name <the project database> --query Database.LocationUri
+  # 5.2 to 5.4 the asset, the grants by item, CT-17 and CT-18
+  aws datazone search --domain-identifier $D --owning-project-identifier $P --search-scope ASSET \
+    --search-text stage21 --profile $S
+  aws datazone get-asset --domain-identifier $D --identifier <asset> --profile $S
+  aws datazone list-subscription-grants --domain-identifier $D --subscription-id <subscription> --profile $S
+  aws s3control list-access-grants --account-id "$A" --profile $S
+  ./aws/catalog.py
+  # 5.5 [user], a test-experimentation notebook, as the project role
+  aws s3control get-data-access --account-id "$(aws sts get-caller-identity --query Account --output text)" \
+    --permission READ \
+    --target 's3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/stage21-images/*'
+  # 5.5 to 5.7 each call's identity and refusal
+  aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=GetDataAccess \
+    --start-time <the request> --profile $S
+  ```
+
+  ```sql
+  -- 5.1 [user], the query editor on Athena, the project database; the generator's VALUES list after AS
+  CREATE TABLE stage21_images
+  WITH (table_type = 'ICEBERG', is_external = false, location = '<LocationUri>/stage21_images/') AS
+  SELECT * FROM (VALUES ...) AS t (object_key, tom, width, height, size_bytes);
+  ```
+- **[Claude, the orchestrating session] 1.5's Recipe B**, 02:01 to 02:05: commit `e9f85352`, the module
+  alone, its hooks run with `pre-commit run --files` while a subagent's edits stood unstaged in the worktree;
+  `git ls-remote` read `sagemaker-prereqs-v0.11.0` as origin's newest, so the tag `sagemaker-prereqs-v0.12.0`,
+  pushed alone with the branch and read back on origin at `e9f85352`; `sandbox/sagemaker/` moved to it with
+  its switch in `d52604a1`. `terraform init` downloaded the tag, and `sandbox/sagemaker/` and
+  `data-governance/governance/` planned *"No changes. Your infrastructure matches the configuration."* with
+  the switches off. `SUP-377` (`GetAssetType`) and `SUP-378` (the template's sentinels) written from 1.3's
+  readings, and a dated reading appended to `SUP-193`.

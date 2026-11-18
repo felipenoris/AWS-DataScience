@@ -389,9 +389,17 @@ locals {
     # is Terraform. `check-tf-conventions` catches the literal, a portability defect that reads as
     # data; `aws/dns-allowlist.py` catches the wrong interpolation, because it resolves
     # `${var.region}` and reports anything else as unresolved rather than guessing. Terraform
-    # accepts both and says `No changes` either way, so only the instrument tells them apart. It is
-    # the only regional entry on this plane.
+    # accepts both and says `No changes` either way, so only the instrument tells them apart. It and
+    # the domain's own URL below are the regional entries on this plane.
     "sagemaker-unified-studio-mcp.${var.region}.api.aws",
+    # The SMUS domain's own URL, the portal's host, allowed by its exact name 2026-11-17 (the user,
+    # 6d decision 6). A Studio component asks for it at every app start (6d 3.4) and it has no VPC
+    # endpoint: `/awsds/prod/proxy` held 21 refusals of it, `403 TCP_DENIED`, from 21 Sandbox
+    # addresses between 2026-09-19 and 2026-10-16. A bare name, because `.sagemaker.<region>.on.aws`
+    # would admit every customer's domain portal. The id is `awsds-studio`'s, as `datazone
+    # list-domains` prints it in Data Governance, and a literal, since the instrument resolves
+    # `${var.region}` alone; a new domain changes this entry.
+    "dzd-d8yrvx1ko7im6o.sagemaker.${var.region}.on.aws",
     # The VS Code extension gallery needs both names (measured 2026-09-09, 6d 8.6). `open-vsx.org`
     # serves the API and the manifest; `openvsx.eclipsecontent.org` serves the `.vsix` bytes. The
     # install goes to the first, is redirected to the second, and Squid matches the hostname the

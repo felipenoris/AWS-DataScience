@@ -98,10 +98,21 @@ module "manage_access_role" {
   # policy (v18) carries the opt-in and the grants a subscription to a Glue table is fulfilled
   # with. Measured 2026-10-20 (Stage 18 7.2): CREATE_FAILED with the SageMaker policy alone,
   # ACTIVE in 40 s with both.
-  managed_policy_arns = [
-    "arn:${data.aws_partition.current.partition}:iam::aws:policy/AmazonDataZoneSageMakerManageAccessRolePolicy",
-    "arn:${data.aws_partition.current.partition}:iam::aws:policy/service-role/AmazonDataZoneGlueManageAccessRolePolicy",
-  ]
+  #
+  # The Redshift policy (v5, read 2026-11-18 at Stage 21 1.3) joins while
+  # var.redshift_serverless_enabled is on: AWS's SMUS-IaC sample attaches it beside the other two, and
+  # it carries the datashare authorization and consumer association a subscription to a Redshift asset
+  # is fulfilled with, on datashares named datazone*. Neither of the other two carries a redshift:
+  # action.
+  managed_policy_arns = concat(
+    [
+      "arn:${data.aws_partition.current.partition}:iam::aws:policy/AmazonDataZoneSageMakerManageAccessRolePolicy",
+      "arn:${data.aws_partition.current.partition}:iam::aws:policy/service-role/AmazonDataZoneGlueManageAccessRolePolicy",
+    ],
+    var.redshift_serverless_enabled ? [
+      "arn:${data.aws_partition.current.partition}:iam::aws:policy/service-role/AmazonDataZoneRedshiftManageAccessRolePolicy",
+    ] : [],
+  )
 }
 
 resource "aws_iam_policy" "project_boundary" {

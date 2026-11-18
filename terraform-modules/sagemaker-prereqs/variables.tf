@@ -244,3 +244,15 @@ variable "blueprint_names" {
     "SageMakerAIDomain",
   ]
 }
+
+# The RedshiftServerless blueprint, category 3 in docs/SMUS.md, configured for one Sandbox sitting by
+# Stage 21 decision 1 (b) (taken 2026-11-17): a consumer project's own workgroup, the target AWS's pages
+# deliver a subscribed Redshift asset to. It stays out of var.blueprint_names, which the other callers
+# pass whole, and out of US-3's allow-list, which reads red while this is on. The profile in
+# data-governance/governance/ locks the workgroup's capacity.
+variable "redshift_serverless_enabled" {
+  description = "Stage 21 decision 1 (b): true configures RedshiftServerless beside var.blueprint_names, with its grant, the project CMK's RedshiftCreateGrantKmsPermissions statement (kms.tf) and AWS's Redshift manage-access policy (roles.tf). false between sittings."
+  type        = bool
+  default     = false
+  nullable    = false
+}

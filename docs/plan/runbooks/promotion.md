@@ -1103,8 +1103,8 @@ on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its pla
 - **A second application**: Stage 10's chain order and xxv (decision 18). `<env>/chains/` takes it as an
   entry of its `applications` and `chains` maps; the split of `staging/orchestration/` per application
   (Stage 8 decision 27) retired with that slice (Stage 19 item 31). The first in the targets is Stage 17's
-  `app-ml` (9.7), then `app-genai` (10.6); Stage 20's `app-dbt` stays in Sandbox under its decision 9 (a),
-  recommended. The three are written in `examples/` since 2026-11-17 and none is deployed. Neither of
+  `app-ml` (9.7), then `app-genai` (10.6); Stage 20's `app-dbt` follows under its decision 9 (b), taken
+  2026-11-17: its pass 8 releases it through both targets. The three are written in `examples/` since 2026-11-17 and none is deployed. Neither of
   Stage 17's consumes another application's marker as written, so xxv stays open on them.
 - **A `monitoring` endpoint** as the positive control: Stage 10 xvi's metrics clause.
 - **S3 data events** (Stage 11): Stage 8 xx's writing identity.
@@ -1131,7 +1131,7 @@ holds one goal: what needs nothing up runs before it, a sitting that needs no Gi
 application reaches a Sandbox space as a tar built on the laptop (Stage 20 step 2.0), never through
 GitLab. Sittings that need the hub may share one hub start. The order is the dependencies', not a
 calendar; the waiting list's "Sittings with the environment up" says what each closes, and its Dates
-bound items 3, 5, 6 and 9.
+bound items 3, 5, 6, 9 and 11.
 
 1. **With nothing up, done 2026-11-17.** Release G's step 3, `production/studio/`, applied at 13:11 UTC on
    the user's word naming it, from the plan saved at 05:06 UTC from `main` at `80e996f5` (2 added, 2
@@ -1156,13 +1156,17 @@ bound items 3, 5, 6 and 9.
    project created before 6d's step 2.7 applies the profile takes that step's path for living projects.
    Left: the projects `app-ml-dev` and `app-genai-dev` created with their contributors and Nova Lite
    enabled (9.6, 10.4), after which Claude plans the Sandbox slices that read the projects' roles and the
-   user applies them.
+   user applies them; the project `app-dbt-dev` with its contributors (Stage 20 2.0), then its
+   `sandbox/workflows/` line, which Claude writes and the user applies; Stage 20 decisions 14 to 17; and
+   Stage 20 8.4's applies of the four `[P]` slices its pass 8 wrote on 2026-11-18, which close their
+   Lesson 69 window.
 3. **Release G's sitting** (N.8.5 steps 2, 4 and 5): the hub, GitLab with `BUILD=1`, `staging/egress/`
    raised before the tag and destroyed after the Staging leg, `production/workloads-egress/` before
    `production-gate`; the local user's password rotated before the first push (N.8.2 step 3), the mirror
    at `main`, the template's merge request of eight files, the tag `v0.6.0` and Production's leg read.
-   With GitLab up, the same sitting creates `awsds/app-ml` and `awsds/app-genai`
-   ([`sagemaker-application.md`](sagemaker-application.md) §L) and takes a backup: the newest, of
+   With GitLab up, the same sitting creates `awsds/app-ml`, `awsds/app-genai` and `awsds/app-dbt`
+   ([`sagemaker-application.md`](sagemaker-application.md) §L; `app-dbt`'s first push and its mirror push
+   wait on item 10 and Stage 20's 8.5) and takes a backup: the newest, of
    2026-11-16 03:01 UTC, leaves the bucket on 2026-12-17. Between 2026-11-22 and 2026-11-25 it carries
    N.8.3 on the same hub start.
 4. **Nothing up, after release G**: Stage 19 4.12, the Governance Manager made a contributor of
@@ -1172,7 +1176,7 @@ bound items 3, 5, 6 and 9.
    it: `EXC-13`'s Production half after the admin secret's first rotation, scheduled 2026-11-22 01:59:59
    UTC, and the free trial's pair.
 6. **Sandbox sitting A**, `make hub-up` then `make up ENV=sandbox GROUPS=mwaa`, no GitLab: Stage 20's
-   passes 2 and 3, dbt on a worker and its lineage events, and 4.5 once item 2's applies ran; before
+   passes 2 and 3 in `app-dbt-dev`, after item 2's project and line, dbt on a worker and its lineage events, and 4.5 once item 2's applies ran; before
    2026-12-18, when dbt Core 1.11's critical support ends.
 7. **Sandbox sitting B**, `GROUPS=mwaa,mlflow`, no GitLab: Stage 17's 1.4 and 1.6, the first tracking
    call, then 9.6, `app-ml` trained, registered and scored in `app-ml-dev`. Stage 17's passes 2 to 5 are
@@ -1182,28 +1186,36 @@ bound items 3, 5, 6 and 9.
    token volume sets 6e decision 6's threshold.
 9. **The Sandbox warehouse sitting**, `GROUPS=redshift`: Stage 19's pass 5 after 4.12, 5b's
    `max_query_execution_time` test, and 6h's negatives after 6h decision 8;
-   [Stage 21](../stages/stage-21-redshift-s3-data-products.md)'s passes 2 to 4 after its 1.3 readings and
-   1.5's code, its `RedshiftServerless` blueprint on for the sitting alone; before 2026-12-19, so the trial
+   [Stage 21](../stages/stage-21-redshift-s3-data-products.md)'s passes 2 to 4, its 1.3 readings and 1.5's
+   code done 2026-11-18 (`sagemaker-prereqs-v0.12.0`), after the user's reading of the enable wizard, its
+   `RedshiftServerless` blueprint on for the sitting alone; before 2026-12-19, so the trial
    absorbs them (5b decision 9, taken 2026-11-17), ahead of items 6 to 8 when they are not ready first,
    since it depends on none of them. Stage 21's pass 5 needs no warehouse and rides any Sandbox sitting.
 10. **With nothing up, before `app-ml`'s first tag**: `scripts/deploy-application.py`,
     `scripts/model-chain.py` and their hooks taught a second application, kept out of the day's pull
     request so that release G's leg runs the script it was read with; the subagents' patches of
     2026-11-17 are in `$HOME/tmp/stage17-proposals/` with a README, the two `deploy-application.py`
-    proposals merged by hand; then the template's pins read against the lint's release.
-11. **`app-ml`'s first release** (Stage 17 9.7), a promotion sitting after items 7 and 10.
-12. **With nothing up, after item 8**: Stage 17's 10.5, the exception and the names in the targets, once
+    proposals merged by hand; then the template's pins read against the lint's release; and Stage 20's
+    `app-dbt`: an application with no image whose workgroup comes from the `Tooling` environment (Stage 20
+    8.1).
+11. **`app-dbt`'s first release** (Stage 20 pass 8), after items 3, 6 and 10 and Stage 20's 8.3 to 8.7:
+    the hub and GitLab; `staging/egress/` raised before the tag `v0.1.0` and destroyed after
+    `staging-catalog`, `production/workloads-egress/` raised before `production-gate`, each with its
+    `athena` endpoint (Stage 20 decision 15); before 2026-12-18, or after the archive moves to dbt 1.12. It
+    can share a hub start with `app-ml`'s release.
+12. **`app-ml`'s first release** (Stage 17 9.7), a promotion sitting after items 7 and 10.
+13. **With nothing up, after item 8**: Stage 17's 10.5, the exception and the names in the targets, once
     10.4 read a first answer from Nova Lite through Sandbox's in-Region profile; its threat-model entry
     accepted before its applies.
-13. **`app-genai`'s first release** (Stage 17 10.6), a promotion sitting after item 12 and a gates tag
+14. **`app-genai`'s first release** (Stage 17 10.6), a promotion sitting after item 13 and a gates tag
     whose pip-audit step passes an application with no runtime package.
-14. **`app-etl`'s model half retired** (Stage 17 9.11), a release of `app-etl` after items 3 and 11, then
+15. **`app-etl`'s model half retired** (Stage 17 9.11), a release of `app-etl` after items 3 and 12, then
     the estate's pull request, planned from a `main` that holds it (Lesson 79).
-15. **The stages' close**: after items 3 and 5, Stages 8, 9 and 10 hold only what N.5 lists, and each can
+16. **The stages' close**: after items 3 and 5, Stages 8, 9 and 10 hold only what N.5 lists, and each can
     close as Stage 4 did, what waits moved to the trigger or the stage that provides its subject. The
     user's decision, read then.
-16. **What waits on something else** (N.5): a second application in a chain that consumes another's
-    marker, a `monitoring` endpoint, Stage 11's S3 data events, a release that removes a file (item 14),
+17. **What waits on something else** (N.5): a second application in a chain that consumes another's
+    marker, a `monitoring` endpoint, Stage 11's S3 data events, a release that removes a file (item 15),
     a workflow's 50th version, a blueprint reconciliation, and the halves no step provokes.
 
 ### N.7 The sittings prepared 2026-10-26

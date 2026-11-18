@@ -31,8 +31,8 @@ locals {
   deployment_keys                = "arn:${local.partition}:kms:${local.region_account}:key/*"
   # The applications' product databases, the same name in every account's catalog (Stage 19 decision
   # 2 (d)), and the parameter each application's stage variables are recorded in
-  # (terraform-modules/orchestration).
-  deployment_product_databases = ["app_etl"]
+  # (terraform-modules/orchestration). app_dbt is app-dbt's (Stage 20 step 8.2).
+  deployment_product_databases = ["app_etl", "app_dbt"]
   deployment_stage_variables   = "arn:${local.partition}:ssm:${local.region_account}:parameter/datascience/${var.env}/applications/*/stage-variables"
 }
 

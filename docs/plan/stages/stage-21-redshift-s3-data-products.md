@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Written 2026-11-17, nothing run** ([log](../../log/log-stage-21-redshift-s3-data-products.md)): the plan, the user's questions of 2026-11-17 answered from AWS's pages read that day and from this estate's measurements, and decisions 1 to 3, taken the same day: 1 (b), the consumer's own workgroup by the `RedshiftServerless` blueprint for one sitting; 2 (a), a second connection by secret for lineage; 3 (b), the federated catalog with data lake access for one sitting. Pass 1 needs nothing up, 1.5's code among it. Passes 2 to 4 ride the Sandbox warehouse sitting ([`runbooks/promotion.md`](../runbooks/promotion.md) §N.6 item 9), before 2026-12-19 if the free trial is to absorb them. Pass 5 needs no warehouse and rides any Sandbox sitting with a space in both projects |
+| **Status** | **Pass 1 done 2026-11-18** ([log](../../log/log-stage-21-redshift-s3-data-products.md)). Written 2026-11-17: the plan, the user's questions of 2026-11-17 answered from AWS's pages read that day and from this estate's measurements, and decisions 1 to 3, taken the same day: 1 (b), the consumer's own workgroup by the `RedshiftServerless` blueprint for one sitting; 2 (a), a second connection by secret for lineage; 3 (b), the federated catalog with data lake access for one sitting. 1.3's readings, 2026-11-18 with nothing up: the blueprint's template holds the base capacity at 4 RPU through a locked `redshiftBaseCapacity`, so decision 1 stands. 1.5's code written the same day, off by default, both slices planned *"No changes."*; the tag `sagemaker-prereqs-v0.12.0` pushed the same night by Recipe B and `sandbox/sagemaker/` moved to it, re-planned *"No changes."*; owed: the user's reading of the console's enable wizard before 2.4. Passes 2 to 4 ride the Sandbox warehouse sitting ([`runbooks/promotion.md`](../runbooks/promotion.md) §N.6 item 9), before 2026-12-19 if the free trial is to absorb them; their commands are in the log's entry of 2026-11-18. Pass 5 needs no warehouse and rides any Sandbox sitting with a space in both projects |
 | **Prerequisites** | [5b](stage-05b-redshift-serverless.md) and [6h](stage-06h-redshift-connection.md): the Sandbox warehouse at 4 base RPUs and `eighth-experimentation`'s connection, which writes and reads the schema `lab` in the `sandbox` database (6h passes 0 to 2, 2026-10-10). [Stage 19](stage-19-smus-native-data-product.md)'s Glue road: a table imported by a project's source, published, packaged in a product and subscribed inside one account (verification vi, 2026-11-14); its pass 5, whose 5.3 publishes the estate's first Redshift asset and subscribes nothing. `test-experimentation`'s `DataLake` environment ([6f](stage-06f-data-governance.md) 2.0), the Glue subscription target. The account's S3 Access Grants instance, created by SageMaker Unified Studio with one location per project ([`docs/SMUS.md`](../../SMUS.md), "The vending surface under that same path", 2026-08-23). For pass 2's subscription, 1.5's code merged and tagged, off by default (decision 1 (b)). Nothing blocks pass 1 |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D26](../decisions/D26-unified-studio.md), [D40](../decisions/D40-redshift-warehouse.md); [D12](../decisions/D12-budget-ceiling.md) for the cost; 6h decisions 3 and 8, [Stage 9](stage-09-deployment-targets.md) decision 5 and Stage 19 decision 9, each read against its premises |
 | **Proves** | — (no `INT-nn` row: everything runs in Sandbox, and the domain in Data Governance is reached through the doors Stage 19 measured). What it does prove: whether SageMaker Unified Studio's standard path carries a Redshift table, the namespace seen through the Glue Data Catalog, and an S3 prefix of images through publication, a data product and a subscription as it carries a Glue table; which engine and which compute the consumer needs for each; and what lineage the catalog draws for the warehouse |
@@ -314,6 +314,31 @@ decision for the user, named by its number in Decisions due. Read from `main` `7
     `create-ns-catalog` and Redshift's namespace-registration pages, and the data transfer role's trust
     and policy from `redshift-ns-prereqs`.
   The commands of passes 2 to 5 are written into the log from these readings before the sitting.
+  **Done 2026-11-18**, 00:39 to 00:55 UTC, read-only, the asset types as `awsds-infra-data`, since
+  `get-asset-type` refuses Sandbox's caller (the log, with the commands of passes 2 to 5; `SUP-377`, `SUP-378`). The readings 1.5
+  and the sittings turn on:
+  - the template `DataZone-Amazon-SageMaker-RedshiftServerlessDefault-prod-20250515` takes
+    `redshiftBaseCapacity` and `redshiftMaxCapacity` as Numbers with no `AllowedValues`; a base other than
+    its 128 becomes the workgroup's `BaseCapacity` and drops the price-performance target, so a locked
+    override of 4 holds the floor and decision 1 stands. The blueprint's user parameter defaults
+    `redshiftMaxCapacity` to 512, and no AWS page states whether a maximum may equal the base;
+  - the namespace's default and only IAM role is the project role, and its key the template's `kmsKeyArn`
+    when DataZone passes one, which 2.4 reads in the stack's parameters; the workgroup takes the `Tooling`
+    stack's subnets and security group; every parameter without a default is DataZone's, none a user
+    parameter;
+  - the key-permissions page names one Redshift statement, `RedshiftCreateGrantKmsPermissions`, and the
+    provisioning role's managed policy (v86) allows `kms:CreateGrant` through no Redshift endpoint;
+  - that policy's `RssMng` allows `UpdateWorkgroup` on workgroups tagged `AmazonDataZoneProject`, which the
+    root's `DenyRedshiftCostGuardTamperingExceptInfrastructure` denies to every role but
+    `InfrastructureAccess`: a create or an *Update project* that calls it fails, read in the trail at 2.4;
+  - `test-experimentation`'s only data target is its `DataLake` environment's `GlueSubscriptionTargetType`,
+    authorized to `abac:CURRENT_PROJECT`, its manage-access role the project role; no Redshift target;
+  - the producer's Redshift connection authenticates by IAM through its access role, database `dev`, its
+    `lineageSync` on and failing every day;
+  - the Access Grants instance holds four locations, the lake's and one for each of
+    `eighth-experimentation`, `test-experimentation` and `app-etl-dev`, and five grants, none from a
+    subscription;
+  - the console's enable wizard (the checklist's step 4) is unread: the user's act before 2.4.
 - **1.4 [Claude] The images' generator**, below, run by the user in pass 5; it writes PNG files with the
   standard library alone, so nothing is installed and no third-party picture is used:
 
@@ -351,7 +376,23 @@ decision for the user, named by its number in Decisions due. Read from `main` `7
   `experimentation` profile, its base capacity and, if the template has one, its maximum locked at 4 RPU by
   parameter overrides that are not editable. `sandbox/sagemaker/` moves to the tag. Each slice is planned
   `No changes` with the variables off. `US-3`'s allow-list stays as it is, so the check reads red, with
-  its own message, while the variables are on.
+  its own message, while the variables are on. **Written 2026-11-18**, each half behind a
+  `redshift_serverless_enabled` that defaults to false:
+  - `sagemaker-prereqs`: `RedshiftServerless` joins the configured set beside `var.blueprint_names`, so
+    its roster guard and its grant follow; the project key gains `RedshiftCreateGrantKmsPermissions`; the
+    manage-access role gains AWS's `service-role/AmazonDataZoneRedshiftManageAccessRolePolicy` (v5), which
+    AWS's SMUS-IaC sample attaches and which holds the datashare authorization the other two policies lack;
+  - `data-governance/governance/`: `experimentation` gains the `ON_DEMAND` configuration at order 14,
+    `redshiftBaseCapacity` and `redshiftMaxCapacity` locked at `"4"`, and the profile's precondition
+    admits the blueprint while the switch is on.
+
+  Planned with the switches off, `sandbox/sagemaker/` against the module by its local path, then reverted
+  to `?ref=sagemaker-prereqs-v0.11.0` and re-initialised: *"No changes."* in both slices, 43 and 23
+  no-ops. With them on, unsaved: 3 to add and 1 to change in Sandbox (the configuration, its grant, the
+  policy attachment; the key's policy), 1 to change in Data Governance (the profile). Tagged
+  `sagemaker-prereqs-v0.12.0` the same night, after `git ls-remote` read `v0.11.0` as origin's newest, and
+  `sandbox/sagemaker/` moved to it with its switch, Recipe B's second commit: *"No changes."* in both slices
+  from that tree.
 
 ### 2. A Redshift table as a data product
 
@@ -400,8 +441,9 @@ pass's end.
   missing default role the institution's environment met. Nothing is granted to the role (5b decision 5).
 - **2.9 The consumer's workgroup removed**, after 2.7. **[user]** The compute removed from
   `test-experimentation` in the portal. **[Claude] reads** the environment, its stack, the workgroup and the
-  namespace absent. **[Claude⚡]** On the user's word, 1.5's variables off, both slices applied and re-planned
-  `No changes`; `US-3` read green.
+  namespace absent. **[Claude⚡]** On the user's word, 1.5's variables off, `data-governance/governance/`
+  then `sandbox/sagemaker/` applied, the reverse of 2.4's order, and re-planned `No changes`; `US-3` read
+  green.
 
 ### 3. Lineage from the warehouse
 
@@ -597,8 +639,8 @@ Each write is on the user's word, in this order, each object read before its del
 3. **[Claude⚡] The lineage credentials** (3.5), if 3.5 did not run: the second connection by a member, the
    user dropped, the secret deleted with no recovery window.
 4. **[user] then [Claude⚡] The consumer's workgroup** (2.9), if 2.9 did not run: the compute removed in
-   the portal and read absent with its stack; 1.5's variables off, `sandbox/sagemaker/` and
-   `data-governance/governance/` applied and re-planned `No changes`.
+   the portal and read absent with its stack; 1.5's variables off, `data-governance/governance/` then
+   `sandbox/sagemaker/` applied and re-planned `No changes`.
 5. **[user] The tables and the images**: `DROP` of `lab.trades_hot_daily`, `lab.trades_hot_by_desk` and
    `lab.trades_hot` unless Stage 19 keeps its copy; the files under `shared/stage21-images/` and the table
    `stage21_images`.

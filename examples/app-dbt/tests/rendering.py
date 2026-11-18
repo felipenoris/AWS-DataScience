@@ -32,6 +32,9 @@ RESOLVED = {
     "stage.name": "dev",
 }
 
+# The manifest's stages: the application's own Sandbox project, then the deployment projects.
+STAGES = ("dev", "staging", "prod")
+
 
 def manifest() -> dict[str, Any]:
     return yaml.safe_load((ROOT / "manifest.yaml").read_text(encoding="utf-8"))

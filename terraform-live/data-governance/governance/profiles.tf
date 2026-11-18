@@ -49,9 +49,9 @@ resource "awscc_datazone_project_profile" "this" {
     precondition {
       condition = (
         each.value.blueprints[0] == "Tooling" &&
-        alltrue([for bp in each.value.blueprints : contains(local.category_one_blueprints, bp)])
+        alltrue([for bp in each.value.blueprints : contains(local.admitted_blueprints, bp)])
       )
-      error_message = "A profile bundles blueprints of decision 5's category 1 only, Tooling first (locals.tf)."
+      error_message = "A profile bundles blueprints of decision 5's category 1 only, Tooling first, and RedshiftServerless only while Stage 21's switch is on (locals.tf)."
     }
   }
 }

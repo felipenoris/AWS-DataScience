@@ -73,6 +73,15 @@ locals {
     "SageMakerAIDomain",
   ]
 
+  # The blueprints a profile may bundle: category 1, and RedshiftServerless, category 3, while Stage
+  # 21's switch is on (var.redshift_serverless_enabled, decision 1 (b)). Appended last, so every
+  # environment above keeps its `deployment_order`. data.tf resolves each one's id, profiles.tf's
+  # precondition admits no other, and `experimentation` bundles them all.
+  admitted_blueprints = concat(
+    local.category_one_blueprints,
+    var.redshift_serverless_enabled ? ["RedshiftServerless"] : [],
+  )
+
   member_account_ids = {
     sandbox    = data.aws_caller_identity.sandbox.account_id
     staging    = data.aws_caller_identity.staging.account_id
@@ -127,7 +136,7 @@ locals {
     {
       experimentation = {
         account     = "sandbox"
-        blueprints  = local.category_one_blueprints
+        blueprints  = local.admitted_blueprints
         group       = "sso-group-data-scientists"
         description = "Experimentation (D21): the unit of work is a notebook. Provisions into a business unit's Sandbox."
       }
@@ -275,6 +284,20 @@ locals {
   # configuration is a diff on every plan (read 2026-10-30).
   sagemaker_ai_domain_defaults_only = false
 
+  # The RedshiftServerless overrides (Stage 21 1.3: the template
+  # DataZone-Amazon-SageMaker-RedshiftServerlessDefault-prod-20250515, read 2026-11-18). Both are
+  # Numbers with no AllowedValues. redshiftBaseCapacity defaults to 128, which the template omits,
+  # setting a price-performance target at level 50 instead; any other value becomes the workgroup's
+  # BaseCapacity and drops the target. redshiftMaxCapacity defaults to 0 in the template, which omits
+  # MaxCapacity, and to "512" in the blueprint's user parameter. Both are locked at D40's floor of
+  # 4 RPU (Lesson 5): unlocked, the blueprint's defaults give a workgroup on that target with a
+  # 512-RPU maximum. No AWS page states MaxCapacity's range, and whether the service takes a maximum
+  # equal to the base is Stage 21 2.4's reading.
+  redshift_serverless_parameters = [
+    { name = "redshiftBaseCapacity", value = "4", is_editable = false },
+    { name = "redshiftMaxCapacity", value = "4", is_editable = false },
+  ]
+
   blueprint_parameters = merge(
     {
       Tooling = local.tooling_parameters
@@ -286,6 +309,7 @@ locals {
       ]
     },
     local.sagemaker_ai_domain_defaults_only ? {} : { SageMakerAIDomain = local.sagemaker_ai_domain_parameters },
+    var.redshift_serverless_enabled ? { RedshiftServerless = local.redshift_serverless_parameters } : {},
   )
 
   # The overrides each profile passes, by profile name. `lake-publishing` and the deployment

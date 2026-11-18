@@ -4,9 +4,10 @@
                              project's VpcConfig and network isolation; an endpoint configuration
                              on ml.m5.large under the project key; CreateEndpoint. It prints the
                              time to InService, sends validation.csv's features through
-                             InvokeEndpoint and recomputes the AUC from the answers, then deletes
-                             the endpoint, its configuration and the model, whatever happened
-                             (decision 6: no endpoint outlives its sitting)
+                             InvokeEndpoint and recomputes the AUC from the answers. The endpoint,
+                             its configuration and the model stay after the run (decision 6): it
+                             prints what it kept, the endpoint's price, and the commands its
+                             member deletes and recreates the endpoint with
     transform PACKAGE_ARN [--no-volume-key]
                              4.3: the same model and CreateTransformJob over validation.csv on
                              ml.m5.large, the volume and the output under the project key, the
@@ -19,8 +20,9 @@
                              named by a serverless endpoint configuration, 1024 MB, expected
                              refused by the service. Anything admitted is deleted in the run
 
-Every object carries the project tag and an ml-demo- name; the model is deleted at the end of
-each run. It prints counts, an AUC and every refusal whole, never a row.
+Every object carries the project tag and an ml-demo- name. A transform or serverless run deletes the
+models and configurations it created; an endpoint run keeps its three objects. It prints counts, an
+AUC and every refusal whole, never a row.
 
     /opt/awsds/venv/bin/python serve.py endpoint <the version's ModelPackageArn>
 """
@@ -50,6 +52,7 @@ from common import (
 from sklearn.metrics import roc_auc_score
 
 INSTANCE_TYPE = "ml.m5.large"
+HOSTING_USD_PER_HOUR = 0.115  # real-time hosting on ml.m5.large in us-west-2, docs/PRICING.md
 BATCH_ROWS = 200  # rows per InvokeEndpoint call, far under the 6 MB payload limit
 SERVERLESS_MB = 1024
 
@@ -102,6 +105,33 @@ def delete_all(sagemaker, created: list) -> None:
             print(refusal(err))
             continue
         print(f"{kind} {name}: deleted")
+
+
+def keep(values: dict, created: list) -> None:
+    """Print what an endpoint run leaves standing (decision 6) and how its member ends it.
+
+    The model and the endpoint configuration bill nothing at rest; the endpoint bills while it
+    exists, and no slice, make down or make status reaches it.
+    """
+    for kind, name in created:
+        print(f"{kind} {name}: kept")
+    endpoints = [name for kind, name in created if kind == "endpoint"]
+    configs = [name for kind, name in created if kind == "endpoint configuration"]
+    if not endpoints:
+        return
+    name = endpoints[0]
+    print(
+        f"the endpoint bills {HOSTING_USD_PER_HOUR:.3f} USD an hour, "
+        f"{HOSTING_USD_PER_HOUR * 24:.2f} a day, until its member deletes it:"
+    )
+    print(f"    aws sagemaker delete-endpoint --endpoint-name {name}")
+    if configs:
+        tags = " ".join(f"Key={t['Key']},Value={t['Value']}" for t in project_tags(values))
+        print("and recreates it from the configuration that stays:")
+        print(
+            f"    aws sagemaker create-endpoint --endpoint-name {name} "
+            f"--endpoint-config-name {configs[0]} --tags {tags}"
+        )
 
 
 def validation_table(values: dict) -> pd.DataFrame:
@@ -189,7 +219,7 @@ def endpoint(values: dict, package_arn: str) -> int:
         print(f"AUC recomputed from the endpoint: {roc_auc_score(table[0], scores):.4f}")
         return 0
     finally:
-        delete_all(sagemaker, created)
+        keep(values, created)
 
 
 def transform(values: dict, package_arn: str, no_volume_key: bool) -> int:

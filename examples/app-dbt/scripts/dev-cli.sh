@@ -3,7 +3,7 @@
 # project's role (Stage 8 decision 22). Every argument is the CLI's own:
 #
 #   scripts/dev-cli.sh deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
-#   scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-etl
+#   scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-dbt
 #
 # It runs the house environment's CLI by its path, whatever a space's PATH resolves: up to the house
 # image's version 10 the SageMaker Distribution's aws-smus-cicd-cli 1.0.8 comes first and refuses the

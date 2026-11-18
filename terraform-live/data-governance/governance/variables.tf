@@ -53,6 +53,13 @@ variable "lake_publishing_enabled" {
   default     = false
 }
 
+variable "redshift_serverless_enabled" {
+  description = "Stage 21 decision 1 (b), for one sitting: true appends an ON_DEMAND RedshiftServerless configuration to the `experimentation` profile, its base and maximum capacity locked at 4 RPU (locals.tf). Applied after sandbox/sagemaker/'s own switch has configured the blueprint in Sandbox, and turned off before it. false between sittings."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
 variable "domain_name" {
   description = "The SMUS domain name. One domain for the whole design (D26) - the plural is the thing INT-12's forbidden fallback would create."
   type        = string
