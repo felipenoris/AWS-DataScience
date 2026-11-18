@@ -1157,8 +1157,10 @@ bound items 3, 5, 6, 9 and 11.
    Left: the projects `app-ml-dev` and `app-genai-dev` created with their contributors and Nova Lite
    enabled (9.6, 10.4), after which Claude plans the Sandbox slices that read the projects' roles and the
    user applies them; the project `app-dbt-dev` with its contributors (Stage 20 2.0), then its
-   `sandbox/workflows/` line, which Claude writes and the user applies. Stage 20's decisions 14 to 17
-   were taken on 2026-11-18 and their changes written, `app-dbt` pinned to `awsds-workflows` `4613ddc`.
+   `sandbox/workflows/` line, which Claude writes and the user applies; and Stage 20 8.3's two
+   `create-environment` calls on the user's word naming each, then `staging/studio/`'s
+   `product_databases` line. Stage 20's decisions 14 to 17 were taken on 2026-11-18 and their changes
+   written, `app-dbt` pinned to `awsds-workflows` `4613ddc`.
    Stage 20 8.4's applies of the four `[P]` slices its pass 8 wrote ran on 2026-11-18, closing their
    Lesson 69 window.
 3. **Release G's sitting** (N.8.5 steps 2, 4 and 5): the hub, GitLab with `BUILD=1`, `staging/egress/`
@@ -1170,9 +1172,10 @@ bound items 3, 5, 6, 9 and 11.
    wait on item 10 and Stage 20's 8.5) and takes a backup: the newest, of
    2026-11-16 03:01 UTC, leaves the bucket on 2026-12-17. Between 2026-11-22 and 2026-11-25 it carries
    N.8.3 on the same hub start.
-4. **Nothing up, after release G**: Stage 19 4.12, the Governance Manager made a contributor of
-   `deploy-production` by its owner, then `eighth-experimentation`'s request and the approval in the
-   portal (the user's acts), the fulfilment read on both sides.
+4. **Nothing up, after release G**: Stage 19 4.12. After the RAM share at version 12, decision 15 (d)'s
+   designation and xxvi, the Governance Manager's membership of `deploy-production` by its owner ((a)'s
+   `PROJECT_CONTRIBUTOR` only if xxvi reads no narrowing), then `eighth-experimentation`'s request and the
+   approval in the portal (the user's acts), the fulfilment read on both sides.
 5. **The warehouse and backup sitting** (N.8.3), between 2026-11-22 and 2026-11-25, unless item 3 carried
    it: `EXC-13`'s Production half after the admin secret's first rotation, scheduled 2026-11-22 01:59:59
    UTC, and the free trial's pair.
@@ -1180,13 +1183,13 @@ bound items 3, 5, 6, 9 and 11.
    passes 2 and 3 in `app-dbt-dev`, after item 2's project and line, dbt on a worker and its lineage events, and 4.5 once item 2's applies ran; before
    2026-12-18, when dbt Core 1.11's critical support ends.
 7. **Sandbox sitting B**, `GROUPS=mwaa,mlflow`, no GitLab: Stage 17's 1.4 and 1.6, the first tracking
-   call, then 9.6, `app-ml` trained, registered and scored in `app-ml-dev`. Stage 17's passes 2 to 5 are
-   sittings of their own after it.
+   call, then 9.6 after `EXC-11`'s share, `app-ml` trained, registered and scored in `app-ml-dev`. Stage
+   17's passes 2 to 5 are sittings of their own after it.
 8. **Sandbox sitting C**, `GROUPS=mwaa,bedrock-base`, no GitLab: Stage 17's 10.4, `app-genai`'s loop
    with the boundary's deny and the account's guardrail measured, and 6e 6.4's assistant session, whose
    token volume sets 6e decision 6's threshold.
 9. **The Sandbox warehouse sitting**, `GROUPS=redshift`: Stage 19's pass 5 after 4.12, 5b's
-   `max_query_execution_time` test, and 6h's negatives after 6h decision 8;
+   `max_query_execution_time` test, and 6h's 5.1 before decision 8 (a)'s wide tag and 5.2b after;
    [Stage 21](../stages/stage-21-redshift-s3-data-products.md)'s passes 2 to 4, its 1.3 readings and 1.5's
    code done 2026-11-18 (`sagemaker-prereqs-v0.12.0`), after the user's reading of the enable wizard, its
    `RedshiftServerless` blueprint on for the sitting alone; before 2026-12-19, so the trial
@@ -1194,11 +1197,16 @@ bound items 3, 5, 6, 9 and 11.
    since it depends on none of them. Stage 21's pass 5 needs no warehouse and rides any Sandbox sitting.
 10. **With nothing up, before `app-ml`'s first tag**: `scripts/deploy-application.py`,
     `scripts/model-chain.py` and their hooks taught a second application, kept out of the day's pull
-    request so that release G's leg runs the script it was read with; the subagents' patches of
-    2026-11-17 are in `$HOME/tmp/stage17-proposals/` with a README, the two `deploy-application.py`
-    proposals merged by hand; then the template's pins read against the lint's release; and Stage 20's
-    `app-dbt`: an application with no image, whose workgroup the CLI resolves from the project's
-    `project.athena` connection (Stage 20 8.1, decision 17 (b)).
+    request so that release G's leg runs the script it was read with. **Written 2026-11-18** on
+    [pull request #321](https://github.com/felipenoris/AWS-DataScience/pull/321) from the subagents'
+    patches of 2026-11-17 (`$HOME/tmp/stage17-proposals/`), the two `deploy-application.py` proposals
+    merged by hand, for `app-ml`, `app-genai` and `app-dbt` (Stage 20 8.1): `--self-check` prints every
+    stage of every application `ok`, `app-etl`'s lines as on `main`. It merges after #320 and release
+    G's sitting, before `app-dbt`'s mirror push and `app-ml`'s first tag. The pins read against the
+    lint's release the same day: `app-etl` (`196acee`), `app-ml` and `app-genai` (`37cb5a6`) each pass at
+    `4613ddc` with their pipelines' options, `probes/operator.yaml` still refused by `operador`, so each
+    pin moves to it at the application's next tag, `app-etl`'s after release G. Left:
+    `aws/catalog.py`'s `CHAIN_DEV_PROJECTS` once `app-dbt-dev` exists.
 11. **`app-dbt`'s first release** (Stage 20 pass 8), after items 3, 6 and 10 and Stage 20's 8.3 to 8.7:
     the hub and GitLab; `staging/egress/` raised before the tag `v0.1.0` and destroyed after
     `staging-catalog`, `production/workloads-egress/` raised before `production-gate`, each with its

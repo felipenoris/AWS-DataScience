@@ -689,6 +689,12 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
    product's name unique within the domain; release F's second import measured it on 2026-11-16, a
    conflict the CLI counts as an update (`SUP-369`, decision 26). A decision that relies on a platform
    behaviour reads the API reference's prerequisites for it before it is taken.
+   Stage 6d's decision 17 (a), offered on 2026-11-17, measured a notebook run in Sandbox *under a control
+   that pins `VPC_ONLY`*; on 2026-11-18 DataZone's service reference gave `StartNotebookRun` no resource
+   type and no condition key, so the promised control had no key to write, and its fallback, the domain's
+   VPC, shows binding only through a negative that needs a quota the decision kept at 0. An option that
+   promises a policy control names the condition key it writes, read from the service reference, before
+   the card is offered.
 
 35. **Adopting an object into infrastructure-as-code silently invalidates every *procedure* written
    about it — and the adoption touches none of the files that carry those procedures.** Stage 2 step
@@ -842,6 +848,12 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
    explanation for behaviour nobody has watched. The tell is the word: "measured" is reserved for
    something this project ran, and a doc reading that says so is worse than an admitted guess,
    because a guess invites the measurement and a false measurement forbids it.
+
+   Read again 2026-11-17: the plan named release T's backup of 2026-11-15 22:38 UTC as GitLab's newest,
+   from the sittings' records, while the host's 03:00 UTC timer had taken one during release F's sitting,
+   at 03:01 UTC on 2026-11-16; the deadline it sets moved from 2026-12-16 to 2026-12-17 once the bucket was
+   listed. A timer acts in every sitting the host is up for and in no sitting's record, so the newest
+   object is read from its store.
 
 39. **What a console wizard fills and the authoring API does not require is still required — and the
    validator is the deploy and the teardown, so an incomplete object pins its dependents in both
@@ -1593,6 +1605,13 @@ refusal read as "what this identity is" outlives the state that produced it.
 **What makes it expensive.** The change is silent in both directions: nothing announces the new access, and a
 permanent note stops anyone from re-trying the call that would show it.
 
+**Read again 2026-11-18.** Stage 6d's `SageMakerAIDomain` pilot was rolled back in the portal on 2026-10-31
+(`DeleteEnvironment` in Data Governance at 00:29:20 UTC, then the domain, its space and its user profile
+deleted in Sandbox within 21 seconds), and no record said so for 18 days: the log's entry of 2026-10-31 still
+described the domain with its spaces, and step 2.7 was planned around a pilot project holding both domains.
+CloudTrail was the only witness, read when 2.7's first step listed the domains. A portal act deletes as
+silently as it grants, so a plan that reuses an object a portal can touch lists it first.
+
 ## Lesson 71 — a lint that prints `ok` for a clause its invocation leaves unchecked reads as a pass on every clause
 
 **What happened.** Stage 8, 2026-10-18. Step 5.6 lists eight clauses for the D28 workflow lint, and
@@ -2002,6 +2021,30 @@ never supplies the identifier it consumes (Lesson 38).
 
 **What makes it expensive.** A pin taken from `main` before the merge names the commit the change was meant to
 leave, and the lint refuses it at the application's first push, weeks later and in another system.
+
+## Lesson 87 — a gate written against the first application's shape fails on the next one's edge, and the failure reads as the application's
+
+**What happened.** The gates' pip-audit step was written for `app-etl`, whose runtime export pins every
+package for one platform. On 2026-11-17 `app-genai`, which has no runtime package, met
+`set -eu; pinned="$(grep -c == req)"`: `grep -c` prints 0 and exits 1 on a count of zero, so the step fails
+on an empty export, and the application's first release waits on a gates tag (Stage 17's log, 10.6). On
+2026-11-18 `app-dbt`'s lock met the same count from the other side: pip-audit 2.10.1 skips a pin whose
+marker its runner does not match, and the job fails when it audits fewer packages than the export pins, so
+the lock was cut for Linux and macOS alone, 80 pins to 78 (Stage 20's log).
+
+**Why it is a class.** A shared gate encodes the shape of the first thing it ran on: a list that is never
+empty, a lock for one platform, a name that always matches. Lesson 31's check keeps passing while the design
+spreads; this one fails, and the failure names the new application, so it reads as the application's defect
+rather than the gate's assumption.
+
+**The rule.** Before a second application rides a shared gate, run the gate on that application's shape with
+nothing up, its empty and multi-platform cases included, and write each edge into the gate's own tests. A
+count that may be zero is read where its exit status does not decide the step (`grep -c … || true`, or the
+count taken in the language that reads it).
+
+**What makes it expensive.** The gates ship as a tagged image, so the fix is a new tag and a pin moved in every
+application that uses it; bending the application to the gate, as `app-dbt`'s lock was, hides the
+assumption from the next one.
 
 ## What AWS does that its documentation does not say
 

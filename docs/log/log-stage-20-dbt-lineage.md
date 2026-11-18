@@ -1084,3 +1084,15 @@ do #28". No AWS call. Times are UTC.*
 - **[Claude] The records**: the waiting list's row for #28 removed; the stage's 8.5, decision 17, `Status`
   and the note to the other sessions, the Current position row, `promotion.md` §N.6 item 2 and the log
   index's row say merged. Left for 17 (b): 3.1's verdict in sitting A.
+
+## 2026-11-18 — 8.1 written in `promotion.md` §N.6 item 10's pull request
+
+*Claude, the orchestrating session, on the laptop, no AWS call. Times are UTC.*
+
+- **[Claude] 8.1** is in [pull request #321](https://github.com/felipenoris/AWS-DataScience/pull/321),
+  §N.6 item 10's, whose checks are in Stage 17's log of the same day: `--self-check` prints `app-dbt`'s
+  stages `ok`, *"staging: 9 variable(s); app_dbt_deploy_staging_app_dbt,
+  app_dbt_deploy_staging_app_dbt_probe"* and *"prod: 9 variable(s); app_dbt_deploy_production_app_dbt"*,
+  with no state read and no image. `aws/catalog.py`'s `CHAIN_DEV_PROJECTS` waits on 2.0.
+- **[Claude] The pin's path, for this log**: `app-dbt` moved to `37cb5a6` on 2026-11-17 with `app-ml` and
+  `app-genai` (Stage 17's log of that day), to `1a50ceb` the same day (6.4), and to `4613ddc` today.

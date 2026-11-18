@@ -590,8 +590,9 @@ targets hold their assets since `v0.5.2`, so its imports revise them by name and
 8. **Nothing up, Claude's reads**: each deployment project's first scheduled source run after the
    imports (xvii's Staging half, xxv), which started at 15:37 UTC in Staging and 15:44 in Production on
    earlier days.
-9. **Nothing up, 4.12** after release G: the Governance Manager made a `PROJECT_CONTRIBUTOR` of
-   `deploy-production` by its owner (decision 15 (a); not a member on 2026-11-16), then
+9. **Nothing up, 4.12** after release G: after the RAM share at version 12, decision 15 (d)'s designation
+   and xxvi, the Governance Manager's membership of `deploy-production` by its owner ((a)'s
+   `PROJECT_CONTRIBUTOR` only if xxvi reads no narrowing; not a member on 2026-11-16), then
    `eighth-experimentation`'s request and the approval in the portal, the fulfilment read on both sides
    (xx, xxiv, xxvi, xxvii).
 10. **The retirement** (item 31, §The retirement as written): **done 2026-11-17**, PR #308's five saved
@@ -1680,8 +1681,8 @@ what a release drops (`SUP-348`), and the workflow scan reads the target project
 
 Waits on decision 9, which decision 6 (b) leaves as written: the Sandbox warehouse reads the subscribed
 product in place, the subscription now Production's listing (4.12) rather than the lake's, through
-`eighth-experimentation`'s connection (`EXC-17`, decision 5), so 6h decision 8 stays deferred. Under its
-recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-compute/` up;
+`eighth-experimentation`'s connection (`EXC-17`, decision 5), so 6h decision 8 (a)'s wide tag is not
+needed here. Under its recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-compute/` up;
 [`redshift-connection.md`](../runbooks/redshift-connection.md) §J).
 
 - **5.1 [Claude⚡] The grant the read in place needs**: on the user's word, Lake Formation `DESCRIBE`
@@ -1908,7 +1909,8 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
    pass 2's consumer, and the Governance Manager, a `PROJECT_CONTRIBUTOR` of `eighth-experimentation`,
    approves there, 6f 4.3 answered in the act; the consumer of Production's listing at 4.12 and pass 5 is
    `eighth-experimentation` itself, through the warehouse connection it already holds (`EXC-17`), the
-   Governance Manager approving in `deploy-production` (decision 15), so 6h decision 8 stays deferred.
+   Governance Manager approving in `deploy-production` (decision 15), so 6h decision 8 (a)'s wide tag is
+   not needed here.
    **Amended 2026-11-14 by the user**: pass 2's consumer is `test-experimentation` (*"Utilizei o
    `test-experimentation` como projeto consumidor."*), the application no longer deployed there
    since decision 19 (c). The Governance Manager is a `PROJECT_CONTRIBUTOR` of

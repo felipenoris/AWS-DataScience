@@ -2913,3 +2913,36 @@ advance every stage but 11 to 15 with nothing up. Times are UTC.*
 - **[Claude]** The instrument's run at 00:45:51, with nothing up: every check passed, no call failed,
   `ML-5` read no endpoint; `ML-1` notes the managed ML policy at v48 on the three projects against the
   v45 the contract was read at, as before.
+
+## 2026-11-18 — `promotion.md` §N.6 item 10: the deploy scripts taught `app-ml`, `app-genai` and `app-dbt`
+
+*Claude, the orchestrating session and a subagent of it, on the laptop, no AWS call. Times are UTC.*
+
+- **[Claude, a subagent] The 2026-11-17 proposals** in `$HOME/tmp/stage17-proposals/`, read with `git
+  apply --check` against `4c441a6e`: `app-ml`'s four patches exit 0; `app-genai`'s
+  `deploy-application.proposal.diff` refused on its `+++` path, which named another session's scratchpad,
+  and exit 0 with `-p0` once that line named `scripts/deploy-application.py`. The two `deploy-application.py`
+  proposals merged by hand with `app-dbt` added.
+- **[Claude, a subagent] The change**, commit `bac717e8` on `claude/plano-estagios-execucao-5f64d8-n6-item10`:
+  `deploy-application.py` names the applications in `APPLICATIONS` and fills a name only where the target
+  stage reads it, `--image-uri` for `${JOB_IMAGE_URI}`, `sagemaker/`'s `training_image_uri`,
+  `studio/`'s `<app>_inference_profile_arn`; `model-chain.py`'s `approve` by application and model hash,
+  the group from `<account>/sagemaker`'s `model_package_group_arns`, `app-etl`'s `--package-arn` form
+  unchanged; `aws/cicd.py`'s `APP_REPOS`, `app-etl`'s and `app-ml`'s repositories; the hook's pattern
+  `examples/app-(etl|ml|genai|dbt)/`. `--self-check`: every stage of the four applications `ok`, `app-etl`'s
+  two lines byte-identical to `main`'s; `model-chain.py --check` *"ok    the model chain's requests,
+  offline"*; `make check` *"check: OK"*. Offline tests against doubles of the aws CLI and the CI/CD CLI,
+  kept in the session's scratchpad: `app-etl`'s deploy and follow-up in both targets, every record the
+  same as `main`'s script's; thirteen `approve` scenarios; five deliberate breaks of the self-check, each
+  refused.
+- **[Claude] Read again and published**: `--self-check` and `model-chain.py --check` exit 0 on the branch;
+  the runbook's scripts row, the README's line and this stage's two rows of scripts written for the
+  change (`b9699ee3`); the branch pushed and
+  [pull request #321](https://github.com/felipenoris/AWS-DataScience/pull/321) opened as a draft, to merge
+  after #320 and release G's sitting, before `app-dbt`'s mirror push and `app-ml`'s first tag.
+- **[Claude] The pins read against the lint's release**, 16:26 UTC, from each application's folder with its
+  pipeline's options at `awsds-workflows` `4613ddc`: `app-ml` *"ok: 6 arquivo(s)"*, `app-genai` *"ok: 3
+  arquivo(s)"*, `app-etl` *"ok: 9 arquivo(s)"*, and `app-genai`'s `probes/operator.yaml` refused by
+  `operador`, exit 1, as at `37cb5a6`. Between `37cb5a6` and `4613ddc` are #27 and #28.
+- **[Claude] Left**: `aws/catalog.py`'s `CHAIN_DEV_PROJECTS` once `app-dbt-dev` exists; `app-genai`'s
+  legs read `studio/`'s output, which 10.5 declares.
