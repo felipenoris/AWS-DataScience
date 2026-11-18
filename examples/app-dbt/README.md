@@ -70,7 +70,6 @@ result. The model drops a table by an Athena statement (`native_drop`), never by
 | `SUBNET_AZ1`, `SUBNET_AZ2` | the project's subnets, which name the Glue job's network connections |
 | `ACCOUNT_ID` | the account of the Glue job's catalog and of the lineage's Glue names |
 | `PRODUCT_DATABASE` | `app_dbt`, a literal: the database is created in each project before its first deploy, never by the application |
-| `ATHENA_WORKGROUP` | the project's workgroup, `workgroup-<project id>-<Tooling environment id>`, the one its `project.athena` connection names |
 | `LINEAGE_DOMAIN` | the domain `transform` posts the events to |
 | `LINEAGE_NAMES` | `as-built` or `glue-arn`, the form of the datasets' names |
 | `LINEAGE_ENDPOINT` | the DataZone endpoint's URL, or `default` for the Region's |
@@ -79,13 +78,17 @@ result. The model drops a table by an Athena statement (`native_drop`), never by
 
 In `dev` every value but the literal comes from the shell of the space. A target holds `${DOMAIN_ID}` for
 `LINEAGE_DOMAIN`, and its switches and its namespace as literals, `as-built`, `default` and
-`app-dbt-<stage>`; its leg fills the subnets and the account from the deployment project, and its
-workgroup is the project's `project.athena` connection's once this tree names that connection (the
-infrastructure repository's Stage 20 decision 17 (b), "The pipeline" below). A stage variable is a
-parameter of the deployed workflow, filled from the shell of each `run`: a switch turned between two runs
-in `dev` is an `export` and a run, never a deploy. The CLI refuses an empty value, so a switch at rest
-holds `default`. Every stage declares every variable a workflow reads, since the deploy resolves every
-workflow the manifest names.
+`app-dbt-<stage>`; its leg fills the subnets and the account from the deployment project. A stage
+variable is a parameter of the deployed workflow, filled from the shell of each `run`: a switch turned
+between two runs in `dev` is an `export` and a run, never a deploy. The CLI refuses an empty value, so a
+switch at rest holds `default`. Every stage declares every variable a workflow reads, since the deploy
+resolves every workflow the manifest names.
+
+The Athena workgroup is no stage variable. Both workflows name
+`{proj.connection.project.athena.workgroupName}`, the workgroup of the `project.athena` connection that
+every project's Tooling environment creates, `workgroup-<project id>-<Tooling environment id>`, and the
+CLI resolves it at the deploy in each stage's project (the infrastructure repository's Stage 20 decision
+17 (b)).
 
 ### The lineage
 
@@ -173,13 +176,13 @@ MB unzipped. The check prints the entries, the unzipped bytes and `['0o100755', 
 
 In a JupyterLab space of the application's `dev` project, Sandbox's egress raised with `GROUPS=mwaa` and
 the tree unpacked with its archive, the values the manifest reads come from the space, the project's name
-and workgroup typed, then the deploy and the runs:
+typed, then the deploy and the runs:
 
 ```bash
 git clone --depth 1 https://github.com/felipenoris/awsds-workflows /tmp/awsds-workflows
 /opt/conda/bin/python /tmp/awsds-workflows/scripts/space_values.py > /tmp/space_values.json
 eval "$(/opt/conda/bin/python -c 'import json; v = json.load(open("/tmp/space_values.json")); print("\n".join("export %s=%s" % p for p in (("DOMAIN_ID", v["DOMAIN_ID"]), ("DOMAIN_REGION", v["REGION"]), ("SUBNET_AZ1", v["SUBNET_AZ1"]), ("SUBNET_AZ2", v["SUBNET_AZ2"]), ("ACCOUNT_ID", v["ACCOUNT_ID"]))))')"
-export DEV_PROJECT_NAME=<the dev project> ATHENA_WORKGROUP=<its workgroup>
+export DEV_PROJECT_NAME=<the dev project>
 export LINEAGE_DOMAIN="$DOMAIN_ID" LINEAGE_NAMES=as-built LINEAGE_ENDPOINT=default LINEAGE_ATTEMPTS=default
 export LINEAGE_NAMESPACE=app-dbt-dev
 scripts/dev-cli.sh deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
@@ -187,11 +190,12 @@ scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-dbt
 scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-dbt
 ```
 
-By hand, the archive unpacked beside the space's own Python, under another job namespace; the dbt
-command follows `--`:
+By hand, the archive unpacked beside the space's own Python, under another job namespace, the
+workgroup typed as the project's `project.athena` connection names it; the dbt command follows `--`:
 
 ```bash
 mkdir -p /tmp/app-dbt-hand && python3 -m zipfile -e code/app-dbt.zip /tmp/app-dbt-hand
+export ATHENA_WORKGROUP=<the project's workgroup>
 PYTHONPATH=/tmp/app-dbt-hand bash /tmp/app-dbt-hand/run-dbt.sh --region us-west-2 --account "$ACCOUNT_ID" --database app_dbt --workgroup "$ATHENA_WORKGROUP" --domain "$LINEAGE_DOMAIN" --names "$LINEAGE_NAMES" --namespace app-dbt-by-hand -- debug
 ```
 
@@ -245,7 +249,6 @@ alone, so `staging-check` and `production-deploy` ask EC2 for an available endpo
 decision 15 (a) and `check-egress.py` reads with the rest. The legs deploy with no `--image-uri`: the
 release follows the infrastructure repository's change that teaches the script a second application
 (Stage 20 step 8.1). A target's workgroup comes from its project's `project.athena` connection, which
-the CLI resolves at the deploy, once this tree names `{proj.connection.project.athena.workgroupName}`
-with the `awsds-workflows` release that admits it (Stage 20 decision 17 (b)). Nothing is torn down:
-Staging's `make down` is the user's. The jobs need the hub, the deploy runner, Staging's `egress/` and
+the CLI resolves at the deploy (Stage 20 decision 17 (b)). Nothing is torn down: Staging's `make down` is
+the user's. The jobs need the hub, the deploy runner, Staging's `egress/` and
 `production/workloads-egress/`, each with its `athena` endpoint.

@@ -62,7 +62,7 @@ ACCOUNT = "000000000000"
 REGION = rendering.RESOLVED["domain.region"]
 DOMAIN = rendering.RESOLVED["domain.id"]
 DATABASE = "app_dbt"
-WORKGROUP = "workgroup-simulated-project"
+WORKGROUP = rendering.RESOLVED["proj.connection.project.athena.workgroupName"]
 LOCATION = "s3://simulated-bucket/simulated-domain/simulated-project/dev/data/catalogs/"
 OUTPUT = "s3://simulated-bucket/simulated-domain/simulated-project/dev/sys/athena/"
 SOURCE_COLUMNS = [
@@ -208,7 +208,6 @@ def stage_parameters(listener: str) -> dict[str, str]:
         "SUBNET_AZ1": "subnet-simulated-az1",
         "SUBNET_AZ2": "subnet-simulated-az2",
         "ACCOUNT_ID": ACCOUNT,
-        "ATHENA_WORKGROUP": WORKGROUP,
         "LINEAGE_DOMAIN": DOMAIN,
         "LINEAGE_NAMES": "as-built",
         "LINEAGE_ENDPOINT": listener,

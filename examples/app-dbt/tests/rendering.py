@@ -29,6 +29,7 @@ RESOLVED = {
     "proj.id": "simulated-project",
     "proj.iam_role_arn": "arn:aws:iam::000000000000:role/simulated-project-role",
     "proj.connection.default.s3_shared.s3Uri": "s3://simulated-bucket/simulated-project/shared/",
+    "proj.connection.project.athena.workgroupName": "workgroup-simulated-project",
     "stage.name": "dev",
 }
 

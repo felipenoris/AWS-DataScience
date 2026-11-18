@@ -1020,3 +1020,47 @@ push e PR", answering "Autoriza o push e o pull request do branch do awsds-workf
   a refused translation at `1a50ceb`. The desktop app bound it to the session; its checks had not started
   at 15:30. Left: its merge, the user's; then 17 (b)'s change in `app-dbt` with the pin at the merge
   commit (8.5).
+
+## 2026-11-18 — 17 (b)'s change in `app-dbt`, its pin waiting on `awsds-workflows` #28
+
+*Claude, the orchestrating session, on the laptop, at the user's word in the session's chat: "Fiz o merge.
+Pode fazer a mudança." No AWS call. Times are UTC.*
+
+- **[Claude] The merge read before the change**:
+  [PR #319](https://github.com/felipenoris/AWS-DataScience/pull/319) merged at 15:33:19 as `df49898b`,
+  its tree equal to the session branch's head; `awsds-workflows` #28
+  open, mergeable, its checks passed, and that repository's `main` still at `1a50ceb`. The pin waits on
+  #28's merge, the user's; the rest of the change was written on a branch cut from `df49898b`.
+- **[Claude] The change**: both workflows name `{proj.connection.project.athena.workgroupName}`, the
+  transform task's `--workgroup` and the probe's second argument; `ATHENA_WORKGROUP` leaves the
+  manifest's three stages and `LEG_FILLS`; `tests/rendering.py` resolves the connection's workgroup as
+  the deploy does, `workgroup-simulated-project`, the value the simulation's services hold; the README
+  and the stage's 2.0 type the workgroup for the run by hand alone. `uv run pytest`: *"86 passed in
+  5.57s"*; ruff clean.
+- **[Claude] The lint**, from `examples/app-dbt/` with the pipeline's `--instance-type` list: at #28's
+  head `2aa32cf`, *"ok: 4 arquivo(s)"*; at `1a50ceb`, *"projeto: variável da CLI sem tradução:
+  {proj.connection.project.athena.workgroupName}"* on both workflows and the two `glue` findings on
+  `load`'s script location, exit 1.
+- **[Claude] The simulation run again**, 15:39:19 to 15:40:46, on 14:15's host archive (`run-dbt.sh`,
+  the package and the lock unchanged since): exit 0, every case's exit code, AWS calls and events as at
+  14:15, the task logs the same to the byte but the failing test's, 4,068 bytes against 4,069; the probe's
+  and the transform task's rendered commands carry `workgroup-simulated-project`.
+
+  | Case | Exit code | Seconds | AWS calls | Events the listener received | Task log, bytes and lines | Peak memory, kB |
+  |---|---|---|---|---|---|---|
+  | A first `dbt build`, the names as built | 0 | 6.5 | 17 | 6, 6 signed | 3,741 and 37 | 244,304 |
+  | A second build, `--names glue-arn` | 0 | 2.8 | 28 | 6, 6 signed | 3,731 and 37 | 204,320 |
+  | A database Glue does not hold | 1 | 0.2 | 1 | 0 | 649 and 3 | not read |
+  | The probe workflow's command, rendered | 0 | 0.8 | 10 | 0 | 10,232 and 234 | not read |
+  | The `transform` task's command, rendered | 0 | 2.8 | 17 | 6, 6 signed | 3,746 and 37 | 203,744 |
+  | By hand, `-- debug` | 0 | 1.5 | 4 | 0 | 3,489 and 53 | 145,344 |
+  | By hand, `-- run` | 0 | 2.7 | 25 | 4, 4 signed | 3,196 and 33 | 195,328 |
+  | Every file of the archive at mode 644 | 0 | 6.2 | 17 | 6, 6 signed | 3,624 and 37 | 243,600 |
+  | The profile with `skip_workgroup_check: true` | 0 | 6.1 | 27 | 6, 6 signed | 3,746 and 37 | 245,056 |
+  | The endpoint's port closed, `--attempts 1` | 0 | 2.7 | 17 | 0 | 147,696 and 775 | 203,696 |
+  | The endpoint's port closed, botocore's default attempts | 0 | 44.5 | 28 | 0 | 148,225 and 781 | 204,448 |
+  | The endpoint answering 403 | 0 | 2.8 | 17 | 6, each refused | 82,824 and 181 | 203,600 |
+  | A test that fails | 1 | 2.7 | 17 | 6, 6 signed | 4,068 and 42 | 203,728 |
+
+- **[Claude] Left**: the pin moved from `1a50ceb` to #28's merge commit in `.gitlab-ci.yml`, the README,
+  `tests/simulation/simulate.py` and the stage's `TOOL`, and the lint read again at that commit.

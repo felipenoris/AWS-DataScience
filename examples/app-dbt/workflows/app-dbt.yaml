@@ -39,9 +39,10 @@ app-dbt:
       retries: 0
     # dbt on the worker, from the archive: run-dbt.sh, started by bash from its full path so that the
     # mode the extraction leaves plays no part, each value in single quotes; a command ending in .sh
-    # would be read as a template file's name. The exit code is dbt's.
+    # would be read as a template file's name. The workgroup is the project's project.athena
+    # connection's, which the CLI resolves at the deploy. The exit code is dbt's.
     transform:
       operator: airflow.providers.standard.operators.bash.BashOperator
       dependencies: [load]
-      bash_command: "bash /usr/local/airflow/dags/run-dbt.sh --region '{domain.region}' --account '{env.ACCOUNT_ID}' --database '{env.PRODUCT_DATABASE}' --workgroup '{env.ATHENA_WORKGROUP}' --domain '{env.LINEAGE_DOMAIN}' --names '{env.LINEAGE_NAMES}' --endpoint '{env.LINEAGE_ENDPOINT}' --attempts '{env.LINEAGE_ATTEMPTS}' --namespace '{env.LINEAGE_NAMESPACE}'"
+      bash_command: "bash /usr/local/airflow/dags/run-dbt.sh --region '{domain.region}' --account '{env.ACCOUNT_ID}' --database '{env.PRODUCT_DATABASE}' --workgroup '{proj.connection.project.athena.workgroupName}' --domain '{env.LINEAGE_DOMAIN}' --names '{env.LINEAGE_NAMES}' --endpoint '{env.LINEAGE_ENDPOINT}' --attempts '{env.LINEAGE_ATTEMPTS}' --namespace '{env.LINEAGE_NAMESPACE}'"
       retries: 0

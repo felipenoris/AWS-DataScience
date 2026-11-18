@@ -18,16 +18,13 @@ TARGETS = {"staging": "STAGING", "prod": "PROD"}
 
 # What scripts/deploy-application.py of the infrastructure repository fills for a target stage from
 # the deployment project's Tooling environment, each under the stage's prefix, and the names the
-# pipeline's jobs carry as CI/CD variables of the GitLab project. ATHENA_WORKGROUP leaves with the
-# infrastructure repository's Stage 20 decision 17 (b), the workgroup then read from the project's
-# project.athena connection.
+# pipeline's jobs carry as CI/CD variables of the GitLab project.
 LEG_FILLS = (
     "SUBNET_AZ1",
     "SUBNET_AZ2",
     "PROJECT_SG",
     "PROJECT_KEY_ARN",
     "ACCOUNT_ID",
-    "ATHENA_WORKGROUP",
 )
 PIPELINE = {"DOMAIN_ID", "DOMAIN_REGION"}
 
@@ -90,7 +87,6 @@ def test_each_stage_its_project_its_bootstrap_and_its_storage(stage, project, cr
                 "SUBNET_AZ2": "${SUBNET_AZ2}",
                 "ACCOUNT_ID": "${ACCOUNT_ID}",
                 "PRODUCT_DATABASE": "app_dbt",
-                "ATHENA_WORKGROUP": "${ATHENA_WORKGROUP}",
                 "LINEAGE_DOMAIN": "${LINEAGE_DOMAIN}",
                 "LINEAGE_NAMES": "${LINEAGE_NAMES}",
                 "LINEAGE_ENDPOINT": "${LINEAGE_ENDPOINT}",
@@ -106,7 +102,6 @@ def test_each_stage_its_project_its_bootstrap_and_its_storage(stage, project, cr
                     "SUBNET_AZ2": f"${{{prefix}_SUBNET_AZ2}}",
                     "ACCOUNT_ID": f"${{{prefix}_ACCOUNT_ID}}",
                     "PRODUCT_DATABASE": "app_dbt",
-                    "ATHENA_WORKGROUP": f"${{{prefix}_ATHENA_WORKGROUP}}",
                     "LINEAGE_DOMAIN": "${DOMAIN_ID}",
                     "LINEAGE_NAMES": "as-built",
                     "LINEAGE_ENDPOINT": "default",
