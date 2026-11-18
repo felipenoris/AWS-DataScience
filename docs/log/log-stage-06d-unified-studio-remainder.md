@@ -3893,3 +3893,58 @@ session. No AWS call.*
 - **[Claude] A count corrected in step 2**: its readings ran `US-5` and `US-7` "at four domains", the count
   of 2026-10-30, when `eighth-experimentation` alone was to take the act; with `app-etl-dev` created on
   2026-11-14 and the pilot deleted on 2026-10-31, step 2 leaves six, two per project.
+
+## 2026-11-18 — 2.7 step 2: the blueprint's domain created in the three projects
+
+*The user, from each project's portal page; Claude, the orchestrating session, read the result as the
+infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1` (Sandbox) and
+`awsds-infra-data` (Data Governance). Reads only. Times are UTC.*
+
+- **[user] The three presses**, *Code spaces → SageMaker AI domain actions → Create SageMaker AI domain*,
+  reported as *"Criei os domínios: eighth-experimentation-ai-domain, test-experimentation-ai-domain,
+  app-etl-dev-ai-domain"*. Each environment is `ACTIVE`, its `CREATE` deployment `SUCCESSFUL`, its stack
+  `DataZone-Env-<environment>` `CREATE_COMPLETE`:
+
+  | Project | Environment | Created, `updatedAt` | Stack created | Domain | Domain created |
+  |---|---|---|---|---|---|
+  | `eighth-experimentation` | `51kcahjgij7ua8` | 18:16:05, 18:16:49 | 18:16:17 | `d-m8m0uefej9kb` `eighth-experimentation-ai-domain` | 18:16:23 |
+  | `test-experimentation` | `61sozk11eycnm8` | 18:20:22, 18:21:07 | 18:20:35 | `d-jaid1tvg20jv` `test-experimentation-ai-domain` | 18:20:40 |
+  | `app-etl-dev` | `3oog3xvtbf43dc` | 18:23:38, 18:24:22 | 18:23:50 | `d-kr8cbbohordz` `app-etl-dev-ai-domain` | 18:23:55 |
+
+  The three environments' `environmentConfigurationId` is `ffd41bb5-2a39-4f0f-b895-32feeeeacd83`,
+  `experimentation`'s `SageMakerAIDomain` element at order 13, the id step 3's plan keeps.
+- **[Claude] The domains against the pilot's reading** (2026-10-30, `d-odhynkcev3yw`), equal on every field
+  that entry names: `InService`, `AuthMode` `IAM`, `VpcOnly` on the project's two subnets and one group, no
+  EFS, the project role as the execution role of users and spaces, `CustomImages` naming
+  `awsds-sandbox-dev-env` at `ImageVersionNumber` 11 on JupyterLab and Code Editor, `DefaultResourceSpec` at
+  version 11's ARN on both, idle `ENABLED` 60/60/120, EBS 16 and 100, the portal's four hidden lists empty,
+  `ExecutionRoleSessionNameMode` `USER_IDENTITY`, no RStudio setting, `AppSecurityGroupManagement` unset.
+  Not in that entry: `DockerSettings.EnableDockerAccess` `ENABLED`, read on all six domains.
+- **[Claude] The stacks' parameters**, alike but for each project's ids, group, role and name: the image
+  lists `awsds-sandbox-dev-env;awsds-sandbox-dev-env-jupyterlab;11` and `…-codeeditor;11`, the default-image
+  ARNs at version 11, idle 60/60/120, lifecycle `ENABLED`, `maxEbsVolumeSize` 100, `enableRStudio` `false`,
+  `hiddenInstanceTypes` empty.
+- **[Claude] `SUP-379` on three more domains, and where its value is composed**: `ProjectS3Path`
+  `s3://awsds-sandbox-smus-projects/shared/` on the three, where the projects' `Tooling` domains carry
+  `<domain>/<project>/dev`. `get-template` on `DataZone-Env-61sozk11eycnm8`: one resource,
+  `AWS::SageMaker::Domain`, with no `UnifiedStudioSettings`; its tag `ProjectS3Path` is `s3://`, the bucket's
+  name split from `sageMakerUnifiedStudioToolingS3BucketArn`, and `/shared/`, the value `describe-domain`
+  answers. The project's prefix arrives as `sageMakerUnifiedStudioProjectRepositoryLocation`
+  (`s3://awsds-sandbox-smus-projects/<domain>/<project>/shared`) and becomes
+  `DefaultUserSettings.CustomFileSystemConfigs`, an S3 mount at `shared`, the URI `test-experimentation`'s
+  `Tooling` domain mounts. A space's `shared` mount is the project's own prefix; only the tag names the root.
+  `SUP-379` gains the reading.
+- **[Claude] The instruments**: `./aws/studio.py` at 18:30: six domains in Sandbox, two per project; `US-5`
+  and `US-7` `pass` on the six (`VpcOnly`, `ENABLED/60min ceiling=120min`); `US-3` at 14; `0 check(s)
+  FAILED`. The persona and Control Tower Admin profiles did not authenticate (*"Token for awsds-scientist does
+  not exist"*), their sessions not signed in. `release/versions.py retire --keep 10 --dry-run --target
+  awsds-infra-sandbox-1` keeps version 11, and `list-image-versions` reads 11 alone, `CREATED`: the image's
+  only version since 2026-11-03 (Stage 8's log). No space and no app in Sandbox.
+- **[Claude] Step 1's reading (ii) becomes readable**: each project holds two domains until its *Update
+  project* (steps 4 and 6), so the domain the automatic default space and the Query editor's app land in is
+  read from `CreateSpace` in Sandbox's trail at the user's next visit to a project, before that press.
+- **[Claude] Step 3's lock check**, 18:30:19, from pull request #322's branch through `awsds-infra-data`:
+  `Plan: 0 to add, 1 to change, 0 to destroy.`, the plan of 16:33. Saved to the scratchpad, not applied.
+- **[Claude] A check id corrected in steps 7 and 8 and decision 16**: written 2026-10-30, they name `US-11`
+  for each blueprint domain's image version against the profile's pin; `./aws/studio.py` has given `US-11`
+  to the deployment targets' projects since Stage 19, so the image check takes `US-13`, the next free id.

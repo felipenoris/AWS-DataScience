@@ -2398,6 +2398,15 @@ entry is still true is the reading.
   prefix, so what the service puts there is unread. Where: `log-stage-06d-unified-studio-remainder.md`,
   2026-10-30 (two entries) and 2026-11-18; `REFERENCES.md`, SageMaker Unified Studio's October 2026
   releases.
+  Read again 2026-11-18 on three more domains, `d-m8m0uefej9kb`, `d-jaid1tvg20jv` and `d-kr8cbbohordz`
+  (Stage 6d 2.7 step 2): the same root. The stack's template holds one resource, `AWS::SageMaker::Domain`,
+  sets no `UnifiedStudioSettings`, and writes the tag `ProjectS3Path` as `s3://`, the bucket's name split
+  from the parameter `sageMakerUnifiedStudioToolingS3BucketArn`, and `/shared/`; `describe-domain` answers
+  the tag's value. The project's prefix arrives as `sageMakerUnifiedStudioProjectRepositoryLocation`
+  (`s3://<bucket>/<domain>/<project>/shared`, the value of `SUP-359`'s `nonGitProjectRepositoryLocation`)
+  and becomes `DefaultUserSettings.CustomFileSystemConfigs`, an S3 mount at `shared`, the URI the project's
+  `Tooling` domain mounts. A space's `shared` mount is therefore inside the project role's object grant;
+  only the tag names the root. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
 
 ### The managed policies of a project role
 
