@@ -4113,3 +4113,19 @@ permission set `InfrastructureAccess`, through `awsds-infra-data` (Data Governan
   space and *Workflows* find what they need. Step 5's portal half is done. Next the user deletes the space
   `test`, then the project, and Claude reads the deletion's residues (`EXC-10`'s groups, the projects
   bucket's prefix).
+
+## 2026-11-18 — `make status` reads the Studio apps
+
+*Claude, the orchestrating session, on the user's request in this session's chat: *"Altere o `make status`
+para listar os apps, com uma estimativa do que é cobrado pelo app. (Me refiro ao code space que está em
+execução no momento)"*. Reads only, through the five infrastructure profiles. Times are UTC.*
+
+- **[Claude] The change**: `scripts/slices.py status` calls `list-apps` in every account it covers and
+  prints each app whose status bills (`Pending`, `InService`, `Deleting`) with its instance type, its rate
+  from `docs/PRICING.md` 3 and 8, and its spend since its creation, and adds the rate to the burn. A pair
+  with no measured row prints *"rate unmeasured"* and makes the total a floor; an account it cannot read is
+  `UNREADABLE`, as a slice is.
+- **[Claude] The reading**, the run started at 22:26:06: *"studio/sandbox/test UP JupyterLab ml.t3.medium
+  0.0500 USD/h, about 0.03 USD so far since 2026-11-18 21:47 UTC, domain d-tzzj1mqagk9d"*, *"no Studio app
+  billing in data-governance, identity, production, staging"*, and *"estimated burn: USD 0.0500/h"*, where
+  the run that ended at 21:58:36 read 0.0000.
