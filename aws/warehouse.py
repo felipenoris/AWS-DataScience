@@ -80,8 +80,9 @@ INERT_DBS = ("warehouse", "dev")
 # projects are admitted" is one more consumer of a list that already has three (Lesson 33).
 PROJECTS_VARS = "terraform-live/sandbox/warehouse/variables.tf"
 
-# The wide tag AWS offers and this design refuses. `AmazonDataZoneProject` names ONE project;
-# this names every project in the account, which is an empty deny-list permitting everything.
+# The wide tag. `AmazonDataZoneProject` names one project; this names every project in the account.
+# 6h decision 8 (a) admits a second project by it, behind sandbox/warehouse/'s
+# `all_projects_tag_enabled`, and WH-7 reads its presence to decide which expectation holds.
 WIDE_TAG = "for-use-with-all-datazone-projects"
 
 DEFAULT_PROFILES = ("awsds-infra-sandbox-1", "awsds-infra-prod")
@@ -422,6 +423,25 @@ def read_account(
                 facts["workgroup_tags"] = {
                     t["key"]: t["value"] for t in json.loads(res.stdout).get("tags", [])
                 }
+
+    # The admin secret's tags, read while the wide tag stands on either object. AWS's project policy
+    # grants GetSecretValue on any secret wearing that tag (`DataConnectionAllProjectResources`), so
+    # WH-7 reads that the secret does not (AWS_STATE.md INV-20).
+    secret_arn = facts.get("namespace", {}).get("adminPasswordSecretArn")
+    tagged = (facts.get("namespace_tags", {}), facts.get("workgroup_tags", {}))
+    if secret_arn and any(WIDE_TAG in t for t in tagged):
+        res = cli.run(
+            "secretsmanager",
+            "describe-secret",
+            "--secret-id",
+            secret_arn,
+            "--query",
+            "Tags",
+            "--output",
+            "json",
+        )
+        if res.ok:
+            facts["secret_tags"] = {t["Key"]: t["Value"] for t in json.loads(res.stdout) or []}
 
     res = cli.run(
         "logs",
@@ -880,17 +900,73 @@ def judge(checks: Checks, facts: dict, authored: dict | None, want_sql: bool) ->
         )
 
     # -------------------------------------------------- WH-7: the tag pair, and the wide form
+    #
+    # The expectation follows what AWS holds. Without the wide tag, both objects carry the map's one
+    # project. With it (6h decision 8 (a), sandbox/warehouse/'s `all_projects_tag_enabled`), every
+    # existing object carries it at `true`, the project tag stays only while the map holds one entry,
+    # and the admin secret wears neither tag (INV-20); the map is then the register of the access
+    # roles, and the schema GRANT the per-project gate. Production carries neither tag (D26).
     expected = set(authored) if authored is not None else None
     wg_tags = facts.get("workgroup_tags", {})
     ns_tags = facts.get("namespace_tags", {})
-    wide = [o for o, t in (("workgroup", wg_tags), ("namespace", ns_tags)) if WIDE_TAG in t]
-    if wide:
+    pairs = (("workgroup", wg_tags, wg), ("namespace", ns_tags, ns))
+    wide = [o for o, t, _ in pairs if WIDE_TAG in t]
+    if wide and env != "sandbox":
         checks.fail(
             "WH-7",
             f"{tag} the project tags match the authored map",
-            f"{WIDE_TAG} on {', '.join(wide)} - that admits EVERY project in the account, "
-            "which is per-account access wearing a per-project name",
+            f"{WIDE_TAG} on {', '.join(wide)} - that admits every project in the account to a "
+            "governed database, which gets no project connection (D26, 6h's opening paragraph)",
         )
+    elif wide:
+        problems = []
+        bare = [o for o, t, obj in pairs if obj is not None and WIDE_TAG not in t]
+        if bare:
+            problems.append(
+                f"{WIDE_TAG} on {', '.join(wide)} and not on {', '.join(bare)} - AWS reads it on "
+                "both objects, so one of the two has drifted (Lesson 14)"
+            )
+        odd = [f"{o}={t[WIDE_TAG]}" for o, t, _ in pairs if t.get(WIDE_TAG, "true") != "true"]
+        if odd:
+            problems.append(f"{WIDE_TAG} reads {', '.join(odd)}; AWS's policy matches `true`")
+        live = {t.get("AmazonDataZoneProject") for _, t, obj in pairs if obj is not None} - {None}
+        want = expected if expected is not None and len(expected) == 1 else set()
+        if expected is not None and live != want:
+            problems.append(
+                f"project tag authored {sorted(want) or 'none'}, live {sorted(live) or 'none'} - "
+                "beside the wide tag it names the map's one entry, and none when the map holds "
+                "several"
+            )
+        secret = facts.get("secret_tags")
+        if ns is not None and ns.get("adminPasswordSecretArn") and secret is None:
+            problems.append("the admin secret's tags were not read, so INV-20 is unread")
+        worn = [k for k in (WIDE_TAG, "AmazonDataZoneProject") if k in (secret or {})]
+        if worn:
+            problems.append(
+                f"{', '.join(worn)} on the admin secret - AWS's project policy grants "
+                "GetSecretValue on a secret wearing the wide tag (AWS_STATE.md INV-20)"
+            )
+        where = "both objects" if len(wide) == 2 else f"the {wide[0]}, the one object that exists"
+        if problems:
+            checks.fail(
+                "WH-7", f"{tag} the project tags match the authored map", "; ".join(problems)
+            )
+        elif expected is None:
+            checks.note(
+                "WH-7",
+                f"{tag} the project tags match the authored map",
+                f"{WIDE_TAG}=true on {where}; the admin secret wears neither tag; "
+                f"{PROJECTS_VARS} could not be parsed, so the project tag is reported rather "
+                f"than judged: {sorted(live) or 'none'}",
+            )
+        else:
+            checks.ok(
+                "WH-7",
+                f"{tag} the project tags match the authored map",
+                f"{WIDE_TAG}=true on {where}, admitting every project in the account (6h "
+                f"decision 8 (a)); project tag {sorted(live) or 'none'}; the admin secret wears "
+                "neither tag",
+            )
     elif expected is None:
         checks.note(
             "WH-7",
@@ -925,6 +1001,15 @@ def judge(checks: Checks, facts: dict, authored: dict | None, want_sql: bool) ->
         if wg is None and ns is None:
             checks.note(
                 "WH-7", f"{tag} the project tags match the authored map", "neither object exists"
+            )
+        elif len(expected) > 1:
+            checks.fail(
+                "WH-7",
+                f"{tag} the project tags match the authored map",
+                f"the map holds {len(expected)} projects and neither object wears {WIDE_TAG} - "
+                "`AmazonDataZoneProject` is single-valued, so only the wide tag admits more "
+                "than one (6h decision 8 (a)), and sandbox/warehouse/'s "
+                "all_projects_tag_enabled writes it",
             )
         elif live != expected:
             checks.fail(
@@ -1479,21 +1564,26 @@ stale copy.""")
             )
 
             rep.h2("the tag pair - layer 1")
+            tagged = [
+                ("workgroup", facts.get("workgroup_tags", {})),
+                ("namespace", facts.get("namespace_tags", {})),
+            ]
+            # The secret's tags are read only while the wide tag stands (INV-20, read_account).
+            if "secret_tags" in facts:
+                tagged.append(("admin secret", facts["secret_tags"]))
             rep.tabulate(
                 ["OBJECT\tAmazonDataZoneProject\tWIDE TAG"]
                 + [
                     f"{obj}\t{t.get('AmazonDataZoneProject', '-')}\t{t.get(WIDE_TAG, 'absent')}"
-                    for obj, t in (
-                        ("workgroup", facts.get("workgroup_tags", {})),
-                        ("namespace", facts.get("namespace_tags", {})),
-                    )
+                    for obj, t in tagged
                 ]
             )
             rep.line()
             rep.line(
-                "AmazonDataZoneProject is a SINGLE-VALUED tag key, on both objects. AWS's "
-                "only way to admit more than one project is the wide tag, refused here, so "
-                "layer 1 admits exactly one project (6h decision 8)."
+                "AmazonDataZoneProject is a single-valued tag key, on both objects. AWS admits "
+                "more than one project only through the wide tag, which sandbox/warehouse/'s "
+                "all_projects_tag_enabled writes when a second project needs the warehouse "
+                "(6h decision 8 (a)); while it is absent, layer 1 admits exactly one project."
             )
 
             conn_rows = [
