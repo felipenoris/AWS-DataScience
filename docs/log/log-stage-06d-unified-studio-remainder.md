@@ -3831,3 +3831,38 @@ the laptop. Times are UTC.*
   (`SUP-168`). Each *Update project* is pressed by the project's owner, or the operator is made owner of
   each project, a membership its owner grants; one call per project by the operator as a contributor is
   refused. `SUP-157` gains the reading; the stage file's 2.7 and the waiting list's row follow.
+
+## 2026-11-18 — 2.7 step 3: decision 16 (a)'s code written and planned, not applied
+
+*Claude, a subagent of the orchestrating session, in a worktree of its own, on the laptop with nothing up;
+the orchestrating session reviewed the diff, pushed the branch and opened the pull request. The
+infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-data`, Terraform 1.16.6.
+Plans only, no AWS write. Times are UTC.*
+
+- **[Claude] The baseline**, 16:23: `data-governance/governance/` planned from `main` at `df49898b`,
+  unmodified: `No changes. Your infrastructure matches the configuration.`
+- **[Claude] The code** (branch `claude/plano-estagios-execucao-5f64d8-6d-step3`, commit `e50e4246`):
+  `enableSpaces` `"false"`, locked, the last row of `tooling_parameters`, so `tooling_with_spaces_off` and its
+  concat go and `lake-publishing`, `deployment-staging` and `deployment-production` pass `tooling_parameters`
+  alone; `profiles.tf`'s mode rule `ON_CREATE` for `Tooling` and `SageMakerAIDomain`; the order rule
+  unchanged, `SageMakerAIDomain` at 13.
+- **[Claude] The plan**, 16:33 (16:28 read the same): `Plan: 0 to add, 1 to change, 0 to destroy.`,
+  `awscc_datazone_project_profile.this["experimentation"]` in place. `environment_configurations[0]`
+  (`Tooling`, order 0, `ON_CREATE`) goes from six overrides to seven, `enableSpaces` `"false"` with
+  `is_editable` false at index 6; `environment_configurations[13]` (`SageMakerAIDomain`) goes from
+  `ON_DEMAND` to `ON_CREATE`, its fourteen overrides unchanged. Elements 1 to 12 and the fourteen
+  `environment_configuration_id`s are unchanged, nothing is `after_unknown`, every other resource is a
+  no-op. The plan's `resolved_parameters` for `Tooling` still reads `enableSpaces` `"true"`, a value the
+  provider owns (Lesson 27).
+- **[Claude] With Stage 21's switch on**, 16:30, `-var redshift_serverless_enabled=true`: `1 to change`,
+  `experimentation` alone, the same two changes and element 14, `RedshiftServerless`, `ON_DEMAND`,
+  `redshiftBaseCapacity` and `redshiftMaxCapacity` 4, both locked.
+- **[Claude] The gates**: `make check` printed `check: OK`; `pre-commit run --files` on the two files, 15
+  hooks passed and 14 skipped with no files.
+- **[Claude] A reading the step did not name**: the portal refused Workflows in Stage 18's `deployment`
+  project (2026-10-20), whose `Tooling` locks `enableSpaces` `false`, and it reads the live profile with no
+  *Update project* (Stage 17 7.2). Step 3 gains the reading right after the apply: *Workflows* and *Code
+  spaces* opened in one Sandbox project.
+- **[Claude] The pull request**: [#322](https://github.com/felipenoris/AWS-DataScience/pull/322), a draft,
+  merged with the apply after step 2's acts (Lesson 69), and before any other session plans `governance/`
+  from `main` after it (Lesson 79).

@@ -233,7 +233,7 @@ model governance profile on 2026-10-19 (Stage 17 decision 13), `lake-publishing`
 | ~~`engineering`~~ | ~~**Development**~~ | **Destroyed 2026-09-06** (Stage 6b step 1.1). The account it targeted became `Staging`, and the chain now starts at a repository rather than an account | — |
 
 Identical in everything but the target account: **eleven environment configurations** (decision 5's
-category 1; `experimentation` holds **thirteen** since 2026-10-19, `MLflowApp` and `AmazonBedrockKnowledgeBase` `ON_DEMAND` at orders 11 and 12), `Tooling` the only base — `ON_CREATE`, every other blueprint `ON_DEMAND`; a second base
+category 1; `experimentation` holds **fourteen** since 2026-10-30, `MLflowApp` and `AmazonBedrockKnowledgeBase` `ON_DEMAND` at orders 11 and 12 since 2026-10-19 and `SageMakerAIDomain` at 13), `Tooling` the only base — `ON_CREATE`, every other blueprint `ON_DEMAND`; a second base
 cannot ride along on demand, which is what re-cut `ToolingLite` to category 3 (its row in the
 blueprint table below) — and the same Tooling parameters, read back after the apply. Since 2026-08-22
 both profiles also declare the only two required-no-default blueprint parameters across the eleven

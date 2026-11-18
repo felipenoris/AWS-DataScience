@@ -1162,7 +1162,9 @@ bound items 3, 5, 6, 9 and 11.
    `product_databases` line. Stage 20's decisions 14 to 17 were taken on 2026-11-18 and their changes
    written, `app-dbt` pinned to `awsds-workflows` `4613ddc`.
    Stage 20 8.4's applies of the four `[P]` slices its pass 8 wrote ran on 2026-11-18, closing their
-   Lesson 69 window.
+   Lesson 69 window. 6d 2.7's acts need nothing metered; its step 3's code was written and planned on
+   2026-11-18 on [pull request #322](https://github.com/felipenoris/AWS-DataScience/pull/322) (`1 to change`), applied on the user's word after step 2's acts and merged with the
+   apply.
 3. **Release G's sitting** (N.8.5 steps 2, 4 and 5): the hub, GitLab with `BUILD=1`, `staging/egress/`
    raised before the tag and destroyed after the Staging leg, `production/workloads-egress/` before
    `production-gate`; the local user's password rotated before the first push (N.8.2 step 3), the mirror
