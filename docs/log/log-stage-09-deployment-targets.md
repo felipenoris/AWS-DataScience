@@ -3125,3 +3125,17 @@ about 03:58 UTC (`promotion.md` §N.8.1 step 4); Claude read AWS as the infrastr
 - **[Claude] The record**: the waiting list's balance row and the trial's end row; `promotion.md` §N.8.1 step
   4; the warehouse's cost row here, `docs/PRICING.md` and `docs/plan/cost-model.md`; `CLAUDE.md`'s Current
   position.
+
+## 2026-11-18 — the four quota cases read closed, with nothing up
+
+*Claude, the orchestrating session, on the laptop, as the infrastructure user (`InfrastructureAccess`) on
+`awsds-infra-prod`, `awsds-infra-staging` and `awsds-infra-sandbox-1`. Read-only calls. Times are UTC.*
+
+- **[Claude] `list-requested-service-quota-change-history --service-code sagemaker`**, 16:30:22: in
+  Production and Staging, `L-611FA074` (`ml.m5.large for training job usage`) and `L-236AE59F`
+  (`ml.m5.large for transform job usage`), each asked at 2.0 on 2026-10-23 at 20:00 UTC, read
+  `CASE_CLOSED`, last updated on 2026-11-03 at 00:04 (Production's two and Staging's training) and 00:34
+  (Staging's transform). Sandbox's three requests of 2026-10-17 (Stage 17) read `CASE_CLOSED`, last
+  updated on 2026-10-28 between 00:49 and 01:19.
+- **[Claude] `get-service-quota`**, 16:30:39: `L-611FA074` 20.0 and `L-236AE59F` 8.0 in both targets, the
+  values read on 2026-10-24 (3.5).
