@@ -229,7 +229,7 @@ decision for the user, named by its number in Decisions due. Read from `main` `7
 | D13 | execution roles hold no S3 on the lake's registered prefixes | **keep**: pass 5's prefix is in the producer's project path, which Lake Formation does not register |
 | D26 | one domain, in Data Governance | **keep** |
 | 6h decision 3 | the connection's `lineageSync`, daily at 03:43 UTC, every run failed; off or kept, owed | **keep** as the user's; pass 3 reads a lineage run with the workgroup up and leaves the setting as it found it |
-| 6h decision 8 | how a second project is admitted to the warehouse; (a) the tag `for-use-with-all-datazone-projects=true`, recommended there, not taken | **keep** open: decision 1 (b) admits no second project to the warehouse |
+| 6h decision 8 | how a second project is admitted to the warehouse; taken 2026-11-17 as (a), the tag `for-use-with-all-datazone-projects=true`, its switch written 2026-11-18 and off | **keep** as taken: decision 1 (b) admits no second project to the warehouse, so this stage turns the switch on nowhere |
 | Stage 9 decision 5 | Production's namespace reaches Lake Formation as a Lake Formation-managed datashare mapped to a federated database; data lake access refused for the managed cluster against `DenyRedshiftProvisionedClusters` and D12; 9.5a's reading owed only if the federated catalog comes back | **keep** in Production. **Decision 3 (b)**: the federated catalog comes back in Sandbox for one sitting, and 9.5a's reading is taken there |
 | Stage 19 decision 9 | (a), taken 2026-10-31: the read in place through `awsdatacatalog`, 5.3's Redshift asset published and never subscribed; (b), the subscription with a target, *"read as a second half once a target's shape is priced"* | **keep** (a) for Stage 19; pass 2 here is (b)'s second half, under decision 1 |
 | [`catalog.md`](../runbooks/catalog.md) | §A: a Redshift source unmeasured; §P: a product of several items unread; §S: no Redshift target, fulfilment from the pages; no S3 Object Collection | **amend**: the 2026-11-17 readings at 1.1, the measurements at 6.1 |
@@ -652,7 +652,13 @@ object created alone and read back for `IAMAllowedPrincipals` before anything is
   `sourceIdentifier`. If it imports: publish, the consumer's request and approval, and what DataZone
   writes, a Lake Formation grant and a resource link in one account or a refusal.
 - **4.5 [Claude⚡] Data lake access**, under decision 3 (b): the data transfer role written in
-  `sandbox/warehouse/` behind a variable that defaults to off, applied for the sitting; the switch on.
+  `sandbox/warehouse/` on 2026-11-18 ([pull request #323](https://github.com/felipenoris/AWS-DataScience/pull/323)): `data_transfer_role_enabled`,
+  off by default, creates `awsds-sandbox-warehouse-data-transfer`, whose ARN is the output
+  `data_transfer_role_arn`; applied for the sitting from a `main` that holds it; the switch on. Two readings
+  the code could not take: the data key's policy delegates to IAM only through Redshift Serverless, so a write
+  through S3 is refused until `sandbox/data/`'s key policy names the role (AWS's
+  `GenerateDataKeyDecryptDataTransferRole`, a D31 widening and the user's decision); and `update-catalog`
+  takes the whole `CatalogInput`, so `get-catalog` comes first (Lesson 60).
   **[Claude] reads** what AWS Glue creates (a cluster or a Serverless workgroup, in Sandbox or out of it,
   its namespace, key and base capacity), the creation in CloudTrail under its caller, and whether
   `DenyRedshiftProvisionedClusters` refused it.
@@ -661,7 +667,7 @@ object created alone and read back for `IAMAllowedPrincipals` before anything is
   account shows it, and the bill by usage type the next day.
 - **4.7 An RMS catalog**: not run, since decision 3 took (b).
 - **4.8 [Claude⚡] Removed in the sitting**: data lake access off, the catalog deleted, the namespace's
-  registration withdrawn, the transfer role's variable off and applied, each read back absent.
+  registration withdrawn, `data_transfer_role_enabled` off and applied, each read back absent.
 
 **The commands of pass 4**, in a shell that ran pass 2's first block. Every `$A` a colon follows is braced
 (`${A}:catalog`): zsh takes the colon after a bare parameter for a modifier (Lesson 84).
@@ -691,8 +697,14 @@ aws lakeformation grant-permissions --principal \
 # 4.3 and 4.6 the session's identity, and the compute
 q "select user_id, query_id, start_time, query_text from sys_query_history
    where start_time > '<the read>' order by start_time"
-# 4.5 ⚡ the transfer role in sandbox/warehouse/ behind its variable, applied for the sitting: the page's
-# trust (glue, redshift) and policy (glue:GetCatalog, glue:GetDatabase, kms:GenerateDataKey, kms:Decrypt).
+# 4.5 ⚡ the transfer role, sandbox/warehouse/'s data_transfer_role_enabled, applied for the sitting from a
+# main that holds pull request #323: the page's trust (glue, redshift) and policy (glue:GetCatalog,
+# glue:GetDatabase, kms:GenerateDataKey, kms:Decrypt); its ARN is the output data_transfer_role_arn.
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse plan -input=false \
+  -var data_transfer_role_enabled=true -out="$HOME/tmp/s21-warehouse-transfer.tfplan"   # 2 to add
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse apply -input=false \
+  "$HOME/tmp/s21-warehouse-transfer.tfplan"
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse output -raw data_transfer_role_arn
 # The update passes the whole input get-catalog returned with DataLakeAccessProperties added: whether
 # UpdateCatalog drops what it is not passed is unread (Lesson 60).
 aws glue get-catalog --catalog-id "${A}:stage21_warehouse" --profile $S
@@ -713,7 +725,11 @@ aws lakeformation deregister-resource --resource-arn "$DS" --profile $S
 aws redshift disassociate-data-share-consumer --data-share-arn "$DS" \
   --consumer-arn "arn:aws:glue:us-west-2:${A}:catalog" --profile $S
 aws redshift deregister-namespace --namespace-identifier "$NSID" --consumer-identifiers "$A" --profile $S
-# then sandbox/warehouse/'s transfer-role variable off, planned and applied
+# then sandbox/warehouse/ planned without the variable and applied: the role and its policy go
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse plan -input=false \
+  -out="$HOME/tmp/s21-warehouse-transfer-off.tfplan"                                    # 2 to destroy
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse apply -input=false \
+  "$HOME/tmp/s21-warehouse-transfer-off.tfplan"
 ```
 
 ### 5. Images as an S3 Object Collection
@@ -835,7 +851,7 @@ answer in the user's words. Taken: 1 to 3.
    `test-experimentation` for one sitting through 1.5's code, its base capacity locked at 4 RPU before the
    create, and removed at 2.9; between the warehouse and that workgroup the fulfilment is the
    datashare-and-view shape. It amends D40 and D12 for the sitting, admits no second project to the
-   warehouse, and leaves 6h decision 8 open. If the blueprint will not hold the floor, decision 1 returns
+   warehouse, and leaves 6h decision 8 (a)'s switch off. If the blueprint will not hold the floor, decision 1 returns
    to the user. Not taken: (a) `test-experimentation` admitted to the Sandbox warehouse under 6h decision 8
    (a), the tag `for-use-with-all-datazone-projects=true`, and a target written with
    `CreateSubscriptionTarget` if none appeared: the institution's own shape, a project that adds an
@@ -885,7 +901,7 @@ Each write is on the user's word, in this order, each object read before its del
 1. **[user] The subscriptions revoked** (2.7, 5.7), then **the listings unpublished and the data products
    deleted**, in the order [`catalog.md`](../runbooks/catalog.md) §A's deletion takes.
 2. **[Claude⚡] The federated catalog and data lake access** (4.8), if 4.8 did not run: the switch off, the
-   catalog deleted, the registration withdrawn, the transfer role's variable off and applied.
+   catalog deleted, the registration withdrawn, `data_transfer_role_enabled` off and applied.
 3. **[Claude⚡] The lineage credentials** (3.5), if 3.5 did not run: the second connection by a member, the
    user dropped, the secret deleted with no recovery window.
 4. **[user] then [Claude⚡] The consumer's workgroup** (2.9), if 2.9 did not run: the compute removed in
@@ -912,8 +928,8 @@ Each write is on the user's word, in this order, each object read before its del
 
 - **Stage 19**: its pass 5 shares the warehouse sitting. Its 5.3 asset is the one 2.2 reads when it ran
   first, and its 5.4 revocation waits for pass 2's end.
-- **6h**: decision 1 (b) admits no second project to the warehouse, so its decision 8 stays open and
-  `WH-7` as it is. Pass 3 reads a lineage run, and its decision 3 stays the user's.
+- **6h**: decision 1 (b) admits no second project to the warehouse, so its decision 8 (a), taken
+  2026-11-17 with its switch written and off, is turned on nowhere here, and `WH-7` stays as it is. Pass 3 reads a lineage run, and its decision 3 stays the user's.
 - **6d, 17, 19 and 20**: 1.5's variables ride `sagemaker-prereqs`, `sandbox/sagemaker/` and
   `data-governance/governance/`, which their applies plan too. Off by default, they plan `No changes` in
   another stage's tree; the sitting's apply is announced to the other sessions first, and `US-3` reads red

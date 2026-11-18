@@ -3879,3 +3879,17 @@ session wrote this entry and took the commit into pull request #320. On the lapt
 - **[Claude] `TM-34`**, brought to decision 17's control reading of 2026-11-18: no condition key exists for
   `StartNotebookRun`, so the domain-level VPC is the control left, and 4.7's negative, a project-role run
   asking for `PUBLIC_INTERNET_ONLY` once `L-85C9EC5A` is above 0, is what shows it binds.
+
+## 2026-11-18 — the application projects ordered after 2.7's step 5
+
+*The user, in the orchestrating session's chat, at about 17:02 UTC; recorded by Claude, the orchestrating
+session. No AWS call.*
+
+- **[user] The order**, on Claude's recommendation that the three application projects be created once
+  step 3's apply and step 5's throwaway project have run, so that each is born with the blueprint's domain
+  alone and takes none of steps 2, 4 and 6: *"Podemos criar os apps após os passos indicados, conforme sua
+  recomendação."* `app-dbt-dev` (Stage 20 2.0), `app-ml-dev` (Stage 17 9.6) and `app-genai-dev` (Stage 17
+  10.4) wait on step 5; the three stage files, the waiting list and `promotion.md` §N.6 item 2 follow.
+- **[Claude] A count corrected in step 2**: its readings ran `US-5` and `US-7` "at four domains", the count
+  of 2026-10-30, when `eighth-experimentation` alone was to take the act; with `app-etl-dev` created on
+  2026-11-14 and the pilot deleted on 2026-10-31, step 2 leaves six, two per project.

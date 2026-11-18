@@ -496,3 +496,27 @@ laptop. Nothing applied and nothing written in AWS. Account ids are replaced by 
   first entry of this log records under the old labels.
 - **[Claude]** The entry of 2026-11-18 above keeps the first version, with the unbraced `$A` and the column
   `tom`. Cutting it from the log is the user's call.
+
+## 2026-11-18 — 4.5's data transfer role written and planned, not applied
+
+*Claude, a subagent of the orchestrating session, in a worktree of its own, on the laptop with nothing up;
+the orchestrating session pushed the branch, opened the pull request and wrote the stage file's commands.
+The infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1`. Times are
+UTC.*
+
+- **[Claude] The code**, in the commit of 6h decision 8 (a)'s switch: `sandbox/warehouse/`'s
+  `data_transfer_role_enabled`, default false, creates `awsds-sandbox-warehouse-data-transfer`, trusted by
+  `glue.amazonaws.com` and `redshift.amazonaws.com` with no condition, as AWS's prerequisites page writes
+  it; `glue:GetCatalog` and `glue:GetDatabase` on the account's catalog and on `stage21_warehouse`, its
+  children and their databases (`federated_catalog_name`, validated to `^[a-z0-9_-]+$`); `kms:GenerateDataKey`
+  and `kms:Decrypt` on the account data key; the output `data_transfer_role_arn`.
+- **[Claude] The plans**: with `-var data_transfer_role_enabled=true`, 16:42:17, *"Plan: 2 to add, 0 to
+  change, 0 to destroy."*, the role and its inline policy; with both switches, 16:56:01, *"Plan: 2 to add, 1
+  to change, 0 to destroy."*; with both off, *"No changes."*
+- **[Claude] What the code could not read**: the data key's policy delegates to IAM only through Redshift
+  Serverless (`AllowRedshiftServerlessViaServiceInThisAccount`), so a write by the managed compute through S3
+  is refused until `sandbox/data/`'s key policy names the role, AWS's `GenerateDataKeyDecryptDataTransferRole`
+  and a D31 widening; and `UpdateCatalog` takes a whole `CatalogInput`, so 4.5 reads `get-catalog` first.
+  Step 4.5 and pass 4's commands name the variable, the saved plan and the output, and 4.8's teardown plans
+  the slice without it.
+- **[Claude] The pull request**: [#323](https://github.com/felipenoris/AWS-DataScience/pull/323).

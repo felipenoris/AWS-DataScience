@@ -1156,7 +1156,8 @@ that trains it. And the developer's loop gains a `bundle` before each `deploy` (
   on the condition that the path is AWS's, which that day's reading of AWS's `ml/deployment` example
   and SageMaker AI's project templates meets (`TM-33`).
 - **9.6 — [user] The loop in Sandbox, where the model is trained.** The project `app-ml-dev` from the
-  `experimentation` profile, as `app-etl-dev` was created (Stage 19 1.5); the bundle role
+  `experimentation` profile after 6d step 2.7's step 5, born with the blueprint's domain alone (the user,
+  2026-11-18), as `app-etl-dev` was created (Stage 19 1.5); the bundle role
   `awsds-deploy-sandbox-test` and Sandbox's `InfrastructureAccess` its contributors, which makes that
   role a member of each application's `dev` project; its MLflow App through `datazone create-environment`
   with the profile's `MLflowApp` configuration (1.5's path, since the portal greys the entry out), the
@@ -1537,7 +1538,7 @@ each run (decision 24 (b)).
   OU's document with the model's `us-west-2` ARN in its `NotResource`, the battery's row written
   and run in the same sitting [Claude⚡]. [user] Nova Lite enabled in projects on the console's
   **Amazon Bedrock models** tab, its *On-demand* row, as decision 13's third step enabled the first
-  five. [user] The project `app-genai-dev` from the `experimentation` profile, as `app-etl-dev` was
+  five. [user] The project `app-genai-dev` from the `experimentation` profile after 6d step 2.7's step 5 (the user, 2026-11-18), as `app-etl-dev` was
   created (Stage 19 1.5), with the bundle role and Sandbox's `InfrastructureAccess` its
   contributors; the model reaches the project by decision 13's path, and its application inference
   profile is read with `list-inference-profiles`, expected to list the model in `us-west-2` alone.

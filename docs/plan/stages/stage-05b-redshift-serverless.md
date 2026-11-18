@@ -463,15 +463,16 @@ Lesson 28's intersection in a third permission layer.
   workgroup tagged with its project, the same to every project role under the wide tag, and
   `GetCredentials` on any workgroup through `sqlworkbench`. What does not survive is the assumption that the
   gate in front of them can be per project too.
-  `sandbox/warehouse/`'s `projects` variable refuses a second entry at plan time, because the alternative is
+  `sandbox/warehouse/`'s `projects` variable refuses a second entry at plan time while `all_projects_tag_enabled` is false, because the alternative is
   a silent overwrite that breaks the first project's connection with nothing in the plan output to say which
   project lost access. **How a second project is admitted is [6h](stage-06h-redshift-connection.md)
-  decision 8**, new on 2026-09-20 and not taken; a second project exists since 2026-10-15 and is in no map.
+  decision 8**, new on 2026-09-20 and taken 2026-11-17 as (a), the wide tag behind `all_projects_tag_enabled`, off by default (pull request #323); a second project exists since 2026-10-15 and is in no map.
 
   **Two things about the tag have to be said now:**
   - AWS offers a wide form — `for-use-with-all-datazone-projects=true`, *"to allow all Amazon SageMaker
-    Unified Studio projects in this account to access it"*. **It is refused here**, and `WH-7` fails if it
-    appears on either object: it is the same shape as an empty deny-list permitting everything, and it turns
+    Unified Studio projects in this account to access it"*. **It was refused here**, `WH-7` failing if it
+    appeared on either object, until 6h decision 8 (a) admitted it on 2026-11-17 behind
+    `all_projects_tag_enabled`, off by default: it is the same shape as an empty deny-list permitting everything, and it turns
     "per project" into "per account" with one tag. *It is also the only mechanism AWS gives for more than one
     project*, which is what makes 6h decision 8 a real choice rather than a formality.
   - The tag is on **two objects**, workgroup *and* namespace, which is Lesson 14's shape — a value that must
@@ -695,7 +696,7 @@ absences as expected readings:
 | `WH-4b` | both alarms exist, `ComputeCapacity` and `DataStorage`, with their state |
 | `WH-5` | `admin_password_secret_arn` is set, `manage_admin_password` is true, and no password string appears in the slice's state |
 | `WH-6` | each account holds exactly one class database under its expected name and no sandbox database exists in Production — the classification a thematic schema name cannot provide. The schemas themselves are `WH-12`'s list, read against the register (2.1) |
-| `WH-7` | the project tags on **both** workgroup and namespace match the authored map — and `for-use-with-all-datazone-projects` appears on neither |
+| `WH-7` | the project tags on **both** workgroup and namespace match the authored map, and `for-use-with-all-datazone-projects` appears on neither; under 6h decision 8 (a)'s switch, that tag at `true` on both, the project tag only for a map of one, and neither tag on the admin secret |
 | `WH-8` | the namespaces and workgroups in every profiled account, so a hand-made one is a diff |
 | `WH-13` | ***[corrected 2026-09-20] it cannot be read, and the check is a note that says so.*** `SVV_SCHEMA_QUOTA_STATE` **and** `STV_SCHEMA_QUOTA_STATE` answer `permission denied for relation` to the namespace admin, who is a superuser, and no other catalog view carries a schema's quota (`svv_redshift_schemas.schema_option` is empty for a schema that has one). So a quota is **authored and proven by breach, never read back** — and the breach was exercised: 2458 MB against a 2048 MB quota, refused **at commit**, with the usage exceeding the quota *inside* the transaction. The floor is also undocumented: *"Schema quota must be between 2048 and 524288000 MB"*. What survives of this check's intent lives in the runbook's `CREATE SCHEMA`, and the owner half moved to `WH-12` |
 | `WH-15` | the last published `ComputeSeconds` interval as a rate: `fail` at 3.5 RPU sustained or more, `note` while something runs below that, `pass` when idle |

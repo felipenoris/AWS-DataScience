@@ -899,8 +899,8 @@ for e in <event names>; do aws cloudtrail lookup-events --lookup-attributes Attr
 
 - **2.0 Before the sitting, with nothing up**: the project, its grant and its image, then the starting
   state, the archive and the tar.
-  - **[user] The project** `app-dbt-dev`, from the `experimentation` profile in the portal, as
-    `app-etl-dev` was ([Stage 19](stage-19-smus-native-data-product.md) step 1.5), and its members: the
+  - **[user] The project** `app-dbt-dev`, from the `experimentation` profile in the portal after 6d step 2.7's
+    step 5, born with the blueprint's domain alone (the user, 2026-11-18), as `app-etl-dev` was ([Stage 19](stage-19-smus-native-data-product.md) step 1.5), and its members: the
     bundle role `awsds-deploy-sandbox-test`, which `bundle` reads the project as (8.6), and Sandbox's
     `InfrastructureAccess`, whose session reads the project from the laptop, both
     `PROJECT_CONTRIBUTOR`, added in the portal's member dialog, which lists a role's group by the role's
