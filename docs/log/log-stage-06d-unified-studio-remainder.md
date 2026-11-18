@@ -4129,3 +4129,41 @@ execução no momento)"*. Reads only, through the five infrastructure profiles. 
   0.0500 USD/h, about 0.03 USD so far since 2026-11-18 21:47 UTC, domain d-tzzj1mqagk9d"*, *"no Studio app
   billing in data-governance, identity, production, staging"*, and *"estimated burn: USD 0.0500/h"*, where
   the run that ended at 21:58:36 read 0.0000.
+
+## 2026-11-18 — 2.7 step 5 closed: `throwaway-6d` deleted, its residues read
+
+*The user deleted the space and the project in the portal. Claude, the orchestrating session, read the
+deletion and what it left, reads only, through `awsds-infra-sandbox-1` and `awsds-infra-data`. Times are
+UTC.*
+
+- **[user] The acts**: *"Apaguei o espaço test e o projeto throwaway-6d"*.
+- **[Claude] The user's calls**: in Sandbox, `DeleteApp` on the space `test`'s JupyterLab app at 22:56:29
+  and `DeleteSpace` at 22:56:34, by the project role from the browser; in Data Governance, `DeleteProject`
+  at 22:57:05 with `skipDeletionCheck` `true`, by `awsds-data-studio-domain-execution` from the browser.
+- **[Claude] The deletion's order**: the provisioning role, session `AmazonDataZoneEnvironmentDeployer-*`,
+  its calls marked `datazone.amazonaws.com`, called `DeleteStack` on the blueprint's
+  `DataZone-Env-4un4zz4uj62nww` at 22:58:34, then `DeleteUserProfile` (the profile the space's creation
+  made) and `DeleteDomain` on `d-tzzj1mqagk9d`, both at 22:58:37; the stack deleted its one resource,
+  `AWS::SageMaker::Domain`, from 22:58:36 to 22:58:48. The project role deleted its own Access Grants
+  location at 22:59:30. `DeleteStack` on the `Tooling`'s `DataZone-Env-cc1e2f06mdfcpc` followed at
+  22:59:45: twelve of its thirteen resources deleted by 23:00:12, `ToolingCloudWatchLogGroup`
+  `DELETE_SKIPPED`. `get-project` answered *"Project not found"* at 23:05:07.
+- **[Claude] What is gone**: the domain, its space and its user profile. No
+  `security-group-for-*-nfs-` group of the domain is left, the six living domains keeping theirs, and the
+  account holds no EFS file system, a Unified Studio domain having none (no `HomeEfsFileSystemId`). The
+  project role and both Bedrock roles answer `NoSuchEntity`; the two Athena workgroups, the Glue
+  connections, the schedule group and the Lake Formation registration of `dev/` are gone; `list-permissions`
+  returns 42 permissions in the account, none naming the project.
+- **[Claude] What stays** (`SUP-165` gains the reading): the log group `datazone-b94v2p77d11oy8-dev`, 731
+  days and 0 bytes (`SUP-174`); the domain's three streams in `/aws/sagemaker/studio`, which never expires
+  (`EXC-10`); the prefix `dzd-d8yrvx1ko7im6o/b94v2p77d11oy8/` in `awsds-sandbox-smus-projects`, five current
+  objects and 87,233 bytes written at the project's creation (the `dev/` and `shared/` markers,
+  `shared/.libs.json`, `README.md` and `getting_started.ipynb`), which the bucket's lifecycle, expiring
+  noncurrent versions alone, never removes; and the domain's `IAM` user profile of the deleted project role,
+  `ACTIVATED`.
+- **[Claude] The creation's one refusal**, read in the same trail: the project role's first
+  `CreateAccessGrantsLocation`, at 21:45:04, was refused `AccessDenied`, and its retry at 21:45:08 answered.
+- **[Claude] The burn**: `./scripts/slices.py status --env sandbox`, ending at 23:07:30, read every slice
+  down, *"no Studio app billing in sandbox"* and *"estimated burn: USD 0.0000/h"*.
+- **[Claude] What it settles**: step 5 is done. The three application projects follow, `app-dbt-dev`,
+  `app-ml-dev` and `app-genai-dev`, created by the user from `experimentation` with their contributors.

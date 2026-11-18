@@ -2227,6 +2227,16 @@ entry is still true is the reading.
   the domain's `IAM` user profiles of the deleted project role and the deploy role, the deploy role's group
   profile and 44 lineage events, which no delete API reached. Where: `log-stage-06a-unified-studio.md`,
   2026-08-26; `log-stage-18-staging-deployment-project.md`, 2026-10-22.
+  **Read again 2026-11-18** (Stage 6d 2.7 step 5), on a project holding the `SageMakerAIDomain`
+  blueprint's environment beside a `Tooling` with spaces off. The portal's `DeleteProject`
+  (`skipDeletionCheck` `true`) at 22:57:05 UTC was followed by the provisioning role's `DeleteStack` on
+  the blueprint's stack at 22:58:34, its `DeleteUserProfile` (the profile the space's creation made) and
+  `DeleteDomain` at 22:58:37, the project role's `DeleteAccessGrantsLocation` at 22:59:30, and
+  `DeleteStack` on the `Tooling`'s at 22:59:45. Left: the prefix's five objects written at the project's
+  creation (87,233 bytes), the log group (`SUP-174`), the domain's streams in `/aws/sagemaker/studio`
+  (`EXC-10`) and the `IAM` user profile of the deleted project role. No EFS file system, NFS security
+  group or Lake Formation permission was left. Where: `log-stage-06d-unified-studio-remainder.md`,
+  2026-11-18.
 
 - `SUP-166` **SMUS registers each project's `dev/` prefix with Lake Formation under the project role and
   grants on it to a project condition, not to a role** (read 2026-09-12 in Sandbox's trail since 2026-08-20,
