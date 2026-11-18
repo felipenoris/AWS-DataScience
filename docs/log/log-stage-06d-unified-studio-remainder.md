@@ -4039,3 +4039,77 @@ session, read the merge with `gh` and the result through `awsds-infra-data` (Dat
   projects' second domain is the user's decision. Step 5's throwaway project, born with `enableSpaces`
   `false`, reads what the application projects will meet: *Workflows* and the portal's default space with
   the blueprint's domain alone. The user offered a Chrome session for the portal; the readings needed none.
+
+## 2026-11-18 — 2.7 step 5: `throwaway-6d`, a project born with the blueprint's domain alone
+
+*The user, in the portal; Claude, the orchestrating session, read the result as the infrastructure user,
+permission set `InfrastructureAccess`, through `awsds-infra-data` (Data Governance) and
+`awsds-infra-sandbox-1` (Sandbox), from 21:52 UTC. Reads only. Times are UTC.*
+
+- **[user] The acts**, reported as *"Notei que a tela de criação de projeto tem parâmetros opcionais para
+  definir `SageMakerAIDomain`. Eu não preenchi. Criei o projeto `throwaway-6d`. Na aba `Code Spaces`, o
+  formulário de criação do space deixou de oferecer um campo de `domain`. [...] Criei um space de teste
+  para você tentar ver via AWS CLI em qual domain ela se encontra. [...] tento no `test-experimentation`
+  quanto no projeto novo `throwaway-6d`, na tela de workflows eu não vejo nenhuma configuração para
+  parametrizar o domain."* The user offered a Chrome session; the readings needed none.
+- **[Claude] The project and its environments**: `throwaway-6d` (`b94v2p77d11oy8`), created at 21:43:54 from
+  `experimentation` by the user's identity, overall deployment `SUCCESSFUL` at 21:46:29. `Tooling`
+  (`cc1e2f06mdfcpc`) created at 21:43:57, its stack `DataZone-Env-cc1e2f06mdfcpc` at 21:44:09, `ACTIVE` at
+  21:45:12. `SageMakerAIDomain` (`4un4zz4uj62nww`, configuration `ffd41bb5-…`) created at 21:45:29, its
+  stack at 21:45:40, `CreateDomain` at 21:45:46 by `awsds-sandbox-smus-provisioning` through DataZone,
+  `ACTIVE` at 21:46:12. The blueprint's environment starts once `Tooling`'s is `ACTIVE`.
+- **[Claude] `Tooling` exports no domain**: its `userParameters` hold `enableSpaces` `false`, `isEditable`
+  false, from birth; its stack's 65 parameters carry `enableSpaces` `false`; its 13 resources hold no
+  `AWS::SageMaker::Domain`, Stage 18's Staging shape (`SUP-160`), and its provisioned resources no
+  `sageMakerDomainId`.
+- **[Claude] The blueprint deploys without it**: its stack's 30 parameters equal `test-experimentation`'s
+  (`DataZone-Env-61sozk11eycnm8`, step 2) but for the project's ids, its security group, its role, its
+  `shared` prefix and an empty `domainName`, so the blueprint takes the role, the group, the subnets, the
+  key and the bucket from `Tooling`, never a domain. The domain `d-tzzj1mqagk9d`, `InService`, equals
+  `d-jaid1tvg20jv` field by field once the ids are set aside: `IAM`, `VpcOnly`, the house image version 11,
+  Docker `ENABLED`, no EFS, the `shared` mount at the project's prefix, the tag `ProjectS3Path` at the
+  bucket's root (`SUP-379`).
+- **[Claude] The creation form's parameters**: the `SageMakerAIDomain` element offers five editable ones,
+  `domainName`, the two idle timeouts (60), `hiddenInstanceTypes` and `hiddenSageMakerImageVersionAliases`
+  (empty), and the portal sent the two timeouts. With `domainName` empty the domain is named
+  `SageMakerUnifiedStudio-b94v2p77d11oy8-4un4zz4uj62nww-dev`, the `Tooling` domains' pattern. The tag
+  `AmazonDataZoneBlueprint` tells the two kinds apart: `SageMakerAIDomain` on this one, `Tooling` on
+  `d-lfgbdrjncmsu`.
+- **[Claude] The deployer's refused `ListTags`**: at 21:45:58, 12 s after `CreateDomain`,
+  `awsds-sandbox-smus-provisioning` through DataZone was refused `sagemaker:ListTags` on the new domain,
+  *"no identity-based policy allows the sagemaker:ListTags action"*. The same refusal stands at 18:16:36,
+  18:20:53 and 18:24:08 on step 2's three domains. `SageMakerStudioProjectProvisioningRolePolicy` v86, the
+  role's only policy, carries no `sagemaker:ListTags`, and each environment went `ACTIVE`. `SUP-381`
+  records it.
+- **[Claude] Code spaces**: the user's space `test` is in `d-tzzj1mqagk9d`, the project's only domain, so
+  *Create space* shows no selector. The calls, by the project role from the browser: five
+  `DescribeUserProfile` refused from 21:46:44 to 21:46:58 on the user's profile in that domain, which did
+  not exist yet; `CreateSpace` at 21:47:31 (JupyterLab, the house image version 11, `ml.t3.medium`, EBS 16,
+  idle 60, `spaceManagedResources` `ENABLED`, the `shared` mount at the project's prefix, remote access
+  `DISABLED`, `Private`); in the same second `CreateUserProfile` for the user, invoked by
+  `sagemaker.amazonaws.com`, and at 21:47:35 `CreateApp`, invoked the same way. Each carries the project's
+  tags, `AmazonDataZoneBlueprint` `SageMakerAIDomain` and `ProjectS3Path` at the root. At 21:48:05 the same
+  role's `DescribeUserProfile` on the same ARN answered: the ML policy v48 allows it only where the
+  profile's `AmazonDataZoneProject` tag equals the role's, and an absent profile has no tag (Lesson 80 gains
+  the reading). `test-experimentation`'s role met the same five refusals from 21:49:12 to 21:49:25 on
+  `d-jaid1tvg20jv`, where the user holds no profile: *Create space* probing the blueprint's domain.
+- **[Claude] The portal's default space**: `CreatePresignedDomainUrl` for `default-<user id>` in
+  `d-tzzj1mqagk9d` at 21:48:13, 21:48:26 and 21:48:36, each `ResourceNotFound`, and no `CreateSpace` for
+  it. With one domain, the portal looks for its default space in the blueprint's.
+- **[Claude] Workflows opened**: `throwaway-6d`'s role called `ListWorkflows` and `ListWorkflowRuns` from
+  21:48:11 to 21:48:58, each answered, and was refused `GetWorkflow` on nine other workflows in the account;
+  `test-experimentation`'s role read its own `houseprice_etl` at 21:49:42 and was refused eight others, each
+  role reading its own project's alone. Stage 18's *"Spaces are not enabled in this project profile"* did
+  not recur: the tool opens on a `Tooling` that holds `enableSpaces` `false` when the blueprint's domain is
+  beside it (`SUP-160` gains the reading). It has no domain field, since a workflow runs on MWAA Serverless
+  with the project role and in no space.
+- **[Claude] The app**: `CreateApp` at 21:47:35, `Pending` at 21:56:30, the container's first log line at
+  21:56:50, `PostStartup` at 21:59:28 timing out on the domain's feature flags (*"Failed to fetch domain
+  page: <urlopen error timed out>"* on `dzd-d8yrvx1ko7im6o.sagemaker.us-west-2.on.aws`) with the hub and
+  `sandbox/egress` down, `InService` at 22:01:11. `make status`, ending at 21:58:36, read every slice down
+  and 0.0000 USD/h; the app bills 0.050 USD/h outside it (`docs/PRICING.md`), which `US-10` sees.
+- **[Claude] What it settles**: a project created under the profile works as the application projects will.
+  It holds one domain, the blueprint's; its first space creates the user's profile; the portal's default
+  space and *Workflows* find what they need. Step 5's portal half is done. Next the user deletes the space
+  `test`, then the project, and Claude reads the deletion's residues (`EXC-10`'s groups, the projects
+  bucket's prefix).

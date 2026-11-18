@@ -1872,6 +1872,14 @@ deleted name proves nothing about it.
 the "not found" that follows it is fixed by recreating the name, which a later reader takes for the
 access coming back.
 
+**Read again 2026-11-18, from the other side.** A refusal can name a permission when the object is what is
+missing. In 6d 2.7 step 5, `throwaway-6d`'s project role was refused `DescribeUserProfile` five times from
+21:46:44 UTC, *"no identity-based policy allows"*, on the user's profile in the blueprint's domain.
+SageMaker created the profile at 21:47:31, and the same role's same call on the same ARN answered at
+21:48:05. The ML policy allows the call only where the profile's `AmazonDataZoneProject` tag equals the
+role's, and an object that does not exist has no tag. Under a tag-conditioned allow, read whether the
+object existed at that second before reading an `AccessDenied` as a missing grant.
+
 ## Lesson 81 — a notebook's engine is a bill of its own, sized by its connection and kept by its idle timeout, and the space's price is not the session's
 
 **What happened.** Stage 19's Sandbox sitting priced its window at the hub's and the endpoints' 0.2 USD/h

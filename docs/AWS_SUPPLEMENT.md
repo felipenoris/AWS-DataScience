@@ -2092,6 +2092,12 @@ entry is still true is the reading.
   AI domain, and the portal's Workflows tool refused: *"This tool is not available for this project: Spaces
   are not enabled in this project profile. Please contact your admin."* Where:
   `log-stage-18-staging-deployment-project.md`, 2026-10-19 and 2026-10-20.
+  **Read again 2026-11-18** (Stage 6d 2.7 step 5): `experimentation` locks `enableSpaces` `false` and
+  deploys the `SageMakerAIDomain` blueprint `ON_CREATE` beside it. Its project `throwaway-6d` got the same
+  thirteen `Tooling` resources with no domain, the blueprint's domain beside them, and the Workflows tool
+  opened: `ListWorkflows` and `ListWorkflowRuns` answered to the project role from 21:48:11 to 21:48:58
+  UTC. A project with no SageMaker AI domain is refused; one whose only domain is the blueprint's is not.
+  Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
 
 - `SUP-161` **A V2 domain refuses the three catalog designations the DataZone API lists** (measured
   2026-10-20, Stage 18 6.1). `create-project-membership` with `PROJECT_CATALOG_VIEWER`,
@@ -2423,6 +2429,16 @@ entry is still true is the reading.
   keeps its copy. Only `enableSpaces` was measured: whether a locked override in another element, the
   `SageMakerAIDomain` image pin among them, stops at the same copy is unmeasured. Where:
   `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
+
+- `SUP-381` **The `SageMakerAIDomain` blueprint's deployer calls `sagemaker:ListTags` on the domain it has
+  just created, which the provisioning role's managed policy does not grant, and the environment goes
+  `ACTIVE` regardless** (measured 2026-11-18 in Sandbox, Stage 6d 2.7 steps 2 and 5). On each of four
+  creations `awsds-sandbox-smus-provisioning`, through DataZone, was refused `sagemaker:ListTags` on the new
+  domain 12 to 13 s after its `CreateDomain`: at 18:16:36, 18:20:53, 18:24:08 and 21:45:58 UTC, *"no
+  identity-based policy allows the sagemaker:ListTags action"*. The role's one policy,
+  `SageMakerStudioProjectProvisioningRolePolicy` v86, carries no `sagemaker:ListTags`. The four environments
+  read `ACTIVE`, their `CREATE` deployments `SUCCESSFUL`, so this refusal in the trail is no deployment's
+  cause. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
 
 ### The managed policies of a project role
 

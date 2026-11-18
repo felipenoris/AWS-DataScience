@@ -1155,9 +1155,10 @@ bound items 3, 5, 6, 9 and 11.
    were taken on 2026-11-17 on the open-decisions review's cards (pull request #317): Stage 19 decisions
    28 and 15, Stage 20 decisions 9 and 11, 6h decisions 3 and 8, and 6d decision 16 (a), under which a
    project created before 6d's step 2.7 applies the profile takes that step's path for living projects.
-   Left: 6d 2.7's step 5 first (steps 2 to 4 done 2026-11-18, step 4's *Update project* retiring no
-   `Tooling` domain, `SUP-380`), the three application projects being
-   created after them (the user's order, 2026-11-18); then the projects `app-ml-dev` and `app-genai-dev` created with their
+   Left: 6d 2.7's step 5 closed by `throwaway-6d`'s deletion (steps 2 to 4 done 2026-11-18, step 4's
+   *Update project* retiring no `Tooling` domain, `SUP-380`; step 5's project read the same day, *Workflows*
+   opening on the blueprint's domain alone), the three application projects being
+   created after it (the user's order, 2026-11-18); then the projects `app-ml-dev` and `app-genai-dev` created with their
    contributors and Nova Lite enabled (9.6, 10.4), after which Claude plans the Sandbox slices that read the projects' roles and the
    user applies them; the project `app-dbt-dev` with its contributors (Stage 20 2.0), then its
    `sandbox/workflows/` line, which Claude writes and the user applies; and Stage 20 8.3's two
