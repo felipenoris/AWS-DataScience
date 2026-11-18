@@ -2158,6 +2158,20 @@ entry is still true is the reading.
   parameters. A roster listing does not show that a blueprint's template moved; the get does. Where:
   `upstream-releases.md`, the `SageMakerAIDomain` row.
 
+- `SUP-378` **The `RedshiftServerless` blueprint's template treats a base capacity of 128 and a maximum of 0 as
+  sentinels, and the blueprint's user parameters default the maximum to 512 RPU** (read 2026-11-18, Stage 21
+  1.3, the template `DataZone-Amazon-SageMaker-RedshiftServerlessDefault-prod-20250515.template.json`,
+  `LastModified` 2026-11-13T19:43:40Z, through the blueprint's `templateUrl`). `redshiftBaseCapacity` and
+  `redshiftMaxCapacity` are `Number`s with no `AllowedValues`, defaults 128 and 0. The workgroup gets
+  `BaseCapacity` only when the base is not 128, `MaxCapacity` only when the maximum is not 0, and
+  `PricePerformanceTarget` `{Level: 50, Status: ENABLED}` only when the base is 128. The blueprint's own
+  user parameters differ from the template's defaults: `redshiftMaxCapacity` `"512"` (template 0),
+  `provisionManagedSecret` `"true"` (false), and the names `redshift-serverless-workgroup` and
+  `redshift-serverless-namespace` (`datazone-workgroup`, `datazone-namespace`). An unconfigured create
+  therefore gives a workgroup on a price-performance target with no base and a 512-RPU maximum; a locked
+  override of the base holds a floor. No AWS page states the sentinels or `MaxCapacity`'s range. Where:
+  `log-stage-21-redshift-s3-data-products.md`, 2026-11-18; `data-governance/governance/locals.tf`.
+
 ### Environments and projects
 
 - `SUP-163` **The `Workflows` blueprint has three states and the bill starts at the third.** Enabling it
@@ -2658,6 +2672,10 @@ entry is still true is the reading.
   Sandbox `DataLake` environment `CREATE_FAILED`, no Sandbox project could receive a Glue subscription until
   `test-experimentation`'s environment reached `ACTIVE` later that day. Where:
   `log-stage-06f-data-governance.md`, 2026-10-20; `docs/plan/integrations.md` `INT-23`.
+  Read again 2026-11-18 (Stage 21 1.3): `list-subscription-targets` returns `type: null` for every target and
+  `get-subscription-target` gives it, `GlueSubscriptionTargetType` on the lakehouse environment's target,
+  `BedrockModelSubscriptionTargetType` and `BaseSubscriptionTargetType` on `Tooling`'s; the Glue target is
+  authorized to `abac:CURRENT_PROJECT`. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-18.
 
 - `SUP-194` **DataZone sets `aws:SourceIdentity` on the project-role sessions it opens for a member or as
   `SYSTEM`, and on none it opens to fulfil a subscription** (measured 2026-10-21 and 2026-10-22, Stage 18
@@ -2890,6 +2908,16 @@ entry is still true is the reading.
   domain-wide answer to "is this name free" is the create's conflict, and a reading per project covers only
   the projects the reader is a member of. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-16;
   `runbooks/promotion.md` §N.8.5 step 1.
+
+- `SUP-377` **DataZone refuses `GetAssetType` to a member account's caller that `SearchTypes` answers with the
+  same types** (measured 2026-11-18 at 00:40 UTC, Stage 21 1.3). Sandbox's `InfrastructureAccess` session, a
+  contributor of both Sandbox projects, listed the 24 managed asset types and their forms with `search-types
+  --managed --search-scope ASSET_TYPE`, and `get-asset-type` answered *"is not authorized to perform:
+  datazone:GetAssetType on resource: arn:aws:datazone:us-west-2:<Data Governance Account>:domain/dzd-d8yrvx1ko7im6o
+  because no resource-based policy allows the datazone:GetAssetType action"*. The same call answered as
+  `awsds-infra-data` in Data Governance. The wording names a resource policy no API of the domain manages, so a
+  type's revisions and required forms are read from the domain's account. Where:
+  `log-stage-21-redshift-s3-data-products.md`, 2026-11-18.
 
 ### Connections
 

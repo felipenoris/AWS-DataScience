@@ -293,7 +293,7 @@ work at all* — is still open.
   3. **[Claude] (a)'s code**, one plan on `data-governance/governance/`: `enableSpaces` `false` locked in
      `tooling_parameters`, so `lake-publishing`'s concat goes and its element re-plans unchanged; the idle
      and EBS rows stay, inert on a `Tooling` that creates no domain; `SageMakerAIDomain` `ON_CREATE` in
-     `profiles.tf`'s mode rule; order 13 kept; `enableRStudio` `false` locked as written. `1 to change`. The apply is a reading of its own:
+     `profiles.tf`'s mode rule; order 13 kept; Stage 21's `RedshiftServerless`, order 14 while its switch is on, stays last and `ON_DEMAND`; `enableRStudio` `false` locked as written. `1 to change`. The apply is a reading of its own:
      `UpdateProjectProfile` refused `ToolingLite` `ON_DEMAND`, and whether it accepts a second `ON_CREATE`
      element after twelve `ON_DEMAND` ones is unmeasured; a refusal naming the order turns the change into a
      reorder, read against every environment's configuration id first, since the ids are what the living
