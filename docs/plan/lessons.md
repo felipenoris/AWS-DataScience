@@ -1982,6 +1982,27 @@ user. Where neither can be read, the record says the composer is unread.
 **What makes it expensive.** A wrong composer moves the fix to the wrong place: a retention rule aimed at the
 service instead of the client's parameter, a grant to a user no session reaches.
 
+## Lesson 86 — a reply that reports an act names the act, never its object, and the object is read before the step that consumes it
+
+**What happened.** On 2026-11-18 the session asked whether to make Stage 20 decision 17 (b)'s change in
+`app-dbt` after the merge of `awsds-workflows` pull request #28, and the user answered *"Fiz o merge. Pode
+fazer a mudança."* The merge the user had made was this repository's PR #319, at 15:33:19 UTC; #28 was still
+open, and that repository's `main` still at `1a50ceb`. The change's pin is #28's merge commit, which did not
+exist yet. The session read both pull requests' states before it wrote the pin, wrote the rest of the change
+on a branch cut from the merge it found, and left the pin for #28's merge (Stage 20's log, the same day).
+
+**Why it is a class.** Two pull requests were open at once, one per repository, and the question named one of
+them. The answer reports the act the user had just performed, and the act is real; its object is whichever
+the user had in front of them. A confirmation carries no identifier, so it fits every object of the right
+kind.
+
+**The rule.** A step that consumes another party's act reads the act's object first: the pull request's state
+and merge commit, the slice's state, the project's membership. A "done" in the chat authorizes the step and
+never supplies the identifier it consumes (Lesson 38).
+
+**What makes it expensive.** A pin taken from `main` before the merge names the commit the change was meant to
+leave, and the lint refuses it at the application's first push, weeks later and in another system.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits. The facts about the platform that cost a measurement to learn are in

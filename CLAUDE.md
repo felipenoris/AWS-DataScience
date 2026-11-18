@@ -550,6 +550,7 @@ The table is a first look by situation; the numbered list below it is complete.
 | Touch the network, the proxy or a client | 40, 42, 43, 44, 45, 53, 55, 56 |
 | Run a command or write a script | 46, 47, 52, 83, 84 |
 | Write the plan, a record or a decision, or read a vendor page | 1, 6, 7, 12, 15, 19, 32, 34, 37, 38, 41, 57, 85 |
+| Act on a reply that reports an act: a merge, an apply, a membership | 38, 86 |
 
 1. **A copy of governed data somewhere less governed is not a hole to be closed.**
 2. **A stand-in sharing an account with what it de-risks proves nothing about permissions.**
@@ -700,3 +701,5 @@ The table is a first look by situation; the numbered list below it is complete.
 84. **The laptop's shell is zsh, and a command written as bash expands to another string before it
     runs.**
 85. **A name has a composer, and a record that infers it from the name's shape credits the default.**
+86. **A reply that reports an act names the act, never its object — read the object before the step that
+    consumes it.**
