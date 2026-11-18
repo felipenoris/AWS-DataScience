@@ -26,12 +26,16 @@ the S3 connection.*
 are code and diff; a `GRANT` is state in the namespace that Terraform never wrote. That asymmetry
 is the whole of §U below.
 
-**Layer 1 admits exactly one project, and the limit is AWS's.** The admin *"adds 1 of the following
+**Layer 1 admits one project by its tag, and the limit is AWS's.** The admin *"adds 1 of the following
 tags"*: `AmazonDataZoneProject={{projectID}}`, which names one project, or
 `for-use-with-all-datazone-projects=true`, which names every project in the account. There is no
 per-project list, because it is a tag key. `sandbox/warehouse/`'s `projects` variable refuses a
 second entry for that reason — a second one would silently overwrite the first project's tag and the
 first project's connection would stop working with nothing in the plan to say which project lost it.
+A second project is admitted by the wide tag (6h decision 8 (a), taken 2026-11-17): the slice's
+`all_projects_tag_enabled` writes it on the namespace and, at the compute slice's next apply, on the
+workgroup, and only then does the map take a second entry. Every project role then reaches the compute
+under AWS's `ExistingRedshiftCompute`, and layer 3's `GRANT` is the per-project gate.
 
 ---
 
@@ -254,8 +258,8 @@ a sharing semantic nobody has asked for; read-across is what a shared base means
 
 **Read what the projects actually need before writing any of it.** If *"creates freely"* means
 *creates and reads its own*, none of the above is needed. It is also where layer 1's one-project limit
-bites: admitting a second project to the **warehouse** needs either the wide tag or a second
-workgroup, and that is a decision with a written argument, not a map entry.
+bites: admitting a second project to the **warehouse** needs the wide tag (6h decision 8 (a)), switched
+on in `sandbox/warehouse/` before the map takes the second entry (§O).
 
 ---
 
@@ -450,7 +454,7 @@ Then the per-project grants above. Unwiring is §U.
 
 | Check | What it reads | What its failure means |
 |---|---|---|
-| `WH-7` | the `AmazonDataZoneProject` tag on the workgroup and the namespace, against the authored map | layer 1. A tag on one object and not the other is a drift, and the compute is missing from the project's dropdown |
+| `WH-7` | the `AmazonDataZoneProject` tag on the workgroup and the namespace, against the authored map; with `for-use-with-all-datazone-projects` on either, that tag at `true` on both, the project tag only while the map holds one entry, and neither tag on the admin secret (`AWS_STATE.md` `INV-20`) | layer 1. A tag on one object and not the other is a drift, and the compute is missing from the project's dropdown. The wide tag on the admin secret opens the superuser password to every project role, the project tag to that project's |
 | `WH-11` | the slice's policy attached to each admitted project's role, and that the role still carries `awsds-sandbox-project-boundary` | layer 2. The plan-time precondition covers the boundary when the map is edited; this covers the role being recreated afterwards |
 | `WH-12` | the themed schemas, the role grants and the **user-role** grants | layer 3, including the orphan an unwiring leaves behind (§U) |
 | `WH-14` | every relation in a themed schema, against the roles that can read it through a grant or a default privilege | layer 3's sharing half: a table no role can read, which on a shared schema is one project's data the others cannot see (§T) |

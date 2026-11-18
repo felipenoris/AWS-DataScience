@@ -439,3 +439,78 @@ resource "aws_iam_role_policy_attachment" "project_access_portal" {
   role       = aws_iam_role.project_access[each.key].name
   policy_arn = aws_iam_policy.project_access_portal[each.key].arn
 }
+
+# --------------------------------------- the data transfer role (Stage 21 step 4.5, decision 3 (b))
+#
+# The role data lake access names when the federated catalog of Stage 21 step 4.1 is opened to the
+# Iceberg engines: AWS Glue and Amazon Redshift assume it to move data to and from S3. Its trust and
+# its four actions are AWS's prerequisites page's ("Prerequisites for managing Amazon Redshift
+# namespaces in the AWS Glue Data Catalog", read 2026-11-18), which grants no S3 action. The page
+# puts every action on `*`; the resources here are this account's catalog, the federated catalog
+# and the namespace's key. It exists only while `data_transfer_role_enabled` is true, for the
+# sitting, and the update-catalog call that names it is a command of that sitting.
+resource "aws_iam_role" "data_transfer" {
+  count = var.data_transfer_role_enabled ? 1 : 0
+
+  name        = "${local.name}-data-transfer"
+  description = "Stage 21 step 4.5: the data transfer role data lake access names on the federated catalog ${var.federated_catalog_name}. Created for the sitting and removed after it."
+
+  assume_role_policy = data.aws_iam_policy_document.data_transfer_trust[0].json
+}
+
+data "aws_iam_policy_document" "data_transfer_trust" {
+  count = var.data_transfer_role_enabled ? 1 : 0
+
+  # AWS's trust policy as the page writes it, with no condition. Which source keys Glue and Redshift
+  # send on this assumption is unread, and a condition the service does not satisfy fails as an
+  # assume nobody can attribute; step 4.5 reads the caller in CloudTrail.
+  statement {
+    sid     = "GlueAndRedshiftAssumeThisRole"
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["glue.amazonaws.com", "redshift.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "data_transfer" {
+  count = var.data_transfer_role_enabled ? 1 : 0
+
+  name   = "data-transfer"
+  role   = aws_iam_role.data_transfer[0].id
+  policy = data.aws_iam_policy_document.data_transfer[0].json
+}
+
+data "aws_iam_policy_document" "data_transfer" {
+  count = var.data_transfer_role_enabled ? 1 : 0
+
+  # The account's catalog, the federated catalog, its child catalogs (one per Redshift database) and
+  # their databases (one per schema), in the ARN forms of AWS's "Specifying AWS Glue resource ARNs".
+  # A Data Catalog operation needs its resource and every ancestor, so the account's catalog is listed.
+  statement {
+    sid     = "ReadTheFederatedCatalog"
+    effect  = "Allow"
+    actions = ["glue:GetCatalog", "glue:GetDatabase"]
+    resources = [
+      "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:catalog",
+      "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:catalog/${var.federated_catalog_name}",
+      "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:catalog/${var.federated_catalog_name}/*",
+      "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:database/${var.federated_catalog_name}/*",
+    ]
+  }
+
+  # The namespace's key, the account data CMK. Its key policy delegates to IAM only for calls through
+  # Redshift Serverless (sandbox/data/'s AllowRedshiftServerlessViaServiceInThisAccount), so this
+  # statement reaches the key on that path alone. A call through S3, the path AWS's page writes into
+  # a customer managed key's policy for this role (GenerateDataKeyDecryptDataTransferRole), needs a
+  # statement in that key policy naming the role, which is sandbox/data/'s and is not written.
+  statement {
+    sid       = "UseTheNamespaceKey"
+    effect    = "Allow"
+    actions   = ["kms:GenerateDataKey", "kms:Decrypt"]
+    resources = [local.data_key_arn]
+  }
+}

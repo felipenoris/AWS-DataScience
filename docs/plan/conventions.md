@@ -216,7 +216,9 @@ terraform-live/
 │   │                     #     above, in the PRIVATE tier's two subnets in two AZs - not the
 │   │                     #     isolated tier, which carries no peering route and no client.
 │   │                     #     Per admitted project: the tag, the IAM policy and the access
-│   │                     #     role Stage 6h's connection needs. No Lake Formation object: the
+│   │                     #     role Stage 6h's connection needs. Behind switches, off by
+│   │                     #     default: the wide tag (6h decision 8 (a)) and Stage 21 4.5's
+│   │                     #     data transfer role, for one sitting. No Lake Formation object: the
 │   │                     #     sandbox class is outside it by design, like lake/ beside it
 │   ├── bedrock/          # [P] the Bedrock grant (6e step 3): one IAM policy for the scoped
 │   │                     #     Claude models and one attachment per SMUS project role. The
