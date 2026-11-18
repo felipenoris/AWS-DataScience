@@ -3948,3 +3948,38 @@ infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra
 - **[Claude] A check id corrected in steps 7 and 8 and decision 16**: written 2026-10-30, they name `US-11`
   for each blueprint domain's image version against the profile's pin; `./aws/studio.py` has given `US-11`
   to the deployment targets' projects since Stage 19, so the image check takes `US-13`, the next free id.
+
+## 2026-11-18 — 2.7 step 3 applied: `SageMakerAIDomain` `ON_CREATE` beside a `Tooling` with spaces off
+
+*The user authorized the apply in this session's chat, *"Autorizo apply do #322"*; Claude, the orchestrating
+session, ran it from pull request #322's worktree as the infrastructure user, permission set
+`InfrastructureAccess`, through `awsds-infra-data`, Terraform 1.16.6. Times are UTC.*
+
+- **[Claude] Other sessions**: none was running on the machine, read before the apply.
+- **[Claude] The first attempt**, 18:43:07: the plan stopped on *"No valid credential sources found"*, *"failed
+  to refresh cached credentials, refresh cached SSO token"*. The `awsds` session's token had expired at
+  18:33:56 while `aws sts get-caller-identity` still answered from the cached role credentials. Nothing
+  ran against AWS.
+- **[user] The login**, `./aws/login.py`, as the infrastructure user.
+- **[Claude] The lock check**, 18:44:31, saved: `Plan: 0 to add, 1 to change, 0 to destroy.`,
+  `awscc_datazone_project_profile.this["experimentation"]` in place. `Tooling` (element 0) goes from six
+  overrides to seven, the last `enableSpaces` `"false"` with `is_editable` false. `SageMakerAIDomain`
+  (element 13) goes from `ON_DEMAND` to `ON_CREATE`. The fourteen configuration ids are unchanged and
+  nothing is `after_unknown`: the plan of 16:33.
+- **[Claude] The apply** of the saved plan, 18:45:21 to 18:45:40: *"Modifications complete after 7s
+  [id=dzd-d8yrvx1ko7im6o|dh60xbal05q64w]"*, `Apply complete! Resources: 0 added, 1 changed, 0 destroyed.`
+  `UpdateProjectProfile` accepted a second `ON_CREATE` element after twelve `ON_DEMAND` ones, the reading
+  step 3 named.
+- **[Claude] Read back**: the re-plan at 18:45:57 printed `No changes. Your infrastructure matches the
+  configuration.` `get-project-profile` reads `lastUpdatedAt` 18:45:34.186 and `Tooling` and
+  `SageMakerAIDomain` `ON_CREATE` at orders 0 and 13, every other element `ON_DEMAND`. `enableSpaces` is
+  `false` with `isEditable` false in both `parameterOverrides` and `resolvedParameters`, where the plan's
+  `resolved_parameters` still showed `"true"` (Lesson 27). The configuration ids match the plan's, the
+  blueprint's `ffd41bb5-…` among them.
+- **[Claude] Pull request #322**: its body gained the apply's readings, and it was marked ready for review.
+  It merges after the user's reading of *Workflows* and *Code spaces*, so the revert stays one apply from
+  `main` until then.
+- **[Claude] The texts the apply made stale**, from step 7's list: `docs/SMUS.md`'s profile paragraph, its
+  `Tooling` parameter table, its roster's `SageMakerAIDomain` and `Tooling` rows and the attachment
+  paragraph, and `AWS_STATE.md`'s registry row. `terraform-live/README.md`'s `sandbox/dev-env/` paragraph
+  waits on steps 4 to 6, and `sagemaker-prereqs`'s roster comment on the module's next tag.

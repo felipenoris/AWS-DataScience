@@ -1155,7 +1155,7 @@ bound items 3, 5, 6, 9 and 11.
    were taken on 2026-11-17 on the open-decisions review's cards (pull request #317): Stage 19 decisions
    28 and 15, Stage 20 decisions 9 and 11, 6h decisions 3 and 8, and 6d decision 16 (a), under which a
    project created before 6d's step 2.7 applies the profile takes that step's path for living projects.
-   Left: 6d 2.7's steps 3 and 5 first (step 2 done 2026-11-18), the three application projects being
+   Left: 6d 2.7's step 5 first (steps 2 and 3 done 2026-11-18), the three application projects being
    created after them (the user's order, 2026-11-18); then the projects `app-ml-dev` and `app-genai-dev` created with their
    contributors and Nova Lite enabled (9.6, 10.4), after which Claude plans the Sandbox slices that read the projects' roles and the
    user applies them; the project `app-dbt-dev` with its contributors (Stage 20 2.0), then its
@@ -1165,8 +1165,8 @@ bound items 3, 5, 6, 9 and 11.
    written, `app-dbt` pinned to `awsds-workflows` `4613ddc`.
    Stage 20 8.4's applies of the four `[P]` slices its pass 8 wrote ran on 2026-11-18, closing their
    Lesson 69 window. 6d 2.7's acts need nothing metered; its step 3's code was written and planned on
-   2026-11-18 on [pull request #322](https://github.com/felipenoris/AWS-DataScience/pull/322) (`1 to change`), applied on the user's word after step 2's acts and merged with the
-   apply.
+   2026-11-18 on [pull request #322](https://github.com/felipenoris/AWS-DataScience/pull/322) (`1 to change`), applied on the user's word at 18:45 UTC the same day, after step 2's acts,
+   and merged after the *Workflows* reading.
 3. **Release G's sitting** (N.8.5 steps 2, 4 and 5): the hub, GitLab with `BUILD=1`, `staging/egress/`
    raised before the tag and destroyed after the Staging leg, `production/workloads-egress/` before
    `production-gate`; the local user's password rotated before the first push (N.8.2 step 3), the mirror
