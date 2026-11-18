@@ -1826,6 +1826,17 @@
   <https://github.com/aws/CICD-for-SageMakerUnifiedStudio>. Read again the same day: the release notes, the
   designations' examples, the Git connection pages and the `SageMakerAIDomain` blueprint's page, each listed
   above.
+- The native notebook run's network (read 2026-11-18, for 6d decision 17 and step 4.7). The data type the
+  run's `networkConfiguration` takes, `networkAccessType` required and `vpcId` required with `VPC_ONLY`:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_NetworkConfig.html>. The run's compute, an
+  `instanceType` matching `(ml|sc)\.…`:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_ComputeConfig.html>. Native notebook kernels in
+  the domain-level VPC, posted 2026-04-23, naming no API or console page:
+  <https://aws.amazon.com/about-aws/whats-new/2026/04/sagemaker-unified-studio-vpc/>. The notebooks page of
+  the user guide, which names no default network for a run:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/notebooks.html>. Read again the same
+  night, each listed above: DataZone's service reference (version 1.5, `StartNotebookRun` with no condition
+  key and no resource type), `API_StartNotebookRun.html` and the admin guide's `network-isolation.html`.
 - The catalog's runbook, `catalog.md` (read 2026-11-17, for Stage 20 steps 1.5 and 1.6). Business
   glossaries, the path *Manage → Catalog management → Business glossaries*, a term's README up to 4,096
   characters, *Is A Type of* and *Has Types* at most 10 each, a term on at most 10 assets, and when a

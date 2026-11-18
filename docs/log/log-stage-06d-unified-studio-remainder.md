@@ -3729,3 +3729,72 @@ open decisions the user asked for at 22:01 UTC, one card per decision under the 
 - **[user] Decision 17**, at 23:34, on the card *"Oferecer no Sandbox as execuções nativas de notebook (em
   segundo plano, agendadas)?"*: *"Medir e oferecer em VPC_ONLY"*, (a). **[Claude]** The control comes
   first, then the quota requests (the waiting list's act), then step 4.7's runs in a Sandbox sitting.
+
+## 2026-11-18 — decision 6 written and planned, 2.7 step 1's readings, and decision 17's control read
+
+*Claude's sitting on the laptop with the environment down (`make status` read 0.0000 USD/h at 00:30),
+the infrastructure user signed in, read-only AWS calls only, at the user's request of 2026-11-17 to
+advance every stage but 11 to 15 with nothing up. Times are UTC.*
+
+### Decision 6: the domain's own URL in `hub-anchors.tf`
+
+- **[Claude]** `terraform-live/production/networking/hub-anchors.tf` gains
+  `dzd-d8yrvx1ko7im6o.sagemaker.${var.region}.on.aws` beside the MCP entry, with the 21 refusals of
+  2026-09-19 to 2026-10-16 as its comment. The id is `awsds-studio`'s as `datazone list-domains` prints it
+  in Data Governance; the bare name, because the parent `.sagemaker.us-west-2.on.aws` would admit every
+  customer's portal.
+- **[Claude]** `production/networking` planned: `Plan: 0 to add, 1 to change, 0 to destroy.`, the
+  parameter `/datascience/prod/proxy/allowlist` at version 11, `sandbox-foundation` from 41 entries to 42,
+  the new name the only difference. Not applied: the apply is the next hub sitting's, so `PX-3` reads it
+  on the host. `./scripts/check-network-doc.py` passes.
+- **[Claude]** `./aws/dns-allowlist.py --from-api awsds-infra-prod` at 00:49:01: exit 2, `DN-3` fails on
+  the name *only in code*, `DN-1`, `DN-2` and `DN-4` pass (the name resolves, 52.85.78.2). `docs/NETWORK.md`
+  and `docs/AWS_STATE.md` §C carry the reading until the apply.
+
+### 2.7 step 1: the readings every option needs
+
+- **[Claude] The pilot is gone.** Sandbox holds three SageMaker AI domains, each a project's `Tooling`
+  domain: `d-lfgbdrjncmsu` (`test-experimentation`), `d-p6gthxc82ckg` (`eighth-experimentation`) and
+  `d-spi9kgo6x5b4` (`app-etl-dev`, a project created from `experimentation` on 2026-11-14 at 02:06). No
+  space and no live app in any of them. The trails say where `d-odhynkcev3yw` went: in Data Governance,
+  `DeleteEnvironment` on `c9ge4welc308pc` at 2026-10-31 00:29:20, from a browser, by a session of
+  `awsds-data-studio-domain-execution` named after `test-experimentation`'s owner (the user id the project's
+  `PROJECT_OWNER` membership lists); in Sandbox, `DeleteDomain` at 00:29:34, `DeleteSpace` of
+  `pilot-jupyterlab` at 00:29:35 and `DeleteUserProfile` at 00:29:41, by
+  `awsds-sandbox-smus-provisioning/AmazonDataZoneEnvironmentDeployer`. That is 2.6 item 6's rollback,
+  pressed in the portal and recorded nowhere until now; the entry of 2026-10-31 above still describes the
+  pilot's domain with its spaces.
+- **[Claude] (i) `ProjectS3Path` against the projects bucket.** The bucket holds the prefix
+  `dzd-d8yrvx1ko7im6o/` alone: no object and no version under the root `shared/` (versioning `Enabled`,
+  noncurrent versions kept 90 days), and its policy is `DenyInsecureTransport` alone. The project role's
+  object grant reaches `<bucket>/<domain>/<project>/*` only (`SageMakerStudioProjectUserRolePolicy` v77,
+  `DomainS3BucketPermissions`), its whole-bucket list comes from `AirflowListDomainS3Permissions` (`TM-31`),
+  and the ML policy v48's `S3AG` statements act through the access-grants instance `default` alone. A
+  blueprint domain's `ProjectS3Path` therefore names a prefix its role lists and cannot read or write, and
+  nothing has written there.
+- **[Claude] (ii)** is moot while no project holds two domains; it moves to the first project step 2
+  gives a second one.
+- **[Claude] (iii)**, `update-project` as a contributor, is a write and waits on the user's word.
+- **[Claude]** The stage file's 2.7: steps 2 and 4 follow, `test-experimentation` and `app-etl-dev` taking
+  step 2's act like `eighth-experimentation`, and step 4's reading moves to the first project holding both
+  domains. The waiting list's row follows.
+
+### Decision 17: what can pin `VPC_ONLY`
+
+- **[Claude]** DataZone's service reference, version 1.5, fetched the same night from
+  `servicereference.us-east-1.amazonaws.com`: `StartNotebookRun` lists no resource type and no condition
+  key, and no key of the service names a network, a VPC or a subnet. The CLI's `start-notebook-run` takes
+  `networkConfiguration.networkAccessType` `PUBLIC_INTERNET_ONLY` or `VPC_ONLY`; `get-domain` prints no VPC
+  field.
+- **[Claude]** AWS's pages, read the same night: the API reference marks `networkConfiguration` optional,
+  `networkAccessType` required inside it and `vpcId` required with `VPC_ONLY`, and lists no error for a
+  network conflict; the announcement of 2026-04-23 says native kernels run in the VPC configured at the
+  domain level, with no API or console page named; no page states the default network of a run or that the
+  domain's VPC overrides a request for `PUBLIC_INTERNET_ONLY`.
+- **[Claude]** The domain-level VPC in Sandbox: every one of the 14 blueprint configurations
+  `list-environment-blueprint-configurations` returns carries `VpcId`, `Subnets` and `AZs` as regional
+  parameters, `sandbox/sagemaker/`'s.
+- **[Claude]** The consequence: decision 17's first branch, a policy condition, has no key to write, and
+  the fallback, the domain's VPC, is a control only 4.7's negative can show, a project-role run asking for
+  `PUBLIC_INTERNET_ONLY`. The negative needs `L-85C9EC5A` above 0, which the decision keeps at 0 until the
+  control exists. The order is the user's, on the waiting list.
