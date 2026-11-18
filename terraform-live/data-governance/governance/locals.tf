@@ -65,11 +65,11 @@ locals {
     # `blueprint_parameters` declares nothing for it (read 2026-10-19). Appended last, like
     # MLflowApp, so every environment above keeps its `deployment_order`.
     "AmazonBedrockKnowledgeBase",
-    # The SageMakerAIDomain blueprint (released 2026-10-20), out of `undefined` at 6d decision due 15,
-    # taken 2026-10-30 by the user as (b): a standalone SageMaker AI domain per project beside
-    # Tooling's, the code spaces experience as the profile's parameters below, RStudio on. Last, so
-    # every environment above keeps its `deployment_order`; ON_DEMAND, so a project gets the domain
-    # only when an owner enables it from Code spaces.
+    # The SageMakerAIDomain blueprint (released 2026-10-20), out of `undefined` at 6d decision due 15
+    # (2026-10-30): the project's SageMaker AI domain, the code spaces experience as the profile's
+    # parameters below. ON_CREATE in profiles.tf beside a Tooling with spaces off (6d decision 16 (a)),
+    # so a project holds this domain alone. Last, so every environment above keeps its
+    # `deployment_order`.
     "SageMakerAIDomain",
   ]
 
@@ -173,12 +173,17 @@ locals {
     } : {},
   )
 
-  # The Tooling parameters Stage 6 step 1.5 locks. The non-editable flag is the difference
-  # between a default and a control (Lesson 5): the parameters exist so nobody can flip a project
-  # to PublicInternetOnly, raise its idle ceiling, or give itself a 16 TiB volume.
+  # The Tooling parameters Stage 6 step 1.5 locks, passed by every profile. The non-editable flag
+  # is the difference between a default and a control (Lesson 5): the parameters exist so nobody
+  # can flip a project to PublicInternetOnly, raise its idle ceiling, or give itself a 16 TiB volume.
   #
   # sagemakerDomainNetworkType = VpcOnly is already the blueprint default (read 2026-08-16), and
   # is written here anyway: a default nobody may change is a different object from a default.
+  #
+  # With `enableSpaces` false, the last row, Tooling creates no SageMaker AI domain, so the idle
+  # and EBS rows reach no domain: a Sandbox project's domain is the SageMakerAIDomain blueprint's,
+  # whose rows (sagemaker_ai_domain_parameters) carry the same ceilings. They stay because removing
+  # them changes every profile's Tooling element for no effect, and a Tooling with spaces on needs them.
   tooling_parameters = [
     { name = "sagemakerDomainNetworkType", value = "VpcOnly", is_editable = false },
     # "ENABLED", not "true": the template's AllowedValues are ENABLED/DISABLED, an enum rather
@@ -187,8 +192,8 @@ locals {
     # apply because CreateProjectProfile validates no parameter against the template; the first
     # deploy to reach CloudFormation refused it ("Parameter 'lifecycleManagement' must be one of
     # AllowedValues", 400). AllowedValues were read from the downloaded template on 2026-08-22
-    # and every other locked value was checked against it in the same sitting: the five below
-    # are valid.
+    # and every other locked value but enableSpaces was checked against it in the same sitting:
+    # all are valid.
     { name = "lifecycleManagement", value = "ENABLED", is_editable = false },
     { name = "idleTimeoutInMinutes", value = tostring(var.idle_timeout_minutes), is_editable = true },
     { name = "maxIdleTimeoutInMinutes", value = tostring(var.max_idle_timeout_minutes), is_editable = false },
@@ -198,25 +203,22 @@ locals {
       value       = tostring(var.enable_trusted_identity_propagation)
       is_editable = false
     },
+    # Tooling creates the project's SageMaker AI domain only when this is true (read 2026-10-19,
+    # SUP-160); false in every profile. The Data OU denies sagemaker:Create* in Data Governance and
+    # the Workloads OU sagemaker:CreateDomain in Staging and Production, where Stage 18 measured a
+    # deploy with false calling no CreateDomain (its step 3.2). In Sandbox the project's domain is
+    # the SageMakerAIDomain blueprint's, ON_CREATE in profiles.tf on this row's premise (6d decision
+    # 16 (a)): with true, a project would be born with two.
+    { name = "enableSpaces", value = "false", is_editable = false },
   ]
 
-  # Parameter overrides per blueprint - the map profiles.tf consumes. Tooling's rows above are
-  # controls (locked, is_editable=false); the two rows below exist for the opposite reason,
-  # measured 2026-08-22: UpdateProjectProfile validates that every required blueprint parameter
-  # without a default is declared ("Missing required Blueprint parameter(s): bucketName"), a
-  # validation CreateProjectProfile never ran, which is how the profiles were created without
-  # them. S3Bucket's bucketName and S3TableCatalog's catalogName are per-project names: both
-  # templates consume them by literal Ref, with no per-project suffix added, so a locked value
-  # would collide between projects and S3's namespace is global. The placeholder is what the
-  # portal pre-fills when a member enables the capability (deployment_mode ON_DEMAND), and
-  # is_editable = true so the member replaces it. A project deployed with the placeholder
-  # unchanged fails or collides visibly, rather than sharing a name silently.
   # The house image's objects in Sandbox, by terraform-live/sandbox/dev-env/'s name contract
   # (`awsds-<env>-dev-env`, one app image configuration per app type). The version is the pin the
-  # SageMakerAIDomain template writes into the domain's CustomImages, so a release reaches the pilot's
-  # domain by moving var.sandbox_dev_env_version and an Update project per project (docs/SMUS.md,
-  # "Custom images"); the default-image ARN carries the same version, which is what the release
-  # pipeline's retire job keeps (gitlab/awsds/dev-env/release/versions.py reads CustomImages alone).
+  # SageMakerAIDomain template writes into the domain's CustomImages, so a release reaches each
+  # project's domain by moving var.sandbox_dev_env_version and an Update project per project
+  # (docs/SMUS.md, "Custom images"); the default-image ARN carries the same version, which is what
+  # the release pipeline's retire job keeps (gitlab/awsds/dev-env/release/versions.py reads
+  # CustomImages alone).
   sandbox_dev_env_image = "awsds-sandbox-dev-env"
   sandbox_dev_env_image_version_arn = format(
     "arn:%s:sagemaker:%s:%s:image-version/%s/%d",
@@ -298,6 +300,17 @@ locals {
     { name = "redshiftMaxCapacity", value = "4", is_editable = false },
   ]
 
+  # Parameter overrides per blueprint - the map profiles.tf consumes. Tooling's rows above are
+  # controls (locked, is_editable=false); the two rows below exist for the opposite reason,
+  # measured 2026-08-22: UpdateProjectProfile validates that every required blueprint parameter
+  # without a default is declared ("Missing required Blueprint parameter(s): bucketName"), a
+  # validation CreateProjectProfile never ran, which is how the profiles were created without
+  # them. S3Bucket's bucketName and S3TableCatalog's catalogName are per-project names: both
+  # templates consume them by literal Ref, with no per-project suffix added, so a locked value
+  # would collide between projects and S3's namespace is global. The placeholder is what the
+  # portal pre-fills when a member enables the capability (deployment_mode ON_DEMAND), and
+  # is_editable = true so the member replaces it. A project deployed with the placeholder
+  # unchanged fails or collides visibly, rather than sharing a name silently.
   blueprint_parameters = merge(
     {
       Tooling = local.tooling_parameters
@@ -312,21 +325,12 @@ locals {
     var.redshift_serverless_enabled ? { RedshiftServerless = local.redshift_serverless_parameters } : {},
   )
 
-  # The overrides each profile passes, by profile name. `lake-publishing` and the deployment
-  # profiles take experimentation's Tooling rows plus `enableSpaces` false and locked: the template
-  # creates the project's SageMaker AI domain only when it is true (read 2026-10-19), the Data OU
-  # denies sagemaker:Create*, the Workloads OU sagemaker:CreateDomain, and the value is the one
-  # Stage 18 measured deploying with no CreateDomain (its step 3.2).
-  tooling_with_spaces_off = {
-    Tooling = concat(local.tooling_parameters, [
-      { name = "enableSpaces", value = "false", is_editable = false },
-    ])
-  }
-
+  # The overrides each profile passes, by profile name: Tooling's rows in every profile, and the
+  # other blueprints' in `experimentation`, the one profile that bundles them.
   profile_parameters = {
     experimentation       = local.blueprint_parameters
-    lake-publishing       = local.tooling_with_spaces_off
-    deployment-staging    = local.tooling_with_spaces_off
-    deployment-production = local.tooling_with_spaces_off
+    lake-publishing       = { Tooling = local.tooling_parameters }
+    deployment-staging    = { Tooling = local.tooling_parameters }
+    deployment-production = { Tooling = local.tooling_parameters }
   }
 }
