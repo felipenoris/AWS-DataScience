@@ -1150,11 +1150,13 @@ bound items 3, 5, 6 and 9.
    `production/registry` first, since `identity/sso` names its repository, then Stage 20 4.4's five slices
    with the battery's Phase 4b (53 as expected), then the rest of 9.5's target slices, both `studio/`
    slices taking the two changes in one apply (Lesson 69), each re-planned `No changes`; and `TM-33`
-   accepted, on the condition that the path is AWS's, read the same day. Left: the
-   decisions a sitting reads (Stage 19 decisions 28 and 15 before 4.12, Stage 20 decisions 9 and 11, 6h
-   decisions 3 and 8, 6d decision 16 before Stage 17's projects); the projects
-   `app-ml-dev` and `app-genai-dev` created with their contributors and Nova Lite enabled (9.6, 10.4),
-   after which Claude plans the Sandbox slices that read the projects' roles and the user applies them.
+   accepted, on the condition that the path is AWS's, read the same day. The decisions a sitting reads
+   were taken on 2026-11-17 on the open-decisions review's cards (pull request #317): Stage 19 decisions
+   28 and 15, Stage 20 decisions 9 and 11, 6h decisions 3 and 8, and 6d decision 16 (a), under which a
+   project created before 6d's step 2.7 applies the profile takes that step's path for living projects.
+   Left: the projects `app-ml-dev` and `app-genai-dev` created with their contributors and Nova Lite
+   enabled (9.6, 10.4), after which Claude plans the Sandbox slices that read the projects' roles and the
+   user applies them.
 3. **Release G's sitting** (N.8.5 steps 2, 4 and 5): the hub, GitLab with `BUILD=1`, `staging/egress/`
    raised before the tag and destroyed after the Staging leg, `production/workloads-egress/` before
    `production-gate`; the local user's password rotated before the first push (N.8.2 step 3), the mirror
@@ -1181,8 +1183,9 @@ bound items 3, 5, 6 and 9.
 9. **The Sandbox warehouse sitting**, `GROUPS=redshift`: Stage 19's pass 5 after 4.12, 5b's
    `max_query_execution_time` test, and 6h's negatives after 6h decision 8;
    [Stage 21](../stages/stage-21-redshift-s3-data-products.md)'s passes 2 to 4 after its 1.3 readings and
-   1.5's code, its `RedshiftServerless` blueprint on for the sitting alone; before 2026-12-19 if the trial
-   is to absorb them. Stage 21's pass 5 needs no warehouse and rides any Sandbox sitting.
+   1.5's code, its `RedshiftServerless` blueprint on for the sitting alone; before 2026-12-19, so the trial
+   absorbs them (5b decision 9, taken 2026-11-17), ahead of items 6 to 8 when they are not ready first,
+   since it depends on none of them. Stage 21's pass 5 needs no warehouse and rides any Sandbox sitting.
 10. **With nothing up, before `app-ml`'s first tag**: `scripts/deploy-application.py`,
     `scripts/model-chain.py` and their hooks taught a second application, kept out of the day's pull
     request so that release G's leg runs the script it was read with; the subagents' patches of

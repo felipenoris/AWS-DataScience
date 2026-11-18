@@ -551,3 +551,16 @@ Manager shell. No account id appears below.*
   infrastructure user. **[Claude]** At 04:06:10 no interface endpoint was left in the SharedServices VPC,
   and at 04:06:37 none in Production; the hub's two hosts kept running for the Stage 19 session, told
   at 04:06.
+
+## 2026-11-17 — decision due 1 taken on a card, with no AWS call
+
+*Claude's sitting in a cloud session of the user's Claude project, no AWS call: the review of the plan's
+open decisions the user asked for at 22:01 UTC, one card per decision under the user's default of
+21:50 UTC (the path AWS suggests), recorded by pull request #317. Times are UTC.*
+
+- **[user] Decision due 1**, at 22:52, on the card *"Que ação dar ao alarme de status do proxy, que
+  dispara a cada hub-down?"*: *"Dados ausentes como OK"*, (b). `treat_missing_data` becomes
+  `notBreaching` in 2.2's `[D]` apply of `production/proxy/`, in the hub sitting, with the alarm's action.
+- **[Claude] 6e decision 6**, taken at 23:45 (that stage's log), reaches 2.1 and decision due 2: the
+  budget's notification and Cost Anomaly Detection are the user's acts, and the ceiling stays decision
+  due 2's.

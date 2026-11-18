@@ -793,6 +793,10 @@ here is built; and decision 1, but only if 0.1's apply refuses two subnets. Each
    90-day window is short next to this plan's pace, so treating it as a budget to optimise would distort the
    build order; treating it as free measurement while it lasts is what it is good for. **Read 2026-10-17 by
    the user**: Sandbox's window runs to 2026-12-19, 90 days from the first use, with 287.90 USD left.
+   **Taken 2026-11-17 by the user: the warehouse sittings brought forward**, the option *"Antecipar as
+   sessões de warehouse"* on a card at 22:32 UTC, against the recommendation: the sittings that raise
+   Sandbox's warehouse run before 2026-12-19, so the trial absorbs them (`runbooks/promotion.md` §N.6
+   item 9).
 6. **Whether `Data Governance` is reconsidered.** D40 closed it on architecture. **Taken 2026-09-20: no**,
    recorded in 0.3's reading — the account has no VPC by decision, and the reason INT-13 already falls to its
    manual fallback is the same reason a workgroup cannot live there.
