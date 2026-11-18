@@ -13,10 +13,13 @@
 # flags. The levers this design pulls are the account and the parameters the creator can no
 # longer change. Each profile names its own blueprints and overrides (locals.tf).
 #
-# deployment_mode = ON_CREATE for Tooling, ON_DEMAND for the rest. Tooling provisions the working
-# environment, so a project without it is not a project; the others are capabilities a project
-# member enables when needed, which keeps a new project from standing up an EMR Serverless
-# application nobody asked for. Both are per-environment-configuration, the grain the API takes.
+# deployment_mode = ON_CREATE for Tooling and SageMakerAIDomain, ON_DEMAND for the rest. Tooling
+# provisions the working environment, so a project without it is not a project. SageMakerAIDomain
+# provisions the project's SageMaker AI domain, its only one while Tooling's `enableSpaces` is false
+# (locals.tooling_parameters, 6d decision 16 (a)), so a project is born with the domain its spaces
+# run in. The others are capabilities a project member enables when needed, which keeps a new
+# project from standing up an EMR Serverless application nobody asked for. Both are
+# per-environment-configuration, the grain the API takes.
 
 resource "awscc_datazone_project_profile" "this" {
   for_each = var.profiles_enabled ? local.project_profiles : {}
@@ -30,7 +33,7 @@ resource "awscc_datazone_project_profile" "this" {
     for bp in each.value.blueprints : {
       name                     = bp
       environment_blueprint_id = data.aws_datazone_environment_blueprint.enabled[bp].id
-      deployment_mode          = bp == "Tooling" ? "ON_CREATE" : "ON_DEMAND"
+      deployment_mode          = contains(["Tooling", "SageMakerAIDomain"], bp) ? "ON_CREATE" : "ON_DEMAND"
       deployment_order         = index(each.value.blueprints, bp)
 
       aws_account = { aws_account_id = local.member_account_ids[each.value.account] }
