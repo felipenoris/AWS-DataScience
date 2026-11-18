@@ -134,15 +134,16 @@ repos:
         pass_filenames: false
         files: ^scripts/(model-chain\.py|tfhygiene/(targets|projects)\.py)$
 
-      # Stage 19 step 4.9 - the leg's deploy against the template's manifest, offline: a target stage
-      # reading a variable the script does not fill, or a workflow naming one a stage does not
-      # declare, fails here and not at the CLI's first line in a pipeline job.
+      # Stage 19 step 4.9 - the leg's deploy against each application's manifest, offline: a target
+      # stage reading a variable the script does not fill, or a workflow naming one a stage does not
+      # declare, fails here and not at the CLI's first line in a pipeline job. The folders are the
+      # script's APPLICATIONS.
       - id: deploy-application-check
-        name: the leg's deploy fills every variable the template's stages read
+        name: the leg's deploy fills every variable the applications' stages read
         entry: ./scripts/deploy-application.py --self-check
         language: system
         pass_filenames: false
-        files: ^(examples/app-etl/(workflows/.*|manifest\.yaml)|scripts/deploy-application\.py|scripts/tfhygiene/projects\.py)$
+        files: ^(examples/app-(etl|ml|genai|dbt)/(workflows/.*|manifest\.yaml)|scripts/deploy-application\.py|scripts/tfhygiene/projects\.py)$
 
       # Stage 19 step 6.1 - the product road's rules in aws/catalog.py, on sample records and
       # with no AWS call. Production lists no product before step 4.12, so a rule that stopped

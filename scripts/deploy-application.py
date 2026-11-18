@@ -3,20 +3,22 @@
 # project by the SMUS CI/CD CLI, the deploy job of each promotion leg.
 #
 #   run:      ./scripts/deploy-application.py <account> --manifest <manifest.yaml> --bundle <app>.zip
-#                 --sha256 <hex> --tag vX.Y.Z --image-uri <uri> [--log <file>] [--dotenv <file>]
+#                 --sha256 <hex> --tag vX.Y.Z [--image-uri <uri>] [--log <file>] [--dotenv <file>]
 #             ./scripts/deploy-application.py <account> --check     # the project, its values and the
 #                                                                   # caller's membership; no deploy
 #             ./scripts/deploy-application.py <account> --catalog-follow-up --manifest ... --bundle ...
-#                 --sha256 <hex> --tag vX.Y.Z --image-uri <uri> [--log <file>]
+#                 --sha256 <hex> --tag vX.Y.Z [--image-uri <uri>] [--log <file>]
 #                                                                   # the project's source run, then
 #                                                                   # the same deploy again
-#             ./scripts/deploy-application.py --self-check          # examples/app-etl's manifest
-#                                                                   # against this script, offline:
-#                                                                   # what `make check` runs
+#             ./scripts/deploy-application.py --self-check          # each application's manifest
+#                                                                   # under examples/ against this
+#                                                                   # script, offline: what `make
+#                                                                   # check` runs
 #   reads:    DOMAIN_ID and DOMAIN_REGION from the environment, the names the template's pipeline
 #             defines; the bundle, already downloaded by the runner's own role (Stage 8 decision 20);
-#             the deployment project and its Tooling environment, from DataZone; sagemaker/'s state
-#             for the training image. Nothing with --self-check.
+#             the deployment project and its Tooling environment, from DataZone; where the target
+#             stage reads the name, sagemaker/'s state for TRAINING_IMAGE_URI and studio/'s for
+#             <PREFIX>_MODEL_ID. Nothing with --self-check.
 #   writes:   what the CLI's `deploy` writes: the bundle's files under the project's shared prefix,
 #             the bundle's catalog into the project, the stage's workflows, and the run its bootstrap
 #             starts; then the SSM parameter /datascience/<env>/applications/<app>/stage-variables, the
@@ -30,8 +32,17 @@
 # before a file of it is read; the project's values and the caller's membership, before anything is
 # written; the bundle extracted beside the tag's manifest, since the CLI 1.0.9 copies a storage item
 # from the manifest's folder and reads the catalog from the archive (SUP-286); every `${VAR}` of the
-# manifest exported, the target stage's from the project and the other stages' as a placeholder,
-# since the CLI refuses a manifest with one unset whatever the target (SUP-282).
+# manifest exported, the target stage's from the project, the release and the account's slices, and
+# the other stages' as a placeholder, since the CLI refuses a manifest with one unset whatever the
+# target (SUP-282).
+#
+# An application declares what the release and the account fill by the names its target stage reads,
+# and each is filled only where the stage reads it: ${JOB_IMAGE_URI}, the release's image, from
+# --image-uri, which such a stage requires; ${TRAINING_IMAGE_URI}, the account's training image, from
+# sagemaker/'s output training_image_uri; ${<PREFIX>_MODEL_ID}, the application's inference profile,
+# from studio/'s output <app>_inference_profile_arn, the application's name with `_` for `-`. A state
+# is read only for a name the stage reads, since the deploy role reads only the states its
+# state_read_keys list.
 #
 # The CLI's exit status is not the whole verdict, so the log is read too: the workflows' network
 # named from the Tooling environment (without the line they run in the service's own, SUP-285); the
@@ -66,6 +77,7 @@ import sys
 import tempfile
 import time
 import zipfile
+from collections.abc import Callable
 from pathlib import Path
 
 import yaml
@@ -84,8 +96,13 @@ from tfhygiene.projects import (
 from tfhygiene.states import StateError, state_outputs
 
 REPO = Path(__file__).resolve().parents[1]
+# The applications --self-check reads, each a folder of examples/ holding its manifest; the hook
+# deploy-application-check names the same folders.
+APPLICATIONS = ("app-etl", "app-ml", "app-genai", "app-dbt")
 CLI = "aws-smus-cicd-cli"
 CATALOG_EXPORT = "catalog/catalog_export.json"
+# The manifest variable --image-uri fills.
+IMAGE_VARIABLE = "JOB_IMAGE_URI"
 
 # The CLI's own pattern for a manifest variable (helpers/utils.py, 1.0.9): ${NAME} or ${NAME:default}.
 MANIFEST_VARIABLE = re.compile(r"\$\{([^${}:]+)(?::([^${}]*))?\}")
@@ -150,6 +167,13 @@ def variables_in(node) -> set:
     return set()
 
 
+def manifest_reads(manifest: Path, account: str) -> set:
+    """Every ${NAME} the account's stage of the manifest file reads; none for a stage the file
+    lacks, which the deploy refuses."""
+    stages = (yaml.safe_load(manifest.read_text(encoding="utf-8")) or {}).get("stages") or {}
+    return variables_in(stages.get(STAGE[account]) or {})
+
+
 def substitute(value: str, env: dict) -> str:
     """A manifest value as the CLI resolves it: each ${NAME} from `env`, or its default."""
 
@@ -164,7 +188,7 @@ def substitute(value: str, env: dict) -> str:
     return MANIFEST_VARIABLE.sub(resolve, value)
 
 
-def stage_exports(account: str, project: dict, image_uri: str, training_image_uri: str) -> dict:
+def stage_exports(account: str, project: dict) -> dict:
     """The `${VAR}` names this script fills for the account's stage, from the project itself."""
     prefix = STAGE_PREFIX[account]
     return {
@@ -173,9 +197,38 @@ def stage_exports(account: str, project: dict, image_uri: str, training_image_ur
         f"{prefix}_PROJECT_SG": project["security_group"],
         f"{prefix}_PROJECT_KEY_ARN": project["key_arn"],
         f"{prefix}_ACCOUNT_ID": project["account_id"],
-        "JOB_IMAGE_URI": image_uri,
-        "TRAINING_IMAGE_URI": training_image_uri,
     }
+
+
+def slice_output(account: str, slice_name: str, name: str, outputs: Callable) -> str:
+    """One output of the account's slice, which must be set."""
+    value = outputs(account, slice_name).get(name)
+    if not value:
+        raise DeployError(f"{account}/{slice_name} outputs no {name}")
+    return value
+
+
+def release_exports(
+    account: str, app: str, reads: set, image_uri: str | None, outputs: Callable = state_outputs
+) -> dict:
+    """The names of `reads`, the stage's, that the release or a slice of the account fills, each
+    only where the stage reads it: JOB_IMAGE_URI from --image-uri, TRAINING_IMAGE_URI from
+    sagemaker/'s output, <PREFIX>_MODEL_ID from studio/'s output <app>_inference_profile_arn.
+    `outputs` reads a slice's outputs: its state, or --self-check's stand-in."""
+    exports = {}
+    if IMAGE_VARIABLE in reads:
+        if not image_uri:
+            raise DeployError(f"the stage reads ${{{IMAGE_VARIABLE}}}, which --image-uri fills")
+        exports[IMAGE_VARIABLE] = image_uri
+    if "TRAINING_IMAGE_URI" in reads:
+        exports["TRAINING_IMAGE_URI"] = slice_output(
+            account, "sagemaker", "training_image_uri", outputs
+        )
+    model = f"{STAGE_PREFIX[account]}_MODEL_ID"
+    if model in reads:
+        profile = f"{app.replace('-', '_')}_inference_profile_arn"
+        exports[model] = slice_output(account, "studio", profile, outputs)
+    return exports
 
 
 def deploy_environment(manifest: dict, stage: str, exports: dict, base: dict) -> dict:
@@ -511,10 +564,9 @@ def deploy(args: argparse.Namespace, admit: bool) -> int:
             f"the manifest's stage {stage} names another project than {project['project_name']}"
         )
 
-    training_image_uri = state_outputs(args.account, "sagemaker").get("training_image_uri")
-    if not training_image_uri:
-        raise DeployError(f"{args.account}/sagemaker outputs no training_image_uri")
-    exports = stage_exports(args.account, project, args.image_uri, training_image_uri)
+    reads = variables_in(manifest["stages"][stage])
+    exports = stage_exports(args.account, project)
+    exports.update(release_exports(args.account, app, reads, args.image_uri))
     env = deploy_environment(manifest, stage, exports, dict(os.environ))
     variables = stage_variables(manifest, stage, env)
     expected = [
@@ -596,11 +648,22 @@ def deploy(args: argparse.Namespace, admit: bool) -> int:
     return 0
 
 
-def self_check() -> int:
-    """examples/app-etl's manifest against this script, with a stand-in project: every name a target
-    stage reads is one this script or the pipeline fills, every `{env.VAR}` of a workflow is a
-    variable of every stage, and the log's readings hold on sample text."""
-    app_dir = REPO / "examples" / "app-etl"
+def stand_in_outputs(account: str, slice_name: str) -> dict:
+    """--self-check's outputs of the slices release_exports reads: studio/'s under the name Stage
+    17's table of pass 10 gives app-genai's inference profile."""
+    return {
+        "sagemaker": {"training_image_uri": "x"},
+        "studio": {
+            "app_genai_inference_profile_arn": "arn:aws:bedrock:region:account:"
+            "application-inference-profile/stand-in"
+        },
+    }.get(slice_name, {})
+
+
+def check_application(app_dir: Path) -> int:
+    """An application's manifest against this script, with a stand-in project and stand-in slice
+    outputs: every name a target stage reads is one this script or the pipeline fills, and every
+    `{env.VAR}` of a workflow is a variable of every stage; 1 on a problem."""
     manifest = yaml.safe_load((app_dir / "manifest.yaml").read_text(encoding="utf-8"))
     app = manifest["applicationName"]
     project = {
@@ -610,13 +673,17 @@ def self_check() -> int:
         "key_arn": "arn:aws:kms:region:account:key/stand-in",
     }
     pipeline = {"DOMAIN_ID": "dzd-standin", "DOMAIN_REGION": backend.REGION}
+    image = "registry.example/app@sha256:" + "0" * 64
     workflow_variables = set()
     for path in sorted((app_dir / "workflows").glob("*.yaml")):
         workflow_variables |= set(WORKFLOW_VARIABLE.findall(path.read_text(encoding="utf-8")))
+    print(f"== {app_dir.relative_to(REPO)} ==")
     fail = 0
     for account, stage in STAGE.items():
-        exports = stage_exports(account, project, "registry.example/app@sha256:" + "0" * 64, "x")
+        reads = variables_in((manifest.get("stages") or {}).get(stage) or {})
         try:
+            exports = stage_exports(account, project)
+            exports.update(release_exports(account, app, reads, image, stand_in_outputs))
             env = deploy_environment(manifest, stage, exports, pipeline)
             variables = stage_variables(manifest, stage, env)
         except DeployError as e:
@@ -644,6 +711,13 @@ def self_check() -> int:
         else:
             names = ", ".join(workflow_name(app, DEPLOYMENT_PROJECT[account], w) for w in created)
             print(f"  ok    {stage}: {len(variables)} variable(s); {names}")
+    return fail
+
+
+def check_samples() -> int:
+    """The log's readings and a workflow's composed name, on sample text; 1 on a problem."""
+    print("== the deploy's log and a workflow's name, on samples ==")
+    fail = 0
     conflict = "INFO - Resource t already exists (ConflictException), treating as update\n"
     product = "INFO - Resource t-p already exists (ConflictException), treating as update\n"
     refused = (
@@ -720,6 +794,26 @@ def self_check() -> int:
     ):
         print("  FAIL  the workflow's composed name")
         fail = 1
+    if fail == 0:
+        print(f"  ok    {len(samples)} log(s) read as expected, and the composed name")
+    return fail
+
+
+def self_check() -> int:
+    """Each application of APPLICATIONS against this script (check_application), every application
+    of examples/ named there, and the samples (check_samples)."""
+    fail = 0
+    unlisted = sorted(
+        p.parent.name
+        for p in (REPO / "examples").glob("app-*/manifest.yaml")
+        if p.parent.name not in APPLICATIONS
+    )
+    if unlisted:
+        print(f"  FAIL  examples/ holds {', '.join(unlisted)}, which APPLICATIONS does not name")
+        fail = 1
+    for app in APPLICATIONS:
+        fail |= check_application(REPO / "examples" / app)
+    fail |= check_samples()
     print()
     print("OK" if fail == 0 else "FAILED")
     return fail
@@ -747,12 +841,17 @@ def main(argv: list) -> int:
     try:
         if args.check:
             return check(args.account)
-        if not (args.manifest and args.bundle and args.sha256 and args.tag and args.image_uri):
-            ap.error("--manifest, --bundle, --sha256, --tag and --image-uri are required to deploy")
+        if not (args.manifest and args.bundle and args.sha256 and args.tag):
+            ap.error("--manifest, --bundle, --sha256 and --tag are required to deploy")
         if not re.fullmatch(r"v\d+\.\d+\.\d+", args.tag):
             ap.error("--tag is the release tag, vMAJOR.MINOR.PATCH")
         if not re.fullmatch(r"[0-9a-f]{64}", args.sha256):
             ap.error("--sha256 is 64 lowercase hex characters")
+        if not args.image_uri and IMAGE_VARIABLE in manifest_reads(args.manifest, args.account):
+            ap.error(
+                f"--image-uri is required: the manifest's stage {STAGE[args.account]} reads "
+                f"${{{IMAGE_VARIABLE}}}"
+            )
         if args.catalog_follow_up:
             return follow_up(args)
         return deploy(args, admit=True)
