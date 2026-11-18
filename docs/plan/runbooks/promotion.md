@@ -1193,8 +1193,8 @@ bound items 3, 5, 6, 9 and 11.
    with the boundary's deny and the account's guardrail measured, and 6e 6.4's assistant session, whose
    token volume sets 6e decision 6's threshold.
 9. **The Sandbox warehouse sitting**, `GROUPS=redshift`: Stage 19's pass 5 after 4.12, 5b's
-   `max_query_execution_time` test, and 6h's 5.1 before decision 8 (a)'s wide tag and 5.2b after, its switch and Stage 21 4.5's transfer role written on
-   [pull request #323](https://github.com/felipenoris/AWS-DataScience/pull/323), off by default;
+   `max_query_execution_time` test, and 6h's 5.1 before decision 8 (a)'s wide tag and 5.2b after, its switch and Stage 21 4.5's transfer role merged on
+   2026-11-18 with [pull request #323](https://github.com/felipenoris/AWS-DataScience/pull/323), off by default;
    [Stage 21](../stages/stage-21-redshift-s3-data-products.md)'s passes 2 to 4, its 1.3 readings and 1.5's
    code done 2026-11-18 (`sagemaker-prereqs-v0.12.0`), after the user's reading of the enable wizard, its
    `RedshiftServerless` blueprint on for the sitting alone; before 2026-12-19, so the trial
