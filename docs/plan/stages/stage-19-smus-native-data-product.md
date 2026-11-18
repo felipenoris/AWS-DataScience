@@ -1766,6 +1766,11 @@ needed here. Under its recommendation, a warehouse sitting inside a Sandbox one 
   `redshift-connection.md` for 5.1 and 5.2, D17, D19, D20, D22, D26, D28, D35, D41 and 5a decision 5
   amended in place with dated lines (Stage 9 decision 15 by its session), `POLICIES.md`'s row (4.1),
   `integrations.md`'s INT-12 and INT-26, `history.md`; `GOVERNANCE.md:737` is the 6f follow-up's.
+  **Owed from the review of 2026-11-17** (the log), left by the runbooks' rewrite for release F to this step
+  or the stage that owns each: the project role's pull of the application image, inferred from the runs
+  and granted by no estate statement; whether every line a Glue script prints reaches
+  `datazone-<id>-dev/output`; and in the template, release G's merge request's scope, the
+  `build-task-code` comment, and the README's job table, which lacks the catalog jobs.
 - **6.3 [Claude] The threat model**: an entry for the product road, the subscriber's full-table vend
   (xi), the re-listing channel (0.5), a materialized view that outlives a revoke (question 3), with the
   checks of 6.1 as its triggers; under decision 6 (b), an entry for the deployment projects, Stage 18's

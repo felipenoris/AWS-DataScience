@@ -4131,3 +4131,31 @@ open decisions the user asked for at 22:01 UTC, one card per decision under the 
   write in Data Governance, before xxvi and decision 15's membership, joins the waiting list.
 - **[user] Decision 15**, at 22:26, on the card *"Quem aprova as assinaturas da listagem de Produção, na
   4.12 do Stage 19?"*: *"Designação própria do SMUS"*, (d), with (a) kept if xxvi reads no narrowing.
+
+## 2026-11-18 — the entries of 2026-11-17 corrected, and readings carried out of this log
+
+*Claude, a subagent of the orchestrating session, on the laptop, no AWS call.*
+
+- **[Claude] The note left open** in the entry *"the runbooks read for statements the estate has outgrown"*,
+  on `aws/probes/probes.py`'s comments reading Production's processing quotas at 0: answered the same day by
+  commit `ca7f72bd`, 15:35:46 UTC, which pull request #313 merged at 15:48:50 UTC. Its two comments date the
+  readings: Production's processing quotas read 0 on 2026-10-17 and, since 2026-10-24, 8 for `ml.m5.large`
+  and 4 for `ml.m5.2xlarge`; an authorized processing row read `ResourceLimitExceeded` while they were 0;
+  the training quotas of the three `ml.m5` types read 0 on 2026-10-20 and 20 each since 2026-10-24. The
+  expected answers, `_JOB_AUTHORIZED`, are unchanged.
+- **[Claude] The runbook's date**, in the same note: *"`sagemaker-ai-ml.md`, written the day before"* came on
+  the note's own UTC day. Its first commit, `9493d2b1` on the branch `claude/project-thread-gu4gmf`, is dated
+  00:01:16 UTC on 2026-11-17, and pull request #311 merged it as `80e996f5` at 04:39 UTC the same day.
+- **[Claude] Item 31's applies**, in the entry *"item 31 applied"*. Its opening line *"Every read as
+  `awsds-infra-staging` or `awsds-infra-prod`, `InfrastructureAccess`"* covers the applies too: each ran from
+  the slice's folder under its profile, the form the stage file gives (`AWS_PROFILE=awsds-infra-staging
+  terraform apply -input=false <plan>`). Its sentence *"Claude applied the saved plans from the branch before
+  the merge, which closes the Lesson 79 window"* reads the other way: applying from the unmerged branch
+  opened the window, since until the merge a plan of those slices from `main` reverted them (the stage file's
+  §The retirement as written), and PR #308's merge at 02:13 UTC closed it, as the entry *"the plan reviewed
+  against the estate"* records.
+- **[Claude] Written from this log's readings**: `SUP-142` gains the Cost Explorer reads of 2026-11-15 to
+  2026-11-17 from the entry on `SUP-368`'s line; step 6.2 gains, as owed, the leftovers the entry *"the plan
+  reviewed against the estate"* recorded only here; `REFERENCES.md` gains the CLI's substitutions guide,
+  which the entry on the CLI's project handling cites, read with `gh api` at `main` `d768153d57` and
+  unchanged since 2026-03-24 (`487e489185`).

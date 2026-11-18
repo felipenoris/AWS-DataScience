@@ -1805,6 +1805,17 @@ entry is still true is the reading.
   balance bills each query at its 60-second minimum, so the metric under-reads a sitting of short statements
   by an order of magnitude, and a reading within the hour missed a quarter of the bill. Where:
   `log-stage-09-deployment-targets.md`, 2026-10-26 (two entries) and 2026-10-30; `docs/PRICING.md` §5.
+  Cost Explorer's lag runs past a day, and a day it holds in part reads cheaper, not absent (read
+  2026-11-15 to 2026-11-17 in Sandbox, Stage 19, each a daily `get-cost-and-usage` by service and usage
+  type). At 05:05:57 UTC on 2026-11-15, 2026-11-14 and 2026-11-15 held no line, and 2026-11-13, 29 hours
+  past its end, held *"3 to 6 hours of its whole-day lines (the alarms 0.1000 against 0.4000 on 2026-11-10
+  to 12, the dashboard 0.0083 against 0.0333, the secret 0.0069 against 0.0333, Unified Studio's volumes
+  0.1111 against 0.5333 GB-month)"*. At 00:02:33 UTC on 2026-11-16, *"2026-11-14 and 2026-11-15 still held
+  none"*, 2026-11-14 a whole day past its end. At 01:12:48 UTC on 2026-11-17, 2026-11-14 held 47 lines,
+  *"its last hour in"*, and 2026-11-15, 25 hours past its end, held 44 lines and 9 endpoint hours, *"where
+  the 2026-11-14 sitting's hour after midnight alone bills 19"*. Read less than two days after it ends, a
+  day can be absent or partial, and a whole-day line below its usual value is the tell. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-17, the entry on `SUP-368`'s line.
 
 - `SUP-143` **Redshift Serverless publishes a `ChargedSeconds` metric beside `ComputeSeconds`, and the two
   diverge for a session held open** (read 2026-10-18 in CloudWatch, Stage 5b). AWS's metric list does not
@@ -2369,6 +2380,24 @@ entry is still true is the reading.
   security group, `datazone-<project>-dev`, admits itself inbound and every destination outbound in
   both targets. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-12;
   `scripts/tfhygiene/projects.py`.
+
+- `SUP-379` **A `SageMakerAIDomain` blueprint domain names the projects bucket's root `shared/` as its
+  `ProjectS3Path`, a prefix the project role lists and can neither read nor write** (read 2026-10-30 on two
+  domains in Sandbox, and the bucket and the role's policies on 2026-11-18; Stage 6d steps 2.6 and 2.7).
+  `describe-domain` read `UnifiedStudioSettings.ProjectS3Path` `s3://awsds-sandbox-smus-projects/shared/`
+  on `d-tqvlxk2hftsv`, born from the template's defaults, and on `d-odhynkcev3yw`, born from
+  `experimentation`'s fourteen overrides: the bucket's root, without the `<domain>/<project>/` prefix, where
+  the two projects' `Tooling` domains carry `<domain>/<project>/dev`. On 2026-11-18 the bucket held the
+  prefix `dzd-d8yrvx1ko7im6o/` alone, no object and no version under `shared/` (versioning `Enabled`,
+  noncurrent versions kept 90 days), and its policy was `DenyInsecureTransport` alone. The project role's
+  object grant reaches `<bucket>/<domain>/<project>/*` only (`SageMakerStudioProjectUserRolePolicy` v77,
+  `DomainS3BucketPermissions`), its whole-bucket list comes from `AirflowListDomainS3Permissions`
+  (`SUP-367`, `TM-31`), and the ML policy v48's `S3AG` statements act through the access-grants instance
+  `default` alone. No AWS page read for this project gives the value: the blueprint's admin guide page,
+  read again 2026-11-18, names no S3 path, prefix or `ProjectS3Path`. Nothing has been written under the
+  prefix, so what the service puts there is unread. Where: `log-stage-06d-unified-studio-remainder.md`,
+  2026-10-30 (two entries) and 2026-11-18; `REFERENCES.md`, SageMaker Unified Studio's October 2026
+  releases.
 
 ### The managed policies of a project role
 
