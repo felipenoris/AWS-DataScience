@@ -2893,3 +2893,23 @@ open decisions the user asked for at 22:01 UTC, one card per decision under the 
   failing on it.
 - **[user] Decision 5**, at 22:51, on the card *"O que fica e o que é apagado ao fechar o Stage 17?"*:
   *"Manter tudo, endpoint incluso"*, against the card's recommendation: the close deletes nothing.
+
+## 2026-11-18 — decision 6's code: `serve.py endpoint` keeps the endpoint, and `ML-5` prints its price
+
+*Claude's sitting on the laptop with the environment down (`make status` read 0.0000 USD/h at 00:30),
+the infrastructure user signed in, read-only AWS calls only, at the user's request of 2026-11-17 to
+advance every stage but 11 to 15 with nothing up. Times are UTC.*
+
+- **[Claude]** `examples/sandbox-ml/serve.py endpoint` keeps the model, the endpoint configuration and
+  the endpoint after the run: its `finally` calls `keep()` in place of `delete_all()`, which prints each
+  object as kept, the endpoint's price (0.115 USD an hour on `ml.m5.large`, 2.76 a day) and the two
+  commands its member runs, `delete-endpoint`, and `create-endpoint` from the configuration that stays,
+  with the project's tags. A `transform` or `serverless` run deletes what it creates, as before. The
+  README's table and its paragraph on the run say the same.
+- **[Claude]** `./aws/sandbox-ml.py`'s `ML-5` describes each endpoint and its configuration and notes
+  the endpoint with its status, its age, each variant's instance type and count, and its price an hour
+  and a day, in place of failing on it (4.6). `aws/INDEX.md`'s row and question follow. `ruff check` and
+  `ruff format --check` pass; a synthetic endpoint printed the expected note.
+- **[Claude]** The instrument's run at 00:45:51, with nothing up: every check passed, no call failed,
+  `ML-5` read no endpoint; `ML-1` notes the managed ML policy at v48 on the three projects against the
+  v45 the contract was read at, as before.

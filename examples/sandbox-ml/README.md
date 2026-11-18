@@ -29,7 +29,7 @@ that session's build host is under "What ran outside the lab".
 | `data.py` | the Telco churn CSV fetched from `raw.githubusercontent.com` through the space's proxy, written as `data/raw/telco.csv` and split into `data/train.csv`, `data/validation.csv` and `data/test.csv` | 2.1 |
 | `train.py` | the XGBoost training job: the admitted request (`tagged`) and six variants that each change one field, an MLflow run per attempt tagged with the job's name or the refusal, a negative the boundary admits stopped at once | 2.2, 2.3, 3.1 |
 | `register.py` | `log-model`: the job's `model.tar.gz` logged into its run, then the booster as an MLflow model; `package`: the group `ml-demo-xgboost` and a `PendingManualApproval` version; `from-mlflow`: a version through MLflow's registry | 3.1, 3.2 |
-| `serve.py` | `endpoint`: a real-time endpoint invoked and deleted in the same run; `transform`: a batch transform, and its negative without the volume key; `serverless`: the two negatives Stage 9 3.7 asks for | 4.1, 4.3, 4.4 |
+| `serve.py` | `endpoint`: a real-time endpoint invoked and kept after the run (decision 6); `transform`: a batch transform, and its negative without the volume key; `serverless`: the two negatives Stage 9 3.7 asks for | 4.1, 4.3, 4.4 |
 | `pipeline/definition.json` | the pipeline `ml-demo-pipeline`, every account-scoped value a placeholder: `Prepare` (processing, the house image, `ml.t3.medium`), `Train`, `CheckAuc` on `validation:auc` against the parameter `AucThreshold` (0.75), then `Register` or the Fail step `AucBelowThreshold` | 5.1 |
 | `pipeline.py` | `upsert` (the definition filled, `prepare.py` uploaded, the pipeline created or updated with the project role as its `RoleArn`), `start`, `status`, and `compare` against the live definition | 5.1, 5.2, 5.4 |
 | `knowledge_base.py` | the runbooks, `docs/plan/runbooks/*.md` (16 files and 556,006 bytes at this commit), copied to `bedrock/kb/` under the prefix, with the commit and each document's size printed | 7.4a |
@@ -155,9 +155,11 @@ name is what `train.py` printed, and a version's ARN is what `register.py packag
 /opt/awsds/venv/bin/python knowledge_base.py
 ```
 
-A `serve.py endpoint` run deletes its endpoint, endpoint configuration and model on its way out, an
-interrupted one included; `ML-5` fails on any endpoint that survives, every sitting. A transform job and a
-training job cannot be deleted, so they stay as records.
+A `serve.py endpoint` run keeps its endpoint, endpoint configuration and model (decision 6), an
+interrupted one included, and prints the endpoint's price with the commands that delete it and recreate it
+from the configuration. The endpoint bills 0.115 USD an hour, 2.76 a day, until its member deletes it;
+no slice, `make down` or `make status` reaches it, and `ML-5` prints each endpoint with its status, its age
+and its price, every sitting. A transform job and a training job cannot be deleted, so they stay as records.
 
 ## What the first run decides
 

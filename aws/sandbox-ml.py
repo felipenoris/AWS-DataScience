@@ -4,7 +4,7 @@
 # version and its create and tag statements, the D13 boundary's five statements and its
 # instance ceiling, the Tooling stack's enableNetworkIsolation), the MLflow Apps, every training
 # job against the boundary's four job settings, the Model Registry group ml-demo-xgboost, the
-# serving objects (no endpoint may survive a sitting), the ML pipelines, the entries read
+# serving objects (each endpoint with its price, decision 6), the ML pipelines, the entries read
 # without being created (HyperPod, Partner AI apps) with the quotas that bound the exercise,
 # the Generative AI objects and the roles behind them, the doors a session opens (the interface
 # endpoints, the S3 gateway's allow-list, the DNS Firewall list), and CloudTrail's record of
@@ -26,6 +26,7 @@
 #             kms:ListAliases; cloudformation:DescribeStacks; sagemaker:ListMlflowApps,
 #             DescribeMlflowApp, ListTrainingJobs, DescribeTrainingJob, ListModelPackageGroups,
 #             DescribeModelPackageGroup, ListModelPackages, DescribeModelPackage, ListEndpoints,
+#             DescribeEndpoint, DescribeEndpointConfig,
 #             ListEndpointConfigs, ListModels, DescribeModel, ListTransformJobs,
 #             DescribeTransformJob, ListPipelines, DescribePipeline, ListPipelineExecutions,
 #             ListPipelineExecutionSteps, ListClusters, ListPartnerApps, DescribeImageVersion,
@@ -121,6 +122,10 @@ EXERCISE_TYPES = (
     ("processing, step 5.1", "ml.t3.medium"),
 )
 CEILING_NEGATIVE = "ml.m5.2xlarge"  # step 2.3's fifth negative, refused while it is off the list
+
+# Real-time hosting per instance-hour in us-west-2 (docs/PRICING.md, measured 2026-10-12). An
+# endpoint on a type missing here is printed with its count and no price.
+HOSTING_USD_PER_HOUR = {"ml.m5.large": 0.115}
 
 # Step 0.2's quotas, by the names Service Quotas gives them. A zero stops the stage.
 QUOTAS = (
@@ -412,6 +417,36 @@ def request_text(requests: dict | None, code: str) -> str:
     )
 
 
+def endpoint_summary(endpoint: dict, now: datetime) -> str:
+    """An endpoint as ML-5 prints it: its status, its age and its price (decision 6)."""
+    status = endpoint.get("EndpointStatus", "-")
+    created = endpoint.get("CreationTime")
+    try:
+        age = now - datetime.fromisoformat(str(created))
+        hours = age.total_seconds() / 3600
+        age_text = f"{hours:.0f} h old" if hours < 48 else f"{hours / 24:.1f} days old"
+    except ValueError:
+        age_text = "of unread age"
+    variants = endpoint.get("_variants")
+    if variants is None:
+        return f"{status} since {created}, {age_text}; its configuration unread, so no price."
+    hourly, parts = 0.0, []
+    for name, itype, count in variants:
+        if itype == "serverless":
+            parts.append(f"{name} serverless, billed per request")
+            continue
+        price = HOSTING_USD_PER_HOUR.get(itype)
+        if price is None or count is None:
+            parts.append(f"{name} {count} x {itype}, not priced here (docs/PRICING.md)")
+            continue
+        hourly += price * count
+        parts.append(f"{name} {count} x {itype}")
+    return (
+        f"{status} since {created}, {age_text}; {', '.join(parts) or 'no variant'}: "
+        f"{hourly:.3f} USD/h, {hourly * 24:.2f} a day, until its member deletes it."
+    )
+
+
 def main(argv: list) -> int:
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
@@ -649,6 +684,31 @@ def main(argv: list) -> int:
 
     # ------------------------------------------------------------------ serving
     endpoints = (run_json("sagemaker", "list-endpoints") or {}).get("Endpoints", [])
+    for e in endpoints:
+        # The instance type is the configuration's, the count the endpoint's (decision 6's price).
+        desc = run_json("sagemaker", "describe-endpoint", "--endpoint-name", e["EndpointName"])
+        config_name = (desc or {}).get("EndpointConfigName")
+        config = (
+            run_json("sagemaker", "describe-endpoint-config", "--endpoint-config-name", config_name)
+            if config_name
+            else None
+        )
+        counts = {
+            v.get("VariantName"): v.get("CurrentInstanceCount")
+            for v in (desc or {}).get("ProductionVariants", [])
+        }
+        e["_variants"] = (
+            None
+            if config is None
+            else [
+                (
+                    v.get("VariantName", "-"),
+                    "serverless" if v.get("ServerlessConfig") else v.get("InstanceType", "-"),
+                    counts.get(v.get("VariantName"), v.get("InitialInstanceCount")),
+                )
+                for v in config.get("ProductionVariants", [])
+            ]
+        )
     endpoint_configs = (run_json("sagemaker", "list-endpoint-configs") or {}).get(
         "EndpointConfigs", []
     )
@@ -1347,15 +1407,11 @@ def main(argv: list) -> int:
     if others:
         checks.note("ML-4", "other model package groups", ", ".join(sorted(others)))
 
-    # ML-5: serving. No endpoint may outlive its sitting (decision 6).
+    # ML-5: serving. 4.1's endpoint stays between sittings and its member deletes it (decision 6),
+    # so each endpoint is a note with its status, its age and its price: no slice, make down or
+    # make status reaches one.
     for e in endpoints:
-        checks.fail(
-            "ML-5",
-            e.get("EndpointName", "-"),
-            f"{e.get('EndpointStatus', '-')} since {e.get('CreationTime', '-')} - an endpoint "
-            "bills while it exists (0.115 USD/h per ml.m5.large) and no slice or make down "
-            "reaches it: DeleteEndpoint now.",
-        )
+        checks.note("ML-5", e.get("EndpointName", "-"), endpoint_summary(e, now))
     if not endpoints:
         checks.ok("ML-5", "endpoints", "none")
     if endpoint_configs:
