@@ -25,7 +25,13 @@ dev = ["jinja2>=3.1", "pytest>=8", "pyyaml>=6", "ruff>=0.12"]
 # The resolver sees nothing published after this instant, so a release reaches the archive no sooner
 # than two weeks after it appears: the delay the infrastructure repository gives an action it pins.
 # Moved forward deliberately, with `uv lock --upgrade` in the same commit.
+#
+# The lock resolves for Linux, where the worker and the pipeline run, and macOS, where the tests run
+# on the laptop. The gates' pip-audit fails when it audits fewer packages than the export pins, and
+# pip-audit 2.10.1 skips a pin whose marker the runner does not match: a lock for every platform pins
+# tzdata for Windows and httpx2-jsfetch for Emscripten, which no runner audits.
 [tool.uv]
+environments = ["sys_platform == 'linux'", "sys_platform == 'darwin'"]
 exclude-newer = "2026-11-03T00:00:00Z"
 
 [build-system]

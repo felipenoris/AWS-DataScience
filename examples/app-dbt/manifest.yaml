@@ -1,20 +1,38 @@
-# app-dbt's manifest (the infrastructure repository's Stage 20, decision 7): what the CI/CD CLI copies
-# to the Sandbox project the application runs in, in the notation the CLI resolves. The storage items
-# are a file or a folder of this tree, never a glob, which `bundle` (CLI 1.0.9) does not expand:
-# `deploy` syncs each to the stage's `targetDirectory` under the project's shared prefix. A workflow's
-# `code` is the worker's archive, which package-task builds before the deploy (README.md).
+# app-dbt's manifest (the infrastructure repository's Stage 20, decisions 7 (b) and 9 (b)): what the
+# CI/CD CLI copies to a project, in the notation the CLI resolves. The storage items are a file or a
+# folder of this tree, never a glob, which `bundle` (CLI 1.0.9) does not expand: `deploy` syncs each to
+# the stage's `targetDirectory` under the project's shared prefix. A workflow's `code` is the worker's
+# archive, which package-task builds before a deploy from a space and the pipeline before the bundle.
 #
-# One stage, `dev`, and no catalog block: the application is Sandbox's alone and carries no release
-# (decision 9 (a)), and the project's own source imports the tables the workflow writes.
+# Three stages, one account each, the template's (Stage 19 decisions 6 (b) and 18 (d)): `dev`, the
+# application's own Sandbox project, which the developer deploys to from a space and the pipeline's
+# `bundle` job names; `staging` and `prod`, each account's deployment project, which the pipeline's
+# legs deploy the bundle into.
 #
-# A stage reads `${VAR}` from the shell, and the CLI refuses a manifest whose variable is unset or
-# empty. Each `{env.VAR}` a workflow names is a stage variable: the CLI writes it into the deployed
-# definition as a parameter and fills it on every run it starts, from the shell of that run, so a switch
-# turned between two runs is an `export` and a run, never a deploy. A switch at rest holds a word,
-# `default`, since an empty value is refused. PRODUCT_DATABASE is a literal: the database is created in
-# the project before the first deploy, never by the application. ACCOUNT_ID is the account the lineage
-# names; LINEAGE_DOMAIN the domain the transform task posts to; LINEAGE_NAMES `as-built` or `glue-arn`;
-# LINEAGE_ENDPOINT a URL or `default`; LINEAGE_ATTEMPTS a number of attempts or `default`.
+# The catalog (Stage 19 decisions 19 (c) and 20 (b)): `bundle` exports what the `dev` project owns,
+# the two tables' assets as the developer curated them, and a deploy imports them into the stage's
+# project. skipPublish: the import lists nothing, and no task of this application publishes.
+#
+# A stage reads `${VAR}` from the shell, every stage's whatever the target, and the CLI refuses a
+# manifest whose variable is unset or empty: a space exports dev's names and scripts/dev-cli.sh gives
+# the targets' a placeholder; a leg fills its target's from the deployment project's Tooling
+# environment (scripts/deploy-application.py of the infrastructure repository) and gives the other
+# stages' a placeholder. Each `{env.VAR}` a workflow names is a stage variable of every stage, since
+# the deploy resolves every workflow the manifest names: the CLI writes it into the deployed definition
+# as a parameter and fills it on a run it starts, from the shell of that run, and a chain's machine
+# fills it from the record the leg keeps of the last deploy. In `dev` a switch turned between two runs
+# is an `export` and a run, never a deploy, and a switch at rest holds `default`, since an empty value
+# is refused; a target holds its switches as literals.
+#
+# PRODUCT_DATABASE is a literal, the same name in every account's catalog: the database is created in
+# each project before its first deploy, never by the application. ACCOUNT_ID is the account the
+# lineage names; ATHENA_WORKGROUP the project's workgroup, workgroup-<project id>-<Tooling environment
+# id>; LINEAGE_DOMAIN the domain the transform task posts to; LINEAGE_NAMES `as-built` or `glue-arn`,
+# a target's the form the infrastructure repository's Stage 20 decision 3 holds; LINEAGE_ENDPOINT a
+# URL or `default`; LINEAGE_ATTEMPTS a number of attempts or `default`.
+#
+# `staging` creates the probe beside app-dbt, and the Staging leg runs it first; `prod` creates app-dbt
+# alone, then runs it and follows the run, so a release ends with both tables written in Production.
 applicationName: app-dbt
 
 content:
@@ -34,6 +52,10 @@ content:
     - name: workflows
       include:
         - "workflows/"
+  catalog:
+    enabled: true
+    connectionName: project.default_lakehouse
+    skipPublish: true
   workflows:
     - workflowName: app-dbt
       connectionName: default.workflow_serverless
@@ -65,6 +87,83 @@ stages:
           workflowName: app-dbt
         - type: workflow.create
           workflowName: app-dbt-probe
+    deployment_configuration:
+      storage:
+        - name: code
+          connectionName: default.s3_shared
+          targetDirectory: app-dbt/code
+        - name: glue
+          connectionName: default.s3_shared
+          targetDirectory: app-dbt/glue
+        - name: samples
+          connectionName: default.s3_shared
+          targetDirectory: app-dbt/inbox
+        - name: workflows
+          connectionName: default.s3_shared
+          targetDirectory: app-dbt/workflows
+
+  staging:
+    stage: STAGING
+    domain:
+      id: ${DOMAIN_ID}
+      region: ${DOMAIN_REGION}
+    project:
+      name: deploy-staging
+    environment_variables:
+      SUBNET_AZ1: ${STAGING_SUBNET_AZ1}
+      SUBNET_AZ2: ${STAGING_SUBNET_AZ2}
+      ACCOUNT_ID: ${STAGING_ACCOUNT_ID}
+      PRODUCT_DATABASE: app_dbt
+      ATHENA_WORKGROUP: ${STAGING_ATHENA_WORKGROUP}
+      LINEAGE_DOMAIN: ${DOMAIN_ID}
+      LINEAGE_NAMES: as-built
+      LINEAGE_ENDPOINT: default
+      LINEAGE_ATTEMPTS: default
+    bootstrap:
+      actions:
+        - type: workflow.create
+          workflowName: app-dbt
+        - type: workflow.create
+          workflowName: app-dbt-probe
+    deployment_configuration:
+      storage:
+        - name: code
+          connectionName: default.s3_shared
+          targetDirectory: app-dbt/code
+        - name: glue
+          connectionName: default.s3_shared
+          targetDirectory: app-dbt/glue
+        - name: samples
+          connectionName: default.s3_shared
+          targetDirectory: app-dbt/inbox
+        - name: workflows
+          connectionName: default.s3_shared
+          targetDirectory: app-dbt/workflows
+
+  prod:
+    stage: PROD
+    domain:
+      id: ${DOMAIN_ID}
+      region: ${DOMAIN_REGION}
+    project:
+      name: deploy-production
+    environment_variables:
+      SUBNET_AZ1: ${PROD_SUBNET_AZ1}
+      SUBNET_AZ2: ${PROD_SUBNET_AZ2}
+      ACCOUNT_ID: ${PROD_ACCOUNT_ID}
+      PRODUCT_DATABASE: app_dbt
+      ATHENA_WORKGROUP: ${PROD_ATHENA_WORKGROUP}
+      LINEAGE_DOMAIN: ${DOMAIN_ID}
+      LINEAGE_NAMES: as-built
+      LINEAGE_ENDPOINT: default
+      LINEAGE_ATTEMPTS: default
+    bootstrap:
+      actions:
+        - type: workflow.create
+          workflowName: app-dbt
+        - type: workflow.run
+          workflowName: app-dbt
+          trailLogs: true
     deployment_configuration:
       storage:
         - name: code

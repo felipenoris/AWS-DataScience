@@ -3,6 +3,10 @@ __pycache__/
 *.egg-info/
 dist/
 code/*.zip
+# What the pipeline's jobs write in the checkout, and `bundle` when rehearsed on a laptop.
+artifacts/
+pip-audit-*
+gl-secret-detection-report.json
 # What dbt writes beside a project it runs; hatchling reads this file, so none of it reaches the
 # wheel package-task builds either.
 target/
