@@ -1416,6 +1416,13 @@ correct whether the API replaces or merges, and a template is correct only if it
 failed to start against the destroyed version, with no fallback to the domain default. The user
 repaired it in the portal and it came up with those three fields intact.
 
+**Read again 2026-11-18.** A DataZone environment holds the same kind of copy. `test-experimentation`'s
+`Tooling` environment, created 2026-10-15, stores `enableSpaces` `"true"` in its own `userParameters`. The
+profile locked it `"false"` on 2026-11-18, and the owner's *Update project* re-deployed `true` with no
+resource changed (`SUP-380`). Stage 6d's decision 16 (a) had planned to retire each living project's
+`Tooling` domain with that press, reasoning from the profile's side; the environment was the consumer
+nobody read until the press.
+
 ## Lesson 64 — a comment inside a rendered template is a host replacement in waiting
 
 **What happened.** Stage 6g decision 1 took the proxy off its `[P]` Elastic IP: two arguments changed in

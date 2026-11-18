@@ -4005,3 +4005,37 @@ read the stack, the domains and the trail through `awsds-infra-sandbox-1`. Reads
 - **[Claude] The trail**, at 19:07: no `CreateSpace` and no SageMaker call in Sandbox since 18:46 but
   Claude's `ListSpaces` at 18:50. The visit's calls may still be inside CloudTrail's delivery delay, so
   step 1's reading (ii) is read again with step 4's.
+
+## 2026-11-18 — 2.7 step 4: *Update project* on `test-experimentation` keeps its `Tooling` domain
+
+*The user merged pull request #322 and pressed *Update project* in the portal; Claude, the orchestrating
+session, read the merge with `gh` and the result through `awsds-infra-data` (Data Governance) and
+`awsds-infra-sandbox-1` (Sandbox), permission set `InfrastructureAccess`. Reads only. Times are UTC.*
+
+- **[Claude] The pre-read**: the `Tooling` stack `DataZone-Env-bi356s1sacz0cw` against the profile's 26
+  resolved `Tooling` parameters: `enableSpaces` alone differed, `true` deployed and `false` resolved.
+- **[user] The acts**, reported as *"Fiz o merge e rodei o update do projeto. Entrando em Spaces -> Create
+  space, o formulário lista `test-experimentation-ai-domain` bem como `SageMakerUnifiedStudio...dev`."*
+- **[Claude] The merge**: #322 `MERGED` at 19:13:49, squashed into `3dd3863e` on `main`.
+- **[Claude] The calls**: `UpdateProject` at 19:14:47 in Data Governance, `projectProfileVersion` `latest`,
+  carrying for the `Tooling` environment its ten editable parameters, `enableSpaces` not among them. The
+  provisioning role's `UpdateStack` on the `Tooling` stack at 19:15:16, 57 parameters, whose values CloudTrail
+  does not record. The stack's events: `UPDATE_IN_PROGRESS` *"User Initiated"* 19:15:16, *"Transformation
+  succeeded"* 19:15:20, `UPDATE_COMPLETE_CLEANUP_IN_PROGRESS` 19:15:28, `UPDATE_COMPLETE` 19:15:29, and no
+  resource event. Three more `UpdateStack` calls, at 19:16:15 twice and at 19:17:17, answered *"No updates
+  are to be performed."* The environment's deployment `bed3kc57…` read `UPDATE` `SUCCESSFUL` at 19:15:48,
+  the blueprint's environment `61sozk11eycnm8` the same at 19:17:28, and the project `lastUpdatedAt` 19:17:54.
+- **[Claude] The result**: the stack still deploys `enableSpaces` `true`; the domain `d-lfgbdrjncmsu` and its
+  user profile stand; *Create space* offers both domains. The environment stores `enableSpaces` in its own
+  `userParameters` as `defaultValue` `"true"`, `isEditable` false, the value resolved at its creation on
+  2026-10-15, before the profile overrode it, and the update re-deployed that copy. `SUP-380` records it,
+  and Lesson 63 gains the reading.
+- **[Claude] Step 1's reading (ii)**: at the user's two visits, 19:06:53 to 19:07:25 and 19:34:37 to
+  19:34:53, the portal called `DescribeSpace` and `CreatePresignedDomainUrl` for `default-<user id>` in the
+  `Tooling` domain alone, each `ResourceNotFound`, through the project role. It made no call on the
+  blueprint's domain and no `CreateSpace`. With both domains, the portal's default space is the `Tooling`
+  domain's.
+- **[Claude] What follows**: step 4's two exits do not arise, and step 6 would retire nothing. The living
+  projects' second domain is the user's decision. Step 5's throwaway project, born with `enableSpaces`
+  `false`, reads what the application projects will meet: *Workflows* and the portal's default space with
+  the blueprint's domain alone. The user offered a Chrome session for the portal; the readings needed none.

@@ -2408,6 +2408,22 @@ entry is still true is the reading.
   `Tooling` domain mounts. A space's `shared` mount is therefore inside the project role's object grant;
   only the tag names the root. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
 
+- `SUP-380` **An *Update project* does not carry a profile's changed override of a non-editable parameter
+  into a living environment: the environment keeps the value resolved at its creation** (measured
+  2026-11-18 in Sandbox, Stage 6d 2.7 step 4). `test-experimentation`'s `Tooling` environment
+  `bi356s1sacz0cw`, created 2026-10-15 when `experimentation` overrode no `enableSpaces`, stores it in its
+  `userParameters` as `defaultValue` `"true"`, `isEditable` false. At 18:45:34 the profile locked
+  `enableSpaces` `"false"`, and `get-project-profile` read it in both `parameterOverrides` and
+  `resolvedParameters`. The user's *Update project* sent `UpdateProject` at 19:14:47 with
+  `projectProfileVersion` `latest` and, for that environment, its ten editable parameters, `enableSpaces`
+  not among them. The provisioning role's `UpdateStack` followed at 19:15:16 with 57 parameters, whose
+  values CloudTrail does not record. The stack read `UPDATE_COMPLETE` at 19:15:29 with no resource event
+  and `enableSpaces` `true`; the deployment read `UPDATE` `SUCCESSFUL`, and the domain `d-lfgbdrjncmsu`
+  stood. A profile's locked change therefore reaches the projects created after it, and a living project
+  keeps its copy. Only `enableSpaces` was measured: whether a locked override in another element, the
+  `SageMakerAIDomain` image pin among them, stops at the same copy is unmeasured. Where:
+  `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
+
 ### The managed policies of a project role
 
 - `SUP-176` **`SageMakerStudioProjectRoleMachineLearningPolicy` grants every SMUS project role `datazone:`
