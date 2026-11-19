@@ -2981,3 +2981,15 @@ planned the slice's lines. Times are UTC.*
   changes are not written.
 - **[Claude] Left**: the two contributors in each project, by the user in the portal's member dialog; the
   apply on the user's word; `app-ml-dev`'s MLflow App and model package group; Nova Lite enabled.
+
+## 2026-11-19 — 9.5's `sandbox/workflows/` line applied for `app-ml-dev` and `app-genai-dev`
+
+*Claude, the orchestrating session, on the user's word, as `awsds-infra-sandbox-1`. Times are UTC.*
+
+- **[user] The authorization**: *"Autorizo o apply"*.
+- **[Claude] The apply**: the saved plan of 00:29, one apply with Stage 20's `app-dbt-dev` line (that log's
+  entry of the same night holds the readings): *"Apply complete! Resources: 3 added, 0 changed, 0
+  destroyed."* at 00:49:48, re-planned *"No changes."* at 00:50:15. `app-ml-dev`'s and `app-genai-dev`'s
+  roles list `awsds-sandbox-workflows`.
+- **[Claude] Left**: 9.5's pairs, model statement, `CreateModelPackage` and bundle role's read; 10.4's
+  `sandbox/bedrock/` and `sandbox/model-access/`; the two contributors in each project.

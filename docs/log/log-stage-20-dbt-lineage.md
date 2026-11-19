@@ -1124,3 +1124,23 @@ infrastructure user through `awsds-infra-sandbox-1` and `awsds-infra-data`, read
   inventories not read. The infrastructure user's membership is what the instrument needs there too.
 - **[Claude] Left**: the two contributors, then the workgroup's reading and 2.0's starting state; the
   apply.
+
+## 2026-11-19 — 2.0's workflows grant applied with Stage 17's two lines
+
+*Claude, the orchestrating session, ran the apply on the user's word, as `awsds-infra-sandbox-1`, the
+infrastructure user's `InfrastructureAccess` in Sandbox, from the saved plan of 00:29. No other session was
+running on the laptop. Times are UTC.*
+
+- **[user] The authorization**: *"Autorizo o apply"*, answering the question that named `sandbox/workflows/`
+  and its `3 to add`.
+- **[Claude] The apply**, 00:49:36 to 00:49:48: one `aws_iam_role_policy_attachment.project` per role, each
+  *"Creation complete after 1s"*, then *"Apply complete! Resources: 3 added, 0 changed, 0 destroyed."*
+- **[Claude] The re-plan**, ending 00:50:15: *"No changes. Your infrastructure matches the configuration."*,
+  exit 0 under `-detailed-exitcode`.
+- **[Claude] The roles read**: `list-attached-role-policies` on `app-dbt-dev`'s, `app-ml-dev`'s and
+  `app-genai-dev`'s roles lists `awsds-sandbox-workflows` beside AWS's
+  `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy`, `SageMakerStudioProjectRoleMachineLearningPolicy`
+  and `SageMakerStudioProjectUserRolePolicy`.
+- **[Claude] Lesson 79**: the slice was applied from pull request #320's branch, so a plan of it from `main`
+  proposes removing the three attachments until that pull request merges.
+- **[Claude] Left**: the project's two contributors, then the workgroup's reading and 2.0's starting state.
