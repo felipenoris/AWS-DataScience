@@ -3096,3 +3096,45 @@ simulations only. Times are UTC.*
   re-planned first; after the SCP's apply, the battery's `ou` phase and the same principal simulation of
   Nova Lite, expected `AllowedByOrganizations` `true`; Nova Lite enabled on the console's **Amazon
   Bedrock models** tab; the training pair in sitting B after 2.2's (a) and (b); the group's statement.
+
+## 2026-11-19 — 3.3: `EXC-11`'s share written and planned as code, nothing applied
+
+*Claude, a session started by the orchestrating session, which handed it the share at about 02:10. Reads
+and a plan as the infrastructure user through `awsds-infra-data`. Times are UTC.*
+
+- **[Claude] AWS's page on a SageMaker data source**, read again: for a unified domain, a RAM share of the
+  domain to the service principal `sagemaker.amazonaws.com` under
+  `AWSRAMSageMakerServicePrincipalPermissionAmazonDataZoneDomain`, by the console's steps alone, the name
+  `DataZone-<domain id>-SageMaker` its example. The page names neither `sources` nor associated accounts.
+- **[Claude] The permission**, `ram get-permission` at 02:11: version 3, the default, `ATTACHABLE`, on
+  `datazone:Domain`, with twenty DataZone actions, `CreateAsset`, `CreateDataSource`, `StartDataSourceRun`
+  and `CreateListingChangeSet` among them. Its `creationTime` and `lastUpdatedTime` read the time of each
+  call (`SUP-382`).
+- **[Claude] RAM's pages**: `CreateResourceShare`'s `sources` constrains where a service principal's
+  requests may come from, against a confused deputy, and RAM's table of shareable resources marks
+  `datazone:Domain` as not shareable with a service principal, against AWS's page and the permission.
+- **[Claude] Data Governance's shares**, at 02:13: nine `LakeFormation-V4`/`V5` shares and
+  `DataZone-EXTENDED_ACCESS-dzd-d8yrvx1ko7im6o-ORG-ONLY`, none to a service principal. No SCP names a
+  `ram:` action. `list-permission-versions` at 02:15:31 read
+  `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess` versions 9 to 12 `UNATTACHABLE` and 13,
+  of 2026-11-16, the default, with the domain's share at version 10; Claude told Stage 19's session, which
+  moved the share on the user's word in its chat (Stage 19's log). Read here at 02:23:13: version 13,
+  `ASSOCIATED`, updated 02:20:33, and still nine `LakeFormation` shares.
+- **[Claude] The `Tooling` sources**, from Data Governance at 02:14: `test-experimentation`'s
+  (`c8sn6a0xxc4zv4`, `cron(6 6 * * ? *)`), `eighth-experimentation`'s (`4tb4qnmgi0iej4`, `cron(32 17 * * ?
+  *)`) and `app-etl-dev`'s (`apnukh5a1tfonk`, `cron(7 2 * * ? *)`), each `RUNNING` since its run of
+  2026-11-18, the two runs before `FAILED` with `VALIDATION_EXCEPTION`, *"Failed to run the data source.
+  Please check if RAM share is correctly configured between Amazon SageMaker and Amazon DataZone"*.
+  `app-etl-dev`'s tracks `SageMakerModelPackageGroupAssetType` over an empty list, `publishOnImport`
+  `false`, through a connection and no environment. `app-dbt-dev`, `app-ml-dev` and `app-genai-dev` hold no
+  SageMaker data source.
+- **[Claude] The code**: `data-governance/governance/sagemaker-share.tf`,
+  `awscc_ram_resource_share.sagemaker`, `DataZone-dzd-d8yrvx1ko7im6o-SageMaker`, the domain's ARN, the
+  principal, the permission, `sources` the four accounts of `local.member_account_ids`,
+  `allow_external_principals` `false`, the five tags. A hand-made share would be `ManagedBy=console`
+  outside Stage 2's table, and the `aws` provider's `aws_ram_resource_share` has no `sources`.
+- **[Claude] The plan**, 02:20:19 to 02:20:51 as `awsds-infra-data`, saved outside the repository: *"Plan:
+  1 to add, 0 to change, 0 to destroy."*, the share alone.
+- **[Claude] Left**: the apply on the user's word naming it, whose wording answers whether RAM shares a
+  domain with a service principal and with `allowExternalPrincipals` `false`; then the three sources' next
+  runs.

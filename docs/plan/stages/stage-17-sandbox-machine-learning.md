@@ -547,6 +547,26 @@ page (7.3, 7.4). It shares 9.1's reading of several applications in one deployme
   3.2 and 9.6, the user's choice of 2026-11-17, so 3.3 reads verification v against a share that exists
   rather than the failure the page predicts.
 
+  **The share written and planned 2026-11-19** (the log), with nothing applied, as code: a hand-made
+  share would be `ManagedBy=console` outside Stage 2's table, which the conventions refuse.
+  `data-governance/governance/sagemaker-share.tf` holds `awscc_ram_resource_share.sagemaker`, named
+  `DataZone-dzd-d8yrvx1ko7im6o-SageMaker` after AWS's example, the domain to `sagemaker.amazonaws.com`
+  under the managed permission, with `sources` the domain's four accounts, RAM's confused-deputy
+  constraint, which the console's steps leave unset and the `aws` provider's resource cannot carry.
+  The permission, version 3, gives the principal on the domain `Search`, `GetAsset`, `CreateAsset`,
+  `CreateAssetRevision`, `CreateDataSource`, `GetDataSource`, `ListDataSources`, `StartDataSourceRun`,
+  `GetDataSourceRun`, `UpdateDataSourceRunActivities`, `CreateListingChangeSet`,
+  `UpdateSubscriptionGrantStatus`, `GetSubscriptionTarget`, `ListProjectMemberShips`, `ListGroupsForUser`,
+  `GetEnvironment`, `ListDataSourceRunActivities`, `ListLinkedTypes`, `GetUserProfile` and `GetConnection`.
+  Planned at 02:20 UTC as `awsds-infra-data`: *"Plan: 1 to add, 0 to change, 0 to destroy."* RAM's table
+  of shareable resources marks a DataZone domain as not shareable with a service principal, against
+  AWS's page and the permission, so the apply is the measurement, read by its wording. Before it, three
+  `Tooling` sources, `test-experimentation`'s, `eighth-experimentation`'s and `app-etl-dev`'s, each failed
+  daily with the RAM message to 2026-11-18, each tracking an empty list with `publishOnImport` `false`;
+  `app-dbt-dev`, `app-ml-dev` and `app-genai-dev` hold none. Their first runs after the share are read
+  from Data Governance with `list-data-source-runs`: `app-etl-dev`'s about 02:19 UTC,
+  `test-experimentation`'s 06:16 and `eighth-experimentation`'s 17:38.
+
 ### 4. Deployed and served
 
 - **4.1 — [user] The endpoint, from the SDK.** `CreateModel` with the XGBoost image, the registered

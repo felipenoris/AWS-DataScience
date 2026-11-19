@@ -267,7 +267,9 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   execution and service roles, the project profiles (`experimentation`, `lake-publishing`,
   `deployment-staging`, `deployment-production`, and the model governance project's), and a
   `CREATE_PROJECT_FROM_PROJECT_PROFILE` grant per profile on the root domain unit (`grants.tf`, since
-  2026-08-22 — without them the profiles were templates nobody could instantiate). **No compute lives here and none ever may**:
+  2026-08-22 — without them the profiles were templates nobody could instantiate). `sagemaker-share.tf`
+  shares the domain through RAM with `sagemaker.amazonaws.com`, the share a SageMaker data source needs
+  (Stage 17 3.3, `EXC-11`; written 2026-11-19, not applied). **No compute lives here and none ever may**:
   `sagemaker:Create*` is denied in this account by the `Data` OU document, a deny that stays free because
   no blueprint is enabled here but the lake-publishing pilot's `Tooling`, with spaces off
   (`data-governance/publishing/`, Stage 6f step 11), and Stage 6 step 0.4 reads the slice's own plan for
