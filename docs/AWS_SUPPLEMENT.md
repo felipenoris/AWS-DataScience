@@ -2044,7 +2044,12 @@ entry is still true is the reading.
   accounts' trails reading `AccessDenied` with no `errorMessage` (`SUP-162`). The project's creator, its
   owner, was accepted the same update from the portal on 2026-10-11 (`SUP-168`), so a project's update is
   its owner's, never an operator's call as a contributor. Where:
-  `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
+  `log-stage-06d-unified-studio-remainder.md`, 2026-11-18. Read again 2026-11-19 (Stage 6h decision 3): the
+  same role, a `PROJECT_CONTRIBUTOR` of `eighth-experimentation`, was accepted `UpdateConnection` on the
+  Redshift connection the project's owner made in the portal, its database and its `lineageSync` changed,
+  both accounts' trails reading the call with no `errorCode`. A connection's update is a contributor's where
+  a project's update is its owner's; the managed designations' descriptions name neither action, so a
+  contributor's writes are read by attempt. Where: `log-stage-06h-redshift-connection.md`, 2026-11-19.
 
 - `SUP-158` **An IAM role in a DataZone domain is a group and one user profile per session name, and a
   policy grant takes the group.** Its ARN resolves as a user identifier to one session's user profile, and
@@ -3125,7 +3130,11 @@ entry is still true is the reading.
   every run id, and a second reading the same day returned zero queries processed and a `RedshiftData`
   status 400, *"Redshift endpoint doesn't exist in this region."*, the workgroup being down. CloudTrail
   holds no `GetCredentials` at the run times, so the failed runs opened no database session. Where:
-  `log-stage-06f-data-governance.md` and `log-stage-06h-redshift-connection.md`, 2026-10-18.
+  `log-stage-06f-data-governance.md` and `log-stage-06h-redshift-connection.md`, 2026-10-18. Read again
+  2026-11-19 (6h decision 3): `UpdateConnection` with `lineageSync` `enabled: false` and the same schedule
+  switched the sync off, the schedule and the `lineageJobId` kept on the object, and `list-job-runs` kept
+  the job's 39 runs, one a day from 2026-10-11 to 2026-11-18, each `FAILED`. Where:
+  `log-stage-06h-redshift-connection.md`, 2026-11-19.
 
 - `SUP-208` **The SageMaker Unified Studio Query editor opens each session on the Redshift connection's
   database, not on the database selected in an earlier session** (measured 2026-10-26, Stage 9 xxiv). The
@@ -3136,9 +3145,21 @@ entry is still true is the reading.
   through the Data Catalog was then refused: *"Failed to incorporate external table
   "trades"."trades_notional" into local catalog. Error=permission denied to create temporary tables in
   database "dev""*, because the session's database holds the query's temporary objects and the user held
-  `TEMP` on `sandbox` alone. Selecting `sandbox` returned the row. Whether a member's `UpdateConnection` can
-  change the stored database is unmeasured. Where: `log-stage-09-deployment-targets.md`, 2026-10-26;
-  `runbooks/redshift-connection.md` §G.
+  `TEMP` on `sandbox` alone. Selecting `sandbox` returned the row. Where: `log-stage-09-deployment-targets.md`,
+  2026-10-26; `runbooks/redshift-connection.md` §G. Read again 2026-11-19 (6h decision 3): a contributor's
+  `UpdateConnection` changed the stored database from `dev` to `sandbox` (`SUP-157`), `jdbcUrl` and
+  `jdbcIamUrl` following it and `redshiftTempDir`, whose `dev` segment is the environment's stage, unchanged.
+  A session opened on the new database needs the workgroup and is unread. Where:
+  `log-stage-06h-redshift-connection.md`, 2026-11-19.
+
+- `SUP-387` **`UpdateConnection` on a Redshift Serverless connection does not check the workgroup it
+  names** (measured 2026-11-19, Stage 6h decision 3). The call was accepted at 02:22:20 UTC on
+  `redshift-serverless.redshift` with the workgroup `awsds-sandbox-warehouse` destroyed, `GetWorkgroup`
+  having answered *"Serverless workgroup awsds-sandbox-warehouse not found."* at 02:11:51, and the object
+  read back `READY`, its workgroup and host unchanged and its database `sandbox`. The service model documents
+  the call as *"Updates a connection"* and says nothing of validation. A connection's database and lineage
+  sync are changed with no warehouse up, and `READY` says nothing about the compute. Where:
+  `log-stage-06h-redshift-connection.md`, 2026-11-19; `runbooks/redshift-connection.md` §P step 4a.
 
 ## SageMaker AI spaces and images
 

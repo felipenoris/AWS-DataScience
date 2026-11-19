@@ -855,9 +855,9 @@ objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/cat
 - **Lineage sync is a connection property.** `glueLineageSyncEnabled` is `true` on each project's
   `LAKEHOUSE` and `IAM` connections (read 2026-10-18, never updated since creation), and the blueprint
   configuration carries no lineage field. The Redshift connection's `lineageSync` is the separate
-  meter below, and it is enabled (`cron(43 3 * * ? *)`, read 2026-10-18): its eight daily runs since
-  2026-10-11 all failed, the newest on *"Redshift endpoint doesn't exist in this region"* while the
-  workgroup was down, and that run processed no query.
+  meter below, enabled at creation on `cron(43 3 * * ? *)` and off since 2026-11-19 (6h decision 3): its
+  39 daily runs from 2026-10-11 to 2026-11-18 all failed, the one read on 2026-10-18 on *"Redshift
+  endpoint doesn't exist in this region"* while the workgroup was down, and that run processed no query.
 - **The domain offers 24 managed asset types** (read 2026-10-28, Stage 19 0.8; 23 on 2026-10-18),
   `GlueTableAssetType` among them, all owned by the domain's own project. A custom type is not needed to publish a Glue table.
 - **`list-domains` in an associated member account returns the shared domain.** The listing alone
@@ -987,9 +987,10 @@ maps nothing on the notebook door.
 **`lineageSync` is a scheduled query on an hourly meter.** `awscc_datazone_connection`'s
 `redshift_properties.lineage_sync` takes an `enabled` flag and a `schedule`, and every run is a query on a
 workgroup billing **1.44 USD/hour** at 4 RPUs. The portal's form offers no toggle for it on this path
-(measured 2026-09-21), and the connection the form wrote has the sync enabled; every run to 2026-10-18
-failed (§The catalog surface). Switching it off is an `UpdateConnection` by a project member, and
-whether to is 6h decision 3, the user's.
+(measured 2026-09-21), and the connection the form wrote has the sync enabled; every run to 2026-11-18
+failed (§The catalog surface). Sandbox's connection has it off since 2026-11-19, by one `UpdateConnection`
+from Sandbox's `InfrastructureAccess` as a contributor, with the workgroup down (6h decision 3,
+`redshift-connection.md` §P step 4a).
 
 **`enable_trusted_identity_propagation` exists per connection**, not only per project profile — which
 corrects the premise of open question 13, where TIP is recorded as a profile-level switch whose cost is that
