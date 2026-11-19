@@ -1132,7 +1132,7 @@ holds one goal: what needs nothing up runs before it, a sitting that needs no Gi
 application reaches a Sandbox space as a tar built on the laptop (Stage 20 step 2.0), never through
 GitLab. Sittings that need the hub may share one hub start. The order is the dependencies', not a
 calendar; the waiting list's "Sittings with the environment up" says what each closes, and its Dates
-bound items 3, 5, 6, 9 and 11.
+bound items 3, 5, 6, 9 and 11. N.9 joins items 6, 7 and 8 in one sitting of three days.
 
 1. **With nothing up, done 2026-11-17.** Release G's step 3, `production/studio/`, applied at 13:11 UTC on
    the user's word naming it, from the plan saved at 05:06 UTC from `main` at `80e996f5` (2 added, 2
@@ -2267,6 +2267,156 @@ step 8, with the hub and GitLab up for its tag, and each act below names its ide
    authorizes them against. From Sandbox, the listing found by a search of the catalog; 4.12's
    subscription requests it. `production-register`, `-approve` and `-transform` stay `manual`: the
    newest training job in Production is release T's (the stage file, §The sittings that follow).
+
+### N.9 The combined Sandbox sitting, prepared 2026-11-19
+
+Written with nothing up on 2026-11-19, when the user asked for the sitting that closes the most steps with
+the least environment. It joins N.6 items 6, 7 and 8 with 6d's Sandbox items, 6d decision 6's apply, 6e 6.4
+and Stage 21's pass 5. It raises the hub and `sandbox/egress` alone: no GitLab, since an application
+reaches a space as a tar built on the laptop; no Staging or Production egress; and no warehouse, whose
+sitting waits for Stage 19's pass 5 (N.9.8). `make status` read 0.0000 USD/h at 14:49 UTC that day. The
+pre-flight ran the same afternoon with nothing up, each block's by the session holding its stage, the
+readings in its stage log: Stage 20's (pull request #335), Stage 17's (#336) and 6d's (#337). Each stage
+file holds its block step by step; this section holds the days, the raises and the lowerings. Every command
+runs as the infrastructure user (`InfrastructureAccess`) unless it names another identity, and each write
+is Claude's on the user's word naming it, the other sessions on the laptop told first.
+
+The blocks add up to about twenty hours, so the sitting runs on three days. Each day raises the groups its
+blocks call and ends at zero burn: a night of fourteen hours with the hub and `sandbox/egress` up costs
+about 3 USD, against 0.36 to 0.87 USD for the next day's Config cycle.
+
+#### N.9.1 What comes before the sitting
+
+- **[user] The merges** of this section's pull request and of #335, #336 and #337, so every apply runs
+  from `main` (Lesson 79).
+- **[user] With nothing up:**
+  - 6d 4.7: run it with `L-85C9EC5A` already above zero, as decision 17 (a) stands, or write decision 17
+    (b)'s Sandbox deny first. AWS raised the quota to 15 with no request in Sandbox, Staging and Production
+    (read 2026-11-19), so 4.7 waits on no request and nothing measured holds the channel shut.
+  - Stage 20 2.1: the database `app_dbt` in `app-dbt-dev` and the editor's probe. The database's source
+    then runs daily at the minute of its creation, which the sitting's runs keep clear of.
+  - Stage 17 0.9's portal reading, before day 2; `app-ml-dev`'s MLflow App by 1.5's path, before day 3. An
+    MLflow App bills nothing at rest.
+  - 6d 7.6's second identity, `eighth-experimentation`'s contributor, signed in from a browser profile of
+    its own; and the window for 6d 7.5's monitored profile, which moves the laptop's network for every
+    session.
+- **[Claude] With nothing up:** Stage 20 4.5's workflow and its second tar; Stage 17 7.4's evaluation
+  dataset and `examples/sandbox-ml`'s scripts read against the house image's lock; the archives of
+  `app-ml` and `app-genai` from `main` on day 3's eve.
+
+#### N.9.2 The days
+
+| Day | Raise | Blocks | Hours |
+|---|---|---|---|
+| 1 | `make hub-up`, 6d decision 6's apply, `make up ENV=sandbox GROUPS=mwaa` | 6d decision 6's render and reading; Stage 20's sitting A; 6d 4.7, 7.6, 7.5's monitored half, 7.7 and 6.1 (viii)'s Code Editor half | about 7 |
+| 2 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | Stage 17's sitting B and pass 7; Stage 21's pass 5 | about 7 |
+| 3 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base` | 6e 6.4's window; Stage 17's sitting C | about 6 |
+
+A group lasts one apply, so each day's raise names every group its blocks call, and no other. The tunnel is
+the user's ([`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md)). A day ends where the
+sitting can stop, and no block depends on a later day's.
+
+#### N.9.3 Day 1: 6d and Stage 20
+
+The blocks are [6d](../stages/stage-06d-unified-studio-remainder.md)'s "The combined Sandbox sitting: 6d's
+items in order" and [Stage 20](../stages/stage-20-dbt-lineage.md)'s "Sitting A in order".
+
+1. [Claude] The other sessions told, `make status`; [user] `make hub-up`.
+2. [Claude⚡] 6d decision 6's apply of `production/networking/` from `main`, which needs no host and may run
+   before the hub. The name reaches Squid at the association's next :00 or :30 with the host running, or
+   at once by [Claude⚡] `start-associations-once`; only the count `PX-3` reads on the host proves a render
+   (`SUP-071`). About 30 minutes with step 1.
+3. [user] `make up ENV=sandbox GROUPS=mwaa`; [Claude] `make status`.
+4. [user] The spaces, each stopped when its steps end: 6d's JupyterLab on `ml.t3.medium` and remote-access
+   Code Editor on `ml.t3.large` in `eighth-experimentation`, the contributor's remote-access space and one
+   in `test-experimentation`; Stage 20's JupyterLab in `app-dbt-dev`.
+5. [Claude] Decision 6's reading: `200 TCP_TUNNEL` on the portal's name from the new app, and no `403`
+   after the render.
+6. Stage 20's sitting A, its steps between the raise and the downs: 2.2 to 2.5, 3.1 on a split graph
+   alone, 3.3, 2.6 if there is room, 3.4 and 4.5. About 3.5 hours, 35 minutes more with 3.1 and 2.6. Pass 3 gives 3.1's
+   verdict, which 8.5 owes.
+7. 6d 4.7, about an hour: a background run, a schedule and a *Notebook Operator* workflow in
+   `eighth-experimentation`, then the `PUBLIC_INTERNET_ONLY` negative from the space. It is left out if the
+   user put decision 17 (b)'s deny first.
+8. 6d 7.6 on the split-tunnel profile, about 20 minutes; then 7.5's monitored half in the window the
+   orchestrating session announces, about 20 minutes, every shell on `proxy-on`.
+9. 6d 7.7 after the portal's logout, read at 5 and 30 minutes, with [Claude] 6.1 (viii)'s Code Editor half
+   from the flow log during the wait: about 35 minutes. It comes last because the logout ends every portal
+   tab.
+10. 6d's step 12: 4.7's schedule deleted, the spaces stopped, the portal tabs closed; then the lowering
+    (N.9.6).
+
+#### N.9.4 Day 2: Stage 17's sitting B and pass 7, Stage 21's pass 5
+
+The blocks are [Stage 17](../stages/stage-17-sandbox-machine-learning.md)'s "Sittings B and C as one
+Sandbox sitting" to the end of pass 7, and [Stage 21](../stages/stage-21-redshift-s3-data-products.md) §5.
+
+1. [Claude] The other sessions told; [user] `make hub-up`, then
+   `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`; [Claude] `make status`.
+   `bedrock-agent` is pass 7's alone.
+2. Stage 17's sitting B and pass 7: the opening with 1.4's and 0.5's readings and the spaces, 0.3 and 0.7, 1.6,
+   2.1, 2.2 (a) and (b), [Claude⚡] the training pair's apply in `sandbox/workflows/`, 2.2 (c), then pass 7.
+   About 4.5 hours. The training pair's default flips to `true` in that day's pull request, or the next
+   plan from `main` removes it (Lesson 79).
+3. Stage 21's pass 5: an `eighth-experimentation` space and a `test-experimentation` notebook; the prefix
+   published, the product requested, approved, read and revoked. Its stage gives no time; its seven steps
+   and the revocation's five-minute wait make about two hours.
+4. Stage 17's closing reads, `./aws/sandbox-ml.py` and `./aws/catalog.py`; the spaces stopped and the portal
+   tabs closed; then the lowering (N.9.6).
+
+#### N.9.5 Day 3: 6e 6.4 and Stage 17's sitting C
+
+The blocks are [6e](../stages/stage-06e-claude-code-bedrock.md) 6.4 and Stage 17's sitting C, 9.6 and 10.4.
+
+1. [Claude] The other sessions told; [user] `make hub-up`, then
+   `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base`; [Claude] `make status`.
+2. 6e 6.4's window, about an hour, with nothing else running: one Claude Code session in a space on the
+   default model, a task of real length over several turns, and no other Bedrock call in the account.
+   Claude marks its start and end in UTC as the user reports them and reads `./aws/bedrock-usage.py` after
+   the channels' publication lag. The token volume sets 6e decision 6's threshold.
+3. Stage 17's sitting C: 9.6, `app-ml` trained, registered and scored in `app-ml-dev` (verification
+   lx); then 10.4's deploy and its readings 1 to 6, each `sandbox/bedrock/` apply [Claude⚡], both switches
+   back to `false` at the end. About 4.7 hours.
+4. Stage 17's closing reads, `./aws/sandbox-ml.py` and `./aws/catalog.py`; the spaces stopped and the portal
+   tabs closed; then the lowering (N.9.6).
+
+#### N.9.6 The lowering, each day
+
+Every portal tab is closed first (`sagemaker-application.md` §D), then:
+
+```bash
+make down ENV=sandbox
+make hub-down
+make status
+```
+
+§R's readings follow. `make status` reads every account's Studio apps, so an app an open page restarted
+after the down's hook shows there.
+
+#### N.9.7 The sitting's cost
+
+At [`cost-model.md`](../cost-model.md)'s "Per session" rates:
+- the hub's two hosts and two addresses, 0.026 USD/h, and Sandbox's 18 endpoints, 0.180 USD/h, each day;
+- the groups' endpoints at 0.010 USD/h each: day 1's one, day 2's six and day 3's four;
+- each space's app, 0.050 USD/h on `ml.t3.medium` and 0.100 on `ml.t3.large`, 6d's remote-access spaces;
+- a Config cycle of Sandbox's `[E]` slices each day, 0.36 to 0.87 USD whatever its length.
+
+Before the spaces, the days bill about 0.22, 0.27 and 0.25 USD/h, some 1.5, 1.9 and 1.5 USD of hub and
+endpoints; with the spaces and the Config cycle, 2 to 3.5 USD a day and 8 to 9 USD for the sitting. The
+models' tokens, the jobs and the embeddings are billed apart, and 6e 6.4's session is the largest of them.
+
+#### N.9.8 What follows the sitting
+
+1. **Release G's sitting** (N.6 item 3, N.8.5), between 2026-11-22 and 2026-11-25. It carries N.8.3 on the
+   same hub start: `EXC-13`'s Production half, after the admin secret's rotation scheduled for 2026-11-22
+   01:59:59 UTC. GitLab's backup, owed before 2026-12-17, and 6d 2.7's step 7 ride it.
+2. **Stage 19 4.12**, the user's acts with nothing up (N.6 item 4).
+3. **The Sandbox warehouse sitting** (N.6 item 9), before 2026-12-19. It carries Stage 19's pass 5 after
+   4.12, 5b's test and re-plan, 6h's negatives and the editor on `sandbox`, and Stage 21's passes 2 to 4.
+   The user's acts before it: 6h decision 8 (a) and Stage 21 1.3's wizard half.
+4. **[Pull request #321](https://github.com/felipenoris/AWS-DataScience/pull/321)**, synced and merged
+   after release G (N.6 item 10). Then come `app-dbt`'s first release before 2026-12-18 (item 11), `app-ml`'s
+   (item 12), Stage 17 10.5 (item 13) and `app-genai`'s (item 14).
 
 ## Q. After the quotas: Stage 10's pass 3
 

@@ -4,7 +4,7 @@
 # files of the slice are copies of production/studio/'s (scripts/check-copies.py).
 
 variable "project_roles" {
-  description = "The deployment project's roles, by role NAME (not ARN): each gets the workflows grant and the deny on a person's session. Empty is legal and attaches nothing; the rollback empties it before the project is deleted, so the environment's stack deletes a role that carries only the policies it attached."
+  description = "The deployment project's roles, by role NAME (not ARN): each gets the workflows grant, the deny on a person's session and the deny on a notebook run. Empty is legal and attaches nothing; the rollback empties it before the project is deleted, so the environment's stack deletes a role that carries only the policies it attached."
   type        = list(string)
 
   # deploy-staging, created 2026-11-11 at 15:26 UTC (Stage 19 step 4.6); read from `iam list-roles`.
