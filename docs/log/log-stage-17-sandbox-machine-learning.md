@@ -3295,3 +3295,39 @@ phase. As the infrastructure user, permission set `InfrastructureAccess`. Times 
     passed)"*.
 - **[Claude] Left**: Nova Lite enabled on the console's Amazon Bedrock models tab (10.4), the user's; the
   training pair in sitting B; `EXC-11`'s reading.
+
+## 2026-11-19 — 10.4: Nova Lite enabled in projects on the Bedrock models tab
+
+*The user enabled the model in Sandbox's console, as the infrastructure user with `InfrastructureAccess` in
+`Sandbox Account 1`, by the steps Claude gave in the session's chat, and wrote "Concluí a configuração do
+Nova Lite pelo console". Claude's readings after it, as `awsds-infra-sandbox-1` and `awsds-infra-data`.
+Times are UTC.*
+
+- **[user] The enabling**: *Enable in projects* on Nova Lite's *On-demand* row of the *Manage* page, with
+  the governance project in its selector, then *Submit*.
+- **[Claude] The trail**: in Sandbox's and in Data Governance's trails in `us-west-2`, one each of
+  `CreateEnvironment` at 13:02:38, `AssociateEnvironmentRole` at 13:02:39, `CreateAsset` at 13:02:41 and
+  `CreateListingChangeSet` at 13:02:43, and no `CreateInferenceProfile` from 12:55. Sandbox's trail in
+  `us-east-1` holds no `CreateRole`, `PutRolePolicy`, `AttachRolePolicy`, `CreatePolicy`,
+  `CreatePolicyVersion`, `UpdateAssumeRolePolicy` or `CreateServiceLinkedRole` from 12:55 (read 13:11:43).
+- **[Claude] The governance project** `GenerativeAIModelGovernanceProject` (`dmvami701qu6xc`), read at
+  13:03:42:
+  - a seventh environment, `amazon.datazone.BedrockModelEnvironmentType_3a043e363774` (`4o9mzknvmxhuhc`),
+    `ACTIVE`, created at 13:02:38 in `Sandbox Account 1`;
+  - a seventh asset, `amazon.nova-lite-v1:0us-west-2BedrockModelForm` (`4kvc963vx6zok0`), of
+    `amazon.datazone.BedrockModelAssetType` revision 9, created at 13:02:41, its listing `cp58jn8lqdoknk`
+    `ACTIVE`. Its `BedrockModelForm` reads `modelName` *Nova Lite*, `inferenceType` `ON_DEMAND`, input
+    modalities text, image and video, `region` `us-west-2`, the environment above, and `managementRoleArn`
+    the slice's `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>`. Its
+    `SubscriptionTermsForm` reads `approvalRequired` `NO`.
+- **[Claude] Sandbox**: the application inference profiles are the three read before: the playground's two
+  of 2026-10-19 (Haiku 4.5 in three Regions, Nova Lite in `us-west-2`) and `eighth-experimentation`'s Opus
+  4.5 of 2026-10-30. No project holds a Nova Lite profile before its first use. No role or customer-managed
+  policy with *Bedrock* in its name is newer than `awsds-sandbox-bedrock-application` (02:56:22).
+- **[Claude] The instruments**:
+  - `./aws/catalog.py`, 13:04:30 to 13:07:24, *"all checks passed"*, `CT-2` reading 11 listings, all owned
+    by a live project;
+  - `./aws/studio.py`, 13:07:24 to 13:10:21, 50 pass, 6 notes and no failure among its checks. It exited 1
+    because the persona, deploy and Control Tower profiles had no session (its section 10).
+- **[Claude] Left**: `app-genai-dev`'s Nova Lite profile, read with `list-inference-profiles` at the
+  project's first use in sitting C (10.4), expected in `us-west-2` alone.

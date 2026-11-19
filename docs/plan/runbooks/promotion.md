@@ -1168,8 +1168,8 @@ bound items 3, 5, 6, 9 and 11.
    The rest of the Sandbox slices that read `app-ml-dev`'s and `app-genai-dev`'s roles (9.5's pairs but the
    training pair, `sandbox/bedrock/`, `sandbox/ml/`), `EXC-11`'s share and the interactive OU's SCP admitting
    Nova Lite were applied on 2026-11-19 from `main` after pull request #326, the SCP by the orchestrating
-   session with the battery's `ou` phase (54 as expected). Left: Nova Lite enabled, and the training pair in
-   sitting B (item 7). Stage 20's decisions 14 to
+   session with the battery's `ou` phase (54 as expected). Nova Lite was enabled in projects the same day
+   (10.4). Left: the training pair in sitting B (item 7). Stage 20's decisions 14 to
    17 were taken on 2026-11-18 and their changes written, `app-dbt` pinned to `awsds-workflows` `4613ddc`.
    Stage 20 8.4's applies of the four `[P]` slices its pass 8 wrote ran on 2026-11-18, closing their
    Lesson 69 window. 6d 2.7's acts need nothing metered; its step 3's code was written and planned on
