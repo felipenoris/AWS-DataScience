@@ -1430,3 +1430,17 @@ infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra
 - **[Claude] Left**: 2.1's acts, the user's, with nothing up; then sitting A by §2's order, 4.5 from
   `app-dbt-job.tar`. Pull request #335's merge carries the workflow into `main`, and 8.6 takes it off the
   tree before pass 8's tag.
+
+## 2026-11-19 — sitting A's raise aligned with `promotion.md` §N.9's day 1
+
+*Claude, in the same session, after merging `origin/main` at `c11a9829`, which carries pull request
+#334's §N.9: the combined Sandbox sitting in three days, sitting A on day 1. Reads only.*
+
+- **[Claude] The raise**: §N.9.2 raises day 1 with `make up ENV=sandbox GROUPS=mwaa`, after `make hub-up`
+  and 6d decision 6's apply. The stage file's order and 2.2 named the single start's
+  `GROUPS=mwaa,mlflow,bedrock-base`, and now name day 1's. The slices are the same: `slices.py up` takes
+  `warehouse-compute/` only when `--groups` names `redshift` (refusal 11), so the pre-flight's dry run,
+  `sandbox/egress/` and `sandbox/probes/`, holds for `GROUPS=mwaa`.
+- **[Claude] A refusal**: `make up ENV=sandbox GROUPS=mwaa DRY=1`, which runs nothing, was refused by the
+  session's auto-mode classifier, *"Destructive or Unwanted Actions"*, and not retried; the `Makefile`
+  and `scripts/slices.py` were read in its place.

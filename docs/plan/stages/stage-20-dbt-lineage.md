@@ -897,9 +897,9 @@ the project role's session `AmazonMWAAServerless`:
 for e in <event names>; do aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=$e --start-time <the run's first minute> --profile $P --region us-west-2 --query 'Events[].CloudTrailEvent' --output json | jq -r '.[] | fromjson | [.eventTime, .eventName, (.userIdentity.arn // "-" | split("/") | last), (.userIdentity.invokedBy // "-"), .sourceIPAddress, (.vpcEndpointId // "-"), (.errorCode // "-"), (.additionalEventData // {} | tostring)] | @tsv'; done
 ```
 
-**Sitting A in order.** The combined Sandbox sitting carries this pass, pass 3 and 4.5 on one hub start
-with Stage 17's sittings B and C ([`promotion.md`](../runbooks/promotion.md) §N.6 items 6 to 8). The
-pre-flight of 2026-11-19, with nothing up, read every input as 2.0 left it (the log). [user] is the
+**Sitting A in order.** The combined Sandbox sitting carries this pass, pass 3 and 4.5 on its first day,
+after 6d decision 6's apply ([`promotion.md`](../runbooks/promotion.md) §N.9.3), and Stage 17's sittings
+B and C on the next two (§N.6 items 6 to 8). The pre-flight of 2026-11-19, with nothing up, read every input as 2.0 left it (the log). [user] is the
 user's act, [Claude] a read, [Claude⚡] a write Claude runs on the user's word naming it. `GROUPS` names
 the optional endpoint group a row needs beside `sandbox/egress/`'s always-on endpoints, which carry
 Athena, Glue, Lake Formation, STS, ECR, `datazone` and `sagemaker.api`, S3 going through the `[P]`
@@ -913,7 +913,7 @@ from it. The commands are each step's own.
 | 3 | [Claude] | 4.5's workflow, its script and the manifest's lines on a branch no tag carries, pass 1's tests and the lint at `4613ddc`, then a second archive and tar from that branch's commit by 2.0's commands | - | the tar 4.5 deploys: `app-dbt-job.tar`, built 2026-11-19 from commit `30ab3539` |
 | 4 | [Claude] | The laptop's other sessions told before the first raise; `make status` | - | - |
 | 5 | [user] | `make hub-up` | - | the proxy a space and a job reach |
-| 6 | [user] | `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base`, which raises `sandbox/egress/` and `sandbox/probes/` (`DRY=1`, 2026-11-19); [Claude] `make status` | `mwaa` | the `airflow-serverless` endpoint every deploy and run from a space calls |
+| 6 | [user] | `make up ENV=sandbox GROUPS=mwaa`, day 1's raise (§N.9.2), which raises `sandbox/egress/` and `sandbox/probes/`; [Claude] `make status` | `mwaa` | the `airflow-serverless` endpoint every deploy and run from a space calls |
 | 7 | [user] | 2.2: a JupyterLab space in `app-dbt-dev`, `app-dbt.tar` checked and extracted, the values, the deploy, the probe's run | `mwaa` | i's worker half, ii's first half, the endpoint's answer to `ListLineageEvents` |
 | 8 | [Claude] | 2.2's reads: the copies, both workflows, the probe's run and log, the trail | - | - |
 | 9 | [user] | 2.3: `app-dbt`'s run; [Claude] 2.3's reads | `mwaa` | i's modes, ii, iii's worker half, iv, v |
@@ -1074,9 +1074,10 @@ from it. The commands are each step's own.
   make up ENV=sandbox ONLY=egress GROUPS=mwaa
   ```
 
-  In the combined Sandbox sitting the raise is `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base`,
-  whose `mwaa` is this pass's; with no `ONLY=` it raises `sandbox/probes/` beside `sandbox/egress/`
-  (`DRY=1`, 2026-11-19). **[Claude]** tells the laptop's other sessions before the first raise and
+  In the combined Sandbox sitting the raise is day 1's `make up ENV=sandbox GROUPS=mwaa`
+  ([`promotion.md`](../runbooks/promotion.md) §N.9.2); with no `ONLY=` it raises `sandbox/probes/` beside
+  `sandbox/egress/`, and a group other than `redshift` changes no slice (`DRY=1` with
+  `GROUPS=mwaa,mlflow,bedrock-base`, 2026-11-19; `scripts/slices.py`'s refusal 11). **[Claude]** tells the laptop's other sessions before the first raise and
   reads `make status` after the second. Then a JupyterLab space in `app-dbt-dev` on
   `awsds-sandbox-dev-env` version 11 (alias `0.10.0`), `ml.t3.medium`, the tar dropped on its file
   browser, and in its terminal the tar checked against the digest 2.0 built before it is extracted:
