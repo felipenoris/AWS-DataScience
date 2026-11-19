@@ -3178,3 +3178,67 @@ before (Recommended)". Reads, a plan and IAM simulations as the infrastructure u
   and 3.2's creates carry the project's tag alone.
 - **[Claude] Left**: the apply on the user's word naming it, from `main` after pull request #326 and
   re-planned first, before sitting B.
+
+## 2026-11-19 — 9.5, 10.4, 3.3 and decision 7 (a): the slices applied from `main`, the SCP's apply refused to this session
+
+*Claude, a session started by the orchestrating session, after the user merged pull request #326
+(02:49:29 UTC, `40c9466c`) and wrote in its chat "Autorizo os applies necessários". Plans and applies as
+the infrastructure user through `awsds-infra-sandbox-1`, `awsds-infra-identity` and `awsds-infra-data`.
+Times are UTC.*
+
+- **[Claude] The tree**: the worktree on `main` at `40c9466c`. Pull request #327, the other merge since the
+  branch's last sync, touched documentation alone.
+- **[Claude] The plans re-taken from `main`**, each compared by its planned changes (`terraform show
+  -json`) with the branch's saved plan, identical in all six:
+
+  | Slice | Profile | Time | Plan |
+  |---|---|---|---|
+  | `sandbox/workflows` | `awsds-infra-sandbox-1` | 02:52:26 | *"Plan: 0 to add, 2 to change, 0 to destroy."* |
+  | `sandbox/bedrock` | `awsds-infra-sandbox-1` | 02:52:41 | *"Plan: 2 to add, 0 to change, 0 to destroy."* |
+  | `sandbox/model-access` | `awsds-infra-sandbox-1` | 02:52:54 | *"Plan: 0 to add, 1 to change, 0 to destroy."* |
+  | `sandbox/ml` | `awsds-infra-sandbox-1` | 02:53:10 | *"Plan: 3 to add, 0 to change, 0 to destroy."* |
+  | `identity/org-policies` | `awsds-infra-identity` | 02:53:58 | *"Plan: 0 to add, 1 to change, 0 to destroy."* |
+  | `data-governance/governance` | `awsds-infra-data` | 02:54:21 | *"Plan: 1 to add, 0 to change, 0 to destroy."* |
+
+- **[Claude] The peers told** at about 02:55: the orchestrating session, Stage 19's, 6h decision 3's and
+  Stage 20 8.3's.
+- **[Claude] The Sandbox applies**, each from its saved plan, each re-planned *"No changes."* between
+  02:57:15 and 02:57:45:
+
+  | Slice | Start | Result |
+  |---|---|---|
+  | `sandbox/workflows` | 02:55:50 | *"Apply complete! Resources: 0 added, 2 changed, 0 destroyed."*: `awsds-sandbox-workflows` and the bundle role's `project-reads` |
+  | `sandbox/bedrock` | 02:56:14 | *"Apply complete! Resources: 2 added, 0 changed, 0 destroyed."*: `awsds-sandbox-bedrock-application` and its attachment to `app-genai-dev`'s role |
+  | `sandbox/model-access` | 02:56:37 | *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*: the provisioning role's `model-management` |
+  | `sandbox/ml` | 02:56:58 | *"Apply complete! Resources: 3 added, 0 changed, 0 destroyed."*: `awsds-sandbox-ml` and its attachments to `eighth-experimentation`'s and `app-ml-dev`'s roles |
+
+- **[Claude] The SCP's apply refused**: `identity/org-policies` from its saved plan was refused at about
+  02:58 by the app's auto-mode classifier before it ran, *"[Protected-Scope IaC Apply]"*, the label
+  `CLAUDE.md` records for an SCP apply in a started session on 2026-10-18. Nothing reached Organizations.
+- **[Claude] Data Governance's shares before the share's apply** (03:01:51): nine `LakeFormation` shares
+  and `DataZone-EXTENDED_ACCESS-dzd-d8yrvx1ko7im6o-ORG-ONLY`, each `ACTIVE`.
+- **[Claude] The share's apply**: `data-governance/governance` as `awsds-infra-data` from its saved plan at
+  03:02:25, *"awscc_ram_resource_share.sagemaker: Creation complete after 7s"* and *"Apply complete!
+  Resources: 1 added, 0 changed, 0 destroyed."*, re-planned *"No changes."* at 03:03:26. Read at 03:03:00:
+  - `DataZone-dzd-d8yrvx1ko7im6o-SageMaker`: `ACTIVE`, `allowExternalPrincipals` `false`, feature set
+    `STANDARD`, five tags, created 03:02:35;
+  - the principal `sagemaker.amazonaws.com`: `ASSOCIATED`, not external;
+  - the domain: `ASSOCIATED`;
+  - `AWSRAMSageMakerServicePrincipalPermissionAmazonDataZoneDomain`, version 3, the default: `ASSOCIATED`;
+  - four `SOURCE_ACCOUNT` associations, each `ASSOCIATED`.
+
+  RAM's table of shareable resources says a domain cannot be shared with a service principal (`SUP-383`).
+- **[Claude] The `Tooling` sources after it**, at 03:05:32, each source `RUNNING`. Each source's newest run
+  read `RUNNING` and had started before the share:
+  - `app-etl-dev`'s `apnukh5a1tfonk` at 02:19:45 that day;
+  - `test-experimentation`'s `c8sn6a0xxc4zv4` on 2026-11-18 at 06:16:57;
+  - `eighth-experimentation`'s `4tb4qnmgi0iej4` on 2026-11-18 at 17:38:11.
+
+  The two runs before each had `FAILED` with `VALIDATION_EXCEPTION`.
+- **[Claude] Left**:
+  - `identity/org-policies`' apply, on the user's word naming it in this chat or by the user's own run of
+    the saved plan `s17-main-identity-org-policies.tfplan`;
+  - after it, `./aws/probes/scp-battery.py --phase ou` and Nova Lite's principal simulation, expected
+    `AllowedByOrganizations` `true`;
+  - the share's reading: whether the runs end and how the next scheduled ones end (verification v);
+  - the training pair in sitting B.
