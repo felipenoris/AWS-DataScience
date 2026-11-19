@@ -1474,7 +1474,9 @@
   light mode, the Glue catalog's OAuth and MLflow 3.16:
   <https://aws.amazon.com/about-aws/whats-new/2026/10/smus-light-mode>,
   <https://aws.amazon.com/about-aws/whats-new/2026/10/glue-catalog-oauth-iceberg-rest/>,
-  <https://aws.amazon.com/about-aws/whats-new/2026/10/mflow-version-3-16/>.
+  <https://aws.amazon.com/about-aws/whats-new/2026/10/mflow-version-3-16/>. The blueprint's page read again
+  2026-11-18 for `SUP-379`: its sections are the profile's deployment settings, the parameters and RStudio's
+  inline policy, and it names no S3 path, prefix or `ProjectS3Path`.
 - **SageMaker Unified Studio's releases to 2026-11-12** — read 2026-11-13 for
   [`upstream-releases.md`](plan/upstream-releases.md). The release notes' November entries, layout customization
   for designations, the Glue Studio job migration tool, notifications for scheduled runs and the two Workday
@@ -3411,6 +3413,14 @@
     project, as its caller, through the `aws` CLI, and neither `bundle` nor `deploy` fails where the
     item is missing:
     <https://pypi.org/project/aws-smus-cicd-cli/1.0.9/>.
+
+- The CI/CD CLI's substitutions guide (read 2026-11-18, for the reading of the CLI's project handling of
+  2026-11-17 in [Stage 19](plan/stages/stage-19-smus-native-data-product.md)'s log, `SUP-375`): the
+  `{proj.*}` properties a workflow resolves at deployment, `id`, `name`, `domain_id`, `iam_role`,
+  `iam_role_arn`, `iam_role_name` and `kms_key_arn`, the connections' under
+  `{proj.connection.<name>.<property>}`, and no subnet or security group; unchanged since `487e489185`
+  (2026-03-24), `main` at `d768153d57`:
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/substitutions-and-variables.md>.
 
 - **AWS's path for a trained model, and what loads it (read 2026-11-17, for `TM-33`'s acceptance on
   the condition that the path is AWS's, [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md)

@@ -261,7 +261,8 @@ a role — which is what keeps the relation many-to-many. And *layer 1 admits on
 `AmazonDataZoneProject` is a **single-valued tag key**, on the workgroup and on the namespace alike, and its
 only alternative is `for-use-with-all-datazone-projects=true`, which admits every project in the account. So
 the per schema × project grain is real at layer 3 and the compute-admission gate in front of it is not; that
-tension arrives with the **second** project and is a decision, not a map entry.
+tension arrives with the **second** project, and 6h decision 8 (a) settles it with the wide tag, not a map
+entry.
 
 Consequences this file has to carry rather than leave to a stage:
 

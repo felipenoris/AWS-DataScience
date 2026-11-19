@@ -689,6 +689,12 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
    product's name unique within the domain; release F's second import measured it on 2026-11-16, a
    conflict the CLI counts as an update (`SUP-369`, decision 26). A decision that relies on a platform
    behaviour reads the API reference's prerequisites for it before it is taken.
+   Stage 6d's decision 17 (a), offered on 2026-11-17, measured a notebook run in Sandbox *under a control
+   that pins `VPC_ONLY`*; on 2026-11-18 DataZone's service reference gave `StartNotebookRun` no resource
+   type and no condition key, so the promised control had no key to write, and its fallback, the domain's
+   VPC, shows binding only through a negative that needs a quota the decision kept at 0. An option that
+   promises a policy control names the condition key it writes, read from the service reference, before
+   the card is offered.
 
 35. **Adopting an object into infrastructure-as-code silently invalidates every *procedure* written
    about it — and the adoption touches none of the files that carry those procedures.** Stage 2 step
@@ -842,6 +848,12 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
    explanation for behaviour nobody has watched. The tell is the word: "measured" is reserved for
    something this project ran, and a doc reading that says so is worse than an admitted guess,
    because a guess invites the measurement and a false measurement forbids it.
+
+   Read again 2026-11-17: the plan named release T's backup of 2026-11-15 22:38 UTC as GitLab's newest,
+   from the sittings' records, while the host's 03:00 UTC timer had taken one during release F's sitting,
+   at 03:01 UTC on 2026-11-16; the deadline it sets moved from 2026-12-16 to 2026-12-17 once the bucket was
+   listed. A timer acts in every sitting the host is up for and in no sitting's record, so the newest
+   object is read from its store.
 
 39. **What a console wizard fills and the authoring API does not require is still required — and the
    validator is the deploy and the teardown, so an incomplete object pins its dependents in both
@@ -1404,6 +1416,13 @@ correct whether the API replaces or merges, and a template is correct only if it
 failed to start against the destroyed version, with no fallback to the domain default. The user
 repaired it in the portal and it came up with those three fields intact.
 
+**Read again 2026-11-18.** A DataZone environment holds the same kind of copy. `test-experimentation`'s
+`Tooling` environment, created 2026-10-15, stores `enableSpaces` `"true"` in its own `userParameters`. The
+profile locked it `"false"` on 2026-11-18, and the owner's *Update project* re-deployed `true` with no
+resource changed (`SUP-380`). Stage 6d's decision 16 (a) had planned to retire each living project's
+`Tooling` domain with that press, reasoning from the profile's side; the environment was the consumer
+nobody read until the press.
+
 ## Lesson 64 — a comment inside a rendered template is a host replacement in waiting
 
 **What happened.** Stage 6g decision 1 took the proxy off its `[P]` Elastic IP: two arguments changed in
@@ -1592,6 +1611,13 @@ refusal read as "what this identity is" outlives the state that produced it.
 
 **What makes it expensive.** The change is silent in both directions: nothing announces the new access, and a
 permanent note stops anyone from re-trying the call that would show it.
+
+**Read again 2026-11-18.** Stage 6d's `SageMakerAIDomain` pilot was rolled back in the portal on 2026-10-31
+(`DeleteEnvironment` in Data Governance at 00:29:20 UTC, then the domain, its space and its user profile
+deleted in Sandbox within 21 seconds), and no record said so for 18 days: the log's entry of 2026-10-31 still
+described the domain with its spaces, and step 2.7 was planned around a pilot project holding both domains.
+CloudTrail was the only witness, read when 2.7's first step listed the domains. A portal act deletes as
+silently as it grants, so a plan that reuses an object a portal can touch lists it first.
 
 ## Lesson 71 — a lint that prints `ok` for a clause its invocation leaves unchecked reads as a pass on every clause
 
@@ -1846,6 +1872,14 @@ deleted name proves nothing about it.
 the "not found" that follows it is fixed by recreating the name, which a later reader takes for the
 access coming back.
 
+**Read again 2026-11-18, from the other side.** A refusal can name a permission when the object is what is
+missing. In 6d 2.7 step 5, `throwaway-6d`'s project role was refused `DescribeUserProfile` five times from
+21:46:44 UTC, *"no identity-based policy allows"*, on the user's profile in the blueprint's domain.
+SageMaker created the profile at 21:47:31, and the same role's same call on the same ARN answered at
+21:48:05. The ML policy allows the call only where the profile's `AmazonDataZoneProject` tag equals the
+role's, and an object that does not exist has no tag. Under a tag-conditioned allow, read whether the
+object existed at that second before reading an `AccessDenied` as a missing grant.
+
 ## Lesson 81 — a notebook's engine is a bill of its own, sized by its connection and kept by its idle timeout, and the space's price is not the session's
 
 **What happened.** Stage 19's Sandbox sitting priced its window at the hub's and the endpoints' 0.2 USD/h
@@ -1981,6 +2015,51 @@ user. Where neither can be read, the record says the composer is unread.
 
 **What makes it expensive.** A wrong composer moves the fix to the wrong place: a retention rule aimed at the
 service instead of the client's parameter, a grant to a user no session reaches.
+
+## Lesson 86 — a reply that reports an act names the act, never its object, and the object is read before the step that consumes it
+
+**What happened.** On 2026-11-18 the session asked whether to make Stage 20 decision 17 (b)'s change in
+`app-dbt` after the merge of `awsds-workflows` pull request #28, and the user answered *"Fiz o merge. Pode
+fazer a mudança."* The merge the user had made was this repository's PR #319, at 15:33:19 UTC; #28 was still
+open, and that repository's `main` still at `1a50ceb`. The change's pin is #28's merge commit, which did not
+exist yet. The session read both pull requests' states before it wrote the pin, wrote the rest of the change
+on a branch cut from the merge it found, and left the pin for #28's merge (Stage 20's log, the same day).
+
+**Why it is a class.** Two pull requests were open at once, one per repository, and the question named one of
+them. The answer reports the act the user had just performed, and the act is real; its object is whichever
+the user had in front of them. A confirmation carries no identifier, so it fits every object of the right
+kind.
+
+**The rule.** A step that consumes another party's act reads the act's object first: the pull request's state
+and merge commit, the slice's state, the project's membership. A "done" in the chat authorizes the step and
+never supplies the identifier it consumes (Lesson 38).
+
+**What makes it expensive.** A pin taken from `main` before the merge names the commit the change was meant to
+leave, and the lint refuses it at the application's first push, weeks later and in another system.
+
+## Lesson 87 — a gate written against the first application's shape fails on the next one's edge, and the failure reads as the application's
+
+**What happened.** The gates' pip-audit step was written for `app-etl`, whose runtime export pins every
+package for one platform. On 2026-11-17 `app-genai`, which has no runtime package, met
+`set -eu; pinned="$(grep -c == req)"`: `grep -c` prints 0 and exits 1 on a count of zero, so the step fails
+on an empty export, and the application's first release waits on a gates tag (Stage 17's log, 10.6). On
+2026-11-18 `app-dbt`'s lock met the same count from the other side: pip-audit 2.10.1 skips a pin whose
+marker its runner does not match, and the job fails when it audits fewer packages than the export pins, so
+the lock was cut for Linux and macOS alone, 80 pins to 78 (Stage 20's log).
+
+**Why it is a class.** A shared gate encodes the shape of the first thing it ran on: a list that is never
+empty, a lock for one platform, a name that always matches. Lesson 31's check keeps passing while the design
+spreads; this one fails, and the failure names the new application, so it reads as the application's defect
+rather than the gate's assumption.
+
+**The rule.** Before a second application rides a shared gate, run the gate on that application's shape with
+nothing up, its empty and multi-platform cases included, and write each edge into the gate's own tests. A
+count that may be zero is read where its exit status does not decide the step (`grep -c … || true`, or the
+count taken in the language that reads it).
+
+**What makes it expensive.** The gates ship as a tagged image, so the fix is a new tag and a pin moved in every
+application that uses it; bending the application to the gate, as `app-dbt`'s lock was, hides the
+assumption from the next one.
 
 ## What AWS does that its documentation does not say
 

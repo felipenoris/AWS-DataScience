@@ -2379,3 +2379,36 @@ open decisions the user asked for at 22:01 UTC, one card per decision under the 
   Sandbox por sandbox?"*: *"Mudar para sandbox na mesma chamada"*. **[Claude]** One `UpdateConnection` by
   a project member carries both, every field passed (Lesson 60); the waiting list holds it as the user's
   act, and `WH-9` and `EXC-17` change with it.
+
+## 2026-11-18 — decision 8 (a)'s switch written and planned, not applied
+
+*Claude, a subagent of the orchestrating session, in a worktree of its own, on the laptop with nothing up;
+the orchestrating session reviewed the diff, pushed the branch and opened the pull request. The
+infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1` and
+`awsds-infra-prod` for the instrument. Plans and reads only. Times are UTC.*
+
+- **[Claude] The code** (branch `claude/plano-estagios-execucao-5f64d8-warehouse-switches`, commit
+  `d9560cef`): `sandbox/warehouse/`'s `all_projects_tag_enabled`, default false, writes
+  `for-use-with-all-datazone-projects=true` on the namespace and, through the output `all_projects_tag`, on
+  the workgroup at `sandbox/warehouse-compute/`'s next apply; `projects` takes a second entry only beside it;
+  `AmazonDataZoneProject` is written only while the map holds exactly one entry. `./aws/warehouse.py`'s
+  `WH-7` expects, under the wide tag, `true` on every object that exists, the project tag for a map of one
+  and absent otherwise, and neither tag on the admin secret (`INV-20`); Production fails on either tag.
+- **[Claude] The plans**: `sandbox/warehouse/` from `main` at `df49898b`, 16:29:52, and from the branch with
+  the switch off, 16:55:04, each *"No changes. Your infrastructure matches the configuration."*; the down
+  `sandbox/warehouse-compute/` reads *"Plan: 2 to add, 0 to change, 0 to destroy."* from both trees, the
+  saved plans' `resource_changes` and `output_changes` identical address by address. With
+  `-var all_projects_tag_enabled=true`, 16:41:49: *"Plan: 0 to add, 1 to change, 0 to destroy."*, the
+  namespace's `tags` gaining the wide tag beside `AmazonDataZoneProject`. A two-entry map with the switch off,
+  16:43:26: *"Error: Invalid value for variable"*; with it on, 16:43:45: *"Plan: 7 to add, 2 to change, 0 to
+  destroy."*, the second project's resources and the namespace's tags without the project tag.
+- **[Claude] The instrument**: `./aws/warehouse.py` on both profiles from `main` (16:31:34) and from the
+  branch (16:51:41), each exit 0; the 34 check rows (14 pass, 20 note, 0 fail) byte-identical, the report
+  differing in one rewritten sentence. `WH-7`'s new branches passed 15 synthetic cases. `describe-secret` on
+  the admin secret, 16:59:04: the service's three tags alone (`INV-20`).
+- **[Claude] The gates**: `ruff check` and `ruff format --check` clean, `make check` *"check: OK"*,
+  `pre-commit run --files` on the 13 files passing.
+- **[Claude] The pull request**: [#323](https://github.com/felipenoris/AWS-DataScience/pull/323), mergeable
+  before the warehouse sitting since the switch off plans `No changes`; the sitting applies from `main`
+  (Lesson 79), 5.1 before the switch and 5.2b after. Per sitting or standing joins the waiting list's
+  decisions.

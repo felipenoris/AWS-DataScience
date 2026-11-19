@@ -45,10 +45,19 @@ variable "project_roles" {
   #   retired that stage (2026-11-11); read 2026-10-16.
   # - app-etl-dev, created 2026-11-14, the project for app-etl alone and the manifest's `dev` stage
   #   (Stage 19 decision 18 (d), step 1.5); read 2026-11-14.
+  # - app-dbt-dev, created 2026-11-19, the project for app-dbt alone and its manifest's `dev` stage
+  #   (Stage 20 step 2.0); read 2026-11-19.
+  # - app-ml-dev, created 2026-11-19, the project for app-ml alone and its manifest's `dev` stage
+  #   (Stage 17 step 9.6); read 2026-11-19.
+  # - app-genai-dev, created 2026-11-19, the project for app-genai alone and its manifest's `dev`
+  #   stage (Stage 17 step 10.4); read 2026-11-19.
   default = [
     "datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c",
     "datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw",
     "datazone_usr_role_ceweti7jbiu1hs_6kvndq6t2757rk",
+    "datazone_usr_role_dnl3l158mbhrio_55hp9teamegf4g",
+    "datazone_usr_role_5rzplmk81vma34_5ae0dd6m1suvbk",
+    "datazone_usr_role_b8fz4ovppjijv4_c9sdti5d2gaqs0",
   ]
 
   validation {

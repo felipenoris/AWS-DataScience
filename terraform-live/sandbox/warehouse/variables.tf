@@ -1,6 +1,6 @@
 # Inputs. region, env, environment_tag and account_folder arrive from the generated, untracked
 # terraform.auto.tfvars (./scripts/gen-tfvars.py sandbox warehouse). Everything else below is this
-# slice's own, and each one carries a decision from Stage 5b or 6h.
+# slice's own, and each one carries a decision from Stage 5b, 6h or 21.
 
 variable "region" {
   description = "AWS region for this slice. No region literal ever appears in a .tf file (docs/plan/architecture.md 4.1)."
@@ -193,11 +193,12 @@ variable "storage_alarm_usd" {
 # One map for every consumer, which is why it is a map and not a list per consumer. Each entry
 # expands to:
 #
-#   layer 1      the tag AmazonDataZoneProject=<projectId> on BOTH the workgroup and the namespace -
-#                AWS names both objects, and a value that must appear in N places by hand will be
-#                missing from one (Lesson 14). The namespace half is written here; the workgroup
-#                half is written by sandbox/warehouse-compute/, which READS THIS MAP FROM THIS
-#                SLICE'S STATE rather than declaring its own copy.
+#   layer 1      the tag AmazonDataZoneProject=<projectId> on both the workgroup and the namespace
+#                while the map holds one entry; a map of several is admitted by the wide tag
+#                (`all_projects_tag_enabled` below). AWS names both objects, and a value that must
+#                appear in N places by hand will be missing from one (Lesson 14). The namespace half
+#                is written here; the workgroup half is written by sandbox/warehouse-compute/, which
+#                reads this map from this slice's state rather than declaring its own copy.
 #   layer 2      one IAM policy, on the project's role and on its access role: GetCredentials,
 #                GetWorkgroup and ListTagsForResource on this account's workgroups, and the two
 #                listings that take no resource.
@@ -265,30 +266,23 @@ variable "projects" {
     error_message = "a project id is the portal's own lowercase alphanumeric id, as it appears in the URL - never a project NAME, which is not what the AmazonDataZoneProject tag is read against."
   }
 
-  # AT MOST ONE, AND THE LIMIT IS AWS'S RATHER THAN THIS DESIGN'S (read 2026-09-20, AWS "Gaining
-  # access to Amazon Redshift resources"). The admin "adds 1 of the following tags": either
-  # `AmazonDataZoneProject={{projectID}}`, which names ONE project, or
-  # `for-use-with-all-datazone-projects=true`, which names EVERY project in the account. There is
-  # no per-project list, because `AmazonDataZoneProject` is a tag KEY and a key holds one value -
-  # on the workgroup and on the namespace alike.
+  # At most one entry while `all_projects_tag_enabled` is false, and the limit is AWS's (read
+  # 2026-09-20, AWS "Gaining access to Amazon Redshift resources"). The admin "adds 1 of the
+  # following tags": `AmazonDataZoneProject={{projectID}}`, which names one project, or
+  # `for-use-with-all-datazone-projects=true`, which names every project in the account. A tag key
+  # holds one value, on the workgroup and on the namespace alike, so the project tag is written only
+  # while the map holds exactly one entry (main.tf).
   #
-  # So Stage 5b 2.2's "one tag per admitted project" is not expressible, and the requirement that
-  # one sandbox schema may be SHARED by several projects meets that wall at the second project, not
-  # the first. Layer 3 (a database role per schema, granted per project) is per project and
-  # many-to-many. Layer 2 is per project on the access role alone: the project role also carries
-  # AWS's SageMakerStudioProjectUserRolePolicy v75, which grants it GetCredentials and the Data API
-  # on a workgroup tagged with its project, the same to every project role under the wide tag, and
-  # GetCredentials on any workgroup through sqlworkbench (simulated 2026-10-18, 6h 5.1 and decision
-  # 8). Only the compute-admission gate is single-valued.
-  #
-  # The validation is here rather than in a comment because the failure it prevents is unreadable:
-  # a second entry would silently overwrite the first project's tag, the first project's connection
-  # would stop working, and nothing in the plan output would say which project lost its access.
-  # 6h decision 8 is where the second project is admitted deliberately, with the wide tag's cost
-  # accepted or rejected in writing.
+  # A second entry therefore needs the wide tag (6h decision 8 (a), taken 2026-11-17). Under it every
+  # project role in the account reaches the compute through AWS's SageMakerStudioProjectUserRolePolicy
+  # (`ExistingRedshiftCompute`, simulated 2026-10-18), each entry's access role is the per-project
+  # gate on the Data page, and the schema GRANT of layer 3 is the only per-project gate on the
+  # notebook and Data API doors. Without the wide tag, a second entry would leave both objects with no
+  # admission tag and every admitted project's connection would stop with nothing in the plan to say
+  # why, which is the failure this validation turns into a plan error.
   validation {
-    condition     = length(var.projects) <= 1
-    error_message = "at most one project: `AmazonDataZoneProject` is a single-valued tag key on both the workgroup and the namespace, and AWS's only way to admit more than one is the wide `for-use-with-all-datazone-projects=true`, refused here (5b 2.2). Admitting a second project is 6h decision 8, not a second map entry."
+    condition     = var.all_projects_tag_enabled || length(var.projects) <= 1
+    error_message = "at most one project while all_projects_tag_enabled is false: `AmazonDataZoneProject` is a single-valued tag key on both the workgroup and the namespace, and AWS admits more than one project only through `for-use-with-all-datazone-projects=true` (6h decision 8 (a)), which all_projects_tag_enabled = true writes."
   }
 
   validation {
@@ -306,13 +300,40 @@ variable "projects" {
   }
 }
 
-# ------------------------------------------------------------------- the wide tag, refused (5b 2.2)
+# ------------------------------------------------------------ the wide tag (6h decision 8 (a))
 #
-# AWS offers `for-use-with-all-datazone-projects=true`, "to allow all Amazon SageMaker Unified
-# Studio projects in this account to access it". It appears nowhere in this repository and
-# ./aws/warehouse.py WH-7 fails if it appears on either object: it is the same shape as an empty
-# deny-list permitting everything, and it turns "per project" into "per account" with one tag.
-# There is no variable for it on purpose - a knob whose only safe value is off is better absent.
+# `for-use-with-all-datazone-projects=true`, AWS's tag "to allow all Amazon SageMaker Unified Studio
+# projects in this account to access it". True puts it on the namespace here and, through the
+# `all_projects_tag` output, on the workgroup at sandbox/warehouse-compute/'s next apply, and lets
+# `projects` hold more than one entry. ./aws/warehouse.py WH-7 then expects it on both objects and
+# neither tag on the admin secret: the same AWS policy grants GetSecretValue on any secret wearing
+# it (`DataConnectionAllProjectResources`, AWS_STATE.md INV-20).
+variable "all_projects_tag_enabled" {
+  description = "6h decision 8 (a): true writes `for-use-with-all-datazone-projects=true` on the namespace and, through this slice's state, on the workgroup, admitting every SMUS project in the account to the compute, and lets `projects` hold more than one entry. false admits the map's one project by `AmazonDataZoneProject` alone."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
+# ------------------------------------------------- the data transfer role (Stage 21 step 4.5)
+variable "data_transfer_role_enabled" {
+  description = "Stage 21 decision 3 (b), for one sitting: true creates the data transfer role that data lake access on the federated catalog names (`DataLakeAccessProperties.DataTransferRole`, iam.tf). The update-catalog call that sets it is a command of the sitting. false between sittings."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
+variable "federated_catalog_name" {
+  description = "The federated catalog Stage 21 step 4.1 registers this namespace as: the one catalog besides the account's own that the data transfer role reads."
+  type        = string
+  default     = "stage21_warehouse"
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[a-z0-9_-]+$", var.federated_catalog_name))
+    error_message = "a catalog name of lowercase letters, digits, `_` and `-`: the data transfer role's Glue resources embed it, and a `*` or a `/` would widen them past one catalog."
+  }
+}
 
 variable "project" {
   description = "Project tag. Fixed by docs/plan/conventions.md and by 1c's tag policy."

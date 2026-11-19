@@ -7,7 +7,7 @@
 #   ./scripts/slices.py up   --env <env>    start the [D] slices, apply the [E] ones, by rank
 #   ./scripts/slices.py down --env <env>    delete the Studio apps, then destroy [E] and stop [D],
 #                                           by rank descending
-#   ./scripts/slices.py status [--env <env>] what is up, and the hourly burn
+#   ./scripts/slices.py status [--env <env>] what is up, the Studio apps, and the hourly burn
 #
 #   exit: 0 clean | 1 something failed | 2 a usage or refusal error
 #
@@ -62,6 +62,7 @@ import json
 import os
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 from tfhygiene import backend, layers
@@ -632,6 +633,79 @@ def managed_resources(module: dict) -> int:
     return n + sum(managed_resources(c) for c in module.get("child_modules", []))
 
 
+# --------------------------------------------------------------- the Studio apps, for `status`
+#
+# A Studio app is started from the portal by a person, so no slice holds it and `terraform show`
+# never counts it: on 2026-11-18 a JupyterLab space billed 0.050 USD/h while `make status` read
+# 0.0000 (6d 2.7 step 5's log). `status` reads the apps from the API in every account it covers,
+# prices each from the table below and adds it to the burn. Deleting them stays `make down`'s,
+# through down-studio-apps.py.
+#
+# The statuses that bill, with the word `status` prints: Pending and InService, and Deleting until
+# the delete finishes, which is why down-studio-apps.py waits on it. Failed and Deleted bill nothing.
+BILLING_APP_STATUSES = {"Pending": "pending", "InService": "UP", "Deleting": "deleting"}
+
+# USD per hour by app type and instance type: the measured us-west-2 rows "SageMaker Studio
+# JupyterLab / CodeEditor" of docs/PRICING.md 3 and 8 (Lesson 6). An app on a pair with no row
+# prints "rate unmeasured" and makes the total a floor: a guessed rate is a reasoned price.
+STUDIO_APP_USD_PER_HOUR = {
+    (app_type, instance): usd
+    for app_type in ("JupyterLab", "CodeEditor")
+    for instance, usd in (
+        ("ml.t3.medium", 0.050),
+        ("ml.t3.large", 0.100),  # measured 2026-09-07
+        ("ml.m5.large", 0.115),  # measured 2026-09-07
+        ("ml.t3.xlarge", 0.200),  # measured 2026-09-11
+    )
+}
+
+# The space volume row of docs/PRICING.md 8: a space bills its EBS volume at rest, app stopped.
+SPACE_VOLUME_USD_PER_GB_MONTH = 0.112
+
+
+def studio_apps_billing(env: str, dry: bool) -> list | None:
+    """[app] for every app in one account whose status bills, or None when nothing was read.
+
+    One `list-apps` with no domain filter answers for every domain in the account, the
+    blueprint's and the Tooling's alike. None follows instance_states()'s rule: it is never
+    read as "no app is running" (Lesson 13).
+    """
+    res = run(
+        ["aws", "sagemaker", "list-apps", "--region", backend.REGION, "--output", "json"],
+        env_extra={"AWS_PROFILE": backend.profile(env)},
+        dry=dry,
+        capture=True,
+    )
+    if res is None:
+        return None
+    if res.returncode != 0:
+        print(f"    FAILED to list the Studio apps in {env}", file=sys.stderr)
+        print(res.stderr.strip(), file=sys.stderr)
+        return None
+    apps = json.loads(res.stdout or "{}").get("Apps", [])
+    return [a for a in apps if a.get("Status") in BILLING_APP_STATUSES]
+
+
+def print_studio_app(env: str, app: dict, now: datetime) -> float | None:
+    """One app's line; returns its hourly rate, or None when docs/PRICING.md holds no row for it."""
+    instance = app.get("ResourceSpec", {}).get("InstanceType", "-")
+    rate = STUDIO_APP_USD_PER_HOUR.get((app["AppType"], instance))
+    owner = app.get("SpaceName") or app.get("UserProfileName", "-")
+    since = datetime.fromisoformat(app["CreationTime"]).astimezone(timezone.utc)
+    if rate is None:
+        cost = "rate unmeasured"
+    else:
+        # The app bills from its creation, Pending included, so the elapsed time bounds the spend.
+        so_far = rate * (now - since).total_seconds() / 3600
+        cost = f"{rate:.4f} USD/h, about {so_far:.2f} USD so far"
+    label = f"studio/{env}/{owner}"
+    print(
+        f"  {label:<40} {BILLING_APP_STATUSES[app['Status']]:<7} {app['AppType']} {instance}"
+        f"   {cost}   since {since:%Y-%m-%d %H:%M} UTC, domain {app['DomainId']}"
+    )
+    return rate
+
+
 def cmd_status(args) -> int:
     """What is up, and the burn - rates from a static table, never a live pricing call (8.4)."""
     envs = [args.env] if args.env else layers.environments()
@@ -708,16 +782,49 @@ def cmd_status(args) -> int:
             f"   {rate:.4f} USD/h" + (f"   with {with_hosts}" if with_hosts else "")
         )
 
-    print(f"\n  estimated burn: USD {total:.4f}/h   (rates: docs/PRICING.md 3, static)")
+    # The Studio apps, which no slice holds (BILLING_APP_STATUSES above).
+    now = datetime.now(timezone.utc)
+    quiet, unmeasured, apps_read = [], 0, False
+    for env in envs:
+        apps = studio_apps_billing(env, args.dry_run)
+        if apps is None:
+            if args.dry_run:
+                continue
+            print(f"  {'studio/' + env:<40} UNREADABLE")
+            unreadable += 1
+            continue
+        apps_read = True
+        if not apps:
+            quiet.append(env)
+        for app in apps:
+            rate = print_studio_app(env, app, now)
+            if rate is None:
+                unmeasured += 1
+            else:
+                total += rate
+    if quiet:
+        print(f"  no Studio app billing in {', '.join(quiet)}")
+
+    print(f"\n  estimated burn: USD {total:.4f}/h   (rates: docs/PRICING.md 3 and 8, static)")
     if any(s.layer == layers.DORMANT for s in metered):
         # 0.0000/h is not "free" once a [D] slice exists. A stopped host keeps its EBS volume
         # and its [P] Elastic IP, both billed monthly, so the hourly total is silent about them
         # by construction.
         print("  a stopped [D] host still bills its EBS volume and its [P] Elastic IP,")
         print("  monthly rather than hourly - the floor lines of docs/plan/cost-model.md.")
+    if apps_read:
+        print(
+            f"  a space bills its volume with its app stopped, {SPACE_VOLUME_USD_PER_GB_MONTH} USD"
+        )
+        print("  per GB-month (docs/PRICING.md 8), monthly rather than hourly.")
+    if unmeasured:
+        print(
+            f"  {unmeasured} Studio app(s) on a rate docs/PRICING.md has not measured"
+            " - this total is a floor"
+        )
     if unreadable:
-        # A slice that could not be read is not a slice that is down.
-        print(f"  {unreadable} slice(s) UNREADABLE - this total is a floor, not a measurement")
+        # A slice or an account that could not be read is not one where nothing runs.
+        print(f"  {unreadable} reading(s) UNREADABLE - this total is a floor, not a measurement")
         return 1
     return 0
 

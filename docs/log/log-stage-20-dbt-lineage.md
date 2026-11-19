@@ -1064,3 +1064,106 @@ Pode fazer a mudança." No AWS call. Times are UTC.*
 
 - **[Claude] Left**: the pin moved from `1a50ceb` to #28's merge commit in `.gitlab-ci.yml`, the README,
   `tests/simulation/simulate.py` and the stage's `TOOL`, and the lint read again at that commit.
+
+## 2026-11-18 — `awsds-workflows` #28 merged, and `app-dbt` pinned to it
+
+*Claude, the orchestrating session, on the laptop, at the user's word in the session's chat: "Fiz o merge
+do #28". No AWS call. Times are UTC.*
+
+- **[Claude] The merge read**: [`awsds-workflows` #28](https://github.com/felipenoris/awsds-workflows/pull/28)
+  merged at 15:50:35 as `4613ddce2bfd2bf43cf79aa4d6bc1d07a9dbc362`, its tree `733f9c2` the same as the
+  branch head `2aa32cf`'s. Between `1a50ceb` and `4613ddc` the diff touches `src/awsds_workflows/render.py`,
+  its two test files, `docs/index.md` and `.claude/memory/cicd-cli.md`; `package-task` is the same at both.
+- **[Claude] The pin moved** from `1a50ceb` to `4613ddc` in `examples/app-dbt/.gitlab-ci.yml` (the
+  archive URL and its comment), the README (the `TOOL` line and the sentence naming the pin),
+  `tests/simulation/simulate.py`, the stage file's pass 2 and the two sentences of
+  `runbooks/sagemaker-ai-ml.md` that name `app-dbt`'s pin.
+- **[Claude] The lint at `4613ddc`**, from `examples/app-dbt/` with the pipeline's `--instance-type` list,
+  15:51:40: *"ok: 4 arquivo(s)"*. `uv run pytest` at 15:54:10: *"86 passed in 5.01s"*; `ruff check` *"All
+  checks passed!"*, `ruff format --check` *"16 files already formatted"*.
+- **[Claude] The records**: the waiting list's row for #28 removed; the stage's 8.5, decision 17, `Status`
+  and the note to the other sessions, the Current position row, `promotion.md` §N.6 item 2 and the log
+  index's row say merged. Left for 17 (b): 3.1's verdict in sitting A.
+
+## 2026-11-18 — 8.1 written in `promotion.md` §N.6 item 10's pull request
+
+*Claude, the orchestrating session, on the laptop, no AWS call. Times are UTC.*
+
+- **[Claude] 8.1** is in [pull request #321](https://github.com/felipenoris/AWS-DataScience/pull/321),
+  §N.6 item 10's, whose checks are in Stage 17's log of the same day: `--self-check` prints `app-dbt`'s
+  stages `ok`, *"staging: 9 variable(s); app_dbt_deploy_staging_app_dbt,
+  app_dbt_deploy_staging_app_dbt_probe"* and *"prod: 9 variable(s); app_dbt_deploy_production_app_dbt"*,
+  with no state read and no image. `aws/catalog.py`'s `CHAIN_DEV_PROJECTS` waits on 2.0.
+- **[Claude] The pin's path, for this log**: `app-dbt` moved to `37cb5a6` on 2026-11-17 with `app-ml` and
+  `app-genai` (Stage 17's log of that day), to `1a50ceb` the same day (6.4), and to `4613ddc` today.
+
+## 2026-11-19 — 2.0: `app-dbt-dev` created, its `sandbox/workflows/` line planned and `CHAIN_DEV_PROJECTS` written
+
+*The user created the project in the portal. Claude, the orchestrating session, read it as the
+infrastructure user through `awsds-infra-sandbox-1` and `awsds-infra-data`, reads only. Times are UTC.*
+
+- **[user] The act**: *"Criei os projetos"*, with Stage 17's two (that log's entry of the same night).
+- **[Claude] The project read**, by 2.0's commands at 00:19 and 00:20: the id `dnl3l158mbhrio`, created
+  00:17:19, `ACTIVE` under `experimentation`; `Tooling` `55hp9teamegf4g` and `SageMakerAIDomain`
+  `4mxdm39fu4j05s`, both `ACTIVE` by 00:20:41; the role `datazone_usr_role_dnl3l158mbhrio_55hp9teamegf4g`,
+  carrying `awsds-sandbox-project-boundary` by `get-role`. 2.0's `list-roles` command read `None` on every
+  role, the field omitted by documented contract, and the stage file now reads the boundary with `get-role`.
+- **[Claude] The members**: the owner and the project's own role, an `IAM` user profile, and no group: the
+  bundle role and `InfrastructureAccess` are not members yet. `list-connections` was refused to the
+  infrastructure user, *"User is not permitted to perform operation: ListConnections"*, and answered the
+  same caller on `app-etl-dev` at 00:32 (`project.athena`, `workgroup-ceweti7jbiu1hs-6kvndq6t2757rk`), so
+  the workgroup is read after the membership.
+- **[Claude] The house image**: the domain `d-nt4ujzbdpeqm` pins version 11 on both app types (`US-13`
+  `pass` at 00:25), so 2.0's §C6 step is not needed.
+- **[Claude] The workflows grant**: the role's line written with Stage 17's two and planned at 00:29,
+  *"Plan: 3 to add, 0 to change, 0 to destroy."*; the apply waits on the user's word.
+- **[Claude] `aws/catalog.py`'s `CHAIN_DEV_PROJECTS`** gains `dnl3l158mbhrio`, 8.1's last item:
+  `--self-check` *"39 of 39 cases as expected"*. The live run, ending 00:36:16, wrote *"all checks
+  passed"*, `CT-15` naming *"(app-etl-dev, app-dbt-dev)"*; its exit 1 is three `search` calls refused on
+  the three new projects, *"User is not permitted to perform operation: Search"*, which `CT-19` notes as
+  inventories not read. The infrastructure user's membership is what the instrument needs there too.
+- **[Claude] Left**: the two contributors, then the workgroup's reading and 2.0's starting state; the
+  apply.
+
+## 2026-11-19 — 2.0's workflows grant applied with Stage 17's two lines
+
+*Claude, the orchestrating session, ran the apply on the user's word, as `awsds-infra-sandbox-1`, the
+infrastructure user's `InfrastructureAccess` in Sandbox, from the saved plan of 00:29. No other session was
+running on the laptop. Times are UTC.*
+
+- **[user] The authorization**: *"Autorizo o apply"*, answering the question that named `sandbox/workflows/`
+  and its `3 to add`.
+- **[Claude] The apply**, 00:49:36 to 00:49:48: one `aws_iam_role_policy_attachment.project` per role, each
+  *"Creation complete after 1s"*, then *"Apply complete! Resources: 3 added, 0 changed, 0 destroyed."*
+- **[Claude] The re-plan**, ending 00:50:15: *"No changes. Your infrastructure matches the configuration."*,
+  exit 0 under `-detailed-exitcode`.
+- **[Claude] The roles read**: `list-attached-role-policies` on `app-dbt-dev`'s, `app-ml-dev`'s and
+  `app-genai-dev`'s roles lists `awsds-sandbox-workflows` beside AWS's
+  `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy`, `SageMakerStudioProjectRoleMachineLearningPolicy`
+  and `SageMakerStudioProjectUserRolePolicy`.
+- **[Claude] Lesson 79**: the slice was applied from pull request #320's branch, so a plan of it from `main`
+  proposes removing the three attachments until that pull request merges.
+- **[Claude] Left**: the project's two contributors, then the workgroup's reading and 2.0's starting state.
+
+## 2026-11-19 — 2.0: the contributors added, the workgroup and the starting state read
+
+*The user added the members in the portal. Claude, the orchestrating session, read them as the
+infrastructure user through `awsds-infra-sandbox-1` and `awsds-infra-data`, reads only. Times are UTC.*
+
+- **[user] The act**: *"Editei os três projetos adicionando os contributors solicitados. Pode verificar."*
+  The user asked first which name the member dialog shows for `InfrastructureAccess`, and Claude answered
+  `AWSReservedSSO_InfrastructureAccess_59e5b26af457128d`, Sandbox's, as Stage 19's log of 2026-11-14 read it.
+- **[Claude] The members**, read at 00:54:50: `app-dbt-dev`, `app-ml-dev` and `app-genai-dev` each list the
+  owner, the project's own role and two `PROJECT_CONTRIBUTOR` groups, as `app-etl-dev` does. From the
+  domain's account, `get-group-profile` answers each group's `rolePrincipalArn`: `06d426f2-…` is
+  `awsds-deploy-sandbox-test` and `839bcde8-…` is `AWSReservedSSO_InfrastructureAccess_59e5b26af457128d`.
+- **[Claude] The workgroups**, by `list-connections` at 00:55:11, refused before the membership:
+  `app-dbt-dev`'s `project.athena` names `workgroup-dnl3l158mbhrio-55hp9teamegf4g`, `app-ml-dev`'s
+  `workgroup-5rzplmk81vma34-5ae0dd6m1suvbk` and `app-genai-dev`'s `workgroup-b8fz4ovppjijv4-c9sdti5d2gaqs0`.
+- **[Claude] 2.0's starting state**, at 00:55:40, each as expected: the workgroup `ENABLED`, enforced, on
+  *"Athena engine version 3"*, its output under the project's `dev/sys/athena/`; *"Database app_dbt not
+  found."* and *"Job not found."*; no `app_dbt_` workflow; `0` objects under `dev/data/catalogs/trades/`,
+  `dev/data/catalogs/app_dbt/` and `shared/app-dbt/`; `search` answering with no asset.
+- **[Claude] `./aws/catalog.py`** again: the run ending 00:58:58 wrote *"all checks passed"* and exited 0: the three `search` calls refused at 00:36 now answer, and `CT-19` reads every inventory, *"13 assets in 10 projects, 7 of them Glue tables"*.
+- **[Claude] Left**: 2.0's archive and tar, built from the merged tree after pull request #320's merge,
+  which moves `app-dbt`'s pin to `4613ddc`; then sitting A.
