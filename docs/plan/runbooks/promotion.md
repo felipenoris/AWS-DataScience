@@ -2297,9 +2297,9 @@ about 3 USD, against 0.36 to 0.87 USD for the next day's Config cycle.
   - 6d 7.6's second identity, `eighth-experimentation`'s contributor, signed in from a browser profile of
     its own; and the window for 6d 7.5's monitored profile, which moves the laptop's network for every
     session.
-- **[Claude] With nothing up:** Stage 20 4.5's workflow and its second tar; Stage 17 7.4's evaluation
-  dataset and `examples/sandbox-ml`'s scripts read against the house image's lock; the archives of
-  `app-ml` and `app-genai` from `main` on day 3's eve.
+- **[Claude] With nothing up:** the archives of `app-ml` and `app-genai` from `main` on day 3's eve. Done
+  2026-11-19: Stage 20 4.5's workflow and its second tar (pull request #335); Stage 17 7.4's evaluation
+  dataset, and `examples/sandbox-ml`'s scripts read against the house image's lock (#336).
 
 #### N.9.2 The days
 
