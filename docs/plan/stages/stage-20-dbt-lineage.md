@@ -1076,8 +1076,8 @@ from it. The commands are each step's own.
 
   In the combined Sandbox sitting the raise is day 1's `make up ENV=sandbox GROUPS=mwaa`
   ([`promotion.md`](../runbooks/promotion.md) §N.9.2); with no `ONLY=` it raises `sandbox/probes/` beside
-  `sandbox/egress/`, and a group other than `redshift` changes no slice (`DRY=1` with
-  `GROUPS=mwaa,mlflow,bedrock-base`, 2026-11-19; `scripts/slices.py`'s refusal 11). **[Claude]** tells the laptop's other sessions before the first raise and
+  `sandbox/egress/`, and a group other than `redshift` changes no slice (the pre-flight's `DRY=1` of the
+  single start's raise, 2026-11-19; `scripts/slices.py`'s refusal 11). **[Claude]** tells the laptop's other sessions before the first raise and
   reads `make status` after the second. Then a JupyterLab space in `app-dbt-dev` on
   `awsds-sandbox-dev-env` version 11 (alias `0.10.0`), `ml.t3.medium`, the tar dropped on its file
   browser, and in its terminal the tar checked against the digest 2.0 built before it is extracted:
