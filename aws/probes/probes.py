@@ -623,14 +623,24 @@ probe("ou", "canary", "allow", "InvalidRequestException|WorkGroup is not found",
 #     Claude Code session calls.
 #
 #     The model statement, in us-west-2, where the Region statement cannot fire. The deny row's
-#     sample is amazon.nova-lite-v1:0, which the account may invoke with no agreement
+#     sample is Amazon Nova Lite, which the account may invoke with no agreement
 #     (claude-code-sagemaker.md, M4): it answered as InfrastructureAccess on 2026-09-12 and was
 #     refused an hour later, after the attach, naming the Interactive document. A sample from
-#     outside Anthropic keeps the row true whatever the scoped set becomes.
+#     outside Anthropic keeps the row true whatever the scoped set becomes. Since Stage 17 decision
+#     23 (a) the statement admits the model's us-west-2 foundation-model ARN, so the row invokes it
+#     through the US system profile, us.amazon.nova-lite-v1:0 (SYSTEM_DEFINED, ACTIVE, routing to
+#     us-east-1, us-west-2 and us-east-2, read 2026-11-19), refused on the profile's own pass.
 _NOVA_BODY = ('{"messages":[{"role":"user","content":[{"text":"ping"}]}],'
               '"inferenceConfig":{"max_new_tokens":1}}')
 probe("ou", "sandbox1", "deny", "ValidationException", "ro",
       "interactive (inherited): bedrock:InvokeModel outside the scoped set (decision 15)",
+      _invoke("us.amazon.nova-lite-v1:0", _NOVA_BODY))
+
+# --- Stage 17 decision 23 (a) - Amazon Nova Lite admitted on its us-west-2 foundation-model ARN, the
+#     model of app-genai. The row invokes the model on demand in us-west-2, the deny row above the
+#     same model through the system profile, so the pair differs by the ARN the statement reads.
+probe("ou", "sandbox1", "allow", None, "ro",
+      "interactive (inherited): bedrock:InvokeModel on amazon.nova-lite-v1:0 in us-west-2 (Stage 17 decision 23)",
       _invoke("amazon.nova-lite-v1:0", _NOVA_BODY))
 
 # --- Stage 17 decision 11 - the statement's two entries beside the scope. Titan Text Embeddings V2,

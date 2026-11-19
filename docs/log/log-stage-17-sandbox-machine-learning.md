@@ -3008,3 +3008,91 @@ planned the slice's lines. Times are UTC.*
   `workgroup-b8fz4ovppjijv4-c9sdti5d2gaqs0`.
 - **[Claude] Left**: `app-ml-dev`'s MLflow App and model package group (9.6); Nova Lite enabled (10.4);
   9.5's pairs and 10.4's `sandbox/bedrock/` and `sandbox/model-access/`.
+
+## 2026-11-19 — 9.5 and 10.4: the rest of `sandbox/workflows/` and the Sandbox Bedrock slices written and planned, nothing applied
+
+*Claude, a session started by the orchestrating session, wrote the code and planned it as the
+infrastructure user through `awsds-infra-sandbox-1` and `awsds-infra-identity`: reads, plans and IAM
+simulations only. Times are UTC.*
+
+- **[Claude] What the roles hold today**, by `simulate-principal-policy` as each role, whose decision
+  includes the organization's policies: `app-ml-dev`'s role is allowed `CreateModel`, `DescribeModel`,
+  `DeleteModel` and `ListModels` on its tagged models, `CreateModelPackageGroup` with its tag and a tagged
+  version, and refused the describe of a free job name, the tag of a job, of a model and of a group, and a
+  version with no tag. `app-genai-dev`'s is allowed the invoke of its project's application profile and of
+  Haiku 4.5's system profile, and `ApplyGuardrail` on a guardrail with its project's tag; Nova Lite's
+  foundation model reads `explicitDeny` with `AllowedByOrganizations` `false`, the interactive OU's
+  `NotResource` (02:01:43); every `guardrail` task's call reads `implicitDeny`. The bundle role is
+  refused every read of the model's prefix and of the project key, and `PutObject` reads `explicitDeny`
+  from its boundary. Both roles carry
+  `EnableAmazonBedrockPermissions`, `EnableSageMakerMLWorkloadsPermissions` and
+  `EnableGlueWorkloadsPermissions` `true` (`list-role-tags`, 01:57:33). The job creates' `explicitDeny`
+  against a job's ARN with the volume key in the context is the simulator's (`SUP-009`): against `*` the
+  same call read `allowed` at 01:31:16.
+- **[Claude] `sandbox/workflows/`**: the transform pair, the model's tag and
+  `RegisterAPendingVersionForAppMl` in the policy, the training pair behind `training_pair_enabled`
+  (`false`), and the map `model_applications` naming `app-ml`'s role, its group `app-ml-dev` and its
+  prefix `app-ml/models/latest`; in `deploy-role.tf`, the bundle role's `ListTheTrainedModelsPrefix`,
+  `ReadTheTrainedModel` and `DecryptTheTrainedModelThroughS3`, the key read from the alias
+  `alias/awsds-sandbox-project`, the same key as the role's `KmsKeyId` tag.
+- **[Claude] `sandbox/bedrock/`**: `application.tf`, `awsds-sandbox-bedrock-application` on
+  `application_roles` (`app-genai-dev`'s role), the deny behind `application_guardrail_required`, and the
+  account's guardrail, its version and the enforced configuration behind `account_guardrail_enabled`, both
+  `false`; `awscc` `~> 1.89` in `versions.tf`, its 1.106.0 block copied from `staging/studio`'s lock and
+  accepted by `init` unchanged.
+- **[Claude] `sandbox/model-access/`**: `amazon.nova-lite-v1:0` in `project_models`.
+- **[Claude] `identity/org-policies/`**: the interactive OU's `NotResource` gains
+  `arn:aws:bedrock:us-west-2::foundation-model/amazon.nova-lite-v1:0`, the document 1,551 characters
+  minified; its description and `POLICIES.md`'s row follow. The battery's deny row now invokes
+  `us.amazon.nova-lite-v1:0`, `SYSTEM_DEFINED` and `ACTIVE`, routing to `us-east-1`, `us-west-2` and
+  `us-east-2` (`get-inference-profile`, read 2026-11-19), and a new `ou` row invokes the model in
+  `us-west-2` as `sandbox1`, expected to answer; `scp-battery.md` follows.
+- **[Claude] The plans**, each with the tfvars regenerated and `-input=false`, saved outside the
+  repository:
+
+  | Slice | Profile | Time | Plan |
+  |---|---|---|---|
+  | `sandbox/workflows` | `awsds-infra-sandbox-1` | 01:45:48 | *"Plan: 0 to add, 2 to change, 0 to destroy."*: `awsds-sandbox-workflows` and the bundle role's `project-reads` |
+  | `sandbox/workflows`, `-var training_pair_enabled=true`, a preview | `awsds-infra-sandbox-1` | 01:46:03 | the same count, the training pair added |
+  | `sandbox/bedrock` | `awsds-infra-sandbox-1` | 01:46:38 | *"Plan: 2 to add, 0 to change, 0 to destroy."*: the policy and its attachment, the assistant's policy unchanged |
+  | `sandbox/bedrock`, both variables `true`, a check | `awsds-infra-sandbox-1` | 01:47:17 | 5 to add: the guardrail, its version, the enforced configuration, the policy with the deny, the attachment |
+  | `sandbox/model-access` | `awsds-infra-sandbox-1` | 01:46:49 | *"Plan: 0 to add, 1 to change, 0 to destroy."*: `model-management` gains Nova Lite's foundation model |
+  | `identity/org-policies` | `awsds-infra-identity` | 01:48:10 | *"Plan: 0 to add, 1 to change, 0 to destroy."*: the interactive OU's document and its description, the description too long (below) |
+  | `identity/org-policies`, again | `awsds-infra-identity` | 02:06:00 | *"Plan: 0 to add, 1 to change, 0 to destroy."*, the description at 508 characters |
+
+- **[Claude] The planned documents simulated** (01:49:14 to 01:51:20) by `simulate-custom-policy`, with
+  AWS's UR v77 and ML v48 under the live boundaries `awsds-sandbox-project-boundary` v3 and
+  `awsds-sandbox-deploy-test-boundary` v2, the organization's policies outside the reading.
+  `app-ml-dev`'s role: `DescribeTransformJob` on a free name, `AddTags` on a transform job and on a model,
+  and `CreateModelPackage` `PendingManualApproval` with no tag on `model-package/app-ml-dev/new` `allowed`
+  by the planned policy; an `Approved` version, a version in another group, `AddTags` on the group and,
+  with the switch off, the training pair `implicitDeny`; with the switch on, the training pair `allowed`.
+  `eighth-experimentation`'s role: a version in `app-ml-dev` `implicitDeny`. `app-genai-dev`'s role, with
+  both variables `false` and `true` alike: `ListGuardrails`, `GetGuardrail`, `CreateGuardrail` with the
+  tag, `UpdateGuardrail`, `CreateGuardrailVersion` and `TagResource` of the `awsds:` keys on a tagged
+  guardrail `allowed`; the project key put on an untagged guardrail, `UpdateGuardrail` on one,
+  `DeleteGuardrail` and `PutEnforcedGuardrailConfiguration` `implicitDeny`; an invoke naming a guardrail
+  version `allowed`, Nova Lite's foundation-model pass through the profile included. An invoke naming
+  none reads `allowed` with the deny off and `explicitDeny` with it on, through the application profile,
+  on the foundation model, through Haiku 4.5's system profile and as a stream. With the deny off, UR v77's
+  `ACInvoke` admits the invoke of every system profile and every foundation model on the role's tag. The
+  bundle role: `ListBucket` on the prefix, `GetObject` under it and `Decrypt` through S3 `allowed`; the
+  whole location, another project's prefix, `inbox/`, a direct `Decrypt` and `PutObject` `implicitDeny`.
+- **[Claude] The description refused at commit**: pre-commit's tflint stopped the first commit on
+  `aws_organizations_policy_invalid_description`, *"description must be 512 characters or less"*: the
+  interactive OU's description, 502 characters before the change, read 608 with Nova Lite's clause, and
+  the plan of 01:48 carried it, a value `UpdatePolicy` refuses. Shortened to 508 with every clause kept,
+  and re-planned at 02:06.
+- **[Claude] The sizes**, minified: the workflows policy 2,451 characters (3,146 with the training pair),
+  the bundle role's `project-reads` 1,419, the application policy 1,162 (1,443 with the deny), the
+  interactive SCP 1,551.
+- **[Claude] Found**: 9.6's group `app-ml-dev` cannot be created with the project's tag from the space,
+  `AddTags` on the group reading `implicitDeny` in both readings, and decision 7 (a) puts that statement in
+  `sandbox/ml/`, unwritten. 9.6's first training run needs the training pair, so 2.2's (a) and (b) come
+  before it in sitting B (`promotion.md` §N.6 item 7). `ACInvoke` reaches every system profile, where
+  `sandbox/bedrock/main.tf`'s header records 6e 3.1's reading of 2026-09-11, none; the interactive OU's
+  `NotResource` is the model ceiling either way.
+- **[Claude] Left**: each apply on the user's word naming it, from `main` after the pull request,
+  re-planned first; after the SCP's apply, the battery's `ou` phase and the same principal simulation of
+  Nova Lite, expected `AllowedByOrganizations` `true`; Nova Lite enabled on the console's **Amazon
+  Bedrock models** tab; the training pair in sitting B after 2.2's (a) and (b); the group's statement.

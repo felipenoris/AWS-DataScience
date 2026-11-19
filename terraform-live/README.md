@@ -336,7 +336,11 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   blueprint configuration has no field that grants anything (a boundary for every project role, a grant
   for none). So `project_roles` is hand-written per project, guarded by a precondition that the role
   carries the D13 boundary — [`claude-code-sagemaker.md`](../docs/plan/runbooks/claude-code-sagemaker.md)
-  section P is the procedure, in both the Terraform and the `aws` CLI form.
+  section P is the procedure, in both the Terraform and the `aws` CLI form. A second policy,
+  `awsds-<env>-bedrock-application`, gives the roles of `application_roles` the calls that keep their own
+  guardrail (Stage 17 10.4, written 2026-11-19, not applied); the deny of an unguarded invocation and the
+  account's guardrail with its enforced configuration (`awscc`) each stand behind a variable that
+  defaults to `false`.
 - **`sandbox/workflows/` `[P]` — the workflows grant** (Stage 6i decision 6): one `awsds-<env>-workflows`
   policy allowing `sagemaker:DescribeProcessingJob` on a processing job that carries no
   `AmazonDataZoneProject` tag, which every name not yet taken satisfies, and `sagemaker:AddTags` of that
@@ -352,7 +356,10 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   `awsds-sandbox-deploy-test-boundary`, trusted by the deploy runner's role alone and holding the DataZone
   reads of that project and of the catalog it owns, with no write. That shape is the code's since
   2026-11-11 and AWS's since the apply of 2026-11-14, which also put the workflows policy on
-  `app-etl-dev`'s role (Stage 19's release T).
+  `app-etl-dev`'s role (Stage 19's release T). Stage 17 9.5 adds, written 2026-11-19 and not applied, the
+  transform pair, the model's tag, a pending version's registration for each application in
+  `model_applications` and the bundle role's read of its model prefix, and the training pair behind
+  `training_pair_enabled`.
 - **`staging/studio/` and `production/studio/` `[P]` — the deployment project's blueprint prerequisites**
   ([Stage 19](../docs/plan/stages/stage-19-smus-native-data-product.md) step 4.4), applied 2026-11-11 in
   two applies, the second adding the two blueprint configurations:

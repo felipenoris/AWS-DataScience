@@ -1191,8 +1191,10 @@ bound items 3, 5, 6, 9 and 11.
    passes 2 and 3 in `app-dbt-dev`, after item 2's project and line, dbt on a worker and its lineage events, and 4.5 once item 2's applies ran; before
    2026-12-18, when dbt Core 1.11's critical support ends.
 7. **Sandbox sitting B**, `GROUPS=mwaa,mlflow`, no GitLab: Stage 17's 1.4 and 1.6, the first tracking
-   call, then 9.6 after `EXC-11`'s share, `app-ml` trained, registered and scored in `app-ml-dev`. Stage
-   17's passes 2 to 5 are sittings of their own after it.
+   call, then 9.6 after `EXC-11`'s share, `app-ml` trained, registered and scored in `app-ml-dev`. 9.6's
+   training run needs `sandbox/workflows/`'s training pair, applied only after 2.2's readings (a) and (b),
+   so those two come first in the sitting (Stage 17 9.5). Stage 17's passes 2 to 5 are sittings of their
+   own after it.
 8. **Sandbox sitting C**, `GROUPS=mwaa,bedrock-base`, no GitLab: Stage 17's 10.4, `app-genai`'s loop
    with the boundary's deny and the account's guardrail measured, and 6e 6.4's assistant session, whose
    token volume sets 6e decision 6's threshold.
