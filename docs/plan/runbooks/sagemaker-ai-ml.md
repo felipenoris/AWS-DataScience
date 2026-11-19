@@ -356,7 +356,7 @@ The list is `ml.t3.medium`, `ml.t3.large`, `ml.t3.xlarge`, `ml.m5.large`, `ml.m5
   or AutoML job and a model stay under the statement, and the table's other rows stay as they are.
   Isolation becomes the application's choice, job by job: `app-ml`'s two `prepare` tasks keep
   `EnableNetworkIsolation: true`, since each reads its input mounts alone. The lint's rule `job` leaves
-  it to the task from `awsds-workflows` `1a50ceb` (that stage's step 6.4), which `app-dbt` pins; at
+  it to the task from `awsds-workflows` `1a50ceb` (that stage's step 6.4), in `app-dbt`'s pin `4613ddc`; at
   `app-ml`'s pin `37cb5a6` it still refuses a processing request without it.
 - **A batch transform has no `VpcConfig` of its own.** It inherits the model's, which is why
   `CreateModel` is on the first two lists.
@@ -718,8 +718,8 @@ and the three Bedrock operators that write what they send and what they receive 
 still pass unread (Lesson 71): a model's `Image` by tag or from any repository; a transform `config` with
 a `Model` and no `Transform`, on which the operator 9.32.0 fails with a `KeyError` before it creates the
 model while `check_if_model_exists` keeps its default; and `action_if_model_exists` at its default,
-`timestamp`, with which a retry creates a second model. No application writes one. From `1a50ceb`, which
-`app-dbt` pins, the rule `job` leaves a processing task's isolation to the task (Stage 20 step 6.4). The
+`timestamp`, with which a retry creates a second model. No application writes one. From `1a50ceb`, in
+`app-dbt`'s pin `4613ddc`, the rule `job` leaves a processing task's isolation to the task (Stage 20 step 6.4). The
 endpoint increment replaces the endpoint operator's refusal with a rule that reads its request, and a rule
 that reads a pipeline's definition file is a pull request of its own before the pipeline increment's tag
 (verification lxi); until then, the boundary and the OU are the only refusal for a pipeline's request.

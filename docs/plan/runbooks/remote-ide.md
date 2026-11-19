@@ -427,6 +427,13 @@ aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,Attribut
   | jq -r '.[] | fromjson | [.eventTime, .userIdentity.arn, .sourceIPAddress, .userAgent] | @tsv'
 ```
 
+**Which domain holds the space**: a project created since 2026-11-18 holds the blueprint's domain
+alone, and the three of `AWS_STATE.md` `EXC-26` hold their `Tooling` domain beside it, so the id is read:
+
+```bash
+aws sagemaker list-spaces --profile awsds-infra-sandbox-1 --query "Spaces[?SpaceName=='<space>'].[DomainId,Status]" --output text
+```
+
 **What the space is, and whether the flag is on**:
 
 ```bash

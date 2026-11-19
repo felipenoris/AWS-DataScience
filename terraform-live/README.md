@@ -323,8 +323,11 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   slice (INT-18); version 7, the last Terraform created, left the state. It is
   the one slice here whose only real input lives in another account, so it reads
   `production/registry/`'s state rather than carrying an ECR URI. **What it does not hold is the
-  attachment**: `CustomImages` is a field of the SageMaker AI domain the `Tooling` blueprint provisions,
-  so making the image *selectable* is a hand step — [`docs/plan/runbooks/dev-env.md`](../docs/plan/runbooks/dev-env.md).
+  attachment**: `CustomImages` is a field of the project's SageMaker AI domain, which the
+  `SageMakerAIDomain` blueprint writes from the profile's pin, `var.sandbox_dev_env_version` in
+  `data-governance/governance/` (6d decision 16 (a)), so a release moves that variable; the three
+  `Tooling` domains of `docs/AWS_STATE.md` `EXC-26` carry it from a hand step —
+  [`docs/plan/runbooks/dev-env.md`](../docs/plan/runbooks/dev-env.md).
 - **`sandbox/bedrock/` `[P]` — the Bedrock grant** (Stage 6e step 3, applied 2026-09-11): one
   `awsds-<env>-bedrock-assistant` policy naming the three scoped Claude models — as inference-profile
   ARNs *and* as region-less foundation-model ARNs, because authorization evaluates both — and one

@@ -26,12 +26,16 @@
 #
 # PRODUCT_DATABASE is a literal, the same name in every account's catalog: the database is created in
 # each project before its first deploy, never by the application. ACCOUNT_ID is the account the
-# lineage names; ATHENA_WORKGROUP the project's workgroup, workgroup-<project id>-<Tooling environment
-# id>; LINEAGE_DOMAIN the domain the transform task posts to; LINEAGE_NAMES `as-built` or `glue-arn`,
-# a target's the form the infrastructure repository's Stage 20 decision 3 holds; LINEAGE_ENDPOINT a
-# URL or `default`; LINEAGE_ATTEMPTS a number of attempts or `default`; LINEAGE_NAMESPACE the job
-# namespace of the dbt run's events, app-dbt-<stage> (Stage 20 decision 16 (c)), so each stage's runs
-# are a job of their own in the domain every account posts to.
+# lineage names; LINEAGE_DOMAIN the domain the transform task posts to; LINEAGE_NAMES `as-built` or
+# `glue-arn`, a target's the form the infrastructure repository's Stage 20 decision 3 holds;
+# LINEAGE_ENDPOINT a URL or `default`; LINEAGE_ATTEMPTS a number of attempts or `default`;
+# LINEAGE_NAMESPACE the job namespace of the dbt run's events, app-dbt-<stage> (Stage 20 decision 16
+# (c)), so each stage's runs are a job of their own in the domain every account posts to.
+#
+# The project's Athena workgroup is no stage variable: both workflows name
+# {proj.connection.project.athena.workgroupName}, the workgroup of the project.athena connection
+# every project's Tooling environment creates, workgroup-<project id>-<Tooling environment id>,
+# which the CLI resolves at the deploy (Stage 20 decision 17 (b)).
 #
 # `staging` creates the probe beside app-dbt, and the Staging leg runs it first; `prod` creates app-dbt
 # alone, then runs it and follows the run, so a release ends with both tables written in Production.
@@ -78,7 +82,6 @@ stages:
       SUBNET_AZ2: ${SUBNET_AZ2}
       ACCOUNT_ID: ${ACCOUNT_ID}
       PRODUCT_DATABASE: app_dbt
-      ATHENA_WORKGROUP: ${ATHENA_WORKGROUP}
       LINEAGE_DOMAIN: ${LINEAGE_DOMAIN}
       LINEAGE_NAMES: ${LINEAGE_NAMES}
       LINEAGE_ENDPOINT: ${LINEAGE_ENDPOINT}
@@ -117,7 +120,6 @@ stages:
       SUBNET_AZ2: ${STAGING_SUBNET_AZ2}
       ACCOUNT_ID: ${STAGING_ACCOUNT_ID}
       PRODUCT_DATABASE: app_dbt
-      ATHENA_WORKGROUP: ${STAGING_ATHENA_WORKGROUP}
       LINEAGE_DOMAIN: ${DOMAIN_ID}
       LINEAGE_NAMES: as-built
       LINEAGE_ENDPOINT: default
@@ -156,7 +158,6 @@ stages:
       SUBNET_AZ2: ${PROD_SUBNET_AZ2}
       ACCOUNT_ID: ${PROD_ACCOUNT_ID}
       PRODUCT_DATABASE: app_dbt
-      ATHENA_WORKGROUP: ${PROD_ATHENA_WORKGROUP}
       LINEAGE_DOMAIN: ${DOMAIN_ID}
       LINEAGE_NAMES: as-built
       LINEAGE_ENDPOINT: default

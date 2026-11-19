@@ -2,11 +2,11 @@
 # studio.py - Stage 6's evidence, registry and runtimes side by side: the one DataZone V2
 # domain in Data Governance (a registry, so also the negative reading: no SageMaker resource
 # may exist there), its blueprint configurations and project profiles, the blueprint-
-# provisioned SageMaker AI domain in each Interactive account (VPC-only, private subnets,
-# idle shutdown), the D13 permissions boundary on the project roles (INT-15's mechanical
-# half), the step 3 deny Sids in the persona sets, the dev-env image registration (INT-17's
-# mechanical half), and the running apps - the burn meter of the one [E] thing Terraform
-# does not own.
+# provisioned SageMaker AI domains in each Interactive account (VPC-only, private subnets,
+# idle shutdown, the house image's pinned version), the D13 permissions boundary on the
+# project roles (INT-15's mechanical half), the step 3 deny Sids in the persona sets, the
+# dev-env image registration (INT-17's mechanical half), and the running apps - the burn
+# meter of the one [E] thing Terraform does not own.
 #
 #   needs:    a live SSO session, and nothing else:
 #
@@ -17,9 +17,10 @@
 #             python3 aws/studio.py -              # CloudShell, ambient credentials
 #   writes:   aws/output/studio.txt   (untracked - see .gitignore)
 #   reads:    datazone:ListDomains, ListEnvironmentBlueprintConfigurations,
-#             GetEnvironmentBlueprint, ListProjectProfiles, ListProjects, GetProject,
-#             ListEnvironments, GetEnvironment, ListSubscriptionTargets,
-#             sagemaker:ListDomains, DescribeDomain, ListApps, ListImages,
+#             GetEnvironmentBlueprint, ListProjectProfiles, GetProjectProfile, ListProjects,
+#             GetProject, ListEnvironments, GetEnvironment, ListSubscriptionTargets,
+#             sagemaker:ListDomains, DescribeDomain, ListTags, ListApps, ListImages,
+#             ListImageVersions,
 #             iam:ListRoles, GetRole,
 #             sso-admin:ListInstances, ListPermissionSets, DescribePermissionSet,
 #             GetInlinePolicyForPermissionSet, sts:GetCallerIdentity.
@@ -145,6 +146,19 @@ RETIRED_PROFILE_NAMES = ("engineering",)
 STEP3_SIDS = ("DenySageMakerJobsOffVpc", "DenySageMakerInstanceCeiling")
 BOUNDARY_NAME_FRAGMENT = "project-boundary"
 
+# US-13 (6d decision 16 (a), INV-23): a project born of `experimentation` holds the
+# SageMakerAIDomain blueprint's domain, which pins the house image at the version the profile's
+# image lists name. A domain is told apart by the tag the blueprint writes, never by its name: an
+# unnamed blueprint domain takes the Tooling domains' pattern (6d 2.7 step 5). The projects created
+# before the profile changed keep their Tooling domain beside it (EXC-26), named here by the
+# portal's names, which are the user's.
+BLUEPRINT_TAG = "AmazonDataZoneBlueprint"
+PROJECT_TAG = "AmazonDataZoneProject"
+PINNED_BLUEPRINT = "SageMakerAIDomain"
+OPEN_ENTRY_BLUEPRINT = "Tooling"
+TOOLING_DOMAIN_PROJECTS = ("app-etl-dev", "eighth-experimentation", "test-experimentation")
+PIN_PARAMETERS = {"JupyterLab": "customImagesJupyterLab", "CodeEditor": "customImagesCodeEditor"}
+
 # The persona sets the step 3 fragment reaches (same set as Stage 4 step 8.2).
 PERSONA_SETS = (
     "DataScientistAccess",
@@ -154,6 +168,159 @@ PERSONA_SETS = (
     "GovernanceManagerAccess",
     "DevEnvStewardAccess",
 )
+
+
+def profile_pins(doc: dict) -> dict:
+    """App type -> (image name, version) from a profile's SageMakerAIDomain image lists.
+
+    Each list is JSON with one entry here. An absent configuration, parameter or version leaves
+    the app type out, and US-13 reports the gap.
+    """
+    pins: dict = {}
+    for cfg in doc.get("environmentConfigurations", []):
+        if cfg.get("name") != PINNED_BLUEPRINT:
+            continue
+        overrides = (cfg.get("configurationParameters") or {}).get("parameterOverrides", [])
+        values = {o.get("name"): o.get("value") for o in overrides}
+        for app, param in PIN_PARAMETERS.items():
+            try:
+                entries = json.loads(values.get(param) or "[]")
+            except json.JSONDecodeError:
+                continue
+            if len(entries) == 1 and entries[0].get("ImageVersionNumber") is not None:
+                pins[app] = (entries[0].get("ImageName"), entries[0].get("ImageVersionNumber"))
+    return pins
+
+
+def judge_image_pins(
+    checks: Checks,
+    p: str,
+    rows: list,
+    profile_pin: dict | None,
+    tops: dict,
+    project_names: dict,
+    born: dict | None,
+) -> None:
+    """US-13 on one Interactive account: the profile's pin, each domain by its blueprint tag, then
+    each ACTIVE project born of the profile against the blueprint domains.
+
+    rows are (domain id, tags or None, {app type: [(image, version)]}); tops maps an image to its
+    newest CREATED version; project_names maps a project id to the portal's name; born maps the
+    id of each ACTIVE project born of the profile to its name, None when unread.
+    """
+    what = f"{PROJECT_PROFILE_NAMES[0]}'s pin for {p}"
+    if profile_pin is None:
+        checks.note("US-13", what, "unread - each domain is read against the newest version.")
+    elif not profile_pin:
+        checks.fail(
+            "US-13",
+            what,
+            f"no image in its {PINNED_BLUEPRINT} configuration: a project born of it gets the "
+            "SageMaker Distribution alone (INV-23).",
+        )
+    else:
+        behind = [
+            f"{app} {n} v{v}, the newest CREATED v{tops[n]}"
+            for app, (n, v) in profile_pin.items()
+            if tops.get(n) is not None and v != tops[n]
+        ]
+        pins = ", ".join(f"{app} {n} v{v}" for app, (n, v) in profile_pin.items())
+        if behind:
+            checks.fail(
+                "US-13",
+                what,
+                f"{'; '.join(behind)} - the pin's pull request on data-governance/governance/ "
+                "is pending (dev-env.md §B).",
+            )
+        elif all(tops.get(n) is not None for n, _v in profile_pin.values()):
+            checks.ok("US-13", what, f"{pins}, the newest CREATED version")
+        else:
+            checks.note("US-13", what, f"{pins}; the newest version was not read.")
+    for did, tags, entries in rows:
+        if tags is None:
+            checks.note(
+                "US-13", f"{p} domain {did}", "tags unread (section 10): blueprint unknown."
+            )
+            continue
+        project = project_names.get(tags.get(PROJECT_TAG, ""), tags.get(PROJECT_TAG) or "untagged")
+        what = f"{p} domain {did} ({project})"
+        blueprint = tags.get(BLUEPRINT_TAG)
+        if blueprint == OPEN_ENTRY_BLUEPRINT:
+            if project in TOOLING_DOMAIN_PROJECTS:
+                checks.note(
+                    "US-13",
+                    what,
+                    "the Tooling domain kept beside the blueprint's (EXC-26); its entry with no "
+                    "version is not judged",
+                )
+            else:
+                checks.fail(
+                    "US-13",
+                    what,
+                    "a Tooling domain outside EXC-26's projects: a project born since 2026-11-18 "
+                    "holds the blueprint's domain alone (INV-23), and this one offers every "
+                    "version unpinned.",
+                )
+            continue
+        if blueprint != PINNED_BLUEPRINT:
+            checks.note(
+                "US-13",
+                what,
+                f"{BLUEPRINT_TAG}={blueprint or 'absent'} - not a domain US-13 judges",
+            )
+            continue
+        shape, lag, pinned = [], [], []
+        for app in PIN_PARAMETERS:
+            have = entries.get(app, [])
+            if len(have) != 1 or have[0][1] is None:
+                shape.append(f"{app} {have or 'no entry'}")
+                continue
+            name, ver = have[0]
+            pinned.append(f"{app} {name} v{ver}")
+            ref = (profile_pin or {}).get(app)
+            if ref is None and tops.get(name) is not None:
+                ref = (name, tops[name])
+            if ref is not None and (name, ver) != tuple(ref):
+                lag.append(f"{app} {name} v{ver} against {ref[0]} v{ref[1]}")
+        if shape:
+            checks.fail(
+                "US-13",
+                what,
+                f"{'; '.join(shape)} - a blueprint domain pins one version per app type (INV-23).",
+            )
+        elif lag:
+            checks.fail(
+                "US-13",
+                what,
+                f"{'; '.join(lag)} - the project owner's Update project is pending "
+                "(dev-env.md §B).",
+            )
+        else:
+            checks.ok("US-13", what, ", ".join(pinned))
+    # A domain whose tags were unread could be the project's, so a missing one is judged only when
+    # every domain's tags were read.
+    if born is None or any(tags is None for _did, tags, _e in rows):
+        return
+    held = {
+        tags.get(PROJECT_TAG)
+        for _did, tags, _e in rows
+        if tags.get(BLUEPRINT_TAG) == PINNED_BLUEPRINT
+    }
+    if born and all(pid in held for pid in born):
+        checks.ok(
+            "US-13",
+            f"{p} projects of {PROJECT_PROFILE_NAMES[0]}",
+            f"{len(born)} ACTIVE, each holding a {PINNED_BLUEPRINT} domain: "
+            + ", ".join(sorted(born.values())),
+        )
+    for pid, name in sorted(born.items(), key=lambda item: item[1]):
+        if pid not in held:
+            checks.fail(
+                "US-13",
+                f"{p} project {name}",
+                f"born of {PROJECT_PROFILE_NAMES[0]} with no {PINNED_BLUEPRINT} domain here: the "
+                "profile's ON_CREATE environment gives every project one (INV-23).",
+            )
 
 
 def main(argv: list) -> int:
@@ -232,6 +399,7 @@ def main(argv: list) -> int:
     # supposed to be" (Lesson 13).
     bp_configs: dict = {}
     project_profiles: list = []  # (name, id, status)
+    profile_pin: dict | None = None  # app type -> (image, version); None when unread
     projects: list = []  # (name, id, status)
     domain_id = ""
     if data_live and dz_domains.get(DATA_PROFILE):
@@ -336,6 +504,24 @@ def main(argv: list) -> int:
                 (i.get("name", "?"), i.get("id", "?"), i.get("status", "?"))
                 for i in doc.get("items", [])
             ]
+        # US-13's registry half: the version the profile's SageMakerAIDomain configuration pins.
+        pid = {n: i for n, i, _s in project_profiles}.get(PROJECT_PROFILE_NAMES[0])
+        if pid:
+            res = cli.run(
+                "datazone",
+                "get-project-profile",
+                "--domain-identifier",
+                domain_id,
+                "--identifier",
+                pid,
+                "--output",
+                "json",
+                log=False,
+            )
+            if res.ok and res.stdout:
+                profile_pin = profile_pins(json.loads(res.stdout or "{}"))
+            else:
+                logerr(DATA_PROFILE, "datazone get-project-profile", res.stderr)
         res = cli.run(
             "datazone",
             "list-projects",
@@ -357,6 +543,8 @@ def main(argv: list) -> int:
     sm_details: dict = {}  # profile -> [(id, VpcOnly?, idle summary, subnets, ceiling)]
     sm_apps: dict = {}  # profile -> [(app name, type, status, instance type)]
     sm_images: dict = {}  # profile -> [image names]
+    sm_pins: dict = {}  # Interactive profile -> [(id, tags or None, {app type: [(image, version)]})]
+    newest_versions: dict = {}  # Interactive profile -> {image: newest CREATED version or None}
     for p in live:
         cli = cli_for(p)
         res = cli.run("sagemaker", "list-domains", "--output", "json", log=False)
@@ -370,6 +558,7 @@ def main(argv: list) -> int:
             for d in doc.get("Domains", [])
         ]
         details = []
+        pin_rows = []
         for did, _name, _status in sm_domains[p]:
             r = cli.run(
                 "sagemaker",
@@ -407,7 +596,36 @@ def main(argv: list) -> int:
             )
             idle += f" ceiling={ceiling}min" if ceiling else " ceiling=ABSENT"
             details.append((did, net, idle, " ".join(d.get("SubnetIds", []) or ["-"]), ceiling))
+            if p in INTERACTIVE_PROFILES:
+                user = d.get("DefaultUserSettings", {})
+                entries = {
+                    app: [
+                        (e.get("ImageName"), e.get("ImageVersionNumber"))
+                        for e in (user.get(f"{app}AppSettings") or {}).get("CustomImages") or []
+                    ]
+                    for app in PIN_PARAMETERS
+                }
+                t = cli.run(
+                    "sagemaker",
+                    "list-tags",
+                    "--resource-arn",
+                    d.get("DomainArn", ""),
+                    "--output",
+                    "json",
+                    log=False,
+                )
+                tags = None
+                if t.ok:
+                    tags = {
+                        x.get("Key"): x.get("Value")
+                        for x in json.loads(t.stdout or "{}").get("Tags", [])
+                    }
+                else:
+                    logerr(p, f"sagemaker list-tags {did}", t.stderr)
+                pin_rows.append((did, tags, entries))
         sm_details[p] = details
+        if p in INTERACTIVE_PROFILES:
+            sm_pins[p] = pin_rows
         if sm_domains[p]:
             r = cli.run(
                 "sagemaker",
@@ -431,6 +649,35 @@ def main(argv: list) -> int:
             )
             if r.ok:
                 sm_images[p] = r.stdout.split()
+
+    # US-13's image half: the newest CREATED version of each image a pin or a domain names.
+    for p in INTERACTIVE_PROFILES:
+        if p not in sm_pins:
+            continue
+        wanted = {n for n, _v in (profile_pin or {}).values()}
+        wanted |= {n for _did, _t, ents in sm_pins[p] for es in ents.values() for n, _v in es}
+        cli = cli_for(p)
+        tops: dict = {}
+        for name in sorted(n for n in wanted if n):
+            r = cli.run(
+                "sagemaker",
+                "list-image-versions",
+                "--image-name",
+                name,
+                "--output",
+                "json",
+                log=False,
+            )
+            if not r.ok:
+                logerr(p, f"sagemaker list-image-versions {name}", r.stderr)
+                continue
+            created = [
+                v.get("Version")
+                for v in json.loads(r.stdout or "{}").get("ImageVersions", [])
+                if v.get("ImageVersionStatus") == "CREATED"
+            ]
+            tops[name] = max(created) if created else None
+        newest_versions[p] = tops
 
     # ---------------- the project roles and their boundary (INT-15's mechanical half)
     # Which roles are blueprint-provisioned is read from the tag, not from the name. The Tooling
@@ -526,9 +773,9 @@ def main(argv: list) -> int:
     # ------------- the deployment projects: one per target, with its environments (INV-21)
     deploy_projects: dict = {}  # deployment profile name -> [(project name, id)]
     deploy_rows: list = []  # (target, project, environment, status, glue database, targets)
+    profile_of: dict = {}  # project id -> its project profile's id; US-13 reads it too
     if DATA_PROFILE in live and domain_id:
         cli = cli_for(DATA_PROFILE)
-        profile_of: dict = {}  # project id -> its project profile's id
         for _name, pid, _status in projects:
             r = cli.run(
                 "datazone",
@@ -1120,6 +1367,30 @@ def main(argv: list) -> int:
                 f"{roles_read.get(p, 0)} role(s) read, none trusts the account's root or any principal",
             )
 
+    # US-13: the house image's pin (6d decision 16 (a), INV-23). The profile pins the newest
+    # CREATED version and each blueprint domain the profile's version, so a release is red here from
+    # its `register` to the last owner's Update project (dev-env.md §B). A Tooling domain is noted
+    # in the projects EXC-26 names and failed anywhere else.
+    # `experimentation` provisions into the one Interactive profile, so its projects are judged there.
+    project_names = {i: n for n, i, _s in projects}
+    exp_id = {n: i for n, i, _s in project_profiles}.get(PROJECT_PROFILE_NAMES[0])
+    born = (
+        {i: n for n, i, s in projects if s == "ACTIVE" and profile_of.get(i) == exp_id}
+        if exp_id and DATA_PROFILE in live
+        else None
+    )
+    for p in INTERACTIVE_PROFILES:
+        if sm_pins.get(p) is not None:
+            judge_image_pins(
+                checks,
+                p,
+                sm_pins[p],
+                profile_pin,
+                newest_versions.get(p, {}),
+                project_names,
+                born,
+            )
+
     # US-9: the step 3 deny Sids in the persona sets - together or not at all
     # (Lesson 14; the same one-fragment rule as Stage 4 step 8.2).
     if identity_live and set_rows:
@@ -1299,10 +1570,36 @@ nothing (Stage 19 decision 14), and the organization denies it the request.""")
                 for did, net, idle, subnets, _ceiling in details:
                     rows.append(f"{p}\t{did}\t{net}\t{idle}\t{subnets}")
         rep.tabulate(rows)
+        rep.line()
+        image_rows = ["PROFILE\tDOMAIN\tBLUEPRINT\tPROJECT\tJUPYTERLAB\tCODEEDITOR"]
+        for p in INTERACTIVE_PROFILES:
+            for did, tags, entries in sm_pins.get(p) or []:
+                t = tags or {}
+                cells = [
+                    " ".join(f"{n} v{v if v is not None else '*'}" for n, v in entries.get(app, []))
+                    or "-"
+                    for app in PIN_PARAMETERS
+                ]
+                who = project_names.get(t.get(PROJECT_TAG, ""), t.get(PROJECT_TAG, "?"))
+                image_rows.append("\t".join([p, did, t.get(BLUEPRINT_TAG, "?"), who, *cells]))
+        rep.tabulate(image_rows)
+        pin_text = (
+            ", ".join(f"{app} {n} v{v}" for app, (n, v) in profile_pin.items())
+            if profile_pin
+            else "(unread or none)"
+        )
+        rep.line(f"{PROJECT_PROFILE_NAMES[0]}'s pin: {pin_text}")
+        for p in INTERACTIVE_PROFILES:
+            for name, top in sorted(newest_versions.get(p, {}).items()):
+                rep.line(f"{p}: newest CREATED version of {name}: {top}")
         rep.text("""
 Domains belong ONLY in the Interactive columns (the blueprint targets). One in
 Data Governance breaks the registry premise (US-2); one in Production or Staging
 breaks D17 (US-6). VpcOnly and an ENABLED idle setting are steps 1 and 8.
+
+The second table is US-13's: `v*` is an entry with no version number, which offers
+every version; a blueprint domain pins one, the profile's. Each domain's BLUEPRINT
+is its AmazonDataZoneBlueprint tag, the one way to tell the two kinds apart.
 
 IDLE SETTINGS carries TWO numbers and step 8.1 rests on the second: the timeout
 is the default a project member may change, `ceiling` is the most they may raise
@@ -1420,7 +1717,12 @@ What the checks are, and where each comes from:
   US-11  each deployment target holds one project, born of its own profile, with every
          environment ACTIVE (Stage 19 step 4.6, INV-21)
   US-12  where a project role exists, no role's trust names the account's root or any
-         principal: the one layer under AWS's sts:AssumeRole on every role (TM-30)""")
+         principal: the one layer under AWS's sts:AssumeRole on every role (TM-30)
+  US-13  the house image's pin (6d decision 16 (a), INV-23): `experimentation` pins the
+         newest CREATED version, each ACTIVE project born of it holds a SageMakerAIDomain
+         domain, and each such domain pins the profile's version on both app types; a
+         Tooling domain is noted in EXC-26's projects and fails in any other. Red from a
+         release's register to its last Update project""")
 
         # ==============================================================================
         rep.h1("9. The accounts nothing here is measuring")

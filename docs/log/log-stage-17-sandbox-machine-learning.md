@@ -2913,3 +2913,98 @@ advance every stage but 11 to 15 with nothing up. Times are UTC.*
 - **[Claude]** The instrument's run at 00:45:51, with nothing up: every check passed, no call failed,
   `ML-5` read no endpoint; `ML-1` notes the managed ML policy at v48 on the three projects against the
   v45 the contract was read at, as before.
+
+## 2026-11-18 — `promotion.md` §N.6 item 10: the deploy scripts taught `app-ml`, `app-genai` and `app-dbt`
+
+*Claude, the orchestrating session and a subagent of it, on the laptop, no AWS call. Times are UTC.*
+
+- **[Claude, a subagent] The 2026-11-17 proposals** in `$HOME/tmp/stage17-proposals/`, read with `git
+  apply --check` against `4c441a6e`: `app-ml`'s four patches exit 0; `app-genai`'s
+  `deploy-application.proposal.diff` refused on its `+++` path, which named another session's scratchpad,
+  and exit 0 with `-p0` once that line named `scripts/deploy-application.py`. The two `deploy-application.py`
+  proposals merged by hand with `app-dbt` added.
+- **[Claude, a subagent] The change**, commit `bac717e8` on `claude/plano-estagios-execucao-5f64d8-n6-item10`:
+  `deploy-application.py` names the applications in `APPLICATIONS` and fills a name only where the target
+  stage reads it, `--image-uri` for `${JOB_IMAGE_URI}`, `sagemaker/`'s `training_image_uri`,
+  `studio/`'s `<app>_inference_profile_arn`; `model-chain.py`'s `approve` by application and model hash,
+  the group from `<account>/sagemaker`'s `model_package_group_arns`, `app-etl`'s `--package-arn` form
+  unchanged; `aws/cicd.py`'s `APP_REPOS`, `app-etl`'s and `app-ml`'s repositories; the hook's pattern
+  `examples/app-(etl|ml|genai|dbt)/`. `--self-check`: every stage of the four applications `ok`, `app-etl`'s
+  two lines byte-identical to `main`'s; `model-chain.py --check` *"ok    the model chain's requests,
+  offline"*; `make check` *"check: OK"*. Offline tests against doubles of the aws CLI and the CI/CD CLI,
+  kept in the session's scratchpad: `app-etl`'s deploy and follow-up in both targets, every record the
+  same as `main`'s script's; thirteen `approve` scenarios; five deliberate breaks of the self-check, each
+  refused.
+- **[Claude] Read again and published**: `--self-check` and `model-chain.py --check` exit 0 on the branch;
+  the runbook's scripts row, the README's line and this stage's two rows of scripts written for the
+  change (`b9699ee3`); the branch pushed and
+  [pull request #321](https://github.com/felipenoris/AWS-DataScience/pull/321) opened as a draft, to merge
+  after #320 and release G's sitting, before `app-dbt`'s mirror push and `app-ml`'s first tag.
+- **[Claude] The pins read against the lint's release**, 16:26 UTC, from each application's folder with its
+  pipeline's options at `awsds-workflows` `4613ddc`: `app-ml` *"ok: 6 arquivo(s)"*, `app-genai` *"ok: 3
+  arquivo(s)"*, `app-etl` *"ok: 9 arquivo(s)"*, and `app-genai`'s `probes/operator.yaml` refused by
+  `operador`, exit 1, as at `37cb5a6`. Between `37cb5a6` and `4613ddc` are #27 and #28.
+- **[Claude] Left**: `aws/catalog.py`'s `CHAIN_DEV_PROJECTS` once `app-dbt-dev` exists; `app-genai`'s
+  legs read `studio/`'s output, which 10.5 declares.
+
+## 2026-11-19 — 9.6 and 10.4: `app-ml-dev` and `app-genai-dev` created, and their `sandbox/workflows/` lines planned
+
+*The user created the projects in the portal. Claude, the orchestrating session, read them as the
+infrastructure user through `awsds-infra-sandbox-1` and `awsds-infra-data`, reads only, and wrote and
+planned the slice's lines. Times are UTC.*
+
+- **[user] The act**: *"Criei os projetos"*, with Stage 20's `app-dbt-dev` (that log's entry of the same
+  night).
+- **[Claude] The projects**, read at 00:19 and 00:20: `app-ml-dev` (`5rzplmk81vma34`, created 00:17:46)
+  and `app-genai-dev` (`b8fz4ovppjijv4`, 00:18:05), both `ACTIVE` under the `experimentation` profile
+  (`dh60xbal05q64w`). Each holds `Tooling` and `SageMakerAIDomain`, both `ACTIVE` by 00:20:41:
+  `app-ml-dev`'s `5ae0dd6m1suvbk` and `dpelnav9n8wyds`, `app-genai-dev`'s `c9sdti5d2gaqs0` and
+  `5dg9rc3o9t070w`.
+- **[Claude] The roles**: `datazone_usr_role_5rzplmk81vma34_5ae0dd6m1suvbk` and
+  `datazone_usr_role_b8fz4ovppjijv4_c9sdti5d2gaqs0`, each carrying `awsds-sandbox-project-boundary` by
+  `get-role`. `list-roles` read `None` for every role, `app-etl-dev`'s included, omitting the field by
+  documented contract.
+- **[Claude] The members**: each project's `list-project-memberships` holds the owner and one
+  `PROJECT_CONTRIBUTOR`, a user profile of type `IAM` whose ARN is the project's own role, as `app-etl-dev`'s
+  holds its role beside the two groups the user added there. The bundle role `awsds-deploy-sandbox-test`
+  and Sandbox's `InfrastructureAccess` are members of neither project yet.
+- **[Claude] The domains** (`./aws/studio.py`, ending 00:25:24): `US-13` passes on `d-hxxfi3od0xhm`
+  (`app-ml-dev`) and `d-q1bianbhckrd` (`app-genai-dev`), each pinning `awsds-sandbox-dev-env` version 11 on
+  both app types, and reads *"6 ACTIVE, each holding a SageMakerAIDomain domain"*. Neither project holds a
+  `Tooling` domain, so 9.6's §C6 attach takes no step. The script's exit 1 is section 10's persona
+  profiles with no SSO token, beside *"0 check(s) FAILED."*
+- **[Claude] `sandbox/workflows/`**: both roles joined `project_roles` with `app-dbt-dev`'s (Stage 20 2.0),
+  each with its comment line, and the slice was planned from this worktree at 00:29 as
+  `awsds-infra-sandbox-1`: *"Plan: 3 to add, 0 to change, 0 to destroy."*, the three attachments of
+  `awsds-sandbox-workflows`, the plan saved outside the repository. 9.5's pairs, model statement,
+  `CreateModelPackage` and bundle role's read, and 10.4's `sandbox/bedrock/` and `sandbox/model-access/`
+  changes are not written.
+- **[Claude] Left**: the two contributors in each project, by the user in the portal's member dialog; the
+  apply on the user's word; `app-ml-dev`'s MLflow App and model package group; Nova Lite enabled.
+
+## 2026-11-19 — 9.5's `sandbox/workflows/` line applied for `app-ml-dev` and `app-genai-dev`
+
+*Claude, the orchestrating session, on the user's word, as `awsds-infra-sandbox-1`. Times are UTC.*
+
+- **[user] The authorization**: *"Autorizo o apply"*.
+- **[Claude] The apply**: the saved plan of 00:29, one apply with Stage 20's `app-dbt-dev` line (that log's
+  entry of the same night holds the readings): *"Apply complete! Resources: 3 added, 0 changed, 0
+  destroyed."* at 00:49:48, re-planned *"No changes."* at 00:50:15. `app-ml-dev`'s and `app-genai-dev`'s
+  roles list `awsds-sandbox-workflows`.
+- **[Claude] Left**: 9.5's pairs, model statement, `CreateModelPackage` and bundle role's read; 10.4's
+  `sandbox/bedrock/` and `sandbox/model-access/`; the two contributors in each project.
+
+## 2026-11-19 — 9.6 and 10.4: the contributors added to `app-ml-dev` and `app-genai-dev`
+
+*Claude, the orchestrating session, read the members the user added, reads only. Times are UTC.*
+
+- **[user] The act**: *"Editei os três projetos adicionando os contributors solicitados. Pode verificar."*
+- **[Claude] The members**, read at 00:54:50: each project lists the owner, its own role, the bundle role's
+  group (`06d426f2-…`, `awsds-deploy-sandbox-test`) and Sandbox's `InfrastructureAccess` group
+  (`839bcde8-…`), both `PROJECT_CONTRIBUTOR`, as `app-etl-dev` does (Stage 20's log of the same night holds
+  the group profiles' readings).
+- **[Claude] The workgroups**, by `list-connections` at 00:55:11, refused before the membership:
+  `app-ml-dev`'s `workgroup-5rzplmk81vma34-5ae0dd6m1suvbk`, `app-genai-dev`'s
+  `workgroup-b8fz4ovppjijv4-c9sdti5d2gaqs0`.
+- **[Claude] Left**: `app-ml-dev`'s MLflow App and model package group (9.6); Nova Lite enabled (10.4);
+  9.5's pairs and 10.4's `sandbox/bedrock/` and `sandbox/model-access/`.

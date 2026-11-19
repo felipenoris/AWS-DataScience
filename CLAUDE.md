@@ -24,7 +24,7 @@ All infrastructure will be deployed in the `us-west-2` Region.
 
 ## Tools installed in the current environment
 
-`terraform` **1.16.7**, the `aws` client, `uv` **v0.12.13**, `jq`,
+`terraform` **1.16.6** (1.16.7 waits on the user's install), the `aws` client, `uv` **v0.12.13**, `jq`,
 `pre-commit` **4.6.2**, `checkov` **3.3.11** (`uv tool install`), `tflint` **v0.64.0**. Python **3.14**
 pinned by `uv` (`pyproject.toml`/`uv.lock`), `WireGuard` **v1.0.16** (App Store), `wireguard-tools` **v1.0.20260223** (homebrew) which provides the `wg` utility, `session-manager-plugin` **1.2.835.0** (homebrew cask); `ruff` lints/formats.
 
@@ -439,25 +439,26 @@ up with what each closes, and the dated deadlines.
 
 Done: 0, 1a, 1b, 1c, 1d, 2, 3, 4, 5a, 6a, 6b, 6c, 6i, 7, 16 and 18. Not started: 13, which waits on the
 domain name from the user; and 15, which nothing blocks and whose decisions 1-4 are the user's. 21's
-pass 1 was done 2026-11-18 with nothing up, its passes 2-4 in the warehouse sitting.
+pass 1 was done 2026-11-18 with nothing up, its passes 2-4 in the warehouse sitting, pass 5 in any Sandbox
+sitting.
 
 | Stage | State | What comes next |
 |---|---|---|
 | 5b, the Sandbox warehouse | Passes 0-3 applied 2026-09-20 | A warehouse sitting before 2026-12-19 (decision 9): the `max_query_execution_time` test and the `enable_large_strings_opt_in` re-plan. The bill's half of verification x after the free trial ends |
-| 6d, Unified Studio's remainder | Steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half. The pilot's domain deleted by its owner 2026-10-31; decision 6's name planned 2026-11-18 | The user's: step 2.7's acts (decision 16 (a)), 4.7's order (no condition key), the 1.1 and 1.2 attempts. A hub sitting: decision 6's apply. A Sandbox sitting: 4.7, 5.1, 6.1 (viii), 7.5's monitored half, 7.6, 7.7, 8.8's tail |
+| 6d, Unified Studio's remainder | Steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half, 2.7's steps 2 to 5 done 2026-11-18. The pilot's domain deleted by its owner 2026-10-31; decision 6's name planned 2026-11-18 | The user's: 4.7's order (no condition key), the 1.1 and 1.2 attempts. A hub sitting: decision 6's apply; a GitLab sitting: `versions.py`'s header (2.7 step 7). A Sandbox sitting: 4.7, 5.1, 6.1 (viii), 7.5's monitored half, 7.6, 7.7 |
 | 6e, Claude Code on Bedrock | A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint). Held by PR #108 | The user's: the three Claude 5.5 model agreements (decision 17), decisions 11 and 13, and decision 6's budget notification. Then 6.4's token volume |
 | 6f, the catalog over the lake | Decision 1 (b), a pilot of SMUS's native flow: step 11 done to 11.11 (2026-10-27), `curated.trades` published by `governed-lake` and subscribed by `eighth-experimentation`. Decisions 2 to 6 taken | The user's: step 2's portal acts, 11.12's rollback residue |
 | 6g, access by identity | Applied 2026-09-17, 1.4 closed on both profiles | 2.4's Athena read, which the user re-specifies. Decision 1's proxy-host replacement at the next `production/proxy/` apply, in a hub sitting |
-| 6h, the Redshift connection | Passes 0-2 done: one project writes and reads the schema `lab` through the Data page and through JupyterLab | The user's: one `UpdateConnection`, `lineageSync` off and database `sandbox` (decision 3). Then a warehouse sitting: the negatives 5.1 and 5.2b, 0.4's portal half, 6.4 |
+| 6h, the Redshift connection | Passes 0-2 done: one project writes and reads the schema `lab` through the Data page and through JupyterLab | The user's: one `UpdateConnection`, `lineageSync` off and database `sandbox` (decision 3). Then a warehouse sitting: the negatives 5.1 and 5.2b around #323's switch, 0.4's portal half, 6.4 |
 | 8, the pipelines | Passes 0-3 done; pass 4 ran with Stage 10's passes: the first promotion on 2026-10-24 (`v0.3.3`), release T's `v0.4.7` on 2026-11-15, release F's `v0.5.2` on 2026-11-16, the CI/CD CLI deploying each leg (Stage 19 4.10); xv read yes. Every decision taken | Release G's `v0.6.0` (Stage 19 decision 26 (b)): `runbooks/promotion.md` §N.8.5. What is left, in order: §N.6 |
-| 9, the deployment targets | Passes 1, 2, 3 and 5 applied; the producer path (2.4), the governed warehouse and its datashare (9.1 to 9.7) run and read to 2026-10-30. Every decision taken | The warehouse and backup sitting, 2026-11-22 to 2026-11-25 (`promotion.md` §N.8.3): `EXC-13`'s Production half. The quota cases, still `CASE_OPENED`. What is left, in order: §N.6 |
+| 9, the deployment targets | Passes 1, 2, 3 and 5 applied; the producer path (2.4), the governed warehouse and its datashare (9.1 to 9.7) run and read to 2026-10-30. Every decision taken | The warehouse and backup sitting, 2026-11-22 to 2026-11-25 (`promotion.md` §N.8.3): `EXC-13`'s Production half. What is left, in order: §N.6 |
 | 10, orchestration | Passes 1-3 done in Staging and Production; the schedules read starting both chains unattended (6.1, 2026-10-25); xx and decision 11's Staging half read 2026-11-15; since 2026-11-16 the chains of `<env>/chains/` start the CLI's workflows in both targets (Stage 19 4.11). Every decision taken | What is left, in order: `promotion.md` §N.6 |
-| 11, data protection | Pass 0 read; pass 1's data cells filters written, creating nothing. The threat model holds `TM-01`..`TM-32` | The user's: decision 12 (the filtered principal), `TM-17`, decisions 1, 2, 5 and 9. The internal-access analyzer, created after a 1st and deleted before the next: it bills on each 1st |
+| 11, data protection | Pass 0 read; pass 1's data cells filters written, creating nothing. The threat model holds `TM-01`..`TM-35` | The user's: decision 12 (the filtered principal), `TM-17`, decisions 1, 2, 5 and 9. The internal-access analyzer, created after a 1st and deleted before the next: it bills on each 1st |
 | 12, observability and FinOps | Both observability slices applied 2026-10-18; `OB-3` passes in Sandbox and fails in Production by design (`EXC-19`). The bill reads above D12's ceiling: 53.31 USD in August and 74.48 in September | A hub sitting: the three `[D]` hosts' alarm actions, the proxy's `notBreaching` (decision due 1 (b)). The user's: decision due 3 and D12's fired revision trigger |
 | 14, Sandbox vending | The pre-vend half done 2026-10-18 (`./aws/vending.py`, `VN-1`..`VN-6`); the rest blocked on the account quota | The user's: the account quota and D34's rung |
-| 17, machine learning in Sandbox | Pass 0 in progress; `MLflowApp` and `AmazonBedrockKnowledgeBase` enabled, `ml-demo-mlflow` created, five models enabled, the playground answering (7.3). Passes 9 and 10 (`app-ml`, `app-genai`) decided (14 to 28); 9.1 to 9.4 and 10.1 to 10.3 done 2026-11-17 with nothing up, the lint pinned at `37cb5a6`, and 9.5 applied and `TM-33` accepted the same day; Stage 10 decision 22 revised, a trained model promoted | Sandbox sittings B and C (`promotion.md` §N.6 items 7, 8): 1.4, 1.6, 9.6, 10.4. The user's: the projects `app-ml-dev` and `app-genai-dev` and 0.9's portal reading. 4.1's endpoint will stay up, past the close too, unseen by `make status` (decisions 5, 6) |
+| 17, machine learning in Sandbox | Pass 0 in progress; `MLflowApp` and `AmazonBedrockKnowledgeBase` enabled, `ml-demo-mlflow` created, five models enabled, the playground answering (7.3). Passes 9 and 10 (`app-ml`, `app-genai`) decided (14 to 28); 9.1 to 9.4 and 10.1 to 10.3 done 2026-11-17 with nothing up, the lint pinned at `37cb5a6`, and 9.5 applied and `TM-33` accepted the same day; Stage 10 decision 22 revised, a trained model promoted | Sandbox sittings B and C (`promotion.md` §N.6 items 7, 8): 1.4, 1.6, 9.6, 10.4. The user's: `app-ml-dev`'s MLflow App and Nova Lite (9.6, 10.4), and 0.9's portal reading. 4.1's endpoint will stay up, past the close too, unseen by `make status` (decisions 5, 6) |
 | 19, a data product on SMUS's native path | Decision 6 (b), the AWS model: a deployment project per target. Passes 1 and 2 run (2026-11-10, 2026-11-14), the product curated in `app-etl-dev` (steps 15 and 17), `TM-31` accepted and the start grant kept in Production alone (2026-11-15). Release T run 2026-11-15. Release F's `v0.5.2` through both targets 2026-11-16 (pipeline #129): the CLI deploying and importing the catalog in `deploy-staging` and `deploy-production`, Production's asset listed with `dev`'s metadata, and step 8's cut-over done, release T's Production slices destroyed and `production/chains/` applied. A data product's name is the domain's (`SUP-369`): decision 26 (b) gives it to Production's `publish` task, release G written 2026-11-16 (PR #307), its `production/studio/` applied 2026-11-17. Decisions 1 to 27 taken, 7 and 8 moot; 27's (d), an account-level log retention policy, waits on the AWS provider (`EXC-25`). Step 9's warehouse sitting run 2026-11-16, xxxii yes; xvii, xxi's domain half, xxii, xxiii and xxx read the same day with nothing up | Release G's sitting (§N.8.5): step 1 done and PR #307 merged on 2026-11-16, step 3 (`production/studio/`) applied 2026-11-17; then, with the hub and GitLab up, the mirror, the template's merge request and the tag `v0.6.0`. The user's: the RAM share at version 12 and decision 15 (d)'s designation before 4.12, xxvi before the membership; pass 5 before 2026-12-19 |
-| 20, dbt and its lineage in the catalog | Decisions 1 to 7, 9 to 11 and 13 to 17 taken; pass 1 and 4.1 to 4.4 done 2026-11-17 (`TM-35`); on 2026-11-18 `app-dbt` in three stages and pass 8 written, its `[P]` slices applied (8.4) | The user's: the project `app-dbt-dev` and the merge of `awsds-workflows` #28 (17 (b)). Sandbox sitting A (§N.6 item 6): passes 2 and 3 and 4.5. Pass 8 after §N.6 item 10, before 2026-12-18 |
+| 20, dbt and its lineage in the catalog | Decisions 1 to 7, 9 to 11 and 13 to 17 taken; pass 1 and 4.1 to 4.4 done 2026-11-17 (`TM-35`); on 2026-11-18 `app-dbt` in three stages and pass 8 written, its `[P]` slices applied (8.4) | The user's: 8.3's two calls named. Sandbox sitting A (§N.6 item 6): passes 2 and 3 and 4.5. Pass 8 after §N.6 item 10 (PR #321), before 2026-12-18 |
 
 #### The estate between sittings
 
@@ -542,7 +543,7 @@ The table is a first look by situation; the numbered list below it is complete.
 
 | When about to | Lessons |
 |---|---|
-| Write or read a check, a probe or a proof | 2, 13, 20, 21, 22, 24, 26, 30, 31, 50, 54, 62, 71, 77, 78, 80 |
+| Write or read a check, a probe or a proof | 2, 13, 20, 21, 22, 24, 26, 30, 31, 50, 54, 62, 71, 77, 78, 80, 87 |
 | Write a policy, a grant or a role, or say what a principal can do | 5, 11, 14, 17, 18, 28, 29, 66, 67, 70, 72, 75, 80, 82, 85 |
 | Move, rename or share something across accounts, or borrow a session | 3, 9, 10, 25, 48 |
 | Change Terraform, a module, a host or the toolchain | 4, 8, 27, 33, 35, 47, 49, 51, 58, 59, 64, 65, 68, 69, 73, 76, 79 |
@@ -550,6 +551,7 @@ The table is a first look by situation; the numbered list below it is complete.
 | Touch the network, the proxy or a client | 40, 42, 43, 44, 45, 53, 55, 56 |
 | Run a command or write a script | 46, 47, 52, 83, 84 |
 | Write the plan, a record or a decision, or read a vendor page | 1, 6, 7, 12, 15, 19, 32, 34, 37, 38, 41, 57, 85 |
+| Act on a reply that reports an act: a merge, an apply, a membership | 38, 86 |
 
 1. **A copy of governed data somewhere less governed is not a hole to be closed.**
 2. **A stand-in sharing an account with what it de-risks proves nothing about permissions.**
@@ -700,3 +702,7 @@ The table is a first look by situation; the numbered list below it is complete.
 84. **The laptop's shell is zsh, and a command written as bash expands to another string before it
     runs.**
 85. **A name has a composer, and a record that infers it from the name's shape credits the default.**
+86. **A reply that reports an act names the act, never its object — read the object before the step that
+    consumes it.**
+87. **A gate written against the first application's shape fails on the next one's edge — run it on the new
+    shape, its empty cases included, before the application rides it.**

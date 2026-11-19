@@ -3831,3 +3831,372 @@ the laptop. Times are UTC.*
   (`SUP-168`). Each *Update project* is pressed by the project's owner, or the operator is made owner of
   each project, a membership its owner grants; one call per project by the operator as a contributor is
   refused. `SUP-157` gains the reading; the stage file's 2.7 and the waiting list's row follow.
+
+## 2026-11-18 — 2.7 step 3: decision 16 (a)'s code written and planned, not applied
+
+*Claude, a subagent of the orchestrating session, in a worktree of its own, on the laptop with nothing up;
+the orchestrating session reviewed the diff, pushed the branch and opened the pull request. The
+infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-data`, Terraform 1.16.6.
+Plans only, no AWS write. Times are UTC.*
+
+- **[Claude] The baseline**, 16:23: `data-governance/governance/` planned from `main` at `df49898b`,
+  unmodified: `No changes. Your infrastructure matches the configuration.`
+- **[Claude] The code** (branch `claude/plano-estagios-execucao-5f64d8-6d-step3`, commit `e50e4246`):
+  `enableSpaces` `"false"`, locked, the last row of `tooling_parameters`, so `tooling_with_spaces_off` and its
+  concat go and `lake-publishing`, `deployment-staging` and `deployment-production` pass `tooling_parameters`
+  alone; `profiles.tf`'s mode rule `ON_CREATE` for `Tooling` and `SageMakerAIDomain`; the order rule
+  unchanged, `SageMakerAIDomain` at 13.
+- **[Claude] The plan**, 16:33 (16:28 read the same): `Plan: 0 to add, 1 to change, 0 to destroy.`,
+  `awscc_datazone_project_profile.this["experimentation"]` in place. `environment_configurations[0]`
+  (`Tooling`, order 0, `ON_CREATE`) goes from six overrides to seven, `enableSpaces` `"false"` with
+  `is_editable` false at index 6; `environment_configurations[13]` (`SageMakerAIDomain`) goes from
+  `ON_DEMAND` to `ON_CREATE`, its fourteen overrides unchanged. Elements 1 to 12 and the fourteen
+  `environment_configuration_id`s are unchanged, nothing is `after_unknown`, every other resource is a
+  no-op. The plan's `resolved_parameters` for `Tooling` still reads `enableSpaces` `"true"`, a value the
+  provider owns (Lesson 27).
+- **[Claude] With Stage 21's switch on**, 16:30, `-var redshift_serverless_enabled=true`: `1 to change`,
+  `experimentation` alone, the same two changes and element 14, `RedshiftServerless`, `ON_DEMAND`,
+  `redshiftBaseCapacity` and `redshiftMaxCapacity` 4, both locked.
+- **[Claude] The gates**: `make check` printed `check: OK`; `pre-commit run --files` on the two files, 15
+  hooks passed and 14 skipped with no files.
+- **[Claude] A reading the step did not name**: the portal refused Workflows in Stage 18's `deployment`
+  project (2026-10-20), whose `Tooling` locks `enableSpaces` `false`, and it reads the live profile with no
+  *Update project* (Stage 17 7.2). Step 3 gains the reading right after the apply: *Workflows* and *Code
+  spaces* opened in one Sandbox project.
+- **[Claude] The pull request**: [#322](https://github.com/felipenoris/AWS-DataScience/pull/322), a draft,
+  merged with the apply after step 2's acts (Lesson 69), and before any other session plans `governance/`
+  from `main` after it (Lesson 79).
+
+## 2026-11-18 — the log review's records for this stage: `SUP-379` and `TM-34`
+
+*Claude: a subagent of the orchestrating session wrote the records and read the page; the orchestrating
+session wrote this entry and took the commit into pull request #320. On the laptop, no AWS call.*
+
+- **[Claude] `SUP-379`**, written from 2.6's readings of 2026-10-30 (two entries) and 2.7 step 1's reading
+  (i): a blueprint domain's `ProjectS3Path` is the projects bucket's root `shared/`, which the project role
+  lists and can neither read nor write. The blueprint's admin guide page, read again on 2026-11-18, names no
+  S3 path, prefix or `ProjectS3Path` (`REFERENCES.md`).
+- **[Claude] `TM-34`**, brought to decision 17's control reading of 2026-11-18: no condition key exists for
+  `StartNotebookRun`, so the domain-level VPC is the control left, and 4.7's negative, a project-role run
+  asking for `PUBLIC_INTERNET_ONLY` once `L-85C9EC5A` is above 0, is what shows it binds.
+
+## 2026-11-18 — the application projects ordered after 2.7's step 5
+
+*The user, in the orchestrating session's chat, at about 17:02 UTC; recorded by Claude, the orchestrating
+session. No AWS call.*
+
+- **[user] The order**, on Claude's recommendation that the three application projects be created once
+  step 3's apply and step 5's throwaway project have run, so that each is born with the blueprint's domain
+  alone and takes none of steps 2, 4 and 6: *"Podemos criar os apps após os passos indicados, conforme sua
+  recomendação."* `app-dbt-dev` (Stage 20 2.0), `app-ml-dev` (Stage 17 9.6) and `app-genai-dev` (Stage 17
+  10.4) wait on step 5; the three stage files, the waiting list and `promotion.md` §N.6 item 2 follow.
+- **[Claude] A count corrected in step 2**: its readings ran `US-5` and `US-7` "at four domains", the count
+  of 2026-10-30, when `eighth-experimentation` alone was to take the act; with `app-etl-dev` created on
+  2026-11-14 and the pilot deleted on 2026-10-31, step 2 leaves six, two per project.
+
+## 2026-11-18 — 2.7 step 2: the blueprint's domain created in the three projects
+
+*The user, from each project's portal page; Claude, the orchestrating session, read the result as the
+infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1` (Sandbox) and
+`awsds-infra-data` (Data Governance). Reads only. Times are UTC.*
+
+- **[user] The three presses**, *Code spaces → SageMaker AI domain actions → Create SageMaker AI domain*,
+  reported as *"Criei os domínios: eighth-experimentation-ai-domain, test-experimentation-ai-domain,
+  app-etl-dev-ai-domain"*. Each environment is `ACTIVE`, its `CREATE` deployment `SUCCESSFUL`, its stack
+  `DataZone-Env-<environment>` `CREATE_COMPLETE`:
+
+  | Project | Environment | Created, `updatedAt` | Stack created | Domain | Domain created |
+  |---|---|---|---|---|---|
+  | `eighth-experimentation` | `51kcahjgij7ua8` | 18:16:05, 18:16:49 | 18:16:17 | `d-m8m0uefej9kb` `eighth-experimentation-ai-domain` | 18:16:23 |
+  | `test-experimentation` | `61sozk11eycnm8` | 18:20:22, 18:21:07 | 18:20:35 | `d-jaid1tvg20jv` `test-experimentation-ai-domain` | 18:20:40 |
+  | `app-etl-dev` | `3oog3xvtbf43dc` | 18:23:38, 18:24:22 | 18:23:50 | `d-kr8cbbohordz` `app-etl-dev-ai-domain` | 18:23:55 |
+
+  The three environments' `environmentConfigurationId` is `ffd41bb5-2a39-4f0f-b895-32feeeeacd83`,
+  `experimentation`'s `SageMakerAIDomain` element at order 13, the id step 3's plan keeps.
+- **[Claude] The domains against the pilot's reading** (2026-10-30, `d-odhynkcev3yw`), equal on every field
+  that entry names: `InService`, `AuthMode` `IAM`, `VpcOnly` on the project's two subnets and one group, no
+  EFS, the project role as the execution role of users and spaces, `CustomImages` naming
+  `awsds-sandbox-dev-env` at `ImageVersionNumber` 11 on JupyterLab and Code Editor, `DefaultResourceSpec` at
+  version 11's ARN on both, idle `ENABLED` 60/60/120, EBS 16 and 100, the portal's four hidden lists empty,
+  `ExecutionRoleSessionNameMode` `USER_IDENTITY`, no RStudio setting, `AppSecurityGroupManagement` unset.
+  Not in that entry: `DockerSettings.EnableDockerAccess` `ENABLED`, read on all six domains.
+- **[Claude] The stacks' parameters**, alike but for each project's ids, group, role and name: the image
+  lists `awsds-sandbox-dev-env;awsds-sandbox-dev-env-jupyterlab;11` and `…-codeeditor;11`, the default-image
+  ARNs at version 11, idle 60/60/120, lifecycle `ENABLED`, `maxEbsVolumeSize` 100, `enableRStudio` `false`,
+  `hiddenInstanceTypes` empty.
+- **[Claude] `SUP-379` on three more domains, and where its value is composed**: `ProjectS3Path`
+  `s3://awsds-sandbox-smus-projects/shared/` on the three, where the projects' `Tooling` domains carry
+  `<domain>/<project>/dev`. `get-template` on `DataZone-Env-61sozk11eycnm8`: one resource,
+  `AWS::SageMaker::Domain`, with no `UnifiedStudioSettings`; its tag `ProjectS3Path` is `s3://`, the bucket's
+  name split from `sageMakerUnifiedStudioToolingS3BucketArn`, and `/shared/`, the value `describe-domain`
+  answers. The project's prefix arrives as `sageMakerUnifiedStudioProjectRepositoryLocation`
+  (`s3://awsds-sandbox-smus-projects/<domain>/<project>/shared`) and becomes
+  `DefaultUserSettings.CustomFileSystemConfigs`, an S3 mount at `shared`, the URI `test-experimentation`'s
+  `Tooling` domain mounts. A space's `shared` mount is the project's own prefix; only the tag names the root.
+  `SUP-379` gains the reading.
+- **[Claude] The instruments**: `./aws/studio.py` at 18:30: six domains in Sandbox, two per project; `US-5`
+  and `US-7` `pass` on the six (`VpcOnly`, `ENABLED/60min ceiling=120min`); `US-3` at 14; `0 check(s)
+  FAILED`. The persona and Control Tower Admin profiles did not authenticate (*"Token for awsds-scientist does
+  not exist"*), their sessions not signed in. `release/versions.py retire --keep 10 --dry-run --target
+  awsds-infra-sandbox-1` keeps version 11, and `list-image-versions` reads 11 alone, `CREATED`: the image's
+  only version since 2026-11-03 (Stage 8's log). No space and no app in Sandbox.
+- **[Claude] Step 1's reading (ii) becomes readable**: each project holds two domains until its *Update
+  project* (steps 4 and 6), so the domain the automatic default space and the Query editor's app land in is
+  read from `CreateSpace` in Sandbox's trail at the user's next visit to a project, before that press.
+- **[Claude] Step 3's lock check**, 18:30:19, from pull request #322's branch through `awsds-infra-data`:
+  `Plan: 0 to add, 1 to change, 0 to destroy.`, the plan of 16:33. Saved to the scratchpad, not applied.
+- **[Claude] A check id corrected in steps 7 and 8 and decision 16**: written 2026-10-30, they name `US-11`
+  for each blueprint domain's image version against the profile's pin; `./aws/studio.py` has given `US-11`
+  to the deployment targets' projects since Stage 19, so the image check takes `US-13`, the next free id.
+
+## 2026-11-18 — 2.7 step 3 applied: `SageMakerAIDomain` `ON_CREATE` beside a `Tooling` with spaces off
+
+*The user authorized the apply in this session's chat, *"Autorizo apply do #322"*; Claude, the orchestrating
+session, ran it from pull request #322's worktree as the infrastructure user, permission set
+`InfrastructureAccess`, through `awsds-infra-data`, Terraform 1.16.6. Times are UTC.*
+
+- **[Claude] Other sessions**: none was running on the machine, read before the apply.
+- **[Claude] The first attempt**, 18:43:07: the plan stopped on *"No valid credential sources found"*, *"failed
+  to refresh cached credentials, refresh cached SSO token"*. The `awsds` session's token had expired at
+  18:33:56 while `aws sts get-caller-identity` still answered from the cached role credentials. Nothing
+  ran against AWS.
+- **[user] The login**, `./aws/login.py`, as the infrastructure user.
+- **[Claude] The lock check**, 18:44:31, saved: `Plan: 0 to add, 1 to change, 0 to destroy.`,
+  `awscc_datazone_project_profile.this["experimentation"]` in place. `Tooling` (element 0) goes from six
+  overrides to seven, the last `enableSpaces` `"false"` with `is_editable` false. `SageMakerAIDomain`
+  (element 13) goes from `ON_DEMAND` to `ON_CREATE`. The fourteen configuration ids are unchanged and
+  nothing is `after_unknown`: the plan of 16:33.
+- **[Claude] The apply** of the saved plan, 18:45:21 to 18:45:40: *"Modifications complete after 7s
+  [id=dzd-d8yrvx1ko7im6o|dh60xbal05q64w]"*, `Apply complete! Resources: 0 added, 1 changed, 0 destroyed.`
+  `UpdateProjectProfile` accepted a second `ON_CREATE` element after twelve `ON_DEMAND` ones, the reading
+  step 3 named.
+- **[Claude] Read back**: the re-plan at 18:45:57 printed `No changes. Your infrastructure matches the
+  configuration.` `get-project-profile` reads `lastUpdatedAt` 18:45:34.186 and `Tooling` and
+  `SageMakerAIDomain` `ON_CREATE` at orders 0 and 13, every other element `ON_DEMAND`. `enableSpaces` is
+  `false` with `isEditable` false in both `parameterOverrides` and `resolvedParameters`, where the plan's
+  `resolved_parameters` still showed `"true"` (Lesson 27). The configuration ids match the plan's, the
+  blueprint's `ffd41bb5-…` among them.
+- **[Claude] Pull request #322**: its body gained the apply's readings, and it was marked ready for review.
+  It merges after the user's reading of *Workflows* and *Code spaces*, so the revert stays one apply from
+  `main` until then.
+- **[Claude] The texts the apply made stale**, from step 7's list: `docs/SMUS.md`'s profile paragraph, its
+  `Tooling` parameter table, its roster's `SageMakerAIDomain` and `Tooling` rows and the attachment
+  paragraph, and `AWS_STATE.md`'s registry row. `terraform-live/README.md`'s `sandbox/dev-env/` paragraph
+  waits on steps 4 to 6, and `sagemaker-prereqs`'s roster comment on the module's next tag.
+
+## 2026-11-18 — 2.7 step 3's portal reading: *Workflows* opened after the apply
+
+*The user, in `test-experimentation`'s portal page after 18:50 UTC; Claude, the orchestrating session,
+read the stack, the domains and the trail through `awsds-infra-sandbox-1`. Reads only. Times are UTC.*
+
+- **[user] The reading**, reported as *"Workflows abriu"*: the tool opened in `test-experimentation` after
+  the apply, where Stage 18's `deployment` project had answered *"Spaces are not enabled in this project
+  profile"*.
+- **[Claude] What it settles**: `test-experimentation`'s `Tooling` stack `DataZone-Env-bi356s1sacz0cw` is
+  `CREATE_COMPLETE` and was never updated, so its deployed `enableSpaces` is still `true` and its domain
+  `d-lfgbdrjncmsu` stands. The profile's locked `false` alone did not close the tool, so the tool does not
+  read the profile's override, unlike the Generative AI menu (Stage 17 7.2). Whether it counts the
+  blueprint's domain is read after step 4's *Update project*, which deploys `enableSpaces` `false` into the
+  environment, and on step 5's throwaway project, born under the new profile.
+- **[Claude] What step 4 meets**: each `Tooling` domain holds one user profile, `28f1b390-…`, named by the
+  identity that created the three blueprint environments, created 2026-08-23 (`d-p6gthxc82ckg`), 2026-10-15
+  (`d-lfgbdrjncmsu`) and 2026-11-14 (`d-spi9kgo6x5b4`); the blueprint domains hold none; Sandbox holds no
+  space and no app.
+- **[Claude] The trail**, at 19:07: no `CreateSpace` and no SageMaker call in Sandbox since 18:46 but
+  Claude's `ListSpaces` at 18:50. The visit's calls may still be inside CloudTrail's delivery delay, so
+  step 1's reading (ii) is read again with step 4's.
+
+## 2026-11-18 — 2.7 step 4: *Update project* on `test-experimentation` keeps its `Tooling` domain
+
+*The user merged pull request #322 and pressed *Update project* in the portal; Claude, the orchestrating
+session, read the merge with `gh` and the result through `awsds-infra-data` (Data Governance) and
+`awsds-infra-sandbox-1` (Sandbox), permission set `InfrastructureAccess`. Reads only. Times are UTC.*
+
+- **[Claude] The pre-read**: the `Tooling` stack `DataZone-Env-bi356s1sacz0cw` against the profile's 26
+  resolved `Tooling` parameters: `enableSpaces` alone differed, `true` deployed and `false` resolved.
+- **[user] The acts**, reported as *"Fiz o merge e rodei o update do projeto. Entrando em Spaces -> Create
+  space, o formulário lista `test-experimentation-ai-domain` bem como `SageMakerUnifiedStudio...dev`."*
+- **[Claude] The merge**: #322 `MERGED` at 19:13:49, squashed into `3dd3863e` on `main`.
+- **[Claude] The calls**: `UpdateProject` at 19:14:47 in Data Governance, `projectProfileVersion` `latest`,
+  carrying for the `Tooling` environment its ten editable parameters, `enableSpaces` not among them. The
+  provisioning role's `UpdateStack` on the `Tooling` stack at 19:15:16, 57 parameters, whose values CloudTrail
+  does not record. The stack's events: `UPDATE_IN_PROGRESS` *"User Initiated"* 19:15:16, *"Transformation
+  succeeded"* 19:15:20, `UPDATE_COMPLETE_CLEANUP_IN_PROGRESS` 19:15:28, `UPDATE_COMPLETE` 19:15:29, and no
+  resource event. Three more `UpdateStack` calls, at 19:16:15 twice and at 19:17:17, answered *"No updates
+  are to be performed."* The environment's deployment `bed3kc57…` read `UPDATE` `SUCCESSFUL` at 19:15:48,
+  the blueprint's environment `61sozk11eycnm8` the same at 19:17:28, and the project `lastUpdatedAt` 19:17:54.
+- **[Claude] The result**: the stack still deploys `enableSpaces` `true`; the domain `d-lfgbdrjncmsu` and its
+  user profile stand; *Create space* offers both domains. The environment stores `enableSpaces` in its own
+  `userParameters` as `defaultValue` `"true"`, `isEditable` false, the value resolved at its creation on
+  2026-10-15, before the profile overrode it, and the update re-deployed that copy. `SUP-380` records it,
+  and Lesson 63 gains the reading.
+- **[Claude] Step 1's reading (ii)**: at the user's two visits, 19:06:53 to 19:07:25 and 19:34:37 to
+  19:34:53, the portal called `DescribeSpace` and `CreatePresignedDomainUrl` for `default-<user id>` in the
+  `Tooling` domain alone, each `ResourceNotFound`, through the project role. It made no call on the
+  blueprint's domain and no `CreateSpace`. With both domains, the portal's default space is the `Tooling`
+  domain's.
+- **[Claude] What follows**: step 4's two exits do not arise, and step 6 would retire nothing. The living
+  projects' second domain is the user's decision. Step 5's throwaway project, born with `enableSpaces`
+  `false`, reads what the application projects will meet: *Workflows* and the portal's default space with
+  the blueprint's domain alone. The user offered a Chrome session for the portal; the readings needed none.
+
+## 2026-11-18 — 2.7 step 5: `throwaway-6d`, a project born with the blueprint's domain alone
+
+*The user, in the portal; Claude, the orchestrating session, read the result as the infrastructure user,
+permission set `InfrastructureAccess`, through `awsds-infra-data` (Data Governance) and
+`awsds-infra-sandbox-1` (Sandbox), from 21:52 UTC. Reads only. Times are UTC.*
+
+- **[user] The acts**, reported as *"Notei que a tela de criação de projeto tem parâmetros opcionais para
+  definir `SageMakerAIDomain`. Eu não preenchi. Criei o projeto `throwaway-6d`. Na aba `Code Spaces`, o
+  formulário de criação do space deixou de oferecer um campo de `domain`. [...] Criei um space de teste
+  para você tentar ver via AWS CLI em qual domain ela se encontra. [...] tento no `test-experimentation`
+  quanto no projeto novo `throwaway-6d`, na tela de workflows eu não vejo nenhuma configuração para
+  parametrizar o domain."* The user offered a Chrome session; the readings needed none.
+- **[Claude] The project and its environments**: `throwaway-6d` (`b94v2p77d11oy8`), created at 21:43:54 from
+  `experimentation` by the user's identity, overall deployment `SUCCESSFUL` at 21:46:29. `Tooling`
+  (`cc1e2f06mdfcpc`) created at 21:43:57, its stack `DataZone-Env-cc1e2f06mdfcpc` at 21:44:09, `ACTIVE` at
+  21:45:12. `SageMakerAIDomain` (`4un4zz4uj62nww`, configuration `ffd41bb5-…`) created at 21:45:29, its
+  stack at 21:45:40, `CreateDomain` at 21:45:46 by `awsds-sandbox-smus-provisioning` through DataZone,
+  `ACTIVE` at 21:46:12. The blueprint's environment starts once `Tooling`'s is `ACTIVE`.
+- **[Claude] `Tooling` exports no domain**: its `userParameters` hold `enableSpaces` `false`, `isEditable`
+  false, from birth; its stack's 65 parameters carry `enableSpaces` `false`; its 13 resources hold no
+  `AWS::SageMaker::Domain`, Stage 18's Staging shape (`SUP-160`), and its provisioned resources no
+  `sageMakerDomainId`.
+- **[Claude] The blueprint deploys without it**: its stack's 30 parameters equal `test-experimentation`'s
+  (`DataZone-Env-61sozk11eycnm8`, step 2) but for the project's ids, its security group, its role, its
+  `shared` prefix and an empty `domainName`, so the blueprint takes the role, the group, the subnets, the
+  key and the bucket from `Tooling`, never a domain. The domain `d-tzzj1mqagk9d`, `InService`, equals
+  `d-jaid1tvg20jv` field by field once the ids are set aside: `IAM`, `VpcOnly`, the house image version 11,
+  Docker `ENABLED`, no EFS, the `shared` mount at the project's prefix, the tag `ProjectS3Path` at the
+  bucket's root (`SUP-379`).
+- **[Claude] The creation form's parameters**: the `SageMakerAIDomain` element offers five editable ones,
+  `domainName`, the two idle timeouts (60), `hiddenInstanceTypes` and `hiddenSageMakerImageVersionAliases`
+  (empty), and the portal sent the two timeouts. With `domainName` empty the domain is named
+  `SageMakerUnifiedStudio-b94v2p77d11oy8-4un4zz4uj62nww-dev`, the `Tooling` domains' pattern. The tag
+  `AmazonDataZoneBlueprint` tells the two kinds apart: `SageMakerAIDomain` on this one, `Tooling` on
+  `d-lfgbdrjncmsu`.
+- **[Claude] The deployer's refused `ListTags`**: at 21:45:58, 12 s after `CreateDomain`,
+  `awsds-sandbox-smus-provisioning` through DataZone was refused `sagemaker:ListTags` on the new domain,
+  *"no identity-based policy allows the sagemaker:ListTags action"*. The same refusal stands at 18:16:36,
+  18:20:53 and 18:24:08 on step 2's three domains. `SageMakerStudioProjectProvisioningRolePolicy` v86, the
+  role's only policy, carries no `sagemaker:ListTags`, and each environment went `ACTIVE`. `SUP-381`
+  records it.
+- **[Claude] Code spaces**: the user's space `test` is in `d-tzzj1mqagk9d`, the project's only domain, so
+  *Create space* shows no selector. The calls, by the project role from the browser: five
+  `DescribeUserProfile` refused from 21:46:44 to 21:46:58 on the user's profile in that domain, which did
+  not exist yet; `CreateSpace` at 21:47:31 (JupyterLab, the house image version 11, `ml.t3.medium`, EBS 16,
+  idle 60, `spaceManagedResources` `ENABLED`, the `shared` mount at the project's prefix, remote access
+  `DISABLED`, `Private`); in the same second `CreateUserProfile` for the user, invoked by
+  `sagemaker.amazonaws.com`, and at 21:47:35 `CreateApp`, invoked the same way. Each carries the project's
+  tags, `AmazonDataZoneBlueprint` `SageMakerAIDomain` and `ProjectS3Path` at the root. At 21:48:05 the same
+  role's `DescribeUserProfile` on the same ARN answered: the ML policy v48 allows it only where the
+  profile's `AmazonDataZoneProject` tag equals the role's, and an absent profile has no tag (Lesson 80 gains
+  the reading). `test-experimentation`'s role met the same five refusals from 21:49:12 to 21:49:25 on
+  `d-jaid1tvg20jv`, where the user holds no profile: *Create space* probing the blueprint's domain.
+- **[Claude] The portal's default space**: `CreatePresignedDomainUrl` for `default-<user id>` in
+  `d-tzzj1mqagk9d` at 21:48:13, 21:48:26 and 21:48:36, each `ResourceNotFound`, and no `CreateSpace` for
+  it. With one domain, the portal looks for its default space in the blueprint's.
+- **[Claude] Workflows opened**: `throwaway-6d`'s role called `ListWorkflows` and `ListWorkflowRuns` from
+  21:48:11 to 21:48:58, each answered, and was refused `GetWorkflow` on nine other workflows in the account;
+  `test-experimentation`'s role read its own `houseprice_etl` at 21:49:42 and was refused eight others, each
+  role reading its own project's alone. Stage 18's *"Spaces are not enabled in this project profile"* did
+  not recur: the tool opens on a `Tooling` that holds `enableSpaces` `false` when the blueprint's domain is
+  beside it (`SUP-160` gains the reading). It has no domain field, since a workflow runs on MWAA Serverless
+  with the project role and in no space.
+- **[Claude] The app**: `CreateApp` at 21:47:35, `Pending` at 21:56:30, the container's first log line at
+  21:56:50, `PostStartup` at 21:59:28 timing out on the domain's feature flags (*"Failed to fetch domain
+  page: <urlopen error timed out>"* on `dzd-d8yrvx1ko7im6o.sagemaker.us-west-2.on.aws`) with the hub and
+  `sandbox/egress` down, `InService` at 22:01:11. `make status`, ending at 21:58:36, read every slice down
+  and 0.0000 USD/h; the app bills 0.050 USD/h outside it (`docs/PRICING.md`), which `US-10` sees.
+- **[Claude] What it settles**: a project created under the profile works as the application projects will.
+  It holds one domain, the blueprint's; its first space creates the user's profile; the portal's default
+  space and *Workflows* find what they need. Step 5's portal half is done. Next the user deletes the space
+  `test`, then the project, and Claude reads the deletion's residues (`EXC-10`'s groups, the projects
+  bucket's prefix).
+
+## 2026-11-18 — `make status` reads the Studio apps
+
+*Claude, the orchestrating session, on the user's request in this session's chat: *"Altere o `make status`
+para listar os apps, com uma estimativa do que é cobrado pelo app. (Me refiro ao code space que está em
+execução no momento)"*. Reads only, through the five infrastructure profiles. Times are UTC.*
+
+- **[Claude] The change**: `scripts/slices.py status` calls `list-apps` in every account it covers and
+  prints each app whose status bills (`Pending`, `InService`, `Deleting`) with its instance type, its rate
+  from `docs/PRICING.md` 3 and 8, and its spend since its creation, and adds the rate to the burn. A pair
+  with no measured row prints *"rate unmeasured"* and makes the total a floor; an account it cannot read is
+  `UNREADABLE`, as a slice is.
+- **[Claude] The reading**, the run started at 22:26:06: *"studio/sandbox/test UP JupyterLab ml.t3.medium
+  0.0500 USD/h, about 0.03 USD so far since 2026-11-18 21:47 UTC, domain d-tzzj1mqagk9d"*, *"no Studio app
+  billing in data-governance, identity, production, staging"*, and *"estimated burn: USD 0.0500/h"*, where
+  the run that ended at 21:58:36 read 0.0000.
+
+## 2026-11-18 — 2.7 step 5 closed: `throwaway-6d` deleted, its residues read
+
+*The user deleted the space and the project in the portal. Claude, the orchestrating session, read the
+deletion and what it left, reads only, through `awsds-infra-sandbox-1` and `awsds-infra-data`. Times are
+UTC.*
+
+- **[user] The acts**: *"Apaguei o espaço test e o projeto throwaway-6d"*.
+- **[Claude] The user's calls**: in Sandbox, `DeleteApp` on the space `test`'s JupyterLab app at 22:56:29
+  and `DeleteSpace` at 22:56:34, by the project role from the browser; in Data Governance, `DeleteProject`
+  at 22:57:05 with `skipDeletionCheck` `true`, by `awsds-data-studio-domain-execution` from the browser.
+- **[Claude] The deletion's order**: the provisioning role, session `AmazonDataZoneEnvironmentDeployer-*`,
+  its calls marked `datazone.amazonaws.com`, called `DeleteStack` on the blueprint's
+  `DataZone-Env-4un4zz4uj62nww` at 22:58:34, then `DeleteUserProfile` (the profile the space's creation
+  made) and `DeleteDomain` on `d-tzzj1mqagk9d`, both at 22:58:37; the stack deleted its one resource,
+  `AWS::SageMaker::Domain`, from 22:58:36 to 22:58:48. The project role deleted its own Access Grants
+  location at 22:59:30. `DeleteStack` on the `Tooling`'s `DataZone-Env-cc1e2f06mdfcpc` followed at
+  22:59:45: twelve of its thirteen resources deleted by 23:00:12, `ToolingCloudWatchLogGroup`
+  `DELETE_SKIPPED`. `get-project` answered *"Project not found"* at 23:05:07.
+- **[Claude] What is gone**: the domain, its space and its user profile. No
+  `security-group-for-*-nfs-` group of the domain is left, the six living domains keeping theirs, and the
+  account holds no EFS file system, a Unified Studio domain having none (no `HomeEfsFileSystemId`). The
+  project role and both Bedrock roles answer `NoSuchEntity`; the two Athena workgroups, the Glue
+  connections, the schedule group and the Lake Formation registration of `dev/` are gone; `list-permissions`
+  returns 42 permissions in the account, none naming the project.
+- **[Claude] What stays** (`SUP-165` gains the reading): the log group `datazone-b94v2p77d11oy8-dev`, 731
+  days and 0 bytes (`SUP-174`); the domain's three streams in `/aws/sagemaker/studio`, which never expires
+  (`EXC-10`); the prefix `dzd-d8yrvx1ko7im6o/b94v2p77d11oy8/` in `awsds-sandbox-smus-projects`, five current
+  objects and 87,233 bytes written at the project's creation (the `dev/` and `shared/` markers,
+  `shared/.libs.json`, `README.md` and `getting_started.ipynb`), which the bucket's lifecycle, expiring
+  noncurrent versions alone, never removes; and the domain's `IAM` user profile of the deleted project role,
+  `ACTIVATED`.
+- **[Claude] The creation's one refusal**, read in the same trail: the project role's first
+  `CreateAccessGrantsLocation`, at 21:45:04, was refused `AccessDenied`, and its retry at 21:45:08 answered.
+- **[Claude] The burn**: `./scripts/slices.py status --env sandbox`, ending at 23:07:30, read every slice
+  down, *"no Studio app billing in sandbox"* and *"estimated burn: USD 0.0000/h"*.
+- **[Claude] What it settles**: step 5 is done. The three application projects follow, `app-dbt-dev`,
+  `app-ml-dev` and `app-genai-dev`, created by the user from `experimentation` with their contributors.
+
+## 2026-11-18 — 2.7: the living projects keep both domains, and step 7's texts and `US-13`
+
+*The user's decision in this session's chat. Claude, the orchestrating session, wrote the records and
+step 7 with no AWS write, reading as `awsds-infra-data` and `awsds-infra-sandbox-1`. Times are UTC.*
+
+- **[user] The decision**, on the waiting list's row for the living projects' second domain: *"(A)"*.
+  Both domains stay in `eighth-experimentation`, `test-experimentation` and `app-etl-dev`; a member
+  creates a space in the blueprint's domain by choice in *Create space*, and the portal's default space
+  stays the `Tooling` domain's.
+- **[Claude] The readings step 7 rests on**: `experimentation`'s `SageMakerAIDomain` configuration pins
+  `awsds-sandbox-dev-env` version 11 in `customImagesJupyterLab`, `customImagesCodeEditor` and both
+  `defaultImageVersionArn*`, all locked; the three blueprint domains name version 11 on both app types;
+  the three `Tooling` domains carry the entry with no `ImageVersionNumber`; the image holds one version,
+  11, `CREATED`. Every domain carries the tag `AmazonDataZoneBlueprint`, `SageMakerAIDomain` or
+  `Tooling`, beside `AmazonDataZoneProject`, the project's id. `list-projects` returns no profile id;
+  `get-project` does.
+- **[Claude] The records**: `AWS_STATE.md`'s `INV-23`, a project born of `experimentation` holding the
+  blueprint's domain at the profile's pin, alone since 2026-11-18, and `EXC-26`, the three living
+  projects' `Tooling` domains; the waiting list's decision row removed.
+- **[Claude] `US-13`** in `./aws/studio.py`: the profile's pin against the newest `CREATED` version, each
+  `ACTIVE` project born of `experimentation` against the blueprint domains, and each blueprint domain's
+  `ImageVersionNumber` against the pin, the domains selected by their tag; a `Tooling` domain is a note in
+  `EXC-26`'s projects and a failure in any other. Fifteen synthetic cases gave the expected verdicts. The
+  run of `awsds-infra-data` and `awsds-infra-sandbox-1` ending at 23:40:45 read 5 `pass` and 3 notes,
+  among them *"3 ACTIVE, each holding a SageMakerAIDomain domain: app-etl-dev, eighth-experimentation,
+  test-experimentation"*, and *"all checks passed"*.
+- **[Claude] Step 7's texts**: `dev-env.md` §O, §B (steps 5 to 7: the pin, *Update project*, `US-13`),
+  §C6 as the `Tooling` domains' route and §V; `docs/SMUS.md` §Custom images; `remote-ide.md` §V, the
+  space's domain read from `list-spaces`; `terraform-live/README.md`'s `sandbox/dev-env/` paragraph; and
+  `aws/INDEX.md`'s question row. `release/versions.py`'s header is a copy of GitLab's `awsds/dev-env`
+  (`gitlab/README.md`), so its change waits on a merge request there, in a GitLab sitting (the waiting
+  list).

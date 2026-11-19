@@ -1805,6 +1805,17 @@ entry is still true is the reading.
   balance bills each query at its 60-second minimum, so the metric under-reads a sitting of short statements
   by an order of magnitude, and a reading within the hour missed a quarter of the bill. Where:
   `log-stage-09-deployment-targets.md`, 2026-10-26 (two entries) and 2026-10-30; `docs/PRICING.md` §5.
+  Cost Explorer's lag runs past a day, and a day it holds in part reads cheaper, not absent (read
+  2026-11-15 to 2026-11-17 in Sandbox, Stage 19, each a daily `get-cost-and-usage` by service and usage
+  type). At 05:05:57 UTC on 2026-11-15, 2026-11-14 and 2026-11-15 held no line, and 2026-11-13, 29 hours
+  past its end, held *"3 to 6 hours of its whole-day lines (the alarms 0.1000 against 0.4000 on 2026-11-10
+  to 12, the dashboard 0.0083 against 0.0333, the secret 0.0069 against 0.0333, Unified Studio's volumes
+  0.1111 against 0.5333 GB-month)"*. At 00:02:33 UTC on 2026-11-16, *"2026-11-14 and 2026-11-15 still held
+  none"*, 2026-11-14 a whole day past its end. At 01:12:48 UTC on 2026-11-17, 2026-11-14 held 47 lines,
+  *"its last hour in"*, and 2026-11-15, 25 hours past its end, held 44 lines and 9 endpoint hours, *"where
+  the 2026-11-14 sitting's hour after midnight alone bills 19"*. Read less than two days after it ends, a
+  day can be absent or partial, and a whole-day line below its usual value is the tell. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-17, the entry on `SUP-368`'s line.
 
 - `SUP-143` **Redshift Serverless publishes a `ChargedSeconds` metric beside `ComputeSeconds`, and the two
   diverge for a session held open** (read 2026-10-18 in CloudWatch, Stage 5b). AWS's metric list does not
@@ -2081,6 +2092,12 @@ entry is still true is the reading.
   AI domain, and the portal's Workflows tool refused: *"This tool is not available for this project: Spaces
   are not enabled in this project profile. Please contact your admin."* Where:
   `log-stage-18-staging-deployment-project.md`, 2026-10-19 and 2026-10-20.
+  **Read again 2026-11-18** (Stage 6d 2.7 step 5): `experimentation` locks `enableSpaces` `false` and
+  deploys the `SageMakerAIDomain` blueprint `ON_CREATE` beside it. Its project `throwaway-6d` got the same
+  thirteen `Tooling` resources with no domain, the blueprint's domain beside them, and the Workflows tool
+  opened: `ListWorkflows` and `ListWorkflowRuns` answered to the project role from 21:48:11 to 21:48:58
+  UTC. A project with no SageMaker AI domain is refused; one whose only domain is the blueprint's is not.
+  Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
 
 - `SUP-161` **A V2 domain refuses the three catalog designations the DataZone API lists** (measured
   2026-10-20, Stage 18 6.1). `create-project-membership` with `PROJECT_CATALOG_VIEWER`,
@@ -2210,6 +2227,16 @@ entry is still true is the reading.
   the domain's `IAM` user profiles of the deleted project role and the deploy role, the deploy role's group
   profile and 44 lineage events, which no delete API reached. Where: `log-stage-06a-unified-studio.md`,
   2026-08-26; `log-stage-18-staging-deployment-project.md`, 2026-10-22.
+  **Read again 2026-11-18** (Stage 6d 2.7 step 5), on a project holding the `SageMakerAIDomain`
+  blueprint's environment beside a `Tooling` with spaces off. The portal's `DeleteProject`
+  (`skipDeletionCheck` `true`) at 22:57:05 UTC was followed by the provisioning role's `DeleteStack` on
+  the blueprint's stack at 22:58:34, its `DeleteUserProfile` (the profile the space's creation made) and
+  `DeleteDomain` at 22:58:37, the project role's `DeleteAccessGrantsLocation` at 22:59:30, and
+  `DeleteStack` on the `Tooling`'s at 22:59:45. Left: the prefix's five objects written at the project's
+  creation (87,233 bytes), the log group (`SUP-174`), the domain's streams in `/aws/sagemaker/studio`
+  (`EXC-10`) and the `IAM` user profile of the deleted project role. No EFS file system, NFS security
+  group or Lake Formation permission was left. Where: `log-stage-06d-unified-studio-remainder.md`,
+  2026-11-18.
 
 - `SUP-166` **SMUS registers each project's `dev/` prefix with Lake Formation under the project role and
   grants on it to a project condition, not to a role** (read 2026-09-12 in Sandbox's trail since 2026-08-20,
@@ -2369,6 +2396,59 @@ entry is still true is the reading.
   security group, `datazone-<project>-dev`, admits itself inbound and every destination outbound in
   both targets. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-12;
   `scripts/tfhygiene/projects.py`.
+
+- `SUP-379` **A `SageMakerAIDomain` blueprint domain names the projects bucket's root `shared/` as its
+  `ProjectS3Path`, a prefix the project role lists and can neither read nor write** (read 2026-10-30 on two
+  domains in Sandbox, and the bucket and the role's policies on 2026-11-18; Stage 6d steps 2.6 and 2.7).
+  `describe-domain` read `UnifiedStudioSettings.ProjectS3Path` `s3://awsds-sandbox-smus-projects/shared/`
+  on `d-tqvlxk2hftsv`, born from the template's defaults, and on `d-odhynkcev3yw`, born from
+  `experimentation`'s fourteen overrides: the bucket's root, without the `<domain>/<project>/` prefix, where
+  the two projects' `Tooling` domains carry `<domain>/<project>/dev`. On 2026-11-18 the bucket held the
+  prefix `dzd-d8yrvx1ko7im6o/` alone, no object and no version under `shared/` (versioning `Enabled`,
+  noncurrent versions kept 90 days), and its policy was `DenyInsecureTransport` alone. The project role's
+  object grant reaches `<bucket>/<domain>/<project>/*` only (`SageMakerStudioProjectUserRolePolicy` v77,
+  `DomainS3BucketPermissions`), its whole-bucket list comes from `AirflowListDomainS3Permissions`
+  (`SUP-367`, `TM-31`), and the ML policy v48's `S3AG` statements act through the access-grants instance
+  `default` alone. No AWS page read for this project gives the value: the blueprint's admin guide page,
+  read again 2026-11-18, names no S3 path, prefix or `ProjectS3Path`. Nothing has been written under the
+  prefix, so what the service puts there is unread. Where: `log-stage-06d-unified-studio-remainder.md`,
+  2026-10-30 (two entries) and 2026-11-18; `REFERENCES.md`, SageMaker Unified Studio's October 2026
+  releases.
+  Read again 2026-11-18 on three more domains, `d-m8m0uefej9kb`, `d-jaid1tvg20jv` and `d-kr8cbbohordz`
+  (Stage 6d 2.7 step 2): the same root. The stack's template holds one resource, `AWS::SageMaker::Domain`,
+  sets no `UnifiedStudioSettings`, and writes the tag `ProjectS3Path` as `s3://`, the bucket's name split
+  from the parameter `sageMakerUnifiedStudioToolingS3BucketArn`, and `/shared/`; `describe-domain` answers
+  the tag's value. The project's prefix arrives as `sageMakerUnifiedStudioProjectRepositoryLocation`
+  (`s3://<bucket>/<domain>/<project>/shared`, the value of `SUP-359`'s `nonGitProjectRepositoryLocation`)
+  and becomes `DefaultUserSettings.CustomFileSystemConfigs`, an S3 mount at `shared`, the URI the project's
+  `Tooling` domain mounts. A space's `shared` mount is therefore inside the project role's object grant;
+  only the tag names the root. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
+
+- `SUP-380` **An *Update project* does not carry a profile's changed override of a non-editable parameter
+  into a living environment: the environment keeps the value resolved at its creation** (measured
+  2026-11-18 in Sandbox, Stage 6d 2.7 step 4). `test-experimentation`'s `Tooling` environment
+  `bi356s1sacz0cw`, created 2026-10-15 when `experimentation` overrode no `enableSpaces`, stores it in its
+  `userParameters` as `defaultValue` `"true"`, `isEditable` false. At 18:45:34 the profile locked
+  `enableSpaces` `"false"`, and `get-project-profile` read it in both `parameterOverrides` and
+  `resolvedParameters`. The user's *Update project* sent `UpdateProject` at 19:14:47 with
+  `projectProfileVersion` `latest` and, for that environment, its ten editable parameters, `enableSpaces`
+  not among them. The provisioning role's `UpdateStack` followed at 19:15:16 with 57 parameters, whose
+  values CloudTrail does not record. The stack read `UPDATE_COMPLETE` at 19:15:29 with no resource event
+  and `enableSpaces` `true`; the deployment read `UPDATE` `SUCCESSFUL`, and the domain `d-lfgbdrjncmsu`
+  stood. A profile's locked change therefore reaches the projects created after it, and a living project
+  keeps its copy. Only `enableSpaces` was measured: whether a locked override in another element, the
+  `SageMakerAIDomain` image pin among them, stops at the same copy is unmeasured. Where:
+  `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
+
+- `SUP-381` **The `SageMakerAIDomain` blueprint's deployer calls `sagemaker:ListTags` on the domain it has
+  just created, which the provisioning role's managed policy does not grant, and the environment goes
+  `ACTIVE` regardless** (measured 2026-11-18 in Sandbox, Stage 6d 2.7 steps 2 and 5). On each of four
+  creations `awsds-sandbox-smus-provisioning`, through DataZone, was refused `sagemaker:ListTags` on the new
+  domain 12 to 13 s after its `CreateDomain`: at 18:16:36, 18:20:53, 18:24:08 and 21:45:58 UTC, *"no
+  identity-based policy allows the sagemaker:ListTags action"*. The role's one policy,
+  `SageMakerStudioProjectProvisioningRolePolicy` v86, carries no `sagemaker:ListTags`. The four environments
+  read `ACTIVE`, their `CREATE` deployments `SUCCESSFUL`, so this refusal in the trail is no deployment's
+  cause. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
 
 ### The managed policies of a project role
 

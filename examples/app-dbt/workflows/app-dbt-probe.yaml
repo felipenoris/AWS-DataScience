@@ -21,7 +21,7 @@ app-dbt-probe:
           printf '#!/bin/sh\necho ran\n' > "$folder/probe-script.sh" && chmod +x "$folder/probe-script.sh"
           echo "script in $folder: $("$folder/probe-script.sh" 2>&1 || echo "did not run, exit $?")"
         done
-        python3 - '{domain.region}' '{env.ATHENA_WORKGROUP}' '{env.PRODUCT_DATABASE}' '{domain.id}' <<'PY'
+        python3 - '{domain.region}' '{proj.connection.project.athena.workgroupName}' '{env.PRODUCT_DATABASE}' '{domain.id}' <<'PY'
         import importlib.metadata
         import os
         import platform

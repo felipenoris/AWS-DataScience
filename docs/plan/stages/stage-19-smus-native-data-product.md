@@ -102,7 +102,7 @@ retire, or a decision for the user, named by its number in Decisions due. The re
 | Item | Today | Under the premises |
 |---|---|---|
 | 5a | decision 5, LF-TBAC the default, "Revision trigger: Stage 6, when the DataZone fulfilment principal joins the permission plane" | **amend**: the trigger fired (INT-23, 2026-10-22; 6f 11.9, 2026-10-26) and the row is unamended; named-resource grants are the road's default, TBAC the register's. The classification scheme loses its carrier on a product with no tag: decision 4 |
-| 5b | the sandbox class bypasses the catalog: "no catalog object, no LF-Tag, no Lake Formation grant"; layer 1 admits one project (`WH-7` fails on the wide tag); 2.4 `awsdatacatalog` read-only | follows decision 9; a second subscribing project hits 6h decision 8 first |
+| 5b | the sandbox class bypasses the catalog: "no catalog object, no LF-Tag, no Lake Formation grant"; layer 1 admits one project by its tag (`WH-7` inverts under the wide tag, 6h decision 8 (a)); 2.4 `awsdatacatalog` read-only | follows decision 9; a second subscribing project hits 6h decision 8 first |
 | 6a | verification xvi, "what shape is the Lake Formation grant it writes", answered by INT-23 and never marked; the deliverable "the Stage 5a lake table ... surfaced as a subscribed asset" done at 6f 11.10 | **keep as a record**; the two rows are stale |
 | 6f | the road built on `curated.trades`; step 2's same-account readings (i to iv) never run; 7.2, the publish act after a deploy, unwritten; 4.3, which policy decides an approval, open | **keep**: this stage's passes 2 and 4 answer i, iii, iv and 7.2 on their own objects, and the results are cited there, not written there (the 6f session holds the stage). The 6f follow-up fixes `GOVERNANCE.md:737` and the check decision 11 names |
 | 6g | 2.4's Athena read from a space, "refused rather than answered, since the project role holds no Lake Formation grant on the lake" | **closes on the road**: the subscription of 6f 11.8 is the project role's grant, read from the query editor at 11.10; the space's read is pass 2's viii |
@@ -590,8 +590,9 @@ targets hold their assets since `v0.5.2`, so its imports revise them by name and
 8. **Nothing up, Claude's reads**: each deployment project's first scheduled source run after the
    imports (xvii's Staging half, xxv), which started at 15:37 UTC in Staging and 15:44 in Production on
    earlier days.
-9. **Nothing up, 4.12** after release G: the Governance Manager made a `PROJECT_CONTRIBUTOR` of
-   `deploy-production` by its owner (decision 15 (a); not a member on 2026-11-16), then
+9. **Nothing up, 4.12** after release G: after the RAM share at version 12, decision 15 (d)'s designation
+   and xxvi, the Governance Manager's membership of `deploy-production` by its owner ((a)'s
+   `PROJECT_CONTRIBUTOR` only if xxvi reads no narrowing; not a member on 2026-11-16), then
    `eighth-experimentation`'s request and the approval in the portal, the fulfilment read on both sides
    (xx, xxiv, xxvi, xxvii).
 10. **The retirement** (item 31, §The retirement as written): **done 2026-11-17**, PR #308's five saved
@@ -1680,8 +1681,8 @@ what a release drops (`SUP-348`), and the workflow scan reads the target project
 
 Waits on decision 9, which decision 6 (b) leaves as written: the Sandbox warehouse reads the subscribed
 product in place, the subscription now Production's listing (4.12) rather than the lake's, through
-`eighth-experimentation`'s connection (`EXC-17`, decision 5), so 6h decision 8 stays deferred. Under its
-recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-compute/` up;
+`eighth-experimentation`'s connection (`EXC-17`, decision 5), so 6h decision 8 (a)'s wide tag is not
+needed here. Under its recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-compute/` up;
 [`redshift-connection.md`](../runbooks/redshift-connection.md) §J).
 
 - **5.1 [Claude⚡] The grant the read in place needs**: on the user's word, Lake Formation `DESCRIBE`
@@ -1765,6 +1766,11 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
   `redshift-connection.md` for 5.1 and 5.2, D17, D19, D20, D22, D26, D28, D35, D41 and 5a decision 5
   amended in place with dated lines (Stage 9 decision 15 by its session), `POLICIES.md`'s row (4.1),
   `integrations.md`'s INT-12 and INT-26, `history.md`; `GOVERNANCE.md:737` is the 6f follow-up's.
+  **Owed from the review of 2026-11-17** (the log), left by the runbooks' rewrite for release F to this step
+  or the stage that owns each: the project role's pull of the application image, inferred from the runs
+  and granted by no estate statement; whether every line a Glue script prints reaches
+  `datazone-<id>-dev/output`; and in the template, release G's merge request's scope, the
+  `build-task-code` comment, and the README's job table, which lacks the catalog jobs.
 - **6.3 [Claude] The threat model**: an entry for the product road, the subscriber's full-table vend
   (xi), the re-listing channel (0.5), a materialized view that outlives a revoke (question 3), with the
   checks of 6.1 as its triggers; under decision 6 (b), an entry for the deployment projects, Stage 18's
@@ -1908,7 +1914,8 @@ recommendation, a warehouse sitting inside a Sandbox one (`sandbox/warehouse-com
    pass 2's consumer, and the Governance Manager, a `PROJECT_CONTRIBUTOR` of `eighth-experimentation`,
    approves there, 6f 4.3 answered in the act; the consumer of Production's listing at 4.12 and pass 5 is
    `eighth-experimentation` itself, through the warehouse connection it already holds (`EXC-17`), the
-   Governance Manager approving in `deploy-production` (decision 15), so 6h decision 8 stays deferred.
+   Governance Manager approving in `deploy-production` (decision 15), so 6h decision 8 (a)'s wide tag is
+   not needed here.
    **Amended 2026-11-14 by the user**: pass 2's consumer is `test-experimentation` (*"Utilizei o
    `test-experimentation` como projeto consumidor."*), the application no longer deployed there
    since decision 19 (c). The Governance Manager is a `PROJECT_CONTRIBUTOR` of
