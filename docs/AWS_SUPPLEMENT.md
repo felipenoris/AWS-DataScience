@@ -3230,6 +3230,9 @@ entry is still true is the reading.
   2026-11-19 (6h decision 3): `UpdateConnection` with `lineageSync` `enabled: false` and the same schedule
   switched the sync off, the schedule and the `lineageJobId` kept on the object, and `list-job-runs` kept
   the job's 39 runs, one a day from 2026-10-11 to 2026-11-18, each `FAILED`. Where:
+  `log-stage-06h-redshift-connection.md`, 2026-11-19. Read again 2026-11-19 at 03:50 UTC: the job created
+  no run at the schedule's time, where it had created one at 03:44:44 on each of the 39 days before, so
+  `enabled: false` stops the runs while the schedule stays on the object. Where:
   `log-stage-06h-redshift-connection.md`, 2026-11-19.
 
 - `SUP-208` **The SageMaker Unified Studio Query editor opens each session on the Redshift connection's
