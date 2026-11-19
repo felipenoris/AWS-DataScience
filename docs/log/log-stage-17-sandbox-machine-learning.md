@@ -3488,3 +3488,24 @@ environments, no AWS call. Times are UTC.*
   day 2 and 5.3 of day 3; the MLflow App comes before day 3, 0.9's reading before day 2 and the archives on
   day 3's eve. The hourly rates are §N.9.7's, 0.27 and 0.25 USD before the spaces; this section's earlier
   0.26 and 0.24 left out the VPN's address, which `docs/PRICING.md` counts as a floor line.
+
+## 2026-11-19 — verification v: `eighth-experimentation`'s first run after the share
+
+*Claude, the same session, on the orchestrating session's follow-up, its third item, after the user's
+"Tente novamente" in that session's chat. Reads as the infrastructure user with `InfrastructureAccess`,
+through `awsds-infra-data`, from 18:16:27 to 18:16:48. Times are UTC.*
+
+- **[Claude] The wait**: the Monitor armed at 17:02:28 for 17:50 expired at 17:32 with no event, and the
+  turn that would have armed it again ended on an API error (`ENOTFOUND`). The reading was taken at
+  18:16, past the orchestrating session's 17:50.
+- **[Claude] `eighth-experimentation`'s source** (`4tb4qnmgi0iej4`, `cron(32 17 * * ? *)`): 88 runs, 87
+  `FAILED` and 1 `SUCCESS`. The new run `5lkcvfroqbjnyo`, `SCHEDULED`, ran from 17:38:11 to 17:38:19 and
+  ended `SUCCESS`, 0 added, updated, unchanged and failed, with no activity. The source reads `READY`, its
+  last run `SUCCESS` with 0 assets.
+- **[Claude] The run before it**: `6fdkdu6arwynf4`, started 2026-11-18 at 17:38:11, was marked `FAILED` at
+  17:38:11 as its successor fired, `VALIDATION_EXCEPTION`, with the wording of every failed run, *"Failed to
+  run the data source. Please check if RAM share is correctly configured between Amazon SageMaker and
+  Amazon DataZone"*.
+- **[Claude] The verdict so far**: both sources that have run since the share succeeded with nothing to
+  ingest. Left: `app-etl-dev`'s first run after the share, at about 02:19 on 2026-11-20, read from the
+  record in a later session; the ingestion half still waits on a model package group (3.2's or 9.6's).
