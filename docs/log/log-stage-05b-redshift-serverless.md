@@ -1335,3 +1335,29 @@ open decisions the user asked for at 22:01 UTC, one card per decision under the 
 - **[user] Decision 9**, at 22:32, on the card *"Gerir o crédito gratuito do Redshift do Sandbox, que acaba
   em 19/12?"*: *"Antecipar as sessões de warehouse"*, against the card's recommendation: the sittings that
   raise Sandbox's warehouse run before 2026-12-19 (`runbooks/promotion.md` §N.6 item 9).
+
+## 2026-11-19 — the warehouse sitting's pre-flight, with nothing up
+
+*Claude, in the pre-flight session of the Sandbox warehouse sitting started by the orchestrating session,
+as the infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1`
+(account Sandbox Account 1). Reads and plans only, no apply and no AWS write. Times are UTC.*
+
+- **[Claude] `make status`** at 21:46:02: `estimated burn: USD 0.0000/h`. A first run, not finished after
+  300 seconds, was stopped and run again.
+- **[Claude] The plans from `main`**, each with `-input=false`, saved and not applied:
+  `sandbox/warehouse-compute/` at 21:43:14, `Plan: 2 to add, 0 to change, 0 to destroy`
+  (`aws_redshiftserverless_workgroup.this`, `aws_redshiftserverless_usage_limit.compute`);
+  `sandbox/warehouse/` at 21:43:48 with both switches off, `No changes`.
+- **[Claude] `CreateWorkgroup` and `UpdateWorkgroup` since 2026-10-19**, `lookup-events`: four creates,
+  2026-10-25 02:11:55, 2026-10-26 01:22:42, 2026-10-26 21:23:42 and 2026-10-30 16:04:42, each by
+  provider 6.68.0, each response carrying ten configuration parameters with `enable_large_strings_opt_in`
+  at `""`; no `UpdateWorkgroup`. Each destroy's `DeleteWorkgroup` answered `ConflictException` three to
+  five times, the `ok` 4 to 17 seconds after the first. No plan has run against a live workgroup, so the re-plan
+  of 2026-10-18 is still owed.
+- **[Claude] The admin secret**, `describe-secret`: last rotated 2026-11-19 at 00:23:23, with no
+  workgroup; rotation enabled, every 30 days in a 2-hour window, the next due 2026-12-19 at 01:59:59. The
+  database half of this second rotation is read by the sitting's first `./aws/warehouse.py --sql`.
+- **[Claude] The block written**: "The Sandbox warehouse sitting: 5b's items in order" in the stage file,
+  before the deliverables: the `--sql` read, the re-plan before 6h's re-apply of the compute slice, and the
+  `max_query_execution_time` test as a non-superuser and as the admin, between the candidates (a), (b) and
+  (c) of 2026-10-18.

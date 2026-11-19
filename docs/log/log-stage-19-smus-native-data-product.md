@@ -4283,3 +4283,45 @@ user's address is `<infrastructure user>`. The designation calls ran the laptop'
   - `REFERENCES.md`;
   - at the orchestrator's request, two rows other sessions' measurements of the same day had overtaken: the
     premise table's 6h row (6h decision 3 done, PR #327) and xix (`SUP-184`'s reading, PR #328).
+
+## 2026-11-19 — pass 5's pre-flight: the access role holds no read of the subscribed product
+
+*Claude, in the pre-flight session of the Sandbox warehouse sitting started by the orchestrating session,
+as the infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1`
+(account Sandbox Account 1), with `awsds-infra-prod` and `awsds-infra-data` read for their account ids
+alone. Reads only, no apply and no AWS write. Times are UTC.*
+
+- **[Claude] The policies on the two doors**, about 22:00: the access role
+  `awsds-sandbox-warehouse-access-avhvbqn37ty7m8` carries two customer-managed policies,
+  `awsds-sandbox-warehouse-project-avhvbqn37ty7m8` and `awsds-sandbox-warehouse-access-portal-avhvbqn37ty7m8`,
+  and no inline one; the project role `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` carries seven, three of
+  them AWS's (`SageMakerStudioProjectUserRolePolicy` among them) and four of this repository's.
+- **[Claude] `simulate-principal-policy` is no instrument for this read.** On both roles, `glue:GetTable` and
+  `glue:GetDatabase` read `explicitDeny` on every resource, the lake account's `governed_trades` included, the
+  read that works since 2026-10-25; the result carries `AllowedByOrganizations: false` and no matched
+  statement. The organization's policies are judged with no context keys to supply, so the positive control
+  fails.
+- **[Claude] `simulate-custom-policy` on the access role's two policies**, the identity half alone:
+
+  | Resource | `glue:GetTable` | `glue:GetDatabase` |
+  |---|---|---|
+  | the lake account's `table/governed_trades/x`, the positive control | `allowed` | `allowed` |
+  | Sandbox's `table/glue_db_blerpkhn9nj7o0/trades_notional` | `implicitDeny` | `implicitDeny` |
+  | Production's `table/app_etl/trades_notional` | `implicitDeny` | `implicitDeny` |
+  | Production's `database/app_etl` | `implicitDeny` | `implicitDeny` |
+
+  `lakeformation:GetDataAccess`: `implicitDeny`. So the read in place through §J's chain or the connection is
+  refused by IAM at `glue:GetTable` before Lake Formation is consulted, as the governed share was on
+  2026-10-25 until `ReadTheGovernedShareCatalog` was written. 5.1 names the Lake Formation and SQL pieces, not
+  this one.
+- **[Claude] The same simulator on the project role's policies** (`SageMakerStudioProjectUserRolePolicy` v77,
+  `awsds-sandbox-warehouse-project-avhvbqn37ty7m8`, `SageMakerStudioProjectRoleMachineLearningPolicy`):
+  `GetDataAccess` `allowed` by `LFforDL`, `glue:GetDatabase` `allowed` on Production's `database/app_etl`,
+  `glue:GetTable` `implicitDeny` on the three tables. v77's `GlueDatalakePermissions` allows Glue on `*` when
+  `glue:LakeFormationPermissions` is `Enabled`, a key the simulator cannot supply, so the direct door's table
+  read is unanswered by the simulator rather than refused.
+- **[Claude] The register**: the per-project database user holds `TEMP ON DATABASE sandbox` and `USAGE ON
+  DATABASE governed_trades` (2026-10-25) and no `USAGE ON DATABASE awsdatacatalog`.
+- **[Claude] The block written**: "The Sandbox warehouse sitting: pass 5 in order" in the stage file, before
+  "To execute", with the access role's two absent pieces as the user's word before the sitting, or 5.2 through
+  the direct door.

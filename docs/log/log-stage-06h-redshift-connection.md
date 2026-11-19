@@ -2491,3 +2491,35 @@ branch being merged. Times are UTC.*
   object. `EXC-17` needs no change, its 39 runs to 2026-11-18 being what the reading shows; `SUP-207`
   gains the reading. `WH-9` reads the runs only while the sync is on, so this reading is the one that shows
   none.
+
+## 2026-11-19 — the warehouse sitting's pre-flight, with nothing up
+
+*Claude, in the pre-flight session of the Sandbox warehouse sitting started by the orchestrating session,
+as the infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1`
+(account Sandbox Account 1). Reads and plans only, no apply and no AWS write. Times are UTC.*
+
+- **[Claude] `sandbox/warehouse/` planned from `main`**, `-input=false`, saved and not applied, the
+  slice that holds both decision 8 (a)'s switch and Stage 21 4.5's:
+
+  | UTC | Variables | Plan |
+  |---|---|---|
+  | 21:43:48 | none, both switches at their default `false` | `No changes` |
+  | 21:44:14 | `all_projects_tag_enabled=true` | `0 to add, 1 to change, 0 to destroy`: `aws_redshiftserverless_namespace.this`, its tags |
+  | 21:44:37 | `data_transfer_role_enabled=true` | `2 to add`: `aws_iam_role.data_transfer[0]`, `aws_iam_role_policy.data_transfer[0]` |
+  | 21:44:59 | both `true` | `2 to add, 1 to change, 0 to destroy` |
+
+  A plan naming one switch takes the other at its default, so each plan in the sitting names both.
+- **[Claude] `SageMakerStudioProjectUserRolePolicy`** read at 21:47:57: default version v77, updated
+  2026-11-13 at 20:47:08, attached to both Sandbox project roles (`test-experimentation`'s is
+  `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw`). It carries `ExistingRedshiftCompute`, `RssCreds`, `ComputeCredentials`,
+  `RedshiftDataActions`, `AllowGetSecretForRedShift` and `DataConnectionAllProjectResources`, the
+  statements 5.3, 5.4 and decision 8 rest on, and the simulator's verdicts on them read as on 2026-10-18.
+- **[Claude] What the rows rest on**, read from the code and the register: the namespace's first database
+  is `warehouse` (`first_database`), `lab` holds `QUOTA 1 TB`, so 5.2a's owed half is the `ALTER SCHEMA`
+  alone; `sandbox` holds no schema but `lab`, so 5.2 creates its second schema for the step; `WH-7` fails
+  while the wide tag is on one object alone, so it is red between the namespace's apply and the compute's
+  re-apply; the `redshift` endpoint group carries `redshift-serverless` alone.
+- **[Claude] The block written**: "The Sandbox warehouse sitting: 6h's items in order" in the stage file,
+  before the deliverables, with every row steps 5 and 6 owe: the editor's first session, 5.2, 5.2a's owed
+  half, 5.3, 5.4, 5.1, the tag on, 5.2b, the tag off unless it stands, 0.4's portal half and 6.4.
+  §N.6 item 9 names 5.1, 5.2b and the editor alone.

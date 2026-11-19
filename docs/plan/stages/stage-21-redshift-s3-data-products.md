@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Pass 1 done 2026-11-18** ([log](../../log/log-stage-21-redshift-s3-data-products.md)). Written 2026-11-17: the plan, the user's questions of 2026-11-17 answered from AWS's pages read that day and from this estate's measurements, and decisions 1 to 3, taken the same day: 1 (b), the consumer's own workgroup by the `RedshiftServerless` blueprint for one sitting; 2 (a), a second connection by secret for lineage; 3 (b), the federated catalog with data lake access for one sitting. 1.3's readings, 2026-11-18 with nothing up: the blueprint's template holds the base capacity at 4 RPU through a locked `redshiftBaseCapacity`, so decision 1 stands. 1.5's code written the same day, off by default, both slices planned *"No changes."*; the tag `sagemaker-prereqs-v0.12.0` pushed the same night by Recipe B and `sandbox/sagemaker/` moved to it, re-planned *"No changes."*; owed: the user's reading of the console's enable wizard before 2.4. 4.5's data transfer role written and merged 2026-11-18 with [pull request #323](https://github.com/felipenoris/AWS-DataScience/pull/323), `data_transfer_role_enabled` off, planned *"Plan: 2 to add"* with it on. Passes 2 to 4 ride the Sandbox warehouse sitting ([`runbooks/promotion.md`](../runbooks/promotion.md) §N.6 item 9), before 2026-12-19 if the free trial is to absorb them; their commands, and pass 5's, follow each pass's steps. Pass 5 needs no warehouse and rides any Sandbox sitting with a space in both projects |
+| **Status** | **Pass 1 done 2026-11-18** ([log](../../log/log-stage-21-redshift-s3-data-products.md)). Written 2026-11-17: the plan, the user's questions of 2026-11-17 answered from AWS's pages read that day and from this estate's measurements, and decisions 1 to 3, taken the same day: 1 (b), the consumer's own workgroup by the `RedshiftServerless` blueprint for one sitting; 2 (a), a second connection by secret for lineage; 3 (b), the federated catalog with data lake access for one sitting. 1.3's readings, 2026-11-18 with nothing up: the blueprint's template holds the base capacity at 4 RPU through a locked `redshiftBaseCapacity`, so decision 1 stands. 1.5's code written the same day, off by default, both slices planned *"No changes."*; the tag `sagemaker-prereqs-v0.12.0` pushed the same night by Recipe B and `sandbox/sagemaker/` moved to it, re-planned *"No changes."*; owed: the user's reading of the console's enable wizard before 2.4. 4.5's data transfer role written and merged 2026-11-18 with [pull request #323](https://github.com/felipenoris/AWS-DataScience/pull/323), `data_transfer_role_enabled` off, planned *"Plan: 2 to add"* with it on. Passes 2 to 4 ride the Sandbox warehouse sitting ([`runbooks/promotion.md`](../runbooks/promotion.md) §N.6 item 9), before 2026-12-19 if the free trial is to absorb them; their commands, and pass 5's, follow each pass's steps. Pass 5 needs no warehouse and rides any Sandbox sitting with a space in both projects. **Passes 2 to 4's rows written 2026-11-19, nothing up**, in "The Sandbox warehouse sitting: passes 2 to 4 in order": the four slices re-planned from `main` with the counts the commands carry, pass 2's raise corrected to one `make up`, and every plan of `sandbox/warehouse/` naming both switches |
 | **Prerequisites** | [5b](stage-05b-redshift-serverless.md) and [6h](stage-06h-redshift-connection.md): the Sandbox warehouse at 4 base RPUs and `eighth-experimentation`'s connection, which writes and reads the schema `lab` in the `sandbox` database (6h passes 0 to 2, 2026-10-10). [Stage 19](stage-19-smus-native-data-product.md)'s Glue road: a table imported by a project's source, published, packaged in a product and subscribed inside one account (verification vi, 2026-11-14); its pass 5, whose 5.3 publishes the estate's first Redshift asset and subscribes nothing. `test-experimentation`'s `DataLake` environment ([6f](stage-06f-data-governance.md) 2.0), the Glue subscription target. The account's S3 Access Grants instance, created by SageMaker Unified Studio with one location per project ([`docs/SMUS.md`](../../SMUS.md), "The vending surface under that same path", 2026-08-23). For pass 2's subscription, 1.5's code merged and tagged, off by default (decision 1 (b)). Nothing blocks pass 1 |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D26](../decisions/D26-unified-studio.md), [D40](../decisions/D40-redshift-warehouse.md); [D12](../decisions/D12-budget-ceiling.md) for the cost; 6h decisions 3 and 8, [Stage 9](stage-09-deployment-targets.md) decision 5 and Stage 19 decision 9, each read against its premises |
 | **Proves** | — (no `INT-nn` row: everything runs in Sandbox, and the domain in Data Governance is reached through the doors Stage 19 measured). What it does prove: whether SageMaker Unified Studio's standard path carries a Redshift table, the namespace seen through the Glue Data Catalog, and an S3 prefix of images through publication, a data product and a subscription as it carries a Glue table; which engine and which compute the consumer needs for each; and what lineage the catalog draws for the warehouse |
@@ -396,8 +396,9 @@ decision for the user, named by its number in Decisions due. Read from `main` `7
 
 ### 2. A Redshift table as a data product
 
-Inside a Sandbox sitting (`make hub-up`, then `make up ENV=sandbox ONLY=egress`), the warehouse's compute
-raised with `make up ENV=sandbox GROUPS=redshift`, spaces in both projects. When Stage 19's pass 5 runs in
+Inside the Sandbox warehouse sitting (`make hub-up`, then `make up ENV=sandbox GROUPS=redshift`, which
+raises `sandbox/egress/` with the `redshift` endpoint group, the warehouse's compute and `sandbox/probes/`
+in one apply), spaces in both projects. When Stage 19's pass 5 runs in
 the same sitting, its 5.2 copy and 5.3 asset are the ones 2.1 and 2.2 read, and its 5.4 waits for this
 pass's end.
 
@@ -700,8 +701,10 @@ q "select user_id, query_id, start_time, query_text from sys_query_history
 # 4.5 ⚡ the transfer role, sandbox/warehouse/'s data_transfer_role_enabled, applied for the sitting from a
 # main that holds pull request #323: the page's trust (glue, redshift) and policy (glue:GetCatalog,
 # glue:GetDatabase, kms:GenerateDataKey, kms:Decrypt); its ARN is the output data_transfer_role_arn.
+# Every plan of the slice names both switches, the tag at the value 6h's sitting left (Lessons 51, 69).
 AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse plan -input=false \
-  -var data_transfer_role_enabled=true -out="$HOME/tmp/s21-warehouse-transfer.tfplan"   # 2 to add
+  -var all_projects_tag_enabled=false -var data_transfer_role_enabled=true \
+  -out="$HOME/tmp/s21-warehouse-transfer.tfplan"                                        # 2 to add
 AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse apply -input=false \
   "$HOME/tmp/s21-warehouse-transfer.tfplan"
 AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse output -raw data_transfer_role_arn
@@ -725,8 +728,9 @@ aws lakeformation deregister-resource --resource-arn "$DS" --profile $S
 aws redshift disassociate-data-share-consumer --data-share-arn "$DS" \
   --consumer-arn "arn:aws:glue:us-west-2:${A}:catalog" --profile $S
 aws redshift deregister-namespace --namespace-identifier "$NSID" --consumer-identifiers "$A" --profile $S
-# then sandbox/warehouse/ planned without the variable and applied: the role and its policy go
+# then sandbox/warehouse/ planned with the transfer switch off and applied: the role and its policy go
 AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse plan -input=false \
+  -var all_projects_tag_enabled=false -var data_transfer_role_enabled=false \
   -out="$HOME/tmp/s21-warehouse-transfer-off.tfplan"                                    # 2 to destroy
 AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse apply -input=false \
   "$HOME/tmp/s21-warehouse-transfer-off.tfplan"
@@ -809,6 +813,74 @@ SELECT * FROM (VALUES ...) AS t (object_key, tone, width, height, size_bytes);
 
 The stage's row in `CLAUDE.md`'s Current position, the index's state, the log, and the waiting list's
 rows removed.
+
+### The Sandbox warehouse sitting: passes 2 to 4 in order
+
+Written 2026-11-19 with nothing up, for the Sandbox warehouse sitting the orchestrating session runs
+([`promotion.md`](../runbooks/promotion.md) §N.6 item 9): `make hub-up`, then `make up ENV=sandbox
+GROUPS=redshift`, which raises `sandbox/egress/`, the warehouse's compute and `sandbox/probes/` in one
+apply; a JupyterLab space in each project on `ml.t3.medium`. Passes 2 to 4 follow Stage 19's pass 5 to its
+5.3 (Stage 19's "The Sandbox warehouse sitting: pass 5 in order"), so 2.1 finds Stage 19's copy and 2.2 is
+5.3's source, and 6h's wide tag is off. Pass 5 is not here: it rides `promotion.md` §N.9's day 2. Its
+values, read that day (the log): from `main`, `sandbox/sagemaker/` plans `No changes`, and `3 to add, 1 to
+change` with `redshift_serverless_enabled=true`; `data-governance/governance/` `No changes`, and `0 to add,
+1 to change` (the profile `experimentation`) with it; `sandbox/warehouse/` `2 to add` with
+`data_transfer_role_enabled=true` and the tag off, the counts this file's commands carry. The profile
+`dh60xbal05q64w` and the blueprint `dlyaabb17hano0` read as 1.3 wrote them.
+
+**Before it, with nothing up**:
+
+1. **[Claude] The readings** above, done 2026-11-19 (the log), and the corrections they made in place:
+   pass 2's raise is one `make up`, and every plan of `sandbox/warehouse/` names both switches, since 6h
+   decision 8 (a)'s tag shares the slice with 4.5's role (Lessons 51 and 69).
+2. **[user] 1.3's wizard half**: the console's enable wizard for the `RedshiftServerless` blueprint read,
+   not submitted, before 2.4 ([`waiting-on-the-user.md`](../waiting-on-the-user.md)).
+3. **[user] 4.5's write path**: whether `sandbox/data/`'s key policy names the data transfer role
+   (`GenerateDataKeyDecryptDataTransferRole`, a D31 widening). Without it, 4.5's reads run and a write
+   through S3 is refused, which is itself a reading.
+
+**In the sitting**, each slice initialised first in a tree on `main` (`./scripts/gen-backend-hcl.py
+<account folder> <slice>`, `./scripts/gen-tfvars.py <account folder> <slice>`, then `init
+-backend-config=backend.hcl -input=false`), and every write on the user's word naming it, the other
+sessions told first:
+
+1. **Pass 2, from 2.1**: 2.1's view and daily table over Stage 19's copy, 2.2 already run as Stage 19's
+   5.3, then 2.3's publication and data product. About 25 minutes.
+2. **2.4, the consumer's workgroup**: the applies in 2.4's order, sagemaker then governance; the compute
+   added to `test-experimentation` in the portal; its reads. A base capacity above 4 RPUs is removed at once
+   by 2.9's steps. About 45 minutes, the stack's creation included.
+3. **2.5 to 2.8**: the request and the approval, the datashare read in both namespaces, the consumer's read
+   from the editor and from `test-experimentation`'s notebook, the revocation, the portal's *Create table*.
+   About 60 minutes.
+4. **2.9, the consumer's workgroup removed**: the portal's removal, then the applies in the reverse order,
+   each re-planned `No changes`; `US-3` green. About 25 minutes.
+5. **Pass 3, lineage**: `lineage_reader`, its secret and the second connection, the data source with
+   lineage, the statements, the graph, then 3.5's removal. About 45 minutes, the pull's five minutes
+   included.
+6. **Pass 4, the namespace in the Glue Data Catalog**: 4.1 to 4.4, then 4.5 with the transfer role
+   applied, 4.6, and 4.8 at once. The managed compute's base capacity is unread, so 4.6's reads are the
+   only queries on it; at 128 RPUs, the blueprint template's own default (1.3), a query's 60-second
+   minimum costs 0.77 USD. About 75 minutes.
+7. **[Claude] The closing reads**: the consumer's workgroup and the managed compute sit outside `make down`,
+   `make status` and the usage limit, so before the lowering:
+
+   ```bash
+   aws redshift-serverless list-workgroups --profile awsds-infra-sandbox-1 --region us-west-2 --query 'workgroups[].[workgroupName,status,baseCapacity]' --output text
+   ```
+
+   ```bash
+   aws redshift describe-clusters --profile awsds-infra-sandbox-1 --region us-west-2 --query 'Clusters[].[ClusterIdentifier,ClusterStatus]' --output text
+   ```
+
+   ```bash
+   ./aws/warehouse.py awsds-infra-sandbox-1
+   ```
+
+   `awsds-sandbox-warehouse` alone, no cluster, and `WH-8` green, its extra-object check.
+8. **[user] The rollback's item 5** with Stage 19's 5.4: one drop of `lab.trades_hot`, `lab.trades_hot_by_desk`
+   and `lab.trades_hot_daily`; then 6h's 6.4.
+
+About 4 hours 30 minutes of passes 2 to 4, beside Stage 19's 5.3, which they share.
 
 ## Verifications
 
