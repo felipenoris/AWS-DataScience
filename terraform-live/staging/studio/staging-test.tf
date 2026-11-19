@@ -15,7 +15,7 @@
 variable "product_databases" {
   description = "The product databases of the applications deployed into this account's project, by name (Stage 19 decision 2 (d)): the same name in every account's catalog."
   type        = list(string)
-  default     = ["app_etl"]
+  default     = ["app_etl", "app_dbt"]
 }
 
 data "aws_iam_role" "deploy" {

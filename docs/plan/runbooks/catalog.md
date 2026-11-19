@@ -186,10 +186,11 @@ The portal's *Create database* deploys a `DataLake` environment named
   environment (`environmentId` null) and hangs from `project.default_lakehouse`, the `Tooling`
   environment's connection. What the environment's delete does to the source is unread.
 
-That environment carries no subscription target. One created by API,
-`create-environment … --user-parameters name=glueDbName,value=<name>`, carries `<environment>-default-target`
-(measured 2026-11-11, Stage 19 xix). The project's own default `DataLake` environment holds the target a
-subscription lands on (§S).
+A project's first `ACTIVE` `DataLake` environment carries `<environment>-default-target`, whichever path
+created it, and a later one carries none, the portal's or one created by API,
+`create-environment … --user-parameters name=glueDbName,value=<name>` (read 2026-11-19 across four
+projects, `SUP-184`; Stage 19 xix measured a first one on 2026-11-11). The project's own default
+`DataLake` environment holds the target a subscription lands on (§S).
 
 A source's run is a `SYSTEM` session of the project role calling `glue:GetDatabase`, `GetTables` and
 `lakeformation:GetResourceLFTags` (measured, Stage 18 7.2 and Stage 19 0.2). A run over `app_etl` with

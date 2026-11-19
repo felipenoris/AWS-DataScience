@@ -1191,3 +1191,97 @@ Times are UTC.*
   `0b3ad0f98ed46af809cb539df0102f3c715723b9d07a868aad9192f41c21a1c8`.
 - **[Claude] Left**: sitting A uploads `$HOME/tmp/stage20/app-dbt.tar` into a space of `app-dbt-dev`; its
   `sha256sum` there reads the digest above.
+
+## 2026-11-19 — 8.3: the `DataLake` environments, and `staging/studio/`'s line applied
+
+*Claude, in a session started by the orchestrating session, on the user's word in this session's chat:
+"Autorizo os três atos", the answer to a question that named the two `create-environment` calls and the
+apply of `staging/studio/`'s saved plan, each with its command. The infrastructure user, permission set
+`InfrastructureAccess`, through `awsds-infra-staging` and `awsds-infra-prod`; reads also through
+`awsds-infra-sandbox-1` and `awsds-infra-data`. The laptop's three other sessions (Stage 19, Stage 17 9.5
+and 10.4, 6h decision 3) were told before the first write. Times are UTC.*
+
+- **[Claude] Lesson 73, before the calls**, read in the CI/CD CLI 1.0.9's wheel unpacked in the laptop's
+  `uv` cache, its four files matching the wheel's `RECORD`, and in this repository:
+  - the CLI keys a project's connections by name (`helpers/connections.py`), the project's listing first
+    and each environment's after it, and resolves `{proj.connection.<name>.<property>}` by name
+    (`helpers/context_resolver.py`); it takes the project role from the first environment that
+    provisions a `userRoleArn` (`get_project_user_role_arn`), and the `Tooling` environment by its
+    blueprint, then by the `IAM` connection;
+  - its catalog import remaps a `DataSourceReferenceForm` by the asset's `databaseName`, and falls back
+    to the first source listed (`SUP-389`); its bootstrap action `datazone.create_connection` creates in
+    `environments[0]`, an action no manifest here names;
+  - `deploy-application.py`'s `product_source`, behind `--catalog-follow-up`, and `app_etl_tasks.py`'s
+    `find_source` select the source whose filter names the stage's database and require exactly one;
+    `scripts/tfhygiene/projects.py` finds the `Tooling` environment by `isDefaultToolingEnvironment`;
+    `aws/catalog.py`'s `CT-14` expects one source per database, `aws/studio.py`'s `US-11` every
+    environment `ACTIVE`. Release G's leg (`promotion.md` §N.8.5) and the template's pipelines run
+    through these alone.
+
+  No selector picks by position among what a second `DataLake` environment adds, if that environment
+  adds no connection and provisions the same role.
+- **[Claude] The targets read**, 02:10:44 to 02:15:24: each project held `Tooling` and
+  `deploy-<env>-app-etl`, the latter's configuration the step's (`d8f802ad-…` in Staging, `f403ecfc-…`
+  in Production) on the blueprint `d8w7c3fmbsz5cg`; that environment provisions `cloudFormationStackId`,
+  `glueDBName`, `glueOutputUri` and `userRoleArn`, the last the `Tooling` environment's role; each
+  project's nine connections are the `Tooling` environment's; one source each, `52f18khk7kdi4w` and
+  `5zggi2lr2ezy4w`, on `project.default_lakehouse`. No environment named `deploy-<env>-app-dbt`, and no
+  Glue database `app_dbt`: each catalog held `app_etl`, `curated`, `default` and `raw`.
+- **[Claude] `staging/studio/`'s line**, `product_databases = ["app_etl", "app_dbt"]`, planned from this
+  worktree's tree (`origin/main` at `573fe1df` and the line) from 02:17:56 to 02:18:24 into
+  `$HOME/tmp/stage20-8-4-staging-studio.tfplan`: *"Plan: 2 to add, 0 to change, 0 to destroy."*, the
+  `aws_lakeformation_permissions` `deploy_product_database` and `deploy_product_tables` on `app_dbt`.
+- **[Claude] The domain's RAM share**: the Stage 19 session announced its permission's replacement at
+  02:20 and reported the share at version 13 at 02:20:41, version 12 reading `UNATTACHABLE`. No DataZone
+  call ran between the two messages; at 02:21:40 `list-environments` and `list-connections` answered in
+  both targets as before.
+- **[Claude⚡] The environments**, by the step's commands:
+  - Staging, 02:23:05 to 02:23:07: exit 0, `bg5ndpa5etujo0` `CREATING`; `ACTIVE` read at 02:23:46, its
+    deployment `SUCCESSFUL`;
+  - Production, 02:26:58 to 02:27:00: exit 0, `adscxpx574cas0`; `ACTIVE` read at 02:27:38.
+- **[Claude] 8.3's reads**, by 2.1's block, Staging at 02:24:03 and Production at 02:28:23, the same in
+  both but the ids:
+  - the environment provisions the stack `DataZone-Env-<environment id>`, `glueDBName` `app_dbt`,
+    `glueOutputUri` the project's `dev/data/catalogs/` and the `Tooling` environment's `userRoleArn`;
+  - the database `app_dbt`, *"Created by DataZone for project deploy-staging"* (`deploy-production`), at
+    the project's `dev/data/catalogs/`, `CreateTableDefaultPermissions` `[]`, created at 02:23:25 and
+    02:27:16;
+  - the account's `IAMPrincipals` under `context.datazone.projectId=="<project>"` hold `CREATE_TABLE`,
+    `DESCRIBE` and `DROP` on it, and `ALTER`, `DELETE`, `DESCRIBE`, `DROP`, `INSERT` and `SELECT` on its
+    tables; the provisioning role `ALL`, grantable; the manage-access role `CREATE_TABLE` and grantable
+    `DESCRIBE`, and grantable `DESCRIBE` and `SELECT` on the tables;
+  - one source over it, `<account>-AwsDataCatalog-app_dbt-default-datasource`: `495urkkg5c7fyo` on
+    `cron(23 2 * * ? *)` and `bjfmkla36ed3ps` on `cron(27 2 * * ? *)`, the minute of each one's
+    creation; `READY`, `ENABLED`, `publishOnImport` false, no business-name generation, its filter
+    `app_dbt` `INCLUDE *`, no environment, hanging from `project.default_lakehouse` (`5xxm5bdolo1fdc`,
+    `5uc9mhko5zvfgw`), whose `glueLineageSyncEnabled` reads `true`;
+  - the nine connections, every one still the `Tooling` environment's;
+  - **no subscription target** on either new environment, read at 02:24:03, 02:24:29 and 02:25:33 in
+    Staging and at 02:28:23 in Production, while `deploy-staging-app-etl` keeps
+    `deploy-staging-app-etl-default-target` (created by `SYSTEM` 2026-11-11 at 15:28:54,
+    `GlueTableAssetType` and `GlueViewAssetType`, `abac:CURRENT_PROJECT`, database `app_etl`). Neither
+    Data Governance's nor Staging's trail holds a `CreateSubscriptionTarget` since 2026-11-11 15:00, that
+    target's included: the trail does not record the `SYSTEM` write under that name.
+- **[Claude] The target across projects**, between 02:25:35 and 02:26:58, each project's environments in
+  creation order with their targets: in `eighth-experimentation`, `eighth-experimentation-lakehouse`
+  (2026-10-26) carries one, `create-datalake-database-env-new_database-…` (2026-10-28) none, and the
+  earlier `mydatabase` environment is `CREATE_FAILED`; in `test-experimentation`,
+  `test-experimentation-lakehouse` (2026-10-20) carries one,
+  `create-datalake-database-env-test_project_database-…` (2026-11-09) none; in `app-etl-dev`, the
+  portal's `create-datalake-database-env-app_etl-…` (2026-11-14), its one `DataLake` environment, carries
+  one. A project's first `ACTIVE` `DataLake` environment carries a default target,
+  whatever path created it, and a later one none (`SUP-184`, appended). A deployment project subscribes to
+  nothing (Stage 19 decision 14), so no step reads the absent target.
+- **[Claude⚡] `staging/studio/` applied**, 02:27:19 to 02:27:30, the saved plan: both grants created in
+  1 s and 2 s, *"Apply complete! Resources: 2 added, 0 changed, 0 destroyed."* The re-plan, 02:27:45 to
+  02:28:09 with `-detailed-exitcode`: exit 0, *"No changes. Your infrastructure matches the
+  configuration."* `list-permissions`: `awsds-deploy-staging` holds `DESCRIBE`, no grant option, on
+  `app_etl`, `app_dbt` and each one's tables; `awsds-deploy-prod` holds nothing on either.
+- **[Claude] `./aws/catalog.py`**, 02:29:00 to 02:31:33: exit 0, *"all checks passed"*; `CT-14` passes in
+  both targets, *"2 source(s), over app_dbt, app_etl"*.
+- **[Claude] `./aws/studio.py`**, 02:31:46 to 02:34:35: *"0 check(s) FAILED"*, 50 passing, the failed
+  calls the persona profiles of the sessions not signed in; `US-11` passes in both targets,
+  *"deploy-staging alone, 3 environment(s) ACTIVE"* and the same for `deploy-production`, its table
+  listing each new environment with `app_dbt` and no target.
+- **[Claude] Lesson 79's window**: `staging/studio/` was applied from this branch, so until its pull
+  request merges, a plan of the slice from `main` proposes destroying the two grants.
