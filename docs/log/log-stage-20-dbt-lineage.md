@@ -1294,3 +1294,153 @@ and 10.4, 6h decision 3) were told before the first write. Times are UTC.*
 - **[Claude] The tree**: `6c3cc62d`'s tree is the branch head `9be8cf75`'s, `d08b994e`, so `main` holds
   `staging/studio/`'s `app_dbt` line the apply of 02:27 ran from, and Lesson 79's window, a plan from `main`
   proposing to destroy the two grants, is closed.
+
+## 2026-11-19 — sitting A's pre-flight, with nothing up
+
+*Claude, in a session started by the orchestrating session, on the laptop with nothing up: reads as the
+infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1`, two
+`terraform plan` runs, a `make up` dry run, and the GitHub API on `awsds-workflows`. No write. Times are
+UTC.*
+
+- **[Claude] The archive and the tar** (pre-flight 1): `examples/app-dbt/` holds the same tree,
+  `ec837c34`, at `103b4acc` and at `origin/main` `0d5b573b`, and no commit between them touches it.
+  `$HOME/tmp/stage20/app-dbt.tar` and the archive in its tree still read 2.0's digests, `0b3ad0f9…` and
+  `7906e411…`, and the tar lists `51 37 []`. Nothing is rebuilt.
+- **[Claude] `app-dbt-dev`** (pre-flight 2), from 15:01:45:
+  - `dnl3l158mbhrio` `ACTIVE`; `Tooling` `55hp9teamegf4g` and `SageMakerAIDomain` `4mxdm39fu4j05s`,
+    both `ACTIVE`, and no other environment;
+  - the owner and three `PROJECT_CONTRIBUTOR`s: the project's own role (`8af0750c-…`, an `IAM` profile
+    by `get-user-profile`), the bundle role's group (`06d426f2-…`) and Sandbox's `InfrastructureAccess`
+    group (`839bcde8-…`);
+  - `project.athena` (`dbddoq8ox6s3gw`, on the `Tooling` environment) naming
+    `workgroup-dnl3l158mbhrio-55hp9teamegf4g`: `ENABLED`, enforced, *"Athena engine version 3"*, its
+    output under the project's `dev/sys/athena/`;
+  - the role carrying `awsds-sandbox-project-boundary`, and `awsds-sandbox-workflows` beside AWS's three
+    policies;
+  - 2.0's starting state as at 00:55: *"Database app_dbt not found."*, *"Job not found."*, no `app_dbt_`
+    workflow, `0` objects three times, no asset and no data source, so 2.1 is not done;
+  - the load task's two Glue network connections,
+    `datazone-glue-network-connection-<subnet>-dnl3l158mbhrio-dev` in `us-west-2a` and `us-west-2b`, on
+    the project's security group; the project's SageMaker AI domain `InService`, pinning
+    `awsds-sandbox-dev-env` version 11 on both app types.
+- **[Claude] The workflows grant** (pre-flight 3): `sandbox/workflows/` planned from this session's branch
+  (`origin/main` at `0d5b573b`) from 15:03:30 to 15:04:05: *"No changes. Your infrastructure matches the
+  configuration."*, exit 0 under `-detailed-exitcode`. With `-var training_pair_enabled=true`, 15:04:24
+  to 15:04:38: *"Plan: 0 to add, 1 to change, 0 to destroy."*, `aws_iam_policy.workflows` in place with
+  `DescribeATrainingJobNoProjectHolds` and `TagATrainingJobWithTheCallersProject` added. That change is
+  Stage 17's training pair (its 9.5), applied in its sitting B after 2.2's readings (a) and (b). It
+  reaches every listed role, `app-dbt-dev`'s among them, and grants on training jobs alone, which no run
+  of this stage creates. No plan was saved.
+- **[Claude] The endpoints** (pre-flight 4), read in `sandbox/egress/` and in `vpc-egress-v0.19.0`, its
+  pin:
+  - the module's core set: `sts`, `logs`, `kms`, `ecr.api`, `ecr.dkr`, `athena`, `glue` and
+    `lakeformation`; the slice's extras: `sagemaker.api`, `sagemaker.runtime`, `sagemaker.studio`,
+    `s3tables`, `datazone`, `ssm`, `ssmmessages`, `ec2messages`, `ec2` and `secretsmanager`; S3 through
+    the `[P]` gateway;
+  - a space's deploy and run call MWAA Serverless at `airflow-serverless.us-west-2.api.aws`, the `mwaa`
+    group's one endpoint, beside DataZone, S3 and STS; a worker calls Glue, Athena, Lake Formation, STS,
+    S3 and DataZone's `PostLineageEvent`; 4.5's operator calls `sagemaker.api`, and its job ECR, Athena,
+    Glue, STS, DataZone and the proxy. All but MWAA Serverless are up with the slice, so `mwaa` is the
+    one group, and `mwaa,mlflow,bedrock-base` holds it;
+  - `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base DRY=1`, which runs nothing, lists
+    `sandbox/egress/` and `sandbox/probes/` as its `[E]` slices and refuses `warehouse-compute/`
+    (refusal 11);
+  - the proxy's Sandbox plane carries GitHub's names since 2026-09-19 (6d decision 6), so 2.2's clone has
+    a path, and `awsds-workflows`' `main` reads `4613ddc`, *"identical"* to the pin by the API's compare.
+- **[Claude] §2's commands** (pre-flight 5), read against decisions 14 to 17, the pin `4613ddc` and
+  `LINEAGE_NAMESPACE`:
+  - 2.4's and 3.4's `get-lineage-node` named the dbt job's node under `app-dbt`, the namespace
+    `run-dbt.sh` reads when `--namespace` is left out; under 16 (c) the transform task passes
+    `app-dbt-dev` in `dev`, so the node is
+    `app-dbt-dev.awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run`. Corrected. The recorded
+    events under `tests/fixtures/` carry `app-dbt`; no step of the sitting reads them.
+  - 4.5 named the lint at `1a50ceb`; `app-dbt` pins `4613ddc`, one commit ahead of it by the compare.
+    Corrected, with 4.5's proxy controls: `pypi.org` on the plane, and never the domain's own URL off it,
+    which 6d decision 6's apply adds.
+  - The values line and 2.6's export take the ids read above; 2.2's extraction checks 2.0's digest
+    first, its clone's head is read against the pin, and 2.2 names the combined sitting's raise.
+  - The rest reads as written: the workflows' names compose as `app-etl`'s did
+    (`app_etl_app_etl_dev_app_etl`, Stage 19's log); the log group is Stage 19 decision 27's
+    `/aws/mwaa-serverless/<domain id>-<project id>/<workflow>`; every field the blocks query is in the
+    AWS CLI 2.37.12's output shapes (`get-workflow`, `list-lineage-events`, `get-lineage-node`,
+    `list-data-source-runs`, `list-data-source-run-activities`), which carries `post-lineage-event` and
+    `delete-lineage-event`. 14 (a) and 15 (a) change nothing in `dev`, and 17 (b)'s workgroup is the
+    CLI's to resolve at the deploy.
+- **[Claude] 3.1's verdict** (pre-flight 6), which 8.5 owes: 2.4 gives it when the graph is one,
+  `as-built` staying in the targets' literal; 3.1 when it is split, `glue-arn` then written in the
+  manifest and `tests/test_manifest.py` before pass 8's tag; neither form linking stops the stage (3.2).
+- **[Claude] 4.5's workflow is unwritten**: the stage writes it at the pass, on a branch no tag carries,
+  so its tar is a second one, and §2's order places it before the sitting, with 2.1's acts.
+- **[Claude] Left**: 2.1's acts, the user's, with nothing up; 4.5's workflow and its tar; then sitting A
+  by §2's order.
+
+## 2026-11-19 — 4.5's workflow and the second tar, with nothing up
+
+*Claude, in a session started by the orchestrating session, on the laptop with nothing up: reads as the
+infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1` and
+`awsds-infra-prod`, the offline tests, the lint and one build. No write to AWS. Times are UTC.*
+
+- **[Claude] The workflow** `app-dbt-job`, its script `job/probe.py`, the manifest's lines and the tests,
+  commit `30ab3539` on pull request #335:
+  - one `SageMakerProcessingOperator` task, `retries: 0`: the image `{env.JOB_IMAGE_URI}`; the entrypoint
+    `/opt/conda/bin/python /opt/ml/processing/code/probe.py`, the Region, the workgroup, the database and
+    the domain as options; `ml.t3.medium` with 10 GB under `{env.PROJECT_KEY_ARN}`;
+    `EnableNetworkIsolation: false` and `EnableInterContainerTrafficEncryption: true` in the project's two
+    subnets and `{env.PROJECT_SG}`; the code input `app-dbt/job/` under the shared prefix; 900 s; the tag
+    `AmazonDataZoneProject` `{proj.id}`; no output;
+  - the manifest: `app-dbt-job` in `content.workflows` and in `dev`'s bootstrap alone; `JOB_IMAGE_URI`,
+    `PROJECT_SG` and `PROJECT_KEY_ARN` in every stage, `dev` reading `${JOB_IMAGE_URI}`,
+    `${DEV_PROJECT_SG}` and `${DEV_PROJECT_KEY_ARN}`, a target `none` and its leg's prefixed names; the
+    storage item `job` in every stage;
+  - `uv run pytest` *"97 passed"*, 11 of them `tests/test_job.py`'s; `ruff check` *"All checks passed!"*
+    and `ruff format --check` clean; `awsds-workflows lint` at `4613ddc` with the pipeline's seven
+    instance types *"ok: 6 arquivo(s)"*, exit 0.
+- **[Claude] The lint's controls**, three altered copies outside the repository: the encryption off,
+  exit 1, *"job: task job: NetworkConfig.EnableInterContainerTrafficEncryption tem de ser true"*; the
+  folder `job` mapped in `dev` alone, exit 1, *"codigo: task job: a entrada de código"* under
+  `shared/app-dbt/job/` *"está fora de"* the four folders every stage copies; the isolation on, exit 0.
+  The second is why every stage maps `job`; the third is `1a50ceb`'s rule leaving the isolation to the
+  task, which `tests/test_job.py` holds at `false`.
+- **[Claude] The image's pull by the project role**, a precondition of the job no step had read:
+  - `awsds-prod-ecr-dev-env`'s repository policy holds one statement, `AllowConsumerAccountsToPull`,
+    granting Sandbox Account 1 `BatchCheckLayerAvailability`, `BatchGetImage`, `GetDownloadUrlForLayer`
+    and `DescribeImages`;
+  - `simulate-principal-policy` on `datazone_usr_role_dnl3l158mbhrio_55hp9teamegf4g` without context
+    read `explicitDeny`, `AllowedByOrganizations: false` and no matched statement, `SUP-008`'s shape; the
+    perimeter SCP denies an ECR push outside the organization alone, and the RCP an identity outside it.
+    With `aws:RequestedRegion=us-west-2`, `BatchGetImage`, `GetDownloadUrlForLayer` and
+    `GetAuthorizationToken` read `allowed` by `SageMakerStudioProjectRoleMachineLearningPolicy`, its
+    `SageMakerECRPermissions` on every repository and its token statement on the caller's account;
+  - that policy's `SageMakerCreatePermissions` asks for `EnableSageMakerMLWorkloadsPermissions` `true` and
+    the project tag, and the role carries both, `AmazonDataZoneProject` `dnl3l158mbhrio`;
+    `SageMakerStudioProjectUserRolePolicy`'s `AllowPassRoleOnProjectRoles` passes it to SageMaker;
+  - `awsds-sandbox-dev-env` version 11 reads `CREATED`, its `BaseImage` and `ContainerImage` one URI by
+    digest, `awsds-prod-ecr-dev-env@sha256:658c05d1…456c19f9`.
+- **[Claude] The second archive and tar**, from `30ab3539` by 2.0's commands, without the `rm -rf`, in
+  `$HOME/tmp/stage20/job/`:
+  - `package-task` from 16:36:43 to 16:36:48, *"26129645 bytes, 82845727 descompactados, para o CPython
+    3.12 em x86_64-manylinux_2_28"*; 1.4's check `5102 82845727 ['0o100755', '0o100755']`;
+  - against 2.0's archive, the same 5,102 names and four entries apart, all in
+    `app_dbt-0.1.0.dist-info/`: `METADATA` from 20,086 to 21,518 bytes, the README the package embeds,
+    and `RECORD`, `direct_url.json` and `uv_cache.json` at their sizes;
+  - the tar `app-dbt-job.tar`, 26,556,928 bytes, `55 40 []`: 2.0's members with `job/`, `job/probe.py`,
+    the third definition and `tests/test_job.py`;
+  - SHA256: the tar `903847a55dcc1b1510ccd4b0f0413c7e181e744ebe7215b9b1c86e59fb279abe`, the archive
+    `74f8bc3948df4ff2a2f509995be361c97c85d19ddc4424b12a95240d79a129ec`; 2.0's tar still `0b3ad0f9…`.
+- **[Claude] Left**: 2.1's acts, the user's, with nothing up; then sitting A by §2's order, 4.5 from
+  `app-dbt-job.tar`. Pull request #335's merge carries the workflow into `main`, and 8.6 takes it off the
+  tree before pass 8's tag.
+
+## 2026-11-19 — sitting A's raise aligned with `promotion.md` §N.9's day 1
+
+*Claude, in the same session, after merging `origin/main` at `c11a9829`, which carries pull request
+#334's §N.9: the combined Sandbox sitting in three days, sitting A on day 1. Reads only.*
+
+- **[Claude] The raise**: §N.9.2 raises day 1 with `make up ENV=sandbox GROUPS=mwaa`, after `make hub-up`
+  and 6d decision 6's apply. The stage file's order and 2.2 named the single start's
+  `GROUPS=mwaa,mlflow,bedrock-base`, and now name day 1's. The slices are the same: `slices.py up` takes
+  `warehouse-compute/` only when `--groups` names `redshift` (refusal 11), so the pre-flight's dry run,
+  `sandbox/egress/` and `sandbox/probes/`, holds for `GROUPS=mwaa`.
+- **[Claude] A refusal**: `make up ENV=sandbox GROUPS=mwaa DRY=1`, which runs nothing, was refused by the
+  session's auto-mode classifier, *"Destructive or Unwanted Actions"*, and not retried; the `Makefile`
+  and `scripts/slices.py` were read in its place.
