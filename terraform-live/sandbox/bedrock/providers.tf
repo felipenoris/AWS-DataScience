@@ -19,3 +19,9 @@ provider "aws" {
     }
   }
 }
+
+# The account-level enforced guardrail configuration (application.tf). It carries no default_tags:
+# awscc has no such block, and the configuration is not a taggable object.
+provider "awscc" {
+  region = var.region
+}

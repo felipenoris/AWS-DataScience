@@ -48,8 +48,9 @@ variable "domain" {
 # us. inference profile id it is copied from`, or "" for a model invoked on demand in one Region.
 # The three Claude models are Stage 6e's scoped set, sandbox/bedrock/'s `models`, which lists four
 # consumers of that one set: this map is a fifth, and the first to add a model to it. Titan Text
-# Embeddings V2 is the knowledge base's embeddings model (Stage 17 decisions 1 and 11). The two
-# lists differ on purpose (Lesson 51), and a change of the scoped set edits both.
+# Embeddings V2 is the knowledge base's embeddings model (Stage 17 decisions 1 and 11), and Amazon
+# Nova Lite is app-genai's model, invoked on demand inside us-west-2 (Stage 17 decision 23 (a), step
+# 10.4). The two lists differ on purpose (Lesson 51), and a change of the scoped set edits both.
 #
 # The provisioning role may create a profile of these models and of no other. Which of them a
 # project reaches is the console's Manage; whether a call through a profile is admitted is the SCP
@@ -63,6 +64,7 @@ variable "project_models" {
     "anthropic.claude-sonnet-4-5-20250929-v1:0" = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
     "anthropic.claude-haiku-4-5-20251001-v1:0"  = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
     "amazon.titan-embed-text-v2:0"              = ""
+    "amazon.nova-lite-v1:0"                     = ""
   }
 
   validation {

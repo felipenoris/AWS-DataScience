@@ -5,11 +5,13 @@
 #
 # `bundle --targets dev` reads the `dev` project the manifest names, its membership, its environments
 # and its connections, and, with `content.catalog` enabled, exports the catalog that project owns
-# (Stage 19 decision 18 (d)): the reads below. It writes nothing in this account: the bundle's files
-# are the tag's own, read beside the manifest, and the role deploys nothing and runs nothing. No action
-# below takes a resource type but GetDomain, so DataZone's own membership layer is what confines the
-# reads: the role is made a member of each application's `dev` project in the portal, by hand, and of
-# no other project (INT-25).
+# (Stage 19 decision 18 (d)): the DataZone reads below. Of those, only GetDomain takes a resource
+# type, so DataZone's own membership layer is what confines them: the role is made a member of each
+# application's `dev` project in the portal, by hand, and of no other project (INT-25). For an
+# application whose manifest carries the trained model (Stage 17 step 9.5), `bundle` also reads the
+# candidate under its `dev` project's model prefix, with S3 and the project key, bound to that prefix.
+# The role writes nothing in this account: the bundle's other files are the tag's own, read beside the
+# manifest, and the role deploys nothing and runs nothing.
 #
 # The ceiling adds, to the module's denies, every role change and every PassRole. No state, since the
 # role applies no slice (refusal 8), and no application ceiling.
@@ -97,6 +99,57 @@ data "aws_iam_policy_document" "bundle_reads" {
       "datazone:SearchTypes",
     ]
     resources = ["*"]
+  }
+
+  # The trained model a release carries (Stage 17 step 9.5, INT-25): `bundle` syncs each model
+  # application's prefix from its `dev` project with the caller's credentials (SUP-374). The listing is
+  # bound to that prefix, so the CLI's first listing, of the connection's whole location, is refused
+  # and printed, and the command goes on.
+  dynamic "statement" {
+    for_each = length(local.model_applications) > 0 ? ["list"] : []
+
+    content {
+      sid       = "ListTheTrainedModelsPrefix"
+      effect    = "Allow"
+      actions   = ["s3:ListBucket"]
+      resources = ["arn:${data.aws_partition.current.partition}:s3:::${local.projects_bucket}"]
+
+      condition {
+        test     = "StringLike"
+        variable = "s3:prefix"
+        values   = [for m in values(local.model_applications) : "${m.model_prefix}*"]
+      }
+    }
+  }
+
+  dynamic "statement" {
+    for_each = length(local.model_applications) > 0 ? ["get"] : []
+
+    content {
+      sid       = "ReadTheTrainedModel"
+      effect    = "Allow"
+      actions   = ["s3:GetObject"]
+      resources = [for m in values(local.model_applications) : "arn:${data.aws_partition.current.partition}:s3:::${local.projects_bucket}/${m.model_prefix}*"]
+    }
+  }
+
+  # The projects bucket encrypts under the project key, whose policy delegates to IAM in this account.
+  # The decrypt is admitted through S3 alone.
+  dynamic "statement" {
+    for_each = length(local.model_applications) > 0 ? ["decrypt"] : []
+
+    content {
+      sid       = "DecryptTheTrainedModelThroughS3"
+      effect    = "Allow"
+      actions   = ["kms:Decrypt"]
+      resources = [data.aws_kms_alias.project.target_key_arn]
+
+      condition {
+        test     = "StringEquals"
+        variable = "kms:ViaService"
+        values   = ["s3.${var.region}.amazonaws.com"]
+      }
+    }
   }
 }
 

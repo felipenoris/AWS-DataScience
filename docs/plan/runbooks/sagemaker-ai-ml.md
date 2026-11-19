@@ -388,12 +388,17 @@ carries no project tag, and `AddTags` allowed for that one key with the caller's
 | Resource type | `sandbox/workflows/` | `<env>/studio/workflows.tf`, the deployment projects |
 |---|---|---|
 | Processing job | held | held |
-| Training job | designed (9.5), after 2.2's readings | held since 2026-11-16 for `app-etl-train`, and removed when that workflow retires (9.11): no target trains `app-ml` |
-| Transform job | designed (9.5) | designed (9.5) |
-| SageMaker model, the tag alone | designed (9.5) | designed (9.5) |
-| Model package, on the stage's group and its versions: `CreateModelPackage`, `ListModelPackages` and `DescribeModelPackage`, and never `UpdateModelPackage` | what 9.1 reads `app-ml-dev`'s role lacks for its own group | designed (9.5, decision 16 (b)) |
+| Training job | written 2026-11-19 behind `training_pair_enabled`, applied after 2.2's readings (9.5) | held since 2026-11-16 for `app-etl-train`, and removed when that workflow retires (9.11): no target trains `app-ml` |
+| Transform job | written 2026-11-19, not applied (9.5) | applied 2026-11-17 (9.5) |
+| SageMaker model, the tag alone | written 2026-11-19, not applied (9.5) | applied 2026-11-17 (9.5) |
+| Model package, on the stage's group and its versions: `CreateModelPackage`, `ListModelPackages` and `DescribeModelPackage`, and never `UpdateModelPackage` | `CreateModelPackage` of a `PendingManualApproval` version in the application's own group, written 2026-11-19, not applied; AWS's policy gives the list, the describe and the approval, the member's in the portal (9.5) | applied 2026-11-17 (9.5, decision 16 (b)) |
 | Endpoint configuration and endpoint | what 9.8's reading finds the role lacks, with the endpoint increment | the same |
 | ML pipeline and its executions | what 9.8's reading finds `app-ml-dev`'s role lacks, with the pipeline increment | none: the pipeline runs in the `dev` project alone |
+
+A model package group is created once from a notebook, never by a workflow: `app-ml-dev`'s in its `dev`
+project (9.6) and 3.2's `ml-demo-xgboost` in the exercise's. Its tag is `sandbox/ml/`'s statement
+(decision 7 (a)), written 2026-11-19 and not applied. The create carries the project's tag alone, since a
+second key reads `implicitDeny`. A target's group is declared by the account's Terraform.
 
 Whether a worker's `CreateModel` and `CreateTransformJob` meet the gap as a processing job did is
 verification xxix, and whether a notebook's `CreateTrainingJob` does is 2.2. A model package is outside
@@ -409,7 +414,8 @@ through their `us.` inference profiles, Titan Text Embeddings V2, and an applica
 the object every portal call invokes through. `DenyBedrockReadsOutsideTheRoutedRegions` keeps the calls
 in `us-east-1`, `us-east-2` and `us-west-2`. Both are measured (2026-10-19, §G). `app-genai`'s model is
 outside that list today: decision 23 (a) adds Nova Lite's foundation model in `us-west-2` to the
-statement's `NotResource`, with the battery's row, before the loop in `dev` (10.4, designed). The
+statement's `NotResource`, with the battery's row, before the loop in `dev` (10.4, written and planned
+2026-11-19, not applied). The
 targets hold neither statement.
 
 **Bedrock in a target.** What stands between a deployment project's role and a model, each read in this

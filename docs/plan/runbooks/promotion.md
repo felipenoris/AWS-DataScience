@@ -1192,14 +1192,19 @@ bound items 3, 5, 6, 9 and 11.
    passes 2 and 3 in `app-dbt-dev`, after item 2's project and line, dbt on a worker and its lineage events, and 4.5 once item 2's applies ran; before
    2026-12-18, when dbt Core 1.11's critical support ends.
 7. **Sandbox sitting B**, `GROUPS=mwaa,mlflow`, no GitLab: Stage 17's 1.4 and 1.6, the first tracking
-   call, then 9.6 after `EXC-11`'s share, `app-ml` trained, registered and scored in `app-ml-dev`. Stage
-   17's passes 2 to 5 are sittings of their own after it.
+   call, then 9.6 after `EXC-11`'s share, `app-ml` trained, registered and scored in `app-ml-dev`. 9.6's
+   training run needs `sandbox/workflows/`'s training pair, applied only after 2.2's readings (a) and (b),
+   so those two come first in the sitting (Stage 17 9.5). Its model package group needs `sandbox/ml/`,
+   applied before the sitting with nothing up (Stage 17 decision 7 (a)). Stage 17's passes 2 to 5 are
+   sittings of their own after it.
 8. **Sandbox sitting C**, `GROUPS=mwaa,bedrock-base`, no GitLab: Stage 17's 10.4, `app-genai`'s loop
    with the boundary's deny and the account's guardrail measured, and 6e 6.4's assistant session, whose
    token volume sets 6e decision 6's threshold.
 9. **The Sandbox warehouse sitting**, `GROUPS=redshift`: Stage 19's pass 5 after 4.12, 5b's
    `max_query_execution_time` test, and 6h's 5.1 before decision 8 (a)'s wide tag and 5.2b after, its switch and Stage 21 4.5's transfer role merged on
    2026-11-18 with [pull request #323](https://github.com/felipenoris/AWS-DataScience/pull/323), off by default;
+   the Query editor's first session opening on `sandbox`, 6h decision 3's effect, its connection updated
+   2026-11-19 with nothing up (the sync off, so no 03:43 UTC run bills during the sitting);
    [Stage 21](../stages/stage-21-redshift-s3-data-products.md)'s passes 2 to 4, its 1.3 readings and 1.5's
    code done 2026-11-18 (`sagemaker-prereqs-v0.12.0`), after the user's reading of the enable wizard, its
    `RedshiftServerless` blueprint on for the sitting alone; before 2026-12-19, so the trial
