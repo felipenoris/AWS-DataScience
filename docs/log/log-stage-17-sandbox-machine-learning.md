@@ -3442,3 +3442,34 @@ module tags, no AWS call. Times are UTC.*
   hours in all, some 2.50 USD of endpoints and hub. Pass 7 can move to a sitting of its own; 0.7 cannot,
   since the forms precede 2.2's job. No item waits on anything outside the sitting but 7.6's idle bill, which
   Cost Explorer shows after the sitting's day (8.2).
+
+## 2026-11-19 — 7.4's evaluation dataset and 0.3's preparation, nothing up
+
+*Claude, the same session, on the orchestrating session's follow-up, its first two items. AWS's and
+MLflow's pages read through page-reading agents, MLflow installed on the laptop in throwaway `uv`
+environments, no AWS call. Times are UTC.*
+
+- **[Claude] The IDE's evaluation form**, read on AWS's pages (`docs/REFERENCES.md`): automatic
+  evaluations alone, with no human-based form and no judge model; the metrics Toxicity, Accuracy and
+  Robustness; the tasks General text generation, Text summarization, Question and answer and Text
+  classification; up to 1000 prompts a job. A custom dataset is JSON lines, each line a `prompt`, a
+  `referenceResponse` (required for question and answer, and for accuracy and robustness) and an optional
+  `category`. The form uploads the file to a bucket the IDE manages or chooses one from S3.
+- **[Claude] 7.4 corrected**: its "Haiku 4.5 as the evaluator" named a judge the IDE does not offer, so
+  Haiku 4.5 is now the model evaluated. Bedrock's own judge list holds Haiku 4.5 and not Nova Lite v1.
+  0.7 gains the form's dataset field: whether *Choose a dataset from S3* reaches `shared/ml-demo/bedrock/`,
+  the upload taking the same file where it does not.
+- **[Claude] The dataset**: `examples/sandbox-ml/bedrock/evaluation-dataset.jsonl`, twenty prompts of the
+  task *Question and answer*, 2,951 bytes, each line the three keys, in five categories: Networking 7,
+  AWS 5, Machine learning 4, Tooling 2, Data 2. Each reference is a short fact from this project's own
+  vocabulary. `examples/sandbox-ml/evaluation_dataset.py` checks every line and copies the file to
+  `shared/ml-demo/bedrock/` from the space; `ruff check` and `ruff format --check` pass.
+- **[Claude] 0.3's preparation**: the lock's `mlflow` 3.17.2 depends on `mlflow-skinny` and
+  `mlflow-tracing` 3.17.2. The scripts make ten MLflow calls: `set_tracking_uri`, `set_experiment`,
+  `start_run`, `log_params`, `log_metric`, `set_tag`, `log_artifact`, `search_runs`, `register_model` and
+  `xgboost.log_model`. Their signatures, printed by `inspect.signature` from `mlflow-skinny` 3.16.0 and
+  3.17.2 on Python 3.12 at 16:30, are identical; `xgboost.log_model`'s second parameter is
+  `artifact_path`, deprecated in both in favour of `name`. GitHub's release pages from 3.16.1 to 3.17.2
+  remove or deprecate none of these calls, and v3.16.2 has no page.
+- **[Claude] No script changed.** `examples/sandbox-ml/README.md` now names `mlflow` 3.17.2, the lock's
+  version since `a1c755b5`, so 0.3 confirms the space's versions against it.

@@ -343,12 +343,14 @@ Without it, pass 7 moves to a Sandbox sitting of its own with `GROUPS=bedrock-ba
 - [Claude] The archives of `examples/app-ml` and `examples/app-genai`, by 9.6's recipe (`SUP-348`), built
   from `main` on the sitting's eve so they carry its last merge.
 - [Claude] `examples/sandbox-ml`'s scripts read against the house lock, unchanged since `a1c755b5`, the
-  day before `default-v0.10.0`'s build: `mlflow` 3.17.2 where the folder's README names 3.16.0, and
-  `boto3` 1.43.92, `sagemaker` 3.21.0, `sagemaker-mlflow` 0.5.0, `pandas` 2.3.3, `xgboost-cpu` 3.3.0 and
-  Python 3.12 as it names them. 0.3 then confirms the versions instead of stopping the sitting on a script
-  that disagrees (Lesson 65).
-- [Claude] 7.4's evaluation dataset, twenty lines, which no file holds yet, written under
-  `examples/sandbox-ml/bedrock/` for the user to copy into `shared/ml-demo/bedrock/`.
+  day before `default-v0.10.0`'s build: `mlflow` 3.17.2 where the scripts were written against 3.16.0,
+  and `boto3` 1.43.92, `sagemaker` 3.21.0, `sagemaker-mlflow` 0.5.0, `pandas` 2.3.3, `xgboost-cpu` 3.3.0
+  and Python 3.12 as the folder's README names them. **Done 2026-11-19**: the MLflow calls the scripts make
+  have the same signatures in 3.16.0 and 3.17.2, so no script changed and the README names 3.17.2 (the
+  log). 0.3 then confirms the versions instead of stopping the sitting (Lesson 65).
+- [Claude] 7.4's evaluation dataset. **Written 2026-11-19**: `examples/sandbox-ml/bedrock/evaluation-dataset.jsonl`,
+  twenty prompts of the task *Question and answer*, which `evaluation_dataset.py` copies to
+  `shared/ml-demo/bedrock/` from the space.
 - Ready:
   - `sandbox/workflows/` plans *"No changes."*; with `training_pair_enabled=true`, 1 to change:
     `DescribeATrainingJobNoProjectHolds` and `TagATrainingJobWithTheCallersProject` added, 9 statements,
@@ -379,7 +381,7 @@ first, as 9.5's Sandbox applies were on 2026-11-19; the user may run the saved p
 | 5 | 2.2 (a) and (b), each refusal by its wording | [user] | 0.3 |
 | 6 | `sandbox/workflows/` with `training_pair_enabled=true`, from `main`, re-planned *"No changes."*; the default flips to `true` in the sitting's pull request, or the next plan from `main` removes the pair (Lesson 79) | [Claude⚡] | 0.1 |
 | 7 | 2.2 (c), the job `Completed` | [user] | 0.3 |
-| 8 | Pass 7, with `bedrock-agent` raised: 7.4's prompt, guardrail, flow and evaluation job; 7.4a's knowledge base over the runbooks, synced once; 7.4b's chat agent, or a flow app over the knowledge base if the create is refused (verification xxxiv), and one `Retrieve` from the space; 7.4c's pane read; 7.5's `ML-8`, `./aws/catalog.py` and `bedrock-usage.py`; 7.6, nothing deleted (decision 5) | [user]; [Claude] reads | 2.0 |
+| 8 | Pass 7, with `bedrock-agent` raised: 7.4's prompt, guardrail, flow and evaluation job, its dataset copied by `evaluation_dataset.py`; 7.4a's knowledge base over the runbooks, synced once; 7.4b's chat agent, or a flow app over the knowledge base if the create is refused (verification xxxiv), and one `Retrieve` from the space; 7.4c's pane read; 7.5's `ML-8`, `./aws/catalog.py` and `bedrock-usage.py`; 7.6, nothing deleted (decision 5) | [user]; [Claude] reads | 2.0 |
 | 9 | 9.6: the group `app-ml-dev`, the tests, the lint, `bundle` and `deploy`; `app-ml-train`, `app-ml-register`, `app-ml-score` and `app-ml-register` again; the registry's path; `bundle` after training; verification lx | [user]; [Claude] reads | 2.0 |
 | 10 | 10.4: the tests, the lint and `deploy`, then its readings 1 to 3 | [user]; [Claude] reads | 1.0 |
 | 11 | 10.4's reading 4: `sandbox/bedrock/` with `application_guardrail_required=true`, then its runs | [Claude⚡]; [user] | 0.4 |
@@ -441,8 +443,9 @@ shows its day (8.2).
   *Train* form (instance type default, VPC, isolation, key, tags), *Create endpoint* and *Add model*,
   *Create MLflow App*, the pipeline editor's step forms, the Generative AI menu's *Functions* wizard, the
   *Create Knowledge Base* pane (its sources, the embeddings models in its dropdown, its vector stores, its
-  chunking and parsing options, the *Local file* limits) and the chat agent's *Model* list. Which boundary
-  fields each form lacks decides whether a pass goes through the portal or the SDK.
+  chunking and parsing options, the *Local file* limits), the evaluation job's dataset field (whether
+  *Choose a dataset from S3* reaches `shared/ml-demo/bedrock/`) and the chat agent's *Model* list. Which
+  boundary fields each form lacks decides whether a pass goes through the portal or the SDK.
 - **0.8 — [Claude] Read the Tooling environment's `enableNetworkIsolation`**, a parameter AWS's Tooling
   page documents as "network isolation for training and deployed inference containers" (read 2026-10-12)
   and which this estate's profile neither sets nor locks: the deployed value, from the environment's
@@ -821,10 +824,15 @@ shows its day (8.2).
   profile whose model ARNs the profile lists, and `BU-5` passes.
 - **7.4 — [user] The objects, one each**: a prompt with a variable and two versions; a guardrail with one
   denied topic and the PII filter, attached to 7.4b's chat agent; a flow with a prompt node and a model
-  node, run once; an evaluation job, automatic, over a twenty-line dataset in `shared/ml-demo/bedrock/`,
-  Haiku 4.5 as the evaluator. **A function is not created** unless decision 10 takes (b): the wizard's
-  fields are read (0.7), and the Lambda it would make runs outside the VPC with the internet a function
-  has by default, outside D38's hub and every proxy reading, the one shape here no control names.
+  node, run once; an evaluation job, automatic, of Haiku 4.5 over the twenty prompts of
+  `examples/sandbox-ml/bedrock/evaluation-dataset.jsonl`, the task *Question and answer*, copied to
+  `shared/ml-demo/bedrock/` by `evaluation_dataset.py`. The IDE offers automatic evaluations alone, with
+  no judge model, so Haiku 4.5 is the model evaluated. Its form uploads a dataset to a bucket the IDE
+  manages or chooses one from S3 (AWS's pages, read 2026-11-19); where 0.7 reads that it cannot reach
+  `shared/`, the upload takes the same file. **A function is not created** unless decision 10 takes (b):
+  the wizard's fields are read (0.7), and the Lambda it would make runs outside the VPC with the internet
+  a function has by default, outside D38's hub and every proxy reading, the one shape here no control
+  names.
 - **7.4a — [user] The knowledge base** (decisions 1, 11 and 12), the Bedrock IDE's component for a chatbot
   over one's own documents, read against this estate's controls. The documents are this repository's
   runbooks, `docs/plan/runbooks/*.md` (16 files, 550 KB, public), copied by the notebook from a clone of
