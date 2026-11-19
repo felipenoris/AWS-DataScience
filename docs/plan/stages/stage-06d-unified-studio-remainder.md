@@ -1704,11 +1704,11 @@ second. Opening the ceiling before 10.2 is answered would turn an accident into 
 
 ### The combined Sandbox sitting: 6d's items in order
 
-Written 2026-11-19 with nothing up, for the combined Sandbox sitting the orchestrating session runs:
-`make hub-up`, then `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base`, with no GitLab and no Staging or
-Production egress; the sitting's whole order is [`promotion.md`](../runbooks/promotion.md) §N.9, the
-orchestrating session's. 6d's items need the hub and `sandbox/egress/`, and of the groups only `mwaa`, for
-4.7's workflow. Its values, read that day (the log): the domain `dzd-d8yrvx1ko7im6o`;
+Written 2026-11-19 with nothing up, for day 1 of the combined Sandbox sitting the orchestrating session
+runs ([`promotion.md`](../runbooks/promotion.md) §N.9): `make hub-up`, then `make up ENV=sandbox
+GROUPS=mwaa`, with no GitLab and no Staging or Production egress. §N.9 holds the day's whole order, Stage
+20's sitting A included. 6d's items need the hub and `sandbox/egress/` with the `mwaa` group, for 4.7's
+workflow. Its values, read that day (the log): the domain `dzd-d8yrvx1ko7im6o`;
 `eighth-experimentation` `avhvbqn37ty7m8`, with two Identity Center members, its owner and a contributor;
 `test-experimentation` `4gqfau9xuo6e4w`, owned by the same user; the association
 `awsds-prod-proxy-reconfigure`, `b9c438be-8de2-430a-9ed9-fb2cea9ff136`. Every space runs the house image,
@@ -1773,7 +1773,7 @@ GitLab and stays out.
    **[Claude⚡] `./aws/proxy.py --on-host`** (`ssm:SendCommand`): `PX-3` green, `sandbox-foundation` at 42
    entries. **[Claude] `./aws/dns-allowlist.py --from-api awsds-infra-prod`**: `DN-3` passes. The render's
    minute is step 6's start time.
-4. **[user or the orchestrating session] `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base`**;
+4. **[user or the orchestrating session] `make up ENV=sandbox GROUPS=mwaa`** (§N.9's day 1);
    **[Claude]** `make status`.
 5. **[user] The spaces**, in the portal:
    - in `eighth-experimentation`, a JupyterLab space on `ml.t3.medium` (4.7) and a Code Editor space on
