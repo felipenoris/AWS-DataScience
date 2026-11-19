@@ -1109,10 +1109,11 @@ def judge(checks: Checks, facts: dict, authored: dict | None, want_sql: bool) ->
     #
     # What is compared: the workgroup and the host the connection names, and the access role, which
     # must be the one sandbox/warehouse/ authors for that project - any other role is a database
-    # identity this repository did not write. `lineageSync` is the connection's scheduled query: the
-    # portal shows no toggle and creates it ENABLED (read 2026-10-18), so it is read here rather than
-    # assumed off. A run that completed fails the check; an enabled sync whose runs all failed is a
-    # note, because it costs nothing until one succeeds (EXC-17).
+    # identity this repository did not write. 6h decision 3 keeps `lineageSync`, the connection's
+    # scheduled query, off and names the class container as the database. The portal writes a
+    # connection with the sync on and database `dev` (SUP-207, SUP-208), so a connection fails here
+    # until redshift-connection.md §P step 4a's update runs. A completed run is named in the failure:
+    # it is a query on the warehouse's meter.
     conns = (facts.get("connections") or {}) if env == "sandbox" else {}
     what9 = f"{tag} the connection object as the portal wrote it"
     if env != "sandbox":
@@ -1142,31 +1143,34 @@ def judge(checks: Checks, facts: dict, authored: dict | None, want_sql: bool) ->
                 )
             for c in found if isinstance(found, list) else []:
                 role = f"{name}-access-{pid}"
+                bad = []
                 if c["workgroup"] != name or not c["host"].startswith(f"{name}."):
-                    problems.append(f"{c['name']} names workgroup {c['workgroup']} at {c['host']}")
+                    bad.append(f"{c['name']} names workgroup {c['workgroup']} at {c['host']}")
                 if c["access_role"] != role:
-                    problems.append(
+                    bad.append(
                         f"{c['name']}'s access role is {c['access_role'] or 'none'}, not {role} - "
                         "a database identity this repository did not author"
                     )
-                ran = [s for s in (c["runs"] or []) if s in LINEAGE_RAN]
-                if c["lineage"] and ran:
-                    problems.append(
-                        f"{c['name']}'s lineageSync ran ({', '.join(sorted(set(ran)))}) on "
-                        f"{c['schedule']} - a scheduled query on the warehouse's meter, which 6h "
-                        "decision 3 keeps off"
+                if c["database"] != CLASS_DB[env]:
+                    bad.append(
+                        f"{c['name']} names database {c['database']}, not {CLASS_DB[env]} - the "
+                        "Query editor opens each session there (6h decision 3, §P step 4a)"
                     )
-                elif c["lineage"]:
-                    runs = (
-                        "runs unread"
-                        if c["runs"] is None
-                        else f"{len(c['runs'])} run(s), none completed"
+                if c["lineage"]:
+                    ran = sorted({s for s in (c["runs"] or []) if s in LINEAGE_RAN})
+                    if c["runs"] is None:
+                        runs = "runs unread"
+                    elif ran:
+                        runs = f"{len(c['runs'])} run(s), {', '.join(ran)} among them"
+                    else:
+                        runs = f"{len(c['runs'])} run(s), none completed"
+                    bad.append(
+                        f"{c['name']}'s lineageSync is ENABLED on {c['schedule']}, {runs} - a "
+                        "scheduled query on the warehouse's meter, which 6h decision 3 keeps off "
+                        "(§P step 4a)"
                     )
-                    notes.append(
-                        f"{c['name']} (database {c['database']}): lineageSync ENABLED on "
-                        f"{c['schedule']}, {runs} - off is 6h decision 3, and the portal shows no "
-                        "toggle (EXC-17)"
-                    )
+                if bad:
+                    problems.extend(bad)
                 else:
                     good.append(f"{c['name']} (database {c['database']}, lineageSync off)")
         if problems:

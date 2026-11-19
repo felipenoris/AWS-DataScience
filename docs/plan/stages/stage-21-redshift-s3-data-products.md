@@ -228,7 +228,7 @@ decision for the user, named by its number in Decisions due. Read from `main` `7
 | D40 | one warehouse per account by hand; the `RedshiftServerless` and `LakehouseCatalog` blueprints disabled, the first for its default of 128 base RPUs and a workgroup per project | **amend for one sitting**: decision 1 (b) enables the blueprint for `test-experimentation`, its base capacity locked at 4 RPU, and removes it at 2.9; D40's file records the sitting at 6.2 |
 | D13 | execution roles hold no S3 on the lake's registered prefixes | **keep**: pass 5's prefix is in the producer's project path, which Lake Formation does not register |
 | D26 | one domain, in Data Governance | **keep** |
-| 6h decision 3 | the connection's `lineageSync`, daily at 03:43 UTC, every run failed; off or kept, owed | **keep** as the user's; pass 3 reads a lineage run with the workgroup up and leaves the setting as it found it |
+| 6h decision 3 | the connection's `lineageSync`, off since 2026-11-19; its 39 daily runs at 03:43 UTC before it all failed | **keep** as the user's; pass 3 reads a lineage run with the workgroup up and leaves the setting as it found it |
 | 6h decision 8 | how a second project is admitted to the warehouse; taken 2026-11-17 as (a), the tag `for-use-with-all-datazone-projects=true`, its switch written 2026-11-18 and off | **keep** as taken: decision 1 (b) admits no second project to the warehouse, so this stage turns the switch on nowhere |
 | Stage 9 decision 5 | Production's namespace reaches Lake Formation as a Lake Formation-managed datashare mapped to a federated database; data lake access refused for the managed cluster against `DenyRedshiftProvisionedClusters` and D12; 9.5a's reading owed only if the federated catalog comes back | **keep** in Production. **Decision 3 (b)**: the federated catalog comes back in Sandbox for one sitting, and 9.5a's reading is taken there |
 | Stage 19 decision 9 | (a), taken 2026-10-31: the read in place through `awsdatacatalog`, 5.3's Redshift asset published and never subscribed; (b), the subscription with a target, *"read as a second half once a target's shape is priced"* | **keep** (a) for Stage 19; pass 2 here is (b)'s second half, under decision 1 |
@@ -236,7 +236,7 @@ decision for the user, named by its number in Decisions due. Read from `main` `7
 | [`docs/SMUS.md`](../../SMUS.md), "Existing buckets as catalog assets" | the S3 Object Collection, *"No stage uses it"* | **amend** at 6.2 |
 | [`docs/SMUS.md`](../../SMUS.md), the `RedshiftServerless` row | category 3, *Never*: a 128-RPU workgroup one click from every member (D26, D40) | **amend** at 6.2 with the sitting's readings; the category stays 3 |
 | [`docs/GOVERNANCE.md`](../../GOVERNANCE.md) | a data product, the lake and a warehouse in one paragraph; a Redshift `GRANT` as the fourth permission system | **amend** at 6.2, with what a subscription writes in each system |
-| `./aws/warehouse.py` | `WH-9` fails the day a lineage run completes; `WH-12` and `WH-14` judge the themed schemas' grants | **read** after passes 2 and 3, **amend** at 6.3 for a subscription's datashare and a lineage run the stage chose |
+| `./aws/warehouse.py` | `WH-9` fails while a connection's lineage sync is on or its database is not `sandbox`; `WH-12` and `WH-14` judge the themed schemas' grants | **read** after passes 2 and 3, **amend** at 6.3 for a subscription's datashare and a lineage run the stage chose |
 | `./aws/studio.py` | `US-3` admits decision 5's category 1 and fails on `RedshiftServerless` with its own message | **read**: red while 1.5's variables are on, green after 2.9; no change |
 | `./aws/catalog.py` | `CT-17` explains every grant on a project's listed Glue table; nothing reads S3 Access Grants | **amend** at 6.3: the grants of an S3 Object Collection's subscription, explained by it |
 
@@ -260,9 +260,9 @@ decision for the user, named by its number in Decisions due. Read from `main` `7
   [`redshift-connection.md`](../runbooks/redshift-connection.md) §P): `eighth-experimentation` reaches the
   workgroup with IAM credentials through a per-project access role, as the database user
   `IAMR:datazone_usr_role_<project>_<env>`; its role holds `USAGE, CREATE` on `lab` in `sandbox`, and the
-  project wrote `lab.hello` from the Query editor on 2026-10-10. The connection names `dev`, so the person
-  selects `sandbox` in the editor. The namespace holds `dev`, `sandbox` and `warehouse`. Its `lineageSync`
-  is on, `cron(43 3 * * ? *)`, and every run read failed while the workgroup was down (`EXC-17`).
+  project wrote `lab.hello` from the Query editor on 2026-10-10. The connection names `sandbox` since
+  2026-11-19 (6h decision 3). The namespace holds `dev`, `sandbox` and `warehouse`. Its `lineageSync` is
+  off since the same day; every run before it failed while the workgroup was down (`EXC-17`).
   `test-experimentation` is in no map: not admitted.
 - **0.3 The catalog road for a Glue table** (Stage 19 verifications vi to viii, 2026-11-14; `SUP-195`): a
   project's source imports a table of its database, the asset is published and packaged in a product of
