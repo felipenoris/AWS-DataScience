@@ -4200,3 +4200,148 @@ step 7 with no AWS write, reading as `awsds-infra-data` and `awsds-infra-sandbox
   `aws/INDEX.md`'s question row. `release/versions.py`'s header is a copy of GitLab's `awsds/dev-env`
   (`gitlab/README.md`), so its change waits on a merge request there, in a GitLab sitting (the waiting
   list).
+
+## 2026-11-19 — Decision 6's apply re-planned for the combined Sandbox sitting
+
+*Claude, the session preparing 6d's half of the combined Sandbox sitting for the orchestrating session, as
+the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`). Reads and plans only, from the
+branch `claude/stage-06d-sandbox-preflight-b17f66` on `origin/main` `0d5b573b`, with nothing up and no AWS
+write. Times are UTC.*
+
+- **[Claude] `production/networking/` planned**, 15:04:43 to 15:05:04: `Plan: 0 to add, 1 to change, 0 to
+  destroy.`, the one change `aws_ssm_parameter.proxy_allowlist`, at version 11. Read from the plan's JSON,
+  only `sandbox-foundation` changes, from 41 allowed names to 42, the addition
+  `dzd-d8yrvx1ko7im6o.sagemaker.us-west-2.on.aws`; the document goes from 1,372 bytes to 1,420.
+- **[Claude] How the name reaches Squid**: the apply writes the parameter and needs no host. The association
+  `awsds-prod-proxy-reconfigure` runs `/usr/local/sbin/awsds-render-squid` at :00 and :30
+  (`cron(0/30 * * * ? *)`, `apply_only_at_cron_interval`); the script rewrites the drop-in only when the
+  rendering differs, checks it with `squid -k parse`, restores the old file on a failure and reloads with
+  `squid -k reconfigure`. A host start renders nothing (`SUP-071`), so after `make hub-up` and the apply the
+  name arrives at the next :00 or :30, or at once by `aws ssm start-associations-once`, a write.
+- **[Claude] The association while the host is stopped**, read 15:49:57: the eight executions from 12:01:18
+  to 15:30:41 each read `Success` with `ResourceCountByStatus` `{}`, association version 2, and
+  `awsds-prod-proxy` reads `stopped`. A `Success` row says nothing about a render; `PX-3` on the host does
+  (`SUP-071` gains the reading).
+- **[Claude] `production/proxy/` planned, and kept out of this sitting**, 15:09:52 to 15:10:11: `Plan: 1 to
+  add, 2 to change, 1 to destroy.` `aws_instance.this` is replaced, forced by `ami` (sensitive in the plan),
+  by `associate_public_ip_address` `false -> true`, which any plan taken with the host stopped shows, and by
+  `user_data`, whose one difference is the comment 6g decision 1 rewrote. In place: the `InstanceId`
+  dimension of `awsds-prod-proxy-status-check` and the record `proxy.awsds.internal`, today
+  `10.31.160.140`. Stage 12 2.2's alarm action is not in the code, so this plan does not carry it. A
+  replaced host renders the parameter at its first boot, so this apply would deliver the name as well; the
+  name does not need it, and it changes the proxy's address mid-sitting.
+- **[Claude] The name in `/awsds/prod/proxy`**, the baseline the sitting's reading compares against, read
+  15:06:33: 60 lines. 15 read `200 TCP_TUNNEL`, from the tunnel's `10.90.0.2` on 2026-09-07 and 2026-09-09;
+  45 read `403 TCP_DENIED`, from 45 Sandbox addresses since 2026-09-11, one per app start, the last at
+  22:15:55 on 2026-11-15 from `10.20.41.98`.
+- **[Claude] `DN-3`**, `./aws/dns-allowlist.py --from-api awsds-infra-prod` at 15:33:03: `fail`,
+  *"sandbox-foundation: only in code ['dzd-d8yrvx1ko7im6o.sagemaker.us-west-2.on.aws'], only deployed -"*,
+  the reading expected until the apply; `DN-1` (41 names, each with an address), `DN-2` and `DN-4` pass.
+
+## 2026-11-19 — The `datazone` notebook quotas raised without a request
+
+*Claude, the same session and identity (`awsds-infra-sandbox-1`, `awsds-infra-staging`,
+`awsds-infra-prod`). Reads only. Times are UTC.*
+
+- **[Claude] The quotas 4.7 depends on**, read 15:37:10 to 15:37:21 and again at 15:45:24, the same in
+  Sandbox, Staging and Production:
+
+  | Quota | Applied | AWS default |
+  |---|---|---|
+  | `L-85C9EC5A`, *The maximum number of concurrent notebook runs per account.* | 15 | 15 |
+  | `L-F63F402C`, *SageMaker Unified Studio Querybooks running on sc.t3.medium instances* | 10 | 5 |
+  | `L-B3401D17`, *SageMaker Unified Studio Querybook Runs running on sc.t3.medium instances* | 5 | 5 |
+
+  The last readings at 0: all three in Sandbox on 2026-10-17, the first two in Sandbox and Staging on
+  2026-10-21 (`SUP-182`).
+- **[Claude] No request raised them**: `list-requested-service-quota-change-history` for `datazone` holds
+  the three requests of 2026-09-13 in Sandbox, each `CASE_CLOSED` on 2026-09-24, and nothing in Staging or
+  Production.
+- **[Claude] The family moved with them**, 15:46:32 to 15:47:12: of the 81 `sc.*` quotas of the `datazone`
+  code with a default above zero, none reads 0 in any of the three accounts, against 79 at 0 in Sandbox on
+  2026-09-12; 36 read above their default, `L-B890B049` (*Compute environments running on sc.t3.large
+  instances*) at 20 against 5 among them.
+- **[Claude] What it changes**: decision 17 (a) put the quota after the control, and the quota arrived
+  first, by AWS's hand, so the order on the waiting list is no longer the user's to give, and 4.7's
+  negative can run in any Sandbox sitting. Nothing measured stops a project role's run on
+  `PUBLIC_INTERNET_ONLY` now: in Sandbox no statement names the action (read 2026-11-18), and in Staging and
+  Production `datazone:StartNotebookRun` is named only by `DenyAPersonWritingNotebooks`, a person's session
+  alone, the deny for every session of the project role that decision 17 took on 2026-11-17 being
+  unwritten. `TM-34`'s revision trigger fired. The querybook has capacity in all three accounts, so its
+  optional request is moot.
+
+## 2026-11-19 — 5.1's threshold and 6.1 (viii)'s JupyterLab half, read from retained logs
+
+*Claude, the same session and identity (`awsds-infra-sandbox-1`, `awsds-infra-identity`,
+`awsds-infra-prod`, `awsds-infra-data`). Reads only. Times are UTC.*
+
+- **[Claude] 5.1, the idle threshold.** `test-experimentation`'s and `eighth-experimentation`'s `Tooling`
+  domains carry `IdleTimeoutInMinutes` 60, `MinIdleTimeoutInMinutes` 60 and `MaxIdleTimeoutInMinutes` 120
+  for JupyterLab and the Code Editor, in the user and the space defaults (read 15:52:40). In each default
+  space's JupyterLab stream of `/aws/sagemaker/studio`, read 15:51 to 15:52, against the
+  `DeleteApp` of `AWSServiceRoleForAmazonSageMakerNotebooks`:
+  - in `test-experimentation`'s, the last terminal opened at 22:58:13 on 2026-10-20 and the app was deleted
+    at 23:58:21, 60 min 08 s later; the server logged nothing after 23:21:04;
+  - in `eighth-experimentation`'s, the app started at 23:04:38 on 2026-10-25 and was deleted at 00:04:56,
+    60 min 18 s later, with a portal tab open the whole hour: 29 rounds of
+    `Saving file at /.aws/sso/idc_access_token.json` and three other `/.aws/` files, the server's last
+    line at 00:03:10. Those saves are not activity to the idle monitor;
+  - two other deletions came 64 min 56 s and 80 min 34 s after the last activity the pattern matched,
+    consistent with activity it does not match.
+
+  The threshold is 60 minutes, met within 8 to 18 seconds. 5.1 is answered.
+- **[Claude] 6.1 (viii), JupyterLab's half**, from the 30 days `awsds-sandbox-vpc-flow-logs` retains, read
+  15:14 to 15:15 and again at 15:51: ten app sessions from 2026-10-25 to 2026-11-15, each found by the
+  domain URL's `CONNECT` in `/awsds/prod/proxy` and read for 8 hours from 5 minutes before it, the endpoint
+  ENIs named by the 138 `CreateVpcEndpoint` responses since 2026-10-20, 21 services.
+  - Nine reached the `datazone`, `sagemaker.api`, `sts`, `athena` and `glue` endpoints, S3 on 443 at
+    addresses of `pl-68a54001` (the gateway), and the proxy on 3128. The tenth, `10.20.56.192` on
+    2026-10-26, reached the proxy and S3 alone.
+  - Four reached `airflow-serverless`; one, `10.20.47.191` on 2026-10-26, `ssm` and `ssmmessages`; three
+    reached `VPC-SharedServices` on 443 (`10.30.39.111`, `10.30.6.245`), GitLab's VPC.
+  - None reached `ec2`, `ec2messages`, `kms`, `logs`, `secretsmanager`, `sagemaker.runtime`, `studio`,
+    `ecr.api`, `ecr.dkr`, `lakeformation` or `s3tables`, each created at every raise since 2026-10-20, nor
+    an address of DynamoDB's prefix list. Every flow read `ACCEPT`.
+  - Of the list AWS requires for `VpcOnly` ([`docs/SMUS.md`](../SMUS.md)), a JupyterLab space exercised
+    `athena`, `datazone`, `glue`, `s3`, `sagemaker.api` and `sts`, and `ssm` and `ssmmessages` once; never
+    `ec2`, `ec2messages`, `kms`, `sagemaker.runtime` or `secretsmanager`. `q` has no endpoint here
+    (decision 2). The Code Editor's half is read in the sitting.
+- **[Claude] The remote IDE's starting point**, `./aws/remote-ide.py` over `awsds-infra-sandbox-1`,
+  `awsds-infra-identity` and `awsds-infra-prod`, ending 15:34: all checks passed. `RI-3` pass,
+  `SageMakerStudioProjectRoleMachineLearningPolicy` v48 carrying `AllowStartSessionForSpaceRemoteConnection`
+  tag-scoped; `RI-4` pass, the six persona sets carrying both Sids on
+  `aws:resourcetag/amazondatazoneproject` and `aws:resourcetag/amazondatazoneuser`; `RI-1`, `RI-2` and
+  `RI-5` notes: no endpoint, no remote-access space, no `StartSession` in seven days.
+- **[Claude] The members 7.6 needs**, read 15:53 to 15:56 as `awsds-infra-data`: `eighth-experimentation`
+  holds two Identity Center users, its owner and a contributor, beside its project role and a group;
+  `test-experimentation` holds one, its owner, the same user as `eighth-experimentation`'s, beside its
+  project role and a group. 7.6's space of another user is the contributor's.
+
+## 2026-11-19 — Decision 17's deny in the targets, written and planned
+
+*Claude, the same session, at the orchestrating session's request on the user's behalf, as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-staging`, `awsds-infra-prod`,
+`awsds-infra-data`, `awsds-infra-sandbox-1`). Code and plans only, no plan saved, no apply. Times are UTC.*
+
+- **[Claude] Whether anything legitimate calls the action**: `lookup-events` for `StartNotebookRun` since
+  2026-08-21 returned none in Sandbox, Staging, Production and Data Governance (read 16:15:38). No file of
+  the repository calls it or names a notebook operator outside the plan's text and `person-session.tf`.
+  Decision 17 records that no released workflow runs a notebook (Stage 8 5.6's lint).
+- **[Claude] Where it lives**: a policy of its own, `awsds-<env>-notebook-run-deny`, with one statement,
+  `DenyTheProjectRoleANotebookRun`, `datazone:StartNotebookRun` on `*` with no condition. It is attached to
+  every `project_roles` entry under the D13 boundary's precondition, as `warehouse.tf` attaches its grant.
+  `notebook-run.tf` is identical in both slices and joins `scripts/check-copies.py`'s list.
+  `person-session.tf` is unchanged: its statement still refuses a person's session, and the new one binds
+  the rest. The deployment project's role carried 5 managed policies in Staging and 6 in Production,
+  against a quota of 20 (read 16:14:39).
+- **[Claude] `staging/studio/` planned**, 16:17:58 to 16:18:25, from this branch on `origin/main`
+  `0d5b573b`: `Plan: 2 to add, 0 to change, 0 to destroy.`, `aws_iam_policy.notebook_run`
+  (`awsds-staging-notebook-run-deny`) and its attachment to `datazone_usr_role_5ido8bej1zoeq8_d6nu5aphq1e974`.
+  No other change is pending in the slice.
+- **[Claude] `production/studio/` planned**, 16:22:09 to 16:22:38, from the same tree: `Plan: 2 to add, 0 to change, 0 to
+  destroy.`, `aws_iam_policy.notebook_run` (`awsds-prod-notebook-run-deny`) and its attachment to
+  `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow`. No other change is pending in the slice.
+- **[Claude] What follows each apply**, not before it (Lesson 50): `aws/orchestration.py`'s
+  `PROJECT_ROLE_POLICIES`, which `OR-3` reads, gains the policy, and so does `docs/AWS_STATE.md`'s
+  deployment-project row. Each apply is the user's word naming it, after PR #337 merges (Lesson 79),
+  Production's in the chat of the session that runs it.
