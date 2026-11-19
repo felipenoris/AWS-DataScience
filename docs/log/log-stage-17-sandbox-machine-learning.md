@@ -3331,3 +3331,83 @@ Times are UTC.*
     because the persona, deploy and Control Tower profiles had no session (its section 10).
 - **[Claude] Left**: `app-genai-dev`'s Nova Lite profile, read with `list-inference-profiles` at the
   project's first use in sitting C (10.4), expected in `us-west-2` alone.
+
+## 2026-11-19 — 3.3 and verification v: `EXC-11`'s first run after the share
+
+*Claude, a session started by the orchestrating session, on its brief of the afternoon, which authorizes
+no write. Reads as the infrastructure user with `InfrastructureAccess`, through `awsds-infra-data` (the
+domain) and `awsds-infra-sandbox-1` (Sandbox's groups), from 15:01:12 to 15:02:19. Times are UTC.*
+
+- **[Claude] The projects**: ten in the domain. The three created on 2026-11-19, `app-dbt-dev` (00:17:19),
+  `app-ml-dev` (00:17:46) and `app-genai-dev` (00:18:05), each hold a `Tooling` and a `SageMakerAIDomain`
+  environment, `ACTIVE`, and no data source. `GenerativeAIModelGovernanceProject` holds none either, and
+  `governed-lake`, `deploy-staging` and `deploy-production` hold Glue sources alone.
+- **[Claude] The `Tooling` sources**: `Tooling-default-sagemaker-modelpackagegroup-datasource` in three
+  projects, each tracking `SageMakerModelPackageGroupAssetType` over an empty list:
+
+  | Project | Source | Schedule | Runs | Newest run |
+  |---|---|---|---|---|
+  | `test-experimentation` | `c8sn6a0xxc4zv4`, `READY` | `cron(6 6 * * ? *)` | 35: 34 `FAILED`, 1 `SUCCESS` | `ajp1ym83139yxc`, from 06:16:57 to 06:17:18, `SUCCESS`, 0 added, updated, unchanged and failed |
+  | `app-etl-dev` | `apnukh5a1tfonk`, `RUNNING` | `cron(7 2 * * ? *)` | 5: 4 `FAILED`, 1 `RUNNING` | `3nzznqq176x028`, started 02:19:45, before the share |
+  | `eighth-experimentation` | `4tb4qnmgi0iej4`, `RUNNING` | `cron(32 17 * * ? *)` | 87: 86 `FAILED`, 1 `RUNNING` | `6fdkdu6arwynf4`, started 2026-11-18 at 17:38:11 |
+
+- **[Claude] The run before the success**: `bq960tfeokvwcw`, started 2026-11-18 at 06:16:57, was marked
+  `FAILED` at 06:16:57 on 2026-11-19 as its successor fired, with the wording of every failed run,
+  *"Failed to run the data source. Please check if RAM share is correctly configured between Amazon
+  SageMaker and Amazon DataZone"* (`VALIDATION_EXCEPTION`). The successful run lists no activity.
+- **[Claude] The start times**: each source starts its run some ten minutes past its schedule's minute,
+  06:16:57 for 06:06, 02:19:45 for 02:07 and 17:38:11 for 17:32.
+- **[Claude] Sandbox's model package groups**: `list-model-package-groups` returned none, exit 0.
+- **[Claude] The verdict so far**: the share removed the failure for the first run started after it,
+  which succeeded with nothing to ingest. The two runs started before it still read `RUNNING`. The
+  ingestion half of verification v waits on a model package group: 3.2's `ml-demo-xgboost` in
+  `eighth-experimentation`, or 9.6's `app-ml-dev` in a project that holds no such source.
+- **[Claude] Left**: `eighth-experimentation`'s run of about 17:38 today and `app-etl-dev`'s of about
+  02:19 on 2026-11-20, read when the orchestrating session asks.
+
+## 2026-11-19 — sittings B and C as one Sandbox sitting: the pre-flight readings, nothing up
+
+*Claude, the same session, on the same brief. Reads and plans as the infrastructure user with
+`InfrastructureAccess`, through `awsds-infra-sandbox-1` and `awsds-infra-data`, from 15:07 to 15:27, the
+plans from the branch at `0d5b573b`. No plan saved, nothing applied, nothing raised. Times are UTC.*
+
+- **[Claude] `./aws/sandbox-ml.py`**, generated 15:07:37: 33 pass, no check failed, *"None. Every call in
+  this report returned successfully."* `ML-1` notes the managed ML policy at v48 on every project; `ML-2`
+  reads `ml-demo-mlflow` `Created` on MLflow 3.16.0, the version 9.4's archive pins, with
+  `AutoModelRegistrationDisabled`.
+- **[Claude] `sandbox/workflows/`**: *"No changes."* at 15:08:12; with `-var training_pair_enabled=true` at
+  15:08:32, *"Plan: 0 to add, 1 to change, 0 to destroy."*, `aws_iam_policy.workflows` gaining
+  `DescribeATrainingJobNoProjectHolds` and `TagATrainingJobWithTheCallersProject`, 9 statements. The
+  slice's code is unchanged since its apply's tree, `40c9466c`, so 9.5's measurement stands: 3,146
+  characters minified of 6,144.
+- **[Claude] `sandbox/bedrock/`**: *"No changes."* at 15:14:55; with both switches `true` at 15:15:08,
+  *"Plan: 3 to add, 1 to change, 0 to destroy."*: `aws_bedrock_guardrail.account[0]`,
+  `aws_bedrock_guardrail_version.account[0]` and `awscc_bedrock_enforced_guardrail_configuration.account[0]`
+  created, `aws_iam_policy.bedrock_application` updated in place.
+- **[Claude] SageMaker's quotas**, applied values at 15:11:53, for the types 2.2 and the applications name:
+
+  | Type | Training | Processing | Transform | Endpoint |
+  |---|---|---|---|---|
+  | `ml.m5.xlarge` | 20 | 8 | 4 | 30 |
+  | `ml.m5.large` | 20 | 8 | 8 | 30 |
+  | `ml.t3.medium` | | 10 | | |
+
+- **[Claude] Bedrock's quotas for Nova Lite** at 15:10:07, applied equal to the defaults: *"Cross-region
+  model inference requests per minute"* 4,000, *"Cross-region model inference tokens per minute"*
+  8,000,000, and *"Model invocation max tokens per day"* 5,760,000,000, doubled for cross-region calls. No
+  quota names an in-Region on-demand rate for the model, so 10.4's first invoke in `us-west-2` is that
+  premise's reading.
+- **[Claude] ML v48's MLflow statement**: `SageMakerMlflowServerlessPermission` grants `CreateMlflowApp`,
+  `CreatePresignedMlflowAppUrl`, `DeleteMlflowApp`, `DescribeMlflowApp`, `UpdateMlflowApp` and
+  `CallMlflowAppApi`.
+- **[Claude] The profile of `app-ml-dev` and `app-genai-dev`**: both `experimentation` (`dh60xbal05q64w`),
+  `ACTIVE` (15:27). Its `MLflowApp` configuration is `3342d20e-001b-4b95-9053-fbbc04b5c303`, blueprint
+  `agjvpzxbha9fbk`, `ON_DEMAND`, with no parameter override (15:16:20), so 1.5's command serves
+  `app-ml-dev` with its project id `5rzplmk81vma34`.
+- **[Claude] What an MLflow App bills**: Sandbox's `Amazon SageMaker` costs by usage type from 2026-10-19
+  to 2026-11-18 (Cost Explorer, 15:12:31) hold Studio's JupyterLab and volume lines, Unified Studio's,
+  processing's and `DataAgentCredit`, and no MLflow line, while `ml-demo-mlflow` existed from its creation on 2026-10-19.
+- **[Claude] The block**: the section "Sittings B and C as one Sandbox sitting" of the stage file, in the
+  order its table gives, about seven hours under `GROUPS=mwaa,mlflow,bedrock-base`.
+- **[Claude] Left before the sitting**: `app-ml-dev`'s MLflow App and 0.9's portal reading, the user's; the
+  archives of `app-ml` and `app-genai` from `main` on the sitting's eve, Claude's.
