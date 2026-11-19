@@ -324,9 +324,13 @@ session is `make hub-up`, then `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-b
 9.6's `track`, `mwaa` for the CLI's deploys and the workflows, `bedrock-base` for 10.4's model and
 `guardrail` calls. It raises no GitLab and no Staging or Production egress. The groups add four endpoints
 to Sandbox's 18, so the session bills about 0.24 USD an hour with the hub, and each running space on
-`ml.t3.medium` 0.050 more (`docs/PRICING.md`).
+`ml.t3.medium` 0.050 more (`docs/PRICING.md`). Pass 7 rides it only with `bedrock-agent` added, as 7.1
+raises it beside `bedrock-base`: `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`, two endpoints more,
+about 0.26 USD an hour with the hub. A group is per apply, so the raise names all four from the start.
+Without it, pass 7 moves to a Sandbox sitting of its own with `GROUPS=bedrock-base,bedrock-agent`.
 
-**Before the sitting, with nothing up** (read 2026-11-19 from 15:01 to 15:16 UTC, the log):
+**Before the sitting, with nothing up** (read 2026-11-19 from 15:01 to 15:16 UTC and the repository at
+`0d5b573b`, the log):
 
 - [user] `app-ml-dev`'s MLflow App by 1.5's path, as the infrastructure user, a contributor of the
   project through Sandbox's `InfrastructureAccess`: `datazone create-environment` in the project
@@ -338,6 +342,13 @@ to Sandbox's 18, so the session bills about 0.24 USD an hour with the hub, and e
 - [user] 0.9's portal reading, which needs no session.
 - [Claude] The archives of `examples/app-ml` and `examples/app-genai`, by 9.6's recipe (`SUP-348`), built
   from `main` on the sitting's eve so they carry its last merge.
+- [Claude] `examples/sandbox-ml`'s scripts read against the house lock, unchanged since `a1c755b5`, the
+  day before `default-v0.10.0`'s build: `mlflow` 3.17.2 where the folder's README names 3.16.0, and
+  `boto3` 1.43.92, `sagemaker` 3.21.0, `sagemaker-mlflow` 0.5.0, `pandas` 2.3.3, `xgboost-cpu` 3.3.0 and
+  Python 3.12 as it names them. 0.3 then confirms the versions instead of stopping the sitting on a script
+  that disagrees (Lesson 65).
+- [Claude] 7.4's evaluation dataset, twenty lines, which no file holds yet, written under
+  `examples/sandbox-ml/bedrock/` for the user to copy into `shared/ml-demo/bedrock/`.
 - Ready:
   - `sandbox/workflows/` plans *"No changes."*; with `training_pair_enabled=true`, 1 to change:
     `DescribeATrainingJobNoProjectHolds` and `TagATrainingJobWithTheCallersProject` added, 9 statements,
@@ -349,27 +360,39 @@ to Sandbox's 18, so the session bills about 0.24 USD an hour with the hub, and e
     transform and 30 for endpoints, `ml.t3.medium` 10 for processing.
   - `./aws/sandbox-ml.py`: 33 pass, no check failed, no call failed.
   - ML v48's `SageMakerMlflowServerlessPermission` holds the MLflow App's actions.
+  - Pass 7's decisions: 5 (everything kept), 10 (a) (no function) and 12 (a) (S3 Vectors), taken
+    2026-11-17; decision 11's amendment applied 2026-10-19. The project boundary fences no service in
+    Sandbox (`fenced_services` empty at `sagemaker-prereqs-v0.12.0`).
+  - 7.4a's documents: `docs/plan/runbooks/*.md` holds 20 files and 1,162,979 bytes at `0d5b573b`,
+    against the 16 files and 550 KB 7.4a names, so the sync's indexed count reads against 20; the
+    embeddings stay under 0.01 USD.
 
 **In the sitting, in this order.** Each apply is [Claude⚡] on the user's word naming it, the peers told
 first, as 9.5's Sandbox applies were on 2026-11-19; the user may run the saved plan instead.
 
 | Order | Step | Hand | Hours |
 |---|---|---|---|
-| 1 | The session; 1.4's `EG-1`..`EG-4` (`./aws/egress.py`) and `DE-5` (`./aws/devenv.py`); spaces on the house image in `eighth-experimentation`, `app-ml-dev` and `app-genai-dev`, each stopped when its steps end | [Claude⚡]; [user] | 0.5 |
-| 2 | 1.6, the first run into `ml-demo-mlflow`, the endpoint's `BytesProcessed` before and after (verification vi) | [user]; [Claude] reads | 0.3 |
-| 3 | 2.1, the data, from `eighth-experimentation`'s space (verification xxvi) | [user] | 0.2 |
-| 4 | 2.2 (a) and (b), each refusal by its wording | [user] | 0.3 |
-| 5 | `sandbox/workflows/` with `training_pair_enabled=true`, from `main`, re-planned *"No changes."*; the default flips to `true` in the sitting's pull request, or the next plan from `main` removes the pair (Lesson 79) | [Claude⚡] | 0.1 |
-| 6 | 2.2 (c), the job `Completed` | [user] | 0.3 |
-| 7 | 9.6: the group `app-ml-dev`, the tests, the lint, `bundle` and `deploy`; `app-ml-train`, `app-ml-register`, `app-ml-score` and `app-ml-register` again; the registry's path; `bundle` after training; verification lx | [user]; [Claude] reads | 2.0 |
-| 8 | 10.4: the tests, the lint and `deploy`, then its readings 1 to 3 | [user]; [Claude] reads | 1.0 |
-| 9 | 10.4's reading 4: `sandbox/bedrock/` with `application_guardrail_required=true`, then its runs | [Claude⚡]; [user] | 0.4 |
-| 10 | 10.4's reading 5, the variants; the infrastructure user deletes the second guardrail | [user]; [Claude⚡] | 0.5 |
-| 11 | 10.4's reading 6: `account_guardrail_enabled=true`, the readings with the deny on and off, both switches back to `false`, `ListEnforcedGuardrailsConfiguration` empty | [Claude⚡]; [user] | 0.8 |
-| 12 | `./aws/sandbox-ml.py` and `./aws/catalog.py`; the portal tabs closed; `make down ENV=sandbox`, `make hub-down`, `make status` | [Claude]; [user]; [Claude⚡] | 0.4 |
+| 1 | The session; 1.4's `EG-1`..`EG-4` (`./aws/egress.py`) and `DE-5` (`./aws/devenv.py`); 0.5's interface half, `ML-9` of `./aws/sandbox-ml.py` run after `./aws/devenv.py`; spaces on the house image in `eighth-experimentation`, `app-ml-dev` and `app-genai-dev`, each stopped when its steps end | [Claude⚡]; [user] | 0.6 |
+| 2 | 0.3 in `eighth-experimentation`'s space, both interpreters; 0.7's forms in the portal, before any run (the *Create MLflow App* item reads greyed out since 2026-10-19, 1.5) | [user]; [Claude] records | 0.7 |
+| 3 | 1.6, the first run into `ml-demo-mlflow`, the endpoint's `BytesProcessed` before and after (verification vi) | [user]; [Claude] reads | 0.3 |
+| 4 | 2.1, the data, from `eighth-experimentation`'s space (verification xxvi) | [user] | 0.2 |
+| 5 | 2.2 (a) and (b), each refusal by its wording | [user] | 0.3 |
+| 6 | `sandbox/workflows/` with `training_pair_enabled=true`, from `main`, re-planned *"No changes."*; the default flips to `true` in the sitting's pull request, or the next plan from `main` removes the pair (Lesson 79) | [Claude⚡] | 0.1 |
+| 7 | 2.2 (c), the job `Completed` | [user] | 0.3 |
+| 8 | Pass 7, with `bedrock-agent` raised: 7.4's prompt, guardrail, flow and evaluation job; 7.4a's knowledge base over the runbooks, synced once; 7.4b's chat agent, or a flow app over the knowledge base if the create is refused (verification xxxiv), and one `Retrieve` from the space; 7.4c's pane read; 7.5's `ML-8`, `./aws/catalog.py` and `bedrock-usage.py`; 7.6, nothing deleted (decision 5) | [user]; [Claude] reads | 2.0 |
+| 9 | 9.6: the group `app-ml-dev`, the tests, the lint, `bundle` and `deploy`; `app-ml-train`, `app-ml-register`, `app-ml-score` and `app-ml-register` again; the registry's path; `bundle` after training; verification lx | [user]; [Claude] reads | 2.0 |
+| 10 | 10.4: the tests, the lint and `deploy`, then its readings 1 to 3 | [user]; [Claude] reads | 1.0 |
+| 11 | 10.4's reading 4: `sandbox/bedrock/` with `application_guardrail_required=true`, then its runs | [Claude⚡]; [user] | 0.4 |
+| 12 | 10.4's reading 5, the variants; the infrastructure user deletes the second guardrail | [user]; [Claude⚡] | 0.5 |
+| 13 | 10.4's reading 6: `account_guardrail_enabled=true`, the readings with the deny on and off, both switches back to `false`, `ListEnforcedGuardrailsConfiguration` empty | [Claude⚡]; [user] | 0.8 |
+| 14 | `./aws/sandbox-ml.py` and `./aws/catalog.py`; the portal tabs closed; `make down ENV=sandbox`, `make hub-down`, `make status` | [Claude]; [user]; [Claude⚡] | 0.4 |
 
-About seven hours of session: some 1.64 USD of endpoints and hub, plus the spaces' hours and the jobs' and
-the tokens' cents (the Cost table).
+About nine and a half hours of session: some 2.50 USD of endpoints and hub with `bedrock-agent`, plus the
+spaces' hours and the jobs', the tokens' and the embeddings' cents (the Cost table). Pass 7 is the part
+that moves: it depends on none of 1.6, 2.1 and 2.2, and nothing after it depends on it. 0.7 stays in this
+sitting wherever pass 7 goes, since the forms come before 2.2's job and before 7.4b's fallback, which
+needs the flow builder's knowledge base node. 7.6's idle bill is read after the sitting, once Cost Explorer
+shows its day (8.2).
 
 ---
 

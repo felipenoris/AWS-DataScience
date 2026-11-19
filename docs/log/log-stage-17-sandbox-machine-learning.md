@@ -3411,3 +3411,34 @@ plans from the branch at `0d5b573b`. No plan saved, nothing applied, nothing rai
   order its table gives, about seven hours under `GROUPS=mwaa,mlflow,bedrock-base`.
 - **[Claude] Left before the sitting**: `app-ml-dev`'s MLflow App and 0.9's portal reading, the user's; the
   archives of `app-ml` and `app-genai` from `main` on the sitting's eve, Claude's.
+
+## 2026-11-19 — sittings B and C's block: Stage 17's other Sandbox items placed, nothing up
+
+*Claude, the same session, on the orchestrating session's addendum to its brief, which asks which of the
+waiting list's Stage 17 Sandbox items ride the same raise. Reads of the repository at `0d5b573b` and of the
+module tags, no AWS call. Times are UTC.*
+
+- **[Claude] The items**: the waiting list's Sandbox row names 0.3, 0.5's interface half, 0.7, 7.4 to 7.4c
+  and 7.6. The log holds no reading of any of them since 2026-10-18, which left 0.3 and 0.7 owed with a
+  session and `ML-9`'s interface half on `make hub-up` and `make up ENV=sandbox`.
+- **[Claude] The groups at `vpc-egress-v0.19.0`**, `sandbox/egress`'s pin: `bedrock-base` is `bedrock` and
+  `bedrock-runtime`, `bedrock-agent` is `bedrock-agent` and `bedrock-agent-runtime`, `mwaa` is
+  `airflow-serverless`. 7.1 raises `bedrock-agent` beside `bedrock-base` for pass 7, and 7.4b's `Retrieve`
+  from the space takes `bedrock-agent-runtime`, so pass 7 needs the fourth group.
+- **[Claude] The boundary**: `fenced_services` defaults to an empty list at `sagemaker-prereqs-v0.12.0`, and
+  `sandbox/sagemaker/` passes none, so `DenyServicesNoProjectUsesHere` is absent and no service pass 7
+  calls is fenced.
+- **[Claude] The house lock**, `gitlab/awsds/dev-env/dev-env/python/uv.lock`, last changed at `a1c755b5` on
+  2026-10-25, the day before `default-v0.10.0`'s build from GitLab's `c8bac16e`, a commit this repository
+  does not hold: `boto3` 1.43.92, `mlflow` 3.17.2, `sagemaker` 3.21.0, `sagemaker-mlflow` 0.5.0, `pandas`
+  2.3.3, `xgboost-cpu` 3.3.0, Python 3.12. `examples/sandbox-ml/README.md` names `mlflow` 3.16.0 and the
+  rest as the lock does.
+- **[Claude] Pass 7's inputs**: decisions 5, 10 and 12 taken 2026-11-17, as (everything kept), (a) and (a);
+  `docs/plan/runbooks/*.md` holds 20 files and 1,162,979 bytes, against 7.4a's 16 files and 550 KB;
+  `examples/sandbox-ml/bedrock/` holds its README alone, so 7.4's twenty-line evaluation dataset is
+  unwritten.
+- **[Claude] The block**: 0.5's interface half joins the session's opening; 0.3 and 0.7 come next,
+  before any run; pass 7 follows 2.2 (c) and precedes 9.6, with `bedrock-agent` in the raise. About 9.6
+  hours in all, some 2.50 USD of endpoints and hub. Pass 7 can move to a sitting of its own; 0.7 cannot,
+  since the forms precede 2.2's job. No item waits on anything outside the sitting but 7.6's idle bill, which
+  Cost Explorer shows after the sitting's day (8.2).
