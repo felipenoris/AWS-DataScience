@@ -16,9 +16,13 @@ data.
 
 Nothing here has run against AWS. The scripts were written on 2026-10-17 in a session with no AWS
 credentials, against the house environment's lock: `boto3` 1.43.92, `mlflow` 3.16.0, `sagemaker-mlflow`
-0.5.0, `sagemaker` 3.21.0, `pandas` 2.3.3, `xgboost-cpu` 3.3.0, Python 3.12. Step 0.3 reads the versions
-the space holds, and a script that disagrees with them changes before it runs (Lesson 65). What ran on
-that session's build host is under "What ran outside the lab".
+0.5.0, `sagemaker` 3.21.0, `pandas` 2.3.3, `xgboost-cpu` 3.3.0, Python 3.12. The lock has carried `mlflow`
+3.17.2 since `a1c755b5` (2026-10-25), and `default-v0.10.0` with it. The ten MLflow calls the scripts make
+have identical signatures in 3.16.0 and 3.17.2, read 2026-11-19 from `mlflow-skinny` at both versions, on
+which the lock's `mlflow` depends, so no script changed; `log_model`'s positional `artifact_path` is
+deprecated in both. Step 0.3 reads the versions the space holds, and a script that disagrees with them
+changes before it runs (Lesson 65). What ran on that session's build host is under "What ran outside the
+lab".
 
 ## Layout
 
@@ -33,7 +37,8 @@ that session's build host is under "What ran outside the lab".
 | `pipeline/definition.json` | the pipeline `ml-demo-pipeline`, every account-scoped value a placeholder: `Prepare` (processing, the house image, `ml.t3.medium`), `Train`, `CheckAuc` on `validation:auc` against the parameter `AucThreshold` (0.75), then `Register` or the Fail step `AucBelowThreshold` | 5.1 |
 | `pipeline.py` | `upsert` (the definition filled, `prepare.py` uploaded, the pipeline created or updated with the project role as its `RoleArn`), `start`, `status`, and `compare` against the live definition | 5.1, 5.2, 5.4 |
 | `knowledge_base.py` | the runbooks, `docs/plan/runbooks/*.md` (16 files and 556,006 bytes at this commit), copied to `bedrock/kb/` under the prefix, with the commit and each document's size printed | 7.4a |
-| [`bedrock/`](bedrock/README.md) | what the portal exports in pass 7 | 7.4, 7.4b |
+| `evaluation_dataset.py` | 7.4's dataset, `bedrock/evaluation-dataset.jsonl`, checked line by line and copied to `bedrock/` under the prefix, with its line count, size and key printed | 7.4 |
+| [`bedrock/`](bedrock/README.md) | 7.4's evaluation dataset, and what the portal exports in pass 7 | 7.4, 7.4b |
 | `extra_values.json` | the values no space reading gives, each `"<NAME>"` until it is filled | — |
 
 Every object carries the tag `AmazonDataZoneProject` with the project's id and a name starting with
@@ -151,6 +156,8 @@ name is what `train.py` printed, and a version's ARN is what `register.py packag
 /opt/awsds/venv/bin/python pipeline.py start
 /opt/awsds/venv/bin/python pipeline.py status
 /opt/awsds/venv/bin/python pipeline.py compare
+# 7.4: the evaluation job's dataset, before the job
+/opt/awsds/venv/bin/python evaluation_dataset.py
 # 7.4a: the knowledge base's documents
 /opt/awsds/venv/bin/python knowledge_base.py
 ```

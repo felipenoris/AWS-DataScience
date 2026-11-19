@@ -1624,6 +1624,43 @@
     runtimes. The Markdown form stops at June 29, 2026:
     <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html>.
 
+- **The evaluations of Amazon Bedrock in SageMaker Unified Studio and Amazon Bedrock's prompt datasets
+  (read 2026-11-19, for [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md)'s step 7.4).** Each
+  page was read in its HTML form through a page-reading agent.
+  - The IDE's evaluations are automatic alone: *"Amazon Bedrock in SageMaker Unified Studio doesn't
+    support Human-based evaluations."*, and no page names a judge model. The metrics are Toxicity,
+    Accuracy and Robustness; the tasks General text generation, Text summarization, Question and answer
+    and Text classification; a job takes up to 1000 prompts. The form's *Upload a dataset to S3* puts the
+    file in a bucket the IDE manages, whose location the project's **Data Store** shows, and *Choose a
+    dataset from S3* picks one already uploaded. A custom dataset is JSON lines, each line a `prompt`, a
+    `referenceResponse` (required for question and answer, and for accuracy and robustness) and an
+    optional `category`:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/evaluation.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/model-evaluation-jobs-management-create.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/model-evaluation-prompt-datasets.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/model-evaluation-prompt-datasets-custom.html>.
+  - Amazon Bedrock's own pages give an automatic job the same keys and a judge job an optional
+    `referenceResponse`. The judge models include Claude Haiku 4.5
+    (`anthropic.claude-haiku-4-5-20251001-v1:0`) and Nova 2 Lite, and not Nova Lite v1:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/model-evaluation-prompt-datasets.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/model-evaluation-prompt-datasets-judge.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/evaluation-judge.html>.
+    Not read, a page holding its title alone:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/model-evaluation-prompt-datasets-custom.html>.
+
+- **MLflow's release notes from 3.16.0 to 3.17.2 (read 2026-11-19, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md)'s step 0.3 and
+  [`examples/sandbox-ml/`](../examples/sandbox-ml/README.md)).** GitHub's release pages, through a
+  page-reading agent; 3.16.0 and 3.17.0 read to about 60% of the page, the others whole, and v3.16.2 a
+  404. No release from 3.16.1 to 3.17.2 removes or deprecates a call the scripts make;
+  `mlflow.xgboost.log_model`'s positional `artifact_path` is in no note, and the signatures were read from
+  both versions installed:
+  <https://github.com/mlflow/mlflow/releases/tag/v3.16.0>,
+  <https://github.com/mlflow/mlflow/releases/tag/v3.16.1>,
+  <https://github.com/mlflow/mlflow/releases/tag/v3.17.0>,
+  <https://github.com/mlflow/mlflow/releases/tag/v3.17.1>,
+  <https://github.com/mlflow/mlflow/releases/tag/v3.17.2>.
+
 - **SageMaker AI's developer guide on Feature Store, MLflow and a container's network isolation, its
   pricing page, and the XGBoost container's code (read 2026-11-16 and 2026-11-17, for
   [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decisions 17, 20 and 21 and step 6.4).**

@@ -1025,7 +1025,7 @@ Paulo that discipline is worth exactly twice as much.
 | SageMaker HyperPod `ml.m5.large` (`Cluster:ml.m5.large`, USD/h per cluster node) — measured 2026-10-12; read, never created (Stage 17 pass 6) | — | 0.115 | |
 | SageMaker with MLflow **tracking server** (`MLExperiments`), USD/h while it exists — measured 2026-10-12: Small / Medium / Large | — | **0.60 / 1.04 / 1.91** | |
 | SageMaker with MLflow tracking-server **storage** (USD/GB-month) — measured 2026-10-12 | — | 0.10 | |
-| SageMaker **MLflow App** (`MLflowApp`) — **no usage type** in the `AmazonSageMaker` offer of 2026-10-12; AWS's post of 2025-12-02 says no additional cost beyond the artifact store; what it bills is read in Stage 17 8.2 | — | — | |
+| SageMaker **MLflow App** (`MLflowApp`) — **no usage type** in the `AmazonSageMaker` offer of 2026-10-12; AWS's post of 2025-12-02 says no additional cost beyond the artifact store; what it bills is read in Stage 17 8.2. **Measured 2026-11-19**: Sandbox's SageMaker bill from 2026-10-19 to 2026-11-18, by usage type, holds no MLflow line while `ml-demo-mlflow` existed (Cost Explorer) | — | **0** at rest | |
 | SageMaker **Partner AI apps** (`PartnerApps`), USD/h per app instance — measured 2026-10-12: Lakera Guard and Deepchecks Small on `m5.2xlarge` 0.384, Comet Small on `m6i.2xlarge` 0.384; Fiddler Small adds Aurora Serverless v2 0.12 per ACU-h, `cache.m5.large` 0.156 and `mq.m5.large` 0.288; Comet adds `cache.r5.xlarge` 0.431; Deepchecks adds `g4dn.xlarge` 0.526; the partner licence is outside the offer. Read, never created (Stage 17 pass 6) | — | **from 0.384** | |
 
 `t4g` (Graviton) is ~20% cheaper than `t3` for the same memory in both regions, which is the sizing
