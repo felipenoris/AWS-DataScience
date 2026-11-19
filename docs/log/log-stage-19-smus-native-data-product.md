@@ -4159,3 +4159,127 @@ open decisions the user asked for at 22:01 UTC, one card per decision under the 
   reviewed against the estate"* recorded only here; `REFERENCES.md` gains the CLI's substitutions guide,
   which the entry on the CLI's project handling cites, read with `gh api` at `main` `d768153d57` and
   unchanged since 2026-03-24 (`487e489185`).
+
+## 2026-11-19 — the domain's RAM share at version 13, decision 15 (d)'s designation and xxvi, `EXC-25` read
+
+*Claude's sitting on the laptop, a side session of the orchestrating session, with nothing metered up.
+Every call ran as the infrastructure user's `InfrastructureAccess`: `awsds-infra-data` (`<Data Governance
+Account>`) for the share and the designation, and `awsds-infra-sandbox-1`, `awsds-infra-staging` and
+`awsds-infra-prod` for the reads from the associated accounts. In the texts below the account ids are
+`<Sandbox Account 1>`, `<Staging Account>`, `<Production Account>` and `<Data Governance Account>`, and the
+user's address is `<infrastructure user>`. The designation calls ran the laptop's CLI 2.37.12 on botocore
+1.44.5's DataZone model, copied from the `uv` cache into `AWS_DATA_PATH`. Times are UTC.*
+
+- **[Claude] The share, read before the move**, 02:09 to 02:15:
+  - `DataZone-EXTENDED_ACCESS-dzd-d8yrvx1ko7im6o-ORG-ONLY`: `ACTIVE`, `STANDARD`, created 2026-08-21T21:12:34Z.
+  - Its permission, `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`: version 10, `ASSOCIATED`,
+    `defaultVersion` false.
+  - Its associations: three principals, `<Sandbox Account 1>` (2026-08-21) and `<Staging Account>` and
+    `<Production Account>` (2026-11-11), and the domain as its one resource.
+  - `list-permission-versions`: versions 1 to 12 `UNATTACHABLE`. **Version 13 is the default and the only
+    `ATTACHABLE` version, created 2026-11-16T21:08:23Z.**
+  - `get-permission`: version 13 holds version 12's 163 unique actions plus
+    `datazone:GetSystemTableExportConfiguration`, 164 in all (166 entries, since `GetEnvironment` and
+    `GetProject` have each been listed twice since version 10), and removes none. Versions 10 to 12 read as
+    in `SUP-360`. `get-permission` dated every version at the second of the call (`SUP-382`, which Stage 17
+    measured the same night).
+  - `ram get-resource-policies` on the domain: one statement,
+    `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess-org-principals`, with the three account roots,
+    version 10's 152 actions and the `aws:PrincipalOrgID` condition.
+- **[Claude] Put to the user**: the API attaches only a permission's default version, so version 12 cannot
+  be attached, and the move to version 13 is final for an AWS managed permission (RAM's user guide).
+- **[user] The move authorized** in this session's chat: *"Autorizo mover o ram share do domínio para a versão
+  13"*. **[Claude]** The other four sessions on the laptop were told before the call (Stage 17 9.5, Stage 20
+  8.3, 6h decision 3 and the orchestrator), and Stage 20 and 6h held their DataZone calls.
+- **[Claude] The move**, 02:20:30 to 02:20:31: `aws ram associate-resource-share-permission
+  --resource-share-arn <the share's ARN> --permission-arn
+  arn:aws:ram::aws:permission/AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess --permission-version
+  13 --replace` answered `{"returnValue": true}`. Data Governance's trail records
+  `AssociateResourceSharePermission` at 02:20:31Z by `AWSReservedSSO_InfrastructureAccess_ba1899ccb658ab35`,
+  with `replace` true, `permissionVersion` 13 and no error.
+- **[Claude] Read after the move**:
+  - 02:20:41: the share `ACTIVE`, `STANDARD`, its permission at version 13, `defaultVersion` true,
+    `ASSOCIATED`, `lastUpdatedTime` 02:20:33. The share's own `lastUpdatedTime` is still 2026-08-21, and the
+    four associations keep their earlier times.
+  - 02:21:01: the domain's resource policy keeps the same statement, principals and condition, now with
+    version 13's 164 actions. The added actions are `CreateDataApp`, `DeleteDataApp`, `GetDataApp`,
+    `GetDesignation`, `GetGroupProfile`, `GetSystemTableExportConfiguration`, `ListDataApps`,
+    `ListDeployableEnvironmentBlueprints`, `ListDesignations`, `ListSharedDataApps`, `UpdateAssetOwner` and
+    `UpdateDataApp`.
+  - The sessions were told at 02:21. Stage 20's `create-environment` calls followed, from Staging at
+    02:23:05 and from Production at 02:26:58. Both answered, and none of that session's reads in either
+    target from 02:21:40 was refused (`log-stage-20-dbt-lineage.md`, 2026-11-19). 6h's `UpdateConnection`
+    followed its own reading of the share at 02:21:41.
+- **[Claude] What the move changed for the associated accounts**, read as each account's `InfrastructureAccess`:
+  - `get-group-profile` on `sso-group-data-scientists` answered from `<Sandbox Account 1>`, `<Staging
+    Account>` and `<Production Account>` at 02:22:10 to 02:22:14. Version 10 refused this call (`SUP-157`).
+  - The control, `get-project-profile` on `ds7ur2s2ce42vk`, was still refused in all three: *"User:
+    arn:aws:sts::<Production Account>:assumed-role/AWSReservedSSO_InfrastructureAccess_c2bcabf74c885115/<infrastructure
+    user> is not authorized to perform: datazone:GetProjectProfile on resource:
+    arn:aws:datazone:us-west-2:<Data Governance Account>:domain/dzd-d8yrvx1ko7im6o because no resource-based
+    policy allows the datazone:GetProjectProfile action"*.
+  - `list-designations` and `get-designation PROJECT_CONTRIBUTOR` answered from all three at 02:26:05 to
+    02:26:09. Sandbox was refused `ListDesignations` on 2026-11-14 (`SUP-360`).
+  - Not called: `ListDeployableEnvironmentBlueprints`, `UpdateAssetOwner`, the Data App actions and
+    `GetSystemTableExportConfiguration`. The laptop's CLI has none of them, and botocore 1.44.5 has no
+    `GetSystemTableExportConfiguration`.
+- **[Claude] The managed designations**, read from Data Governance at 02:24: `PROJECT_OWNER` and
+  `PROJECT_CONTRIBUTOR`, `MANAGED`, deletion protection on, created by `system`. Their stored Cedar policies
+  hold 23 and 18 statements and 158 and 150 unique actions, and differ from the admin guide's printed text
+  (`SUP-385`).
+- **[Claude] `deploy-production`'s members**, read from Production at 02:26: the two owner groups as
+  `PROJECT_OWNER` and the project role's user profile as `PROJECT_CONTRIBUTOR`, as on 2026-11-16. The
+  Governance Manager is not a member.
+- **[Claude] The designation put to the user**: `subscription-approver`, a policy of three statements with
+  the individual actions of Subscriptions' *Manage subscription approvals* (5), Catalog's *Read-only
+  actions* (9) and the 17 Data Agent actions the stored `PROJECT_CONTRIBUTOR` holds. AWS's designations page
+  requires the Data Agent in every custom designation.
+- **[user] The creation authorized**: *"Autorizo criar a designation subscription-approver"*. **[Claude]** The
+  four sessions were told before it.
+- **[Claude] The first attempt refused**, 02:33:29 to 02:33:30: `aws datazone create-designation
+  --domain-identifier dzd-d8yrvx1ko7im6o --name subscription-approver --description "…" --policy
+  file://subscription-approver.cedar` answered *"An error occurred (ValidationException) when calling the
+  CreateDesignation operation: Invalid designation policy: Designation policy validation error: the
+  specified action is not a valid action group"*. Nothing was created. Data Governance's trail records
+  `CreateDesignation` at 02:33:30Z with `ValidationException`. A custom designation's policy names action
+  groups (`SUP-384`).
+- **[Claude] The policy rewritten and put to the user**: three statements naming
+  `Subscriptions::Action::"ManageSubscriptionApprovals"`, `Catalog::Action::"ReadOnlyActions"` and
+  `DataAgent::Action::"AllActions"`. The first id was inferred from the pattern of the group ids a
+  community article read in a designation made in the portal. One more attempt with Connections' two groups
+  was proposed, only if the validation asked for them.
+- **[user]** *"Pode tentar novamente"*.
+- **[Claude] Created**, 02:46:45 to 02:46:47, with the same command and the rewritten policy:
+  - The response: `id` `ahjm1h20oujxqo`, `designationType` `USER_CREATED`, `deletionProtection` true,
+    `createdBy` `9e7cfd86-4ddb-4ea1-b43f-04417861d609`, `createdAt` 2026-11-19T02:46:46.779396Z. The validation
+    did not ask for the Connections groups.
+  - Data Governance's trail, read at 02:53: `CreateDesignation` at 02:46:46Z by the same role, no error, the
+    response's `id` `ahjm1h20oujxqo`.
+  - 02:47: `get-designation` returned the submitted policy byte for byte. `list-designations` listed the
+    designation from `<Data Governance Account>`, `<Sandbox Account 1>`, `<Staging Account>` and
+    `<Production Account>`, and `get-designation` answered from Production.
+  - No membership was created.
+- **[Claude] xxvi read from the designation as created** (the stage file's xxvi). By AWS's designation
+  permissions page, its three groups expand to 5 Subscriptions actions, 9 Catalog reads and the Data Agent's
+  actions. Cedar permits nothing else, so against `PROJECT_CONTRIBUTOR` it withholds the Project, the
+  Connections, and the Notebooks and Querybooks categories, among them `GetEnvironmentCredentials` and the
+  catalog's writes and publishing. Which Data Agent actions `AllActions` grants is not readable:
+  `get-designation` returns the group as written, the page lists 14 actions and the managed designations
+  store 17 (`SUP-385`). The portal's half needs the membership.
+- **[Claude] `EXC-25`'s provider**, read at about 02:30:
+  - The newest `hashicorp/aws` release is still 6.73.0 (2026-11-11).
+  - `aws_cloudwatch_log_account_policy` validates `policy_type` with the AWS SDK's `PolicyType` enum.
+  - The SDK's `service/cloudwatchlogs` added `RETENTION_POLICY` in v1.91.0 (2026-10-30, its changelog). The
+    provider's `go.mod` pins v1.90.2, both at `v6.73.0` and on `main`.
+  - PR #50873 documents the type and changes no `go.mod`. It is a draft from an external contributor,
+    opened 2026-11-10 and untouched since 11:40 UTC that day.
+  - The three `foundation/` slices lock 6.60.0 under `~> 6.60`.
+- **[Claude] Written**:
+  - the stage file: decisions 15 and 27, step 4.12, xxvi, the sittings' item 9 and the `Status` row;
+  - `SUP-147`, `SUP-157`, `SUP-360` and `SUP-382` appended, and `SUP-384` and `SUP-385` new;
+  - `upstream-releases.md`'s designations row, the provider's `RETENTION_POLICY` row and the next reading;
+  - the waiting list, without the RAM share's row and the designation's row, and with 4.12's row rewritten;
+  - `docs/SMUS.md`, `runbooks/catalog.md` and `runbooks/promotion.md` §N.6 item 4;
+  - `REFERENCES.md`;
+  - at the orchestrator's request, two rows other sessions' measurements of the same day had overtaken: the
+    premise table's 6h row (6h decision 3 done, PR #327) and xix (`SUP-184`'s reading, PR #328).

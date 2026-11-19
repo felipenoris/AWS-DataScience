@@ -1184,10 +1184,12 @@ bound items 3, 5, 6, 9 and 11.
    wait on item 10 and Stage 20's 8.5) and takes a backup: the newest, of
    2026-11-16 03:01 UTC, leaves the bucket on 2026-12-17. Between 2026-11-22 and 2026-11-25 it carries
    N.8.3 on the same hub start.
-4. **Nothing up, after release G**: Stage 19 4.12. After the RAM share at version 12, decision 15 (d)'s
-   designation and xxvi, the Governance Manager's membership of `deploy-production` by its owner ((a)'s
-   `PROJECT_CONTRIBUTOR` only if xxvi reads no narrowing), then `eighth-experimentation`'s request and the
-   approval in the portal (the user's acts), the fulfilment read on both sides.
+4. **Nothing up, after release G**: Stage 19 4.12. The RAM share at version 13, decision 15 (d)'s
+   designation `subscription-approver` and xxvi's half with no membership are done (2026-11-19). The
+   Governance Manager's membership of `deploy-production` by its owner with that designation, xxvi's portal
+   half before the approval ((a)'s `PROJECT_CONTRIBUTOR` only if it reads no narrowing), then
+   `eighth-experimentation`'s request and the approval in the portal (the user's acts), the fulfilment read
+   on both sides.
 5. **The warehouse and backup sitting** (N.8.3), between 2026-11-22 and 2026-11-25, unless item 3 carried
    it: `EXC-13`'s Production half after the admin secret's first rotation, scheduled 2026-11-22 01:59:59
    UTC, and the free trial's pair.
