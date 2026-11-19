@@ -1373,3 +1373,60 @@ UTC.*
   so its tar is a second one, and §2's order places it before the sitting, with 2.1's acts.
 - **[Claude] Left**: 2.1's acts, the user's, with nothing up; 4.5's workflow and its tar; then sitting A
   by §2's order.
+
+## 2026-11-19 — 4.5's workflow and the second tar, with nothing up
+
+*Claude, in a session started by the orchestrating session, on the laptop with nothing up: reads as the
+infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1` and
+`awsds-infra-prod`, the offline tests, the lint and one build. No write to AWS. Times are UTC.*
+
+- **[Claude] The workflow** `app-dbt-job`, its script `job/probe.py`, the manifest's lines and the tests,
+  commit `30ab3539` on pull request #335:
+  - one `SageMakerProcessingOperator` task, `retries: 0`: the image `{env.JOB_IMAGE_URI}`; the entrypoint
+    `/opt/conda/bin/python /opt/ml/processing/code/probe.py`, the Region, the workgroup, the database and
+    the domain as options; `ml.t3.medium` with 10 GB under `{env.PROJECT_KEY_ARN}`;
+    `EnableNetworkIsolation: false` and `EnableInterContainerTrafficEncryption: true` in the project's two
+    subnets and `{env.PROJECT_SG}`; the code input `app-dbt/job/` under the shared prefix; 900 s; the tag
+    `AmazonDataZoneProject` `{proj.id}`; no output;
+  - the manifest: `app-dbt-job` in `content.workflows` and in `dev`'s bootstrap alone; `JOB_IMAGE_URI`,
+    `PROJECT_SG` and `PROJECT_KEY_ARN` in every stage, `dev` reading `${JOB_IMAGE_URI}`,
+    `${DEV_PROJECT_SG}` and `${DEV_PROJECT_KEY_ARN}`, a target `none` and its leg's prefixed names; the
+    storage item `job` in every stage;
+  - `uv run pytest` *"97 passed"*, 11 of them `tests/test_job.py`'s; `ruff check` *"All checks passed!"*
+    and `ruff format --check` clean; `awsds-workflows lint` at `4613ddc` with the pipeline's seven
+    instance types *"ok: 6 arquivo(s)"*, exit 0.
+- **[Claude] The lint's controls**, three altered copies outside the repository: the encryption off,
+  exit 1, *"job: task job: NetworkConfig.EnableInterContainerTrafficEncryption tem de ser true"*; the
+  folder `job` mapped in `dev` alone, exit 1, *"codigo: task job: a entrada de código"* under
+  `shared/app-dbt/job/` *"está fora de"* the four folders every stage copies; the isolation on, exit 0.
+  The second is why every stage maps `job`; the third is `1a50ceb`'s rule leaving the isolation to the
+  task, which `tests/test_job.py` holds at `false`.
+- **[Claude] The image's pull by the project role**, a precondition of the job no step had read:
+  - `awsds-prod-ecr-dev-env`'s repository policy holds one statement, `AllowConsumerAccountsToPull`,
+    granting Sandbox Account 1 `BatchCheckLayerAvailability`, `BatchGetImage`, `GetDownloadUrlForLayer`
+    and `DescribeImages`;
+  - `simulate-principal-policy` on `datazone_usr_role_dnl3l158mbhrio_55hp9teamegf4g` without context
+    read `explicitDeny`, `AllowedByOrganizations: false` and no matched statement, `SUP-008`'s shape; the
+    perimeter SCP denies an ECR push outside the organization alone, and the RCP an identity outside it.
+    With `aws:RequestedRegion=us-west-2`, `BatchGetImage`, `GetDownloadUrlForLayer` and
+    `GetAuthorizationToken` read `allowed` by `SageMakerStudioProjectRoleMachineLearningPolicy`, its
+    `SageMakerECRPermissions` on every repository and its token statement on the caller's account;
+  - that policy's `SageMakerCreatePermissions` asks for `EnableSageMakerMLWorkloadsPermissions` `true` and
+    the project tag, and the role carries both, `AmazonDataZoneProject` `dnl3l158mbhrio`;
+    `SageMakerStudioProjectUserRolePolicy`'s `AllowPassRoleOnProjectRoles` passes it to SageMaker;
+  - `awsds-sandbox-dev-env` version 11 reads `CREATED`, its `BaseImage` and `ContainerImage` one URI by
+    digest, `awsds-prod-ecr-dev-env@sha256:658c05d1…456c19f9`.
+- **[Claude] The second archive and tar**, from `30ab3539` by 2.0's commands, without the `rm -rf`, in
+  `$HOME/tmp/stage20/job/`:
+  - `package-task` from 16:36:43 to 16:36:48, *"26129645 bytes, 82845727 descompactados, para o CPython
+    3.12 em x86_64-manylinux_2_28"*; 1.4's check `5102 82845727 ['0o100755', '0o100755']`;
+  - against 2.0's archive, the same 5,102 names and four entries apart, all in
+    `app_dbt-0.1.0.dist-info/`: `METADATA` from 20,086 to 21,518 bytes, the README the package embeds,
+    and `RECORD`, `direct_url.json` and `uv_cache.json` at their sizes;
+  - the tar `app-dbt-job.tar`, 26,556,928 bytes, `55 40 []`: 2.0's members with `job/`, `job/probe.py`,
+    the third definition and `tests/test_job.py`;
+  - SHA256: the tar `903847a55dcc1b1510ccd4b0f0413c7e181e744ebe7215b9b1c86e59fb279abe`, the archive
+    `74f8bc3948df4ff2a2f509995be361c97c85d19ddc4424b12a95240d79a129ec`; 2.0's tar still `0b3ad0f9…`.
+- **[Claude] Left**: 2.1's acts, the user's, with nothing up; then sitting A by §2's order, 4.5 from
+  `app-dbt-job.tar`. Pull request #335's merge carries the workflow into `main`, and 8.6 takes it off the
+  tree before pass 8's tag.
