@@ -2993,3 +2993,18 @@ planned the slice's lines. Times are UTC.*
   roles list `awsds-sandbox-workflows`.
 - **[Claude] Left**: 9.5's pairs, model statement, `CreateModelPackage` and bundle role's read; 10.4's
   `sandbox/bedrock/` and `sandbox/model-access/`; the two contributors in each project.
+
+## 2026-11-19 — 9.6 and 10.4: the contributors added to `app-ml-dev` and `app-genai-dev`
+
+*Claude, the orchestrating session, read the members the user added, reads only. Times are UTC.*
+
+- **[user] The act**: *"Editei os três projetos adicionando os contributors solicitados. Pode verificar."*
+- **[Claude] The members**, read at 00:54:50: each project lists the owner, its own role, the bundle role's
+  group (`06d426f2-…`, `awsds-deploy-sandbox-test`) and Sandbox's `InfrastructureAccess` group
+  (`839bcde8-…`), both `PROJECT_CONTRIBUTOR`, as `app-etl-dev` does (Stage 20's log of the same night holds
+  the group profiles' readings).
+- **[Claude] The workgroups**, by `list-connections` at 00:55:11, refused before the membership:
+  `app-ml-dev`'s `workgroup-5rzplmk81vma34-5ae0dd6m1suvbk`, `app-genai-dev`'s
+  `workgroup-b8fz4ovppjijv4-c9sdti5d2gaqs0`.
+- **[Claude] Left**: `app-ml-dev`'s MLflow App and model package group (9.6); Nova Lite enabled (10.4);
+  9.5's pairs and 10.4's `sandbox/bedrock/` and `sandbox/model-access/`.

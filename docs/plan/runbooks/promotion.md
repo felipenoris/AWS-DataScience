@@ -1158,9 +1158,9 @@ bound items 3, 5, 6, 9 and 11.
    6d 2.7's steps 2 to 5 were done on 2026-11-18 (step 4's *Update project* retiring no `Tooling` domain,
    `SUP-380`; step 5's `throwaway-6d` read, *Workflows* opening on the blueprint's domain alone, then
    deleted). The three application projects were created on 2026-11-19 and their `sandbox/workflows/`
-   lines applied the same night on the user's word (`3 added`, re-planned `No changes`). Left: their
-   contributors, the bundle role and Sandbox's `InfrastructureAccess` (9.6, 10.4, Stage 20 2.0), and Nova
-   Lite enabled; the rest of the Sandbox slices that read `app-ml-dev`'s and `app-genai-dev`'s roles
+   lines applied the same night on the user's word (`3 added`, re-planned `No changes`), and the user added
+   their contributors, the bundle role and Sandbox's `InfrastructureAccess` (9.6, 10.4, Stage 20 2.0).
+   Left: Nova Lite enabled; Stage 20 2.0's archive and tar after this pull request's merge; the rest of the Sandbox slices that read `app-ml-dev`'s and `app-genai-dev`'s roles
    (9.5's pairs, `sandbox/bedrock/`), which Claude writes and the user applies; and Stage 20 8.3's two
    `create-environment` calls on the user's word naming each, then `staging/studio/`'s
    `product_databases` line. Stage 20's decisions 14 to 17 were taken on 2026-11-18 and their changes

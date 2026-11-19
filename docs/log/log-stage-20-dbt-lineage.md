@@ -1144,3 +1144,26 @@ running on the laptop. Times are UTC.*
 - **[Claude] Lesson 79**: the slice was applied from pull request #320's branch, so a plan of it from `main`
   proposes removing the three attachments until that pull request merges.
 - **[Claude] Left**: the project's two contributors, then the workgroup's reading and 2.0's starting state.
+
+## 2026-11-19 — 2.0: the contributors added, the workgroup and the starting state read
+
+*The user added the members in the portal. Claude, the orchestrating session, read them as the
+infrastructure user through `awsds-infra-sandbox-1` and `awsds-infra-data`, reads only. Times are UTC.*
+
+- **[user] The act**: *"Editei os três projetos adicionando os contributors solicitados. Pode verificar."*
+  The user asked first which name the member dialog shows for `InfrastructureAccess`, and Claude answered
+  `AWSReservedSSO_InfrastructureAccess_59e5b26af457128d`, Sandbox's, as Stage 19's log of 2026-11-14 read it.
+- **[Claude] The members**, read at 00:54:50: `app-dbt-dev`, `app-ml-dev` and `app-genai-dev` each list the
+  owner, the project's own role and two `PROJECT_CONTRIBUTOR` groups, as `app-etl-dev` does. From the
+  domain's account, `get-group-profile` answers each group's `rolePrincipalArn`: `06d426f2-…` is
+  `awsds-deploy-sandbox-test` and `839bcde8-…` is `AWSReservedSSO_InfrastructureAccess_59e5b26af457128d`.
+- **[Claude] The workgroups**, by `list-connections` at 00:55:11, refused before the membership:
+  `app-dbt-dev`'s `project.athena` names `workgroup-dnl3l158mbhrio-55hp9teamegf4g`, `app-ml-dev`'s
+  `workgroup-5rzplmk81vma34-5ae0dd6m1suvbk` and `app-genai-dev`'s `workgroup-b8fz4ovppjijv4-c9sdti5d2gaqs0`.
+- **[Claude] 2.0's starting state**, at 00:55:40, each as expected: the workgroup `ENABLED`, enforced, on
+  *"Athena engine version 3"*, its output under the project's `dev/sys/athena/`; *"Database app_dbt not
+  found."* and *"Job not found."*; no `app_dbt_` workflow; `0` objects under `dev/data/catalogs/trades/`,
+  `dev/data/catalogs/app_dbt/` and `shared/app-dbt/`; `search` answering with no asset.
+- **[Claude] `./aws/catalog.py`** again: the run ending 00:58:58 wrote *"all checks passed"* and exited 0: the three `search` calls refused at 00:36 now answer, and `CT-19` reads every inventory, *"13 assets in 10 projects, 7 of them Glue tables"*.
+- **[Claude] Left**: 2.0's archive and tar, built from the merged tree after pull request #320's merge,
+  which moves `app-dbt`'s pin to `4613ddc`; then sitting A.
