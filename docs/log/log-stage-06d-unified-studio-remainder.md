@@ -4386,3 +4386,17 @@ the question that named `staging/studio/` and `production/studio/`. As the infra
   a workflow worker's included, is refused a native notebook run, whatever its network. `TM-34`'s targets
   half holds by an applied control; Sandbox's waits on 4.7, as decision 17 (a) stands or decision 17 (b)'s
   deny first, the user's.
+
+## 2026-11-19 — 4.7's order: the negative on the combined sitting's day 1
+
+*Claude, the orchestrating session, recording the user's answer in its chat at 17:08 UTC. No AWS call.*
+
+- **[user] The answer**: *"Negativo no dia 1"*, to the question whether 4.7 runs with `L-85C9EC5A` already
+  above zero, as decision 17 (a) stands, or decision 17 (b)'s Sandbox deny is written first.
+- **[Claude] What it sets**: 4.7's runs, a background run, a schedule and a *Notebook Operator* workflow in
+  `eighth-experimentation`, and the `PUBLIC_INTERNET_ONLY` negative run on
+  [`promotion.md`](../plan/runbooks/promotion.md) §N.9's day 1, with no deny in Sandbox before them. A
+  refusal, or a run inside the VPC whose cell fails, leaves the domain's VPC as the control; a cell that
+  prints an address, with no interface in the VPC, brings decision 17 (b)'s deny to Sandbox.
+- **[Claude] The records**: decision 17, step 4.7, the block's item 2 and the `Status` row in the stage
+  file; `TM-34`; §N.9.1 and §N.9.3 step 7; the waiting list, whose row for 4.7's order is removed.
