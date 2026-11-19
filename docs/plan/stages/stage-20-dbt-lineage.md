@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Written 2026-11-16; step 1.1's facts and decisions 1 to 7, 10 and 13 taken the same day; decisions 9 (b) and 11 (a) taken 2026-11-17, 9 moving 7 to (b); the application's draft run against simulated services on 2026-11-17 (0.15, 0.16), pass 1 and 4.1 to 4.3 done the same day with nothing up, 4.4's applies run and 4.6 written after them; the three stages and pass 8, the promotion, written 2026-11-18 with nothing up, 8.4's applies run and decisions 14 to 17 taken the same day; no Sandbox sitting yet** ([log](../../log/log-stage-20-dbt-lineage.md)): the plan, the user's questions answered from dated vendor pages, OpenLineage's released code and this estate's measurements, and each decision in the user's words. dbt runs on Athena, in a Bash task on the worker, on dbt Core 1.11, in a new application `app-dbt` in a Sandbox project of its own, promoted to Staging and Production by the CI/CD CLI (decision 9 (b)), whose passes are written before their sitting; Redshift and Glue with Spark are a later revision's, and a run past the worker's hour is compared in the runbook, measured by no pass. Decision 13 takes a processing job out of the network-isolation statement in Sandbox, Staging and Production, applied 2026-11-17. Pass 1 runs with nothing up; passes 2 and 3 are Sandbox sittings; pass 4 is decision 13's change, a laptop session's tags and applies on the user's word, with the SCP battery; pass 5 waits on [Stage 19](stage-19-smus-native-data-product.md) step 4.12 (decision 11 (a)); pass 8 is a GitLab sitting and a release sitting after [`promotion.md`](../runbooks/promotion.md) §N.6 item 10. On 2026-11-17: `examples/app-dbt/` written from the stage's prose, step 1.3's three criteria met by the simulation on the laptop's host archive (`aarch64-apple-darwin`, 28,621,986 bytes, 88,429,087 unzipped), 51 tests passing (1.2 to 1.4); `catalog.md`'s first version with 1.6's desk readings (1.5, 1.6); `upstream-releases.md`'s dbt and OpenLineage section (1.7); `sagemaker-denies-v0.3.0` and `sagemaker-prereqs-v0.11.0` tagged at `5f121541`, the callers pinned and the battery's rows written (4.1 to 4.3), each slice planned, then applied on the user's word from 16:01 to 16:09 UTC with `production/registry` first, every re-plan `No changes`, and the battery's processing row authorized and its training row refused, 53 as expected (4.4); the documents and checks that state the rule rewritten and `TM-35` written (4.6). The lint's `job` rule, the item 6.4 hands `awsds-workflows` after pass 4, relaxed the same day by that project's pull request #27, merged as `1a50ceb`, which `app-dbt` pinned until #28's merge. On 2026-11-18, with nothing up: `examples/app-dbt/` extended to the three stages of decisions 7 (b) and 9 (b), with the catalog block, `product.json` and its guard, the pipeline from the template, and the lock cut for Linux and macOS so the gates' `pip-audit` audits every pin; 84 tests passing, the lint *"ok: 4 arquivo(s)"*, and the simulation's thirteen cases as on 2026-11-17; passes 2, 3 and 5 rewritten for the application's own `dev` project, `app-dbt-dev`; pass 8 written, its four `[P]` slices written and planned (8.2); after PR #318's merge, the four applied on the user's word from 10:43 to 10:44 UTC, each re-planned `No changes` (8.4); decisions 14 (a), 15 (a), 16 (c) and 17 (b) taken at 14:02 UTC, and what each changes written with nothing up (8.5): `athena` in both egress slices' `core_services`, each slice planned 17 to add before and 18 after; the stage variable `LINEAGE_NAMESPACE` and `run-dbt.sh`'s `--namespace`, 86 tests passing, the lint *"ok: 4 arquivo(s)"* and the simulation's thirteen cases run again; `awsds-workflows`' change for 17 (b) opened as its pull request #28 on the user's word, and 17 (b)'s change in `app-dbt` written, the simulation run again, and pinned to #28's merge `4613ddc`, the lint *"ok: 4 arquivo(s)"*. 8.1 written on pull request #321 (`promotion.md` §N.6 item 10), merged after release G's sitting. On 2026-11-19 the user created `app-dbt-dev`, born with the blueprint's domain alone, its role carrying the boundary; its `sandbox/workflows/` line was applied with Stage 17's two on the user's word, `3 added` and re-planned `No changes`, and `CHAIN_DEV_PROJECTS` took its id (2.0, 8.1). The user added its two contributors the same night, and 2.0's starting state read as expected. After pull request #320's merge, 2.0's archive and tar were built from `main` at `103b4acc` and checked, the modes `['0o100755', '0o100755']` and no `._` member, closing 2.0. On 2026-11-19, on the user's word, 8.3's `DataLake` environments created, `deploy-staging-app-dbt` (`bg5ndpa5etujo0`) at 02:23 UTC and `deploy-production-app-dbt` (`adscxpx574cas0`) at 02:27, both `ACTIVE`, each with the database `app_dbt`, its conditioned grants and one daily source, and no subscription target (`SUP-184`); `staging/studio/`'s `product_databases` line applied at 02:27 from 8.3's branch, re-planned `No changes` (8.4). Left: sitting A, passes 2 and 3 with 4.5; pass 5 after Stage 19's 4.12; pass 8's remainder after `promotion.md` §N.6 item 10 and before 2026-12-18 |
+| **Status** | **Written 2026-11-16; step 1.1's facts and decisions 1 to 7, 10 and 13 taken the same day; decisions 9 (b) and 11 (a) taken 2026-11-17, 9 moving 7 to (b); the application's draft run against simulated services on 2026-11-17 (0.15, 0.16), pass 1 and 4.1 to 4.3 done the same day with nothing up, 4.4's applies run and 4.6 written after them; the three stages and pass 8, the promotion, written 2026-11-18 with nothing up, 8.4's applies run and decisions 14 to 17 taken the same day; no Sandbox sitting yet** ([log](../../log/log-stage-20-dbt-lineage.md)): the plan, the user's questions answered from dated vendor pages, OpenLineage's released code and this estate's measurements, and each decision in the user's words. dbt runs on Athena, in a Bash task on the worker, on dbt Core 1.11, in a new application `app-dbt` in a Sandbox project of its own, promoted to Staging and Production by the CI/CD CLI (decision 9 (b)), whose passes are written before their sitting; Redshift and Glue with Spark are a later revision's, and a run past the worker's hour is compared in the runbook, measured by no pass. Decision 13 takes a processing job out of the network-isolation statement in Sandbox, Staging and Production, applied 2026-11-17. Pass 1 runs with nothing up; passes 2 and 3 are Sandbox sittings; pass 4 is decision 13's change, a laptop session's tags and applies on the user's word, with the SCP battery; pass 5 waits on [Stage 19](stage-19-smus-native-data-product.md) step 4.12 (decision 11 (a)); pass 8 is a GitLab sitting and a release sitting after [`promotion.md`](../runbooks/promotion.md) §N.6 item 10. On 2026-11-17: `examples/app-dbt/` written from the stage's prose, step 1.3's three criteria met by the simulation on the laptop's host archive (`aarch64-apple-darwin`, 28,621,986 bytes, 88,429,087 unzipped), 51 tests passing (1.2 to 1.4); `catalog.md`'s first version with 1.6's desk readings (1.5, 1.6); `upstream-releases.md`'s dbt and OpenLineage section (1.7); `sagemaker-denies-v0.3.0` and `sagemaker-prereqs-v0.11.0` tagged at `5f121541`, the callers pinned and the battery's rows written (4.1 to 4.3), each slice planned, then applied on the user's word from 16:01 to 16:09 UTC with `production/registry` first, every re-plan `No changes`, and the battery's processing row authorized and its training row refused, 53 as expected (4.4); the documents and checks that state the rule rewritten and `TM-35` written (4.6). The lint's `job` rule, the item 6.4 hands `awsds-workflows` after pass 4, relaxed the same day by that project's pull request #27, merged as `1a50ceb`, which `app-dbt` pinned until #28's merge. On 2026-11-18, with nothing up: `examples/app-dbt/` extended to the three stages of decisions 7 (b) and 9 (b), with the catalog block, `product.json` and its guard, the pipeline from the template, and the lock cut for Linux and macOS so the gates' `pip-audit` audits every pin; 84 tests passing, the lint *"ok: 4 arquivo(s)"*, and the simulation's thirteen cases as on 2026-11-17; passes 2, 3 and 5 rewritten for the application's own `dev` project, `app-dbt-dev`; pass 8 written, its four `[P]` slices written and planned (8.2); after PR #318's merge, the four applied on the user's word from 10:43 to 10:44 UTC, each re-planned `No changes` (8.4); decisions 14 (a), 15 (a), 16 (c) and 17 (b) taken at 14:02 UTC, and what each changes written with nothing up (8.5): `athena` in both egress slices' `core_services`, each slice planned 17 to add before and 18 after; the stage variable `LINEAGE_NAMESPACE` and `run-dbt.sh`'s `--namespace`, 86 tests passing, the lint *"ok: 4 arquivo(s)"* and the simulation's thirteen cases run again; `awsds-workflows`' change for 17 (b) opened as its pull request #28 on the user's word, and 17 (b)'s change in `app-dbt` written, the simulation run again, and pinned to #28's merge `4613ddc`, the lint *"ok: 4 arquivo(s)"*. 8.1 written on pull request #321 (`promotion.md` §N.6 item 10), merged after release G's sitting. On 2026-11-19 the user created `app-dbt-dev`, born with the blueprint's domain alone, its role carrying the boundary; its `sandbox/workflows/` line was applied with Stage 17's two on the user's word, `3 added` and re-planned `No changes`, and `CHAIN_DEV_PROJECTS` took its id (2.0, 8.1). The user added its two contributors the same night, and 2.0's starting state read as expected. After pull request #320's merge, 2.0's archive and tar were built from `main` at `103b4acc` and checked, the modes `['0o100755', '0o100755']` and no `._` member, closing 2.0. On 2026-11-19, on the user's word, 8.3's `DataLake` environments created, `deploy-staging-app-dbt` (`bg5ndpa5etujo0`) at 02:23 UTC and `deploy-production-app-dbt` (`adscxpx574cas0`) at 02:27, both `ACTIVE`, each with the database `app_dbt`, its conditioned grants and one daily source, and no subscription target (`SUP-184`); `staging/studio/`'s `product_databases` line applied at 02:27 from 8.3's branch, re-planned `No changes` (8.4). On 2026-11-19, with nothing up, sitting A's pre-flight read the archive and the tar unchanged since `103b4acc`, `app-dbt-dev` as 2.0 left it, `sandbox/workflows/` re-planned `No changes` and the endpoints, `mwaa` the one group the sitting needs; §2 took the sitting's order and its corrected commands, the dbt job's node under `app-dbt-dev` and 4.5's pin `4613ddc`. Left: 2.1's acts and 4.5's workflow before sitting A, then sitting A, passes 2 and 3 with 4.5; pass 5 after Stage 19's 4.12; pass 8's remainder after `promotion.md` §N.6 item 10 and before 2026-12-18 |
 | **Prerequisites** | [6i](stage-06i-sandbox-orchestration.md) steps 4 and 5, a Python and a Bash task run from a code archive on the worker (2026-10-11), and `awsds-workflows package-task`, which builds that archive ([`serverless-workflows.md`](../runbooks/serverless-workflows.md) §C). [Stage 19](stage-19-smus-native-data-product.md) pass 1's recipe: a workflow's Glue job writing an Iceberg table into a project database and posting OpenLineage events through Sandbox's `datazone` endpoint (2026-11-10), the graph drawn on the asset's page (2026-11-14). The application's own Sandbox project, `app-dbt-dev` (decision 7 (b)), the user's to create, with the workflows grant once its role joins `sandbox/workflows/`'s `project_roles` (2.0), and spaces on the house image's version 11 with the CI/CD CLI 1.0.9. `sandbox/egress/`'s `athena`, `glue`, `lakeformation`, `sts` and `datazone` endpoints, the first four in the endpoint module's core set and the fifth among the slice's extra services, and its `mwaa` group for a deploy from a space. For pass 4, a laptop session as the infrastructure user and the SCP battery ([`scp-battery.md`](../runbooks/scp-battery.md)). For pass 8, the deploy script taught an application with no image and its workgroup ([`promotion.md`](../runbooks/promotion.md) §N.6 item 10, step 8.1), the GitLab project `awsds/app-dbt` (8.7), and the hub, GitLab and both targets' egress slices with an `athena` endpoint (decision 15). Nothing blocks pass 1 |
 | **Consumes** | [D7](../decisions/D07-orchestration.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D26](../decisions/D26-unified-studio.md), [D28](../decisions/D28-workflow-contract.md), [D41](../decisions/D41-sagemaker-application.md); [D12](../decisions/D12-budget-ceiling.md) for the cost |
 | **Proves** | — (no `INT-nn` row: the worker's post reaches the domain in Data Governance through the `datazone` endpoint a Glue job's lineage already crosses, and no new wiring between accounts is built). What it does prove: whether a dbt project run as a task of a SageMaker application's workflow reads and writes the project's tables through an engine SageMaker Unified Studio itself uses, and whether the OpenLineage events dbt's wrapper posts land on the graph the portal draws for the assets, beside a Glue job's; and, under decision 9 (b), whether the application released by the CI/CD CLI does both in each deployment project |
@@ -874,11 +874,11 @@ own workflow's name ([`sagemaker-application.md`](../runbooks/sagemaker-applicat
 is the stream its `LogStream` names.
 
 ```bash
-D=dzd-d8yrvx1ko7im6o; E=<the project's id>; P=awsds-infra-sandbox-1; B=awsds-sandbox-smus-projects; WG=workgroup-$E-<its Tooling environment's id>
+D=dzd-d8yrvx1ko7im6o; E=dnl3l158mbhrio; P=awsds-infra-sandbox-1; B=awsds-sandbox-smus-projects; WG=workgroup-dnl3l158mbhrio-55hp9teamegf4g
 ```
 
 The two ids are the two segments of the project role's name, `datazone_usr_role_<project id>_<Tooling
-environment id>`, which 2.0 reads.
+environment id>`, which 2.0 reads: `app-dbt-dev`'s, read again on 2026-11-19 at 15:01 UTC.
 
 ```bash
 N=app_dbt_app_dbt_dev_app_dbt_probe
@@ -896,6 +896,35 @@ the project role's session `AmazonMWAAServerless`:
 ```bash
 for e in <event names>; do aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=$e --start-time <the run's first minute> --profile $P --region us-west-2 --query 'Events[].CloudTrailEvent' --output json | jq -r '.[] | fromjson | [.eventTime, .eventName, (.userIdentity.arn // "-" | split("/") | last), (.userIdentity.invokedBy // "-"), .sourceIPAddress, (.vpcEndpointId // "-"), (.errorCode // "-"), (.additionalEventData // {} | tostring)] | @tsv'; done
 ```
+
+**Sitting A in order.** The combined Sandbox sitting carries this pass, pass 3 and 4.5 on one hub start
+with Stage 17's sittings B and C ([`promotion.md`](../runbooks/promotion.md) §N.6 items 6 to 8). The
+pre-flight of 2026-11-19, with nothing up, read every input as 2.0 left it (the log). [user] is the
+user's act, [Claude] a read, [Claude⚡] a write Claude runs on the user's word naming it. `GROUPS` names
+the optional endpoint group a row needs beside `sandbox/egress/`'s always-on endpoints, which carry
+Athena, Glue, Lake Formation, STS, ECR, `datazone` and `sagemaker.api`, S3 going through the `[P]`
+gateway; `none` marks a row that calls from the VPC through those alone, and `-` a row that calls nothing
+from it. The commands are each step's own.
+
+| Order | Hand | Step and what runs | `GROUPS` | What it closes |
+|---|---|---|---|---|
+| 1 | [user] | 2.1, with nothing up: *Data → Create database* `app_dbt` in `app-dbt-dev`, then the editor's create and drop of `editor_probe` | - | the database 2.3 writes into; iii's editor half |
+| 2 | [Claude] | 2.1's reads, the source's daily minute among them | - | the minute the sitting's runs keep clear of |
+| 3 | [Claude] | 4.5's workflow, its script and the manifest's lines on a branch no tag carries, pass 1's tests and the lint at `4613ddc`, then a second archive and tar from that branch's commit by 2.0's commands | - | the tar 4.5 deploys |
+| 4 | [Claude] | The laptop's other sessions told before the first raise; `make status` | - | - |
+| 5 | [user] | `make hub-up` | - | the proxy a space and a job reach |
+| 6 | [user] | `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base`, which raises `sandbox/egress/` and `sandbox/probes/` (`DRY=1`, 2026-11-19); [Claude] `make status` | `mwaa` | the `airflow-serverless` endpoint every deploy and run from a space calls |
+| 7 | [user] | 2.2: a JupyterLab space in `app-dbt-dev`, `app-dbt.tar` checked and extracted, the values, the deploy, the probe's run | `mwaa` | i's worker half, ii's first half, the endpoint's answer to `ListLineageEvents` |
+| 8 | [Claude] | 2.2's reads: the copies, both workflows, the probe's run and log, the trail | - | - |
+| 9 | [user] | 2.3: `app-dbt`'s run; [Claude] 2.3's reads | `mwaa` | i's modes, ii, iii's worker half, iv, v |
+| 10 | [user] | 2.4: the source's *Run* in the portal, each table's *Lineage* tab; [Claude] 2.4's reads | - | vi, vii, xvi; one graph is 3.1's verdict, `as-built` staying in the targets |
+| 11 | [user] | 2.5: the run and the source again; [Claude] 2.5's reads | `mwaa` | x |
+| 12 | [user] | 3.1, on a split graph alone: `glue-arn` exported, the run, the source; [Claude] 3.1's reads | `mwaa` | viii; one graph is 3.1's verdict, `glue-arn` in the targets before pass 8's tag; neither form linking stops the stage (3.2) |
+| 13 | [user] | 3.3: the three failing runs, each after its `export`, then the switches back at rest; [Claude] each run's reads | `mwaa` | ix, decision 5's input |
+| 14 | [user] | 2.6, if the sitting has room: the archive run by hand in the space, `-- debug` then `-- run`; [Claude] the trail | none | the development loop |
+| 15 | [user] | 3.4: a space of `test-experimentation`, the foreign event posted, the node read; [Claude] the answers; [Claude⚡] the event's delete | none | xi, xv |
+| 16 | [user] | 4.5: the second tar in the space, §D step 3's values with the image's URI typed, the deploy, the run; [Claude] 4.5's reads | `mwaa` | xii's Sandbox half, xiii |
+| 17 | [user] | 2.7: both spaces stopped, every portal tab closed, `make down ENV=sandbox`, `make hub-down`; [Claude] `make status`, §R's readings | - | zero burn |
 
 - **2.0 Before the sitting, with nothing up**: the project, its grant and its image, then the starting
   state, the archive and the tar.
@@ -1045,20 +1074,25 @@ for e in <event names>; do aws cloudtrail lookup-events --lookup-attributes Attr
   make up ENV=sandbox ONLY=egress GROUPS=mwaa
   ```
 
-  **[Claude]** tells the laptop's other sessions before the first raise and reads `make status` after the
-  second. Then a JupyterLab space in `app-dbt-dev` on `awsds-sandbox-dev-env` version 11
-  (alias `0.10.0`), `ml.t3.medium`, the tar dropped on its file browser, and in its terminal:
+  In the combined Sandbox sitting the raise is `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base`,
+  whose `mwaa` is this pass's; with no `ONLY=` it raises `sandbox/probes/` beside `sandbox/egress/`
+  (`DRY=1`, 2026-11-19). **[Claude]** tells the laptop's other sessions before the first raise and
+  reads `make status` after the second. Then a JupyterLab space in `app-dbt-dev` on
+  `awsds-sandbox-dev-env` version 11 (alias `0.10.0`), `ml.t3.medium`, the tar dropped on its file
+  browser, and in its terminal the tar checked against the digest 2.0 built before it is extracted:
 
   ```bash
-  tar -x -f app-dbt.tar && cd app-dbt
+  echo '0b3ad0f98ed46af809cb539df0102f3c715723b9d07a868aad9192f41c21a1c8  app-dbt.tar' | sha256sum -c && tar -x -f app-dbt.tar && cd app-dbt
   ```
 
   The values the manifest's `dev` stage reads, §D step 3 without an image or a key; the project's name
   is typed, as 2.0 read it. The workgroup is no stage variable (decision 17 (b)), and 2.6's run by hand
-  alone types it:
+  alone types it. The clone's head is read against the pin, `4613ddc`, which `awsds-workflows`' `main`
+  held on 2026-11-19:
 
   ```bash
   git clone --depth 1 https://github.com/felipenoris/awsds-workflows /tmp/awsds-workflows
+  git -C /tmp/awsds-workflows log -1 --format=%h
   /opt/conda/bin/python /tmp/awsds-workflows/scripts/space_values.py > /tmp/space_values.json
   eval "$(/opt/conda/bin/python -c 'import json; v = json.load(open("/tmp/space_values.json")); print("\n".join("export %s=%s" % p for p in (("DOMAIN_ID", v["DOMAIN_ID"]), ("DOMAIN_REGION", v["REGION"]), ("SUBNET_AZ1", v["SUBNET_AZ1"]), ("SUBNET_AZ2", v["SUBNET_AZ2"]), ("ACCOUNT_ID", v["ACCOUNT_ID"]))))')"
   export DEV_PROJECT_NAME=app-dbt-dev
@@ -1158,14 +1192,15 @@ for e in <event names>; do aws cloudtrail lookup-events --lookup-attributes Attr
   aws datazone search --domain-identifier $D --search-scope ASSET --owning-project-identifier $E --profile $P --region us-west-2 --query 'items[].assetItem.[identifier,name,externalIdentifier]' --output text
   aws datazone get-asset --domain-identifier $D --identifier <an asset's id> --profile $P --region us-west-2 --query "formsOutput[?formName=='GlueTableForm'].content | [0]" --output text
   aws datazone get-lineage-node --domain-identifier $D --identifier amazon.datazone.asset/<an asset's id> --profile $P --region us-west-2 --query '[id, typeName, sourceIdentifier, upstreamNodes[].id, downstreamNodes[].id]'
-  aws datazone get-lineage-node --domain-identifier $D --identifier 'app-dbt.awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run' --profile $P --region us-west-2 --query '[id, typeName, sourceIdentifier, formsOutput[].formName, upstreamNodes[].id, downstreamNodes[].id]'
+  aws datazone get-lineage-node --domain-identifier $D --identifier 'app-dbt-dev.awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run' --profile $P --region us-west-2 --query '[id, typeName, sourceIdentifier, formsOutput[].formName, upstreamNodes[].id, downstreamNodes[].id]'
   aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=CreateLineageNode --start-time <2.3's first minute> --profile awsds-infra-data --region us-west-2 --query 'Events[].CloudTrailEvent' --output json | jq -r '.[] | fromjson | [.eventTime, (.additionalEventData | tostring)] | @tsv'
   ```
 
   This stage's assets are the project's two, whose external identifiers end
   `table/app_dbt/trades.<the project's id>` and `table/app_dbt/notional_by_desk.<the project's id>`
   (`SUP-343`). An asset's node answers to `amazon.datazone.asset/<asset id>`, a job's to
-  `<namespace>.<name>`, and every other node to its id alone, which `Data Governance`'s trail gives with
+  `<namespace>.<name>`, the dbt job's namespace `app-dbt-dev` in `dev` (decision 16 (c)), and every
+  other node to its id alone, which `Data Governance`'s trail gives with
   its `sourceIdentifier` (`SUP-347`); `get-lineage-node` on each id chains them. The graph is one when
   `notional_by_desk`'s asset has the dbt job's run upstream and that run has, upstream, the node the Glue
   job wrote, the one `trades`' asset hangs from: the model's output node then carries the table's ARN,
@@ -1197,7 +1232,7 @@ for e in <event names>; do aws cloudtrail lookup-events --lookup-attributes Attr
 
   ```bash
   mkdir -p /tmp/app-dbt-hand && python3 -m zipfile -e code/app-dbt.zip /tmp/app-dbt-hand
-  export ATHENA_WORKGROUP=workgroup-<project id>-<Tooling environment id>
+  export ATHENA_WORKGROUP=workgroup-dnl3l158mbhrio-55hp9teamegf4g
   PYTHONPATH=/tmp/app-dbt-hand bash /tmp/app-dbt-hand/run-dbt.sh --region us-west-2 --account "$ACCOUNT_ID" --database app_dbt --workgroup "$ATHENA_WORKGROUP" --domain "$LINEAGE_DOMAIN" --names "$LINEAGE_NAMES" --namespace app-dbt-by-hand -- debug
   ```
 
@@ -1281,7 +1316,7 @@ its result is. Steps 3.1 and 3.2 run only if 2.4 reads a split graph.
   ```
 
   ```bash
-  aws datazone get-lineage-node --domain-identifier dzd-d8yrvx1ko7im6o --identifier 'app-dbt.awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run' --region us-west-2 --query '[id, typeName, formsOutput[].formName]'
+  aws datazone get-lineage-node --domain-identifier dzd-d8yrvx1ko7im6o --identifier 'app-dbt-dev.awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run' --region us-west-2 --query '[id, typeName, formsOutput[].formName]'
   ```
 
   **[Claude] reads** whether the domain accepts an event about another project's table (the post's answer
@@ -1413,12 +1448,16 @@ four profiles 4.4 names.
   `DEV_PROJECT_SG` and `DEV_PROJECT_KEY_ARN` (§D step 3's line) and the image's URI, typed in the space
   and never written down, and each target its leg's `${<PREFIX>_PROJECT_SG}` and
   `${<PREFIX>_PROJECT_KEY_ARN}` with the image `none`; `dev`'s bootstrap alone creates it, and it leaves
-  `content.workflows` before pass 8's tag, no target running a processing job of this stage. The workflow is written at this pass, and `awsds-workflows lint` at `app-dbt`'s pin `1a50ceb`
-  passes it: that commit's `job` rule leaves the isolation to the task (6.4). Its script prints the
+  `content.workflows` before pass 8's tag, no target running a processing job of this stage. The workflow is written at this pass, and `awsds-workflows lint` at `app-dbt`'s pin `4613ddc`
+  passes it: that commit carries `1a50ceb`'s `job` rule, which leaves the isolation to the task (6.4). Its script prints the
   caller's identity, a `SELECT 1`
   through the project's Athena workgroup, the product database as Glue returns it, `ListLineageEvents` on
-  the domain, and what the proxy answers a request for a name on Sandbox's allow-list and for one off it.
-  The deploy and the run are 2.2's commands with the workflow's name. **[Claude] reads** the run by pass
+  the domain, and what the proxy answers a request for a name on Sandbox's allow-list and for one off it:
+  `pypi.org`, and a name no plane carries, never the domain's own URL, which 6d decision 6 adds to
+  Sandbox's plane at the hub sitting's `production/networking/` apply.
+  The deploy and the run are 2.2's commands with the workflow's name, from a tar of the branch that
+  carries the workflow, after §D step 3's values, whose line exports `DEV_PROJECT_SG` and
+  `DEV_PROJECT_KEY_ARN`. **[Claude] reads** the run by pass
   2's blocks, the job's description and its calls in Sandbox's trail, by the session `SageMaker` (xii,
   xiii):
 
@@ -1623,7 +1662,8 @@ manager's, the user's hands.
   the simulation's thirteen cases run again from 15:39 to 15:40 UTC, as at 14:15. #28 merged by the user
   at 15:50:35 UTC as `4613ddc`, its tree the branch's, and the pin moved to it in `.gitlab-ci.yml`, the
   README, the simulation and pass 2's archive line: the lint at `4613ddc` *"ok: 4 arquivo(s)"* with the
-  pipeline's instance types, `package-task` the same at both commits. Owed: 3.1's verdict.
+  pipeline's instance types, `package-task` the same at both commits. Owed: 3.1's verdict, which sitting
+  A gives at 2.4 when the graph is one, `as-built` staying in the targets, and at 3.1 when it is split.
 - **8.6 The release's content in `app-dbt-dev`**: **[user]** the two assets curated in the portal, as
   Stage 19's step 15 curated `app-etl-dev`'s: each one's description and README, and the form
   `classification`; and the project left holding nothing else a bundle would carry: pass 5's table asset
