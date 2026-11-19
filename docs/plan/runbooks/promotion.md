@@ -1165,8 +1165,11 @@ bound items 3, 5, 6, 9 and 11.
    `deploy-staging-app-dbt` and `deploy-production-app-dbt` were created on 2026-11-19 at 02:23 and 02:27
    UTC on the user's word, both `ACTIVE` with the database `app_dbt` and its source, and `staging/studio/`'s
    `product_databases` line applied at 02:27 from 8.3's branch, re-planned `No changes` (8.4).
-   Left: Nova Lite enabled; the rest of the Sandbox slices that read `app-ml-dev`'s and `app-genai-dev`'s roles
-   (9.5's pairs, `sandbox/bedrock/`), which Claude writes and the user applies. Stage 20's decisions 14 to
+   The rest of the Sandbox slices that read `app-ml-dev`'s and `app-genai-dev`'s roles (9.5's pairs but the
+   training pair, `sandbox/bedrock/`, `sandbox/ml/`), `EXC-11`'s share and the interactive OU's SCP admitting
+   Nova Lite were applied on 2026-11-19 from `main` after pull request #326, the SCP by the orchestrating
+   session with the battery's `ou` phase (54 as expected). Left: Nova Lite enabled, and the training pair in
+   sitting B (item 7). Stage 20's decisions 14 to
    17 were taken on 2026-11-18 and their changes written, `app-dbt` pinned to `awsds-workflows` `4613ddc`.
    Stage 20 8.4's applies of the four `[P]` slices its pass 8 wrote ran on 2026-11-18, closing their
    Lesson 69 window. 6d 2.7's acts need nothing metered; its step 3's code was written and planned on
@@ -1197,7 +1200,7 @@ bound items 3, 5, 6, 9 and 11.
    call, then 9.6 after `EXC-11`'s share, `app-ml` trained, registered and scored in `app-ml-dev`. 9.6's
    training run needs `sandbox/workflows/`'s training pair, applied only after 2.2's readings (a) and (b),
    so those two come first in the sitting (Stage 17 9.5). Its model package group needs `sandbox/ml/`,
-   applied before the sitting with nothing up (Stage 17 decision 7 (a)). Stage 17's passes 2 to 5 are
+   applied on 2026-11-19 with nothing up (Stage 17 decision 7 (a)). Stage 17's passes 2 to 5 are
    sittings of their own after it.
 8. **Sandbox sitting C**, `GROUPS=mwaa,bedrock-base`, no GitLab: Stage 17's 10.4, `app-genai`'s loop
    with the boundary's deny and the account's guardrail measured, and 6e 6.4's assistant session, whose
