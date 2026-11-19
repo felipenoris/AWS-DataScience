@@ -1285,3 +1285,12 @@ and 10.4, 6h decision 3) were told before the first write. Times are UTC.*
   listing each new environment with `app_dbt` and no target.
 - **[Claude] Lesson 79's window**: `staging/studio/` was applied from this branch, so until its pull
   request merges, a plan of the slice from `main` proposes destroying the two grants.
+
+## 2026-11-19 — 8.4: pull request #328 merged, `staging/studio/`'s window closed
+
+*Claude, the orchestrating session, read the merge with `gh` and `git`, no AWS call. Times are UTC.*
+
+- **[user] The merge**: *"Fiz o merge"*, of pull request #328, merged at 02:54:04 as `6c3cc62d`.
+- **[Claude] The tree**: `6c3cc62d`'s tree is the branch head `9be8cf75`'s, `d08b994e`, so `main` holds
+  `staging/studio/`'s `app_dbt` line the apply of 02:27 ran from, and Lesson 79's window, a plan from `main`
+  proposing to destroy the two grants, is closed.

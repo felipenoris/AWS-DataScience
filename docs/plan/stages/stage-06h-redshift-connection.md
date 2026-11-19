@@ -588,7 +588,9 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
    step 4a). The object reads `lineageSync.enabled: false`, its schedule and lineage job kept, and database
    `sandbox`, both JDBC URLs following; nothing else changed. The service refused neither the contributor
    (`SUP-157`) nor the absent workgroup (`SUP-387`). `WH-9` passes, and fails on an enabled sync or another
-   database. The Query editor's opening on `sandbox` is read in the warehouse sitting.
+   database. The schedule's next time, 03:43 UTC the same day, created no run (read at 03:50): the sync off
+   stops the runs, with the schedule and the job kept. The Query editor's opening on `sandbox` is read in
+   the warehouse sitting.
 4. **Whether a persona ever queries the warehouse directly** (step 4). **Taken 2026-09-20: no**, as 5b 2.3
    applied it: the persona keeps the read side and is denied `GetCredentials` and the `redshift-data:`
    family. Every query arrives through a project, which keeps the `GRANT` register complete and the shared

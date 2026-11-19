@@ -1599,8 +1599,8 @@ manager's, the user's hands.
   after 8.3, on the user's word: `product_databases` took `app_dbt`, planned from this step's branch
   (`main` at `573fe1df` and the line), *"2 added"* from 02:27:19 to 02:27:30 UTC, re-planned
   `No changes`; `awsds-deploy-staging` holds `DESCRIBE` on `app_etl`, `app_dbt` and their tables. The
-  slice ran from an unmerged branch: until its merge, a plan from `main` destroys the two grants
-  (Lesson 79).
+  slice ran from pull request #328's branch, merged at 02:54:04 UTC as `6c3cc62d` with the head's tree,
+  so `main` holds the line the apply ran from (Lesson 79).
 - **8.5 [user] Decisions 14 to 17, and 3.1's verdict**; then **[Claude]** writes what each answer changes
   before 8.6: 14 (b)'s publish task, its data product and their grants; 15's endpoint, in both egress
   slices or in the module's group; 16 (b)'s namespace in the workflow's command, `run-dbt.sh` and the

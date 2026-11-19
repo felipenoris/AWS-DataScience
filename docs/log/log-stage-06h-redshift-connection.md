@@ -2474,3 +2474,20 @@ laptop's CLI 2.37.12 carries. Times are UTC.*
   its warehouse sitting brought to the change; `promotion.md` §N.6 item 9; Stage 21's three sentences on
   the connection. Owed: the Query editor's first session opening on `sandbox`, which needs the workgroup
   (§N.6 item 9).
+
+## 2026-11-19 — the lineage job after decision 3: no run at 03:43
+
+*Claude, in the session of decision 3, by a background read after its branch merged, as the
+infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1` (account
+`Sandbox`). Reads only. Written into this log by the orchestrating session from that session's note, its
+branch being merged. Times are UTC.*
+
+- **[Claude] `list-job-runs`** on `ayya3b95j0zvo0` at 03:50:00: exit 0, 39 runs, each `FAILED`, the newest
+  created 2026-11-18 at 03:44:44; the list identical to 02:22:57's. No run on 2026-11-19, the first day
+  without one since 2026-10-11.
+- **[Claude] `get-connection`** at 03:50:02: identical to 02:22:55's, database `sandbox`, `lineageSync`
+  `enabled: false` with `cron(43 3 * * ? *)` and the job kept, `READY`.
+- **[Claude] The verdict**: `enabled: false` stops the runs, while the schedule and the job stay on the
+  object. `EXC-17` needs no change, its 39 runs to 2026-11-18 being what the reading shows; `SUP-207`
+  gains the reading. `WH-9` reads the runs only while the sync is on, so this reading is the one that shows
+  none.
