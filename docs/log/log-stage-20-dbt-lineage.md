@@ -1167,3 +1167,27 @@ infrastructure user through `awsds-infra-sandbox-1` and `awsds-infra-data`, read
 - **[Claude] `./aws/catalog.py`** again: the run ending 00:58:58 wrote *"all checks passed"* and exited 0: the three `search` calls refused at 00:36 now answer, and `CT-19` reads every inventory, *"13 assets in 10 projects, 7 of them Glue tables"*.
 - **[Claude] Left**: 2.0's archive and tar, built from the merged tree after pull request #320's merge,
   which moves `app-dbt`'s pin to `4613ddc`; then sitting A.
+
+## 2026-11-19 — 2.0: the archive and the tar built from `main` at `103b4acc`
+
+*Claude, in a session started by the orchestrating session, on the laptop with nothing up, no AWS call.
+Times are UTC.*
+
+- **[Claude] The tree**: `main` at `103b4acc`, pull request #320's merge at 01:02:23, which pins `app-dbt`
+  to `awsds-workflows` `4613ddc`. At 01:06:53, 2.0's `git archive` of `examples/app-dbt` at that commit
+  into `$HOME/tmp/stage20`, absent before: `source.tar`, 409,600 bytes, 51 members of which 36 files,
+  extracted there.
+- **[Claude] The archive**, 01:07:09 to 01:07:14, `package-task . code/app-dbt.zip --platform
+  x86_64-manylinux_2_28 --include code/run-dbt.sh` with the README's `TOOL`, exit 0: *"code/app-dbt.zip:
+  26129224 bytes, 82844295 descompactados, para o CPython 3.12 em x86_64-manylinux_2_28"*. 1.4's check
+  printed `5102 82844295 ['0o100755', '0o100755']`, the draft's 5102 entries (0.15). Ten `.so` modules,
+  `openlineage_sql` asking for GLIBC_2.28 and the others 2.16 at most; no `boto3`, `botocore` or `yaml`
+  at the root, no bytecode, `testzip()` clean. SHA256 `7906e411f557393cf444cec20737022476505c512082776aee3fb9d60a3e1e07`.
+- **[Claude] The tar**, 01:07:44, 2.0's `COPYFILE_DISABLE=1 tar --no-xattrs --no-acls --no-mac-metadata`
+  from `examples/`, exit 0: `app-dbt.tar`, 26,531,328 bytes. The listing printed `51 37 []`: 51 members,
+  37 files (the tree's 36 and the archive), no `._` member. No member carries a pax header, though the
+  extracted files hold macOS's `com.apple.provenance` attribute; the four scripts are `0o755`, and the
+  archive inside is byte-identical to the one built. SHA256
+  `0b3ad0f98ed46af809cb539df0102f3c715723b9d07a868aad9192f41c21a1c8`.
+- **[Claude] Left**: sitting A uploads `$HOME/tmp/stage20/app-dbt.tar` into a space of `app-dbt-dev`; its
+  `sha256sum` there reads the digest above.
