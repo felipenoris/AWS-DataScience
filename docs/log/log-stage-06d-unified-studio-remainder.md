@@ -4316,3 +4316,32 @@ write. Times are UTC.*
   holds two Identity Center users, its owner and a contributor, beside its project role and a group;
   `test-experimentation` holds one, its owner, the same user as `eighth-experimentation`'s, beside its
   project role and a group. 7.6's space of another user is the contributor's.
+
+## 2026-11-19 — Decision 17's deny in the targets, written and planned
+
+*Claude, the same session, at the orchestrating session's request on the user's behalf, as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-staging`, `awsds-infra-prod`,
+`awsds-infra-data`, `awsds-infra-sandbox-1`). Code and plans only, no plan saved, no apply. Times are UTC.*
+
+- **[Claude] Whether anything legitimate calls the action**: `lookup-events` for `StartNotebookRun` since
+  2026-08-21 returned none in Sandbox, Staging, Production and Data Governance (read 16:15:38). No file of
+  the repository calls it or names a notebook operator outside the plan's text and `person-session.tf`.
+  Decision 17 records that no released workflow runs a notebook (Stage 8 5.6's lint).
+- **[Claude] Where it lives**: a policy of its own, `awsds-<env>-notebook-run-deny`, with one statement,
+  `DenyTheProjectRoleANotebookRun`, `datazone:StartNotebookRun` on `*` with no condition. It is attached to
+  every `project_roles` entry under the D13 boundary's precondition, as `warehouse.tf` attaches its grant.
+  `notebook-run.tf` is identical in both slices and joins `scripts/check-copies.py`'s list.
+  `person-session.tf` is unchanged: its statement still refuses a person's session, and the new one binds
+  the rest. The deployment project's role carried 5 managed policies in Staging and 6 in Production,
+  against a quota of 20 (read 16:14:39).
+- **[Claude] `staging/studio/` planned**, 16:17:58 to 16:18:25, from this branch on `origin/main`
+  `0d5b573b`: `Plan: 2 to add, 0 to change, 0 to destroy.`, `aws_iam_policy.notebook_run`
+  (`awsds-staging-notebook-run-deny`) and its attachment to `datazone_usr_role_5ido8bej1zoeq8_d6nu5aphq1e974`.
+  No other change is pending in the slice.
+- **[Claude] `production/studio/` planned**, 16:22:09 to 16:22:38, from the same tree: `Plan: 2 to add, 0 to change, 0 to
+  destroy.`, `aws_iam_policy.notebook_run` (`awsds-prod-notebook-run-deny`) and its attachment to
+  `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow`. No other change is pending in the slice.
+- **[Claude] What follows each apply**, not before it (Lesson 50): `aws/orchestration.py`'s
+  `PROJECT_ROLE_POLICIES`, which `OR-3` reads, gains the policy, and so does `docs/AWS_STATE.md`'s
+  deployment-project row. Each apply is the user's word naming it, after PR #337 merges (Lesson 79),
+  Production's in the chat of the session that runs it.
