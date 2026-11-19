@@ -2436,16 +2436,17 @@ limit, so each day starts at zero of its 10 RPU-hours.
 
 - **[user] The merges** of pull request #339 and of this section's, so every apply runs from `main`
   (Lesson 79).
+- **[Claude⚡] `sandbox/warehouse/` applied from `main`**, with nothing up, on the user's word naming it:
+  Stage 19 5.2's door, the access role's catalog read and `lakeformation:GetDataAccess`, which the user
+  chose on 2026-11-19 (*"Sim, escreva"*, in the pre-flight's session) and pull request #339 writes,
+  planned `0 to add, 1 to change, 0 to destroy`. The role held neither piece: simulated that day,
+  `glue:GetTable` read `implicitDeny` on Sandbox's and Production's `trades_notional` and `allowed` on the
+  lake's table, the control. Until the apply, every plan of the slice shows that change besides its own.
 - **[user] Release G's sitting and Stage 19 4.12** (N.9.8 items 1 and 2): pass 5 reads the subscribed
   product.
 - **[user] With nothing up:**
   - 6h decision 8 (a)'s window: the wide tag per sitting or standing.
   - Stage 21 1.3's wizard half, the enable wizard read and cancelled.
-  - Stage 19 5.2's door: the access role's catalog read and `lakeformation:GetDataAccess`, written by
-    [Claude] in `sandbox/warehouse/iam.tf` after 4.12 and applied from `main` on the user's word; or 5.2
-    through the direct door. The role holds neither piece: simulated 2026-11-19, `glue:GetTable` reads
-    `implicitDeny` on Sandbox's and Production's `trades_notional` and `allowed` on the lake's table, the
-    control.
   - Stage 21 4.5's write path: `sandbox/data/`'s key policy naming the data transfer role (D31), or
     reads alone.
   - Sandbox's free-trial balance, before the sitting, after each day and the next day.
