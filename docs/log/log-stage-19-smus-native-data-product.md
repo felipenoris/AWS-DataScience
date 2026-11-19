@@ -4206,8 +4206,10 @@ user's address is `<infrastructure user>`. The designation calls ran the laptop'
     `GetDesignation`, `GetGroupProfile`, `GetSystemTableExportConfiguration`, `ListDataApps`,
     `ListDeployableEnvironmentBlueprints`, `ListDesignations`, `ListSharedDataApps`, `UpdateAssetOwner` and
     `UpdateDataApp`.
-  - The sessions were told at 02:21. Stage 20's `create-environment` calls followed at 02:23 and 02:27, and
-    6h's `UpdateConnection` after its own reading of the share at 02:21:41.
+  - The sessions were told at 02:21. Stage 20's `create-environment` calls followed, from Staging at
+    02:23:05 and from Production at 02:26:58. Both answered, and none of that session's reads in either
+    target from 02:21:40 was refused (`log-stage-20-dbt-lineage.md`, 2026-11-19). 6h's `UpdateConnection`
+    followed its own reading of the share at 02:21:41.
 - **[Claude] What the move changed for the associated accounts**, read as each account's `InfrastructureAccess`:
   - `get-group-profile` on `sso-group-data-scientists` answered from `<Sandbox Account 1>`, `<Staging
     Account>` and `<Production Account>` at 02:22:10 to 02:22:14. Version 10 refused this call (`SUP-157`).
@@ -4278,4 +4280,6 @@ user's address is `<infrastructure user>`. The designation calls ran the laptop'
   - `upstream-releases.md`'s designations row, the provider's `RETENTION_POLICY` row and the next reading;
   - the waiting list, without the RAM share's row and the designation's row, and with 4.12's row rewritten;
   - `docs/SMUS.md`, `runbooks/catalog.md` and `runbooks/promotion.md` §N.6 item 4;
-  - `REFERENCES.md`.
+  - `REFERENCES.md`;
+  - at the orchestrator's request, two rows other sessions' measurements of the same day had overtaken: the
+    premise table's 6h row (6h decision 3 done, PR #327) and xix (`SUP-184`'s reading, PR #328).
