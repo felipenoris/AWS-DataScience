@@ -41,6 +41,7 @@ COPIES = (
             "backend.tf",
             "data.tf",
             "main.tf",
+            "notebook-run.tf",
             "outputs.tf",
             "person-session.tf",
             "providers.tf",

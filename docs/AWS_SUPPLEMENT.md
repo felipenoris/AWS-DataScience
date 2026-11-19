@@ -938,7 +938,9 @@ entry is still true is the reading.
   starting the hub does not put the committed policy in force, and for up to one cron interval the proxy
   enforces the previous session's allow-list. A parameter written while the host is stopped is not rendered
   by the start either, so the lag is not bounded by how old the edit is. Where: `NETWORK.md` the proxy's
-  filters, `log-stage-06d` the fifteenth sitting.
+  filters, `log-stage-06d` the fifteenth sitting. Read again 2026-11-19 with the host stopped: the eight
+  executions from 12:01:18Z to 15:30:41Z each reported `Success` with `ResourceCountByStatus` `{}`, so an
+  execution's status says nothing about a render and its count does (`log-stage-06d`, 2026-11-19).
 
 - `SUP-072` **A public AMI parameter answers only its current value** (measured 2026-10-16 as
   `InfrastructureAccess` in Production, Stage 8 decision 25). On
@@ -2678,8 +2680,8 @@ entry is still true is the reading.
   public egress from the client's network. Where: `aws/networking.py` `NT-9` and `NT-10`;
   `docs/plan/lessons.md`, Lessons 40 and 41. The private zone's reach over a subtree is `SUP-078`.
 
-- `SUP-182` **The Query Editor's querybook compute is refused with status 402 because the `datazone`
-  querybook quotas apply at 0 against non-zero defaults** (measured 2026-09-13 in Sandbox, Stage 6d
+- `SUP-182` **The Query Editor's querybook compute was refused with status 402 while the `datazone`
+  querybook quotas applied at 0 against non-zero defaults, and AWS later raised them with no request** (measured 2026-09-13 in Sandbox, Stage 6d
   thirteenth sitting, and 2026-10-21 in Staging, Stage 18 6.1). Six `datazone:StartNotebookCompute` calls
   answered `ServiceQuotaExceededException`, shown as *"Status code: 402 - The account-level service limit
   'SageMaker Unified Studio Querybooks running on sc.t3.medium instances' is 0 Querybooks"*. In the
@@ -2690,7 +2692,10 @@ entry is still true is the reading.
   with no compute, returned 10 rows. In Staging the 402 came with *"Kernel Error"*, and the typed `SELECT 1`
   was saved as the querybook's description (`UpdateNotebook`). Where:
   `log-stage-06d-unified-studio-remainder.md`, 2026-09-12/13 and 2026-10-17;
-  `log-stage-18-staging-deployment-project.md`, 2026-10-21.
+  `log-stage-18-staging-deployment-project.md`, 2026-10-21. Read again 2026-11-19 in Sandbox, Staging and
+  Production: `L-F63F402C` 10, `L-B3401D17` 5 and `L-85C9EC5A` 15, none of the 81 `sc.*` quotas with a
+  default above zero at 0 and 36 above their default, with no request on record but Sandbox's three closed
+  on 2026-09-24 (`log-stage-06d-unified-studio-remainder.md`, 2026-11-19).
 
 - `SUP-183` **The portal's file upload creates a Glue table whose location is a folder named after the
   upload time in milliseconds, not under the database's `LocationUri`** (read 2026-09-13 in Sandbox's trail,

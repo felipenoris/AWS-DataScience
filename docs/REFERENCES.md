@@ -2005,7 +2005,10 @@
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designation-permissions.html>; the
   designations page, the Data Agent required in every custom designation:
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designations.html>; the examples:
-  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/example-designations.html>. The
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/example-designations.html>; a
+  designation assigned when a member is added or edited, one by direct assignment and others inherited
+  through groups, read for 4.12's membership command:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/assign-designations.html>. The
   action-group identifiers a custom designation's policy names (`SUP-384`), read from a designation made in
   the portal (Classmethod, 2026-11-02):
   <https://dev.classmethod.jp/en/articles/20261101-amazon-smus-custom-designations/>. The IAM reference,
