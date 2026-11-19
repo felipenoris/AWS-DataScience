@@ -1269,13 +1269,13 @@ parameter exists so nobody can flip a project to `PublicInternetOnly`.
 ### Querybook compute
 
 A querybook, the SQL notebook the portal opens from the catalog, runs its cells on a managed compute
-that `datazone:StartNotebookCompute` starts. In Sandbox that call fails with
+that `datazone:StartNotebookCompute` starts. In Sandbox that call failed with
 `ServiceQuotaExceededException`, which the portal shows as status code 402 (measured 2026-09-12, six
 attempts by the project role):
 
-- `L-F63F402C`, *SageMaker Unified Studio Querybooks running on sc.t3.medium instances*, reads **0**
+- `L-F63F402C`, *SageMaker Unified Studio Querybooks running on sc.t3.medium instances*, read **0**
   against an AWS default of **5**. `L-B3401D17` (*Querybook Runs running on sc.t3.medium instances*)
-  reads 0 against 5, and `L-85C9EC5A` (*The maximum number of concurrent notebook runs per account*)
+  read 0 against 5, and `L-85C9EC5A` (*The maximum number of concurrent notebook runs per account*)
   0 against 15. Of the 81 `sc.*` quotas in the `datazone` service code with a default above zero, 79
   read 0; the two others are `L-DBBAE884` (*Notebooks running on sc.t3.medium instances*, 2 against 6)
   and `L-B890B049` (*Compute environments running on sc.t3.large instances*, 5 against 5). No increase
@@ -1294,12 +1294,14 @@ attempts by the project role):
   greater than the default quota value of 5.0"*), and a request equal to the default is accepted. An
   approval turns on a compute surface this estate has not measured. The query editor runs Athena
   through SQL Workbench without it (§S3 item 1b). The three requests were closed on 2026-09-24 07:49Z
-  without an increase, and the applied values still read 0 on 2026-10-17 (6d log), so the Querybook
-  has no capacity in this account until a new request.
+  without an increase, and the applied values still read 0 on 2026-10-17 (6d log). AWS raised them
+  later with no request: on 2026-11-19 `L-F63F402C` reads 10, `L-B3401D17` 5 and `L-85C9EC5A` 15 in
+  Sandbox, Staging and Production, and none of the 81 `sc.*` quotas with a default above zero reads 0
+  (6d log). The Querybook has capacity in all three; the compute's own calls stay unmeasured.
 
 A DataZone notebook is of type `SQL`, the querybook, or `DATA`, the native notebook the user guide documents
-beside JupyterLab and Code Editor (the API model and the guide, read 2026-10-18). `L-DBBAE884` above reads 2,
-and its name makes it the `DATA` notebook's quota (inferred, unmeasured), so one may start here. The native
+beside JupyterLab and Code Editor (the API model and the guide, read 2026-10-18). `L-DBBAE884` above read 2, and 10
+on 2026-11-19; its name makes it the `DATA` notebook's quota (inferred, unmeasured), so one may start here. The native
 notebook's kernels run in the
 domain-level VPC configuration (since 2026-04-23); Athena for Apache Spark is still its default Spark runtime
 and still outside any VPC (open question 12); and since 2026-08-19 its Athena, Redshift and EMR Serverless
