@@ -19,6 +19,15 @@ data "aws_iam_role" "project" {
   name     = each.value
 }
 
+data "aws_partition" "current" {}
+
+# The roles application.tf attaches to, read as project_roles are, and checked for the boundary the
+# same way.
+data "aws_iam_role" "application" {
+  for_each = toset(var.application_roles)
+  name     = each.value
+}
+
 locals {
   # The two ARN groups the grant needs, built from one map so they cannot disagree.
   #
@@ -37,4 +46,9 @@ locals {
   ]
 
   boundary_name = "awsds-${var.env}-project-boundary"
+
+  # Every guardrail of this account, and every numbered version of one: a version's ARN is the
+  # guardrail's with `:<version>` appended, and the DRAFT's carries none.
+  guardrails         = "arn:${data.aws_partition.current.partition}:bedrock:${var.region}:${data.aws_caller_identity.current.account_id}:guardrail/*"
+  guardrail_versions = "arn:${data.aws_partition.current.partition}:bedrock:${var.region}:${data.aws_caller_identity.current.account_id}:guardrail/*:*"
 }

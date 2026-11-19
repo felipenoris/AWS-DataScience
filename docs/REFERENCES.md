@@ -1824,6 +1824,15 @@
   domain to `sagemaker.amazonaws.com` a SageMaker data source needs, under
   `AWSRAMSageMakerServicePrincipalPermissionAmazonDataZoneDomain`:
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-sagemaker-data-source.html>.
+  RAM's pages for that share, read 2026-11-19 for Stage 17 3.3: `CreateResourceShare`, whose `sources`
+  takes accounts, ARNs, organization ids or paths against a confused deputy, and whose
+  `allowExternalPrincipals` defaults to `true`:
+  <https://docs.aws.amazon.com/ram/latest/APIReference/API_CreateResourceShare.html>; a share with a
+  service principal admits no other principal:
+  <https://docs.aws.amazon.com/ram/latest/userguide/working-with-sharing-create.html>; the table of
+  shareable resources, which marks `datazone:Domain` as not shareable with a service principal:
+  <https://docs.aws.amazon.com/ram/latest/userguide/shareable.html>; and
+  <https://docs.aws.amazon.com/ram/latest/userguide/getting-started-sharing.html>.
   The CI/CD CLI's repository, its guides and examples, `main` at `cdb8e3c18f` (2026-11-06):
   <https://github.com/aws/CICD-for-SageMakerUnifiedStudio>. Read again the same day: the release notes, the
   designations' examples, the Git connection pages and the `SageMakerAIDomain` blueprint's page, each listed

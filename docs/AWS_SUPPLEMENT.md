@@ -2201,6 +2201,16 @@ entry is still true is the reading.
   override of the base holds a floor. No AWS page states the sentinels or `MaxCapacity`'s range. Where:
   `log-stage-21-redshift-s3-data-products.md`, 2026-11-18; `data-governance/governance/locals.tf`.
 
+- `SUP-382` **`ram get-permission` on an AWS-managed permission answers the time of the call as its
+  `creationTime` and `lastUpdatedTime`** (measured 2026-11-19 in Data Governance, Stage 17 3.3). Two calls
+  on `AWSRAMSageMakerServicePrincipalPermissionAmazonDataZoneDomain`, version 3, made at 02:21:16.69 and
+  02:21:18.59 UTC, answered `02:21:18.543Z` and `02:21:19.740Z` in both fields, and a call at 02:11:47 had
+  answered `02:11:49.944Z`. `ram list-permission-versions` dates each version with a fixed past time
+  (`AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`: version 12 2026-11-03, version 13
+  2026-11-16). The CLI's reference describes the two fields as *"The date and time when the permission was
+  created"* and *"last updated"*. A permission's age is read from `list-permission-versions`, never from
+  `get-permission`. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-19.
+
 ### Environments and projects
 
 - `SUP-163` **The `Workflows` blueprint has three states and the bill starts at the third.** Enabling it
