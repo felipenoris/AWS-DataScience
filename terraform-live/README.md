@@ -364,7 +364,7 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   2026-11-11 at `sagemaker-prereqs-v0.10.0`. Applied 2026-11-12: the fence's warehouse half, the
   deny's growth to a warehouse session, and the file one account adds, Production's `warehouse.tf`
   (the load's session as the project's role) and Staging's `staging-test.tf` (the deploy role's
-  `DESCRIBE` on the product database and on its tables, the slice's two Lake Formation grants).
+  `DESCRIBE` on each product database and on its tables, two Lake Formation grants per database).
 - **`staging/chains/` and `production/chains/` `[P]` — the chain layer above a deployment project's
   workflows** ([Stage 19](../docs/plan/stages/stage-19-smus-native-data-product.md) step 4.11), applied
   2026-11-15 in Staging and 2026-11-16 in Production: `terraform-modules/orchestration/` at

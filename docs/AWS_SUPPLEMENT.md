@@ -2633,9 +2633,20 @@ entry is still true is the reading.
   null) and hangs from the project's `project.default_lakehouse` connection, the `Tooling` environment's,
   its filter naming the database; the stack's template gives `GlueDatabase`, and an Athena workgroup the
   stack did not create, `DeletionPolicy` and `UpdateReplacePolicy` `Retain`, so the stack's deletion leaves
-  the database. What the environment's delete does to the source is unread. Where:
+  the database. What the environment's delete does to the source is unread. Read 2026-11-19 across four
+  projects (Stage 20 8.3): the target follows an environment's rank in its project, not the path that
+  created it. A project's first `ACTIVE` `DataLake` environment carries one and a later one none:
+  `eighth-experimentation-lakehouse` (2026-10-26) and `test-experimentation-lakehouse` (2026-10-20) carry
+  one, the portal's `new_database` (2026-10-28) and `test_project_database` (2026-11-09) environments none,
+  `app-etl-dev`'s portal `app_etl` environment (2026-11-14), its project's first, one, and the API's
+  `deploy-staging-app-dbt` and `deploy-production-app-dbt`, each its project's second, none. The contrast
+  of 2026-11-11 set a first environment created through the API beside `chz5jdb80ohocw`, a later one of
+  `eighth-experimentation`. No trail holds a `CreateSubscriptionTarget` for the target `SYSTEM` created on
+  2026-11-11. In `deploy-staging` and `deploy-production` the second environment adds no connection, the
+  nine staying the `Tooling` environment's, and provisions that environment's `userRoleArn`. Where:
   `log-stage-06f-data-governance.md`, 2026-09-12/13; `log-stage-19-smus-native-data-product.md`, 2026-10-28,
-  2026-11-08, 2026-11-11 and 2026-11-14; `docs/SMUS.md`, the *Create database* item.
+  2026-11-08, 2026-11-11 and 2026-11-14; `log-stage-20-dbt-lineage.md`, 2026-11-19; `docs/SMUS.md`, the
+  *Create database* item.
 
 - `SUP-185` **The portal's MLflow entries look their blueprint up in the domain account, so a domain whose
   configurations live in associated accounts greys them out whatever the profile carries** (read 2026-10-19,
@@ -4235,6 +4246,27 @@ entry is still true is the reading.
   `create`, so its `deploy` makes no membership or IAM call, and the project roles' policies stay
   Terraform's (open question 27). Where: `log-stage-19-smus-native-data-product.md`, 2026-11-17; Stage 19
   decision 15.
+
+- `SUP-389` **`aws-smus-cicd-cli` 1.0.9's catalog import points an asset at the target project's source
+  whose filter names the asset's database, and falls back to a source by position when none does or the
+  asset carries no `GlueTableForm`** (read 2026-11-19 in the released wheel unpacked in the laptop's `uv`
+  cache, `helpers/catalog_import.py` matching the wheel's `RECORD`, `sha256=NPf0CALj…Ihk`; nothing
+  executed, Stage 20 8.3). For an asset's `amazon.datazone.DataSourceReferenceFormType`,
+  `_resolve_target_data_source` lists the target project's sources in one `ListDataSources` call of
+  `maxResults=25`, reading no next page, and keeps those of the form's `dataSourceType` (`GLUE` by
+  default) that are `READY` or `RUNNING`. It returns the first whose `relationalFilterConfigurations` name
+  the asset's `databaseName`, else the last whose filter is `*`, else `candidates[0]`; a source whose
+  `GetDataSource` fails is skipped. The database comes from the asset's `GlueTableFormType` form alone, so
+  an asset with none, a view's `GlueViewFormType` among them, takes `candidates[0]` directly. The form then
+  names that source, and its latest run when that run is `SUCCESS`. With no candidate the form is
+  stripped: *"No matching <type> data source in target project (db=<database>), stripping
+  DataSourceReferenceForm"*. The order `ListDataSources` returns is undocumented, and the CLI's pages do
+  not describe the remap. The consequences: in a deployment project holding several applications'
+  sources, a table asset reaches its own database's source, since each source `create-environment` makes
+  filters on its database alone; a view, an asset of another form, or a project past 25 sources takes a
+  source by position (Lesson 73). Release F's import of 2026-11-15 logged its remap to `52f18khk7kdi4w`,
+  the source over `app_etl`, the project's only one. Where: `log-stage-20-dbt-lineage.md`, 2026-11-19;
+  `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 ## Bedrock
 

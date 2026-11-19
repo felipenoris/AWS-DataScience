@@ -1161,12 +1161,13 @@ bound items 3, 5, 6, 9 and 11.
    lines applied the same night on the user's word (`3 added`, re-planned `No changes`), and the user added
    their contributors, the bundle role and Sandbox's `InfrastructureAccess` (9.6, 10.4, Stage 20 2.0).
    Stage 20 2.0's archive and tar were built on 2026-11-19 from `main` at `103b4acc`, pull request #320's
-   merge, and checked, which closes 2.0 before sitting A (item 6).
+   merge, and checked, which closes 2.0 before sitting A (item 6). Stage 20 8.3's `DataLake` environments
+   `deploy-staging-app-dbt` and `deploy-production-app-dbt` were created on 2026-11-19 at 02:23 and 02:27
+   UTC on the user's word, both `ACTIVE` with the database `app_dbt` and its source, and `staging/studio/`'s
+   `product_databases` line applied at 02:27 from 8.3's branch, re-planned `No changes` (8.4).
    Left: Nova Lite enabled; the rest of the Sandbox slices that read `app-ml-dev`'s and `app-genai-dev`'s roles
-   (9.5's pairs, `sandbox/bedrock/`), which Claude writes and the user applies; and Stage 20 8.3's two
-   `create-environment` calls on the user's word naming each, then `staging/studio/`'s
-   `product_databases` line. Stage 20's decisions 14 to 17 were taken on 2026-11-18 and their changes
-   written, `app-dbt` pinned to `awsds-workflows` `4613ddc`.
+   (9.5's pairs, `sandbox/bedrock/`), which Claude writes and the user applies. Stage 20's decisions 14 to
+   17 were taken on 2026-11-18 and their changes written, `app-dbt` pinned to `awsds-workflows` `4613ddc`.
    Stage 20 8.4's applies of the four `[P]` slices its pass 8 wrote ran on 2026-11-18, closing their
    Lesson 69 window. 6d 2.7's acts need nothing metered; its step 3's code was written and planned on
    2026-11-18 on [pull request #322](https://github.com/felipenoris/AWS-DataScience/pull/322) (`1 to change`), applied on the user's word at 18:45 UTC the same day, after step 2's acts;
@@ -1216,7 +1217,7 @@ bound items 3, 5, 6, 9 and 11.
     `4613ddc` with their pipelines' options, `probes/operator.yaml` still refused by `operador`, so each
     pin moves to it at the application's next tag, `app-etl`'s after release G.
     `aws/catalog.py`'s `CHAIN_DEV_PROJECTS` gained `app-dbt-dev`'s id on 2026-11-19, on pull request #320.
-11. **`app-dbt`'s first release** (Stage 20 pass 8), after items 3, 6 and 10 and Stage 20's 8.3 to 8.7:
+11. **`app-dbt`'s first release** (Stage 20 pass 8), after items 3, 6 and 10 and Stage 20's 8.5 to 8.7:
     the hub and GitLab; `staging/egress/` raised before the tag `v0.1.0` and destroyed after
     `staging-catalog`, `production/workloads-egress/` raised before `production-gate`, each with its
     `athena` endpoint (Stage 20 decision 15 (a)); before 2026-12-18, or after the archive moves to dbt
