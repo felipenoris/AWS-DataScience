@@ -1215,6 +1215,8 @@ bound items 3, 5, 6, 9 and 11. N.9 joins items 6, 7 and 8 in one sitting of thre
    `RedshiftServerless` blueprint on for the sitting alone; before 2026-12-19, so the trial
    absorbs them (5b decision 9, taken 2026-11-17), ahead of items 6 to 8 when they are not ready first,
    since it depends on none of them. Stage 21's pass 5 needs no warehouse and rides any Sandbox sitting.
+   N.10 holds it in two days, prepared 2026-11-19 with nothing up (pull request #339), with 5b's re-plan,
+   6h's 5.2 to 5.4, 0.4's portal half and 6.4 besides.
 10. **With nothing up, before `app-ml`'s first tag**: `scripts/deploy-application.py`,
     `scripts/model-chain.py` and their hooks taught a second application, kept out of the day's pull
     request so that release G's leg runs the script it was read with. **Written 2026-11-18** on
@@ -2288,7 +2290,7 @@ about 3 USD, against 0.36 to 0.87 USD for the next day's Config cycle.
 #### N.9.1 What comes before the sitting
 
 - **[user] The merges** of this section's pull request and of #335, #336 and #337, so every apply runs
-  from `main` (Lesson 79).
+  from `main` (Lesson 79). Done 2026-11-19.
 - **[user] With nothing up:**
   - Stage 20 2.1: the database `app_dbt` in `app-dbt-dev` and the editor's probe. The database's source
     then runs daily at the minute of its creation, which the sitting's runs keep clear of.
@@ -2408,12 +2410,131 @@ models' tokens, the jobs and the embeddings are billed apart, and 6e 6.4's sessi
    same hub start: `EXC-13`'s Production half, after the admin secret's rotation scheduled for 2026-11-22
    01:59:59 UTC. GitLab's backup, owed before 2026-12-17, and 6d 2.7's step 7 ride it.
 2. **Stage 19 4.12**, the user's acts with nothing up (N.6 item 4).
-3. **The Sandbox warehouse sitting** (N.6 item 9), before 2026-12-19. It carries Stage 19's pass 5 after
-   4.12, 5b's test and re-plan, 6h's negatives and the editor on `sandbox`, and Stage 21's passes 2 to 4.
-   The user's acts before it: 6h decision 8 (a) and Stage 21 1.3's wizard half.
+3. **The Sandbox warehouse sitting** (N.10), two days before 2026-12-19. It carries Stage 19's pass 5
+   after 4.12, 5b's test and re-plan, 6h's negatives and the editor on `sandbox`, and Stage 21's passes 2
+   to 4. The user's acts before it are N.10.1's.
 4. **[Pull request #321](https://github.com/felipenoris/AWS-DataScience/pull/321)**, synced and merged
    after release G (N.6 item 10). Then come `app-dbt`'s first release before 2026-12-18 (item 11), `app-ml`'s
    (item 12), Stage 17 10.5 (item 13) and `app-genai`'s (item 14).
+
+### N.10 The Sandbox warehouse sitting, prepared 2026-11-19
+
+Written with nothing up on 2026-11-19, the pre-flight of N.6 item 9 (pull request #339). It joins 5b's
+test and re-plan, 6h's owed negatives and readings, Stage 19's pass 5 and Stage 21's passes 2 to 4. Each
+day raises the hub and one `make up ENV=sandbox GROUPS=redshift`, which brings `sandbox/egress/` with the
+`redshift` group, the warehouse's compute and `sandbox/probes/`: no GitLab, no Staging or Production egress.
+It shares no hub start with N.9, whose days already run six to seven hours. `make status` read 0.0000 USD/h
+at 21:46 UTC that day. Each stage file holds its block step by step under "The Sandbox warehouse sitting",
+and its stage log the readings; this section holds the days, the raises and the lowerings. Every command
+runs as the infrastructure user (`InfrastructureAccess`) unless it names another identity, and each write
+is Claude's on the user's word naming it, the other sessions on the laptop told first.
+
+The blocks add up to about nine hours, so the sitting runs on two days. Each `make up` creates a new usage
+limit, so each day starts at zero of its 10 RPU-hours.
+
+#### N.10.1 What comes before the sitting
+
+- **[user] The merges** of pull request #339 and of this section's, so every apply runs from `main`
+  (Lesson 79).
+- **[user] Release G's sitting and Stage 19 4.12** (N.9.8 items 1 and 2): pass 5 reads the subscribed
+  product.
+- **[user] With nothing up:**
+  - 6h decision 8 (a)'s window: the wide tag per sitting or standing.
+  - Stage 21 1.3's wizard half, the enable wizard read and cancelled.
+  - Stage 19 5.2's door: the access role's catalog read and `lakeformation:GetDataAccess`, written by
+    [Claude] in `sandbox/warehouse/iam.tf` after 4.12 and applied from `main` on the user's word; or 5.2
+    through the direct door. The role holds neither piece: simulated 2026-11-19, `glue:GetTable` reads
+    `implicitDeny` on Sandbox's and Production's `trades_notional` and `allowed` on the lake's table, the
+    control.
+  - Stage 21 4.5's write path: `sandbox/data/`'s key policy naming the data transfer role (D31), or
+    reads alone.
+  - Sandbox's free-trial balance, before the sitting, after each day and the next day.
+- **[user] The identities**: `eighth-experimentation`'s contributor in a browser profile of its own (6h
+  0.4); the Data Scientist User signed in (6h 5.4).
+
+#### N.10.2 The days
+
+| Day | Raise | Blocks | Hours |
+|---|---|---|---|
+| 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | 5b; 6h to 0.4's portal half; Stage 19's pass 5 to 5.3 | about 5 |
+| 2 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | Stage 21's passes 2 to 4 and their closing reads; Stage 19's 5.4 with Stage 21's rollback; 6h 6.4 | about 5 |
+
+The two may run as one day of about nine hours when the usage limit leaves room; a breach deactivates the
+compute until its amount is raised.
+
+#### N.10.3 Day 1: 5b, 6h and Stage 19
+
+The blocks are the sections titled "The Sandbox warehouse sitting" in
+[5b](../stages/stage-05b-redshift-serverless.md), [6h](../stages/stage-06h-redshift-connection.md) and
+[Stage 19](../stages/stage-19-smus-native-data-product.md).
+
+1. [Claude] The other sessions told, `make status`; [user] `make hub-up`, `make up ENV=sandbox
+   GROUPS=redshift`; [Claude] `make status`.
+2. [user] The spaces, each stopped when its steps end: a JupyterLab on `ml.t3.medium` in
+   `eighth-experimentation` (6h 5.3, Stage 19's pass 5) and one in `test-experimentation` (6h 5.2b).
+3. [Claude] 5b's steps 1 and 2: `./aws/warehouse.py awsds-infra-sandbox-1 --sql`, then the re-plan of
+   `warehouse-compute/`. A change in that plan stops every apply to the slice for the day, the wide tag's
+   included. About 15 minutes.
+4. [user; Claude] 6h's step 1, the editor's first session on `sandbox`, then 5b's step 3, the
+   `max_query_execution_time` test. About 40 minutes.
+5. 6h's steps 2 to 10: 5.2, 5.2a's owed half, 5.3, 5.4, 5.1; [Claude⚡] the wide tag on, `sandbox/warehouse/`
+   then `warehouse-compute/`; 5.2b; [Claude⚡] the tag off unless it stands; 0.4's portal half. About 2 hours
+   10 minutes.
+6. Stage 19's pass 5, steps 1 to 6: the session, `USAGE ON DATABASE awsdatacatalog`, 5.2's read with
+   DataZone's grant alone (xiii), 5.1's Lake Formation half only on its refusal, the copy and the view, and
+   5.3's source, which is Stage 21's 2.2. About 1 hour 25 minutes.
+7. [user] Every space stopped and every portal tab closed, then the lowering (N.10.5). 5.1's grants and the
+   copy stay for day 2, whose 2.1 reads the copy and 3.3 the read in place.
+
+#### N.10.4 Day 2: Stage 21
+
+The block is [Stage 21](../stages/stage-21-redshift-s3-data-products.md)'s "The Sandbox warehouse sitting:
+passes 2 to 4 in order".
+
+1. [Claude] The other sessions told; [user] `make hub-up`, `make up ENV=sandbox GROUPS=redshift`; the
+   spaces in both projects.
+2. Stage 21's block, steps 1 to 7: pass 2 from 2.1, the consumer's workgroup by 1.5's applies in 2.4's order
+   and its removal by 2.9's, pass 3, pass 4 with 4.5's transfer role applied and 4.8 at once, then the
+   closing reads (`list-workgroups`, `describe-clusters`, `WH-8`). About 4 hours 30 minutes.
+3. [user] Stage 19's 5.4 with Stage 21's rollback item 5: 5.1's grants revoked, `lab.trades_hot`, its view
+   and `lab.trades_hot_daily` dropped; then 6h's 6.4, keep or drop `lab`. Then the lowering (N.10.5).
+
+#### N.10.5 The lowering, each day
+
+Every portal tab is closed first (`sagemaker-application.md` §D), then:
+
+```bash
+make down ENV=sandbox
+make hub-down
+make status
+```
+
+§R's readings follow. `make status` reads no Redshift workgroup, so day 2's closing reads stand for the
+consumer's workgroup and the managed compute, which no slice holds.
+
+#### N.10.6 The sitting's cost
+
+At [`cost-model.md`](../cost-model.md)'s "Per session" rates:
+- the hub's two hosts and two addresses, 0.026 USD/h, Sandbox's 18 endpoints, 0.180, the `redshift` group's
+  one, 0.010, and `sandbox/probes/`, 0.008: about 0.22 USD/h each day before the spaces;
+- each space's app, 0.050 USD/h on `ml.t3.medium`;
+- a Config cycle of Sandbox's `[E]` slices each day, 0.36 to 0.87 USD;
+- the warehouse: 1.44 USD per query-hour at 4 RPUs and 2.88 at 8, nothing idle, each day capped at 10
+  RPU-hours, 3.60 USD; 6h's full day of 2026-10-10 burned 2.44 USD;
+- Stage 21's consumer workgroup at the same rate with its 4 RPUs locked, and its decision 3 (b)'s managed
+  compute, whose base capacity is unread: at 128 RPUs a query's 60-second minimum costs 0.77 USD. Neither is
+  under the usage limit.
+
+With the warehouse's queries running, a day bills about 1.7 USD/h. The days come to about 3.5 and 4.5 USD,
+some 8 USD for the sitting, between 5.5 and 12, the managed compute the widest term. The trial absorbs the
+warehouse's share to 2026-12-19; whether it covers the two other compute objects is a reading.
+
+#### N.10.7 What follows the sitting
+
+1. **[Pull request #321](https://github.com/felipenoris/AWS-DataScience/pull/321)** after release G (N.6
+   item 10), then items 11 to 14.
+2. The bill halves after 2026-12-19: 5b's verification x and 6h's xii; Stage 19's close (its sitting 12);
+   Stage 21's pass 5 on N.9's day 2, then its close.
 
 ## Q. After the quotas: Stage 10's pass 3
 
