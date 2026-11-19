@@ -4345,3 +4345,58 @@ infrastructure user with `InfrastructureAccess` (`awsds-infra-staging`, `awsds-i
   `PROJECT_ROLE_POLICIES`, which `OR-3` reads, gains the policy, and so does `docs/AWS_STATE.md`'s
   deployment-project row. Each apply is the user's word naming it, after PR #337 merges (Lesson 79),
   Production's in the chat of the session that runs it.
+
+## 2026-11-19 — Decision 17's deny in the targets, applied
+
+*Claude, the orchestrating session, on the user's words in its chat, "Autorizo os dois applies", answering
+the question that named `staging/studio/` and `production/studio/`. As the infrastructure user with
+`InfrastructureAccess`: `awsds-infra-staging` (account `Staging`) and `awsds-infra-prod` (account
+`Production`). From the branch of pull request #338, whose `terraform-live/` and `scripts/` are `main`'s at
+`c11a9829`, the merge of #337. The laptop's other sessions were told first. Times are UTC.*
+
+- **[Claude] The plans**, saved, `-input=false`, after `gen-tfvars.py`, `gen-backend-hcl.py` and `init`:
+  - `staging/studio/`, 16:55:42 to 16:56:03: `Plan: 2 to add, 0 to change, 0 to destroy.`,
+    `aws_iam_policy.notebook_run` (`awsds-staging-notebook-run-deny`) and its attachment to
+    `datazone_usr_role_5ido8bej1zoeq8_d6nu5aphq1e974`;
+  - `production/studio/`, 16:56:03 to 16:56:28: the same shape, `awsds-prod-notebook-run-deny` and its
+    attachment to `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow`.
+
+  Each plan's document is one statement, `DenyTheProjectRoleANotebookRun`, `datazone:StartNotebookRun` on
+  `*`. The resources, names and roles are those the stage's session planned at 16:17 and 16:22.
+- **[Claude⚡] The applies** of the saved plans:
+  - `staging/studio/`, 16:56:48 to 16:57:01: *"Apply complete! Resources: 2 added, 0 changed, 0
+    destroyed."*;
+  - `production/studio/`, 16:57:10 to 16:57:25: the same.
+- **[Claude] The re-plans**: `staging/studio/` 16:57:44 to 16:58:04 and `production/studio/` 16:58:09 to
+  16:58:29, each *"No changes. Your infrastructure matches the configuration."*. The deployment project's
+  role now carries 6 managed policies in Staging and 7 in Production, against a quota of 20.
+- **[Claude] The simulation** (`simulate-principal-policy` as each deployment project's role):
+  - with no context, at 16:58:07 and 16:58:31: `explicitDeny`, `AllowedByOrganizations` `false` and no
+    matched statement. That is the Control Tower Region ceiling (`SUP-008`), and the same result with
+    `aws:PrincipalArn` alone in the context, at 16:59:11 and 16:59:13, rules out the `Workloads` SCP's
+    `DenyDataZoneEntirely` carve-out as its source;
+  - with `aws:RequestedRegion=us-west-2` in the context, at 16:59:47 in Staging and 16:59:49 in Production:
+    `datazone:StartNotebookRun` `explicitDeny`, matched by `awsds-<env>-notebook-run-deny`, with
+    `AllowedByOrganizations` and the boundary `true`; and `datazone:GetDomain`, the control, `allowed`,
+    matched by `SageMakerStudioProjectRoleMachineLearningPolicy`.
+- **[Claude] `./aws/orchestration.py`**, 17:01:48 to 17:04:12, its `PROJECT_ROLE_POLICIES` given the policy
+  in both targets: `OR-3` 10 pass, 0 fail, each line naming the deny; `OR-2`'s 5 failures are `EXC-25`'s.
+  The exit 1 is the persona profiles with no session.
+- **[Claude] The verdict**: in Staging and Production every session of the deployment project's role,
+  a workflow worker's included, is refused a native notebook run, whatever its network. `TM-34`'s targets
+  half holds by an applied control; Sandbox's waits on 4.7, as decision 17 (a) stands or decision 17 (b)'s
+  deny first, the user's.
+
+## 2026-11-19 — 4.7's order: the negative on the combined sitting's day 1
+
+*Claude, the orchestrating session, recording the user's answer in its chat at 17:08 UTC. No AWS call.*
+
+- **[user] The answer**: *"Negativo no dia 1"*, to the question whether 4.7 runs with `L-85C9EC5A` already
+  above zero, as decision 17 (a) stands, or decision 17 (b)'s Sandbox deny is written first.
+- **[Claude] What it sets**: 4.7's runs, a background run, a schedule and a *Notebook Operator* workflow in
+  `eighth-experimentation`, and the `PUBLIC_INTERNET_ONLY` negative run on
+  [`promotion.md`](../plan/runbooks/promotion.md) §N.9's day 1, with no deny in Sandbox before them. A
+  refusal, or a run inside the VPC whose cell fails, leaves the domain's VPC as the control; a cell that
+  prints an address, with no interface in the VPC, brings decision 17 (b)'s deny to Sandbox.
+- **[Claude] The records**: decision 17, step 4.7, the block's item 2 and the `Status` row in the stage
+  file; `TM-34`; §N.9.1 and §N.9.3 step 7; the waiting list, whose row for 4.7's order is removed.

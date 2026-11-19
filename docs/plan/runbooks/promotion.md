@@ -2290,9 +2290,6 @@ about 3 USD, against 0.36 to 0.87 USD for the next day's Config cycle.
 - **[user] The merges** of this section's pull request and of #335, #336 and #337, so every apply runs
   from `main` (Lesson 79).
 - **[user] With nothing up:**
-  - 6d 4.7: run it with `L-85C9EC5A` already above zero, as decision 17 (a) stands, or write decision 17
-    (b)'s Sandbox deny first. AWS raised the quota to 15 with no request in Sandbox, Staging and Production
-    (read 2026-11-19), so 4.7 waits on no request and nothing measured holds the channel shut.
   - Stage 20 2.1: the database `app_dbt` in `app-dbt-dev` and the editor's probe. The database's source
     then runs daily at the minute of its creation, which the sitting's runs keep clear of.
   - Stage 17 0.9's portal reading, before day 2; `app-ml-dev`'s MLflow App by 1.5's path, before day 3. An
@@ -2300,9 +2297,9 @@ about 3 USD, against 0.36 to 0.87 USD for the next day's Config cycle.
   - 6d 7.6's second identity, `eighth-experimentation`'s contributor, signed in from a browser profile of
     its own; and the window for 6d 7.5's monitored profile, which moves the laptop's network for every
     session.
-- **[Claude] With nothing up:** Stage 20 4.5's workflow and its second tar; Stage 17 7.4's evaluation
-  dataset and `examples/sandbox-ml`'s scripts read against the house image's lock; the archives of
-  `app-ml` and `app-genai` from `main` on day 3's eve.
+- **[Claude] With nothing up:** the archives of `app-ml` and `app-genai` from `main` on day 3's eve. Done
+  2026-11-19: Stage 20 4.5's workflow and its second tar (pull request #335); Stage 17 7.4's evaluation
+  dataset, and `examples/sandbox-ml`'s scripts read against the house image's lock (#336).
 
 #### N.9.2 The days
 
@@ -2336,8 +2333,8 @@ items in order" and [Stage 20](../stages/stage-20-dbt-lineage.md)'s "Sitting A i
    alone, 3.3, 2.6 if there is room, 3.4 and 4.5. About 3.5 hours, 35 minutes more with 3.1 and 2.6. Pass 3 gives 3.1's
    verdict, which 8.5 owes.
 7. 6d 4.7, about an hour: a background run, a schedule and a *Notebook Operator* workflow in
-   `eighth-experimentation`, then the `PUBLIC_INTERNET_ONLY` negative from the space. It is left out if the
-   user put decision 17 (b)'s deny first.
+   `eighth-experimentation`, then the `PUBLIC_INTERNET_ONLY` negative from the space, with no deny in
+   Sandbox before it: decision 17 (a) as it stands, the user's choice of 2026-11-19.
 8. 6d 7.6 on the split-tunnel profile, about 20 minutes; then 7.5's monitored half in the window the
    orchestrating session announces, about 20 minutes, every shell on `proxy-on`.
 9. 6d 7.7 after the portal's logout, read at 5 and 30 minutes, with [Claude] 6.1 (viii)'s Code Editor half
