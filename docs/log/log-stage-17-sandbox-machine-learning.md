@@ -3473,3 +3473,18 @@ environments, no AWS call. Times are UTC.*
   remove or deprecate none of these calls, and v3.16.2 has no page.
 - **[Claude] No script changed.** `examples/sandbox-ml/README.md` now names `mlflow` 3.17.2, the lock's
   version since `a1c755b5`, so 0.3 confirms the space's versions against it.
+
+## 2026-11-19 — the combined sitting's block on `promotion.md` §N.9's days 2 and 3, nothing up
+
+*Claude, the same session, on the orchestrating session's message after its commit `f3b87975` (pull request
+#334, merged into this branch with `main` at `c11a9829`). No AWS call.*
+
+- **[Claude] The block's days**: §N.9 runs the combined sitting on three days, and Stage 17's rows fill two.
+  Day 2 raises `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` for sitting B to the end of pass 7, then
+  Stage 21's pass 5. Day 3 raises `GROUPS=mwaa,mlflow,bedrock-base` for 6e 6.4's window alone, then 9.6
+  and 10.4. Each day ends with `./aws/sandbox-ml.py`, `./aws/catalog.py` and §N.9.6's lowering.
+- **[Claude] The section rewritten to match**: the opening paragraph names both days and their groups; the
+  table gains a column for the day, a second closing and day 3's raise, 16 rows in all, about 4.9 hours of
+  day 2 and 5.3 of day 3; the MLflow App comes before day 3, 0.9's reading before day 2 and the archives on
+  day 3's eve. The hourly rates are §N.9.7's, 0.27 and 0.25 USD before the spaces; this section's earlier
+  0.26 and 0.24 left out the VPN's address, which `docs/PRICING.md` counts as a floor line.
