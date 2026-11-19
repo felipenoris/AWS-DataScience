@@ -269,7 +269,7 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   `CREATE_PROJECT_FROM_PROJECT_PROFILE` grant per profile on the root domain unit (`grants.tf`, since
   2026-08-22 — without them the profiles were templates nobody could instantiate). `sagemaker-share.tf`
   shares the domain through RAM with `sagemaker.amazonaws.com`, the share a SageMaker data source needs
-  (Stage 17 3.3, `EXC-11`; written 2026-11-19, not applied). **No compute lives here and none ever may**:
+  (Stage 17 3.3, `EXC-11`; applied 2026-11-19). **No compute lives here and none ever may**:
   `sagemaker:Create*` is denied in this account by the `Data` OU document, a deny that stays free because
   no blueprint is enabled here but the lake-publishing pilot's `Tooling`, with spaces off
   (`data-governance/publishing/`, Stage 6f step 11), and Stage 6 step 0.4 reads the slice's own plan for
@@ -340,7 +340,7 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   carries the D13 boundary — [`claude-code-sagemaker.md`](../docs/plan/runbooks/claude-code-sagemaker.md)
   section P is the procedure, in both the Terraform and the `aws` CLI form. A second policy,
   `awsds-<env>-bedrock-application`, gives the roles of `application_roles` the calls that keep their own
-  guardrail (Stage 17 10.4, written 2026-11-19, not applied); the deny of an unguarded invocation and the
+  guardrail (Stage 17 10.4, applied 2026-11-19); the deny of an unguarded invocation and the
   account's guardrail with its enforced configuration (`awscc`) each stand behind a variable that
   defaults to `false`.
 - **`sandbox/workflows/` `[P]` — the workflows grant** (Stage 6i decision 6): one `awsds-<env>-workflows`
@@ -358,12 +358,12 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   `awsds-sandbox-deploy-test-boundary`, trusted by the deploy runner's role alone and holding the DataZone
   reads of that project and of the catalog it owns, with no write. That shape is the code's since
   2026-11-11 and AWS's since the apply of 2026-11-14, which also put the workflows policy on
-  `app-etl-dev`'s role (Stage 19's release T). Stage 17 9.5 adds, written 2026-11-19 and not applied, the
+  `app-etl-dev`'s role (Stage 19's release T). Stage 17 9.5 adds, applied 2026-11-19, the
   transform pair, the model's tag, a pending version's registration for each application in
   `model_applications` and the bundle role's read of its model prefix, and the training pair behind
   `training_pair_enabled`.
-- **`sandbox/ml/` `[P]` — the notebook grant** (Stage 17 decision 7 (a), written 2026-11-19, not
-  applied): one `awsds-<env>-ml` policy allowing `sagemaker:AddTags` of the `AmazonDataZoneProject` tag
+- **`sandbox/ml/` `[P]` — the notebook grant** (Stage 17 decision 7 (a), applied
+  2026-11-19): one `awsds-<env>-ml` policy allowing `sagemaker:AddTags` of the `AmazonDataZoneProject` tag
   alone, with the caller's own value, on a model package group that carries no project tag or already the
   caller's, which creating a tagged group from a notebook needs; one attachment per SMUS project role,
   `eighth-experimentation`'s and `app-ml-dev`'s. What a workflow's operators create stays in

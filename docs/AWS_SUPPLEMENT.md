@@ -2211,6 +2211,19 @@ entry is still true is the reading.
   created"* and *"last updated"*. A permission's age is read from `list-permission-versions`, never from
   `get-permission`. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-19.
 
+- `SUP-383` **RAM shares a DataZone domain with the service principal `sagemaker.amazonaws.com`, which its
+  table of shareable resources says it cannot** (measured 2026-11-19 in Data Governance, Stage 17 3.3).
+  RAM's *Shareable AWS resources* page marks `datazone:Domain` *"Can share with service principals: No"*,
+  against AWS's page on a SageMaker data source and the managed permission
+  `AWSRAMSageMakerServicePrincipalPermissionAmazonDataZoneDomain`, whose resource type is
+  `datazone:Domain`. `awscc_ram_resource_share` (awscc 1.106.0, CloudFormation's
+  `AWS::RAM::ResourceShare`) created `DataZone-dzd-d8yrvx1ko7im6o-SageMaker` in 7 seconds at 03:02:35 UTC,
+  with the domain, that principal, that permission and four source accounts in `sources`. Read at 03:03:
+  the share `ACTIVE`, the principal and the domain `ASSOCIATED`, the permission at version 3 `ASSOCIATED`,
+  and each source association `ASSOCIATED`. The apply's wording is the reading where the table and the
+  service disagree; whether a data source then runs is `EXC-11`'s. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-19.
+
 ### Environments and projects
 
 - `SUP-163` **The `Workflows` blueprint has three states and the bill starts at the third.** Enabling it

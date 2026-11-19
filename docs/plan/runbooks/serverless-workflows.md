@@ -225,7 +225,7 @@ in `<env>/studio/workflows.tf`, with the pair for training jobs beside the proce
 first run in `deploy-staging` stopped on `DescribeTrainingJob` without it (2026-11-16, run
 `W373uHP9ZB5EvsW`). Sandbox's grant carries the training pair behind `training_pair_enabled`, `false`
 until the sitting after Stage 17 2.2's readings (a) and (b); it was written 2026-11-19 with the transform
-pair, the model's tag and the registration in an application's own group, none applied (Stage 17 9.5).
+pair, the model's tag and the registration in an application's own group, applied the same night (Stage 17 9.5).
 
 The policy allows `DescribeProcessingJob` on a job with no project tag, `AddTags` of the caller's own
 project tag alone, on a job with no project tag or with the caller's, and `glue:GetJob` on a job with no
