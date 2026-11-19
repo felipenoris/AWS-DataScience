@@ -1132,7 +1132,7 @@ holds one goal: what needs nothing up runs before it, a sitting that needs no Gi
 application reaches a Sandbox space as a tar built on the laptop (Stage 20 step 2.0), never through
 GitLab. Sittings that need the hub may share one hub start. The order is the dependencies', not a
 calendar; the waiting list's "Sittings with the environment up" says what each closes, and its Dates
-bound items 3, 5, 6, 9 and 11.
+bound items 3, 5, 6, 9 and 11. N.9 joins items 6, 7 and 8 in one sitting.
 
 1. **With nothing up, done 2026-11-17.** Release G's step 3, `production/studio/`, applied at 13:11 UTC on
    the user's word naming it, from the plan saved at 05:06 UTC from `main` at `80e996f5` (2 added, 2
@@ -2267,6 +2267,100 @@ step 8, with the hub and GitLab up for its tag, and each act below names its ide
    authorizes them against. From Sandbox, the listing found by a search of the catalog; 4.12's
    subscription requests it. `production-register`, `-approve` and `-transform` stay `manual`: the
    newest training job in Production is release T's (the stage file, §The sittings that follow).
+
+### N.9 The combined Sandbox sitting, prepared 2026-11-19
+
+Written with nothing up on 2026-11-19, when the user asked for the sitting that closes the most steps with
+the least environment. It joins N.6 items 6, 7 and 8 on one hub start, with 6d's Sandbox items, 6d decision
+6's apply and Stage 21's pass 5. It raises the hub and `sandbox/egress` alone: no GitLab, since an
+application reaches a space as a tar built on the laptop; no Staging or Production egress; and no
+warehouse, whose sitting waits for Stage 19's pass 5 (N.9.6). `make status` read 0.0000 USD/h at 14:49 UTC
+that day. Each stage's block is in its stage file; this section holds the order, the raise and the
+lowering. Every command runs as the infrastructure user (`InfrastructureAccess`) unless it names another
+identity, and each write is Claude's on the user's word naming it, the other sessions on the laptop told
+first.
+
+#### N.9.1 What comes before the sitting
+
+- **[user] 6d 4.7's order** (decision 17 (a)): the quota `L-85C9EC5A` and the negative, or 4.7 stays out of
+  the sitting.
+- **[user] `app-ml-dev`'s MLflow App** (Stage 17 9.6), before sitting B's block. The price list has no usage
+  type for it (`docs/PRICING.md`); what it bills is read in Stage 17 8.2.
+- **[Claude] Each block's pre-flight**, read with nothing up by the session that holds its stage, the
+  readings in its stage log: Stage 20's, Stage 17's with `EXC-11`'s reading, and 6d's.
+
+#### N.9.2 The raise
+
+```bash
+make hub-up
+make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base
+```
+
+The three groups rise at once, 0.040 USD/h over the narrowest set, because a `make up` without a group
+destroys that group's endpoints, so a raise per block would rebuild them. 6d decision 6's apply of
+`production/networking/` rides the hub start, before or after `make hub-up` as 6d's block says. The tunnel
+is the user's ([`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md)).
+
+#### N.9.3 The blocks, in order
+
+Each block ends where the sitting can stop (N.9.4) and a later sitting resume.
+
+1. **6d decision 6's apply**, then the reading from a space that 6d 3.4's refusals of the domain's URL stop
+   ([6d](../stages/stage-06d-unified-studio-remainder.md)'s block).
+2. **Sitting A**: Stage 20's passes 2, 3 and 4.5 in `app-dbt-dev`, which need `mwaa`
+   ([Stage 20](../stages/stage-20-dbt-lineage.md) §2). Pass 3 gives 3.1's verdict, which 8.5 owes.
+3. **Sitting B**: Stage 17's 1.4 and 1.6, 2.2's (a) and (b), the training pair's apply in
+   `sandbox/workflows/`, then 9.6, which need `mwaa,mlflow`
+   ([Stage 17](../stages/stage-17-sandbox-machine-learning.md)'s block).
+4. **Sitting C**: Stage 17's 10.4, which needs `mwaa,bedrock-base`; then 6e 6.4's window
+   ([6e](../stages/stage-06e-claude-code-bedrock.md) 6.4). The window holds one Claude Code session in a
+   space on the default model, a task of real length over several turns, and no other Bedrock call. Claude
+   marks its start and end in UTC as the user reports them and reads `./aws/bedrock-usage.py` after the
+   channels' publication lag. The token volume sets 6e decision 6's threshold.
+5. **6d's Sandbox items** that are ready: 5.1, 6.1 (viii), 7.5's monitored half, 7.6 and 7.7, and 4.7 if
+   the user ordered it (6d's block).
+6. **Stage 21's pass 5**: the user's acts in an `eighth-experimentation` space and a
+   `test-experimentation` notebook, with Claude's reads
+   ([Stage 21](../stages/stage-21-redshift-s3-data-products.md) §5). It needs no warehouse.
+
+The order follows the groups each block adds, and no block runs beside 6e 6.4's window.
+
+#### N.9.4 The lowering
+
+Every portal tab is closed first (`sagemaker-application.md` §D), then:
+
+```bash
+make down ENV=sandbox
+make hub-down
+make status
+```
+
+§R's readings follow. `make status` reads every account's Studio apps, so an app an open page restarted
+after the down's hook shows there.
+
+#### N.9.5 The sitting's cost
+
+At [`cost-model.md`](../cost-model.md)'s "Per session" rates:
+- the hub's two hosts and two addresses, 0.026 USD/h;
+- Sandbox's 18 endpoints, 0.180 USD/h, and the three groups' four, 0.040 USD/h;
+- each space's app, 0.050 USD/h on `ml.t3.medium`;
+- one Config cycle of Sandbox's `[E]` slices, 0.36 to 0.87 USD whatever the sitting's length.
+
+That is about 0.25 USD/h before the spaces, and 3 to 4 USD for eight hours with two spaces. The models'
+tokens are billed apart, and 6e 6.4's session is the largest of them.
+
+#### N.9.6 What follows the sitting
+
+1. **Release G's sitting** (N.6 item 3, N.8.5), between 2026-11-22 and 2026-11-25. It carries N.8.3 on the
+   same hub start: `EXC-13`'s Production half, after the admin secret's rotation scheduled for 2026-11-22
+   01:59:59 UTC. GitLab's backup, owed before 2026-12-17, and 6d 2.7's step 7 ride it.
+2. **Stage 19 4.12**, the user's acts with nothing up (N.6 item 4).
+3. **The Sandbox warehouse sitting** (N.6 item 9), before 2026-12-19. It carries Stage 19's pass 5 after
+   4.12, 5b's test and re-plan, 6h's negatives and the editor on `sandbox`, and Stage 21's passes 2 to 4.
+   The user's acts before it: 6h decision 8 (a) and Stage 21 1.3's wizard half.
+4. **[Pull request #321](https://github.com/felipenoris/AWS-DataScience/pull/321)**, synced and merged
+   after release G (N.6 item 10). Then come `app-dbt`'s first release before 2026-12-18 (item 11), `app-ml`'s
+   (item 12), Stage 17 10.5 (item 13) and `app-genai`'s (item 14).
 
 ## Q. After the quotas: Stage 10's pass 3
 
