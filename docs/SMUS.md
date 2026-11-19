@@ -117,9 +117,10 @@ a concession mechanism wearing a restriction's name, and what it natively restri
 
 - the member's **designation** — owner vs contributor, and since 2026-10-29 a **custom designation**, a
   Cedar permit policy over the project's actions the domain defines (`CreateDesignation`;
-  [`upstream-releases.md`](plan/upstream-releases.md)); `awsds-studio` holds the two managed ones alone
-  (read 2026-10-30) — plus the domain's authorization policies over who creates projects, who joins, who
-  assumes ownership;
+  [`upstream-releases.md`](plan/upstream-releases.md)); `awsds-studio` holds the two managed ones and,
+  since 2026-11-19, Stage 19 decision 15 (d)'s `subscription-approver`, a policy of action groups
+  (`SUP-384`) assigned to no member yet — plus the domain's authorization policies over who creates
+  projects, who joins, who assumes ownership;
 - the **surface** — inherited from the profile: which blueprints exist, which parameters are locked.
   The member does not choose it; it came with the mold;
 - **which assets the project reaches** — every catalog asset crosses a subscription request approved
@@ -780,8 +781,9 @@ and its log). Since 2026-11-11 each deployment target holds one, `deploy-staging
   to the service, the project's `shared/` prefix and the project key. `run` starts the workflow and
   returns; a pipeline follows the run with `get-workflow-run`.
 - **A person in it.** The V2 domain admits `PROJECT_OWNER`, `PROJECT_CONTRIBUTOR` and, since 2026-10-29, a
-  `USER_CREATED_DESIGNATION` of the domain's own (none here, read 2026-10-30); a member of any designation
-  acts as the project role, and with spaces off the portal offers no Workflows tool.
+  `USER_CREATED_DESIGNATION` of the domain's own (`subscription-approver` alone since 2026-11-19); a member
+  of either managed designation acts as the project role, for a custom one unmeasured (Stage 19 xxvi), and
+  with spaces off the portal offers no Workflows tool.
   DataZone sets `aws:SourceIdentity` on the sessions it opens for a member and as `SYSTEM`, and none
   is set on a worker's session or on a subscription fulfilment's.
 - **A subscription across accounts.** The fulfilment acts as each side's project role, in

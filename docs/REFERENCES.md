@@ -1955,6 +1955,35 @@
   <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-redshiftserverless-namespace.html>
   and <https://github.com/hashicorp/terraform-provider-aws/issues/28980>. `ASSUMEROLE` held by `PUBLIC` until
   revoked: <https://docs.aws.amazon.com/redshift/latest/dg/r_GRANT-usage-notes.html>.
+- **Custom designations by API, and the versions of the domain's RAM permission (read 2026-11-19, for
+  [Stage 19](plan/stages/stage-19-smus-native-data-product.md) decision 15 (d), 4.12 and xxvi).**
+  `CreateDesignation`, `GetDesignation` and `ListDesignations`: `policy` is a Cedar permit policy of up to
+  10,000 characters, deletion protection defaults to on, and no page shows a policy's syntax:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateDesignation.html>,
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_GetDesignation.html>,
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_ListDesignations.html>; the CLI's reference,
+  with no `--policy` example: <https://docs.aws.amazon.com/cli/latest/reference/datazone/create-designation.html>.
+  The designation permissions page, each category's choices by label with their API lists, and the managed
+  designations' Cedar text, which differs from what `get-designation` returns (`SUP-385`):
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designation-permissions.html>; the
+  designations page, the Data Agent required in every custom designation:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designations.html>; the examples:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/example-designations.html>. The
+  action-group identifiers a custom designation's policy names (`SUP-384`), read from a designation made in
+  the portal (Classmethod, 2026-11-02):
+  <https://dev.classmethod.jp/en/articles/20261101-amazon-smus-custom-designations/>. The IAM reference,
+  served to the fetcher in part: the designation actions' access levels, and
+  `GetSystemTableExportConfiguration` in its summarised half alone:
+  <https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazondatazone.html>. RAM: a share
+  keeps its permission's version until it is moved, only the default version attaches, and an AWS managed
+  permission's move is final:
+  <https://docs.aws.amazon.com/ram/latest/userguide/security-ram-permissions.html>,
+  <https://docs.aws.amazon.com/ram/latest/userguide/working-with-sharing-update-permissions.html>,
+  <https://docs.aws.amazon.com/ram/latest/userguide/working-with-sharing-update.html>;
+  `AssociateResourceSharePermission` takes only the default version, and `ReplacePermissionAssociations`
+  moves every share of a permission asynchronously:
+  <https://docs.aws.amazon.com/ram/latest/APIReference/API_AssociateResourceSharePermission.html>,
+  <https://docs.aws.amazon.com/ram/latest/APIReference/API_ReplacePermissionAssociations.html>.
 
 ## Data platform
 
@@ -4372,6 +4401,18 @@
   The older remediation, an EventBridge rule on `CreateLogGroup` starting a Lambda function that sets the
   retention, existing groups included (AWS blog, 2022):
   <https://aws.amazon.com/blogs/infrastructure-and-automation/reduce-log-storage-costs-by-automating-retention-settings-in-amazon-cloudwatch>.
+
+- **The AWS provider's road to `RETENTION_POLICY` (read 2026-11-19, for
+  [Stage 19](plan/stages/stage-19-smus-native-data-product.md) decision 27 (d) and `EXC-25`).** The
+  releases, 6.73.0 (2026-11-11) the newest: <https://github.com/hashicorp/terraform-provider-aws/releases>.
+  `aws_cloudwatch_log_account_policy` validates `policy_type` against the Go SDK's `PolicyType` enum:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/main/internal/service/logs/account_policy.go>.
+  The enum gains `RETENTION_POLICY` in `service/cloudwatchlogs` v1.91.0 (2026-10-30):
+  <https://github.com/aws/aws-sdk-go-v2/blob/main/service/cloudwatchlogs/CHANGELOG.md> and
+  <https://github.com/aws/aws-sdk-go-v2/blob/main/service/cloudwatchlogs/types/enums.go>. The provider pins
+  v1.90.2 at `v6.73.0` and on `main`:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/v6.73.0/go.mod>. A draft PR documents the type
+  and moves no dependency: <https://github.com/hashicorp/terraform-provider-aws/pull/50873>.
 
 ## Databricks
 

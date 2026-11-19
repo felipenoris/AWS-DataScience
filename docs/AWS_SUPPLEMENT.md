@@ -1895,7 +1895,8 @@ entry is still true is the reading.
   authorizing a blueprint from an associated account, v11 for this one. Measured 2026-11-14: the share still
   carries version 10, and what that withholds from an associated account is `SUP-360`. Where:
   `log-stage-06a-unified-studio.md`, 2026-08-21; `open-questions.md` 21; `upstream-releases.md`, the
-  designations row.
+  designations row. Read again 2026-11-19 (Stage 19): the share moved to version 13 that day, the only
+  version RAM would attach (`SUP-360`). Where: `log-stage-19-smus-native-data-product.md`, 2026-11-19.
 
 - `SUP-148` **`CreateProjectProfile` refuses `ToolingLite` as an on-demand element of a project profile**
   (measured 2026-08-21, Stage 6 1.5). Both profile creates failed with DataZone 400, *"ToolingLite
@@ -2049,7 +2050,11 @@ entry is still true is the reading.
   Redshift connection the project's owner made in the portal, its database and its `lineageSync` changed,
   both accounts' trails reading the call with no `errorCode`. A connection's update is a contributor's where
   a project's update is its owner's; the managed designations' descriptions name neither action, so a
-  contributor's writes are read by attempt. Where: `log-stage-06h-redshift-connection.md`, 2026-11-19.
+  contributor's writes are read by attempt. Where: `log-stage-06h-redshift-connection.md`, 2026-11-19. Read
+  again 2026-11-19 (Stage 19), after the share's move to version 13 (`SUP-360`): `GetGroupProfile` answered
+  from Sandbox, Staging and Production as each account's `InfrastructureAccess`, and `GetProjectProfile` was
+  refused in all three, *"because no resource-based policy allows the datazone:GetProjectProfile action"*.
+  Where: `log-stage-19-smus-native-data-product.md`, 2026-11-19.
 
 - `SUP-158` **An IAM role in a DataZone domain is a group and one user profile per session name, and a
   policy grant takes the group.** Its ARN resolves as a user identifier to one session's user profile, and
@@ -2158,7 +2163,8 @@ entry is still true is the reading.
   2026-11-11.
 
 - `SUP-360` **A DataZone domain's RAM share keeps the version of its managed permission it was created
-  with, so an action AWS adds to the permission later does not reach an associated account** (measured
+  with, so an action AWS adds to the permission later reaches an associated account only once the share is
+  moved to the default version, the one version RAM attaches** (measured
   2026-11-14 in Data Governance and Sandbox, `upstream-releases.md`'s re-read). `ram
   list-resource-share-permissions` on `DataZone-EXTENDED_ACCESS-<domain id>-ORG-ONLY`, created 2026-08-21 with a
   `lastUpdatedTime` of that same second, read `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`
@@ -2176,7 +2182,22 @@ entry is still true is the reading.
   `GetGroupProfile` refusal the CLI's deploys from a member account have logged since 2026-10-19, in the same
   wording (`SUP-157`); the share has not been moved to confirm it. Moving it to the default version is a RAM
   write in the domain's account. Where: `upstream-releases.md`, the designations row;
-  `waiting-on-the-user.md`.
+  `waiting-on-the-user.md`. Read again 2026-11-19 (Stage 19, before 4.12): `list-permission-versions` read
+  version 13, created 2026-11-16T21:08:23Z, as the default and the only `ATTACHABLE` version, versions 1 to
+  12 `UNATTACHABLE`; version 13 adds `datazone:GetSystemTableExportConfiguration` to version 12's 163
+  actions. Version 12, which the user had chosen on 2026-11-17, could no longer be attached:
+  `AssociateResourceSharePermission` takes only a permission's default version, by its API reference. The
+  share moved from version 10 to 13 at 02:20:31 UTC on the user's word, `associate-resource-share-permission
+  --permission-version 13 --replace` answering `{"returnValue": true}`. The association read
+  `lastUpdatedTime` 02:20:33 and the share's own `lastUpdatedTime` stayed at 2026-08-21. At 02:21:01 `ram
+  get-resource-policies` on the domain read version 13's 164 actions in the same statement, principals and
+  `aws:PrincipalOrgID` condition. From Sandbox, Staging and Production as `InfrastructureAccess`,
+  `GetGroupProfile`, `ListDesignations` and `GetDesignation` then answered, and `GetProjectProfile` was still
+  refused in the same wording: version 10's missing `GetGroupProfile` was the cause of the deploys'
+  refusals, though no deploy has run since. RAM's user guide states what this entry measured, where a
+  DataZone reader does not look: a share is never moved to a new version by itself, and an AWS managed
+  permission's move cannot be reverted once saved. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-19.
 
 - `SUP-361` **`list-environment-blueprints` and `get-environment-blueprint` date one managed blueprint
   differently** (measured 2026-11-14 on `awsds-studio`, `upstream-releases.md`'s re-read). `datazone
@@ -2209,7 +2230,10 @@ entry is still true is the reading.
   (`AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`: version 12 2026-11-03, version 13
   2026-11-16). The CLI's reference describes the two fields as *"The date and time when the permission was
   created"* and *"last updated"*. A permission's age is read from `list-permission-versions`, never from
-  `get-permission`. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-19.
+  `get-permission`. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-19. Read again 2026-11-19
+  (Stage 19): `get-permission` on `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`, versions 10 to
+  13, called from 02:09:50 to 02:10:14 UTC, dated each version at the second of its own call. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-19.
 
 ### Environments and projects
 
@@ -2464,6 +2488,44 @@ entry is still true is the reading.
   `SageMakerStudioProjectProvisioningRolePolicy` v86, carries no `sagemaker:ListTags`. The four environments
   read `ACTIVE`, their `CREATE` deployments `SUCCESSFUL`, so this refusal in the trail is no deployment's
   cause. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
+
+- `SUP-384` **A custom designation's Cedar policy names action groups, never individual actions, and no AWS
+  page gives the groups' identifiers** (measured 2026-11-19 in Data Governance, Stage 19 decision 15 (d)).
+  `datazone create-designation` on `awsds-studio`, its policy three `permit`s over individual actions in
+  the managed designations' form (`Subscriptions::Action::"AcceptSubscriptionRequest"` and the other four
+  approvals, nine `Catalog` reads, the 17 `DataAgent` actions `PROJECT_CONTRIBUTOR` stores), was refused at
+  02:33:30 UTC with a `ValidationException`: *"Invalid designation policy: Designation policy validation
+  error: the specified action is not a valid action group"*. Nothing was created. The same call with one
+  group per statement, `Subscriptions::Action::"ManageSubscriptionApprovals"`,
+  `Catalog::Action::"ReadOnlyActions"` and `DataAgent::Action::"AllActions"`, created `subscription-approver`
+  at 02:46:46, `USER_CREATED` with deletion protection on, and `get-designation` returns the policy byte for
+  byte, its groups unexpanded. `CreateDesignation`'s reference describes `policy` as a Cedar permit policy
+  and shows no syntax. The designation permissions page names each category's choices by label (*Manage
+  subscription approvals*, *Read-only actions*) with their API lists, never by identifier, and prints the
+  managed designations with individual actions (`SUP-385`). `ReadOnlyActions`, `UseConnection` and
+  `AllActions` come from a designation made in the portal (Classmethod, 2026-11-02);
+  `ManageSubscriptionApprovals` was inferred from its label and accepted. The validation accepted a policy
+  without the Connections groups, which the portal pre-selects and does not let a user clear (the same
+  article). Whether it refuses a policy without the Data Agent group, which the guide requires, was not
+  tried. What a group grants is read from the permissions page, not from the API. The CLI 2.37.12 has no
+  designation operations; botocore 1.44.5's model in `AWS_DATA_PATH` ran them. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-19; Stage 19 decision 15.
+
+- `SUP-385` **The managed designations' stored policies differ from the text the admin guide prints for
+  them** (read 2026-11-19 in Data Governance and on the designation permissions page, Stage 19 decision 15
+  (d)). `get-designation` returned `PROJECT_OWNER` and `PROJECT_CONTRIBUTOR` as 23 and 18 `permit`
+  statements over 158 and 150 unique actions; the page prints 21 and 17 statements over 150 and 143. Both
+  stored policies hold seven Data Agent actions the page lacks, `PutAgentApprovalPolicy`,
+  `GetAgentApprovalPolicy`, `DeleteAgentApprovalPolicy`, `RegisterAgentArtifact`, `DeregisterAgentArtifact`,
+  `ListAgentArtifacts` and `ListAgentSessionRecords`, and lack the page's four agent-context actions,
+  `AssociateAgentContext`, `DisassociateAgentContext`, `UpdateAgentContext` and `ListAgentContexts`, which
+  the page's table also lists under the Data Agent's *All actions*. Both add the `Project` actions
+  `ListDeployableEnvironmentBlueprints`, `StartCompute`, `GetCompute` and `StopCompute`, the last three in the
+  page's table under *Manage user compute* but in neither printed policy, and the owner's adds `Catalog`'s
+  `UpdateAssetOwner`. Which actions `DataAgent::Action::"AllActions"` grants in a custom designation
+  (`SUP-384`) is therefore unread: the page lists 14, the managed designations hold 17. A managed
+  designation's reach is read from `get-designation`, never from the page. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-19.
 
 ### The managed policies of a project role
 
