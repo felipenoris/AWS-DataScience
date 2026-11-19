@@ -3242,3 +3242,56 @@ Times are UTC.*
     `AllowedByOrganizations` `true`;
   - the share's reading: whether the runs end and how the next scheduled ones end (verification v);
   - the training pair in sitting B.
+
+## 2026-11-19 — 10.4: the interactive OU's SCP applied by the orchestrating session, the battery's `ou` phase
+
+*Claude, the session that wrote 10.4, recording the orchestrating session's acts from the outputs it sent at
+about 04:25 UTC, and reading them back. The orchestrating session ran each step on the user's words in its
+own chat, "Autorizo SCP e bateria", which answered a question naming the SCP's apply and the battery's `ou`
+phase. As the infrastructure user, permission set `InfrastructureAccess`. Times are UTC.*
+
+- **[orchestrating session] The peers told** at about 04:20.
+- **[orchestrating session] The plan**, 04:21:38 to 04:21:53, as `awsds-infra-identity` from its worktree
+  at `main`'s `6c3cc62d` and one commit of documentation, the slice identical to `main`'s: *"Plan: 0 to add,
+  1 to change, 0 to destroy."*. Its `terraform show -json` resource changes are byte-identical (`cmp`) to
+  this session's plan of 02:53:58: `aws_organizations_policy.this["awsds-org-scp-ou-interactive"]`, one
+  entry added to `DenyBedrockInvocationOutsideTheScopedModels`' `NotResource`,
+  `arn:aws:bedrock:us-west-2::foundation-model/amazon.nova-lite-v1:0`, and the description;
+  `DenyBedrockReadsOutsideTheRoutedRegions` unchanged.
+- **[orchestrating session] The apply**, 04:22:32 to 04:22:42, from that saved plan:
+  *"aws_organizations_policy.this["awsds-org-scp-ou-interactive"]: Modifications complete after 1s
+  [id=p-tgda7n58]"* and *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*, re-planned *"No
+  changes. Your infrastructure matches the configuration."* at 04:22:51.
+- **[orchestrating session] The read-back** at 04:23:16, `organizations describe-policy`: four statements,
+  nine entries in the deny's `NotResource`, Nova Lite's among them.
+- **[orchestrating session] The battery**, `./aws/probes/scp-battery.py --phase ou`, 04:23:30 to 04:24:52,
+  exit 0: *"54 as expected, 0 unexpected, 5 not measured"*, against 53, 0 and 5 on 2026-11-17. As
+  `sandbox1`:
+  - *"interactive (inherited): bedrock:InvokeModel on amazon.nova-lite-v1:0 in us-west-2 (Stage 17
+    decision 23)"*: `ALLOWED`, succeeded, the new row;
+  - *"bedrock:InvokeModel outside the scoped set (decision 15)"*, sampling `us.amazon.nova-lite-v1:0`:
+    `DENY-SCP` `p-tgda7n58`;
+  - Titan V2 and the three Claude 4.5 `us.` profiles: `ALLOWED`, succeeded;
+  - `GetUseCaseForModelAccess` in `eu-west-1`: `DENY-SCP` `p-tgda7n58`.
+
+  The five not measured are 2026-11-17's kinds: four Athena rows `DENY-NOT-SCP`, and Identity's
+  `ec2:RunInstances` `UNTESTED`, *"no subnet in us-west-2"*. The report is
+  `aws/output/scp-battery-20261119T012331.txt` in the orchestrating session's worktree, named and headed in
+  local time (01:23:31, 04:23:31 UTC).
+- **[orchestrating session] The simulation** at 04:24:17, `iam simulate-principal-policy` as
+  `awsds-infra-sandbox-1`: `app-genai-dev`'s role `datazone_usr_role_b8fz4ovppjijv4_c9sdti5d2gaqs0`,
+  `bedrock:InvokeModel` on Nova Lite's `us-west-2` foundation model, with `aws:RequestedRegion` `us-west-2`
+  and `aws:PrincipalTag/EnableAmazonBedrockPermissions` `true`: `allowed`, `AllowedByOrganizations` `true`,
+  `AllowedByPermissionsBoundary` `true`, the matched statement in AWS's `SageMakerStudioProjectUserRolePolicy`.
+- **[Claude] The read-back from this session**:
+  - `describe-policy` at 04:26:53: `awsds-org-scp-ou-interactive`, four statements, the deny's `NotResource`
+    nine entries with Nova Lite's `us-west-2` ARN eighth, the document 1,551 characters, the description 508;
+  - the same simulation at 04:26:55: Nova Lite `allowed`, `AllowedByOrganizations` `true`, through
+    `SageMakerStudioProjectUserRolePolicy`; the negatives, Nova Pro's `us-west-2` foundation model and the
+    system profile `us.amazon.nova-lite-v1:0`, `explicitDeny`, `AllowedByOrganizations` `false`;
+  - `identity/org-policies` re-planned from this worktree at 04:27:05, the slice identical to `main`'s:
+    *"No changes."*;
+  - `./aws/org-policies.py`, 04:29:46 to 04:30:46, exit 0: *"wrote aws/output/org-policies.txt (all checks
+    passed)"*.
+- **[Claude] Left**: Nova Lite enabled on the console's Amazon Bedrock models tab (10.4), the user's; the
+  training pair in sitting B; `EXC-11`'s reading.

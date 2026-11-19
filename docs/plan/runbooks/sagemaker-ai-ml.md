@@ -412,11 +412,10 @@ lviii.
 refused on every resource but Claude Opus 4.5, Sonnet 4.5 and Haiku 4.5, as foundation models and
 through their `us.` inference profiles, Titan Text Embeddings V2, and an application inference profile,
 the object every portal call invokes through. `DenyBedrockReadsOutsideTheRoutedRegions` keeps the calls
-in `us-east-1`, `us-east-2` and `us-west-2`. Both are measured (2026-10-19, §G). `app-genai`'s model is
-outside that list today: decision 23 (a) adds Nova Lite's foundation model in `us-west-2` to the
-statement's `NotResource`, with the battery's row, before the loop in `dev` (10.4, written and planned
-2026-11-19, its apply waiting on the user's word). The
-targets hold neither statement.
+in `us-east-1`, `us-east-2` and `us-west-2`. Both are measured (2026-10-19, §G). `app-genai`'s model
+joined that list on 2026-11-19: decision 23 (a) added Nova Lite's foundation model in `us-west-2` to the
+statement's `NotResource`, with the battery's row, before the loop in `dev` (10.4; the battery's `ou` phase
+read the model allowed the same night). The targets hold neither statement.
 
 **Bedrock in a target.** What stands between a deployment project's role and a model, each read in this
 repository on 2026-11-16 or 2026-11-17:
@@ -1253,7 +1252,7 @@ Claude Code on Bedrock from a space, with the use-case form and the retention mo
 | *"This tool is not available for this project."*, on a Generative AI entry | the project's profile lacks one of the seven Bedrock blueprint types (read 2026-10-19) | the blueprint promoted into the profile (done 2026-10-19) |
 | *"No models found. Contact your admin to enable more models."* | the account enables no Bedrock model for the portal (read 2026-10-19) | the model governance project and `sandbox/model-access/` (decision 13 (b), done) |
 | *"not authorized to perform: bedrock:InvokeModelWithResponseStream on resource: …application-inference-profile/… with an explicit deny in a service control policy"* | the portal invokes through an application inference profile the SCP did not admit (measured 2026-10-19) | admitted since decision 11's amendment, applied 2026-10-19 |
-| the same deny on `foundation-model/…` | a model outside the scoped set (Nova Lite, measured 2026-10-19) | none for a model outside the set: the ceiling is the control. Nova Lite's `us-west-2` foundation model joins the set before `app-genai`'s loop in `dev` (decision 23 (a), 10.4, designed) |
+| the same deny on `foundation-model/…` | a model outside the scoped set (Nova Lite, measured 2026-10-19) | none for a model outside the set: the ceiling is the control. Nova Lite's `us-west-2` foundation model joined the set on 2026-11-19, before `app-genai`'s loop in `dev` (decision 23 (a), 10.4) |
 | *"Bedrock Agents is in Maintenance Mode. New agent creation is not available for accounts without prior service usage."* | AWS's wording for a `CreateAgent` in an account that never created an agent (read 2026-11-16, not met here) | none, by AWS's page; a flow app and the knowledge base stay (§G) |
 | an `AccessDeniedException` on `bedrock:InvokeModel`, from a task in a target (designed; its wording is step 10.4's reading) | the request names no numbered version of a guardrail of the account, names a guardrail's `DRAFT`, or names a model outside the stage's profile: the boundary's exception admits none of them (§G) | the version the `guardrail` task returned, in the request's `guardrailConfig`. `app-genai-probe` expects this refusal and passes on it |
 | `DENY-SCP` on a `CreateEndpointConfig` that carries a `ServerlessConfig` | `DenySageMakerServerlessInference`, in the `Workloads` OU (measured 2026-10-18) | none: an instance-backed endpoint in Sandbox, a batch transform in a target |
