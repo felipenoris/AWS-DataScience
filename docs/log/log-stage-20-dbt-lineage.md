@@ -1096,3 +1096,31 @@ do #28". No AWS call. Times are UTC.*
   with no state read and no image. `aws/catalog.py`'s `CHAIN_DEV_PROJECTS` waits on 2.0.
 - **[Claude] The pin's path, for this log**: `app-dbt` moved to `37cb5a6` on 2026-11-17 with `app-ml` and
   `app-genai` (Stage 17's log of that day), to `1a50ceb` the same day (6.4), and to `4613ddc` today.
+
+## 2026-11-19 — 2.0: `app-dbt-dev` created, its `sandbox/workflows/` line planned and `CHAIN_DEV_PROJECTS` written
+
+*The user created the project in the portal. Claude, the orchestrating session, read it as the
+infrastructure user through `awsds-infra-sandbox-1` and `awsds-infra-data`, reads only. Times are UTC.*
+
+- **[user] The act**: *"Criei os projetos"*, with Stage 17's two (that log's entry of the same night).
+- **[Claude] The project read**, by 2.0's commands at 00:19 and 00:20: the id `dnl3l158mbhrio`, created
+  00:17:19, `ACTIVE` under `experimentation`; `Tooling` `55hp9teamegf4g` and `SageMakerAIDomain`
+  `4mxdm39fu4j05s`, both `ACTIVE` by 00:20:41; the role `datazone_usr_role_dnl3l158mbhrio_55hp9teamegf4g`,
+  carrying `awsds-sandbox-project-boundary` by `get-role`. 2.0's `list-roles` command read `None` on every
+  role, the field omitted by documented contract, and the stage file now reads the boundary with `get-role`.
+- **[Claude] The members**: the owner and the project's own role, an `IAM` user profile, and no group: the
+  bundle role and `InfrastructureAccess` are not members yet. `list-connections` was refused to the
+  infrastructure user, *"User is not permitted to perform operation: ListConnections"*, and answered the
+  same caller on `app-etl-dev` at 00:32 (`project.athena`, `workgroup-ceweti7jbiu1hs-6kvndq6t2757rk`), so
+  the workgroup is read after the membership.
+- **[Claude] The house image**: the domain `d-nt4ujzbdpeqm` pins version 11 on both app types (`US-13`
+  `pass` at 00:25), so 2.0's §C6 step is not needed.
+- **[Claude] The workflows grant**: the role's line written with Stage 17's two and planned at 00:29,
+  *"Plan: 3 to add, 0 to change, 0 to destroy."*; the apply waits on the user's word.
+- **[Claude] `aws/catalog.py`'s `CHAIN_DEV_PROJECTS`** gains `dnl3l158mbhrio`, 8.1's last item:
+  `--self-check` *"39 of 39 cases as expected"*. The live run, ending 00:36:16, wrote *"all checks
+  passed"*, `CT-15` naming *"(app-etl-dev, app-dbt-dev)"*; its exit 1 is three `search` calls refused on
+  the three new projects, *"User is not permitted to perform operation: Search"*, which `CT-19` notes as
+  inventories not read. The infrastructure user's membership is what the instrument needs there too.
+- **[Claude] Left**: the two contributors, then the workgroup's reading and 2.0's starting state; the
+  apply.

@@ -2946,3 +2946,38 @@ advance every stage but 11 to 15 with nothing up. Times are UTC.*
   `operador`, exit 1, as at `37cb5a6`. Between `37cb5a6` and `4613ddc` are #27 and #28.
 - **[Claude] Left**: `aws/catalog.py`'s `CHAIN_DEV_PROJECTS` once `app-dbt-dev` exists; `app-genai`'s
   legs read `studio/`'s output, which 10.5 declares.
+
+## 2026-11-19 — 9.6 and 10.4: `app-ml-dev` and `app-genai-dev` created, and their `sandbox/workflows/` lines planned
+
+*The user created the projects in the portal. Claude, the orchestrating session, read them as the
+infrastructure user through `awsds-infra-sandbox-1` and `awsds-infra-data`, reads only, and wrote and
+planned the slice's lines. Times are UTC.*
+
+- **[user] The act**: *"Criei os projetos"*, with Stage 20's `app-dbt-dev` (that log's entry of the same
+  night).
+- **[Claude] The projects**, read at 00:19 and 00:20: `app-ml-dev` (`5rzplmk81vma34`, created 00:17:46)
+  and `app-genai-dev` (`b8fz4ovppjijv4`, 00:18:05), both `ACTIVE` under the `experimentation` profile
+  (`dh60xbal05q64w`). Each holds `Tooling` and `SageMakerAIDomain`, both `ACTIVE` by 00:20:41:
+  `app-ml-dev`'s `5ae0dd6m1suvbk` and `dpelnav9n8wyds`, `app-genai-dev`'s `c9sdti5d2gaqs0` and
+  `5dg9rc3o9t070w`.
+- **[Claude] The roles**: `datazone_usr_role_5rzplmk81vma34_5ae0dd6m1suvbk` and
+  `datazone_usr_role_b8fz4ovppjijv4_c9sdti5d2gaqs0`, each carrying `awsds-sandbox-project-boundary` by
+  `get-role`. `list-roles` read `None` for every role, `app-etl-dev`'s included, omitting the field by
+  documented contract.
+- **[Claude] The members**: each project's `list-project-memberships` holds the owner and one
+  `PROJECT_CONTRIBUTOR`, a user profile of type `IAM` whose ARN is the project's own role, as `app-etl-dev`'s
+  holds its role beside the two groups the user added there. The bundle role `awsds-deploy-sandbox-test`
+  and Sandbox's `InfrastructureAccess` are members of neither project yet.
+- **[Claude] The domains** (`./aws/studio.py`, ending 00:25:24): `US-13` passes on `d-hxxfi3od0xhm`
+  (`app-ml-dev`) and `d-q1bianbhckrd` (`app-genai-dev`), each pinning `awsds-sandbox-dev-env` version 11 on
+  both app types, and reads *"6 ACTIVE, each holding a SageMakerAIDomain domain"*. Neither project holds a
+  `Tooling` domain, so 9.6's §C6 attach takes no step. The script's exit 1 is section 10's persona
+  profiles with no SSO token, beside *"0 check(s) FAILED."*
+- **[Claude] `sandbox/workflows/`**: both roles joined `project_roles` with `app-dbt-dev`'s (Stage 20 2.0),
+  each with its comment line, and the slice was planned from this worktree at 00:29 as
+  `awsds-infra-sandbox-1`: *"Plan: 3 to add, 0 to change, 0 to destroy."*, the three attachments of
+  `awsds-sandbox-workflows`, the plan saved outside the repository. 9.5's pairs, model statement,
+  `CreateModelPackage` and bundle role's read, and 10.4's `sandbox/bedrock/` and `sandbox/model-access/`
+  changes are not written.
+- **[Claude] Left**: the two contributors in each project, by the user in the portal's member dialog; the
+  apply on the user's word; `app-ml-dev`'s MLflow App and model package group; Nova Lite enabled.

@@ -1157,10 +1157,11 @@ bound items 3, 5, 6, 9 and 11.
    project created before 6d's step 2.7 applies the profile takes that step's path for living projects.
    6d 2.7's steps 2 to 5 were done on 2026-11-18 (step 4's *Update project* retiring no `Tooling` domain,
    `SUP-380`; step 5's `throwaway-6d` read, *Workflows* opening on the blueprint's domain alone, then
-   deleted). Left: the projects `app-ml-dev` and `app-genai-dev` created with their
-   contributors and Nova Lite enabled (9.6, 10.4), after which Claude plans the Sandbox slices that read the projects' roles and the
-   user applies them; the project `app-dbt-dev` with its contributors (Stage 20 2.0), then its
-   `sandbox/workflows/` line, which Claude writes and the user applies; and Stage 20 8.3's two
+   deleted). The three application projects were created on 2026-11-19 and their `sandbox/workflows/`
+   lines written and planned the same night (`3 to add`). Left: their contributors, the bundle role and
+   Sandbox's `InfrastructureAccess` (9.6, 10.4, Stage 20 2.0), and Nova Lite enabled; the lines' apply on
+   the user's word; the rest of the Sandbox slices that read `app-ml-dev`'s and `app-genai-dev`'s roles
+   (9.5's pairs, `sandbox/bedrock/`), which Claude writes and the user applies; and Stage 20 8.3's two
    `create-environment` calls on the user's word naming each, then `staging/studio/`'s
    `product_databases` line. Stage 20's decisions 14 to 17 were taken on 2026-11-18 and their changes
    written, `app-dbt` pinned to `awsds-workflows` `4613ddc`.
@@ -1211,8 +1212,8 @@ bound items 3, 5, 6, 9 and 11.
     G's sitting, before `app-dbt`'s mirror push and `app-ml`'s first tag. The pins read against the
     lint's release the same day: `app-etl` (`196acee`), `app-ml` and `app-genai` (`37cb5a6`) each pass at
     `4613ddc` with their pipelines' options, `probes/operator.yaml` still refused by `operador`, so each
-    pin moves to it at the application's next tag, `app-etl`'s after release G. Left:
-    `aws/catalog.py`'s `CHAIN_DEV_PROJECTS` once `app-dbt-dev` exists.
+    pin moves to it at the application's next tag, `app-etl`'s after release G.
+    `aws/catalog.py`'s `CHAIN_DEV_PROJECTS` gained `app-dbt-dev`'s id on 2026-11-19, on pull request #320.
 11. **`app-dbt`'s first release** (Stage 20 pass 8), after items 3, 6 and 10 and Stage 20's 8.3 to 8.7:
     the hub and GitLab; `staging/egress/` raised before the tag `v0.1.0` and destroyed after
     `staging-catalog`, `production/workloads-egress/` raised before `production-gate`, each with its

@@ -194,9 +194,9 @@ DEPLOYMENT_PROJECTS = (STAGING_PROJECT, PRODUCTION_PROJECT)
 DEPLOY_ROLES = {"awsds-deploy-staging": STAGING_PROJECT, "awsds-deploy-prod": PRODUCTION_PROJECT}
 
 # The projects a chain application's `dev` stage deploys from, by id (Stage 19 decision 18 (d),
-# step 1.5). Decision 20 (b) lists such an application's product in Production alone, by the
-# template's default: CT-15 reports a listing one of these owns as a note.
-CHAIN_DEV_PROJECTS = {"ceweti7jbiu1hs": "app-etl-dev"}
+# step 1.5; Stage 20 step 2.0). Decision 20 (b) lists such an application's product in Production
+# alone, by the template's default: CT-15 reports a listing one of these owns as a note.
+CHAIN_DEV_PROJECTS = {"ceweti7jbiu1hs": "app-etl-dev", "dnl3l158mbhrio": "app-dbt-dev"}
 
 # The governed lake's databases, in the registry account. A SMUS principal reaching one of these is
 # CT-7's finding; a project's own database is not.
