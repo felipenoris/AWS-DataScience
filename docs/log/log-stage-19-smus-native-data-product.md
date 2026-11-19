@@ -4328,3 +4328,48 @@ alone. Reads only, no apply and no AWS write. Times are UTC.*
 - **[Claude] The block written**: "The Sandbox warehouse sitting: pass 5 in order" in the stage file, before
   "To execute", with the access role's two absent pieces as the user's word before the sitting, or 5.2 through
   the direct door.
+
+## 2026-11-19 — 5.2's door: the access role's statement written and planned, unapplied
+
+*Claude, in the same session, on the user's "Sim, escreva" to the question whether to write the access
+role's statement in PR #339; as the infrastructure user, permission set `InfrastructureAccess`, through
+`awsds-infra-sandbox-1` (account Sandbox Account 1), with `awsds-infra-prod` (account Production) for two
+reads and its account id. A plan from the branch, no apply and no AWS write. Times are UTC.*
+
+- **[user] The door**: §J's chain, through the access role, answered *"Sim, escreva"*. The direct door as
+  the project role stays the fallback the stage file names.
+- **[Claude] Production's table and its location**, about 22:47, as `awsds-infra-prod`: `glue get-table` on
+  `app_etl.trades_notional` reads `EXTERNAL_TABLE`, `table_type` `ICEBERG`, no partition keys, its location
+  under `s3://awsds-prod-smus-projects/dzd-d8yrvx1ko7im6o/d7qcazihvr3s7k/dev/data/catalogs/`.
+  `lakeformation list-resources` reads one registered location, `s3://awsds-prod-smus-projects/dzd-d8yrvx1ko7im6o/d7qcazihvr3s7k/dev`,
+  role `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow`, `HybridAccessEnabled: false`, `VERIFIED`, last
+  modified 2026-11-11 15:30 UTC. So the read takes `GetDataAccess`, and neither an S3 grant nor a partition
+  action.
+- **[Claude] The statement written**: `sandbox/warehouse/`'s new map `subscribed_products`, keyed by
+  project id, its one entry `avhvbqn37ty7m8` naming `glue_db_blerpkhn9nj7o0`, `app_etl` and
+  `trades_notional`; two dynamic statements in `project_access_portal`, after `ReadTheGovernedShareCatalog`:
+  `ReadTheSubscribedProductsCatalog`, the four Glue reads on Sandbox's catalog, the link database and its
+  tables and on Production's catalog, `app_etl` and `trades_notional`, and
+  `LakeFormationVendsTheSubscribedProductsData`, `lakeformation:GetDataAccess` on `*`. Production's id is
+  resolved by the aliased provider `production` and `data.aws_caller_identity.production`, its profile from a
+  new `producers` emission of `scripts/tfhygiene/backend.py` for a SMUS member's `warehouse` slice, the
+  `data-governance/data/` idiom.
+- **[Claude] The plan from the branch**, 22:49:04 to 22:49:17, as `awsds-infra-sandbox-1` with
+  `-input=false -var all_projects_tag_enabled=false -var data_transfer_role_enabled=false`: *"Plan: 0 to add,
+  1 to change, 0 to destroy."*, `aws_iam_policy.project_access_portal["avhvbqn37ty7m8"]` updated in place. Of
+  the new statement's Glue ARNs, three carry Sandbox's account and three Production's, read from the plan's
+  JSON against each profile's account with no id printed. The planned document is 2,224 characters without
+  whitespace, under IAM's 6,144.
+- **[Claude] `simulate-custom-policy` on the two planned statements**, 22:51, one resource per call:
+  `glue:GetTable` and `glue:GetDatabase` `allowed` on Sandbox's catalog, `database/glue_db_blerpkhn9nj7o0` and
+  `table/glue_db_blerpkhn9nj7o0/trades_notional`, and on Production's catalog, `database/app_etl` and
+  `table/app_etl/trades_notional`; `implicitDeny` on Production's `table/app_etl/other_table` and
+  `database/curated`, the negative controls; `lakeformation:GetDataAccess` `allowed`. The whole planned
+  document was refused at the simulator's 2,000 characters (`SUP-006`), and one call lost its ARNs to zsh's
+  `:c` modifier (Lesson 84) before the run above. A call naming the eight resources at once returned one result per
+  action, its resource the pattern `arn:aws:glue:${Region}:${Account}:${ResourceType}/${ResourcePath}` and its
+  decision `implicitDeny`, the aggregate; the verdicts above are the per-resource ones.
+- **[Claude] Written with it**: the slice README's row for `project_access_portal`, runbook
+  `redshift-connection.md` §G's paragraph for a subscribed product, the stage file's block (before it item 3,
+  the pieces table) and its Status row, and `waiting-on-the-user.md`'s row. What follows is the apply from
+  `main` after PR #339's merge, on the user's word.
