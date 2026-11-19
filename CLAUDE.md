@@ -267,7 +267,9 @@ The orchestrating session ran each of the first three itself, on the user's auth
 chat. Let through on 2026-11-11: reads, a RAM association, a candidate SCP's life on `Policy Test`, and
 every apply and `create-project` the user named; on 2026-11-17, the orchestrating session's push and pull
 request in `awsds-workflows`, which the user authorized in its chat; on 2026-11-19, its apply of the SCP
-a started session was refused, on the user's *"Autorizo SCP e bateria"* in its chat.
+a started session was refused, on the user's *"Autorizo SCP e bateria"* in its chat, and its applies of
+`staging/studio/` and `production/studio/`, on the user's *"Autorizo os dois applies"* answering a question
+that named both.
 
 Sessions run in parallel under one orchestrator are told not to edit `CLAUDE.md`,
 `docs/GENERAL_PLAN.md`, `docs/plan/stages/INDEX.md` and `docs/log/INDEX.md`: each leaves its text in its
@@ -447,7 +449,7 @@ sitting.
 | Stage | State | What comes next |
 |---|---|---|
 | 5b, the Sandbox warehouse | Passes 0-3 applied 2026-09-20 | A warehouse sitting before 2026-12-19 (decision 9): the `max_query_execution_time` test and the `enable_large_strings_opt_in` re-plan. The bill's half of verification x after the free trial ends |
-| 6d, Unified Studio's remainder | Steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half, 2.7's steps 2 to 5 done 2026-11-18; on 2026-11-19 5.1 and 6.1 (viii)'s JupyterLab half read, the `datazone` quotas found raised by AWS, decision 17's deny in the targets written | The user's: that deny's `<env>/studio/` applies, 4.7 as is or decision 17 (b)'s deny first, the 1.1 and 1.2 attempts. `promotion.md` §N.9's day 1: decision 6's apply, 4.7, 6.1 (viii), 7.5 to 7.7. A GitLab sitting: 2.7 step 7 |
+| 6d, Unified Studio's remainder | Steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half, 2.7's steps 2 to 5 done 2026-11-18; on 2026-11-19 5.1 and 6.1 (viii)'s JupyterLab half read, the `datazone` quotas found raised by AWS, decision 17's deny in the targets applied | The user's: 4.7 as is or decision 17 (b)'s deny first, the 1.1 and 1.2 attempts. `promotion.md` §N.9's day 1: decision 6's apply, 4.7, 6.1 (viii), 7.5 to 7.7. A GitLab sitting: 2.7 step 7 |
 | 6e, Claude Code on Bedrock | A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint). Held by PR #108 | The user's: the three Claude 5.5 model agreements (decision 17), decisions 11 and 13, and decision 6's budget notification. Then 6.4's token volume |
 | 6f, the catalog over the lake | Decision 1 (b), a pilot of SMUS's native flow: step 11 done to 11.11 (2026-10-27), `curated.trades` published by `governed-lake` and subscribed by `eighth-experimentation`. Decisions 2 to 6 taken | The user's: step 2's portal acts, 11.12's rollback residue |
 | 6g, access by identity | Applied 2026-09-17, 1.4 closed on both profiles | 2.4's Athena read, which the user re-specifies. Decision 1's proxy-host replacement at the next `production/proxy/` apply, in a hub sitting |

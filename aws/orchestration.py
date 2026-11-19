@@ -88,10 +88,19 @@ DEPLOY_PROJECTS = {"staging": "deploy-staging", "prod": "deploy-production"}
 PROJECT_BUCKETS = {"staging": "awsds-staging-smus-projects", "prod": "awsds-prod-smus-projects"}
 PROJECT_ROLE_PREFIX = "datazone_usr_role_"
 # The policies <env>/studio/ attaches to the deployment project's role (workflows.tf,
-# person-session.tf, warehouse.tf). A workflow runs as that role.
+# person-session.tf, notebook-run.tf, warehouse.tf). A workflow runs as that role.
 PROJECT_ROLE_POLICIES = {
-    "staging": ("awsds-staging-workflows", "awsds-staging-person-session-deny"),
-    "prod": ("awsds-prod-workflows", "awsds-prod-person-session-deny", "awsds-prod-warehouse-load"),
+    "staging": (
+        "awsds-staging-workflows",
+        "awsds-staging-person-session-deny",
+        "awsds-staging-notebook-run-deny",
+    ),
+    "prod": (
+        "awsds-prod-workflows",
+        "awsds-prod-person-session-deny",
+        "awsds-prod-notebook-run-deny",
+        "awsds-prod-warehouse-load",
+    ),
 }
 WF_PRINCIPAL = "airflow-serverless.amazonaws.com"
 # The service's events carry the "MWAA Serverless " prefix (the EventBridge reference page and an
