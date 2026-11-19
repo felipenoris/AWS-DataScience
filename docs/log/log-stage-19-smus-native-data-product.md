@@ -4296,11 +4296,11 @@ alone. Reads only, no apply and no AWS write. Times are UTC.*
   `awsds-sandbox-warehouse-project-avhvbqn37ty7m8` and `awsds-sandbox-warehouse-access-portal-avhvbqn37ty7m8`,
   and no inline one; the project role `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` carries seven, three of
   them AWS's (`SageMakerStudioProjectUserRolePolicy` among them) and four of this repository's.
-- **[Claude] `simulate-principal-policy` is no instrument for this read.** On both roles, `glue:GetTable` and
+- **[Claude] `simulate-principal-policy` with no context entries**: on both roles, `glue:GetTable` and
   `glue:GetDatabase` read `explicitDeny` on every resource, the lake account's `governed_trades` included, the
   read that works since 2026-10-25; the result carries `AllowedByOrganizations: false` and no matched
-  statement. The organization's policies are judged with no context keys to supply, so the positive control
-  fails.
+  statement. 6h's simulation of 2026-10-18 passed `aws:RequestedRegion` and `aws:PrincipalArn`, and this one
+  did not, so the organization's verdict is unread here.
 - **[Claude] `simulate-custom-policy` on the access role's two policies**, the identity half alone:
 
   | Resource | `glue:GetTable` | `glue:GetDatabase` |
@@ -4310,7 +4310,10 @@ alone. Reads only, no apply and no AWS write. Times are UTC.*
   | Production's `table/app_etl/trades_notional` | `implicitDeny` | `implicitDeny` |
   | Production's `database/app_etl` | `implicitDeny` | `implicitDeny` |
 
-  `lakeformation:GetDataAccess`: `implicitDeny`. So the read in place through §J's chain or the connection is
+  `lakeformation:GetDataAccess`: `implicitDeny`. **`simulate-principal-policy` on the access role at 22:24**, with
+  `aws:RequestedRegion=us-west-2` and `aws:PrincipalArn` in the context: `glue:GetTable` `allowed` on the
+  positive control and `implicitDeny` on Sandbox's and Production's `trades_notional`, `GetDataAccess`
+  `implicitDeny`, each with `AllowedByOrganizations: true`. So the read in place through §J's chain or the connection is
   refused by IAM at `glue:GetTable` before Lake Formation is consulted, as the governed share was on
   2026-10-25 until `ReadTheGovernedShareCatalog` was written. 5.1 names the Lake Formation and SQL pieces, not
   this one.

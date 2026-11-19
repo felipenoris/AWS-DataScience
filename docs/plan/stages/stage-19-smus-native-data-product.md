@@ -956,9 +956,10 @@ first piece is the access role's own policy, and on 2026-11-19 it does not hold 
 | Lake Formation's admission of the access role: DataZone's grant to Sandbox's `IAMPrincipals` under the consumer's context, if the session carries it (verification xiii), or 5.1's named grant in Production and `DESCRIBE` on the link in Sandbox | Lake Formation, both accounts | 4.12's fulfilment, after release G |
 | `USAGE ON DATABASE awsdatacatalog` and `TEMP ON DATABASE sandbox` for the database user | SQL, as the admin | `TEMP` held since 2026-10-25, `USAGE` absent |
 
-The verdicts are the identity policies' alone, from `iam simulate-custom-policy` on the access role's two
-policies. `simulate-principal-policy` is no instrument here: it reads `explicitDeny` from the organization
-on the positive control too, with no context keys to supply. The project role, the direct door, holds
+The verdicts are the role's, from `iam simulate-principal-policy` with `aws:RequestedRegion` and
+`aws:PrincipalArn` in the context, as 6h's simulation of 2026-10-18 passed them, the organization admitting
+each call; `simulate-custom-policy` on the role's two policies reads the same. Without those keys the
+simulator reads `explicitDeny` from the organization on the positive control too. The project role, the direct door, holds
 v77's `GlueDatalakePermissions` (Glue reads on `*` when `glue:LakeFormationPermissions` is `Enabled`, a key
 the simulator cannot supply) and `LFforDL` (`GetDataAccess`).
 
