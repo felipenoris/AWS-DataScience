@@ -362,6 +362,13 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   transform pair, the model's tag, a pending version's registration for each application in
   `model_applications` and the bundle role's read of its model prefix, and the training pair behind
   `training_pair_enabled`.
+- **`sandbox/ml/` `[P]` — the notebook grant** (Stage 17 decision 7 (a), written 2026-11-19, not
+  applied): one `awsds-<env>-ml` policy allowing `sagemaker:AddTags` of the `AmazonDataZoneProject` tag
+  alone, with the caller's own value, on a model package group that carries no project tag or already the
+  caller's, which creating a tagged group from a notebook needs; one attachment per SMUS project role,
+  `eighth-experimentation`'s and `app-ml-dev`'s. What a workflow's operators create stays in
+  `sandbox/workflows/`; an endpoint configuration, an endpoint, a pipeline or an MLflow App joins this
+  slice once a refusal is measured on it.
 - **`staging/studio/` and `production/studio/` `[P]` — the deployment project's blueprint prerequisites**
   ([Stage 19](../docs/plan/stages/stage-19-smus-native-data-product.md) step 4.4), applied 2026-11-11 in
   two applies, the second adding the two blueprint configurations:

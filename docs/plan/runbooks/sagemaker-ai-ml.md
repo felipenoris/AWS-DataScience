@@ -395,6 +395,11 @@ carries no project tag, and `AddTags` allowed for that one key with the caller's
 | Endpoint configuration and endpoint | what 9.8's reading finds the role lacks, with the endpoint increment | the same |
 | ML pipeline and its executions | what 9.8's reading finds `app-ml-dev`'s role lacks, with the pipeline increment | none: the pipeline runs in the `dev` project alone |
 
+A model package group is created once from a notebook, never by a workflow: `app-ml-dev`'s in its `dev`
+project (9.6) and 3.2's `ml-demo-xgboost` in the exercise's. Its tag is `sandbox/ml/`'s statement
+(decision 7 (a)), written 2026-11-19 and not applied. The create carries the project's tag alone, since a
+second key reads `implicitDeny`. A target's group is declared by the account's Terraform.
+
 Whether a worker's `CreateModel` and `CreateTransformJob` meet the gap as a processing job did is
 verification xxix, and whether a notebook's `CreateTrainingJob` does is 2.2. A model package is outside
 the pair's tag half: a versioned package takes no tag argument and uses its group's tags (the SDK's

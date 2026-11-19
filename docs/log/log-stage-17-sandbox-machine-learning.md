@@ -3138,3 +3138,43 @@ and a plan as the infrastructure user through `awsds-infra-data`. Times are UTC.
 - **[Claude] Left**: the apply on the user's word naming it, whose wording answers whether RAM shares a
   domain with a service principal and with `allowExternalPrincipals` `false`; then the three sources' next
   runs.
+
+## 2026-11-19 — decision 7 (a): `sandbox/ml/` written and planned with the model package group's statement, nothing applied
+
+*Claude, a session started by the orchestrating session, on the user's answer in its chat, "Write it
+before (Recommended)". Reads, a plan and IAM simulations as the infrastructure user through
+`awsds-infra-sandbox-1`, and one project read through `awsds-infra-data`. Times are UTC.*
+
+- **[Claude] The roles**, at 02:31: `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` and
+  `datazone_usr_role_5rzplmk81vma34_5ae0dd6m1suvbk` carry `AmazonDataZoneProject` `avhvbqn37ty7m8` and
+  `5rzplmk81vma34`, scope `dev`, blueprint `Tooling`, and the boundary `awsds-sandbox-project-boundary`;
+  `datazone get-project` names the projects `eighth-experimentation` and `app-ml-dev`. The boundary, v3,
+  holds no statement on a tag or a model package group.
+- **[Claude] The gap**, by principal simulation as both roles, the organization's policies included
+  (02:33:12): the tagged `CreateModelPackageGroup` reads `allowed` by
+  `SageMakerStudioProjectRoleMachineLearningPolicy` v48's `SageMakerCreatePermissions`, the context
+  carrying the caller's tag as `aws:ResourceTag/AmazonDataZoneProject`, and its `AddTags` reads
+  `implicitDeny`, in both. The two readings before it were the simulator's: without `aws:RequestedRegion`
+  both calls read `explicitDeny` with `AllowedByOrganizations` `false` (02:31:51, `SUP-008`), and without
+  the principal tag `EnableSageMakerMLWorkloadsPermissions` the create read `implicitDeny` (02:32:09).
+- **[Claude] `sandbox/ml/`**, rank 57, `[P]`: `awsds-sandbox-ml` with
+  `TagAModelPackageGroupWithTheCallersProject`, `sagemaker:AddTags` on `model-package-group/*` of the key
+  `AmazonDataZoneProject` alone, with the caller's own value, on a group that carries no project tag or
+  already the caller's; one attachment per role of `project_roles`, the two above, each checked for the
+  boundary; CostCenter `stage-17`; the lock copied from `sandbox/workflows/`'s and accepted by `init`
+  unchanged. Registered in `scripts/tfhygiene/layers.py`: `./scripts/slices.py check` read 49 slices
+  declared, 49 on disk.
+- **[Claude] The plan**, at 02:36:01: *"Plan: 3 to add, 0 to change, 0 to destroy."*, the policy and the
+  two attachments, saved outside the repository. The document is 504 characters minified.
+- **[Claude] The planned document simulated**, added to each role's live policies by principal
+  simulation (`SUP-370`'s refusal of a `file://` document was met first, and a file holding a JSON array
+  of one string passed), the organization's policies and the boundary included, `AllowedByOrganizations`
+  `true` in every row (02:37:39 to 02:37:54). As each role, its own value reads `allowed` on an untagged
+  group and on a group already its own; another project's value, a group carrying another project's tag,
+  and the project's key beside a second key (`Team`) read `implicitDeny`.
+- **[Claude] Sandbox's model package groups**: none, `list-model-package-groups` at 02:39:54.
+- **[Claude] Found**: a create that carries a second tag beside the project's is refused as `AddTags`,
+  since the blueprint's tag statement admits no `AmazonDataZone*` key and this one that key alone. 9.6's
+  and 3.2's creates carry the project's tag alone.
+- **[Claude] Left**: the apply on the user's word naming it, from `main` after pull request #326 and
+  re-planned first, before sitting B.
