@@ -4450,3 +4450,39 @@ whose `production/networking/` equals `origin/main` `30855d92`'s (`git diff` emp
   `Status` row; `docs/NETWORK.md`'s table and paragraph; `docs/AWS_STATE.md` §C's row, from `DN-3` to
   `PX-3`; `promotion.md` §N.6 item 3, §N.9.1 and §N.9.3 step 2; the waiting list's Sandbox row; Current
   position.
+
+## 2026-11-20 — Day 1's pre-flight with nothing up
+
+*Claude, in the session that applied 6d decision 6 and Stage 17 decision 7 the same day, on the user's request to prepare every pending sitting before raising anything and to minimise the plan's running time (*"otimize o plano e faça todas as preparações necessárias para que o tempo necessário para executar o plano seja minimizado"*). As the infrastructure user with `InfrastructureAccess`, read-only, through `awsds-infra-sandbox-1` (account Sandbox Account 1) and the
+other `awsds-infra-*` profiles the instruments name. Times are UTC.*
+
+- **[Claude] 4.7's negative, simulated** as `eighth-experimentation`'s project role, `aws:RequestedRegion`
+  in the context. At 20:12:03, with the domain's ARN in the Data Governance account as the resource,
+  `datazone:StartNotebookRun`, `ListNotebooks` and `GetNotebook` read `implicitDeny` naming no statement and
+  carrying no organization or boundary detail; the same with the ARN rewritten to Sandbox's account. At
+  20:19:08, with no resource named, the three and `CreateNotebook` read `allowed`, the organization and the
+  boundary `true`, through `SageMakerStudioProjectRoleMachineLearningPolicy` v48, whose
+  `DataZoneUserPermissions` grants `datazone:*Notebook*`. The first shape is `SUP-008`'s for an action with
+  no resource type, appended there. As the Data Scientist's permission-set role the four read
+  `implicitDeny`, the organization `true`; as `InfrastructureAccess`, `allowed` through
+  `AdministratorAccess`. The negative from the space runs as written, and a refusal of it is DataZone's.
+- **[Claude] The laptop's client** for 7.5 to 7.7: VS Code 1.146.0 in `/Applications`, its
+  `CFBundleExecutable` `Code`; no `$HOME/Applications/vscode-1.119.1`; neither Remote - SSH nor AWS Toolkit
+  under `~/.vscode/extensions`; no `proxy-on` or `proxy-off` in `~/.zshrc`. The block's step 9 named
+  `Contents/MacOS/Electron` and now reads the executable from the bundle; the client and `proxy-on` are the
+  user's before the day (`promotion.md` §N.12.4).
+- **[Claude] The instruments**, 20:00 to 20:14: `studio`, `remote-ide`, `warehouse`, `catalog`, `cicd`,
+  `deploytargets`, `orchestration`, `devenv`, `egress`, `vpn`, `datalake` and `sandbox-orchestration`, every
+  check as expected with everything down. `OR-2`'s five fails are `EXC-25`'s; `DE-2` fails while
+  `sandbox/egress/` is down; each script's failed calls are the persona profiles', whose session holds no
+  sign-in (*"Token for awsds-devenv does not exist"*).
+- **[Claude] The commands**: the 134 distinct `aws <service> <command>` that `promotion.md` and the stage
+  files of 5b, 6d, 6e, 6h, 17, 19, 20 and 21 name, each run with `--generate-cli-skeleton` under bash, none
+  answering *"Found invalid choice"* in `aws-cli/2.37.12`; `aws datazone not-a-real-command`, the negative
+  control, did. A first run under zsh read every command invalid, `aws $c` passing one word (Lesson 84).
+- **[Claude] The records**: `promotion.md` §N.12 and §N.9.3; the block's steps 7 and 9; the `Status` row;
+  the waiting list; `SUP-008`.
+- **[Claude] The push** of this preparation's branch, `claude/plano-estagios-execucao-5f64d8-n9-day1`, was
+  refused by the app's classifier, *Sensitive Information Leakage*, at its first `git push` to the public
+  repository. Every identifier the diff adds is already on `main`, and no account id or e-mail address is
+  in it (the pre-commit hook). The push waits on the user's word naming it.

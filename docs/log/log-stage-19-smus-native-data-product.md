@@ -4419,3 +4419,21 @@ Terraform registry's and GitHub's public APIs read at about 17:04 and 17:05, no 
 - **[Claude] Decision 27 (d)'s provider**: the registry's newest `hashicorp/aws` is 6.73.0, published
   2026-11-11; `go.mod` at `v6.73.0` and on `main` both name `service/cloudwatchlogs` v1.90.2, below the
   v1.91.0 that `upstream-releases.md` watches for. `EXC-25` stands.
+
+## 2026-11-20 — Release G's pre-flight with nothing up
+
+*Claude, in the session that applied 6d decision 6 and Stage 17 decision 7 the same day, on the user's request to prepare every pending sitting before raising anything and to minimise the plan's running time (*"otimize o plano e faça todas as preparações necessárias para que o tempo necessário para executar o plano seja minimizado"*). As the infrastructure user with `InfrastructureAccess`, read-only, through `awsds-infra-staging` (account
+Staging), `awsds-infra-prod` (account Production) and `awsds-infra-sandbox-1` (account Sandbox Account 1).
+Times are UTC.*
+
+- **[Claude] `./scripts/deploy-application.py staging --check` and `production --check`**, with
+  `DOMAIN_ID` and `DOMAIN_REGION` set as the pipeline sets them: each exit 0, `deploy-staging` and
+  `deploy-production` with their roles, subnets, security group, key and shared prefix read, and *"the
+  caller is a member of the project"*.
+- **[Claude] `./scripts/check-gitlab-mirror.py --plan`**: exit 0, `GM-1` to `GM-8` passing, the copy at
+  `awsds/dev-env` `717d80b57541` of 2026-11-15, the Dockerfile's `NO_PROXY_LIST` and the account's list from
+  a plan of `sandbox/egress/` at 73 entries, sha256 `61f1e1646df12c14` on both sides.
+- **[Claude] Release G's gate, dry**: `pip-audit` 2.10.1 over each lock's runtime set (`uv export --frozen --no-dev`), an approximation of
+  the gates' job, which `awsds/ci-gates` holds: *"No known vulnerabilities found"* for `app-etl` (one
+  package), `app-ml`'s `code` (48) and `app-dbt` (78), at 20:36 UTC. The gate itself runs on the laptop
+  the day of each tag, before the tag (Lesson 77).

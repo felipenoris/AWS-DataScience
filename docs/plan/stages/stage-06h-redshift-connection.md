@@ -521,9 +521,9 @@ GROUPS=redshift`. It holds every row step 5 and step 6 still owe, not only the t
 values, read that day (the log): `sandbox/warehouse/` plans `No changes` with both switches off,
 `0 to add, 1 to change` (the namespace's tags) with `all_projects_tag_enabled=true`, `2 to add` with
 `data_transfer_role_enabled=true` alone and `2 to add, 1 to change` with both, so every plan of the slice
-names both switches (Lessons 51 and 69), and each count holds once Stage 19's access-role statement
-(PR #339) is applied before the sitting, until which each plan also shows the access role's portal policy
-updated in place; `SageMakerStudioProjectUserRolePolicy` is at v77 on both project
+names both switches (Lessons 51 and 69), and each count holds again since Stage 19's access-role
+statement (PR #339) was applied from `main` on 2026-11-20 at 15:57 UTC, re-planned `No changes`;
+`SageMakerStudioProjectUserRolePolicy` is at v77 on both project
 roles and its Redshift statements read as v75's did on 2026-10-18; the first database is `warehouse`, the
 schema `lab` holds `QUOTA 1 TB`, the role is `sbx_lab_rw`, and `test-experimentation` (`4gqfau9xuo6e4w`)
 is in no map. The rows need a JupyterLab space in each project, on `ml.t3.medium`.

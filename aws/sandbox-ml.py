@@ -8,15 +8,21 @@
 # without being created (HyperPod, Partner AI apps) with the quotas that bound the exercise,
 # the Generative AI objects and the roles behind them, the doors a session opens (the interface
 # endpoints, the S3 gateway's allow-list, the DNS Firewall list), and CloudTrail's record of
-# who created each object, and through which door.
+# who created each object, and through which door. Passes 9 and 10's applications in their
+# `dev` projects: app-ml's jobs, its leftover model, its candidate, the version it proposed and
+# its MLflow run (ML-10); app-genai's guardrail against the checkout's definition, its inference
+# profile, its two reports, the deny on its role and the account-level guardrail configuration
+# (ML-11).
 #
 #   needs:    a live SSO session, the only prerequisite:
 #
 #                 aws sso login --sso-session awsds
 #
-#             and an AWS CLI that knows `sagemaker list-mlflow-apps`, `s3vectors` and
-#             `bedrock get-foundation-model-availability`. A CLI that does not fails those
-#             calls into section 13, and the checks that needed them say so.
+#             and an AWS CLI that knows `sagemaker list-mlflow-apps`, `s3vectors`,
+#             `bedrock get-foundation-model-availability` and
+#             `bedrock list-enforced-guardrails-configuration` (2.37.12 knows all four). A CLI
+#             that does not fails those calls into section 15, and the checks that needed them
+#             say so.
 #   run:      ./aws/sandbox-ml.py                        # the Sandbox profile
 #             ./aws/sandbox-ml.py awsds-infra-sandbox-1  # the same, named
 #             python3 aws/sandbox-ml.py -                # CloudShell, ambient
@@ -24,7 +30,8 @@
 #             aws/output/sandbox-ml/ (untracked - see .gitignore)
 #   reads:    iam:ListRoles, GetRole, ListAttachedRolePolicies, GetPolicy, GetPolicyVersion;
 #             kms:ListAliases; cloudformation:DescribeStacks; sagemaker:ListMlflowApps,
-#             DescribeMlflowApp, ListTrainingJobs, DescribeTrainingJob, ListModelPackageGroups,
+#             DescribeMlflowApp, ListTrainingJobs, DescribeTrainingJob, ListProcessingJobs,
+#             DescribeProcessingJob, ListModelPackageGroups,
 #             DescribeModelPackageGroup, ListModelPackages, DescribeModelPackage, ListEndpoints,
 #             DescribeEndpoint, DescribeEndpointConfig,
 #             ListEndpointConfigs, ListModels, DescribeModel, ListTransformJobs,
@@ -32,13 +39,16 @@
 #             ListPipelineExecutionSteps, ListClusters, ListPartnerApps, DescribeImageVersion,
 #             ListTags; servicequotas:ListServiceQuotas, ListAWSDefaultServiceQuotas,
 #             ListRequestedServiceQuotaChangeHistory;
-#             bedrock:ListGuardrails, ListEvaluationJobs, GetFoundationModelAvailability,
-#             ListTagsForResource; bedrock-agent (bedrock:) ListKnowledgeBases, GetKnowledgeBase,
+#             bedrock:ListGuardrails, GetGuardrail, ListEvaluationJobs,
+#             GetFoundationModelAvailability, ListTagsForResource, ListInferenceProfiles,
+#             ListEnforcedGuardrailsConfiguration; bedrock-agent (bedrock:) ListKnowledgeBases,
+#             GetKnowledgeBase,
 #             ListDataSources, ListAgents, ListPrompts, ListFlows; aoss:ListCollections;
 #             s3vectors:ListVectorBuckets; lambda:ListFunctions; ec2:DescribeSubnets,
 #             DescribeSecurityGroups, DescribeVpcEndpoints; route53resolver:
 #             ListFirewallDomainLists, ListFirewallDomains; cloudwatch:ListMetrics,
-#             GetMetricStatistics; s3api:HeadObject; cloudtrail:LookupEvents;
+#             GetMetricStatistics; s3api:HeadObject, ListObjectsV2; s3:GetObject (`aws s3 cp`
+#             to stdout, or to a temporary folder for an archive's hash); cloudtrail:LookupEvents;
 #             sts:GetCallerIdentity. It never creates, updates or deletes anything.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
@@ -52,7 +62,8 @@
 #
 # The project is read from the project roles' tags (AmazonDataZoneProject, ...Domain, KmsKeyId,
 # DomainBucketName), never from this file, and an object belongs to the project whose role it
-# runs as or whose tag it carries.
+# runs as or whose tag it carries. ML-10 and ML-11 name their two projects by id (APP_ML_DEV,
+# APP_GENAI_DEV), since a role's tags carry a project's id and not its name.
 #
 # What it cannot see, since an empty listing and a missing account look alike:
 #   - The space: the SDK's configuration files and the interpreters' versions (Stage 17 step
@@ -61,16 +72,21 @@
 #   - The MLflow data plane's calls and InvokeEndpoint write no management event: the
 #     endpoints' BytesProcessed and the Invocations metric (sections 6 and 10) are the
 #     readings, and a metric with no traffic in the window is absent, not zero.
+#   - An MLflow run's record: ML-10 reads the run app-ml's track task logged through the
+#     evaluation artifact it leaves in the app's artifact store.
 #   - The quality of a model: the validation AUC is reported, never checked.
 #   - "Not built yet" is a note, never a fail.
 
 from __future__ import annotations
 
 import fnmatch
+import hashlib
 import json
 import re
 import sys
+import tempfile
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from awslib import bedrockscope, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
@@ -159,6 +175,53 @@ CONTROL_TOWER_FUNCTION_PREFIX = "aws-controltower-"
 EMBEDDINGS_MODEL = "amazon.titan-embed-text-v2:0"
 IDLE_FREE_STORES = ("S3_VECTORS",)
 
+# Passes 9 and 10's `dev` projects (steps 9.6 and 10.4), by id: a project role's tags carry its
+# project's id and not its name, so the names are written here, as catalog.py writes app-etl-dev's.
+APP_ML_DEV = "5rzplmk81vma34"  # app-ml-dev
+APP_GENAI_DEV = "b8fz4ovppjijv4"  # app-genai-dev
+
+# app-ml's names in its `dev` project (examples/app-ml/manifest.yaml and workflows/): each job kind
+# with the name prefix its workflow gives it and the workflows that create it; the model resolve
+# creates, app-ml-score-<project id>; the candidate publish writes under shared/; the group register
+# proposes in, and how a version's description carries the archive's hash (registry.py).
+APP_ML_JOBS = (
+    ("processing", "app-ml-prepare-", "app-ml-train and app-ml-score"),
+    ("training", "app-ml-train-", "app-ml-train"),
+    ("transform", "app-ml-score-", "app-ml-score"),
+)
+APP_ML_MODEL_PREFIX = "app-ml-score-"
+APP_ML_CANDIDATE = "app-ml/models/latest/"
+APP_ML_GROUP = "app-ml-dev"
+APP_ML_HASH_MARK = "sha256:"
+# A model resolve created and cleanup has not deleted: younger, a run in progress or one that
+# failed; older, a failed run no run has followed (9.9).
+MODEL_MAX_AGE = timedelta(days=1)
+# No gate reads a `dev` version's status, and 9.6 approves one by hand.
+DEV_VERSION_STATUSES = ("PendingManualApproval", "Approved")
+# track logs the evaluation as the run's artifact evaluation.json, which MLflow keeps under
+# <artifact store>/<experiment id>/<run id>/artifacts/: a layout unmeasured on an MLflow App here.
+MLFLOW_EVALUATION_SUFFIX = "/artifacts/evaluation.json"
+MLFLOW_RUNS_READ = 5  # the newest evaluation artifacts read
+
+# app-genai's names in its `dev` project (examples/app-genai/): the guardrail its guardrail task
+# keeps, app-genai-<project id>, and the two tags it writes after a publish; the definition in the
+# checkout; the model of decision 23 (a); the reports under shared/ with the workflow writing each;
+# the policy sandbox/bedrock attaches to the role, the statement application_guardrail_required adds
+# to it (10.4 step 4), and the guardrail account_guardrail_enabled creates (10.4 step 6).
+GENAI_GUARDRAIL_PREFIX = "app-genai-"
+GENAI_HASH_TAG = "awsds:definition-sha256"
+GENAI_VERSION_TAG = "awsds:definition-version"
+GENAI_DEFINITION = "examples/app-genai/guardrail/definition.json"
+GENAI_MODEL = "amazon.nova-lite-v1:0"
+GENAI_OUTBOX = "app-genai/outbox/"
+GENAI_REPORTS = (
+    ("triage-report.json", "app-genai-triage"),
+    ("probe-report.json", "app-genai-probe"),
+)
+GENAI_POLICY = "awsds-sandbox-bedrock-application"
+GENAI_DENY_SID = "DenyAnInvocationWithNoPublishedGuardrailOfTheAccount"
+ACCOUNT_GUARDRAIL = "awsds-sandbox-account-guardrail"
+
 SAGEMAKER_EVENTS = (
     "CreateMlflowApp",
     "CreateTrainingJob",
@@ -214,7 +277,7 @@ METRIC_DAYS = 14  # list-metrics returns only the metrics with data in the last 
 ABSENT = (
     "NoSuchEntity|ResourceNotFound|Validation(Exception|Error).*does not exist|NoSuchKey|Not Found"
 )
-UNREAD = "(unread)"  # a value whose call failed: the call is in section 13
+UNREAD = "(unread)"  # a value whose call failed: the call is in section 15
 
 # A training job's terminal and transient states, as DescribeTrainingJob spells them; transform
 # jobs use the same words.
@@ -406,7 +469,7 @@ def quota_text(value) -> str:
 def request_text(requests: dict | None, code: str) -> str:
     """A quota's newest increase request as one phrase; None means the history went unread."""
     if requests is None:
-        return "its increase requests unread (section 13)"
+        return "its increase requests unread (section 15)"
     request = requests.get(code)
     if not request:
         return "no increase request"
@@ -447,6 +510,92 @@ def endpoint_summary(endpoint: dict, now: datetime) -> str:
     )
 
 
+def job_view(kind: str, job: dict) -> dict:
+    """What ML-10 judges of one processing, training or transform job, in one shape. A transform
+    job carries no network settings: they are its model's, which app-ml-score's cleanup deletes."""
+    noun = kind.capitalize()
+    vpc = isolation = ice = None
+    if kind == "processing":
+        net = job.get("NetworkConfig") or {}
+        cluster = (job.get("ProcessingResources") or {}).get("ClusterConfig") or {}
+        vpc = net.get("VpcConfig") or {}
+        isolation = net.get("EnableNetworkIsolation")
+        ice = net.get("EnableInterContainerTrafficEncryption")
+        volume_key, itype = cluster.get("VolumeKmsKeyId"), cluster.get("InstanceType", "-")
+        output_key = (job.get("ProcessingOutputConfig") or {}).get("KmsKeyId")
+    elif kind == "training":
+        res = job.get("ResourceConfig") or {}
+        vpc = job.get("VpcConfig") or {}
+        isolation = job.get("EnableNetworkIsolation")
+        ice = job.get("EnableInterContainerTrafficEncryption")
+        volume_key, itype = res.get("VolumeKmsKeyId"), res.get("InstanceType", "-")
+        output_key = (job.get("OutputDataConfig") or {}).get("KmsKeyId")
+    else:
+        res = job.get("TransformResources") or {}
+        volume_key, itype = res.get("VolumeKmsKeyId"), res.get("InstanceType", "-")
+        output_key = (job.get("TransformOutput") or {}).get("KmsKeyId")
+    return {
+        "name": job.get(f"{noun}JobName", "-"),
+        "status": job.get(f"{noun}JobStatus", "-"),
+        "failure": job.get("FailureReason"),
+        "vpc": vpc,
+        "isolation": isolation,
+        "ice": ice,
+        "volume_key": volume_key,
+        "output_key": output_key,
+        "itype": itype,
+    }
+
+
+def definition_hash(definition: dict) -> str:
+    """The SHA-256 app-genai's guardrail task publishes a version under: the definition's JSON with
+    sorted keys and no spaces, as UTF-8 (examples/app-genai/code/app_genai_tasks/guardrail.py)."""
+    text = json.dumps(definition, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def age_of(value, now: datetime) -> timedelta | None:
+    """How long before ``now`` a timestamp the CLI printed lies, or None when it does not parse."""
+    try:
+        return now - datetime.fromisoformat(str(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def hours_text(age: timedelta) -> str:
+    hours = age.total_seconds() / 3600
+    return f"{hours:.0f} h" if hours < 48 else f"{hours / 24:.1f} days"
+
+
+def principal_name(arn: str | None) -> str:
+    """The role an assumed-role or role ARN names, without its session, or '-'."""
+    arn = arn or ""
+    if ":assumed-role/" in arn:
+        return arn.split(":assumed-role/", 1)[1].split("/", 1)[0]
+    return last_segment(arn) if arn else "-"
+
+
+def cell(value) -> str:
+    """A table cell: tabulate drops an empty field, so None and '' print as '-'."""
+    return "-" if value is None or value == "" else str(value)
+
+
+def short_hash(value) -> str:
+    """A SHA-256 as a check row prints it: its first 12 hex digits, or '-'."""
+    return str(value)[:12] if value else "-"
+
+
+def flat(text) -> str:
+    """Free text on one line: a check row is tab-separated, and a reason can hold either."""
+    return " ".join(str(text).split())
+
+
+def arn_region(arn: str | None) -> str:
+    """The Region field of an ARN, or '-'."""
+    parts = (arn or "").split(":")
+    return parts[3] if len(parts) > 3 and parts[3] else "-"
+
+
 def main(argv: list) -> int:
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
@@ -474,6 +623,8 @@ def main(argv: list) -> int:
             return None
         return json.loads(res.stdout or "{}")
 
+    policy_dates = {}  # policy ARN -> its default version's CreateDate
+
     def policy_document(arn: str) -> tuple:
         """(default version id, document) of a managed policy, or ('-', None)."""
         got = run_json("iam", "get-policy", "--policy-arn", arn) or {}
@@ -483,12 +634,39 @@ def main(argv: list) -> int:
         doc = (
             run_json("iam", "get-policy-version", "--policy-arn", arn, "--version-id", version)
             or {}
-        )
-        return version, (doc.get("PolicyVersion") or {}).get("Document")
+        ).get("PolicyVersion") or {}
+        policy_dates[arn] = doc.get("CreateDate")
+        return version, doc.get("Document")
 
     def tags_of(arn: str) -> dict:
         got = run_json("sagemaker", "list-tags", "--resource-arn", arn) or {}
         return {t["Key"]: t["Value"] for t in got.get("Tags", [])}
+
+    def s3_objects(bucket: str, prefix: str) -> list | None:
+        """Every object under a prefix but a folder marker, or None when the listing failed."""
+        got = run_json("s3api", "list-objects-v2", "--bucket", bucket, "--prefix", prefix)
+        if got is None:
+            return None
+        return [o for o in got.get("Contents") or [] if not o.get("Key", "").endswith("/")]
+
+    def s3_text(bucket: str, key: str) -> str | None:
+        """An object's text through `aws s3 cp` to stdout, or None when the read failed."""
+        res = cli.run("s3", "cp", f"s3://{bucket}/{key}", "-")
+        return res.stdout if res.ok else None
+
+    def s3_sha256(bucket: str, key: str) -> str | None:
+        """The SHA-256 of an object's bytes, copied into a temporary folder the run removes, or
+        None when the read failed."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "object"
+            res = cli.run("s3", "cp", f"s3://{bucket}/{key}", str(path), "--only-show-errors")
+            if not res.ok:
+                return None
+            digest = hashlib.sha256()
+            with path.open("rb") as stream:
+                for block in iter(lambda: stream.read(1 << 20), b""):
+                    digest.update(block)
+            return digest.hexdigest()
 
     note(f"measuring {cli.label} ...")
     now = datetime.now(timezone.utc)
@@ -636,6 +814,35 @@ def main(argv: list) -> int:
             or {}
         )
         return got.get(key, [])
+
+    def named_jobs(kind: str, prefix: str) -> list:
+        """The newest jobs of one kind whose name holds ``prefix``, each described and tagged.
+        --max-items and not --max-results: the service filters a page after reading it, so one
+        page can be empty with more to read (list-processing-jobs, measured 2026-11-20)."""
+        noun = kind.capitalize()
+        got = (
+            run_json(
+                "sagemaker",
+                f"list-{kind}-jobs",
+                "--name-contains",
+                prefix,
+                "--sort-by",
+                "CreationTime",
+                "--sort-order",
+                "Descending",
+                "--max-items",
+                str(JOBS_MAX),
+            )
+            or {}
+        )
+        out = []
+        for summary in got.get(f"{noun}JobSummaries", []):
+            name = summary.get(f"{noun}JobName", "")
+            desc = run_json("sagemaker", f"describe-{kind}-job", f"--{kind}-job-name", name)
+            desc = desc or dict(summary)
+            desc["_tags"] = tags_of(desc.get(f"{noun}JobArn", summary.get(f"{noun}JobArn", "")))
+            out.append(desc)
+        return out
 
     jobs = []
     for summary in recent("training-job", "TrainingJobSummaries"):
@@ -839,6 +1046,8 @@ def main(argv: list) -> int:
     collection_listing = cli.pages("opensearchserverless", "list-collections", token="nextToken")
     collections = collection_listing.items("collectionSummaries")
     vector_buckets = (run_json("s3vectors", "list-vector-buckets") or {}).get("vectorBuckets", [])
+    # Without an identifier, ListGuardrails lists the DRAFT of every guardrail of the account.
+    guardrail_summaries = (run_json("bedrock", "list-guardrails") or {}).get("guardrails", [])
     genai = {  # kind -> [(name, arn or id)]
         "agents": [
             (a.get("agentName", "-"), a.get("agentId", "-"))
@@ -852,10 +1061,7 @@ def main(argv: list) -> int:
             (x.get("name", "-"), x.get("arn", "-"))
             for x in (run_json("bedrock-agent", "list-flows") or {}).get("flowSummaries", [])
         ],
-        "guardrails": [
-            (x.get("name", "-"), x.get("arn", "-"))
-            for x in (run_json("bedrock", "list-guardrails") or {}).get("guardrails", [])
-        ],
+        "guardrails": [(x.get("name", "-"), x.get("arn", "-")) for x in guardrail_summaries],
         "evaluation jobs": [
             (x.get("jobName", "-"), x.get("jobArn", "-"))
             for x in (run_json("bedrock", "list-evaluation-jobs") or {}).get("jobSummaries", [])
@@ -864,6 +1070,7 @@ def main(argv: list) -> int:
     # The project tag of each object whose ARN a listing gives. bedrock-agent answers a map,
     # bedrock a list of {key, value} (botocore 1.43.114).
     genai_tags = {}  # arn -> project tag value
+    genai_tag_sets = {}  # arn -> every tag, None when unread
     tagged = [("bedrock-agent", arn) for kind in ("prompts", "flows") for _n, arn in genai[kind]]
     tagged += [("bedrock", arn) for _n, arn in genai["guardrails"]]
     tagged += [("bedrock-agent", kb.get("knowledgeBaseArn", "")) for kb in kbs]
@@ -873,11 +1080,13 @@ def main(argv: list) -> int:
         got = run_json(service, "list-tags-for-resource", "--resource-arn", arn)
         if got is None:
             genai_tags[arn] = UNREAD
+            genai_tag_sets[arn] = None
             continue
         tags = got.get("tags") or {}
         if isinstance(tags, list):
             tags = {t.get("key"): t.get("value") for t in tags}
         genai_tags[arn] = tags.get(PROJECT_TAG, "")
+        genai_tag_sets[arn] = tags
     availability = (
         run_json("bedrock", "get-foundation-model-availability", "--model-id", EMBEDDINGS_MODEL)
         or {}
@@ -885,6 +1094,168 @@ def main(argv: list) -> int:
     scp_models, scp_app_profiles, scp_why = bedrockscope.scp_admitted(
         ctx.repo_root / bedrockscope.SCP_PATH
     )
+
+    # ------------------------------------------------------------------ app-ml in app-ml-dev
+    ml_dev = by_project.get(APP_ML_DEV)
+    app_ml_jobs = []  # (kind, job), the newest first within a kind
+    if ml_dev:
+        for kind, prefix, _workflows in APP_ML_JOBS:
+            for j in named_jobs(kind, prefix):
+                if kind == "transform":
+                    out = (j.get("TransformOutput") or {}).get("S3OutputPath", "")
+                    mine = (project_of_uri(out) or {}).get("project") == APP_ML_DEV or (
+                        j.get("ModelName") == f"{APP_ML_MODEL_PREFIX}{APP_ML_DEV}"
+                    )
+                else:
+                    mine = j.get("RoleArn") == ml_dev["arn"]
+                if mine:
+                    app_ml_jobs.append((kind, j))
+    # The candidate: its objects by name under the prefix (None when unread), model.json's text
+    # and document, and the archive's SHA-256 as read.
+    ml_objects, ml_model_text, ml_model, ml_digest = None, None, None, None
+    if ml_dev and ml_dev["bucket"]:
+        base = f"{ml_dev['shared']}{APP_ML_CANDIDATE}"
+        listed = s3_objects(ml_dev["bucket"], base)
+        if listed is not None:
+            ml_objects = {o["Key"][len(base) :]: o for o in listed}
+        if ml_objects and "model.json" in ml_objects:
+            ml_model_text = s3_text(ml_dev["bucket"], f"{base}model.json")
+            try:
+                ml_model = json.loads(ml_model_text) if ml_model_text is not None else None
+            except json.JSONDecodeError:
+                ml_model = None
+            if not isinstance(ml_model, dict):
+                ml_model = None
+        if ml_model and "model.tar.gz" in ml_objects:
+            ml_digest = s3_sha256(ml_dev["bucket"], f"{base}model.tar.gz")
+    ml_hash = str((ml_model or {}).get("sha256") or "")
+    ml_group, ml_group_tags, ml_versions = None, {}, []
+    if APP_ML_GROUP in all_groups:
+        ml_group = run_json(
+            "sagemaker",
+            "describe-model-package-group",
+            "--model-package-group-name",
+            APP_ML_GROUP,
+            tolerate=ABSENT,
+        )
+    if ml_group:
+        ml_group_tags = tags_of(ml_group.get("ModelPackageGroupArn", ""))
+        ml_versions = (
+            run_json(
+                "sagemaker",
+                "list-model-packages",
+                "--model-package-group-name",
+                APP_ML_GROUP,
+                "--sort-by",
+                "CreationTime",
+                "--sort-order",
+                "Descending",
+            )
+            or {}
+        ).get("ModelPackageSummaryList", [])
+    ml_carrying = []  # each version whose description carries the candidate's hash, described
+    if ml_hash:
+        for v in ml_versions:
+            if f"{APP_ML_HASH_MARK}{ml_hash}" in (v.get("ModelPackageDescription") or ""):
+                arn = v.get("ModelPackageArn", "")
+                desc = run_json("sagemaker", "describe-model-package", "--model-package-name", arn)
+                ml_carrying.append(desc or v)
+    # The project's MLflow App, and the newest runs' evaluation artifacts in its store as
+    # (key under the store, LastModified, the training job the evaluation names); None when unread.
+    ml_apps = [
+        a
+        for a in apps
+        if (project_of_uri(a.get("ArtifactStoreUri") or "") or {}).get("project") == APP_ML_DEV
+        or a["_tags"].get(PROJECT_TAG) == APP_ML_DEV
+    ]
+    ml_runs = None
+    store_uri = (ml_apps[0].get("ArtifactStoreUri") or "") if ml_apps else ""
+    store = re.match(r"^s3://([^/]+)/(.*)$", store_uri)
+    if store:
+        store_bucket, store_prefix = store.group(1), store.group(2).rstrip("/") + "/"
+        listed = s3_objects(store_bucket, store_prefix)
+        if listed is not None:
+            found = sorted(
+                (o for o in listed if o.get("Key", "").endswith(MLFLOW_EVALUATION_SUFFIX)),
+                key=lambda o: str(o.get("LastModified", "")),
+                reverse=True,
+            )
+            ml_runs = []
+            for o in found[:MLFLOW_RUNS_READ]:
+                text = s3_text(store_bucket, o["Key"])
+                try:
+                    evaluation = json.loads(text) if text else {}
+                    job = (evaluation.get("awsds") or {}).get("training_job")
+                except (json.JSONDecodeError, AttributeError):
+                    job = None
+                ml_runs.append((o["Key"][len(store_prefix) :], o.get("LastModified", "-"), job))
+
+    # ------------------------------------------------------------------ app-genai in app-genai-dev
+    genai_dev = by_project.get(APP_GENAI_DEV)
+    gr_name = f"{GENAI_GUARDRAIL_PREFIX}{APP_GENAI_DEV}"
+    gr_found = [g for g in guardrail_summaries if g.get("name") == gr_name]
+    # With an identifier, ListGuardrails lists that guardrail's versions, the DRAFT among them.
+    gr_versions, gr_newest, gr_newest_got = [], None, None
+    if len(gr_found) == 1:
+        gid = gr_found[0].get("id", "")
+        gr_versions = (
+            run_json("bedrock", "list-guardrails", "--guardrail-identifier", gid) or {}
+        ).get("guardrails", [])
+        numbered = [v for v in gr_versions if str(v.get("version", "")).isdigit()]
+        if numbered:
+            gr_newest = max(numbered, key=lambda v: int(v["version"]))
+            gr_newest_got = run_json(
+                "bedrock",
+                "get-guardrail",
+                "--guardrail-identifier",
+                gid,
+                "--guardrail-version",
+                str(gr_newest["version"]),
+            )
+    try:
+        definition = json.loads((ctx.repo_root / GENAI_DEFINITION).read_text(encoding="utf-8"))
+        checkout_hash = definition_hash(definition)
+    except (OSError, json.JSONDecodeError):
+        checkout_hash = None
+    genai_profiles = []  # the application inference profiles tagged with the project
+    for prof in (
+        run_json("bedrock", "list-inference-profiles", "--type-equals", "APPLICATION") or {}
+    ).get("inferenceProfileSummaries", []):
+        got = run_json(
+            "bedrock",
+            "list-tags-for-resource",
+            "--resource-arn",
+            prof.get("inferenceProfileArn", ""),
+        )
+        tags = {t.get("key"): t.get("value") for t in (got or {}).get("tags") or []}
+        if tags.get(PROJECT_TAG) == APP_GENAI_DEV:
+            genai_profiles.append(prof)
+    genai_reports = None  # report name -> (LastModified, text or None); None when unread
+    if genai_dev and genai_dev["bucket"]:
+        base = f"{genai_dev['shared']}{GENAI_OUTBOX}"
+        listed = s3_objects(genai_dev["bucket"], base)
+        if listed is not None:
+            names = {name for name, _workflow in GENAI_REPORTS}
+            genai_reports = {
+                o["Key"][len(base) :]: (
+                    o.get("LastModified", "-"),
+                    s3_text(genai_dev["bucket"], o["Key"]),
+                )
+                for o in listed
+                if o["Key"][len(base) :] in names
+            }
+    # sandbox/bedrock's policy on the role: (ARN, version, its CreateDate, whether it carries the
+    # deny, None when its document went unread); None when the role does not carry it.
+    genai_policy = None
+    if genai_dev:
+        pol = next((a for a in genai_dev["attached"] if a.get("PolicyName") == GENAI_POLICY), None)
+        if pol:
+            arn = pol.get("PolicyArn", "")
+            version, doc = policies.get(arn, ("-", None))
+            deny = None if doc is None else GENAI_DENY_SID in statements_by_sid(doc)
+            genai_policy = (arn, version, policy_dates.get(arn), deny)
+    enforced = run_json("bedrock", "list-enforced-guardrails-configuration")
+    enforced_configs = None if enforced is None else enforced.get("guardrailsConfig") or []
 
     # ------------------------------------------------------------------ network objects
     private = {}  # subnet id -> (name, AZ id)
@@ -902,6 +1273,8 @@ def main(argv: list) -> int:
         sg_ids.update((j.get("VpcConfig") or {}).get("SecurityGroupIds", []))
     for m in models:
         sg_ids.update((m.get("VpcConfig") or {}).get("SecurityGroupIds", []))
+    for kind, j in app_ml_jobs:
+        sg_ids.update((job_view(kind, j)["vpc"] or {}).get("SecurityGroupIds", []))
     sg_project = {}
     if sg_ids:
         got = run_json("ec2", "describe-security-groups", "--group-ids", *sorted(sg_ids)) or {}
@@ -1395,7 +1768,7 @@ def main(argv: list) -> int:
     for url, kms in model_data.items():
         p = project_of_uri(url)
         if kms == UNREAD:
-            checks.note("ML-4", url, "head-object failed - see section 13.")
+            checks.note("ML-4", url, "head-object failed - see section 15.")
         elif p is None:
             checks.note("ML-4", url, f"{kms} - under no project's prefix.")
         elif is_project_key(kms, p):
@@ -1647,7 +2020,7 @@ def main(argv: list) -> int:
         checks.note(
             "ML-8",
             "OpenSearch Serverless collections",
-            f"{len(collections)} read; the listing was not read to its last page (section 13), "
+            f"{len(collections)} read; the listing was not read to its last page (section 15), "
             "and a collection not read is a bill this report does not show.",
         )
     checks.note(
@@ -1796,6 +2169,477 @@ def main(argv: list) -> int:
     else:
         checks.note("ML-9", "DE-5", "aws/output/devenv.txt absent - run ./aws/devenv.py first.")
 
+    # ML-10: app-ml in app-ml-dev (step 9.9): its jobs against the settings and the tag, the model
+    # app-ml-score leaves, the candidate, the version app-ml-register proposed and the MLflow run
+    # track logged. A failed outcome fails on the newest job of its task only, as in ML-3.
+    leftovers = [m for m in models if m.get("ModelName", "").startswith(APP_ML_MODEL_PREFIX)]
+    for m in leftovers:
+        age = age_of(m.get("CreationTime"), now)
+        what = f"model {m.get('ModelName', '-')}"
+        if age is None:
+            checks.note("ML-10", what, f"created {m.get('CreationTime', '-')}, of unread age.")
+        elif age > MODEL_MAX_AGE:
+            checks.fail(
+                "ML-10",
+                what,
+                f"{hours_text(age)} old: a failed run's model no run has followed - the next "
+                "app-ml-score run's resolve deletes it.",
+            )
+        else:
+            checks.note(
+                "ML-10",
+                what,
+                f"{hours_text(age)} old: a run in progress, or a failed one whose model the next "
+                "run's resolve deletes.",
+            )
+    if not leftovers:
+        checks.ok("ML-10", f"models {APP_ML_MODEL_PREFIX}*", "none")
+    if ml_dev is None:
+        checks.note(
+            "ML-10",
+            f"app-ml-dev {APP_ML_DEV}",
+            f"no project role tagged {PROJECT_TAG} {APP_ML_DEV} - 9.6 runs the application there.",
+        )
+    else:
+        newest = {}  # a job's task, its name without the timestamp -> the newest job's name
+        for kind, j in app_ml_jobs:
+            name = job_view(kind, j)["name"]
+            newest.setdefault(name.rsplit("-", 1)[0], name)
+        if not app_ml_jobs:
+            checks.note(
+                "ML-10", "app-ml jobs", "none - app-ml-train and app-ml-score create them (9.6)."
+            )
+        for kind, j in app_ml_jobs:
+            v = job_view(kind, j)
+            problems = []
+            if kind != "transform":
+                vpc = v["vpc"] or {}
+                bad = [s for s in vpc.get("Subnets", []) if s not in private]
+                if not vpc.get("Subnets"):
+                    problems.append("no VpcConfig")
+                elif bad:
+                    problems.append(f"subnets outside the private tier: {', '.join(bad)}")
+                if any(sg_project.get(g) != APP_ML_DEV for g in vpc.get("SecurityGroupIds", [])):
+                    problems.append("a security group not tagged with the project")
+                if v["isolation"] is not True:
+                    problems.append("network isolation off")
+                if v["ice"] is not True:
+                    problems.append("inter-container encryption off")
+            if ceiling is not None and v["itype"] not in ceiling:
+                problems.append(f"{v['itype']} outside the ceiling")
+            for which, key in (("volume", v["volume_key"]), ("output", v["output_key"])):
+                if not key:
+                    problems.append(f"no {which} key")
+                elif not is_project_key(key, ml_dev):
+                    problems.append(f"{which} key {last_segment(key)} not the project's")
+            if j["_tags"].get(PROJECT_TAG) != APP_ML_DEV:
+                problems.append(f"no {PROJECT_TAG} tag naming app-ml-dev")
+            status = v["status"]
+            summary = f"{kind}, {status}, {v['itype']}"
+            failure = f"Failed: {flat(v['failure'] or '-')}" if status == "Failed" else None
+            if failure and newest.get(v["name"].rsplit("-", 1)[0]) == v["name"]:
+                problems.append(failure)
+            if problems:
+                checks.fail("ML-10", v["name"], "; ".join(problems) + f" ({summary}).")
+            elif failure or status in RUNNING or status == "Stopped":
+                checks.note("ML-10", v["name"], summary + (f"; {failure}" if failure else ""))
+            elif kind == "transform":
+                checks.ok(
+                    "ML-10",
+                    v["name"],
+                    f"{summary}; the ceiling, the project key and tag (its network settings are "
+                    "its model's)",
+                )
+            else:
+                checks.ok(
+                    "ML-10",
+                    v["name"],
+                    f"{summary}; the four settings, the ceiling, the project key and tag",
+                )
+        what = f"shared/{APP_ML_CANDIDATE}"
+        if not ml_dev["bucket"]:
+            checks.note("ML-10", what, "the role carries no DomainBucketName - nothing to list.")
+        elif ml_objects is None:
+            checks.note("ML-10", what, "the listing failed - see section 15.")
+        elif "model.json" not in ml_objects:
+            checks.note(
+                "ML-10",
+                what,
+                f"no model.json (holds {', '.join(sorted(ml_objects)) or 'nothing'}) - "
+                "app-ml-train's publish writes the candidate (9.6).",
+            )
+        elif ml_model_text is None:
+            checks.note("ML-10", what, "model.json unread - see section 15.")
+        elif ml_model is None:
+            checks.fail(
+                "ML-10", what, "model.json is no JSON object: register and resolve refuse it."
+            )
+        elif "model.tar.gz" not in ml_objects:
+            checks.fail("ML-10", what, "model.json without model.tar.gz beside it.")
+        elif ml_digest is None:
+            checks.note("ML-10", what, "model.tar.gz unread - see section 15.")
+        else:
+            size = ml_objects["model.tar.gz"].get("Size")
+            problems = []
+            if ml_digest != ml_hash:
+                problems.append(
+                    f"the archive hashes to {short_hash(ml_digest)}, model.json names "
+                    f"{short_hash(ml_hash)}"
+                )
+            if str(size) != str(ml_model.get("size_bytes")):
+                problems.append(
+                    f"the archive holds {size} bytes, model.json names "
+                    f"{ml_model.get('size_bytes', '-')}"
+                )
+            detail = (
+                f"sha256 {short_hash(ml_digest)}, {size} bytes, trained by "
+                f"{ml_model.get('training_job', '-')}, AUC {ml_model.get('auc', '-')}, published "
+                f"{ml_model.get('published', '-')}"
+            )
+            if problems:
+                checks.fail("ML-10", what, "; ".join(problems) + f" ({detail}).")
+            else:
+                checks.ok("ML-10", what, f"the archive's hash is model.json's: {detail}")
+    what = f"model package group {APP_ML_GROUP}"
+    if APP_ML_GROUP not in all_groups:
+        checks.note("ML-10", what, "absent - created once from the space at 9.6.")
+    elif ml_group is None:
+        checks.note("ML-10", what, "unread - see section 15.")
+    else:
+        tag = ml_group_tags.get(PROJECT_TAG)
+        statuses = (
+            ", ".join(
+                f"v{v.get('ModelPackageVersion', '?')} {v.get('ModelApprovalStatus', '-')}"
+                for v in ml_versions
+            )
+            or "no version"
+        )
+        if tag == APP_ML_DEV:
+            checks.ok("ML-10", what, f"tagged app-ml-dev; {statuses}")
+        else:
+            checks.fail(
+                "ML-10",
+                what,
+                f"tag {tag or 'none'} - 9.6 creates it with app-ml-dev's tag alone; {statuses}.",
+            )
+        what = "the version app-ml-register proposed"
+        if not ml_hash:
+            checks.note(
+                "ML-10", what, "no candidate to read it against - 9.6's publish writes one."
+            )
+        elif not ml_carrying:
+            checks.note(
+                "ML-10",
+                what,
+                f"none carries sha256:{short_hash(ml_hash)} - app-ml-register proposes it (9.6).",
+            )
+        elif len(ml_carrying) > 1:
+            checks.fail(
+                "ML-10",
+                what,
+                f"{len(ml_carrying)} versions carry sha256:{short_hash(ml_hash)} ("
+                + ", ".join(f"v{p.get('ModelPackageVersion', '?')}" for p in ml_carrying)
+                + ") - register proposes one per archive.",
+            )
+        else:
+            pkg = ml_carrying[0]
+            meta = pkg.get("CustomerMetadataProperties") or {}
+            urls = [
+                c.get("ModelDataUrl", "")
+                for c in (pkg.get("InferenceSpecification") or {}).get("Containers", [])
+            ]
+            problems = []
+            if meta.get("sha256") != ml_hash:
+                problems.append(f"its metadata names sha256 {short_hash(meta.get('sha256'))}")
+            if meta.get("training_job") != ml_model.get("training_job"):
+                problems.append(
+                    f"its metadata names {meta.get('training_job') or 'no training job'}, "
+                    f"model.json {ml_model.get('training_job', '-')}"
+                )
+            if ml_dev is not None:
+                copy = (
+                    f"s3://{ml_dev['bucket']}/{ml_dev['shared']}app-ml/models/sha256/"
+                    f"{ml_hash}/model.tar.gz"
+                )
+                if urls != [copy]:
+                    problems.append(
+                        "its model data is not the copy under app-ml/models/sha256/: "
+                        + (", ".join(u.split(ml_dev["prefix"], 1)[-1] for u in urls) or "none")
+                    )
+            status = pkg.get("ModelApprovalStatus", "-")
+            by = principal_name(((pkg.get("CreatedBy") or {}).get("IamIdentity") or {}).get("Arn"))
+            detail = (
+                f"v{pkg.get('ModelPackageVersion', '?')} {status}, trained by "
+                f"{meta.get('training_job', '-')}, validation AUC "
+                f"{meta.get('validation_auc', '-')}, registered by {by}"
+            )
+            if problems:
+                checks.fail("ML-10", what, "; ".join(problems) + f" ({detail}).")
+            elif status not in DEV_VERSION_STATUSES:
+                checks.note("ML-10", what, f"{detail} - no gate reads a dev version's status.")
+            else:
+                checks.ok("ML-10", what, f"{detail}; its metadata and model data the candidate's")
+    if ml_dev is not None:
+        what = "the MLflow run app-ml-train's track logged"
+        job = (ml_model or {}).get("training_job")
+        if not ml_apps:
+            checks.note(
+                "ML-10",
+                what,
+                "app-ml-dev has no MLflow App - the user's create-environment before day 3 "
+                "creates it (9.6).",
+            )
+        elif ml_runs is None:
+            checks.note(
+                "ML-10",
+                what,
+                f"{ml_apps[0].get('Name', '-')}'s store unread: no s3:// store, or the listing "
+                "failed (section 15).",
+            )
+        elif not ml_runs:
+            checks.note(
+                "ML-10",
+                what,
+                f"no key ending {MLFLOW_EVALUATION_SUFFIX} in {ml_apps[0].get('Name', '-')}'s "
+                "store - track logs one per run (9.6); the layout is unmeasured.",
+            )
+        else:
+            match = next((r for r in ml_runs if job and r[2] == job), None)
+            if match:
+                checks.ok(
+                    "ML-10",
+                    what,
+                    f"run {match[0].split('/artifacts/', 1)[0]} at {match[1]} logged {job}'s "
+                    "evaluation, the candidate's",
+                )
+            else:
+                named = ", ".join(sorted({r[2] or "no training job" for r in ml_runs}))
+                tail = f", not the candidate's {job}." if job else "; no candidate to read them by."
+                checks.note("ML-10", what, f"the newest {len(ml_runs)} run(s) name {named}{tail}")
+
+    # ML-11: app-genai in app-genai-dev (step 10.9): its guardrail and the hash its newest version
+    # carries against the checkout's definition, its inference profile, its two reports, the deny
+    # on its role and the account-level guardrail configuration.
+    if genai_dev is None:
+        checks.note(
+            "ML-11",
+            f"app-genai-dev {APP_GENAI_DEV}",
+            f"no project role tagged {PROJECT_TAG} {APP_GENAI_DEV} - 10.4 runs the application "
+            "there.",
+        )
+    gr = gr_found[0] if len(gr_found) == 1 else None
+    gr_tags = genai_tag_sets.get(gr.get("arn", "")) if gr else None
+    what = f"guardrail {gr_name}"
+    if gr is None:
+        checks.note("ML-11", what, "absent - app-genai-triage's guardrail task creates it (10.4).")
+    else:
+        status = gr.get("status", "-")
+        tag = (gr_tags or {}).get(PROJECT_TAG)
+        if gr_tags is None:
+            checks.note("ML-11", what, f"{status}; its tags unread - see section 15.")
+        elif tag != APP_GENAI_DEV:
+            checks.fail(
+                "ML-11",
+                what,
+                f"{status}; tag {tag or 'none'} - the role keeps a guardrail of its own project "
+                "alone, by that tag.",
+            )
+        elif status == "FAILED":
+            checks.fail("ML-11", what, "FAILED - read GetGuardrail's failureRecommendations.")
+        elif status != "READY":
+            checks.note("ML-11", what, f"{status} - read again when it settles.")
+        else:
+            checks.ok("ML-11", what, f"READY, id {gr.get('id', '-')}, tagged app-genai-dev")
+        what = f"{gr_name}'s newest version"
+        if gr_newest is None:
+            checks.note(
+                "ML-11", what, "no published version - the guardrail task publishes one (10.4)."
+            )
+        else:
+            version = str(gr_newest["version"])
+            carried = (gr_newest_got or {}).get("description") or ""
+            tag_hash = (gr_tags or {}).get(GENAI_HASH_TAG)
+            tag_version = (gr_tags or {}).get(GENAI_VERSION_TAG)
+            # The tags are the task's record of a publish; GetGuardrail's description on a version
+            # is the hash only if the call returns the version's own (guardrail.py reads which).
+            if tag_hash and tag_version == version:
+                carries, source = tag_hash, "its tags"
+            elif re.fullmatch(r"[0-9a-f]{64}", carried):
+                carries, source = carried, "GetGuardrail's description"
+            else:
+                carries, source = None, None
+            told = (
+                f"; GetGuardrail's description {'is' if carried == carries else 'is not'} the hash"
+                if source == "its tags"
+                else ""
+            )
+            if carries is None:
+                checks.note(
+                    "ML-11",
+                    what,
+                    f"version {version} carries no hash: the tags name version "
+                    f"{tag_version or '-'} - the next run of the guardrail task publishes and "
+                    "tags one.",
+                )
+            elif checkout_hash is None:
+                checks.note(
+                    "ML-11",
+                    what,
+                    f"version {version} carries {short_hash(carries)}; {GENAI_DEFINITION} "
+                    "unreadable.",
+                )
+            elif carries == checkout_hash:
+                checks.ok(
+                    "ML-11",
+                    what,
+                    f"version {version} carries {short_hash(carries)}, the checkout's definition, "
+                    f"by {source}{told}",
+                )
+            else:
+                checks.note(
+                    "ML-11",
+                    what,
+                    f"version {version} carries {short_hash(carries)} by {source}, the checkout's "
+                    f"definition {short_hash(checkout_hash)} - a deploy of the checkout and a run "
+                    "of app-genai-triage publish it.",
+                )
+    if genai_dev is not None:
+        nova = [
+            prof
+            for prof in genai_profiles
+            if any(last_segment(m.get("modelArn")) == GENAI_MODEL for m in prof.get("models") or [])
+        ]
+        if not nova:
+            checks.note(
+                "ML-11",
+                f"inference profile for {GENAI_MODEL}",
+                "none tagged with app-genai-dev - the project's first use of the model creates it "
+                "(10.4).",
+            )
+        for prof in nova:
+            arns = {m.get("modelArn", "") for m in prof.get("models") or []}
+            pid = prof.get("inferenceProfileId") or last_segment(prof.get("inferenceProfileArn"))
+            what = f"inference profile {prof.get('inferenceProfileName') or pid}"
+            if arns == {f"arn:aws:bedrock:{context.REGION}::foundation-model/{GENAI_MODEL}"}:
+                checks.ok(
+                    "ML-11",
+                    what,
+                    f"{prof.get('status', '-')}, id {pid}; {GENAI_MODEL} in {context.REGION} "
+                    "alone (decision 23 (a))",
+                )
+            else:
+                listed = ", ".join(sorted(f"{last_segment(a)} in {arn_region(a)}" for a in arns))
+                checks.fail(
+                    "ML-11",
+                    what,
+                    f"{listed} - decision 23 (a) keeps {GENAI_MODEL} inside {context.REGION}.",
+                )
+    genai_report_rows = []  # (report, written, passed, detail) for section 13
+    for name, workflow in GENAI_REPORTS:
+        if genai_dev is None:
+            break
+        what = f"shared/{GENAI_OUTBOX}{name}"
+        if genai_reports is None:
+            checks.note(
+                "ML-11",
+                what,
+                "the outbox unread: no bucket on the role, or the listing failed (section 15).",
+            )
+            continue
+        if name not in genai_reports:
+            checks.note("ML-11", what, f"absent - {workflow}'s run writes it (10.4).")
+            continue
+        modified, text = genai_reports[name]
+        if text is None:
+            checks.note("ML-11", what, "unread - see section 15.")
+            continue
+        try:
+            report = json.loads(text)
+        except json.JSONDecodeError:
+            report = None
+        if not isinstance(report, dict):
+            checks.fail("ML-11", what, f"written {modified}, and no JSON object.")
+            continue
+        passed = report.get("passed")
+        failures = [flat(f) for f in report.get("failures") or []]
+        if "outcome" in report:
+            detail = f"outcome {report.get('outcome', '-')}, expected {report.get('expected', '-')}"
+            detail += f", {report['error']}" if report.get("error") else ""
+        else:
+            guard = report.get("guardrail") or {}
+            detail = (
+                f"accuracy {report.get('accuracy', '-')} against {report.get('min_accuracy', '-')}; "
+                f"{report.get('answers', '-')} answers to {report.get('messages', '-')} messages, "
+                f"{report.get('let_through', '-')} let through, {report.get('blocked', '-')} "
+                f"blocked; guardrail version {guard.get('version', '-')}, sha256 "
+                f"{short_hash(guard.get('sha256'))}"
+            )
+        detail += f"; model {last_segment(report.get('model'))}; written {modified}"
+        genai_report_rows.append((name, modified, passed, detail))
+        if passed is True:
+            checks.ok("ML-11", what, f"passed: {detail}")
+        elif failures and all(f.startswith("accuracy ") for f in failures):
+            checks.note(
+                "ML-11",
+                what,
+                f"{failures[0]}: the model's quality, reported and never checked ({detail}).",
+            )
+        elif passed is False:
+            checks.fail(
+                "ML-11",
+                what,
+                f"not passed: {'; '.join(failures[:5]) or 'no failure listed'} ({detail}).",
+            )
+        else:
+            checks.fail("ML-11", what, f"no verdict in the report ({detail}).")
+    if genai_dev is not None:
+        what = f"{GENAI_POLICY} on app-genai-dev's role"
+        if genai_policy is None:
+            checks.fail(
+                "ML-11",
+                what,
+                "not attached - sandbox/bedrock attaches it to application_roles, and the "
+                "guardrail task needs it (10.4).",
+            )
+        else:
+            _arn, version, created, deny = genai_policy
+            stamp = f"{version}, created {created or '-'}"
+            if deny is None:
+                checks.note("ML-11", what, f"{stamp}; its document unread - see section 15.")
+            elif deny:
+                checks.note(
+                    "ML-11",
+                    what,
+                    f"{stamp}: carries {GENAI_DENY_SID} - application_guardrail_required true, 10.4 "
+                    "step 4's state until its sitting ends.",
+                )
+            else:
+                checks.note(
+                    "ML-11",
+                    what,
+                    f"{stamp}: no {GENAI_DENY_SID} - application_guardrail_required false, the "
+                    "state between sittings.",
+                )
+    what = "ListEnforcedGuardrailsConfiguration"
+    if enforced_configs is None:
+        checks.note("ML-11", what, "unread - see section 15.")
+    elif not enforced_configs:
+        checks.ok("ML-11", what, "empty")
+    else:
+        names = {g.get("id"): g.get("name", "-") for g in guardrail_summaries}
+        listed = "; ".join(
+            f"{names.get(c.get('guardrailId'), c.get('guardrailId', '-'))} version "
+            f"{c.get('guardrailVersion', '-')} on "
+            + (", ".join((c.get("modelEnforcement") or {}).get("includedModels") or []) or "-")
+            for c in enforced_configs
+        )
+        checks.fail(
+            "ML-11",
+            what,
+            f"{listed} - empty outside 10.4 step 6's sitting, which deletes the configuration "
+            f"of {ACCOUNT_GUARDRAIL} before it ends.",
+        )
+
     # ================================================================== report
     with open(out_path, "w") as stream:
         rep = Report(stream)
@@ -1807,11 +2651,14 @@ def main(argv: list) -> int:
             "\nSections: 1 who is asking; 2 the project roles; 3 MLflow Apps; 4 training jobs;\n"
             "5 the Model Registry; 6 serving; 7 ML pipelines; 8 the entries read and the\n"
             "quotas; 9 the Generative AI menu; 10 the session's doors; 11 CloudTrail;\n"
-            "12 checks ML-1..ML-9; 13 calls that failed.\n"
+            "12 app-ml in app-ml-dev; 13 app-genai in app-genai-dev; 14 checks ML-1..ML-11;\n"
+            "15 calls that failed.\n"
             f"Contracts: MODEL_GROUP={MODEL_GROUP}  DEMO_DIR=shared/{DEMO_DIR}  "
             f"ML_POLICY={ML_POLICY} {ML_POLICY_VERSION}\n"
             f"           EXERCISE_TYPES={', '.join(t for _u, t in EXERCISE_TYPES)}  "
             f"CEILING_NEGATIVE={CEILING_NEGATIVE}\n"
+            f"           APP_ML_DEV={APP_ML_DEV}  APP_ML_GROUP={APP_ML_GROUP}  "
+            f"APP_GENAI_DEV={APP_GENAI_DEV}  GENAI_MODEL={GENAI_MODEL}\n"
         )
 
         rep.h1("1. Who is asking")
@@ -2121,10 +2968,163 @@ def main(argv: list) -> int:
         rep.line(f"The latest {LOOKUP_MAX} events per name, in the 90-day lookup window;")
         rep.line(f"{PULL_EVENT} only for {XGBOOST_REPOSITORY}.")
 
-        rep.h1("12. Checks")
+        rep.h1("12. app-ml in app-ml-dev - ML-10")
+        rep.line(f"PROJECT_ID={APP_ML_DEV}  ROLE={(ml_dev or {}).get('role', '(no role read)')}")
+        rep.line()
+        rows = ["KIND\tJOB\tSTATUS\tINSTANCE\tVPC\tISOLATED\tICE\tVOLUME KEY\tOUTPUT KEY\tTAG"]
+        for kind, j in app_ml_jobs:
+            v = job_view(kind, j)
+            vpc = "-" if v["vpc"] is None else ("yes" if v["vpc"].get("Subnets") else "no")
+            cells = [
+                kind,
+                v["name"],
+                v["status"],
+                v["itype"],
+                vpc,
+                cell(v["isolation"]),
+                cell(v["ice"]),
+                last_segment(v["volume_key"]),
+                last_segment(v["output_key"]),
+                j["_tags"].get(PROJECT_TAG, "-"),
+            ]
+            rows.append("\t".join(str(c) for c in cells))
+        rep.tabulate(rows if len(rows) > 1 else rows + ["(no app-ml job)" + "\t-" * 9])
+        rep.line()
+        rows = ["MODEL\tCREATED\tROLE"]
+        rows += [
+            f"{m.get('ModelName', '-')}\t{m.get('CreationTime', '-')}\t"
+            f"{last_segment(m.get('ExecutionRoleArn'))}"
+            for m in leftovers
+        ]
+        rep.tabulate(rows if len(rows) > 1 else rows + [f"(no model {APP_ML_MODEL_PREFIX}*)\t-\t-"])
+        rep.h2(f"The candidate - shared/{APP_ML_CANDIDATE}")
+        rows = ["OBJECT\tSIZE\tLAST MODIFIED"]
+        rows += [
+            f"{n}\t{o.get('Size', '-')}\t{o.get('LastModified', '-')}"
+            for n, o in sorted((ml_objects or {}).items())
+        ]
+        state = "unread" if ml_objects is None else "nothing"
+        rep.tabulate(rows if len(rows) > 1 else rows + [f"({state})\t-\t-"])
+        if ml_model:
+            rep.line()
+            for key in ("training_job", "sha256", "size_bytes", "auc", "published"):
+                rep.line(f"model.json {key}: {cell(ml_model.get(key))}")
+            rep.line(f"model.tar.gz sha256, as read: {ml_digest or '(unread)'}")
+        rep.h2(f"The model package group - {APP_ML_GROUP}")
+        rows = ["VERSION\tAPPROVAL\tSTATUS\tCREATED\tSHA256 IN ITS DESCRIPTION"]
+        for v in ml_versions:
+            mark = re.search(r"sha256:([0-9a-f]{64})", v.get("ModelPackageDescription") or "")
+            rows.append(
+                f"{v.get('ModelPackageVersion', '-')}\t{v.get('ModelApprovalStatus', '-')}\t"
+                f"{v.get('ModelPackageStatus', '-')}\t{v.get('CreationTime', '-')}\t"
+                f"{mark.group(1) if mark else '-'}"
+            )
+        if ml_group:
+            state = "no version"
+        else:
+            state = "no group" if APP_ML_GROUP not in all_groups else "unread"
+        rep.tabulate(rows if len(rows) > 1 else rows + [f"({state})\t-\t-\t-\t-"])
+        if ml_group:
+            rep.line()
+            rep.line(f"{PROJECT_TAG}: {ml_group_tags.get(PROJECT_TAG, '(none)')}")
+        for pkg in ml_carrying:
+            meta = pkg.get("CustomerMetadataProperties") or {}
+            by = principal_name(((pkg.get("CreatedBy") or {}).get("IamIdentity") or {}).get("Arn"))
+            rep.line(
+                f"version {pkg.get('ModelPackageVersion', '-')} carries the candidate's hash; "
+                f"registered by {by}; training_job {meta.get('training_job', '-')}, "
+                f"validation_auc {meta.get('validation_auc', '-')}"
+            )
+        rep.h2("The MLflow App and the runs track logged")
+        rows = ["APP\tSTATUS\tARTIFACT STORE"]
+        rows += [
+            f"{a.get('Name', '-')}\t{a.get('Status', '-')}\t{a.get('ArtifactStoreUri') or '-'}"
+            for a in ml_apps
+        ]
+        rep.tabulate(rows if len(rows) > 1 else rows + ["(no MLflow App of app-ml-dev)\t-\t-"])
+        if ml_runs:
+            rep.line()
+            rows = ["EXPERIMENT/RUN\tLAST MODIFIED\tTRAINING JOB"]
+            rows += [
+                f"{key.split('/artifacts/', 1)[0]}\t{modified}\t{job or '-'}"
+                for key, modified, job in ml_runs
+            ]
+            rep.tabulate(rows)
+        rep.line()
+        rep.line(
+            f"The newest {MLFLOW_RUNS_READ} keys ending {MLFLOW_EVALUATION_SUFFIX} in the store;"
+        )
+        rep.line("the layout <experiment id>/<run id>/artifacts/ is MLflow's, unmeasured here.")
+
+        rep.h1("13. app-genai in app-genai-dev - ML-11")
+        rep.line(
+            f"PROJECT_ID={APP_GENAI_DEV}  ROLE={(genai_dev or {}).get('role', '(no role read)')}"
+        )
+        rep.line(f"{GENAI_DEFINITION}: sha256 {checkout_hash or '(unreadable)'}")
+        rep.line()
+        rows = ["GUARDRAIL\tVERSION\tSTATUS\tDESCRIPTION\tUPDATED"]
+        rows += [
+            f"{gr_name}\t{v.get('version', '-')}\t{v.get('status', '-')}\t"
+            f"{cell(v.get('description'))}\t{v.get('updatedAt', '-')}"
+            for v in gr_versions
+        ]
+        rep.tabulate(rows if len(rows) > 1 else rows + [f"(no guardrail {gr_name})\t-\t-\t-\t-"])
+        if gr:
+            rep.line()
+            tags_text = ", ".join(f"{k}={v}" for k, v in sorted((gr_tags or {}).items()))
+            rep.line(f"id {gr.get('id', '-')}; tags {tags_text or '(none read)'}")
+        if gr_newest:
+            rep.line(
+                f"GetGuardrail on version {gr_newest.get('version', '-')}: description "
+                f"{cell((gr_newest_got or {}).get('description'))}"
+            )
+        rep.line()
+        rows = ["INFERENCE PROFILE\tID\tSTATUS\tMODELS"]
+        for prof in genai_profiles:
+            listed = ", ".join(
+                sorted(
+                    f"{last_segment(m.get('modelArn'))} in {arn_region(m.get('modelArn'))}"
+                    for m in prof.get("models") or []
+                )
+            )
+            rows.append(
+                f"{prof.get('inferenceProfileName', '-')}\t"
+                f"{prof.get('inferenceProfileId') or last_segment(prof.get('inferenceProfileArn'))}"
+                f"\t{prof.get('status', '-')}\t{listed or '-'}"
+            )
+        rep.tabulate(rows if len(rows) > 1 else rows + ["(none tagged with the project)\t-\t-\t-"])
+        rep.line()
+        rows = ["REPORT\tWRITTEN\tPASSED\tDETAIL"]
+        rows += [f"{n}\t{w}\t{cell(p)}\t{d}" for n, w, p, d in genai_report_rows]
+        rep.tabulate(rows if len(rows) > 1 else rows + [f"(none read in {GENAI_OUTBOX})\t-\t-\t-"])
+        rep.line()
+        if genai_policy is None:
+            rep.line(f"{GENAI_POLICY}: not attached to the role")
+        else:
+            _arn, version, created, deny = genai_policy
+            state = {True: "present", False: "absent"}.get(deny, "(unread)")
+            rep.line(
+                f"{GENAI_POLICY} {version}, created {created or '-'}: {GENAI_DENY_SID} {state}"
+            )
+        rep.line()
+        rows = ["ENFORCED GUARDRAIL\tVERSION\tOWNER\tINCLUDED MODELS\tEXCLUDED MODELS\tUPDATED"]
+        names = {g.get("id"): g.get("name", "-") for g in guardrail_summaries}
+        for c in enforced_configs or []:
+            enforcement = c.get("modelEnforcement") or {}
+            rows.append(
+                f"{names.get(c.get('guardrailId'), c.get('guardrailId', '-'))}\t"
+                f"{c.get('guardrailVersion', '-')}\t{c.get('owner', '-')}\t"
+                f"{', '.join(enforcement.get('includedModels') or []) or '-'}\t"
+                f"{', '.join(enforcement.get('excludedModels') or []) or '-'}\t"
+                f"{c.get('updatedAt', '-')}"
+            )
+        state = "unread" if enforced_configs is None else "empty"
+        rep.tabulate(rows if len(rows) > 1 else rows + [f"({state})\t-\t-\t-\t-\t-"])
+
+        rep.h1("14. Checks")
         rep.checks_table(checks)
 
-        rep.h1("13. Calls that failed")
+        rep.h1("15. Calls that failed")
         failed_calls_epilogue(rep, errors)
         rep.line()
         rep.line("Regenerate with:  ./aws/sandbox-ml.py")
@@ -2133,10 +3133,10 @@ def main(argv: list) -> int:
     n_fail = checks.n_fail()
     note("")
     if errors:
-        note(f"wrote {out_label} (some calls FAILED - see section 13)")
+        note(f"wrote {out_label} (some calls FAILED - see section 15)")
         return 1
     if n_fail > 0:
-        note(f"wrote {out_label} ({n_fail} CHECK(S) FAILED - see section 12)")
+        note(f"wrote {out_label} ({n_fail} CHECK(S) FAILED - see section 14)")
         return 2
     note(f"wrote {out_label} (all checks passed)")
     return 0

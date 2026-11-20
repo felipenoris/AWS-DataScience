@@ -1455,3 +1455,26 @@ call; the plan revised.*
 - **[Claude] Pass 8** follows pull request #321's merge in R1 (§N.11.1 step 6). Its release sitting is R1
   when N.9's day 1 has run and 8.5 and 8.6 are done, otherwise R2, before 2026-12-18, with the build runner
   (`make gitlab-up BUILD=1`). 8.7's `awsds/app-dbt` and its job-token allowlist entry are R1's step 3.
+
+## 2026-11-20 — Pull request #321's branch synced with `main`
+
+*Claude, in the session that applied 6d decision 6 and Stage 17 decision 7 the same day, on the user's request to prepare every pending sitting before raising anything and to minimise the plan's running time (*"otimize o plano e faça todas as preparações necessárias para que o tempo necessário para executar o plano seja minimizado"*). The merge in a temporary worktree of this session, detached at the pull request's branch,
+`190b2424`; the one AWS read as the infrastructure user with `InfrastructureAccess` through
+`awsds-infra-sandbox-1` (account Sandbox Account 1).*
+
+- **[Claude] The merge** of `origin/main` at `5dfff219` (#344): one conflict, in
+  `docs/plan/runbooks/sagemaker-application.md` §S's table, resolved by keeping this branch's row for the
+  scripts and `main`'s row for `sandbox/workflows/` and `sandbox/bedrock/` (`application_roles`,
+  `model_applications`).
+- **[Claude] The checks** on the merged tree: `./scripts/deploy-application.py --self-check` exit 0, every
+  stage of `app-etl`, `app-ml`, `app-genai` and `app-dbt` `ok`, `app-etl`'s nine variables per stage as on
+  `main` and `app-dbt`'s twelve; `make check` OK; pre-commit's hooks passed on the merge commit.
+- **[Claude] The push**: `00113780` to `claude/plano-estagios-execucao-5f64d8-n6-item10`
+  (`190b2424..00113780`). R1's step 6 merges it after Production's leg, synced again with what `main` gained.
+- **[Claude] 5.0's target**: `list-environments` on `app-dbt-dev` reads `Tooling` and `SageMakerAIDomain`
+  alone, both `ACTIVE` since 2026-11-19, so 2.1's *Create database* makes the project's first `DataLake`
+  environment, which carries the subscription target (`SUP-184`), and 5.0's link lands in `app_dbt`.
+- **[Claude] 8.8's gate, dry**: `pip-audit` 2.10.1 over each lock's runtime set (`uv export --frozen --no-dev`), an approximation of
+  the gates' job, which `awsds/ci-gates` holds: *"No known vulnerabilities found"* for `app-etl` (one
+  package), `app-ml`'s `code` (48) and `app-dbt` (78), at 20:36 UTC. The gate itself runs on the laptop
+  the day of each tag, before the tag (Lesson 77).

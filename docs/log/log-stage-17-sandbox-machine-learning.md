@@ -3613,3 +3613,36 @@ are UTC.*
 - **[Claude] The records**: decision 7, the deliverables row, the ready list and the `Status` row in the
   stage file; `runbooks/sagemaker-ai-ml.md`'s paragraph on what a notebook creates; `promotion.md` §N.6
   item 3, §N.9.1 and §N.10.1; the waiting list's Sandbox row; Current position.
+
+## 2026-11-20 — Day 2's training pair planned from `main`'s tree
+
+*Claude, in the session that applied 6d decision 6 and Stage 17 decision 7 the same day, on the user's request to prepare every pending sitting before raising anything and to minimise the plan's running time (*"otimize o plano e faça todas as preparações necessárias para que o tempo necessário para executar o plano seja minimizado"*). As the infrastructure user with `InfrastructureAccess`, through `awsds-infra-sandbox-1` (account Sandbox
+Account 1), from this session's worktree at `main`'s `5dfff219`; nothing applied. Times are UTC.*
+
+- **[Claude] The plan** of `sandbox/workflows/` with `-var training_pair_enabled=true`, saved as
+  `$HOME/tmp/stage17-training-pair-preflight.tfplan`: *"Plan: 0 to add, 1 to change, 0 to destroy."*,
+  `aws_iam_policy.workflows` alone, its statements from seven to nine with
+  `DescribeATrainingJobNoProjectHolds` and `TagATrainingJobWithTheCallersProject`. The default plan reads
+  *"No changes."* Day 2 applies the saved file only while the slice's state and `main`'s tree have not
+  moved; Terraform refuses it otherwise.
+- **[Claude] 2.1's dataset**, `Telco-Customer-Churn.csv` on `raw.githubusercontent.com`, answers 200 to a
+  `HEAD` from the laptop.
+- **[Claude] 10.4's `DEV_MODEL_ID`**: `aws bedrock list-inference-profiles --type-equals APPLICATION` in
+  Sandbox lists three profiles, the domain's Claude Haiku 4.5 and Nova Lite of 2026-10-19 and
+  `eighth-experimentation`'s Claude Opus 4.5 of 2026-10-30, none of `app-genai-dev`'s: the project's first
+  Nova Lite call, before 10.4's deploy, creates it (`promotion.md` §N.12.4).
+- **[Claude] 9.7's gate, dry**: `pip-audit` 2.10.1 over each lock's runtime set (`uv export --frozen --no-dev`), an approximation of
+  the gates' job, which `awsds/ci-gates` holds: *"No known vulnerabilities found"* for `app-etl` (one
+  package), `app-ml`'s `code` (48) and `app-dbt` (78), at 20:36 UTC. The gate itself runs on the laptop
+  the day of each tag, before the tag (Lesson 77).
+- **[Claude] 9.9's and 10.9's Sandbox halves**, written by a subagent of this session and read by
+  Claude: `./aws/sandbox-ml.py` gained `ML-10` (section 12, `app-ml` in `app-ml-dev`) and `ML-11`
+  (section 13, `app-genai` in `app-genai-dev`), its read-only calls `describe-model-package`,
+  `describe-model-package-group`, `list-model-packages`, `get-guardrail`, `list-guardrails`,
+  `list-enforced-guardrails-configuration`, `list-inference-profiles`, `list-tags-for-resource`,
+  `list-objects-v2` and `s3 cp` to the laptop. Its run at 21:04:17 returned every call: `ML-10`
+  passes on `models app-ml-score-*`, `none`, and `ML-11` on `ListEnforcedGuardrailsConfiguration`, `empty`;
+  nine notes name the objects 9.6 and 10.4 create, among them no application inference profile tagged
+  with `app-genai-dev` and `awsds-sandbox-bedrock-application` v1 with no
+  `DenyAnInvocationWithNoPublishedGuardrailOfTheAccount`, the state between sittings. `OR-10`, `OR-11`
+  and `DT-14` are owed.

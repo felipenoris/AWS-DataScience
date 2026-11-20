@@ -1665,3 +1665,13 @@ open decisions the user asked for at 22:01 UTC, one card per decision under the 
   taken; the ceiling's number stays Stage 12's.
 - **[user] The review stops here**, at 23:46: *"Suba as decisões aqui no PR e vamos deixar as demais para
   depois. Vamos finalizar esta sessão."* The decisions not yet put stay on the waiting list as they were.
+
+## 2026-11-20 — 6.4's baseline read with nothing up
+
+*Claude, in the session that applied 6d decision 6 and Stage 17 decision 7 the same day, on the user's request to prepare every pending sitting before raising anything and to minimise the plan's running time (*"otimize o plano e faça todas as preparações necessárias para que o tempo necessário para executar o plano seja minimizado"*). As the infrastructure user with `InfrastructureAccess`, read-only, through `awsds-infra-sandbox-1`
+(account Sandbox Account 1). Times are UTC.*
+
+- **[Claude] `./aws/bedrock-usage.py`**, 2026-11-01 to 20:16: `amazon.nova-lite-v1:0` one invocation,
+  unpriced; `amazon.titan-embed-text-v2:0` four; the Claude Haiku 4.5, Opus 4.5 and Sonnet 4.5 profiles four
+  each; *"USD 0.0005 computed, not billed"*, all checks passed. `./aws/bedrock-scope.py` wrote its snapshot.
+  6.4's window, on `promotion.md` §N.9's day 3, starts from that month.
