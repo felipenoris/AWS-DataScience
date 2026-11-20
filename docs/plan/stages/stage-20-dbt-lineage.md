@@ -1544,8 +1544,10 @@ four profiles 4.4 names.
 Waits on Stage 19 step 4.12, Production's listing of `trades_notional` approved for a Sandbox project
 (decision 11 (a)). Stage 19's consumer is `eighth-experimentation`, and under decision 7 (b) the model
 reads through `app-dbt-dev`'s own subscription, a second request on the same listing. It runs while that
-listing is live, before the revocation step 4.12 ends with, the two sessions agreeing on the order. It is
-a Sandbox sitting raised as 2.2's and read by pass 2's blocks.
+listing is live, before the revocation step 4.12 ends with, the two sessions agreeing on the order. It
+rides [`promotion.md`](../runbooks/promotion.md) §N.10's day 1 (§N.10.3 step 8), raised with
+`GROUPS=redshift,mwaa`, after the subscriptions of §N.6 item 6, and is read by pass 2's blocks; 5.0 and
+5.1 run before it with nothing up.
 
 - **5.0 [user] `app-dbt-dev`'s request**, in the portal as the project's owner, on the listing 4.12
   publishes, and its approval by the approver Stage 19 decision 15 names, as 4.12's; its revocation joins
@@ -1580,8 +1582,8 @@ the CI/CD CLI into `deploy-staging` and then `deploy-production`, as `app-etl`'s
 ([Stage 19](stage-19-smus-native-data-product.md) steps 4.9 to 4.11;
 [`sagemaker-application.md`](../runbooks/sagemaker-application.md) §P, §S and §T). The pass runs after
 passes 2 and 3, whose readings decide the targets' names (3.1), and after pass 5 when Stage 19's 4.12
-comes first; after [`promotion.md`](../runbooks/promotion.md) §N.6 item 10, whose script change the legs
-need (8.1); and before 2026-12-18, when dbt Core 1.11's critical support ends (decision 6), or with the
+comes first; after pull request #321's merge in R1 ([`promotion.md`](../runbooks/promotion.md) §N.11.1
+step 6), whose script change the legs need (8.1); and before 2026-12-18, when dbt Core 1.11's critical support ends (decision 6), or with the
 archive moved to 1.12 and pass 1's tests, the simulation and 2.3 repeated on it. Passes 6 and 7 close the
 stage after it. Step 8.2 and 8.4's four applies ran on 2026-11-18, 8.3 and 8.4's last apply on
 2026-11-19; every other step is owed.
@@ -1609,8 +1611,8 @@ manager's, the user's hands.
 | The stage variables | `/datascience/staging/applications/app-dbt/stage-variables`, written by `staging-deploy` | `/datascience/prod/applications/app-dbt/stage-variables`, by `production-deploy` | the leg |
 | The two assets | imported by the leg, then revised by its second import (`SUP-369`) | the same | the leg |
 
-- **8.1 [Claude] What the legs need of the scripts**, written in the pull request of `promotion.md`
-  §N.6 item 10, which teaches the scripts `app-ml` and `app-genai` from Stage 17's patches; this stage
+- **8.1 [Claude] What the legs need of the scripts**, written in pull request #321, which teaches the
+  scripts `app-ml` and `app-genai` from Stage 17's patches; this stage
   writes none of it:
   - `scripts/deploy-application.py`: `--image-uri` optional and `TRAINING_IMAGE_URI` exported only for
     an application that reads it, as Stage 17's `release_exports` proposes, `app-dbt` having neither;
@@ -1722,7 +1724,7 @@ manager's, the user's hands.
   three CI/CD variables exported; the export read, and `scripts/check-catalog-export.py` passing on the
   two assets and the form alone. The CLI's calls are reads, and Sandbox's trail is read after.
 - **8.7 The GitLab sitting** ([`gitlab.md`](../runbooks/gitlab.md) §U), the hub and GitLab up, which
-  `promotion.md` §N.6 item 3 or `app-ml`'s sitting may carry: **[user]** `awsds/app-dbt` created as
+  R1 carries (`promotion.md` §N.11.1 step 3): **[user]** `awsds/app-dbt` created as
   [`sagemaker-application.md`](../runbooks/sagemaker-application.md) §L's steps 1 to 6 say: the project,
   `main` and `v*` protected, the members, the three runners linked, the variables `DOMAIN_ID`,
   `DOMAIN_REGION` and `DEV_PROJECT_NAME` (`app-dbt-dev`), and `awsds/infrastructure`'s job-token
@@ -1733,8 +1735,9 @@ manager's, the user's hands.
   **[Claude] reads** the branch pipeline: `test` (pytest, ruff, the lint *"ok: 4 arquivo(s)"*),
   `secret_detection` and its gate, and `pip-audit` over the runtime export's 78 pins, each audited; a
   finding is a line of `awsds/ci-gates`' baselines and a gates tag (§L step 8), or the lock moved.
-- **8.8 The release sitting**, in [`promotion.md`](../runbooks/promotion.md) §N.8.4's form: **[user]** the
-  hub and GitLab, `make up ENV=staging ONLY=egress` before the tag, the tag `v0.1.0` on `main` and
+- **8.8 The release sitting**, in [`promotion.md`](../runbooks/promotion.md) §N.8.4's form, R1 when N.9's
+  day 1 has run and 8.5 and 8.6 are done, otherwise R2 (§N.11): **[user]** the hub and GitLab with the
+  build runner (`make gitlab-up BUILD=1`), `make up ENV=staging ONLY=egress` before the tag, the tag `v0.1.0` on `main` and
   `staging-gate`; `make down ENV=staging` after `staging-catalog`; `make up ENV=production
   ONLY=workloads-egress` before `production-gate`, then the gate. **[Claude]** tells the other sessions
   before the first raise, reads `make status` after each, and follows each job:

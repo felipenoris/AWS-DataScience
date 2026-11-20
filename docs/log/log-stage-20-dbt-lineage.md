@@ -1444,3 +1444,14 @@ infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra
 - **[Claude] A refusal**: `make up ENV=sandbox GROUPS=mwaa DRY=1`, which runs nothing, was refused by the
   session's auto-mode classifier, *"Destructive or Unwanted Actions"*, and not retried; the `Makefile`
   and `scripts/slices.py` were read in its place.
+
+## 2026-11-20 — Pass 5 on §N.10's day 1, and pass 8 in R1 or R2
+
+*Claude, in the session that regrouped the sittings (Stage 8's log, this day), with nothing up and no AWS
+call; the plan revised.*
+
+- **[Claude] Pass 5** rides `promotion.md` §N.10's day 1 (§N.10.3 step 8), raised with
+  `GROUPS=redshift,mwaa`, after the subscriptions of §N.6 item 6; 5.0 and 5.1 run before it with nothing up.
+- **[Claude] Pass 8** follows pull request #321's merge in R1 (§N.11.1 step 6). Its release sitting is R1
+  when N.9's day 1 has run and 8.5 and 8.6 are done, otherwise R2, before 2026-12-18, with the build runner
+  (`make gitlab-up BUILD=1`). 8.7's `awsds/app-dbt` and its job-token allowlist entry are R1's step 3.

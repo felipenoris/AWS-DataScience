@@ -4565,3 +4565,31 @@ open decisions the user asked for at 22:01 UTC, one card per decision under the 
   lines moved to 1.16.7 in pull request #317. The laptop's install is the user's, the `darwin_arm64` zip
   checked against the published sums, on the waiting list; the deploy image's two pins wait on its next
   release, its binary reading no state since release F.
+
+## 2026-11-20 — The sittings regrouped in `promotion.md`: the Sandbox days and the release sittings
+
+*Claude, a session of its own on the branch `claude/plano-execucao-offline-8bcc39`, cut from `origin/main`
+`30855d92`, with nothing up. Reads and plans as the infrastructure user with `InfrastructureAccess`,
+through `awsds-infra-prod` (account Production), `awsds-infra-staging` (Staging), `awsds-infra-sandbox-1`
+(Sandbox Account 1) and `awsds-infra-data` (Data Governance), from about 17:00 to 17:54; no AWS write. The
+plan revised in `runbooks/promotion.md` and the files it names. Times are UTC.*
+
+- **[Claude] `make status`**, 17:04:11: every slice down, *"estimated burn: USD 0.0000/h"*, *"no Studio app
+  billing in data-governance, identity, production, sandbox, staging"*.
+- **[Claude] The order of what is left**, `promotion.md` §N.6 read 2026-11-20: the acts that need nothing up
+  (item 3), N.9's day 1, R1, the acts R1 unblocks (item 6), N.9's days 2 and 3, N.10's two days before
+  2026-12-19, then R2. §N.11 is new. R1 carries release G, N.8.3's readings after the Production admin
+  secret's first rotation, a GitLab backup before 2026-12-17, the local user's password, 6d 2.7 step 7, the
+  three application projects and pull request #321's merge after Production's leg, and needs no Sandbox day
+  before it. R2 carries `app-dbt`'s first release if R1 did not, `app-ml`'s (Stage 17 9.7) and
+  `app-genai`'s (10.6), then the retirement of `app-etl`'s model half (9.11).
+- **[Claude] The release leg's egress**, planned from `30855d92`'s tree at 17:08:46:
+  `production/workloads-egress` and `staging/egress` each *"Plan: 18 to add, 0 to change, 0 to destroy."*
+- **[Claude] The hub's hosts**, planned in the same run, for the waiting list's Hub row and not for R1:
+  `production/proxy` *"Plan: 1 to add, 2 to change, 1 to destroy."*, `aws_instance.this` replaced;
+  `production/vpn` *"Plan: 2 to add, 3 to change, 2 to destroy."*, `module.wireguard.aws_instance.this` and
+  `module.wireguard.aws_eip_association.this` replaced.
+- **[Claude] The GitLab backups** in `awsds-prod-gitlab-backup`, read 17:06:42 and 17:49:45: the newest
+  `1794798069_2026_11_16_19.4.2_gitlab_backup.tar`, 2026-11-16 03:01:18, 15,728,640 bytes; before it
+  2026-11-15 22:38:11 and 2026-11-10 01:51:59. The bucket's rules: `expire-current-versions` at 30 days,
+  `expire-noncurrent-versions` at 7. The newest stops being current on 2026-12-17, R1's bound.

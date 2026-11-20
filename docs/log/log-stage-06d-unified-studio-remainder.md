@@ -4400,3 +4400,22 @@ the question that named `staging/studio/` and `production/studio/`. As the infra
   prints an address, with no interface in the VPC, brings decision 17 (b)'s deny to Sandbox.
 - **[Claude] The records**: decision 17, step 4.7, the block's item 2 and the `Status` row in the stage
   file; `TM-34`; §N.9.1 and §N.9.3 step 7; the waiting list, whose row for 4.7's order is removed.
+
+## 2026-11-20 — Decision 6's apply moved before the day, and 2.7 step 7's header proposed
+
+*Claude, in the session that regrouped the Sandbox days (Stage 8's log, this day), with nothing up. A plan
+as the infrastructure user with `InfrastructureAccess`, through `awsds-infra-prod` (account Production),
+from `origin/main` `30855d92`'s tree; no AWS write. Times are UTC.*
+
+- **[Claude] `production/networking/` planned**, 17:07:16 to 17:07:37: *"Plan: 0 to add, 1 to change, 0 to
+  destroy."*, `aws_ssm_parameter.proxy_allowlist` updated in place, its version 11 to *(known after
+  apply)*: 2026-11-19's re-plan unchanged.
+- **[Claude] The apply moved out of day 1**: it writes a parameter and needs no host, so it runs with nothing
+  up on the user's word naming it (`promotion.md` §N.6 item 3, §N.9.1). Day 1's step 2 becomes its re-plan,
+  `No changes`, and `PX-3` on the host reads the render as before (`SUP-071`).
+- **[Claude] 2.7 step 7's header proposed** in this repository's copy,
+  `gitlab/awsds/dev-env/release/versions.py`: `register` says a blueprint domain offers the version its
+  project profile pins, which reaches a project when the pin moves in `data-governance/governance/` and the
+  owner presses *Update project*; `retire` that a blueprint domain names its pinned version. The copy is
+  GitLab's, so the text is a proposal until a merge request on `awsds/dev-env` lands it and
+  `./scripts/gitlab-mirror.py` reads the copy unchanged, in R1 (`promotion.md` §N.11.1 step 3).

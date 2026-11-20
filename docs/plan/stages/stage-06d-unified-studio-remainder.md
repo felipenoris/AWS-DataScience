@@ -1715,7 +1715,7 @@ workflow. Its values, read that day (the log): the domain `dzd-d8yrvx1ko7im6o`;
 `awsds-prod-proxy-reconfigure`, `b9c438be-8de2-430a-9ed9-fb2cea9ff136`. Every space runs the house image,
 version 11, in the blueprint's domain by choice in *Create space* (`EXC-26`); a remote-access space is
 `ml.t3.large` or larger (`RI-2`), and a native run bills 0.050 USD/h on `sc.t3.medium`. 2.7 step 7 needs
-GitLab and stays out.
+GitLab and rides R1 ([`promotion.md`](../runbooks/promotion.md) §N.11.1).
 
 **Before it, with nothing up**:
 
@@ -1729,6 +1729,8 @@ GitLab and stays out.
 3. **[Claude⚡] Decision 17's deny in the targets**, `notebook-run.tf` in `staging/studio/` and
    `production/studio/`, written and planned 2026-11-19 and applied in both from `main` the same day, on
    the user's word (the log). It needed nothing up and is not part of the sitting.
+4. **[Claude⚡] Decision 6's apply**, the sitting's step 2 below, on the user's word naming it, with nothing
+   up before the day (`promotion.md` §N.6 item 3); the day's step 2 is then its re-plan, `No changes`.
 
 **In the sitting**:
 

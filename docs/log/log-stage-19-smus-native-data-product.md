@@ -4406,3 +4406,16 @@ Times are UTC.*
   `database/other_db` and `glue:CreateTable` on `table/app_etl/trades_notional`, the negative controls; the
   organization allowing each. The IAM half of 5.2's door is open; Lake Formation's admission and the SQL
   grants stay 4.12's and the sitting's (the stage file's pieces table).
+
+## 2026-11-20 — Release G placed in R1, and decision 27 (d)'s provider read
+
+*Claude, in the session that regrouped the sittings (Stage 8's log, this day), with nothing up: the
+Terraform registry's and GitHub's public APIs read at about 17:04 and 17:05, no AWS call. Times are UTC.*
+
+- **[Claude] Release G** (decision 26 (b)) rides R1 (`promotion.md` §N.11.1 step 4), after `EXC-13`'s
+  rotation and before 2026-12-17. 4.12's membership with `subscription-approver` and xxvi's portal half need
+  neither the release nor anything up and come first (§N.6 item 3); 4.12's request and approval follow the
+  release (item 6). Pass 5 to 5.3 is on §N.10's day 1, 5.4 on day 2.
+- **[Claude] Decision 27 (d)'s provider**: the registry's newest `hashicorp/aws` is 6.73.0, published
+  2026-11-11; `go.mod` at `v6.73.0` and on `main` both name `service/cloudwatchlogs` v1.90.2, below the
+  v1.91.0 that `upstream-releases.md` watches for. `EXC-25` stands.
