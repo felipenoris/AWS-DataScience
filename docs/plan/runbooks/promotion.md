@@ -2435,13 +2435,14 @@ limit, so each day starts at zero of its 10 RPU-hours.
 #### N.10.1 What comes before the sitting
 
 - **[user] The merges** of pull request #339 and of this section's, so every apply runs from `main`
-  (Lesson 79).
+  (Lesson 79). Done 2026-11-20.
 - **[Claude⚡] `sandbox/warehouse/` applied from `main`**, with nothing up, on the user's word naming it:
   Stage 19 5.2's door, the access role's catalog read and `lakeformation:GetDataAccess`, which the user
   chose on 2026-11-19 (*"Sim, escreva"*, in the pre-flight's session) and pull request #339 writes,
   planned `0 to add, 1 to change, 0 to destroy`. The role held neither piece: simulated that day,
   `glue:GetTable` read `implicitDeny` on Sandbox's and Production's `trades_notional` and `allowed` on the
-  lake's table, the control. Until the apply, every plan of the slice shows that change besides its own.
+  lake's table, the control. Done 2026-11-20, 15:57:30 to 15:57:40 UTC, on the user's *"autorizo o apply no
+  warehouse"*, re-planned `No changes`.
 - **[user] Release G's sitting and Stage 19 4.12** (N.9.8 items 1 and 2): pass 5 reads the subscribed
   product.
 - **[user] With nothing up:**

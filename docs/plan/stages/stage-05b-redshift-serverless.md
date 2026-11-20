@@ -689,8 +689,8 @@ the re-plan precedes 6h's re-apply of the compute slice. Its values, read that d
 `No changes`; the usage limit is 10 RPU-hours with `deactivate`, a new object at each `make up`, so each
 raise starts at zero; `max_query_execution_time` is 120 seconds; the admin secret rotated again on
 2026-11-19 at 00:23:23Z with no workgroup, the next rotation due 2026-12-19 at 01:59:59Z.
-These `sandbox/warehouse/` counts hold once Stage 19's access-role statement (PR #339, pass 5's before it
-item 3) is applied before the sitting; until then each plan of the slice also shows
+These `sandbox/warehouse/` counts hold since Stage 19's access-role statement (PR #339, pass 5's before it
+item 3) was applied from `main` on 2026-11-20 at 15:57 UTC; before it each plan of the slice also showed
 `aws_iam_policy.project_access_portal["avhvbqn37ty7m8"]` updated in place (Lesson 69).
 
 **Before it, with nothing up**:

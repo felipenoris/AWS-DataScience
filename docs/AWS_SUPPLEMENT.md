@@ -2248,7 +2248,10 @@ entry is still true is the reading.
   the share `ACTIVE`, the principal and the domain `ASSOCIATED`, the permission at version 3 `ASSOCIATED`,
   and each source association `ASSOCIATED`. The apply's wording is the reading where the table and the
   service disagree; whether a data source then runs is `EXC-11`'s. Where:
-  `log-stage-17-sandbox-machine-learning.md`, 2026-11-19.
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-19. Read 2026-11-19 and 2026-11-20: the `Tooling`
+  data source of each of three projects in Sandbox, an account associated with the domain, ended its first
+  run after the share `SUCCESS`, where AWS's page describes the domain's own account alone; `EXC-11`
+  closed 2026-11-20. Where: the same log, both days.
 
 ### Environments and projects
 
