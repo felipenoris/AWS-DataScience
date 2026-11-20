@@ -545,7 +545,8 @@ step 6.4's measurement window.
 
 | Probe (from `awsds-infra-sandbox-1`) | Expected | Statement it answers |
 |---|---|---|
-| `aws bedrock-runtime invoke-model --model-id amazon.nova-lite-v1:0 … --region us-west-2` | `AccessDenied` naming the Interactive document | `DenyBedrockInvocationOutsideTheScopedModels`. Nova Lite needs no agreement, so with the deny lifted it answers |
+| `aws bedrock-runtime invoke-model --model-id us.amazon.nova-lite-v1:0 … --region us-west-2` | `AccessDenied` naming the Interactive document | `DenyBedrockInvocationOutsideTheScopedModels`, on the system profile's own pass. Nova Lite needs no agreement, so with the deny lifted it answers. The row invoked the foundation model `amazon.nova-lite-v1:0` until Stage 17 decision 23 (a) admitted that model's `us-west-2` ARN (written 2026-11-19) |
+| `aws bedrock-runtime invoke-model --model-id amazon.nova-lite-v1:0 … --region us-west-2` | answers | none: Stage 17 decision 23 (a)'s entry, and the contrast of the row above, the same model by the ARN the statement reads |
 | the same, on each profile the house image pins, read from `managed-settings.json` when `probes.py` is imported | answers | none: the contrast, and the reading that the scoped set is not dark. A gate refusal after authorization still reads `ALLOWED`; `./aws/bedrock-scope.py` `BS-5` reads the agreements |
 | `aws bedrock get-use-case-for-model-access --region eu-west-1` | `AccessDenied` naming the Interactive document | `DenyBedrockReadsOutsideTheRoutedRegions`, the only policy that can refuse it there: Control Tower's Region control exempts the action ([`claude-code-sagemaker.md`](claude-code-sagemaker.md), M5) and the model statement does not name it |
 | the same in `us-east-1` and `us-east-2` | answers | none: the routed Regions stay open, and the Control Tower exemption still holds |

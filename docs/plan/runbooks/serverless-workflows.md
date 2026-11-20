@@ -209,7 +209,11 @@ The grant for the jobs is `terraform-live/sandbox/workflows/`, one policy and on
 
 1. Add the project role's name to `project_roles` in `variables.tf`. The role is
    `datazone_usr_role_<project id>_<environment id>`, read with `aws iam list-roles`.
-2. Plan and apply the slice as the infrastructure user, `InfrastructureAccess`, in the account the project
+2. For an application whose task registers a model, add its entry to `model_applications`: the project
+   role, its model package group and the prefix its training leaves the model under. The role gains the
+   registration of a pending version in that group, and the bundle role the read of that prefix
+   ([INT-25](../integrations.md), Stage 17 9.5).
+3. Plan and apply the slice as the infrastructure user, `InfrastructureAccess`, in the account the project
    lives in, after the project exists: the slice reads each listed role with `data "aws_iam_role"`, so a
    role not yet minted fails the plan, naming it (Stage 17 9.5). A precondition refuses a role without
    the D13 boundary.
@@ -219,7 +223,9 @@ Stage 18's deployment project in Staging held, until its removal on 2026-10-22, 
 without them (2026-10-19, run `7MMhwSySe5SOWd1`). Stage 19's deployment projects hold the same statements
 in `<env>/studio/workflows.tf`, with the pair for training jobs beside the processing pair: `app-etl-train`'s
 first run in `deploy-staging` stopped on `DescribeTrainingJob` without it (2026-11-16, run
-`W373uHP9ZB5EvsW`). Sandbox's grant carries no training pair.
+`W373uHP9ZB5EvsW`). Sandbox's grant carries the training pair behind `training_pair_enabled`, `false`
+until the sitting after Stage 17 2.2's readings (a) and (b); it was written 2026-11-19 with the transform
+pair, the model's tag and the registration in an application's own group, applied the same night (Stage 17 9.5).
 
 The policy allows `DescribeProcessingJob` on a job with no project tag, `AddTags` of the caller's own
 project tag alone, on a job with no project tag or with the caller's, and `glue:GetJob` on a job with no

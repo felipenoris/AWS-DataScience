@@ -11,12 +11,12 @@ record. What a step reads is recorded in that stage's log, in the sitting it ran
 Written 2026-10-23 with the environment down. Every `[Claude⚡]` apply waits for the user's word in
 chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs.
 
-**Where it stands, 2026-11-17**: §0, §H, §P, §T, §W and §V done; of §N, N.0 to N.3 ran 2026-10-25/26,
+**Where it stands, 2026-11-20**: §0, §H, §P, §T, §W and §V done; of §N, N.0 to N.3 ran 2026-10-25/26,
 release T's sitting (N.8.2, `v0.4.7`, pipeline #117) on 2026-11-15 and release F's (N.8.4, `v0.5.2`,
 pipeline #129) on 2026-11-16, its step 10, Stage 19 item 31, applied on 2026-11-17. What is left is §N.6's
-order: N.8.5 (release G, `v0.6.0`), its step 3 applied on 2026-11-17, and N.8.3 (2026-11-22 to
-2026-11-25), then Stage 20's and Stage 17's sittings and releases (N.6 items 6 to 14), the steps that need
-nothing up first.
+order: five Sandbox days (N.9's three and N.10's two) and two release sittings (N.11), R1 carrying release
+G (N.8.5, `v0.6.0`) and N.8.3, R2 the first releases of `app-ml`, `app-genai` and, unless R1 took it,
+`app-dbt`; the steps that need nothing up run first.
 
 | § | Holds |
 |---|---|
@@ -26,7 +26,7 @@ nothing up first.
 | [§T](#t-the-tag-stage-8s-pass-4-with-stage-10s-passes-1-and-2) | the tag: Stage 8's pass 4 with Stage 10's passes 1 and 2, and Stage 9's 8.5 |
 | [§W](#w-the-governed-warehouse-stage-9s-pass-6) | the governed warehouse, Stage 9's pass 6: steps 1 to 4 done, step 5 run within §V |
 | [§V](#v-the-data-release-v040) | the data release, the tag `v0.4.2` since `v0.4.0` and `v0.4.1` stopped in their legs: Stage 9's 8.5 and 9.4 to 9.7, Stage 10's pass 3 and 6.1, Stage 8's ix |
-| [§N](#n-the-next-release-what-stages-8-9-and-10-leave) | what Stages 8, 9 and 10 leave, by sitting: the steps that need nothing up, the next release through Staging and Production (`EXC-22`, Stage 8 xxiv, Stage 9 xii, the Scheduler's placeholder), the warehouses, a Sandbox space, the deliberate exercises (xxiv on the adopted datashare in N.4a), what waits on something else, and N.6, the order of what is left on 2026-11-17 |
+| [§N](#n-the-next-release-what-stages-8-9-and-10-leave) | what Stages 8, 9 and 10 leave, by sitting: the steps that need nothing up, the next release through Staging and Production (`EXC-22`, Stage 8 xxiv, Stage 9 xii, the Scheduler's placeholder), the warehouses, a Sandbox space, the deliberate exercises (xxiv on the adopted datashare in N.4a), what waits on something else, N.6, the order of what is left on 2026-11-20, N.9 and N.10, the Sandbox days, and N.11, the release sittings |
 | [§Q](#q-after-the-quotas-stage-10s-pass-3) | after the quotas: Stage 10's pass 3, now within §V |
 | [§R](#r-the-readings-at-the-end-of-every-sitting) | the readings at the end of every sitting |
 
@@ -1123,16 +1123,21 @@ on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its pla
   refusal, xv's deploy- and execution-role halves and xxvii's cancel (no statement past 300 s); Stage 10
   xviii and xxviii's inbox marker (no task writes one).
 
-### N.6 The order of what is left, read 2026-11-18
+### N.6 The order of what is left, read 2026-11-20
 
 Read on 2026-11-18 against the stage files and their logs, with nothing up, after Stage 20's 8.4 applies
-and the day's log review, whose pull requests are #320 (the records), #321 (item 10), #322 (6d 2.7's step
-3) and #323 (the warehouse switches). Each sitting starts on the user's word, since it is metered, and
-holds one goal: what needs nothing up runs before it, a sitting that needs no GitLab raises none, and an
-application reaches a Sandbox space as a tar built on the laptop (Stage 20 step 2.0), never through
-GitLab. Sittings that need the hub may share one hub start. The order is the dependencies', not a
-calendar; the waiting list's "Sittings with the environment up" says what each closes, and its Dates
-bound items 3, 5, 6, 9 and 11.
+and the day's log review, whose pull requests are #320 (the records), #321 (the scripts taught a second
+application), #322 (6d 2.7's step 3) and #323 (the warehouse switches); read again on 2026-11-20 with
+nothing up, when the user asked for the most steps with the least environment in each sitting. Each
+sitting starts on the user's word, since it is metered, and raises only what its blocks call: what needs
+nothing up runs before it, a sitting that needs no GitLab raises none, and an application reaches a
+Sandbox space as a tar built on the laptop (Stage 20 step 2.0), never through GitLab. The steps are
+grouped by what they raise. Every Sandbox step that needs no GitLab is on one of five Sandbox days, N.9's
+three and N.10's two, which also hold the passes no sitting held: Stage 17's 2.3 to 5, Stage 20's pass 5
+and Stage 21's pass 5. Every step that needs GitLab is on one of two release sittings, N.11's R1 and R2,
+where release G, N.8.3 and each application's first release had a sitting of their own. The order is the
+dependencies', not a calendar; the waiting list's "Sittings with the environment up" says what each
+closes, and its Dates bound items 4, 5, 9 and 10.
 
 1. **With nothing up, done 2026-11-17.** Release G's step 3, `production/studio/`, applied at 13:11 UTC on
    the user's word naming it, from the plan saved at 05:06 UTC from `main` at `80e996f5` (2 added, 2
@@ -1160,78 +1165,74 @@ bound items 3, 5, 6, 9 and 11.
    deleted). The three application projects were created on 2026-11-19 and their `sandbox/workflows/`
    lines applied the same night on the user's word (`3 added`, re-planned `No changes`), and the user added
    their contributors, the bundle role and Sandbox's `InfrastructureAccess` (9.6, 10.4, Stage 20 2.0).
-   Left: Nova Lite enabled; Stage 20 2.0's archive and tar after this pull request's merge; the rest of the Sandbox slices that read `app-ml-dev`'s and `app-genai-dev`'s roles
-   (9.5's pairs, `sandbox/bedrock/`), which Claude writes and the user applies; and Stage 20 8.3's two
-   `create-environment` calls on the user's word naming each, then `staging/studio/`'s
-   `product_databases` line. Stage 20's decisions 14 to 17 were taken on 2026-11-18 and their changes
-   written, `app-dbt` pinned to `awsds-workflows` `4613ddc`.
+   Stage 20 2.0's archive and tar were built on 2026-11-19 from `main` at `103b4acc`, pull request #320's
+   merge, and checked, which closes 2.0 before sitting A (item 4). Stage 20 8.3's `DataLake` environments
+   `deploy-staging-app-dbt` and `deploy-production-app-dbt` were created on 2026-11-19 at 02:23 and 02:27
+   UTC on the user's word, both `ACTIVE` with the database `app_dbt` and its source, and `staging/studio/`'s
+   `product_databases` line applied at 02:27 from 8.3's branch, re-planned `No changes` (8.4).
+   The rest of the Sandbox slices that read `app-ml-dev`'s and `app-genai-dev`'s roles (9.5's pairs but the
+   training pair, `sandbox/bedrock/`, `sandbox/ml/`), `EXC-11`'s share and the interactive OU's SCP admitting
+   Nova Lite were applied on 2026-11-19 from `main` after pull request #326, the SCP by the orchestrating
+   session with the battery's `ou` phase (54 as expected). Nova Lite was enabled in projects the same day
+   (10.4). Left: the training pair in sitting B (item 7). Stage 20's decisions 14 to
+   17 were taken on 2026-11-18 and their changes written, `app-dbt` pinned to `awsds-workflows` `4613ddc`.
    Stage 20 8.4's applies of the four `[P]` slices its pass 8 wrote ran on 2026-11-18, closing their
    Lesson 69 window. 6d 2.7's acts need nothing metered; its step 3's code was written and planned on
    2026-11-18 on [pull request #322](https://github.com/felipenoris/AWS-DataScience/pull/322) (`1 to change`), applied on the user's word at 18:45 UTC the same day, after step 2's acts;
    *Workflows* opened after it, and the user merged it at 19:13 UTC.
-3. **Release G's sitting** (N.8.5 steps 2, 4 and 5): the hub, GitLab with `BUILD=1`, `staging/egress/`
-   raised before the tag and destroyed after the Staging leg, `production/workloads-egress/` before
-   `production-gate`; the local user's password rotated before the first push (N.8.2 step 3), the mirror
-   at `main`, the template's merge request of eight files, the tag `v0.6.0` and Production's leg read.
-   With GitLab up, the same sitting creates `awsds/app-ml`, `awsds/app-genai` and `awsds/app-dbt`
-   ([`sagemaker-application.md`](sagemaker-application.md) §L; `app-dbt`'s first push and its mirror push
-   wait on item 10 and Stage 20's 8.5) and takes a backup: the newest, of
-   2026-11-16 03:01 UTC, leaves the bucket on 2026-12-17. Between 2026-11-22 and 2026-11-25 it carries
-   N.8.3 on the same hub start.
-4. **Nothing up, after release G**: Stage 19 4.12. After the RAM share at version 12, decision 15 (d)'s
-   designation and xxvi, the Governance Manager's membership of `deploy-production` by its owner ((a)'s
-   `PROJECT_CONTRIBUTOR` only if xxvi reads no narrowing), then `eighth-experimentation`'s request and the
-   approval in the portal (the user's acts), the fulfilment read on both sides.
-5. **The warehouse and backup sitting** (N.8.3), between 2026-11-22 and 2026-11-25, unless item 3 carried
-   it: `EXC-13`'s Production half after the admin secret's first rotation, scheduled 2026-11-22 01:59:59
-   UTC, and the free trial's pair.
-6. **Sandbox sitting A**, `make hub-up` then `make up ENV=sandbox GROUPS=mwaa`, no GitLab: Stage 20's
-   passes 2 and 3 in `app-dbt-dev`, after item 2's project and line, dbt on a worker and its lineage events, and 4.5 once item 2's applies ran; before
-   2026-12-18, when dbt Core 1.11's critical support ends.
-7. **Sandbox sitting B**, `GROUPS=mwaa,mlflow`, no GitLab: Stage 17's 1.4 and 1.6, the first tracking
-   call, then 9.6 after `EXC-11`'s share, `app-ml` trained, registered and scored in `app-ml-dev`. Stage
-   17's passes 2 to 5 are sittings of their own after it.
-8. **Sandbox sitting C**, `GROUPS=mwaa,bedrock-base`, no GitLab: Stage 17's 10.4, `app-genai`'s loop
-   with the boundary's deny and the account's guardrail measured, and 6e 6.4's assistant session, whose
-   token volume sets 6e decision 6's threshold.
-9. **The Sandbox warehouse sitting**, `GROUPS=redshift`: Stage 19's pass 5 after 4.12, 5b's
-   `max_query_execution_time` test, and 6h's 5.1 before decision 8 (a)'s wide tag and 5.2b after, its switch and Stage 21 4.5's transfer role merged on
-   2026-11-18 with [pull request #323](https://github.com/felipenoris/AWS-DataScience/pull/323), off by default;
-   [Stage 21](../stages/stage-21-redshift-s3-data-products.md)'s passes 2 to 4, its 1.3 readings and 1.5's
-   code done 2026-11-18 (`sagemaker-prereqs-v0.12.0`), after the user's reading of the enable wizard, its
-   `RedshiftServerless` blueprint on for the sitting alone; before 2026-12-19, so the trial
-   absorbs them (5b decision 9, taken 2026-11-17), ahead of items 6 to 8 when they are not ready first,
-   since it depends on none of them. Stage 21's pass 5 needs no warehouse and rides any Sandbox sitting.
-10. **With nothing up, before `app-ml`'s first tag**: `scripts/deploy-application.py`,
-    `scripts/model-chain.py` and their hooks taught a second application, kept out of the day's pull
-    request so that release G's leg runs the script it was read with. **Written 2026-11-18** on
-    [pull request #321](https://github.com/felipenoris/AWS-DataScience/pull/321) from the subagents'
-    patches of 2026-11-17 (`$HOME/tmp/stage17-proposals/`), the two `deploy-application.py` proposals
-    merged by hand, for `app-ml`, `app-genai` and `app-dbt` (Stage 20 8.1): `--self-check` prints every
-    stage of every application `ok`, `app-etl`'s lines as on `main`. It merges after #320 and release
-    G's sitting, before `app-dbt`'s mirror push and `app-ml`'s first tag. The pins read against the
-    lint's release the same day: `app-etl` (`196acee`), `app-ml` and `app-genai` (`37cb5a6`) each pass at
-    `4613ddc` with their pipelines' options, `probes/operator.yaml` still refused by `operador`, so each
-    pin moves to it at the application's next tag, `app-etl`'s after release G.
-    `aws/catalog.py`'s `CHAIN_DEV_PROJECTS` gained `app-dbt-dev`'s id on 2026-11-19, on pull request #320.
-11. **`app-dbt`'s first release** (Stage 20 pass 8), after items 3, 6 and 10 and Stage 20's 8.3 to 8.7:
-    the hub and GitLab; `staging/egress/` raised before the tag `v0.1.0` and destroyed after
-    `staging-catalog`, `production/workloads-egress/` raised before `production-gate`, each with its
-    `athena` endpoint (Stage 20 decision 15 (a)); before 2026-12-18, or after the archive moves to dbt
-    1.12. It can share a hub start with `app-ml`'s release.
-12. **`app-ml`'s first release** (Stage 17 9.7), a promotion sitting after items 7 and 10.
-13. **With nothing up, after item 8**: Stage 17's 10.5, the exception and the names in the targets, once
-    10.4 read a first answer from Nova Lite through Sandbox's in-Region profile; its threat-model entry
-    accepted before its applies.
-14. **`app-genai`'s first release** (Stage 17 10.6), a promotion sitting after item 13 and a gates tag
-    whose pip-audit step passes an application with no runtime package.
-15. **`app-etl`'s model half retired** (Stage 17 9.11), a release of `app-etl` after items 3 and 12, then
-    the estate's pull request, planned from a `main` that holds it (Lesson 79).
-16. **The stages' close**: after items 3 and 5, Stages 8, 9 and 10 hold only what N.5 lists, and each can
-    close as Stage 4 did, what waits moved to the trigger or the stage that provides its subject. The
-    user's decision, read then.
-17. **What waits on something else** (N.5): a second application in a chain that consumes another's
-    marker, a `monitoring` endpoint, Stage 11's S3 data events, a release that removes a file (item 15),
+3. **With nothing up, now**, each a waiting-list row:
+   - [Claude⚡] 6d decision 6's apply of `production/networking/` ran at 19:21 UTC on 2026-11-20 from a
+     tree equal to `30855d92`'s, on the user's word: the portal's name in the proxy's allow-list parameter,
+     *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*, version 12, the re-plan `No changes`.
+     The name reaches Squid at the association's first run with the proxy up, and only day 1's `PX-3` on
+     the host proves the render (`SUP-071`).
+   - [Claude⚡] Stage 17 decision 7's statements for endpoint configurations, endpoints and pipelines in
+     `sandbox/ml/` ran at 19:40 UTC on 2026-11-20 from `main` at `78dc4397`, on the user's word, *"Apply
+     complete! Resources: 0 added, 1 changed, 0 destroyed."*, the re-plan `No changes`: N.9's day 3 (pass
+     5's pipeline) and N.10's day 1 (pass 4's endpoint) wait on nothing of it.
+   - [user] Stage 19 4.12's membership: the Governance Manager added to `deploy-production` by the
+     project's owner with the designation `subscription-approver`, then xxvi's portal half. Neither needs
+     release G; the request and the approval do (item 6).
+   - [user] Stage 20 2.1 before N.9's day 1; Stage 17 0.9 before day 2 and `app-ml-dev`'s MLflow App
+     before day 3; 6d 1.1 and 1.2, and 7.6's second identity in a browser profile of its own; N.10.1's
+     acts; 6g 2.4 re-specified, which the portal's query editor reads with no space (Stage 18 7.2).
+4. **N.9's day 1** (N.9.3), `make hub-up` and `make up ENV=sandbox GROUPS=mwaa`, no GitLab: 6d's block
+   and Stage 20's sitting A, passes 2 and 3 and 4.5, after Stage 20 2.1 and before 2026-12-18, when dbt
+   Core 1.11's critical support ends.
+5. **R1** (N.11.1), after the admin secret's first rotation in Production, scheduled 2026-11-22 01:59:59
+   UTC, and before 2026-12-17, when the newest GitLab backup leaves the bucket: release G (N.8.5 steps 4
+   and 5), N.8.3's reading of the rotation on a Production raise of its own after the leg, a backup, the
+   local user's password, 6d 2.7's step 7, the three application projects in GitLab, and pull request
+   #321 merged after Production's leg. `app-dbt`'s first release joins it once N.9's day 1 has run and
+   Stage 20's 8.5 and 8.6 are done; otherwise R2 carries it.
+6. **With nothing up, after R1**: Stage 19 4.12's request by `eighth-experimentation` and Stage 20 5.0's
+   by `app-dbt-dev`, both on the listing release G creates, each approved by the Governance Manager and
+   its fulfilment read on both sides; Stage 20 5.1's model, its archive and its tar. Both subscriptions
+   stay until N.10's day 2 ends, since both of its days read through them.
+7. **N.9's days 2 and 3** (N.9.4, N.9.5), no GitLab: Stage 17's sitting B with 2.3 to 3.2 and pass 7 on
+   day 2, `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`; 6e 6.4's window, Stage 17's sitting C and its
+   pass 5 on day 3, `GROUPS=mwaa,mlflow,bedrock-base`. They depend on no other sitting, so they run before
+   R1 or after it.
+8. **With nothing up, after N.9's day 3**: Stage 17 10.5, the exception and the application's names in
+   the targets, once 10.4 read a first answer from Nova Lite through Sandbox's in-Region profile; its
+   threat-model entry accepted before its applies, the account's guardrail configuration applied by
+   `<env>/studio/`, and the retention mode the user's act in each target.
+9. **N.10's two days** (N.10.3, N.10.4), no GitLab, before 2026-12-19 so the trial absorbs the
+   warehouse: 5b, 6h, Stage 19's pass 5, Stage 17's pass 4 and Stage 20's pass 5 on its day 1,
+   `GROUPS=redshift,mwaa`; Stage 21's passes 2 to 5, Stage 19's 5.4 and 6h's 6.4 on its day 2,
+   `GROUPS=redshift`, the subscriptions revoked at its end. Its day 1 follows item 6, whose subscriptions
+   it reads, and N.9's day 2, whose registered version pass 4 serves.
+10. **R2** (N.11.2), after items 7 to 9 and #321's merge: `app-dbt`'s first release unless R1 carried it,
+    before 2026-12-18 or with the archive moved to dbt 1.12; `app-ml`'s (Stage 17 9.7) and `app-genai`'s
+    (10.6), whose pipeline runs no `pip-audit` and so waits on no gates tag; then `app-etl`'s release
+    retiring its model half (9.11).
+11. **With nothing up, after R2**: 9.11's estate pull request, planned from a `main` that holds it
+    (Lesson 79).
+12. **The stages' close**: after item 5, Stages 8, 9 and 10 hold only what N.5 lists, and each can close
+    as Stage 4 did, what waits moved to the trigger or the stage that provides its subject. The user's
+    decision, read then.
+13. **What waits on something else** (N.5): a second application in a chain that consumes another's
+    marker, a `monitoring` endpoint, Stage 11's S3 data events, a release that removes a file (item 10),
     a workflow's 50th version, a blueprint reconciliation, and the halves no step provokes.
 
 ### N.7 The sittings prepared 2026-10-26
@@ -1990,7 +1991,7 @@ space alone: a sitting without step 13 leaves Sandbox down.
     aws mwaa-serverless list-workflows --profile awsds-infra-sandbox-1 --region us-west-2 --query "Workflows[?contains(Name,'test_experimentation')].[Name,WorkflowArn]" --output text
     ```
 
-#### N.8.3 The warehouse and backup sitting, between 2026-11-22 and 2026-11-25
+#### N.8.3 The warehouse and backup readings, carried by R1
 
 What it closes: `EXC-13`'s Production half, whether the database took the password the admin secret's first
 rotation wrote; the free trial's pair of readings around a warehouse sitting; and a GitLab backup before
@@ -1999,7 +2000,9 @@ carries the backup, and the Sandbox warehouse's owed items (the waiting list's W
 same hub start, each after its decision. **Read 2026-11-17**: the newest backup is the timer's of
 2026-11-16 03:01 UTC, taken during release F's sitting, expiring 2026-12-17 (the bucket's rule expires a
 current version after 30 days), so step 4's backup moves to any GitLab sitting before that date; the
-secret's `NextRotationDate` read 2026-11-22 01:59:59 UTC on 2026-11-16, never rotated.
+secret's `NextRotationDate` read 2026-11-22 01:59:59 UTC on 2026-11-16, never rotated. R1 (N.11.1)
+carries every step below on its own raises, after the rotation and before 2026-12-17: steps 2 and 3 on a
+Production raise after release G's leg, step 4's backup with GitLab already up.
 
 1. **[Claude] The rotation**, with nothing up, expected `LastRotatedDate` on 2026-11-22:
 
@@ -2190,7 +2193,9 @@ requires both.
 What it closes: Production's `publish` task owning the product's data product, the domain's one
 `trades-notional`, created over Production's asset and listed. What is written and why is the stage
 file's [§Release G as written](../stages/stage-19-smus-native-data-product.md). It runs after N.8.4's
-step 8, with the hub and GitLab up for its tag, and each act below names its identity.
+step 8, in R1 (N.11.1), with the hub and GitLab up with the build runner for its tag (`make gitlab-up
+BUILD=1`: a tag pipeline's untagged jobs run on the build runner alone, [`gitlab.md`](gitlab.md) §U), and
+each act below names its identity.
 
 1. **[user] `app-etl-dev`'s data product deleted**, `trades-notional` (`5070mjwdvjwp3k`), which was
    never published: in the portal as the project's owner (the project's data products, *Delete*), or
@@ -2255,6 +2260,379 @@ step 8, with the hub and GitLab up for its tag, and each act below names its ide
    subscription requests it. `production-register`, `-approve` and `-transform` stay `manual`: the
    newest training job in Production is release T's (the stage file, §The sittings that follow).
 
+### N.9 The combined Sandbox sitting, prepared 2026-11-19
+
+Written with nothing up on 2026-11-19, when the user asked for the sitting that closes the most steps with
+the least environment. It holds N.6 items 4 and 7: 6d's Sandbox items and Stage 20's sitting A on day 1,
+Stage 17's sittings B and C with its passes 2, 3 and 5 on days 2 and 3, and 6e 6.4. It raises the hub and
+`sandbox/egress` alone: no GitLab, since an application reaches a space as a tar built on the laptop; no
+Staging or Production egress; and no warehouse, which N.10 raises. `make status` read 0.0000 USD/h at 14:49 UTC that day. The
+pre-flight ran the same afternoon with nothing up, each block's by the session holding its stage, the
+readings in its stage log: Stage 20's (pull request #335), Stage 17's (#336) and 6d's (#337). Each stage
+file holds its block step by step; this section holds the days, the raises and the lowerings. Every command
+runs as the infrastructure user (`InfrastructureAccess`) unless it names another identity, and each write
+is Claude's on the user's word naming it, the other sessions on the laptop told first.
+
+The blocks add up to about twenty-one and a half hours, so the sitting runs on three days. Each day raises the groups its
+blocks call and ends at zero burn: a night of fourteen hours with the hub and `sandbox/egress` up costs
+about 3 USD, against 0.36 to 0.87 USD for the next day's Config cycle.
+
+#### N.9.1 What comes before the sitting
+
+- **[user] The merges** of this section's pull request and of #335, #336 and #337, so every apply runs
+  from `main` (Lesson 79). Done 2026-11-19.
+- **[user] With nothing up:**
+  - Stage 20 2.1: the database `app_dbt` in `app-dbt-dev` and the editor's probe. The database's source
+    then runs daily at the minute of its creation, which the sitting's runs keep clear of.
+  - Stage 17 0.9's portal reading, before day 2; `app-ml-dev`'s MLflow App by 1.5's path, before day 3. An
+    MLflow App bills nothing at rest.
+  - 6d 7.6's second identity, `eighth-experimentation`'s contributor, signed in from a browser profile of
+    its own; and the window for 6d 7.5's monitored profile, which moves the laptop's network for every
+    session.
+- **6d decision 6's apply** of `production/networking/` ran on 2026-11-20 with nothing up (N.6 item 3); day 1
+  reads its effect.
+- **`sandbox/ml/`'s statements** for endpoint configurations, endpoints and pipelines (Stage 17 decision 7)
+  ran from `main` on 2026-11-20 with nothing up (N.6 item 3).
+- **[Claude] With nothing up:** the archives of `app-ml` and `app-genai` from `main` on day 3's eve. Done
+  2026-11-19: Stage 20 4.5's workflow and its second tar (pull request #335); Stage 17 7.4's evaluation
+  dataset, and `examples/sandbox-ml`'s scripts read against the house image's lock (#336).
+
+#### N.9.2 The days
+
+| Day | Raise | Blocks | Hours |
+|---|---|---|---|
+| 1 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa` | 6d decision 6's render and reading; Stage 20's sitting A; 6d 4.7, 7.6, 7.5's monitored half, 7.7 and 6.1 (viii)'s Code Editor half | about 6.5 |
+| 2 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | Stage 17's sitting B with 2.3 to 3.2, and pass 7 | about 7 |
+| 3 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base` | 6e 6.4's window; Stage 17's sitting C and pass 5 | about 8 |
+
+A group lasts one apply, so each day's raise names every group its blocks call, and no other. The tunnel is
+the user's ([`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md)). A day ends where the
+sitting can stop, and no block depends on a later day's.
+
+#### N.9.3 Day 1: 6d and Stage 20
+
+The blocks are [6d](../stages/stage-06d-unified-studio-remainder.md)'s "The combined Sandbox sitting: 6d's
+items in order" and [Stage 20](../stages/stage-20-dbt-lineage.md)'s "Sitting A in order".
+
+1. [Claude] The other sessions told, `make status`; [user] `make hub-up`.
+2. 6d decision 6's apply of `production/networking/` ran with nothing up on 2026-11-20 (N.9.1); [Claude]
+   the day re-plans it, `No changes`. The name reaches Squid at the association's next :00 or :30 with the host running, or at once by
+   [Claude⚡] `start-associations-once`; only the count `PX-3` reads on the host proves a render
+   (`SUP-071`).
+3. [user] `make up ENV=sandbox GROUPS=mwaa`; [Claude] `make status`.
+4. [user] The spaces, each stopped when its steps end: 6d's JupyterLab on `ml.t3.medium` and remote-access
+   Code Editor on `ml.t3.large` in `eighth-experimentation`, the contributor's remote-access space and one
+   in `test-experimentation`; Stage 20's JupyterLab in `app-dbt-dev`.
+5. [Claude] Decision 6's reading: `200 TCP_TUNNEL` on the portal's name from the new app, and no `403`
+   after the render.
+6. Stage 20's sitting A, its steps between the raise and the downs: 2.2 to 2.5, 3.1 on a split graph
+   alone, 3.3, 2.6 if there is room, 3.4 and 4.5. About 3.5 hours, 35 minutes more with 3.1 and 2.6. Pass 3 gives 3.1's
+   verdict, which 8.5 owes.
+7. 6d 4.7, about an hour: a background run, a schedule and a *Notebook Operator* workflow in
+   `eighth-experimentation`, then the `PUBLIC_INTERNET_ONLY` negative from the space, with no deny in
+   Sandbox before it: decision 17 (a) as it stands, the user's choice of 2026-11-19.
+8. 6d 7.6 on the split-tunnel profile, about 20 minutes; then 7.5's monitored half in the window the
+   orchestrating session announces, about 20 minutes, every shell on `proxy-on`.
+9. 6d 7.7 after the portal's logout, read at 5 and 30 minutes, with [Claude] 6.1 (viii)'s Code Editor half
+   from the flow log during the wait: about 35 minutes. It comes last because the logout ends every portal
+   tab.
+10. 6d's step 12: 4.7's schedule deleted, the spaces stopped, the portal tabs closed; then the lowering
+    (N.9.6).
+
+#### N.9.4 Day 2: Stage 17's sitting B, its passes 2 and 3, and pass 7
+
+The block is [Stage 17](../stages/stage-17-sandbox-machine-learning.md)'s "Sittings B and C as one
+Sandbox sitting", its day 2 rows.
+
+1. [Claude] The other sessions told; [user] `make hub-up`, then
+   `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`; [Claude] `make status`.
+   `bedrock-agent` is pass 7's alone.
+2. Stage 17's sitting B and pass 7: the opening with 1.4's and 0.5's readings and the spaces, 0.3 and 0.7, 1.6,
+   2.1, 2.2 (a) and (b), [Claude⚡] the training pair's apply in `sandbox/workflows/`, 2.2 (c), 2.3's
+   negatives, 2.4's JumpStart form, 3.1's second run and 3.2's registry, then pass 7. About 6.2 hours. The
+   training pair's default flips to `true` in that day's pull request, or the next plan from `main`
+   removes it (Lesson 79). 3.3 is read with nothing up after `eighth-experimentation`'s next source run,
+   about 17:38 UTC.
+3. Stage 17's closing reads, `./aws/sandbox-ml.py` and `./aws/catalog.py`, 2.5's `ML-3` among them; the
+   spaces stopped and the portal tabs closed; then the lowering (N.9.6).
+
+#### N.9.5 Day 3: 6e 6.4, Stage 17's sitting C and its pass 5
+
+The blocks are [6e](../stages/stage-06e-claude-code-bedrock.md) 6.4 and Stage 17's day 3 rows: sitting C,
+9.6 and 10.4, then pass 5.
+
+1. [Claude] The other sessions told; [user] `make hub-up`, then
+   `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base`; [Claude] `make status`.
+2. 6e 6.4's window, about an hour, with nothing else running: one Claude Code session in a space on the
+   default model, a task of real length over several turns, and no other Bedrock call in the account.
+   Claude marks its start and end in UTC as the user reports them and reads `./aws/bedrock-usage.py` after
+   the channels' publication lag. The token volume goes to Stage 12 decision due 2's ceiling, where 6e
+   decision 6, taken 2026-11-17, leaves it.
+3. Stage 17's sitting C: 9.6, `app-ml` trained, registered and scored in `app-ml-dev` (verification
+   lx); then 10.4's deploy and its readings 1 to 6, each `sandbox/bedrock/` apply [Claude⚡], both switches
+   back to `false` at the end; then pass 5 in `eighth-experimentation`'s space, the pipeline authored from
+   the SDK, run and read back, and the editor's forms (5.1 to 5.4). About 6.2 hours.
+4. Stage 17's closing reads, `./aws/sandbox-ml.py` and `./aws/catalog.py`; the spaces stopped and the portal
+   tabs closed; then the lowering (N.9.6).
+
+#### N.9.6 The lowering, each day
+
+Every portal tab is closed first (`sagemaker-application.md` §D), then:
+
+```bash
+make down ENV=sandbox
+make hub-down
+make status
+```
+
+§R's readings follow. `make status` reads every account's Studio apps, so an app an open page restarted
+after the down's hook shows there.
+
+#### N.9.7 The sitting's cost
+
+At [`cost-model.md`](../cost-model.md)'s "Per session" rates:
+- the hub's two hosts and two addresses, 0.026 USD/h, and Sandbox's 18 endpoints, 0.180 USD/h, each day;
+- the groups' endpoints at 0.010 USD/h each: day 1's one, day 2's six and day 3's four;
+- each space's app, 0.050 USD/h on `ml.t3.medium` and 0.100 on `ml.t3.large`, 6d's remote-access spaces;
+- a Config cycle of Sandbox's `[E]` slices each day, 0.36 to 0.87 USD whatever its length.
+
+Before the spaces, the days bill about 0.22, 0.27 and 0.25 USD/h, some 1.4, 1.9 and 2.0 USD of hub and
+endpoints; with the spaces and the Config cycle, 2 to 3.5 USD a day and 8 to 10 USD for the sitting. The
+models' tokens, the jobs and the embeddings are billed apart, and 6e 6.4's session is the largest of them;
+Stage 17's training jobs are about five minutes of `ml.m5.xlarge` each, at 0.23 USD/h.
+
+#### N.9.8 What follows the sitting
+
+N.6 items 5 to 11, in their order: R1 (N.11.1) after 2026-11-22, the subscriptions with nothing up, Stage
+17 10.5 after day 3, N.10's two days before 2026-12-19, and R2 (N.11.2). Days 2 and 3 depend on none of
+them, so R1 may come between day 1 and day 2.
+
+### N.10 The Sandbox warehouse sitting, prepared 2026-11-19
+
+Written with nothing up on 2026-11-19, the pre-flight of N.6 item 9 (pull request #339). It joins 5b's
+test and re-plan, 6h's owed negatives and readings, Stage 19's pass 5 and Stage 21's passes 2 to 5, with
+Stage 17's pass 4 and Stage 20's pass 5, which call no warehouse. Each day raises the hub and one `make up
+ENV=sandbox GROUPS=redshift`, which brings `sandbox/egress/` with the `redshift` group, the warehouse's
+compute and `sandbox/probes/`, and day 1 adds `mwaa` for Stage 20's run: no GitLab, no Staging or
+Production egress. It shares no hub start with N.9, whose days already run six to seven hours. `make status` read 0.0000 USD/h
+at 21:46 UTC that day. Each stage file holds its block step by step under "The Sandbox warehouse sitting",
+and its stage log the readings; this section holds the days, the raises and the lowerings. Every command
+runs as the infrastructure user (`InfrastructureAccess`) unless it names another identity, and each write
+is Claude's on the user's word naming it, the other sessions on the laptop told first.
+
+The blocks add up to about fifteen hours, so the sitting runs on two days. Each `make up` creates a new
+usage limit, so each day starts at zero of its 10 RPU-hours.
+
+#### N.10.1 What comes before the sitting
+
+- **[user] The merges** of pull request #339 and of this section's, so every apply runs from `main`
+  (Lesson 79). Done 2026-11-20.
+- **[Claude⚡] `sandbox/warehouse/` applied from `main`**, with nothing up, on the user's word naming it:
+  Stage 19 5.2's door, the access role's catalog read and `lakeformation:GetDataAccess`, which the user
+  chose on 2026-11-19 (*"Sim, escreva"*, in the pre-flight's session) and pull request #339 writes,
+  planned `0 to add, 1 to change, 0 to destroy`. The role held neither piece: simulated that day,
+  `glue:GetTable` read `implicitDeny` on Sandbox's and Production's `trades_notional` and `allowed` on the
+  lake's table, the control. Done 2026-11-20, 15:57:30 to 15:57:40 UTC, on the user's *"autorizo o apply no
+  warehouse"*, re-planned `No changes`.
+- **[user] R1 and the subscriptions** (N.6 items 5 and 6): Stage 19's pass 5 and Stage 20's read the
+  product through `eighth-experimentation`'s and `app-dbt-dev`'s subscriptions; Stage 20 5.1's tar is
+  built before day 1.
+- **N.9's day 2**: Stage 17's pass 4 serves the version 3.2 registered.
+- **`sandbox/ml/`'s endpoint statements** (Stage 17 decision 7) ran from `main` on 2026-11-20 with nothing
+  up (N.6 item 3): pass 4 creates an endpoint configuration and an endpoint.
+- **[user] With nothing up:**
+  - 6h decision 8 (a)'s window: the wide tag per sitting or standing.
+  - Stage 21 1.3's wizard half, the enable wizard read and cancelled.
+  - Stage 21 4.5's write path: `sandbox/data/`'s key policy naming the data transfer role (D31), or
+    reads alone.
+  - Sandbox's free-trial balance, before the sitting, after each day and the next day.
+- **[user] The identities**: `eighth-experimentation`'s contributor in a browser profile of its own (6h
+  0.4); the Data Scientist User signed in (6h 5.4).
+
+#### N.10.2 The days
+
+| Day | Raise | Blocks | Hours |
+|---|---|---|---|
+| 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | 5b; 6h to 0.4's portal half; Stage 19's pass 5 to 5.3; Stage 17's pass 4; Stage 20's pass 5 | about 7.5 |
+| 2 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | Stage 21's passes 2 to 5 and their closing reads; Stage 19's 5.4 with Stage 21's rollback; 6h 6.4; the subscriptions revoked | about 7.5 |
+
+A breach of the usage limit deactivates the compute until its amount is raised; Stage 17's and Stage 20's
+blocks call no warehouse, so they run on through one.
+
+#### N.10.3 Day 1: 5b, 6h, Stage 19, Stage 17's pass 4 and Stage 20's pass 5
+
+The blocks are the sections titled "The Sandbox warehouse sitting" in
+[5b](../stages/stage-05b-redshift-serverless.md), [6h](../stages/stage-06h-redshift-connection.md) and
+[Stage 19](../stages/stage-19-smus-native-data-product.md), then
+[Stage 17](../stages/stage-17-sandbox-machine-learning.md)'s pass 4 and
+[Stage 20](../stages/stage-20-dbt-lineage.md)'s pass 5.
+
+1. [Claude] The other sessions told, `make status`; [user] `make hub-up`, `make up ENV=sandbox
+   GROUPS=redshift,mwaa`; [Claude] `make status`.
+2. [user] The spaces, each stopped when its steps end: a JupyterLab on `ml.t3.medium` in
+   `eighth-experimentation` (6h 5.3, Stage 19's pass 5, Stage 17's pass 4), one in `test-experimentation`
+   (6h 5.2b) and one in `app-dbt-dev` (Stage 20's pass 5).
+3. [Claude] 5b's steps 1 and 2: `./aws/warehouse.py awsds-infra-sandbox-1 --sql`, then the re-plan of
+   `warehouse-compute/`. A change in that plan stops every apply to the slice for the day, the wide tag's
+   included. About 15 minutes.
+4. [user; Claude] 6h's step 1, the editor's first session on `sandbox`, then 5b's step 3, the
+   `max_query_execution_time` test. About 40 minutes.
+5. 6h's steps 2 to 10: 5.2, 5.2a's owed half, 5.3, 5.4, 5.1; [Claude⚡] the wide tag on, `sandbox/warehouse/`
+   then `warehouse-compute/`; 5.2b; [Claude⚡] the tag off unless it stands; 0.4's portal half. About 2 hours
+   10 minutes.
+6. Stage 19's pass 5, steps 1 to 6: the session, `USAGE ON DATABASE awsdatacatalog`, 5.2's read with
+   DataZone's grant alone (xiii), 5.1's Lake Formation half only on its refusal, the copy and the view, and
+   5.3's source, which is Stage 21's 2.2. About 1 hour 25 minutes.
+7. Stage 17's pass 4, 4.1 to 4.6: the endpoint from the SDK, which stays up after the sitting (decision
+   6), the portal's form, the batch transform, the serverless and GPU negatives. About 2 hours. Simulated
+   on 2026-11-20 as `eighth-experimentation`'s project role: `CreateModel`, `CreateEndpointConfig`,
+   `CreateEndpoint`, `CreateTransformJob` and `CreatePipeline` `allowed` with the project's tag on the
+   resource, and the GPU's endpoint configuration `explicitDeny` by the project boundary.
+8. Stage 20's pass 5, 5.2 and 5.3: the model over the subscribed table deployed and run from
+   `app-dbt-dev`'s space by 2.2's and 2.3's commands, its read and its graph read, then the listing's
+   *Lineage* tab as a member of another project. About 45 minutes.
+9. [user] Every space stopped and every portal tab closed, then the lowering (N.10.5). 5.1's grants, the
+   copy and both subscriptions stay for day 2, whose 2.1 reads the copy and 3.3 the read in place.
+
+#### N.10.4 Day 2: Stage 21
+
+The blocks are [Stage 21](../stages/stage-21-redshift-s3-data-products.md)'s "The Sandbox warehouse sitting:
+passes 2 to 4 in order" and its §5.
+
+1. [Claude] The other sessions told; [user] `make hub-up`, `make up ENV=sandbox GROUPS=redshift`; the
+   spaces in both projects.
+2. Stage 21's block, steps 1 to 7: pass 2 from 2.1, the consumer's workgroup by 1.5's applies in 2.4's order
+   and its removal by 2.9's, pass 3, pass 4 with 4.5's transfer role applied and 4.8 at once, then the
+   closing reads (`list-workgroups`, `describe-clusters`, `WH-8`). About 4 hours 30 minutes. Then Stage
+   21's pass 5: the prefix published from the `eighth-experimentation` space, the product requested from a
+   `test-experimentation` notebook, approved, read and revoked, about two hours with the revocation's
+   five-minute wait.
+3. [user] Stage 19's 5.4 with Stage 21's rollback item 5: 5.1's grants revoked, then the view and the
+   tables that item names dropped; 6h's 6.4, keep or drop `lab`; then the subscriptions of N.6 item 6
+   revoked, Stage 19 4.12's (by its 2.5) and Stage 20 5.0's, each read on both sides. Then the lowering
+   (N.10.5).
+
+#### N.10.5 The lowering, each day
+
+Every portal tab is closed first (`sagemaker-application.md` §D), then:
+
+```bash
+make down ENV=sandbox
+make hub-down
+make status
+```
+
+§R's readings follow. `make status` reads no Redshift workgroup, so day 2's closing reads stand for the
+consumer's workgroup and the managed compute, which no slice holds.
+
+#### N.10.6 The sitting's cost
+
+At [`cost-model.md`](../cost-model.md)'s "Per session" rates:
+- the hub's two hosts and two addresses, 0.026 USD/h, Sandbox's 18 endpoints, 0.180, the `redshift` group's
+  one, 0.010, and `sandbox/probes/`, 0.008: about 0.22 USD/h each day before the spaces, 0.23 on day 1
+  with the `mwaa` group's endpoint;
+- each space's app, 0.050 USD/h on `ml.t3.medium`, three of them on day 1;
+- Stage 17 4.1's endpoint, hosting `ml.m5.large` at 0.115 USD/h from its creation until the member deletes
+  it (decision 6), 2.76 USD a day, which neither `make status` nor `make down` reaches;
+- a Config cycle of Sandbox's `[E]` slices each day, 0.36 to 0.87 USD;
+- the warehouse: 1.44 USD per query-hour at 4 RPUs and 2.88 at 8, nothing idle, each day capped at 10
+  RPU-hours, 3.60 USD; 6h's full day of 2026-10-10 burned 2.44 USD;
+- Stage 21's consumer workgroup at the same rate with its 4 RPUs locked, and its decision 3 (b)'s managed
+  compute, whose base capacity is unread: at 128 RPUs a query's 60-second minimum costs 0.77 USD. Neither is
+  under the usage limit.
+
+With the warehouse's queries running, a day bills about 1.7 USD/h. The days come to about 4.5 and 5 USD,
+some 9.5 USD for the sitting, between 6.5 and 13, the managed compute the widest term and 4.1's endpoint
+apart. The trial absorbs the
+warehouse's share to 2026-12-19; whether it covers the two other compute objects is a reading.
+
+#### N.10.7 What follows the sitting
+
+1. **R2** (N.11.2), after Stage 17 10.5 and #321's merge in R1 (N.6 items 8 and 10).
+2. The bill halves after 2026-12-19: 5b's verification x and 6h's xii; Stage 19's close (its sitting 12);
+   Stage 21's close.
+
+### N.11 The release sittings, read 2026-11-20
+
+Written with nothing up on 2026-11-20 (N.6). Every owed step that needs GitLab is on one of two sittings,
+each raising the hub, GitLab with the build runner and the targets' egress once for every tag it carries:
+a tag pipeline's untagged jobs run on the build runner alone, so each is `make gitlab-up BUILD=1`
+([`gitlab.md`](gitlab.md) §U), and `BUILD=1` lasts one apply. Each stage file holds its steps; this section
+holds the order, the raises and the lowerings. Every command runs as the infrastructure user
+(`InfrastructureAccess`) unless it names another identity, and each write is Claude's on the user's word
+naming it, the other sessions on the laptop told first.
+
+#### N.11.1 R1: release G, the rotation's reading and the GitLab chores
+
+After 2026-11-22 01:59:59 UTC, the admin secret's first scheduled rotation in Production, and before
+2026-12-17, when the newest GitLab backup leaves the bucket. It needs no Sandbox day before it, and
+`app-dbt`'s release joins it only after N.9's day 1.
+
+1. [Claude] With nothing up: N.8.3 step 1, `LastRotatedDate` on 2026-11-22; the other sessions told;
+   `make status`. [user] Production's free-trial balance.
+2. [user] `make hub-up`, `make gitlab-up BUILD=1`, the tunnel ([`gitlab.md`](gitlab.md) §U); the local
+   user's password rotated before the first push (N.8.2 step 3).
+3. [user] With GitLab up, in any order: a backup by hand ([`gitlab.md`](gitlab.md) §B), which [Claude] reads
+   in the bucket; 6d 2.7's step 7, `release/versions.py`'s header by a merge request on `awsds/dev-env`, then
+   the mirror (`gitlab/README.md`, *Changing a recipe*); `awsds/app-ml`, `awsds/app-genai` and
+   `awsds/app-dbt` created by [`sagemaker-application.md`](sagemaker-application.md) §L's steps 1 to 6,
+   with `awsds/infrastructure`'s job-token allowlist admitting each (Stage 20 8.7).
+4. [user] Release G, N.8.5 step 4: the mirror at `main`, the template's merge request of eight files,
+   `make up ENV=staging ONLY=egress`, the tag `v0.6.0`; `make up ENV=production ONLY=workloads-egress`
+   before `production-gate`, then the gate. [Claude] N.8.5 step 5's readings of Production's leg.
+5. [user] After Production's leg, `make up ENV=production ONLY=workloads-egress,warehouse-compute
+   GROUPS=redshift`, so no run of the leg meets a warehouse; [Claude] N.8.3 step 3,
+   `./aws/warehouse.py awsds-infra-prod --sql`, whose database half signs in as `dbadmin` through the
+   rotated secret: `EXC-13`'s Production half. Then [user] `make down ENV=production
+   ONLY=warehouse-compute`.
+6. [user] [Pull request #321](https://github.com/felipenoris/AWS-DataScience/pull/321) merged, its branch
+   having taken `origin/main` by merge (it read `CONFLICTING` on 2026-11-20), so release G's leg ran the
+   script it was read with; the mirror pushed at the merge, since the legs clone the scripts from it. The
+   pull request teaches `scripts/deploy-application.py`, `scripts/model-chain.py` and their hooks `app-ml`,
+   `app-genai` and `app-dbt` (Stage 20 8.1): `--self-check` printed every stage of every application `ok`,
+   `app-etl`'s lines as on `main`. The pins read against the lint's release on 2026-11-18, `app-etl`
+   (`196acee`), `app-ml` and `app-genai` (`37cb5a6`), each pass at `4613ddc` with their pipelines'
+   options, so each moves to it at the application's next tag, `app-etl`'s after release G.
+7. When N.9's day 1 read Stage 20's passes 2 and 3, 8.5's verdict is written and 8.6's bundle rehearsed:
+   `app-dbt`'s first push and branch pipeline (8.7), then its tag `v0.1.0` by 8.8, `staging/egress/` kept
+   up from step 4 to the last Staging leg and `production/workloads-egress/` still up. Otherwise R2
+   carries it.
+8. [user] `make down ENV=staging` after the last Staging leg, release G's `staging-catalog` when step 7
+   does not run; `make down ENV=production ONLY=workloads-egress`; `make gitlab-down`; the tunnel down;
+   `make hub-down`. [Claude] `make status`
+   and §R; [user] Production's free-trial balance after the last half-hour interval has closed, and again
+   the next day.
+
+#### N.11.2 R2: the first releases of `app-ml`, `app-genai` and `app-dbt`, and `app-etl`'s model half
+
+After N.9's day 3 (9.6's candidate published, 10.4's readings), Stage 17 10.5's applies and #321's merge;
+before 2026-12-18 when it carries `app-dbt`, or with that archive moved to dbt 1.12.
+
+1. [Claude] The other sessions told, `make status`. [user] `make hub-up`, `make gitlab-up BUILD=1`, the
+   tunnel.
+2. [user] Each application's first push and branch pipeline, its merge request and its tag, in this order:
+   `app-dbt`'s `v0.1.0` (Stage 20 8.7 and 8.8) unless R1 carried it; `app-ml`'s (Stage 17 9.7), whose bundle
+   carries the candidate `app-ml-dev` last published; `app-genai`'s (10.6), whose `.gitlab-ci.yml` sets no
+   `GATES_UV_PROJECTS`, so its pipeline runs no `pip-audit` and no gates tag comes first. `make up
+   ENV=staging ONLY=egress` before the first tag and `make down ENV=staging` after the last Staging leg;
+   `make up ENV=production ONLY=workloads-egress` before the first `production-gate`. [Claude] the
+   readings per target after each leg (Stage 17's, and Stage 20's 8.9).
+3. [user] `app-etl`'s release retiring its model half (Stage 17 9.11), last, once `app-ml`'s release holds
+   the model in both targets; `app-etl`'s lint pin moves to `4613ddc` with it.
+4. [user] `make down ENV=production ONLY=workloads-egress`; `make gitlab-down`; the tunnel down;
+   `make hub-down`. [Claude] `make status`, §R, and 9.11's estate pull request, planned from a `main` that
+   holds the release (N.6 item 11).
+
+#### N.11.3 The sittings' cost
+
+At the rates of [`gitlab.md`](gitlab.md) §U and [`cost-model.md`](../cost-model.md)'s "Per session": the hub,
+0.026 USD/h; GitLab's session, 0.1961 USD/h, and its three runners with `BUILD=1`, 0.2493; Staging's and
+Production's egress, 0.080 USD/h each while raised; a Config cycle of GitLab's `[E]` slices, 0.21 to 0.38
+USD per sitting. A sitting of six to eight hours bills about 0.47 USD/h before the targets' egress, some
+4 to 6 USD in all. R1 adds N.8.3's warehouse queries, at 1.44 USD per query-hour and nothing idle, against
+Production's trial. The two replace the sittings of release G, of N.8.3 and of each application's first
+release, each of which raised the same hub, GitLab and egress.
+
 ## Q. After the quotas: Stage 10's pass 3
 
 The quotas are above zero since 2026-10-24 (§0.2), and pass 3 is the data release's (§V steps 3, 6 and 7).
@@ -2268,10 +2646,10 @@ The quotas are above zero since 2026-10-24 (§0.2), and pass 3 is the data relea
 Zero burn in every account the sitting raised, no interface endpoint left, no NAT gateway anywhere;
 then the stage's own instrument (`cicd.py`, `deploytargets.py`, `orchestration.py`, `datalake.py`,
 `warehouse.py` after §W), `make status`, and the log entry of each step, in the sitting it ran. After a
-Sandbox sitting, no Studio app in any project's domain (`eighth-experimentation`'s, `test-experimentation`'s
-and, since 2026-11-14, `app-etl-dev`'s), since an open portal page starts one again after the down's hook
-(N.3 step 10):
+Sandbox sitting, no Studio app in any of Sandbox's domains, nine across its six projects on 2026-11-20,
+since an open portal page starts one again after the down's hook (N.3 step 10). The loop reads the domains
+rather than naming them:
 
 ```bash
-for d in d-p6gthxc82ckg d-lfgbdrjncmsu d-spi9kgo6x5b4; do aws sagemaker list-apps --domain-id-equals "$d" --query 'Apps[?Status!=`Deleted`].[SpaceName,AppType,Status]' --output text --profile awsds-infra-sandbox-1 --region us-west-2; done
+for d in $(aws sagemaker list-domains --query 'Domains[].DomainId' --output text --profile awsds-infra-sandbox-1 --region us-west-2); do aws sagemaker list-apps --domain-id-equals "$d" --query 'Apps[?Status!=`Deleted`].[SpaceName,AppType,Status]' --output text --profile awsds-infra-sandbox-1 --region us-west-2; done
 ```

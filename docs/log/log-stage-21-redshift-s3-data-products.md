@@ -520,3 +520,52 @@ UTC.*
   Step 4.5 and pass 4's commands name the variable, the saved plan and the output, and 4.8's teardown plans
   the slice without it.
 - **[Claude] The pull request**: [#323](https://github.com/felipenoris/AWS-DataScience/pull/323).
+
+## 2026-11-19 — passes 2 to 4's pre-flight, with nothing up
+
+*Claude, in the pre-flight session of the Sandbox warehouse sitting started by the orchestrating session,
+as the infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1`
+(account Sandbox Account 1) and `awsds-infra-data` (account Data Governance). Reads and plans only, no
+apply and no AWS write. Times are UTC.*
+
+- **[Claude] The plans from `main`**, each `-input=false`, saved and not applied:
+
+  | UTC | Slice | Variables | Plan |
+  |---|---|---|---|
+  | 21:44:37 | `sandbox/warehouse/` | `data_transfer_role_enabled=true` | `2 to add` |
+  | 21:52:31 | `sandbox/sagemaker/` | none | `No changes` |
+  | 21:53:01 | `sandbox/sagemaker/` | `redshift_serverless_enabled=true` | `3 to add, 1 to change, 0 to destroy`: the `RedshiftServerless` blueprint configuration, its policy grant, `AmazonDataZoneRedshiftManageAccessRolePolicy` on the manage-access role; the project key's policy |
+  | 21:53:54 | `data-governance/governance/` | none | `No changes` |
+  | 21:54:23 | `data-governance/governance/` | `redshift_serverless_enabled=true` | `0 to add, 1 to change, 0 to destroy`: `awscc_datazone_project_profile.this["experimentation"]` |
+
+  The counts are the ones the stage's commands carry.
+- **[Claude] Two corrections made in place in the stage file**: pass 2's raise is one `make up ENV=sandbox
+  GROUPS=redshift`, which raises `sandbox/egress/` with the group, the compute and `sandbox/probes/`,
+  where the text had a separate `ONLY=egress` first; and 4.5's and 4.8's plans of `sandbox/warehouse/` name
+  `all_projects_tag_enabled` beside `data_transfer_role_enabled`, since a plan naming one switch takes the
+  other at its default and 6h decision 8 (a)'s tag may stand (Lessons 51 and 69).
+- **[Claude] What `make down` and `make status` do not see**: the consumer's workgroup (decision 1 (b)) and
+  the managed compute of decision 3 (b) are no slice's, and `make status` reads no Redshift workgroup, so
+  the block closes with `list-workgroups`, `describe-clusters` and `./aws/warehouse.py`'s `WH-8`.
+- **[Claude] The block written**: "The Sandbox warehouse sitting: passes 2 to 4 in order" in the stage
+  file, after the close and before the verifications.
+
+## 2026-11-20 — Pass 5 on the warehouse sitting's day 2, and the switches re-planned
+
+*Claude, in the session that regrouped the sittings (Stage 8's log, this day), with nothing up. Plans as the
+infrastructure user with `InfrastructureAccess`, through `awsds-infra-sandbox-1` (account Sandbox Account 1)
+and `awsds-infra-data` (Data Governance), from `origin/main` `30855d92`'s tree, 17:10:43 to 17:13:42; no AWS
+write. Times are UTC.*
+
+- **[Claude] The switches**, each default *"No changes."*: `sandbox/sagemaker/` with
+  `redshift_serverless_enabled=true` *"Plan: 3 to add, 1 to change, 0 to destroy."*;
+  `data-governance/governance/` with the same *"Plan: 0 to add, 1 to change, 0 to destroy."*;
+  `sandbox/warehouse/` with `data_transfer_role_enabled=true` *"Plan: 2 to add, 0 to change, 0 to destroy."*
+  and with `all_projects_tag_enabled=true` *"Plan: 0 to add, 1 to change, 0 to destroy."*
+- **[Claude] Pass 5** follows passes 2 to 4 on `promotion.md` §N.10's day 2 (§N.10.4), a space in each
+  project.
+- **[Claude] The stage file's commands and rollback aligned**: 3.3 reads the link 4.12 read; both plans of
+  `sandbox/warehouse/` take the wide tag from `TAG`, `false` while 6h decision 8 (a)'s tag is per sitting;
+  the drops name the view `lab.trades_hot_by_desk` first, then `lab.trades_hot_daily`,
+  `lab.trades_hot_by_day`, `lab.trades_from_lake` and `lab.trades_hot`; 6h decision 3's sentence says it was
+  done 2026-11-19.

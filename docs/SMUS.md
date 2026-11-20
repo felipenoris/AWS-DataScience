@@ -117,9 +117,10 @@ a concession mechanism wearing a restriction's name, and what it natively restri
 
 - the member's **designation** — owner vs contributor, and since 2026-10-29 a **custom designation**, a
   Cedar permit policy over the project's actions the domain defines (`CreateDesignation`;
-  [`upstream-releases.md`](plan/upstream-releases.md)); `awsds-studio` holds the two managed ones alone
-  (read 2026-10-30) — plus the domain's authorization policies over who creates projects, who joins, who
-  assumes ownership;
+  [`upstream-releases.md`](plan/upstream-releases.md)); `awsds-studio` holds the two managed ones and,
+  since 2026-11-19, Stage 19 decision 15 (d)'s `subscription-approver`, a policy of action groups
+  (`SUP-384`) assigned to no member yet — plus the domain's authorization policies over who creates
+  projects, who joins, who assumes ownership;
 - the **surface** — inherited from the profile: which blueprints exist, which parameters are locked.
   The member does not choose it; it came with the mold;
 - **which assets the project reaches** — every catalog asset crosses a subscription request approved
@@ -780,8 +781,9 @@ and its log). Since 2026-11-11 each deployment target holds one, `deploy-staging
   to the service, the project's `shared/` prefix and the project key. `run` starts the workflow and
   returns; a pipeline follows the run with `get-workflow-run`.
 - **A person in it.** The V2 domain admits `PROJECT_OWNER`, `PROJECT_CONTRIBUTOR` and, since 2026-10-29, a
-  `USER_CREATED_DESIGNATION` of the domain's own (none here, read 2026-10-30); a member of any designation
-  acts as the project role, and with spaces off the portal offers no Workflows tool.
+  `USER_CREATED_DESIGNATION` of the domain's own (`subscription-approver` alone since 2026-11-19); a member
+  of either managed designation acts as the project role, for a custom one unmeasured (Stage 19 xxvi), and
+  with spaces off the portal offers no Workflows tool.
   DataZone sets `aws:SourceIdentity` on the sessions it opens for a member and as `SYSTEM`, and none
   is set on a worker's session or on a subscription fulfilment's.
 - **A subscription across accounts.** The fulfilment acts as each side's project role, in
@@ -855,9 +857,9 @@ objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/cat
 - **Lineage sync is a connection property.** `glueLineageSyncEnabled` is `true` on each project's
   `LAKEHOUSE` and `IAM` connections (read 2026-10-18, never updated since creation), and the blueprint
   configuration carries no lineage field. The Redshift connection's `lineageSync` is the separate
-  meter below, and it is enabled (`cron(43 3 * * ? *)`, read 2026-10-18): its eight daily runs since
-  2026-10-11 all failed, the newest on *"Redshift endpoint doesn't exist in this region"* while the
-  workgroup was down, and that run processed no query.
+  meter below, enabled at creation on `cron(43 3 * * ? *)` and off since 2026-11-19 (6h decision 3): its
+  39 daily runs from 2026-10-11 to 2026-11-18 all failed, the one read on 2026-10-18 on *"Redshift
+  endpoint doesn't exist in this region"* while the workgroup was down, and that run processed no query.
 - **The domain offers 24 managed asset types** (read 2026-10-28, Stage 19 0.8; 23 on 2026-10-18),
   `GlueTableAssetType` among them, all owned by the domain's own project. A custom type is not needed to publish a Glue table.
 - **`list-domains` in an associated member account returns the shared domain.** The listing alone
@@ -987,9 +989,10 @@ maps nothing on the notebook door.
 **`lineageSync` is a scheduled query on an hourly meter.** `awscc_datazone_connection`'s
 `redshift_properties.lineage_sync` takes an `enabled` flag and a `schedule`, and every run is a query on a
 workgroup billing **1.44 USD/hour** at 4 RPUs. The portal's form offers no toggle for it on this path
-(measured 2026-09-21), and the connection the form wrote has the sync enabled; every run to 2026-10-18
-failed (§The catalog surface). Switching it off is an `UpdateConnection` by a project member, and
-whether to is 6h decision 3, the user's.
+(measured 2026-09-21), and the connection the form wrote has the sync enabled; every run to 2026-11-18
+failed (§The catalog surface). Sandbox's connection has it off since 2026-11-19, by one `UpdateConnection`
+from Sandbox's `InfrastructureAccess` as a contributor, with the workgroup down (6h decision 3,
+`redshift-connection.md` §P step 4a).
 
 **`enable_trusted_identity_propagation` exists per connection**, not only per project profile — which
 corrects the premise of open question 13, where TIP is recorded as a profile-level switch whose cost is that
@@ -1266,13 +1269,13 @@ parameter exists so nobody can flip a project to `PublicInternetOnly`.
 ### Querybook compute
 
 A querybook, the SQL notebook the portal opens from the catalog, runs its cells on a managed compute
-that `datazone:StartNotebookCompute` starts. In Sandbox that call fails with
+that `datazone:StartNotebookCompute` starts. In Sandbox that call failed with
 `ServiceQuotaExceededException`, which the portal shows as status code 402 (measured 2026-09-12, six
 attempts by the project role):
 
-- `L-F63F402C`, *SageMaker Unified Studio Querybooks running on sc.t3.medium instances*, reads **0**
+- `L-F63F402C`, *SageMaker Unified Studio Querybooks running on sc.t3.medium instances*, read **0**
   against an AWS default of **5**. `L-B3401D17` (*Querybook Runs running on sc.t3.medium instances*)
-  reads 0 against 5, and `L-85C9EC5A` (*The maximum number of concurrent notebook runs per account*)
+  read 0 against 5, and `L-85C9EC5A` (*The maximum number of concurrent notebook runs per account*)
   0 against 15. Of the 81 `sc.*` quotas in the `datazone` service code with a default above zero, 79
   read 0; the two others are `L-DBBAE884` (*Notebooks running on sc.t3.medium instances*, 2 against 6)
   and `L-B890B049` (*Compute environments running on sc.t3.large instances*, 5 against 5). No increase
@@ -1291,12 +1294,14 @@ attempts by the project role):
   greater than the default quota value of 5.0"*), and a request equal to the default is accepted. An
   approval turns on a compute surface this estate has not measured. The query editor runs Athena
   through SQL Workbench without it (§S3 item 1b). The three requests were closed on 2026-09-24 07:49Z
-  without an increase, and the applied values still read 0 on 2026-10-17 (6d log), so the Querybook
-  has no capacity in this account until a new request.
+  without an increase, and the applied values still read 0 on 2026-10-17 (6d log). AWS raised them
+  later with no request: on 2026-11-19 `L-F63F402C` reads 10, `L-B3401D17` 5 and `L-85C9EC5A` 15 in
+  Sandbox, Staging and Production, and none of the 81 `sc.*` quotas with a default above zero reads 0
+  (6d log). The Querybook has capacity in all three; the compute's own calls stay unmeasured.
 
 A DataZone notebook is of type `SQL`, the querybook, or `DATA`, the native notebook the user guide documents
-beside JupyterLab and Code Editor (the API model and the guide, read 2026-10-18). `L-DBBAE884` above reads 2,
-and its name makes it the `DATA` notebook's quota (inferred, unmeasured), so one may start here. The native
+beside JupyterLab and Code Editor (the API model and the guide, read 2026-10-18). `L-DBBAE884` above read 2, and 10
+on 2026-11-19; its name makes it the `DATA` notebook's quota (inferred, unmeasured), so one may start here. The native
 notebook's kernels run in the
 domain-level VPC configuration (since 2026-04-23); Athena for Apache Spark is still its default Spark runtime
 and still outside any VPC (open question 12); and since 2026-08-19 its Athena, Redshift and EMR Serverless

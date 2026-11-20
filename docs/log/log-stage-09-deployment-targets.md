@@ -3139,3 +3139,17 @@ about 03:58 UTC (`promotion.md` §N.8.1 step 4); Claude read AWS as the infrastr
   updated on 2026-10-28 between 00:49 and 01:19.
 - **[Claude] `get-service-quota`**, 16:30:39: `L-611FA074` 20.0 and `L-236AE59F` 8.0 in both targets, the
   values read on 2026-10-24 (3.5).
+
+## 2026-11-20 — `EXC-13`'s Production half placed in R1
+
+*Claude, in the session that regrouped the sittings (Stage 8's log, this day), with nothing up. Reads as the
+infrastructure user with `InfrastructureAccess`, through `awsds-infra-prod` (account Production) and
+`awsds-infra-sandbox-1` (Sandbox Account 1); no AWS write. Times are UTC.*
+
+- **[Claude] The warehouse admin secrets**, read 17:04:20, Production's again at 17:49:36:
+  `redshift!awsds-prod-warehouse-dbadmin` with no `LastRotatedDate`, `NextRotationDate` 2026-11-22
+  01:59:59, rotation enabled; `redshift!awsds-sandbox-warehouse-dbadmin` rotated 2026-11-19 00:23:23, next
+  2026-12-19 01:59:59.
+- **[Claude] `promotion.md` N.8.3 rides R1** (§N.11.1): its steps on their own raises after the rotation and
+  before 2026-12-17, steps 2 and 3 on a Production raise after release G's leg, step 4's backup with GitLab
+  already up.

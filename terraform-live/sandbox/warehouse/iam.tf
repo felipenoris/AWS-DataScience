@@ -338,7 +338,7 @@ resource "aws_iam_policy" "project_access_portal" {
 }
 
 data "aws_iam_policy_document" "project_access_portal" {
-  # checkov:skip=CKV_AWS_356:the sqlworkbench and tag actions below are NOT resource-scopable - AWS's own AmazonRedshiftQueryEditorV2NoSharing puts them in a statement it names `NonResourceLevelPermissions` with Resource `*`, and tag:GetResources is an account-wide API. The constraint is the role's trust policy: only this project's role can assume it, with the project id as the external id
+  # checkov:skip=CKV_AWS_356:the sqlworkbench and tag actions below are NOT resource-scopable - AWS's own AmazonRedshiftQueryEditorV2NoSharing puts them in a statement it names `NonResourceLevelPermissions` with Resource `*`, tag:GetResources is an account-wide API, and lakeformation:GetDataAccess takes no resource type, Lake Formation's grants being its scope. The constraint is the role's trust policy: only this project's role can assume it, with the project id as the external id
   # checkov:skip=CKV_AWS_111:the writes here are query-editor session state (tabs, workspace settings) and query execution, none of which takes a resource ARN. The owner-scopable half - saved queries, notebooks, charts - is deliberately NOT granted, which is what would have carried a resource constraint
   for_each = var.projects
 
@@ -412,6 +412,45 @@ data "aws_iam_policy_document" "project_access_portal" {
       "arn:aws:glue:${var.region}:${local.lake_catalog_id}:database/governed_trades",
       "arn:aws:glue:${var.region}:${local.lake_catalog_id}:table/governed_trades/*",
     ]
+  }
+
+  # A product the project subscribes to and reads in place (Stage 19 pass 5, variables.tf
+  # `subscribed_products`). Redshift calls Glue on the resource link in this account and on its
+  # target in the producer's, as this role. DataZone names a link after its target (Lesson 85), so
+  # the link's half names the subscription target database's tables by wildcard; the target's half
+  # names the producer's one table. Lake Formation's grants decide which rows either half reaches.
+  dynamic "statement" {
+    for_each = length(lookup(var.subscribed_products, each.key, [])) > 0 ? [var.subscribed_products[each.key]] : []
+
+    content {
+      sid     = "ReadTheSubscribedProductsCatalog"
+      effect  = "Allow"
+      actions = ["glue:GetDatabase", "glue:GetDatabases", "glue:GetTable", "glue:GetTables"]
+      resources = distinct(flatten([
+        for p in statement.value : [
+          "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:catalog",
+          "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:database/${p.link_database}",
+          "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:table/${p.link_database}/*",
+          "arn:aws:glue:${var.region}:${local.producer_catalog_id}:catalog",
+          "arn:aws:glue:${var.region}:${local.producer_catalog_id}:database/${p.producer_database}",
+          "arn:aws:glue:${var.region}:${local.producer_catalog_id}:table/${p.producer_database}/${p.producer_table}",
+        ]
+      ]))
+    }
+  }
+
+  # The product's data is in S3 under a location Lake Formation holds, so Redshift asks Lake
+  # Formation for credentials as this role. The governed share never needed it: its data is in a
+  # Redshift datashare.
+  dynamic "statement" {
+    for_each = length(lookup(var.subscribed_products, each.key, [])) > 0 ? [each.key] : []
+
+    content {
+      sid       = "LakeFormationVendsTheSubscribedProductsData"
+      effect    = "Allow"
+      actions   = ["lakeformation:GetDataAccess"]
+      resources = ["*"]
+    }
   }
 
   # The tag reads AWS names for "signing in using IAM credentials", where the database user comes

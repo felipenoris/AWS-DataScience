@@ -3008,3 +3008,608 @@ planned the slice's lines. Times are UTC.*
   `workgroup-b8fz4ovppjijv4-c9sdti5d2gaqs0`.
 - **[Claude] Left**: `app-ml-dev`'s MLflow App and model package group (9.6); Nova Lite enabled (10.4);
   9.5's pairs and 10.4's `sandbox/bedrock/` and `sandbox/model-access/`.
+
+## 2026-11-19 — 9.5 and 10.4: the rest of `sandbox/workflows/` and the Sandbox Bedrock slices written and planned, nothing applied
+
+*Claude, a session started by the orchestrating session, wrote the code and planned it as the
+infrastructure user through `awsds-infra-sandbox-1` and `awsds-infra-identity`: reads, plans and IAM
+simulations only. Times are UTC.*
+
+- **[Claude] What the roles hold today**, by `simulate-principal-policy` as each role, whose decision
+  includes the organization's policies: `app-ml-dev`'s role is allowed `CreateModel`, `DescribeModel`,
+  `DeleteModel` and `ListModels` on its tagged models, `CreateModelPackageGroup` with its tag and a tagged
+  version, and refused the describe of a free job name, the tag of a job, of a model and of a group, and a
+  version with no tag. `app-genai-dev`'s is allowed the invoke of its project's application profile and of
+  Haiku 4.5's system profile, and `ApplyGuardrail` on a guardrail with its project's tag; Nova Lite's
+  foundation model reads `explicitDeny` with `AllowedByOrganizations` `false`, the interactive OU's
+  `NotResource` (02:01:43); every `guardrail` task's call reads `implicitDeny`. The bundle role is
+  refused every read of the model's prefix and of the project key, and `PutObject` reads `explicitDeny`
+  from its boundary. Both roles carry
+  `EnableAmazonBedrockPermissions`, `EnableSageMakerMLWorkloadsPermissions` and
+  `EnableGlueWorkloadsPermissions` `true` (`list-role-tags`, 01:57:33). The job creates' `explicitDeny`
+  against a job's ARN with the volume key in the context is the simulator's (`SUP-009`): against `*` the
+  same call read `allowed` at 01:31:16.
+- **[Claude] `sandbox/workflows/`**: the transform pair, the model's tag and
+  `RegisterAPendingVersionForAppMl` in the policy, the training pair behind `training_pair_enabled`
+  (`false`), and the map `model_applications` naming `app-ml`'s role, its group `app-ml-dev` and its
+  prefix `app-ml/models/latest`; in `deploy-role.tf`, the bundle role's `ListTheTrainedModelsPrefix`,
+  `ReadTheTrainedModel` and `DecryptTheTrainedModelThroughS3`, the key read from the alias
+  `alias/awsds-sandbox-project`, the same key as the role's `KmsKeyId` tag.
+- **[Claude] `sandbox/bedrock/`**: `application.tf`, `awsds-sandbox-bedrock-application` on
+  `application_roles` (`app-genai-dev`'s role), the deny behind `application_guardrail_required`, and the
+  account's guardrail, its version and the enforced configuration behind `account_guardrail_enabled`, both
+  `false`; `awscc` `~> 1.89` in `versions.tf`, its 1.106.0 block copied from `staging/studio`'s lock and
+  accepted by `init` unchanged.
+- **[Claude] `sandbox/model-access/`**: `amazon.nova-lite-v1:0` in `project_models`.
+- **[Claude] `identity/org-policies/`**: the interactive OU's `NotResource` gains
+  `arn:aws:bedrock:us-west-2::foundation-model/amazon.nova-lite-v1:0`, the document 1,551 characters
+  minified; its description and `POLICIES.md`'s row follow. The battery's deny row now invokes
+  `us.amazon.nova-lite-v1:0`, `SYSTEM_DEFINED` and `ACTIVE`, routing to `us-east-1`, `us-west-2` and
+  `us-east-2` (`get-inference-profile`, read 2026-11-19), and a new `ou` row invokes the model in
+  `us-west-2` as `sandbox1`, expected to answer; `scp-battery.md` follows.
+- **[Claude] The plans**, each with the tfvars regenerated and `-input=false`, saved outside the
+  repository:
+
+  | Slice | Profile | Time | Plan |
+  |---|---|---|---|
+  | `sandbox/workflows` | `awsds-infra-sandbox-1` | 01:45:48 | *"Plan: 0 to add, 2 to change, 0 to destroy."*: `awsds-sandbox-workflows` and the bundle role's `project-reads` |
+  | `sandbox/workflows`, `-var training_pair_enabled=true`, a preview | `awsds-infra-sandbox-1` | 01:46:03 | the same count, the training pair added |
+  | `sandbox/bedrock` | `awsds-infra-sandbox-1` | 01:46:38 | *"Plan: 2 to add, 0 to change, 0 to destroy."*: the policy and its attachment, the assistant's policy unchanged |
+  | `sandbox/bedrock`, both variables `true`, a check | `awsds-infra-sandbox-1` | 01:47:17 | 5 to add: the guardrail, its version, the enforced configuration, the policy with the deny, the attachment |
+  | `sandbox/model-access` | `awsds-infra-sandbox-1` | 01:46:49 | *"Plan: 0 to add, 1 to change, 0 to destroy."*: `model-management` gains Nova Lite's foundation model |
+  | `identity/org-policies` | `awsds-infra-identity` | 01:48:10 | *"Plan: 0 to add, 1 to change, 0 to destroy."*: the interactive OU's document and its description, the description too long (below) |
+  | `identity/org-policies`, again | `awsds-infra-identity` | 02:06:00 | *"Plan: 0 to add, 1 to change, 0 to destroy."*, the description at 508 characters |
+
+- **[Claude] The planned documents simulated** (01:49:14 to 01:51:20) by `simulate-custom-policy`, with
+  AWS's UR v77 and ML v48 under the live boundaries `awsds-sandbox-project-boundary` v3 and
+  `awsds-sandbox-deploy-test-boundary` v2, the organization's policies outside the reading.
+  `app-ml-dev`'s role: `DescribeTransformJob` on a free name, `AddTags` on a transform job and on a model,
+  and `CreateModelPackage` `PendingManualApproval` with no tag on `model-package/app-ml-dev/new` `allowed`
+  by the planned policy; an `Approved` version, a version in another group, `AddTags` on the group and,
+  with the switch off, the training pair `implicitDeny`; with the switch on, the training pair `allowed`.
+  `eighth-experimentation`'s role: a version in `app-ml-dev` `implicitDeny`. `app-genai-dev`'s role, with
+  both variables `false` and `true` alike: `ListGuardrails`, `GetGuardrail`, `CreateGuardrail` with the
+  tag, `UpdateGuardrail`, `CreateGuardrailVersion` and `TagResource` of the `awsds:` keys on a tagged
+  guardrail `allowed`; the project key put on an untagged guardrail, `UpdateGuardrail` on one,
+  `DeleteGuardrail` and `PutEnforcedGuardrailConfiguration` `implicitDeny`; an invoke naming a guardrail
+  version `allowed`, Nova Lite's foundation-model pass through the profile included. An invoke naming
+  none reads `allowed` with the deny off and `explicitDeny` with it on, through the application profile,
+  on the foundation model, through Haiku 4.5's system profile and as a stream. With the deny off, UR v77's
+  `ACInvoke` admits the invoke of every system profile and every foundation model on the role's tag. The
+  bundle role: `ListBucket` on the prefix, `GetObject` under it and `Decrypt` through S3 `allowed`; the
+  whole location, another project's prefix, `inbox/`, a direct `Decrypt` and `PutObject` `implicitDeny`.
+- **[Claude] The description refused at commit**: pre-commit's tflint stopped the first commit on
+  `aws_organizations_policy_invalid_description`, *"description must be 512 characters or less"*: the
+  interactive OU's description, 502 characters before the change, read 608 with Nova Lite's clause, and
+  the plan of 01:48 carried it, a value `UpdatePolicy` refuses. Shortened to 508 with every clause kept,
+  and re-planned at 02:06.
+- **[Claude] The sizes**, minified: the workflows policy 2,451 characters (3,146 with the training pair),
+  the bundle role's `project-reads` 1,419, the application policy 1,162 (1,443 with the deny), the
+  interactive SCP 1,551.
+- **[Claude] Found**: 9.6's group `app-ml-dev` cannot be created with the project's tag from the space,
+  `AddTags` on the group reading `implicitDeny` in both readings, and decision 7 (a) puts that statement in
+  `sandbox/ml/`, unwritten. 9.6's first training run needs the training pair, so 2.2's (a) and (b) come
+  before it in sitting B (`promotion.md` §N.6 item 7). `ACInvoke` reaches every system profile, where
+  `sandbox/bedrock/main.tf`'s header records 6e 3.1's reading of 2026-09-11, none; the interactive OU's
+  `NotResource` is the model ceiling either way.
+- **[Claude] Left**: each apply on the user's word naming it, from `main` after the pull request,
+  re-planned first; after the SCP's apply, the battery's `ou` phase and the same principal simulation of
+  Nova Lite, expected `AllowedByOrganizations` `true`; Nova Lite enabled on the console's **Amazon
+  Bedrock models** tab; the training pair in sitting B after 2.2's (a) and (b); the group's statement.
+
+## 2026-11-19 — 3.3: `EXC-11`'s share written and planned as code, nothing applied
+
+*Claude, a session started by the orchestrating session, which handed it the share at about 02:10. Reads
+and a plan as the infrastructure user through `awsds-infra-data`. Times are UTC.*
+
+- **[Claude] AWS's page on a SageMaker data source**, read again: for a unified domain, a RAM share of the
+  domain to the service principal `sagemaker.amazonaws.com` under
+  `AWSRAMSageMakerServicePrincipalPermissionAmazonDataZoneDomain`, by the console's steps alone, the name
+  `DataZone-<domain id>-SageMaker` its example. The page names neither `sources` nor associated accounts.
+- **[Claude] The permission**, `ram get-permission` at 02:11: version 3, the default, `ATTACHABLE`, on
+  `datazone:Domain`, with twenty DataZone actions, `CreateAsset`, `CreateDataSource`, `StartDataSourceRun`
+  and `CreateListingChangeSet` among them. Its `creationTime` and `lastUpdatedTime` read the time of each
+  call (`SUP-382`).
+- **[Claude] RAM's pages**: `CreateResourceShare`'s `sources` constrains where a service principal's
+  requests may come from, against a confused deputy, and RAM's table of shareable resources marks
+  `datazone:Domain` as not shareable with a service principal, against AWS's page and the permission.
+- **[Claude] Data Governance's shares**, at 02:13: nine `LakeFormation-V4`/`V5` shares and
+  `DataZone-EXTENDED_ACCESS-dzd-d8yrvx1ko7im6o-ORG-ONLY`, none to a service principal. No SCP names a
+  `ram:` action. `list-permission-versions` at 02:15:31 read
+  `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess` versions 9 to 12 `UNATTACHABLE` and 13,
+  of 2026-11-16, the default, with the domain's share at version 10; Claude told Stage 19's session, which
+  moved the share on the user's word in its chat (Stage 19's log). Read here at 02:23:13: version 13,
+  `ASSOCIATED`, updated 02:20:33, and still nine `LakeFormation` shares.
+- **[Claude] The `Tooling` sources**, from Data Governance at 02:14: `test-experimentation`'s
+  (`c8sn6a0xxc4zv4`, `cron(6 6 * * ? *)`), `eighth-experimentation`'s (`4tb4qnmgi0iej4`, `cron(32 17 * * ?
+  *)`) and `app-etl-dev`'s (`apnukh5a1tfonk`, `cron(7 2 * * ? *)`), each `RUNNING` since its run of
+  2026-11-18, the two runs before `FAILED` with `VALIDATION_EXCEPTION`, *"Failed to run the data source.
+  Please check if RAM share is correctly configured between Amazon SageMaker and Amazon DataZone"*.
+  `app-etl-dev`'s tracks `SageMakerModelPackageGroupAssetType` over an empty list, `publishOnImport`
+  `false`, through a connection and no environment. `app-dbt-dev`, `app-ml-dev` and `app-genai-dev` hold no
+  SageMaker data source.
+- **[Claude] The code**: `data-governance/governance/sagemaker-share.tf`,
+  `awscc_ram_resource_share.sagemaker`, `DataZone-dzd-d8yrvx1ko7im6o-SageMaker`, the domain's ARN, the
+  principal, the permission, `sources` the four accounts of `local.member_account_ids`,
+  `allow_external_principals` `false`, the five tags. A hand-made share would be `ManagedBy=console`
+  outside Stage 2's table, and the `aws` provider's `aws_ram_resource_share` has no `sources`.
+- **[Claude] The plan**, 02:20:19 to 02:20:51 as `awsds-infra-data`, saved outside the repository: *"Plan:
+  1 to add, 0 to change, 0 to destroy."*, the share alone.
+- **[Claude] Left**: the apply on the user's word naming it, whose wording answers whether RAM shares a
+  domain with a service principal and with `allowExternalPrincipals` `false`; then the three sources' next
+  runs.
+
+## 2026-11-19 — decision 7 (a): `sandbox/ml/` written and planned with the model package group's statement, nothing applied
+
+*Claude, a session started by the orchestrating session, on the user's answer in its chat, "Write it
+before (Recommended)". Reads, a plan and IAM simulations as the infrastructure user through
+`awsds-infra-sandbox-1`, and one project read through `awsds-infra-data`. Times are UTC.*
+
+- **[Claude] The roles**, at 02:31: `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` and
+  `datazone_usr_role_5rzplmk81vma34_5ae0dd6m1suvbk` carry `AmazonDataZoneProject` `avhvbqn37ty7m8` and
+  `5rzplmk81vma34`, scope `dev`, blueprint `Tooling`, and the boundary `awsds-sandbox-project-boundary`;
+  `datazone get-project` names the projects `eighth-experimentation` and `app-ml-dev`. The boundary, v3,
+  holds no statement on a tag or a model package group.
+- **[Claude] The gap**, by principal simulation as both roles, the organization's policies included
+  (02:33:12): the tagged `CreateModelPackageGroup` reads `allowed` by
+  `SageMakerStudioProjectRoleMachineLearningPolicy` v48's `SageMakerCreatePermissions`, the context
+  carrying the caller's tag as `aws:ResourceTag/AmazonDataZoneProject`, and its `AddTags` reads
+  `implicitDeny`, in both. The two readings before it were the simulator's: without `aws:RequestedRegion`
+  both calls read `explicitDeny` with `AllowedByOrganizations` `false` (02:31:51, `SUP-008`), and without
+  the principal tag `EnableSageMakerMLWorkloadsPermissions` the create read `implicitDeny` (02:32:09).
+- **[Claude] `sandbox/ml/`**, rank 57, `[P]`: `awsds-sandbox-ml` with
+  `TagAModelPackageGroupWithTheCallersProject`, `sagemaker:AddTags` on `model-package-group/*` of the key
+  `AmazonDataZoneProject` alone, with the caller's own value, on a group that carries no project tag or
+  already the caller's; one attachment per role of `project_roles`, the two above, each checked for the
+  boundary; CostCenter `stage-17`; the lock copied from `sandbox/workflows/`'s and accepted by `init`
+  unchanged. Registered in `scripts/tfhygiene/layers.py`: `./scripts/slices.py check` read 49 slices
+  declared, 49 on disk.
+- **[Claude] The plan**, at 02:36:01: *"Plan: 3 to add, 0 to change, 0 to destroy."*, the policy and the
+  two attachments, saved outside the repository. The document is 504 characters minified.
+- **[Claude] The planned document simulated**, added to each role's live policies by principal
+  simulation (`SUP-370`'s refusal of a `file://` document was met first, and a file holding a JSON array
+  of one string passed), the organization's policies and the boundary included, `AllowedByOrganizations`
+  `true` in every row (02:37:39 to 02:37:54). As each role, its own value reads `allowed` on an untagged
+  group and on a group already its own; another project's value, a group carrying another project's tag,
+  and the project's key beside a second key (`Team`) read `implicitDeny`.
+- **[Claude] Sandbox's model package groups**: none, `list-model-package-groups` at 02:39:54.
+- **[Claude] Found**: a create that carries a second tag beside the project's is refused as `AddTags`,
+  since the blueprint's tag statement admits no `AmazonDataZone*` key and this one that key alone. 9.6's
+  and 3.2's creates carry the project's tag alone.
+- **[Claude] Left**: the apply on the user's word naming it, from `main` after pull request #326 and
+  re-planned first, before sitting B.
+
+## 2026-11-19 — 9.5, 10.4, 3.3 and decision 7 (a): the slices applied from `main`, the SCP's apply refused to this session
+
+*Claude, a session started by the orchestrating session, after the user merged pull request #326
+(02:49:29 UTC, `40c9466c`) and wrote in its chat "Autorizo os applies necessários". Plans and applies as
+the infrastructure user through `awsds-infra-sandbox-1`, `awsds-infra-identity` and `awsds-infra-data`.
+Times are UTC.*
+
+- **[Claude] The tree**: the worktree on `main` at `40c9466c`. Pull request #327, the other merge since the
+  branch's last sync, touched documentation alone.
+- **[Claude] The plans re-taken from `main`**, each compared by its planned changes (`terraform show
+  -json`) with the branch's saved plan, identical in all six:
+
+  | Slice | Profile | Time | Plan |
+  |---|---|---|---|
+  | `sandbox/workflows` | `awsds-infra-sandbox-1` | 02:52:26 | *"Plan: 0 to add, 2 to change, 0 to destroy."* |
+  | `sandbox/bedrock` | `awsds-infra-sandbox-1` | 02:52:41 | *"Plan: 2 to add, 0 to change, 0 to destroy."* |
+  | `sandbox/model-access` | `awsds-infra-sandbox-1` | 02:52:54 | *"Plan: 0 to add, 1 to change, 0 to destroy."* |
+  | `sandbox/ml` | `awsds-infra-sandbox-1` | 02:53:10 | *"Plan: 3 to add, 0 to change, 0 to destroy."* |
+  | `identity/org-policies` | `awsds-infra-identity` | 02:53:58 | *"Plan: 0 to add, 1 to change, 0 to destroy."* |
+  | `data-governance/governance` | `awsds-infra-data` | 02:54:21 | *"Plan: 1 to add, 0 to change, 0 to destroy."* |
+
+- **[Claude] The peers told** at about 02:55: the orchestrating session, Stage 19's, 6h decision 3's and
+  Stage 20 8.3's.
+- **[Claude] The Sandbox applies**, each from its saved plan, each re-planned *"No changes."* between
+  02:57:15 and 02:57:45:
+
+  | Slice | Start | Result |
+  |---|---|---|
+  | `sandbox/workflows` | 02:55:50 | *"Apply complete! Resources: 0 added, 2 changed, 0 destroyed."*: `awsds-sandbox-workflows` and the bundle role's `project-reads` |
+  | `sandbox/bedrock` | 02:56:14 | *"Apply complete! Resources: 2 added, 0 changed, 0 destroyed."*: `awsds-sandbox-bedrock-application` and its attachment to `app-genai-dev`'s role |
+  | `sandbox/model-access` | 02:56:37 | *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*: the provisioning role's `model-management` |
+  | `sandbox/ml` | 02:56:58 | *"Apply complete! Resources: 3 added, 0 changed, 0 destroyed."*: `awsds-sandbox-ml` and its attachments to `eighth-experimentation`'s and `app-ml-dev`'s roles |
+
+- **[Claude] The SCP's apply refused**: `identity/org-policies` from its saved plan was refused at about
+  02:58 by the app's auto-mode classifier before it ran, *"[Protected-Scope IaC Apply]"*, the label
+  `CLAUDE.md` records for an SCP apply in a started session on 2026-10-18. Nothing reached Organizations.
+- **[Claude] Data Governance's shares before the share's apply** (03:01:51): nine `LakeFormation` shares
+  and `DataZone-EXTENDED_ACCESS-dzd-d8yrvx1ko7im6o-ORG-ONLY`, each `ACTIVE`.
+- **[Claude] The share's apply**: `data-governance/governance` as `awsds-infra-data` from its saved plan at
+  03:02:25, *"awscc_ram_resource_share.sagemaker: Creation complete after 7s"* and *"Apply complete!
+  Resources: 1 added, 0 changed, 0 destroyed."*, re-planned *"No changes."* at 03:03:26. Read at 03:03:00:
+  - `DataZone-dzd-d8yrvx1ko7im6o-SageMaker`: `ACTIVE`, `allowExternalPrincipals` `false`, feature set
+    `STANDARD`, five tags, created 03:02:35;
+  - the principal `sagemaker.amazonaws.com`: `ASSOCIATED`, not external;
+  - the domain: `ASSOCIATED`;
+  - `AWSRAMSageMakerServicePrincipalPermissionAmazonDataZoneDomain`, version 3, the default: `ASSOCIATED`;
+  - four `SOURCE_ACCOUNT` associations, each `ASSOCIATED`.
+
+  RAM's table of shareable resources says a domain cannot be shared with a service principal (`SUP-383`).
+- **[Claude] The `Tooling` sources after it**, at 03:05:32, each source `RUNNING`. Each source's newest run
+  read `RUNNING` and had started before the share:
+  - `app-etl-dev`'s `apnukh5a1tfonk` at 02:19:45 that day;
+  - `test-experimentation`'s `c8sn6a0xxc4zv4` on 2026-11-18 at 06:16:57;
+  - `eighth-experimentation`'s `4tb4qnmgi0iej4` on 2026-11-18 at 17:38:11.
+
+  The two runs before each had `FAILED` with `VALIDATION_EXCEPTION`.
+- **[Claude] Left**:
+  - `identity/org-policies`' apply, on the user's word naming it in this chat or by the user's own run of
+    the saved plan `s17-main-identity-org-policies.tfplan`;
+  - after it, `./aws/probes/scp-battery.py --phase ou` and Nova Lite's principal simulation, expected
+    `AllowedByOrganizations` `true`;
+  - the share's reading: whether the runs end and how the next scheduled ones end (verification v);
+  - the training pair in sitting B.
+
+## 2026-11-19 — 10.4: the interactive OU's SCP applied by the orchestrating session, the battery's `ou` phase
+
+*Claude, the session that wrote 10.4, recording the orchestrating session's acts from the outputs it sent at
+about 04:25 UTC, and reading them back. The orchestrating session ran each step on the user's words in its
+own chat, "Autorizo SCP e bateria", which answered a question naming the SCP's apply and the battery's `ou`
+phase. As the infrastructure user, permission set `InfrastructureAccess`. Times are UTC.*
+
+- **[orchestrating session] The peers told** at about 04:20.
+- **[orchestrating session] The plan**, 04:21:38 to 04:21:53, as `awsds-infra-identity` from its worktree
+  at `main`'s `6c3cc62d` and one commit of documentation, the slice identical to `main`'s: *"Plan: 0 to add,
+  1 to change, 0 to destroy."*. Its `terraform show -json` resource changes are byte-identical (`cmp`) to
+  this session's plan of 02:53:58: `aws_organizations_policy.this["awsds-org-scp-ou-interactive"]`, one
+  entry added to `DenyBedrockInvocationOutsideTheScopedModels`' `NotResource`,
+  `arn:aws:bedrock:us-west-2::foundation-model/amazon.nova-lite-v1:0`, and the description;
+  `DenyBedrockReadsOutsideTheRoutedRegions` unchanged.
+- **[orchestrating session] The apply**, 04:22:32 to 04:22:42, from that saved plan:
+  *"aws_organizations_policy.this["awsds-org-scp-ou-interactive"]: Modifications complete after 1s
+  [id=p-tgda7n58]"* and *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*, re-planned *"No
+  changes. Your infrastructure matches the configuration."* at 04:22:51.
+- **[orchestrating session] The read-back** at 04:23:16, `organizations describe-policy`: four statements,
+  nine entries in the deny's `NotResource`, Nova Lite's among them.
+- **[orchestrating session] The battery**, `./aws/probes/scp-battery.py --phase ou`, 04:23:30 to 04:24:52,
+  exit 0: *"54 as expected, 0 unexpected, 5 not measured"*, against 53, 0 and 5 on 2026-11-17. As
+  `sandbox1`:
+  - *"interactive (inherited): bedrock:InvokeModel on amazon.nova-lite-v1:0 in us-west-2 (Stage 17
+    decision 23)"*: `ALLOWED`, succeeded, the new row;
+  - *"bedrock:InvokeModel outside the scoped set (decision 15)"*, sampling `us.amazon.nova-lite-v1:0`:
+    `DENY-SCP` `p-tgda7n58`;
+  - Titan V2 and the three Claude 4.5 `us.` profiles: `ALLOWED`, succeeded;
+  - `GetUseCaseForModelAccess` in `eu-west-1`: `DENY-SCP` `p-tgda7n58`.
+
+  The five not measured are 2026-11-17's kinds: four Athena rows `DENY-NOT-SCP`, and Identity's
+  `ec2:RunInstances` `UNTESTED`, *"no subnet in us-west-2"*. The report is
+  `aws/output/scp-battery-20261119T012331.txt` in the orchestrating session's worktree, named and headed in
+  local time (01:23:31, 04:23:31 UTC).
+- **[orchestrating session] The simulation** at 04:24:17, `iam simulate-principal-policy` as
+  `awsds-infra-sandbox-1`: `app-genai-dev`'s role `datazone_usr_role_b8fz4ovppjijv4_c9sdti5d2gaqs0`,
+  `bedrock:InvokeModel` on Nova Lite's `us-west-2` foundation model, with `aws:RequestedRegion` `us-west-2`
+  and `aws:PrincipalTag/EnableAmazonBedrockPermissions` `true`: `allowed`, `AllowedByOrganizations` `true`,
+  `AllowedByPermissionsBoundary` `true`, the matched statement in AWS's `SageMakerStudioProjectUserRolePolicy`.
+- **[Claude] The read-back from this session**:
+  - `describe-policy` at 04:26:53: `awsds-org-scp-ou-interactive`, four statements, the deny's `NotResource`
+    nine entries with Nova Lite's `us-west-2` ARN eighth, the document 1,551 characters, the description 508;
+  - the same simulation at 04:26:55: Nova Lite `allowed`, `AllowedByOrganizations` `true`, through
+    `SageMakerStudioProjectUserRolePolicy`; the negatives, Nova Pro's `us-west-2` foundation model and the
+    system profile `us.amazon.nova-lite-v1:0`, `explicitDeny`, `AllowedByOrganizations` `false`;
+  - `identity/org-policies` re-planned from this worktree at 04:27:05, the slice identical to `main`'s:
+    *"No changes."*;
+  - `./aws/org-policies.py`, 04:29:46 to 04:30:46, exit 0: *"wrote aws/output/org-policies.txt (all checks
+    passed)"*.
+- **[Claude] Left**: Nova Lite enabled on the console's Amazon Bedrock models tab (10.4), the user's; the
+  training pair in sitting B; `EXC-11`'s reading.
+
+## 2026-11-19 — 10.4: Nova Lite enabled in projects on the Bedrock models tab
+
+*The user enabled the model in Sandbox's console, as the infrastructure user with `InfrastructureAccess` in
+`Sandbox Account 1`, by the steps Claude gave in the session's chat, and wrote "Concluí a configuração do
+Nova Lite pelo console". Claude's readings after it, as `awsds-infra-sandbox-1` and `awsds-infra-data`.
+Times are UTC.*
+
+- **[user] The enabling**: *Enable in projects* on Nova Lite's *On-demand* row of the *Manage* page, with
+  the governance project in its selector, then *Submit*.
+- **[Claude] The trail**: in Sandbox's and in Data Governance's trails in `us-west-2`, one each of
+  `CreateEnvironment` at 13:02:38, `AssociateEnvironmentRole` at 13:02:39, `CreateAsset` at 13:02:41 and
+  `CreateListingChangeSet` at 13:02:43, and no `CreateInferenceProfile` from 12:55. Sandbox's trail in
+  `us-east-1` holds no `CreateRole`, `PutRolePolicy`, `AttachRolePolicy`, `CreatePolicy`,
+  `CreatePolicyVersion`, `UpdateAssumeRolePolicy` or `CreateServiceLinkedRole` from 12:55 (read 13:11:43).
+- **[Claude] The governance project** `GenerativeAIModelGovernanceProject` (`dmvami701qu6xc`), read at
+  13:03:42:
+  - a seventh environment, `amazon.datazone.BedrockModelEnvironmentType_3a043e363774` (`4o9mzknvmxhuhc`),
+    `ACTIVE`, created at 13:02:38 in `Sandbox Account 1`;
+  - a seventh asset, `amazon.nova-lite-v1:0us-west-2BedrockModelForm` (`4kvc963vx6zok0`), of
+    `amazon.datazone.BedrockModelAssetType` revision 9, created at 13:02:41, its listing `cp58jn8lqdoknk`
+    `ACTIVE`. Its `BedrockModelForm` reads `modelName` *Nova Lite*, `inferenceType` `ON_DEMAND`, input
+    modalities text, image and video, `region` `us-west-2`, the environment above, and `managementRoleArn`
+    the slice's `AmazonSageMakerBedrockModelManagementRole-<Data Governance Account>`. Its
+    `SubscriptionTermsForm` reads `approvalRequired` `NO`.
+- **[Claude] Sandbox**: the application inference profiles are the three read before: the playground's two
+  of 2026-10-19 (Haiku 4.5 in three Regions, Nova Lite in `us-west-2`) and `eighth-experimentation`'s Opus
+  4.5 of 2026-10-30. No project holds a Nova Lite profile before its first use. No role or customer-managed
+  policy with *Bedrock* in its name is newer than `awsds-sandbox-bedrock-application` (02:56:22).
+- **[Claude] The instruments**:
+  - `./aws/catalog.py`, 13:04:30 to 13:07:24, *"all checks passed"*, `CT-2` reading 11 listings, all owned
+    by a live project;
+  - `./aws/studio.py`, 13:07:24 to 13:10:21, 50 pass, 6 notes and no failure among its checks. It exited 1
+    because the persona, deploy and Control Tower profiles had no session (its section 10).
+- **[Claude] Left**: `app-genai-dev`'s Nova Lite profile, read with `list-inference-profiles` at the
+  project's first use in sitting C (10.4), expected in `us-west-2` alone.
+
+## 2026-11-19 — 3.3 and verification v: `EXC-11`'s first run after the share
+
+*Claude, a session started by the orchestrating session, on its brief of the afternoon, which authorizes
+no write. Reads as the infrastructure user with `InfrastructureAccess`, through `awsds-infra-data` (the
+domain) and `awsds-infra-sandbox-1` (Sandbox's groups), from 15:01:12 to 15:02:19. Times are UTC.*
+
+- **[Claude] The projects**: ten in the domain. The three created on 2026-11-19, `app-dbt-dev` (00:17:19),
+  `app-ml-dev` (00:17:46) and `app-genai-dev` (00:18:05), each hold a `Tooling` and a `SageMakerAIDomain`
+  environment, `ACTIVE`, and no data source. `GenerativeAIModelGovernanceProject` holds none either, and
+  `governed-lake`, `deploy-staging` and `deploy-production` hold Glue sources alone.
+- **[Claude] The `Tooling` sources**: `Tooling-default-sagemaker-modelpackagegroup-datasource` in three
+  projects, each tracking `SageMakerModelPackageGroupAssetType` over an empty list:
+
+  | Project | Source | Schedule | Runs | Newest run |
+  |---|---|---|---|---|
+  | `test-experimentation` | `c8sn6a0xxc4zv4`, `READY` | `cron(6 6 * * ? *)` | 35: 34 `FAILED`, 1 `SUCCESS` | `ajp1ym83139yxc`, from 06:16:57 to 06:17:18, `SUCCESS`, 0 added, updated, unchanged and failed |
+  | `app-etl-dev` | `apnukh5a1tfonk`, `RUNNING` | `cron(7 2 * * ? *)` | 5: 4 `FAILED`, 1 `RUNNING` | `3nzznqq176x028`, started 02:19:45, before the share |
+  | `eighth-experimentation` | `4tb4qnmgi0iej4`, `RUNNING` | `cron(32 17 * * ? *)` | 87: 86 `FAILED`, 1 `RUNNING` | `6fdkdu6arwynf4`, started 2026-11-18 at 17:38:11 |
+
+- **[Claude] The run before the success**: `bq960tfeokvwcw`, started 2026-11-18 at 06:16:57, was marked
+  `FAILED` at 06:16:57 on 2026-11-19 as its successor fired, with the wording of every failed run,
+  *"Failed to run the data source. Please check if RAM share is correctly configured between Amazon
+  SageMaker and Amazon DataZone"* (`VALIDATION_EXCEPTION`). The successful run lists no activity.
+- **[Claude] The start times**: each source starts its run some ten minutes past its schedule's minute,
+  06:16:57 for 06:06, 02:19:45 for 02:07 and 17:38:11 for 17:32.
+- **[Claude] Sandbox's model package groups**: `list-model-package-groups` returned none, exit 0.
+- **[Claude] The verdict so far**: the share removed the failure for the first run started after it,
+  which succeeded with nothing to ingest. The two runs started before it still read `RUNNING`. The
+  ingestion half of verification v waits on a model package group: 3.2's `ml-demo-xgboost` in
+  `eighth-experimentation`, or 9.6's `app-ml-dev` in a project that holds no such source.
+- **[Claude] Left**: `eighth-experimentation`'s run of about 17:38 today and `app-etl-dev`'s of about
+  02:19 on 2026-11-20, read when the orchestrating session asks.
+
+## 2026-11-19 — sittings B and C as one Sandbox sitting: the pre-flight readings, nothing up
+
+*Claude, the same session, on the same brief. Reads and plans as the infrastructure user with
+`InfrastructureAccess`, through `awsds-infra-sandbox-1` and `awsds-infra-data`, from 15:07 to 15:27, the
+plans from the branch at `0d5b573b`. No plan saved, nothing applied, nothing raised. Times are UTC.*
+
+- **[Claude] `./aws/sandbox-ml.py`**, generated 15:07:37: 33 pass, no check failed, *"None. Every call in
+  this report returned successfully."* `ML-1` notes the managed ML policy at v48 on every project; `ML-2`
+  reads `ml-demo-mlflow` `Created` on MLflow 3.16.0, the version 9.4's archive pins, with
+  `AutoModelRegistrationDisabled`.
+- **[Claude] `sandbox/workflows/`**: *"No changes."* at 15:08:12; with `-var training_pair_enabled=true` at
+  15:08:32, *"Plan: 0 to add, 1 to change, 0 to destroy."*, `aws_iam_policy.workflows` gaining
+  `DescribeATrainingJobNoProjectHolds` and `TagATrainingJobWithTheCallersProject`, 9 statements. The
+  slice's code is unchanged since its apply's tree, `40c9466c`, so 9.5's measurement stands: 3,146
+  characters minified of 6,144.
+- **[Claude] `sandbox/bedrock/`**: *"No changes."* at 15:14:55; with both switches `true` at 15:15:08,
+  *"Plan: 3 to add, 1 to change, 0 to destroy."*: `aws_bedrock_guardrail.account[0]`,
+  `aws_bedrock_guardrail_version.account[0]` and `awscc_bedrock_enforced_guardrail_configuration.account[0]`
+  created, `aws_iam_policy.bedrock_application` updated in place.
+- **[Claude] SageMaker's quotas**, applied values at 15:11:53, for the types 2.2 and the applications name:
+
+  | Type | Training | Processing | Transform | Endpoint |
+  |---|---|---|---|---|
+  | `ml.m5.xlarge` | 20 | 8 | 4 | 30 |
+  | `ml.m5.large` | 20 | 8 | 8 | 30 |
+  | `ml.t3.medium` | | 10 | | |
+
+- **[Claude] Bedrock's quotas for Nova Lite** at 15:10:07, applied equal to the defaults: *"Cross-region
+  model inference requests per minute"* 4,000, *"Cross-region model inference tokens per minute"*
+  8,000,000, and *"Model invocation max tokens per day"* 5,760,000,000, doubled for cross-region calls. No
+  quota names an in-Region on-demand rate for the model, so 10.4's first invoke in `us-west-2` is that
+  premise's reading.
+- **[Claude] ML v48's MLflow statement**: `SageMakerMlflowServerlessPermission` grants `CreateMlflowApp`,
+  `CreatePresignedMlflowAppUrl`, `DeleteMlflowApp`, `DescribeMlflowApp`, `UpdateMlflowApp` and
+  `CallMlflowAppApi`.
+- **[Claude] The profile of `app-ml-dev` and `app-genai-dev`**: both `experimentation` (`dh60xbal05q64w`),
+  `ACTIVE` (15:27). Its `MLflowApp` configuration is `3342d20e-001b-4b95-9053-fbbc04b5c303`, blueprint
+  `agjvpzxbha9fbk`, `ON_DEMAND`, with no parameter override (15:16:20), so 1.5's command serves
+  `app-ml-dev` with its project id `5rzplmk81vma34`.
+- **[Claude] What an MLflow App bills**: Sandbox's `Amazon SageMaker` costs by usage type from 2026-10-19
+  to 2026-11-18 (Cost Explorer, 15:12:31) hold Studio's JupyterLab and volume lines, Unified Studio's,
+  processing's and `DataAgentCredit`, and no MLflow line, while `ml-demo-mlflow` existed from its creation on 2026-10-19.
+- **[Claude] The block**: the section "Sittings B and C as one Sandbox sitting" of the stage file, in the
+  order its table gives, about seven hours under `GROUPS=mwaa,mlflow,bedrock-base`.
+- **[Claude] Left before the sitting**: `app-ml-dev`'s MLflow App and 0.9's portal reading, the user's; the
+  archives of `app-ml` and `app-genai` from `main` on the sitting's eve, Claude's.
+
+## 2026-11-19 — sittings B and C's block: Stage 17's other Sandbox items placed, nothing up
+
+*Claude, the same session, on the orchestrating session's addendum to its brief, which asks which of the
+waiting list's Stage 17 Sandbox items ride the same raise. Reads of the repository at `0d5b573b` and of the
+module tags, no AWS call. Times are UTC.*
+
+- **[Claude] The items**: the waiting list's Sandbox row names 0.3, 0.5's interface half, 0.7, 7.4 to 7.4c
+  and 7.6. The log holds no reading of any of them since 2026-10-18, which left 0.3 and 0.7 owed with a
+  session and `ML-9`'s interface half on `make hub-up` and `make up ENV=sandbox`.
+- **[Claude] The groups at `vpc-egress-v0.19.0`**, `sandbox/egress`'s pin: `bedrock-base` is `bedrock` and
+  `bedrock-runtime`, `bedrock-agent` is `bedrock-agent` and `bedrock-agent-runtime`, `mwaa` is
+  `airflow-serverless`. 7.1 raises `bedrock-agent` beside `bedrock-base` for pass 7, and 7.4b's `Retrieve`
+  from the space takes `bedrock-agent-runtime`, so pass 7 needs the fourth group.
+- **[Claude] The boundary**: `fenced_services` defaults to an empty list at `sagemaker-prereqs-v0.12.0`, and
+  `sandbox/sagemaker/` passes none, so `DenyServicesNoProjectUsesHere` is absent and no service pass 7
+  calls is fenced.
+- **[Claude] The house lock**, `gitlab/awsds/dev-env/dev-env/python/uv.lock`, last changed at `a1c755b5` on
+  2026-10-25, the day before `default-v0.10.0`'s build from GitLab's `c8bac16e`, a commit this repository
+  does not hold: `boto3` 1.43.92, `mlflow` 3.17.2, `sagemaker` 3.21.0, `sagemaker-mlflow` 0.5.0, `pandas`
+  2.3.3, `xgboost-cpu` 3.3.0, Python 3.12. `examples/sandbox-ml/README.md` names `mlflow` 3.16.0 and the
+  rest as the lock does.
+- **[Claude] Pass 7's inputs**: decisions 5, 10 and 12 taken 2026-11-17, as (everything kept), (a) and (a);
+  `docs/plan/runbooks/*.md` holds 20 files and 1,162,979 bytes, against 7.4a's 16 files and 550 KB;
+  `examples/sandbox-ml/bedrock/` holds its README alone, so 7.4's twenty-line evaluation dataset is
+  unwritten.
+- **[Claude] The block**: 0.5's interface half joins the session's opening; 0.3 and 0.7 come next,
+  before any run; pass 7 follows 2.2 (c) and precedes 9.6, with `bedrock-agent` in the raise. About 9.6
+  hours in all, some 2.50 USD of endpoints and hub. Pass 7 can move to a sitting of its own; 0.7 cannot,
+  since the forms precede 2.2's job. No item waits on anything outside the sitting but 7.6's idle bill, which
+  Cost Explorer shows after the sitting's day (8.2).
+
+## 2026-11-19 — 7.4's evaluation dataset and 0.3's preparation, nothing up
+
+*Claude, the same session, on the orchestrating session's follow-up, its first two items. AWS's and
+MLflow's pages read through page-reading agents, MLflow installed on the laptop in throwaway `uv`
+environments, no AWS call. Times are UTC.*
+
+- **[Claude] The IDE's evaluation form**, read on AWS's pages (`docs/REFERENCES.md`): automatic
+  evaluations alone, with no human-based form and no judge model; the metrics Toxicity, Accuracy and
+  Robustness; the tasks General text generation, Text summarization, Question and answer and Text
+  classification; up to 1000 prompts a job. A custom dataset is JSON lines, each line a `prompt`, a
+  `referenceResponse` (required for question and answer, and for accuracy and robustness) and an optional
+  `category`. The form uploads the file to a bucket the IDE manages or chooses one from S3.
+- **[Claude] 7.4 corrected**: its "Haiku 4.5 as the evaluator" named a judge the IDE does not offer, so
+  Haiku 4.5 is now the model evaluated. Bedrock's own judge list holds Haiku 4.5 and not Nova Lite v1.
+  0.7 gains the form's dataset field: whether *Choose a dataset from S3* reaches `shared/ml-demo/bedrock/`,
+  the upload taking the same file where it does not.
+- **[Claude] The dataset**: `examples/sandbox-ml/bedrock/evaluation-dataset.jsonl`, twenty prompts of the
+  task *Question and answer*, 2,951 bytes, each line the three keys, in five categories: Networking 7,
+  AWS 5, Machine learning 4, Tooling 2, Data 2. Each reference is a short fact from this project's own
+  vocabulary. `examples/sandbox-ml/evaluation_dataset.py` checks every line and copies the file to
+  `shared/ml-demo/bedrock/` from the space; `ruff check` and `ruff format --check` pass.
+- **[Claude] 0.3's preparation**: the lock's `mlflow` 3.17.2 depends on `mlflow-skinny` and
+  `mlflow-tracing` 3.17.2. The scripts make ten MLflow calls: `set_tracking_uri`, `set_experiment`,
+  `start_run`, `log_params`, `log_metric`, `set_tag`, `log_artifact`, `search_runs`, `register_model` and
+  `xgboost.log_model`. Their signatures, printed by `inspect.signature` from `mlflow-skinny` 3.16.0 and
+  3.17.2 on Python 3.12 at 16:30, are identical; `xgboost.log_model`'s second parameter is
+  `artifact_path`, deprecated in both in favour of `name`. GitHub's release pages from 3.16.1 to 3.17.2
+  remove or deprecate none of these calls, and v3.16.2 has no page.
+- **[Claude] No script changed.** `examples/sandbox-ml/README.md` now names `mlflow` 3.17.2, the lock's
+  version since `a1c755b5`, so 0.3 confirms the space's versions against it.
+
+## 2026-11-19 — the combined sitting's block on `promotion.md` §N.9's days 2 and 3, nothing up
+
+*Claude, the same session, on the orchestrating session's message after its commit `f3b87975` (pull request
+#334, merged into this branch with `main` at `c11a9829`). No AWS call.*
+
+- **[Claude] The block's days**: §N.9 runs the combined sitting on three days, and Stage 17's rows fill two.
+  Day 2 raises `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` for sitting B to the end of pass 7, then
+  Stage 21's pass 5. Day 3 raises `GROUPS=mwaa,mlflow,bedrock-base` for 6e 6.4's window alone, then 9.6
+  and 10.4. Each day ends with `./aws/sandbox-ml.py`, `./aws/catalog.py` and §N.9.6's lowering.
+- **[Claude] The section rewritten to match**: the opening paragraph names both days and their groups; the
+  table gains a column for the day, a second closing and day 3's raise, 16 rows in all, about 4.9 hours of
+  day 2 and 5.3 of day 3; the MLflow App comes before day 3, 0.9's reading before day 2 and the archives on
+  day 3's eve. The hourly rates are §N.9.7's, 0.27 and 0.25 USD before the spaces; this section's earlier
+  0.26 and 0.24 left out the VPN's address, which `docs/PRICING.md` counts as a floor line.
+
+## 2026-11-19 — verification v: `eighth-experimentation`'s first run after the share
+
+*Claude, the same session, on the orchestrating session's follow-up, its third item, after the user's
+"Tente novamente" in that session's chat. Reads as the infrastructure user with `InfrastructureAccess`,
+through `awsds-infra-data`, from 18:16:27 to 18:16:48. Times are UTC.*
+
+- **[Claude] The wait**: the Monitor armed at 17:02:28 for 17:50 expired at 17:32 with no event, and the
+  turn that would have armed it again ended on an API error (`ENOTFOUND`). The reading was taken at
+  18:16, past the orchestrating session's 17:50.
+- **[Claude] `eighth-experimentation`'s source** (`4tb4qnmgi0iej4`, `cron(32 17 * * ? *)`): 88 runs, 87
+  `FAILED` and 1 `SUCCESS`. The new run `5lkcvfroqbjnyo`, `SCHEDULED`, ran from 17:38:11 to 17:38:19 and
+  ended `SUCCESS`, 0 added, updated, unchanged and failed, with no activity. The source reads `READY`, its
+  last run `SUCCESS` with 0 assets.
+- **[Claude] The run before it**: `6fdkdu6arwynf4`, started 2026-11-18 at 17:38:11, was marked `FAILED` at
+  17:38:11 as its successor fired, `VALIDATION_EXCEPTION`, with the wording of every failed run, *"Failed to
+  run the data source. Please check if RAM share is correctly configured between Amazon SageMaker and
+  Amazon DataZone"*.
+- **[Claude] The verdict so far**: both sources that have run since the share succeeded with nothing to
+  ingest. Left: `app-etl-dev`'s first run after the share, at about 02:19 on 2026-11-20, read from the
+  record in a later session; the ingestion half still waits on a model package group (3.2's or 9.6's).
+
+## 2026-11-20 — verification v: `app-etl-dev`'s first run after the share, and `EXC-11` closed
+
+*Claude, the orchestrating session, with nothing up. Reads as the infrastructure user with
+`InfrastructureAccess`, through `awsds-infra-data` (account Data Governance), from about 16:00 to 16:05;
+`./aws/catalog.py` read through its own profiles. The record's one code change is in `aws/catalog.py`; no
+AWS write. Times are UTC.*
+
+- **[Claude] `app-etl-dev`'s `Tooling-default-sagemaker-modelpackagegroup-datasource`** (`apnukh5a1tfonk`,
+  `cron(7 2 * * ? *)`): its first run after the share, `3wo565isiosnm8`, `SCHEDULED`, started at 02:19:45
+  and ended `SUCCESS` at 02:19:55 on 2026-11-20; `added`, `updated`, `unchanged` and `failed` all 0, no
+  activity, `lastRunAssetCount` 0; the source's first success in 6 runs. Its predecessor, started
+  2026-11-19 at 02:19:45, was marked `FAILED`, `VALIDATION_EXCEPTION`, at 02:19:45 as it fired, and so were
+  the four before it, the oldest started 2026-11-15.
+- **[Claude] The other two sources' newest runs**: `test-experimentation`'s second run after the share,
+  06:16:57 to 06:17:25, `SUCCESS`; `eighth-experimentation`'s newest is still the one of 2026-11-19 at
+  17:38:11, `SUCCESS`, its next due at about 17:38.
+- **[Claude] Verification v's failure half answered**: every source of the name ended its first run after
+  the share `SUCCESS`, in three projects of Sandbox, an account associated with the domain. The ingestion
+  half waits on 3.2's or 9.6's model package group.
+- **[Claude] `EXC-11` closed**, as its row said this reading would: the row in `docs/AWS_STATE.md` struck
+  and dated, `SUP-383` given the associated account's case, and `aws/catalog.py`'s `FAILING_BY_EXCEPTION`
+  emptied, as its comment asks when the exception closes. `./aws/catalog.py` then answered *"all checks
+  passed"*, its report written at 16:04:52: `CT-6` a note on the schedules nobody wrote (Lesson 17), the
+  three Tooling sources at 34 `FAILED` and 2 `SUCCESS`, 87 and 1, and 5 and 1. A source whose every
+  completed run fails now turns `CT-6` red.
+
+## 2026-11-20 — Passes 4 and 5's creates simulated, and `sandbox/ml/`'s endpoint and pipeline statements planned
+
+*Claude, in the session that regrouped the Sandbox days (Stage 8's log, this day), with nothing up. Reads
+and plans as the infrastructure user with `InfrastructureAccess`, through `awsds-infra-sandbox-1` (account
+Sandbox Account 1), from 17:09 to 17:54: `iam:SimulatePrincipalPolicy` as `eighth-experimentation`'s
+project role, which evaluates the organization's policies and the role's boundary, and plans from
+`origin/main` `30855d92`'s tree and from this branch. No AWS write. Times are UTC.*
+
+- **[Claude] The switches re-planned**, 17:09:27 to 17:10:27, each default *"No changes."*:
+  `sandbox/workflows/` with `training_pair_enabled=true` *"Plan: 0 to add, 1 to change, 0 to destroy."*;
+  `sandbox/bedrock/` with `application_guardrail_required=true` and `account_guardrail_enabled=true`
+  *"Plan: 3 to add, 1 to change, 0 to destroy."*
+- **[Claude] The creates of passes 4 and 5**, in three runs, each with the request tag
+  `AmazonDataZoneProject` at the project's value. 17:29:40, with nothing else of the project's:
+  `CreateModel`, `CreateEndpointConfig`, `CreateEndpoint` and `CreatePipeline` `implicitDeny`,
+  `CreateTransformJob` `explicitDeny` by `awsds-sandbox-project-boundary`. 17:30:21, adding the resource tag
+  and `aws:PrincipalAccount`: all five `allowed` through `SageMakerStudioProjectRoleMachineLearningPolicy`;
+  `CreateTrainingJob` `explicitDeny` by the boundary and `iam:PassRole` of the role to SageMaker
+  `implicitDeny`. 17:32:01, adding `sagemaker:InterContainerTrafficEncryption=true`, the `RoleName` principal
+  tag and `aws:ResourceAccount`: `CreateTrainingJob` `allowed`, `iam:PassRole` `allowed` through
+  `SageMakerStudioProjectUserRolePolicy`, and an endpoint configuration on `ml.g5.xlarge`, 4.5's negative,
+  `explicitDeny` by the boundary.
+- **[Claude] The tag a create also authorizes**, 17:51:17: `sagemaker:AddTags` of the project tag alone, at
+  the caller's value, `allowed` on a model, a transform job and a processing job through
+  `awsds-sandbox-workflows` and on a model package group through `awsds-sandbox-ml`; `implicitDeny` on an
+  endpoint configuration, an endpoint, a pipeline and a training job. The training job's is
+  `sandbox/workflows/`'s pair, applied on `promotion.md` §N.9's day 2; nothing granted the other three, so
+  pass 4's endpoint and pass 5's pipeline would have been refused at their create (decision 7).
+- **[Claude] `sandbox/ml/` written** on this branch: `TagAnEndpointConfigWithTheCallersProject`,
+  `TagAnEndpointWithTheCallersProject` and `TagAPipelineWithTheCallersProject` beside the model package
+  group's statement, all four generated by a `dynamic` block from `local.tagged_resources`, so the three
+  conditions are written once. The policy's description is unchanged and it updates in place.
+- **[Claude] `sandbox/ml/` planned**, 17:52:44 to 17:53:01: *"Plan: 0 to add, 1 to change, 0 to destroy."*,
+  `aws_iam_policy.ml` at four statements and 1,858 characters; saved at 17:53:20 to
+  `$HOME/tmp/stage17-ml-tags.tfplan`. `terraform fmt` clean.
+- **[Claude] The planned document simulated** beside the role's policies, 17:54:04: `AddTags` of the project
+  tag at the caller's value `allowed` on the endpoint configuration, the endpoint and the pipeline through
+  `PolicyInputList.1`; another project's value on the endpoint, and a second key, `AmazonDataZoneDomain`,
+  beside the project's on the pipeline, both `implicitDeny`.
+- **[Claude] Where the passes run**: passes 2, 3 and 7 on §N.9's day 2, pass 5 on day 3, pass 4 on §N.10's
+  day 1 with its endpoint kept up. `sandbox/ml/` is applied from `main` after the merge, on the user's word
+  naming it, before day 3 (§N.6 item 3).
+
+## 2026-11-20 — `sandbox/ml/`'s endpoint and pipeline statements applied
+
+*Claude, in the same session, on the user's "Merge feito, aplique" answering a question that named the apply
+of `sandbox/ml/` in Sandbox Account 1 after pull request #343's merge. As the infrastructure user with
+`InfrastructureAccess`, through `awsds-infra-sandbox-1` (account Sandbox Account 1), from this session's
+worktree, whose tree equals `origin/main` at `78dc4397`, the merge of 19:38:28 (`git diff` empty). Times
+are UTC.*
+
+- **[Claude] Before the write**: #343 read `MERGED`; no other Claude session on the laptop; `make status`,
+  read before 6d decision 6's apply at 19:21 (6d's log), had shown 0.0000 USD/h with everything down.
+- **[Claude] The plan**, saved as `$HOME/tmp/stage17-ml-tags.tfplan`: *"Plan: 0 to add, 1 to change, 0 to
+  destroy."*, `aws_iam_policy.ml` alone. Read with `terraform show -json`: `awsds-sandbox-ml` from one
+  statement, `TagAModelPackageGroupWithTheCallersProject`, unchanged, to four, adding
+  `TagAPipelineWithTheCallersProject`, `TagAnEndpointConfigWithTheCallersProject` and
+  `TagAnEndpointWithTheCallersProject`, each `sagemaker:AddTags` on its type's ARN pattern under the same
+  three conditions; no other attribute changing.
+- **[Claude⚡] The apply**, 19:40:33 to 19:40:42: *"aws_iam_policy.ml: Modifications complete after 1s"*,
+  *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*
+- **[Claude] The readings after**: the re-plan *"No changes. Your infrastructure matches the
+  configuration."* (`-detailed-exitcode` 0); `get-policy` at `v2`, `AttachmentCount` 2, updated
+  19:40:41, its four statements as planned, attached to `eighth-experimentation`'s and `app-ml-dev`'s
+  roles.
+- **[Claude] The simulation**, as `eighth-experimentation`'s role, `sagemaker:AddTags` with the project tag
+  alone. At 19:41:39, with no `aws:RequestedRegion` in the context, every call, the model package group's
+  included, read `explicitDeny` with `AllowedByOrganizations` false and no matched statement: `SUP-008`'s
+  shape. At 19:42:49, with the context of 17:51:17 (the region, the principal's `AmazonDataZoneProject`,
+  `RoleName` and `EnableSageMakerMLWorkloadsPermissions` tags, both accounts): `endpoint-config`,
+  `endpoint` and `pipeline` at the caller's value `allowed` through `awsds-sandbox-ml`, as is
+  `model-package-group`; the endpoint at `test-experimentation`'s value and the pipeline with a second key,
+  `AmazonDataZoneDomain`, both `implicitDeny`; a training job's tag `implicitDeny`, the training pair of
+  `sandbox/workflows/` being applied on `promotion.md` §N.9's day 2.
+- **[Claude] The records**: decision 7, the deliverables row, the ready list and the `Status` row in the
+  stage file; `runbooks/sagemaker-ai-ml.md`'s paragraph on what a notebook creates; `promotion.md` §N.6
+  item 3, §N.9.1 and §N.10.1; the waiting list's Sandbox row; Current position.

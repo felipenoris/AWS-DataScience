@@ -146,20 +146,43 @@ connect but sees nothing"* as the expected state for a while — which is the am
      over `terraform output project_access_role_arns`. AWS's same-account procedure names no access
      role and the field's help calls it *"optional. Required when connecting to resources in a
      different AWS account"* — both wrong against the running form.
-   - **The compute dropdown offers the namespace's `dev` database, and the connection keeps it.** The
+   - **The compute dropdown offers the namespace's `dev` database, and the form keeps it.** The
      themed schema is in the class container (`sandbox`), and a cross-database **write** does not work
      in Redshift. Measured 2026-10-10: the Query editor lists every database in the namespace (`dev`,
-     `sandbox`, `warehouse`), and the project wrote `lab.hello` from it. The connection object names
-     `dev` (read 2026-10-18 and 2026-10-26), so the editor opens there, and a session in `dev` reads no
-     governed share for want of `TEMP` (§G). The person selects `sandbox`. Whether a member's
-     `UpdateConnection` can change the database is unmeasured, and a full-replace update needs every
-     field passed (Lesson 60). The user chose on 2026-11-17 to name `sandbox` in the call that switches
-     `lineageSync` off (6h decision 3); until that call, or if it is refused, the person selects `sandbox`.
-   - **There is no `lineageSync` toggle** on this path, and the connection it wrote has the sync
-     **on**: the object read 2026-10-18 has `lineageSync.enabled: true` on a daily cron, and every run
-     so far failed without minting a database session (6h decision 3). A run that succeeds is a
-     scheduled query on the 1.44 USD/hour meter, and `WH-9` fails on it. Switching it off is an
-     `UpdateConnection` by a project member, the user's choice of 2026-11-17 (6h decision 3).
+     `sandbox`, `warehouse`), and the project wrote `lab.hello` from it. The editor opens each session
+     on the connection's database, and a session in `dev` reads no governed share for want of `TEMP`
+     (§G, `SUP-208`). Step 4a names `sandbox`.
+   - **There is no `lineageSync` toggle** on this path, and the form writes the sync **on**, on a
+     daily cron (`SUP-207`). A run that succeeds is a scheduled query on the 1.44 USD/hour meter.
+     Step 4a switches it off (6h decision 3), and `WH-9` fails until it runs.
+4a. **The update: database `sandbox` and `lineageSync` off**, right after step 4, as
+   `awsds-infra-sandbox-1`. DataZone accepts it from Sandbox's `InfrastructureAccess` as a contributor
+   of the project (`SUP-157`) and with the workgroup down (`SUP-387`), so it needs nothing up; it ran on
+   `eighth-experimentation`'s connection on 2026-11-19 (6h decision 3). The call passes every field the
+   object has (Lesson 60), from a reading this procedure takes, never from a file an earlier sitting
+   kept (Lesson 61):
+   ```bash
+   D=<domain id>; J=<project id>; P=awsds-infra-sandbox-1
+   aws datazone list-connections --domain-identifier $D --project-identifier $J --type REDSHIFT \
+     --query 'items[].[connectionId, name]' --output text --profile $P
+   C=<the connection id>
+   aws datazone get-connection --domain-identifier $D --identifier $C --output json --profile $P > conn.json
+   jq '{domainIdentifier: .domainId, identifier: .connectionId,
+        awsLocation: (.physicalEndpoints[0].awsLocation | {accessRole, awsAccountId, awsRegion}),
+        props: {redshiftProperties: {storage: .props.redshiftProperties.storage,
+          databaseName: "sandbox", host: .physicalEndpoints[0].host, port: .physicalEndpoints[0].port,
+          lineageSync: {enabled: false, schedule: .props.redshiftProperties.lineageSync.schedule}}}}' \
+     conn.json > update.json
+   aws datazone update-connection --cli-input-json file://update.json --profile $P
+   aws datazone get-connection --domain-identifier $D --identifier $C --profile $P \
+     --query 'props.redshiftProperties.[databaseName, lineageSync]'
+   ```
+   The model declares the call `PATCH`, and whether it keeps a field left out is unmeasured. The filter
+   carries what the portal's object holds: no `credentials`, no `configurations`, and an empty
+   `description`, which the update cannot pass back, since its minimum is one character. An object that
+   holds more needs it added to the filter. The read-back differs from the first reading in four fields,
+   `databaseName`, `jdbcUrl`, `jdbcIamUrl` and `lineageSync.enabled`; the schedule and the lineage job
+   stay, and `WH-9` passes.
 5. **Re-run `./aws/warehouse.py --sql`** and add the register row. The database user is
    **`IAMR:<the RedshiftDbUser tag's value>`** — measured 2026-10-10: the tag is honoured and Redshift
    prefixes its value, so with the tag set to the project role's name the user is
@@ -427,11 +450,12 @@ after.
 | `TEMP ON DATABASE sandbox` for the same user: the share's table is an external table, and the session's database holds the query's temporary objects | SQL, as the admin; `PUBLIC` holds no database privilege since 5b and 6h | *"Failed to incorporate external table … permission denied to create temporary tables in database "sandbox""* |
 | the producer's share: Production's `GRANT USAGE … VIA DATA CATALOG`, its authorization, and Data Governance's association with its catalog | SQL in Production; `production/warehouse/datashare.tf`; `data-governance/data/warehouse-share.tf` | *"AwsClientException: EntityNotFoundException from glue - No glue catalog datashare is found with arn …"*, and `WH-16` fails. Every Lake Formation grant stays after a revoke, so the grants prove nothing about the share, and `data-governance/data/` plans nothing until the re-grant (Stage 9 xxiv, 2026-10-26; `promotion.md` §N.4a step 5) |
 
-The project's connection, `redshift-serverless.redshift`, names `dev` as its database, so the Query editor
-opens there and the read is refused for want of `TEMP` in `dev`: select `sandbox` (read 2026-10-26). The
-table's name in Redshift is `governed_trades.trades.trades_notional`: the producer's schema, not the
-Glue database's. A password user (`dbadmin`) is refused, *"Current user is not authenticated with IAM
-credentials"*, so the admin reads the metadata alone, and through the Data API with IAM authentication the
+The Query editor opens each session on the connection's database, and in `dev` the read is refused for
+want of `TEMP` there (read 2026-10-26, while `redshift-serverless.redshift` named `dev`). That connection
+names `sandbox` since 2026-11-19 (§P step 4a); one the portal has just made names `dev`, and the person
+selects `sandbox` until step 4a runs. The table's name in Redshift is
+`governed_trades.trades.trades_notional`: the producer's schema, not the Glue database's. A password user
+(`dbadmin`) is refused, *"Current user is not authenticated with IAM credentials"*, so the admin reads the metadata alone, and through the Data API with IAM authentication the
 infrastructure user, Sandbox's Lake Formation administrator, reads under the account's grant. The read needs
 Sandbox's workgroup alone: Production's may be down.
 
@@ -440,6 +464,18 @@ database in Sandbox's warehouse (`CREATE DATABASE <name> FROM ARN 'arn:aws:glue:
 Governance>:database/<name>' WITH DATA CATALOG SCHEMA <name>`, a statement of its own, as the admin), and
 its database and tables among `ReadTheGovernedShareCatalog`'s resources, which name `governed_trades` alone.
 Then the per-project grants above. Unwiring is §U.
+
+**A product a project subscribes to in the portal**, read in place through `awsdatacatalog`, takes the same
+principal through a resource link: DataZone fulfils the subscription with a link in the subscription
+target's Glue database in Sandbox, named after its target, and Redshift calls Glue on the link and on its
+target in the producer's account as the access role. Its AWS pieces are one entry of `sandbox/warehouse/`'s
+`subscribed_products` map per product, keyed by project: the target database and the producer's database
+and table, which become `ReadTheSubscribedProductsCatalog` (the link database's tables and the producer's one
+table) and `LakeFormationVendsTheSubscribedProductsData` (`lakeformation:GetDataAccess`: the data is in S3,
+under a location Lake Formation holds). Lake Formation's admission is DataZone's grant, or a named grant in
+the producer's account with `DESCRIBE` on the link in Sandbox; the SQL is `USAGE ON DATABASE awsdatacatalog`
+and the same `TEMP`. The first product's sitting is [Stage 19](../stages/stage-19-smus-native-data-product.md)'s
+pass 5 block.
 
 ---
 
@@ -458,7 +494,7 @@ Then the per-project grants above. Unwiring is §U.
 | `WH-11` | the slice's policy attached to each admitted project's role, and that the role still carries `awsds-sandbox-project-boundary` | layer 2. The plan-time precondition covers the boundary when the map is edited; this covers the role being recreated afterwards |
 | `WH-12` | the themed schemas, the role grants and the **user-role** grants | layer 3, including the orphan an unwiring leaves behind (§U) |
 | `WH-14` | every relation in a themed schema, against the roles that can read it through a grant or a default privilege | layer 3's sharing half: a table no role can read, which on a shared schema is one project's data the others cannot see (§T) |
-| `WH-9` | each admitted project's Redshift connection: its workgroup, host, access role, database and `lineageSync` | the connection names an access role this repository did not author, or the lineage sync completed a run, a scheduled query on the meter. A `note` while `list-connections` is refused or the sync is on with no run completed (`EXC-17`) |
+| `WH-9` | each admitted project's Redshift connection: its workgroup, host, access role, database and `lineageSync` | the connection names a workgroup or an access role this repository did not author, a database other than `sandbox`, or the lineage sync on, a scheduled query on the meter (6h decision 3; §P step 4a repairs the last two). A `note` while `list-connections` is refused (`EXC-17`) |
 
 `WH-11` reads as a `note` where nothing is admitted, because a check that is green for an absence is
 green for the wrong reason (Lesson 50).

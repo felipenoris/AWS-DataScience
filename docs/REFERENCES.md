@@ -1624,6 +1624,43 @@
     runtimes. The Markdown form stops at June 29, 2026:
     <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html>.
 
+- **The evaluations of Amazon Bedrock in SageMaker Unified Studio and Amazon Bedrock's prompt datasets
+  (read 2026-11-19, for [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md)'s step 7.4).** Each
+  page was read in its HTML form through a page-reading agent.
+  - The IDE's evaluations are automatic alone: *"Amazon Bedrock in SageMaker Unified Studio doesn't
+    support Human-based evaluations."*, and no page names a judge model. The metrics are Toxicity,
+    Accuracy and Robustness; the tasks General text generation, Text summarization, Question and answer
+    and Text classification; a job takes up to 1000 prompts. The form's *Upload a dataset to S3* puts the
+    file in a bucket the IDE manages, whose location the project's **Data Store** shows, and *Choose a
+    dataset from S3* picks one already uploaded. A custom dataset is JSON lines, each line a `prompt`, a
+    `referenceResponse` (required for question and answer, and for accuracy and robustness) and an
+    optional `category`:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/evaluation.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/model-evaluation-jobs-management-create.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/model-evaluation-prompt-datasets.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/model-evaluation-prompt-datasets-custom.html>.
+  - Amazon Bedrock's own pages give an automatic job the same keys and a judge job an optional
+    `referenceResponse`. The judge models include Claude Haiku 4.5
+    (`anthropic.claude-haiku-4-5-20251001-v1:0`) and Nova 2 Lite, and not Nova Lite v1:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/model-evaluation-prompt-datasets.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/model-evaluation-prompt-datasets-judge.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/evaluation-judge.html>.
+    Not read, a page holding its title alone:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/model-evaluation-prompt-datasets-custom.html>.
+
+- **MLflow's release notes from 3.16.0 to 3.17.2 (read 2026-11-19, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md)'s step 0.3 and
+  [`examples/sandbox-ml/`](../examples/sandbox-ml/README.md)).** GitHub's release pages, through a
+  page-reading agent; 3.16.0 and 3.17.0 read to about 60% of the page, the others whole, and v3.16.2 a
+  404. No release from 3.16.1 to 3.17.2 removes or deprecates a call the scripts make;
+  `mlflow.xgboost.log_model`'s positional `artifact_path` is in no note, and the signatures were read from
+  both versions installed:
+  <https://github.com/mlflow/mlflow/releases/tag/v3.16.0>,
+  <https://github.com/mlflow/mlflow/releases/tag/v3.16.1>,
+  <https://github.com/mlflow/mlflow/releases/tag/v3.17.0>,
+  <https://github.com/mlflow/mlflow/releases/tag/v3.17.1>,
+  <https://github.com/mlflow/mlflow/releases/tag/v3.17.2>.
+
 - **SageMaker AI's developer guide on Feature Store, MLflow and a container's network isolation, its
   pricing page, and the XGBoost container's code (read 2026-11-16 and 2026-11-17, for
   [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decisions 17, 20 and 21 and step 6.4).**
@@ -1824,6 +1861,15 @@
   domain to `sagemaker.amazonaws.com` a SageMaker data source needs, under
   `AWSRAMSageMakerServicePrincipalPermissionAmazonDataZoneDomain`:
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-sagemaker-data-source.html>.
+  RAM's pages for that share, read 2026-11-19 for Stage 17 3.3: `CreateResourceShare`, whose `sources`
+  takes accounts, ARNs, organization ids or paths against a confused deputy, and whose
+  `allowExternalPrincipals` defaults to `true`:
+  <https://docs.aws.amazon.com/ram/latest/APIReference/API_CreateResourceShare.html>; a share with a
+  service principal admits no other principal:
+  <https://docs.aws.amazon.com/ram/latest/userguide/working-with-sharing-create.html>; the table of
+  shareable resources, which marks `datazone:Domain` as not shareable with a service principal:
+  <https://docs.aws.amazon.com/ram/latest/userguide/shareable.html>; and
+  <https://docs.aws.amazon.com/ram/latest/userguide/getting-started-sharing.html>.
   The CI/CD CLI's repository, its guides and examples, `main` at `cdb8e3c18f` (2026-11-06):
   <https://github.com/aws/CICD-for-SageMakerUnifiedStudio>. Read again the same day: the release notes, the
   designations' examples, the Git connection pages and the `SageMakerAIDomain` blueprint's page, each listed
@@ -1946,6 +1992,38 @@
   <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-redshiftserverless-namespace.html>
   and <https://github.com/hashicorp/terraform-provider-aws/issues/28980>. `ASSUMEROLE` held by `PUBLIC` until
   revoked: <https://docs.aws.amazon.com/redshift/latest/dg/r_GRANT-usage-notes.html>.
+- **Custom designations by API, and the versions of the domain's RAM permission (read 2026-11-19, for
+  [Stage 19](plan/stages/stage-19-smus-native-data-product.md) decision 15 (d), 4.12 and xxvi).**
+  `CreateDesignation`, `GetDesignation` and `ListDesignations`: `policy` is a Cedar permit policy of up to
+  10,000 characters, deletion protection defaults to on, and no page shows a policy's syntax:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateDesignation.html>,
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_GetDesignation.html>,
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_ListDesignations.html>; the CLI's reference,
+  with no `--policy` example: <https://docs.aws.amazon.com/cli/latest/reference/datazone/create-designation.html>.
+  The designation permissions page, each category's choices by label with their API lists, and the managed
+  designations' Cedar text, which differs from what `get-designation` returns (`SUP-385`):
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designation-permissions.html>; the
+  designations page, the Data Agent required in every custom designation:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designations.html>; the examples:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/example-designations.html>; a
+  designation assigned when a member is added or edited, one by direct assignment and others inherited
+  through groups, read for 4.12's membership command:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/assign-designations.html>. The
+  action-group identifiers a custom designation's policy names (`SUP-384`), read from a designation made in
+  the portal (Classmethod, 2026-11-02):
+  <https://dev.classmethod.jp/en/articles/20261101-amazon-smus-custom-designations/>. The IAM reference,
+  served to the fetcher in part: the designation actions' access levels, and
+  `GetSystemTableExportConfiguration` in its summarised half alone:
+  <https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazondatazone.html>. RAM: a share
+  keeps its permission's version until it is moved, only the default version attaches, and an AWS managed
+  permission's move is final:
+  <https://docs.aws.amazon.com/ram/latest/userguide/security-ram-permissions.html>,
+  <https://docs.aws.amazon.com/ram/latest/userguide/working-with-sharing-update-permissions.html>,
+  <https://docs.aws.amazon.com/ram/latest/userguide/working-with-sharing-update.html>;
+  `AssociateResourceSharePermission` takes only the default version, and `ReplacePermissionAssociations`
+  moves every share of a permission asynchronously:
+  <https://docs.aws.amazon.com/ram/latest/APIReference/API_AssociateResourceSharePermission.html>,
+  <https://docs.aws.amazon.com/ram/latest/APIReference/API_ReplacePermissionAssociations.html>.
 
 ## Data platform
 
@@ -4363,6 +4441,18 @@
   The older remediation, an EventBridge rule on `CreateLogGroup` starting a Lambda function that sets the
   retention, existing groups included (AWS blog, 2022):
   <https://aws.amazon.com/blogs/infrastructure-and-automation/reduce-log-storage-costs-by-automating-retention-settings-in-amazon-cloudwatch>.
+
+- **The AWS provider's road to `RETENTION_POLICY` (read 2026-11-19, for
+  [Stage 19](plan/stages/stage-19-smus-native-data-product.md) decision 27 (d) and `EXC-25`).** The
+  releases, 6.73.0 (2026-11-11) the newest: <https://github.com/hashicorp/terraform-provider-aws/releases>.
+  `aws_cloudwatch_log_account_policy` validates `policy_type` against the Go SDK's `PolicyType` enum:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/main/internal/service/logs/account_policy.go>.
+  The enum gains `RETENTION_POLICY` in `service/cloudwatchlogs` v1.91.0 (2026-10-30):
+  <https://github.com/aws/aws-sdk-go-v2/blob/main/service/cloudwatchlogs/CHANGELOG.md> and
+  <https://github.com/aws/aws-sdk-go-v2/blob/main/service/cloudwatchlogs/types/enums.go>. The provider pins
+  v1.90.2 at `v6.73.0` and on `main`:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/v6.73.0/go.mod>. A draft PR documents the type
+  and moves no dependency: <https://github.com/hashicorp/terraform-provider-aws/pull/50873>.
 
 ## Databricks
 

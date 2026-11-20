@@ -242,6 +242,11 @@ terraform-live/
 │   │                     #     decision 19 (c)), on the deploy-role module with its own
 │   │                     #     ceiling: it reads the dev project and writes nothing, so
 │   │                     #     dev-env/'s is the supply chain's one write path into Sandbox
+│   ├── ml/               # [P] the notebook grant (Stage 17 decision 7 (a), rank 57): one IAM
+│   │                     #     policy - AddTags of the caller's own project tag on a model
+│   │                     #     package group, which creating the group from a notebook needs -
+│   │                     #     and one attachment per SMUS project role, hand-written like
+│   │                     #     workflows/'s. What a workflow's operators create stays there
 │   ├── observability/    # [P] Stage 12 steps 1, 2 and 9 (rank 70): the account dashboard
 │   │                     #     awsds-sandbox-environment, the account's alerts topic
 │   │                     #     awsds-sandbox-alerts (Stage 8 decision 5 gave one to each
@@ -809,6 +814,7 @@ plan, so the layer of the other two is written here rather than inferred from a 
 | a model's catalog asset and environment in the governance project; a project's application inference profile of a model | `[P]` in shape | the console's *Manage*; DataZone, at a subscription's grant | nothing | never: the console's disable revokes the listing's subscriptions and unpublishes and deletes the asset (its code, read 2026-10-19); whether it deletes the environment is unread |
 | the workflows grant | `[P]` | `sandbox/workflows/`, rank 56 | nothing | never |
 | the pipeline's `bundle` role, `awsds-deploy-sandbox-test`, and its ceiling | `[P]` | `sandbox/workflows/`, rank 56 (Stage 8 decision 19, applied 2026-10-16; Stage 19 decision 19 (c) narrows it to the `dev` project's reads) | nothing | never |
+| the notebook grant | `[P]` | `sandbox/ml/`, rank 57 (Stage 17 decision 7 (a)) | nothing | never |
 | **a space** | **`[D]` in shape**: kept between sessions, its app stopped, its volume billing — though no `make` target starts one | the portal, by hand | **USD 0.112 per GB-month** of its volume (`UnifiedStudio:VolumeUsage.gp3`); 56 GB and USD 6.27 a month across the three spaces of 2026-09-12 | **not by default**: `scripts/down-studio-apps.py --spaces` deletes them, and the home directories with them |
 | an app (JupyterLab, Code Editor) | `[E]` | the portal | instance-hours while it runs, nothing after | deleted by `scripts/down-studio-apps.py` |
 | a processing or training job, a MWAA Serverless run | `[E]` | Stage 10 | nothing | nothing to delete |

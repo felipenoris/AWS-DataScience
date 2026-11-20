@@ -4,9 +4,9 @@
 # are repeated per slice (Lesson 14). scripts/check-provider-locks.py compares required_version and
 # the hashicorp/aws constraint against sandbox/foundation's.
 #
-# One provider. Everything here is IAM, which the aws provider has covered since before this
-# project - unlike sandbox/sagemaker/, whose blueprint configuration carries a field only awscc
-# offers.
+# Two providers. The aws provider carries the IAM grants and the account's guardrail; awscc carries
+# the account-level enforced guardrail configuration, which the aws provider does not (Stage 17
+# verification xlix, read 2026-11-17 at awscc 1.106.0).
 
 terraform {
   required_version = "~> 1.15"
@@ -15,6 +15,10 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 6.60"
+    }
+    awscc = {
+      source  = "hashicorp/awscc"
+      version = "~> 1.89"
     }
   }
 }

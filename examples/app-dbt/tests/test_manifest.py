@@ -33,6 +33,7 @@ STORAGE = {
     "glue": "app-dbt/glue",
     "samples": "app-dbt/inbox",
     "workflows": "app-dbt/workflows",
+    "job": "app-dbt/job",
 }
 
 
@@ -50,7 +51,7 @@ def names(node) -> set:
 @pytest.mark.parametrize(
     ("stage", "project", "created", "run"),
     [
-        ("dev", "${DEV_PROJECT_NAME}", ["app-dbt", "app-dbt-probe"], []),
+        ("dev", "${DEV_PROJECT_NAME}", ["app-dbt", "app-dbt-probe", "app-dbt-job"], []),
         ("staging", "deploy-staging", ["app-dbt", "app-dbt-probe"], []),
         ("prod", "deploy-production", ["app-dbt"], ["app-dbt"]),
     ],
@@ -92,6 +93,9 @@ def test_each_stage_its_project_its_bootstrap_and_its_storage(stage, project, cr
                 "LINEAGE_ENDPOINT": "${LINEAGE_ENDPOINT}",
                 "LINEAGE_ATTEMPTS": "${LINEAGE_ATTEMPTS}",
                 "LINEAGE_NAMESPACE": "${LINEAGE_NAMESPACE}",
+                "JOB_IMAGE_URI": "${JOB_IMAGE_URI}",
+                "PROJECT_SG": "${DEV_PROJECT_SG}",
+                "PROJECT_KEY_ARN": "${DEV_PROJECT_KEY_ARN}",
             },
         ),
         *(
@@ -107,6 +111,9 @@ def test_each_stage_its_project_its_bootstrap_and_its_storage(stage, project, cr
                     "LINEAGE_ENDPOINT": "default",
                     "LINEAGE_ATTEMPTS": "default",
                     "LINEAGE_NAMESPACE": f"app-dbt-{stage}",
+                    "JOB_IMAGE_URI": "none",
+                    "PROJECT_SG": f"${{{prefix}_PROJECT_SG}}",
+                    "PROJECT_KEY_ARN": f"${{{prefix}_PROJECT_KEY_ARN}}",
                 },
             )
             for stage, prefix in TARGETS.items()

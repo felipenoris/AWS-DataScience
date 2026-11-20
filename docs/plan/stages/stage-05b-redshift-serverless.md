@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **passes 0-3 applied 2026-09-20** ([log](../../log/log-stage-05b-redshift-serverless.md)); what is left is the bill's half of verification x, readable only after the free trial ends on 2026-12-19: the trial is active (the user, 2026-10-17: 287.90 of 300 USD left), so every figure in this stage was absorbed rather than billed (0.3a / xiii). The endpoint door (1.10 / verification xv) was answered from the trail of 2026-10-10, and the audit groups (6.1) by the re-read of 2026-10-17. **Also owed, with the compute up**: whether `max_query_execution_time` binds anyone (the 2026-09-20 runaway read only catalog tables, which run on the leader node, so the test is a long query over a user table, run as a non-superuser and as the admin; log, 2026-10-18), the re-plan of `warehouse-compute/` against a workgroup carrying `enable_large_strings_opt_in` (the 2026-10-16 creates returned it empty, on provider 6.68.0, and no `UpdateWorkgroup` followed), and whether the database took the admin password `EXC-13`'s first rotation wrote. **That rotation succeeded** on 2026-10-20 at 01:22:07Z with no workgroup, against AWS's page (log, 2026-10-20; PR #224), and the next `./aws/warehouse.py --sql` reads the database half, its statements carrying the rotated secret. `./aws/warehouse.py --sql` read **14 pass, 2 notes** on 2026-10-10, the last session it ran in; with the compute down it reads 7 pass and 9 notes in Sandbox (2026-10-18). **Nine sentences in this file were wrong and are corrected in place, each marked `[corrected 2026-09-20]`** — the stage had only ever been *written*, and `validate`, `render` and `run` are three verdicts (Lesson 54). Originally written 2026-09-19 from the vendor documentation and one priced reading. **The slice is a pair since 2026-09-20**: `sandbox/warehouse/` `[P]` holds the **namespace** — the data, the users, the roles and the `GRANT`s — and `sandbox/warehouse-compute/` `[E]` holds the **workgroup and its usage limit** and nothing else, so `make down ENV=sandbox` removes the compute object entirely. **Redshift Serverless has no pause**, only create and delete, so *powered off* means *does not exist*, which is also the strongest guarantee available: none of D40's three ways an idle warehouse bills anyway has anything to arrive at. RMS storage still bills while down, and that is the price of keeping the data. **Step 0.0 is done (2026-09-20): the requirement is in [`objectives.md`](../objectives.md)** — Redshift Serverless is a **second possible engine**, the Glue/Iceberg lake stays the warehouse of record, the two classes of database are named with their writers, and the estate is **one Redshift environment from a data scientist's point of view, with where its databases live an implementation matter**. That last clause is what makes [D40](../decisions/D40-redshift-warehouse.md)'s two-account split admissible rather than a deviation. **The read side was answered the same day**: the controls do not change — Redshift is *one more execution environment*, not a new class of reader, so a governed database is read by whoever the grant register already admits, through Lake Formation. That narrows `INT-24` to the mechanisms **Lake Formation governs** — two of them, not one (0.0's second table; the first draft excluded one of the two wrongly) — and it puts a **known collision** on step 3.1's deny, which Stage 9 9.5a resolves. The stage was written from a Price List reading and the documentation; its passes measured the numbers since, each dated in the log. Its central choice is settled in advance by **[D40](../decisions/D40-redshift-warehouse.md)** — a warehouse built by hand at **4 base RPUs**, two classes of database on two accounts, and the `RedshiftServerless` blueprint still disabled. **This stage builds the Sandbox warehouse only.** The governed class has no content until [Stage 9](stage-09-deployment-targets.md), so `production/warehouse/` is *specified* here (§7) and *applied* there — the rule that an act with no owning pass does not happen (Lesson 5), applied to a namespace nobody would write to for four stages. The database half of `EXC-13`'s first rotation was read on 2026-10-25, at Stage 9's sitting: the database follows the rotation (`SUP-129`). |
+| **Status** | **passes 0-3 applied 2026-09-20** ([log](../../log/log-stage-05b-redshift-serverless.md)); what is left is the bill's half of verification x, readable only after the free trial ends on 2026-12-19: the trial is active (the user, 2026-10-17: 287.90 of 300 USD left), so every figure in this stage was absorbed rather than billed (0.3a / xiii). The endpoint door (1.10 / verification xv) was answered from the trail of 2026-10-10, and the audit groups (6.1) by the re-read of 2026-10-17. **Also owed, with the compute up**: whether `max_query_execution_time` binds anyone (the 2026-09-20 runaway read only catalog tables, which run on the leader node, so the test is a long query over a user table, run as a non-superuser and as the admin; log, 2026-10-18), the re-plan of `warehouse-compute/` against a workgroup carrying `enable_large_strings_opt_in` (the 2026-10-16 creates returned it empty, on provider 6.68.0, and no `UpdateWorkgroup` followed), and whether the database took the admin password `EXC-13`'s first rotation wrote. **That rotation succeeded** on 2026-10-20 at 01:22:07Z with no workgroup, against AWS's page (log, 2026-10-20; PR #224), and the next `./aws/warehouse.py --sql` reads the database half, its statements carrying the rotated secret. `./aws/warehouse.py --sql` read **14 pass, 2 notes** on 2026-10-10, the last session it ran in; with the compute down it reads 7 pass and 9 notes in Sandbox (2026-10-18). **Nine sentences in this file were wrong and are corrected in place, each marked `[corrected 2026-09-20]`** — the stage had only ever been *written*, and `validate`, `render` and `run` are three verdicts (Lesson 54). Originally written 2026-09-19 from the vendor documentation and one priced reading. **The slice is a pair since 2026-09-20**: `sandbox/warehouse/` `[P]` holds the **namespace** — the data, the users, the roles and the `GRANT`s — and `sandbox/warehouse-compute/` `[E]` holds the **workgroup and its usage limit** and nothing else, so `make down ENV=sandbox` removes the compute object entirely. **Redshift Serverless has no pause**, only create and delete, so *powered off* means *does not exist*, which is also the strongest guarantee available: none of D40's three ways an idle warehouse bills anyway has anything to arrive at. RMS storage still bills while down, and that is the price of keeping the data. **Step 0.0 is done (2026-09-20): the requirement is in [`objectives.md`](../objectives.md)** — Redshift Serverless is a **second possible engine**, the Glue/Iceberg lake stays the warehouse of record, the two classes of database are named with their writers, and the estate is **one Redshift environment from a data scientist's point of view, with where its databases live an implementation matter**. That last clause is what makes [D40](../decisions/D40-redshift-warehouse.md)'s two-account split admissible rather than a deviation. **The read side was answered the same day**: the controls do not change — Redshift is *one more execution environment*, not a new class of reader, so a governed database is read by whoever the grant register already admits, through Lake Formation. That narrows `INT-24` to the mechanisms **Lake Formation governs** — two of them, not one (0.0's second table; the first draft excluded one of the two wrongly) — and it puts a **known collision** on step 3.1's deny, which Stage 9 9.5a resolves. The stage was written from a Price List reading and the documentation; its passes measured the numbers since, each dated in the log. Its central choice is settled in advance by **[D40](../decisions/D40-redshift-warehouse.md)** — a warehouse built by hand at **4 base RPUs**, two classes of database on two accounts, and the `RedshiftServerless` blueprint still disabled. **This stage builds the Sandbox warehouse only.** The governed class has no content until [Stage 9](stage-09-deployment-targets.md), so `production/warehouse/` is *specified* here (§7) and *applied* there — the rule that an act with no owning pass does not happen (Lesson 5), applied to a namespace nobody would write to for four stages. The database half of `EXC-13`'s first rotation was read on 2026-10-25, at Stage 9's sitting: the database follows the rotation (`SUP-129`). **The warehouse sitting's rows are written** (2026-11-19, nothing up), in "The Sandbox warehouse sitting: 5b's items in order" before the deliverables: the four creates from 2026-10-25 to 2026-10-30 were followed by no update, so the re-plan is still owed, and the secret rotated a second time on 2026-11-19 at 00:23:23Z, whose database half the sitting's first `--sql` reads. |
 | **Prerequisites** | **Stage 5a** — the lake exists, `sandbox/data/` holds this account's `DataLakeSettings` and the account data CMK `alias/awsds-sandbox-data`, which is the namespace's encryption key (`docs/GOVERNANCE.md` §Encryption). **Stage 3** — `sandbox/foundation/`'s VPC, whose **private** tier is where the workgroup lands: two subnets in two AZs, which is what pass 0's first reading is about. **6c** — no default route in that tier, and no NAT anywhere (D38), so nothing here reaches the internet. Nothing waits on a vend or a quota increase this stage knows of; 0.4 is where that is checked rather than assumed |
 | **Consumes** | [D9](../decisions/D09-az-count.md), [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D22](../decisions/D22-data-governance-account.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md), [D38](../decisions/D38-single-egress-hub.md), [D40](../decisions/D40-redshift-warehouse.md) |
 | **Proves** | — (no `INT-nn` row: every object this stage builds lives in one account). The cross-account row the warehouse eventually needs is **INT-24**, and it belongs to [Stage 9](stage-09-deployment-targets.md) |
@@ -677,6 +677,100 @@ and the deploy credential, so the governed class costs it one slice rather than 
 - **7.2 — [Claude] Open `INT-24`** in [`integrations.md`](../integrations.md) for the one thing that is
   genuinely cross-account: a Sandbox project reading a governed table that lives in Production. The fallback
   and the mechanism go in the row; the proof is Stage 9's.
+
+### The Sandbox warehouse sitting: 5b's items in order
+
+Written 2026-11-19 with nothing up, for the Sandbox warehouse sitting the orchestrating session runs
+([`promotion.md`](../runbooks/promotion.md) §N.6 item 9): `make hub-up`, then `make up ENV=sandbox
+GROUPS=redshift`, which raises `sandbox/egress/` with the `redshift` endpoint group, `warehouse-compute/`
+and `sandbox/probes/`. 5b's rows open the sitting: each reads the warehouse as `make up` leaves it, and
+the re-plan precedes 6h's re-apply of the compute slice. Its values, read that day (the log): from `main`,
+`warehouse-compute/` plans `2 to add` (the workgroup and the usage limit) and `sandbox/warehouse/` plans
+`No changes`; the usage limit is 10 RPU-hours with `deactivate`, a new object at each `make up`, so each
+raise starts at zero; `max_query_execution_time` is 120 seconds; the admin secret rotated again on
+2026-11-19 at 00:23:23Z with no workgroup, the next rotation due 2026-12-19 at 01:59:59Z.
+These `sandbox/warehouse/` counts hold since Stage 19's access-role statement (PR #339, pass 5's before it
+item 3) was applied from `main` on 2026-11-20 at 15:57 UTC; before it each plan of the slice also showed
+`aws_iam_policy.project_access_portal["avhvbqn37ty7m8"]` updated in place (Lesson 69).
+
+**Before it, with nothing up**:
+
+1. **[Claude] The readings**, done 2026-11-19 (the log): the four `CreateWorkgroup` calls from
+   2026-10-25 to 2026-10-30, all on provider 6.68.0, returned `enable_large_strings_opt_in` with the value `""`, and no
+   `UpdateWorkgroup` followed any of them, so no plan has yet run against a live workgroup and the re-plan
+   is still owed.
+2. **[user] The trial's balance**, from the Redshift Serverless console's *Free trial* section, before the
+   sitting, after it and the next day (0.3a, verification xiii): while the trial absorbs the compute, it
+   is the only reading of what the sitting spent beside `ComputeSeconds`.
+
+**In the sitting**:
+
+1. **[Claude] The database half of the rotation of 2026-11-19**, right after the raise:
+
+   ```bash
+   ./aws/warehouse.py awsds-infra-sandbox-1 --sql
+   ```
+
+   Its statements carry the rotated secret, so a pass reads the database following the second rotation as
+   it followed the first (`EXC-13`, `SUP-129`).
+2. **[Claude] The re-plan of `warehouse-compute/`**, before any apply that touches the slice:
+
+   ```bash
+   ./scripts/gen-backend-hcl.py sandbox warehouse-compute && ./scripts/gen-tfvars.py sandbox warehouse-compute
+   ```
+
+   ```bash
+   AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/warehouse-compute init -backend-config=backend.hcl -input=false
+   ```
+
+   ```bash
+   AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/warehouse-compute plan -input=false
+   ```
+
+   `No changes` closes the question the log of 2026-10-18 left: provider 6.68.0 ignores the undeclared
+   key. A planned change to the workgroup stops the row with no apply, since 6h's re-apply would carry it
+   as an `UpdateWorkgroup` (admitted to `InfrastructureAccess` alone by
+   `DenyRedshiftCostGuardTamperingExceptInfrastructure`); the key's handling in `main.tf` is then the
+   user's decision.
+3. **The `max_query_execution_time` test**, between the candidates the log of 2026-10-18 names: (a) a
+   superuser is exempt, (b) the standalone parameter is not enforced, (c) it binds compute-node queries and
+   the runaway of 2026-09-20 read leader-node catalog tables alone.
+   - **[user]** In `eighth-experimentation`'s Query editor on the warehouse, database `sandbox`, as the
+     project's database user, a table of 10,000 rows built from a digits table, since `generate_series`
+     runs on the leader node alone:
+
+     ```sql
+     CREATE TABLE lab.wh_digits (d INT);
+     INSERT INTO lab.wh_digits VALUES (0), (1), (2), (3), (4), (5), (6), (7), (8), (9);
+     CREATE TABLE lab.wh_n AS SELECT a.d + 10 * b.d + 100 * c.d + 1000 * e.d AS n
+       FROM lab.wh_digits a, lab.wh_digits b, lab.wh_digits c, lab.wh_digits e;
+     ```
+
+   - **[user]** The long query from the same editor, its start time noted: 10^12 rows, far past 120
+     seconds at 4 to 8 RPUs.
+
+     ```sql
+     SELECT SUM((x.n * y.n + z.n) % 7) FROM lab.wh_n x, lab.wh_n y, lab.wh_n z;
+     ```
+
+     **[Claude]** watches it from `SYS_QUERY_HISTORY` as the admin. At 150 seconds with the query still
+     running, the user cancels it in the editor, or **[Claude⚡]** ends it with `pg_terminate_backend` on
+     its `session_id` ([`redshift-connection.md`](../runbooks/redshift-connection.md) §J).
+   - **[Claude⚡] The same query as the admin**, a superuser, through the Data API (the `q` helper of
+     [Stage 21](stage-21-redshift-s3-data-products.md) pass 2's first block), ended at 150 seconds with `aws redshift-data cancel-statement --id <the
+     statement> --profile awsds-infra-sandbox-1` if it is still running.
+   - **[Claude] The verdict**, read by the statements' wording, never their exit codes:
+
+     ```bash
+     q "select q.query_id, u.usename, q.status, q.elapsed_time / 1000000 as seconds, q.error_message from sys_query_history q join pg_user u on u.usesysid = q.user_id where q.query_text like '%wh_n x%' order by q.start_time"
+     ```
+
+     An abort at about 120 seconds for both users is (c); for the project's user alone, (a); for neither,
+     (b), and the usage limit is the only bound, as `main.tf`'s comment already relies on.
+   - **[user]** `DROP TABLE lab.wh_n; DROP TABLE lab.wh_digits;` from the editor, as their owner.
+
+About 45 minutes of 5b's rows: step 1 five, step 2 ten, step 3 thirty. Step 3's two runs cost under 0.30
+USD of compute at up to 8 RPUs. Verification x's bill half stays owed until after 2026-12-19.
 
 ---
 

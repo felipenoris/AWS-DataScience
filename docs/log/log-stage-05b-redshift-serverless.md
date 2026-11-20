@@ -1335,3 +1335,45 @@ open decisions the user asked for at 22:01 UTC, one card per decision under the 
 - **[user] Decision 9**, at 22:32, on the card *"Gerir o crédito gratuito do Redshift do Sandbox, que acaba
   em 19/12?"*: *"Antecipar as sessões de warehouse"*, against the card's recommendation: the sittings that
   raise Sandbox's warehouse run before 2026-12-19 (`runbooks/promotion.md` §N.6 item 9).
+
+## 2026-11-19 — the warehouse sitting's pre-flight, with nothing up
+
+*Claude, in the pre-flight session of the Sandbox warehouse sitting started by the orchestrating session,
+as the infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1`
+(account Sandbox Account 1). Reads and plans only, no apply and no AWS write. Times are UTC.*
+
+- **[Claude] `make status`** at 21:46:02: `estimated burn: USD 0.0000/h`. A first run, not finished after
+  300 seconds, was stopped and run again.
+- **[Claude] The plans from `main`**, each with `-input=false`, saved and not applied:
+  `sandbox/warehouse-compute/` at 21:43:14, `Plan: 2 to add, 0 to change, 0 to destroy`
+  (`aws_redshiftserverless_workgroup.this`, `aws_redshiftserverless_usage_limit.compute`);
+  `sandbox/warehouse/` at 21:43:48 with both switches off, `No changes`.
+- **[Claude] `CreateWorkgroup` and `UpdateWorkgroup` since 2026-10-19**, `lookup-events`: four creates,
+  2026-10-25 02:11:55, 2026-10-26 01:22:42, 2026-10-26 21:23:42 and 2026-10-30 16:04:42, each by
+  provider 6.68.0, each response carrying ten configuration parameters with `enable_large_strings_opt_in`
+  at `""`; no `UpdateWorkgroup`. Each destroy's `DeleteWorkgroup` answered `ConflictException` three to
+  five times, the `ok` 4 to 17 seconds after the first. No plan has run against a live workgroup, so the re-plan
+  of 2026-10-18 is still owed.
+- **[Claude] The admin secret**, `describe-secret`: last rotated 2026-11-19 at 00:23:23, with no
+  workgroup; rotation enabled, every 30 days in a 2-hour window, the next due 2026-12-19 at 01:59:59. The
+  database half of this second rotation is read by the sitting's first `./aws/warehouse.py --sql`.
+- **[Claude] The block written**: "The Sandbox warehouse sitting: 5b's items in order" in the stage file,
+  before the deliverables: the `--sql` read, the re-plan before 6h's re-apply of the compute slice, and the
+  `max_query_execution_time` test as a non-superuser and as the admin, between the candidates (a), (b) and
+  (c) of 2026-10-18.
+
+## 2026-11-19 — `promotion.md` §N.10 written from the pre-flight, nothing up
+
+*Claude, the orchestrating session, from the pre-flight session's report; no AWS call. Merged with pull
+request #340 on 2026-11-20 at 15:52:10. Times are UTC.*
+
+- **[Claude] §N.10, the Sandbox warehouse sitting**, written at 22:32: two days of about five hours, each
+  raised by `make hub-up` and then `make up ENV=sandbox GROUPS=redshift`. Day 1 opens with this stage's
+  rows (the `--sql` read, the `warehouse-compute/` re-plan, the `max_query_execution_time` test), then 6h's
+  (the editor on `sandbox`, the negatives 5.1 to 5.4, 5.2b with the wide tag, 0.4's portal half) and Stage
+  19's pass 5 to 5.3; day 2 holds Stage 21's passes 2 to 4, Stage 19's 5.4 with Stage 21's rollback, and
+  6h's 6.4. The cost written: about 0.22 USD/h before the spaces and about 1.7 USD/h while the warehouse
+  runs queries, about 8 USD for the sitting, between 5.5 and 12. §N.6 item 9 and §N.9.8 item 3 point to it.
+- **[Claude] §N.10.1, the acts before it**: release G and 4.12, 6h decision 8 (a)'s window, Stage 21 1.3's
+  wizard half and 4.5's write path, and Sandbox's free-trial balance; at 23:01, after the user chose Stage 19
+  5.2's door, its apply from `main`, done 2026-11-20 (Stage 19's log).

@@ -522,10 +522,13 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     for carrying it as an axis rather than as two incidents.
 
     **Amended 2026-10-22: the membership is a door of its own.** DataZone hands an owner's or a
-    contributor's portal session the project role, the only designations a V2 domain admits (Stage 18
-    6.1), and its query editor reads the project's tables with no compute (Stage 18 7.2), so a governance
-    manager made a member, as 6f 4.3 plans, reads them past `DenyReadingTheRows` with no
-    `GetEnvironmentCredentials` call.
+    contributor's portal session the project role (Stage 18 6.1), and its query editor reads the project's
+    tables with no compute (Stage 18 7.2), so a governance manager made a member, as 6f 4.3 plans, reads
+    them past `DenyReadingTheRows` with no `GetEnvironmentCredentials` call. A domain-defined designation
+    is the narrower membership, by API only since 2026-10-29, its policy naming action groups (`SUP-384`):
+    Stage 19's `subscription-approver` (decision 15 (d), 2026-11-19) withholds the Project, Connections,
+    and Notebooks and Querybooks categories `PROJECT_CONTRIBUTOR` grants. Whether the query editor still
+    hands the member the project role under it is Stage 19 xxvi's portal half.
 
 ### Raised by Stage 6 step 1.3, 2026-08-21
 

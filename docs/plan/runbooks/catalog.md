@@ -74,11 +74,12 @@ Formation grant; a publish writes to the SageMaker Catalog alone (measured 2026-
 project in V2 domain"* (measured 2026-10-20, Stage 18 6.1; `SUP-161`). Both admitted designations work on
 the project's credentials, so no designation gives a person a view with no write. Member management is the
 Owner's: a Contributor's `DeleteProjectMembership` was refused, *"DesignationPolicy does not allow access."*
-(measured 2026-11-14, `SUP-157`). Custom designations are unmeasured here. The domain's RAM share stays at
-version 10 of its managed permission, which names no `ListDesignations`, so an associated account is
-refused that call (measured 2026-11-14, `SUP-360`). Stage 19 decision 15 (d), a custom designation for
-Production's approver, was put to the user on 2026-11-17. The release notes of 2026-11-12 add a layout per
-designation, which they call presentation only (read 2026-11-17).
+(measured 2026-11-14, `SUP-157`). A custom designation's portal acts are unmeasured; its policy names
+action groups, never individual actions (`SUP-384`). The domain's RAM share moved to version 13 of its
+managed permission on 2026-11-19, and the associated accounts read the designations since (`SUP-360`).
+Stage 19 decision 15 (d), a custom designation for Production's approver, was taken on 2026-11-17, and its
+designation `subscription-approver` was created on 2026-11-19, assigned to no member yet. The release notes
+of 2026-11-12 add a layout per designation, which they call presentation only (read 2026-11-17).
 
 **By AWS's pages** (read 2026-11-17). Curating, publishing and unpublishing an asset take Owner or
 Contributor of its project (the curation page). Requesting a subscription takes membership of the
@@ -185,10 +186,11 @@ The portal's *Create database* deploys a `DataLake` environment named
   environment (`environmentId` null) and hangs from `project.default_lakehouse`, the `Tooling`
   environment's connection. What the environment's delete does to the source is unread.
 
-That environment carries no subscription target. One created by API,
-`create-environment … --user-parameters name=glueDbName,value=<name>`, carries `<environment>-default-target`
-(measured 2026-11-11, Stage 19 xix). The project's own default `DataLake` environment holds the target a
-subscription lands on (§S).
+A project's first `ACTIVE` `DataLake` environment carries `<environment>-default-target`, whichever path
+created it, and a later one carries none, the portal's or one created by API,
+`create-environment … --user-parameters name=glueDbName,value=<name>` (read 2026-11-19 across four
+projects, `SUP-184`; Stage 19 xix measured a first one on 2026-11-11). The project's own default
+`DataLake` environment holds the target a subscription lands on (§S).
 
 A source's run is a `SYSTEM` session of the project role calling `glue:GetDatabase`, `GetTables` and
 `lakeformation:GetResourceLFTags` (measured, Stage 18 7.2 and Stage 19 0.2). A run over `app_etl` with
@@ -602,9 +604,9 @@ Sandbox project's product.
 - The `Workloads` OU denies `CreateSubscriptionRequest` (above).
 - `CT-10`, `CT-11`, `CT-16` and `CT-17` judge every grant and access act (§V).
 - Stage 19 step 4.12, `eighth-experimentation`'s subscription to Production's listing, is unrun. Its approver
-  is Stage 19 decision 15, taken as (a) on 2026-10-31, the Governance Manager as a Contributor of
-  `deploy-production`, and put to the user again on 2026-11-17 with a custom designation as (d); the
-  Governance Manager's membership comes first.
+  is Stage 19 decision 15, taken as (d) on 2026-11-17: the Governance Manager a member of
+  `deploy-production` under the custom designation `subscription-approver`, created 2026-11-19. The
+  membership, by the project's owner, comes first.
 - The lake road: `governed-lake` lists `curated.trades`, the publishing role holding its read with the grant
   option in [`publishing.tf`](../../../terraform-live/data-governance/data/publishing.tf); a restricted or
   personal table travels on TBAC grants alone (6f decision 2; `CT-12`).

@@ -938,7 +938,9 @@ entry is still true is the reading.
   starting the hub does not put the committed policy in force, and for up to one cron interval the proxy
   enforces the previous session's allow-list. A parameter written while the host is stopped is not rendered
   by the start either, so the lag is not bounded by how old the edit is. Where: `NETWORK.md` the proxy's
-  filters, `log-stage-06d` the fifteenth sitting.
+  filters, `log-stage-06d` the fifteenth sitting. Read again 2026-11-19 with the host stopped: the eight
+  executions from 12:01:18Z to 15:30:41Z each reported `Success` with `ResourceCountByStatus` `{}`, so an
+  execution's status says nothing about a render and its count does (`log-stage-06d`, 2026-11-19).
 
 - `SUP-072` **A public AMI parameter answers only its current value** (measured 2026-10-16 as
   `InfrastructureAccess` in Production, Stage 8 decision 25). On
@@ -1895,7 +1897,8 @@ entry is still true is the reading.
   authorizing a blueprint from an associated account, v11 for this one. Measured 2026-11-14: the share still
   carries version 10, and what that withholds from an associated account is `SUP-360`. Where:
   `log-stage-06a-unified-studio.md`, 2026-08-21; `open-questions.md` 21; `upstream-releases.md`, the
-  designations row.
+  designations row. Read again 2026-11-19 (Stage 19): the share moved to version 13 that day, the only
+  version RAM would attach (`SUP-360`). Where: `log-stage-19-smus-native-data-product.md`, 2026-11-19.
 
 - `SUP-148` **`CreateProjectProfile` refuses `ToolingLite` as an on-demand element of a project profile**
   (measured 2026-08-21, Stage 6 1.5). Both profile creates failed with DataZone 400, *"ToolingLite
@@ -2044,7 +2047,16 @@ entry is still true is the reading.
   accounts' trails reading `AccessDenied` with no `errorMessage` (`SUP-162`). The project's creator, its
   owner, was accepted the same update from the portal on 2026-10-11 (`SUP-168`), so a project's update is
   its owner's, never an operator's call as a contributor. Where:
-  `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
+  `log-stage-06d-unified-studio-remainder.md`, 2026-11-18. Read again 2026-11-19 (Stage 6h decision 3): the
+  same role, a `PROJECT_CONTRIBUTOR` of `eighth-experimentation`, was accepted `UpdateConnection` on the
+  Redshift connection the project's owner made in the portal, its database and its `lineageSync` changed,
+  both accounts' trails reading the call with no `errorCode`. A connection's update is a contributor's where
+  a project's update is its owner's; the managed designations' descriptions name neither action, so a
+  contributor's writes are read by attempt. Where: `log-stage-06h-redshift-connection.md`, 2026-11-19. Read
+  again 2026-11-19 (Stage 19), after the share's move to version 13 (`SUP-360`): `GetGroupProfile` answered
+  from Sandbox, Staging and Production as each account's `InfrastructureAccess`, and `GetProjectProfile` was
+  refused in all three, *"because no resource-based policy allows the datazone:GetProjectProfile action"*.
+  Where: `log-stage-19-smus-native-data-product.md`, 2026-11-19.
 
 - `SUP-158` **An IAM role in a DataZone domain is a group and one user profile per session name, and a
   policy grant takes the group.** Its ARN resolves as a user identifier to one session's user profile, and
@@ -2153,7 +2165,8 @@ entry is still true is the reading.
   2026-11-11.
 
 - `SUP-360` **A DataZone domain's RAM share keeps the version of its managed permission it was created
-  with, so an action AWS adds to the permission later does not reach an associated account** (measured
+  with, so an action AWS adds to the permission later reaches an associated account only once the share is
+  moved to the default version, the one version RAM attaches** (measured
   2026-11-14 in Data Governance and Sandbox, `upstream-releases.md`'s re-read). `ram
   list-resource-share-permissions` on `DataZone-EXTENDED_ACCESS-<domain id>-ORG-ONLY`, created 2026-08-21 with a
   `lastUpdatedTime` of that same second, read `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`
@@ -2171,7 +2184,22 @@ entry is still true is the reading.
   `GetGroupProfile` refusal the CLI's deploys from a member account have logged since 2026-10-19, in the same
   wording (`SUP-157`); the share has not been moved to confirm it. Moving it to the default version is a RAM
   write in the domain's account. Where: `upstream-releases.md`, the designations row;
-  `waiting-on-the-user.md`.
+  `waiting-on-the-user.md`. Read again 2026-11-19 (Stage 19, before 4.12): `list-permission-versions` read
+  version 13, created 2026-11-16T21:08:23Z, as the default and the only `ATTACHABLE` version, versions 1 to
+  12 `UNATTACHABLE`; version 13 adds `datazone:GetSystemTableExportConfiguration` to version 12's 163
+  actions. Version 12, which the user had chosen on 2026-11-17, could no longer be attached:
+  `AssociateResourceSharePermission` takes only a permission's default version, by its API reference. The
+  share moved from version 10 to 13 at 02:20:31 UTC on the user's word, `associate-resource-share-permission
+  --permission-version 13 --replace` answering `{"returnValue": true}`. The association read
+  `lastUpdatedTime` 02:20:33 and the share's own `lastUpdatedTime` stayed at 2026-08-21. At 02:21:01 `ram
+  get-resource-policies` on the domain read version 13's 164 actions in the same statement, principals and
+  `aws:PrincipalOrgID` condition. From Sandbox, Staging and Production as `InfrastructureAccess`,
+  `GetGroupProfile`, `ListDesignations` and `GetDesignation` then answered, and `GetProjectProfile` was still
+  refused in the same wording: version 10's missing `GetGroupProfile` was the cause of the deploys'
+  refusals, though no deploy has run since. RAM's user guide states what this entry measured, where a
+  DataZone reader does not look: a share is never moved to a new version by itself, and an AWS managed
+  permission's move cannot be reverted once saved. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-19.
 
 - `SUP-361` **`list-environment-blueprints` and `get-environment-blueprint` date one managed blueprint
   differently** (measured 2026-11-14 on `awsds-studio`, `upstream-releases.md`'s re-read). `datazone
@@ -2195,6 +2223,35 @@ entry is still true is the reading.
   therefore gives a workgroup on a price-performance target with no base and a 512-RPU maximum; a locked
   override of the base holds a floor. No AWS page states the sentinels or `MaxCapacity`'s range. Where:
   `log-stage-21-redshift-s3-data-products.md`, 2026-11-18; `data-governance/governance/locals.tf`.
+
+- `SUP-382` **`ram get-permission` on an AWS-managed permission answers the time of the call as its
+  `creationTime` and `lastUpdatedTime`** (measured 2026-11-19 in Data Governance, Stage 17 3.3). Two calls
+  on `AWSRAMSageMakerServicePrincipalPermissionAmazonDataZoneDomain`, version 3, made at 02:21:16.69 and
+  02:21:18.59 UTC, answered `02:21:18.543Z` and `02:21:19.740Z` in both fields, and a call at 02:11:47 had
+  answered `02:11:49.944Z`. `ram list-permission-versions` dates each version with a fixed past time
+  (`AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`: version 12 2026-11-03, version 13
+  2026-11-16). The CLI's reference describes the two fields as *"The date and time when the permission was
+  created"* and *"last updated"*. A permission's age is read from `list-permission-versions`, never from
+  `get-permission`. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-19. Read again 2026-11-19
+  (Stage 19): `get-permission` on `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`, versions 10 to
+  13, called from 02:09:50 to 02:10:14 UTC, dated each version at the second of its own call. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-19.
+
+- `SUP-383` **RAM shares a DataZone domain with the service principal `sagemaker.amazonaws.com`, which its
+  table of shareable resources says it cannot** (measured 2026-11-19 in Data Governance, Stage 17 3.3).
+  RAM's *Shareable AWS resources* page marks `datazone:Domain` *"Can share with service principals: No"*,
+  against AWS's page on a SageMaker data source and the managed permission
+  `AWSRAMSageMakerServicePrincipalPermissionAmazonDataZoneDomain`, whose resource type is
+  `datazone:Domain`. `awscc_ram_resource_share` (awscc 1.106.0, CloudFormation's
+  `AWS::RAM::ResourceShare`) created `DataZone-dzd-d8yrvx1ko7im6o-SageMaker` in 7 seconds at 03:02:35 UTC,
+  with the domain, that principal, that permission and four source accounts in `sources`. Read at 03:03:
+  the share `ACTIVE`, the principal and the domain `ASSOCIATED`, the permission at version 3 `ASSOCIATED`,
+  and each source association `ASSOCIATED`. The apply's wording is the reading where the table and the
+  service disagree; whether a data source then runs is `EXC-11`'s. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-19. Read 2026-11-19 and 2026-11-20: the `Tooling`
+  data source of each of three projects in Sandbox, an account associated with the domain, ended its first
+  run after the share `SUCCESS`, where AWS's page describes the domain's own account alone; `EXC-11`
+  closed 2026-11-20. Where: the same log, both days.
 
 ### Environments and projects
 
@@ -2450,6 +2507,44 @@ entry is still true is the reading.
   read `ACTIVE`, their `CREATE` deployments `SUCCESSFUL`, so this refusal in the trail is no deployment's
   cause. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
 
+- `SUP-384` **A custom designation's Cedar policy names action groups, never individual actions, and no AWS
+  page gives the groups' identifiers** (measured 2026-11-19 in Data Governance, Stage 19 decision 15 (d)).
+  `datazone create-designation` on `awsds-studio`, its policy three `permit`s over individual actions in
+  the managed designations' form (`Subscriptions::Action::"AcceptSubscriptionRequest"` and the other four
+  approvals, nine `Catalog` reads, the 17 `DataAgent` actions `PROJECT_CONTRIBUTOR` stores), was refused at
+  02:33:30 UTC with a `ValidationException`: *"Invalid designation policy: Designation policy validation
+  error: the specified action is not a valid action group"*. Nothing was created. The same call with one
+  group per statement, `Subscriptions::Action::"ManageSubscriptionApprovals"`,
+  `Catalog::Action::"ReadOnlyActions"` and `DataAgent::Action::"AllActions"`, created `subscription-approver`
+  at 02:46:46, `USER_CREATED` with deletion protection on, and `get-designation` returns the policy byte for
+  byte, its groups unexpanded. `CreateDesignation`'s reference describes `policy` as a Cedar permit policy
+  and shows no syntax. The designation permissions page names each category's choices by label (*Manage
+  subscription approvals*, *Read-only actions*) with their API lists, never by identifier, and prints the
+  managed designations with individual actions (`SUP-385`). `ReadOnlyActions`, `UseConnection` and
+  `AllActions` come from a designation made in the portal (Classmethod, 2026-11-02);
+  `ManageSubscriptionApprovals` was inferred from its label and accepted. The validation accepted a policy
+  without the Connections groups, which the portal pre-selects and does not let a user clear (the same
+  article). Whether it refuses a policy without the Data Agent group, which the guide requires, was not
+  tried. What a group grants is read from the permissions page, not from the API. The CLI 2.37.12 has no
+  designation operations; botocore 1.44.5's model in `AWS_DATA_PATH` ran them. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-19; Stage 19 decision 15.
+
+- `SUP-385` **The managed designations' stored policies differ from the text the admin guide prints for
+  them** (read 2026-11-19 in Data Governance and on the designation permissions page, Stage 19 decision 15
+  (d)). `get-designation` returned `PROJECT_OWNER` and `PROJECT_CONTRIBUTOR` as 23 and 18 `permit`
+  statements over 158 and 150 unique actions; the page prints 21 and 17 statements over 150 and 143. Both
+  stored policies hold seven Data Agent actions the page lacks, `PutAgentApprovalPolicy`,
+  `GetAgentApprovalPolicy`, `DeleteAgentApprovalPolicy`, `RegisterAgentArtifact`, `DeregisterAgentArtifact`,
+  `ListAgentArtifacts` and `ListAgentSessionRecords`, and lack the page's four agent-context actions,
+  `AssociateAgentContext`, `DisassociateAgentContext`, `UpdateAgentContext` and `ListAgentContexts`, which
+  the page's table also lists under the Data Agent's *All actions*. Both add the `Project` actions
+  `ListDeployableEnvironmentBlueprints`, `StartCompute`, `GetCompute` and `StopCompute`, the last three in the
+  page's table under *Manage user compute* but in neither printed policy, and the owner's adds `Catalog`'s
+  `UpdateAssetOwner`. Which actions `DataAgent::Action::"AllActions"` grants in a custom designation
+  (`SUP-384`) is therefore unread: the page lists 14, the managed designations hold 17. A managed
+  designation's reach is read from `get-designation`, never from the page. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-19.
+
 ### The managed policies of a project role
 
 - `SUP-176` **`SageMakerStudioProjectRoleMachineLearningPolicy` grants every SMUS project role `datazone:`
@@ -2588,8 +2683,8 @@ entry is still true is the reading.
   public egress from the client's network. Where: `aws/networking.py` `NT-9` and `NT-10`;
   `docs/plan/lessons.md`, Lessons 40 and 41. The private zone's reach over a subtree is `SUP-078`.
 
-- `SUP-182` **The Query Editor's querybook compute is refused with status 402 because the `datazone`
-  querybook quotas apply at 0 against non-zero defaults** (measured 2026-09-13 in Sandbox, Stage 6d
+- `SUP-182` **The Query Editor's querybook compute was refused with status 402 while the `datazone`
+  querybook quotas applied at 0 against non-zero defaults, and AWS later raised them with no request** (measured 2026-09-13 in Sandbox, Stage 6d
   thirteenth sitting, and 2026-10-21 in Staging, Stage 18 6.1). Six `datazone:StartNotebookCompute` calls
   answered `ServiceQuotaExceededException`, shown as *"Status code: 402 - The account-level service limit
   'SageMaker Unified Studio Querybooks running on sc.t3.medium instances' is 0 Querybooks"*. In the
@@ -2600,7 +2695,10 @@ entry is still true is the reading.
   with no compute, returned 10 rows. In Staging the 402 came with *"Kernel Error"*, and the typed `SELECT 1`
   was saved as the querybook's description (`UpdateNotebook`). Where:
   `log-stage-06d-unified-studio-remainder.md`, 2026-09-12/13 and 2026-10-17;
-  `log-stage-18-staging-deployment-project.md`, 2026-10-21.
+  `log-stage-18-staging-deployment-project.md`, 2026-10-21. Read again 2026-11-19 in Sandbox, Staging and
+  Production: `L-F63F402C` 10, `L-B3401D17` 5 and `L-85C9EC5A` 15, none of the 81 `sc.*` quotas with a
+  default above zero at 0 and 36 above their default, with no request on record but Sandbox's three closed
+  on 2026-09-24 (`log-stage-06d-unified-studio-remainder.md`, 2026-11-19).
 
 - `SUP-183` **The portal's file upload creates a Glue table whose location is a folder named after the
   upload time in milliseconds, not under the database's `LocationUri`** (read 2026-09-13 in Sandbox's trail,
@@ -2633,9 +2731,20 @@ entry is still true is the reading.
   null) and hangs from the project's `project.default_lakehouse` connection, the `Tooling` environment's,
   its filter naming the database; the stack's template gives `GlueDatabase`, and an Athena workgroup the
   stack did not create, `DeletionPolicy` and `UpdateReplacePolicy` `Retain`, so the stack's deletion leaves
-  the database. What the environment's delete does to the source is unread. Where:
+  the database. What the environment's delete does to the source is unread. Read 2026-11-19 across four
+  projects (Stage 20 8.3): the target follows an environment's rank in its project, not the path that
+  created it. A project's first `ACTIVE` `DataLake` environment carries one and a later one none:
+  `eighth-experimentation-lakehouse` (2026-10-26) and `test-experimentation-lakehouse` (2026-10-20) carry
+  one, the portal's `new_database` (2026-10-28) and `test_project_database` (2026-11-09) environments none,
+  `app-etl-dev`'s portal `app_etl` environment (2026-11-14), its project's first, one, and the API's
+  `deploy-staging-app-dbt` and `deploy-production-app-dbt`, each its project's second, none. The contrast
+  of 2026-11-11 set a first environment created through the API beside `chz5jdb80ohocw`, a later one of
+  `eighth-experimentation`. No trail holds a `CreateSubscriptionTarget` for the target `SYSTEM` created on
+  2026-11-11. In `deploy-staging` and `deploy-production` the second environment adds no connection, the
+  nine staying the `Tooling` environment's, and provisions that environment's `userRoleArn`. Where:
   `log-stage-06f-data-governance.md`, 2026-09-12/13; `log-stage-19-smus-native-data-product.md`, 2026-10-28,
-  2026-11-08, 2026-11-11 and 2026-11-14; `docs/SMUS.md`, the *Create database* item.
+  2026-11-08, 2026-11-11 and 2026-11-14; `log-stage-20-dbt-lineage.md`, 2026-11-19; `docs/SMUS.md`, the
+  *Create database* item.
 
 - `SUP-185` **The portal's MLflow entries look their blueprint up in the domain account, so a domain whose
   configurations live in associated accounts greys them out whatever the profile carries** (read 2026-10-19,
@@ -3125,7 +3234,14 @@ entry is still true is the reading.
   every run id, and a second reading the same day returned zero queries processed and a `RedshiftData`
   status 400, *"Redshift endpoint doesn't exist in this region."*, the workgroup being down. CloudTrail
   holds no `GetCredentials` at the run times, so the failed runs opened no database session. Where:
-  `log-stage-06f-data-governance.md` and `log-stage-06h-redshift-connection.md`, 2026-10-18.
+  `log-stage-06f-data-governance.md` and `log-stage-06h-redshift-connection.md`, 2026-10-18. Read again
+  2026-11-19 (6h decision 3): `UpdateConnection` with `lineageSync` `enabled: false` and the same schedule
+  switched the sync off, the schedule and the `lineageJobId` kept on the object, and `list-job-runs` kept
+  the job's 39 runs, one a day from 2026-10-11 to 2026-11-18, each `FAILED`. Where:
+  `log-stage-06h-redshift-connection.md`, 2026-11-19. Read again 2026-11-19 at 03:50 UTC: the job created
+  no run at the schedule's time, where it had created one at 03:44:44 on each of the 39 days before, so
+  `enabled: false` stops the runs while the schedule stays on the object. Where:
+  `log-stage-06h-redshift-connection.md`, 2026-11-19.
 
 - `SUP-208` **The SageMaker Unified Studio Query editor opens each session on the Redshift connection's
   database, not on the database selected in an earlier session** (measured 2026-10-26, Stage 9 xxiv). The
@@ -3136,9 +3252,21 @@ entry is still true is the reading.
   through the Data Catalog was then refused: *"Failed to incorporate external table
   "trades"."trades_notional" into local catalog. Error=permission denied to create temporary tables in
   database "dev""*, because the session's database holds the query's temporary objects and the user held
-  `TEMP` on `sandbox` alone. Selecting `sandbox` returned the row. Whether a member's `UpdateConnection` can
-  change the stored database is unmeasured. Where: `log-stage-09-deployment-targets.md`, 2026-10-26;
-  `runbooks/redshift-connection.md` §G.
+  `TEMP` on `sandbox` alone. Selecting `sandbox` returned the row. Where: `log-stage-09-deployment-targets.md`,
+  2026-10-26; `runbooks/redshift-connection.md` §G. Read again 2026-11-19 (6h decision 3): a contributor's
+  `UpdateConnection` changed the stored database from `dev` to `sandbox` (`SUP-157`), `jdbcUrl` and
+  `jdbcIamUrl` following it and `redshiftTempDir`, whose `dev` segment is the environment's stage, unchanged.
+  A session opened on the new database needs the workgroup and is unread. Where:
+  `log-stage-06h-redshift-connection.md`, 2026-11-19.
+
+- `SUP-387` **`UpdateConnection` on a Redshift Serverless connection does not check the workgroup it
+  names** (measured 2026-11-19, Stage 6h decision 3). The call was accepted at 02:22:20 UTC on
+  `redshift-serverless.redshift` with the workgroup `awsds-sandbox-warehouse` destroyed, `GetWorkgroup`
+  having answered *"Serverless workgroup awsds-sandbox-warehouse not found."* at 02:11:51, and the object
+  read back `READY`, its workgroup and host unchanged and its database `sandbox`. The service model documents
+  the call as *"Updates a connection"* and says nothing of validation. A connection's database and lineage
+  sync are changed with no warehouse up, and `READY` says nothing about the compute. Where:
+  `log-stage-06h-redshift-connection.md`, 2026-11-19; `runbooks/redshift-connection.md` §P step 4a.
 
 ## SageMaker AI spaces and images
 
@@ -4235,6 +4363,27 @@ entry is still true is the reading.
   `create`, so its `deploy` makes no membership or IAM call, and the project roles' policies stay
   Terraform's (open question 27). Where: `log-stage-19-smus-native-data-product.md`, 2026-11-17; Stage 19
   decision 15.
+
+- `SUP-389` **`aws-smus-cicd-cli` 1.0.9's catalog import points an asset at the target project's source
+  whose filter names the asset's database, and falls back to a source by position when none does or the
+  asset carries no `GlueTableForm`** (read 2026-11-19 in the released wheel unpacked in the laptop's `uv`
+  cache, `helpers/catalog_import.py` matching the wheel's `RECORD`, `sha256=NPf0CALj…Ihk`; nothing
+  executed, Stage 20 8.3). For an asset's `amazon.datazone.DataSourceReferenceFormType`,
+  `_resolve_target_data_source` lists the target project's sources in one `ListDataSources` call of
+  `maxResults=25`, reading no next page, and keeps those of the form's `dataSourceType` (`GLUE` by
+  default) that are `READY` or `RUNNING`. It returns the first whose `relationalFilterConfigurations` name
+  the asset's `databaseName`, else the last whose filter is `*`, else `candidates[0]`; a source whose
+  `GetDataSource` fails is skipped. The database comes from the asset's `GlueTableFormType` form alone, so
+  an asset with none, a view's `GlueViewFormType` among them, takes `candidates[0]` directly. The form then
+  names that source, and its latest run when that run is `SUCCESS`. With no candidate the form is
+  stripped: *"No matching <type> data source in target project (db=<database>), stripping
+  DataSourceReferenceForm"*. The order `ListDataSources` returns is undocumented, and the CLI's pages do
+  not describe the remap. The consequences: in a deployment project holding several applications'
+  sources, a table asset reaches its own database's source, since each source `create-environment` makes
+  filters on its database alone; a view, an asset of another form, or a project past 25 sources takes a
+  source by position (Lesson 73). Release F's import of 2026-11-15 logged its remap to `52f18khk7kdi4w`,
+  the source over `app_etl`, the project's only one. Where: `log-stage-20-dbt-lineage.md`, 2026-11-19;
+  `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 ## Bedrock
 

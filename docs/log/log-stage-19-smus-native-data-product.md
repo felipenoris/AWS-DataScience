@@ -4159,3 +4159,263 @@ open decisions the user asked for at 22:01 UTC, one card per decision under the 
   reviewed against the estate"* recorded only here; `REFERENCES.md` gains the CLI's substitutions guide,
   which the entry on the CLI's project handling cites, read with `gh api` at `main` `d768153d57` and
   unchanged since 2026-03-24 (`487e489185`).
+
+## 2026-11-19 — the domain's RAM share at version 13, decision 15 (d)'s designation and xxvi, `EXC-25` read
+
+*Claude's sitting on the laptop, a side session of the orchestrating session, with nothing metered up.
+Every call ran as the infrastructure user's `InfrastructureAccess`: `awsds-infra-data` (`<Data Governance
+Account>`) for the share and the designation, and `awsds-infra-sandbox-1`, `awsds-infra-staging` and
+`awsds-infra-prod` for the reads from the associated accounts. In the texts below the account ids are
+`<Sandbox Account 1>`, `<Staging Account>`, `<Production Account>` and `<Data Governance Account>`, and the
+user's address is `<infrastructure user>`. The designation calls ran the laptop's CLI 2.37.12 on botocore
+1.44.5's DataZone model, copied from the `uv` cache into `AWS_DATA_PATH`. Times are UTC.*
+
+- **[Claude] The share, read before the move**, 02:09 to 02:15:
+  - `DataZone-EXTENDED_ACCESS-dzd-d8yrvx1ko7im6o-ORG-ONLY`: `ACTIVE`, `STANDARD`, created 2026-08-21T21:12:34Z.
+  - Its permission, `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`: version 10, `ASSOCIATED`,
+    `defaultVersion` false.
+  - Its associations: three principals, `<Sandbox Account 1>` (2026-08-21) and `<Staging Account>` and
+    `<Production Account>` (2026-11-11), and the domain as its one resource.
+  - `list-permission-versions`: versions 1 to 12 `UNATTACHABLE`. **Version 13 is the default and the only
+    `ATTACHABLE` version, created 2026-11-16T21:08:23Z.**
+  - `get-permission`: version 13 holds version 12's 163 unique actions plus
+    `datazone:GetSystemTableExportConfiguration`, 164 in all (166 entries, since `GetEnvironment` and
+    `GetProject` have each been listed twice since version 10), and removes none. Versions 10 to 12 read as
+    in `SUP-360`. `get-permission` dated every version at the second of the call (`SUP-382`, which Stage 17
+    measured the same night).
+  - `ram get-resource-policies` on the domain: one statement,
+    `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess-org-principals`, with the three account roots,
+    version 10's 152 actions and the `aws:PrincipalOrgID` condition.
+- **[Claude] Put to the user**: the API attaches only a permission's default version, so version 12 cannot
+  be attached, and the move to version 13 is final for an AWS managed permission (RAM's user guide).
+- **[user] The move authorized** in this session's chat: *"Autorizo mover o ram share do domínio para a versão
+  13"*. **[Claude]** The other four sessions on the laptop were told before the call (Stage 17 9.5, Stage 20
+  8.3, 6h decision 3 and the orchestrator), and Stage 20 and 6h held their DataZone calls.
+- **[Claude] The move**, 02:20:30 to 02:20:31: `aws ram associate-resource-share-permission
+  --resource-share-arn <the share's ARN> --permission-arn
+  arn:aws:ram::aws:permission/AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess --permission-version
+  13 --replace` answered `{"returnValue": true}`. Data Governance's trail records
+  `AssociateResourceSharePermission` at 02:20:31Z by `AWSReservedSSO_InfrastructureAccess_ba1899ccb658ab35`,
+  with `replace` true, `permissionVersion` 13 and no error.
+- **[Claude] Read after the move**:
+  - 02:20:41: the share `ACTIVE`, `STANDARD`, its permission at version 13, `defaultVersion` true,
+    `ASSOCIATED`, `lastUpdatedTime` 02:20:33. The share's own `lastUpdatedTime` is still 2026-08-21, and the
+    four associations keep their earlier times.
+  - 02:21:01: the domain's resource policy keeps the same statement, principals and condition, now with
+    version 13's 164 actions. The added actions are `CreateDataApp`, `DeleteDataApp`, `GetDataApp`,
+    `GetDesignation`, `GetGroupProfile`, `GetSystemTableExportConfiguration`, `ListDataApps`,
+    `ListDeployableEnvironmentBlueprints`, `ListDesignations`, `ListSharedDataApps`, `UpdateAssetOwner` and
+    `UpdateDataApp`.
+  - The sessions were told at 02:21. Stage 20's `create-environment` calls followed, from Staging at
+    02:23:05 and from Production at 02:26:58. Both answered, and none of that session's reads in either
+    target from 02:21:40 was refused (`log-stage-20-dbt-lineage.md`, 2026-11-19). 6h's `UpdateConnection`
+    followed its own reading of the share at 02:21:41.
+- **[Claude] What the move changed for the associated accounts**, read as each account's `InfrastructureAccess`:
+  - `get-group-profile` on `sso-group-data-scientists` answered from `<Sandbox Account 1>`, `<Staging
+    Account>` and `<Production Account>` at 02:22:10 to 02:22:14. Version 10 refused this call (`SUP-157`).
+  - The control, `get-project-profile` on `ds7ur2s2ce42vk`, was still refused in all three: *"User:
+    arn:aws:sts::<Production Account>:assumed-role/AWSReservedSSO_InfrastructureAccess_c2bcabf74c885115/<infrastructure
+    user> is not authorized to perform: datazone:GetProjectProfile on resource:
+    arn:aws:datazone:us-west-2:<Data Governance Account>:domain/dzd-d8yrvx1ko7im6o because no resource-based
+    policy allows the datazone:GetProjectProfile action"*.
+  - `list-designations` and `get-designation PROJECT_CONTRIBUTOR` answered from all three at 02:26:05 to
+    02:26:09. Sandbox was refused `ListDesignations` on 2026-11-14 (`SUP-360`).
+  - Not called: `ListDeployableEnvironmentBlueprints`, `UpdateAssetOwner`, the Data App actions and
+    `GetSystemTableExportConfiguration`. The laptop's CLI has none of them, and botocore 1.44.5 has no
+    `GetSystemTableExportConfiguration`.
+- **[Claude] The managed designations**, read from Data Governance at 02:24: `PROJECT_OWNER` and
+  `PROJECT_CONTRIBUTOR`, `MANAGED`, deletion protection on, created by `system`. Their stored Cedar policies
+  hold 23 and 18 statements and 158 and 150 unique actions, and differ from the admin guide's printed text
+  (`SUP-385`).
+- **[Claude] `deploy-production`'s members**, read from Production at 02:26: the two owner groups as
+  `PROJECT_OWNER` and the project role's user profile as `PROJECT_CONTRIBUTOR`, as on 2026-11-16. The
+  Governance Manager is not a member.
+- **[Claude] The designation put to the user**: `subscription-approver`, a policy of three statements with
+  the individual actions of Subscriptions' *Manage subscription approvals* (5), Catalog's *Read-only
+  actions* (9) and the 17 Data Agent actions the stored `PROJECT_CONTRIBUTOR` holds. AWS's designations page
+  requires the Data Agent in every custom designation.
+- **[user] The creation authorized**: *"Autorizo criar a designation subscription-approver"*. **[Claude]** The
+  four sessions were told before it.
+- **[Claude] The first attempt refused**, 02:33:29 to 02:33:30: `aws datazone create-designation
+  --domain-identifier dzd-d8yrvx1ko7im6o --name subscription-approver --description "…" --policy
+  file://subscription-approver.cedar` answered *"An error occurred (ValidationException) when calling the
+  CreateDesignation operation: Invalid designation policy: Designation policy validation error: the
+  specified action is not a valid action group"*. Nothing was created. Data Governance's trail records
+  `CreateDesignation` at 02:33:30Z with `ValidationException`. A custom designation's policy names action
+  groups (`SUP-384`).
+- **[Claude] The policy rewritten and put to the user**: three statements naming
+  `Subscriptions::Action::"ManageSubscriptionApprovals"`, `Catalog::Action::"ReadOnlyActions"` and
+  `DataAgent::Action::"AllActions"`. The first id was inferred from the pattern of the group ids a
+  community article read in a designation made in the portal. One more attempt with Connections' two groups
+  was proposed, only if the validation asked for them.
+- **[user]** *"Pode tentar novamente"*.
+- **[Claude] Created**, 02:46:45 to 02:46:47, with the same command and the rewritten policy:
+  - The response: `id` `ahjm1h20oujxqo`, `designationType` `USER_CREATED`, `deletionProtection` true,
+    `createdBy` `9e7cfd86-4ddb-4ea1-b43f-04417861d609`, `createdAt` 2026-11-19T02:46:46.779396Z. The validation
+    did not ask for the Connections groups.
+  - Data Governance's trail, read at 02:53: `CreateDesignation` at 02:46:46Z by the same role, no error, the
+    response's `id` `ahjm1h20oujxqo`.
+  - 02:47: `get-designation` returned the submitted policy byte for byte. `list-designations` listed the
+    designation from `<Data Governance Account>`, `<Sandbox Account 1>`, `<Staging Account>` and
+    `<Production Account>`, and `get-designation` answered from Production.
+  - No membership was created.
+- **[Claude] xxvi read from the designation as created** (the stage file's xxvi). By AWS's designation
+  permissions page, its three groups expand to 5 Subscriptions actions, 9 Catalog reads and the Data Agent's
+  actions. Cedar permits nothing else, so against `PROJECT_CONTRIBUTOR` it withholds the Project, the
+  Connections, and the Notebooks and Querybooks categories, among them `GetEnvironmentCredentials` and the
+  catalog's writes and publishing. Which Data Agent actions `AllActions` grants is not readable:
+  `get-designation` returns the group as written, the page lists 14 actions and the managed designations
+  store 17 (`SUP-385`). The portal's half needs the membership.
+- **[Claude] `EXC-25`'s provider**, read at about 02:30:
+  - The newest `hashicorp/aws` release is still 6.73.0 (2026-11-11).
+  - `aws_cloudwatch_log_account_policy` validates `policy_type` with the AWS SDK's `PolicyType` enum.
+  - The SDK's `service/cloudwatchlogs` added `RETENTION_POLICY` in v1.91.0 (2026-10-30, its changelog). The
+    provider's `go.mod` pins v1.90.2, both at `v6.73.0` and on `main`.
+  - PR #50873 documents the type and changes no `go.mod`. It is a draft from an external contributor,
+    opened 2026-11-10 and untouched since 11:40 UTC that day.
+  - The three `foundation/` slices lock 6.60.0 under `~> 6.60`.
+- **[Claude] Written**:
+  - the stage file: decisions 15 and 27, step 4.12, xxvi, the sittings' item 9 and the `Status` row;
+  - `SUP-147`, `SUP-157`, `SUP-360` and `SUP-382` appended, and `SUP-384` and `SUP-385` new;
+  - `upstream-releases.md`'s designations row, the provider's `RETENTION_POLICY` row and the next reading;
+  - the waiting list, without the RAM share's row and the designation's row, and with 4.12's row rewritten;
+  - `docs/SMUS.md`, `runbooks/catalog.md` and `runbooks/promotion.md` §N.6 item 4;
+  - `REFERENCES.md`;
+  - at the orchestrator's request, two rows other sessions' measurements of the same day had overtaken: the
+    premise table's 6h row (6h decision 3 done, PR #327) and xix (`SUP-184`'s reading, PR #328).
+
+## 2026-11-19 — pass 5's pre-flight: the access role holds no read of the subscribed product
+
+*Claude, in the pre-flight session of the Sandbox warehouse sitting started by the orchestrating session,
+as the infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1`
+(account Sandbox Account 1), with `awsds-infra-prod` and `awsds-infra-data` read for their account ids
+alone. Reads only, no apply and no AWS write. Times are UTC.*
+
+- **[Claude] The policies on the two doors**, about 22:00: the access role
+  `awsds-sandbox-warehouse-access-avhvbqn37ty7m8` carries two customer-managed policies,
+  `awsds-sandbox-warehouse-project-avhvbqn37ty7m8` and `awsds-sandbox-warehouse-access-portal-avhvbqn37ty7m8`,
+  and no inline one; the project role `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` carries seven, three of
+  them AWS's (`SageMakerStudioProjectUserRolePolicy` among them) and four of this repository's.
+- **[Claude] `simulate-principal-policy` with no context entries**: on both roles, `glue:GetTable` and
+  `glue:GetDatabase` read `explicitDeny` on every resource, the lake account's `governed_trades` included, the
+  read that works since 2026-10-25; the result carries `AllowedByOrganizations: false` and no matched
+  statement. 6h's simulation of 2026-10-18 passed `aws:RequestedRegion` and `aws:PrincipalArn`, and this one
+  did not, so the organization's verdict is unread here.
+- **[Claude] `simulate-custom-policy` on the access role's two policies**, the identity half alone:
+
+  | Resource | `glue:GetTable` | `glue:GetDatabase` |
+  |---|---|---|
+  | the lake account's `table/governed_trades/x`, the positive control | `allowed` | `allowed` |
+  | Sandbox's `table/glue_db_blerpkhn9nj7o0/trades_notional` | `implicitDeny` | `implicitDeny` |
+  | Production's `table/app_etl/trades_notional` | `implicitDeny` | `implicitDeny` |
+  | Production's `database/app_etl` | `implicitDeny` | `implicitDeny` |
+
+  `lakeformation:GetDataAccess`: `implicitDeny`. **`simulate-principal-policy` on the access role at 22:24**, with
+  `aws:RequestedRegion=us-west-2` and `aws:PrincipalArn` in the context: `glue:GetTable` `allowed` on the
+  positive control and `implicitDeny` on Sandbox's and Production's `trades_notional`, `GetDataAccess`
+  `implicitDeny`, each with `AllowedByOrganizations: true`. So the read in place through §J's chain or the connection is
+  refused by IAM at `glue:GetTable` before Lake Formation is consulted, as the governed share was on
+  2026-10-25 until `ReadTheGovernedShareCatalog` was written. 5.1 names the Lake Formation and SQL pieces, not
+  this one.
+- **[Claude] The same simulator on the project role's policies** (`SageMakerStudioProjectUserRolePolicy` v77,
+  `awsds-sandbox-warehouse-project-avhvbqn37ty7m8`, `SageMakerStudioProjectRoleMachineLearningPolicy`):
+  `GetDataAccess` `allowed` by `LFforDL`, `glue:GetDatabase` `allowed` on Production's `database/app_etl`,
+  `glue:GetTable` `implicitDeny` on the three tables. v77's `GlueDatalakePermissions` allows Glue on `*` when
+  `glue:LakeFormationPermissions` is `Enabled`, a key the simulator cannot supply, so the direct door's table
+  read is unanswered by the simulator rather than refused.
+- **[Claude] The register**: the per-project database user holds `TEMP ON DATABASE sandbox` and `USAGE ON
+  DATABASE governed_trades` (2026-10-25) and no `USAGE ON DATABASE awsdatacatalog`.
+- **[Claude] The block written**: "The Sandbox warehouse sitting: pass 5 in order" in the stage file, before
+  "To execute", with the access role's two absent pieces as the user's word before the sitting, or 5.2 through
+  the direct door.
+
+## 2026-11-19 — 5.2's door: the access role's statement written and planned, unapplied
+
+*Claude, in the same session, on the user's "Sim, escreva" to the question whether to write the access
+role's statement in PR #339; as the infrastructure user, permission set `InfrastructureAccess`, through
+`awsds-infra-sandbox-1` (account Sandbox Account 1), with `awsds-infra-prod` (account Production) for two
+reads and its account id. A plan from the branch, no apply and no AWS write. Times are UTC.*
+
+- **[user] The door**: §J's chain, through the access role, answered *"Sim, escreva"*. The direct door as
+  the project role stays the fallback the stage file names.
+- **[Claude] Production's table and its location**, about 22:47, as `awsds-infra-prod`: `glue get-table` on
+  `app_etl.trades_notional` reads `EXTERNAL_TABLE`, `table_type` `ICEBERG`, no partition keys, its location
+  under `s3://awsds-prod-smus-projects/dzd-d8yrvx1ko7im6o/d7qcazihvr3s7k/dev/data/catalogs/`.
+  `lakeformation list-resources` reads one registered location, `s3://awsds-prod-smus-projects/dzd-d8yrvx1ko7im6o/d7qcazihvr3s7k/dev`,
+  role `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow`, `HybridAccessEnabled: false`, `VERIFIED`, last
+  modified 2026-11-11 15:30 UTC. So the read takes `GetDataAccess`, and neither an S3 grant nor a partition
+  action.
+- **[Claude] The statement written**: `sandbox/warehouse/`'s new map `subscribed_products`, keyed by
+  project id, its one entry `avhvbqn37ty7m8` naming `glue_db_blerpkhn9nj7o0`, `app_etl` and
+  `trades_notional`; two dynamic statements in `project_access_portal`, after `ReadTheGovernedShareCatalog`:
+  `ReadTheSubscribedProductsCatalog`, the four Glue reads on Sandbox's catalog, the link database and its
+  tables and on Production's catalog, `app_etl` and `trades_notional`, and
+  `LakeFormationVendsTheSubscribedProductsData`, `lakeformation:GetDataAccess` on `*`. Production's id is
+  resolved by the aliased provider `production` and `data.aws_caller_identity.production`, its profile from a
+  new `producers` emission of `scripts/tfhygiene/backend.py` for a SMUS member's `warehouse` slice, the
+  `data-governance/data/` idiom.
+- **[Claude] The plan from the branch**, 22:49:04 to 22:49:17, as `awsds-infra-sandbox-1` with
+  `-input=false -var all_projects_tag_enabled=false -var data_transfer_role_enabled=false`: *"Plan: 0 to add,
+  1 to change, 0 to destroy."*, `aws_iam_policy.project_access_portal["avhvbqn37ty7m8"]` updated in place. Of
+  the new statement's Glue ARNs, three carry Sandbox's account and three Production's, read from the plan's
+  JSON against each profile's account with no id printed. The planned document is 2,224 characters without
+  whitespace, under IAM's 6,144.
+- **[Claude] `simulate-custom-policy` on the two planned statements**, 22:51, one resource per call:
+  `glue:GetTable` and `glue:GetDatabase` `allowed` on Sandbox's catalog, `database/glue_db_blerpkhn9nj7o0` and
+  `table/glue_db_blerpkhn9nj7o0/trades_notional`, and on Production's catalog, `database/app_etl` and
+  `table/app_etl/trades_notional`; `implicitDeny` on Production's `table/app_etl/other_table` and
+  `database/curated`, the negative controls; `lakeformation:GetDataAccess` `allowed`. The whole planned
+  document was refused at the simulator's 2,000 characters (`SUP-006`), and one call lost its ARNs to zsh's
+  `:c` modifier (Lesson 84) before the run above. A call naming the eight resources at once returned one result per
+  action, its resource the pattern `arn:aws:glue:${Region}:${Account}:${ResourceType}/${ResourcePath}` and its
+  decision `implicitDeny`, the aggregate; the verdicts above are the per-resource ones.
+- **[Claude] Written with it**: the slice README's row for `project_access_portal`, runbook
+  `redshift-connection.md` §G's paragraph for a subscribed product, the stage file's block (before it item 3,
+  the pieces table) and its Status row, and `waiting-on-the-user.md`'s row. What follows is the apply from
+  `main` after PR #339's merge, on the user's word.
+
+## 2026-11-20 — 5.2's door applied from `main`
+
+*Claude, the orchestrating session, on the user's "autorizo o apply no warehouse" in its chat, after the
+merges of PR #339 (15:51:55 UTC) and PR #340 (15:52:10 UTC); as the infrastructure user, permission set
+`InfrastructureAccess`, through `awsds-infra-sandbox-1` (account Sandbox Account 1), with
+`awsds-infra-prod` (account Production) for the aliased provider's account id. One AWS write, the apply.
+Times are UTC.*
+
+- **[user] The word**: *"autorizo o apply no warehouse"*, sent while the session waited on a new SSO
+  login; the session read valid again at 15:56:16.
+- **[Claude] The plan from `main`** at `7af1ec3d`, from 15:56:48, the slice initialised in the worktree
+  (`gen-backend-hcl.py`, `gen-tfvars.py`, `init -backend-config=backend.hcl -input=false`), with
+  `-input=false -var all_projects_tag_enabled=false -var data_transfer_role_enabled=false`, saved: *"Plan:
+  0 to add, 1 to change, 0 to destroy."*, `aws_iam_policy.project_access_portal["avhvbqn37ty7m8"]` updated
+  in place, its diff the two statements `ReadTheSubscribedProductsCatalog` and
+  `LakeFormationVendsTheSubscribedProductsData` and nothing else.
+- **[Claude] The other session told** before the apply: the pre-flight's session, the one peer on the
+  machine, idle.
+- **[Claude] The apply of the saved plan**, 15:57:30 to 15:57:40: *"Apply complete! Resources: 0 added, 1
+  changed, 0 destroyed."* The policy `awsds-sandbox-warehouse-access-portal-avhvbqn37ty7m8` reads default
+  version `v4`, updated at 15:57:39.
+- **[Claude] The re-plan**, 15:58:02, the same switches: *"No changes. Your infrastructure matches the
+  configuration."*
+- **[Claude] `simulate-principal-policy` as `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`**, about 15:58,
+  one resource per call, `aws:RequestedRegion` and `aws:PrincipalArn` in the context: `allowed` for
+  `glue:GetDatabase` on Sandbox's `database/glue_db_blerpkhn9nj7o0` and Production's `database/app_etl`, for
+  `glue:GetTable` on Sandbox's `table/glue_db_blerpkhn9nj7o0/trades_notional` and Production's
+  `table/app_etl/trades_notional`, and for `lakeformation:GetDataAccess` on `*`; `implicitDeny` for
+  `glue:GetTable` on Production's `table/app_etl/some_other_table`, `glue:GetDatabase` on
+  `database/other_db` and `glue:CreateTable` on `table/app_etl/trades_notional`, the negative controls; the
+  organization allowing each. The IAM half of 5.2's door is open; Lake Formation's admission and the SQL
+  grants stay 4.12's and the sitting's (the stage file's pieces table).
+
+## 2026-11-20 — Release G placed in R1, and decision 27 (d)'s provider read
+
+*Claude, in the session that regrouped the sittings (Stage 8's log, this day), with nothing up: the
+Terraform registry's and GitHub's public APIs read at about 17:04 and 17:05, no AWS call. Times are UTC.*
+
+- **[Claude] Release G** (decision 26 (b)) rides R1 (`promotion.md` §N.11.1 step 4), after `EXC-13`'s
+  rotation and before 2026-12-17. 4.12's membership with `subscription-approver` and xxvi's portal half need
+  neither the release nor anything up and come first (§N.6 item 3); 4.12's request and approval follow the
+  release (item 6). Pass 5 to 5.3 is on §N.10's day 1, 5.4 on day 2.
+- **[Claude] Decision 27 (d)'s provider**: the registry's newest `hashicorp/aws` is 6.73.0, published
+  2026-11-11; `go.mod` at `v6.73.0` and on `main` both name `service/cloudwatchlogs` v1.90.2, below the
+  v1.91.0 that `upstream-releases.md` watches for. `EXC-25` stands.

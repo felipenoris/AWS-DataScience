@@ -183,6 +183,10 @@ RANKS = {
     # and above `sagemaker` (46) for the same reason. [P], so up/down skip it; 56 is the first free
     # slot, and nothing interleaves with it.
     "workflows": 56,
+    # Stage 17 decision 7 (a): the notebook grant for SMUS project roles, beside `workflows` and above
+    # `sagemaker` (46) for the same reason. [P], so up/down skip it; 57 is shared with Production's
+    # `runners`, and nothing interleaves with it.
+    "ml": 57,
     # Stage 5b step 1.7 - the Redshift Serverless warehouse, split across two ranks because the two
     # halves have different lifecycles and the order between them is a real dependency:
     #
@@ -604,6 +608,15 @@ SLICES = [
         "workflows",
         PERSISTENT,
         "the workflows grant: 1 policy + 1 attachment per project",
+    ),
+    # Stage 17 decision 7 (a) - one IAM policy and one attachment per SMUS project whose notebooks
+    # create what a workflow never does: AddTags of the caller's project tag on a model package group,
+    # which the group's create needs. Free at rest, hand-written per project like `workflows`.
+    Slice(
+        "sandbox",
+        "ml",
+        PERSISTENT,
+        "the notebook grant: 1 policy + 1 attachment per project",
     ),
     # Stage 5b pass 1 - the data half of the warehouse. [P] and free at rest in the sense this
     # column measures: nothing in it is metered by the hour. What it DOES cost is Redshift Managed
