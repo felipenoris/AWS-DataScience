@@ -910,6 +910,15 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         values["account_folder"] = account
         if slice_name == "warehouse-compute":
             values["zone_ids"] = ZONE_IDS[account]
+        # Stage 19 pass 5 - a member's warehouse/ grants each access role the catalog read of the
+        # products its project subscribes to, whose target ARNs carry the producer's account id. The
+        # id is resolved through an aliased provider, the data-governance/data idiom, so the map
+        # carries each producer's profile and never its id (aws/INDEX.md rule 1).
+        if slice_name == "warehouse" and account in SMUS_MEMBERS:
+            values["producers"] = {
+                acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
+                for acct in DATA_PRODUCERS
+            }
 
     # Stage 12 step 1 - observability/ reads the [P] states of the slices it watches (foundation/,
     # networking/, workloads/), by the account folder for the same reason.

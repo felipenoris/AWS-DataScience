@@ -1,6 +1,6 @@
-# Inputs. region, env, environment_tag and account_folder arrive from the generated, untracked
-# terraform.auto.tfvars (./scripts/gen-tfvars.py sandbox warehouse). Everything else below is this
-# slice's own, and each one carries a decision from Stage 5b, 6h or 21.
+# Inputs. region, env, environment_tag, account_folder and producers arrive from the generated,
+# untracked terraform.auto.tfvars (./scripts/gen-tfvars.py sandbox warehouse). Everything else below
+# is this slice's own, and each one carries a decision from Stage 5b, 6h, 19 or 21.
 
 variable "region" {
   description = "AWS region for this slice. No region literal ever appears in a .tf file (docs/plan/architecture.md 4.1)."
@@ -33,6 +33,12 @@ variable "environment_tag" {
 variable "account_folder" {
   description = "The terraform-live/ folder this slice lives in - the first segment of every state key it reads. No .tf file may re-derive it from the env token (Lesson 14)."
   type        = string
+  nullable    = false
+}
+
+variable "producers" {
+  description = "The producer account of the products the access roles read in place (Stage 19 pass 5): production, keyed by account folder with its profile and env token, derived from backend.DATA_PRODUCERS in scripts/tfhygiene/backend.py and never authored here. Only providers.tf's aliased provider reads it, to resolve the account id the catalog ARNs carry."
+  type        = map(object({ profile = string, env = string }))
   nullable    = false
 }
 
@@ -332,6 +338,55 @@ variable "federated_catalog_name" {
   validation {
     condition     = can(regex("^[a-z0-9_-]+$", var.federated_catalog_name))
     error_message = "a catalog name of lowercase letters, digits, `_` and `-`: the data transfer role's Glue resources embed it, and a `*` or a `/` would widen them past one catalog."
+  }
+}
+
+# ---------------------------------------------- the subscribed products (Stage 19 pass 5)
+#
+# A product a project subscribes to in the portal and reads in place through the warehouse. DataZone
+# fulfils the subscription with a resource link in the subscription target's Glue database in this
+# account, and Redshift resolves the link and calls Glue and Lake Formation as the access role, the
+# session's IAM principal (runbook redshift-connection.md §G). Each entry adds the identity half of
+# that read to the project's access role (iam.tf); Lake Formation's admission is DataZone's grant or
+# Stage 19 step 5.1's, never this map.
+#
+# Written by hand, as `projects` is: the database is the service's, named after the project's
+# environment, and the producer's table is the product's asset.
+variable "subscribed_products" {
+  description = "Per admitted project, keyed by project id: the products it reads in place from the producer account. Each entry names the subscription target's Glue database in this account, which holds DataZone's resource links, and the producer's database and table a link targets. Empty, or a project absent, adds nothing to that project's access role."
+  type = map(list(object({
+    link_database     = string
+    producer_database = string
+    producer_table    = string
+  })))
+
+  # `eighth-experimentation`'s subscription to Production's `trades_notional` (Stage 19 step 4.12),
+  # written before the request exists, from values read 2026-11-19: the subscription target is the
+  # project's `DataLake` environment `blerpkhn9nj7o0`, whose database `glue_db_blerpkhn9nj7o0` holds
+  # the project's resource links, and the product's asset is `app_etl.trades_notional`, an Iceberg
+  # table with no partition keys whose location Lake Formation holds in Lake Formation mode.
+  default = {
+    avhvbqn37ty7m8 = [{
+      link_database     = "glue_db_blerpkhn9nj7o0"
+      producer_database = "app_etl"
+      producer_table    = "trades_notional"
+    }]
+  }
+
+  validation {
+    condition     = alltrue([for id in keys(var.subscribed_products) : contains(keys(var.projects), id)])
+    error_message = "every key of subscribed_products is a key of projects: only `projects` creates an access role, so an entry for a project absent from it grants nothing and reads as a grant that exists. A project leaves both maps in the same edit."
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      for products in values(var.subscribed_products) : [
+        for p in products : [
+          for name in [p.link_database, p.producer_database, p.producer_table] : can(regex("^[a-z0-9_]+$", name))
+        ]
+      ]
+    ]))
+    error_message = "a Glue database or table name of lowercase letters, digits and `_`: the access role's ARNs embed each one, and a `*` or a `/` would widen the read past one database or table."
   }
 }
 

@@ -465,6 +465,18 @@ Governance>:database/<name>' WITH DATA CATALOG SCHEMA <name>`, a statement of it
 its database and tables among `ReadTheGovernedShareCatalog`'s resources, which name `governed_trades` alone.
 Then the per-project grants above. Unwiring is §U.
 
+**A product a project subscribes to in the portal**, read in place through `awsdatacatalog`, takes the same
+principal through a resource link: DataZone fulfils the subscription with a link in the subscription
+target's Glue database in Sandbox, named after its target, and Redshift calls Glue on the link and on its
+target in the producer's account as the access role. Its AWS pieces are one entry of `sandbox/warehouse/`'s
+`subscribed_products` map per product, keyed by project: the target database and the producer's database
+and table, which become `ReadTheSubscribedProductsCatalog` (the link database's tables and the producer's one
+table) and `LakeFormationVendsTheSubscribedProductsData` (`lakeformation:GetDataAccess`: the data is in S3,
+under a location Lake Formation holds). Lake Formation's admission is DataZone's grant, or a named grant in
+the producer's account with `DESCRIBE` on the link in Sandbox; the SQL is `USAGE ON DATABASE awsdatacatalog`
+and the same `TEMP`. The first product's sitting is [Stage 19](../stages/stage-19-smus-native-data-product.md)'s
+pass 5 block.
+
 ---
 
 ## §V The instruments
