@@ -632,7 +632,7 @@ MERGE INTO lab.trades_hot_daily USING (SELECT trade_date, SUM(notional) AS notio
   WHEN MATCHED THEN UPDATE SET notional = s.notional
   WHEN NOT MATCHED THEN INSERT VALUES (s.trade_date, s.notional);
 -- only where Stage 19's 5.2 read in place works
-CREATE TABLE lab.trades_from_lake AS SELECT * FROM awsdatacatalog.<project database>.trades_notional;
+CREATE TABLE lab.trades_from_lake AS SELECT * FROM awsdatacatalog.glue_db_blerpkhn9nj7o0.<the link 4.12 read>;
 ```
 
 ### 4. The namespace in the Glue Data Catalog
@@ -701,9 +701,11 @@ q "select user_id, query_id, start_time, query_text from sys_query_history
 # 4.5 ⚡ the transfer role, sandbox/warehouse/'s data_transfer_role_enabled, applied for the sitting from a
 # main that holds pull request #323: the page's trust (glue, redshift) and policy (glue:GetCatalog,
 # glue:GetDatabase, kms:GenerateDataKey, kms:Decrypt); its ARN is the output data_transfer_role_arn.
-# Every plan of the slice names both switches, the tag at the value 6h's sitting left (Lessons 51, 69).
+# Every plan of the slice names both switches, the tag at the value 6h's sitting left (Lessons 51, 69):
+# false when 6h decision 8 (a)'s wide tag is per sitting, true when it stands.
+TAG=false
 AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse plan -input=false \
-  -var all_projects_tag_enabled=false -var data_transfer_role_enabled=true \
+  -var all_projects_tag_enabled=$TAG -var data_transfer_role_enabled=true \
   -out="$HOME/tmp/s21-warehouse-transfer.tfplan"                                        # 2 to add
 AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse apply -input=false \
   "$HOME/tmp/s21-warehouse-transfer.tfplan"
@@ -730,7 +732,7 @@ aws redshift disassociate-data-share-consumer --data-share-arn "$DS" \
 aws redshift deregister-namespace --namespace-identifier "$NSID" --consumer-identifiers "$A" --profile $S
 # then sandbox/warehouse/ planned with the transfer switch off and applied: the role and its policy go
 AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse plan -input=false \
-  -var all_projects_tag_enabled=false -var data_transfer_role_enabled=false \
+  -var all_projects_tag_enabled=$TAG -var data_transfer_role_enabled=false \
   -out="$HOME/tmp/s21-warehouse-transfer-off.tfplan"                                    # 2 to destroy
 AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse apply -input=false \
   "$HOME/tmp/s21-warehouse-transfer-off.tfplan"
@@ -821,7 +823,8 @@ Written 2026-11-19 with nothing up, for the Sandbox warehouse sitting the orches
 GROUPS=redshift`, which raises `sandbox/egress/`, the warehouse's compute and `sandbox/probes/` in one
 apply; a JupyterLab space in each project on `ml.t3.medium`. Passes 2 to 4 follow Stage 19's pass 5 to its
 5.3 (Stage 19's "The Sandbox warehouse sitting: pass 5 in order"), so 2.1 finds Stage 19's copy and 2.2 is
-5.3's source, and 6h's wide tag is off. Pass 5 is not here: it rides `promotion.md` §N.9's day 2. Its
+5.3's source, and 6h's wide tag is off. Pass 5 follows passes 2 to 4 on the sitting's day 2
+(`promotion.md` §N.10.4), with a space in each project. Its
 values, read that day (the log): from `main`, `sandbox/sagemaker/` plans `No changes`, and `3 to add, 1 to
 change` with `redshift_serverless_enabled=true`; `data-governance/governance/` `No changes`, and `0 to add,
 1 to change` (the profile `experimentation`) with it; `sandbox/warehouse/` `2 to add` with
@@ -880,8 +883,9 @@ sessions told first:
    ```
 
    `awsds-sandbox-warehouse` alone, no cluster, and `WH-8` green, its extra-object check.
-8. **[user] The rollback's item 5** with Stage 19's 5.4: one drop of `lab.trades_hot`, `lab.trades_hot_by_desk`
-   and `lab.trades_hot_daily`; then 6h's 6.4.
+8. **[user] The rollback's item 5** with Stage 19's 5.4: the view `lab.trades_hot_by_desk` dropped, then the
+   tables `lab.trades_hot_daily`, `lab.trades_hot_by_day`, `lab.trades_from_lake` where 3.3 created it, and
+   `lab.trades_hot`; then 6h's 6.4.
 
 About 4 hours 30 minutes of passes 2 to 4, beside Stage 19's 5.3, which they share.
 
@@ -982,9 +986,10 @@ Each write is on the user's word, in this order, each object read before its del
 4. **[user] then [Claude⚡] The consumer's workgroup** (2.9), if 2.9 did not run: the compute removed in
    the portal and read absent with its stack; 1.5's variables off, `data-governance/governance/` then
    `sandbox/sagemaker/` applied and re-planned `No changes`.
-5. **[user] The tables and the images**: `DROP` of `lab.trades_hot_daily`, `lab.trades_hot_by_desk` and
-   `lab.trades_hot` unless Stage 19 keeps its copy; the files under `shared/stage21-images/` and the table
-   `stage21_images`.
+5. **[user] The tables and the images**: `DROP VIEW lab.trades_hot_by_desk`, then `DROP TABLE` of
+   `lab.trades_hot_daily`, `lab.trades_hot_by_day` (3.3), `lab.trades_from_lake` (3.3, where it was created)
+   and `lab.trades_hot` unless Stage 19 keeps its copy; the files under `shared/stage21-images/` and the
+   table `stage21_images`.
 6. **[user] `make down ENV=sandbox`**, every portal tab closed first
    ([`sagemaker-application.md`](../runbooks/sagemaker-application.md) §D).
 
@@ -1004,7 +1009,8 @@ Each write is on the user's word, in this order, each object read before its del
 - **Stage 19**: its pass 5 shares the warehouse sitting. Its 5.3 asset is the one 2.2 reads when it ran
   first, and its 5.4 revocation waits for pass 2's end.
 - **6h**: decision 1 (b) admits no second project to the warehouse, so its decision 8 (a), taken
-  2026-11-17 with its switch written and off, is turned on nowhere here, and `WH-7` stays as it is. Pass 3 reads a lineage run, and its decision 3 stays the user's.
+  2026-11-17 with its switch written and off, is turned on nowhere here, and `WH-7` stays as it is. Pass 3 reads a lineage run;
+  6h decision 3 was done 2026-11-19, the project connection's `lineageSync` off and its database `sandbox`.
 - **6d, 17, 19 and 20**: 1.5's variables ride `sagemaker-prereqs`, `sandbox/sagemaker/` and
   `data-governance/governance/`, which their applies plan too. Off by default, they plan `No changes` in
   another stage's tree; the sitting's apply is announced to the other sessions first, and `US-3` reads red

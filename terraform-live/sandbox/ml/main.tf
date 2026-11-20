@@ -1,8 +1,14 @@
 # The notebook grant for SMUS project roles (Stage 17 decision 7 (a)): the calls a member's notebook
 # needs on what it creates and a workflow's operators never create. A workflow's operators' statements
-# are sandbox/workflows/'s. The grant holds one statement per refusal measured: the model package
-# group's tag. An endpoint configuration, an endpoint, a pipeline or an MLflow App joins it as a
+# are sandbox/workflows/'s. The grant holds one statement per refusal measured, each generated from
+# local.tagged_resources (data.tf): the model package group's tag, measured 2026-11-19, and the endpoint
+# configuration's, the endpoint's and the pipeline's, measured 2026-11-20. An MLflow App joins it as a
 # statement of its own once a refusal is measured on it.
+#
+# A tagged create is also authorized as sagemaker:AddTags on the new resource. By simulation as
+# eighth-experimentation's role on 2026-11-20, the organization's policies included, the AddTags of the
+# project tag reads implicitDeny on an endpoint configuration, an endpoint and a pipeline, and allowed on
+# a model, a transform job and a processing job through sandbox/workflows/'s statements.
 #
 # CreateModelPackageGroup with tags is also authorized as sagemaker:AddTags. The blueprint's
 # SageMakerCreatePermissions (SageMakerStudioProjectRoleMachineLearningPolicy v48) admits the create
@@ -27,29 +33,34 @@ resource "aws_iam_policy" "ml" {
   policy      = data.aws_iam_policy_document.ml.json
 }
 
+# The same three conditions on every resource type, so no statement can drift from the others.
 data "aws_iam_policy_document" "ml" {
-  statement {
-    sid       = "TagAModelPackageGroupWithTheCallersProject"
-    effect    = "Allow"
-    actions   = ["sagemaker:AddTags"]
-    resources = [local.model_package_groups]
+  dynamic "statement" {
+    for_each = local.tagged_resources
 
-    condition {
-      test     = "StringEquals"
-      variable = "aws:RequestTag/AmazonDataZoneProject"
-      values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
-    }
+    content {
+      sid       = statement.key
+      effect    = "Allow"
+      actions   = ["sagemaker:AddTags"]
+      resources = ["${local.sagemaker_arn_prefix}:${statement.value}"]
 
-    condition {
-      test     = "StringEqualsIfExists"
-      variable = "aws:ResourceTag/AmazonDataZoneProject"
-      values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
-    }
+      condition {
+        test     = "StringEquals"
+        variable = "aws:RequestTag/AmazonDataZoneProject"
+        values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
+      }
 
-    condition {
-      test     = "ForAllValues:StringEquals"
-      variable = "aws:TagKeys"
-      values   = ["AmazonDataZoneProject"]
+      condition {
+        test     = "StringEqualsIfExists"
+        variable = "aws:ResourceTag/AmazonDataZoneProject"
+        values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
+      }
+
+      condition {
+        test     = "ForAllValues:StringEquals"
+        variable = "aws:TagKeys"
+        values   = ["AmazonDataZoneProject"]
+      }
     }
   }
 }

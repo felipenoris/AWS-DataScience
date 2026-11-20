@@ -380,16 +380,16 @@ Both were NXDOMAIN. `app.aws` and `on.aws` joined the list with their apexes, on
 Unified Studio domain's own URL — resolvable, which is the DNS block 6d step 8.6 could attribute to
 nothing. **Resolving is not reaching**: that name has no endpoint, so it leaves as a proxy request and
 comes back a 403 naming the host. The user allowed it by its exact name on 2026-11-17 (6d decision 6); it
-is in `hub-anchors.tf` since 2026-11-18, planned that day (0 to add, 1 to change: the parameter at version
-11, the Sandbox plane 41 entries to 42), and joins the plane at the next `production/networking` apply, in
-a hub sitting. Until then `DN-3` reads it *only in code*.
+is in `hub-anchors.tf` since 2026-11-18 and in the parameter since 2026-11-20 (version 12, the Sandbox
+plane 41 entries to 42), applied with the hub down: the host carries it from the association's first run
+after `make hub-up`, which `PX-3` reads.
 
 **The proxy's filters are the estate's egress policy, and they are two kinds of list:**
 
 | plane | source | mode | entries |
 |---|---|---|---|
 | `tunnel` | `10.90.0.0/24` | **`open`** — everything permitted, everything logged | 0 (a *deny* list, empty by decision) |
-| `sandbox-foundation` | `10.20.0.0/16` | `allowlist` — SageMaker's | 41 † ‡ ¶ ‖ |
+| `sandbox-foundation` | `10.20.0.0/16` | `allowlist` — SageMaker's | 42 † ‡ ¶ ‖ |
 | `production-foundation` | `10.30.0.0/16` | **`open`** — the build plane † | 0 (a *deny* list, empty by decision) |
 | `production-workloads` · `staging-foundation` | `10.32` · `10.50` | `allowlist` | 0 — **refuse everything**, by decision |
 

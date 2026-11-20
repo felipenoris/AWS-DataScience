@@ -584,23 +584,24 @@ targets hold their assets since `v0.5.2`, so its imports revise them by name and
    after. Release G's sitting follows (§Release G as written): `app-etl-dev`'s data product deleted,
    `production/studio/` applied, its tag through both targets. **Run 2026-11-15 to 2026-11-16** for
    release F, `v0.5.2` through both targets with steps 7 to 9; release G's step 1 done the same day.
-7. **Release G's sitting**, the hub and GitLab up ([`runbooks/promotion.md`](../runbooks/promotion.md)
-   §N.8.5 steps 2, 4 and 5): the mirror at `c5e1718e` or later, the template's merge request and the tag
+7. **Release G's sitting**, R1, the hub and GitLab up ([`runbooks/promotion.md`](../runbooks/promotion.md)
+   §N.8.5 steps 2, 4 and 5, §N.11.1): the mirror at `c5e1718e` or later, the template's merge request and the tag
    `v0.6.0`. Step 3, `production/studio/`, applied 2026-11-17 with nothing up.
 8. **Nothing up, Claude's reads**: each deployment project's first scheduled source run after the
    imports (xvii's Staging half, xxv), which started at 15:37 UTC in Staging and 15:44 in Production on
    earlier days.
 9. **Nothing up, 4.12** after release G: the RAM share at version 13, decision 15 (d)'s designation
-   `subscription-approver` and xxvi's half with no membership, **done 2026-11-19**; then the Governance
-   Manager's membership of `deploy-production` by its owner with that designation ((a)'s
+   `subscription-approver` and xxvi's half with no membership, **done 2026-11-19**; then, needing nothing
+   of release G and so before it, the Governance Manager's membership of `deploy-production` by its owner
+   with that designation ((a)'s
    `PROJECT_CONTRIBUTOR` only if xxvi's portal half reads no narrowing; not a member on 2026-11-19), xxvi's
    portal half, `eighth-experimentation`'s request and the approval in the portal, the fulfilment read on
    both sides (xx, xxiv, xxvi, xxvii).
 10. **The retirement** (item 31, §The retirement as written): **done 2026-11-17**, PR #308's five saved
     plans applied from its branch on the user's word, before release G's sitting, whose legs call nothing it
     removes. The merge closes the Lesson 79 window.
-11. **A Sandbox warehouse sitting** (§The Sandbox warehouse sitting: pass 5 in order): pass 5, after 4.12
-    and before 2026-12-19 if the trial is to absorb it.
+11. **A Sandbox warehouse sitting** (§The Sandbox warehouse sitting: pass 5 in order): pass 5 on
+    `promotion.md` §N.10's day 1, after 4.12 and before 2026-12-19 if the trial is to absorb it.
 12. **The close**: 6.2's documents, 6.3's threat-model entries, 6.4 with xvi, 7.
 
 Production's model jobs, `production-register`, `-approve` and `-transform`, stay manual: with

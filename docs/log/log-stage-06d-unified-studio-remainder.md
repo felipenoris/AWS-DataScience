@@ -4400,3 +4400,53 @@ the question that named `staging/studio/` and `production/studio/`. As the infra
   prints an address, with no interface in the VPC, brings decision 17 (b)'s deny to Sandbox.
 - **[Claude] The records**: decision 17, step 4.7, the block's item 2 and the `Status` row in the stage
   file; `TM-34`; §N.9.1 and §N.9.3 step 7; the waiting list, whose row for 4.7's order is removed.
+
+## 2026-11-20 — Decision 6's apply moved before the day, and 2.7 step 7's header proposed
+
+*Claude, in the session that regrouped the Sandbox days (Stage 8's log, this day), with nothing up. A plan
+as the infrastructure user with `InfrastructureAccess`, through `awsds-infra-prod` (account Production),
+from `origin/main` `30855d92`'s tree; no AWS write. Times are UTC.*
+
+- **[Claude] `production/networking/` planned**, 17:07:16 to 17:07:37: *"Plan: 0 to add, 1 to change, 0 to
+  destroy."*, `aws_ssm_parameter.proxy_allowlist` updated in place, its version 11 to *(known after
+  apply)*: 2026-11-19's re-plan unchanged.
+- **[Claude] The apply moved out of day 1**: it writes a parameter and needs no host, so it runs with nothing
+  up on the user's word naming it (`promotion.md` §N.6 item 3, §N.9.1). Day 1's step 2 becomes its re-plan,
+  `No changes`, and `PX-3` on the host reads the render as before (`SUP-071`).
+- **[Claude] 2.7 step 7's header proposed** in this repository's copy,
+  `gitlab/awsds/dev-env/release/versions.py`: `register` says a blueprint domain offers the version its
+  project profile pins, which reaches a project when the pin moves in `data-governance/governance/` and the
+  owner presses *Update project*; `retire` that a blueprint domain names its pinned version. The copy is
+  GitLab's, so the text is a proposal until a merge request on `awsds/dev-env` lands it and
+  `./scripts/gitlab-mirror.py` reads the copy unchanged, in R1 (`promotion.md` §N.11.1 step 3).
+
+## 2026-11-20 — Decision 6 applied with nothing up
+
+*Claude, in the same session, on the user's "Autorizo o apply" answering a question that named the apply of
+`production/networking/` in Production (decision 6). As the infrastructure user with
+`InfrastructureAccess`, through `awsds-infra-prod` (account Production), from this session's worktree,
+whose `production/networking/` equals `origin/main` `30855d92`'s (`git diff` empty). Times are UTC.*
+
+- **[Claude] Before the write**: no other Claude session on the laptop; `make status` read 0.0000 USD/h, with
+  `production/vpn`, `production/proxy` and `production/tooling` stopped.
+- **[Claude] The plan**, saved as `$HOME/tmp/networking-6d.tfplan`: *"Plan: 0 to add, 1 to change, 0 to
+  destroy."*, `aws_ssm_parameter.proxy_allowlist` alone, its value `(sensitive value)`. The planned value,
+  read with `terraform show -json` against `ssm get-parameter` (version 11, `String`, equal to the plan's
+  before): `sandbox-foundation.allow` 41 to 42, `dzd-d8yrvx1ko7im6o.sagemaker.us-west-2.on.aws` added,
+  nothing removed, the other four planes unchanged.
+- **[Claude⚡] The apply**, 19:21:14 to 19:21:26: *"aws_ssm_parameter.proxy_allowlist: Modifications
+  complete after 2s"*, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*
+- **[Claude] The readings after**: the re-plan *"No changes. Your infrastructure matches the
+  configuration."* (`-detailed-exitcode` 0); the parameter at version 12, modified 19:21:23,
+  `sandbox-foundation` at 42 entries with the name and the other four planes at 0;
+  `./aws/dns-allowlist.py --from-api awsds-infra-prod` *"the committed planes equal the deployed parameter
+  5 planes, entry for entry"* on `DN-3`, with `DN-1`, `DN-2` and `DN-4` passing.
+- **[Claude] What is left of decision 6**: the host keeps its render of version 11, 41 entries, until the
+  association's first run after `make hub-up`, because the user data renders at first boot only and the
+  association runs at :00 and :30 (`apply_only_at_cron_interval`, `production/proxy/main.tf`). `PX-3` on
+  the host and step 6's proxy-log reading stay on `promotion.md` §N.9's day 1, whose step 2 is now the
+  re-plan.
+- **[Claude] The records**: the block's items 2 and 4, step 2 and decision 6 in the stage file, and its
+  `Status` row; `docs/NETWORK.md`'s table and paragraph; `docs/AWS_STATE.md` §C's row, from `DN-3` to
+  `PX-3`; `promotion.md` §N.6 item 3, §N.9.1 and §N.9.3 step 2; the waiting list's Sandbox row; Current
+  position.

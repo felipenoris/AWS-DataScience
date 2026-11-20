@@ -549,3 +549,23 @@ apply and no AWS write. Times are UTC.*
   the block closes with `list-workgroups`, `describe-clusters` and `./aws/warehouse.py`'s `WH-8`.
 - **[Claude] The block written**: "The Sandbox warehouse sitting: passes 2 to 4 in order" in the stage
   file, after the close and before the verifications.
+
+## 2026-11-20 — Pass 5 on the warehouse sitting's day 2, and the switches re-planned
+
+*Claude, in the session that regrouped the sittings (Stage 8's log, this day), with nothing up. Plans as the
+infrastructure user with `InfrastructureAccess`, through `awsds-infra-sandbox-1` (account Sandbox Account 1)
+and `awsds-infra-data` (Data Governance), from `origin/main` `30855d92`'s tree, 17:10:43 to 17:13:42; no AWS
+write. Times are UTC.*
+
+- **[Claude] The switches**, each default *"No changes."*: `sandbox/sagemaker/` with
+  `redshift_serverless_enabled=true` *"Plan: 3 to add, 1 to change, 0 to destroy."*;
+  `data-governance/governance/` with the same *"Plan: 0 to add, 1 to change, 0 to destroy."*;
+  `sandbox/warehouse/` with `data_transfer_role_enabled=true` *"Plan: 2 to add, 0 to change, 0 to destroy."*
+  and with `all_projects_tag_enabled=true` *"Plan: 0 to add, 1 to change, 0 to destroy."*
+- **[Claude] Pass 5** follows passes 2 to 4 on `promotion.md` §N.10's day 2 (§N.10.4), a space in each
+  project.
+- **[Claude] The stage file's commands and rollback aligned**: 3.3 reads the link 4.12 read; both plans of
+  `sandbox/warehouse/` take the wide tag from `TAG`, `false` while 6h decision 8 (a)'s tag is per sitting;
+  the drops name the view `lab.trades_hot_by_desk` first, then `lab.trades_hot_daily`,
+  `lab.trades_hot_by_day`, `lab.trades_from_lake` and `lab.trades_hot`; 6h decision 3's sentence says it was
+  done 2026-11-19.
