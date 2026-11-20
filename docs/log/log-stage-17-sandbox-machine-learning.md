@@ -3578,3 +3578,38 @@ project role, which evaluates the organization's policies and the role's boundar
 - **[Claude] Where the passes run**: passes 2, 3 and 7 on §N.9's day 2, pass 5 on day 3, pass 4 on §N.10's
   day 1 with its endpoint kept up. `sandbox/ml/` is applied from `main` after the merge, on the user's word
   naming it, before day 3 (§N.6 item 3).
+
+## 2026-11-20 — `sandbox/ml/`'s endpoint and pipeline statements applied
+
+*Claude, in the same session, on the user's "Merge feito, aplique" answering a question that named the apply
+of `sandbox/ml/` in Sandbox Account 1 after pull request #343's merge. As the infrastructure user with
+`InfrastructureAccess`, through `awsds-infra-sandbox-1` (account Sandbox Account 1), from this session's
+worktree, whose tree equals `origin/main` at `78dc4397`, the merge of 19:38:28 (`git diff` empty). Times
+are UTC.*
+
+- **[Claude] Before the write**: #343 read `MERGED`; no other Claude session on the laptop; `make status`,
+  read before 6d decision 6's apply at 19:21 (6d's log), had shown 0.0000 USD/h with everything down.
+- **[Claude] The plan**, saved as `$HOME/tmp/stage17-ml-tags.tfplan`: *"Plan: 0 to add, 1 to change, 0 to
+  destroy."*, `aws_iam_policy.ml` alone. Read with `terraform show -json`: `awsds-sandbox-ml` from one
+  statement, `TagAModelPackageGroupWithTheCallersProject`, unchanged, to four, adding
+  `TagAPipelineWithTheCallersProject`, `TagAnEndpointConfigWithTheCallersProject` and
+  `TagAnEndpointWithTheCallersProject`, each `sagemaker:AddTags` on its type's ARN pattern under the same
+  three conditions; no other attribute changing.
+- **[Claude⚡] The apply**, 19:40:33 to 19:40:42: *"aws_iam_policy.ml: Modifications complete after 1s"*,
+  *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*
+- **[Claude] The readings after**: the re-plan *"No changes. Your infrastructure matches the
+  configuration."* (`-detailed-exitcode` 0); `get-policy` at `v2`, `AttachmentCount` 2, updated
+  19:40:41, its four statements as planned, attached to `eighth-experimentation`'s and `app-ml-dev`'s
+  roles.
+- **[Claude] The simulation**, as `eighth-experimentation`'s role, `sagemaker:AddTags` with the project tag
+  alone. At 19:41:39, with no `aws:RequestedRegion` in the context, every call, the model package group's
+  included, read `explicitDeny` with `AllowedByOrganizations` false and no matched statement: `SUP-008`'s
+  shape. At 19:42:49, with the context of 17:51:17 (the region, the principal's `AmazonDataZoneProject`,
+  `RoleName` and `EnableSageMakerMLWorkloadsPermissions` tags, both accounts): `endpoint-config`,
+  `endpoint` and `pipeline` at the caller's value `allowed` through `awsds-sandbox-ml`, as is
+  `model-package-group`; the endpoint at `test-experimentation`'s value and the pipeline with a second key,
+  `AmazonDataZoneDomain`, both `implicitDeny`; a training job's tag `implicitDeny`, the training pair of
+  `sandbox/workflows/` being applied on `promotion.md` §N.9's day 2.
+- **[Claude] The records**: decision 7, the deliverables row, the ready list and the `Status` row in the
+  stage file; `runbooks/sagemaker-ai-ml.md`'s paragraph on what a notebook creates; `promotion.md` §N.6
+  item 3, §N.9.1 and §N.10.1; the waiting list's Sandbox row; Current position.
