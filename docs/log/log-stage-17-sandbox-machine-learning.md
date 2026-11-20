@@ -3509,3 +3509,29 @@ through `awsds-infra-data`, from 18:16:27 to 18:16:48. Times are UTC.*
 - **[Claude] The verdict so far**: both sources that have run since the share succeeded with nothing to
   ingest. Left: `app-etl-dev`'s first run after the share, at about 02:19 on 2026-11-20, read from the
   record in a later session; the ingestion half still waits on a model package group (3.2's or 9.6's).
+
+## 2026-11-20 — verification v: `app-etl-dev`'s first run after the share, and `EXC-11` closed
+
+*Claude, the orchestrating session, with nothing up. Reads as the infrastructure user with
+`InfrastructureAccess`, through `awsds-infra-data` (account Data Governance), from about 16:00 to 16:05;
+`./aws/catalog.py` read through its own profiles. The record's one code change is in `aws/catalog.py`; no
+AWS write. Times are UTC.*
+
+- **[Claude] `app-etl-dev`'s `Tooling-default-sagemaker-modelpackagegroup-datasource`** (`apnukh5a1tfonk`,
+  `cron(7 2 * * ? *)`): its first run after the share, `3wo565isiosnm8`, `SCHEDULED`, started at 02:19:45
+  and ended `SUCCESS` at 02:19:55 on 2026-11-20; `added`, `updated`, `unchanged` and `failed` all 0, no
+  activity, `lastRunAssetCount` 0; the source's first success in 6 runs. Its predecessor, started
+  2026-11-19 at 02:19:45, was marked `FAILED`, `VALIDATION_EXCEPTION`, at 02:19:45 as it fired, and so were
+  the four before it, the oldest started 2026-11-15.
+- **[Claude] The other two sources' newest runs**: `test-experimentation`'s second run after the share,
+  06:16:57 to 06:17:25, `SUCCESS`; `eighth-experimentation`'s newest is still the one of 2026-11-19 at
+  17:38:11, `SUCCESS`, its next due at about 17:38.
+- **[Claude] Verification v's failure half answered**: every source of the name ended its first run after
+  the share `SUCCESS`, in three projects of Sandbox, an account associated with the domain. The ingestion
+  half waits on 3.2's or 9.6's model package group.
+- **[Claude] `EXC-11` closed**, as its row said this reading would: the row in `docs/AWS_STATE.md` struck
+  and dated, `SUP-383` given the associated account's case, and `aws/catalog.py`'s `FAILING_BY_EXCEPTION`
+  emptied, as its comment asks when the exception closes. `./aws/catalog.py` then answered *"all checks
+  passed"*, its report written at 16:04:52: `CT-6` a note on the schedules nobody wrote (Lesson 17), the
+  three Tooling sources at 34 `FAILED` and 2 `SUCCESS`, 87 and 1, and 5 and 1. A source whose every
+  completed run fails now turns `CT-6` red.

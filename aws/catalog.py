@@ -271,12 +271,7 @@ DOMAIN_UNIT_POLICY_TYPES = (
 # CT-6 prints how many sources it covered, and the project of each. CT-6 reports these as a note and
 # fails on anything else, so the check stays readable while the exception stands (Lesson 50). Remove
 # a row here when its exception is closed, and CT-6 turns red the same day.
-FAILING_BY_EXCEPTION = {
-    "Tooling-default-sagemaker-modelpackagegroup-datasource": (
-        "EXC-11: the Tooling blueprint's own source, one per project, tracking an asset type this "
-        "estate has never produced; it bills nothing and creates nothing"
-    ),
-}
+FAILING_BY_EXCEPTION: dict[str, str] = {}
 
 # Starts of another project's source made on purpose, by the event's request id. CT-13 reports these
 # as a note and fails on any other cross-project start (Lesson 50). CloudTrail's event history keeps

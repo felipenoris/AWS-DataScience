@@ -4373,3 +4373,36 @@ reads and its account id. A plan from the branch, no apply and no AWS write. Tim
   `redshift-connection.md` §G's paragraph for a subscribed product, the stage file's block (before it item 3,
   the pieces table) and its Status row, and `waiting-on-the-user.md`'s row. What follows is the apply from
   `main` after PR #339's merge, on the user's word.
+
+## 2026-11-20 — 5.2's door applied from `main`
+
+*Claude, the orchestrating session, on the user's "autorizo o apply no warehouse" in its chat, after the
+merges of PR #339 (15:51:55 UTC) and PR #340 (15:52:10 UTC); as the infrastructure user, permission set
+`InfrastructureAccess`, through `awsds-infra-sandbox-1` (account Sandbox Account 1), with
+`awsds-infra-prod` (account Production) for the aliased provider's account id. One AWS write, the apply.
+Times are UTC.*
+
+- **[user] The word**: *"autorizo o apply no warehouse"*, sent while the session waited on a new SSO
+  login; the session read valid again at 15:56:16.
+- **[Claude] The plan from `main`** at `7af1ec3d`, from 15:56:48, the slice initialised in the worktree
+  (`gen-backend-hcl.py`, `gen-tfvars.py`, `init -backend-config=backend.hcl -input=false`), with
+  `-input=false -var all_projects_tag_enabled=false -var data_transfer_role_enabled=false`, saved: *"Plan:
+  0 to add, 1 to change, 0 to destroy."*, `aws_iam_policy.project_access_portal["avhvbqn37ty7m8"]` updated
+  in place, its diff the two statements `ReadTheSubscribedProductsCatalog` and
+  `LakeFormationVendsTheSubscribedProductsData` and nothing else.
+- **[Claude] The other session told** before the apply: the pre-flight's session, the one peer on the
+  machine, idle.
+- **[Claude] The apply of the saved plan**, 15:57:30 to 15:57:40: *"Apply complete! Resources: 0 added, 1
+  changed, 0 destroyed."* The policy `awsds-sandbox-warehouse-access-portal-avhvbqn37ty7m8` reads default
+  version `v4`, updated at 15:57:39.
+- **[Claude] The re-plan**, 15:58:02, the same switches: *"No changes. Your infrastructure matches the
+  configuration."*
+- **[Claude] `simulate-principal-policy` as `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`**, about 15:58,
+  one resource per call, `aws:RequestedRegion` and `aws:PrincipalArn` in the context: `allowed` for
+  `glue:GetDatabase` on Sandbox's `database/glue_db_blerpkhn9nj7o0` and Production's `database/app_etl`, for
+  `glue:GetTable` on Sandbox's `table/glue_db_blerpkhn9nj7o0/trades_notional` and Production's
+  `table/app_etl/trades_notional`, and for `lakeformation:GetDataAccess` on `*`; `implicitDeny` for
+  `glue:GetTable` on Production's `table/app_etl/some_other_table`, `glue:GetDatabase` on
+  `database/other_db` and `glue:CreateTable` on `table/app_etl/trades_notional`, the negative controls; the
+  organization allowing each. The IAM half of 5.2's door is open; Lake Formation's admission and the SQL
+  grants stay 4.12's and the sitting's (the stage file's pieces table).

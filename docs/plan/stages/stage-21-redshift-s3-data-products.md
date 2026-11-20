@@ -826,8 +826,8 @@ values, read that day (the log): from `main`, `sandbox/sagemaker/` plans `No cha
 change` with `redshift_serverless_enabled=true`; `data-governance/governance/` `No changes`, and `0 to add,
 1 to change` (the profile `experimentation`) with it; `sandbox/warehouse/` `2 to add` with
 `data_transfer_role_enabled=true` and the tag off, the counts this file's commands carry. These
-`sandbox/warehouse/` counts hold once Stage 19's access-role statement (PR #339, pass 5's before it item 3) is
-applied before the sitting; until then each plan of the slice also shows
+`sandbox/warehouse/` counts hold since Stage 19's access-role statement (PR #339, pass 5's before it item 3)
+was applied from `main` on 2026-11-20 at 15:57 UTC; before it each plan of the slice also showed
 `aws_iam_policy.project_access_portal["avhvbqn37ty7m8"]` updated in place (Lesson 69). The profile
 `dh60xbal05q64w` and the blueprint `dlyaabb17hano0` read as 1.3 wrote them.
 
