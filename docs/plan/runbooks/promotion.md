@@ -1181,11 +1181,11 @@ closes, and its Dates bound items 4, 5, 9 and 10.
    2026-11-18 on [pull request #322](https://github.com/felipenoris/AWS-DataScience/pull/322) (`1 to change`), applied on the user's word at 18:45 UTC the same day, after step 2's acts;
    *Workflows* opened after it, and the user merged it at 19:13 UTC.
 3. **With nothing up, now**, each a waiting-list row:
-   - [Claude⚡] 6d decision 6's apply of `production/networking/` from `main`, on the user's word naming
-     it: the portal's name in the proxy's allow-list parameter, planned on 2026-11-20 from `30855d92`'s
-     tree as *"Plan: 0 to add, 1 to change, 0 to destroy."*. It needs no host: the name reaches Squid at
-     the association's first run with the proxy up, and only day 1's `PX-3` on the host proves the render
-     (`SUP-071`).
+   - [Claude⚡] 6d decision 6's apply of `production/networking/` ran at 19:21 UTC on 2026-11-20 from a
+     tree equal to `30855d92`'s, on the user's word: the portal's name in the proxy's allow-list parameter,
+     *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*, version 12, the re-plan `No changes`.
+     The name reaches Squid at the association's first run with the proxy up, and only day 1's `PX-3` on
+     the host proves the render (`SUP-071`).
    - [Claude⚡] Stage 17 decision 7's statements for endpoint configurations, endpoints and pipelines in
      `sandbox/ml/`, written and planned on 2026-11-20 (*"Plan: 0 to add, 1 to change, 0 to destroy."*),
      applied from `main` after their merge on the user's word naming it, before N.9's day 3 (pass 5's
@@ -2289,8 +2289,8 @@ about 3 USD, against 0.36 to 0.87 USD for the next day's Config cycle.
   - 6d 7.6's second identity, `eighth-experimentation`'s contributor, signed in from a browser profile of
     its own; and the window for 6d 7.5's monitored profile, which moves the laptop's network for every
     session.
-- **[Claude⚡] 6d decision 6's apply** of `production/networking/` from `main`, with nothing up, on the user's
-  word naming it (N.6 item 3); day 1 reads its effect.
+- **6d decision 6's apply** of `production/networking/` ran on 2026-11-20 with nothing up (N.6 item 3); day 1
+  reads its effect.
 - **[Claude⚡] `sandbox/ml/`'s statements** for endpoint configurations, endpoints and pipelines (Stage 17
   decision 7), from `main`, with nothing up, on the user's word naming it (N.6 item 3), before day 3.
 - **[Claude] With nothing up:** the archives of `app-ml` and `app-genai` from `main` on day 3's eve. Done
@@ -2315,8 +2315,8 @@ The blocks are [6d](../stages/stage-06d-unified-studio-remainder.md)'s "The comb
 items in order" and [Stage 20](../stages/stage-20-dbt-lineage.md)'s "Sitting A in order".
 
 1. [Claude] The other sessions told, `make status`; [user] `make hub-up`.
-2. 6d decision 6's apply of `production/networking/` runs with nothing up before the day (N.9.1). The
-   name reaches Squid at the association's next :00 or :30 with the host running, or at once by
+2. 6d decision 6's apply of `production/networking/` ran with nothing up on 2026-11-20 (N.9.1); [Claude]
+   the day re-plans it, `No changes`. The name reaches Squid at the association's next :00 or :30 with the host running, or at once by
    [Claude⚡] `start-associations-once`; only the count `PX-3` reads on the host proves a render
    (`SUP-071`).
 3. [user] `make up ENV=sandbox GROUPS=mwaa`; [Claude] `make status`.
