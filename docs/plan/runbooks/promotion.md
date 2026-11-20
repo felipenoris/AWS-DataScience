@@ -1229,6 +1229,8 @@ bound items 3, 5, 6, 9 and 11. N.9 joins items 6, 7 and 8 in one sitting of thre
     `4613ddc` with their pipelines' options, `probes/operator.yaml` still refused by `operador`, so each
     pin moves to it at the application's next tag, `app-etl`'s after release G.
     `aws/catalog.py`'s `CHAIN_DEV_PROJECTS` gained `app-dbt-dev`'s id on 2026-11-19, on pull request #320.
+    Pull request #321 reads `CONFLICTING` with `main` on 2026-11-20: its branch takes `origin/main` by
+    merge before the user merges it.
 11. **`app-dbt`'s first release** (Stage 20 pass 8), after items 3, 6 and 10 and Stage 20's 8.5 to 8.7:
     the hub and GitLab; `staging/egress/` raised before the tag `v0.1.0` and destroyed after
     `staging-catalog`, `production/workloads-egress/` raised before `production-gate`, each with its

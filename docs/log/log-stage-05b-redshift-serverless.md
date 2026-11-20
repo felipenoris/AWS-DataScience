@@ -1361,3 +1361,19 @@ as the infrastructure user, permission set `InfrastructureAccess`, through `awsd
   before the deliverables: the `--sql` read, the re-plan before 6h's re-apply of the compute slice, and the
   `max_query_execution_time` test as a non-superuser and as the admin, between the candidates (a), (b) and
   (c) of 2026-10-18.
+
+## 2026-11-19 — `promotion.md` §N.10 written from the pre-flight, nothing up
+
+*Claude, the orchestrating session, from the pre-flight session's report; no AWS call. Merged with pull
+request #340 on 2026-11-20 at 15:52:10. Times are UTC.*
+
+- **[Claude] §N.10, the Sandbox warehouse sitting**, written at 22:32: two days of about five hours, each
+  raised by `make hub-up` and then `make up ENV=sandbox GROUPS=redshift`. Day 1 opens with this stage's
+  rows (the `--sql` read, the `warehouse-compute/` re-plan, the `max_query_execution_time` test), then 6h's
+  (the editor on `sandbox`, the negatives 5.1 to 5.4, 5.2b with the wide tag, 0.4's portal half) and Stage
+  19's pass 5 to 5.3; day 2 holds Stage 21's passes 2 to 4, Stage 19's 5.4 with Stage 21's rollback, and
+  6h's 6.4. The cost written: about 0.22 USD/h before the spaces and about 1.7 USD/h while the warehouse
+  runs queries, about 8 USD for the sitting, between 5.5 and 12. §N.6 item 9 and §N.9.8 item 3 point to it.
+- **[Claude] §N.10.1, the acts before it**: release G and 4.12, 6h decision 8 (a)'s window, Stage 21 1.3's
+  wizard half and 4.5's write path, and Sandbox's free-trial balance; at 23:01, after the user chose Stage 19
+  5.2's door, its apply from `main`, done 2026-11-20 (Stage 19's log).
