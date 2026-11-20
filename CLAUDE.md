@@ -247,6 +247,10 @@ and the stage logs hold the refusals.
   run as subagents in worktrees of their own, at the user's choice, and open their own PRs.
 - **A refused write.** The session the user authorizes in its own chat runs it, and the authorization
   names the act: a blanket authorization and a question (*"você pode executar?"*) were both refused.
+- **Archiving a session.** The classifier gives no verdict on `archive_session` when a hook adds a
+  `session` field naming the session's title, worktree and last activity (*"a hook changed this call's
+  input after auto mode reviewed it"*); the call re-issued with the hook's input runs (measured
+  2026-11-19).
 
 | What the auto-mode classifier refused | Its label | Date |
 |---|---|---|
@@ -432,7 +436,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 The chain is Sandbox → Staging → Production: no Development account, ever, and interactive compute is
 Sandbox only. D1-D41 are closed; D41 item 2 is reopened since 2026-10-31 (Stage 19 decision 6 (b)). Gates:
 `make check`, `make check-ou`. Whether anything is up is read with `make status`, never from this file:
-every sitting ends at zero burn, and the orchestrating session read 0.0000 USD/h on 2026-11-19.
+every sitting ends at zero burn, and the orchestrating session read 0.0000 USD/h on 2026-11-20.
 
 Before asking the user anything, read
 [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md), and remove a row in the sitting
