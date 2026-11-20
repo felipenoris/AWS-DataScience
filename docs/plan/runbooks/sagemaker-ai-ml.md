@@ -397,7 +397,9 @@ carries no project tag, and `AddTags` allowed for that one key with the caller's
 
 A model package group is created once from a notebook, never by a workflow: `app-ml-dev`'s in its `dev`
 project (9.6) and 3.2's `ml-demo-xgboost` in the exercise's. Its tag is `sandbox/ml/`'s statement
-(decision 7 (a)), applied 2026-11-19. The create carries the project's tag alone, since a
+(decision 7 (a)), applied 2026-11-19. The same slice grants the project tag's `AddTags` on endpoint
+configurations, endpoints and pipelines since 2026-11-20, for `eighth-experimentation`'s and
+`app-ml-dev`'s roles: a notebook's create of each, with the project's tag alone, reads `allowed`. The create carries the project's tag alone, since a
 second key reads `implicitDeny`. A target's group is declared by the account's Terraform.
 
 Whether a worker's `CreateModel` and `CreateTransformJob` meet the gap as a processing job did is

@@ -1187,9 +1187,9 @@ closes, and its Dates bound items 4, 5, 9 and 10.
      The name reaches Squid at the association's first run with the proxy up, and only day 1's `PX-3` on
      the host proves the render (`SUP-071`).
    - [Claude⚡] Stage 17 decision 7's statements for endpoint configurations, endpoints and pipelines in
-     `sandbox/ml/`, written and planned on 2026-11-20 (*"Plan: 0 to add, 1 to change, 0 to destroy."*),
-     applied from `main` after their merge on the user's word naming it, before N.9's day 3 (pass 5's
-     pipeline) and N.10's day 1 (pass 4's endpoint).
+     `sandbox/ml/` ran at 19:40 UTC on 2026-11-20 from `main` at `78dc4397`, on the user's word, *"Apply
+     complete! Resources: 0 added, 1 changed, 0 destroyed."*, the re-plan `No changes`: N.9's day 3 (pass
+     5's pipeline) and N.10's day 1 (pass 4's endpoint) wait on nothing of it.
    - [user] Stage 19 4.12's membership: the Governance Manager added to `deploy-production` by the
      project's owner with the designation `subscription-approver`, then xxvi's portal half. Neither needs
      release G; the request and the approval do (item 6).
@@ -2291,8 +2291,8 @@ about 3 USD, against 0.36 to 0.87 USD for the next day's Config cycle.
     session.
 - **6d decision 6's apply** of `production/networking/` ran on 2026-11-20 with nothing up (N.6 item 3); day 1
   reads its effect.
-- **[Claude⚡] `sandbox/ml/`'s statements** for endpoint configurations, endpoints and pipelines (Stage 17
-  decision 7), from `main`, with nothing up, on the user's word naming it (N.6 item 3), before day 3.
+- **`sandbox/ml/`'s statements** for endpoint configurations, endpoints and pipelines (Stage 17 decision 7)
+  ran from `main` on 2026-11-20 with nothing up (N.6 item 3).
 - **[Claude] With nothing up:** the archives of `app-ml` and `app-genai` from `main` on day 3's eve. Done
   2026-11-19: Stage 20 4.5's workflow and its second tar (pull request #335); Stage 17 7.4's evaluation
   dataset, and `examples/sandbox-ml`'s scripts read against the house image's lock (#336).
@@ -2438,8 +2438,8 @@ usage limit, so each day starts at zero of its 10 RPU-hours.
   product through `eighth-experimentation`'s and `app-dbt-dev`'s subscriptions; Stage 20 5.1's tar is
   built before day 1.
 - **N.9's day 2**: Stage 17's pass 4 serves the version 3.2 registered.
-- **[Claude⚡] `sandbox/ml/`'s endpoint statements** (Stage 17 decision 7), applied from `main` with nothing
-  up before N.9's day 3 (N.6 item 3): pass 4 creates an endpoint configuration and an endpoint.
+- **`sandbox/ml/`'s endpoint statements** (Stage 17 decision 7) ran from `main` on 2026-11-20 with nothing
+  up (N.6 item 3): pass 4 creates an endpoint configuration and an endpoint.
 - **[user] With nothing up:**
   - 6h decision 8 (a)'s window: the wide tag per sitting or standing.
   - Stage 21 1.3's wizard half, the enable wizard read and cancelled.
