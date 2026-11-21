@@ -1530,3 +1530,54 @@ and `awsds-infra-data`, reads only. Times are UTC.*
   *"Transfer metadata and subscription management to another project while retaining your AWS Lake
   Formation permissions, if applicable."* (`docs/plan/upstream-releases.md`).
 - **Left**: sitting A from row 3 of its order, on §N.9's day 1.
+
+## 2026-11-21 — Sitting A: 2.2, the space, the deploy and the probe
+
+*Claude, in the session running `promotion.md` §N.9's day 1 on the user's *"Começar agora"*: the raise,
+the render and decision 6's reading are 6d's log's entry of the same day. The space's acts are the
+user's, as the Data Scientist User; the space's terminal runs as `app-dbt-dev`'s project role. Claude's
+reads as the infrastructure user with `InfrastructureAccess`, through `awsds-infra-sandbox-1` (account
+Sandbox Account 1). Times are UTC.*
+
+- **[user] The space**: `jup` in `app-dbt-dev`'s blueprint domain, JupyterLab on `ml.t3.medium`,
+  `awsds-sandbox-dev-env` version 11, created 03:28:04 and `InService` at 03:40:39, its app at 10.20.28.126.
+- **[user] The tar**, dropped on the file browser: `sha256sum -c` read *"app-dbt.tar: FAILED"* three
+  times while the upload ran, then *"app-dbt.tar: OK"*, and the tar extracted. The clone's head `4613ddc`,
+  the pin; the values by `space_values.py` and the exports as written.
+- **[user] The deploy**, *"aws-smus-cicd-cli 1.0.9 on /opt/awsds/venv/bin/python"*: the five files synced
+  to `shared/app-dbt/` from 04:03:56; *"No managed Tooling.GA/Tooling.Lightning blueprint found; will try
+  the IAM connection fallback"*, then the Tooling configuration resolved to the project's two subnets, its
+  security group `sg-040ed6781b8c4449e` and Sandbox's project key, with no *"No custom VPC config"* line;
+  the operator code uploaded once per `workflow.create` action, two copies for this deploy; both workflows
+  created `READY` at 04:04:35 and 04:04:47; *"Deployment completed successfully!"*
+- **[user] The probe's run**, `VulTqaEATnNLvZa` at 04:05:05. Before it, the CLI's `run` listed every
+  workflow in the account and read `ListTagsForResource` refused on the nine of other projects, *"because
+  no identity-based policy allows the airflow-serverless:ListTagsForResource action"*, as the project
+  role's session `SageMaker`.
+- **[Claude] The copies and the workflows**: under `shared/app-dbt/`, `code/app-dbt.zip` 26,129,224 bytes,
+  `glue/load.py` 2,859, `inbox/trades.csv` 362, `workflows/app-dbt.yaml` 3,794 and
+  `workflows/app-dbt-probe.yaml` 7,390, the two definitions larger than the tar's 3,508 and 7,389 by the
+  values the CLI resolved; under `shared/operatorFiles/`, two copies of 26,129,224 bytes, the size of the
+  laptop's archive. Both workflows `READY`, `manual_only`, in the project's two subnets and its security
+  group, `CUSTOMER_MANAGED_KEY`, each logging under `/aws/mwaa-serverless/dzd-d8yrvx1ko7im6o-dnl3l158mbhrio/`.
+- **[Claude] The probe's run**: `SUCCESS` from 04:05:08 to 04:05:54, its one task `probe`, `BashOperator`,
+  `SUCCESS` in 10 seconds, the worker's interface at 10.20.71.155 (04:05:14). Its log: the folder
+  `/var/tmp/airflowtmp…`; `python3` at `/opt/mwaa-serverless-venv/bin/python3`, `bash`, `mktemp`, `cp`,
+  `chmod` and `dirname` under `/usr/bin`; the script ran in the task's folder and in `mktemp -d`'s, the
+  latter under `/usr/local/airflow/dags/`; Python 3.12.16 on *"Linux-6.1.190-x86_64-with-glibc2.34"*,
+  glibc 2.34; Amazon Linux 2023.12.20261119; 2 CPUs, `MemTotal` 7,952,724 kB, no cgroup limit file; `/tmp`
+  9,963 MiB free; 166 distributions, among them `apache-airflow` 3.0.6, `apache-airflow-providers-amazon`
+  9.38.0, `boto3` 1.43.1, `sagemaker_studio` 1.0.28, `PyAthena` 3.17.1, `redshift-connector` 2.1.8,
+  `duckdb` 2.0.0 and `dag-factory` 1.0.0; 36 variable names, `PYTHONPATH`, `TMPDIR` and three
+  `OVERDRIVE__CMK__*` among them; the caller the project role's session `AmazonMWAAServerless`; the
+  workgroup `workgroup-dnl3l158mbhrio-55hp9teamegf4g` `ENABLED`, enforced, Athena engine version 3, its
+  output under the project's `dev/sys/athena/`; the database `app_dbt` at the project's
+  `dev/data/catalogs/`; `SELECT 1` `SUCCEEDED`; the count of `trades` `FAILED` *"TABLE_NOT_FOUND"*, expected
+  before 2.3; `ListLineageEvents` 10 events, each `SUCCESS`.
+- **[Claude] The trail**, after its delay, each call from 10.20.71.155 as `AmazonMWAAServerless`:
+  `GetCallerIdentity` through `sts`'s endpoint, `GetDatabase` through `glue`'s, `GetWorkGroup` and two
+  `StartQueryExecution` through `athena`'s, `ListLineageEvents` through `datazone`'s; one `GetDatabase`
+  invoked by `athena.amazonaws.com`. AWS Config's `GetDatabase` was refused twice at 04:06:48.
+- **[Claude] 2.2 passes**: i's worker half, glibc 2.34; ii's first half, `SELECT 1`; the endpoint's answer
+  to `ListLineageEvents`. A script runs in `mktemp`'s folder, so `run-dbt.sh` keeps its form. The
+  expected *"one copy of the archive for each deploy"* reads one copy per workflow the deploy creates.
