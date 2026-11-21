@@ -505,13 +505,14 @@ resource "aws_dlm_lifecycle_policy" "data" {
 
 # -------------------------------------------------------------------------------------- the alarm
 #
-# On the status checks, like the hub hosts'. `missing` is NOT breaching here, unlike the proxy's:
-# this host is stopped between sessions by design, and an alarm that is red every night teaches its
-# reader to ignore it. The price is that a dead host and a stopped one read alike until a session
-# starts it, which `make gitlab-up` does. No action is wired: D12 left the budget notifying nobody.
+# On the status checks, like the hub hosts'. Missing data is not breaching: this host is stopped
+# between sessions by design, and an alarm that is red every night teaches its reader to ignore it.
+# The price is that a dead host and a stopped one read alike until a session starts it, which
+# `make gitlab-up` does. It notifies production/foundation/'s awsds-<env>-alerts, which admits this
+# account's alarms (Stage 12 steps 2.2 and 2.3).
 resource "aws_cloudwatch_metric_alarm" "health" {
   alarm_name          = "awsds-${var.env}-gitlab-status-check"
-  alarm_description   = "GitLab is failing its EC2 status checks while running (Stage 7 step 1.2)."
+  alarm_description   = "GitLab is failing its EC2 status checks while running (Stage 7 step 1.2, Stage 12 step 2.3); a stopped host reads OK. docs/plan/runbooks/gitlab.md: section U for the session, section B for a restore, section V for the instruments."
   namespace           = "AWS/EC2"
   metric_name         = "StatusCheckFailed"
   statistic           = "Maximum"
@@ -520,6 +521,7 @@ resource "aws_cloudwatch_metric_alarm" "health" {
   threshold           = 0
   comparison_operator = "GreaterThanThreshold"
   treat_missing_data  = "notBreaching"
+  alarm_actions       = [data.terraform_remote_state.foundation.outputs.alerts_topic_arn]
 
   dimensions = {
     InstanceId = aws_instance.gitlab.id

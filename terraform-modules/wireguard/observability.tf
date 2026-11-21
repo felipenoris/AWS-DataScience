@@ -22,14 +22,12 @@ resource "aws_cloudwatch_log_group" "handshakes" {
 # alarm into INSUFFICIENT_DATA after every `make down` - a state change per session, from the
 # machinery working exactly as designed.
 #
-# It notifies nobody (Lesson 5). D12 left the budget with no subscriber and this environment's
-# first automatic notification is Stage 15 step 4's GuardDuty topic, in Audit. Until an SNS
-# topic exists in this account, the alarm is read by ./aws/vpn.py VP-6 and by Stage 12's
-# dashboard, so what it buys today is a state a script can measure, not a page anybody
-# receives.
+# It notifies var.alarm_actions, the caller's alerts topic (Stage 12 step 2.2). With the default,
+# an empty list, it notifies nobody (Lesson 5) and is read by ./aws/vpn.py VP-6 and Stage 12's
+# dashboard alone.
 resource "aws_cloudwatch_metric_alarm" "health" {
   alarm_name          = "awsds-${var.env}-vpn-health"
-  alarm_description   = "WireGuard host status checks (Stage 4 step 7.3). No action: no SNS topic exists in this account yet - see Stage 12."
+  alarm_description   = "WireGuard host status checks while running (Stage 4 step 7.3, Stage 12 step 2.2); a stopped host reads OK. docs/plan/runbooks/vpn.md: section S5 to start and stop the host, section K0a for a shell on it, section C4 when the tunnel does not work."
   namespace           = "AWS/EC2"
   metric_name         = "StatusCheckFailed"
   statistic           = "Maximum"
@@ -38,6 +36,7 @@ resource "aws_cloudwatch_metric_alarm" "health" {
   threshold           = 1
   comparison_operator = "GreaterThanOrEqualToThreshold"
   treat_missing_data  = "notBreaching"
+  alarm_actions       = var.alarm_actions
 
   dimensions = {
     InstanceId = aws_instance.this.id

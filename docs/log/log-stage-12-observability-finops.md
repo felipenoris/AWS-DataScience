@@ -564,3 +564,99 @@ open decisions the user asked for at 22:01 UTC, one card per decision under the 
 - **[Claude] 6e decision 6**, taken at 23:45 (that stage's log), reaches 2.1 and decision due 2: the
   budget's notification and Cost Anomaly Detection are the user's acts, and the ceiling stays decision
   due 2's.
+
+## 2026-11-21 — 9.1 read with the environment up, and 2.2's `[D]` half written and planned against the live hub
+
+*Claude, session "Stage 12: hub alarms and 9.1", started by the orchestrating session at the user's
+request, in a worktree of `origin/main` at `b3b900b4`, from about 20:11 UTC. Every AWS call ran as the
+infrastructure user with `InfrastructureAccess`, through the five `awsds-infra-*` profiles, in
+`us-west-2`; none wrote, none reached Bedrock, and no plan file was kept. The environment was up for
+`runbooks/promotion.md` §N.9's day 2, held by another session: both hub hosts running, Sandbox's
+`egress/` with `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` and its `probes/`; GitLab stopped,
+Staging's and Production's `egress/` and both warehouses down.*
+
+### Readings
+
+- **[Claude] `make status`**, about 20:15: `production/vpn` and `production/proxy` up, `sandbox/egress` up
+  with 33 resources, `sandbox/probes` with 4, `production/tooling` stopped, every other `[E]` slice down;
+  estimated burn 0.3590 USD/h.
+- **[Claude] `./aws/observability.py`** over the five profiles, report stamped 2026-11-21T20:21:16Z: exit 2,
+  no call failed. `OB-5` passes in every account; every quota reads its applied value, and each code's
+  name reads back as its quota (`L-0263D0A3` *EC2-VPC Elastic IPs*, `L-29B6F2EB` *Interface VPC endpoints
+  per VPC*, `L-1B52E74A` *Gateway VPC endpoints per Region*):
+
+  | Account | Elastic IPs | Interface endpoints per VPC | Gateway endpoints | Hosted zones |
+  |---|---|---|---|---|
+  | Production | 1 of 5 | 0 of 50 in each of its three VPCs | 6 of 20 | 3 of 500 |
+  | Sandbox | 0 of 5 | 24 of 50 (48 %) | 2 of 20 | 1 of 500 |
+  | Staging | 0 of 5 | 0 of 50 | 2 of 20 | 1 of 500 |
+  | Data Governance | 0 of 5 | 0 of 50 | 2 of 20 | 0 of 500 |
+  | Identity | 0 of 5 | no VPC | 0 of 20 | 0 of 500 |
+
+  SageMaker: one Code Editor app on `ml.t3.large` (`L-656A17FA`) and one JupyterLab on `ml.t3.medium`
+  (`L-71FAF417`) in Sandbox, 1 of 10 each; no job or endpoint in any account. `OB-3` fails in Production
+  for exactly `awsds-prod-gitlab-status-check`, `awsds-prod-proxy-status-check` and `awsds-prod-vpn-health`
+  (`EXC-19`), all three `OK`, the proxy's with the hub running; Production's other four alarms, the
+  refusals, the VPCs-per-Region quota and the two warehouse alarms, resolve to `awsds-prod-alerts` (one
+  confirmed subscription), and Sandbox's seven resolve. `OB-1` passes, Production at 16 groups (30 to 365
+  days); `OB-2` and `OB-4` note as before.
+- **[Claude] The endpoint usage metric**, `AWS/Usage` `ResourceCount` `InterfaceVPCEndpointsPerVPC` on
+  Sandbox's VPC, hourly maximum from 2026-11-07 to 2026-11-21T21:00Z: 15 datapoints, 19 in every session
+  hour from 2026-11-10 to 2026-11-21T07:00Z and 24 at 19:00 and 20:00 on 2026-11-21, `SERVICE_QUOTA()` 50
+  throughout. No datapoint is published for an hour with no endpoint.
+- **[Claude] The 24 endpoints**, by `terraform output interface_endpoint_ids` on `sandbox/egress`: the 18
+  of the base set, `airflow-serverless` (`mwaa`), `sagemaker.mlflow` (`mlflow`), `bedrock` and
+  `bedrock-runtime` (`bedrock-base`), `bedrock-agent` and `bedrock-agent-runtime` (`bedrock-agent`).
+  Counted from `vpc-egress-v0.19.0`'s `endpoints.tf`, every optional group adds `emr`'s seven and
+  `redshift`'s one: 32, 64 % of the quota, under `awsds-sandbox-quota-interface-endpoints-per-vpc`'s 80 %.
+- **[Claude] The hub hosts**, `describe-instances`: `awsds-prod-vpn` `i-011ffd7b6dde40a9a`, private
+  `10.31.160.22`, Elastic IP `52.89.212.1`, on `ami-0bea529386a62a2ad` (`al2023-ami-2023.12.20260831.0`);
+  `awsds-prod-proxy` still `i-0d42d0393c39eefdb`, the instance 6g decision 1 applied on 2026-09-17, private
+  `10.31.160.140`, public `44.255.111.239` this run, on `ami-0e8ee1bc880594d50`
+  (`al2023-ami-2023.12.20260917.1`); both started at 19:46. The parameter
+  `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64` resolves to
+  `ami-09f6e62a9fe578f92` (`al2023-ami-2023.12.20261120.0`), modified 2026-11-20T16:28:29Z.
+
+### The code
+
+- **[Claude] `terraform-modules/wireguard`**: an `alarm_actions` input, empty by default, on the health
+  alarm, whose description no longer says no topic exists. Commit `ed563388` alone, then
+  `wireguard-v0.7.0`, the next version after `wireguard-v0.6.0` on `git ls-remote --tags origin` at
+  20:25, pushed with the branch and read back from origin on the same hash. `user-data.sh.tftpl` is
+  untouched by it; against `wireguard-v0.6.0` the template differs in comment lines alone.
+- **[Claude] `production/vpn/`** pins `wireguard-v0.7.0` and passes `production/foundation/`'s
+  `alerts_topic_arn`.
+- **[Claude] `production/proxy/`**: the status-check alarm takes `notBreaching` (decision due 1 (b)), the
+  alerts topic and a description naming `./aws/proxy.py`.
+- **[Claude] `production/tooling/`**: GitLab's alarm takes the alerts topic and a description naming
+  `runbooks/gitlab.md` §U, §B and §V.
+- **[Claude] `production/observability/`**: the hub dashboard's text says the three hosts' alarms read
+  `OK` while stopped and notify the topic.
+
+### The plans against the live hub
+
+*Each with `-input=false` as `awsds-infra-prod`, its output read in full.*
+
+- **[Claude] `production/proxy/`**, 20:21:09: `1 to add, 2 to change, 1 to destroy`. `aws_instance.this`
+  is replaced on `ami`, masked (`SUP-312`), and on `user_data`, whose one difference is the first-render
+  comment 6g decision 1 corrected after its apply (three lines out, two in). The alarm changes in place:
+  `alarm_actions` gains `awsds-prod-alerts`, `treat_missing_data` `breaching` → `notBreaching`, the
+  description, and `InstanceId` known after apply. `proxy.awsds.internal` changes in place from
+  `10.31.160.140`; the reconfigure association does not change.
+- **[Claude] `production/vpn/`**, with the module's local path (Recipe B step 1) at 20:24:30 and from
+  `wireguard-v0.7.0` at 20:27:27, the two outputs identical: `2 to add, 3 to change, 2 to destroy`.
+  `module.wireguard.aws_instance.this` is replaced on `ami` and on `user_data`, 65 changed lines, every one
+  a comment; `aws_eip_association.this` is replaced with it, `52.89.212.1` moving to the new instance. In
+  place: the alarm (`alarm_actions`, the description, `InstanceId`), `aws_route.tunnel_return` onto the new
+  interface, and `vpn.awsds.internal` from `10.31.160.22`.
+- **[Claude] `production/tooling/`**, 20:28:07, with `-var-file` on the project folder's
+  `saml.auto.tfvars`, GitLab stopped: `0 to add, 1 to change, 0 to destroy`, the alarm alone
+  (`alarm_actions`, the description). The instance plans nothing, its `ami` and `user_data` held by
+  `ignore_changes`.
+- **[Claude] `production/observability/`**, 20:28:36: `0 to add, 1 to change, 0 to destroy`, the dashboard's
+  markdown alone.
+- **[Claude] What the applies do to a session**: the proxy's replaces the estate's only internet exit, and
+  the new host takes a new private and public address that the record follows; the tunnel's replaces the
+  endpoint every client pins, whose Elastic IP and host key carry over, so no `.conf` changes. Neither runs
+  while a spoke session needs the proxy or the tunnel; the hub sitting takes the tunnel down on the
+  operator's device first (`runbooks/vpn.md` §K6) and plans again.
