@@ -54,7 +54,7 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | The domain name | [Stage 13](stages/stage-13-public-web-tier.md) |
 | Stage 17 passes 9 and 10's portal and console acts: `app-ml-dev`'s MLflow App and model package group (9.6); `app-genai-dev`'s first Nova Lite call, which creates the application inference profile 10.4's `DEV_MODEL_ID` names, none on 2026-11-20 (10.4); in each target, the retention mode `none` declared in `us-west-2` (10.5; the account's guardrail configuration is `<env>/studio/`'s, by `awscc`); a deployment manager's merge requests, tags and approvals (9.7, 10.6) | [Stage 17](stages/stage-17-sandbox-machine-learning.md) |
 | Stage 20 5.0: `app-dbt-dev`'s subscription request on 4.12's listing and its approval, after R1 with 4.12's (§N.6 item 6); the revocation joins 4.12's at the end of §N.10's day 2 | [Stage 20](stages/stage-20-dbt-lineage.md) 5.0, Stage 19 4.12 |
-| Stage 20 8.6: the two assets curated in `app-dbt-dev`, and pass 5's asset deleted before the tag | [Stage 20](stages/stage-20-dbt-lineage.md) 8.6 |
+| Stage 20 8.6: before a tag after 5.0, pass 5's table asset and 5.0's link asset deleted in `app-dbt-dev` | [Stage 20](stages/stage-20-dbt-lineage.md) 8.6 |
 | Stage 20 8.7: `awsds/app-dbt` by `sagemaker-application.md` §L steps 1-6 and the infrastructure job-token allowlist in R1 (§N.11.1 step 3); the mirror push after #321's merge; the first push in R1 or R2 | [Stage 20](stages/stage-20-dbt-lineage.md) 8.7 |
 | The account quota, D34's rung (recommended: the auto-enrollment rung), and the Account Factory product's reading in Management | [Stage 14](stages/stage-14-sandbox-vending.md) |
 | 6d 6.1 (xvii), the `GetEnvironmentCredentials` attempt | [6d](stages/stage-06d-unified-studio-remainder.md) |

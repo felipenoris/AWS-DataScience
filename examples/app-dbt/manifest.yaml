@@ -39,13 +39,6 @@
 #
 # `staging` creates the probe beside app-dbt, and the Staging leg runs it first; `prod` creates app-dbt
 # alone, then runs it and follows the run, so a release ends with both tables written in Production.
-#
-# app-dbt-job, the infrastructure repository's Stage 20 step 4.5, is a processing job without network
-# isolation on the house image, which `dev`'s bootstrap alone creates. It reads JOB_IMAGE_URI, the
-# house image by digest, typed in the space and `none` in a target, and PROJECT_SG and PROJECT_KEY_ARN,
-# the project's security group and key, which a leg fills under the target's prefix. Its code is the
-# storage item `job`, which every stage copies, since the lint reads a job's code input under a folder
-# every stage copies. The workflow, its folder and their lines leave the tree before pass 8's tag.
 applicationName: app-dbt
 
 content:
@@ -65,12 +58,6 @@ content:
     - name: workflows
       include:
         - "workflows/"
-    - name: job
-      include:
-        - "job/"
-      exclude:
-        - __pycache__/
-        - "*.pyc"
   catalog:
     enabled: true
     connectionName: project.default_lakehouse
@@ -80,8 +67,6 @@ content:
       connectionName: default.workflow_serverless
       code: code/app-dbt.zip
     - workflowName: app-dbt-probe
-      connectionName: default.workflow_serverless
-    - workflowName: app-dbt-job
       connectionName: default.workflow_serverless
 
 stages:
@@ -102,17 +87,12 @@ stages:
       LINEAGE_ENDPOINT: ${LINEAGE_ENDPOINT}
       LINEAGE_ATTEMPTS: ${LINEAGE_ATTEMPTS}
       LINEAGE_NAMESPACE: ${LINEAGE_NAMESPACE}
-      JOB_IMAGE_URI: ${JOB_IMAGE_URI}
-      PROJECT_SG: ${DEV_PROJECT_SG}
-      PROJECT_KEY_ARN: ${DEV_PROJECT_KEY_ARN}
     bootstrap:
       actions:
         - type: workflow.create
           workflowName: app-dbt
         - type: workflow.create
           workflowName: app-dbt-probe
-        - type: workflow.create
-          workflowName: app-dbt-job
     deployment_configuration:
       storage:
         - name: code
@@ -127,9 +107,6 @@ stages:
         - name: workflows
           connectionName: default.s3_shared
           targetDirectory: app-dbt/workflows
-        - name: job
-          connectionName: default.s3_shared
-          targetDirectory: app-dbt/job
 
   staging:
     stage: STAGING
@@ -148,9 +125,6 @@ stages:
       LINEAGE_ENDPOINT: default
       LINEAGE_ATTEMPTS: default
       LINEAGE_NAMESPACE: app-dbt-staging
-      JOB_IMAGE_URI: none
-      PROJECT_SG: ${STAGING_PROJECT_SG}
-      PROJECT_KEY_ARN: ${STAGING_PROJECT_KEY_ARN}
     bootstrap:
       actions:
         - type: workflow.create
@@ -171,9 +145,6 @@ stages:
         - name: workflows
           connectionName: default.s3_shared
           targetDirectory: app-dbt/workflows
-        - name: job
-          connectionName: default.s3_shared
-          targetDirectory: app-dbt/job
 
   prod:
     stage: PROD
@@ -192,9 +163,6 @@ stages:
       LINEAGE_ENDPOINT: default
       LINEAGE_ATTEMPTS: default
       LINEAGE_NAMESPACE: app-dbt-prod
-      JOB_IMAGE_URI: none
-      PROJECT_SG: ${PROD_PROJECT_SG}
-      PROJECT_KEY_ARN: ${PROD_PROJECT_KEY_ARN}
     bootstrap:
       actions:
         - type: workflow.create
@@ -216,6 +184,3 @@ stages:
         - name: workflows
           connectionName: default.s3_shared
           targetDirectory: app-dbt/workflows
-        - name: job
-          connectionName: default.s3_shared
-          targetDirectory: app-dbt/job
