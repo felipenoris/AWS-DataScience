@@ -952,7 +952,7 @@ first piece is the access role's own policy, and on 2026-11-19 it does not hold 
 
 | Piece | Where it lives | Read 2026-11-19 |
 |---|---|---|
-| the access role's catalog read on Sandbox's `glue_db_blerpkhn9nj7o0` and its tables, and on Production's catalog, `app_etl` and `trades_notional`, the link's target | `sandbox/warehouse/iam.tf`'s `ReadTheSubscribedProductsCatalog`, from the map `subscribed_products`; written and planned 2026-11-19 (PR #339), unapplied | absent: `implicitDeny` for `glue:GetTable` and `glue:GetDatabase` on all of them, `allowed` on the lake account's `governed_trades`, the positive control |
+| the access role's catalog read on Sandbox's `glue_db_blerpkhn9nj7o0` and its tables, and on Production's catalog, `app_etl` and `trades_notional`, the link's target | `sandbox/warehouse/iam.tf`'s `ReadTheSubscribedProductsCatalog`, from the map `subscribed_products`; written and planned 2026-11-19 (PR #339), applied 2026-11-20 | absent: `implicitDeny` for `glue:GetTable` and `glue:GetDatabase` on all of them, `allowed` on the lake account's `governed_trades`, the positive control |
 | the access role's `lakeformation:GetDataAccess`, for a table whose data is in S3, which the governed share never needed | `LakeFormationVendsTheSubscribedProductsData`, the same | absent: `implicitDeny` |
 | Lake Formation's admission of the access role: DataZone's grant to Sandbox's `IAMPrincipals` under the consumer's context, if the session carries it (verification xiii), or 5.1's named grant in Production and `DESCRIBE` on the link in Sandbox | Lake Formation, both accounts | 4.12's fulfilment, after release G |
 | `USAGE ON DATABASE awsdatacatalog` and `TEMP ON DATABASE sandbox` for the database user | SQL, as the admin | `TEMP` held since 2026-10-25, `USAGE` absent |
@@ -1758,14 +1758,14 @@ what a release drops (`SUP-348`), and the workflow scan reads the target project
   is `ACTIVE`.
   **Run 2026-11-19, nothing up** (the log): the domain's RAM share at version 13 and decision 15 (d)'s
   designation `subscription-approver` (`ahjm1h20oujxqo`) created, each on the user's word, and xxvi's half
-  with no membership read; `deploy-production`'s members as on 2026-11-16. What is left, after release G:
-  the owner, as `awsds-infra-prod`, adds the Governance Manager with `datazone create-project-membership
-  --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d7qcazihvr3s7k --member
+  with no membership read; `deploy-production`'s members as on 2026-11-16. What is left, the membership
+  needing no release G: the owner, as `awsds-infra-prod`, adds the Governance Manager with `datazone
+  create-project-membership --domain-identifier dzd-d8yrvx1ko7im6o --project-identifier d7qcazihvr3s7k --member
   userIdentifier=e8a1f320-e0b1-70fc-22c1-40cdce5152ef --designation USER_CREATED_DESIGNATION
   --user-created-designation-id ahjm1h20oujxqo`. The laptop's CLI 2.37.12 has no
   `--user-created-designation-id`, so the call runs on botocore 1.44.5's model in `AWS_DATA_PATH`, as the
-  designation's creation did. Then xxvi's portal half, before the approval; then the request and the
-  approval above.
+  designation's creation did. Then xxvi's portal half, before the approval; then, after release G, the
+  request and the approval above.
 - **4.13 [Claude] Staging's catalog under decision 14**: with `catalog.disable` on the `staging` stage,
   Staging's project holds the table and no asset until its daily source runs; what the source imports
   and leaves unpublished, read the morning after (xxv), and `CT-4`'s rule on it.
@@ -2234,8 +2234,8 @@ needed here. Under its recommendation, a warehouse sitting inside a Sandbox one 
     is written only if xxvi's portal half shows it reaching a model or Production's data beyond `TM-23`.
     xxvi's half with no membership leaves (d) standing: the designation withholds the Project, Connections,
     and Notebooks and Querybooks categories `PROJECT_CONTRIBUTOR` grants. The membership is the owner's
-    after release G (4.12), then xxvi's portal half before the approval; (a)'s `PROJECT_CONTRIBUTOR`
-    returns only if that half reads no narrowing. The person-session deny stays, since a designation
+    and needs no release G (4.12), then xxvi's portal half before the approval, which follows release G;
+    (a)'s `PROJECT_CONTRIBUTOR` returns only if that half reads no narrowing. The person-session deny stays, since a designation
     governs the project's actions and never IAM.
 16. **The warehouse workflow and the job role** (4.9, 4.11). Stage 9 decision 15's Production-only
     workflow loads the warehouse as `awsds-prod-job-exec`, which holds the lake's write share and the

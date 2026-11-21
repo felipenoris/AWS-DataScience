@@ -2523,3 +2523,16 @@ as the infrastructure user, permission set `InfrastructureAccess`, through `awsd
   before the deliverables, with every row steps 5 and 6 owe: the editor's first session, 5.2, 5.2a's owed
   half, 5.3, 5.4, 5.1, the tag on, 5.2b, the tag off unless it stands, 0.4's portal half and 6.4.
   §N.6 item 9 names 5.1, 5.2b and the editor alone.
+
+## 2026-11-20 — 5.2b's network door read in the code
+
+*Claude, in the session that applied 6d decision 6 and Stage 17 decision 7 the same day, on the user's request to prepare every pending sitting before raising anything and to minimise the plan's running time (*"otimize o plano e faça todas as preparações necessárias para que o tempo necessário para executar o plano seja minimizado"*). No AWS call: `terraform-live/sandbox/warehouse/` read.*
+
+- **[Claude] The door**: `aws_vpc_security_group_ingress_rule.project_5439` (`security-group.tf`) is
+  created per entry of `var.projects`, whose default holds `eighth-experimentation` alone, and is the slice's
+  only ingress rule. The wide tag (`all_projects_tag_enabled`) writes `for-use-with-all-datazone-projects=true`
+  on the namespace and the workgroup and lets `projects` take a second entry; it opens no port. So
+  `test-experimentation`'s notebook, 5.2b's second project, opens no TCP connection to 5439 while that project
+  is out of `projects`, and 5.2b as written would read the network's timeout (Lesson 42). The user's choice,
+  in the waiting list's decision 8 row and `promotion.md` §N.12.4: `test-experimentation` in `projects`
+  within the wide tag's applies of the sitting's steps 5 and 9, or 5.2b re-specified.

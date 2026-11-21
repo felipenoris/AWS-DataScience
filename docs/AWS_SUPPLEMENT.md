@@ -231,6 +231,10 @@ entry is still true is the reading.
   organization and the boundary read `true` and the four `implicitDeny`, a statement on the domain matching
   no `*`. `StartDataSourceRun` runs under the same form of statement (`SUP-346`), so a grant of such an
   action on the domain is read from its call (`log-stage-19-smus-native-data-product.md`, 2026-11-17).
+  Read again 2026-11-20 on `eighth-experimentation`'s project role: `datazone:StartNotebookRun`,
+  `ListNotebooks`, `GetNotebook` and `CreateNotebook` read `implicitDeny` with the domain's ARN in either
+  account and `allowed` with no resource named, through `SageMakerStudioProjectRoleMachineLearningPolicy`'s
+  `datazone:*Notebook*` (`log-stage-06d-unified-studio-remainder.md`, 2026-11-20).
 
 - `SUP-009` **`iam simulate-custom-policy` ignores `sagemaker:VolumeKmsKey` and `sagemaker:OutputKmsKey`
   when the resource is a job's ARN** (measured 2026-10-18, 6d step 1.3). A `Deny` on `Null` of either key

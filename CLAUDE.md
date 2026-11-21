@@ -266,6 +266,7 @@ and the stage logs hold the refusals.
 | A saved plan's apply in Production under the user's blanket authorization of the session; let through once the user named the apply in chat | *Production Deploy* | 2026-11-17 |
 | A subagent's launch whose brief held a push and a merge request in another repository (`awsds-workflows`) | *Unsanctioned Communication* | 2026-11-17 |
 | A started session's apply of `identity/org-policies` under the user's *"Autorizo os applies necessários"* in its chat, which let its five other applies through | *Protected-Scope IaC Apply* | 2026-11-19 |
+| A session's push of a new branch to the public repository, two of its branches pushed and merged the same day; the diff added no identifier `main` lacked. Let through once the user authorized it in chat (*"Autorizo push e PR"*) | *Sensitive Information Leakage* | 2026-11-20 |
 
 The orchestrating session ran each of the first three itself, on the user's authorization in its own
 chat. Let through on 2026-11-11: reads, a RAM association, a candidate SCP's life on `Policy Test`, and
@@ -447,14 +448,14 @@ up with what each closes, and the dated deadlines.
 
 Done: 0, 1a, 1b, 1c, 1d, 2, 3, 4, 5a, 6a, 6b, 6c, 6i, 7, 16 and 18. Not started: 13, which waits on the
 domain name from the user; and 15, which nothing blocks and whose decisions 1-4 are the user's. 21's
-pass 1 was done 2026-11-18 with nothing up, its passes 2-4 on §N.10's day 2, pass 5 on §N.9's
-day 2.
+pass 1 was done 2026-11-18 with nothing up, its passes 2-5 on §N.10's day 2. The calendar is
+`promotion.md` §N.12.
 
 | Stage | State | What comes next |
 |---|---|---|
 | 5b, the Sandbox warehouse | Passes 0-3 applied 2026-09-20 | `promotion.md` §N.10's day 1, before 2026-12-19 (decision 9): the `--sql` read, the `enable_large_strings_opt_in` re-plan, the `max_query_execution_time` test. The bill's half of verification x after the free trial ends |
-| 6d, Unified Studio's remainder | Steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half, 2.7's steps 2 to 5 done 2026-11-18; on 2026-11-19 5.1 and 6.1 (viii)'s JupyterLab half read, the `datazone` quotas found raised by AWS, decision 17's deny in the targets applied; decision 6 applied 2026-11-20 | The user's: the 1.1 and 1.2 attempts. `promotion.md` §N.9's day 1: decision 6's render, 4.7, 6.1 (viii), 7.5 to 7.7. R1: 2.7 step 7 |
-| 6e, Claude Code on Bedrock | A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint). Held by PR #108 | The user's: the three Claude 5.5 model agreements (decision 17), decisions 11 and 13, and decision 6's budget notification. Then 6.4's token volume |
+| 6d, Unified Studio's remainder | Steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half, 2.7's steps 2 to 5 done 2026-11-18; on 2026-11-19 5.1 and 6.1 (viii)'s JupyterLab half read and decision 17's deny in the targets applied; decision 6 applied 2026-11-20 | The user's: the 1.1 and 1.2 attempts; day 1's client and `proxy-on` (§N.12.4). `promotion.md` §N.9's day 1: decision 6's render, 4.7, 6.1 (viii), 7.5 to 7.7. R1: 2.7 step 7 |
+| 6e, Claude Code on Bedrock | A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint). Held by PR #108 | The user's: the three Claude 5.5 model agreements (decision 17), decisions 11 and 13, and decision 6's budget notification. 6.4's token volume on §N.9's day 3 |
 | 6f, the catalog over the lake | Decision 1 (b), a pilot of SMUS's native flow: step 11 done to 11.11 (2026-10-27), `curated.trades` published by `governed-lake` and subscribed by `eighth-experimentation`. Decisions 2 to 6 taken | The user's: step 2's portal acts, 11.12's rollback residue |
 | 6g, access by identity | Applied 2026-09-17, 1.4 closed on both profiles | 2.4's Athena read, which the user re-specifies. Decision 1's proxy-host replacement at the next `production/proxy/` apply, in a hub sitting |
 | 6h, the Redshift connection | Passes 0-2 done: one project writes and reads the schema `lab` through the Data page and through JupyterLab; decision 3 done 2026-11-19, `lineageSync` off and database `sandbox` | The user's: decision 8 (a)'s window. §N.10's day 1: the editor on `sandbox`, 5.1 to 5.4 and 5.2b around #323's switch, 0.4's portal half; 6.4 on day 2 |

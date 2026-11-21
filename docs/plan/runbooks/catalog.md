@@ -485,9 +485,10 @@ API, `create-listing-change-set --action UNPUBLISH` (measured 2026-11-14 from th
 ### The target
 
 A Glue table's subscription target is the subscriber's `DataLake` environment's,
-`<environment>-lakehouse-default-target`, whose `manageAccessRole` is the project role; a project with no
-`ACTIVE` `DataLake` environment receives none (read 2026-10-20, `SUP-193`). *Create database*'s
-environment carries no target, and one created by API with `glueDbName` carries one (§A).
+`<environment>-default-target`, whose `manageAccessRole` is the project role; a project with no
+`ACTIVE` `DataLake` environment receives none (read 2026-10-20, `SUP-193`). The project's first `ACTIVE`
+`DataLake` environment carries it, whether *Create database* or the API created it, and a later one none
+(§A, `SUP-184`).
 
 ### The fulfilment in one account
 
