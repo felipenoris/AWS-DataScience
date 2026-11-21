@@ -580,9 +580,23 @@
   <https://www.chromium.org/developers/design-documents/network-settings/>.
 
 - Squid's `acl` directive — for a request naming an IP address, `dstdomain` matches the name a reverse
-  lookup of that address returns, unless the `-n` option is set (read 2026-10-17). The rendered plane
-  lists carry no `-n`, which is the proxy half of `threat-model.md`'s `TM-01`:
-  <https://www.squid-cache.org/Doc/config/acl/>.
+  lookup of that address returns, unless the `-n` option is set (read 2026-10-17). The pages for Squid
+  6.9 and 5.10, read 2026-11-21, give `acl aclname dstdomain [-n] .foo.com ...`, the flag before the
+  names, which `render-squid.sh.tftpl` writes on the allow-list planes for `threat-model.md`'s `TM-01`:
+  <https://www.squid-cache.org/Doc/config/acl/>,
+  <https://www.squid-cache.org/Versions/v6/cfgman/acl.html>,
+  <https://www.squid-cache.org/Versions/v5/cfgman/acl.html>.
+
+- Amazon EC2 user data — *"User data is limited to 16 KB, in raw form, before it is base64-encoded"*
+  (read 2026-11-21); the proxy host's rendered user data is 15,148 bytes with `TM-01`'s `-n`
+  (`log-stage-11-dlp.md`, 2026-11-21):
+  <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html>.
+
+- Amazon Linux 2023 release notes — the 2023.12.20260917 release, the proxy host's image, names no Squid
+  update, and the AL2023.12 package list describes 2023.12.20261021 (read 2026-11-21, the Squid row not
+  reached), so the host's Squid version is unread:
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.20260917.md>,
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/all-packages-AL2023.12.html>.
 
 - Amazon EC2 instance hostname types — *"compute.amazonaws.com is the domain provided by AWS for
   IPv4-based public hostnames"* (the example `ec2-52-54-55-66.ap-southeast-2.compute.amazonaws.com`), and

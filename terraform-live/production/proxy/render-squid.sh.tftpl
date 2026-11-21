@@ -51,11 +51,14 @@ JSON=$(aws ssm get-parameter --name "$PARAM" --region "$REGION" --query 'Paramet
   #   allowlist  one src acl, one dst acl, one `allow src dst`. Anything not on the list falls
   #              through to squid.conf's final `deny all` and is refused by name. This is the
   #              compute's shape, the objectives' "restriction on the SageMaker-managed compute".
+  #              The dst acl's `-n` refuses a request naming an IP address, which Squid otherwise
+  #              matches by its reverse record (TM-01).
   #   open       one src acl, then - only if the deny list has content - a `deny src dstdeny`
   #              above a bare `allow src`. The deny must come first or it is unreachable, the same
   #              top-to-bottom rule the global denies in squid.conf rely on. This is the client's
   #              shape, the objectives' "all internet access will be monitored": the control is the
-  #              access log, not the list.
+  #              access log, not the list. The dstdeny acl has no `-n`, which would admit an address
+  #              whose reverse name is denied.
   #
   # An `open` plane with an empty deny list still emits a block, a bare `allow src`, which is why
   # the `select` below tests the mode and not the length of a list. An empty list meaning "emit
@@ -78,7 +81,7 @@ JSON=$(aws ssm get-parameter --name "$PARAM" --region "$REGION" --query 'Paramet
                   "http_access deny src_\($n) dstdeny_\($n)\n"
              else "" end) +
             "http_access allow src_\($n)\n"
-       else "acl dst_\($n) dstdomain \(.value.allow | join(" "))\n" +
+       else "acl dst_\($n) dstdomain -n \(.value.allow | join(" "))\n" +
             "http_access allow src_\($n) dst_\($n)\n"
        end)
   '
