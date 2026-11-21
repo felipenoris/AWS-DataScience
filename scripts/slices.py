@@ -7,7 +7,9 @@
 #   ./scripts/slices.py up   --env <env>    start the [D] slices, apply the [E] ones, by rank
 #   ./scripts/slices.py down --env <env>    delete the Studio apps, then destroy [E] and stop [D],
 #                                           by rank descending
-#   ./scripts/slices.py status [--env <env>] what is up, the Studio apps, and the hourly burn
+#   ./scripts/slices.py status [--env <env>] what is up, the Studio apps, the portal's EMR
+#                                           Serverless applications and OpenSearch Serverless
+#                                           collections, and the hourly burn
 #
 #   exit: 0 clean | 1 something failed | 2 a usage or refusal error
 #
@@ -706,6 +708,80 @@ def print_studio_app(env: str, app: dict, now: datetime) -> float | None:
     return rate
 
 
+# ------------------------------------------------- the portal's standing resources, for `status`
+#
+# A project member deploys an EMR Serverless application or a knowledge base's OpenSearch
+# Serverless collection from the portal (docs/SMUS.md §Resource blueprints). No slice declares
+# either, so `terraform show` never counts one, and `make down` deletes neither: each belongs to
+# the project that deployed it. `status` lists the ones that can bill in every account it covers.
+# Neither is priced: an application bills the workers it holds started and a classic collection
+# one OCU or more, and no listing gives those counts, so each one makes the total a floor
+# (docs/PRICING.md 5, Lesson 6).
+#
+# The states that can bill: an application while it starts, runs or stops; a collection in every
+# state but the two below.
+EMR_SERVERLESS_BILLING_STATES = ("STARTING", "STARTED", "STOPPING")
+AOSS_IDLE_STATUSES = ("DELETING", "FAILED")
+
+
+def portal_listing(env: str, cmd: list, what: str, key: str, dry: bool) -> list | None:
+    """The items of one listing in one account, or None when it was not read (Lesson 13)."""
+    res = run(
+        ["aws", *cmd, "--region", backend.REGION, "--output", "json"],
+        env_extra={"AWS_PROFILE": backend.profile(env)},
+        dry=dry,
+        capture=True,
+    )
+    if res is None:
+        return None
+    if res.returncode != 0:
+        print(f"    FAILED to list the {what} in {env}", file=sys.stderr)
+        print(res.stderr.strip(), file=sys.stderr)
+        return None
+    return json.loads(res.stdout or "{}").get(key, [])
+
+
+def utc_minute(stamp: str) -> str:
+    """An API timestamp as `YYYY-MM-DD HH:MM UTC`, or as given when it does not parse."""
+    try:
+        return f"{datetime.fromisoformat(stamp).astimezone(timezone.utc):%Y-%m-%d %H:%M} UTC"
+    except ValueError:
+        return stamp
+
+
+def portal_standing(env: str, dry: bool) -> list | None:
+    """[(label, state, detail)] for the portal resources that can bill in one account."""
+    apps = portal_listing(
+        env,
+        ["emr-serverless", "list-applications", "--states", *EMR_SERVERLESS_BILLING_STATES],
+        "EMR Serverless applications",
+        "applications",
+        dry,
+    )
+    collections = portal_listing(
+        env,
+        ["opensearchserverless", "list-collections"],
+        "OpenSearch Serverless collections",
+        "collectionSummaries",
+        dry,
+    )
+    if apps is None or collections is None:
+        return None
+    return [
+        (
+            f"emr-serverless/{env}/{a.get('name') or a.get('id', '?')}",
+            a.get("state", "?"),
+            f"{a.get('type', '?')} application {a.get('id', '?')},"
+            f" since {utc_minute(a.get('updatedAt', '?'))}",
+        )
+        for a in apps
+    ] + [
+        (f"aoss/{env}/{c.get('name', '?')}", c.get("status", "?"), f"collection {c.get('id', '?')}")
+        for c in collections
+        if c.get("status") not in AOSS_IDLE_STATUSES
+    ]
+
+
 def cmd_status(args) -> int:
     """What is up, and the burn - rates from a static table, never a live pricing call (8.4)."""
     envs = [args.env] if args.env else layers.environments()
@@ -805,6 +881,27 @@ def cmd_status(args) -> int:
     if quiet:
         print(f"  no Studio app billing in {', '.join(quiet)}")
 
+    # The portal's standing resources, which no slice holds either (EMR_SERVERLESS_BILLING_STATES).
+    portal_quiet, unpriced = [], 0
+    for env in envs:
+        standing = portal_standing(env, args.dry_run)
+        if standing is None:
+            if args.dry_run:
+                continue
+            print(f"  {'portal/' + env:<40} UNREADABLE")
+            unreadable += 1
+            continue
+        if not standing:
+            portal_quiet.append(env)
+        for label, state, detail in standing:
+            print(f"  {label:<40} {state:<7} {detail}   rate unmeasured")
+        unpriced += len(standing)
+    if portal_quiet:
+        print(
+            "  no EMR Serverless application started and no OpenSearch Serverless collection in "
+            + ", ".join(portal_quiet)
+        )
+
     print(f"\n  estimated burn: USD {total:.4f}/h   (rates: docs/PRICING.md 3 and 8, static)")
     if any(s.layer == layers.DORMANT for s in metered):
         # 0.0000/h is not "free" once a [D] slice exists. A stopped host keeps its EBS volume
@@ -821,6 +918,12 @@ def cmd_status(args) -> int:
         print(
             f"  {unmeasured} Studio app(s) on a rate docs/PRICING.md has not measured"
             " - this total is a floor"
+        )
+    if unpriced:
+        print(
+            f"  {unpriced} portal resource(s) that no listing prices - this total is a floor:"
+            " an application bills\n  its started workers, a classic collection at least one"
+            " OCU at 0.24 USD/h (docs/PRICING.md 5)"
         )
     if unreadable:
         # A slice or an account that could not be read is not one where nothing runs.

@@ -76,7 +76,8 @@ the project's credentials, so no designation gives a person a view with no write
 Owner's: a Contributor's `DeleteProjectMembership` was refused, *"DesignationPolicy does not allow access."*
 (measured 2026-11-14, `SUP-157`). A custom designation's portal acts are unmeasured; its policy names
 action groups, never individual actions (`SUP-384`). The domain's RAM share moved to version 13 of its
-managed permission on 2026-11-19, and the associated accounts read the designations since (`SUP-360`).
+managed permission on 2026-11-19, and the associated accounts read the designations since; it moved to
+version 14 on 2026-11-21, and they read the project profiles since (`SUP-360`).
 Stage 19 decision 15 (d), a custom designation for Production's approver, was taken on 2026-11-17, and its
 designation `subscription-approver` was created on 2026-11-19, assigned to no member yet. The release notes
 of 2026-11-12 add a layout per designation, which they call presentation only (read 2026-11-17).

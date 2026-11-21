@@ -417,7 +417,11 @@ pass's end.
   sessions told first: 1.5's variables on, `sandbox/sagemaker/` then `data-governance/governance/` applied
   and re-planned `No changes`; `datazone get-project-profile` read for the configuration and its locked
   capacity. **[user]** A member of `test-experimentation` adds the Redshift Serverless compute on demand in
-  the portal. **[Claude] reads** the environment and its stack; the namespace and the workgroup, their base
+  the portal, from the project's *Resource blueprints* page (*Deploy*). While the configuration and its
+  grant stand, every contributor of every `experimentation` project can deploy the same workgroup from that
+  page ([`SMUS.md`](../../SMUS.md) §Resource blueprints), and `make status` reads no Redshift workgroup, so
+  the variables stay on for the sitting alone and 2.9 reads every project before turning them off.
+  **[Claude] reads** the environment and its stack; the namespace and the workgroup, their base
   and maximum capacity, key, subnets and security group; the connection the blueprint writes; and the
   Redshift subscription target the environment carries, its `type`, forms and `authorizedPrincipals`, beside
   the Glue target 1.3 read. A workgroup above 4 base RPUs is removed at once by 2.9's steps, and decision 1
@@ -442,7 +446,9 @@ pass's end.
   missing default role the institution's environment met. Nothing is granted to the role (5b decision 5).
 - **2.9 The consumer's workgroup removed**, after 2.7. **[user]** The compute removed from
   `test-experimentation` in the portal. **[Claude] reads** the environment, its stack, the workgroup and the
-  namespace absent. **[Claude⚡]** On the user's word, 1.5's variables off, `data-governance/governance/`
+  namespace absent, and no `RedshiftServerless` environment in any project of the domain
+  (`datazone list-environments` per project, the blueprint's id as filter) nor any workgroup in Sandbox
+  but the warehouse's. **[Claude⚡]** On the user's word, 1.5's variables off, `data-governance/governance/`
   then `sandbox/sagemaker/` applied, the reverse of 2.4's order, and re-planned `No changes`; `US-3` read
   green.
 

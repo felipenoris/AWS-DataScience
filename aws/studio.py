@@ -1,12 +1,13 @@
 #!/usr/bin/env -S uv run --quiet
 # studio.py - Stage 6's evidence, registry and runtimes side by side: the one DataZone V2
 # domain in Data Governance (a registry, so also the negative reading: no SageMaker resource
-# may exist there), its blueprint configurations and project profiles, the blueprint-
-# provisioned SageMaker AI domains in each Interactive account (VPC-only, private subnets,
-# idle shutdown, the house image's pinned version), the D13 permissions boundary on the
-# project roles (INT-15's mechanical half), the step 3 deny Sids in the persona sets, the
-# dev-env image registration (INT-17's mechanical half), and the running apps - the burn
-# meter of the one [E] thing Terraform does not own.
+# may exist there), its blueprint configurations with the grant that authorizes each, its
+# project profiles, the blueprint-provisioned SageMaker AI domains in each Interactive account
+# (VPC-only, private subnets, idle shutdown, the house image's pinned version), the D13
+# permissions boundary on the project roles (INT-15's mechanical half), the step 3 deny Sids in
+# the persona sets, the dev-env image registration (INT-17's mechanical half), the running
+# apps - the burn meter of the one [E] thing Terraform does not own - and the buckets a deleted
+# environment left behind.
 #
 #   needs:    a live SSO session, and nothing else:
 #
@@ -16,12 +17,13 @@
 #             ./aws/studio.py awsds-infra-data     # only the ones named
 #             python3 aws/studio.py -              # CloudShell, ambient credentials
 #   writes:   aws/output/studio.txt   (untracked - see .gitignore)
-#   reads:    datazone:ListDomains, ListEnvironmentBlueprintConfigurations,
-#             GetEnvironmentBlueprint, ListProjectProfiles, GetProjectProfile, ListProjects,
-#             GetProject, ListEnvironments, GetEnvironment, ListSubscriptionTargets,
+#   reads:    datazone:ListDomains, GetDomain, ListEnvironmentBlueprintConfigurations,
+#             GetEnvironmentBlueprint, ListPolicyGrants, ListProjectProfiles, GetProjectProfile,
+#             ListProjects, GetProject, ListEnvironments, GetEnvironment, ListSubscriptionTargets,
 #             sagemaker:ListDomains, DescribeDomain, ListTags, ListApps, ListImages,
 #             ListImageVersions,
 #             iam:ListRoles, GetRole,
+#             cloudformation:DescribeStacks, tag:GetResources, s3:GetBucketTagging,
 #             sso-admin:ListInstances, ListPermissionSets, DescribePermissionSet,
 #             GetInlinePolicyForPermissionSet, sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything.
@@ -323,6 +325,151 @@ def judge_image_pins(
             )
 
 
+# US-14 (INV-24): terraform-modules/sagemaker-prereqs/grants.tf declares one
+# CREATE_ENVIRONMENT_FROM_BLUEPRINT grant on every blueprint configuration, to every project of the
+# root domain unit with designation CONTRIBUTOR, child units excluded. The grant decides which
+# blueprints a project's Resource blueprints page deploys (docs/SMUS.md §Resource blueprints), and a
+# blueprint's Authorization tab adds one outside Terraform's state.
+GRANT_DESIGNATION = "CONTRIBUTOR"
+
+
+def is_module_grant(principals: list, root_unit: str) -> bool:
+    """True when a configuration's grants are exactly the one sagemaker-prereqs declares."""
+    if len(principals) != 1:
+        return False
+    project = principals[0].get("project") or {}
+    unit = (project.get("projectGrantFilter") or {}).get("domainUnitFilter") or {}
+    return (
+        project.get("projectDesignation") == GRANT_DESIGNATION
+        and not project.get("projectIdentifier")
+        and not project.get("userCreatedDesignationId")
+        and unit.get("domainUnit") == root_unit
+        and not unit.get("includeChildDomainUnits")
+    )
+
+
+def grant_text(principals: list | None, root_unit: str) -> str:
+    """A configuration's grants, one phrase per principal: section 3's column, US-14's detail."""
+    if principals is None:
+        return "(unread)"
+    if not principals:
+        return "none"
+    phrases = []
+    for principal in principals:
+        project = principal.get("project")
+        if project is None:
+            phrases.append(json.dumps(principal, separators=(",", ":")))
+            continue
+        who = project.get("projectDesignation", "?")
+        if project.get("userCreatedDesignationId"):
+            who = f"designation {project['userCreatedDesignationId']}"
+        unit = (project.get("projectGrantFilter") or {}).get("domainUnitFilter") or {}
+        if project.get("projectIdentifier"):
+            scope = f"project {project['projectIdentifier']}"
+        elif unit.get("domainUnit") == root_unit:
+            scope = "root unit"
+        elif unit:
+            scope = f"unit {unit.get('domainUnit', '?')}"
+        else:
+            scope = "no filter"
+        if unit.get("includeChildDomainUnits"):
+            scope += " and its children"
+        phrases.append(f"{who}, {scope}")
+    return "; ".join(phrases)
+
+
+# US-15 (INV-25): the S3Bucket template keeps its bucket when DataZone deletes the environment's
+# stack, and the bucket keeps the environment's tags while its policy is deleted (SUP-394). DataZone
+# answers GetEnvironment from a caller outside the project "Environment not found" for an environment
+# that exists (SUP-157), so the reading stays in the bucket's own account: every stack DataZone
+# deploys carries the environment's tag, and a tagged resource whose environment no live stack
+# carries was left by a deleted one. The tagging API reads one Region, the domain's, where every
+# environment deploys.
+ENV_TAG = "AmazonDataZoneEnvironment"
+
+
+def short_arn(arn: str) -> str:
+    """An ARN without its partition, Region and account: `s3 <bucket>`, `logs log-group:<name>`."""
+    parts = arn.split(":", 5)
+    return f"{parts[2]} {parts[5]}" if len(parts) == 6 else arn
+
+
+def bucket_name(arn: str) -> str | None:
+    """The bucket an ARN names; None for any other resource, an access point among them."""
+    parts = arn.split(":", 5)
+    if len(parts) == 6 and parts[2] == "s3" and not parts[3] and "/" not in parts[5]:
+        return parts[5]
+    return None
+
+
+def env_text(tags: dict) -> str:
+    """The environment, project and blueprint a resource's DataZone tags name."""
+    return (
+        f"environment {tags.get(ENV_TAG, '?')}, project {tags.get('AmazonDataZoneProject', '?')}, "
+        f"{tags.get('AmazonDataZoneBlueprint', '?')}"
+    )
+
+
+def judge_leftovers(
+    checks: Checks, p: str, live_envs: set | None, tagged: list | None, reread
+) -> None:
+    """US-15 in one account.
+
+    `tagged` holds (arn, tags) for every resource carrying ENV_TAG, `live_envs` the environment ids
+    a live stack carries, and `reread(bucket)` answers ("ok", tags), ("gone", {}) or ("unread", {}).
+    A bucket is read again before it is judged, since the tagging index lags a deletion.
+    """
+    what = f"buckets left by deleted environments in {p}"
+    if live_envs is None or tagged is None:
+        checks.note("US-15", what, "unjudged - a listing failed (section 10).")
+        return
+    orphans, stale, others = [], [], []
+    for arn, tags in tagged:
+        if tags.get(ENV_TAG) in live_envs:
+            continue
+        name = bucket_name(arn)
+        if name is None:
+            others.append(short_arn(arn))
+            continue
+        state, real = reread(name)
+        env = real.get(ENV_TAG) if state == "ok" else tags.get(ENV_TAG)
+        if state == "gone" or env is None or env in live_envs:
+            stale.append(name)
+            continue
+        orphans.append(f"{name} ({env_text(real if state == 'ok' else tags)})")
+    if orphans:
+        checks.fail(
+            "US-15",
+            what,
+            f"{'; '.join(orphans)} - no live stack carries the environment, and the bucket stayed "
+            "with its policy deleted (SUP-394). An administrator empties and deletes it (INV-25).",
+        )
+    else:
+        n = sum(1 for arn, tags in tagged if bucket_name(arn) and tags.get(ENV_TAG) in live_envs)
+        checks.ok(
+            "US-15",
+            f"buckets of environments in {p}",
+            f"{n} bucket(s) carry the tag of an environment whose stack is live"
+            if n
+            else f"no bucket carries an environment's tag; {len(live_envs)} environment stack(s) live",
+        )
+    if stale:
+        checks.note(
+            "US-15",
+            what,
+            f"{', '.join(stale)}: the tagging index lists a bucket S3 no longer holds or no longer "
+            "tags so - re-run.",
+        )
+    if others:
+        shown = ", ".join(others[:8]) + (f" and {len(others) - 8} more" if len(others) > 8 else "")
+        checks.note(
+            "US-15",
+            f"other resources left by deleted environments in {p}",
+            f"{len(others)}: {shown} - no live stack carries their environment's tag. A deleted "
+            "Tooling environment leaves its log group (SUP-174); each is deleted by hand.",
+        )
+
+
 def main(argv: list) -> int:
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
@@ -333,6 +480,7 @@ def main(argv: list) -> int:
     errors = ErrorLog()
     callers = profiles.preflight(selected, errors, out_label=out_label)
     live = [c.profile for c in callers if c.live]
+    account_of = {c.profile: c.account for c in callers if c.live}
     checks = Checks()
 
     def cli_for(profile: str) -> AwsCli:
@@ -340,6 +488,33 @@ def main(argv: list) -> int:
 
     def logerr(profile: str, what: str, err: str) -> None:
         errors.entries.append(f"[{profile}] aws {what}\n    {head2(err)}")
+
+    def config_grants(cli: AwsCli, profile: str, domain: str, blueprint_id: str) -> list | None:
+        """US-14's reading: the principals of one configuration's grants, None when unread.
+
+        The entity is `<account-id>:<blueprint-id>`, the account being the configuration's
+        owner, which is the caller here (sagemaker-prereqs/grants.tf).
+        """
+        res = cli.run(
+            "datazone",
+            "list-policy-grants",
+            "--domain-identifier",
+            domain,
+            "--entity-type",
+            "ENVIRONMENT_BLUEPRINT_CONFIGURATION",
+            "--entity-identifier",
+            f"{account_of.get(profile, '?')}:{blueprint_id}",
+            "--policy-type",
+            "CREATE_ENVIRONMENT_FROM_BLUEPRINT",
+            "--output",
+            "json",
+            log=False,
+        )
+        if not res.ok:
+            logerr(profile, "datazone list-policy-grants", res.stderr)
+            return None
+        grants = json.loads(res.stdout or "{}").get("grantList", [])
+        return [g.get("principal") or {} for g in grants]
 
     # -------------------------------------------- the DataZone domain, in every account
     # One listing everywhere, with the owner read from the ARN rather than inferred from who is
@@ -398,13 +573,30 @@ def main(argv: list) -> int:
     # "no blueprint is configured anywhere" from "every blueprint is configured where it is
     # supposed to be" (Lesson 13).
     bp_configs: dict = {}
+    bp_grants: dict = {}  # profile -> [(blueprint name, grant principals or None when unread)]
     project_profiles: list = []  # (name, id, status)
     profile_pin: dict | None = None  # app type -> (image, version); None when unread
     projects: list = []  # (name, id, status)
     domain_id = ""
+    root_unit = ""  # the domain's root domain unit, the one US-14's grant names
     if data_live and dz_domains.get(DATA_PROFILE):
         cli = cli_for(DATA_PROFILE)
         domain_id = dz_domains[DATA_PROFILE][0][0]
+        res = cli.run(
+            "datazone",
+            "get-domain",
+            "--identifier",
+            domain_id,
+            "--query",
+            "rootDomainUnitId",
+            "--output",
+            "text",
+            log=False,
+        )
+        if res.ok:
+            root_unit = (res.stdout or "").strip()
+        else:
+            logerr(DATA_PROFILE, "datazone get-domain", res.stderr)
         res = cli.run(
             "datazone",
             "list-environment-blueprint-configurations",
@@ -441,6 +633,9 @@ def main(argv: list) -> int:
                         "yes" if c.get("provisioningRoleArn") else "-",
                         "yes" if c.get("manageAccessRoleArn") else "-",
                     )
+                )
+                bp_grants.setdefault(DATA_PROFILE, []).append(
+                    (name, config_grants(cli, DATA_PROFILE, domain_id, bpid))
                 )
         # The member accounts' half: same domain id, each member's own session, because the
         # configuration belongs to the caller's account. Between the domain's creation and the
@@ -479,13 +674,17 @@ def main(argv: list) -> int:
                     log=False,
                     tolerate="AccessDenied|ResourceNotFound",
                 )
+                name = r.stdout.strip() if r.ok else bpid
                 bp_configs.setdefault(member, []).append(
                     (
-                        r.stdout.strip() if r.ok else bpid,
+                        name,
                         " ".join(c.get("enabledRegions", []) or ["-"]),
                         "yes" if c.get("provisioningRoleArn") else "-",
                         "yes" if c.get("manageAccessRoleArn") else "-",
                     )
+                )
+                bp_grants.setdefault(member, []).append(
+                    (name, config_grants(mcli, member, domain_id, bpid))
                 )
 
         res = cli.run(
@@ -770,6 +969,69 @@ def main(argv: list) -> int:
         open_trust[p] = loose
         roles_read[p] = n_read
 
+    # US-15's reading, per account: the environments a live stack carries, any status but
+    # DELETE_COMPLETE, and every resource carrying an environment's tag. No DataZone call answers
+    # this: a project's non-member is told an existing environment is not found (SUP-157).
+    env_stacks: dict = {}  # profile -> environment ids a live stack carries, None when unread
+    env_tagged: dict = {}  # profile -> [(arn, tags)] carrying ENV_TAG, None when unread
+    for p in INTERACTIVE_PROFILES + HEADLESS_PROFILES + (DATA_PROFILE,):
+        if p not in live:
+            continue
+        cli = cli_for(p)
+        res = cli.run(
+            "cloudformation",
+            "describe-stacks",
+            "--query",
+            f"Stacks[].Tags[?Key=='{ENV_TAG}'][].Value",
+            "--output",
+            "json",
+            log=False,
+        )
+        env_stacks[p] = set(json.loads(res.stdout or "[]") or []) if res.ok else None
+        if not res.ok:
+            logerr(p, "cloudformation describe-stacks", res.stderr)
+        res = cli.run(
+            "resourcegroupstaggingapi",
+            "get-resources",
+            "--tag-filters",
+            f"Key={ENV_TAG}",
+            "--query",
+            "ResourceTagMappingList[].[ResourceARN, Tags]",
+            "--output",
+            "json",
+            log=False,
+        )
+        env_tagged[p] = (
+            [
+                (arn, {t["Key"]: t.get("Value", "") for t in tags or []})
+                for arn, tags in json.loads(res.stdout or "[]") or []
+            ]
+            if res.ok
+            else None
+        )
+        if not res.ok:
+            logerr(p, "resourcegroupstaggingapi get-resources", res.stderr)
+
+    def bucket_reader(p: str):
+        """US-15's second reading of a bucket: its own tag set, which the index may lag."""
+        cli = cli_for(p)
+
+        def reread(name: str) -> tuple:
+            res = cli.run(
+                "s3api", "get-bucket-tagging", "--bucket", name, "--output", "json", log=False
+            )
+            if res.ok:
+                doc = json.loads(res.stdout or "{}")
+                return "ok", {t["Key"]: t.get("Value", "") for t in doc.get("TagSet", [])}
+            if "NoSuchBucket" in res.stderr:
+                return "gone", {}
+            if "NoSuchTagSet" in res.stderr:
+                return "ok", {}
+            logerr(p, f"s3api get-bucket-tagging {name}", res.stderr)
+            return "unread", {}
+
+        return reread
+
     # ------------- the deployment projects: one per target, with its environments (INV-21)
     deploy_projects: dict = {}  # deployment profile name -> [(project name, id)]
     deploy_rows: list = []  # (target, project, environment, status, glue database, targets)
@@ -955,7 +1217,6 @@ def main(argv: list) -> int:
     # US-2: no DataZone domain owned anywhere else (1c's root deny holding), and nothing
     # SageMaker-shaped in Data Governance (the registry-not-runtime negative deliverable).
     # Owned, not visible - see the collection comment above.
-    account_of = {c.profile: c.account for c in callers if c.live}
     for p in live:
         if p == DATA_PROFILE or dz_domains.get(p) is None:
             continue
@@ -1151,6 +1412,47 @@ def main(argv: list) -> int:
                     f"blueprint configurations in {target}",
                     "none - the account is associated and <env>/studio/'s second apply has "
                     "not run (Stage 19 step 4.4).",
+                )
+
+    # US-14: every configuration holds the one grant sagemaker-prereqs declares, read in the
+    # configuration's own account. A second grant, another designation or another unit is a hand
+    # grant from a blueprint's Authorization tab; no grant is a blueprint no project can deploy.
+    if data_live and domain_id:
+        for p in sorted(bp_grants):
+            rows = bp_grants[p]
+            unread = [n for n, g in rows if g is None]
+            stray = [
+                f"{n} ({grant_text(g, root_unit)})"
+                for n, g in rows
+                if g is not None and not is_module_grant(g, root_unit)
+            ]
+            if not root_unit:
+                checks.note(
+                    "US-14",
+                    f"blueprint grants in {p}",
+                    "unjudged - the root domain unit was not read (get-domain, above).",
+                )
+                continue
+            if stray:
+                checks.fail(
+                    "US-14",
+                    f"blueprint grants in {p}",
+                    f"{'; '.join(stray)} - sagemaker-prereqs/grants.tf declares one "
+                    f"CREATE_ENVIRONMENT_FROM_BLUEPRINT grant per configuration, {GRANT_DESIGNATION} "
+                    "projects of the root unit, children excluded (INV-24). Any other grant was "
+                    "added by hand and widens what a project's Resource blueprints page deploys.",
+                )
+            if unread:
+                checks.note(
+                    "US-14",
+                    f"blueprint grants in {p}",
+                    f"{', '.join(unread)} unread - the failed call is listed at the end.",
+                )
+            if not stray and not unread:
+                checks.ok(
+                    "US-14",
+                    f"blueprint grants on {len(rows)} configuration(s) in {p}",
+                    f"each holds the module's one grant: {GRANT_DESIGNATION}, root unit",
                 )
 
     # US-4: the project profiles, by their contracted names - and the retired one by its.
@@ -1426,6 +1728,12 @@ def main(argv: list) -> int:
     elif any(sm_domains.get(p) for p in INTERACTIVE_PROFILES):
         checks.ok("US-10", "no running apps", "zero everywhere is D11 working")
 
+    # US-15 (INV-25): no bucket outlives the environment that created it. Only a bucket fails:
+    # it holds a project's data with its policy gone. Other resources are noted.
+    for p in INTERACTIVE_PROFILES + HEADLESS_PROFILES + (DATA_PROFILE,):
+        if p in live:
+            judge_leftovers(checks, p, env_stacks.get(p), env_tagged.get(p), bucket_reader(p))
+
     # ---------------------------------------------------------------------- the report
     with open(out_path, "w", encoding="utf-8") as stream:
         rep = Report(stream)
@@ -1512,10 +1820,12 @@ called the first `shared in` a violation on the day the association succeeded.""
             rep.line(f"DOMAIN_ID={domain_id}")
             rep.line()
             if bp_configs:
+                grant_of = {(prof, n): g for prof, rows_ in bp_grants.items() for n, g in rows_}
                 rep.tabulate(
-                    ["ACCOUNT\tBLUEPRINT\tREGIONS\tPROVISIONING ROLE\tMANAGE-ACCESS ROLE"]
+                    ["ACCOUNT\tBLUEPRINT\tREGIONS\tPROVISIONING ROLE\tMANAGE-ACCESS ROLE\tGRANTS"]
                     + [
-                        f"{prof}\t{n}\t{r}\t{pr}\t{m}"
+                        f"{prof}\t{n}\t{r}\t{pr}\t{m}\t"
+                        + grant_text(grant_of.get((prof, n)), root_unit)
                         for prof in sorted(bp_configs)
                         for n, r, pr, m in bp_configs[prof]
                     ]
@@ -1529,7 +1839,12 @@ and no account - so an associated member enables blueprints against the shared
 domain, and a reading taken only in Data Governance cannot tell "nothing is
 configured" from "everything is configured where it belongs" (Lesson 13). Rows in
 awsds-infra-data are a US-3 FAILURE, not a success, but for the lake-publishing
-pilot's Tooling (Stage 6f step 11, D22 amended 2026-10-26).""")
+pilot's Tooling (Stage 6f step 11, D22 amended 2026-10-26).
+
+GRANTS is US-14's reading: the CREATE_ENVIRONMENT_FROM_BLUEPRINT grants on each
+configuration, which decide what a project's Resource blueprints page deploys.
+The module declares one per configuration, `CONTRIBUTOR, root unit`; any other
+was added from a blueprint's Authorization tab (INV-24).""")
             rep.line()
             if project_profiles:
                 rep.tabulate(
@@ -1722,7 +2037,14 @@ What the checks are, and where each comes from:
          newest CREATED version, each ACTIVE project born of it holds a SageMakerAIDomain
          domain, and each such domain pins the profile's version on both app types; a
          Tooling domain is noted in EXC-26's projects and fails in any other. Red from a
-         release's register to its last Update project""")
+         release's register to its last Update project
+  US-14  every blueprint configuration holds the one grant sagemaker-prereqs declares,
+         CONTRIBUTOR projects of the root unit (INV-24); any other was added from a
+         blueprint's Authorization tab and widens a project's Resource blueprints page
+  US-15  no bucket outlives its environment (INV-25): a bucket carrying an
+         environment's tag has that environment's stack live in its account. A deleted
+         S3Bucket environment keeps its bucket and deletes its policy (SUP-394); any
+         other resource a deleted environment left is a note (SUP-174)""")
 
         # ==============================================================================
         rep.h1("9. The accounts nothing here is measuring")
@@ -1731,7 +2053,9 @@ What the checks are, and where each comes from:
   - Every Sandbox beyond unit 1 has no profile until Stage 14 - re-run after
     each vend; the domain association list must grow with N (D35, INT-12).
   - The portal is a browser surface, reached from any network with an Identity
-    Center session (D39); no profile reads it.""")
+    Center session (D39); no profile reads it.
+  - US-15 reads the tagging API in the domain's Region alone, where every
+    environment deploys; a bucket an environment left elsewhere is not seen.""")
 
         # ==============================================================================
         rep.h1("10. Calls that failed")

@@ -1327,8 +1327,11 @@ that trains it. And the developer's loop gains a `bundle` before each `deploy` (
   2026-11-18), as `app-etl-dev` was created (Stage 19 1.5); the bundle role
   `awsds-deploy-sandbox-test` and Sandbox's `InfrastructureAccess` its contributors, which makes that
   role a member of each application's `dev` project; its MLflow App through `datazone create-environment`
-  with the profile's `MLflowApp` configuration (1.5's path, since the portal greys the entry out), the
-  registration mode verification lx needs stated; the house image attached by `dev-env.md` §C6, unless
+  with the profile's `MLflowApp` configuration (1.5's path, since the portal greys the entry out), or from
+  the project's *Resource blueprints* gallery, which offers *MLflow App* in `app-ml-dev` and asks a name, a
+  description and `mlflowAppName` (read 2026-11-21; whether its deployment uses the profile's configuration
+  is unread, [`SMUS.md`](../../SMUS.md) §Resource blueprints), and the registration mode verification lx
+  needs stated; the house image attached by `dev-env.md` §C6, unless
   6d's step 2.7 has applied decision 16 (a), the user's choice of 2026-11-17, before the project exists;
   and its model package group `app-ml-dev`, created once from the space with 3.2's call. The application
   reaches the space as a tar, so the sitting raises no GitLab: [Claude] builds it before the sitting,
