@@ -3969,3 +3969,92 @@ account id written `<Sandbox Account 1>`. Times are UTC.*
     list *Nova Lite*, *Claude Haiku 4.5*, *Claude Opus 4.5* and *Claude Sonnet 4.5*, each *"Supports
     Guardrails, Data, Functions"*. The page's banner: *"Agents Classic will no longer be open to new
     customers starting on July 30, 2026"*.
+
+## 2026-11-21 — Day 2's sitting B: 1.6 and 2.1
+
+Written by Claude in the session the orchestrator started. The user ran the commands in the `jup` space
+and pasted their output. The lines quoted below are excerpts in the paste's order, each line verbatim
+except the account id in S3 Control's host name, written `<Sandbox Account 1>`; left out are the
+container-credential fetches from `169.254.170.2` and six of 1.6's nine MLflow requests, all `200`. Claude's readings ran as `awsds-infra-sandbox-1` (Sandbox Account 1) and, for the proxy's
+log, `awsds-infra-prod`. Times UTC.
+
+- **[Claude] The apps, restarted.** The blueprint domain's 60-minute idle shutdown deleted `code` at
+  21:19:50 and `jup` at 21:23:14 (`DeleteApp` by `AWSServiceRoleForAmazonSageMakerNotebooks`); both spaces
+  stayed `InService` with their home volumes, the clone and `extra_values.json` on them. The user started
+  both again: `list-apps` read them `Pending` at 23:02:08 under the deleted apps' `CreationTime`. The new
+  apps took new addresses, read from their first proxy lines: `jup` 10.20.54.175 (was 10.20.38.182),
+  `code` 10.20.26.209 (was 10.20.20.46).
+- **[user] 1.6**, the step's script with urllib3's connection log on:
+
+  ```
+  start 23:08:13
+  urllib3.connectionpool Starting new HTTPS connection (1): mlflow.sagemaker.us-west-2.app.aws:443
+  urllib3.connectionpool https://mlflow.sagemaker.us-west-2.app.aws:443 "GET /api/2.0/mlflow/experiments/get-by-name?experiment_name=ml-demo-first-run HTTP/1.1" 404 142
+  2026/11/21 23:08:33 INFO mlflow.tracking.fluent: Experiment with name 'ml-demo-first-run' does not exist. Creating a new experiment.
+  urllib3.connectionpool https://mlflow.sagemaker.us-west-2.app.aws:443 "POST /api/2.0/mlflow/experiments/create HTTP/1.1" 200 26
+  urllib3.connectionpool Starting new HTTPS connection (1): config.mlflow-telemetry.io:443
+  urllib3.connectionpool https://mlflow.sagemaker.us-west-2.app.aws:443 "POST /api/2.0/mlflow/runs/create HTTP/1.1" 200 392
+  urllib3.connectionpool Starting new HTTPS connection (1): sts.us-west-2.amazonaws.com:443
+  urllib3.connectionpool https://sts.us-west-2.amazonaws.com:443 "POST / HTTP/1.1" 200 472
+  urllib3.connectionpool https://awsds-sandbox-smus-projects.s3.us-west-2.amazonaws.com:443 "HEAD / HTTP/1.1" 200 0
+  urllib3.connectionpool https://<Sandbox Account 1>.s3-control.us-west-2.amazonaws.com:443 "GET /v20180820/accessgrantsinstance/prefix?s3prefix=s3%3A%2F%2Fawsds-sandbox-smus-projects%2Fdzd-d8yrvx1ko7im6o%2Favhvbqn37ty7m8%2Fdev%2Fdata%2Fml%2Fmlflow%2Fworkspaces%2Fdefault%2F1%2Faa66682b1adc4b168ae4f857f1f0e315%2Fartifacts%2Fml-demo-1-6.txt HTTP/1.1" 200 251
+  urllib3.connectionpool https://<Sandbox Account 1>.s3-control.us-west-2.amazonaws.com:443 "GET /v20180820/accessgrantsinstance/dataaccess?target=s3%3A%2F%2Fawsds-sandbox-smus-projects%2Fdzd-d8yrvx1ko7im6o%2Favhvbqn37ty7m8%2Fdev%2Fdata%2Fml%2Fmlflow%2Fworkspaces%2Fdefault%2F1%2Faa66682b1adc4b168ae4f857f1f0e315%2Fartifacts%2Fml-demo-1-6.txt&permission=WRITE&privilege=Default HTTP/1.1" 403 449
+  urllib3.connectionpool https://awsds-sandbox-smus-projects.s3.us-west-2.amazonaws.com:443 "PUT /dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/ml/mlflow/workspaces/default/1/aa66682b1adc4b168ae4f857f1f0e315/artifacts/ml-demo-1-6.txt HTTP/1.1" 200 0
+  run aa66682b1adc4b168ae4f857f1f0e315 experiment 1
+  artifact_uri s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/ml/mlflow/workspaces/default/1/aa66682b1adc4b168ae4f857f1f0e315/artifacts
+  end 23:08:35
+  ```
+
+  and `getent hosts mlflow.sagemaker.us-west-2.app.aws` printed `10.20.36.90     mlflow.sagemaker.us-west-2.app.aws`.
+- **[Claude] 1.6's readings.**
+  - The door: `vpce-0c34126a42848e404` (CloudWatch's service name `aws.sagemaker.us-west-2.mlflow`) had no
+    `BytesProcessed` series at 20:07 or at 23:02; after the run it carried one datapoint, 23:08,
+    `BytesProcessed` 9410 and `NewConnections` 1, its per-subnet series on `subnet-016b5a3a62c739894`
+    alone. The client opened one connection to the host and sent its nine MLflow requests on it. The
+    proxy's log holds no `mlflow` line from 23:05 to 23:10. Verification vi: yes. The name is
+    `mlflow.sagemaker.us-west-2.app.aws`, resolved to the endpoint's address; the endpoint carried the
+    bytes; nothing failed to resolve, so the DNS Firewall list needs no entry.
+  - The artifact: `ml-demo-1-6.txt`, 18 bytes, `LastModified` 23:08:36, `aws:kms` under
+    `alias/awsds-sandbox-project`'s key with the bucket key, the bucket's default. The MLflow store's
+    objects are verification iv's other half, read with 3.1's model.
+  - The S3 Access Grants plugin: before the PUT, `GetAccessGrantsInstanceForPrefix` answered 200 and
+    `GetDataAccess` for `WRITE` 403, then the PUT ran under the role's own credentials, the plugin's
+    fallback. Both S3 Control calls left through the proxy, one tunnel:
+    `2026-11-21T23:08:35+0000 10.20.54.175 CONNECT <Sandbox Account 1>.s3-control.us-west-2.amazonaws.com:443 200 7313 6347 TCP_TUNNEL`.
+    The house image's `NO_PROXY` names S3 as `s3.us-west-2.amazonaws.com` and
+    `s3.dualstack.us-west-2.amazonaws.com` (`vpc-egress`'s `no-proxy.tf`), which `s3-control` does not end
+    in, so `SUP-091`'s direct path through the gateway endpoint is not a space's: from a space the call
+    takes `SUP-042`'s path through the proxy. The STS call and the PUT left direct: no proxy line.
+  - MLflow's telemetry: `2026-11-21T23:08:33+0000 10.20.54.175 CONNECT config.mlflow-telemetry.io:443 403 3430 89 TCP_DENIED`,
+    the connection the client logged with no response. MLflow's source (`mlflow-skinny` 3.18.0 in the
+    laptop's uv cache; the house lock pins `mlflow` 3.17.2) reads `CONFIG_URL =
+    "https://config.mlflow-telemetry.io"` and turns telemetry off when `MLFLOW_DISABLE_TELEMETRY` is true
+    or `DO_NOT_TRACK` equals `true`; `DO_NOT_TRACK=1`, dbt's spelling in Stage 20, does not. The attempt
+    shows neither set in the space. The allow-list held.
+- **[user] 2.1**, `data.py`:
+
+  ```
+  fetched 7043 rows, 970457 bytes, from https://raw.githubusercontent.com/IBM/telco-customer-churn-on-icp4d/master/data/Telco-Customer-Churn.csv
+  raw: s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/data/raw/telco.csv
+  prepared: 7032 rows, 11 dropped for a blank TotalCharges
+  train: 4922 rows -> s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/data/train.csv
+  validation: 1054 rows -> s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/data/validation.csv
+  test: 1056 rows -> s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/data/test.csv
+  ```
+- **[Claude] 2.1's readings.** One proxy line,
+  `2026-11-21T23:08:52+0000 10.20.54.175 CONNECT raw.githubusercontent.com:443 200 979031 1923 TCP_TUNNEL`,
+  the CSV's 970,457 bytes and the TLS handshake. Verification xxvi: yes. The four objects read 970457,
+  151945, 32496 and 32696 bytes, `LastModified` 23:08:53 to 23:08:54, each `aws:kms` under the project key
+  with the bucket key; the rows match the step's 7,043, split 4922/1054/1056 of 7,032. A second S3 Control
+  tunnel, `200 9301 12888 TCP_TUNNEL`, closed at 23:08:53, the second the objects were written.
+- **[Claude] JupyterLab's telemetry loop, read in the proxy's log.** From `jup`, a pair every 2.5 to 2.6 s,
+  each pair the same sizes:
+  `CONNECT cognito-identity.us-east-1.amazonaws.com:443 200 8072 2932 TCP_TUNNEL` and
+  `CONNECT client-telemetry.us-east-1.amazonaws.com:443 200 5605 3637 TCP_TUNNEL`. 1,529 pairs came from
+  10.20.38.182 between 20:17:53 and 21:23:15, the old app's life from its UI's first minutes to its
+  idle delete, and the loop started again from 10.20.54.175 at 23:07:53 (49 pairs by 23:09:57). The
+  `code` space's addresses carry none, where 6d's log read the pair once per Code Editor start. Both
+  names pass the compute plane's `.amazonaws.com` entry. About 6.6 KB leave per pair, 9.2 MB an hour per
+  open JupyterLab app, and 19 MB arrive. The loop did not hold the app open: its last pair closed a
+  second after the delete. The component that sends it is not identified, and no file of the repository
+  names `client-telemetry` but 6d's and Stage 19's logs.
