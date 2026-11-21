@@ -4058,3 +4058,56 @@ log, `awsds-infra-prod`. Times UTC.
   open JupyterLab app, and 19 MB arrive. The loop did not hold the app open: its last pair closed a
   second after the delete. The component that sends it is not identified, and no file of the repository
   names `client-telemetry` but 6d's and Stage 19's logs.
+
+## 2026-11-21 — Day 2's sitting B: 2.2 (a) and (b), and the training pair applied
+
+Written by Claude in the session the orchestrator started. The user ran `train.py` and `env` in the `jup`
+space and pasted their output, verbatim below except the account id, written `<Sandbox Account 1>`.
+Claude's readings and the apply ran as `awsds-infra-sandbox-1` (Sandbox Account 1), the apply on the user's
+words in this session's chat, *"Autorizo o apply do par"*. Times UTC.
+
+- **[user] 2.2 (a) and (b)**:
+
+  ```
+  2026/11/21 23:19:34 INFO mlflow.tracking.fluent: Experiment with name 'ml-demo-xgboost' does not exist. Creating a new experiment.
+  ml-demo-xgb-untagged-20261121-231933: created
+  admitted, contrary to the stage's expectation: stopped
+  🏃 View run ml-demo-xgb-untagged-20261121-231933 at: https://mlflow.sagemaker.us-west-2.app.aws/#/experiments/2/runs/b5466f46bf424ac3b1de029f0041ab18
+  🧪 View experiment at: https://mlflow.sagemaker.us-west-2.app.aws/#/experiments/2
+  ml-demo-xgb-tagged-20261121-231943: refused
+  AccessDeniedException: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform: sagemaker:AddTags on resource: arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:training-job/ml-demo-xgb-tagged-20261121-231943 because no identity-based policy allows the sagemaker:AddTags action
+  🏃 View run ml-demo-xgb-tagged-20261121-231943 at: https://mlflow.sagemaker.us-west-2.app.aws/#/experiments/2/runs/0799746e3de245368186293e8332e751
+  🧪 View experiment at: https://mlflow.sagemaker.us-west-2.app.aws/#/experiments/2
+  ```
+
+  and `env | grep -i -E 'botocore|plugin'` printed
+  `BOTOCORE_EXPERIMENTAL__PLUGINS=S3AccessGrantsPlugin=aws_s3_access_grants_boto3_plugin.s3_access_grants_plugin`.
+- **[Claude] (a), admitted.** `train.py untagged` deletes `Tags` from its request, yet CloudTrail's
+  `CreateTrainingJob` at 23:19:36, from 10.20.54.175 through `vpce-02feedaa4ad58acf4` with the user's
+  profile name as source identity, records `requestParameters.tags` with seven keys:
+  `sagemaker:user-profile-arn`, `sagemaker:domain-arn`, `sagemaker:space-arn` (`space/d-m8m0uefej9kb/jup`),
+  `AmazonDataZoneProject` `avhvbqn37ty7m8`, `AmazonDataZoneScopeName` `dev`, `AmazonDataZoneUser` (the
+  user's id) and `AmazonDataZoneDomain` `dzd-d8yrvx1ko7im6o`; `list-tags` on the job reads the same seven.
+  No policy on the role allowed `AddTags`, as (b) shows. Who composes the seven is not read: the space's
+  only botocore plugin is the S3 Access Grants plugin, which also accounts for 1.6's S3 Control calls; the
+  blueprint domain's `TagPropagation` reads `None` (`ExecutionRoleIdentityConfig` `USER_PROFILE_NAME`);
+  the four `AmazonDataZone*` keys are four of the nine the space and its user profile carry, without
+  `ProjectS3Path`, `AmazonDataZoneStage`, `AmazonDataZoneBlueprint`, `AmazonDataZoneDomainAccount` and
+  `AmazonDataZoneDomainRegion`. The job: `Stopped` at 23:19:39, no `TrainingStartTime`, no billable time;
+  isolation and inter-container encryption on, `ml.m5.xlarge`, the project key on the volume, two subnets.
+  The step's expectation for (a) was wrong for a notebook in a space: there the request that names no tag
+  is admitted. `SUP-405`.
+- **[Claude] (b), refused as expected.** CloudTrail's event at 23:19:44, `errorCode` `AccessDenied`, the
+  message above, the same endpoint and source; `DescribeTrainingJob` of the name reads *"Requested resource
+  not found"*: nothing was created. It is `SUP-267`'s exclusion of the `AmazonDataZone*` keys, met by a key
+  the caller names.
+- **[Claude] What (a) leaves in place.** The training pair stays where decision 7 put it: a workflow's
+  operator names the tag, and 2.2 (c) and 2.3's negatives are `train.py tagged`'s variants.
+- **[Claude] Order 6, the training pair applied.** At 23:25 the hub's session and the orchestrator were
+  told; the other three peers were idle on unrelated work. `sandbox/workflows/` planned from this tree,
+  *"No changes."* at 23:24:43. On the user's words, the plan saved at 18:57 (Terraform 1.17.2) applied
+  from 23:29:37 to 23:29:49: *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*.
+  `awsds-sandbox-workflows` reads version `v7` (23:29:46), nine statements, `DescribeATrainingJobNoProjectHolds`
+  and `TagATrainingJobWithTheCallersProject` among them. With `-var training_pair_enabled=true`, *"No
+  changes."* at 23:30:36. The default is `true` in this branch, planned at 23:31:40, *"No changes."*; a plan
+  from `main` removes the pair until the branch merges (Lesson 79).

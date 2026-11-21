@@ -390,7 +390,7 @@ carries no project tag, and `AddTags` allowed for that one key with the caller's
 | Resource type | `sandbox/workflows/` | `<env>/studio/workflows.tf`, the deployment projects |
 |---|---|---|
 | Processing job | held | held |
-| Training job | written 2026-11-19 behind `training_pair_enabled`, applied after 2.2's readings (9.5) | held since 2026-11-16 for `app-etl-train`, and removed when that workflow retires (9.11): no target trains `app-ml` |
+| Training job | written 2026-11-19 behind `training_pair_enabled`, applied 2026-11-21 after 2.2's readings (9.5) | held since 2026-11-16 for `app-etl-train`, and removed when that workflow retires (9.11): no target trains `app-ml` |
 | Transform job | applied 2026-11-19 (9.5) | applied 2026-11-17 (9.5) |
 | SageMaker model, the tag alone | applied 2026-11-19 (9.5) | applied 2026-11-17 (9.5) |
 | Model package, on the stage's group and its versions: `CreateModelPackage`, `ListModelPackages` and `DescribeModelPackage`, and never `UpdateModelPackage` | `CreateModelPackage` of a `PendingManualApproval` version in the application's own group, applied 2026-11-19; AWS's policy gives the list, the describe and the approval, the member's in the portal (9.5) | applied 2026-11-17 (9.5, decision 16 (b)) |

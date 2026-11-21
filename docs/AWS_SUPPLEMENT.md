@@ -3876,6 +3876,22 @@ entry is still true is the reading.
   account data key in Staging (2026-10-25 23:37 UTC) and Production (2026-10-26 00:27:20 UTC). Where:
   `log-stage-10-orchestration-promotion.md`, 2026-10-25; `AWS_STATE.md` `EXC-22`.
 
+- `SUP-405` **A `CreateTrainingJob` sent from a notebook in a SageMaker Unified Studio space with no tags
+  is recorded with seven and admitted without the caller's `sagemaker:AddTags`, while the same request
+  naming `AmazonDataZoneProject` is refused as `sagemaker:AddTags`** (measured 2026-11-21 in Sandbox, Stage
+  17 2.2). `train.py untagged` deleted `Tags` from its boto3 request; CloudTrail's event at 23:19:36 recorded
+  `requestParameters.tags` with `sagemaker:user-profile-arn`, `sagemaker:domain-arn`, `sagemaker:space-arn`,
+  `AmazonDataZoneProject`, `AmazonDataZoneScopeName`, `AmazonDataZoneUser` and `AmazonDataZoneDomain`, and
+  the job `ml-demo-xgb-untagged-20261121-231933` carried the same seven, though no policy on the project
+  role allowed `AddTags`. Eight seconds later the request whose `Tags` named `AmazonDataZoneProject` read
+  *"not authorized to perform: sagemaker:AddTags ... because no identity-based policy allows the
+  sagemaker:AddTags action"* (`SUP-267`'s exclusion). The composer of the seven is not read: the space's
+  `BOTOCORE_EXPERIMENTAL__PLUGINS` names the S3 Access Grants plugin alone, the blueprint domain's
+  `TagPropagation` reads `None`, and the four `AmazonDataZone*` keys are four of the nine the space and its
+  user profile carry. A notebook in a space creates a training job without the training pair by naming no
+  tag; a workflow's operator names it and needs the pair (`sandbox/workflows/`). Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-21.
+
 ## MWAA
 
 ### MWAA Serverless: workflows and the API
