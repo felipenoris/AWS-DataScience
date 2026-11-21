@@ -3670,3 +3670,43 @@ Formation admin seats surfaced from an unrelated plan ([Lesson 31](../plan/lesso
 row is long, it is read first by anyone planning a pass, and nothing mechanical checks it against the
 bodies it summarises. Recorded here rather than turned into a rule: the gate that would catch it does not
 exist, and inventing one on the strength of three occurrences is a bigger claim than the evidence carries.
+
+---
+## 2026-11-21 — Unified Studio's resource blueprints read against the domain, and the instruments for their controls
+
+*Provenance: **this entry is Claude's**, written in a session of its own: the user reported a project's new
+*Resource blueprints* page (*"O SMUS agora tem um menu "Resource blueprints""*) and answered *"Sim,
+começar"* to the adjustments Claude proposed. Reads only, as the infrastructure user through
+`awsds-infra-data`, `awsds-infra-sandbox-1`, `awsds-infra-staging`, `awsds-infra-prod` and
+`awsds-infra-identity`; nothing applied. The controls it reads, the blueprint configurations and their
+grants, are this stage's (step 1.7, `grants.tf`), and 6d's log is a peer session's while §N.9's day 1 runs.
+Times are UTC.*
+
+- **[Claude] The release**, read 2026-11-20 from AWS's release notes, the What's New post, the admin guide's
+  overview and the four pages under it, the user guide's page and botocore 1.44.8 (2026-11-20 21:09): a
+  project's *Resource blueprints* page lists its environments and deploys a blueprint from a gallery, which
+  a blueprint authorization grant decides, as the configuration's provisioning role. `SMUS.md` §Resource
+  blueprints and `upstream-releases.md` carry it.
+- **[Claude] The domain**, read before 02:48: 24 managed blueprints, unchanged; five profiles and ten
+  projects, each project with a profile and none in the `ADMIN` category; 19 configurations, each naming its
+  account's `awsds-<env>-smus-provisioning` and holding one `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant,
+  `CONTRIBUTOR` on the root domain unit, children excluded. The root unit has no child, no `CREATE_PROJECT`
+  grant and four `CREATE_PROJECT_FROM_PROJECT_PROFILE` grants; no account holds a `ToolingLite`
+  configuration. `ListPolicyGrants` refuses the type on a domain unit, *"EntityType: DomainUnit is not
+  applicable for PolicyType: CreateEnvironmentFromBlueprint"*; a configuration's grants are read on
+  `ENVIRONMENT_BLUEPRINT_CONFIGURATION` with `<account-id>:<blueprint-id>`, the configuration's own account.
+- **[Claude] `US-14`** in `./aws/studio.py`, with section 3's `GRANTS` column: each configuration's grants
+  read in its own account and judged against `grants.tf`'s one grant (`INV-24`). The run ending 03:32:18
+  read it passing on 1 configuration in Data Governance, 14 in Sandbox and 2 in each target, *"0 check(s)
+  FAILED."*; its exit 1 is the persona profiles', whose session holds no token. On synthetic grants the
+  judge failed every other shape: a second grant, `OWNER`, children included, another unit, one project, a
+  user-created designation, a user principal, and none.
+- **[Claude] `make status`** (`scripts/slices.py`) lists in every account the EMR Serverless applications
+  `STARTING`, `STARTED` or `STOPPING` and the OpenSearch Serverless collections in any status but `DELETING`
+  and `FAILED`, each unpriced and making the total a floor. The run at 03:35 read none in the five accounts,
+  beside a peer sitting's hub, `sandbox/egress`, `sandbox/probes` and four Studio apps in Sandbox. On canned
+  listings an application `STARTED` and collections `ACTIVE` and `UPDATE_FAILED` printed, `DELETING` and
+  `FAILED` did not, and a refused listing took the `UNREADABLE` path.
+- **[Claude] The records**: `INV-24`; `aws/INDEX.md`; Stage 17 9.6 and the waiting list's gallery reading;
+  Stage 21 2.4 and 2.9; `SMUS.md`'s `ToolingLite` row and §Resource blueprints; `promotion.md` §R; the
+  `Makefile`'s help.
