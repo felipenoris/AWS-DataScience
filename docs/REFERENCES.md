@@ -740,6 +740,9 @@
   - Publishing lineage programmatically, the operations `PostLineageEvent`, `GetLineageEvent`,
     `ListLineageEvents`, `DeleteLineageEvent`, `QueryGraph`, `GetLineageNode` and `ListLineageNodeHistory`:
     <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-apis.html>.
+  - The authorization and API pages read again 2026-11-21, for Stage 20's 3.4 and xv: neither names who may
+    call `DeleteLineageEvent` or what it removes (`SUP-401`), nor a check of a posted event against the
+    dataset's owning project (`SUP-402`).
   - The graph in the portal: dataset, job and job-run nodes, column lineage *"when available in dataset
     nodes"*, a node's versions; in IAM mode a server-side *Query Graph mode* of 1 to 5 hops and a
     client-side *Event Timestamp mode*; a sample graph under *Try sample data lineage*:
@@ -2323,6 +2326,8 @@
   user read it there the same day: <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-console.html>.
 
 - Querying Apache Iceberg tables with Athena: <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg.html>.
+
+- Renaming an Iceberg table with Athena, and managing Iceberg tables (read 2026-11-21, for Stage 20 2.5's table swap): neither page names a permission or says how a rename is carried out, which the trail shows as a create and a delete after Glue's Iceberg REST endpoint refuses `renameTable` (`SUP-400`): <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg-alter-table-rename.html> and <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg-managing-tables.html>. Glue's Iceberg REST pages, read again the same day, the connection page listing the endpoint's operations without `RenameTable`: <https://docs.aws.amazon.com/glue/latest/dg/iceberg-rest-apis.html> and <https://docs.aws.amazon.com/glue/latest/dg/connect-glu-iceberg-rest.html>.
 
 - Iceberg table maintenance with Athena (`OPTIMIZE`, `VACUUM` — compaction and snapshot expiration): <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg-data-optimization.html>.
 
@@ -4235,6 +4240,7 @@
     - *AWS Systems Manager endpoints and quotas* — the per-Region list the SageMaker guide points the laptop at (`ssm`, `ssmmessages`, `ec2messages`, each with its `amazonaws.com` and, for `ssm`, an `api.aws` spelling): <https://docs.aws.amazon.com/general/latest/gr/ssm.html>.
     - *Attributes for access control* (IAM Identity Center) — the mechanism decision due 4's `IDC_UserName` rests on: attributes selected on the instance's *Settings → Attributes for access control* page (API `CreateInstanceAccessControlAttributeConfiguration`) arrive in the account as session tags, readable as `aws:PrincipalTag/<key>` in every IAM policy type; with the Identity Center directory as the source, the values come from the user's own attributes: <https://docs.aws.amazon.com/singlesignon/latest/userguide/attributesforaccesscontrol.html> and <https://docs.aws.amazon.com/singlesignon/latest/userguide/configure-abac.html>.
     - *`session-manager-plugin`, `websocketutil.go`* — the plugin dials with gorilla's `websocket.DefaultDialer`, whose `Proxy` is `http.ProxyFromEnvironment`: the data channel honours `HTTPS_PROXY` if the variable reaches the process, which is 7.5's measurement rather than a documented claim: <https://github.com/aws/session-manager-plugin/blob/mainline/src/websocketutil/websocketutil.go>.
+  - The pages read again on 2026-11-21, for 6d 7.6 and the Toolkit's listing: *Local IDE support*, *Set up Remote IDE* and *Connect your Remote IDE*. None states that `StartSession` on a Unified Studio space refuses every client but the AWS Toolkit and the web IDEs (`SUP-397`), which domain the Toolkit lists spaces from (`SUP-398`), or the deep link's browser refresh and its 40-second limit (`SUP-399`).
 
 - Workflows in SageMaker Unified Studio — the Workflows tool is Amazon MWAA, in both a *serverless* and a *provisioned* form, and existing MWAA environments can be connected to a project. It confirms D7/D28: the `CLAUDE.md` "workflows" feature and Stage 10's orchestration comparison are the same surface (`docs/plan/open-questions.md` item 15): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/workflow-orchestration.html>.
 

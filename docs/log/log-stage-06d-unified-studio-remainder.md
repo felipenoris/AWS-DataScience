@@ -4638,3 +4638,92 @@ project role; Claude's reads as the infrastructure user with `InfrastructureAcce
   the project's group, as the three runs with no network did, and its cell cannot leave: the domain's VPC
   binds the request. 4.7 closes, and `TM-34` with it. Decision 17 (a) stands, and (b)'s deny does not
   follow in Sandbox. Left of 4.7: the schedule's delete at step 12.
+
+## 2026-11-21 — Day 1: 7.6, the tag pair, and the two remote clients
+
+*Claude, in the same session. The portal's, the laptop's and the space's acts are the user's, as the Data
+Scientist User; the space's terminal runs as `eighth-experimentation`'s project role. Claude's reads as the
+infrastructure user with `InfrastructureAccess`, through `awsds-infra-sandbox-1` (account Sandbox Account
+1), and the laptop's own files. Times are UTC.*
+
+- **[user] The Toolkit**: VS Code 1.147.0, AWS Toolkit 4.20.0 (the latest release, 2026-11-19),
+  Remote-SSH 0.128.0. It signed in to the domain and opened `eighth-experimentation`, and listed no space,
+  the `vscode` space `InService` with remote access `ENABLED`.
+- **[Claude] Why it listed none**: the Toolkit's six `ListSpaces` and `ListApps` pairs from 07:23:08 to
+  07:31:27, `aws-sdk-js` from the laptop's address, named `domainIdEquals` `d-p6gthxc82ckg` alone, the
+  project's `Tooling` domain, which holds no space since 2.7. The portal's listings in the same minutes
+  named `d-m8m0uefej9kb` as well, the blueprint's domain, where the space is. The Toolkit's bundle reads
+  the domain from the project's `Tooling` environment, its provisioned resource `sageMakerDomainId`, and
+  filters the spaces to the signed-in user's profile (`SUP-398`).
+- **[user] The deep link**, the space's *Open in VS Code* in the portal:
+  - `StartSession` at 07:33:11 as the project role, session `<user id>@<environment id>`, from the laptop's
+    address with a browser's user agent and no endpoint, on `d-m8m0uefej9kb/vscode`: answered.
+  - The Toolkit took the link at 07:33:15, downloaded its own `session-manager-plugin` from
+    `s3.amazonaws.com` and installed it by 07:33:20, and opened the remote window at 07:33:24. The first
+    SSH connection read the session from the Toolkit's local server, HTTP 200, at 07:33:26, and reached
+    the space at 07:33:29.
+  - The laptop's `remote.SSH.localServerDownload` `always` had the laptop fetch the VS Code Server from
+    `update.code.visualstudio.com` (07:33:30 to 07:33:34) and copy it with `scp`, a second SSH
+    connection. It asked a new session at 07:33:37 and read HTTP 202 once and HTTP 204 seven times, 5
+    seconds apart, then *"Error: Timed out after 8 attempts waiting for session to be ready."* and
+    *"scp: Connection closed"* at 07:34:18.
+  - `~/.aws/.sagemaker-space-profiles` then held the link's first request `consumed` and the second
+    `pending`, with no session. The trail holds no `StartSession` after 07:33:11, so the browser's refresh,
+    which the local server opens at the portal's refresh URL with a callback to `localhost`, never reached
+    the API (`SUP-399`). Its cause is unread: Chrome is the laptop's default browser, and a link opens in
+    the last profile used.
+- **[user] The calls from `jup-ai`'s terminal**, the project role's session `SageMaker`, from 10.20.97.84
+  through `vpce-042889be2db64615e` (`sagemaker.api`), `aws-cli/2.37.0`, `sourceIdentity` the user's id:
+  - 07:42:23, the owner's `d-m8m0uefej9kb/vscode`: `ValidationException`, *"StartSession for SageMaker
+    Unified Studio Domain is supported only from Unified Studio clients - AWS Toolkit and SageMaker
+    Unified Studio Web IDEs. Retry your request from a supported client."*;
+  - 07:42:24, `test-experimentation`'s `d-jaid1tvg20jv/vscode`: `AccessDenied`, *"… is not authorized to
+    perform: sagemaker:StartSession on resource: arn:aws:sagemaker:us-west-2:<Sandbox>:space/d-jaid1tvg20jv/vscode
+    because no identity-based policy allows the sagemaker:StartSession action"*;
+  - 07:42:25, the contributor's `d-m8m0uefej9kb/code`: `AccessDenied`, the same wording on that space.
+- **[Claude] 7.6 closes**: both refusals name an identity-based policy, no boundary and no service control
+  policy, so AWS's tag-conditioned Allow (`RI-3`) is what evaluated on another user's space and on another
+  project's space. The positive control is the deep link's `StartSession`, answered on the owner's space.
+  The owner's call from the terminal met a client check rather than IAM, and that check comes after
+  authorization: the same client, from the same session, read the identity refusal on the other two
+  spaces (`SUP-397`).
+- **Left of the day, to the next sitting with the hub and `sandbox/egress/` up**: 7.5's monitored half,
+  by the deep link alone, since the Toolkit lists no space; 7.7, which needs a connected session; 6.1
+  (viii)'s Code Editor half; and 4.7's schedule, which fired at 03:54 and fires no more. The deep link's
+  second session is watched in the browser: the Data Scientist User's Chrome profile in front, any prompt
+  answered within the script's 40 seconds.
+
+## 2026-11-21 — Day 1: the spaces deleted, the lowering and §R's readings
+
+*Claude, in the same session. The portal's acts are the user's as the Data Scientist User, the downs the
+user's as the infrastructure user with `InfrastructureAccess`. Claude's reads through
+`awsds-infra-sandbox-1` (Sandbox Account 1) and `awsds-infra-prod` (Production), and `make status`. Times
+are UTC.*
+
+- **[user] A space in the `Tooling` domain**, by the portal as `eighth-experimentation`'s project role:
+  `CreateSpace` `vscode` in `d-p6gthxc82ckg` at 07:34:29, its JupyterLab app at 07:34:34 (the portal's own
+  `CreateApp` read `ResourceInUse` beside the service's), the app deleted at 07:35:04 and the space at
+  07:35:09. The Toolkit's last listing was at 07:31:27, so none saw it.
+- **[Claude] The idle shutdowns**, `AWSServiceRoleForAmazonSageMakerNotebooks` through
+  `global.workflows.looseleaf.im.amazonaws.com`: `jup-ai`'s app at 04:39:06, `eighth-experimentation`'s
+  `vscode` at 04:40:56, `test-experimentation`'s `vscode` at 04:40:41 and again at 06:43:09, the
+  contributor's `code` at 05:04:31, each 70 to 76 minutes after its `CreateApp`, under 5.1's 60-minute
+  threshold. The user started `test-experimentation`'s `vscode` again at 05:27:00, `jup-ai` at 06:53:49 and
+  `eighth-experimentation`'s `vscode` at 07:09:41.
+- **[user] The spaces deleted** through the portal: `app-dbt-dev`'s `jup` app at 07:09:24; from 07:46:33
+  to 07:47:16 `eighth-experimentation`'s `vscode` and `jup-ai`, apps then spaces, `app-dbt-dev`'s `jup` and
+  `test-experimentation`'s `vscode`. The contributor's `code` stays, with no app, billing its volume.
+- **[user] The downs**: `make down ENV=sandbox`, the interface endpoints deleted from 07:50:30 to 07:53:47
+  (one `Client.RequestLimitExceeded` at 07:50:48, retried at 07:50:50), then `make hub-down`, the two hosts
+  stopped at 07:56:33 and 07:56:35.
+- **[Claude] §R's readings**, from 08:00: `./aws/egress.py` on the three accounts, *"all checks passed"*,
+  no interface endpoint, no NAT gateway, 0.000 USD/h; `make status` *"estimated burn: USD 0.0000/h"*, the
+  proxy, VPN and GitLab hosts `stopped`, no EMR Serverless application and no OpenSearch Serverless
+  collection; no Studio app in Sandbox's nine domains, and one space, the contributor's `code`.
+- **[Claude] 4.7's schedule**, `to-run-in-background-tytue9` in the group
+  `SageMakerUnifiedStudio-avhvbqn37ty7m8-dev`: `ENABLED`, `at(2026-11-21T00:50:00)` in
+  `America/Sao_Paulo`, `ActionAfterCompletion` `NONE`, so it stays and fires no more. Step 12's delete
+  waits.
+- **[Claude] Left of day 1**: 7.5's monitored half, 7.7 and 6.1 (viii)'s Code Editor half, on a new
+  remote-access Code Editor space of the owner's in `eighth-experimentation`, the deep link the one method
+  (`SUP-398`, `SUP-399`); then step 12's schedule delete and the contributor's `code` space.

@@ -2037,3 +2037,22 @@ UTC.*
     reading of 2026-11-11.
   - Rows 1 to 16 of sitting A are done. Row 17 joins 6d's lowering at the day's end (`promotion.md`
     §N.9.3 step 10).
+
+## 2026-11-21 — Sitting A: 2.7, the downs
+
+*Claude, in the same session. The portal's acts are the user's as the Data Scientist User, the downs the
+user's as the infrastructure user with `InfrastructureAccess`; Claude's reads through
+`awsds-infra-sandbox-1` (Sandbox Account 1) and `make status`. Times are UTC.*
+
+- **[user] The space**: `jup`'s app deleted at 07:09:24 and the space itself at 07:46:59, through the
+  portal.
+- **[user] The downs**: `make down ENV=sandbox`, its interface endpoints deleted from 07:50:30 to 07:53:47,
+  and `make hub-down`, the hosts stopped at 07:56:33 and 07:56:35.
+- **[Claude] `make status` and §R's readings**, from 08:00: 0.0000 USD/h, no interface endpoint, no NAT
+  gateway and no Studio app in Sandbox (6d's log carries the readings).
+- **[Claude] `$HOME/tmp/stage20`** moved to the Trash as `stage20-2026-11-21`, 102 MB: 2.0's `source.tar`
+  and `app-dbt.tar`, the job's tar in `job/`, the extracted tree and the nine event files of 2.3, whose
+  readings the 2.3 entry holds. 2.0's commands rebuild the folder from `rm -rf`.
+- **[Claude] Sitting A is done**, rows 1 to 17. Left: pass 5 after Stage 19's 4.12, on §N.10's day 1; 7.1
+  and Rollback's step 6, which wait on an identity that may call `DeleteLineageEvent` (xv); pass 8's
+  remainder in R1 or R2, before 2026-12-18.
