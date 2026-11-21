@@ -3811,3 +3811,28 @@ sessão."* Reads only, as the infrastructure user through `awsds-infra-sandbox-1
   Glue reading is a release fact (`upstream-releases.md`).
 - **[Claude] The records**: `INV-25`; `aws/INDEX.md`; `SMUS.md`'s `S3Bucket` measurement;
   `upstream-releases.md`'s RAM share reading.
+
+## 2026-11-21 — The domain's RAM share moved to version 14
+
+*Provenance: **this entry is Claude's**, in the session of the entries above. The user answered *"Sim,
+mover"* to Claude's question *"Movo o share RAM do domínio para a versão 14?"*, asked after the reading of the
+entry above. The write ran as the infrastructure user through `awsds-infra-data` (`InfrastructureAccess`,
+Data Governance), and the readings also through `awsds-infra-sandbox-1`, `awsds-infra-staging` and
+`awsds-infra-prod`. The two peer sessions on this machine were told before the write and after the reading.
+Times are UTC.*
+
+- **[Claude] Before**, read by 05:45:20: the share `DataZone-EXTENDED_ACCESS-<domain id>-ORG-ONLY` `ACTIVE` and
+  `ASSOCIATED` at version 13, no longer the default. The domain's resource policy held two statements, the
+  organization principals' and one of 20 actions for `sagemaker.amazonaws.com`. Sandbox, Staging and Production
+  were refused `GetProjectProfile` on `experimentation`, *"because no resource-based policy allows the
+  datazone:GetProjectProfile action"*, and `ListEntityOwners` on the root domain unit in the same wording.
+- **[Claude] The move**, 05:45:59: `aws ram associate-resource-share-permission --resource-share-arn <share>
+  --permission-arn arn:aws:ram::aws:permission/AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess
+  --permission-version 14 --replace --profile awsds-infra-data` answered `{"returnValue": true}`.
+- **[Claude] Read back**: at 05:46:17 the association at version 14, the default, `lastUpdatedTime` 05:46:02,
+  and the share's own `lastUpdatedTime` still 2026-08-21; the organization principals' statement held version
+  14's 173 actions and no other, and the service principal's was unchanged. At 05:46:23 `GetProjectProfile`
+  answered `experimentation` `ENABLED` in the three accounts, and `ListEntityOwners` stayed refused in the same
+  wording (`SUP-360`).
+- **[Claude] The records**: `SUP-360` and `SUP-157`; `upstream-releases.md`'s next reading; `catalog.md`'s
+  designations paragraph.

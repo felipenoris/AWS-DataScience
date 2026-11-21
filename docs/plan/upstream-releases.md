@@ -281,11 +281,10 @@ None is applied here; each is a change of its own, with the plan read first.
 
 The next reading is due 2026-11-27.
 
-- **The domain's RAM share**, at version 13 of `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`
-  since 2026-11-19 and no longer the default: version 14, dated 2026-11-18 and read 2026-11-21, adds
-  `GetProjectProfile` and eight other actions (`SUP-360`), so the refusal the CLI's deploys meet in each
-  target (`SUP-157`) lasts until the share is moved, a RAM write in the domain's account and the user's to
-  make; and what its Data App and system-table actions serve.
+- **The domain's RAM share**, at version 14 of `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`
+  since 2026-11-21, the default: the permission's next version, which the share does not take by itself
+  (`SUP-360`), and what its Data App and system-table actions serve. Version 14 added `GetProjectProfile`,
+  which the CLI's deploys were refused in each target (`SUP-157`).
 - **The provisioning role's RAM grant** (v85): the organization's RAM setting and the `allowExternalPrincipals`
   of a `DataZone*` share, and what makes the service create one. Whether a space reaches AgentCore's endpoint
   for v48's `InvokeWebSearch`.

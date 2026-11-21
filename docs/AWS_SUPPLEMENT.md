@@ -2075,7 +2075,8 @@ entry is still true is the reading.
   environment and an id that never existed receive the same wording (read the same hour), so a non-member
   cannot tell a deleted environment from one it may not read; `./aws/studio.py` `US-15` reads the
   environment's stack in the resource's account instead. Version 14 of the share's permission names
-  `GetProjectProfile` (`SUP-360`). Where: `log-stage-06a-unified-studio.md`, 2026-11-21.
+  `GetProjectProfile`, which answers from the three member accounts since the share's move to it that day
+  (`SUP-360`). Where: `log-stage-06a-unified-studio.md`, 2026-11-21.
 
 - `SUP-158` **An IAM role in a DataZone domain is a group and one user profile per session name, and a
   policy grant takes the group.** Its ARN resolves as a user identifier to one session's user profile, and
@@ -2228,7 +2229,14 @@ entry is still true is the reading.
   `StartMetadataGenerationRun`, `GetAccountPool` and `ListAccountsInAccountPool`. Neither version names
   `ListEntityOwners`: Sandbox's `InfrastructureAccess` was refused it on the root domain unit, *"because no
   resource-based policy allows the datazone:ListEntityOwners action"*, and Data Governance's read the unit's
-  one owner. Where: `log-stage-06a-unified-studio.md`, 2026-11-21.
+  one owner. The share moved to version 14 at 05:45:59Z on the user's word, `associate-resource-share-permission
+  --permission-version 14 --replace` answering `{"returnValue": true}`; the association read
+  `lastUpdatedTime` 05:46:02Z and the share's own stayed at 2026-08-21. At 05:46:17Z the domain's
+  org-principals statement held version 14's 173 actions and no other, beside the unchanged statement of 20
+  actions for `sagemaker.amazonaws.com`. At 05:46:23Z `GetProjectProfile` answered from Sandbox, Staging and
+  Production as `InfrastructureAccess`, refused at 05:45:20Z *"because no resource-based policy allows the
+  datazone:GetProjectProfile action"*, and `ListEntityOwners` stayed refused in all three. Where:
+  `log-stage-06a-unified-studio.md`, 2026-11-21.
 
 - `SUP-361` **`list-environment-blueprints` and `get-environment-blueprint` date one managed blueprint
   differently** (measured 2026-11-14 on `awsds-studio`, `upstream-releases.md`'s re-read). `datazone
