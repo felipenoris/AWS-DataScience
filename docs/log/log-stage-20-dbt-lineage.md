@@ -1951,3 +1951,89 @@ Governance). Times are UTC.*
 - **[user] Decision 5 keeps (a)**: *"Manter (a)"*, answering Claude's question on 3.3's readings (ix).
   dbt's exit code decides the task, and a failed post stays a warning in the task's log. The stage file's
   decision 5 carries the date.
+
+## 2026-11-21 — Sitting A: 4.5, a processing job without isolation
+
+*Claude, in the same session. The tar, the deploy and the run are the user's, in `jup`'s terminal as
+`app-dbt-dev`'s project role; Claude's reads as the infrastructure user with `InfrastructureAccess`, through
+`awsds-infra-sandbox-1` (account Sandbox Account 1) and `awsds-infra-prod` (account Production). Times are
+UTC.*
+
+- **[user] The tar and the exports**: *"app-dbt-job.tar: OK"*, the tree extracted to `job/app-dbt`; 2.2's
+  values, then `DEV_PROJECT_SG`, `DEV_PROJECT_KEY_ARN` and `JOB_IMAGE_URI`, the house image by digest in
+  Production's registry (`sha256:658c05d1…`).
+- **[user] The deploy**: seven files synced to `shared/app-dbt/`; `app_dbt_app_dbt_dev_app_dbt` and
+  `app_dbt_app_dbt_dev_app_dbt_probe` updated, `app_dbt_app_dbt_dev_app_dbt_job` created `READY`. The
+  CLI's S3 Access Grants plugin asked `GetDataAccess` for `shared/` and for each definition: eight refusals
+  from 06:45:31 to 06:46:05, from the proxy host's address through Production's S3 gateway endpoint
+  (`SUP-042`, `SUP-093`), as 2.2's deploy read six from 04:04:24. The copies ran on the role's own
+  credentials.
+- **[user] The run**: 2.2's nine `ListTagsForResource` refusals, then *"Successfully started workflow run:
+  yNcXniA0X0rn8G1"*.
+- **[Claude] The copies and the workflow**: under `shared/app-dbt/`, seven objects: `code/app-dbt.zip`
+  26,129,645 bytes, `job/probe.py` 6,103, `workflows/app-dbt-job.yaml` 2,342, `workflows/app-dbt-probe.yaml`
+  7,390 and `workflows/app-dbt.yaml` 3,794, with `glue/load.py` and `inbox/trades.csv` unchanged. Under
+  `shared/operatorFiles/`, three copies, at 06:45:33, 06:45:46 and 06:45:58. The job's workflow `READY`,
+  `manual_only`, created 06:46:06, in the project's two subnets and `sg-040ed6781b8c4449e`, under
+  `CUSTOMER_MANAGED_KEY`.
+- **[Claude] The create**: `CreateProcessingJob` at 06:47:20 as the project role's session
+  `AmazonMWAAServerless`, `Boto3/1.43.1`. It came from the worker's interface `eni-09bca8eafcf24448b` at
+  10.20.102.138 (created 06:46:42 by `AWSServiceRoleForAmazonMWAAServerless`), through
+  `vpce-042889be2db64615e` (`sagemaker.api`). Its `networkConfig`: `enableNetworkIsolation` `false`,
+  `enableInterContainerTrafficEncryption` `true`, the project's two subnets and its group; `ml.t3.medium`,
+  10 GB under the project's key.
+  - SageMaker's checks around the create, as the project role: five `CreateNetworkInterface` answered
+    `DryRunOperation` at 06:47:20 and 06:47:21 (sessions `AnalyticsValidation`, `SageMaker`, and
+    `AmazonMWAAServerless` invoked by `sagemaker.amazonaws.com`), and two `BatchGetImage` from Amazon
+    public addresses.
+  - A `kms:CreateGrant` on the project's key at 06:47:22, as the session `SageMaker` from 32.184.5.219,
+    refused *"because no identity-based policy allows the kms:CreateGrant action"*. The same grant invoked
+    by `sagemaker.amazonaws.com` answered in the same second, and so did the volume's grant by
+    `ec2-frontend-api.amazonaws.com` at 06:47:26. The job ran past the refusal.
+- **[Claude] The job's interfaces**, created by SageMaker as the project role's session `SageMaker` from
+  34.214.211.121, both in `subnet-09d3399d6b0fec93a`: `eni-0d5e959e28a522ec7` at 10.20.127.40 (06:47:53)
+  and `eni-085f0964023533252` at 10.20.72.88 (06:47:55), described
+  `pipeline-<Sandbox>-215bb7e6615b3de8c510cdf43d4c8a59-1` and `-2`. Every call of the container came from
+  the second.
+- **[Claude] The image's pull**: `GetAuthorizationToken` at 06:48:06 from 52.39.237.48, an Amazon public
+  address, `aws-sdk-go`. Then `BatchGetImage` and 42 `GetDownloadUrlForLayer` invoked by
+  `ecr.amazonaws.com`, to 06:49:02, as the project role's session `SageMaker`, and one `BatchGetImage` from
+  52.39.237.48 refused `InvalidParameterException` on `repositoryName`. No call of the pull came through a
+  Sandbox endpoint or from the job's interfaces.
+- **[Claude] The job**: `Completed`, no `FailureReason`; created 06:47:20, `ProcessingStartTime` 06:48:06,
+  `ProcessingEndTime` 06:55:11, the container's lines at 06:54:52 and 06:54:53. The run `SUCCESS` from
+  06:46:36 to 06:57:24, 647 seconds; `job_1`, `SageMakerProcessingOperator`, `SUCCESS` in 612. The polls
+  read the job `Completed` at 06:57:27, and the run `SUCCESS` only at 06:59:00.
+- **[Claude] The job's log**, `/aws/sagemaker/ProcessingJobs`, one line per reading:
+  - Python 3.12.14 as user 1000;
+  - the image's proxy `http://proxy.awsds.internal:3128` and its file, *"no_proxy entries: 73; no_proxy
+    sha256 : 61f1e1646df12c14"*;
+  - `boto3 1.43.75`, and the caller, the project role's session `SageMaker`;
+  - `SELECT 1` `SUCCEEDED` through the project's workgroup, its output under `dev/sys/athena/`, rows
+    `[['_col0'], ['1']]`;
+  - `app_dbt` at `…/dev/data/catalogs/`;
+  - `ListLineageEvents`: 10 events, each `SUCCESS`;
+  - *"on the plane: https://pypi.org/ HTTP 200"* and *"on no plane: http://example.com/ HTTP 403
+    Forbidden"*.
+- **[Claude] The job's calls**, in Sandbox's event history, each from 10.20.72.88 as the project role's
+  session `SageMaker`, `Boto3/1.43.75`, each answered:
+  - `GetCallerIdentity` at 06:54:51 through `vpce-01faaff304e0184b0` (`sts`);
+  - `StartQueryExecution`, two `GetQueryExecution` and `GetQueryResults` from 06:54:51 to 06:54:52 through
+    `vpce-0150fe6c7648118a7` (`athena`);
+  - `GetDatabase` at 06:54:52 through `vpce-015a9ee19ec1b45af` (`glue`);
+  - `ListLineageEvents` at 06:54:52 through `vpce-03abb012f13500645` (`datazone`).
+
+  The job's own log calls came from 52.39.237.48 at 06:54:58: `CreateLogGroup` answered
+  `ResourceAlreadyExistsException`, then `CreateLogStream`.
+- **[Claude] The proxy**, `/awsds/prod/proxy`, both lines stamped 06:54:53: `10.20.72.88 CONNECT
+  pypi.org:443 200 30324 1783 TCP_TUNNEL` and `10.20.72.88 GET http://example.com/ 403 3391 133
+  TCP_DENIED`.
+- **[Claude] 4.5 passes**: the job was created, ended `Completed` and had each call answered, with the
+  proxy at 200 for `pypi.org` and 403 for `example.com`, as `sandbox/probes/` expects them.
+  - xii: yes. A project role in Sandbox creates a job without isolation; 4.4's battery of 2026-11-17 read
+    the processing job `ALLOWED` in Production and the training job `DENY-SCP`.
+  - xiii's Sandbox half: yes. STS, Athena, Glue and the domain answered through their interface
+    endpoints, the proxy passed its allow-list and no name off it. The target's half stays the step's
+    reading of 2026-11-11.
+  - Rows 1 to 16 of sitting A are done. Row 17 joins 6d's lowering at the day's end (`promotion.md`
+    §N.9.3 step 10).
