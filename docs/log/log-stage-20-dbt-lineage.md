@@ -1748,3 +1748,34 @@ Times are UTC.*
   05:02:41 to its `COMPLETE` at 05:03:10; the Glue job's 14 under `default`, from 05:00:38 to 05:01:29.
 - **[Claude] x's half passes**: the swap ran, no rename or drop refused, the grants unchanged; the asset and
   the graph wait on the source's second run.
+- **[user] 2.5's source**: `app_dbt` run again in the portal, *Manage → Data sources*, after the run.
+- **[Claude] The source's run**: `6fipr3qxr7for4`, `PRIORITIZED`, created 05:09:58, `SUCCESS`, `added` 0,
+  `updated` 2, `unchanged` 0, `failed` 0, `lineageSummary.importStatus` `SUCCESS`. The activities: `trades`
+  and `notional_by_desk` `SUCCEEDED_UPDATED`, on the assets `bra0895x5fjzww` and `daefcycb3hhhn4`.
+- **[Claude] The assets keep their ids**, each at revision 2, created by `SYSTEM` at 05:10:00 beside revision
+  1 of 04:34:58, each `DataSourceReferenceForm` naming the run. `notional_by_desk`'s `GlueTableForm` names
+  the new location, `…/notional_by_desk/378cf5f7-…`, and `updateTime` 05:03:04, where revision 1 named
+  `d37c35ec-…` and 04:18:14; the table's description and both columns' descriptions are kept, `persist_docs`
+  having written them on the new table. `trades`' form names `updateTime` 05:01:27, its location unchanged.
+- **[Claude] The graph keeps its nodes**: Data Governance's trail, read through `awsds-infra-data` at
+  05:14:46, holds no `CreateLineageNode` since 04:57, beside 20 `PostLineageEvent`, the Glue job's 14 from
+  05:00:53 to 05:01:29 and dbt's six at 05:03:10 and 05:03:11. Every node gained versions under its own id:
+  the table nodes `6w7hp2vvi8kscw` (`notional_by_desk`) at 05:03:04 and 05:03:10, beside 04:18:14 and
+  04:18:18, and `3s0gk0eg2o68pc` (`trades`) at 05:01:24, 05:01:27 and 05:03:04, beside 04:16:41, 04:16:42
+  and 04:18:14; the job nodes `….build.run` (`6eael36d03lyfk`) at 05:03:04, `….build.test`
+  (`dpv0jnpy6a2ln4`) and the parent (`6fbpvdjy84hq4w`) at 05:03:10; the asset nodes `avyjoalaki4cy8` and
+  `6ljn21swt4l0y8` at 05:10:00, the source's run, beside 04:34:58.
+- **[Claude] The second run's job runs**: `6w7hp2vvi8kscw`'s version at 05:03:04 hangs from the model's run
+  `c5hbxzn5im6lcg` (`….notional_by_desk.build.run/01a1fc7c-a7a7-…`, from 05:02:52 to 05:03:04, upstream
+  `3s0gk0eg2o68pc`), its `JobRunForm` naming the first run's job,
+  `app-dbt-dev.awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run`, and the parent run
+  `01a1fc7c-38ff-…`. The test's run `c8e2sp3c5j8f4g` (`….build.test/01a1fc7c-a7a9-…`, 05:03:10) hangs from
+  the node, whose latest version, the test's, reads downstream that run and the asset node and no upstream.
+  `3s0gk0eg2o68pc`'s versions at 05:01:24 and 05:01:27 hang from the Glue job's runs `4rt71px23p3ksw`
+  (`….overwrite_by_expression.glue_catalog_app_dbt_trades/01a1fc7b-0898-…`) and `3uv1vzb973rh1s`
+  (`….atomic_replace_table_as_select.app_dbt_trades/01a1fc7b-0745-…`), each from the inbox
+  `cvurzd3gyts5qo`.
+- **[Claude] x passes**: the swap leaves `notional_by_desk` a new table at a new location, created 05:02:58,
+  with the first table's grants; the asset keeps its id and takes revision 2 at the new location; the graph
+  keeps its nodes, a dataset node being the table's ARN, which names the table and not its location, and
+  each run adds its job runs under the same jobs and a version to each node.
