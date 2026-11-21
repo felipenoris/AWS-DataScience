@@ -234,7 +234,14 @@ entry is still true is the reading.
   Read again 2026-11-20 on `eighth-experimentation`'s project role: `datazone:StartNotebookRun`,
   `ListNotebooks`, `GetNotebook` and `CreateNotebook` read `implicitDeny` with the domain's ARN in either
   account and `allowed` with no resource named, through `SageMakerStudioProjectRoleMachineLearningPolicy`'s
-  `datazone:*Notebook*` (`log-stage-06d-unified-studio-remainder.md`, 2026-11-20).
+  `datazone:*Notebook*` (`log-stage-06d-unified-studio-remainder.md`, 2026-11-20). A key policy is evaluated
+  once each statement's `Resource` is rewritten from `*` to the key's ARN, and refused as written (measured
+  2026-11-21 in Sandbox, Stage 6a): passed as `--resource-policy` with `Resource` `*`, the call answered
+  `InvalidInput`, *"ResourceNames are not in a valid ARN format: *."*; rewritten, a project role's
+  `kms:GenerateDataKey` and `kms:Decrypt` through S3 read `allowed`, `ResourcePolicy` among the matched
+  statements beside AWS's two project-role policies, the context carrying the Region, the organization,
+  `kms:ViaService`, the encryption context and the role's `KmsKeyId` tag
+  (`log-stage-06a-unified-studio.md`, 2026-11-21).
 
 - `SUP-009` **`iam simulate-custom-policy` ignores `sagemaker:VolumeKmsKey` and `sagemaker:OutputKmsKey`
   when the resource is a job's ARN** (measured 2026-10-18, 6d step 1.3). A `Deny` on `Null` of either key
@@ -2060,7 +2067,15 @@ entry is still true is the reading.
   again 2026-11-19 (Stage 19), after the share's move to version 13 (`SUP-360`): `GetGroupProfile` answered
   from Sandbox, Staging and Production as each account's `InfrastructureAccess`, and `GetProjectProfile` was
   refused in all three, *"because no resource-based policy allows the datazone:GetProjectProfile action"*.
-  Where: `log-stage-19-smus-native-data-product.md`, 2026-11-19.
+  Where: `log-stage-19-smus-native-data-product.md`, 2026-11-19. Read again 2026-11-21 (Stage 6a): the layer
+  confines `GetEnvironment` where it lists environments to anyone. Production's `InfrastructureAccess`, no
+  member of `test-experimentation`, read its five environments with `ListEnvironments` and was answered
+  `GetEnvironment` on one of them, `ACTIVE` in that listing, *"ResourceNotFoundException ... Environment not
+  found"*; Sandbox's, no member of `deploy-production`, read that project's pair the same way. A deleted
+  environment and an id that never existed receive the same wording (read the same hour), so a non-member
+  cannot tell a deleted environment from one it may not read; `./aws/studio.py` `US-15` reads the
+  environment's stack in the resource's account instead. Version 14 of the share's permission names
+  `GetProjectProfile` (`SUP-360`). Where: `log-stage-06a-unified-studio.md`, 2026-11-21.
 
 - `SUP-158` **An IAM role in a DataZone domain is a group and one user profile per session name, and a
   policy grant takes the group.** Its ARN resolves as a user identifier to one session's user profile, and
@@ -2203,7 +2218,17 @@ entry is still true is the reading.
   refusals, though no deploy has run since. RAM's user guide states what this entry measured, where a
   DataZone reader does not look: a share is never moved to a new version by itself, and an AWS managed
   permission's move cannot be reverted once saved. Where: `log-stage-19-smus-native-data-product.md`,
-  2026-11-19.
+  2026-11-19. Read again 2026-11-21 (Stage 6a): version 14 is the default and the only `ATTACHABLE` version,
+  versions 12 and 13 `UNATTACHABLE`, and the share still holds 13, `ASSOCIATED`. `list-permission-versions`
+  dates version 14 2026-11-18T20:03:32Z, earlier than the move of 2026-11-19 at 02:20:31Z that took version
+  13 as the default; `get-permission` answers `creationTime` and `lastUpdatedTime` as the moment of each
+  call, for every version, so a version's date is read from the listing. Version 14 adds nine actions to
+  version 13's 164 in an otherwise identical statement: `GetProjectProfile`, `ListProjectProfiles`,
+  `ListGroupsForUser`, `GetAssetType`, `GetSubscriptionEligibility`, `GetUpdateEligibility`,
+  `StartMetadataGenerationRun`, `GetAccountPool` and `ListAccountsInAccountPool`. Neither version names
+  `ListEntityOwners`: Sandbox's `InfrastructureAccess` was refused it on the root domain unit, *"because no
+  resource-based policy allows the datazone:ListEntityOwners action"*, and Data Governance's read the unit's
+  one owner. Where: `log-stage-06a-unified-studio.md`, 2026-11-21.
 
 - `SUP-361` **`list-environment-blueprints` and `get-environment-blueprint` date one managed blueprint
   differently** (measured 2026-11-14 on `awsds-studio`, `upstream-releases.md`'s re-read). `datazone
@@ -2421,7 +2446,13 @@ entry is still true is the reading.
   leaves v0.6.0. Where: `log-stage-18-staging-deployment-project.md`, the 7.2 entries of 2026-10-20.
 
 - `SUP-174` **Deleting a `Tooling` environment leaves its log group** (measured 2026-10-22, Stage 18 8.1):
-  the stack reached `DELETE_COMPLETE` and `datazone-<project>-dev`, at 731 days, stayed.
+  the stack reached `DELETE_COMPLETE` and `datazone-<project>-dev`, at 731 days, stayed. Read again
+  2026-11-21 in Sandbox (Stage 6a): five such groups of five deleted projects, four created on 2026-08-22
+  and 23 and one on 2026-11-18, 0 bytes each at 3, 30 or 731 days, keep their environment's
+  `AmazonDataZone*` tags and CloudFormation's three, `aws:cloudformation:stack-id` naming a stack
+  `describe-stacks` no longer finds by that id; an `S3Bucket` bucket loses CloudFormation's (`SUP-394`). The
+  tagging API lists them by `AmazonDataZoneEnvironment` while no live stack carries their environment, which
+  is how `./aws/studio.py` `US-15` notes them. Where: `log-stage-06a-unified-studio.md`, 2026-11-21.
 
 - `SUP-175` **DataZone takes the `SageMakerAIDomain` blueprint's `customImages*` as JSON and reports nothing
   when they are not** (measured 2026-10-30). The template declares the parameter as comma-separated

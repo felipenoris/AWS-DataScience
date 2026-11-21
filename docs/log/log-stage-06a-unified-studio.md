@@ -3763,3 +3763,51 @@ Times are UTC.*
 - **[Claude] The records**: `SUP-392` to `SUP-394`; `SMUS.md`'s `S3Bucket` row and §Resource blueprints, where
   the measurement leaves the blueprint in category 1; Stage 17 9.6; the waiting list's gallery row, which the
   user took; `upstream-releases.md`'s resource-blueprints row.
+
+## 2026-11-21 — `US-15`, the buckets a deleted environment leaves, and the supplement reviewed
+
+*Provenance: **this entry is Claude's**, in the session of the two entries above. The user answered *"Sim,
+implementar"* to Claude's question whether to write a check listing the buckets `S3Bucket` leaves, and asked
+during the work *"Revise se é necessário atualizar algo no AWS_SUPPLEMENT considerando o aprendizado com esta
+sessão."* Reads only, as the infrastructure user through `awsds-infra-sandbox-1`, `awsds-infra-staging`,
+`awsds-infra-prod` and `awsds-infra-data`; nothing created, changed or deleted. Times are UTC.*
+
+- **[Claude] DataZone's answer to a non-member**, read by 05:22: `GetEnvironment` answered
+  *"ResourceNotFoundException ... Environment not found"* for the two `S3Bucket` environments deleted at 04:58
+  and for an id that never existed. It answered the same to Production's `InfrastructureAccess` on
+  `test-experimentation`'s `SageMakerAIDomain` environment, which that session's `ListEnvironments` listed
+  `ACTIVE` among the project's five, and to Sandbox's on `deploy-production`'s `Tooling`, listed the same way.
+  Sandbox's session read the environments of six Sandbox projects (`SUP-157`).
+- **[Claude] The listing**: in Sandbox, Staging, Production and Data Governance the tagging API listed 3, 4, 7
+  and 7 buckets, each account's `list-buckets` count, none with an `AmazonDataZone*` tag. Every stack DataZone
+  deploys, `DataZone-Env-<environment id>`, carries `AmazonDataZoneEnvironment`: 19, 3, 3 and 1 live. In
+  Sandbox the tag is on 82 resources of nine types, Athena workgroups, Glue connections and databases,
+  security groups, log groups, SageMaker domains, an MLflow app and schedule groups beside the stacks.
+- **[Claude] What deleted environments left**: five log groups in Sandbox, `datazone-<project>-dev` of five
+  projects no longer in the domain, four created on 2026-08-22 and 23 and one on 2026-11-18, 0 bytes each at
+  3, 30 or 731 days. Each keeps its environment's `AmazonDataZone*` tags and CloudFormation's three; the
+  first's `aws:cloudformation:stack-id` names a stack `describe-stacks` answers *"does not exist"* by that id
+  (`SUP-174`).
+- **[Claude] `US-15`** in `./aws/studio.py`: in each account, every resource carrying
+  `AmazonDataZoneEnvironment` against the environments a live stack carries. A bucket whose environment no
+  live stack carries is read again with `get-bucket-tagging` and failed (`INV-25`); a bucket S3 no longer
+  holds or tags is a note, and any other resource is a note. On synthetic inputs an orphan bucket failed, and
+  so did one whose second read was refused; a bucket whose stack lives and an account with nothing tagged
+  passed; a bucket the index listed after its deletion or after its tag's removal passed with a note; a log
+  group and an access point were noted; a failed listing left the account unjudged. The run of 05:30:03 read
+  `US-15` passing in the four accounts, *"no bucket carries an environment's tag"* beside 19, 3, 3 and 1 live
+  environment stacks, with the note naming Sandbox's five groups, and *"0 check(s) FAILED."*; its exit 1 is the
+  profiles of identities whose session holds no token and the persona sets' `ListDomains` refusals. `US-10`
+  read two running apps in Sandbox, a peer sitting's. The legend gained `US-14`, missing since 03:32.
+- **[Claude] The domain's RAM share**, read at 05:32: version 14 of
+  `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess` is the default and the only `ATTACHABLE`
+  version, the share still at 13. Version 14 adds `GetProjectProfile` and eight other actions; neither names
+  `ListEntityOwners`, refused to Sandbox's session on the root domain unit at 05:36:31, *"because no
+  resource-based policy allows the datazone:ListEntityOwners action"* (`SUP-360`).
+- **[Claude] The supplement reviewed** against the sitting: `SUP-157`, `SUP-174` and `SUP-360` gain the
+  readings above, and `SUP-008` the key policy the simulator evaluated for the probe bucket's reach (the entry
+  above), refused as written with *"ResourceNames are not in a valid ARN format: *."*. No new id: the
+  template's behaviours are `SUP-392` to `SUP-394`, the tagging API's S3 support is documented, and the CLI's
+  Glue reading is a release fact (`upstream-releases.md`).
+- **[Claude] The records**: `INV-25`; `aws/INDEX.md`; `SMUS.md`'s `S3Bucket` measurement;
+  `upstream-releases.md`'s RAM share reading.

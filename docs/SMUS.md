@@ -645,11 +645,12 @@ and deleted it within the hour ([the log](log/log-stage-06a-unified-studio.md)).
 - **The project** gains no connection, so a member reaches the bucket by its `s3://` path. The bucket carries
   the stack's four `AmazonDataZone*` tags.
 - **Deleting the environment** removes the policy and keeps the bucket, with its objects and tags, out of
-  every project role's reach (`SUP-394`). No instrument lists such a bucket.
+  every project role's reach (`SUP-394`). `./aws/studio.py` `US-15` fails on such a bucket (`INV-25`): it
+  carries the tag of an environment no live stack in its account carries.
 
 Nothing measured moves `S3Bucket` out of category 1: its key and its policy are the ones this design asks
 for, and its one parameter, the name, must differ per deployment, so a locked value cannot serve. A member
-has to know the prefix, and nobody owns the buckets its deletions leave.
+has to know the prefix, and an administrator deletes the bucket a deletion leaves once `US-15` names it.
 
 What a deployment leaves billing is its blueprint's: an `EmrServerless` application bills the workers it
 holds while started, and a knowledge base's OpenSearch Serverless collection, which the Generative AI menu
