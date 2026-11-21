@@ -4489,3 +4489,275 @@ other `awsds-infra-*` profiles the instruments name. Times are UTC.*
 - **[Claude] The push**, on the user's *"Autorizo push e PR"* in this chat, ran at 01:15 UTC on
   2026-11-21, and [pull request #345](https://github.com/felipenoris/AWS-DataScience/pull/345) opened
   against `main`.
+
+## 2026-11-21 — Day 1: decision 6's render and reading, the spaces, and 4.7's runs
+
+*Claude, in the session running `promotion.md` §N.9's day 1 on the user's *"Começar agora"*, and the two
+writes on the user's *"Autorizo os dois"* answering a question that named `start-associations-once` and
+`./aws/proxy.py --on-host`. As the infrastructure user with `InfrastructureAccess`, through
+`awsds-infra-prod` (account Production) and `awsds-infra-sandbox-1` (account Sandbox Account 1), read-only
+otherwise. The portal's acts are the user's, as the Data Scientist User and, in its own browser profile,
+the Governance Manager User. Times are UTC.*
+
+- **[Claude] Before the raise**: the laptop's other sessions told; `make status` 0.0000 USD/h.
+- **[user] The raise**: `make hub-up`, the proxy and VPN hosts running from 03:10:54 and 03:10:57, both
+  SSM agents `Online`; then `make up ENV=sandbox GROUPS=mwaa`, its interface endpoints created at 03:12,
+  `airflow-serverless` among them. `make status` after: `sandbox/egress` 28 resources, `sandbox/probes` 4,
+  0.2090 USD/h, no Studio app.
+- **[Claude] Step 2**, the re-plan of `production/networking/` at 03:11 from this worktree, whose slice
+  equals `main`'s: *"No changes. Your infrastructure matches the configuration."*, exit 0.
+- **[Claude⚡] Step 3, the render**: `start-associations-once` at 03:15:36, the execution at 03:15:39
+  `Success` with `{Success=1}`. `./aws/proxy.py --on-host`: `PX-3` *"5 planes, entry for entry - the render
+  is current"*, `PX-1` and `PX-2` pass, `PX-4` its note. `./aws/dns-allowlist.py --from-api
+  awsds-infra-prod`: `DN-1` to `DN-4` pass.
+- **[user] Step 5, the spaces**, each on `awsds-sandbox-dev-env` version 11 in its project's blueprint
+  domain, none in a `Tooling` domain (`EXC-26`): in `app-dbt-dev`, `jup`, JupyterLab on `ml.t3.medium`
+  (03:28:04, Stage 20's); in `eighth-experimentation-ai-domain`, `jup-ai`, JupyterLab on `ml.t3.medium`
+  (03:28:57), and `vscode`, Code Editor on `ml.t3.large` with remote access `ENABLED` (03:29:52); in
+  `test-experimentation-ai-domain`, `vscode`, the same (03:30:48); and the Governance Manager's `code` in
+  `eighth-experimentation-ai-domain`, the same (03:54:05), its user profile created with it. The first four
+  apps read `Pending` at 03:37:19 and `InService` at 03:40:39. Each app's interface attached about 30
+  seconds after its `CreateApp`, which maps the addresses: `jup` 10.20.28.126, `jup-ai` 10.20.96.127,
+  `eighth-experimentation`'s `vscode` 10.20.127.219, `test-experimentation`'s `vscode` 10.20.64.132, `code`
+  10.20.72.18. The two JupyterLab apps alone called `pypi.org`, which agrees with the mapping.
+- **[Claude] Step 6, decision 6's reading**, `/awsds/prod/proxy` from the render: `CONNECT
+  dzd-d8yrvx1ko7im6o.sagemaker.us-west-2.on.aws:443 200 114993 1936 TCP_TUNNEL` from 10.20.28.126 at
+  03:37:47, 10.20.96.127 at 03:38:41, 10.20.64.132 at 03:40:25 and 10.20.127.219 at 03:40:38, and no `403`
+  for the name. The window's other Sandbox lines: `pypi.org` `200` from the two JupyterLab apps, and
+  `redshift.us-west-2.amazonaws.com` `200` from `jup-ai` and `eighth-experimentation`'s `vscode`. Decision 6
+  closes: 3.4's refusals stop.
+- **[user; Claude] 4.7, the cell run in the editor** before the three runs: the native notebook
+  `d9o0gdrdgyla8g` in `eighth-experimentation`, the block's one cell.
+  - `StartNotebookCompute` at 03:32:09 by the portal, a browser's user agent from the laptop's public
+    address, as the project role, session `<Identity Center user id>@<Tooling environment id>`. Its request:
+    `networkConfig` `VPC_ONLY` with `awsds-sandbox-vpc`, the project's two subnets and its security group,
+    `computeConfig` `sc.t3.medium`, the project role as `executionRoleConfig`, the project's prefix and key
+    as `storageConfig`; the response `computeId` `ce-91ce9508-…`, `networkAccessType` `VpcOnly`. The
+    command is absent from `aws-cli/2.37.12`'s `datazone`.
+  - The compute's interface `eni-04f9c150edde720b1`, *"[DO NOT DELETE] ENI managed by DataZone for
+    ComputeEnvironment(ce-91ce9508-…)"*, created 03:32:11 (`invokedBy`
+    `global.workflows.looseleaf.im.amazonaws.com`) at 10.20.13.163 in `awsds-sandbox-private-usw2-az1`, its
+    security group `datazone-avhvbqn37ty7m8-dev`; owned by Sandbox, requested and attached by another
+    account.
+  - The kernel's calls, as the project role in a session named after the user's id, from 10.20.13.163
+    through `vpce-03abb012f13500645` (`datazone`), `Boto3/1.40.61`: `CreateCellRun` 03:33:38, `UpdateCellRun`
+    at 03:34:38, 03:35:39 and 03:36:19, `PutCellRunResult` twice at 03:36:20. The DNS Firewall answered
+    `checkip.amazonaws.com` `NOERROR` with 7 IPv4 addresses at 03:33:38, and the cell printed
+    *"URLError: <urlopen error timed out>"* 2 minutes 42 seconds after it started: 7 addresses at the cell's
+    20 seconds each.
+  - The flow log, read at 03:40 for 03:30 onward: the interface's flows to the `datazone` and `glue`
+    endpoints alone, 443 `ACCEPT`, and none to a public address, read inside the log's aggregation interval.
+- **[user; Claude] 4.7's three runs**, launched by the user from 03:45:
+  - *Run in background*: `StartNotebookRun` at 03:45:31 by the portal as the project role, the user's
+    session, its request `computeConfiguration` `sc.t3.medium` and no `networkConfiguration`; run
+    `dcy58is3e94y6o`, trigger `MANUAL`. Its compute's interface `eni-045f5d1ad1f1cffa9` at 10.20.31.63
+    (03:45:48), the kernel's `GetNotebookRun`, `BatchGetCell` and `CreateCellRun` from it at 03:49:49 to
+    03:49:53 through the `datazone` endpoint, `checkip` resolved at 03:49:52 with 8 addresses; `FAILED` at
+    03:53:07, its error *"URLError: <urlopen error timed out>"*, `runTimeoutInMinutes` 60, the default.
+  - The schedule: `CreateSchedule` at 03:46:12, then `UpdateSchedule` at 03:46:13, by the portal as the
+    project role: EventBridge Scheduler's `to-run-in-background-tytue9` in the group
+    `SageMakerUnifiedStudio-avhvbqn37ty7m8-dev`, `at(2026-11-21T00:50:00)` in `America/Sao_Paulo`, a
+    flexible window of 5 minutes, the universal target `arn:aws:scheduler:::aws-sdk:datazone:startNotebookRun`
+    with the project role and the project's key, no `ActionAfterCompletion`. It fired at 03:54:24:
+    `StartNotebookRun` as the project role in a 32-hex session, from an Amazon public address with no
+    endpoint, its request `scheduleIdentifier` `63h6ij8qg3bx8w`, trigger `SCHEDULED`, and neither a compute
+    nor a network; run `bqwg8hoby5a13k`, its compute at 10.20.15.221 (03:54:41), `checkip` resolved at
+    03:58:26, `FAILED` at 04:01:49 with the same error.
+  - The workflow: `CreateWorkflow` `wfk-notebook` at 03:47:06 by the portal as the project role, in the
+    project's two subnets and its security group, under the project's key, `triggerMode` `manual_only`, its
+    definition `dev/workflows/wfk-notebook.yaml` under the project's prefix; `StartWorkflowRun` at 03:47:07,
+    run `H6HmKz4W8nwNCgd`. The task's operator is
+    `airflow.providers.amazon.aws.operators.sagemaker_unified_studio_notebook.SageMakerUnifiedStudioNotebookOperator`,
+    with `notebook_identifier`, `domain_identifier`, `owning_project_identifier`, `compute_configuration`
+    `sc.t3.medium` and `timeout_configuration` 60 minutes, and no network parameter. The worker's interface
+    at 10.20.47.178 (03:47:19, `invokedBy` `workflows.airflow-serverless.amazonaws.com`) called
+    `StartNotebookRun` at 03:47:54 as the project role's session `AmazonMWAAServerless` through the
+    `datazone` endpoint, with the compute, the timeout, trigger `WORKFLOW` and no network, then
+    `GetNotebookRun` every 10 seconds; run `c00t2gxe7ot09c`, its compute at 10.20.16.194 (03:48:20),
+    `checkip` resolved at 03:53:06, `FAILED` at 03:56:20 with the same error. The task retried: a second
+    worker at 10.20.73.120 (04:01:47) started run `3idpl9cl62887k` at 04:02:24, its compute at 10.20.12.239
+    (04:02:41), `FAILED` at 04:09:53 with the same error; the workflow run `FAILED` at 04:10:05 after the two
+    attempts, the second task instance `FAILED` in 469 seconds.
+  - The portal's refusals in the window, both as the project role: `datazone:GetCurrentEffectivePolicy`
+    at 03:46:39, and `airflow-serverless:GetWorkflow` on workflows of other projects, beside the same call
+    answered on its own.
+- **[Claude] What the runs answer**: every compute put an interface in `awsds-sandbox-vpc`'s private
+  subnets with the project's security group, resolved the name through the DNS Firewall and timed out on
+  the connection. No `StartNotebookRun` request carried a network; the editor's compute carried `VPC_ONLY`,
+  written by the portal. The native operator calls `StartNotebookRun`, never `CreateTrainingJob`, so
+  decision 14's refusal does not reach it, and Stage 8 5.6's lint learns its name. Left of 4.7: the
+  `PUBLIC_INTERNET_ONLY` negative after Stage 20's sitting A, and the schedule's delete at step 12.
+
+## 2026-11-21 — Day 1: 4.7's negative, a run asking for `PUBLIC_INTERNET_ONLY`
+
+*Claude, in the same session. The call is the user's, in `jup-ai`'s terminal as `eighth-experimentation`'s
+project role; Claude's reads as the infrastructure user with `InfrastructureAccess`, through
+`awsds-infra-sandbox-1` (account Sandbox Account 1). Times are UTC.*
+
+- **[user] The call**, after Stage 20's sitting A, from `jup-ai`, whose app reads 10.20.97.84 (its
+  interface attached 06:54:18; 03:40's 10.20.96.127 no longer exists). `aws sts get-caller-identity` read
+  `datazone_usr_role_avhvbqn37ty7m8_…` with the session `SageMaker`. 4.7's command answered *"status":
+  "QUEUED"*: run `60uo7lmz36vzm8` at 07:04:34, its `networkConfiguration` `PUBLIC_INTERNET_ONLY`, created
+  by the Data Scientist User's DataZone id. `get-notebook-run` then read `STARTING` and
+  `runTimeoutInMinutes` 60.
+- **[Claude] The request**, in Sandbox's event history: `StartNotebookRun` at 07:04:34 as the project
+  role's session `SageMaker`, `sourceIdentity` the user's id, from 10.20.97.84 through
+  `vpce-03abb012f13500645` (`datazone`), `aws-cli/2.37.0`. Its `networkConfiguration` was
+  `{"networkAccessType": "PUBLIC_INTERNET_ONLY"}`, with no compute; the response carried the same network
+  and one cell, `do878hwqhbsh74`. DataZone refused nothing, with no deny in Sandbox before it.
+- **[Claude] The compute**: `CreateNetworkInterface` at 07:04:51 by `AWSServiceRoleForAmazonSageMakerNotebooks`,
+  session `AmazonSageMaker`, `invokedBy` `global.workflows.looseleaf.im.amazonaws.com`. It made
+  `eni-0e140fe72af86a5b2` at 10.20.73.14 in `awsds-sandbox-private-usw2-az2`, its one group
+  `datazone-avhvbqn37ty7m8-dev`, described *"[DO NOT DELETE] ENI managed by DataZone for
+  ComputeEnvironment(ce-1dd26c50-…)"*, attached 07:04:52. The project role's image token was fetched on
+  AWS's side: `GetAuthorizationToken` from Amazon public addresses with
+  `global.compute-capacity.looseleaf.im.amazonaws.com` in the endpoint field, at 06:55:37 and 07:11:26,
+  neither at the run's start.
+- **[Claude] The kernel**, from 10.20.73.14 through `vpce-03abb012f13500645` as the project role in a
+  session named after the user's id, `Boto3/1.40.61`:
+  - `GetNotebookRun` at 07:08:28; `BatchGetCell` and `CreateCellRun` at 07:08:32;
+  - `UpdateCellRun` at 07:09:33 and 07:10:33;
+  - `PutCellRunResult` for cell run `4ufhijq2v10ivk`, `RUNNING` at 07:11:13 and `FAILED` at 07:11:14.
+
+  The cell ran 2 minutes 42 seconds: the 20-second timeout on each of `checkip`'s 8 addresses. The
+  CloudWatch agent's two `CreateLogStream` came from 50.20.227.50 at 07:08:36.
+- **[Claude] The DNS Firewall**, `/awsds/sandbox/dns-firewall`, from 10.20.73.14: `checkip.amazonaws.com`
+  `A` `NOERROR` with 8 addresses at 07:08:32. Before it, from 07:08:28 to 07:08:31, the kernel's own
+  names: `datazone.us-west-2.api.aws`, `athena`, `glue`, `emr-serverless`, `s.emr-serverless-services`,
+  `aws-analytics-downloads-us-east-1.s3.us-east-1.amazonaws.com`, and `sessions.glue.us-west-2.amazonaws.com`
+  `NXDOMAIN`, its search-domain form `BLOCK`.
+- **[Claude] The flow log**, `awsds-sandbox-vpc-flow-logs`, read to 07:11:29: the interface's flows go to
+  10.20.41.89:443 alone, `vpce-03abb012f13500645`'s interface, `ACCEPT`, at 07:09:16, 07:10:22 and
+  07:11:28, and none to a public address. The windows from 07:05:22 to 07:09:53 read `NODATA`, the one
+  holding the kernel's calls of 07:08:28 and 07:08:32 among them, so the log is not complete for that
+  minute; the cell's timeout is the reading that decides.
+- **[Claude] The run**: `FAILED` at 07:11:42, *"URLError: <urlopen error timed out>"*. Its record still
+  reads `networkAccessType` `PUBLIC_INTERNET_ONLY`.
+- **[Claude] What the negative answers**: the project role passes `PUBLIC_INTERNET_ONLY`, and DataZone
+  accepts and records it. The compute still takes an interface in `awsds-sandbox-vpc`'s private subnet with
+  the project's group, as the three runs with no network did, and its cell cannot leave: the domain's VPC
+  binds the request. 4.7 closes, and `TM-34` with it. Decision 17 (a) stands, and (b)'s deny does not
+  follow in Sandbox. Left of 4.7: the schedule's delete at step 12.
+
+## 2026-11-21 — Day 1: 7.6, the tag pair, and the two remote clients
+
+*Claude, in the same session. The portal's, the laptop's and the space's acts are the user's, as the Data
+Scientist User; the space's terminal runs as `eighth-experimentation`'s project role. Claude's reads as the
+infrastructure user with `InfrastructureAccess`, through `awsds-infra-sandbox-1` (account Sandbox Account
+1), and the laptop's own files. Times are UTC.*
+
+- **[user] The Toolkit**: VS Code 1.147.0, AWS Toolkit 4.20.0 (the latest release, 2026-11-19),
+  Remote-SSH 0.128.0. It signed in to the domain and opened `eighth-experimentation`, and listed no space,
+  the `vscode` space `InService` with remote access `ENABLED`.
+- **[Claude] Why it listed none**: the Toolkit's six `ListSpaces` and `ListApps` pairs from 07:23:08 to
+  07:31:27, `aws-sdk-js` from the laptop's address, named `domainIdEquals` `d-p6gthxc82ckg` alone, the
+  project's `Tooling` domain, which holds no space since 2.7. The portal's listings in the same minutes
+  named `d-m8m0uefej9kb` as well, the blueprint's domain, where the space is. The Toolkit's bundle reads
+  the domain from the project's `Tooling` environment, its provisioned resource `sageMakerDomainId`, and
+  filters the spaces to the signed-in user's profile (`SUP-398`).
+- **[user] The deep link**, the space's *Open in VS Code* in the portal:
+  - `StartSession` at 07:33:11 as the project role, session `<user id>@<environment id>`, from the laptop's
+    address with a browser's user agent and no endpoint, on `d-m8m0uefej9kb/vscode`: answered.
+  - The Toolkit took the link at 07:33:15, downloaded its own `session-manager-plugin` from
+    `s3.amazonaws.com` and installed it by 07:33:20, and opened the remote window at 07:33:24. The first
+    SSH connection read the session from the Toolkit's local server, HTTP 200, at 07:33:26, and reached
+    the space at 07:33:29.
+  - The laptop's `remote.SSH.localServerDownload` `always` had the laptop fetch the VS Code Server from
+    `update.code.visualstudio.com` (07:33:30 to 07:33:34) and copy it with `scp`, a second SSH
+    connection. It asked a new session at 07:33:37 and read HTTP 202 once and HTTP 204 seven times, 5
+    seconds apart, then *"Error: Timed out after 8 attempts waiting for session to be ready."* and
+    *"scp: Connection closed"* at 07:34:18.
+  - `~/.aws/.sagemaker-space-profiles` then held the link's first request `consumed` and the second
+    `pending`, with no session. The trail holds no `StartSession` after 07:33:11, so the browser's refresh,
+    which the local server opens at the portal's refresh URL with a callback to `localhost`, never reached
+    the API (`SUP-399`). Its cause is unread: Chrome is the laptop's default browser, and a link opens in
+    the last profile used.
+- **[user] The calls from `jup-ai`'s terminal**, the project role's session `SageMaker`, from 10.20.97.84
+  through `vpce-042889be2db64615e` (`sagemaker.api`), `aws-cli/2.37.0`, `sourceIdentity` the user's id:
+  - 07:42:23, the owner's `d-m8m0uefej9kb/vscode`: `ValidationException`, *"StartSession for SageMaker
+    Unified Studio Domain is supported only from Unified Studio clients - AWS Toolkit and SageMaker
+    Unified Studio Web IDEs. Retry your request from a supported client."*;
+  - 07:42:24, `test-experimentation`'s `d-jaid1tvg20jv/vscode`: `AccessDenied`, *"… is not authorized to
+    perform: sagemaker:StartSession on resource: arn:aws:sagemaker:us-west-2:<Sandbox>:space/d-jaid1tvg20jv/vscode
+    because no identity-based policy allows the sagemaker:StartSession action"*;
+  - 07:42:25, the contributor's `d-m8m0uefej9kb/code`: `AccessDenied`, the same wording on that space.
+- **[Claude] 7.6 closes**: both refusals name an identity-based policy, no boundary and no service control
+  policy, so AWS's tag-conditioned Allow (`RI-3`) is what evaluated on another user's space and on another
+  project's space. The positive control is the deep link's `StartSession`, answered on the owner's space.
+  The owner's call from the terminal met a client check rather than IAM, and that check comes after
+  authorization: the same client, from the same session, read the identity refusal on the other two
+  spaces (`SUP-397`).
+- **Left of the day, to the next sitting with the hub and `sandbox/egress/` up**: 7.5's monitored half,
+  by the deep link alone, since the Toolkit lists no space; 7.7, which needs a connected session; 6.1
+  (viii)'s Code Editor half; and 4.7's schedule, which fired at 03:54 and fires no more. The deep link's
+  second session is watched in the browser: the Data Scientist User's Chrome profile in front, any prompt
+  answered within the script's 40 seconds.
+
+## 2026-11-21 — Day 1: the spaces deleted, the lowering and §R's readings
+
+*Claude, in the same session. The portal's acts are the user's as the Data Scientist User, the downs the
+user's as the infrastructure user with `InfrastructureAccess`. Claude's reads through
+`awsds-infra-sandbox-1` (Sandbox Account 1) and `awsds-infra-prod` (Production), and `make status`. Times
+are UTC.*
+
+- **[user] A space in the `Tooling` domain**, by the portal as `eighth-experimentation`'s project role:
+  `CreateSpace` `vscode` in `d-p6gthxc82ckg` at 07:34:29, its JupyterLab app at 07:34:34 (the portal's own
+  `CreateApp` read `ResourceInUse` beside the service's), the app deleted at 07:35:04 and the space at
+  07:35:09. The Toolkit's last listing was at 07:31:27, so none saw it.
+- **[Claude] The idle shutdowns**, `AWSServiceRoleForAmazonSageMakerNotebooks` through
+  `global.workflows.looseleaf.im.amazonaws.com`: `jup-ai`'s app at 04:39:06, `eighth-experimentation`'s
+  `vscode` at 04:40:56, `test-experimentation`'s `vscode` at 04:40:41 and again at 06:43:09, the
+  contributor's `code` at 05:04:31, each 70 to 76 minutes after its `CreateApp`, under 5.1's 60-minute
+  threshold. The user started `test-experimentation`'s `vscode` again at 05:27:00, `jup-ai` at 06:53:49 and
+  `eighth-experimentation`'s `vscode` at 07:09:41.
+- **[user] The spaces deleted** through the portal: `app-dbt-dev`'s `jup` app at 07:09:24; from 07:46:33
+  to 07:47:16 `eighth-experimentation`'s `vscode` and `jup-ai`, apps then spaces, `app-dbt-dev`'s `jup` and
+  `test-experimentation`'s `vscode`. The contributor's `code` stays, with no app, billing its volume.
+- **[user] The downs**: `make down ENV=sandbox`, the interface endpoints deleted from 07:50:30 to 07:53:47
+  (one `Client.RequestLimitExceeded` at 07:50:48, retried at 07:50:50), then `make hub-down`, the two hosts
+  stopped at 07:56:33 and 07:56:35.
+- **[Claude] §R's readings**, from 08:00: `./aws/egress.py` on the three accounts, *"all checks passed"*,
+  no interface endpoint, no NAT gateway, 0.000 USD/h; `make status` *"estimated burn: USD 0.0000/h"*, the
+  proxy, VPN and GitLab hosts `stopped`, no EMR Serverless application and no OpenSearch Serverless
+  collection; no Studio app in Sandbox's nine domains, and one space, the contributor's `code`.
+- **[Claude] 4.7's schedule**, `to-run-in-background-tytue9` in the group
+  `SageMakerUnifiedStudio-avhvbqn37ty7m8-dev`: `ENABLED`, `at(2026-11-21T00:50:00)` in
+  `America/Sao_Paulo`, `ActionAfterCompletion` `NONE`, so it stays and fires no more. Step 12's delete
+  waits.
+- **[Claude] Left of day 1**: 7.5's monitored half, 7.7 and 6.1 (viii)'s Code Editor half, on a new
+  remote-access Code Editor space of the owner's in `eighth-experimentation`, the deep link the one method
+  (`SUP-398`, `SUP-399`); then step 12's schedule delete and the contributor's `code` space.
+
+## 2026-11-21 — Step 12's leftovers: 4.7's schedule deleted, the `code` space read standing
+
+*Claude's hand on the user's word in chat, *"Autorizo vc apagar o Apagar o schedule
+to-run-in-background-tytue9 pela CLI."*, through `awsds-infra-sandbox-1` (Sandbox Account 1, the
+infrastructure user with `InfrastructureAccess`), with the estate down. The session the user opened in
+`awsds-workflows` was told before the write. Times are UTC.*
+
+- **[Claude] The schedule before**: `to-run-in-background-tytue9` in `SageMakerUnifiedStudio-avhvbqn37ty7m8-dev`,
+  `ENABLED`, `at(2026-11-21T00:50:00)` in `America/Sao_Paulo`, `ActionAfterCompletion` `NONE`, created
+  03:46:12, its target `aws-sdk:datazone:startNotebookRun`.
+- **[Claude] The delete**, 17:57:30 to 17:57:31: `scheduler delete-schedule`, exit 0. Read after:
+  `get-schedule` *"ResourceNotFoundException … Schedule to-run-in-background-tytue9 does not exist."*, and
+  `list-schedules` on the group returns none.
+- **[user] The space**, in chat: *"Vi que o space `code` do `eighth-experimentation` já está apagado."*
+- **[Claude] The space read**: `describe-space` on `code` answers `InService`, created 03:54:05, owned by the
+  Governance Manager's user profile, 7.6's contributor, `Private`, `CodeEditor`, remote access `ENABLED`,
+  a 16 GB volume; its one app, `CodeEditor` `default`, `Deleted`. The space stands with no app and bills its
+  volume. Either the app's `Deleted` or a portal that lists no other user's private space (inferred) reads
+  as a deleted space. Its delete is the owner's in the portal, or Claude's on the user's word naming it.
+
+## 2026-11-21 — Step 12's `code` space deleted
+
+*Claude's hand on the user's word in chat, *"Sim, apague"*, answering the question that named the space and
+its 16 GB volume and said the delete is irreversible; through `awsds-infra-sandbox-1` (Sandbox Account 1,
+the infrastructure user with `InfrastructureAccess`), with the estate down. No other session was running
+on the laptop. Times are UTC.*
+
+- **[Claude] Before**: `code` `InService`, the contributor's, `Private`, `CodeEditor`, 16 GB; its one app
+  `Deleted`; the domain's only space.
+- **[Claude] The delete**, 18:34:04 to 18:34:05: `sagemaker delete-space`, exit 0; `describe-space` right
+  after read `Deleting`.
+- **[Claude] After**, 18:34:22: `describe-space` *"ResourceNotFound … Space [… space/<domain>/code] does
+  not exist."*, and `list-spaces` on the domain returns none. Step 12's leftovers are gone.

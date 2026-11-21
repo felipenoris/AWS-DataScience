@@ -66,10 +66,10 @@ entry is still true is the reading.
 | [S3](#s3) | S3 Access Grants: the request charge, the lag of a delete, the instance and the plugin SageMaker Unified Studio brings; the wording of a refused read |
 | [Glue](#glue) | Resource policies; crawlers under a security configuration; a job's sessions; lineage without an endpoint; federated databases |
 | [Lake Formation](#lake-formation) | Data lake settings and who writes them; listings that omit grants; cross-account shares, vends and their flags; the creator's permissions; Athena writes through vended sessions; RAM |
-| [Athena](#athena) | Workgroup deletion; SCP refusals that name no policy; Athena Spark's network |
+| [Athena](#athena) | Workgroup deletion; SCP refusals that name no policy; Athena Spark's network; an Iceberg table's rename |
 | [Redshift Serverless](#redshift-serverless) | Namespace, workgroup and usage limits; SQL, users and privileges; the Data API; datashares through Lake Formation; billing, metrics, the free trial and the audit export |
 | [DataZone and SageMaker Unified Studio](#datazone-and-sagemaker-unified-studio) | The domain and its account association; blueprints, profiles and policy grants; environments, and what a project creates and leaves; the project role's managed policies; the portal; catalog, data sources and subscriptions; connections |
-| [SageMaker AI spaces and images](#sagemaker-ai-spaces-and-images) | Custom images and their versions; spaces, apps and their network identity; the Code Editor, the remote IDE and Amazon Q |
+| [SageMaker AI spaces and images](#sagemaker-ai-spaces-and-images) | Custom images and their versions; spaces, apps and their network identity; the Code Editor, the remote IDE, its clients and Amazon Q |
 | [SageMaker AI jobs and models](#sagemaker-ai-jobs-and-models) | Processing jobs: status, mounts, keys and image pulls; condition keys on the job creates; models and model packages |
 | [MWAA](#mwaa) | MWAA Serverless workflows, their API and KMS use; workers, templates, tasks and the Airflow operators; provisioned MWAA |
 | [The SMUS CI/CD CLI](#the-smus-cicd-cli) | `aws-smus-cicd-cli` 1.0.9: manifests and their variables, bundles, workflow names, the pre-deployment validation, what `deploy` reads and creates |
@@ -1521,6 +1521,20 @@ entry is still true is the reading.
   and a destroy runs from the attributes in state, so the flag has to be set in the configuration before the
   resource is removed from it. Deleting the block and the flag in one version leaves the destroy unarmed,
   which surfaces only at destroy time.
+
+- `SUP-400` **Athena renames an Iceberg table in the Glue Data Catalog by a create and a delete, after the
+  Glue Iceberg REST endpoint refuses `renameTable`** (measured 2026-11-21 in Sandbox, Stage 20 2.5).
+  dbt-athena's table swap on `notional_by_desk`, every statement `SUCCEEDED`. For each of its two
+  `alter table … rename to …` (05:02:56 and 05:02:57 UTC) the trail holds first an `UpdateTable` refused
+  `UnsupportedOperationResponse`, *"RenameTable endpoint is not supported for Glue Catalog."*,
+  `additionalEventData` `{"IcebergRestOperation":"renameTable"}`, with the prefix `catalogs/<account id>`
+  and both names, then a `CreateTable` of the new name and a `DeleteTable` of the old, all as the caller's
+  session invoked by `athena.amazonaws.com`. The table under the new name is a new Glue object, created at
+  the rename at `VersionId` 1. Each rename therefore leaves a refused call in the trail beside a statement
+  that succeeded, and exercises `glue:CreateTable` and `glue:DeleteTable` rather than the update its
+  statement names. Glue's Iceberg REST connection page lists the endpoint's operations without
+  `RenameTable`, and Athena's *ALTER TABLE RENAME* page names no permission; neither says how a rename is
+  carried out (read 2026-11-21). Where: `log-stage-20-dbt-lineage.md`, 2026-11-21, 2.5's run half.
 
 ## Redshift Serverless
 
@@ -3203,6 +3217,53 @@ entry is still true is the reading.
   type's revisions and required forms are read from the domain's account. Where:
   `log-stage-21-redshift-s3-data-products.md`, 2026-11-18.
 
+- `SUP-391` **A dataset's `symlinks` facet naming a Glue table makes its lineage node the table's ARN in an
+  event with no Glue environment properties, which the `sourceIdentifier` page reserves to Glue's events**
+  (measured 2026-11-21, Stage 20 2.4). dbt 1.11.16's events, built by OpenLineage's dbt wrapper 1.55.0 and
+  posted with `PostLineageEvent` as `app-dbt-dev`'s role, name each dataset
+  `awsathena://athena.us-west-2.amazonaws.com` `awsdatacatalog.app_dbt.<table>` with one `symlinks`
+  identifier, namespace `arn:aws:glue:us-west-2:<Sandbox>`, name `table/app_dbt/<table>`, type `TABLE`; their
+  run facets are `dbt_run`, `dbt_version`, `parent`, `processing_engine` and `tags`, with no
+  `environment-properties`. The domain created the output's node `6w7hp2vvi8kscw` with the `sourceIdentifier`
+  `arn:aws:glue:us-west-2:<Sandbox>:table/app_dbt/notional_by_desk`, and the input took `3s0gk0eg2o68pc`, the
+  node the Glue job's events had created for `trades`: Data Governance's trail holds no `CreateLineageNode`
+  with an `awsathena://` identifier. Each node's `DatasetForm` keeps both names as `alternateIdentifiers`, the
+  Athena one and the symlink joined by a slash (`arn:aws:glue:us-west-2:<Sandbox>/table/app_dbt/trades`), and
+  the `ColumnLineageForm` names its source table by the Athena name. The page reads the symlink for an event
+  whose `environment-properties` carries `GLUE_VERSION`, and *"In all other cases, dataset nodes'
+  sourceIdentifier is populated using <namespace>/<name>"*, which would have made the node
+  `awsathena://athena.us-west-2.amazonaws.com/awsdatacatalog.app_dbt.notional_by_desk`, apart from its asset.
+  A dbt project's events join the Glue assets' graph as the wrapper builds them, with no transformer in the
+  client (Stage 20 decision 3). Where: `log-stage-20-dbt-lineage.md`, 2026-11-21.
+
+- `SUP-401` **`DeleteLineageEvent` is refused to a member account by the domain's resource share, whose
+  managed permission carries `PostLineageEvent` and not the delete, and to the domain's own account by
+  DataZone itself** (measured 2026-11-21, Stage 20 3.4). `delete-lineage-event` on one posted event as
+  `InfrastructureAccess`, aws-cli 2.37.12. From Sandbox at 05:50:51 UTC: *"… is not authorized to perform:
+  datazone:DeleteLineageEvent on resource: …:domain/dzd-… because no resource-based policy allows the
+  datazone:DeleteLineageEvent action"*. From Data Governance, the domain's account, at 05:50:54: *"User is
+  not permitted to perform operation: DeleteLineageEvent"*, DataZone's own wording after IAM let the call
+  through. `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`, versions 13 and 14, carries
+  `PostLineageEvent` and the lineage reads and no `DeleteLineageEvent`; the root domain unit's one owner is
+  an Identity Center group, with no IAM principal. AWS's lineage authorization and API pages name neither
+  who may call the delete nor what it removes (read 2026-11-21). A posted event stays in the graph until an
+  identity the domain admits deletes it; the infrastructure user is none in either account, and the posting
+  role was not tried. Where: `log-stage-20-dbt-lineage.md`, 2026-11-21 (3.4).
+
+- `SUP-402` **The domain adds a posted lineage event about any project's dataset to that dataset's node,
+  whoever posts it, and names as its creator the person a session carries, else the role** (measured
+  2026-11-21, Stage 20 2.6 and 3.4). From a space of `test-experimentation` as that project's role, an
+  event whose output named `app-dbt-dev`'s table by its Glue ARN answered `processingStatus` `SUCCESS`: the
+  table's node took a version at the event's time with the foreign job's run upstream, and the portal drew
+  that job on `app-dbt-dev`'s asset's *Lineage* tab, naming the node by its latest version's dataset name.
+  Posts from a space, the role's session `SageMaker` whose `sourceIdentity` is the user, name as creator of
+  the events and of the nodes they add the person's profile (type `SSO`); a workflow's posts, the session
+  `AmazonMWAAServerless` with no `sourceIdentity`, name the role's profile (type `IAM`). Data Governance's
+  trail records both as `AWSAccount`, so the domain's account cannot tell them apart. The pages read for
+  this project say posting needs `datazone:PostLineageEvent` and name no check against the dataset's
+  owning project. A role holding `PostLineageEvent` writes into every project's graph, and a node's history
+  is the instrument that shows who did. Where: `log-stage-20-dbt-lineage.md`, 2026-11-21 (2.6, 3.4).
+
 ### Connections
 
 - `SUP-199` **A portal S3 connection over an already registered Access Grants location needs none of the
@@ -3355,6 +3416,36 @@ entry is still true is the reading.
   the call as *"Updates a connection"* and says nothing of validation. A connection's database and lineage
   sync are changed with no warehouse up, and `READY` says nothing about the compute. Where:
   `log-stage-06h-redshift-connection.md`, 2026-11-19; `runbooks/redshift-connection.md` §P step 4a.
+
+- `SUP-390` **The portal's *Create database* refusal names a project-profile setting the profile
+  carries** (measured 2026-11-21, Stage 20 2.1). In `app-genai-dev` the portal answered *"Insufficient
+  permissions to create a new database. Please add a LakeHouseDatabase blueprint deployment setting with
+  On Demand mode to the project profile."* The profile `experimentation` carried `DataLake`, the console's
+  `LakeHouseDatabase`, as `ON_DEMAND`; the domain's `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant on it named
+  the contributor projects of the project's domain unit; the user owned the project. No call failed: the
+  trail holds `GetProjectProfile` and `ListDeployableEnvironmentBlueprints`, a call the CLI does not
+  offer, on `app-genai-dev` at each attempt, each answered. The same act then created the database in
+  `app-dbt-dev`, with the same profile, unit, environments and owner, after the page was opened on it.
+  The page and the project changed together, so the refusal is unattributed, and the message is no
+  evidence about the profile: the trail's `projectIdentifier` says which project the portal had open.
+  Where: `log-stage-20-dbt-lineage.md`, 2026-11-21.
+
+- `SUP-396` **A native notebook run accepts and records `networkAccessType` `PUBLIC_INTERNET_ONLY`, and its
+  compute runs in the domain's VPC regardless** (measured 2026-11-21 in Sandbox, Stage 6d 4.7). From a
+  space's terminal as `eighth-experimentation`'s project role, `datazone:StartNotebookRun` with
+  `--network-configuration networkAccessType=PUBLIC_INTERNET_ONLY` and no compute answered `QUEUED`; the
+  request, the response and every later `GetNotebookRun` carried `PUBLIC_INTERNET_ONLY`. Seventeen seconds
+  after the call, `AWSServiceRoleForAmazonSageMakerNotebooks` created the compute's interface through
+  `global.workflows.looseleaf.im.amazonaws.com` in the project's private subnet, with its
+  `datazone-<project>-dev` group. The kernel called DataZone through the VPC's interface endpoint, and a
+  cell opening `https://checkip.amazonaws.com` with no proxy timed out on each of its 8 addresses: `FAILED`,
+  *"URLError: <urlopen error timed out>"*. Three runs sent the same day with no network, from the portal's
+  *Run in background*, a schedule and a workflow's `SageMakerUnifiedStudioNotebookOperator`, took the same
+  subnets and group, and the portal sent the editor's own compute `VPC_ONLY`. The VPC, its subnets and its
+  zones are the domain's blueprint configuration's (`sandbox/sagemaker/`). No AWS page read for this
+  project states a run's default network or that the domain's VPC overrides the request, so a run's record
+  is no evidence of where it ran; its interface is. Where: `log-stage-06d-unified-studio-remainder.md`,
+  2026-11-21 (two entries); `threat-model.md`, `TM-34`.
 
 ## SageMaker AI spaces and images
 
@@ -3617,6 +3708,55 @@ entry is still true is the reading.
   *available only in `us-east-1`*. `/amazon/datazone/q/<domain-id>` and `.../q-enabled` answer
   `ParameterNotFound`. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-09-12, 2026-09-18,
   2026-10-17 and 2026-10-18; `docs/SMUS.md`.
+
+- `SUP-397` **`sagemaker:StartSession` on a space of a domain SageMaker Unified Studio created refuses any
+  client but the AWS Toolkit and the Unified Studio web IDEs, and checks the client only after IAM allows
+  the call** (measured 2026-11-21 in Sandbox, Stage 6d 7.6). From a space's terminal as
+  `eighth-experimentation`'s project role, `aws-cli/2.37.0` through the `sagemaker.api` interface endpoint,
+  three calls a second apart: the caller's own space in the blueprint's domain answered
+  `ValidationException`, *"StartSession for SageMaker Unified Studio Domain is supported only from Unified
+  Studio clients - AWS Toolkit and SageMaker Unified Studio Web IDEs. Retry your request from a supported
+  client."*; another project's space and another user's space answered `AccessDenied`, *"… because no
+  identity-based policy allows the sagemaker:StartSession action"*. The portal's deep link on the caller's
+  own space, 9 minutes earlier, was answered. A call IAM refuses reads the refusal, and only an allowed call
+  meets the client check. Which mark of the request the service reads is unread; the user agent is the
+  visible difference. The SageMaker AI guide's third connection method runs `aws sagemaker start-session`
+  in a `ProxyCommand` script, and neither its pages nor the Unified Studio admin guide's *Local IDE
+  support*, read 2026-11-21, state the restriction: that method cannot reach a Unified Studio space, and a
+  CLI `start-session` measures the identity half only on a space the caller holds no Allow for. Where:
+  `log-stage-06d-unified-studio-remainder.md`, 2026-11-21; `runbooks/remote-ide.md` §I and §F.
+
+- `SUP-398` **The AWS Toolkit lists a Unified Studio project's spaces from the domain its `Tooling`
+  environment names, so a space in the project's `SageMakerAIDomain` blueprint domain is invisible to it**
+  (measured 2026-11-21 in Sandbox, Stage 6d 7.6; read from the Toolkit 4.20.0 bundle the same day). Signed
+  in to the domain with `eighth-experimentation` open, the Toolkit listed no space. Its six `ListSpaces`
+  and `ListApps` pairs from 07:23:08 to 07:31:27 UTC, `aws-sdk-js` from the laptop's address as the
+  project role, each named `domainIdEquals` the `Tooling` domain alone, empty since 6d 2.7 moved the spaces;
+  the portal's listings in the same minutes named the blueprint's domain as well, where the owner's space
+  ran. The bundle (`dist/src/extensionNode.js`) takes the domain id from the `Tooling` environment's
+  provisioned resource `sageMakerDomainId` and filters the spaces to the signed-in user's profile; a
+  project whose environment has no such resource, as one created since 2026-11-18 under the profile, reads
+  *"Spaces are unavailable — this project's tooling environment has no SageMaker domain"* (the code, not
+  run). No AWS page read 2026-11-21 (*Local IDE support*, *Set up Remote IDE*, *Connect your Remote IDE*)
+  says which domain the Toolkit reads. A space in the blueprint's domain is reached by the portal's deep
+  link alone. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-21; `runbooks/remote-ide.md` §W.
+
+- `SUP-399` **A portal deep link hands the Toolkit one session, and every later SSH connection to the space
+  waits on the browser for another, for 40 seconds** (measured 2026-11-21 on macOS, Stage 6d 7.6; read
+  from the Toolkit 4.20.0 bundle the same day). The link's session, from the portal's `StartSession`, is
+  stored in `~/.aws/.sagemaker-space-profiles` as the request `initial-connection`. The connect script asks
+  the Toolkit's local server (`/get_session_async`) for a session per SSH connection, and the server hands
+  `initial-connection` to the first and marks it `consumed`. For a later connection it opens the portal's
+  refresh URL in the default browser, with `remote_access_token_refresh=true` and a callback to its own
+  `localhost` port, answers 202 and marks the request `pending`, then answers 204 until the callback
+  delivers a session; the script polls 8 times at 5 seconds and gives up. Remote-SSH's
+  `remote.SSH.localServerDownload` `always` copies the VS Code Server with `scp`, a second connection: it
+  read 202 once and 204 seven times from 07:33:37 UTC and failed at 07:34:18 with *"Error: Timed out after
+  8 attempts waiting for session to be ready."*, and the trail holds no second `StartSession`. No AWS page
+  read 2026-11-21 mentions the refresh or its limit. A first connection to a space that does not hold the
+  server yet, and every reconnection, needs the browser to finish the portal's refresh, signed in as the
+  space's owner, within 40 seconds. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-21;
+  `runbooks/remote-ide.md` §W.
 
 ## SageMaker AI jobs and models
 
@@ -4048,8 +4188,8 @@ entry is still true is the reading.
   `OSError(16, 'Device or resource busy')`, pip `[Errno 16]`, rather than a name error. A worker failing at
   resolution with "Device or resource busy" is a blocked name. Where: `runbooks/serverless-workflows.md` §O.
 
-- `SUP-273` **A run's state lags its task instances, and the workflow's log group exists from its first
-  save** (measured 2026-10-11, Stage 6i step 3.8). `get-workflow-run` read `QUEUED` until 23:06:16Z while
+- `SUP-273` **A run's state and its task instances lag the work they report, and the workflow's log group
+  exists from its first save** (measured 2026-10-11, Stage 6i step 3.8). `get-workflow-run` read `QUEUED` until 23:06:16Z while
   the sensor had finished at 23:05:23Z, and `/aws/mwaa-serverless/<domain>-<project>/<workflow>` existed,
   empty and with no retention, before any run. Where: `runbooks/serverless-workflows.md` §V and §O.
   Read again 2026-11-16 in Staging through the chain machines' `getWorkflowRun`, one poll a minute (Stage
@@ -4059,6 +4199,12 @@ entry is still true is the reading.
   `QUEUED` at 00:59:15 and 01:00:15 and `FAILED` at 01:01:16, with a `ModifiedAt` of 01:00:23; it never read
   `RUNNING`. A run shorter than the lag goes from `QUEUED` to its end, and the end is written about a
   minute after `CompletedOn`. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
+  Read again 2026-11-21 in Sandbox, polled every 22 seconds (Stage 20 2.5). `get-workflow-run` read `QUEUED`
+  and `list-task-instances` listed nothing through 04:59:28, `load` first at 04:59:50, while
+  `list-workflow-runs` read `RUNNING` from 04:57:30 and the task's Glue job had started at 04:58:18. At the
+  end `transform` and the run read `RUNNING` through 05:05:22 and `SUCCESS` at 05:05:44, dbt's log having
+  ended at 05:03:11. The task instances lag as the run does, about two and a half minutes at each end, and
+  `list-workflow-runs` reads the start first. Where: `log-stage-20-dbt-lineage.md`, 2026-11-21.
 
 - `SUP-274` **On an MWAA Serverless worker a Python task imports a pre-installed package before the code
   archive's copy, while a Bash task's `python3` imports the archive's copy first** (measured 2026-10-11,
@@ -4715,6 +4861,16 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   same way with a document that did change, each plan *"2 to add, 2 to change"* and each apply *"2
   added, 2 changed"*.
 
+- `SUP-403` **A saved plan file is refused by every Terraform version but the one that wrote it** (measured
+  2026-11-21, the laptop's move to 1.17.2). `sandbox/workflows/`'s training-pair plan, saved by 1.16.6 on
+  2026-11-20, read with `terraform show` under 1.17.2: exit 1, *"Plan read error: plan file was created by
+  Terraform 1.16.6, but this is 1.17.2; plan files cannot be transferred between different Terraform
+  versions"*. The pages of `plan` and `apply` (read 2026-11-21) call `-out`'s file opaque and name no
+  version. A plan saved for a later sitting does not survive a binary change, and the sitting plans again.
+  `state pull` is the documented opposite: its output carries the running binary's version, 1.17.2 against
+  the 1.15.8 the S3 object of `sandbox/foundation` holds (serial 18 in both). Where:
+  `log-stage-08-cicd-pipelines.md`, 2026-11-21; `runbooks/promotion.md` §N.12.3.
+
 ### The `aws` provider
 
 - `SUP-307` **`aws_organizations_policy` compares `content` as decoded JSON values, so a one-element
@@ -5115,3 +5271,27 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   constraints the client checks. A test over `Stubber` therefore passes a request the service refuses, so
   `examples/app-genai/tests/test_definition.py` walks the model's constraints itself. Where:
   `log-stage-17-sandbox-machine-learning.md`, 2026-11-17.
+
+- `SUP-395` **botocore decides a client's proxy against the host it composes from the service's endpoint
+  prefix, not the host the endpoint ruleset resolves, so a `NO_PROXY` naming only
+  `airflow-serverless.<region>.api.aws` sends MWAA Serverless's calls to the proxy** (measured 2026-11-21 in
+  a space on `awsds-sandbox-dev-env` version 11 and on the laptop with aws-cli 2.37.12, Stage 20 3.3). In
+  `app-dbt-dev`'s space, `boto3.client("mwaa-serverless", region_name="us-west-2")` failed `GetWorkflowRun`
+  with `ProxyConnectionError`, *"Tunnel connection failed: 403 Forbidden"*, and the proxy logged five
+  `CONNECT airflow-serverless.us-west-2.api.aws:443 403 … TCP_DENIED` from the space, both `NO_PROXY`
+  variables carrying that host. On the laptop, with `HTTPS_PROXY=http://127.0.0.1:9` standing for a proxy
+  that refuses every connection, `aws mwaa-serverless list-workflows` with `NO_PROXY` naming the `.api.aws`
+  host logged *"Endpoint provider result: https://airflow-serverless.us-west-2.api.aws"*, then
+  `ProxyConnectionError: Failed to connect to proxy URL: "http://127.0.0.1:9"`. The call answered with
+  `NO_PROXY` naming `airflow-serverless.us-west-2.amazonaws.com`, a host that does not resolve (the `mwaa`
+  group in `terraform-modules/vpc-egress/endpoints.tf`), and with `--endpoint-url
+  https://airflow-serverless.us-west-2.api.aws` beside the `.api.aws` host in `NO_PROXY`; `sts
+  get-caller-identity` with `NO_PROXY` naming `sts.us-west-2.amazonaws.com` answered, the control. The
+  service's `endpointPrefix` is `airflow-serverless`. The proxy is chosen once, for
+  `<endpointPrefix>.<region>.amazonaws.com`, when the client is created, and each request then goes to the
+  ruleset's host (inferred from the readings). Every other `.api.aws` host in version 11's list has its
+  composed twin beside it, ECR's being `api.ecr.us-west-2.amazonaws.com`, so MWAA Serverless is the one
+  service in that list the rule reaches. A client in a space reaches the service with the composed host
+  added to `NO_PROXY` or with an explicit endpoint URL. The CI/CD CLI's `run`, from the same terminal, left
+  no `airflow-serverless` line in the proxy's log (cause unmeasured). Where: `log-stage-20-dbt-lineage.md`,
+  2026-11-21; `runbooks/sagemaker-application.md` §D.

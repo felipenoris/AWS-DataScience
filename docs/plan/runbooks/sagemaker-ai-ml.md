@@ -168,16 +168,17 @@ registered model's *Approve/Reject* among them, are refused to the person who op
 ## E. The entries of the menus
 
 AWS's path for each entry, by chapter of its user guide (read 2026-11-16), what the entry holds, and
-what the lab's portal has shown. "Unread" means no sitting has read the entry in the lab (0.9).
+what the lab's portal has shown, read in `eighth-experimentation` and `app-etl-dev` on 2026-11-21 (Stage
+17 0.9).
 
 | AI/ML entry | Identity Center chapter | IAM-based chapter | What it holds | In the lab |
 |---|---|---|---|---|
-| **Models** | two entries, *JumpStart models* and *Model registry* | *Models*, with the tabs *Foundation Models* and *Registered Models* | pre-trained models to train or deploy; the Model Registry's groups and versions | unread; no version registered (pass 3) |
-| **Training Jobs** | the *Training jobs* page, reached after a JumpStart model's *Train* | *Training Jobs* | the project's training jobs: status, metrics, output | unread; no job created from a space (pass 2) |
-| **MLflow** | *MLflow*, with *Create MLflow App* | *MLflow*, with *Connect MLflow App* | MLflow Apps and tracking servers; the experiments' interface | read 2026-10-19: the entry is the legacy experiments page, and the app is under *Compute → MLflow* |
-| **Inference endpoints** | *Inference endpoints*, with *Create endpoint* | *Endpoints* | models, endpoint configurations and real-time endpoints | unread; none created (pass 4) |
-| **ML pipelines** | *ML pipelines*, with *Create in visual editor* | not in the chapter | SageMaker AI Pipelines: definitions, executions, the graph | unread; none created (pass 5) |
-| **Feature Store** | not in the chapter; the SDK works in any domain type | *Feature Store* | feature groups and their stores | unread (6.4) |
+| **Models** | two entries, *JumpStart models* and *Model registry* | *Models*, with the tabs *Foundation Models* and *Registered Models* | pre-trained models to train or deploy; the Model Registry's groups and versions | *Models*, with the tabs *Foundation models* and *My models*, the second empty; no version registered (pass 3) |
+| **Training Jobs** | the *Training jobs* page, reached after a JumpStart model's *Train* | *Training Jobs* | the project's training jobs: status, metrics, output | *Training jobs*, empty; no job created from a space (pass 2) |
+| **MLflow** | *MLflow*, with *Create MLflow App* | *MLflow*, with *Connect MLflow App* | MLflow Apps and tracking servers; the experiments' interface | the entry opens *Compute → MLflow*, `ml-demo-mlflow` in `eighth-experimentation`; on 2026-10-19 it was the legacy experiments page |
+| **Inference endpoints** | *Inference endpoints*, with *Create endpoint* | *Endpoints* | models, endpoint configurations and real-time endpoints | *Inference endpoints*, with *Create new endpoint*; none created (pass 4) |
+| **ML pipelines** | *ML pipelines*, with *Create in visual editor* | not in the chapter | SageMaker AI Pipelines: definitions, executions, the graph | *ML pipelines*, with *Create in visual editor*; none created (pass 5) |
+| **Feature Store** | not in the chapter; the SDK works in any domain type | *Feature Store* | feature groups and their stores | *Feature Store*, no feature group (6.4) |
 
 The Identity Center chapter also documents *HyperPod clusters* and *Partner AI apps*. Both provision
 standing infrastructure, and Stage 17 reads them without creating anything (6.1, 6.2).
@@ -232,7 +233,8 @@ in Amazon SageMaker Unified Studio."*). *"Deleting an MLflow App is permanent an
 The lab, read 2026-10-19:
 
 - The left navigation's *AI/ML → MLflow* is the legacy experiments page. It offers a tracking server
-  alone and carried the notice *"This page will be removed on September 16, 2026"*.
+  alone and carried the notice *"This page will be removed on September 16, 2026"*. On 2026-11-21 the
+  entry opens *Compute → MLflow* (0.9).
 - The app's entry is *Compute → MLflow → Create*. Both of its items stayed greyed out after the
   blueprint's apply, with *"The MLflowApp blueprint is not enabled for this project. Contact your
   administrator to enable it."*: the entry reads the domain account's blueprint configurations, which

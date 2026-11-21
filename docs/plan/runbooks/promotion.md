@@ -2305,7 +2305,7 @@ about 3 USD, against 0.36 to 0.87 USD for the next day's Config cycle.
 
 | Day | Raise | Blocks | Hours |
 |---|---|---|---|
-| 1 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa` | 6d decision 6's render and reading; Stage 20's sitting A; 6d 4.7, 7.6, 7.5's monitored half, 7.7 and 6.1 (viii)'s Code Editor half | about 6.5 |
+| 1 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa` | 6d decision 6's render and reading; Stage 20's sitting A; 6d 4.7, 7.6, 7.5's monitored half, 7.7 and 6.1 (viii)'s Code Editor half. Ran 2026-11-21 to 7.6; the rest rides day 2 or 3 (N.9.3) | about 6.5 |
 | 2 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | Stage 17's sitting B with 2.3 to 3.2, and pass 7 | about 7 |
 | 3 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base` | 6e 6.4's window; Stage 17's sitting C and pass 5 | about 8 |
 
@@ -2345,6 +2345,13 @@ items in order" and [Stage 20](../stages/stage-20-dbt-lineage.md)'s "Sitting A i
    tab.
 10. 6d's step 12: 4.7's schedule deleted, the spaces stopped, the portal tabs closed; then the lowering
     (N.9.6).
+
+**Day 1 ran on 2026-11-21 to step 8**: Stage 20's sitting A whole, and 6d to 7.6. The user deleted the
+spaces and lowered the estate before step 9. Step 8's 7.5 half, steps 9 and 10 are 6d's *The remainder after
+day 1*, about 75 minutes on the base endpoint set, at the end of day 2 or day 3 before its lowering, the
+user's choice: 7.7's sign-out ends every portal tab, so it comes after that day's portal work. The deep
+link is its one method (`SUP-398`), with Chrome relaunched on the proxy flag under the monitored profile
+and the copy's portal tab watched (`SUP-399`).
 
 #### N.9.4 Day 2: Stage 17's sitting B, its passes 2 and 3, and pass 7
 
@@ -2607,7 +2614,10 @@ After 2026-11-22 01:59:59 UTC, the admin secret's first scheduled rotation in Pr
    `app-genai` and `app-dbt` (Stage 20 8.1): `--self-check` printed every stage of every application `ok`,
    `app-etl`'s lines as on `main`. The pins read against the lint's release on 2026-11-18, `app-etl`
    (`196acee`), `app-ml` and `app-genai` (`37cb5a6`), each pass at `4613ddc` with their pipelines'
-   options, so each moves to it at the application's next tag, `app-etl`'s after release G.
+   options, so each moves to it at the application's next tag, `app-etl`'s after release G. Its successor
+   `4401f91` ([pull request #29](https://github.com/felipenoris/awsds-workflows/pull/29), merged
+   2026-11-21) adds the rule `operador`'s refusal of the native notebook operator (Stage 8 5.6, `TM-34`), and
+   no application's lint has run at it yet.
 7. When N.9's day 1 read Stage 20's passes 2 and 3, 8.5's verdict is written and 8.6's bundle rehearsed:
    `app-dbt`'s first push and branch pipeline (8.7), then its tag `v0.1.0` by 8.8, `staging/egress/` kept
    up from step 4 to the last Staging leg and `production/workloads-egress/` still up. Otherwise R2
@@ -2664,7 +2674,7 @@ bound it stay N.6's.
 
 | Date | Sitting | Raise | Waits on |
 |---|---|---|---|
-| 2026-11-21 | N.9's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa` | the user's acts of N.12.4 |
+| 2026-11-21 | N.9's day 1, run to 6d 7.6 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa` | the user's acts of N.12.4 |
 | 2026-11-22, after 01:59:59 UTC | R1 (N.11.1), N.6 item 6 inside it | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress, Production's warehouse compute after the leg | the rotation; N.9's day 1, for `app-dbt`'s release |
 | 2026-11-23 | N.9's day 2 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | Stage 17 0.9 |
 | 2026-11-24 | N.9's day 3, then Stage 17 10.5 with nothing up (N.6 item 8) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base` | `app-ml-dev`'s MLflow App |
@@ -2737,7 +2747,8 @@ Each reading is in the log of the stage that owns it.
   gaining `DescribeATrainingJobNoProjectHolds` and `TagATrainingJobWithTheCallersProject` alone; the
   default plan `No changes`. Saved as `$HOME/tmp/stage17-training-pair-preflight.tfplan`, it applies on day
   2 only while the slice's state and `main`'s tree have not moved; Terraform refuses it otherwise, and the
-  day plans again. The evaluation dataset's URL answers 200.
+  day plans again. The evaluation dataset's URL answers 200. Terraform 1.17.2, on the laptop since
+  2026-11-21, refuses the file 1.16.6 wrote (`SUP-403`), so day 2 plans the pair again.
 - **N.9's day 3**: 6e 6.4's baseline, `./aws/bedrock-usage.py` from 2026-11-01 to 20:16 UTC: 0.0005 USD
   computed over one to four invocations per model. Sandbox's application inference profiles are three,
   the domain's Haiku 4.5 and Nova Lite of 2026-10-19 and `eighth-experimentation`'s Opus 4.5 of
@@ -2764,7 +2775,7 @@ Each reading is in the log of the stage that owns it.
 The waiting list holds each as a row. In the calendar's order:
 
 - **Before N.9's day 1**:
-  - Stage 20 2.1, at a minute of the day the sitting's runs keep clear of;
+  - Stage 20 2.1, done 2026-11-21, its source's minute 02:43 UTC, which the sitting's runs keep clear of;
   - the client for 6d 7.5 to 7.7 ([`remote-ide.md`](remote-ide.md) §W): Remote - SSH and AWS Toolkit in a VS
     Code whose settings carry `remote.downloadExtensionsLocally` and `remote.SSH.localServerDownload`. The
     pinned 1.119.1 is a choice, not a prerequisite, and the current client serves 7.5's reading, which is the
@@ -2774,8 +2785,14 @@ The waiting list holds each as a row. In the calendar's order:
     runs in every shell;
   - 7.6's contributor in a browser profile of its own, and the monitored profile's tunnel in the WireGuard
     app ([`vpn.md`](vpn.md) §C7).
-- **Before R1**: Production's free-trial balance; Stage 19 4.12's membership, which R1's approval needs.
-- **Before N.9's day 2**: Stage 17 0.9.
+
+  All taken by day 1, read 2026-11-21: Remote - SSH 0.128.0 and AWS Toolkit 4.20.0 with both settings,
+  `proxy-on` in `~/.zshrc`, the tunnels `mbp` and `mbp-split-tunnel` in the WireGuard app.
+- **Before 6d's remainder** (N.9.3): nothing new. Chrome's proxy flag is typed in the window itself
+  ([`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §4.1 [c]).
+- **Before R1**: Production's free-trial balance, read 2026-11-21 at 299.18 of 300.00 (Stage 9's log);
+  Stage 19 4.12's membership, which R1's approval needs, done 2026-11-21 (Stage 19's log).
+- **Before N.9's day 2**: Stage 17 0.9, read 2026-11-21 (Stage 17's log).
 - **Before N.9's day 3**: `app-ml-dev`'s MLflow App; and, before 10.4's deploy, `app-genai-dev`'s first
   call to Nova Lite, which creates the project's application inference profile whose ARN 10.4's
   `DEV_MODEL_ID` names (`examples/app-genai/README.md`). Which portal act counts as that first use, the

@@ -3153,3 +3153,20 @@ infrastructure user with `InfrastructureAccess`, through `awsds-infra-prod` (acc
 - **[Claude] `promotion.md` N.8.3 rides R1** (§N.11.1): its steps on their own raises after the rotation and
   before 2026-12-17, steps 2 and 3 on a Production raise after release G's leg, step 4's backup with GitLab
   already up.
+
+## 2026-11-21 — the free trial's Production balance before R1
+
+*The user's hand in the Redshift Serverless console, pasted in chat verbatim (`promotion.md` §N.12.4, before
+R1); Claude read AWS as the infrastructure user with `InfrastructureAccess` in `Production`
+(`awsds-infra-prod`), reads alone.*
+
+- **[user]** Production: *"Créditos de avaliação gratuita restantes"*, *"$299,18 com diferença de $300,00"*,
+  *"Expiração da avaliação gratuita"*, *"January 21, 2027"*.
+- **[Claude] The compute since 2026-10-30**: `list-workgroups` empty. The trail holds one `CreateWorkgroup`
+  since, at 2026-11-16 03:45:46 UTC, and three `DeleteWorkgroup` from 05:33:18 to 05:33:20, each by the
+  infrastructure user: release F's sitting, with Stage 19 step 9's xxxii (Stage 19's log, 2026-11-15).
+  `ComputeSeconds` on `awsds-prod-warehouse` per half hour from 03:30: 0, 0, 56, 83 and 0 RPU-seconds,
+  139 in all, 0.0139 USD at the rate.
+- **[Claude] The reading**: 0.32 USD of credit since 299.50 on 2026-10-30, with that sitting the only
+  workgroup in between, against 0.16 for xxiv's. Read five days after the sitting, no late part is left.
+  299.18 is R1's reading before; the one after and the next day's are R1's (`promotion.md` §N.8.3).
