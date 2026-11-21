@@ -1882,8 +1882,8 @@ GitLab and rides R1 ([`promotion.md`](../runbooks/promotion.md) §N.11.1).
 
 **The remainder after day 1.** On 2026-11-21 steps 1 to 8 ran and 7.6 closed; the user deleted the spaces
 and lowered the estate before step 9 ([the log](../../log/log-stage-06d-unified-studio-remainder.md)).
-Steps 9 to 12 need `make hub-up` and `make up ENV=sandbox`, no group, and ride the end of another Sandbox
-day ([`promotion.md`](../runbooks/promotion.md) §N.9.3), about 75 minutes:
+Steps 9 to 12 need `make hub-up` and `make up ENV=sandbox`, no group, and ride the end of §N.9's day 2, the
+user's choice of 2026-11-21 ([`promotion.md`](../runbooks/promotion.md) §N.9.4), about 75 minutes:
 
 1. **[user] The owner's remote-access Code Editor space** in `eighth-experimentation`, `ml.t3.large`,
    remote access on, in the blueprint's domain. **[Claude]** Its domain, status and flag by
@@ -1901,8 +1901,8 @@ day ([`promotion.md`](../runbooks/promotion.md) §N.9.3), about 75 minutes:
    relaunched without the flag. A reconnection after the sign-out needs a portal refresh the browser can
    no longer give (`SUP-399`), so the step reads whether one SSH connection carried both commands.
 4. **[Claude] 6.1 (viii)'s Code Editor half**, step 11, in 7.7's wait.
-5. **[user] Step 12**: 4.7's schedule deleted, the space stopped or deleted, the contributor's `code`
-   space deleted as the contributor, every portal tab closed; then the lowering.
+5. **[user] Step 12**: the space stopped or deleted and every portal tab closed; then the lowering. 4.7's
+   schedule and the contributor's `code` space were deleted on 2026-11-21 (the log).
 
 About 2.5 to 3 hours of 6d's rows, part of them beside other stages' rows: steps 1 to 4 about 30 minutes,
 less with `start-associations-once`; 5 and 6 about 20; 7 about 60, each run's compute start and the

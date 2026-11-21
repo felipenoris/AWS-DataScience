@@ -4761,3 +4761,14 @@ on the laptop. Times are UTC.*
   after read `Deleting`.
 - **[Claude] After**, 18:34:22: `describe-space` *"ResourceNotFound … Space [… space/<domain>/code] does
   not exist."*, and `list-spaces` on the domain returns none. Step 12's leftovers are gone.
+
+## 2026-11-21 — The remainder's day: the end of §N.9's day 2
+
+*Claude's hand, recording the user's answer in chat, *"End of day 2"*, to the question of which day 6d's
+remainder goes on, day 2 or day 3 of `promotion.md` §N.9 (§N.9.3); no AWS call.*
+
+- **[user] The day**: steps 9 to 12 ride the end of §N.9's day 2, 2026-11-23 in §N.12.1's calendar, after
+  Stage 17's pass 7 and before its closing reads (§N.9.4 steps 3 and 4). Day 2's raise names four groups;
+  the remainder calls none.
+- **[Claude] Step 12's text** in the stage file no longer lists 4.7's schedule and the contributor's `code`
+  space, both deleted earlier the same day (the two entries above).

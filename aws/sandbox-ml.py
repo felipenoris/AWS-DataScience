@@ -2763,6 +2763,9 @@ def main(argv: list) -> int:
             ]
             rows.append("\t".join(str(c) for c in cells))
         rep.tabulate(rows if len(rows) > 1 else rows + ["(none)\t-\t-\t-\t-\t-\t-\t-"])
+        # The value examples/sandbox-ml/extra_values.json and app-ml's deploy name MLFLOW_APP_ARN.
+        for app in apps:
+            rep.line(f"MLFLOW_APP_ARN={app.get('Arn', '-')}  ({app.get('Name', '-')})")
 
         rep.h1("4. Training jobs - ML-3")
         rows = ["JOB\tSTATUS\tINSTANCE\tBILLED S\tVPC\tISOLATED\tICE\tVOLUME KEY\tTAG\tIMAGE"]
