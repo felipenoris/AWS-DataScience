@@ -130,6 +130,9 @@ it is not worth creating.
      device (`runbooks/vpn.md` §K6); the applies run from the laptop's uplink.
   2. **[Claude⚡]** `production/vpn/` from `main`, planned again (`2 to add, 3 to change, 2 to destroy`),
      applied and re-planned `No changes`. `./aws/vpn.py`'s `VP-2` reads `52.89.212.1` on the new instance.
+     `./aws/vpn.py` reads descriptions only, so the bootstrap is read in `aws ec2 get-console-output
+     --latest` and in `/awsds/prod/vpn`'s first event. On 2026-11-21 `VP-2` passed while the first boot's
+     `dnf install` had been OOM-killed on a t3.nano, and the host was rebuilt on t3.medium (#353).
   3. **[Claude⚡]** `production/proxy/` from `main` once #351 has merged, so its plan carries `TM-01`'s `-n`
      (Lesson 79): `1 to add, 2 to change, 1 to destroy` from #351's branch at 21:23:38 UTC. Applied and
      re-planned `No changes`. Nothing proxies from the old host's destroy until the new Squid listens and
@@ -140,13 +143,26 @@ it is not worth creating.
      applied, one more replacement. The new image's repository, 2023.12.20261120, carries
      `squid-6.13-1.amzn2023.0.7` (the AL2023 release notes) and Squid's 6.9 and 5.10 `acl` pages give
      `dstdomain [-n]`, so the new host's `squid -k parse` is the flag's first reading. The user data is
-     15,148 bytes of EC2's 16 KB, a limit no plan checks.
+     15,148 bytes of EC2's 16 KB, a limit no plan checks. The first boot's `dnf install -y squid jq
+     amazon-cloudwatch-agent` is the other way the new host comes up without Squid: the VPN host's, on a
+     t3.nano, was OOM-killed on the repository's 91 MB of metadata (step 2), and this host is a t3.micro,
+     twice that memory, unmeasured against that metadata. The console then reads `Out of memory: Killed
+     process (dnf)`, and the repair is `t3.small`, the slice's largest admitted size, in a pull request
+     applied with `-replace`.
   4. **[Claude, on the user's word]** `./aws/proxy.py --on-host` (`ssm:SendCommand`): `PX-3` passes on the
      new host, with `-n` under FLAGS.
   5. **[user; Claude]** `TM-01`'s re-probe: the two `curl`s of Stage 11's log of 2026-11-21, from a space,
      read in `/awsds/prod/proxy` with the reverse record of `54.213.164.60` still
      `ec2-54-213-164-60.us-west-2.compute.amazonaws.com.`: `54.213.164.60` reads `403 TCP_DENIED`, and
-     `108.158.137.46` stays `403`.
+     `108.158.137.46` stays `403`. An empty allow-list (step 3's failed first render) reads `403` on both
+     as well, so a third `curl`, in the same paste and from the same space, is the positive control:
+     `pypi.org`, one of `sandbox-foundation`'s 42 names at parameter version 12, prints `CONNECT=200
+     HTTP=200` and `exit=0`, and logs `CONNECT pypi.org:443 200 ... TCP_TUNNEL` in the new instance's
+     stream beside the `TCP_DENIED` of `54.213.164.60`.
+
+     ```bash
+     date -u +%FT%TZ; curl -sS -o /dev/null --max-time 10 --proxy http://proxy.awsds.internal:3128 --noproxy '' -w 'controle pypi.org CONNECT=%{http_connect} HTTP=%{http_code}\n' https://pypi.org/simple/; echo "exit=$?"
+     ```
   6. **[Claude⚡]** `production/observability/` (`0 to add, 1 to change, 0 to destroy`), applied and
      re-planned `No changes`. `./aws/observability.py`'s `OB-3` fails in Production on GitLab's alarm alone,
      and `EXC-19` narrows to it until R1. `docs/NETWORK.md`'s hub rows and diagram take the new private
