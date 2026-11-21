@@ -2056,3 +2056,55 @@ user's as the infrastructure user with `InfrastructureAccess`; Claude's reads th
 - **[Claude] Sitting A is done**, rows 1 to 17. Left: pass 5 after Stage 19's 4.12, on §N.10's day 1; 7.1
   and Rollback's step 6, which wait on an identity that may call `DeleteLineageEvent` (xv); pass 8's
   remainder in R1 or R2, before 2026-12-18.
+
+## 2026-11-21 — 8.6: the tree to be tagged, and the bundle rehearsed before the curation
+
+*Claude, in a session the orchestrating session started for 8.6, with the hub and Sandbox up for N.9's day
+2, which this work does not use. Reads as the infrastructure user with `InfrastructureAccess`, through
+`awsds-infra-sandbox-1` (Sandbox Account 1) and `awsds-infra-data` (Data Governance); the portal read in
+Claude's own tab group of the user's Chrome, signed in as the Data Scientist User, reads only. Account ids
+in pasted output became `<Sandbox Account 1>`. Times are UTC.*
+
+- **[Claude] The portal's identity**, about 20:20: the account menu reads *Data Scientist User*; the project's
+  *Members* page lists that user as *Owner* of `app-dbt-dev`, and `awsds-deploy-sandbox-test`, the
+  infrastructure user's `AWSReservedSSO_InfrastructureAccess_…` and the project role as *Contributor*, as
+  `list-project-memberships` reads them.
+- **[Claude] The assets before the curation**: `trades` (`bra0895x5fjzww`) and `notional_by_desk`
+  (`daefcycb3hhhn4`), each at revision 2 by `SYSTEM`, no description, `AssetCommonDetailsForm` holding the
+  table's ARN alone, no `classification`; the project owns no data product and no glossary. The form type
+  `classification` is at revision 2, `ENABLED`, owned by `eighth-experimentation`. The texts were proposed to
+  the user in chat, each README under 1,500 of the 4,096 characters.
+- **[Claude] The tree**, on pull request #349: `git restore --source=c11a9829` over `examples/app-dbt/`, whose
+  tree `ec837c34` is `103b4acc`'s, the one 2.0 built the archive and the tar from; `399f3365`'s six files for
+  4.5 are off it. Then the lint pin moved from `4613ddc` to `awsds-workflows` `4401f91` in `.gitlab-ci.yml`,
+  the README and the simulation; between the two commits only `src/awsds_workflows/lint.py` changed in the
+  package. `uv sync --locked`, ruff check and format clean, `pytest` *"86 passed"*; the lint with the
+  pipeline's instance types *"ok: 4 arquivo(s)"* at `4613ddc` and at `4401f91`. #321's
+  `deploy-application.py --self-check`, run in a copy of its branch holding this tree: *"ok    staging: 9
+  variable(s); app_dbt_deploy_staging_app_dbt, app_dbt_deploy_staging_app_dbt_probe"*, *"ok    prod: 9
+  variable(s); app_dbt_deploy_production_app_dbt"*, every other application `ok`, *"OK"*.
+- **[Claude] `build-task-code`'s script**, by `bash` at 20:26 in the tag's tree, extracted from `git archive`
+  of the branch's head (36 files): exit 0, *"code/app-dbt.zip: 5102 entries, 26129234 bytes, 82844337
+  unzipped, modes {'run-dbt.sh': '0o100755', 'app_dbt/bin/dbt': '0o100755'}"*. Against 2.0's archive, read in
+  the Trash where 2.7 left it: the same 5,102 members, and only four differ, all in
+  `app_dbt-0.1.0.dist-info/`: `METADATA`, which embeds the README (`readme = "README.md"`), `RECORD`,
+  `direct_url.json`, which names the build's temporary folder, and `uv_cache.json`. The archive's digest
+  thus moves with the README and the build folder, never with the code alone.
+- **[Claude] The pipeline's `pip-audit`**, by the gates' commands at 20:29: 78 pins exported, 78 audited, *"No
+  known vulnerabilities found"*. The gate reads a feed, so it runs again on the day of the tag (Lesson 77).
+- **[Claude] The bundle before the curation**, `bundle`'s script by `bash` in the same tree, as
+  `awsds-infra-sandbox-1` with `DOMAIN_ID`, `DOMAIN_REGION` and `DEV_PROJECT_NAME` exported, from 20:27:34 to
+  20:28:01: exit 0, `artifacts/app-dbt.zip` 25,501,926 bytes, six files (the catalog export, `code/app-dbt.zip`,
+  `glue/load.py`, `samples/trades.csv` and the two workflows); no *"Pattern not found"* and no *"Failed to get
+  project connections"*. The guard: *"assets: 2 (notional_by_desk, trades)"*, every other section 0, *"OK"*.
+  Each asset carries `GlueTableForm` 13, `DataSourceReferenceForm` 5, `SubscriptionTermsForm` 2 and
+  `AssetCommonDetailsForm` 8, no description, no README.
+- **[Claude] Sandbox's trail** for that minute: 32 calls by the session from 20:27:35 to 20:28:00, each a read:
+  `DescribeStacks` refused `ValidationException`, `ListDomains`, `ListProjects`, `GetProject`,
+  `ListProjectMemberships`, two `GetUserProfile`, two `GetGroupProfile` answered (`SUP-360`), four
+  `ListConnections`, nine `GetConnection`, `ListEnvironments`, four `Search`, two `SearchTypes`, two `GetAsset`
+  and `GetCallerIdentity`. CloudTrail records `Search` and `SearchTypes` with `readOnly` false.
+- **[Claude] Read against R1**: 5.0's subscription writes its resource link in `app_dbt`, and the project's
+  source `3uof8bs4x693f4` (`cron(43 2 * * ? *)`) imports a link as an inventory asset (`SUP-197`), which the
+  bundle exports and the guard fails. `promotion.md` §N.11.1 step 5 now has 5.0's request wait for step 7's
+  `bundle` job.
