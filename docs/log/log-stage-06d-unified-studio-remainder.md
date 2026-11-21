@@ -4587,3 +4587,54 @@ the Governance Manager User. Times are UTC.*
   written by the portal. The native operator calls `StartNotebookRun`, never `CreateTrainingJob`, so
   decision 14's refusal does not reach it, and Stage 8 5.6's lint learns its name. Left of 4.7: the
   `PUBLIC_INTERNET_ONLY` negative after Stage 20's sitting A, and the schedule's delete at step 12.
+
+## 2026-11-21 — Day 1: 4.7's negative, a run asking for `PUBLIC_INTERNET_ONLY`
+
+*Claude, in the same session. The call is the user's, in `jup-ai`'s terminal as `eighth-experimentation`'s
+project role; Claude's reads as the infrastructure user with `InfrastructureAccess`, through
+`awsds-infra-sandbox-1` (account Sandbox Account 1). Times are UTC.*
+
+- **[user] The call**, after Stage 20's sitting A, from `jup-ai`, whose app reads 10.20.97.84 (its
+  interface attached 06:54:18; 03:40's 10.20.96.127 no longer exists). `aws sts get-caller-identity` read
+  `datazone_usr_role_avhvbqn37ty7m8_…` with the session `SageMaker`. 4.7's command answered *"status":
+  "QUEUED"*: run `60uo7lmz36vzm8` at 07:04:34, its `networkConfiguration` `PUBLIC_INTERNET_ONLY`, created
+  by the Data Scientist User's DataZone id. `get-notebook-run` then read `STARTING` and
+  `runTimeoutInMinutes` 60.
+- **[Claude] The request**, in Sandbox's event history: `StartNotebookRun` at 07:04:34 as the project
+  role's session `SageMaker`, `sourceIdentity` the user's id, from 10.20.97.84 through
+  `vpce-03abb012f13500645` (`datazone`), `aws-cli/2.37.0`. Its `networkConfiguration` was
+  `{"networkAccessType": "PUBLIC_INTERNET_ONLY"}`, with no compute; the response carried the same network
+  and one cell, `do878hwqhbsh74`. DataZone refused nothing, with no deny in Sandbox before it.
+- **[Claude] The compute**: `CreateNetworkInterface` at 07:04:51 by `AWSServiceRoleForAmazonSageMakerNotebooks`,
+  session `AmazonSageMaker`, `invokedBy` `global.workflows.looseleaf.im.amazonaws.com`. It made
+  `eni-0e140fe72af86a5b2` at 10.20.73.14 in `awsds-sandbox-private-usw2-az2`, its one group
+  `datazone-avhvbqn37ty7m8-dev`, described *"[DO NOT DELETE] ENI managed by DataZone for
+  ComputeEnvironment(ce-1dd26c50-…)"*, attached 07:04:52. The project role's image token was fetched on
+  AWS's side: `GetAuthorizationToken` from Amazon public addresses with
+  `global.compute-capacity.looseleaf.im.amazonaws.com` in the endpoint field, at 06:55:37 and 07:11:26,
+  neither at the run's start.
+- **[Claude] The kernel**, from 10.20.73.14 through `vpce-03abb012f13500645` as the project role in a
+  session named after the user's id, `Boto3/1.40.61`:
+  - `GetNotebookRun` at 07:08:28; `BatchGetCell` and `CreateCellRun` at 07:08:32;
+  - `UpdateCellRun` at 07:09:33 and 07:10:33;
+  - `PutCellRunResult` for cell run `4ufhijq2v10ivk`, `RUNNING` at 07:11:13 and `FAILED` at 07:11:14.
+
+  The cell ran 2 minutes 42 seconds: the 20-second timeout on each of `checkip`'s 8 addresses. The
+  CloudWatch agent's two `CreateLogStream` came from 50.20.227.50 at 07:08:36.
+- **[Claude] The DNS Firewall**, `/awsds/sandbox/dns-firewall`, from 10.20.73.14: `checkip.amazonaws.com`
+  `A` `NOERROR` with 8 addresses at 07:08:32. Before it, from 07:08:28 to 07:08:31, the kernel's own
+  names: `datazone.us-west-2.api.aws`, `athena`, `glue`, `emr-serverless`, `s.emr-serverless-services`,
+  `aws-analytics-downloads-us-east-1.s3.us-east-1.amazonaws.com`, and `sessions.glue.us-west-2.amazonaws.com`
+  `NXDOMAIN`, its search-domain form `BLOCK`.
+- **[Claude] The flow log**, `awsds-sandbox-vpc-flow-logs`, read to 07:11:29: the interface's flows go to
+  10.20.41.89:443 alone, `vpce-03abb012f13500645`'s interface, `ACCEPT`, at 07:09:16, 07:10:22 and
+  07:11:28, and none to a public address. The windows from 07:05:22 to 07:09:53 read `NODATA`, the one
+  holding the kernel's calls of 07:08:28 and 07:08:32 among them, so the log is not complete for that
+  minute; the cell's timeout is the reading that decides.
+- **[Claude] The run**: `FAILED` at 07:11:42, *"URLError: <urlopen error timed out>"*. Its record still
+  reads `networkAccessType` `PUBLIC_INTERNET_ONLY`.
+- **[Claude] What the negative answers**: the project role passes `PUBLIC_INTERNET_ONLY`, and DataZone
+  accepts and records it. The compute still takes an interface in `awsds-sandbox-vpc`'s private subnet with
+  the project's group, as the three runs with no network did, and its cell cannot leave: the domain's VPC
+  binds the request. 4.7 closes, and `TM-34` with it. Decision 17 (a) stands, and (b)'s deny does not
+  follow in Sandbox. Left of 4.7: the schedule's delete at step 12.
