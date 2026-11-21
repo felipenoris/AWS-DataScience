@@ -3766,3 +3766,206 @@ and nothing raised; the one other session on the laptop was idle. Times are UTC.
     space's clone, outside git since the ARN carries the account's id.
 - **[Claude] Left to the day**: the user's acts of `promotion.md` §N.9.4, and the training pair's apply on
   the user's word naming it.
+
+## 2026-11-21 — Day 2's sitting B: the opening readings, 0.3 and 0.7
+
+*Claude, in the session the orchestrating session started for `promotion.md` §N.9.4's day 2, with the user
+at the laptop. Claude's reads as the infrastructure user with `InfrastructureAccess` through
+`awsds-infra-sandbox-1` (account Sandbox Account 1) and, for the proxy's log, `awsds-infra-prod` (account
+Production); the instruments through their own profiles. The portal was read by Claude through Claude in
+Chrome, in the user's Chrome signed in as the Data Scientist User, at the user's choice (*"Você, pelo
+Chrome"*); nothing was saved, created or submitted. The space's readings are the user's, pasted, with the
+account id written `<Sandbox Account 1>`. Times are UTC.*
+
+- **[Claude] The opening readings** (order 1), with the hub and the day's four groups raised before them;
+  the MLflow endpoint `vpce-0c34126a42848e404` was created at 19:47:33:
+  - `make status`, 19:55: `production/vpn` and `production/proxy` `UP`, `sandbox/egress` `UP` with 33
+    resources and `sandbox/probes` with 4, *"no Studio app billing"*, *"estimated burn: USD 0.2090/h"*.
+  - `./aws/egress.py awsds-infra-sandbox-1`: every check passed; `EG-5` *"24 interface endpoint(s) + 0
+    NAT(s) = ~USD 0.240/h"*.
+  - `./aws/devenv.py`: `DE-1` to `DE-6` pass, the baked list and the account's at 73 names, sha256
+    `61f1e1646df12c14`; `DE-5` read the image's bytes at 19:58:18.
+  - `./aws/sandbox-ml.py`, 19:58:24 to 20:01:52: 37 pass, none failed. `ML-9`:
+    `aws.sagemaker.us-west-2.mlflow` answered by `vpce-0c34126a42848e404`, `available`, private DNS on;
+    the S3 gateway's list names `sagemaker-us-west-2` and `jumpstart-cache-prod-us-west-2`;
+    `awsds-sandbox-egress-allow` 14 entries. `ML-2` `ml-demo-mlflow` `Created` on MLflow 3.16.0; `ML-7`
+    20, 30, 8 and 10; `ML-8` Titan V2 `AVAILABLE` and `AUTHORIZED`, and no knowledge base, vector bucket,
+    agent, prompt, flow, guardrail or evaluation job.
+  - 1.6's "before", 20:07: `list-metrics` holds no `BytesProcessed` series for `vpce-0c34126a42848e404`.
+- **[user] The spaces**, in `eighth-experimentation`'s blueprint domain `eighth-experimentation-ai-domain`
+  (`d-m8m0uefej9kb`), read by Claude with `list-spaces` and `list-apps`, both `InService`: `jup`, JupyterLab
+  on `ml.t3.medium` with `awsds-sandbox-dev-env` version 11, created 20:07:15, remote access `DISABLED`;
+  `code`, Code Editor on `ml.t3.large`, created 20:08:41, remote access `ENABLED`, for 6d's 7.5 and 7.7.
+- **[user] 0.3, the space.** The versions in both interpreters, pasted:
+
+  ```text
+  == /opt/awsds/venv/bin/python
+  python 3.12.14
+  sagemaker 3.21.0
+  sagemaker-core 2.21.0
+  mlflow 3.17.2
+  mlflow-skinny 3.17.2
+  sagemaker-mlflow 0.5.0
+  xgboost absent
+  xgboost-cpu 3.3.0
+  boto3 1.43.92
+  pandas 2.3.3
+  == /opt/conda/bin/python
+  python 3.12.14
+  sagemaker absent
+  sagemaker-core 2.21.0
+  mlflow 3.15.2
+  mlflow-skinny 3.15.2
+  sagemaker-mlflow 0.5.0
+  xgboost 2.1.4
+  xgboost-cpu absent
+  boto3 1.43.75
+  pandas 2.3.3
+  ```
+
+  The house interpreter holds the lock's versions. Neither `SAGEMAKER_USER_CONFIG_OVERRIDE` nor
+  `SAGEMAKER_ADMIN_CONFIG_OVERRIDE` is set (*"no override variable"*), the user configuration
+  `~/.config/sagemaker/config.yaml` is `absent`, and the admin configuration is the only `config.yaml` under
+  `/etc`, `/opt` and `/home`, pasted:
+
+  ```yaml
+  == /etc/xdg/sagemaker/config.yaml
+  SchemaVersion: '1.0'
+  SageMaker:
+    PythonSDK:
+      Modules:
+        Session:
+          DefaultS3Bucket: awsds-sandbox-smus-projects
+          DefaultS3ObjectKeyPrefix: shared/
+        RemoteFunction:
+          IncludeLocalWorkDir: true
+          VpcConfig: &id001
+            SecurityGroupIds:
+            - sg-0fee1c059b82e3562
+            Subnets:
+            - subnet-016b5a3a62c739894
+            - subnet-09d3399d6b0fec93a
+        NotebookJob:
+          RoleArn: arn:aws:iam::<Sandbox Account 1>:role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c
+          S3RootUri: s3://awsds-sandbox-smus-projects/shared/
+          VpcConfig: *id001
+        Serve:
+          S3ModelDataUri: s3://awsds-sandbox-smus-projects/shared/
+    Pipeline:
+      RoleArn: arn:aws:iam::<Sandbox Account 1>:role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c
+    Model:
+      ExecutionRoleArn: arn:aws:iam::<Sandbox Account 1>:role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c
+      VpcConfig: *id001
+    ModelPackage:
+      ValidationSpecification:
+        ValidationRole: arn:aws:iam::<Sandbox Account 1>:role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c
+    ProcessingJob:
+      RoleArn: arn:aws:iam::<Sandbox Account 1>:role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c
+      NetworkConfig:
+        VpcConfig: *id001
+    TrainingJob:
+      RoleArn: arn:aws:iam::<Sandbox Account 1>:role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c
+      Environment:
+        BOTOCORE_EXPERIMENTAL__PLUGINS: S3AccessGrantsPlugin=aws_s3_access_grants_boto3_plugin.s3_access_grants_plugin
+      VpcConfig: *id001
+    MonitoringSchedule:
+      MonitoringScheduleConfig:
+        MonitoringJobDefinition:
+          NetworkConfig:
+            VpcConfig: *id001
+    AutoMLJob:
+      AutoMLJobConfig:
+        SecurityConfig:
+          VpcConfig: *id001
+    AutoMLJobV2:
+      SecurityConfig:
+        VpcConfig: *id001
+    CompilationJob:
+      VpcConfig: *id001
+  ```
+
+  What a `CreateTrainingJob` through the SDK's own classes gets filled in: the project role, the project's
+  security group (`datazone-avhvbqn37ty7m8-dev`) and both private subnets, and the S3 Access Grants plugin
+  in the container's environment. No key, no tag, no isolation and no inter-container encryption anywhere,
+  so 2.2 (a) and (b) stay two readings. The S3 defaults name the bucket's root `shared/`, outside the
+  project's `<domain>/<project>/` prefix. `examples/sandbox-ml/` calls boto3's client, which reads none of
+  this file. The clone read `b3b900b 2026-11-21T16:51:08-03:00`; `space_values.json` holds `ACCOUNT_ID`,
+  `DOMAIN_ID`, `PROJECTS_BUCKET`, `PROJECT_ID`, `PROJECT_KEY_ID`, `PROJECT_ROLE_NAME`, `PROJECT_SG`,
+  `REGION`, `SUBNET_AZ1` and `SUBNET_AZ2`; the user replaced the clone's `extra_values.json` with the
+  laptop's. The fetch of `space_values.py` is the proxy's line *"2026-11-21T20:19:16+0000 10.20.38.182
+  CONNECT raw.githubusercontent.com:443 200 14336 974 TCP_TUNNEL"*.
+- **[Claude] 0.7, the forms**, from 20:15, in `eighth-experimentation`; the account menu read *"Data
+  Scientist User"*:
+  - **JumpStart has no *Train* form.** AI/ML → *Models*, searched *"xgboost classification"*: one model,
+    *"XGBoost Classification"*, Model ID `xgboost-classification-model`, *Tabular Classification ·
+    Fine-tune*. Its page offers *Customize* ▾ and *Deploy* ▾, each with *Notebook*, disabled (*"Notebooks
+    are currently not supported for cross-region and cross-account project configurations"*), and
+    *JupyterLab*, not clicked. The *Sample notebooks* tab previews two:
+    - *Deploy*, *"SageMaker Built-In Algorithms: Tabular Classification using XGBoost and Linear
+      Learner"*: SDK 3's `ModelTrainer.from_jumpstart_config(JumpStartConfig(model_id=...))` with
+      `Compute(instance_type="ml.m5.xlarge")`, JumpStart's dataset under
+      `jumpstart-cache-prod-{region}/training-datasets/tabular_multiclass/`, the output under
+      `sagemaker_session.default_bucket()`, a first cell `!pip install ipywidgets==7.0.0`, then
+      `ModelBuilder.deploy()` and the deletes;
+    - *Fine-tune*, *"Training Model with Jumpstart And MLflow In SageMaker Unified Studio"*: SDK 2's
+      `sagemaker.jumpstart.estimator.JumpStartEstimator`, which SDK 3.21.0 does not carry, with t5's
+      hyperparameters, `instance_type` commented out and an MLflow tracking server placeholder.
+
+    2.4's portal path is a sample notebook run in JupyterLab, not a form to submit once.
+  - **Inference endpoints → *Create new endpoint*** opens *Select model*, *"No registered models found. No
+    registered models with approved versions found. Models must have at least one approved version to
+    appear here."*, with *Create endpoint using JupyterLab* and *Create endpoint using Notebook* disabled;
+    no field form and no *Add model*.
+  - **Compute → MLflow**: `ml-demo-mlflow`, *On*, *App*. *Create* ▾ greys both items: *Create MLflow App*
+    (*"The MLflowApp blueprint is not enabled for this project. Contact your administrator to enable
+    it."*) and *Create MLflow Tracking Server* (*"The MLExperiments blueprint is not enabled for this
+    project."*). The page carries *"The Compute page is migrating to Resource blueprints"*.
+  - **ML pipelines → *Create in visual editor***, a draft never saved. The library: *Run notebook or code*,
+    *Run callback*, *Run lambda function*, *Process data*, *Train model*, *Fine tune model*, *Register
+    model*, *Create model*, *Deploy model (endpoint)*, *Deploy model (batch inference)*, *Condition*,
+    *Fail*. The step forms:
+
+    | Step | Fields | *Advanced → Security* | Isolation, inter-container encryption |
+    |---|---|---|---|
+    | *Train model* | Model output S3 URI and Algorithm ECR URI (required), Input Mode *FastFile*, metrics, Instance Type default `ml.m5.xlarge`, Count, Additional storage per instance (30 GB shown), hyperparameters, stopping condition 86400 s, checkpoints, caching, retry | IAM Role empty; VPC `vpc-00dca74a35159b11c`, both subnets and `sg-0fee1c059b82e3562` filled; Encryption KMS key empty | no field |
+    | *Process data* | Image URI (required), Instance `ml.m5.xlarge`, Count 1, storage 1 GB, stopping 86400 s | as *Train model* | no field |
+    | *Create model* | Execution Role, Model S3 URI (required), *Bring your own container*, ECR URI, environment | VPC, subnets, security groups | no field |
+    | *Deploy model (endpoint)* | Endpoint Name (required), *Real-time*, default `ml.t2.medium`, Count 1, Maximum count 1 | none, no key | — |
+    | *Deploy model (batch inference)* | data input and output (output and capture keys *"No Custom Encryption"*), Instance `ml.m5.xlarge`, configuration, data joins, environment | none, no volume key | — |
+
+    Every step's *Tags* say *"Tag keys will be automatically prefixed with "ProjectUserTag"."*, so no form
+    can set `AmazonDataZoneProject`; a *Train model* or *Process data* step submitted from the editor lacks
+    isolation and inter-container encryption, which the boundary requires.
+  - **Generative AI → *My components***: *"Components (0)"*, *Create component* ▾ offering *Knowledge
+    Base*, *Guardrail* and *Function*.
+    - *Create function*, cancelled: name, description, an OpenAPI 3.0.0 schema of up to 5 APIs,
+      authentication *No authentication* by default (or API keys, bearer token, basic), a server URL; no
+      network field and no Lambda field.
+    - *Create a new knowledge base*, cancelled: name and description; sources *Local file*, *Web crawler*
+      and *Project data sources*. *Local file* takes .docx, .doc, .pdf, .txt, .md, .html, .csv, .xls and
+      .xlsx, *"Maximum 10 files, 50MB per file"*, where 7.4a read 50 files on 2026-10-12. *Project data
+      sources* lists *Lakehouse (1)*, *Default Lakehouse connection*; *Redshift (1)*,
+      `redshift-serverless.redshift`; *S3 (3)*: `default.s3_shared`
+      (`s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/`), *S3 (Default)*
+      (`…/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/`) and `sandbox-lake.s3`
+      (`s3://awsds-sandbox-lake/sso-group-data-scientists/`). *Data storage and processing*, fixed at
+      create: the embeddings model *Titan Text Embeddings V2* alone; with it, the embedding type
+      *Floating-point vector embeddings* alone, the dimension 256, 512 or 1024 with 256 preselected; the
+      vector store preselected as *Vector engine for Amazon OpenSearch Serverless*, beside *Amazon S3
+      Vectors - new* and *Amazon Neptune Analytics (GraphRAG) - new*, the last disabled. Chunking
+      *Default*, *Fixed size*, *Hierarchical*, *Semantic* and *None*; parsing *Bedrock default parser*
+      with *"Access to model required"*. 7.4a picks S3 Vectors and 1024 by hand, since the defaults are
+      OpenSearch Serverless and 256.
+  - **Build → *Model evaluations* → *Create evaluation***, left at its second step: the model list *Nova
+    Lite*, *Claude Haiku 4.5*, *Claude Opus 4.5* and *Claude Sonnet 4.5*, the three Claude models
+    *Cross-region*; the task types *General text generation*, *Text summarization*, *Question and answer*
+    and *Text classification*. For *Question and answer*, *Accuracy* and *Robustness* take the built-in
+    datasets alone (*"Custom datasets are not supported for Q&A task type with robustness or accuracy
+    metrics"*: *BoolQ*, *Natural Questions*, *Trivia QA*); *Toxicity* takes *Upload a dataset to S3*
+    (*"max. 100 MB per file, 1 file"*, from the browser) or *Choose a dataset from S3*, which opens
+    *Select a previously uploaded dataset* and read *"No options"*. The field does not browse
+    `shared/ml-demo/bedrock/`: 7.4's dataset reaches the job by the upload.
+  - **Build → *Chat agent***, an unsaved *Untitled App*, its model preselected as *Claude Opus 4.5*; the
+    list *Nova Lite*, *Claude Haiku 4.5*, *Claude Opus 4.5* and *Claude Sonnet 4.5*, each *"Supports
+    Guardrails, Data, Functions"*. The page's banner: *"Agents Classic will no longer be open to new
+    customers starting on July 30, 2026"*.
