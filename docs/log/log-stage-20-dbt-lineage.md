@@ -1620,3 +1620,52 @@ Sandbox Account 1). Times are UTC.*
   `notional_by_desk` and two `GetDataAccess` invoked by `athena.amazonaws.com`, `UpdateTable` through
   `glue`'s (`persist_docs`), six `PostLineageEvent` through `datazone`'s. No refusal.
 - **[Claude] 2.3 passes**: i's modes, ii, iii's worker half, iv and v.
+
+## 2026-11-21 — Sitting A: 2.4, the source's run and one graph
+
+*Claude, in the same session. The portal's acts are the user's, as the Data Scientist User; Claude's reads
+as the infrastructure user with `InfrastructureAccess`, through `awsds-infra-sandbox-1` (Sandbox Account 1)
+and `awsds-infra-data` (Data Governance) for the trail. Times are UTC.*
+
+- **[user] 2.4**: the source `app_dbt` run in the portal, *Manage → Data sources*, after 2.3's run.
+- **[Claude] The run**: `d2cehnogthh2c0`, `PRIORITIZED`, created 04:34:56, `SUCCESS`, `added` 2, `updated`
+  0, `unchanged` 0, `failed` 0, `lineageSummary.importStatus` `SUCCESS`. The activities: `trades`
+  `SUCCEEDED_CREATED`, asset `bra0895x5fjzww`; `notional_by_desk` `SUCCEEDED_CREATED`, asset `daefcycb3hhhn4`,
+  its technical description the model's. Each activity's `lineageSummary.eventStatus` reads `None`.
+- **[Claude] The assets**: `GlueTableAssetType`, revision 1, created by `SYSTEM` at 04:34:58, unlisted, their
+  external identifiers `table/app_dbt/trades.dnl3l158mbhrio` and `table/app_dbt/notional_by_desk.dnl3l158mbhrio`
+  (`SUP-343`), each `DataSourceReferenceForm` naming the run. `notional_by_desk`'s `GlueTableForm` carries
+  `tableDescription`, *"The notional each desk traded, quantity times price summed over the desk's trades."*,
+  and each column's `columnDescription`: `desk` *"The desk."*, `notional` *"The sum of quantity times price
+  over the desk's trades, rounded to cents."*, the Glue table's comments `persist_docs` wrote. The asset's
+  own `description` is empty and it holds no time-series form. `trades` carries no description: its table
+  has no comments, `persist_docs` writing a model's alone, and `sources.yml`'s descriptions reach only the
+  lineage node's `DatasetSchemaForm`.
+- **[Claude] The graph**, from the asset back, by `get-lineage-node`, `list-lineage-node-history` and the
+  node's version at each event (`--event-timestamp`): `notional_by_desk`'s asset node `6ljn21swt4l0y8` hangs
+  from `6w7hp2vvi8kscw`, the dataset node `arn:aws:glue:us-west-2:<Sandbox>:table/app_dbt/notional_by_desk`;
+  its version at 04:18:14 has upstream the job run `5cqirhi3wi3lw0`,
+  `app-dbt-dev.awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run/01a1fc53-9635-…`, whose upstream is
+  `3s0gk0eg2o68pc`, `arn:aws:glue:us-west-2:<Sandbox>:table/app_dbt/trades`, the node `trades`' asset node
+  `avyjoalaki4cy8` hangs from. That node's versions at 04:16:41 and 04:16:42 have upstream the Glue job's runs
+  `b8r5wfvogmhmds` (`default.app_dbt_dnl3l158mbhrio.overwrite_by_expression.glue_catalog_app_dbt_trades/…`)
+  and `514rsn88f19h5c` (`….atomic_replace_table_as_select.app_dbt_trades/…`), each from `cvurzd3gyts5qo`,
+  the project's `shared/app-dbt/inbox`. The test's run `by4b2cm6q5sas0` (`….build.test/01a1fc53-9637-…`,
+  04:18:18) hangs from the model's node. A node read at its latest version shows that event's edges alone:
+  `6w7hp2vvi8kscw`'s latest, the test's, reads no upstream.
+- **[Claude] vi passes**: the model's output node is the Glue table's ARN, the symlink honoured in an event
+  with no Glue environment properties, and dbt's input is the node the Spark job wrote (`SUP-391`). Data
+  Governance's trail since 04:14 holds 13 `CreateLineageNode`, 4 dataset nodes and 9 job nodes, none with an
+  `awsathena://` identifier; no job run's node and no asset's node is among them. The graph is one, so
+  decision 3 (b)'s transformer and 3.1 are not needed.
+- **[Claude] The nodes' facets**: the job nodes, `….build.run` (`JobForm` `BATCH`, `DBT`, `MODEL`; `QueryForm`,
+  the compiled SQL with the model's comment), `….build.test` (`JobForm` `TEST`) and the parent
+  `app-dbt-dev.dbt-run-app_dbt`, carry no edges; the runs carry them, each `JobRunForm` naming the parent run
+  `01a1fc53-46be-…`, the model's from 04:18:09 to 04:18:14, `COMPLETE`. The model's output node at 04:18:14
+  holds `DatasetSchemaForm` with both columns' descriptions and `ColumnLineageForm`: `desk` from `trades`'
+  `desk`, `notional` from `price` and `quantity`, each source table named
+  `awsathena://athena.us-west-2.amazonaws.com/awsdatacatalog.app_dbt.trades`. The test left
+  `DataQualityResultForm` on the node, `{"evaluations":[{"types":["not_null"],"details":{"COLUMN_NAME":"desk"},"status":"PASS"}]}`,
+  and nothing on the asset.
+- **[Claude] xvi passes**: the model's and its columns' descriptions reach the asset through the Glue table's
+  comments. vii's portal half, what the *Lineage* tab draws, is the user's look.

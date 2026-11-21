@@ -3203,6 +3203,25 @@ entry is still true is the reading.
   type's revisions and required forms are read from the domain's account. Where:
   `log-stage-21-redshift-s3-data-products.md`, 2026-11-18.
 
+- `SUP-391` **A dataset's `symlinks` facet naming a Glue table makes its lineage node the table's ARN in an
+  event with no Glue environment properties, which the `sourceIdentifier` page reserves to Glue's events**
+  (measured 2026-11-21, Stage 20 2.4). dbt 1.11.16's events, built by OpenLineage's dbt wrapper 1.55.0 and
+  posted with `PostLineageEvent` as `app-dbt-dev`'s role, name each dataset
+  `awsathena://athena.us-west-2.amazonaws.com` `awsdatacatalog.app_dbt.<table>` with one `symlinks`
+  identifier, namespace `arn:aws:glue:us-west-2:<Sandbox>`, name `table/app_dbt/<table>`, type `TABLE`; their
+  run facets are `dbt_run`, `dbt_version`, `parent`, `processing_engine` and `tags`, with no
+  `environment-properties`. The domain created the output's node `6w7hp2vvi8kscw` with the `sourceIdentifier`
+  `arn:aws:glue:us-west-2:<Sandbox>:table/app_dbt/notional_by_desk`, and the input took `3s0gk0eg2o68pc`, the
+  node the Glue job's events had created for `trades`: Data Governance's trail holds no `CreateLineageNode`
+  with an `awsathena://` identifier. Each node's `DatasetForm` keeps both names as `alternateIdentifiers`, the
+  Athena one and the symlink joined by a slash (`arn:aws:glue:us-west-2:<Sandbox>/table/app_dbt/trades`), and
+  the `ColumnLineageForm` names its source table by the Athena name. The page reads the symlink for an event
+  whose `environment-properties` carries `GLUE_VERSION`, and *"In all other cases, dataset nodes'
+  sourceIdentifier is populated using <namespace>/<name>"*, which would have made the node
+  `awsathena://athena.us-west-2.amazonaws.com/awsdatacatalog.app_dbt.notional_by_desk`, apart from its asset.
+  A dbt project's events join the Glue assets' graph as the wrapper builds them, with no transformer in the
+  client (Stage 20 decision 3). Where: `log-stage-20-dbt-lineage.md`, 2026-11-21.
+
 ### Connections
 
 - `SUP-199` **A portal S3 connection over an already registered Access Grants location needs none of the
