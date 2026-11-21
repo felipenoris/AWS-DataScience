@@ -1501,6 +1501,33 @@
   What's New, the Workday integration and the console assistant's new name:
   <https://aws.amazon.com/about-aws/whats-new/2026/11/aws-analytics-workday-data-cloud/>,
   <https://aws.amazon.com/about-aws/whats-new/2026/11/q-developer-renamed-aws-assistant/>.
+- **SageMaker Unified Studio's resource blueprints** — read 2026-11-20 for
+  [`upstream-releases.md`](plan/upstream-releases.md) and [`SMUS.md`](SMUS.md) §Resource blueprints, after the
+  user saw a project's *Resource blueprints* page. The release note of 2026-11-20, and the 2026-11-17 entry on
+  asset ownership transfer: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>;
+  What's New of the same day, found through the directory API:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-sagemaker-adds-new-capabilities/>; the admin guide's
+  overview, the three controls and the two project kinds:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/resource-blueprints.html>; the
+  provisioning role, a blueprint's own before the account's, the project execution role last:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/resource-blueprint-provisioning-role.html>;
+  the grants, a designation and a domain unit, at most 20:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/grant-deploy-resource-blueprints.html>;
+  the *Default Project Profile* and `DISASSOCIATE`:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/remove-project-profile.html>; the
+  blueprints each project kind deploys:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/available-resource-blueprints.html>;
+  the console's *Authorization* tab and the *Manage Environments* requirement:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/authorization-for-blueprints.html>;
+  the exports a custom Tooling blueprint owes the managed ones:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/tooling-managed-compatibility.html>;
+  the *Manage environments* permission's actions:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designation-permissions.html>; the user
+  guide's page, *Blueprint deployments* and *Deploy*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/deploying-resources.html>. botocore
+  1.44.8's changelog entry, its PyPI upload time and its DataZone model, compared with 1.44.2's:
+  <https://github.com/boto/botocore/blob/develop/CHANGELOG.rst>, <https://pypi.org/pypi/botocore/1.44.8/json>,
+  <https://github.com/boto/botocore/blob/1.44.8/botocore/data/datazone/2018-05-10/service-2.json>.
 - Code spaces, and an environment's deployment record — the user-guide page that routes IAM and Identity Center domains to their own code-spaces pages, and the DataZone API's `GetEnvironment` and `EnvironmentDeploymentDetails`, which define `VALIDATION_FAILED`, `FAILED_VALIDATION` and the `failureReason` an environment carries (6d 2.6 item 3, the `[]` read 2026-10-30): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/ide-spaces.html>, <https://docs.aws.amazon.com/datazone/latest/APIReference/API_GetEnvironment.html> and <https://docs.aws.amazon.com/datazone/latest/APIReference/API_EnvironmentDeploymentDetails.html>.
 - **RStudio on SageMaker AI, the pages 6d 2.6 item 5 rests on** — read 2026-10-31 before the user's licence and
   policy acts. The licence, granted in `us-east-1` and accepted in the domain's Region after the console's

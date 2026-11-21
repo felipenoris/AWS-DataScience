@@ -322,7 +322,8 @@ Because the entity is per member account, the grant lives in **`terraform-module
 joining category 1 arrives authorized in the same apply. Without its grant, every `ON_DEMAND`
 blueprint fails as Tooling did, one capability-enable at a time. **Applied 2026-08-22 in both member
 slices** — `11 added` each, re-plan `No changes`, all 22 read back with exactly one grant (the stage
-file's owed table is the record).
+file's owed table is the record). Since 2026-11-20 AWS calls it a **blueprint authorization grant**, one of
+the controls of a project's *Resource blueprints* page (§Resource blueprints below).
 
 #### Who may create a metadata form type
 
@@ -579,6 +580,48 @@ profile, never as an extra on these two.
 > registered locations is **unmeasured** — INT-15 and Stage 6 verification (v)'s question, what a
 > service-authored role can do that this project did not grant. The boundary's S3 deny names the
 > **LF-registered** buckets, so it says nothing about the derived zone, where a project's outputs live.
+
+### Resource blueprints — what a project member deploys
+
+A project's **Resource blueprints** page, released 2026-11-20 ([`upstream-releases.md`](plan/upstream-releases.md)),
+lists the project's environments as *Blueprint deployments*, by blueprint or by resource, each with a
+*Resources* tab. Its *Deploy* opens a gallery of the blueprints the member may deploy; the member names the
+resource and fills the blueprint's parameters, and the deployment is one more environment. Three objects
+decide the gallery, and this design already holds each of them:
+
+| Control | What it is | In this design |
+|---|---|---|
+| Blueprint authorization grant | `CREATE_ENVIRONMENT_FROM_BLUEPRINT` on a blueprint configuration: a designation and a domain unit, for one account or for all of them, at most 20 | one per configuration, `CONTRIBUTOR` on the root domain unit, written by `sagemaker-prereqs`' `grants.tf` (§Who may create an environment); read on all 19 configurations 2026-11-21. A blueprint's *Authorization* tab, in the console and in the domain management portal, adds one by hand, outside Terraform's state, and no instrument in `aws/` reads a configuration's grants (`aws/catalog.py` reads the domain unit's) |
+| Designation | its *Manage environments* permission: `CreateEnvironment`, `UpdateEnvironment`, `DeleteEnvironment`, `GetEnvironmentActionLink`, `AssociateEnvironmentRole`, `DisassociateEnvironmentRole` and `GetEnvironmentCredentials`. The gallery lists with `ListDeployableEnvironmentBlueprints`, which botocore 1.44.8's model does not carry | `PROJECT_OWNER` and `PROJECT_CONTRIBUTOR` hold both; `subscription-approver` holds neither, so its member deploys nothing (read 2026-11-21) |
+| Provisioning role | the blueprint configuration's own; else one role for the account, set in the domain management portal (*Accounts → Domain account settings → IAM roles*), with no API in botocore 1.44.8; else the project's execution role | every configuration names its account's `awsds-<env>-smus-provisioning` (read 2026-11-21), so neither fallback is reached |
+
+The project's kind sets what the gallery can hold:
+
+- **A project with a profile** offers the profile's `ON_DEMAND` environment configurations, under the
+  profile's defaults, locked parameters, order, account and tags. Every project in `awsds-studio` has one
+  (read 2026-11-21). AWS lists what such a project deploys in an Identity Center domain: `DataLake`,
+  `EmrOnEc2`, `EmrOnEks`, `EmrServerless`, `LakehouseCatalog`, `MLExperiments`, `MLflowApp`, `QuickSight`,
+  `RedshiftServerless`, `S3Bucket`, `SageMakerAIDomain` and `Workflows`; `S3TableCatalog` only without a
+  profile, and no `AmazonBedrock*` blueprint. In an `experimentation` project that leaves `DataLake`,
+  `EmrServerless`, `MLflowApp` and `S3Bucket`, all category 1, plus `RedshiftServerless` under its 4-RPU
+  locks during Stage 21's sitting; in `deploy-staging` and `deploy-production`, `DataLake`. No gallery has
+  been read in this portal.
+- **A project without a profile** is created only from the domain management portal, starts with one
+  Tooling-category environment on `ToolingLite`, and deploys whatever its members' grants name, with every
+  parameter editable: the profile's locks, the control Lesson 5 names, are absent. Two controls already in
+  place close it here: the root domain unit holds no `CREATE_PROJECT` grant, and no account holds a
+  `ToolingLite` configuration (category 3, which `US-3` fails on).
+- **The managed *Default Project Profile***, on `ToolingLite`, is what a project created before 2026-11-19
+  with no profile named carries. It offers `S3Bucket` and `S3TableCatalog` alone, and `UpdateProject` with
+  `projectProfileAction` `DISASSOCIATE` (botocore 1.44.8) removes it for good, called by a member of the
+  domain's admin project, from a `ToolingLite` profile only. `awsds-studio` holds neither the profile nor
+  such a project (read 2026-11-21).
+
+The gallery reopens the MLflow entries' gate (the checklist's step 7): [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md)
+9.6 creates `app-ml-dev`'s MLflow App with `datazone create-environment` because those entries grey out, and
+whether the gallery offers `MLflowApp` in that project is unread. `S3Bucket` is on AWS's list too, never
+deployed here (no project held an `S3Bucket` environment on 2026-11-21), with the key and bucket policy its
+row says nobody chose.
 
 ## The workflow surface
 
