@@ -203,6 +203,12 @@ variable "log_retention_days" {
   default     = 30
 }
 
+variable "alarm_actions" {
+  description = "The SNS topic ARNs the health alarm notifies when the running host fails its status checks - the caller's account alerts topic (Stage 12 step 2.2). Empty, the default, leaves the alarm notifying nobody. The topic's policy must admit cloudwatch.amazonaws.com for this account's alarms, which ./aws/observability.py OB-3 reads."
+  type        = list(string)
+  default     = []
+}
+
 variable "root_volume_size" {
   description = "GiB. The [D] idle cost of this host, ~USD 0.65/month at gp3 rates (docs/PRICING.md 3) - it goes on billing while the instance is stopped, which is the deal [D] makes."
   type        = number
