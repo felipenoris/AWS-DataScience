@@ -2108,3 +2108,57 @@ in pasted output became `<Sandbox Account 1>`. Times are UTC.*
   source `3uof8bs4x693f4` (`cron(43 2 * * ? *)`) imports a link as an inventory asset (`SUP-197`), which the
   bundle exports and the guard fails. `promotion.md` §N.11.1 step 5 now has 5.0's request wait for step 7's
   `bundle` job.
+
+## 2026-11-21 — 8.6: the curation saved through the portal, and the bundle rehearsed after it
+
+*Claude, in the same session. The portal in Claude's own tab group of the user's Chrome, signed in as the
+Data Scientist User, the group closed after the saves. Reads as the infrastructure user with
+`InfrastructureAccess`, through `awsds-infra-sandbox-1` (Sandbox Account 1) and `awsds-infra-data` (Data
+Governance, the domain's account). Times are UTC.*
+
+- **[Claude] The word**: the user's *"Autorizo a curadoria"* in this session's chat, answering the
+  question that named saving the two assets' curation with the texts shown in full. The orchestrating
+  session had relayed the same authorization from its own chat; this session did not act on the relay.
+  The four other sessions on the laptop were told before the first save.
+- **[Claude] The identity**, read again before the first save: the account menu reads *Data Scientist
+  User*, project `dnl3l158mbhrio`.
+- **[Claude] The saves**, each one revision by the Data Scientist User, read back by `get-asset` after
+  each:
+
+  | Asset | Revision | At | The portal's act |
+  |---|---|---|---|
+  | `trades` | 3 | 20:38:26 | the description, by the edit icon beside *No description* and its check mark: *"Description updated successfully"* |
+  | `trades` | 4 | 20:39:56 | the README, by *Create Readme* and the editor's *Save* |
+  | `trades` | 5 | 20:40:47 | the form, by *Add Form*, *Classification*, *Next*, `internal` and *Save*: *"Form added successfully"* |
+  | `notional_by_desk` | 3 | 20:41:47 | the description, the same way |
+  | `notional_by_desk` | 4 | 20:42:29 | the README |
+  | `notional_by_desk` | 5 | 20:43:12 | the form, `internal` |
+
+  Each description reads as shown; `AssetCommonDetailsForm` holds `readMe` beside `sourceIdentifier`,
+  equal to the text shown (1,282 and 1,484 characters, the file's final newline dropped); `classification`
+  is at type revision 2 holding `{"classification":"internal"}`. Revisions 1 and 2 stay `SYSTEM`'s. Neither
+  asset was published: *Generate suggestions* and *Publish* were never clicked.
+- **[Claude] What the portal showed beyond `catalog.md`**: the README is a Monaco code editor with a
+  *Side By Side Preview* switch. Each text went in through the editor's own API (`executeEdits` over the
+  whole model) rather than typed, read back equal and rendered by the preview before *Save*. *Add Form*
+  opens a panel in two steps: *Select a form*, which offered `Classification` alone, with its description
+  and *1 fields*, and *Enter field values*, one optional text field. `get-form-type` reads its model as one
+  `String` with no list of values, its description naming `public`, `internal`, `restricted` or
+  `personal`, so the field takes any text.
+- **[Claude] Data Governance's trail** from 20:37:30 to 20:43:40: six `CreateAssetRevision`, at the six
+  times above on `bra0895x5fjzww` and `daefcycb3hhhn4`, by the role `awsds-data-studio-domain-execution`
+  in the user's session; every other call with `readOnly` false a `Search` or a `SearchTypes`, and no
+  `CreateListingChangeSet`. Sandbox's trail holds none of the six.
+- **[Claude] The bundle after the curation**, the script and tree of 20:27, from 20:44:32 to 20:44:57:
+  exit 0, `artifacts/app-dbt.zip` 25,503,094 bytes,
+  `BUNDLE_SHA256=4ca00173830a4c390c507a8e32e744a4b9afad5d2b16df805a8c2fce5bba41f3`, the same six files. The
+  guard: *"formTypes: 0"*, *"assets: 2 (notional_by_desk, trades)"*, every other section 0, *"OK"*. Each
+  asset carries its description, the `readMe` equal to the text saved and `classification` at revision 2
+  with `{"classification":"internal"}`, beside the four forms of 20:27; the form type travels in no
+  `formTypes`, its owner being `eighth-experimentation` (Stage 19 item 22).
+- **[Claude] Sandbox's trail** for that minute, read at 20:47: 32 calls by the session from 20:44:33 to
+  20:44:57, the set of 20:27: `DescribeStacks` refused `ValidationException`, `ListDomains`,
+  `ListProjects`, `GetProject`, `ListProjectMemberships`, two `GetUserProfile`, two `GetGroupProfile`
+  answered, four `ListConnections`, nine `GetConnection`, `ListEnvironments`, four `Search`, two
+  `SearchTypes`, two `GetAsset` and `GetCallerIdentity`, each a read. A read at 20:45:39 had found the
+  window empty.
