@@ -402,3 +402,44 @@ user (`awsds-infra-prod`, `InfrastructureAccess`), no write. Times are UTC.*
 - **[user] `-n`**, on a question of this session answered by 20:33: *"Aplicar o -n (Recomendado)"*, on
   every `dstdomain` of the allow-list planes, never on a deny list. The code is the session's that
   prepares the hub sitting's `production/proxy/` apply.
+
+## 2026-11-21 — `TM-01`'s `-n` written, and `production/proxy/` planned against the live hub
+
+*Claude, in the same session and branch, at the request of the session coordinating the hub sitting,
+which relayed the user's words of 21:00 in its chat; the applies are that session's, from `main` after
+PR #351's merge. AWS calls: an SSM `GetParameter`, EC2 and SSM Inventory reads and a `terraform plan`
+in Production as the infrastructure user (`awsds-infra-prod`, `InfrastructureAccess`), no write. Times
+are UTC.*
+
+- **[Claude] The template**: `render-squid.sh.tftpl`'s `allowlist` branch renders
+  `acl dst_<plane> dstdomain -n <names>`. The `open` branch's `acl dstdeny_<plane>` stays without the
+  flag, which would admit an address whose reverse name is denied. Squid's `acl` pages for 6.9 and 5.10,
+  read the same day, give `acl aclname dstdomain [-n] .foo.com ...`, the flag before the names.
+- **[Claude] The host's Squid version is read nowhere**: SSM Inventory holds no `AWS:Application` entry
+  for `awsds-prod-proxy`, only `access.log` reaches CloudWatch, and the image is
+  `al2023-ami-2023.12.20260917.1`, whose release notes name no Squid update. The new host's
+  `squid -k parse` is the flag's first reading, and a refusal at first boot leaves the allow-list empty,
+  every Sandbox request `TCP_DENIED`, the failure `hub-anchors.tf` records for 2026-09-06.
+- **[Claude] The render rehearsed** on the laptop: the template's jq program over
+  `/datascience/prod/proxy/allowlist` at version 12 (`sandbox-foundation` an `allowlist` of 42 names,
+  `production-workloads` and `staging-foundation` empty, `tunnel` and `production-foundation` `open`
+  with empty deny lists) differs from the applied template's output in one line,
+  `acl dst_sandbox_foundation dstdomain -n .amazonaws.com ...`.
+- **[Claude] `./aws/proxy.py`**: `acl_values` reads the tokens before the first name that start with `-`
+  as flags, `--` ending them, so `running_allowlist` returns the same 42 names over both renders and
+  PX-3 compares equal with and without `-n`. Read as a name, `-n` would be an entry only the host has.
+  The running table gains a FLAGS column (`running_flags`) that no check judges, so PX-3 does not fail
+  on the host before the apply.
+- **[Claude] `production/proxy/` planned** from the branch at 21:23:38, `-input=false`, Terraform
+  1.17.2: `1 to add, 2 to change, 1 to destroy`, the counts of Stage 12's plan of 20:21:09.
+  `aws_instance.this` is replaced on `ami`, masked, and on `user_data`, whose differences are the
+  render's, two lines out and five in, and 6g decision 1's first-render comment, three out and two in.
+  The alarm and `proxy.awsds.internal` change in place; the association does not change. A first plan
+  at 21:21:28, with longer comments, read the same counts.
+- **[Claude] The user data's size**: `length(local.user_data)` in `terraform console` reads 15,148, and
+  the three templates hold no non-ASCII character, so 15,148 bytes against EC2's limit of *"16 KB, in
+  raw form, before it is base64-encoded"*, about 1.2 KB of room. The render's change spent 262 bytes,
+  and nothing in the slice checks the limit at plan time.
+- **[Claude] Records**: `TM-01`'s row reads written and not applied, its revision trigger read in the
+  FLAGS column of `./aws/proxy.py --on-host`; the Stage 11 `Status` row; `NETWORK.md` §5's paragraph
+  says the flag is written, and it leaves with the apply.

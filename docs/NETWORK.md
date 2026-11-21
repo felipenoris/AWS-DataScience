@@ -184,7 +184,7 @@ no endpoint into a timeout with no message, where the proxy gives a **403 naming
 of it returns. From a space, `CONNECT 54.213.164.60:443`, an address of
 `airflow-serverless.us-west-2.api.aws` whose record is `ec2-54-213-164-60.us-west-2.compute.amazonaws.com`,
 read `200 TCP_TUNNEL` while that name is refused, and a CloudFront address read `403 TCP_DENIED`. The
-flag is decided and rides the hub sitting's `production/proxy/` apply.
+flag is written in `render-squid.sh.tftpl` and rides the hub sitting's `production/proxy/` apply.
 
 **The names come from the endpoints, not from the service roster** (`vpc-egress-v0.11.1`, 2026-09-09).
 A service has one canonical private DNS name; an endpoint answers for **several**, and the bypass list

@@ -259,6 +259,33 @@ def parse_allowlist(raw: str) -> dict:
     return out
 
 
+PLANE_ACL = re.compile(r"^\s*acl\s+dst(deny)?_(\S+)\s+dstdomain\s+(.+)$", re.M)
+
+
+def acl_values(tokens: list) -> tuple:
+    """A Squid acl's values split into its leading flags and its names, as ([flags], [names]).
+
+    Squid reads the tokens before the first value that start with `-` as flags, and `--` ends
+    them (`acl aclname dstdomain [-n] .foo.com ...`). A DNS label cannot start with a hyphen, so
+    no name is read as a flag. The render script writes `-n` on every `allowlist` plane (TM-01);
+    read as a name, it would be an entry only the host has, and PX-3 would fail on every plane.
+    """
+    for i, tok in enumerate(tokens):
+        if tok == "--":
+            return tokens[:i], tokens[i + 1 :]
+        if not tok.startswith("-"):
+            return tokens[:i], tokens[i:]
+    return list(tokens), []
+
+
+def running_flags(config_text: str) -> dict:
+    """The flags on each plane's dstdomain acl as the host renders them, {plane: [flags]}."""
+    out: dict = {}
+    for m in PLANE_ACL.finditer(config_text):
+        out.setdefault(m.group(2), []).extend(acl_values(m.group(3).split())[0])
+    return out
+
+
 def running_allowlist(config_text: str) -> dict:
     """The planes as the host spells them: `acl dst_<plane> dstdomain <names>`, in the drop-in.
 
@@ -266,13 +293,14 @@ def running_allowlist(config_text: str) -> dict:
     per plane from the parameter's keys - so a plane that vanished from the parameter and stayed
     on the host is what PX-3 is looking for, and it is only visible as a missing key. The name
     is `dst_<plane>` and the file is `/etc/squid/conf.d/awsds-planes.conf`; both are
-    render-squid.sh's contract, and a rename there must fail loudly here.
+    render-squid.sh's contract, and a rename there must fail loudly here. The flags before the
+    names are not entries; `running_flags` reads them.
     """
     out: dict = {}
-    for m in re.finditer(r"^\s*acl\s+dst(deny)?_(\S+)\s+dstdomain\s+(.+)$", config_text, re.M):
+    for m in PLANE_ACL.finditer(config_text):
         mode = "open" if m.group(1) else "allowlist"
         cur = out.setdefault(m.group(2), (mode, []))
-        cur[1].extend(m.group(3).split())
+        cur[1].extend(acl_values(m.group(3).split())[1])
     # An `open` plane with an empty deny list emits no dstdomain acl at all - only `acl src_<n>`
     # and a bare `http_access allow src_<n>`. It is a real plane in a real state, so it is found
     # by its allow line rather than by a list that is legitimately absent; missing it would make
@@ -546,14 +574,25 @@ actually succeeds is 6c step 6.3's probe, whose four readings are the behavioura
             or ["PLANE\tMODE\tENTRIES", "not read\t-\t-"]
         )
         running = running_allowlist(planes_conf) if on_host else {}
+        flags = running_flags(planes_conf) if on_host else {}
         rep.h2("running - the host's own squid.conf")
         if not on_host:
             rep.text("  not read - --on-host was not given\n")
         else:
+            rep.text(
+                "FLAGS are the tokens before the names: `-n` on an `allowlist` plane refuses a request\n"
+                "naming an IP address (TM-01), and a deny list carries none.\n"
+            )
             rep.tabulate(
-                ["PLANE\tMODE\tENTRIES"]
-                + [f"{k}\t{m}\t{len(v)}" for k, (m, v) in sorted(running.items())]
-                or ["PLANE\tMODE\tENTRIES", f"none parsed (ssm status: {host_status})\t-\t-"]
+                ["PLANE\tMODE\tFLAGS\tENTRIES"]
+                + [
+                    f"{k}\t{m}\t{' '.join(flags.get(k, [])) or '-'}\t{len(v)}"
+                    for k, (m, v) in sorted(running.items())
+                ]
+                or [
+                    "PLANE\tMODE\tFLAGS\tENTRIES",
+                    f"none parsed (ssm status: {host_status})\t-\t-\t-",
+                ]
             )
 
         rep.h1("5. The access log (PX-4)")
