@@ -1779,3 +1779,114 @@ Times are UTC.*
   with the first table's grants; the asset keeps its id and takes revision 2 at the new location; the graph
   keeps its nodes, a dataset node being the table's ARN, which names the table and not its location, and
   each run adds its job runs under the same jobs and a version to each node.
+
+## 2026-11-21 — Sitting A: 3.3, the posts that fail
+
+*Claude, in the same session. The space's acts are the user's, as the Data Scientist User, from `jup`'s
+terminal as `app-dbt-dev`'s project role; Claude's reads as the infrastructure user with
+`InfrastructureAccess`, through `awsds-infra-sandbox-1` (Sandbox Account 1) and, for the proxy's log,
+`awsds-infra-prod` (Production). Times are UTC.*
+
+- **[user] 3.3**, as one chain Claude wrote: each of the step's `export`s, then `scripts/dev-cli.sh run
+  --manifest manifest.yaml --targets dev --workflow app-dbt`, then a boto3 poll of the run's state before
+  the next. The runs, each run's `OverrideParameters` carrying the switches as exported:
+  `y0LYsay860ExnUB` at 05:25:34 (`LINEAGE_DOMAIN=dzd_canaryprobe0000`), `2n9VT4BUgGDzjEI` at 05:35:59
+  (`LINEAGE_ENDPOINT=http://127.0.0.1:9`, `LINEAGE_ATTEMPTS=1`) and `W79iKwIMko7AROp` at 05:42:06
+  (`https://datazone.us-west-2.api.aws:8443`, one attempt). The chain ended *"em repouso:
+  dzd-d8yrvx1ko7im6o default default"*.
+- **[Claude] The poll stopped the chain after the first run**: `boto3.client("mwaa-serverless")` failed
+  `GetWorkflowRun` with `ProxyConnectionError`, *"Tunnel connection failed: 403 Forbidden"*, and the
+  proxy's log reads five `CONNECT airflow-serverless.us-west-2.api.aws:443 403 … TCP_DENIED` from `jup`'s
+  10.20.28.126 from 05:25:35 to 05:25:40, with that host in both of the image's `NO_PROXY` variables. A
+  second attempt was refused the same way. The CLI's `run`, from the same terminal at 05:25:34, left no
+  `airflow-serverless` line in that log. Measured on the laptop at 05:33: botocore decides the proxy
+  against `airflow-serverless.us-west-2.amazonaws.com`, the host it composes from the service's endpoint
+  prefix, and not against the `.api.aws` host the request goes to (`SUP-395`). With that host added to
+  `NO_PROXY` and an explicit `endpoint_url`, the poll read `y0LYsay860ExnUB` `SUCCESS` at 05:35:55 and the
+  chain went on.
+- **[Claude] The runs**, each `SUCCESS` with `load` and `transform` `SUCCESS`, beside 2.3's and 2.5's. The
+  emit phase runs from dbt's *"Done. PASS=2 …"* to the wrapper's *"Emitted … OpenLineage events"*; the log
+  is the `transform` task's, counted in its messages' bytes:
+
+  | Run | The post | `transform` | Emit phase | The log |
+  |---|---|---|---|---|
+  | 2.3's `SzzngX9q8O3hZ7k` | six events posted | 48 s | 2.6 s | 64 events, 17,653 bytes |
+  | 2.5's `JCrmBgSmNqRrTXg` | six events posted | 54 s | 2.5 s | 64 events, 17,652 bytes |
+  | `y0LYsay860ExnUB`, refused | `AccessDeniedException` | 67 s | 2.4 s | 352 events, 211,566 bytes |
+  | `2n9VT4BUgGDzjEI`, rejected | `ConnectionRefusedError`, then `EndpointConnectionError` | 50 s | 2.6 s | 1,540 events, 466,887 bytes |
+  | `W79iKwIMko7AROp`, unanswered | `ConnectTimeoutError` | 426 s | 362.4 s | 1,420 events, 441,139 bytes |
+
+- **[Claude] The wrapper's lines are the same in all three**: each of the six events' failures is printed
+  twice, in the wrapper's two log formats, as *"OpenLineage client failed to emit event …"* with its
+  traceback and a `RuntimeError: Failed to send lineage event to DataZone Domain …` line of 2,134 to 9,155
+  bytes that carries the event, the compiled SQL included; then *"Emitted 0 OpenLineage events"*,
+  *"Underlying dbt execution returned 0"*, *"run-dbt.sh: peak memory … kB, exit code 0"* and *"Command
+  exited with return code 0"*. The refusal is IAM's: *"…
+  assumed-role/datazone_usr_role_dnl3l158mbhrio_55hp9teamegf4g/AmazonMWAAServerless is not authorized to
+  perform: datazone:PostLineageEvent on resource: arn:aws:datazone:us-west-2:<Sandbox>:domain/* because no
+  identity-based policy allows the datazone:PostLineageEvent action"*, the resource in the caller's
+  account, where the step expected the service's error for a domain it does not hold. The closed port
+  reads *"Could not connect to the endpoint URL:
+  "http://127.0.0.1:9/v2/domains/dzd-d8yrvx1ko7im6o/lineage/events""*; the unanswered port *"Connect
+  timeout on endpoint URL:
+  "https://datazone.us-west-2.api.aws:8443/v2/domains/dzd-d8yrvx1ko7im6o/lineage/events""*, the first at
+  05:48:01, 62 seconds after *"Done."*, botocore's 60-second connect timeout once per event.
+- **[Claude] ix**: a refused, a rejected and an unanswered post each leave the task `SUCCESS`, the
+  script's exit code 0 and *"Emitted 0 OpenLineage events"*, as in 0.16. The refused and the rejected add
+  nothing to the 2.5 seconds the posts take; the unanswered adds six minutes, 60 seconds for each of the six
+  events at one attempt, as the step computed. Each multiplies the log by 12 to 26. Nothing outside the
+  task's log reports a failed post: decision 5's input, which goes back to the user.
+
+## 2026-11-21 — Sitting A: 3.4, another project's event on `notional_by_desk`
+
+*Claude, in the same session. The space's acts are the user's, as the Data Scientist User, from the
+terminal of a space of `test-experimentation` (`4gqfau9xuo6e4w`) as that project's role; Claude's reads
+and the delete as the infrastructure user with `InfrastructureAccess`, through `awsds-infra-sandbox-1`
+(Sandbox Account 1) and `awsds-infra-data` (Data Governance); the portal in the user's Chrome session
+through Claude in Chrome. Times are UTC.*
+
+- **[user] 3.4**, aws-cli 2.37.0 in the space: the step's event, its output the pair under which 2.4 read
+  the model's node, `arn:aws:glue:us-west-2:<Sandbox>:table` and `app_dbt/notional_by_desk`, the job
+  `stage-20-foreign` `foreign-writer`, the run `791b1044-…`; the post answered the id `bbmyjshqm00c5s`.
+  Then `get-lineage-node` on `app-dbt-dev.awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run`
+  answered `6eael36d03lyfk` with the forms `QueryForm`, `JobForm` and `AdditionalPropertiesLineageForm`.
+- **[Claude] The domain accepted the event**: `processingStatus` `SUCCESS`, `eventTime` 05:42:00,
+  `createdAt` 05:42:10. Data Governance's trail holds the `PostLineageEvent` at 05:42:10 from
+  10.20.104.205 through `vpce-03abb012f13500645` with no error, and a `CreateLineageNode` by
+  `datazone.amazonaws.com` at 05:42:17. The table's node `6w7hp2vvi8kscw` took a version at 05:42:00, its
+  upstream the run `bdgva1yjktix3k` (`amazon.datazone.JobRunLineageNodeType`,
+  `stage-20-foreign.foreign-writer/791b1044-…`, `JobForm` and `JobRunForm`), its downstream the asset's
+  node `6ljn21swt4l0y8`; the job's node is `bgib8sahkbeets` (`stage-20-foreign.foreign-writer`,
+  `JobForm`). Both new nodes name as creator the Data Scientist User's id, where the workflow's events name
+  the project role: a post from a space's terminal carries the person.
+- **[Claude] The portal**, read from 05:44 to 05:46, signed in as the Data Scientist User; reads and view
+  toggles only. `app-dbt-dev`'s `notional_by_desk`, *Lineage*: `foreign-writer` as a *Job Run*,
+  `COMPLETE`, 02:42 UTC-03:00, beside the dbt model's run of 02:03 (2.5's), both drawn into the table; the
+  table's node labelled `app_dbt/notional_by_desk`, the foreign event's name, where vii read
+  `awsdatacatalog.app_dbt.notional_by_desk`; the foreign run's panel, *Source Identifier*
+  `stage-20-foreign.foreign-writer` and *Created By* the Data Scientist User. The portal draws the latest
+  run of each job upstream of a node, and names a node by its latest version.
+- **[Claude] xi: yes to both, with a limit.** The domain accepts from one project's role an event about
+  another project's table, adds it as a version of that table's node and draws the foreign job on the
+  table's tab; a role outside the project reads the project's job node, the compiled SQL in its
+  `QueryForm` included (`TM-29`'s shape, on lineage). The Data Scientist User is `PROJECT_OWNER` of both
+  projects, so the reading does not separate the project from the person.
+- **[user] The delete**, in chat: *"Autorizo o delete"*, answering Claude's question that named
+  `delete-lineage-event` of `bbmyjshqm00c5s`, as Sandbox and then as Data Governance. The other sessions
+  on this machine told at 05:50.
+- **[Claude⚡] Both refused**, from the laptop, aws-cli 2.37.12. As Sandbox at 05:50:51: *"… is not
+  authorized to perform: datazone:DeleteLineageEvent on resource: …:domain/dzd-d8yrvx1ko7im6o because no
+  resource-based policy allows the datazone:DeleteLineageEvent action"*. As Data Governance, the domain's
+  account, at 05:50:54: *"User is not permitted to perform operation: DeleteLineageEvent"*, DataZone's own
+  wording, IAM having let the call through. A member account reaches the domain through the RAM share's
+  managed permission `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`: versions 13 and 14, the
+  second the share's since 05:45:59 (pull request #347), each carry `PostLineageEvent` and the lineage
+  reads and neither carries `DeleteLineageEvent`. The root domain unit's one owner is an Identity Center
+  group (`7ee243ab-…`), and no IAM principal.
+- **[user] The event stays**: *"Deixe e registre"*. The step's fallback, the posting space's role, is a
+  Sandbox principal under the same resource policy, and was not run.
+- **[Claude] xv is not answered**: no identity this session holds may call `DeleteLineageEvent`, so what
+  it removes stays unmeasured. AWS's lineage authorization and API pages name neither who may call it nor
+  what it removes (read 2026-11-21). `bbmyjshqm00c5s` stays in the graph, the portal drawing
+  `foreign-writer` into `notional_by_desk`; 7.1 and Rollback's step 6, which delete the events by what xv
+  reads, wait on an identity the root domain unit's owners would have to admit.

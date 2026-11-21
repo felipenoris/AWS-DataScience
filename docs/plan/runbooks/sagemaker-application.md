@@ -315,8 +315,9 @@ The space's `~/shared/` folder is the project's `shared/` S3 prefix, its house e
 CI/CD CLI (Stage 8 decision 22), and every command it runs holds the project role's credentials. The
 loop below ran end to end from a space on 2026-10-26 ([`promotion.md`](promotion.md) §N.3, Stage 10
 2.1). Steps 1 and 6 carry what the image and the CLI do not yet do for the developer: git's credential
-helpers, and the CLI's domain lookup, which the template's `scripts/dev-cli.sh` answers. Step 4, the MWAA
-Serverless API's name in `NO_PROXY`, is what version 11 carries.
+helpers, and the CLI's domain lookup, which the template's `scripts/dev-cli.sh` answers. Step 4 holds the
+MWAA Serverless API's names in `NO_PROXY`: version 11 carries the one the CLI needs, and a boto3 client
+needs a second (`SUP-395`).
 
 **The session is the infrastructure user's.** `make hub-up`; `make gitlab-up RUNNERS=0` while the
 checkout is cloned or pushed; and Sandbox's endpoints with the MWAA Serverless group:
@@ -372,14 +373,17 @@ settles, so the down runs again.
    export ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
    ```
 
-4. **The API's name in `NO_PROXY`**: version 11, `default-v0.10.0` (2026-10-26), carries it, and a space
-   on it needs no export, read from a space at [`promotion.md`](promotion.md) §N.7.3. Versions 7 to 10
-   lacked it and were deleted on 2026-11-03 ([`dev-env.md`](dev-env.md) §B); the export below is for a
-   space on another image. Without the name boto3 sends the call to the proxy, which refuses it, even with
-   the endpoint up. `getent hosts` answers the endpoint's `10.20.x` address:
+4. **The API's names in `NO_PROXY`**: version 11, `default-v0.10.0` (2026-10-26), carries the
+   endpoint's name, `airflow-serverless.us-west-2.api.aws`, which is all the CI/CD CLI needs, read from a
+   space at [`promotion.md`](promotion.md) §N.7.3. A boto3 client or the AWS CLI also needs
+   `airflow-serverless.us-west-2.amazonaws.com`, the name botocore decides the proxy against (`SUP-395`):
+   with the first name alone, a poll of a run's state from a space went to the proxy, which refused it, on
+   2026-11-21. Versions 7 to 10 lacked the first name and were deleted on 2026-11-03
+   ([`dev-env.md`](dev-env.md) §B). The export below adds both, for a script or a shell that calls the
+   service itself, on any image. `getent hosts` answers the endpoint's `10.20.x` address for the first:
 
    ```bash
-   export NO_PROXY="$NO_PROXY,airflow-serverless.us-west-2.api.aws" no_proxy="$no_proxy,airflow-serverless.us-west-2.api.aws"
+   export NO_PROXY="$NO_PROXY,airflow-serverless.us-west-2.api.aws,airflow-serverless.us-west-2.amazonaws.com" no_proxy="$no_proxy,airflow-serverless.us-west-2.api.aws,airflow-serverless.us-west-2.amazonaws.com"
    ```
 
 5. **The worker's packages.** The CLI copies files and builds nothing, so the zip a Python task runs from
@@ -1131,7 +1135,7 @@ topic. Start from the question, and the table names the place:
 | did the chain run, when, how did it end | `aws stepfunctions list-executions --state-machine-arn <machine>`; `describe-execution`; the execution's input (`scheduledTime` for a scheduled start); the machine's log group `/aws/vendedlogs/states/awsds-<env>-chains` |
 | which workflow run did it start, and how did each task end | `get-execution-history` names the run id; `aws mwaa-serverless list-task-instances --workflow-arn <arn> --run-id <id>` and `get-task-instance`: read a task's `DurationInSeconds` and state, never the run's `RunState`, which lags its tasks |
 | why did a task fail | its stream `workflow_id=<workflow>/run_id=<id>/task_id=<task>/attempt=<n>.log` in `/aws/mwaa-serverless/<domain>-<project>/<name>`, in every stage ([`log-debugging.md`](log-debugging.md) §W) |
-| a run in `dev`, from the space | the same `mwaa-serverless` reads as the project role, which need the `mwaa` group and the API's name in `NO_PROXY` (§D); from a laptop, as the infrastructure user with `awsds-infra-sandbox-1` |
+| a run in `dev`, from the space | the same `mwaa-serverless` reads as the project role, which need the `mwaa` group and the API's names in `NO_PROXY` (§D step 4); from a laptop, as the infrastructure user with `awsds-infra-sandbox-1` |
 | what did the Glue job do | `aws glue get-job-runs --job-name <app>-<project id>`; the run's streams under `datazone-<project id>-dev/output` and `/error`, the job's `--custom-logGroup-prefix` |
 | which snapshot of the governed table did a run read, where one reads it (item 32) | `source` in `shared/<app>/outbox/report.json` and in `shared/<app>/work/job/<stem>.summary.json`; the Glue run's line *"reading SELECT … VERSION AS OF <id>"* |
 | what did the processing or training job print, did it respect the boundary | `aws sagemaker describe-processing-job`, `describe-training-job` (`FailureReason`, the network and key settings); the container's stream in `/aws/sagemaker/ProcessingJobs` or `/aws/sagemaker/TrainingJobs` |
@@ -1256,7 +1260,7 @@ for each kind of task in each stage; where one term is missing, the reach is abs
 | Redshift | the sandbox warehouse through the project's connection, the Data page as the access role and a notebook through it (`redshift-connection.md` §J); the governed warehouse through the datashare alone, since Sandbox does not peer with `VPC-Workloads` | Production's project role over JDBC as `IAMR:user-project@d7qcazihvr3s7k`, the load's, its other doors fenced (`redshift-data`, `sqlworkbench`); the deploy role through the Data API for the DDL; the persona refused a session (`DenyMintingARedshiftDatabaseSession`); Staging's project role fenced off every Redshift service |
 | S3 | the project prefix; the sandbox lake through the project's S3 connection; the drop-box's `PutObject` as the persona from a laptop, never read back | the project's prefix of `awsds-<env>-smus-projects`, every other bucket of the account denied by the boundary's fence (`fence.tf`); no lake bucket; the release store read by the runner's own role |
 | GitLab | a space clones over the `Sandbox ↔ VPC-SharedServices` peering, `gitlab.awsds.internal` answered by the apex zone every VPC is associated with, with a persona's personal access token and git's credential helpers reset (INT-09, measured 2026-10-26; §D) | the deploy runner clones the mirror with the job token; no task reaches it |
-| the MWAA Serverless API | from a space, through the `mwaa` group's endpoint alone (`GROUPS=mwaa`, the name in `NO_PROXY`): the API's only name, under `.api.aws`, is refused by the compute plane's proxy; a task never calls it | the deploy runner's calls, the CLI's deploy among them, through the proxy's open build plane in `VPC-SharedServices`; the chain's machine through Step Functions' AWS SDK integration; a task never calls it |
+| the MWAA Serverless API | from a space, through the `mwaa` group's endpoint alone (`GROUPS=mwaa`, the names in `NO_PROXY`, §D step 4): the API's only name, under `.api.aws`, is refused by the compute plane's proxy; a task never calls it | the deploy runner's calls, the CLI's deploy among them, through the proxy's open build plane in `VPC-SharedServices`; the chain's machine through Step Functions' AWS SDK integration; a task never calls it |
 | the internet | a space through the proxy's allow-list; a job and a worker never | never: anything a task needs is in the image, in the zip or behind an endpoint |
 
 ---

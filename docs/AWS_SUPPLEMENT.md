@@ -5147,3 +5147,27 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   constraints the client checks. A test over `Stubber` therefore passes a request the service refuses, so
   `examples/app-genai/tests/test_definition.py` walks the model's constraints itself. Where:
   `log-stage-17-sandbox-machine-learning.md`, 2026-11-17.
+
+- `SUP-395` **botocore decides a client's proxy against the host it composes from the service's endpoint
+  prefix, not the host the endpoint ruleset resolves, so a `NO_PROXY` naming only
+  `airflow-serverless.<region>.api.aws` sends MWAA Serverless's calls to the proxy** (measured 2026-11-21 in
+  a space on `awsds-sandbox-dev-env` version 11 and on the laptop with aws-cli 2.37.12, Stage 20 3.3). In
+  `app-dbt-dev`'s space, `boto3.client("mwaa-serverless", region_name="us-west-2")` failed `GetWorkflowRun`
+  with `ProxyConnectionError`, *"Tunnel connection failed: 403 Forbidden"*, and the proxy logged five
+  `CONNECT airflow-serverless.us-west-2.api.aws:443 403 … TCP_DENIED` from the space, both `NO_PROXY`
+  variables carrying that host. On the laptop, with `HTTPS_PROXY=http://127.0.0.1:9` standing for a proxy
+  that refuses every connection, `aws mwaa-serverless list-workflows` with `NO_PROXY` naming the `.api.aws`
+  host logged *"Endpoint provider result: https://airflow-serverless.us-west-2.api.aws"*, then
+  `ProxyConnectionError: Failed to connect to proxy URL: "http://127.0.0.1:9"`. The call answered with
+  `NO_PROXY` naming `airflow-serverless.us-west-2.amazonaws.com`, a host that does not resolve (the `mwaa`
+  group in `terraform-modules/vpc-egress/endpoints.tf`), and with `--endpoint-url
+  https://airflow-serverless.us-west-2.api.aws` beside the `.api.aws` host in `NO_PROXY`; `sts
+  get-caller-identity` with `NO_PROXY` naming `sts.us-west-2.amazonaws.com` answered, the control. The
+  service's `endpointPrefix` is `airflow-serverless`. The proxy is chosen once, for
+  `<endpointPrefix>.<region>.amazonaws.com`, when the client is created, and each request then goes to the
+  ruleset's host (inferred from the readings). Every other `.api.aws` host in version 11's list has its
+  composed twin beside it, ECR's being `api.ecr.us-west-2.amazonaws.com`, so MWAA Serverless is the one
+  service in that list the rule reaches. A client in a space reaches the service with the composed host
+  added to `NO_PROXY` or with an explicit endpoint URL. The CI/CD CLI's `run`, from the same terminal, left
+  no `airflow-serverless` line in the proxy's log (cause unmeasured). Where: `log-stage-20-dbt-lineage.md`,
+  2026-11-21; `runbooks/sagemaker-application.md` §D.
