@@ -2370,6 +2370,23 @@ Sandbox sitting", its day 2 rows.
 3. Stage 17's closing reads, `./aws/sandbox-ml.py` and `./aws/catalog.py`, 2.5's `ML-3` among them; the
    spaces stopped and the portal tabs closed; then the lowering (N.9.6).
 
+**Prepared 2026-11-21 with nothing up** (Stage 17's log): `make status` at 0.0000 USD/h and every instrument
+as expected; the training pair planned again from `main` at `0c78f571` with Terraform 1.17.2 and saved as
+`$HOME/tmp/stage17-training-pair-preflight.tfplan`, `0 to add, 1 to change`, which applies while the slice's
+state and `main`'s tree have not moved; `sandbox/egress/` planned with the four groups, 33 to add and 24
+endpoints; and `$HOME/tmp/stage17-day2-extra_values.json`, the two values the space's clone needs. Readings
+that shape the day:
+- 3.2 comes about 3.7 hours into the day, so a start before about 13:30 UTC creates the group before
+  `eighth-experimentation`'s source run of about 17:38; a later start leaves 3.3 to the next day's run.
+- 2.4's JumpStart model defaults to `ml.m5.4xlarge`, which the ceiling refuses; `ml.m5.xlarge` is the
+  submission that reads what the form fills.
+- Pass 7's knowledge base, evaluation job, flow and chat agent run as the project's Bedrock service role,
+  which invokes a model only through an application inference profile tagged with the project; the IDE's
+  first use creates one, and `eighth-experimentation` holds Opus 4.5's alone.
+
+6d's remainder (N.9.3), about 75 minutes that call no group, ends the day before the closing reads if the
+user puts it here; 7.7's sign-out comes after the day's last portal step.
+
 #### N.9.5 Day 3: 6e 6.4, Stage 17's sitting C and its pass 5
 
 The blocks are [6e](../stages/stage-06e-claude-code-bedrock.md) 6.4 and Stage 17's day 3 rows: sitting C,
@@ -2748,7 +2765,8 @@ Each reading is in the log of the stage that owns it.
   default plan `No changes`. Saved as `$HOME/tmp/stage17-training-pair-preflight.tfplan`, it applies on day
   2 only while the slice's state and `main`'s tree have not moved; Terraform refuses it otherwise, and the
   day plans again. The evaluation dataset's URL answers 200. Terraform 1.17.2, on the laptop since
-  2026-11-21, refuses the file 1.16.6 wrote (`SUP-403`), so day 2 plans the pair again.
+  2026-11-21, refuses the file 1.16.6 wrote (`SUP-403`); the pair was planned again with 1.17.2 and saved
+  on 2026-11-21 (N.9.4).
 - **N.9's day 3**: 6e 6.4's baseline, `./aws/bedrock-usage.py` from 2026-11-01 to 20:16 UTC: 0.0005 USD
   computed over one to four invocations per model. Sandbox's application inference profiles are three,
   the domain's Haiku 4.5 and Nova Lite of 2026-10-19 and `eighth-experimentation`'s Opus 4.5 of

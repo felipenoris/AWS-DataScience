@@ -3695,3 +3695,74 @@ banner was left alone, and the tab was closed at the end. Times are UTC, from ab
 - **[Claude] Day 2's saved plan**: Terraform 1.17.2, on the laptop since this day, refuses
   `$HOME/tmp/stage17-training-pair-preflight.tfplan` (Stage 8's log, `SUP-403`), so day 2 plans the
   training pair again from `main`.
+
+## 2026-11-21 — Day 2's pre-flight with nothing up
+
+*Claude, in a session the user opened to prepare `promotion.md` §N.9's day 2 (*"Faça toda a preparação
+necessária para iniciarmos a sessão do dia 2 do §N.9."*). Reads and plans as the infrastructure user with
+`InfrastructureAccess`, through `awsds-infra-sandbox-1` (account Sandbox Account 1), `make status` and the
+instruments through their own profiles, from this session's worktree at `main`'s `0c78f571`. Nothing applied
+and nothing raised; the one other session on the laptop was idle. Times are UTC.*
+
+- **[Claude] `make status`**, 18:45: *"estimated burn: USD 0.0000/h"*, the proxy, VPN and GitLab hosts
+  `stopped`, no Studio app, no EMR Serverless application started and no OpenSearch Serverless collection.
+- **[Claude] The instruments**, 18:47 to 19:09, each as expected with everything down:
+  - `./aws/sandbox-ml.py`: 35 pass, no check failed, no call failed; `ML-2` `ml-demo-mlflow` `Created` on
+    MLflow 3.16.0, `ML-7` the four quotas at 20, 30, 8 and 10, `ML-8` Titan V2 `AVAILABLE` and `AUTHORIZED`.
+  - `./aws/devenv.py`: `DE-1`, `DE-4` and `DE-5` pass (version 11, 73 names); `DE-2` fails while
+    `sandbox/egress/` is down.
+  - `./aws/egress.py` on Production, Staging and Sandbox: no metered egress, no call failed.
+  - `./aws/catalog.py`: 15 pass and 5 notes, no check failed; `./aws/bedrock-scope.py`: `BS-1` to `BS-7`
+    pass; `./aws/remote-ide.py`: `RI-3` and `RI-4` pass.
+  - `./aws/studio.py`: 58 pass and 7 notes, no check failed, `US-13` reading version 11 in
+    `eighth-experimentation`'s blueprint domain; the persona and deploy profiles did not authenticate, with
+    no sign-in on their sessions.
+  - `./aws/bedrock-usage.py` from 2026-11-01 to 18:51: 17 invocations and 0.0005 USD computed, the newest
+    event at 2026-11-19 04:24:23, so pass 7's and 6e 6.4's baseline has not moved since 2026-11-20. `BU-5`
+    notes Nova Lite unpriced: `docs/PRICING.md`'s row names the model, not its id.
+- **[Claude] The training pair re-planned.** The file of 2026-11-20 read as *"plan file was created by
+  Terraform 1.16.6, but this is 1.17.2; plan files cannot be transferred between different Terraform
+  versions"* (`SUP-403`). `sandbox/workflows/` planned *"No changes."* at 18:57:04 (`-detailed-exitcode`
+  0); with `-var training_pair_enabled=true`, *"Plan: 0 to add, 1 to change, 0 to destroy."*, saved over the
+  old file at 18:57:22. Read with `terraform show -json`: `aws_iam_policy.workflows`'s `policy` alone, from 7
+  statements to 9 with `DescribeATrainingJobNoProjectHolds` and `TagATrainingJobWithTheCallersProject`,
+  3,146 characters minified, as on 2026-11-20.
+- **[Claude] Day 2's raise, dry and planned.** `make up ENV=sandbox
+  GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent DRY=1` names `sandbox/egress/` and `sandbox/probes/`, the
+  warehouse's compute held by refusal 11. `sandbox/egress/` planned at 18:58 with the four groups as
+  `TF_VAR_optional_service_groups`: *"Plan: 33 to add, 0 to change, 0 to destroy."*, 24 interface
+  endpoints, the base set's 18 with `airflow-serverless`, `sagemaker.mlflow`, `bedrock`, `bedrock-runtime`,
+  `bedrock-agent` and `bedrock-agent-runtime`. Its `no_proxy_all_groups`, 73 names, equals the Dockerfile's
+  literal, so `DE-3` reads green after the raise.
+- **[Claude] 2.4's model**, `describe-hub-content` on `SageMakerPublicHub`: `xgboost-classification-model`
+  2.2.0 `Available`, beside `xgboost-regression-model`. Its document: `DefaultTrainingInstanceType`
+  `ml.m5.4xlarge`, outside the boundary's ceiling, with `ml.m5.xlarge` among `SupportedTrainingInstanceTypes`;
+  `TrainingEnableNetworkIsolation` and `EncryptInterContainerTraffic` `true`; `DefaultTrainingDatasetUri`
+  under `jumpstart-cache-prod-us-west-2/training-datasets/`; `MaxRuntimeInSeconds` 360000.
+- **[Claude] Pass 7's service role**, `AmazonBedrockServiceRole-avhvbqn37ty7m8-5hkjdsy3umpi1c`, carrying
+  `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy` v9 and `SageMakerStudioBedrockEvaluationJobServiceRolePolicy`
+  v3 with the flow's and the agent's. Its tags name the project, the domain, the bucket
+  `awsds-sandbox-smus-projects` and the bucket's default key. Simulated at 19:03 with those tags,
+  `aws:RequestedRegion` and both accounts as context; the boundary and the organization allowed every call:
+  - `allowed`: `s3:GetObject` and `s3:ListBucket` on the project's `shared/ml-demo/bedrock/kb/`, `kms:Decrypt`
+    of the key through S3, `bedrock:InvokeModel` on an application inference profile tagged with the project
+    and on a foundation model through a profile, `s3vectors:PutVectors` on `amazon-bedrock-ide-<project>*`;
+  - `implicitDeny`: another project's prefix, Titan V2's foundation model with no profile, the domain's
+    Haiku 4.5 profile, which carries no project tag, Haiku 4.5's system profile, another vector bucket name.
+- **[Claude] The application inference profiles**: three in Sandbox, the domain's Haiku 4.5 (`cp0gmvjv1h8q`)
+  and Nova Lite (`csu817ovl4kz`), tagged with the domain alone, and `eighth-experimentation`'s Opus 4.5
+  (`zy55dk32prho`). Pass 7's knowledge base (Titan V2) and its evaluation job, flow and chat agent (Haiku
+  4.5) each run as the service role, so each needs a profile of the project's for its model: the IDE's
+  first use creates one (decision 13's path), or IAM refuses the call with *no identity-based policy
+  allows*.
+- **[Claude] The rest**:
+  - the runbooks 7.4a indexes: 20 files and 1,210,723 bytes at `0c78f571`;
+  - 2.1's dataset and awsds-workflows' `scripts/space_values.py` answer 200 to a `HEAD`;
+  - AWS's `sagemaker-xgboost:3.0-5` exists in `us-west-2` (`ecr batch-get-image`, no failure), the URI SDK
+    3.21.0's `image_uris.retrieve` prints;
+  - `./aws/sandbox-ml.py` prints `MLFLOW_APP_ARN=` under section 3 since this sitting (run at 19:14:50, 35
+    pass), the place `examples/sandbox-ml/README.md` names for the value;
+  - `$HOME/tmp/stage17-day2-extra_values.json` holds `XGBOOST_IMAGE_URI` and `MLFLOW_APP_ARN` for the
+    space's clone, outside git since the ARN carries the account's id.
+- **[Claude] Left to the day**: the user's acts of `promotion.md` §N.9.4, and the training pair's apply on
+  the user's word naming it.

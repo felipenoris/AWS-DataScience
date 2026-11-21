@@ -62,7 +62,7 @@ in a tracked file, so neither reaches git filled:
 | Value | What it is | Where it is read | Needed by |
 |---|---|---|---|
 | `XGBOOST_IMAGE_URI` | AWS's XGBoost algorithm image for the Region, version `3.0-5` ("The model format") | the SDK's image table, in the space, below | `train.py`, `pipeline.py` |
-| `MLFLOW_APP_ARN` | the project's MLflow App, once step 1.5 has created it | the app's page in the portal, or `ML-2` in `aws/output/sandbox-ml.txt` | `train.py`, `register.py log-model` and `from-mlflow` |
+| `MLFLOW_APP_ARN` | the project's MLflow App, once step 1.5 has created it | the app's page in the portal, or the line `MLFLOW_APP_ARN=` under section 3 of `aws/output/sandbox-ml.txt` on the laptop | `train.py`, `register.py log-model` and `from-mlflow` |
 | `JOB_IMAGE_URI` | the house image pinned by digest, which the pipeline's processing step runs | `awsds-workflows values --profile awsds-infra-sandbox-1 --subnet-name 'awsds-sandbox-private-*' --image-name awsds-sandbox-dev-env` on the laptop | `pipeline.py` |
 
 In the space, from `examples/sandbox-ml/` in the clone, the first two commands write `space_values.json` and
