@@ -266,7 +266,7 @@ and the stage logs hold the refusals.
 | A saved plan's apply in Production under the user's blanket authorization of the session; let through once the user named the apply in chat | *Production Deploy* | 2026-11-17 |
 | A subagent's launch whose brief held a push and a merge request in another repository (`awsds-workflows`) | *Unsanctioned Communication* | 2026-11-17 |
 | A started session's apply of `identity/org-policies` under the user's *"Autorizo os applies necessários"* in its chat, which let its five other applies through | *Protected-Scope IaC Apply* | 2026-11-19 |
-| A session's push of a new branch to the public repository, two of its branches pushed and merged the same day; the diff added no identifier `main` lacked | *Sensitive Information Leakage* | 2026-11-20 |
+| A session's push of a new branch to the public repository, two of its branches pushed and merged the same day; the diff added no identifier `main` lacked. Let through once the user authorized it in chat (*"Autorizo push e PR"*) | *Sensitive Information Leakage* | 2026-11-20 |
 
 The orchestrating session ran each of the first three itself, on the user's authorization in its own
 chat. Let through on 2026-11-11: reads, a RAM association, a candidate SCP's life on `Policy Test`, and
