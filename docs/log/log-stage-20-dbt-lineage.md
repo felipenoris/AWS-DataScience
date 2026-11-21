@@ -1943,3 +1943,11 @@ Governance). Times are UTC.*
   person's profile from a space, the role's from the workflow. The job's name follows the dbt command,
   `run` against the workflow's `build`, not the person. A run by hand moves the table to a new location,
   and the asset follows at the source's next run.
+
+## 2026-11-21 — Decision 5 looked at again after 3.3
+
+*Claude, in the same session; the decision is the user's, in chat.*
+
+- **[user] Decision 5 keeps (a)**: *"Manter (a)"*, answering Claude's question on 3.3's readings (ix).
+  dbt's exit code decides the task, and a failed post stays a warning in the task's log. The stage file's
+  decision 5 carries the date.

@@ -1902,7 +1902,10 @@ user's words. Taken: 1 to 7, 9 to 11 and 13 to 17. Settled by other decisions: 8
    `lineage` fetches them and runs `dbt-ol send-events`, so a run shows the lineage's state apart from
    the data's and a post is retried without running dbt again. (c) is the form for a pipeline whose
    lineage has to be complete for the run to count as done: Claude brings 3.3's readings back to the
-   user, who looks at it again then.
+   user, who looks at it again then. **Looked at again 2026-11-21: (a) kept**, in the user's words
+   *"Manter (a)"*, on 3.3's readings (ix): a refused, a rejected and an unanswered post each leave the
+   task `SUCCESS` with exit code 0 and the task's log alone reports them; the unanswered adds six minutes,
+   and each multiplies the log by 12 to 26.
 6. **The dbt line.** **Taken 2026-11-16: (a) for now**, in the user's words *"Sugiro seguirmos com a
    versão 1.11 por enquanto."* (a) dbt Core 1.11, pinned by `uv.lock`: the newest line `package-task`
    builds today, under dbt's critical support until 2026-12-18. (b) dbt Core 1.12, in active support
