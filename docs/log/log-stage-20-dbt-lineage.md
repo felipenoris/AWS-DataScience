@@ -1669,3 +1669,26 @@ and `awsds-infra-data` (Data Governance) for the trail. Times are UTC.*
   and nothing on the asset.
 - **[Claude] xvi passes**: the model's and its columns' descriptions reach the asset through the Glue table's
   comments. vii's portal half, what the *Lineage* tab draws, is the user's look.
+- **[Claude] vii, the portal's half**, at the user's request, in the user's Chrome session through Claude in
+  Chrome, the portal signed in as the Data Scientist User, from 04:46 to 04:52; reads and view toggles only.
+  The project's *Manage → Assets*, `notional_by_desk`, *Lineage*, graph depth 5: one graph, left to right, the
+  inbox (*Table / Amazon S3*, 5 columns, 01:16 UTC-03:00), the two Spark runs (*Job Run / Apache Spark*,
+  `COMPLETE`), `awsdatacatalog.app_dbt.trades` (*Table / AWS Glue*, 5 columns), the dbt model's run (*Job
+  Run*, `COMPLETE`, 01:18), `awsdatacatalog.app_dbt.notional_by_desk` (*Table / AWS Glue*), and an edge
+  labelled *Cataloged* to the asset (*Asset / Inventory*, *Base*, 2 columns, 01:34). The portal names the two
+  tables by dbt's names, each node's latest version. The model's node at its latest version, the test's,
+  shows no columns, and selecting `price` on `trades` lights `price` on the inbox and nothing downstream.
+  The node's panel reads *Source Type* `GlueTableDatasetSourceType`, the table's ARN as *Source
+  Identifier*, *Created By* the project's role, and under *Additional Properties* the test's
+  `dataQualityAssertions` facet (`"assertion": "not_null"`, `"actual": "0"`). Its *History* lists two
+  versions at 01:18; *View Lineage* on the model run's opens the graph based on that version, the test's run
+  drawn beside the asset under the node, and the node's *Schema* tab: `desk` from 1 column, `notional` from
+  2, each *Type: unknown* with *View transformation*, the sources `price` and `quantity` under *Table:
+  awsathena://athena.us-west-2.amazonaws.com/awsdatacatalog.app_dbt.trades*. *Highlight* on `price` lights
+  `price` on `trades` and on the inbox: the column lineage crosses from dbt's step into the Glue job's, the
+  Athena name resolved to the Glue table's node. The asset's *Data quality* tab reads *Rulesets (0)*,
+  *Rule results (0)*, *Run history (0)*. The project's overview shows the banner *"Project profile
+  blueprints have been changed for your project"* with *Update project*, not clicked.
+- **[Claude] vii passes**: the portal draws one graph from the S3 input through the Glue job, `trades` and
+  the dbt job to `notional_by_desk`, with column lineage at the model run's version; the test leaves its
+  assertion on the model's node, as a facet and as the node's latest version, and nothing on the asset.
