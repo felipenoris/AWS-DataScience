@@ -1890,3 +1890,56 @@ through Claude in Chrome. Times are UTC.*
   what it removes (read 2026-11-21). `bbmyjshqm00c5s` stays in the graph, the portal drawing
   `foreign-writer` into `notional_by_desk`; 7.1 and Rollback's step 6, which delete the events by what xv
   reads, wait on an identity the root domain unit's owners would have to admit.
+
+## 2026-11-21 — Sitting A: 2.6, the same project by hand
+
+*Claude, in the same session. The space's acts are the user's, as the Data Scientist User, from `jup`'s
+terminal as `app-dbt-dev`'s project role; Claude's reads as the infrastructure user with
+`InfrastructureAccess`, through `awsds-infra-sandbox-1` (Sandbox Account 1) and `awsds-infra-data` (Data
+Governance). Times are UTC.*
+
+- **[user] 2.6**, the step's commands from `~/app-dbt`, the variables read first (*"dzd-d8yrvx1ko7im6o |
+  as-built | conta definida"*): the archive unpacked to `/tmp/app-dbt-hand`, then `run-dbt.sh …
+  --namespace app-dbt-by-hand` with `-- debug` and with `-- run`. Both print *"dbt from /tmp/tmp.…/bin,
+  this script not executable"* and *"/opt/conda/bin/python3 3.12.14
+  Linux-6.12.115-140.210.amzn2023.x86_64-x86_64-with-glibc2.39"*, where the worker reads 3.12.16 on Linux
+  6.1.190 with glibc 2.34. `debug`: *"This dbt command produces no lineage; running it without OpenLineage
+  events"*, *"Connection test: [OK connection ok]"*, *"All checks passed!"*, peak memory 159,304 kB, exit
+  code 0. `run`: *"OK created sql table model app_dbt.notional_by_desk … [OK 3 in 13.98s]"*, *"Done. PASS=1
+  …"*, four events posted at 06:18:13 (`ckenjo1twzcqds`, `61luuzkqhux72o`, `dnwj5sxhkowff4`,
+  `6qldbu4jy3iz68`), *"Emitted 4 OpenLineage events"*, peak memory 194,416 kB, exit code 0. As 0.16 read.
+- **[Claude] The statements and the table**: 2.5's swap, each statement `SUCCEEDED`: the create at
+  06:17:58; the renames at 06:18:02 and 06:18:04, each an `UpdateTable` refused
+  `UnsupportedOperationResponse` and then a `CreateTable` and a `DeleteTable`; the drop at 06:18:07; the
+  model's second statement at 06:18:10. `notional_by_desk` created 06:18:05 and updated 06:18:11,
+  `VersionId` 1, one version, its description kept, at
+  `…/app_dbt/notional_by_desk/4e686f34-677c-45e5-8678-7d4c31a7c5f6`; `notional_by_desk__ha` and
+  `notional_by_desk__bkp` read `EntityNotFoundException`; the project role's two grant rows unchanged. The
+  asset `daefcycb3hhhn4` stays at revision 2, its `GlueTableForm` naming 2.5's location `378cf5f7-…`,
+  until the source's next run.
+- **[Claude] The space's session against the worker's**: in Sandbox's trail every call is the project
+  role's session `SageMaker` from `jup`'s 10.20.28.126, user agent `Boto3/1.43.75 …
+  os/linux#6.12.115…`: Athena's `StartQueryExecution` through `vpce-0150fe6c7648118a7`; the client's Glue
+  calls through `vpce-015a9ee19ec1b45af`, `persist_docs`' `UpdateTable` at 06:18:11 among them; the four
+  `PostLineageEvent` at 06:18:13 through `vpce-03abb012f13500645`; Athena's own Glue calls from
+  `athena.amazonaws.com`. 2.5's worker called as the session `AmazonMWAAServerless` from 10.20.56.170.
+  Data Governance's trail records the four posts as `AWSAccount`, with the same address and endpoint, so
+  the domain's account does not tell the two apart; it adds two `CreateLineageNode` by
+  `datazone.amazonaws.com` at 06:18:25. Two `GetDatabase` calls Glue made itself under the client's
+  `GetDatabases`, at 06:17:57, read *"Insufficient Lake Formation permission(s): Required Describe on
+  curated"* and *"… on raw"*.
+- **[Claude] The graph keeps its dataset nodes and adds a job**: the four events' and the new nodes'
+  creator is `28f1b390-…`, the Data Scientist User's profile (type `SSO`), where the workflow's events
+  carry `8af0750c-…`, the profile of `datazone_usr_role_dnl3l158mbhrio_55hp9teamegf4g` (type `IAM`). The
+  jobs `app-dbt-by-hand.awsdatacatalog.app_dbt.app_dbt.notional_by_desk` (`dm0hfd9w4k7ehc`, `QueryForm`,
+  `JobForm`, `AdditionalPropertiesLineageForm`) and `app-dbt-by-hand.dbt-run-app_dbt` (`bhng3gchuguzyo`)
+  were created at 06:18:25. `6w7hp2vvi8kscw` took a version at 06:18:11, named
+  `awsdatacatalog.app_dbt.notional_by_desk` again, its upstream the run `axu3omqltim74g`
+  (`…notional_by_desk/01a1fcc1-5bb4-…`) from `3s0gk0eg2o68pc`, which took a version at the same second, its
+  downstream the asset's node `6ljn21swt4l0y8`.
+- **[Claude] The development loop, read**: a person's run joins the workflow's graph as a job of its own
+  between the same dataset nodes. The graph tells it by the job's namespace, which the person chooses
+  (`app-dbt` when `--namespace` is left out), and by each version's creator, which DataZone sets: the
+  person's profile from a space, the role's from the workflow. The job's name follows the dbt command,
+  `run` against the workflow's `build`, not the person. A run by hand moves the table to a new location,
+  and the asset follows at the source's next run.
