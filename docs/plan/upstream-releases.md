@@ -191,7 +191,9 @@ nothing was called.
 from the CLI's own version notice on the laptop: 1.17.0 is released; its `-minimal-refresh` rule is due (the list
 below), and the lab stays on 1.16.6. **Read 2026-10-30**: 1.17.1 (2026-10-28) is the latest release.
 **Read 2026-11-13**: 1.17.2 (2026-11-11) is the latest release and 1.16.7 (2026-10-22) the 1.16 line's; the
-laptop's binary, the offline-gates job and the deploy image's Dockerfile name 1.16.6.
+laptop's binary, the offline-gates job and the deploy image's Dockerfile name 1.16.6. **Read 2026-11-21**:
+the laptop runs 1.17.2, the user's install, and the offline-gates job moves with it; the Dockerfile still
+names 1.16.6.
 
 | Change | Plan items it moves | Verdict | Confirmed by |
 |---|---|---|---|
@@ -199,7 +201,7 @@ laptop's binary, the offline-gates job and the deploy image's Dockerfile name 1.
 | 1.16.7 (2026-10-22) is built with Go 1.26.10, which *"no longer trusts certificates issued through a set of compromised eMudhra intermediate CAs (CVE-2026-111943)"*; `aws` 6.70.0 and `awscc` 1.107.0 carry the same note | Terraform's registry and backend calls verify TLS with core's Go, and a provider's AWS calls with its own. The lab's three binaries are 1.16.6, and on 2026-11-13 48 of the tree's 52 `aws` locks predate 6.70.0. Whether a 1.16.6 binary reads a state 1.16.7 wrote is unmeasured. No pipeline job runs Terraform since release F, a leg reading its role's states as JSON (read 2026-11-17), so no older reader is left beside the laptop's sessions, which share one binary | bump | note |
 | `lifecycle { destroy = false }` on a resource (1.16.0, [PR #38784](https://github.com/hashicorp/terraform/pull/38784); fixed with `create_before_destroy` in 1.16.3, and a cycle with a provider that references such a resource in 1.17.2): a destroy removes the object from state and leaves it | The in-place form of the `removed` block Stage 6c used for the Elastic IP; no planned step needs it | unblocks | note |
 | `import` blocks inside modules (1.16.0); `state show -json` (1.16.0) | An adoption (Lesson 35) can live in a module; an instrument can read one resource as JSON | unblocks | note |
-| `-minimal-refresh` (1.17.0, 2026-10-21, [#35290](https://github.com/hashicorp/terraform/issues/35290)): a plan refreshes only the resources it proposes to change | `sandbox/data/` forbids `-refresh=false` because SMUS is a Lake Formation admin in Sandbox (open question 24; `CLAUDE.md`'s standing rule), and the new option skips the same refresh for every resource the plan leaves alone. The option is released, and the lab's 1.16.6 does not know it: the rule names both the day a binary moves to 1.17 | risk | note |
+| `-minimal-refresh` (1.17.0, 2026-10-21, [#35290](https://github.com/hashicorp/terraform/issues/35290)): a plan refreshes only the resources it proposes to change | `sandbox/data/` forbids `-refresh=false` because SMUS is a Lake Formation admin in Sandbox (open question 24; `CLAUDE.md`'s standing rule), and the new option skips the same refresh for every resource the plan leaves alone. The laptop moved to 1.17.2 on 2026-11-21, and `CLAUDE.md`'s standing rule names both since | risk | note |
 | Variables and locals in provider requirements (1.17.0, [#39153](https://github.com/hashicorp/terraform/issues/39153)) | The per-slice pin (Lesson 14, each `versions.tf`) stays per root module | holds | note |
 
 ## The `hashicorp/aws` provider
@@ -270,6 +272,7 @@ None is applied here; each is a change of its own, with the plan read first.
 |---|---|---|---|---|
 | Terraform core, **taken by the user 2026-10-22** | 1.15.8 → 1.16.6 | CVE-2026-78669; `lifecycle { destroy = false }`; module `import` blocks | in order: the laptop's binary (the user's install) and `CLAUDE.md`'s tool list, then `.github/workflows/offline-gates.yml` (`TERRAFORM_VERSION`) and `gitlab/awsds/deploy-image/Dockerfile` (`TERRAFORM_VERSION`, `TERRAFORM_SHA256`, a new deploy image release at a GitLab sitting); no `versions.tf` changes | the published `linux_amd64` checksum `38034b38…f1b7` against its signature; every slice re-plans `No changes`. **The laptop runs 1.16.6 since 2026-10-25** (the user's install, the `darwin_arm64` zip checked against the published sums), `CLAUDE.md`'s list, the workflow's pin and the Dockerfile's two pins moved the same day, `production/warehouse/` re-planned `No changes` under it. The image's release is owed at the GitLab sitting and comes **before any laptop apply or `make up` of a slice the pipeline reads or applies**: a state written by 1.16.6 is refused by the image's 1.15.8, by a plan, a `terraform_remote_state` read or `terraform output` alike (*state snapshot was created by a newer version*) |
 | Terraform core, **taken by the user 2026-11-17** (a card at 23:01 UTC, *"Atualizar agora"*) | 1.16.6 → 1.16.7 | Go 1.26.10's distrust of the compromised eMudhra intermediate CAs (CVE-2026-111943) | the laptop's binary and the workflow's pin together, then `CLAUDE.md`'s line; the Dockerfile's two pins at the deploy image's next release, its binary reading no state since release F (read 2026-11-17) | the published checksums against their signature. The workflow's pin and `CLAUDE.md`'s lines moved in PR #317; the laptop's install is the user's, with the `darwin_arm64` zip checked against the published sums |
+| Terraform core, **the user's install 2026-11-21** | 1.16.6 → 1.17.2 on the laptop, 1.16.7 skipped | the current release line; 1.17's `-minimal-refresh`, which `CLAUDE.md`'s standing rule forbids on `sandbox/data/` | the laptop's binary and the workflow's pin, then `CLAUDE.md`'s lines; the Dockerfile's two pins at the deploy image's next release | the binary signed by HashiCorp's Developer ID (`codesign`); `sandbox/foundation` re-planned `No changes`; a plan file 1.16.6 saved refused (`SUP-403`). Whether the zip was checked against the published sums was not reported |
 | `awscc` | none for the three 1.98.0 locks | No planned step on those slices needs a newer schema | — | the two `orchestration/` slices, whose workflows are `awscc_mwaaserverless_workflow`, lock 1.107.0, past the 1.99.0 that brought `code` |
 | `aws` | none required | `rotation_enabled` is in `sandbox/warehouse/`'s 6.64.0 | `data-governance/data/` at its next change | the `aws_glue_catalog_table` plan |
 | `aws` on `identity/org-policies/` | 6.60.0 → 6.68.0 or later, only if Stage 15 decision 4 authors the GuardDuty policy there | the `GUARDDUTY_POLICY` type | the slice's `.terraform.lock.hcl`; the `~> 6.60` constraint admits it | the ten documents re-plan `No changes` before the policy joins them (`type` is ForceNew) |
@@ -309,8 +312,7 @@ The next reading is due 2026-11-27.
   from the CLI's deploy or from an `awscc` apply drops the set, and whether the render at run creation
   resolves `var.value`. At the next Sandbox sitting, the worker's Amazon provider version from a task. The
   Airflow UI's session against the caller's role session, and the host on the client plane's allow-list.
-- **Terraform 1.17.2** (2026-11-11) and 1.16.7: the bump's order, and the `-minimal-refresh` rule the day a
-  binary moves to 1.17.
+- **Terraform**: the deploy image's two pins at its next release, and the 1.17 line's releases after 1.17.2.
 - **Identity Center's network controls**: whether SageMaker Unified Studio forwards the network context, and
   the announcement when one is posted, before the user decides. The Sign-In guide's sign-in sessions of up to
   90 days against D39.

@@ -4437,3 +4437,21 @@ Times are UTC.*
   the gates' job, which `awsds/ci-gates` holds: *"No known vulnerabilities found"* for `app-etl` (one
   package), `app-ml`'s `code` (48) and `app-dbt` (78), at 20:36 UTC. The gate itself runs on the laptop
   the day of each tag, before the tag (Lesson 77).
+
+## 2026-11-21 — 4.12's membership: the Governance Manager in `deploy-production` as `subscription-approver`
+
+*Claude's hand on the user's word in chat, *"Autorizo a membership"*, through `awsds-infra-prod`
+(Production, the infrastructure user with `InfrastructureAccess`), the project's owner, with the estate
+down. The session the user opened in `awsds-workflows` was told before the write. Times are UTC.*
+
+- **[Claude] The client**: the laptop's `aws-cli/2.37.12` has no `--user-created-designation-id`, so the
+  call ran with botocore 1.44.5's DataZone model staged through `AWS_DATA_PATH`, whose help lists the
+  option.
+- **[Claude] The members before**: two groups `PROJECT_OWNER` and one user `PROJECT_CONTRIBUTOR`.
+- **[Claude] The call**, 17:56:59 to 17:57:00: `create-project-membership` on `deploy-production` with the
+  Governance Manager's user profile as `userIdentifier`, `--designation USER_CREATED_DESIGNATION
+  --user-created-designation-id ahjm1h20oujxqo`. Exit 0, an empty body.
+- **[Claude] The members after**: the same three, and the Governance Manager's user profile as
+  `USER_CREATED_DESIGNATION` with `userCreatedDesignationId` `ahjm1h20oujxqo`.
+- **Left of 4.12**: xxvi's portal half, read before the approval; after R1, `eighth-experimentation`'s
+  request on the listing release G creates and the Governance Manager's approval in the portal.

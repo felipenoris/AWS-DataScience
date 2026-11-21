@@ -4727,3 +4727,23 @@ are UTC.*
 - **[Claude] Left of day 1**: 7.5's monitored half, 7.7 and 6.1 (viii)'s Code Editor half, on a new
   remote-access Code Editor space of the owner's in `eighth-experimentation`, the deep link the one method
   (`SUP-398`, `SUP-399`); then step 12's schedule delete and the contributor's `code` space.
+
+## 2026-11-21 — Step 12's leftovers: 4.7's schedule deleted, the `code` space read standing
+
+*Claude's hand on the user's word in chat, *"Autorizo vc apagar o Apagar o schedule
+to-run-in-background-tytue9 pela CLI."*, through `awsds-infra-sandbox-1` (Sandbox Account 1, the
+infrastructure user with `InfrastructureAccess`), with the estate down. The session the user opened in
+`awsds-workflows` was told before the write. Times are UTC.*
+
+- **[Claude] The schedule before**: `to-run-in-background-tytue9` in `SageMakerUnifiedStudio-avhvbqn37ty7m8-dev`,
+  `ENABLED`, `at(2026-11-21T00:50:00)` in `America/Sao_Paulo`, `ActionAfterCompletion` `NONE`, created
+  03:46:12, its target `aws-sdk:datazone:startNotebookRun`.
+- **[Claude] The delete**, 17:57:30 to 17:57:31: `scheduler delete-schedule`, exit 0. Read after:
+  `get-schedule` *"ResourceNotFoundException … Schedule to-run-in-background-tytue9 does not exist."*, and
+  `list-schedules` on the group returns none.
+- **[user] The space**, in chat: *"Vi que o space `code` do `eighth-experimentation` já está apagado."*
+- **[Claude] The space read**: `describe-space` on `code` answers `InService`, created 03:54:05, owned by the
+  Governance Manager's user profile, 7.6's contributor, `Private`, `CodeEditor`, remote access `ENABLED`,
+  a 16 GB volume; its one app, `CodeEditor` `default`, `Deleted`. The space stands with no app and bills its
+  volume. Either the app's `Deleted` or a portal that lists no other user's private space (inferred) reads
+  as a deleted space. Its delete is the owner's in the portal, or Claude's on the user's word naming it.

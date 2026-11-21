@@ -24,7 +24,7 @@ All infrastructure will be deployed in the `us-west-2` Region.
 
 ## Tools installed in the current environment
 
-`terraform` **1.16.6** (1.16.7 waits on the user's install), the `aws` client, `uv` **v0.12.13**, `jq`,
+`terraform` **1.17.2**, the `aws` client, `uv` **v0.12.13**, `jq`,
 `pre-commit` **4.6.2**, `checkov` **3.3.11** (`uv tool install`), `tflint` **v0.64.0**. Python **3.14**
 pinned by `uv` (`pyproject.toml`/`uv.lock`), `WireGuard` **v1.0.16** (App Store), `wireguard-tools` **v1.0.20260223** (homebrew) which provides the `wg` utility, `session-manager-plugin` **1.2.835.0** (homebrew cask); `ruff` lints/formats.
 
@@ -229,12 +229,13 @@ per laptop, never one per session.
   that writes the entry and again at every sync, and `./scripts/check-aws-supplement.py` is run on
   the synced tree: PRs #294 and #298 each took `SUP-360` on 2026-11-14, each green on its own
   branch, and `main` failed the check until the second became `SUP-362`.
-- **The Terraform binary is one per laptop, and every session's.** The laptop moves to 1.16.7 by the user's
-  install (the bump taken 2026-11-17; `terraform version` reads which), and the deploy image runs 1.16.6
+- **The Terraform binary is one per laptop, and every session's.** The laptop runs 1.17.2 since 2026-11-21,
+  the user's install (`terraform version` reads which), and the deploy image runs 1.16.6
   since 2026-10-25 (`v0.3.0`, the deploy runner replaced 20:40 UTC). No pipeline job runs Terraform
   since release F: a leg reads its role's `state_read_keys` as JSON (`scripts/tfhygiene/states.py`, read
   2026-11-17), so the image's binary reads no state. A laptop upgrade moves every session at once, with the
-  offline gates' pin (`.github/workflows/offline-gates.yml`); the image's pins move at its next release.
+  offline gates' pin (`.github/workflows/offline-gates.yml`), and voids every saved plan file
+  (`SUP-403`); the image's pins move at its next release.
 
 ### What the app refuses
 
@@ -454,7 +455,7 @@ pass 1 was done 2026-11-18 with nothing up, its passes 2-5 on §N.10's day 2. Th
 | Stage | State | What comes next |
 |---|---|---|
 | 5b, the Sandbox warehouse | Passes 0-3 applied 2026-09-20 | `promotion.md` §N.10's day 1, before 2026-12-19 (decision 9): the `--sql` read, the `enable_large_strings_opt_in` re-plan, the `max_query_execution_time` test. The bill's half of verification x after the free trial ends |
-| 6d, Unified Studio's remainder | Steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half, 2.7's steps 2 to 5 done 2026-11-18; 5.1 read and decision 17's deny in the targets applied 2026-11-19; decision 6, 4.7 with `TM-34` (`SUP-396`) and 7.6 closed 2026-11-21 | The user's: the 1.1 and 1.2 attempts; step 12's leftovers. §N.9.3's remainder at the end of day 2 or 3: 7.5's monitored half by the deep link alone (`SUP-398`), 7.7, 6.1 (viii). R1: 2.7 step 7. Stage 8 5.6's lint owes the native notebook operator |
+| 6d, Unified Studio's remainder | Steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half, 2.7's steps 2 to 5 done 2026-11-18; 5.1 read and decision 17's deny in the targets applied 2026-11-19; decision 6, 4.7 with `TM-34` (`SUP-396`) and 7.6 closed 2026-11-21 | The user's: the 1.1 and 1.2 attempts; step 12's `code` space, its schedule deleted 2026-11-21. §N.9.3's remainder at the end of day 2 or 3: 7.5's monitored half by the deep link alone (`SUP-398`), 7.7, 6.1 (viii). R1: 2.7 step 7. Stage 8 5.6's rule is in `awsds-workflows` `4401f91` (PR #29); each application's pin moves at its next tag |
 | 6e, Claude Code on Bedrock | A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint). Held by PR #108 | The user's: the three Claude 5.5 model agreements (decision 17), decisions 11 and 13, and decision 6's budget notification. 6.4's token volume on §N.9's day 3 |
 | 6f, the catalog over the lake | Decision 1 (b), a pilot of SMUS's native flow: step 11 done to 11.11 (2026-10-27), `curated.trades` published by `governed-lake` and subscribed by `eighth-experimentation`. Decisions 2 to 6 taken | The user's: step 2's portal acts, 11.12's rollback residue |
 | 6g, access by identity | Applied 2026-09-17, 1.4 closed on both profiles | 2.4's Athena read, which the user re-specifies. Decision 1's proxy-host replacement at the next `production/proxy/` apply, in a hub sitting |
@@ -465,8 +466,8 @@ pass 1 was done 2026-11-18 with nothing up, its passes 2-5 on §N.10's day 2. Th
 | 11, data protection | Pass 0 read; pass 1's data cells filters written, creating nothing. The threat model holds `TM-01`..`TM-35` | The user's: decision 12 (the filtered principal), `TM-17`, decisions 1, 2, 5 and 9. The internal-access analyzer, created after a 1st and deleted before the next: it bills on each 1st |
 | 12, observability and FinOps | Both observability slices applied 2026-10-18; `OB-3` passes in Sandbox and fails in Production by design (`EXC-19`). The bill reads above D12's ceiling: 53.31 USD in August and 74.48 in September | A hub sitting: the three `[D]` hosts' alarm actions, the proxy's `notBreaching` (decision due 1 (b)). The user's: decision due 3 and D12's fired revision trigger |
 | 14, Sandbox vending | The pre-vend half done 2026-10-18 (`./aws/vending.py`, `VN-1`..`VN-6`); the rest blocked on the account quota | The user's: the account quota and D34's rung |
-| 17, machine learning in Sandbox | Pass 0 in progress; `MLflowApp` and `AmazonBedrockKnowledgeBase` enabled, `ml-demo-mlflow` created, five models enabled, the playground answering (7.3). Passes 9 and 10 (`app-ml`, `app-genai`) decided (14 to 28); 9.1 to 9.4 and 10.1 to 10.3 done, 9.5's targets applied and `TM-33` accepted; Stage 10 decision 22 revised, a trained model promoted. On 2026-11-19 `app-ml-dev` and `app-genai-dev` created; 9.5's and 10.4's Sandbox slices, `sandbox/ml/`, `EXC-11`'s share (3.3) and the SCP admitting Nova Lite applied; Nova Lite enabled in projects; `EXC-11` closed and decision 7's statements applied 2026-11-20 | The user's: `app-ml-dev`'s MLflow App, 0.9's portal reading. `promotion.md` §N.9's days 2 and 3: 0.3, 0.7, 1.4, 1.6, passes 2, 3, 5 and 7, 9.6, 10.4; §N.10's day 1: pass 4, its endpoint kept up, unseen by `make status` (decisions 5, 6). R2: 9.7, 10.6, 9.11 |
-| 19, a data product on SMUS's native path | Decision 6 (b), the AWS model: a deployment project per target. Passes 1 and 2 run, the product curated in `app-etl-dev` (steps 15 and 17), `TM-31` accepted and the start grant kept in Production alone. Release F's `v0.5.2` through both targets 2026-11-16, the CLI deploying and importing the catalog, Production's asset listed with `dev`'s metadata, and step 8's cut-over done. A data product's name is the domain's (`SUP-369`): decision 26 (b) gives it to Production's `publish` task, release G written (PR #307), its `production/studio/` applied 2026-11-17. Decisions 1 to 28 taken, 7 and 8 moot; 27's (d), an account-level log retention policy, waits on the AWS provider (`EXC-25`). Step 9's warehouse sitting run, xxxii yes; xvii, xxi's domain half, xxii, xxiii and xxx read. The share at version 13 and decision 15 (d)'s `subscription-approver` created 2026-11-19, xxvi's half with no membership yes | The user's, now: 4.12's membership with `subscription-approver` and xxvi's portal half. Release G in R1 (§N.11.1), steps 1 and 3 done; then 4.12's request and approval; pass 5 on §N.10's day 1, 5.2's door applied 2026-11-20 |
+| 17, machine learning in Sandbox | Pass 0 in progress; `MLflowApp` and `AmazonBedrockKnowledgeBase` enabled, `ml-demo-mlflow` created, five models enabled, the playground answering (7.3). Passes 9 and 10 (`app-ml`, `app-genai`) decided (14 to 28); 9.1 to 9.4 and 10.1 to 10.3 done, 9.5's targets applied and `TM-33` accepted; Stage 10 decision 22 revised, a trained model promoted. On 2026-11-19 `app-ml-dev` and `app-genai-dev` created; 9.5's and 10.4's Sandbox slices, `sandbox/ml/`, `EXC-11`'s share (3.3) and the SCP admitting Nova Lite applied; Nova Lite enabled in projects; `EXC-11` closed and decision 7's statements applied 2026-11-20; 0.9 read 2026-11-21 (xxvii) | The user's: `app-ml-dev`'s MLflow App. `promotion.md` §N.9's days 2 and 3: 0.3, 0.7, 1.4, 1.6, passes 2, 3, 5 and 7, 9.6, 10.4; §N.10's day 1: pass 4, its endpoint kept up, unseen by `make status` (decisions 5, 6). R2: 9.7, 10.6, 9.11 |
+| 19, a data product on SMUS's native path | Decision 6 (b), the AWS model: a deployment project per target. Passes 1 and 2 run, the product curated in `app-etl-dev` (steps 15 and 17), `TM-31` accepted and the start grant kept in Production alone. Release F's `v0.5.2` through both targets 2026-11-16, the CLI deploying and importing the catalog, Production's asset listed with `dev`'s metadata, and step 8's cut-over done. A data product's name is the domain's (`SUP-369`): decision 26 (b) gives it to Production's `publish` task, release G written (PR #307), its `production/studio/` applied 2026-11-17. Decisions 1 to 28 taken, 7 and 8 moot; 27's (d), an account-level log retention policy, waits on the AWS provider (`EXC-25`). Step 9's warehouse sitting run, xxxii yes; xvii, xxi's domain half, xxii, xxiii and xxx read. The share at version 13 and decision 15 (d)'s `subscription-approver` created 2026-11-19, xxvi's half with no membership yes; 4.12's membership with it done 2026-11-21 | The user's, now: xxvi's portal half. Release G in R1 (§N.11.1), steps 1 and 3 done; then 4.12's request and approval; pass 5 on §N.10's day 1, 5.2's door applied 2026-11-20 |
 | 20, dbt and its lineage in the catalog | Decisions 1 to 7, 9 to 11 and 13 to 17 taken; pass 1 and 4.1 to 4.4 done 2026-11-17 (`TM-35`); pass 8 written, its `[P]` slices applied (8.4); 2.0 closed 2026-11-19; 2.1 and sitting A done 2026-11-21, decision 5 kept (a), xv unanswered (`SUP-401`) | Pass 5 on §N.10's day 1, after 4.12. Pass 8 in R1 after PR #321's merge, or in R2, before 2026-12-18 |
 
 #### The estate between sittings
@@ -525,7 +526,8 @@ the log. `./scripts/check-plan-refs.py` fails this section past 12 KB.
 - `-input=false` on every plan and apply (Lesson 47).
 - Never pipe a command whose exit code matters (Lesson 46).
 - A module change is exercised by planning a caller, never by `validate`.
-- `-refresh=false` is forbidden on `sandbox/data/`, where SMUS is a Lake Formation admin (OQ 24).
+- `-refresh=false` and `-minimal-refresh` are forbidden on `sandbox/data/`, where SMUS is a Lake Formation
+  admin (OQ 24).
 - Never add an `sts:` action to the RCP without reading `CT.STS.PV.1`'s exclusion note.
 - Resolve an account by exact vended name. Subnets anchor on AZ `zone_id`.
 - Read the denial wording, never the exit code.

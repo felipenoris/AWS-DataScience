@@ -4593,3 +4593,34 @@ plan revised in `runbooks/promotion.md` and the files it names. Times are UTC.*
   `1794798069_2026_11_16_19.4.2_gitlab_backup.tar`, 2026-11-16 03:01:18, 15,728,640 bytes; before it
   2026-11-15 22:38:11 and 2026-11-10 01:51:59. The bucket's rules: `expire-current-versions` at 30 days,
   `expire-noncurrent-versions` at 7. The newest stops being current on 2026-12-17, R1's bound.
+
+## 2026-11-21 — Terraform 1.17.2 on the laptop, and Stage 8 5.6's rule in `awsds-workflows`
+
+*The user's hand for the install; Claude's reads through `awsds-infra-sandbox-1` (Sandbox Account 1, the
+infrastructure user with `InfrastructureAccess`), in the session of §N.9's day 1, with the estate down.
+Times are UTC.*
+
+- **[user] The install**, reported in chat: *"Atualizei o binário do terraform para v1.17.2."* The bump
+  taken on 2026-11-17 named 1.16.7, so the laptop skipped it.
+- **[Claude] The binary**: `terraform version` prints `Terraform v1.17.2 on darwin_arm64`, at
+  `$HOME/local/bin/terraform`; `codesign --verify --strict` reads it valid on disk and satisfying its
+  designated requirement, signed by *"Developer ID Application: Hashicorp, Inc. (D38WU7D763)"*, timestamp
+  2026-11-11 11:02:51. Whether the zip was checked against the published sums was not reported.
+- **[Claude] A state read under 1.17.2**: `sandbox/foundation` initialised by `gen-backend-hcl.py` and
+  `init`, then planned from 18:12:35 to 18:12:54, `-detailed-exitcode` exit 0, *"No changes. Your
+  infrastructure matches the configuration."* The state object's newest version in `awsds-sandbox-tfstate`
+  is still that of 2026-10-15 06:17:11, so the plan wrote nothing. The object holds `terraform_version`
+  1.15.8 at serial 18, and `terraform state pull` printed 1.17.2 at the same serial, as its page states.
+- **[Claude] A saved plan under 1.17.2** (`SUP-403`): `sandbox/workflows/`'s training-pair plan of
+  2026-11-20, `$HOME/tmp/stage17-training-pair-preflight.tfplan`, read with `terraform show`: exit 1,
+  *"plan file was created by Terraform 1.16.6, but this is 1.17.2; plan files cannot be transferred between
+  different Terraform versions"*. N.9's day 2 plans the pair again (`promotion.md` §N.12.3).
+- **[Claude] The records**: `.github/workflows/offline-gates.yml`'s pin and `CLAUDE.md`'s lines moved to
+  1.17.2; `-minimal-refresh` joins `-refresh=false` in the standing rule on `sandbox/data/`, due the day a
+  binary moved to 1.17 (`upstream-releases.md`); the waiting list's install row removed. The deploy image's
+  two pins wait on its next release, its binary reading no state since release F.
+- **[Claude] 5.6's rule**, from the report of the session the user opened for it: `awsds-workflows`
+  [pull request #29](https://github.com/felipenoris/awsds-workflows/pull/29) merged at 18:05:10 as
+  `4401f91`, *"A regra operador recusa pelo nome o SageMakerUnifiedStudioNotebookOperator"*. The
+  applications' pins move to it at their next tags, `app-etl`'s after release G
+  (`promotion.md` §N.11.1 step 6); no application's lint has run at `4401f91` yet.

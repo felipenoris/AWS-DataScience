@@ -2614,7 +2614,10 @@ After 2026-11-22 01:59:59 UTC, the admin secret's first scheduled rotation in Pr
    `app-genai` and `app-dbt` (Stage 20 8.1): `--self-check` printed every stage of every application `ok`,
    `app-etl`'s lines as on `main`. The pins read against the lint's release on 2026-11-18, `app-etl`
    (`196acee`), `app-ml` and `app-genai` (`37cb5a6`), each pass at `4613ddc` with their pipelines'
-   options, so each moves to it at the application's next tag, `app-etl`'s after release G.
+   options, so each moves to it at the application's next tag, `app-etl`'s after release G. Its successor
+   `4401f91` ([pull request #29](https://github.com/felipenoris/awsds-workflows/pull/29), merged
+   2026-11-21) adds the rule `operador`'s refusal of the native notebook operator (Stage 8 5.6, `TM-34`), and
+   no application's lint has run at it yet.
 7. When N.9's day 1 read Stage 20's passes 2 and 3, 8.5's verdict is written and 8.6's bundle rehearsed:
    `app-dbt`'s first push and branch pipeline (8.7), then its tag `v0.1.0` by 8.8, `staging/egress/` kept
    up from step 4 to the last Staging leg and `production/workloads-egress/` still up. Otherwise R2
@@ -2744,7 +2747,8 @@ Each reading is in the log of the stage that owns it.
   gaining `DescribeATrainingJobNoProjectHolds` and `TagATrainingJobWithTheCallersProject` alone; the
   default plan `No changes`. Saved as `$HOME/tmp/stage17-training-pair-preflight.tfplan`, it applies on day
   2 only while the slice's state and `main`'s tree have not moved; Terraform refuses it otherwise, and the
-  day plans again. The evaluation dataset's URL answers 200.
+  day plans again. The evaluation dataset's URL answers 200. Terraform 1.17.2, on the laptop since
+  2026-11-21, refuses the file 1.16.6 wrote (`SUP-403`), so day 2 plans the pair again.
 - **N.9's day 3**: 6e 6.4's baseline, `./aws/bedrock-usage.py` from 2026-11-01 to 20:16 UTC: 0.0005 USD
   computed over one to four invocations per model. Sandbox's application inference profiles are three,
   the domain's Haiku 4.5 and Nova Lite of 2026-10-19 and `eighth-experimentation`'s Opus 4.5 of
@@ -2787,8 +2791,8 @@ The waiting list holds each as a row. In the calendar's order:
 - **Before 6d's remainder** (N.9.3): nothing new. Chrome's proxy flag is typed in the window itself
   ([`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §4.1 [c]).
 - **Before R1**: Production's free-trial balance, read 2026-11-21 at 299.18 of 300.00 (Stage 9's log);
-  Stage 19 4.12's membership, which R1's approval needs.
-- **Before N.9's day 2**: Stage 17 0.9.
+  Stage 19 4.12's membership, which R1's approval needs, done 2026-11-21 (Stage 19's log).
+- **Before N.9's day 2**: Stage 17 0.9, read 2026-11-21 (Stage 17's log).
 - **Before N.9's day 3**: `app-ml-dev`'s MLflow App; and, before 10.4's deploy, `app-genai-dev`'s first
   call to Nova Lite, which creates the project's application inference profile whose ARN 10.4's
   `DEV_MODEL_ID` names (`examples/app-genai/README.md`). Which portal act counts as that first use, the

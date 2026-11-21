@@ -4861,6 +4861,16 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   same way with a document that did change, each plan *"2 to add, 2 to change"* and each apply *"2
   added, 2 changed"*.
 
+- `SUP-403` **A saved plan file is refused by every Terraform version but the one that wrote it** (measured
+  2026-11-21, the laptop's move to 1.17.2). `sandbox/workflows/`'s training-pair plan, saved by 1.16.6 on
+  2026-11-20, read with `terraform show` under 1.17.2: exit 1, *"Plan read error: plan file was created by
+  Terraform 1.16.6, but this is 1.17.2; plan files cannot be transferred between different Terraform
+  versions"*. The pages of `plan` and `apply` (read 2026-11-21) call `-out`'s file opaque and name no
+  version. A plan saved for a later sitting does not survive a binary change, and the sitting plans again.
+  `state pull` is the documented opposite: its output carries the running binary's version, 1.17.2 against
+  the 1.15.8 the S3 object of `sandbox/foundation` holds (serial 18 in both). Where:
+  `log-stage-08-cicd-pipelines.md`, 2026-11-21; `runbooks/promotion.md` §N.12.3.
+
 ### The `aws` provider
 
 - `SUP-307` **`aws_organizations_policy` compares `content` as decoded JSON values, so a one-element

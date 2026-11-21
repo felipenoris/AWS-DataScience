@@ -3646,3 +3646,52 @@ Account 1), from this session's worktree at `main`'s `5dfff219`; nothing applied
   with `app-genai-dev` and `awsds-sandbox-bedrock-application` v1 with no
   `DenyAnInvocationWithNoPublishedGuardrailOfTheAccount`, the state between sittings. `OR-10`, `OR-11`
   and `DT-14` are owed.
+
+## 2026-11-21 — 0.9: the left navigation read in both projects
+
+*Claude's hand in the user's Chrome, on the portal session the user opened for it (*"Abri uma sessão no
+chrome no SMUS para você realizar as leituras."*), signed in as the Data Scientist User (read in the account
+menu), with the estate down. Links were followed and nothing was created; each project's *Update project*
+banner was left alone, and the tab was closed at the end. Times are UTC, from about 17:58 to 18:11.*
+
+- **[Claude] The navigation**, the same in `eighth-experimentation` and `app-etl-dev`, in order: Overview,
+  Discover, Data, Files, Repositories, Connections, Resource blueprints (*New*), Compute; Notebooks,
+  Workflows; **Data analytics**: Query Editor, Visual ETL, Data processing jobs; **AI/ML**: Models,
+  Training jobs, MLflow, Inference endpoints, ML pipelines, Feature Store; **Generative AI**: Playground,
+  AI apps; **IDEs**: JupyterLab, Code Spaces; Manage at the foot. *JumpStart models*, *Model registry* and
+  *Partner AI apps* are absent.
+- **[Claude] The AI/ML entries**, each read in both projects, paths under `/projects/<id>/`:
+  - *Models*, `modelhub`: the tabs *Foundation models* (939 models, a model finder by type, featured
+    providers) and *My models* (`modelhub/registered`: *"These are your own trained, versioned,
+    production-ready models. You can register models using the SageMaker SDK in a notebook."*, filtered by
+    *Model group*, *Model* or *Deployable models*), *"No models found"* in both projects.
+  - *Training jobs*, `trainingjobs`: *"View and manage SageMaker training jobs created from notebooks."*,
+    *"You don't have any training jobs."*; its *Browse models to train* opens *Foundation models*.
+  - *MLflow*, `compute?type=mlflow`: Compute's *MLflow* tab, *MLflow environments*, under the banner *"The
+    Compute page is migrating to Resource blueprints."*; `eighth-experimentation` lists `ml-demo-mlflow`,
+    *On*, *App*, created 2026-10-19 06:39, and `app-etl-dev` *"No MLflow Apps or Tracking Servers found"*.
+    The legacy experiments page 1.1 read is no longer what the entry opens.
+  - *Inference endpoints*, `endpoints`: *"You don't have any inference endpoints."*, *Create new endpoint*.
+  - *ML pipelines*, `pipelines/view`: *Delete*, *Edit*, *Create in visual editor*, *"No pipelines"*.
+  - *Feature Store*, `feature-store`: *"You don't have any feature groups."*, *Create feature group*.
+- **[Claude] The Generative AI entries**:
+  - *Playground*, `/bedrock/playground/explorer`, a domain path with no project in it: *Chat playground*,
+    and Amazon Bedrock's panel with *Discover*, *Models*, *Playgrounds* (*Chat*, *Image and video*) and
+    *Shared apps and prompts*. `app-etl-dev`'s page preselected Nova Lite; no prompt was sent.
+  - *AI apps*, `bedrock/playground/chat`: a new chat agent app, *"Not saved"*, *"Not deployed"*, *"Not
+    shared"*, *App ID: -*, under Agents Classic's notice, never saved; the panel's *Build* (*Chat agent*,
+    *Flow*, *Prompt*, *Model evaluations*) and *Asset gallery* (*My apps*, *My prompts*, *My components*).
+    *My components*, `bedrock/components`, lists *Components (0)* in `app-etl-dev`, typed *Knowledge base*,
+    *Guardrail* or *Function*.
+  - In `app-etl-dev`, *AI apps* opened from *Playground* rendered *"Whoops, something went wrong."*, the
+    console reading *"TypeError: Cannot read properties of undefined (reading 'foundationModel')"* in the
+    playground's code at 18:07:05; *Reload page* drew the builder.
+- **[Claude] Not opened**: *JupyterLab* (`code`), which opens a space, *Code Spaces* (`code-spaces`) and
+  *Manage*.
+- **[Claude] The verdicts**: xxvii, neither chapter as written: the menu carries the IAM-based chapter's
+  entries, with *My models* where that chapter names *Registered Models*, and neither of the Identity Center
+  chapter's *JumpStart models* and *Model registry*. xxxiii's 0.9 half: *Feature Store* shows in an Identity
+  Center domain. The paths of "The menu, entry by entry" are corrected in the stage file the same day.
+- **[Claude] Day 2's saved plan**: Terraform 1.17.2, on the laptop since this day, refuses
+  `$HOME/tmp/stage17-training-pair-preflight.tfplan` (Stage 8's log, `SUP-403`), so day 2 plans the
+  training pair again from `main`.

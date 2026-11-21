@@ -390,6 +390,13 @@
   <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-mwaaserverless-workflow.html>,
   <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-sagemaker-mlflowapp.html>.
 
+- Terraform's `state pull`, `plan` and `apply` pages (read 2026-11-21, for the laptop's move to 1.17.2):
+  `state pull` converts the state to the running binary's version before it prints it, and the `plan` and
+  `apply` pages name no version for a saved plan file (`SUP-403`):
+  <https://developer.hashicorp.com/terraform/cli/commands/state/pull>,
+  <https://developer.hashicorp.com/terraform/cli/commands/plan>,
+  <https://developer.hashicorp.com/terraform/cli/commands/apply>.
+
 ## Networking and access
 
 - WireGuard: <https://www.wireguard.com/>.
