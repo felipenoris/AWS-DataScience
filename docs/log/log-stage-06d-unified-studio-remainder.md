@@ -4747,3 +4747,17 @@ infrastructure user with `InfrastructureAccess`), with the estate down. The sess
   a 16 GB volume; its one app, `CodeEditor` `default`, `Deleted`. The space stands with no app and bills its
   volume. Either the app's `Deleted` or a portal that lists no other user's private space (inferred) reads
   as a deleted space. Its delete is the owner's in the portal, or Claude's on the user's word naming it.
+
+## 2026-11-21 — Step 12's `code` space deleted
+
+*Claude's hand on the user's word in chat, *"Sim, apague"*, answering the question that named the space and
+its 16 GB volume and said the delete is irreversible; through `awsds-infra-sandbox-1` (Sandbox Account 1,
+the infrastructure user with `InfrastructureAccess`), with the estate down. No other session was running
+on the laptop. Times are UTC.*
+
+- **[Claude] Before**: `code` `InService`, the contributor's, `Private`, `CodeEditor`, 16 GB; its one app
+  `Deleted`; the domain's only space.
+- **[Claude] The delete**, 18:34:04 to 18:34:05: `sagemaker delete-space`, exit 0; `describe-space` right
+  after read `Deleting`.
+- **[Claude] After**, 18:34:22: `describe-space` *"ResourceNotFound … Space [… space/<domain>/code] does
+  not exist."*, and `list-spaces` on the domain returns none. Step 12's leftovers are gone.
