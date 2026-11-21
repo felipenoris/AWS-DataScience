@@ -609,6 +609,12 @@
 
 - SageMaker `RetentionPolicy` for `DeleteDomain` (defaults to `Retain`): <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_RetentionPolicy.html>.
 
+- SageMaker `DescribeApp` and ListApps's `AppDetails`, read 2026-11-21 for `SUP-229`: DescribeApp's
+  `CreationTime` says an application restarted within 24 hours of its last shutdown is an update that keeps
+  its metadata; `AppDetails` gives only the creation time:
+  <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeApp.html>,
+  <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_AppDetails.html>.
+
 - SageMaker Pipelines (a D7 option): <https://docs.aws.amazon.com/sagemaker/latest/dg/pipelines.html>.
 
 - SageMaker Model Registry (model promotion, Stage 10): <https://docs.aws.amazon.com/sagemaker/latest/dg/model-registry.html>.

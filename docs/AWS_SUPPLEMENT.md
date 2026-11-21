@@ -3626,10 +3626,20 @@ entry is still true is the reading.
   `etc/conda/activate.d/*.sh` run after the activation exports `PATH`. Where:
   `log-stage-08-cicd-pipelines.md`, 2026-10-26.
 
-- `SUP-229` **`list-apps` reports an app's first creation, not its latest start** (measured 2026-10-26).
+- `SUP-229` **An app's `CreationTime` is the first `CreateApp` under its name, kept across a restart and
+  across its space deleted and made again under the same name** (measured 2026-10-26 and 2026-11-21).
   Both `default` spaces' apps read `CreationTime` 2026-10-25 05:40 UTC while CloudTrail's `CreateApp`
   started them at 04:45 and 05:31 UTC on 2026-10-26: an app's age is read from `CreateApp`. Where:
-  `log-stage-10-orchestration-promotion.md`, 2026-10-26.
+  `log-stage-10-orchestration-promotion.md`, 2026-10-26. **2026-11-21**: `code` in `d-m8m0uefej9kb` was
+  created at 03:54:10, shut down idle at 05:04:31, its space deleted at 18:34:05 and made again at 20:08:41,
+  and its `CreateApp` ran at 20:08:46; `describe-app` and `list-apps` still read 03:54:10. Three restarts
+  inside one space read their first `CreateApp` too. The DescribeApp reference states the rule on
+  `CreationTime` (an application restarted within 24 hours of its last shutdown is an update and keeps its
+  metadata); ListApps's `AppDetails`, the shape of each app `list-apps` returns, says only *"The creation time."*, and
+  neither page names a space made again. `scripts/slices.py status` billed `code` *"about 1.74 USD so far
+  since 2026-11-21 03:54 UTC"* for a run of about 0.12 USD; it now bills from the later of the app's and
+  the space's `CreationTime` and prints an upper bound, since a restart inside one space keeps the first
+  time. Where: `log-stage-12-observability-finops.md`, 2026-11-21.
 
 - `SUP-230` **An open portal page starts its project's space app again after `make down` deleted it**
   (measured 2026-10-26). The Studio-apps hook deleted both projects' apps at 06:10 UTC; the persona's open
