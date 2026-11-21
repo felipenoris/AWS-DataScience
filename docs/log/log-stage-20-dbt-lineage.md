@@ -1581,3 +1581,42 @@ Sandbox Account 1). Times are UTC.*
 - **[Claude] 2.2 passes**: i's worker half, glibc 2.34; ii's first half, `SELECT 1`; the endpoint's answer
   to `ListLineageEvents`. A script runs in `mktemp`'s folder, so `run-dbt.sh` keeps its form. The
   expected *"one copy of the archive for each deploy"* reads one copy per workflow the deploy creates.
+- **[user] 2.3**, `app-dbt`'s run `SzzngX9q8O3hZ7k` at 04:14:33, from the same terminal, the same nine
+  `ListTagsForResource` refusals before it.
+- **[Claude] 2.3's run**: `SUCCESS` from 04:14:39 to 04:18:21; `load`, `GlueJobOperator`, `SUCCESS` in 103
+  seconds, which created the Glue job `app-dbt-dnl3l158mbhrio`, its run `SUCCEEDED` from 04:15:23 to
+  04:16:55 (76 seconds of execution); `transform`, `BashOperator`, `SUCCESS` in 48 seconds. The task log
+  reads the step's criteria: *"run-dbt.sh: dbt from /usr/local/airflow/dags/app_dbt/bin, this script
+  executable"*; *"Running OpenLineage dbt wrapper version 1.55.0"*; *"Running with dbt=1.11.16"* and
+  *"Registered adapter: athena=1.11.1"*, the lock's `dbt-core` and `dbt-athena`; the model *"OK 3 in
+  5.38s"*, the test *"PASS in 2.65s"*, *"Done. PASS=2 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=2"*; six
+  *"Successfully posted a LineageEvent: … in Domain: dzd-d8yrvx1ko7im6o"*, the transport's *"does not
+  support timeout"*, *"Emitted 6 OpenLineage events"*, *"Underlying dbt execution returned 0"*; *"run-dbt.sh:
+  peak memory 290516 kB, exit code 0"*.
+- **[Claude] The tables**: `trades`, `EXTERNAL_TABLE`, `table_type` `ICEBERG`, registered with Lake
+  Formation, at the project's `dev/data/catalogs/trades`, created 04:16:42 by the project role's session
+  `GlueJobRunnerSession`, version 0; `notional_by_desk`, the same type, at
+  `dev/data/catalogs/app_dbt/notional_by_desk/d37c35ec-…`, created 04:18:11 by `AmazonMWAAServerless`,
+  version 1, its description *"The notional each desk traded, quantity times price summed over the desk's
+  trades."* The model's location holds one Parquet file of 402 bytes, its metadata JSON and two Avro
+  files. Lake Formation registers each project's `dev/` prefix with the project's role, `app-dbt-dev`'s
+  among them, which covers both locations.
+- **[Claude] The statements**, each under the workgroup's enforced output: the create at 04:18:09
+  (`DDL`, 296 bytes scanned), the constant `SELECT '{"rowcount":3,"data_scanned_in_bytes":296}'` at
+  04:18:12 and the test at 04:18:14, each `SUCCEEDED`, each carrying dbt's comment with `dbt_version`
+  1.11.16.
+- **[Claude] The events**, each `SUCCESS`, each created by `8af0750c-…`: the six dbt events under the job
+  namespace `app-dbt-dev` (decision 16 (c)), the parent `dbt-run-app_dbt` and the nodes
+  `awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run` and `….build.test`; the Glue job's 14 under
+  `default`, from `app_dbt_dnl3l158mbhrio`. Saved to `$HOME/tmp/stage20/events-2.3/`. dbt's datasets are
+  `awsathena://athena.us-west-2.amazonaws.com` `awsdatacatalog.app_dbt.trades` and
+  `….notional_by_desk`, each with a `symlinks` facet naming the Glue table (`table/app_dbt/<table>`,
+  `TABLE`), the output with `columnLineage` on `desk` and `notional`; the Glue job's output is
+  `s3://awsds-sandbox-smus-projects` `…/dev/data/catalogs/trades`, its `symlinks` naming
+  `table/app_dbt/trades`, its input the project's `shared/app-dbt/inbox`.
+- **[Claude] The trail**: the Glue job from 10.20.1.240 as `GlueJobRunnerSession`, `CreateTable` `trades`
+  through `glue`'s endpoint and 14 `PostLineageEvent` through `datazone`'s; the dbt task from 10.20.47.7 as
+  `AmazonMWAAServerless`, `GetWorkGroup` and three `StartQueryExecution` through `athena`'s, `CreateTable`
+  `notional_by_desk` and two `GetDataAccess` invoked by `athena.amazonaws.com`, `UpdateTable` through
+  `glue`'s (`persist_docs`), six `PostLineageEvent` through `datazone`'s. No refusal.
+- **[Claude] 2.3 passes**: i's modes, ii, iii's worker half, iv and v.
