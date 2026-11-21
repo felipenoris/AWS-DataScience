@@ -3388,6 +3388,23 @@ entry is still true is the reading.
   evidence about the profile: the trail's `projectIdentifier` says which project the portal had open.
   Where: `log-stage-20-dbt-lineage.md`, 2026-11-21.
 
+- `SUP-396` **A native notebook run accepts and records `networkAccessType` `PUBLIC_INTERNET_ONLY`, and its
+  compute runs in the domain's VPC regardless** (measured 2026-11-21 in Sandbox, Stage 6d 4.7). From a
+  space's terminal as `eighth-experimentation`'s project role, `datazone:StartNotebookRun` with
+  `--network-configuration networkAccessType=PUBLIC_INTERNET_ONLY` and no compute answered `QUEUED`; the
+  request, the response and every later `GetNotebookRun` carried `PUBLIC_INTERNET_ONLY`. Seventeen seconds
+  after the call, `AWSServiceRoleForAmazonSageMakerNotebooks` created the compute's interface through
+  `global.workflows.looseleaf.im.amazonaws.com` in the project's private subnet, with its
+  `datazone-<project>-dev` group. The kernel called DataZone through the VPC's interface endpoint, and a
+  cell opening `https://checkip.amazonaws.com` with no proxy timed out on each of its 8 addresses: `FAILED`,
+  *"URLError: <urlopen error timed out>"*. Three runs sent the same day with no network, from the portal's
+  *Run in background*, a schedule and a workflow's `SageMakerUnifiedStudioNotebookOperator`, took the same
+  subnets and group, and the portal sent the editor's own compute `VPC_ONLY`. The VPC, its subnets and its
+  zones are the domain's blueprint configuration's (`sandbox/sagemaker/`). No AWS page read for this
+  project states a run's default network or that the domain's VPC overrides the request, so a run's record
+  is no evidence of where it ran; its interface is. Where: `log-stage-06d-unified-studio-remainder.md`,
+  2026-11-21 (two entries); `threat-model.md`, `TM-34`.
+
 ## SageMaker AI spaces and images
 
 ### Custom images and their versions
