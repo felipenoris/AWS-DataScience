@@ -2786,7 +2786,8 @@ The waiting list holds each as a row. In the calendar's order:
   `proxy-on` in `~/.zshrc`, the tunnels `mbp` and `mbp-split-tunnel` in the WireGuard app.
 - **Before 6d's remainder** (N.9.3): nothing new. Chrome's proxy flag is typed in the window itself
   ([`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §4.1 [c]).
-- **Before R1**: Production's free-trial balance; Stage 19 4.12's membership, which R1's approval needs.
+- **Before R1**: Production's free-trial balance, read 2026-11-21 at 299.18 of 300.00 (Stage 9's log);
+  Stage 19 4.12's membership, which R1's approval needs.
 - **Before N.9's day 2**: Stage 17 0.9.
 - **Before N.9's day 3**: `app-ml-dev`'s MLflow App; and, before 10.4's deploy, `app-genai-dev`'s first
   call to Nova Lite, which creates the project's application inference profile whose ARN 10.4's
