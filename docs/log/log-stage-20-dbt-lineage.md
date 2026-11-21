@@ -1692,3 +1692,59 @@ and `awsds-infra-data` (Data Governance) for the trail. Times are UTC.*
 - **[Claude] vii passes**: the portal draws one graph from the S3 input through the Glue job, `trades` and
   the dbt job to `notional_by_desk`, with column lineage at the model run's version; the test leaves its
   assertion on the model's node, as a facet and as the node's latest version, and nothing on the asset.
+
+## 2026-11-21 — Sitting A: 2.5, the second run's swap
+
+*Claude, in the same session. The space's acts are the user's, as the Data Scientist User; Claude's reads as
+the infrastructure user with `InfrastructureAccess`, through `awsds-infra-sandbox-1` (Sandbox Account 1).
+Times are UTC.*
+
+- **[user] 2.5**, `app-dbt`'s run `JCrmBgSmNqRrTXg` at 04:57:25, by 2.3's command from the same terminal,
+  its variables read first (`echo "$DOMAIN_ID $LINEAGE_NAMESPACE"`), the same nine `ListTagsForResource`
+  refusals before it.
+- **[Claude] The run**: `StartedOn` 04:57:30, `CompletedOn` 05:03:13; `load`, `GlueJobOperator`, `SUCCESS` in
+  219 seconds, the Glue job's run `jr_cebf2ded…` `SUCCEEDED` from 04:58:18 to 05:01:40 (173 seconds of
+  execution, the first run's 76); `transform`, `BashOperator`, `SUCCESS` in 54 seconds. The task log: *"OK
+  created sql table model app_dbt.notional_by_desk … OK 3 in 12.66s"*, *"PASS not_null_notional_by_desk_desk
+  … PASS in 3.70s"*, *"Done. PASS=2 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=2"*, six posted events, *"Emitted 6
+  OpenLineage events"*, *"Underlying dbt execution returned 0"*, *"run-dbt.sh: peak memory 293544 kB, exit
+  code 0"*.
+- **[Claude] The reads lag the run at both ends**, polled every 22 seconds: `get-workflow-run` read `QUEUED`
+  and `list-task-instances` nothing through 04:59:28, `load` first listed at 04:59:50, while
+  `list-workflow-runs` read `RUNNING` from 04:57:30 and the Glue job had started at 04:58:18; at the end
+  `transform` and the run read `RUNNING` through 05:05:22, `SUCCESS` at 05:05:44, while dbt's log ended at
+  05:03:11. The task instances lag as the run's
+  state does, by about two and a half minutes (`serverless-workflows.md`'s *"The run's state lags its
+  tasks"*, 2026-10-11).
+- **[Claude] The statements**, each `SUCCEEDED` with no `StateChangeReason`: 05:02:52 `create table
+  "awsdatacatalog"."app_dbt"."notional_by_desk__ha" with ( table_type='iceberg', is_external=false,
+  location=…`; 05:02:56 `alter table app_dbt.notional_by_desk rename to app_dbt.notional_by_desk__bkp`;
+  05:02:57 `alter table app_dbt.notional_by_desk__ha rename to app_dbt.notional_by_desk`; 05:03:00 `drop
+  table if exists app_dbt.notional_by_desk__bkp`; 05:03:03 the constant `SELECT`, rowcount 3; 05:03:05 the
+  test. The swap of 0.13, as 0.16 ran it.
+- **[Claude] The trail**, every call as the project role's session `AmazonMWAAServerless`, invoked by
+  `athena.amazonaws.com`: 05:02:54 `CreateTable` `notional_by_desk__ha`. Each rename is first an
+  `UpdateTable` refused `UnsupportedOperationResponse`, *"RenameTable endpoint is not supported for Glue
+  Catalog."*, `additionalEventData` `{"IcebergRestOperation":"renameTable"}`, its parameters the prefix
+  `catalogs/<Sandbox>` and the source and destination names (05:02:56, 05:02:57), then a `CreateTable` of
+  the new name and a `DeleteTable` of the old: `notional_by_desk__bkp` created at 05:02:56 and
+  `notional_by_desk` deleted at 05:02:57; `notional_by_desk` created and `notional_by_desk__ha` deleted at
+  05:02:58. The drop is `DeleteTable` `notional_by_desk__bkp` at 05:03:02; `persist_docs` the `UpdateTable`
+  of `notional_by_desk` at 05:03:04 from 10.20.56.170 through `glue`'s endpoint. The Glue job's write is an
+  `UpdateTable` of `trades` at 05:01:27 as `GlueJobRunnerSession` from 10.20.37.237 through the same
+  endpoint, `trades` now at version 1 with its creation time of 04:16:42.
+- **[Claude] The table**: `notional_by_desk` created 05:02:58 (the first run's 04:18:11), updated 05:03:04,
+  `VersionId` 1 as the first run's, one version in `get-table-versions`, its description kept, at
+  `…/app_dbt/notional_by_desk/378cf5f7-04a0-4d83-b7f1-083b293f390e` (the first run's `d37c35ec-…`).
+  `notional_by_desk__ha` and `notional_by_desk__bkp` read `EntityNotFoundException`.
+- **[Claude] The objects**: under the new location four current objects written at 05:02:55, one Parquet of
+  399 bytes, the metadata JSON and two Avro files; under the first location no current object, its four
+  versions noncurrent beside seven delete markers of 05:03:02, the drop's second: two each on the
+  Parquet file, the manifest and the manifest list, one on the metadata JSON. The bucket's versioning keeps
+  the first run's files as noncurrent versions.
+- **[Claude] The grants**: Lake Formation lists on the table the project role's `ALL`, `ALTER`, `DELETE`,
+  `DESCRIBE`, `DROP`, `INSERT` and its `SELECT`, the two rows the first run's table read at 04:43.
+- **[Claude] The events**, each `SUCCESS`: dbt's six under `app-dbt-dev`, from the parent's `START` at
+  05:02:41 to its `COMPLETE` at 05:03:10; the Glue job's 14 under `default`, from 05:00:38 to 05:01:29.
+- **[Claude] x's half passes**: the swap ran, no rename or drop refused, the grants unchanged; the asset and
+  the graph wait on the source's second run.
