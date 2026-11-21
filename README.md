@@ -163,8 +163,9 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   role's grants in Staging's and Production's `foundation/` among them, and fails when one has diverged.
   `deploy-application.py` and `model-chain.py` are the promotion's tools: the first runs the CI/CD CLI's
   deploy into a deployment target's project from the release's bundle (Stage 19 step 4.9), the second
-  registers, approves and serves the model the release trains (Stage 10 steps 5.2 and 5.4); each has an
-  offline self-check in `make check`.
+  registers, approves and serves `app-etl`'s model (Stage 10 steps 5.2 and 5.4) and approves another
+  application's version by the release's model hash (Stage 17 pass 9); each has an offline self-check in
+  `make check`.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree. `make`
   itself is a convenience, not a dependency — every target is a direct call to scripts that also run
