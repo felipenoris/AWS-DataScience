@@ -5157,7 +5157,9 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   while an HTTP redirect to another host is a new request that needs its own entry. `github.com` covered
   neither `api.github.com` nor `codeload.github.com`, and the latter was refused `403 TCP_DENIED` in the
   same second the first tunnelled. Where: `log-stage-06c-networking-hub.md`, 2026-09-06; `runbooks/vpn.md`;
-  `runbooks/log-debugging.md` §P.
+  `runbooks/log-debugging.md` §P. A later reading, 2026-11-21 (Stage 11, `TM-01`): a `CONNECT` target that
+  is an IP address is matched by the name its reverse lookup returns, as Squid's `acl` page states for a
+  `dstdomain` without `-n`; `SUP-404` holds the reading.
 
 - `SUP-332` **`AllowedIPs` is inert for an address family the interface has no address in** (measured
   2026-09-07, macOS, App Store client). `wg-quick` installs routes only for the families present on
@@ -5295,3 +5297,20 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   added to `NO_PROXY` or with an explicit endpoint URL. The CI/CD CLI's `run`, from the same terminal, left
   no `airflow-serverless` line in the proxy's log (cause unmeasured). Where: `log-stage-20-dbt-lineage.md`,
   2026-11-21; `runbooks/sagemaker-application.md` §D.
+
+- `SUP-404` **An AWS service endpoint named under `.api.aws` can answer a reverse lookup with an EC2
+  hostname under `.amazonaws.com`, so a proxy that matches reverse names admits by address a service it
+  refuses by name** (measured 2026-11-21, Stage 11 `TM-01`). Read with `dig -x` from the laptop:
+  the four addresses of `airflow-serverless.us-west-2.api.aws` and the three of
+  `sagemaker-unified-studio-mcp.us-west-2.api.aws` answered `ec2-<a>-<b>-<c>-<d>.us-west-2.compute.amazonaws.com`,
+  the form of the public hostname EC2 documents for an instance, and so did the front-ends of `sts`, `ec2`,
+  `ssm`, `logs`, `sqs`, `sns`, `kms`, `monitoring`, `glue` and `athena` in `us-west-2`; S3's answered
+  `s3-us-west-2.amazonaws.com` and DynamoDB's `dynamodb.us-west-2.amazonaws.com`. Names CloudFront serves
+  answered `server-<ip>.<pop>.r.cloudfront.net` (`datazone.us-west-2.api.aws`,
+  `idetoolkits.amazonwebservices.com`), and `public.ecr.aws`, on Global Accelerator,
+  `<id>.awsglobalaccelerator.com`. No page this project read gives a service endpoint's reverse record.
+  Squid's `dstdomain` without `-n` matches an address by that name (`SUP-331`): from a Sandbox space at
+  20:29:25Z, `CONNECT 54.213.164.60:443`, an `airflow-serverless` address, read `200 TCP_TUNNEL` through the
+  compute plane's `.amazonaws.com` entry, the plane refusing that host by name the same day (`SUP-395`),
+  and `CONNECT 108.158.137.46:443`, a `datazone` address, read `403 TCP_DENIED`. Where:
+  `log-stage-11-dlp.md`, 2026-11-21; `threat-model.md` `TM-01`.
