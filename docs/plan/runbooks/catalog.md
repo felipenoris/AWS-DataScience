@@ -281,12 +281,16 @@ Iceberg table's `DROP TABLE` left its objects as noncurrent versions behind dele
 
 The curation page (read 2026-11-17): on the asset's page, the edit icons beside the business name and the
 description; on the *Overview* tab, *Summary*, *Glossary terms*, *Readme* (Markdown, up to 4,096
-characters) and *Metadata forms*; under *Asset details*, *Catalog visibility* and *Subscription approval*;
-on the *Schema* tab, each column's business name, description, glossary terms and forms.
+characters, written in a code editor with a *Side By Side Preview* switch, read 2026-11-21) and *Metadata
+forms*; under *Asset details*, *Catalog visibility* and *Subscription approval*; on the *Schema* tab, each
+column's business name, description, glossary terms and forms.
 
 Measured: the user wrote `trades_notional`'s description, README and `classification` `internal` on
 2026-11-10, and they travelled to listing revision 4 onwards and survived the source's updates (Stage 19
-iv); read again in `app-etl-dev` at revision 4 on 2026-11-15 (step 15). A table's comments in Glue are
+iv); read again in `app-etl-dev` at revision 4 on 2026-11-15 (step 15). In `app-dbt-dev` on 2026-11-21
+each save was one revision, the description's check mark, the README's *Save* and the form's *Save*:
+revisions 3 to 5 over a source's two, the README stored as `AssetCommonDetailsForm`'s `readMe`, and the
+bundle's export carrying all three (Stage 20 8.6). A table's comments in Glue are
 technical metadata: dbt writes a model's with `persist_docs`, the Athena adapter's `glue:UpdateTable`
 (read, Stage 20 0.13), and whether a source carries them to the asset is Stage 20 verification xvi,
 unmeasured.
@@ -331,7 +335,9 @@ root unit gives no Sandbox project (6f 1.1). None has been created here.
 - Measured: `classification`, valued `public` or `internal`, owned by `eighth-experimentation`. Each save
   in the portal was a `CreateFormType` answering a new revision, revision 2 at 00:44:24 UTC on
   2026-11-10, and `GetFormType` answers a non-member (`SUP-344`). Every product listing carries it (Stage
-  19 decision 4; `CT-18`).
+  19 decision 4; `CT-18`). Its model is one `String` with no list of values, the description naming
+  `public`, `internal`, `restricted` or `personal`, so *Add Form*'s *Enter field values* takes any text
+  (read 2026-11-21, Stage 20 8.6).
 - A domain unit's metadata rule can require a form at publishing (the metadata rules page, read
   2026-11-08); a required form shows *Required* on the asset and cannot be removed (the curation page). No
   rule is set here.

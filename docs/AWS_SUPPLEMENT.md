@@ -2250,7 +2250,10 @@ entry is still true is the reading.
   actions for `sagemaker.amazonaws.com`. At 05:46:23Z `GetProjectProfile` answered from Sandbox, Staging and
   Production as `InfrastructureAccess`, refused at 05:45:20Z *"because no resource-based policy allows the
   datazone:GetProjectProfile action"*, and `ListEntityOwners` stayed refused in all three. Where:
-  `log-stage-06a-unified-studio.md`, 2026-11-21.
+  `log-stage-06a-unified-studio.md`, 2026-11-21. Read again the same day (Stage 20 8.6), on version 14: the
+  CI/CD CLI's `bundle` from Sandbox as `InfrastructureAccess` made two `GetGroupProfile` calls at 20:27Z,
+  both answered, where Stage 19 step 17's run of 2026-11-15, on version 10, read both refused. Where:
+  `log-stage-20-dbt-lineage.md`, 2026-11-21.
 
 - `SUP-361` **`list-environment-blueprints` and `get-environment-blueprint` date one managed blueprint
   differently** (measured 2026-11-14 on `awsds-studio`, `upstream-releases.md`'s re-read). `datazone

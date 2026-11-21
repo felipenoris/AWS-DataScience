@@ -3,8 +3,7 @@
 A dbt project run by a Bash task of a SageMaker workflow: Athena builds the model as an Iceberg table of
 the project's database, and OpenLineage's dbt wrapper posts the run's lineage to the domain. The
 application of the infrastructure repository's Stage 20, on the template `examples/app-etl/` with no
-image, no job and no model; step 4.5's processing job, a third workflow, leaves the tree before pass
-8's tag. Its manifest holds three stages, one account each (the stage's decisions
+image, no job and no model. Its manifest holds three stages, one account each (the stage's decisions
 7 (b) and 9 (b)): `dev`, the application's own Sandbox project, which the developer deploys to from a
 space and the pipeline's `bundle` reads; and `staging` and `prod`, each account's deployment project,
 `deploy-staging` and `deploy-production`, which the pipeline's legs deploy the release's bundle into. The
@@ -16,8 +15,6 @@ cycle an application on this template follows, from a space to Production, is
 | `manifest.yaml` | the application: the folders the CLI copies to the project's shared prefix, the two workflows, the catalog block, and the three stages with the variables the workflows read |
 | `workflows/app-dbt.yaml` | the workflow: `load`, a Glue job that writes the source table, then `transform`, dbt on the worker |
 | `workflows/app-dbt-probe.yaml` | one inline Bash task that prints what the plan assumes of the worker and the AWS calls `transform` makes, each answer or refusal on one line |
-| `workflows/app-dbt-job.yaml` | step 4.5's processing job on the house image, in the project's subnets and security group without network isolation; the `dev` stage alone creates it |
-| `job/probe.py` | the job's script: the caller, `SELECT 1` through the workgroup, the database, `ListLineageEvents`, and the proxy's answers for `pypi.org` and `example.com`, each on one line |
 | `glue/load.py` | the Glue job's script: the inbox's trades as the Iceberg table `trades` of the product database |
 | `code/run-dbt.sh` | the `transform` task's command: dbt through the wrapper, the lineage configuration written for the run; copied to the archive's root |
 | `src/app_dbt/` | the package the archive carries: the dbt project (`project/`), dbt Core's console script (`bin/dbt`), and the transformer of the datasets' names (`lineage.py`) |
@@ -78,8 +75,6 @@ result. The model drops a table by an Athena statement (`native_drop`), never by
 | `LINEAGE_ENDPOINT` | the DataZone endpoint's URL, or `default` for the Region's |
 | `LINEAGE_ATTEMPTS` | the attempts of every botocore client of the run, the transport's included, or `default` |
 | `LINEAGE_NAMESPACE` | the job namespace of the run's events, `app-dbt-<stage>`: `app-dbt-dev` exported in `dev`, `app-dbt-staging` and `app-dbt-prod` written in the targets |
-| `JOB_IMAGE_URI` | step 4.5's image, the house image by digest: typed in the space in `dev`, `none` in a target |
-| `PROJECT_SG`, `PROJECT_KEY_ARN` | the project's security group and key, which step 4.5's job takes: from the space's values in `dev`, from the deployment project by the leg in a target |
 
 In `dev` every value but the literal comes from the shell of the space. A target holds `${DOMAIN_ID}` for
 `LINEAGE_DOMAIN`, and its switches and its namespace as literals, `as-built`, `default` and
@@ -162,13 +157,14 @@ The lock resolves for Linux, where the worker and the pipeline run, and macOS, w
 laptop (`[tool.uv] environments`). The gates' `pip-audit` fails when it audits fewer packages than the
 runtime export pins, and pip-audit 2.10.1 skips a pin whose marker its Linux runner does not match.
 
-The lint and the archive run from this folder with `awsds-workflows` at `4613ddc`, the merge of its
-pull request #28, whose `CLI_VARIABLES` admits the project's Athena workgroup (Stage 20 decision 17
-(b)), after #27's rule `job` left a processing task's isolation to the task (step 6.4); the pipeline
-pins the same commit:
+The lint and the archive run from this folder with `awsds-workflows` at `4401f91`, the merge of its
+pull request #29, whose rule `operador` refuses the native notebook operator by name (Stage 8 5.6),
+after #28's `CLI_VARIABLES` admitted the project's Athena workgroup (Stage 20 decision 17 (b)) and
+#27's rule `job` left a processing task's isolation to the task (step 6.4); the pipeline pins the same
+commit:
 
 ```bash
-TOOL="awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/4613ddce2bfd2bf43cf79aa4d6bc1d07a9dbc362.zip"
+TOOL="awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/4401f91ffdf3b742c231e08bfe3443b05de4afec.zip"
 uvx --from "$TOOL" awsds-workflows lint .
 uvx --from "$TOOL" awsds-workflows package-task . code/app-dbt.zip --platform x86_64-manylinux_2_28 --include code/run-dbt.sh
 python3 -c 'import sys, zipfile; z = zipfile.ZipFile(sys.argv[1]); print(len(z.infolist()), sum(i.file_size for i in z.infolist()), [oct(z.getinfo(n).external_attr >> 16) for n in ("run-dbt.sh", "app_dbt/bin/dbt")])' code/app-dbt.zip
@@ -194,16 +190,6 @@ export LINEAGE_NAMESPACE=app-dbt-dev
 scripts/dev-cli.sh deploy --manifest manifest.yaml --targets dev --skip-validation --no-events
 scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-dbt-probe
 scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-dbt
-```
-
-While the tree carries step 4.5's job, the `dev` stage reads three more names, which the CLI requires
-before the deploy above: the project's security group and key from the same values, and the house
-image by digest, typed. The job then runs as the other workflows do:
-
-```bash
-eval "$(/opt/conda/bin/python -c 'import json; v = json.load(open("/tmp/space_values.json")); print("export DEV_PROJECT_SG=%s DEV_PROJECT_KEY_ARN=arn:aws:kms:%s:%s:key/%s" % (v["PROJECT_SG"], v["REGION"], v["ACCOUNT_ID"], v["PROJECT_KEY_ID"]))')"
-export JOB_IMAGE_URI="<the house image by digest>"
-scripts/dev-cli.sh run --manifest manifest.yaml --targets dev --workflow app-dbt-job
 ```
 
 By hand, the archive unpacked beside the space's own Python, under another job namespace, the
