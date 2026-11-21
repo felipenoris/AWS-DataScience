@@ -554,6 +554,15 @@
 
 - Update dnf on an Amazon Linux instance without internet access — AL2023's default `mirrorlist=` URL points into the regional repository bucket itself (`al2023-repos-<region>-de612dc2`, the S3 dualstack hostname), so the S3 gateway endpoint carries the whole package path; only a repo file referencing `cdn.amazonlinux.com` needs internet (Stage 3): <https://repost.aws/knowledge-center/ec2-al1-al2-update-yum-without-internet>.
 
+- Amazon Linux 2023's Squid, read 2026-11-21 for the proxy host's replacement (Stage 12 step 2.2): the
+  AL2023.12 package list as of 2023.12.20261021 has `squid` `6.13-1.amzn2023.0.6`, full support to
+  2029-06-30; release 2023.12.20261112's core updated packages list `squid-6.13-1.amzn2023.0.7`; the
+  2023.12.20261120 release, the new image's, lists none:
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/all-packages-AL2023.12.html>,
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.html>,
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.20261112.html>,
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.20261120.html>.
+
 - ICANN resolution 2024.07.29.06, reserving `.internal` from delegation in the root zone for private use — why D36 fixes the internal naming on that suffix: <https://www.icann.org/en/board-activities-and-meetings/materials/approved-resolutions-special-meeting-of-the-icann-board-29-07-2024-en>.
 
 - VPC endpoint private DNS (served by an AWS-managed zone, scoped to the endpoint's own VPC — the limit behind Stage 3 step 4's second note): <https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-access-aws-services.html>.

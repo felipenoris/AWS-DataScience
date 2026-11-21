@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **in progress since 2026-10-18** ([log](../../log/log-stage-12-observability-finops.md)). Step 10's `./aws/observability.py` written 2026-10-17. **Built in Production 2026-10-18**: `production/observability/` (the hub dashboard, the proxy log's two metric filters, the refusal alarm, the VPCs-per-Region quota alarm) and the CloudWatch statement on `awsds-prod-alerts`, both re-planning `No changes`. **`sandbox/observability/` was applied the same day by the orchestrating session** (9 added, `No changes` after), the topic's e-mail subscription confirmed by the user on 2026-10-19, so `OB-3` passes in Sandbox. 4.2 read the bill from the accounts with a profile: **at least USD 53.31 in August and 74.48 in September**, above D12's 50, and the model is rewritten from it. `OB-3` fails since the first wired alarm, by design, until the three `[D]` hosts' alarms are wired (`EXC-19`); Sandbox's two warehouse alarms notify `awsds-sandbox-alerts` since PR #181's apply. Scoped against [D38](../decisions/D38-single-egress-hub.md): no NAT panels, and three lines the hub creates — the proxy's access log and its refusal rate, the DNS Firewall's per-query charge, the peering bytes. 5.2 read the bill's usage types on 2026-10-20: no letter moves (decision due 3, the user's). **5.3 done 2026-11-10**: GitLab's data volume is 20 GiB, through `runbooks/gitlab.md` §B's destroy, re-apply and restore, the restored instance reading what it read before **Decision due 1 taken 2026-11-17 as (b)**, on a card in the review of the plan's open decisions: the proxy status-check alarm's missing data `notBreaching`, written with 2.2's `[D]` half. **9.1 read with the environment up 2026-11-21**: every quota under 80 %, Sandbox's VPC at 24 of 50 interface endpoints on day 2's groups and 32 with every group, Production's one Elastic IP of 5 with the hub up. **2.2's `[D]` half written and planned against the live hub the same day**, `wireguard-v0.7.0` tagged: `production/proxy/` `1 to add, 2 to change, 1 to destroy` and `production/vpn/` `2 to add, 3 to change, 2 to destroy`, each replacing its host, `production/tooling/` and `production/observability/` the alarm and the dashboard text alone. Owed: the hub sitting's applies, `tooling/`'s in R1, then 2.4. |
+| **Status** | **in progress since 2026-10-18** ([log](../../log/log-stage-12-observability-finops.md)). Step 10's `./aws/observability.py` written 2026-10-17. **Built in Production 2026-10-18**: `production/observability/` (the hub dashboard, the proxy log's two metric filters, the refusal alarm, the VPCs-per-Region quota alarm) and the CloudWatch statement on `awsds-prod-alerts`, both re-planning `No changes`. **`sandbox/observability/` was applied the same day by the orchestrating session** (9 added, `No changes` after), the topic's e-mail subscription confirmed by the user on 2026-10-19, so `OB-3` passes in Sandbox. 4.2 read the bill from the accounts with a profile: **at least USD 53.31 in August and 74.48 in September**, above D12's 50, and the model is rewritten from it. `OB-3` fails since the first wired alarm, by design, until the three `[D]` hosts' alarms are wired (`EXC-19`); Sandbox's two warehouse alarms notify `awsds-sandbox-alerts` since PR #181's apply. Scoped against [D38](../decisions/D38-single-egress-hub.md): no NAT panels, and three lines the hub creates — the proxy's access log and its refusal rate, the DNS Firewall's per-query charge, the peering bytes. 5.2 read the bill's usage types on 2026-10-20: no letter moves (decision due 3, the user's). **5.3 done 2026-11-10**: GitLab's data volume is 20 GiB, through `runbooks/gitlab.md` §B's destroy, re-apply and restore, the restored instance reading what it read before **Decision due 1 taken 2026-11-17 as (b)**, on a card in the review of the plan's open decisions: the proxy status-check alarm's missing data `notBreaching`, written with 2.2's `[D]` half. **9.1 read with the environment up 2026-11-21**: every quota under 80 %, Sandbox's VPC at 24 of 50 interface endpoints on day 2's groups and 32 with every group, Production's one Elastic IP of 5 with the hub up. **2.2's `[D]` half written and planned against the live hub the same day**, `wireguard-v0.7.0` tagged: `production/proxy/` `1 to add, 2 to change, 1 to destroy` and `production/vpn/` `2 to add, 3 to change, 2 to destroy`, each replacing its host, `production/tooling/` and `production/observability/` the alarm and the dashboard text alone. **The hub sitting prepared the same evening** (2.2): the plans unchanged at 21:17 UTC, no client's configuration moving with either host, window (a) recommended, `vpn/` first from `main` and `proxy/` from `main` once #351's `-n` has merged. Owed: the hub sitting's applies, `tooling/`'s in R1, then 2.4. |
 | **Prerequisites** | any stage that created resources — and **one real invoice**, met: the August and September bills, read from Cost Explorer in every account with a CLI profile (2026-10-14 for Config, 2026-10-18 in full). Management, Log Archive and Audit hold no profile and are unread |
 | **Consumes** | [D11](../decisions/D11-lab-lifecycle.md), [D12](../decisions/D12-budget-ceiling.md), [D38](../decisions/D38-single-egress-hub.md) |
 | **Proves** | nothing new crosses an account boundary. What it **retires** is a set of estimates |
@@ -112,9 +112,59 @@ it is not worth creating.
   Elastic IP association replaced with it, the alarm, the tunnel's return route and `vpn.awsds.internal` in
   place. `production/tooling/` plans the alarm alone with GitLab stopped, `0 to add, 1 to change, 0 to
   destroy`, and `production/observability/` the dashboard text that described `breaching`, the same counts.
-  The hub sitting takes the tunnel down on the operator's device first (`runbooks/vpn.md` §K6), plans again,
-  applies `proxy/` and `vpn/`, then `observability/`, re-plans each to `No changes` and reads `OB-3`
-  (`EXC-19`); R1 applies `tooling/`.
+  R1 applies `tooling/`.
+
+  **The hub sitting**, prepared against the live hub on 2026-11-21
+  ([log](../../log/log-stage-12-observability-finops.md)): the plans read again at 21:17 UTC on `main`'s
+  tree at `4053faee` give the same counts. Each replacement destroys the old host before it creates the
+  new one, and neither changes a client's configuration. The profiles `mbp` and `mbp-split-tunnel` pin
+  `52.89.212.1:51820`, the Elastic IP the replaced association carries to the new host, which fetches the
+  same `[P]` host key and renders the peers of `peers.auto.tfvars`. `proxy-on`, Chrome's `--proxy-server`
+  and the house image's `https_proxy` (version 11 on both spaces) name `proxy.awsds.internal:3128`; the
+  proxy's apply re-points that record in place, TTL 60, as the tunnel's re-points `vpn.awsds.internal`.
+  6d's 7.5 and 7.7 therefore run on their configurations unchanged, Chrome relaunched a minute after the
+  proxy's apply. The new proxy renders the allow-list at first boot before Squid starts, so `SUP-071`'s
+  lag and `start-associations-once` belong to a start, not to a replacement. In order:
+
+  1. **[Claude]** The other sessions told, `make status`. **[user]** The tunnel down on the operator's
+     device (`runbooks/vpn.md` §K6); the applies run from the laptop's uplink.
+  2. **[Claude⚡]** `production/vpn/` from `main`, planned again (`2 to add, 3 to change, 2 to destroy`),
+     applied and re-planned `No changes`. `./aws/vpn.py`'s `VP-2` reads `52.89.212.1` on the new instance.
+  3. **[Claude⚡]** `production/proxy/` from `main` once #351 has merged, so its plan carries `TM-01`'s `-n`
+     (Lesson 79): `1 to add, 2 to change, 1 to destroy` from #351's branch at 21:23:38 UTC. Applied and
+     re-planned `No changes`. Nothing proxies from the old host's destroy until the new Squid listens and
+     the record's 60-second TTL has run: `aws ec2 get-console-output --latest` shows the boot's say-lines
+     up to `done - the proxy is up`, and the new stream `<instance>/access` in `/awsds/prod/proxy` its
+     first request. A rendered list that does not parse (`(4) first render FAILED`, as on 2026-09-06) leaves the
+     allow-list empty and every Sandbox request `TCP_DENIED`; the rollback is the `-n` reverted and
+     applied, one more replacement. The new image's repository, 2023.12.20261120, carries
+     `squid-6.13-1.amzn2023.0.7` (the AL2023 release notes) and Squid's 6.9 and 5.10 `acl` pages give
+     `dstdomain [-n]`, so the new host's `squid -k parse` is the flag's first reading. The user data is
+     15,148 bytes of EC2's 16 KB, a limit no plan checks.
+  4. **[Claude, on the user's word]** `./aws/proxy.py --on-host` (`ssm:SendCommand`): `PX-3` passes on the
+     new host, with `-n` under FLAGS.
+  5. **[user; Claude]** `TM-01`'s re-probe: the two `curl`s of Stage 11's log of 2026-11-21, from a space,
+     read in `/awsds/prod/proxy` with the reverse record of `54.213.164.60` still
+     `ec2-54-213-164-60.us-west-2.compute.amazonaws.com.`: `54.213.164.60` reads `403 TCP_DENIED`, and
+     `108.158.137.46` stays `403`.
+  6. **[Claude⚡]** `production/observability/` (`0 to add, 1 to change, 0 to destroy`), applied and
+     re-planned `No changes`. `./aws/observability.py`'s `OB-3` fails in Production on GitLab's alarm alone,
+     and `EXC-19` narrows to it until R1. `docs/NETWORK.md`'s hub rows and diagram take the new private
+     addresses; the diagram's Squid reads `10.31.160.181`, the rows `10.31.160.140`.
+  7. **[Claude]** After the day's lowering, `describe-alarms`: the vpn and proxy alarms notify
+     `awsds-prod-alerts`, GitLab's carries no action until R1, and the proxy's alarm, `notBreaching`, reads
+     `OK` with the hub stopped. 2.4's provocations may ride the same window, optionally.
+
+  The window options differ in what they disturb. **(a), recommended**: the gap of day 2 after Stage 17's
+  2.1 line is in `/awsds/prod/proxy` and before 6d's 7.5, `vpn/` first, since neither host reads the other's
+  address and no client held the tunnel (`handshake=never` for both peers from 19:47 to 21:22 UTC). It
+  interrupts the spaces' proxied requests for the proxy's replacement, and 7.5, 7.7 and the re-probe then
+  read the new hosts the same day. If #351 has not merged by 7.5, `proxy/` moves to (b) or (c): applied
+  without `-n`, it costs a second replacement. **(b)**: all three after day 2's last portal step and before
+  the lowering; nothing is in flight, and the re-probe moves to day 3. **(c)**: day 3's start, after `make
+  hub-up` and before the Sandbox raise; no spoke is up, and the re-probe and the new hosts' first reading
+  move to day 3. Both spaces' apps were deleted by idle shutdown at 21:19:50 (`code`) and 21:23:14 UTC
+  (`jup`), so Stage 17's 2.1 starts `jup` again.
 - **2.3 — [Claude] Alarm the pipelines and GitLab**: a failed promotion, a GitLab health-check failure, an
   unusual Athena scan volume. **Read 2026-10-18**: GitLab's health check is `awsds-prod-gitlab-status-check`,
   2.2's `[D]` half; an Athena scan volume has no metric while the project workgroups publish none (1.1); a
