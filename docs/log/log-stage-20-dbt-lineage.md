@@ -1478,3 +1478,55 @@ call; the plan revised.*
   the gates' job, which `awsds/ci-gates` holds: *"No known vulnerabilities found"* for `app-etl` (one
   package), `app-ml`'s `code` (48) and `app-dbt` (78), at 20:36 UTC. The gate itself runs on the laptop
   the day of each tag, before the tag (Lesson 77).
+
+## 2026-11-21 — 2.1: `app_dbt` created in `app-dbt-dev`, and the editor's baseline
+
+*The user acted in the portal as the Data Scientist User, with nothing up. Claude, in the session that
+prepared every pending sitting (#345), read it as the infrastructure user through `awsds-infra-sandbox-1`
+and `awsds-infra-data`, reads only. Times are UTC.*
+
+- **[user] The first attempt**, refused by the portal, pasted verbatim:
+
+  ```
+  [Error] Insufficient permissions to create a new database. Please add a LakeHouseDatabase blueprint deployment setting with On Demand mode to the project profile.
+  ```
+
+  then *"Eu entrei novamente e agora funcionou..."*.
+- **[Claude] The refusal read**: the profile `experimentation` (`dh60xbal05q64w`, last updated 2026-11-18
+  18:45:34) carries `DataLake` (`d8w7c3fmbsz5cg`, the console's `LakeHouseDatabase`) as `ON_DEMAND`; the
+  domain's `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant on that blueprint in Sandbox names `CONTRIBUTOR`
+  projects of the domain unit `awsds-studio` (`bzq0cbh2gd0f4g`), created 2026-08-22. Data Governance's trail
+  places the refused attempts in `app-genai-dev` (`b8fz4ovppjijv4`): the portal's `GetProjectProfile` and
+  `ListDeployableEnvironmentBlueprints` on it at 02:36:30, 02:37:52 and 02:39:52, each answered, in the
+  Data Scientist User's session on `awsds-data-studio-domain-execution`. The portal opened `app-dbt-dev` at
+  02:41:01. `app-genai-dev` has the same profile, domain unit and two environments, and the user as its
+  owner, so the refusal is unattributed (`SUP-390`).
+- **[user] The act**, on `app-dbt-dev`: *Data → Catalogs → AwsDataCatalog → Create database* `app_dbt`,
+  then the query editor's create of `editor_probe` and its drop; *"2.1 feito"*.
+- **[Claude] 2.1's reads**, at 02:49:36, each as expected (`SUP-184`, 0.7):
+  - the environment `au9oegx70xvyts`, `create-datalake-database-env-app_dbt-1795228956827`, `ACTIVE`,
+    created 02:42:38, beside `Tooling` and `SageMakerAIDomain`; its subscription target `algy8t6358fits`,
+    `<environment>-default-target`, created 02:43:05. The project's first `DataLake` environment carries
+    it, and 5.0's link lands in `app_dbt`;
+  - the database, created 02:42:55 by the provisioning role's `AmazonDataZoneEnvironmentDeployer` session:
+    *"Created by DataZone for project app-dbt-dev"*, at
+    `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/dnl3l158mbhrio/dev/data/catalogs/`, with no default
+    table permission;
+  - Lake Formation: `IAMPrincipals` under the project's condition holding `CREATE_TABLE`, `DESCRIBE` and
+    `DROP` on the database and `ALTER`, `DELETE`, `DESCRIBE`, `DROP`, `INSERT` and `SELECT` on its tables;
+    `awsds-sandbox-smus-manage-access` `CREATE_TABLE` and grantable `DESCRIBE` on the database, grantable
+    `DESCRIBE` and `SELECT` on its tables; the provisioning role every permission, grantable;
+  - the source `3uof8bs4x693f4`, `READY`, `cron(43 2 * * ? *)`, created 02:43:06, `publishOnImport` false,
+    its filter `app_dbt`, on `project.default_lakehouse` (`6h4cpmm4m2g74g`), `LAKEHOUSE`,
+    `glueLineageSyncEnabled` `true`. The sittings' runs keep clear of 02:43 UTC;
+  - the workgroup's statements: the `CREATE TABLE` at 02:46:01, a `SELECT * FROM app_dbt.editor_probe LIMIT
+    100` at 02:46:25 and the `DROP TABLE` at 02:47:54, each `SUCCEEDED`;
+  - under the dropped table's folder, no current object: four versions and seven delete markers;
+  - the trail: `CreateTable` at 02:46:02 and `DeleteTable` at 02:47:57 as the project role, invoked by
+    `athena.amazonaws.com`, the session's `sourceIdentity` the Data Scientist User's Identity Center id, no
+    VPC endpoint, `insufficientLakeFormationPermissions` empty and the project role the Lake Formation
+    principal: the conditioned grant admitted both (iii's baseline, the editor's half).
+- **[user] Seen, not clicked**: the database's page now offers *"Change asset ownership across projects"*,
+  *"Transfer metadata and subscription management to another project while retaining your AWS Lake
+  Formation permissions, if applicable."* (`docs/plan/upstream-releases.md`).
+- **Left**: sitting A from row 3 of its order, on §N.9's day 1.

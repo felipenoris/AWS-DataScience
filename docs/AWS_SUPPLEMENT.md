@@ -3356,6 +3356,19 @@ entry is still true is the reading.
   sync are changed with no warehouse up, and `READY` says nothing about the compute. Where:
   `log-stage-06h-redshift-connection.md`, 2026-11-19; `runbooks/redshift-connection.md` §P step 4a.
 
+- `SUP-390` **The portal's *Create database* refusal names a project-profile setting the profile
+  carries** (measured 2026-11-21, Stage 20 2.1). In `app-genai-dev` the portal answered *"Insufficient
+  permissions to create a new database. Please add a LakeHouseDatabase blueprint deployment setting with
+  On Demand mode to the project profile."* The profile `experimentation` carried `DataLake`, the console's
+  `LakeHouseDatabase`, as `ON_DEMAND`; the domain's `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant on it named
+  the contributor projects of the project's domain unit; the user owned the project. No call failed: the
+  trail holds `GetProjectProfile` and `ListDeployableEnvironmentBlueprints`, a call the CLI does not
+  offer, on `app-genai-dev` at each attempt, each answered. The same act then created the database in
+  `app-dbt-dev`, with the same profile, unit, environments and owner, after the page was opened on it.
+  The page and the project changed together, so the refusal is unattributed, and the message is no
+  evidence about the profile: the trail's `projectIdentifier` says which project the portal had open.
+  Where: `log-stage-20-dbt-lineage.md`, 2026-11-21.
+
 ## SageMaker AI spaces and images
 
 ### Custom images and their versions

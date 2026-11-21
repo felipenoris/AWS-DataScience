@@ -2764,7 +2764,7 @@ Each reading is in the log of the stage that owns it.
 The waiting list holds each as a row. In the calendar's order:
 
 - **Before N.9's day 1**:
-  - Stage 20 2.1, at a minute of the day the sitting's runs keep clear of;
+  - Stage 20 2.1, done 2026-11-21, its source's minute 02:43 UTC, which the sitting's runs keep clear of;
   - the client for 6d 7.5 to 7.7 ([`remote-ide.md`](remote-ide.md) §W): Remote - SSH and AWS Toolkit in a VS
     Code whose settings carry `remote.downloadExtensionsLocally` and `remote.SSH.localServerDownload`. The
     pinned 1.119.1 is a choice, not a prerequisite, and the current client serves 7.5's reading, which is the
