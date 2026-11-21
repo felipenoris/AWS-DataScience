@@ -2383,6 +2383,9 @@ that shape the day:
 - Pass 7's knowledge base, evaluation job, flow and chat agent run as the project's Bedrock service role,
   which invokes a model only through an application inference profile tagged with the project; the IDE's
   first use creates one, and `eighth-experimentation` holds Opus 4.5's alone.
+- Each project's *Update project* banner, seen at 0.9's reading on 2026-11-21, stays unpressed: the press
+  re-deploys the project's `Tooling` environment (`SUP-380`) and is 6d 2.4's after half, which Claude reads
+  before and after.
 
 6d's remainder (N.9.3), about 75 minutes that call no group, ends the day before the closing reads if the
 user puts it here; 7.7's sign-out comes after the day's last portal step.
