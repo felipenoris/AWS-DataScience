@@ -418,30 +418,30 @@ SLICES = [
         0.0052,
     ),
     # 6c step 4.8 - the estate's single internet exit, and the reason there is no NAT gateway
-    # anywhere: an explicit Squid proxy on a host of its own, priced from the same
-    # docs/PRICING.md row (Lesson 6). Two hosts and not one because the WireGuard host receives
-    # untrusted UDP from the internet and this one parses untrusted internet responses;
-    # separating them keeps a compromise of either off the other, for the price of one more host.
+    # anywhere: an explicit Squid proxy on a host of its own. Two hosts and not one because the
+    # WireGuard host receives untrusted UDP from the internet and this one parses untrusted
+    # internet responses; separating them keeps a compromise of either off the other, for the
+    # price of one more host.
     #
     # It ranks below vpn (41 against 40) and that order is load-bearing: `make down` walks the
     # table in reverse, so the proxy goes first and the tunnel last - the tunnel is the way back
     # in, and a session that killed its own path out would have killed its path in one step
     # earlier. `up` runs it the right way round for the same reason.
     #
-    # 0.0154 is the t3.micro row of docs/PRICING.md 8, 0.0104 measured 2026-09-06 (Lesson 6), plus
-    # the host's public IPv4 at 0.005 (docs/PRICING.md 3). The address is assigned at start and
-    # released at stop (`associate_public_ip_address`), so it bills while the host runs and is
-    # hourly; the VPN's Elastic IP bills stopped or running and stays a floor line. The size
-    # is decided by the build and not the steady state: `dnf install squid jq
-    # amazon-cloudwatch-agent` was OOM-killed on a nano (415 MiB usable), with the kernel naming
-    # it. It fit on the first host and not the second, which makes the nano marginal rather than
-    # small, and the estate's single internet exit is the wrong place for a coin-flip.
+    # 0.0258 is the t3.small row of docs/PRICING.md 8, 0.0208 read 2026-11-21, plus the host's
+    # public IPv4 at 0.005 (docs/PRICING.md 3). The address is assigned at start and released at
+    # stop (`associate_public_ip_address`), so it bills while the host runs and is hourly; the
+    # VPN's Elastic IP bills stopped or running and stays a floor line. The size is decided by the
+    # build and not the steady state: the first boot's `dnf install squid jq
+    # amazon-cloudwatch-agent` was OOM-killed on a nano (415 MiB usable) on 2026-09-06, and a cold
+    # dnf with update-motd's beside it needs more than a t3.micro holds (617 and 623 MiB RSS,
+    # measured 2026-11-21; var.instance_type in production/proxy/variables.tf).
     Slice(
         "production",
         "proxy",
         DORMANT,
         "Squid explicit proxy - the estate's only internet exit",
-        0.0154,
+        0.0258,
     ),
     # Stage 5a pass 1. Free or floor-priced at rest: one CMK (key-month), five buckets, catalog
     # objects, LF settings/tags/grants, two on-demand crawlers and the compaction optimizer
