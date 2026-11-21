@@ -157,13 +157,14 @@ The lock resolves for Linux, where the worker and the pipeline run, and macOS, w
 laptop (`[tool.uv] environments`). The gates' `pip-audit` fails when it audits fewer packages than the
 runtime export pins, and pip-audit 2.10.1 skips a pin whose marker its Linux runner does not match.
 
-The lint and the archive run from this folder with `awsds-workflows` at `4613ddc`, the merge of its
-pull request #28, whose `CLI_VARIABLES` admits the project's Athena workgroup (Stage 20 decision 17
-(b)), after #27's rule `job` left a processing task's isolation to the task (step 6.4); the pipeline
-pins the same commit:
+The lint and the archive run from this folder with `awsds-workflows` at `4401f91`, the merge of its
+pull request #29, whose rule `operador` refuses the native notebook operator by name (Stage 8 5.6),
+after #28's `CLI_VARIABLES` admitted the project's Athena workgroup (Stage 20 decision 17 (b)) and
+#27's rule `job` left a processing task's isolation to the task (step 6.4); the pipeline pins the same
+commit:
 
 ```bash
-TOOL="awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/4613ddce2bfd2bf43cf79aa4d6bc1d07a9dbc362.zip"
+TOOL="awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/4401f91ffdf3b742c231e08bfe3443b05de4afec.zip"
 uvx --from "$TOOL" awsds-workflows lint .
 uvx --from "$TOOL" awsds-workflows package-task . code/app-dbt.zip --platform x86_64-manylinux_2_28 --include code/run-dbt.sh
 python3 -c 'import sys, zipfile; z = zipfile.ZipFile(sys.argv[1]); print(len(z.infolist()), sum(i.file_size for i in z.infolist()), [oct(z.getinfo(n).external_attr >> 16) for n in ("run-dbt.sh", "app_dbt/bin/dbt")])' code/app-dbt.zip
