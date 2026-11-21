@@ -2549,6 +2549,35 @@ entry is still true is the reading.
   designation's reach is read from `get-designation`, never from the page. Where:
   `log-stage-19-smus-native-data-product.md`, 2026-11-19.
 
+- `SUP-392` **DataZone passes a project's `Tooling` outputs to an `S3Bucket` environment, so its bucket
+  encrypts under the project CMK though neither the blueprint configuration nor the profile names a key**
+  (measured 2026-11-21 in Sandbox, Stage 6a). `create-environment` in `test-experimentation`, with the
+  `experimentation` profile's `S3Bucket` configuration and one user parameter, `bucketName`, made a stack with
+  six parameters: `bucketName`, `datazoneEnvironmentEnvironmentId`, `datazoneEnvironmentProjectId`,
+  `datazoneScopeName` `dev`, `executionRoleArn` and `kmsKeyArn`. The last two equal the values the project's
+  `Tooling` environment answers as `userRoleArn` and `kmsKeyArn` (`SUP-359`): the project's user role and the
+  key `alias/awsds-sandbox-project` names. The `S3Bucket` configuration's regional parameters are `VpcId`,
+  `Subnets` and `AZs`, and the profile overrides `bucketName` alone. The template
+  (`DataZone-Amazon-SageMaker-S3Bucket-prod-20250923`) describes the key as *"optional. If not provided,
+  uses S3 managed encryption"*, and no page read for `docs/SMUS.md` §Resource blueprints names where the value
+  comes from. The bucket read SSE-KMS under that key, `BucketKeyEnabled` false and `SSE-C` blocked, and
+  carried the stack's tags `AmazonDataZoneDomain`, `AmazonDataZoneProject`, `AmazonDataZoneEnvironment` and
+  `AmazonDataZoneBlueprint`. Which key such a bucket uses is AWS's composition, not a parameter this
+  repository writes. Where: `log-stage-06a-unified-studio.md`, 2026-11-21.
+
+- `SUP-394` **Deleting an `S3Bucket` environment deletes the bucket's policy and keeps the bucket, which no
+  project role then reaches** (measured 2026-11-21 in `test-experimentation`, Sandbox, Stage 6a).
+  `delete-environment` ran at 04:58:36 UTC. The stack read `DELETE_COMPLETE` at 04:58:55, `ProjectBucketPolicy`
+  `DELETE_COMPLETE` and `ProjectBucket` `DELETE_SKIPPED` under the template's `DeletionPolicy: Retain`, and the
+  environment answered *"Environment not found"* by 04:59:15. The bucket kept its default encryption under the
+  project CMK and the four `AmazonDataZone*` tags, lost CloudFormation's three, and `get-bucket-policy`
+  answered `NoSuchBucketPolicy`. The simulator gave `s3:GetObject`, `s3:PutObject` and `s3:ListBucket`
+  `implicitDeny` to the owning project's user role and to another project's. The provisioning role cannot
+  delete the bucket: `SageMakerStudioProjectProvisioningRolePolicy` v86 grants `DeleteBucketPolicy` on
+  `sagemaker-*` in Sid `S3Create` and no `DeleteBucket`. A bucket therefore outlives its environment with
+  whatever the project wrote in it, reachable only by an identity whose own IAM policy covers it; the probe's
+  empty bucket was deleted by hand at 05:00:15 UTC. Where: `log-stage-06a-unified-studio.md`, 2026-11-21.
+
 ### The managed policies of a project role
 
 - `SUP-176` **`SageMakerStudioProjectRoleMachineLearningPolicy` grants every SMUS project role `datazone:`
@@ -2835,6 +2864,22 @@ entry is still true is the reading.
   the agent's. `get-domain` carries no field for the agent's switch. The inference is AWS's: neither a proxy
   nor a Bedrock SCP's model list is on its path. Where: `log-stage-06d-unified-studio-remainder.md`,
   2026-10-30; `docs/plan/threat-model.md` `TM-23`.
+
+- `SUP-393` **The portal's *S3 Bucket* form prefills the prefix `amazon-sagemaker-`, and the managed
+  provisioning policy creates only `sagemaker-*` buckets, so a deployment that keeps the prefix fails on
+  `s3:CreateBucket`** (read 2026-11-21 in `app-ml-dev`'s gallery and measured the same day in
+  `test-experimentation`, Sandbox, Stage 6a). The form's one field, *Bucket name*, an editable text box,
+  opens holding `amazon-sagemaker-` over the hint *"Prefilled with the recommended prefix amazon-sagemaker.
+  Must be 3 to 33 characters."*; the profile's default for the parameter, `changeme-project-bucket`, is not
+  shown. `create-environment` with the same configuration and the name `amazon-sagemaker-probe-<suffix>` read
+  `CREATE_FAILED` 33 seconds later: *"User: arn:aws:sts::<account>:assumed-role/awsds-sandbox-smus-provisioning/AmazonDataZoneEnvironmentDeployer-<account>
+  is not authorized to perform: s3:CreateBucket on resource: "arn:aws:s3:::amazon-sagemaker-probe-<suffix>"
+  because no identity-based policy allows the s3:CreateBucket action"*, and no stack remained.
+  `SageMakerStudioProjectProvisioningRolePolicy` v86 (2026-11-17), the provisioning role's one policy, grants
+  `CreateBucket` and the bucket's configuration calls in Sid `S3Create` on `arn:aws:s3:::sagemaker-*` alone;
+  with the name `sagemaker-awsds-probe-<suffix>` the environment was `ACTIVE` in about 70 seconds. A member
+  replaces the prefix with `sagemaker-`, and the refusal names a permission where the cause is the name.
+  Where: `log-stage-06a-unified-studio.md`, 2026-11-21; `docs/SMUS.md` §Resource blueprints.
 
 ### Catalog, data sources and subscriptions
 

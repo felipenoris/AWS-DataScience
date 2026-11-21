@@ -1428,7 +1428,7 @@
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/lake-formation-permissions-for-amazon-sagemaker-unified-studio.html>.
   DataZone's publication and grant errors and their fixes:
   <https://docs.aws.amazon.com/datazone/latest/userguide/troubleshooting-datazone.html>.
-- The managed blueprints' CloudFormation templates, read 2026-10-19 for Stage 18 decision 1: `get-environment-blueprint` returns `provisioningProperties.cloudFormation.templateUrl`, an S3 access-point URL that answers SigV4 only (a plain fetch returns `InvalidRequest`), read with `s3api get-object` as the infrastructure user in Data Governance: `v2/DataZone-Amazon-SageMaker-ToolingLiteDefault-prod-20260723.template.json` (159,043 bytes) and `v2/DataZone-Amazon-SageMaker-ToolingDefault-prod-20260918.template.json` (245,988 bytes) in the bucket the alias `env-partner-blueprin-7y6few8bfipfncrikgx3ouh18fq66usw2b-s3alias` names.
+- The managed blueprints' CloudFormation templates, read 2026-10-19 for Stage 18 decision 1: `get-environment-blueprint` returns `provisioningProperties.cloudFormation.templateUrl`, an S3 access-point URL that answers SigV4 only (a plain fetch returns `InvalidRequest`), read with `s3api get-object` as the infrastructure user in Data Governance: `v2/DataZone-Amazon-SageMaker-ToolingLiteDefault-prod-20260723.template.json` (159,043 bytes) and `v2/DataZone-Amazon-SageMaker-ToolingDefault-prod-20260918.template.json` (245,988 bytes) in the bucket the alias `env-partner-blueprin-7y6few8bfipfncrikgx3ouh18fq66usw2b-s3alias` names. Read 2026-11-21 the same way as the infrastructure user in Sandbox, for [`SMUS.md`](SMUS.md) §Resource blueprints: `v2/DataZone-Amazon-SageMaker-S3Bucket-prod-20250923.template.json` (5,749 bytes).
 - Project membership in SageMaker Unified Studio, read 2026-10-20 for Stage 18 step 6.1 and its question iv:
   a member is a Contributor or an Owner, and a member's analytics runs on IAM session credentials the
   service generates for the project's context:
@@ -2580,6 +2580,26 @@
   <https://aws.amazon.com/sagemaker/lakehouse/pricing/>. S3 Metadata's object metadata in *"read-only, fully
   managed Apache Iceberg tables"*:
   <https://docs.aws.amazon.com/AmazonS3/latest/userguide/metadata-tables-overview.html>.
+- **Glue's data quality monitoring of a catalog or a database, SageMaker Unified Studio's *Data profile*** —
+  read 2026-11-21 for [`upstream-releases.md`](plan/upstream-releases.md) and [`PRICING.md`](PRICING.md) §5,
+  after the user found the *Data profile* menu on a database. The guide's page and the pages on getting
+  started, authorization, troubleshooting, the API, encryption and the document history:
+  <https://docs.aws.amazon.com/glue/latest/dg/data-quality-catalog-monitoring.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/data-quality-catalog-monitoring-getting-started.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/data-quality-authorization.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/data-quality-catalog-monitoring-troubleshooting.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-data-quality-api.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/data-quality-encryption.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/doc-history.html>; SageMaker Unified Studio's release notes and
+  its profiling pages: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/dq-profile-catalogs-databases.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/dq-profile-schedule.html>; What's New:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/glue-catalog-data-quality-monitoring/>; the price, the
+  pricing page and the `us-west-2` offer file: <https://aws.amazon.com/glue/pricing/>,
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSGlue/current/us-west-2/index.json>; the project
+  role's managed policy, Sid `GlueDQVetl`:
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectUserRolePolicy.html>;
+  botocore's changelog: <https://raw.githubusercontent.com/boto/botocore/develop/CHANGELOG.rst>.
 
 ## Containers, CI/CD and orchestration
 

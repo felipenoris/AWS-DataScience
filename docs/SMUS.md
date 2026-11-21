@@ -510,7 +510,7 @@ can be diffed against this table directly.
 | `PartnerApps` | An IAM role and a Connection giving access to third-party Partner AI Apps | **Standing/subscription** — partner licence + deployed infrastructure; varies by partner. Not measured | amend the decision | **3** |
 | `QuickSight` | The QuickSight analytics/dashboard surface inside a project | **Subscription** — per author/month + per reader session. Not measured | amend the decision. **Also blocked in fact**: the console reads *"QuickSight account not set up"* (2026-08-21) | **3** |
 | `RedshiftServerless` | A Redshift Serverless workgroup + namespace | **Per use** with a **60-second minimum charge per query** + storage, at **0.36 USD/RPU-hour** measured (`PRICING.md` §5) — and its template (`…RedshiftServerlessDefault-prod-20250515`, read 2026-11-18, `SUP-378`) sets no base at its default of 128 but a price-performance target at level 50, with the blueprint's maximum of 512 RPUs; any other base becomes `BaseCapacity`. The target's price is unmeasured | **Never** — and the trigger changed on 2026-09-19 without the verdict changing. [D40](plan/decisions/D40-redshift-warehouse.md) **admits a warehouse and keeps this blueprint disabled**: the warehouse is one namespace per account, written by Terraform at `base_capacity = 4` with a usage limit, reached through a **connection to an existing compute resource** (§Connections below, [Stage 6h](plan/stages/stage-06h-redshift-connection.md)). Enabling *this* row unlocked would put a workgroup with a 512-RPU maximum one click from every project member, which is the thing D26 refused and D40 did not un-refuse. `US-3` fails if it appears, with its own message. **Configured for one Sandbox sitting by [Stage 21](plan/stages/stage-21-redshift-s3-data-products.md) decision 1 (b)**: `sagemaker-prereqs-v0.12.0`'s `redshift_serverless_enabled`, off by default, and the `experimentation` profile's overrides lock base and maximum at 4 RPU. **The warehouse it was refused in favour of exists since 2026-09-20** and reads back at `base 4 / max 8 RPU` with a 10-RPU-hour monthly limit that `deactivate`s on breach — measured refusing queries, so the comparison in this row is now against something real | **3** |
-| `S3Bucket` | *"Create S3 bucket for SageMaker Unified Studio project."* Not offered by the console — read from `get-environment-blueprint` | Storage + requests. Not measured. **The governing question is not cost**: a bucket born here has an encryption key and a policy nobody in this project chose (`docs/GOVERNANCE.md` §Encryption) | — | **1** |
+| `S3Bucket` | *"Create S3 bucket for SageMaker Unified Studio project."* Not on the console's *Blueprints* page; a project's gallery offers it as *S3 Bucket*. One bucket, named as the member types it, under the project CMK, with a policy admitting the project's user role alone, and kept when its environment is deleted (measured 2026-11-21, §Resource blueprints) | Storage + requests at S3's rates ([`PRICING.md`](PRICING.md) §5), billed until an administrator deletes the bucket its environment leaves | — | **1** |
 | `S3TableCatalog` | *"Create S3 table catalog for SageMaker Unified Studio project."* Not offered by the console. **Possibly what `LakehouseCatalog` expands into when its S3-tables form is picked** — the same one-console-entry-to-many-API-rows shape as the Bedrock grouping. **Hypothesis, not a reading** | S3 Tables storage + maintenance. Not measured | — | **1** |
 | `SageMakerAIDomain` | *"A SageMaker AI domain for managing SageMaker spaces and apps"* (read 2026-10-30 from `get-environment-blueprint`; in the roster since Stage 19's reading of 2026-10-28, `createdAt` 2026-08-21, `updatedAt` 2026-10-22). A standalone SageMaker AI domain per project beside `Tooling`'s, from the template `DataZone-SageMakerAIDomain-prod-20260905`: one `AWS::SageMaker::Domain`, `VpcOnly` on the Tooling environment's network, the project role as every space's execution role, the Tooling key; the profile's parameters carry the custom images (a JSON list of `ImageName`, `AppImageConfigName` and `ImageVersionNumber`, 30 per app type, which the service translates into the template's `name;config;version`), the default image version, the idle timeouts and their ranges, the hidden instance types and distribution versions, the volume ceiling (100 GB), the domain name and `enableRStudio`, whose `true` cannot be undone and which adds an EFS home, service-managed security groups and Posit's RStudio (§Custom images; [`upstream-releases.md`](plan/upstream-releases.md)) | The domain at rest is free (§10); JupyterLab and Code Editor apps bill as `Tooling`'s; an RStudio session bills the instance rate (`ml.t3.medium` **0.050/h**) and the server app **0.00**, the Posit licence outside AWS's price list (`PRICING.md` §8, §11) | **6d decision 15, taken 2026-10-30 by the user as (b)**: the pilot on `experimentation` (`ON_DEMAND`, order 13; `sagemaker-prereqs-v0.9.0`), the house image pinned at `var.sandbox_dev_env_version`, applied 2026-10-30, the image lists in JSON since the two `[]`s of 2.6 item 3; `test-experimentation` held `lab-sagemaker-ai-domain` (`d-odhynkcev3yw`) from 2026-10-30, the house image pinned at 11, until its owner deleted the environment from the portal on 2026-10-31 (read 2026-11-18, 6d 2.7 step 1); RStudio off by the user's decision of 2026-10-30 (the Posit licence's price; 6d 2.6 item 5), `enableRStudio` `false` locked, a VPC-only RStudio domain also needing a `license-manager` interface endpoint (read 2026-10-31); it becomes the standard for every Sandbox project (`Tooling` with `enableSpaces` false, the blueprint `ON_CREATE`, the `Tooling` domains retired) by 6d decision 16 (a), the user's choice of 2026-11-17: the blueprint's domain created in the three living projects and the profile applied on 2026-11-18 (2.7 steps 2 and 3), an *Update project* retiring no `Tooling` domain, the environment keeping its own `enableSpaces` `true` (step 4, `SUP-380`); a project created under the profile holds the blueprint's domain alone, named `SageMakerUnifiedStudio-<project>-<environment>-dev` when `domainName` is left empty, its first space creating the user's profile and *Workflows* opening (step 5, `SUP-160`) | **1** |
 | `Tooling` | The project's basic environment: the per-project **SageMaker AI domain** (only under the template's `sageMakerDomainRequired`, a default Tooling with `enableSpaces == "true"`, read 2026-10-19 in `ToolingDefault-prod-20260918`: a profile with `enableSpaces` false creates none, Stage 18 decision 1; every profile has locked it `false` since 2026-11-18, 6d decision 16 (a)), project roles, security groups, Athena workgroups, the project S3 location — and the parameter surface Stage 6 step 1.5 locks (`sagemakerDomainNetworkType`, idle shutdown, `maxEbsVolumeSize`, TIP). Mandatory — nothing else provisions a working environment | Per **app-hour running** (`ml.t3.medium` JupyterLab/Code Editor at **USD 0.050/h**, `PRICING.md` §8) + EBS. An open app bills whether used or not — the step 8 idle shutdown is what converts "up" into "in use". A notebook cell on `project.spark.fineGrained` starts a bill of its own: a Glue 5.0 interactive session of up to 10 DPU at **USD 0.44/DPU-h** (`PRICING.md` §5), kept 60 minutes after its last statement; the one measured 2026-11-14 averaged 2.8 DPU over 1152 s (`SUP-368`, Lesson 81) | default — mandatory | **1** |
@@ -598,14 +598,20 @@ decide the gallery, and this design already holds each of them:
 The project's kind sets what the gallery can hold:
 
 - **A project with a profile** offers the profile's `ON_DEMAND` environment configurations, under the
-  profile's defaults, locked parameters, order, account and tags. Every project in `awsds-studio` has one
+  profile's defaults, locked parameters, order, account and tags, AWS's page says. Every project in
+  `awsds-studio` has one
   (read 2026-11-21). AWS lists what such a project deploys in an Identity Center domain: `DataLake`,
   `EmrOnEc2`, `EmrOnEks`, `EmrServerless`, `LakehouseCatalog`, `MLExperiments`, `MLflowApp`, `QuickSight`,
   `RedshiftServerless`, `S3Bucket`, `SageMakerAIDomain` and `Workflows`; `S3TableCatalog` only without a
   profile, and no `AmazonBedrock*` blueprint. In an `experimentation` project that leaves `DataLake`,
   `EmrServerless`, `MLflowApp` and `S3Bucket`, all category 1, plus `RedshiftServerless` under its 4-RPU
-  locks during Stage 21's sitting; in `deploy-staging` and `deploy-production`, `DataLake`. No gallery has
-  been read in this portal.
+  locks during Stage 21's sitting; in `deploy-staging` and `deploy-production`, `DataLake`. `app-ml-dev`'s
+  owner read its gallery on 2026-11-21: *EMR Serverless*, *Lakehouse Database* (`DataLake`), *MLflow App* and
+  *S3 Bucket*, with `SageMakerAIDomain` and `Tooling` listed as deployed. Each form asks a name and a
+  description, then the blueprint's parameters: *Amazon EMR release* and *Permission mode*, `compatibility`
+  (full-table access) or `fineGrained`; `glueDbName`, optional; `mlflowAppName`; and *Bucket name*, which
+  opens holding the portal's prefix `amazon-sagemaker-` instead of the profile's default
+  `changeme-project-bucket` (`SUP-393`). Whether the gallery honours a locked parameter is unread.
 - **A project without a profile** is created only from the domain management portal, starts with one
   Tooling-category environment on `ToolingLite`, and deploys whatever its members' grants name, with every
   parameter editable: the profile's locks, the control Lesson 5 names, are absent. Two controls already in
@@ -619,9 +625,31 @@ The project's kind sets what the gallery can hold:
 
 The gallery reopens the MLflow entries' gate (the checklist's step 7): [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md)
 9.6 creates `app-ml-dev`'s MLflow App with `datazone create-environment` because those entries grey out, and
-whether the gallery offers `MLflowApp` in that project is unread. `S3Bucket` is on AWS's list too, never
-deployed here (no project held an `S3Bucket` environment on 2026-11-21), with the key and bucket policy its
-row says nobody chose.
+the gallery offers *MLflow App* in that project, a portal door for 9.6; what its *Deploy* sends is unread.
+
+`S3Bucket` was measured on 2026-11-21 in `test-experimentation`: the infrastructure user, a contributor there
+through its role's group profile (`SUP-159`), deployed it through the API with the profile's configuration
+and deleted it within the hour ([the log](log/log-stage-06a-unified-studio.md)).
+
+- **The name** is the bucket's, verbatim. The provisioning role creates `sagemaker-*` buckets only, so a name
+  that keeps the portal's prefix fails on `s3:CreateBucket` in 33 seconds (`SUP-393`), where
+  `sagemaker-awsds-probe-…` was `ACTIVE` in about 70.
+- **The key** is the project CMK, `alias/awsds-sandbox-project`: DataZone passes the `Tooling` environment's
+  `kmsKeyArn` to the stack (`SUP-392`), so the bucket holds project data under the key `docs/GOVERNANCE.md`
+  §Encryption gives it, by AWS's composition rather than a parameter of `blueprints.tf`.
+- **The policy** denies calls without TLS and admits the project's user role alone, by `aws:PrincipalArn`,
+  to read, write and delete objects. Simulated, that role reads, writes and lists the bucket and uses the key
+  through S3, and another project's role reaches nothing. Public access is blocked and ownership
+  `BucketOwnerEnforced`, with no versioning, lifecycle or logging; CORS admits every origin for `PUT`, `GET`,
+  `POST`, `DELETE` and `HEAD`.
+- **The project** gains no connection, so a member reaches the bucket by its `s3://` path. The bucket carries
+  the stack's four `AmazonDataZone*` tags.
+- **Deleting the environment** removes the policy and keeps the bucket, with its objects and tags, out of
+  every project role's reach (`SUP-394`). No instrument lists such a bucket.
+
+Nothing measured moves `S3Bucket` out of category 1: its key and its policy are the ones this design asks
+for, and its one parameter, the name, must differ per deployment, so a locked value cannot serve. A member
+has to know the prefix, and nobody owns the buckets its deletions leave.
 
 What a deployment leaves billing is its blueprint's: an `EmrServerless` application bills the workers it
 holds while started, and a knowledge base's OpenSearch Serverless collection, which the Generative AI menu

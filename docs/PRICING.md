@@ -471,6 +471,7 @@ São Paulo as in Oregon.
 | Glue crawler (USD/DPU-h) | 0.69 | 0.44 | 1.57 |
 | Glue Iceberg compaction / optimization (USD/DPU-h) | 0.44 | 0.44 | **1.00** |
 | Glue catalog statistics (USD/DPU-h) | 0.44 | 0.44 | **1.00** |
+| Glue Data Quality runs (USD/DPU-h), the evaluation configurations behind SageMaker Unified Studio's *Data profile* among them (`docs/plan/upstream-releases.md`). A configuration bills nothing; a run takes at least 2 DPU for at least 1 minute. The pricing page's examples use 0.44 with no Region named, and the `AWSGlue` offer for `us-west-2` published 2026-11-20 carries no data quality product (read 2026-11-21) | — | — | |
 | Glue Data Catalog storage (USD per 100k objects-mo) | 1.00 | 1.00 | **1.00** |
 | Glue Data Catalog requests (USD per 1M) | 1.00 | 1.00 | **1.00** |
 | **Athena** SQL (USD per TB scanned) | 9.00 | 5.00 | 1.80 |

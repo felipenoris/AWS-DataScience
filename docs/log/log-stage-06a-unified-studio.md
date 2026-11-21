@@ -3710,3 +3710,56 @@ Times are UTC.*
 - **[Claude] The records**: `INV-24`; `aws/INDEX.md`; Stage 17 9.6 and the waiting list's gallery reading;
   Stage 21 2.4 and 2.9; `SMUS.md`'s `ToolingLite` row and §Resource blueprints; `promotion.md` §R; the
   `Makefile`'s help.
+
+## 2026-11-21 — The gallery read in `app-ml-dev`, and `S3Bucket` measured in `test-experimentation`
+
+*Provenance: the gallery's list is **the user's** reading, quoted as written; **the rest is Claude's**, in
+the session of the entry above. The user answered *"Pode seguir com o item 4"* to Claude's proposal to read
+`S3Bucket`'s template and deploy a bucket in `test-experimentation`. Claude created two `S3Bucket`
+environments there and deleted them, and the bucket the first left, as the infrastructure user through
+`awsds-infra-sandbox-1`; that role is a contributor of `test-experimentation` through its group profile
+(`SUP-159`). The peer session running §N.9's day 1 was told before the first write and after the last.
+Times are UTC.*
+
+- **[The user] The gallery**, in `app-ml-dev`: *"Aparecem na lista de blueprints "SageMakerAIDomain" e
+  "Tooling", como já deployed. No botão "Deploy", ele abre uma janela com as opções: EMR Serverless,
+  Lakehouse Database, MLflow App, S3 Bucket."*
+- **[Claude] The forms**, read in the user's Chrome session, each dialog cancelled before *Deploy* and the
+  list still holding the two deployments after the last. Each asks a name and a description, then:
+  *Amazon EMR release* and *Permission mode*, `compatibility` (*"Data managed using full-table access"*) or
+  `fineGrained`, for *EMR Serverless*; `glueDbName`, optional, for *Lakehouse Database*, the `DataLake`
+  blueprint; `mlflowAppName` for *MLflow App*; and *Bucket name* for *S3 Bucket*, an editable box holding
+  `amazon-sagemaker-` over *"Prefilled with the recommended prefix amazon-sagemaker. Must be 3 to 33
+  characters."* The `experimentation` profile's default for that parameter is `changeme-project-bucket`.
+- **[Claude] The template** `DataZone-Amazon-SageMaker-S3Bucket-prod-20250923` (5,749 bytes, last modified
+  2026-11-21 01:19:23), read through its access point with a signed call: one bucket named by `bucketName`,
+  `DeletionPolicy: Retain`, SSE-KMS when `kmsKeyArn` is passed and SSE-S3 otherwise, public access blocked,
+  CORS for every origin, and a policy that denies calls without TLS and admits the role `executionRoleArn`
+  names. `SageMakerStudioProjectProvisioningRolePolicy` v86, the provisioning role's one policy, grants the
+  bucket's calls in Sid `S3Create` on `arn:aws:s3:::sagemaker-*` alone, `DeleteBucket` absent.
+- **[Claude] A bucket named `sagemaker-awsds-probe-…`**: `create-environment` at 04:48:49, `ACTIVE` when
+  polled at 04:49:59, the stack `CREATE_COMPLETE` with no service role. The stack's `kmsKeyArn` and
+  `executionRoleArn` were the `Tooling` environment's `kmsKeyArn` and `userRoleArn`; the configuration names
+  no key (`SUP-392`). Read at 04:50:21: SSE-KMS under `alias/awsds-sandbox-project`, `BucketKeyEnabled`
+  false, `SSE-C` blocked; the four `AmazonDataZone*` tags beside CloudFormation's three; the template's
+  policy, public access block and CORS; `BucketOwnerEnforced`; no versioning, lifecycle or logging. The
+  project's nine connections were unchanged.
+- **[Claude] The reach, simulated** with the bucket's and the key's policies and the organization's
+  context: the project's user role was `allowed` `s3:PutObject`, `GetObject` and `ListBucket` by the bucket
+  policy, and `kms:GenerateDataKey` and `Decrypt` through S3 by `SageMakerStudioProjectRoleMachineLearningPolicy`,
+  `SageMakerStudioProjectUserRolePolicy` and the key policy; `app-ml-dev`'s role read `implicitDeny` on the
+  three S3 actions, with and without the bucket policy. Without `aws:ResourceOrgID` in the context,
+  `PutObject` read `explicitDeny` from the SCP `DenyS3ObjectWriteOutsideOrganization`.
+- **[Claude] A bucket keeping the portal's prefix**: `create-environment` with `amazon-sagemaker-probe-…` at
+  04:57:14, `CREATE_FAILED` at 04:57:49 with *"User:
+  arn:aws:sts::<account>:assumed-role/awsds-sandbox-smus-provisioning/AmazonDataZoneEnvironmentDeployer-<account>
+  is not authorized to perform: s3:CreateBucket on resource: "arn:aws:s3:::amazon-sagemaker-probe-…"
+  because no identity-based policy allows the s3:CreateBucket action"*, and no stack left (`SUP-393`).
+- **[Claude] The deletion**: both environments at 04:58:36, gone by 04:59:15. The first stack read
+  `ProjectBucketPolicy` `DELETE_COMPLETE` and `ProjectBucket` `DELETE_SKIPPED`. At 04:59:56 the bucket stood
+  empty, `aws:kms`, its four `AmazonDataZone*` tags kept and no policy, and the simulator gave both project
+  roles `implicitDeny` (`SUP-394`). Claude deleted it at 05:00:15; `head-bucket` answered 404, and
+  `test-experimentation` held its five earlier environments.
+- **[Claude] The records**: `SUP-392` to `SUP-394`; `SMUS.md`'s `S3Bucket` row and §Resource blueprints, where
+  the measurement leaves the blueprint in category 1; Stage 17 9.6; the waiting list's gallery row, which the
+  user took; `upstream-releases.md`'s resource-blueprints row.
