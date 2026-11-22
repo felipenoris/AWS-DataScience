@@ -4812,3 +4812,24 @@ as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1` (`
 - **[Claude] The instruments**: `./aws/sandbox-ml.py` at 08:50Z, `ML-2` reading the new app as above,
   `ML-10` and `ML-11` noting 9.6's and 10.4's objects absent, and `ML-8` failing on the flow's role,
   `AWS_STATE.md`'s expected reading.
+
+## 2026-11-22 — `SUP-447`'s role: the user's decision, an exception
+
+*The user's choice on a question card in the session "Decisões pendentes, uma de cada vez", relayed to this
+session with the user's words; Claude read the role as the infrastructure user with `InfrastructureAccess`
+in `Sandbox Account 1` (`awsds-infra-sandbox-1`), reads alone. Times UTC.*
+
+- **[user] The decision**, at 13:30, verbatim: *"Aceitar como exceção (Recomendado)"*. The card's other
+  options, not taken: *"Apagar o flow e a role"* and *"Pôr o boundary à mão"*. The option as the card
+  stated it: an `EXC-nn` row in `docs/AWS_STATE.md` for `AmazonBedrockFlowServiceRole-5er1gtql9ewbgw`, and
+  `ML-8` (`aws/sandbox-ml.py`) and `US-8` (`aws/studio.py`) recognising the role's shape rather than its id
+  (the name `AmazonBedrockFlowServiceRole-*`, trust in `bedrock.amazonaws.com` alone, AWS's
+  `SageMakerStudioBedrockFlowServiceRolePolicy` alone), so the exception covers every later flow app and
+  fails again if the shape changes; no AWS write.
+- **[Claude] The role read again**, at 13:34: `PermissionsBoundary` null, `RoleLastUsed` empty, created
+  02:02:39Z; its trust `sts:AssumeRole` by `bedrock.amazonaws.com` under `aws:SourceAccount` the account's
+  own and `aws:SourceArn` `arn:aws:bedrock:us-west-2:<account>:flow/*`; one attached policy,
+  `service-role/SageMakerStudioBedrockFlowServiceRolePolicy`, and no inline policy; the only
+  `AmazonBedrockFlowServiceRole-*` role in the account.
+- **Left**: the `EXC-nn` row and the two checks' change, written on the user's word in this session's chat;
+  until then `ML-8` and `US-8` fail on the role, `AWS_STATE.md`'s expected reading.

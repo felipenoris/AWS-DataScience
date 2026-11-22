@@ -979,7 +979,8 @@ is read after day 2, once Cost Explorer shows its day (8.2).
   principal, session, `vpcEndpointId` present or absent (verification xviii). **Read 2026-11-22** (the log):
   the prompt, the flow, the guardrail and the knowledge base carry the project tag, the vector bucket none,
   and no create carries a `vpcEndpointId`. `ML-8` fails on the role the flow's stack created with no
-  permissions boundary, `AmazonBedrockFlowServiceRole-5er1gtql9ewbgw` (`SUP-447`), until the user decides it.
+  permissions boundary, `AmazonBedrockFlowServiceRole-5er1gtql9ewbgw` (`SUP-447`), which the user accepted as an
+  exception on 2026-11-22 (the log); `ML-8` fails on it until its `EXC-nn` row and the checks' change are written.
 - **7.6 — [user] Keep** (decision 5): the agent, the flow, the prompt, the guardrail, the evaluation job's
   outputs and the knowledge base stay; its S3 Vectors store bills storage at 0.06 USD per GB-month, cents
   for the runbooks, and 7.4a reads its idle bill. **Read 2026-11-22**: no agent exists to keep. The flow, the
