@@ -416,8 +416,10 @@ statement, reads included. So end a cell's work with `conn.commit()` or `conn.ro
 connection. On 2026-10-10 `ComputeSeconds` held 4 RPU from 17:57 to 18:56Z while a notebook session was
 open and no query longer than ten seconds completed (the 5b log, 2026-10-18).
 
-`max_query_execution_time` is **120 seconds** on this workgroup, and **whether it cuts anything off is
-unproven** ([the 5b log](../../log/log-stage-05b-redshift-serverless.md)). The monthly ceiling is
+`max_query_execution_time` is **120 seconds** on this workgroup, and a query on the compute nodes is
+aborted about ten seconds past it, the admin's too, as *"cancelled by WLM abort action of Query Monitoring
+Rule "max_query_execution_time""* ([the 5b log](../../log/log-stage-05b-redshift-serverless.md),
+2026-11-22). The monthly ceiling is
 **10 RPU-hours with `breach_action = deactivate`**: when it is reached the workgroup refuses any query
 that needs the compute until somebody raises it, while the leader node keeps answering. A statement that
 reads only catalog tables (`pg_*`) runs on the leader node, and on 2026-09-20 one ran for six and a half

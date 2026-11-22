@@ -1945,7 +1945,13 @@ entry is still true is the reading.
   did not: the statement kept running through the two minutes 5.1 held it breached, while that breach
   refused every query needing the compute. Where: `log-stage-05b` the third amendment and the entry of
   2026-10-18, and the comments on `sandbox/warehouse-compute/main.tf`'s `max_query_execution_time` and
-  `layers.py`'s `sandbox/warehouse-compute` row.
+  `layers.py`'s `sandbox/warehouse-compute` row. Read again 2026-11-22 (5b step 3), and the test settles it
+  on the third candidate. A query over a user table, under a limit of 120, was *"cancelled by WLM abort
+  action of Query Monitoring Rule "max_query_execution_time""* (code 1078) at 130 s as a project's database
+  user and at 129 s as `dbadmin`, `usesuper` true. The parameter is enforced as a rule of that name, about
+  ten seconds past its value, and a superuser is not exempt. A statement that reads only catalog tables runs
+  on the leader node, outside the rule, and `pg_terminate_backend` stays its bound. Where: `log-stage-05b`,
+  2026-11-22.
 
 - `SUP-138` **The Data API authorizes following, reading and cancelling a statement on no resource**
   (measured 2026-10-25, `production-warehouse-ddl`). `DescribeStatement`, `GetStatementResult` and
