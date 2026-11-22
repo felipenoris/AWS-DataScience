@@ -5501,3 +5501,37 @@ Times UTC.*
   - The deny binds the application's role. The playground calls as the domain's consumption role, which the
     deny does not bind, so the playground answers under it with no guardrail (`SUP-300`). The account's
     guardrail of reading 6, enforced on the model for every caller, is the layer that reaches this path.
+
+## 2026-11-22 — Day 3's sitting C: the registry's score
+
+*Claude writes this entry, from the workflow's logs, the trail and the SageMaker API, as the infrastructure
+user with `InfrastructureAccess` through `awsds-infra-sandbox-1`. The run is the user's. Times UTC.*
+
+- **The run `QCRC1Im4FuKYOMS`**, `MODEL_SOURCE` `registry` in the working copy's `dev` stage: `SUCCESS` from
+  20:52:16 to 21:11:44. `prepare` took 613 s, `resolve` 13, `score` 339, `check` 9 and `cleanup` 7.
+- **`resolve`**, 21:03:58: *"created app-ml-score-5rzplmk81vma34 from
+  arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:model-package/app-ml-dev/1: sha256 852032c5…"*.
+  - The trail: `CreateModel` at 21:03:58 as the project role in the worker's session `AmazonMWAAServerless`,
+    through `vpce-0dc0f341029459864`.
+  - The request: `containers` one element, `modelPackageName` the version's ARN alone; `executionRoleArn` the
+    project role; the tags `AmazonDataZoneProject`, `AmazonDataZoneDomain` and `AmazonDataZoneScopeName`
+    `dev`; `vpcConfig` `sg-028f033a218b701b2` with the two subnets; `enableNetworkIsolation` true.
+  - The model read back with the container's `ModelPackageName` and `Mode` `SingleModel`.
+  - The version, `Approved`, holds the image by its digest `0b5d9341…`, `ModelDataUrl` under
+    `app-ml/models/sha256/852032c5…/`, and `ModelDataETag` `1792fa29…`, the field the service set (`SUP-458`).
+- **`score`**: the transform `app-ml-score-20261122T210440`, created at 21:04:42, ran on one `ml.m5.large`
+  from 21:08:05 to 21:09:36, its volume under the project's key `a81b1ef3-…`; the output under
+  `app-ml/predictions/20261122/`.
+- **`check`**: *"app-ml-score-20261122T210440: 200 prediction(s) for 200 line(s), AUC 0.847556, MIN_AUC
+  0.7"*, `source` `registry`, the training job `app-ml-train-20261122T193009`. The AUC is the prefix score's,
+  the same bytes.
+- **`cleanup`**: *"Model app-ml-score-5rzplmk81vma34 deleted successfully."* at 21:11:44; no model created
+  since 20:52 remains.
+- Verification lix's first half reads yes: a worker creates a model from a version's `ModelPackageName` as
+  the project role, under the D13 boundary and the `Workloads` OU, with `VpcConfig` and network isolation.
+  Its second half is not measured: the object was unchanged, so a comparison of the version's
+  `ModelDataETag` with it reads the same whether it happens or not (Lesson 13). Measuring it needs an object
+  whose ETag differs from the version's, which under SSE-KMS any rewrite of the object gives, and which
+  leaves `app-ml-dev/1` unusable if the service compares.
+- The working copy's `MODEL_SOURCE` returns to `prefix` on the `dev` stage, the user's edit, before the day
+  ends.
