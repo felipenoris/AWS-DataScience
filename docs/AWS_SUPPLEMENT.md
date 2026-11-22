@@ -3572,7 +3572,36 @@ entry is still true is the reading.
   `inferenceConfig` holding `maxTokens` 1 alone, and the job's `inferenceParams` read
   `HIDDEN_DUE_TO_SECURITY_REASONS`. The portal read *"An error occurred while creating the evaluation job:
   Unknown error. Potentially invalid input"*, and no evaluation job exists. The environment stayed `ACTIVE`.
+  The prompt editor drops Top P instead: its form at Temperature 1 and Top P 0 stored, in both versions of the
+  prompt, `inferenceConfiguration` `temperature` 1.0, `maxTokens` 4096 and `stopSequences` `Human:`, with no
+  `topP`, and its test of Haiku 4.5 was admitted (`ConverseStream` at 01:48:24Z as the project role). The trail
+  shows `maxTokens` alone for every call, so the stored prompt is what tells the two forms apart. SMUS's
+  job-creation page says *"You can change Max tokens, temperature, and Top P inference parameters"* and names
+  no model they exclude (read 2026-11-22). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+
+- `SUP-419` **The Bedrock IDE's evaluation form refuses a custom dataset for Accuracy and Robustness under
+  Question and answer, where SMUS's pages say every metric takes one** (measured 2026-11-22 in Sandbox, Stage 17
+  7.4). With the task *Question and answer* and the metric Accuracy or Robustness, the form greys out *Upload a
+  dataset to S3* and *Choose a dataset from S3*, reads *"Custom datasets are not supported for Q&A task type with
+  robustness or accuracy metrics"*, and leaves the built-in BoolQ, Natural Questions and Trivia QA checked.
+  Toxicity takes the upload. SMUS's custom-dataset page says *"you can use a custom prompt dataset for each
+  metric you select in the model evaluation job"* and requires `referenceResponse` *"for all accuracy, and
+  robustness evaluations"*; its job-creation page offers, *"For each metric"*, the built-in or an S3 dataset
+  (both read 2026-11-22). A question-and-answer dataset of one's own is therefore scored for toxicity alone.
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+
+- `SUP-445` **The Bedrock IDE keeps a component's portal name in its DataZone environment's description, and
+  names the environment and the Bedrock resource after ids** (read 2026-11-22 in Sandbox, Stage 17 7.4). Each
+  component is an environment whose description is JSON, `{"resourceId":"<component uuid>","resourceName":"<the
+  portal's name>","resourceDescription":"<the form's description>"}`, and whose name is `<component uuid>-dev`;
+  the portal's URL carries the uuid (`/bedrock/prompts/<uuid>`, `/bedrock/promptFlows/<uuid>`). The Bedrock
+  resource's name is `Bedrock-Prompt-<environment id>` or `Bedrock-Flow-<environment id>`, its description names
+  the project and the domain, and the flow carries the tags `AmazonDataZoneProject`, `AmazonDataZoneEnvironment`,
+  `AmazonDataZoneBlueprint`, `AmazonDataZoneDomain` and `AmazonBedrockManaged`. A knowledge base is named
+  `<project id>-<portal name>`. An evaluation's environment and job are both named `<project id><portal name>`,
+  with no separator and no description. No SMUS page describes the mapping, so a reader that lists Bedrock's
+  objects finds none under the name the portal shows. Where: `log-stage-17-sandbox-machine-learning.md`,
+  2026-11-22.
 
 ## SageMaker AI spaces and images
 

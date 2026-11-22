@@ -4417,3 +4417,68 @@ UTC.
   each of the 18 that failed holds two or more, `security-hub.md` (10,432 bytes) among them. Neither the
   file's size, its largest table (750 to 8,099 bytes among the failures) nor its longest line separates the
   two groups. This is a correlation over 20 files, not a cause any reading names.
+
+## 2026-11-22 — Day 2's sitting B: 7.4's prompt and flow created, its guardrail and evaluation refused
+
+- **[user] The authorization.** *"Autorizo"*, answering whether Claude should create, over the two-runbook
+  base, 7.4's prompt, guardrail, flow and automatic evaluation of Haiku 4.5, and 7.4b's chat agent with a
+  single *Share*.
+- **[Claude] The portal session ended** at about 01:51, between the prompt's two versions, with no act of
+  Claude's; the cause was not read. **[user]** *"Entrei"*: the user signed in again as Data Scientist User
+  in the same tab.
+- **[Claude] The prompt.** *Build* → *Prompt*, Claude Haiku 4.5, one variable, `{{excerpt}}`. The first test
+  created the model's application inference profile, `ljl42zoh6e4v`, by the IDE's model-management role's
+  `CreateInferenceProfile` at 01:48:19, then sent `ConverseStream` at 01:48:24 as the project role, admitted.
+  The save is a DataZone environment, `f1fa8784-9ee4-4bfe-ad24-9d62e6a549dc-dev` (`dsffvybs9lppcg`, created
+  01:48:46), whose stack's `CreatePrompt` ran at 01:49:04 as the provisioning role. The prompt is
+  `Bedrock-Prompt-dsffvybs9lppcg` (`KWK4ZJRAWD`), under the project key; the portal names it
+  `untitled-prompt-1yrl1`. Version 1 was created at 01:49:48 and version 2 at 01:53:49, both by
+  `CreatePromptVersion` as the project role; version 2 adds *"Answer in Brazilian Portuguese."* to the text.
+  Both store `temperature` 1.0, `maxTokens` 4096 and `stopSequences` `Human:`, with no `topP`, where the form
+  read Top P 0. Each save took about a minute. The split button's *Create version*, chosen from its
+  dropdown, only switches the button's action, and the button's next click creates the version.
+- **[Claude] The guardrail, refused.** *Build* → *Guardrail*, `ml-demo-guardrail`. The form's step 2,
+  *Filters*, offers *Content filters*, shown enabled, and *Denied topics* alone, so the PII filter 7.4 names
+  could not be set. One denied topic was added, *Investment advice*, with two sample phrases. Step 3's
+  blocked message, *"Sorry, the model cannot answer this question."*, also applies to responses. The
+  description typed still named a PII filter. The environment `d4db8360-ee3b-4562-8349-eae449b1b72d-dev`
+  (`ajfy8315ryk3kg`) was created at 01:56:07 and its stack at 01:56:20. At 01:56:24 `CreateGuardrail` was refused with *"You
+  don't have sufficient permissions for this KMS key."*, and `kms:CreateGrant` on the project key with
+  *"… because no identity-based policy allows the kms:CreateGrant action"*, both as the provisioning role
+  from `datazone.amazonaws.com`. The stack rolled back to `DELETE_COMPLETE`, and the environment reads
+  `CREATE_FAILED` with *"Access denied for operation 'AWS::Bedrock::Guardrail'."* (`SUP-417`). SMUS's
+  guardrail page lists two policies, content filters and denied topics (read 2026-11-22), so no IDE
+  guardrail carries a PII filter.
+- **[Claude] The flow.** *Build* → *Flow*, `ml-demo-flow`. Claude in Chrome's pointer drag from the palette
+  left the canvas empty; a scripted `dragstart`, `dragenter`, `dragover` and `drop`, carrying
+  `application/reactflow` `PromptsNode`, placed the node, and the edges took a pointer drag. The builder has
+  no model node: the prompt node carries the model. The node `Prompt_1` points at the prompt's version 2
+  (`prompt/KWK4ZJRAWD:2`), between `FlowInputNode` and `FlowOutputNode`. The environment
+  `d6d9be18-d2cd-4249-bf55-4bd97abc9a33-dev` (`5er1gtql9ewbgw`) was created at 02:02:19, and its stack's
+  `CreateFlow` and `PrepareFlow` ran at 02:02:40 and 02:02:41 as the provisioning role. The flow is
+  `Bedrock-Flow-5er1gtql9ewbgw` (`Q9HHV1YRRX`), `Prepared`, under the project key; the save took about three
+  minutes. One run at 02:03:25: `Converse` as `AmazonBedrockServiceRole-avhvbqn37ty7m8-5hkjdsy3umpi1c`,
+  admitted, and the answer came back in Portuguese.
+- **[Claude] The evaluation, refused.** *Build* → *Model evaluation*, `ml-demo-eval-haiku45`: Claude Haiku
+  4.5, *Question and answer*, Toxicity over `evaluation-dataset.jsonl` (2.88 KB), uploaded by the form, whose
+  dialog reads *"Once uploaded, you cannot delete the file"*. Accuracy and Robustness offer the built-in
+  datasets alone (`SUP-419`). The model list offers Nova Lite, Claude Haiku 4.5, Claude Opus 4.5 and Claude
+  Sonnet 4.5. *Inference configurations* holds Max tokens 500, Temperature 0.5, Top P 0.5 and Top K 50, and
+  a cleared Top P returns to 0.5. The submit created the environment `avhvbqn37ty7m8ml-demo-eval-haiku45`
+  (`6fl52xzq3yt768`, 02:07:10) and its stack (02:07:23, `CREATE_COMPLETE`, one output and no resource), and
+  put the file in `awsds-sandbox-smus-projects` under `…/avhvbqn37ty7m8/genAI/assets/evaluations/input/`. At
+  02:07:54 Bedrock's pre-flight `Converse`, as the project's service role, was refused with *"The model
+  returned the following errors: `temperature` and `top_p` cannot both be specified for this model. Please
+  use only one."*, and `CreateEvaluationJob`, as the project role, with the same reason. The portal read
+  *"An error occurred while creating the evaluation job: Unknown error. Potentially invalid input"*
+  (`SUP-418`). `list-evaluation-jobs` reads none, and the environment stays `ACTIVE`.
+- **[Claude] The names** the IDE gives these objects (`SUP-445`): the portal's name lives in the
+  environment's description, prompts and flows are named `Bedrock-<type>-<environment id>`, the knowledge
+  base `<project id>-<name>`, and the evaluation `<project id><name>`.
+- **[Claude] The key's statement for the guardrail**, written in `terraform-modules/sagemaker-prereqs/kms.tf`
+  (`51459ace`): Bedrock's `PermissionsForGuardrailsCreators`, with the principal narrowed to the provisioning
+  role, on the guardrail blueprint's switch. A plan of `sandbox/sagemaker` with the module read from the
+  working tree read `0 to add, 1 to change, 0 to destroy`, the key's policy gaining that statement alone. The
+  tag and the apply wait on the user.
+- **[Claude] `app-ml-dev`'s MLflow App** is not there yet: `list-mlflow-apps` listed `ml-demo-mlflow` alone at
+  about 02:25.
