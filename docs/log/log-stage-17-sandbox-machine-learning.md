@@ -4273,3 +4273,23 @@ UTC.
   2026-11-17 left open, read here from a space. The refusal of 00:18:46 was of a request the API reference
   excludes, so decision 7 (a) writes no `sandbox/ml/` statement for a version, and `register.py package`
   sends no tag on the version (this sitting's commit).
+
+## 2026-11-22 — Day 2's sitting B: 3.2's approval in the portal, and no collection to create
+
+- **[user] The approval.** Version 1 approved from the portal's model group page. CloudTrail records
+  `UpdateModelPackage` at 00:45:45 with `modelApprovalStatus` `Approved`, from the browser and with no
+  `vpcEndpointId`, as the project role in the session `28f1b390-…@5hkjdsy3umpi1c`, the user's id as source
+  identity. The version reads `LastModifiedBy` that role and no `ApprovalDescription`.
+- **[Claude] The registry's pages**, read through Chrome after the approval. AI/ML → *Models* has two tabs,
+  *Foundation models* (939 models) and *My models*, the registry: *"These are your own trained, versioned,
+  production-ready models. You can register models using the SageMaker SDK in a notebook."* It lists
+  `ml-demo-xgboost`, *Model group*, one version. Its *Filter by* offers *All*, *Model group*, *Model* and
+  *Deployable models*; the row's menu offers *Delete model group* alone. The group's page shows the ARN, the
+  creator's id, the tabs *Versions* and *Tags*, *Publish* and *Delete model group*, and version 1 *Not
+  deployed*, *Approved*. **No page offers a collection**, so 3.2's collection is not created: the portal
+  has no collection to put the group in.
+- **[Claude] *Inference endpoints* → *Create new endpoint*** now lists *"ml-demo-xgboost, 1 approved
+  version"* under *"List of deployable models and registered model versions approved for deployment"*. With
+  version 1 selected, *Create endpoint using JupyterLab* is enabled and *Create endpoint using Notebook* is
+  disabled, labelled *"Notebooks are currently not supported for cross-region and …"*. The dialog was
+  cancelled: the portal's endpoint path is a notebook, and 4.1's is `serve.py endpoint`.
