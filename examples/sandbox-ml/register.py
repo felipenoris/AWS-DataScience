@@ -7,7 +7,9 @@
                          image's format, or print xgboost's refusal as the reading
     package JOB          3.2: the group ml-demo-xgboost (created with the project tag if absent)
                          and a version from the job: the job's own image, its ModelDataUrl,
-                         PendingManualApproval. The user approves it from the portal's page
+                         PendingManualApproval, and no tag, since a version takes none and is
+                         authorized against its group's (SUP-409). The user approves it from the
+                         portal's page
     from-mlflow JOB      3.2: a second version through the registry's MLflow integration, as
                          AWS's recipe registers one: mlflow.register_model on the job's
                          model.tar.gz, into the registered model ml-demo-xgboost
@@ -143,7 +145,6 @@ def package(values: dict, job: str) -> int:
                 "SupportedTransformInstanceTypes": [SERVING_TYPE],
             },
             ModelApprovalStatus="PendingManualApproval",
-            Tags=project_tags(values),
         )
     except ClientError as err:
         print(f"{MODEL_GROUP} version from {job}: refused")

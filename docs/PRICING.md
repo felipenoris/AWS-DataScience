@@ -794,6 +794,13 @@ are under 0.01 USD a sync and an S3 Vectors store cents a month; an OpenSearch S
 collection would be the standing line, which is why Stage 17 decision 12 recommends S3 Vectors and its
 7.6 deletes a store with a minimum OCU.
 
+**Flows, measured 2026-11-22** for [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) 7.4, from the
+`us-west-2` offer file `AmazonBedrock` (version `20261111013037`, published `2026-11-11T01:30:37Z`): a flow's
+run bills `USW2-BedrockFlows-v1-invokeFlow`, *Flow Execution*, at 0.035 USD per 1,000 node transitions, beside
+the tokens its nodes' models and embeddings bill at the rates above. The file holds no product for prompt
+management or for model evaluation jobs, and *Automatic Prompt Optimization* (`USW2-APO-v1-optimizePrompt`),
+which this estate did not use, is 0.03 USD per 1,000 tokens.
+
 **AgentCore, measured 2026-11-17** for [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) step
 10.11, from the `us-west-2` offer file `AmazonBedrockAgentCore` (version `20261113204112`, published
 `2026-11-13T20:41:12Z`), read from a cloud session with no AWS credentials. An agent's runtime bills what

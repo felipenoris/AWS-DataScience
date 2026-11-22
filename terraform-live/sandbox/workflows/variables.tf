@@ -72,14 +72,14 @@ variable "project_roles" {
   }
 }
 
-# The training pair reaches every role in project_roles, and Stage 17's 2.2 reads the tag gap on a
-# notebook's training job in eighth-experimentation, which the pair closes. The switch is turned true
-# after 2.2's readings (a) and (b), by -var on the plan of that sitting and in the default by the
-# sitting's records (Stage 17 step 9.5).
+# The training pair reaches every role in project_roles. A training job whose request names
+# AmazonDataZoneProject needs its tag statement, as a workflow operator's does; a request from a
+# notebook in a space that names no tag is admitted without it (Stage 17 step 2.2). false removes both
+# statements from every listed role.
 variable "training_pair_enabled" {
-  description = "Stage 17 step 9.5: true adds DescribeATrainingJobNoProjectHolds and TagATrainingJobWithTheCallersProject to the policy every listed role carries. false until Stage 17's 2.2 has read (a) and (b)."
+  description = "Stage 17 step 9.5: true adds DescribeATrainingJobNoProjectHolds and TagATrainingJobWithTheCallersProject to the policy every listed role carries."
   type        = bool
-  default     = false
+  default     = true
   nullable    = false
 }
 
