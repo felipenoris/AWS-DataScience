@@ -1,10 +1,17 @@
 #!/usr/bin/env -S uv run --quiet
 # model-chain.py - Stage 10 steps 5.2 and 5.4: the model app-etl-train trains, registered, approved
-# and served by a batch transform, the jobs of the promotion pipeline (examples/app-etl/.gitlab-ci.yml).
+# and served by a batch transform, the jobs of the promotion pipeline (examples/app-etl/.gitlab-ci.yml);
+# and Stage 17 pass 9: the approval of the version another application's task proposed, found by the
+# release's model hash (examples/app-ml/.gitlab-ci.yml).
 #
 #   run:      ./scripts/model-chain.py register --tag vX.Y.Z [--dotenv <file>] --project
 #                 # Production: the newest completed app-etl-train job, PendingManualApproval
 #             ./scripts/model-chain.py approve --package-arn <arn> --approver <login>
+#                 # app-etl's version, by its ARN
+#             ./scripts/model-chain.py approve staging|production --application <app>
+#                 --sha256 <hex> --approver <login>
+#                 # the one version of the account's group for <app> whose description carries
+#                 # the release's model hash, PendingManualApproval or already Approved
 #             ./scripts/model-chain.py transform staging --tag vX.Y.Z --project
 #                 # Staging's own model, retrained there (Stage 10 decision 22)
 #             ./scripts/model-chain.py transform production --tag vX.Y.Z --package-arn <arn> --project
@@ -17,10 +24,11 @@
 #             evaluation the workflow's evaluate task wrote beside the model; the transform's output;
 #             in Staging, Production's newest approved version of the application's registry group,
 #             before Staging's own model is served (Stage 9 4.6, INT-07's registry half, verification
-#             xii). Nothing with --check.
-#   writes:   register, a version of awsds-prod-model-app-etl; approve, its status; transform, a model
-#             it deletes after and a transform job's output under the models' prefix,
-#             transform/<job>/.
+#             xii); for an approval by hash, the versions of the group the account's sagemaker/ state
+#             names for the application. Nothing with --check.
+#   writes:   register, a version of awsds-prod-model-app-etl; approve, the status of the version it
+#             names or finds; transform, a model it deletes after and a transform job's output under
+#             the models' prefix, transform/<job>/.
 #   exit:     0 done | 1 a check failed | 2 usage
 #
 # Run as the account's deploy role, the deploy runner's profile for it; by hand, the account's
@@ -51,7 +59,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from tfhygiene.projects import ProjectError, project_values
-from tfhygiene.states import StateError
+from tfhygiene.states import StateError, state_outputs
 from tfhygiene.targets import TargetError, account_values
 
 APP = "app-etl"
@@ -260,21 +268,78 @@ def register(args) -> int:
     return 0
 
 
+def hash_mark(sha256: str) -> str:
+    """How a version's description carries its archive's SHA-256: examples/app-ml's register task
+    writes `app-ml sha256:<hex>, trained by <job>`."""
+    return f"sha256:{sha256}"
+
+
+def versions_with_hash(summaries: list, sha256: str) -> list:
+    """The version summaries whose description carries the hash."""
+    mark = hash_mark(sha256)
+    return [s for s in summaries if mark in (s.get("ModelPackageDescription") or "")]
+
+
+def release_version(account: str, application: str, sha256: str) -> str:
+    """The ARN of the one version whose description carries the hash, in the account's group for
+    the application, which its sagemaker/ state names; any other count fails."""
+    groups = state_outputs(account, "sagemaker").get("model_package_group_arns") or {}
+    group = groups.get(application)
+    if not group:
+        raise ChainError(f"{account}/sagemaker names no model package group for {application}")
+    summaries = aws_json(
+        "sagemaker", "list-model-packages", "--model-package-group-name", group
+    ).get("ModelPackageSummaryList", [])
+    found = versions_with_hash(summaries, sha256)
+    if len(found) != 1:
+        name = group.rsplit("/", 1)[-1]
+        raise ChainError(f"{len(found)} version(s) of {name} carry sha256 {sha256}, one expected")
+    return found[0]["ModelPackageArn"]
+
+
+def pending_release_version(args) -> str | None:
+    """The release's version, printed with its training job and its metrics: its ARN while it is
+    PendingManualApproval, None once Approved; any other status fails."""
+    arn = release_version(args.account, args.application, args.sha256)
+    described = aws_json("sagemaker", "describe-model-package", "--model-package-name", arn)
+    status = described["ModelApprovalStatus"]
+    metadata = described.get("CustomerMetadataProperties") or {}
+    quality = (described.get("ModelMetrics") or {}).get("ModelQuality") or {}
+    metrics = (quality.get("Statistics") or {}).get("S3Uri")
+    print(
+        f"{arn}: {status}, trained by {metadata.get('training_job')}, validation AUC "
+        f"{metadata.get('validation_auc')}, metrics {metrics}"
+    )
+    if status == "Approved":
+        return None
+    if status != "PendingManualApproval":
+        raise ChainError(f"{arn} is {status}: a release approves a PendingManualApproval version")
+    return arn
+
+
 def approve(args) -> int:
+    """app-etl's version by its ARN, or the release's version by its model hash, approved and read
+    back Approved; the release's version left as it is once Approved."""
+    if args.package_arn:
+        arn, where = args.package_arn, "the promotion pipeline's manual job"
+    else:
+        arn, where = pending_release_version(args), f"the promotion pipeline's {args.account} leg"
+        if arn is None:
+            return 0
     aws_json(
         "sagemaker",
         "update-model-package",
         "--model-package-arn",
-        args.package_arn,
+        arn,
         "--model-approval-status",
         "Approved",
         "--approval-description",
-        f"approved by {args.approver} at the promotion pipeline's manual job",
+        f"approved by {args.approver} at {where}",
     )
-    status = aws_json(
-        "sagemaker", "describe-model-package", "--model-package-name", args.package_arn
-    )["ModelApprovalStatus"]
-    print(f"{args.package_arn}: {status}")
+    status = aws_json("sagemaker", "describe-model-package", "--model-package-name", arn)[
+        "ModelApprovalStatus"
+    ]
+    print(f"{arn}: {status}")
     if status != "Approved":
         raise ChainError(f"the version reads {status} after the update")
     return 0
@@ -447,6 +512,15 @@ def check() -> int:
         group_arn,
     ):
         problems.append(f"the registry group {group_arn!r} is not a group ARN")
+    summaries = [
+        {"ModelPackageArn": "v1", "ModelPackageDescription": f"app-ml sha256:{'a' * 64}, by j"},
+        {"ModelPackageArn": "v2", "ModelPackageDescription": "app-etl v0.4.0, trained by j"},
+        {"ModelPackageArn": "v3"},
+    ]
+    if [s["ModelPackageArn"] for s in versions_with_hash(summaries, "a" * 64)] != ["v1"]:
+        problems.append("the release's version is not found by its hash")
+    if versions_with_hash(summaries, "b" * 64):
+        problems.append("a version found for a hash no description carries")
     try:
         predictions("1.5\n2.5\n", 3)
         problems.append("a short output passed the check")
@@ -463,14 +537,19 @@ def check() -> int:
 def main(argv: list) -> int:
     if argv == ["--check"]:
         return check()
-    ap = argparse.ArgumentParser(description="Register, approve and serve app-etl's model.")
+    ap = argparse.ArgumentParser(
+        description="Register, approve and serve app-etl's model; approve another application's."
+    )
     commands = ap.add_subparsers(dest="command", required=True)
     r = commands.add_parser("register")
     r.add_argument("--tag", required=True)
     r.add_argument("--dotenv", type=Path)
     r.add_argument("--project", action="store_true")
     a = commands.add_parser("approve")
-    a.add_argument("--package-arn", required=True)
+    a.add_argument("account", nargs="?", choices=["staging", "production"])
+    a.add_argument("--package-arn")
+    a.add_argument("--application")
+    a.add_argument("--sha256")
     a.add_argument("--approver", required=True)
     t = commands.add_parser("transform")
     t.add_argument("account", choices=["staging", "production"])
@@ -480,6 +559,14 @@ def main(argv: list) -> int:
     args = ap.parse_args(argv)
     if getattr(args, "tag", None) and not re.fullmatch(r"v\d+\.\d+\.\d+", args.tag):
         ap.error("--tag is the release tag, vMAJOR.MINOR.PATCH")
+    if args.command == "approve":
+        by_hash = (args.account, args.application, args.sha256)
+        if (args.package_arn and any(by_hash)) or (not args.package_arn and not all(by_hash)):
+            ap.error("approve takes --package-arn, or an account with --application and --sha256")
+        if args.sha256 and not re.fullmatch(r"[0-9a-f]{64}", args.sha256):
+            ap.error("--sha256 is 64 lowercase hex characters")
+        if args.application and not re.fullmatch(r"app-[a-z0-9-]+", args.application):
+            ap.error("--application is an application's name, app-<name>")
     try:
         return {"register": register, "approve": approve, "transform": transform}[args.command](
             args

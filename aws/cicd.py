@@ -36,7 +36,8 @@
 #   - the misuse-alarm rules carry "deploy-misuse" in their name, the state
 #     ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS, and a pattern exempting the runner role's unique
 #     id through userIdentity.principalId (step 4.6, deploy-role-v0.2.0)
-#   - the application repository is awsds-prod-ecr-app-etl (Stage 7 step 5.1)
+#   - the application repositories are awsds-prod-ecr-app-etl (Stage 7 step 5.1) and
+#     awsds-prod-ecr-app-ml (Stage 17 step 9.5)
 #   - a registered dev-env image's name contains "dev-env" (Stage 6 step 5.1's record)
 #
 # What it cannot see, stated because an empty listing and a missing account look alike:
@@ -83,7 +84,11 @@ RUNNER_NAME = "awsds-prod-runner-deploy"
 TEST_RUNNER_NAME = "awsds-prod-runner-test"
 TEST_RUNNER_ACTIONS = {"secretsmanager:GetSecretValue", "ssm:GetParameter"}
 TEST_RUNNER_MANAGED = {"AmazonSSMManagedInstanceCore"}
-APP_REPO = "awsds-prod-ecr-app-etl"
+# The application repositories, each with the step that creates it.
+APP_REPOS = {
+    "awsds-prod-ecr-app-etl": "Stage 7 step 5.1",
+    "awsds-prod-ecr-app-ml": "Stage 17 step 9.5",
+}
 MISUSE_RULE_SUBSTR = "deploy-misuse"
 MISUSE_RULE_STATE = "ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS"
 DEVENV_IMAGE_SUBSTR = "dev-env"
@@ -403,100 +408,109 @@ def main(argv: list) -> int:
             if MISUSE_RULE_SUBSTR in str(rname):
                 rule_rows.append((p, str(rname), str(state), str(pattern or "")))
 
-    # ------- the app-repository grant and the reads from Sandbox (2.4) and Staging (INT-07)
-    app_policy_state = "(not measured)"
-    app_policy_text = ""
-    app_repo_exists = False
-    staging_read = "(no staging profile)"
-    sandbox_read = "(no sandbox profile)"
+    # ------- the app-repository grants and the reads from Sandbox (2.4) and Staging (INT-07)
     account_of = {c.profile: c.account for c in callers}
-    if prod_live:
-        cli = cli_for(PROD_PROFILE)
-        res = cli.run(
-            "ecr",
-            "get-repository-policy",
-            "--repository-name",
-            APP_REPO,
-            "--query",
-            "policyText",
-            "--output",
-            "text",
-            log=False,
-            tolerate="RepositoryNotFoundException|RepositoryPolicyNotFoundException",
-        )
-        if res.tolerated:
-            app_policy_state = "(no repository, or no policy on it)"
-            r = cli.run(
+    app_repos: dict = {}  # repository -> its policy, whether it exists, and the two reads
+    for app_repo in APP_REPOS:
+        app_policy_state = "(not measured)"
+        app_policy_text = ""
+        app_repo_exists = False
+        staging_read = "(no staging profile)"
+        sandbox_read = "(no sandbox profile)"
+        if prod_live:
+            cli = cli_for(PROD_PROFILE)
+            res = cli.run(
                 "ecr",
-                "describe-repositories",
-                "--repository-names",
-                APP_REPO,
+                "get-repository-policy",
+                "--repository-name",
+                app_repo,
                 "--query",
-                "repositories[0].repositoryName",
+                "policyText",
                 "--output",
                 "text",
                 log=False,
-                tolerate="RepositoryNotFoundException",
+                tolerate="RepositoryNotFoundException|RepositoryPolicyNotFoundException",
             )
-            app_repo_exists = bool(r.ok and not r.tolerated)
-        elif res.ok:
-            app_repo_exists = True
-            app_policy_text = res.stdout or ""
-            admitted = [
-                name
-                for name, prof in (("Sandbox", SANDBOX_PROFILE), ("Staging", STAGING_PROFILE))
-                if account_of.get(prof) and account_of[prof] in app_policy_text
-            ]
-            app_policy_state = "present, admitting " + (
-                ", ".join(admitted) or "no measured account"
+            if res.tolerated:
+                app_policy_state = "(no repository, or no policy on it)"
+                r = cli.run(
+                    "ecr",
+                    "describe-repositories",
+                    "--repository-names",
+                    app_repo,
+                    "--query",
+                    "repositories[0].repositoryName",
+                    "--output",
+                    "text",
+                    log=False,
+                    tolerate="RepositoryNotFoundException",
+                )
+                app_repo_exists = bool(r.ok and not r.tolerated)
+            elif res.ok:
+                app_repo_exists = True
+                app_policy_text = res.stdout or ""
+                admitted = [
+                    name
+                    for name, prof in (("Sandbox", SANDBOX_PROFILE), ("Staging", STAGING_PROFILE))
+                    if account_of.get(prof) and account_of[prof] in app_policy_text
+                ]
+                app_policy_state = "present, admitting " + (
+                    ", ".join(admitted) or "no measured account"
+                )
+        if SANDBOX_PROFILE in live and prod_account:
+            res = cli_for(SANDBOX_PROFILE).run(
+                "ecr",
+                "describe-images",
+                "--registry-id",
+                prod_account,
+                "--repository-name",
+                app_repo,
+                "--max-results",
+                "1",
+                "--query",
+                "length(imageDetails)",
+                "--output",
+                "text",
+                log=False,
+                tolerate="RepositoryNotFoundException|AccessDenied",
             )
-    if SANDBOX_PROFILE in live and prod_account:
-        res = cli_for(SANDBOX_PROFILE).run(
-            "ecr",
-            "describe-images",
-            "--registry-id",
-            prod_account,
-            "--repository-name",
-            APP_REPO,
-            "--max-results",
-            "1",
-            "--query",
-            "length(imageDetails)",
-            "--output",
-            "text",
-            log=False,
-            tolerate="RepositoryNotFoundException|AccessDenied",
-        )
-        if res.tolerated:
-            sandbox_read = "(denied or no repository)"
-        elif res.ok:
-            sandbox_read = f"ok (asked for 1 image, {res.stdout.strip()} returned)"
-        else:
-            sandbox_read = "(call failed)"
-    if "awsds-infra-staging" in live and prod_account:
-        cli = cli_for("awsds-infra-staging")
-        res = cli.run(
-            "ecr",
-            "describe-images",
-            "--registry-id",
-            prod_account,
-            "--repository-name",
-            APP_REPO,
-            "--max-results",
-            "1",
-            "--query",
-            "length(imageDetails)",
-            "--output",
-            "text",
-            log=False,
-            tolerate="RepositoryNotFoundException|AccessDenied",
-        )
-        if res.tolerated:
-            staging_read = "(denied or no repository)"
-        elif res.ok:
-            staging_read = f"ok (asked for 1 image, {res.stdout.strip()} returned)"
-        else:
-            staging_read = "(call failed)"
+            if res.tolerated:
+                sandbox_read = "(denied or no repository)"
+            elif res.ok:
+                sandbox_read = f"ok (asked for 1 image, {res.stdout.strip()} returned)"
+            else:
+                sandbox_read = "(call failed)"
+        if "awsds-infra-staging" in live and prod_account:
+            cli = cli_for("awsds-infra-staging")
+            res = cli.run(
+                "ecr",
+                "describe-images",
+                "--registry-id",
+                prod_account,
+                "--repository-name",
+                app_repo,
+                "--max-results",
+                "1",
+                "--query",
+                "length(imageDetails)",
+                "--output",
+                "text",
+                log=False,
+                tolerate="RepositoryNotFoundException|AccessDenied",
+            )
+            if res.tolerated:
+                staging_read = "(denied or no repository)"
+            elif res.ok:
+                staging_read = f"ok (asked for 1 image, {res.stdout.strip()} returned)"
+            else:
+                staging_read = "(call failed)"
+        app_repos[app_repo] = {
+            "policy_state": app_policy_state,
+            "policy_text": app_policy_text,
+            "exists": app_repo_exists,
+            "sandbox_read": sandbox_read,
+            "staging_read": staging_read,
+        }
 
     # ----------------- the dev-env registration, side by side (INT-17/INT-18 mechanical)
     image_rows: list = []  # (profile, image name, latest version, container image tail)
@@ -683,53 +697,57 @@ def main(argv: list) -> int:
     elif prod_live and built:
         checks.note("CI-4", f"role {RUNNER_NAME}", "absent - expected before step 4.3.")
 
-    # CI-5: the app-repository grant and the reads it admits - Sandbox's since step 2.4, Staging's
+    # CI-5: each app-repository grant and the reads it admits - Sandbox's since step 2.4, Staging's
     # (INT-07's enabling half) since step 3.0. Every promotion leg since pipeline #71 (2026-10-24) pulls
     # the application image in Staging, so a missing policy or a refused Staging read is a failure.
-    admits = {
-        prof: bool(account_of.get(prof)) and account_of[prof] in app_policy_text
-        for prof in (SANDBOX_PROFILE, STAGING_PROFILE)
-    }
-    if prod_live:
-        if app_policy_state.startswith("present"):
-            checks.ok("CI-5", f"policy on {APP_REPO}", app_policy_state)
-        elif app_repo_exists:
+    for app_repo, seen in app_repos.items():
+        admits = {
+            prof: bool(account_of.get(prof)) and account_of[prof] in seen["policy_text"]
+            for prof in (SANDBOX_PROFILE, STAGING_PROFILE)
+        }
+        if prod_live:
+            if seen["policy_state"].startswith("present"):
+                checks.ok("CI-5", f"policy on {app_repo}", seen["policy_state"])
+            elif seen["exists"]:
+                checks.fail(
+                    "CI-5",
+                    f"policy on {app_repo}",
+                    "repository exists with no policy - Staging cannot pull (step 3.0), and the "
+                    "promotion chain reaches Staging.",
+                )
+            else:
+                checks.note(
+                    "CI-5", f"repository {app_repo}", f"absent - {APP_REPOS[app_repo]} creates it."
+                )
+        # Each read is refused until its grant exists: a refusal the policy explains is a note, one
+        # the policy does not explain is a failure.
+        if seen["sandbox_read"].startswith("ok"):
+            checks.ok("CI-5", f"the Sandbox cross-account read of {app_repo}", seen["sandbox_read"])
+        elif SANDBOX_PROFILE in live and seen["exists"]:
+            (checks.fail if admits[SANDBOX_PROFILE] else checks.note)(
+                "CI-5",
+                f"the Sandbox cross-account read of {app_repo}",
+                f"{seen['sandbox_read']} - "
+                + (
+                    "the policy names Sandbox, so the read should answer."
+                    if admits[SANDBOX_PROFILE]
+                    else "the policy does not name Sandbox yet, expected before step 2.4's apply."
+                ),
+            )
+        if seen["staging_read"].startswith("ok"):
+            checks.ok("CI-5", f"the Staging cross-account read of {app_repo}", seen["staging_read"])
+        elif STAGING_PROFILE in live and seen["exists"]:
             checks.fail(
                 "CI-5",
-                f"policy on {APP_REPO}",
-                "repository exists with no policy - Staging cannot pull (step 3.0), and the "
-                "promotion chain reaches Staging.",
+                f"the Staging cross-account read of {app_repo}",
+                f"{seen['staging_read']} - "
+                + (
+                    "the policy names Staging, so the read should answer."
+                    if admits[STAGING_PROFILE]
+                    else "the policy does not name Staging, and every promotion leg pulls the "
+                    "image there."
+                ),
             )
-        else:
-            checks.note("CI-5", f"repository {APP_REPO}", "absent - Stage 7 step 5.1 creates it.")
-    # Each read is refused until its grant exists: a refusal the policy explains is a note, one the
-    # policy does not explain is a failure.
-    if sandbox_read.startswith("ok"):
-        checks.ok("CI-5", "the Sandbox cross-account read", sandbox_read)
-    elif SANDBOX_PROFILE in live and app_repo_exists:
-        (checks.fail if admits[SANDBOX_PROFILE] else checks.note)(
-            "CI-5",
-            "the Sandbox cross-account read",
-            f"{sandbox_read} - "
-            + (
-                "the policy names Sandbox, so the read should answer."
-                if admits[SANDBOX_PROFILE]
-                else "the policy does not name Sandbox yet, expected before step 2.4's apply."
-            ),
-        )
-    if staging_read.startswith("ok"):
-        checks.ok("CI-5", "the Staging cross-account read", staging_read)
-    elif STAGING_PROFILE in live and app_repo_exists:
-        checks.fail(
-            "CI-5",
-            "the Staging cross-account read",
-            f"{staging_read} - "
-            + (
-                "the policy names Staging, so the read should answer."
-                if admits[STAGING_PROFILE]
-                else "the policy does not name Staging, and every promotion leg pulls the image there."
-            ),
-        )
 
     # CI-6: the registered dev-env versions agree across the Interactive accounts -
     # D17's identical-runtime-by-construction, read at the registration (step 1.6).
@@ -973,10 +991,11 @@ with the D35 map.""")
             rep.line("No *deploy-misuse* rule in any measured promotion account (pre-4.6).")
 
         # ==============================================================================
-        rep.h1("5. The application repository: the grant, and the reads it admits (2.4, INT-07)")
-        rep.line(f"{APP_REPO} policy: {app_policy_state}")
-        rep.line(f"Sandbox cross-account read: {sandbox_read}")
-        rep.line(f"Staging cross-account read: {staging_read}")
+        rep.h1("5. The application repositories: each grant and its reads (2.4, INT-07)")
+        for app_repo, seen in app_repos.items():
+            rep.line(f"{app_repo} policy: {seen['policy_state']}")
+            rep.line(f"  Sandbox cross-account read: {seen['sandbox_read']}")
+            rep.line(f"  Staging cross-account read: {seen['staging_read']}")
         rep.text("""
 Presence, never sufficiency: the behavioural INT-07 proof is 3.2's pull under
 awsds-deploy-staging during a real promotion. This grant is deliberately NOT the
@@ -1023,7 +1042,7 @@ What the checks are, and where each comes from:
   CI-2  every deploy role carries a permissions boundary (4.1-4.2)
   CI-3  every trust policy: the runner's role only, sts:AssumeRole only (4.1-4.2)
   CI-4  the runner role assumes ONLY the enumerated awsds-deploy-* ARNs (4.3)
-  CI-5  the app-repository grant, and the reads from Sandbox (2.4) and Staging (3.0, INT-07)
+  CI-5  each app-repository grant, and the reads from Sandbox (2.4) and Staging (3.0, INT-07)
   CI-6  the dev-env container image agrees across Interactive accounts (1.6, D17)
   CI-7  the *deploy-misuse* rules receive read-only management events and exempt the runner by role id (4.6)
   CI-8  every recorded deploy-role assumption was the deploy runner (INT-08)

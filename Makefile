@@ -30,7 +30,7 @@
 # check-iam-wildcards (9.2), check-bootstrap-parity (3.5: the five bootstrap slices are one slice
 # copied), check-copies (Stage 8 4.1: files copied across slices), model-chain.py --check (Stage 10
 # steps 5.2 and 5.4: the model chain's requests carry the settings the Workloads OU's document demands), deploy-application.py --self-check (Stage 19 step 4.9: the leg's
-# deploy fills every variable a target stage of the template's manifest reads), aws/catalog.py --self-check (Stage 19 step 6.1: the product road's rules hold on sample records), slices.py check (8.1), check-tfvars-shape, check-index (9.4), check-network-doc, check-plan-refs (the plan's
+# deploy fills every variable a target stage of each application's manifest reads), aws/catalog.py --self-check (Stage 19 step 6.1: the product road's rules hold on sample records), slices.py check (8.1), check-tfvars-shape, check-index (9.4), check-network-doc, check-plan-refs (the plan's
 # relative links, stable IDs and the two size budgets),
 # check-identifiers (no account id or e-mail in a tracked file), check-provider-locks (6.3: three
 # platforms in every committed lock file), check-gitlab-ci (no job named after a GitLab CI global
