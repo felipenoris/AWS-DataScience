@@ -1985,6 +1985,45 @@
     USD on the usage types that end in `-v2`, and no row for a runtime that exists with no session
     ([`PRICING.md`](PRICING.md)):
     <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrockAgentCore/current/us-west-2/index.json>.
+- **Amazon Bedrock AgentCore's web search and the AWS Agent Registry (read 2026-11-22, for `TM-28` and
+  `SUP-176`).** Each page in its HTML form, through a page-reading agent.
+  - The administrator guide's document history, its first 39,900 of 89,272 characters received verbatim:
+    entries of 2026-11-13 for `SageMakerStudioProjectRoleMachineLearningPolicy` (the API key credential
+    provider, the token vault, the web search tool, the Agent Registry and its service-linked role, KMS
+    through Identity Center, `datazone:UpdateAssetOwner`) and `SageMakerStudioProjectUserRolePolicy`, and of
+    2026-11-14 for the four execution policies of an IAM-mode domain; no entry after 2026-11-14:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html>.
+  - The Web Search API, generally available 2026-11-10: `InvokeWebSearch` returns ranked results with text
+    extracts from an Amazon-operated web index, filtered by domain and publication time. The guide gives the
+    resource `arn:aws:bedrock-agentcore:<Region>:aws:tool/web-search.v1`, IAM authorization alone, the data
+    plane endpoint and PrivateLink through `com.amazonaws.<region>.bedrock-agentcore`, `us-west-2` among its
+    Regions, and CloudTrail data events, off by default, that log `webSearchId` and `maxResults` and not the
+    query; no page states a retention or names another provider:
+    <https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-bedrock-agentcore-web-search-api/>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/web-search-api.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/web-search-api-get-started.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/web-search-api-privatelink.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/web-search-api-cloudtrail.html>.
+  - The AWS Agent Registry: a record's type (MCP, Agent, Skills, Custom, Web bot), a description of up to
+    4,096 characters, a descriptor, a source URL and a skill package of up to 5 MiB. Search returns approved
+    records alone and is authorized per registry, so a record-level deny does not reach it.
+    `SubmitRegistryRecordForApproval` moves a record to `PENDING_APPROVAL`, or approves it where the registry
+    auto-approves, and `UpdateRegistryRecordStatus` approves, rejects and deprecates. The owner shares a
+    registry through AWS RAM, with accounts outside the organization by invitation, under four managed
+    permissions. The pages date the end of the preview `bedrock-agentcore` namespace's support 2026-10-30,
+    log control-plane calls as management events, and give no Region list:
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-key-capabilities.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-create-manage-records.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-cross-account-sharing.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-iam-permissions.html>.
+  - The rates, read with no credential ([`PRICING.md`](PRICING.md)): the price list's index, which names the
+    service code `awsagentregistry`; AgentCore's `us-west-2` offer file, version `20261120191134`, with the
+    web search tool's rows; the Agent Registry's region index and `us-west-2` offer file, version
+    `20261106194856`:
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json>,
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrockAgentCore/current/us-west-2/index.json>,
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/awsagentregistry/current/region_index.json>,
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/awsagentregistry/current/us-west-2/index.json>.
 - SageMaker Unified Studio's standard path read against the plan (read 2026-11-17, for 6d step 4.7 and
   decision 17, `TM-34`, `EXC-11` and Stage 19 decision 15). A notebook run in the background, on a schedule
   and as a workflow's *Notebook Operator* and *Notebook Sensor*:

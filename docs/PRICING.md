@@ -806,12 +806,20 @@ its sessions consume, and the offer holds no row for a runtime that exists with 
 | Runtime, committed baseline (`USW2-Runtime:Committed-baseline:vCPU-v2`, `:Memory-v2`) | per vCPU-hour, per GB-hour | 0.0997, 0.0132 |
 | Runtime, instance-based management (`USW2-Runtime:Instance-based:<type>:Management-Hours`, 889 rows) | per hour | by instance type: `m5.large` 0.01152, `c5.large` 0.0102 |
 | Browser tool and Code Interpreter, consumption-based | per vCPU-hour, per GB-hour | 0.0895, 0.00945 |
+| Web search tool (`USW2-WebSearchTool:Consumption-based:Queries`), read 2026-11-22 from version `20261120191134`, published `2026-11-20T19:11:34Z` | per query | 0.007, after a `Global-WebSearchTool` tier of 5,000 queries at 0.00 whose period the file does not state |
 
 The first row's figures are the ones AWS's pricing page gave on 2026-11-16. The offer file does not say
 which runtime the `-v2` usage types price, so which pair a session of 10.11 meters is that step's
 reading, from the first bill. The offer's other families, unused here, are Gateway, Memory, Policy,
 Evaluations and Knowledge-Base. The model's tokens and the guardrails' text units are billed apart, at
 the rates above.
+
+**The AWS Agent Registry, measured 2026-11-22** for `TM-28`, from the `us-west-2` offer file
+`awsagentregistry` (version `20261106194856`, published `2026-11-06T19:48:56Z`, three products); its region
+index lists `us-west-2`, `us-east-1`, `eu-west-1`, `ap-northeast-1`, `ap-southeast-2` and `us-gov-west-1`.
+Each tier opens at 0.00 USD, with no period stated: search calls 0.00002 USD each past 1,000,000, list and
+get calls 0.000004 past 2,000,000, records 0.0004 each past 5,000. The estate holds no registry
+(2026-11-22).
 
 ### Amazon Q Developer — the assistant the IDE offers, and not the one this estate enabled
 

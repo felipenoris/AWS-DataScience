@@ -910,7 +910,8 @@ objects above turn out to do, read 2026-09-18 by [`./aws/catalog.py`](../aws/cat
 - **A project role may read, search and publish in the catalog, and not start a data source run** (read
   2026-11-08, Stage 19 1.1): `SageMakerStudioProjectRoleMachineLearningPolicy` v47 grants
   `datazone:Get*`, `List*`, `Search*`, `CreateAsset*`, `CreateListingChangeSet`,
-  `CreateSubscriptionRequest` and `RevokeSubscription` on `*` and no `StartDataSourceRun`;
+  `CreateSubscriptionRequest` and `RevokeSubscription` on `*` and no `StartDataSourceRun`, which v48
+  (2026-11-13, read 2026-11-22) keeps, adding `UpdateAssetOwner` (`SUP-176`);
   `SageMakerStudioProjectUserRolePolicy` v76 names a list of reads on the domain. The house grant adds
   the one action on the domain for an application's publishing task in Production's `studio/` alone,
   the one stage that lists, since Stage 19 decision 17's revision of 2026-11-15; `sandbox/workflows/`
