@@ -245,11 +245,13 @@ differences called out where they land.
 **The nano builds again from `wireguard-v0.8.1`.** On v0.7.0 a `t3.nano`'s first boot stopped at step
 (1): the AL2023 repository's metadata, 91 MB on 2026-11-21, takes a cold `dnf` to about 620 MiB, the
 nano holds 415 MiB of RAM and as much zram, and the OOM killer took the install (`SUP-405`, `SUP-406`).
-The host was rebuilt on `t3.medium` (#353), and goes back to the nano with #356. v0.8.1's step (0)
+The host was rebuilt on `t3.medium` (#353) and went back to the nano with #356. v0.8.1's step (0)
 writes a 1 GiB swap file and masks update-motd, whose `dnf check-update` runs at every boot, before the
-first `dnf`, so the first boot fits every admitted size. The first apply on v0.8.1 replaces the host,
-because the user data changed; the size it builds is still the tracked file's selection, and after that
-a size switch is the stop and start below, with the swap file already on the disk.
+first `dnf`, so the first boot fits every admitted size. Measured on 2026-11-22: the nano's first boot
+on v0.8.1 finished step (1)'s `dnf` in 65 s and reached `END` 86 s after power-on, with no OOM line.
+The first apply on v0.8.1 replaces the host, because the user data changed; the size it builds is still
+the tracked file's selection, and after that a size switch is the stop and start below, with the swap
+file already on the disk.
 
 **The AMI decides the family; the parameter decides only the size within it.** The `wireguard` module
 pins the Amazon Linux 2023 x86_64 image by SSM parameter —
