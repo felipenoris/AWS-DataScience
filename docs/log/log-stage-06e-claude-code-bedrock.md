@@ -1933,3 +1933,15 @@ id inside a role name becomes `<Sandbox Account 1>`. Times are UTC.*
   and the page says nothing of a refused call. Written: `SUP-427`; a reading appended to `SUP-295`, whose
   `InvocationClientErrors` is no longer dimensionless only; Lesson 62's fourth instance; the Bedrock entry in
   `REFERENCES.md`; a sentence in the runbook's M6.
+
+## 2026-11-22 — 6.4's window taken out of §N.9's day 3
+
+*The user's words, written in the orchestrating session's chat and relayed to the session running
+`promotion.md` §N.9.5's day 3 at about 18:30 UTC; no AWS call.*
+
+- **[user] The decision**, verbatim: *"No N.9 tem precista uma "Janela do 6e 6.4" envolvendo uma sessão do
+  Claude Code. Peço avisar a sessão correspondente que isso não será executado. Deixe como item pendente no
+  plano para uma sessão futura."*
+- **[Claude] What follows**: no Claude Code session ran in the `code` space for 6.4, and no window was
+  marked. 6.4 stays owed to a later sitting with the environment up, its baseline the one read on
+  2026-11-20; the session of §N.10's day 1 was told the window will not open.

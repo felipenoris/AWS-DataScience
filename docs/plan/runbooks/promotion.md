@@ -1225,8 +1225,8 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    carries (Stage 20's log); 4.12's consumer read from the query editor at 14:56:17 UTC, and xxiv read
    (Stage 19's log).
 7. **N.9's days 2 and 3** (N.9.4, N.9.5), no GitLab: Stage 17's sitting B with 2.3 to 3.2 and pass 7 on
-   day 2, `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`; 6e 6.4's window, Stage 17's sitting C and its
-   pass 5 on day 3. **Day 2 ran 2026-11-21 and 22** (Stage 17's log), and left 6d's remainder and
+   day 2, `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`; Stage 17's sitting C and its pass 5 on day 3,
+   from which the user took 6e 6.4's window on 2026-11-22, owed to a later sitting. **Day 2 ran 2026-11-21 and 22** (Stage 17's log), and left 6d's remainder and
    verification xxiv's `Retrieve` to day 3, which raises `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`.
    Day 3 depends on no other sitting, and its prerequisites, `app-ml-dev`'s MLflow App, `app-genai-dev`'s Nova
    Lite profile and the two tars, were done 2026-11-22 (N.12.5).
@@ -2297,7 +2297,8 @@ each act below names its identity. **Run 2026-11-22 in R1** (Stage 19's log): st
 
 Written with nothing up on 2026-11-19, when the user asked for the sitting that closes the most steps with
 the least environment. It holds N.6 items 4 and 7: 6d's Sandbox items and Stage 20's sitting A on day 1,
-Stage 17's sittings B and C with its passes 2, 3 and 5 on days 2 and 3, and 6e 6.4. It raises the hub and
+Stage 17's sittings B and C with its passes 2, 3 and 5 on days 2 and 3, and 6e 6.4, which the user took
+out of day 3 on 2026-11-22. It raises the hub and
 `sandbox/egress` alone: no GitLab, since an application reaches a space as a tar built on the laptop; no
 Staging or Production egress; and no warehouse, which N.10 raises. `make status` read 0.0000 USD/h at 14:49 UTC that day. The
 pre-flight ran the same afternoon with nothing up, each block's by the session holding its stage, the
@@ -2340,7 +2341,7 @@ about 3 USD, against 0.36 to 0.87 USD for the next day's Config cycle.
 |---|---|---|---|
 | 1 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa` | 6d decision 6's render and reading; Stage 20's sitting A; 6d 4.7, 7.6, 7.5's monitored half, 7.7 and 6.1 (viii)'s Code Editor half. Ran 2026-11-21 to 7.6; the rest rides day 3's end (N.9.3) | about 6.5 |
 | 2 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | Stage 17's sitting B with 2.3 to 3.2, and pass 7. Ran 2026-11-21 and 22 (N.9.4) | about 8 |
-| 3 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | 6e 6.4's window; Stage 17's sitting C and pass 5; verification xxiv's `Retrieve`; then 6d's remainder of day 1 | about 9.5 |
+| 3 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | Stage 17's sitting C and pass 5; verification xxiv's `Retrieve`; then 6d's remainder of day 1 | about 9.5 |
 
 A group lasts one apply, so each day's raise names every group its blocks call, and no other. The tunnel is
 the user's ([`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md)). A day ends where the
@@ -2432,16 +2433,18 @@ created the group at 00:18 UTC, so 3.3 reads `eighth-experimentation`'s source r
 2026-11-22. The owners' six *Update project* presses, 05:14 to 05:21 UTC, their stacks done by 05:29, gave 6d 2.4's
 after half and 2.7's step 8, read by the coordinating session (6d's log).
 
-#### N.9.5 Day 3: 6e 6.4, Stage 17's sitting C and its pass 5, and 6d's remainder
+#### N.9.5 Day 3: Stage 17's sitting C and its pass 5, and 6d's remainder
 
-The blocks are [6e](../stages/stage-06e-claude-code-bedrock.md) 6.4 and Stage 17's day 3 rows: sitting C,
-9.6 and 10.4, then pass 5; then verification xxiv's `Retrieve`, left by day 2; then 6d's *The remainder
-after day 1* (N.9.3).
+The blocks are Stage 17's day 3 rows: sitting C, 9.6 and 10.4, then pass 5; then verification xxiv's
+`Retrieve`, left by day 2; then 6d's *The remainder after day 1* (N.9.3). The user took
+[6e](../stages/stage-06e-claude-code-bedrock.md) 6.4's window, step 2, out of the day on 2026-11-22; it
+is owed to a later sitting with `bedrock-base` raised.
 
 1. [Claude] The other sessions told; [user] `make hub-up`, then
    `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`; [Claude] `make status`.
    `bedrock-agent` is step 4's alone.
-2. 6e 6.4's window, about an hour: one Claude Code session in a space on the default model, a task of
+2. 6e 6.4's window, not run on 2026-11-22 (the user's decision) and kept here for the sitting that takes
+   it, about an hour: one Claude Code session in a space on the default model, a task of
    real length over several turns, and no other Bedrock call in the account. 9.6's workflow (step 3),
    which calls none, starts just before the window and trains through it.
    Claude marks its start and end in UTC as the user reports them and reads `./aws/bedrock-usage.py` after
@@ -2453,7 +2456,7 @@ after day 1* (N.9.3).
    each `sandbox/bedrock/` apply [Claude⚡], both switches back to `false` at the end; then pass 5 in `eighth-experimentation`'s space, the pipeline authored from
    the SDK, run and read back, and the editor's forms (5.1 to 5.4). About 6.2 hours.
 4. [user] Verification xxiv: from `jup`, one `Retrieve` on the knowledge base `QWDNVYXADH` through
-   `bedrock-agent-runtime`, its output pasted (Stage 17 7.4b), after 6e 6.4's window. Minutes.
+   `bedrock-agent-runtime`, its output pasted (Stage 17 7.4b). Minutes.
 5. 6d's remainder, the steps of 6d's *The remainder after day 1*, about 75 minutes that call no group, on
    the owner's remote-access space `code`, after the day's last apply, so 7.5's monitored window reads no
    terminal traffic of Claude's; Stage 17's spaces stopped first; 7.7's sign-out after the day's last
@@ -2488,7 +2491,7 @@ At [`cost-model.md`](../cost-model.md)'s "Per session" rates:
 Before the spaces, day 1 bills about 0.22 USD/h, day 2 0.27, 0.31 after the rebuilds and 0.28 since the VPN
 host's return, and day 3 0.28, some 1.4, 2.4 and 2.7 USD of hub and endpoints; with the spaces and the Config
 cycle, 2 to 4 USD a day and 9.5 to 11.5 USD for the sitting. The models' tokens, the jobs and the embeddings are
-billed apart, and 6e 6.4's session is the largest of them; Stage 17's training jobs are about five minutes of
+billed apart; Stage 17's training jobs are about five minutes of
 `ml.m5.xlarge` each, at 0.23 USD/h.
 
 #### N.9.8 What follows the sitting
@@ -2808,9 +2811,8 @@ minutes starts before the step that does not need it.
 - **N.9's day 2** (N.9.4): the training pair's plan is read already (N.12.3); each training job, about five
   minutes, runs while the next notebook cell is written; 3.3 is read with nothing up after the source run
   of about 17:38 UTC, so the day does not wait for it.
-- **N.9's day 3** (N.9.5): 9.6's workflow, which calls no Bedrock, starts before 6e 6.4's window and trains
-  through it, since the window excludes other Bedrock calls alone; 10.4's and pass 5's calls and xxiv's
-  `Retrieve` follow the window's end. 6d's remainder follows the day's last apply, and 6.1 (viii)'s
+- **N.9's day 3** (N.9.5): 9.6's workflow and 10.4's runs proceed side by side, 6e 6.4's window having
+  been taken out of the day on 2026-11-22; pass 5's calls and xxiv's `Retrieve` follow. 6d's remainder follows the day's last apply, and 6.1 (viii)'s
   reading and the day's records fill 7.7's thirty minutes.
 - **N.10's day 1** (N.10.3): pass 4's endpoint, minutes to create, starts before Stage 20's pass 5. The
   usage limit's amount is the user's value ([`redshift-connection.md`](redshift-connection.md)): on a

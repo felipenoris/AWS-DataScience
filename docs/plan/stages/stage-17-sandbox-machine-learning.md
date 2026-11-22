@@ -1139,9 +1139,10 @@ what a model that crosses accounts asks:
   that named that key would serve the next release's archive under an old approval. `register` copies the
   archive to a key that holds its hash and registers the copy, with the hash in the version's
   description, which `UpdateModelPackage` cannot change (the SDK's model at botocore 1.43.1, the
-  worker's, read 2026-11-17), and `resolve` hashes what it is about to serve. The version also carries
-  the copy's ETag in the container's `ModelDataETag`; what the service does with that field at
-  `CreateModel` is unread (verification lix).
+  worker's, read 2026-11-17), and `resolve` hashes what it is about to serve. The request names no
+  `ModelDataETag`: `CreateModelPackage` refuses one that a caller sends and sets the field from the copy
+  (`SUP-456`, 2026-11-22). Whether `CreateModel` compares the field with the object it loads is
+  verification lix.
 - **A registration proposes and never approves.** `register` sends `PendingManualApproval` and holds no
   path to another status, which the application's test asserts. The estate's statements give the project
   role `CreateModelPackage` on its stage's group, and a `Deny` of `UpdateModelPackage` there, since AWS's

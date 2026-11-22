@@ -4415,6 +4415,30 @@ entry is still true is the reading.
   with the project.
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
+- `SUP-456` **`CreateModelPackage` refuses a `ModelDataETag` that its caller sends, even the object's
+  own ETag, and sets the field itself from the object the version names** (measured 2026-11-22 in
+  Sandbox, Stage 17 9.6, as `app-ml-dev`'s project role from an MWAA Serverless worker, through the
+  `sagemaker` API endpoint).
+  - The documentation: `ModelPackageContainerDefinition` describes the field as *"The ETag associated with
+    Model Data URL"* and says nothing of who sets it. CreateModelPackage lists it in its request syntax
+    with no prose.
+  - The refusal: a versioned `CreateModelPackage` at 19:39:35 named `ModelDataETag`
+    `b5a42cff73d4153ba6731750a1831ebc`, the ETag `head-object` read on its `ModelDataUrl` without the
+    quotes. It was refused: *"An error occurred (ValidationException) when calling the CreateModelPackage
+    operation: The ETag request value isn't permissible."*
+  - The service sets it: the same request with no `ModelDataETag`, at 20:00:18, created `app-ml-dev/1`,
+    whose `ModelDataETag` reads `1792fa2976e38b9a5bec44860076416d`, the object's ETag at that moment.
+    `ml-demo-xgboost/1`, created at 00:34:10 by a request with none, reads
+    `f8783f02a8dc0bb2867b2e67b030ea30`, its own object's ETag.
+  - The service also fills `ImageDigest` and sets `IsCheckpoint` to `false`.
+  - Under the bucket's SSE-KMS encryption the ETag is no digest of the bytes. The same 9,930 bytes
+    (SHA-256 `852032c5…`) read `b5a42cff…` after the PUT at 19:39 and `1792fa29…` after the PUT at 20:00.
+    The candidate they were copied from reads `fad76c8d…`.
+  - So a version's `ModelDataETag` names one PUT of its object, and rewriting identical bytes changes the
+    object's ETag. Whether `CreateModel` from the version compares the two is verification lix.
+
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `examples/app-ml/code/app_ml_tasks/registry.py`.
+
 ## MWAA
 
 ### MWAA Serverless: workflows and the API
@@ -5129,6 +5153,21 @@ entry is still true is the reading.
   a target. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-17; Stage 17 pass 9, "The model
   in the bundle, and what the CLI does with it", and verification lxii; `runbooks/sagemaker-ai-ml.md`
   §B.
+  **Read again 2026-11-22** (Stage 17 9.6, `bundle --targets dev` from a space as `app-ml-dev`'s project
+  role through `scripts/dev-cli.sh`):
+  - `bundle` never reads the connection. It copies the stage's domain `region`, `name` and `tags` into its
+    configuration, not its `id`.
+  - `get_datazone_project_info` then resolves the domain through `datazone.resolve_domain_id`, a
+    `ListDomains` that DataZone refuses to a project role: *"User is not permitted to perform operation:
+    ListDomains"*, logged three times as `ERROR`.
+  - The project's connections come back empty. The `model` item, which names `default.s3_shared`, is
+    skipped with the warning above. This happened before the training run (18:45:20) and after it
+    (19:57:48), with `latest/` present in the prefix.
+  - The archive held the 10 files of the items read from the manifest's folders (15,592,181 and 15,592,095
+    bytes), and the command exited 0.
+  - `scripts/dev-cli.sh` answers `get_domain_id_by_name`, which this path does not call. The bundle role
+    holds `datazone:ListDomains`.
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 - `SUP-375` **`aws-smus-cicd-cli` 1.0.9's `deploy` adds a stage's `owners` and `contributors` to an
   existing project at every run and removes no member, and acts on the project role only under
