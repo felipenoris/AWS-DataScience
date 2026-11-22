@@ -4494,3 +4494,13 @@ acts are named. Times are UTC.*
   `1795315677_2026_11_22_19.4.2_gitlab_backup.tar`, 15,708,160 bytes, uploaded at 02:48:08, `aws:kms`,
   expiring 2026-12-23 by the rule `expire-current-versions`; its release, 19.4.2, is `gitlab_ce_version`'s.
   The newest backup now leaves the bucket on 2026-12-23, where the one of 2026-11-16 leaves on 2026-12-17.
+- **[user] Step 3's projects** by `sagemaker-application.md` §L's steps 1 to 6, as GitLab's local
+  administrator: `awsds/app-ml` (id 7) at 02:50:58, `awsds/app-genai` (8) at 02:55:07 and `awsds/app-dbt`
+  (9) at 02:56:40. **[Claude] read** through GitLab's API in the user's browser session at about 03:10: each
+  private and empty; `main` protected, push and merge `Maintainers`, no force push; `v*` protected, create
+  `Maintainers`; `awsds/data-scientists` a Developer and `awsds/deployment-managers` a Maintainer, no direct
+  member; the runners 1 (`awsds-prod-runner`, untagged, `ref_protected`), 3 (`awsds-prod-runner-deploy`,
+  `awsds-deploy`, `ref_protected`) and 4 (`awsds-prod-runner-test`, `awsds-test`, `not_protected`) linked,
+  each still locked; `DOMAIN_ID` `dzd-d8yrvx1ko7im6o`, `DOMAIN_REGION` `us-west-2` and `DEV_PROJECT_NAME`
+  `app-ml-dev`, `app-genai-dev` or `app-dbt-dev`, each protected and unmasked. `awsds/infrastructure`'s
+  job-token allowlist, inbound enabled, holds the three beside `awsds/app-etl` and itself.
