@@ -445,6 +445,13 @@ def cmd_check(args) -> int:
             )
         if sl.layer not in layers.LAYER_NAMES:
             failures.append(f"{sl.path}: unknown layer '{sl.layer}'.")
+        # An interface endpoint bills by the hour and by the GB (docs/PRICING.md 3 and 7), so a
+        # row declaring endpoints carries ENDPOINT_GB, and only such a row does.
+        if (sl.endpoints > 0) != all(pair in sl.per_use for pair in layers.ENDPOINT_GB):
+            failures.append(
+                f"{sl.path}: endpoints={sl.endpoints} and per_use {sl.per_use} disagree: a row "
+                "declaring interface endpoints carries per_use=ENDPOINT_GB, and only such a row."
+            )
         # `status` prints every per_use rate in the active burn, so a unit UNIT_CLASS does not
         # call active would land in the wrong total.
         for _, unit in sl.per_use:
@@ -643,6 +650,26 @@ def managed_resources(module: dict) -> int:
     """
     n = sum(1 for r in module.get("resources", []) if r.get("mode") == "managed")
     return n + sum(managed_resources(c) for c in module.get("child_modules", []))
+
+
+def interface_endpoints(module: dict) -> tuple[int, int]:
+    """The interface endpoints in a state tree, recursively, and the Availability Zones they sit in.
+
+    An interface endpoint bills per AZ, one subnet each (docs/PRICING.md 3 and 7); a gateway
+    endpoint bills nothing and is not counted.
+    """
+    found = [
+        r.get("values") or {}
+        for r in module.get("resources", [])
+        if r.get("mode") == "managed"
+        and r.get("type") == "aws_vpc_endpoint"
+        and (r.get("values") or {}).get("vpc_endpoint_type") == "Interface"
+    ]
+    n, azs = len(found), sum(len(v.get("subnet_ids") or ()) for v in found)
+    for child in module.get("child_modules", []):
+        cn, cazs = interface_endpoints(child)
+        n, azs = n + cn, azs + cazs
+    return n, azs
 
 
 # --------------------------------------------------------------- the Studio apps, for `status`
@@ -937,13 +964,28 @@ def cmd_status(args) -> int:
         ]
         rate = sl.usd_per_hour + sum(usd * held.count(addr) for addr, usd in sl.optional_hosts)
         with_hosts = ", ".join(addr for addr, _ in sl.optional_hosts if addr in held)
+        # The interface endpoints: an up slice's from its state, per AZ, optional groups included;
+        # a down slice's from the row (layers.Slice.endpoints), the rate `up` would start.
+        endpoints, azs = interface_endpoints(state)
+        rate += layers.ENDPOINT_HOUR * (azs if up else sl.endpoints)
+        # A state holding interface endpoints bills their GB too, whatever its row declares.
+        per_use = sl.per_use
+        if up and endpoints:
+            per_use += tuple(pair for pair in layers.ENDPOINT_GB if pair not in per_use)
+        counted = ""
+        if up and (endpoints or sl.endpoints):
+            counted = f"   {endpoints} interface endpoint(s)" + (
+                f" in {azs} AZ placement(s)" if azs != endpoints else ""
+            )
         if up:
             passive += rate
-            for pair in sl.per_use:
+            for pair in per_use:
                 active.setdefault(pair, []).append(f"{sl.account}/{sl.name}")
         print(
             f"  {sl.path:<40} {'UP' if up else 'down':<5} {n:>3} resource(s)"
-            f"   {charges(rate, sl.per_use)}" + (f"   with {with_hosts}" if with_hosts else "")
+            f"   {charges(rate, per_use)}"
+            + (f"   with {with_hosts}" if with_hosts else "")
+            + counted
         )
 
     # The Studio apps, which no slice holds (BILLING_APP_STATUSES above).

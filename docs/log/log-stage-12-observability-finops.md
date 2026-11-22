@@ -1139,3 +1139,29 @@ and one `describe-vpc-endpoints` as the `awsds-infra-*` profiles (the infrastruc
   unmeasured); DNS Firewall queries (7: 0.60 USD per million inspected).
 - **[Claude] Not seen by `make status`**: Stage 17 pass 4's inference endpoint, which would be passive.
   The Studio apps' *"at most … so far"* (`SUP-229`) is unchanged.
+
+## 2026-11-22 — `make status` prices the interface endpoints an up slice's state holds
+
+*Claude's sitting, in the same session, on the user's *"Sim, neste PR"* in chat. Read-only throughout:
+`make status`, a `terraform show -json` of `sandbox/egress`, `describe-vpc-endpoints` and
+`list-workgroups`, as the `awsds-infra-*` profiles (the infrastructure user with `InfrastructureAccess`).
+Times are UTC.*
+
+- **[Claude] The change**: `layers.Slice` gains `endpoints`, the interface endpoints a row declares. The
+  four egress rows move from `usd_per_hour` 0.180, 0.080, 0.120 and 0.080 to `endpoints` 18, 8, 12 and 8.
+  `status` prices an up slice by the interface endpoints its state holds, per AZ, at `ENDPOINT_HOUR`, 0.010
+  USD (`docs/PRICING.md` 3 and 7), and a down line by the row's count. A state holding interface endpoints
+  bills `ENDPOINT_GB` whatever its row declares. `slices.py check` fails on a row with endpoints and no
+  `ENDPOINT_GB`, or the reverse; a negative control with both mismatches exits 1.
+- **[Claude] Offline**, on fabricated states: 26 interface endpoints and two gateway endpoints in a child
+  module read 0.2600 USD/h and *"26 interface endpoint(s)"*; 12 endpoints, one of them in two subnets,
+  read 0.1300 and *"12 interface endpoint(s) in 13 AZ placement(s)"*; everything down reads both totals at
+  USD 0.0000, the down lines' rates unchanged.
+- **[Claude] `make status`** from 19:04:28 to 19:06:28, exit 0: *"terraform-live/sandbox/egress UP 34
+  resource(s) passive 0.2500 USD/h, active 0.0100 USD/GB processed 25 interface endpoint(s)"*, and
+  *"passive burn: USD 0.5894/h"* with six JupyterLab apps billing in Sandbox; the active burn as at 18:43.
+- **[Claude] The 26th endpoint**: the state of `sandbox/egress` lists 25 interface endpoints, the 18:52:44
+  account reading less one to a `vpce-svc-` service. That one is requester-managed, in two subnets, and was
+  created at 18:17:00, 18 s after the workgroup `awsds-sandbox-warehouse`, whose `endpoint.vpcEndpoints`
+  holds it: the workgroup's own endpoint (`SUP-128`). No slice's state holds it, so `status` does not price
+  it, and whether its hours bill is not in `docs/PRICING.md`.

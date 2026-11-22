@@ -294,7 +294,13 @@ class Slice:
     name: str  # the slice folder inside it
     layer: str  # P | D | E
     why: str  # what the slice holds, in one line - so a reader need not open it
-    usd_per_hour: float = 0.0  # per HOUR the slice is up; 0.0 when nothing in it bills by the hour
+    # Per HOUR the slice is up, besides its interface endpoints; 0.0 when nothing else in it bills
+    # by the hour.
+    usd_per_hour: float = 0.0
+    # The interface endpoints the slice declares, one Availability Zone each. A down line quotes
+    # them at ENDPOINT_HOUR each; an up line prices the ones its state holds, per AZ, so an apply
+    # that names an optional endpoint group is priced with it.
+    endpoints: int = 0
     # A host the slice creates only when an apply asks for it, as (resource address, USD/h) pairs:
     # usd_per_hour is the slice without them, and `make status` adds a pair's rate for each instance
     # of that address the state holds.
@@ -323,15 +329,19 @@ class Slice:
 # Every slice on disk today. The [P] rows are free or nearly free at rest: five state
 # buckets and their keys (KMS is priced per key-month, docs/PRICING.md 2, so it is a floor
 # line and not an hourly one), two Identity Center / Organizations slices whose objects cost
-# nothing at all, and the foundation networks. The [D] and [E] rows carry `usd_per_hour` and
-# `per_use`, and `make status` meters both layers - the [D] hosts bill while every [E] slice is
-# down.
+# nothing at all, and the foundation networks. The [D] and [E] rows carry `usd_per_hour`,
+# `endpoints` and `per_use`, and `make status` meters both layers - the [D] hosts bill while
+# every [E] slice is down.
 #
 # usd_per_hour is copied from docs/PRICING.md 3, measured us-west-2 rates (Lesson 6), and
-# is the at-rest-while-up figure: interface endpoint 0.010/h each, NAT gateway 0.045/h +
-# public IPv4 0.005/h. Per account: endpoints x 0.010 + 0.050 where a NAT exists (egress_mode
-# A). Per-GB processing is traffic, not time, so it is a per_use rate: ENDPOINT_GB, on every
-# slice that holds interface endpoints (docs/PRICING.md 7, 0.01 USD/GB).
+# is the at-rest-while-up figure: NAT gateway 0.045/h + public IPv4 0.005/h, a host by its
+# type. An interface endpoint bills ENDPOINT_HOUR per Availability Zone it sits in
+# (docs/PRICING.md 3 and 7, 0.010 USD per endpoint per AZ), counted from the state on an up
+# line and from `endpoints` on a down one. Per account: the endpoints, plus 0.050 where a NAT
+# exists (egress_mode A). Per-GB processing is traffic, not time, so it is a per_use rate:
+# ENDPOINT_GB, on every slice that declares endpoints (docs/PRICING.md 7, 0.01 USD/GB);
+# `slices.py check` fails on one without the other.
+ENDPOINT_HOUR = 0.010
 ENDPOINT_GB = ((0.01, GB_PROCESSED),)
 
 SLICES = [
@@ -369,9 +379,8 @@ SLICES = [
     # Stage 3 pass 3. The endpoint counts are step 8.3's per-role lists: core 8 + the account's
     # extras. The NAT left at 6c step 5.1 and these three figures moved with it: each was
     # NAT 0.045 + its Elastic IP 0.005 + the endpoints, and each is now the endpoints alone,
-    # counted from the slice's own plan rather than from a list somebody might have edited
-    # (`terraform plan | grep -c aws_vpc_endpoint.interface`), at the measured 0.010/h per
-    # endpoint of docs/PRICING.md 8.
+    # `endpoints` below, counted from the slice's own plan rather than from a list somebody might
+    # have edited (`terraform plan | grep -c aws_vpc_endpoint.interface`), at ENDPOINT_HOUR.
     #
     # Sandbox's idle floor went **up**, 0.160 -> 0.180, because 5.2 has to enumerate what the NAT
     # used to cover silently, and that is the only axis on which it rises. Per gigabyte a NAT is
@@ -383,14 +392,15 @@ SLICES = [
     #
     # None of the three includes 5.3's optional groups: `bedrock-base` and `bedrock-agent` add
     # 0.020 each, `emr` 0.070, `mlflow` and `redshift` 0.010 each, only for an apply that names
-    # them, and a static rate that assumed them would over-report every session that does not.
-    # `make status` quotes this column; the flag's cost is in `make help`.
+    # them. `make status` prices an up slice by the endpoints its state holds, so a group is
+    # billed while it is up and a session without one is not over-reported; a down line quotes
+    # the count here. The flag's cost is in `make help`.
     Slice(
         "sandbox",
         "egress",
         EPHEMERAL,
         "18 interface endpoints (5.2) - no NAT",
-        0.180,
+        endpoints=18,
         per_use=ENDPOINT_GB,
     ),
     # Stage 9 step 4.3a re-cut it to VPC-Workloads' set (3.3a), the endpoints a job and a worker call;
@@ -400,7 +410,7 @@ SLICES = [
         "egress",
         EPHEMERAL,
         "8 interface endpoints (St.9 4.3a, St.19 4.4) + DNS Firewall - no NAT",
-        0.080,
+        endpoints=8,
         per_use=ENDPOINT_GB,
     ),
     # 12 since Stage 7 (2026-10-12): 6c 5.5's 13 plus `secretsmanager` (step 1.7), which the GitLab
@@ -411,7 +421,7 @@ SLICES = [
         "egress",
         EPHEMERAL,
         "12 interface endpoints (5.5, 7 1.7, 7 dec 9) - no NAT",
-        0.120,
+        endpoints=12,
         per_use=ENDPOINT_GB,
     ),
     # Stage 6c step 1.3a - VPC-Workloads' endpoint slice, zero NAT (D38). Stage 9 step 3.3a names
@@ -424,7 +434,7 @@ SLICES = [
         "workloads-egress",
         EPHEMERAL,
         "8 interface endpoints (St.9 3.3a, St.19 4.4) + DNS Firewall - no NAT",
-        0.080,
+        endpoints=8,
         per_use=ENDPOINT_GB,
     ),
     # Stage 19 step 4.11 - the chain layer above the workflows the CI/CD CLI creates in each
