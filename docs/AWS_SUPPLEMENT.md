@@ -3509,6 +3509,27 @@ entry is still true is the reading.
   Serverless. Bedrock's knowledge-base setup page names no key policy. All three pages were read 2026-11-22.
   A project key written to SMUS's page therefore refuses every IDE knowledge base on S3 Vectors. Where:
   `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `terraform-modules/sagemaker-prereqs/kms.tf`.
+  A later reading (2026-11-22, 01:33Z): with the statement in the key's policy (`sagemaker-prereqs-v0.13.0`),
+  the second create's `CreateIndex` was admitted. The failed component's row in *My components* carried an
+  error icon and no menu; once its blueprint deployment was deleted from *Resource blueprints*, the row
+  offered *Delete*. The first vector bucket survived both deletes, empty.
+
+- `SUP-410` **The Bedrock IDE's S3 Vectors index declares `AMAZON_BEDROCK_TEXT` alone non-filterable, where
+  Bedrock's pages add `AMAZON_BEDROCK_METADATA`, and ingestion then fails on S3 Vectors' 2 KB cap on a
+  filterable string with a per-document reason that names no metadata** (measured 2026-11-22 in Sandbox,
+  Stage 17 7.4a). The index `amazon-bedrock-ide` the provisioning role created at 01:33:17Z read
+  `nonFilterableMetadataKeys` `AMAZON_BEDROCK_TEXT` and `indexMode` `ENHANCED`; the knowledge-base form
+  exposes no index setting. Bedrock's knowledge-base setup page (its S3 Vectors tab) and its chunking page
+  say to add `AMAZON_BEDROCK_TEXT` and `AMAZON_BEDROCK_METADATA` as non-filterable keys. S3 Vectors' limits
+  page caps each filterable string value at 2 KB, and its metadata-filtering page says non-filterable keys
+  are configured when the index is created. Over 20 Markdown runbooks with the form's default chunking
+  (fixed size, 300 tokens, 15 % overlap), the sync the create started indexed 2 and failed 18. A second
+  sync scanned 20, indexed none and failed 18, counting the other 2 in no statistic. Both jobs' reason
+  read *"Invalid record for key '<uuid>': Metadata value is invalid: exceeds 2048 byte string limit
+  (Service: S3Vectors, Status Code: 400 …)"*, and each failed document's `statusReason` read *"The document
+  was not indexed. No content could be extracted from it, or processing ended before it completed."*
+  Neither reading names the key that exceeded. A knowledge base the IDE creates on S3 Vectors keeps this
+  index for its life. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 ## SageMaker AI spaces and images
 

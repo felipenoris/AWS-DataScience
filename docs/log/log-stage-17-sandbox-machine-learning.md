@@ -4360,3 +4360,55 @@ UTC.
   `sandbox/sagemaker` against the local module read `0 to add, 1 to change, 0 to destroy`: the project
   key's policy gains that one statement. The caller went back to its pinned tag. The module's tag and the
   apply wait on the user.
+
+## 2026-11-22 — Day 2's sitting B: 7.4a's knowledge base created after the key's apply, and its syncs refused by the index's metadata
+
+- **[user] The authorization.** *"Autorizo"*, answering whether Claude should publish
+  `sagemaker-prereqs-v0.13.0`, apply `sandbox/sagemaker`, delete the failed component and recreate the
+  knowledge base with a sync.
+- **[Claude] The tag and the apply.** `sagemaker-prereqs-v0.13.0` was pushed and read back from origin at
+  `4628357d`, and `sandbox/sagemaker` was pinned to it in `207eb246`. The saved plan read
+  `0 to add, 1 to change, 0 to destroy`. The other sessions were told, then the plan was applied as the
+  infrastructure user (`InfrastructureAccess`, `awsds-infra-sandbox-1`): `Modifications complete after 7s`,
+  `Apply complete! Resources: 0 added, 1 changed, 0 destroyed.` at 01:23 UTC. The re-plan read `No changes`,
+  and the key's live policy lists `AllowS3VectorsIndexingOfTheBedrockIdesVectorBuckets` tenth.
+- **[Claude] The failed component, removed in two acts.** *My components* showed an error icon on the
+  failed row and no menu. *Resource blueprints* listed the deployment
+  `34bcff63-e1c0-4b5a-b669-a48df19b6f16-dev`, `AmazonBedrockKnowledgeBase`, *Deployment failed*, with a
+  delete. Its dialog read *"Permanently delete blueprint deployment …? Deleting a blueprint deployment is
+  final and removes all connections created."*; after `confirm`, the portal answered *"Blueprint deployment
+  deleted successfully"* at about 01:25, and the row was gone by 01:26:50. The component stayed listed: its
+  definition, `amazon-bedrock/builder/components/knowledgeBase/34bcff63-…-definition.json` in the project's
+  prefix of the projects bucket, was written by the project role at 01:02:30. Its row then offered *Sync*,
+  *View*, *Edit* and *Delete*. *Delete* asked *"Are you sure you want to delete this Knowledge Base?"* and
+  removed the definition, so the prefix was empty at 01:30:18. The first vector bucket,
+  `amazon-bedrock-ide-avhvbqn37ty7m8-cie8747bea6mxc`, survived both deletes (read 01:33:38).
+- **[Claude] The second create**, the same form: Titan V2, floating-point, 1024 dimensions, S3 Vectors,
+  default chunking, default parser. At 01:33:17 the provisioning role's `CreateVectorBucket`
+  `amazon-bedrock-ide-avhvbqn37ty7m8-46cr0woe7670gg`, under the project key, and `CreateIndex`
+  `amazon-bedrock-ide` were both admitted. The index declares `nonFilterableMetadataKeys`
+  `AMAZON_BEDROCK_TEXT` alone, `indexMode` `ENHANCED`. The knowledge base `QWDNVYXADH`, named
+  `avhvbqn37ty7m8-ml-demo-runbooks`, read `ACTIVE` at 01:33:18. Its role is the project role
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, its embeddings go through
+  `application-inference-profile/p391nstyc81c` at 1024 `FLOAT32`, and its storage is `S3_VECTORS`. Its data
+  source `JXKIPOER3T` reads the projects bucket under the prefix `…/shared/ml-demo/bedrock/kb/`, with
+  `FIXED_SIZE` chunks of 300 tokens and 15 % overlap (the form's *Default*), `dataDeletionPolicy` `DELETE`,
+  encrypted under the project key.
+- **[Claude] The syncs.** The create started one by itself: `TGR4ZAJ1LU`, 01:33:30 to 01:33:55, `COMPLETE`,
+  20 documents scanned, 2 indexed, 18 failed. The *Sync* Claude clicked was `FH5GACQWX9`, 01:34:13 to
+  01:34:40, `FAILED`, 20 scanned, 0 indexed, 18 failed. Both jobs' failure reasons have one form:
+
+  ```
+  Encountered error: Invalid record for key '1606687c-6dd0-480b-9d30-7b498bd1bced': Metadata value is invalid: exceeds 2048 byte string limit (Service: S3Vectors, Status Code: 400, Request ID: 1ecbbd8d-60cc-8d4f-b8de-4d30bfe12103) (SDK Attempt Count: 1). Call to Amazon S3 Vectors did not succeed.
+  ```
+
+  The indexed documents are `break-glass.md` and `buildbox.md`. The 18 others read `FAILED` with a status
+  reason that names no metadata: *"The document was not indexed. No content could be extracted from it, or
+  processing ended before it completed. Check that the document contai…"*. The embeddings ran as the
+  project role, session `EmbeddingTask-FH5GACQWX9`, from `bedrock.amazonaws.com`: 50 `InvokeModel` calls on
+  the application inference profile between 01:34:34 and 01:34:37, all admitted (verification xxii).
+- **[Claude] The pages, read 2026-11-22.** Bedrock's knowledge-base setup page (its S3 Vectors tab) and its
+  chunking page ask that the index declare `AMAZON_BEDROCK_TEXT` and `AMAZON_BEDROCK_METADATA`
+  non-filterable. S3 Vectors' limits page caps a filterable string value at 2 KB. Its metadata-filtering
+  page says a key declared non-filterable cannot become filterable later. The IDE's index leaves
+  `AMAZON_BEDROCK_METADATA` filterable, and the form exposes no index setting (`SUP-410`).
