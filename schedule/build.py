@@ -36,7 +36,7 @@ CAL_BLOCKS = [
         "sandbox",
         "N.9 · dia 3",
         "hub + Sandbox: mwaa, mlflow, bedrock-base, bedrock-agent",
-        ["17", "6e", "6d"],
+        ["17", "6d"],
     ),
     (
         1,
@@ -145,9 +145,9 @@ TODAY = [
         15.75,
         16.75,
         "3",
-        "<b>Janela do 6e 6.4</b> (cerca de 1 h). Uma sessão do Claude Code num espaço, no modelo padrão, com uma tarefa longa em vários turnos, e nenhuma outra chamada ao Bedrock na conta. Claude anota o início e o fim em UTC e lê <code>./aws/bedrock-usage.py</code> depois do atraso de publicação; o volume vai para o teto da decisão 2 do Stage 12.",
-        ["6e", "12"],
-        "você · Claude",
+        "<b>Janela do 6e 6.4</b>: não executada hoje, por escolha sua; fica pendente para uma sessão futura.",
+        ["6e"],
+        "—",
     ),
     (
         16.75,
@@ -576,7 +576,7 @@ def page2():
     return f"""
 <section class="page">
   <div class="kicker">Hoje · domingo, 22/11 · sessão Sandbox</div>
-  <h2>N.9 dia 3: 6e 6.4, sessão C do Stage 17 com o pass 5, e o restante do 6d</h2>
+  <h2>N.9 dia 3: sessão C do Stage 17 com o pass 5, e o restante do 6d</h2>
   <p class="sub">15:00 → ~00:30 (18:00 → 03:30 UTC). Subida: <code>make hub-up</code>, depois
   <code>make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent</code>. Sem GitLab e sem egress dos alvos.
   O plano dá cerca de 6,2 h à sessão C (blocos 2 a 7); a divisão interna dela é estimativa deste relatório.</p>
@@ -594,7 +594,7 @@ def page2():
     <div class="box">
       <h3>Custo e ponto de parada</h3>
       <ul>
-        <li>Hub e endpoints: cerca de 0,28 USD/h antes dos espaços; cada espaço <code>ml.t3.medium</code> soma 0,050 USD/h. O dia fica entre 2 e 4 USD com o ciclo do Config; os tokens são cobrados à parte, e a janela do 6.4 é o maior deles.</li>
+        <li>Hub e endpoints: cerca de 0,28 USD/h antes dos espaços; cada espaço <code>ml.t3.medium</code> soma 0,050 USD/h. O dia fica entre 2 e 4 USD com o ciclo do Config; os tokens são cobrados à parte.</li>
         <li>Se precisar parar antes: depois do xxiv, por volta das 21:40. O restante do 6d não chama grupo; já passou do dia 2 para o dia 3 por escolha sua, e mudá-lo de novo também é escolha sua.</li>
       </ul>
     </div>
@@ -768,7 +768,7 @@ def page5():
         (
             "6e · Claude Code no Bedrock",
             "a janela do 6.4; o alerta de orçamento (decisão 6); o sucessor do Sonnet 4.5",
-            "hoje; 23/11; até 08/01",
+            "sessão futura; 23/11; até 08/01",
         ),
         (
             "6f · Catálogo sobre o lake",

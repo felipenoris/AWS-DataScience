@@ -326,8 +326,9 @@ page (7.3, 7.4). It shares 9.1's reading of several applications in one deployme
 item 7), and pass 4 on §N.10's day 1. Stage 17's part of each day is below, and each day ends with its
 closing reads and §N.9.6's lowering. **Day 2** (§N.9.4) is `make hub-up`, then `make up ENV=sandbox
 GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`: sitting B with 2.3 to 3.2, then pass 7. **Day 3** (§N.9.5)
-is `make hub-up`, then `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`: 6e 6.4's window
-alone, then 9.6, 10.4 and pass 5, then verification xxiv's `Retrieve`, which day 2 left. **Pass 4** rides §N.10's day 1 (§N.10.3 step 7), after day 2's 3.2: its endpoint and
+is `make hub-up`, then `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`: 9.6, 10.4 and
+pass 5, then verification xxiv's `Retrieve`, which day 2 left. 6e 6.4's window, planned first, was not run on
+2026-11-22, the user's choice, and is owed to a later sitting. **Pass 4** rides §N.10's day 1 (§N.10.3 step 7), after day 2's 3.2: its endpoint and
 transform serve the registered version and need no group, `sagemaker.runtime` being one of Sandbox's 18
 endpoints. `mlflow`
 serves 1.6 and 9.6's `track`, `mwaa` the CLI's deploys and the workflows, `bedrock-base` 10.4's model and
@@ -402,7 +403,7 @@ first, as 9.5's Sandbox applies were on 2026-11-19; the user may run the saved p
 | 2 | 9 | 3.1, the second job, the compare view and the better run's artifact logged; 3.2, the group `ml-demo-xgboost`, the version approved from the portal's page, the collection, the second version through the MLflow integration; 3.3 read with nothing up after `eighth-experimentation`'s next source run, about 17:38 UTC | [user]; [Claude] reads | 1.2 |
 | 2 | 10 | Pass 7, the one user of `bedrock-agent`: 7.4's prompt, guardrail, flow and evaluation job, its dataset copied by `evaluation_dataset.py`; 7.4a's knowledge base over the runbooks, synced once; 7.4b's chat agent, or a flow app over the knowledge base if the create is refused (verification xxxiv), and one `Retrieve` from the space; 7.4c's pane read; 7.5's `ML-8`, `./aws/catalog.py` and `bedrock-usage.py`; 7.6, nothing deleted (decision 5) | [user]; [Claude] reads | 2.0 |
 | 2 | 11 | `./aws/sandbox-ml.py` and `./aws/catalog.py`; the space stopped and the portal tabs closed; §N.9.6's lowering, `make down ENV=sandbox`, `make hub-down`, `make status` | [Claude]; [user]; [Claude⚡] | 0.4 |
-| 3 | 12 | The raise and 6e 6.4's window alone, §N.9.5 steps 1 and 2, its hour 6e's; then spaces on the house image in `app-ml-dev` and `app-genai-dev`, each stopped when its steps end; after the window, verification xxiv's `Retrieve` from `jup`, which day 2's pass 7 left (§N.9.5 step 4) | [user]; [Claude] reads | 0.3 |
+| 3 | 12 | The raise, §N.9.5 step 1 (6e 6.4's window, step 2, not run on 2026-11-22, the user's choice); then spaces on the house image in `app-ml-dev` and `app-genai-dev`, each stopped when its steps end; verification xxiv's `Retrieve` from `jup`, which day 2's pass 7 left (§N.9.5 step 4) | [user]; [Claude] reads | 0.3 |
 | 3 | 13 | 9.6: the group `app-ml-dev`, the tests, the lint, `bundle` and `deploy`; `app-ml-train`, `app-ml-register`, `app-ml-score` and `app-ml-register` again; the registry's path; `bundle` after training; verification lx | [user]; [Claude] reads | 2.0 |
 | 3 | 14 | 10.4: the tests, the lint and `deploy`, then its readings 1 to 3 | [user]; [Claude] reads | 1.0 |
 | 3 | 15 | 10.4's reading 4: `sandbox/bedrock/` with `application_guardrail_required=true`, then its runs | [Claude⚡]; [user] | 0.4 |
@@ -411,7 +412,7 @@ first, as 9.5's Sandbox applies were on 2026-11-19; the user may run the saved p
 | 3 | 18 | Pass 5 in `eighth-experimentation`'s space: 5.1's pipeline from the SDK, its definition exported to `examples/sandbox-ml/pipeline/definition.json` before `upsert`; 5.2's run, the third version in the registry, the downloaded definition compared; 5.3's visual editor; 5.4's `ML-6` | [user]; [Claude] reads | 1.5 |
 | 3 | 19 | `./aws/sandbox-ml.py` and `./aws/catalog.py`; the spaces stopped and the portal tabs closed; §N.9.6's lowering, `make down ENV=sandbox`, `make hub-down`, `make status` | [Claude]; [user]; [Claude⚡] | 0.4 |
 
-Stage 17's rows take about 6.7 hours of day 2 and 6.9 of day 3, beside 6e's hour. §N.9.7 prices each
+Stage 17's rows take about 6.7 hours of day 2 and 6.9 of day 3. §N.9.7 prices each
 day's hub, endpoints, spaces and Config cycle; the jobs', the tokens' and the embeddings' cents are the
 Cost table's. No row needs a later day's, and day 3's 9.6 and pass 5 need the training pair of order 6, so
 day 2's pull request carries its default (Lesson 79); pass 5's registration step needs 3.2's group. Pass 7 depends on none of 1.6,

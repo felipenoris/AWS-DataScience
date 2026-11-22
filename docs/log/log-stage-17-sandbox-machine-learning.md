@@ -5286,3 +5286,108 @@ and the apply is Claude's on the user's word. Times UTC.*
   - It was applied 19:55:50 to 19:56:01. The policy's default version is `v2`, updated at 19:56:00, and
     holds the statement as planned.
   - A re-plan with the same variable: *"No changes."*
+
+## 2026-11-22 — Day 3's sitting C: 9.6's register after the correction, and the score from the prefix
+
+*Claude writes this entry. The space's readings are the user's, pasted, from `jup-ml-dev` in `app-ml-dev`.
+Claude's reads are as the infrastructure user with `InfrastructureAccess` through `awsds-infra-sandbox-1`,
+reads alone. Times UTC.*
+
+- **[user] The correction in the space.** The patch applied to the space's folder: `registry.py` and
+  `test_tasks.py` read `8d2dedea…` and `a139fabe…`. *"100 passed in 2.27s"*, ruff clean, *"20 files already
+  formatted"*, and the task archives rebuilt at 19:57:40.
+- **[user] `bundle` after the training run**, 19:57:48 (verification lxii's second reading).
+  - `ListDomains` was refused three times, as before the training: *"Error getting DataZone project info
+    for app-ml-dev: Failed to resolve domain"*.
+  - It printed *"Warning: Connection 'default.s3_shared' not found for storage item 'model'"* and wrote
+    `./artifacts/app-ml.zip`, 15,592,095 bytes, 10 files: code 3, src 2, samples 2, workflows 3. The zip
+    holds no `model/`, though `app-ml/models/latest/` held the candidate since 19:36:05. The exit was 0.
+  - So the project role's `bundle` skips the model item before and after a model exists (`SUP-374`).
+- **[user] `deploy`**, about 19:58: 12 files, the three workflows updated (`UpdateWorkflow` at 19:58:57,
+  19:59:12 and 19:59:24) with `sg-028f033a218b701b2` and the project key. Each `workflow.create` action
+  uploaded the three task archives to `operatorFiles/`, so the deploy wrote nine archives.
+- **[user] `run --workflow app-ml-register`**: the run `t5NzIjmLYAtSNGn`, `SUCCESS` from 19:59:35 to
+  20:00:19. Its task `register` ran 8 s and logged *"proposed
+  arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:model-package/app-ml-dev/1: sha256 852032c5…, trained by
+  app-ml-train-20261122T193009, PendingManualApproval"*.
+- **[Claude] The version `app-ml-dev/1`**, created at 20:00:18.658.
+  - `PendingManualApproval`, `ModelPackageStatus` `Completed`. `CreatedBy` names no user profile.
+  - Its container: the serving image by the digest `0b5d9341…`, `ImageDigest` filled by the service,
+    `ModelDataUrl` `app-ml/models/sha256/852032c5…/model.tar.gz`, and `IsCheckpoint` `false`, which the
+    request did not send.
+  - `ModelDataETag` `1792fa2976e38b9a5bec44860076416d`, set by the service: the ETag `head-object` reads on
+    the copy the task rewrote at 20:00:19. The copy is SSE-KMS under the project key with the bucket key on.
+  - The copy written at 19:39 by the refused run had the ETag `b5a42cff…`, and `latest/` holds the same
+    bytes under `fad76c8d…`. So an SSE-KMS object's ETag changes with each PUT of identical bytes, and
+    `aws s3 cp` of the copy hashes to `852032c5…` (`SUP-456`).
+  - `text/csv` in and out, `ml.m5.large` for transform, the model quality statistics pointing at the copy's
+    `evaluation.json` (378 bytes), and the metadata `sha256`, `source_prefix` `app-ml/models/latest/`,
+    `training_job`, `training_source` `46bd65a0…` and `validation_auc` 0.8289499878883362.
+- **[Claude] The trail of `CreateModelPackage`**, as the project role in the session `AmazonMWAAServerless`,
+  through the SageMaker API endpoint `vpce-0dc0f341029459864`: refused at 19:39:35 from 10.20.5.16, admitted
+  at 20:00:18 from 10.20.120.228 with a `ListModelPackages` in the same second. At 20:00:19
+  `sagemaker.amazonaws.com` itself recorded `CreateArtifact` three times, `CreateAction` twice and
+  `AddAssociation` five times: the version's lineage, which the task does not create.
+- **[user] `app-ml-register` a second time**: the run `7tWoxPRH5B7MMHJ`, `SUCCESS` from 20:09:11 to
+  20:09:55, task 7 s, *"app-ml-dev holds arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:model-package/app-ml-dev/1 for
+  sha256 852032c5…: nothing proposed"*. The group holds version 1 alone.
+- **[user] `app-ml-score` with `MODEL_SOURCE` `prefix`**: the run `acnc3LIFhHsNGoe`, `SUCCESS` from 20:08:54
+  to 20:28:23: `prepare` 613 s (`app-ml-prepare-score-20261122T200942`), `resolve` 7 s, `score` 344 s,
+  `check` 10 s, `cleanup` 10 s.
+  - `resolve` at 20:20:24: *"created app-ml-score-5rzplmk81vma34 from
+    s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/5rzplmk81vma34/shared/app-ml/models/latest/model.tar.gz:
+    sha256 852032c5…"*, returning the source `prefix` and no version.
+  - **[Claude] `CreateModel` at 20:20:24**, as the project role in the session `AmazonMWAAServerless`,
+    through `vpce-0dc0f341029459864` from 10.20.53.111: the image by the digest `0b5d9341…`, the model data
+    `latest/model.tar.gz`, the project role as execution role, `vpcConfig` with `sg-028f033a218b701b2` and
+    the two project subnets, `enableNetworkIsolation` `true`, and the three project tags.
+  - The transform job `app-ml-score-20261122T202107`, created at 20:21:10 from 10.20.96.156, ran 20:24:45
+    to 20:26:14 on one `ml.m5.large`: input `app-ml/work/score/batch/`, output
+    `app-ml/predictions/20261122/batch.csv.out` (3,902 bytes), output and volume under the project key,
+    tagged with the project, the domain and the scope `dev`.
+  - `check`: *"app-ml-score-20261122T202107: 200 prediction(s) for 200 line(s), AUC 0.847556, MIN_AUC
+    0.7"*.
+  - `cleanup`: `DeleteModel` at 20:28:22 from 10.20.106.28, *"Model app-ml-score-5rzplmk81vma34 deleted
+    successfully."* `DescribeModel` then read *"Could not find model"*.
+- **[Claude] The run in the MLflow App.** `track` of the run `hO8zhGFdi8vlso5` logged *"tracked
+  app-ml-train-20261122T193009 as run 3533b6355fd9410f92b0d3f3c3ad3d67 of the experiment app-ml"* with
+  `validation_auc` 0.8289499878883362. The app `app-ml-dev-mlflow` keeps its artifacts under the project's
+  `dev/data/ml/mlflow` and reads `AutoModelRegistrationDisabled`.
+
+## 2026-11-22 — Day 3's sitting C: 10.4's reading 4, the runs under the deny
+
+*Claude writes this entry. The space's readings are the user's, pasted, from `jup-app-genai-dev`, and the
+operator's runs are the user's from the portal's editor. Claude's reads are as the infrastructure user with
+`InfrastructureAccess` through `awsds-infra-sandbox-1`, reads alone. Times UTC.*
+
+- **[user] The operator's workflow, run from the portal before the space's commands**: the run
+  `PkCuanMhWnJcaL2`, `FAILED` from 20:08:31 to 20:09:19. Its task `invoke` logged at 20:09:14:
+  *"AccessDeniedException … User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_b8fz4ovppjijv4_c9sdti5d2gaqs0/AmazonMWAAServerless
+  is not authorized to perform: bedrock:InvokeModel on resource:
+  arn:aws:bedrock:us-west-2:<Sandbox Account 1>:application-inference-profile/ciceumyodl7y with an explicit deny in an
+  identity-based policy: arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-bedrock-application"*.
+- **[user] `app-genai-triage`**: the run `RPNFldOIkDd4tVB`, `SUCCESS` from 20:10:23 to 20:13:25 (`guardrail`
+  10 s, `triage` 46 s, `check` 6 s).
+  - Its log: *"unchanged, version 2, definition sha256 ed309c78…; GetGuardrail on the version returns the
+    hash as its description: True"*. The deployed archive still held the changed definition: reading 2's
+    discard had restored the working copy alone, with no deploy.
+  - 40 sent under `mn3wavwk9jx7` version 2, 2 blocked, 12,001 and 957 tokens, accuracy 0.9737, no failure.
+- **[user] `app-genai-probe`** with the working copy's `EXPECT_UNGUARDED` set to `refused` on the `dev`
+  stage's line, read by `grep` beside the two targets' `refused`, and no deploy: the run `OrTNEd36RnUEkxp`,
+  `SUCCESS` from 20:10:35 to 20:11:16. Its log: *"the request without a guardrail: refused, refused
+  expected"*. The report names `AccessDeniedException` with the explicit deny's wording, on the profile.
+  `run` passes the stage's variables at run time, so the deployed workflow read the edited value.
+- **[user] The operator's workflow again, after the space's commands**: the run `uDsenQWO6tkBr0a`,
+  `FAILED` from 20:10:56 to 20:11:47, its task `invoke` 14 s.
+- **[Claude] The trail since 20:05**, 46 Bedrock events, read once it had caught up to the triage's end.
+  - The 40 `Converse` of the triage, admitted from 20:12:04, each naming `guardrailVersion` `2`, through
+    `vpce-0d325931b42cbb2a4` from 10.20.10.202. The `guardrail` task's `ListGuardrails`, `GetGuardrail` and
+    `ListTagsForResource` at 20:11:11 and 20:11:12 from 10.20.26.175.
+  - Three refusals, each `AccessDenied` with the explicit deny's wording, as the project role in the
+    session `AmazonMWAAServerless`: `InvokeModel` at 20:09:14 from 10.20.14.149 (the first operator run),
+    `Converse` at 20:11:15 from 10.20.89.108 (the probe) and `InvokeModel` at 20:11:41 from 10.20.83.169
+    (the second operator run).
+- **Verification xxxvii reads yes**: a guarded `Converse` through the application profile carries
+  `bedrock:GuardrailIdentifier` on every pass the deny reads, so the deny admits the triage's 40 calls.
+- **Verification xl's second half reads yes**: the deny refuses `BedrockInvokeModelOperator`'s `InvokeModel`,
+  which names no guardrail.
