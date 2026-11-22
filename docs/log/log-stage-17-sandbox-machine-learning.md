@@ -4111,3 +4111,57 @@ words in this session's chat, *"Autorizo o apply do par"*. Times UTC.
   and `TagATrainingJobWithTheCallersProject` among them. With `-var training_pair_enabled=true`, *"No
   changes."* at 23:30:36. The default is `true` in this branch, planned at 23:31:40, *"No changes."*; a plan
   from `main` removes the pair until the branch merges (Lesson 79).
+
+## 2026-11-21 — Day 2's sitting B: 2.2 (c) and 2.3
+
+Written by Claude in the session the orchestrator started. The user ran `train.py` in the `jup` space and
+pasted its output; the lines quoted are verbatim except the account id, written `<Sandbox Account 1>`, and
+the MLflow run links, left out. Claude's readings ran as `awsds-infra-sandbox-1` (Sandbox Account 1). Times
+UTC.
+
+- **[user] 2.2 (c)**, `train.py tagged --wait` after the training pair's apply:
+
+  ```
+  ml-demo-xgb-tagged-20261121-233934: created
+  ml-demo-xgb-tagged-20261121-233934: Completed, 89 s billed
+  validation:auc: 0.8209
+  train:auc: 0.9513
+  model: s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/models/ml-demo-xgb-tagged-20261121-233934/output/model.tar.gz
+  ```
+- **[Claude] 2.2 (c)'s job**: created 23:39:40, trained 23:40:22 to 23:41:51, 89 s billed, against the
+  step's five minutes. Network isolation and inter-container encryption on, `ml.m5.xlarge` × 1, a 30 GB
+  volume and the output under the project key, the project's two subnets and `sg-0fee1c059b82e3562`,
+  `MaxRuntimeInSeconds` 600, the image `sagemaker-xgboost:3.0-5` from the Region's algorithm registry, the
+  recipe's hyperparameters (`eta=0.2 eval_metric=auc max_depth=5 num_round=200 objective=binary:logistic
+  subsample=0.8`). Its tags are 2.2 (a)'s seven keys: the request's own `AmazonDataZoneProject` and the
+  seven others merged into one set. `model.tar.gz`, 125,534 bytes, `aws:kms` under the project key with the
+  bucket key. Validation AUC 0.8209, a reading.
+- **[user] 2.3**, the five negatives and the admitted request again:
+
+  ```
+  ml-demo-xgb-no-vpc-20261121-235342: refused
+  AccessDeniedException: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform: sagemaker:CreateTrainingJob on resource: arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:training-job/ml-demo-xgb-no-vpc-20261121-235342 with an explicit deny in a permissions boundary: arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-project-boundary
+  ml-demo-xgb-no-isolation-20261121-235351: refused
+  AccessDeniedException: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform: sagemaker:CreateTrainingJob on resource: arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:training-job/ml-demo-xgb-no-isolation-20261121-235351 with an explicit deny in a permissions boundary: arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-project-boundary
+  ml-demo-xgb-no-ice-20261121-235359: refused
+  AccessDeniedException: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform: sagemaker:CreateTrainingJob on resource: arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:training-job/ml-demo-xgb-no-ice-20261121-235359 with an explicit deny in a permissions boundary: arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-project-boundary
+  ml-demo-xgb-no-volume-key-20261121-235410: refused
+  AccessDeniedException: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform: sagemaker:CreateTrainingJob on resource: arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:training-job/ml-demo-xgb-no-volume-key-20261121-235410 with an explicit deny in a permissions boundary: arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-project-boundary
+  ml-demo-xgb-ceiling-20261121-235418: refused
+  AccessDeniedException: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform: sagemaker:CreateTrainingJob on resource: arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:training-job/ml-demo-xgb-ceiling-20261121-235418 with an explicit deny in a permissions boundary: arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-project-boundary
+  ml-demo-xgb-tagged-20261121-235427: created
+  ml-demo-xgb-tagged-20261121-235427: Completed, 84 s billed
+  validation:auc: 0.8209
+  train:auc: 0.9513
+  model: s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/models/ml-demo-xgb-tagged-20261121-235427/output/model.tar.gz
+  ```
+- **[Claude] 2.3's readings.** Each refusal names the boundary, `awsds-sandbox-project-boundary`, never a
+  statement: the step's *"each naming its statement"* holds as each attributed by the one field it changes.
+  The boundary's version `v3` maps them: `DenySageMakerJobsOffVpc` (`Null` on `sagemaker:VpcSubnets`),
+  `DenySageMakerJobsWithoutNetworkIsolation` and `DenySageMakerJobsWithoutInterContainerEncryption`
+  (`BoolIfExists` false), `DenySageMakerJobsWithoutVolumeEncryption` (`Null` on `sagemaker:VolumeKmsKey`) and
+  `DenySageMakerInstanceCeiling` (`ForAnyValue:StringNotEquals` on `sagemaker:InstanceTypes`). None of the
+  five names exists as a job (`DescribeTrainingJob` exit 254 for each), so none billed. The sixth, created
+  23:54:28 and trained 23:55:13 to 23:56:37, 84 s billed, read `Completed` with isolation and
+  inter-container encryption on: the five refusals are read against a pass of the same sitting. The
+  negatives ran through the proxy's replacement (23:51:43 to 23:54:00), which none of them crosses.
