@@ -2591,3 +2591,7 @@ Sandbox Account 1). Reads and plans only, no apply and no AWS write. Times are U
   taken), 6.4, and the warehouse sitting's block (step 7 the standing apply, step 9 5.1's after half from
   `app-dbt-dev`, step 11 nothing); `waiting-on-the-user.md`, `promotion.md` §N.10 and §N.12, the runbook,
   `docs/SMUS.md`, `docs/NETWORK.md`, `docs/AWS_STATE.md` and the slice's README.
+- **[Claude] The pull request**: [#363](https://github.com/felipenoris/AWS-DataScience/pull/363), the branch
+  synced with `origin/main` at `1980abb2` by merge before it opened; `terraform fmt -check` clean, `make
+  check` *"check: OK"*, every pre-commit hook passed or skipped, `./scripts/check-aws-supplement.py` OK on
+  the synced tree.

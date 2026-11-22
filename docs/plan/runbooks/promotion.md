@@ -2477,7 +2477,7 @@ usage limit, so each day starts at zero of its 10 RPU-hours.
 - **`sandbox/ml/`'s endpoint statements** (Stage 17 decision 7) ran from `main` on 2026-11-20 with nothing
   up (N.6 item 3): pass 4 creates an endpoint configuration and an endpoint.
 - **[user] With nothing up:**
-  - 6h decision 8 (a)'s window, taken 2026-11-22 as standing: pull request #PRNUM merged before day 1,
+  - 6h decision 8 (a)'s window, taken 2026-11-22 as standing: pull request #363 merged before day 1,
     which also gives 5.2b's network door (N.12.4).
   - Stage 21 1.3's wizard half, the enable wizard read and cancelled.
   - Stage 21 4.5's write path: `sandbox/data/`'s key policy naming the data transfer role (D31), or
@@ -2826,7 +2826,7 @@ The waiting list holds each as a row. In the calendar's order:
   network's timeout, not the schema's verbs (Lesson 42). The wide tag admits every project at the IAM layer
   and lets `projects` take a second entry: `test-experimentation` in `projects` within the wide tag's
   applies of 6h's steps 5 and 9 gives it the door, with its access-role policies, at no extra apply.
-  The user took decision 8 (a)'s window as standing on 2026-11-22 (pull request #PRNUM):
+  The user took decision 8 (a)'s window as standing on 2026-11-22 (pull request #363):
   `test-experimentation` joins `projects` at 6h's step 7, which gives it the rule, and the tag stays.
 
 ## Q. After the quotas: Stage 10's pass 3
