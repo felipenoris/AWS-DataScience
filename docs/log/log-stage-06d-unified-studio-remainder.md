@@ -4772,3 +4772,41 @@ remainder goes on, day 2 or day 3 of `promotion.md` §N.9 (§N.9.3); no AWS call
   the remainder calls none.
 - **[Claude] Step 12's text** in the stage file no longer lists 4.7's schedule and the contributor's `code`
   space, both deleted earlier the same day (the two entries above).
+
+## 2026-11-22 — Day 2: the remainder not run, and 2.7 step 8 read in `app-genai-dev`
+
+*Claude's hand, recording the user's answer in chat and the readings the coordinating session (*"Ambiente no
+ar: coordenação e applies do hub (Stage 12 2.2 [D])"*) relayed to this session at 05:17 and 05:19; Claude's
+reads through `awsds-infra-sandbox-1` (Sandbox Account 1, the infrastructure user with
+`InfrastructureAccess`). Times are UTC.*
+
+- **[user] The remainder**: *"Não, fechar a sessão"* at 04:59, answering *"Fazemos agora o restante da
+  6d?"*. Steps 9 to 12 of the combined sitting (7.5's monitored half, 7.7, 6.1 (viii)'s Code Editor half) did
+  not run on day 2 and wait for a later Sandbox sitting with the hub and `sandbox/egress/` up.
+- **[Claude] The owner's remote-access space**: `code`, Code Editor on `ml.t3.large` with remote access
+  `ENABLED`, made by the user at 20:08 on 2026-11-21 in `eighth-experimentation`'s blueprint domain
+  `d-m8m0uefej9kb` for 7.5 and 7.7 (Stage 17's log), read `InService` at 05:36 by `list-spaces`, every app of
+  the domain `Deleted` by `list-apps`.
+- **[The coordinating session, relayed at 05:17] The version a new space starts on**: in a blueprint domain,
+  the version the domain pins; `studio.py` at 05:02 (`US-13`) read version 11 in all six Sandbox blueprint
+  domains, `d-m8m0uefej9kb` among them. In the three `Tooling` domains (`EXC-26`), whose entry carries no
+  number, the newest `CREATED` version, 12 (`default-v0.10.1`), registered by the dev-env release's
+  `register` job (pipeline #139). A blueprint domain moves to 12 only on the owner's *Update project* after
+  the pin's apply, which the coordinating session ran on `data-governance/governance` at 05:07
+  (`experimentation`'s `ImageVersionNumber` 11 to 12, PR #366).
+- **[The coordinating session, relayed at 05:19] 2.7 step 8 in `app-genai-dev`**: the owner pressed *Update
+  project* about 05:14, and the locked pin moved. `UpdateProject` at 05:14:42 by
+  `awsds-data-studio-domain-execution` in the owner's session, `projectProfileVersion` `latest`, with the
+  editable parameters of both environments (10 and 5). Through the provisioning role: `Tooling`'s
+  `UpdateStack` at 05:15:08 with 57 parameters, `UPDATE_COMPLETE` at 05:15:19 with no resource event, as on
+  2026-11-18; `SageMakerAIDomain`'s `UpdateStack` at 05:16:08 with 29 parameters, the `SageMakerDomain`
+  resource `UPDATE_IN_PROGRESS` at 05:16:13 and `UPDATE_COMPLETE` at 05:16:20, the stack at 05:16:22; and
+  `UpdateDomain` on `d-q1bianbhckrd` at 05:16:14, rewriting the whole `DefaultUserSettings` (`codeEditor`,
+  `jupyterLab`, `customFileSystemConfigs`, `executionRole`, `securityGroups`, `spaceStorageSettings`,
+  `studioWebPortal`). After: the domain on JupyterLab and Code Editor version 12, in the custom images and
+  the default, and the environment's stored value ending in `/12`. `Tooling`'s `enableSpaces` (`SUP-380`)
+  did not move; its value came from the blueprint's default at creation, where the pin was already the
+  profile's override when `app-genai-dev`'s environments were created on 2026-11-19.
+- **[Claude] What follows**: `SUP-380` carries the reading above. The coordinating session reads 2.4's after
+  half (`studio.py`), `US-13` and the other projects' presses, `eighth-experimentation` and
+  `test-experimentation` among them, after this sitting's lowering.

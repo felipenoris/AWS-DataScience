@@ -2640,9 +2640,9 @@ entry is still true is the reading.
   `Tooling` domain mounts. A space's `shared` mount is therefore inside the project role's object grant;
   only the tag names the root. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
 
-- `SUP-380` **An *Update project* does not carry a profile's changed override of a non-editable parameter
-  into a living environment: the environment keeps the value resolved at its creation** (measured
-  2026-11-18 in Sandbox, Stage 6d 2.7 step 4). `test-experimentation`'s `Tooling` environment
+- `SUP-380` **An *Update project* did not carry a profile's new override of `enableSpaces` into an environment
+  created before the override, and carried a changed override of the image pin into one created with it**
+  (measured 2026-11-18 in Sandbox, Stage 6d 2.7 step 4). `test-experimentation`'s `Tooling` environment
   `bi356s1sacz0cw`, created 2026-10-15 when `experimentation` overrode no `enableSpaces`, stores it in its
   `userParameters` as `defaultValue` `"true"`, `isEditable` false. At 18:45:34 the profile locked
   `enableSpaces` `"false"`, and `get-project-profile` read it in both `parameterOverrides` and
@@ -2655,6 +2655,17 @@ entry is still true is the reading.
   keeps its copy. Only `enableSpaces` was measured: whether a locked override in another element, the
   `SageMakerAIDomain` image pin among them, stops at the same copy is unmeasured. Where:
   `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
+  **Read again 2026-11-22** (Stage 6d 2.7 step 8, read by the coordinating session): the image pin moved.
+  `app-genai-dev`'s environments were created 2026-11-19 with `experimentation` already overriding the pin at
+  version 11, and the profile's pin went to 12 at 05:07Z. The owner's *Update project* sent `UpdateProject` at
+  05:14:42Z with `projectProfileVersion` `latest` and the editable parameters of both environments, 10 and 5.
+  The provisioning role's `UpdateStack` on `Tooling` at 05:15:08Z, 57 parameters, read `UPDATE_COMPLETE` at
+  05:15:19Z with no resource event. On `SageMakerAIDomain` at 05:16:08Z, 29 parameters, it updated the
+  `SageMakerDomain` resource from 05:16:13Z to 05:16:20Z, and `UpdateDomain` on `d-q1bianbhckrd` at 05:16:14Z
+  rewrote the whole `DefaultUserSettings`. The domain then read JupyterLab and Code Editor at version 12, and
+  the environment's stored value ended in `/12`. The two readings differ in the parameter and in whether the
+  override existed when the environment was created, so they do not say which of the two decides. Where:
+  `log-stage-06d-unified-studio-remainder.md`, 2026-11-22.
 
 - `SUP-381` **The `SageMakerAIDomain` blueprint's deployer calls `sagemaker:ListTags` on the domain it has
   just created, which the provisioning role's managed policy does not grant, and the environment goes

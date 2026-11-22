@@ -4701,3 +4701,28 @@ UTC.
 - **[Claude] What waits on the user**: nothing new. The flow keeps the project's service role as its
   execution role, `AmazonBedrockFlowServiceRole-5er1gtql9ewbgw` stands as before (`SUP-447`), and xxiv's
   `Retrieve` from a space stays the user's.
+
+## 2026-11-22 — Day 2's sitting B: the closing reads and the lowering
+
+*Claude's hand through `awsds-infra-sandbox-1` (Sandbox Account 1, the infrastructure user with
+`InfrastructureAccess`), `catalog.py` also through `awsds-infra-data`, `awsds-infra-staging` and
+`awsds-infra-prod`; the lowering by the user's hand in a terminal of their own. The user's *"Não, fechar a
+sessão"* at 04:59 closed the sitting without 6d's remainder (6d's log). Times are UTC.*
+
+- **[Claude] `./aws/sandbox-ml.py`**, generated 05:03:58: exit 2, one check failed, `ML-8` on
+  `AmazonBedrockFlowServiceRole-5er1gtql9ewbgw`, *"no permissions boundary - an interactive principal
+  outside D13 (policies: SageMakerStudioBedrockFlowServiceRolePolicy)"* (`SUP-447`), as at 03:25:56; 46
+  checks pass and every call returned. The coordinating session reads `ML-8` against this report after an
+  *Update project* on `eighth-experimentation`.
+- **[Claude] `./aws/catalog.py`**, generated 05:03:39: every check passed, every call returned.
+- **[Claude] A space no entry named**: CloudTrail records `CreateSpace` `new-jup-xlarge` at 00:12:15 and
+  `DeleteSpace` at 00:39:54 in `eighth-experimentation`'s blueprint domain, both from the browser as the
+  project role in the user's session; its JupyterLab app read `Deleted` at 05:36.
+- **[user] The lowering**: `make down ENV=sandbox`, after the reads.
+- **[Claude] `make status`** at 05:24:24: `sandbox/egress`, `sandbox/warehouse-compute`, `sandbox/probes` and
+  `staging/egress` down, no Studio app billing in the five environments; Production's `vpn`, `proxy`,
+  `egress`, `workloads-egress`, `tooling` and `runners` up for the coordinating session, *"estimated burn: USD
+  0.5475/h"*.
+- **[Claude] `make check`** at 05:27:42: *"check: OK"*.
+- **[Claude] What stands in Sandbox**: `jup` and `code` `InService` in the blueprint domain with every app
+  `Deleted` (05:36); pass 7's objects, which 7.6 keeps; the flow's own role, waiting on the user (`SUP-447`).
