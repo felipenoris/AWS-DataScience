@@ -574,7 +574,8 @@ shrug.
   database user has no password; the admin's is Redshift-managed in Secrets Manager. AWS's page says its
   rotation fails if it lands while the `[E]` workgroup is down; the first, at 2026-10-20 01:22:07Z with no
   workgroup since 2026-10-16, succeeded on the Secrets Manager side, and whether the database took the new
-  password is read with the compute up (`EXC-13`; log, 2026-10-20). Declaring the rotation off is possible
+  password is read with the compute up (`EXC-13`; log, 2026-10-20): it did, read on 2026-10-25 in Sandbox and,
+  for Production's first rotation, on 2026-11-22 in R1 (Stage 19's log). Declaring the rotation off is possible
   since provider 6.62.0, `aws_secretsmanager_secret_rotation.rotation_enabled = false`, unread on a
   Redshift-owned secret ([`upstream-releases.md`](../upstream-releases.md)); `EXC-13` records it.
 - **`useractivitylog` carries SQL text**, which means it carries data values in literals. It is a DLP feed

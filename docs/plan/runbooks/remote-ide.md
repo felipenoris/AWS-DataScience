@@ -79,7 +79,7 @@ Matching the version AWS pins in the image (`1.119.1`, read from
 `/opt/conda/share/sagemaker-code-editor/product.json` on 2026-09-11) is what keeps one extension set
 usable in both surfaces. That reading predates the house image's move to SageMaker Distribution
 `4.5.2-cpu` (`default-v0.5.0`, 2026-10-10), and this repository records none since, so read
-`product.json` in a space on version 11 before pinning a client. A pinned client receives no fixes — stable was `1.137.0` on the day this was
+`product.json` in a space on version 12, the pin since 2026-11-22, before pinning a client. A pinned client receives no fixes — stable was `1.137.0` on the day this was
 written — so keep a current install for everything else and use the pinned one for this session. **The
 pin is a choice and not a prerequisite** — §E carries what it buys, what it costs, and the per-extension
 route that needs no pin at all. **What holds the pin differs by platform**: the Windows archive does not
