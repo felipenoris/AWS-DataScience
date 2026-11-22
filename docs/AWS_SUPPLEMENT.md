@@ -4040,6 +4040,15 @@ entry is still true is the reading.
   `VALIDATION_EXCEPTION`, IAM's wording in `errorDetail`, with no run. The access role's policy, written for
   the Data page and the query editor, holds no `redshift-data:` action. Where:
   `log-stage-19-smus-native-data-product.md`, 2026-11-22.
+  Read again 2026-11-22 at 22:59Z (Stage 21's 2.2), with `ListDatabases`, `ListSchemas`, `ListTables` and
+  `DescribeTable` on the access role: the creation passed, the access role calling `GetCredentials` twice,
+  `ListDatabases` and `ListSchemas` (`schemaPattern` `lab`), and the source stood `READY`. Its first run then
+  called `redshift-data:ExecuteStatement` in a second session of the same name, three attempts in 3 s,
+  `requestParameters` `{}`, each refused, and no `ListTables` or `DescribeTable` followed. The run failed
+  with `VALIDATION_EXCEPTION` and IAM's wording, nothing imported. A run's first call is SQL through the Data
+  API, run as the access role's database user; whether it calls the metadata actions after that is
+  unmeasured. Where:
+  `log-stage-21-redshift-s3-data-products.md`, 2026-11-22.
 
 ## SageMaker AI spaces and images
 
