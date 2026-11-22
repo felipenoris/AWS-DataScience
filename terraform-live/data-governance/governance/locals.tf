@@ -175,15 +175,18 @@ locals {
 
   # The Tooling parameters Stage 6 step 1.5 locks, passed by every profile. The non-editable flag
   # is the difference between a default and a control (Lesson 5): the parameters exist so nobody
-  # can flip a project to PublicInternetOnly, raise its idle ceiling, or give itself a 16 TiB volume.
+  # can flip a project to PublicInternetOnly or give itself a 16 TiB volume, and so every project
+  # offers the same idle range.
   #
   # sagemakerDomainNetworkType = VpcOnly is already the blueprint default (read 2026-08-16), and
   # is written here anyway: a default nobody may change is a different object from a default.
   #
   # With `enableSpaces` false, the last row, Tooling creates no SageMaker AI domain, so the idle
-  # and EBS rows reach no domain: a Sandbox project's domain is the SageMakerAIDomain blueprint's,
-  # whose rows (sagemaker_ai_domain_parameters) carry the same ceilings. They stay because removing
-  # them changes every profile's Tooling element for no effect, and a Tooling with spaces on needs them.
+  # and EBS rows reach no domain in a project created since 2026-11-18: its domain is the
+  # SageMakerAIDomain blueprint's, whose rows (sagemaker_ai_domain_parameters) carry the same range
+  # and ceiling. The projects of EXC-26 keep their Tooling domain, which Create space offers beside
+  # the blueprint's, so the rows stay. Tooling's minIdleTimeoutInMinutes is not overridden: the
+  # template's default is 60, the floor.
   tooling_parameters = [
     { name = "sagemakerDomainNetworkType", value = "VpcOnly", is_editable = false },
     # "ENABLED", not "true": the template's AllowedValues are ENABLED/DISABLED, an enum rather
@@ -231,7 +234,7 @@ locals {
 
   # The SageMakerAIDomain blueprint's parameters (6d decision due 15 (b), 2026-10-30). They are the
   # template's own and per app type, so Tooling's rows above do not reach this domain: the same
-  # ceilings are written again, locked (Lesson 5), from the same variables. The image lists are JSON,
+  # idle range and volume ceiling are written again, locked (Lesson 5), from the same variables. The image lists are JSON,
   # `[{"ImageName","AppImageConfigName","ImageVersionNumber"}]`, the form the portal and the service
   # take; DataZone translates it to the template's `name;config;version` before the stack, and a
   # triple written here fails the environment's validation with an empty message (measured
@@ -270,8 +273,8 @@ locals {
     { name = "lifecycleManagementCodeEditor", value = "ENABLED", is_editable = false },
     { name = "idleTimeoutInMinutesJupyterLab", value = tostring(var.idle_timeout_minutes), is_editable = true },
     { name = "idleTimeoutInMinutesCodeEditor", value = tostring(var.idle_timeout_minutes), is_editable = true },
-    { name = "minIdleTimeoutInMinutesJupyterLab", value = tostring(var.idle_timeout_minutes), is_editable = false },
-    { name = "minIdleTimeoutInMinutesCodeEditor", value = tostring(var.idle_timeout_minutes), is_editable = false },
+    { name = "minIdleTimeoutInMinutesJupyterLab", value = tostring(var.min_idle_timeout_minutes), is_editable = false },
+    { name = "minIdleTimeoutInMinutesCodeEditor", value = tostring(var.min_idle_timeout_minutes), is_editable = false },
     { name = "maxIdleTimeoutInMinutesJupyterLab", value = tostring(var.max_idle_timeout_minutes), is_editable = false },
     { name = "maxIdleTimeoutInMinutesCodeEditor", value = tostring(var.max_idle_timeout_minutes), is_editable = false },
     { name = "maxEbsVolumeSize", value = tostring(var.max_ebs_volume_size_gb), is_editable = false },

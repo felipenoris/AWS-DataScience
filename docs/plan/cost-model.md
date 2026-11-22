@@ -113,6 +113,9 @@ The levers, in the order the bill ranks them:
   forgotten day; `make down` is the guard, and `make status` the meter.
 - **The number of `[E]` cycles.** Each costs 0.36-0.87 of Config whatever its length.
 - **Spaces nobody deletes.** 0.112 per GB-month with every app stopped.
+- **Apps left running.** A space's app bills its instance until its idle timeout, which its member picks
+  from 60 minutes to 365 days: 1.20 USD a day on `ml.t3.medium`, 2.40 on `ml.t3.large`. `make down
+  ENV=sandbox`'s app sweep deletes every app.
 - **The key count**, which grows by a version per key and year from 2027-08.
 
 ### What a second business unit adds to the floor (D35)
@@ -182,8 +185,8 @@ separates the three is a long query over a user table, run as a non-superuser an
 runaway*). The usage limit is the second guard, and it did not stop the statement either: it kept
 running through the two minutes the workgroup was breached on 2026-09-20, while the breach refused
 every query that needed the compute. And `make status` read `0.0000 USD/h` throughout, because the
-slice's authored `usd_per_hour` was 0.0; it is **1.44** since 2026-09-20, a ceiling rather than an
-average.
+slice's authored `usd_per_hour` was 0.0. The workgroup's **1.44 per query-hour** is `make status`'s
+active burn, printed for as long as the workgroup exists, whether or not a query runs.
 
 **The warehouse's storage has its own ceiling, and it is not small.** A sandbox schema carries a **1 TB**
 quota (`objectives.md`, 2026-09-20), which at 0.024 USD/GB-month is **24.58 USD a month if filled — 49% of

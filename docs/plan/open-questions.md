@@ -306,7 +306,9 @@ load-bearing against principle 4.
     restricted instance-type list, not a policy — **Stage 6**, priced into `docs/plan/cost-model.md`
     against the USD 50 ceiling. **The list stopped reaching spaces on 2026-09-07**
     (`sagemaker-denies-v0.2.0`, the user's decision for the remote-IDE floor): idle shutdown is what
-    remains on that path, and jobs keep the list. Also confirms rather than changes D7/D28: **SMUS
+    remains on that path, and jobs keep the list. Since 2026-11-22 a member sets a space's idle timeout
+    anywhere from 60 minutes to 365 days (the user's decision), so the timeout is the member's choice and
+    `make down ENV=sandbox`'s app sweep is what bounds a forgotten space. Also confirms rather than changes D7/D28: **SMUS
     workflows are MWAA**, serverless or provisioned, so Stage 10's orchestrator and this feature are one
     surface, not two.
 

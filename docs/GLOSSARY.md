@@ -180,3 +180,4 @@ Not acronyms, but the densest jargon in the plan, and they carry most of its mea
 | **USD** | United States dollar. All costs in the plan are USD, in `us-west-2`, and are order-of-magnitude estimates until Stage 12 replaces them with measured figures. |
 | **GB** | Gigabyte. |
 | **USD/h**, **USD/month** | The two figures the cost model always separates: the hourly burn while the lab is up, and the floor paid even when it is shut down (`docs/plan/cost-model.md`). |
+| **Passive burn**, **active burn** | The two totals `make status` prints: USD per hour billed while a resource is up, used or not, and the rates billed only by use, each in its unit (USD per warehouse query-hour, per GB an interface endpoint processes). A rate's unit decides its class, in `UNIT_CLASS` of `scripts/tfhygiene/layers.py`. |

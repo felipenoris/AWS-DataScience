@@ -1925,7 +1925,7 @@ entry is still true is the reading.
   did not: the statement kept running through the two minutes 5.1 held it breached, while that breach
   refused every query needing the compute. Where: `log-stage-05b` the third amendment and the entry of
   2026-10-18, and the comments on `sandbox/warehouse-compute/main.tf`'s `max_query_execution_time` and
-  `layers.py`'s `usd_per_hour`.
+  `layers.py`'s `sandbox/warehouse-compute` row.
 
 - `SUP-138` **The Data API authorizes following, reading and cancelling a statement on no resource**
   (measured 2026-10-25, `production-warehouse-ddl`). `DescribeStatement`, `GetStatementResult` and
@@ -2059,6 +2059,22 @@ entry is still true is the reading.
   trial usage. A namespace created ahead of use spends the window. Where:
   `log-stage-09-deployment-targets.md`, 2026-10-25; `log-stage-05b-redshift-serverless.md`, 2026-10-17;
   `docs/PRICING.md` §5.
+
+- `SUP-455` **A Redshift Serverless workgroup's own VPC endpoint adds no hours to the account's
+  `USW2-VpcEndpoint-Hours`** (measured 2026-11-22 in Sandbox from Cost Explorer and CloudTrail, Stage 12).
+  Each `CreateWorkgroup` is followed within 18 s by a `CreateVpcEndpoint` that `redshift.amazonaws.com`
+  invokes: a requester-managed interface endpoint in two subnets, which the same service deletes with the
+  workgroup. CloudTrail holds 15 since 2026-09-20. Cost Explorer's daily `USW2-VpcEndpoint-Hours` from
+  2026-09-20 to 11-21 fits the CloudTrail lifetimes of the user-made endpoints alone with an absolute
+  error of 207 h, and of 315 h once the managed endpoints' two AZs are added. On the ten days with a
+  workgroup, Cost Explorer reads a mean of 12.2 h below the user-made hours, where billing the managed
+  endpoint would add 12.1. On 2026-09-20 it billed 273 h, against 273.3 user-made and 305.7 with the
+  managed endpoints. Sandbox shows no other VPC usage type in October and November, and no Redshift line
+  during the free trial (`SUP-145`), so a charge billed under Redshift is not visible before 2026-12-19.
+  AWS's page on Redshift-managed VPC endpoints sends their pricing to PrivateLink's, and the Serverless
+  connection and pricing pages say nothing of the workgroup's own endpoint. Over the 63 days the bill
+  reads 1761 h against 1901 user-made, and a day's residual reaches 35 h, both unexplained. Where:
+  `log-stage-12-observability-finops.md`, 2026-11-22; `docs/PRICING.md` §5; `SUP-128`.
 
 ## DataZone and SageMaker Unified Studio
 
@@ -2568,6 +2584,16 @@ entry is still true is the reading.
   of a value the role already carried; the SageMaker domain resource read `UPDATE_COMPLETE` with no
   `UPDATE_IN_PROGRESS` and no `UpdateDomain`, so an attachment made by hand outside the template survives a
   reconciliation that leaves the domain's properties alone. Where: 6d step 2.4, INT-15, INT-17.
+  **Read again 2026-11-22** (Stage 6d, the idle range, read by the session that applied it): a reconciliation
+  that changes the domain's properties leaves the hand-set ones as well. `app-etl-dev`'s *Update project*
+  (`UpdateProject` 19:19:49Z) re-deployed its `Tooling` environment, whose stack sent `UpdateDomain` on the
+  project's `Tooling` domain at 19:20:23Z through the provisioning role. The request carried the template's
+  declared `DefaultUserSettings`, JupyterLab's and Code Editor's `AppLifecycleManagement` among them with
+  `MaxIdleTimeoutInMinutes` 525600, and neither `CustomImages` nor `StudioWebPortalSettings`, which the
+  template does not declare. Against its 19:01Z snapshot the domain changed in the three
+  `MaxIdleTimeoutInMinutes` leaves alone: the `CustomImages` entries attached by hand, which name no
+  `ImageVersionNumber`, and `ExecutionRoleSessionNameMode` `USER_IDENTITY` stood, the omitted keys read as
+  unchanged (`SUP-212`). Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-22.
 
 - `SUP-169` **The `AmazonBedrockKnowledgeBase` blueprint's template creates its OpenSearch Serverless
   collection, Lambdas and roles only for an OpenSearch Serverless store, behind a network policy with
@@ -2719,8 +2745,8 @@ entry is still true is the reading.
   only the tag names the root. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
 
 - `SUP-380` **An *Update project* did not carry a profile's new override of `enableSpaces` into an environment
-  created before the override, and carried a changed override of the image pin into every environment created
-  with it**
+  created before the override, and carried changed overrides of the image pin and the idle ceiling into the
+  environments created with them**
   (measured 2026-11-18 in Sandbox, Stage 6d 2.7 step 4). `test-experimentation`'s `Tooling` environment
   `bi356s1sacz0cw`, created 2026-10-15 when `experimentation` overrode no `enableSpaces`, stores it in its
   `userParameters` as `defaultValue` `"true"`, `isEditable` false. At 18:45:34 the profile locked
@@ -2746,6 +2772,15 @@ entry is still true is the reading.
   parameters the profile overrode at creation were re-resolved from its latest version. The readings differ in
   the parameter as well as in the creation condition, and no living environment holds the image pin from the
   blueprint's default, so which of the two decides is unmeasured. Where:
+  `log-stage-06d-unified-studio-remainder.md`, 2026-11-22.
+  **Read again 2026-11-22** (Stage 6d, the idle range, read by the session that applied it): one environment
+  held both outcomes. `app-etl-dev`'s `Tooling` environment `6kvndq6t2757rk`, created 2026-11-14, before the
+  `enableSpaces` override, stored `enableSpaces` `"true"` and `maxIdleTimeoutInMinutes` `"120"`, both
+  `isEditable` false; every profile has locked the second since Stage 6a step 8.1. The profiles took `525600`
+  at 19:00:22Z. After the owner's *Update project* (`UpdateProject` 19:19:49Z, the deployment `UPDATE`
+  `SUCCESSFUL` at 19:20:54Z), the environment stored `"525600"` beside `enableSpaces` `"true"`, and its domain
+  read 525600. The element, the environment and the update are now the same, and only the parameter differs:
+  `enableSpaces` remains the one override measured arriving after an environment's creation. Where:
   `log-stage-06d-unified-studio-remainder.md`, 2026-11-22.
 
 - `SUP-381` **The `SageMakerAIDomain` blueprint's deployer calls `sagemaker:ListTags` on the domain it has
@@ -3162,6 +3197,20 @@ entry is still true is the reading.
   with the name `sagemaker-awsds-probe-<suffix>` the environment was `ACTIVE` in about 70 seconds. A member
   replaces the prefix with `sagemaker-`, and the refusal names a permission where the cause is the name.
   Where: `log-stage-06a-unified-studio.md`, 2026-11-21; `docs/SMUS.md` §Resource blueprints.
+
+- `SUP-456` **Saving a space's idle timeout in the portal deletes the space's app, updates the space and
+  creates the app again, so the save lasts a whole app start** (measured 2026-11-22 in Sandbox, Stage 6d's
+  idle range). The space `jup8h` (JupyterLab, `ml.t3.medium`, `awsds-sandbox-dev-env` version 12) was created
+  in `app-etl-dev` at 19:26:15Z with an idle timeout of 480 minutes. Its owner saved 1440, and the browser
+  sent, through the project's user role, `DeleteApp` at 19:43:45Z (the server took `SIGTERM` at 19:43:46Z),
+  `UpdateSpace` at 19:43:50Z carrying the whole `SpaceSettings` with `IdleTimeoutInMinutes` 1440, and
+  `CreateApp` at 19:43:55Z. The portal polled `DescribeApp` every 3 s until 19:53:58Z, when it sent
+  `CreatePresignedDomainUrl` for the space: the save lasted 10 min 13 s. The six JupyterLab apps created in
+  Sandbox that day, all on the house image and `ml.t3.medium`, logged their first line 8 min 41 s to 9 min
+  10 s after their `CreateApp`. `describe-app` kept the first app's `CreationTime`, 19:26:20Z, through the
+  delete and the re-create, and its `LastHealthCheckTimestamp` read that instant while `Pending` and the
+  instant of each call once `InService`, so an app's start is timed from CloudTrail's `CreateApp`. Where:
+  `log-stage-06d-unified-studio-remainder.md`, 2026-11-22.
 
 ### Catalog, data sources and subscriptions
 
@@ -5590,6 +5639,18 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   `state pull` is the documented opposite: its output carries the running binary's version, 1.17.2 against
   the 1.15.8 the S3 object of `sandbox/foundation` holds (serial 18 in both). Where:
   `log-stage-08-cicd-pipelines.md`, 2026-11-21; `runbooks/promotion.md` §N.12.3.
+
+- `SUP-457` **`terraform show -json` prints `{"format_version":"1.0"}`, exit 0, both for a state that holds
+  no resource and for an S3 backend key that holds no object** (measured 2026-11-22 under 1.17.2). The
+  destroyed `production/egress/`, whose object reads format 4, serial 226 and `"resources": []`, printed that
+  line; so did a scratch configuration whose backend named `production/no-such-slice/terraform.tfstate`, a
+  key `head-object` answers 404 for, after an `init` that exited 0. The human `show` of the second printed
+  *"The state file is empty. No resources are represented."*, exit 0. The pages of `terraform show`, the
+  JSON output format and the S3 backend (read 2026-11-22, the last two in part) state no output for an
+  empty or absent state and nothing about a key with no object. Until 2026-11-22 `make status` read every
+  `[E]` slice through `show`, so a moved key or a slice never applied read `down` at 0 USD/h; it reads the
+  object since, and a key with no object reads UNREADABLE. Where: `scripts/slices.py`, `state_tree()`;
+  `log-stage-12-observability-finops.md`, 2026-11-22.
 
 ### The `aws` provider
 

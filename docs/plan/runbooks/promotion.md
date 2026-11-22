@@ -2958,7 +2958,8 @@ The quotas are above zero since 2026-10-24 (§0.2), and pass 3 is the data relea
 
 Zero burn in every account the sitting raised, no interface endpoint left, no NAT gateway anywhere;
 then the stage's own instrument (`cicd.py`, `deploytargets.py`, `orchestration.py`, `datalake.py`,
-`warehouse.py` after §W), `make status`, and the log entry of each step, in the sitting it ran.
+`warehouse.py` after §W), `make status`, whose passive and active burns both read USD 0.0000 once
+nothing is up, and the log entry of each step, in the sitting it ran.
 `make status` also lists each EMR Serverless application started and each OpenSearch Serverless
 collection, which a portal deployment leaves and `make down` never deletes. After a
 Sandbox sitting, no Studio app in any of Sandbox's domains, nine across its six projects on 2026-11-20,
