@@ -1229,9 +1229,10 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    warehouse: 5b, 6h, Stage 19's pass 5, Stage 17's pass 4 and Stage 20's pass 5 on its day 1,
    `GROUPS=redshift,mwaa`; Stage 21's passes 2 to 5, Stage 19's 5.4 and 6h's 6.4 on its day 2,
    `GROUPS=redshift`, the subscriptions revoked at its end. Its day 1 follows item 6, whose subscriptions
-   it reads, and N.9's day 2, whose registered version pass 4 serves; it waits on no result of N.9's day 3
-   or of R2, so either may come first.
-10. **R2** (N.11.2), after item 7's day 3, item 8's applies and #321's merge: `app-dbt`'s first release,
+   it reads, and N.9's day 2, whose registered version pass 4 serves; it waits on no result of N.9's day 3,
+   so either may come first, and R2 follows its day 1 (item 10).
+10. **R2** (N.11.2), after item 7's day 3, item 8's applies, item 9's day 1, whose pass 5 Stage 20 orders
+    before pass 8, and #321's merge: `app-dbt`'s first release,
     before 2026-12-18 or with the archive moved to dbt 1.12, its tag preceded by 8.6's deletion of the
     assets 5.0 and pass 5 left in `app-dbt-dev`; `app-ml`'s (Stage 17 9.7) and `app-genai`'s
     (10.6), whose pipeline runs no `pip-audit` and so waits on no gates tag; then `app-etl`'s release
@@ -2470,8 +2471,8 @@ billed apart, and 6e 6.4's session is the largest of them; Stage 17's training j
 #### N.9.8 What follows the sitting
 
 N.6 items 6 to 11, in their order: the subscriptions with nothing up, Stage 17 10.5 after day 3, N.10's
-two days before 2026-12-19, and R2 (N.11.2) after day 3 and 10.5. R1 ran beside day 2 on 2026-11-22, and
-N.10 waits on no result of day 3.
+two days before 2026-12-19, and R2 (N.11.2) after day 3, 10.5 and N.10's day 1. R1 ran beside day 2 on
+2026-11-22, and N.10 waits on no result of day 3.
 
 ### N.10 The Sandbox warehouse sitting, prepared 2026-11-19
 
@@ -2615,8 +2616,8 @@ warehouse's share to 2026-12-19; whether it covers the two other compute objects
 
 #### N.10.7 What follows the sitting
 
-1. **R2** (N.11.2), after N.9's day 3, Stage 17 10.5 and #321's merge (N.6 items 7, 8 and 10), which
-   waits on no result of this sitting.
+1. **R2** (N.11.2), after N.9's day 3, Stage 17 10.5, this sitting's day 1 and #321's merge (N.6 items 7
+   to 10): Stage 20 orders its pass 8 after pass 5.
 2. The bill halves after 2026-12-19: 5b's verification x and 6h's xii; Stage 19's close (its sitting 12);
    Stage 21's close.
 
@@ -2681,17 +2682,14 @@ After 2026-11-22 01:59:59 UTC, the admin secret's first scheduled rotation in Pr
 
 #### N.11.2 R2: the first releases of `app-ml`, `app-genai` and `app-dbt`, and `app-etl`'s model half
 
-After N.9's day 3 (9.6's candidate published, 10.4's readings), Stage 17 10.5's applies and #321's merge;
-before 2026-12-18, since it carries `app-dbt`'s first release, which R1 left on 2026-11-22, or with that
-archive moved to dbt 1.12. It waits on no result of N.10.
+After N.9's day 3 (9.6's candidate published, 10.4's readings), Stage 17 10.5's applies, N.10's day 1,
+whose pass 5 Stage 20 orders before pass 8, and #321's merge; before 2026-12-18, since it carries
+`app-dbt`'s first release, which R1 left on 2026-11-22, or with that archive moved to dbt 1.12.
 
 1. [Claude] The other sessions told, `make status`. [user] `make hub-up`, `make gitlab-up BUILD=1`, the
-   tunnel; the mirror pushed at `main`, which holds #321, since the legs clone the scripts from it
-   (`gitlab/README.md`).
+   tunnel.
 2. [user] Each application's first push and branch pipeline, its merge request and its tag, in this order:
-   `app-dbt`'s `v0.1.0` (Stage 20 8.7 and 8.8), the project `awsds/app-dbt` created by R1, after 8.6's
-   deletion of 5.0's link asset and pass 5's table asset from `app-dbt-dev`, between two of its source's
-   daily runs (02:43 UTC), so the bundle carries neither; `app-ml`'s (Stage 17 9.7), whose bundle
+   `app-dbt`'s `v0.1.0` (Stage 20 8.7 and 8.8) unless R1 carried it; `app-ml`'s (Stage 17 9.7), whose bundle
    carries the candidate `app-ml-dev` last published; `app-genai`'s (10.6), whose `.gitlab-ci.yml` sets no
    `GATES_UV_PROJECTS`, so its pipeline runs no `pip-audit` and no gates tag comes first. `make up
    ENV=staging ONLY=egress` before the first tag and `make down ENV=staging` after the last Staging leg;
@@ -2699,7 +2697,9 @@ archive moved to dbt 1.12. It waits on no result of N.10.
    `GROUPS=bedrock-base` for `app-genai`'s legs, Staging's once Stage 17 10.5 gives `staging/egress/` the
    `optional_service_groups` variable, absent there and present in `production/workloads-egress/` on
    2026-11-20. [Claude] the
-   readings per target after each leg (Stage 17's, and Stage 20's 8.9).
+   readings per target after each leg (Stage 17's, and Stage 20's 8.9). Before `app-dbt`'s tag, 8.6's
+   deletion of 5.0's link asset and pass 5's table asset from `app-dbt-dev`, between two of its source's
+   daily runs (02:43 UTC), so the bundle carries neither.
 3. [user] `app-etl`'s release retiring its model half (Stage 17 9.11), last, once `app-ml`'s release holds
    the model in both targets; `app-etl`'s lint pin moves to `4613ddc` with it.
 4. [user] `make down ENV=production ONLY=workloads-egress`; `make gitlab-down`; the tunnel down;
@@ -2737,11 +2737,12 @@ bound it stay N.6's.
 | 2026-11-23 | N.9's day 3 with 6d's remainder, then Stage 17 10.5 with nothing up (N.6 item 8) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | `app-ml-dev`'s MLflow App; `app-genai-dev`'s first call to Nova Lite |
 | 2026-11-24 | N.10's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | item 6's subscriptions and Stage 20 5.1's tar |
 | 2026-11-25 | N.10's day 2 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | day 1 |
-| 2026-11-26 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | day 3; 10.5's applies; #321 merged |
+| 2026-11-26 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | day 3; 10.5's applies; N.10's day 1; #321 merged |
 
 Then 9.11's estate pull request with nothing up (N.6 item 11). The metered days left sit inside N.6's
 dates: `app-dbt`'s release, now R2's, before 2026-12-18, N.10 before 2026-12-19. N.9's day 3 and N.10's
-days wait on no result of each other, so either comes first; R2 waits on day 3 alone of them.
+days wait on no result of each other, so either comes first; R2 waits on day 3 and on N.10's day 1, whose
+pass 5 Stage 20 orders before pass 8.
 
 R2 can share a day with N.10's day 2, the user's choice, since it keeps the user on two surfaces at once:
 R2's acts sit between its pipelines' legs, an hour or more each, and the hub starts once. R1 shared N.9's

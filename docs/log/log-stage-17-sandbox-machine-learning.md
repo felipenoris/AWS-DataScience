@@ -4740,3 +4740,23 @@ sessão"* at 04:59 closed the sitting without 6d's remainder (6d's log). Times a
 - **[Claude] `make check`** at 05:27:42: *"check: OK"*.
 - **[Claude] What stands in Sandbox**: `jup` and `code` `InService` in the blueprint domain with every app
   `Deleted` (05:36); pass 7's objects, which 7.6 keeps; the flow's own role, waiting on the user (`SUP-447`).
+
+## 2026-11-22 — Day 3's pre-flight, with nothing up
+
+*Claude, in the orchestrating session of `promotion.md` §N.9's day 2, after the day's lowering: read-only
+plans with `-input=false`, Terraform 1.17.2, from 06:26 to 06:32 UTC, and the stage file aligned with
+§N.9.5. Nothing was saved or applied.*
+
+- **[Claude] `sandbox/bedrock/`** (`awsds-infra-sandbox-1`), from `86748b34`, whose slice pull request #369
+  did not change: *"No changes."*; with `application_guardrail_required=true`, *"Plan: 0 to add, 1 to
+  change, 0 to destroy."*, `aws_iam_policy.bedrock_application` (10.4's reading 4); with
+  `account_guardrail_enabled=true`, *"Plan: 3 to add, 0 to change, 0 to destroy."*, the guardrail
+  `account`, its version and `awscc_bedrock_enforced_guardrail_configuration.account` (reading 6). The stage
+  file's 3 to add and 1 to change with both switches is their sum.
+- **[Claude] `sandbox/ml/`**: *"No changes."*
+- **[Claude] `sandbox/workflows/`**, from the merge of `origin/main` at `82edff32`: *"No changes."*;
+  `training_pair_enabled` defaults to `true` since #369, the pair applied on day 2.
+- **[Claude] The stage file**: day 3 raises `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`, since
+  verification xxiv's `Retrieve`, which day 2 left on the user's choice, rides day 3 after 6e 6.4's window
+  (`promotion.md` §N.9.5 step 4). Row 12 carries it, and day 3 bills about 0.28 USD an hour before the
+  spaces, as day 2 did since the VPN host's return.
