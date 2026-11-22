@@ -113,6 +113,9 @@ The levers, in the order the bill ranks them:
   forgotten day; `make down` is the guard, and `make status` the meter.
 - **The number of `[E]` cycles.** Each costs 0.36-0.87 of Config whatever its length.
 - **Spaces nobody deletes.** 0.112 per GB-month with every app stopped.
+- **Apps left running.** A space's app bills its instance until its idle timeout, which its member picks
+  from 60 minutes to 365 days: 1.20 USD a day on `ml.t3.medium`, 2.40 on `ml.t3.large`. `make down
+  ENV=sandbox`'s app sweep deletes every app.
 - **The key count**, which grows by a version per key and year from 2027-08.
 
 ### What a second business unit adds to the floor (D35)
