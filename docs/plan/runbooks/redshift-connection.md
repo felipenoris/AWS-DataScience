@@ -157,7 +157,9 @@ connect but sees nothing"* as the expected state for a while — which is the am
      (§G, `SUP-208`). Step 4a names `sandbox`.
    - **There is no `lineageSync` toggle** on this path, and the form writes the sync **on**, on a
      daily cron (`SUP-207`). A run that succeeds is a scheduled query on the 1.44 USD/hour meter.
-     Step 4a switches it off (6h decision 3), and `WH-9` fails until it runs.
+     Step 4a switches it off (6h decision 3), and `WH-9` fails until it runs. The cron is the creation's
+     minute, and a contributor's connection carries it too (6h xi, 2026-11-22): a second connection in a
+     project is a second job, which its connection's delete removes.
 4a. **The update: database `sandbox` and `lineageSync` off**, right after step 4, as
    `awsds-infra-sandbox-1`. DataZone accepts it from Sandbox's `InfrastructureAccess` as a contributor
    of the project (`SUP-157`) and with the workgroup down (`SUP-387`), so it needs nothing up; it ran on

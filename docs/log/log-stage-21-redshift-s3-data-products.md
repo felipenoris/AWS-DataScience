@@ -723,3 +723,13 @@ and `Data Governance Account` (`awsds-infra-data`). Times UTC. Stage 19's log ho
   (`SUP-459`).
 - **Left for day 2**: 2.2 again after the access role's `redshift-data` permission, the user's decision, or
   pass 2 starts at 2.1 without an asset; `c4n05wth04ll3k` stands until then.
+
+## 2026-11-22 — 2.2's prerequisite applied: the access role's Data API reads
+
+*Claude, in the session of `promotion.md` §N.10's day 1, recording an apply that Stage 19's log holds in full.
+No AWS call for this entry. Times UTC.*
+
+- **[Claude] The access role's four metadata reads**, `redshift-data:ListDatabases`, `ListSchemas`,
+  `ListTables` and `DescribeTable` on Sandbox's workgroups, written on the user's *"Sim, escreva"* and applied on
+  *"Sim, aplique"* at 21:23 in `sandbox/warehouse/` (0 added, 2 changed, re-planned `No changes`). The earlier
+  entry's "Left for day 2" is answered: 2.2 runs again on day 2, `c4n05wth04ll3k` deleted first.

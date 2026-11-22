@@ -31,6 +31,16 @@ permission problem. `aws sts get-caller-identity` before the first real call tel
 assumed-role ARN it prints is the evidence of which permission set answered (`docs/GLOSSARY.md`,
 "Permission set").
 
+That check reads the CLI's cache, never the token Terraform reads. Past the SSO token's `expiresAt` the
+CLI answers from cached role credentials, which live four hours from their vend (`SUP-012`), while
+Terraform refreshes the token itself, and the refresh failed with `InvalidGrantException` on 2026-11-22
+(`SUP-465`). Before a plan or an apply, the infrastructure session's token is read; a time ahead of the
+clock is the one Terraform signs in with:
+
+```bash
+jq -r .expiresAt ~/.aws/sso/cache/$(printf %s awsds | shasum | cut -c1-40).json
+```
+
 The naming: the session names the **person**; the profile is `awsds-<person>-<account>`, and the segment
 between names the **role** wherever one person holds several (`-infra-`, `-ctadmin-orgfull-`). The persona
 rows drop that segment because person and role coincide. The exception: `awsds-scientist-sandbox` and

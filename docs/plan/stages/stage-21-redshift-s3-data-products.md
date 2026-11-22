@@ -885,8 +885,9 @@ was applied from `main` on 2026-11-20 at 15:57 UTC; before it each plan of the s
 -backend-config=backend.hcl -input=false`), and every write on the user's word naming it, the other
 sessions told first:
 
-1. **Pass 2, from 2.1**: 2.1's view and daily table over Stage 19's copy, 2.2 already run as Stage 19's
-   5.3, then 2.3's publication and data product. About 25 minutes.
+1. **Pass 2, from 2.1**: 2.1's view and daily table over Stage 19's copy; 2.2 again as Stage 19's step 6,
+   whose source of day 1 failed creation (`SUP-460`) and is deleted first, the access role's Data API reads
+   applied 2026-11-22; then 2.3's publication and data product. About 25 minutes.
 2. **2.4, the consumer's workgroup**: the applies in 2.4's order, sagemaker then governance; the compute
    added to `test-experimentation` in the portal; its reads. A base capacity above 4 RPUs is removed at once
    by 2.9's steps. About 45 minutes, the stack's creation included.

@@ -2323,7 +2323,14 @@ entry is still true is the reading.
   cannot tell a deleted environment from one it may not read; `./aws/studio.py` `US-15` reads the
   environment's stack in the resource's account instead. Version 14 of the share's permission names
   `GetProjectProfile`, which answers from the three member accounts since the share's move to it that day
-  (`SUP-360`). Where: `log-stage-06a-unified-studio.md`, 2026-11-21.
+  (`SUP-360`). Where: `log-stage-06a-unified-studio.md`, 2026-11-21. Read again 2026-11-22 (Stage 6h 0.4's
+  portal half): a contributor creates a connection too. The Governance Manager User, a `PROJECT_CONTRIBUTOR`
+  of `eighth-experimentation`, made a Redshift connection through the portal's *Add compute*: Data
+  Governance's trail reads `CreateConnection` at 21:53:22Z under
+  `awsds-data-studio-domain-execution/user-<Identity Center user id>` with no `errorCode`, and Sandbox's
+  trail holds none. The owner's `DeleteConnection` at 21:57:17Z took the same path. A connection's create and
+  update are a contributor's as well as its owner's; a contributor's delete was not attempted. Where:
+  `log-stage-06h-redshift-connection.md`, 2026-11-22.
 
 - `SUP-158` **An IAM role in a DataZone domain is a group and one user profile per session name, and a
   policy grant takes the group.** Its ARN resolves as a user identifier to one session's user profile, and
@@ -3748,7 +3755,11 @@ entry is still true is the reading.
   `log-stage-06h-redshift-connection.md`, 2026-11-19. Read again 2026-11-19 at 03:50 UTC: the job created
   no run at the schedule's time, where it had created one at 03:44:44 on each of the 39 days before, so
   `enabled: false` stops the runs while the schedule stays on the object. Where:
-  `log-stage-06h-redshift-connection.md`, 2026-11-19.
+  `log-stage-06h-redshift-connection.md`, 2026-11-19. Read again 2026-11-22 (6h 0.4's portal half): a
+  connection a contributor made at 21:53:22Z carried `lineageSync` enabled on `cron(53 21 * * ? *)`, the
+  minute of its creation, daily, and a job of its own, `cqsmsbqin5yr2o`, with no run at 21:55:04.
+  `DeleteConnection` took the job with it: `list-job-runs` on its id answered *"The given Job doesn't
+  exist."* at 21:57:38. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22.
 
 - `SUP-208` **The SageMaker Unified Studio Query editor opens each session on the Redshift connection's
   database, not on the database selected in an earlier session** (measured 2026-10-26, Stage 9 xxiv). The

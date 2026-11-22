@@ -991,7 +991,8 @@ the simulator cannot supply) and `LFforDL` (`GetDataAccess`).
    it needs `GRANT ROLE sbx_lab_rw` for the sitting, and Stage 21's 2.1 then reads a copy a person owns.
 
 **In the sitting**, run 2026-11-22 on §N.10's day 1 (the log): steps 1 to 5 done, the view refused
-(`SUP-459`); step 6 stopped at `FAILED_CREATION` (`SUP-460`); step 7 on day 2.
+(`SUP-459`); step 6 stopped at `FAILED_CREATION` (`SUP-460`) and runs again on day 2, the access role's
+four Data API reads applied the same evening; step 7 on day 2.
 
 1. **[user] The session**: §J's connection from the space, through the access role. **[Claude]** reads
    its database user in `SVV_USER_INFO` as the admin, with the `q` helper of
@@ -1014,9 +1015,12 @@ the simulator cannot supply) and `LFforDL` (`GetDataAccess`).
 6. **[user] 5.3, which is Stage 21's 2.2**: one Redshift data source on the project's connection, database
    `sandbox`, schema `lab`, the include rule `trades_hot*`, *Publish on import* off, no schedule, one run;
    then *Publish* on `lab.trades_hot`. **[Claude]** reads the asset's type and forms and whether a
-   subscription finds a target (xv). Stage 21's pass 2 runs from its 2.3.
+   subscription finds a target (xv). Stage 21's pass 2 runs from its 2.3. On day 2 the source of day 1,
+   `c4n05wth04ll3k`, `FAILED_CREATION`, is deleted first and the source created again under the same
+   rules.
 7. **[user] 5.4 at the sitting's end**, after Stage 21's passes 2 to 4: 5.1's grants revoked, SQL and Lake
-   Formation, and the copy and the view dropped, the drop Stage 21's rollback item 5 also names.
+   Formation, and the copy dropped, the drop Stage 21's rollback item 5 also names; the view was refused
+   on day 1 (`SUP-459`), so none exists.
 
 About 1 hour 35 minutes of pass 5's rows: steps 1 and 2 15 minutes, step 3 15 with the trail's delay, step 4
 15, step 5 20, step 6 20, step 7 10.

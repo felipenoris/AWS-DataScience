@@ -552,8 +552,8 @@ outside the map, `app-dbt-dev`'s of [`promotion.md`](../runbooks/promotion.md) �
    its own for step 10 (6d 7.6's), and the Data Scientist User signed in for step 5 (SSO user Data
    Scientist User, Sandbox Account 1, `DataScientistAccess` through `awsds-scientist-sandbox`).
 
-**In the sitting**, after 5b's steps 1 and 2; run 2026-11-22 on §N.10's day 1 (the log): steps 1 to 4 and 6 to 9
-done, steps 5 and 10 owed. Step 1's command reads `user_name` and `auth_method`, the view's columns, and step
+**In the sitting**, after 5b's steps 1 and 2; run 2026-11-22 on §N.10's day 1 (the log): steps 1 to 10
+done, 5 and 10 last, by the user's hand. Step 1's command reads `user_name` and `auth_method`, the view's columns, and step
 2's quota is 2 GB, Redshift's floor, both corrected that day.
 
 1. **[user; Claude] The Query editor's first session opens on `sandbox`** (decision 3). It is the

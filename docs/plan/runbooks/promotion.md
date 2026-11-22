@@ -2598,7 +2598,8 @@ passes 2 to 4 in order" and its §5.
 
 1. [Claude] The other sessions told; [user] `make hub-up`, `make up ENV=sandbox GROUPS=redshift`; the
    spaces in both projects.
-2. Stage 21's block, steps 1 to 7: pass 2 from 2.1, the consumer's workgroup by 1.5's applies in 2.4's order
+2. Stage 21's block, steps 1 to 7: pass 2 from 2.1, its 2.2 run again as Stage 19's step 6 (the source of
+   day 1 deleted first, `SUP-460`), the consumer's workgroup by 1.5's applies in 2.4's order
    and its removal by 2.9's, pass 3, pass 4 with 4.5's transfer role and then its key statement in
    `sandbox/data/` applied (decision 4 (b)) and 4.8 at once, then the
    closing reads (`list-workgroups`, `describe-clusters`, `WH-8`). About 4 hours 30 minutes. Then Stage
