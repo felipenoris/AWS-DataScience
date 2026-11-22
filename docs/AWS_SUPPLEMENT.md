@@ -4064,12 +4064,17 @@ entry is still true is the reading.
   2026-09-10; `log-stage-10-orchestration-promotion.md`, 2026-10-22; `docs/SMUS.md`; `upstream-releases.md`,
   the MWAA Serverless table.
 
-- `SUP-251` **`list-workflow-runs` returns `RunType` null for every run, and `get-workflow-run` carries it**
-  (measured 2026-10-10, on Sandbox's two portal-authored workflows). The service model declares `RunType`
-  (`ON_DEMAND` | `SCHEDULED`) in `WorkflowRunSummary`; all six listed runs read `null`, and each read
-  `ON_DEMAND` one at a time. A check that takes the type from the list sees no `SCHEDULED` run whether one
-  fired or not, and that is Stage 10 verification (v)'s evidence. Where: `aws/orchestration.py` section 7,
-  `log-stage-06d`'s sixteenth sitting.
+- `SUP-251` **`list-workflow-runs` returned `RunType` null for every run on 2026-10-10 and carried it on
+  2026-11-22; `get-workflow-run` carries it** (measured 2026-10-10, on Sandbox's two portal-authored
+  workflows). The service model declares `RunType` (`ON_DEMAND` | `SCHEDULED`) in `WorkflowRunSummary`; all
+  six listed runs read `null`, and each read `ON_DEMAND` one at a time. A check that takes the type from the
+  list sees no `SCHEDULED` run whether one fired or not, and that is Stage 10 verification (v)'s evidence.
+  Where: `aws/orchestration.py` section 7, `log-stage-06d`'s sixteenth sitting.
+  **Read again 2026-11-22** (R1): the list carried `RunType` on every run, 36 runs of 15 workflows in
+  Sandbox, Staging and Production, each `ON_DEMAND`, the portal-created `wfk-notebook`'s run among them.
+  `simple-s3-copy`, one of the workflows read on 2026-10-10, is no longer listed, so whether the service
+  changed or those runs differed is unread, and no `SCHEDULED` run was listed to show the list carries that
+  value. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22.
 
 - `SUP-252` **The portal's save sends a code location the editor pre-fills, and an import cannot replace a
   saved workflow** (measured 2026-10-10/11, Stage 6i). A new workflow's *Settings → Storage* carries
@@ -4223,6 +4228,24 @@ entry is still true is the reading.
   that session at 20:01:18 with no error. A reader of run state needs `kms:Decrypt` on the workflow's key,
   and that `kms:ViaService` value admits it. `GetTaskInstance` was not called in the window. Where:
   `log-stage-10-orchestration-promotion.md`, 2026-10-26.
+
+- `SUP-436` **`list-workflow-runs` fills each page with the newest runs not yet listed and orders the runs
+  inside a page by no time, so only a page of one run is ordered** (measured 2026-11-22, R1, as
+  `awsds-infra-prod` and `awsds-infra-sandbox-1`, aws-cli 2.37.12). Production's
+  `app_etl_deploy_production_app_etl` holds three runs of 2026-11-16, created 02:32:15, 02:51:21 and 03:19:11
+  UTC. One page listed them 02:32:15, 03:19:11, 02:51:21, the same on two calls; pages of one run answered
+  03:19:11, 02:51:21 and 02:32:15, in that order; a page of two answered 03:19:11, 02:51:21. Sandbox's
+  `houseprice_etl_eighth_experimentation_houseprice_etl` holds seven runs of 2026-10-16: one page listed
+  02:13:11, 02:03:59, 15:21:53, 15:18:35, 03:28:31, 03:11:05, 02:25:55; pages of three answered the three
+  newest, then 02:13:11, 03:11:05, 02:25:55, then 02:03:59; pages of one answered all seven newest first. Of
+  the 15 workflows with runs in Sandbox, Staging and Production, a full list read in descending order for
+  six, ascending for one and in neither for three; five hold one run. The CLI's reference page says only
+  that the call lists all runs for a workflow, with optional pagination and filtering. Consequence:
+  `WorkflowRuns[0]` of a page holding more than one run is not the newest run, and `--max-results 1
+  --no-paginate --query 'WorkflowRuns[0].RunId'`, the runbooks' form, is. A reader of several runs sorts by
+  `RunDetailSummary.CreatedOn`, as `aws/sandbox-orchestration.py` does; `aws/orchestration.py`'s
+  `--max-results` returns the newest runs in no order. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-22.
 
 ### MWAA Serverless: workers, tasks and operators
 
