@@ -737,7 +737,13 @@ is read after day 2, once Cost Explorer shows its day (8.2).
   two directions).
 - **5.3 — [user] The visual editor** (Lesson 16): the step forms of the imported pipeline, which boundary
   fields they expose; a pipeline authored in the editor with one training step, run once, admitted or
-  refused by wording.
+  refused by wording. [Claude] `ML-7` lists the MLflow Apps before the editor's first entry and after it:
+  the SageMaker AI guide's *Add integration* page says *"A default MLflow application will be created when
+  you enter the pipeline visual editor."* and names no studio or domain type (read 2026-11-21 by the
+  session that wrote `docs/SMUS-GRAPH-TOOLS.md`, PR #360). An app the entry creates is an object nobody
+  chose (Lesson 17), read with `DescribeMlflowApp` (its role, artifact store, key, `AccountDefaultStatus`,
+  `DefaultDomainIdList` and tags) and the principal of CloudTrail's `CreateMlflowApp`. The account's quota is
+  three apps (`ML-7`): `ml-demo-mlflow` holds one and `app-ml-dev`'s app a second.
 - **5.4 — [Claude] `ML-6`**: the pipeline's definition against the settings, the executions and their
   steps' jobs, the committed definition against the live one.
 
