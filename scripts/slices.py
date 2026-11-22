@@ -65,6 +65,7 @@ import json
 import os
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -75,10 +76,16 @@ BOLD, RESET = "\033[1m", "\033[0m"
 RED = "\033[31m"  # step 7.2's refusal
 
 
-def run(cmd: list, env_extra: dict | None = None, dry: bool = False, capture: bool = False):
-    """One subprocess, always announced. Nothing in this file runs a command it did not print."""
+def announce(cmd: list, env_extra: dict | None = None) -> None:
+    """The `$` line that names a command whole, so a reader can run it again by hand."""
     shown = " ".join(f"{k}={v}" for k, v in (env_extra or {}).items())
     print(f"  $ {shown + ' ' if shown else ''}{' '.join(cmd)}")
+
+
+def run(cmd: list, env_extra: dict | None = None, dry: bool = False, capture: bool = False):
+    """One subprocess, announced before it runs. Nothing in this file runs a command it does not
+    print: `status` prints each of its reads beside the result instead (Read)."""
+    announce(cmd, env_extra)
     if dry:
         return None
     env = dict(os.environ)
@@ -86,6 +93,65 @@ def run(cmd: list, env_extra: dict | None = None, dry: bool = False, capture: bo
     if capture:
         return subprocess.run(cmd, env=env, capture_output=True, text=True)
     return subprocess.run(cmd, env=env)
+
+
+# `status` runs its reads concurrently, READ_WORKERS at a time: on 2026-11-22 its 27 reads took 32 s one
+# at a time and 3.9 s on 16 threads, each read ~1 s, two thirds of it the round trips to us-west-2.
+# A read still running after READ_TIMEOUT seconds is killed and reported UNREADABLE, so one that
+# hangs cannot hold the run (Lesson 52).
+READ_WORKERS = 16
+READ_TIMEOUT = 120
+TIMED_OUT = 124  # the exit status timeout(1) gives a command it kills
+
+
+def captured(cmd: list, env_extra: dict) -> subprocess.CompletedProcess:
+    """One read's subprocess, its output captured; killed at READ_TIMEOUT and returned as failed."""
+    try:
+        return subprocess.run(
+            cmd,
+            env={**os.environ, **env_extra},
+            capture_output=True,
+            text=True,
+            timeout=READ_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(
+            cmd, TIMED_OUT, "", f"no answer in {READ_TIMEOUT} s: killed (READ_TIMEOUT)"
+        )
+
+
+class Read:
+    """One read `status` starts on its pool when the Read is made, and reports when it is taken.
+
+    take() prints the `$` line and returns the result, so each line stands beside the result it
+    produced and the report keeps its order, whatever order the reads finished in. `after`, as
+    (read, wanted), holds this read until that one returns and runs it only when wanted(result) is
+    true, and the report takes it only then. With no pool (--dry-run) nothing runs: take() prints
+    the line and returns None, as run() does.
+    """
+
+    def __init__(
+        self,
+        pool: ThreadPoolExecutor | None,
+        cmd: list,
+        env_extra: dict,
+        after: tuple | None = None,
+    ):
+        self.cmd, self.env_extra = cmd, env_extra
+        if pool is None:
+            self.future = None
+        elif after is None:
+            self.future = pool.submit(captured, cmd, env_extra)
+        else:
+            # The read it waits on was submitted first, so a worker took it before this one.
+            self.future = pool.submit(self._after, *after)
+
+    def _after(self, first: Read, wanted) -> subprocess.CompletedProcess | None:
+        return captured(self.cmd, self.env_extra) if wanted(first.future.result()) else None
+
+    def take(self) -> subprocess.CompletedProcess | None:
+        announce(self.cmd, self.env_extra)
+        return None if self.future is None else self.future.result()
 
 
 def prepare(sl: layers.Slice, dry: bool, profile: str | None = None) -> bool:
@@ -132,6 +198,39 @@ def instance_name(env: str, slice_name: str) -> str:
     return f"awsds-{backend.env_token(env)}-{slice_name}"
 
 
+def instances_cmd(env: str, slice_name: str) -> list:
+    """The read behind instance_states(): the [D] slice's hosts, by Name tag, with their state."""
+    return [
+        "aws",
+        "ec2",
+        "describe-instances",
+        "--region",
+        backend.REGION,
+        "--filters",
+        f"Name=tag:Name,Values={instance_name(env, slice_name)}",
+        "Name=instance-state-name,Values=pending,running,stopping,stopped",
+        "--query",
+        "Reservations[].Instances[].[InstanceId,State.Name]",
+        "--output",
+        "text",
+    ]
+
+
+def instances_found(
+    env: str, slice_name: str, res: subprocess.CompletedProcess | None
+) -> list | None:
+    """instances_cmd()'s result as [(instance id, power state)], or None when nothing was read."""
+    if res is None:
+        return None
+    if res.returncode != 0:
+        print(
+            f"    FAILED to read instances tagged {instance_name(env, slice_name)}", file=sys.stderr
+        )
+        print(res.stderr.strip(), file=sys.stderr)
+        return None
+    return [tuple(ln.split("\t")) for ln in res.stdout.split("\n") if ln.strip()]
+
+
 def instance_states(
     env: str, slice_name: str, dry: bool, profile: str | None = None
 ) -> list | None:
@@ -144,33 +243,12 @@ def instance_states(
     total is a floor rather than a measurement.
     """
     res = run(
-        [
-            "aws",
-            "ec2",
-            "describe-instances",
-            "--region",
-            backend.REGION,
-            "--filters",
-            f"Name=tag:Name,Values={instance_name(env, slice_name)}",
-            "Name=instance-state-name,Values=pending,running,stopping,stopped",
-            "--query",
-            "Reservations[].Instances[].[InstanceId,State.Name]",
-            "--output",
-            "text",
-        ],
+        instances_cmd(env, slice_name),
         env_extra={"AWS_PROFILE": profile or backend.profile(env)},
         dry=dry,
         capture=True,
     )
-    if res is None:
-        return None
-    if res.returncode != 0:
-        print(
-            f"    FAILED to read instances tagged {instance_name(env, slice_name)}", file=sys.stderr
-        )
-        print(res.stderr.strip(), file=sys.stderr)
-        return None
-    return [tuple(ln.split("\t")) for ln in res.stdout.split("\n") if ln.strip()]
+    return instances_found(env, slice_name, res)
 
 
 # ----------------------------------------------------------- the hub (6c steps 7.1 and 7.2)
@@ -635,6 +713,73 @@ def cmd_updown(args) -> int:
     return 0
 
 
+# ------------------------------------------------------------------ an [E] slice's state, for `status`
+#
+# `status` reads an [E] slice's state object straight from its S3 backend, at the bucket and key
+# backend.hcl is written from (gen-backend-hcl.py), with no generated file, no `terraform init` and
+# no `terraform show`. On 2026-11-22 those two took 5.7 s and 5.0 s per slice, 97 of the 118 s the
+# run took, and `show` loads the provider's schema only to print the values the object already holds.
+# STATE_FORMAT is the state file format Terraform has written since 0.12, the one state_tree() reads.
+STATE_FORMAT = 4
+
+
+def state_uri(sl: layers.Slice) -> str:
+    v = backend.backend_values(sl.account, sl.name)
+    return f"s3://{v['bucket']}/{v['key']}"
+
+
+def state_object(sl: layers.Slice) -> list:
+    """The read of one [E] slice's state: its object in the backend, printed whole to stdout."""
+    return ["aws", "s3", "cp", state_uri(sl), "-", "--region", backend.REGION, "--only-show-errors"]
+
+
+def state_tree(sl: layers.Slice, res: subprocess.CompletedProcess | None) -> dict | None:
+    """One [E] slice's state in the shape of `terraform show -json`'s root module, or None.
+
+    Each resource in the object lists one entry per object, the current one and any deposed, which
+    is what `show -json` prints one resource for, so managed_resources() and interface_endpoints()
+    count the same. A module's resources become one child of the root whatever their depth: the
+    counts sum over the tree, and only the optional hosts read the root's own addresses.
+
+    None is a read that did not run, under --dry-run, or one that failed, its reason on stderr. A
+    missing object fails, where `terraform show` read it as an empty state: a moved key or a slice
+    never applied is not a slice that is down (Lesson 62).
+    """
+    if res is None:
+        return None
+    doc, reason = None, res.stderr.strip() or f"exit status {res.returncode}"
+    if res.returncode == 0:
+        try:
+            doc = json.loads(res.stdout)
+        except ValueError as e:
+            reason = f"not JSON: {e}"
+        else:
+            version = doc.get("version") if isinstance(doc, dict) else None
+            if version != STATE_FORMAT:
+                doc = None
+                reason = f"state format {version!r}, and state_tree() reads {STATE_FORMAT}"
+    if doc is None:
+        print(f"    FAILED to read the state object {state_uri(sl)}", file=sys.stderr)
+        print(reason, file=sys.stderr)
+        return None
+    root, modules = [], {}
+    for r in doc.get("resources", []):
+        entries = [
+            {
+                "mode": r.get("mode"),
+                "type": r.get("type"),
+                "name": r.get("name"),
+                "values": i.get("attributes") or {},
+            }
+            for i in r.get("instances", [])
+        ]
+        if r.get("module"):
+            modules.setdefault(r["module"], []).extend(entries)
+        else:
+            root.extend(entries)
+    return {"resources": root, "child_modules": [{"resources": m} for m in modules.values()]}
+
+
 def managed_resources(module: dict) -> int:
     """Deployed resources in a state tree, recursively and managed-only.
 
@@ -709,41 +854,37 @@ STUDIO_APP_USD_PER_HOUR = {
 SPACE_VOLUME_USD_PER_GB_MONTH = 0.112
 
 
-def studio_apps_billing(env: str, dry: bool) -> list | None:
+LIST_APPS = ["aws", "sagemaker", "list-apps", "--region", backend.REGION, "--output", "json"]
+LIST_SPACES = ["aws", "sagemaker", "list-spaces", "--region", backend.REGION, "--output", "json"]
+
+
+def billing_apps(res: subprocess.CompletedProcess | None) -> list | None:
+    """The apps whose status bills in one LIST_APPS result, or None when it did not run or failed."""
+    if res is None or res.returncode != 0:
+        return None
+    apps = json.loads(res.stdout or "{}").get("Apps", [])
+    return [a for a in apps if a.get("Status") in BILLING_APP_STATUSES]
+
+
+def studio_apps_billing(env: str, res: subprocess.CompletedProcess | None) -> list | None:
     """[app] for every app in one account whose status bills, or None when nothing was read.
 
     One `list-apps` with no domain filter answers for every domain in the account, the
     blueprint's and the Tooling's alike. None follows instance_states()'s rule: it is never
     read as "no app is running" (Lesson 13).
     """
-    res = run(
-        ["aws", "sagemaker", "list-apps", "--region", backend.REGION, "--output", "json"],
-        env_extra={"AWS_PROFILE": backend.profile(env)},
-        dry=dry,
-        capture=True,
-    )
-    if res is None:
-        return None
-    if res.returncode != 0:
+    if res is not None and res.returncode != 0:
         print(f"    FAILED to list the Studio apps in {env}", file=sys.stderr)
         print(res.stderr.strip(), file=sys.stderr)
-        return None
-    apps = json.loads(res.stdout or "{}").get("Apps", [])
-    return [a for a in apps if a.get("Status") in BILLING_APP_STATUSES]
+    return billing_apps(res)
 
 
-def studio_spaces_created(env: str, dry: bool) -> dict | None:
+def studio_spaces_created(env: str, res: subprocess.CompletedProcess | None) -> dict | None:
     """{(domain id, space name): creation time} for every space in one account, or None.
 
     One `list-spaces` with no domain filter answers for every domain, as `list-apps` does. None
     leaves each app's line on its own CreationTime, the wider bound, and never reads as "no space".
     """
-    res = run(
-        ["aws", "sagemaker", "list-spaces", "--region", backend.REGION, "--output", "json"],
-        env_extra={"AWS_PROFILE": backend.profile(env)},
-        dry=dry,
-        capture=True,
-    )
     if res is None:
         return None
     if res.returncode != 0:
@@ -800,16 +941,32 @@ def print_studio_app(env: str, app: dict, now: datetime, spaces: dict | None) ->
 # state but the two below.
 EMR_SERVERLESS_BILLING_STATES = ("STARTING", "STARTED", "STOPPING")
 AOSS_IDLE_STATUSES = ("DELETING", "FAILED")
+LIST_EMR_SERVERLESS = [
+    "aws",
+    "emr-serverless",
+    "list-applications",
+    "--states",
+    *EMR_SERVERLESS_BILLING_STATES,
+    "--region",
+    backend.REGION,
+    "--output",
+    "json",
+]
+LIST_AOSS = [
+    "aws",
+    "opensearchserverless",
+    "list-collections",
+    "--region",
+    backend.REGION,
+    "--output",
+    "json",
+]
 
 
-def portal_listing(env: str, cmd: list, what: str, key: str, dry: bool) -> list | None:
+def portal_listing(
+    env: str, res: subprocess.CompletedProcess | None, what: str, key: str
+) -> list | None:
     """The items of one listing in one account, or None when it was not read (Lesson 13)."""
-    res = run(
-        ["aws", *cmd, "--region", backend.REGION, "--output", "json"],
-        env_extra={"AWS_PROFILE": backend.profile(env)},
-        dry=dry,
-        capture=True,
-    )
     if res is None:
         return None
     if res.returncode != 0:
@@ -827,21 +984,11 @@ def utc_minute(stamp: str) -> str:
         return stamp
 
 
-def portal_standing(env: str, dry: bool) -> list | None:
+def portal_standing(env: str, emr: Read, aoss: Read) -> list | None:
     """[(label, state, detail)] for the portal resources that can bill in one account."""
-    apps = portal_listing(
-        env,
-        ["emr-serverless", "list-applications", "--states", *EMR_SERVERLESS_BILLING_STATES],
-        "EMR Serverless applications",
-        "applications",
-        dry,
-    )
+    apps = portal_listing(env, emr.take(), "EMR Serverless applications", "applications")
     collections = portal_listing(
-        env,
-        ["opensearchserverless", "list-collections"],
-        "OpenSearch Serverless collections",
-        "collectionSummaries",
-        dry,
+        env, aoss.take(), "OpenSearch Serverless collections", "collectionSummaries"
     )
     if apps is None or collections is None:
         return None
@@ -907,19 +1054,51 @@ def cmd_status(args) -> int:
         print("  both zero because the set is empty, not because it was read")
         return 0
 
+    pool = ThreadPoolExecutor(max_workers=READ_WORKERS)
+    try:
+        return status_report(args, envs, metered, None if args.dry_run else pool)
+    finally:
+        pool.shutdown(cancel_futures=True)
+
+
+def status_report(args, envs: list, metered: list, pool: ThreadPoolExecutor | None) -> int:
+    """cmd_status's lines and totals. Every read starts here, before the first line is printed,
+    and each is taken below in the order it is reported (Read)."""
+    env_extra = {env: {"AWS_PROFILE": backend.profile(env)} for env in envs}
+    slice_reads = [
+        Read(
+            pool,
+            instances_cmd(sl.account, sl.name) if sl.layer == layers.DORMANT else state_object(sl),
+            env_extra[sl.account],
+        )
+        for sl in metered
+    ]
+    app_reads = {env: Read(pool, LIST_APPS, env_extra[env]) for env in envs}
+    # The spaces date an account's apps, so they are listed only where an app bills.
+    space_reads = {
+        env: Read(pool, LIST_SPACES, env_extra[env], after=(app_reads[env], billing_apps))
+        for env in envs
+    }
+    portal_reads = {
+        env: (
+            Read(pool, LIST_EMR_SERVERLESS, env_extra[env]),
+            Read(pool, LIST_AOSS, env_extra[env]),
+        )
+        for env in envs
+    }
+
     # The passive burn adds every hourly rate of what is up. `active` maps each (USD, unit) pair
     # of a slice that is up to the slices billing it (layers.Slice.per_use).
     passive, unreadable = 0.0, 0
     active: dict[tuple[float, str], list[str]] = {}
-    for sl in metered:
-        # A [D] slice is not measured by its state file. `terraform show` reports the instance
-        # as present whether it is running or stopped, which is what [D] means, so counting
-        # resources would add 0.0042/h to the passive burn forever and the 0.0000/h reading Stage 3
-        # closed on could never come back. What is metered by the hour here is the power state,
-        # so it is read from EC2 by the same Name tag the dormant hook uses, and no
-        # `terraform init` is needed to answer it.
+    for sl, read in zip(metered, slice_reads):
+        # A [D] slice is not measured by its state. The state holds the instance whether it is
+        # running or stopped, which is what [D] means, so counting resources would add 0.0042/h to
+        # the passive burn forever and the 0.0000/h reading Stage 3 closed on could never come
+        # back. What is metered by the hour here is the power state, so it is read from EC2 by
+        # the same Name tag the dormant hook uses.
         if sl.layer == layers.DORMANT:
-            found = instance_states(sl.account, sl.name, args.dry_run)
+            found = instances_found(sl.account, sl.name, read.take())
             if found is None:
                 if args.dry_run:
                     continue
@@ -936,23 +1115,13 @@ def cmd_status(args) -> int:
                 f"  {sl.path:<40} {state:<7} {len(found):>3} instance(s)   {charges(rate, per_use)}"
             )
             continue
-        if not prepare(sl, args.dry_run):
+        state = state_tree(sl, read.take())
+        if state is None:
+            if args.dry_run:
+                continue
             print(f"  {sl.path:<40} UNREADABLE")
             unreadable += 1
             continue
-        res = run(
-            ["terraform", f"-chdir={sl.path}", "show", "-json"],
-            env_extra={"AWS_PROFILE": backend.profile(sl.account)},
-            dry=args.dry_run,
-            capture=True,
-        )
-        if res is None:
-            continue
-        if res.returncode != 0:
-            print(f"  {sl.path:<40} UNREADABLE")
-            unreadable += 1
-            continue
-        state = json.loads(res.stdout or "{}").get("values", {}).get("root_module", {})
         n = managed_resources(state)
         up = n > 0
         # An optional host bills only when the state holds it, which is the apply having asked for
@@ -992,7 +1161,7 @@ def cmd_status(args) -> int:
     now = datetime.now(timezone.utc)
     quiet, unmeasured, apps_read = [], 0, False
     for env in envs:
-        apps = studio_apps_billing(env, args.dry_run)
+        apps = studio_apps_billing(env, app_reads[env].take())
         if apps is None:
             if args.dry_run:
                 continue
@@ -1002,7 +1171,7 @@ def cmd_status(args) -> int:
         apps_read = True
         if not apps:
             quiet.append(env)
-        spaces = studio_spaces_created(env, args.dry_run) if apps else {}
+        spaces = studio_spaces_created(env, space_reads[env].take()) if apps else {}
         for app in apps:
             rate = print_studio_app(env, app, now, spaces)
             if rate is None:
@@ -1015,7 +1184,7 @@ def cmd_status(args) -> int:
     # The portal's standing resources, which no slice holds either (EMR_SERVERLESS_BILLING_STATES).
     portal_quiet, unpriced = [], 0
     for env in envs:
-        standing = portal_standing(env, args.dry_run)
+        standing = portal_standing(env, *portal_reads[env])
         if standing is None:
             if args.dry_run:
                 continue
