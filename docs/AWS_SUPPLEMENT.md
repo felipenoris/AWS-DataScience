@@ -1514,7 +1514,37 @@ entry is still true is the reading.
   on the link and on the lake's table, in both accounts. No `UpdateTable`, no `GenerateDataKey` and no
   manifest object existed, although the console message said one may need cleaning. The editor appended `
   LIMIT 100` to every statement, the insert included. Where: `log-stage-09-deployment-targets.md`,
-  2026-10-30.
+  2026-10-30. A statement carrying its own limit gains none (read 2026-11-22, Stage 6g 2.4): `SELECT * FROM
+  "glue_db_blerpkhn9nj7o0"."trades" LIMIT 10;` ran as `… LIMIT 10`, with no semicolon. The statement is
+  read with `athena get-query-execution`, since the trail's `StartQueryExecution` shows `queryString` as
+  `***OMITTED***`. Where: `log-stage-06g-access-by-identity.md`, 2026-11-22.
+
+- `SUP-416` **A cross-account Athena read through Lake Formation leaves `Decrypt` events in the owner's
+  trail by the registration role, invoked by `glue.amazonaws.com`, and names the query only in the
+  consumer's `GetDataAccess` on the resource link** (read 2026-11-22 in Sandbox's and Data Governance's
+  trails, Stage 6g 2.4). The project role's query `c9f604ea-50f8-47b3-b171-caf3985b6692`, from the portal's
+  query editor through the link `glue_db_blerpkhn9nj7o0.trades` to `curated.trades`, left two
+  `GetDataAccess` in Sandbox at 02:15:34Z. The one invoked by `athena.amazonaws.com` on the link carries
+  `requestParameters.auditContext.additionalAuditContext` `{queryId: c9f604ea-50f8-47b3-b171-caf3985b6692}`,
+  a string rather than JSON, and the project role's ARN as `lakeFormationPrincipal`. The one invoked by
+  `glue.amazonaws.com` on the lake's table carries `callType` `EXTERNAL` and no audit context. Both carry
+  `requesterService` `ATHENA` and one `lakeFormationRoleSessionName`,
+  `AWSLF-00-AT-<Sandbox account id>-CRWz3tDXZ4`. Data Governance received the second alone, as a shared
+  event of type `AWSAccount` whose `principalId` is the project role's unique id and its session,
+  `<Identity Center user id>@<environment id>`. The nine `Decrypt` in Data Governance at 02:15:35Z name
+  `assumed-role/awsds-data-lf-registration/AWSLF-00-AT-<Sandbox account id>-CRWz3tDXZ4`, a session created
+  at 02:15:34Z, with `invokedBy`, `sourceIPAddress` and `userAgent` `glue.amazonaws.com`, encryption context
+  `aws:s3:arn` the bucket's ARN, no source identity and no VPC endpoint. AWS's *Cross-account CloudTrail
+  logging* page gives the session name's format, `AT` for Athena and the account id of the account that
+  requested the credentials, with a Glue job's S3 event as its example; neither it nor the service's
+  CloudTrail page mentions KMS events, an Athena read's `invokedBy` or the audit context (read 2026-11-22).
+  In the owner's account the `Decrypt` events read as Glue's, and the shared `GetDataAccess` names Athena,
+  the consumer account and the role's session, never the query. The query comes from the consumer's trail:
+  the session name finds the `GetDataAccess` on the link, its audit context names the query, and the
+  query's `StartQueryExecution` carries the source identity. Whether the consumer's opt-in, *Resource
+  owners* under *Default permissions for AWS CloudTrail*, adds the principal's ARN to the owner's copy was
+  not measured. Where: `log-stage-06g-access-by-identity.md`, 2026-11-22 (2.4's Athena read, and the
+  attribution read after it).
 
 ## Athena
 
@@ -1541,7 +1571,12 @@ entry is still true is the reading.
   the same shape the next day. A classifier that files a policy-less refusal as an IAM deny misfiles these,
   so attribution needs a contrast call from an account the statement does not reach. Where:
   `log-stage-05a-data-foundation.md`, 2026-08-20 (4e); `log-stage-06a-unified-studio.md`, 2026-08-21;
-  `aws/probes/probes.py`.
+  `aws/probes/probes.py`. The portal's query editor shows the same text (read 2026-11-22, Stage 6f 4.3):
+  `governed-lake`'s editor in Data Governance, as the project role in the Governance Manager's session,
+  answered *"…on the resource. After your AWS administrator or you have updated your permissions, please
+  try again. (Service: Athena, Status Code: 400, …)"*, CloudTrail's `errorCode` `AccessDenied`, the
+  workgroup existing and its `GetWorkGroup` answered 3 s earlier (`log-stage-06f-data-governance.md`,
+  2026-11-22).
 
 - `SUP-119` **`athena:UpdateSession`, which AWS's sample statement for disabling Athena Spark denies, is in
   no Athena API model** (read 2026-08-21 in the CLI's service model, Stage 6 step 1.6). AWS's SageMaker
@@ -2303,7 +2338,13 @@ entry is still true is the reading.
   identifier read `createdAt` 2026-08-21T00:49:55Z and `updatedAt` 2026-10-22T22:46:51Z, the dates the reading
   of 2026-10-30 recorded, with the template `DataZone-SageMakerAIDomain-prod-20260905` and its 17 user
   parameters. A roster listing does not show that a blueprint's template moved; the get does. Where:
-  `upstream-releases.md`, the `SageMakerAIDomain` row.
+  `upstream-releases.md`, the `SageMakerAIDomain` row. Read again 2026-11-22 on `RedshiftServerless`
+  (Stage 21): the get reads `createdAt` and `updatedAt` both 2026-05-13T21:31:31Z, while the template object
+  behind its `templateUrl` read `LastModified` 2026-11-13T19:43:40Z on 2026-11-18 (`SUP-378`) and
+  2026-11-21T01:19:23Z on 2026-11-22, 10,532 bytes both times. The object is rewritten in place with no
+  change to the blueprint's dates, so its `LastModified` dates a rewrite, not a release; a change of content
+  under the same name is read from the object's `ETag` (`"d516acd3183d361cf3b92a12ec19dd95"` on 2026-11-22).
+  Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-22.
 
 - `SUP-378` **The `RedshiftServerless` blueprint's template treats a base capacity of 128 and a maximum of 0 as
   sentinels, and the blueprint's user parameters default the maximum to 512 RPU** (read 2026-11-18, Stage 21
@@ -2874,7 +2915,12 @@ entry is still true is the reading.
   nine staying the `Tooling` environment's, and provisions that environment's `userRoleArn`. Where:
   `log-stage-06f-data-governance.md`, 2026-09-12/13; `log-stage-19-smus-native-data-product.md`, 2026-10-28,
   2026-11-08, 2026-11-11 and 2026-11-14; `log-stage-20-dbt-lineage.md`, 2026-11-19; `docs/SMUS.md`, the
-  *Create database* item.
+  *Create database* item. A name the account's catalog already holds is refused before any stack: the
+  portal's `mydatabase` in `test-experimentation` (`60j5234reuos9c`, created 2026-11-09 19:53:53Z by the
+  Data Scientist User, `eighth-experimentation`'s `mydatabase` existing) read `VALIDATION_FAILED` 11 s
+  later, `failureReason` *"Failed to validate environment 60j5234reuos9c: Glue database with name
+  mydatabase already exists"*, `provisionedResources` null, and the record stays in the project (read
+  2026-11-22, `log-stage-06f-data-governance.md`).
 
 - `SUP-185` **The portal's MLflow entries look their blueprint up in the domain account, so a domain whose
   configurations live in associated accounts greys them out whatever the profile carries** (read 2026-10-19,
@@ -3060,7 +3106,15 @@ entry is still true is the reading.
   session, at 01:07:09Z, 39 s after `revoke-subscription`. The *"Policy not found"* Stage 18 read after the
   revocation came from `glue get-resource-policy`, which lists none of these (`SUP-099`): the trail's three
   deletes are what show them gone, and `glue get-resource-policies` read an empty list on 2026-11-17
-  (`log-stage-18-staging-deployment-project.md`, 2026-11-17).
+  (`log-stage-18-staging-deployment-project.md`, 2026-11-17). A second subscriber project in an account
+  the producer already shares to (measured 2026-11-22, Stage 6f 4.3, `test-experimentation` on
+  `curated.trades` beside `eighth-experimentation`) costs one grant: the producer's role made one
+  `BatchGrantPermissions` (`SELECT` to Sandbox's `IAMPrincipals` under the new project's condition,
+  `CROSS_ACCOUNT_VERSION` 5) 5 s after the approval and no RAM or Glue policy call, the share
+  `LakeFormation-V5-ZKUYXYESG4` and the five per-resource policies keeping their update times and hashes, and
+  the grant read `COMPLETED` 16 s after the approval, against 63 s for the first. The same night inside one
+  account (`house-price` into `test-experimentation`): the owner's grant 32 s after the request, the link 11 s
+  later, `COMPLETED` at 54 s (`log-stage-06f-data-governance.md`, 2026-11-22).
 
 - `SUP-196` **`UpdateDataSource` refuses the `dataAccessRole` that `GetDataSource` reports for a Glue source
   on a connection** (measured 2026-10-26 in Data Governance, Stage 6f 11.6). A configuration built from the
@@ -3307,6 +3361,21 @@ entry is still true is the reading.
   this project say posting needs `datazone:PostLineageEvent` and name no check against the dataset's
   owning project. A role holding `PostLineageEvent` writes into every project's graph, and a node's history
   is the instrument that shows who did. Where: `log-stage-20-dbt-lineage.md`, 2026-11-21 (2.6, 3.4).
+
+- `SUP-415` **A subscription's fulfilment writes a lineage node for the subscriber's resource link, keyed by
+  the link's Glue ARN, and a later link of the same name inherits that node with every upstream it had**
+  (measured 2026-11-22, Stage 6f 2.2 and 4.3). After each grant read `COMPLETED`, Data Governance's trail
+  holds `datazone.amazonaws.com` writing a `DatasetLineageNodeType` node whose `sourceIdentifier` is the
+  link's ARN (`arn:aws:glue:us-west-2:<Sandbox>:table/glue_db_4zojr4rr6bmnww/<table>`), named after the
+  subscription target and carrying `SubscriptionTargetLineageForm`, `DatasetSchemaForm`, `DatasetForm` and
+  `ColumnLineageForm`, with the listing's node as its upstream and both versions dated at the grant's
+  completion: `house-price`'s link a new node 6 s after its grant completed, `trades`' link a new version
+  14 s after. That `trades` node, `3juvtmem73n1g0`, dates from 2026-10-22, when Stage 18 7.2's subscription
+  to Staging's `trades` created a link of the same name; its revocation added a version and kept the edge.
+  The node now lists two upstreams, the lake listing's node and that of Staging's listing
+  `bx8v3rafykv3ww`, which `get-listing` answers `ResourceNotFoundException`. A subscriber's graph keeps a
+  revoked producer as an input of every link that reuses the name. Where:
+  `log-stage-06f-data-governance.md`, 2026-11-22.
 
 ### Connections
 
@@ -4974,6 +5043,13 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   The complement, 2026-11-12, release F's applies in the same two slices: the same policy planned the
   same way with a document that did change, each plan *"2 to add, 2 to change"* and each apply *"2
   added, 2 changed"*.
+  Read again 2026-11-22 in `sandbox/warehouse/` (Stage 6h decision 8 (a)'s standing change, Terraform
+  1.17.2), with no `depends_on`: `data.aws_iam_policy_document.project_warehouse["avhvbqn37ty7m8"]`
+  references `aws_iam_role.project_access[each.key]`, its own instance unchanged, and was planned *"will be
+  read during apply"*, *"(depends on a resource or a module with changes pending)"*, because the resource
+  gains the instance `4gqfau9xuo6e4w`. The plan read *"7 to add, 2 to change"*, the existing project's
+  policy the second change: the deferral follows the resource, not the instance. The apply half is read at
+  the Sandbox warehouse sitting. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22.
 
 - `SUP-403` **A saved plan file is refused by every Terraform version but the one that wrote it** (measured
   2026-11-21, the laptop's move to 1.17.2). `sandbox/workflows/`'s training-pair plan, saved by 1.16.6 on

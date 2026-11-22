@@ -1789,6 +1789,44 @@
     inside the `3.0-5` image was not read:
     <https://raw.githubusercontent.com/aws/sagemaker-xgboost-container/master/src/sagemaker_xgboost_container/algorithm_mode/serve_utils.py>.
 
+- **MLflow beside the portal's graph tools (read 2026-11-21, for
+  [`SMUS-GRAPH-TOOLS.md`](SMUS-GRAPH-TOOLS.md)).** Through page-reading agents, in the pages' Markdown form.
+  - The ML pipelines visual editor's MLflow integration: *Integration → MLflow* on the toolbar picks a
+    tracking server or an app and an experiment for the pipeline's metrics, *Update app and experiment*
+    overrides both for one execution, and a default MLflow application is created when the editor is
+    entered. The page names no Studio, no domain type and no writer of the run:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/build-and-manage-steps-integration.html>.
+  - The automatic registration of an MLflow model in the SageMaker Model Registry, an opt-in sync turned on
+    with `UpdateMlflowApp` or `UpdateMlflowTrackingServer`: `mlflow.register_model()` creates a model
+    package group named `<registered model>-<suffix>`, the suffix the first six characters of a SHA-256 of
+    the ARN's last segment, and a version in it, whose approval is a separate SageMaker call:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-track-experiments-model-registration.html>.
+  - Logging through the MLflow SDK with the server's ARN as the tracking URI, the page silent on where the
+    code runs: <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-track-experiments-log-metrics.html>.
+    The overview, re-read, names no default app for an account or a domain:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow.html>.
+  - `CreateTrainingJob`'s `MlflowConfig`, an MLflow resource's ARN, an experiment and a run name, with no
+    sentence on who writes the run or on network isolation:
+    <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_CreateTrainingJob.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_MlflowConfig.html>.
+  - The user guide's MLflow pages, re-read: the UI opens on experiments, models and traces; one page creates
+    an app from *Compute → MLflow* and the other connects one by its ARN; none joins MLflow to ML
+    pipelines, workflows, Visual ETL or lineage, and the release notes hold no MLflow entry:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/use-mlflow-experiments.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-experiments.xml.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-iam-based-domains.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>.
+  - MLflow's tracking pages: a run records one execution of code, an experiment groups runs and models, the
+    UI lists, searches and compares runs and charts their metrics, and a child run carries
+    `mlflow.parentRunId`: <https://mlflow.org/docs/latest/ml/tracking/>,
+    <https://mlflow.org/docs/latest/ml/tracking/tracking-api/>. The trace view, a span tree with each span's
+    latency on a timeline and the run a trace was logged in:
+    <https://mlflow.org/docs/latest/genai/tracing/observe-with-traces/ui>. The 3.16.0 highlights, a rebuilt
+    trace explorer, span links and trace views the assistant builds: <https://mlflow.org/releases/3.16.0/>.
+    Tried for whether MLflow 3 removed MLflow Recipes, and returned no text:
+    <https://mlflow.org/docs/latest/genai/mlflow-3/breaking-changes/>,
+    <https://github.com/mlflow/mlflow/releases/tag/v3.0.0>.
+
 - **Amazon Bedrock for an application's model call: Agents Classic, a guardrail enforced in IAM and at
   the account, inference profiles and the models of `us-west-2` (read 2026-11-16 and 2026-11-17, for
   [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) pass 10 and its decisions 22 to 27).**
@@ -2410,7 +2448,15 @@
 
 - Lake Formation cross-account data sharing best practices and considerations: <https://docs.aws.amazon.com/lake-formation/latest/dg/cross-account-notes.html>.
 
+- Lake Formation and CloudTrail (read 2026-11-22, for `SUP-416`). The vended session's name, `AWSLF-<version>-<engine code>-<account id>-<suffix>` with `AT` for Athena and the account that requested the credentials, and the consumer's opt-in that gives the owner the principal's ARN: <https://docs.aws.amazon.com/lake-formation/latest/dg/cross-account-logging.html>. The service's CloudTrail page, whose `GetDataAccess` examples carry no audit context: <https://docs.aws.amazon.com/lake-formation/latest/dg/logging-using-cloudtrail.html>. The underlying-data page, which does not mention KMS: <https://docs.aws.amazon.com/lake-formation/latest/dg/access-control-underlying-data.html>.
+
 - Lake Formation hybrid access mode (the documented exception in D13): <https://docs.aws.amazon.com/lake-formation/latest/dg/hybrid-access-mode.html>.
+
+- The actions, resources and condition keys of AWS Lake Formation, the machine-readable copy (read
+  2026-11-22, for [Stage 6f](plan/stages/stage-06f-data-governance.md) 11.12's residue): no resource type,
+  one condition key (`lakeformation:EnabledOnlyForMetaDataAccess`), and `DeregisterResource`,
+  `RegisterResource` and `UpdateResource` with neither, so an SCP carve-out on deregistration can name a
+  principal and never a location: <https://servicereference.us-east-1.amazonaws.com/v1/lakeformation/lakeformation.json>.
 
 - Lake Formation tag-based access control — best practices and considerations (LF-Tag creators and delegation, expression grants, cross-account LF-TBAC prerequisites, the limits; read 2026-08-17 for the Stage 5a governance review): <https://docs.aws.amazon.com/lake-formation/latest/dg/lf-tag-considerations.html>.
 

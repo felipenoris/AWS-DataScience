@@ -529,6 +529,11 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     Stage 19's `subscription-approver` (decision 15 (d), 2026-11-19) withholds the Project, Connections,
     and Notebooks and Querybooks categories `PROJECT_CONTRIBUTOR` grants. Whether the query editor still
     hands the member the project role under it is Stage 19 xxvi's portal half.
+    **Read 2026-11-22 at 6f 4.3**: in `governed-lake`, which the governance manager owns, the query editor
+    ran as the project role and Athena refused `StartQueryExecution`, the Data OU's `DenyUserCompute`
+    denying it to every principal, so the door is shut in Data Governance. The same portal session acted as
+    `eighth-experimentation`'s role in Sandbox, where that user has been a `PROJECT_CONTRIBUTOR` since
+    2026-11-14 (Stage 19 decision 5), and opened its query editor with no query; Sandbox has no Athena deny.
 
 ### Raised by Stage 6 step 1.3, 2026-08-21
 

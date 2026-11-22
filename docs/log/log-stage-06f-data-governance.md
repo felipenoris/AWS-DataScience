@@ -1431,3 +1431,106 @@ logged ([`log-stage-19-smus-native-data-product.md`](log-stage-19-smus-native-da
 - **[Claude] Written**: steps 2.2 and 4.3's notes (a request to `house-price` is accepted at creation
   whoever makes it; an approval is read on a listing that requires one), and the waiting list's row on
   step 2's portal acts.
+
+## 2026-11-22 — 11.12's residue accepted, and 2.1's consumer named
+
+*Claude in a session the orchestrating session started for 6f's two items, reading AWS as the
+infrastructure user with `InfrastructureAccess` in `Data Governance Account` (`awsds-infra-data`) and
+`Sandbox Account 1` (`awsds-infra-sandbox-1`), reads alone; the user answered in the chat. Times UTC.*
+
+- **[Claude] The residue's options**, put to the user before any write: accept the `dev/` registration the
+  Data OU keeps at 11.12 step 4, or amend `DenyLakeDeletionAndDeregistration` for that sitting (battery
+  phase 4b). Lake Formation's authorization reference, read for it (`REFERENCES.md`), defines no resource
+  type and one condition key, `lakeformation:EnabledOnlyForMetaDataAccess`, and `DeregisterResource` takes
+  neither. A carve-out could therefore name a principal and never a location, and that principal could
+  deregister `raw` and `curated` too. After step 4 the project role is gone and after step 6 the bucket is
+  empty, so the registration vends nothing. An amendment costs two `identity/org-policies` applies and
+  battery 4b.
+- **[user] The residue**, verbatim: *"Aceitar como resíduo (Recomendado)"*. No SCP was written.
+- **[user] The consumer**, verbatim: *"test-experimentation (Recomendado)"*, the other answer offered being
+  a new project from `experimentation`. No project was created.
+- **[Claude] `mydatabase` in `test-experimentation`**, read while preparing 2.1: the environment
+  `60j5234reuos9c`, created 2026-11-09 19:53:53Z by the Data Scientist User, read `VALIDATION_FAILED` 11 s
+  later, *"Failed to validate environment 60j5234reuos9c: Glue database with name mydatabase already
+  exists"*, `provisionedResources` null, its record left in the project (`SUP-184`, decision 6's note).
+- **[Claude] Written**: 11.12 step 4's sentence, decision 6's note, `REFERENCES.md`'s line, and the
+  waiting list's residue row removed.
+
+## 2026-11-22 — 2.2 and 4.3: `house-price` subscribed inside Sandbox, `curated.trades` approved by the Governance Manager
+
+*The user in the portal as the Data Scientist User, in a new tab of the day-2 browser profile, and as the
+Governance Manager user, in a separate profile; Claude read AWS as the infrastructure user with
+`InfrastructureAccess` in `Data Governance Account` (`awsds-infra-data`) and `Sandbox Account 1`
+(`awsds-infra-sandbox-1`), reads alone. Times UTC.*
+
+- **[Claude] The day-2 session** (`n9-dia2`) told before the acts and again after the reads; its browser
+  stayed on one tab of `eighth-experimentation`.
+- **[user]**, verbatim: *"Fiz os passos. O SELECT pelo governance manager no governed-lake falhou. O comando
+  foi `SELECT * FROM curated.trades LIMIT 1;` utilizando `Athena (SQL)`. A mensagem de erro foi:"*
+
+  ```text
+  You are not authorized to perform: athena:StartQueryExecution on the resource. After your AWS administrator or you have updated your permissions, please try again. (Service: Athena, Status Code: 400, Request ID: e491b005-8891-4c79-a65b-397f347847a7) (SDK Attempt Count: 1)
+  ```
+
+- **[Claude] 2.2, the request and the subscription**: `3m9tub99v1uj68` on `house-price`
+  (`cetyru4cvy1bio`), created and `ACCEPTED` at 02:18:34.984Z by the Data Scientist User for
+  `test-experimentation`, reason *"access"*, no reviewer; the subscription `6exx6qof1bqads` `APPROVED` at
+  the same instant.
+- **[Claude] 2.2, the fulfilment**, in Sandbox, every call in an `AWSDataZone-Subscriptions` session with no
+  source identity:
+  - 02:19:07Z, `eighth-experimentation`'s role, the owner's: `BatchGrantPermissions`, `SELECT` on
+    `mydatabase.house-price` to Sandbox's `IAMPrincipals` under
+    `context.datazone.projectId=="4gqfau9xuo6e4w"`, no grant option.
+  - 02:19:18Z, `test-experimentation`'s role: `CreateTable` of the link `house-price` in
+    `glue_db_4zojr4rr6bmnww`, targeting `mydatabase.house-price`, and `BatchGrantPermissions`, `DESCRIBE` on
+    it to `IAMPrincipals` and to `arn:aws:identitystore:::user/*` under the same condition.
+  - The grant `c63tep9telqz68` to the target `ai0iw2p6vlxw5s`, created 02:18:37Z, read `COMPLETED` with the
+    asset `GRANTED` at 02:19:28Z, 54 s after the request. The manage-access role made no call and no grant
+    names a role: verification i in one account.
+- **[Claude] 4.3, the request and its approval**: `3tir3xqbyeuids` on `trades` (`b3bagfgnvev3tc`), created
+  02:19:05Z by the Data Scientist User for `test-experimentation`, reason *"subcribe"*; `ACCEPTED` at
+  02:20:33Z, its reviewer the Governance Manager's profile. `AcceptSubscriptionRequest` ran as
+  `awsds-data-studio-domain-execution` in the session `user-e8a1f320-…`, and `GovernanceManagerAccess` made
+  no call (vii). The subscription `cjk51sow90f4wg` `APPROVED`.
+- **[Claude] 4.3, the fulfilment**: in Data Governance at 02:20:38Z, `governed-lake`'s role made one
+  `BatchGrantPermissions`, `SELECT` on `curated.trades` to Sandbox's `IAMPrincipals` under
+  `context.datazone.projectId=="4gqfau9xuo6e4w"`, the entry carrying `CROSS_ACCOUNT_VERSION` `5`, and no
+  RAM or Glue policy call. Between the snapshots of 01:59:37Z and 02:22:50Z the share
+  `LakeFormation-V5-ZKUYXYESG4` kept its update time of 2026-10-26 21:36:49Z, and the five per-resource
+  policies their hashes and update times. In Sandbox, `test-experimentation`'s role created the link
+  `trades` in `glue_db_4zojr4rr6bmnww` at 02:20:48Z and its `DESCRIBE` grants at 02:20:49Z. The grant
+  `bpw1y925dbfa4w`, created 02:20:35Z, read `COMPLETED` at 02:20:49Z, 16 s after the approval against 63 s
+  for the first subscription (`SUP-195`).
+- **[Claude] The lineage both fulfilments wrote**, `datazone.amazonaws.com` in Data Governance's trail. At
+  02:19:34Z: a new `DatasetLineageNodeType` node `4xeji7wlcovwnk` for the `house-price` link's Glue ARN, its
+  version dated 02:19:28Z, and a version of the listing's node `58w6xmloxbpvkg`
+  (`amazon.datazone.listing/cetyru4cvy1bio`). At 02:21:03Z: versions dated 02:20:49Z of the `trades` link's
+  node `3juvtmem73n1g0`, which dates from Stage 18 7.2's link of 2026-10-22, and of `5vrx7y3x3blg5s`. The
+  `trades` node now lists two upstreams, the lake listing's node and that of Staging's listing
+  `bx8v3rafykv3ww`, which `get-listing` answers `ResourceNotFoundException` (`SUP-415`).
+- **[Claude] The Governance Manager's query**, Data Governance's trail, as `governed-lake`'s role with that
+  user's profile as source identity: `GetDatabases` and `GetTables` at 02:21:40-41Z, `athena:GetWorkGroup`
+  on `workgroup-3j4l4xmvz7fggg-52webn93119ouo` at 02:21:43Z answered, and `StartQueryExecution` at 02:21:46Z
+  and 02:21:56Z, each `AccessDenied` in the wording above, which names no policy (`SUP-118`). The Data OU's
+  `DenyUserCompute` denies `athena:StartQueryExecution` on `*` with no condition. The simulator as that
+  role, with the Region and the role's tags in the context, read `explicitDeny` and
+  `AllowedByOrganizations` false; the identity layer is not read past it (`SUP-008`). A membership in Data
+  Governance reads no rows through Athena (open question 20).
+- **[Claude] The same portal session in Sandbox**, at 02:21:05-21Z, as `eighth-experimentation`'s role with
+  the Governance Manager's profile as source identity: `GetEnvironment`, `ListNotebooks`, the query
+  editor's `CreateNotebook`, `CreateNotebookCell` and `PutTab`, `StartConversation`, and Glue catalog
+  reads; no Athena call. `list-project-memberships` reads the Governance Manager a `PROJECT_CONTRIBUTOR` of
+  `eighth-experimentation`, created by the Data Scientist User on 2026-11-14 at 03:35:22Z (Stage 19 pass 2,
+  decision 5). Sandbox carries no Athena deny, so open question 20's door stands open in that project,
+  unexercised.
+- **[Claude] Not done**: 2.3's query of `house-price` from `test-experimentation`; Sandbox's trail holds no
+  Athena call by that project's role to 02:25Z.
+- **[Claude] The instruments**: `./aws/catalog.py` at 02:31:26Z, *"all checks passed"*. `CT-10` reads six
+  grants on `curated.trades`, two of them fulfilments; `CT-11` two approved subscriptions, each a project's
+  request approved by the owner; `CT-17` one fulfilment on `mydatabase.house-price`; `CT-8` 57 conditioned
+  `IAMPrincipals` grants. `CT-16`'s note calls `6exx6qof1bqads` *"the owner's Share, a request made by a
+  member of the owning project"*: the requester is a member of both projects, and the record does not
+  separate a member's subscription on a listing with no approval from a Share. `./aws/datalake.py` at
+  02:32:51Z, *"0 check(s) FAILED"*, `DL-7` eleven shares out and two resource links on the consumer side; it
+  exits 1 because section 14 lists `get-caller-identity` for the profiles of the other sign-in sessions,
+  none signed in.

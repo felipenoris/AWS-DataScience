@@ -526,6 +526,18 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
    than its exit code, because that field is a positive proof of a grant that no failure elsewhere
    would have attributed correctly.
 
+   Amended 2026-11-22 (Stage 6h decision 8 (a)), because a database reached over a port adds a fourth
+   term, the network. The decision said that under the wide tag `for-use-with-all-datazone-projects=true`
+   the schema `GRANT` is the only per-project gate on the notebook and Data API doors, and the
+   per-sitting recommendation kept the second project out of `projects` while its 5.2b connected from
+   that project's notebook. The tag widens IAM alone: AWS's project policy admits every project role to
+   `GetCredentials`, and the workgroup's security group still admits `5439` from the map's projects
+   only, so the step would have read a timeout and measured the network instead of the grant (Lesson
+   42). Read in the code on 2026-11-20, before any sitting ran it. The Data API reaches the workgroup
+   from AWS's side and is the one door where the grant stands alone. The fourth discriminator: for each
+   door, name the IAM grant, the database grant and the rule that admits the packet. A switch that
+   widens one of them opens no door, and gates keyed off one map widen only where the switch reaches.
+
 29. **An attribute assigned to describe a thing becomes a selector the moment somebody writes a rule
    over it — and the rule inherits every resource that wears the attribute for an unrelated
    reason.** Stage 5a pass 3 was one expression away from sharing the drop-box. The classification
@@ -1271,11 +1283,14 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
     specification is a fork of it. A vendor's sentence forks the same way. ECR's page says the
     creation role *"must be provided when using repository tags and/or KMS in the template"*;
     `registry/cache.tf` carried it as *"a CMK in a creation template needs a custom role"*, kept the
-    tags, and every first pull through the cache read `not found` (Stage 7, 2026-10-12). A lesson forks
-    the same way. On 2026-11-22 a peer session carried Lesson 79 as a rule that applies come from `main`,
-    which would have merged PR #108 before decision 17's SCP apply and its invocations, putting model ARNs
-    no invocation had proven on `main` for another session to apply (Lesson 69). The lesson says to plan
-    from the tree that applied, or after the merge; its text settled it (Stage 6e).
+    tags, and every first pull through the cache read `not found` (Stage 7, 2026-10-12). A session's
+    brief forks the same way: the brief for Stage 21's 4.5 asked for *"the stage's recommendation"*, and
+    the stage file held none; its one sentence on the item framed the narrower option as a reading in
+    itself, while the user's rule for that stage's recommendations pointed at the wider one (2026-11-22).
+    A lesson forks too. On 2026-11-22 a peer session carried Lesson 79 as a rule that applies come from
+    `main`, which would have merged PR #108 before decision 17's SCP apply and its invocations, putting
+    model ARNs no invocation had proven on `main` for another session to apply (Lesson 69). The lesson
+    says to plan from the tree that applied, or after the merge; its text settled it (Stage 6e).
 
 58. **Data and code can share a delivery path and still have different costs, and the one that
     reports success is the cheap one.** Stage 6c, 2026-09-07. The proxy's allow-lists are `[P]` data
@@ -1999,6 +2014,11 @@ The Bash tool's `grep` is a shell function that runs ugrep 7.8.4. On 2026-11-16 
 bounded repeats, `[^"]{0,40}` and `[^"]{0,80}`, in one pattern over a session transcript with *"exceeds
 complexity limits"* (Stage 6e). A search whose absence is evidence runs as `grep -F` or in Python, with its
 exit code read.
+
+Both recurred on 2026-11-22, in Stage 6g's trail reads. An unquoted `$ids` reached
+`batch-get-query-execution` as one argument, refused with *"Member must satisfy regular expression pattern:
+\S+"*, a message about the parameter's shape that never names the shell. Ugrep refused
+`.{0,80}6g 2\.4.{0,90}` with *"exceeds complexity limits"* and exit 2.
 
 **Why it is a class rather than a slip.** The differences are in expansion, which happens before the
 command runs, so the command receives another string and nothing reports the substitution. A modifier such
