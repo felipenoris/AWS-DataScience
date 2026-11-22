@@ -5601,6 +5601,18 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   the 1.15.8 the S3 object of `sandbox/foundation` holds (serial 18 in both). Where:
   `log-stage-08-cicd-pipelines.md`, 2026-11-21; `runbooks/promotion.md` §N.12.3.
 
+- `SUP-457` **`terraform show -json` prints `{"format_version":"1.0"}`, exit 0, both for a state that holds
+  no resource and for an S3 backend key that holds no object** (measured 2026-11-22 under 1.17.2). The
+  destroyed `production/egress/`, whose object reads format 4, serial 226 and `"resources": []`, printed that
+  line; so did a scratch configuration whose backend named `production/no-such-slice/terraform.tfstate`, a
+  key `head-object` answers 404 for, after an `init` that exited 0. The human `show` of the second printed
+  *"The state file is empty. No resources are represented."*, exit 0. The pages of `terraform show`, the
+  JSON output format and the S3 backend (read 2026-11-22, the last two in part) state no output for an
+  empty or absent state and nothing about a key with no object. Until 2026-11-22 `make status` read every
+  `[E]` slice through `show`, so a moved key or a slice never applied read `down` at 0 USD/h; it reads the
+  object since, and a key with no object reads UNREADABLE. Where: `scripts/slices.py`, `state_tree()`;
+  `log-stage-12-observability-finops.md`, 2026-11-22.
+
 ### The `aws` provider
 
 - `SUP-307` **`aws_organizations_policy` compares `content` as decoded JSON values, so a one-element

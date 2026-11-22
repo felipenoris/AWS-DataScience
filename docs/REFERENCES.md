@@ -401,6 +401,13 @@
   described with no size limit, while the provider refuses more than 16,384 bytes at plan (`SUP-407`):
   <https://github.com/hashicorp/terraform-provider-aws/blob/v6.60.0/website/docs/r/instance.html.markdown>.
 
+- Terraform's `show` page, the JSON output format and the S3 backend page (read 2026-11-22, for `make
+  status`'s state reads; the last two to about 40,000 of their 50,000 characters, the rest through a
+  summary): none states what `show -json` prints for an empty or absent state, or what a key holding no
+  object does (`SUP-457`): <https://developer.hashicorp.com/terraform/cli/commands/show>,
+  <https://developer.hashicorp.com/terraform/internals/json-format>,
+  <https://developer.hashicorp.com/terraform/language/backend/s3>.
+
 ## Networking and access
 
 - WireGuard: <https://www.wireguard.com/>.
