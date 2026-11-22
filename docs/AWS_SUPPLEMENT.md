@@ -1207,6 +1207,15 @@ entry is still true is the reading.
   the gateway endpoint for them. `GetDataAccess` is also an event name of `lakeformation.amazonaws.com`, so
   a trail lookup filters on `eventSource`. Where: `log-stage-06a-unified-studio.md`, 2026-08-24;
   `docs/AWS_STATE.md`, the persona vending row.
+  **Read again 2026-11-21** (Stage 17 1.6, from a SageMaker Unified Studio space behind the egress proxy):
+  the S3 Access Grants plugin's `GetAccessGrantsInstanceForPrefix` and `GetDataAccess` went to
+  `<account>.s3-control.us-west-2.amazonaws.com` through the proxy, one tunnel (*"CONNECT
+  <account>.s3-control.us-west-2.amazonaws.com:443 200 7313 6347 TCP_TUNNEL"*, 23:08:35Z), while the STS
+  call and the `PutObject` that followed left with no proxy line. The account-prefixed host matches no
+  `NO_PROXY` entry naming `s3.<region>.amazonaws.com`, so a proxied client reaches S3 Control through the
+  proxy, the path `SUP-042` records with the hub's gateway endpoint, not the spoke's. Verification iii's ranged read on
+  2026-11-22 showed the same tunnel at 00:12:57Z. Where: `log-stage-17-sandbox-machine-learning.md`,
+  2026-11-21 and 2026-11-22.
 
 - `SUP-092` **Deleting an S3 Access Grants grant leaves `GetDataAccess` answering for up to about 19
   seconds, and credentials already vended work until their own expiry** (measured 2026-08-26 in Sandbox,
@@ -1230,6 +1239,14 @@ entry is still true is the reading.
   grant the error is the register's, *"You do not have READWRITE permissions to the requested S3 Prefix"*. A
   direct-refusal test runs only where no plugin sits. Where: `log-stage-16-sandbox-lake.md`, 2026-08-26,
   sitting 3; `runbooks/sandbox-lake.md`.
+  **Read again 2026-11-21** (Stage 17 1.6, from `eighth-experimentation`'s space `jup` on the house image):
+  before a `PutObject` under the project's `shared/` prefix, `GetAccessGrantsInstanceForPrefix` answered 200
+  and `GetDataAccess` for `WRITE` 403, and the write then succeeded under the project role's own
+  credentials, the plugin's fallback: the object `ml-demo-1-6.txt` exists, under the bucket's default key.
+  Where the reading above surfaced the register's refusal, the notebook here saw a successful write, so a
+  grant's refusal tested from a space is read in the trail's `GetDataAccess`, not in the call's result. The
+  plugin's version and fallback setting in either
+  interpreter were not read. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-21.
 
 - `SUP-094` **An S3 gateway endpoint policy's refusal of another owner's bucket reaches the client as a bare
   `AccessDenied - Access Denied`, with no mention of the endpoint policy** (measured 2026-10-11 from a MWAA
@@ -3670,8 +3687,9 @@ entry is still true is the reading.
   DataZone's `UpdateEnvironment`, a PUT of the environment's `definition.json` and the update of the stack
   `DataZone-Env-<environment id>` (04:25:26Z to 04:25:36Z), whose `UpdateFlow` and `PrepareFlow` ran as the
   provisioning role from `datazone.amazonaws.com`, before the browser's `InvokeFlow` on `TSTALIASID`
-  (04:25:49Z). Each of the three later messages, with no edit between them, updated the stack again
-  (`UpdateFlow` at 04:28:33Z and 04:30:29Z), and a message took 70 to 80 s from the send to the answer. The
+  (04:25:49Z). Each of the three later messages, with no edit between them, updated the stack again (the stack
+  from 04:26:50Z to 04:27:01Z, then `UpdateFlow` at 04:28:33Z and at 04:30:29Z), and a message took 70 to
+  80 s from the send to the answer. The
   stack updated `BedrockFlow` alone. *My apps* lists the flow *"Not shared"*, with a delete icon alone. AWS's
   flow app pages say *Save* saves the app and the run button tests it, and its share page describes chat agent
   apps alone (`build-flow.html`, `app-share.html`, read 2026-11-22). A flow saved and never tested therefore
@@ -3883,6 +3901,21 @@ entry is still true is the reading.
   *"You cannot delete the default JupyterLab space"*. Opening that project's *Code spaces* page recreated
   the space (`CreateSpace` by the project role from a browser, 06:44:45 UTC) and the service started its
   app. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-10-30.
+
+- `SUP-450` **A SageMaker Unified Studio JupyterLab app calls `cognito-identity.us-east-1.amazonaws.com`
+  and `client-telemetry.us-east-1.amazonaws.com` every few seconds while it runs, and the idle shutdown does
+  not count the calls as activity** (measured 2026-11-21 in Sandbox's proxy log, Stage 17 sitting B). From
+  the space `jup`, JupyterLab on `ml.t3.medium`, the proxy logged a pair of tunnels every 2.5 to 2.6 s, each
+  pair the same sizes: *"CONNECT cognito-identity.us-east-1.amazonaws.com:443 200 8072 2932 TCP_TUNNEL"* and
+  *"CONNECT client-telemetry.us-east-1.amazonaws.com:443 200 5605 3637 TCP_TUNNEL"*. The app's address sent
+  1,529 pairs from 20:17:53Z to 21:23:15Z, from its UI's first minutes to its idle delete at 21:23:14Z
+  (`SUP-221`, the domain's `IdleTimeoutInMinutes` 60), and the restarted app's new address sent them again
+  from 23:07:53Z. About 6.6 KB leave per pair, 9.2 MB an hour per running JupyterLab app, and 19 MB arrive.
+  The pair passes the compute plane's `.amazonaws.com` allowance. A Code Editor space sent it once per app
+  start (6d's log; `SUP-233`), and `app-etl-dev`'s JupyterLab space `default` about 300 of each in 20
+  minutes on 2026-11-15. The sending component was not identified. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-21; `log-stage-12-observability-finops.md`,
+  2026-11-21; `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 ### The Code Editor and the remote IDE
 
@@ -4118,9 +4151,10 @@ entry is still true is the reading.
   account data key in Staging (2026-10-25 23:37 UTC) and Production (2026-10-26 00:27:20 UTC). Where:
   `log-stage-10-orchestration-promotion.md`, 2026-10-25; `AWS_STATE.md` `EXC-22`.
 
-- `SUP-408` **A `CreateTrainingJob` sent from a notebook in a SageMaker Unified Studio space with no tags
-  is recorded with seven and admitted without the caller's `sagemaker:AddTags`, while the same request
-  naming `AmazonDataZoneProject` is refused as `sagemaker:AddTags`** (measured 2026-11-21 in Sandbox, Stage
+- `SUP-408` **A `CreateTrainingJob` sent with no tags from a notebook in a SageMaker Unified Studio space
+  is recorded with the space's `sagemaker:*-arn` and `AmazonDataZone*` tags and admitted without the
+  caller's `sagemaker:AddTags`, while the same request naming `AmazonDataZoneProject` is refused as
+  `sagemaker:AddTags`** (measured 2026-11-21 in Sandbox, Stage
   17 2.2). `train.py untagged` deleted `Tags` from its boto3 request; CloudTrail's event at 23:19:36 recorded
   `requestParameters.tags` with `sagemaker:user-profile-arn`, `sagemaker:domain-arn`, `sagemaker:space-arn`,
   `AmazonDataZoneProject`, `AmazonDataZoneScopeName`, `AmazonDataZoneUser` and `AmazonDataZoneDomain`, and
