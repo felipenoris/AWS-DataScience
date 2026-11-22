@@ -1195,7 +1195,7 @@ closes, and its Dates bound items 4, 5, 9 and 10.
      release G; the request and the approval do (item 6).
    - [user] Stage 20 2.1 before N.9's day 1; Stage 17 0.9 before day 2 and `app-ml-dev`'s MLflow App
      before day 3; 6d 1.1 and 1.2, and 7.6's second identity in a browser profile of its own; N.10.1's
-     acts; 6g 2.4 re-specified, which the portal's query editor reads with no space (Stage 18 7.2).
+     acts; 6g 2.4, read from the query editor with no space on 2026-11-22 (6g's log).
 4. **N.9's day 1** (N.9.3), `make hub-up` and `make up ENV=sandbox GROUPS=mwaa`, no GitLab: 6d's block
    and Stage 20's sitting A, passes 2 and 3 and 4.5, after Stage 20 2.1 and before 2026-12-18, when dbt
    Core 1.11's critical support ends.

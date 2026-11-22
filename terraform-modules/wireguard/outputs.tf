@@ -28,6 +28,11 @@ output "instance_role_arn" {
   value       = module.role.role_arn
 }
 
+output "user_data_bytes" {
+  description = "The rendered user data's size in bytes, the count the instance's precondition holds to EC2's 16,384. Read from the caller with `terraform console`: `module.wireguard.user_data_bytes`."
+  value       = local.user_data_bytes
+}
+
 output "primary_network_interface_id" {
   description = "The route target, and the reason it is an output rather than a lookup: a route that sends a private tier's default through this host has to name an ENI, and an ENI belongs to an instance that may be replaced (a shape change, a user-data change). Reading it through terraform_remote_state means the consumer re-plans onto the new interface instead of pointing at a deleted one - which is a route that blackholes rather than an error. Paired with the PostUp chain: a route that names this id sends traffic into a host that drops it unless `forward_destinations` admits the destination and `no_masquerade_cidrs` (or the default masquerade) makes the return leg legitimate. Under 6c the consumer is the hub's public route table, which sends the tunnel range here so the proxy can see a per-device source."
   value       = aws_instance.this.primary_network_interface_id
