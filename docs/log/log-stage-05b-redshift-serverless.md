@@ -1435,3 +1435,23 @@ and the raise are the user's, relayed by the orchestrating session. Times are UT
 - **[Claude] What the editor showed besides**: a *"Try the new Query Editor"* prompt, answered *Later*, so
   the classic editor ran every statement; and on typing in the cell, *"A problem occurred while getting
   autocompletion data"*, *"autocompleteMsg.getMetadataErrorAccessDenied"*, which stopped no statement.
+
+## 2026-11-22 — the trial's balance after day 1's blocks
+
+*Claude, on the user's reading pasted in this session's chat at about 22:14; the meters read as the
+infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1` (account Sandbox
+Account 1), at 22:15. The workgroup was still up and idle, §N.9's day 3 holding the lowering. Times are UTC.*
+
+- **[user] The trial's balance**, verbatim: *"Free trial credits remaining $286.16 out of $300.00"*, *"Free
+  trial expiration December 19, 2026"*. 0.94 USD below the 287.10 read at 17:41 (computed).
+- **[Claude] The workgroup's meters**, `AWS/Redshift-Serverless` half-hour sums for `awsds-sandbox-warehouse`:
+
+  | Interval | 18:00 | 18:30 | 19:00 | 19:30 | 20:00 | 20:30 to 22:00 |
+  |---|---|---|---|---|---|---|
+  | `ChargedSeconds` | 480 | 4,436 | 2,160 | 2,400 | 480 | 0 in each |
+  | `ComputeSeconds` | 2 | 1,152 | 185 | 88 | 67 | 0 in each |
+
+  `ChargedSeconds` sums 9,956 RPU-seconds, 0.9956 USD at 0.0001 USD per RPU-second, and `ComputeSeconds`
+  1,494, 0.1494 USD. The balance stands 0.06 USD under `ChargedSeconds`, about the 20:00 interval's
+  0.048 USD, so the next day's reading settles which meter it follows (`SUP-142`, `SUP-143`). The intervals of
+  6h's steps 5 and 10, 21:30 and 22:00, read 0.
