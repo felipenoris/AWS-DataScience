@@ -664,7 +664,10 @@ during the stage and written into `docs/log/log-stage-11-dlp.md` (Lesson 16), wi
    silence.
 9. **ECR enhanced scanning** (4.6, Stage 7 decision 2's deferral) — recommended: **stay on basic** until a
    Stage 8 gate reading misses a language-package CVE that mattered; if adopted, standalone Inspector in
-   Production only, and re-read the re-scan churn against the bill at Stage 12.
+   Production only, and re-read the re-scan churn against the bill at Stage 12. **Read 2026-11-22**
+   (`SUP-437`): basic scanning has failed every image pushed since 2026-11-15 on a vulnerability limit no AWS
+   page names, so "stay on basic" now leaves Stage 8's gate with no OS reading at all, the premise of the
+   recommendation gone; the decision is the user's again (the waiting list).
 10. **INT-16's choice** — closed by D39, which removed the requirement the portal's ingress deviated from;
     3.4 writes the premise that replaced it.
 11. **Bedrock model invocation logging** (5.6) — handed here by [Stage 6e](stage-06e-claude-code-bedrock.md)

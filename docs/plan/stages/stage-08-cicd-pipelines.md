@@ -266,6 +266,11 @@ conda-built R stack, the toolchains under `/opt`, the proxy literal, the assista
   two constraints on the gate: the `dev-env` scan of `default-v0.6.0` completed 7 min 22 s after its push,
   past the waiter's 300 s (it exits 255 after 60 checks), so the gate polls under a bound of its own; and the
   counts come from `DescribeImageScanFindings`, since `DescribeImages` carries no scan field here.
+  **Since 2026-11-15 basic scanning fails every image this estate pushes** (`SUP-437`, read 2026-11-22):
+  the gate reads `FAILED`, *"Number of vulnerabilities for this image exceeds the maximum supported with
+  Basic Scanning"*, and no finding, on every tag from `app-etl`'s `v0.4.7` to release G's `v0.6.0` and on
+  `default-v0.10.1`'s two images, so its OS half reports nothing; `pip-audit` is the scan left. Stage 11
+  decision 9 holds the remedy, enhanced scanning.
   **The zlib pair, taken 2026-10-26** (decision 1, option A, the user as the Dev Env Steward):
   `CVE-2026-85091` on `zlib` and `zlib1g` 1.3.dfsg-3.1ubuntu2.2, new in `default-v0.9.1`'s scans, enters the
   SageMaker Distribution lineage's baseline by name, dated and attributed, in the copy's
